@@ -1,0 +1,13 @@
+Module
+  name: game_dpsmeter
+  description: DPS meter and combat log (damage, healing, taken and received per skill, fights, party; extended opcode 204)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ dpsmath, dpsmeter ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

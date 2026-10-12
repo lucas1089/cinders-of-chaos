@@ -1,0 +1,13 @@
+Module
+  name: game_partyfinder
+  description: Party Finder window - post a group, browse groups, apply with a role, quick join (server party_finder.lua, extended opcode 208)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ partyfinderview, partyfinder ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

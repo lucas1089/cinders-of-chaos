@@ -13,8 +13,8 @@ return {
 
 	-- milestones: paid together with the daily reward of the day the streak reaches `days` (all or nothing with it),
 	-- every time a streak gets there. `title`: shown in the look text of every character of the account while its
-	-- best streak ever is at least `days` (the highest one wins). Server item ids: 29856 Chaos Orb, 29857 Divine Orb,
-	-- 29855 Exalted Orb, 2160 crystal coin.
+	-- best streak ever is at least `days` (the highest one wins). Server item ids: 29856 Orb of Upheaval, 29857 Orb of Fate,
+	-- 29855 Orb of Grafting, 2160 crystal coin.
 	milestones = {
 		{days = 7, items = {{itemId = 29856, count = 2}, {itemId = 29857, count = 1}}},
 		{days = 14, items = {{itemId = 29856, count = 3}, {itemId = 29857, count = 2}}},

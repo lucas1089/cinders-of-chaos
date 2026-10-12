@@ -23,5 +23,6 @@ function onCastSpell(creature, variant, isHotkey)
 	player:addCondition(regen)
 
 	ChaosSpell.fx(player:getPosition(), "heal_sparkle", CONST_ME_MAGIC_GREEN)
+	ChaosSpell.vfx(player:getPosition(), "stone_ward")
 	return true
 end

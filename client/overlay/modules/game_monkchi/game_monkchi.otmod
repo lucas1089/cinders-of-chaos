@@ -1,0 +1,13 @@
+Module
+  name: game_monkchi
+  description: Monk chi HUD (5 pips over the map; extended opcode 247, server monk_combat.lua / monk_chi_core.lua)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ chimath, monkchi ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

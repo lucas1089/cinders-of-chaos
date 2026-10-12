@@ -1,10 +1,13 @@
 -- Rift run HUD: time left, monsters killed / left, the guardian, the modifiers and the reward bonuses of the rift
 -- the player is in. Server: server/data/scripts/chaos/rift.lua, extended opcode 228 (JSON {action, data}).
 --   server -> client  start / update {tier, theme, left, limit, total, killed, bossAt, boss = waiting|alive|dead,
---                                     state, bossName, mods = [{name, text}], bonus = {quantity, rarity, experience}}
+--                                     state, bossName, mods = [{name, text, boon}], bonus = {quantity, rarity, experience},
+--                                     notes = [text] (live lines: sealed coffer, goblin, twin guardians, fallen players),
+--                                     lives, livesMax (shared lives), mods[].tier (modifier tier 1-5 or none),
+--                                     omen (kind name) and title (an Omen Key arena)}
 --                     end {result = success|failed, text, exitIn}
 --   client -> server  query (after a module reload: the server answers with start when the player is in a rift)
--- !rift (server talkaction) shows the keys the player carries and the run status.
+-- The Rift Keys page of the Info & Services window (game_chaosinfo) shows the keys the player carries and the run status.
 
 local OPCODE = 228
 local hud
@@ -49,9 +52,12 @@ local function updateClock()
   end
 end
 
+local place
+
 local function tick()
   tickEvent = nil
   updateClock()
+  place()
   if data and data.state == 'running' then
     tickEvent = scheduleEvent(tick, 500)
   end
@@ -59,12 +65,21 @@ end
 
 local function render()
   if not hud or not data then return end
-  child('title'):setText(tr('Rift - Tier %d', tonumber(data.tier) or 1))
+  child('title'):setText(data.title and tostring(data.title) or tr('Rift - Tier %d', tonumber(data.tier) or 1))
+  local lives = child('lives')
+  local livesText = RiftMath.livesLine(data.lives, data.livesMax)
+  lives:setText(livesText)
+  lives:setColor(RiftMath.livesColor(data.lives, data.livesMax))
+  lives:setVisible(livesText ~= '')
   child('theme'):setText(tostring(data.theme or ''))
   local total, killed = tonumber(data.total) or 0, tonumber(data.killed) or 0
   local bar = child('progress')
   bar:setPercent(RiftMath.bossPercent(killed, data.bossAt, data.boss))
-  bar:setText(tr('%s / %s slain, %s left', short(killed), short(total), short(math.max(0, total - killed))))
+  if data.omen then
+    bar:setText(tr('Omen: %s', tostring(data.omen)))
+  else
+    bar:setText(tr('%s / %s slain, %s left', short(killed), short(total), short(math.max(0, total - killed))))
+  end
   bar:setBackgroundColor(data.boss == 'waiting' and '#6a2ab0' or '#8a1010')
   child('boss'):setText(RiftMath.bossLine(data))
   local mods = child('mods')
@@ -72,17 +87,43 @@ local function render()
   local list = type(data.mods) == 'table' and data.mods or {}
   for _, m in ipairs(list) do
     local label = g_ui.createWidget('RiftModLabel', mods)
-    label:setText('- ' .. tostring(m.text or m.name or ''))
+    label:setText('- ' .. RiftMath.modLine(m))
+    if m.boon then label:setColor('#e8c060') end -- a pure reward modifier (coffer, goblin, echoing spoils)
+  end
+  local notes = child('notes')
+  notes:destroyChildren()
+  for _, text in ipairs(type(data.notes) == 'table' and data.notes or {}) do
+    g_ui.createWidget('RiftNoteLabel', notes):setText(tostring(text))
   end
   child('modsHeader'):setText(#list > 0 and tr('Modifiers') or tr('No modifiers'))
+  child('modsHeader'):setVisible(#list > 0 or not data.omen) -- an omen arena has no modifiers to speak of
   local bonus = RiftMath.bonusLine(data.bonus)
   child('bonus'):setText(bonus ~= '' and tr('Rewards: %s', bonus) or '')
   child('bonus'):setVisible(bonus ~= '')
   updateClock()
 end
 
+-- under the character plate and the buff bar fixed below it (game_buffbar; it grows a row at a time, so this runs
+-- with the clock too): the map panel starts above the window in the extended view (y -80 at 1280x720, -120 at
+-- 1920x1080), so the fixed margin-top of the style put the HUD on the plate
+place = function()
+  local mapPanel = hud and hud:getParent()
+  local plate = rootWidget:recursiveGetChildById('chaosHud')
+  if not mapPanel or not plate or not plate:isVisible() then return end
+  local r = plate:getRect()
+  local bottom = r.y + r.height
+  local buffs = rootWidget:recursiveGetChildById('buffBar')
+  if buffs and buffs:isVisible() then
+    local b = buffs:getRect()
+    bottom = math.max(bottom, b.y + b.height)
+  end
+  local top = bottom + 8 - mapPanel:getY()
+  if hud:getMarginTop() ~= top then hud:setMarginTop(top) end
+end
+
 local function show()
   if not hud then return end
+  place()
   if hideEvent then removeEvent(hideEvent) hideEvent = nil end
   child('result'):setVisible(false)
   hud:show()

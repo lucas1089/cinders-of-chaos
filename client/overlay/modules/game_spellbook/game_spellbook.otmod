@@ -1,7 +1,7 @@
 Module
   name: game_spellbook
-  description: Spellbook window (every server spell with its data and area of effect; !spells, extended opcode 219)
-  author: project-chaos
+  description: Spellbook window (every server spell with its data and area of effect; extended opcode 219)
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ spellbook ]
   dependencies:

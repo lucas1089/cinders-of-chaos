@@ -1,0 +1,93 @@
+# Keep attacking while moving (client/MANIFEST.md "game_kitewalk", server/README.md "Keep attacking while moving"): one option in Options > Interface, "Keep attacking while moving" (keepAttackingWhileMoving), on by default, in a new panel after "Right-click equips items". Its apply hands the new value to the overlay module game_kitewalk, which tells the server (extended opcode 186; server src-patch 0028 lets a walk by click or key win over the chase and keep the attacks going). While it is on, the base "Auto Chase Off" (game_inventory check(), on by default) no longer switches the stance to Don't Chase on every manual walk while attacking: the server resumes the chase when the walk ends. The Auto Chase Off tooltip says so. Without this patch the option counts as on on the server, and Auto Chase Off still flips the stance.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1919,6 +1919,19 @@ return {
+ 		end,
+ 	},
+ 
++	-- keep attacking while moving (overlay module game_kitewalk, server src-patch 0028): a walk by click or key keeps
++	-- the attack target and the attacks going and wins over the chase; the module tells the server when this changes
++	keepAttackingWhileMoving = {
++		value = true,
++		apply = function(value)
++			local m = modules.game_kitewalk
++			if m and m.onOptionChange then
++				m.onOptionChange(value)
++			end
++			return true
++		end,
++	},
++
+ 	enableLights = {
+ 		value = true,
+         apply = function(value)
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -288,6 +288,42 @@ InterfaceWindow < Panel
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('When checked, using a piece of equipment you carry puts it on, and\nusing a worn one takes it off into your backpack. The use is a right-click\nwith Classic Controls, Ctrl + click with Regular Controls and a click\nwith Left Smart-Click. Items with a use of their own (potions, runes,\nfood, tools, keys) and containers work as before.')
+ 
++  FlatPanel
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: keepAttackingWhileMoving
++      size: 12 12
++      !text: tr('Keep attacking while moving')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('keepAttackingWhileMoving')
++        self:setChecked(value ~= false)
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 5
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('When checked, walking by a click on the map or the minimap, or by\nkeys, keeps your attack target: you walk the path you chose and your\nattacks keep firing whenever the target is in range, even with Chase\nOpponent on. Chasing starts again when you stop. Unchecked, each step\ndelays your attacks and Chase Opponent pulls you back to the target.')
++
+   FlatPanel
+     size: 505 44
+     anchors.top: prev.bottom
+--- a/modules/game_inventory/inventory.lua
++++ b/modules/game_inventory/inventory.lua
+@@ -636,6 +636,11 @@
+ end
+ 
+ function check()
++  -- Keep attacking while moving (overlay module game_kitewalk, server src-patch 0028): the server lets a walk by click
++  -- or key win over the chase and resumes the chase when it ends, so the stance stays Chase Opponent
++  if m_settings.getOption('keepAttackingWhileMoving') ~= false then
++    return
++  end
+   if m_settings.getOption('autoChaseOverride') then
+     if g_game.isAttacking() and g_game.getChaseMode() == ChaseOpponent then
+       g_game.doThing(false)
+--- a/mods/client_settings/options/gameplay.otui
++++ b/mods/client_settings/options/gameplay.otui
+@@ -68,7 +68,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('This option will only work if you have selected the movement mode \n"Chase Opponent". \nIf "Auto Chase Off" is enabled, your character will stop chasing an \nopponent whenever you move manually, i.e. if you press a cursor \nkey or click somewhere on the game window. Deselecting this \noption will cause your character to resume the chase as soon as \nyou stop moving them manually.')
++      !tooltip: tr('This option will only work if you have selected the movement mode \n"Chase Opponent". \nIf "Auto Chase Off" is enabled, your character will stop chasing an \nopponent whenever you move manually, i.e. if you press a cursor \nkey or click somewhere on the game window. Deselecting this \noption will cause your character to resume the chase as soon as \nyou stop moving them manually. While "Keep attacking while moving" \n(Options > Interface) is on, this option has no effect: walking keeps \nthe stance and the chase starts again when you stop.')
+ 
+   FlatPanel
+     size: 505 22

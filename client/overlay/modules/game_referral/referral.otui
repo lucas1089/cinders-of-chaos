@@ -1,0 +1,216 @@
+// Referral window (game_referral): your code, a friend's code, referred friends. Styles from client_chaos_theme.
+
+ReferralStep < ChaosLabel
+  height: 16
+  width: 136
+  text-align: right
+  text-auto-resize: false
+
+ReferralFriendRow < ChaosPanelDark
+  height: 38
+  margin-bottom: 3
+
+  ChaosLabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: steps.left
+    margin-right: 6
+    height: 15
+    color: #e8b84a
+
+  ChaosLabelDim
+    id: sub
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: steps.left
+    margin-right: 6
+    height: 14
+
+  UIWidget
+    id: steps
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 276
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+ReferralWindow < ChaosMainWindow
+  id: referralWindow
+  size: 560 540
+  !text: tr('Referral')
+  @onEscape: modules.game_referral.hide()
+
+  ChaosPanelHighlight
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 74
+
+    ChaosLabelDim
+      id: codeLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      height: 15
+      width: 200
+      !text: tr('Your referral code')
+
+    ChaosTitle
+      id: code
+      anchors.top: codeLabel.bottom
+      anchors.left: parent.left
+      anchors.right: copyButton.left
+      margin-top: 2
+      margin-right: 6
+      height: 20
+      text-align: left
+
+    ChaosButton
+      id: copyButton
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-top: 8
+      size: 110 24
+      !text: tr('Copy code')
+      @onClick: modules.game_referral.copyCode()
+
+    ChaosLabel
+      id: codeNote
+      anchors.top: code.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 28
+      text-wrap: true
+      text-align: topLeft
+
+  ChaosTitlePlate
+    id: rewardsPlate
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Rewards (cosmetic, never power)')
+
+  ChaosLabel
+    id: rewards
+    anchors.top: rewardsPlate.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 58
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosTitlePlate
+    id: entryPlate
+    anchors.top: rewards.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+    ChaosTitle
+      anchors.fill: parent
+      text: Code from a friend
+
+  ChaosLabel
+    id: entryText
+    anchors.top: entryPlate.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 30
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosTextEdit
+    id: codeEdit
+    anchors.top: entryText.bottom
+    anchors.left: parent.left
+    margin-top: 2
+    size: 180 24
+    max-length: 12
+    placeholder: XXXX-XXXX
+
+  ChaosButton
+    id: enterButton
+    anchors.top: codeEdit.top
+    anchors.left: codeEdit.right
+    margin-left: 6
+    size: 110 24
+    !text: tr('Use this code')
+    @onClick: modules.game_referral.enterCode()
+
+  ChaosTitlePlate
+    id: friendsPlate
+    anchors.top: codeEdit.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+
+    ChaosTitle
+      id: friendsTitle
+      anchors.fill: parent
+
+  ChaosLabelDim
+    id: empty
+    anchors.top: friendsPlate.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 15
+
+  ScrollablePanel
+    id: friends
+    anchors.top: friendsPlate.bottom
+    anchors.left: parent.left
+    anchors.right: friendsScroll.left
+    anchors.bottom: month.top
+    margin-top: 4
+    margin-bottom: 4
+    margin-right: 2
+    vertical-scrollbar: friendsScroll
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: friendsScroll
+    anchors.top: friendsPlate.bottom
+    anchors.bottom: month.top
+    anchors.right: parent.right
+    margin-top: 4
+    margin-bottom: 4
+    step: 20
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: month
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: note.top
+    margin-bottom: 2
+    height: 15
+
+  ChaosLabel
+    id: note
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 24
+    text-wrap: true
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_referral.hide()

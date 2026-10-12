@@ -3,7 +3,7 @@
 --   1 moving and fighting: kill 3 rats in the first pen (CreatureEvent kill)
 --   2 spells: open !spells (ChaosSpellbook.sendTo, wrapped) and cast the class spell (spell group cooldown)
 --   3 the passive tree: one free point, allocate it (ChaosPassiveTree.listeners)
---   4 orbs: a Chaos Orb and a Common leather armor; use the orb on it (stock action or the crafting bench)
+--   4 orbs: an Orb of Upheaval and a Common leather armor; use the orb on it (stock action or the crafting bench)
 --   5 keystones, !bounty and the store: information, then the exit forcefield
 -- Divider walls with a gate keep a player in its station until the task is done; a lesson (modal window + toast)
 -- opens on entering a station, on its white marble tile and on its angel statue. !skiptutorial or the goblin statue in
@@ -21,6 +21,9 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
 if not ChaosNewPlayer or not ChaosNewPlayer.layout then
 	dofile("data/scripts/chaos/newplayer_core.lua")
@@ -272,7 +275,7 @@ local function poll(pid)
 		if castSpell(player) and not NP.hasBit(flagsOf(player), 2) then
 			setFlag(player, 2)
 			if not NP.hasBit(flagsOf(player), 1) then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Well cast! Now open your spellbook with !spells.")
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Well cast! Now open your spellbook: Character > Spellbook (Alt+S).")
 			end
 		end
 		if NP.spellTaskDone(flagsOf(player), spellOf(player) ~= nil) then
@@ -347,7 +350,10 @@ local function startTask(player, i)
 				container = player:addItem(C().common.backpackId, 1, false, 1, CONST_SLOT_BACKPACK)
 			end
 			local o = t.orbItem
-			local item = Game.createItemWithRarity and Game.createItemWithRarity(o.id, 1, o.rarity) or Game.createItem(o.id, 1)
+			-- the tutorial's fixed item level (chaos_item_mods.lua itemLevel.tutorial); rolled by ChaosCrafting.forge
+			local item = ChaosCrafting and ChaosCrafting.createItem
+				and ChaosCrafting.createItem(o.id, o.rarity or 0, ChaosItemMods.config.itemLevel.tutorial)
+				or Game.createItem(o.id, 1)
 			if item then
 				if not (container and container:addItemEx(item) == RETURNVALUE_NOERROR) then
 					player:addItemEx(item, true)
@@ -378,6 +384,63 @@ local function registerEvents(player)
 	player:registerEvent("ChaosTutorialHealth")
 end
 
+-- ------------------------------------------------------------------ the island's time limit (instance limits)
+NP.islandSince = NP.islandSince or {} -- [guid] = os.time this session on the island began
+NP.islandWarn = NP.islandWarn or {} -- [guid] = warning state of this session
+
+-- seconds left on the island (nil without a limit)
+function NP.islandLeft(player, now)
+	local limit = (T().timeLimitMinutes or 0) * 60
+	if limit <= 0 then
+		return nil
+	end
+	now = now or os.time()
+	local used = math.max(0, getS(player, "islandUsed"))
+	local since = NP.islandSince[player:getGuid()] or now
+	return math.max(0, limit - used - (now - since))
+end
+
+local function islandWatch(name, guid, since)
+	local p = Player(name)
+	if not p or p:getGuid() ~= guid or NP.islandSince[guid] ~= since or not NP.inTutorial(stageOf(p)) then
+		return
+	end
+	local left = NP.islandLeft(p)
+	if not left then
+		return
+	end
+	if left <= 0 then
+		NP.tutorialFinish(p, "time")
+		return
+	end
+	if ChaosInstanceLimits then
+		NP.islandWarn[guid] = NP.islandWarn[guid] or {}
+		ChaosInstanceLimits.warn(NP.islandWarn[guid], left, {p}, "Tutorial", T().limits)
+	end
+	addEvent(islandWatch, 5000, name, guid, since)
+end
+NP._islandWatch = islandWatch
+
+local function islandClock(player)
+	local guid, now = player:getGuid(), os.time()
+	NP.islandSince[guid] = now
+	NP.islandWarn[guid] = {}
+	addEvent(islandWatch, 5000, player:getName(), guid, now)
+end
+
+-- logout: the session's time is kept
+function NP.islandLogout(player)
+	local guid = player:getGuid()
+	local since = NP.islandSince[guid]
+	if since then
+		NP.islandSince[guid] = nil
+		NP.islandWarn[guid] = nil
+		if NP.inTutorial(stageOf(player)) then
+			setS(player, "islandUsed", math.max(0, getS(player, "islandUsed")) + math.max(0, os.time() - since))
+		end
+	end
+end
+
 function NP.tutorialStart(player)
 	if not NP.islandReady() then
 		return false
@@ -386,6 +449,8 @@ function NP.tutorialStart(player)
 	setS(player, "done", 0)
 	setS(player, "kills", 0)
 	setS(player, "flags", 0)
+	setS(player, "islandUsed", 0)
+	islandClock(player)
 	registerEvents(player)
 	local L = NP.layout()
 	player:teleportTo(P(L.rooms[1].arrival))
@@ -400,19 +465,33 @@ function NP.tutorialStart(player)
 	return true
 end
 
--- leave the island: kit if not given yet, temple, welcome. how = "done" | "skipped"
+-- leave the island: kit if not given yet, temple, welcome. how = "done" | "skipped" | "time" (the time limit; counts
+-- as skipped)
 function NP.tutorialFinish(player, how)
 	setS(player, "stage", how == "done" and C().stageDone or C().stageSkipped)
+	NP.islandSince[player:getGuid()] = nil
 	local temple = player:getTown():getTemplePosition()
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	player:teleportTo(temple)
 	temple:sendMagicEffect(CONST_ME_TELEPORT)
-	if how == "skipped" then
+	if how == "time" then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your time on the tutorial island is up: here is your kit. " ..
+			"Everything the island shows is also in the menu at the top.")
+	elseif how == "skipped" then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You skipped the tutorial.")
 	else
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You finished the tutorial. Good hunting!")
 	end
 	NP.kitAndWelcome(player, 1000)
+	-- the login windows (Daily Reward, patch notes) waited for the island; the client shows them after the welcome
+	if ChaosLoginWindows and ChaosLoginWindows.start then
+		ChaosLoginWindows.start(player)
+	end
+end
+
+-- true while the character is on the tutorial island (stations 1..rooms)
+function NP.onTutorial(player)
+	return NP.inTutorial(stageOf(player))
 end
 
 -- called by newplayer.lua's login event; true when the tutorial handled the login
@@ -423,7 +502,13 @@ function NP.tutorialLogin(player, first)
 			NP.tutorialFinish(player, "skipped")
 			return true
 		end
+		local limit = (T().timeLimitMinutes or 0) * 60
+		if limit > 0 and math.max(0, getS(player, "islandUsed")) >= limit then
+			NP.tutorialFinish(player, "time")
+			return true
+		end
 		registerEvents(player)
+		islandClock(player)
 		local L = NP.layout()
 		if not NP.onIsland(player:getPosition(), L) then
 			player:teleportTo(P(NP.resumeSpot(stage, L)))
@@ -505,10 +590,11 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local total = math.abs(primaryDamage) + (secondaryType ~= COMBAT_HEALING and math.abs(secondaryDamage) or 0)
-	if total < creature:getHealth() then
+	local lethal = creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0) -- energy shield (patch 0015) after this event
+	if total < lethal then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local keep = math.max(0, creature:getHealth() - 1)
+	local keep = math.max(0, lethal - 1)
 	local cid = creature:getId()
 	addEvent(function()
 		local p = Player(cid)
@@ -685,7 +771,7 @@ end
 skip:aid(NP.cfg().tutorial.aid.skip)
 skip:register()
 
-local skipTalk = TalkAction("!skiptutorial")
+local skipTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "skiptutorial")
 function skipTalk.onSay(player, words, param)
 	if not NP.inTutorial(stageOf(player)) then
 		player:sendCancelMessage("You are not in the tutorial.")
@@ -694,7 +780,35 @@ function skipTalk.onSay(player, words, param)
 	NP.tutorialFinish(player, "skipped")
 	return false
 end
-skipTalk:register()
+ChaosCommands.register("skiptutorial", function(player, param) return skipTalk.onSay(player, "", param) end)
+
+local islandLogout = CreatureEvent("ChaosTutorialLogout")
+function islandLogout.onLogout(player)
+	NP.islandLogout(player)
+	return true
+end
+islandLogout:type("logout")
+islandLogout:register()
+
+-- /instances (instance_limits.lua): the characters on the island and their time left (staff view; no area rules)
+Chaos.registerInstance("tutorial", {label = "the tutorial island", runs = function()
+	local out = {}
+	for guid in pairs(NP.islandSince) do
+		for _, p in ipairs(Game.getPlayers()) do
+			if p:getGuid() == guid then
+				out[#out + 1] = {id = p:getName(), what = "station " .. stageOf(p), left = NP.islandLeft(p), players = 1}
+			end
+		end
+	end
+	return out
+end, close = function(id) -- the character leaves as with "Skip tutorial" (kit, welcome, temple)
+	local p = Player(tostring(id))
+	if not p or not NP.inTutorial(stageOf(p)) then
+		return false, "No character " .. tostring(id) .. " on the tutorial island."
+	end
+	NP.tutorialFinish(p, "skipped")
+	return true, tostring(id) .. " left the tutorial island."
+end})
 
 local startup = GlobalEvent("ChaosTutorialStartup")
 function startup.onStartup()

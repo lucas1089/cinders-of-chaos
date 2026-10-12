@@ -33,7 +33,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, "You have no companion out. Call it with Wild Bond.")
 	end
 	local tpos = target:getPosition()
-	local min, max = ChaosClasses.biteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE))
+	local min, max = ChaosClasses.biteValuesFor(player) -- with the Pack Alpha keystone
 	for _, s in ipairs(pack) do
 		local spos = s:getPosition()
 		if spos.z ~= tpos.z or math.max(math.abs(spos.x - tpos.x), math.abs(spos.y - tpos.y)) > 1 then
@@ -46,6 +46,8 @@ function onCastSpell(creature, variant, isHotkey)
 		s:setTarget(target)
 		ChaosSpell.damageTarget(player, target, COMBAT_PHYSICALDAMAGE, min * cfg.mauls, max * cfg.mauls, CONST_ME_DRAWBLOOD)
 	end
-	target:getPosition():sendMagicEffect(CONST_ME_HITAREA)
+	if not ChaosSpell.vfxDir(target:getPosition(), "claw_rake", ChaosSpell.dirTo(player:getPosition(), target:getPosition())) then
+		target:getPosition():sendMagicEffect(CONST_ME_HITAREA)
+	end
 	return true
 end

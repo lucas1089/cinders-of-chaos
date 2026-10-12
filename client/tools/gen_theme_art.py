@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Procedural art generator for the Chaos dark-fantasy OTClient theme.
+"""Procedural art generator for the Cinders of Chaos dark-fantasy OTClient theme.
 
-Run:  python3 -I client/tools/gen_theme_art.py [icons] [background] [logo]
-(no argument = all three).  The frame and control images of chaos/ (window, buttons, panels, tabs,
-scroll bars, ...) are drawn by gen_skin.py now; the old "frames" task here would overwrite them with the
+Run:  python3 -I client/tools/gen_theme_art.py [icons] [background]
+(no argument = both; the logo is drawn by gen_login_art.py logo).  The frame and control images of chaos/
+(window, buttons, panels, tabs, scroll bars, ...) are drawn by gen_skin.py now; the old "frames" task here would overwrite them with the
 previous flat look, so it only runs when asked for by name.  Needs Pillow + numpy.  Output goes to
 client/overlay/data/images/chaos/.  Deterministic (fixed seeds).
 """
@@ -1446,180 +1446,15 @@ def gen_background():
 
 
 # ---------------------------------------------------------------- logo
-def chaikin_open(pts, it=3):
-    pts = list(pts)
-    for _ in range(it):
-        new = [pts[0]]
-        for a, b in zip(pts[:-1], pts[1:]):
-            new.append((0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]))
-            new.append((0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]))
-        new.append(pts[-1])
-        pts = new
-    return pts
-
-
-def letter_masks():
-    """Returns a dict letter -> (draw_fn, width) in a 100x140 box (y down)."""
-    def Hf(d, ox, oy, k):
-        P = lambda pts: [(ox + x * k, oy + y * k) for x, y in pts]
-        d.polygon(P([(0, 0), (12, -16), (24, 0), (24, 140), (12, 154), (0, 140)]), fill=255)
-        d.polygon(P([(76, 0), (88, -16), (100, 0), (100, 140), (88, 154), (76, 140)]), fill=255)
-        d.polygon(P([(24, 56), (76, 56), (76, 70), (50, 86), (24, 70)]), fill=255)
-        d.polygon(P([(24, 76), (50, 92), (76, 76), (76, 84), (24, 84)]), fill=255)
-
-    def Af(d, ox, oy, k):
-        P = lambda pts: [(ox + x * k, oy + y * k) for x, y in pts]
-        d.polygon(P([(0, 140), (44, -6), (50, -26), (56, -6), (100, 140), (74, 140), (50, 40), (26, 140)]), fill=255)
-        d.polygon(P([(24, 84), (76, 84), (80, 100), (20, 100)]), fill=255)
-        d.polygon(P([(0, 140), (14, 156), (26, 140)]), fill=255)
-        d.polygon(P([(74, 140), (86, 156), (100, 140)]), fill=255)
-
-    def Of(d, ox, oy, k):
-        P = lambda pts: [(ox + x * k, oy + y * k) for x, y in pts]
-        d.ellipse([ox, oy, ox + 100 * k, oy + 140 * k], fill=255)
-        d.ellipse([ox + 28 * k, oy + 30 * k, ox + 72 * k, oy + 110 * k], fill=0)
-        d.polygon(P([(38, 2), (50, -22), (62, 2)]), fill=255)
-        d.polygon(P([(38, 138), (50, 162), (62, 138)]), fill=255)
-        d.polygon(P([(50, 56), (58, 70), (50, 84), (42, 70)]), fill=255)
-
-    def Cf(d, ox, oy, k):
-        P = lambda pts: [(ox + x * k, oy + y * k) for x, y in pts]
-        d.ellipse([ox, oy, ox + 100 * k, oy + 140 * k], fill=255)
-        d.ellipse([ox + 26 * k, oy + 28 * k, ox + 74 * k, oy + 112 * k], fill=0)
-        d.polygon(P([(50, 70), (150, -10), (150, 150)]), fill=0)
-        d.polygon(P([(88, 22), (112, 6), (94, 40)]), fill=255)
-        d.polygon(P([(88, 118), (112, 134), (94, 100)]), fill=255)
-        d.polygon(P([(30, 2), (42, -20), (54, 2)]), fill=255)
-
-    def Sf(d, ox, oy, k):
-        pts = [(86, 26), (66, 6), (36, 4), (16, 26), (28, 52), (60, 70), (84, 92), (78, 120), (54, 138), (24, 134), (8, 112)]
-        pts = chaikin_open(pts, 3)
-        P = [(ox + x * k, oy + y * k) for x, y in pts]
-        w = int(23 * k)
-        d.line(P, fill=255, width=w, joint="curve")
-        r = w / 2
-        for (x, y) in P[::2]:
-            d.ellipse([x - r, y - r, x + r, y + r], fill=255)
-        for (x, y, dx, dy) in ((86, 26, 18, -6), (8, 112, -14, 12)):
-            X, Y = ox + x * k, oy + y * k
-            d.polygon([(X - 12 * k, Y - 10 * k), (X + dx * k, Y + dy * k), (X + 12 * k, Y + 10 * k)], fill=255)
-
-    return {"C": (Cf, 100), "H": (Hf, 100), "A": (Af, 100), "O": (Of, 100), "S": (Sf, 100)}
-
-
-def make_logo():
-    SS = 2
-    W, H = 760 * SS, 300 * SS
-    k = 1.2 * SS
-    L = letter_masks()
-    word = "CHAOS"
-    gap = 22
-    total = sum(L[c][1] for c in word) * 1.2 + gap * (len(word) - 1)
-    ox = (760 - total) / 2 * SS
-    oy = 52 * SS
-    m = Image.new("L", (W, H), 0)
-    d = ImageDraw.Draw(m)
-    x = ox
-    for c in word:
-        fn, wd = L[c]
-        fn(d, x, oy, k)
-        x += (wd * 1.2 + gap) * SS
-    m = m.filter(ImageFilter.GaussianBlur(0.7))
-    M = mask_arr(m)
-    # drips below letters
-    rng = np.random.RandomState(99)
-    dm = Image.new("L", (W, H), 0)
-    dd = ImageDraw.Draw(dm)
-    mm = np.asarray(m)
-    for xx_ in range(int(ox), int(W - ox), 5 * SS):
-        col = mm[:, xx_]
-        ys = np.where(col > 128)[0]
-        if len(ys) and rng.rand() < 0.2:
-            yb = ys.max()
-            w = rng.uniform(3, 7) * SS
-            ln = rng.uniform(14, 40) * SS
-            dd.polygon([(xx_ - w, yb - 6 * SS), (xx_ + w, yb - 6 * SS), (xx_ + w * 0.5, yb + ln), (xx_ - w * 0.5, yb + ln)], fill=255)
-            dd.ellipse([xx_ - w * 0.9, yb + ln - w, xx_ + w * 0.9, yb + ln + w * 1.4], fill=255)
-    dm = dm.filter(ImageFilter.GaussianBlur(0.8))
-    DM = mask_arr(dm)
-    yy = np.mgrid[0:H, 0:W][0].astype(np.float32)
-    top = oy - 30 * SS
-    t = np.clip((yy - top) / (170 * SS), 0, 1)
-    # gold-to-blood gradient, "blood soaked" from below
-    stops = [(0.0, GOLD_4), (0.28, GOLD_3), (0.5, GOLD_2), (0.68, GOLD_1), (0.82, BLOOD_3), (1.0, BLOOD_1)]
-    body = np.zeros((H, W, 3), np.float32)
-    for i in range(3):
-        body[..., i] = np.interp(t, [s[0] for s in stops], [s[1][i] for s in stops])
-    pat = fbm(H, W, 7 * SS, 4, 5)
-    body *= (0.74 + 0.5 * pat)[..., None]
-    # brushed scratches
-    sc = np.random.RandomState(4).randn(1, W).astype(np.float32)
-    body *= (1 + 0.04 * sc)[..., None]
-    sh = lambda im, dx, dy: ImageChops.offset(im, dx, dy)
-    hi = np.clip(M - mask_arr(sh(m, 3 * SS, 3 * SS)), 0, 1)
-    lo = np.clip(M - mask_arr(sh(m, -3 * SS, -3 * SS)), 0, 1)
-    hi = mask_arr(blur(Image.fromarray((hi * 255).astype(np.uint8)), 1.5 * SS))
-    lo = mask_arr(blur(Image.fromarray((lo * 255).astype(np.uint8)), 1.5 * SS))
-    body = body + hi[..., None] * (np.array(GOLD_4, np.float32) - body) * 0.95
-    body *= (1 - lo[..., None] * 0.7)
-    # inner chisel line
-    inner = mask_arr(m.filter(ImageFilter.MinFilter(2 * SS * 3 + 1)))
-    ring = np.clip(M - inner, 0, 1)
-    body = body * (1 - ring[..., None] * 0.25)
-    out = np.zeros((H, W, 4), np.float32)
-    # ember glow
-    gl = mask_arr(blur(m, 26 * SS))
-    gl2 = mask_arr(blur(m, 8 * SS))
-    out[..., :3] = np.array([200, 40, 15], np.float32)
-    out[..., 3] = np.clip(gl * 0.75 + gl2 * 0.4, 0, 1) * 255
-    img = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
-    # shadow + outline
-    shd = alpha_layer_wh((0, 0, 0), mask_arr(blur(sh(m, 4 * SS, 6 * SS), 4 * SS)) * 0.9, W, H)
-    img.alpha_composite(shd)
-    ol = alpha_layer_wh((8, 3, 3), mask_arr(m.filter(ImageFilter.MaxFilter(4 * SS + 1))), W, H)
-    img.alpha_composite(ol)
-    # blood drips
-    bcol = np.zeros((H, W, 3), np.float32)
-    bcol[...] = np.array([150, 14, 12], np.float32)
-    bcol *= (0.7 + 0.5 * pat)[..., None]
-    dsp = np.clip(DM - mask_arr(sh(dm, 2 * SS, 0)), 0, 1)
-    bcol += dsp[..., None] * 120
-    dl = Image.fromarray(np.clip(bcol, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
-    dl.putalpha(dm)
-    img.alpha_composite(dl)
-    layer = Image.fromarray(np.clip(body, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
-    layer.putalpha(m)
-    img.alpha_composite(layer)
-    # ornament line under the word
-    od = ImageDraw.Draw(img)
-    y0 = int(284 * SS)
-    cxm = W // 2
-    for s_ in (-1, 1):
-        for i in range(0, int(260 * SS)):
-            tt = i / (260 * SS)
-            col = tuple(int(c) for c in lerp(GOLD_3, BLOOD_2, tt)) + (int(255 * (1 - tt) ** 0.7),)
-            od.point((cxm + s_ * (14 * SS + i), y0), col)
-            od.point((cxm + s_ * (14 * SS + i), y0 + 1), col)
-    od.polygon([(cxm, y0 - 8 * SS), (cxm + 8 * SS, y0), (cxm, y0 + 8 * SS), (cxm - 8 * SS, y0)], fill=BLACK + (255,))
-    od.polygon([(cxm, y0 - 5 * SS), (cxm + 5 * SS, y0), (cxm, y0 + 5 * SS), (cxm - 5 * SS, y0)], fill=BLOOD_3 + (255,))
-    return img.resize((W // SS, H // SS), Image.LANCZOS)
-
-
-def alpha_layer_wh(color, a, w, h):
-    lay = Image.new("RGBA", (w, h), tuple(color) + (0,))
-    lay.putalpha(Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8)))
-    return lay
-
-
 def gen_logo():
-    lg = make_logo()
-    save(lg, "logo.png")
-    save(lg.resize((lg.width // 2, lg.height // 2), Image.LANCZOS), "logo_small.png")
+    # the "Cinders of Chaos" wordmark (chaos/logo.png, logo_small.png, ui/logo.png) is drawn with the login
+    # screen art now, so the two always match
+    print('the logo is made by gen_login_art.py: python3 -I client/tools/gen_login_art.py logo')
 
 
 # ---------------------------------------------------------------- main
 def main(argv):
-    tasks = argv[1:] or ["icons", "logo", "background"]
+    tasks = argv[1:] or ["icons", "background"]
     for t in tasks:
         {"frames": gen_frames, "icons": gen_icons, "logo": gen_logo, "background": gen_background}[t]()
 

@@ -1,0 +1,13 @@
+# Cinders of Chaos: runs chaos-health.service every 5 minutes (docs/LAUNCH.md "Monitoring"). The daily summary goes out
+# with the first run at or after 09:00 server time.
+
+[Unit]
+Description=Cinders of Chaos health alerts, every 5 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

@@ -83,7 +83,7 @@ local function bite(owner, companion, target)
 	if target:isPlayer() and not (ChaosSpell and ChaosSpell.canAttack(owner, target)) then
 		return
 	end
-	local min, max = C.biteValues(owner:getLevel(), owner:getEffectiveSkillLevel(SKILL_DISTANCE))
+	local min, max = C.biteValuesFor(owner)
 	if max <= 0 then
 		return
 	end
@@ -120,6 +120,12 @@ function guard.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if owner and attacker and primaryType ~= COMBAT_HEALING
 			and (attacker == owner or attacker:getMaster() == owner) then
 		return 0, primaryType, 0, secondaryType
+	end
+	-- Pack Alpha (the owner's keystone): companions take less damage
+	local cut = owner and owner:isPlayer() and ChaosClassTree.value(owner, "ksPackAlpha", "reduction") or 0
+	if cut > 0 and primaryType ~= COMBAT_HEALING then
+		primaryDamage = primaryDamage - math.floor(primaryDamage * cut)
+		secondaryDamage = secondaryDamage - math.floor(secondaryDamage * cut)
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end

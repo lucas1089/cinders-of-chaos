@@ -35,23 +35,76 @@ ChaosOpcodes = {
 	infinitytower = 214,
 	autoloot = 216,
 	shop = 218, -- Chaos store (client game_shop); the base server's own store uses 201
-	bounty = 223, -- bounty board (client game_bounty, !bounty; bounty.lua, bounty_config.lua)
-	rift = 228, -- rift run HUD, server -> client (client game_rift, !rift; rift.lua, rift_config.lua)
-	leaderboard = 229, -- leaderboards (client game_leaderboard, !leaderboard; leaderboard.lua, leaderboard_config.lua)
-	crafting = 232, -- crafting bench (client game_crafting, !craft; crafting.lua, data/lib/chaos_crafting.lua)
-	siege = 233, -- guild siege HUD and sign-up window (client game_siege, !siege; siege.lua, siege_config.lua)
-	arena = 236, -- ranked PvP arena window and match HUD (client game_arena, !arena; arena.lua, arena_config.lua)
-	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter, !lootfilter; lootfilter.lua)
-	nameplate = 248, -- name plates over players: title, guild, frame (client game_nameplate, !title; nameplate.lua, titles.lua)
-	season = 246, -- seasons window (client game_season, !season; season.lua, season_config.lua)
+	bounty = 223, -- bounty board (client game_bounty; bounty.lua, bounty_config.lua)
+	rift = 228, -- rift run HUD, server -> client (client game_rift; rift.lua, rift_config.lua)
+	leaderboard = 229, -- leaderboards (client game_leaderboard; leaderboard.lua, leaderboard_config.lua)
+	crafting = 232, -- crafting bench (client game_crafting; crafting.lua, data/lib/chaos_crafting.lua)
+	siege = 233, -- guild siege HUD and sign-up window (client game_siege; siege.lua, siege_config.lua)
+	arena = 236, -- ranked PvP arena window and match HUD (client game_arena; arena.lua, arena_config.lua)
+	monkChi = 247, -- Monk chi HUD, server -> client, plain text "chi:<chi>:<max>:<decaySec>" (client game_monkchi; monk_chi_core.lua)
+	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter; lootfilter.lua)
+	nameplate = 248, -- name plates over players: title, guild, frame (client game_nameplate; nameplate.lua, titles.lua)
+	season = 246, -- seasons window (client game_season; season.lua, season_config.lua)
+	seasonPass = 227, -- season pass window: tiers, claims, challenges, packs (client game_battlepass; seasonpass*.lua)
 	patchnotes = 244,
-	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt, !hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
-	achievements = 250, -- achievements window and unlocks (client game_achievements, !achievements; achievements*.lua)
-	spellbook = 219 -- spell list window (client game_spellbook, !spells)
+	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
+	itemTooltip = 242, -- rich item tooltips with the equipped-item compare (client game_itemtooltip; item_tooltip*.lua)
+	achievements = 250, -- achievements window and unlocks (client game_achievements; achievements*.lua)
+	invasion = 251, -- invasion HUD and upcoming events window, server -> client (client game_invasion; invasion*.lua, worldevents.lua)
+	guild = 252, -- Guild window: level, perks, members, guild bank, guild hall, depot, top guilds (client game_guild; guild*.lua)
+	bestiary = 253, -- bestiary, kill tasks and the task tracker HUD (client game_bestiary; bestiary*.lua)
+	pets = 254, -- pets window: owned pets, summon / dismiss / rename, levels and abilities (client game_pets; pets*.lua)
+	supports = 243, -- spell supports window and action bar sockets (client game_spellsupports; supports.lua)
+	spellbook = 219, -- spell list window (client game_spellbook)
+	townPortal = 239, -- Town Portal cast bar and Portal Style window (client game_townportal; townportal.lua)
+	mapmarks = 245, -- map overlay points of interest and the rift square (client game_mapoverlay; map_marks.lua)
+	info = 237, -- Info & Services window: the player commands reached from the menu (client game_chaosinfo; commands_ui*.lua)
+	itemLink = 249, -- items linked into chat: register / get a snapshot (client game_chatlinks; itemlink.lua, itemlink_core.lua)
+	inspect = 240, -- Inspect Player window: equipment and public stats of another player (client game_playerinspect; inspect.lua, inspect_core.lua)
+	market = 221, -- player market for gold and Chaos Coins (client game_market; market.lua, market_core.lua, market_config.lua)
+	orbExchange = 209, -- Orb Exchange: order book for the crafting orbs, orb for orb and orb for gold (client game_orbexchange; orbexchange*.lua)
+	buffs = 234, -- buff / debuff bar, server -> client diffs (client game_buffbar; buffbar.lua, data/lib/chaos_buffs.lua)
+	energyShield = 224, -- energy shield bar, server -> client, sent by the engine (patch 0015, config energyShieldOpcode), plain text "es:<current>:<max>" (client game_energyshield)
+	groundLoot = 230, -- ground loot labels: names, rarity and decay of the items on the tiles in view (client game_groundlabels; groundloot.lua)
+	castbar = 231, -- cast bar of the cast-time spells, both ways (client game_castbar; casting.lua, data/lib/chaos_casting.lua)
+	referral = 220, -- Referral window: own code, enter a code, referred friends (client game_referral; referral*.lua)
+	pact = 222, -- Chaos Pact window: status, limits, daily coins, saved builds (client game_pact; pact.lua, pact_config.lua)
+	transmog = 212, -- Transmog window: wardrobe, apply / remove a look (client game_transmog; transmog.lua, transmog_core.lua, transmog_config.lua)
+	pouches = 226, -- store pouches: the Loot Pouch rules window (client game_pouches; pouches.lua, pouches_core.lua, pouches_config.lua)
+	partyFrames = 235, -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
+	cosmetics = 225, -- Cosmetics window, chat name colours, loot label accent (client game_cosmetics; cosmetics*.lua)
+	bossSpawns = 217 -- Boss Spawns window: every boss by category, place and respawn (client game_bossspawns; bossspawns*.lua)
+}
+-- Rift Atlas window: completion grid, node map, allocate / refund (client game_riftatlas; atlas.lua, atlas_core.lua, atlas_config.lua)
+ChaosOpcodes.riftAtlas = 210
+-- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
+ChaosOpcodes.combatLog = 204
+-- Client guard (engine src-patch 0021, client base patch 0035, clientguard*.lua; server/README.md "Client guard"): 189 is
+-- the engine's HMAC handshake, both ways, handled in C++ on both sides (it never reaches Lua; listed so that no module
+-- takes it); 190 is the module hello of client game_chaosguard, client -> server
+ChaosOpcodes.clientGuard = 189
+ChaosOpcodes.clientGuardHello = 190
+
+-- ---------------------------------------------------------------------------
+-- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client
+-- feature GameItemCustomAttributes = 126): after every item the client gets u16 count, then u16 key + u64 value per
+-- entry. The keys are the same numbers as ChaosItemAttrKey in the engine's const.h and ChaosItemAttr in the client
+-- (modules/game_itemrarity); tests/item_tooltip_test.lua checks the three. item:getClientAttributes() returns them.
+-- ---------------------------------------------------------------------------
+Chaos.itemAttr = {
+	rarity = 1, -- custom attribute "rarity" (1..15)
+	level = 2, -- custom attribute "combatPowerLevel" (item level)
+	locked = 3, -- custom attribute "chaos_locked" (the item lock)
+	unique = 4, -- custom attribute "chaos_unique" present
+	sockets = 5, -- custom attribute "chaos_sockets" (socket count; a unique's fixed socket is not stored)
+	id = 6, -- custom attribute "chaos_iid": per-item id, given by the engine the first time the item is sent
+	version = 7, -- hash of the item's attributes: changes when the item changes (orbs, gems, upgrades)
+	appearance = 8 -- custom attribute "chaos_tmog" (transmog look, server id) sent as the look's client id (engine patch 0019)
 }
 
 -- ---------------------------------------------------------------------------
--- Player storage keys (7100000 - 7100999 is reserved for Chaos; unused by the reference server)
+-- Player storage keys (7100000 - 7100999 is reserved for Chaos; unused by the reference server). The other Chaos
+-- blocks up to 7127999 are listed in server/README.md "Storage keys".
 -- ---------------------------------------------------------------------------
 Chaos.storage = {
 	-- autoloot: SAME base as the reference server's own scripts/creaturescripts/autoloot.lua
@@ -65,27 +118,61 @@ Chaos.storage = {
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
+	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
+	passiveRework = 7100023, -- the last reworked-nodes version refunded (passivetree_config.lua reworked)
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
 	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
 	lootFilter = 7100500, -- loot filter settings of the character, packed in one value (lootfilter_core.lua F.pack); 7100500 - 7100509 reserved
 	newPlayer = 7100250, -- new-player kit, welcome, milestones and tutorial island (newplayer*.lua): 7100250 - 7100269 reserved
+	bestiary = 7100870, -- bestiary (bestiary_config.lua taskPointsStorage): 7100870 - 7100879 reserved; bestiary points from kill tasks
+	-- spell supports (data/lib/chaos_supports_config.lua): 7109990 - 7109992 cast context / Reprisal, 7110000 - 7111999
+	-- the support sockets keyed by spell id (base + spell id * 4 + 0..3)
+	-- Town Portal (townportal_config.lua storage): 7101600 - 7101639 reserved; selected style, cooldown, store styles owned
+	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
+	inspectOff = 7100960, -- 1 = this character does not allow others to inspect it (inspect.lua; default on, so unset)
+	-- market (market_config.lua storage): 7100970 - 7100979 reserved; listSeq, deliverSeq (crash-safe escrow markers)
+	-- orb exchange (orbexchange_config.lua storage): 7100950 - 7100954 reserved; placeSeq, deliverSeq (crash-safe escrow markers)
+	-- season pass (seasonpass_config.lua storage): 7100980 - 7100984 reserved; 7100980 = the season name frame is hidden
+	-- cosmetics (cosmetics_config.lua storage): 7100940 - 7100949 reserved; the chosen kill effect, loot label accent,
+	-- chat name colour, then one spell skin per class line (7100943 + slot)
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,
 	shopAuraBase = 7100650,
 	shopShaderBase = 7100700,
+	-- store name plate frames (shop.lua, kind "frame"): base + 1 violet, + 2 frost; 7100760 - 7100769 reserved
+	shopFrameBase = 7100760,
+	shopFrameActive = 7100769, -- index of the frame shown (0 / unset = the title's own frame)
+	-- frame slots 9 and up (shop_core.lua C.FRAMES / frameStorage): base + slot - 9; 7102010 - 7102039 reserved
+	shopFrameBase2 = 7102010,
 
 	-- store services (shop_services.lua, autosell.lua): 7100100 - 7100159
-	shopLootPouch = 7100100, -- 1 = Bottomless Loot Pouch unlocked (per character)
+	shopLootPouch = 7100100, -- RESERVED: the retired Bottomless Loot Pouch unlock (1 = owned; pouches.lua gives those owners a
+	-- free Loot Pouch once). Never reuse the key.
 	shopAutoSeller = 7100101, -- 1 = Auto Seller unlocked (per character)
 	autosellPaused = 7100102, -- 1 = auto seller switched off with !autosell off
 	autosellRarity = 7100103, -- 1 = opt-in: the auto seller may sell items with a rarity / modifiers
 	nameChangeTokens = 7100104, -- unused name changes bought in the store
 	vocationChangeTokens = 7100105, -- unused vocation changes bought in the store
 	shopRarityAutoloot = 7100106, -- 1 = Rarity Autoloot unlocked (lootfilter.lua: autoloot by rarity)
+	-- store pouches (pouches_config.lua storage): 7100107 Loot Pouch rules, 7100108 free Loot Pouch given, 7100109 pouches to give back
 	autosellBase = 7100110 -- + 1 .. + Chaos.shopServices.autosellSlots: item ids on the auto-sell list
 }
+
+-- Anti-bot and player reports (client game_antibot; antibot*.lua, reports*.lua, sql/chaos_reports.sql): presence check
+-- modal and the report dialog on one opcode; storages 7100890 - 7100899 reserved (antibot.lua: +0 last presence check,
+-- +1 day key, +2 checks that day, +3 grace until, +4 suspicion score x 10)
+ChaosOpcodes.antibot = 211
+Chaos.storage.antibot = 7100890
+Chaos.antibotTables = {reports = "chaos_reports", log = "chaos_antibot_log", holds = "chaos_antibot_holds"}
+
+-- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
+-- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
+-- of client game_cosmetics, cosmetics opcode 225, no new opcode). Storages 7102000 - 7102049 reserved: +0 the chosen
+-- footprint, +1 the chosen outline (cosmetics_config.lua storage), +10 .. +39 name plate frame slots 9 and up
+-- (shopFrameBase2 above)
+Chaos.storage.wardrobe = 7102000
 
 -- ---------------------------------------------------------------------------
 -- Database tables (created by server/sql/chaos.sql)
@@ -100,9 +187,135 @@ Chaos.tables = {
 	dungeonRuns = "chaos_dungeon_runs",
 	dungeonRunPlayers = "chaos_dungeon_run_players",
 	towerPlayers = "chaos_tower_players",
+	towerSeasonRewards = "chaos_tower_season_rewards", -- season-end top 3 chests, one row per season and character
 	shopCoins = "chaos_shop_coins",
-	shopHistory = "chaos_shop_history"
+	shopHistory = "chaos_shop_history",
+	-- store purchase log (also the weekly limits), gifts to offline characters, paid Chaos Coin orders (shop.lua, sql/chaos.sql)
+	shopPurchases = "chaos_shop_purchases",
+	shopGifts = "chaos_shop_gifts",
+	coinOrders = "chaos_coin_orders",
+	-- the Pix / PayPal donation of an order (shop_payments.lua, the website's pay/ worker and webhook)
+	coinPayments = "chaos_coin_payments",
+	coinGifts = "chaos_coin_gifts"
 }
+-- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
+Chaos.tables.riftAtlas = "chaos_rift_atlas"
+-- the visual exclusives, one row per account and unlock (exclusives.lua, sql/chaos_exclusives.sql; "Wardrobe" above)
+Chaos.tables.exclusives = "chaos_exclusives"
+-- Seasonal Journey (season_journey.lua, season_journey_config.lua, sql/chaos_season_journey.sql): on the season opcode
+-- (246, actions journey*), no player storages
+Chaos.tables.seasonJourneyStats = "chaos_season_journey_stats"
+Chaos.tables.seasonJourney = "chaos_season_journey"
+-- Ascended Omens and the Cinderheart (uber.lua): player storages 7100460 - 7100469 reserved; +0 the sigil kind of a run
+-- in progress (the crash refund marker), +1 its start, +2 the sigil use exhaust
+Chaos.storage.ascendedRun = 7100460
+
+-- The Ember Descent (client game_descent; descent.lua, descent_core.lua, descent_config.lua, sql/chaos_descent.sql):
+-- the roguelike trial window, run HUD and boon choice on one opcode; storages 7100410 - 7100419 reserved (+0 a run in
+-- progress, +1 when the next free run is ready)
+ChaosOpcodes.descent = 205
+Chaos.storage.descent = 7100410
+Chaos.tables.descentPlayers = "chaos_descent_players"
+Chaos.tables.descentRuns = "chaos_descent_runs"
+-- Factions with reputation (client game_factions; factions.lua, factions_core.lua, factions_config.lua,
+-- sql/chaos_factions.sql): SQL only, no player storages
+ChaosOpcodes.factions = 215
+Chaos.tables.factions = "chaos_factions"
+-- Community goals and the weekly world modifier (client game_community; community.lua, community_core.lua,
+-- community_config.lua, sql/chaos_community.sql): SQL only, no player storages
+ChaosOpcodes.community = 203
+Chaos.tables.communityGoal = "chaos_community_goal"
+-- The Ashen Sepulchre, the weekly raid (client game_raid; raid.lua, raid_core.lua, raid_config.lua, sql/chaos_raid.sql):
+-- the raid window, journal, vendor and in-raid HUD on one opcode; storages 7100440 - 7100449 reserved (+0 inside a raid
+-- instance, +1 .. +5 the end of this week's lockout of boss 1 .. 5: the Boss Spawns cooldown)
+ChaosOpcodes.raid = 213
+Chaos.storage.raid = 7100440
+Chaos.tables.raidLockouts = "chaos_raid_lockouts"
+Chaos.tables.raidInstances = "chaos_raid_instances"
+-- Loadouts / Armory (client game_loadouts; loadouts.lua, loadouts_core.lua, loadouts_config.lua, sql/chaos_loadouts.sql):
+-- save and switch whole builds; storages 7100570 - 7100579 reserved (+0 active slot, +1 switch serial, +2 last switch),
+-- and 7112000 - 7127999 for the support runes each loadout holds (loadouts_config.lua runeMirrorBase)
+ChaosOpcodes.loadouts = 206
+Chaos.storage.loadouts = 7100570
+Chaos.tables.loadouts = "chaos_loadouts"
+-- Depot tabs (client game_depottabs; depot.lua, depot_core.lua, depot_config.lua, tools/patch_base_depot.py): the depot
+-- window (tab counts, tab switch requests, tab names and colours); no storages (tabs bought are pact.lua extras)
+ChaosOpcodes.depotTabs = 111
+Chaos.tables.depotTabs = "chaos_depot_tabs" -- depot tab names and colours per account (depot.lua, sql/chaos_depot_tabs.sql)
+-- Hideouts (client game_hideout; hideout.lua, hideout_core.lua, hideout_config.lua, hideout_store.lua,
+-- sql/chaos_hideout.sql): decoration window, placement, permissions, visits and likes on one opcode; storages
+-- 7100180 - 7100189 reserved (hideout_config.lua storage: the spot a character entered from); map grid x/y 12288 - 12799
+ChaosOpcodes.hideout = 192
+Chaos.storage.hideout = 7100180
+Chaos.tables.hideouts = "chaos_hideouts"
+-- PvP battleground "Ember Wells" and the PvP seasons (client game_battleground; battleground*.lua, arena_season.lua,
+-- sql/chaos_battleground.sql): queue, vendor, season window, match HUD and scoreboard on one opcode; storages
+-- 7100380 - 7100389 reserved (battleground_config.lua storage); map grid x/y 11264 - 11455
+ChaosOpcodes.battleground = 200
+-- Guild wars in game and the weekly guild boss (client game_guildwar; guildwar*.lua, guildboss*.lua,
+-- sql/chaos_guildwar.sql): one opcode for both; storage 7101302 (in the guild block 7101300 - 7101309) holds the end of
+-- the guild boss lockout of the character's guild (the Boss Spawns cooldown)
+ChaosOpcodes.guildWar = 197
+Chaos.storage.guildBossLockout = 7101302
+Chaos.tables.guildWars = "chaos_guildwar"
+Chaos.tables.guildBoss = "chaos_guildboss_week"
+-- Mentors (client game_mentor; mentor.lua, mentor_core.lua, mentor_config.lua, sql/chaos_mentor.sql): mentor list,
+-- apprentice view, marks shop on one opcode; storages 7100360 - 7100369 reserved (+0 "looking for a mentor")
+ChaosOpcodes.mentor = 194
+Chaos.storage.mentor = 7100360
+Chaos.tables.mentors = "chaos_mentors"
+Chaos.tables.mentorLinks = "chaos_mentor_links"
+-- Veiled modifiers: the Unveil window of the Orb of Unveiling (client game_unveil; veiled.lua, data/lib/chaos_veiled*.lua);
+-- no storages, no tables (item attributes only)
+ChaosOpcodes.veiled = 196
+-- Charms: the charm grid window (client game_charms; charms.lua, charms_core.lua, charms_config.lua, sql/chaos_charms.sql);
+-- storages 7100470 - 7100479 reserved (+0 the place / take serial, the crash marker; +1 the Last Ember cooldown)
+ChaosOpcodes.charms = 198
+Chaos.storage.charms = 7100470
+Chaos.tables.charms = "chaos_charms"
+-- The Scorched Marches, the open-world PvP zone (client game_pvpzone; pvpzone.lua, pvpzone_core.lua, pvpzone_config.lua,
+-- sql/chaos_pvpzone.sql): window, entry confirmation, vendor and HUD on one opcode; storages 7100520 - 7100529 reserved
+-- (pvpzone_config.lua storage: +0 inside, +1 protected until, +2 carried embers, +3..5 return spot, +6 entered at);
+-- map grid x/y 13312 - 13823
+ChaosOpcodes.pvpZone = 193
+Chaos.storage.pvpZone = 7100520
+Chaos.tables.pvpZone = "chaos_pvpzone_players"
+-- Professions: gathering for the Material Broker and the experience bonus (client game_professions; professions.lua,
+-- professions_core.lua, professions_config.lua, sql/chaos_professions.sql); no storages (node cooldowns in memory)
+ChaosOpcodes.professions = 195
+Chaos.tables.professions = "chaos_professions"
+Chaos.tables.professionSales = "chaos_professions_sales"
+-- The Gambler: sealed equipment for gold, a stock per character every 4 hours (client game_gamble; gamble.lua,
+-- gamble_core.lua, gamble_config.lua, NPC data/npc/Mordecai Ashwager.xml); storages 7101900 - 7101909 reserved
+-- (+0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes); no tables
+ChaosOpcodes.gamble = 199
+Chaos.storage.gamble = 7101900
+-- Map markers (client game_mapmarkers; server/README.md "Map markers"). One opcode for two scripts, JSON {action, data}:
+-- partymarkers.lua (+ _core, _config): where the other party members are; poi.lua (+ _core, _config, the generated
+-- data/chaos_poi.lua of tools/gen_poi.py): points of interest, the discovered ones in chaos_poi_seen
+-- (sql/chaos_poi.sql). No player storages.
+ChaosOpcodes.mapMarkers = 153
+Chaos.tables.poiSeen = "chaos_poi_seen"
+-- Right-click equips (engine src-patch 0024, server/README.md "Right-click equips"; rightclick_equip.lua,
+-- rightclick_equip_core.lua; client game_rightclickequip): the client option "Right-click equips items", client ->
+-- server {on = true | false}. Storages 7101810 - 7101819 reserved: +0 is 1 while the player turned it off (the engine
+-- reads it, CHAOS_EQUIP_ON_USE_OFF in game.cpp). No tables.
+ChaosOpcodes.rightClickEquip = 188
+Chaos.storage.rightClickEquipOff = 7101810
+-- Keep attacking while moving (engine src-patch 0028, server/README.md "Keep attacking while moving"; kitewalk.lua,
+-- kitewalk_core.lua; client game_kitewalk): the client option "Keep attacking while moving", client -> server
+-- {on = true | false}. Storages 7101820 - 7101829 reserved: +0 is 1 while the player turned it off (the engine reads it,
+-- CHAOS_KITE_WALK_OFF in game.cpp). No tables.
+ChaosOpcodes.kiteWalk = 186
+Chaos.storage.kiteWalkOff = 7101820
+-- Item finder: where an item drops, who sells and buys it, the recipes that make or use it (client game_itemfinder;
+-- itemfinder.lua, itemfinder_core.lua, itemfinder_sources.lua, itemfinder_config.lua; server/README.md "Item finder").
+-- One index in memory, built at startup. No storages, no tables.
+ChaosOpcodes.itemFinder = 155
+-- Progress bars over tiles (client game_tileoverlays; tilebars.lua, tilebars_core.lua, tilebars_config.lua;
+-- server/README.md "Progress bars over tiles"): server -> client bars over map positions for the players near them
+-- (battleground braziers, profession nodes, the invasion breach), client -> server hello. No storages, no tables.
+ChaosOpcodes.tileBars = 156
 
 -- ---------------------------------------------------------------------------
 -- Module settings
@@ -128,12 +341,12 @@ Chaos.daily = {
 	-- The window shows one item per day; the bonus below is added to day 7 on top of it.
 	rewards = {
 		{itemId = 2152, count = 20},  -- platinum coin
-		{itemId = 29856, count = 1},  -- Chaos Orb
+		{itemId = 29856, count = 1},  -- Orb of Upheaval
 		{itemId = 2152, count = 50},  -- platinum coin
-		{itemId = 29857, count = 1},  -- Divine Orb
+		{itemId = 29857, count = 1},  -- Orb of Fate
 		{itemId = 2160, count = 1},   -- crystal coin
-		{itemId = 29856, count = 3},  -- Chaos Orb
-		{itemId = 29857, count = 3}   -- Divine Orb
+		{itemId = 29856, count = 3},  -- Orb of Upheaval
+		{itemId = 29857, count = 3}   -- Orb of Fate
 	},
 	-- given together with day 7 (all or nothing with it): a full week of claims
 	weekBonus = {
@@ -187,6 +400,12 @@ Chaos.dungeons = {
 	--   * list / levels / party size / DungeonPos / FromPos / ToPos / DungeonTime / cooldown storage
 	-- Everything the base server table does not have is declared here, per base server dungeon id.
 	exitDelayMs = 10000, -- delay between finishing and teleporting the group out
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a queue run lasts the base server's
+	-- DungeonTime (60 / 30 minutes) but at most maxTimeSeconds (45 minutes: two to three times the speed challenge of
+	-- 15-20 minutes); warnings at warnAt seconds left. One run per dungeon at a time (the base dungeon is one map area):
+	-- the queue is the waiting line and shows the wait of the run inside.
+	maxTimeSeconds = 2700,
+	limits = {warnAt = {300, 60, 10}},
 	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the base server modal only did on failure)
 	queueTickMs = 3000,
 	maxDifficulty = 6, -- client has 6 difficulty buttons
@@ -221,8 +440,8 @@ Chaos.dungeons = {
 			}
 		},
 		[4] = {
-			title = "Rootkraken",
-			bossName = "the rootkraken",
+			title = "Rootmaw",
+			bossName = "the rootmaw",
 			loot = {{id = 2160, count = 10}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 10 minutes.", maxMs = 10 * 60 * 1000},
@@ -233,9 +452,33 @@ Chaos.dungeons = {
 }
 
 Chaos.tower = {
-	-- Season = fixed-length window counted from seasonEpoch (unix time).
-	seasonEpoch = 1735689600, -- 2025-01-01 00:00:00 UTC
+	-- Season = fixed-length window counted from seasonEpoch (infinitytower_core.lua K.seasonOf): a unix time or
+	-- {year, month, day, hour} in server local time. Before the epoch it is season 1. The tower keeps its own 30-day
+	-- seasons (points, milestones and the ranking reset each one); the server Seasons (season_config.lua) are 13-week
+	-- realms with gaps that staff can start and end by hand, so they are not used here. The epoch is the launch
+	-- (docs/BETA.md: Fri 20 Nov 2026 15:00), so Tower Season 1 starts with the server (it was 2025-01-01, which made the
+	-- launch season 22). Changing it renumbers the seasons of chaos_tower_players: only on a wiped database.
+	seasonEpoch = {year = 2026, month = 11, day = 20, hour = 15},
 	seasonLengthDays = 30,
+	-- Season end (infinitytower.lua ChaosTower.checkSeasons; server/README.md "Infinity Tower season rewards"): the top
+	-- 3 of the ended season's ranking (best floor, then best time; equal floor and time share the place; staff and
+	-- characters held by the anti-bot left out) get the chest of their place once: a row in chaos_tower_season_rewards,
+	-- delivered into the inbox at once when online, else at the next login. server_config `configKey` = the last season
+	-- paid out. chestId: an existing pickupable container of the base items (its look on the podium), renamed by the
+	-- item name attribute; items: existing orbs (install_orbs.py).
+	seasonEnd = {
+		checkSeconds = 60,
+		configKey = "chaos_tower_season_done",
+		staffGroup = 4,
+		chests = {
+			{name = "Gold Tower Chest", chestId = 1746, items = { -- treasure chest, 10 slots
+				{id = 29857, count = 20, name = "Orb of Fate"}, {id = 29856, count = 40, name = "Orb of Upheaval"}}},
+			{name = "Silver Tower Chest", chestId = 1740, items = { -- chest, 15 slots
+				{id = 29857, count = 12, name = "Orb of Fate"}, {id = 29856, count = 25, name = "Orb of Upheaval"}}},
+			{name = "Copper Tower Chest", chestId = 1738, items = { -- box, 10 slots
+				{id = 29857, count = 6, name = "Orb of Fate"}, {id = 29856, count = 12, name = "Orb of Upheaval"}}}
+		}
+	},
 	tryCooldownSeconds = 0, -- "Next Try Available"; 0 = always ready
 	pointsPerFloor = 1000,
 	rankingSize = 10,
@@ -243,9 +486,9 @@ Chaos.tower = {
 	-- server; its built-in fallback list is only shown before the first update).
 	milestones = {
 		{points = 60000, items = {{id = 2148, count = 300, name = "Gold Coin"}}},
-		{points = 120000, items = {{id = 29856, count = 3, name = "Chaos Orb"}}},
-		{points = 180000, items = {{id = 29857, count = 3, name = "Divine Orb"}}},
-		{points = 240000, items = {{id = 29857, count = 10, name = "Divine Orb"}}},
+		{points = 120000, items = {{id = 29856, count = 3, name = "Orb of Upheaval"}}},
+		{points = 180000, items = {{id = 29857, count = 3, name = "Orb of Fate"}}},
+		{points = 240000, items = {{id = 29857, count = 10, name = "Orb of Fate"}}},
 		{points = 300000, items = {{id = 8209, count = 1, name = "Soulreaper"}}}
 	}
 }
@@ -291,6 +534,9 @@ Chaos.worldBoss = {
 	exitDelaySeconds = 90, -- after the end: time to loot before everyone is sent to their temple
 	minLevel = 300,
 	maxPlayers = 40, -- players inside lobby + arena at once (0 = no limit)
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings to everyone inside at warnAt
+	-- seconds before the boss withdraws (fightMinutes); one arena, one event at a time
+	limits = {warnAt = {300, 60, 10}},
 	allowPvp = false, -- no player-vs-player damage in the lobby and the arena
 	-- multi-client characters (Chaos.isMultiClient) may enter and fight, but get no participation reward
 	mcReward = false,
@@ -308,7 +554,11 @@ Chaos.worldBoss = {
 		wallId = 5648, -- stone wall
 		pillarId = 1514, -- stone pillar (line-of-sight cover inside the arena)
 		basinId = 1481, -- coal basin (light, lobby corners and arena corners)
-		portalId = 1387 -- magic forcefield (type teleport in items.xml); used without destination + action id
+		portalId = 1387, -- magic forcefield (type teleport in items.xml); used without destination + action id
+		-- dark tile set (server/README.md "Dark tile set"): with the set installed, walls, pillars and lights use
+		-- these and both rooms are painted (data/lib/chaos_dark_paint.lua styles); else the ids above are used
+		dark = {enabled = true, wall = "dark_wall", pillar = "ruined_pillar", basin = "brazier",
+			arenaStyle = "arena", lobbyStyle = "lobby"}
 	},
 	-- action ids of the forcefields (handled by MoveEvent onStepIn, never by the teleport destination, so monsters
 	-- that step on them are not moved and the entry rules are checked)
@@ -320,25 +570,69 @@ Chaos.worldBoss = {
 	portalOffsets = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}, {2, 2}, {-2, 2}, {2, -2}, {-2, -2}, {3, 0}, {-3, 0}},
 	rotationStorage = 7100910, -- global storage (Game.setStorageValue, in memory): last boss index; resets on restart
 
-	-- participation reward (everybody with at least minDamagePercent % of the boss max health in damage).
-	-- share = own damage / damage of all eligible players. Delivered to the backpack, the rest to the inbox;
+	-- roles (worldboss.lua "role tracking"): what a player did in the fight, besides damage on the boss.
+	--   healing: healing on OTHER players inside the arena while the boss is alive, effective only (capped at the
+	--            target's missing health) and at most the boss damage the target took and was not healed for yet
+	--   tanking: damage from the boss and its adds the player survived (a killing hit counts nothing), capped per hit,
+	--            only while the player is active (attacked the boss or an add, or healed someone, within activeSeconds)
+	-- contribution score = damage + healing x healWeight + tanking x tankWeight
+	roles = {
+		healWeight = 1.0, -- 1 health healed on someone else = 1 damage
+		selfHealWeight = 0, -- healing yourself does not count (survival is already the tanking credit)
+		tankWeight = 0.5, -- tanking overlaps with the healing that undoes it, so it counts half
+		tankHitCap = 8000, -- per hit: the biggest designed boss hit (Nyxareth's rift beam)
+		offTargetWeight = 0.5, -- hits from a boss or add that is not targeting you (area splash) count half
+		activeSeconds = 30,
+		titleDays = 7, -- role titles (reward.podium) are held this long after the fight
+		titleStorage = 7100930, -- player storages 7100930-7100932: until when the damage/healing/tanking title is held
+		boards = {healing = "bosshealer", tanking = "bosstank"} -- weekly boards (leaderboard_config.lua); nil = none
+	},
+
+	-- participation reward (everybody with a contribution score of at least minScorePercent % of the boss max health).
+	-- share = own score / score of all eligible players. Delivered to the backpack, the rest to the inbox;
 	-- players offline at the kill get it at their next login (kept in memory until a restart).
 	reward = {
-		minDamagePercent = 0.25,
+		minScorePercent = 0.25,
 		bankGold = 500000, -- deposited into the bank for every eligible player
-		bankGoldPool = 10000000, -- split by damage share, deposited into the bank
-		base = {{id = 29856, count = 3}, {id = 29857, count = 1}}, -- Chaos Orbs, Divine Orb for everyone
-		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by damage share (floor)
-		top = { -- bonus for the top damage dealers
-			{{id = 29857, count = 5}, {id = 2160, count = 50}},
-			{{id = 29857, count = 3}, {id = 2160, count = 30}},
-			{{id = 29857, count = 2}, {id = 2160, count = 20}}
-		},
+		bankGoldPool = 10000000, -- split by share, deposited into the bank
+		base = {{id = 29856, count = 3}, {id = 29857, count = 1}}, -- Orbs of Upheaval, Orb of Fate for everyone
+		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by share (floor)
 		gearChance = 1500, -- per 10000: one item of the boss gear list (rolled with rarity gearRarity)
-		gearShareBonus = 3000, -- + share x this (a player with 20% of the damage: +600)
+		gearShareBonus = 3000, -- + share x this (a player with 20% of the score: +600)
 		gearRarity = {6, 9}, -- min, max rarity of that item (Game.createItemWithRarity)
 		uniqueChance = 50, -- per 10000: one of the boss-only uniques that list this boss (chaos_unique_items.lua)
-		uniqueShareBonus = 300 -- + share x this
+		uniqueShareBonus = 300, -- + share x this
+		-- the top `top` of each category (eligible players only; one player can place in several): rewards[place],
+		-- an extra unique roll uniqueChance[place] per 10000 (one unique at most per player) and the role title.
+		-- Ties: who reached the value first places higher. A value under placeMinPercent % of the boss max health
+		-- does not place.
+		podium = {
+			top = 3,
+			placeMinPercent = 0.1,
+			categories = {
+				{key = "damage", name = "Damage", title = "Bossbreaker", color = "#f08a4b",
+					rewards = {
+						{{id = 29857, count = 5}, {id = 2160, count = 50}},
+						{{id = 29857, count = 3}, {id = 2160, count = 30}},
+						{{id = 29857, count = 2}, {id = 2160, count = 20}}
+					},
+					uniqueChance = {300, 200, 100}},
+				{key = "healing", name = "Healing", title = "Lifewarden", color = "#6fd8a8",
+					rewards = {
+						{{id = 29857, count = 5}, {id = 2160, count = 50}},
+						{{id = 29857, count = 3}, {id = 2160, count = 30}},
+						{{id = 29857, count = 2}, {id = 2160, count = 20}}
+					},
+					uniqueChance = {300, 200, 100}},
+				{key = "tanking", name = "Tanking", title = "Bulwark", color = "#9fb4cc",
+					rewards = {
+						{{id = 29857, count = 5}, {id = 2160, count = 50}},
+						{{id = 29857, count = 3}, {id = 2160, count = 30}},
+						{{id = 29857, count = 2}, {id = 2160, count = 20}}
+					},
+					uniqueChance = {300, 200, 100}}
+			}
+		}
 	},
 
 	-- the five bosses. adds: {name, count, health}; phases trigger once when health falls to `at` (fraction).
@@ -399,7 +693,7 @@ Chaos.worldBoss = {
 Chaos.boosted = {
 	creatures = {"Dragon", "Dragon Lord", "Giant Spider", "Hydra", "Behemoth", "Serpent Spawn", "Warlock", "Hero",
 		"Nightmare", "Grim Reaper", "Frost Dragon", "Medusa", "Sea Serpent", "Wyrm", "Lost Soul"},
-	bosses = {"Ferumbras", "Orshabaal", "Ghazbaran", "Morgaroth", "Zulazza the Corruptor", "The Plasmother"},
+	bosses = {"Vhalkareth", "Morgashal", "Moloveth", "Vharagoth", "Ssylvath the Corruptor", "The Spawnmother"},
 	storageCreature = 7100900, -- global storages for the fallback pick: index into the list above
 	storageBoss = 7100901,
 	storageDay = 7100902 -- YYYYMMDD of the fallback pick
@@ -419,11 +713,11 @@ Chaos.shopServices = {
 	-- restart.
 	worldBuffs = {
 		{id = "xp", name = "World Experience", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% experience from monsters for every player"},
+			text = "+25% experience from monsters for every standard character"},
 		{id = "loot", name = "World Loot", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% Chaos loot (extra loot rolls and currency drops) for every player"},
+			text = "+25% Chaos loot (extra loot rolls and currency drops) for every standard character"},
 		{id = "skill", name = "World Training", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% skill and magic level training for every player"}
+			text = "+25% skill and magic level training for every standard character"}
 	},
 	worldBuffStorage = 7100920, -- global storages 7100921.. (expiry unix time per buff, in list order)
 	worldBuffConfigKey = "chaos_worldbuff_", -- server_config rows chaos_worldbuff_<id>
@@ -454,14 +748,22 @@ Chaos.shopServices = {
 		illusionist = {1, 10},
 		thief = {11, 12, choose = {"ninja", "samurai"}},
 		ninja = {11, 12},
-		samurai = {11, 13}
+		samurai = {11, 13},
+		monk = {17, 18, choose = {"shadowfist", "ironsage"}},
+		shadowfist = {17, 18},
+		ironsage = {17, 19},
+		necromancer = {20, 21, choose = {"lich", "bonelord"}},
+		lich = {20, 21},
+		bonelord = {20, 22},
+		templar = {23, 24, choose = {"inquisitor", "sentinel"}},
+		inquisitor = {23, 24},
+		sentinel = {23, 25}
 	},
 	-- the word list players see (!changevocation, the store's notices)
-	vocationWords = "warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai",
+	vocationWords = "warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai"
+		.. "|monk|shadowfist|ironsage|necromancer|lich|bonelord|templar|inquisitor|sentinel",
 	vocationBaseLevel = 8, -- health/mana/capacity gains are counted from this level (as the engine does)
 
-	-- Bottomless Loot Pouch: tell the player at most once per this many seconds
-	pouchNoticeSeconds = 60,
 	-- Auto Seller
 	autosellSlots = 40,
 	-- blessings of the "All Blessings" offer (base server: 1-5, see creaturescripts login.lua)
@@ -476,6 +778,19 @@ Chaos.clientServices = {
 	refreshSeconds = 300
 }
 
+-- Party Finder (LFG) window (client game_partyfinder; party_finder.lua, party_finder_core.lua, party_finder_config.lua)
+ChaosOpcodes.partyFinder = 208
+
+-- Level-up wings: golden wings open behind a character that gains a level, server -> client to every player who sees
+-- it (client game_levelwings; levelwings.lua, levelwings_core.lua, levelwings_config.lua); no storages, no tables
+ChaosOpcodes.levelWings = 191
+
+-- Death recap: who killed the character, with what and how fast; the last 5 deaths per character (client
+-- game_deathrecap; deathrecap.lua, deathrecap_core.lua, deathrecap_config.lua, sql/chaos_death_recaps.sql; fed by the
+-- combat log's damage-taken hook in combatlog.lua). No player storages.
+ChaosOpcodes.deathRecap = 154
+Chaos.tables.deathRecaps = "chaos_death_recaps"
+
 -- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
 -- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,
 -- Bloodrage) and beastmaster.lua (the companion), the spells in data/spells/chaos/<class>/.
@@ -486,10 +801,16 @@ Chaos.classes = {
 	-- spells, NPCs and the database keep working; 2, 6 and 9 are retired (class_migration.lua moves them).
 	ids = {
 		mystic = 1, ranger = 3, warrior = 4, elementalist = 5, deadeye = 7, juggernaut = 8, illusionist = 10,
-		thief = 11, ninja = 12, samurai = 13, berserker = 14, beastmaster = 15
+		thief = 11, ninja = 12, samurai = 13, berserker = 14, beastmaster = 15,
+		-- classes five to seven, behind the store's class unlock (class_unlocks.lua); each line's own ids are in
+		-- ChaosMonk.ids (monk_chi_core.lua), necro_config.lua and ChaosTemplar.cfg.ids (templar_aura_core.lua)
+		monk = 17, shadowfist = 18, ironsage = 19,
+		necromancer = 20, lich = 21, bonelord = 22,
+		templar = 23, inquisitor = 24, sentinel = 25
 	},
 	-- base class of every class (the line)
-	baseOf = {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3, [15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11, [13] = 11},
+	baseOf = {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3, [15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11, [13] = 11,
+		[17] = 17, [18] = 17, [19] = 17, [20] = 20, [21] = 20, [22] = 20, [23] = 23, [24] = 23, [25] = 23},
 	-- the engine knows one promotion per vocation; the choice between two ascended classes is this script's
 	ascension = {
 		minLevel = 100,
@@ -499,7 +820,10 @@ Chaos.classes = {
 			[4] = {juggernaut = 8, berserker = 14},
 			[3] = {deadeye = 7, beastmaster = 15},
 			[1] = {elementalist = 5, illusionist = 10},
-			[11] = {ninja = 12, samurai = 13}
+			[11] = {ninja = 12, samurai = 13},
+			[17] = {shadowfist = 18, ironsage = 19},
+			[20] = {lich = 21, bonelord = 22},
+			[23] = {inquisitor = 24, sentinel = 25}
 		}
 	},
 	-- one-time migration of the old vocations (class_migration.lua). Runs once at startup (version in server_config),
@@ -519,6 +843,49 @@ Chaos.classes = {
 		oldNames = {[1] = "Sorcerer", [2] = "Druid", [3] = "Paladin", [4] = "Knight", [5] = "Master Sorcerer",
 			[6] = "Elder Druid", [7] = "Royal Paladin", [8] = "Elite Knight", [9] = "Illusionist", [10] = "Arch Illusionist"}
 	},
+	-- class outfits, by vocation id (client pair outfits 1505-1510: client/tools/sprites/import_outfits.py; 1551-1560: the
+	-- donor B first set, import_donor_things.py; added to data/XML/outfits.xml for both sexes by
+	-- server/tools/install_outfits.py). The class's list is given at a class change (ascension.lua puts on the first one
+	-- when the character had none of them) and at login; outfits stay after a later class change. Names must be unique
+	-- and match outfits.xml.
+	outfits = (function()
+		local O = {
+			warrior = {lookType = 1551, name = "Warborn"},
+			thief = {lookType = 1556, name = "Hooded Thief"},
+			ninja = {{lookType = 1505, name = "Shadow Ninja"}, {lookType = 1506, name = "Crimson Ninja"},
+				{lookType = 1507, name = "Masked Ninja"}, {lookType = 1555, name = "Nightblade"}},
+			samurai = {{lookType = 1508, name = "Oni Samurai"}, {lookType = 1509, name = "Ronin"},
+				{lookType = 1510, name = "Dark Samurai"}, {lookType = 1554, name = "Wandering Blade"}},
+			ranger = {lookType = 1558, name = "Wildwood Ranger"},
+			mystic = {lookType = 1559, name = "Archmage"},
+			monk = {lookType = 1557, name = "Brawler"},
+			necromancer = {lookType = 1560, name = "Plague Doctor"},
+			templar = {lookType = 1552, name = "Golden Templar"},
+			seraph = {lookType = 1553, name = "Seraph"}
+		}
+		local function list(...)
+			local out = {}
+			for _, part in ipairs({...}) do
+				if part.lookType then
+					out[#out + 1] = part
+				else
+					for _, o in ipairs(part) do
+						out[#out + 1] = o
+					end
+				end
+			end
+			return out
+		end
+		return {
+			[4] = list(O.warrior), [8] = list(O.warrior), [14] = list(O.warrior),
+			[11] = list(O.thief), [12] = list(O.ninja, O.thief), [13] = list(O.samurai, O.thief),
+			[3] = list(O.ranger), [7] = list(O.ranger), [15] = list(O.ranger),
+			[1] = list(O.mystic), [5] = list(O.mystic), [10] = list(O.mystic),
+			[17] = list(O.monk), [18] = list(O.monk), [19] = list(O.monk),
+			[20] = list(O.necromancer), [21] = list(O.necromancer), [22] = list(O.necromancer),
+			[23] = list(O.templar), [24] = list(O.seraph, O.templar), [25] = list(O.seraph, O.templar)
+		}
+	end)(),
 	storage = {
 		dualWield = 7100200, -- 1 while the character may hold an off-hand sword (read by server/src-patches/0002)
 		ascended = 7100201, -- os.time of the ascension (information only)
@@ -529,6 +896,8 @@ Chaos.classes = {
 	-- Lua states; the conditions are the state both see. Stealth is CONDITION_INVISIBLE, the others
 	-- CONDITION_ATTRIBUTES without attributes (a timer). Next to ChaosSpell.SUBID (71001-71009).
 	subId = {stealth = 71010, poisonBlades = 71011, counter = 71012, bushido = 71013, bloodrage = 71014},
+	-- the new lines keep their sub ids in their own config: Necromancer 71020-71023 (necro_config.lua), Monk
+	-- 71030-71044 (monk_chi_core.lua), Templar 71050-71052 (templar_aura_core.lua)
 	-- Shadow Veil: monsters drop the player as a target and cannot pick it; attacking or being hit ends it
 	stealth = {
 		durationMs = 4000,
@@ -543,17 +912,21 @@ Chaos.classes = {
 	-- Ninja dual wield: each main-hand weapon hit adds an off-hand strike of `share` of the hit, scaled by the
 	-- off-hand weapon's attack against the main hand's (clamped to minRatio..maxRatio)
 	dualWield = {share = 0.5, minRatio = 0.5, maxRatio = 1.25, delayMs = 150},
-	-- Samurai Counter Stance: the next melee hit taken within windowMs is parried (no damage) and answered with a
-	-- strike of `multiplier` x the parried hit
-	counter = {windowMs = 2000, multiplier = 1.5},
+	-- Samurai Counter Stance (the duelist off-tank, docs/CLASSES.md): the next melee hit taken within windowMs is parried
+	-- (no damage) and answered with a strike of `multiplier` x the parried hit; while the stance lasts every other hit
+	-- taken is `guard` smaller; the cast taunts the monsters within tauntRadius sqm
+	counter = {windowMs = 3000, multiplier = 1.5, guard = 0.30, tauntRadius = 3},
 	-- Samurai Bushido Focus: while the buff lasts, every second without taking damage adds a stack;
 	-- each stack is +perStack critical chance on weapon hits and Iaijutsu, a critical hit does critMultiplier
 	bushido = {durationMs = 30000, stackMs = 1000, perStack = 0.03, maxStacks = 10, startStacks = 3, critMultiplier = 1.5},
+	-- Shadow Mend (spell 98, `saen umh`): the line's self heal. Restores level x perLevel + magic level x perMagicLevel +
+	-- maxHealthShare of the maximum health (+-spread); x veiledMultiplier while Shadow Veil is up (healing does not end
+	-- the veil). Below the Illusionist and near the Ranger line: server/data/spells/README.md "Healing"
+	shadowMend = {perLevel = 1.0, perMagicLevel = 10, maxHealthShare = 0.04, veiledMultiplier = 1.3, spread = 0.1},
 	-- shurikens: the throwing stars of the base server; the attack a shuriken spell uses without one in hand
 	shuriken = {items = {2399, 7368}, defaultAttack = 50},
-	-- spell strikes x (1 + (level - from) / per), at most max (ChaosSpell.thiefLevelScale). A stand-in for the
-	-- passive tree the Thief line does not have yet: re-tune or drop it with the tree (phase 2)
-	spellLevelScale = {from = 300, per = 700, max = 2.2},
+	-- (spellLevelScale, the level factor of the line's spell strikes, stood in for the passive tree until the class trees
+	-- of phase 2b; dropped: the tree and class_tree.lua classDamage scale the line now)
 	-- Berserker Rage (passive): every damage the Berserker deals gets up to +maxBonus, growing linearly from 0 at full
 	-- health to maxBonus at `fullBelow` of the maximum health and below
 	rage = {maxBonus = 0.30, fullBelow = 0.30},
@@ -634,6 +1007,45 @@ function Chaos.send(player, opcode, action, data)
 		payload.data = data
 	end
 	player:sendExtendedOpcode(opcode, json.encode(payload))
+	return true
+end
+
+-- An extended opcode message (0x32, u8 opcode, u16 length, bytes) carries its payload as one string, and the engine's
+-- NetworkMessage::addString silently refuses strings over 8192 bytes. The base Player.sendExtendedOpcode writes 0x32 and
+-- the opcode before the string, so a longer payload left those two bytes alone in the packet: the client read the next
+-- two bytes as the string length and dropped the rest of that network message ("parse message exception ... last opcode
+-- is 0x32" at every admin login: the 20 KB admin catalog). extended_opcode.lua refuses such payloads (with a warning);
+-- Chaos.sendChunked splits one into the parts "S..." (start), "P..." (part), "E..." (end) that the client's
+-- ProtocolGame.registerExtendedJSONOpcode joins back together. A payload that fits goes out unchanged.
+Chaos.extendedOpcodeMax = 8192
+Chaos.extendedOpcodeChunk = 8000
+
+function Chaos.splitExtended(buffer, size)
+	buffer = tostring(buffer or "")
+	if #buffer <= Chaos.extendedOpcodeMax then
+		return {buffer}
+	end
+	size = math.min(size or Chaos.extendedOpcodeChunk, Chaos.extendedOpcodeMax - 1)
+	local parts = {}
+	for i = 1, #buffer, size do
+		parts[#parts + 1] = buffer:sub(i, i + size - 1)
+	end
+	for i = 1, #parts do
+		parts[i] = (i == 1 and "S" or (i == #parts and "E" or "P")) .. parts[i]
+	end
+	return parts
+end
+
+-- for client modules that listen with ProtocolGame.registerExtendedJSONOpcode (JSON payloads only)
+function Chaos.sendChunked(player, opcode, buffer)
+	if not player then
+		return false
+	end
+	for _, part in ipairs(Chaos.splitExtended(buffer)) do
+		if player:sendExtendedOpcode(opcode, part) == false then
+			return false
+		end
+	end
 	return true
 end
 
@@ -736,4 +1148,208 @@ function Chaos.heal(creature, amount)
 		creature:addHealth(amount)
 	end
 	return creature:getHealth() - before
+end
+
+-- ---------------------------------------------------------------------------
+-- Monster names
+-- ---------------------------------------------------------------------------
+-- Monster:rename (base engine) changes the name the clients see: the creature packet (look text, the monster bar,
+-- battle list), the damage lines (its nameDescription) and our kill and loot lines. Rift monsters (rift_config.lua
+-- looks.names) and invaders wear such names. What a monster IS stays its type: everything keyed on it (bestiary,
+-- bounty, unique drops, pool levels, resistances, achievements, pets) uses Chaos.monsterTypeName.
+function Chaos.monsterTypeName(creature)
+	if not creature then
+		return nil
+	end
+	local ok, name = pcall(function()
+		local mt = creature:isMonster() and creature:getType()
+		return mt and mt:name()
+	end)
+	if ok and type(name) == "string" and name ~= "" then
+		return name
+	end
+	return creature:getName()
+end
+
+-- "an abyssal spawn" for a shown name; the monster files write their nameDescription the same way
+function Chaos.nameDescriptionOf(name)
+	local lower = tostring(name):lower()
+	return (lower:find("^[aeiou]") and "an " or "a ") .. lower
+end
+
+-- what loot lines call a monster: its type's nameDescription, or the description of the name it was renamed to
+function Chaos.monsterNameDescription(creature)
+	local name = creature:getName()
+	local ok, desc = pcall(function()
+		local mt = creature:isMonster() and creature:getType()
+		return mt and mt:name() == name and mt:getNameDescription() or nil
+	end)
+	if ok and desc then
+		return desc
+	end
+	return Chaos.nameDescriptionOf(name)
+end
+
+-- Game.createMonster under a shown name. The name is set in onSpawn, before the placement (callback in
+-- monster_tiers.lua, index -100, so it runs first), so the first creature packet already carries it: a rename after the
+-- placement does not reach clients that know the creature (the engine resends a known creature by id only, without
+-- its name).
+Chaos.spawnName = nil
+function Chaos.createMonsterNamed(typeName, position, extended, force, shownName)
+	if not shownName or shownName == typeName then
+		return Game.createMonster(typeName, position, extended, force)
+	end
+	Chaos.spawnName = shownName
+	local ok, monster = pcall(Game.createMonster, typeName, position, extended, force)
+	Chaos.spawnName = nil
+	if not ok then
+		error(monster, 0)
+	end
+	return monster
+end
+
+-- ---------------------------------------------------------------------------
+-- Instances: every place with its own way in and out (rift, dungeon, raid, arena, ...) registers here. The Town
+-- Portal and the hideout ask Chaos.inAnyInstance before they move a player, the hideout asks Chaos.instanceAt before
+-- it sends a player back to a stored spot, and the instances sweep strangers out of their slots.
+--   Chaos.registerInstance(key, {label = "a raid", inside = function(player) end, at = function(pos) end})
+--       inside: the player takes part in a run (membership); at: the position lies in the instance's area
+--   Chaos.inAnyInstance(player[, except]) -> key, label   (taking part in one, or standing in one's area)
+--   Chaos.instanceAt(pos[, except]) -> key, label         (area only)
+--   Chaos.sweepIntruders(inArea, isMember[, text]) -> n   non-staff players in the area who are not members go home
+--   optional runs = function() -> {{id, what, left, players, idle}}, close = function(id) -> ok, text: the staff view
+--       /instances of instance_limits.lua (server/README.md "Instance limits")
+-- A check that errors counts as "no" (one broken module must not lock everybody in place).
+-- ---------------------------------------------------------------------------
+Chaos.instances = {}
+Chaos.instanceOrder = {}
+
+function Chaos.registerInstance(key, def)
+	if type(key) ~= "string" or type(def) ~= "table" then
+		return false
+	end
+	if not Chaos.instances[key] then
+		Chaos.instanceOrder[#Chaos.instanceOrder + 1] = key
+	end
+	Chaos.instances[key] = def
+	return true
+end
+
+local function instanceCheck(fn, arg)
+	if type(fn) ~= "function" or arg == nil then
+		return false
+	end
+	local ok, v = pcall(fn, arg)
+	return ok and v ~= nil and v ~= false
+end
+
+function Chaos.instanceAt(pos, except)
+	for _, key in ipairs(Chaos.instanceOrder) do
+		local def = Chaos.instances[key]
+		if key ~= except and def and instanceCheck(def.at, pos) then
+			return key, def.label or key
+		end
+	end
+	return nil
+end
+
+function Chaos.inAnyInstance(player, except)
+	if not player then
+		return nil
+	end
+	local okPos, pos = pcall(function() return player:getPosition() end)
+	for _, key in ipairs(Chaos.instanceOrder) do
+		local def = Chaos.instances[key]
+		if key ~= except and def and (instanceCheck(def.inside, player) or (okPos and instanceCheck(def.at, pos))) then
+			return key, def.label or key
+		end
+	end
+	return nil
+end
+
+function Chaos.isStaff(player)
+	local ok, v = pcall(function()
+		local g = player:getGroup()
+		return g and g:getAccess()
+	end)
+	return ok and v == true
+end
+
+-- how often an instance's tick sweeps its slot for strangers (Chaos.sweepDue keeps the time per run table)
+Chaos.instanceSweepMs = 3000
+function Chaos.sweepDue(run, nowMs)
+	if not run or (run.sweptAt and nowMs - run.sweptAt < Chaos.instanceSweepMs and nowMs >= run.sweptAt) then
+		return false
+	end
+	run.sweptAt = nowMs
+	return true
+end
+
+function Chaos.sweepIntruders(inArea, isMember, text)
+	if not Game or type(Game.getPlayers) ~= "function" then
+		return 0
+	end
+	local n = 0
+	for _, p in ipairs(Game.getPlayers() or {}) do
+		if instanceCheck(inArea, p:getPosition()) and not instanceCheck(isMember, p) and not Chaos.isStaff(p) then
+			local town = p:getTown()
+			local to = town and town:getTemplePosition()
+			if to then
+				p:teleportTo(to)
+				if to.sendMagicEffect then
+					to:sendMagicEffect(CONST_ME_TELEPORT)
+				end
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text or "You do not belong to the group in there: you were sent to your temple.")
+				n = n + 1
+			end
+		end
+	end
+	return n
+end
+
+-- ---------------------------------------------------------------------------
+-- Save before a database credit. Moving value from the character (memory, written at logout and server saves) into
+-- a database row (stash, bank, guild bank, ...) at once leaves a window: a crash before the next save brings the
+-- character back with the value while the row keeps it too. Remove in memory, Chaos.saveCharacter(player), and only
+-- then credit the row; when the save fails, give back what was taken and stop (as market.lua and orbexchange.lua do).
+-- ---------------------------------------------------------------------------
+function Chaos.saveCharacter(player)
+	local ok, saved = pcall(function() return player:save() end)
+	return ok and saved == true
+end
+
+-- ---------------------------------------------------------------------------
+-- Staff talkactions. Commands that create or move economy value (/coins, /charm give, /pact days|extra|claimreset)
+-- need group >= Chaos.economyMinGroup (the admin panel's economy.* actions ask the same); the rest only staff access.
+-- Every use by staff is written to the admin audit log (admin/core.lua ChaosAdmin.log; the console when it is absent).
+-- Returns allowed, isStaff: callers return `not isStaff` when not allowed (a player's words are said as chat, staff's
+-- are swallowed).
+-- ---------------------------------------------------------------------------
+Chaos.economyMinGroup = 5
+function Chaos.staffCommand(player, words, param, economy)
+	local ok, access, gid = pcall(function()
+		local g = player:getGroup()
+		return g:getAccess(), g:getId()
+	end)
+	if not ok or not access then
+		return false, false
+	end
+	local allowed = not economy or (tonumber(gid) or 0) >= Chaos.economyMinGroup
+	local status = allowed and "ok" or "denied"
+	local text = tostring(words) .. " " .. tostring(param or "")
+	if ChaosAdmin and ChaosAdmin.log then
+		pcall(ChaosAdmin.log, player, "talk" .. tostring(words), "", {param = tostring(param or "")}, status, text)
+	else
+		print(string.format("[Chaos staff] %s (group %s) %s -> %s", player:getName(), tostring(gid), text, status))
+	end
+	if not allowed then
+		player:sendCancelMessage("Only an administrator may use " .. tostring(words) .. " this way.")
+	end
+	return allowed, true
+end
+
+-- true when a client request must be dropped (ratelimit.lua; per player and key, e.g. "bounty.accept"): for the opcode
+-- handlers whose actions read or write the database or walk large tables
+function Chaos.limited(player, key, ms)
+	return ChaosRateLimit ~= nil and ChaosRateLimit.allow ~= nil and not ChaosRateLimit.allow(player, key, ms or 300)
 end

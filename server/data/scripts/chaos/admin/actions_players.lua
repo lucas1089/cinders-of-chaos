@@ -145,7 +145,8 @@ reg{id = "set_vocation", name = "Set vocation", description = "Change vocation b
 		return true, t:getName() .. " is now a " .. v:getName() .. ". (Relog recommended.)"
 	end}
 
-reg{id = "give_item", name = "Give item", description = "Add an item (id or name) to a player's inventory.",
+-- creates items (economy): administrators like economy.*, also for the actor's own character (it can trade them on)
+reg{id = "give_item", name = "Give item", description = "Add an item (id or name) to a player's inventory.", minGroup = 5,
 	params = {PLAYER_OPT, {name = "item", label = "Item id or name", type = "string", max = 60},
 		{name = "count", label = "Count", type = "int", min = 1, max = 10000, default = 1}},
 	handler = function(actor, p)
@@ -175,7 +176,8 @@ reg{id = "remove_item", name = "Remove item", description = "Remove items (id or
 		if not t then return false, err end
 		local it, e2 = ChaosAdmin.resolveItem(p.item)
 		if not it then return false, e2 end
-		if t:removeItem(it:getId(), p.count) then
+		-- includeLocked (engine patch 0009): staff remove locked items too
+		if t:removeItem(it:getId(), p.count, -1, false, true) then
 			return true, string.format("Removed %dx %s from %s.", p.count, it:getName(), t:getName())
 		end
 		return false, "Player does not have that many."

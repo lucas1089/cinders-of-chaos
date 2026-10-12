@@ -41,7 +41,7 @@ do
 	local ids = Chaos.classes.ids
 	eq(NP.kitNameFor(ids.warrior), "warrior", "warrior")
 	eq(NP.kitNameFor(ids.juggernaut), "warrior", "juggernaut")
-	eq(NP.kitNameFor(ids.berserker), "warrior", "berserker")
+	eq(NP.kitNameFor(ids.berserker), "berserker", "berserker (two-handed, no shield)")
 	eq(NP.kitNameFor(ids.ranger), "ranger", "ranger")
 	eq(NP.kitNameFor(ids.deadeye), "ranger", "deadeye")
 	eq(NP.kitNameFor(ids.beastmaster), "ranger", "beastmaster")
@@ -50,7 +50,7 @@ do
 	eq(NP.kitNameFor(ids.illusionist), "mystic", "illusionist")
 	eq(NP.kitNameFor(ids.thief), "thief", "thief")
 	eq(NP.kitNameFor(ids.ninja), "ninja", "ninja")
-	eq(NP.kitNameFor(ids.samurai), "thief", "samurai")
+	eq(NP.kitNameFor(ids.samurai), "samurai", "samurai (katana)")
 	eq(NP.kitNameFor(0), nil, "vocation 0 is left to the base firstitems.lua")
 	for _, id in pairs(ids) do
 		ok(NP.kitFor(id) ~= nil, "kit for vocation " .. id)
@@ -93,7 +93,7 @@ do
 	ok(k.gold > 0, "gold")
 	local r = NP.kitFor(3)
 	eq(slotOf(r, "left").id, 2456, "ranger bow")
-	eq(slotOf(r, "ammo").id, 2544, "ranger arrows")
+	eq(slotOf(r, "ammo"), nil, "ranger: no arrows (bows fire without ammunition)")
 	eq(r.role, "ranged", "ranger role")
 	local s = NP.kitFor(1)
 	eq(slotOf(s, "left").id, 2190, "mystic wand")
@@ -105,7 +105,18 @@ do
 	eq(slotOf(nj, "left").id, 2379, "ninja inherits the dagger")
 	eq(bpCount(nj, 2399), 30, "ninja inherits the stars")
 	eq(bpCount(nj, 2379), 1, "ninja off-hand dagger")
-	eq(nj.role, "thief", "ninja role inherited")
+	eq(nj.role, "ranged", "ninja role inherited (the Royal Paladin's potions)")
+	eq(NP.kitFor(17).role, "ranged", "monk: the Royal Paladin's potions")
+	local bz = NP.kitFor(14)
+	eq(slotOf(bz, "left").id, 2378, "berserker battle axe (two-handed)")
+	eq(slotOf(bz, "right"), nil, "berserker: no shield")
+	eq(bz.role, "melee", "berserker role")
+	local sm = NP.kitFor(13)
+	eq(slotOf(sm, "left").id, 2412, "samurai katana")
+	eq(bpCount(sm, 2399), 30, "samurai keeps the thief's stars")
+	eq(sm.role, "ranged", "samurai role inherited")
+	eq(slotOf(NP.kitFor(23), "right").id, 2525, "templar: sword and shield (the warrior kit)")
+	eq(slotOf(NP.kitFor(20), "left").id, 2190, "necromancer: the caster kit")
 
 	-- copies: changing a returned kit does not change the config
 	k.equip[1].id = 1
@@ -153,6 +164,19 @@ end
 
 -- ------------------------------------------------------------------ milestones
 do
+	-- the welcome's gift line follows the milestone levels in the config and drops the ones already passed
+	local levels = {}
+	for _, m in ipairs(NP.cfg().milestones) do levels[#levels + 1] = m.level end
+	local line = NP.giftLine(1)
+	for _, l in ipairs(levels) do
+		assert(line:find(tostring(l), 1, true), "gift line names level " .. l)
+	end
+	eq(NP.giftLine(levels[#levels]), "", "no gift line past the last milestone")
+	eq(NP.giftLine(levels[#levels] - 1), "A gift waits for you at level " .. levels[#levels] .. ".", "one gift left")
+	local text = string.format(NP.cfg().welcome.text, "Name", "Warrior", NP.giftLine(1))
+	assert(text:find(line, 1, true) and not text:find("%s", 1, true), "welcome text takes the gift line")
+end
+do
 	local claimed = {}
 	local function isClaimed(i)
 		return claimed[i] == true
@@ -181,13 +205,17 @@ do
 			potions = potions + it.count
 		end
 	end
-	eq(orbs, 3, "level 100: 3 Chaos Orbs")
+	eq(orbs, 3, "level 100: 3 Orbs of Upheaval")
 	ok(stamina > 0, "level 100: stamina refill item")
 	ok(potions > 0, "level 100: potions")
-	local thief = NP.milestoneItems(2, "thief")
-	for _, it in ipairs(thief) do
-		ok(it.id == 7618 or it.id == 7620 or it.id == cfg.orbId, "thief potions are the unrestricted ones")
+	-- the Thief and Monk lines drink the Royal Paladin's potions (add_vocations.py): the ranged gifts
+	local thiefRole = NP.kitFor(11).role
+	eq(thiefRole, "ranged", "thief role")
+	local has = false
+	for _, it in ipairs(NP.milestoneItems(3, thiefRole)) do
+		has = has or it.id == 8472
 	end
+	ok(has, "thief level 100: great spirit potions")
 	ok(#NP.milestoneItems(1, "nonsense") > 0, "an unknown role falls back to melee potions")
 	eq(#NP.milestoneItems(9, "melee"), 0, "unknown milestone")
 end

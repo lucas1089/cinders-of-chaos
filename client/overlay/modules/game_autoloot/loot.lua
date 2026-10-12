@@ -26,17 +26,18 @@ function init()
 	autoLootButton:setOn(false)
 
 	function windowAutoLoot.add.onClick()
-		if tonumber(windowAutoLoot.editItemName:getText()) then
-			g_game.talk("!autolootclient add, " .. windowAutoLoot.editItemName:getText())
+		local text = windowAutoLoot.editItemName:getText()
+		if tonumber(text) then
+			sendAction(autoLootOpcode, "add", {clientId = tonumber(text)})
 		else
-			g_game.talk("!autoloot add, " .. windowAutoLoot.editItemName:getText())
+			sendAction(autoLootOpcode, "add", {name = text})
 		end
 
 		windowAutoLoot.editItemName:clearText()
 	end
 
 	function windowAutoLoot.clear.onClick()
-		g_game.talk("!autoloot clear")
+		sendAction(autoLootOpcode, "clear")
 	end
 
 	g_keyboard.bindKeyDown("Escape", autolootWindowHide)
@@ -91,7 +92,7 @@ function refreshAutolootWindow(data)
 		items.rowItemName:setText(data.itemsTable[i][2])
 
 		function items.rowButtonRemove.onClick()
-			g_game.talk("!autoloot remove, " .. data.itemsTable[i][2])
+			sendAction(autoLootOpcode, "remove", {name = data.itemsTable[i][2]})
 		end
 	end
 

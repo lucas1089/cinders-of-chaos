@@ -76,8 +76,8 @@ local function item(id, weaponType, slotPos, ammoType)
 end
 ItemType = function(id)
   local d = items[id]
-  return {getWeaponType = function() return d.wt end, getSlotPosition = function() return d.sp end,
-    getAmmoType = function() return d.at end}
+  return {getId = function() return id end, getWeaponType = function() return d.wt end,
+    getSlotPosition = function() return d.sp end, getAmmoType = function() return d.at end}
 end
 SLOTP_TWO_HAND = 32
 local dealt = {}
@@ -178,11 +178,11 @@ knight.slots[CONST_SLOT_LEFT] = item(500, WEAPON_SWORD, SLOTP_TWO_HAND)
 K.depth = 1; ev.onHealthChange(main, knight, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); K.depth = 0
 eq(#queue, 0, "guard")
 
--- paladin: deadeye doubles a bolt hit, ricochet bounces to the nearest monsters within 4
+-- paladin: deadeye doubles a crossbow hit (no ammunition: data/lib/chaos_archery_config.lua says 2455 is a crossbow),
+-- ricochet bounces to the nearest monsters within 4
 for id in pairs(creatures) do creatures[id] = nil end
 local pal = mkCreature(2, pos(200, 200), "player")
-pal.slots[CONST_SLOT_LEFT] = item(600, WEAPON_DISTANCE, SLOTP_TWO_HAND, AMMO_BOLT)
-pal.slots[CONST_SLOT_AMMO] = item(601, WEAPON_AMMO, 0, AMMO_BOLT)
+pal.slots[CONST_SLOT_LEFT] = item(2455, WEAPON_DISTANCE, SLOTP_TWO_HAND)
 ChaosPassiveCache[2] = {ksRicochet = 1, ksDeadeye = 1}
 local t1 = mkCreature(20, pos(204, 200), "monster")
 mkCreature(21, pos(206, 200), "monster"); mkCreature(22, pos(207, 201), "monster"); mkCreature(23, pos(212, 200), "monster")
@@ -192,9 +192,10 @@ eq(pd, 1000, "deadeye: double damage"); runEvents()
 eq(#dealt, 2, "two bounces"); eq(dealt[1].target, 21); eq(dealt[2].target, 22)
 eq(dealt[1].amount, -650, "65% of the deadeye hit")
 eq(dealt[2].amount, -422, "65% of that")
-pal.slots[CONST_SLOT_AMMO] = item(602, WEAPON_AMMO, 0, AMMO_ARROW); dealt = {}
+pal.slots[CONST_SLOT_LEFT] = item(2456, WEAPON_DISTANCE, SLOTP_TWO_HAND); dealt = {} -- a bow
 pd = ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
-eq(pd, 500, "deadeye needs bolts"); runEvents()
+eq(pd, 500, "deadeye needs a crossbow"); runEvents()
+pal.slots[CONST_SLOT_LEFT] = item(2455, WEAPON_DISTANCE, SLOTP_TWO_HAND)
 math.random = function() return 100 end; dealt = {}
 ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED); runEvents()
 eq(#dealt, 0, "no proc when the roll fails")
@@ -268,6 +269,13 @@ eqm(K.partyMultiplier({attackerId = 1, party = 1, pos = pos(10, 10), now = 1000}
 eqm(K.partyMultiplier(hit, mark, {{id = 1, pos = pos(11, 10)}, {id = 3, pos = pos(11, 10)}}), 1.2, "both, one aura at most")
 eqm(K.partyMultiplier({attackerId = 2, party = 1, pos = pos(10, 10), now = 1000, multiClient = true}, mark, givers), 1, "multi-client member gets nothing")
 eqm(K.partyMultiplier(hit, {owner = 1, party = 1, untilTime = 5000, multiClient = true}, {{id = 1, pos = pos(11, 10), multiClient = true}}), 1, "multi-client illusionist gives nothing")
+-- Shared Phantasm also heals the hitting party member for a share of the hit (the illusionist's own hits: nothing)
+eq(K.phantasmLeech(hit, mark, 1000), math.floor(1000 * cfg.phantasm.leech), "leech on a marked enemy")
+eq(K.phantasmLeech(hit, nil, 1000), 0, "no mark, no leech")
+eq(K.phantasmLeech({attackerId = 1, party = 1, pos = pos(10, 10), now = 1000}, mark, 1000), 0, "not for the illusionist")
+eq(K.phantasmLeech({attackerId = 2, party = 9, pos = pos(10, 10), now = 1000}, mark, 1000), 0, "other party")
+eq(K.phantasmLeech({attackerId = 2, party = 1, pos = pos(10, 10), now = 5001}, mark, 1000), 0, "mark expired")
+eq(K.phantasmLeech({attackerId = 2, party = 1, pos = pos(10, 10), now = 1000, multiClient = true}, mark, 1000), 0, "multi-client")
 
 -- engine glue: the illusionist marks, a party member hits the marked enemy harder
 local leader = mkCreature(7, pos(600, 600), "player")
@@ -277,6 +285,7 @@ leader.getParty = function() return party end; member.getParty = function() retu
 ChaosPassiveCache[7] = {ksSharedPhantasm = 1, ksInspiringIllusion = 1}
 ChaosPassiveCache[8] = {}
 local m1 = mkCreature(70, pos(603, 600), "monster")
+dealt = {}
 eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1080, "aura only (no mark yet)")
 eq(ev.onHealthChange(m1, leader, 1000, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "the illusionist gets nothing")
 eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1200, "mark + aura")
@@ -285,12 +294,19 @@ eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, OR
 NOW = NOW + cfg.phantasm.duration + 1
 eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1000, "mark gone")
 runEvents()
+local heals = {}
+for _, d in ipairs(dealt) do if d.type == COMBAT_HEALING then heals[#heals + 1] = d end end
+eq(#heals, 1, "one Shared Phantasm heal per tick and member")
+eq(heals[1].target, 8, "the party member is healed"); eq(heals[1].attacker, 7, "by the illusionist")
+eq(heals[1].amount, math.floor(1200 * cfg.phantasm.leech) + math.floor(1120 * cfg.phantasm.leech), "4% of the marked hits")
 
 -- ---------------------------------------------------------------- per-vocation stats in the generated data
 local data = dofile("data/scripts/chaos/passivetree_data.lua")
 local expected = {
-  [621] = {knight = "ksCleavingArc", paladin = "ksRicochet", sorcerer = "ksArcaneEcho", druid = "ksOvergrowth", illusionist = "ksSharedPhantasm"},
-  [624] = {knight = "ksBulwark", paladin = "ksDeadeye", sorcerer = "ksOverload", druid = "ksThorns", illusionist = "ksInspiringIllusion"},
+  [621] = {knight = "ksCleavingArc", paladin = "ksRicochet", sorcerer = "ksArcaneEcho", druid = "ksOvergrowth", illusionist = "ksSharedPhantasm",
+    juggernaut = "ksImmovable", berserker = "ksCleavingArc", deadeye = "ksHuntersFocus", beastmaster = "ksRicochet"},
+  [624] = {knight = "ksBulwark", paladin = "ksDeadeye", sorcerer = "ksOverload", druid = "ksThorns", illusionist = "ksInspiringIllusion",
+    juggernaut = "ksBulwark", berserker = "ksUndyingRage", deadeye = "ksDeadeye", beastmaster = "ksPackAlpha"},
 }
 for id, byVoc in pairs(expected) do
   local node = data.nodes[id]
@@ -300,26 +316,35 @@ for id, byVoc in pairs(expected) do
 end
 eq(data.nodes[600].n[3], 619, "Wrath path starts at node 600"); eq(data.nodes[489].n[3], 622, "Resolve path starts at 489")
 
--- passivetree.lua picks the vocation's variant
-Chaos = {passive = {}, tables = {passiveTree = "chaos_passive_tree"}, storage = {}, load = function(f) return dofile("data/scripts/chaos/" .. f) end,
+-- passivetree.lua picks the class's variant (the real class table: class keys)
+local savedChaos = Chaos
+Chaos = nil
+dofile("data/scripts/chaos/chaos_constants.lua")
+local realClasses = Chaos.classes
+Chaos = savedChaos
+Chaos = {classes = realClasses, passive = {}, tables = {passiveTree = "chaos_passive_tree"}, storage = {}, load = function(f) return dofile("data/scripts/chaos/" .. f) end,
   select = function() return {{preset = 1, name = "p", nodes = "619,620,621,622,623,624"}} end}
 ChaosOpcodes = {}
 db = {escapeString = function(s) return "'" .. s .. "'" end, query = function() end}
 dofile("data/scripts/chaos/passivetree.lua")
 local function voc(id) return {getGuid = function() return 1 end, getVocation = function() return {getId = function() return id end} end} end
 local b = ChaosPassiveTree.getBonuses(voc(8))
-eq(b.ksCleavingArc, 1, "juggernaut wrath"); eq(b.ksBulwark, 1, "juggernaut resolve"); eq(b.ksRicochet, nil, "no paladin keystone")
+eq(b.ksImmovable, 1, "juggernaut wrath"); eq(b.ksBulwark, 1, "juggernaut resolve"); eq(b.ksRicochet, nil, "no paladin keystone")
+eq(b.ksCleavingArc, nil, "the juggernaut swapped Cleaving Arc")
 eq(b.incrementPhysical, 7, "the path notables count for everyone")
-b = ChaosPassiveTree.getBonuses(voc(14)); eq(b.ksCleavingArc, 1, "berserker: the knight variant")
+b = ChaosPassiveTree.getBonuses(voc(14)); eq(b.ksCleavingArc, 1, "berserker wrath"); eq(b.ksUndyingRage, 1, "berserker resolve")
+eq(b.ksBulwark, nil, "the berserker swapped Bulwark")
 b = ChaosPassiveTree.getBonuses(voc(4)); eq(b.ksBulwark, 1, "warrior: the knight variant")
-b = ChaosPassiveTree.getBonuses(voc(7)); eq(b.ksRicochet, 1, "deadeye"); eq(b.ksDeadeye, 1, "deadeye resolve")
-b = ChaosPassiveTree.getBonuses(voc(15)); eq(b.ksRicochet, 1, "beastmaster: the paladin variant")
+b = ChaosPassiveTree.getBonuses(voc(7)); eq(b.ksHuntersFocus, 1, "deadeye"); eq(b.ksDeadeye, 1, "deadeye resolve")
+b = ChaosPassiveTree.getBonuses(voc(15)); eq(b.ksRicochet, 1, "beastmaster wrath"); eq(b.ksPackAlpha, 1, "beastmaster resolve")
+b = ChaosPassiveTree.getBonuses(voc(3)); eq(b.ksRicochet, 1, "ranger: the paladin variant"); eq(b.ksDeadeye, 1, "ranger")
 b = ChaosPassiveTree.getBonuses(voc(5)); eq(b.ksArcaneEcho, 1, "elementalist"); eq(b.ksOverload, 1, "elementalist resolve")
 b = ChaosPassiveTree.getBonuses(voc(1)); eq(b.ksArcaneEcho, 1, "mystic: the sorcerer variant")
 b = ChaosPassiveTree.getBonuses(voc(10)); eq(b.ksSharedPhantasm, 1, "illusionist"); eq(b.ksInspiringIllusion, 1, "illusionist resolve")
 eq(b.ksOvergrowth, nil, "the druid variant is no class's")
 b = ChaosPassiveTree.getBonuses(voc(0)); assert(not K.hasKeystone(b), "no vocation: no keystone")
-b = ChaosPassiveTree.getBonuses(voc(12)); assert(not K.hasKeystone(b), "the Thief line has no tree entry yet")
+b = ChaosPassiveTree.getBonuses(voc(12)); assert(not K.hasKeystone(b), "621 / 624 are not the Thief line's")
+eq(b.incrementPhysical, 7, "a Ninja still gets the shared notables of those paths")
 
 -- ---------------------------------------------------------------- the client tooltips state the server numbers
 local nodesFile = "../client/overlay/modules/game_passivetree/treedata/nodes.lua"
@@ -340,7 +365,7 @@ if f then
       cfg.echo.minTargets .. " or more"}, [624] = {sec(cfg.overload.window), "+" .. pct(cfg.overload.bonus)}},
     druid = {[621] = {pct(cfg.overgrowth.percent), sec(cfg.overgrowth.pulses * cfg.overgrowth.interval), cfg.overgrowth.pulses .. " pulses"},
       [624] = {pct(cfg.thorns.percent), cfg.thorns.perMagicLevel .. " x your magic level"}},
-    illusionist = {[621] = {sec(cfg.phantasm.duration), "+" .. pct(cfg.phantasm.bonus)},
+    illusionist = {[621] = {sec(cfg.phantasm.duration), "+" .. pct(cfg.phantasm.bonus), "heal for " .. pct(cfg.phantasm.leech)},
       [624] = {cfg.inspire.range .. " sqm", "+" .. pct(cfg.inspire.bonus)}},
   }
   for vocName, byNode in pairs(want) do
@@ -352,4 +377,14 @@ if f then
     end
   end
 end
+-- ---------------------------------------------------------------- the per-ascended keystones (numbers: class_tree.lua)
+local near = function(a, b, m) assert(math.abs(a - b) < 1e-9, (m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b)) end
+near(K.immovableFactor(900, 1000), 0.92, "Immovable"); near(K.immovableFactor(400, 1000), 0.84, "Immovable below half")
+eq(K.undyingHeal(-1000, 900, 1000), 40, "Undying Rage"); eq(K.undyingHeal(1000, 300, 1000), 80, "Undying Rage low")
+local fs = {}
+near(K.focusStep(fs, 5, 0), 1, "first hit"); near(K.focusStep(fs, 5, 100), 1.04); near(K.focusStep(fs, 5, 200), 1.08)
+for t = 3, 9 do K.focusStep(fs, 5, t * 100) end
+near(K.focusStep(fs, 5, 1000), 1.20, "capped at +20%")
+near(K.focusStep(fs, 6, 1100), 1, "another target starts again")
+K.focusStep(fs, 6, 1200); near(K.focusStep(fs, 6, 9000), 1, "6 s without a hit starts again")
 print("passive keystones: all asserts passed")

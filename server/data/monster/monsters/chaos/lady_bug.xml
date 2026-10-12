@@ -13,7 +13,6 @@
 		<flag pushable="1" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="1" />
-		<flag isBlocked="1"/>
 		<flag targetdistance="0" />
 		<flag runonhealth="91000" />
 	</flags>
@@ -49,17 +48,17 @@
 		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
 		<item id="5741" countmax="1" chance="3100" /><!-- skull helmet;steel boots -->
 		<item id="2645" countmax="1" chance="3100" />
-		<item id="11302" countmax="1" chance="1500" /><!-- zaoan helmet -->
+		<item id="11302" countmax="1" chance="1500" /><!-- jadefen helmet -->
 		<item id="11301" countmax="1" chance="1500" />
 		<item id="11304" countmax="1" chance="1500" />
 		<item id="11303" countmax="1" chance="1500" />
-		<item id="8891" countmax="1" chance="2000" /><!-- paladin armor;coconut shoes;Zaoan robe -->
+		<item id="8891" countmax="1" chance="2000" /><!-- paladin armor;coconut shoes;Jadefen robe -->
 		<item id="9931" countmax="1" chance="2000" />
 		<item id="11356" countmax="1" chance="2000" />
 		<item id="2522" countmax="1" chance="2340" /><!-- great shield;demon shield;crystal boots -->
 		<item id="2520" countmax="1" chance="2340" />
 		<item id="11117" countmax="1" chance="2340" />
-		<item id="8889" countmax="1" chance="1200" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="8889" countmax="1" chance="1200" /><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor -->
 		<item id="8887" countmax="1" chance="1200" />
 		<item id="12607" countmax="1" chance="1200" />
 		<item id="8880" countmax="1" chance="1200" />

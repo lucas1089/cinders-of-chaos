@@ -28,6 +28,66 @@ return {
 		delayMs = 50
 	},
 
+	-- ------------------------------------------------------------------ Treasure Goblin Chance (the item modifier)
+	-- The Chaos item modifier "goblinchance" (data/lib/chaos_item_mods.lua: helmets and jewellery, +10-40% per item by
+	-- tier, at most +100% per character) raises the 1-in-oneIn roll of a respawn: the respawn takes the highest total
+	-- among the players within `radius` tiles of the spawn point on the same floor (one lucky player is enough; bonuses
+	-- of several players do not add up). oneIn / (1 + bonus%): +100% = 1 in 1500. Natural respawns are held back while a
+	-- player stands within view of the spawn point, so the radius reaches past the screen. The world event multiplier
+	-- (ChaosEvents.bonus "goblin") applies on top. maxAlive and the per-area cooldown stay as they are.
+	spoor = {
+		modKey = "goblinchance",
+		radius = 24,
+		cap = 100 -- the same cap as the modifier's; a safety net here as well
+	},
+
+	-- ------------------------------------------------------------------ variants
+	-- Each goblin is one of these, by weight. All share the behaviour (flee, blinks, escape), the experience, the
+	-- leaderboard and the loot rays; the name (one monster XML each: data/monster/monsters/chaos/), the stock look type
+	-- and the outfit shader (data/XML/shaders.xml) tell them apart. `loot` overrides parts of the shared loot table
+	-- below for that variant (only the keys given; gems, socketOrb, shards and orbs exist only there).
+	-- Expected loot per goblin (area level L, no item find):
+	--   Hoarder (70%): gold 2000 + 400 L, 3 Orbs of Upheaval (+1 per 150 L, at most 10), 25% Orb of Fate, 2-4 rolled gear,
+	--     the unique roll x3 and the hoard roll.
+	--   Gem Goblin (20%): half the gold, 2.5 gems (+1 per 250 L, at most 5; tier by L as monster gem drops, 25% one
+	--     tier better), 1.25 Orbs of Sockets, 1 rolled gear, the unique roll x1. About 2.5 gems at L 100, 3.5 at L 300.
+	--   Shard Goblin (10%): half the gold, rune shards (10 + L/10) x 80-120% (at most 60): about 20 at L 100, 40 at
+	--     L 300; 1.5 Orbs of Upheaval (+1 per 300 L, at most 4), 1 random crafting orb (the salvage orb weights), 1 rolled
+	--     gear, the unique roll x1. 25 shards make an Orb of Upheaval at the bench, so a Shard Goblin is worth about the
+	--     Hoarder's orbs, less its gear.
+	--   Across all goblins: about 0.5 gems and 2 (L 100) to 4 (L 300) rune shards per goblin on average.
+	variants = {
+		{key = "hoarder", name = "Treasure Goblin", weight = 70, look = 297, shader = 12},
+		{key = "gem", name = "Gem Goblin", weight = 20, look = 296, shader = 9,
+			loot = {
+				goldMult = 50,
+				chaosOrb = {id = 29856, min = 0, max = 0, perLevels = 1000000, cap = 0},
+				divineOrb = {id = 29857, chance = 0},
+				items = {min = 1, max = 1},
+				unique = {tier = "legendary", mult = 1},
+				uniqueHoard = {chance = 0, levelSlack = 20},
+				-- gems of chaos_gems.lua: random(min, max) + floor(L / perLevels), at most cap; the tier by
+				-- ChaosGems.levelWeights(L), then tierUp percent for one tier better
+				gems = {min = 2, max = 3, perLevels = 250, cap = 5, tierUp = 25},
+				-- Orb of Sockets (ChaosGems.config.socketOrb.id): count, plus extraChance percent for one more
+				socketOrb = {count = 1, extraChance = 25}
+			}},
+		{key = "shard", name = "Shard Goblin", weight = 10, look = 61, shader = 10,
+			loot = {
+				goldMult = 50,
+				chaosOrb = {id = 29856, min = 1, max = 2, perLevels = 300, cap = 4},
+				divineOrb = {id = 29857, chance = 0},
+				items = {min = 1, max = 1},
+				unique = {tier = "legendary", mult = 1},
+				uniqueHoard = {chance = 0, levelSlack = 20},
+				-- Rune Shards (salvage_config.lua shard.id): (base + L / perLevel) x random(minMult..maxMult)%, at most cap
+				shards = {id = 32051, base = 10, perLevel = 10, minMult = 80, maxMult = 120, cap = 60},
+				-- crafting orbs (ChaosCrafting orb keys), count of them, picked by weight (salvage_config.lua orbWeights)
+				orbs = {count = 1, weights = {{"transmutation", 35}, {"chaos", 25}, {"scouring", 12}, {"alchemy", 10},
+					{"annulment", 8}, {"divine", 5}, {"sockets", 3}, {"exalted", 2}}}
+			}}
+	},
+
 	-- ------------------------------------------------------------------ area level and health
 	level = {
 		-- area level = the replaced monster's level (Monster:getMonsterLevel()) when it has one; otherwise the average
@@ -74,17 +134,18 @@ return {
 	},
 	appearLine = "Ooh, shiny...",
 	escapeLine = "Ha ha!",
-	appearText = "A Treasure Goblin appears!",
-	escapeText = "The Treasure Goblin escaped through a portal with its loot!",
-	killText = "%s slew a Treasure Goblin!",
+	-- %s / the second %s = the variant's name (Treasure Goblin, Gem Goblin, Shard Goblin)
+	appearText = "A %s appears!",
+	escapeText = "The %s escaped through a portal with its loot!",
+	killText = "%s slew a %s!",
 
 	-- ------------------------------------------------------------------ loot (corpse owner = most damage)
 	loot = {
 		-- gold value: base + perLevel x area level, then x random(minMult..maxMult)%; paid in crystal/platinum/gold
 		gold = {base = 2000, perLevel = 400, minMult = 80, maxMult = 130},
-		-- Chaos Orbs (Orb of Chaos 29856): count = random(min, max) + floor(area level / perLevels), capped
+		-- Orbs of Upheaval (Orb of Upheaval 29856): count = random(min, max) + floor(area level / perLevels), capped
 		chaosOrb = {id = 29856, min = 2, max = 4, perLevels = 150, cap = 10},
-		-- Divine Orb (29857): chance in percent (x item find), count 1
+		-- Orb of Fate (29857): chance in percent (x item find), count 1
 		divineOrb = {id = 29857, chance = 25},
 		-- guaranteed gear rolls through the Chaos loot layer (rarity from ChaosLoot.upgradeRarity per tier)
 		items = {min = 2, max = 4},

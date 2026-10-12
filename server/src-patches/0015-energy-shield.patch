@@ -1,0 +1,436 @@
+# Energy shield (server/README.md "Energy shield"): a per-player pool above the health that items give. Damage order:
+# mana shield (utamo vita) -> the onHealthChange scripts (resistances, dodge, block, damage reductions, reflect / thorns,
+# Last Breath and the other lethal-hit catches, which count health + shield) -> energy shield -> health. Not
+# COMBAT_UNDEFINEDDAMAGE (scripted health costs), as the mana shield. Every hit that takes mana, shield or health (also
+# damage over time and fields) restarts the recharge delay; healing never fills the shield.
+#   * Player: energyShield / maxEnergyShield / energyShieldRecharge (per mille of the maximum per second, default 200 =
+#     20%); Player::onThink recharges it once the delay (config energyShieldRechargeDelay, 2000 ms) has passed, only for
+#     the part of the think after the delay; death empties it; a new login starts at 0 (the scripts set the maximum).
+#   * Game::combatChangeHealth takes it after the HEALTHCHANGE events (in the call they re-enter with ORIGIN_NONE, so
+#     once per hit), with "You lose N energy shield ..." messages and a light blue-violet number (colour 131).
+#   * CombatDamage::absorbed: what the shield took. The attacker's life / mana leech counts it (single target and area),
+#     so a hit on a shielded player leeches like a hit on the health.
+#   * client: extended opcode energyShieldOpcode (default 224, 0 = none), plain text "es:<current>:<max>", only to
+#     OTClient-based clients, at most every 200 ms (a skipped update goes out with the next think), immediately when the
+#     maximum changes (client module game_energyshield).
+#   * Lua: player:getEnergyShield(), player:setEnergyShield(n) (clamped), player:getMaxEnergyShield(),
+#     player:setMaxEnergyShield(n) (lowers the current value), player:getEnergyShieldRecharge(),
+#     player:setEnergyShieldRecharge(perMillePerSecond); configKeys.ENERGY_SHIELD_RECHARGE_DELAY / ENERGY_SHIELD_OPCODE.
+#     data/lib/chaos_energy_shield.lua holds the item modifiers; data/scripts/chaos/item_mods.lua sets the maximum.
+# Apply in the server source root after 0001-0014: patch -p1 < 0015-energy-shield.patch, then rebuild.
+--- a/src/combat.cpp
++++ b/src/combat.cpp
+@@ -919,7 +919,7 @@ void Combat::doTargetCombat(Creature* caster, Creature* target, CombatDamage& da
+ 			leechCombat.origin = ORIGIN_NONE;
+ 			leechCombat.leeched = true;
+ 
+-			int32_t totalDamage = std::abs(damage.primary.value + damage.secondary.value);
++			int32_t totalDamage = std::abs(damage.primary.value + damage.secondary.value) + damage.absorbed; // Chaos (patch 0015): a hit on an energy shield leeches too
+ 
+ 			if (casterPlayer->getHealth() < casterPlayer->getMaxHealth()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHCHANCE);
+@@ -1077,7 +1077,7 @@ void Combat::doAreaCombat(Creature* caster, const Position& position, const Area
+ 			success = g_game.combatChangeMana(caster, creature, damageCopy);
+ 		}
+ 		if (success) {
+-			int32_t dmgDealt = std::abs(damageCopy.primary.value + damageCopy.secondary.value);
++			int32_t dmgDealt = std::abs(damageCopy.primary.value + damageCopy.secondary.value) + damageCopy.absorbed; // Chaos (patch 0015)
+ 			if (dmgDealt > maxDamageFound) {
+ 				maxDamageFound = dmgDealt;
+ 			}
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -299,6 +299,10 @@ bool ConfigManager::load()
+ 	integer[MIN_PLAYER_ATTACK_INTERVAL] = getGlobalNumber(L, "minPlayerAttackInterval", 1000);
+ 	integer[MAX_PLAYER_ATTACK_SPEED_BONUS] = getGlobalNumber(L, "maxPlayerAttackSpeedBonus", 25);
+ 	integer[MIN_PLAYER_LEECH_INTERVAL] = getGlobalNumber(L, "minPlayerLeechInterval", 900);
++	// Chaos (patch 0015): a player's energy shield starts recharging energyShieldRechargeDelay ms after the last hit taken;
++	// its value goes to the client on extended opcode energyShieldOpcode (0: not sent)
++	integer[ENERGY_SHIELD_RECHARGE_DELAY] = getGlobalNumber(L, "energyShieldRechargeDelay", 2000);
++	integer[ENERGY_SHIELD_OPCODE] = getGlobalNumber(L, "energyShieldOpcode", 224);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -124,6 +124,8 @@ class ConfigManager
+ 			MIN_PLAYER_ATTACK_INTERVAL, // Chaos (patch 0011): attack speed cap
+ 			MAX_PLAYER_ATTACK_SPEED_BONUS,
+ 			MIN_PLAYER_LEECH_INTERVAL,
++			ENERGY_SHIELD_RECHARGE_DELAY, // Chaos (patch 0015): energy shield
++			ENERGY_SHIELD_OPCODE,
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+--- a/src/enums.h
++++ b/src/enums.h
+@@ -637,6 +637,7 @@ struct CombatDamage
+ 	BlockType_t blockType = BLOCK_NONE;
+ 	bool critical = false;
+ 	bool leeched = false;
++	int32_t absorbed = 0; // Chaos (patch 0015): taken by the target's energy shield instead of its health
+ };
+ 
+ using MarketOfferList = std::list<MarketOffer>;
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -4065,6 +4065,54 @@ void Game::combatGetTypeInfo(CombatType_t combatType, Creature* target, TextColo
+ 	}
+ }
+ 
++// Chaos (patch 0015): the text messages and the animated number of a hit taken by an energy shield (light blue-violet)
++void Game::sendEnergyShieldDamage(const SpectatorVec& spectators, Creature* attacker, Player* targetPlayer, int32_t amount)
++{
++	static constexpr auto TEXTCOLOR_ENERGYSHIELD = static_cast<TextColor_t>(131);
++	const Position& targetPos = targetPlayer->getPosition();
++	Player* attackerPlayer = attacker ? attacker->getPlayer() : nullptr;
++
++	TextMessage message;
++	message.position = targetPos;
++	message.primary.value = amount;
++	message.primary.color = TEXTCOLOR_ENERGYSHIELD;
++
++	std::string spectatorMessage;
++	for (Creature* spectator : spectators) {
++		Player* tmpPlayer = spectator->getPlayer();
++		if (!tmpPlayer || tmpPlayer->getPosition().z != targetPos.z) {
++			continue;
++		}
++
++		if (tmpPlayer == attackerPlayer && attackerPlayer != targetPlayer) {
++			message.type = MESSAGE_DAMAGE_DEALT;
++			message.text = fmt::format("{:s} loses {:d} energy shield due to your attack.", targetPlayer->getNameDescription(), amount);
++			message.text[0] = std::toupper(message.text[0]);
++		} else if (tmpPlayer == targetPlayer) {
++			message.type = MESSAGE_DAMAGE_RECEIVED;
++			if (!attacker) {
++				message.text = fmt::format("You lose {:d} energy shield.", amount);
++			} else if (targetPlayer == attackerPlayer) {
++				message.text = fmt::format("You lose {:d} energy shield due to your own attack.", amount);
++			} else {
++				message.text = fmt::format("You lose {:d} energy shield due to an attack by {:s}.", amount, attacker->getNameDescription());
++			}
++		} else {
++			message.type = MESSAGE_DAMAGE_OTHERS;
++			if (spectatorMessage.empty()) {
++				if (!attacker || attacker == targetPlayer) {
++					spectatorMessage = fmt::format("{:s} loses {:d} energy shield.", targetPlayer->getNameDescription(), amount);
++				} else {
++					spectatorMessage = fmt::format("{:s} loses {:d} energy shield due to an attack by {:s}.", targetPlayer->getNameDescription(), amount, attacker->getNameDescription());
++				}
++				spectatorMessage[0] = std::toupper(spectatorMessage[0]);
++			}
++			message.text = spectatorMessage;
++		}
++		tmpPlayer->sendTextMessage(message);
++	}
++}
++
+ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage& damage)
+ {
+ 	if (!target) {
+@@ -4192,6 +4240,7 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
+ 				}
+ 
+ 				targetPlayer->drainMana(attacker, manaDamage);
++				targetPlayer->onEnergyShieldHit(); // Chaos (patch 0015): any damage taken delays the recharge
+ 				map.getSpectators(spectators, targetPos, true, true);
+ 				addMagicEffect(spectators, targetPos, CONST_ME_LOSEENERGY);
+ 
+@@ -4260,6 +4309,31 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
+ 			}
+ 		}
+ 
++		// Chaos (patch 0015): the energy shield takes what is left after the mana shield and the onHealthChange scripts
++		// (resistances, dodge, block and the damage reductions of the scripts count first), before the health. Not
++		// UNDEFINEDDAMAGE (scripted health costs), as the mana shield. The amount stays in damage.absorbed for the leech.
++		if (targetPlayer && damage.primary.type != COMBAT_UNDEFINEDDAMAGE) {
++			targetPlayer->onEnergyShieldHit();
++			int32_t shieldDamage = std::min<int32_t>(targetPlayer->getEnergyShield(), damage.primary.value + damage.secondary.value);
++			if (shieldDamage > 0) {
++				targetPlayer->setEnergyShield(targetPlayer->getEnergyShield() - shieldDamage);
++				damage.absorbed += shieldDamage;
++				damage.primary.value -= shieldDamage;
++				if (damage.primary.value < 0) {
++					damage.secondary.value = std::max<int32_t>(0, damage.secondary.value + damage.primary.value);
++					damage.primary.value = 0;
++				}
++
++				if (spectators.empty()) {
++					map.getSpectators(spectators, targetPos, true, true);
++				}
++				sendEnergyShieldDamage(spectators, attacker, targetPlayer, shieldDamage);
++				if (damage.primary.value + damage.secondary.value == 0) {
++					return true;
++				}
++			}
++		}
++
+ 		int32_t targetHealth = target->getHealth();
+ 		if (damage.primary.value >= targetHealth) {
+ 			damage.primary.value = targetHealth;
+--- a/src/game.h
++++ b/src/game.h
+@@ -432,6 +432,7 @@ class Game
+ 		void combatGetTypeInfo(CombatType_t combatType, Creature* target, TextColor_t& color, uint8_t& effect);
+ 
+ 		bool combatChangeHealth(Creature* attacker, Creature* target, CombatDamage& damage);
++		void sendEnergyShieldDamage(const SpectatorVec& spectators, Creature* attacker, Player* targetPlayer, int32_t amount); // Chaos (patch 0015)
+ 		bool combatChangeMana(Creature* attacker, Creature* target, CombatDamage& damage);
+ 
+ 		//animation help functions
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2043,6 +2043,8 @@ void LuaScriptInterface::registerFunctions()
+ 	registerEnumIn("configKeys", ConfigManager::MIN_PLAYER_ATTACK_INTERVAL)
+ 	registerEnumIn("configKeys", ConfigManager::MAX_PLAYER_ATTACK_SPEED_BONUS)
+ 	registerEnumIn("configKeys", ConfigManager::MIN_PLAYER_LEECH_INTERVAL)
++	registerEnumIn("configKeys", ConfigManager::ENERGY_SHIELD_RECHARGE_DELAY) // Chaos (patch 0015)
++	registerEnumIn("configKeys", ConfigManager::ENERGY_SHIELD_OPCODE)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLEAN_MAP)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLOSE)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_SHUTDOWN)
+@@ -2486,6 +2488,12 @@ void LuaScriptInterface::registerFunctions()
+ 	registerMethod("Player", "addMana", LuaScriptInterface::luaPlayerAddMana);
+ 	registerMethod("Player", "getMaxMana", LuaScriptInterface::luaPlayerGetMaxMana);
+ 	registerMethod("Player", "setMaxMana", LuaScriptInterface::luaPlayerSetMaxMana);
++	registerMethod("Player", "getEnergyShield", LuaScriptInterface::luaPlayerGetEnergyShield); // Chaos (patch 0015)
++	registerMethod("Player", "setEnergyShield", LuaScriptInterface::luaPlayerSetEnergyShield);
++	registerMethod("Player", "getMaxEnergyShield", LuaScriptInterface::luaPlayerGetMaxEnergyShield);
++	registerMethod("Player", "setMaxEnergyShield", LuaScriptInterface::luaPlayerSetMaxEnergyShield);
++	registerMethod("Player", "getEnergyShieldRecharge", LuaScriptInterface::luaPlayerGetEnergyShieldRecharge);
++	registerMethod("Player", "setEnergyShieldRecharge", LuaScriptInterface::luaPlayerSetEnergyShieldRecharge);
+ 	registerMethod("Player", "getManaSpent", LuaScriptInterface::luaPlayerGetManaSpent);
+ 	registerMethod("Player", "addManaSpent", LuaScriptInterface::luaPlayerAddManaSpent);
+ 	registerMethod("Player", "removeManaSpent", LuaScriptInterface::luaPlayerRemoveManaSpent);
+@@ -8897,6 +8905,82 @@ int LuaScriptInterface::luaPlayerSetMaxMana(lua_State* L)
+ 	return 1;
+ }
+ 
++// Chaos (patch 0015): energy shield
++int LuaScriptInterface::luaPlayerGetEnergyShield(lua_State* L)
++{
++	// player:getEnergyShield()
++	const Player* player = getUserdata<const Player>(L, 1);
++	if (player) {
++		lua_pushnumber(L, player->getEnergyShield());
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerSetEnergyShield(lua_State* L)
++{
++	// player:setEnergyShield(value) -- clamped to 0 .. the maximum
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		player->setEnergyShield(getNumber<int32_t>(L, 2));
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerGetMaxEnergyShield(lua_State* L)
++{
++	// player:getMaxEnergyShield()
++	const Player* player = getUserdata<const Player>(L, 1);
++	if (player) {
++		lua_pushnumber(L, player->getMaxEnergyShield());
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerSetMaxEnergyShield(lua_State* L)
++{
++	// player:setMaxEnergyShield(value) -- the current value is lowered to it when above
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		player->setMaxEnergyShield(getNumber<int32_t>(L, 2));
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerGetEnergyShieldRecharge(lua_State* L)
++{
++	// player:getEnergyShieldRecharge() -- per mille of the maximum per second
++	const Player* player = getUserdata<const Player>(L, 1);
++	if (player) {
++		lua_pushnumber(L, player->getEnergyShieldRecharge());
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerSetEnergyShieldRecharge(lua_State* L)
++{
++	// player:setEnergyShieldRecharge(perMillePerSecond)
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		player->setEnergyShieldRecharge(std::max<int32_t>(0, getNumber<int32_t>(L, 2)));
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
+ int LuaScriptInterface::luaPlayerGetManaSpent(lua_State* L)
+ {
+ 	// player:getManaSpent()
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -909,6 +909,12 @@ class LuaScriptInterface
+ 		static int luaPlayerAddMana(lua_State* L);
+ 		static int luaPlayerGetMaxMana(lua_State* L);
+ 		static int luaPlayerSetMaxMana(lua_State* L);
++		static int luaPlayerGetEnergyShield(lua_State* L); // Chaos (patch 0015)
++		static int luaPlayerSetEnergyShield(lua_State* L);
++		static int luaPlayerGetMaxEnergyShield(lua_State* L);
++		static int luaPlayerSetMaxEnergyShield(lua_State* L);
++		static int luaPlayerGetEnergyShieldRecharge(lua_State* L);
++		static int luaPlayerSetEnergyShieldRecharge(lua_State* L);
+ 		static int luaPlayerGetManaSpent(lua_State* L);
+ 		static int luaPlayerAddManaSpent(lua_State* L);
+ 		static int luaPlayerRemoveManaSpent(lua_State* L);
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -404,6 +404,65 @@ void Player::setLeeched(bool mana)
+ 	(mana ? lastManaLeech : lastLifeLeech) = OTSYS_TIME();
+ }
+ 
++// Chaos (patch 0015): energy shield
++void Player::setEnergyShield(int32_t value)
++{
++	value = std::max<int32_t>(0, std::min<int32_t>(value, maxEnergyShield));
++	if (value != energyShield) {
++		energyShield = value;
++		sendEnergyShield();
++	}
++}
++
++void Player::setMaxEnergyShield(int32_t value)
++{
++	value = std::max<int32_t>(0, value);
++	if (value == maxEnergyShield) {
++		return;
++	}
++	maxEnergyShield = value;
++	energyShield = std::min<int32_t>(energyShield, maxEnergyShield);
++	sendEnergyShield(true);
++}
++
++void Player::rechargeEnergyShield(uint32_t interval)
++{
++	if (maxEnergyShield <= 0 || energyShield >= maxEnergyShield || energyShieldRecharge == 0 || getHealth() <= 0) {
++		return;
++	}
++	// recharge only for the part of this think that lies after the delay
++	const int64_t ready = lastEnergyShieldHit + g_config.getNumber(ConfigManager::ENERGY_SHIELD_RECHARGE_DELAY);
++	const int64_t now = OTSYS_TIME();
++	if (now <= ready) {
++		return;
++	}
++	const int64_t ms = std::min<int64_t>(interval, now - ready);
++	const int64_t gain = std::max<int64_t>(1, static_cast<int64_t>(maxEnergyShield) * energyShieldRecharge * ms / 1000000);
++	setEnergyShield(static_cast<int32_t>(std::min<int64_t>(maxEnergyShield, energyShield + gain)));
++}
++
++void Player::sendEnergyShield(bool force /* = false*/)
++{
++	const int32_t opcode = g_config.getNumber(ConfigManager::ENERGY_SHIELD_OPCODE);
++	if (!client || opcode <= 0 || opcode > 255 || operatingSystem < CLIENTOS_OTCLIENT_LINUX) {
++		return;
++	}
++	// at most one update per 200 ms; a skipped one goes out with the next think
++	const int64_t now = OTSYS_TIME();
++	if (!force && now - lastEnergyShieldSent < 200) {
++		energyShieldDirty = true;
++		return;
++	}
++	lastEnergyShieldSent = now;
++	energyShieldDirty = false;
++
++	NetworkMessage msg;
++	msg.addByte(0x32);
++	msg.addByte(static_cast<uint8_t>(opcode));
++	msg.addString(fmt::format("es:{:d}:{:d}", energyShield, maxEnergyShield));
++	client->writeToOutputBuffer(msg);
++}
++
+ float Player::getAttackFactor() const
+ {
+ 	switch (fightMode) {
+@@ -1546,6 +1605,11 @@ void Player::onThink(uint32_t interval)
+ 	if (lastStatsTrainingTime != getOfflineTrainingTime() / 60 / 1000) {
+ 		sendStats();
+ 	}
++
++	rechargeEnergyShield(interval); // Chaos (patch 0015)
++	if (energyShieldDirty) {
++		sendEnergyShield(true);
++	}
+ }
+ 
+ uint32_t Player::isMuted() const
+@@ -2024,6 +2088,7 @@ uint32_t Player::getIP() const
+ void Player::death(Creature* lastHitCreature)
+ {
+ 	loginPosition = town->getTemplePosition();
++	energyShield = 0; // Chaos (patch 0015)
+ 
+ 	if (skillLoss) {
+ 		uint8_t unfairFightReduction = 100;
+--- a/src/player.h
++++ b/src/player.h
+@@ -635,6 +635,28 @@ class Player final : public Creature, public Cylinder
+ 		void doAttacking(uint32_t interval) override;
+ 		bool canLeech(bool mana) const; // Chaos (patch 0011)
+ 		void setLeeched(bool mana);
++
++		// Chaos (patch 0015): energy shield, a pool above the health that the items give (scripts set the maximum); it takes
++		// the damage after the mana shield and the onHealthChange scripts, and recharges energyShieldRecharge per mille of
++		// its maximum per second, starting energyShieldRechargeDelay ms after the last hit taken
++		int32_t getEnergyShield() const {
++			return energyShield;
++		}
++		int32_t getMaxEnergyShield() const {
++			return maxEnergyShield;
++		}
++		uint32_t getEnergyShieldRecharge() const {
++			return energyShieldRecharge;
++		}
++		void setEnergyShieldRecharge(uint32_t perMillePerSecond) {
++			energyShieldRecharge = perMillePerSecond;
++		}
++		void setEnergyShield(int32_t value);
++		void setMaxEnergyShield(int32_t value);
++		void onEnergyShieldHit() {
++			lastEnergyShieldHit = OTSYS_TIME();
++		}
++		void sendEnergyShield(bool force = false);
+ 		bool hasExtraSwing() override {
+ 			return lastAttack > 0 && ((OTSYS_TIME() - lastAttack) >= getAttackSpeed());
+ 		}
+@@ -1362,6 +1384,13 @@ class Player final : public Creature, public Cylinder
+ 		int16_t charStats[CHARSTAT_LAST + 1] = {};
+ 		int64_t lastLifeLeech = 0; // Chaos (patch 0011)
+ 		int64_t lastManaLeech = 0;
++		int64_t lastEnergyShieldHit = 0; // Chaos (patch 0015)
++		int64_t lastEnergyShieldSent = 0;
++		int32_t energyShield = 0;
++		int32_t maxEnergyShield = 0;
++		uint32_t energyShieldRecharge = 200;
++		bool energyShieldDirty = false;
++		void rechargeEnergyShield(uint32_t interval);
+ 		bool chaseMode = false;
+ 		bool secureMode = false;
+ 		bool inMarket = false;

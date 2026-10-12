@@ -1,6 +1,6 @@
 # client_chaos_theme
 
-Dark-fantasy UI theme (blackened iron, dried blood red, ember gold) for the OTClient 10.98 setup.
+Cinders of Chaos dark-fantasy UI theme (blackened iron, dried blood red, ember gold) for the OTClient 10.98 setup.
 Autoloads before the game modules (`autoload-priority: 500`) and imports `styles.otui` and `compat.otui`, so any other module can use the `Chaos*` styles.
 It also adds two widget helpers some modules expect and this engine lacks: `UIWidget:parseColoredText` (`[color=#rrggbb]...[/color]` markup) and `UIWidget:setExtendedTooltip` (shown as a plain multi-line tooltip).
 
@@ -11,10 +11,11 @@ It also adds two widget helpers some modules expect and this engine lacks: `UIWi
 | `modules/client_chaos_theme/chaos_theme.otmod`, `chaos_theme.lua`, `styles.otui` | The theme module and all styles |
 | `modules/client_chaos_topbar/` | Menu bar at the top of the game window with drop-downs by category (otmod, lua, otui) |
 | `data/images/chaos/` | All generated art (PNG, 80 files) |
-| `../tools/gen_theme_art.py` | Icons, logo and login background: `python3 -I client/tools/gen_theme_art.py [icons] [logo] [background]` |
+| `../tools/gen_theme_art.py` | Icons and `chaos/background.png`: `python3 -I client/tools/gen_theme_art.py [icons] [background]` |
+| `../tools/gen_login_art.py` | Login screen and the "Cinders of Chaos" logo (`logo`, `logo_small`, `ui/logo.png`, cut out of the login artwork): `python3 -I client/tools/gen_login_art.py [bg] [ui] [logo]` |
 | `../tools/gen_skin.py` | Frames, controls, ornaments, HUD and in-place stock images: `python3 client/tools/gen_skin.py --base <base-client-dir>` |
 
-`client/tools/assemble_client.sh` copies the overlay into the client; the login background and logo are plain images (`data/images/title.png`, `data/images/ui/logo.png`) used by the stock `client_background`.
+`client/tools/assemble_client.sh` copies the overlay into the client; the login background and logo are plain images (`data/images/title.png`, `data/images/ui/logo.png`) used by the stock `client_background`. The login screen layout is the module `client_chaos_login` (art: `client/tools/gen_login_art.py`, `data/images/title.png` and `data/images/chaos/login/`).
 
 ## Styles (styles.otui)
 
@@ -32,7 +33,7 @@ Window 9-slice: `image-border: 18`, `image-border-top: 34` (title band is part o
 
 `window`, `button_{normal,hover,pressed,disabled}`, `panel`, `panel_dark`, `panel_highlight`, `title_plate`, `textedit(_focus)`, `tab_{normal,hover,active}`,
 `progress_frame`, `itemslot`, `scroll_*`, `checkbox` (16x32 sheet), `combobox`, `separator`, `topbar_bg`,
-`background` (1920x1080), `logo` (760x300), `logo_small` (380x150),
+`background` (1920x1080), `logo` (1168x740, the logo), `logo_small` (584x370),
 `topbutton_<name>[_hover]` (64x64) and `small/topbutton_<name>[_hover]` (32x32) for: inventory, skills, battlelist, vip, spells, quests, market, bank, stash,
 autoloot, daily, battlepass, passivetree, dungeons, events, infinitytower, minimap, options, notifications, help, logout, admin, ranking.
 
@@ -56,20 +57,28 @@ updating the base client; files not in that list are our own art and are never o
 
 ## Menu bar (client_chaos_topbar)
 
-Category buttons at the top of the game window: Character, Hunt, Chaos, Economy, Social, System and Admin (admins only). Each opens a
-drop-down with the windows of that group (skills, spell list, passive tree, battle list, analyser, prey, auto loot, Infinity Tower, dungeons,
-daily reward, event calendar, store, battle pass, market, bank, stash, VIP, quest log, options, hotkeys, logout, ...). It replaces the icon grid of
-the stock `game_sidebuttons` window, which is closed on login. An entry is listed only when its module is loaded and exposes a known call
-(`toggle`, `Stash.Toggle`, ...); calls are `pcall`-guarded, so a missing module never breaks the menu.
+Category buttons at the top of the game window: Character, Hunt, Adventure, Economy, Social, System and Admin (admins only).
+Each opens a drop-down of at most ten entries; rarely used windows sit in a "More" sub-menu at the end of the drop-down
+(System has a "Developer" one for the console and the DAT offset studio). The most used windows have hotkeys shown beside
+the entry and bound while in game: Alt+S Spellbook, Alt+P Passive Tree, Alt+H Hunt Tracker, Alt+B Bestiary, Alt+J
+Dungeons, Alt+C Crafting Bench, Alt+G Guild. It replaces the icon grid of the stock `game_sidebuttons` window, which is
+closed on login, and the stock top strip of `client_topmenu`. An entry is listed only when its module is loaded and exposes
+a known call (`toggle`, `vipToggle`, ...); calls are `pcall`-guarded, so a missing module never breaks the menu. A base
+window a Chaos one replaces (spell list, hunt analyser) is listed only when the Chaos module is missing.
+Every player command of the server is in the menu: the commands that only print text or take a short argument open a page
+of the Info & Services window (`game_chaosinfo`).
 The admin category shows when the local player has GM access or a script calls `modules.client_chaos_topbar.ChaosTopBar.setAdmin(true)`.
-Other modules can add entries with `ChaosTopBar.addEntry('chaos', { text = ..., icon = ..., modules = {...}, fns = {...} })`;
-`ChaosTopBar.available()` lists what the menu shows and `ChaosTopBar.run(text)` runs an entry (useful for checks).
+Other modules can add entries with `ChaosTopBar.addEntry('adventure', { text = ..., icon = ..., modules = {...}, fns = {...}, key = ... })`
+(a third argument, e.g. `'More'`, puts it in that sub-menu); `ChaosTopBar.available()` lists what the menu shows,
+`ChaosTopBar.run(text)` runs an entry and `ChaosTopBar.open(id)` opens a drop-down (useful for checks).
 
 ## Notes
 
 - Loaded and checked in the Linux build of the client (see `client/LINUX.md`).
 - Whether the engine draws `ChaosProgressBar` fill under or over the frame image (the frame has a translucent track, so either order is usable but the fill may look slightly dimmed).
-- Fonts: only `verdana-11px-antialised` and `verdana-11px-rounded` are used. `ChaosTitle` could use a bigger stock font if your client has one.
+- Fonts: the Chaos bitmap fonts by role (`ChaosTheme.fonts`, `ChaosTheme.font(role)`, `applyFont`): window titles in
+  Cinzel, Codex / crafting headings in Alegreya SC, NPC dialogue in IM Fell English, a trial body font (off); see
+  client/MANIFEST.md "OFL fonts". Other text uses `verdana-11px-antialised` and `verdana-11px-rounded`.
 - `image-border-left/right` on `ChaosSeparator`/`ChaosComboBox` and `image-border-top` on windows are standard OTClient properties but unverified on your fork.
 - `modules.<name>` function names (`toggle` etc.) come from reading the overlay sources; several of those modules (bank, battlepass, notifications, game_admin, game_guide, game_highscore) have no
   confirmed toggle, so their icon may stay hidden. `game_admin` does not exist in the overlay yet.

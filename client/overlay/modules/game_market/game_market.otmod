@@ -1,0 +1,14 @@
+Module
+  name: game_market
+  description: Market (extended opcode 221): our own player market for gold and Chaos Coins; browse with filters and the full item tooltips, price history, sell, my offers, history
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ marketview, marketpriceview, market ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+    - game_itemtooltip
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

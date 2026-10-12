@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Treant Sapling" nameDescription="a treant sapling" race="venom" experience="180" speed="160" manacost="0">
+	<health now="300" max="300" />
+	<look type="2023" head="62" body="59" legs="39" feet="41" corpse="36084" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="30" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-90" />
+		<attack name="speed" interval="2000" chance="12" range="7" speedchange="-270" duration="5000">
+			<attribute key="areaEffect" value="smallplants" />
+		</attack>
+	</attacks>
+	<defenses armor="18" defense="18">
+		<defense name="healing" interval="2000" chance="8" min="60" max="120">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Creak..." />
+	</voices>
+	<loot>
+		<item id="2148" countmax="45" chance="60000" /><!-- gold coin -->
+		<item id="36031" countmax="2" chance="18000" /><!-- handful of treant seeds -->
+		<item id="36029" countmax="1" chance="8000" /><!-- dryad leaf -->
+		<item id="36052" countmax="2" chance="12000" /><!-- wild pear -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+	</loot>
+</monster>

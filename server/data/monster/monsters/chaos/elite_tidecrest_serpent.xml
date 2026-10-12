@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Elite Tidecrest Serpent" nameDescription="an elite tidecrest serpent" race="venom"  experience="500000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
+	<health now="450000" max="450000"/>
+	<look type="675" corpse="6068"/>
+	<level min="2500" max="3000"/>
+  	<targetchange interval="2000" chance="9" />
+  	<strategy attack="130" defense="0"/>
+	<levelconfig experience="250" health="100" damage="0" speed="50" />
+  	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag staticattack="90" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="0" />
+		<flag runonhealth="0" />
+  	</flags>
+  	<script>
+		<event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+	</script> 
+  	<attacks>
+    	<attack name="melee" interval="2000" min="-15000" max="-20000" />
+		<attack name="death" interval="2000" chance="30" range="7" target="1" min="-15000" max="-22000">
+      		<attribute key="shootEffect" value="earth" />
+			<attribute key="areaEffect" value="rednote" />
+    	</attack>
+		<attack name="lifedrain" interval="2000" chance="25" target="0" radius="3" min="-15000" max="-25000">
+      		<attribute key="areaEffect" value="redshimmer" />
+    	</attack>
+		<attack name="ice" interval="2000" chance="30" length="8" spread="3" min="-19000" max="-30000">
+			<attribute key="areaEffect" value="watersplash" />
+		</attack>
+		<attack name="physical" interval="2000" chance="25" length="4" spread="0" min="-15000" max="-22000">
+      		<attribute key="areaEffect" value="blueshimmer" />
+    	</attack>
+  	</attacks>
+  	<defenses armor="51" defense="51">
+    	<defense name="healing" interval="2000" chance="15" min="7000" max="12000">
+      		<attribute key="areaEffect" value="bluenote" />
+    	</defense>
+    	<defense name="melee" interval="2000" chance="10">
+      		<attribute key="areaEffect" value="smallplants" />
+    	</defense>
+  	</defenses>
+	<elements>
+		<element firePercent="30"/>
+		<element energyPercent="30"/>
+		<element earthPercent="30"/>
+		<element physicalPercent="30"/>
+		<element deathPercent="30"/>
+	</elements>
+  	<immunities>
+		<immunity drown="1" />
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+  	</immunities>
+  	<voices interval="2000" chance="5">
+		<voice sentence="WARAAAHAAARRRR!" />
+		<voice sentence="LOOK INTO THE LIGHT..." />
+		<voice sentence="LEAVE THESE GROUNDS..." />
+		<voice sentence="THE DARK TIDE WILL SWALLOW YOU..." />
+  	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="3983" countmax="1" chance="444"/><!-- legs -->
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="8888" countmax="1" chance="444"/>
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
+	</loot>
+</monster>

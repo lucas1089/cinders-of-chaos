@@ -1,0 +1,8 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,necro_spear_hit,necro_fx/necro_spear_hit.png,2,2,7,70,0,0,bone: the bone spear strikes; splinters and a violet snap
+effect,lich_soul_drain,necro_fx/lich_soul_drain.png,2,2,8,100,0,0,necrotic: souls spiral out of the target into a ghost skull (Life Siphon)
+effect,bonelord_golem_rise,necro_fx/bonelord_golem_rise.png,2,2,8,90,0,0,bone: spikes erupt into a ribcage; a skull flares (Bone Golem)
+effect,bonelord_banner,necro_fx/bonelord_banner.png,2,2,8,90,0,0,bone: shards circle up into a crown and rain back (Banner of Bones)
+effect,bonelord_rally,necro_fx/bonelord_rally.png,1,1,6,90,0,0,bone: shards spiral up a rallied minion (Banner of Bones)
+effect,bonelord_offering,necro_fx/bonelord_offering.png,2,2,8,85,0,0,bone: a skeleton bursts into ribs; bones and ash (Bone Offering)
+effect,bonelord_ward,necro_fx/bonelord_ward.png,2,2,8,90,0,0,bone: rib plates close over the caster and crumble (Bone Offering ward)

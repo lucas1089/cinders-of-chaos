@@ -23,7 +23,9 @@ local function strike(playerId, targetId)
 	local min = (l + power * 0.20 + 60) * SCALE
 	local max = (l + power * 0.30 + 120) * SCALE
 	p:sendDistanceEffect(t, CONST_ANI_WHIRLWINDSWORD)
-	ChaosSpell.fx(t, "ground_slam", CONST_ME_HITAREA)
+	if not ChaosSpell.vfxDir(t, "sword_slash", ChaosSpell.dirTo(p, t)) then
+		ChaosSpell.fx(t, "ground_slam", CONST_ME_HITAREA)
+	end
 	ChaosSpell.weaponStrike(player, target, min, max, CONST_ME_DRAWBLOOD, ORIGIN_MELEE)
 end
 

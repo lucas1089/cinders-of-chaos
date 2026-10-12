@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Dreamgorger" nameDescription="a dreamgorger" race="blood" experience="8200" speed="54" evented = "4" skulled="1" looting="1" manacost="0">
+	<health now="16200" max="16200"/>
+	<level min="760" max="800"/>
+	<look type="1479" corpse="6068" corpseActionId = "41021" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="1" />
+		<flag pushable="0" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="70" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+		<flag canwalkonfire="0" />
+		<flag canwalkonpoison="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-600" max="-900"/>
+		<attack name="death" interval="2000" chance="10" range="7" min="-500" max="-830">
+			<attribute key="shootEffect" value="suddendeath"/>
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="16" length="7" spread="0" min="-300" max="-600">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="34" range="7" radius="4" target="1" min="-500" max="-980">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="redspark"/>
+	 	</attack>
+		<attack name="physical" interval="2000" chance="25" length="7" spread="3" min="-360" max="-930">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</attack>
+	</attacks>
+	<defenses armor="65" defense="65">
+		<defense name="healing" interval="1000" chance="25" min="900" max="2500">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="-15"/>
+		<element holyPercent="-15"/>
+		<element firePercent="20"/>
+		<element energyPercent="20"/>
+		<element icePercent="20"/>
+		<element earthPercent="20"/>
+		<element deathPercent="10"/>
+	</elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Death!" yell="1"/>
+		<voice sentence="Come a little closer!" yell="1"/>
+		<voice sentence="The end is near!" yell="1"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
+		<item id="6500" countmax="1" chance="400"/><!-- demonic essences -->
+		<item id="11302" chance="375" /><!-- jadefen helmet -->
+		<item id="11301" chance="375" />
+		<item id="11304" chance="375" />
+		<item id="11303" chance="375" />
+		<item id="8891" chance="375" />
+		<item id="9931" chance="375" />
+		<item id="11356" chance="375" />
+		<item id="2645" chance="375" />
+		<item id="8889" chance="250" /><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor -->
+		<item id="8887" chance="250" />
+		<item id="12607" chance="250" />
+		<item id="8880" chance="250" />
+		<item id="2522" chance="250" />
+		<item id="2520" chance="250" />
+		<item id="11117" chance="250" />
+		<item id="5741" chance="250" />
+	</loot>
+</monster>

@@ -13,9 +13,12 @@ function onCastSpell(creature, variant, isHotkey)
 	center = {x = center.x, y = center.y, z = center.z}
 	local min, max = ChaosSpell.mlValues(player, 1.8, 3.0, 20, 40, 1.2)
 
-	ChaosSpell.shoot(player:getPosition(), Position(center), "ice_shard", CONST_ANI_ICE)
+	ChaosSpell.vshoot(player:getPosition(), Position(center), "ice_lance", "ice_shard", CONST_ANI_ICE)
 	ChaosSpell.pulse(player:getId(), 6, 1000, function(caster, step)
 		local pos = Position(center)
+		if step % 2 == 1 then
+			ChaosSpell.vfx(pos, "frost_glyph")
+		end
 		doAreaCombat(caster, COMBAT_ICEDAMAGE, pos, area, -math.floor(min), -math.floor(max), Fx("frost_burst", CONST_ME_ICEAREA))
 		for _, c in ipairs(ChaosSpell.enemiesAround(caster, pos, 2)) do
 			ChaosSpell.slow(c, 2000, 0.7)

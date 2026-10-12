@@ -1,0 +1,171 @@
+# A network message that did not fit is not sent. NetworkMessage::add* returned silently when the buffer was full, and
+# addString / addBytes refused more than 8192 bytes the same way, so the rest of the message was missing and the client
+# misread everything after it ("ProtocolGame parse message exception ... last opcode is 0x32"). NetworkMessage now keeps
+# an overflow flag (any add that does not fit, a string or byte block over 8192); ProtocolGame::writeToOutputBuffer and
+# Protocol::send drop a flagged message and print one line with its opcode (and extended opcode), the bytes written and
+# the player. Also: the packet length on the wire and MsgSize_t are 16 bits, so with this base's NETWORKMESSAGE_MAXSIZE
+# (90459) a message or a batch of messages past 65535 bytes wrapped its length; messages and the batching of
+# Protocol::getOutputBuffer now stop at 65522 bytes of body (65535 with checksum, length and XTEA padding).
+# Apply in the server source root after 0001-0012: patch -p1 < 0013-oversize-messages-are-dropped.patch, then rebuild.
+--- a/src/networkmessage.cpp
++++ b/src/networkmessage.cpp
+@@ -35,7 +35,12 @@ Position NetworkMessage::getPosition()
+ void NetworkMessage::addString(const std::string& value)
+ {
+ 	size_t stringLen = value.length();
+-	if (!canAdd(stringLen + 2) || stringLen > 8192) {
++	if (stringLen > 8192) {
++		info.overflow = true;
++		return;
++	}
++
++	if (!canAdd(stringLen + 2)) {
+ 		return;
+ 	}
+ 
+@@ -53,7 +58,12 @@ void NetworkMessage::addDouble(double value, uint8_t precision/* = 2*/)
+ 
+ void NetworkMessage::addBytes(const char* bytes, size_t size)
+ {
+-	if (!canAdd(size) || size > 8192) {
++	if (size > 8192) {
++		info.overflow = true;
++		return;
++	}
++
++	if (!canAdd(size)) {
+ 		return;
+ 	}
+ 
+@@ -64,7 +74,9 @@ void NetworkMessage::addBytes(const char* bytes, size_t size)
+ 
+ void NetworkMessage::addPaddingBytes(size_t n)
+ {
+-	if (!canAdd(n)) {
++	// XTEA padding of a finished message: may go past MAX_PROTOCOL_BODY_LENGTH (that limit leaves room for it)
++	if (n + info.position >= MAX_BODY_LENGTH) {
++		info.overflow = true;
+ 		return;
+ 	}
+ 
+--- a/src/networkmessage.h
++++ b/src/networkmessage.h
+@@ -26,7 +26,10 @@ class NetworkMessage
+ 		enum { CHECKSUM_LENGTH = 4 };
+ 		enum { XTEA_MULTIPLE = 8 };
+ 		enum { MAX_BODY_LENGTH = NETWORKMESSAGE_MAXSIZE - HEADER_LENGTH - CHECKSUM_LENGTH - XTEA_MULTIPLE };
+-		enum { MAX_PROTOCOL_BODY_LENGTH = MAX_BODY_LENGTH - 10 };
++		// The packet length on the wire (and MsgSize_t) is 16 bits: checksum, inner length, body and XTEA padding (up to
++		// 7 bytes) must fit in 65535, so a longer body cannot be sent whatever the buffer size.
++		static constexpr int32_t MAX_PACKET_BODY_LENGTH = 65535 - CHECKSUM_LENGTH - HEADER_LENGTH - (XTEA_MULTIPLE - 1);
++		static constexpr int32_t MAX_PROTOCOL_BODY_LENGTH = std::min<int32_t>(MAX_BODY_LENGTH - 10, MAX_PACKET_BODY_LENGTH);
+ 
+ 		NetworkMessage() = default;
+ 
+@@ -130,6 +133,12 @@ class NetworkMessage
+ 			return info.overrun;
+ 		}
+ 
++		// true once something did not fit (or a string / byte block was over its limit): the message is incomplete
++		// and must not be sent
++		bool isOverflow() const {
++			return info.overflow;
++		}
++
+ 		uint8_t* getBuffer() {
+ 			return buffer;
+ 		}
+@@ -148,14 +157,20 @@ class NetworkMessage
+ 			MsgSize_t length = 0;
+ 			MsgSize_t position = INITIAL_BUFFER_POSITION;
+ 			bool overrun = false;
++			bool overflow = false;
+ 		};
+ 
+ 		NetworkMessageInfo info;
+ 		uint8_t buffer[NETWORKMESSAGE_MAXSIZE] = {};
+ 
+ 	private:
+-		bool canAdd(size_t size) const {
+-			return (size + info.position) < MAX_BODY_LENGTH;
++		bool canAdd(size_t size) {
++			if ((size + info.position) < MAX_BODY_LENGTH &&
++			        (size + info.position) <= static_cast<size_t>(MAX_PROTOCOL_BODY_LENGTH + INITIAL_BUFFER_POSITION)) {
++				return true;
++			}
++			info.overflow = true;
++			return false;
+ 		}
+ 
+ 		bool canRead(int32_t size) {
+--- a/src/protocol.cpp
++++ b/src/protocol.cpp
+@@ -65,6 +65,35 @@ void Protocol::onRecvMessage(NetworkMessage& msg)
+ 	parsePacket(msg);
+ }
+ 
++void Protocol::send(OutputMessage_ptr msg) const
++{
++	if (msg->isOverflow()) {
++		logOverflow(*msg, "connection " + convertIPToString(getIP()));
++		return;
++	}
++
++	if (auto connection = getConnection()) {
++		connection->send(msg);
++	}
++}
++
++void Protocol::logOverflow(const NetworkMessage& msg, const std::string& receiver)
++{
++	const uint8_t* body = msg.getBuffer() + NetworkMessage::INITIAL_BUFFER_POSITION;
++	std::ostringstream ss;
++	ss << "[Warning - Protocol] network message too big, not sent: opcode 0x" << std::hex << std::setfill('0');
++	if (msg.getLength() > 0) {
++		ss << std::setw(2) << static_cast<int>(body[0]);
++		if (body[0] == 0x32 && msg.getLength() > 1) {
++			ss << " (extended opcode " << std::dec << static_cast<int>(body[1]) << ")";
++		}
++	} else {
++		ss << "??";
++	}
++	ss << std::dec << ", " << msg.getLength() << " bytes written before it overflowed, to " << receiver;
++	std::cout << ss.str() << std::endl;
++}
++
+ OutputMessage_ptr Protocol::getOutputBuffer(int32_t size)
+ {
+ 	//dispatcher thread
+--- a/src/protocol.h
++++ b/src/protocol.h
+@@ -41,11 +41,10 @@ class Protocol : public std::enable_shared_from_this<Protocol>
+ 			return outputBuffer;
+ 		}
+ 
+-		void send(OutputMessage_ptr msg) const {
+-			if (auto connection = getConnection()) {
+-				connection->send(msg);
+-			}
+-		}
++		void send(OutputMessage_ptr msg) const;
++
++		// one console line for a message that is dropped because it overflowed (NetworkMessage::isOverflow)
++		static void logOverflow(const NetworkMessage& msg, const std::string& receiver);
+ 
+ 	protected:
+ 		void disconnect() const {
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -468,6 +468,12 @@ void ProtocolGame::disconnectClient(const std::string& message) const
+ 
+ void ProtocolGame::writeToOutputBuffer(const NetworkMessage& msg)
+ {
++	if (msg.isOverflow()) {
++		// a message that did not fit is incomplete: sending it would make the client misread everything after it
++		logOverflow(msg, player ? "player " + player->getName() : "connection " + convertIPToString(getIP()));
++		return;
++	}
++
+ 	auto out = getOutputBuffer(msg.getLength());
+ 	out->append(msg);
+ }

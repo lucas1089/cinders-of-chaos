@@ -1,4 +1,4 @@
--- Hunt tracker (client game_hunt, extended opcode ChaosOpcodes.hunt, !hunt)
+-- Hunt tracker (client game_hunt, extended opcode ChaosOpcodes.hunt)
 --
 -- Counts a hunting session on the server and pushes it to the client window: session time (pause / resume / reset),
 -- experience and exp/h, time to the next level, kills per monster, loot (items and gold value, NPC sell prices of
@@ -99,7 +99,7 @@ function kill.onKill(player, target)
 	end
 	local s = sessionOf(player)
 	if s then
-		H.addKill(s, target:getName())
+		H.addKill(s, target:getName()) -- the name the player saw (a rift monster's rift name)
 	end
 	return true
 end
@@ -357,6 +357,10 @@ local function act(player, action)
 		H.resume(s, now)
 	elseif action == "reset" then
 		H.reset(s, now)
+		-- the DPS meter's session follows the hunt session (combatlog.lua)
+		if ChaosCombatLog and ChaosCombatLog.onHuntReset then
+			pcall(ChaosCombatLog.onHuntReset, player)
+		end
 	end
 end
 
@@ -367,6 +371,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local msg = Chaos.decode(buffer)
 	if not msg then
+		return
+	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "hunt." .. tostring(msg.action), 300) then
 		return
 	end
 	local action = msg.action
@@ -385,22 +393,3 @@ end
 ext:type("extendedopcode")
 ext:register()
 
--- !hunt opens the window; !hunt pause | resume | reset work from the chat too
-local function onCommand(player, words, param)
-	param = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-	if param == "pause" or param == "resume" or param == "reset" then
-		act(player, param)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Hunt tracker: " .. (param == "reset" and "session reset."
-			or param == "pause" and "paused." or "running."))
-	end
-	H.watch[player:getId()] = true
-	send(player, true)
-	return false
-end
-
-for _, words in ipairs({"!hunt", "/hunt"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onCommand
-	talk:separator(" ")
-	talk:register()
-end

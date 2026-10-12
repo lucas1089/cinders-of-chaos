@@ -121,6 +121,35 @@ def rename_quoted(s, mapping, pattern):
     return re.sub(pattern, rep, s), count
 
 
+SPELLNAME_RX = re.compile(r'''(\bspellName\s*=\s*)(['"])((?:\\.|(?!\2)[^\\\n])*)\2''')
+
+
+def rename_npc_lua(s, names):
+    """spellName = '...' / "..." of the spell teachers. Lua escapes count (a stock 'Apprentice\\'s Strike' is found)
+    and a new name is written with its quote escaped ('Warlord\\'s Resolve'). Older versions of this tool wrote it
+    unescaped, which broke the whole script (Ormuhn, Puffels, Thorwulf, Tristan, Uso, Zarak did not load): such a
+    line is repaired first. Returns (text, number of changes)."""
+    count = 0
+    for new in sorted(set(names.values())):
+        if "'" not in new:
+            continue
+        bad = re.compile(r"(\bspellName\s*=\s*)'(%s)'" % re.escape(new), re.I)
+        s, n = bad.subn(lambda m: m.group(1) + "'" + m.group(2).replace("'", "\\'") + "'", s)
+        count += n
+    lower = {k.lower(): v for k, v in names.items()}
+
+    def rep(m):
+        nonlocal count
+        q, raw = m.group(2), m.group(3)
+        old = re.sub(r'\\(.)', r'\1', raw)
+        new = lower.get(old.lower())
+        if new is None:
+            return m.group(0)
+        count += 1
+        return m.group(1) + q + keep_case(old, new).replace('\\', '\\\\').replace(q, '\\' + q) + q
+    return SPELLNAME_RX.sub(rep, s), count
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     dry = '--dry-run' in sys.argv
@@ -158,7 +187,7 @@ def main():
         write(path, *rename_quoted(s, names, r'(\b(?:name|id)\s*=\s*")([^"]+)(")'))
     for path in glob.glob(os.path.join(data, 'npc', '**', '*.lua'), recursive=True):
         s = open(path, encoding='utf-8', errors='surrogateescape').read()
-        write(path, *rename_quoted(s, names, r'''(\bspellName\s*=\s*['"])([^'"]+)(['"])'''))
+        write(path, *rename_npc_lua(s, names))
     for path in glob.glob(os.path.join(data, 'npc', '**', '*.xml'), recursive=True):
         s = open(path, encoding='utf-8', errors='surrogateescape').read()
         write(path, *rename_quoted(s, rune_names, r'((?:^|[;"\s]))([A-Za-z\' ]+?)(,\d+,)'))

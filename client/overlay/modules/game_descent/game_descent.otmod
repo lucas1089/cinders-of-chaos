@@ -1,0 +1,13 @@
+Module
+  name: game_descent
+  description: The Ember Descent - roguelike trial run HUD, boon choice cards, merchant and entry window (extended opcode 205)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ descentmath, descent ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1003
+  @onLoad: init()
+  @onUnload: terminate()

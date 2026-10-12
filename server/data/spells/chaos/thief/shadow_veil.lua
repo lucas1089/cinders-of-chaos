@@ -57,7 +57,7 @@ function onCastSpell(creature, variant, isHotkey)
 	c:setParameter(CONDITION_PARAM_SUBID, cfg.subId.stealth)
 	c:setParameter(CONDITION_PARAM_TICKS, cfg.stealth.durationMs)
 	player:addCondition(c)
-	ChaosSpell.fx(player:getPosition(), "shadow_smoke", CONST_ME_POFF)
+	ChaosSpell.vfxOr(player:getPosition(), "shade_vanish", "shadow_smoke", CONST_ME_POFF)
 	pulse(player:getId(), cfg.stealth.durationMs, {})
 	return true
 end

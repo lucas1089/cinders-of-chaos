@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The weekly guild boss (guildboss.lua): summoned at the Summoning Stone of a guild hall. Health = 650,000 x (1 + 0.6 x
+     (players - 1)) set by the script (guildboss_config.lua `bossHealth` must match); the telegraphed hits, phases, adds,
+     the hazard pools and the enrage are scripted. The stock look 591. No loot: the spoils are scripted (gold, orbs, guild
+     XP and the guild's banner tier). Numbers: server/README.md "The weekly guild boss". -->
+<monster name="Gorvath the Banner-Eater" nameDescription="Gorvath the Banner-Eater" race="undead" experience="2000000" speed="260" manacost="0">
+	<health now="650000" max="650000" />
+	<look type="591" corpse="6068" />
+	<targetchange interval="5000" chance="15" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-450" max="-1000" />
+		<!-- Standard Rend: a thrown splinter of a banner pole, radius 2 -->
+		<attack name="death" interval="2000" chance="20" range="7" target="1" radius="2" min="-500" max="-1100">
+			<attribute key="shootEffect" value="suddendeath" />
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+		<!-- Ash of Oaths: burns around him -->
+		<attack name="fire" interval="2000" chance="12" radius="4" min="-400" max="-900">
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+	</attacks>
+	<defenses armor="65" defense="65">
+	</defenses>
+	<elements>
+		<element physicalPercent="5" />
+		<element firePercent="20" />
+		<element energyPercent="5" />
+		<element earthPercent="5" />
+		<element icePercent="5" />
+		<element holyPercent="-15" />
+		<element deathPercent="40" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Your colours taste of fear." yell="1" />
+		<voice sentence="I have eaten the banners of a hundred guilds." yell="1" />
+		<voice sentence="SWEAR YOUR OATHS. I WILL CHEW THEM." yell="1" />
+	</voices>
+</monster>

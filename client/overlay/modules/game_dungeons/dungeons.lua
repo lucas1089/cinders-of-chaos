@@ -492,7 +492,7 @@ local BANNERS = {
   ["Bones Dungeon"] = "Bones",
   ["Master of the Elements"] = "MasterElement",
   ["Forbidden Chevalier"] = "Forbidden",
-  ["Rootkraken"] = "Rootkraken",
+  ["Rootmaw"] = "Rootmaw",
   ["Underworld"] = "Underworld"
 }
 

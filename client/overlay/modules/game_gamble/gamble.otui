@@ -1,0 +1,236 @@
+// The Gambler window (game_gamble): a grid of sealed crates (look, slot, item level, price; the rarity hidden), the
+// countdown to the next stock, the early refresh, the odds and the reveal of the last crate opened.
+// Styles from client_chaos_theme. Opened from the menu (Economy > The Gambler) or by the Gambler himself.
+
+GambleCell < UIWidget
+  size: 152 102
+  background-color: #1a151a
+  border-width: 1
+  border-color: #3a2c22
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+    border-color: #e8b84a
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 6
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: seal
+    anchors.right: item.right
+    anchors.bottom: item.bottom
+    size: 10 12
+    text: ?
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: center
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: item.right
+    anchors.right: parent.right
+    margin-top: 5
+    margin-left: 6
+    margin-right: 4
+    height: 30
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: topLeft
+    text-wrap: true
+    phantom: true
+
+  UILabel
+    id: slot
+    anchors.top: item.bottom
+    anchors.left: parent.left
+    margin-top: 3
+    margin-left: 6
+    width: 56
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: level
+    anchors.top: slot.top
+    anchors.left: slot.right
+    anchors.right: parent.right
+    margin-right: 6
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: right
+    phantom: true
+
+  UILabel
+    id: price
+    anchors.top: slot.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    margin-left: 6
+    margin-right: 6
+    font: verdana-11px-antialised
+    color: #e8b84a
+    text-align: right
+    phantom: true
+
+  ChaosButton
+    id: buy
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 0 6 5 6
+    height: 20
+    !text: tr('Buy')
+
+GambleWindow < ChaosMainWindow
+  id: gambleWindow
+  size: 690 610
+  !text: tr('The Gambler')
+  @onEscape: modules.game_gamble.hide()
+
+  ChaosLabel
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    text-align: left
+
+  ChaosLabel
+    id: nearLabel
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 16
+    text-align: left
+
+  ChaosTitlePlate
+    id: gridPlate
+    anchors.top: nearLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+    ChaosTitle
+      id: refreshLabel
+      anchors.fill: parent
+      !text: tr('Sealed Crates')
+
+  ChaosPanelDark
+    id: gridFrame
+    anchors.top: gridPlate.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: revealPanel.top
+    margin-top: 4
+    margin-bottom: 6
+
+    ScrollablePanel
+      id: grid
+      anchors.fill: parent
+      margin: 6
+      margin-right: 16
+      vertical-scrollbar: gridScroll
+      layout:
+        type: grid
+        cell-size: 152 102
+        cell-spacing: 5
+        flow: true
+
+    ChaosScrollBar
+      id: gridScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 54
+      pixels-scroll: true
+
+  UIWidget
+    id: revealPanel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: oddsLabel.top
+    margin-bottom: 4
+    height: 44
+    background-color: #1a151a
+    phantom: true
+
+    UIWidget
+      id: frame
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      size: 38 38
+      border-width: 1
+      border-color: #3a2c22
+      phantom: true
+
+    UIItem
+      id: item
+      anchors.centerIn: frame
+      size: 34 34
+      virtual: true
+      visible: false
+      phantom: true
+
+    UILabel
+      id: text
+      anchors.left: frame.right
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 8
+      margin-right: 6
+      font: verdana-11px-rounded
+      text-align: left
+      phantom: true
+
+  ChaosLabelDim
+    id: oddsLabel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: status.top
+    margin-bottom: 4
+    height: 28
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosLabel
+    id: status
+    anchors.left: parent.left
+    anchors.right: rerollButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 24
+    text-wrap: true
+    text-align: left
+
+  ChaosButton
+    id: rerollButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    size: 150 24
+    !text: tr('Fresh Crates')
+    @onClick: modules.game_gamble.reroll()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_gamble.hide()

@@ -1,0 +1,110 @@
+// Map markers (game_mapmarkers): party members and points of interest inside the minimap widget, and the settings
+// window. Styles from client_chaos_theme (styles.otui). Icons: /images/chaos/mapmarkers/ (client/tools/gen_mapmarker_art.py).
+
+// the layer inside the minimap: never takes the mouse
+MapMarkerLayer < UIWidget
+  phantom: true
+  focusable: false
+
+MapMarkerPoi < UIWidget
+  size: 14 14
+  phantom: true
+  focusable: false
+  image-smooth: true
+
+// a party member: the pin (tinted with the member's colour from Lua) and the floor triangle in its top right corner
+MapMarkerParty < UIWidget
+  size: 12 12
+  phantom: true
+  focusable: false
+  image-smooth: true
+  image-source: /images/chaos/mapmarkers/party_pin
+
+  UIWidget
+    id: floor
+    size: 8 8
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: -4
+    margin-right: -5
+    phantom: true
+    focusable: false
+    image-smooth: true
+    visible: false
+
+MapMarkerCheck < ChaosCheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin-top: 8
+
+MapMarkerCategory < ChaosCheckBox
+  height: 20
+  margin-top: 2
+  icon-size: 14 14
+  icon-offset: 18 1
+  text-offset: 36 0
+
+MapMarkerSettings < ChaosMainWindow
+  id: mapMarkerSettings
+  !text: tr('Map Markers')
+  size: 320 440
+
+  MapMarkerCheck
+    id: partyBox
+    anchors.top: parent.top
+    margin-top: 2
+    !text: tr('Show party members')
+    @onCheckChange: modules.game_mapmarkers.setParty(self:isChecked())
+
+  ChaosLabelDim
+    id: partyNote
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-wrap: true
+    text-auto-resize: true
+    text-align: left
+    !text: tr('A pin per member, an arrow on the edge when out of view, a triangle when on another floor.')
+
+  ChaosSeparator
+    id: sep1
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+
+  MapMarkerCheck
+    id: poiBox
+    anchors.top: sep1.bottom
+    !text: tr('Mark points of interest')
+    @onCheckChange: modules.game_mapmarkers.setPoi(self:isChecked())
+
+  UIWidget
+    id: categories
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 198
+    layout:
+      type: verticalBox
+
+  ChaosLabelDim
+    id: poiNote
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-wrap: true
+    text-auto-resize: true
+    text-align: left
+    !text: tr('Hunting areas, dungeons, boss places and remote shops appear once you have been near them.')
+
+  ChaosButton
+    id: closeButton
+    !text: tr('Close')
+    width: 70
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_mapmarkers.hideSettings()

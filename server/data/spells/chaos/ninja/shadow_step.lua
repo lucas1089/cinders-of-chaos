@@ -24,7 +24,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if #spots == 0 then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
-	ChaosSpell.fx(from, "shadow_smoke", CONST_ME_POFF)
+	ChaosSpell.vfxOr(from, "shade_vanish", "shadow_smoke", CONST_ME_POFF)
 	player:teleportTo(spots[1].pos)
 	local p = player:getPosition()
 	local dx, dy = tpos.x - p.x, tpos.y - p.y
@@ -33,7 +33,7 @@ function onCastSpell(creature, variant, isHotkey)
 	else
 		player:setDirection(dy > 0 and DIRECTION_SOUTH or DIRECTION_NORTH)
 	end
-	ChaosSpell.fx(spots[1].pos, "shadow_smoke", CONST_ME_MORTAREA)
+	ChaosSpell.vfxOr(spots[1].pos, "shade_appear", "shadow_smoke", CONST_ME_MORTAREA)
 	local power = ChaosSpell.bladePower(player)
 	local l = player:getLevel() / 5
 	local min = (l + power * 0.075 + 30) * SCALE

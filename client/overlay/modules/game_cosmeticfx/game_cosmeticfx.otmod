@@ -1,0 +1,12 @@
+Module
+  name: game_cosmeticfx
+  description: Footprints and outlines of the players on screen (server cosmetics.lua kinds footprint / outline; the looks come through game_cosmetics, extended opcode 225); drawn by this client, others can be hidden in Character > Cosmetics
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ cosmeticfxlogic, cosmeticfx ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

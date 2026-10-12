@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Witch" nameDescription="a goblin witch" race="blood" experience="120" speed="180" manacost="0">
+	<health now="160" max="160" />
+	<look type="2009" head="61" body="52" legs="76" feet="76" corpse="36070" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="4" />
+		<flag staticattack="90" />
+		<flag runonhealth="16" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-36" />
+		<attack name="death" interval="2000" chance="30" range="7" min="-36" max="-100">
+			<attribute key="shootEffect" value="suddendeath" />
+		</attack>
+		<attack name="speed" interval="2000" chance="12" range="7" speedchange="-270" duration="5000">
+			<attribute key="areaEffect" value="poison" />
+		</attack>
+	</attacks>
+	<defenses armor="10" defense="10">
+		<defense name="healing" interval="2000" chance="10" min="60" max="120">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Hex on you!" />
+		<voice sentence="Into the pot!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="30" chance="60000" /><!-- gold coin -->
+		<item id="36011" countmax="2" chance="18000" /><!-- goblin skull -->
+		<item id="36034" countmax="1" chance="8000" /><!-- drop of toad venom -->
+		<item id="36050" countmax="2" chance="12000" /><!-- jar of berry jam -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

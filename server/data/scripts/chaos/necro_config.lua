@@ -1,0 +1,131 @@
+-- necro_config.lua: every number of the Necromancer line (docs/CLASSES.md "Necromancer"): the Necromancer and its
+-- ascended classes Lich (curses, damage over time, life drain, corpse explosion; few strong minions) and Bone Lord
+-- (the army: more skeletons, the Bone Golem, an aura, sacrifices).
+-- Plain table, loaded as ChaosNecroConfig = dofile("data/scripts/chaos/necro_config.lua") by necro_core.lua users:
+-- necro_minions.lua and necromancer_combat.lua (scripts Lua state) and the spells in data/spells/chaos/necromancer,
+-- lich and bonelord (spells Lua state, through necromancer/_necro.lua). Pure logic: necro_core.lua
+-- (tests: server/tests/necro_test.lua). Balance: server/data/spells/README.md "Necromancer line".
+-- Lua 5.1 / LuaJIT and Lua 5.3 compatible. Edit here, then /reload scripts and /reload spells (or restart).
+return {
+	-- vocation ids (server/data/XML/chaos_vocations_necro.xml) and the client's class byte (base slot 7, + 10 / + 20 for
+	-- the ascended classes; client/base-patches/0016-chaos-vocation-ids.patch maps it back to these ids)
+	ids = {necromancer = 20, lich = 21, bonelord = 22},
+	clientIds = {necromancer = 7, lich = 17, bonelord = 27},
+	-- the class key of the store unlock (class_unlocks.lua, ChaosClassUnlocks)
+	unlockKey = "necromancer",
+	-- !ascend words of the base class
+	ascension = {lich = 21, bonelord = 22},
+
+	-- spell ids (spells_chaos.xml; below 256: the 10.98 cooldown packet sends the id as one byte)
+	spellIds = {
+		raiseDead = 180, boneSpear = 181, witheringCurse = 182,
+		soulRot = 183, lifeSiphon = 184, corpseExplosion = 185,
+		boneGolem = 186, bannerOfBones = 187, boneOffering = 188
+	},
+
+	-- condition sub ids (CONDITIONID_COMBAT): the spells and the scripts run in different Lua states, so the
+	-- conditions are the state both see. Next to the class sub ids of chaos_constants.lua (71010-71014).
+	subId = {
+		curse = 71020, -- Withering Curse of a Necromancer or Bone Lord on a monster (timer)
+		curseLich = 71021, -- the Lich's stronger Withering Curse on a monster (timer)
+		boneAura = 71022, -- Banner of Bones on the Bone Lord (timer)
+		boneShield = 71023 -- Bone Offering's shield on the Bone Lord (timer)
+	},
+
+	-- levelScale = {from, per, max}: spell strikes (not minions) x (1 + (level - from) / per), at most max. It stood in for
+	-- the passive tree and was dropped with the class trees (no entry: 1).
+
+	-- ---------------------------------------------------------------- minions
+	-- Minions are real monster types (data/monster/monsters/chaos/necro_*.xml) summoned as the player's summons. They
+	-- deal no damage of their own: necro_minions.lua makes them hit every `intervalMs` the creature they target, and
+	-- the hit is dealt as the owner (it counts for the owner: experience, loot, bounties, leaderboards, curses).
+	-- hit: avg = level x a + magic level x b, min/max = avg x (1 -/+ spread), times the class factor.
+	-- health: base + level x perLevel + magic level x perMl, times the class factor.
+	-- The XML health is a placeholder below the monster tiers' minimum (monster_tiers.lua minMaxHealth 50), so a new
+	-- minion never rolls a tier; the spell sets the real health right after it is created.
+	minions = {
+		skeleton = {
+			monster = "Risen Skeleton", range = 1, intervalMs = 2000, combat = "physical",
+			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
+		},
+		shade = {
+			monster = "Lich Shade", range = 4, intervalMs = 2000, combat = "death",
+			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
+		},
+		golem = {
+			monster = "Bone Golem", range = 1, intervalMs = 2500, combat = "physical",
+			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
+			-- the golem's hit strikes every enemy next to it (a slam), and it taunts monsters near it
+			slam = true, tauntMs = 6000, tauntRadius = 3,
+		},
+		spread = 0.2,
+		-- what each class raises and how strong: {kind, caps = {{level, count}, ...}, hit, health} (factors)
+		classes = {
+			necromancer = {kind = "skeleton", caps = {{0, 1}, {40, 2}, {80, 3}, {200, 4}}, hit = 1.0, health = 1.0},
+			lich = {kind = "shade", caps = {{0, 1}}, hit = 2.4, health = 2.5},
+			bonelord = {kind = "skeleton", caps = {{0, 5}, {400, 6}}, hit = 0.6, health = 1.2,
+				-- Bone Lord skeletons: shards of each hit strike the other enemies next to the target for this share
+				splash = 0.75},
+		},
+		-- the Bone Golem (Bone Lord spell): one at a time, on top of the skeleton cap
+		golemClass = {count = 1, hit = 1.8, health = 4.0},
+		-- leash: a minion farther than this from its owner, or on another floor, is brought next to it
+		leashRange = 7,
+		thinkMs = 500,
+		-- protection zones: monsters cannot enter them, so when the owner steps into one its minions are put to rest
+		-- (removed, kind and health kept) and rise again next to it when it steps out; a rest older than this is lost
+		restKeepSeconds = 1800,
+	},
+
+	-- ---------------------------------------------------------------- spells
+	-- Raise Dead: raises minions from usable corpses within `radius` of the caster (at most perCast per cast), or one
+	-- from nothing for `nothingManaFactor` x the spell's mana on top. A corpse is usable when it is a monster corpse,
+	-- holds no items (never destroys loot) and belongs to nobody else (corpse owner: the caster, its party, or none).
+	raiseDead = {radius = 4, perCast = {necromancer = 2, lich = 1, bonelord = 3}, nothingManaFactor = 1.0, mana = 60},
+
+	-- Bone Spear: physical; the creature right behind the target takes `pierce` of it. Formula as mlValues:
+	-- (level / 5 + ml x mlMin + baseMin) x scale .. (level / 5 + ml x mlMax + baseMax) x scale, then the level scale.
+	boneSpear = {mlMin = 1.6, mlMax = 2.6, baseMin = 20, baseMax = 40, scale = 1.0, pierce = 0.5},
+
+	-- Withering Curse: the target takes +amplify more damage from everyone for durationMs, and rots for
+	-- `ticks` x a tick of death damage (one per second). The Lich's curse is stronger and also curses up to
+	-- `spread` more enemies within spreadRadius of the target. Against players: only the rot (no amplify).
+	witheringCurse = {
+		durationMs = 12000, ticks = 10, tickMs = 1000,
+		amplify = {necromancer = 0.15, bonelord = 0.15, lich = 0.25},
+		spread = {lich = 2}, spreadRadius = 2,
+		tick = {mlMin = 0.25, mlMax = 0.35, baseMin = 5, baseMax = 10, scale = 1.0},
+		tickLich = 1.8, -- the Lich's rot ticks harder
+	},
+
+	-- Soul Rot (Lich): heavy death damage over time; when the target dies before the rot ends, the remaining
+	-- ticks jump to the nearest enemy within jumpRadius.
+	soulRot = {ticks = 6, tickMs = 1000, jumpRadius = 3,
+		tick = {mlMin = 1.2, mlMax = 1.6, baseMin = 20, baseMax = 40, scale = 1.15}},
+
+	-- Life Siphon (Lich): `pulses` death strikes `pulseMs` apart; the Lich heals `heal` of the damage dealt
+	lifeSiphon = {pulses = 3, pulseMs = 500, heal = 0.5,
+		hit = {mlMin = 1.1, mlMax = 1.6, baseMin = 20, baseMax = 40, scale = 1.15}},
+
+	-- Corpse Explosion (Lich): up to maxCorpses usable corpses within radius of the target burst, each hitting every
+	-- enemy within burstRadius of it (death damage). Without a corpse the spell fails (no mana spent).
+	corpseExplosion = {radius = 3, maxCorpses = 3, burstRadius = 1,
+		hit = {mlMin = 2.0, mlMax = 3.0, baseMin = 40, baseMax = 80, scale = 1.0}},
+
+	-- Lich, Soul Hoard (passive): spells deal +perFreeSlot for every shade slot left empty (fewer minions, more
+	-- personal damage)
+	soulHoard = {perFreeSlot = 0.25},
+
+	-- Banner of Bones (Bone Lord): for durationMs the Bone Lord's minions deal +damage, take -reduction and heal
+	-- regen of their maximum health every second
+	bannerOfBones = {durationMs = 20000, damage = 0.30, reduction = 0.25, regen = 0.03},
+
+	-- Bone Offering (Bone Lord): the skeleton nearest to the target bursts (it dies): physical damage to every enemy
+	-- within radius of it, the formula plus healthShare of the skeleton's health; the Bone Lord takes -shield damage
+	-- for shieldMs
+	boneOffering = {radius = 2, healthShare = 0.15, shield = 0.2, shieldMs = 6000,
+		hit = {mlMin = 4.5, mlMax = 6.5, baseMin = 80, baseMax = 160, scale = 1.0}},
+
+	-- Bone Golem (Bone Lord): a cast with the golem out calls it back and heals `heal` of its health
+	boneGolem = {heal = 0.5},
+}

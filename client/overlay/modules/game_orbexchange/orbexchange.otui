@@ -1,0 +1,725 @@
+// Orb Exchange window (game_orbexchange). Styles from client_chaos_theme (styles.otui). 900 x 600: fits a 1280x720
+// screen with the top bar. Opened from Economy > Orb Exchange and from the Market window.
+
+OrbxText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  phantom: true
+
+OrbxDim < OrbxText
+  color: #8c8070
+
+OrbxHead < OrbxText
+  font: verdana-11px-rounded
+  color: #e8b84a
+
+OrbxWrap < OrbxText
+  text-wrap: true
+  text-vertical-auto-resize: true
+  text-align: topLeft
+
+// an orb of the pair strip: click to trade it
+OrbxOrb < UIItem
+  size: 36 36
+  virtual: true
+  image-source: /images/chaos/itemslot
+  image-border: 4
+  padding: 2
+  focusable: false
+  phantom: false
+  border-width: 0
+  border-color: #e8b84a
+  change-cursor-image: true
+  cursor: pointer
+
+  $checked:
+    border-width: 2
+
+  $hover !checked:
+    border-width: 1
+    border-color: #8c8070
+
+OrbxIcon < UIItem
+  size: 22 22
+  virtual: true
+  phantom: true
+
+// one price level: the depth bar behind price, quantity, orders, total
+OrbxBookRow < UIWidget
+  height: 18
+  phantom: false
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    background-color: #2a2128
+
+  UIWidget
+    id: bar
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 0
+    phantom: true
+
+  OrbxText
+    id: price
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    width: 100
+
+  OrbxText
+    id: qty
+    anchors.left: price.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 84
+    text-align: right
+
+  OrbxDim
+    id: orders
+    anchors.left: qty.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 54
+    text-align: right
+
+  OrbxDim
+    id: total
+    anchors.left: orders.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    text-align: right
+
+OrbxTradeRow < UIWidget
+  height: 16
+  phantom: true
+
+  OrbxText
+    id: price
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    width: 150
+
+  OrbxText
+    id: qty
+    anchors.left: price.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 150
+    text-align: right
+
+  OrbxDim
+    id: ago
+    anchors.left: qty.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    text-align: right
+
+// one of my orders
+OrbxOrderRow < UIWidget
+  height: 44
+  margin-bottom: 2
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+
+  OrbxIcon
+    id: giveIcon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+
+  OrbxDim
+    id: arrow
+    anchors.left: giveIcon.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+    width: 14
+    text: >
+
+  OrbxIcon
+    id: wantIcon
+    anchors.left: arrow.right
+    anchors.verticalCenter: parent.verticalCenter
+
+  OrbxText
+    id: title
+    anchors.top: parent.top
+    anchors.left: wantIcon.right
+    anchors.right: bar.left
+    margin-top: 6
+    margin-left: 8
+    margin-right: 8
+    height: 14
+    font: verdana-11px-rounded
+
+  OrbxDim
+    id: sub
+    anchors.top: title.bottom
+    anchors.left: title.left
+    anchors.right: action.left
+    margin-top: 3
+    margin-right: 8
+    height: 14
+
+  ChaosProgressBar
+    id: bar
+    anchors.top: parent.top
+    anchors.right: action.left
+    margin-top: 6
+    margin-right: 8
+    size: 110 14
+    background-color: #8a6a1a
+    font: verdana-11px-antialised
+
+  ChaosButton
+    id: action
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: parent.right
+    margin-right: 6
+    size: 66 24
+    !text: tr('Cancel')
+
+OrbxFillRow < OrbxText
+  height: 16
+  text-auto-resize: false
+
+// a rectangle of the chart
+OrbxRect < UIWidget
+  anchors.top: parent.top
+  anchors.left: parent.left
+  phantom: true
+
+ChaosMainWindow
+  id: orbExchangeWindow
+  size: 900 600
+  !text: tr('Orb Exchange')
+  @onEscape: modules.game_orbexchange.hide()
+
+  UIWidget
+    id: tabBar
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 260
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  OrbxText
+    id: walletLabel
+    anchors.verticalCenter: tabBar.verticalCenter
+    anchors.left: tabBar.right
+    anchors.right: parent.right
+    margin-left: 8
+    height: 16
+    text-align: right
+    color: #e8b84a
+
+  // ---------------------------------------------------------- Book
+  UIWidget
+    id: bookPanel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 4
+    phantom: true
+
+    UIWidget
+      id: orbStrip
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 38
+      phantom: true
+      layout:
+        type: horizontalBox
+        spacing: 3
+
+    OrbxHead
+      id: pairLabel
+      anchors.top: orbStrip.bottom
+      anchors.left: parent.left
+      margin-top: 8
+      width: 330
+      height: 18
+
+    OrbxDim
+      id: forLabel
+      anchors.verticalCenter: quoteCombo.verticalCenter
+      anchors.right: quoteIcon.left
+      margin-right: 6
+      text-auto-resize: true
+      !text: tr('priced in')
+
+    OrbxIcon
+      id: quoteIcon
+      anchors.verticalCenter: quoteCombo.verticalCenter
+      anchors.right: quoteCombo.left
+      margin-right: 4
+
+    ChaosComboBox
+      id: quoteCombo
+      anchors.top: orbStrip.bottom
+      anchors.right: refreshButton.left
+      margin-top: 6
+      margin-right: 10
+      size: 170 22
+      menu-scroll: true
+      menu-height: 300
+      menu-scroll-step: 18
+      !tooltip: tr('What the price is counted in: gold or another orb')
+
+    ChaosButton
+      id: refreshButton
+      anchors.top: orbStrip.bottom
+      anchors.right: parent.right
+      margin-top: 6
+      size: 80 22
+      !text: tr('Refresh')
+      @onClick: modules.game_orbexchange.refresh()
+
+    // the order book (left)
+    ChaosPanelDark
+      id: bookFrame
+      anchors.top: quoteCombo.bottom
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-top: 8
+      width: 340
+
+      OrbxDim
+        id: hPrice
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-left: 6
+        width: 100
+        height: 16
+        !text: tr('Price')
+
+      OrbxDim
+        id: hQty
+        anchors.top: parent.top
+        anchors.left: hPrice.right
+        width: 84
+        height: 16
+        text-align: right
+        !text: tr('Quantity')
+
+      OrbxDim
+        anchors.top: parent.top
+        anchors.left: hQty.right
+        width: 54
+        height: 16
+        text-align: right
+        !text: tr('Orders')
+
+      OrbxDim
+        anchors.top: parent.top
+        anchors.right: parent.right
+        margin-right: 6
+        width: 70
+        height: 16
+        text-align: right
+        !text: tr('Total')
+
+      UIWidget
+        id: bookList
+        anchors.top: hPrice.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-top: 4
+        phantom: true
+        layout:
+          type: verticalBox
+
+    // stats, chart, last trades, the form (right)
+    ChaosPanelDark
+      id: statsFrame
+      anchors.top: bookFrame.top
+      anchors.left: bookFrame.right
+      anchors.right: parent.right
+      margin-left: 8
+      height: 132
+
+      OrbxDim
+        id: lastCaption
+        anchors.top: parent.top
+        anchors.left: parent.left
+        width: 200
+        height: 14
+        !text: tr('Last price')
+
+      OrbxText
+        id: lastValue
+        anchors.top: lastCaption.bottom
+        anchors.left: parent.left
+        width: 200
+        height: 20
+        font: verdana-11px-rounded
+        color: #f6cf72
+
+      OrbxText
+        id: changeValue
+        anchors.top: lastValue.bottom
+        anchors.left: parent.left
+        width: 200
+        height: 16
+
+      OrbxDim
+        id: rangeValue
+        anchors.top: changeValue.bottom
+        anchors.left: parent.left
+        margin-top: 4
+        width: 200
+        height: 14
+
+      OrbxDim
+        id: volValue
+        anchors.top: rangeValue.bottom
+        anchors.left: parent.left
+        margin-top: 2
+        width: 200
+        height: 14
+
+      OrbxDim
+        id: volQuoteValue
+        anchors.top: volValue.bottom
+        anchors.left: parent.left
+        margin-top: 2
+        width: 200
+        height: 14
+
+      UIWidget
+        id: chart
+        anchors.top: parent.top
+        anchors.left: lastCaption.right
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-left: 8
+        margin-bottom: 14
+        background-color: #120e12
+        border-width: 1
+        border-color: #3a3339
+        phantom: true
+
+      OrbxDim
+        id: chartLabel
+        anchors.top: chart.bottom
+        anchors.left: chart.left
+        anchors.right: chart.right
+        height: 14
+        text-align: center
+
+      OrbxDim
+        id: chartEmpty
+        anchors.centerIn: chart
+        text-auto-resize: true
+        !text: tr('No trades in the last 24 hours')
+
+    ChaosPanelDark
+      id: tradesFrame
+      anchors.top: statsFrame.bottom
+      anchors.left: statsFrame.left
+      anchors.right: statsFrame.right
+      margin-top: 6
+      height: 118
+
+      OrbxDim
+        id: tradesHead
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 14
+        !text: tr('Last trades')
+
+      UIWidget
+        id: tradeList
+        anchors.top: tradesHead.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-top: 2
+        phantom: true
+        layout:
+          type: verticalBox
+
+    ChaosPanelDark
+      id: formFrame
+      anchors.top: tradesFrame.bottom
+      anchors.left: statsFrame.left
+      anchors.right: statsFrame.right
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      padding: 8
+
+      ChaosTabButton
+        id: buyButton
+        anchors.top: parent.top
+        anchors.left: parent.left
+        size: 70 22
+        !text: tr('Buy')
+        @onClick: modules.game_orbexchange.setSide('buy')
+
+      ChaosTabButton
+        id: sellButton
+        anchors.top: parent.top
+        anchors.left: buyButton.right
+        margin-left: 4
+        size: 70 22
+        !text: tr('Sell')
+        @onClick: modules.game_orbexchange.setSide('sell')
+
+      OrbxDim
+        id: haveLabel
+        anchors.verticalCenter: buyButton.verticalCenter
+        anchors.left: sellButton.right
+        anchors.right: daysCombo.left
+        margin-left: 12
+        margin-right: 8
+        height: 16
+
+      ChaosComboBox
+        id: daysCombo
+        anchors.top: parent.top
+        anchors.right: parent.right
+        size: 90 22
+        !tooltip: tr('How long the order stays on the book')
+
+      OrbxDim
+        id: qtyCaption
+        anchors.top: buyButton.bottom
+        anchors.left: parent.left
+        margin-top: 12
+        text-auto-resize: true
+        !text: tr('Quantity')
+
+      ChaosTextEdit
+        id: qtyEdit
+        anchors.top: buyButton.bottom
+        anchors.left: qtyCaption.right
+        margin-top: 8
+        margin-left: 6
+        size: 90 22
+        max-length: 10
+
+      OrbxDim
+        id: qtyUnit
+        anchors.verticalCenter: qtyEdit.verticalCenter
+        anchors.left: qtyEdit.right
+        margin-left: 6
+        width: 76
+        height: 16
+
+      OrbxDim
+        id: priceCaption
+        anchors.verticalCenter: qtyEdit.verticalCenter
+        anchors.left: qtyUnit.right
+        margin-left: 6
+        text-auto-resize: true
+        !text: tr('Price each')
+
+      ChaosTextEdit
+        id: priceEdit
+        anchors.top: qtyEdit.top
+        anchors.left: priceCaption.right
+        margin-left: 6
+        size: 90 22
+        max-length: 14
+
+      OrbxDim
+        id: priceUnit
+        anchors.verticalCenter: priceEdit.verticalCenter
+        anchors.left: priceEdit.right
+        anchors.right: parent.right
+        margin-left: 6
+        height: 16
+
+      OrbxWrap
+        id: previewLabel
+        anchors.top: qtyEdit.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 8
+
+      ChaosButton
+        id: placeButton
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        size: 120 26
+        !text: tr('Place order')
+        @onClick: modules.game_orbexchange.place()
+
+      OrbxDim
+        id: formHint
+        anchors.verticalCenter: placeButton.verticalCenter
+        anchors.left: parent.left
+        anchors.right: placeButton.left
+        margin-right: 8
+        height: 16
+        !text: tr('Click a price in the book to fill the form.')
+
+  // ---------------------------------------------------------- My Orders
+  UIWidget
+    id: minePanel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 4
+    phantom: true
+    visible: false
+
+    OrbxHead
+      id: openHead
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 18
+
+    ChaosPanelDark
+      id: openFrame
+      anchors.top: openHead.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 236
+
+    UIScrollArea
+      id: openList
+      anchors.top: openFrame.top
+      anchors.left: openFrame.left
+      anchors.right: openScroll.left
+      anchors.bottom: openFrame.bottom
+      margin: 5 3 5 5
+      vertical-scrollbar: openScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: openScroll
+      anchors.top: openFrame.top
+      anchors.right: openFrame.right
+      anchors.bottom: openFrame.bottom
+      margin: 3 3 3 0
+      step: 46
+      pixels-scroll: true
+
+    OrbxDim
+      id: openEmpty
+      anchors.top: openFrame.top
+      anchors.left: openFrame.left
+      anchors.right: openFrame.right
+      margin-top: 40
+      height: 16
+      text-align: center
+      visible: false
+      !text: tr('No open orders. Place one on the Book tab.')
+
+    OrbxHead
+      id: fillsHead
+      anchors.top: openFrame.bottom
+      anchors.left: parent.left
+      margin-top: 8
+      width: 420
+      height: 18
+      !text: tr('My fills')
+
+    ChaosPanelDark
+      id: fillsFrame
+      anchors.top: fillsHead.bottom
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      width: 430
+
+    UIScrollArea
+      id: fillList
+      anchors.top: fillsFrame.top
+      anchors.left: fillsFrame.left
+      anchors.right: fillScroll.left
+      anchors.bottom: fillsFrame.bottom
+      margin: 5 3 5 5
+      vertical-scrollbar: fillScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: fillScroll
+      anchors.top: fillsFrame.top
+      anchors.right: fillsFrame.right
+      anchors.bottom: fillsFrame.bottom
+      margin: 3 3 3 0
+      step: 16
+      pixels-scroll: true
+
+    OrbxHead
+      id: closedHead
+      anchors.top: fillsHead.top
+      anchors.left: fillsFrame.right
+      margin-left: 8
+      width: 420
+      height: 18
+      !text: tr('Closed orders')
+
+    ChaosPanelDark
+      id: closedFrame
+      anchors.top: fillsFrame.top
+      anchors.left: fillsFrame.right
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-left: 8
+
+    UIScrollArea
+      id: closedList
+      anchors.top: closedFrame.top
+      anchors.left: closedFrame.left
+      anchors.right: closedScroll.left
+      anchors.bottom: closedFrame.bottom
+      margin: 5 3 5 5
+      vertical-scrollbar: closedScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: closedScroll
+      anchors.top: closedFrame.top
+      anchors.right: closedFrame.right
+      anchors.bottom: closedFrame.bottom
+      margin: 3 3 3 0
+      step: 32
+      pixels-scroll: true
+
+  OrbxWrap
+    id: statusLabel
+    anchors.bottom: closeButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 4
+
+  OrbxDim
+    id: deliveryHint
+    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    margin-right: 8
+    height: 16
+    !text: tr('Orbs you receive go to your inbox, gold to your bank.')
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_orbexchange.hide()

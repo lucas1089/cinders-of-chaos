@@ -1,0 +1,287 @@
+// Boss Spawns window (game_bossspawns): bosses by category with place and respawn. Styles from client_chaos_theme.
+// Opened from the menu (Adventure > Boss Spawns). Fixed size: the columns are laid out for 700 px.
+
+BossSpawnsCategory < UIWidget
+  height: 24
+  margin-top: 4
+  margin-bottom: 1
+  image-source: /images/chaos/title_plate
+  image-border: 8
+  image-border-left: 12
+  image-border-right: 12
+  phantom: false
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  UILabel
+    id: title
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
+  UILabel
+    id: info
+    anchors.left: title.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 12
+    margin-right: 10
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+BossSpawnsRow < UIWidget
+  height: 38
+  margin-bottom: 1
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UICreature
+    id: creature
+    size: 34 34
+    fixed-creature-size: true
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: creature.right
+    anchors.right: loc.left
+    margin-top: 4
+    margin-left: 8
+    margin-right: 8
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: level
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 1
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: loc
+    anchors.top: parent.top
+    anchors.right: status.left
+    margin-top: 4
+    margin-right: 10
+    width: 176
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: coords
+    anchors.top: loc.bottom
+    anchors.left: loc.left
+    anchors.right: loc.right
+    margin-top: 1
+    text-align: left
+    font: verdana-11px-antialised
+    color: #6b6258
+    phantom: true
+
+  UILabel
+    id: status
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 4
+    margin-right: 8
+    width: 180
+    text-align: right
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.top: status.bottom
+    anchors.left: status.left
+    anchors.right: status.right
+    margin-top: 1
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+BossSpawnsHeader < UILabel
+  font: verdana-11px-rounded
+  color: #e8b84a
+  phantom: true
+
+ChaosMainWindow
+  id: bossSpawnsWindow
+  size: 700 560
+  !text: tr('Boss Spawns')
+  @onEscape: modules.game_bossspawns.hide()
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-wrap: true
+    text-auto-resize: true
+    !text: tr('Where every boss lives and when it comes back. Click a category to fold it; hover a boss for its rule and last kill. Server time.')
+
+  ChaosTextEdit
+    id: searchEdit
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    width: 220
+    !tooltip: tr('Find a boss by name or place.')
+
+  UILabel
+    id: searchHint
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.left
+    margin-left: 7
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #6b6258
+    phantom: true
+    !text: tr('Find a boss or place...')
+
+  ChaosButton
+    id: expandButton
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.right
+    margin-left: 8
+    width: 90
+    !text: tr('Expand all')
+    @onClick: modules.game_bossspawns.foldAll(false)
+
+  ChaosButton
+    id: collapseButton
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: expandButton.right
+    margin-left: 6
+    width: 90
+    !text: tr('Collapse all')
+    @onClick: modules.game_bossspawns.foldAll(true)
+
+  ChaosLabel
+    id: countLabel
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.right: parent.right
+    text-auto-resize: true
+    color: #8c8070
+
+  UIWidget
+    id: header
+    anchors.top: searchEdit.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 18
+    phantom: true
+
+    BossSpawnsHeader
+      id: hName
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 50
+      text-auto-resize: true
+      !text: tr('Boss')
+
+    BossSpawnsHeader
+      id: hStatus
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 31
+      width: 180
+      text-align: right
+      !text: tr('Respawn')
+
+    BossSpawnsHeader
+      id: hLoc
+      anchors.right: hStatus.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 10
+      width: 176
+      text-align: left
+      !text: tr('Location')
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 2
+    margin-bottom: 8
+    padding: 3
+
+  UIScrollArea
+    id: rowList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 39
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    !text: tr('Loading...')
+
+  ChaosLabelDim
+    id: updatedLabel
+    anchors.left: parent.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    text-auto-resize: true
+
+  ChaosButton
+    id: refreshButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 80
+    !text: tr('Refresh')
+    @onClick: modules.game_bossspawns.refresh()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_bossspawns.hide()

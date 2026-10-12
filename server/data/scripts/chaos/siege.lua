@@ -129,6 +129,33 @@ local function locate(pos)
 end
 S.locate = locate
 
+-- a player (or a position) inside any built bracket of the siege: guild.lua, arena.lua, treasure_goblin.lua and the
+-- instance registry (chaos_constants.lua) ask
+function S.isInsidePos(pos)
+	return locate(pos) ~= nil
+end
+function S.isInside(player)
+	return player ~= nil and locate(player:getPosition()) ~= nil
+end
+Chaos.registerInstance("siege", {label = "a guild siege", at = S.isInsidePos, runs = function() -- /instances
+	if not S.state or S.state.phase == "idle" then
+		return {}
+	end
+	local n = 0
+	for _, p in pairs(S.state.players or {}) do
+		if p.inside then
+			n = n + 1
+		end
+	end
+	return {{id = "siege", what = S.state.phase, left = S.state.endAt and math.max(0, S.state.endAt - os.time()) or nil, players = n}}
+end, close = function() -- as /siege stop (no rewards)
+	if not S.state or S.state.phase == "idle" then
+		return false, "No guild siege is running."
+	end
+	S.stop()
+	return true, "Guild siege stopped."
+end})
+
 local function team(p)
 	local br = state.brackets and state.brackets[p.bracket]
 	return br and br.teams[p.slot] or nil
@@ -741,6 +768,16 @@ local function tick(token)
 		finish("time")
 		return
 	end
+	if match and ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		local inside = {}
+		for guid, p in pairs(state.players) do
+			local player = p.inside and Player(p.name)
+			if player and player:getGuid() == guid then
+				inside[#inside + 1] = player
+			end
+		end
+		ChaosInstanceLimits.warn(state, state.endAt - now, inside, "Guild siege", cfg.limits)
+	end
 	addEvent(tick, 1000, token)
 end
 
@@ -1011,7 +1048,7 @@ function S.sendInfo(player, open)
 			string.format("Every %s at %02d:%02d server time: %s of gathering, then a %d-minute war for the Chaos Obelisk.",
 				S.WEEKDAYS[cfg.weekday], cfg.hour, cfg.minute, cfg.gatherSeconds >= 120 and (math.floor(cfg.gatherSeconds / 60) .. " minutes")
 				or (cfg.gatherSeconds .. " seconds"), cfg.matchMinutes),
-			string.format("The guild leader or a vice-leader signs up with !siege join; the guild needs %d members. Up to %d guilds per arena, %d arenas.",
+			string.format("The guild leader or a vice-leader signs up in the Guild Siege window; the guild needs %d members. Up to %d guilds per arena, %d arenas.",
 				cfg.minMembers, cfg.perBracket, cfg.maxBrackets),
 			string.format("Members (level %d+) enter through the portals next to the temples. Multi-clienting characters cannot take part.", cfg.minLevel),
 			string.format("%d points per enemy struck down, %d per second for the guild with the most members on the obelisk (a tie contests it).",
@@ -1030,6 +1067,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local msg = Chaos.decode(buffer)
 	if not msg then
+		return true
+	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "siege." .. tostring(msg.action), 300) then
 		return true
 	end
 	if msg.action == "open" then
@@ -1277,7 +1318,7 @@ function schedule.onThink(interval)
 			end
 			announce(string.format("The guild siege begins in %d minute(s)! Signed up: %s.%s", m,
 				#names > 0 and table.concat(names, ", ") or "nobody",
-				#names < (cfg.minGuilds or 2) and string.format(" At least %d guilds are needed: leaders, !siege join.", cfg.minGuilds or 2) or ""),
+				#names < (cfg.minGuilds or 2) and string.format(" At least %d guilds are needed: leaders, sign up in Adventure > Guild Siege.", cfg.minGuilds or 2) or ""),
 				i == 1 or i == #cfg.warnMinutes)
 		end
 	end
@@ -1310,23 +1351,6 @@ end
 startup:register()
 
 -- ======================================================================== commands
-local talk = TalkAction("!siege")
-function talk.onSay(player, words, param)
-	local cmd = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-	if cmd == "join" or cmd == "leave" then
-		local ok, text = (cmd == "join" and S.join or S.leave)(player)
-		player:sendTextMessage(ok and MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL, text)
-		S.sendInfo(player, false)
-	elseif cmd == "status" or cmd == "list" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, S.status())
-	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, S.status() .. "\n!siege join / !siege leave (guild leader or vice-leader), !siege status.")
-		S.sendInfo(player, true)
-	end
-	return false
-end
-talk:separator(" ")
-talk:register()
 
 local gm = TalkAction("/siege")
 function gm.onSay(player, words, param)

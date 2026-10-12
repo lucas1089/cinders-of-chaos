@@ -1,0 +1,75 @@
+client_id,server_id,key,name,kind,piece,size,patterns,phases,frame_ms,speed,otb_group,otb_flags,top_order,light_level,light_color,minimap,dat_flags
+27484,30484,obsidian_floor,cracked obsidian floor,ground,,1x1,4x4,1,0,100,1,0,0,0,0,36,ground notmoveable minimap fullground
+27485,30485,magma_floor,magma-veined obsidian,ground,,1x1,4x4,1,0,100,1,0,0,2,186,114,ground notmoveable light minimap fullground
+27486,30486,ash_soil,ash soil,ground,,1x1,4x4,1,0,120,1,0,0,0,0,86,ground notmoveable minimap fullground
+27487,30487,bone_earth,bone-strewn earth,ground,,1x1,4x4,1,0,120,1,0,0,0,0,85,ground notmoveable minimap fullground
+27488,30488,wet_rock,wet black rock,ground,,1x1,4x4,1,0,120,1,0,0,0,0,43,ground notmoveable minimap fullground
+27489,30489,mossy_rock,mossy black rock,ground,,1x1,4x4,1,0,120,1,0,0,0,0,43,ground notmoveable minimap fullground
+27490,30490,dark_moss,dark moss,ground,,1x1,4x4,1,0,130,1,0,0,0,0,6,ground notmoveable minimap fullground
+27491,30491,ruined_floor,ruined dark stone floor,ground,,1x1,4x4,1,0,100,1,0,0,0,0,86,ground notmoveable minimap fullground
+27492,30492,cursed_pool,cursed pool,ground,,1x1,4x4,6,180,100,1,16777217,0,2,113,38,ground notwalkable notmoveable light minimap fullground
+27493,30493,obsidian_floor_border_n,cracked obsidian floor,border,n,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27494,30494,obsidian_floor_border_e,cracked obsidian floor,border,e,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27495,30495,obsidian_floor_border_s,cracked obsidian floor,border,s,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27496,30496,obsidian_floor_border_w,cracked obsidian floor,border,w,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27497,30497,obsidian_floor_border_outer_ne,cracked obsidian floor,border,outer_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27498,30498,obsidian_floor_border_outer_nw,cracked obsidian floor,border,outer_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27499,30499,obsidian_floor_border_outer_se,cracked obsidian floor,border,outer_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27500,30500,obsidian_floor_border_outer_sw,cracked obsidian floor,border,outer_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27501,30501,obsidian_floor_border_inner_ne,cracked obsidian floor,border,inner_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27502,30502,obsidian_floor_border_inner_nw,cracked obsidian floor,border,inner_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27503,30503,obsidian_floor_border_inner_se,cracked obsidian floor,border,inner_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27504,30504,obsidian_floor_border_inner_sw,cracked obsidian floor,border,inner_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27505,30505,ash_soil_border_n,ash soil,border,n,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27506,30506,ash_soil_border_e,ash soil,border,e,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27507,30507,ash_soil_border_s,ash soil,border,s,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27508,30508,ash_soil_border_w,ash soil,border,w,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27509,30509,ash_soil_border_outer_ne,ash soil,border,outer_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27510,30510,ash_soil_border_outer_nw,ash soil,border,outer_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27511,30511,ash_soil_border_outer_se,ash soil,border,outer_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27512,30512,ash_soil_border_outer_sw,ash soil,border,outer_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27513,30513,ash_soil_border_inner_ne,ash soil,border,inner_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27514,30514,ash_soil_border_inner_nw,ash soil,border,inner_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27515,30515,ash_soil_border_inner_se,ash soil,border,inner_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27516,30516,ash_soil_border_inner_sw,ash soil,border,inner_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27517,30517,wet_rock_border_n,wet black rock,border,n,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27518,30518,wet_rock_border_e,wet black rock,border,e,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27519,30519,wet_rock_border_s,wet black rock,border,s,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27520,30520,wet_rock_border_w,wet black rock,border,w,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27521,30521,wet_rock_border_outer_ne,wet black rock,border,outer_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27522,30522,wet_rock_border_outer_nw,wet black rock,border,outer_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27523,30523,wet_rock_border_outer_se,wet black rock,border,outer_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27524,30524,wet_rock_border_outer_sw,wet black rock,border,outer_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27525,30525,wet_rock_border_inner_ne,wet black rock,border,inner_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27526,30526,wet_rock_border_inner_nw,wet black rock,border,inner_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27527,30527,wet_rock_border_inner_se,wet black rock,border,inner_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27528,30528,wet_rock_border_inner_sw,wet black rock,border,inner_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27529,30529,dark_moss_border_n,dark moss,border,n,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27530,30530,dark_moss_border_e,dark moss,border,e,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27531,30531,dark_moss_border_s,dark moss,border,s,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27532,30532,dark_moss_border_w,dark moss,border,w,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27533,30533,dark_moss_border_outer_ne,dark moss,border,outer_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27534,30534,dark_moss_border_outer_nw,dark moss,border,outer_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27535,30535,dark_moss_border_outer_se,dark moss,border,outer_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27536,30536,dark_moss_border_outer_sw,dark moss,border,outer_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27537,30537,dark_moss_border_inner_ne,dark moss,border,inner_ne,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27538,30538,dark_moss_border_inner_nw,dark moss,border,inner_nw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27539,30539,dark_moss_border_inner_se,dark moss,border,inner_se,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27540,30540,dark_moss_border_inner_sw,dark moss,border,inner_sw,1x1,4x4,1,0,0,0,8192,1,0,0,,clip notmoveable
+27541,30541,dark_wall,dark stone wall,wall,,2x2,2x2,1,0,0,0,8199,2,0,0,186,bottom notwalkable notmoveable blockmissile blockpath minimap
+27542,30542,ruined_wall,ruined stone wall,wall,,2x2,2x2,1,0,0,0,8199,2,0,0,186,bottom notwalkable notmoveable blockmissile blockpath minimap
+27543,30543,obsidian_wall,obsidian rock wall,wall,,2x2,2x2,1,0,0,0,8199,2,0,0,186,bottom notwalkable notmoveable blockmissile blockpath minimap
+27544,30544,dead_tree,dead tree,object,,2x2,1x1,1,0,0,0,1,0,0,0,42,notwalkable notmoveable minimap
+27545,30545,twisted_tree,twisted dead tree,object,,2x2,1x1,1,0,0,0,1,0,0,0,42,notwalkable notmoveable minimap
+27546,30546,dead_bush,dead bush,object,,1x1,1x1,1,0,0,0,1,0,0,0,42,notwalkable notmoveable minimap
+27547,30547,dark_boulder,dark boulder,object,,1x1,1x1,1,0,0,0,3,0,0,0,43,notwalkable notmoveable blockmissile minimap
+27548,30548,rock_outcrop,jagged rock outcrop,object,,2x2,1x1,1,0,0,0,8199,2,0,0,43,bottom notwalkable notmoveable blockmissile blockpath minimap
+27549,30549,ruined_pillar,ruined pillar,object,,1x2,1x1,1,0,0,0,8193,2,0,0,186,bottom notwalkable notmoveable minimap
+27550,30550,broken_pillar,broken pillar,object,,1x1,1x1,1,0,0,0,8193,2,0,0,186,bottom notwalkable notmoveable minimap
+27551,30551,brazier,iron brazier,object,,1x2,1x1,6,140,0,0,16777221,0,7,199,192,notwalkable notmoveable blockpath light minimap
+27552,30552,standing_torch,standing torch,object,,1x2,1x1,6,140,0,0,16777221,0,5,199,192,notwalkable notmoveable blockpath light minimap
+27553,30553,glowcap_purple,violet glowcaps,object,,1x1,1x1,4,420,0,0,16777216,0,2,113,,notmoveable light
+27554,30554,glowcap_teal,teal glowcaps,object,,1x1,1x1,4,420,0,0,16777216,0,2,28,,notmoveable light
+27555,30555,blood_crystals,blood crystals,object,,1x1,1x1,1,0,0,0,1,0,2,181,108,notwalkable notmoveable light minimap
+27556,30556,bone_pile,pile of bones,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+27557,30557,rubble,dark rubble,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable

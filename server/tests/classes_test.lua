@@ -28,7 +28,7 @@ id, why = C.ascensionFor(THIEF, 300, "ninja", false, false)
 eq(id, nil, "outside a protection zone refused"); eq(why:find("protection zone") ~= nil, true)
 eq(C.ascensionFor(THIEF, 300, "ninja", true, true), nil, "in combat refused")
 id, why = C.ascensionFor(THIEF, 300, "", true, false)
-eq(id, nil, "no choice"); eq(why:find("ninja|samurai", 1, true) ~= nil, true, "lists the choices")
+eq(id, nil, "no choice"); eq(why:find("ninja or samurai", 1, true) ~= nil, true, "lists the choices")
 eq(C.ascensionFor(THIEF, 300, "knight", true, false), nil, "not a choice of the thief")
 id, why = C.ascensionFor(NINJA, 300, "samurai", true, false)
 eq(id, nil, "final: a ninja cannot switch"); eq(why:find("Vocation Change") ~= nil, true, "points to the store")
@@ -43,7 +43,7 @@ for word, want in pairs({juggernaut = 8, berserker = 14}) do eq(C.ascensionFor(4
 for word, want in pairs({deadeye = 7, beastmaster = 15}) do eq(C.ascensionFor(3, 100, word, true, false), want, "ranger " .. word) end
 for word, want in pairs({elementalist = 5, illusionist = 10}) do eq(C.ascensionFor(1, 100, word, true, false), want, "mystic " .. word) end
 id, why = C.ascensionFor(4, 300, "", true, false)
-eq(why:find("berserker|juggernaut", 1, true) ~= nil, true, "lists the warrior's choices: " .. why)
+eq(why:find("berserker or juggernaut", 1, true) ~= nil, true, "lists the warrior's choices: " .. why)
 eq(C.ascensionFor(3, 300, "berserker", true, false), nil, "not a choice of the ranger")
 eq(C.ascensionFor(1, 99, "illusionist", true, false), nil, "level rule for every class")
 id, why = C.ascensionFor(8, 300, "berserker", true, false)
@@ -57,7 +57,7 @@ eq(select(2, C.ascensionFor(4, 100, "juggernaut", true, false)), false, "a norma
 id, why = C.ascensionFor(8, 300, "juggernaut", true, false, 14)
 eq(id, nil, "already a juggernaut"); eq(why:find("stays") ~= nil, true, "the switch is kept")
 id, why = C.ascensionFor(8, 300, "elementalist", true, false, 14)
-eq(id, nil, "only the other class of the line"); eq(why:find("!ascend berserker", 1, true) ~= nil, true, why)
+eq(id, nil, "only the other class of the line"); eq(why:find("to berserker", 1, true) ~= nil, true, why)
 eq(C.ascensionFor(8, 300, "berserker", false, false, 14), nil, "free switch: still a protection zone")
 eq(C.ascensionFor(8, 300, "berserker", true, true, 14), nil, "free switch: not in combat")
 eq(C.ascensionFor(7, 300, "beastmaster", true, false, 15), 15, "old royal paladin -> beastmaster")
@@ -65,10 +65,18 @@ eq(C.baseOf(14), 4); eq(C.baseOf(15), 3); eq(C.baseOf(10), 1); eq(C.baseOf(2), n
 eq(C.isAscended(14), true); eq(C.isAscended(4), false); eq(C.isAscended(0), false)
 
 -- ------------------------------------------------------------------ keystone variants
-local keys = {[4] = "knight", [8] = "knight", [14] = "knight", [3] = "paladin", [7] = "paladin", [15] = "paladin",
+local keys = {[4] = "knight", [8] = "juggernaut", [14] = "berserker", [3] = "paladin", [7] = "deadeye", [15] = "beastmaster",
   [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist"}
 for v, k in pairs(keys) do eq(C.keystoneKey(v), k, "keystone key " .. v) end
-eq(C.keystoneKey(12), nil, "the Thief line has no tree entry yet")
+eq(C.keystoneKey(12), "ninja", "the class sections: the class key")
+-- class keys and lines (the passive tree's class nodes)
+local classKeys = {[4] = "warrior", [8] = "juggernaut", [14] = "berserker", [3] = "ranger", [7] = "deadeye",
+  [15] = "beastmaster", [1] = "mystic", [5] = "elementalist", [10] = "illusionist", [11] = "thief", [12] = "ninja",
+  [13] = "samurai", [17] = "monk", [18] = "shadowfist", [19] = "ironsage", [20] = "necromancer", [21] = "lich",
+  [22] = "bonelord", [23] = "templar", [24] = "inquisitor", [25] = "sentinel"}
+for v, k in pairs(classKeys) do eq(C.classKey(v), k, "class key " .. v) end
+eq(C.classKey(2), nil, "retired"); eq(C.lineKey(13), "thief"); eq(C.lineKey(25), "templar"); eq(C.lineKey(8), "warrior")
+eq(C.lineKey(0), nil)
 
 -- ------------------------------------------------------------------ migration
 local function mig(v) local p = C.migrationFor(v); return p and p.to, p and p.freeSwitch, p and p.resetTree end
@@ -93,7 +101,7 @@ eq(sql[6], "UPDATE `players` SET `vocation` = 10 WHERE `vocation` = 6", "elder d
 eq(sql[7], "UPDATE `players` SET `vocation` = 1 WHERE `vocation` = 9", "illusionist -> mystic")
 for i = 1, 4 do assert(sql[i]:find("vocation") and sql[i]:find("players"), "storages and tree run before the ids move") end
 local text = C.migrationMessage("Elite Knight", "Juggernaut", "berserker", true)
-eq(text:find("Elite Knight is now Juggernaut") ~= nil, true, text); eq(text:find("!ascend berserker", 1, true) ~= nil, true)
+eq(text:find("Elite Knight is now Juggernaut") ~= nil, true, text); eq(text:find("(berserker): Character > Services", 1, true) ~= nil, true, text)
 eq(text:find("passive tree") ~= nil, true, "mentions the reset")
 eq(C.migrationMessage("Druid", "Mystic", nil, true):find("ascend") == nil, true, "no switch offered")
 
@@ -194,5 +202,37 @@ eq(C.dodges(NINJA, false, 0.0), false, "spells are not dodged")
 eq(C.dodges(4, true, 0.0), false, "knights do not dodge")
 eq(C.poisonTick(400), math.floor(400 * cfg.poisonBlades.share / cfg.poisonBlades.ticks + 0.5), "poison per tick")
 eq(C.poisonTick(0), 1, "at least 1")
+
+-- ------------------------------------------------------------------ the Monk, Necromancer and Templar lines
+-- (ids and choices in chaos_constants.lua; each line's own rules: tests/monk_test.lua, necro_test.lua, templar_test.lua)
+eq(cfg.ids.monk, 17); eq(cfg.ids.shadowfist, 18); eq(cfg.ids.ironsage, 19)
+eq(C.ascensionFor(17, 100, "shadowfist", true, false), 18, "monk -> shadowfist")
+eq(C.ascensionFor(17, 100, "ironsage", true, false), 19, "monk -> iron sage")
+eq(C.ascensionFor(17, 99, "ironsage", true, false), nil, "monk: level 100")
+eq(C.ascensionFor(18, 300, "ironsage", true, false), nil, "final: a shadowfist cannot switch")
+eq(C.ascensionFor(11, 300, "shadowfist", true, false), nil, "not a choice of the thief")
+eq(C.baseOf(19), 17, "iron sage line"); eq(C.isAscended(18), true); eq(C.isThiefLine(17), false)
+eq(C.keystoneKey(17), "monk", "the Monk: its class section")
+
+eq(C.ascensionFor(20, 100, "lich", true, false), 21, "necromancer -> lich")
+eq(C.ascensionFor(20, 300, " BoneLord ", true, false), 22, "necromancer -> bone lord (trimmed, case-free)")
+eq(C.ascensionFor(20, 99, "lich", true, false), nil, "necromancer level 99 refused")
+eq(C.ascensionFor(21, 300, "bonelord", true, false), nil, "an ascended lich cannot ascend again")
+eq(C.baseOf(22), 20, "bone lord's base"); eq(C.isAscended(21), true, "lich is ascended")
+eq(C.keystoneKey(20), "necromancer", "its class section")
+local necroCfg = dofile("data/scripts/chaos/necro_config.lua")
+for key, vid in pairs(necroCfg.ids) do eq(cfg.ids[key], vid, "Chaos.classes.ids." .. key .. " = necro_config.lua") end
+
+eq(cfg.ids.templar, 23); eq(cfg.ids.inquisitor, 24); eq(cfg.ids.sentinel, 25)
+eq(C.ascensionFor(23, 100, "inquisitor", true, false), 24, "templar -> inquisitor")
+eq(C.ascensionFor(23, 100, "sentinel", true, false), 25, "templar -> sentinel")
+eq(C.ascensionFor(24, 300, "sentinel", true, false), nil, "final: an inquisitor cannot switch")
+eq(C.baseOf(25), 23, "sentinel line"); eq(C.isAscended(23), false); eq(C.keystoneKey(23), "templar")
+
+-- the vocation change words name every class of the three lines
+for _, w in ipairs({"monk", "shadowfist", "ironsage", "necromancer", "lich", "bonelord", "templar", "inquisitor", "sentinel"}) do
+	eq(Chaos.shopServices.vocations[w] ~= nil, true, "!changevocation " .. w)
+	eq(("|" .. Chaos.shopServices.vocationWords .. "|"):find("|" .. w .. "|", 1, true) ~= nil, true, "word list names " .. w)
+end
 
 print("classes_test: OK")

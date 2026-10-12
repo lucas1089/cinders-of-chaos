@@ -249,8 +249,8 @@ RulesWindow < NewHeadlessWindow
       anchors.bottom: parent.bottom
       anchors.left: parent.left
       text-offset: 16 -2
-      !text: tr('I agree with Chaos Terms and Conditions.')
-      !tooltip: tr('I have read and I agree to the Extended Chaos Service Agreement and the Chaos Privacy Policy.')
+      !text: tr('I agree with Cinders of Chaos Terms and Conditions.')
+      !tooltip: tr('I have read and I agree to the Extended Cinders of Chaos Service Agreement and the Cinders of Chaos Privacy Policy.')
       margin-bottom: 5
       font: $var-cip-font
       color: $var-text-cip-color

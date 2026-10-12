@@ -24,9 +24,7 @@ monster.Bestiary = {
 	CharmsPoints = 1,
 	Stars = 0,
 	Occurrence = 0,
-	Locations = "Banuta, Carlin Surroundings, Feyrist Meadows, Grimvale, Liberty Bay City, \z
-		Liberty Bay Surroundings, Meriana, Plains of Havoc, Port Hope Surroundings, \z
-		Yalahar Arena Quarter, Yalahar Centre, Yalahar Magician Quarter."
+	Locations = "Meadows and gardens around Thornmere, Saltgrave, Fevergate and Hollowspire."
 	}
 
 monster.health = 2

@@ -1,0 +1,157 @@
+-- Passive tree search (the matching is treeplan.lua TreePlan.search, tested by treeplan_test.lua). The box at the
+-- bottom left finds the shown nodes whose name or bonus text holds every typed word (any case, any order): mastery
+-- effects and keystone lines count. Every match gets a gold frame, the current one an orange frame and the view
+-- centred on it; Next / Prev (Enter / Shift+Enter in the box) step through the matches, the label counts them.
+local entries, entriesFor = nil, nil
+local matches, index = {}, 0
+local marked = {} -- [widget] = true: widgets with a search frame
+local MATCH, CURRENT = '#e8c25a', '#ff7a2a'
+
+local function child(id)
+  local window = getTreeWindow()
+  return window and window:recursiveGetChildById(id)
+end
+
+-- the searchable text of a node: its name (its class variant's), the stat lines, the description lines and the effects
+local function nodeText(node)
+  local parts = {node.name or ''}
+  local function add(list)
+    for _, line in ipairs(list or {}) do
+      parts[#parts + 1] = line
+    end
+  end
+  local variant = getTreeVariant()
+  for key, value in pairs(node) do
+    if type(value) == 'table' and value.customStats and value.name and key ~= 'masteries' and (variant == nil or key == variant) then
+      parts[#parts + 1] = value.name
+      add(getCustomStatString(value.customStats))
+      add(value.stats)
+    end
+  end
+  if node.customStats then
+    add(getCustomStatString(node.customStats, true))
+  end
+  add(node.stats)
+  for _, effect in ipairs(node.masteries or {}) do
+    parts[#parts + 1] = effect.name
+    add(getCustomStatString(effect.customStats or {}))
+  end
+  return TreePlan.normalize(table.concat(parts, ' '))
+end
+
+local function buildEntries()
+  local map = getTreeNodeMap() or {}
+  if entriesFor == map and entries then
+    return entries
+  end
+  local ids = {}
+  for id, node in pairs(map) do
+    if not node.isStartNode then
+      ids[#ids + 1] = id
+    end
+  end
+  table.sort(ids)
+  entries = {}
+  for _, id in ipairs(ids) do
+    entries[#entries + 1] = {id = id, text = nodeText(map[id])}
+  end
+  entriesFor = map
+  return entries
+end
+
+local function unmarkAll()
+  for widget in pairs(marked) do
+    if not widget:isDestroyed() then
+      widget:setBorderWidth(0)
+    end
+  end
+  marked = {}
+end
+
+local function mark()
+  unmarkAll()
+  for i, id in ipairs(matches) do
+    local widget = getTreeNodeWidget(id)
+    if widget then
+      widget:setBorderWidth(i == index and 3 or 2)
+      widget:setBorderColor(i == index and CURRENT or MATCH)
+      marked[widget] = true
+    end
+  end
+  local label = child('searchCount')
+  if label then
+    local edit = child('searchEdit')
+    label:setText(TreePlan.countText(index, #matches, edit and edit:getText() or ''))
+    label:setColor(#matches == 0 and '#e07060' or '#d8cfc0')
+  end
+end
+
+local function go(i)
+  index = i
+  local node = (getTreeNodeMap() or {})[matches[index] or 0]
+  if node then
+    panTreeTo(node)
+  end
+  mark()
+end
+
+-- the box's text changed
+function onTreeSearchChange()
+  local edit = child('searchEdit')
+  local query = edit and edit:getText() or ''
+  matches = TreePlan.search(buildEntries(), query)
+  index = 0
+  if #matches > 0 then
+    go(1)
+  else
+    mark()
+  end
+end
+
+function treeSearchNext()
+  if #matches > 0 then
+    go(TreePlan.step(index, #matches, 1))
+  end
+end
+
+function treeSearchPrev()
+  if #matches > 0 then
+    go(TreePlan.step(index, #matches, -1))
+  end
+end
+
+-- new widgets (a zoom level, another class, an inspected tree): the matches again, without moving the view
+function refreshTreeSearch()
+  local edit = child('searchEdit')
+  if not edit or edit:getText() == '' then
+    unmarkAll()
+    return
+  end
+  local current = matches[index]
+  matches = TreePlan.search(buildEntries(), edit:getText())
+  index = 0
+  for i, id in ipairs(matches) do
+    if id == current then
+      index = i
+    end
+  end
+  mark()
+end
+
+function clearTreeSearch()
+  local edit = child('searchEdit')
+  if edit then
+    edit:setText('')
+  end
+  matches, index = {}, 0
+  unmarkAll()
+  mark()
+end
+
+function focusTreeSearch()
+  local edit = child('searchEdit')
+  if edit then
+    edit:focus()
+    edit:selectAll()
+  end
+end

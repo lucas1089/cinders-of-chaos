@@ -2,16 +2,20 @@
 -- account-wide cosmetic reward track. Rules and numbers: season_config.lua; pure logic: season_core.lua; client
 -- game_season (extended opcode ChaosOpcodes.season); tables sql/chaos_season.sql. Overview: server/README.md "Seasons".
 --
---   !season               info: the season, time left, your milestones (and opens the window)
---   !season join          a fresh character (level <= join.maxLevel, empty depot) opts in; then !season join confirm
+--   Adventure > Season    the window (players): the season, time left, your milestones; Join, then the confirmation
 --   /season start [id]|end|status   gods only: start the next season now, end the running one now (migration), state
+--   (there is no chat join: the window is the only way in, and its confirmation closes by itself once the character
+--   cannot join any more, e.g. after a level up past join.maxLevel)
 --
 -- Isolation while a season runs (realm = 0 for standard characters, the season id for season characters):
 --   trade window and house trade (EventCallback onTradeRequest / onTradeAccept; tools/patch_season_events.py enables
 --   them in events.xml), items on the ground, in corpses, in houses and mail (ChaosSeason.onMoveItem, called first in
 --   Player:onMoveItem by the same tool; the realm of whoever dropped an item / killed a monster / died is written on
 --   the item or corpse as the custom attribute chaos_realm), parties (EventCallback onJoin), the Chaos bank transfer
---   (bank.lua asks ChaosSeason.transferBlocked). Not blocked: the market, the NPC bank transfer (see README).
+--   (bank.lua asks ChaosSeason.transferBlocked), the NPC bank transfer (Player.transferMoneyTo asks
+--   ChaosSeason.npcTransferBlocked), the market (separate season markets, market.lua; gold only, ChaosMarket wrapped
+--   here). Account-wide Chaos Coins: the store (shop.lua asks ChaosSeason.storeProblem), the season pass items
+--   (seasonpass.lua asks ChaosSeason.passClaimProblem), the world buffs (shop_services.lua). See README.
 -- End of season: once the season's finish has passed (or /season end), its characters are migrated to standard:
 --   chaos_season_players.migrated_at is set (once, logged); they keep everything and trade normally.
 -- Leaderboards: leaderboard.lua asks ChaosSeason.leaderboardMeta / ChaosSeason.sendBoard for the "Season" view.
@@ -183,7 +187,8 @@ local function notice(player, key)
 		return
 	end
 	lastNotice[id] = now()
-	player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, iso.messages[key] or iso.messages.move)
+	player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, iso.messages[key] or
+		(cfg.modes and cfg.modes.messages[key]) or iso.messages.move) -- modes: season_modes.lua
 end
 
 -- tags of a thing and of every container around it; returns the tile when it lies on the ground (else nil)
@@ -277,6 +282,9 @@ function S.onMoveItem(player, item, count, fromPosition, toPosition, fromCylinde
 		m.houseTo = houseRealm(toTile)
 	end
 	local ok, why = S.moveCheck(m)
+	if ok and S.modesMove then -- season modes (season_modes.lua): Self-Found items, loot and mail
+		ok, why = S.modesMove(player, item, toPosition, toCylinder)
+	end
 	if ok then
 		return NOERR
 	end
@@ -356,14 +364,117 @@ function S.transferBlocked(player, targetGuid)
 	if not S.current() or staff(player) then
 		return false
 	end
+	S.transferBlockedText = iso.messages.bank
+	if S.modesTransferBlocked and S.modesTransferBlocked(player, targetGuid) then -- season modes (season_modes.lua)
+		S.transferBlockedText = cfg.modes.messages.bank
+		return true
+	end
 	return S.realmOf(player) ~= S.realmOfGuid(targetGuid)
 end
 S.transferBlockedText = iso.messages.bank
+
+-- the NPC bank transfer (Player.transferMoneyTo of data/lib/core/player.lua, every bank NPC): refused between realms.
+-- tools/patch_season_events.py puts the call into that function; without the patch it is wrapped here at runtime
+function S.npcTransferBlocked(player, targetGuid)
+	local ok, blocked = pcall(S.transferBlocked, player, tonumber(targetGuid) or 0)
+	if ok and blocked then
+		player:sendCancelMessage(S.transferBlockedText or "You cannot transfer gold to that character.")
+		return true
+	end
+	return false
+end
+if not ChaosSeasonTransferPatched and Player and Player.transferMoneyTo and not S.transferWrapped then
+	S.transferWrapped = true
+	local stockTransfer = Player.transferMoneyTo
+	Player.transferMoneyTo = function(self, target, amount)
+		if target and S.npcTransferBlocked(self, target.guid) then
+			return false
+		end
+		return stockTransfer(self, target, amount)
+	end
+	print("[Warning - Chaos season] data/lib/core/player.lua is not patched (tools/patch_season_events.py): the NPC bank transfer is guarded at runtime")
+end
 
 -- season uniques (loot.lua rollUniques): true when this season unique may not drop for `owner` (a Player or nil)
 function S.uniqueBlocked(uniqueSeason, owner)
 	local realm = owner and S.realmOf(owner) or nil
 	return not S.uniqueAllowed(uniqueSeason, realm, now(), seasons(), S.ov)
+end
+
+-- ---------------------------------------------------------------- account-wide Chaos Coins
+-- the store (shop.lua): why `target` (a Player, or the guid of an offline gift receiver) may not get `offer`, or nil.
+-- gift: bought by another character (name = the receiver's name for the text)
+function S.storeProblem(target, offer, gift, name)
+	if not S.current() or not cfg.store then
+		return nil
+	end
+	local realm
+	if type(target) == "number" then
+		realm = S.realmOfGuid(target)
+	else
+		if staff(target) then
+			return nil
+		end
+		realm = S.realmOf(target)
+		name = name or target:getName()
+	end
+	return S.storeText(realm, offer, cfg.store, gift, name)
+end
+
+-- the season pass (seasonpass.lua): why this character may not claim `reward` now, or nil
+function S.passClaimProblem(player, reward)
+	if not S.current() or staff(player) or S.passClaimAllowed(reward, S.realmOf(player), cfg.passItems) then
+		return nil
+	end
+	return cfg.passItems and cfg.passItems.message or "Season characters cannot claim this now."
+end
+
+-- the market (market.lua, no change there): a season character lists, buys and posts buy orders for gold only.
+-- ChaosMarket.list / buy / orderPost are wrapped (again after a /reload of market.lua), as ChaosLeaderboard.record is
+local MARKET_CURRENCY = {
+	list = function(d) return (tonumber(d.coins) or 0) > 0 and "coins" or "gold" end,
+	buy = function(d) return d.cur == "coins" and "coins" or "gold" end,
+	orderPost = function(d) return d.cur == "coins" and "coins" or "gold" end,
+	fill = function() return "gold" end -- wrapped for the season modes only (Self-Found: no market)
+}
+S.marketWrapped = S.marketWrapped or {}
+function S.marketRefusal(player, action, d)
+	local pick = MARKET_CURRENCY[action]
+	if not pick or not S.current() or staff(player) then
+		return nil
+	end
+	local modes = S.modesMarketRefusal and S.modesMarketRefusal(player, action) -- season modes (season_modes.lua)
+	if modes then
+		return modes
+	end
+	local ok, currency = pcall(pick, type(d) == "table" and d or {})
+	if ok and not S.marketCurrencyAllowed(S.realmOf(player), currency, cfg.market) then
+		return cfg.market and cfg.market.message or "Season markets trade for gold only."
+	end
+	return nil
+end
+
+function S.wrapMarket()
+	local MK = ChaosMarket
+	if not MK then
+		return
+	end
+	for action in pairs(MARKET_CURRENCY) do
+		local fn = MK[action]
+		if type(fn) == "function" and fn ~= S.marketWrapped[action] then
+			local original = fn
+			local wrapped = function(player, d, ...)
+				local why = S.marketRefusal(player, action, d)
+				if why then
+					Chaos.sendChunked(player, ChaosOpcodes.market or 221, json.encode({action = "error", data = {text = why}}))
+					return false
+				end
+				return original(player, d, ...)
+			end
+			S.marketWrapped[action] = wrapped
+			MK[action] = wrapped
+		end
+	end
 end
 
 -- season modifier: experience
@@ -560,13 +671,19 @@ end
 
 -- ---------------------------------------------------------------- migration (end of season)
 local function migrateRow(guid, seasonId, why)
+	if S.modesMigrated then -- season modes (season_modes.lua): reset the mode, the end-of-season achievements
+		pcall(S.modesMigrated, guid, seasonId, why)
+	end
 	db.query(string.format("UPDATE `%s` SET `migrated_at` = %d WHERE `player_id` = %d AND `migrated_at` = 0",
 		T.players, now(), guid))
 	S.rows[guid] = nil
 	S.members[guid] = nil
 	logEvent(seasonId, guid, "migrate", why)
 	local p = Player(guid)
-	if p then
+	if p and why == "fallen" then -- a fallen Hardcore character (season_modes.lua tells it)
+		S.rowOf(guid)
+		S.sendState(p, false)
+	elseif p then
 		local season = S.byId(seasons(), seasonId)
 		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s has ended. This character is now a standard character: " ..
 			"it keeps its level, skills, items and passive tree and can trade with everyone.", season and season.name or "The season"))
@@ -574,6 +691,8 @@ local function migrateRow(guid, seasonId, why)
 		S.sendState(p, false)
 	end
 end
+
+S.migrateRow = migrateRow -- season modes (season_modes.lua): a fallen Hardcore character migrates at once
 
 -- migrate every season character whose season has ended; idempotent. Returns the number migrated.
 function S.migrateAll(why)
@@ -617,9 +736,15 @@ local function storedItems(player)
 	return n
 end
 
+-- items only when joinCheck reads them (S.joinNeedsItems): the count opens the depot chests, and an opened depot is
+-- rewritten by the engine at every save and logout (the login state send asks for this for every character)
 function S.joinInfo(player)
-	return {level = player:getLevel(), row = S.rowOf(player:getGuid()), items = storedItems(player),
+	local info = {level = player:getLevel(), row = S.rowOf(player:getGuid()), items = 0,
 		party = player:getParty() ~= nil, house = player:getHouse() ~= nil}
+	if S.joinNeedsItems(info, cfg) then
+		info.items = storedItems(player)
+	end
+	return info
 end
 
 local function joinTerms(season)
@@ -664,14 +789,14 @@ local function doJoin(player, season)
 		pcall(NP.giveKit, player)
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to %s! %s is now a season character %s. " ..
-		"The season ends in %s. !season shows your milestones.", season.name, player:getName(), season.tag or "",
+		"The season ends in %s. Adventure > Season shows your milestones.", season.name, player:getName(), season.tag or "",
 		S.formatDuration(select(2, S.times(season, S.ov)) - now())))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED or CONST_ME_MAGIC_BLUE)
 	pcall(function() player:save() end)
 end
 
 -- confirm = false: check and ask for the confirmation; true: join when the confirmation is still open
-function S.join(player, confirm)
+function S.join(player, confirm, modeKey)
 	local guid = player:getGuid()
 	local season, reason = S.joinCheck(S.joinInfo(player), cfg, now(), S.ov)
 	if not season then
@@ -681,16 +806,29 @@ function S.join(player, confirm)
 		return false
 	end
 	if confirm and S.pending[guid] and S.pending[guid] >= now() then
+		local mode -- season modes (season_modes.lua): the mode picked in the confirmation (nil key = Standard)
+		if S.modesPick then
+			local why
+			mode, why = S.modesPick(modeKey)
+			if not mode then
+				player:sendTextMessage(MESSAGE_INFO_DESCR, why)
+				return false
+			end
+		end
 		S.pending[guid] = nil
 		doJoin(player, season)
+		if mode and S.modesJoined then
+			S.modesJoined(player, season, mode)
+		end
 		S.sendState(player, false)
 		return true
 	end
 	S.pending[guid] = now() + cfg.join.confirmSeconds
 	local text = joinTerms(season)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, text .. string.format(" Type !season join confirm within %d seconds.",
+	player:sendTextMessage(MESSAGE_INFO_DESCR, text .. string.format(" Confirm in the Season window within %d seconds.",
 		cfg.join.confirmSeconds))
-	Chaos.send(player, OPCODE, "confirm", {text = text, seconds = cfg.join.confirmSeconds})
+	Chaos.send(player, OPCODE, "confirm", {text = text, seconds = cfg.join.confirmSeconds,
+		modes = S.modesChoices and S.modesChoices() or nil}) -- season modes (season_modes.lua)
 	return false
 end
 
@@ -732,6 +870,9 @@ function S.stateOf(player)
 	local _, reason = S.joinCheck(S.joinInfo(player), cfg, now(), S.ov)
 	local mine = {realm = realm, seasonal = realm > 0, veteran = row and realm == 0 or false,
 		joinedSeason = row and row.season or nil, eligible = reason == nil, reason = reason, level = player:getLevel()}
+	if S.modesMine then -- season modes (season_modes.lua): mode, fallen, heartbeat
+		S.modesMine(player, mine)
+	end
 	local stats = {}
 	if season and realm == season.id then
 		for k, v in pairs(S.stats[guid] or {}) do
@@ -773,7 +914,7 @@ local function infoText(player)
 	if d.mine.seasonal then
 		lines[#lines + 1] = "This character is a season character."
 	elseif d.mine.eligible then
-		lines[#lines + 1] = "This character can join: !season join."
+		lines[#lines + 1] = "This character can join: Adventure > Season."
 	elseif s.status == "active" then
 		lines[#lines + 1] = "Join: " .. tostring(d.mine.reason)
 	end
@@ -819,7 +960,8 @@ function S.leaderboardMeta(player)
 	if not season or not ChaosLeaderboard or not lbCfg() then
 		return nil
 	end
-	return {id = season.id, name = season.name, tag = season.tag}
+	return {id = season.id, name = season.name, tag = season.tag,
+		modes = S.modesLadderTabs and S.modesLadderTabs() or nil} -- season modes (season_modes.lua)
 end
 
 local function vocationName(id)
@@ -844,7 +986,8 @@ end
 
 local function ladderWhere(g, seasonId)
 	return string.format("p.`vocation` IN (%s) AND p.`group_id` < %d AND p.`deletion` = 0 AND sp.`season` = %d AND " ..
-		"sp.`migrated_at` = 0", table.concat(g.ids, ","), cfg.ladder.staffGroup, seasonId)
+		"sp.`migrated_at` = 0", table.concat(g.ids, ","), cfg.ladder.staffGroup, seasonId) ..
+		(ChaosAntibot and ChaosAntibot.heldClause and ChaosAntibot.heldClause("p.") or "") -- anti-bot review holds (antibot.lua)
 end
 
 local function seasonLadderRows(g, seasonId)
@@ -881,12 +1024,16 @@ local function groupOf(player, groupKey)
 	end
 	return own or groups[1], own
 end
+S.ladderHelpers = {where = ladderWhere, groupOf = groupOf, vocationName = vocationName, boardTitle = boardTitle} -- modes
 
 -- the Season view of a leaderboard (called by leaderboard.lua). Returns true when it answered.
-function S.sendBoard(player, key, groupKey)
+function S.sendBoard(player, key, groupKey, mode)
 	local season, LB, lc = S.current(), ChaosLeaderboard, lbCfg()
 	if not season or not LB or not lc then
 		return false
+	end
+	if mode and mode ~= "all" and S.modesSendBoard then -- season modes (season_modes.lua): one mode's tab
+		return S.modesSendBoard(player, key, groupKey, mode)
 	end
 	local data
 	if key == lc.ladder.key then
@@ -952,11 +1099,12 @@ local lastActive -- id of the season running at the last check (start / end anno
 
 local function checkSeasons(startup)
 	S.wrapLeaderboard()
+	S.wrapMarket()
 	local season = S.current()
 	local id = season and season.id or 0
 	if not startup and lastActive ~= nil and id ~= lastActive then
 		if season then
-			Game.broadcastMessage(string.format("%s %s has begun! New characters can join with !season join.", season.name,
+			Game.broadcastMessage(string.format("%s %s has begun! New characters can join in Adventure > Season.", season.name,
 				season.tag or ""), MESSAGE_EVENT_ADVANCE)
 			logEvent(season.id, 0, "start", "season started")
 		end
@@ -1041,11 +1189,11 @@ function login.onLogin(player)
 		local s = S.current()
 		if s then
 			if S.realmOf(p) == s.id then
-				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s %s: %s left. !season shows your milestones.",
+				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s %s: %s left. Adventure > Season shows your milestones.",
 					s.name, s.tag or "", S.formatDuration(select(2, S.times(s, S.ov)) - now())))
 			elseif not S.rowOf(p:getGuid()) and p:getLevel() <= cfg.join.maxLevel then
 				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s is running. This character can still join it: " ..
-					"!season join (or Chaos -> Season in the top menu).", s.name))
+					"Adventure > Season in the menu.", s.name))
 			end
 		end
 		S.sendState(p, false)
@@ -1068,6 +1216,10 @@ local advance = CreatureEvent("ChaosSeasonAdvance")
 function advance.onAdvance(player, skill, oldLevel, newLevel)
 	if skill == SKILL_LEVEL and newLevel > oldLevel then
 		S.checkMilestones(player)
+		-- the window's level progress and the Join button (level) stay current while it is open
+		if shownSeason() then
+			S.sendState(player, false)
+		end
 	end
 	return true
 end
@@ -1094,11 +1246,15 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "season." .. tostring(msg.action), 300) then
+		return
+	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	if msg.action == "open" then
 		S.sendState(player, true)
 	elseif msg.action == "join" then
-		S.join(player, data.confirm == true)
+		S.join(player, data.confirm == true, type(data.mode) == "string" and data.mode or nil)
 	end
 end
 ext:type("extendedopcode")
@@ -1186,9 +1342,13 @@ local function onCommand(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!season", "/season"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onCommand
-	talk:separator(" ")
-	talk:register()
+-- staff only (players open the window from the menu)
+local talk = TalkAction("/season")
+function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
+	return onCommand(player, words, param)
 end
+talk:separator(" ")
+talk:register()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Death Mage" nameDescription="a death mage" race="blood" experience="180000" evented = "25" speed="450" skulled="2" looting="1" manacost="0">
 	<health now="250000" max="250000"/>
-	<look type="555" corpse="6068" />
+	<look type="1539" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
 	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
@@ -13,7 +13,6 @@
 		<flag pushable="0"/>
 		<flag canpushitems="1"/>
 		<flag canpushcreatures="1"/>
-		<flag ignorespawnboost="1"/>
 		<flag targetdistance="1"/>
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
@@ -57,4 +56,21 @@
 	<voices interval="5000" chance="10">
 		<voice sentence="Learn the secret of our magic! YOUR death!"/>
 	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="60" chance="70000"/><!-- platinum coin -->
+		<item id="2160" chance="8000"/><!-- crystal coin -->
+		<item id="5944" countmax="2" chance="15000"/><!-- soul orb -->
+		<item id="2150" countmax="4" chance="8000"/><!-- small amethyst -->
+		<item id="2153" chance="3000"/><!-- violet gem -->
+		<item id="8890" chance="400"/><!-- robe of the underworld -->
+		<item id="8903" chance="400"/><!-- spellbook of lost souls -->
+		<item id="8918" chance="200"/><!-- spellbook of dark mysteries -->
+		<item id="8910" chance="400"/><!-- underworld rod -->
+		<item id="2436" chance="500"/><!-- skull staff -->
+		<item id="6300" chance="600"/><!-- death ring -->
+		<item id="2136" chance="200"/><!-- demonbone amulet -->
+		<item id="25380" countmax="1" chance="30"/><!-- talent token -->
+	</loot>
 </monster>

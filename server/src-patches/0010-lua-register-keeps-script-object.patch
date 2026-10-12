@@ -1,0 +1,75 @@
+# Lua-created event objects stay valid after :register(). The engine took ownership of the object the script holds:
+# Actions / TalkActions / CreatureEvents / MoveEvents / GlobalEvents / InstantSpell / RuneSpell ::registerLuaEvent wrap it
+# in a unique_ptr and delete it when they return, but the Lua userdata keeps pointing at it. Every method called on the
+# object afterwards (action:clearItemIdRange() inside luaActionRegister itself, moveevent:type("stepout") for the second
+# registration of one MoveEvent, spell:name() / spell:cooldown(...) after spell:register(), ...) read and WROTE freed
+# heap memory: 18 distinct heap-use-after-free reports at every script load under AddressSanitizer, and an arbitrary
+# crash (or a silently changed object) whenever the freed block had been reused, e.g. after a /lua test that created a
+# Spell. Now the register functions hand the engine a copy (new T(*object)); the object in the script is left alone,
+# so reusing it for another registration keeps working (a few hundred small objects stay allocated per script load).
+# Apply in the server source root after 0009: patch -p1 < 0010-lua-register-keeps-script-object.patch, then rebuild.
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -15752,7 +15752,7 @@
+ 				pushBoolean(L, false);
+ 				return 1;
+ 			}
+-			pushBoolean(L, g_spells->registerInstantLuaEvent(instant));
++			pushBoolean(L, g_spells->registerInstantLuaEvent(new InstantSpell(*instant)));
+ 		} else if (spell->spellType == SPELL_RUNE) {
+ 			RuneSpell* rune = dynamic_cast<RuneSpell*>(getUserdata<Spell>(L, 1));
+ 			if (rune->getMagicLevel() != 0 || rune->getLevel() != 0) {
+@@ -15767,7 +15767,7 @@
+ 				pushBoolean(L, false);
+ 				return 1;
+ 			}
+-			pushBoolean(L, g_spells->registerRuneLuaEvent(rune));
++			pushBoolean(L, g_spells->registerRuneLuaEvent(new RuneSpell(*rune)));
+ 		}
+ 	} else {
+ 		lua_pushnil(L);
+@@ -16568,7 +16568,7 @@
+ 			pushBoolean(L, false);
+ 			return 1;
+ 		}
+-		pushBoolean(L, g_actions->registerLuaEvent(action));
++		pushBoolean(L, g_actions->registerLuaEvent(new Action(*action)));
+ 		action->clearActionIdRange();
+ 		action->clearItemIdRange();
+ 		action->clearUniqueIdRange();
+@@ -16725,7 +16725,7 @@
+ 			pushBoolean(L, false);
+ 			return 1;
+ 		}
+-		pushBoolean(L, g_talkActions->registerLuaEvent(talk));
++		pushBoolean(L, g_talkActions->registerLuaEvent(new TalkAction(*talk)));
+ 	} else {
+ 		lua_pushnil(L);
+ 	}
+@@ -16844,7 +16844,7 @@
+ 			pushBoolean(L, false);
+ 			return 1;
+ 		}
+-		pushBoolean(L, g_creatureEvents->registerLuaEvent(creature));
++		pushBoolean(L, g_creatureEvents->registerLuaEvent(new CreatureEvent(*creature)));
+ 	} else {
+ 		lua_pushnil(L);
+ 	}
+@@ -16937,7 +16937,7 @@
+ 			pushBoolean(L, g_moveEvents->registerLuaFunction(moveevent));
+ 			return 1;
+ 		}
+-		pushBoolean(L, g_moveEvents->registerLuaEvent(moveevent));
++		pushBoolean(L, g_moveEvents->registerLuaEvent(new MoveEvent(*moveevent)));
+ 		moveevent->clearItemIdRange();
+ 		moveevent->clearActionIdRange();
+ 		moveevent->clearUniqueIdRange();
+@@ -17251,7 +17251,7 @@
+ 			return 1;
+ 		}
+ 		
+-		pushBoolean(L, g_globalEvents->registerLuaEvent(globalevent));
++		pushBoolean(L, g_globalEvents->registerLuaEvent(new GlobalEvent(*globalevent)));
+ 	} else {
+ 		lua_pushnil(L);
+ 	}

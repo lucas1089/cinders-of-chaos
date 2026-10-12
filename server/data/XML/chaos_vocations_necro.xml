@@ -1,0 +1,68 @@
+<!-- Chaos vocations, the Necromancer line (docs/CLASSES.md "Necromancer", the fifth class): Necromancer (base) ->
+     Lich | Bone Lord. Installed into the base server's data/XML/vocations.xml by server/tools/add_vocations.py, together
+     with chaos_vocations.xml and the other class fragments, between the "BEGIN chaos vocations" markers. All ids of
+     the line: server/data/scripts/chaos/necro_config.lua (ids, clientIds).
+
+     | id | class       | base | client byte |
+     | 20 | Necromancer | 20   |  7 |
+     | 21 | Lich        | 20   | 17 |
+     | 22 | Bone Lord   | 20   | 27 |
+
+     clientid: slot 7 (+10 / +20 for the two ascended classes; the Monk has slot 8, the Templar slot 9). The client maps
+     the bytes back to these ids (client/base-patches/0016-chaos-vocation-ids.patch). Both ascended classes name the
+     Necromancer as fromvoc; the choice is made by !ascend lich|bonelord (data/scripts/chaos/ascension.lua).
+
+     A caster with a little more health than the Mystic (hp 5 / mana 30 / cap 10): Necromancer hp 8 / mana 26 / cap 13,
+     Lich hp 7 / mana 28 / cap 12 (the spell caster), Bone Lord hp 9 / mana 24 / cap 15, defense / armor 1.05 (it stands
+     in its army). Skills and magic level (manamultiplier 1.1) like the Mystic; wands and rods. -->
+	<vocation id="20" clientid="7" name="Necromancer" description="a necromancer" gaincap="13" gainhp="8" gainmana="26" gainhpticks="6" gainhpamount="5" gainmanaticks="3" gainmanaamount="5" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="100" gainsoulticks="120" fromvoc="20" noPongKickTime="40">
+		<formula meleeDamage="1.0" distDamage="1.0" defense="1.0" armor="1.0" />
+		<skill id="0" multiplier="1.5" />
+		<skill id="1" multiplier="2.0" />
+		<skill id="2" multiplier="2.0" />
+		<skill id="3" multiplier="2.0" />
+		<skill id="4" multiplier="2.0" />
+		<skill id="5" multiplier="1.5" />
+		<skill id="6" multiplier="1.1" />
+		<skill id="7" multiplier="1.1" />
+		<skill id="8" multiplier="1.1" />
+		<skill id="9" multiplier="1.1" />
+		<skill id="10" multiplier="1.1" />
+		<skill id="11" multiplier="1.1" />
+		<skill id="12" multiplier="1.1" />
+		<skill id="13" multiplier="1.1" />
+	</vocation>
+	<vocation id="21" clientid="17" name="Lich" description="a lich" gaincap="12" gainhp="7" gainmana="28" gainhpticks="4" gainhpamount="10" gainmanaticks="2" gainmanaamount="10" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="20" noPongKickTime="40">
+		<formula meleeDamage="1.0" distDamage="1.0" defense="1.0" armor="1.0" />
+		<skill id="0" multiplier="1.5" />
+		<skill id="1" multiplier="2.0" />
+		<skill id="2" multiplier="2.0" />
+		<skill id="3" multiplier="2.0" />
+		<skill id="4" multiplier="2.0" />
+		<skill id="5" multiplier="1.5" />
+		<skill id="6" multiplier="1.1" />
+		<skill id="7" multiplier="1.1" />
+		<skill id="8" multiplier="1.1" />
+		<skill id="9" multiplier="1.1" />
+		<skill id="10" multiplier="1.1" />
+		<skill id="11" multiplier="1.1" />
+		<skill id="12" multiplier="1.1" />
+		<skill id="13" multiplier="1.1" />
+	</vocation>
+	<vocation id="22" clientid="27" name="Bone Lord" description="a bone lord" gaincap="15" gainhp="9" gainmana="24" gainhpticks="4" gainhpamount="10" gainmanaticks="2" gainmanaamount="10" manamultiplier="1.1" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="20" noPongKickTime="40">
+		<formula meleeDamage="1.0" distDamage="1.0" defense="1.05" armor="1.05" />
+		<skill id="0" multiplier="1.5" />
+		<skill id="1" multiplier="2.0" />
+		<skill id="2" multiplier="2.0" />
+		<skill id="3" multiplier="2.0" />
+		<skill id="4" multiplier="2.0" />
+		<skill id="5" multiplier="1.5" />
+		<skill id="6" multiplier="1.1" />
+		<skill id="7" multiplier="1.1" />
+		<skill id="8" multiplier="1.1" />
+		<skill id="9" multiplier="1.1" />
+		<skill id="10" multiplier="1.1" />
+		<skill id="11" multiplier="1.1" />
+		<skill id="12" multiplier="1.1" />
+		<skill id="13" multiplier="1.1" />
+	</vocation>

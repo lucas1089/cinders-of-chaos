@@ -1,0 +1,103 @@
+# Guild wars in game (server/data/scripts/chaos/guildwar.lua): the engine loads a player's war list (guild_wars rows
+# with status 1, the enemy guild ids) only at login (IOLoginData::loadPlayer), so a war accepted or ended in game did
+# not change the war emblems or the skull rules (Player::isInWar: no white skull and no unjustified kill against a war
+# enemy) of the members online until they logged in again. This adds
+#   player:getGuildWarList()            the enemy guild ids of the player's wars (a list), as the engine holds them
+#   player:setGuildWarList({ids})       replaces that list, then every player in view (and the player) gets the
+#                                       creature emblem (re-sent creature) and skull of the other again, so the war
+#                                       emblems change at once
+# guildwar.lua calls setGuildWarList for every online member of both guilds when a war starts or ends (the list read
+# from guild_wars as the engine does at login); without this patch it tells the members the emblems show at the next
+# login. Only luascript.cpp / luascript.h change.
+# Apply in the server source root after 0001-0019: patch -p1 < 0020-guild-war-list-lua.patch, then rebuild.
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2552,6 +2552,9 @@
+ 	registerMethod("Player", "getGuildNick", LuaScriptInterface::luaPlayerGetGuildNick);
+ 	registerMethod("Player", "setGuildNick", LuaScriptInterface::luaPlayerSetGuildNick);
+ 
++	registerMethod("Player", "getGuildWarList", LuaScriptInterface::luaPlayerGetGuildWarList);
++	registerMethod("Player", "setGuildWarList", LuaScriptInterface::luaPlayerSetGuildWarList);
++
+ 	registerMethod("Player", "getGroup", LuaScriptInterface::luaPlayerGetGroup);
+ 	registerMethod("Player", "setGroup", LuaScriptInterface::luaPlayerSetGroup);
+ 
+@@ -9564,6 +9567,66 @@
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaPlayerGetGuildWarList(lua_State* L)
++{
++	// player:getGuildWarList()
++	Player* player = getUserdata<Player>(L, 1);
++	if (!player) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	const GuildWarVector& wars = player->getGuildWarVector();
++	lua_createtable(L, wars.size(), 0);
++
++	int index = 0;
++	for (uint32_t guildId : wars) {
++		lua_pushnumber(L, guildId);
++		lua_rawseti(L, -2, ++index);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerSetGuildWarList(lua_State* L)
++{
++	// player:setGuildWarList({guildId, ...})
++	Player* player = getUserdata<Player>(L, 1);
++	if (!player || !isTable(L, 2)) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	GuildWarVector wars;
++	lua_pushnil(L);
++	while (lua_next(L, 2) != 0) {
++		uint32_t guildId = getNumber<uint32_t>(L, -1);
++		if (guildId != 0 && std::find(wars.begin(), wars.end(), guildId) == wars.end()) {
++			wars.push_back(guildId);
++		}
++		lua_pop(L, 1);
++	}
++	player->guildWarVector = std::move(wars);
++
++	// the war emblems and the skulls in view depend on the list: both sides see each other again
++	SpectatorVec spectators;
++	g_game.map.getSpectators(spectators, player->getPosition(), true, true);
++	for (Creature* spectator : spectators) {
++		Player* other = spectator->getPlayer();
++		if (!other) {
++			continue;
++		}
++
++		other->sendCreatureEmblem(player);
++		other->sendCreatureSkull(player);
++		if (other != player) {
++			player->sendCreatureEmblem(other);
++			player->sendCreatureSkull(other);
++		}
++	}
++	pushBoolean(L, true);
++	return 1;
++}
++
+ int LuaScriptInterface::luaPlayerGetGroup(lua_State* L)
+ {
+ 	// player:getGroup()
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -964,6 +964,9 @@
+ 		static int luaPlayerGetGuildNick(lua_State* L);
+ 		static int luaPlayerSetGuildNick(lua_State* L);
+ 
++		static int luaPlayerGetGuildWarList(lua_State* L);
++		static int luaPlayerSetGuildWarList(lua_State* L);
++
+ 		static int luaPlayerGetGroup(lua_State* L);
+ 		static int luaPlayerSetGroup(lua_State* L);
+ 

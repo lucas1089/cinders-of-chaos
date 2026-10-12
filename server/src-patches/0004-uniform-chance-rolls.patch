@@ -1,0 +1,173 @@
+# Uniform chance rolls. The base engine rolled the critical hit chance (single-target combat), the life and mana leech
+# chances (single-target and area combat) and the monster-set spawn chance with normal_random(1, 100) <= chance:
+# normal_random is a bell curve around 50 (sd 25, values outside 1..100 fall on 50/51), so a 10% chance fired ~3.0%
+# of the time, 20% ~9.0%, 30% ~18.7% and 50% exactly 50%. They now use uniform_random (as the area critical hit
+# already did), so a chance means what it says. The Chaos chance values were rescaled to about two thirds to keep the
+# old effective rates at typical totals (server/README.md "Critical and leech chances").
+# The rarity roll (Item::applyRarityEffects, Monster::dropLoot) gives a critical / mana / life chance of
+# (2 * roll + 1) / 3 (1..6 -> 1,1,2,3,3,4); the paired amount keeps the full roll.
+# Apply in the server source root after 0001-0003: patch -p1 < 0004-uniform-chance-rolls.patch, then rebuild.
+--- a/src/combat.cpp
++++ b/src/combat.cpp
+@@ -884,7 +884,7 @@
+ 			if (!damage.critical && damage.primary.type != COMBAT_HEALING && damage.origin != ORIGIN_CONDITION) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_CRITICALHITCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_CRITICALHITAMOUNT);
+-				if (chance > 0 && skill > 0 && normal_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
+ 					damage.primary.value += std::round(damage.primary.value * (skill / 100.));
+ 					damage.secondary.value += std::round(damage.secondary.value * (skill / 100.));
+ 					damage.critical = true;
+@@ -924,7 +924,7 @@
+ 			if (casterPlayer->getHealth() < casterPlayer->getMaxHealth()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && normal_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
+ 					leechCombat.primary.value = std::round(totalDamage * (skill / 100.));
+ 					g_game.combatChangeHealth(nullptr, casterPlayer, leechCombat);
+ 					casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_RED);
+@@ -934,7 +934,7 @@
+ 			if (casterPlayer->getMana() < casterPlayer->getMaxMana()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && normal_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
+ 					leechCombat.primary.value = std::round(totalDamage * (skill / 100.));
+ 					g_game.combatChangeMana(nullptr, casterPlayer, leechCombat);
+ 					casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_BLUE);
+@@ -1127,7 +1127,7 @@
+ 			if (casterPlayer->getHealth() < casterPlayer->getMaxHealth()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && normal_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
+ 					int32_t finalLeech = calcLeechValue(skill, 10.0);
+ 					leechCombat.primary.value = finalLeech;
+ 					if (finalLeech > 0) {
+@@ -1139,7 +1139,7 @@
+ 			if (casterPlayer->getMana() < casterPlayer->getMaxMana()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && normal_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
+ 					int32_t finalLeech = calcLeechValue(skill, 5.0);
+ 					leechCombat.primary.value = finalLeech;
+ 					if (finalLeech > 0) {
+--- a/src/item.cpp
++++ b/src/item.cpp
+@@ -244,12 +244,13 @@
+         	if (!criticalApplied) {
+             	const auto& range = absorptionBonuses[rarityId - 1];
+             	int bonus = uniform_random(range.first, range.second);
++            	int chanceBonus = (2 * bonus + 1) / 3; // Chaos: chance ~2/3 of the roll (uniform chance rolls)
+             	std::string critChanceKey = "rarity_criticalHitChance";
+             	std::string critHitKey    = "rarity_criticalHitAmount";
+-            	item->setCustomAttribute(critChanceKey, static_cast<int64_t>(bonus));
++            	item->setCustomAttribute(critChanceKey, static_cast<int64_t>(chanceBonus));
+             	item->setCustomAttribute(critHitKey,    static_cast<int64_t>(bonus));
+             	specialsDesc += (specialsDesc.empty() ? "" : ", ") +
+-                            std::string("Critical Chance +") + std::to_string(bonus) + "%";
++                            std::string("Critical Chance +") + std::to_string(chanceBonus) + "%";
+             	specialsDesc += ", " +
+                             std::string("Critical Hit +") + std::to_string(bonus) + "%";
+             	criticalApplied = true;
+@@ -260,12 +261,13 @@
+         	if (!manaApplied) {
+             	const auto& range = absorptionBonuses[rarityId - 1];
+             	int bonus = uniform_random(range.first, range.second);
++            	int chanceBonus = (2 * bonus + 1) / 3; // Chaos: chance ~2/3 of the roll (uniform chance rolls)
+             	std::string manaChanceKey = "rarity_manaLeechChance";
+             	std::string manaAmountKey = "rarity_manaLeechAmount";
+-            	item->setCustomAttribute(manaChanceKey, static_cast<int64_t>(bonus));
++            	item->setCustomAttribute(manaChanceKey, static_cast<int64_t>(chanceBonus));
+             	item->setCustomAttribute(manaAmountKey, static_cast<int64_t>(bonus));
+             	specialsDesc += (specialsDesc.empty() ? "" : ", ") +
+-                            std::string("Mana Chance +") + std::to_string(bonus) + "%";
++                            std::string("Mana Chance +") + std::to_string(chanceBonus) + "%";
+             	specialsDesc += ", " +
+                             std::string("Mana Amount +") + std::to_string(bonus) + "%";
+             	manaApplied = true;
+@@ -276,12 +278,13 @@
+         	if (!lifeApplied) {
+             	const auto& range = absorptionBonuses[rarityId - 1];
+             	int bonus = uniform_random(range.first, range.second);
++            	int chanceBonus = (2 * bonus + 1) / 3; // Chaos: chance ~2/3 of the roll (uniform chance rolls)
+             	std::string lifeChanceKey = "rarity_lifeLeechChance";
+             	std::string lifeAmountKey = "rarity_lifeLeechAmount";
+-            	item->setCustomAttribute(lifeChanceKey, static_cast<int64_t>(bonus));
++            	item->setCustomAttribute(lifeChanceKey, static_cast<int64_t>(chanceBonus));
+             	item->setCustomAttribute(lifeAmountKey, static_cast<int64_t>(bonus));
+             	specialsDesc += (specialsDesc.empty() ? "" : ", ") +
+-                            std::string("Life Chance +") + std::to_string(bonus) + "%";
++                            std::string("Life Chance +") + std::to_string(chanceBonus) + "%";
+             	specialsDesc += ", " +
+                             std::string("Life Amount +") + std::to_string(bonus) + "%";
+             	lifeApplied = true;
+--- a/src/monster.cpp
++++ b/src/monster.cpp
+@@ -2303,14 +2303,15 @@
+ 				if (!criticalApplied) {
+ 					const auto& range = absorptionBonuses[rarityId - 1];
+ 					int bonus = uniform_random(range.first, range.second);
++					int chanceBonus = (2 * bonus + 1) / 3; // Chaos: chance ~2/3 of the roll (uniform chance rolls)
+ 					std::string keyChance = "rarity_criticalHitChance";
+ 					std::string keyAmount = "rarity_criticalHitAmount";
+ 		
+-					item->setCustomAttribute(keyChance, static_cast<int64_t>(bonus));
++					item->setCustomAttribute(keyChance, static_cast<int64_t>(chanceBonus));
+ 					item->setCustomAttribute(keyAmount, static_cast<int64_t>(bonus));
+ 		
+ 					specialsDesc += (specialsDesc.empty() ? "" : ", ")
+-								  + std::string("Critical Chance +") + std::to_string(bonus) + "%";
++								  + std::string("Critical Chance +") + std::to_string(chanceBonus) + "%";
+ 					specialsDesc += ", Critical Hit +" + std::to_string(bonus) + "%";
+ 		
+ 					criticalApplied = true;
+@@ -2321,14 +2322,15 @@
+ 				if (!manaApplied) {
+ 					const auto& range = absorptionBonuses[rarityId - 1];
+ 					int bonus = uniform_random(range.first, range.second);
++					int chanceBonus = (2 * bonus + 1) / 3; // Chaos: chance ~2/3 of the roll (uniform chance rolls)
+ 					std::string keyChance = "rarity_manaLeechChance";
+ 					std::string keyAmount = "rarity_manaLeechAmount";
+ 		
+-					item->setCustomAttribute(keyChance, static_cast<int64_t>(bonus));
++					item->setCustomAttribute(keyChance, static_cast<int64_t>(chanceBonus));
+ 					item->setCustomAttribute(keyAmount, static_cast<int64_t>(bonus));
+ 		
+ 					specialsDesc += (specialsDesc.empty() ? "" : ", ")
+-								  + std::string("Mana Chance +") + std::to_string(bonus) + "%";
++								  + std::string("Mana Chance +") + std::to_string(chanceBonus) + "%";
+ 					specialsDesc += ", Mana Amount +" + std::to_string(bonus) + "%";
+ 		
+ 					manaApplied = true;
+@@ -2339,14 +2341,15 @@
+ 				if (!lifeApplied) {
+ 					const auto& range = absorptionBonuses[rarityId - 1];
+ 					int bonus = uniform_random(range.first, range.second);
++					int chanceBonus = (2 * bonus + 1) / 3; // Chaos: chance ~2/3 of the roll (uniform chance rolls)
+ 					std::string keyChance = "rarity_lifeLeechChance";
+ 					std::string keyAmount = "rarity_lifeLeechAmount";
+ 		
+-					item->setCustomAttribute(keyChance, static_cast<int64_t>(bonus));
++					item->setCustomAttribute(keyChance, static_cast<int64_t>(chanceBonus));
+ 					item->setCustomAttribute(keyAmount, static_cast<int64_t>(bonus));
+ 		
+ 					specialsDesc += (specialsDesc.empty() ? "" : ", ")
+-								  + std::string("Life Chance +") + std::to_string(bonus) + "%";
++								  + std::string("Life Chance +") + std::to_string(chanceBonus) + "%";
+ 					specialsDesc += ", Life Amount +" + std::to_string(bonus) + "%";
+ 		
+ 					lifeApplied = true;
+--- a/src/spawn.cpp
++++ b/src/spawn.cpp
+@@ -285,7 +285,7 @@
+ 				return spawnMonster(spawnId, pair.first, sb.pos, sb.direction, startup);
+ 			}
+ 
+-			if (pair.second >= normal_random(1, 100) && spawnMonster(spawnId, pair.first, sb.pos, sb.direction, startup)) {
++			if (pair.second >= uniform_random(1, 100) && spawnMonster(spawnId, pair.first, sb.pos, sb.direction, startup)) {
+ 				return true;
+ 			}
+ 		}

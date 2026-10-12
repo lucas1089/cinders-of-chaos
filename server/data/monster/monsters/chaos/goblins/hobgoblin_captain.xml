@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Hobgoblin Captain" nameDescription="a hobgoblin captain" race="blood" experience="700" speed="210" manacost="0">
+	<health now="950" max="950" />
+	<look type="2012" head="56" body="76" legs="115" feet="59" corpse="36073" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-253" />
+		<attack name="physical" interval="2000" chance="15" length="5" spread="2" min="-104" max="-280">
+			<attribute key="areaEffect" value="blackspark" />
+		</attack>
+	</attacks>
+	<defenses armor="30" defense="30">
+		<defense name="healing" interval="2000" chance="8" min="130" max="260">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Hold the line!" />
+		<voice sentence="For the tribe!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
+		<item id="2152" countmax="1" chance="40000" /><!-- platinum coin -->
+		<item id="36012" countmax="2" chance="18000" /><!-- piece of scrap metal -->
+		<item id="36011" countmax="1" chance="8000" /><!-- goblin skull -->
+		<item id="36016" countmax="1" chance="8000" /><!-- tribal feather -->
+		<item id="36060" countmax="2" chance="12000" /><!-- hunter's platter -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="7588" chance="4000" /><!-- strong health potion -->
+		<item id="7589" chance="4000" /><!-- strong mana potion -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

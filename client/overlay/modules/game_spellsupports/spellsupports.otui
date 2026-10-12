@@ -1,0 +1,369 @@
+// Spell supports window (game_spellsupports). Styles from client_chaos_theme (styles.otui).
+
+SupportSpellRow < UIWidget
+  height: 40
+  focusable: true
+  phantom: false
+  background-color: alpha
+  padding: 2
+
+  $hover !focus:
+    background-color: #3a333955
+
+  $focus:
+    background-color: #5a0a0a99
+    border-width: 1
+    border-color: #e8b84a
+
+  UIWidget
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 2
+    height: 16
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  UIWidget
+    id: pips
+    anchors.left: name.left
+    anchors.top: name.bottom
+    margin-top: 4
+    size: 36 10
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 3
+
+  UILabel
+    id: kind
+    anchors.left: pips.right
+    anchors.right: parent.right
+    anchors.verticalCenter: pips.verticalCenter
+    margin-left: 4
+    height: 14
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+SupportPip < UIWidget
+  size: 10 10
+  phantom: true
+  border-width: 1
+  border-color: #0d0b0e
+  background-color: #2a2226
+
+SupportSocket < UIWidget
+  height: 66
+  phantom: false
+  background-color: #0d0b0e66
+  padding: 3
+
+  ChaosItemSlot
+    id: slot
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    virtual: true
+
+    UIWidget
+      id: icon
+      anchors.centerIn: parent
+      size: 32 32
+      phantom: true
+
+  UILabel
+    id: name
+    anchors.left: slot.right
+    anchors.top: parent.top
+    anchors.right: buttons.left
+    margin-left: 8
+    margin-right: 6
+    margin-top: 2
+    height: 16
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  // three lines; spellsupports.lua shortens a longer text (full text in the row tooltip)
+  UILabel
+    id: text
+    anchors.left: name.left
+    anchors.top: name.bottom
+    anchors.right: buttons.left
+    margin-top: 2
+    margin-right: 6
+    text-align: topleft
+    text-wrap: true
+    height: 42
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UIWidget
+    id: buttons
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 104 50
+    phantom: true
+
+    ChaosButton
+      id: first
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 22
+
+    ChaosButton
+      id: second
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 22
+
+SupportRuneCell < UIWidget
+  size: 38 38
+  focusable: true
+  phantom: false
+  draggable: true
+  image-source: /images/chaos/itemslot
+  image-border: 4
+
+  $focus:
+    border-width: 1
+    border-color: #e8b84a
+
+  UIWidget
+    id: icon
+    anchors.centerIn: parent
+    size: 32 32
+    phantom: true
+
+  UILabel
+    id: count
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 2
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #ffffff
+    phantom: true
+
+ChaosMainWindow
+  id: supportsWindow
+  size: 760 616
+  !text: tr('Spell Supports')
+  @onEscape: modules.game_spellsupports.hide()
+
+  ChaosLabelDim
+    id: listTitle
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 240
+    !text: tr('Your spells')
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: listTitle.bottom
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-top: 4
+    margin-bottom: 6
+    width: 240
+    padding: 3
+
+  UIScrollArea
+    id: spellList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: spellScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 3
+    layout:
+      type: verticalBox
+    vertical-scrollbar: spellScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: spellScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 40
+    pixels-scroll: true
+
+  ChaosPanel
+    id: details
+    anchors.top: parent.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    height: 294
+    margin-left: 8
+
+    UIWidget
+      id: icon
+      size: 32 32
+      anchors.top: parent.top
+      anchors.left: parent.left
+      phantom: true
+
+    UILabel
+      id: name
+      anchors.top: parent.top
+      anchors.left: icon.right
+      anchors.right: parent.right
+      margin-left: 8
+      margin-top: 1
+      height: 16
+      text-align: left
+      font: verdana-11px-rounded
+      color: #e8b84a
+      phantom: false
+
+    UILabel
+      id: info
+      anchors.top: name.bottom
+      anchors.left: name.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 28
+      text-align: topleft
+      text-wrap: true
+      font: verdana-11px-antialised
+      color: #8c8070
+      phantom: false
+
+    ChaosSeparator
+      id: headerSeparator
+      anchors.top: info.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+
+    UIWidget
+      id: sockets
+      anchors.top: headerSeparator.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      phantom: true
+      layout:
+        type: verticalBox
+        spacing: 4
+
+    ChaosLabelDim
+      id: emptyText
+      anchors.centerIn: parent
+      !text: tr('Select a spell.')
+      text-auto-resize: true
+      visible: false
+
+  ChaosLabelDim
+    id: runesTitle
+    anchors.top: details.bottom
+    anchors.left: details.left
+    margin-top: 6
+    !text: tr('Your support runes (select one, then Socket; or drag it onto a socket)')
+
+  ChaosPanelDark
+    id: runesFrame
+    anchors.top: runesTitle.bottom
+    anchors.left: details.left
+    anchors.right: details.right
+    height: 96
+    margin-top: 4
+    padding: 3
+
+  UIScrollArea
+    id: runeGrid
+    anchors.top: runesFrame.top
+    anchors.left: runesFrame.left
+    anchors.right: runeScroll.left
+    anchors.bottom: runesFrame.bottom
+    margin: 4
+    layout:
+      type: grid
+      cell-size: 38 38
+      cell-spacing: 3
+      flow: true
+    vertical-scrollbar: runeScroll
+
+  ChaosScrollBar
+    id: runeScroll
+    anchors.top: runesFrame.top
+    anchors.right: runesFrame.right
+    anchors.bottom: runesFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 41
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: noRunes
+    anchors.centerIn: runesFrame
+    !text: tr('No support runes. They drop from monsters, rifts and bounties.')
+    text-auto-resize: true
+    visible: false
+
+  // the selected rune and the last answer: three lines each; spellsupports.lua shortens a longer text (full text
+  // in the tooltip)
+  UILabel
+    id: runeInfo
+    anchors.top: runesFrame.bottom
+    anchors.left: runesFrame.left
+    anchors.right: runesFrame.right
+    margin-top: 4
+    height: 42
+    text-align: topleft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: false
+
+  UILabel
+    id: resultLabel
+    anchors.left: details.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 6
+    height: 42
+    text-align: topleft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #9fdc7f
+    phantom: false
+
+  ChaosButton
+    id: combineButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    width: 110
+    !text: tr('Combine 3')
+    !tooltip: tr('Three runes of the selected support and level become one of the next level')
+    enabled: false
+    @onClick: modules.game_spellsupports.combineSelected()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_spellsupports.hide()

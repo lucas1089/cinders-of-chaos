@@ -1,0 +1,422 @@
+--- a/init.lua
++++ b/init.lua
+@@ -19,7 +19,19 @@
+   status = { "http://127.0.0.1:8090/clientservices" },
+   -- Direct HTTPS URL to a compatible OTMM file. The minimap download button
+   -- stays hidden while this value is empty.
+-  minimap = ""
++  minimap = "",
++  -- Cinders of Chaos signed updater (modules/client_chaos_updater, client/MANIFEST.md "Signed updater").
++  -- manifest: HTTPS URL of the signed manifest on the website ("" turns the updater off);
++  -- publicKey: the operator's Ed25519 public key, 64 hex digits (client/tools/make_update_manifest.py keygen);
++  -- package: this client package's build number (a manifest with a higher min_package asks for a new download);
++  -- required: true refuses to play when the update server cannot be reached.
++  update = {
++    manifest = "",
++    publicKey = "",
++    package = 1,
++    required = false,
++    download = ""
++  }
+ }
+ 
+ -- Direct connection to the TFS login server (no HTTP service required).
+@@ -71,6 +83,13 @@
+ g_resources.setLayout(layout)
+ 
+ -- load mods
++-- signed updater: the verified update files (write dir, chaos_update/files) go in front of the client's own files
++-- before any module is discovered; a half-applied update or one made for another client package is left out
++if g_resources.mountUpdateDir then
++  local ok, err = pcall(dofile, "/modules/client_chaos_updater/bootstrap.lua")
++  if not ok then g_logger.warning("updater bootstrap: " .. tostring(err)) end
++end
++
+ g_modules.discoverModules()
+ g_modules.ensureModuleLoaded("corelib")
+   
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -28,6 +28,7 @@
+ #include <framework/luaengine/luainterface.h>
+ #include <framework/platform/platform.h>
+ #include <framework/util/crypt.h>
++#include <framework/util/chaosupdate.h>
+ #include <framework/http/http.h>
+ #include <queue>
+ #include <regex>
+@@ -1135,6 +1136,139 @@
+     return checksum;
+ }
+ 
++// ---- Cinders of Chaos signed updater (modules/client_chaos_updater) ----
++// The updater keeps everything under "chaos_update/" in the write dir: downloads are staged there, checked against
++// the signed manifest and only then moved into "chaos_update/files", which init.lua mounts in front of the client's
++// own folder at the next start. These helpers never touch anything outside that folder.
++namespace {
++const std::string CHAOS_UPDATE_ROOT = "chaos_update/";
++
++bool isChaosUpdatePath(std::string path)
++{
++    if (!path.empty() && path[0] == '/')
++        path = path.substr(1);
++    return stdext::starts_with(path, CHAOS_UPDATE_ROOT) && path.size() > CHAOS_UPDATE_ROOT.size() &&
++        chaosupdate::isSafeUpdatePath(path);
++}
++
++std::filesystem::path chaosUpdateRealPath(std::string path)
++{
++    if (!path.empty() && path[0] == '/')
++        path = path.substr(1);
++    const char* writeDir = PHYSFS_getWriteDir();
++    if (!writeDir)
++        return {};
++    return std::filesystem::u8path(writeDir) / std::filesystem::u8path(path);
++}
++}
++
++// SHA-256 (lowercase hex) of a file in the virtual file system, read in 1 MB blocks; "" if it cannot be read
++std::string ResourceManager::fileSha256(const std::string& path)
++{
++#ifdef __EMSCRIPTEN__
++    (void)path;
++    return "";
++#else
++    PHYSFS_File* file = PHYSFS_openRead(path.c_str());
++    if (!file)
++        return "";
++    chaosupdate::Sha256Stream sha;
++    std::vector<char> buffer(1024 * 1024);
++    bool ok = true;
++    while (true) {
++        const PHYSFS_sint64 n = PHYSFS_readBytes(file, buffer.data(), buffer.size());
++        if (n < 0) { ok = false; break; }
++        if (n == 0) break;
++        sha.update(buffer.data(), static_cast<size_t>(n));
++    }
++    PHYSFS_close(file);
++    return ok ? sha.finishHex() : "";
++#endif
++}
++
++// size in bytes of a file in the virtual file system, -1 if it does not exist (opened, so a symbolic link counts
++// with the size of its target)
++int64_t ResourceManager::fileSize(const std::string& path)
++{
++    if (PHYSFS_isDirectory(path.c_str()))
++        return -1;
++    PHYSFS_File* file = PHYSFS_openRead(path.c_str());
++    if (!file)
++        return -1;
++    const PHYSFS_sint64 size = PHYSFS_fileLength(file);
++    PHYSFS_close(file);
++    return size;
++}
++
++// appends to a file of the write dir (created when missing); used for resumable downloads in parts
++bool ResourceManager::appendFileContents(const std::string& fileName, const std::string& data)
++{
++    PHYSFS_File* file = PHYSFS_openAppend(fileName.c_str());
++    if (!file) {
++        g_logger.error(stdext::format("unable to open file for appending '%s': %s", fileName, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())));
++        return false;
++    }
++    const bool ok = PHYSFS_writeBytes(file, data.data(), data.size()) == static_cast<PHYSFS_sint64>(data.size());
++    return PHYSFS_close(file) != 0 && ok;
++}
++
++// renames a file inside chaos_update/ of the write dir (one atomic step on the same disk), replacing the target
++bool ResourceManager::moveUpdateFile(const std::string& from, const std::string& to)
++{
++    if (!isChaosUpdatePath(from) || !isChaosUpdatePath(to)) {
++        g_logger.warning(stdext::format("updater: refused move '%s' -> '%s'", from, to));
++        return false;
++    }
++    const auto src = chaosUpdateRealPath(from), dst = chaosUpdateRealPath(to);
++    if (src.empty() || dst.empty())
++        return false;
++    std::error_code ec;
++    std::filesystem::create_directories(dst.parent_path(), ec);
++    std::filesystem::rename(src, dst, ec);
++    if (ec) {
++        g_logger.warning(stdext::format("updater: unable to move '%s' -> '%s': %s", from, to, ec.message()));
++        return false;
++    }
++    return true;
++}
++
++// removes a file or a whole folder inside chaos_update/ of the write dir
++bool ResourceManager::removeUpdateTree(const std::string& path)
++{
++    if (!isChaosUpdatePath(path))
++        return false;
++    const auto real = chaosUpdateRealPath(path);
++    if (real.empty())
++        return false;
++    std::error_code ec;
++    std::filesystem::remove_all(real, ec);
++    return !ec;
++}
++
++// mounts a folder of chaos_update/ at "/" in front of every other search path (its files override the client's)
++bool ResourceManager::mountUpdateDir(const std::string& path)
++{
++    if (!isChaosUpdatePath(path))
++        return false;
++    const auto real = chaosUpdateRealPath(path);
++    std::error_code ec;
++    if (real.empty() || !std::filesystem::is_directory(real, ec))
++        return false;
++    if (!PHYSFS_mount(real.u8string().c_str(), nullptr, 0)) {
++        g_logger.warning(stdext::format("updater: unable to mount '%s': %s", path, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())));
++        return false;
++    }
++    return true;
++}
++
++bool ResourceManager::unmountUpdateDir(const std::string& path)
++{
++    if (!isChaosUpdatePath(path))
++        return false;
++    const auto real = chaosUpdateRealPath(path);
++    return !real.empty() && PHYSFS_unmount(real.u8string().c_str()) != 0;
++}
++
+ std::map<std::string, std::string> ResourceManager::filesChecksums()
+ {
+     std::map<std::string, std::string> ret;
+--- a/src/framework/core/resourcemanager.h
++++ b/src/framework/core/resourcemanager.h
+@@ -85,6 +85,15 @@
+     uint64 getGeneration() const { return m_generation; }
+ 
+     std::string fileChecksum(const std::string& path);
++
++    // Cinders of Chaos signed updater (modules/client_chaos_updater, util/chaosupdate.h)
++    std::string fileSha256(const std::string& path);
++    int64_t fileSize(const std::string& path);
++    bool appendFileContents(const std::string& fileName, const std::string& data);
++    bool moveUpdateFile(const std::string& from, const std::string& to);
++    bool removeUpdateTree(const std::string& path);
++    bool mountUpdateDir(const std::string& path);
++    bool unmountUpdateDir(const std::string& path);
+     
+     std::map<std::string, std::string> filesChecksums();
+     std::string selfChecksum();
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -163,6 +163,9 @@
+     g_lua.bindSingletonFunction("g_crypt", "sha1Encode", &Crypt::sha1Encode, &g_crypt);
+     g_lua.bindSingletonFunction("g_crypt", "md5Encode", &Crypt::md5Encode, &g_crypt);
+     g_lua.bindSingletonFunction("g_crypt", "crc32", &Crypt::crc32, &g_crypt);
++    // Cinders of Chaos signed updater
++    g_lua.bindSingletonFunction("g_crypt", "sha256Encode", &Crypt::sha256Encode, &g_crypt);
++    g_lua.bindSingletonFunction("g_crypt", "ed25519Verify", &Crypt::ed25519Verify, &g_crypt);
+     g_lua.bindSingletonFunction("g_crypt", "rsaGenerateKey", &Crypt::rsaGenerateKey, &g_crypt);
+     g_lua.bindSingletonFunction("g_crypt", "rsaSetPublicKey", &Crypt::rsaSetPublicKey, &g_crypt);
+     g_lua.bindSingletonFunction("g_crypt", "rsaSetPrivateKey", &Crypt::rsaSetPrivateKey, &g_crypt);
+@@ -268,6 +271,14 @@
+     g_lua.bindSingletonFunction("g_resources", "fileChecksum", &ResourceManager::fileChecksum, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "filesChecksums", &ResourceManager::filesChecksums, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "selfChecksum", &ResourceManager::selfChecksum, &g_resources);
++    // Cinders of Chaos signed updater (modules/client_chaos_updater)
++    g_lua.bindSingletonFunction("g_resources", "fileSha256", &ResourceManager::fileSha256, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "fileSize", &ResourceManager::fileSize, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "appendFileContents", &ResourceManager::appendFileContents, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "moveUpdateFile", &ResourceManager::moveUpdateFile, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "removeUpdateTree", &ResourceManager::removeUpdateTree, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "mountUpdateDir", &ResourceManager::mountUpdateDir, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "unmountUpdateDir", &ResourceManager::unmountUpdateDir, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateData", &ResourceManager::updateData, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateExecutable", &ResourceManager::updateExecutable, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "createArchive", &ResourceManager::createArchive, &g_resources);
+--- a/src/framework/util/chaosupdate.h
++++ b/src/framework/util/chaosupdate.h
+@@ -0,0 +1,154 @@
++// Cinders of Chaos signed updater: the native helpers (client/base-patches/0031-signed-updater.patch).
++//
++// Header only, so client/tests/chaosupdate_test.cpp can build it on its own against OpenSSL:
++//   * ed25519Verify: Ed25519 (RFC 8032) signature check with OpenSSL's EVP interface (OpenSSL 1.1.1 or newer;
++//     the client already links OpenSSL for RSA, SHA and TLS). No crypto code of our own.
++//   * sha256Hex / Sha256Stream: SHA-256 as lowercase hex.
++//   * isSafeUpdatePath: the relative paths the updater may write under its folder in the write dir.
++// The Lua side (modules/client_chaos_updater) checks paths again with its own, stricter rules.
++#pragma once
++
++#include <cstdint>
++#include <string>
++
++#ifndef __EMSCRIPTEN__
++#include <openssl/evp.h>
++#endif
++
++namespace chaosupdate
++{
++
++inline int hexValue(char c)
++{
++    if (c >= '0' && c <= '9') return c - '0';
++    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
++    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
++    return -1;
++}
++
++inline bool hexToBytes(const std::string& hex, std::string& out)
++{
++    out.clear();
++    if (hex.size() % 2 != 0)
++        return false;
++    out.reserve(hex.size() / 2);
++    for (size_t i = 0; i < hex.size(); i += 2) {
++        const int hi = hexValue(hex[i]), lo = hexValue(hex[i + 1]);
++        if (hi < 0 || lo < 0)
++            return false;
++        out.push_back(static_cast<char>((hi << 4) | lo));
++    }
++    return true;
++}
++
++inline std::string bytesToHex(const unsigned char* data, size_t size)
++{
++    static const char digits[] = "0123456789abcdef";
++    std::string out(size * 2, '0');
++    for (size_t i = 0; i < size; ++i) {
++        out[i * 2] = digits[data[i] >> 4];
++        out[i * 2 + 1] = digits[data[i] & 15];
++    }
++    return out;
++}
++
++// publicKeyHex: 64 hex digits (32 bytes); signatureHex: 128 hex digits (64 bytes); message: the exact signed bytes.
++// Anything malformed is a failed check, never an exception.
++inline bool ed25519Verify(const std::string& publicKeyHex, const std::string& message, const std::string& signatureHex)
++{
++#ifdef __EMSCRIPTEN__
++    (void)publicKeyHex; (void)message; (void)signatureHex;
++    return false;
++#else
++    std::string key, signature;
++    if (!hexToBytes(publicKeyHex, key) || key.size() != 32)
++        return false;
++    if (!hexToBytes(signatureHex, signature) || signature.size() != 64)
++        return false;
++
++    EVP_PKEY* pkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, nullptr,
++                                                 reinterpret_cast<const unsigned char*>(key.data()), key.size());
++    if (!pkey)
++        return false;
++    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
++    bool ok = false;
++    if (ctx && EVP_DigestVerifyInit(ctx, nullptr, nullptr, nullptr, pkey) == 1) {
++        ok = EVP_DigestVerify(ctx, reinterpret_cast<const unsigned char*>(signature.data()), signature.size(),
++                              reinterpret_cast<const unsigned char*>(message.data()), message.size()) == 1;
++    }
++    EVP_MD_CTX_free(ctx);
++    EVP_PKEY_free(pkey);
++    return ok;
++#endif
++}
++
++#ifndef __EMSCRIPTEN__
++// incremental SHA-256 (files are hashed in 1 MB blocks, never read whole)
++class Sha256Stream
++{
++public:
++    Sha256Stream() : m_ctx(EVP_MD_CTX_new())
++    {
++        m_ok = m_ctx && EVP_DigestInit_ex(m_ctx, EVP_sha256(), nullptr) == 1;
++    }
++    ~Sha256Stream() { EVP_MD_CTX_free(m_ctx); }
++    Sha256Stream(const Sha256Stream&) = delete;
++    Sha256Stream& operator=(const Sha256Stream&) = delete;
++
++    void update(const void* data, size_t size)
++    {
++        if (m_ok && size > 0)
++            m_ok = EVP_DigestUpdate(m_ctx, data, size) == 1;
++    }
++    // "" when anything failed
++    std::string finishHex()
++    {
++        unsigned char md[EVP_MAX_MD_SIZE];
++        unsigned int len = 0;
++        if (!m_ok || EVP_DigestFinal_ex(m_ctx, md, &len) != 1 || len != 32)
++            return "";
++        m_ok = false;
++        return bytesToHex(md, len);
++    }
++
++private:
++    EVP_MD_CTX* m_ctx;
++    bool m_ok = false;
++};
++
++inline std::string sha256Hex(const std::string& data)
++{
++    Sha256Stream s;
++    s.update(data.data(), data.size());
++    return s.finishHex();
++}
++#endif
++
++// A relative path under the updater's own folder of the write dir: segments of [A-Za-z0-9 ._()+,-] (the client's
++// own data has names like "Label Money.png" and "62-(33253-31491-7)subarea.png"), no empty segment, no "." or "..",
++// no segment starting or ending with a space or ending with a dot, no leading or trailing "/", no backslash, no
++// drive letter, at most 240 characters.
++inline bool isSafeUpdatePath(const std::string& path)
++{
++    if (path.empty() || path.size() > 240 || path.front() == '/' || path.back() == '/')
++        return false;
++    size_t start = 0;
++    while (start <= path.size()) {
++        size_t end = path.find('/', start);
++        if (end == std::string::npos)
++            end = path.size();
++        const std::string part = path.substr(start, end - start);
++        if (part.empty() || part == "." || part == ".." || part.front() == ' ' || part.back() == ' ' || part.back() == '.')
++            return false;
++        for (char c : part) {
++            const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
++                c == '.' || c == '_' || c == '-' || c == ' ' || c == '(' || c == ')' || c == '+' || c == ',';
++            if (!ok)
++                return false;
++        }
++        start = end + 1;
++    }
++    return true;
++}
++
++} // namespace chaosupdate
+--- a/src/framework/util/crypt.cpp
++++ b/src/framework/util/crypt.cpp
+@@ -21,6 +21,7 @@
+  */
+ 
+ #include "crypt.h"
++#include "chaosupdate.h"
+ #include <framework/stdext/math.h>
+ #include <framework/core/logger.h>
+ #include <framework/core/resourcemanager.h>
+@@ -308,6 +309,11 @@
+ #endif
+ }
+ 
++bool Crypt::ed25519Verify(const std::string& publicKeyHex, const std::string& message, const std::string& signatureHex)
++{
++    return chaosupdate::ed25519Verify(publicKeyHex, message, signatureHex);
++}
++
+ std::string Crypt::sha512Encode(const std::string& decoded_string, bool upperCase)
+ {
+ #ifndef __EMSCRIPTEN__
+--- a/src/framework/util/crypt.h
++++ b/src/framework/util/crypt.h
+@@ -56,6 +56,8 @@
+     std::string sha1Encode(const std::string& decoded_string, bool upperCase);
+     std::string sha256Encode(const std::string& decoded_string, bool upperCase);
+     std::string sha512Encode(const std::string& decoded_string, bool upperCase);
++    // Cinders of Chaos signed updater (util/chaosupdate.h): Ed25519 check of the update manifest
++    bool ed25519Verify(const std::string& publicKeyHex, const std::string& message, const std::string& signatureHex);
+     std::string crc32(const std::string& decoded_string, bool upperCase);
+ 
+     void rsaGenerateKey(int bits, int e);

@@ -1,10 +1,17 @@
--- Loot filter (Hunt -> Loot Filter, !lootfilter), corpse highlights and the loot channel with item icons.
+-- Loot filter (Hunt -> Loot Filter), corpse highlights and the loot feed (monster and item icons over the Loot tab).
 -- Server: server/data/scripts/chaos/lootfilter.lua, extended opcode 238 (JSON {action, data}).
 --   server -> client  settings {s, unlocked, presets, samples, open}
 --                     peek {cid, corpse, items = [{i, id, c, r, u, o, g}]}      rarity data of an open container
---                     kill {k, m, p, items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
+--                     kill {k, m, look, p, items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
+--                       one loot feed row: the monster's icon (look, a UICreature) and the item icons, no text
 --                     update {k, left = [...]}   decay {k}   msg {text}
+--                     settings also carry snd (sound per rule, vol, mute, hunt) and counts {session, total};
+--                     kill carries hits {rule = items} and counts when a rule matched; counts {session, total}
 --   client -> server  open | sync | set {s} | preset {name} | peek {cid} | take {k, n, id, one}
+--                     sound {s = snd} | reset {scope = session | total | all, rule}
+-- Rule counters and sounds: the server counts the drops of your kills per filter rule (lootfilter_core.lua F.RULES);
+-- this module shows them (filter window, optionally the Hunt Tracker's Chaos Drops tab) and plays the rule's sound
+-- (sounds/*.ogg, made by client/tools/gen_lootfilter_sounds.py) on the Effect sound channel.
 -- The rules used for drawing are in lootfilterlogic.lua (a mirror of the server's lootfilter_core.lua).
 
 local OPCODE = 238
@@ -16,6 +23,12 @@ local GONE_OPACITY = 0.6 -- with the dark veil and the check mark
 local PEEK_DELAY = 60
 
 local settings = L.defaults()
+local snd = L.soundDefaults()
+local counts = { session = L.counts(nil), total = L.counts(nil) }
+local ruleRows = {}   -- [rule key] = row widget of the counters panel
+local soundSaveEvent
+local lastPlayed      -- {file, gain, rule, at}: the last alert played (for the in-game check)
+local onCounts, playKillSound -- defined with the counters panel below (used by the loot channel)
 local unlocked = false
 local presets = {}
 local samples = {}
@@ -84,6 +97,8 @@ local function child(widget, id, style)
       setImage(c, '/modules/game_lootfilter/images/lf_glow')
     elseif style == 'frame' then
       setImage(c, '/modules/game_lootfilter/images/lf_frame')
+    elseif style == 'empty' then
+      setImage(c, '/modules/game_lootfilter/images/lf_empty')
     elseif style == 'gone' then
       c:setBackgroundColor('#0a080cc8')
       setImage(c, '/modules/game_lootfilter/images/lf_taken')
@@ -117,7 +132,8 @@ local function decorate(widget, info, allowDim, gone)
   else
     glow:hide()
   end
-  if color and not gone then
+  -- one frame per slot: game_itemrarity draws one from the item's custom attributes (widget.irColor)
+  if color and not gone and not widget.irColor then
     frame:setImageColor(color)
     frame:show()
   else
@@ -240,10 +256,9 @@ end
 
 local function setIconState(icon)
   local info = icon.info
-  local left = tonumber(info.left) or tonumber(info.c) or 1
-  local count = tonumber(info.c) or 1
-  icon.w:setItemCount(left > 0 and left or count)
-  decorate(icon.w, info, true, left <= 0)
+  local count, gone = L.iconCount(info)
+  icon.w:setItemCount(count)
+  decorate(icon.w, info, true, gone)
   icon.w:setTooltip(L.tooltip(info))
 end
 
@@ -258,9 +273,6 @@ local function dropRow(k)
   rows[k] = nil
   if row and row.widget and not row.widget:isDestroyed() then
     row.widget:destroy()
-  end
-  for _, w in ipairs(row and row.lines or {}) do
-    if not w:isDestroyed() then w:destroy() end
   end
 end
 
@@ -301,30 +313,40 @@ end
 local function onKill(data)
   local drops = list(data.drops)
   showFlash(drops)
+  if type(data.counts) == 'table' then onCounts(data.counts) end
+  if type(data.hits) == 'table' then playKillSound(data.hits) end
   local panel = ensureLootPanel()
   if not panel then return end
   ensureLootTab()
-  local k = tonumber(data.k)
-  if not k then return end
-  local items = list(data.items)
-  panel.hint:hide() -- the how-to line only while the tab is empty
-  local lines = {}
-  for _, d in ipairs(drops) do
-    local line = g_ui.createWidget('LootChannelLine', panel.list)
-    line:setText(L.clock(os.time()) .. '  ' .. (d.text or ''))
-    line:setColor(d.color or '#ffffff')
-    lines[#lines + 1] = line
+  local r = L.feedRow(data, os.time())
+  if not r then return end
+  local k = r.k
+  if rows[k] then -- the same id again (the server's counter restarted): the new row replaces the old one
+    dropRow(k)
+    for i = #rowOrder, 1, -1 do
+      if rowOrder[i] == k then table.remove(rowOrder, i) end
+    end
   end
+  panel.hint:hide() -- the how-to line only while the tab is empty
+  -- one row: the monster's icon, then the item icons (no text; names, counts and times are in the tooltips)
   local widget = g_ui.createWidget('LootChannelRow', panel.list)
-  local head = g_ui.createWidget('LootChannelHead', widget)
-  head:setText(L.clock(os.time()) .. ' ' .. (data.m or '?') .. (#items == 0 and ': nothing' or ':'))
-  local row = { k = k, widget = widget, icons = {}, lines = lines }
-  for _, info in ipairs(items) do
+  local mob = g_ui.createWidget('LootChannelMonster', widget)
+  -- fit the look's own size into the cell, centred: a rat stays 1:1, a dragon is scaled down (not a fixed 64 px box)
+  pcall(mob.setOldScaling, mob, true)
+  pcall(mob.setCenter, mob, true)
+  if r.outfit then
+    local ok = pcall(mob.setOutfit, mob, r.outfit)
+    if not ok then pcall(mob.setOutfit, mob, { type = r.outfit.type, auxType = r.outfit.auxType }) end
+  end
+  mob:setTooltip(r.tip)
+  if r.empty then child(mob, 'lfEmpty', 'empty'):show() end -- a veil and a small empty mark, no text
+  local row = { k = k, widget = widget, icons = {} }
+  for _, info in ipairs(r.items) do
     local w = g_ui.createWidget('LootChannelItem', widget)
     w:setItemId(tonumber(info.id) or 0)
     w:setVirtual(true)
     local icon = { w = w, info = info }
-    row.icons[tonumber(info.n) or (#row.icons + 1)] = icon
+    row.icons[info.n] = icon
     w.onMouseRelease = function(self, mousePos, button)
       if button == MouseLeftButton and self:containsPoint(mousePos) then
         onIconClick(row, icon)
@@ -332,6 +354,7 @@ local function onKill(data)
       end
       return false
     end
+    if modules.game_itemfinder and modules.game_itemfinder.attach then modules.game_itemfinder.attach(w, tonumber(info.id)) end -- right-click: Where to find
     setIconState(icon)
   end
   rows[k] = row
@@ -375,12 +398,161 @@ local function clearRows()
   if lootPanel and not lootPanel:isDestroyed() then lootPanel.hint:show() end
 end
 
+-- ---------------------------------------------------------------- rule counters and sounds
+local noSoundLogged = false
+local function playFile(file, gain, rule)
+  if not file then return false end
+  lastPlayed = { file = file, gain = gain, rule = rule, at = os.time(), played = false }
+  if not g_sounds then
+    -- a client built without its sound framework (CMake FRAMEWORK_SOUND, client base-patch 0032)
+    if not noSoundLogged then
+      noSoundLogged = true
+      g_logger.warning('[lootfilter] this client has no sound support (g_sounds): rule sounds are not played')
+    end
+    return false
+  end
+  local channel = g_sounds.getChannel and SoundChannels and g_sounds.getChannel(SoundChannels.Effect)
+  local ok, err
+  if channel then
+    ok, err = pcall(channel.play, channel, file, 0, gain)
+  else
+    ok, err = pcall(g_sounds.play, file, 0, gain)
+  end
+  if not ok then g_logger.warning('[lootfilter] sound ' .. file .. ': ' .. tostring(err)) end
+  lastPlayed.played = ok and err ~= nil -- the source (nil when audio is off or the channel disabled)
+  return ok
+end
+
+playKillSound = function(hits)
+  local file, gain, rule = L.pickSound(hits, snd)
+  if file then playFile(file, gain, rule) end
+end
+
+local function notifyHunt()
+  local hunt = modules.game_hunt
+  if hunt and hunt.onLootFilterCounts then pcall(hunt.onLootFilterCounts) end
+end
+
+local function refreshRules()
+  if not window or not window.rulesPanel then return end
+  local p = window.rulesPanel
+  updatingUi = true
+  for _, r in ipairs(L.RULES) do
+    local row = ruleRows[r.key]
+    if row then
+      row.count:setText(L.countLine(counts, r.key))
+      row.sound:setCurrentIndex((snd.rules[r.key] or 0) + 1)
+    end
+  end
+  p.volumeCombo:setCurrentIndex(math.floor((snd.vol or 0) / 10) + 1)
+  p.muteCheck:setChecked(snd.mute)
+  p.huntCheck:setChecked(snd.hunt)
+  for _, row in pairs(ruleRows) do row.play:setEnabled(not snd.mute and (snd.vol or 0) > 0) end
+  updatingUi = false
+end
+
+local function scheduleSoundSave()
+  if soundSaveEvent then removeEvent(soundSaveEvent) end
+  soundSaveEvent = scheduleEvent(function()
+    soundSaveEvent = nil
+    send('sound', { s = snd })
+  end, 250)
+end
+
+local function onSoundUi()
+  if updatingUi or not window then return end
+  local p = window.rulesPanel
+  for _, r in ipairs(L.RULES) do
+    local row = ruleRows[r.key]
+    local o = row and row.sound:getCurrentOption()
+    if o then snd.rules[r.key] = tonumber(o.data) or 0 end
+  end
+  local v = p.volumeCombo:getCurrentOption()
+  snd.vol = v and tonumber(v.data) or snd.vol
+  snd.mute = p.muteCheck:isChecked()
+  snd.hunt = p.huntCheck:isChecked()
+  refreshRules()
+  notifyHunt()
+  scheduleSoundSave()
+end
+
+local function buildRules()
+  if not window or not window.rulesPanel then return end
+  local p = window.rulesPanel
+  p.ruleRows:destroyChildren()
+  ruleRows = {}
+  updatingUi = true
+  for _, r in ipairs(L.RULES) do
+    local row = g_ui.createWidget('LootFilterRuleRow', p.ruleRows)
+    row:setId('rule_' .. r.key)
+    row.name:setText(tr(r.name))
+    row.name:setColor(r.color)
+    row.sound:addOption(tr('No sound'), 0)
+    for i, x in ipairs(L.SOUNDS) do row.sound:addOption(tr(x.name), i) end
+    local key = r.key
+    row.sound.onOptionChange = safe('ui', onSoundUi)
+    row.play.onClick = function()
+      playFile(L.soundFile(snd.rules[key]), (snd.vol or 0) / 100, key)
+    end
+    row.reset.onClick = function() send('reset', { scope = 'all', rule = key }) end
+    ruleRows[key] = row
+  end
+  p.volumeCombo:clearOptions()
+  for v = 0, 100, 10 do p.volumeCombo:addOption(v .. '%', v) end
+  updatingUi = false
+  p.volumeCombo.onOptionChange = safe('ui', onSoundUi)
+  p.muteCheck.onCheckChange = safe('ui', onSoundUi)
+  p.huntCheck.onCheckChange = safe('ui', onSoundUi)
+  refreshRules()
+end
+
+onCounts = function(data)
+  counts = { session = L.counts(data.session), total = L.counts(data.total) }
+  refreshRules()
+  notifyHunt()
+end
+
+function resetCounters(scope)
+  if scope ~= 'total' then
+    send('reset', { scope = 'session' })
+    return
+  end
+  local box
+  local function close() if box then box:destroy() box = nil end end
+  local function yes() close() send('reset', { scope = 'total' }) end
+  if displayGeneralBox then
+    box = displayGeneralBox(tr('Reset totals'), tr('Set the total of every rule back to zero?'),
+      { { text = tr('Yes'), callback = yes }, { text = tr('No'), callback = close }, anchor = AnchorHorizontalCenter }, yes, close)
+  else
+    yes()
+  end
+end
+
+-- the counters for the Hunt Tracker: {show, rows = L.huntRows}
+function getCounters()
+  return { show = snd.hunt and true or false, rows = L.huntRows(counts) }
+end
+
+function getLastSound()
+  return lastPlayed
+end
+
 -- ---------------------------------------------------------------- window
 local function rarityCombo(combo, offText, value, suffix)
   combo:clearOptions()
   combo:addOption(offText, 0)
   for i, r in ipairs(L.RARITY) do
     combo:addOption(r.name .. (suffix or ''), i)
+  end
+  combo:setCurrentIndex((value or 0) + 1)
+end
+
+-- modifier tier threshold: Off, T1+ .. T8+
+local function tierCombo(combo, value)
+  combo:clearOptions()
+  combo:addOption(tr('Off'), 0)
+  for t = 1, L.MAX_TIER do
+    combo:addOption(string.format('T%d+', t), t)
   end
   combo:setCurrentIndex((value or 0) + 1)
 end
@@ -403,6 +575,10 @@ local function buildPreview()
   for i, r in ipairs(L.RARITY) do
     entries[#entries + 1] = { id = gear, r = i, g = 'equipment', nm = r.name .. ' gear' }
   end
+  if (settings.tier or 0) > 0 then
+    entries[#entries + 1] = { id = gear, r = 1, t = settings.tier, g = 'equipment',
+      nm = string.format(tr('Common gear with a T%d modifier'), settings.tier) }
+  end
   entries[#entries + 1] = { id = tonumber(samples.unique) or gear, u = 1, g = 'equipment', nm = tr('A unique') }
   entries[#entries + 1] = { id = tonumber(samples.orb) or 0, o = 1, g = 'currency', nm = tr('An orb') }
   entries[#entries + 1] = { id = tonumber(samples.coin) or 0, g = 'currency', nm = tr('Coins') }
@@ -423,6 +599,7 @@ local function refreshWindow()
   updatingUi = true
   rarityCombo(window.highlightCombo, tr('Off'), settings.highlight, '+')
   rarityCombo(window.dimCombo, tr('Off'), settings.dim)
+  if window.tierCombo then tierCombo(window.tierCombo, settings.tier) end
   rarityCombo(window.autolootPanel.lootMinCombo, tr('Off'), settings.lootMin)
   rarityCombo(window.autolootPanel.lootFromCombo, tr('Off'), settings.lootFrom, '+')
   for _, c in ipairs(L.CATEGORIES) do
@@ -465,6 +642,7 @@ local function onUiChange()
   end
   settings.highlight = comboValue(window.highlightCombo)
   settings.dim = comboValue(window.dimCombo)
+  if window.tierCombo then settings.tier = comboValue(window.tierCombo) end
   if unlocked then
     settings.lootMin = comboValue(window.autolootPanel.lootMinCombo)
     settings.lootFrom = comboValue(window.autolootPanel.lootFromCombo)
@@ -486,6 +664,12 @@ local function onSettings(data)
   unlocked = data.unlocked and true or false
   presets = list(data.presets)
   if type(data.samples) == 'table' then samples = data.samples end
+  if type(data.snd) == 'table' then snd = L.normalizeSound(data.snd) end
+  if type(data.counts) == 'table' then
+    counts = { session = L.counts(data.counts.session), total = L.counts(data.counts.total) }
+  end
+  refreshRules()
+  notifyHunt()
   redrawContainers()
   redrawRows()
   ensureLootPanel()
@@ -510,6 +694,7 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   elseif msg.action == 'update' then onUpdate(data)
   elseif msg.action == 'decay' then onDecay(data)
   elseif msg.action == 'msg' then showFlash({ { text = data.text or '', color = '#ff7a5a' } })
+  elseif msg.action == 'counts' then onCounts(data)
   end
 end
 
@@ -531,6 +716,11 @@ function toggle()
   else
     send('open') -- the server answers with the settings (open = true)
   end
+end
+
+-- the filter settings as the client has them (game_groundlabels labels ground items by the same rules)
+function getSettings()
+  return settings
 end
 
 function openStore()
@@ -573,6 +763,7 @@ function init()
     end
     hook(window.highlightCombo, 'onOptionChange', onUiChange)
     hook(window.dimCombo, 'onOptionChange', onUiChange)
+    hook(window.tierCombo, 'onOptionChange', onUiChange)
     local ap = window.autolootPanel
     hook(ap and ap.lootMinCombo, 'onOptionChange', onUiChange)
     hook(ap and ap.lootFromCombo, 'onOptionChange', onUiChange)
@@ -581,6 +772,8 @@ function init()
     end
     hook(window.icons, 'onCheckChange', onUiChange)
     hook(window.notify, 'onCheckChange', onUiChange)
+    local okR, errR = pcall(buildRules)
+    if not okR then g_logger.warning('[lootfilter] rule counters panel: ' .. tostring(errR)) end
   else
     window = nil
     g_logger.warning('[lootfilter] window not loaded (theme styles missing?): ' .. tostring(ui))
@@ -598,6 +791,8 @@ function terminate()
   for _, e in pairs(peekEvents) do removeEvent(e) end
   peekEvents = {}
   if saveEvent then removeEvent(saveEvent) saveEvent = nil end
+  if soundSaveEvent then removeEvent(soundSaveEvent) soundSaveEvent = nil end
+  ruleRows = {}
   if flashEvent then removeEvent(flashEvent) flashEvent = nil end
   local chat = getChat()
   if chat and chat.tabBar and handlers.tab then pcall(disconnect, chat.tabBar, { onTabChange = handlers.tab }) end

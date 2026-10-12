@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Warden Ysolde: home NPC and quartermaster of a faction (server/data/scripts/chaos/factions.lua, factions_config.lua; server/README.md
+     "Factions"). Placed next to a temple at startup; installed by server/tools/install_factions.py. -->
+<npc name="Warden Ysolde" script="warden_ysolde.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="131" head="114" body="94" legs="114" feet="94" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Ashes to ashes, |PLAYERNAME|. The Ashen Vigil keeps the pyres. Ask me about our {contracts}, the {quartermaster} or the {lore} of the Vigil." />
+		<parameter key="message_farewell" value="Keep your torch lit, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The bell tolls on." />
+	</parameters>
+</npc>

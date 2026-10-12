@@ -1,0 +1,42 @@
+// Energy shield bar: drawn above the health slot of the character plate (game_chaoshud, bars at x 96, width 166),
+// in the transparent strip over the plate's top edge. Light blue-violet fill, numbers like the health bar.
+UIWidget
+  id: energyShieldBar
+  size: 168 12
+  anchors.left: parent.left
+  anchors.top: parent.top
+  margin-left: 95
+  margin-top: 2
+  background-color: #0b0a12e0
+  border-width: 1
+  border-color: #8a6a2f
+  phantom: false
+  focusable: false
+
+  UIWidget
+    id: fill
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 1
+    margin-top: 1
+    size: 166 10
+    background-color: #9a92ff
+    phantom: true
+
+  UIWidget
+    id: shine
+    anchors.left: fill.left
+    anchors.top: fill.top
+    anchors.right: fill.right
+    height: 3
+    background-color: #d6d2ff70
+    phantom: true
+
+  UILabel
+    id: text
+    anchors.fill: parent
+    font: verdana-11px-rounded
+    color: #f2f0ff
+    text-align: center
+    text-offset: 0 -1
+    phantom: true

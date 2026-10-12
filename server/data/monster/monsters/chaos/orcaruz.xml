@@ -18,7 +18,6 @@
         <flag targetdistance="1"/>
         <flag staticattack="90"/>
         <flag runonhealth="0"/>
-        <flag lootmessage="1"/>
     </flags>
     <script>
         <event name="boss_tp_death"/>
@@ -50,7 +49,7 @@
         </defense>
     </defenses>
     <elements>
-        <element PhysicalPercent="15"/>
+        <element physicalPercent="15"/>
         <element icePercent="5"/>
         <element firePercent="5"/>
         <element deathPercent="5"/>
@@ -65,6 +64,7 @@
         <item id="2666" countmax="2" chance="11111"/><!-- meat -->
         <item id="2497" chance="1300"/><!-- crsuder helmet -->
         <item id="2529" chance="1100"/><!-- black shield -->
-        <item id="2477;7895" chance="1000"/><!-- knight legs magic legs-->
+        <item id="2477" chance="500"/><!-- knight legs magic legs-->
+        <item id="7895" chance="500"/>
     </loot>
 </monster>

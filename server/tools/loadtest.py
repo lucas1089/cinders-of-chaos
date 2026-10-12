@@ -5,14 +5,19 @@ Standard library only (Python 3.7+). Three commands:
 
   setup    create the bot accounts and characters in the game database (mysql client; CHAOS_DB_* as for backup.sh)
              python3 -I server/tools/loadtest.py setup --count 30 [--pos 1500,1500,7] [--town 1] [--vocation 4]
+                 [--hash-iterations 120000]
   run      log the bots in, walk, talk, measure, print a report
              python3 -I server/tools/loadtest.py run --count 30 --host 127.0.0.1 --port 7171 --duration 120
                  [--server-pid PID] [--server-log PATH] [--key key.pem] [--ramp 0.5] [--walk 1.0] [--say 20]
+                 [--dev-key | --client-key HEX] [--client-build N] [--login-timeout 20]
   cleanup  delete the bot characters and accounts again
              python3 -I server/tools/loadtest.py cleanup
 
-Accounts are named loadbot0001..., password "loadbot", one character each ("Loadbot Aa", "Loadbot Ab", ...), level 100,
-placed at --pos (spread over a square around it) with lastlogin set, so the new-player tutorial and kit do not start.
+Accounts are named loadbot0000..., password "loadbot", stored as the website stores it (PBKDF2 with --hash-iterations,
+which must equal the server's passwordHashIterations, default 120000; one salt for all bots). --hash-iterations 0 writes
+the old unsalted SHA-1, which every first login re-hashes and writes back: only to test that migration, it is not what a
+new player's login costs. One character each ("Loadbot Aaa", "Loadbot Aab", ...), level 100, placed at --pos (spread
+over a square around it) with lastlogin set, so the new-player tutorial and kit do not start.
 Never run setup against a live database you cannot clean: cleanup removes exactly the loadbot accounts and their
 characters.
 
@@ -28,18 +33,34 @@ Protocol (what the engine's protocollogin.cpp / protocolgame.cpp expect, the sam
   in game        0x65-0x68 walk north/east/south/west, 0x96 say (type 1, text), 0x1E ping (keeps the engine's
                  no-pong kick away); everything the server sends is read and counted, only the first message is
                  decrypted (to tell a login error from entering the game)
+Client guard (server/README.md "Client guard", engine src-patch 0021): by default the bots send the stock client version
+1098 in the u32 client version fields, which a server with clientGuardMode "off" or "log" lets in (log: one line per
+bot in data/logs/clientguard.log). Against "enforce" give the bots the client's key: --dev-key (the public development
+key; the server needs clientGuardAllowDevKey = true, a test server only) or --client-key HEX / the environment variable
+CHAOS_CLIENT_KEY (the real key: keep it out of shell history and logs). Then each bot sends the official identifier
+(0x4343 << 16 | --client-build, default 1), answers the server's challenge on extended opcode 189 with the HMAC the
+client computes and sends the module hello on extended opcode 190, as the client does.
 RSA: m^65537 mod n. n is read from --key (the server's key.pem, PKCS#1, only the modulus is used) or is the standard
 open-server public key that the client also ships.
 The os sent is 10 (OTClient on Linux), so the engine enables extended opcodes and the Chaos modules talk to the bots
 at login as they do to real clients. Each bot connects from its own loopback address (127.0.0.N) when --host is a
 loopback address, because the Chaos multi-client rule allows only 2 characters per IP.
 
-Measured: logins (ok / failed and why), login time (p50 / p95 / max), bytes received, disconnects; with --server-pid
+Measured: how many bots really entered the game, and for every other bot why not, grouped (the server's text from
+the login error packet, a timeout and at which step, a connection the server closed without a message, a kick right
+after entering with the server's text); login time (p50 / p90 / p95 / max) and its first part, the character list
+(the login server's answer: account lookup and password check on the engine's login worker), bytes received, disconnects. A progress line
+every 10 s says how many bots are in game, still logging in and failed; Ctrl+C or SIGTERM ends the run early and
+still prints the report. Timeouts: 10 s per connect, 15 s for the login server's answer and for the game server's
+challenge, 20 s for the answer to the game login (--login-timeout S sets the last one). With --server-pid
 the server's CPU (% of one core) and memory (RSS) every second (Linux /proc); with --server-log the lines of the
 probe server/tools/loadtest_probe.lua (TEST ONLY) that the server printed during the run: the game loop lag.
 """
 import asyncio
 import base64
+import hashlib
+import hmac
+import json
 import os
 import random
 import re
@@ -61,10 +82,15 @@ OT_RSA_N = int(
     '3429057592827629436413108566029093628212635953836686562675849720'
     '6207862794310902180176810615217550567108238764764442605581471797'
     '07119674283982419152118103759076030616683978566631413')
+# client guard (engine src-patch 0021, client base patch 0035)
+GUARD_TAG = 0x4343
+GUARD_OPCODE = 189
+GUARD_HELLO_OPCODE = 190
+GUARD_DEV_KEY = bytes.fromhex('4445562d4b45592d63696e646572732d6f662d6368616f732d554e5341464521')  # "DEV-KEY-cinders-of-chaos-UNSAFE!"
 DELTA = 0x9E3779B9
 MASK = 0xFFFFFFFF
 PREFIX = 'loadbot'
-WORDS = ['hunting rotworms', 'anyone for a rift?', 'nice drop', 'where is the bank', 'level up!', 'chaos orb please',
+WORDS = ['hunting rotworms', 'anyone for a rift?', 'nice drop', 'where is the bank', 'level up!', 'orb of upheaval please',
          'brb', 'going to the tower', 'who wants to party', 'that goblin escaped again', 'lag?', 'gg']
 
 
@@ -132,8 +158,25 @@ def modulus_from_pem(path):
 
 
 def string(s):
-    b = s.encode('latin-1')
+    b = s.encode('latin-1') if isinstance(s, str) else s
     return struct.pack('<H', len(b)) + b
+
+
+def guard_mac(key, nonce, account, character, build):
+    """HMAC-SHA256(key, nonce || u16le #account || account || u16le #character || character || u16le build)"""
+    a, c = account.encode('latin-1'), character.encode('latin-1')
+    data = nonce + struct.pack('<H', len(a)) + a + struct.pack('<H', len(c)) + c + struct.pack('<H', build)
+    return hmac.new(key, data, hashlib.sha256).digest()
+
+
+def guard_answer(key, nonce, account, character, build):
+    return 'cg1:%d:%s' % (build, guard_mac(key, nonce, account, character, build).hex())
+
+
+def find_challenge(plain):
+    """the nonce of a client guard challenge (0x32, opcode 189, string "cg1:<32 hex>") in a decrypted message, or None"""
+    m = re.search(re.escape(bytes([0x32, GUARD_OPCODE])) + rb'\x24\x00cg1:([0-9a-f]{32})', plain)
+    return bytes.fromhex(m.group(1).decode()) if m else None
 
 
 # ------------------------------------------------------------------------------------------------ framing
@@ -184,6 +227,7 @@ class Bot:
             self.source = '127.0.%d.%d' % (1 + index // 250, 1 + index % 250 + 1)
         self.conn = None
         self.alive = False
+        self.stage = 'start'
 
     def key(self):
         return [random.getrandbits(32) for _ in range(4)]
@@ -194,14 +238,16 @@ class Bot:
         return Conn(reader, writer)
 
     async def login_server(self):
+        self.stage = 'login server: connect'
         c = await self.open(self.args.port)
         c.key = self.key()
         rsa1 = b'\x00' + struct.pack('<4I', *c.key) + string(self.account) + string(self.password)
         rsa2 = b'\x00' + string('') + b'\x00'
-        body = (b'\x01' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, VERSION) + struct.pack('<3I', 0, 0, 0)
+        body = (b'\x01' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, self.args.client_id) + struct.pack('<3I', 0, 0, 0)
                 + b'\x00' + rsa_block(rsa1, self.n) + rsa_block(rsa2, self.n))
         c.send_raw(body)
         await c.w.drain()
+        self.stage = 'login server: waiting for the character list'
         msg = c.decrypt(await asyncio.wait_for(c.read_message(), 15))
         c.w.close()
         i, session, world = 0, None, None
@@ -238,7 +284,9 @@ class Bot:
 
     async def enter_game(self, session, world):
         port = self.args.game_port or world[1]
+        self.stage = 'game server: connect'
         c = await self.open(port)
+        self.stage = 'game server: waiting for the challenge'
         msg = await asyncio.wait_for(c.read_message(), 15)
         if len(msg) < 12 or msg[6] != 0x1F:
             raise RuntimeError('no challenge from the game server')
@@ -246,31 +294,62 @@ class Bot:
         c.key = self.key()
         rsa = (b'\x00' + struct.pack('<4I', *c.key) + b'\x00' + string(session) + string(self.name)
                + struct.pack('<IB', ts, rnd) + struct.pack('<H', 0))
-        body = (b'\x0A' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, VERSION) + b'\x00' + struct.pack('<H', 0)
-                + rsa_block(rsa, self.n))
+        body = (b'\x0A' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, self.args.client_id) + b'\x00'
+                + struct.pack('<H', 0) + rsa_block(rsa, self.n))
         c.send_raw(body)
         await c.w.drain()
-        first = c.decrypt(await asyncio.wait_for(c.read_message(), 20))
+        self.stage = 'game server: waiting for the game login answer'
+        first = c.decrypt(await asyncio.wait_for(c.read_message(), self.args.login_timeout))
         if first and first[0] in (0x14, 0x0B):
             text, _ = read_string(first, 1)
             raise RuntimeError('game refused: ' + text.replace('\n', ' '))
         if first and first[0] == 0x16:
             raise RuntimeError('waiting list (server full)')
+        if self.args.guard_key:
+            await self.answer_guard(c, first)
         return c
 
-    async def run(self, until):
+    async def answer_guard(self, c, first):
+        """the client guard: the HMAC answer to the challenge (it comes with the first messages), then the module hello"""
+        nonce, msg, extra = find_challenge(first), first, 0
+        while nonce is None and extra < 3:
+            try:
+                msg = c.decrypt(await asyncio.wait_for(c.read_message(), 2))
+            except asyncio.TimeoutError:
+                break
+            extra += 1
+            if msg and msg[0] == 0x14:
+                text, _ = read_string(msg, 1)
+                raise RuntimeError('game refused: ' + text.replace('\n', ' '))
+            nonce = find_challenge(msg)
+        if nonce is None:
+            self.stats['no_challenge'] += 1  # the server's client guard is off (or log mode with a refused id)
+            return
+        build = self.args.client_build
+        c.send(b'\x32' + bytes([GUARD_OPCODE]) + string(guard_answer(self.args.guard_key, nonce, self.account, self.name, build)))
+        hello = json.dumps({'action': 'hello', 'data': {'build': build, 'modules': 99}}, separators=(',', ':'))
+        c.send(b'\x32' + bytes([GUARD_HELLO_OPCODE]) + string(hello))
+        await c.w.drain()
+
+    async def run(self, clock):
         t0 = time.monotonic()
+        self.stats['connecting'] += 1
         try:
             session, world = await self.login_server()
+            self.stats.setdefault('charlist_ms', []).append((time.monotonic() - t0) * 1000)
             self.conn = await self.enter_game(session, world)
         except Exception as e:  # noqa: BLE001 - every failure is a result of the test
-            self.stats['failed'].append('%s: %s' % (self.name, str(e) or type(e).__name__))
+            self.stats['connecting'] -= 1
+            self.stats['failed'].append((self.name, failure_reason(self.stage, e)))
             return
+        self.stats['connecting'] -= 1
         self.stats['login_ms'].append((time.monotonic() - t0) * 1000)
+        self.stats['in_game'] += 1
+        self.entered = time.monotonic()
         self.alive = True
         reader = asyncio.ensure_future(self.drain())
         try:
-            await self.act(until)
+            await self.act(clock)
         finally:
             reader.cancel()
             if self.alive:
@@ -281,22 +360,38 @@ class Bot:
                     pass
             self.conn.w.close()
             self.stats['bytes'] += self.conn.received
+            if self.alive:
+                self.alive = False
+                self.stats['in_game'] -= 1
 
     async def drain(self):
+        last = None
         try:
             while True:
-                await self.conn.read_message()
+                last = await self.conn.read_message()
+        except asyncio.CancelledError:
+            raise
         except Exception:  # noqa: BLE001 - the server closed the connection
             if self.alive:
                 self.alive = False
+                self.stats['in_game'] -= 1
                 self.stats['disconnects'] += 1
+                text = None
+                try:
+                    text = disconnect_text(self.conn.decrypt(last)) if last else None
+                except Exception:  # noqa: BLE001 - not a message we can read
+                    pass
+                after = time.monotonic() - self.entered
+                if after < 10:
+                    self.stats['kicked'].append((self.name, 'kicked %s after entering%s' % (
+                        'within 10 s', ': ' + text if text else ' (no message)')))
 
-    async def act(self, until):
+    async def act(self, clock):
         a = self.args
         next_walk = time.monotonic() + random.random() * a.walk
         next_say = time.monotonic() + random.random() * a.say if a.say > 0 else float('inf')
         next_ping = time.monotonic() + 2
-        while self.alive and time.monotonic() < until:
+        while self.alive and time.monotonic() < clock['until'] and not self.stats['stop']:
             now = time.monotonic()
             if now >= next_walk and a.walk > 0:
                 self.conn.send(bytes([random.choice((0x65, 0x66, 0x67, 0x68))]))
@@ -314,6 +409,38 @@ class Bot:
             except Exception:  # noqa: BLE001
                 break
             await asyncio.sleep(0.1)
+
+
+def disconnect_text(plain):
+    """the text of a game server disconnect message (0x14 or 0x0B, u16 length, text), else None"""
+    if len(plain) >= 3 and plain[0] in (0x14, 0x0B):
+        try:
+            text, _ = read_string(plain, 1)
+        except struct.error:
+            return None
+        return text.replace('\n', ' ')
+    return None
+
+
+def failure_reason(stage, e):
+    """one line why a bot did not enter the game; equal causes give equal lines (they are counted in the report)"""
+    if isinstance(e, asyncio.TimeoutError):
+        return 'timeout at %s' % stage
+    if isinstance(e, asyncio.IncompleteReadError):
+        return 'connection closed by the server without a message at %s' % stage
+    if isinstance(e, ConnectionError) or isinstance(e, OSError):
+        return '%s at %s' % (type(e).__name__ + (': ' + e.strerror if getattr(e, 'strerror', None) else ''), stage)
+    text = str(e) or type(e).__name__
+    # "You are at place 12 on the waiting list", retry times ...: numbers would split one cause into many lines
+    return re.sub(r'\d+', 'N', text)
+
+
+def group_reasons(failed):
+    """[(name, reason)] -> [(count, reason, first names)] most frequent first"""
+    groups = {}
+    for name, reason in failed:
+        groups.setdefault(reason, []).append(name)
+    return sorted(((len(v), k, v[:3]) for k, v in groups.items()), key=lambda g: (-g[0], g[1]))
 
 
 def bot_name(index):
@@ -357,6 +484,12 @@ def pct(values, p):
     return s[min(len(s) - 1, int(round(p / 100.0 * (len(s) - 1))))]
 
 
+def spread(values):
+    """'p50 .. ms, p90 .. ms, p95 .. ms, max .. ms' of a list of times in ms"""
+    return 'p50 %.0f ms, p90 %.0f ms, p95 %.0f ms, max %.0f ms' % (
+        pct(values, 50), pct(values, 90), pct(values, 95), max(values or [0]))
+
+
 def probe_lines(path, start, end):
     out = []
     try:
@@ -372,7 +505,8 @@ def probe_lines(path, start, end):
 
 async def run_test(args):
     n = modulus_from_pem(args.key) if args.key else OT_RSA_N
-    stats = {'login_ms': [], 'failed': [], 'bytes': 0, 'disconnects': 0, 'walks': 0, 'says': 0}
+    stats = {'login_ms': [], 'charlist_ms': [], 'failed': [], 'kicked': [], 'bytes': 0, 'disconnects': 0, 'walks': 0,
+             'says': 0, 'no_challenge': 0, 'in_game': 0, 'connecting': 0, 'stop': False}
     sampler = Sampler(args.server_pid) if args.server_pid else None
     baseline = None
     if sampler:
@@ -381,34 +515,63 @@ async def run_test(args):
         baseline = list(sampler.samples)
     wall0 = time.time()
     t0 = time.monotonic()
-    ramp_end = t0 + args.ramp * args.count
-    until = ramp_end + args.duration
+    # the hold starts when the last bot was started (the ramp takes longer than ramp x count on a busy machine)
+    clock = {'until': float('inf')}
     bots = [Bot(i, args, n, stats) for i in range(args.count)]
     tasks = []
+    loop = asyncio.get_event_loop()
+    for sig in ('SIGINT', 'SIGTERM'):
+        try:
+            loop.add_signal_handler(getattr(__import__('signal'), sig), lambda: stats.update(stop=True))
+        except (NotImplementedError, AttributeError, RuntimeError):
+            pass  # Windows: Ctrl+C still ends the run, without a report
+    progress = asyncio.ensure_future(report_progress(stats, args.count, t0))
     for bot in bots:
-        tasks.append(asyncio.ensure_future(bot.run(until)))
+        if stats['stop']:
+            break
+        tasks.append(asyncio.ensure_future(bot.run(clock)))
         await asyncio.sleep(args.ramp)
-    print('%d bots started in %.1fs; holding for %ds ...' % (args.count, time.monotonic() - t0, args.duration), flush=True)
+    ramp_end = time.monotonic()
+    until = clock['until'] = ramp_end + args.duration
+    print('%d bots started in %.1fs (%d in game, %d logging in, %d failed); holding for %ds ...' % (
+        len(tasks), time.monotonic() - t0, stats['in_game'], stats['connecting'], len(stats['failed']), args.duration),
+        flush=True)
     await asyncio.gather(*tasks)
+    progress.cancel()
     wall1 = time.time()
     if sampler:
         sampler.task.cancel()
     report(args, stats, sampler, baseline, ramp_end, until, wall0, wall1)
 
 
+async def report_progress(stats, count, t0):
+    while True:
+        await asyncio.sleep(10)
+        print('  [%4.0fs] in game %d, logging in %d, failed %d, not started %d' % (
+            time.monotonic() - t0, stats['in_game'], stats['connecting'], len(stats['failed']),
+            count - len(stats['login_ms']) - len(stats['failed']) - stats['connecting']), flush=True)
+
+
 def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
     ok = len(s['login_ms'])
     print()
-    print('Load test: %d bots, %ds at full load, walk every %.1fs, say every %ss' % (args.count, args.duration, args.walk,
-                                                                                     args.say))
-    print('  logins ok %d / %d; login time p50 %.0f ms, p95 %.0f ms, max %.0f ms' % (
-        ok, args.count, pct(s['login_ms'], 50), pct(s['login_ms'], 95), max(s['login_ms'] or [0])))
-    for f in s['failed'][:10]:
-        print('  failed: ' + f)
-    if len(s['failed']) > 10:
-        print('  ... %d more failures' % (len(s['failed']) - 10))
+    print('Load test: %d bots, %ds at full load, walk every %.1fs, say every %ss%s' % (
+        args.count, args.duration, args.walk, args.say, ' (stopped early)' if s['stop'] else ''))
+    print('  entered the game %d / %d; failed %d; kicked within 10 s of entering %d' % (
+        ok, args.count, len(s['failed']), len(s['kicked'])))
+    print('  login time %s (connect to in game)' % spread(s['login_ms']))
+    if s.get('charlist_ms'):
+        print('  character list %s (%d answers; the login server part of the above)' % (
+            spread(s['charlist_ms']), len(s['charlist_ms'])))
+    for count, reason, names in group_reasons(s['failed'] + s['kicked']):
+        print('  %4d x %s (%s%s)' % (count, reason, ', '.join(names), ', ...' if count > len(names) else ''))
     print('  disconnects during the run: %d; steps sent %d, chat lines %d; received %.1f MB' % (
         s['disconnects'], s['walks'], s['says'], s['bytes'] / 1e6))
+    if args.guard_key:
+        print('  client guard: build %d, %s key; logins without a challenge (guard off): %d' % (
+            args.client_build, 'development' if args.guard_key == GUARD_DEV_KEY else 'given', s['no_challenge']))
+    else:
+        print('  client guard: stock client version 1098 sent (only a server in clientGuardMode "off" or "log" lets it in)')
     if sampler and sampler.samples:
         def window(a, b):
             return [x for x in sampler.samples if a <= x['t'] <= b]
@@ -463,11 +626,20 @@ def sql(args, statements):
         os.unlink(opt)
 
 
+def password_hash(password, iterations):
+    """accounts.password as the website writes it (engine src-patch 0014): pbkdf2-sha256$<iterations>$<salt>$<key>,
+    standard base64. 0 iterations: the old unsalted SHA-1 (the first login re-hashes it: the migration path)"""
+    if iterations <= 0:
+        return hashlib.sha1(password.encode()).hexdigest()
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, iterations, 32)
+    return 'pbkdf2-sha256$%d$%s$%s' % (iterations, base64.b64encode(salt).decode(), base64.b64encode(key).decode())
+
+
 def setup(args):
-    import hashlib
     x, y, z = (int(v) for v in args.pos.split(','))
     side = max(1, int(args.count ** 0.5 + 0.999))
-    pw = hashlib.sha1(PREFIX.encode()).hexdigest()
+    pw = password_hash(PREFIX, args.hash_iterations)
     st = []
     for i in range(args.count):
         acc = '%s%04d' % (PREFIX, i)
@@ -503,9 +675,10 @@ def parse(argv):
     a.cmd = argv[0]
     defaults = {'--count': 30, '--host': '127.0.0.1', '--port': 7171, '--game-port': 0, '--duration': 120,
                 '--server-pid': 0, '--server-log': '', '--key': '', '--ramp': 0.5, '--walk': 1.0, '--say': 20.0,
-                '--pos': '1500,1500,7', '--town': 1, '--vocation': 4, '--db': ''}
+                '--pos': '1500,1500,7', '--town': 1, '--vocation': 4, '--db': '', '--client-key': '',
+                '--client-build': 1, '--login-timeout': 20.0, '--hash-iterations': 120000}
     vals = dict(defaults)
-    flags = {'--no-source-ips': False}
+    flags = {'--no-source-ips': False, '--dev-key': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -522,6 +695,18 @@ def parse(argv):
         setattr(a, k.lstrip('-').replace('-', '_'), v)
     if a.count < 1 or a.count > 9999:
         sys.exit('--count 1..9999')
+    if not 1 <= a.client_build <= 0xFFFF:
+        sys.exit('--client-build 1..65535')
+    key = a.client_key or os.environ.get('CHAOS_CLIENT_KEY', '')
+    if a.dev_key:
+        a.guard_key = GUARD_DEV_KEY
+    elif key:
+        if not re.match(r'^[0-9a-fA-F]{64}$', key.strip()):
+            sys.exit('--client-key / CHAOS_CLIENT_KEY must be 64 hex digits')
+        a.guard_key = bytes.fromhex(key.strip())
+    else:
+        a.guard_key = None
+    a.client_id = (GUARD_TAG << 16 | a.client_build) if a.guard_key else VERSION
     return a
 
 

@@ -1,5 +1,5 @@
 -- Treasure goblins: a cowardly, very rare monster that replaces a natural respawn, never attacks, flees and blinks
--- once hit, escapes through a portal after ~18 s, and drops a hoard (gold, Chaos Orbs, a chance of a Divine Orb,
+-- once hit, escapes through a portal after ~18 s, and drops a hoard (gold, Orbs of Upheaval, a chance of an Orb of Fate,
 -- 2-4 rarity-rolled gear items through the Chaos loot layer, a raised unique chance) when killed in time.
 --
 -- * Spawn: own EventCallback.onSpawn (registered first, index -10). A natural map respawn (not a script's
@@ -13,8 +13,15 @@
 -- * Loot: added to the corpse in the death event (before the engine's onDropLoot, so the stock loot message and
 --   autoloot see it), using ChaosLoot (loot.lua) for item find, rarity rolls and uniques.
 --
+-- * Variants (cfg.variants, by weight): the Hoarder ("Treasure Goblin", the hoard above), the Gem Goblin (gems and
+--   Orbs of Sockets) and the Shard Goblin (Rune Shards and orbs); one monster XML each, same behaviour.
+-- * Treasure Goblin Chance: the Chaos item modifier "goblinchance" (chaos_item_mods.lua) of the players near a respawn
+--   raises its roll (the highest total within cfg.spoor.radius tiles counts, at most +100%).
+--
 -- Config: treasure_goblin_config.lua. Pure logic: treasure_goblin_core.lua (tests: server/tests/treasure_goblin_test.lua).
--- Exports: ChaosTreasureGoblin.spawn(pos[, opts]) (staff / tests), ChaosTreasureGoblin.alive (id -> state).
+-- Exports: ChaosTreasureGoblin.spawn(pos[, opts]) (staff / tests; opts.variant = "hoarder" | "gem" | "shard"),
+-- ChaosTreasureGoblin.alive (id -> state), ChaosTreasureGoblin.isGoblinName(name), ChaosTreasureGoblin.spoorAt(pos),
+-- ChaosTreasureGoblin.trySpawnRoll(info) (the respawn path, for a scripted test).
 -- Optional hooks, called guarded, never created here: ChaosLeaderboard.record(board, player, 1, "add") when Chaos.leaderboardConfig has the board
 -- (cfg.leaderboard.board, "goblin"); ChaosNotify.gmBroadcast(player, text) for the appear toast.
 
@@ -23,6 +30,9 @@ if not Chaos then
 end
 ChaosTreasureGoblinConfig = dofile("data/scripts/chaos/treasure_goblin_config.lua")
 dofile("data/scripts/chaos/treasure_goblin_core.lua")
+if not ChaosSpeed then
+	dofile("data/lib/chaos_speed.lua") -- the speed a player really walks at (engine patch 0018 clamps it)
+end
 
 ChaosTreasureGoblin = ChaosTreasureGoblin or {}
 local TG = ChaosTreasureGoblin
@@ -45,8 +55,12 @@ local function rand(a, b)
 	return math.random(a, b)
 end
 
-local function lowerName()
-	return cfg().name:lower()
+function TG.isGoblinName(name)
+	return G.isGoblinName(cfg(), name)
+end
+
+local function variantOf(keyOrName)
+	return G.variant(cfg(), keyOrName) or G.variants(cfg())[1]
 end
 
 local function countAlive()
@@ -64,7 +78,9 @@ end
 -- monster_tiers.lua must never give the goblin a tier, modifiers or an ambush copy
 local function keepOutOfTiers()
 	if ChaosTierConfig and ChaosTierConfig.skip then
-		ChaosTierConfig.skip[lowerName()] = true
+		for _, v in ipairs(G.variants(cfg())) do
+			ChaosTierConfig.skip[v.name:lower()] = true
+		end
 	end
 end
 
@@ -174,15 +190,17 @@ local function setup(monster, data)
 	local pos = monster:getPosition()
 	local level = data.level or G.areaLevel(c, 0, nearbyPlayerLevels(pos, c.level.playerRadius), data.maxHealth or 0)
 	local real = G.realHealth(c, level, data.maxHealth)
+	local variant = variantOf(data.variant or monster:getName())
 	local st = {
 		id = monster:getId(), level = level, real = real, bornAt = nowMs(), seen = {}, attackers = {},
-		replaced = data.name, replacedExp = data.experience or 0, gear = data.gear or {}
+		replaced = data.name, replacedExp = data.experience or 0, gear = data.gear or {}, variant = variant,
+		goblinName = variant.name, spoor = data.spoor or 0
 	}
 	TG.alive[st.id] = st
 	local dormant = G.dormantHealth(c, real)
 	monster:setMaxHealth(dormant)
 	monster:setHealth(dormant)
-	local shader = c.behaviour.shader or 0
+	local shader = variant.shader or c.behaviour.shader or 0
 	if shader > 0 then
 		local outfit = monster:getOutfit()
 		outfit.lookShader = shader
@@ -192,19 +210,26 @@ local function setup(monster, data)
 	monster:registerEvent("ChaosTreasureGoblinDeath")
 	effect(pos, "summon_portal", CONST_ME_TELEPORT)
 	addEvent(TG.tick, c.behaviour.tickMs, st.id)
-	print(string.format("[Chaos goblin] Treasure Goblin at %d,%d,%d (area level %d, health %d, replaced %s)",
-		pos.x, pos.y, pos.z, level, real, tostring(data.name)))
+	print(string.format("[Chaos goblin] %s at %d,%d,%d (area level %d, health %d, replaced %s, chance bonus %d%%)",
+		variant.name, pos.x, pos.y, pos.z, level, real, tostring(data.name), st.spoor))
 	return st
 end
 
--- create a goblin at pos (staff command, tests). opts = setup data; returns the monster or nil
+-- create a goblin at pos (staff command, rifts, tests). opts = setup data (opts.variant: a variant key or name,
+-- default the first, the Hoarder); returns the monster or nil
 function TG.spawn(pos, opts)
 	keepOutOfTiers()
-	local monster = Game.createMonster(cfg().name, pos, true, false)
+	local variant = variantOf(opts and opts.variant)
+	local monster = Game.createMonster(variant.name, pos, true, false)
 	if not monster then
 		return nil
 	end
-	setup(monster, opts)
+	local data = {}
+	for k, v in pairs(opts or {}) do
+		data[k] = v
+	end
+	data.variant = variant.key
+	setup(monster, data)
 	return monster
 end
 
@@ -260,7 +285,7 @@ local function despawn(monster, st, escaped)
 	if escaped then
 		effect(pos, "summon_portal", CONST_ME_TELEPORT)
 		say(monster, c.escapeLine)
-		tell(pos, c.behaviour.announceRadius, c.escapeText)
+		tell(pos, c.behaviour.announceRadius, string.format(c.escapeText, st.goblinName or c.name))
 		print(string.format("[Chaos goblin] escaped at %d,%d,%d", pos.x, pos.y, pos.z))
 	else
 		pos:sendMagicEffect(CONST_ME_POFF)
@@ -277,9 +302,10 @@ local function announce(monster, st)
 		local pid = p:getId()
 		if not st.seen[pid] then
 			st.seen[pid] = true
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, c.appearText)
+			local text = string.format(c.appearText, st.goblinName or c.name)
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 			if c.behaviour.toast and ChaosNotify and ChaosNotify.gmBroadcast then
-				pcall(ChaosNotify.gmBroadcast, p, c.appearText)
+				pcall(ChaosNotify.gmBroadcast, p, text)
 			end
 		end
 	end
@@ -315,7 +341,7 @@ local function wake(monster, st, attacker)
 	local c = cfg()
 	monster:setMaxHealth(st.real)
 	monster:setHealth(st.real)
-	local delta = G.fleeSpeedDelta(c, monster:getSpeed(), attacker and attacker:getSpeed() or 0)
+	local delta = G.fleeSpeedDelta(c, monster:getSpeed(), attacker and ChaosSpeed.effective(attacker) or 0)
 	if delta > 0 then
 		monster:changeSpeed(delta)
 	end
@@ -385,7 +411,7 @@ end
 
 -- returns a list of text pieces and the best "kind" for the loot rays (unique / legendary / rare / magic)
 function TG.fillCorpse(corpse, st, owner)
-	local c = cfg()
+	local c = G.forVariant(cfg(), st.variant)
 	local L = ChaosLoot
 	local bonus, kind = {}, "magic"
 	local level = st.level
@@ -399,6 +425,57 @@ function TG.fillCorpse(corpse, st, owner)
 		addStack(corpse, c.loot.divineOrb.id, 1, bonus)
 	end
 
+	-- Gem Goblin: gems (tier by area level, as monster gem drops) and Orbs of Sockets
+	local gems = G.gemCount(c, level, rand)
+	if gems > 0 and ChaosGems and ChaosGems.randomGem then
+		local counts, order = {}, {}
+		for _ = 1, gems do
+			local id = ChaosGems.randomGem(ChaosGems.levelWeights(level), rand)
+			if id and rand(1, 100) <= (c.loot.gems.tierUp or 0) then
+				id = ChaosGems.combineResult(id) or id
+			end
+			if id then
+				if not counts[id] then
+					counts[id] = 0
+					order[#order + 1] = id
+				end
+				counts[id] = counts[id] + 1
+			end
+		end
+		for _, id in ipairs(order) do
+			local before = #bonus
+			addStack(corpse, id, counts[id], bonus)
+			if #bonus > before and ChaosGems.gemName then
+				bonus[#bonus] = (counts[id] > 1 and (counts[id] .. "x ") or "") .. ChaosGems.gemName(id)
+			end
+		end
+	end
+	local sockets = G.socketOrbs(c, rand)
+	if sockets > 0 and ChaosGems and ChaosGems.config and ChaosGems.config.socketOrb then
+		local before = #bonus
+		addStack(corpse, ChaosGems.config.socketOrb.id, sockets, bonus)
+		if #bonus > before then
+			bonus[#bonus] = (sockets > 1 and (sockets .. "x ") or "") .. ChaosGems.config.socketOrb.name
+		end
+	end
+
+	-- Shard Goblin: Rune Shards and crafting orbs
+	local shards = G.shardCount(c, level, rand)
+	if shards > 0 then
+		-- stacks of at most 100 (the cap is 60 anyway)
+		addStack(corpse, c.loot.shards.id, math.min(shards, 100), bonus)
+	end
+	local orbCounts = {}
+	for _, key in ipairs(G.orbKeys(c, rand)) do
+		local orb = ChaosCrafting and ChaosCrafting.orbByKey and ChaosCrafting.orbByKey[key]
+		if orb then
+			orbCounts[orb.id] = (orbCounts[orb.id] or 0) + 1
+		end
+	end
+	for id, n in pairs(orbCounts) do
+		addStack(corpse, id, n, bonus)
+	end
+
 	local maxRarity = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.maxRarity or 15
 	local ids = G.pickGear(c, level, st.gear, G.itemCount(c, rand), rand)
 	for _, id in ipairs(ids) do
@@ -409,11 +486,20 @@ function TG.fillCorpse(corpse, st, owner)
 		end
 		r = math.min(r, maxRarity)
 		local placed = false
-		if r > 0 and Game.createItemWithRarity then
-			local item = Game.createItemWithRarity(id, 1, r)
-			if item and corpse:addItemEx(item) == RETURNVALUE_NOERROR then
-				placed = true
-				bonus[#bonus + 1] = string.format("[%s] %s", rarityName(r), itemName(id))
+		if r > 0 and ChaosCrafting and ChaosCrafting.createItem then
+			-- rolled now at the goblin's item level (its area level, as a legendary kill) and kept as text through the
+			-- engine's rarity pass of this corpse (ChaosCrafting.shield; item_mods.lua gives it back a tick later)
+			local ilvl = ChaosItemMods.sourceLevel({monsterLevel = level, tier = "legendary"})
+			local item = ChaosCrafting.createItem(id, r, ilvl)
+			if item then
+				ChaosCrafting.shield(item)
+				if corpse:addItemEx(item) == RETURNVALUE_NOERROR then
+					placed = true
+					bonus[#bonus + 1] = string.format("[%s] %s", rarityName(r), itemName(id))
+					if ChaosItemMods.afterDrop then
+						ChaosItemMods.afterDrop(corpse)
+					end
+				end
 			end
 		end
 		if not placed and corpse:addItem(id, 1) then
@@ -467,7 +553,7 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		return true
 	end
 	local pos = creature:getPosition()
-	tell(pos, c.behaviour.announceRadius, string.format(c.killText, owner:getName()))
+	tell(pos, c.behaviour.announceRadius, string.format(c.killText, owner:getName(), st.goblinName or c.name))
 
 	local xp = G.experience(c, st.replacedExp, st.level)
 	if xp > 0 then
@@ -479,7 +565,7 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		if not ok then
 			print("[Chaos goblin] loot failed: " .. tostring(bonus))
 		elseif #bonus > 0 then
-			local text = "Treasure Goblin hoard: " .. table.concat(bonus, ", ")
+			local text = (st.goblinName or c.name) .. " hoard: " .. table.concat(bonus, ", ")
 			local msgType = _G[c.loot.messageType] or MESSAGE_LOOT or MESSAGE_INFO_DESCR
 			local party = owner:getParty()
 			if party then
@@ -490,7 +576,8 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 			pos:sendMagicEffect(CONST_ME_GIFT_WRAPS or CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE)
 			-- loot rays: lootfilter.lua reads the corpse in onDropLoot, after this death event, so uniques and
 			-- Legendary+ items placed above get their beam without a hook
-			print(string.format("[Chaos goblin] %s killed one (area level %d): %s", owner:getName(), st.level, text))
+			print(string.format("[Chaos goblin] %s killed a %s (area level %d): %s", owner:getName(), st.goblinName or c.name,
+				st.level, text))
 		end
 	end
 
@@ -504,10 +591,71 @@ end
 death:register()
 
 -- ------------------------------------------------------------------ the spawn roll
+-- Treasure Goblin Chance of the players near pos: mult (>= 1), the best bonus in percent, that player's name
+function TG.spoorAt(pos)
+	local c = cfg()
+	local sp = c.spoor
+	if not sp or not (ChaosItemMods and ChaosItemMods.playerBonus) then
+		return 1, 0, nil
+	end
+	local r = sp.radius or 24
+	local bonuses, bestName, best = {}, nil, 0
+	for _, p in ipairs(Game.getSpectators(pos, false, true, r, r, r, r)) do
+		local b = ChaosItemMods.playerBonus(p, sp.modKey or "goblinchance") or 0
+		bonuses[#bonuses + 1] = b
+		if b > best then
+			best, bestName = b, p:getName()
+		end
+	end
+	local mult, pct = G.spoorMult(c, bonuses)
+	return mult, pct, bestName
+end
+
+-- The respawn path without the engine's spawn callback (staff test, /goblin roll): info as G.eligible's, plus
+-- rand (optional). Returns the outcome ("goblin", or the reason it did not happen), the roll's 1-in-N and the bonus.
+function TG.rollAt(info, rand_)
+	local c = cfg()
+	TG.spawnState.alive = countAlive()
+	local ok, why = G.eligible(c, info, TG.spawnState, os.time())
+	if not ok then
+		return why, 0, 0
+	end
+	local mult = tonumber(ChaosEvents and ChaosEvents.bonus and call(ChaosEvents.bonus, "goblin") or 1) or 1
+	local hit, oneIn, pct = G.rollWithSpoor(c, rand_ or rand, mult, function()
+		local m, p = TG.spoorAt(info.pos)
+		return m, p
+	end)
+	if not hit then
+		return "miss", oneIn, pct
+	end
+	if TG.excludedAt(info.pos) then
+		return "area", oneIn, pct
+	end
+	return "goblin", oneIn, pct
+end
+
+-- place a goblin for a respawn that rolled one (after the replaced spawn was cancelled)
+local function replaceSpawn(position, data)
+	local c = cfg()
+	G.markSpawn(c, TG.spawnState, position, os.time())
+	TG.pending = (TG.pending or 0) + 1
+	local pos = Position(position.x, position.y, position.z)
+	local variant = G.pickVariant(c, rand)
+	data.variant = variant.key
+	addEvent(function()
+		TG.pending = math.max(0, (TG.pending or 1) - 1)
+		keepOutOfTiers()
+		local monster = Game.createMonster(variant.name, pos, true, false)
+		if monster then
+			setup(monster, data)
+		end
+	end, c.spawn.delayMs or 50)
+end
+
 local spawnCb = EventCallback
 spawnCb.onSpawn = function(self, position, startup, artificial)
 	local c = cfg()
-	if artificial or self:getName():lower() == lowerName() then
+	if artificial or TG.isGoblinName(self:getName()) then
 		return true
 	end
 	local mt = self:getType()
@@ -515,51 +663,84 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 		name = self:getName(), pos = position, natural = not artificial, startup = startup,
 		summon = self:getMaster() ~= nil, boss = isBoss(self), hostile = isHostile(self), maxHealth = self:getMaxHealth()
 	}
-	TG.spawnState.alive = countAlive()
-	local ok = G.eligible(c, info, TG.spawnState, os.time())
-	if not ok then
-		return true
-	end
-	local mult = ChaosEvents and ChaosEvents.bonus and call(ChaosEvents.bonus, "goblin") or 1
-	if not G.rollSpawn(c, rand, tonumber(mult) or 1) then
-		return true
-	end
-	if TG.excludedAt(position) then
+	local outcome, _, spoorPct = TG.rollAt(info)
+	if outcome ~= "goblin" then
 		return true
 	end
 	local level = call(function() return self:getMonsterLevel() end) or 0
-	local data = {
+	replaceSpawn(position, {
 		level = G.areaLevel(c, level, nearbyPlayerLevels(position, c.level.playerRadius), info.maxHealth),
-		maxHealth = info.maxHealth, name = info.name, gear = gearOf(mt),
+		maxHealth = info.maxHealth, name = info.name, gear = gearOf(mt), spoor = spoorPct,
 		experience = mt and call(function() return mt:getExperience() end) or 0
-	}
-	G.markSpawn(c, TG.spawnState, position, os.time())
-	TG.pending = (TG.pending or 0) + 1
-	local pos = Position(position.x, position.y, position.z)
-	addEvent(function()
-		TG.pending = math.max(0, (TG.pending or 1) - 1)
-		keepOutOfTiers()
-		local monster = Game.createMonster(c.name, pos, true, false)
-		if monster then
-			setup(monster, data)
-		end
-	end, c.spawn.delayMs or 50)
+	})
 	-- cancel the replaced spawn; its spawn block tries again after its normal interval
 	return false
 end
 spawnCb:register(-10)
 
--- staff helper: /goblin spawns one next to the GM (god accounts only)
+-- staff helper (god accounts only):
+--   /goblin [hoarder|gem|shard] [level]   one goblin next to the GM
+--   /goblin roll <monster name>[, n]       n scripted respawn rolls of that monster 2 tiles ahead (default 1):
+--                                         reports the 1-in-N after the Treasure Goblin Chance bonus and the outcomes;
+--                                         a hit places a goblin as a real respawn would (variant by weight)
+--   /goblin dry <monster name>[, n]        the same rolls, nothing placed or marked (measures the odds)
 local talk = TalkAction("/goblin")
 function talk.onSay(player, words, param)
 	if not player:getGroup():getAccess() or player:getAccountType() < ACCOUNT_TYPE_GOD then
 		return true
 	end
+	local c = cfg()
 	local pos = player:getPosition()
 	pos:getNextPosition(player:getDirection(), 2)
-	local level = tonumber(param)
-	local monster = TG.spawn(pos, level and {level = level} or nil)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, monster and "Treasure Goblin spawned." or "Could not place the goblin.")
+	local mode, roll = param:match("^(%a+)%s+(.+)$")
+	if mode ~= "roll" and mode ~= "dry" then
+		roll = nil
+	end
+	if roll then
+		local name, n = roll:match("^(.-)%s*,%s*(%d+)$")
+		name, n = name or roll, math.min(tonumber(n) or 1, 100000)
+		local mt = MonsterType(name)
+		if not mt then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, "No monster type " .. name .. ".")
+			return false
+		end
+		local hp = call(function() return mt:getMaxHealth() end) or 1000
+		local counts, oneIn, pct = {}, 0, 0
+		for _ = 1, n do
+			local info = {name = mt:getName(), pos = pos, natural = true, startup = false, summon = false, boss = false,
+				hostile = true, maxHealth = hp}
+			local outcome
+			outcome, oneIn, pct = TG.rollAt(info)
+			counts[outcome] = (counts[outcome] or 0) + 1
+			if outcome == "goblin" and mode == "roll" then
+				replaceSpawn(pos, {level = G.areaLevel(c, 0, nearbyPlayerLevels(pos, c.level.playerRadius), hp),
+					maxHealth = hp, name = mt:getName(), gear = gearOf(mt), spoor = pct,
+					experience = call(function() return mt:getExperience() end) or 0})
+			end
+		end
+		local parts = {}
+		for k, v in pairs(counts) do
+			parts[#parts + 1] = k .. " " .. v
+		end
+		table.sort(parts)
+		local m
+		m, pct = TG.spoorAt(pos)
+		oneIn = (c.spawn.oneIn or 0) / m / (tonumber(ChaosEvents and ChaosEvents.bonus and call(ChaosEvents.bonus, "goblin") or 1) or 1)
+		local text = string.format("Goblin " .. mode .. " x%d: 1 in %.0f (Treasure Goblin Chance +%d%%): %s", n, oneIn, pct,
+			table.concat(parts, ", "))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+		print("[Chaos goblin] " .. text)
+		return false
+	end
+	local key, level = param:match("^(%a+)%s*(%d*)$")
+	local variant = key and G.variant(c, key)
+	if not variant then
+		level = param:match("^(%d+)$")
+	end
+	level = tonumber(level)
+	local opts = {variant = variant and variant.key or nil, level = level}
+	local monster = TG.spawn(pos, opts)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, monster and (monster:getName() .. " spawned.") or "Could not place the goblin.")
 	return false
 end
 talk:separator(" ")

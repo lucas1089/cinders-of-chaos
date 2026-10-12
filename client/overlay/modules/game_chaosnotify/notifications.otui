@@ -23,7 +23,7 @@ NotificationPanel < Panel
       id: moduleIcon
       size: 64 64
       anchors.centerIn: parent
-      image-source: images/notifications/gm.png
+      image-source: images/toast/announce.png
 
   // Botão de fixar (topo direito)
   UIButton
@@ -47,7 +47,8 @@ NotificationPanel < Panel
     margin-top: 15
     margin-right: 10
     height: 25
-    font: Fontin-19px-antialiased
+    // stock font; the toast notifications.lua builds uses the Chaos heading font when loaded
+    font: verdana-11px-rounded
     color: #a3844b
     text-align: center
 
@@ -72,7 +73,7 @@ NotificationPanel < Panel
     margin-top: 8
     margin-right: 10
     height: 35
-    font: verdana-12px-rounded
+    font: verdana-11px-rounded
     color: #FFD700
     text-align: center
     text-wrap: true

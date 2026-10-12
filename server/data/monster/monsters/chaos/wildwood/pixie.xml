@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Forest Pixie" nameDescription="a forest pixie" race="blood" experience="140" speed="250" manacost="0">
+	<health now="160" max="160" />
+	<look type="2021" head="1" body="43" legs="10" feet="18" corpse="36082" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="4" />
+		<flag staticattack="90" />
+		<flag runonhealth="16" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-30" />
+		<attack name="energy" interval="2000" chance="30" range="7" min="-30" max="-85">
+			<attribute key="shootEffect" value="energy" />
+		</attack>
+	</attacks>
+	<defenses armor="8" defense="8">
+		<defense name="healing" interval="2000" chance="15" min="50" max="100">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+		<defense name="speed" interval="2000" chance="10" speedchange="250" duration="4000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Tee-hee!" />
+		<voice sentence="Catch me!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="35" chance="60000" /><!-- gold coin -->
+		<item id="36025" countmax="2" chance="18000" /><!-- pouch of pixie dust -->
+		<item id="36044" countmax="2" chance="12000" /><!-- bunch of cherries -->
+		<item id="36037" countmax="2" chance="12000" /><!-- handful of berries -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+	</loot>
+</monster>

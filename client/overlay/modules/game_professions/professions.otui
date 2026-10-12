@@ -1,0 +1,343 @@
+// Professions window (game_professions): the four professions with level and experience bar, where to gather (areas
+// with your ready nodes), and the Material Broker's board of the week (price x demand, sold today, carried, Sell).
+// Styles from client_chaos_theme. Opened from the menu (Economy > Professions) or by a Material Broker.
+
+ProfessionRow < UIWidget
+  height: 64
+  margin-bottom: 4
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 6
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: item.right
+    anchors.right: level.left
+    margin-top: 6
+    margin-left: 8
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: level
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 6
+    margin-right: 8
+    width: 70
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: right
+    phantom: true
+
+  UILabel
+    id: tier
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: parent.right
+    margin-top: 2
+    margin-right: 8
+    font: verdana-11px-antialised
+    text-align: left
+    phantom: true
+
+  ChaosProgressBar
+    id: bar
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 8
+    margin-right: 8
+    margin-bottom: 6
+    height: 14
+    phantom: true
+
+AreaRow < UIWidget
+  height: 46
+  margin-bottom: 2
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 4 8 0 8
+    font: verdana-11px-rounded
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: text
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 2 8 0 8
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    text-wrap: true
+    height: 26
+    phantom: true
+
+MaterialRow < UIWidget
+  height: 44
+  margin-bottom: 2
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 5
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: item.right
+    anchors.right: price.left
+    margin-top: 5
+    margin-left: 8
+    margin-right: 6
+    font: verdana-11px-rounded
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: info
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: sold.left
+    margin-top: 3
+    margin-right: 6
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: mult
+    anchors.top: parent.top
+    anchors.right: sell.left
+    margin-top: 5
+    margin-right: 8
+    width: 44
+    font: verdana-11px-rounded
+    text-align: right
+    phantom: true
+
+  UILabel
+    id: price
+    anchors.top: parent.top
+    anchors.right: mult.left
+    margin-top: 5
+    margin-right: 4
+    width: 84
+    font: verdana-11px-antialised
+    color: #e8b84a
+    text-align: right
+    phantom: true
+
+  UILabel
+    id: sold
+    anchors.top: price.bottom
+    anchors.right: sell.left
+    margin-top: 3
+    margin-right: 8
+    width: 106
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: right
+    phantom: true
+
+  ChaosButton
+    id: sell
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    size: 54 22
+    !text: tr('Sell')
+
+ProfessionsWindow < ChaosMainWindow
+  id: professionsWindow
+  size: 820 580
+  !text: tr('Professions')
+  @onEscape: modules.game_professions.hide()
+
+  ChaosLabel
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    text-align: left
+    color: #8fd16a
+
+  ChaosTitlePlate
+    id: profPlate
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    margin-top: 4
+    width: 300
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Your Professions')
+
+  UIWidget
+    id: profList
+    anchors.top: profPlate.bottom
+    anchors.left: parent.left
+    margin-top: 4
+    width: 300
+    height: 272
+    layout:
+      type: verticalBox
+
+  ChaosTitlePlate
+    id: areaPlate
+    anchors.top: profList.bottom
+    anchors.left: parent.left
+    margin-top: 4
+    width: 300
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Where to Gather')
+
+  ChaosPanelDark
+    id: areaFrame
+    anchors.top: areaPlate.bottom
+    anchors.left: parent.left
+    anchors.bottom: footer.top
+    margin-top: 4
+    margin-bottom: 6
+    width: 300
+
+    ScrollablePanel
+      id: areaList
+      anchors.fill: parent
+      margin: 6
+      margin-right: 16
+      vertical-scrollbar: areaScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: areaScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 24
+      pixels-scroll: true
+
+  ChaosTitlePlate
+    id: boardPlate
+    anchors.top: header.bottom
+    anchors.left: profPlate.right
+    anchors.right: parent.right
+    margin-top: 4
+    margin-left: 8
+
+    ChaosTitle
+      id: boardTitle
+      anchors.fill: parent
+      !text: tr('Material Broker: Demand of the Week')
+
+  ChaosLabel
+    id: brokerState
+    anchors.top: boardPlate.bottom
+    anchors.left: boardPlate.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 16
+    text-align: left
+
+  ChaosPanelDark
+    id: boardFrame
+    anchors.top: brokerState.bottom
+    anchors.left: boardPlate.left
+    anchors.right: parent.right
+    anchors.bottom: footer.top
+    margin-top: 4
+    margin-bottom: 6
+
+    ScrollablePanel
+      id: boardList
+      anchors.fill: parent
+      margin: 6
+      margin-right: 16
+      vertical-scrollbar: boardScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: boardScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 46
+      pixels-scroll: true
+
+  ChaosLabelDim
+    id: footer
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: status.top
+    margin-bottom: 4
+    height: 16
+    text-align: left
+
+  ChaosLabel
+    id: status
+    anchors.left: parent.left
+    anchors.right: sellAllButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 24
+    text-wrap: true
+    text-align: left
+
+  ChaosButton
+    id: sellAllButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    size: 150 24
+    !text: tr('Sell All')
+    @onClick: modules.game_professions.sellAll()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_professions.hide()

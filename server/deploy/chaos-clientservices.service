@@ -1,4 +1,4 @@
-# Project Chaos login-screen services (boosted creature/boss, event calendar, players online) for the client.
+# Cinders of Chaos login-screen services (boosted creature/boss, event calendar, players online) for the client.
 # The game server writes data/chaos_clientservices.json (data/scripts/chaos/clientservices.lua) at start and every
 # 5 minutes; server/tools/clientservices.py (Python 3 standard library only) serves that file over HTTP. The client asks
 # the URL set as clientServicesLink in its init.lua: http://<host>:8090/clientservices (any path works).
@@ -7,7 +7,7 @@
 # /opt/chaos/repo is a checkout of this repository (only server/tools/clientservices.py is used).
 
 [Unit]
-Description=Project Chaos login-screen services (HTTP)
+Description=Cinders of Chaos login-screen services (HTTP)
 Wants=network-online.target
 After=network-online.target chaos-server.service
 

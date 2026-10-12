@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Install everything of Project Chaos into a stock base server folder, in the order of server/README.md "Install".
+"""Install everything of Cinders of Chaos into a stock base server folder, in the order of server/README.md "Install".
 
 usage: python3 -I server/tools/install_all.py SERVER_DIR [--dry-run] [--no-sql] [--skip STEP,...] [--only STEP,...]
                                               [--db NAME] [--db-host HOST] [--db-port PORT] [--db-user USER]
                                               [--mysql PATH] [--quiet | --verbose]
 
-SERVER_DIR is the base server folder: the one with config.lua and data/ (the map .otbm is never read or changed).
+SERVER_DIR is the base server folder: the one with config.lua and data/ (only the towns and worldtexts steps read and
+change the map .otbm: the names of its towns, the texts of its signs and books).
 
 Steps, in this order (each one is idempotent on its own; a second run of the whole script changes nothing):
   files        copy server/data from this repo into SERVER_DIR/data: scripts/chaos/**, lib/chaos_*.lua,
@@ -13,24 +14,117 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                register_spells.py reads) and patchnotes/*.md (+ index.txt). Only new or different files are written;
                files in SERVER_DIR/data/scripts/chaos that the repo no longer has are listed, never deleted.
   lib          data/lib/lib.lua loads chaos_unique_items.lua (data/items/README.md, "Install" 1)
+  monsternames tools/patch_base_monster_names.py Chaos names of the base monsters (data/monster/base_monster_names.csv,
+               keyed by the sha256 of the old name): registrations, monster files, spawns, raids, scripts, a few outfit and
+               mount names (README "Base monster names"; before lategame and spawns, which name monsters by the new names)
   vocations    tools/add_vocations.py            the classes (README "Install" 5b, docs/CLASSES.md)
+               tools/patch_base_classes.py       the base server's vocation checks (NPCs, quests, familiars, ...) know
+                                                 the classes (README "Install" 5b, docs/CLASSES.md "Base scripts")
   events       tools/patch_base_events.py        experience / loot / siege / login hooks (README "Install" 4)
                tools/patch_season_events.py      season isolation hooks (when the tool exists)
+               tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
+               tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
+               tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
+               tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
+  basecrafting tools/patch_base_crafting.py       the base crafting script (opcode 91, tables 38820-38826): table check,
+                                                 one pending craft per player, gold and materials taken before the item
+                                                 is made, refund when it cannot be added (README "Base crafting script")
+  basecraftingui tools/patch_base_crafting_ui.py  the base crafting script talks to the client's Crafting Table window:
+                                                 messages instead of popups, material names, item tooltips (README
+                                                 "Crafting Table window"; needs the basecrafting step first)
+  basecraftingbonus tools/patch_base_crafting_bonus.py  crafted equipment rolls a Chaos rarity and item level, potions
+                                                 and runes may give extra pieces, by the crafting skill (README
+                                                 "Crafting bonus"; needs basecrafting and basecraftingui first)
   weapons      tools/two_handed.py               two-handed attack speed (README "Weapon styles")
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
+  orbs         tools/install_orbs.py             crafting orbs v2 items, orb renames in the base files (README "Crafting orbs v2")
+  darktiles    tools/install_dark_tiles.py       the dark tile set in items.otb / items.xml (README "Dark tile set")
+  outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md)
+  auras        tools/install_auras.py            the Chaos auras in auras.xml (data/XML/chaos_auras.csv, written by
+               client/tools/sprites/import_vfx.py; spells/README_FX.md "Animated pack effects")
+  donoritems   tools/install_donor_items.py      the items imported from donor B art in items.otb / items.xml (server ids
+               40000..; nothing to do while data/items/donor_items.csv is absent or empty)
+  packitems    tools/install_pack_items.py       the pack items (new looks of the rune-stone orbs and ore pieces, creature
+               products, food, corpses, trees, grounds, water, shores, lake objects) in items.otb / items.xml and the
+               products in Grimgan's shop (README "Pack items and monsters")
+  fistweapons  tools/install_fist_weapons.py     the Monk line's fist weapons in items.otb / items.xml, their Monk-only equip
+               entries in movements.xml and the weapon dealers' / Grimgan's shops (README "Fist weapons")
+  gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
+  salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
+  omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
+  ascended     tools/install_ascended.py         the Ascended Shards, Sigil and Relic in items.otb / items.xml (README "Ascended
+               Omens and the Cinderheart")
+  factions     tools/install_factions.py         the faction tokens in items.otb / items.xml and the four faction NPCs in data/npc
+               (README "Factions")
+  pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
+               (README "Store pouches")
+  depot        tools/patch_base_depot.py         depot tabs: the depot boxes pickupable in items.otb and named "depot tab n" with
+               100 slots in items.xml, the locker hook and the move hook in Player:onMoveItem (README "Depot tabs")
+  charms       tools/install_charms.py           the charms and the charm shard in items.otb / items.xml (README "Charms")
+  professions  tools/install_professions.py      the profession materials and gathering nodes in items.otb / items.xml, the
+               Material Broker in data/npc and the hooks in the stock pick / sickle / skinning / fishing scripts
+               (README "Professions")
+  gamble       tools/install_gamble.py           the Gambler NPC in data/npc (README "The Gambler")
+  supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
+  spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
+               tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
+               respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
+               respawn"; after monsters, which it reads)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
                the class lines (Necromancer / Monk / Templar) put their own spell or data installers there
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
+  archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
+               their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
+               0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
+               rarity script keeps both rings of a ring slot swap and clears a hand the base two-handed swap emptied,
+               the base two-handed swap keeps a quiver, arrows and bolts leave
+               loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
+               vocations, which still reads the launchers' ammo type, and after spells)
+  itemnames    tools/patch_base_item_names.py    Chaos names of the base items with names of another world, by id
+               (data/items/base_item_names.csv): items.xml, the monsters' loot by old name becomes loot by
+               id, other mentions in the base data renamed (README "Base item names"; after archery)
+  towns        tools/patch_base_towns.py         Chaos names of the map's towns by town id (tools/base_towns.csv), in the
+               towns node of the .otbm; <map>.otbm.bak keeps the original (README "Town names")
+  npcnames     tools/patch_base_npc_names.py     Chaos names of the base NPCs (data/npc/base_npc_names.csv, keyed by the
+               sha256 of the old name): the NPC files and their shown names, the NPC spawn entries, Game.createNpc
+               names (README "Base NPC names"; after towns, monsternames and itemnames)
+  worldtexts   tools/patch_base_texts.py         the old world's names in NPC dialogue and keywords, travel, the quest log,
+               raids, achievements, item descriptions, script messages and the map's signs and books
+               (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
+  servername   tools/patch_base_server_name.py   the base server's own name in whole strings of its data: the welcome text
+               over the first temple, the web login service's console banner (tools/base_server_texts.csv, keyed by
+               the sha256 of the old string; README "Server name"; after worldtexts)
+  houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
+               in the map's house file (README "Base houses")
+  poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
+               service NPCs, hunting areas, boss places) from the installed map, items, NPCs and spawn data into
+               data/chaos_poi.lua (README "Map markers"; after towns, npcnames and worldtexts, which rename what it reads)
   autoloot     data/talkactions/talkactions.xml: the stock XML "!autoloot" line is commented out, so autoloot.lua's own
                talkaction runs and the window refreshes (README "Install" 7)
+  commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
+               client's menu now; README "Player commands: the menu")
+  autosave     tools/patch_base_save.py          the hourly autosave runs Game.saveIncremental (engine src-patch 0026: players
+               in small batches over several ticks, only the changed houses) and keeps the game state (a closed server
+               stays closed); the warnings stay; the logout writes the outfit columns and the skill history row only
+               when they changed (README "Autosave in steps"; after commands, which also edits login.lua)
+  stalls       tools/patch_base_stalls.py        the base expedition scripts announce a new NPC or boss to the players on its
+               island from the list of players online instead of a scan of every tile of the island (627,000 tiles,
+               0.6-0.9 s of frozen game loop at each spawn time; same players, sounds, marks and broadcasts); the base
+               upgrade-slot check (every 100 ms per player) keeps the slots it parsed per item description (README "Game
+               loop stalls")
+  bossrooms    tools/patch_base_bossrooms.py     the base lever boss rooms: the lever is locked while a group is inside, a time
+               limit (the room's own kick time, at most 30 minutes) with warnings and a countdown, everyone out to the
+               room's exit and its monsters removed at the end, an empty room frees up after 2 minutes, a login inside a
+               closed room goes to its exit (README "Instance limits")
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
 --dry-run runs every step on a temporary copy of SERVER_DIR (config.lua and data/ without *.otbm, logs/, reports/) and
-reports what would change; SERVER_DIR and the database are not touched (the SQL step only lists its files).
+reports what would change; SERVER_DIR and the database are not touched (the SQL step only lists its files; the towns
+and worldtexts steps read the real map and only report).
 --quiet prints only the step lines and the changed files, --verbose every line of the tools' own output (else 15 per step).
 
 Database: name, host, port and user default to config.lua's mysqlDatabase / mysqlHost / mysqlPort / mysqlUser. A value
@@ -54,7 +148,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'monsters', 'spells', 'autoloot', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -74,7 +168,7 @@ AUTOLOOT_RE = re.compile(r'^([ \t]*)(<talkaction\s+words="!autoloot"[^>]*/>)[ \t
 AUTOLOOT_MARK = 'Chaos: autoloot.lua registers !autoloot (server/tools/install_all.py)'
 
 # hashed for the change report; the map itself is skipped (large and never changed by any step)
-SKIP_HASH = re.compile(r'\.otbm$|(^|/)(logs|reports)/')
+SKIP_HASH = re.compile(r'\.otbm(\.bak|\.tmp)?$|(^|/)(logs|reports)/')
 
 
 # ------------------------------------------------------------------------------------------------ helpers
@@ -199,16 +293,50 @@ def step_lib(server, data, ctx):
     return True, ['lib.lua: added ' + LIB_LINE], []
 
 
+def step_monsternames(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_monster_names.py'), data], 'patch_base_monster_names.py'))
+
+
 def step_vocations(server, data, ctx):
-    return tool_result(run_tool([tool('add_vocations.py'), data], 'add_vocations.py'))
+    ok, lines = run_tool([tool('add_vocations.py'), data], 'add_vocations.py')
+    if ok and os.path.isfile(tool('patch_base_classes.py')):
+        ok2, more = run_tool([tool('patch_base_classes.py'), data], 'patch_base_classes.py')
+        ok, lines = ok2, lines + more
+    return tool_result((ok, lines))
 
 
 def step_events(server, data, ctx):
-    ok, lines = run_tool([tool('patch_base_events.py'), data], 'patch_base_events.py')
+    # --enable-spell-events: the cooldown / mana-cost reductions run through the engine's spell events (engine patch
+    # 0008); without that patch the engine only warns about the four unknown events and the Lua fallbacks apply
+    ok, lines = run_tool([tool('patch_base_events.py'), data, '--enable-spell-events'], 'patch_base_events.py')
     if ok and os.path.isfile(tool('patch_season_events.py')):
         ok2, more = run_tool([tool('patch_season_events.py'), data], 'patch_season_events.py')
         ok, lines = ok2, lines + more
+    if ok and os.path.isfile(tool('patch_market.py')):
+        ok4, more = run_tool([tool('patch_market.py'), data], 'patch_market.py')
+        ok, lines = ok4, lines + more
+    if ok and os.path.isfile(tool('patch_help_itemlinks.py')):
+        ok3, more = run_tool([tool('patch_help_itemlinks.py'), data], 'patch_help_itemlinks.py')
+        ok, lines = ok3, lines + more
+    if ok and os.path.isfile(tool('patch_report_chat.py')):
+        ok6, more = run_tool([tool('patch_report_chat.py'), data], 'patch_report_chat.py')
+        ok, lines = ok6, lines + more
+    if ok:
+        ok5, more = run_tool([tool('patch_base_npcs.py'), data], 'patch_base_npcs.py')
+        ok, lines = ok5, lines + more
     return tool_result((ok, lines))
+
+
+def step_basecrafting(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_crafting.py'), data], 'patch_base_crafting.py'))
+
+
+def step_basecraftingui(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_crafting_ui.py'), data], 'patch_base_crafting_ui.py'))
+
+
+def step_basecraftingbonus(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_crafting_bonus.py'), data], 'patch_base_crafting_bonus.py'))
 
 
 def step_weapons(server, data, ctx):
@@ -222,6 +350,78 @@ def step_lategame(server, data, ctx):
 
 def step_crafting(server, data, ctx):
     return tool_result(run_tool([tool('install_crafting.py'), data], 'install_crafting.py'))
+
+
+def step_orbs(server, data, ctx):
+    return tool_result(run_tool([tool('install_orbs.py'), data], 'install_orbs.py'))
+
+
+def step_darktiles(server, data, ctx):
+    return tool_result(run_tool([tool('install_dark_tiles.py'), data], 'install_dark_tiles.py'))
+
+
+def step_outfits(server, data, ctx):
+    return tool_result(run_tool([tool('install_outfits.py'), data], 'install_outfits.py'))
+
+
+def step_auras(server, data, ctx):
+    return tool_result(run_tool([tool('install_auras.py'), data], 'install_auras.py'))
+
+
+def step_donoritems(server, data, ctx):
+    return tool_result(run_tool([tool('install_donor_items.py'), data], 'install_donor_items.py'))
+
+
+def step_packitems(server, data, ctx):
+    return tool_result(run_tool([tool('install_pack_items.py'), data], 'install_pack_items.py'))
+
+
+def step_fistweapons(server, data, ctx):
+    return tool_result(run_tool([tool('install_fist_weapons.py'), data], 'install_fist_weapons.py'))
+
+
+def step_gems(server, data, ctx):
+    return tool_result(run_tool([tool('install_gems.py'), data], 'install_gems.py'))
+
+
+def step_salvage(server, data, ctx):
+    return tool_result(run_tool([tool('install_salvage.py'), data], 'install_salvage.py'))
+
+
+def step_omens(server, data, ctx):
+    return tool_result(run_tool([tool('install_omens.py'), data], 'install_omens.py'))
+
+
+def step_ascended(server, data, ctx):
+    return tool_result(run_tool([tool('install_ascended.py'), data], 'install_ascended.py'))
+
+
+def step_factions(server, data, ctx):
+    return tool_result(run_tool([tool('install_factions.py'), data], 'install_factions.py'))
+
+
+def step_pouches(server, data, ctx):
+    return tool_result(run_tool([tool('install_pouches.py'), data], 'install_pouches.py'))
+
+
+def step_depot(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_depot.py'), data], 'patch_base_depot.py'))
+
+
+def step_charms(server, data, ctx):
+    return tool_result(run_tool([tool('install_charms.py'), data], 'install_charms.py'))
+
+
+def step_professions(server, data, ctx):
+    return tool_result(run_tool([tool('install_professions.py'), data], 'install_professions.py'))
+
+
+def step_gamble(server, data, ctx):
+    return tool_result(run_tool([tool('install_gamble.py'), data], 'install_gamble.py'))
+
+
+def step_supports(server, data, ctx):
+    return tool_result(run_tool([tool('install_supports.py'), data], 'install_supports.py'))
 
 
 def step_monsters(server, data, ctx):
@@ -242,6 +442,11 @@ def step_monsters(server, data, ctx):
     return True, lines, []
 
 
+def step_spawns(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_spawns.py'), data, '--config', os.path.join(server, 'config.lua')],
+                                'patch_base_spawns.py'))
+
+
 def step_spells(server, data, ctx):
     ok, lines = run_tool([tool('register_spells.py'), data], 'register_spells.py')
     if not ok:
@@ -259,6 +464,85 @@ def step_spells(server, data, ctx):
         ctx['rename_sql'] = sql_out
     warn = unregistered_spell_fragments(data)
     return ok, lines, warn
+
+
+def step_archery(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
+
+
+def step_itemnames(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_item_names.py'), data], 'patch_base_item_names.py'))
+
+
+def step_towns(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        return tool_result(run_tool([tool('patch_base_towns.py'), real, '--dry-run'], 'patch_base_towns.py'))
+    return tool_result(run_tool([tool('patch_base_towns.py'), data], 'patch_base_towns.py'))
+
+
+def step_npcnames(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_npc_names.py'), data], 'patch_base_npc_names.py'))
+
+
+def step_worldtexts(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: the data files on the copy, the map texts read from the real map, nothing written
+        ok, lines = run_tool([tool('patch_base_texts.py'), data, '--no-map'], 'patch_base_texts.py')
+        if ok:
+            real = os.path.join(ctx['server'], 'data')
+            ok, more = run_tool([tool('patch_base_texts.py'), real, '--map-only', '--dry-run'], 'patch_base_texts.py')
+            lines += more
+        return tool_result((ok, lines))
+    return tool_result(run_tool([tool('patch_base_texts.py'), data], 'patch_base_texts.py'))
+
+
+def step_servername(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_server_name.py'), data], 'patch_base_server_name.py'))
+
+
+STEPS.insert(STEPS.index('worldtexts') + 1, 'servername')  # after worldtexts, which may rename part of a phrase first
+
+
+def step_houses(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_houses.py'), data], 'patch_base_houses.py'))
+
+
+def step_poi(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write into the copy
+        real = os.path.join(ctx['server'], 'data')
+        mp = tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('gen_poi.py'), server, '--map', mp], 'gen_poi.py'))
+    return tool_result(run_tool([tool('gen_poi.py'), server], 'gen_poi.py'))
+
+
+def tool_map_path(data_dir):
+    sys.path.insert(0, HERE)
+    import patch_base_towns
+    return patch_base_towns.map_path(data_dir)
+
+
+def step_commands(server, data, ctx):
+    return tool_result(run_tool([tool('install_commands.py'), data], 'install_commands.py'))
+
+
+def step_autosave(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_save.py'), data], 'patch_base_save.py'))
+
+
+def step_stalls(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_stalls.py'), data], 'patch_base_stalls.py'))
+
+
+def step_bossrooms(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_bossrooms.py'), data], 'patch_base_bossrooms.py'))
+
+
+STEPS.insert(STEPS.index('stalls') + 1, 'bossrooms')  # after stalls, before sql
 
 
 def step_autoloot(server, data, ctx):
@@ -402,7 +686,7 @@ def make_dry_copy(server, tmp):
 
     def ignore(folder, names):
         rel = os.path.relpath(folder, src).replace(os.sep, '/')
-        skip = [n for n in names if n.endswith('.otbm')]
+        skip = [n for n in names if n.endswith(('.otbm', '.otbm.bak', '.otbm.tmp'))]
         if rel == '.':
             skip += [n for n in names if n in ('logs', 'reports')]
         return skip
@@ -457,9 +741,9 @@ def main(argv):
     try:
         target = make_dry_copy(server, tmp) if dry else server
         data = os.path.join(target, 'data')
-        ctx = {'dry': dry, 'no_sql': bool(args.get('--no-sql')), 'tmp': tmp, 'mysql': args.get('--mysql', 'mysql'),
+        ctx = {'dry': dry, 'server': server, 'no_sql': bool(args.get('--no-sql')), 'tmp': tmp, 'mysql': args.get('--mysql', 'mysql'),
                'db': db_settings(server, args)}
-        say('Project Chaos install%s' % (' (DRY RUN on a temporary copy; nothing is changed)' if dry else ''))
+        say('Cinders of Chaos install%s' % (' (DRY RUN on a temporary copy; nothing is changed)' if dry else ''))
         say('  server:   %s' % server)
         say('  repo:     %s' % REPO_SERVER)
         say('  steps:    %s' % ', '.join(steps))

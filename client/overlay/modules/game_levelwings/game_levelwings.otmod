@@ -1,0 +1,12 @@
+Module
+  name: game_levelwings
+  description: Golden wings open behind a character that gains a level (extended opcode 191, server levelwings.lua)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ levelwingsmath, levelwings ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

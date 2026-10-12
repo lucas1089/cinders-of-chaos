@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Ice Dragon" nameDescription="a Ice Dragon" race="blood" experience="160000" speed="700" manacost="0" bosses="1">
 	<health now="500000" max="500000"/>
-	<look type="1472" head="11" body="11" legs="11" feet="11" corpse="6068"/>
+	<look type="1533" head="11" body="11" legs="11" feet="11" corpse="6068"/>
 	<targetchange interval="4000" chance="10"/>
 	<strategy attack="100" defense="0"/>
 	<flags>
@@ -16,7 +16,6 @@
 		<flag targetdistance="1"/>
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
-		<flag isBlocked="1"/>
 	</flags>
     <script>
         <event name="auto_loot"/>
@@ -50,9 +49,21 @@
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
-		<item id="8888;2500;2472;8885;8884" chance="600" /><!-- armors -->
-		<item id="3983;2495;2469;7894" chance="500" /><!-- legs -->
-		<item id="5462;2644;11118;11240" chance="1200" /><!-- boots -->
-		<item id="2537;2514;2499" chance="710" /><!-- shields amd helmet -->
+		<item id="8888" chance="120"/><!-- armors -->
+		<item id="2500" chance="120"/>
+		<item id="2472" chance="120"/>
+		<item id="8885" chance="120"/>
+		<item id="8884" chance="120"/>
+		<item id="3983" chance="125"/><!-- legs -->
+		<item id="2495" chance="125"/>
+		<item id="2469" chance="125"/>
+		<item id="7894" chance="125"/>
+		<item id="5462" chance="300"/><!-- boots -->
+		<item id="2644" chance="300"/>
+		<item id="11118" chance="300"/>
+		<item id="11240" chance="300"/>
+		<item id="2537" chance="237"/><!-- shields amd helmet -->
+		<item id="2514" chance="237"/>
+		<item id="2499" chance="237"/>
 	</loot>
 </monster>

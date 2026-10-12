@@ -1,0 +1,652 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+33000,24691,orb_alchemy,look,replace,Orb of Gilding,1x1,,,,0,0,0,
+33001,24697,orb_annulment,look,replace,Orb of Unmaking,1x1,,,,0,0,0,
+33002,24688,orb_scouring,look,replace,Orb of Erasure,1x1,,,,0,0,0,
+33003,26398,ore_bronze,look,replace,piece of bronze,1x1,,,,0,0,0,
+33004,26399,ore_silver,look,replace,piece of silver,1x1,,,,0,0,0,
+33005,26400,ore_amethyst,look,replace,piece of amethyst,1x1,,,,0,0,0,
+33006,26401,ore_gold,look,replace,piece of gold,1x1,,,,0,0,0,
+33007,26402,ore_ruby,look,replace,piece of ruby,1x1,,,,0,0,0,
+33008,26403,ore_emerald,look,replace,piece of emerald,1x1,,,,0,0,0,
+33009,26404,ore_sapphire,look,replace,piece of sapphire,1x1,,,,0,0,0,
+33010,36010,goblin_tooth,product,new,goblin tooth,1x1,0,224,0,0,0,0,plural=goblin teeth|weight=20|description=A yellowed fang pulled from a goblin.|sell=15
+33011,36011,goblin_skull,product,new,goblin skull,1x1,0,224,0,0,0,0,plural=goblin skulls|weight=300|description=Goblin shamans paint these and hang them from their staffs.|sell=40
+33012,36012,scrap_metal,product,new,piece of scrap metal,1x1,0,224,0,0,0,0,plural=pieces of scrap metal|weight=400|description=Rusty plates and nails the goblins pry from wagons.|sell=20
+33013,36013,black_powder,product,new,pouch of black powder,1x1,0,224,0,0,0,0,plural=pouches of black powder|weight=100|description=Keep it away from torches.|sell=35
+33014,36014,frayed_rope,product,new,frayed rope,1x1,0,224,0,0,0,0,"plural=frayed ropes|weight=150|description=A goblin snare, chewed through.|sell=12"
+33015,36015,carved_bone,product,new,carved bone,1x1,0,224,0,0,0,0,plural=carved bones|weight=120|description=Crude runes are scratched into it.|sell=25
+33016,36016,tribal_feather,product,new,tribal feather,1x1,0,224,0,0,0,0,plural=tribal feathers|weight=10|description=A dyed feather from a goblin headdress.|sell=30
+33017,36017,boar_hide,product,new,boar hide,1x1,0,224,0,0,0,0,plural=boar hides|weight=600|description=Bristly and thick.|sell=30
+33018,36018,bear_pelt,product,new,bear pelt,1x1,0,224,0,0,0,0,plural=bear pelts|weight=900|description=A heavy pelt from a forest bear.|sell=60
+33019,36019,wolf_pelt,product,new,wolf pelt,1x1,0,224,0,0,0,0,plural=wolf pelts|weight=500|description=Soft grey fur.|sell=35
+33020,36020,elk_antler,product,new,elk antler,1x1,0,224,0,0,0,0,plural=elk antlers|weight=700|description=Moss still clings to the tines.|sell=80
+33021,36021,heartwood,product,new,piece of heartwood,1x1,0,224,0,0,0,0,plural=pieces of heartwood|weight=900|description=Dense wood from the core of a walking tree.|sell=50
+33022,36022,spore_sack,product,new,spore sack,1x1,0,224,0,0,0,0,plural=spore sacks|weight=60|description=It puffs a green cloud when squeezed.|sell=25
+33023,36023,moss_gel,product,new,lump of moss gel,1x1,0,224,0,0,0,0,"plural=lumps of moss gel|weight=150|description=Cold, green and wobbly.|sell=20"
+33024,36024,hornet_stinger,product,new,hornet stinger,1x1,0,224,0,0,0,0,plural=hornet stingers|weight=30|description=As long as a dagger blade.|sell=35
+33025,36025,pixie_dust,product,new,pouch of pixie dust,1x1,0,224,0,0,0,0,plural=pouches of pixie dust|weight=20|description=It glitters even in the dark.|sell=45
+33026,36026,spider_silk,product,new,tuft of spider silk,1x1,0,224,0,0,0,0,plural=tufts of spider silk|weight=40|description=Strong as wire.|sell=40
+33027,36027,beetle_horn,product,new,stag beetle horn,1x1,0,224,0,0,0,0,plural=stag beetle horns|weight=300|description=A curved horn of hard chitin.|sell=60
+33028,36028,owl_feather,product,new,owl feather,1x1,0,224,0,0,0,0,"plural=owl feathers|weight=10|description=A broad, silent flight feather.|sell=30"
+33029,36029,dryad_leaf,product,new,dryad leaf,1x1,0,224,0,0,0,0,plural=dryad leaves|weight=10|description=It stays green long after it was picked.|sell=25
+33030,36030,withered_leaf,product,new,withered leaf,1x1,0,224,0,0,0,0,plural=withered leaves|weight=10|description=A dry leaf from an old treant.|sell=10
+33031,36031,treant_seeds,product,new,handful of treant seeds,1x1,0,224,0,0,0,0,plural=handfuls of treant seeds|weight=20|description=Plant them and a forest might listen.|sell=20
+33032,36032,moss_clump,product,new,moss clump,1x1,0,224,0,0,0,0,plural=moss clumps|weight=60|description=Damp forest moss.|sell=15
+33033,36033,inky_ichor,product,new,drop of inky ichor,1x1,0,224,0,0,0,0,plural=drops of inky ichor|weight=30|description=It stains everything it touches.|sell=40
+33034,36034,toad_venom,product,new,drop of toad venom,1x1,0,224,0,0,0,0,plural=drops of toad venom|weight=30|description=Do not lick.|sell=40
+33035,36035,royal_spores,product,new,cloud of royal spores,1x1,0,224,0,0,0,0,plural=clouds of royal spores|weight=30|description=The Mushroom King breathes these.|sell=120
+33036,36036,pinecone,product,new,pinecone,1x1,0,224,0,0,0,0,plural=pinecones|weight=40|description=A pinecone from the wild woods.|sell=8
+33037,36037,berries,food,new,handful of berries,1x1,0,224,0,0,0,0,plural=handfuls of berries|weight=30|food=3|sound=Yum.
+33038,36038,blueberry,food,new,giant blueberry,1x1,0,224,0,0,0,0,plural=giant blueberries|weight=40|food=3|sound=Yum.
+33039,36039,rye_bread,food,new,loaf of rye bread,1x1,0,224,0,0,0,0,plural=loaves of rye bread|weight=300|food=10|sound=Crunch.
+33040,36040,sweet_bun,food,new,sweet bun,1x1,0,224,0,0,0,0,plural=sweet buns|weight=100|food=8|sound=Mmmm.
+33041,36041,honey_cake,food,new,honey cake,1x1,0,224,0,0,0,0,plural=honey cakes|weight=400|food=15|sound=Mmmm.
+33042,36042,wild_carrot,food,new,wild carrot,1x1,0,224,0,0,0,0,plural=wild carrots|weight=80|food=4|sound=Crunch.
+33043,36043,cheese_wedge,food,new,wedge of cheese,1x1,0,224,0,0,0,0,plural=wedges of cheese|weight=200|food=9|sound=Smack.
+33044,36044,cherries,food,new,bunch of cherries,1x1,0,224,0,0,0,0,plural=bunches of cherries|weight=20|food=2|sound=Yum.
+33045,36045,roast_chicken,food,new,roast chicken leg,1x1,0,224,0,0,0,0,plural=roast chicken legs|weight=300|food=12|sound=Munch.
+33046,36046,oat_cookie,food,new,oat cookie,1x1,0,224,0,0,0,0,plural=oat cookies|weight=30|food=3|sound=Crunch.
+33047,36047,fried_fish,food,new,fried fish,1x1,0,224,0,0,0,0,plural=fried fish|weight=400|food=12|sound=Munch.
+33048,36048,wild_grapes,food,new,bunch of wild grapes,1x1,0,224,0,0,0,0,plural=bunches of wild grapes|weight=120|food=5|sound=Yum.
+33049,36049,honeycomb,food,new,wild honeycomb,1x1,0,224,0,0,0,0,plural=wild honeycombs|weight=200|food=8|sound=Mmmm.
+33050,36050,berry_jam,food,new,jar of berry jam,1x1,0,224,0,0,0,0,plural=jars of berry jam|weight=400|food=10|sound=Mmmm.
+33051,36051,roast_lamb,food,new,roast lamb,1x1,0,224,0,0,0,0,plural=roast lambs|weight=500|food=15|sound=Munch.
+33052,36052,wild_pear,food,new,wild pear,1x1,0,224,0,0,0,0,plural=wild pears|weight=120|food=5|sound=Yum.
+33053,36053,apple_pie,food,new,slice of apple pie,1x1,0,224,0,0,0,0,plural=slices of apple pie|weight=200|food=10|sound=Mmmm.
+33054,36054,cherry_pie,food,new,slice of cherry pie,1x1,0,224,0,0,0,0,plural=slices of cherry pie|weight=200|food=10|sound=Mmmm.
+33055,36055,meat_pie,food,new,slice of meat pie,1x1,0,224,0,0,0,0,plural=slices of meat pie|weight=250|food=12|sound=Munch.
+33056,36056,baked_potato,food,new,baked potato,1x1,0,224,0,0,0,0,plural=baked potatoes|weight=200|food=8|sound=Munch.
+33057,36057,grilled_sausage,food,new,grilled sausage,1x1,0,224,0,0,0,0,plural=grilled sausages|weight=150|food=9|sound=Munch.
+33058,36058,grilled_steak,food,new,grilled steak,1x1,0,224,0,0,0,0,plural=grilled steaks|weight=400|food=15|sound=Munch.
+33059,36059,mushroom_stew,food,new,bowl of mushroom stew,1x1,0,224,0,0,0,0,plural=bowls of mushroom stew|weight=500|food=14|sound=Slurp.
+33060,36060,hunters_platter,food,new,hunter's platter,1x1,0,224,0,0,0,0,plural=hunter's platters|weight=700|food=18|sound=Munch.
+33061,36061,corpse_goblin_grunt,corpse,new,dead goblin grunt,2x1,2,67108864,0,0,0,0,race=blood
+33062,36062,corpse_goblin_spearman,corpse,new,dead goblin spearman,2x2,2,67108864,0,0,0,0,race=blood
+33063,36063,corpse_goblin_archer,corpse,new,dead goblin archer,1x2,2,67108864,0,0,0,0,race=blood
+33064,36064,corpse_goblin_sneak,corpse,new,dead goblin sneak,2x1,2,67108864,0,0,0,0,race=blood
+33065,36065,corpse_goblin_bomber,corpse,new,dead goblin bomber,1x2,2,67108864,0,0,0,0,race=blood
+33066,36066,corpse_goblin_sapper,corpse,new,dead goblin sapper,2x2,2,67108864,0,0,0,0,race=blood
+33067,36067,corpse_goblin_trapper,corpse,new,dead goblin trapper,1x2,2,67108864,0,0,0,0,race=blood
+33068,36068,corpse_goblin_drummer,corpse,new,dead goblin war-drummer,2x1,2,67108864,0,0,0,0,race=blood
+33069,36069,corpse_goblin_shaman,corpse,new,dead goblin shaman,2x2,2,67108864,0,0,0,0,race=blood
+33070,36070,corpse_goblin_witch,corpse,new,dead goblin witch,2x2,2,67108864,0,0,0,0,race=blood
+33071,36071,corpse_goblin_brute,corpse,new,dead goblin brute,3x3,2,67108864,0,0,0,0,race=blood
+33072,36072,corpse_goblin_wolf_rider,corpse,new,dead goblin wolf rider,3x2,2,67108864,0,0,0,0,race=blood
+33073,36073,corpse_hobgoblin_captain,corpse,new,dead hobgoblin captain,3x3,2,67108864,0,0,0,0,race=blood
+33074,36074,corpse_goblin_warlock,corpse,new,dead goblin warlock,3x3,2,67108864,0,0,0,0,race=blood
+33075,36075,corpse_goblin_chieftain,corpse,new,dead goblin chieftain,3x3,2,67108864,0,0,0,0,race=blood
+33076,36076,corpse_wolf,corpse,new,dead forest wolf,2x2,2,67108864,0,0,0,0,race=blood
+33077,36077,corpse_shroomling,corpse,new,dead shroomling,1x1,2,67108864,0,0,0,0,race=venom
+33078,36078,corpse_boar,corpse,new,dead wild boar,2x2,2,67108864,0,0,0,0,race=blood
+33079,36079,corpse_giant_hornet,corpse,new,dead giant hornet,2x2,2,67108864,0,0,0,0,race=venom
+33080,36080,corpse_morel_imp,corpse,new,dead morel imp,2x2,2,67108864,0,0,0,0,race=venom
+33081,36081,corpse_moss_slime,corpse,new,dead moss slime,1x1,2,67108864,0,0,0,0,race=venom
+33082,36082,corpse_pixie,corpse,new,dead forest pixie,2x2,2,67108864,0,0,0,0,race=blood
+33083,36083,corpse_glowcap,corpse,new,dead glowcap cluster,1x1,2,67108864,0,0,0,0,race=venom
+33084,36084,corpse_treant_sapling,corpse,new,dead treant sapling,2x2,2,67108864,0,0,0,0,race=venom
+33085,36085,corpse_inkcap,corpse,new,dead inkcap creeper,2x1,2,67108864,0,0,0,0,race=venom
+33086,36086,corpse_myconid_shaman,corpse,new,dead myconid shaman,2x2,2,67108864,0,0,0,0,race=venom
+33087,36087,corpse_dryad,corpse,new,dead grove dryad,2x2,2,67108864,0,0,0,0,race=blood
+33088,36088,corpse_dire_bear,corpse,new,dead dire bear,3x3,2,67108864,0,0,0,0,race=blood
+33089,36089,corpse_thornback_toad,corpse,new,dead giant thornback toad,3x3,2,67108864,0,0,0,0,race=blood
+33090,36090,corpse_owlbear,corpse,new,dead owlbear,3x3,2,67108864,0,0,0,0,race=blood
+33091,36091,corpse_forest_spider,corpse,new,dead giant forest spider,3x3,2,67108864,0,0,0,0,race=venom
+33092,36092,corpse_stag_beetle,corpse,new,dead giant stag beetle,3x3,2,67108864,0,0,0,0,race=venom
+33093,36093,corpse_flytrap,corpse,new,dead snapjaw flytrap,3x3,2,67108864,0,0,0,0,race=venom
+33094,36094,corpse_puffball_brute,corpse,new,dead puffball brute,2x2,2,67108864,0,0,0,0,race=venom
+33095,36095,corpse_bracket_golem,corpse,new,dead bracket fungus golem,3x3,2,67108864,0,0,0,0,race=venom
+33096,36096,corpse_mushroom_king,corpse,new,dead mushroom king,3x3,2,67108864,0,0,0,0,race=venom
+33097,36097,corpse_elk_guardian,corpse,new,dead elk guardian,3x3,2,67108864,0,0,0,0,race=blood
+33098,36098,corpse_mycelium_horror,corpse,new,dead mycelium horror,2x2,2,67108864,0,0,0,0,race=undead
+33099,36099,corpse_ancient_treant,corpse,new,dead ancient treant,3x3,2,67108864,0,0,0,0,race=venom
+33100,36100,tree_001,tree,new,summer oak,3x2,0,8193,2,0,0,0,family=broadleaf
+33101,36101,stump_001,stump,new,summer oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33102,36102,tree_002,tree,new,stone oak,2x2,0,8193,2,0,0,0,family=stone
+33103,36103,stump_002,stump,new,stone oak stump,1x1,0,8193,2,0,0,0,family=stone
+33104,36104,tree_003,tree,new,crimson maple,3x2,0,8193,2,0,0,0,family=autumn
+33105,36105,stump_003,stump,new,crimson maple stump,1x1,0,8193,2,0,0,0,family=autumn
+33106,36106,tree_004,tree,new,wild elm,2x2,0,8193,2,0,0,0,family=broadleaf
+33107,36107,stump_004,stump,new,wild elm stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33108,36108,tree_005,tree,new,bushy oak,3x2,0,8193,2,0,0,0,family=broadleaf
+33109,36109,stump_005,stump,new,bushy oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33110,36110,tree_006,tree,new,frost coral tree,2x2,0,8193,2,0,0,0,family=frost
+33111,36111,stump_006,stump,new,frost coral tree stump,1x1,0,8193,2,0,0,0,family=frost
+33112,36112,tree_007,tree,new,red rowan,3x2,0,8193,2,0,0,0,family=fruit
+33113,36113,stump_007,stump,new,red rowan stump,1x1,0,8193,2,0,0,0,family=fruit
+33114,36114,tree_008,tree,new,old oak,3x2,0,8193,2,0,0,0,family=broadleaf
+33115,36115,stump_008,stump,new,old oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33116,36116,tree_009,tree,new,bristle fir,3x2,0,8193,2,0,0,0,family=conifer
+33117,36117,stump_009,stump,new,bristle fir stump,1x1,0,8193,2,0,0,0,family=conifer
+33118,36118,tree_010,tree,new,frost oak,2x2,0,8193,2,0,0,0,family=frost
+33119,36119,stump_010,stump,new,frost oak stump,1x1,0,8193,2,0,0,0,family=frost
+33120,36120,tree_011,tree,new,ember maple,2x2,0,8193,2,0,0,0,family=autumn
+33121,36121,stump_011,stump,new,ember maple stump,1x1,0,8193,2,0,0,0,family=autumn
+33122,36122,tree_012,tree,new,golden gnarlwood,2x2,0,8193,2,0,0,0,family=fantasy
+33123,36123,stump_012,stump,new,golden gnarlwood stump,1x1,0,8193,2,0,0,0,family=fantasy
+33124,36124,tree_013,tree,new,cloud oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33125,36125,stump_013,stump,new,cloud oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33126,36126,tree_014,tree,new,dead oak,2x2,0,8193,2,0,0,0,family=dead
+33127,36127,stump_014,stump,new,dead oak stump,1x1,0,8193,2,0,0,0,family=dead
+33128,36128,tree_015,tree,new,red coral tree,2x2,0,8193,2,0,0,0,family=coral
+33129,36129,stump_015,stump,new,red coral tree stump,1x1,0,8193,2,0,0,0,family=coral
+33130,36130,tree_016,tree,new,great canopy oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33131,36131,stump_016,stump,new,great canopy oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33132,36132,tree_017,tree,new,puffball tree,2x2,0,8193,2,0,0,0,family=broadleaf
+33133,36133,stump_017,stump,new,puffball tree stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33134,36134,tree_018,tree,new,dead snag,2x2,0,8193,2,0,0,0,family=dead
+33135,36135,stump_018,stump,new,dead snag stump,1x1,0,8193,2,0,0,0,family=dead
+33136,36136,tree_019,tree,new,coral branch,2x2,0,8193,2,0,0,0,family=coral
+33137,36137,stump_019,stump,new,coral branch stump,1x1,0,8193,2,0,0,0,family=coral
+33138,36138,tree_020,tree,new,broad oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33139,36139,stump_020,stump,new,broad oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33140,36140,tree_021,tree,new,round oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33141,36141,stump_021,stump,new,round oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33142,36142,tree_022,tree,new,charred tree,2x2,0,8193,2,0,0,0,family=ash
+33143,36143,stump_022,stump,new,charred tree stump,1x1,0,8193,2,0,0,0,family=ash
+33144,36144,tree_023,tree,new,autumn oak,2x2,0,8193,2,0,0,0,family=autumn
+33145,36145,stump_023,stump,new,autumn oak stump,1x1,0,8193,2,0,0,0,family=autumn
+33146,36146,tree_024,tree,new,emerald laurel,2x2,0,8193,2,0,0,0,family=jungle
+33147,36147,stump_024,stump,new,emerald laurel stump,1x1,0,8193,2,0,0,0,family=jungle
+33148,36148,tree_025,tree,new,green linden,2x2,0,8193,2,0,0,0,family=broadleaf
+33149,36149,stump_025,stump,new,green linden stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33150,36150,tree_026,tree,new,teal crystal tree,2x2,0,8193,2,0,0,0,family=crystal
+33151,36151,stump_026,stump,new,teal crystal tree stump,1x1,0,8193,2,0,0,0,family=crystal
+33152,36152,tree_027,tree,new,ochre oak,3x2,0,8193,2,0,0,0,family=autumn
+33153,36153,stump_027,stump,new,ochre oak stump,1x1,0,8193,2,0,0,0,family=autumn
+33154,36154,tree_028,tree,new,bare elm,3x2,0,8193,2,0,0,0,family=dead
+33155,36155,stump_028,stump,new,bare elm stump,1x1,0,8193,2,0,0,0,family=dead
+33156,36156,tree_029,tree,new,dewdrop tree,2x2,0,8193,2,0,0,0,family=fantasy
+33157,36157,stump_029,stump,new,dewdrop tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33158,36158,tree_030,tree,new,amber tree,2x2,0,8193,2,0,0,0,family=fantasy
+33159,36159,stump_030,stump,new,amber tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33160,36160,tree_031,tree,new,amber oak,2x2,0,8193,2,0,0,0,family=fantasy
+33161,36161,stump_031,stump,new,amber oak stump,1x1,0,8193,2,0,0,0,family=fantasy
+33162,36162,tree_032,tree,new,rune deadwood,2x2,0,8193,2,0,0,0,family=crystal
+33163,36163,stump_032,stump,new,rune deadwood stump,1x1,0,8193,2,0,0,0,family=crystal
+33164,36164,tree_033,tree,new,blossom linden,2x2,0,8193,2,0,0,0,family=broadleaf
+33165,36165,stump_033,stump,new,blossom linden stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33166,36166,tree_034,tree,new,brushwood tree,2x2,0,8193,2,0,0,0,family=dead
+33167,36167,stump_034,stump,new,brushwood tree stump,1x1,0,8193,2,0,0,0,family=dead
+33168,36168,tree_035,tree,new,golden larch,2x2,0,8193,2,0,0,0,family=conifer
+33169,36169,stump_035,stump,new,golden larch stump,1x1,0,8193,2,0,0,0,family=conifer
+33170,36170,tree_036,tree,new,ember heart tree,2x2,0,8193,2,0,0,0,family=fantasy
+33171,36171,stump_036,stump,new,ember heart tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33172,36172,tree_037,tree,new,green elm,2x2,0,8193,2,0,0,0,family=broadleaf
+33173,36173,stump_037,stump,new,green elm stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33174,36174,tree_038,tree,new,ice shard tree,2x2,0,8193,2,0,0,0,family=crystal
+33175,36175,stump_038,stump,new,ice shard tree stump,1x1,0,8193,2,0,0,0,family=crystal
+33176,36176,tree_039,tree,new,autumn beech,2x2,0,8193,2,0,0,0,family=autumn
+33177,36177,stump_039,stump,new,autumn beech stump,1x1,0,8193,2,0,0,0,family=autumn
+33178,36178,tree_040,tree,new,bare beech,2x2,0,8193,2,0,0,0,family=dead
+33179,36179,stump_040,stump,new,bare beech stump,1x1,0,8193,2,0,0,0,family=dead
+33180,36180,tree_041,tree,new,tall coconut palm,3x2,0,8193,2,0,0,0,family=palm
+33181,36181,stump_041,stump,new,coconut palm stump,1x1,0,8193,2,0,0,0,family=palm
+33182,36182,tree_042,tree,new,driftwood snag,2x2,0,8193,2,0,0,0,family=dead
+33183,36183,stump_042,stump,new,driftwood snag stump,2x1,0,8193,2,0,0,0,family=dead
+33184,36184,tree_043,tree,new,crimson palm,2x2,0,8193,2,0,0,0,family=palm
+33185,36185,stump_043,stump,new,crimson palm stump,1x1,0,8193,2,0,0,0,family=palm
+33186,36186,tree_044,tree,new,withered palm,2x2,0,8193,2,0,0,0,family=palm
+33187,36187,stump_044,stump,new,withered palm stump,1x1,0,8193,2,0,0,0,family=palm
+33188,36188,tree_045,tree,new,tropical palm,2x2,0,8193,2,0,0,0,family=palm
+33189,36189,stump_045,stump,new,tropical palm stump,1x1,0,8193,2,0,0,0,family=palm
+33190,36190,tree_046,tree,new,hooked deadwood,2x2,0,8193,2,0,0,0,family=dead
+33191,36191,stump_046,stump,new,hooked deadwood stump,1x1,0,8193,2,0,0,0,family=dead
+33192,36192,tree_047,tree,new,coiled red palm,2x2,0,8193,2,0,0,0,family=palm
+33193,36193,stump_047,stump,new,coiled red palm stump,1x1,0,8193,2,0,0,0,family=palm
+33194,36194,tree_048,tree,new,coiled palm,2x2,0,8193,2,0,0,0,family=palm
+33195,36195,stump_048,stump,new,coiled palm stump,1x1,0,8193,2,0,0,0,family=palm
+33196,36196,tree_049,tree,new,date palm,2x2,0,8193,2,0,0,0,family=palm
+33197,36197,stump_049,stump,new,date palm stump,1x1,0,8193,2,0,0,0,family=palm
+33198,36198,tree_050,tree,new,young palm,2x2,0,8193,2,0,0,0,family=palm
+33199,36199,stump_050,stump,new,young palm stump,1x1,0,8193,2,0,0,0,family=palm
+33200,36200,tree_051,tree,new,dry palm,2x2,0,8193,2,0,0,0,family=palm
+33201,36201,stump_051,stump,new,dry palm stump,1x1,0,8193,2,0,0,0,family=palm
+33202,36202,tree_052,tree,new,island palm,2x2,0,8193,2,0,0,0,family=palm
+33203,36203,stump_052,stump,new,island palm stump,1x1,0,8193,2,0,0,0,family=palm
+33204,36204,tree_053,tree,new,shady palm,2x2,0,8193,2,0,0,0,family=palm
+33205,36205,stump_053,stump,new,shady palm stump,1x1,0,8193,2,0,0,0,family=palm
+33206,36206,tree_054,tree,new,dwarf palm,2x2,0,8193,2,0,0,0,family=palm
+33207,36207,stump_054,stump,new,dwarf palm stump,1x1,0,8193,2,0,0,0,family=palm
+33208,36208,tree_055,tree,new,rose palm,2x2,0,8193,2,0,0,0,family=palm
+33209,36209,stump_055,stump,new,rose palm stump,1x1,0,8193,2,0,0,0,family=palm
+33210,36210,tree_056,tree,new,lagoon palm,2x2,0,8193,2,0,0,0,family=palm
+33211,36211,stump_056,stump,new,lagoon palm stump,1x1,0,8193,2,0,0,0,family=palm
+33212,36212,tree_057,tree,new,green beech,3x2,0,8193,2,0,0,0,family=broadleaf
+33213,36213,stump_057,stump,new,green beech stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33214,36214,tree_058,tree,new,black snag,3x2,0,8193,2,0,0,0,family=dead
+33215,36215,stump_058,stump,new,black snag stump,1x1,0,8193,2,0,0,0,family=dead
+33216,36216,tree_059,tree,new,fire maple,2x2,0,8193,2,0,0,0,family=autumn
+33217,36217,stump_059,stump,new,fire maple stump,1x1,0,8193,2,0,0,0,family=autumn
+33218,36218,tree_060,tree,new,redvein oak,2x2,0,8193,2,0,0,0,family=fantasy
+33219,36219,stump_060,stump,new,redvein oak stump,1x1,0,8193,2,0,0,0,family=fantasy
+33220,36220,tree_061,tree,new,shrub oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33221,36221,stump_061,stump,new,shrub oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33222,36222,tree_062,tree,new,thorn snag,2x2,0,8193,2,0,0,0,family=dead
+33223,36223,stump_062,stump,new,thorn snag stump,2x1,0,8193,2,0,0,0,family=dead
+33224,36224,tree_063,tree,new,autumn maple,2x2,0,8193,2,0,0,0,family=autumn
+33225,36225,stump_063,stump,new,autumn maple stump,1x1,0,8193,2,0,0,0,family=autumn
+33226,36226,tree_064,tree,new,bog mangrove,2x2,0,8193,2,0,0,0,family=swamp
+33227,36227,stump_064,stump,new,bog mangrove stump,1x1,0,8193,2,0,0,0,family=swamp
+33228,36228,tree_065,tree,new,ashen pine,2x2,0,8193,2,0,0,0,family=ash
+33229,36229,stump_065,stump,new,ashen pine stump,1x1,0,8193,2,0,0,0,family=ash
+33230,36230,tree_066,tree,new,bramble tree,2x2,0,8193,2,0,0,0,family=fantasy
+33231,36231,stump_066,stump,new,bramble tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33232,36232,tree_067,tree,new,ember ball tree,2x2,0,8193,2,0,0,0,family=fantasy
+33233,36233,stump_067,stump,new,ember ball tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33234,36234,tree_068,tree,new,withered ball tree,2x2,0,8193,2,0,0,0,family=dead
+33235,36235,stump_068,stump,new,withered ball tree stump,1x1,0,8193,2,0,0,0,family=dead
+33236,36236,tree_069,tree,new,fern tree,2x2,0,8193,2,0,0,0,family=jungle
+33237,36237,stump_069,stump,new,fern tree stump,1x1,0,8193,2,0,0,0,family=jungle
+33238,36238,tree_070,tree,new,broken deadwood,2x2,0,8193,2,0,0,0,family=dead
+33239,36239,stump_070,stump,new,broken deadwood stump,1x1,0,8193,2,0,0,0,family=dead
+33240,36240,tree_071,tree,new,bloodleaf tree,2x2,0,8193,2,0,0,0,family=fantasy
+33241,36241,stump_071,stump,new,bloodleaf tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33242,36242,tree_072,tree,new,holly tree,2x2,0,8193,2,0,0,0,family=fruit
+33243,36243,stump_072,stump,new,holly tree stump,1x1,0,8193,2,0,0,0,family=fruit
+33244,36244,tree_073,tree,new,sago palm,2x2,0,8193,2,0,0,0,family=palm
+33245,36245,stump_073,stump,new,sago palm stump,1x1,0,8193,2,0,0,0,family=palm
+33246,36246,tree_074,tree,new,dead sapling,2x2,0,8193,2,0,0,0,family=dead
+33247,36247,stump_074,stump,new,dead sapling stump,1x1,0,8193,2,0,0,0,family=dead
+33248,36248,tree_075,tree,new,dead palm,2x2,0,8193,2,0,0,0,family=palm
+33249,36249,stump_075,stump,new,dead palm stump,1x1,0,8193,2,0,0,0,family=palm
+33250,36250,tree_076,tree,new,jungle palm,2x2,0,8193,2,0,0,0,family=palm
+33251,36251,stump_076,stump,new,jungle palm stump,1x1,0,8193,2,0,0,0,family=palm
+33252,36252,tree_077,tree,new,moss oak,2x2,0,8193,2,0,0,0,family=swamp
+33253,36253,stump_077,stump,new,moss oak stump,1x1,0,8193,2,0,0,0,family=swamp
+33254,36254,tree_078,tree,new,frost deadwood,2x2,0,8193,2,0,0,0,family=frost
+33255,36255,stump_078,stump,new,frost deadwood stump,1x1,0,8193,2,0,0,0,family=frost
+33256,36256,tree_079,tree,new,gall oak,2x2,0,8193,2,0,0,0,family=fantasy
+33257,36257,stump_079,stump,new,gall oak stump,1x1,0,8193,2,0,0,0,family=fantasy
+33258,36258,tree_080,tree,new,witch oak,2x2,0,8193,2,0,0,0,family=fantasy
+33259,36259,stump_080,stump,new,witch oak stump,1x1,0,8193,2,0,0,0,family=fantasy
+33260,36260,tree_081,tree,new,forked oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33261,36261,stump_081,stump,new,forked oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33262,36262,tree_082,tree,new,granite oak,2x2,0,8193,2,0,0,0,family=stone
+33263,36263,stump_082,stump,new,granite oak stump,1x1,0,8193,2,0,0,0,family=stone
+33264,36264,tree_083,tree,new,copper oak,2x2,0,8193,2,0,0,0,family=autumn
+33265,36265,stump_083,stump,new,copper oak stump,1x1,0,8193,2,0,0,0,family=autumn
+33266,36266,tree_084,tree,new,spring oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33267,36267,stump_084,stump,new,spring oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33268,36268,tree_085,tree,new,apple tree,2x2,0,8193,2,0,0,0,family=fruit
+33269,36269,stump_085,stump,new,apple tree stump,1x1,0,8193,2,0,0,0,family=fruit
+33270,36270,tree_086,tree,new,starlit shade,2x2,0,8193,2,0,0,0,family=fantasy
+33271,36271,stump_086,stump,new,starlit shade stump,1x1,0,8193,2,0,0,0,family=fantasy
+33272,36272,tree_087,tree,new,sand oak,2x2,0,8193,2,0,0,0,family=autumn
+33273,36273,stump_087,stump,new,sand oak stump,1x1,0,8193,2,0,0,0,family=autumn
+33274,36274,tree_088,tree,new,meadow oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33275,36275,stump_088,stump,new,meadow oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33276,36276,tree_089,tree,new,limeberry tree,2x2,0,8193,2,0,0,0,family=fruit
+33277,36277,stump_089,stump,new,limeberry tree stump,1x1,0,8193,2,0,0,0,family=fruit
+33278,36278,tree_090,tree,new,soot tree,2x2,0,8193,2,0,0,0,family=ash
+33279,36279,stump_090,stump,new,soot tree stump,1x1,0,8193,2,0,0,0,family=ash
+33280,36280,tree_091,tree,new,sunspot tree,2x2,0,8193,2,0,0,0,family=fantasy
+33281,36281,stump_091,stump,new,sunspot tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33282,36282,tree_092,tree,new,spiky oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33283,36283,stump_092,stump,new,spiky oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33284,36284,tree_093,tree,new,emerald oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33285,36285,stump_093,stump,new,emerald oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33286,36286,tree_094,tree,new,mahogany tree,2x2,0,8193,2,0,0,0,family=jungle
+33287,36287,stump_094,stump,new,mahogany tree stump,1x1,0,8193,2,0,0,0,family=jungle
+33288,36288,tree_095,tree,new,crimson bristle,2x2,0,8193,2,0,0,0,family=fantasy
+33289,36289,stump_095,stump,new,crimson bristle stump,1x1,0,8193,2,0,0,0,family=fantasy
+33290,36290,tree_096,tree,new,green puff oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33291,36291,stump_096,stump,new,green puff oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33292,36292,tree_097,tree,new,starroot oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33293,36293,stump_097,stump,new,starroot oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33294,36294,tree_098,tree,new,coal tree,2x2,0,8193,2,0,0,0,family=ash
+33295,36295,stump_098,stump,new,coal tree stump,1x1,0,8193,2,0,0,0,family=ash
+33296,36296,tree_099,tree,new,lantern tree,2x2,0,8193,2,0,0,0,family=fantasy
+33297,36297,stump_099,stump,new,lantern tree stump,1x1,0,8193,2,0,0,0,family=fantasy
+33298,36298,tree_100,tree,new,grove oak,2x2,0,8193,2,0,0,0,family=broadleaf
+33299,36299,stump_100,stump,new,grove oak stump,1x1,0,8193,2,0,0,0,family=broadleaf
+33300,36300,ground_lush_grass,ground,new,thick lush grass,1x1,1,0,0,150,0,0,
+33301,36301,border_lush_grass_n,border,new,thick lush grass (north edge),1x1,0,8192,1,0,0,0,piece=n
+33302,36302,border_lush_grass_s,border,new,thick lush grass (south edge),1x1,0,8192,1,0,0,0,piece=s
+33303,36303,border_lush_grass_e,border,new,thick lush grass (east edge),1x1,0,8192,1,0,0,0,piece=e
+33304,36304,border_lush_grass_w,border,new,thick lush grass (west edge),1x1,0,8192,1,0,0,0,piece=w
+33305,36305,border_lush_grass_nw,border,new,thick lush grass (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33306,36306,border_lush_grass_ne,border,new,thick lush grass (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33307,36307,border_lush_grass_sw,border,new,thick lush grass (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33308,36308,border_lush_grass_se,border,new,thick lush grass (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33309,36309,border_lush_grass_in_nw,border,new,thick lush grass (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33310,36310,border_lush_grass_in_ne,border,new,thick lush grass (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33311,36311,border_lush_grass_in_sw,border,new,thick lush grass (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33312,36312,border_lush_grass_in_se,border,new,thick lush grass (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33313,36313,ground_dense_grass,ground,new,dense grass,1x1,1,0,0,150,0,0,
+33314,36314,border_dense_grass_n,border,new,dense grass (north edge),1x1,0,8192,1,0,0,0,piece=n
+33315,36315,border_dense_grass_s,border,new,dense grass (south edge),1x1,0,8192,1,0,0,0,piece=s
+33316,36316,border_dense_grass_e,border,new,dense grass (east edge),1x1,0,8192,1,0,0,0,piece=e
+33317,36317,border_dense_grass_w,border,new,dense grass (west edge),1x1,0,8192,1,0,0,0,piece=w
+33318,36318,border_dense_grass_nw,border,new,dense grass (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33319,36319,border_dense_grass_ne,border,new,dense grass (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33320,36320,border_dense_grass_sw,border,new,dense grass (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33321,36321,border_dense_grass_se,border,new,dense grass (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33322,36322,border_dense_grass_in_nw,border,new,dense grass (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33323,36323,border_dense_grass_in_ne,border,new,dense grass (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33324,36324,border_dense_grass_in_sw,border,new,dense grass (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33325,36325,border_dense_grass_in_se,border,new,dense grass (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33326,36326,ground_dry_grass,ground,new,dry prairie grass,1x1,1,0,0,150,0,0,
+33327,36327,border_dry_grass_n,border,new,dry prairie grass (north edge),1x1,0,8192,1,0,0,0,piece=n
+33328,36328,border_dry_grass_s,border,new,dry prairie grass (south edge),1x1,0,8192,1,0,0,0,piece=s
+33329,36329,border_dry_grass_e,border,new,dry prairie grass (east edge),1x1,0,8192,1,0,0,0,piece=e
+33330,36330,border_dry_grass_w,border,new,dry prairie grass (west edge),1x1,0,8192,1,0,0,0,piece=w
+33331,36331,border_dry_grass_nw,border,new,dry prairie grass (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33332,36332,border_dry_grass_ne,border,new,dry prairie grass (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33333,36333,border_dry_grass_sw,border,new,dry prairie grass (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33334,36334,border_dry_grass_se,border,new,dry prairie grass (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33335,36335,border_dry_grass_in_nw,border,new,dry prairie grass (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33336,36336,border_dry_grass_in_ne,border,new,dry prairie grass (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33337,36337,border_dry_grass_in_sw,border,new,dry prairie grass (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33338,36338,border_dry_grass_in_se,border,new,dry prairie grass (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33339,36339,ground_meadow_grass,ground,new,meadow grass,1x1,1,0,0,150,0,0,
+33340,36340,border_meadow_grass_n,border,new,meadow grass (north edge),1x1,0,8192,1,0,0,0,piece=n
+33341,36341,border_meadow_grass_s,border,new,meadow grass (south edge),1x1,0,8192,1,0,0,0,piece=s
+33342,36342,border_meadow_grass_e,border,new,meadow grass (east edge),1x1,0,8192,1,0,0,0,piece=e
+33343,36343,border_meadow_grass_w,border,new,meadow grass (west edge),1x1,0,8192,1,0,0,0,piece=w
+33344,36344,border_meadow_grass_nw,border,new,meadow grass (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33345,36345,border_meadow_grass_ne,border,new,meadow grass (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33346,36346,border_meadow_grass_sw,border,new,meadow grass (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33347,36347,border_meadow_grass_se,border,new,meadow grass (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33348,36348,border_meadow_grass_in_nw,border,new,meadow grass (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33349,36349,border_meadow_grass_in_ne,border,new,meadow grass (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33350,36350,border_meadow_grass_in_sw,border,new,meadow grass (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33351,36351,border_meadow_grass_in_se,border,new,meadow grass (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33352,36352,ground_bright_grass,ground,new,bright grass,1x1,1,0,0,150,0,0,
+33353,36353,border_bright_grass_n,border,new,bright grass (north edge),1x1,0,8192,1,0,0,0,piece=n
+33354,36354,border_bright_grass_s,border,new,bright grass (south edge),1x1,0,8192,1,0,0,0,piece=s
+33355,36355,border_bright_grass_e,border,new,bright grass (east edge),1x1,0,8192,1,0,0,0,piece=e
+33356,36356,border_bright_grass_w,border,new,bright grass (west edge),1x1,0,8192,1,0,0,0,piece=w
+33357,36357,border_bright_grass_nw,border,new,bright grass (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33358,36358,border_bright_grass_ne,border,new,bright grass (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33359,36359,border_bright_grass_sw,border,new,bright grass (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33360,36360,border_bright_grass_se,border,new,bright grass (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33361,36361,border_bright_grass_in_nw,border,new,bright grass (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33362,36362,border_bright_grass_in_ne,border,new,bright grass (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33363,36363,border_bright_grass_in_sw,border,new,bright grass (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33364,36364,border_bright_grass_in_se,border,new,bright grass (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33365,36365,ground_loam,ground,new,loam,1x1,1,0,0,110,0,0,
+33366,36366,border_loam_n,border,new,loam (north edge),1x1,0,8192,1,0,0,0,piece=n
+33367,36367,border_loam_s,border,new,loam (south edge),1x1,0,8192,1,0,0,0,piece=s
+33368,36368,border_loam_e,border,new,loam (east edge),1x1,0,8192,1,0,0,0,piece=e
+33369,36369,border_loam_w,border,new,loam (west edge),1x1,0,8192,1,0,0,0,piece=w
+33370,36370,border_loam_nw,border,new,loam (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33371,36371,border_loam_ne,border,new,loam (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33372,36372,border_loam_sw,border,new,loam (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33373,36373,border_loam_se,border,new,loam (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33374,36374,border_loam_in_nw,border,new,loam (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33375,36375,border_loam_in_ne,border,new,loam (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33376,36376,border_loam_in_sw,border,new,loam (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33377,36377,border_loam_in_se,border,new,loam (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33378,36378,ground_flagstone_floor,ground,new,flagstone floor,1x1,1,0,0,100,0,0,
+33379,36379,border_flagstone_floor_n,border,new,flagstone floor (north edge),1x1,0,8192,1,0,0,0,piece=n
+33380,36380,border_flagstone_floor_s,border,new,flagstone floor (south edge),1x1,0,8192,1,0,0,0,piece=s
+33381,36381,border_flagstone_floor_e,border,new,flagstone floor (east edge),1x1,0,8192,1,0,0,0,piece=e
+33382,36382,border_flagstone_floor_w,border,new,flagstone floor (west edge),1x1,0,8192,1,0,0,0,piece=w
+33383,36383,border_flagstone_floor_nw,border,new,flagstone floor (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33384,36384,border_flagstone_floor_ne,border,new,flagstone floor (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33385,36385,border_flagstone_floor_sw,border,new,flagstone floor (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33386,36386,border_flagstone_floor_se,border,new,flagstone floor (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33387,36387,border_flagstone_floor_in_nw,border,new,flagstone floor (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33388,36388,border_flagstone_floor_in_ne,border,new,flagstone floor (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33389,36389,border_flagstone_floor_in_sw,border,new,flagstone floor (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33390,36390,border_flagstone_floor_in_se,border,new,flagstone floor (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33391,36391,ground_jade_tile_floor,ground,new,jade tile floor,1x1,1,0,0,100,0,0,
+33392,36392,border_jade_tile_floor_n,border,new,jade tile floor (north edge),1x1,0,8192,1,0,0,0,piece=n
+33393,36393,border_jade_tile_floor_s,border,new,jade tile floor (south edge),1x1,0,8192,1,0,0,0,piece=s
+33394,36394,border_jade_tile_floor_e,border,new,jade tile floor (east edge),1x1,0,8192,1,0,0,0,piece=e
+33395,36395,border_jade_tile_floor_w,border,new,jade tile floor (west edge),1x1,0,8192,1,0,0,0,piece=w
+33396,36396,border_jade_tile_floor_nw,border,new,jade tile floor (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33397,36397,border_jade_tile_floor_ne,border,new,jade tile floor (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33398,36398,border_jade_tile_floor_sw,border,new,jade tile floor (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33399,36399,border_jade_tile_floor_se,border,new,jade tile floor (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33400,36400,border_jade_tile_floor_in_nw,border,new,jade tile floor (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33401,36401,border_jade_tile_floor_in_ne,border,new,jade tile floor (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33402,36402,border_jade_tile_floor_in_sw,border,new,jade tile floor (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33403,36403,border_jade_tile_floor_in_se,border,new,jade tile floor (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33404,36404,ground_slate_floor,ground,new,violet slate floor,1x1,1,0,0,100,0,0,
+33405,36405,border_slate_floor_n,border,new,violet slate floor (north edge),1x1,0,8192,1,0,0,0,piece=n
+33406,36406,border_slate_floor_s,border,new,violet slate floor (south edge),1x1,0,8192,1,0,0,0,piece=s
+33407,36407,border_slate_floor_e,border,new,violet slate floor (east edge),1x1,0,8192,1,0,0,0,piece=e
+33408,36408,border_slate_floor_w,border,new,violet slate floor (west edge),1x1,0,8192,1,0,0,0,piece=w
+33409,36409,border_slate_floor_nw,border,new,violet slate floor (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33410,36410,border_slate_floor_ne,border,new,violet slate floor (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33411,36411,border_slate_floor_sw,border,new,violet slate floor (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33412,36412,border_slate_floor_se,border,new,violet slate floor (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33413,36413,border_slate_floor_in_nw,border,new,violet slate floor (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33414,36414,border_slate_floor_in_ne,border,new,violet slate floor (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33415,36415,border_slate_floor_in_sw,border,new,violet slate floor (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33416,36416,border_slate_floor_in_se,border,new,violet slate floor (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33417,36417,ground_red_clay,ground,new,red clay,1x1,1,0,0,110,0,0,
+33418,36418,border_red_clay_n,border,new,red clay (north edge),1x1,0,8192,1,0,0,0,piece=n
+33419,36419,border_red_clay_s,border,new,red clay (south edge),1x1,0,8192,1,0,0,0,piece=s
+33420,36420,border_red_clay_e,border,new,red clay (east edge),1x1,0,8192,1,0,0,0,piece=e
+33421,36421,border_red_clay_w,border,new,red clay (west edge),1x1,0,8192,1,0,0,0,piece=w
+33422,36422,border_red_clay_nw,border,new,red clay (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33423,36423,border_red_clay_ne,border,new,red clay (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33424,36424,border_red_clay_sw,border,new,red clay (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33425,36425,border_red_clay_se,border,new,red clay (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33426,36426,border_red_clay_in_nw,border,new,red clay (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33427,36427,border_red_clay_in_ne,border,new,red clay (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33428,36428,border_red_clay_in_sw,border,new,red clay (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33429,36429,border_red_clay_in_se,border,new,red clay (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33430,36430,ground_fine_sand,ground,new,fine sand,1x1,1,0,0,120,0,0,
+33431,36431,border_fine_sand_n,border,new,fine sand (north edge),1x1,0,8192,1,0,0,0,piece=n
+33432,36432,border_fine_sand_s,border,new,fine sand (south edge),1x1,0,8192,1,0,0,0,piece=s
+33433,36433,border_fine_sand_e,border,new,fine sand (east edge),1x1,0,8192,1,0,0,0,piece=e
+33434,36434,border_fine_sand_w,border,new,fine sand (west edge),1x1,0,8192,1,0,0,0,piece=w
+33435,36435,border_fine_sand_nw,border,new,fine sand (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33436,36436,border_fine_sand_ne,border,new,fine sand (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33437,36437,border_fine_sand_sw,border,new,fine sand (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33438,36438,border_fine_sand_se,border,new,fine sand (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33439,36439,border_fine_sand_in_nw,border,new,fine sand (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33440,36440,border_fine_sand_in_ne,border,new,fine sand (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33441,36441,border_fine_sand_in_sw,border,new,fine sand (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33442,36442,border_fine_sand_in_se,border,new,fine sand (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33443,36443,ground_fresh_snow,ground,new,fresh snow,1x1,1,0,0,150,0,0,
+33444,36444,border_fresh_snow_n,border,new,fresh snow (north edge),1x1,0,8192,1,0,0,0,piece=n
+33445,36445,border_fresh_snow_s,border,new,fresh snow (south edge),1x1,0,8192,1,0,0,0,piece=s
+33446,36446,border_fresh_snow_e,border,new,fresh snow (east edge),1x1,0,8192,1,0,0,0,piece=e
+33447,36447,border_fresh_snow_w,border,new,fresh snow (west edge),1x1,0,8192,1,0,0,0,piece=w
+33448,36448,border_fresh_snow_nw,border,new,fresh snow (north-west corner),1x1,0,8192,1,0,0,0,piece=nw
+33449,36449,border_fresh_snow_ne,border,new,fresh snow (north-east corner),1x1,0,8192,1,0,0,0,piece=ne
+33450,36450,border_fresh_snow_sw,border,new,fresh snow (south-west corner),1x1,0,8192,1,0,0,0,piece=sw
+33451,36451,border_fresh_snow_se,border,new,fresh snow (south-east corner),1x1,0,8192,1,0,0,0,piece=se
+33452,36452,border_fresh_snow_in_nw,border,new,fresh snow (north-west inner corner),1x1,0,8192,1,0,0,0,piece=in_nw
+33453,36453,border_fresh_snow_in_ne,border,new,fresh snow (north-east inner corner),1x1,0,8192,1,0,0,0,piece=in_ne
+33454,36454,border_fresh_snow_in_sw,border,new,fresh snow (south-west inner corner),1x1,0,8192,1,0,0,0,piece=in_sw
+33455,36455,border_fresh_snow_in_se,border,new,fresh snow (south-east inner corner),1x1,0,8192,1,0,0,0,piece=in_se
+33456,36456,water_deep,water,new,deep lake water,1x1,1,16777217,0,0,0,0,px=3|py=3|ms=140
+33457,36457,water_shallow_sand,water,new,shallow water over sand,1x1,1,16777216,0,250,0,0,px=3|py=3|ms=140
+33458,36458,water_shallow_pebbles,water,new,shallow water over pebbles,1x1,1,16777216,0,250,0,0,px=3|py=3|ms=140
+33459,36459,water_shallow_weeds,water,new,shallow water over weeds,1x1,1,16777216,0,250,0,0,px=3|py=3|ms=140
+33460,36460,water_lagoon,water,new,lagoon water,1x1,1,16777217,0,0,0,0,px=3|py=3|ms=140
+33461,36461,water_murky,water,new,murky water,1x1,1,16777217,0,0,0,0,px=3|py=3|ms=140
+33462,36462,water_alpine_lake,water,new,mountain lake water,1x1,1,16777217,0,0,0,0,px=3|py=3|ms=140
+33463,36463,water_alpine_shallow,water,new,mountain shallows,1x1,1,16777216,0,250,0,0,px=3|py=3|ms=140
+33464,36464,shore_grass_bank_e,shore,new,grass shore (e),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=e
+33465,36465,shore_grass_bank_in_ew,shore,new,grass shore (inner ew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ew
+33466,36466,shore_grass_bank_in_ne,shore,new,grass shore (inner ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ne
+33467,36467,shore_grass_bank_in_new,shore,new,grass shore (inner new),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_new
+33468,36468,shore_grass_bank_in_ns,shore,new,grass shore (inner ns),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ns
+33469,36469,shore_grass_bank_in_nse,shore,new,grass shore (inner nse),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nse
+33470,36470,shore_grass_bank_in_nsew,shore,new,grass shore (inner nsew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsew
+33471,36471,shore_grass_bank_in_nsw,shore,new,grass shore (inner nsw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsw
+33472,36472,shore_grass_bank_in_nw,shore,new,grass shore (inner nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nw
+33473,36473,shore_grass_bank_in_se,shore,new,grass shore (inner se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_se
+33474,36474,shore_grass_bank_in_sew,shore,new,grass shore (inner sew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sew
+33475,36475,shore_grass_bank_in_sw,shore,new,grass shore (inner sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sw
+33476,36476,shore_grass_bank_n,shore,new,grass shore (n),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=n
+33477,36477,shore_grass_bank_ne,shore,new,grass shore (ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=ne
+33478,36478,shore_grass_bank_nw,shore,new,grass shore (nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=nw
+33479,36479,shore_grass_bank_s,shore,new,grass shore (s),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=s
+33480,36480,shore_grass_bank_se,shore,new,grass shore (se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=se
+33481,36481,shore_grass_bank_sw,shore,new,grass shore (sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=sw
+33482,36482,shore_grass_bank_w,shore,new,grass shore (w),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=w
+33483,36483,shore_sand_beach_e,shore,new,sand beach (e),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=e
+33484,36484,shore_sand_beach_in_ew,shore,new,sand beach (inner ew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ew
+33485,36485,shore_sand_beach_in_ne,shore,new,sand beach (inner ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ne
+33486,36486,shore_sand_beach_in_new,shore,new,sand beach (inner new),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_new
+33487,36487,shore_sand_beach_in_ns,shore,new,sand beach (inner ns),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ns
+33488,36488,shore_sand_beach_in_nse,shore,new,sand beach (inner nse),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nse
+33489,36489,shore_sand_beach_in_nsew,shore,new,sand beach (inner nsew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsew
+33490,36490,shore_sand_beach_in_nsw,shore,new,sand beach (inner nsw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsw
+33491,36491,shore_sand_beach_in_nw,shore,new,sand beach (inner nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nw
+33492,36492,shore_sand_beach_in_se,shore,new,sand beach (inner se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_se
+33493,36493,shore_sand_beach_in_sew,shore,new,sand beach (inner sew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sew
+33494,36494,shore_sand_beach_in_sw,shore,new,sand beach (inner sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sw
+33495,36495,shore_sand_beach_n,shore,new,sand beach (n),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=n
+33496,36496,shore_sand_beach_ne,shore,new,sand beach (ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=ne
+33497,36497,shore_sand_beach_nw,shore,new,sand beach (nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=nw
+33498,36498,shore_sand_beach_s,shore,new,sand beach (s),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=s
+33499,36499,shore_sand_beach_se,shore,new,sand beach (se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=se
+33500,36500,shore_sand_beach_sw,shore,new,sand beach (sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=sw
+33501,36501,shore_sand_beach_w,shore,new,sand beach (w),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=w
+33502,36502,shore_rock_e,shore,new,rocky shore (e),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=e
+33503,36503,shore_rock_in_ew,shore,new,rocky shore (inner ew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ew
+33504,36504,shore_rock_in_ne,shore,new,rocky shore (inner ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ne
+33505,36505,shore_rock_in_new,shore,new,rocky shore (inner new),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_new
+33506,36506,shore_rock_in_ns,shore,new,rocky shore (inner ns),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ns
+33507,36507,shore_rock_in_nse,shore,new,rocky shore (inner nse),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nse
+33508,36508,shore_rock_in_nsew,shore,new,rocky shore (inner nsew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsew
+33509,36509,shore_rock_in_nsw,shore,new,rocky shore (inner nsw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsw
+33510,36510,shore_rock_in_nw,shore,new,rocky shore (inner nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nw
+33511,36511,shore_rock_in_se,shore,new,rocky shore (inner se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_se
+33512,36512,shore_rock_in_sew,shore,new,rocky shore (inner sew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sew
+33513,36513,shore_rock_in_sw,shore,new,rocky shore (inner sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sw
+33514,36514,shore_rock_n,shore,new,rocky shore (n),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=n
+33515,36515,shore_rock_ne,shore,new,rocky shore (ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=ne
+33516,36516,shore_rock_nw,shore,new,rocky shore (nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=nw
+33517,36517,shore_rock_s,shore,new,rocky shore (s),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=s
+33518,36518,shore_rock_se,shore,new,rocky shore (se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=se
+33519,36519,shore_rock_sw,shore,new,rocky shore (sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=sw
+33520,36520,shore_rock_w,shore,new,rocky shore (w),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=w
+33521,36521,shore_snow_bank_e,shore,new,snow shore (e),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=e
+33522,36522,shore_snow_bank_in_ew,shore,new,snow shore (inner ew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ew
+33523,36523,shore_snow_bank_in_ne,shore,new,snow shore (inner ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ne
+33524,36524,shore_snow_bank_in_new,shore,new,snow shore (inner new),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_new
+33525,36525,shore_snow_bank_in_ns,shore,new,snow shore (inner ns),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ns
+33526,36526,shore_snow_bank_in_nse,shore,new,snow shore (inner nse),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nse
+33527,36527,shore_snow_bank_in_nsew,shore,new,snow shore (inner nsew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsew
+33528,36528,shore_snow_bank_in_nsw,shore,new,snow shore (inner nsw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsw
+33529,36529,shore_snow_bank_in_nw,shore,new,snow shore (inner nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nw
+33530,36530,shore_snow_bank_in_se,shore,new,snow shore (inner se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_se
+33531,36531,shore_snow_bank_in_sew,shore,new,snow shore (inner sew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sew
+33532,36532,shore_snow_bank_in_sw,shore,new,snow shore (inner sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sw
+33533,36533,shore_snow_bank_n,shore,new,snow shore (n),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=n
+33534,36534,shore_snow_bank_ne,shore,new,snow shore (ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=ne
+33535,36535,shore_snow_bank_nw,shore,new,snow shore (nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=nw
+33536,36536,shore_snow_bank_s,shore,new,snow shore (s),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=s
+33537,36537,shore_snow_bank_se,shore,new,snow shore (se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=se
+33538,36538,shore_snow_bank_sw,shore,new,snow shore (sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=sw
+33539,36539,shore_snow_bank_w,shore,new,snow shore (w),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=w
+33540,36540,shore_stone_rim_e,shore,new,stone rim (e),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=e
+33541,36541,shore_stone_rim_in_ew,shore,new,stone rim (inner ew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ew
+33542,36542,shore_stone_rim_in_ne,shore,new,stone rim (inner ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ne
+33543,36543,shore_stone_rim_in_new,shore,new,stone rim (inner new),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_new
+33544,36544,shore_stone_rim_in_ns,shore,new,stone rim (inner ns),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ns
+33545,36545,shore_stone_rim_in_nse,shore,new,stone rim (inner nse),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nse
+33546,36546,shore_stone_rim_in_nsew,shore,new,stone rim (inner nsew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsew
+33547,36547,shore_stone_rim_in_nsw,shore,new,stone rim (inner nsw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsw
+33548,36548,shore_stone_rim_in_nw,shore,new,stone rim (inner nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nw
+33549,36549,shore_stone_rim_in_se,shore,new,stone rim (inner se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_se
+33550,36550,shore_stone_rim_in_sew,shore,new,stone rim (inner sew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sew
+33551,36551,shore_stone_rim_in_sw,shore,new,stone rim (inner sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sw
+33552,36552,shore_stone_rim_n,shore,new,stone rim (n),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=n
+33553,36553,shore_stone_rim_ne,shore,new,stone rim (ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=ne
+33554,36554,shore_stone_rim_nw,shore,new,stone rim (nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=nw
+33555,36555,shore_stone_rim_s,shore,new,stone rim (s),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=s
+33556,36556,shore_stone_rim_se,shore,new,stone rim (se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=se
+33557,36557,shore_stone_rim_sw,shore,new,stone rim (sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=sw
+33558,36558,shore_stone_rim_w,shore,new,stone rim (w),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=w
+33559,36559,shore_mud_bank_e,shore,new,mud bank (e),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=e
+33560,36560,shore_mud_bank_in_ew,shore,new,mud bank (inner ew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ew
+33561,36561,shore_mud_bank_in_ne,shore,new,mud bank (inner ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ne
+33562,36562,shore_mud_bank_in_new,shore,new,mud bank (inner new),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_new
+33563,36563,shore_mud_bank_in_ns,shore,new,mud bank (inner ns),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_ns
+33564,36564,shore_mud_bank_in_nse,shore,new,mud bank (inner nse),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nse
+33565,36565,shore_mud_bank_in_nsew,shore,new,mud bank (inner nsew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsew
+33566,36566,shore_mud_bank_in_nsw,shore,new,mud bank (inner nsw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nsw
+33567,36567,shore_mud_bank_in_nw,shore,new,mud bank (inner nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_nw
+33568,36568,shore_mud_bank_in_se,shore,new,mud bank (inner se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_se
+33569,36569,shore_mud_bank_in_sew,shore,new,mud bank (inner sew),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sew
+33570,36570,shore_mud_bank_in_sw,shore,new,mud bank (inner sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=in_sw
+33571,36571,shore_mud_bank_n,shore,new,mud bank (n),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=n
+33572,36572,shore_mud_bank_ne,shore,new,mud bank (ne),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=ne
+33573,36573,shore_mud_bank_nw,shore,new,mud bank (nw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=nw
+33574,36574,shore_mud_bank_s,shore,new,mud bank (s),1x1,0,16785408,1,0,0,0,px=3|py=1|ms=140|piece=s
+33575,36575,shore_mud_bank_se,shore,new,mud bank (se),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=se
+33576,36576,shore_mud_bank_sw,shore,new,mud bank (sw),1x1,0,16785408,1,0,0,0,px=1|py=1|ms=140|piece=sw
+33577,36577,shore_mud_bank_w,shore,new,mud bank (w),1x1,0,16785408,1,0,0,0,px=1|py=3|ms=140|piece=w
+33578,36578,lake_cattail_single,lake,new,cattail single,2x2,0,16777217,0,0,0,0,ms=140
+33579,36579,lake_cattail_small,lake,new,cattail small,2x2,0,16777217,0,0,0,0,ms=140
+33580,36580,lake_cattail_clump,lake,new,cattail clump,2x2,0,16777217,0,0,0,0,ms=140
+33581,36581,lake_cattail_large,lake,new,cattail large,2x2,0,16777217,0,0,0,0,ms=140
+33582,36582,lake_reed_small,lake,new,reed small,2x2,0,16777217,0,0,0,0,ms=140
+33583,36583,lake_reed_clump,lake,new,reed clump,2x2,0,16777217,0,0,0,0,ms=140
+33584,36584,lake_reed_tall,lake,new,reed tall,2x2,0,16777217,0,0,0,0,ms=140
+33585,36585,lake_reeds_dry,lake,new,reeds dry,2x2,0,16777217,0,0,0,0,ms=140
+33586,36586,lake_reed_bed_h,lake,new,reed bed (east-west),2x2,0,16777217,0,0,0,0,ms=140
+33587,36587,lake_rush_clump,lake,new,rush clump,2x2,0,16777217,0,0,0,0,ms=140
+33588,36588,lake_sedge_tuft,lake,new,sedge tuft,2x2,0,16777217,0,0,0,0,ms=140
+33589,36589,lake_bulrush_tall,lake,new,bulrush tall,2x2,0,16777217,0,0,0,0,ms=140
+33590,36590,lake_lily_pad_small,lake,new,lily pad small,1x1,0,16777216,0,0,0,0,ms=140
+33591,36591,lake_lily_pad_large,lake,new,lily pad large,1x1,0,16777216,0,0,0,0,ms=140
+33592,36592,lake_lily_white,lake,new,lily white,1x1,0,16777216,0,0,0,0,ms=140
+33593,36593,lake_lily_pink,lake,new,lily pink,1x1,0,16777216,0,0,0,0,ms=140
+33594,36594,lake_lily_yellow,lake,new,lily yellow,1x1,0,16777216,0,0,0,0,ms=140
+33595,36595,lake_lily_pads_group,lake,new,lily pads group,2x2,0,16777216,0,0,0,0,ms=140
+33596,36596,lake_lotus,lake,new,lotus,2x2,0,16777216,0,0,0,0,ms=140
+33597,36597,lake_duckweed_patch_s,lake,new,duckweed patch (small),1x1,0,0,0,0,0,0,ms=140
+33598,36598,lake_duckweed_patch_l,lake,new,duckweed patch (large),2x2,0,0,0,0,0,0,ms=140
+33599,36599,lake_algae_mat,lake,new,algae mat,2x2,0,0,0,0,0,0,ms=140
+33600,36600,lake_floating_leaves,lake,new,floating leaves,1x1,0,0,0,0,0,0,ms=140
+33601,36601,lake_water_hyacinth,lake,new,water hyacinth,1x1,0,16777216,0,0,0,0,ms=140
+33602,36602,lake_seaweed_green,lake,new,seaweed green,1x1,0,16777216,0,0,0,0,ms=140
+33603,36603,lake_kelp_tall,lake,new,kelp tall,2x2,0,16777216,0,0,0,0,ms=140
+33604,36604,lake_waterweed_tuft,lake,new,waterweed tuft,1x1,0,16777216,0,0,0,0,ms=140
+33605,36605,lake_eelgrass,lake,new,eelgrass,1x1,0,16777216,0,0,0,0,ms=140
+33606,36606,lake_coral_pink,lake,new,coral pink,1x1,0,0,0,0,0,0,ms=140
+33607,36607,lake_coral_blue,lake,new,coral blue,1x1,0,0,0,0,0,0,ms=140
+33608,36608,lake_sea_fan,lake,new,sea fan,1x1,0,16777216,0,0,0,0,ms=140
+33609,36609,lake_shells_pile,lake,new,shells pile,1x1,0,0,0,0,0,0,ms=140
+33610,36610,lake_water_stakes,lake,new,water stakes,2x2,0,16777217,0,0,0,0,ms=140
+33611,36611,lake_stake_single,lake,new,stake single,2x1,0,16777217,0,0,0,0,ms=140
+33612,36612,lake_floating_log,lake,new,floating log,2x1,0,16777217,0,0,0,0,ms=140
+33613,36613,lake_driftwood,lake,new,driftwood,2x2,0,16777217,0,0,0,0,ms=140
+33614,36614,lake_reed_raft,lake,new,reed raft,2x2,0,16777217,0,0,0,0,ms=140
+33615,36615,lake_buoy_red,lake,new,buoy red,1x1,0,16777217,0,0,0,0,ms=140
+33616,36616,lake_buoy_lantern,lake,new,buoy lantern,2x1,0,16777217,0,0,3,208,ms=140
+33617,36617,lake_rock_in_water_s,lake,new,rock in water (small),1x1,0,16777217,0,0,0,0,ms=140
+33618,36618,lake_rock_in_water_m,lake,new,rock in water (medium),1x1,0,16777217,0,0,0,0,ms=140
+33619,36619,lake_rock_in_water_l,lake,new,rock in water (large),2x1,0,16777217,0,0,0,0,ms=140
+33620,36620,lake_stepping_stones_h,lake,new,stepping stones (east-west),2x1,0,16777217,0,0,0,0,ms=140
+33621,36621,lake_fishing_net_floats,lake,new,fishing net floats,3x2,0,16777217,0,0,0,0,ms=140
+33622,36622,lake_water_splash,lake,new,water splash,1x1,0,16777217,0,0,0,0,ms=140
+33623,36623,lake_ripple_ring_s,lake,new,ripple ring (small),1x1,0,16777216,0,0,0,0,ms=140
+33624,36624,lake_ripple_ring_l,lake,new,ripple ring (large),1x1,0,16777216,0,0,0,0,ms=140
+33625,36625,lake_reed_bed_v,lake,new,reed bed (north-south),2x2,0,16777217,0,0,0,0,ms=140
+33626,36626,lake_stepping_stones_v,lake,new,stepping stones (north-south),1x2,0,16777217,0,0,0,0,ms=140
+33627,36627,dock_rowboat_h,dock,new,rowboat (east-west),2x1,0,1,0,0,0,0,
+33628,36628,dock_rowboat_v,dock,new,rowboat (north-south),1x2,0,1,0,0,0,0,
+33629,36629,dock_post,dock,new,post,1x1,0,1,0,0,0,0,
+33630,36630,dock_post_pair,dock,new,post pair,1x1,0,1,0,0,0,0,
+33631,36631,dock_post_rope,dock,new,post rope,1x1,0,1,0,0,0,0,
+33632,36632,dock_post_stumps,dock,new,post stumps,1x1,0,1,0,0,0,0,
+33633,36633,dock_crates,dock,new,crates,2x2,0,1,0,0,0,0,
+33634,36634,dock_crates_ground,dock,new,crates (on land),2x1,0,1,0,0,0,0,
+33635,36635,dock_crate,dock,new,dock crate,2x2,0,1,0,0,0,0,
+33636,36636,dock_crate_ground,dock,new,crate (on land),1x1,0,1,0,0,0,0,
+33637,36637,dock_barrel,dock,new,dock barrel,2x1,0,1,0,0,0,0,
+33638,36638,dock_barrel_ground,dock,new,barrel (on land),1x1,0,1,0,0,0,0,
+33639,36639,dock_rope_coil,dock,new,rope coil,1x1,0,1,0,0,0,0,
+33640,36640,dock_rope_coil_ground,dock,new,rope coil (on land),1x1,0,1,0,0,0,0,
+33641,36641,dock_net_pile,dock,new,net pile,2x1,0,1,0,0,0,0,
+33642,36642,dock_net_pile_ground,dock,new,net pile (on land),1x1,0,1,0,0,0,0,
+33643,36643,dock_net_rack,dock,new,net rack,2x2,0,1,0,0,0,0,
+33644,36644,dock_net_rack_ground,dock,new,net rack (on land),2x1,0,1,0,0,0,0,
+33645,36645,dock_fish_basket,dock,new,fish basket,2x1,0,1,0,0,0,0,
+33646,36646,dock_fish_basket_ground,dock,new,fish basket (on land),1x1,0,1,0,0,0,0,
+33647,36647,dock_bollard,dock,new,dock bollard,1x1,0,1,0,0,0,0,
+33648,36648,dock_bollard_ground,dock,new,bollard (on land),1x1,0,1,0,0,0,0,
+33649,36649,dock_lantern_post,dock,new,lantern post,2x2,0,1,0,0,3,208,
+33650,36650,dock_lantern_post_ground,dock,new,lantern post (on land),2x2,0,1,0,0,3,208,

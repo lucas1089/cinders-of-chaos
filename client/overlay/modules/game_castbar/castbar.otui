@@ -1,0 +1,40 @@
+// a dark plate with the progress bar in it (the bar alone would leave the unfilled part see-through)
+CastBarFill < UIProgressBar
+  id: bar
+  anchors.fill: parent
+  margin: 1
+  background-color: #c08a2a
+  image-source: /images/chaos/progress_frame
+  image-border: 3
+  font: verdana-11px-rounded
+  color: #f0e4c8
+  text-offset: 0 1
+  phantom: true
+
+CastBar < UIWidget
+  size: 152 16
+  background-color: #0d0b0ee0
+  border-width: 1
+  border-color: #7d7176
+  focusable: false
+
+  CastBarFill
+
+// over other players: smaller, no frame image on the fill (a separate style: a child declared again in a derived style
+// would be a second child)
+OtherCastBar < UIWidget
+  size: 110 14
+  background-color: #0d0b0ee0
+  border-width: 1
+  border-color: #7d7176
+  focusable: false
+  phantom: true
+
+  UIProgressBar
+    id: bar
+    anchors.fill: parent
+    margin: 1
+    background-color: #c08a2a
+    font: verdana-9px-rounded
+    color: #f0e4c8
+    phantom: true

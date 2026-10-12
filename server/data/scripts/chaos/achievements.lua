@@ -1,4 +1,4 @@
--- Achievements (client game_achievements, extended opcode ChaosOpcodes.achievements = 250, !achievements).
+-- Achievements (client game_achievements, extended opcode ChaosOpcodes.achievements = 250).
 -- The list: achievements_data.lua. Pure logic: achievements_core.lua (tests: server/tests/achievements_test.lua).
 -- Tables: chaos_achievements, chaos_achievement_stats (server/sql/chaos_achievements.sql; also created at startup).
 --
@@ -11,7 +11,12 @@
 --   ChaosAchievements.unlockedOf(player)            {id = unlock time} of the character
 --   ChaosAchievements.pointsOf(player)              character points, account points
 --   ChaosAchievements.grant(player, id)             unlock now (staff tools)
---   ChaosAchievements.sendState(player, open)       the window
+--   ChaosAchievements.sendState(player, open)       the window (state, track, list)
+--   ChaosAchievements.accountOf(player | account id) {ids, points} of the account
+--   ChaosAchievements.syncTrack(player)             reward track: cosmetics.lua grants what the account earned
+-- Reward track (server/README.md "Achievements"): account points milestones and category completion give cosmetics of
+-- cosmetics_config.lua (source "achievement", points / category) and category titles (achievements_data.lua
+-- categoryRewards); the window gets them as "track" (cosmetics_core.lua trackView).
 -- A new source is one guarded line in the other script:
 --   if ChaosAchievements then ChaosAchievements.progress(player, "my_counter", 1) end
 -- plus an entry with stat = "my_counter" in achievements_data.lua.
@@ -26,8 +31,9 @@
 --                                  rift_tier/rift_runs/modifiers/flawless (the run from ChaosRift.runOf); "arena1v1" /
 --                                  "arena2v2" -> wins and rating (ChaosArena.ratingOf); "siege" -> siege_played/siege_wins
 --   ChaosWorldBoss.computeRewards  wrapped: every rewarded player -> wb_kills, wb_<boss>, wb_top (rank 1)
---   ChaosCrafting.apply            wrapped: orbs_used, orb_exalted, mods_max (bench and the crafting orbs' use-with; the
---                                  base server's own Chaos / Divine Orb use-with is not counted)
+--   ChaosCrafting.apply            wrapped: orbs_used, orb_exalted, orb_binding, ruin_improved, ruin_ruined, quality_max,
+--                                  power_found, mods_max (bench and the crafting orbs' use-with; the
+--                                  base server's own Upheaval / Fate use-with is not counted)
 --   ChaosTreasureGoblin.tick       wrapped: a goblin that escaped after being hit -> goblin_escaped for its attackers
 --   onDropLoot (index 2.4)         unique_found, rarity_max, mods_max from the corpse of a kill (before autoloot)
 -- Retroactive at login: level, Paragon, ascension, tutorial, guild, bounty contracts (chaos_bounty), the last weekly
@@ -39,6 +45,11 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
 end
 if not ChaosAchievementsCore or not ChaosAchievementsCore.unlockMethod then
 	dofile("data/scripts/chaos/achievements_core.lua")
@@ -198,11 +209,26 @@ local function giveReward(player, reward)
 	if reward.mount and reward.mount.id then
 		player:addMount(reward.mount.id)
 	end
+	if reward.portal and ChaosTownPortal and ChaosTownPortal.sendState then
+		-- a Portal Style window that is open shows the style unlocked at once (open = false: a closed one stays closed);
+		-- a moment later, when the unlock is stored
+		local pid = player:getId()
+		addEvent(function()
+			local p = Player(pid)
+			if p then
+				pcall(ChaosTownPortal.sendState, p, false)
+			end
+		end, 200)
+	end
 	return K.rewardText(reward, itemName) .. (inbox and " (your backpack was full: see your inbox)" or "")
 end
 
-local function notify(player, text)
-	player:sendExtendedOpcode(NOTIFY_OPCODE, json.encode({action = "achievement", message = text}))
+-- a toast with the ACHIEVEMENT UNLOCKED header (notifications.lua ChaosNotify.send; the raw packet when it is not loaded)
+local function notify(player, title, text)
+	if ChaosNotify and ChaosNotify.send then
+		return ChaosNotify.send(player, title, text, "achievement")
+	end
+	player:sendExtendedOpcode(NOTIFY_OPCODE, json.encode({action = "achievement", message = title .. ": " .. text}))
 end
 
 local function checkClassUnlocks(player)
@@ -220,11 +246,14 @@ local function checkClassUnlocks(player)
 			and U.grant(player:getAccountId(), key, "achievement") then
 			local class = CK.config.classes[key]
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Class unlocked for your account: " .. (class and class.name or key) .. ".")
+			notify(player, "Class unlocked", (class and class.name or key) .. " is open to every character of your account.")
 		end
 	end
 end
 
--- unlock one achievement (it must not be unlocked yet); quiet = no toast (the login summary sends one)
+-- unlock one achievement (it must not be unlocked yet); quiet = no toast (the login summary sends one). Returns true and
+-- the reward text. The unlock row is written first: when that fails nothing is given or shown (a later check retries),
+-- so a relog never finds it locked again and never gives the reward or the toast twice.
 local function unlock(player, def, quiet)
 	local guid = player:getGuid()
 	local unlocked = A.unlocked[guid]
@@ -232,8 +261,11 @@ local function unlock(player, def, quiet)
 		return false
 	end
 	local now = os.time()
+	if db.query(K.sqlUnlock(guid, def.id, now)) == false then
+		log("unlock " .. def.id .. " of " .. player:getName() .. " not stored: tried again at the next check")
+		return false
+	end
 	unlocked[def.id] = now
-	db.query(K.sqlUnlock(guid, def.id, now))
 	local acc = A.accounts[player:getAccountId()]
 	if acc and not acc.ids[def.id] then
 		acc.ids[def.id] = true
@@ -241,44 +273,61 @@ local function unlock(player, def, quiet)
 	end
 	local parts = {string.format("Achievement unlocked: %s (+%d points).", def.name, def.points)}
 	if def.title then
-		parts[#parts + 1] = string.format("Title: %s (!title %s).", def.title, def.title)
+		parts[#parts + 1] = string.format("Title: %s (pick it in the Achievements window).", def.title)
 	end
+	local rewardText = ""
 	if def.reward then
 		local ok, text = pcall(giveReward, player, def.reward)
 		parts[#parts + 1] = ok and ("Reward: " .. text .. ".") or "The reward could not be given; tell the staff."
-		if not ok then
+		if ok then
+			rewardText = text
+		else
 			log("reward of " .. def.id .. " for " .. player:getName() .. " failed: " .. tostring(text))
 		end
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, table.concat(parts, " "))
 	if not quiet then
-		notify(player, string.format("%s  (+%d)%s", def.name, def.points, def.title and ("  -  title " .. def.title) or ""))
+		notify(player, K.toast(def, rewardText))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 	end
 	Chaos.send(player, OPCODE, "unlock", {id = def.id, name = def.name, points = def.points, title = def.title})
 	if def.title and ChaosNameplate and ChaosNameplate.refresh then
 		pcall(ChaosNameplate.refresh, player)
 	end
-	return true
+	return true, rewardText
 end
 
--- check every achievement of an online character; returns the list unlocked now
+-- check every achievement of an online character; returns the list unlocked now (done.rewards = {[id] = reward text})
 function A.evaluate(player, quiet)
 	local guid = player:getGuid()
 	local stats, unlocked = A.stats[guid], A.unlocked[guid]
 	if not stats or not unlocked then
 		return {}
 	end
-	local done = {}
+	local done = {rewards = {}}
 	for _, def in ipairs(K.evaluate(index, stats, unlocked)) do
-		if unlock(player, def, quiet) then
+		local ok, rewardText = unlock(player, def, quiet)
+		if ok then
 			done[#done + 1] = def
+			done.rewards[def.id] = rewardText
 		end
 	end
 	if #done > 0 then
 		pcall(checkClassUnlocks, player)
+		A.syncTrack(player)
 	end
 	return done
+end
+
+-- the reward track (cosmetics.lua): account points or a completed category may have earned a cosmetic; idempotent
+function A.syncTrack(player)
+	local M = ChaosCosmetics
+	if M and M.sync then
+		local ok, err = pcall(M.sync, player)
+		if not ok then
+			log("reward track sync " .. player:getName() .. ": " .. tostring(err))
+		end
+	end
 end
 
 -- ---------------------------------------------------------------- public API
@@ -328,6 +377,12 @@ function A.has(player, query)
 	return K.has(account(accountId), query)
 end
 
+-- the account's achievements {ids = set, points} (each achievement once, any character); player or account id
+function A.accountOf(who)
+	local accountId = type(who) == "number" and who or who:getAccountId()
+	return account(accountId)
+end
+
 function A.unlockedOf(player)
 	return A.unlocked[player:getGuid()] or {}
 end
@@ -345,6 +400,7 @@ function A.grant(player, id)
 	if ok then
 		A.evaluate(player)
 		pcall(checkClassUnlocks, player)
+		A.syncTrack(player)
 	end
 	return ok
 end
@@ -444,7 +500,29 @@ local function titleInfo(player)
 		return false, nil
 	end
 	local active = N.pick(list, N.choice and N.choice[player:getGuid()])
-	return true, active and active.text or nil
+	-- every title the character holds (leaderboards, siege, seasons, staff, achievements): the window's selector
+	local held = {}
+	for _, t in ipairs(list) do
+		held[#held + 1] = {text = t.text}
+	end
+	return true, active and active.text or nil, held
+end
+
+-- the reward track of the window (cosmetics_core.lua trackView): account points milestones and category completion,
+-- each with its cosmetic and whether the account owns it. Nothing while cosmetics.lua is not loaded.
+function A.sendTrack(player)
+	local M, C = ChaosCosmetics, ChaosCosmeticsCore
+	if not (M and M.ownedOf and M.config and C and C.trackView) then
+		return
+	end
+	local ok, err = pcall(function()
+		local acc = account(player:getAccountId())
+		Chaos.send(player, OPCODE, "track", C.trackView(M.config, acc.points, M.ownedOf(player:getAccountId()),
+			K.categoryTrack(index, acc.ids)))
+	end)
+	if not ok then
+		log("track " .. player:getName() .. ": " .. tostring(err))
+	end
 end
 
 function A.sendState(player, open)
@@ -458,7 +536,7 @@ function A.sendState(player, open)
 	for _ in pairs(unlocked) do
 		count = count + 1
 	end
-	local titlesOn, active = titleInfo(player)
+	local titlesOn, active, held = titleInfo(player)
 	Chaos.send(player, OPCODE, "state", {
 		open = open and true or false,
 		points = points, accountPoints = accPoints, maxPoints = K.maxPoints(index),
@@ -466,8 +544,9 @@ function A.sendState(player, open)
 		categories = K.categorySummary(index, unlocked),
 		recent = K.recent(index, unlocked, 5),
 		titles = K.titlesOf(index, unlocked),
-		titlesOn = titlesOn, activeTitle = active or ""
+		titlesOn = titlesOn, activeTitle = active or "", heldTitles = held or {}
 	})
+	A.sendTrack(player)
 	local rows = K.view(index, stats, unlocked, itemName)
 	for i = 1, #rows, CHUNK do
 		local part = {}
@@ -513,7 +592,7 @@ local function onRecord(board, who, value)
 			for _ in pairs(run.players or {}) do
 				inside = inside + 1
 			end
-			if run.size and inside >= run.size then
+			if run.size and inside >= run.size and (run.deaths or 0) == 0 then -- rift lives: nobody fell
 				A.progress(player, "rift_flawless", 1)
 			end
 		end
@@ -576,12 +655,27 @@ local function onCraft(orbKey, res)
 	A.progress(player, "orbs_used", 1)
 	if orbKey == "exalted" then
 		A.progress(player, "orb_exalted", 1)
+	elseif orbKey == "binding" then
+		A.progress(player, "orb_binding", 1)
+	elseif orbKey == "ruin" then
+		if res.outcome == "improve" then
+			A.progress(player, "ruin_improved", 1)
+		elseif res.outcome == "ruin" then
+			A.progress(player, "ruin_ruined", 1)
+		end
+	elseif orbKey == "whetstone" and res.quality then
+		A.set(player, "quality_max", res.quality)
 	end
 	local C = ChaosCrafting
 	if C and C.readMods then
 		local ok, mods = pcall(C.readMods, item)
 		if ok and type(mods) == "table" then
 			A.set(player, "mods_max", #mods)
+			for _, m in ipairs(mods) do
+				if m.power then
+					A.set(player, "power_found", 1) -- an item of the player's with a legendary power
+				end
+			end
 		end
 	end
 end
@@ -616,8 +710,8 @@ function A.installHooks()
 	local C = ChaosCrafting
 	if C and C.apply and not C.achievementsWrapped then
 		local original = C.apply
-		C.apply = function(orbKey, item)
-			local ok, res = original(orbKey, item)
+		C.apply = function(orbKey, item, opts)
+			local ok, res = original(orbKey, item, opts)
 			if ok then
 				local fine, err = pcall(onCraft, orbKey, res)
 				if not fine then
@@ -649,7 +743,15 @@ function A.installHooks()
 	-- name plate titles
 	if ChaosTitles and ChaosTitles.register then
 		ChaosTitles.register("achievement", function(player)
-			return K.titlesOf(index, A.unlocked[player:getGuid()])
+			local list = K.titlesOf(index, A.unlocked[player:getGuid()])
+			-- category completion titles of the reward track (account-wide)
+			local ok, acc = pcall(account, player:getAccountId())
+			if ok and acc then
+				for _, t in ipairs(K.categoryTitles(index, acc.ids)) do
+					list[#list + 1] = t
+				end
+			end
+			return list
 		end)
 	end
 	-- class unlock method "achievement" (points or an achievement id); the classes' configured methods stay as they are
@@ -680,7 +782,7 @@ function kill.onKill(player, target)
 		return true
 	end
 	local ok, err = pcall(function()
-		local name = target:getName():lower()
+		local name = typeNameOf(target):lower()
 		local tier = ChaosTierOf and ChaosTierOf(target) or "normal"
 		if tier == "magic" or tier == "rare" or tier == "legendary" then
 			A.progress(player, "kills_" .. tier, 1)
@@ -689,7 +791,8 @@ function kill.onKill(player, target)
 				A.progress(player, "witching_legendary", 1)
 			end
 		end
-		if name == "treasure goblin" then
+		if name == "treasure goblin" or (ChaosTreasureGoblin and ChaosTreasureGoblin.isGoblinName
+			and ChaosTreasureGoblin.isGoblinName(name)) then
 			A.progress(player, "goblin_kills", 1)
 		elseif name == "rat" and player:getLevel() >= 500 then
 			A.progress(player, "rat_500", 1)
@@ -725,23 +828,14 @@ function advance.onAdvance(player, skill, oldLevel, newLevel)
 end
 advance:register()
 
+-- the unlocks of the quiet login check: one toast (achievements_core.lua K.summaryToast) with names, points and rewards
 local function summaryToast(player, list)
-	if #list == 0 then
-		return
+	local title, text = K.summaryToast(list, list.rewards)
+	if title then
+		notify(player, title, text)
 	end
-	local points = 0
-	local names = {}
-	for _, def in ipairs(list) do
-		points = points + def.points
-		if #names < 3 then
-			names[#names + 1] = def.name
-		end
-	end
-	local text = #list == 1 and string.format("%s  (+%d)", list[1].name, points)
-		or string.format("%d achievements (+%d points): %s%s", #list, points, table.concat(names, ", "),
-			#list > 3 and ", ..." or "")
-	notify(player, text)
 end
+A.summaryToast = summaryToast
 
 local login = CreatureEvent("ChaosAchievementsLogin")
 function login.onLogin(player)
@@ -791,6 +885,15 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	local action = type(msg) == "table" and msg.action
 	if action == "open" or action == "get" then
 		A.sendState(player, action == "open")
+	elseif action == "title" then
+		-- the title selector: {action = "title", data = {title = "auto" | "none" | <title text>}} (nameplate.lua)
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "achievements.title", 500) then
+			return
+		end
+		local title = type(msg.data) == "table" and msg.data.title
+		if ChaosNameplate and ChaosNameplate.setTitle and type(title) == "string" then
+			ChaosNameplate.setTitle(player, title:sub(1, 60))
+		end
 	end
 end
 ext:register()
@@ -806,10 +909,17 @@ local function scanItem(owner, item, best)
 	if rarity > best.rarity and rarity <= 15 then
 		best.rarity = rarity
 	end
-	if rarity >= 13 and ChaosCrafting and ChaosCrafting.readMods then
+	if rarity >= 5 and ChaosCrafting and ChaosCrafting.readMods then
 		local okM, mods = pcall(ChaosCrafting.readMods, item)
-		if okM and type(mods) == "table" and #mods > best.mods then
-			best.mods = #mods
+		if okM and type(mods) == "table" then
+			if rarity >= 13 and #mods > best.mods then
+				best.mods = #mods
+			end
+			for _, m in ipairs(mods) do
+				if m.power then
+					best.power = true
+				end
+			end
 		end
 	end
 end
@@ -824,7 +934,7 @@ drop.onDropLoot = function(self, corpse)
 		if not owner or not A.stats[owner:getGuid()] then
 			return
 		end
-		local best = {rarity = 0, mods = 0}
+		local best = {rarity = 0, mods = 0, power = false}
 		for _, item in ipairs(corpse:getItems()) do
 			scanItem(owner, item, best)
 			if item:isContainer() then
@@ -838,6 +948,9 @@ drop.onDropLoot = function(self, corpse)
 		end
 		if best.mods > 0 then
 			A.set(owner, "mods_max", best.mods)
+		end
+		if best.power then
+			A.set(owner, "power_found", 1)
 		end
 	end)
 	if not ok then
@@ -882,26 +995,6 @@ end
 startup:register()
 
 -- ---------------------------------------------------------------- commands
-local function onCommand(player, words, param)
-	local guid = player:getGuid()
-	if not A.unlocked[guid] then
-		return false
-	end
-	local points, accPoints = A.pointsOf(player)
-	local count = 0
-	for _ in pairs(A.unlocked[guid]) do
-		count = count + 1
-	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Achievements: %d of %d, %d points (account %d).", count,
-		#index.list, points, accPoints))
-	A.sendState(player, true)
-	return false
-end
-
-local talk = TalkAction("!achievements", "!achievement")
-talk.onSay = onCommand
-talk:separator(" ")
-talk:register()
 
 -- staff: /achievements grant <id> | stat <key> <value> | add <key> <amount> | reset   (on yourself)
 local gm = TalkAction("/achievements")

@@ -254,6 +254,6 @@ ok(cfg.buff.xp > 0 and cfg.buff.xp <= 0.1, "small buff")
 local ev = S.calendarEvent(cfg)
 eq(ev.id, "guildsiege", "calendar id")
 eq(ev.weekdays[1], cfg.weekday, "calendar weekday")
-ok(ev.description:find("!siege join"), "calendar tells how to sign up")
+ok(ev.description:find("Guild Siege", 1, true), "calendar tells how to sign up")
 
 print(string.format("siege tests OK (%d checks)", checks))

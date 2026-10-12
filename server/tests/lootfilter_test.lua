@@ -13,7 +13,7 @@ local function eq(a, b, m)
 end
 
 local function sameSettings(a, b, m)
-	for _, k in ipairs({"highlight", "dim", "lootMin", "lootFrom", "icons", "notify"}) do
+	for _, k in ipairs({"highlight", "dim", "lootMin", "lootFrom", "icons", "notify", "tier"}) do
 		eq(a[k], b[k], m .. " " .. k)
 	end
 	for _, c in ipairs(F.CATEGORIES) do
@@ -33,9 +33,18 @@ sameSettings(F.unpack(-1), d, "unset storage = defaults")
 sameSettings(F.unpack(nil), d, "nil = defaults")
 sameSettings(F.unpack(F.pack(d)), d, "defaults round trip")
 local s = {highlight = 15, dim = 7, lootMin = 4, lootFrom = 12, show = {equipment = false, currency = true, supplies = false,
-	other = true}, icons = false, notify = true}
+	other = true}, icons = false, notify = true, tier = 8}
 sameSettings(F.unpack(F.pack(s)), F.sanitize(s), "full round trip")
 assert(F.pack(s) < 2 ^ 31, "fits an int32 storage")
+eq(F.unpack(F.pack(s)).tier, 8, "the tier rule round trip")
+eq(F.unpack(2097152 + 1048576 + 3).tier, 0, "settings saved before the tier rule: off")
+eq(F.sanitize({tier = 12}).tier, 8, "clamped")
+-- the tier rule: gear with a modifier of that tier or better glows
+local tierS = F.sanitize({highlight = 9, tier = 6})
+eq(F.classify({rarity = 2, bestTier = 6, category = "equipment"}, tierS), "highlight", "T6 on Uncommon gear glows")
+eq(F.classify({rarity = 2, bestTier = 5, category = "equipment"}, tierS), "normal", "T5 does not")
+eq(F.classify({rarity = 2, category = "equipment"}, F.sanitize({highlight = 9})), "normal", "rule off")
+eq(F.classify({rarity = 5, power = true, category = "equipment"}, F.sanitize({highlight = 9})), "highlight", "a legendary power always glows")
 for _, p in ipairs(F.PRESETS) do
 	local ps = F.applyPreset(p.key)
 	assert(ps, "preset " .. p.key)
@@ -138,9 +147,89 @@ eq(F.label({name = "gold coin"}), "gold coin", "plain label")
 eq(F.dropLine({name = "Dawnforged Helmet", rarity = 5, category = "equipment"}, hunter), "Rare drop: [Legendary] Dawnforged Helmet",
 	"rare drop line")
 eq(F.dropLine({name = "Sword", rarity = 3, category = "equipment"}, hunter), nil, "below the highlight: no line")
-eq(F.dropLine({name = "Orb of Chaos", orb = true, count = 2, category = "currency"}, hunter), nil, "orbs: no line")
+eq(F.dropLine({name = "Orb of Upheaval", orb = true, count = 2, category = "currency"}, hunter), nil, "orbs: no line")
 eq(F.dropLine({name = "Soulreaper", unique = true, category = "equipment"}, hunter), "Unique drop: [Unique] Soulreaper", "unique line")
 local quiet = F.applyPreset("hunter"); quiet.notify = false
 eq(F.dropLine({name = "X", rarity = 9, category = "equipment"}, quiet), nil, "notify off")
+
+-- ---------------------------------------------------------------- rule counters and sounds
+local rs = F.sanitize({highlight = 5, tier = 6})
+local function hitList(info, set)
+	return table.concat(F.ruleHits(info, set or rs), ",")
+end
+eq(hitList({unique = true, rarity = 9, power = true, category = "equipment"}), "unique", "a unique counts once, as unique")
+eq(hitList({rarity = 6, power = true, bestTier = 7, category = "equipment"}), "power,rarity,tier", "every rule it matches")
+eq(hitList({rarity = 4, bestTier = 5, category = "equipment"}), "", "below both thresholds")
+eq(hitList({rarity = 9, category = "equipment"}, F.sanitize({highlight = 0, tier = 0})), "", "rarity and tier rules off")
+eq(hitList({orb = true, count = 3, category = "currency"}), "orb", "orb")
+eq(hitList({rarity = 9, category = "supplies"}), "", "only gear counts for rarity")
+local hits = F.countHits({{orb = true, count = 3, category = "currency"}, {rarity = 5, category = "equipment"},
+	{unique = true, category = "equipment"}, {rarity = 1, category = "equipment"}, {orb = true, category = "currency"}}, rs)
+eq(hits.orb, 4, "orbs counted as items (a stack of 3 and one)")
+eq(hits.rarity, 1, "one Legendary")
+eq(hits.unique, 1, "one unique")
+eq(hits.tier, nil, "no tier hit")
+local c = F.addCounts(F.counts(nil), hits)
+eq(c.orb .. "/" .. c.rarity .. "/" .. c.power, "4/1/0", "added")
+F.addCounts(c, {orb = 2, bogus = 9})
+eq(c.orb, 6, "added again")
+eq(c.bogus, nil, "unknown rule ignored")
+eq(F.addCounts({orb = 1999999999}, {orb = 5}).orb, 2000000000, "capped below the int32 limit")
+eq(F.counts({orb = -4, tier = 2.6}).orb .. "/" .. F.counts({tier = 2.6}).tier, "0/2", "counts read clean")
+
+local sd = F.soundDefaults()
+local snd = F.unpackSound(F.packSound(sd))
+eq(snd.rules.unique .. snd.rules.power .. snd.rules.rarity .. "/" .. snd.vol .. "/" .. tostring(snd.mute) .. tostring(snd.hunt),
+	"510/70/falsetrue", "defaults round trip")
+eq(F.unpackSound(-1).vol, 70, "unset storage = defaults")
+local full = {rules = {unique = 5, power = 4, rarity = 3, tier = 2, orb = 1}, vol = 100, mute = true, hunt = false}
+local back = F.unpackSound(F.packSound(full))
+eq(back.rules.unique .. back.rules.power .. back.rules.rarity .. back.rules.tier .. back.rules.orb, "54321", "every rule round trip")
+eq(back.vol .. tostring(back.mute) .. tostring(back.hunt), "100truefalse", "volume, mute, hunt")
+assert(F.packSound(full) < 2 ^ 31, "sound settings fit an int32 storage")
+local bad = F.sanitizeSound({rules = {unique = 99, orb = -1, tier = "x", bogus = 3}, vol = 400, mute = "1"})
+eq(bad.rules.unique .. bad.rules.orb .. bad.rules.tier .. "/" .. bad.vol .. tostring(bad.mute), "000/100true", "client input clamped")
+eq(bad.rules.bogus, nil, "unknown rule dropped")
+
+eq(F.pickSound({orb = 2, unique = 1}, sd), "fanfare", "the first rule in priority order with a sound")
+eq(select(2, F.pickSound({orb = 2, unique = 1}, sd)), "unique", "and its rule")
+eq(F.pickSound({orb = 2}, sd), nil, "orbs have no sound by default")
+eq(F.pickSound({power = 1, rarity = 1}, F.sanitizeSound({rules = {power = 0, rarity = 3}})), "ping", "a rule without sound is skipped")
+eq(F.pickSound({unique = 1}, F.sanitizeSound({mute = true})), nil, "mute all")
+eq(F.pickSound({unique = 1}, F.sanitizeSound({vol = 0})), nil, "volume 0")
+eq(F.pickSound({}, sd), nil, "nothing matched")
+
+local plan = F.resetPlan("session")
+eq(#plan.rules .. tostring(plan.session) .. tostring(plan.total), "5truefalse", "reset the session of every rule")
+plan = F.resetPlan("all", "orb")
+eq(plan.rules[1] .. #plan.rules .. tostring(plan.session) .. tostring(plan.total), "orb1truetrue", "reset one rule")
+eq(F.resetPlan("total").total, true, "reset totals")
+eq(F.resetPlan("everything"), nil, "unknown scope")
+eq(F.resetPlan("all", "bogus"), nil, "unknown rule")
+eq(cfg.soundStorage >= 7100500 and cfg.soundStorage <= 7100509 and cfg.totalStorageBase + #F.RULES - 1 <= 7100509, true,
+	"storages inside the loot filter's reserved range")
+eq(cfg.totalStorageBase > cfg.soundStorage, true, "no overlap")
+
+-- ---------------------------------------------------------------- the monster icon of a loot row
+local shaders = F.parseShaders('<shaders>\n <shader id="1" name="blue_loohs" premium="no" />\n'
+	.. '   <shader id="14" name="orange_energizer" premium="no" />\n<shader id="x" name="bad" /><shader id="3" name="" /></shaders>')
+eq(shaders[1] .. "/" .. shaders[14], "blue_loohs/orange_energizer", "shader names by id")
+eq(shaders[3], nil, "empty name skipped")
+eq(next(F.parseShaders(nil)), nil, "no file")
+local lk = F.look({lookType = 34, lookHead = 10, lookBody = 20, lookLegs = 30, lookFeet = 40, lookAddons = 3, lookMount = 368})
+eq(lk.type .. "," .. lk.head .. "," .. lk.body .. "," .. lk.legs .. "," .. lk.feet .. "," .. lk.addons, "34,10,20,30,40,3",
+	"a creature look in the client's outfit names")
+eq(lk.mount, nil, "no mount on an item sized icon")
+eq(lk.auxType, nil, "no item look")
+eq(lk.shader, nil, "no shader")
+lk = F.look({lookType = 0, lookTypeEx = 2148}, shaders)
+eq(lk.type .. "/" .. lk.auxType, "0/2148", "an item look goes as auxType")
+eq(F.look({lookType = 1203, lookShader = 14}, shaders).shader, "orange_energizer", "a tier shader by name")
+eq(F.look({lookType = 1203, lookShader = 99}, shaders).shader, nil, "an unknown shader is left out")
+eq(F.look({lookType = 0, lookTypeEx = 0}), nil, "no look")
+eq(F.look({lookType = 0}, nil, {lookType = 35}).type, 35, "falls back to the monster type's look")
+eq(F.look(nil, nil, {lookType = 0}), nil, "no look anywhere")
+eq(F.look({lookType = 99999, lookHead = -4}), nil, "out of range")
+eq(F.look({lookType = 40, lookHead = 400}).head, 0, "colour out of range")
 
 print("lootfilter tests OK")

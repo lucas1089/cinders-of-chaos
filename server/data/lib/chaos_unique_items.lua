@@ -97,21 +97,35 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Bonelord", "Elder Bonelord", "Skeleton Warrior", "Demon Skeleton", "Lich", "Undead Gladiator", "Crypt Shambler"} },
 	{ name = "Soulshackle Scepter", id = 29571, minTier = "legendary", chance = 7, level = 120, slot = "wand",
 	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker"} },
+	-- the Monk's legendary fist weapon: its base item (36659, "pyre saint's grasp") is a fist weapon of its own
+	-- (server/tools/install_fist_weapons.py); it is in no shop and no loot table, so it is only ever found as this unique
+	{ name = "Grasp of the Pyre Saint", id = 36659, minTier = "legendary", chance = 8, level = 650, slot = "fist",
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
 	{ name = "Cinderbrand Axe", id = 8925, minTier = "boss", chance = 20, level = 130, slot = "axe",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Fangs of the Ninth Circle", id = 24790, minTier = "boss", chance = 20, level = 120, slot = "necklace",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Visage of the Pale King", id = 27675, minTier = "boss", chance = 20, level = 120, slot = "head",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Duskweaver Wand", id = 29866, minTier = "boss", chance = 20, level = 140, slot = "wand",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Veil of the Wraith", id = 29868, minTier = "boss", chance = 20, level = 120, slot = "ring",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
+	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
+	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
+	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",
+	  bossOnly = true, ascended = true, monsters = {"Ascended Sangrith", "Ysgrath the Cinderheart"} },
+	{ name = "Hollow Crown of Morvane", id = 2493, minTier = "boss", chance = 10, level = 1000, slot = "head",
+	  bossOnly = true, ascended = true, monsters = {"Ascended Morvane", "Ysgrath the Cinderheart"} },
+	{ name = "Eye of the Unbroken Storm", id = 2171, minTier = "boss", chance = 10, level = 1000, slot = "necklace",
+	  bossOnly = true, ascended = true, monsters = {"Ascended Thalcyra", "Ysgrath the Cinderheart"} },
+	{ name = "Cinderheart Signet", id = 2123, minTier = "boss", chance = 8, level = 1000, slot = "ring",
+	  bossOnly = true, ascended = true, monsters = {"Ysgrath the Cinderheart"} },
 }
 
 -- name (and lower-case name) -> entry
@@ -148,6 +162,9 @@ function ChaosMakeUnique(item)
 		item:setCustomAttribute(key, value)
 	end
 	item:setCustomAttribute("chaos_unique", 1)
+	if spec.set then
+		item:setCustomAttribute("chaos_set", spec.set) -- a set piece (chaos_item_sets.lua)
+	end
 	return true
 end
 
@@ -173,18 +190,11 @@ function ChaosGiveUnique(player, name)
 end
 
 -- ---------------------------------------------------------------------------
--- ChaosSets: DOCUMENTATION ONLY. Nothing reads this table yet; set bonuses are NOT implemented.
--- To implement: an onEquip/onDeEquip MoveEvent for each piece (or a creaturescript on equip change) that counts equipped
--- pieces and applies the bonus as a Condition (CONDITION_ATTRIBUTES: stats, absorbs) or a storage-driven bonus.
+-- Item sets: data/lib/chaos_item_sets.lua (the sets, bonuses and sources: chaos_item_sets_config.lua; the game side:
+-- data/scripts/chaos/itemsets.lua). Every set piece is a unique; the pieces with monster or world boss drops are
+-- added to ChaosUniqueItems here (set = key), the raid, Descent, rift and dungeon pieces drop through their own rolls.
+-- ChaosSets[key] = the set ({key, name, pieces = [{id, name, slot, hands, level}], bonuses, sources, ...}).
 -- ---------------------------------------------------------------------------
-ChaosSets = {
-	embers = {
-		name = "Embers of Aranoth",
-		pieces = {2496, 8892, 27692, 27647, 3975, 10314}, -- Hornsworn Helm, Cindermail Coat, Emberveil Greaves, Bloodstep Boots, Emberwarden, Cinderclaw Band
-		bonuses = { -- pieces equipped -> bonus (NOT implemented)
-			[2] = "+4% fire absorb",
-			[4] = "+5 magic level, +10% fire absorb",
-			[6] = "+10% max HP, melee hits burn target (fire DoT)",
-		},
-	},
-}
+dofile("data/lib/chaos_item_sets.lua")
+ChaosItemSets.register(ChaosUniqueItems, ChaosUniqueByName, ChaosUniqueById)
+ChaosSets = ChaosItemSets.byKey

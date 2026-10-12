@@ -3,7 +3,7 @@
 --   server -> client  open {vocation, level, magicLevel, total, chunks, vocationNames}
 --                     spells {index, spells = [...]}  (several messages)
 --                     done {total}
---   client -> server  open                             (menu / toggle; the server answers as for !spells)
+--   client -> server  open                             (menu / toggle)
 -- Spell fields: name, words, level, maglevel, mana, manaPercent, soul, cooldown, groupCooldown, group, type,
 -- element, target (single/area/self/front), center (caster/target), area (matrix: 1 hit, 2 centre, 3 centre + hit,
 -- "front" spells face north), range, description, scaling, vocations (ids), premium, rune, runeClientId.
@@ -270,7 +270,24 @@ local function showDetails(spell)
   addStat(tr('Vocations'), short, full)
   if spell.premium then addStat(tr('Premium'), tr('Yes')) end
 
-  d.description:setText(spell.description or '')
+  local text = spell.description or ''
+  -- the spell's support runes (game_spellsupports), when that module knows the spell: a short line here, the effects
+  -- in the tooltip; that module also shortens a description too long for its box (full text in the tooltip)
+  local sup = modules.game_spellsupports
+  local ok, line, effects = pcall(function()
+    if sup and sup.spellbookLine then return sup.spellbookLine(spell.words) end
+  end)
+  local tip
+  if ok and line then
+    text = text .. '\n\n' .. line
+    if effects then tip = (spell.description or '') .. '\n\n' .. effects end
+  end
+  if sup and sup.fitText then
+    sup.fitText(d.description, text, tip)
+  else
+    d.description:setText(text)
+    d.description:setTooltip(tip)
+  end
   drawArea(spell)
 end
 

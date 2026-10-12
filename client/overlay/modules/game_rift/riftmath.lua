@@ -21,6 +21,9 @@ function RiftMath.bossPercent(killed, bossAt, boss)
 end
 
 function RiftMath.bossLine(d)
+  if d.omen and d.boss == 'waiting' then
+    return 'The guardian ' .. tostring(d.bossName or '') .. ' is coming...'
+  end
   if d.boss == 'alive' then
     return 'The guardian ' .. tostring(d.bossName or '') .. ' is here!'
   elseif d.boss == 'dead' then
@@ -39,6 +42,40 @@ function RiftMath.bonusLine(b)
     if v > 0 then parts[#parts + 1] = string.format('+%d%% %s', v, k) end
   end
   return table.concat(parts, ', ')
+end
+
+local ROMAN = { 'I', 'II', 'III', 'IV', 'V' }
+
+-- 4 -> "IV" (modifier tiers I-V; '' for none)
+function RiftMath.roman(t)
+  t = tonumber(t)
+  return t and ROMAN[t] or ''
+end
+
+-- "Teeming III: +30% monster packs" (name with the modifier tier, and the text; either alone when the other is missing)
+function RiftMath.modLine(m)
+  if type(m) ~= 'table' then return '' end
+  local name, text = tostring(m.name or ''), tostring(m.text or '')
+  local roman = RiftMath.roman(m.tier)
+  if name ~= '' and roman ~= '' then name = name .. ' ' .. roman end
+  if name ~= '' and text ~= '' then return name .. ': ' .. text end
+  return name ~= '' and name or text
+end
+
+-- "Lives: 2 / 4" (shared lives of the run; '' when the server sent none)
+function RiftMath.livesLine(lives, max)
+  lives, max = tonumber(lives), tonumber(max)
+  if not lives then return '' end
+  if max and max > 0 then return string.format('Lives: %d / %d', lives, max) end
+  return string.format('Lives: %d', lives)
+end
+
+-- colour of the lives line: red at the last life, orange below half, else pale green
+function RiftMath.livesColor(lives, max)
+  lives, max = tonumber(lives) or 0, tonumber(max) or 0
+  if lives <= 1 then return '#ff4030' end
+  if max > 0 and lives * 2 < max then return '#ff9a30' end
+  return '#9fd89f'
 end
 
 -- colour of the clock: gold, orange under a minute, red under 20 s

@@ -1,11 +1,13 @@
 Module
   name: game_battlepass
-  description: Game pass
-  author: Oskar
-  scripts: [ game_battlepass ]
-  
+  description: Season pass window (free and premium track, claims, challenges, season packs; extended opcode 227)
+  author: Cinders of Chaos
   sandboxed: true
+  scripts: [ passview, battlepass ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
   autoload: true
-  
-  @onLoad: onLoad()
-  @onUnload: onUnload()
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

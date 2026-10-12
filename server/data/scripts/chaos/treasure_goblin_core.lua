@@ -1,5 +1,5 @@
--- Treasure Goblin pure logic (no engine calls): spawn roll and exclusions, area level, health, escape / blink timers,
--- loot amounts. Used by treasure_goblin.lua and tested by server/tests/treasure_goblin_test.lua.
+-- Treasure Goblin pure logic (no engine calls): spawn roll and exclusions, the Treasure Goblin Chance bonus, variants,
+-- area level, health, escape / blink timers, loot amounts. Used by treasure_goblin.lua and tested by server/tests/treasure_goblin_test.lua.
 -- Every function takes the config table and, where it rolls, a random function rand(a, b) -> integer in [a, b].
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -35,6 +35,96 @@ function G.inRects(rects, pos)
 	return false
 end
 
+-- ------------------------------------------------------------------ variants
+-- the variant list (a config without `variants` has the one goblin of cfg.name)
+function G.variants(cfg)
+	if cfg.variants and #cfg.variants > 0 then
+		return cfg.variants
+	end
+	return {{key = "hoarder", name = cfg.name, weight = 1}}
+end
+
+-- variant by key or by monster name (any case); nil when none
+function G.variant(cfg, keyOrName)
+	local k = tostring(keyOrName or ""):lower()
+	for _, v in ipairs(G.variants(cfg)) do
+		if v.key == k or v.name:lower() == k then
+			return v
+		end
+	end
+	return nil
+end
+
+function G.isGoblinName(cfg, name)
+	name = tostring(name or ""):lower()
+	if name == cfg.name:lower() then
+		return true
+	end
+	for _, v in ipairs(G.variants(cfg)) do
+		if v.name:lower() == name then
+			return true
+		end
+	end
+	return false
+end
+
+-- weighted pick of a variant
+function G.pickVariant(cfg, rand)
+	local list = G.variants(cfg)
+	local total = 0
+	for _, v in ipairs(list) do
+		total = total + (v.weight or 0)
+	end
+	if total <= 0 then
+		return list[1]
+	end
+	local roll, acc = rand(1, total), 0
+	for _, v in ipairs(list) do
+		acc = acc + (v.weight or 0)
+		if roll <= acc then
+			return v
+		end
+	end
+	return list[#list]
+end
+
+-- a config view for one variant: cfg with `loot` = the shared loot table with the variant's overrides on top
+-- (only the keys the variant gives). Cached on the variant.
+function G.forVariant(cfg, variant)
+	if not variant or not variant.loot then
+		return cfg
+	end
+	if variant._view and variant._viewOf == cfg then
+		return variant._view
+	end
+	local loot = {}
+	for k, v in pairs(cfg.loot) do
+		loot[k] = v
+	end
+	for k, v in pairs(variant.loot) do
+		loot[k] = v
+	end
+	local view = setmetatable({loot = loot}, {__index = cfg})
+	variant._view, variant._viewOf = view, cfg
+	return view
+end
+
+-- ------------------------------------------------------------------ Treasure Goblin Chance
+-- the multiplier a respawn's roll gets from the players near it: bonuses = the "goblinchance" totals (percent) of
+-- the players within cfg.spoor.radius; the highest counts, at most cfg.spoor.cap. Returns mult (>= 1), best percent.
+function G.spoorMult(cfg, bonuses)
+	local sp = cfg.spoor or {}
+	local best = 0
+	for _, b in ipairs(bonuses or {}) do
+		b = tonumber(b) or 0
+		if b > best then
+			best = b
+		end
+	end
+	best = clamp(floor(best), 0, sp.cap or 100)
+	return 1 + best / 100, best
+end
+
 -- Whether a spawn may become a goblin, before the dice. info = {
 --   name, pos, natural (map respawn, not a script's Game.createMonster), startup, summon, boss, hostile,
 --   maxHealth, excluded (an engine-side area check said no: protection zone, rift, arena, world boss ...)}
@@ -51,7 +141,7 @@ function G.eligible(cfg, info, state, now)
 		return false, "startup"
 	end
 	local name = tostring(info.name or ""):lower()
-	if name == cfg.name:lower() then
+	if G.isGoblinName(cfg, name) then
 		return false, "goblin"
 	end
 	if info.summon then
@@ -98,6 +188,37 @@ function G.rollSpawn(cfg, rand, mult)
 		return true
 	end
 	return rand(1, floor(n + 0.5)) == 1
+end
+
+-- The dice with the Treasure Goblin Chance bonus, without looking for players on every respawn: a first roll as
+-- G.rollSpawn with the highest possible bonus (eventMult x (1 + cap%)); only on its hit spoorFn() -> mult (>= 1),
+-- percent is asked and the hit kept with chance (wanted odds) / (first roll's odds), wanted = min(1, eventMult x
+-- mult / oneIn). Same odds as G.rollSpawn(cfg, rand, eventMult x mult) up to its rounding.
+-- Returns hit, the effective 1-in-N (nil when spoorFn was not needed), the bonus percent.
+function G.rollWithSpoor(cfg, rand, eventMult, spoorFn)
+	eventMult = eventMult or 1
+	local oneIn = cfg.spawn.oneIn or 0
+	if oneIn <= 0 then
+		return false, nil, 0
+	end
+	local maxMult = 1 + ((cfg.spoor and cfg.spoor.cap) or 0) / 100
+	local n1 = oneIn / (eventMult * maxMult)
+	local p1 = 1
+	if n1 > 1 then
+		local sides = floor(n1 + 0.5)
+		if rand(1, sides) ~= 1 then
+			return false, nil, 0
+		end
+		p1 = 1 / sides
+	end
+	local mult, pct = 1, 0
+	if spoorFn then
+		mult, pct = spoorFn()
+	end
+	mult = clamp(mult or 1, 1, maxMult)
+	local want = math.min(1, eventMult * mult / oneIn)
+	local keep = floor(math.min(1, want / p1) * 10000 + 0.5)
+	return keep >= 10000 or rand(1, 10000) <= keep, oneIn / (eventMult * mult), pct
 end
 
 function G.markSpawn(cfg, state, pos, now)
@@ -224,7 +345,7 @@ end
 function G.goldValue(cfg, level, rand)
 	local g = cfg.loot.gold
 	local base = (g.base or 0) + (g.perLevel or 0) * level
-	return floor(base * rand(g.minMult, g.maxMult) / 100)
+	return floor(base * rand(g.minMult, g.maxMult) / 100 * (cfg.loot.goldMult or 100) / 100)
 end
 
 -- gold value -> {{id, count}, ...} in crystal (2160), platinum (2152) and gold (2148) coins, stacks of at most 100
@@ -246,8 +367,69 @@ end
 
 function G.chaosOrbs(cfg, level, rand)
 	local o = cfg.loot.chaosOrb
+	if (o.cap or 1) <= 0 then
+		return 0
+	end
 	local n = rand(o.min, o.max) + floor(level / (o.perLevels or 1000000))
 	return math.min(n, o.cap or n)
+end
+
+-- Gem Goblin: number of gems (0 when the variant has none)
+function G.gemCount(cfg, level, rand)
+	local g = cfg.loot.gems
+	if not g then
+		return 0
+	end
+	local n = rand(g.min, g.max) + floor(level / (g.perLevels or 1000000))
+	return math.min(n, g.cap or n)
+end
+
+-- Gem Goblin: Orbs of Sockets
+function G.socketOrbs(cfg, rand)
+	local o = cfg.loot.socketOrb
+	if not o then
+		return 0
+	end
+	local n = o.count or 0
+	if (o.extraChance or 0) > 0 and rand(1, 100) <= o.extraChance then
+		n = n + 1
+	end
+	return n
+end
+
+-- Shard Goblin: Rune Shards
+function G.shardCount(cfg, level, rand)
+	local s = cfg.loot.shards
+	if not s then
+		return 0
+	end
+	local base = (s.base or 0) + level / (s.perLevel or 1000000)
+	local n = floor(base * rand(s.minMult or 100, s.maxMult or 100) / 100)
+	return clamp(n, 0, s.cap or n)
+end
+
+-- Shard Goblin: crafting orb keys (ChaosCrafting orb keys), picked by weight
+function G.orbKeys(cfg, rand)
+	local o = cfg.loot.orbs
+	local out = {}
+	if not o or not o.weights or #o.weights == 0 then
+		return out
+	end
+	local total = 0
+	for _, w in ipairs(o.weights) do
+		total = total + w[2]
+	end
+	for i = 1, o.count or 0 do
+		local roll, acc = rand(1, total), 0
+		for _, w in ipairs(o.weights) do
+			acc = acc + w[2]
+			if roll <= acc then
+				out[i] = w[1]
+				break
+			end
+		end
+	end
+	return out
 end
 
 -- itemFind: ChaosLoot.itemFindMult (1 = none)

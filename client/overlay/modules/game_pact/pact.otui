@@ -1,0 +1,217 @@
+// Chaos Pact window (game_pact): Pact status, daily coins, account limits, saved builds. Styles from client_chaos_theme.
+
+PactCell < ChaosLabel
+  height: 18
+  text-align: center
+  text-auto-resize: false
+
+PactLimitRow < UIWidget
+  height: 20
+  layout:
+    type: horizontalBox
+    spacing: 4
+
+PactBuildRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+
+  ChaosLabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: loadButton.left
+    margin-right: 6
+    height: 15
+    color: #e8b84a
+
+  ChaosLabelDim
+    id: sub
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: loadButton.left
+    margin-right: 6
+    height: 14
+
+  ChaosButton
+    id: deleteButton
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 54 22
+    padding: 3 4 3 4
+    !text: tr('Delete')
+
+  ChaosButton
+    id: saveButton
+    anchors.right: deleteButton.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 74 22
+    padding: 3 4 3 4
+    !text: tr('Save here')
+
+  ChaosButton
+    id: loadButton
+    anchors.right: saveButton.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 50 22
+    padding: 3 4 3 4
+    !text: tr('Load')
+
+PactWindow < ChaosMainWindow
+  id: pactWindow
+  size: 560 560
+  !text: tr('Chaos Pact')
+  @onEscape: modules.game_pact.hide()
+
+  ChaosPanelHighlight
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 62
+
+    ChaosTitle
+      id: headline
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: claimButton.left
+      text-align: left
+      height: 18
+
+    ChaosLabel
+      id: statusLine
+      anchors.top: headline.bottom
+      anchors.left: parent.left
+      anchors.right: claimButton.left
+      margin-top: 2
+      margin-right: 6
+      height: 28
+      text-wrap: true
+      text-align: topLeft
+
+    ChaosButton
+      id: claimButton
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 120 24
+      !text: tr('Daily coins')
+      @onClick: modules.game_pact.claim()
+
+    ChaosButton
+      id: storeButton
+      anchors.top: claimButton.bottom
+      anchors.right: parent.right
+      margin-top: 4
+      size: 120 22
+      !text: tr('Store')
+      @onClick: modules.game_pact.openStore()
+
+  ChaosLabelDim
+    id: wallet
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 15
+
+  ChaosTitlePlate
+    id: limitsPlate
+    anchors.top: wallet.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Your account limits')
+
+  UIWidget
+    id: limitsHead
+    anchors.top: limitsPlate.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 18
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  UIWidget
+    id: limits
+    anchors.top: limitsHead.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 124
+    layout:
+      type: verticalBox
+      spacing: 1
+
+  ChaosLabelDim
+    id: special
+    anchors.top: limits.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 28
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosTitlePlate
+    id: buildsPlate
+    anchors.top: special.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+    ChaosTitle
+      id: buildsTitle
+      anchors.fill: parent
+
+  ScrollablePanel
+    id: builds
+    anchors.top: buildsPlate.bottom
+    anchors.left: parent.left
+    anchors.right: buildsScroll.left
+    anchors.bottom: buildName.top
+    margin-top: 4
+    margin-bottom: 6
+    margin-right: 2
+    vertical-scrollbar: buildsScroll
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: buildsScroll
+    anchors.top: buildsPlate.bottom
+    anchors.bottom: buildName.top
+    anchors.right: parent.right
+    margin-top: 4
+    margin-bottom: 6
+    step: 20
+    pixels-scroll: true
+
+  ChaosTextEdit
+    id: buildName
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    size: 180 24
+    max-length: 24
+    placeholder: Name of the build
+
+  ChaosButton
+    id: saveNewButton
+    anchors.left: buildName.right
+    anchors.bottom: parent.bottom
+    margin-left: 6
+    size: 150 24
+    !text: tr('Save current build')
+    @onClick: modules.game_pact.saveBuild()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_pact.hide()

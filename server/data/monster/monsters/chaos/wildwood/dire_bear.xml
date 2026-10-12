@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Dire Bear" nameDescription="a dire bear" race="blood" experience="800" speed="220" manacost="0">
+	<health now="1100" max="1100" />
+	<look type="2027" head="39" body="58" legs="116" feet="22" corpse="36088" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-235" />
+	</attacks>
+	<defenses armor="26" defense="26">
+		<defense name="speed" interval="2000" chance="8" speedchange="250" duration="4000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="GRRROOAARR!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
+		<item id="2152" countmax="2" chance="40000" /><!-- platinum coin -->
+		<item id="36018" countmax="2" chance="18000" /><!-- bear pelt -->
+		<item id="36049" countmax="2" chance="12000" /><!-- wild honeycomb -->
+		<item id="36047" countmax="2" chance="12000" /><!-- fried fish -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="7588" chance="4000" /><!-- strong health potion -->
+		<item id="7589" chance="4000" /><!-- strong mana potion -->
+	</loot>
+</monster>

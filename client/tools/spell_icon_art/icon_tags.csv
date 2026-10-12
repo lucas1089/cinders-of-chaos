@@ -1,0 +1,241 @@
+set,index,tags
+Fire,1,beam strike
+Fire,2,area dot
+Fire,3,strike wand
+Fire,4,area burst
+Fire,5,fist
+Fire,6,wave
+Fire,7,area ammo
+Fire,8,melee
+Fire,9,melee strike
+Fire,10,rune virtue
+Fire,11,strike
+Fire,12,summon
+Fire,13,dot regen
+Fire,14,strike area
+Fire,15,claw
+Fire,16,wave
+Fire,17,beam
+Fire,18,strike
+Fire,19,spear ammo
+Fire,20,claw
+Fire,21,wand light
+Fire,22,wave
+Fire,23,rune
+Fire,24,avatar buff
+Fire,25,area burstring
+Fire,26,light holyground
+Fire,27,beam strike
+Fire,28,dot area
+Fire,29,melee
+Fire,30,wave area
+Fire,31,burst burstring
+Fire,32,avatar
+Fire,33,avatar party
+Fire,34,dot rune
+Fire,35,burst
+Fire,36,ammo
+Fire,37,heal light
+Fire,38,flash light
+Fire,39,holyground
+Fire,40,rune
+Water,1,strike
+Water,2,strike
+Water,3,wave
+Water,4,heal cure
+Water,5,wave
+Water,6,area
+Water,7,heal regen
+Water,8,summon
+Water,9,rune
+Water,10,shield levitate
+Water,11,beam
+Water,12,area burst
+Water,13,haste
+Water,14,area
+Water,15,strike
+Water,16,area burstring
+Water,17,shield
+Water,18,burst
+Water,19,spear
+Water,20,strike
+Water,21,wave
+Water,22,levitate
+Water,23,ammo
+Water,24,strike wand
+Water,25,shield
+Water,26,burst
+Water,27,cure
+Water,28,strike
+Water,29,area
+Water,30,fist
+Water,31,melee
+Water,32,shield
+Water,33,wave area
+Water,34,haste
+Water,35,ammo
+Water,36,beam
+Water,37,light
+Water,38,beam
+Water,39,haste
+Water,40,heal
+Nature,1,light flash
+Nature,2,heal
+Nature,3,area burst
+Nature,4,dot
+Nature,5,fist
+Nature,6,summon
+Nature,7,spear
+Nature,8,wave
+Nature,9,dot area
+Nature,10,area holyground
+Nature,11,melee
+Nature,12,dot
+Nature,13,dot area
+Nature,14,regen
+Nature,15,party
+Nature,16,rune
+Nature,17,claw
+Nature,18,wave
+Nature,19,cure
+Nature,20,buff
+Nature,21,heal
+Nature,22,rune
+Nature,23,ammo
+Nature,24,melee
+Nature,25,dot
+Nature,26,strike
+Nature,27,summon
+Nature,28,strike wand
+Nature,29,haste
+Nature,30,haste
+Nature,31,find reveal
+Nature,32,spear
+Nature,33,shield
+Nature,34,melee
+Nature,35,spear ammo
+Nature,36,regen summon
+Nature,37,food
+Nature,38,burst area
+Nature,39,shield
+Nature,40,dot
+Arcane,1,strike
+Arcane,2,shield
+Arcane,3,claw
+Arcane,4,strike
+Arcane,5,burst
+Arcane,6,strike wand
+Arcane,7,beam
+Arcane,8,invis
+Arcane,9,melee
+Arcane,10,rune
+Arcane,11,area burstring
+Arcane,12,strike
+Arcane,13,claw
+Arcane,14,beam
+Arcane,15,ammo
+Arcane,16,dot
+Arcane,17,area
+Arcane,18,rune
+Arcane,19,area
+Arcane,20,challenge
+Arcane,21,strike
+Arcane,22,haste
+Arcane,23,illusion
+Arcane,24,find
+Arcane,25,challenge
+Arcane,26,area
+Arcane,27,rune
+Arcane,28,avatar
+Arcane,29,light
+Arcane,30,reveal find
+Arcane,31,summon
+Arcane,32,rune
+Arcane,33,illusion
+Arcane,34,melee
+Arcane,35,holyground
+Arcane,36,haste
+Arcane,37,invis
+Arcane,38,fist
+Arcane,39,meditate
+Arcane,40,wave
+Blood,1,avatar
+Blood,2,challenge
+Blood,3,buff
+Blood,4,fist
+Blood,5,wave
+Blood,6,strike
+Blood,7,area
+Blood,8,melee
+Blood,9,find
+Blood,10,summon
+Blood,11,beam
+Blood,12,summon
+Blood,13,claw
+Blood,14,dot
+Blood,15,strike
+Blood,16,heal
+Blood,17,melee
+Blood,18,burst
+Blood,19,rune
+Blood,20,strike
+Blood,21,burst
+Blood,22,challenge
+Blood,23,rune
+Blood,24,dot
+Blood,25,flash
+Blood,26,claw
+Blood,27,rune
+Blood,28,haste
+Blood,29,regen heal
+Blood,30,ammo
+Blood,31,area burstring
+Blood,32,challenge
+Blood,33,area
+Blood,34,spear
+Blood,35,invis
+Blood,36,wave
+Blood,37,ammo
+Blood,38,fist
+Blood,39,melee
+Blood,40,rune
+Steel,1,shield
+Steel,2,ammo
+Steel,3,buff
+Steel,4,shield
+Steel,5,ammo
+Steel,6,melee
+Steel,7,meditate
+Steel,8,virtue holyground
+Steel,9,melee virtue
+Steel,10,buff
+Steel,11,melee
+Steel,12,ammo
+Steel,13,virtue
+Steel,14,spear
+Steel,15,melee
+Steel,16,melee
+Steel,17,strike
+Steel,18,melee
+Steel,19,virtue
+Steel,20,rope
+Steel,21,burst
+Steel,22,rune
+Steel,23,summon
+Steel,24,melee
+Steel,25,shield
+Steel,26,spear
+Steel,27,strike
+Steel,28,melee
+Steel,29,area
+Steel,30,challenge
+Steel,31,spear
+Steel,32,ammo
+Steel,33,rope food
+Steel,34,challenge
+Steel,35,flash
+Steel,36,ammo
+Steel,37,party
+Steel,38,fist
+Steel,39,haste
+Steel,40,claw

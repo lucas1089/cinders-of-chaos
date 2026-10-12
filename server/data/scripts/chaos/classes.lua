@@ -16,6 +16,10 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 
+if not ChaosClassTree then
+	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree (their flags and numbers)
+end
+
 ChaosClasses = ChaosClasses or {}
 local M = ChaosClasses
 
@@ -56,14 +60,37 @@ function M.isAscended(vocId)
 	return base ~= nil and base ~= vocId
 end
 
--- which per-vocation variant of the passive tree's keystones (nodes 621 / 624, passivetree_data.lua) a class gets:
--- the Warrior line the knight's (Cleaving Arc, Bulwark), the Ranger line the paladin's (Ricochet, Deadeye), Mystic
--- and Elementalist the sorcerer's (Arcane Echo, Overload), the Illusionist the illusionist's support keystones
--- (Shared Phantasm, Inspiring Illusion). The Thief line has no tree entry yet (nil).
-local KEYSTONE_KEY = {[4] = "knight", [8] = "knight", [14] = "knight", [3] = "paladin", [7] = "paladin",
-	[15] = "paladin", [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist"}
+-- which per-class variant of the passive tree's keystones (nodes 621 / 624, passivetree_data.lua `v`) a class gets:
+-- the Warrior the knight's (Cleaving Arc, Bulwark), the Juggernaut Immovable + Bulwark, the Berserker Cleaving Arc +
+-- Undying Rage; the Ranger the paladin's (Ricochet, Deadeye), the Deadeye Hunter's Focus + Deadeye, the Beastmaster
+-- Ricochet + Pack Alpha; Mystic and Elementalist the sorcerer's (Arcane Echo, Overload), the Illusionist its support
+-- keystones (Shared Phantasm, Inspiring Illusion). The Thief, Necromancer, Monk and Templar lines have their keystones
+-- in their class sections (class_tree.lua) and no variant on 621 / 624: their key is the class key.
+local KEYSTONE_KEY = {[4] = "knight", [8] = "juggernaut", [14] = "berserker", [3] = "paladin", [7] = "deadeye",
+	[15] = "beastmaster", [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist"}
 function M.keystoneKey(vocId)
-	return KEYSTONE_KEY[vocId]
+	return KEYSTONE_KEY[vocId] or M.classKey(vocId)
+end
+
+-- the class key of a vocation ("warrior", "juggernaut", ... "sentinel"; the keys of Chaos.classes.ids), nil for none.
+-- The passive tree marks the nodes a class may hold with these keys (class_tree.lua).
+function M.classKey(vocId)
+	local c = Chaos and Chaos.classes
+	if not c or not c.ids then
+		return nil
+	end
+	for key, id in pairs(c.ids) do
+		if id == vocId then
+			return key
+		end
+	end
+	return nil
+end
+
+-- the class key of the vocation's base class (its line), nil for none
+function M.lineKey(vocId)
+	local base = Chaos and Chaos.classes and Chaos.classes.baseOf and Chaos.classes.baseOf[vocId]
+	return base and M.classKey(base) or nil
 end
 
 local function trimWord(word)
@@ -102,10 +129,10 @@ function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
 				end
 			end
 			if id == vocId then
-				return nil, "You already are of that class. Your free switch (!ascend " .. tostring(freeWord) .. ") stays."
+				return nil, "You already are of that class. Your free switch (to " .. tostring(freeWord) .. ") stays."
 			end
 			if not id or id ~= freeSwitchTo then
-				return nil, "You may switch once, for free: !ascend " .. tostring(freeWord) .. "."
+				return nil, "You may switch once, for free, to " .. tostring(freeWord) .. " (Character > Services)."
 			end
 			free = true
 		else
@@ -115,7 +142,7 @@ function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
 	end
 	local id = choices[trimWord(word)]
 	if not id then
-		return nil, "Choose your ascension: !ascend " .. table.concat(choiceNames(choices), "|") .. ". The choice is final."
+		return nil, "Choose your ascension: " .. table.concat(choiceNames(choices), " or ") .. ". The choice is final."
 	end
 	if not free and level < a.minLevel then
 		return nil, string.format("You need level %d to ascend.", a.minLevel)
@@ -147,15 +174,15 @@ function M.migrationFor(oldVoc)
 	return {to = m.map[oldVoc] or oldVoc, freeSwitch = m.freeSwitch[oldVoc], resetTree = reset}
 end
 
--- the login message: oldName / newName = vocation names, freeWord = the !ascend word of the free switch or nil
+-- the login message: oldName / newName = vocation names, freeWord = the class word of the free switch or nil
 function M.migrationMessage(oldName, newName, freeWord, treeReset)
 	local text = string.format("The classes were reworked: your %s is now %s.", oldName, newName)
 	if treeReset then
 		text = text .. " Your passive tree was reset for free; allocate your points again."
 	end
 	if freeWord then
-		text = text .. string.format(" You may switch to the other ascended class once, for free: say !ascend %s in a "
-			.. "protection zone.", freeWord)
+		text = text .. string.format(" You may switch to the other ascended class once, for free (%s): Character > Services, "
+			.. "in a protection zone.", freeWord)
 	end
 	return text
 end
@@ -237,11 +264,17 @@ function M.companionHealth(level)
 	return math.floor(h.base + h.perLevel * level)
 end
 
--- a bite: positive min, max from the owner's level and distance skill
-function M.biteValues(level, distanceSkill)
+-- a bite: positive min, max from the owner's level and distance skill (x factor: the Pack Alpha keystone)
+function M.biteValues(level, distanceSkill, factor)
 	local c = cfg().companion
-	local avg = level * c.biteLevel + (distanceSkill or 0) * c.biteSkill
+	local avg = (level * c.biteLevel + (distanceSkill or 0) * c.biteSkill) * (factor or 1)
 	return math.floor(avg * (1 - c.spread)), math.floor(avg * (1 + c.spread))
+end
+
+-- the bite of this owner's companions: level, distance skill and the Pack Alpha keystone (class_tree.lua)
+function M.biteValuesFor(player)
+	return M.biteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE),
+		1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus"))
 end
 
 -- ------------------------------------------------------------------------------------------------ weapons
@@ -258,7 +291,7 @@ end
 -- Damage of the off-hand strike that follows a main-hand weapon hit of `hit` (positive).
 -- The engine halves damage between players before onHealthChange sees it and halves the scripted strike again,
 -- so against a player the strike is computed from the unhalved hit.
-function M.offhandDamage(hit, mainAttack, offAttack, targetIsPlayer)
+function M.offhandDamage(hit, mainAttack, offAttack, targetIsPlayer, extraShare)
 	local d = cfg().dualWield
 	hit = math.abs(hit or 0)
 	if hit <= 0 then
@@ -269,29 +302,56 @@ function M.offhandDamage(hit, mainAttack, offAttack, targetIsPlayer)
 		ratio = (offAttack or 0) / mainAttack
 	end
 	ratio = math.max(d.minRatio, math.min(d.maxRatio, ratio))
-	local value = hit * d.share * ratio
+	local value = hit * (d.share + (extraShare or 0)) * ratio
 	if targetIsPlayer then
 		value = value * 2
 	end
 	return math.floor(value + 0.5)
 end
 
--- Poison Blades: damage per tick for a weapon hit of `hit`.
-function M.poisonTick(hit)
+-- Poison Blades: damage per tick for a weapon hit of `hit`. bonus: Blackblood Creed's poisonBonus (0 / nil = none).
+function M.poisonTick(hit, bonus)
 	local p = cfg().poisonBlades
-	return math.max(1, math.floor(math.abs(hit or 0) * p.share / p.ticks + 0.5))
+	return math.max(1, math.floor(math.abs(hit or 0) * p.share * (1 + (bonus or 0)) / p.ticks + 0.5))
 end
 
-function M.dodgeChance(vocId)
-	return cfg().evasion[vocId] or 0
+-- Blackblood Creed (the line keystone): does a weapon hit poison? With the keystone always, else while Poison Blades lasts
+function M.weaponPoisons(isWeapon, bladesBuff, creed)
+	return isWeapon == true and (bladesBuff == true or creed == true)
 end
 
--- `roll` in [0, 1) (math.random()); only weapon-style attacks (melee or ranged origin) can be dodged
-function M.dodges(vocId, isWeaponAttack, roll)
+-- scale: Blackblood Creed's evasionScale (nil = 1)
+function M.dodgeChance(vocId, extra, scale)
+	local base = cfg().evasion[vocId]
+	if not base then
+		return 0
+	end
+	return (base + (extra or 0)) * (scale or 1)
+end
+
+-- `roll` in [0, 1) (math.random()); only weapon-style attacks (melee or ranged origin) can be dodged.
+-- extra: evasion from the passive tree (Fleet Shadow); scale: Blackblood Creed halves it
+function M.dodges(vocId, isWeaponAttack, roll, extra, scale)
 	if not isWeaponAttack then
 		return false
 	end
-	return roll < M.dodgeChance(vocId)
+	return roll < M.dodgeChance(vocId, extra, scale)
+end
+
+-- Living Shadow (Ninja keystone): livingState[id] = ms the window ends
+M.livingState = M.livingState or {}
+
+function M.livingOpen(id, now)
+	M.livingState[id] = now + ChaosClassTree.fx.ksLivingShadow.durationMs
+end
+
+-- the damage factor of a weapon hit or strike at `now` (1 outside the window)
+function M.livingFactor(id, now)
+	local untilMs = M.livingState[id]
+	if untilMs and now < untilMs then
+		return 1 + ChaosClassTree.fx.ksLivingShadow.bonus
+	end
+	return 1
 end
 
 -- ------------------------------------------------------------------------------------------------ stealth
@@ -336,8 +396,17 @@ function M.counterTake(ticksLeft, isMelee, fromCreature)
 	return (ticksLeft or 0) > 0 and isMelee and fromCreature and true or false
 end
 
-function M.counterDamage(parried)
-	return math.floor(math.abs(parried or 0) * cfg().counter.multiplier + 0.5)
+-- Counter Stance guard: the damage factor of a hit the stance does not parry (1 without a stance)
+function M.counterGuard(ticksLeft)
+	if (ticksLeft or 0) > 0 then
+		return 1 - (cfg().counter.guard or 0)
+	end
+	return 1
+end
+
+-- bonus: Iron Parry (+50% of the answer)
+function M.counterDamage(parried, bonus)
+	return math.floor(math.abs(parried or 0) * cfg().counter.multiplier * (1 + (bonus or 0)) + 0.5)
 end
 
 -- ------------------------------------------------------------------------------------------------ bushido
@@ -364,11 +433,13 @@ function M.bushidoStacks(id, now)
 	return math.min(b.maxStacks, s.base + math.floor((now - s.since) / b.stackMs))
 end
 
--- damage taken: the stacks start again from zero (the buff itself stays)
-function M.bushidoOnDamaged(id, now)
+-- damage taken: the stacks start again from zero (the buff itself stays); keepShare: the share of the stacks a hit
+-- leaves (Way of the Blade: half)
+function M.bushidoOnDamaged(id, now, keepShare)
 	local s = M.bushidoState[id]
 	if s and now < s.untilMs then
-		s.base, s.since = 0, now
+		local keep = math.floor(M.bushidoStacks(id, now) * (keepShare or 0))
+		s.base, s.since = keep, now
 	end
 end
 
@@ -376,13 +447,24 @@ function M.bushidoCritChance(id, now)
 	return M.bushidoStacks(id, now) * cfg().bushido.perStack
 end
 
--- `roll` in [0, 1): multiplier for this hit (critMultiplier on a crit, else 1) and whether it was a crit
-function M.bushidoRoll(id, now, roll)
+-- `roll` in [0, 1): multiplier for this hit (critMultiplier on a crit, else 1) and whether it was a crit;
+-- critMultiplier: Way of the Blade's (x1.8), else the buff's
+function M.bushidoRoll(id, now, roll, critMultiplier)
 	local chance = M.bushidoCritChance(id, now)
 	if chance > 0 and roll < chance then
-		return cfg().bushido.critMultiplier, true
+		return critMultiplier or cfg().bushido.critMultiplier, true
 	end
 	return 1, false
+end
+
+-- Shadow Mend (thief/shadow_mend.lua): min and max of the self heal, before the engine's own healing modifiers
+function M.shadowMendRange(maxHealth, level, magicLevel, veiled)
+	local h = cfg().shadowMend
+	local avg = (level or 0) * h.perLevel + (magicLevel or 0) * h.perMagicLevel + (maxHealth or 0) * h.maxHealthShare
+	if veiled then
+		avg = avg * h.veiledMultiplier
+	end
+	return math.floor(avg * (1 - h.spread)), math.floor(avg * (1 + h.spread))
 end
 
 -- keep the dual-wield storage (read by server/src-patches/0002) in line with the vocation: login, ascension,
@@ -398,6 +480,7 @@ end
 -- forget everything about a creature (logout, death)
 function M.clear(id)
 	M.bushidoState[id] = nil
+	M.livingState[id] = nil
 end
 
 return M

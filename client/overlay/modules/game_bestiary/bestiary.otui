@@ -1,0 +1,560 @@
+// Bestiary and kill tasks window (game_bestiary). Styles from client_chaos_theme (styles.otui).
+
+BestiaryCategory < ChaosTabButton
+  height: 22
+  margin-bottom: 2
+  text-align: left
+  text-offset: 6 0
+
+BestiaryRow < UIWidget
+  height: 22
+  margin-bottom: 1
+  background-color: #1a151a
+  focusable: true
+  phantom: false
+
+  $hover:
+    background-color: #2a1d18
+
+  $focus:
+    background-color: #3a2410
+
+  UIWidget
+    id: dot
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 5
+    size: 8 8
+    background-color: #6b6258
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: dot.right
+    anchors.right: level.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: level
+    anchors.right: kills.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 56
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: kills
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    width: 70
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+BestiaryInfoLabel < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-bottom: 2
+  phantom: true
+
+BestiaryInfoHeader < UILabel
+  font: verdana-11px-rounded
+  color: #e8b84a
+  text-align: left
+  text-auto-resize: true
+  margin-top: 4
+  margin-bottom: 2
+  phantom: true
+
+BestiaryLootItem < Item
+  size: 34 34
+  virtual: true
+  phantom: false
+
+BestiaryLootGrid < UIWidget
+  phantom: true
+  layout:
+    type: grid
+    cell-size: 34 34
+    cell-spacing: 3
+    flow: true
+    fit-children: true
+
+BestiaryTaskRow < ChaosPanelDark
+  height: 74
+  margin-bottom: 4
+  phantom: false
+
+  UICreature
+    id: creature
+    size: 48 48
+    fixed-creature-size: true
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    phantom: true
+
+  UILabel
+    id: kind
+    anchors.left: creature.right
+    anchors.top: parent.top
+    margin-left: 8
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: kind.right
+    anchors.right: action.left
+    anchors.top: parent.top
+    margin-left: 6
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
+  UILabel
+    id: task
+    anchors.left: kind.left
+    anchors.right: parent.right
+    anchors.top: kind.bottom
+    margin-top: 2
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: reward
+    anchors.left: kind.left
+    anchors.right: parent.right
+    anchors.top: task.bottom
+    margin-top: 2
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #f6cf72
+    phantom: false
+
+  ChaosProgressBar
+    id: progress
+    anchors.left: kind.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 12
+    text-offset: 0 0
+    font: verdana-11px-antialised
+
+  ChaosButton
+    id: action
+    anchors.right: parent.right
+    anchors.top: parent.top
+    width: 80
+
+BestiaryTab < ChaosTabButton
+  width: 120
+  height: 24
+  margin-right: 4
+
+BestiarySectionTitle < ChaosTitle
+  text-align: left
+  height: 18
+
+ChaosMainWindow
+  id: bestiaryWindow
+  size: 840 590
+  !text: tr('Bestiary')
+  @onEscape: modules.game_bestiary.hide()
+
+  UIWidget
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 260
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosLabel
+    id: summaryLabel
+    anchors.left: tabs.right
+    anchors.right: parent.right
+    anchors.verticalCenter: tabs.verticalCenter
+    margin-left: 8
+    text-align: right
+    color: #f6cf72
+    font: verdana-11px-rounded
+    phantom: false
+
+  // ------------------------------------------------------------ bestiary tab
+  UIWidget
+    id: bestiaryPanel
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    phantom: true
+
+    ChaosPanelDark
+      id: categoryPanel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 196
+      padding: 4
+
+    UIScrollArea
+      id: categoryList
+      anchors.fill: categoryPanel
+      margin: 6
+      layout:
+        type: verticalBox
+      vertical-scrollbar: categoryScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: categoryScroll
+      anchors.top: categoryPanel.top
+      anchors.right: categoryPanel.right
+      anchors.bottom: categoryPanel.bottom
+      margin: 3
+      step: 24
+      pixels-scroll: true
+      visible: false
+
+    ChaosTextEdit
+      id: searchEdit
+      anchors.top: parent.top
+      anchors.left: categoryPanel.right
+      margin-left: 8
+      width: 180
+      placeholder: Search a monster
+
+    ChaosCheckBox
+      id: knownBox
+      anchors.left: searchEdit.right
+      anchors.verticalCenter: searchEdit.verticalCenter
+      margin-left: 10
+      width: 110
+      !text: tr('Known only')
+
+    ChaosPanelDark
+      id: listFrame
+      anchors.top: searchEdit.bottom
+      anchors.left: categoryPanel.right
+      anchors.bottom: prevButton.top
+      margin-top: 6
+      margin-left: 8
+      margin-bottom: 6
+      width: 316
+      padding: 3
+
+    UIScrollArea
+      id: entryList
+      anchors.top: listFrame.top
+      anchors.left: listFrame.left
+      anchors.right: listScroll.left
+      anchors.bottom: listFrame.bottom
+      margin: 4
+      layout:
+        type: verticalBox
+      vertical-scrollbar: listScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: listScroll
+      anchors.top: listFrame.top
+      anchors.right: listFrame.right
+      anchors.bottom: listFrame.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 23
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: emptyText
+      anchors.centerIn: listFrame
+      text-auto-resize: true
+      !text: tr('Loading the bestiary...')
+
+    ChaosButton
+      id: prevButton
+      anchors.left: categoryPanel.right
+      anchors.bottom: parent.bottom
+      margin-left: 8
+      width: 60
+      !text: tr('< Prev')
+
+    ChaosLabel
+      id: pageLabel
+      anchors.left: prevButton.right
+      anchors.right: nextButton.left
+      anchors.verticalCenter: prevButton.verticalCenter
+      text-align: center
+
+    ChaosButton
+      id: nextButton
+      anchors.left: categoryPanel.right
+      anchors.bottom: parent.bottom
+      margin-left: 264
+      width: 60
+      !text: tr('Next >')
+
+    ChaosPanelDark
+      id: detailPanel
+      anchors.top: parent.top
+      anchors.left: listFrame.right
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-left: 8
+      padding: 6
+
+      UICreature
+        id: creature
+        size: 64 64
+        fixed-creature-size: true
+        anchors.top: parent.top
+        anchors.left: parent.left
+        phantom: true
+
+      UILabel
+        id: name
+        anchors.top: parent.top
+        anchors.left: creature.right
+        anchors.right: parent.right
+        margin-left: 8
+        margin-top: 4
+        text-align: left
+        font: verdana-11px-rounded
+        color: #e8b84a
+
+      UILabel
+        id: stage
+        anchors.top: name.bottom
+        anchors.left: name.left
+        anchors.right: parent.right
+        margin-top: 4
+        text-align: left
+        font: verdana-11px-antialised
+        color: #d6c9ae
+
+      ChaosProgressBar
+        id: stageBar
+        anchors.top: stage.bottom
+        anchors.left: name.left
+        anchors.right: parent.right
+        margin-top: 5
+        height: 14
+        text-offset: 0 1
+        font: verdana-11px-antialised
+        background-color: #8a1010
+
+      UIScrollArea
+        id: info
+        anchors.top: creature.bottom
+        anchors.left: parent.left
+        anchors.right: infoScroll.left
+        anchors.bottom: taskLabel.top
+        margin-top: 6
+        margin-bottom: 4
+        layout:
+          type: verticalBox
+        vertical-scrollbar: infoScroll
+        auto-focus: none
+
+      ChaosScrollBar
+        id: infoScroll
+        anchors.top: creature.bottom
+        anchors.right: parent.right
+        anchors.bottom: taskLabel.top
+        margin-top: 6
+        margin-bottom: 4
+        step: 30
+        pixels-scroll: true
+
+      ChaosLabel
+        id: taskLabel
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: taskButton.top
+        margin-bottom: 4
+        text-align: left
+        text-wrap: true
+        height: 30
+        color: #8c8070
+
+      ChaosButton
+        id: taskButton
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        width: 96
+        !text: tr('Take task')
+
+  // ------------------------------------------------------------ kill tasks tab
+  UIWidget
+    id: tasksPanel
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    phantom: true
+    visible: false
+
+    ChaosLabel
+      id: limitsLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      text-auto-resize: true
+      color: #f6cf72
+      phantom: false
+
+    ChaosLabelDim
+      id: timerLabel
+      anchors.top: parent.top
+      anchors.right: parent.right
+      text-auto-resize: true
+
+    BestiarySectionTitle
+      id: boardTitle
+      anchors.top: limitsLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.horizontalCenter
+      margin-top: 8
+      !text: tr("Today's board")
+
+    ChaosPanelDark
+      id: boardFrame
+      anchors.top: boardTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.horizontalCenter
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      margin-right: 4
+      padding: 3
+
+    UIScrollArea
+      id: boardList
+      anchors.top: boardFrame.top
+      anchors.left: boardFrame.left
+      anchors.right: boardScroll.left
+      anchors.bottom: boardFrame.bottom
+      margin: 4
+      layout:
+        type: verticalBox
+      vertical-scrollbar: boardScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: boardScroll
+      anchors.top: boardFrame.top
+      anchors.right: boardFrame.right
+      anchors.bottom: boardFrame.bottom
+      margin: 3
+      step: 40
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: boardEmpty
+      anchors.centerIn: boardFrame
+      text-auto-resize: true
+      !text: tr('No offers for your level today.')
+      visible: false
+
+    BestiarySectionTitle
+      id: activeTitle
+      anchors.top: boardTitle.top
+      anchors.left: parent.horizontalCenter
+      anchors.right: parent.right
+      margin-left: 4
+      !text: tr('Your tasks')
+
+    ChaosPanelDark
+      id: activeFrame
+      anchors.top: activeTitle.bottom
+      anchors.left: parent.horizontalCenter
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      margin-left: 4
+      padding: 3
+
+    UIScrollArea
+      id: activeList
+      anchors.top: activeFrame.top
+      anchors.left: activeFrame.left
+      anchors.right: activeScroll.left
+      anchors.bottom: activeFrame.bottom
+      margin: 4
+      layout:
+        type: verticalBox
+      vertical-scrollbar: activeScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: activeScroll
+      anchors.top: activeFrame.top
+      anchors.right: activeFrame.right
+      anchors.bottom: activeFrame.bottom
+      margin: 3
+      step: 40
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: activeEmpty
+      anchors.centerIn: activeFrame
+      width: 300
+      text-align: center
+      text-wrap: true
+      text-auto-resize: true
+      !text: tr('No kill tasks. Take one from the board or from a discovered bestiary entry.')
+
+  // ------------------------------------------------------------ bottom
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: trackerBox.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 28
+    !text: tr('Your kills and kills of party members near you count. A completed entry gives more damage and experience against that monster.')
+
+  ChaosCheckBox
+    id: trackerBox
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 12
+    width: 110
+    !text: tr('Task tracker')
+    @onCheckChange: modules.game_bestiary.setTrackerEnabled(self:isChecked())
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_bestiary.hide()
+

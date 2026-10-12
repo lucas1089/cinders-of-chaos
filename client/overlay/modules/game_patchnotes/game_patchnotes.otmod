@@ -1,7 +1,7 @@
 Module
   name: game_patchnotes
-  description: Patch notes window (weekly notes sent by the server; !patchnotes, extended opcode 244)
-  author: project-chaos
+  description: Patch notes window (weekly notes sent by the server; extended opcode 244)
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ patchnotesview, patchnotes ]
   dependencies:

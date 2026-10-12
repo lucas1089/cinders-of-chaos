@@ -5,7 +5,7 @@
 --                     note {id, title, date, part, parts, intro, sections = [{name, kind, cont, items = [{text, level,
 --                           lead}]}]}   a long note comes in parts; PatchNotesView.join puts them back together
 --   client -> server  open {id?} | get {id} | seen {id} | auto {enabled} | closed (window hidden)
--- Opened from the top menu (Chaos -> Patch Notes, toggle()) and with !patchnotes. At login the server sends `auto` once
+-- Opened from the top menu (Social > Patch Notes, toggle()). At login the server sends `auto` once
 -- per unseen week, in its turn in the server's login window queue (after the Daily Reward). The window also waits
 -- by itself while the Daily Reward window (game_daily) is visible, or expected (PatchNotesView.autoStep), so the two
 -- never stack; game_daily in turn waits while this window (id patchNotesWindow) is on screen. Drawing and that rule are in patchnotesview.lua (tested).
@@ -47,6 +47,15 @@ local function dailyVisible()
     return w and not w:isDestroyed() and w:isVisible() or false
   end)
   return ok and visible == true
+end
+
+-- a server modal dialog (the new-player welcome, a tutorial lesson) is on screen: the login auto-open waits for it
+local function modalOpen()
+  local ok, open = pcall(function()
+    local md = modules and modules.game_modaldialog
+    return md and rawget(md, 'modalDialog') ~= nil or false
+  end)
+  return ok and open == true
 end
 
 local function markSeen(id)
@@ -195,7 +204,9 @@ local function autoTick()
   autoEvent = nil
   if not window or not g_game.isOnline() then return end
   if auto then
-    if V.autoStep(auto, dailyVisible(), now()) == 'show' then
+    if modalOpen() then
+      -- try again on the next tick
+    elseif V.autoStep(auto, dailyVisible(), now()) == 'show' then
       auto = nil
       show()
       autoShownAt = now()

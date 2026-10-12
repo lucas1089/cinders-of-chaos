@@ -1,0 +1,143 @@
+-- luajit chatlinks_logic_test.lua && lua5.3 chatlinks_logic_test.lua (CI runs every client/overlay/modules/*/*_test.lua)
+local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. 'chatlinks_logic.lua')
+dofile(dir .. '../game_itemtooltip/tooltiplogic.lua')
+local L = ChatLinksLogic
+local fails, checks = 0, 0
+local function eq(a, b, what)
+  checks = checks + 1
+  if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
+end
+
+-- the colours are the item tooltip's
+for i = 1, 15 do eq(L.RARITY_COLORS[i], ItemTooltipLogic.RARITY_COLORS[i], 'rarity colour ' .. i) end
+eq(#L.RARITY_COLORS, #ItemTooltipLogic.RARITY_COLORS, 'same number of rarities')
+eq(L.colorOf(4), '#a35cf0', 'rarity 4')
+eq(L.colorOf(0), L.NORMAL_COLOR, 'normal')
+eq(L.colorOf(99), L.NORMAL_COLOR, 'unknown rarity')
+eq(L.colorOf(0, true), L.UNIQUE_COLOR, 'unique')
+eq(L.UNIQUE_COLOR, ItemTooltipLogic.COLORS.unique, 'the unique orange of the tooltip')
+eq(L.parse('[Soulreaper]{uabcdefghi}')[1].unique, true, 'unique link')
+eq(L.parse('[Soulreaper]{uabcdefghi}')[1].rarity, 0, 'unique has no rarity')
+eq(L.pieces('[Soulreaper]{uabcdefghi}', 'white').parts[2], L.UNIQUE_COLOR, 'unique colour in the text')
+eq(L.plain('[Soulreaper]{uabcdefghi}'), '[Soulreaper]', 'unique plain')
+
+-- parse: the format of the server (itemlink_core.lua), also tested there
+local msg = 'sell [Blade of Dawn]{4k7f2m9qax} or [Ring]{a000000001}!'
+local links = L.parse(msg)
+eq(#links, 2, 'two links')
+eq(links[1].name, 'Blade of Dawn', 'name')
+eq(links[1].id, 'k7f2m9qax', 'id')
+eq(links[1].rarity, 4, 'rarity')
+eq(links[2].rarity, 10, 'hex rarity')
+eq(msg:sub(links[1].first, links[1].last), '[Blade of Dawn]{4k7f2m9qax}', 'range')
+eq(#L.parse('[Name]{4short}'), 0, 'short id')
+eq(#L.parse('[Name]{4ABCDEFGHI}'), 0, 'upper case')
+eq(#L.parse('hello [world] {x}'), 0, 'plain text')
+eq(#L.parse(nil), 0, 'nil')
+local four = string.rep('[A]{0aaaaaaaaa} ', 4)
+eq(#L.parse(four), 3, 'at most three links')
+eq(L.plain(four), '[A] [A] [A] [A] ', 'plain text shows the names')
+eq(L.plain('hello'), 'hello', 'plain without links')
+eq(L.plain('[Blade of Dawn]{4k7f2m9qax} x'), '[Blade of Dawn] x', 'plain')
+eq(L.plain(nil), nil, 'plain nil')
+
+-- pieces: shown text, colours, ranges
+local p = L.pieces('Anna: look [Blade of Dawn]{4k7f2m9qax} now', 'white')
+eq(p.text, 'Anna: look [Blade of Dawn] now', 'shown text')
+eq(#p.ranges, 1, 'one range')
+eq(p.ranges[1].first, 11, 'range start (0-based)')
+eq(p.ranges[1].last, 26, 'range end (exclusive)')
+eq(p.text:sub(p.ranges[1].first + 1, p.ranges[1].last), '[Blade of Dawn]', 'range covers the link')
+eq(p.parts[1], 'Anna: look ', 'part 1')
+eq(p.parts[2], 'white', 'colour 1')
+eq(p.parts[3], '[Blade of Dawn]', 'part 2')
+eq(p.parts[4], '#a35cf0', 'rarity colour')
+eq(p.parts[5], ' now', 'part 3')
+eq(L.rangeAt(p.ranges, 11).id, 'k7f2m9qax', 'index on the first character')
+eq(L.rangeAt(p.ranges, 25).id, 'k7f2m9qax', 'index on the last character')
+eq(L.rangeAt(p.ranges, 26), nil, 'index after the link')
+eq(L.rangeAt(p.ranges, 10), nil, 'index before the link')
+eq(L.rangeAt(nil, 1), nil, 'no ranges')
+p = L.pieces('plain text', 'white')
+eq(#p.ranges, 0, 'no links')
+eq(p.text, 'plain text', 'plain stays')
+p = L.pieces('[A]{0aaaaaaaaa}[B]{1bbbbbbbbb}', 'white')
+eq(p.text, '[A][B]', 'adjacent links')
+eq(p.ranges[2].first, 3, 'second range')
+eq(p.parts[2], L.colorOf(0), 'first colour')
+eq(p.parts[4], L.colorOf(1), 'second colour')
+
+-- chips
+local chips = { { name = 'Magic Sword', token = '[Magic Sword]{3abcdefghi}' }, { name = 'Ring', token = '[Ring]{0jklmnopqr}' } }
+local out, used = L.expand('sell [Magic Sword] and [Ring] cheap', chips)
+eq(out, 'sell [Magic Sword]{3abcdefghi} and [Ring]{0jklmnopqr} cheap', 'chips become links')
+eq(used, 2, 'two used')
+out, used = L.expand('only [Ring] here', chips)
+eq(out, 'only [Ring]{0jklmnopqr} here', 'a deleted chip is skipped')
+eq(used, 1, 'one used')
+out, used = L.expand('typed [Ring] by hand', {})
+eq(out, 'typed [Ring] by hand', 'no chip, no link')
+out = L.expand('[Rope] [Rope]', { { name = 'Rope', token = '[Rope]{0aaaaaaaaa}' }, { name = 'Rope', token = '[Rope]{0bbbbbbbbb}' } })
+eq(out, '[Rope]{0aaaaaaaaa} [Rope]{0bbbbbbbbb}', 'same name twice: in order')
+eq(#L.liveChips('x [Ring]', chips), 1, 'live chips')
+eq(#L.liveChips('', chips), 0, 'no live chips')
+eq(#L.liveChips('[Ring] [Magic Sword]', chips), 1, 'order matters: the sword chip is first')
+local ok, why = L.canAdd('[Magic Sword] [Ring] [Rope]', { chips[1], chips[2], { name = 'Rope', token = '[Rope]{0ccccccccc}' } },
+  { name = 'Boots', token = '[Boots]{0ddddddddd}' })
+eq(ok, false, 'a fourth chip is refused')
+eq(why, 'You can link up to 3 items in one message.', 'reason')
+ok = L.canAdd('', {}, { name = 'Boots', token = '[Boots]{0ddddddddd}' })
+eq(ok, true, 'the first chip')
+ok, why = L.canAdd(string.rep('x', 245), {}, { name = 'Boots', token = '[Boots]{0ddddddddd}' })
+eq(ok, false, 'too long')
+eq(why, 'The message is too long for another item link.', 'too long reason')
+eq(L.projectedLength('[Ring] hi', { chips[2] }), #'[Ring]{0jklmnopqr} hi', 'projected length')
+
+-- where a link may go
+local ctx = L.contextOf({ name = 'Default', local_ = true })
+eq(ctx.kind, 'say', 'default channel')
+eq(L.contextOf({ private = true }).kind, 'private', 'private')
+eq(L.contextOf({ serverLog = true }).kind, 'say', 'server log sends to the default channel')
+eq(L.contextOf({ id = 3 }).kind, 'channel', 'a channel')
+eq(L.contextOf({ id = 0x2710 }).id, 0x2710, 'guild channel')
+ctx, why = L.contextOf({ id = 7 }, false)
+eq(ctx, nil, 'Help refuses')
+eq(why, 'Item links are not allowed in the Help channel.', 'Help reason')
+eq(L.contextOf({ id = 7 }, true).id, 7, 'Help for tutors')
+eq(L.contextOf({ npc = true }), nil, 'NPC')
+eq(L.contextOf({ loot = true }), nil, 'loot')
+eq(L.scrub('a [X]{0aaaaaaaaa}', false), 'a [X]', 'scrubbed')
+eq(L.scrub('a [X]{0aaaaaaaaa}', true), 'a [X]{0aaaaaaaaa}', 'kept')
+
+-- positions and ids
+eq(L.linkable({ x = 65535, y = 6, z = 0 }), true, 'inventory')
+eq(L.linkable({ x = 65535, y = 65, z = 3 }), true, 'container')
+eq(L.linkable({ x = 100, y = 100, z = 7 }), false, 'ground')
+eq(L.linkable(nil), false, 'nothing')
+eq(L.iidText(1878573878083590), '1878573878083590', 'big id in full')
+eq(L.iidText('123'), '123', 'string id')
+eq(L.iidText(nil), '0', 'no id')
+
+-- the store
+local s = L.newStore()
+eq(L.get(s, 'aaaaaaaaa', 0), nil, 'empty')
+L.put(s, 'aaaaaaaaa', { tip = { name = 'x' } }, 100)
+eq(L.get(s, 'aaaaaaaaa', 150).tip.name, 'x', 'stored')
+eq(L.get(s, 'aaaaaaaaa', 100 + L.TTL), nil, 'a snapshot expires with the server')
+L.put(s, 'bbbbbbbbb', { gone = true }, 100)
+eq(L.get(s, 'bbbbbbbbb', 100 + L.GONE_TTL - 1).gone, true, 'an expired answer is believed for a while')
+eq(L.get(s, 'bbbbbbbbb', 100 + L.GONE_TTL), nil, 'then the server is asked again')
+eq(L.shouldAsk(s, 'ccccccccc', 10), true, 'first ask')
+eq(L.shouldAsk(s, 'ccccccccc', 11), false, 'again too soon')
+eq(L.shouldAsk(s, 'ccccccccc', 10 + L.ASK_INTERVAL), true, 'later')
+local big = L.newStore()
+for i = 1, L.MAX_STORE + 10 do L.put(big, string.format('k%08d', i), { tip = {} }, 1) end
+eq(#big.order, L.MAX_STORE, 'store size limit')
+eq(big.entries['k00000001'], nil, 'oldest dropped')
+eq(L.footer('Anna', { at = 100, left = 600 }, 100), 'Linked by Anna - 10 min left', 'footer')
+eq(L.footer('Anna', { at = 100, left = 600 }, 100 + 300), 'Linked by Anna - 5 min left', 'footer later')
+eq(L.footer(nil, { at = 100, left = 30 }, 100), 'Linked by ? - 1 min left', 'footer rounds up')
+
+if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
+print('chatlinks_logic_test: ' .. checks .. ' checks ok')

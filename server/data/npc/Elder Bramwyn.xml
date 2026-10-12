@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Elder Bramwyn: home NPC and quartermaster of a faction (server/data/scripts/chaos/factions.lua, factions_config.lua; server/README.md
+     "Factions"). Placed next to a temple at startup; installed by server/tools/install_factions.py. -->
+<npc name="Elder Bramwyn" script="elder_bramwyn.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="144" head="82" body="102" legs="117" feet="116" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Root and thorn, |PLAYERNAME|. The Thornbound Circle needs hands that do not flinch. Ask about {contracts}, the {quartermaster} or the {lore}." />
+		<parameter key="message_farewell" value="Walk lightly, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The leaves close." />
+	</parameters>
+</npc>

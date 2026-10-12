@@ -1,0 +1,11 @@
+# Cinders of Chaos: runs chaos-watchdog.service once a minute (docs/LAUNCH.md "Running it").
+[Unit]
+Description=Cinders of Chaos hang watchdog, every minute
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=1min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

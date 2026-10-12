@@ -1,4 +1,4 @@
-# Project Chaos logs. Install: sudo cp server/deploy/chaos.logrotate /etc/logrotate.d/chaos
+# Cinders of Chaos logs. Install: sudo cp server/deploy/chaos.logrotate /etc/logrotate.d/chaos
 # systemd appends the console output to these files and keeps them open, so they are copied and truncated in place
 # (copytruncate) instead of being moved; a few lines written during the copy can be lost, which is fine for a console log.
 # systemd (root) creates the files, so keep /var/log/chaos owned by root: sudo install -d -m 0755 /var/log/chaos

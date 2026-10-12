@@ -15,7 +15,7 @@ vec4 EmbossFull(sampler2D txt,vec2 uv,vec4 color)
  float metal=length(vec2(sin(a+2.*uv.x),sin(a-2.*uv.x)+sin(a+2.*uv.y)+sin(a+5.*uv.y)));
  metal+=txt1.r*.21+txt1.g*.4+txt1.b*.2;
  metal=mod(metal,1.);
- metal=smoothstep(.001,.001,metal);
+ metal=step(.001,metal); // was smoothstep(.001,.001,metal): equal edges are undefined in GLSL (llvmpipe: garbage)
  
  vec4 noise=vec4(0.,0.,0.,0.);
  float n=abs(sin(uv.x*300.+u_Time*7.)+cos(uv.y*250.+u_Time*7.));

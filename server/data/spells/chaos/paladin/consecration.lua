@@ -17,7 +17,9 @@ function onCastSpell(creature, variant, isHotkey)
 
 	ChaosSpell.pulse(player:getId(), 6, 1000, function(caster, step)
 		local pos = Position(center)
-		ChaosSpell.fx(pos, "aura_ring", CONST_ME_HOLYAREA)
+		if step % 2 == 1 then
+			ChaosSpell.vfxOr(pos, "holy_seal", "aura_ring", CONST_ME_HOLYAREA)
+		end
 		doAreaCombat(caster, COMBAT_HOLYDAMAGE, pos, area, -math.floor(min), -math.floor(max), Fx("holy_smite", CONST_ME_HOLYDAMAGE))
 		for _, ally in ipairs(ChaosSpell.alliesAround(caster, pos, 2, true)) do
 			ChaosSpell.healTarget(caster, ally, min * 0.5, max * 0.5, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))

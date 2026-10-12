@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin War-Drummer" nameDescription="a goblin war-drummer" race="blood" experience="105" speed="190" manacost="0">
+	<health now="170" max="170" />
+	<look type="2007" head="56" body="95" legs="95" feet="19" corpse="36068" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="17" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-77" />
+	</attacks>
+	<defenses armor="12" defense="12">
+		<defense name="speed" interval="2000" chance="15" speedchange="250" duration="4000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+		<defense name="healing" interval="2000" chance="10" min="50" max="100">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="BOM! BOM! BOM!" />
+		<voice sentence="War! War!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="26" chance="60000" /><!-- gold coin -->
+		<item id="36016" countmax="2" chance="18000" /><!-- tribal feather -->
+		<item id="36017" countmax="1" chance="8000" /><!-- boar hide -->
+		<item id="36051" countmax="2" chance="12000" /><!-- roast lamb -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

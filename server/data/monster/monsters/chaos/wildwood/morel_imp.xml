@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Morel Imp" nameDescription="a morel imp" race="venom" experience="140" speed="210" manacost="0">
+	<health now="200" max="200" />
+	<look type="2019" head="22" body="2" legs="1" feet="95" corpse="36080" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="3" />
+		<flag staticattack="90" />
+		<flag runonhealth="20" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-69" />
+		<attack name="fire" interval="2000" chance="25" range="7" min="-26" max="-76">
+			<attribute key="shootEffect" value="fire" />
+		</attack>
+	</attacks>
+	<defenses armor="11" defense="11">
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Hihihi!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="35" chance="60000" /><!-- gold coin -->
+		<item id="36022" countmax="2" chance="18000" /><!-- spore sack -->
+		<item id="36042" countmax="2" chance="12000" /><!-- wild carrot -->
+	</loot>
+</monster>

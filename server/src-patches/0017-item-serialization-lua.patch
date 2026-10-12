@@ -1,0 +1,83 @@
+# Item serialization for Lua (the Chaos market escrow, data/scripts/chaos/market.lua and market_core.lua).
+# item:serializeAttributes() returns every attribute of an item, custom attributes included, as the binary string the
+# engine itself saves items with (Item::serializeAttr, the player_items / player_depotitems `attributes` column);
+# item:unserializeAttributes(data) reads such a string into a new item (Item::unserializeAttr). The market keeps a listed
+# item as one row with that string, and creates it again on purchase, cancel or expiry: rarity, item level, every
+# modifier with its tier, bound and raw marks, sockets and gems, quality, legendary powers, uniques, rift keys, names,
+# descriptions, charges and any custom attribute added later come back exactly (the engine has no call that lists the
+# custom attributes, so a Lua copy by a key list can miss one). Container contents are not part of it (the market
+# refuses containers that hold anything).
+# Without this patch the market falls back to copying a key list (the guild depot's method) and says so at startup.
+# Apply in the server source root after 0001-0014: patch -p1 < 0017-item-serialization-lua.patch, then rebuild
+# (only luascript.cpp / luascript.h change).
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2332,6 +2332,8 @@
+ 	registerMethod("Item", "getRealUID", LuaScriptInterface::luaItemGetRealUID);
+ 	registerMethod("Item", "sendUpdate", LuaScriptInterface::luaItemSendUpdate); // Chaos
+ 	registerMethod("Item", "getClientAttributes", LuaScriptInterface::luaItemGetClientAttributes); // Chaos
++	registerMethod("Item", "serializeAttributes", LuaScriptInterface::luaItemSerializeAttributes); // Chaos market
++	registerMethod("Item", "unserializeAttributes", LuaScriptInterface::luaItemUnserializeAttributes); // Chaos market
+ 	registerMethod("Item", "isStoreItem", LuaScriptInterface::luaItemIsStoreItem);
+ 
+ 	// Container
+@@ -7128,6 +7130,48 @@
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaItemSerializeAttributes(lua_State* L)
++{
++	// item:serializeAttributes() -> string: every attribute of the item (custom attributes included) in the binary
++	// form the engine saves items in (player_items.attributes); never the contents of a container
++	Item* item = getUserdata<Item>(L, 1);
++	if (!item) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	PropWriteStream stream;
++	item->serializeAttr(stream);
++	size_t size;
++	const char* data = stream.getStream(size);
++	lua_pushlstring(L, data, size);
++	return 1;
++}
++
++int LuaScriptInterface::luaItemUnserializeAttributes(lua_State* L)
++{
++	// item:unserializeAttributes(data) -> true when every attribute of `data` (item:serializeAttributes()) was read;
++	// meant for a new item that is not in the world yet (Game.createItem(id, count) without a position). A stackable
++	// item keeps the count it was created with (the data holds the count of the stack it was taken from).
++	Item* item = getUserdata<Item>(L, 1);
++	if (!item || !isString(L, 2)) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	size_t size;
++	const char* data = lua_tolstring(L, 2, &size);
++	PropStream stream;
++	stream.init(data, size);
++	const uint16_t count = item->getItemCount();
++	const bool ok = item->unserializeAttr(stream);
++	if (item->isStackable()) {
++		item->setItemCount(static_cast<uint8_t>(std::min<uint16_t>(count, 0xFF)));
++	}
++	pushBoolean(L, ok);
++	return 1;
++}
++
+ // Container
+ int LuaScriptInterface::luaContainerCreate(lua_State* L)
+ {
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -758,6 +758,8 @@
+ 		static int luaItemGetRealUID(lua_State* L);
+ 		static int luaItemSendUpdate(lua_State* L);
+ 		static int luaItemGetClientAttributes(lua_State* L);
++		static int luaItemSerializeAttributes(lua_State* L);
++		static int luaItemUnserializeAttributes(lua_State* L);
+ 		static int luaItemSetStoreItem(lua_State* L);
+ 		static int luaItemIsStoreItem(lua_State* L);
+ 

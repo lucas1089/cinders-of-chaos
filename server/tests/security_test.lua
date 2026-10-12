@@ -17,6 +17,7 @@ function Chaos.send(player, opcode, action, data) sent[#sent + 1] = {opcode = op
 
 local events, talks = {}, {}
 function CreatureEvent(name) local o = {}; function o:type() end; function o:register() events[name] = o end; return o end
+EventCallback = {register = function() end} -- dungeons.lua (difficulty) hooks onGainExperience / onDropLoot callbacks
 function TalkAction(words) local o = {}; function o:separator() end; function o:register() talks[words] = o end; return o end
 function GlobalEvent(name) local o = {}; function o:interval() end; function o:register() end; return o end
 function addEvent() return 1 end
@@ -53,6 +54,7 @@ local function tile(x, y, z, h)
 	local t = {things = {}, house = h}
 	function t:getHouse() return self.house end
 	function t:getThing(i) return self.things[i + 1] end
+	function t:hasProperty() return self.solid == true end
 	tiles[key(x, y, z)] = t
 	return t
 end
@@ -94,6 +96,9 @@ local function newPlayer(id, pos)
 	function p:isPzLocked() return self.pzLocked end
 	function p:hasCondition(c) return c == CONDITION_INFIGHT and self.inFight end
 	function p:registerEvent() end
+	function p:save() return self.saveOk ~= false end
+	p.added = {}
+	function p:addItem(id, c) self.added[#self.added + 1] = {id, c} return true end
 	return p
 end
 
@@ -138,6 +143,34 @@ local loose = item(2150, 7)
 street.things[1] = loose
 stashAt(outside, 100, 100, 7)
 eq(loose.removed, true, "a movable item on the street is stashed as before")
+
+-- crash duplication: the character is saved before the stash row is credited; a failed save gives the item back
+local saveless = newPlayer(4, Position(100, 100, 7))
+saveless.saveOk = false
+local stack = item(2151, 9)
+street.things[1] = stack
+local nq = #queries
+stashAt(saveless, 100, 100, 7)
+eq(#queries, nq, "no stash row without a save")
+eq(saveless.added[1] and saveless.added[1][1], 2151, "the item goes back to the character")
+eq(saveless.added[1] and saveless.added[1][2], 9, "all of it")
+
+-- reach: not through a wall, bars or a window, not around a corner between two walls
+local wallTile = tile(100, 99, 7)
+wallTile.solid = true
+local behind = item(2152, 4)
+wallTile.things[1] = behind
+stashAt(outside, 100, 99, 7)
+eq(behind.removed, false, "an item on a blocking tile (bars, window) is out of reach")
+local corner = tile(99, 99, 7)
+local around = item(2153, 4)
+corner.things[1] = around
+tile(99, 100, 7).solid = true                       -- the other side of the corner is a wall too
+stashAt(outside, 99, 99, 7)
+eq(around.removed, false, "an item diagonally between two walls is out of reach")
+tiles[key(99, 100, 7)].solid = false
+stashAt(outside, 99, 99, 7)
+eq(around.removed, true, "with one open side it is in reach")
 
 -- rate limit: the item list is read from the database at most every 300 ms
 local before = #sent

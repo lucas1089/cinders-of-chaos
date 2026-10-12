@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Bracket Fungus Golem" nameDescription="a bracket fungus golem" race="venom" experience="1400" speed="170" manacost="0">
+	<health now="2000" max="2000" />
+	<look type="2034" head="40" body="58" legs="58" feet="43" corpse="36095" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-362" />
+		<attack name="physical" interval="2000" chance="12" radius="3" target="1" min="-142" max="-347">
+			<attribute key="shootEffect" value="largerock" />
+			<attribute key="areaEffect" value="stones" />
+		</attack>
+	</attacks>
+	<defenses armor="40" defense="40">
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="*rumble*" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
+		<item id="2152" countmax="3" chance="40000" /><!-- platinum coin -->
+		<item id="36021" countmax="2" chance="18000" /><!-- piece of heartwood -->
+		<item id="36022" countmax="1" chance="8000" /><!-- spore sack -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="7588" chance="4000" /><!-- strong health potion -->
+		<item id="7589" chance="4000" /><!-- strong mana potion -->
+	</loot>
+</monster>

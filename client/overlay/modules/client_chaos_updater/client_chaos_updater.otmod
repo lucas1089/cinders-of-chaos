@@ -1,0 +1,13 @@
+Module
+  name: client_chaos_updater
+  description: Cinders of Chaos signed updater (Ed25519-signed manifest, SHA-256 checked files, parallel downloads, progress on the login screen)
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ updater_core, updater ]
+  dependencies:
+    - client_chaos_theme
+    - client_entergame
+  autoload: true
+  autoload-priority: 1110
+  @onLoad: ChaosUpdater.init()
+  @onUnload: ChaosUpdater.terminate()

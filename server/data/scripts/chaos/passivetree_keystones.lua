@@ -6,13 +6,19 @@
 --                ksBulwark      with a shield: 15% to block a melee/ranged attack fully, 30% of melee damage reflected
 --   paladin      ksRicochet     bow/crossbow hits: 30% to bounce to the nearest other enemy (4 sqm) for 65%, then once
 --                               more for 65% of that; never the same target twice
---                ksDeadeye      crossbow + bolts: 15% for a Deadeye shot, double damage
+--                ksDeadeye      crossbow: 15% for a Deadeye shot, double damage
 --   sorcerer     ksArcaneEcho   a spell that hits 2+ enemies: 35% to echo 0.6 s later on the same spots for 50%, 3 s cooldown
 --                ksOverload     a spell hit of one element primes the others: the next spell of another element +20% (8 s)
 --   druid        ksOvergrowth   heals on others also heal 30% of the heal again over 6 s (3 pulses)
 --                ksThorns       melee/ranged attackers take 30% of their hit + 2 x magic level back as earth damage
+--   juggernaut   ksImmovable    damage taken -8%, -16% while below 50% health (and Bulwark, as the knight)
+--   berserker    ksUndyingRage  melee weapon hits heal 4% of the damage dealt, 8% below 50% health (and Cleaving Arc)
+--   deadeye      ksHuntersFocus bow / crossbow hits on the same target +4% each, up to +20% (and Deadeye)
+--   beastmaster  ksPackAlpha    companions: bites and Feral Command +35%, 20% less damage taken (beastmaster.lua,
+--                               classes.lua biteValues; and Ricochet). Numbers of these four: class_tree.lua (fx).
 --   illusionist  (support: makes the party hit harder, never the illusionist)
 --                ksSharedPhantasm    the illusionist's hits mark the enemy for 6 s: other party members deal +12% to it
+--                                    and heal for 4% of the damage they deal to it (the illusionist heals them)
 --                ksInspiringIllusion other party members within 8 sqm (same floor) deal +8% damage
 --                Both need a party; multi-client characters neither give nor get them (Chaos.isMultiClient).
 -- The numbers are in `cfg` below; the client tooltips (treedata/nodes.lua) repeat them and the unit test checks that.
@@ -42,7 +48,7 @@ local cfg = {
 	overload = {bonus = 0.20, window = 8000, castWindow = 150},
 	overgrowth = {percent = 0.30, pulses = 3, interval = 2000},
 	thorns = {percent = 0.30, perMagicLevel = 2},
-	phantasm = {bonus = 0.12, duration = 6000},
+	phantasm = {bonus = 0.12, duration = 6000, leech = 0.04},
 	inspire = {bonus = 0.08, range = 8},
 }
 K.cfg = cfg
@@ -186,6 +192,16 @@ function K.partyMultiplier(hit, mark, givers)
 	return m
 end
 
+-- Shared Phantasm's heal: what a party member's hit of `amount` on a marked enemy heals it for (0 when the mark does
+-- not count for this hit: no party, another party, its own mark, expired, multi-client)
+function K.phantasmLeech(hit, mark, amount)
+	if not hit.party or hit.multiClient or not mark or mark.party ~= hit.party or mark.owner == hit.attackerId
+			or hit.now > mark.untilTime or mark.multiClient then
+		return 0
+	end
+	return math.floor(math.abs(amount) * cfg.phantasm.leech)
+end
+
 function K.hasKeystone(bonuses)
 	if bonuses then
 		for key in pairs(bonuses) do
@@ -240,14 +256,14 @@ local function copyPos(p)
 	return {x = p.x, y = p.y, z = p.z}
 end
 
--- weapon in the hands (not a shield, not ammunition), like weapon_styles.lua
+-- weapon in the hands (not a shield, not ammunition, not a quiver), like weapon_styles.lua
 local function handWeapon(player)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
 		if item then
 			local it = ItemType(item:getId())
 			local wt = it:getWeaponType()
-			if wt ~= WEAPON_NONE and wt ~= WEAPON_SHIELD and wt ~= WEAPON_AMMO then
+			if wt ~= WEAPON_NONE and wt ~= WEAPON_SHIELD and wt ~= WEAPON_AMMO and wt ~= (WEAPON_QUIVER or 8) then
 				return it
 			end
 		end
@@ -271,12 +287,12 @@ end
 
 local MELEE_WEAPON = {[WEAPON_SWORD] = true, [WEAPON_CLUB] = true, [WEAPON_AXE] = true}
 
+-- a crossbow in the hands (bows and crossbows fire without ammunition: data/lib/chaos_archery_core.lua)
 local function shootsBolts(player, weapon)
-	if weapon:getWeaponType() ~= WEAPON_DISTANCE or weapon:getAmmoType() ~= AMMO_BOLT then
-		return false
+	if not ChaosArchery then
+		pcall(dofile, "data/lib/chaos_archery_core.lua")
 	end
-	local ammo = player:getSlotItem(CONST_SLOT_AMMO)
-	return ammo ~= nil and ItemType(ammo:getId()):getAmmoType() == AMMO_BOLT
+	return ChaosArchery ~= nil and ChaosArchery.kindOfType(weapon) == "crossbow"
 end
 
 local function validTarget(attacker, c)
@@ -430,6 +446,32 @@ local function setMark(player, party, target)
 	end
 end
 
+-- Shared Phantasm heals: collected per party member until the end of the server tick, healed by the mark's owner
+local leechBuffer = {}
+local function flushLeech(memberId)
+	local entry = leechBuffer[memberId]
+	leechBuffer[memberId] = nil
+	local member = Player(memberId)
+	if entry and member and member:getHealth() > 0 and entry.amount > 0 then
+		guarded(doTargetCombat, Player(entry.owner) or 0, member, COMBAT_HEALING, entry.amount, entry.amount, CONST_ME_NONE,
+			ORIGIN_SPELL)
+	end
+end
+
+local function addLeech(member, owner, amount)
+	if amount <= 0 then
+		return
+	end
+	local id = member:getId()
+	local entry = leechBuffer[id]
+	if not entry then
+		entry = {owner = owner, amount = 0}
+		leechBuffer[id] = entry
+		addEvent(flushLeech, 0, id)
+	end
+	entry.amount = entry.amount + amount
+end
+
 local function partyBonus(attacker, creature, pd, sd)
 	local party = attacker:getParty()
 	if not party then
@@ -448,10 +490,14 @@ local function partyBonus(attacker, creature, pd, sd)
 	if not mark and #givers == 0 then
 		return pd, sd
 	end
-	local m = K.partyMultiplier({attackerId = attacker:getId(), party = K.partyKey(party), pos = copyPos(attacker:getPosition()),
-		now = now(), multiClient = isMultiClient(attacker)}, mark, givers)
+	local hit = {attackerId = attacker:getId(), party = K.partyKey(party), pos = copyPos(attacker:getPosition()),
+		now = now(), multiClient = isMultiClient(attacker)}
+	local m = K.partyMultiplier(hit, mark, givers)
 	if m ~= 1 then
 		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
+	if mark then
+		addLeech(attacker, mark.owner, K.phantasmLeech(hit, mark, math.abs(pd) + math.abs(sd)))
 	end
 	return pd, sd
 end
@@ -496,8 +542,44 @@ local function reflect(ownerId, attackerId, ctype, amount, missile, effect)
 	end
 end
 
+if not ChaosClassTree then
+	dofile("data/scripts/chaos/class_tree.lua")
+end
+local CT = ChaosClassTree
+
+-- Juggernaut, Immovable: the damage factor at `health` of `maxHealth` (pure)
+function K.immovableFactor(health, maxHealth)
+	local f = CT.fx.ksImmovable
+	if (maxHealth or 0) > 0 and health / maxHealth < f.lowHealth then
+		return 1 - f.lowReduction
+	end
+	return 1 - f.reduction
+end
+
+-- Berserker, Undying Rage: the heal for a melee weapon hit of `amount` (pure)
+function K.undyingHeal(amount, health, maxHealth)
+	local f = CT.fx.ksUndyingRage
+	local share = ((maxHealth or 0) > 0 and health / maxHealth < f.lowHealth) and f.lowHeal or f.heal
+	return math.floor(math.abs(amount or 0) * share)
+end
+
+-- Deadeye, Hunter's Focus: state = {target, hits, at}; returns the multiplier of this hit on `targetId` at `now` (pure)
+function K.focusStep(state, targetId, now)
+	local f = CT.fx.ksHuntersFocus
+	if state.target ~= targetId or now - (state.at or 0) > f.resetMs then
+		state.target, state.hits = targetId, 0
+	end
+	local m = 1 + math.min(f.maxBonus, state.hits * f.perHit)
+	state.hits, state.at = state.hits + 1, now
+	return m
+end
+
 -- keystones of the creature that is hit (it is a player)
 local function defend(player, b, attacker, pd, pt, sd, st, origin)
+	if b.ksImmovable then
+		local m = K.immovableFactor(player:getHealth(), player:getMaxHealth())
+		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
 	if origin ~= ORIGIN_MELEE and origin ~= ORIGIN_RANGED then
 		return pd, sd
 	end
@@ -536,12 +618,31 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 	end
 
 	if origin == ORIGIN_MELEE or origin == ORIGIN_RANGED then
-		if not (b.ksCleavingArc or b.ksRicochet or b.ksDeadeye) then
+		if not (b.ksCleavingArc or b.ksRicochet or b.ksDeadeye or b.ksUndyingRage or b.ksHuntersFocus) then
 			return pd, sd
 		end
 		local weapon = handWeapon(player)
 		if not weapon then
 			return pd, sd
+		end
+		if b.ksHuntersFocus and origin == ORIGIN_RANGED and weapon:getWeaponType() == WEAPON_DISTANCE then
+			local s = stateOf(pid)
+			s.focus = s.focus or {}
+			local m = K.focusStep(s.focus, creature:getId(), now())
+			if m ~= 1 then
+				pd, sd = K.scale(pd, m), K.scale(sd, m)
+			end
+		end
+		if b.ksUndyingRage and origin == ORIGIN_MELEE and MELEE_WEAPON[weapon:getWeaponType()] then
+			local heal = K.undyingHeal(math.abs(pd) + math.abs(sd), player:getHealth(), player:getMaxHealth())
+			if heal > 0 then
+				addEvent(function()
+					local p = Player(pid)
+					if p and p:getHealth() > 0 and Chaos and Chaos.heal then
+						Chaos.heal(p, heal)
+					end
+				end, 0)
+			end
 		end
 		if b.ksDeadeye and origin == ORIGIN_RANGED and shootsBolts(player, weapon) and K.roll(cfg.deadeye.chance) then
 			pd, sd = K.scale(pd, cfg.deadeye.multiplier), K.scale(sd, cfg.deadeye.multiplier)
@@ -601,7 +702,7 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	end
 	if creature:isPlayer() then
 		local b = ChaosPassiveCache[creature:getId()]
-		if b and (b.ksBulwark or b.ksThorns) then
+		if b and (b.ksBulwark or b.ksThorns or b.ksImmovable) then
 			pd, sd = defend(creature, b, attacker, pd, pt, sd, st, origin)
 			if pd == 0 and sd == 0 then
 				return pd, pt, sd, st

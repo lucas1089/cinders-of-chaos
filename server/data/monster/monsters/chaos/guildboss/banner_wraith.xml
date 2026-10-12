@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Add of the guild boss arena (guildboss.lua): a fallen standard-bearer. Health and count are set by the script (x the
+     number of members, guildboss_config.lua); the stock look 78. No loot, no experience to speak of. -->
+<monster name="Banner Wraith" nameDescription="a banner wraith" race="undead" experience="1000" speed="240" manacost="0">
+	<health now="25000" max="25000" />
+	<look type="78" corpse="6068" />
+	<targetchange interval="4000" chance="20" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-250" max="-550" />
+		<attack name="death" interval="2000" chance="20" range="6" target="1" radius="1" min="-300" max="-650">
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+	</attacks>
+	<defenses armor="40" defense="40" />
+	<elements>
+		<element physicalPercent="15" />
+		<element holyPercent="-25" />
+		<element deathPercent="60" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+</monster>

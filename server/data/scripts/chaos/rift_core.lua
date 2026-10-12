@@ -74,28 +74,141 @@ function R.rollModCount(cfg, rand, better)
 	return weighted(better and cfg.modCountBetter or cfg.modCount, rand)
 end
 
--- `count` different modifiers, each {key =, value =}, in the order of cfg.mods
-function R.rollMods(cfg, count, rand)
-	local pool = {}
-	for i = 1, #cfg.mods do
-		pool[i] = i
+-- roll weight of a modifier (default 100) and whether a key of `tier` may roll it (minTier, default 1; nil tier: any)
+function R.modWeight(def)
+	return def.weight or 100
+end
+
+function R.modAllowed(def, tier)
+	return tier == nil or tier >= (def.minTier or 1)
+end
+
+-- ---------------------------------------------------------------- modifier tiers (I-V)
+-- def.tiers = the highest value of each tier; tier 1 starts at range[1], tier t at tiers[t - 1] + step. A modifier
+-- without `tiers` has none (R.modTier is nil).
+function R.tierBounds(def, t)
+	local tiers = def.tiers
+	if not tiers or #tiers == 0 then
+		return def.range[1], def.range[2]
 	end
+	t = clamp(floor(t), 1, #tiers)
+	local lo = t == 1 and def.range[1] or tiers[t - 1] + def.step
+	return lo, tiers[t]
+end
+
+function R.modTier(def, value)
+	if not def or not def.tiers then
+		return nil
+	end
+	for t, top in ipairs(def.tiers) do
+		if value <= top then
+			return t
+		end
+	end
+	return #def.tiers
+end
+
+-- {lowest, highest} modifier tier a key of `tier` rolls (no tier or no table: I-III, the ranges before the tiers)
+function R.modTierWindow(cfg, tier)
+	local mt = cfg and cfg.modTiers
+	if not mt or not tier then
+		return 1, 3
+	end
+	for _, row in ipairs(mt.window) do
+		if tier <= row[1] then
+			return row[2], row[3]
+		end
+	end
+	local last = mt.window[#mt.window]
+	return last[2], last[3]
+end
+
+function R.tierName(cfg, t)
+	local names = cfg and cfg.modTiers and cfg.modTiers.names
+	return t and (names and names[t] or tostring(t)) or nil
+end
+
+-- a value for a modifier on a key of `tier`: evenly on the step grid from the bottom of the lowest to the top of the
+-- highest tier of the window (one rand call; keys of tier 1-5 and calls without a tier roll exactly the I-III range)
+local function rollValue(def, rand, tier, cfg)
+	local lo, hi = def.range[1], def.range[2]
+	if def.tiers then
+		local a, b = R.modTierWindow(cfg, tier)
+		b = math.min(b, #def.tiers)
+		a = math.min(a, b)
+		lo = (R.tierBounds(def, a))
+		hi = select(2, R.tierBounds(def, b))
+	end
+	local steps = floor((hi - lo) / def.step)
+	return lo + rand(0, steps) * def.step
+end
+R.rollValue = rollValue
+
+-- indexes of cfg.mods a key of `tier` may still roll (not in `have` = {key = true})
+local function modPool(cfg, tier, have)
+	local pool = {}
+	for i, def in ipairs(cfg.mods) do
+		if R.modAllowed(def, tier) and not (have and have[def.key]) and R.modWeight(def) > 0 then
+			pool[#pool + 1] = i
+		end
+	end
+	return pool
+end
+R.modPool = modPool
+
+-- draws up to `count` different indexes from pool (weighted, without replacement)
+local function drawMods(cfg, pool, count, rand)
 	local picked = {}
 	for _ = 1, math.min(count, #pool) do
-		picked[#picked + 1] = table.remove(pool, rand(1, #pool))
+		local total = 0
+		for _, i in ipairs(pool) do
+			total = total + R.modWeight(cfg.mods[i])
+		end
+		local roll, acc = rand(1, total), 0
+		for k, i in ipairs(pool) do
+			acc = acc + R.modWeight(cfg.mods[i])
+			if roll <= acc then
+				picked[#picked + 1] = table.remove(pool, k)
+				break
+			end
+		end
 	end
 	table.sort(picked)
+	return picked
+end
+
+-- `count` different modifiers, each {key =, value =}, in the order of cfg.mods (weighted by `weight`; with a tier,
+-- only the modifiers whose minTier it reaches)
+function R.rollMods(cfg, count, rand, tier)
 	local mods = {}
-	for _, i in ipairs(picked) do
+	for _, i in ipairs(drawMods(cfg, modPool(cfg, tier), count, rand)) do
 		local m = cfg.mods[i]
-		local steps = floor((m.range[2] - m.range[1]) / m.step)
-		mods[#mods + 1] = {key = m.key, value = m.range[1] + rand(0, steps) * m.step}
+		mods[#mods + 1] = {key = m.key, value = rollValue(m, rand, tier, cfg)}
 	end
 	return mods
 end
 
+-- adds up to `count` new modifiers to key (the orbs of upheaval_crafting.lua); returns the added ones. key.mods stays in
+-- config order.
+function R.addMods(cfg, key, count, rand)
+	local have = {}
+	for _, m in ipairs(key.mods) do
+		have[m.key] = true
+	end
+	local added = {}
+	for _, i in ipairs(drawMods(cfg, modPool(cfg, key.tier, have), count, rand)) do
+		local def = cfg.mods[i]
+		local m = {key = def.key, value = rollValue(def, rand, key.tier, cfg)}
+		key.mods[#key.mods + 1] = m
+		added[#added + 1] = m
+	end
+	key.mods = R.decodeMods(cfg, R.encodeMods(key.mods))
+	return added
+end
+
 function R.rollKey(cfg, tier, rand, better)
-	return {tier = R.clampTier(cfg, tier), mods = R.rollMods(cfg, R.rollModCount(cfg, rand, better), rand)}
+	tier = R.clampTier(cfg, tier)
+	return {tier = tier, mods = R.rollMods(cfg, R.rollModCount(cfg, rand, better), rand, tier)}
 end
 
 function R.encodeMods(mods)
@@ -106,15 +219,16 @@ function R.encodeMods(mods)
 	return table.concat(parts, ",")
 end
 
--- parses and validates (unknown keys dropped, values clamped to the range, duplicates dropped, at most 3)
+-- parses and validates (unknown keys dropped, values clamped to the range, duplicates dropped, at most cfg.key.maxMods)
 function R.decodeMods(cfg, text)
 	local mods, seen = {}, {}
 	if type(text) ~= "string" then
 		return mods
 	end
+	local max = cfg.key and cfg.key.maxMods or 3
 	for key, value in text:gmatch("([%a_]+):(%-?%d+)") do
 		local def = R.modDef(cfg, key)
-		if def and not seen[key] and #mods < 3 then
+		if def and not seen[key] and #mods < max then
 			seen[key] = true
 			mods[#mods + 1] = {key = key, value = clamp(tonumber(value), def.range[1], def.range[2])}
 		end
@@ -154,6 +268,16 @@ function R.modText(cfg, m)
 	return (def.text:find("%%d") and string.format(def.text, m.value) or def.text)
 end
 
+-- "Vitality III" (the name and the tier of a modifier; the name alone without a tier)
+function R.modLabel(cfg, m)
+	local def = R.modDef(cfg, m.key)
+	if not def then
+		return m.key
+	end
+	local t = R.modTier(def, m.value)
+	return t and (def.name .. " " .. R.tierName(cfg, t)) or def.name
+end
+
 -- reward bonuses in percent {quantity, rarity, experience} from the modifiers (+ tiers above the table)
 function R.bonuses(cfg, mods, tier)
 	local b = {quantity = 0, rarity = 0, experience = 0}
@@ -171,16 +295,44 @@ function R.bonuses(cfg, mods, tier)
 			end
 		end
 	end
+	local cap = R.bonusCaps(cfg, mods)
 	for k, v in pairs(b) do
 		b[k] = floor(v + 0.5)
+		if cap[k] and b[k] > cap[k] then
+			b[k] = cap[k]
+		end
 	end
 	return b
+end
+
+-- the caps of the summed bonuses: bonusCap + modTiers.capRaise of every tier IV / V modifier
+function R.bonusCaps(cfg, mods)
+	local cap = {}
+	for k, v in pairs(cfg.bonusCap or {}) do
+		cap[k] = v
+	end
+	local raise = cfg.modTiers and cfg.modTiers.capRaise
+	if raise then
+		for _, m in ipairs(mods or {}) do
+			local t = R.modTier(R.modDef(cfg, m.key), m.value)
+			local r = t and raise[t]
+			if r then
+				for k, v in pairs(r) do
+					if cap[k] then
+						cap[k] = cap[k] + v
+					end
+				end
+			end
+		end
+	end
+	return cap
 end
 
 function R.describe(cfg, key)
 	local lines = {}
 	for _, m in ipairs(key.mods or {}) do
-		lines[#lines + 1] = R.modText(cfg, m)
+		local t = R.modTier(R.modDef(cfg, m.key), m.value)
+		lines[#lines + 1] = R.modText(cfg, m) .. (t and (" (" .. R.tierName(cfg, t) .. ")") or "")
 	end
 	local b = R.bonuses(cfg, key.mods, key.tier)
 	local bonus = {}
@@ -218,7 +370,9 @@ end
 -- what the modifiers do: multipliers / additions used by rift.lua
 function R.effects(cfg, mods, tier)
 	local t = R.tierInfo(cfg, tier)
-	local fx = {health = t.health, damage = t.damage, speed = 0, elite = 1, reflect = 0, resist = 0, noRegen = false, packBonus = 0}
+	local fx = {health = t.health, damage = t.damage, speed = 0, elite = 1, reflect = 0, resist = 0, noRegen = false, packBonus = 0,
+		packMult = 1, gilded = 0, warband = 0, coffer = 0, twin = 0, echo = 0, cinder = 0, healMult = 1, timeMult = 1,
+		boss = 1, fragile = 0}
 	for _, m in ipairs(mods or {}) do
 		local v = m.value
 		if m.key == "vitality" then
@@ -237,6 +391,28 @@ function R.effects(cfg, mods, tier)
 			fx.noRegen = true
 		elseif m.key == "swarm" then
 			fx.packBonus = fx.packBonus + v
+		elseif m.key == "teeming" then
+			fx.packMult = fx.packMult * (1 + v / 100)
+		elseif m.key == "gilded" then
+			fx.gilded = v -- percent chance of the goblin
+		elseif m.key == "warband" then
+			fx.warband = v -- percent of packs
+		elseif m.key == "coffer" then
+			fx.coffer = v -- percent chance of the coffer
+		elseif m.key == "twin" then
+			fx.twin = v / 100 -- health share of each guardian
+		elseif m.key == "echo" then
+			fx.echo = v -- percent chance per kill
+		elseif m.key == "cinder" then
+			fx.cinder = v / 100 -- share of the monster's max health
+		elseif m.key == "blight" then
+			fx.healMult = fx.healMult * (1 - v / 100)
+		elseif m.key == "waning" then
+			fx.timeMult = fx.timeMult * (1 - v / 100)
+		elseif m.key == "dread" then
+			fx.boss = fx.boss * (1 + v / 100) -- guardian health and damage
+		elseif m.key == "fragile" then
+			fx.fragile = fx.fragile + v -- fewer lives
 		end
 	end
 	return fx
@@ -294,6 +470,54 @@ local function eliteTier(cfg, fx, tier, rand)
 end
 R.eliteTier = eliteTier
 
+-- the looks of a run (rift-exclusive outfits, cfg.looks): {byName = {[lowercase type name] = lookType}, guardian =
+-- lookType, names = {[lowercase type name] = shown name}, guardianName}, or nil (looks off, or a theme without a
+-- family). `types` sorted by level (R.pickTypes): the weakest is the minion, the strongest the elite, the rest brutes;
+-- one type is the elite, two are brute and elite. Each rank shows its name of cfg.looks.names (none: the type's own).
+function R.lookPlan(cfg, themeName, types)
+	local L = cfg.looks
+	local fam = L and L.enabled and L.families and L.families[themeName]
+	if not fam then
+		return nil
+	end
+	local names = L.names and L.names[themeName] or {}
+	local plan = {byName = {}, guardian = fam.guardian, names = {}, guardianName = names.guardian}
+	local n = #types
+	for i, e in ipairs(types) do
+		local rank = "brute"
+		if i == n then
+			rank = "elite"
+		elseif i == 1 and n >= 3 then
+			rank = "minion"
+		end
+		plan.byName[e.name:lower()] = fam[rank]
+		plan.names[e.name:lower()] = names[rank]
+	end
+	return plan
+end
+
+-- the name a rift monster shows: its rank's name (the guardian's for a guardian); nil = its type's own
+function R.nameOf(plan, name, boss)
+	if not plan then
+		return nil
+	end
+	if boss then
+		return plan.guardianName
+	end
+	return plan.names and plan.names[tostring(name):lower()]
+end
+
+-- the look a rift monster wears: the guardian's for a guardian, else its type's rank's; nil = its own
+function R.lookOf(plan, name, boss)
+	if not plan then
+		return nil
+	end
+	if boss then
+		return plan.guardian
+	end
+	return plan.byName[tostring(name):lower()]
+end
+
 -- the run plan: {types, packs = {{room, name, count, elites = {tier or false, ...}}}, total, bossAt, boss}
 -- rooms = list of room names the packs may use (open side rooms; "hub" gets at most one pack)
 function R.plan(cfg, tier, fx, players, types, rooms, rand)
@@ -302,7 +526,10 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 	if #types == 0 then
 		return plan
 	end
-	local count = cfg.packs.base + floor(tier / cfg.packs.perTiers) + cfg.packs.perExtraPlayer * (players - 1)
+	local count = R.packCount(cfg, tier, players)
+	if (fx.packMult or 1) ~= 1 then
+		count = floor(count * fx.packMult + 0.5) -- Teeming
+	end
 	local areas = {}
 	for _, r in ipairs(rooms) do
 		areas[#areas + 1] = r
@@ -320,12 +547,143 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 		for k = 1, size do
 			elites[k] = eliteTier(cfg, fx, tier, rand) or false
 		end
-		plan.packs[#plan.packs + 1] = {room = room, name = name, count = size, elites = elites}
+		local warband = (fx.warband or 0) > 0 and chance(fx.warband, rand)
+		if warband then -- Warbands: every member at least rare, the first legendary
+			for k = 1, size do
+				if elites[k] ~= "legendary" then
+					elites[k] = "rare"
+				end
+			end
+			elites[1] = "legendary"
+		end
+		plan.packs[#plan.packs + 1] = {room = room, name = name, count = size, elites = elites, warband = warband or nil}
 		plan.total = plan.total + size
 	end
 	plan.bossAt = math.max(1, math.ceil(plan.total * cfg.bossAt / 100))
 	plan.boss = types[#types].name -- the strongest type (types are sorted by level)
+	plan.guardians = (fx.twin or 0) > 0 and 2 or 1
+	-- Gilded Trail: the kill count at which the goblin appears (nil: no goblin this run)
+	if (fx.gilded or 0) > 0 and chance(fx.gilded, rand) then
+		local at = cfg.gilded and cfg.gilded.atKills or {25, 60}
+		plan.gildedAt = math.max(1, math.ceil(plan.total * rand(at[1], at[2]) / 100))
+	end
+	-- Sealed Coffer: the room it stands in (nil: no coffer this run)
+	if (fx.coffer or 0) > 0 and chance(fx.coffer, rand) then
+		plan.coffer = #rooms > 0 and rooms[rand(1, #rooms)] or "hub"
+	end
 	return plan
+end
+
+-- packs of a run before Teeming: packs.base + tier / packs.perTiers + packs.perExtraPlayer x (players - 1)
+function R.packCount(cfg, tier, players)
+	players = math.max(1, floor(tonumber(players) or 1))
+	return cfg.packs.base + floor(tier / cfg.packs.perTiers) + cfg.packs.perExtraPlayer * (players - 1)
+end
+
+-- ===================================================================== party scaling
+-- cfg.party (rift_config.lua): with n players who entered,
+--   health  the rift's total monster health x (1 + healthPerExtraPlayer x (n - 1))
+--   damage  rift monsters and guardians x (1 + damagePerExtraPlayer x (n - 1))
+--   reward  every finisher's chest x (1 + min(rewardCap, rewardPerExtraPlayer x (n - 1)) / 100)
+--   loot    the kills' Chaos loot rate and the Sealed Coffer x (1 + min(lootCap, lootPerExtraPlayer x (n - 1)) / 100)
+-- Solo (or no cfg.party): every value 1.
+function R.party(cfg, players)
+	local p = cfg and cfg.party
+	local extra = math.max(1, floor(tonumber(players) or 1)) - 1
+	if not p or extra == 0 then
+		return {players = extra + 1, health = 1, damage = 1, reward = 1, loot = 1}
+	end
+	return {
+		players = extra + 1,
+		health = 1 + (p.healthPerExtraPlayer or 0) * extra,
+		damage = 1 + (p.damagePerExtraPlayer or 0) * extra,
+		reward = 1 + math.min(p.rewardCap or 0, (p.rewardPerExtraPlayer or 0) * extra) / 100,
+		loot = 1 + math.min(p.lootCap or 0, (p.lootPerExtraPlayer or 0) * extra) / 100
+	}
+end
+
+-- each pack monster's health multiplier for the party: the packs already grow with the players (R.packCount), so a
+-- monster gets the rest of the total health curve (party.health x solo packs / party packs), never below 1
+function R.partyMonsterHealth(cfg, tier, players)
+	local ps = R.party(cfg, players)
+	if ps.players <= 1 then
+		return 1
+	end
+	return math.max(1, ps.health * R.packCount(cfg, tier, 1) / R.packCount(cfg, tier, ps.players))
+end
+
+-- the party part of a run's effects (after R.effects / R.applyAtlasFx): fx.damage x party damage (every rift monster
+-- and guardian), fx.partyHealth (each pack monster's extra health), fx.party (the R.party table). Omen arenas pass
+-- tier nil (no packs). Changes and returns fx.
+function R.applyParty(cfg, fx, players, tier)
+	local ps = R.party(cfg, players)
+	fx.party = ps
+	fx.damage = (fx.damage or 1) * ps.damage
+	fx.partyHealth = tier and R.partyMonsterHealth(cfg, tier, players) or 1
+	return fx
+end
+
+-- one finisher's chest x the party bonus: gold, orbs and item rolls (fractions a chance of one more). Changes and
+-- returns r; solo leaves it as it was.
+function R.partyReward(cfg, r, players, rand)
+	local m = R.party(cfg, players).reward
+	if m == 1 then
+		return r
+	end
+	r.gold = floor((r.gold or 0) * m)
+	r.chaos = R.roundChance((r.chaos or 0) * m, rand)
+	r.divine = R.roundChance((r.divine or 0) * m, rand)
+	r.rolls = math.max(1, R.roundChance((r.rolls or 1) * m, rand))
+	r.partyMult = m
+	return r
+end
+
+-- a count (Omen Fragments) x the party bonus, fractions a chance of one more
+function R.partyCount(cfg, n, players, rand)
+	local m = R.party(cfg, players).reward
+	if m == 1 or (n or 0) <= 0 then
+		return n
+	end
+	return R.roundChance(n * m, rand)
+end
+
+-- the chat line of a party's scaling ("Party of 3: monster health x3, damage +20%; every chest +20%, loot +10%."),
+-- nil solo. health = the health multiplier to show (the rift total, or the guardian's)
+function R.partyNote(ps, health)
+	if not ps or ps.players <= 1 then
+		return nil
+	end
+	local function pct(x)
+		return floor((x - 1) * 100 + 0.5)
+	end
+	return string.format("Party of %d: monster health x%s, damage +%d%%; every chest +%d%%, loot +%d%%.", ps.players,
+		tostring(floor((health or ps.health) * 100 + 0.5) / 100), pct(ps.damage), pct(ps.reward), pct(ps.loot))
+end
+
+-- the guardian's health multiplier (on its base health): boss.healthMult, players, the modifiers' health, Dread
+-- Guardian, and the Twin Guardians share of each
+function R.guardianHealthMult(cfg, fx, players)
+	local c = cfg.boss
+	local m = c.healthMult * (1 + c.perExtraPlayer * (math.max(1, players or 1) - 1)) * (fx.health or 1) * (fx.boss or 1)
+	if (fx.twin or 0) > 0 then
+		m = m * fx.twin
+	end
+	return m
+end
+
+-- Cinderdeath: fire damage of a slain monster's burst
+function R.cinderDamage(cfg, maxHealth, share, tier)
+	if not share or share <= 0 then
+		return 0
+	end
+	local c = cfg.cinder
+	return math.max(1, floor(math.min((maxHealth or 0) * share, c.capBase + c.capPerTier * R.clampTier(cfg, tier))))
+end
+
+-- Sealed Coffer: number of monsters in the wave
+function R.cofferWaveSize(cfg, players)
+	local w = cfg.coffer.wave
+	return w.base + w.perExtraPlayer * (math.max(1, players or 1) - 1)
 end
 
 -- ===================================================================== rewards
@@ -366,24 +724,66 @@ function R.reward(cfg, tier, bonus, rand)
 	}
 end
 
--- odds of the next key: {chance = percent of a key, nextTier = percent of those that are tier + 1}
-function R.keyOdds(cfg, modCount)
-	local k = cfg.keyDrop
-	modCount = modCount or 0
+-- the Sealed Coffer's contents: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult}; players = who entered
+function R.cofferLoot(cfg, tier, bonus, rand, players)
+	local t = R.tierInfo(cfg, tier)
+	local q = 1 + (bonus and bonus.quantity or 0) / 100
+	local scale = q * t.reward * R.party(cfg, players).loot -- the party's loot bonus (one coffer for the party)
+	local c = cfg.coffer
 	return {
-		chance = math.min(k.max, k.base + k.perMod * modCount),
-		nextTier = math.min(100, k.nextTier + k.nextPerMod * modCount)
+		gold = floor(c.goldPerTier2 * t.tier * t.tier * scale),
+		chaos = roundChance((c.chaos.base + c.chaos.perTier * t.tier) * scale, rand),
+		divine = roundChance((c.divine.base + c.divine.perTier * t.tier) * scale, rand),
+		rolls = math.max(1, roundChance((c.rolls.base + c.rolls.perTier * t.tier) * scale, rand)),
+		countMult = q,
+		lootTier = R.lootTier(cfg, t.tier),
+		rarityMult = 1 + (bonus and bonus.rarity or 0) / 100
 	}
 end
 
--- nil, or the new key {tier, mods}
-function R.rollKeyDrop(cfg, tier, modCount, rand)
-	local odds = R.keyOdds(cfg, modCount)
+-- gold value -> coin stacks {{id, count}} (crystal 2160, platinum 2152, gold 2148; at most 100 per stack)
+function R.coins(value)
+	local out = {}
+	for _, c in ipairs({{2160, 10000}, {2152, 100}, {2148, 1}}) do
+		local n = floor(value / c[2])
+		value = value - n * c[2]
+		while n > 0 do
+			local k = math.min(100, n)
+			out[#out + 1] = {c[1], k}
+			n = n - k
+		end
+	end
+	return out
+end
+
+-- odds of the next key: {chance = percent of a key, nextTier = percent of those that are tier + 1}
+-- am (optional): the Rift Atlas modifiers of the key user (R.atlasMods): keyChance adds to the chance and to its cap,
+-- keyUpgrade to nextTier; the Ashen Ascent keystone halves the chance (keyChanceMult) and makes every key tier + 1
+function R.keyOdds(cfg, modCount, am)
+	local k = cfg.keyDrop
+	modCount = modCount or 0
+	local extra = am and am.keyChance or 0
+	local odds = {
+		chance = math.min(k.max + extra, k.base + k.perMod * modCount + extra),
+		nextTier = math.min(100, k.nextTier + k.nextPerMod * modCount + (am and am.keyUpgrade or 0))
+	}
+	if am and am.keyChanceMult then
+		odds.chance = odds.chance * am.keyChanceMult
+	end
+	if am and am.keyAscend then
+		odds.nextTier = 100
+	end
+	return odds
+end
+
+-- nil, or the new key {tier, mods}. am (optional): as R.keyOdds; betterMods rolls the modifier count as a next-tier key
+function R.rollKeyDrop(cfg, tier, modCount, rand, am)
+	local odds = R.keyOdds(cfg, modCount, am)
 	if not chance(odds.chance, rand) then
 		return nil
 	end
 	local up = chance(odds.nextTier, rand) and tier < cfg.maxTier
-	return R.rollKey(cfg, up and tier + 1 or tier, rand, up)
+	return R.rollKey(cfg, up and tier + 1 or tier, rand, up or (am and am.betterMods) or false)
 end
 
 -- per 100000 chance of a tier-1 key from a normal kill (0 when the kill does not qualify)
@@ -536,10 +936,12 @@ function R.pickRooms(cfg, rand)
 end
 
 -- ===================================================================== run state
--- run = R.newRun(cfg, now, total, bossAt): {state = "running", startTime, deadline, total, killed, bossAt, boss = "waiting"}
-function R.newRun(cfg, now, total, bossAt)
-	return {state = "running", startTime = now, deadline = now + cfg.timeLimit, total = total, killed = 0,
-		bossAt = bossAt or total, boss = "waiting"}
+-- run = R.newRun(cfg, now, total, bossAt[, fx]): {state = "running", startTime, deadline, limit, total, killed, bossAt,
+-- boss = "waiting", guardians}. fx (R.effects): Waning Veil shortens the limit, Twin Guardians makes two guardians.
+function R.newRun(cfg, now, total, bossAt, fx)
+	local limit = math.max(60, floor(cfg.timeLimit * (fx and fx.timeMult or 1) + 0.5))
+	return {state = "running", startTime = now, deadline = now + limit, limit = limit, total = total, killed = 0,
+		bossAt = bossAt or total, boss = "waiting", guardians = (fx and (fx.twin or 0) > 0) and 2 or 1}
 end
 
 function R.timeLeft(run, now)
@@ -562,7 +964,8 @@ function R.onKill(run)
 	return nil
 end
 
--- the boss died: "success" (only while running and before the deadline)
+-- a guardian died: "twin" while another guardian still lives, then "success" (only while running and before the
+-- deadline)
 function R.onBossKilled(run, now)
 	if run.state ~= "running" or run.boss ~= "alive" then
 		return nil
@@ -570,6 +973,10 @@ function R.onBossKilled(run, now)
 	if now > run.deadline then
 		run.state = "failed"
 		return "fail"
+	end
+	run.guardiansKilled = (run.guardiansKilled or 0) + 1
+	if run.guardiansKilled < (run.guardians or 1) then
+		return "twin"
 	end
 	run.boss = "dead"
 	run.state = "success"
@@ -585,6 +992,94 @@ function R.tick(run, now)
 		return "fail"
 	end
 	return nil
+end
+
+-- ===================================================================== lives
+-- shared lives of a run: lives.base + perExtraPlayer x (players - 1) - Fragile, at least lives.min
+function R.startLives(cfg, players, fx)
+	local l = cfg.lives or {base = 3, perExtraPlayer = 1, min = 1}
+	local n = l.base + l.perExtraPlayer * (math.max(1, players or 1) - 1) - (fx and fx.fragile or 0)
+	-- Rift Atlas (R.applyAtlasFx): extra lives, or the Lone Ember keystone's single life
+	if fx and fx.oneLife then
+		return 1
+	end
+	n = n + (fx and fx.atlasLives or 0)
+	return math.max(l.min or 1, n)
+end
+
+-- a player died inside a running run: one life less. Returns the lives left (0: the rift collapses), or nil when the
+-- run is not running (the death costs nothing then)
+function R.loseLife(run)
+	if run.state ~= "running" then
+		return nil
+	end
+	run.deaths = (run.deaths or 0) + 1
+	run.lives = math.max(0, (run.lives or 1) - 1)
+	return run.lives
+end
+
+-- ===================================================================== omens
+-- a kind by its key ("bloodmoon") or index; returns def, index
+function R.omenKind(cfg, k)
+	local kinds = cfg.omen and cfg.omen.kinds or {}
+	if type(k) == "number" then
+		return kinds[k], kinds[k] and k or nil
+	end
+	for i, d in ipairs(kinds) do
+		if d.key == k then
+			return d, i
+		end
+	end
+	return nil
+end
+
+function R.omenKeyName(cfg, kind)
+	local d = R.omenKind(cfg, kind)
+	return "Omen Key (" .. (d and d.name or "?") .. ")"
+end
+
+-- fragments of one finisher's chest of a sealed rift of `tier` (0 below omen.minTier)
+function R.omenFragments(cfg, tier, bonus, rand)
+	local o = cfg.omen
+	if not o or tier < o.minTier then
+		return 0
+	end
+	local q = 1 + (bonus and bonus.quantity or 0) / 100
+	return roundChance((o.chest.base + o.chest.perTier * (tier - o.minTier)) * q, rand)
+end
+
+-- the guardian's health multiplier for `players`
+function R.omenHealthMult(cfg, players)
+	return 1 + cfg.omen.healthPerExtraPlayer * (math.max(1, players or 1) - 1)
+end
+
+-- one finisher's guardian chest: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult, uniqueRolls, uniqueFind}.
+-- Gold: goldPerLevel x the finisher's level (at least omen.minLevel); a flat `gold` of an older config still works.
+function R.omenReward(cfg, level)
+	local o = cfg.omen
+	local r = o.reward
+	local gold = r.gold
+	if r.goldPerLevel then
+		gold = floor(r.goldPerLevel * math.max(o.minLevel or 1, floor(tonumber(level) or 0)))
+	end
+	return {gold = gold or 0, chaos = r.chaos, divine = r.divine, rolls = r.rolls, countMult = 1, lootTier = "boss",
+		rarityMult = r.rarityMult, uniqueRolls = r.uniqueRolls, uniqueFind = r.uniqueFind}
+end
+
+-- the crash refund marker stores a rift key's tier (1..maxTier) or omenMarker + the kind's index
+R.omenMarker = 1000
+function R.markerTier(cfg, kind)
+	local _, i = R.omenKind(cfg, kind)
+	return R.omenMarker + (i or 1)
+end
+
+function R.markerOmen(cfg, value)
+	value = tonumber(value) or 0
+	if value <= R.omenMarker then
+		return nil
+	end
+	local d = R.omenKind(cfg, value - R.omenMarker)
+	return d and d.key or nil
 end
 
 -- ===================================================================== experience cap
@@ -625,6 +1120,166 @@ function R.capFactor(cfg, st, level, base, minutes)
 		return (room + (base - room) * e.overCapMult) / base
 	end
 	return e.overCapMult
+end
+
+-- ===================================================================== rift atlas
+-- The Rift Atlas (atlas.lua, atlas_core.lua, atlas_config.lua) plugs in through R.hooks; with no hook set every
+-- function below leaves the run exactly as before. am = the flat modifiers of atlas_core.lua A.resolve (nil = none):
+-- density, elite, time, modReward, goldMult, keyChance, keyUpgrade, fragments, chaos, divine, rolls, goblin, coffer,
+-- lives, betterMods, themeWeights, and the keystone flags oneLife, rewardMult, guardianMult, orbsMult, keyChanceMult,
+-- keyAscend, timeMult.
+--   hooks.atlasMods(player, ctx) -> am      ctx = {theme = name, tier = number, omen = kind}
+--   hooks.onSealed(info)                    info = {theme, tier, omen, deaths, secs, guids = {guid, ...}}
+R.hooks = R.hooks or {}
+
+function R.atlasMods(player, ctx)
+	local f = R.hooks.atlasMods
+	if not f or not player then
+		return R.mergeWorld(nil, R.worldMods(player, ctx))
+	end
+	local ok, am = pcall(f, player, ctx or {})
+	return R.mergeWorld(ok and type(am) == "table" and am or nil, R.worldMods(player, ctx))
+end
+
+-- The community goal and the weekly world modifier (community.lua) plug in through R.hooks.world(player, ctx) ->
+-- nil or wm = {keyChance = percentage points, rewardMult = percent, extraMods = n}. With no hook, or a nil answer, every
+-- function here returns its input unchanged.
+function R.worldMods(player, ctx)
+	local f = R.hooks.world
+	if not f or not player then
+		return nil
+	end
+	local ok, wm = pcall(f, player, ctx or {})
+	return ok and type(wm) == "table" and wm or nil
+end
+
+-- am (the atlas modifiers, may be nil) with wm's key chance and chest bonus added; a copy, never am itself
+function R.mergeWorld(am, wm)
+	if not wm or ((wm.keyChance or 0) <= 0 and (wm.rewardMult or 0) <= 0) then
+		return am
+	end
+	local out = {}
+	for k, v in pairs(am or {}) do
+		out[k] = v
+	end
+	out.keyChance = (out.keyChance or 0) + math.max(0, wm.keyChance or 0)
+	out.rewardMult = (out.rewardMult or 0) + math.max(0, wm.rewardMult or 0)
+	return out
+end
+
+-- a key about to be opened gets wm.extraMods more modifiers (Ember Tides); returns the added ones (none: {})
+function R.worldKeyMods(cfg, player, key, rand)
+	local wm = R.worldMods(player, {tier = key and key.tier})
+	local n = wm and math.floor(wm.extraMods or 0) or 0
+	if n <= 0 or not key or not key.mods then
+		return {}
+	end
+	return R.addMods(cfg, key, n, rand)
+end
+
+function R.atlasSealed(info)
+	local f = R.hooks.onSealed
+	if f then
+		pcall(f, info)
+	end
+end
+
+-- the theme of a new rift: even odds, each theme's weight raised by its attunement (weights = {[name] = percent});
+-- without weights exactly one rand(1, #themes) as before
+function R.pickTheme(cfg, rand, weights)
+	local any = false
+	for _, v in pairs(weights or {}) do
+		if v > 0 then
+			any = true
+		end
+	end
+	if not any then
+		return cfg.themes[rand(1, #cfg.themes)]
+	end
+	local rows = {}
+	for _, th in ipairs(cfg.themes) do
+		rows[#rows + 1] = {th, 100 + floor(weights[th.name] or 0)}
+	end
+	return weighted(rows, rand)
+end
+
+-- the run-shaping part of am on the effects of R.effects (before R.plan / R.newRun / R.startLives)
+function R.applyAtlasFx(fx, am)
+	if not am then
+		return fx
+	end
+	fx.packMult = (fx.packMult or 1) * (1 + (am.density or 0) / 100)
+	fx.elite = (fx.elite or 1) * (1 + (am.elite or 0) / 100)
+	fx.timeMult = (fx.timeMult or 1) * (1 + (am.time or 0) / 100) * (am.timeMult or 1)
+	fx.gilded = math.min(100, (fx.gilded or 0) + (am.goblin or 0))
+	fx.coffer = math.min(100, (fx.coffer or 0) + (am.coffer or 0))
+	fx.boss = (fx.boss or 1) * (am.guardianMult or 1)
+	fx.atlasLives = am.lives or 0
+	fx.oneLife = am.oneLife or nil
+	return fx
+end
+
+-- the modifiers' reward bonuses (R.bonuses) x (1 + modReward / 100)
+function R.atlasBonus(b, am)
+	local m = am and am.modReward or 0
+	if m <= 0 then
+		return b
+	end
+	for k, v in pairs(b) do
+		b[k] = floor(v * (1 + m / 100) + 0.5)
+	end
+	return b
+end
+
+-- one finisher's chest (R.reward) with the atlas: own = the finisher's own am (gold, orbs, item rolls), run = the key
+-- user's am (the keystone's rewardMult and orbsMult, shared by every finisher). goldMult and rewardMult (Lone Ember,
+-- Fleeting Sanctum, the world modifier) raise gold (rewardMult the item rolls too), never the orbs: only orbsMult
+-- (Obsidian Crown) and the flat orb nodes change those. Changes and returns r.
+function R.atlasReward(cfg, r, own, run, rand)
+	if not own and not run then
+		return r
+	end
+	local mult = 1 + (run and run.rewardMult or 0) / 100
+	local orbs = run and run.orbsMult or 1
+	own = own or {}
+	r.gold = floor(r.gold * (1 + (own.goldMult or 0) / 100) * mult)
+	r.chaos = roundChance((r.chaos + (own.chaos or 0)) * orbs, rand)
+	r.divine = roundChance((r.divine + (own.divine or 0)) * orbs, rand)
+	r.rolls = math.max(1, roundChance((r.rolls + (own.rolls or 0)) * mult, rand))
+	return r
+end
+
+-- Omen Fragments of a chest x (1 + fragments / 100) (fractions a chance of one more)
+function R.atlasFragments(n, am, rand)
+	local f = am and am.fragments or 0
+	if n <= 0 or f <= 0 then
+		return n
+	end
+	return roundChance(n * (1 + f / 100), rand)
+end
+
+-- the HUD line of a run's atlas ("Atlas: Lone Ember, +12% packs, +1 life"), or nil
+function R.atlasNote(am)
+	if not am then
+		return nil
+	end
+	local parts = {}
+	if am.keystone then
+		parts[#parts + 1] = am.keystone
+	end
+	if (am.density or 0) > 0 then
+		parts[#parts + 1] = "+" .. floor(am.density) .. "% packs"
+	end
+	if (am.time or 0) > 0 then
+		parts[#parts + 1] = "+" .. floor(am.time) .. "% time"
+	end
+	if (am.lives or 0) > 0 then
+		parts[#parts + 1] = "+" .. am.lives .. " " .. (am.lives == 1 and "life" or "lives")
+	end
+	if #parts == 0 then
+		return nil
+	end
+	return "Atlas: " .. table.concat(parts, ", ")
 end
 
 return R

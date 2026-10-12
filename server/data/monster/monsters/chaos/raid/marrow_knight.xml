@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Trash of the Ashen Sepulchre (raid.lua): a pack monster of the corridors; the script gives it a tier (magic / rare) and scales its health by the raid size; the stock look 37. -->
+<monster name="Marrow Knight" nameDescription="a marrow knight" race="undead" experience="28000" speed="230" manacost="0">
+	<health now="60000" max="60000" />
+	<look type="37" corpse="6068" />
+	<targetchange interval="4000" chance="15" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-650" max="-1300" />
+		<attack name="physical" interval="2000" chance="10" radius="2" target="0" min="-500" max="-1000">
+			<attribute key="areaEffect" value="groundshaker" />
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80" />
+	<elements>
+		<element physicalPercent="15" />
+		<element firePercent="0" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="0" />
+		<element holyPercent="-20" />
+		<element deathPercent="40" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+	<loot>
+		<item id="2160" countmax="2" chance="40000" /><!-- crystal coin -->
+		<item id="29856" chance="6000" /><!-- Orb of Upheaval -->
+	</loot>
+</monster>

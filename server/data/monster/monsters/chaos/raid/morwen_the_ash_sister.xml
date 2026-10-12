@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 2128: its own donor-library look (client/tools/sprites/monster_looks/picks.csv, things_custom14). Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
+<monster name="Morwen the Ash-Sister" nameDescription="Morwen the Ash-Sister" race="undead" experience="2700000" speed="240" manacost="0">
+	<health now="4400000" max="4400000" />
+	<look type="2128" corpse="6068" />
+	<targetchange interval="8000" chance="5" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-700" max="-1500" />
+		<attack name="fire" interval="2000" chance="18" range="7" target="1" min="-900" max="-1800">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+		<attack name="fire" interval="2000" chance="8" radius="3" target="0" min="-600" max="-1300">
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+	</attacks>
+	<defenses armor="70" defense="70" />
+	<elements>
+		<element physicalPercent="0" />
+		<element firePercent="40" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="-20" />
+		<element holyPercent="-10" />
+		<element deathPercent="20" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Hush now. Sleep in the ash." yell="1" />
+		<voice sentence="SING WITH ME!" yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="20" chance="100000" /><!-- crystal coin -->
+	</loot>
+</monster>

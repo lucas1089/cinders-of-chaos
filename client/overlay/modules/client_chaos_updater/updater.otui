@@ -1,0 +1,74 @@
+// Signed updater panel on the login screen (client_chaos_updater/updater.lua). Chaos theme styles only.
+
+ChaosUpdateBlocker < UIWidget
+  anchors.fill: parent
+  background-color: #0d0b0e80
+  focusable: false
+
+ChaosUpdatePanel < ChaosWindow
+  id: chaosUpdatePanel
+  !text: tr('CLIENT UPDATE')
+  size: 440 186
+  anchors.centerIn: parent
+  draggable: false
+  &chaosOrnate: false
+
+  ChaosLabel
+    id: status
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-align: center
+    text-auto-resize: false
+    height: 16
+
+  ChaosProgressBar
+    id: bar
+    anchors.top: status.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    percent: 0
+
+  ChaosLabelDim
+    id: detail
+    anchors.top: bar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    text-align: center
+    height: 16
+
+  ChaosLabelDim
+    id: note
+    anchors.top: detail.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-align: center
+    height: 16
+
+  ChaosButton
+    id: retryButton
+    !text: tr('Retry')
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 120
+    visible: false
+
+  ChaosButton
+    id: playButton
+    !text: tr('Play')
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 150
+    visible: false
+
+  ChaosButton
+    id: restartButton
+    !text: tr('Restart now')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 120
+    visible: false

@@ -1,0 +1,155 @@
+# Attack speed cap (server/README.md "Attack speed cap"): life / mana leech rolls on every hit, so more hits per second
+# meant more healing per second. Three rules, each a config.lua number (0 turns it off; the defaults below apply when
+# config.lua does not name it), readable from Lua as configManager.getNumber(configKeys.<KEY>):
+#  1. minPlayerAttackInterval = 1000: no player swings faster than once per 1000 ms, whatever the vocation, the weapon,
+#     its Chaos attack speed modifier and topaz gems (data/lib/chaos_item_mods.lua M.syncAttackSpeed) and dexterity.
+#  2. maxPlayerAttackSpeedBonus = 25: every attack speed bonus together (the weapon's attribute against its type's own
+#     interval, or 2000 without one; the stat window's dexterity) shortens the vocation-scaled interval by at most 25%.
+#  3. minPlayerLeechInterval = 900: life leech heals at most once per 900 ms, mana leech too (each its own timer). A roll
+#     inside the window is skipped. Covers every extra hit at once: the Ninja off-hand, Bloodrage and keystone cleaves,
+#     ricochets and echoes, Flurry, pets / companions / minions hitting as their owner, support repeats.
+# Also: dexterity is clamped to 0..100 (a value above 100 made the interval negative). Lua mirror of rules 1 and 2:
+# ChaosItemMods.effectiveInterval (tests/attack_speed_cap_test.lua), shown as "Your Attack Interval" in item tooltips.
+# Apply in the server source root after 0001-0010: patch -p1 < 0011-attack-speed-cap.patch, then rebuild.
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -120,6 +120,9 @@
+ 			VIP_PREMIUM_LIMIT,
+ 			DEPOT_FREE_LIMIT,
+ 			DEPOT_PREMIUM_LIMIT,
++			MIN_PLAYER_ATTACK_INTERVAL, // Chaos (patch 0011): attack speed cap
++			MAX_PLAYER_ATTACK_SPEED_BONUS,
++			MIN_PLAYER_LEECH_INTERVAL,
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -292,6 +292,12 @@
+ 	integer[VIP_PREMIUM_LIMIT] = getGlobalNumber(L, "vipPremiumLimit", 100);
+ 	integer[DEPOT_FREE_LIMIT] = getGlobalNumber(L, "depotFreeLimit", 2000);
+ 	integer[DEPOT_PREMIUM_LIMIT] = getGlobalNumber(L, "depotPremiumLimit", 10000);
++	// Chaos (patch 0011): a player swings at most once per minPlayerAttackInterval ms, all attack speed bonuses together
++	// shorten the weapon's interval by at most maxPlayerAttackSpeedBonus %, and life / mana leech heal at most once per
++	// minPlayerLeechInterval ms each (0 turns a rule off)
++	integer[MIN_PLAYER_ATTACK_INTERVAL] = getGlobalNumber(L, "minPlayerAttackInterval", 1000);
++	integer[MAX_PLAYER_ATTACK_SPEED_BONUS] = getGlobalNumber(L, "maxPlayerAttackSpeedBonus", 25);
++	integer[MIN_PLAYER_LEECH_INTERVAL] = getGlobalNumber(L, "minPlayerLeechInterval", 900);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2033,6 +2033,9 @@
+ 	registerEnumIn("configKeys", ConfigManager::CLASSIC_ATTACK_SPEED)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_NOTIFY_MESSAGE)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_NOTIFY_DURATION)
++	registerEnumIn("configKeys", ConfigManager::MIN_PLAYER_ATTACK_INTERVAL)
++	registerEnumIn("configKeys", ConfigManager::MAX_PLAYER_ATTACK_SPEED_BONUS)
++	registerEnumIn("configKeys", ConfigManager::MIN_PLAYER_LEECH_INTERVAL)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLEAN_MAP)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLOSE)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_SHUTDOWN)
+--- a/src/player.h
++++ b/src/player.h
+@@ -633,6 +633,8 @@
+ 		BlockType_t blockHit(Creature* attacker, CombatType_t combatType, int32_t& damage,
+ 		                             bool checkDefense = false, bool checkArmor = false, bool field = false, bool ignoreResistances = false) override;
+ 		void doAttacking(uint32_t interval) override;
++		bool canLeech(bool mana) const; // Chaos (patch 0011)
++		void setLeeched(bool mana);
+ 		bool hasExtraSwing() override {
+ 			return lastAttack > 0 && ((OTSYS_TIME() - lastAttack) >= getAttackSpeed());
+ 		}
+@@ -1358,6 +1360,8 @@
+ 		fightMode_t fightMode = FIGHTMODE_ATTACK;
+ 		AccountType_t accountType = ACCOUNT_TYPE_NORMAL;
+ 		int16_t charStats[CHARSTAT_LAST + 1] = {};
++		int64_t lastLifeLeech = 0; // Chaos (patch 0011)
++		int64_t lastManaLeech = 0;
+ 		bool chaseMode = false;
+ 		bool secureMode = false;
+ 		bool inMarket = false;
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -372,8 +372,36 @@
+ 		ret = ret * vocation->getAttackSpeed() / 2000;
+ 	}
+ 
+-	ret = ret - (ret * getCharacterStat(CHARSTAT_DEXTERITY) / 100.0);
+-	return ret;
++	// Chaos (patch 0011): attack speed cap. `base` is the interval without any bonus: the weapon type's own interval
++	// (2000 when it has none but the item carries a Chaos attack speed attribute) scaled by the vocation like above.
++	// Every bonus (the weapon's attribute: Chaos modifier + topaz gems; dexterity) together shortens it by at most
++	// maxPlayerAttackSpeedBonus %, and no player swings faster than minPlayerAttackInterval ms.
++	uint32_t base = ret;
++	if (weapon && weapon->getAttackSpeed() != 0) {
++		uint32_t typeSpeed = Item::items[weapon->getID()].attackSpeed;
++		base = (typeSpeed != 0 ? typeSpeed : 2000) * vocation->getAttackSpeed() / 2000;
++	}
++	int32_t dexterity = std::min<int32_t>(100, std::max<int32_t>(0, getCharacterStat(CHARSTAT_DEXTERITY)));
++	double interval = ret - (ret * dexterity / 100.0);
++	int32_t maxBonus = g_config.getNumber(ConfigManager::MAX_PLAYER_ATTACK_SPEED_BONUS);
++	if (maxBonus > 0 && maxBonus < 100) {
++		interval = std::max<double>(interval, base * (100 - maxBonus) / 100.0);
++	}
++	interval = std::max<double>(interval, std::max<int32_t>(0, g_config.getNumber(ConfigManager::MIN_PLAYER_ATTACK_INTERVAL)));
++	return static_cast<uint32_t>(interval);
++}
++
++// Chaos (patch 0011): life / mana leech heal at most once per minPlayerLeechInterval ms each, whatever deals the hits
++// (weapon swings, an off-hand, cleaves, procs, pets and minions hitting as their owner, multi-hit spells)
++bool Player::canLeech(bool mana) const
++{
++	int64_t interval = g_config.getNumber(ConfigManager::MIN_PLAYER_LEECH_INTERVAL);
++	return interval <= 0 || (OTSYS_TIME() - (mana ? lastManaLeech : lastLifeLeech)) >= interval;
++}
++
++void Player::setLeeched(bool mana)
++{
++	(mana ? lastManaLeech : lastLifeLeech) = OTSYS_TIME();
+ }
+ 
+ float Player::getAttackFactor() const
+--- a/src/combat.cpp
++++ b/src/combat.cpp
+@@ -924,7 +924,8 @@
+ 			if (casterPlayer->getHealth() < casterPlayer->getMaxHealth()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && casterPlayer->canLeech(false) && uniform_random(1, 100) <= chance) {
++					casterPlayer->setLeeched(false);
+ 					leechCombat.primary.value = std::round(totalDamage * (skill / 100.));
+ 					g_game.combatChangeHealth(nullptr, casterPlayer, leechCombat);
+ 					casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_RED);
+@@ -934,7 +935,8 @@
+ 			if (casterPlayer->getMana() < casterPlayer->getMaxMana()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && casterPlayer->canLeech(true) && uniform_random(1, 100) <= chance) {
++					casterPlayer->setLeeched(true);
+ 					leechCombat.primary.value = std::round(totalDamage * (skill / 100.));
+ 					g_game.combatChangeMana(nullptr, casterPlayer, leechCombat);
+ 					casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_BLUE);
+@@ -1127,7 +1129,8 @@
+ 			if (casterPlayer->getHealth() < casterPlayer->getMaxHealth()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && casterPlayer->canLeech(false) && uniform_random(1, 100) <= chance) {
++					casterPlayer->setLeeched(false);
+ 					int32_t finalLeech = calcLeechValue(skill, 10.0);
+ 					leechCombat.primary.value = finalLeech;
+ 					if (finalLeech > 0) {
+@@ -1139,7 +1142,8 @@
+ 			if (casterPlayer->getMana() < casterPlayer->getMaxMana()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {
++				if (chance > 0 && skill > 0 && casterPlayer->canLeech(true) && uniform_random(1, 100) <= chance) {
++					casterPlayer->setLeeched(true);
+ 					int32_t finalLeech = calcLeechValue(skill, 5.0);
+ 					leechCombat.primary.value = finalLeech;
+ 					if (finalLeech > 0) {

@@ -1,0 +1,11 @@
+{
+  "key": "charger_rider",
+  "name": "Pyrewarden Rider",
+  "note": "A mounted Warrior (2073, its mounted pattern) on the Pyrewarden Charger (mount look 2132), baked into one look for a boss or a statue: the rider sits on the charger's seat (byte 39) as base patch 0034 places it and keeps its colour mask. The seat is dropped from the result (it is not a mount).",
+  "flags": {"bones": null},
+  "colours": {"head": 78, "body": 94, "legs": 114, "feet": 76},
+  "layers": [
+    {"src": "live:outfit:2132", "base": true},
+    {"src": "live:outfit:2073", "role": "rider", "frames": {"walk": {"group": "walk", "phases": "repeat"}}}
+  ]
+}

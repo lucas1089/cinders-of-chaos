@@ -1,0 +1,419 @@
+# Quivers in the off-hand; the ammunition slot becomes a second ring slot (server/README.md "Infinite arrows and
+# quivers", "Second ring slot"). Owner requests: "Quivers go in the off-hand now." and then "Don't remove the ammo slot.
+# Turn it into a second ring slot." Bows and crossbows stay two-handed (every two-handed rule, weapon_styles.lua's
+# two-handed speed and damage, the keystones and the class kits see them as before); the one exception is the quiver.
+#   * a new weapon type WEAPON_QUIVER (const.h; items.xml weaponType "quiver", written by
+#     server/tools/patch_base_archery.py; Lua constant WEAPON_QUIVER = 8; getWeaponName "quiver"). It is no weapon:
+#     Player::getWeapon skips it, Player::getShieldAndWeapon counts it as neither shield nor weapon (defense, shielding).
+#   * Player::queryAdd, classicEquipmentSlots = false (the Chaos setting): the shield hand takes a quiver while the
+#     weapon hand holds a bow or crossbow (a two-handed distance weapon) or nothing; the weapon hand takes a bow or
+#     crossbow next to a quiver, and refuses every other weapon while a quiver is in the shield hand. A shield (or a
+#     dual-wield blade) next to a launcher is still refused (both hands need to be free). A quiver never goes in the
+#     weapon hand. Every equip path asks queryAdd: drag and drop, the equip hotkey (Game::playerEquipItem), a script's
+#     addItem / addItemEx with a slot (loadouts, kits), Player::queryDestination; only the login (IOLoginData) skips it,
+#     and data/scripts/chaos/archery.lua checks the hands and the second ring slot there.
+#   * the second ring slot (CONST_SLOT_AMMO, slot 10): it takes the item types the ring slot takes (slot position
+#     ring) and nothing else (the base's "Quiver" name exception goes). MoveEvents::getEvent looks up the ring events
+#     for it (slot="ring" in movements.xml), so a ring there gets its abilities, its vocation and level check and its
+#     transformation on equip and de-equip (the timed rings) as in the ring slot; Player::getArmor counts it. The equip
+#     hotkey (Game::playerEquipItem) of a ring worn in either slot takes it off (slot 9 first); a ring not worn goes
+#     into the second slot when the first holds another ring and the second is free. A ring taken off one ring slot
+#     (the hotkey, a drop on the inventory) is never put into the other one by Player::queryDestination: it goes to
+#     the containers as in stock. A ring dragged from one ring slot onto the ring in the other swaps the two
+#     (Game::internalMoveItem; the stock exchange cannot, the source slot is still taken): both are taken out, put
+#     back crosswise, then the de-equip and equip events run, the decay starts as after a move, and onMoveItem /
+#     onItemMoved run for both rings as in a stock exchange.
+#   * classicEquipmentSlots = true is not supported for quivers: a quiver is then a second hand item and is refused
+#     next to a two-handed launcher, as before.
+#   * one might ring at a time (owner decision): Player::queryAdd refuses a might ring in either ring slot while the
+#     other ring slot holds a might ring, with RETURNVALUE_ONLYONEMIGHTRING ("You can only wear one might ring at a
+#     time."). The might rings (the normal and the worn ids) carry the items.xml key "chaosMightRing" (ItemType
+#     chaosMightRing, written by server/tools/patch_base_archery.py from chaos_archery_config.lua mightRings); Lua
+#     itemType:isMightRing() reads it. Every equip path asks queryAdd; the equip hotkey also sends the message. Two
+#     might rings worn from before are split at login (archery.lua: the one in the second ring slot is stowed).
+# Apply in the server source root after 0001-0022: patch -p1 < 0023-quiver-off-hand.patch, then rebuild
+# (items.h changes the ItemType layout: rebuild every object, not only the changed files).
+--- a/src/const.h
++++ b/src/const.h
+@@ -364,6 +364,7 @@
+ 	WEAPON_DISTANCE,
+ 	WEAPON_WAND,
+ 	WEAPON_AMMO,
++	WEAPON_QUIVER, // Chaos (src-patch 0023): worn in the shield hand next to a bow or crossbow
+ };
+ 
+ enum Ammo_t : uint8_t {
+--- a/src/enums.h
++++ b/src/enums.h
+@@ -482,6 +482,7 @@
+ 	RETURNVALUE_CANNOTMOVEITEMISNOTSTOREITEM,
+ 	RETURNVALUE_ITEMCANNOTBEMOVEDTHERE,
+ 	RETURNVALUE_YOUCANNOTUSETHISBED,
++	RETURNVALUE_ONLYONEMIGHTRING, // Chaos (src-patch 0023): a might ring is already worn in the other ring slot
+ };
+ 
+ enum SpeechBubble_t
+--- a/src/items.h
++++ b/src/items.h
+@@ -178,6 +178,7 @@
+ 	ITEM_PARSE_BLOCKING,
+ 	ITEM_PARSE_ALLOWDISTREAD,
+ 	ITEM_PARSE_STOREITEM,
++	ITEM_PARSE_CHAOSMIGHTRING, // Chaos (src-patch 0023)
+ };
+ 
+ struct Abilities {
+@@ -373,6 +374,7 @@
+ 		int8_t hitChance = 0;
+ 
+ 		bool storeItem = false;
++		bool chaosMightRing = false; // Chaos 0023: one might ring at a time (items.xml "chaosMightRing")
+ 		bool forceUse = false;
+ 		bool forceSerialize = false;
+ 		bool hasHeight = false;
+--- a/src/items.cpp
++++ b/src/items.cpp
+@@ -150,6 +150,7 @@
+ 	{"blocking", ITEM_PARSE_BLOCKING},
+ 	{"allowdistread", ITEM_PARSE_ALLOWDISTREAD},
+ 	{"storeitem", ITEM_PARSE_STOREITEM},
++	{"chaosmightring", ITEM_PARSE_CHAOSMIGHTRING}, // Chaos 0023, written by server/tools/patch_base_archery.py
+ };
+ 
+ const std::unordered_map<std::string, ItemTypes_t> ItemTypesMap = {
+@@ -191,6 +192,7 @@
+ 	{"distance", WEAPON_DISTANCE},
+ 	{"wand", WEAPON_WAND},
+ 	{"ammunition", WEAPON_AMMO},
++	{"quiver", WEAPON_QUIVER},
+ };
+ 
+ const std::unordered_map<std::string, FluidTypes_t> FluidTypesMap = {
+@@ -1479,6 +1481,11 @@
+ 					break;
+ 				}
+ 
++				case ITEM_PARSE_CHAOSMIGHTRING: {
++					it.chaosMightRing = booleanString(valueAttribute.as_string());
++					break;
++				}
++
+ 				default: {
+ 					// It should not ever get to here, only if you add a new key to the map and don't configure a case for it.
+ 					std::cout << "[Warning - Items::parseItemNode] Not configured key value: " << keyAttribute.as_string() << std::endl;
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -1291,6 +1291,7 @@
+ 		static int luaItemTypeGetManaGain(lua_State *L);
+ 		static int luaItemTypeGetManaTicks(lua_State *L);
+ 		static int luaItemTypeIsStoreItem(lua_State* L);
++		static int luaItemTypeIsMightRing(lua_State* L);
+ 
+ 		// Combat
+ 		static int luaCombatCreate(lua_State* L);
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -1791,6 +1791,7 @@
+ 	registerEnum(WEAPON_DISTANCE)
+ 	registerEnum(WEAPON_WAND)
+ 	registerEnum(WEAPON_AMMO)
++	registerEnum(WEAPON_QUIVER)
+ 
+ 	registerEnum(WORLD_TYPE_NO_PVP)
+ 	registerEnum(WORLD_TYPE_PVP)
+@@ -1952,6 +1953,7 @@
+ 	registerEnum(RETURNVALUE_YOUCANNOTTRADETHISHOUSE)
+ 	registerEnum(RETURNVALUE_YOUDONTHAVEREQUIREDPROFESSION)
+ 	registerEnum(RETURNVALUE_YOUCANNOTUSETHISBED)
++	registerEnum(RETURNVALUE_ONLYONEMIGHTRING)
+ 
+ 	registerEnum(RELOAD_TYPE_ALL)
+ 	registerEnum(RELOAD_TYPE_ACTIONS)
+@@ -2887,6 +2889,7 @@
+ 	registerMethod("ItemType", "getManaGain", LuaScriptInterface::luaItemTypeGetManaGain);
+ 	registerMethod("ItemType", "getManaTicks", LuaScriptInterface::luaItemTypeGetManaTicks);
+ 	registerMethod("ItemType", "isStoreItem", LuaScriptInterface::luaItemTypeIsStoreItem);
++	registerMethod("ItemType", "isMightRing", LuaScriptInterface::luaItemTypeIsMightRing);
+ 
+ 	// Combat
+ 	registerClass("Combat", "", LuaScriptInterface::luaCombatCreate);
+@@ -13592,6 +13595,18 @@
+ 	} else {
+ 		lua_pushnil(L);
+ 	}
++	return 1;
++}
++
++int LuaScriptInterface::luaItemTypeIsMightRing(lua_State* L)
++{
++	// itemType:isMightRing() (Chaos, src-patch 0023: items.xml key "chaosMightRing")
++	const ItemType* itemType = getUserdata<const ItemType>(L, 1);
++	if (itemType) {
++		pushBoolean(L, itemType->chaosMightRing);
++	} else {
++		lua_pushnil(L);
++	}
+ 	return 1;
+ }
+ 
+--- a/src/tools.cpp
++++ b/src/tools.cpp
+@@ -908,6 +908,7 @@
+ 		case WEAPON_DISTANCE: return "distance";
+ 		case WEAPON_WAND: return "wand";
+ 		case WEAPON_AMMO: return "ammunition";
++		case WEAPON_QUIVER: return "quiver";
+ 		default: return std::string();
+ 	}
+ }
+@@ -1264,6 +1265,9 @@
+ 		case RETURNVALUE_ITEMCANNOTBEMOVEDTHERE:
+ 			return "This item cannot be moved there.";
+ 
++		case RETURNVALUE_ONLYONEMIGHTRING:
++			return "You can only wear one might ring at a time.";
++
+ 		case RETURNVALUE_YOUCANNOTUSETHISBED:
+ 			return "This bed can't be used, but Premium Account players can rent houses and sleep in beds there to regain health and mana.";
+ 
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -194,7 +194,7 @@
+ 	}
+ 
+ 	WeaponType_t weaponType = item->getWeaponType();
+-	if (weaponType == WEAPON_NONE || weaponType == WEAPON_SHIELD || weaponType == WEAPON_AMMO) {
++	if (weaponType == WEAPON_NONE || weaponType == WEAPON_SHIELD || weaponType == WEAPON_AMMO || weaponType == WEAPON_QUIVER) {
+ 		return nullptr;
+ 	}
+ 
+@@ -289,7 +289,7 @@
+ {
+ 	int32_t armor = 0;
+ 
+-	static const slots_t armorSlots[] = {CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_ARMOR, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_DECK, CONST_SLOT_BADGE, CONST_SLOT_SHIP, CONST_SLOT_BELT, CONST_SLOT_GLOVES };
++	static const slots_t armorSlots[] = {CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_ARMOR, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_AMMO /* Chaos 0023: the second ring */, CONST_SLOT_DECK, CONST_SLOT_BADGE, CONST_SLOT_SHIP, CONST_SLOT_BELT, CONST_SLOT_GLOVES };
+ 	for (slots_t slot : armorSlots) {
+ 		Item* inventoryItem = inventory[slot];
+ 		if (inventoryItem) {
+@@ -312,6 +312,7 @@
+ 
+ 		switch (item->getWeaponType()) {
+ 			case WEAPON_NONE:
++			case WEAPON_QUIVER: // Chaos: a quiver is neither shield nor weapon
+ 				break;
+ 
+ 			case WEAPON_SHIELD: {
+@@ -2476,6 +2477,37 @@
+ 	return player->getStorageValue(CHAOS_DUAL_WIELD_STORAGE, value) && value > 0;
+ }
+ 
++// Chaos (src-patch 0023, server/README.md "Infinite arrows and quivers"): a quiver (items.xml weaponType "quiver") is
++// worn in the shield hand. A bow or crossbow (a two-handed distance weapon) and a quiver may share the hands; nothing
++// else goes in the shield hand with a launcher, and a quiver goes only next to a launcher or an empty weapon hand.
++// The ammunition slot is a second ring slot: it takes rings only (classicEquipmentSlots = false; with classic slots a
++// quiver is refused next to a launcher like any other second item).
++static bool chaosIsQuiver(const Item* item)
++{
++	return item && item->getWeaponType() == WEAPON_QUIVER;
++}
++
++static bool chaosIsLauncher(const Item* item)
++{
++	return item && item->getWeaponType() == WEAPON_DISTANCE && (item->getSlotPosition() & SLOTP_TWO_HAND);
++}
++
++// Chaos 0023: one might ring at a time over both ring slots. The might rings (the normal and the worn ids) carry the
++// items.xml key "chaosMightRing" (server/tools/patch_base_archery.py). `item` may go into a ring slot unless it is a
++// might ring and `other` (what the other ring slot holds) is another might ring.
++static bool chaosIsMightRing(const Item* item)
++{
++	return item && Item::items[item->getID()].chaosMightRing;
++}
++
++static ReturnValue chaosRingSlot(const Item* item, const Item* other)
++{
++	if (other && other != item && chaosIsMightRing(item) && chaosIsMightRing(other)) {
++		return RETURNVALUE_ONLYONEMIGHTRING;
++	}
++	return RETURNVALUE_NOERROR;
++}
++
+ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count, uint32_t flags, Creature*) const
+ {
+ 	const Item* item = thing.getItem();
+@@ -2552,7 +2584,15 @@
+ 		case CONST_SLOT_RIGHT: {
+ 			if (slotPosition & SLOTP_RIGHT) {
+ 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+-					if (item->getWeaponType() != WEAPON_SHIELD && chaosCanHoldOffhand(this, item)) {
++					if (chaosIsQuiver(item)) {
++						// Chaos 0023: next to a bow or crossbow, or with the weapon hand empty
++						const Item* leftItem = inventory[CONST_SLOT_LEFT];
++						if (!leftItem || leftItem == item || chaosIsLauncher(leftItem)) {
++							ret = RETURNVALUE_NOERROR;
++						} else {
++							ret = RETURNVALUE_CANNOTBEDRESSED;
++						}
++					} else if (item->getWeaponType() != WEAPON_SHIELD && chaosCanHoldOffhand(this, item)) {
+ 						const Item* leftItem = inventory[CONST_SLOT_LEFT];
+ 						if (leftItem && leftItem != item && (leftItem->getSlotPosition() & SLOTP_TWO_HAND)) {
+ 							ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
+@@ -2607,9 +2647,13 @@
+ 			if (slotPosition & SLOTP_LEFT) {
+ 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+ 					WeaponType_t type = item->getWeaponType();
+-					if (type == WEAPON_NONE || type == WEAPON_SHIELD || type == WEAPON_AMMO) {
++					const Item* rightItem = inventory[CONST_SLOT_RIGHT];
++					if (type == WEAPON_NONE || type == WEAPON_SHIELD || type == WEAPON_AMMO || type == WEAPON_QUIVER) {
+ 						ret = RETURNVALUE_CANNOTBEDRESSED;
+-					} else if (inventory[CONST_SLOT_RIGHT] && (slotPosition & SLOTP_TWO_HAND)) {
++					} else if (chaosIsQuiver(rightItem) && rightItem != item) {
++						// Chaos 0023: a quiver in the shield hand takes a bow or crossbow only
++						ret = chaosIsLauncher(item) ? RETURNVALUE_NOERROR : RETURNVALUE_CANNOTBEDRESSED;
++					} else if (rightItem && (slotPosition & SLOTP_TWO_HAND)) {
+ 						ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
+ 					} else {
+ 						ret = RETURNVALUE_NOERROR;
+@@ -2660,7 +2704,7 @@
+ 
+ 		case CONST_SLOT_RING: {
+ 			if (slotPosition & SLOTP_RING) {
+-				ret = RETURNVALUE_NOERROR;
++				ret = chaosRingSlot(item, inventory[CONST_SLOT_AMMO]);
+ 			}
+ 			break;
+ 		}
+@@ -2701,11 +2745,10 @@
+ 		}
+ 
+ 		case CONST_SLOT_AMMO: {
+-			if ((slotPosition & SLOTP_AMMO) || g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+-				ret = RETURNVALUE_NOERROR;
+-			} else if (slotPosition & SLOTP_BACKPACK && item->getName() == "Quiver") {
+-				ret = RETURNVALUE_NOERROR;
+-			}
++			// Chaos 0023: the ammunition slot is a second ring slot (bows fire without ammunition, the quiver is worn in
++			// the shield hand): rings only, the item types the ring slot takes. Anything else left in it is moved at
++			// login (archery.lua). One might ring at a time over both ring slots.
++			ret = (slotPosition & SLOTP_RING) ? chaosRingSlot(item, inventory[CONST_SLOT_RING]) : RETURNVALUE_CANNOTBEDRESSED;
+ 			break;
+ 		}
+ 
+@@ -2890,6 +2933,11 @@
+ 				} else if (Container* subContainer = inventoryItem->getContainer()) {
+ 					containers.push_back(subContainer);
+ 				}
++			} else if ((slotIndex == CONST_SLOT_RING || slotIndex == CONST_SLOT_AMMO) &&
++			           (inventory[CONST_SLOT_RING] == item || inventory[CONST_SLOT_AMMO] == item)) {
++				// Chaos 0023: a ring taken off one ring slot (the equip hotkey, a drop on the inventory) goes to the
++				// containers as in stock, not into the other ring slot
++				continue;
+ 			} else if (queryAdd(slotIndex, *item, item->getItemCount(), flags) == RETURNVALUE_NOERROR) { //empty slot
+ 				index = slotIndex;
+ 				*destItem = nullptr;
+--- a/src/movement.cpp
++++ b/src/movement.cpp
+@@ -346,7 +346,7 @@
+ 		case CONST_SLOT_LEFT: slotp = SLOTP_LEFT; break;
+ 		case CONST_SLOT_LEGS: slotp = SLOTP_LEGS; break;
+ 		case CONST_SLOT_FEET: slotp = SLOTP_FEET; break;
+-		case CONST_SLOT_AMMO: slotp = SLOTP_AMMO; break;
++		case CONST_SLOT_AMMO: slotp = SLOTP_RING; break; // Chaos 0023: the second ring slot runs the ring events
+ 		case CONST_SLOT_RING: slotp = SLOTP_RING; break;
+ 		case CONST_SLOT_DECK: slotp = SLOTP_DECKBAD; break;
+ 		case CONST_SLOT_BADGE: slotp = SLOTP_DECKBAD; break;
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -1105,6 +1105,63 @@
+ 
+ 	//check if we can add this item
+ 	ReturnValue ret = toCylinder->queryAdd(index, *item, count, flags, actor);
++
++	// Chaos 0023: a ring moved from one ring slot onto the ring in the other swaps the two rings. The exchange below
++	// cannot: the source slot is still taken and addThing(thing) puts nothing into an inventory slot. Both rings stay
++	// worn, so the one-might-ring rule holds; queryAdd ran the ring events' check for `item`, and `toItem` was in a ring
++	// slot already.
++	Player* ringOwner = nullptr;
++	int32_t ringFrom = -1;
++	if (ret == RETURNVALUE_NEEDEXCHANGE && toItem && fromCylinder == toCylinder && (index == CONST_SLOT_RING || index == CONST_SLOT_AMMO)) {
++		ringOwner = dynamic_cast<Player*>(toCylinder);
++		ringFrom = ringOwner ? ringOwner->getThingIndex(item) : -1;
++	}
++	if (ringOwner && ringFrom != index && (ringFrom == CONST_SLOT_RING || ringFrom == CONST_SLOT_AMMO)) {
++		if (actorPlayer && fromPos && toPos) {
++			ret = g_events->eventPlayerOnMoveItem(actorPlayer, toItem, toItem->getItemCount(), *toPos, *fromPos, toCylinder, fromCylinder);
++			if (ret != RETURNVALUE_NOERROR) {
++				return ret;
++			}
++		}
++
++		ret = ringOwner->queryRemove(*toItem, toItem->getItemCount(), flags, actor);
++		if (ret == RETURNVALUE_NOERROR) {
++			ret = ringOwner->queryRemove(*item, item->getItemCount(), flags, actor);
++		}
++		if (ret != RETURNVALUE_NOERROR) {
++			return ret;
++		}
++
++		ringOwner->removeThing(toItem, toItem->getItemCount());
++		ringOwner->removeThing(item, item->getItemCount());
++		ringOwner->addThing(index, item);
++		ringOwner->addThing(ringFrom, toItem);
++		ringOwner->postRemoveNotification(toItem, ringOwner, index);
++		ringOwner->postRemoveNotification(item, ringOwner, ringFrom);
++		ringOwner->postAddNotification(item, ringOwner, index);
++		ringOwner->postAddNotification(toItem, ringOwner, ringFrom);
++
++		for (Item* ring : {item, toItem}) {
++			if (!ring->isRemoved() && ring->getDuration() > 0) {
++				startDecay(ring);
++			}
++		}
++
++		if (_moveItem) {
++			*_moveItem = item;
++		}
++
++		if (actorPlayer && fromPos && toPos) {
++			if (!toItem->isRemoved()) {
++				g_events->eventPlayerOnItemMoved(actorPlayer, toItem, toItem->getItemCount(), *toPos, *fromPos, toCylinder, fromCylinder);
++			}
++			if (!item->isRemoved()) {
++				g_events->eventPlayerOnItemMoved(actorPlayer, item, count, *fromPos, *toPos, fromCylinder, toCylinder);
++			}
++		}
++		return RETURNVALUE_NOERROR;
++	}
++
+ 	if (ret == RETURNVALUE_NEEDEXCHANGE) {
+ 		//check if we can add it to source cylinder
+ 		ret = fromCylinder->queryAdd(fromCylinder->getThingIndex(item), *toItem, toItem->getItemCount(), 0);
+@@ -1860,12 +1917,26 @@
+ 	const ItemType& it = Item::items.getItemIdByClientId(spriteId);
+ 	slots_t slot = getSlotType(it);
+ 
++	// Chaos 0023: the second ring slot (the old ammunition slot). The hotkey of a ring worn in either slot takes it off
++	// (slot 9 first); a ring not worn goes into slot 10 when slot 9 holds another ring and slot 10 is free.
++	if (slot == CONST_SLOT_RING) {
++		const Item* first = player->getInventoryItem(CONST_SLOT_RING);
++		const Item* second = player->getInventoryItem(CONST_SLOT_AMMO);
++		bool firstIsIt = first && first->getID() == it.id;
++		if (!firstIsIt && ((second && second->getID() == it.id) || (first && !second))) {
++			slot = CONST_SLOT_AMMO;
++		}
++	}
++
+ 	Item* slotItem = player->getInventoryItem(slot);
+ 	Item* equipItem = searchForItem(backpack, it.id);
+ 	if (slotItem && slotItem->getID() == it.id && (!it.stackable || slotItem->getItemCount() == 100 || !equipItem)) {
+ 		internalMoveItem(slotItem->getParent(), player, CONST_SLOT_WHEREEVER, slotItem, slotItem->getItemCount(), nullptr);
+ 	} else if (equipItem) {
+-		internalMoveItem(equipItem->getParent(), player, slot, equipItem, equipItem->getItemCount(), nullptr);
++		ReturnValue ret = internalMoveItem(equipItem->getParent(), player, slot, equipItem, equipItem->getItemCount(), nullptr);
++		if (ret == RETURNVALUE_ONLYONEMIGHTRING) {
++			player->sendCancelMessage(ret); // Chaos 0023: say why the hotkey did nothing
++		}
+ 	}
+ }
+ 

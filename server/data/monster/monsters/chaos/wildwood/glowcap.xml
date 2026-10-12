@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Glowcap Cluster" nameDescription="a glowcap cluster" race="venom" experience="190" speed="150" manacost="0">
+	<health now="260" max="260" />
+	<look type="2022" head="66" body="76" legs="10" feet="19" corpse="36083" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="26" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-50" />
+		<attack name="earth" interval="2000" chance="20" radius="2" target="0" min="-42" max="-113">
+			<attribute key="areaEffect" value="poison" />
+		</attack>
+	</attacks>
+	<defenses armor="14" defense="14">
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="*puff*" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="47" chance="60000" /><!-- gold coin -->
+		<item id="36022" countmax="2" chance="18000" /><!-- spore sack -->
+		<item id="36059" countmax="2" chance="12000" /><!-- bowl of mushroom stew -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+	</loot>
+</monster>

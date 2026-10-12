@@ -1,0 +1,65 @@
+#!/usr/sbin/nft -f
+# Cinders of Chaos gateway firewall (docs/LAUNCH.md "Gateways and DDoS"). Template: setup_gateway.sh fills in the ports,
+# the SSH rule and the limits and writes the result to /etc/nftables.d/chaos-gateway.nft (included
+# from /etc/nftables.conf, so it comes back after a reboot).
+# Loading it again replaces the whole table: it is idempotent. Check: sudo nft list table inet chaos_gateway
+#
+# Only this host's own traffic is filtered (the gateway forwards in HAProxy, not in the kernel). In short:
+#   * broken packets: conntrack "invalid", a new connection that is not a plain SYN, impossible flag mixes: dropped;
+#   * the game ports: at most @NEW_RATE@ new connections per second per source (burst @NEW_BURST@) and @CONN_MAX@ open
+#     connections per source, then dropped (HAProxy's own limits sit behind this, see haproxy.cfg);
+#   * the login-screen services port (when the gateway forwards it): @NEW_RATE@ new connections per second per source;
+#   * SSH: @SSH_RULE_DOC@;
+#   * everything else coming in: dropped. Outgoing traffic is not filtered.
+# SYN cookies and the backlog sizes are kernel settings: /etc/sysctl.d/90-chaos-gateway.conf (setup_gateway.sh).
+
+table inet chaos_gateway
+delete table inet chaos_gateway
+
+table inet chaos_gateway {
+	set game_rate4 {
+		type ipv4_addr
+		size 262144
+		flags dynamic,timeout
+		timeout 1m
+	}
+
+	set svc_rate4 {
+		type ipv4_addr
+		size 262144
+		flags dynamic,timeout
+		timeout 1m
+	}
+
+	set game_conn4 {
+		type ipv4_addr
+		size 262144
+		flags dynamic
+	}
+
+	chain input {
+		type filter hook input priority filter; policy drop;
+
+		iif "lo" accept
+		ct state invalid drop
+		ct state established,related accept
+
+		# a new connection starts with a SYN and nothing else
+		tcp flags & (fin | syn | rst | ack) != syn ct state new drop
+		tcp flags & (fin | syn) == (fin | syn) drop
+		tcp flags & (syn | rst) == (syn | rst) drop
+
+		# ping and the ICMP errors path MTU discovery needs (established ones pass as "related")
+		ip protocol icmp icmp type echo-request limit rate 5/second burst 10 packets accept
+		ip6 nexthdr icmpv6 icmpv6 type { echo-request, nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert } accept
+
+		@SSH_RULE@
+
+		# the game: per source new-connection rate and open-connection cap, then accept
+		tcp dport { @LOGIN_PORT@, @GAME_PORT@ } ct state new update @game_rate4 { ip saddr limit rate over @NEW_RATE@/second burst @NEW_BURST@ packets } counter drop
+		tcp dport { @LOGIN_PORT@, @GAME_PORT@ } ct state new add @game_conn4 { ip saddr ct count over @CONN_MAX@ } counter drop
+		tcp dport { @LOGIN_PORT@, @GAME_PORT@ } ct state new counter accept
+
+		@SERVICES_RULES@
+	}
+}

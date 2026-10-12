@@ -1,0 +1,41 @@
+--- a/modules/gamelib/protocollogin.lua
++++ b/modules/gamelib/protocollogin.lua
+@@ -335,10 +335,34 @@
+       local character = {}
+       local worldId = msg:getU8()
+       character.name = msg:getString()
+-      character.worldName = worlds[worldId].worldName
+-      character.worldIp = worlds[worldId].worldIp
+-      character.worldPort = worlds[worldId].worldPort
+-      character.previewState = worlds[worldId].previewState
++      if g_game.getProtocolVersion() == 1098 then
++        -- Chaos (10.98 base server): every entry also carries level u32, vocation u16 (server id) and the outfit
++        -- (looktype u16; head, body, legs, feet, addons u8 each, or an item id u16 when the looktype is 0; mount u16).
++        -- Reading only world id + name left these bytes unread, so the second entry started inside the first one's
++        -- level and every account with more than one character failed here.
++        character.level = msg:getU32()
++        local vocationId = msg:getU16()
++        character.vocation = translateVocationName and translateVocationName(vocationId) or tostring(vocationId)
++        character.vocationId = vocationId
++        local lookType = msg:getU16()
++        if lookType ~= 0 then
++          local outfit = { type = lookType }
++          outfit.head = msg:getU8()
++          outfit.body = msg:getU8()
++          outfit.legs = msg:getU8()
++          outfit.feet = msg:getU8()
++          outfit.addons = msg:getU8()
++          character.outfit = outfit
++        else
++          msg:getU16() -- item id of an item-shaped outfit (not drawn in the list)
++        end
++        msg:getU16() -- mount (not drawn in the list)
++      end
++      local world = worlds[worldId] or {}
++      character.worldName = world.worldName
++      character.worldIp = world.worldIp
++      character.worldPort = world.worldPort
++      character.previewState = world.previewState
+       characters[i] = character
+     end
+ 

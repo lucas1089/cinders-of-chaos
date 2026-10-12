@@ -1,0 +1,42 @@
+// Monk chi HUD: five pips under the character (server: monk_combat.lua / monk_chi_core.lua, extended opcode 247)
+ChiPip < UIWidget
+  size: 18 18
+  margin-left: 4
+  border-width: 1
+  border-color: #6b5a3c
+  background-color: #1a1418cc
+  phantom: true
+
+ChaosPanelDark
+  id: monkChiHud
+  height: 40
+  width: 150
+  // below the character (the map's centre): the bottom of the map panel lies under the chat in the Chaos layout,
+  // where the HUD was hidden (tested in game)
+  anchors.verticalCenter: parent.verticalCenter
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 120
+  padding: 4
+  phantom: true
+  focusable: false
+
+  UILabel
+    id: title
+    text: Chi
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    phantom: true
+
+  Panel
+    id: pips
+    height: 18
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 1
+    phantom: true
+    layout:
+      type: horizontalBox

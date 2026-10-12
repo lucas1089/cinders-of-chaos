@@ -1,0 +1,83 @@
+-- Late-game monster damage boost, pure logic (no engine calls): the percent by monster level and the scaling of one hit.
+-- Used by monster_damage.lua and tested by server/tests/monster_damage_test.lua. Config: monster_damage_config.lua.
+-- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+
+ChaosMonsterDamageCore = ChaosMonsterDamageCore or {}
+local C = ChaosMonsterDamageCore
+
+local floor = math.floor
+
+-- percent for a monster level: linear between cfg.points ({level, percent}, sorted by level), flat beyond the ends;
+-- 0 for an unknown level (0 or nil) or without points
+function C.percentFor(cfg, level)
+	local pts = cfg and cfg.points
+	level = tonumber(level) or 0
+	if not pts or #pts == 0 or level <= 0 then
+		return 0
+	end
+	if level <= pts[1].level then
+		return pts[1].percent
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if level <= b.level then
+			return a.percent + (b.percent - a.percent) * (level - a.level) / (b.level - a.level)
+		end
+	end
+	return pts[#pts].percent
+end
+
+-- the multiplier for a monster level (1 when the boost is off)
+function C.multiplierFor(cfg, level)
+	if not cfg or cfg.enabled == false then
+		return 1
+	end
+	return 1 + C.percentFor(cfg, level) / 100
+end
+
+-- value x mult, rounded to the nearest point, keeping the sign (the engine passes positive values to onHealthChange)
+function C.scale(value, mult)
+	value = tonumber(value) or 0
+	if mult == 1 or value == 0 then
+		return value
+	end
+	if value < 0 then
+		return -floor(-value * mult + 0.5)
+	end
+	return floor(value * mult + 0.5)
+end
+
+-- whether a damage part of this combat type and origin is boosted. k = the engine constants
+-- {physical, healing, undefined, none, manadrain, melee, ranged, spell} (tables so the tests need no globals).
+-- Physical: the monster's melee and ranged attacks only (ORIGIN_MELEE / ORIGIN_RANGED, the hits armour reduces);
+-- scripted damage (ORIGIN_SPELL: reflection, boss scripts), conditions (bleeding) and ORIGIN_NONE never.
+-- Elemental (cfg.elemental): the same origins plus the monster's spells.
+function C.isBoosted(cfg, k, combatType, origin)
+	if combatType == nil or combatType == k.none or combatType == k.healing or combatType == k.undefined
+		or combatType == k.manadrain then
+		return false
+	end
+	if combatType == k.physical then
+		return origin == k.melee or origin == k.ranged
+	end
+	if cfg and cfg.elemental then
+		return origin == k.melee or origin == k.ranged or origin == k.spell
+	end
+	return false
+end
+
+-- scale one hit: returns primary, secondary (types unchanged)
+function C.scaleHit(cfg, k, mult, primary, primaryType, secondary, secondaryType, origin)
+	if mult == 1 then
+		return primary, secondary
+	end
+	if C.isBoosted(cfg, k, primaryType, origin) then
+		primary = C.scale(primary, mult)
+	end
+	if C.isBoosted(cfg, k, secondaryType, origin) then
+		secondary = C.scale(secondary, mult)
+	end
+	return primary, secondary
+end
+
+return C

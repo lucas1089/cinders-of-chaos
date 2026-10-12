@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 2129: its own donor-library look (client/tools/sprites/monster_looks/picks.csv, things_custom14). Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
+<monster name="The Marrow Colossus" nameDescription="the Marrow Colossus" race="undead" experience="2900000" speed="200" manacost="0">
+	<health now="4800000" max="4800000" />
+	<look type="2129" corpse="6068" />
+	<targetchange interval="8000" chance="5" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1300" max="-2500" />
+		<attack name="physical" interval="2000" chance="10" radius="2" target="0" min="-800" max="-1600">
+			<attribute key="areaEffect" value="groundshaker" />
+		</attack>
+	</attacks>
+	<defenses armor="110" defense="110" />
+	<elements>
+		<element physicalPercent="25" />
+		<element firePercent="-5" />
+		<element energyPercent="0" />
+		<element earthPercent="10" />
+		<element icePercent="0" />
+		<element holyPercent="-20" />
+		<element deathPercent="35" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="BONE... TO... BONE..." yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="20" chance="100000" /><!-- crystal coin -->
+	</loot>
+</monster>

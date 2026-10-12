@@ -7,7 +7,7 @@
 --                     s = [[clientId, n, gold, name]], x = [[clientId, n, name, rarity, unique, orb]]}
 --   client -> server  open | close | get | pause | resume | reset
 -- While the window is open the server sends a state every 2 s; the session clock ticks here in between.
--- !hunt opens it from the chat; the top menu (Hunt -> Hunt Tracker) calls toggle().
+-- The top menu (Hunt -> Hunt Tracker) calls toggle().
 -- The base client's analyser (mods/game_analyser) is not used: its loot, supply, damage and kill panes are fed by
 -- game-protocol messages this server's protocol never sends (see server/README.md "Hunt tracker").
 
@@ -145,9 +145,22 @@ local function showList()
     total = tr('Supplies used: %s gold', HuntMath.exact(st.sv))
     empty = tr('No potions, runes or ammunition used yet (not counted in protection zones).')
   else
+    -- the loot filter's rule counters (game_lootfilter, when "Show the counters in the Hunt Tracker" is on)
+    local lf = modules.game_lootfilter
+    local ok, c = pcall(function() return lf and lf.getCounters and lf.getCounters() end)
+    local ruleRows = 0
+    if ok and type(c) == 'table' and c.show then
+      for i, r in ipairs(c.rows or {}) do
+        local row = addRow(i, 0, tr('Filter rule: %s', tr(r.name)), r.color, tr('session'), HuntMath.exact(r.session),
+          tr('Since login: %s   Total: %s', HuntMath.exact(r.session), HuntMath.exact(r.total)))
+        row:setId('lfRule_' .. r.key)
+        ruleRows = ruleRows + 1
+        n = n + 1
+      end
+    end
     for i, r in ipairs(HuntMath.specialRows(st.x)) do
       local label, color = HuntMath.itemLabel(r.name, r.rarity, r.unique, r.orb)
-      addRow(i, r.id, label, color, '', r.count .. 'x', '')
+      addRow(ruleRows + i, r.id, label, color, '', r.count .. 'x', '')
       n = n + 1
     end
     total = tr('Chaos drops: orbs, uniques and items with a rarity')
@@ -156,6 +169,11 @@ local function showList()
   window.totalLabel:setText(total)
   window.emptyText:setText(empty)
   window.emptyText:setVisible(n == 0)
+end
+
+-- game_lootfilter calls this when its rule counters (or the "show in the Hunt Tracker" option) change
+function onLootFilterCounts()
+  if window and window:isVisible() and selected == 'drops' then showList() end
 end
 
 local function selectTab(key)

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Risen Skeleton: a Necromancer-line minion (Necromancer and Bone Lord; data/scripts/chaos/necro_minions.lua, numbers in necro_config.lua).
+     Raised by the spell Raise Dead as the player's summon. It has no attacks of its own: necro_minions.lua makes it hit
+     the creature it targets every 2 s (physical; a Bone Lord's skeletons splash onto the enemies next to the target), dealt as its owner so the damage counts for the owner. Health is a placeholder below the monster
+     tiers' minimum (no tier roll at creation); the spell sets the real health from the owner's level and magic level.
+     Pushable, so players can push it out of the way; monsters never enter protection zones (the minions rest there). -->
+<monster name="Risen Skeleton" nameDescription="a risen skeleton" race="undead" experience="0" speed="200" manacost="0">
+	<health now="10" max="10" />
+	<look type="1542" corpse="5972" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<defenses armor="20" defense="20" />
+	<elements>
+		<element deathPercent="50" />
+		<element holyPercent="-20" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+		<immunity drown="1" />
+	</immunities>
+</monster>

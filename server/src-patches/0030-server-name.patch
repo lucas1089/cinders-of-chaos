@@ -1,0 +1,83 @@
+# Our name in the status protocol and the console (server/README.md "Server name"). The base server's status name
+# (STATUS_SERVER_NAME, another server's name and version) was sent to server lists in the status document's
+# serverinfo "server" attribute and in the software info answer (0x23), and printed on the console. Now
+# CHAOS_SERVER_NAME "Cinders of Chaos" and CHAOS_SERVER_VERSION "1.0" (definitions.h) are sent there and printed;
+# the console line keeps the engine version (STATUS_SERVER_VERSION) in brackets. The old constant stays unused in
+# definitions.h (a hunk that removed it would carry the old name into this repository).
+# The other leftovers of the base server's name are data, changed by tools/patch_base_server_name.py (install step
+# "servername"); serverName and motd in config.lua are set by tools/prod_config.py.
+# Applies after 0001-0029.
+--- a/src/definitions.h
++++ b/src/definitions.h
+@@ -12,6 +12,11 @@ static constexpr auto CLIENT_VERSION_MIN = 1097;
+ static constexpr auto CLIENT_VERSION_MAX = 1098;
+ static constexpr auto CLIENT_VERSION_STR = "10.98";
+ 
++// Chaos (patch 0030): our name and version, in the status protocol (server lists) and the console, in place of the
++// base server's STATUS_SERVER_NAME. STATUS_SERVER_VERSION stays the engine's version.
++static constexpr auto CHAOS_SERVER_NAME = "Cinders of Chaos";
++static constexpr auto CHAOS_SERVER_VERSION = "1.0";
++
+ static constexpr auto AUTHENTICATOR_DIGITS = 6U;
+ static constexpr auto AUTHENTICATOR_PERIOD = 30U;
+ 
+--- a/src/otserv.cpp
++++ b/src/otserv.cpp
+@@ -99,13 +99,13 @@ int main(int argc, char* argv[])
+ void printServerVersion()
+ {
+ #if defined(GIT_RETRIEVED_STATE) && GIT_RETRIEVED_STATE
+-	std::cout << STATUS_SERVER_NAME << " - Version " << GIT_DESCRIBE << std::endl;
++	std::cout << CHAOS_SERVER_NAME << " " << CHAOS_SERVER_VERSION << " (engine " << STATUS_SERVER_VERSION << ", " << GIT_DESCRIBE << ")" << std::endl;
+ 	std::cout << "Git SHA1 " << GIT_SHORT_SHA1  << " dated " << GIT_COMMIT_DATE_ISO8601 << std::endl;
+ 	#if GIT_IS_DIRTY
+ 	std::cout << "*** DIRTY - NOT OFFICIAL RELEASE ***" << std::endl;
+ 	#endif
+ #else
+-	std::cout << STATUS_SERVER_NAME << " - Version " << STATUS_SERVER_VERSION << std::endl;
++	std::cout << CHAOS_SERVER_NAME << " " << CHAOS_SERVER_VERSION << " (engine " << STATUS_SERVER_VERSION << ")" << std::endl;
+ #endif
+ 	std::cout << std::endl;
+ 
+@@ -140,7 +140,7 @@ void mainLoader(int, char*[], ServiceManager* services)
+ 
+ 	srand(static_cast<unsigned int>(OTSYS_TIME()));
+ #ifdef _WIN32
+-	SetConsoleTitle(STATUS_SERVER_NAME);
++	SetConsoleTitle(CHAOS_SERVER_NAME);
+ #endif
+ 
+ 	printServerVersion();
+@@ -320,7 +320,7 @@ void mainLoader(int, char*[], ServiceManager* services)
+ 
+ #ifndef _WIN32
+ 	if (getuid() == 0 || geteuid() == 0) {
+-		std::cout << "> Warning: " << STATUS_SERVER_NAME << " has been executed as root user, please consider running it as a normal user." << std::endl;
++		std::cout << "> Warning: " << CHAOS_SERVER_NAME << " has been executed as root user, please consider running it as a normal user." << std::endl;
+ 	}
+ #endif
+ 
+--- a/src/protocolstatus.cpp
++++ b/src/protocolstatus.cpp
+@@ -92,8 +92,8 @@ void ProtocolStatus::sendStatusString()
+ 	serverinfo.append_attribute("port") = std::to_string(g_config.getNumber(ConfigManager::LOGIN_PORT)).c_str();
+ 	serverinfo.append_attribute("location") = g_config.getString(ConfigManager::LOCATION).c_str();
+ 	serverinfo.append_attribute("url") = g_config.getString(ConfigManager::URL).c_str();
+-	serverinfo.append_attribute("server") = STATUS_SERVER_NAME;
+-	serverinfo.append_attribute("version") = STATUS_SERVER_VERSION;
++	serverinfo.append_attribute("server") = CHAOS_SERVER_NAME; // Chaos (patch 0030)
++	serverinfo.append_attribute("version") = CHAOS_SERVER_VERSION;
+ 	serverinfo.append_attribute("client") = CLIENT_VERSION_STR;
+ 
+ 	pugi::xml_node owner = tsqp.append_child("owner");
+@@ -203,8 +203,8 @@ void ProtocolStatus::sendInfo(uint16_t requestedInfo, const std::string& charact
+ 
+ 	if (requestedInfo & REQUEST_SERVER_SOFTWARE_INFO) {
+ 		output->addByte(0x23); // server software info
+-		output->addString(STATUS_SERVER_NAME);
+-		output->addString(STATUS_SERVER_VERSION);
++		output->addString(CHAOS_SERVER_NAME); // Chaos (patch 0030)
++		output->addString(CHAOS_SERVER_VERSION);
+ 		output->addString(CLIENT_VERSION_STR);
+ 	}
+ 	send(output);

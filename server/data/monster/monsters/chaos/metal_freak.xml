@@ -45,4 +45,20 @@
     <voice sentence="Metalllll Freakooo!"/>
     <voice sentence="I will Freak You Body So I will Make you Metal Noob!"/>
   </voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
+		<item id="2152" countmax="60" chance="80000"/><!-- platinum coin -->
+		<item id="2160" countmax="2" chance="15000"/><!-- crystal coin -->
+		<item id="36012" countmax="5" chance="20000"/><!-- piece of scrap metal -->
+		<item id="2156" countmax="2" chance="6000"/><!-- red gem -->
+		<item id="2154" chance="3000"/><!-- yellow gem -->
+		<item id="2472" chance="400"/><!-- magic plate armor -->
+		<item id="8885" chance="400"/><!-- divine plate -->
+		<item id="8889" chance="400"/><!-- skullcracker armor -->
+		<item id="2645" chance="500"/><!-- steel boots -->
+		<item id="2514" chance="400"/><!-- mastermind shield -->
+		<item id="8929" chance="300"/><!-- the stomper -->
+		<item id="25380" countmax="1" chance="15"/><!-- talent token -->
+	</loot>
 </monster>

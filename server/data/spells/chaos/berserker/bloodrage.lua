@@ -22,7 +22,7 @@ function onCastSpell(creature, variant, isHotkey)
 	c:setParameter(CONDITION_PARAM_TICKS, cfg.bloodrage.durationMs)
 	player:addCondition(c)
 	local pos = player:getPosition()
-	ChaosSpell.fx(pos, "blood_rune", CONST_ME_DRAWBLOOD)
+	ChaosSpell.vfxOr(pos, "aura_burst_red", "blood_rune", CONST_ME_DRAWBLOOD)
 	pos:sendMagicEffect(CONST_ME_MAGIC_RED)
 	return true
 end

@@ -1,0 +1,13 @@
+Module
+  name: game_charms
+  description: Charms - a grid of small charms with minor bonuses (place, move, take out, salvage, reforge); extended opcode 198
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ charmsview, charms ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

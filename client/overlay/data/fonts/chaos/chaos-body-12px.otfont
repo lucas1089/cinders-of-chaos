@@ -1,0 +1,9 @@
+Font
+  name: chaos-body-12px
+  texture: chaos-body-12px
+  height: 16
+  glyph-size: 15 16
+  first-glyph: 32
+  y-offset: 0
+  spacing: 0 0
+  space-width: 3

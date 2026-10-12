@@ -10,12 +10,12 @@ return {
 
 	-- how often (ms) the supply count runs and the open window gets a fresh state
 	thinkMs = 2000,
-	-- used supplies are counted from the inventory: a potion, rune or arrow less than at the last count is "used".
+	-- used supplies are counted from the inventory: a potion, rune or spear less than at the last count is "used".
 	-- In a protection zone nothing is counted (putting potions in the depot or selling them is not using them).
 	countSuppliesInPz = false,
 
 	-- EventCallback indexes (lower runs first). onDropLoot: 0 stock loot, 1 Chaos loot layer, 2 paragon gold /
-	-- rift key / AUTO SELLER, 2.5 loot filter snapshot, 3 autoloot, 4 loot pouch. The corpse is read twice, before and
+	-- rift key / AUTO SELLER, 2.5 loot filter snapshot, 2.7 store pouches, 3 autoloot. The corpse is read twice, before and
 	-- after the index-2 callbacks, and per item the larger count is kept: items the auto seller takes out and the coins
 	-- or keys added at 2 both count.
 	lootBeforeIndex = 1.9,

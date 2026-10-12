@@ -1,0 +1,108 @@
+# Percent armour (server/README.md "Percent armour"): a player's armour reduced a physical hit by a random flat amount
+# (stock: uniform(armour / 2, armour - 1)), which blocked small hits completely and hardly mattered against the late-game
+# ones. With armorPercent = true (default) a player's armour takes armour / (armour + armorPercentConstant) of a physical
+# hit (rounded), at most armorPercentMax % (defaults 250 and 80): 100 armour 28.6%, 150 37.5%, 200 44.4%. Only
+# COMBAT_PHYSICALDAMAGE that is blocked by armour (melee, distance weapons, "physical" monster spells, spells with
+# COMBAT_PARAM_BLOCKARMOR); elemental damage is not reduced by armour (the stock formula took the flat amount from a
+# blockArmor elemental hit too). Defence (the shield block: blockCount, uniform(def / 2, def)) is unchanged and comes
+# first, as before. Monsters keep the stock formula (their armour values are tuned for it). armorPercent = false is the
+# stock formula for players again. configKeys.ARMOR_PERCENT / ARMOR_PERCENT_CONSTANT / ARMOR_PERCENT_MAX;
+# Creature::armorPercentReduction(armour) is the share. Simulation: server/tools/armor_sim.py.
+# Apply in the server source root after 0001-0015: patch -p1 < 0016-percent-armour.patch, then rebuild.
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -303,6 +303,11 @@ bool ConfigManager::load()
+ 	// its value goes to the client on extended opcode energyShieldOpcode (0: not sent)
+ 	integer[ENERGY_SHIELD_RECHARGE_DELAY] = getGlobalNumber(L, "energyShieldRechargeDelay", 2000);
+ 	integer[ENERGY_SHIELD_OPCODE] = getGlobalNumber(L, "energyShieldOpcode", 224);
++	// Chaos (patch 0016): a player's armour takes armour / (armour + armorPercentConstant) of a physical hit, at most
++	// armorPercentMax %; armorPercent = false is the stock random flat reduction
++	boolean[ARMOR_PERCENT] = getGlobalBoolean(L, "armorPercent", true);
++	integer[ARMOR_PERCENT_CONSTANT] = getGlobalNumber(L, "armorPercentConstant", 250);
++	integer[ARMOR_PERCENT_MAX] = getGlobalNumber(L, "armorPercentMax", 80);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -54,6 +54,7 @@ class ConfigManager
+ 			ONLY_INVITED_CAN_MOVE_HOUSE_ITEMS,
+ 			REMOVE_ON_DESPAWN,
+ 			PLAYER_CONSOLE_LOGS,
++			ARMOR_PERCENT, // Chaos (patch 0016): percent armour for players
+ 
+ 			LAST_BOOLEAN_CONFIG /* this must be the last one */
+ 		};
+@@ -126,6 +127,8 @@ class ConfigManager
+ 			MIN_PLAYER_LEECH_INTERVAL,
+ 			ENERGY_SHIELD_RECHARGE_DELAY, // Chaos (patch 0015): energy shield
+ 			ENERGY_SHIELD_OPCODE,
++			ARMOR_PERCENT_CONSTANT, // Chaos (patch 0016)
++			ARMOR_PERCENT_MAX,
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+--- a/src/creature.cpp
++++ b/src/creature.cpp
+@@ -821,6 +821,17 @@ void Creature::drainHealth(Creature* attacker, int32_t damage)
+ 	}
+ }
+ 
++// Chaos (patch 0016): the share of a physical hit that this much armour takes (0 .. armorPercentMax / 100)
++double Creature::armorPercentReduction(int32_t armor)
++{
++	const int32_t k = std::max<int32_t>(1, g_config.getNumber(ConfigManager::ARMOR_PERCENT_CONSTANT));
++	const int32_t cap = std::max<int32_t>(0, std::min<int32_t>(100, g_config.getNumber(ConfigManager::ARMOR_PERCENT_MAX)));
++	if (armor <= 0) {
++		return 0.;
++	}
++	return std::min<double>(cap / 100., static_cast<double>(armor) / (armor + k));
++}
++
+ BlockType_t Creature::blockHit(Creature* attacker, CombatType_t combatType, int32_t& damage,
+                                bool checkDefense /* = false */, bool checkArmor /* = false */, bool /* field = false */, bool /* ignoreResistances = false */)
+ {
+@@ -849,7 +860,13 @@ BlockType_t Creature::blockHit(Creature* attacker, CombatType_t combatType, int3
+ 
+ 		if (checkArmor) {
+ 			int32_t armor = getArmor();
+-			if (armor > 3) {
++			if (getPlayer() && g_config.getBoolean(ConfigManager::ARMOR_PERCENT)) {
++				// Chaos (patch 0016): a player's armour takes a share of a physical hit, armour / (armour + K), at most
++				// armorPercentMax %; other damage types are not reduced by armour (monsters keep the stock formula)
++				if (combatType == COMBAT_PHYSICALDAMAGE && armor > 0 && damage > 0) {
++					damage -= static_cast<int32_t>(std::round(damage * armorPercentReduction(armor)));
++				}
++			} else if (armor > 3) {
+ 				damage -= uniform_random(armor / 2, armor - (armor % 2 + 1));
+ 			} else if (armor > 0) {
+ 				--damage;
+--- a/src/creature.h
++++ b/src/creature.h
+@@ -282,6 +282,7 @@ class Creature : virtual public Thing
+ 		virtual bool setAttackedCreature(Creature* creature);
+ 		virtual BlockType_t blockHit(Creature* attacker, CombatType_t combatType, int32_t& damage,
+ 		                             bool checkDefense = false, bool checkArmor = false, bool field = false, bool ignoreResistances = false);
++		static double armorPercentReduction(int32_t armor); // Chaos (patch 0016)
+ 
+ 		bool setMaster(Creature* newMaster);
+ 
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2045,6 +2045,8 @@ void LuaScriptInterface::registerFunctions()
+ 	registerEnumIn("configKeys", ConfigManager::MIN_PLAYER_LEECH_INTERVAL)
+ 	registerEnumIn("configKeys", ConfigManager::ENERGY_SHIELD_RECHARGE_DELAY) // Chaos (patch 0015)
+ 	registerEnumIn("configKeys", ConfigManager::ENERGY_SHIELD_OPCODE)
++	registerEnumIn("configKeys", ConfigManager::ARMOR_PERCENT_CONSTANT) // Chaos (patch 0016)
++	registerEnumIn("configKeys", ConfigManager::ARMOR_PERCENT_MAX)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLEAN_MAP)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLOSE)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_SHUTDOWN)
+@@ -2103,6 +2105,7 @@ void LuaScriptInterface::registerFunctions()
+ 	registerEnumIn("configKeys", ConfigManager::EXP_FROM_PLAYERS_LEVEL_RANGE)
+ 	registerEnumIn("configKeys", ConfigManager::MAX_PACKETS_PER_SECOND)
+ 	registerEnumIn("configKeys", ConfigManager::PLAYER_CONSOLE_LOGS)
++	registerEnumIn("configKeys", ConfigManager::ARMOR_PERCENT) // Chaos (patch 0016)
+ 
+ 	// os
+ 	registerMethod("os", "mtime", LuaScriptInterface::luaSystemTime);

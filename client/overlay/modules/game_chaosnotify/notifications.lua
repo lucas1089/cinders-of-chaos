@@ -16,7 +16,7 @@ local isInitialized = false
 -- Tipos de notificação com configurações melhoradas + CATACOMB
 local NOTIFICATION_TYPES = {
     GM_BROADCAST = {
-        icon = "images/notifications/gm.png",
+        icon = "images/toast/announce.png",
         title = "GAMEMASTER NOTIFICATION",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -24,7 +24,7 @@ local NOTIFICATION_TYPES = {
         duration = 30000, -- 10 segundos
     },
     TASK_COMPLETE = {
-        icon = "images/notifications/task.png",
+        icon = "images/toast/task.png",
         title = "TASK COMPLETED",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -32,7 +32,7 @@ local NOTIFICATION_TYPES = {
         duration = 10000, -- 10 segundos
     },
     BATTLE_PASS = {
-        icon = "images/notifications/battlepass.png",
+        icon = "images/toast/season_pass.png",
         title = "BATTLE PASS REWARD",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -40,7 +40,7 @@ local NOTIFICATION_TYPES = {
         duration = 10000, -- 10 segundos
     },
     PARTY_INVITE = {
-        icon = "images/notifications/party.png",
+        icon = "images/toast/party_invite.png",
         title = "PARTY INVITATION",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -48,7 +48,7 @@ local NOTIFICATION_TYPES = {
         duration = 30000, -- 30 segundos
     },
     BOUNTY = {
-        icon = "images/notifications/task.png",
+        icon = "images/toast/bounty.png",
         title = "BOUNTY BOARD",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -56,24 +56,98 @@ local NOTIFICATION_TYPES = {
         duration = 8000,
     },
     NEW_PLAYER = {
-        icon = "images/notifications/gm.png",
+        icon = "images/toast/new_player.png",
         title = "NEW ADVENTURER",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
         borderColor = "#6a5632",
         duration = 12000,
     },
-    -- achievements (server data/scripts/chaos/achievements.lua): one toast per unlock
+    -- bestiary and kill tasks (server data/scripts/chaos/bestiary.lua): new stages, completed tasks
+    BESTIARY = {
+        icon = "images/toast/bestiary.png",
+        title = "BESTIARY",
+        titleColor = "#b08a4a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 7000,
+    },
+    -- achievements (server data/scripts/chaos/achievements.lua): one toast per unlock (name, points, title, reward), one
+    -- summary for the unlocks of the login check; the reward track and class unlocks
     ACHIEVEMENT = {
-        icon = "images/notifications/task.png",
+        icon = "/images/chaos/topbutton_ranking",
         title = "ACHIEVEMENT UNLOCKED",
         titleColor = "#5cc8c0",
         backgroundColor = "#ccbebb",
         borderColor = "#2c6e69",
         duration = 8000,
     },
+    -- ascension quest (server data/scripts/chaos/ascension_quest.lua): Proof, Trial and the ascension itself
+    ASCENSION = {
+        icon = "images/toast/ascension.png",
+        title = "ASCENSION",
+        titleColor = "#c9a24a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 10000,
+    },
+    -- invasions and world events (server data/scripts/chaos/invasion.lua, worldevents.lua): warnings, waves, the end
+    -- the market (server data/scripts/chaos/market.lua): a sale, a purchase, items and gold delivered
+    MARKET = {
+        icon = "images/toast/market.png",
+        title = "MARKET",
+        titleColor = "#e8b84a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 9000,
+    },
+    -- a listing of the player sold (server market.lua, orbexchange.lua; kind "sale"): item, price, fee and proceeds, or
+    -- "While you were away: 3 items sold for 4.2M gold: ..." at login
+    SALE = {
+        icon = "images/toast/market.png",
+        title = "ITEM SOLD",
+        titleColor = "#e8b84a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 12000,
+    },
+    INVASION = {
+        icon = "images/toast/invasion.png",
+        title = "INVASION",
+        titleColor = "#d8452a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a1a12",
+        duration = 9000,
+    },
+    -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
+    SEASON_PASS = {
+        icon = "images/toast/season_pass.png",
+        title = "SEASON PASS",
+        titleColor = "#ff9a3c",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a3a12",
+        duration = 9000,
+    },
+    -- Seasonal Journey (server data/scripts/chaos/season_journey.lua): an objective done, a chapter complete
+    JOURNEY = {
+        icon = "images/toast/journey.png",
+        title = "SEASONAL JOURNEY",
+        titleColor = "#ff9a3c",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a3a12",
+        duration = 8000,
+    },
+    -- boss passive points (server data/scripts/chaos/bosspoints.lua): first kill of a major boss, +1 passive point
+    BOSS_POINT = {
+        icon = "images/toast/boss_point.png",
+        title = "BOSS PASSIVE POINT",
+        titleColor = "#d8a03a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a5410",
+        duration = 10000,
+    },
     CATACOMB_FREE = {
-        icon = "images/notifications/catacomb2.png",
+        icon = "images/toast/catacomb_invite.png",
         title = "CATACOMB AVAILABLE",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -198,35 +272,27 @@ local function calculateOptimalPosition()
     return {marginRight = 30, y = 35}
 end
 
--- Função para posicionar notificações
+-- stack the shown toasts (notifyview.lua ChaosNotifyView.stack): pinned first, then by slot, each below the one above
+-- by its own height, so toasts with buttons (140) and several toasts at once never overlap
 function repositionNotifications()
     local basePos = calculateOptimalPosition()
-    local currentY = basePos.y
     local margin = basePos.marginRight
-
-    -- Posicionar notificações fixadas primeiro
-    for slot, data in pairs(pinnedNotifications) do
-        if data and data.widget and isWidgetValid(data.widget) then
-            pcall(function()
-                -- usar margins e anchors em vez de setPosition
-                data.widget:setMarginRight(margin)
-                data.widget:setMarginTop(currentY + 35)
-                data.widget:raise()
-                currentY = currentY + 120
-            end)
+    local groups = {pinned = {}, active = {}}
+    local sources = {pinned = pinnedNotifications, active = activeNotifications}
+    for name, list in pairs(sources) do
+        for slot, data in pairs(list) do
+            if data and data.widget and isWidgetValid(data.widget) then
+                groups[name][slot] = {type = data.data and data.data.notificationType}
+            end
         end
     end
-
-    -- Posicionar notificações temporárias
-    for slot, data in pairs(activeNotifications) do
-        if data and data.widget and isWidgetValid(data.widget) then
-            pcall(function()
-                data.widget:setMarginRight(margin)
-                data.widget:setMarginTop(currentY + 35)
-                data.widget:raise()
-                currentY = currentY + 120
-            end)
-        end
+    for _, place in ipairs(ChaosNotifyView.stack(groups.pinned, groups.active, basePos.y + 35)) do
+        local data = sources[place.group][place.slot]
+        pcall(function()
+            data.widget:setMarginRight(margin)
+            data.widget:setMarginTop(place.y)
+            data.widget:raise()
+        end)
     end
 end
 
@@ -303,6 +369,9 @@ function init()
     end
 
     
+    -- the answer button styles (ChaosToastAccept / ChaosToastDecline)
+    pcall(function() g_ui.importStyle('toastbuttons') end)
+
     -- Registrar opcode
     if ProtocolGame and ProtocolGame.registerExtendedOpcode then
         ProtocolGame.registerExtendedOpcode(opcode, onExtendedOpcode)
@@ -375,6 +444,42 @@ function hideAllNotifications()
     pinnedNotifications = {}
 end
 
+-- the toast title: the Chaos heading font (client_chaos_theme ChaosTheme.fonts) when the client has it, stock Verdana otherwise
+local function titleFont()
+    local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
+    return theme and theme.font and theme.font('heading', 'verdana-11px-antialised') or 'verdana-11px-antialised'
+end
+
+-- the answer buttons of the invitation toasts: generated plates (client/tools/gen_toast_art.py, styles in
+-- toastbuttons.otui) with normal / hover / pressed / disabled states. kind 'yes' (Accept, Start) sits left of the
+-- middle of the text column, 'no' (Decline, Cancel) right of it; both 80 x 24, ANSWER_GAP apart
+local ANSWER_W, ANSWER_GAP, ANSWER_BOTTOM = 80, 12, 33
+local TEXT_LEFT, TEXT_RIGHT, TOAST_W = 80, 30, 340 -- the message label's margins and the toast width
+
+local function createAnswerButton(parent, kind, id, text)
+    local style = kind == 'yes' and 'ChaosToastAccept' or 'ChaosToastDecline'
+    local ok, button = pcall(g_ui.createWidget, style, parent)
+    if not ok or not button then
+        return nil
+    end
+    pcall(function()
+        local mid = TEXT_LEFT + math.floor((TOAST_W - TEXT_LEFT - TEXT_RIGHT) / 2)
+        button:setId(id)
+        button:setText(text)
+        button:setFont(titleFont())
+        button:setMarginBottom(ANSWER_BOTTOM)
+        button:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+        if kind == 'yes' then
+            button:setMarginLeft(mid - math.floor(ANSWER_GAP / 2) - ANSWER_W)
+            button:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        else
+            button:setMarginRight(TOAST_W - mid - math.ceil(ANSWER_GAP / 2) - ANSWER_W)
+            button:addAnchor(AnchorRight, 'parent', AnchorRight)
+        end
+    end)
+    return button
+end
+
 -- FUNÇÃO CORRIGIDA: Criar notificação com botões para party invite e catacomb free
 local function createCompactNotification(data, isPinned)
     local gameRootPanel = modules.game_interface.getRootPanel()
@@ -394,7 +499,7 @@ local function createCompactNotification(data, isPinned)
     local totalPausedTime = 0
     
     -- Altura maior para notificações com botões
-    local notificationHeight = (data.notificationType == "PARTY_INVITE" or data.notificationType == "CATACOMB_FREE") and 140 or 110
+    local notificationHeight = ChaosNotifyView.heightOf(data.notificationType)
     
     -- Configurar o painel principal
     pcall(function()
@@ -433,7 +538,7 @@ local function createCompactNotification(data, isPinned)
             pcall(function()
                 moduleIcon:setId('moduleIcon')
                 moduleIcon:setSize({width = 48, height = 48})
-                moduleIcon:setImageSource(data.icon or 'images/notifications/gm.png')
+                moduleIcon:setImageSource(data.icon or 'images/toast/announce.png')
                 moduleIcon:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
                 moduleIcon:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
             end)
@@ -494,8 +599,8 @@ local function createCompactNotification(data, isPinned)
         pcall(function()
             titleLabel:setId('titleLabel')
             titleLabel:setText(data.title or 'NOTIFICATION')
-            titleLabel:setFont('verdana-11px-antialised')
-            titleLabel:setColor('#a3844b')
+            titleLabel:setFont(titleFont())
+            titleLabel:setColor(data.titleColor or '#a3844b')
             titleLabel:setTextAlign(AlignCenter)
             titleLabel:setHeight(18)
             titleLabel:setMarginLeft(80)
@@ -517,7 +622,9 @@ local function createCompactNotification(data, isPinned)
             messageLabel:setColor('#FFD700')
             messageLabel:setTextAlign(AlignLeft)
             messageLabel:setTextWrap(true)
-            messageLabel:setHeight(35)
+            -- four wrapped lines fit above the timer bar; two where Accept/Start buttons sit below the text
+            local hasButtons = ChaosNotifyView.hasButtons(data.notificationType)
+            messageLabel:setHeight(hasButtons and 35 or 64)
             messageLabel:setMarginLeft(80)
             messageLabel:setMarginTop(28)
             messageLabel:setMarginRight(30)
@@ -530,21 +637,8 @@ local function createCompactNotification(data, isPinned)
     -- NOVO: Criar botões para party invite
     if data.notificationType == "PARTY_INVITE" and data.inviteData then
         -- Botão Aceitar
-        local acceptButton = g_ui.createWidget('UIButton', notification)
+        local acceptButton = createAnswerButton(notification, 'yes', 'acceptButton', 'Accept')
         if acceptButton then
-            pcall(function()
-                acceptButton:setId('acceptButton')
-                acceptButton:setText('Accept')
-                acceptButton:setSize({width = 70, height = 25})
-                acceptButton:setImageSource('images/yes.png')
-                acceptButton:setFont('verdana-11px-antialised')
-                acceptButton:setColor('white')
-                acceptButton:setMarginBottom(35)
-                acceptButton:setMarginLeft(90)
-                acceptButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                acceptButton:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-            end)
-            
             acceptButton.onClick = function()
                 -- CRÍTICO: Aceitar convite de party usando sistema customizado integrado
                 if g_game and g_game.getLocalPlayer then
@@ -571,21 +665,8 @@ local function createCompactNotification(data, isPinned)
         end
         
         -- Botão Recusar
-        local declineButton = g_ui.createWidget('UIButton', notification)
+        local declineButton = createAnswerButton(notification, 'no', 'declineButton', 'Decline')
         if declineButton then
-            pcall(function()
-                declineButton:setId('declineButton')
-                declineButton:setText('Decline')
-                declineButton:setSize({width = 70, height = 25})
-                declineButton:setImageSource('images/no.png')
-                declineButton:setFont('verdana-11px-antialised')
-                declineButton:setColor('white')
-                declineButton:setMarginBottom(35)
-                declineButton:setMarginRight(90)
-                declineButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                declineButton:addAnchor(AnchorRight, 'parent', AnchorRight)
-            end)
-            
             declineButton.onClick = function()
                 -- CRÍTICO: Recusar convite de party usando sistema customizado integrado
                 if g_game and g_game.getLocalPlayer then
@@ -615,21 +696,8 @@ local function createCompactNotification(data, isPinned)
     -- NOVO: Criar botões para catacomb free
     if data.notificationType == "CATACOMB_FREE" and data.catacombData then
         -- Botão Start
-        local startButton = g_ui.createWidget('UIButton', notification)
+        local startButton = createAnswerButton(notification, 'yes', 'startButton', 'Start')
         if startButton then
-            pcall(function()
-                startButton:setId('startButton')
-                startButton:setText('START')
-                startButton:setSize({width = 70, height = 25})
-                startButton:setImageSource('images/yes.png')
-                startButton:setFont('verdana-11px-antialised')
-                startButton:setColor('white')
-                startButton:setMarginBottom(35)
-                startButton:setMarginLeft(90)
-                startButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                startButton:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-            end)
-            
             startButton.onClick = function()
                 -- Verificar se está em PZ antes de iniciar
                 local localPlayer = g_game.getLocalPlayer()
@@ -663,21 +731,8 @@ local function createCompactNotification(data, isPinned)
         end
         
         -- Botão Cancel
-        local cancelButton = g_ui.createWidget('UIButton', notification)
+        local cancelButton = createAnswerButton(notification, 'no', 'cancelButton', 'Cancel')
         if cancelButton then
-            pcall(function()
-                cancelButton:setId('cancelButton')
-                cancelButton:setText('CANCEL')
-                cancelButton:setSize({width = 70, height = 25})
-                cancelButton:setImageSource('images/no.png')
-                cancelButton:setFont('verdana-11px-antialised')
-                cancelButton:setColor('white')
-                cancelButton:setMarginBottom(35)
-                cancelButton:setMarginRight(90)
-                cancelButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                cancelButton:addAnchor(AnchorRight, 'parent', AnchorRight)
-            end)
-            
             cancelButton.onClick = function()
                 -- Remover da fila
                 if g_game and g_game.getProtocolGame then
@@ -1008,7 +1063,8 @@ function addNotification(notificationType, message, customIcon, monsterLookType,
         catacombData = catacombData
     }
     
-    table.insert(notificationQueue, notificationData)
+    -- three shown at once, the rest wait in a capped queue (notifyview.lua ChaosNotifyView.enqueue)
+    ChaosNotifyView.enqueue(notificationQueue, notificationData)
     processNotificationQueue()
 end
 
@@ -1063,10 +1119,66 @@ function onExtendedOpcode(protocol, opcode, buffer)
             end
         end,
 
+        -- bestiary and kill tasks (server data/scripts/chaos/bestiary.lua)
+        bestiary = function(data)
+            if data.message then
+                addNotification("BESTIARY", data.message, nil, data.monsterLookType)
+            end
+        end,
+
         -- achievements (server data/scripts/chaos/achievements.lua)
         achievement = function(data)
             if data.message then
                 addNotification("ACHIEVEMENT", data.message)
+            end
+        end,
+
+        -- boss passive points (server data/scripts/chaos/bosspoints.lua)
+        bosspoints = function(data)
+            if data.message then
+                addNotification("BOSS_POINT", data.message)
+            end
+        end,
+
+        -- ascension quest (server data/scripts/chaos/ascension_quest.lua)
+        ascension = function(data)
+            if data.message then
+                addNotification("ASCENSION", data.message)
+            end
+        end,
+
+        -- the market (server data/scripts/chaos/market.lua)
+        market = function(data)
+            if data.message then
+                addNotification("MARKET", data.message)
+            end
+        end,
+
+        -- a listing of the player sold (server data/scripts/chaos/market.lua, orbexchange.lua)
+        sale = function(data)
+            if data.message then
+                addNotification("SALE", data.message)
+            end
+        end,
+
+        -- season pass (server data/scripts/chaos/seasonpass.lua)
+        seasonpass = function(data)
+            if data.message then
+                addNotification("SEASON_PASS", data.message)
+            end
+        end,
+
+        -- Seasonal Journey (server data/scripts/chaos/season_journey.lua)
+        journey = function(data)
+            if data.message then
+                addNotification("JOURNEY", data.message)
+            end
+        end,
+
+        -- invasions and world events (server data/scripts/chaos/invasion.lua)
+        invasion = function(data)
+            if data.message then
+                addNotification("INVASION", data.message)
             end
         end,
 
@@ -1138,6 +1250,10 @@ function testNotifications()
         }
         addNotification("PARTY_INVITE", "TestPlayer invited you to join their party for catacomb!", nil, nil, inviteData)
     end, 6000)
+    scheduleEvent(function()
+        addNotification("SALE", "While you were away: 3 items sold for 4.2M gold: Doombringer, 20x Orb of Fate, plate armor.")
+        addNotification("ACHIEVEMENT", "The Thousandth Step: +50 points. Title: the Unbroken. Reward: mount Doombringer.")
+    end, 1000)
     scheduleEvent(function()
         -- Teste de catacomb livre
         local catacombData = {

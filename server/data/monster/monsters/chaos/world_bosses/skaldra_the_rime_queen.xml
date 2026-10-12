@@ -2,7 +2,7 @@
 <!-- World boss (worldboss.lua). Frost wyrm queen: long ice breaths, freezing DoTs, slows. -->
 <monster name="Skaldra the Rime Queen" nameDescription="Skaldra the Rime Queen" race="undead" experience="16000000" speed="280" manacost="0">
 	<health now="16000000" max="16000000" />
-	<look type="1472" head="86" body="9" legs="86" feet="9" corpse="7091" />
+	<look type="1534" head="86" body="9" legs="86" feet="9" corpse="7091" />
 	<targetchange interval="5000" chance="20" />
 	<flags>
 		<flag isboss="1" />
@@ -73,8 +73,8 @@
 	</voices>
 	<loot>
 		<item id="2160" countmax="55" chance="100000" /><!-- crystal coin -->
-		<item id="29856" countmax="12" chance="100000" /><!-- Chaos Orb -->
-		<item id="29857" countmax="5" chance="80000" /><!-- Divine Orb -->
+		<item id="29856" countmax="12" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="5" chance="80000" /><!-- Orb of Fate -->
 		<item id="29870" chance="6000" /><!-- Seraphic Tabard -->
 		<item id="29875" chance="5000" /><!-- Seraphic Piercer -->
 		<item id="29871" chance="6000" /><!-- Seraphic Greaves -->

@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Add the Chaos auras to a base server's data/XML/auras.xml.
+
+usage: python3 -I install_auras.py DATA_DIR [--dry-run] [--manifest CSV]
+
+The auras are outfit things appended to the client Tibia.dat/.spr by client/tools/sprites/import_vfx.py, which also
+writes the manifest server/data/XML/chaos_auras.csv (aura_id, client_id, name; the default --manifest). One
+<aura id=.. clientid=.. name=.. speed="20" /> line per row (speed as the base server's own store auras) sits in a block
+between two marker comments before </auras>; the block is rewritten when the manifest changed. An aura id or client id
+that already has an entry outside the block stops the script (nothing is written). Idempotent: a second run changes
+nothing. The store offers them (data/scripts/chaos/shop_config.lua, category Auras). Without the matching client pair
+the auras show as nothing in the client, so install both.
+A second manifest, data/XML/chaos_auras_donor.csv (same columns), is read after it when no --manifest is given: auras
+whose art is a donor-library outfit imported by client/tools/sprites/donor_pick.py + import_outfits.py (picks.csv rows
+of family "faction", kind "aura"), not by import_vfx.py, so re-running import_vfx.py never drops them. They are rewards
+(factions_config.lua), not store offers.
+A third manifest, data/XML/chaos_auras_exclusive.csv (same columns), is read last when no --manifest is given: base
+looks of the client pair that no auras.xml line had, the never-sold auras of exclusives_config.lua (an achievement and a
+boss drop).
+"""
+import csv, os, re, sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras.csv')
+DONOR_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_donor.csv')
+EXCLUSIVE_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_exclusive.csv')
+BEGIN = '\t<!-- Chaos auras (server/tools/install_auras.py, do not edit by hand) -->\n'
+END = '\t<!-- end of the Chaos auras -->\n'
+
+
+def read_manifest(*paths):
+    rows = []
+    for path in paths:
+        with open(path, newline='', encoding='utf-8') as fh:
+            rows += [(int(r['aura_id']), int(r['client_id']), r['name']) for r in csv.DictReader(fh)]
+    path = ' + '.join(paths)
+    ids = [r[0] for r in rows]
+    if len(set(ids)) != len(ids) or any(not 1 <= i <= 255 for i in ids):
+        sys.exit('%s: aura ids must be unique and 1..255' % path)
+    return rows
+
+
+def main(argv):
+    args = [a for a in argv if not a.startswith('--')]
+    dry = '--dry-run' in argv
+    manifests = [DEFAULT_MANIFEST] + [m for m in (DONOR_MANIFEST, EXCLUSIVE_MANIFEST) if os.path.isfile(m)]
+    if '--manifest' in argv:
+        i = argv.index('--manifest')
+        manifests = [argv[i + 1]]
+        args = [a for a in args if a != manifests[0]]
+    if len(args) != 1:
+        print(__doc__)
+        return 2
+    path = os.path.join(args[0], 'XML', 'auras.xml')
+    if not os.path.isfile(path):
+        print('missing ' + path)
+        return 1
+    rows = read_manifest(*manifests)
+    text = open(path, encoding='utf-8', errors='surrogateescape').read()
+    rest = re.sub(re.escape(BEGIN) + r'.*?' + re.escape(END), '', text, flags=re.S)
+    taken_ids = {int(x) for x in re.findall(r'<aura\s[^>]*\bid="(\d+)"', rest)}
+    taken_cids = {int(x) for x in re.findall(r'<aura\s[^>]*\bclientid="(\d+)"', rest)}
+    clash = sorted(a for a, c, _ in rows if a in taken_ids) + sorted(c for a, c, _ in rows if c in taken_cids)
+    if clash:
+        print('auras.xml already has aura id / client id %s outside the Chaos block; nothing written' % clash)
+        return 1
+    esc = lambda s: s.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;')
+    lines = ''.join('\t<aura id="%d" clientid="%d" name="%s" speed="20" />\n' % (a, c, esc(n)) for a, c, n in rows)
+    at = rest.rfind('</auras>')
+    if at < 0:
+        print(path + ': no </auras>')
+        return 1
+    new = rest[:at] + BEGIN + lines + END + rest[at:]
+    if new == text:
+        print('auras.xml: %d Chaos auras already installed' % len(rows))
+        return 0
+    if not dry:
+        open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
+    print('auras.xml: %d Chaos auras written (ids %d..%d, client ids %d..%d)%s' % (
+        len(rows), rows[0][0], rows[-1][0], rows[0][1], rows[-1][1], ' (dry run)' if dry else ''))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

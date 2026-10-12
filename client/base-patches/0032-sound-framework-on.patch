@@ -1,0 +1,12 @@
+# Sound on: the client is built with its sound framework (g_sounds: OpenAL + Ogg Vorbis), so the loot filter's rule sounds (game_lootfilter, client/MANIFEST.md) can play. The base's vcpkg.json already lists openal-soft, libogg and libvorbis (the Windows build); on Linux install libopenal-dev, libogg-dev and libvorbis-dev (client/LINUX.md). Build with -DFRAMEWORK_SOUND=OFF to leave it out again: game_lootfilter then plays nothing and says so once in the log.
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -14,7 +14,7 @@
+     set(CMAKE_BUILD_TYPE "Release")
+ endif()
+ 
+-option(FRAMEWORK_SOUND "Use SOUND " OFF)
++option(FRAMEWORK_SOUND "Use SOUND " ON)
+ option(FRAMEWORK_GRAPHICS "Use GRAPHICS " ON)
+ option(FRAMEWORK_XML "Use XML " ON)
+ option(FRAMEWORK_NET "Use NET " ON)

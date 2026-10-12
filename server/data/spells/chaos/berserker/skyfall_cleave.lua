@@ -49,5 +49,6 @@ function onCastSpell(creature, variant, isHotkey)
 		player:teleportTo(spots[1].pos)
 		ChaosSpell.shoot(from, spots[1].pos, "blood_spear", CONST_ANI_WHIRLWINDAXE)
 	end
+	ChaosSpell.vfxDir(tpos, "heavy_cleave", ChaosSpell.dirTo(player:getPosition(), tpos))
 	return combat:execute(player, Variant(tpos))
 end

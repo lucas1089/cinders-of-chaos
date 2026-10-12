@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Forest Wolf" nameDescription="a forest wolf" race="blood" experience="45" speed="220" manacost="0">
+	<health now="90" max="90" />
+	<look type="2015" head="40" body="39" legs="22" feet="2" corpse="36076" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="9" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-38" />
+	</attacks>
+	<defenses armor="6" defense="6">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Grrrr" />
+		<voice sentence="Yoooohhuuuu!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="11" chance="60000" /><!-- gold coin -->
+		<item id="36019" countmax="2" chance="18000" /><!-- wolf pelt -->
+	</loot>
+</monster>

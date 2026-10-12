@@ -11,10 +11,11 @@
 --   * the Paragon part is applied when the code has one and the track is unlocked
 --
 -- Protocol (opcode 65, through ChaosPassiveTree.extraActions in passivetree.lua):
---   client -> server  buildExport                  -> buildCode {code, nodes, paragon}
+--   client -> server  buildExport                  -> buildCode {code, nodes, paragon} (format version 3: with the masteries)
 --                     buildPreview {code}          -> buildPreview {code, nodes, current, wanted, applied, skipped, added,
 --                                                     removed, treeReset, paragon, paragonChange, paragonReset, cost,
---                                                     free, points, notes, change} or buildError {message}
+--                                                     free, points, notes, change, masteries = [{id, choice}]} or
+--                                                     buildError {message}
 --                     buildApply {code, cost}      -> applied (sendNodes, sendPoints, paragonState, respecInfo) and
 --                                                     buildApplied {message}, or buildError {message}; cost is the price
 --                                                     the preview showed: a higher price now is refused
@@ -61,8 +62,10 @@ local function context(T, player)
 	local active = activeRow(T, player)
 	local ctx = {
 		classId = classOf(player), className = className, current = active and active.nodes or {},
+		currentMasteries = active and T.core.cleanMasteries(T.getTree(), active.nodes, active.masteries) or {},
 		points = T.totalPoints(player),
-		keystoneKey = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil
+		keystoneKey = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
+		classKey = ChaosPassiveTree.classKey and ChaosPassiveTree.classKey(player) or nil
 	}
 	local P = ChaosParagon
 	if P and P.defs then
@@ -83,7 +86,8 @@ end
 function B.exportCode(player)
 	local T = ChaosPassiveTree.internal
 	local active = activeRow(T, player)
-	local build = {classId = classOf(player), nodes = active and active.nodes or {}}
+	local build = {classId = classOf(player), nodes = active and active.nodes or {},
+		masteries = active and T.core.cleanMasteries(T.getTree(), active.nodes, active.masteries) or nil}
 	if ChaosParagon and ChaosParagon.allocation then
 		local alloc = ChaosParagon.allocation(player)
 		if ChaosParagon.spent(alloc) > 0 then
@@ -120,7 +124,7 @@ function B.preview(player, code)
 		paragon = plan.paragon, paragonChange = plan.paragonChange or false, paragonReset = plan.paragonReset or false,
 		cost = cost, free = (plan.treeReset or plan.paragonReset) and R and R.freeText(player) or nil, points = ctx.points,
 		notes = plan.notes, change = plan.treeChange or plan.paragonChange or false,
-		className = className(build.classId)
+		className = className(build.classId), masteries = T.core.toList(plan.masteries)
 	}, nil, plan
 end
 
@@ -176,7 +180,7 @@ function B.apply(player, code, seenCost)
 	local guid = player:getGuid()
 	if plan.treeChange then
 		local active = activeRow(T, player)
-		T.savePreset(guid, active and active.preset or 1, active and active.name or "Preset 1", ids)
+		T.savePreset(guid, active and active.preset or 1, active and active.name or "Preset 1", ids, plan.masteries)
 	end
 	local P = ChaosParagon
 	if plan.paragon and plan.paragonChange and P then
@@ -241,54 +245,6 @@ actions.buildApply = function(player, data)
 end
 
 -- ------------------------------------------------------------------------------------------------ chat
-local function onBuildCommand(player, words, param)
-	local verb, rest = (param or ""):match("^%s*(%S*)%s*(.-)%s*$")
-	verb = (verb or ""):lower()
-	local id = player:getId()
-	if verb == "export" then
-		local code = B.exportCode(player)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your build code: " .. code)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Build link: [build " .. code .. "]  (import with !build import <code>)")
-		actions.buildExport(player)
-	elseif verb == "import" then
-		local p, err = B.preview(player, rest)
-		if not p then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Build import: " .. err)
-			return false
-		end
-		p.summary = summary(p)
-		Chaos.send(player, OPCODE, "buildPreview", p)
-		for line in p.summary:gmatch("[^\n]+") do
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, line)
-		end
-		if p.change then
-			B.pending[id] = {code = p.code, cost = p.cost, time = os.time()}
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Type !build confirm to apply it, or !build cancel.")
-		end
-	elseif verb == "confirm" then
-		local pending = B.pending[id]
-		B.pending[id] = nil
-		if not pending or os.time() - pending.time > PENDING_SECONDS then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "No build import to confirm. Use !build import <code> first.")
-			return false
-		end
-		local ok, text = B.apply(player, pending.code, pending.cost)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, ok and text or ("Build import: " .. text))
-	elseif verb == "cancel" then
-		B.pending[id] = nil
-		ChaosPassiveTree.internal.sendNodes(player)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Build import cancelled.")
-	else
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"!build export: your build code. !build import <code>: preview a build, then !build confirm to apply it.")
-	end
-	return false
-end
-
-local talk = TalkAction("!build")
-talk.onSay = onBuildCommand
-talk:separator(" ")
-talk:register()
 
 local logout = CreatureEvent("ChaosBuildShareLogout")
 function logout.onLogout(player)

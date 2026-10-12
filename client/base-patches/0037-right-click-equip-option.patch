@@ -1,0 +1,68 @@
+# Right-click equips items (client/MANIFEST.md "game_rightclickequip", server/README.md "Right-click equips"): one option in Options > Interface, "Right-click equips items" (rightClickEquip), on by default, in a new panel after "Show Link Copy Warning". Its apply hands the new value to the overlay module game_rightclickequip, which tells the server (extended opcode 188; server src-patch 0024 equips on use). Without this patch the option counts as on.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1906,6 +1906,19 @@ return {
+ 		value = true,
+ 	},
+ 
++	-- right-click equips (overlay module game_rightclickequip, server src-patch 0024): a use of a piece of equipment
++	-- without an action of its own puts it on or takes it off; the module tells the server when this changes
++	rightClickEquip = {
++		value = true,
++		apply = function(value)
++			local m = modules.game_rightclickequip
++			if m and m.onOptionChange then
++				m.onOptionChange(value)
++			end
++			return true
++		end,
++	},
++
+ 	enableLights = {
+ 		value = true,
+         apply = function(value)
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -252,6 +252,42 @@ InterfaceWindow < Panel
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Cinders of Chaos account.')
+ 
++  FlatPanel
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: rightClickEquip
++      size: 12 12
++      !text: tr('Right-click equips items')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('rightClickEquip')
++        self:setChecked(value ~= false)
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 5
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('When checked, using a piece of equipment you carry puts it on, and\nusing a worn one takes it off into your backpack. The use is a right-click\nwith Classic Controls, Ctrl + click with Regular Controls and a click\nwith Left Smart-Click. Items with a use of their own (potions, runes,\nfood, tools, keys) and containers work as before.')
++
+   FlatPanel
+     size: 505 44
+     anchors.top: prev.bottom

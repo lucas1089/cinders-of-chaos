@@ -14,12 +14,15 @@
 --   K.view(index, stats, unlocked)        -> the window's rows (hidden + locked -> "???", no progress)
 --   K.recent(index, unlocked, n)          -> the newest n unlocks [{id, name, points, at}]
 --   K.titlesOf(index, unlocked)           -> titles for ChaosTitles (source "achievement")
---   K.rewardText(reward, nameOf)          -> "3 Chaos Orb, mount Doombringer" (nameOf(itemId) -> name)
+--   K.rewardText(reward, nameOf)          -> "3 Orb of Upheaval, mount Doombringer" (nameOf(itemId) -> name)
+--   K.toast(def, rewardText)              -> title, text of the unlock toast ("Blooded", "+5 points. Reward: ...")
+--   K.summaryToast(list, rewards)         -> title, text of several unlocks at once (the login summary); nil for none
 --   K.retroStats(facts)                   -> stats that the character's current state proves (level, Paragon, ...)
 --   K.paragonLevel(level, startLevel)
 --   K.unlockMethod()                      -> {describe, check} for ChaosClassUnlocksCore.registerMethod("achievement")
 --   K.has(account, query)                 account = {ids = set, points = n}; query = id or "points:N"
 --   K.validKey(s), K.sql*                 storage helpers (statements only, the caller runs them)
+--   K.completedCategories / categoryTitles / categoryTrack   category completion of the reward track (see below)
 
 ChaosAchievementsCore = ChaosAchievementsCore or {}
 local K = ChaosAchievementsCore
@@ -102,6 +105,15 @@ function K.build(data)
 			index.list[#index.list + 1] = def
 			index.byId[a.id] = def
 		end
+	end
+	-- category completion rewards (reward track): a bad entry is reported and left out
+	index.categoryRewards = {}
+	local rewardProblems, rewardOk = K.categoryRewardProblems(data)
+	for _, p in ipairs(rewardProblems) do
+		index.problems[#index.problems + 1] = p
+	end
+	for key, r in pairs(rewardOk) do
+		index.categoryRewards[key] = r
 	end
 	return index
 end
@@ -268,7 +280,7 @@ function K.titlesOf(index, unlocked)
 	for id, at in pairs(unlocked or {}) do
 		local def = index.byId[id]
 		if def and def.title then
-			out[#out + 1] = {key = "achievement:" .. id, text = def.title, at = at, order = def.order}
+			out[#out + 1] = {key = "achievement:" .. id, text = def.title, at = at, order = def.order, frame = def.frame}
 		end
 	end
 	table.sort(out, function(a, b) return a.order < b.order end)
@@ -297,7 +309,55 @@ function K.rewardText(reward, nameOf)
 	if reward.mount then
 		parts[#parts + 1] = "mount " .. tostring(reward.mount.name or "?")
 	end
+	if reward.portal then
+		parts[#parts + 1] = "portal style " .. tostring(reward.portal.name or "?")
+	end
+	-- visual exclusives of exclusives_config.lua (unlocked for the account by exclusives.lua)
+	for _, e in ipairs(reward.exclusives or {}) do
+		parts[#parts + 1] = tostring(type(e) == "table" and e.name or e)
+	end
 	return table.concat(parts, ", ")
+end
+
+-- ------------------------------------------------------------------------------------------------ toasts
+-- the toast of one unlock (notifications.lua ChaosNotify.send, kind "achievement" = the ACHIEVEMENT UNLOCKED header):
+-- title = the name, text = "+15 points. Title: the Unbroken. Reward: mount Doombringer."
+function K.toast(def, rewardText)
+	local parts = {string.format("+%d point%s.", def.points or 0, (def.points or 0) == 1 and "" or "s")}
+	if def.title then
+		parts[#parts + 1] = "Title: " .. def.title .. "."
+	end
+	if rewardText and rewardText ~= "" then
+		parts[#parts + 1] = "Reward: " .. rewardText .. "."
+	end
+	return tostring(def.name or def.id or "Achievement"), table.concat(parts, " ")
+end
+
+-- several unlocks at once (the quiet login check): one toast. rewards = {[id] = reward text}
+function K.summaryToast(list, rewards)
+	if type(list) ~= "table" or #list == 0 then
+		return nil
+	end
+	rewards = rewards or {}
+	if #list == 1 then
+		return K.toast(list[1], rewards[list[1].id])
+	end
+	local points, names, got = 0, {}, {}
+	for _, def in ipairs(list) do
+		points = points + (def.points or 0)
+		if #names < 3 then
+			names[#names + 1] = def.name
+		end
+		local r = rewards[def.id]
+		if r and r ~= "" then
+			got[#got + 1] = r
+		end
+	end
+	local text = string.format("+%d points: %s%s.", points, table.concat(names, ", "), #list > 3 and (" and " .. (#list - 3) .. " more") or "")
+	if #got > 0 then
+		text = text .. " Rewards: " .. table.concat(got, ", ", 1, math.min(#got, 2)) .. (#got > 2 and (" and " .. (#got - 2) .. " more") or "") .. "."
+	end
+	return #list .. " achievements unlocked", text
 end
 
 -- ------------------------------------------------------------------------------------------------ retroactive
@@ -404,6 +464,78 @@ function K.unlockMethod(index)
 			return id ~= nil and facts.achievement(id) == true
 		end
 	}
+end
+
+-- ------------------------------------------------------------------------------------------------ reward track
+-- Category completion: data.categoryRewards = {[category key] = {title, frame}}. Completion is account-wide: `ids` is
+-- the set of achievement ids of the account (K.accountFromIds(...).ids), hidden achievements count too.
+--   K.categoryRewardProblems(data)          -> problems, {[key] = reward} of the good entries
+--   K.completedCategories(index, ids)       -> {[category key] = true} (a category without achievements never completes)
+--   K.categoryTitles(index, ids)            -> titles for ChaosTitles (key "achievement_cat:<key>", frame)
+--   K.categoryTrack(index, ids)             -> [{key, name, done, total, title, frame, complete}] in category order
+function K.categoryRewardProblems(data)
+	local problems, ok = {}, {}
+	local cats = {}
+	for _, c in ipairs(data and data.categories or {}) do
+		cats[c.key] = true
+	end
+	for key, r in pairs(data and data.categoryRewards or {}) do
+		local where = "categoryRewards." .. tostring(key)
+		if not cats[key] then
+			problems[#problems + 1] = where .. ": unknown category"
+		elseif type(r) ~= "table" or type(r.title) ~= "string" or r.title == "" or #r.title > 24 then
+			problems[#problems + 1] = where .. ": title must be text of at most 24 characters"
+		elseif r.frame ~= nil and (type(r.frame) ~= "string" or not validKey(r.frame)) then
+			problems[#problems + 1] = where .. ": frame must be a frame key"
+		else
+			ok[key] = r
+		end
+	end
+	table.sort(problems)
+	return problems, ok
+end
+
+function K.completedCategories(index, ids)
+	ids = ids or {}
+	local total, done = {}, {}
+	for _, def in ipairs(index.list) do
+		total[def.cat] = (total[def.cat] or 0) + 1
+		if ids[def.id] then
+			done[def.cat] = (done[def.cat] or 0) + 1
+		end
+	end
+	local out = {}
+	for key, n in pairs(total) do
+		if n > 0 and (done[key] or 0) >= n then
+			out[key] = true
+		end
+	end
+	return out
+end
+
+function K.categoryTitles(index, ids)
+	local complete = K.completedCategories(index, ids)
+	local out = {}
+	for _, c in ipairs(index.categories) do
+		local r = (index.categoryRewards or {})[c.key]
+		if r and complete[c.key] then
+			out[#out + 1] = {key = "achievement_cat:" .. c.key, text = r.title, at = 0, frame = r.frame}
+		end
+	end
+	return out
+end
+
+function K.categoryTrack(index, ids)
+	ids = ids or {}
+	local out = {}
+	for _, s in ipairs(K.categorySummary(index, ids)) do
+		local r = (index.categoryRewards or {})[s.key]
+		if r then
+			out[#out + 1] = {key = s.key, name = s.name, done = s.done, total = s.total, title = r.title, frame = r.frame,
+				complete = s.total > 0 and s.done >= s.total}
+		end
+	end
+	return out
 end
 
 -- ------------------------------------------------------------------------------------------------ SQL

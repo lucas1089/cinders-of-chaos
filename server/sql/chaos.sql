@@ -94,6 +94,24 @@ CREATE TABLE IF NOT EXISTS `chaos_tower_players` (
   CONSTRAINT `chaos_tower_players_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- game_infinitytower season end (infinitytower.lua ChaosTower.processSeason): the top 3 chests, one row per season and
+-- character (written once, INSERT IGNORE). rewarded = 1 once the chest is in the inbox (online at the season end, else
+-- at the next login). server_config `chaos_tower_season_done` = the last season paid out. infinitytower.lua also
+-- creates the table at startup when it is missing.
+CREATE TABLE IF NOT EXISTS `chaos_tower_season_rewards` (
+  `season` int(10) unsigned NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `place` tinyint(3) unsigned NOT NULL,
+  `best_floor` int(10) unsigned NOT NULL DEFAULT 0,
+  `best_time` int(10) unsigned NOT NULL DEFAULT 0,
+  `chest` varchar(32) NOT NULL DEFAULT '',
+  `rewarded` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `awarded_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `delivered_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`season`, `player_id`),
+  KEY `chaos_tower_season_rewards_pending` (`player_id`, `rewarded`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 -- Chaos store (data/scripts/chaos/shop.lua): coins per account and purchase history
 CREATE TABLE IF NOT EXISTS `chaos_shop_coins` (
   `account_id` int(11) NOT NULL,
@@ -110,6 +128,117 @@ CREATE TABLE IF NOT EXISTS `chaos_shop_history` (
   `created` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `chaos_shop_history_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Store purchase log (shop.lua; also created at startup): one row per purchase or gift, read by the weekly limits,
+-- the once-per-account starter packs and the admin panel's Store tab
+CREATE TABLE IF NOT EXISTS `chaos_shop_purchases` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `player_name` varchar(255) NOT NULL DEFAULT '',
+  `level` int(11) NOT NULL DEFAULT 0,
+  `offer_key` varchar(64) NOT NULL,
+  `category` varchar(64) NOT NULL DEFAULT '',
+  `title` varchar(100) NOT NULL,
+  `price` int(11) NOT NULL,
+  `list_price` int(11) NOT NULL,
+  `gift_account` int(11) NOT NULL DEFAULT 0,
+  `gift_player` int(11) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_shop_purchases_account` (`account_id`, `offer_key`),
+  KEY `chaos_shop_purchases_created` (`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Store gifts to characters that were offline (shop.lua): status 0 waiting, 1 delivered at login, 2 refunded
+CREATE TABLE IF NOT EXISTS `chaos_shop_gifts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `target_player` int(11) NOT NULL,
+  `offer_key` varchar(64) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `price` int(11) NOT NULL,
+  `from_account` int(11) NOT NULL,
+  `from_name` varchar(255) NOT NULL DEFAULT '',
+  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  `done` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `chaos_shop_gifts_target` (`target_player`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Paid Chaos Coin orders (written by the website hook chaos_coin_order_paid or the admin panel; credited by shop.lua
+-- with the bonuses of shop_coins_config.lua): status paid -> credited | rejected
+CREATE TABLE IF NOT EXISTS `chaos_coin_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `pack_key` varchar(32) NOT NULL,
+  `provider` varchar(32) NOT NULL DEFAULT '',
+  `provider_ref` varchar(128) NOT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'paid',
+  `coins` int(11) NOT NULL DEFAULT 0,
+  `bonus` int(11) NOT NULL DEFAULT 0,
+  `first_bonus` int(11) NOT NULL DEFAULT 0,
+  `note` varchar(255) NOT NULL DEFAULT '',
+  `created` int(10) unsigned NOT NULL,
+  `credited` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `chaos_coin_orders_ref` (`provider`, `provider_ref`),
+  KEY `chaos_coin_orders_status` (`status`),
+  KEY `chaos_coin_orders_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- The Pix / PayPal donation of an order (data/scripts/chaos/shop_payments.lua; the website's plugins/chaos/pay/ worker
+-- and webhook fill in the charge). Money in integer cents of `currency`. reversal: a refund or chargeback after crediting
+-- (refunded / charged_back / disputed), handled by the game server (reversal_done, reversal_coins taken back).
+CREATE TABLE IF NOT EXISTS `chaos_coin_payments` (
+  `order_id` int(11) NOT NULL,
+  `method` varchar(16) NOT NULL,
+  `token` varchar(64) NOT NULL,
+  `amount_cents` int(11) NOT NULL,
+  `currency` char(3) NOT NULL,
+  `source` varchar(8) NOT NULL DEFAULT 'client',
+  `psp` varchar(16) NOT NULL DEFAULT '',
+  `psp_id` varchar(128) NOT NULL DEFAULT '',
+  `psp_ref` varchar(128) NOT NULL DEFAULT '',
+  `psp_status` varchar(32) NOT NULL DEFAULT '',
+  `qr_code` varchar(1024) NOT NULL DEFAULT '',
+  `pay_url` varchar(1024) NOT NULL DEFAULT '',
+  `qr_image` mediumtext NULL,
+  `expires` int(10) unsigned NOT NULL DEFAULT 0,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `claimed` int(10) unsigned NOT NULL DEFAULT 0,
+  `checked` int(10) unsigned NOT NULL DEFAULT 0,
+  `cancel_sent` tinyint(1) NOT NULL DEFAULT 0,
+  `paid_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `reversal` varchar(16) NOT NULL DEFAULT '',
+  `reversal_cents` int(11) NOT NULL DEFAULT 0,
+  `reversal_done` tinyint(1) NOT NULL DEFAULT 0,
+  `reversal_coins` int(11) NOT NULL DEFAULT 0,
+  `reversal_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `note` varchar(255) NOT NULL DEFAULT '',
+  `updated` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`order_id`),
+  UNIQUE KEY `chaos_coin_payments_token` (`token`),
+  KEY `chaos_coin_payments_psp` (`psp`, `psp_id`),
+  KEY `chaos_coin_payments_ref` (`psp`, `psp_ref`),
+  KEY `chaos_coin_payments_reversal` (`reversal_done`, `reversal`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Chaos Coin gifts between accounts (shop.lua gift_coins). order_id: the sender's last credited coin order at the time;
+-- clawed: coins taken back from the receiver when a donation of the sender was refunded or charged back later
+-- (shop_payments.lua processReversals).
+CREATE TABLE IF NOT EXISTS `chaos_coin_gifts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `from_account` int(11) NOT NULL,
+  `to_account` int(11) NOT NULL,
+  `amount` int(11) NOT NULL,
+  `order_id` int(11) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  `clawed` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `chaos_coin_gifts_from` (`from_account`, `created`),
+  KEY `chaos_coin_gifts_to` (`to_account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Bounty board (data/scripts/chaos/bounty.lua; table name in bounty_config.lua): one row per accepted contract. day = bounty day (YYYYMMDD, the day

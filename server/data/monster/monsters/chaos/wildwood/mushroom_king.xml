@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Mushroom King" nameDescription="a mushroom king" race="venom" experience="4500" speed="200" manacost="0">
+	<health now="6000" max="6000" />
+	<look type="2035" head="71" body="2" legs="76" feet="60" corpse="36096" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="3" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-326" />
+		<attack name="earth" interval="2000" chance="20" radius="4" target="0" min="-150" max="-365">
+			<attribute key="areaEffect" value="poison" />
+		</attack>
+		<attack name="earth" interval="2000" chance="25" range="7" min="-120" max="-310">
+			<attribute key="shootEffect" value="smallearth" />
+		</attack>
+	</attacks>
+	<defenses armor="40" defense="40">
+		<defense name="healing" interval="2000" chance="15" min="200" max="400">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<summons maxSummons="4">
+		<summon name="Shroomling" interval="2000" chance="15" />
+	</summons>
+	<voices interval="5000" chance="10">
+		<voice sentence="Bow before your king!" />
+		<voice sentence="My children, rise!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
+		<item id="2152" countmax="11" chance="40000" /><!-- platinum coin -->
+		<item id="36035" countmax="2" chance="18000" /><!-- cloud of royal spores -->
+		<item id="36022" countmax="1" chance="8000" /><!-- spore sack -->
+		<item id="36059" countmax="2" chance="12000" /><!-- bowl of mushroom stew -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="7588" chance="4000" /><!-- strong health potion -->
+		<item id="7589" chance="4000" /><!-- strong mana potion -->
+	</loot>
+</monster>

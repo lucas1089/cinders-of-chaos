@@ -1,0 +1,54 @@
+// Tile overlays (game_tileoverlays): a field timer and a server bar. The engine draws them over their tile
+// (Tile:addOverlayWidget, client base patch 0041), centred on the tile and moved by their margins; they take no input.
+
+TileOverlayTimer < UILabel
+  font: verdana-11px-rounded
+  text-align: center
+  color: #ffffff
+  background-color: #000000a0
+  size: 26 14
+  phantom: true
+  focusable: false
+
+TileOverlayBar < UIWidget
+  size: 66 20
+  phantom: true
+  focusable: false
+
+  UILabel
+    id: label
+    font: verdana-11px-rounded
+    text-align: center
+    color: #f0e6d2
+    background-color: #00000080
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 13
+    phantom: true
+    focusable: false
+
+  UIWidget
+    id: back
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 6
+    background-color: #000000c8
+    border-width: 1
+    border-color: #1a1410
+    phantom: true
+    focusable: false
+
+    UIWidget
+      id: fill
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      margin-top: 1
+      margin-bottom: 1
+      margin-left: 1
+      width: 0
+      background-color: #d8b45a
+      phantom: true
+      focusable: false

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Trial Warden: the guardian of a Vocation Trial (data/scripts/chaos/trials.lua, docs in scripts/chaos/TRIALS.md).
+     Renamed and dressed per class family at run time (trials_config.lua families); its health is set per run and the
+     size of every hit it deals is a share of the player's maximum health (trials.lua), so these numbers only set the
+     rhythm of its attacks. No experience, no loot; never gets a monster tier. -->
+<monster name="Trial Warden" nameDescription="a trial warden" race="undead" experience="0" speed="230" manacost="0">
+	<health now="6000" max="6000" />
+	<look type="1540" corpse="0" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-110" />
+		<attack name="physical" interval="2400" chance="20" range="7" target="1" min="-40" max="-120">
+			<attribute key="shootEffect" value="suddendeath" />
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+	</attacks>
+	<defenses armor="25" defense="25" />
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+		<immunity drown="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Show me what you have become." />
+		<voice sentence="Every power has its price." />
+	</voices>
+</monster>

@@ -223,7 +223,7 @@ ChaosMainWindow
     anchors.verticalCenter: closeButton.verticalCenter
     width: 240
     !text: tr("Don't show automatically")
-    !tooltip: tr('When checked, new patch notes no longer open by themselves at login. Chaos -> Patch Notes and !patchnotes still open them.')
+    !tooltip: tr('When checked, new patch notes no longer open by themselves at login. Social > Patch Notes still opens them.')
 
   ChaosButton
     id: closeButton

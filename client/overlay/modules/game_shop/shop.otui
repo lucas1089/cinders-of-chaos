@@ -54,7 +54,7 @@ ShopCategoryImage < ShopCategory
     
     
 ShopOffer < Panel
-  height: 50
+  height: 60
   background: alpha
   
   $focus:
@@ -63,37 +63,92 @@ ShopOffer < Panel
   Label
     id: title
     anchors.left: parent.left
-    anchors.right: parent.right
     anchors.top: parent.top
     margin-top: 4
     margin-left: 55
     text-align: topleft
+    text-auto-resize: true
     color: white
+    font: verdana-11px-rounded
+
+  // the price before a sale or a bundle discount, struck through (shop.lua sends oldCost)
+  Label
+    id: oldPrice
+    anchors.left: title.right
+    anchors.top: title.top
+    margin-left: 6
+    text-auto-resize: true
+    color: #9a9a9a
+    font: verdana-11px-rounded
+    visible: false
+
+    UIWidget
+      id: strike
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      height: 1
+      background-color: #d24a3a
+      phantom: true
+
+  // Sale / New / Featured / Bundle tags
+  Label
+    id: tags
+    anchors.left: oldPrice.right
+    anchors.top: title.top
+    margin-left: 6
+    text-auto-resize: true
+    color: #f0c050
     font: verdana-11px-rounded
 
   Label
     id: description
-    anchors.top: prev.bottom
+    anchors.top: title.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.bottom: parent.bottom
     margin-left: 55
-    margin-right: 55
+    margin-right: 104
     text-align: topleft
     text-auto-resize: true
     text-wrap: true
     color: white
     font: verdana-11px-rounded
-    
+
   Button
     id: buyButton
     text: BUY
+    width: 40
     height: 25
     anchors.verticalCenter: parent.verticalCenter
-    anchors.left: prev.right
-    anchors.right: parent.right    
+    anchors.right: parent.right
     margin-right: 15
     text-align: center
+
+  // buy it for another character (shown when the server says the offer can be gifted)
+  Button
+    id: giftButton
+    text: GIFT
+    width: 40
+    height: 25
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: buyButton.left
+    margin-right: 4
+    text-align: center
+    visible: false
+
+  // a cosmetic's preview (server cosmetics.lua): its effects around you, only you see them; cosmetics are not gifts,
+  // so it takes the gift button's place
+  Button
+    id: previewButton
+    text: SHOW
+    width: 40
+    height: 25
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: buyButton.left
+    margin-right: 4
+    text-align: center
+    visible: false
     
 ShopOfferItem < ShopOffer
   UIItem
@@ -152,14 +207,27 @@ MainWindow
       text: -
       text-auto-resize: true
     
+    // voluntary donations for Chaos Coins (pay.lua, pay.otui)
+    Button
+      id: donate
+      anchors.left: parent.left
+      anchors.top: points.bottom
+      margin-top: 10
+      margin-left: 4
+      width: 110
+      !text: tr("Donate")
+      !tooltip: tr("Voluntary donation: Chaos Coins as a thank-you. The game is fully playable for free.")
+      @onClick: modules.game_shop.showPay()
+
     Button
       id: buy
-      anchors.horizontalCenter: parent.horizontalCenter
-      width: 150
-      anchors.top: prev.bottom
+      anchors.right: parent.right
+      width: 106
+      anchors.top: points.bottom
       margin-top: 10
+      margin-right: 4
       visible: false
-      !text: tr("Get coins")
+      !text: tr("Website")
 
   Panel
     id: adPanel

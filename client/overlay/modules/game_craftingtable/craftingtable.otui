@@ -1,0 +1,415 @@
+// Crafting Table window (game_craftingtable): the base server's crafting tables (extended opcode 91). Styles from
+// client_chaos_theme. Opened by the server when the player uses a crafting table; the categories are tabs, the
+// recipes a list with search and filter, the chosen recipe on the right with its materials, gold, skill and Craft.
+
+CraftTableTab < ChaosTabButton
+  size: 114 24
+  margin-left: 4
+
+CraftTableFilter < ChaosTabButton
+  size: 78 22
+
+CraftTableRow < UIWidget
+  height: 40
+  margin-bottom: 1
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 3
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: item.right
+    anchors.right: state.left
+    margin-top: 5
+    margin-left: 7
+    margin-right: 4
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 2
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: state
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 7
+    width: 64
+    font: verdana-11px-antialised
+    text-align: right
+    phantom: true
+
+CraftTableMaterial < UIWidget
+  height: 38
+  margin-bottom: 2
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+    virtual: true
+
+  UILabel
+    id: name
+    anchors.left: item.right
+    anchors.right: count.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+    margin-right: 6
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: count
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 10
+    width: 90
+    font: verdana-11px-rounded
+    text-align: right
+    phantom: true
+
+CraftTableLine < UILabel
+  height: 16
+  margin-top: 3
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  phantom: true
+
+ChaosMainWindow
+  id: craftingTableWindow
+  size: 860 600
+  !text: tr('Crafting Table')
+  @onEscape: modules.game_craftingtable.hide()
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-wrap: true
+    text-auto-resize: true
+
+  UIWidget
+    id: tabBar
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 24
+    layout:
+      type: horizontalBox
+
+  ChaosTextEdit
+    id: searchEdit
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    width: 150
+    !tooltip: tr('Find a recipe by its name or a material.')
+
+  UILabel
+    id: searchHint
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.left
+    margin-left: 7
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #6b6258
+    phantom: true
+    !text: tr('Find a recipe...')
+
+  CraftTableFilter
+    id: filterAll
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.right
+    margin-left: 6
+    !text: tr('All')
+    !tooltip: tr('Every recipe of this table.')
+
+  CraftTableFilter
+    id: filterCraftable
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: filterAll.right
+    margin-left: 3
+    !text: tr('Can craft')
+    !tooltip: tr('Only what you can craft now: unlocked, your skill, your gold and the materials you carry.')
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: searchEdit.bottom
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 8
+    width: 324
+    padding: 3
+
+  UIScrollArea
+    id: recipeList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 41
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    !text: tr('Loading...')
+
+  ChaosPanelDark
+    id: detail
+    anchors.top: tabBar.bottom
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 10
+    margin-left: 10
+    margin-bottom: 8
+    padding: 10
+
+    ChaosItemSlot
+      id: resultSlot
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 44 44
+      virtual: true
+
+    UILabel
+      id: resultName
+      anchors.top: parent.top
+      anchors.left: resultSlot.right
+      anchors.right: parent.right
+      margin-left: 10
+      margin-top: 2
+      height: 22
+      font: verdana-11px-rounded
+      color: #f6cf72
+      text-align: left
+
+    UILabel
+      id: resultSub
+      anchors.top: resultName.bottom
+      anchors.left: resultName.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 16
+      font: verdana-11px-antialised
+      color: #8c8070
+      text-align: left
+
+    ChaosSeparator
+      id: sep1
+      anchors.top: resultSlot.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 8
+
+    CraftTableLine
+      id: skillLine
+      anchors.top: sep1.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+
+    CraftTableLine
+      id: goldLine
+      anchors.top: skillLine.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+
+    CraftTableLine
+      id: lockLine
+      anchors.top: goldLine.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      text-wrap: true
+      text-auto-resize: true
+
+    CraftTableLine
+      id: bonusLine
+      anchors.top: lockLine.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      color: #e8b84a
+      text-wrap: true
+      text-auto-resize: true
+
+    UILabel
+      id: matTitle
+      anchors.top: bonusLine.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      text-auto-resize: true
+      font: verdana-11px-rounded
+      color: #e8b84a
+      !text: tr('Materials (you carry / needed)')
+
+    UIScrollArea
+      id: matList
+      anchors.top: matTitle.bottom
+      anchors.left: parent.left
+      anchors.right: matScroll.left
+      anchors.bottom: status.top
+      margin-top: 5
+      margin-bottom: 8
+      layout:
+        type: verticalBox
+      vertical-scrollbar: matScroll
+
+    ChaosScrollBar
+      id: matScroll
+      anchors.top: matTitle.bottom
+      anchors.bottom: status.top
+      anchors.right: parent.right
+      margin-top: 5
+      margin-bottom: 8
+      step: 40
+      pixels-scroll: true
+
+    UILabel
+      id: status
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: progress.top
+      margin-bottom: 6
+      text-wrap: true
+      text-auto-resize: true
+      font: verdana-11px-rounded
+      color: #d6c9ae
+      text-align: left
+
+    ChaosProgressBar
+      id: progress
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: craftButton.top
+      margin-bottom: 8
+      height: 14
+      visible: false
+
+    ChaosButton
+      id: qtyMinus
+      anchors.left: parent.left
+      anchors.verticalCenter: craftButton.verticalCenter
+      width: 24
+      text: -
+      !tooltip: tr('Craft fewer times in a row.')
+
+    UILabel
+      id: qtyLabel
+      anchors.left: qtyMinus.right
+      anchors.verticalCenter: craftButton.verticalCenter
+      width: 54
+      font: verdana-11px-rounded
+      color: #f6cf72
+      text-align: center
+
+    ChaosButton
+      id: qtyPlus
+      anchors.left: qtyLabel.right
+      anchors.verticalCenter: craftButton.verticalCenter
+      width: 24
+      text: +
+      !tooltip: tr('Craft more times in a row (one after the other, while you have the materials).')
+
+    ChaosButton
+      id: craftButton
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      width: 120
+      height: 26
+      !text: tr('Craft')
+
+    ChaosLabelDim
+      id: blockText
+      anchors.left: qtyPlus.right
+      anchors.right: craftButton.left
+      anchors.verticalCenter: craftButton.verticalCenter
+      margin-left: 10
+      margin-right: 8
+      text-align: right
+      text-wrap: true
+      height: 28
+      color: #e0a050
+
+  ChaosLabel
+    id: moneyLabel
+    anchors.left: parent.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-bottom: 0
+    text-auto-resize: true
+    color: #e8b84a
+
+  ChaosLabelDim
+    id: skillLabel
+    anchors.left: moneyLabel.right
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-left: 20
+    text-auto-resize: true
+
+  ChaosButton
+    id: refreshButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 80
+    !text: tr('Refresh')
+    !tooltip: tr('Count your materials again.')
+    @onClick: modules.game_craftingtable.refresh()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_craftingtable.hide()

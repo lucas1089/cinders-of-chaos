@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 server/data/chaos_clientservices.json
 server/data/chaos_clientservices.json.tmp
+client/local-fonts/
+# donation settings with credentials (website/payments.env.example): never in git
+payments.env

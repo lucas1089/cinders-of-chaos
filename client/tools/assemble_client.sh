@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assemble the Chaos client: the base client source (you supply it) + patches + overlay.
+# Assemble the Cinders of Chaos client: the base client source (you supply it) + patches + overlay.
 # Usage: tools/assemble_client.sh <base-client-dir> <output-dir>
 # The base client tree is ~300 MB, so it is not committed here.
 # Does NOT include Tibia.spr/.dat: copy your 10.98 pair into <out>/data/things/1098/ yourself.
@@ -11,7 +11,7 @@ mkdir -p "$OUT"; cp -a "$SRC"/. "$OUT"/
 for p in "$HERE"/base-patches/*.patch; do patch -p1 -d "$OUT" < "$p"; done
 # the base client's own stash targets its 8.60 protocol; ours speaks extended opcode 110 to the base server
 rm -rf "$OUT/mods/game_stash" "$OUT/modules/game_stash"
-# the base client's battle pass is for its own server; ours matches the base server (raw opcode 39)
+# the base client's battle pass is for its own server; ours is the Chaos season pass (extended opcode 227)
 rm -rf "$OUT/modules/game_battlepass" "$OUT/mods/game_battlepass"
 # no scripting bot: the vBot module (scripts, cavebot) and the helper's cavebot and script workspace go
 # (patch 0015 removes them from the helper window, its module list and game_interface's load-later list)
@@ -21,6 +21,21 @@ rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
 # (the overlay's data/images/game/spells/spell-icons-*.png are complete generated sheets, Chaos spells at cells
-#  201..249 included, and replace the base ones; regenerate them with tools/gen_all_spell_icons.py)
+#  201..277 included, and replace the base ones; regenerate them with tools/gen_all_spell_icons.py)
+# the Chaos bitmap fonts (client_chaos_theme ChaosTheme.fonts), made from the OFL fonts in client/fonts-src/ by
+# tools/make_ofl_fonts.sh, came with the overlay into data/fonts/chaos/ (client/MANIFEST.md "OFL fonts"). The client
+# copies every font into one 2048x2048 atlas texture (framework/graphics/atlas.cpp; out of space is fatal at start);
+# the room comes from four unused stock fonts the overlay's data/fonts/*.otfont replace by a copy of a loaded one.
+# A local override: bitmap fonts in client/local-fonts/ (git-ignored) replace the shipped ones of the same name.
+if ls "$HERE"/local-fonts/*.otfont >/dev/null 2>&1; then
+  cp "$HERE"/local-fonts/*.otfont "$HERE"/local-fonts/*.png "$OUT/data/fonts/chaos/"
+fi
+# The font atlas check (tools/make_fonts.py, no Pillow needed): a set that does not fit stops the assembly here,
+# since the client would stop at start with "[Atlas] Out of space for new fonts".
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys' >/dev/null 2>&1; then
+  python3 -I "$HERE/tools/make_fonts.py" --atlas-check "$OUT/data/fonts" | tail -1
+else
+  echo "python3 not found: font atlas check skipped"
+fi
 mkdir -p "$OUT/data/things/1098"
 echo "Done. Put Tibia.spr and Tibia.dat (10.98) in $OUT/data/things/1098/, then build with CMake."

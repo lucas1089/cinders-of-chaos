@@ -1,0 +1,208 @@
+// Guild window (game_guild): level and XP bar, tabs Overview / Members / Hall / Depot / Top Guilds. Styles: client_chaos_theme.
+GuildTab < ChaosTabButton
+  size: 104 24
+  margin-right: 4
+
+GuildSection < UILabel
+  font: verdana-11px-rounded
+  color: #f6cf72
+  text-align: left
+  text-auto-resize: true
+  margin-top: 8
+  phantom: true
+
+GuildText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-top: 3
+  phantom: true
+
+GuildButtonRow < UIWidget
+  height: 26
+  margin-top: 3
+
+  UILabel
+    id: label
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    anchors.left: parent.left
+    anchors.right: button.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    anchors.right: button.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    text-auto-resize: true
+    phantom: true
+
+  ChaosButton
+    id: button
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 90
+
+GuildItemRow < UIWidget
+  height: 36
+  margin-top: 2
+
+  UIItem
+    id: item
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: label
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    anchors.left: item.right
+    anchors.right: button.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+    text-align: left
+    phantom: true
+
+  ChaosButton
+    id: button
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 70
+    !text: tr('Take')
+
+GuildBankRow < UIWidget
+  height: 28
+  margin-top: 4
+
+  ChaosTextEdit
+    id: amount
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 140
+    max-length: 14
+
+  ChaosButton
+    id: deposit
+    anchors.left: amount.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    width: 90
+    !text: tr('Deposit')
+
+  ChaosButton
+    id: withdraw
+    anchors.left: deposit.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    width: 90
+    !text: tr('Withdraw')
+
+ChaosMainWindow
+  id: guildWindow
+  size: 620 600
+  !text: tr('Guild')
+  @onEscape: modules.game_guild.hide()
+
+  ChaosLabel
+    id: guildName
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+    color: #f6cf72
+
+  ChaosLabel
+    id: levelLabel
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    color: #f6cf72
+
+  ChaosProgressBar
+    id: xpBar
+    anchors.top: guildName.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 18
+    background-color: #b8862c
+
+  ChaosLabelDim
+    id: subLine
+    anchors.top: xpBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-align: left
+
+  UIWidget
+    id: tabs
+    anchors.top: subLine.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 24
+    layout:
+      type: horizontalBox
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 4
+    margin-bottom: 6
+    padding: 3
+
+  UIScrollArea
+    id: rowList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 6
+    layout:
+      type: verticalBox
+      fit-children: false
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 26
+    pixels-scroll: true
+
+  ChaosLabel
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    margin-bottom: 4
+    text-align: left
+    text-wrap: true
+    height: 28
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_guild.hide()

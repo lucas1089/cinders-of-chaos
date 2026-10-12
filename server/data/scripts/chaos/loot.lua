@@ -2,8 +2,13 @@
 -- corpse AFTER the stock data/scripts/eventcallbacks/monster/default_onDropLoot.lua.
 --
 --   1. extra loot rolls from the monster's own loot table by tier (magic x1, rare x2, legendary x3, boss x2)
---   2. gear quality: floor + bonus rarity per tier, items replaced via Game.createItemWithRarity
+--   2. gear quality: floor + bonus rarity per tier (the "rarity" attribute)
+--   2b. item level and modifiers: every gear drop gets the item level of this kill (L.dropLevel: the monster's level,
+--       its tier, boss, rift tier, Omen guardian, world boss; chaos_item_mods.lua M.sourceLevel); drops with a rarity
+--       are rolled whole by ChaosCrafting.forgeDrop (tiers by item level, count by rarity, prefixes / suffixes)
 --   3. currency / crafting drops (stock orbs 29856 / 29857 + configurable list)
+--   3b. gems (data/lib/chaos_gems_config.lua drop) and, in step 2b, sockets on gear with a rarity (chaos_gems.lua)
+--   3c. spell support runes (data/lib/chaos_supports_config.lua drop, scripts/chaos/supports.lua)
 --   4. unique items from the global ChaosUniqueItems (contract in LOOT.md)
 --   5. item find (player storage) multiplies the chances
 --   6. ChaosLootRoll(monsterName, tier, kills): pure simulation for balance tuning
@@ -16,6 +21,11 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
 end
 
 -- always reloaded so that /reload scripts picks up edits; loot.lua reads the GLOBAL at runtime
@@ -92,11 +102,18 @@ local function rateMult(ctx)
 		r = ok and v or 1
 	end
 	r = tonumber(r) or 1
-	if r < 0 then
+	if r ~= r or r < 0 then
 		r = 0
+	end
+	-- every loot bonus multiplies into this one rate (events, store, rift quantity, Golden Hour, community, Marches,
+	-- blessings, the guild perk wrapper): the product is capped here (loot_config.lua maxRate)
+	local cap = tonumber(cfg().maxRate)
+	if cap and r > cap then
+		r = cap
 	end
 	return r
 end
+L.rateMult = rateMult
 
 function L.itemFindMult(player)
 	local c = cfg()
@@ -104,7 +121,13 @@ function L.itemFindMult(player)
 		return 1
 	end
 	local ok, v = pcall(function() return player:getStorageValue(c.itemFindStorage) end)
-	v = ok and tonumber(v) or 0
+	v = math.max(0, ok and tonumber(v) or 0)
+	-- the Item Find modifier of the equipped items (item_mods.lua)
+	v = v + (ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(player, "itemfind") or 0)
+	-- the pet's Treasure Sense (pets.lua)
+	v = v + (ChaosPets and ChaosPets.itemFind and ChaosPets.itemFind(player) or 0)
+	-- the Self-Found loot bonus (season_modes.lua)
+	v = v + (ChaosSeason and ChaosSeason.modesLootBonus and select(1, ChaosSeason.modesLootBonus(player)) or 0)
 	if v <= 0 then
 		return 1
 	end
@@ -224,6 +247,10 @@ function L.isGearId(id)
 		if t:isContainer() or t:isStackable() or t:getAmmoType() ~= 0 then
 			return false
 		end
+		-- a quiver (data/lib/chaos_archery_core.lua): its stats are implicit modifiers, not item type values
+		if ChaosItemMods and ChaosItemMods.kindOfType and ChaosItemMods.kindOfType(t) == "quiver" then
+			return true
+		end
 		return relevantType(t)
 	end)
 	return ok and res or false
@@ -306,7 +333,8 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	local out = {}
 	local rolls = tierValue(c.extraRolls, tier, 0)
 	-- loot events and the store's World Loot buff add one extra roll to every monster, normal ones included
-	local buff = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("loot") or 1
+	-- (not for season characters: ctx.player, the corpse owner)
+	local buff = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("loot", ctx.player) or 1
 	if (ChaosEvents and ChaosEvents.bonus("loot") > 1) or buff > 1 then
 		rolls = rolls + 1
 	end
@@ -316,7 +344,8 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	local rm = rateMult(ctx)
 	local find = ctx.itemFind or 1
 	local chanceMult = tierValue(c.extraChanceMult, tier, 1) * rm * find
-	local countMult = tierValue(c.extraCountMult, tier, 1) * levelCountMult(ctx.level or 0) * rm
+	-- the rate scales how often an extra roll hits, not its stack size (rate x count would square the bonus)
+	local countMult = tierValue(c.extraCountMult, tier, 1) * levelCountMult(ctx.level or 0)
 	for _ = 1, rolls do
 		for _, entry in ipairs(lootTable) do
 			local id = entry.itemId
@@ -349,7 +378,14 @@ function L.rollCurrency(tier, ctx)
 	local cur = cfg().currency
 	tier = L.normTier(tier)
 	ctx = ctx or {}
-	local scale = rateMult(ctx) * (ctx.itemFind or 1)
+	local scale = rateMult(ctx) * (ctx.itemFind or 1) * (ctx.orbFind or 1) -- orbFind: charms.lua
+	-- the Ember of the Forge blessing of the corpse owner (blessings.lua): every orb of the list more often
+	scale = scale * (ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx.player, "orb") or 1)
+	-- rate, item find, orb find and the Forge together: capped (loot_config.lua currency.maxScale)
+	local maxScale = tonumber(cur.maxScale)
+	if maxScale and scale > maxScale then
+		scale = maxScale
+	end
 	local cm = tierValue(cur.countMult, tier, 1)
 	local merged, order = {}, {}
 	local function add(e)
@@ -639,6 +675,93 @@ local function itemRarityOf(item)
 	return ok and tonumber(r) or 0
 end
 
+-- true once the engine rolled the rarity stats (Item::applyRarityEffects / the Monster::dropLoot pass set it)
+function L.isRolled(item)
+	local ok, v = pcall(function() return item:getCustomAttribute("combatPowerLevel") end)
+	return ok and v ~= nil
+end
+
+-- For an item about to leave a corpse before the engine's rarity pass (autoloot, the loot pouch, the Rarity Autoloot).
+-- A drop the loot layer forged keeps its rarity as text until a tick later (ChaosCrafting.shield): it gets the number
+-- back now. An item with a rarity nobody rolled yet (a corpse the layer skipped) is forged here, in place, at the item
+-- level it carries (or its type's). Returns the item to move (always the item itself now; callers keep the return).
+function L.finalizeRarity(item)
+	local C = ChaosCrafting
+	if not C then
+		return item
+	end
+	if C.unshield(item) then
+		return item
+	end
+	local r = itemRarityOf(item)
+	if r <= 0 or L.isRolled(item) or not L.isGearId(item:getId()) then
+		return item
+	end
+	C.forge(item, r, C.orbLevel(item))
+	return item
+end
+
+-- ---------------------------------------------------------------------------
+-- item level of a kill's drops
+-- ---------------------------------------------------------------------------
+local poolLevels
+local function poolLevel(name)
+	if not poolLevels then
+		poolLevels = {}
+		local ok, pool = pcall(dofile, "data/scripts/chaos/bounty_pool.lua")
+		if ok and type(pool) == "table" then
+			for _, list in ipairs({pool.hunt or {}, pool.bosses or {}}) do
+				for _, e in ipairs(list) do
+					poolLevels[tostring(e.name):lower()] = tonumber(e.level)
+				end
+			end
+		end
+	end
+	return poolLevels[tostring(name):lower()]
+end
+
+-- the monster's level: Monster:getMonsterLevel (level-scaled monsters), else its hunting level from bounty_pool.lua,
+-- else the same estimate from its experience and health
+function L.monsterLevel(monster)
+	local ok, lvl = pcall(function() return monster:getMonsterLevel() end)
+	if ok and tonumber(lvl) and tonumber(lvl) > 0 then
+		return tonumber(lvl)
+	end
+	local okN, name = pcall(function() return typeNameOf(monster) end)
+	local pl = okN and poolLevel(name)
+	if pl and pl > 0 then
+		return pl
+	end
+	local mt = monster:getType()
+	local okE, exp = pcall(function() return mt:getExperience() end)
+	local okH, hp = pcall(function() return mt:getMaxHealth() end)
+	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
+end
+
+-- the item level of this kill's drops (owner = the corpse owner; inside a rift / Omen arena its run counts)
+function L.dropLevel(monster, owner, tier)
+	local M = ChaosItemMods
+	if not M then
+		return 0
+	end
+	local src = {monsterLevel = L.monsterLevel(monster), tier = tier}
+	local mt = monster:getType()
+	local okB, boss = pcall(function() return mt and mt:isBoss() end)
+	if okB and boss then
+		src.tier = "boss"
+	end
+	local run = owner and ChaosRift and ChaosRift.runOf and ChaosRift.runOf[owner:getId()]
+	if run and run.key then
+		src.riftTier = run.key.tier
+		src.omen = run.omen ~= nil
+	end
+	local wb = ChaosWorldBoss and ChaosWorldBoss.state
+	if wb and wb.bossId and wb.bossId == monster:getId() then
+		src.worldBoss = true
+	end
+	return M.sourceLevel(src)
+end
+
 local function announce(owner, corpsePos, text, nearMessage)
 	local u = cfg().unique
 	local msgType = globalByName(u.messageType, MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR)
@@ -679,6 +802,8 @@ local function processKill(monster, corpse)
 		level = tonumber(lvl)
 	end
 	local ctx = {tier = tier, monster = monster, player = owner, level = level, itemFind = L.itemFindMult(owner)}
+	-- the Orb Find of the placed charms (charms.lua): the currency chances only
+	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
 	local corpsePos = corpse:getPosition()
 
@@ -687,10 +812,25 @@ local function processKill(monster, corpse)
 	-- upgrades), so stock copies of the same base ids may still be upgraded
 	L.protectedIds = {}
 
+	-- 0. no arrows or bolts any more (bows fire without them: data/lib/chaos_archery_core.lua). The install tool takes
+	-- them out of the base loot tables; a loot table it could not read still drops none.
+	local A = ChaosArchery
+	local function isAmmo(id)
+		return A ~= nil and A.isAmmoId(id, ItemType and ItemType(id) or nil)
+	end
+	if A then
+		for slot = corpse:getSize() - 1, 0, -1 do
+			local item = corpse:getItem(slot)
+			if item and isAmmo(item:getId()) then
+				item:remove()
+			end
+		end
+	end
+
 	-- 1. extra rolls
 	local lootTable = mType and mType:getLoot()
 	for _, drop in ipairs(L.rollExtraLoot(lootTable, tier, ctx)) do
-		local item = corpse:addItem(drop.itemId, drop.count)
+		local item = not isAmmo(drop.itemId) and corpse:addItem(drop.itemId, drop.count) or nil
 		if item then
 			if L.isGearId(drop.itemId) then
 				local r = L.stockRarity()
@@ -711,26 +851,60 @@ local function processKill(monster, corpse)
 		end
 	end
 	local noError = RETURNVALUE_NOERROR or 0
+	-- the Rarity Find modifier of the equipped items (item_mods.lua) raises the bonus rarity chance
+	local rarityFind = ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(owner, "rarityfind") or 0
+	-- and the Self-Found loot bonus (season_modes.lua)
+	rarityFind = rarityFind + (ChaosSeason and ChaosSeason.modesLootBonus and select(2, ChaosSeason.modesLootBonus(owner)) or 0)
+	-- and the Ember of Fortune blessing (blessings.lua)
+	rarityFind = rarityFind + (ChaosBlessings and ChaosBlessings.value and ChaosBlessings.value(owner, "rarity") or 0)
+	-- Only the "rarity" attribute is raised here, as the stock callback sets it: the engine rolls the stats of every
+	-- item that still carries one in the corpse after all onDropLoot callbacks (Monster::dropLoot), once. Rolling here
+	-- too (Game.createItemWithRarity) gave corpse items two sets of stats. Items that leave the corpse before the
+	-- engine pass (autoloot, the loot pouch) are rolled on the way out: L.finalizeRarity.
 	for _, item in ipairs(items) do
 		local id = item:getId()
-		if L.isGearId(id) then
+		if L.isGearId(id) and not L.isRolled(item) then
 			local current = itemRarityOf(item)
-			local target = L.upgradeRarity(tier, current, ctx.itemFind)
+			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100))
 			if target > current then
-				local newItem = Game.createItemWithRarity(id, 1, target)
-				if newItem and itemRarityOf(newItem) == target then
-					if corpse:addItemEx(newItem) == noError then
-						item:remove()
-						bonus[#bonus + 1] = string.format("[%s] %s", rarityName(target), itemName(id))
-						local from = c.announceRarityFrom or 0
-						if from > 0 and target >= from then
-							announce(owner, corpsePos,
-								string.format("%s found a [%s] %s!", owner:getName(), rarityName(target), itemName(id)))
-						end
-					end
+				item:setCustomAttribute("rarity", target)
+				bonus[#bonus + 1] = string.format("[%s] %s", rarityName(target), itemName(id))
+				local from = c.announceRarityFrom or 0
+				if from > 0 and target >= from then
+					announce(owner, corpsePos,
+						string.format("%s found a [%s] %s!", owner:getName(), rarityName(target), itemName(id)))
 				end
-				-- otherwise the original item stays untouched (a temp item is freed by the engine)
 			end
+		end
+	end
+
+	-- 2b. item level and modifiers (data/lib/chaos_crafting.lua forgeDrop): every gear drop gets this kill's item
+	-- level; one with a rarity gets sockets (data/lib/chaos_gems.lua: 0-3 by rarity) and its whole roll now, the
+	-- rarity kept as text through the engine's own pass (ChaosItemMods.afterDrop makes it a number a tick later)
+	if ChaosCrafting and ChaosCrafting.forgeDrop then
+		local ilvl = L.dropLevel(monster, owner, tier)
+		local forged = false
+		for slot = 0, corpse:getSize() - 1 do
+			local item = corpse:getItem(slot)
+			if item and (L.isGearId(item:getId()) or ChaosCrafting.isGear(item)) and not L.isRolled(item) then
+				if itemRarityOf(item) > 0 then
+					if ChaosGems then
+						ChaosGems.rollDropSockets(item)
+					end
+					forged = #ChaosCrafting.forgeDrop(item, ilvl) >= 0 or forged
+				else
+					ChaosCrafting.forgeDrop(item, ilvl)
+				end
+			end
+		end
+		if forged and ChaosItemMods.afterDrop then
+			ChaosItemMods.afterDrop(corpse)
+		end
+	end
+	-- 2c. veiled modifiers and the Orb of Unveiling (veiled.lua): kills in high content only
+	if ChaosVeiled and ChaosVeiled.onCorpse then
+		for _, text in ipairs(ChaosVeiled.onCorpse(corpse, monster, owner, tier)) do
+			bonus[#bonus + 1] = text
 		end
 	end
 
@@ -742,9 +916,28 @@ local function processKill(monster, corpse)
 		end
 	end
 
+	-- 3b. gems (data/lib/chaos_gems_config.lua drop): chance by monster tier x the layer's rate x item find, the tier
+	-- by the monster's level (the killer's when the monster has none)
+	if ChaosGems then
+		local gemLevel = level > 0 and level or owner:getLevel()
+		for _, id in ipairs(ChaosGems.rollDrop(tier, gemLevel, rateMult(ctx) * ctx.itemFind, rnd)) do
+			local item = corpse:addItem(id, 1)
+			if item then
+				bonus[#bonus + 1] = ChaosGems.gemName(id)
+			end
+		end
+	end
+	-- 3c. spell support runes (data/lib/chaos_supports_config.lua drop; supports.lua): like the gems
+	if ChaosSupports and ChaosSupports.lootDrop then
+		for _, name in ipairs(ChaosSupports.lootDrop(corpse, tier, level > 0 and level or owner:getLevel(),
+				rateMult(ctx) * ctx.itemFind, rnd)) do
+			bonus[#bonus + 1] = name
+		end
+	end
+
 	-- 4. uniques
 	local u = c.unique
-	for _, e in ipairs(L.rollUniques(tier, monster:getName(), level, ctx.itemFind, nil, owner)) do
+	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), level, ctx.itemFind, nil, owner)) do
 		local item = corpse:addItem(e.id, 1)
 		if item then
 			if ChaosMakeUnique then
@@ -755,12 +948,12 @@ local function processKill(monster, corpse)
 			corpsePos:sendMagicEffect(effect)
 			announce(owner, corpsePos,
 				string.format(u.broadcastText, owner:getName(), e.name),
-				string.format(u.message, mType:getNameDescription(), e.name))
+				string.format(u.message, Chaos.monsterNameDescription(monster), e.name))
 		end
 	end
 
 	if #bonus > 0 then
-		local text = ("Chaos bonus loot of %s: %s"):format(mType:getNameDescription(), table.concat(bonus, ", "))
+		local text = ("Chaos bonus loot of %s: %s"):format(Chaos.monsterNameDescription(monster), table.concat(bonus, ", "))
 		local party = owner:getParty()
 		if party then
 			party:broadcastPartyLoot(text)

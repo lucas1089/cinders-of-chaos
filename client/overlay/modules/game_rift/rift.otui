@@ -11,6 +11,9 @@ RiftHudLabel < UILabel
 RiftModLabel < RiftHudLabel
   color: #c79bff
 
+RiftNoteLabel < RiftHudLabel
+  color: #f4d27a
+
 ChaosPanelDark
   id: riftHud
   width: 230
@@ -44,6 +47,12 @@ ChaosPanelDark
     phantom: true
     margin-top: 2
 
+  RiftHudLabel
+    id: lives
+    color: #9fd89f
+    text-align: center
+    margin-top: 2
+
   ChaosProgressBar
     id: progress
     margin-top: 4
@@ -67,6 +76,14 @@ ChaosPanelDark
       type: verticalBox
       fit-children: true
 
+  UIWidget
+    id: notes
+    phantom: true
+    margin-top: 4
+    layout:
+      type: verticalBox
+      fit-children: true
+
   RiftHudLabel
     id: bonus
     color: #7fd07f
@@ -77,3 +94,11 @@ ChaosPanelDark
     color: #f4d27a
     margin-top: 6
     visible: false
+
+  ChaosButton
+    id: atlasButton
+    margin-top: 6
+    height: 20
+    !text: tr('Rift Atlas')
+    !tooltip: tr('Open the Rift Atlas: your completion grid and the atlas tree.')
+    @onClick: if modules.game_riftatlas then modules.game_riftatlas.toggle() end

@@ -1,0 +1,10 @@
+# Cinders of Chaos: hang watchdog for the game server (server/tools/chaos_watchdog.py; docs/LAUNCH.md "Running it").
+# Run once a minute by chaos-watchdog.timer. When the status protocol does not answer 3 times in a row (and the server
+# has been up longer than 5 minutes), it restarts chaos-server and writes /var/log/chaos/crashes/watchdog.log.
+[Unit]
+Description=Cinders of Chaos hang watchdog
+After=chaos-server.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I /opt/chaos/repo/server/tools/chaos_watchdog.py --unit chaos-server --port 7171

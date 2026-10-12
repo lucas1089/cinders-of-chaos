@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Giant Forest Spider" nameDescription="a giant forest spider" race="venom" experience="850" speed="240" manacost="0">
+	<health now="1000" max="1000" />
+	<look type="2030" head="18" body="58" legs="116" feet="22" corpse="36091" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-194" />
+		<attack name="earth" interval="2000" chance="25" range="7" min="-84" max="-220">
+			<attribute key="shootEffect" value="poison" />
+		</attack>
+		<attack name="speed" interval="2000" chance="12" range="7" speedchange="-430" duration="5000">
+			<attribute key="areaEffect" value="poison" />
+		</attack>
+	</attacks>
+	<defenses armor="24" defense="24">
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="*hiss*" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
+		<item id="2152" countmax="2" chance="40000" /><!-- platinum coin -->
+		<item id="36026" countmax="2" chance="18000" /><!-- tuft of spider silk -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="7588" chance="4000" /><!-- strong health potion -->
+		<item id="7589" chance="4000" /><!-- strong mana potion -->
+	</loot>
+</monster>

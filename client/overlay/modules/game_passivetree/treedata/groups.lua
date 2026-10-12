@@ -724,8 +724,9 @@ function getTreeGroups()
 			y = 2330,
 			nodes = {}
 		},
-		  
-		  
+		--- group 104: the class sections (625-664; the four lines share it, each sees only its own), shown only to a line
+		--- that has one (`section`). The start node in the centre, the line nodes up to the ring, the two paths round it ---
+		{ orbit = 0, x = -1800, y = -2350, nodes = {}, section = true }, -- 104
 	}
 end
 

@@ -12,7 +12,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	local min, max = ChaosSpell.mlValues(player, 12, 20, 90, 190)
-	ChaosSpell.fx(player:getPosition(), "aura_ring", CONST_ME_MAGIC_BLUE)
+	ChaosSpell.vfxOr(player:getPosition(), "healing_bloom", "aura_ring", CONST_ME_MAGIC_BLUE)
 	for _, ally in ipairs(ChaosSpell.alliesAround(player, player:getPosition(), 3, true)) do
 		for _, ctype in ipairs(CLEANSE) do
 			ally:removeCondition(ctype)

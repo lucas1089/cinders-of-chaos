@@ -32,7 +32,9 @@ function init()
     onGameStart = onGameStart,
     onGameEnd = onGameEnd
   })
-  ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
+  -- JSON variant: the server splits the catalog (about 20 KB, over the 8192 bytes one extended opcode message can
+  -- carry) into S/P/E parts, which the base ProtocolGame joins and decodes before calling onExtendedOpcode
+  ProtocolGame.registerExtendedJSONOpcode(OPCODE, onExtendedOpcode)
 
   if g_game.isOnline() then
     onGameStart()
@@ -44,7 +46,7 @@ function terminate()
     onGameStart = onGameStart,
     onGameEnd = onGameEnd
   })
-  ProtocolGame.unregisterExtendedOpcode(OPCODE, onExtendedOpcode)
+  ProtocolGame.unregisterExtendedJSONOpcode(OPCODE)
   destroy()
 end
 
@@ -79,8 +81,8 @@ function create()
   window = ui
   window:hide()
 
-  window:getChildById("filterEdit").onTextChange = function() buildActionList() end
-  window:getChildById("runButton").onClick = onRunClicked
+  window:recursiveGetChildById("filterEdit").onTextChange = function() buildActionList() end
+  window:recursiveGetChildById("runButton").onClick = onRunClicked
 
   local okB, btn = pcall(function()
     return modules.client_topmenu.addRightGameToggleButton("adminButton", tr("Admin Panel"), "/images/topbuttons/logout", toggle)
@@ -156,10 +158,9 @@ function sendRequest(action, data)
   return true
 end
 
-function onExtendedOpcode(protocol, code, buffer)
+function onExtendedOpcode(protocol, code, msg)
   if not g_game.isOnline() then return end
-  local ok, msg = pcall(function() return json.decode(buffer) end)
-  if not ok or type(msg) ~= "table" then return end
+  if type(msg) ~= "table" then return end
 
   if msg.action == "catalog" then
     onCatalog(msg.data)
@@ -218,7 +219,7 @@ end
 -- sidebar / list / form
 ------------------------------------------------------------------------------------------------
 function buildSidebar()
-  local list = window:getChildById("categoryList")
+  local list = window:recursiveGetChildById("categoryList")
   list:destroyChildren()
 
   local function add(id, label)
@@ -240,9 +241,9 @@ end
 
 function buildActionList()
   if not window or not catalog then return end
-  local list = window:getChildById("actionList")
+  local list = window:recursiveGetChildById("actionList")
   list:destroyChildren()
-  local filter = window:getChildById("filterEdit"):getText():lower()
+  local filter = window:recursiveGetChildById("filterEdit"):getText():lower()
 
   for _, c in ipairs(catalog.categories) do
     if selectedCategory == "*" or selectedCategory == c.id then
@@ -302,11 +303,11 @@ function showAction(action)
   selectedAction = action
   paramWidgets = {}
   disarmConfirm()
-  local container = window:getChildById("paramList")
+  local container = window:recursiveGetChildById("paramList")
   container:destroyChildren()
-  local title = window:getChildById("actionTitle")
-  local desc = window:getChildById("actionDesc")
-  local run = window:getChildById("runButton")
+  local title = window:recursiveGetChildById("actionTitle")
+  local desc = window:recursiveGetChildById("actionDesc")
+  local run = window:recursiveGetChildById("runButton")
 
   if not action then
     title:setText(tr("Select an action"))
@@ -351,14 +352,14 @@ function disarmConfirm()
   confirmArmed = false
   if confirmEvent then removeEvent(confirmEvent); confirmEvent = nil end
   if window and selectedAction then
-    window:getChildById("runButton"):setText(tr("Run"))
+    window:recursiveGetChildById("runButton"):setText(tr("Run"))
   end
 end
 
 function unlockRun()
   if unlockEvent then removeEvent(unlockEvent); unlockEvent = nil end
   if window and selectedAction then
-    window:getChildById("runButton"):setEnabled(true)
+    window:recursiveGetChildById("runButton"):setEnabled(true)
   end
 end
 
@@ -370,7 +371,7 @@ function onRunClicked()
     return
   end
 
-  local run = window:getChildById("runButton")
+  local run = window:recursiveGetChildById("runButton")
   if selectedAction.confirm and not confirmArmed then
     confirmArmed = true
     run:setText(tr("Click again to confirm"))
@@ -394,7 +395,7 @@ end
 ------------------------------------------------------------------------------------------------
 function addResultLine(text, color)
   if not window then return end
-  local list = window:getChildById("resultList")
+  local list = window:recursiveGetChildById("resultList")
   local label = g_ui.createWidget("AdminResultLine", list)
   label:setText(text)
   label:setColor(color or COLOR_INFO)
@@ -405,7 +406,7 @@ function addResultLine(text, color)
   end
   scheduleEvent(function()
     if window then
-      local bar = window:getChildById("resultScroll")
+      local bar = window:recursiveGetChildById("resultScroll")
       bar:setValue(bar:getMaximum())
     end
   end, 20)
@@ -413,6 +414,6 @@ end
 
 function clearResults()
   if not window then return end
-  window:getChildById("resultList"):destroyChildren()
+  window:recursiveGetChildById("resultList"):destroyChildren()
   resultLines = 0
 end

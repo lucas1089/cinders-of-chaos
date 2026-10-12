@@ -1,365 +1,427 @@
-local tooltipWindow = nil
-local itemSprite = nil
-local itemSprite_2 = nil
-local itemWeightLabel = nil
-local labels = nil
-local hoveredItem = nil
+-- Rich item tooltips (server-driven). Hovering an item in the inventory or an open container asks the server
+-- (extended opcode 242, server/data/scripts/chaos/item_tooltip.lua) for its tooltip: name, rarity, item level, base
+-- stats, every modifier with its tier and roll range, sockets and gems, unique and set (the pieces worn and the bonuses
+-- active; the cached set pieces are dropped when the equipment changes), requirements. Holding Ctrl
+-- shows the equipped item(s) worn the same way next to it, and the hovered tooltip lists the differences per stat
+-- (green better, red worse).
+-- Tooltips are cached by the item's per-item id and version (item custom attributes, game_itemrarity ChaosItemAttr):
+-- the version changes whenever the server changes the item (orbs, gems), so a changed item is asked for again.
+-- Items without those attributes (plain items, or a server without engine patch 0003) are cached for a short time
+-- under their position, id and count. The view logic is in tooltiplogic.lua (tested by tooltiplogic_test.lua).
+--   client -> server  get {items = [{pos = {x, y, z}, iid}]}   (iid as a decimal string)
+--   server -> client  tips {items = [{pos, iid, tip} | {pos, iid, gone}]}
 
-local BASE_WIDTH = 170
-local BASE_HEIGHT = 0
+local OPCODE = 242
+local L = ItemTooltipLogic
+local C = L.COLORS
 
-local tooltipWidth = 0
-local tooltipWidthBase = BASE_WIDTH
-local tooltipHeight = BASE_HEIGHT
-local longestString = 0
+local PAD_X, PAD_TOP, LINE_GAP, SEP_GAP = 8, 46, 1, 5
+local MIN_WIDTH = 190
+local ASK_DELAY = 60 -- ms of hover before asking the server
+local PENDING_TIMEOUT = 2 -- s before an unanswered request may be sent again
+local CTRL_POLL = 100 -- ms
 
-local cachedItems = {}
+local cache = L.newCache()
+local pending = {} -- posKey -> {key, plain, at}
+local hovered = nil -- {widget, item, pos, key, plain}
+local panels = {} -- the tooltip panels on screen (1 = hovered, then the compare ones)
+local askEvent, pollEvent
+local compareShown = false
+local handlers = {}
+
+local function now()
+  return os.time()
+end
+
+local function safe(name, fn)
+  local reported = false
+  return function(...)
+    local ok, err = pcall(fn, ...)
+    if not ok and not reported then
+      reported = true
+      g_logger.warning('[itemtooltip] ' .. name .. ': ' .. tostring(err))
+    end
+  end
+end
+
+-- ---------------------------------------------------------------- items and keys
+local function attr(item, key)
+  if getItemAttribute then
+    return getItemAttribute(item, key)
+  end
+  local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+  return ok and tonumber(v) or 0
+end
+
+local function describe(item)
+  local A = ChaosItemAttr or { ID = 6, VERSION = 7 }
+  local pos = item:getPosition()
+  pos = { x = pos.x, y = pos.y, z = pos.z }
+  local iid = attr(item, A.ID)
+  local key, plain = L.cacheKey({ id = iid, ver = attr(item, A.VERSION) }, item:getId(), item:getCount(), pos)
+  return { item = item, pos = pos, iid = iid, key = key, plain = plain }
+end
+
+local function equippedItem(slot)
+  local player = g_game.getLocalPlayer()
+  return player and player:getInventoryItem(slot) or nil
+end
+
+-- ---------------------------------------------------------------- server
+local function send(list)
+  local protocol = g_game.getProtocolGame()
+  if not protocol or #list == 0 then return end
+  local items = {}
+  for _, d in ipairs(list) do
+    -- the id as a string: the JSON encoder writes big numbers with 14 digits (1.8785738780836e+15)
+    items[#items + 1] = { pos = d.pos, iid = L.iidText(d.iid) }
+    pending[L.posKey(d.pos, d.iid)] = { key = d.key, plain = d.plain, at = now() }
+  end
+  protocol:sendExtendedOpcode(OPCODE, json.encode({ action = 'get', data = { items = items } }))
+end
+
+local function needs(d)
+  if L.cacheGet(cache, d.key, now()) then return false end
+  local p = pending[L.posKey(d.pos, d.iid)]
+  return not p or now() - p.at > PENDING_TIMEOUT or p.key ~= d.key
+end
+
+-- ---------------------------------------------------------------- panels
+local function clearPanels()
+  for _, p in ipairs(panels) do
+    if not p:isDestroyed() then p:destroy() end
+  end
+  panels = {}
+end
+
+local function addLine(panel, y, row)
+  local label = g_ui.createWidget('ItemTooltipLine', panel)
+  if row.parts and label.setColoredText then
+    label:setColoredText(row.parts)
+  else
+    label:setText(row.text)
+    label:setColor(row.color or C.text)
+  end
+  label:addAnchor(AnchorTop, 'parent', AnchorTop)
+  label:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  label:setMarginTop(y)
+  label:setMarginLeft(PAD_X)
+  local size = label:getTextSize()
+  label:resize(size.width, size.height)
+  return size
+end
+
+-- one plate: icon and name, the lines, then extra rows (the differences); returns the panel
+local function buildPanel(tip, extra, heading)
+  local panel = g_ui.createWidget('ItemTooltipPanel', rootWidget)
+  local titleColor = L.titleColor(tip)
+  panel:getChildById('band'):setBackgroundColor(titleColor)
+  local icon = panel:getChildById('icon')
+  icon:setItemId(tip.id or 0)
+  if (tip.count or 1) > 1 then icon:setItemCount(tip.count) end
+  -- a transmog look (server transmog.lua, tip.look; client base patch 0030): the icon shows the item as it looks, also
+  -- for item links in chat (their snapshot carries the look)
+  local look = type(tip.look) == 'table' and tonumber(tip.look.cid) or 0
+  local iconItem = look > 0 and icon:getItem() or nil
+  if iconItem then pcall(function() iconItem:setAppearanceId(look) end) end
+  if heading then
+    local h = panel:getChildById('header')
+    h:setText(heading)
+    h:show()
+  end
+  local width = MIN_WIDTH
+  local title = g_ui.createWidget('ItemTooltipTitle', panel)
+  title:setText(L.title(tip.name))
+  title:setColor(titleColor)
+  title:addAnchor(AnchorTop, 'parent', AnchorTop)
+  title:addAnchor(AnchorLeft, 'icon', AnchorRight)
+  title:setMarginTop(heading and 20 or 12)
+  title:setMarginLeft(6)
+  local ts = title:getTextSize()
+  title:resize(ts.width, ts.height)
+  width = math.max(width, 46 + ts.width + PAD_X)
+
+  local y = PAD_TOP
+  local rows = L.lines(tip, { level = g_game.getLocalPlayer() and g_game.getLocalPlayer():getLevel() or 0 })
+  for _, r in ipairs(extra or {}) do rows[#rows + 1] = r end
+  for _, row in ipairs(rows) do
+    if row.sep then
+      local rule = g_ui.createWidget('ItemTooltipRule', panel)
+      rule:addAnchor(AnchorTop, 'parent', AnchorTop)
+      rule:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+      rule:addAnchor(AnchorRight, 'parent', AnchorRight)
+      rule:setMarginTop(y + 2)
+      rule:setMarginLeft(PAD_X)
+      rule:setMarginRight(PAD_X)
+      y = y + SEP_GAP
+    end
+    local size = addLine(panel, y, row)
+    y = y + size.height + LINE_GAP
+    width = math.max(width, size.width + 2 * PAD_X)
+  end
+  panel:resize(width, y + 6)
+  return panel
+end
+
+-- the rows of the differences hovered - equipped
+local function diffRows(tip, other)
+  local rows = { { text = 'Compared with ' .. (other.name or 'equipped'), color = C.dim, sep = true } }
+  local diffs = L.diff(tip, other)
+  if #diffs == 0 then
+    rows[#rows + 1] = { text = 'No difference', color = C.dim }
+  end
+  for _, d in ipairs(diffs) do
+    rows[#rows + 1] = { text = L.diffText(d), color = d.better and C.better or C.worse }
+  end
+  return rows
+end
+
+local function place()
+  if #panels == 0 then return end
+  local mouse = g_window.getMousePosition()
+  local screen = rootWidget:getSize()
+  local main = panels[1]
+  local total = 0
+  for _, p in ipairs(panels) do total = total + p:getWidth() + 4 end
+  -- main tooltip right of the cursor when it fits, else left; the compare plates on the side with room
+  local x = mouse.x + 18
+  if x + main:getWidth() > screen.width then
+    x = mouse.x - main:getWidth() - 12
+  end
+  local function clampY(h)
+    return math.max(0, math.min(mouse.y + 8, screen.height - h))
+  end
+  main:setPosition({ x = math.max(0, x), y = clampY(main:getHeight()) })
+  local left = x - 4
+  local right = x + main:getWidth() + 4
+  for i = 2, #panels do
+    local p = panels[i]
+    if left - p:getWidth() >= 0 then
+      left = left - p:getWidth()
+      p:setPosition({ x = left, y = clampY(p:getHeight()) })
+      left = left - 4
+    else
+      p:setPosition({ x = math.min(right, screen.width - p:getWidth()), y = clampY(p:getHeight()) })
+      right = right + p:getWidth() + 4
+    end
+  end
+  for _, p in ipairs(panels) do
+    p:raise()
+    p:show()
+  end
+end
+
+-- the equipped items in the slots the tooltip names: {[slot] = tip} of those already known, and the ones to ask for
+local function equippedTips(tip)
+  local bySlot, missing = {}, {}
+  for _, slot in ipairs(tip.cmp or {}) do
+    local item = equippedItem(slot)
+    if item then
+      local d = describe(item)
+      local known = L.cacheGet(cache, d.key, now())
+      if known then
+        known.key = known.key or d.key
+        bySlot[slot] = known
+      elseif d.key ~= hovered.key and needs(d) then
+        missing[#missing + 1] = d
+      end
+    end
+  end
+  return bySlot, missing
+end
+
+local function render()
+  clearPanels()
+  if not hovered then return end
+  local tip = L.cacheGet(cache, hovered.key, now())
+  if not tip then return end
+  local wantCompare = g_keyboard.isCtrlPressed() and tip.cmp ~= nil
+  local extra, others = {}, {}
+  for _, r in ipairs(hovered.extra or {}) do extra[#extra + 1] = r end
+  if wantCompare then
+    local bySlot, missing = equippedTips(tip)
+    if #missing > 0 then send(missing) end
+    others = L.compareWith(tip, bySlot, hovered.key)
+    for _, o in ipairs(others) do
+      local partner = o
+      if hovered.external then
+        -- a linked or inspected item has no "Your Attack Interval" (it is the viewer's own number): leave it out of
+        -- the equipped item's side too, or the difference would list it as a change
+        partner = {}
+        for k, v in pairs(o) do partner[k] = v end
+        partner.stats = {}
+        for _, st in ipairs(o.stats or {}) do
+          if st.k ~= 'yourinterval' then partner.stats[#partner.stats + 1] = st end
+        end
+      end
+      for _, r in ipairs(diffRows(tip, partner)) do extra[#extra + 1] = r end
+    end
+    if #others == 0 and #missing == 0 then
+      extra[#extra + 1] = { text = 'Nothing equipped to compare', color = C.dim, sep = true }
+    end
+  elseif tip.cmp then
+    extra[#extra + 1] = { text = 'Hold Ctrl to compare', color = C.dim, sep = true }
+  end
+  compareShown = wantCompare
+  panels[1] = buildPanel(tip, extra)
+  for _, o in ipairs(others) do
+    panels[#panels + 1] = buildPanel(o, nil, 'Equipped')
+  end
+  place()
+end
+
+local function ask()
+  askEvent = nil
+  if not hovered or not g_game.isOnline() then return end
+  if L.cacheGet(cache, hovered.key, now()) then
+    render()
+    return
+  end
+  if needs(hovered) then send({ hovered }) end
+end
+
+local function poll()
+  pollEvent = nil
+  if not hovered then return end
+  if hovered.widget:isDestroyed() or not hovered.widget:isVisible() or
+      (hovered.external and not hovered.widget:containsPoint(g_window.getMousePosition())) then
+    hovered = nil
+    clearPanels()
+    return
+  end
+  local ctrl = g_keyboard.isCtrlPressed()
+  if #panels > 0 and ctrl ~= compareShown then
+    render()
+  elseif #panels > 0 then
+    place()
+  end
+  pollEvent = scheduleEvent(poll, CTRL_POLL)
+end
+
+-- Tooltips of items that are not in this player's inventory or containers (item links in the chat, the inspect
+-- window): the caller has the tooltip and a widget the pointer is over. Same plate, Ctrl compares with what the
+-- player wears. key is any string unique to the item, extra = { { text, color, sep } } lines under the tooltip.
+function showTip(widget, key, tip, extra)
+  if not widget or widget:isDestroyed() or type(tip) ~= 'table' then return end
+  L.cachePut(cache, key, tip, false, now())
+  if askEvent then removeEvent(askEvent) askEvent = nil end
+  hovered = { widget = widget, key = key, plain = false, external = true, extra = extra }
+  render()
+  if not pollEvent then pollEvent = scheduleEvent(poll, CTRL_POLL) end
+end
+
+function hideTip(widget)
+  if hovered and hovered.external and (not widget or hovered.widget == widget) then
+    hovered = nil
+    clearPanels()
+  end
+end
+
+-- ---------------------------------------------------------------- events
+local function onHoverChange(widget, isHovered)
+  if not isHovered then
+    if hovered and hovered.widget == widget then
+      hovered = nil
+      clearPanels()
+    end
+    return
+  end
+  local item = widget:getItem()
+  if not item or widget:isVirtual() or not g_game.isOnline() then return end
+  local d = describe(item)
+  if not L.askable(d.pos) then return end
+  d.widget = widget
+  hovered = d
+  if askEvent then removeEvent(askEvent) end
+  if L.cacheGet(cache, d.key, now()) then
+    render()
+  else
+    clearPanels()
+    askEvent = scheduleEvent(ask, ASK_DELAY)
+  end
+  if not pollEvent then pollEvent = scheduleEvent(poll, CTRL_POLL) end
+end
+
+-- the hovered slot got a new item or the same item with a new version: ask again
+local function onItemChange(widget)
+  if not hovered or hovered.widget ~= widget then return end
+  local item = widget:getItem()
+  if not item then
+    hovered = nil
+    clearPanels()
+    return
+  end
+  local d = describe(item)
+  d.widget = widget
+  if d.key ~= hovered.key then
+    hovered = d
+    if L.cacheGet(cache, d.key, now()) then render() else
+      clearPanels()
+      if askEvent then removeEvent(askEvent) end
+      askEvent = scheduleEvent(ask, ASK_DELAY)
+    end
+  end
+end
+
+-- the equipment changed: the set block of every cached set piece may be stale (tooltiplogic.lua L.dropSetTips); the
+-- hovered piece is asked for again
+local function onInventoryChange()
+  if L.dropSetTips(cache) == 0 then return end
+  if hovered and not hovered.external and not L.cacheGet(cache, hovered.key, now()) then
+    if askEvent then removeEvent(askEvent) end
+    askEvent = scheduleEvent(ask, ASK_DELAY)
+  end
+end
+
+local function onTips(data)
+  local t = now()
+  for _, row in ipairs(type(data.items) == 'table' and data.items or {}) do
+    local pk = L.posKey(row.pos, row.iid)
+    local p = pending[pk]
+    pending[pk] = nil
+    if p and type(row.tip) == 'table' then
+      L.cachePut(cache, p.key, row.tip, p.plain, t)
+    end
+  end
+  if hovered and L.cacheGet(cache, hovered.key, t) then
+    render()
+  end
+end
+
+local function onExtendedOpcode(protocol, opcode, buffer)
+  local ok, msg = pcall(json.decode, buffer)
+  if not ok or type(msg) ~= 'table' then return end
+  if msg.action == 'tips' and type(msg.data) == 'table' then
+    onTips(msg.data)
+  end
+end
+
+local function reset()
+  cache = L.newCache()
+  pending = {}
+  hovered = nil
+  clearPanels()
+end
 
 function init()
-  connect(UIItem, {onHoverChange = onHoverChange})
-  connect(g_game, {onGameEnd = resetData})
-
-  tooltipWindow = g_ui.displayUI("item_tooltip")
-  tooltipWindow:hide()
-  tooltipWindow:setBackgroundColor("#00000088") -- Black with 53% opacity
-
-  labels = tooltipWindow:getChildById("labels")
-  itemWeightLabel = tooltipWindow:getChildById("itemWeightLabel")
-  itemSprite = tooltipWindow:getChildById("itemSprite")
-  itemSprite_2 = tooltipWindow:getChildById("itemSprite_2")
+  g_ui.importStyle('item_tooltip')
+  handlers.hover = safe('hover', onHoverChange)
+  handlers.change = safe('change', onItemChange)
+  handlers.opcode = safe('opcode', onExtendedOpcode)
+  handlers.reset = safe('reset', reset)
+  handlers.inventory = safe('inventory', onInventoryChange)
+  connect(UIItem, { onHoverChange = handlers.hover, onItemChange = handlers.change })
+  connect(LocalPlayer, { onInventoryChange = handlers.inventory })
+  connect(g_game, { onGameEnd = handlers.reset, onGameStart = handlers.reset })
+  ProtocolGame.registerExtendedOpcode(OPCODE, handlers.opcode)
 end
 
 function terminate()
-  disconnect(UIItem, {onHoverChange = onHoverChange})
-  disconnect(g_game, {onGameEnd = resetData})
-
-  if tooltipWindow then
-    cachedItems = {}
-    hoveredItem = nil
-
-    itemWeightLabel = nil
-    itemSprite = nil
-    itemSprite_2 = nil
-    labels = nil
-
-    tooltipWindow:destroy()
-    tooltipWindow = nil
-  end
-end
-
-function resetData()
-  cachedItems = {}
-  hoveredItem = nil
-  tooltipWindow:hide()
-end
-
-function deleteLastCharacter(str)
-  return (str:gsub("[%z\1-\127\194-\244][\128-\191]*$", ""))
-end
-
-function removeArticle(name)
-  -- Removes "a", "an", or "the" at the start of the string
-  return name:gsub("^(a |an |the )", "")
-end
-
-local excludedKeywords = {
-  "health:", "mana:", "fighting", "protection", "atk:", "range:", "arm:", 
-  "physical", "energy", "earth", "fire", "ice", "holy", "death", "drown", 
-  "poison", "def:", "drain"
-}
-
--- Function to check if a part contains any excluded keywords
-local function isExcluded(part)
-  part = part:lower() -- Convert to lowercase for case-insensitive matching
-  for _, keyword in ipairs(excludedKeywords) do
-      if part:find(keyword) then
-          return true -- Part contains an excluded keyword
-      end
-  end
-  return false -- Part does not contain any excluded keywords
-end
-local Colors = {
-  Default = "#ffffff",
-  ItemLevel = "#abface",
-  Description = "#8080ff",
-  Implicit = "#ffbb22",
-  Attribute = "#2266ff",
-  Mirrored = "#22ffbb",
-  physical = "#ff8800", -- Orange
-    energy = "#0000ff",  -- Blue
-    ice = "#00ffff",     -- Cyan
-    positive = "#00ff00", -- Green
-    negative = "#ff0000" -- Red
-}
-
-
-local protectionMap = {
-  ["physical"] = "Physical Protection",              -- For simple "physical +X%"
-  ["energy"] = "Energy Protection",
-  ["earth"] = "Earth Protection",
-  ["fire"] = "Fire Protection",
-  ["ice"] = "Ice Protection",
-  ["holy"] = "Holy Protection",
-  ["death"] = "Death Protection",
-  ["drown"] = "Drown Protection",
-  ["poison"] = "Poison Protection",
-  ["life drain"] = "Life Drain Protection",          -- For "life drain +X%"
-  ["mana drain"] = "Mana Drain Protection",          -- For "mana drain +X%"
-  ["protection physical"] = "Physical Protection",   -- For "protection physical +X%"
-  ["protection energy"] = "Energy Protection",
-  ["protection earth"] = "Earth Protection",
-  ["protection fire"] = "Fire Protection",
-  ["protection ice"] = "Ice Protection",
-  ["protection holy"] = "Holy Protection",
-  ["protection death"] = "Death Protection",
-  ["protection drown"] = "Drown Protection",
-  ["protection poison"] = "Poison Protection",
-  ["protection life drain"] = "Life Drain Protection",
-  ["protection mana drain"] = "Mana Drain Protection",
-  ["all"] = "Protection All"
-}
-
-local function processProtections(message)
-  -- Patterns to match different protection formats
-  -- 1. Simple: "physical +5%" or "physical -5%"
-  -- 2. Complex: "Protection Physical +5%" or "Life Drain Protection +5%"
-  for protectionType, value in message:lower():gmatch("(%w+%s*%w*) ([+-]%d+)%%") do
-      -- Trim any extra spaces and normalize the protection type
-      protectionType = protectionType:gsub("^%s*(.-)%s*$", "%1") -- Remove leading/trailing spaces
-      -- Map the protection type to its full name, default to unknown if not found
-      local mappedName = protectionMap[protectionType] or ("Unknown Protection (" .. protectionType .. ")")
-      -- Add the protection to the tooltip
-      if not protection then
-          addSeparator()
-          protection = true
-      end
-      addEmpty(5)
-      addString(mappedName .. ": " .. value .. "%", Colors.positive)
-  end
-end
-
-local function processReflect(message)
-  local reflectFound = false
-  for chance, amount, damageType in message:lower():gmatch("reflect: (%d+)%% chance for (%d+)%% amount of ([a-z]+) damage") do
-      local reflectText = "Reflect: " .. chance .. "% chance for " .. amount .. "% amount of " .. damageType .. " damage"
-      addEmpty(5)
-      addString(reflectText, Colors.positive)
-      reflectFound = true
-      if reflectFound then
-        addSeparator()
-      end
-
-  end
-end
-
-
-
-function onItemChangesss(items)
-  local texts = nil
-  if items:getItem() and items:getItem():getTooltip():len() > 0 then
-      local text = items:getItem():getTooltip()
-      -- Regex patterns
-      local name = regexMatch(text, [[^(.*?)(?: \((.*)\))?\..*]])
-      local stats = regexMatch(text, [[\((.*)\).]])
-      local level = regexMatch(text, "level ([0-9]*) or higher.")
-      local capacity = regexMatch(text, "weighs (.*) oz.")
-      local health = regexMatch(text, "health: ([0-9]+)/1 sec")
-      local mana = regexMatch(text, "mana: ([0-9]+)/1 sec")
-      
-      if #name ~= 0 then
-          local rawName = name[1][2] or name[1][1]
-          addEmpty(5)
-          addString(rawName, Colors.Default)
-      end
-      
-
-      if #stats ~= 0 then
-          local info = string.split(stats[1][2], ", ")
-          local Separator = false
-          addSeparator()
-          for _, part in ipairs(info) do
-            
-            if part:lower():find("atk:") or part:lower():find("range:") then
-              addEmpty(5)
-              Separator = true
-              addString(part, Colors.negative)
-            end
-
-            if part:lower():find("arm:") or part:lower():find("def:") then
-              addEmpty(5)
-              Separator = true
-              addString(part, Colors.physical)
-            end
-
-            if part:lower():find("fighting") then
-              if not skills and Separator then
-                addSeparator()
-              skills = true
-              end
-              addEmpty(5)
-              addString(part, Colors.ice)
-            end
-
-            if part:lower():find("mana:") or part:lower():find("health:") then
-              if not mana_health then
-                addSeparator()
-                mana_health = true
-              end
-              addEmpty(5)
-              addString(part, Colors.ice)
-            end
-            
-
-          processProtections(part)
-          processReflect(part)
-          
-            if not isExcluded(part) then
-              if not attrrrrrr and Separator then
-                addSeparator()
-                attrrrrrr = true
-              end
-              addEmpty(5)
-              addString(part, Colors.Attribute)
-          end
-        end
-      end
-
-      local vocationList = text:match("can only be wielded properly by ([%a%s,]+)%.")
-      if vocationList then
-          addSeparator()
-          addEmpty(5)
-          addString("Usable by: " .. vocationList, Colors.Description)
-      end
-
-      local vocationLists = text:match("can only be wielded properly by ([%a%s,]+)% of")
-      if vocationLists and vocationLists ~= "players" then
-          addSeparator()
-          addEmpty(5)
-          addString("Usable by: " .. vocationLists, Colors.Description)
-      end
-      
-
-    if #level ~= 0 then
-        addSeparator()
-        addEmpty(5)
-          addString("Item " .. level[1][1], Colors.ItemLevel)
-      end
-
-	  local info = string.split(text, "oz.")
-	if info[2] and #info[2] ~= 0 then
-		info[2] = string.gsub(info[2], "^%s*", "") -- Remove leading spaces
-		info[2] = string.gsub(info[2], "[()]", "") -- Remove parentheses only
-		addSeparator()
-		addEmpty(5)
-		addString(info[2], Colors.physical)
-	end
-
-      if #capacity ~= 0 then
-        addSeparator()
-          addEmpty(10)
-          local weightText = "Weight: " .. capacity[1][2] .. " oz"
-          addString(weightText, Colors.Default)
-      end
-
-  end
-  return
-end
-
-
-function onHoverChange(widget, hovered)
-  local item = widget:getItem()
-  if not item or widget:getId() == "containerItemWidget" or widget:isVirtual() then
-    return
-  end
-
-  if hovered then
-    hoveredItem = item
-      protection = false
-      skills = false
-      mana_health = false
-      attrrrrrr = false
-      tooltipWidth = 0
-      longestString = 0
-      tooltipWidthBase = BASE_WIDTH
-      tooltipHeight = BASE_HEIGHT
-      tooltipWindow:setWidth(tooltipWidth)
-      tooltipWindow:setHeight(tooltipHeight)
-      labels:destroyChildren()
-      itemSprite:setItemId(hoveredItem:getId())
-      itemSprite:setItemCount(hoveredItem:getCount())
-      itemSprite_2:setItemId(hoveredItem:getId())
-      itemSprite_2:setItemCount(hoveredItem:getCount())
-      onItemChangesss(widget)
-      shrinkSeparators()
-      showItemTooltip()
-  else
-    hoveredItem = nil
-    tooltipWindow:hide()
-  end
-end
-
-function addString(text, color, resize)
-  local label = g_ui.createWidget("TooltipLabel", labels)
-  label:setColor(color)
-
-  if resize then
-    tooltipWindow:setWidth(tooltipWidth)
-    label:setTextWrap(true)
-    label:setTextAutoResize(true)
-    label:setText(text)
-    tooltipHeight = tooltipHeight + label:getTextSize().height + 4
-  else
-    label:setText(text)
-    local textSize = label:getTextSize()
-    if longestString == 0 then
-      longestString = textSize.width + itemWeightLabel:getWidth()
-      tooltipWidth = tooltipWidthBase + longestString
-      label:addAnchor(AnchorTop, "parent", AnchorTop)
-    elseif textSize.width > longestString then
-      longestString = textSize.width
-      tooltipWidth = tooltipWidthBase + longestString
-    end
-    tooltipHeight = tooltipHeight + textSize.height
-  end
-end
-
-function shrinkSeparators()
-  local children = labels:getChildren()
-  local m = math.max(60, math.floor(tooltipWidth / 4))
-  for _, child in ipairs(children) do
-    if child:getStyleName() == "TooltipSeparator" then
-      child:setMarginLeft(m)
-      child:setMarginRight(m)
-    end
-  end
-end
-
-function addSeparator()
-  local sep = g_ui.createWidget("TooltipSeparator", labels)
-  tooltipHeight = tooltipHeight + sep:getHeight() + sep:getMarginTop() + sep:getMarginBottom()
-end
-
-function addEmpty(height)
-  local empty = g_ui.createWidget("TooltipEmpty", labels)
-  empty:setHeight(height)
-  tooltipHeight = tooltipHeight + height
-end
-
-function showItemTooltip()
-  local mousePos = g_window.getMousePosition()
-  tooltipHeight = math.max(tooltipHeight, 40)
-  tooltipWindow:setWidth(tooltipWidth)
-  tooltipWindow:setHeight(tooltipHeight)
-  tooltipWindow:setBorderWidth(1)
-	tooltipWindow:setBorderColor("white")
-  
-  local windowSize = g_window.getSize()
-  if mousePos.x > windowSize.width / 2 then
-    tooltipWindow:move(mousePos.x - (tooltipWidth + 2), math.min(windowSize.height - tooltipHeight, mousePos.y + 5))
-  else
-    tooltipWindow:move(mousePos.x + 5, mousePos.y + 10)
-  end
-  tooltipWindow:raise()
-  tooltipWindow:show()
-  g_effects.fadeIn(tooltipWindow, 500)
+  disconnect(UIItem, { onHoverChange = handlers.hover, onItemChange = handlers.change })
+  disconnect(LocalPlayer, { onInventoryChange = handlers.inventory })
+  disconnect(g_game, { onGameEnd = handlers.reset, onGameStart = handlers.reset })
+  pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
+  if askEvent then removeEvent(askEvent) askEvent = nil end
+  if pollEvent then removeEvent(pollEvent) pollEvent = nil end
+  reset()
 end

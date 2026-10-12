@@ -1,7 +1,7 @@
 Module
   name: game_chaoshud
   description: Character plate over the top-left of the map: portrait, level, health, mana and experience
-  author: Chaos
+  author: Cinders of Chaos
   sandboxed: true
   autoload: true
   autoload-priority: 900

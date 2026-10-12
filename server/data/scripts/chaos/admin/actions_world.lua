@@ -34,7 +34,8 @@ reg{id = "spawn_npc", name = "Spawn NPC", description = "Create an NPC by name."
 		return true, "Spawned NPC " .. p.name .. "."
 	end}
 
-reg{id = "create_item", name = "Create item on tile", description = "Create an item (id or name) on a tile.",
+-- creates items (economy): administrators like economy.*
+reg{id = "create_item", name = "Create item on tile", description = "Create an item (id or name) on a tile.", minGroup = 5,
 	params = {{name = "item", label = "Item id or name", type = "string", max = 60}, POS_OPT,
 		{name = "count", label = "Count", type = "int", min = 1, max = 1000, default = 1}},
 	handler = function(actor, p)

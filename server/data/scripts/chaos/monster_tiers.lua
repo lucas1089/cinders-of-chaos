@@ -7,11 +7,13 @@
 --   boss 4-5, see cfg.modCount) from ChaosMods: burning hits, venom, vampiric, stoneskin, ...
 -- * Shaders: the monster is drawn with the outfit shader of its strongest modifier (ids 1-17 of
 --   data/XML/shaders.xml, registered by the client). A rotating magic effect shows the others.
--- * Roll on spawn: every spawned monster rolls cfg.spawnChance (per 10000).
+-- * Roll on spawn: every spawned monster rolls cfg.spawnChance (per 10000). The tier is applied at its first think,
+--   after the placement (the engine gives a monster its id there); see "natural roll on spawn" below.
 -- * Ambush on kill: when a player kills a monster there is a chance that a magic, rare or
 --   legendary copy of it appears next to the corpse (cfg.ambush).
 -- * Client (game_monsterbar): {"action":"query","data":{"cid":N}} when the player targets a creature,
---   answered with {"action":"info","data":{"cid","tier","label","mods":["Blazing",..],"mult":{..}}}.
+--   answered with {"action":"info","data":{"cid","tier","label","role","level","mods":["Blazing",..],"mult":{..}}}
+--   (role: "guardian" for a rift guardian, "omen" for an Omen guardian; level: ChaosLoot.monsterLevel).
 --
 -- Not verified on a running server. Assumed engine API: EventCallback onSpawn (Monster:onSpawn in
 -- data/events/scripts/monster.lua), onGainExperience (arg 3 modifiable), CreatureEvent "death" and
@@ -20,6 +22,11 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
 end
 
 local OPCODE = ChaosOpcodes.monsterbar
@@ -43,9 +50,23 @@ local cfg = {
 	bossMods = true, -- bosses get modifiers (and their shader)
 	modCount = {magic = {1, 2}, rare = {2, 3}, legendary = {3, 4}, boss = {4, 5}},
 	tickMs = 2500, -- ambient effect / regeneration step
-	announceLegendary = true
+	announceLegendary = true,
+	-- the spawn chance multipliers (event day x Chaos Storm ...) multiply, at most this much together
+	maxSpawnMult = 3.0
 }
 ChaosTierConfig = cfg
+
+-- the multiplier on spawnChance at a position: the Chaos Rift day (events_schedule.lua) x the Chaos Storm
+-- (worldevents.lua), capped at cfg.maxSpawnMult (2 x 1.5 x 3 was 9x)
+function ChaosTierSpawnMult(position)
+	local m = ChaosEvents and ChaosEvents.bonus("tierChance") or 1
+	m = m * (ChaosWorldEvents and ChaosWorldEvents.tierMult and ChaosWorldEvents.tierMult(position) or 1)
+	local cap = tonumber(cfg.maxSpawnMult)
+	if cap and m > cap then
+		m = cap
+	end
+	return m
+end
 
 -- World bosses (worldboss.lua): boss tier for the client (their XML also has isboss="1"; this is the fallback) but
 -- no random modifiers: Regenerating, Juggernaut or Explosive (5% of max health on death) would wreck the tuned fight.
@@ -124,10 +145,13 @@ table.sort(ChaosModList)
 -- creature id -> {tier = "rare", depth = 0, mods = {"blazing", ...}, step = 0}
 ChaosTierState = ChaosTierState or {}
 local state = ChaosTierState
-local pendingTier, pendingDepth = nil, 0
+-- older versions applied the natural roll inside onSpawn, before the monster had an id, and left an entry under id 0
+-- (the table outlives a reload); no monster has id 0, drop it
+state[0] = nil
+local pendingTier -- set around the creation of an ambush copy (no natural roll for it)
 
 local function isBoss(monster)
-	local name = monster:getName():lower()
+	local name = typeNameOf(monster):lower() -- a renamed rift monster or invader is still its type
 	if cfg.bosses[name] then
 		return true
 	end
@@ -156,7 +180,7 @@ local function eligible(monster)
 	if monster:getMaster() then
 		return false
 	end
-	if cfg.skip[monster:getName():lower()] or isBoss(monster) then
+	if cfg.skip[typeNameOf(monster):lower()] or isBoss(monster) then
 		return false
 	end
 	return monster:getMaxHealth() >= cfg.minMaxHealth
@@ -213,6 +237,26 @@ local function applyMods(monster, mods)
 	monster:registerEvent("ChaosModTaken")
 end
 
+-- the monster bar's role of a creature: "omen" (an Omen guardian) or "guardian" (a rift guardian), read from
+-- rift.lua's run of the monster (ChaosRift.monsterRun, run.bossIds); nil for every other monster
+local function roleOf(creature)
+	local rift = ChaosRift
+	local run = rift and rift.monsterRun and rift.monsterRun[creature:getId()]
+	if run and run.bossIds and run.bossIds[creature:getId()] then
+		return run.omen and "omen" or "guardian"
+	end
+	return nil
+end
+
+-- the level the monster bar shows: the one the item level uses (loot.lua ChaosLoot.monsterLevel)
+local function levelOf(creature)
+	if not (ChaosLoot and ChaosLoot.monsterLevel) then
+		return nil
+	end
+	local ok, level = pcall(ChaosLoot.monsterLevel, creature)
+	return ok and tonumber(level) and math.floor(level) or nil
+end
+
 -- one "info" message for a creature (used for the monster bar query and for the in-world labels)
 local function sendInfo(player, creature)
 	local cid = creature:getId()
@@ -228,6 +272,8 @@ local function sendInfo(player, creature)
 		tier = tier,
 		name = creature:getName(),
 		label = (t and tier ~= "boss") and t.label or nil,
+		role = roleOf(creature),
+		level = levelOf(creature),
 		mods = names,
 		mult = t and {hp = t.hp, damage = t.damage, xp = t.xp} or nil
 	})
@@ -311,38 +357,69 @@ local function pickWeighted(weights)
 	end
 end
 
--- natural roll on spawn
+-- shown names (Chaos.createMonsterNamed: rift monsters, their ambush copies): renamed before the placement and before
+-- every other onSpawn callback, so the first creature packet and "A legendary ... appears!" carry the name
+local nameCb = EventCallback
+nameCb.onSpawn = function(self, position, startup, artificial)
+	local name = Chaos.spawnName
+	if name then
+		Chaos.spawnName = nil -- one monster per call; a creature made inside another callback keeps its own name
+		self:rename(name, Chaos.nameDescriptionOf and Chaos.nameDescriptionOf(name) or name:lower())
+	end
+	return true
+end
+nameCb:register(-100)
+
+-- natural roll on spawn. The engine runs onSpawn before the placement and gives a monster its id at the placement, so
+-- the roll is decided here and applied at the monster's first think (a think event per tier that removes itself), where
+-- the monster has its id: tier state, the modifier tick and the monster bar are keyed by that id. A map respawn thinks
+-- right after it is placed; a startup spawn once a player comes near.
+local rollEvent = {}
+for _, tier in ipairs({"magic", "rare", "legendary", "boss"}) do
+	local name = "ChaosTierRoll" .. tier:sub(1, 1):upper() .. tier:sub(2)
+	rollEvent[tier] = name
+	local ev = CreatureEvent(name)
+	function ev.onThink(creature, interval)
+		creature:unregisterEvent(name)
+		-- a tier set in between (ChaosApplyTier: rift, invasion, tower) wins over the natural roll
+		if creature:isMonster() and creature:getId() ~= 0 and not state[creature:getId()]
+				and (tier == "boss" or eligible(creature)) then
+			applyTier(creature, tier, 0)
+		end
+		return true
+	end
+	ev:register()
+end
+
 local spawnCb = EventCallback
 spawnCb.onSpawn = function(self, position, startup, artificial)
 	if pendingTier then
-		local tier, depth = pendingTier, pendingDepth
+		-- an ambush copy: no roll of its own; the ambush applies its tier once it is placed
 		pendingTier = nil
-		if eligible(self) then
-			applyTier(self, tier, depth)
-		end
 		return true
 	end
 	if eligible(self) then
 		local roll = math.random(10000)
-		local eventMult = ChaosEvents and ChaosEvents.bonus("tierChance") or 1
+		local eventMult = ChaosTierSpawnMult(position or self:getPosition())
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
 			if roll <= cfg.spawnChance[tier] * eventMult then
-				applyTier(self, tier, 0)
+				self:registerEvent(rollEvent[tier])
 				return true
 			end
 		end
-	elseif cfg.bossMods and not self:getMaster() and not cfg.skip[self:getName():lower()] and isBoss(self) then
-		applyTier(self, "boss", 0)
+	elseif cfg.bossMods and not self:getMaster() and not cfg.skip[typeNameOf(self):lower()] and isBoss(self) then
+		self:registerEvent(rollEvent.boss)
 	end
 	return true
 end
 spawnCb:register()
 
--- applyTier registers the death event for tiered monsters; normal ones get it here so that
--- killing a normal monster can also bring an ambush.
+-- applyTier registers the death event for tiered monsters; every eligible one gets it here as well (a second
+-- registration is a no-op), so that killing a normal monster can also bring an ambush. No tier state is read here:
+-- the monster has no id yet.
 local normalDeath = EventCallback
 normalDeath.onSpawn = function(self, position, startup, artificial)
-	if not state[self:getId()] and eligible(self) then
+	if eligible(self) then
 		self:registerEvent("ChaosTierDeath")
 	end
 	return true
@@ -383,11 +460,20 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	end
 	local newTier = pickWeighted(cfg.ambushTier)
 	local pos = creature:getPosition()
-	addEvent(function(name, position, nt, d)
-		pendingTier, pendingDepth = nt, d
-		Game.createMonster(name, position, true, false)
+	addEvent(function(typeName, shown, position, nt, d, look)
+		pendingTier = nt
+		local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
+		local copy = create(typeName, position, true, false, shown) -- a rift name carries over
 		pendingTier = nil
-	end, 600, creature:getName(), pos, newTier, depth + 1)
+		if copy and eligible(copy) then
+			applyTier(copy, nt, d)
+		end
+		-- the copy wears what the original wore (a rift look), with its own tier's shader
+		if copy and look and copy:getOutfit().lookType ~= look.lookType then
+			look.lookShader = copy:getOutfit().lookShader
+			copy:setOutfit(look)
+		end
+	end, 600, typeNameOf(creature), creature:getName(), pos, newTier, depth + 1, creature:getOutfit())
 	pos:sendMagicEffect(CONST_ME_TELEPORT)
 	return true
 end

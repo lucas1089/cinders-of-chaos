@@ -1,0 +1,262 @@
+// Map overlay (game_mapoverlay): see-through explored map over the game view + its settings window.
+// Styles from client_chaos_theme (styles.otui). Mark icons: /images/chaos/mapoverlay/<kind>.png
+// (client/tools/gen_mapoverlay_icons.py).
+
+MapOverlayMark < UIWidget
+  size: 14 14
+  phantom: true
+  focusable: false
+  image-smooth: true
+
+MapOverlayYou < ChaosLabel
+  phantom: true
+  focusable: false
+  text-auto-resize: true
+  color: #f6cf72
+  background-color: #0d0b0ecc
+
+MapOverlayRow < UIWidget
+  height: 22
+  margin-top: 6
+  anchors.left: parent.left
+  anchors.right: parent.right
+
+MapOverlayStepButton < ChaosButton
+  size: 22 20
+  anchors.verticalCenter: parent.verticalCenter
+
+MapOverlayRowLabel < ChaosLabel
+  anchors.left: parent.left
+  anchors.verticalCenter: parent.verticalCenter
+  width: 70
+  text-align: left
+
+MapOverlayValue < ChaosLabel
+  width: 52
+  text-align: center
+  anchors.verticalCenter: parent.verticalCenter
+
+MapOverlayCheck < ChaosCheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin-top: 8
+
+// the overlay itself: child of the game map panel, never takes the mouse
+// its rect follows the area where the game view draws the map (set from Lua every tick)
+MapOverlay < UIWidget
+  id: mapOverlay
+  phantom: true
+  focusable: false
+  clipping: true
+  border-width: 0
+  border-color: #7d7176
+
+  UIMinimap
+    id: map
+    phantom: true
+    focusable: false
+    color: alpha
+
+  UIWidget
+    id: marks
+    anchors.fill: parent
+    phantom: true
+    focusable: false
+
+// the compact control strip in a corner of the game view: the only clickable part of the overlay
+MapOverlayStripButton < ChaosButton
+  size: 22 20
+  padding: 0
+  anchors.top: parent.top
+  margin-top: 4
+  margin-left: 2
+
+MapOverlayStripValue < ChaosLabel
+  size: 36 20
+  text-align: center
+  anchors.top: parent.top
+  margin-top: 4
+
+MapOverlayStrip < UIWidget
+  id: mapOverlayStrip
+  size: 336 44
+  background-color: #0d0b0ee6
+  border-width: 1
+  border-color: #7d7176
+  focusable: false
+
+  MapOverlayStripButton
+    id: opMinus
+    text: -
+    anchors.left: parent.left
+    margin-left: 4
+    @onClick: modules.game_mapoverlay.stepOpacity(-0.1)
+  MapOverlayStripValue
+    id: opValue
+    anchors.left: prev.right
+    margin-left: 0
+  MapOverlayStripButton
+    id: opPlus
+    text: +
+    anchors.left: prev.right
+    margin-left: 0
+    @onClick: modules.game_mapoverlay.stepOpacity(0.1)
+  MapOverlayStripButton
+    id: zMinus
+    text: -
+    anchors.left: prev.right
+    margin-left: 10
+    @onClick: modules.game_mapoverlay.zoom(-1)
+  MapOverlayStripValue
+    id: zValue
+    anchors.left: prev.right
+    margin-left: 0
+  MapOverlayStripButton
+    id: zPlus
+    text: +
+    anchors.left: prev.right
+    margin-left: 0
+    @onClick: modules.game_mapoverlay.zoom(1)
+  MapOverlayStripButton
+    id: centre
+    !text: tr('Centre')
+    width: 54
+    anchors.left: prev.right
+    margin-left: 10
+    @onClick: modules.game_mapoverlay.centre()
+  MapOverlayStripButton
+    id: close
+    text: x
+    anchors.left: prev.right
+    margin-left: 4
+    @onClick: modules.game_mapoverlay.setShown(false)
+  ChaosLabelDim
+    id: status
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 6
+    margin-right: 4
+    margin-bottom: 3
+    text-align: left
+
+MapOverlaySettings < ChaosMainWindow
+  id: mapOverlaySettings
+  !text: tr('Map Overlay')
+  size: 330 396
+
+  ChaosCheckBox
+    id: showBox
+    !text: tr('Show the overlay')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    @onCheckChange: modules.game_mapoverlay.setShown(self:isChecked())
+
+  MapOverlayRow
+    id: opacityRow
+    anchors.top: showBox.bottom
+    margin-top: 10
+    MapOverlayRowLabel
+      !text: tr('Opacity')
+    MapOverlayStepButton
+      id: minus
+      text: -
+      anchors.left: prev.right
+      @onClick: modules.game_mapoverlay.stepOpacity(-0.1)
+    MapOverlayValue
+      id: value
+      anchors.left: prev.right
+    MapOverlayStepButton
+      id: plus
+      text: +
+      anchors.left: prev.right
+      @onClick: modules.game_mapoverlay.stepOpacity(0.1)
+
+  MapOverlayRow
+    id: zoomRow
+    anchors.top: opacityRow.bottom
+    MapOverlayRowLabel
+      !text: tr('Zoom')
+    MapOverlayStepButton
+      id: minus
+      text: -
+      anchors.left: prev.right
+      @onClick: modules.game_mapoverlay.zoom(-1)
+    MapOverlayValue
+      id: value
+      anchors.left: prev.right
+    MapOverlayStepButton
+      id: plus
+      text: +
+      anchors.left: prev.right
+      @onClick: modules.game_mapoverlay.zoom(1)
+
+  MapOverlayRow
+    id: modeRow
+    anchors.top: zoomRow.bottom
+    MapOverlayRowLabel
+      !text: tr('Position')
+    ChaosComboBox
+      id: mode
+      anchors.left: prev.right
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+
+  MapOverlayCheck
+    id: stripBox
+    anchors.top: modeRow.bottom
+    margin-top: 10
+    !text: tr('Show the control strip')
+    @onCheckChange: modules.game_mapoverlay.setStrip(self:isChecked())
+
+  ChaosSeparator
+    id: sep1
+    anchors.top: stripBox.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+
+  MapOverlayCheck
+    id: partyBox
+    anchors.top: sep1.bottom
+    !text: tr('Party members')
+    @onCheckChange: modules.game_mapoverlay.setFilter('party', self:isChecked())
+
+  MapOverlayCheck
+    id: townBox
+    anchors.top: prev.bottom
+    !text: tr('Temple, depots and NPCs')
+    @onCheckChange: modules.game_mapoverlay.setFilter('town', self:isChecked())
+
+  MapOverlayCheck
+    id: eventsBox
+    anchors.top: prev.bottom
+    !text: tr('Rifts, bosses, goblins, invasions')
+    @onCheckChange: modules.game_mapoverlay.setFilter('events', self:isChecked())
+
+  ChaosSeparator
+    id: sep2
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+
+  ChaosLabelDim
+    id: keyLabel
+    anchors.top: sep2.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-wrap: true
+    text-auto-resize: true
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    !text: tr('Close')
+    width: 70
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_mapoverlay.hideSettings()

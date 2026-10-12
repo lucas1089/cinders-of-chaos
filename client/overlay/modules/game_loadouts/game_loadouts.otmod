@@ -1,0 +1,13 @@
+Module
+  name: game_loadouts
+  description: Loadouts (Armory) - save whole builds (passive tree, Paragon, supports, gear set) and switch between them for free; extended opcode 206
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ loadoutsview, loadouts ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

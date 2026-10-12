@@ -1,0 +1,12 @@
+Module
+  name: game_tileoverlays
+  description: Tile overlays - seconds left over magic walls, wild growth and other timed fields (Options > Interface "Field timers"), and the server's progress bars over map positions (extended opcode 156)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ tileoverlayslogic, fielddata, tileoverlays ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

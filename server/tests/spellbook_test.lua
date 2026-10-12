@@ -215,8 +215,13 @@ B.chunkBytes = 1500 -- force several packets
 -- chunks go out one per tick: run the scheduled sends right away, in order
 function addEvent(fn, delay, ...) fn(...) end
 function Player(id) return id == p.id and p or nil end
-assert(talks["!spells"] and talks["/spells"], "both talkactions registered")
-eq(talks["!spells"].onSay(p, "!spells", ""), false, "talkaction returns false")
+assert(talks["/spells"] and not talks["!spells"], "only the staff talkaction (players: the menu)")
+eq(talks["/spells"].onSay(p, "/spells", ""), false, "players: said as chat, nothing sent")
+eq(#sent, 0, "nothing sent to a player")
+local gmGroup = p.getGroup
+function p:getGroup() return {getAccess = function() return true end} end
+eq(talks["/spells"].onSay(p, "/spells", ""), false, "talkaction returns false")
+p.getGroup = gmGroup
 eq(sent[1].action, "open", "open first"); eq(sent[1].opcode, 219, "opcode on the wire")
 eq(sent[1].data.vocation, 5, "player vocation"); eq(sent[1].data.level, 120, "level"); eq(sent[1].data.magicLevel, 60, "magic level")
 eq(sent[1].data.total, 12, "total")
@@ -233,7 +238,9 @@ eq(sent[#sent].action, "done", "done last")
 
 -- a second open right away is throttled; the opcode path reaches the same sender
 local before = #sent
-talks["!spells"].onSay(p, "!spells", "")
+p.getGroup = function() return {getAccess = function() return true end} end
+talks["/spells"].onSay(p, "/spells", "")
+p.getGroup = gmGroup
 eq(#sent, before, "throttled"); assert(p.cancel, "throttle message")
 registry["ChaosSpellbookLogout"].onLogout(p)
 registry["ChaosSpellbookExtended"].onExtendedOpcode(p, 219, {action = "open"})
@@ -252,4 +259,11 @@ assert(gm.msgs[1] and gm.msgs[1]:find("12 spells"), "reload message")
 -- control characters from script files (CR, tabs, NUL) never reach the client
 assert(ChaosSpellbook.clean("Heals\r\nyou\0 and\tfriends") == "Heals you and friends", "clean control characters")
 assert(ChaosSpellbook.clean({a = {"x\0y"}}).a[1] == "x y", "clean nested")
+-- the class helpers deal the damage: their element and kind come from the helper call (Monk, Templar, Necromancer)
+local monk = B.analyzeScript("dofile('data/spells/scripts/chaos/_monk.lua')\nfunction onCastSpell(c, v)\n\tMonkSpell.strike(p, t, f, 1)\nend\n")
+eq(monk.damage[1], "physical", "Monk strike: physical")
+eq(monk.scaling, "fist skill x fist attack (or a staff)", "Monk strike: scaling")
+eq(B.analyzeScript("TemplarSpell.holyStrike(player, target, min, max)\n").damage[1], "holy", "Templar strike: holy")
+eq(B.analyzeScript("NecroSpell.curse(player, classKey, target)\n").damage[1], "death", "Necromancer curse: death")
+eq(B.analyzeScript("local m = L.raise(player, kind, pos)\n").summon, true, "Necromancer minions: a summon")
 print("spellbook: all asserts passed")

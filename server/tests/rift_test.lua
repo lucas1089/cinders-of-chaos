@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/rift_test.lua (CI runs it with LuaJIT and Lua 5.3)
--- Pure rift logic (rift_core.lua + rift_config.lua): modifier rolling, key format, reward scaling, key drop odds,
--- slot allocation and layout, the run timer / fail / boss bookkeeping and the experience cap.
+-- Pure rift logic (rift_core.lua + rift_config.lua): modifier rolling and tiers, key format, reward scaling, key drop odds,
+-- slot allocation and layout, the run timer / fail / boss bookkeeping, lives, omens and the experience cap.
 local cfg = dofile("data/scripts/chaos/rift_config.lua")
 dofile("data/scripts/chaos/rift_core.lua")
 local R = ChaosRiftCore
@@ -50,8 +50,13 @@ do
 		end
 		eq(key.tier, 4, "tier kept")
 	end
+	-- every modifier a tier-4 key may roll shows up about in proportion to its weight; the gated ones never do
 	for _, def in ipairs(cfg.mods) do
-		ok((seenMods[def.key] or 0) > 200, "every modifier rolls: " .. def.key)
+		if (def.minTier or 1) <= 4 then
+			ok((seenMods[def.key] or 0) > 2.5 * R.modWeight(def), "every modifier rolls: " .. def.key .. " " .. tostring(seenMods[def.key]))
+		else
+			eq(seenMods[def.key], nil, "tier gating: " .. def.key)
+		end
 	end
 	-- weights 50 / 35 / 15
 	ok(math.abs(counts[1] / 3000 - 0.50) < 0.04, "one modifier ~50%")
@@ -83,7 +88,7 @@ do
 			swarm = m
 		end
 	end
-	eq(swarm and swarm.value, 3, "decode clamps down to the range")
+	eq(swarm and swarm.value, R.modDef(cfg, "swarm").range[2], "decode clamps down to the range")
 	eq(#R.decodeMods(cfg, nil), 0, "decode nil")
 	for _, m in ipairs(key.mods) do
 		local u = R.unpackMod(cfg, R.packMod(cfg, m))
@@ -178,25 +183,27 @@ end
 -- ------------------------------------------------------------------ rewards
 do
 	local rand = rng(3)
+	local g2 = cfg.reward.goldPerTier2
 	local r4 = R.reward(cfg, 4, {quantity = 0, rarity = 0}, rand)
-	eq(r4.gold, 160000, "tier 4 gold")
+	eq(r4.gold, g2 * 16, "tier 4 gold")
 	eq(r4.lootTier, "rare", "tier 4 loot tier")
 	local r4q = R.reward(cfg, 4, {quantity = 50, rarity = 40}, rand)
-	eq(r4q.gold, 240000, "quantity bonus scales gold")
+	eq(r4q.gold, math.floor(g2 * 16 * 1.5), "quantity bonus scales gold")
 	ok(math.abs(r4q.rarityMult - 1.4) < 1e-9, "rarity bonus multiplier")
-	eq(R.reward(cfg, 10, {quantity = 0}, rand).gold, 1000000, "tier 10 gold")
-	eq(R.reward(cfg, 12, {quantity = 0}, rand).gold, math.floor(10000 * 144 * 1.2), "tier 12 gold with the beyond bonus")
+	eq(R.reward(cfg, 10, {quantity = 0}, rand).gold, g2 * 100, "tier 10 gold")
+	eq(R.reward(cfg, 12, {quantity = 0}, rand).gold, math.floor(g2 * 144 * 1.2), "tier 12 gold with the beyond bonus")
 	eq(R.lootTier(cfg, 2), "magic", "tier 2 loot tier")
 	eq(R.lootTier(cfg, 10), "legendary", "tier 10 loot tier")
 	eq(R.lootTier(cfg, 11), "boss", "tier 11 loot tier")
-	-- expected orbs: (1 + 0.5 t) chaos, 0.25 t divine, x quantity
+	-- expected orbs: (base + perTier x t) x quantity
+	local rc, rd = cfg.reward.chaos, cfg.reward.divine
 	local n, chaos, divine, rolls = 4000, 0, 0, 0
 	for _ = 1, n do
 		local r = R.reward(cfg, 6, {quantity = 20}, rand)
 		chaos, divine, rolls = chaos + r.chaos, divine + r.divine, rolls + r.rolls
 	end
-	ok(math.abs(chaos / n - 4 * 1.2) < 0.08, "mean Chaos Orbs tier 6: " .. chaos / n)
-	ok(math.abs(divine / n - 1.5 * 1.2) < 0.06, "mean Divine Orbs tier 6: " .. divine / n)
+	ok(math.abs(chaos / n - (rc.base + rc.perTier * 6) * 1.2) < 0.05, "mean Orbs of Upheaval tier 6: " .. chaos / n)
+	ok(math.abs(divine / n - (rd.base + rd.perTier * 6) * 1.2) < 0.04, "mean Orbs of Fate tier 6: " .. divine / n)
 	ok(math.abs(rolls / n - (2 + 0.5 * 6) * 1.2) < 0.1, "mean item rolls tier 6: " .. rolls / n)
 	local last = 0
 	for t = 1, cfg.maxTier do
@@ -398,6 +405,611 @@ do
 		normal = normal + rate * R.capFactor(cfg, st3, 950, rate, minute)
 	end
 	ok(math.abs(normal - rate * 10) < 1, "model-speed hunting is never cut")
+end
+
+-- ------------------------------------------------------------------ map modifiers (second set)
+do
+	local function def(k)
+		return (R.modDef(cfg, k))
+	end
+	-- ten new modifiers with a weight, a description and (for the hard ones) a reward bonus
+	local new = {"teeming", "gilded", "warband", "coffer", "twin", "echo", "cinder", "blight", "waning", "dread"}
+	for _, k in ipairs(new) do
+		local d = def(k)
+		ok(d ~= nil, "new modifier " .. k)
+		ok(d and d.weight and d.weight > 0, "weight " .. k)
+		ok(d and (d.boon or d.reward ~= nil), "reward bonus or boon " .. k)
+		ok(d and #R.modText(cfg, {key = k, value = d.range[2]}) > 10, "text " .. k)
+		ok(d and not R.modText(cfg, {key = k, value = d.range[1]}):find("%%d"), "text formatted " .. k)
+	end
+	-- the first eight keep their storage index (crash refund marker)
+	eq(select(2, R.modDef(cfg, "swarm")), 8, "swarm still index 8")
+	-- tier gating
+	local rand = rng(21)
+	local seen1, seen15 = {}, {}
+	for _ = 1, 4000 do
+		for _, m in ipairs(R.rollKey(cfg, 1, rand).mods) do
+			seen1[m.key] = true
+		end
+		for _, m in ipairs(R.rollKey(cfg, 15, rand).mods) do
+			seen15[m.key] = true
+		end
+	end
+	for _, d in ipairs(cfg.mods) do
+		if (d.minTier or 1) > 1 then
+			ok(not seen1[d.key], "tier 1 never rolls " .. d.key)
+		else
+			ok(seen1[d.key], "tier 1 rolls " .. d.key)
+		end
+		ok(seen15[d.key], "tier 15 rolls " .. d.key)
+	end
+	-- weights: Teeming (80) rolls about twice as often as Gilded Trail (40)
+	local cnt = {}
+	local r2 = rng(33)
+	for _ = 1, 20000 do
+		for _, m in ipairs(R.rollMods(cfg, 1, r2, 15)) do
+			cnt[m.key] = (cnt[m.key] or 0) + 1
+		end
+	end
+	local ratio = cnt.teeming / cnt.gilded
+	ok(ratio > 1.7 and ratio < 2.3, "weights: teeming / gilded ~2: " .. ratio)
+	-- addMods (orbs): respects the tier, no duplicates, config order
+	local key = {tier = 1, mods = {{key = "waning", value = 20}}}
+	local added = R.addMods(cfg, key, 2, rng(4))
+	eq(#added, 2, "addMods adds two")
+	eq(#key.mods, 3, "key has three")
+	local last = 0
+	for _, m in ipairs(key.mods) do
+		ok((def(m.key).minTier or 1) <= 1, "addMods respects the tier: " .. m.key)
+		local _, i = R.modDef(cfg, m.key)
+		ok(i > last, "addMods keeps config order")
+		last = i
+	end
+	-- packing a new modifier for the crash refund marker
+	local u = R.unpackMod(cfg, R.packMod(cfg, {key = "dread", value = 125}))
+	eq(u.key .. u.value, "dread125", "pack / unpack dread")
+
+	-- bonuses and the cap
+	local b = R.bonuses(cfg, {{key = "warband", value = 30}, {key = "blight", value = 50}, {key = "dread", value = 150}})
+	eq(b.rarity, cfg.bonusCap.rarity, "rarity capped") -- 85 > 75 -> 75
+end
+
+do
+	local b = R.bonuses(cfg, {{key = "warband", value = 30}, {key = "blight", value = 50}, {key = "dread", value = 150}})
+	eq(b.quantity, 9 + 10 + 15, "quantity of warband + blight + dread")
+	eq(b.experience, 15, "experience of blight")
+	local q = R.bonuses(cfg, {{key = "vitality", value = 60}, {key = "waning", value = 30}, {key = "swarm", value = 3}})
+	eq(q.quantity, cfg.bonusCap.quantity, "quantity capped (30 + 30 + 24 = 84 -> 80)")
+	-- the old eight never reach a cap: the best three of each kind
+	local best = {quantity = 0, rarity = 0, experience = 0}
+	local old = {}
+	for i = 1, 8 do
+		old[i] = cfg.mods[i]
+	end
+	for a = 1, 8 do
+		for bb = a + 1, 8 do
+			for c = bb + 1, 8 do
+				local mods = {}
+				for _, i in ipairs({a, bb, c}) do
+					-- the top of tier III = the old top of the range
+					mods[#mods + 1] = {key = old[i].key, value = select(2, R.tierBounds(old[i], 3))}
+				end
+				local raw = R.bonuses({mods = cfg.mods, tiers = cfg.tiers, beyond = cfg.beyond, maxTier = cfg.maxTier}, mods)
+				for k, v in pairs(raw) do
+					best[k] = math.max(best[k], v)
+				end
+			end
+		end
+	end
+	for k, v in pairs(best) do
+		ok(v <= cfg.bonusCap[k], "old combinations stay under the " .. k .. " cap: " .. v)
+	end
+
+	-- effects
+	local fx = R.effects(cfg, {{key = "teeming", value = 50}, {key = "gilded", value = 40}, {key = "warband", value = 20},
+		{key = "coffer", value = 60}, {key = "twin", value = 60}, {key = "echo", value = 10}, {key = "cinder", value = 10},
+		{key = "blight", value = 30}, {key = "waning", value = 20}, {key = "dread", value = 100}}, 5)
+	ok(math.abs(fx.packMult - 1.5) < 1e-9, "teeming x1.5")
+	eq(fx.gilded, 40, "gilded chance")
+	eq(fx.warband, 20, "warband share")
+	eq(fx.coffer, 60, "coffer chance")
+	ok(math.abs(fx.twin - 0.6) < 1e-9, "twin share")
+	eq(fx.echo, 10, "echo chance")
+	ok(math.abs(fx.cinder - 0.1) < 1e-9, "cinder share")
+	ok(math.abs(fx.healMult - 0.7) < 1e-9, "blight x0.7")
+	ok(math.abs(fx.timeMult - 0.8) < 1e-9, "waning x0.8")
+	ok(math.abs(fx.boss - 2) < 1e-9, "dread x2")
+	local none = R.effects(cfg, {}, 5)
+	eq(none.packMult .. none.healMult .. none.timeMult .. none.boss .. none.twin, "11110", "neutral effects")
+
+	-- plan: Teeming packs, Warbands, the goblin threshold, the coffer room
+	local types = {{name = "A", level = 300}, {name = "B", level = 320}, {name = "C", level = 350}}
+	local base = R.plan(cfg, 4, none, 1, types, {"east"}, rng(8))
+	local more = R.plan(cfg, 4, R.effects(cfg, {{key = "teeming", value = 50}}, 4), 1, types, {"east"}, rng(8))
+	eq(#more.packs, math.floor(#base.packs * 1.5 + 0.5), "teeming: +50% packs")
+	eq(base.gildedAt, nil, "no goblin without the modifier")
+	eq(base.coffer, nil, "no coffer without the modifier")
+	eq(base.guardians, 1, "one guardian")
+	local wb, packs = 0, 0
+	local r = rng(9)
+	local fxw = R.effects(cfg, {{key = "warband", value = 30}}, 4)
+	for _ = 1, 300 do
+		for _, p in ipairs(R.plan(cfg, 4, fxw, 1, types, {"east"}, r).packs) do
+			packs = packs + 1
+			if p.warband then
+				wb = wb + 1
+				eq(p.elites[1], "legendary", "warband leader legendary")
+				for k = 2, p.count do
+					ok(p.elites[k] == "rare" or p.elites[k] == "legendary", "warband members rare+")
+				end
+			end
+		end
+	end
+	ok(math.abs(wb / packs - 0.30) < 0.03, "warbands ~30% of packs: " .. wb / packs)
+	local fxg = R.effects(cfg, {{key = "gilded", value = 100}, {key = "coffer", value = 100}, {key = "twin", value = 55}}, 4)
+	for _ = 1, 200 do
+		local p = R.plan(cfg, 4, fxg, 1, types, {"east", "west"}, r)
+		ok(p.gildedAt and p.gildedAt >= math.ceil(p.total * 0.25) and p.gildedAt <= math.ceil(p.total * 0.60), "goblin at 25-60% kills")
+		ok(p.coffer == "east" or p.coffer == "west", "coffer in an open room")
+		eq(p.guardians, 2, "twin: two guardians")
+	end
+	local hub = R.plan(cfg, 4, fxg, 1, types, {}, r)
+	eq(hub.coffer, "hub", "coffer in the hub when no side room is open")
+	local gch, gn = 0, 2000
+	local fxg40 = R.effects(cfg, {{key = "gilded", value = 40}}, 4)
+	for _ = 1, gn do
+		if R.plan(cfg, 4, fxg40, 1, types, {"east"}, r).gildedAt then
+			gch = gch + 1
+		end
+	end
+	ok(math.abs(gch / gn - 0.4) < 0.04, "goblin chance ~40%: " .. gch / gn)
+
+	-- guardian health: twin share, dread, players
+	local hm = R.guardianHealthMult(cfg, none, 1)
+	ok(math.abs(hm - cfg.boss.healthMult) < 1e-9, "guardian x3")
+	ok(math.abs(R.guardianHealthMult(cfg, R.effects(cfg, {{key = "twin", value = 60}}, 4), 1) - 1.8) < 1e-9, "twin 60% each")
+	ok(math.abs(R.guardianHealthMult(cfg, R.effects(cfg, {{key = "dread", value = 100}}, 4), 2) - 12) < 1e-9, "dread x2, 2 players")
+
+	-- run: Waning Veil shortens the limit, twin guardians need two kills
+	local run = R.newRun(cfg, 1000, 10, 8, R.effects(cfg, {{key = "waning", value = 30}, {key = "twin", value = 60}}, 4))
+	eq(run.limit, 420, "waning: 600 s -> 420 s")
+	eq(run.deadline, 1420, "deadline")
+	eq(run.guardians, 2, "two guardians")
+	for _ = 1, 8 do
+		R.onKill(run)
+	end
+	eq(run.boss, "alive", "guardians out")
+	eq(R.onBossKilled(run, 1100), "twin", "first guardian: twin left")
+	eq(run.state, "running", "still running")
+	eq(R.onBossKilled(run, 1101), "success", "second guardian: sealed")
+	local plain = R.newRun(cfg, 0, 5, 4)
+	eq(plain.limit, cfg.timeLimit, "no fx: the full limit")
+	eq(plain.guardians, 1, "no fx: one guardian")
+
+	-- cinder damage: share of the health, capped by tier
+	eq(R.cinderDamage(cfg, 2000, 0.1, 4), 200, "cinder 10% of 2000")
+	eq(R.cinderDamage(cfg, 100000, 0.15, 4), cfg.cinder.capBase + 4 * cfg.cinder.capPerTier, "cinder cap tier 4")
+	eq(R.cinderDamage(cfg, 2000, 0, 4), 0, "no cinder")
+
+	-- coffer
+	eq(R.cofferWaveSize(cfg, 1), cfg.coffer.wave.base, "wave solo")
+	eq(R.cofferWaveSize(cfg, 3), cfg.coffer.wave.base + 2 * cfg.coffer.wave.perExtraPlayer, "wave 3 players")
+	local cl = R.cofferLoot(cfg, 5, {quantity = 20, rarity = 10}, rng(2))
+	eq(cl.gold, math.floor(cfg.coffer.goldPerTier2 * 25 * 1.2), "coffer gold tier 5 +20%")
+	ok(cl.rolls >= 1 and cl.chaos >= 0, "coffer rolls / chaos")
+	ok(cl.gold < R.reward(cfg, 5, {quantity = 20}, rng(2)).gold, "coffer below the chest")
+	local coins = R.coins(1234567)
+	local total = 0
+	for _, c in ipairs(coins) do
+		total = total + ({[2160] = 10000, [2152] = 100, [2148] = 1})[c[1]] * c[2]
+		ok(c[2] <= 100 and c[2] > 0, "coin stack size")
+	end
+	eq(total, 1234567, "coins sum")
+end
+
+
+-- ------------------------------------------------------------------ modifier tiers
+do
+	-- tiers I-III are exactly the ranges of before the tiers (old keys keep their values and roll the same)
+	local before = {vitality = {20, 60}, brutality = {15, 40}, haste = {40, 120}, elites = {50, 200}, reflection = {5, 15},
+		warding = {10, 30}, swarm = {1, 3}, teeming = {20, 50}, gilded = {30, 70}, warband = {10, 30}, coffer = {40, 100},
+		twin = {55, 75}, echo = {5, 15}, cinder = {5, 15}, blight = {20, 50}, waning = {15, 30}, dread = {50, 150}}
+	for key, r in pairs(before) do
+		local d = R.modDef(cfg, key)
+		eq(R.tierBounds(d, 1), r[1], "tier I starts at the old bottom: " .. key)
+		eq(select(2, R.tierBounds(d, 3)), r[2], "tier III ends at the old top: " .. key)
+		-- every old value decodes unchanged and has a tier of I-III
+		for v = r[1], r[2], d.step do
+			local m = R.decodeMods(cfg, key .. ":" .. v)[1]
+			eq(m and m.value, v, "old value decodes unchanged: " .. key .. v)
+			local t = R.modTier(d, v)
+			ok(t and t >= 1 and t <= 3, "old value is tier I-III: " .. key .. v)
+		end
+	end
+	for _, d in ipairs(cfg.mods) do
+		if d.tiers then
+			-- tiers are contiguous on the step grid, increasing, and end at the top of the range
+			eq(d.tiers[#d.tiers], d.range[2], "last tier ends the range: " .. d.key)
+			for t = 1, #d.tiers do
+				local lo, hi = R.tierBounds(d, t)
+				ok(lo <= hi, "tier bounds ordered: " .. d.key .. t)
+				eq((lo - d.range[1]) % d.step, 0, "tier start on a step: " .. d.key .. t)
+				eq(R.modTier(d, lo), t, "tier of its bottom: " .. d.key .. t)
+				eq(R.modTier(d, hi), t, "tier of its top: " .. d.key .. t)
+			end
+		else
+			eq(R.modTier(d, d.range[1]), nil, "no tiers: " .. d.key)
+		end
+	end
+	-- windows
+	local a, b = R.modTierWindow(cfg, 1)
+	eq(a .. b, "13", "tier 1 keys roll I-III")
+	a, b = R.modTierWindow(cfg, 5)
+	eq(a .. b, "13", "tier 5 keys roll I-III")
+	a, b = R.modTierWindow(cfg, 8)
+	eq(a .. b, "14", "tier 8 keys roll I-IV")
+	a, b = R.modTierWindow(cfg, 15)
+	eq(a .. b, "25", "tier 15 keys roll II-V")
+	a, b = R.modTierWindow(cfg, nil)
+	eq(a .. b, "13", "no tier: I-III")
+	-- rolls per key tier
+	local r = rng(77)
+	local seen = {[1] = {}, [8] = {}, [15] = {}}
+	for _, kt in ipairs({1, 8, 15}) do
+		for _ = 1, 4000 do
+			for _, m in ipairs(R.rollMods(cfg, 3, r, kt)) do
+				local d = R.modDef(cfg, m.key)
+				ok(m.value >= d.range[1] and m.value <= d.range[2], "tiered value in range")
+				eq((m.value - d.range[1]) % d.step, 0, "tiered value on a step")
+				local t = R.modTier(d, m.value)
+				if t then
+					seen[kt][t] = (seen[kt][t] or 0) + 1
+				end
+			end
+		end
+	end
+	ok(seen[1][4] == nil and seen[1][5] == nil, "tier 1 keys never roll IV / V")
+	ok((seen[8][4] or 0) > 500 and seen[8][5] == nil, "tier 8 keys roll IV, never V")
+	ok((seen[15][5] or 0) > 500 and seen[15][1] == nil, "tier 15 keys roll V, never I")
+	-- the coffer has three tiers: a tier 15 key rolls II-III there
+	for _ = 1, 300 do
+		local v = R.rollValue(R.modDef(cfg, "coffer"), r, 15, cfg)
+		ok(v >= 60 and v <= 100, "coffer on a tier 15 key: II-III")
+	end
+	-- the old rolls: a key of tier 1-5 rolls the old range with the same single rand call
+	local d = R.modDef(cfg, "vitality")
+	local calls = 0
+	local v = R.rollValue(d, function(x, y) calls = calls + 1; eq(x .. "-" .. y, "0-8", "one call over the old 9 steps"); return 8 end, 4, cfg)
+	eq(v, 60, "old top")
+	eq(calls, 1, "one rand call")
+	eq(R.rollValue(d, function(x, y) return y end, nil, nil), 60, "no tier, no cfg: old range")
+	eq(R.rollValue(d, function(x, y) return y end, 15, cfg), 90, "tier 15: top of V")
+	eq(R.rollValue(d, function(x, y) return x end, 15, cfg), 35, "tier 15: bottom of II")
+	-- labels and descriptions
+	eq(R.modLabel(cfg, {key = "vitality", value = 85}), "Vitality V", "label V")
+	eq(R.modLabel(cfg, {key = "withering", value = 1}), "Withering", "label without tier")
+	local desc = R.describe(cfg, {tier = 12, mods = {{key = "vitality", value = 70}}})
+	ok(desc:find("%+70%% health %(IV%)") ~= nil, "description names the tier: " .. desc)
+	-- caps rise with tier IV / V modifiers
+	local caps = R.bonusCaps(cfg, {{key = "vitality", value = 90}, {key = "swarm", value = 4}})
+	eq(caps.quantity, cfg.bonusCap.quantity + 16 + 8, "cap + V + IV")
+	local big = R.bonuses(cfg, {{key = "vitality", value = 90}, {key = "waning", value = 40}, {key = "swarm", value = 5}})
+	eq(big.quantity, math.min(45 + 40 + 40, cfg.bonusCap.quantity + 48), "three tier V modifiers: raised cap")
+	ok(big.quantity > cfg.bonusCap.quantity, "tier V beats the old cap")
+	-- packing high values for the crash refund marker
+	local u = R.unpackMod(cfg, R.packMod(cfg, {key = "elites", value = 300}))
+	eq(u.key .. u.value, "elites300", "pack / unpack elites V")
+	-- effects of the new top values
+	local fx = R.effects(cfg, {{key = "vitality", value = 90}, {key = "swarm", value = 5}}, 15)
+	ok(math.abs(fx.health - 1.9 * R.tierInfo(cfg, 15).health) < 1e-9, "vitality V x1.9")
+	eq(fx.packBonus, 5, "swarm V +5")
+end
+
+-- ------------------------------------------------------------------ lives
+do
+	local none = R.effects(cfg, {}, 4)
+	eq(R.startLives(cfg, 1, none), 3, "solo: 3 lives")
+	eq(R.startLives(cfg, 2, none), 4, "two players: 4")
+	eq(R.startLives(cfg, 4, none), 6, "four players: 6")
+	local fr = R.effects(cfg, {{key = "fragile", value = 2}}, 6)
+	eq(fr.fragile, 2, "fragile -2")
+	eq(R.startLives(cfg, 1, fr), 1, "fragile solo: 1")
+	eq(R.startLives(cfg, 1, R.effects(cfg, {{key = "fragile", value = 2}, {key = "fragile", value = 2}}, 6)), cfg.lives.min,
+		"never below the minimum")
+	eq(R.startLives(cfg, 3, fr), 3, "fragile with 3 players: 5 - 2")
+	local fb = R.bonuses(cfg, {{key = "fragile", value = 2}})
+	eq(fb.quantity .. "/" .. fb.rarity .. "/" .. fb.experience, "14/14/10", "fragile bonuses")
+	eq(R.modDef(cfg, "fragile").minTier, 4, "fragile from tier 4")
+	local run = R.newRun(cfg, 0, 10, 8)
+	run.lives = 2
+	eq(R.loseLife(run), 1, "one life lost")
+	eq(run.deaths, 1, "deaths counted")
+	eq(R.loseLife(run), 0, "last life")
+	eq(R.loseLife(run), 0, "never negative")
+	run.state = "success"
+	eq(R.loseLife(run), nil, "after the seal a death costs nothing")
+	eq(run.deaths, 3, "no death counted after the seal")
+	-- the fragile modifier is appended: keys of before still decode, the refund marker index is new
+	local _, idx = R.modDef(cfg, "fragile")
+	eq(idx, #cfg.mods, "fragile is the last modifier")
+	local u = R.unpackMod(cfg, R.packMod(cfg, {key = "fragile", value = 2}))
+	eq(u.key .. u.value, "fragile2", "pack / unpack fragile")
+end
+
+-- ------------------------------------------------------------------ omens
+do
+	local o = cfg.omen
+	eq(R.omenFragments(cfg, o.minTier - 1, nil, rng(1)), 0, "no fragments below the omen tier")
+	eq(R.omenFragments(cfg, o.minTier, nil, rng(1)), o.chest.base, "fragments at the omen tier")
+	eq(R.omenFragments(cfg, 10, nil, rng(1)), o.chest.base + 4 * o.chest.perTier, "fragments at tier 10")
+	-- +50% quantity: 2 x 1.5 = 3 exactly; 3 x 1.5 = 4.5 -> 4 or 5
+	eq(R.omenFragments(cfg, o.minTier, {quantity = 50}, rng(1)), 3, "fragments x quantity")
+	local r, fives = rng(12), 0
+	for _ = 1, 2000 do
+		local n = R.omenFragments(cfg, o.minTier + 1, {quantity = 50}, r)
+		ok(n == 4 or n == 5, "fragments 4.5 -> 4 or 5")
+		if n == 5 then
+			fives = fives + 1
+		end
+	end
+	ok(math.abs(fives / 2000 - 0.5) < 0.04, "fraction is a chance")
+	-- runs to a key: tier 6 ~30, tier 10 ~10, tier 15 ~6 (solo, no quantity bonus, chest only)
+	ok(o.keyCost / R.omenFragments(cfg, 6, nil, rng(1)) <= 30, "tier 6: at most 30 rifts per key")
+	ok(o.keyCost / R.omenFragments(cfg, 15, nil, rng(1)) <= 6, "tier 15: at most 6 rifts per key")
+	-- kinds
+	eq(#o.kinds, 3, "three omen kinds")
+	local names = {}
+	for i, k in ipairs(o.kinds) do
+		local d, idx = R.omenKind(cfg, k.key)
+		eq(d, k, "kind by key")
+		eq(idx, i, "kind index")
+		eq(R.omenKind(cfg, i), k, "kind by index")
+		ok(cfg.themes[k.theme] ~= nil, "kind theme exists")
+		ok(not names[k.boss], "one guardian per kind")
+		names[k.boss] = true
+		eq(R.markerOmen(cfg, R.markerTier(cfg, k.key)), k.key, "marker round trip " .. k.key)
+		ok(R.markerTier(cfg, k.key) > cfg.maxTier, "an omen marker is no rift tier")
+		-- the guardian's XML exists, with an outfit of the client pair and the same name
+		local fn = "data/monster/monsters/chaos/omens/" .. k.boss:lower():gsub(" ", "_") .. ".xml"
+		local f = io.open(fn, "r")
+		ok(f ~= nil, "guardian XML " .. fn)
+		if f then
+			local t = f:read("*a")
+			f:close()
+			ok(t:find('<monster name="' .. k.boss .. '"', 1, true) ~= nil, "guardian name in " .. fn)
+			local look = tonumber(t:match('<look type="(%d+)"'))
+			ok(look and look <= 2125, "guardian look in the client pair (things_custom11: outfits up to 2125)")
+			ok(look and look >= 2116 and look <= 2118, "omen guardian on its own rift-exclusive look (2116-2118)")
+		end
+	end
+	eq(R.omenKind(cfg, "nope"), nil, "unknown kind")
+	eq(R.markerOmen(cfg, 7), nil, "a rift tier is no omen")
+	eq(R.markerOmen(cfg, 0), nil, "no marker")
+	eq(R.omenKeyName(cfg, "hollow"), "Omen Key (Hollow)", "omen key name")
+	ok(math.abs(R.omenHealthMult(cfg, 1) - 1) < 1e-9, "guardian solo x1")
+	ok(math.abs(R.omenHealthMult(cfg, 4) - (1 + 3 * o.healthPerExtraPlayer)) < 1e-9, "guardian 4 players")
+	local rw = R.omenReward(cfg)
+	eq(rw.lootTier, "boss", "guardian chest at the boss loot tier")
+	ok(rw.gold > R.reward(cfg, 15, nil, rng(1)).gold, "the guardian pays more than a tier 15 rift")
+	ok(rw.uniqueRolls >= 1, "unique rolls")
+	-- the items are new server ids, apart from each other and from the other Chaos items
+	ok(o.fragment.id ~= o.key.id, "two item ids")
+	for _, id in ipairs({o.fragment.id, o.key.id}) do
+		ok(not (id >= 32001 and id <= 32035) and id ~= 32051 and not (id >= 32101 and id <= 32200)
+			and not (id >= 30484 and id <= 30557), "omen id clear of the gem / salvage / support / dark tile ids: " .. id)
+	end
+end
+
+-- ------------------------------------------------------------------ rift-exclusive looks
+do
+	local L = cfg.looks
+	ok(L and L.enabled, "rift looks on")
+	local all = {}
+	for _, th in ipairs(cfg.themes) do
+		local fam = L.families[th.name]
+		ok(fam ~= nil, "a look family for the theme " .. th.name)
+		for _, rank in ipairs({"minion", "brute", "elite", "guardian"}) do
+			local v = fam and fam[rank]
+			ok(type(v) == "number" and v >= 2100 and v <= 2125, th.name .. " " .. rank .. " look in 2100-2125")
+			ok(v and not all[v], th.name .. " " .. rank .. ": a look of its own")
+			if v then
+				all[v] = th.name .. " " .. rank
+			end
+		end
+	end
+	local types = {{name = "Weak One", level = 100}, {name = "Middle", level = 150}, {name = "Strong", level = 200}}
+	local plan = R.lookPlan(cfg, "Abyssal Rift", types)
+	local fam = L.families["Abyssal Rift"]
+	eq(R.lookOf(plan, "weak one", false), fam.minion, "weakest type: minion")
+	eq(R.lookOf(plan, "MIDDLE", false), fam.brute, "middle type: brute (any case)")
+	eq(R.lookOf(plan, "Strong", false), fam.elite, "strongest type: elite")
+	eq(R.lookOf(plan, "Strong", true), fam.guardian, "guardian: the guardian look")
+	eq(R.lookOf(plan, "Treasure Goblin", false), nil, "a monster of no rift type keeps its look")
+	local two = R.lookPlan(cfg, "Ashen Crypt", {types[1], types[3]})
+	eq(R.lookOf(two, "weak one", false), L.families["Ashen Crypt"].brute, "two types: brute")
+	eq(R.lookOf(two, "strong", false), L.families["Ashen Crypt"].elite, "two types: elite")
+	local one = R.lookPlan(cfg, "Obsidian Hall", {types[2]})
+	eq(R.lookOf(one, "middle", false), L.families["Obsidian Hall"].elite, "one type: elite")
+	eq(R.lookPlan(cfg, "No Such Theme", types), nil, "no family: no looks")
+	eq(R.lookOf(nil, "x", true), nil, "no plan: own look")
+	-- names: one per rank and theme, the family word first; credit stays with the type (only the shown name changes)
+	local names = L.names["Abyssal Rift"]
+	eq(R.nameOf(plan, "weak one", false), names.minion, "weakest type: the minion name")
+	eq(R.nameOf(plan, "MIDDLE", false), names.brute, "middle type: the brute name (any case)")
+	eq(R.nameOf(plan, "Strong", false), names.elite, "strongest type: the elite name")
+	eq(R.nameOf(plan, "Strong", true), names.guardian, "guardian: the guardian name")
+	eq(R.nameOf(plan, "Treasure Goblin", false), nil, "a monster of no rift type keeps its name")
+	eq(R.nameOf(two, "weak one", false), L.names["Ashen Crypt"].brute, "two types: brute name")
+	eq(R.nameOf(one, "middle", false), L.names["Obsidian Hall"].elite, "one type: elite name")
+	eq(R.nameOf(nil, "x", true), nil, "no plan: own name")
+	local shown = {}
+	for _, th in ipairs(cfg.themes) do
+		for _, rank in ipairs({"minion", "brute", "elite", "guardian"}) do
+			local v = L.names[th.name] and L.names[th.name][rank]
+			ok(type(v) == "string" and #v >= 3 and #v <= 30 and v:match("^[%a ]+$") ~= nil,
+				th.name .. " " .. rank .. ": a name of letters and spaces")
+			ok(v and not shown[v:lower()], th.name .. " " .. rank .. ": a name of its own")
+			if v then
+				shown[v:lower()] = true
+			end
+		end
+	end
+	L.enabled = false
+	eq(R.lookPlan(cfg, "Abyssal Rift", types), nil, "looks off")
+	eq(R.nameOf(R.lookPlan(cfg, "Abyssal Rift", types), "Strong", true), nil, "looks off: own names")
+	L.enabled = true
+	-- a rift name is no monster type's name (so /m, the bestiary and the bounty board never confuse the two)
+	local pn = io.popen("find data/monster -name '*.xml'")
+	for fn in pn:lines() do
+		local f = io.open(fn)
+		local t = f:read("*a")
+		f:close()
+		local n = t:match('<monster%s+name="([^"]+)"')
+		if n then
+			eq(shown[n:lower()], nil, "rift name " .. n .. " is not a monster type (" .. fn .. ")")
+		end
+	end
+	pn:close()
+	-- exclusive: no monster definition uses a rift family look; each omen look only by its guardian
+	local p = io.popen("find data/monster -name '*.xml' -o -name '*.lua'")
+	local users = {}
+	for fn in p:lines() do
+		-- the Ascended Omens (uber.lua) are their omens ascended and wear the omen's look on purpose
+		local f = not fn:find("/chaos/ascended/", 1, true) and io.open(fn) or nil
+		local t = f and f:read("*a") or ""
+		if f then
+			f:close()
+		end
+		for v in t:gmatch('<look%s+type="(%d+)"') do
+			users[tonumber(v)] = (users[tonumber(v)] or 0) + 1
+		end
+		for v in t:gmatch("lookType%s*=%s*(%d+)") do
+			users[tonumber(v)] = (users[tonumber(v)] or 0) + 1
+		end
+	end
+	p:close()
+	for v, what in pairs(all) do
+		eq(users[v], nil, what .. " look used by no monster file")
+	end
+	for _, v in ipairs({2116, 2117, 2118}) do
+		eq(users[v], 1, "omen look " .. v .. " used once")
+	end
+end
+
+-- ------------------------------------------------------------------ party scaling (cfg.party)
+do
+	local p = cfg.party
+	local near = function(a, b) return math.abs(a - b) < 1e-9 end
+	local solo = R.party(cfg, 1)
+	ok(solo.health == 1 and solo.damage == 1 and solo.reward == 1 and solo.loot == 1, "solo: every party value 1")
+	ok(R.party(cfg, nil).players == 1 and R.party(cfg, 0).players == 1, "no or zero players: solo")
+	ok(R.party({}, 5).reward == 1, "no party block: neutral")
+	ok(cfg.maxPlayers == 5, "rifts take a party of 5")
+	-- the curve: health +1.0 or more per extra player, damage up, reward linear up to the cap
+	ok(p.healthPerExtraPlayer >= 1.0, "health +100% or more per extra player")
+	ok(p.damagePerExtraPlayer > 0, "parties take more damage")
+	ok(cfg.boss.perExtraPlayer >= 1.0 and cfg.omen.healthPerExtraPlayer >= 1.0, "guardians +100% per extra player")
+	local last = 1
+	for n = 2, 8 do
+		local ps = R.party(cfg, n)
+		ok(near(ps.health, 1 + p.healthPerExtraPlayer * (n - 1)), "total health " .. n)
+		ok(near(ps.damage, 1 + p.damagePerExtraPlayer * (n - 1)), "damage " .. n)
+		ok(ps.reward >= last and ps.reward <= 1 + p.rewardCap / 100 + 1e-9, "reward grows to the cap " .. n)
+		ok(ps.loot <= 1 + p.lootCap / 100 + 1e-9 and ps.loot > 1, "loot bonus bounded " .. n)
+		last = ps.reward
+	end
+	ok(near(R.party(cfg, 2).reward, 1 + p.rewardPerExtraPlayer / 100), "two players: one step")
+	local full = R.party(cfg, cfg.maxPlayers)
+	ok(full.reward >= 1.4 and full.reward <= 1.5 + 1e-9, "a full party: +40-50% per finisher")
+	ok(near(R.party(cfg, 9).reward, full.reward), "capped at a full party")
+	-- the packs grow with the players; each monster gets the rest, so the total follows the curve
+	for _, tier in ipairs({1, 6, 15}) do
+		eq(R.partyMonsterHealth(cfg, tier, 1), 1, "solo monsters x1, tier " .. tier)
+		for n = 2, 5 do
+			local total = R.partyMonsterHealth(cfg, tier, n) * R.packCount(cfg, tier, n) / R.packCount(cfg, tier, 1)
+			ok(math.abs(total - R.party(cfg, n).health) < 1e-9, string.format("tier %d, %d players: total health x%.2f", tier, n, total))
+			ok(R.partyMonsterHealth(cfg, tier, n) >= 1, "a monster never gets weaker")
+		end
+	end
+	-- R.plan uses the same pack count
+	local plan = R.plan(cfg, 9, R.effects(cfg, {}, 9), 3, {{name = "a", level = 1}}, {"n"}, rng(4))
+	eq(#plan.packs, R.packCount(cfg, 9, 3), "plan packs = R.packCount")
+	-- R.applyParty: damage into fx, the monster share, Brutality kept
+	local fx = R.applyParty(cfg, R.effects(cfg, {{key = "brutality", value = 20}}, 4), 3, 4)
+	ok(near(fx.damage, 1.2 * (1 + 2 * p.damagePerExtraPlayer)), "damage: Brutality x party")
+	ok(near(fx.partyHealth, R.partyMonsterHealth(cfg, 4, 3)), "monster share")
+	eq(fx.party.players, 3, "party kept on fx")
+	local fxs = R.applyParty(cfg, R.effects(cfg, {}, 4), 1, 4)
+	ok(fxs.damage == 1 and fxs.partyHealth == 1, "solo fx unchanged")
+	local fxo = R.applyParty(cfg, R.effects(cfg, {}, 1), 4, nil)
+	ok(fxo.partyHealth == 1 and fxo.damage > 1, "an Omen arena: damage, no pack share")
+	-- the guardian health is not scaled twice by the party
+	ok(near(R.guardianHealthMult(cfg, fx, 3), cfg.boss.healthMult * (1 + 2 * cfg.boss.perExtraPlayer) * fx.health),
+		"guardian health from boss.perExtraPlayer only")
+	-- rewards: solo unchanged, a party more per finisher, every field scaled
+	local base = R.reward(cfg, 12, {quantity = 40}, rng(5))
+	local same = R.partyReward(cfg, R.reward(cfg, 12, {quantity = 40}, rng(5)), 1, rng(1))
+	ok(same.gold == base.gold and same.chaos == base.chaos and same.rolls == base.rolls, "solo chest unchanged")
+	local pr = R.partyReward(cfg, R.reward(cfg, 12, {quantity = 40}, rng(5)), 5, rng(1))
+	eq(pr.gold, math.floor(base.gold * full.reward), "party gold")
+	ok(pr.rolls >= math.floor(base.rolls * full.reward), "party item rolls")
+	local sc, sp, n = 0, 0, 3000
+	local r1, r2 = rng(21), rng(22)
+	for _ = 1, n do
+		sc = sc + R.reward(cfg, 15, {quantity = 100}, r1).chaos
+		sp = sp + R.partyReward(cfg, R.reward(cfg, 15, {quantity = 100}, r2), 5, r2).chaos
+	end
+	ok(math.abs(sp / sc - full.reward) < 0.06, "party orbs x the bonus: " .. sp / sc)
+	eq(R.partyCount(cfg, 20, 1, rng(1)), 20, "solo fragments unchanged")
+	eq(R.partyCount(cfg, 20, 5, rng(1)), math.floor(20 * full.reward), "party fragments")
+	eq(R.partyCount(cfg, 0, 5, rng(1)), 0, "no fragments stay none")
+	-- coffer: one for the party, x the loot bonus
+	local c1 = R.cofferLoot(cfg, 10, {quantity = 0}, rng(2), 1)
+	local c5 = R.cofferLoot(cfg, 10, {quantity = 0}, rng(2), 5)
+	eq(c1.gold, R.cofferLoot(cfg, 10, {quantity = 0}, rng(2)).gold, "coffer: no players = solo")
+	eq(c5.gold, math.floor(c1.gold * full.loot), "coffer gold x the loot bonus")
+	-- the chat line
+	eq(R.partyNote(solo), nil, "no note solo")
+	local note = R.partyNote(R.party(cfg, 3), 3)
+	ok(note and note:find("Party of 3", 1, true) and note:find("x3", 1, true) and note:find("+20%", 1, true), "party note: " .. tostring(note))
+end
+
+-- ------------------------------------------------------------------ the income model (server/README.md "Rifts", Income)
+-- hunting at level 1000 ("Respec" table and the audit): 9.5M gold, 2.5 Orbs of Upheaval, 1.3 Orbs of Fate an hour.
+-- Rifting: four tier 15 chests an hour at +128% quantity (the highest sum with tier V modifiers).
+do
+	local hunt = {gold = 9519711, chaos = 2.5, divine = 1.3}
+	local function hour(players, own, run)
+		local g, c, d, n = 0, 0, 0, 4000
+		local rand = rng(77)
+		for _ = 1, n do
+			local r = R.reward(cfg, 15, {quantity = 128}, rand)
+			R.atlasReward(cfg, r, own, run, rand)
+			R.partyReward(cfg, r, players, rand)
+			g, c, d = g + r.gold, c + r.chaos, d + r.divine
+		end
+		return {gold = 4 * g / n, chaos = 4 * c / n, divine = 4 * d / n}
+	end
+	local solo, party = hour(1), hour(5)
+	ok(solo.gold >= 1.5 * hunt.gold and solo.gold <= 2 * hunt.gold, string.format("solo gold %.1fM: 1.5-2x hunting", solo.gold / 1e6))
+	ok(solo.chaos >= 5 * hunt.chaos and solo.chaos <= 15 * hunt.chaos, string.format("solo Upheaval %.1f: at most 15x hunting", solo.chaos))
+	ok(solo.divine >= 5 * hunt.divine and solo.divine <= 15 * hunt.divine, string.format("solo Fate %.1f: at most 15x hunting", solo.divine))
+	ok(party.chaos <= 15 * hunt.chaos and party.divine <= 15 * hunt.divine, "a full party's orbs per head: at most 15x hunting")
+	local ratio = party.gold / solo.gold
+	ok(ratio >= 1.3 and ratio <= 1.6, string.format("a full party per head: x%.2f solo", ratio))
+	-- the atlas multipliers raise gold, never the orbs
+	local maxed = hour(1, {goldMult = 25}, {rewardMult = 60})
+	ok(math.abs(maxed.gold / solo.gold - 1.25 * 1.6) < 0.01, "goldMult and Lone Ember on the gold")
+	ok(math.abs(maxed.chaos / solo.chaos - 1) < 0.05 and math.abs(maxed.divine / solo.divine - 1) < 0.06,
+		"goldMult and Lone Ember leave the orbs alone")
+	-- the Omen guardian: gold by the finisher's level (at least the arena's level)
+	local o = cfg.omen
+	eq(R.omenReward(cfg, 1000).gold, o.reward.goldPerLevel * 1000, "Omen gold at level 1000")
+	eq(R.omenReward(cfg, 1200).gold, o.reward.goldPerLevel * 1200, "Omen gold grows with the level")
+	eq(R.omenReward(cfg, 10).gold, o.reward.goldPerLevel * o.minLevel, "Omen gold: at least the arena's level")
+	eq(R.omenReward(cfg).gold, o.reward.goldPerLevel * o.minLevel, "Omen gold without a level")
+	ok(R.omenReward(cfg, 1000).gold < hunt.gold / 2, "an Omen kill pays less gold than half an hour of hunting")
+	ok(R.omenReward(cfg, 1000).chaos <= 6 and R.omenReward(cfg, 1000).divine <= 3, "Omen orbs cut to a third")
 end
 
 print(string.format("rift tests: %d checks, %d failed", checks, fails))

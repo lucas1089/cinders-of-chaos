@@ -1,0 +1,12 @@
+Module
+  name: game_rightclickequip
+  description: Right-click equips items (server src-patch 0024): tells the server the option of Options > Interface (extended opcode 188)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ rightclickequiplogic, rightclickequip ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

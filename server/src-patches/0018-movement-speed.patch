@@ -1,0 +1,313 @@
+# Movement speed (server/README.md "Movement speed"; client base-patch 0029 predicts the same steps, change both together):
+#  1. Base speed: vocation base + playerSpeedBonus (50) + playerSpeedPerTenLevels / 10 (2.5) per level up to
+#     playerSpeedSoftLevel (300), then playerSpeedPerTenLevelsAbove / 10 (1) per level (stock: vocation + 2 per level).
+#  2. A player's walk speed (base + haste, slows, items, mounts, passive tree, Paragon, Lua changeSpeed) is held between
+#     minPlayerSpeed (120, about 1 tile/s: a slow never freezes a player) and maxPlayerSpeed (2600, 100 ms = 10 tiles/s on
+#     normal ground). Staff with PlayerFlag_SetMaxSpeed keep the stock limits; 0 turns a limit off. Monsters unchanged.
+#  3. A player's step is rounded up to 10 ms (stock: the 50 ms beat, which turned a 107 ms step into 150 ms) and a
+#     diagonal step takes 7/5 of a straight one (this engine's stock code meant 1.5 but stored it in an integer, so the
+#     server walked diagonals at 1x while the client waited 3x). Monsters and NPCs keep 50 ms and their 1x diagonal.
+#  4. The step formula no longer wraps to a 0 ms step below speed 16 (step speed at least 1, as the stock code meant).
+# Lua: creature:getStepSpeed() (the clamped speed), configKeys.MIN_PLAYER_SPEED, MAX_PLAYER_SPEED, PLAYER_SPEED_BONUS,
+# PLAYER_SPEED_PER_TEN_LEVELS, PLAYER_SPEED_SOFT_LEVEL, PLAYER_SPEED_PER_TEN_LEVELS_ABOVE; mirror: data/lib/chaos_speed.lua
+# (tests/movement_speed_test.lua). Apply in the server source root after 0001-0017: patch -p1 < 0018-movement-speed.patch
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -308,6 +308,15 @@ bool ConfigManager::load()
+ 	boolean[ARMOR_PERCENT] = getGlobalBoolean(L, "armorPercent", true);
+ 	integer[ARMOR_PERCENT_CONSTANT] = getGlobalNumber(L, "armorPercentConstant", 250);
+ 	integer[ARMOR_PERCENT_MAX] = getGlobalNumber(L, "armorPercentMax", 80);
++	// Chaos (patch 0018): a player's speed is held between minPlayerSpeed (a slow never freezes: about 1 tile/s) and
++	// maxPlayerSpeed (about 10 tiles/s on normal ground); base speed = vocation + playerSpeedBonus +
++	// playerSpeedPerTenLevels / 10 per level up to playerSpeedSoftLevel, playerSpeedPerTenLevelsAbove / 10 per level after
++	integer[MIN_PLAYER_SPEED] = getGlobalNumber(L, "minPlayerSpeed", 120);
++	integer[MAX_PLAYER_SPEED] = getGlobalNumber(L, "maxPlayerSpeed", 2600);
++	integer[PLAYER_SPEED_BONUS] = getGlobalNumber(L, "playerSpeedBonus", 50);
++	integer[PLAYER_SPEED_PER_TEN_LEVELS] = getGlobalNumber(L, "playerSpeedPerTenLevels", 25);
++	integer[PLAYER_SPEED_SOFT_LEVEL] = getGlobalNumber(L, "playerSpeedSoftLevel", 300);
++	integer[PLAYER_SPEED_PER_TEN_LEVELS_ABOVE] = getGlobalNumber(L, "playerSpeedPerTenLevelsAbove", 10);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -129,6 +129,12 @@ class ConfigManager
+ 			ENERGY_SHIELD_OPCODE,
+ 			ARMOR_PERCENT_CONSTANT, // Chaos (patch 0016)
+ 			ARMOR_PERCENT_MAX,
++			MIN_PLAYER_SPEED, // Chaos (patch 0018): movement speed
++			MAX_PLAYER_SPEED,
++			PLAYER_SPEED_BONUS,
++			PLAYER_SPEED_PER_TEN_LEVELS,
++			PLAYER_SPEED_SOFT_LEVEL,
++			PLAYER_SPEED_PER_TEN_LEVELS_ABOVE,
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+--- a/src/creature.cpp
++++ b/src/creature.cpp
+@@ -117,7 +117,7 @@ int32_t Creature::getWalkDelay() const
+ 	}
+ 
+ 	int64_t ct = OTSYS_TIME();
+-	int64_t stepDuration = getStepDuration() * lastStepCost;
++	int64_t stepDuration = getLastStepDuration();
+ 	return stepDuration - (ct - lastStep);
+ }
+ 
+@@ -476,6 +476,7 @@ void Creature::onCreatureMove(Creature* creature, const Tile* newTile, const Pos
+ 	if (creature == this) {
+ 		lastStep = OTSYS_TIME();
+ 		lastStepCost = 1;
++		lastStepDiagonal = false;
+ 
+ 		if (!teleport) {
+ 			if (oldPos.z != newPos.z) {
+@@ -483,7 +484,8 @@ void Creature::onCreatureMove(Creature* creature, const Tile* newTile, const Pos
+ 				lastStepCost = 2;
+ 			} else if (Position::getDistanceX(newPos, oldPos) >= 1 && Position::getDistanceY(newPos, oldPos) >= 1) {
+ 				//diagonal extra cost
+-				lastStepCost = 1.5;
++				lastStepCost = 1.5; // stock: truncated to 1 (uint32_t), what monsters and NPCs still walk with
++				lastStepDiagonal = true; // Chaos (patch 0018): players, getLastStepDuration
+ 			}
+ 		} else {
+ 			stopEventWalk();
+@@ -1400,11 +1402,26 @@ int64_t Creature::getStepDuration(Direction dir) const
+ {
+ 	int64_t stepDuration = getStepDuration();
+ 	if ((dir & DIRECTION_DIAGONAL_MASK) != 0) {
+-		stepDuration *= 1.5;
++		if (getPlayer()) {
++			stepDuration = stepDuration * PLAYER_DIAGONAL_STEP_NUM / PLAYER_DIAGONAL_STEP_DEN; // Chaos (patch 0018)
++		} else {
++			stepDuration *= 1.5;
++		}
+ 	}
+ 	return stepDuration;
+ }
+ 
++int64_t Creature::getLastStepDuration() const
++{
++	// Chaos (patch 0018): after a player's diagonal step the next one waits 7/5 of a straight step (the client waits
++	// the same); everything else as stock (floor change x2; a monster's diagonal x1, the stock 1.5 truncated)
++	int64_t stepDuration = getStepDuration();
++	if (lastStepDiagonal && getPlayer()) {
++		return stepDuration * PLAYER_DIAGONAL_STEP_NUM / PLAYER_DIAGONAL_STEP_DEN;
++	}
++	return stepDuration * lastStepCost;
++}
++
+ int64_t Creature::getStepDuration() const
+ {
+ 	if (isRemoved()) {
+@@ -1416,10 +1433,10 @@ int64_t Creature::getStepDuration() const
+ 
+ 	int32_t stepSpeed = getStepSpeed();
+ 	if (stepSpeed > -Creature::speedB) {
+-		calculatedStepSpeed = floor((Creature::speedA * log((stepSpeed / 2) + Creature::speedB) + Creature::speedC) + 0.5);
+-		if (calculatedStepSpeed == 0) {
+-			calculatedStepSpeed = 1;
+-		}
++		// Chaos (patch 0018): below speed 16 the formula is negative, which wrapped around to a huge step speed (a step
++		// of 0 ms); at least 1, as the stock code meant
++		double formula = floor((Creature::speedA * log((stepSpeed / 2) + Creature::speedB) + Creature::speedC) + 0.5);
++		calculatedStepSpeed = formula < 1 ? 1 : static_cast<uint32_t>(formula);
+ 	} else {
+ 		calculatedStepSpeed = 1;
+ 	}
+@@ -1435,7 +1452,8 @@ int64_t Creature::getStepDuration() const
+ 	}
+ 
+ 	double duration = std::floor(1000 * groundSpeed / calculatedStepSpeed);
+-	int64_t stepDuration = std::ceil(duration / 50) * 50;
++	const double rounding = getPlayer() ? PLAYER_STEP_ROUNDING : 50; // Chaos (patch 0018): players 10 ms, others 50
++	int64_t stepDuration = std::ceil(duration / rounding) * rounding;
+ 
+ 	const Monster* monster = getMonster();
+ 	if (monster && monster->isTargetNearby() && !monster->isFleeing() && !monster->getMaster()) {
+@@ -1453,7 +1471,7 @@ int64_t Creature::getEventStepTicks(bool onlyDelay) const
+ 		if (onlyDelay && stepDuration > 0) {
+ 			ret = 1;
+ 		} else {
+-			ret = stepDuration * lastStepCost;
++			ret = getLastStepDuration();
+ 		}
+ 	}
+ 	return ret;
+--- a/src/creature.h
++++ b/src/creature.h
+@@ -80,6 +80,14 @@ class FrozenPathingConditionCall
+ // Defines the Base class for all creatures and base functions which
+ // every creature has
+ 
++// Chaos (patch 0018): a player's step is rounded up to PLAYER_STEP_ROUNDING ms (the stock 50 ms beat made speed come
++// in coarse jumps: 107 ms became 150) and a diagonal step takes PLAYER_DIAGONAL_STEP_NUM / PLAYER_DIAGONAL_STEP_DEN of
++// a straight one (about sqrt(2)). The client predicts both (client base-patch 0029); change them together.
++// Monsters and NPCs keep the stock rules: 50 ms rounding, a diagonal costs what the engine had (lastStepCost).
++static constexpr int64_t PLAYER_STEP_ROUNDING = 10;
++static constexpr int64_t PLAYER_DIAGONAL_STEP_NUM = 7;
++static constexpr int64_t PLAYER_DIAGONAL_STEP_DEN = 5;
++
+ class Creature : virtual public Thing
+ {
+ 	protected:
+@@ -199,6 +207,7 @@ class Creature : virtual public Thing
+ 		int64_t getEventStepTicks(bool onlyDelay = false) const;
+ 		int64_t getStepDuration(Direction dir) const;
+ 		int64_t getStepDuration() const;
++		int64_t getLastStepDuration() const; // Chaos (patch 0018): the step just taken (diagonal / floor change cost)
+ 		virtual int32_t getStepSpeed() const {
+ 			return getSpeed();
+ 		}
+@@ -206,10 +215,12 @@ class Creature : virtual public Thing
+ 			return baseSpeed + varSpeed;
+ 		}
+ 		void setSpeed(int32_t varSpeedDelta) {
+-			int32_t oldSpeed = getSpeed();
++			int32_t oldSpeed = getStepSpeed();
+ 			varSpeed = varSpeedDelta;
+ 
+-			if (getSpeed() <= 0) {
++			// Chaos (patch 0018): the speed the creature walks at (a player's is held between minPlayerSpeed and
++			// maxPlayerSpeed, so a slow never stops a player's walk)
++			if (getStepSpeed() <= 0) {
+ 				stopEventWalk();
+ 				cancelNextWalk = true;
+ 			} else if (oldSpeed <= 0 && !listWalkDir.empty()) {
+@@ -524,6 +535,7 @@ class Creature : virtual public Thing
+ 		uint32_t blockCount = 0;
+ 		uint32_t blockTicks = 0;
+ 		uint32_t lastStepCost = 1;
++		bool lastStepDiagonal = false; // Chaos (patch 0018)
+ 		uint32_t baseSpeed = 220;
+ 		int32_t varSpeed = 0;
+ 		int32_t health = 1000;
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2047,6 +2047,12 @@ void LuaScriptInterface::registerFunctions()
+ 	registerEnumIn("configKeys", ConfigManager::ENERGY_SHIELD_OPCODE)
+ 	registerEnumIn("configKeys", ConfigManager::ARMOR_PERCENT_CONSTANT) // Chaos (patch 0016)
+ 	registerEnumIn("configKeys", ConfigManager::ARMOR_PERCENT_MAX)
++	registerEnumIn("configKeys", ConfigManager::MIN_PLAYER_SPEED) // Chaos (patch 0018)
++	registerEnumIn("configKeys", ConfigManager::MAX_PLAYER_SPEED)
++	registerEnumIn("configKeys", ConfigManager::PLAYER_SPEED_BONUS)
++	registerEnumIn("configKeys", ConfigManager::PLAYER_SPEED_PER_TEN_LEVELS)
++	registerEnumIn("configKeys", ConfigManager::PLAYER_SPEED_SOFT_LEVEL)
++	registerEnumIn("configKeys", ConfigManager::PLAYER_SPEED_PER_TEN_LEVELS_ABOVE)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLEAN_MAP)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_CLOSE)
+ 	registerEnumIn("configKeys", ConfigManager::SERVER_SAVE_SHUTDOWN)
+@@ -2405,6 +2411,7 @@ void LuaScriptInterface::registerFunctions()
+ 
+ 	registerMethod("Creature", "getSpeed", LuaScriptInterface::luaCreatureGetSpeed);
+ 	registerMethod("Creature", "getBaseSpeed", LuaScriptInterface::luaCreatureGetBaseSpeed);
++	registerMethod("Creature", "getStepSpeed", LuaScriptInterface::luaCreatureGetStepSpeed); // Chaos (patch 0018)
+ 	registerMethod("Creature", "changeSpeed", LuaScriptInterface::luaCreatureChangeSpeed);
+ 
+ 	registerMethod("Creature", "setDropLoot", LuaScriptInterface::luaCreatureSetDropLoot);
+@@ -7858,6 +7865,19 @@ int LuaScriptInterface::luaCreatureGetSpeed(lua_State* L)
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaCreatureGetStepSpeed(lua_State* L)
++{
++	// creature:getStepSpeed() Chaos (patch 0018): the speed the creature walks at (a player's held between
++	// minPlayerSpeed and maxPlayerSpeed); creature:getSpeed() stays the unclamped sum
++	const Creature* creature = getUserdata<const Creature>(L, 1);
++	if (creature) {
++		lua_pushnumber(L, creature->getStepSpeed());
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
+ int LuaScriptInterface::luaCreatureGetBaseSpeed(lua_State* L)
+ {
+ 	// creature:getBaseSpeed()
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -824,6 +824,7 @@ class LuaScriptInterface
+ 
+ 		static int luaCreatureGetSpeed(lua_State* L);
+ 		static int luaCreatureGetBaseSpeed(lua_State* L);
++		static int luaCreatureGetStepSpeed(lua_State* L);
+ 		static int luaCreatureChangeSpeed(lua_State* L);
+ 
+ 		static int luaCreatureSetDropLoot(lua_State* L);
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -1363,6 +1363,48 @@ bool Player::closeShopWindow(bool sendCloseShopWindow /*= true*/)
+ 	return true;
+ }
+ 
++int32_t Player::getStepSpeed() const
++{
++	// Chaos (patch 0018): every speed change (haste, slows, items, mounts, Lua changeSpeed) adds to varSpeed; the sum is
++	// clamped here, so this is what the player walks at and what clients are sent. Staff with PlayerFlag_SetMaxSpeed
++	// keep the stock limits. 0 turns a limit off.
++	int32_t minSpeed = PLAYER_MIN_SPEED;
++	int32_t maxSpeed = PLAYER_MAX_SPEED;
++	if (!hasFlag(PlayerFlag_SetMaxSpeed)) {
++		const int32_t configMin = g_config.getNumber(ConfigManager::MIN_PLAYER_SPEED);
++		const int32_t configMax = g_config.getNumber(ConfigManager::MAX_PLAYER_SPEED);
++		if (configMin > 0) {
++			minSpeed = std::min<int32_t>(configMin, PLAYER_MAX_SPEED);
++		}
++		if (configMax > 0) {
++			maxSpeed = std::max<int32_t>(minSpeed, std::min<int32_t>(configMax, PLAYER_MAX_SPEED));
++		}
++	}
++	return std::max<int32_t>(minSpeed, std::min<int32_t>(maxSpeed, getSpeed()));
++}
++
++void Player::updateBaseSpeed()
++{
++	if (hasFlag(PlayerFlag_SetMaxSpeed)) {
++		baseSpeed = PLAYER_MAX_SPEED;
++		return;
++	}
++
++	// Chaos (patch 0018): stock was vocation + 2 per level. Now vocation + playerSpeedBonus, then
++	// playerSpeedPerTenLevels / 10 per level up to playerSpeedSoftLevel and playerSpeedPerTenLevelsAbove / 10 per level
++	// above it (defaults: +50, 2.5 per level to level 300, 1 per level after). Lua mirror: ChaosSpeed.baseSpeed
++	// (data/lib/chaos_speed.lua).
++	const int64_t levels = level > 1 ? level - 1 : 0;
++	const int64_t softLevel = std::max<int64_t>(1, g_config.getNumber(ConfigManager::PLAYER_SPEED_SOFT_LEVEL));
++	const int64_t below = std::min<int64_t>(levels, softLevel - 1);
++	const int64_t above = levels - below;
++	const int64_t perTen = std::max<int64_t>(0, g_config.getNumber(ConfigManager::PLAYER_SPEED_PER_TEN_LEVELS));
++	const int64_t perTenAbove = std::max<int64_t>(0, g_config.getNumber(ConfigManager::PLAYER_SPEED_PER_TEN_LEVELS_ABOVE));
++	int64_t speed = static_cast<int64_t>(vocation->getBaseSpeed()) + g_config.getNumber(ConfigManager::PLAYER_SPEED_BONUS) +
++	                (below * perTen + above * perTenAbove) / 10;
++	baseSpeed = static_cast<uint32_t>(std::max<int64_t>(1, std::min<int64_t>(speed, PLAYER_MAX_SPEED)));
++}
++
+ void Player::onWalk(Direction& dir)
+ {
+ 	Creature::onWalk(dir);
+--- a/src/player.h
++++ b/src/player.h
+@@ -1404,16 +1404,11 @@ class Player final : public Creature, public Cylinder
+ 		static uint32_t playerAutoID;
+ 
+ 		void updateItemsLight(bool internal = false);
+-		int32_t getStepSpeed() const override {
+-			return std::max<int32_t>(PLAYER_MIN_SPEED, std::min<int32_t>(PLAYER_MAX_SPEED, getSpeed()));
+-		}
+-		void updateBaseSpeed() {
+-			if (!hasFlag(PlayerFlag_SetMaxSpeed)) {
+-				baseSpeed = vocation->getBaseSpeed() + (2 * (level - 1));
+-			} else {
+-				baseSpeed = PLAYER_MAX_SPEED;
+-			}
+-		}
++		// Chaos (patch 0018): the speed a player walks at, held between minPlayerSpeed and maxPlayerSpeed (config.lua);
++		// the base speed: the vocation's + playerSpeedBonus + playerSpeedPerTenLevels / 10 per level up to
++		// playerSpeedSoftLevel, playerSpeedPerTenLevelsAbove / 10 per level above (player.cpp)
++		int32_t getStepSpeed() const override;
++		void updateBaseSpeed();
+ 
+ 		bool isPromoted() const;
+ 

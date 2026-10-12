@@ -1,4 +1,4 @@
-// Project Chaos admin panel. Styles named Chaos* come from client_chaos_theme
+// Cinders of Chaos admin panel. Styles named Chaos* come from client_chaos_theme
 // (or admin_fallback.otui when that module is absent).
 
 AdminCategoryButton < ChaosTabButton
@@ -49,7 +49,7 @@ AdminResultLine < ChaosLabel
 
 ChaosWindow
   id: adminWindow
-  !text: tr('Chaos Administration')
+  !text: tr('Cinders of Chaos Administration')
   size: 900 620
   padding-top: 28
   padding-left: 12

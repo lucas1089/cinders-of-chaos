@@ -268,6 +268,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "patchnotes." .. tostring(msg.action), 300) then
+		return
+	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	local id = PN.validId(data.id) and data.id or nil
 	if msg.action == "open" then
@@ -329,9 +333,13 @@ local function onCommand(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!patchnotes", "/patchnotes"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onCommand
-	talk:separator(" ")
-	talk:register()
+-- staff only (players open the window from the menu)
+local talk = TalkAction("/patchnotes")
+function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
+	return onCommand(player, words, param)
 end
+talk:separator(" ")
+talk:register()

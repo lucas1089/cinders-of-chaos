@@ -30,6 +30,7 @@ mock-API smoke test (catalog build + dispatch path) were done. See "Untested" at
 | `actions_content.lua` | Content category |
 | `actions_security.lua` | Accounts & Security category |
 | `actions_tools.lua` | Tools category |
+| `actions_store.lua` | Store category: sales dashboard (per day, category, top offers), recent purchases, donations (coin orders; Pix / PayPal with their provider status; refunds and chargebacks with the coins taken back), record a donation, give Chaos Coins (`chaos_shop_purchases`, `chaos_coin_orders`, `chaos_coin_payments`; server/README.md "Store") |
 
 Action files only write into the global `ChaosAdminPending[id]`, so load order inside the folder does not matter.
 
@@ -118,6 +119,8 @@ add a `ChaosAdminRegisterHook` call next to them.
 
 Players: info, kick, ban (account), unban, mute, set_level, set_skill (raise only), set_vocation, give_item, remove_item,
 give_premium, teleport_to, summon, heal, set_group (dangerous), add_storage (set storage).
+give_item (Players) and create_item (World) create items, so they need group 5 like the Economy actions
+(`minGroup = 5` on the action); the other Players and World actions stay at group 4.
 
 Server: broadcast, save, reload (talkactions, scripts, monsters, npcs, config, actions, movements, creaturescripts,
 globalevents, spells, weapons, items, quests, raids, mounts, chat, events, global, all; dangerous), shutdown / restart with
@@ -127,7 +130,7 @@ use a supervisor), cancel_countdown, set_state (open/close), online, stats.
 World: spawn_monster, spawn_npc, create_item, remove_items (movable items on a tile), clean_map, set_time (only if
 `Game.setWorldTime` exists), set_weather (rain storage from `customs/globalevents/rain.lua`), town_teleport, list_towns, start_raid.
 
-Economy: give_gold, remove_gold, give_bank, item_price (item info + market table stats), market_offers, stash_give, stash_info
+Economy: give_gold, remove_gold, give_bank, item_price (item info + market table stats), market_offers, market_buy_orders (Chaos market buy orders and the escrow they hold, read only), stash_give, stash_info
 (stash ones only if the build exposes the stash API).
 
 Events: list, start, stop (hooks), broadcast_template, set_exp (experience multiplier through `EventCallback.onGainExperience`).
@@ -149,5 +152,7 @@ invisible, ghost (group 6), god_mode (group 5; uses `healthchange` + `manachange
 * `mute` uses `CONDITION_MUTED`, which TFS only applies to some chat paths; verify it blocks speech on your build.
 * The exp event assumes this server's `EventCallback.onGainExperience` is actually invoked by the engine
   (`data/scripts/lib/event_callbacks.lua` lists it, the engine side was not verified). The server also has its own `storage 6000` 2x exp.
+  Both count under the global experience cap (`xpcap.lua`, index 85: at most 4x a kill's base; server/README.md "Experience
+  cap"), so `double_exp` doubles only while the other bonuses leave room.
 * `god_mode` relies on per-player `healthchange`/`manachange` CreatureEvents.
 * Admin log DB writes use `db.asyncQuery`.

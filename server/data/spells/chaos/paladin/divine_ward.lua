@@ -26,7 +26,7 @@ function onCastSpell(creature, variant, isHotkey)
 	player:addCondition(regen)
 
 	local pos = player:getPosition()
-	ChaosSpell.fx(pos, "aura_ring", CONST_ME_HOLYAREA)
+	ChaosSpell.vfxOr(pos, "dawn_aegis", "aura_ring", CONST_ME_HOLYAREA)
 	pos:sendMagicEffect(CONST_ME_MAGIC_BLUE)
 	return true
 end

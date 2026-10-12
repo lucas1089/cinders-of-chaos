@@ -420,6 +420,16 @@ InfinityTowerWindow < NewHeadlessWindow
     @onClick: modules.game_infinitytower.enterTower()
 
   Button
+    id: leaveButton
+    !text: tr('Leave Tower')
+    !tooltip: tr('Leave the tower run you are in (your progress so far counts).')
+    anchors.top: bottomSeparator.bottom
+    anchors.right: enterButton.left
+    margin-top: 10
+    margin-right: 8
+    @onClick: modules.game_infinitytower.leaveTower()
+
+  Button
     id: closeButton
     !text: tr('Close')
     anchors.top: bottomSeparator.bottom

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ascension Warden: the guardian of the Trial of Ascension (data/scripts/chaos/ascension_quest.lua). Renamed and dressed
+     per class at run time (Chaos.ascensionQuest.guardians: Warden of Iron, of the Hunt, of the Veil, ...); health and the
+     damage of these attacks are scaled to the player's level, clamped to 100-130 (ascension_quest_core.lua trialScale).
+     The class mechanics (stillness, adds, zones, enrage) are scripted. No experience, no loot; never gets a monster tier. -->
+<monster name="Ascension Warden" nameDescription="an ascension warden" race="undead" experience="0" speed="230" manacost="0">
+	<health now="6000" max="6000" />
+	<look type="1540" corpse="0" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-110" />
+		<attack name="physical" interval="2000" chance="20" range="7" target="1" min="-40" max="-120">
+			<attribute key="shootEffect" value="suddendeath" />
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+	</attacks>
+	<defenses armor="25" defense="25" />
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+		<immunity drown="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Prove it." />
+		<voice sentence="The road is closed to the weak." />
+	</voices>
+</monster>

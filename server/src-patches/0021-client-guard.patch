@@ -1,0 +1,1163 @@
+# Client guard (server/README.md "Client guard"): only the official Cinders of Chaos client may play. Owner request:
+# "block anyone from playing with clients that are not ours". No client check is unbreakable (the key is inside every
+# client binary, only obfuscated, and the protocol can be proxied); this stops stock and third-party clients and casually
+# modified ones and raises the bar for the rest. The client half is client/base-patches/0035-client-guard.patch.
+#   * login gate (protocollogin.cpp, protocolgame.cpp): the u32 "client version" field both login packets already carry
+#     (it was skipped) must be 0x4343 << 16 | build, with build in clientGuardBuilds (empty: any) and not below the
+#     min_package of the updater manifest clientGuardManifest (when set). Stock clients send 1098 there. Refused with
+#     "Please use the official Cinders of Chaos client: <clientGuardDownloadUrl>" (account login: before the password
+#     check; game login: before the character is loaded). With the guard on, a client of another protocol version gets
+#     the same message instead of "Only clients with protocol 10.98 allowed!".
+#   * handshake (protocolgame.cpp): right after the game login, before the login packets, the server sends a 16-byte
+#     random nonce on extended opcode 189 ("cg1:<hex>"); the client answers from C++ with "cg1:<build>:<hex>" of
+#     HMAC-SHA256(key, nonce || u16le #account || account || u16le #character || character || u16le build) (Crypto++,
+#     constant-time compare). A wrong or missing answer (clientGuardTimeout seconds, default 10) is logged and, in
+#     "enforce", the player gets the same message and is logged out (Player::kickPlayer, so logout scripts run). Every
+#     other extended opcode the client sends before its answer is held back (at most 64) and handed to Lua after it,
+#     so no module loses data; after a failure they are dropped.
+#   * keys: config.lua clientGuardKey, else the file clientGuardKeyFile, else the environment variable CHAOS_CLIENT_KEY;
+#     64 hex digits each, several (comma separated) during a key rotation. The public development key
+#     (ClientGuard::DEV_KEY_HEX, what a client built without the secret gets) is refused unless
+#     clientGuardAllowDevKey = true; an answer made with it is named in the log.
+#   * clientGuardMode: "off" (the default: an older config.lua changes nothing), "log" (every check runs and is logged,
+#     nobody is refused or kicked) or "enforce" (anything else counts as "enforce"). Staff: accounts of type gamemaster or
+#     higher logging in from an IP in clientGuardStaffIps skip both checks (nobody is exempt by default).
+#   * log: one line per refusal / kick / log-only pass on the console and in clientGuardLogFile (data/logs/clientguard.log).
+#   * Lua: player:getClientGuard() -> {mode, state, official, build}; player:clientGuardFail(reason) (used by
+#     data/scripts/chaos/clientguard.lua for its module hello check: logged, kicked in "enforce").
+#   * startup: mode, key count and source, builds and an HMAC self-test on the console; an error line when enforcing
+#     without a usable key (then every handshake fails: fail closed).
+# New src/clientguard.cpp / .h (listed in src/CMakeLists.txt; a Visual Studio project needs them added by hand).
+# Apply in the server source root after 0001-0020: patch -p1 < 0021-client-guard.patch, then rebuild.
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -6,6 +6,7 @@ set(tfs_SRC
+ 	${CMAKE_CURRENT_LIST_DIR}/baseevents.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/bed.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/chat.cpp
++	${CMAKE_CURRENT_LIST_DIR}/clientguard.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/combat.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/condition.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/configmanager.cpp
+--- a/src/clientguard.cpp
++++ b/src/clientguard.cpp
+@@ -0,0 +1,505 @@
++// Cinders of Chaos engine patch 0021 (server/src-patches/0021-client-guard.patch). See clientguard.h.
++// Part of the engine, under its GPL-2.0 License (LICENSE in the server source root).
++
++#include "otpch.h"
++
++#include "clientguard.h"
++
++#include "configmanager.h"
++#include "tools.h"
++
++#include <fmt/format.h>
++
++#include <cryptopp/hmac.h>
++#include <cryptopp/misc.h>
++#include <cryptopp/osrng.h>
++#include <cryptopp/sha.h>
++
++#include <cctype>
++#include <cstdlib>
++#include <ctime>
++#include <filesystem>
++#include <fstream>
++#include <mutex>
++#include <set>
++#include <sstream>
++#include <vector>
++
++extern ConfigManager g_config;
++
++namespace ClientGuard {
++
++namespace {
++
++std::mutex cacheLock; // the caches below; the login server calls in from the network thread
++std::mutex logLock;
++
++std::string trim(const std::string& s)
++{
++	size_t b = 0, e = s.size();
++	while (b < e && std::isspace(static_cast<unsigned char>(s[b]))) {
++		++b;
++	}
++	while (e > b && std::isspace(static_cast<unsigned char>(s[e - 1]))) {
++		--e;
++	}
++	return s.substr(b, e - b);
++}
++
++// "a, b c" -> {"a", "b", "c"}
++std::vector<std::string> tokens(const std::string& s)
++{
++	std::vector<std::string> out;
++	std::string cur;
++	for (char c : s) {
++		if (c == ',' || c == ';' || std::isspace(static_cast<unsigned char>(c))) {
++			if (!cur.empty()) {
++				out.push_back(cur);
++				cur.clear();
++			}
++		} else {
++			cur += c;
++		}
++	}
++	if (!cur.empty()) {
++		out.push_back(cur);
++	}
++	return out;
++}
++
++bool fromHex(const std::string& hex, std::string& out)
++{
++	if (hex.size() % 2 != 0) {
++		return false;
++	}
++	out.clear();
++	for (size_t i = 0; i < hex.size(); i += 2) {
++		int v = 0;
++		for (size_t j = 0; j < 2; ++j) {
++			char c = static_cast<char>(std::tolower(static_cast<unsigned char>(hex[i + j])));
++			v <<= 4;
++			if (c >= '0' && c <= '9') {
++				v |= c - '0';
++			} else if (c >= 'a' && c <= 'f') {
++				v |= c - 'a' + 10;
++			} else {
++				return false;
++			}
++		}
++		out.push_back(static_cast<char>(v));
++	}
++	return true;
++}
++
++std::string toHex(const std::string& bytes)
++{
++	static const char digits[] = "0123456789abcdef";
++	std::string out;
++	out.reserve(bytes.size() * 2);
++	for (unsigned char c : bytes) {
++		out.push_back(digits[c >> 4]);
++		out.push_back(digits[c & 15]);
++	}
++	return out;
++}
++
++std::string fileStamp(const std::string& path)
++{
++	std::error_code ec;
++	auto t = std::filesystem::last_write_time(path, ec);
++	if (ec) {
++		return "missing";
++	}
++	auto size = std::filesystem::file_size(path, ec);
++	return std::to_string(t.time_since_epoch().count()) + "/" + std::to_string(ec ? 0 : size);
++}
++
++bool readFile(const std::string& path, std::string& out)
++{
++	std::ifstream in(path, std::ios::binary);
++	if (!in) {
++		return false;
++	}
++	std::ostringstream ss;
++	ss << in.rdbuf();
++	out = ss.str();
++	return true;
++}
++
++// ------------------------------------------------------------------------------------------------ keys
++struct Keys {
++	std::string signature;
++	std::vector<std::string> keys; // raw 32-byte keys
++	std::string devKey;            // raw dev key, to tell a dev-key answer apart in the log
++	bool devRefused = false;       // the dev key was configured but clientGuardAllowDevKey is false
++	std::vector<std::string> problems;
++	std::string source;
++};
++Keys keyCache;
++
++const Keys& keys()
++{
++	const std::string& configured = g_config.getString(ConfigManager::CLIENT_GUARD_KEY);
++	const std::string& keyFile = g_config.getString(ConfigManager::CLIENT_GUARD_KEY_FILE);
++	const char* env = std::getenv("CHAOS_CLIENT_KEY");
++	const std::string envValue = env ? env : "";
++	const bool allowDev = g_config.getBoolean(ConfigManager::CLIENT_GUARD_ALLOW_DEV_KEY);
++	const std::string signature = configured + "\n" + keyFile + "\n" + (keyFile.empty() ? "" : fileStamp(keyFile)) +
++	                              "\n" + envValue + "\n" + (allowDev ? "1" : "0");
++	if (signature == keyCache.signature && !keyCache.signature.empty()) {
++		return keyCache;
++	}
++
++	Keys k;
++	k.signature = signature;
++	fromHex(DEV_KEY_HEX, k.devKey);
++	// the first non-empty source wins: config.lua clientGuardKey, the file clientGuardKeyFile, the environment
++	std::string text;
++	if (!trim(configured).empty()) {
++		text = configured;
++		k.source = "config.lua clientGuardKey";
++	} else if (!keyFile.empty()) {
++		if (readFile(keyFile, text)) {
++			k.source = "file " + keyFile;
++		} else {
++			k.problems.push_back("clientGuardKeyFile " + keyFile + " cannot be read");
++		}
++	}
++	if (trim(text).empty() && !envValue.empty()) {
++		text = envValue;
++		k.source = "environment CHAOS_CLIENT_KEY";
++	}
++	for (const std::string& token : tokens(text)) {
++		std::string raw;
++		if (token.size() != 64 || !fromHex(token, raw)) {
++			k.problems.push_back("a key is not 64 hex digits (" + std::to_string(token.size()) + " characters)");
++			continue;
++		}
++		if (raw == k.devKey && !allowDev) {
++			k.devRefused = true;
++			continue;
++		}
++		k.keys.push_back(raw);
++	}
++	if (k.keys.empty() && allowDev) {
++		k.keys.push_back(k.devKey); // test servers: the development key when nothing else is configured
++		k.source = k.source.empty() ? "development key (clientGuardAllowDevKey)" : k.source + " + development key";
++	}
++	keyCache = std::move(k);
++	return keyCache;
++}
++
++// ------------------------------------------------------------------------------------------------ builds
++struct Builds {
++	std::string signature;
++	std::set<uint16_t> list;    // clientGuardBuilds; empty = any build
++	int32_t floor = 0;          // min_package of the updater manifest (clientGuardManifest), 0 = none
++	std::string problem;
++};
++Builds buildCache;
++
++int32_t manifestFloor(const std::string& text)
++{
++	// the manifest is an envelope whose payload is JSON inside a JSON string: "min_package": N appears as
++	// \"min_package\": N there. Take the first number after the key.
++	size_t pos = text.find("min_package");
++	if (pos == std::string::npos) {
++		return -1;
++	}
++	pos += 11;
++	size_t limit = std::min(text.size(), pos + 16);
++	while (pos < limit && !std::isdigit(static_cast<unsigned char>(text[pos]))) {
++		if (text[pos] != '"' && text[pos] != '\\' && text[pos] != ':' && !std::isspace(static_cast<unsigned char>(text[pos]))) {
++			return -1;
++		}
++		++pos;
++	}
++	int32_t value = 0;
++	bool any = false;
++	while (pos < text.size() && std::isdigit(static_cast<unsigned char>(text[pos])) && value < 100000) {
++		value = value * 10 + (text[pos] - '0');
++		any = true;
++		++pos;
++	}
++	return any ? value : -1;
++}
++
++const Builds& builds()
++{
++	const std::string& list = g_config.getString(ConfigManager::CLIENT_GUARD_BUILDS);
++	const std::string& manifest = g_config.getString(ConfigManager::CLIENT_GUARD_MANIFEST);
++	const std::string signature = list + "\n" + manifest + "\n" + (manifest.empty() ? "" : fileStamp(manifest));
++	if (signature == buildCache.signature && !buildCache.signature.empty()) {
++		return buildCache;
++	}
++	Builds b;
++	b.signature = signature;
++	for (const std::string& token : tokens(list)) {
++		char* end = nullptr;
++		long v = std::strtol(token.c_str(), &end, 10);
++		if (end && *end == '\0' && v >= 0 && v <= 0xFFFF) {
++			b.list.insert(static_cast<uint16_t>(v));
++		} else {
++			b.problem = "clientGuardBuilds: \"" + token + "\" is not a build number";
++		}
++	}
++	if (!manifest.empty()) {
++		std::string text;
++		if (!readFile(manifest, text)) {
++			b.problem = "clientGuardManifest " + manifest + " cannot be read (no min_package floor)";
++		} else {
++			int32_t floor = manifestFloor(text);
++			if (floor < 0) {
++				b.problem = "clientGuardManifest " + manifest + " has no min_package";
++			} else {
++				b.floor = floor;
++			}
++		}
++	}
++	buildCache = std::move(b);
++	return buildCache;
++}
++
++std::string buildList(const Builds& b)
++{
++	std::string out;
++	for (uint16_t v : b.list) {
++		out += (out.empty() ? "" : ",") + std::to_string(v);
++	}
++	return out.empty() ? "any" : out;
++}
++
++void appendU16(std::string& s, size_t v)
++{
++	s.push_back(static_cast<char>(v & 0xFF));
++	s.push_back(static_cast<char>((v >> 8) & 0xFF));
++}
++
++} // namespace
++
++Mode mode()
++{
++	std::string m = asLowerCaseString(trim(g_config.getString(ConfigManager::CLIENT_GUARD_MODE)));
++	if (m.empty() || m == "off" || m == "false" || m == "disabled") {
++		return Mode::Off;
++	}
++	if (m == "log" || m == "log-only" || m == "logonly") {
++		return Mode::Log;
++	}
++	return Mode::Enforce; // "enforce", and anything unknown: a typo must not open the server
++}
++
++const char* modeName(Mode mode)
++{
++	switch (mode) {
++		case Mode::Off: return "off";
++		case Mode::Log: return "log";
++		default: return "enforce";
++	}
++}
++
++std::string gateReason(uint32_t clientId)
++{
++	if (!isOfficialClientId(clientId)) {
++		return fmt::format("not the official client (client version field {:d})", clientId);
++	}
++	const uint16_t build = buildOf(clientId);
++	std::lock_guard<std::mutex> guard(cacheLock);
++	const Builds& b = builds();
++	if (!b.list.empty() && b.list.find(build) == b.list.end()) {
++		return fmt::format("client build {:d} is not accepted (clientGuardBuilds {:s})", build, buildList(b));
++	}
++	if (b.floor > 0 && build < b.floor) {
++		return fmt::format("client build {:d} is below min_package {:d} of the update manifest", build, b.floor);
++	}
++	return "";
++}
++
++bool isStaffIp(uint32_t ip)
++{
++	const std::string text = g_config.getString(ConfigManager::CLIENT_GUARD_STAFF_IPS);
++	if (text.empty() || ip == 0) {
++		return false;
++	}
++	const std::string address = convertIPToString(ip);
++	for (const std::string& token : tokens(text)) {
++		if (token == address) {
++			return true;
++		}
++	}
++	return false;
++}
++
++std::string refusalMessage()
++{
++	const std::string url = trim(g_config.getString(ConfigManager::CLIENT_GUARD_DOWNLOAD_URL));
++	if (url.empty()) {
++		return "Please use the official Cinders of Chaos client.";
++	}
++	return "Please use the official Cinders of Chaos client: " + url;
++}
++
++uint32_t timeoutSeconds()
++{
++	int32_t v = g_config.getNumber(ConfigManager::CLIENT_GUARD_TIMEOUT);
++	return static_cast<uint32_t>(std::max<int32_t>(2, std::min<int32_t>(120, v)));
++}
++
++std::string makeNonce()
++{
++	CryptoPP::AutoSeededRandomPool rng;
++	std::string nonce(NONCE_BYTES, '\0');
++	rng.GenerateBlock(reinterpret_cast<CryptoPP::byte*>(&nonce[0]), nonce.size());
++	return nonce;
++}
++
++std::string challengePayload(const std::string& nonce)
++{
++	return "cg1:" + toHex(nonce);
++}
++
++std::string mac(const std::string& key, const std::string& nonce, const std::string& account,
++                const std::string& character, uint16_t build)
++{
++	std::string data = nonce;
++	appendU16(data, account.size());
++	data += account;
++	appendU16(data, character.size());
++	data += character;
++	appendU16(data, build);
++	CryptoPP::HMAC<CryptoPP::SHA256> hmac(reinterpret_cast<const CryptoPP::byte*>(key.data()), key.size());
++	std::string out(CryptoPP::HMAC<CryptoPP::SHA256>::DIGESTSIZE, '\0');
++	hmac.CalculateDigest(reinterpret_cast<CryptoPP::byte*>(&out[0]), reinterpret_cast<const CryptoPP::byte*>(data.data()),
++	                     data.size());
++	return out;
++}
++
++const char* answerText(Answer answer)
++{
++	switch (answer) {
++		case Answer::Ok: return "ok";
++		case Answer::Malformed: return "malformed answer";
++		case Answer::WrongBuild: return "answer for another build";
++		case Answer::DevKey: return "answer made with the DEVELOPMENT key (client built without CHAOS_CLIENT_KEY)";
++		case Answer::NoKey: return "no usable key configured on the server (clientGuardKey)";
++		default: return "wrong answer (another key, or not our client)";
++	}
++}
++
++Answer checkAnswer(const std::string& payload, const std::string& nonce, const std::string& account,
++                   const std::string& character, uint16_t build)
++{
++	// "cg1:<build>:<64 hex>"
++	if (payload.size() < 4 + 1 + 1 + 64 || payload.compare(0, 4, "cg1:") != 0) {
++		return Answer::Malformed;
++	}
++	const size_t colon = payload.find(':', 4);
++	if (colon == std::string::npos || colon == 4 || colon > 9 || payload.size() - colon - 1 != 64) {
++		return Answer::Malformed;
++	}
++	const std::string buildText = payload.substr(4, colon - 4);
++	for (char c : buildText) {
++		if (!std::isdigit(static_cast<unsigned char>(c))) {
++			return Answer::Malformed;
++		}
++	}
++	std::string answer;
++	if (!fromHex(payload.substr(colon + 1), answer)) {
++		return Answer::Malformed;
++	}
++	if (std::stoul(buildText) != build) {
++		return Answer::WrongBuild;
++	}
++
++	std::lock_guard<std::mutex> guard(cacheLock);
++	const Keys& k = keys();
++	for (const std::string& key : k.keys) {
++		const std::string expected = mac(key, nonce, account, character, build);
++		if (CryptoPP::VerifyBufsEqual(reinterpret_cast<const CryptoPP::byte*>(expected.data()),
++		                              reinterpret_cast<const CryptoPP::byte*>(answer.data()), expected.size())) {
++			return Answer::Ok;
++		}
++	}
++	const std::string dev = mac(k.devKey, nonce, account, character, build);
++	if (CryptoPP::VerifyBufsEqual(reinterpret_cast<const CryptoPP::byte*>(dev.data()),
++	                              reinterpret_cast<const CryptoPP::byte*>(answer.data()), dev.size())) {
++		return Answer::DevKey;
++	}
++	return k.keys.empty() ? Answer::NoKey : Answer::Wrong;
++}
++
++void log(const std::string& event, uint32_t ip, const std::string& account, const std::string& character,
++         uint32_t clientId, const std::string& detail)
++{
++	char stamp[32] = {};
++	const time_t now = time(nullptr);
++	struct tm tmv;
++#ifdef _WIN32
++	localtime_s(&tmv, &now);
++#else
++	localtime_r(&now, &tmv);
++#endif
++	std::strftime(stamp, sizeof(stamp), "%Y-%m-%d %H:%M:%S", &tmv);
++	std::string id = isOfficialClientId(clientId) ? fmt::format("build {:d}", buildOf(clientId))
++	                                              : fmt::format("client version {:d}", clientId);
++	const std::string line = fmt::format("[ClientGuard] {:s} {:s} ip={:s} account={:s} character={:s} {:s}: {:s}", stamp,
++	                                     event, ip ? convertIPToString(ip) : "-", account.empty() ? "-" : account,
++	                                     character.empty() ? "-" : character, id, detail);
++	std::lock_guard<std::mutex> guard(logLock);
++	std::cout << line << std::endl;
++	const std::string path = g_config.getString(ConfigManager::CLIENT_GUARD_LOG_FILE);
++	if (path.empty()) {
++		return;
++	}
++	std::error_code ec;
++	const std::filesystem::path parent = std::filesystem::path(path).parent_path();
++	if (!parent.empty()) {
++		std::filesystem::create_directories(parent, ec);
++	}
++	std::ofstream out(path, std::ios::app);
++	if (out) {
++		out << line << '\n';
++	}
++}
++
++void startupReport()
++{
++	const Mode m = mode();
++	std::lock_guard<std::mutex> guard(cacheLock);
++	const Keys& k = keys();
++	const Builds& b = builds();
++	std::cout << ">> Client guard: " << modeName(m);
++	if (m == Mode::Off) {
++		std::cout << " (any client may log in; clientGuardMode = \"enforce\" turns it on)" << std::endl;
++		return;
++	}
++	std::cout << ", " << k.keys.size() << " key(s)" << (k.source.empty() ? "" : " from " + k.source) << ", builds "
++	          << buildList(b) << (b.floor > 0 ? fmt::format(", min_package {:d}", b.floor) : "") << ", answer within "
++	          << timeoutSeconds() << " s" << std::endl;
++	for (const std::string& p : k.problems) {
++		std::cout << "[Warning - ClientGuard] " << p << std::endl;
++	}
++	if (!b.problem.empty()) {
++		std::cout << "[Warning - ClientGuard] " << b.problem << std::endl;
++	}
++	if (k.devRefused) {
++		std::cout << "[Warning - ClientGuard] the DEVELOPMENT key is configured and refused (clientGuardAllowDevKey = false)"
++		          << std::endl;
++	}
++	if (k.keys.empty()) {
++		std::cout << "[Error - ClientGuard] no usable key: "
++		          << (m == Mode::Enforce ? "every player will be kicked at the handshake" : "every handshake will be logged as failed")
++		          << ". Set clientGuardKey (config.lua), clientGuardKeyFile or the environment variable CHAOS_CLIENT_KEY."
++		          << std::endl;
++	}
++	// self-test: RFC 4231 test case 2 through the same HMAC call
++	CryptoPP::HMAC<CryptoPP::SHA256> h(reinterpret_cast<const CryptoPP::byte*>("Jefe"), 4);
++	std::string out(32, '\0');
++	const std::string msg = "what do ya want for nothing?";
++	h.CalculateDigest(reinterpret_cast<CryptoPP::byte*>(&out[0]), reinterpret_cast<const CryptoPP::byte*>(msg.data()), msg.size());
++	if (toHex(out) != "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843") {
++		std::cout << "[Error - ClientGuard] HMAC-SHA256 self-test failed" << std::endl;
++	}
++}
++
++} // namespace ClientGuard
+--- a/src/clientguard.h
++++ b/src/clientguard.h
+@@ -0,0 +1,70 @@
++// Cinders of Chaos engine patch 0021 (server/src-patches/0021-client-guard.patch): only the official client may play.
++// Part of the engine, under its GPL-2.0 License (LICENSE in the server source root).
++//
++// Two checks, both configured in config.lua (server/README.md "Client guard"):
++//  1. login gate: the u32 "client version" field of both login packets (account login and game login) must carry
++//     CLIENT_ID_TAG in its high 16 bits and an accepted build number in its low 16 bits (stock clients send 1098);
++//  2. handshake: after the game login the server sends a random nonce on extended opcode HANDSHAKE_OPCODE and the
++//     client must answer within clientGuardTimeout seconds with
++//         HMAC-SHA256(key, nonce || u16le #account || account || u16le #character || character || u16le build)
++//     computed in C++ (client base patch 0035), the key built into the client from a build secret.
++// Nothing here is unbreakable: the key is in every client binary (only obfuscated) and the protocol can be proxied.
++// It stops stock and third-party clients and casually modified ones; the rest it only makes harder.
++
++#ifndef FS_CLIENTGUARD_H_C0C1E7A2D45B4E1F9A3B6C8D2E4F1A07
++#define FS_CLIENTGUARD_H_C0C1E7A2D45B4E1F9A3B6C8D2E4F1A07
++
++#include <cstdint>
++#include <string>
++
++namespace ClientGuard {
++
++enum class Mode : uint8_t { Off, Log, Enforce };
++
++// the official client sends (CLIENT_ID_TAG << 16) | build where the stock clients send their version (1098)
++constexpr uint32_t CLIENT_ID_TAG = 0x4343; // "CC"
++// extended opcode of the handshake, both ways; handled in C++ on both sides and never passed to Lua
++constexpr uint8_t HANDSHAKE_OPCODE = 189;
++constexpr size_t NONCE_BYTES = 16;
++// extended opcodes of a client that has not answered yet are held back (and dropped when it fails), at most this many
++constexpr size_t QUEUE_LIMIT = 64;
++// the key a client is built with when the build has no CHAOS_CLIENT_KEY (client base patch 0035): public, for tests
++// only; refused unless clientGuardAllowDevKey = true. Its bytes are the text "DEV-KEY-cinders-of-chaos-UNSAFE!".
++constexpr char DEV_KEY_HEX[] = "4445562d4b45592d63696e646572732d6f662d6368616f732d554e5341464521";
++
++Mode mode();
++const char* modeName(Mode mode);
++
++inline bool isOfficialClientId(uint32_t clientId) { return (clientId >> 16) == CLIENT_ID_TAG; }
++inline uint16_t buildOf(uint32_t clientId) { return static_cast<uint16_t>(clientId & 0xFFFF); }
++
++// "" when this client version field passes the login gate, else the reason (for the log)
++std::string gateReason(uint32_t clientId);
++// clientGuardStaffIps: staff accounts (account type gamemaster or higher) logging in from these IPs skip both checks
++bool isStaffIp(uint32_t ip);
++// "Please use the official Cinders of Chaos client: <clientGuardDownloadUrl>"
++std::string refusalMessage();
++uint32_t timeoutSeconds();
++
++std::string makeNonce();
++// what the server sends on HANDSHAKE_OPCODE: "cg1:" + the nonce in hex
++std::string challengePayload(const std::string& nonce);
++
++enum class Answer : uint8_t { Ok, Malformed, WrongBuild, DevKey, NoKey, Wrong };
++const char* answerText(Answer answer);
++// the client's answer "cg1:<build>:<64 hex digits>" against every configured key
++Answer checkAnswer(const std::string& payload, const std::string& nonce, const std::string& account,
++                   const std::string& character, uint16_t build);
++// the HMAC itself (raw 32 bytes); exposed for the startup self-test
++std::string mac(const std::string& key, const std::string& nonce, const std::string& account,
++                const std::string& character, uint16_t build);
++
++// one line on the console and in clientGuardLogFile (default data/logs/clientguard.log; "" = console only)
++void log(const std::string& event, uint32_t ip, const std::string& account, const std::string& character,
++         uint32_t clientId, const std::string& detail);
++// mode, keys and accepted builds on the console at startup (and a warning when enforcing without a usable key)
++void startupReport();
++
++} // namespace ClientGuard
++
++#endif
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -317,6 +317,19 @@ bool ConfigManager::load()
+ 	integer[PLAYER_SPEED_PER_TEN_LEVELS] = getGlobalNumber(L, "playerSpeedPerTenLevels", 25);
+ 	integer[PLAYER_SPEED_SOFT_LEVEL] = getGlobalNumber(L, "playerSpeedSoftLevel", 300);
+ 	integer[PLAYER_SPEED_PER_TEN_LEVELS_ABOVE] = getGlobalNumber(L, "playerSpeedPerTenLevelsAbove", 10);
++	// Chaos (patch 0021): client guard (src/clientguard.h, server/README.md "Client guard"). clientGuardMode "off" (default:
++	// any client), "log" (check and log, let everyone in) or "enforce"; keys: clientGuardKey, else the file
++	// clientGuardKeyFile, else the environment variable CHAOS_CLIENT_KEY (64 hex digits each, several for a rotation)
++	string[CLIENT_GUARD_MODE] = getGlobalString(L, "clientGuardMode", "off");
++	string[CLIENT_GUARD_BUILDS] = getGlobalString(L, "clientGuardBuilds", "");
++	string[CLIENT_GUARD_KEY] = getGlobalString(L, "clientGuardKey", "");
++	string[CLIENT_GUARD_KEY_FILE] = getGlobalString(L, "clientGuardKeyFile", "");
++	string[CLIENT_GUARD_MANIFEST] = getGlobalString(L, "clientGuardManifest", "");
++	string[CLIENT_GUARD_DOWNLOAD_URL] = getGlobalString(L, "clientGuardDownloadUrl", "");
++	string[CLIENT_GUARD_STAFF_IPS] = getGlobalString(L, "clientGuardStaffIps", "");
++	string[CLIENT_GUARD_LOG_FILE] = getGlobalString(L, "clientGuardLogFile", "data/logs/clientguard.log");
++	integer[CLIENT_GUARD_TIMEOUT] = getGlobalNumber(L, "clientGuardTimeout", 10);
++	boolean[CLIENT_GUARD_ALLOW_DEV_KEY] = getGlobalBoolean(L, "clientGuardAllowDevKey", false);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -55,6 +55,7 @@ class ConfigManager
+ 			REMOVE_ON_DESPAWN,
+ 			PLAYER_CONSOLE_LOGS,
+ 			ARMOR_PERCENT, // Chaos (patch 0016): percent armour for players
++			CLIENT_GUARD_ALLOW_DEV_KEY, // Chaos (patch 0021): client guard
+ 
+ 			LAST_BOOLEAN_CONFIG /* this must be the last one */
+ 		};
+@@ -78,6 +79,14 @@ class ConfigManager
+ 			DEFAULT_PRIORITY,
+ 			MAP_AUTHOR,
+ 			CONFIG_FILE,
++			CLIENT_GUARD_MODE, // Chaos (patch 0021): client guard
++			CLIENT_GUARD_BUILDS,
++			CLIENT_GUARD_KEY,
++			CLIENT_GUARD_KEY_FILE,
++			CLIENT_GUARD_MANIFEST,
++			CLIENT_GUARD_DOWNLOAD_URL,
++			CLIENT_GUARD_STAFF_IPS,
++			CLIENT_GUARD_LOG_FILE,
+ 
+ 			LAST_STRING_CONFIG /* this must be the last one */
+ 		};
+@@ -135,6 +144,7 @@ class ConfigManager
+ 			PLAYER_SPEED_PER_TEN_LEVELS,
+ 			PLAYER_SPEED_SOFT_LEVEL,
+ 			PLAYER_SPEED_PER_TEN_LEVELS_ABOVE,
++			CLIENT_GUARD_TIMEOUT, // Chaos (patch 0021): client guard
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -9,6 +9,7 @@
+ #include "luascript.h"
+ #include "chat.h"
+ #include "player.h"
++#include "clientguard.h"
+ #include "game.h"
+ #include "protocolstatus.h"
+ #include "spells.h"
+@@ -2552,6 +2553,9 @@ void LuaScriptInterface::registerFunctions()
+ 	registerMethod("Player", "getGuildNick", LuaScriptInterface::luaPlayerGetGuildNick);
+ 	registerMethod("Player", "setGuildNick", LuaScriptInterface::luaPlayerSetGuildNick);
+ 
++	registerMethod("Player", "getClientGuard", LuaScriptInterface::luaPlayerGetClientGuard); // Chaos (patch 0021)
++	registerMethod("Player", "clientGuardFail", LuaScriptInterface::luaPlayerClientGuardFail);
++
+ 	registerMethod("Player", "getGuildWarList", LuaScriptInterface::luaPlayerGetGuildWarList);
+ 	registerMethod("Player", "setGuildWarList", LuaScriptInterface::luaPlayerSetGuildWarList);
+ 
+@@ -9567,6 +9571,39 @@ int LuaScriptInterface::luaPlayerSetGuildNick(lua_State* L)
+ 	return 1;
+ }
+ 
++// Chaos (patch 0021): the client guard of the player's connection (src/clientguard.h, data/scripts/chaos/clientguard.lua)
++int LuaScriptInterface::luaPlayerGetClientGuard(lua_State* L)
++{
++	// player:getClientGuard() -> {mode = "off" | "log" | "enforce", state = "none" | "pending" | "verified" | "bypass" |
++	//                             "logged" | "failed", official = bool, build = n} or nil without a connection
++	Player* player = getUserdata<Player>(L, 1);
++	if (!player || !player->client) {
++		lua_pushnil(L);
++		return 1;
++	}
++	static const char* const states[] = {"none", "pending", "verified", "bypass", "logged", "failed"};
++	const uint32_t clientId = player->client->getGuardClientId();
++	lua_createtable(L, 0, 4);
++	setField(L, "mode", ClientGuard::modeName(ClientGuard::mode()));
++	setField(L, "state", states[static_cast<uint8_t>(player->client->getGuardState())]);
++	pushBoolean(L, ClientGuard::isOfficialClientId(clientId));
++	lua_setfield(L, -2, "official");
++	setField(L, "build", ClientGuard::isOfficialClientId(clientId) ? ClientGuard::buildOf(clientId) : 0);
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerClientGuardFail(lua_State* L)
++{
++	// player:clientGuardFail(reason): logged; in "enforce" the official-client message and a logout (returns true)
++	Player* player = getUserdata<Player>(L, 1);
++	if (!player || !player->client) {
++		lua_pushnil(L);
++		return 1;
++	}
++	pushBoolean(L, player->client->clientGuardFail(getString(L, 2)));
++	return 1;
++}
++
+ int LuaScriptInterface::luaPlayerGetGuildWarList(lua_State* L)
+ {
+ 	// player:getGuildWarList()
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -964,6 +964,8 @@ class LuaScriptInterface
+ 		static int luaPlayerGetGuildNick(lua_State* L);
+ 		static int luaPlayerSetGuildNick(lua_State* L);
+ 
++		static int luaPlayerGetClientGuard(lua_State* L); // Chaos (patch 0021)
++		static int luaPlayerClientGuardFail(lua_State* L);
+ 		static int luaPlayerGetGuildWarList(lua_State* L);
+ 		static int luaPlayerSetGuildWarList(lua_State* L);
+ 
+--- a/src/otserv.cpp
++++ b/src/otserv.cpp
+@@ -10,6 +10,7 @@
+ #include "iomarket.h"
+ 
+ #include "configmanager.h"
++#include "clientguard.h"
+ #include "scriptmanager.h"
+ #include "rsa.h"
+ #include "protocolold.h"
+@@ -184,6 +185,8 @@ void mainLoader(int, char*[], ServiceManager* services)
+ 		return;
+ 	}
+ 
++	ClientGuard::startupReport(); // Chaos (patch 0021): client guard mode, keys and builds
++
+ 	std::cout << ">> Establishing database connection..." << std::flush;
+ 
+ 	if (!Database::getInstance().connect()) {
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -17,6 +17,7 @@
+ #include "iologindata.h"
+ #include "iomarket.h"
+ #include "ban.h"
++#include "clientguard.h"
+ #include "scheduler.h"
+ #include "monster.h"
+ #include <fmt/format.h>
+@@ -133,12 +134,156 @@ void ProtocolGame::release()
+ 		player = nullptr;
+ 	}
+ 
++	if (guardEvent != 0) { // Chaos (patch 0021)
++		g_scheduler.stopEvent(guardEvent);
++		guardEvent = 0;
++	}
++
+ 	OutputMessagePool::getInstance().removeProtocolFromAutosend(shared_from_this());
+ 	Protocol::release();
+ }
+ 
++// Chaos (patch 0021): the client guard (src/clientguard.h, server/README.md "Client guard"). Decides at the game login:
++// refused (enforce: not the official client id / build, or no extended opcodes), let in after a log line (log mode),
++// a staff account from a staff IP (no checks), or a challenge to answer within clientGuardTimeout seconds.
++bool ProtocolGame::clientGuardLogin(uint32_t accountId, OperatingSystem_t operatingSystem)
++{
++	guardState = GuardState::None;
++	const ClientGuard::Mode mode = ClientGuard::mode();
++	if (mode == ClientGuard::Mode::Off) {
++		return true;
++	}
++
++	const uint32_t ip = getIP();
++	if (ClientGuard::isStaffIp(ip) && IOLoginData::getAccountType(accountId) >= ACCOUNT_TYPE_GAMEMASTER) {
++		guardState = GuardState::Bypass;
++		ClientGuard::log("game login without checks", ip, guardAccount, guardCharacter, guardClientId, "staff account from a staff IP");
++		return true;
++	}
++
++	std::string reason = ClientGuard::gateReason(guardClientId);
++	if (reason.empty() && operatingSystem < CLIENTOS_OTCLIENT_LINUX) {
++		reason = fmt::format("no extended opcodes (client OS {:d})", static_cast<uint16_t>(operatingSystem));
++	}
++	if (!reason.empty()) {
++		if (mode == ClientGuard::Mode::Enforce) {
++			ClientGuard::log("game login refused", ip, guardAccount, guardCharacter, guardClientId, reason);
++			disconnectClient(ClientGuard::refusalMessage());
++			return false;
++		}
++		ClientGuard::log("game login allowed (log only)", ip, guardAccount, guardCharacter, guardClientId, reason);
++		guardState = GuardState::Logged;
++		return true;
++	}
++
++	guardNonce = ClientGuard::makeNonce();
++	guardState = GuardState::Pending;
++	return true;
++}
++
++void ProtocolGame::clientGuardTimeout()
++{
++	guardEvent = 0;
++	if (guardState == GuardState::Pending) {
++		clientGuardFail(fmt::format("no answer to the client check within {:d} s", ClientGuard::timeoutSeconds()));
++	}
++}
++
++bool ProtocolGame::clientGuardFail(const std::string& reason)
++{
++	if (guardEvent != 0) {
++		g_scheduler.stopEvent(guardEvent);
++		guardEvent = 0;
++	}
++	if (guardState == GuardState::Failed) {
++		return true;
++	}
++
++	const bool enforce = ClientGuard::mode() == ClientGuard::Mode::Enforce;
++	const std::string name = player ? player->getName() : guardCharacter;
++	ClientGuard::log(enforce ? "kicked" : "let in (log only)", getIP(), guardAccount, name, guardClientId, reason);
++	if (!enforce) {
++		const bool wasPending = guardState == GuardState::Pending;
++		guardState = GuardState::Logged;
++		if (wasPending) {
++			auto held = std::move(guardQueue);
++			guardQueue.clear();
++			for (auto& entry : held) {
++				onExtendedOpcode(entry.first, entry.second);
++			}
++		}
++		return false;
++	}
++
++	guardState = GuardState::Failed;
++	guardQueue.clear();
++	auto output = OutputMessagePool::getOutputMessage();
++	output->addByte(0x14);
++	output->addString(ClientGuard::refusalMessage());
++	send(output);
++	if (player && !player->isRemoved()) {
++		player->kickPlayer(false);
++	} else {
++		disconnect();
++	}
++	return true;
++}
++
++// dispatcher thread: every extended opcode of the client goes through here (parseExtendedOpcode)
++void ProtocolGame::onExtendedOpcode(uint8_t opcode, const std::string& buffer)
++{
++	if (!player || player->isRemoved()) {
++		return;
++	}
++
++	if (opcode == ClientGuard::HANDSHAKE_OPCODE) {
++		if (guardState != GuardState::Pending) {
++			return;
++		}
++		const ClientGuard::Answer answer = ClientGuard::checkAnswer(buffer, guardNonce, guardAccount, guardCharacter,
++		                                                           ClientGuard::buildOf(guardClientId));
++		if (answer != ClientGuard::Answer::Ok) {
++			clientGuardFail(ClientGuard::answerText(answer));
++			return;
++		}
++		if (guardEvent != 0) {
++			g_scheduler.stopEvent(guardEvent);
++			guardEvent = 0;
++		}
++		guardState = GuardState::Verified;
++		auto held = std::move(guardQueue);
++		guardQueue.clear();
++		for (auto& entry : held) {
++			g_game.parsePlayerExtendedOpcode(player->getID(), entry.first, entry.second);
++		}
++		return;
++	}
++
++	switch (guardState) {
++		case GuardState::Pending:
++			// before the answer: held back (the official client answers before its modules send anything)
++			if (guardQueue.size() < ClientGuard::QUEUE_LIMIT) {
++				guardQueue.emplace_back(opcode, buffer);
++			} else if (!guardQueueFull) {
++				guardQueueFull = true;
++				ClientGuard::log("extended opcodes dropped", getIP(), guardAccount, player->getName(), guardClientId,
++				                 "more than 64 before the answer to the client check");
++			}
++			return;
++		case GuardState::Failed:
++			return;
++		default:
++			g_game.parsePlayerExtendedOpcode(player->getID(), opcode, buffer);
++	}
++}
++
+ void ProtocolGame::login(const std::string& name, uint32_t accountId, OperatingSystem_t operatingSystem)
+ {	
++	// Chaos (patch 0021): the client guard decides first (refused here in "enforce" when it is not our client)
++	if (!clientGuardLogin(accountId, operatingSystem)) {
++		return;
++	}
++
+ 	// OTCv8 features and extended opcodes
+ 	if (otclientV8 || operatingSystem >= CLIENTOS_OTCLIENT_LINUX) {
+ 		if(otclientV8)
+@@ -150,6 +295,21 @@ void ProtocolGame::login(const std::string& name, uint32_t accountId, OperatingS
+ 		writeToOutputBuffer(opcodeMessage);
+ 	}
+ 
++	// Chaos (patch 0021): the challenge goes out before the login packets, so the client answers before its modules
++	// send anything (what they send earlier is held back until the answer)
++	if (guardState == GuardState::Pending) {
++		NetworkMessage challenge;
++		challenge.addByte(0x32);
++		challenge.addByte(ClientGuard::HANDSHAKE_OPCODE);
++		challenge.addString(ClientGuard::challengePayload(guardNonce));
++		writeToOutputBuffer(challenge);
++		if (guardEvent != 0) {
++			g_scheduler.stopEvent(guardEvent);
++		}
++		guardEvent = g_scheduler.addEvent(createSchedulerTask(ClientGuard::timeoutSeconds() * 1000,
++		                                                      std::bind(&ProtocolGame::clientGuardTimeout, getThis())));
++	}
++
+ 	//dispatcher thread
+ 	Player* foundPlayer = g_game.getPlayerByName(name);
+ 	if (!foundPlayer || g_config.getBoolean(ConfigManager::ALLOW_CLONES)) {
+@@ -331,7 +491,8 @@ void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg)
+ 	OperatingSystem_t operatingSystem = static_cast<OperatingSystem_t>(msg.get<uint16_t>());
+ 	version = msg.get<uint16_t>();
+ 
+-	msg.skipBytes(7); // U32 client version, U8 client type, U16 dat revision
++	guardClientId = msg.get<uint32_t>(); // U32 client version (Chaos patch 0021: the client guard's identifier)
++	msg.skipBytes(3); // U8 client type, U16 dat revision
+ 
+ 	if (!Protocol::RSA_decrypt(msg)) {
+ 		disconnect();
+@@ -377,6 +538,8 @@ void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg)
+ 	}
+ 
+ 	std::string characterName = msg.getString();
++	guardAccount = accountName; // Chaos (patch 0021): the names as this client sent them, part of the handshake answer
++	guardCharacter = characterName;
+ 
+ 	uint32_t timeStamp = msg.get<uint32_t>();
+ 	uint8_t randNumber = msg.getByte();
+@@ -396,6 +559,13 @@ void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg)
+ 	}
+ 
+ 	if (version < CLIENT_VERSION_MIN || version > CLIENT_VERSION_MAX) {
++		// Chaos (patch 0021): with the client guard on, another protocol is another client: the official-client message
++		if (ClientGuard::mode() != ClientGuard::Mode::Off) {
++			ClientGuard::log("game login refused", getIP(), accountName, characterName, guardClientId,
++			                 fmt::format("protocol {:d}", version));
++			disconnectClient(ClientGuard::refusalMessage());
++			return;
++		}
+ 		disconnectClient(fmt::format("Only clients with protocol {:s} allowed!", CLIENT_VERSION_STR));
+ 		return;
+ 	}
+@@ -3410,8 +3580,9 @@ void ProtocolGame::parseExtendedOpcode(NetworkMessage& msg)
+ 	uint8_t opcode = msg.getByte();
+ 	const std::string& buffer = msg.getString();
+ 
+-	// process additional opcodes via lua script event
+-	addGameTask(&Game::parsePlayerExtendedOpcode, player->getID(), opcode, buffer);
++	// process additional opcodes via lua script event; Chaos (patch 0021): through the client guard on the dispatcher
++	// (the handshake answer is handled there, other opcodes wait for it)
++	g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::onExtendedOpcode, getThis(), opcode, buffer)));
+ }
+ 
+ // OTCv8
+--- a/src/protocolgame.h
++++ b/src/protocolgame.h
+@@ -57,6 +57,13 @@ class ProtocolGame final : public Protocol
+ 			return version;
+ 		}
+ 
++		// Chaos (patch 0021): the client guard (src/clientguard.h)
++		enum class GuardState : uint8_t { None, Pending, Verified, Bypass, Logged, Failed };
++		GuardState getGuardState() const { return guardState; }
++		uint32_t getGuardClientId() const { return guardClientId; }
++		// a failed check: logged; in "enforce" the player gets the official-client message and is logged out (true)
++		bool clientGuardFail(const std::string& reason);
++
+ 	private:
+ 		ProtocolGame_ptr getThis() {
+ 			return std::static_pointer_cast<ProtocolGame>(shared_from_this());
+@@ -299,6 +306,11 @@ class ProtocolGame final : public Protocol
+ 
+ 		void sendFloorDescription(const Position& pos, int floor);
+ 		void parseChangeAwareRange(NetworkMessage& msg);
++
++		// Chaos (patch 0021): the client guard
++		bool clientGuardLogin(uint32_t accountId, OperatingSystem_t operatingSystem);
++		void clientGuardTimeout();
++		void onExtendedOpcode(uint8_t opcode, const std::string& buffer);
+ 		void updateAwareRange(int width, int height);
+ 		void sendAwareRange();
+ 
+@@ -330,6 +342,17 @@ class ProtocolGame final : public Protocol
+ 		uint16_t otclientV8 = 0;
+ 		bool chaosClient = false; // the client sent the markers of our client after its version (see onRecvFirstMessage)
+ 		bool chaosItemAttributes = false; // GameItemCustomAttributes announced: every item carries its custom attributes
++
++		// Chaos (patch 0021): the client guard: client version field, names as the client sent them, the nonce, the
++		// timeout event and the extended opcodes held back until the answer
++		uint32_t guardClientId = 0;
++		std::string guardAccount;
++		std::string guardCharacter;
++		std::string guardNonce;
++		GuardState guardState = GuardState::None;
++		uint32_t guardEvent = 0;
++		std::vector<std::pair<uint8_t, std::string>> guardQueue;
++		bool guardQueueFull = false;
+ 		struct AwareRange {
+ 			int width = 17;
+ 			int height = 13;
+--- a/src/protocollogin.cpp
++++ b/src/protocollogin.cpp
+@@ -11,6 +11,7 @@
+ #include "configmanager.h"
+ #include "iologindata.h"
+ #include "ban.h"
++#include "clientguard.h"
+ #include "game.h"
+ 
+ #include <fmt/format.h>
+@@ -29,7 +30,7 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
+ 	disconnect();
+ }
+ 
+-void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, const std::string& token, uint16_t version, const std::shared_ptr<Account>& checkedAccount)
++void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, const std::string& token, uint16_t version, const std::shared_ptr<Account>& checkedAccount, uint32_t clientId, const std::string& guardReason)
+ {
+ 	if (!checkedAccount) {
+ 		disconnectClient("Account name or password is not correct.", version);
+@@ -37,6 +38,18 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
+ 	}
+ 	Account& account = *checkedAccount;
+ 
++	// Chaos (patch 0021): another client from a staff IP (clientGuardStaffIps) is let in for staff accounts only
++	if (!guardReason.empty()) {
++		auto connection = getConnection();
++		const uint32_t ip = connection ? connection->getIP() : 0;
++		if (account.accountType < ACCOUNT_TYPE_GAMEMASTER) {
++			ClientGuard::log("login refused", ip, accountName, "", clientId, guardReason);
++			disconnectClient(ClientGuard::refusalMessage(), version);
++			return;
++		}
++		ClientGuard::log("login allowed (staff account from a staff IP)", ip, accountName, "", clientId, guardReason);
++	}
++
+ 	uint32_t ticks = time(nullptr) / AUTHENTICATOR_PERIOD;
+ 
+ 	auto output = OutputMessagePool::getOutputMessage();
+@@ -121,14 +134,16 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
+ 	msg.skipBytes(2); // client OS
+ 
+ 	uint16_t version = msg.get<uint16_t>();
++	uint32_t clientId = 0; // Chaos (patch 0021): the client version field, read by the client guard
+ 	if (version >= 971) {
+-		msg.skipBytes(17);
++		clientId = msg.get<uint32_t>();
++		msg.skipBytes(13);
+ 	} else {
+ 		msg.skipBytes(12);
+ 	}
+ 	/*
+ 	 * Skipped bytes:
+-	 * 4 bytes: protocolVersion
++	 * 4 bytes: protocolVersion (client version: the client guard's identifier, see clientguard.h)
+ 	 * 12 bytes: dat, spr, pic signatures (4 bytes each)
+ 	 * 1 byte: 0
+ 	 */
+@@ -152,6 +167,14 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
+ 	setXTEAKey(std::move(key));
+ 
+ 	if (version < CLIENT_VERSION_MIN || version > CLIENT_VERSION_MAX) {
++		// Chaos (patch 0021): with the client guard on, another protocol is another client: the official-client message
++		if (ClientGuard::mode() != ClientGuard::Mode::Off) {
++			auto connection = getConnection();
++			ClientGuard::log("login refused", connection ? connection->getIP() : 0, "", "", clientId,
++			                 fmt::format("protocol {:d}", version));
++			disconnectClient(ClientGuard::refusalMessage(), version);
++			return;
++		}
+ 		disconnectClient(fmt::format("Only clients with protocol {:s} allowed!", CLIENT_VERSION_STR), version);
+ 		return;
+ 	}
+@@ -207,10 +230,28 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
+ 
+ 	std::string authToken = msg.getString();
+ 
++	// Chaos (patch 0021): the client guard's login gate (src/clientguard.h). In "enforce" another client is refused here,
++	// before the password check; from a staff IP the decision waits for the account type (getCharacterList)
++	std::string guardReason;
++	const ClientGuard::Mode guardMode = ClientGuard::mode();
++	if (guardMode != ClientGuard::Mode::Off) {
++		guardReason = ClientGuard::gateReason(clientId);
++		if (!guardReason.empty()) {
++			if (guardMode == ClientGuard::Mode::Log) {
++				ClientGuard::log("login allowed (log only)", connection->getIP(), accountName, "", clientId, guardReason);
++				guardReason.clear();
++			} else if (!ClientGuard::isStaffIp(connection->getIP())) {
++				ClientGuard::log("login refused", connection->getIP(), accountName, "", clientId, guardReason);
++				disconnectClient(ClientGuard::refusalMessage(), version);
++				return;
++			}
++		}
++	}
++
+ 	// Chaos (patch 0014): the password check (database + PBKDF2) runs on the login worker, the answer on the dispatcher
+ 	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
+-	bool queued = IOLoginData::loginserverAuthenticationAsync(accountName, password, [thisPtr, accountName, password, authToken, version](std::shared_ptr<Account> account) {
+-		thisPtr->getCharacterList(accountName, password, authToken, version, account);
++	bool queued = IOLoginData::loginserverAuthenticationAsync(accountName, password, [thisPtr, accountName, password, authToken, version, clientId, guardReason](std::shared_ptr<Account> account) {
++		thisPtr->getCharacterList(accountName, password, authToken, version, account, clientId, guardReason);
+ 	});
+ 	if (!queued) {
+ 		disconnectClient("Too many logins at the moment.\nPlease try again in a few seconds.", version);
+--- a/src/protocollogin.h
++++ b/src/protocollogin.h
+@@ -30,7 +30,9 @@ class ProtocolLogin : public Protocol
+ 
+ 		// Chaos (patch 0014): account is the result of IOLoginData::loginserverAuthentication on the login worker,
+ 		// nullptr when the name or password was wrong
+-		void getCharacterList(const std::string& accountName, const std::string& password, const std::string& token, uint16_t version, const std::shared_ptr<Account>& account);
++		// Chaos (patch 0021): clientId is the client version field; guardReason is set when the client guard's login gate
++		// failed for a staff IP (clientGuardStaffIps): only a staff account may go on then
++		void getCharacterList(const std::string& accountName, const std::string& password, const std::string& token, uint16_t version, const std::shared_ptr<Account>& account, uint32_t clientId, const std::string& guardReason);
+ };
+ 
+ #endif

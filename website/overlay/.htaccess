@@ -1,0 +1,25 @@
+# Cinders of Chaos (website/overlay/.htaccess, copied over ZnoteX's own by install_site.sh). Apache 2.4.
+# ZnoteX's rule (any other path is a character name) plus deny rules for everything that is not a page or an asset.
+# nginx: website/README.md "Web server" has the same rules as a server block.
+Options -Indexes +FollowSymLinks
+
+<IfModule mod_headers.c>
+	Header always unset X-Powered-By
+	Header unset X-Powered-By
+</IfModule>
+
+# internals: the repository data, schemas, tests, tools, docker files, the special/ scripts, the web installer, the
+# admin panel's backups and the caches
+RedirectMatch 404 "^/(\.git|SQL|Lua|tests|tools|docker|special|install|engine/(backups|cache)|vendor)(/|$)"
+# any other dot file or folder (.env, .github, .gitignore ...); /.well-known/ stays for certificates
+RedirectMatch 404 "/\.(?!well-known(/|$))"
+<FilesMatch "(^composer\.|^docker-compose|^Dockerfile$|^config\.local\.php$|\.(sql|md|lock|dist|example|bak|yml|yaml|env|log|phar)$)">
+	Require all denied
+</FilesMatch>
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+# [B]: the name is URL-encoded into the query (Apache 2.4.59+ refuses a raw space there, and a name cannot add
+# parameters)
+RewriteRule ^(.*)$ /characterprofile.php?name=$1 [B,L]

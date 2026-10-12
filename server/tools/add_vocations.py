@@ -4,7 +4,9 @@
 usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
 
 1. data/XML/vocations.xml: the entries of server/data/XML/chaos_vocations.xml (the reviewable table: ids, names,
-   gains, attack speed, skills) go between "BEGIN chaos vocations" / "END chaos vocations" markers before </vocations>.
+   gains, attack speed, skills) and of the class fragments next to it, chaos_vocations_monk.xml (17-19),
+   chaos_vocations_necro.xml (20-22) and chaos_vocations_templar.xml (23-25), go between "BEGIN chaos vocations" /
+   "END chaos vocations" markers before </vocations>. A "BEGIN chaos necromancer" block an older tool wrote is dropped.
    An entry of the table replaces the base server's entry with the same id (Knight 4 -> Warrior, ...), the retired ids
    2, 6 and 9 (Druid, Elder Druid, Illusionist) are removed. Re-running rebuilds the block from the table. Stops with
    an error, changing nothing, when a name of the table is used by an entry it does not replace.
@@ -25,9 +27,33 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    weapon (weaponType "distance" without ammoType: throwing stars, assassin stars, knives, spears). Equip events that
    list vocations get the three when the slot is not a hand and the Ranger may wear it, or the slot is a hand and the
    item is a one-handed sword or a throwing weapon. A list that names "Thief" already is left as it is.
-4. data/actions/scripts/other/potions.lua: a potion that the Elite Knight (8) may drink also lists the Berserker (14),
-   one the Royal Paladin (7) may drink the Beastmaster (15). data/lib/core/player.lua: Player.isKnight also counts the
-   Berserker and Player.isPaladin the Beastmaster (base scripts and NPCs ask them). Both are skipped when missing.
+   The Monk line (Monk, Shadowfist, Iron Sage) fights unarmed or with a staff: weapon entries of two-handed clubs get
+   the three; equip events get them when the slot is not a hand and the Ranger may wear it (light armour), or the slot
+   is a hand and the item is a two-handed club, or the item is a fist weapon (items.xml weaponType "shield" with an
+   attack: no stock shield has one; the fist weapons and their Monk-only equip entries come from install_fist_weapons.py).
+   The Templar line (Templar, Inquisitor, Sentinel) gets one-handed swords and clubs, and every non-hand equip entry
+   (shields too) that the Warrior may wear.
+   The Necromancer line (Necromancer, Lich, Bone Lord) wields and wears what the Mystic does: every <wand> and every
+   equip event whose list names a caster (Mystic, Elementalist, Illusionist). The stock healing and support instants
+   of the Mystic in spells.xml get it too (healing, haste, magic shield, light, cures, party spells; not rune
+   conjuring, not the stock summon, which would bypass the minion caps, not other classes' custom spells).
+   A list that already names the line's base class is left as it is, so every run after the first changes nothing.
+   The quiver block of movements.xml (patch_base_archery.py) is left alone: only the launcher classes wear a quiver.
+   The Thief, Monk and Templar lines get the stock utility spells every other class has (LINE_STOCK_SPELLS: light, great
+   light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures); the Thief and Monk lines also
+   strong haste, the Monk and Templar lines cure bleeding (as the Warrior), the Templar line cure curse (as the Ranger).
+4. data/actions/scripts/other/potions.lua: every class drinks the potions of its role (docs/CLASSES.md, POTION_RULES):
+   a list that names the Elite Knight (8) also gets the Berserker (14), one that names the Royal Paladin (7) the
+   Beastmaster (15), the Thief line (11, 12, 13) and the Monk line (17, 18, 19), one that names either the Templar line
+   (23, 24, 25), one that names the Elementalist (5) the Necromancer line (20, 21, 22); lists are sorted, so a re-run
+   (also on an install of the former rule) changes nothing. Each refusal text is rebuilt from its list with our class
+   names ("Only Warriors and Templars of level 80 or above may drink this fluid."; a line by its base class when all
+   three are in the list; "Only characters of level 50 or above ..." when every class is).
+   data/actions/scripts/other/strengthening_potions.lua: the mastermind potion asks Player.isMage (Sorcerer and Druid
+   ids only); it gets the stock mastermind list plus the Necromancer line (Mystic, Elementalist, Illusionist,
+   Necromancer, Lich, Bone Lord) and the text "Only Mystics and Necromancers may drink this fluid.".
+   data/lib/core/player.lua: Player.isKnight also counts the
+   Berserker and Player.isPaladin the Beastmaster (base scripts and NPCs ask them). Each file is skipped when missing.
 
 The engine adds a promoted vocation to a weapon's list by itself only for the first vocation that names the base one
 as its fromvoc, so every class is written out.
@@ -36,11 +62,40 @@ import os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TABLE = os.path.join(HERE, '..', 'data', 'XML', 'chaos_vocations.xml')
+# the class fragments (one file per line, ids in the line's own config), installed in the same block
+FRAGMENTS = [os.path.join(HERE, '..', 'data', 'XML', 'chaos_vocations_%s.xml' % k) for k in ('monk', 'necro', 'templar')]
+# a block of the former separate tool for the Necromancer: dropped, the entries are in the main block now
+OLD_BLOCKS = [('<!-- BEGIN chaos necromancer (server/tools/add_necromancer.py) -->', '<!-- END chaos necromancer -->')]
 BEGIN = '<!-- BEGIN chaos vocations (server/tools/add_vocations.py) -->'
 END = '<!-- END chaos vocations -->'
 CONVERTED = '<!-- chaos classes: vocation lists converted (server/tools/add_vocations.py) -->'
 RETIRED = {'2', '6', '9'}
 LINE = ['Thief', 'Ninja', 'Samurai']
+MONK_LINE = ['Monk', 'Shadowfist', 'Iron Sage']
+NECRO_LINE = ['Necromancer', 'Lich', 'Bone Lord']
+TEMPLAR_LINE = ['Templar', 'Inquisitor', 'Sentinel']
+CASTERS = ('Mystic', 'Elementalist', 'Illusionist', 'Sorcerer', 'Master Sorcerer', 'Druid', 'Elder Druid')
+# the Necromancer's stock spells: the Mystic's healing / support instants, never these scripts
+NECRO_SPELL_FROM = ('Mystic', 'Sorcerer')
+NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/')
+# the stock utility spells of the Thief, Monk and Templar lines (the Warrior, Ranger, Mystic and Necromancer all have
+# the first nine): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
+# the client's spelldata.lua (ChaosStockSpellLines), so the client's spell list shows them for the three lines.
+THIEF_MONK_TEMPLAR = (LINE, MONK_LINE, TEMPLAR_LINE)
+LINE_STOCK_SPELLS = [
+    ('support/light.lua', 'utevo lux', THIEF_MONK_TEMPLAR),
+    ('support/great_light.lua', 'utevo gran lux', THIEF_MONK_TEMPLAR),
+    ('support/haste.lua', 'utani hur', THIEF_MONK_TEMPLAR),
+    ('support/find_person.lua', 'exiva', THIEF_MONK_TEMPLAR),
+    ('support/levitate.lua', 'exani hur', THIEF_MONK_TEMPLAR),
+    ('support/magic_rope.lua', 'exani tera', THIEF_MONK_TEMPLAR),
+    ('healing/cure_poison.lua', 'exana pox', THIEF_MONK_TEMPLAR),
+    ('healing/cure_splashed.lua', 'exana splash', THIEF_MONK_TEMPLAR),
+    ('healing/cure_bewitched.lua', 'exana arcane', THIEF_MONK_TEMPLAR),
+    ('support/strong_haste.lua', 'utani gran hur', (LINE, MONK_LINE)),       # the mobile lines
+    ('healing/cure_bleeding.lua', 'exana kor', (MONK_LINE, TEMPLAR_LINE)),   # melee lines, as the Warrior
+    ('healing/cure_curse.lua', 'exana mort', (TEMPLAR_LINE,)),               # the holy line, as the Ranger
+]
 
 # old name -> new names; 'B' / 'BM' mark the Berserker / Beastmaster, added only where the item allows it
 CONVERT = {
@@ -51,9 +106,17 @@ CONVERT = {
     'Illusionist': ['Mystic', 'Illusionist'], 'Arch Illusionist': ['Illusionist'],
 }
 BASE_OF = {'Juggernaut': 'Warrior', 'Berserker': 'Warrior', 'Deadeye': 'Ranger', 'Beastmaster': 'Ranger',
-           'Elementalist': 'Mystic', 'Illusionist': 'Mystic', 'Ninja': 'Thief', 'Samurai': 'Thief'}
+           'Elementalist': 'Mystic', 'Illusionist': 'Mystic', 'Ninja': 'Thief', 'Samurai': 'Thief',
+           'Shadowfist': 'Monk', 'Iron Sage': 'Monk', 'Lich': 'Necromancer', 'Bone Lord': 'Necromancer',
+           'Inquisitor': 'Templar', 'Sentinel': 'Templar'}
 ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster', 'Mystic', 'Elementalist',
-         'Illusionist', 'Thief', 'Ninja', 'Samurai']
+         'Illusionist', 'Thief', 'Ninja', 'Samurai', 'Monk', 'Shadowfist', 'Iron Sage', 'Necromancer', 'Lich',
+         'Bone Lord', 'Templar', 'Inquisitor', 'Sentinel']
+# the quiver block of movements.xml belongs to patch_base_archery.py (its MOVE_BEGIN / MOVE_END): its lists are the
+# classes that may fire a launcher, rebuilt on every archery run, so the class lines are never added there (else the
+# two tools rewrite the block back and forth on every install)
+QUIVER_BLOCK = re.compile(re.escape('<!-- Chaos quivers (server/tools/patch_base_archery.py, do not edit by hand) -->')
+                          + r'.*?' + re.escape('<!-- end of the Chaos quivers -->'), re.S)
 
 
 def read(path):
@@ -65,17 +128,20 @@ def write(path, text):
 
 
 def table_entries():
-    """the <vocation> elements of the table, as text, and their (id, name) pairs"""
-    t = read(TABLE)
-    t = re.sub(r'<!--.*?-->', '', t, flags=re.S)
-    entries = re.findall(r'[ \t]*<vocation\s.*?</vocation>', t, re.S)
+    """the <vocation> elements of the table and the fragments, as text, and their (id, name) pairs"""
+    entries = []
+    for path in [TABLE] + [f for f in FRAGMENTS if os.path.exists(f)]:
+        t = re.sub(r'<!--.*?-->', '', read(path), flags=re.S)
+        entries += re.findall(r'[ \t]*<vocation\s.*?</vocation>', t, re.S)
     ids = [(re.search(r'\bid="(\d+)"', e).group(1), re.search(r'\bname="([^"]+)"', e).group(1)) for e in entries]
     return entries, ids
 
 
 def patch_vocations(text, entries, ids):
     """returns (new text, status)"""
-    outside = re.sub(r'[ \t]*' + re.escape(BEGIN) + r'.*?' + re.escape(END) + r'\n?', '', text, flags=re.S)
+    outside = text
+    for begin, end in [(BEGIN, END)] + OLD_BLOCKS:
+        outside = re.sub(r'[ \t]*' + re.escape(begin) + r'.*?' + re.escape(end) + r'\n?', '', outside, flags=re.S)
     replace = {vid for vid, _ in ids} | RETIRED
 
     def drop(m):
@@ -109,10 +175,21 @@ def item_info(items_xml):
         flags = set()
         if wt == 'sword' and not two:
             flags.add('sword1h')
+        if wt == 'club' and not two:
+            flags.add('club1h')
+        if wt == 'club' and two:
+            flags.add('staff')
         if wt in ('sword', 'axe', 'club') and two:
             flags.add('melee2h')
+        # a bow or crossbow fires without ammunition once tools/patch_base_archery.py ran (no ammoType, a missile of
+        # its own): it is two-handed, a throwing weapon is not
+        if not ammo and wt == 'distance' and two:
+            shoot = re.search(r'key="shootType"\s+value="([^"]+)"', body, re.I)
+            ammo = 'bolt' if shoot and 'bolt' in shoot.group(1).lower() else 'arrow'
         if wt == 'distance' and not ammo:
             flags.add('throwing')
+        if wt == 'shield' and re.search(r'key="attack"\s+value="[1-9]', body, re.I):
+            flags.add('fist')            # a shield with an attack: the Monk line's fist weapons (install_fist_weapons.py)
         if wt == 'distance' and ammo == 'arrow':
             flags.add('bow')
         if wt == 'ammunition' and ammo == 'arrow':
@@ -226,80 +303,258 @@ def convert_file(text, kind, info):
     return new, count[0]
 
 
-# ------------------------------------------------------------------------------------------------ the Thief line
-def add_lines(element):
-    """append the Thief line to the <vocation> list of one XML element (text), keeping its indentation"""
-    if re.search(r'<vocation\s+name="Thief"', element):
+# ------------------------------------------------------------------------------------------------ the class lines
+def add_lines(element, line=None):
+    """append a class line (default the Thief line) to the <vocation> list of one XML element (text), keeping its
+    indentation; the base class is shown in descriptions, the ascended classes are not. A list that names the base
+    class already is left as it is."""
+    line = line or LINE
+    if re.search(r'<vocation\s+name="%s"' % re.escape(line[0]), element):
         return element
     last = list(re.finditer(r'\n([ \t]*)<vocation\s[^>]*/>', element))
     if not last:
         return element
     indent = last[-1].group(1)
     at = last[-1].end()
-    lines = ''.join('\n%s<vocation name="%s"%s />' % (indent, v, '' if v == 'Thief' else ' showInDescription="0"')
-                    for v in LINE)
+    lines = ''.join('\n%s<vocation name="%s"%s />' % (indent, v, '' if v == line[0] else ' showInDescription="0"')
+                    for v in line)
     return element[:at] + lines + element[at:]
+
+
+def names_in(element):
+    return re.findall(r'<vocation\s+name="([^"]+)"', element)
 
 
 def thief_ok(fl):
     return 'sword1h' in fl or 'throwing' in fl
 
 
+def monk_ok(fl):
+    return 'staff' in fl or 'fist' in fl
+
+
+def templar_ok(fl):
+    return 'sword1h' in fl or 'club1h' in fl
+
+
+def caster_list(element):
+    return any(n in CASTERS for n in names_in(element))
+
+
 def patch_weapons(text, info):
-    count = [0]
+    """returns (new text, {line base name: entries changed})"""
+    count = {'Thief': 0, 'Monk': 0, 'Templar': 0, 'Necromancer': 0}
+
+    def add(el, line, ok):
+        if not ok:
+            return el
+        new = add_lines(el, line)
+        if new != el:
+            count[line[0]] += 1
+        return new
 
     def repl(m):
         el = m.group(0)
-        if '<vocation' not in el or not thief_ok(flags_of(m.group(2), info)):
+        if '<vocation' not in el:
             return el
-        new = add_lines(el)
-        if new != el:
-            count[0] += 1
-        return new
+        fl = flags_of(m.group(2), info)
+        el = add(el, LINE, thief_ok(fl))
+        el = add(el, MONK_LINE, monk_ok(fl))
+        el = add(el, TEMPLAR_LINE, m.group(1) == 'melee' and templar_ok(fl))
+        return el
+
+    def wand(m):
+        el = m.group(0)
+        if '<vocation' not in el:
+            return el
+        return add(el, NECRO_LINE, caster_list(el))
     new = re.sub(r'<(melee|distance)\s([^>]*[^/])>.*?</\1>', repl, text, flags=re.S)
-    return new, count[0]
+    new = re.sub(r'<wand\b([^>]*[^/])>.*?</wand>', wand, new, flags=re.S)
+    return new, count
 
 
 def patch_movements(text, info):
-    count = [0]
+    """returns (new text, {line base name: equip entries changed})"""
+    count = {'Thief': 0, 'Monk': 0, 'Templar': 0, 'Necromancer': 0}
+
+    def add(el, line, ok):
+        if not ok:
+            return el
+        new = add_lines(el, line)
+        if new != el:
+            count[line[0]] += 1
+        return new
+
+    skip = [b.span() for b in QUIVER_BLOCK.finditer(text)]
 
     def repl(m):
         el, tag = m.group(0), m.group(1)
-        if '<vocation' not in el:
+        if '<vocation' not in el or any(a <= m.start() < b for a, b in skip):
             return el
         slot = re.search(r'\bslot="([^"]+)"', tag)
         slot = slot.group(1).lower() if slot else ''
-        if slot == 'hand':
-            ok = thief_ok(flags_of(tag, info))
+        light = re.search(r'<vocation\s+name="(?:Paladin|Ranger)"', el) is not None
+        heavy = re.search(r'<vocation\s+name="(?:Knight|Warrior)"', el) is not None
+        caster = caster_list(el)
+        fl = flags_of(tag, info)
+        if slot == 'hand' or 'fist' in fl:          # fist weapons are equipped in the shield slot
+            thief, monk, templar = thief_ok(fl), monk_ok(fl), templar_ok(fl)
         else:
-            ok = re.search(r'<vocation\s+name="(?:Paladin|Ranger)"', el) is not None
-        if not ok:
-            return el
-        new = add_lines(el)
-        if new != el:
-            count[0] += 1
-        return new
+            thief = monk = light
+            templar = heavy
+        el = add(el, LINE, thief)
+        el = add(el, MONK_LINE, monk)
+        el = add(el, TEMPLAR_LINE, templar)
+        el = add(el, NECRO_LINE, caster)
+        return el
     new = re.sub(r'<movevent\s+event="Equip"([^>]*[^/])>.*?</movevent>', repl, text, flags=re.S)
-    return new, count[0]
+    return new, count
 
 
-# ------------------------------------------------------------------------------------------------ base scripts
-def patch_potions(text):
-    """vocations = {...} lists: + 14 where 8 is, + 15 where 7 is"""
+def patch_spells_necro(text):
+    """the Mystic's stock healing and support instants get the Necromancer line (not the Chaos block)"""
+    m = re.search(r'<!-- BEGIN chaos spells.*?<!-- END chaos spells -->', text, re.S)
+    skip = m.span() if m else None
     count = [0]
 
     def repl(m):
-        ids = [x.strip() for x in m.group(1).split(',') if x.strip()]
-        new = list(ids)
-        if '8' in ids and '14' not in ids:
-            new.append('14')
-        if '7' in ids and '15' not in ids:
-            new.append('15')
-        if new == ids:
+        if skip and skip[0] <= m.start() < skip[1]:
             return m.group(0)
-        count[0] += 1
+        el, head = m.group(0), m.group(1)
+        group = re.search(r'\bgroup="([^"]+)"', head)
+        group = group.group(1).lower() if group else ''
+        script = re.search(r'\bscript="([^"]+)"', head)
+        script = script.group(1).lower() if script else ''
+        if any(s in script for s in NECRO_SPELL_SKIP) or group not in ('healing', 'support'):
+            return el
+        if not any(n in NECRO_SPELL_FROM for n in names_in(el)):
+            return el
+        new = add_lines(el, NECRO_LINE)
+        if new != el:
+            count[0] += 1
+        return new
+    return re.sub(r'<instant\b([^>]*[^/])>.*?</instant>', repl, text, flags=re.S), count[0]
+
+
+def patch_spells_lines(text):
+    """the stock utility spells of LINE_STOCK_SPELLS get their class lines (not the Chaos block); returns (text, count)"""
+    m = re.search(r'<!-- BEGIN chaos spells.*?<!-- END chaos spells -->', text, re.S)
+    skip = m.span() if m else None
+    lines_of = {script: lines for script, _, lines in LINE_STOCK_SPELLS}
+    count = [0]
+
+    def repl(m):
+        if skip and skip[0] <= m.start() < skip[1]:
+            return m.group(0)
+        el = m.group(0)
+        script = re.search(r'\bscript="([^"]+)"', m.group(1))
+        lines = lines_of.get(script.group(1).lower().replace('\\', '/') if script else '')
+        if not lines or '<vocation' not in el:
+            return el
+        new = el
+        for line in lines:
+            new = add_lines(new, line)
+        if new != el:
+            count[0] += 1
+        return new
+    return re.sub(r'<instant\b([^>]*[^/])>.*?</instant>', repl, text, flags=re.S), count[0]
+
+
+# ------------------------------------------------------------------------------------------------ base scripts
+# potions.lua: the stock vocation whose potions a class drinks (docs/CLASSES.md): a list that names the stock id gets the
+# class ids. Melee lines drink the knight's, hybrids the paladin's, casters the mage's.
+POTION_RULES = [
+    (('8',), ('14',)),                 # Berserker: the Elite Knight's
+    (('7',), ('15',)),                 # Beastmaster: the Royal Paladin's
+    (('7',), ('11', '12', '13')),      # Thief line: the Royal Paladin's (it wears what the Paladin wears)
+    (('7',), ('17', '18', '19')),      # Monk line: the Royal Paladin's
+    (('7', '8'), ('23', '24', '25')),  # Templar line: the Elite Knight's and the Royal Paladin's
+    (('5',), ('20', '21', '22')),      # Necromancer line: the Elementalist's (the casters' mana potions)
+]
+PLURAL = {'Thief': 'Thieves', 'Samurai': 'Samurai', 'Lich': 'Liches'}
+POTION_ENTRY = re.compile(r'(\n[ \t]*\[\d+\]\s*=\s*\{)')
+POTION_LIST = re.compile(r'vocations\s*=\s*\{([\d,\s]*)\}')
+POTION_TEXT = re.compile(r'(description\s*=\s*")Only .*?( of level \d+ or above)? may drink this (fluid|potion)\.(")')
+
+
+def potion_names(ids, names):
+    """the classes of a potion's vocation list in words: a whole line by its base class ("Warriors"), else each class"""
+    have = {names[i] for i in ids if i in names}
+    lines = [n for n in ORDER if n not in BASE_OF]
+    out = []
+    for base in lines:
+        members = [base] + [n for n in ORDER if BASE_OF.get(n) == base]
+        present = [n for n in members if n in have]
+        if len(present) == len(members):
+            out.append(base)
+        else:
+            out += present
+    words = [PLURAL.get(n, n + 's') for n in out]
+    if out == lines:
+        return None  # every class
+    if len(words) > 1:
+        return ', '.join(words[:-1]) + ' and ' + words[-1]
+    return words[0] if words else 'nobody'
+
+
+def patch_potions(text, names=None):
+    """per potion entry: the vocation list gets the class ids of POTION_RULES (sorted, so a re-run changes nothing), and
+    the refusal text names the classes of the list ("Only Warriors, Rangers and Templars of level 50 or above ...")"""
+    if names is None:
+        names = dict(table_entries()[1])
+    count = [0]
+
+    def patch_list(m):
+        ids = [x.strip() for x in m.group(1).split(',') if x.strip()]
+        new = set(ids)
+        for keys, add in POTION_RULES:
+            if any(k in ids for k in keys):
+                new.update(add)
+        new = sorted(new, key=int)
         return 'vocations = {' + ', '.join(new) + '}'
-    return re.sub(r'vocations\s*=\s*\{([\d,\s]*)\}', repl, text), count[0]
+
+    parts = POTION_ENTRY.split(text)
+    for i in range(2, len(parts), 2):
+        chunk = POTION_LIST.sub(patch_list, parts[i], count=1)
+        m = POTION_LIST.search(chunk)
+        if m:
+            ids = [x.strip() for x in m.group(1).split(',') if x.strip()]
+            who = potion_names(ids, names)
+
+            def text_repl(t):
+                level = t.group(2) or ''
+                if who is None:
+                    return '%s%s may drink this %s.%s' % (
+                        t.group(1), ('Only characters' + level) if level else 'Anyone', t.group(3), t.group(4))
+                return '%sOnly %s%s may drink this %s.%s' % (t.group(1), who, level, t.group(3), t.group(4))
+            chunk = POTION_TEXT.sub(text_repl, chunk, count=1)
+        if chunk != parts[i]:
+            count[0] += 1
+            parts[i] = chunk
+    return ''.join(parts), count[0]
+
+
+# strengthening_potions.lua: the mastermind potion (7440) asks Player.isMage, which knows the Sorcerer and the Druid
+# ids only (1, 2, 5, 6): the Illusionist (10) and the Necromancer line were refused. The stock mastermind list of
+# potions.lua with the Necromancer line instead, and our class names in the text.
+MASTERMIND_IDS = ['1', '2', '5', '6', '9', '10', '20', '21', '22']
+
+
+def patch_strengthening(text, names=None):
+    """the mastermind check: player:isMage() -> the mage ids and the Necromancer line; the refusal text"""
+    if names is None:
+        names = dict(table_entries()[1])
+    count = 0
+    check = 'table.contains({%s}, player:getVocation():getId())' % ', '.join(MASTERMIND_IDS)
+    if 'not player:isMage()' in text:
+        text = text.replace('not player:isMage()', 'not ' + check, 1)
+        count += 1
+    words = 'Only %s may drink this fluid.' % potion_names(MASTERMIND_IDS, names)
+    new, n = re.subn(r"'Only [^'\n]* may drink this fluid\.'", "'%s'" % words, text, count=1)
+    if n and new != text:
+        text = new
+        count += 1
+    return text, count
 
 
 def patch_player_lib(text):
@@ -336,12 +591,21 @@ def main():
     spells, ns = convert_file(read(paths['spells']), 'spells', info)
     weapons, nwc = convert_file(read(paths['weapons']), 'weapons', info)
     moves, nmc = convert_file(read(paths['moves']), 'movements', info)
-    weapons, nw = patch_weapons(weapons, info)
-    moves, nm = patch_movements(moves, info)
+    weapons, cw = patch_weapons(weapons, info)
+    moves, cm = patch_movements(moves, info)
+    spells, nsn = patch_spells_necro(spells)
+    spells, nsl = patch_spells_lines(spells)
+    nw, nm = sum(cw.values()), sum(cm.values())
+    ns += nsn + nsl
+
+    def per_line(c):
+        return ', '.join('%d the %s line' % (n, k) for k, n in c.items())
     print('vocations.xml: %s (%s; retired %s)' % (status, ', '.join('%s %s' % i for i in ids), ', '.join(sorted(RETIRED))))
-    print('spells.xml: %d vocation lists converted' % ns)
-    print('weapons.xml: %d vocation lists converted, %d weapon entries get the Thief line' % (nwc, nw))
-    print('movements.xml: %d vocation lists converted, %d equip entries get the Thief line' % (nmc, nm))
+    print('spells.xml: %d vocation lists converted, %d stock healing / support spells get the Necromancer line'
+          % (ns - nsn - nsl, nsn))
+    print('spells.xml: %d stock utility spells get the Thief / Monk / Templar lines' % nsl)
+    print('weapons.xml: %d vocation lists converted; weapon entries: %s' % (nwc, per_line(cw)))
+    print('movements.xml: %d vocation lists converted; equip entries: %s' % (nmc, per_line(cm)))
     if status == 'patched':
         changes[paths['voc']] = voc
     if ns or CONVERTED in spells and CONVERTED not in read(paths['spells']):
@@ -350,12 +614,15 @@ def main():
         changes[paths['weapons']] = weapons
     if nmc or nm or (CONVERTED in moves and CONVERTED not in read(paths['moves'])):
         changes[paths['moves']] = moves
-    for key, rel, fn in (('potions', ('actions', 'scripts', 'other', 'potions.lua'), patch_potions),
-                         ('player', ('lib', 'core', 'player.lua'), patch_player_lib)):
+    for what, rel, fn in (('the Berserker / Beastmaster / the new class lines', ('actions', 'scripts', 'other', 'potions.lua'),
+                           patch_potions),
+                          ('the Illusionist and the Necromancer line (mastermind)',
+                           ('actions', 'scripts', 'other', 'strengthening_potions.lua'), patch_strengthening),
+                          ('the Berserker / Beastmaster', ('lib', 'core', 'player.lua'), patch_player_lib)):
         p = os.path.join(data, *rel)
         if os.path.exists(p):
             new, n = fn(read(p))
-            print('%s: %d lists get the Berserker / Beastmaster' % ('/'.join(rel), n))
+            print('%s: %d lists get %s' % ('/'.join(rel), n, what))
             if n:
                 changes[p] = new
         else:

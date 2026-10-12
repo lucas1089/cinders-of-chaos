@@ -3,8 +3,8 @@ Abyssal Shadowfiend: dropped 1 loot lines for ids [40407]
 Acid Hydra: corpse 41162 -> 6068
 Acid Hydra: dropped 2 loot lines for ids [38782, 40407]
 Actors Power: corpse 41162 -> 6068
-Alptramun: corpse 41162 -> 6068
-Alptramun: dropped 1 loot lines for ids [40407]
+Dreamgorger: corpse 41162 -> 6068
+Dreamgorger: dropped 1 loot lines for ids [40407]
 Ancient Fungus: corpse 41162 -> 6068
 Arcane Energizer: corpse 41162 -> 6068
 Azure Dragon: corpse 41162 -> 6068
@@ -30,8 +30,8 @@ Elite Ice Dragon: corpse 41162 -> 6068
 Elite Ice Dragon: dropped 1 loot lines for ids [40407]
 Elite Ice Witch: corpse 41162 -> 6068
 Elite Ice Witch: dropped 1 loot lines for ids [40407]
-Elite Seacrest Serpent: corpse 41162 -> 6068
-Elite Seacrest Serpent: dropped 1 loot lines for ids [40407]
+Elite Tidecrest Serpent: corpse 41162 -> 6068
+Elite Tidecrest Serpent: dropped 1 loot lines for ids [40407]
 Elite Spider: corpse 41162 -> 6068
 Elite Spider: dropped 1 loot lines for ids [40407]
 Elite Twisted Shaper: corpse 41162 -> 6068
@@ -68,8 +68,8 @@ Jungle Beasts: corpse 41162 -> 6068
 Jungle Beasts: dropped 2 loot lines for ids [30843, 40407]
 Jungle Warrior: corpse 41162 -> 6068
 Jungle Warrior: dropped 1 loot lines for ids [40407]
-Kroazur: corpse 41162 -> 6068
-Kroazur: dropped 1 loot lines for ids [40407]
+Vorkhaz: corpse 41162 -> 6068
+Vorkhaz: dropped 1 loot lines for ids [40407]
 Lacewing Moth: corpse 41162 -> 6068
 Lacewing Moth: dropped 1 loot lines for ids [40407]
 Lady bug: corpse 41162 -> 6068
@@ -78,8 +78,8 @@ Legendary Warrior: corpse 41162 -> 6068
 Legendary Warrior: dropped 1 loot lines for ids [40407]
 Loricate Orger: corpse 41162 -> 6068
 Loricate Orger: dropped 1 loot lines for ids [40407]
-Malofur Mangrinder: corpse 41162 -> 6068
-Malofur Mangrinder: dropped 1 loot lines for ids [40407]
+Grindmaw the Mauler: corpse 41162 -> 6068
+Grindmaw the Mauler: dropped 1 loot lines for ids [40407]
 Mercenary: corpse 41162 -> 6068
 Mercenary: dropped 2 loot lines for ids [37460, 40407]
 Mercenary Ranger: corpse 41162 -> 6068
@@ -88,8 +88,8 @@ Metal Freak: corpse 41162 -> 6068
 Mortal Illusion: corpse 41162 -> 6068
 Mutated Visco: corpse 41162 -> 6068
 Mutated Visco: dropped 1 loot lines for ids [40407]
-Nerubian: corpse 41162 -> 6068
-Nerubian: dropped 1 loot lines for ids [40407]
+Webbound Crawler: corpse 41162 -> 6068
+Webbound Crawler: dropped 1 loot lines for ids [40407]
 Nexweaver: corpse 41162 -> 6068
 Nexweaver: dropped 1 loot lines for ids [40407]
 Nightdweller: corpse 41162 -> 6068
@@ -112,8 +112,8 @@ Shadowgeist: corpse 41162 -> 6068
 Shadowgeist: dropped 1 loot lines for ids [40350]
 Shaper Matriarch: corpse 41162 -> 6068
 Shaper Matriarch: dropped 1 loot lines for ids [40407]
-Shenlong: corpse 41162 -> 6068
-Shenlong: dropped 2 loot lines for ids [36168, 40407]
+Celestial Wyrm: corpse 41162 -> 6068
+Celestial Wyrm: dropped 2 loot lines for ids [36168, 40407]
 Silicron: corpse 41162 -> 6068
 Silicron: dropped 1 loot lines for ids [40407]
 Snake Master: corpse 41162 -> 6068
@@ -131,8 +131,8 @@ Tarrasque: corpse 41162 -> 6068
 Tarrasque: dropped 1 loot lines for ids [41409]
 Thal: corpse 41162 -> 6068
 Thal: dropped 1 loot lines for ids [40407]
-Titanica: corpse 41162 -> 6068
-Titanica: dropped 1 loot lines for ids [40407]
+Fenmaw: corpse 41162 -> 6068
+Fenmaw: dropped 1 loot lines for ids [40407]
 Tundra Troll: corpse 41162 -> 6068
 Tundra Troll: dropped 1 loot lines for ids [40407]
 Twisted Shaper: corpse 41162 -> 6068
@@ -144,4 +144,25 @@ Vyrm: dropped 1 loot lines for ids [40407]
 Ward Barbarian: corpse 41162 -> 6068
 Winterstride: corpse 41162 -> 6068
 Winterstride: dropped 1 loot lines for ids [40407]
-Zaoan Badger: corpse 41162 -> 6068
+Jadefen Badger: corpse 41162 -> 6068
+Twisted Shaper: dropped loot id 37431 (split from a loot list by fix_monster_xml.py, missing from items.otb)
+Vorathrax: dropped loot ids [38977, 38983] (split from a loot list by fix_monster_xml.py, missing from items.otb); replacement loot set by hand (coins, gems, late-game armours, talent token; modelled on Webbound Crawler, scaled up)
+Serpent Pride: loot table set by hand, modelled on Giant Asura (coins, small emeralds, terra set, medusa shield, talent token)
+Snake Master: loot table set by hand, modelled on Giant Asura and Serpent Pride (coins, emeralds, terra set, medusa shield, elite wyrmblood mail, talent token)
+Phantom Shade: loot table set by hand, modelled on Giant Asura, coins raised for its 8M health (soul orbs, amethysts, underworld caster gear, death ring, talent token)
+Shadowgeist: loot table set by hand, modelled on Phantom Shade (soul orbs, amethysts, underworld caster gear, nightmare blade, talent token)
+Mortal Illusion: loot table set by hand, modelled on Giant Asura, coins raised for its 18M health (diamonds, mind caster gear, crystal sword and ring, talent token)
+Infectanus: loot table set by hand, modelled on Webbound Crawler (coins, emeralds, terra set, greenwood coat, talent token)
+Metal Freak: loot table set by hand, modelled on Vorathrax (tanky, 10M health; scrap metal, plate armours, steel boots, the stomper, talent token)
+Ward Barbarian: loot table set by hand, modelled on Webbound Crawler (coins, meat, rubies, rimehorn helmet, magma legs and boots, axes, talent token)
+Tarrasque: loot table set by hand, modelled on Vorathrax (same experience; gems, dragon scale set, dragon shield, magma coat and legs, talent token)
+Steelbeak: loot table set by hand, modelled on Dark Sorcerer and Captain Bloodbeard (same experience; feathers, amazon set, ravenwing, boots of haste, talent token)
+Death Mage: loot table set by hand, modelled on Dark Sorcerer (soul orbs, amethysts, underworld caster gear, skull staff, death ring, talent token)
+Actors Power: loot table set by hand, modelled on Elite Twisted Shaper, coins scaled like Vorathrax (gems, crown set, golden armor and legs, holy weapons, talent token)
+Ancient Fungus: loot table set by hand, modelled on Elite Twisted Shaper (spore products, emeralds, terra set, greenwood coat, talent token)
+Nightdweller: loot table set by hand, modelled on Vyrm and Thal, coins raised for its 18M health (soul orbs, gems, underworld caster gear, Myst Regalia helmet and wand at 0.06%, talent token)
+Arcane Energizer: loot table set by hand, modelled on Facetis, coins raised for its 60M health (sapphires, lightning set, Myst Regalia spellbook and ring at 0.06%, talent token)
+Saga: loot table set by hand, modelled on the world bosses at about a seventh of their coins and orbs (up to 8 crystal coins, orbs, gems, golden armor and legs, one set item each at 0.8%, talent token 0.5%); a normal monster, no script spawns it
+Gloomfire: loot table set by hand, modelled on Kaelgor the Infernal Warlord at about half its coins and orbs (up to 30 crystal coins, orbs, gems, magma set, Dawnforged items at 1-2%, talent token 2.5%); a normal monster, no script spawns it
+Talath: loot table set by hand, modelled on Nyxareth the Void Archon at about half its coins and orbs (up to 30 crystal coins, orbs, gems, underworld gear, Myst Regalia items at 1-2%, talent token 2.5%); a normal monster, no script spawns it
+Ormathulak: loot table set by hand, modelled on Skaldra the Rime Queen at about half its coins and orbs (up to 30 crystal coins, orbs, gems, terra and glacier items, Seraphic items at 1-2%, talent token 2%); a normal monster, no script spawns it

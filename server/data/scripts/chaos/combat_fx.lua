@@ -18,6 +18,7 @@
 --   ChaosCombatFx.crit(pos[, sourceId])            ChaosCombatFx.dodge(creature)
 --   ChaosCombatFx.reflect(creature)                 ChaosCombatFx.element(pos, combatType[, amount[, sourceId]])
 --   ChaosCombatFx.label(pos, text, color)           ChaosCombatFx.config (on/off per visual, throttle)
+--   (color: a palette byte, TEXTCOLOR_*; a "#rrggbb" string is mapped to the nearest byte, ChaosCombatFx.paletteByte)
 -- Callers outside this file: `if ChaosCombatFx then ChaosCombatFx.dodge(player) end`.
 -- Effect ids come from data/lib/chaos_fx.lua (generated, client/tools/sprites/fx_custom.csv rows 415..423).
 
@@ -160,9 +161,30 @@ local function sendEffect(pos, id)
 	return false
 end
 
+-- the colour byte of a label: the client reads one byte of its 8-bit palette (Color::from8bit: r*36 + g*6 + b, 51 per
+-- step; 0 and 216..255 draw black). The engine turns a string into byte 0, so a "#rrggbb" string becomes the nearest
+-- palette byte here and anything else the default white.
+M.defaultColor = 215 -- TEXTCOLOR_WHITE_EXP
+function M.paletteByte(color)
+	if type(color) == "number" and color >= 0 and color <= 255 and color % 1 == 0 then
+		return color
+	end
+	if type(color) == "string" then
+		local r, g, b = color:match("^#(%x%x)(%x%x)(%x%x)$")
+		if r then
+			local function step(h)
+				return math.floor(tonumber(h, 16) / 51 + 0.5)
+			end
+			return step(r) * 36 + step(g) * 6 + step(b)
+		end
+	end
+	return M.defaultColor
+end
+
 -- floating text above a tile for every player who sees it (opcode 0x84, the animated text the client parses in
 -- ProtocolGame::parseAnimatedText; 10.98 servers do not send it themselves)
 function M.label(pos, text, color)
+	color = M.paletteByte(color)
 	pos = toPos(pos)
 	if not pos or not text or not NetworkMessage or not Game.getSpectators then
 		return false
@@ -171,7 +193,7 @@ function M.label(pos, text, color)
 		local msg = NetworkMessage()
 		msg:addByte(0x84)
 		msg:addPosition(pos)
-		msg:addByte(color or 215)
+		msg:addByte(color)
 		msg:addString(text)
 		msg:sendToPlayer(spectator)
 		if msg.delete then

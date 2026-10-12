@@ -1,0 +1,31 @@
+// The answer buttons of the invitation toasts (Accept / Decline, Start / Cancel).
+// Art: client/tools/gen_toast_art.py -> images/toast/accept.png, decline.png. Each is a strip of four 80 x 24
+// states: normal, hover, pressed, disabled. The label is drawn by the client (notifications.lua sets the
+// Chaos heading font when it is loaded).
+ChaosToastButton < UIButton
+  size: 80 24
+  font: verdana-11px-antialised
+  color: #e9dcc0
+  text-align: center
+  text-offset: 0 0
+  image-clip: 0 0 80 24
+
+  $hover !disabled:
+    image-clip: 0 24 80 24
+    color: #fff3cf
+
+  $pressed:
+    image-clip: 0 48 80 24
+    text-offset: 1 1
+    color: #d6c9ae
+
+  $disabled:
+    image-clip: 0 72 80 24
+    color: #7d7176
+    change-cursor-image: false
+
+ChaosToastAccept < ChaosToastButton
+  image-source: images/toast/accept
+
+ChaosToastDecline < ChaosToastButton
+  image-source: images/toast/decline

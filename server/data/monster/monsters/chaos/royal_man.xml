@@ -6,7 +6,6 @@
 	<targetchange interval="5000" chance="25"/>
 	<strategy attack="100" defense="0"/>
 	<flags>
-		<flag bestiary="1" />
 		<flag summonable="1" />
 		<flag attackable="1" />
 		<flag hostile="1" />
@@ -55,17 +54,17 @@
 		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
 		<item id="5741" countmax="1" chance="6000" /><!-- skull helmet;steel boots -->
 		<item id="2645" countmax="1" chance="6000" />
-		<item id="11302" countmax="1" chance="1500" /><!-- zaoan helmet -->
+		<item id="11302" countmax="1" chance="1500" /><!-- jadefen helmet -->
 		<item id="11301" countmax="1" chance="1500" />
 		<item id="11304" countmax="1" chance="1500" />
 		<item id="11303" countmax="1" chance="1500" />
-		<item id="8891" countmax="1" chance="4000" /><!-- paladin armor;coconut shoes;Zaoan robe -->
+		<item id="8891" countmax="1" chance="4000" /><!-- paladin armor;coconut shoes;Jadefen robe -->
 		<item id="9931" countmax="1" chance="4000" />
 		<item id="11356" countmax="1" chance="4000" />
 		<item id="2522" countmax="1" chance="1667" /><!-- great shield;demon shield;crystal boots -->
 		<item id="2520" countmax="1" chance="1667" />
 		<item id="11117" countmax="1" chance="1667" />
-		<item id="8889" countmax="1" chance="2367" /><!-- skullcrackerarmor;frozen plate;elite draken mail -->
+		<item id="8889" countmax="1" chance="2367" /><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail -->
 		<item id="8887" countmax="1" chance="2367" />
 		<item id="12607" countmax="1" chance="2367" />
 	</loot>

@@ -26,9 +26,21 @@ LeaderboardRow < UIWidget
     color: #d6c9ae
     phantom: true
 
+  // a fallen Hardcore character (season_modes.lua): a skull; width 0 when not fallen
+  UIWidget
+    id: fallen
+    anchors.left: name.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 0 14
+    image-source: /images/game/buffs/skull_red
+    image-smooth: false
+    visible: false
+    phantom: false
+
   UILabel
     id: title
-    anchors.left: name.right
+    anchors.left: fallen.right
     anchors.right: value.left
     anchors.verticalCenter: parent.verticalCenter
     margin-left: 8
@@ -59,14 +71,23 @@ LeaderboardRow < UIWidget
     color: #f6cf72
     phantom: false
 
+// Tab widths and rows are set by leaderboard.lua (tabrows.lua): every tab is as wide as its label in the font it
+// is drawn with, in as many rows as needed.
 LeaderboardTab < ChaosTabButton
   width: 124
-  margin-right: 4
 
 LeaderboardGroupTab < ChaosTabButton
   width: 92
   height: 22
-  margin-right: 3
+
+LeaderboardModeTab < ChaosTabButton
+  width: 92
+  height: 20
+
+LeaderboardTabRow < UIWidget
+  phantom: true
+  layout:
+    type: horizontalBox
 
 HeaderLabel < UILabel
   font: verdana-11px-rounded
@@ -113,7 +134,8 @@ ChaosMainWindow
     height: 24
     phantom: true
     layout:
-      type: horizontalBox
+      type: verticalBox
+      spacing: 3
 
   UIWidget
     id: groupTabs
@@ -124,11 +146,26 @@ ChaosMainWindow
     height: 22
     phantom: true
     layout:
-      type: horizontalBox
+      type: verticalBox
+      spacing: 3
+
+  // the mode tabs of the Season view (season_modes.lua): All / Standard / Self-Found / Hardcore / HC Self-Found / Fallen
+  UIWidget
+    id: modeTabs
+    anchors.top: groupTabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 0
+    height: 0
+    visible: false
+    phantom: true
+    layout:
+      type: verticalBox
+      spacing: 3
 
   ChaosPanelDark
     id: championPanel
-    anchors.top: groupTabs.bottom
+    anchors.top: modeTabs.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 4

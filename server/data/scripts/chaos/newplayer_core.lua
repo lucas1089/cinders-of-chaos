@@ -202,6 +202,26 @@ function NP.milestonesDue(oldLevel, newLevel, claimed, c)
 	return due
 end
 
+-- the welcome's gift line, from the milestone levels still ahead of `level` (a character created at a high level
+-- is not promised gifts it can no longer reach): "Gifts wait for you at levels 20, 50, 100 and 200." or ""
+function NP.giftLine(level, c)
+	c = c or NP.cfg()
+	local ahead = {}
+	for _, m in ipairs(c.milestones) do
+		if (tonumber(level) or 1) < m.level then
+			ahead[#ahead + 1] = tostring(m.level)
+		end
+	end
+	if #ahead == 0 then
+		return ""
+	end
+	if #ahead == 1 then
+		return "A gift waits for you at level " .. ahead[1] .. "."
+	end
+	local last = table.remove(ahead)
+	return "Gifts wait for you at levels " .. table.concat(ahead, ", ") .. " and " .. last .. "."
+end
+
 -- the items of one milestone for a kit role: list of {id, count} (potions of the role, orbs, extra items)
 function NP.milestoneItems(index, role, c)
 	c = c or NP.cfg()

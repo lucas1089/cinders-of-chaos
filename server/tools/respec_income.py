@@ -5,7 +5,7 @@
 
 For each level the hunt is a set of monsters that are spawned in the loaded map (counted in <mapName>-spawn.xml) and
 that the leveling model of the README ("The leveling model and the hours") puts there; level 1000 is the tier 3 set of
-tools/late_game_spawns.csv (Darklight Core). Per monster, from its loot table (XML or Lua monster file):
+tools/late_game_spawns.csv (Nightglass Core). Per monster, from its loot table (XML or Lua monster file):
   coins      expected gold, crystal / platinum / gold coins, count x the stock level count multiplier
   items      expected NPC sell value of the other drops (data/scripts/chaos/sell_prices.lua, what the Auto Seller pays)
   chaos      the Chaos loot layer's extra rolls (loot_config.lua extraRolls x the tier spawn chances of monster_tiers.lua)
@@ -35,9 +35,9 @@ LEVELS = [100, 300, 500, 600, 1000]
 HUNTS = [
     ("Dragons", 100, 1.0, ["Dragon", "Dragon Lord", "Wyrm", "Hydra"]),
     ("Demons", 250, 1.0, ["Demon", "Hellspawn", "Behemoth", "Dark Torturer", "Juggernaut"]),
-    ("Soul War", 500, 1.0, ["Infernal Demon", "Brachiodemon", "Rotten Golem", "Branchy Crawler", "Mould Phantom", "Infernal Phantom",
+    ("Soul War", 500, 1.0, ["Infernal Demon", "Cleftfiend", "Rotten Golem", "Branchy Crawler", "Mould Phantom", "Infernal Phantom",
                 "Druid's Apparition", "Knight's Apparition"]),
-    ("Darklight Core (late game tier 3)", 800, 0.75, ["Azure Dragon", "Golden Lord", "Lacewing Moth", "Jungle Beasts", "Lady bug", "Malofur Mangrinder"]),
+    ("Nightglass Core (late game tier 3)", 800, 0.75, ["Azure Dragon", "Golden Lord", "Lacewing Moth", "Jungle Beasts", "Lady bug", "Grindmaw the Mauler"]),
 ]
 
 

@@ -1,0 +1,110 @@
+// Store pouches (game_pouches): the Loot Pouch rules window. Styles from client_chaos_theme.
+
+PouchCheck < ChaosCheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin-top: 6
+
+PouchesWindow < ChaosMainWindow
+  id: pouchesWindow
+  size: 420 396
+  !text: tr('Loot Pouch')
+  @onEscape: modules.game_pouches.hideSettings()
+
+  ChaosLabelDim
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 58
+    text-wrap: true
+    text-align: topLeft
+    !text: tr('While you carry your Loot Pouch it takes these items from the monsters you kill. Orbs, gems and keys always go to the Orbs and Rift Key Pouch first. A full pouch passes the item on (below), then to your backpack.')
+
+  PouchCheck
+    id: list
+    anchors.top: intro.bottom
+    !text: tr('Items on my autoloot list')
+
+  PouchCheck
+    id: gold
+    anchors.top: list.bottom
+    !text: tr('Gold, platinum and crystal coins')
+
+  PouchCheck
+    id: uniques
+    anchors.top: gold.bottom
+    !text: tr('Unique items')
+
+  PouchCheck
+    id: gear
+    anchors.top: uniques.bottom
+    anchors.right: none
+    width: 250
+    margin-top: 9
+    !text: tr('Gear with a rarity of at least')
+
+  ChaosComboBox
+    id: rarityCombo
+    anchors.top: uniques.bottom
+    anchors.right: parent.right
+    margin-top: 4
+    size: 130 22
+
+  PouchCheck
+    id: supplies
+    anchors.top: gear.bottom
+    margin-top: 8
+    !text: tr('Supplies (potions, runes, ammunition, food)')
+
+  PouchCheck
+    id: gems
+    anchors.top: supplies.bottom
+    !text: tr('Gems (when you carry no Orbs Pouch)')
+
+  PouchCheck
+    id: other
+    anchors.top: gems.bottom
+    !text: tr('Everything else (creature products, valuables)')
+
+  PouchCheck
+    id: overflow
+    anchors.top: other.bottom
+    !text: tr('Overflow: what a full Orbs or Rift Key Pouch passes on')
+
+  ChaosLabel
+    id: status
+    anchors.top: overflow.bottom
+    anchors.left: parent.left
+    anchors.right: storeButton.left
+    margin-top: 12
+    margin-right: 8
+    height: 30
+    text-wrap: true
+    text-align: topLeft
+    color: #e8b84a
+
+  ChaosButton
+    id: storeButton
+    anchors.top: overflow.bottom
+    anchors.right: parent.right
+    margin-top: 12
+    size: 92 24
+    !text: tr('Open Store')
+    @onClick: modules.game_pouches.openStore()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_pouches.hideSettings()
+
+  ChaosLabelDim
+    id: savedLabel
+    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    text-align: left
+    !text: tr('Saved on your character at once.')

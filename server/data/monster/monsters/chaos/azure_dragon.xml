@@ -16,7 +16,6 @@
 		<flag staticattack="85"/>
 		<flag targetdistance="1"/>
 		<flag runonhealth="0"/>
-		<flag respenpercent="15"/>
 	</flags>
 	<attacks>
 		<attack name="melee" interval="2000" min="-300" max="-460"/>
@@ -46,13 +45,13 @@
 		<item id="2152" countmax="4" chance="3500"/><!-- Platinum Coin -->
 		<item id="5741" chance="1200" /><!-- skull helmet -->
 		<item id="2645" chance="1325" /><!-- steel boots -->
-		<item id="11302" chance="600" /><!-- zaoan helmet -->
-		<item id="11301" chance="600" /><!-- zaoan armor -->
-		<item id="11304" chance="600" /><!-- zaoan legs -->
-		<item id="11303" chance="1550" /><!-- zaoan shoes -->
-		<item id="11356" chance="750" /><!-- Zaoan robe -->
+		<item id="11302" chance="600" /><!-- jadefen helmet -->
+		<item id="11301" chance="600" /><!-- jadefen armor -->
+		<item id="11304" chance="600" /><!-- jadefen legs -->
+		<item id="11303" chance="1550" /><!-- jadefen shoes -->
+		<item id="11356" chance="750" /><!-- Jadefen robe -->
 		<item id="11117" chance="450" /><!-- crystal boots -->
-		<item id="12607" chance="500" /><!-- elite draken mail -->
+		<item id="12607" chance="500" /><!-- elite wyrmblood mail -->
 		<item id="9931" chance="1351" /><!-- coconut shoes -->
 		<item id="8887" chance="450" /><!-- frozen plate -->
 		<item id="2520" chance="800" /><!-- demon shield --> 

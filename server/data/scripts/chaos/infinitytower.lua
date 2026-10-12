@@ -7,33 +7,47 @@
 --                      "seasonNum":N, "seasonEnd":unix, "nextTry":unix, "playerPoints":N,
 --                      "milestones":[{"points":N,"claimed":bool,
 --                                     "items":[{"id":clientId,"count":N,"name":".."}]}],
---                      "rankings":[{"name":"..","floor":N,"time":seconds}]}
+--                      "rankings":[{"name":"..","floor":N,"time":seconds}],
+--                      "topRewards":[{"place":N,"name":"Gold Tower Chest","id":clientId,"text":"..",
+--                                     "items":[{"name":"..","count":N}]}]}
 --   "open" shows the window, "update" refreshes it if it is already open.
 --
 -- Implemented: seasons, per-season points / best floor / best time, ranking top 10, milestone
 -- claiming with item rewards, "!tower" to open the window, and the tower itself in
 -- infinitytower_run.lua ("!tower start" / "!tower leave" / the client's Enter button), which reports each
 -- finished run with ChaosTower.recordRun(player, floorsCleared, seconds).
--- NOT implemented: the season-end "top 3 chest" rewards (no script gives them out).
+-- Season end (ChaosTower.checkSeasons, pure part infinitytower_core.lua, numbers Chaos.tower.seasonEnd): the top 3
+-- of each ended season get the "Top Rank Rewards" chest of their place once (chaos_tower_season_rewards, server_config
+-- chaos_tower_season_done), into the inbox at once or at the next login. Staff: /towerseason status | pay.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 
+dofile("data/scripts/chaos/infinitytower_core.lua")
+
 local OPCODE = ChaosOpcodes.infinitytower
 local cfg = Chaos.tower
 local T = Chaos.tables.towerPlayers
+local T_REWARDS = Chaos.tables.towerSeasonRewards or "chaos_tower_season_rewards"
+local K = ChaosTowerCore
 
 ChaosTower = ChaosTower or {}
+ChaosTower.lastCheck = ChaosTower.lastCheck or 0
+
+local function log(text)
+	print("[Chaos tower] " .. text)
+end
 
 local function currentSeason(now)
-	now = now or os.time()
-	local length = cfg.seasonLengthDays * 86400
-	local number = math.floor((now - cfg.seasonEpoch) / length) + 1
-	if number < 1 then
-		number = 1
-	end
-	return number, cfg.seasonEpoch + number * length
+	local number, _, finish = K.seasonOf(cfg, now or os.time())
+	return number, finish
+end
+ChaosTower.currentSeason = currentSeason
+
+local function clientIdOf(id)
+	local it = ItemType(id)
+	return it and it:getId() ~= 0 and it:getClientId() or id
 end
 
 local function loadPlayerRow(guid, season)
@@ -90,7 +104,8 @@ local function buildPayload(player)
 		nextTry = nextTry,
 		playerPoints = row.points,
 		milestones = milestones,
-		rankings = rankings
+		rankings = rankings,
+		topRewards = cfg.seasonEnd and K.topRewards(cfg.seasonEnd, clientIdOf) or nil
 	}
 end
 
@@ -179,10 +194,174 @@ local function claim(player, index)
 	sendTower(player, "update")
 end
 
+-- ---------------------------------------------------------------- season end: the top 3 chests
+function ChaosTower.ensureTable()
+	db.query("CREATE TABLE IF NOT EXISTS `" .. T_REWARDS .. "` (`season` int(10) unsigned NOT NULL, `player_id` int(11) " ..
+		"NOT NULL, `place` tinyint(3) unsigned NOT NULL, `best_floor` int(10) unsigned NOT NULL DEFAULT 0, `best_time` " ..
+		"int(10) unsigned NOT NULL DEFAULT 0, `chest` varchar(32) NOT NULL DEFAULT '', `rewarded` tinyint(1) unsigned NOT " ..
+		"NULL DEFAULT 0, `awarded_at` int(10) unsigned NOT NULL DEFAULT 0, `delivered_at` int(10) unsigned NOT NULL DEFAULT 0, " ..
+		"PRIMARY KEY (`season`, `player_id`), KEY `chaos_tower_season_rewards_pending` (`player_id`, `rewarded`)) " ..
+		"ENGINE=InnoDB DEFAULT CHARSET=utf8")
+end
+
+local function getConfig(key)
+	local id = db.storeQuery("SELECT `value` FROM `server_config` WHERE `config` = " .. db.escapeString(key))
+	if not id then
+		return nil
+	end
+	local v = result.getString(id, "value")
+	result.free(id)
+	return tonumber(v)
+end
+
+local function setConfig(key, value)
+	db.query(string.format("INSERT INTO `server_config` (`config`, `value`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE " ..
+		"`value` = VALUES(`value`)", db.escapeString(key), db.escapeString(tostring(value))))
+end
+
+local function chestByName(name)
+	for place, chest in ipairs(cfg.seasonEnd.chests) do
+		if chest.name == name then
+			return chest, place
+		end
+	end
+	return nil
+end
+
+-- the chest item with its contents; what does not fit the chest goes into the inbox loose
+local function packChest(chest, season, place)
+	local item = Game.createItem(chest.chestId, 1)
+	if not item then
+		return nil, chest.items
+	end
+	item:setAttribute(ITEM_ATTRIBUTE_NAME, chest.name)
+	if ITEM_ATTRIBUTE_DESCRIPTION then
+		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("Infinity Tower Season %d, %s place.", season,
+			K.placeNames[place] or ("#" .. place)))
+	end
+	local container = Container(item:getUniqueId())
+	local loose = {}
+	for _, it in ipairs(chest.items) do
+		if not (container and container:addItem(it.id, it.count)) then
+			loose[#loose + 1] = it
+		end
+	end
+	return item, loose
+end
+
+-- deliver every unpaid chest of this character (any season) into its inbox
+function ChaosTower.deliverPending(player)
+	local guid = player:getGuid()
+	local rows = Chaos.select(string.format("SELECT `season`, `place`, `best_floor`, `chest` FROM `%s` WHERE `player_id` = %d " ..
+		"AND `rewarded` = 0 ORDER BY `season`", T_REWARDS, guid), {{"season", "n"}, {"place", "n"}, {"best_floor", "n"},
+		{"chest", "s"}})
+	local inbox = #rows > 0 and player:getInbox() or nil
+	local n = 0
+	for _, r in ipairs(rows) do
+		local chest = chestByName(r.chest) or cfg.seasonEnd.chests[r.place]
+		if not inbox or not chest then
+			break -- left unpaid: the next login tries again
+		end
+		-- marked first: a failure below never pays twice (the log names what was lost)
+		db.query(string.format("UPDATE `%s` SET `rewarded` = 1, `delivered_at` = %d WHERE `season` = %d AND `player_id` = %d " ..
+			"AND `rewarded` = 0", T_REWARDS, os.time(), r.season, guid))
+		local item, loose = packChest(chest, r.season, r.place)
+		if item then
+			inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		end
+		for _, it in ipairs(loose) do
+			local rest = it.count
+			while rest > 0 do
+				local c = math.min(rest, 100)
+				inbox:addItem(it.id, c, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+				rest = rest - c
+			end
+		end
+		n = n + 1
+		local text = string.format("Infinity Tower Season %d has ended: %s place with floor %d. Your %s is in your inbox.",
+			r.season, K.placeNames[r.place] or ("#" .. r.place), r.best_floor, K.chestText(chest))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+		if ChaosNotify and ChaosNotify.send then
+			pcall(ChaosNotify.send, player, "Infinity Tower", text, "achievement")
+		end
+		pcall(function()
+			player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+		end)
+		log(string.format("season %d: %s delivered to %s", r.season, chest.name, player:getName()))
+	end
+	return n
+end
+
+-- the awards of an ended season, written once (INSERT IGNORE on season + character)
+function ChaosTower.processSeason(season)
+	local rows = Chaos.select(string.format("SELECT t.`player_id`, p.`name`, p.`group_id`, t.`best_floor`, t.`best_time` " ..
+		"FROM `%s` t JOIN `players` p ON p.`id` = t.`player_id` WHERE t.`season` = %d AND t.`best_floor` > 0", T, season),
+		{{"player_id", "n"}, {"name", "s"}, {"group_id", "n"}, {"best_floor", "n"}, {"best_time", "n"}})
+	local list = {}
+	for _, r in ipairs(rows) do
+		list[#list + 1] = {guid = r.player_id, name = r.name, group = r.group_id, floor = r.best_floor, time = r.best_time}
+	end
+	-- characters held for an anti-bot review get nothing (antibot.lua; off unless log.holdLeaderboards)
+	if ChaosAntibot and ChaosAntibot.filterRanked then
+		list = ChaosAntibot.filterRanked(list)
+	end
+	local awards = K.awards(K.places(list, cfg.seasonEnd.staffGroup), cfg.seasonEnd)
+	for _, a in ipairs(awards) do
+		db.query(string.format("INSERT IGNORE INTO `%s` (`season`, `player_id`, `place`, `best_floor`, `best_time`, `chest`, " ..
+			"`rewarded`, `awarded_at`) VALUES (%d, %d, %d, %d, %d, %s, 0, %d)", T_REWARDS, season, a.guid, a.place, a.floor,
+			a.time, db.escapeString(a.chest.name), os.time()))
+	end
+	return awards
+end
+
+-- pays every ended season not paid yet (server_config configKey); startup = no broadcast
+function ChaosTower.checkSeasons(startup, now)
+	local se = cfg.seasonEnd
+	local current = currentSeason(now)
+	local done = getConfig(se.configKey)
+	local pending = K.pendingSeasons(done, current)
+	if not pending then
+		setConfig(se.configKey, current - 1) -- a new server: nothing earlier to pay out
+		return 0
+	end
+	local paid = 0
+	for _, s in ipairs(pending) do
+		local ok, awards = pcall(ChaosTower.processSeason, s)
+		if not ok then
+			log("season " .. s .. " end failed: " .. tostring(awards))
+			return paid
+		end
+		setConfig(se.configKey, s)
+		paid = paid + 1
+		local names = {}
+		for _, a in ipairs(awards) do
+			names[#names + 1] = string.format("%s %s (floor %d)", K.placeNames[a.place] or ("#" .. a.place), a.name, a.floor)
+		end
+		local text = string.format("Infinity Tower Season %d has ended.%s Season %d begins.", s,
+			#names > 0 and (" Top Rank Rewards: " .. table.concat(names, ", ") .. ".") or "", s + 1)
+		log(text)
+		if not startup then
+			Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+		end
+	end
+	if paid > 0 then
+		for _, p in ipairs(Game.getPlayers()) do
+			ChaosTower.deliverPending(p)
+		end
+	end
+	return paid
+end
+
 local LoginEvent = CreatureEvent("ChaosTowerLogin")
 
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosTowerExtended")
+	if cfg.seasonEnd then
+		local ok, err = pcall(ChaosTower.deliverPending, player)
+		if not ok then
+			log("delivery at login: " .. tostring(err))
+		end
+	end
 	return true
 end
 
@@ -196,6 +375,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "tower." .. tostring(msg.action), 300) then
+		return
+	end
 	if msg.action == "enter" then
 		if ChaosTowerRun then
 			ChaosTowerRun.start(player)
@@ -204,6 +387,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		sendTower(player, "update")
 	elseif msg.action == "claim" then
 		claim(player, msg.milestoneIndex)
+	elseif msg.action == "leave" then
+		if ChaosTowerRun then
+			ChaosTowerRun.leave(player)
+		end
 	end
 end
 
@@ -211,27 +398,6 @@ LoginEvent:type("login")
 LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
-
-local talk = TalkAction("!tower")
-
-function talk.onSay(player, words, param)
-	param = (param or ""):lower():match("^%s*(%a*)") or ""
-	if param == "start" or param == "enter" then
-		if ChaosTowerRun then
-			ChaosTowerRun.start(player)
-		end
-	elseif param == "leave" then
-		if ChaosTowerRun then
-			ChaosTowerRun.leave(player)
-		end
-	else
-		ChaosTower.open(player)
-	end
-	return false
-end
-
-talk:separator(" ")
-talk:register()
 
 -- /towerrun <floors>,<seconds> : staff test helper, records a fake run for yourself so the
 -- window, ranking and milestones can be checked without the (missing) tower gameplay.
@@ -252,3 +418,57 @@ end
 
 testTalk:separator(" ")
 testTalk:register()
+
+-- /towerseason [status | pay] : staff. status = the season, its end and the last season paid out; pay = run the
+-- season-end check now (pays only seasons that have ended; idempotent).
+local seasonTalk = TalkAction("/towerseason")
+
+function seasonTalk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return true
+	end
+	param = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+	if param == "pay" then
+		local n = ChaosTower.checkSeasons(false)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and (n .. " ended season(s) paid out.") or "No ended season to pay out.")
+	else
+		local season, finish = currentSeason()
+		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Tower Season %d ends %s. Last season paid out: %s.",
+			season, os.date("%Y-%m-%d %H:%M", finish), tostring(getConfig(cfg.seasonEnd.configKey) or "none")))
+	end
+	return false
+end
+
+seasonTalk:separator(" ")
+seasonTalk:register()
+
+if cfg.seasonEnd then
+	local startup = GlobalEvent("ChaosTowerSeasonStartup")
+	function startup.onStartup()
+		local ok, err = pcall(function()
+			ChaosTower.ensureTable()
+			ChaosTower.checkSeasons(true)
+		end)
+		if not ok then
+			log("season startup: " .. tostring(err))
+		end
+		return true
+	end
+	startup:type("startup")
+	startup:register()
+
+	local think = GlobalEvent("ChaosTowerSeasonThink")
+	function think.onThink(interval)
+		local now = os.time()
+		if now - ChaosTower.lastCheck >= (cfg.seasonEnd.checkSeconds or 60) then
+			ChaosTower.lastCheck = now
+			local ok, err = pcall(ChaosTower.checkSeasons, false)
+			if not ok then
+				log("season check: " .. tostring(err))
+			end
+		end
+		return true
+	end
+	think:interval(10000)
+	think:register()
+end

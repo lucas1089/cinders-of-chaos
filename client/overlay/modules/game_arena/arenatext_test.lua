@@ -7,6 +7,10 @@ local function eq(a, b, name)
   n = n + 1
   if a ~= b then fails = fails + 1; print('FAIL ' .. name .. ': got ' .. tostring(a) .. ', want ' .. tostring(b)) end
 end
+-- loaded at module load, before any result() call (the window reads them when it opens)
+eq(type(T.MODE_TITLE), 'table', 'MODE_TITLE at load')
+eq(type(T.seasonLine), 'function', 'seasonLine at load')
+eq(type(T.seasonDelta), 'function', 'seasonDelta at load')
 eq(T.clock(75), '1:15', 'clock')
 eq(T.clock(300), '5:00', 'clock 5 min')
 eq(T.clock(-3), '0:00', 'clock negative')
@@ -29,5 +33,11 @@ eq((T.hudCenter('fight', 125)), '2:05', 'hud fight')
 eq(select(2, T.hudCenter('done', 0)), 'over', 'hud done')
 eq(T.hpColor(80), '#2f7a2a', 'hp green')
 eq(T.hpColor(10), '#8a1010', 'hp red')
+eq(T.MODE_TITLE['3v3'], 'Warband 3v3', '3v3 title')
+eq((T.seasonLine({ rating = 1650, placed = true, tierName = 'Kindled', color = '#f0a040' }, 2)), 'Season: Kindled 1650', 'season line')
+eq((T.seasonLine({ rating = 1500, placed = false, matches = 2, placementLeft = 3 }, 2)), 'Season: placement 2/5', 'placement line')
+eq((T.seasonLine(nil)), '', 'no season')
+eq(T.seasonDelta({ before = 1500, after = 1520, delta = 20, placed = true, tierName = 'Kindled' }), 'Season 1500 -> 1520 (+20) Kindled', 'season delta')
+eq(T.seasonDelta({ before = 1500, after = 1640, delta = 140, placed = false, placementLeft = 4 }), 'Season 1500 -> 1640 (+140), placement: 4 left', 'placement delta')
 print(string.format('arenatext_test: %d checks, %d failed', n, fails))
 if fails > 0 then os.exit(1) end

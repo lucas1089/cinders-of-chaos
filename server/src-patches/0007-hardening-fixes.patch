@@ -1,0 +1,211 @@
+# Small hardening fixes.
+#   * protocol.h, networkmessage.h: the XTEA key of a Protocol and the NetworkMessage buffer start zeroed instead of
+#     holding whatever the allocation contained (no uninitialised bytes reach the network or the cipher).
+#   * globalevent.cpp, luascript.cpp, globalevent.h: a globalevent time ("hh", "hh:mm", "hh:mm:ss" in globalevents.xml
+#     or globalevent:time()) that is empty, not a number or has too many parts was an uncaught exception
+#     (vectorAtoi / params.front()) that aborted the server at startup or reload; a failing localtime() was a null
+#     dereference. Both places now use one parser, parseGlobalEventTime, that prints the error and rejects the event.
+# Apply in the server source root after 0006: patch -p1 < 0007-hardening-fixes.patch, then rebuild.
+--- a/src/globalevent.cpp
++++ b/src/globalevent.cpp
+@@ -225,6 +225,59 @@
+ 	}
+ }
+ 
++bool parseGlobalEventTime(const std::string& value, const std::string& name, int32_t& hour, int64_t& nextExecution)
++{
++	// vectorAtoi throws on an empty or non-numeric part ("", "12:", "noon"), which aborted the server at load
++	std::vector<int32_t> params;
++	try {
++		params = vectorAtoi(explodeString(value, ":"));
++	} catch (const std::exception&) {
++		params.clear();
++	}
++
++	if (params.empty() || params.size() > 3) {
++		std::cout << "[Error - GlobalEvent::configureEvent] Invalid time \"" << value << "\" for globalevent with name: " << name << std::endl;
++		return false;
++	}
++
++	hour = params[0];
++	if (hour < 0 || hour > 23) {
++		std::cout << "[Error - GlobalEvent::configureEvent] Invalid hour \"" << value << "\" for globalevent with name: " << name << std::endl;
++		return false;
++	}
++
++	int32_t min = params.size() > 1 ? params[1] : 0;
++	if (min < 0 || min > 59) {
++		std::cout << "[Error - GlobalEvent::configureEvent] Invalid minute \"" << value << "\" for globalevent with name: " << name << std::endl;
++		return false;
++	}
++
++	int32_t sec = params.size() > 2 ? params[2] : 0;
++	if (sec < 0 || sec > 59) {
++		std::cout << "[Error - GlobalEvent::configureEvent] Invalid second \"" << value << "\" for globalevent with name: " << name << std::endl;
++		return false;
++	}
++
++	time_t current_time = time(nullptr);
++	tm* timeinfo = localtime(&current_time);
++	if (!timeinfo) {
++		std::cout << "[Error - GlobalEvent::configureEvent] Cannot read the local time for globalevent with name: " << name << std::endl;
++		return false;
++	}
++
++	timeinfo->tm_hour = hour;
++	timeinfo->tm_min = min;
++	timeinfo->tm_sec = sec;
++
++	time_t difference = static_cast<time_t>(difftime(mktime(timeinfo), current_time));
++	if (difference < 0) {
++		difference += 86400;
++	}
++
++	nextExecution = current_time + difference;
++	return true;
++}
++
+ GlobalEvent::GlobalEvent(LuaScriptInterface* interface) : Event(interface) {}
+ 
+ bool GlobalEvent::configureEvent(const pugi::xml_node& node)
+@@ -240,46 +293,12 @@
+ 
+ 	pugi::xml_attribute attr;
+ 	if ((attr = node.attribute("time"))) {
+-		std::vector<int32_t> params = vectorAtoi(explodeString(attr.as_string(), ":"));
+-
+-		int32_t hour = params.front();
+-		if (hour < 0 || hour > 23) {
+-			std::cout << "[Error - GlobalEvent::configureEvent] Invalid hour \"" << attr.as_string() << "\" for globalevent with name: " << name << std::endl;
++		int32_t hour;
++		if (!parseGlobalEventTime(attr.as_string(), name, hour, nextExecution)) {
+ 			return false;
+ 		}
+ 
+ 		interval |= hour << 16;
+-
+-		int32_t min = 0;
+-		int32_t sec = 0;
+-		if (params.size() > 1) {
+-			min = params[1];
+-			if (min < 0 || min > 59) {
+-				std::cout << "[Error - GlobalEvent::configureEvent] Invalid minute \"" << attr.as_string() << "\" for globalevent with name: " << name << std::endl;
+-				return false;
+-			}
+-
+-			if (params.size() > 2) {
+-				sec = params[2];
+-				if (sec < 0 || sec > 59) {
+-					std::cout << "[Error - GlobalEvent::configureEvent] Invalid second \"" << attr.as_string() << "\" for globalevent with name: " << name << std::endl;
+-					return false;
+-				}
+-			}
+-		}
+-
+-		time_t current_time = time(nullptr);
+-		tm* timeinfo = localtime(&current_time);
+-		timeinfo->tm_hour = hour;
+-		timeinfo->tm_min = min;
+-		timeinfo->tm_sec = sec;
+-
+-		time_t difference = static_cast<time_t>(difftime(mktime(timeinfo), current_time));
+-		if (difference < 0) {
+-			difference += 86400;
+-		}
+-
+-		nextExecution = current_time + difference;
+ 		eventType = GLOBALEVENT_TIMER;
+ 	} else if ((attr = node.attribute("type"))) {
+ 		const char* value = attr.value();
+--- a/src/globalevent.h
++++ b/src/globalevent.h
+@@ -59,6 +59,10 @@
+ 		int32_t thinkEventId = 0, timerEventId = 0;
+ };
+ 
++// parses a globalevent time "hh[:mm[:ss]]": the hour and the next time (unix seconds) it falls on; false, with an
++// error printed, on a malformed value or when the local time cannot be read
++bool parseGlobalEventTime(const std::string& value, const std::string& name, int32_t& hour, int64_t& nextExecution);
++
+ class GlobalEvent final : public Event
+ {
+ 	public:
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -17266,50 +17266,15 @@
+ 	// globalevent:time(time)
+ 	GlobalEvent* globalevent = getUserdata<GlobalEvent>(L, 1);
+ 	if (globalevent) {
+-		std::string timer = getString(L, 2);
+-		std::vector<int32_t> params = vectorAtoi(explodeString(timer, ":"));
+-
+-		int32_t hour = params.front();
+-		if (hour < 0 || hour > 23) {
+-			std::cout << "[Error - GlobalEvent::configureEvent] Invalid hour \"" << timer << "\" for globalevent with name: " << globalevent->getName() << std::endl;
++		int32_t hour;
++		int64_t nextExecution;
++		if (!parseGlobalEventTime(getString(L, 2), globalevent->getName(), hour, nextExecution)) {
+ 			pushBoolean(L, false);
+ 			return 1;
+ 		}
+ 
+ 		globalevent->setInterval(hour << 16);
+-
+-		int32_t min = 0;
+-		int32_t sec = 0;
+-		if (params.size() > 1) {
+-			min = params[1];
+-			if (min < 0 || min > 59) {
+-				std::cout << "[Error - GlobalEvent::configureEvent] Invalid minute \"" << timer << "\" for globalevent with name: " << globalevent->getName() << std::endl;
+-				pushBoolean(L, false);
+-				return 1;
+-			}
+-
+-			if (params.size() > 2) {
+-				sec = params[2];
+-				if (sec < 0 || sec > 59) {
+-					std::cout << "[Error - GlobalEvent::configureEvent] Invalid second \"" << timer << "\" for globalevent with name: " << globalevent->getName() << std::endl;
+-					pushBoolean(L, false);
+-					return 1;
+-				}
+-			}
+-		}
+-
+-		time_t current_time = time(nullptr);
+-		tm* timeinfo = localtime(&current_time);
+-		timeinfo->tm_hour = hour;
+-		timeinfo->tm_min = min;
+-		timeinfo->tm_sec = sec;
+-
+-		time_t difference = static_cast<time_t>(difftime(mktime(timeinfo), current_time));
+-		if (difference < 0) {
+-			difference += 86400;
+-		}
+-
+-		globalevent->setNextExecution(current_time + difference);
++		globalevent->setNextExecution(nextExecution);
+ 		globalevent->setEventType(GLOBALEVENT_TIMER);
+ 		pushBoolean(L, true);
+ 	} else {
+--- a/src/networkmessage.h
++++ b/src/networkmessage.h
+@@ -151,7 +151,7 @@
+ 		};
+ 
+ 		NetworkMessageInfo info;
+-		uint8_t buffer[NETWORKMESSAGE_MAXSIZE];
++		uint8_t buffer[NETWORKMESSAGE_MAXSIZE] = {};
+ 
+ 	private:
+ 		bool canAdd(size_t size) const {
+--- a/src/protocol.h
++++ b/src/protocol.h
+@@ -77,7 +77,7 @@
+ 		OutputMessage_ptr outputBuffer;
+ 
+ 		const ConnectionWeak_ptr connection;
+-		xtea::round_keys key;
++		xtea::round_keys key = {};
+ 		bool encryptionEnabled = false;
+ 		bool checksumEnabled = true;
+ 		bool rawMessages = false;

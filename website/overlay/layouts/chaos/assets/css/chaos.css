@@ -1,0 +1,364 @@
+/*
+ * Cinders of Chaos layout: our rules on top of the re-coloured Void stylesheets.
+ * website/tools/recolor_layout.py appends this file to the generated contract.css (the last stylesheet the Void
+ * shell loads), so it wins over the parent's rules. Image paths are relative to assets/css/.
+ * Palette: client/tools/gen_theme_art.py (IRON_*, BLOOD_*, GOLD_*) and the client's .otui text colours.
+ */
+:root {
+  --c-black: #050405; --c-iron0: #0d0b0e; --c-iron1: #17141a; --c-iron2: #241f27; --c-iron3: #3a3339; --c-iron4: #574d52;
+  --c-blood1: #5a0a0a; --c-blood2: #8a1010; --c-blood3: #b8160f; --c-blood4: #e03a1e;
+  --c-gold0: #6b4a14; --c-gold1: #a87420; --c-gold2: #d9a53a; --c-gold3: #f6cf72; --c-gold4: #fff0b8;
+  --c-text: #d6c9ae; --c-muted: #8c8070; --c-link: #e8b84a;
+  --c-display: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  --c-serif: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+
+  /* the parent's variables */
+  --s-bg: var(--c-black); --s-bg2: var(--c-iron0);
+  --s-panel: rgba(13,11,14,.94); --s-panel2: rgba(23,20,26,.92);
+  --s-red: var(--c-blood3); --s-red2: var(--c-blood4); --s-orange: var(--c-gold2);
+  --s-gold: var(--c-gold2); --s-gold2: var(--c-gold3);
+  --s-text: var(--c-text); --s-muted: var(--c-muted);
+  --s-border: rgba(168,116,32,.38); --s-border2: rgba(217,165,58,.7);
+  --r: 2px;
+  --glow-r: 0 0 24px rgba(184,22,15,.5), 0 0 60px rgba(184,22,15,.16);
+  --glow-g: 0 0 24px rgba(217,165,58,.4), 0 0 60px rgba(217,165,58,.12);
+  --glow-o: 0 0 24px rgba(224,58,30,.4), 0 0 60px rgba(224,58,30,.12);
+}
+
+body { font-family: var(--c-serif); color: var(--c-text); background: var(--c-black); }
+body::before {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(138,16,16,.16) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 15% 70%, rgba(90,10,10,.10) 0%, transparent 65%),
+    url('../img/iron.png') repeat, var(--c-black) !important;
+  animation: none !important; filter: none !important;
+}
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 85% 75% at 50% 40%, transparent 55%, rgba(0,0,0,.65) 100%);
+}
+a { color: var(--c-link); }
+a:hover { color: var(--c-gold4); }
+h1, h2, h3, h4 { font-family: var(--c-display); color: var(--c-gold3); letter-spacing: .04em; }
+::selection { background: var(--c-blood2); color: var(--c-gold4); }
+::-webkit-scrollbar-thumb { background: var(--c-gold1); }
+
+/* ---------------------------------------------------------------- header: the client's login scene */
+.sh-header { background: var(--c-black); }
+@media (min-width: 901px) { .sh-header { height: 540px; } }
+.sh-scene-stars, .sh-scene-aurora, .sh-scene > div.sh-scene-moon, .sh-scene-mtn, .sh-scene-fog { display: none !important; }
+.sh-scene-sky {
+  background: url('../img/header.png') center 30% / cover no-repeat, var(--c-black) !important;
+  animation: chaosSceneBreath 18s ease-in-out infinite alternate;
+}
+@keyframes chaosSceneBreath { from { transform: scale(1); } to { transform: scale(1.04); } }
+.sh-header-overlay {
+  background:
+    linear-gradient(180deg, rgba(5,4,5,.55) 0%, rgba(5,4,5,0) 26%, rgba(5,4,5,.12) 60%, rgba(5,4,5,.97) 100%),
+    radial-gradient(ellipse 60% 50% at 50% 38%, rgba(184,22,15,.14) 0%, transparent 70%) !important;
+}
+.sh-logo { margin-top: 14px; }
+.sh-logo-img { max-height: 250px; filter: drop-shadow(0 0 26px rgba(184,22,15,.5)) drop-shadow(0 8px 16px rgba(0,0,0,.7)); animation: none; }
+html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
+@keyframes chaosLogo {
+  0%, 100% { filter: drop-shadow(0 0 22px rgba(184,22,15,.45)) drop-shadow(0 8px 16px rgba(0,0,0,.7)); }
+  50% { filter: drop-shadow(0 0 36px rgba(224,58,30,.7)) drop-shadow(0 8px 16px rgba(0,0,0,.7)); }
+}
+.sh-footer-logo img { filter: drop-shadow(0 0 12px rgba(184,22,15,.45)); }
+
+/* the top menu bar: iron plate, gold trim (client menubar) */
+.sh-nav-frame {
+  background: linear-gradient(180deg, #3a3339 0%, #17141a 16%, #0d0b0e 50%, #17141a 84%, #2a2428 100%) !important;
+  border-top: 1px solid var(--c-gold1) !important; border-bottom: 1px solid var(--c-gold1) !important;
+  box-shadow: inset 0 1px 0 rgba(255,240,184,.12), inset 0 -2px 0 #000, 0 6px 24px rgba(0,0,0,.6) !important;
+}
+.sh-nav-frame::before { background: linear-gradient(90deg, transparent 2%, rgba(217,165,58,.6) 25%, rgba(246,207,114,.9) 50%, rgba(217,165,58,.6) 75%, transparent 98%) !important; }
+.sh-nav-frame::after { background: linear-gradient(90deg, transparent 2%, rgba(138,16,16,.6) 25%, rgba(184,22,15,.9) 50%, rgba(138,16,16,.6) 75%, transparent 98%) !important; }
+.sh-nav-list > li + li::before { background: linear-gradient(180deg, transparent, rgba(168,116,32,.6), rgba(90,10,10,.6), rgba(168,116,32,.6), transparent) !important; }
+.sh-nav-btn, .sh-nav-btn-text { font-family: var(--c-display); color: var(--c-text); }
+.sh-nav-list > li.active .sh-nav-btn, .sh-nav-btn:hover { color: var(--c-gold3); }
+.sh-dropdown { background: linear-gradient(180deg, #17141a, #0d0b0e) !important; border: 1px solid var(--c-gold1) !important; }
+.sh-dropdown a { color: var(--c-text) !important; font-family: var(--c-serif); }
+.sh-dropdown a:hover { color: var(--c-gold3) !important; background: rgba(138,16,16,.25) !important; }
+
+/* header blocks: online count and download plates */
+.sh-server-block, .sh-download-block {
+  background: linear-gradient(180deg, rgba(36,31,39,.92), rgba(13,11,14,.95)) !important;
+  border: 1px solid #000 !important; border-radius: 2px !important;
+  box-shadow: inset 0 0 0 1px var(--c-iron3), inset 0 0 0 4px var(--c-iron1), inset 0 0 0 5px var(--c-gold1), 0 10px 30px rgba(0,0,0,.6) !important;
+}
+.sh-dl-title, .sh-server-label { font-family: var(--c-display); }
+
+/* ---------------------------------------------------------------- windows (the client's window frame) */
+.sh-panel, .bd-c, .chaos-box {
+  position: relative;
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(58,51,57,.45), transparent 70%), linear-gradient(180deg, #17141a, #0d0b0e) !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  /* iron band, black groove, gold trim, crimson etch: the client's window frame */
+  box-shadow: inset 0 0 0 1px #574d52, inset 0 0 0 5px #241f27, inset 0 0 0 6px #000, inset 0 0 0 7px rgba(217,165,58,.8),
+    inset 0 0 0 8px rgba(90,10,10,.9), 0 12px 34px rgba(0,0,0,.6) !important;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+/* our pages bring their own frames: the page column stays bare */
+.bd-c:has(> .chaos-page) { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; }
+.bd-c:has(> .chaos-page)::before, .bd-c:has(> .chaos-page)::after { display: none; }
+.sh-panel { overflow: visible; }
+.sh-panel:hover { transform: none; }
+.sh-panel::before, .bd-c::before, .chaos-box::before,
+.sh-panel::after, .bd-c::after, .chaos-box::after {
+  content: ''; position: absolute; width: 30px; height: 30px; z-index: 3; pointer-events: none;
+  background: url('../img/frame-corner_tl.png') no-repeat 0 0 / contain; animation: none; opacity: 1;
+}
+.sh-panel::before, .bd-c::before, .chaos-box::before { top: -12px; left: -12px; right: auto; inset: -12px auto auto -12px; height: 30px; }
+.sh-panel::after, .bd-c::after, .chaos-box::after { inset: -12px -12px auto auto; background-image: url('../img/frame-corner_tr.png'); }
+.sh-panel-title {
+  margin: 8px 8px 0; padding: 9px 14px 8px;
+  font-family: var(--c-display); font-size: 11px; letter-spacing: .16em;
+  color: var(--c-gold3) !important; text-shadow: 0 1px 0 #000, 0 0 10px rgba(184,22,15,.4);
+  background: linear-gradient(180deg, rgba(58,51,57,.55), rgba(13,11,14,.2)) !important;
+  border-bottom: 1px solid #000 !important; box-shadow: 0 1px 0 rgba(168,116,32,.45);
+}
+.sh-panel-title i { color: var(--c-blood4) !important; }
+.bd-c { padding: 20px 22px !important; min-height: 200px; }
+.sh-panel-body { padding: 12px 18px 16px; }
+
+.sh-tabs { border-bottom: 1px solid var(--c-gold1); }
+.sh-tab-btn { font-family: var(--c-display); color: var(--c-muted); letter-spacing: .1em; }
+.sh-tab-btn.active { color: var(--c-gold3) !important; border-bottom-color: var(--c-blood3) !important; }
+
+/* buttons: crimson plate, gold edge (client buttons) */
+.sh-btn, .znx-acct-btn, .chaos-btn, input[type=submit], button[type=submit] {
+  font-family: var(--c-display); letter-spacing: .12em; text-transform: uppercase;
+  border-radius: 2px !important;
+}
+.sh-btn-primary, .znx-acct-btn, .chaos-btn, button[type=submit], input[type=submit] {
+  background: linear-gradient(180deg, #b8160f 0%, #8a1010 48%, #5a0a0a 100%) !important;
+  color: var(--c-gold4) !important; border: 1px solid #000 !important;
+  box-shadow: inset 0 0 0 1px var(--c-gold1), inset 0 1px 0 rgba(255,240,184,.3), 0 2px 8px rgba(0,0,0,.6) !important;
+  text-shadow: 0 1px 0 #000;
+}
+.sh-btn-primary:hover, .znx-acct-btn:hover, .chaos-btn:hover, button[type=submit]:hover {
+  background: linear-gradient(180deg, #e03a1e 0%, #b8160f 50%, #8a1010 100%) !important;
+  box-shadow: inset 0 0 0 1px var(--c-gold2), 0 0 16px rgba(224,58,30,.45) !important;
+}
+.sh-btn-outline { border-color: var(--c-gold1) !important; color: var(--c-gold3) !important; }
+.sh-input, .znx-acct-select, input[type=text], input[type=password], input[type=email], select, textarea {
+  background: #0a0809 !important; color: var(--c-text) !important;
+  border: 1px solid var(--c-iron3) !important; border-radius: 1px !important;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,.8) !important;
+}
+.sh-input:focus, input:focus, select:focus, textarea:focus { border-color: var(--c-gold1) !important; outline: none; }
+
+/* the stock ZnoteX views inside our frames */
+.znx-acct-head, .sh-page-title {
+  font-family: var(--c-display); color: var(--c-gold3) !important; letter-spacing: .1em;
+  border-bottom: 1px solid rgba(168,116,32,.5) !important; background: none !important;
+}
+.znx-acct-table th, .znx-acct-table tr.yellow td, table tr.yellow td { color: var(--c-gold3) !important; background: rgba(58,51,57,.35) !important; }
+.znx-acct-table td { border-color: rgba(87,77,82,.4) !important; }
+
+/* rankings sidebar */
+.sh-rank-1 { color: var(--c-gold3) !important; }
+.sh-rank-2 { color: #cfc6bd !important; }
+.sh-rank-3 { color: #c27a3a !important; }
+.sh-rank-avatar { border-color: var(--c-gold1) !important; background: #0a0809 !important; }
+.sh-rank-avatar img { image-rendering: auto; }
+
+/* footer */
+.sh-footer { background: linear-gradient(180deg, rgba(13,11,14,.96), #050405) !important; border-top: 1px solid var(--c-gold1) !important; }
+.sh-footer::before { background: linear-gradient(90deg, transparent, var(--c-blood3), var(--c-gold2), var(--c-blood3), transparent) !important; }
+.sh-footer-col h4, .sh-footer-clock h4 { color: var(--c-gold3) !important; font-family: var(--c-display); }
+.sh-clock { color: var(--c-gold3) !important; font-family: var(--c-display); }
+.sh-copyright, .sh-copyright a { color: var(--c-muted) !important; }
+.sn-glow { background: radial-gradient(circle, rgba(224,58,30,.18), transparent 70%) !important; }
+
+/* ---------------------------------------------------------------- Cinders of Chaos pages */
+.chaos-page { display: flex; flex-direction: column; gap: 26px; }
+.chaos-box { padding: 22px 26px !important; }
+.chaos-page h1, .chaos-page h2, .chaos-page h3 { color: var(--c-gold3); }
+.chaos-heading { font-family: var(--c-display); color: var(--c-gold3); font-size: 22px; letter-spacing: .12em; text-transform: uppercase;
+  margin: 0 0 10px; text-shadow: 0 2px 0 #000, 0 0 18px rgba(184,22,15,.45); }
+.chaos-heading small, .chaos-subheading small { font-size: 12px; color: var(--c-muted); letter-spacing: .04em; text-transform: none; }
+.chaos-subheading { font-family: var(--c-display); color: var(--c-gold2); font-size: 16px; letter-spacing: .08em; margin: 18px 0 6px; }
+.chaos-lead { color: var(--c-text); font-size: 15px; line-height: 1.7; margin: 0 0 14px; }
+.chaos-muted { color: var(--c-muted); }
+.chaos-gold { color: var(--c-gold3); }
+.chaos-empty { color: var(--c-muted); font-style: italic; text-align: center; padding: 10px; }
+.chaos-page code { background: #0a0809; color: var(--c-gold3); padding: 1px 5px; border: 1px solid var(--c-iron2); }
+.chaos-divider { height: 14px; margin: 14px auto; max-width: 70%;
+  background: radial-gradient(circle, var(--c-blood3) 3px, #000 4px, transparent 5px) center / 14px 14px no-repeat,
+    linear-gradient(90deg, transparent, var(--c-gold2), transparent) center / 100% 1px no-repeat; }
+
+.chaos-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.chaos-tab { font-family: var(--c-display); font-size: 12px; letter-spacing: .08em; padding: 6px 12px; color: var(--c-text);
+  background: linear-gradient(180deg, #241f27, #0d0b0e); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron3); }
+.chaos-tab:hover { color: var(--c-gold3); box-shadow: inset 0 0 0 1px var(--c-gold1); }
+.chaos-tab.is-active { color: var(--c-gold4); background: linear-gradient(180deg, #8a1010, #5a0a0a); box-shadow: inset 0 0 0 1px var(--c-gold2); }
+
+.chaos-table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; font-size: 14px; }
+.chaos-table th { font-family: var(--c-display); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--c-gold3);
+  text-align: left; padding: 8px 10px; background: linear-gradient(180deg, rgba(58,51,57,.6), rgba(23,20,26,.6)); border-bottom: 1px solid var(--c-gold1); }
+.chaos-table td { padding: 7px 10px; border-bottom: 1px solid rgba(87,77,82,.35); }
+.chaos-table tbody tr:nth-child(even) td { background: rgba(255,255,255,.015); }
+.chaos-table tbody tr:hover td { background: rgba(138,16,16,.14); }
+.chaos-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.chaos-top-1 td:first-child { color: var(--c-gold3); font-weight: 700; }
+.chaos-top-2 td:first-child { color: #cfc6bd; font-weight: 700; }
+.chaos-top-3 td:first-child { color: #c27a3a; font-weight: 700; }
+
+.chaos-ladder { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.chaos-ladder__col { background: rgba(5,4,5,.55); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron2); padding: 10px 12px; }
+.chaos-ladder__name { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 6px; color: var(--c-gold3); }
+.chaos-ladder__list { margin: 0; padding-left: 22px; font-size: 13px; }
+.chaos-ladder__list li { list-style: decimal; padding: 2px 0; color: var(--c-muted); }
+.chaos-ladder__list li .chaos-muted { font-size: 11px; margin-left: 4px; }
+.chaos-ladder__lvl { float: right; color: var(--c-gold2); font-variant-numeric: tabular-nums; }
+.chaos-fallen { color: #c9301f; margin-left: 4px; cursor: help; } /* a fallen Hardcore character (season modes) */
+
+/* patch notes: the in-game window's colours (New green, Changes gold, Fixes blue, Balance violet) */
+.chaos-pn-layout { display: grid; grid-template-columns: 220px 1fr; gap: 18px; }
+.chaos-pn-list { margin: 0; padding: 0; border-right: 1px solid var(--c-iron2); }
+.chaos-pn-list li { list-style: none; }
+.chaos-pn-list a { display: block; padding: 8px 10px; border-bottom: 1px solid rgba(87,77,82,.3); color: var(--c-text); }
+.chaos-pn-list li.is-active a { background: linear-gradient(90deg, rgba(138,16,16,.4), transparent); color: var(--c-gold3); box-shadow: inset 2px 0 0 var(--c-gold2); }
+.chaos-pn-list__date { display: block; font-size: 11px; color: var(--c-muted); }
+.chaos-pn-list__title { display: block; font-size: 13px; }
+.chaos-pn__title { font-size: 20px; margin: 0; }
+.chaos-pn__date { color: var(--c-muted); font-size: 12px; margin: 2px 0 10px; }
+.chaos-pn__intro { line-height: 1.7; }
+.chaos-pn__section h3 { font-size: 15px; letter-spacing: .12em; text-transform: uppercase; margin: 18px 0 6px; padding-bottom: 4px; border-bottom: 1px solid currentColor; }
+.chaos-pn__section ul { margin: 0; padding: 0; }
+.chaos-pn__section li { list-style: none; position: relative; padding: 3px 0 3px 18px; line-height: 1.6; }
+.chaos-pn__section li.chaos-pn__bullet::before { content: ''; position: absolute; left: 4px; top: 11px; width: 6px; height: 6px; transform: rotate(45deg); background: var(--pn); }
+.chaos-pn__section li.chaos-pn__sub { padding-left: 36px; font-size: 13px; }
+.chaos-pn__section li.chaos-pn__sub::before { content: ''; position: absolute; left: 22px; top: 11px; width: 5px; height: 5px; border-radius: 50%; background: var(--pn); opacity: .7; }
+.chaos-pn__section li.chaos-pn__para { padding-left: 0; }
+.chaos-pn__lead { color: var(--pn); }
+.chaos-pn--new { --pn: #66cc66; } .chaos-pn--new h3 { color: #66cc66; }
+.chaos-pn--changes { --pn: #f6cf72; } .chaos-pn--changes h3 { color: #f6cf72; }
+.chaos-pn--fixes { --pn: #6fa8e8; } .chaos-pn--fixes h3 { color: #6fa8e8; }
+.chaos-pn--balance { --pn: #b48cf0; } .chaos-pn--balance h3 { color: #b48cf0; }
+.chaos-pn--other { --pn: #d6c9ae; } .chaos-pn--other h3 { color: #d6c9ae; }
+
+.chaos-season { background: rgba(5,4,5,.5); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-gold1); padding: 14px 18px; margin: 10px 0; }
+.chaos-season__state { font-family: var(--c-display); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--c-blood4); }
+.chaos-season__name { margin: 4px 0 8px; font-size: 22px; }
+.chaos-facts { display: grid; grid-template-columns: 120px 1fr; gap: 4px 12px; margin: 0; }
+.chaos-facts dt { color: var(--c-muted); font-weight: normal; }
+.chaos-facts dd { margin: 0; }
+
+/* home and class pages */
+.chaos-hero { text-align: center; padding: 6px 0 4px; }
+.chaos-hero__title { font-size: 26px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .14em; text-shadow: 0 2px 0 #000, 0 0 20px rgba(184,22,15,.5); }
+.chaos-hero__text { max-width: 760px; margin: 0 auto 14px; font-size: 16px; line-height: 1.75; }
+.chaos-hero__quote { font-style: italic; color: var(--c-muted); }
+.chaos-cta { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; }
+.chaos-btn { display: inline-block; padding: 10px 22px; font-size: 13px; }
+.chaos-btn--ghost { background: linear-gradient(180deg, #241f27, #0d0b0e) !important; color: var(--c-gold3) !important; }
+
+.chaos-classes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-top: 12px; }
+.chaos-class { position: relative; text-align: center; padding: 14px 12px 12px; background: linear-gradient(180deg, rgba(36,31,39,.8), rgba(5,4,5,.9));
+  border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron3), inset 0 0 0 4px rgba(13,11,14,.9), inset 0 0 0 5px rgba(168,116,32,.55); }
+.chaos-class img { display: block; margin: 0 auto 6px; width: 64px; height: 64px; }
+.chaos-class__name { font-family: var(--c-display); color: var(--c-gold3); font-size: 17px; letter-spacing: .1em; text-transform: uppercase; }
+.chaos-class__plays { color: var(--c-muted); font-size: 12px; font-style: italic; min-height: 34px; }
+.chaos-class__asc { margin: 8px 0 0; padding: 0; text-align: left; }
+.chaos-class__asc li { list-style: none; font-size: 12px; padding: 5px 0 0; border-top: 1px solid rgba(87,77,82,.35); line-height: 1.45; }
+.chaos-class__asc strong { color: var(--c-gold2); display: block; font-family: var(--c-display); font-size: 13px; }
+.chaos-class.is-locked { opacity: .78; }
+.chaos-class.is-locked::after { content: 'Unlockable'; position: absolute; top: 8px; right: 8px; font-family: var(--c-display); font-size: 9px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--c-gold4); background: var(--c-blood2); padding: 2px 6px; box-shadow: inset 0 0 0 1px var(--c-gold1); }
+.chaos-class.is-unlocked::after { content: 'Unlocked'; position: absolute; top: 8px; right: 8px; font-family: var(--c-display); font-size: 9px; letter-spacing: .12em;
+  text-transform: uppercase; color: #0d0b0e; background: var(--c-gold2); padding: 2px 6px; }
+
+.chaos-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.chaos-feature { background: rgba(5,4,5,.5); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron2); padding: 12px 14px; }
+.chaos-feature h3 { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 6px; color: var(--c-gold3); }
+.chaos-feature ul { margin: 0; padding: 0; }
+.chaos-feature li { list-style: none; position: relative; padding: 2px 0 2px 14px; font-size: 13px; line-height: 1.5; }
+.chaos-feature li::before { content: ''; position: absolute; left: 1px; top: 9px; width: 5px; height: 5px; transform: rotate(45deg); background: var(--c-blood3); }
+
+.chaos-news { margin-top: 4px; }
+.chaos-news__item { padding: 10px 0; border-bottom: 1px solid rgba(87,77,82,.35); }
+.chaos-news__item h3 { font-size: 16px; margin: 0 0 2px; }
+.chaos-news__meta { font-size: 11px; color: var(--c-muted); margin-bottom: 6px; }
+
+/* character creation */
+.chaos-create { display: flex; flex-direction: column; gap: 14px; }
+.chaos-create label.chaos-pick { cursor: pointer; display: block; }
+.chaos-pick input { position: absolute; opacity: 0; pointer-events: none; }
+.chaos-pick .chaos-class { transition: box-shadow .2s, transform .2s; }
+.chaos-pick input:checked + .chaos-class { box-shadow: inset 0 0 0 1px var(--c-gold2), inset 0 0 0 4px rgba(138,16,16,.6), inset 0 0 0 5px var(--c-gold3), 0 0 18px rgba(224,58,30,.4); transform: translateY(-2px); }
+.chaos-pick input:focus-visible + .chaos-class { outline: 2px solid var(--c-gold3); }
+.chaos-field { display: flex; flex-direction: column; gap: 4px; max-width: 420px; }
+.chaos-field label { font-family: var(--c-display); color: var(--c-gold2); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+.chaos-field input, .chaos-field select { padding: 8px 10px; font-size: 14px; }
+.chaos-note { font-size: 13px; color: var(--c-muted); }
+.chaos-msg { padding: 10px 14px; border: 1px solid #000; }
+.chaos-msg--ok { box-shadow: inset 0 0 0 1px #3c7a3c; color: #a6e0a6; background: rgba(20,60,20,.3); }
+.chaos-msg--error { box-shadow: inset 0 0 0 1px var(--c-blood3); color: #ffb3a6; background: rgba(90,10,10,.35); }
+
+.chaos-dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.chaos-dl__card { text-align: center; padding: 16px; background: rgba(5,4,5,.5); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron3), inset 0 0 0 4px rgba(13,11,14,.9), inset 0 0 0 5px rgba(168,116,32,.55); }
+.chaos-dl__card i { font-size: 34px; color: var(--c-gold2); }
+.chaos-dl__card h3 { margin: 8px 0 4px; font-size: 16px; }
+.chaos-dl__card p { font-size: 12px; color: var(--c-muted); min-height: 36px; }
+.chaos-steps { margin: 0; padding-left: 20px; line-height: 1.9; }
+
+@media (max-width: 900px) {
+  .chaos-pn-layout { grid-template-columns: 1fr; }
+  .chaos-pn-list { border-right: 0; border-bottom: 1px solid var(--c-iron2); }
+  html, body { max-width: 100%; overflow-x: hidden; }
+  .chaos-box { padding: 16px 14px !important; }
+  .chaos-table { font-size: 12px; }
+}
+/* phones: wide tables (donation packs, mentors, wars, stock character / guild / online lists) scroll sideways inside
+   their frame instead of being cut off by the page's overflow-x: hidden */
+@media (max-width: 600px) {
+  .chaos-table, table.table, table.znx-acct-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* links and tabs inside our pages: gold, as in the client */
+.chaos-page a:not(.chaos-btn):not(.chaos-tab) { color: var(--c-link) !important; }
+.chaos-page a:not(.chaos-btn):not(.chaos-tab):hover { color: var(--c-gold4) !important; }
+.chaos-page .chaos-tab { color: var(--c-text) !important; }
+.chaos-page .chaos-tab.is-active, .chaos-page .chaos-tab:hover { color: var(--c-gold4) !important; }
+.sh-rank-name a, .sh-guild-name a { color: var(--c-gold3) !important; }
+
+/* class cards inside form labels: the parent styles every label as a small caps caption */
+.chaos-pick, .chaos-pick * { text-transform: none; letter-spacing: normal; font-weight: normal; }
+.chaos-pick .chaos-class__name { font-family: var(--c-display); text-transform: uppercase; letter-spacing: .1em; font-size: 17px; }
+.chaos-pick .chaos-class__plays { font-style: italic; font-size: 12px; }
+.chaos-pick .chaos-class__asc li { font-size: 12px; }
+.chaos-pick .chaos-class__asc strong { font-weight: 700; }
+
+/* the site is English only (config language_selector = false); the parent's shell places its picker anyway */
+.void-lang { display: none !important; }
+
+/* the community goal and the week's world modifiers (plugins/chaos/community_lib.php) */
+.chaos-community { display: flex; flex-direction: column; gap: 14px; margin: 10px 0; }
+.chaos-community__goal, .chaos-community__week { background: rgba(5,4,5,.5); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-gold1); padding: 12px 16px; }
+.chaos-community__head { display: flex; gap: 8px; align-items: baseline; margin-bottom: 8px; }
+.chaos-community__left { margin-left: auto; color: var(--c-gold3); font-size: 13px; }
+.chaos-community__bar { position: relative; height: 24px; background: rgba(0,0,0,.6); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron3); overflow: hidden; }
+.chaos-community__fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#e0782a, #a8461a); }
+.chaos-community__mark { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: rgba(246,207,114,.55); }
+.chaos-community__text { position: relative; display: block; text-align: center; line-height: 24px; font-size: 13px; color: #fff3d6; text-shadow: 0 1px 2px #000; }
+.chaos-community__buffs, .chaos-community__week ul, .chaos-community__news ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.7; }
+.chaos-community__top { margin-top: 10px; }
+
+/* Leaderboards: the class tabs of a board with byClass (the Cinderheart fastest kills), "All classes" first */
+.chaos-tabs--classes { margin-top: 2px; padding-top: 8px; border-top: 1px solid rgba(87,77,82,.35); }
+.chaos-tabs--classes .chaos-tab { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; }
+.chaos-tabs--classes .chaos-tab img { width: 18px; height: 18px; }
+
+/* Stock ZnoteX leftovers that do not apply here (website/README.md "Not used on this server"): the premium badge and
+   the points / premium figures of the account header, the shop link of the footer, the premium "Account Status" row
+   of the character page, and the staff widget's link into the forum, which is off. */
+.void-acc-badges .void-acc-badge:nth-child(2),
+.void-acc-stats,
+.sh-footer a[href="shop.php"],
+.cp-info-list > .cp-info-row:last-child,
+.sh-sidebar a[href^="forum.php"] { display: none !important; }
+.chaos-notused__links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }

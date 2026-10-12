@@ -21,6 +21,6 @@ function onCastSpell(creature, variant, isHotkey)
 	player:addCondition(regen)
 
 	local pos = player:getPosition()
-	ChaosSpell.fx(pos, "arcane_circle", CONST_ME_MAGIC_BLUE)
+	ChaosSpell.vfxOr(pos, "shield_bubble", "arcane_circle", CONST_ME_MAGIC_BLUE)
 	return true
 end

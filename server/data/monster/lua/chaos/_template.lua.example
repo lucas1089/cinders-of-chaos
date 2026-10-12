@@ -14,7 +14,7 @@ monster.speed = 200
 monster.manaCost = 0
 
 monster.flags = { summonable = false, attackable = true, hostile = true, convinceable = false, pushable = false, rewardBoss = false, illusionable = false, canPushItems = true, canPushCreatures = true, staticAttackChance = 90, targetDistance = 1, runHealth = 0, healthHidden = false, isBlockable = false, canWalkOnEnergy = false, canWalkOnFire = false, canWalkOnPoison = false }
-monster.loot = { { id = 3031, chance = 100000, maxCount = 20 } } -- gold coin
+monster.loot = { { id = 2148, chance = 100000, maxCount = 20 } } -- gold coin (by id: the base takes no loot names)
 monster.attacks = { { name = "melee", interval = 2000, chance = 100, minDamage = 0, maxDamage = -50 } }
 
 mType:register(monster)

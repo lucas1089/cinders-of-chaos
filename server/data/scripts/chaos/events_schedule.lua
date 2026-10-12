@@ -16,9 +16,13 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 
 ChaosEvents = ChaosEvents or {}
 local E = ChaosEvents
+E.dynamic = E.dynamic or {} -- key -> runtime event (see E.active)
 
 local function cfg()
 	return Chaos.events or {list = {}}
@@ -50,6 +54,12 @@ function E.active(t)
 	local list = {}
 	for _, event in ipairs(cfg().list) do
 		if E.runsOn(event, t) then
+			list[#list + 1] = event
+		end
+	end
+	-- runtime events with an end time (invasion.lua: the Victory buff; worldevents.lua): {id, name, description, bonus, untilTime}
+	for _, event in pairs(E.dynamic) do
+		if (event.untilTime or 0) > t then
 			list[#list + 1] = event
 		end
 	end
@@ -147,7 +157,7 @@ function login.onLogin(player)
 end
 login:register()
 
-local talk = TalkAction("!events")
+local talk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "events")
 function talk.onSay(player, words, param)
 	local lines = E.describeActive()
 	if #lines == 0 then
@@ -157,5 +167,4 @@ function talk.onSay(player, words, param)
 	end
 	return false
 end
-talk:separator(" ")
-talk:register()
+ChaosCommands.register("events", function(player, param) return talk.onSay(player, "", param) end)

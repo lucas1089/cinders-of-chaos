@@ -1,11 +1,12 @@
 -- Leaderboards window: weekly boards (World Boss, Bounty Hunter, Rifts) with last week's title holders, the all-time
 -- class ladder, the player's own rank and the time to the weekly reset.
 -- Server: server/data/scripts/chaos/leaderboard.lua, extended opcode 229 (JSON {action, data}).
---   server -> client  meta {open, boards = [{key, name, weekly, value, count, title, info}], groups = [{key, name}], ownGroup}
+--   server -> client  meta {open, boards = [{key, name, weekly, value, count, title, info, byClass, format}], groups = [{key, name}], ownGroup}
+--                     (byClass: class tabs on a weekly board, "All classes" first; format "time": values in seconds, shown m:ss)
 --                     board {key, group, week, resetIn, rows = [{rank, name, value, count, level, vocation, title}],
 --                            own = {rank, value, count} | nil, champions = [{rank, rankName, name, value, title}], total}
 --   client -> server  open | get {board, group}
--- !leaderboard opens it from the chat; the top menu (Chaos -> Leaderboards) calls toggle().
+-- The top menu (Social > Leaderboards) calls toggle().
 
 local OPCODE = 229
 local RANK_COLOR = { '#e8b84a', '#a8b4c8', '#c87a3a' }
@@ -16,10 +17,13 @@ local current          -- last board received
 local boardAt = 0      -- g_clock.seconds() when it arrived
 local selected         -- board key shown
 local selectedGroup    -- class group shown on the ladder
+local classGroup       -- class tab of the boards with class tabs (byClass); nil = every class
 local tabs, groupTabs = {}, {}
 local tickEvent
 local refreshAsked = false
 local seasonView = false -- the Season toggle (server season.lua): only the running season's characters
+local seasonMode = 'all' -- its mode tab (server season_modes.lua): all | standard | ssf | hc | hcssf | fallen
+local modeTabs = {}
 
 -- ---------------------------------------------------------------- helpers
 local function send(action, data)
@@ -27,6 +31,7 @@ local function send(action, data)
   if action == 'get' and seasonView then
     data = data or {}
     data.season = true
+    if seasonMode ~= 'all' then data.mode = seasonMode end
   end
   if protocol then
     protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
@@ -62,11 +67,25 @@ local function formatTime(seconds)
   return string.format('%dh %02dm %02ds', h, m, s)
 end
 
+-- a board value as shown: m:ss for the time boards, else short (or exact) numbers
+local function valueText(v, b, exactly)
+  local t = TabRows and TabRows.valueText and TabRows.valueText(v, b and b.format)
+  if t then return t end
+  return exactly and exact(v) or short(v)
+end
+
 local function boardMeta(key)
   for _, b in ipairs(list(meta and meta.boards)) do
     if b.key == key then return b end
   end
   return nil
+end
+
+-- the group to ask for with the board shown: the class tab of a byClass board, else the ladder's class
+local function currentGroup()
+  local b = selected and boardMeta(selected)
+  if b and b.weekly and b.byClass then return classGroup end
+  return selectedGroup
 end
 
 local function groupName(key)
@@ -93,9 +112,20 @@ local function createRow(r, b, ownName)
   else
     row.title:setText('')
   end
+  -- a fallen Hardcore character: the skull, the fall in the tooltip
+  local fallen = type(r.fallen) == 'table' and r.fallen or nil
+  row.fallen:setVisible(fallen ~= nil)
+  row.fallen:setWidth(fallen and 14 or 0)
+  row.fallen:setMarginLeft(fallen and 4 or 0)
+  if fallen then
+    local tip = tr('Fallen in Hardcore at level %d (%s).', tonumber(fallen.level) or 0, tostring(fallen.cause or ''))
+    row.fallen:setTooltip(tip)
+    row:setTooltip(tip)
+    row.name:setColor('#a09080')
+  end
   if b.weekly then
-    row.value:setText(short(r.value))
-    row.value:setTooltip(exact(r.value) .. ' ' .. (b.value or ''):lower())
+    row.value:setText(valueText(r.value, b))
+    row.value:setTooltip(valueText(r.value, b, true) .. ' ' .. (b.value or ''):lower())
     row.extra:setText(b.count and exact(r.count) or '')
   else
     row.value:setText(tostring(r.level or r.value or 0))
@@ -118,7 +148,7 @@ local function updateTimer()
   window.timerLabel:setTooltip(tr('The weekly boards reset every Monday at 06:00 server time.'))
   if left <= 0 and not refreshAsked and window:isVisible() then
     refreshAsked = true
-    scheduleEvent(function() send('get', { board = selected, group = selectedGroup }) end, 5000)
+    scheduleEvent(function() send('get', { board = selected, group = currentGroup() }) end, 5000)
   end
 end
 
@@ -154,7 +184,7 @@ local function showBoard()
       for _, c in ipairs(champions) do
         local place = c.rankName or ordinal(tonumber(c.rank) or 0)
         parts[#parts + 1] = place .. ' ' .. (c.name or '?')
-        exacts[#exacts + 1] = string.format('%s %s: %s %s', place, c.name or '?', exact(c.value), (b.value or ''):lower())
+        exacts[#exacts + 1] = string.format('%s %s: %s %s', place, c.name or '?', valueText(c.value, b, true), (b.value or ''):lower())
       end
       window.championPanel.championNames:setText(table.concat(parts, '    '))
       window.championPanel.championNames:setTooltip(table.concat(exacts, '\n'))
@@ -168,9 +198,13 @@ local function showBoard()
   local season = type(current.season) == 'table' and current.season or nil
   if season then
     window.championPanel.championNames:setTooltip('')
-    window.championPanel.championTitle:setText(tr('%s %s: season characters only', season.name or '', season.tag or ''))
+    window.championPanel.championTitle:setText(season.modeName and tr('%s %s: %s', season.name or '', season.tag or '', season.modeName)
+      or tr('%s %s: season characters only', season.name or '', season.tag or ''))
     window.championPanel.championNames:setText(b.weekly and tr('This week\'s scores of the season\'s characters. Titles are won on the normal boards.')
       or tr('Highest level of the season\'s characters in the %s line.', groupName(current.group)))
+    if season.mode == 'fallen' then
+      window.championPanel.championNames:setText(tr('Hardcore characters that died, highest level first, with what killed them.'))
+    end
   end
 
   window.emptyText:setText(b.weekly and tr('No scores on this board yet this week.') or tr('No characters of this class yet.'))
@@ -181,7 +215,7 @@ local function showBoard()
     local text
     if b.weekly then
       text = tr('Your rank: #%d of %d   -   %s: %s', tonumber(own.rank) or 0, tonumber(current.total) or 0,
-        b.value or tr('Score'), exact(own.value))
+        b.value or tr('Score'), valueText(own.value, b, true))
       if b.count then text = text .. string.format('   -   %s: %s', b.count, exact(own.count)) end
     else
       text = tr('Your rank in the %s line: #%d   -   level %d', groupName(current.group), tonumber(own.rank) or 0,
@@ -189,8 +223,9 @@ local function showBoard()
     end
     window.ownPanel.ownLabel:setText(text)
   else
-    window.ownPanel.ownLabel:setText(b.weekly and tr('You have no score on this board this week.')
-      or tr('Your class is not on this ladder.'))
+    local tab = type(current.season) == 'table' and current.season.mode or nil
+    window.ownPanel.ownLabel:setText(tab and tr('This character is not on this tab.')
+      or (b.weekly and tr('You have no score on this board this week.') or tr('Your class is not on this ladder.')))
   end
 
   if b.weekly then
@@ -201,26 +236,100 @@ local function showBoard()
   updateTimer()
 end
 
+-- the tabs of `items` ({text, tooltip, onClick, checked}) in rows inside container (tabrows.lua), each as wide as its
+-- label in the tab's font; returns the tab widgets in order and sets the container's height
+local TAB_GAP, ROW_GAP = 4, 3
+
+local function buildTabRows(container, style, items, maxWidth)
+  container:destroyChildren()
+  local avail = container:getWidth()
+  if avail <= 0 then avail = window:getWidth() - window:getPaddingLeft() - window:getPaddingRight() end
+  local probe = g_ui.createWidget(style, container)
+  local rowHeight = probe:getHeight()
+  local pad = probe:getPaddingLeft() + probe:getPaddingRight() + 8
+  local widths = {}
+  for i, item in ipairs(items) do
+    probe:setText(item.text)
+    widths[i] = probe:getTextSize().width + pad
+  end
+  probe:destroy()
+  local out = {}
+  local rows = TabRows.layout(widths, avail, TAB_GAP, maxWidth)
+  for _, cells in ipairs(rows) do
+    local row = g_ui.createWidget('LeaderboardTabRow', container)
+    row:setHeight(rowHeight)
+    for k, cell in ipairs(cells) do
+      local item = items[cell.index]
+      local tab = g_ui.createWidget(style, row)
+      tab:setWidth(cell.width)
+      tab:setHeight(rowHeight)
+      tab:setMarginRight(k < #cells and TAB_GAP or 0)
+      tab:setText(item.text)
+      if item.tooltip then tab:setTooltip(item.tooltip) end
+      tab:setChecked(item.checked and true or false)
+      tab.onClick = item.onClick
+      out[cell.index] = tab
+    end
+  end
+  container:setHeight(math.max(1, #rows) * rowHeight + math.max(0, #rows - 1) * ROW_GAP)
+  return out
+end
+
 local function buildGroupTabs()
   window.groupTabs:destroyChildren()
   groupTabs = {}
   local ladder = selected and boardMeta(selected)
-  local visible = ladder and not ladder.weekly
+  local byClass = ladder and ladder.weekly and ladder.byClass
+  local visible = ladder and (not ladder.weekly or byClass)
   window.groupTabs:setVisible(visible and true or false)
   window.groupTabs:setHeight(visible and 22 or 0)
   window.groupTabs:setMarginTop(visible and 4 or 0)
   if not visible then return end
-  for _, g in ipairs(list(meta.groups)) do
-    local tab = g_ui.createWidget('LeaderboardGroupTab', window.groupTabs)
-    tab:setText(g.name or '?')
+  local groups, items = list(meta.groups), {}
+  if byClass then
+    -- a weekly board with class tabs: "All classes" first (key 'all' = no filter)
+    table.insert(groups, 1, { key = 'all', name = tr('All classes') })
+  end
+  for i, g in ipairs(groups) do
     local key = g.key
-    tab:setChecked(key == selectedGroup)
-    tab.onClick = function()
-      selectedGroup = key
+    local checked = byClass and (key == (classGroup or 'all')) or (not byClass and key == selectedGroup)
+    items[i] = { text = g.name or '?', checked = checked, onClick = function()
+      if byClass then
+        classGroup = key ~= 'all' and key or nil
+      else
+        selectedGroup = key
+      end
       for k, t in pairs(groupTabs) do t:setChecked(k == key) end
-      send('get', { board = selected, group = key })
-    end
-    groupTabs[key] = tab
+      send('get', { board = selected, group = byClass and classGroup or key })
+    end }
+  end
+  for i, tab in pairs(buildTabRows(window.groupTabs, 'LeaderboardGroupTab', items, 124)) do
+    groupTabs[groups[i].key] = tab
+  end
+end
+
+-- the mode tabs of the Season view (meta.season.modes), shown while the Season toggle is on
+local function buildModeTabs()
+  window.modeTabs:destroyChildren()
+  modeTabs = {}
+  local season = meta and type(meta.season) == 'table' and meta.season or nil
+  local modes = season and list(season.modes) or {}
+  local visible = seasonView and #modes > 0
+  window.modeTabs:setVisible(visible)
+  window.modeTabs:setHeight(visible and 20 or 0)
+  window.modeTabs:setMarginTop(visible and 4 or 0)
+  if not visible then return end
+  local items = {}
+  for i, m in ipairs(modes) do
+    local key = m.key
+    items[i] = { text = tostring(m.name or key), checked = key == seasonMode, onClick = function()
+      seasonMode = key
+      for k, t in pairs(modeTabs) do t:setChecked(k == key) end
+      send('get', { board = selected, group = currentGroup() })
+    end }
+  end
+  for i, tab in pairs(buildTabRows(window.modeTabs, 'LeaderboardModeTab', items, 124)) do
+    modeTabs[modes[i].key] = tab
   end
 end
 
@@ -230,38 +339,35 @@ local function selectBoard(key)
   local b = boardMeta(key)
   if b and not b.weekly and not selectedGroup then selectedGroup = meta.ownGroup end
   buildGroupTabs()
-  send('get', { board = key, group = selectedGroup })
+  send('get', { board = key, group = (b and b.weekly and b.byClass) and classGroup or selectedGroup })
 end
 
 local function buildTabs()
-  window.tabs:destroyChildren()
   tabs = {}
-  local boards = list(meta.boards)
-  -- share the row between the boards (124 px each at most, as in the .otui)
-  local width = math.min(124, math.floor((window.tabs:getWidth() - 4 * #boards) / math.max(1, #boards)))
-  for _, b in ipairs(boards) do
-    local tab = g_ui.createWidget('LeaderboardTab', window.tabs)
-    if width > 40 then tab:setWidth(width) end
-    tab:setText(b.name or b.key)
-    tab:setTooltip(b.weekly and tr('Weekly: %s', b.info or '') or (b.info or ''))
+  local boards, items = list(meta.boards), {}
+  for i, b in ipairs(boards) do
     local key = b.key
-    tab.onClick = function() selectBoard(key) end
-    tabs[key] = tab
+    items[i] = { text = b.name or b.key, checked = key == selected, onClick = function() selectBoard(key) end,
+                 tooltip = b.weekly and tr('Weekly: %s', b.info or '') or (b.info or '') }
+  end
+  for i, tab in pairs(buildTabRows(window.tabs, 'LeaderboardTab', items)) do
+    tabs[boards[i].key] = tab
   end
 end
 
 -- ---------------------------------------------------------------- protocol
 local function onMeta(data)
   meta = data
-  if data.open then seasonView = false end
+  if data.open then seasonView = false seasonMode = 'all' end
   local season = type(data.season) == 'table' and data.season or nil
-  if not season then seasonView = false end
+  if not season then seasonView = false seasonMode = 'all' end
   window.seasonToggle:setVisible(season ~= nil)
   window.seasonToggle:setText(season and tr('%s only', season.tag or tr('Season')) or '')
   window.seasonToggle:setTooltip(season and tr('Show only the characters of %s.', season.name or '') or '')
   window.seasonToggle:setChecked(seasonView)
   if not selectedGroup then selectedGroup = data.ownGroup end
   buildTabs()
+  buildModeTabs()
   if data.open then show() end
 end
 
@@ -273,7 +379,11 @@ local function onBoardData(data)
     selected = data.key
     buildGroupTabs()
   end
-  if data.group then
+  local db = boardMeta(data.key)
+  if db and db.weekly and db.byClass then
+    classGroup = data.group
+    for k, t in pairs(groupTabs) do t:setChecked(k == (data.group or 'all')) end
+  elseif data.group then
     selectedGroup = data.group
     for k, t in pairs(groupTabs) do t:setChecked(k == data.group) end
   end
@@ -298,8 +408,12 @@ end
 -- ---------------------------------------------------------------- window
 function toggleSeason()
   seasonView = not seasonView
-  if window then window.seasonToggle:setChecked(seasonView) end
-  send('get', { board = selected, group = selectedGroup })
+  if not seasonView then seasonMode = 'all' end
+  if window then
+    window.seasonToggle:setChecked(seasonView)
+    buildModeTabs()
+  end
+  send('get', { board = selected, group = currentGroup() })
 end
 
 function show()
@@ -327,7 +441,7 @@ end
 local function onGameEnd()
   hide()
   meta, current, selected, selectedGroup = nil, nil, nil, nil
-  tabs, groupTabs = {}, {}
+  tabs, groupTabs, modeTabs, seasonMode = {}, {}, {}, 'all'
 end
 
 function init()

@@ -1,0 +1,13 @@
+Module
+  name: game_energyshield
+  description: Energy shield bar above the health bar of the character plate (extended opcode 224, sent by the engine, patch 0015)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ shieldmath, energyshield ]
+  dependencies:
+    - game_interface
+    - game_chaoshud
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

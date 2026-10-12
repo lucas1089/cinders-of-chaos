@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Keeper of Trials: opens the Vocation Trials (server/data/scripts/chaos/TRIALS.md, trials.lua). Greeting him opens the
+     same door as the Trials button of the passive tree window. Placed in the temple at startup (Chaos.trials.npc). -->
+<npc name="Keeper of Trials" script="keeper_of_trials.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="141" head="19" body="114" legs="95" feet="95" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. Every road of power asks a price. I keep the doors of the {trials}." />
+		<parameter key="message_farewell" value="May the trials find you ready, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The doors close." />
+	</parameters>
+</npc>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mordecai Ashwager, the Gambler: sealed equipment for gold, the rarity hidden until the seal breaks
+     (server/data/scripts/chaos/gamble.lua, gamble_config.lua; server/README.md "The Gambler"). Placed next to the main
+     temple at startup; installed by server/tools/install_gamble.py. -->
+<npc name="Mordecai Ashwager" script="mordecai_ashwager.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="152" head="114" body="94" legs="114" feet="76" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Sealed crates, |PLAYERNAME|. Made for your hands, opened by your gold. Care to {gamble}? Ask about the {odds}, or when the {crates} change." />
+		<parameter key="message_farewell" value="Luck is a fickle ember, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The crates will wait. They always do." />
+	</parameters>
+</npc>

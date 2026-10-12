@@ -217,7 +217,7 @@ actions.refundNode = function(player, data)
 			left[#left + 1] = other
 		end
 	end
-	T.savePreset(guid, active.preset, active.name, left)
+	T.savePreset(guid, active.preset, active.name, left, active.masteries) -- the other masteries keep their effect
 	T.sendNodes(player)
 	T.sendPoints(player)
 	ChaosPassiveTree.apply(player)

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Trial Thrall: the waves, marks and adds of a Vocation Trial (data/scripts/chaos/trials.lua). Renamed and dressed per
+     class family at run time; health is set per run, the size of its hits is a share of the player's maximum health.
+     No experience, no loot, no tier. -->
+<monster name="Trial Thrall" nameDescription="a trial thrall" race="undead" experience="0" speed="210" manacost="0">
+	<health now="600" max="600" />
+	<look type="233" corpse="0" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-45" />
+	</attacks>
+	<defenses armor="10" defense="10" />
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drown="1" />
+	</immunities>
+</monster>

@@ -29,7 +29,10 @@
 		<attack name="outfit" interval="4000" chance="10" range="7" item="3976" duration="4000">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</attack>
-		<attack name="serpent_attack" interval="4000" chance="25"/>
+		<attack name="speed" range="7" target="1" speedchange="-850" duration="12000" interval="4000" chance="25">
+			<attribute key="shootEffect" value="poison"/>
+			<attribute key="areaEffect" value="redshimmer"/>
+		</attack>
 	</attacks>
 	<defenses armor="32" defense="35">
 		<defense name="healing" interval="2000" chance="10" min="1200" max="1525">
@@ -46,4 +49,17 @@
 		<voice sentence="Tsssse one will risssse again"/>
 		<voice sentence="I bring your deathhh, mortalssss"/>
 	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="20" chance="50000"/><!-- platinum coin -->
+		<item id="2149" countmax="3" chance="6000"/><!-- small emerald -->
+		<item id="2155" chance="1500"/><!-- green gem -->
+		<item id="7884" chance="300"/><!-- terra mantle -->
+		<item id="7885" chance="300"/><!-- terra legs -->
+		<item id="7886" chance="300"/><!-- terra boots -->
+		<item id="2536" chance="250"/><!-- medusa shield -->
+		<item id="8912" chance="300"/><!-- springsprout rod -->
+		<item id="25380" countmax="1" chance="3"/><!-- talent token -->
+	</loot>
 </monster>

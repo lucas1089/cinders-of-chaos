@@ -1,0 +1,30 @@
+# MSVC static build with sound (0032): the OpenGL lookup reset CMAKE_FIND_LIBRARY_SUFFIXES to ".a", so every later find_library (OpenAL, Vorbis, VorbisFile, Ogg) missed vcpkg's .lib files on Windows. Keep ".lib" for MSVC, and link vcpkg's static openal-soft as static (AL_LIBTYPE_STATIC, plus ole32 and avrt).
+diff --git a/src/framework/CMakeLists.txt b/src/framework/CMakeLists.txt
+index f892580..b6c8cad 100644
+--- a/src/framework/CMakeLists.txt
++++ b/src/framework/CMakeLists.txt
+@@ -378,7 +378,11 @@ if(FRAMEWORK_GRAPHICS)
+             if(USE_STATIC_LIBS)
+                 set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+                 find_package(OpenGL REQUIRED)
+-                set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
++                if(MSVC)
++                    set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".a")
++                else()
++                    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
++                endif()
+             else()
+                 find_package(OpenGL REQUIRED)            
+             endif()
+@@ -542,6 +546,11 @@ if(FRAMEWORK_SOUND)
+ 
+     if(WIN32)
+         set(framework_LIBRARIES ${framework_LIBRARIES} winmm)
++        if(MSVC AND USE_STATIC_LIBS)
++            # vcpkg's static openal-soft: no dllimport, and the system libraries its backends use
++            set(framework_DEFINITIONS ${framework_DEFINITIONS} -DAL_LIBTYPE_STATIC)
++            set(framework_LIBRARIES ${framework_LIBRARIES} ole32 avrt)
++        endif()
+     elseif(APPLE)
+         set(framework_LIBRARIES ${framework_LIBRARIES} System)
+     endif()

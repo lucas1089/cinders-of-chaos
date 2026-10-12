@@ -9,7 +9,7 @@
 		<attribute key="defense" value="28" />
 		<attribute key="extraDef" value="2" />
 		<attribute key="skillSword" value="4" />
-		<attribute key="lifeLeechChance" value="15" />
+		<attribute key="lifeLeechChance" value="10" />
 		<attribute key="lifeLeechAmount" value="8" />
 		<attribute key="description" value="Every soul it cuts only feeds the hunger of its blade. (Requires level 120.)" />
 		<attribute key="showattributes" value="1" />
@@ -21,18 +21,18 @@
 		<attribute key="attack" value="44" />
 		<attribute key="defense" value="22" />
 		<attribute key="skillSword" value="3" />
-		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitChance" value="5" />
 		<attribute key="criticalHitAmount" value="25" />
 		<attribute key="description" value="Forged under a crimson moon; it never dries. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 11426: stock "the Ron the Ripper's sabre", client id 6101 -->
+	<!-- 11426: stock "the Mad Hobb the Ripper's sabre", client id 6101 -->
 	<item id="11426" article="a" name="Gorecleaver">
 		<attribute key="weight" value="2500" />
 		<attribute key="weaponType" value="sword" />
 		<attribute key="attack" value="36" />
 		<attribute key="defense" value="18" />
-		<attribute key="lifeLeechChance" value="8" />
+		<attribute key="lifeLeechChance" value="5" />
 		<attribute key="lifeLeechAmount" value="5" />
 		<attribute key="description" value="A ripper's sabre, notched by a thousand slaughters. (Requires level 70.)" />
 		<attribute key="showattributes" value="1" />
@@ -45,7 +45,7 @@
 		<attribute key="defense" value="16" />
 		<attribute key="extraDef" value="2" />
 		<attribute key="skillSword" value="2" />
-		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="20" />
 		<attribute key="description" value="Quick as a whisper in the crypt, and as final. (Requires level 60.)" />
 		<attribute key="showattributes" value="1" />
@@ -57,7 +57,7 @@
 		<attribute key="attack" value="24" />
 		<attribute key="defense" value="12" />
 		<attribute key="extraDef" value="2" />
-		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitChance" value="3" />
 		<attribute key="criticalHitAmount" value="15" />
 		<attribute key="description" value="Slim, patient and well-used; its owners all died young. (Requires level 40.)" />
 		<attribute key="showattributes" value="1" />
@@ -84,12 +84,12 @@
 		<attribute key="defense" value="14" />
 		<attribute key="elementDeath" value="22" />
 		<attribute key="skillAxe" value="4" />
-		<attribute key="manaLeechChance" value="10" />
+		<attribute key="manaLeechChance" value="7" />
 		<attribute key="manaLeechAmount" value="6" />
 		<attribute key="description" value="It has reaped countless souls and still wants a few more. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 2440: stock "daramian waraxe", client id 3328 -->
+	<!-- 2440: stock "scorchveil waraxe", client id 3328 -->
 	<item id="2440" article="an" name="Executioner's Reckoning">
 		<attribute key="weight" value="5250" />
 		<attribute key="weaponType" value="axe" />
@@ -97,7 +97,7 @@
 		<attribute key="attack" value="50" />
 		<attribute key="defense" value="18" />
 		<attribute key="skillAxe" value="3" />
-		<attribute key="criticalHitChance" value="10" />
+		<attribute key="criticalHitChance" value="7" />
 		<attribute key="criticalHitAmount" value="30" />
 		<attribute key="description" value="The last thing many a condemned man heard was its song. (Requires level 80.)" />
 		<attribute key="showattributes" value="1" />
@@ -110,7 +110,7 @@
 		<attribute key="attack" value="58" />
 		<attribute key="defense" value="18" />
 		<attribute key="skillClub" value="5" />
-		<attribute key="criticalHitChance" value="7" />
+		<attribute key="criticalHitChance" value="5" />
 		<attribute key="criticalHitAmount" value="25" />
 		<attribute key="description" value="A skull on a pole. The skull is grinning, the pole is not. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
@@ -122,7 +122,7 @@
 		<attribute key="attack" value="62" />
 		<attribute key="defense" value="30" />
 		<attribute key="skillClub" value="4" />
-		<attribute key="lifeLeechChance" value="10" />
+		<attribute key="lifeLeechChance" value="7" />
 		<attribute key="lifeLeechAmount" value="6" />
 		<attribute key="description" value="Wherever it lands, a new mouth opens. (Requires level 110.)" />
 		<attribute key="showattributes" value="1" />
@@ -134,7 +134,7 @@
 		<attribute key="slotType" value="two-handed" />
 		<attribute key="attack" value="66" />
 		<attribute key="defense" value="20" />
-		<attribute key="criticalHitChance" value="12" />
+		<attribute key="criticalHitChance" value="8" />
 		<attribute key="criticalHitAmount" value="30" />
 		<attribute key="description" value="A two-handed argument that ends all debate. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
@@ -157,12 +157,10 @@
 		<attribute key="weight" value="12600" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="ammoType" value="bolt" />
 		<attribute key="range" value="6" />
-		<attribute key="attack" value="14" />
-		<attribute key="hitChance" value="6" />
+		<attribute key="attack" value="80" />
 		<attribute key="skillDist" value="4" />
-		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="20" />
 		<attribute key="description" value="Its bolts scream on the way down. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
@@ -172,10 +170,8 @@
 		<attribute key="weight" value="4700" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="ammoType" value="arrow" />
 		<attribute key="range" value="6" />
-		<attribute key="attack" value="10" />
-		<attribute key="hitChance" value="6" />
+		<attribute key="attack" value="75" />
 		<attribute key="skillDist" value="6" />
 		<attribute key="absorbPercentDeath" value="6" />
 		<attribute key="description" value="Strung with something that was once alive; it hums at the dead. (Requires level 110.)" />
@@ -186,9 +182,7 @@
 		<attribute key="weight" value="3500" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="ammoType" value="bolt" />
 		<attribute key="range" value="5" />
-		<attribute key="hitChance" value="4" />
 		<attribute key="skillDist" value="3" />
 		<attribute key="description" value="A hangman's design: it only needs one shot. (Requires level 60.)" />
 		<attribute key="showattributes" value="1" />
@@ -212,7 +206,7 @@
 		<attribute key="shootType" value="death" />
 		<attribute key="range" value="3" />
 		<attribute key="magicPoints" value="3" />
-		<attribute key="manaLeechChance" value="8" />
+		<attribute key="manaLeechChance" value="5" />
 		<attribute key="manaLeechAmount" value="5" />
 		<attribute key="description" value="Tears a seam in the world and lets the death in. (Requires level 80.)" />
 		<attribute key="showattributes" value="1" />
@@ -225,9 +219,9 @@
 		<attribute key="range" value="6" />
 		<attribute key="attackSpeed" value="1800" />
 		<attribute key="magicPoints" value="5" />
-		<attribute key="criticalHitChance" value="10" />
+		<attribute key="criticalHitChance" value="7" />
 		<attribute key="criticalHitAmount" value="12" />
-		<attribute key="manaLeechChance" value="10" />
+		<attribute key="manaLeechChance" value="7" />
 		<attribute key="manaLeechAmount" value="8" />
 		<attribute key="absorbPercentDeath" value="8" />
 		<attribute key="description" value="A cage of rattling chains for what is left of a mind. (Requires level 120.)" />
@@ -241,9 +235,9 @@
 		<attribute key="range" value="6" />
 		<attribute key="attackSpeed" value="1800" />
 		<attribute key="magicPoints" value="6" />
-		<attribute key="criticalHitChance" value="12" />
+		<attribute key="criticalHitChance" value="8" />
 		<attribute key="criticalHitAmount" value="15" />
-		<attribute key="manaLeechChance" value="12" />
+		<attribute key="manaLeechChance" value="8" />
 		<attribute key="manaLeechAmount" value="10" />
 		<attribute key="absorbPercentPhysical" value="8" />
 		<attribute key="description" value="It weaves the last light of day into a shroud. (Requires level 140.)" />
@@ -279,6 +273,7 @@
 		<attribute key="absorbPercentFire" value="12" />
 		<attribute key="absorbPercentPhysical" value="4" />
 		<attribute key="magicPoints" value="2" />
+		<attribute key="set" value="embers" />
 		<attribute key="description" value="Singed at the seams, it still smoulders when no one is looking. (Requires level 80.) Part of the Embers of Aranoth set." />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -337,6 +332,7 @@
 		<attribute key="skillSword" value="2" />
 		<attribute key="skillAxe" value="2" />
 		<attribute key="skillClub" value="2" />
+		<attribute key="set" value="embers" />
 		<attribute key="description" value="Sworn to a master who answers to no one above. (Requires level 70.) Part of the Embers of Aranoth set." />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -370,6 +366,7 @@
 		<attribute key="absorbPercentFire" value="10" />
 		<attribute key="absorbPercentPhysical" value="4" />
 		<attribute key="magicPoints" value="2" />
+		<attribute key="set" value="embers" />
 		<attribute key="description" value="Each step leaves a warm print in the ash. (Requires level 80.) Part of the Embers of Aranoth set." />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -393,7 +390,7 @@
 		<attribute key="skillAxe" value="4" />
 		<attribute key="skillClub" value="4" />
 		<attribute key="absorbPercentPhysical" value="6" />
-		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechChance" value="4" />
 		<attribute key="manaLeechAmount" value="6" />
 		<attribute key="description" value="Scales shed by something that lives between the stars. (Requires level 130.)" />
 		<attribute key="showattributes" value="1" />
@@ -427,6 +424,7 @@
 		<attribute key="absorbPercentFire" value="8" />
 		<attribute key="magicPoints" value="1" />
 		<attribute key="speed" value="20" />
+		<attribute key="set" value="embers" />
 		<attribute key="description" value="Dyed in the blood of the road they walked. (Requires level 80.) Part of the Embers of Aranoth set." />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -448,6 +446,7 @@
 		<attribute key="defense" value="34" />
 		<attribute key="skillShield" value="3" />
 		<attribute key="absorbPercentFire" value="15" />
+		<attribute key="set" value="embers" />
 		<attribute key="description" value="Hold it up and the fire has to ask permission. (Requires level 90.) Part of the Embers of Aranoth set." />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -476,9 +475,9 @@
 	<item id="10221" article="a" name="Heartbleed Pendant">
 		<attribute key="weight" value="700" />
 		<attribute key="slotType" value="necklace" />
-		<attribute key="lifeLeechChance" value="8" />
+		<attribute key="lifeLeechChance" value="5" />
 		<attribute key="lifeLeechAmount" value="6" />
-		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="20" />
 		<attribute key="description" value="Each beat is a drop of someone else's life. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
@@ -517,7 +516,7 @@
 		<attribute key="description" value="The beetle was dead long before it was strung. (Requires level 50.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 10314: stock "claw of 'The Noxious Spawn'", client id 9397 -->
+	<!-- 10314: stock "claw of 'The Bilespawn'", client id 9397 -->
 	<item id="10314" article="a" name="Cinderclaw Band">
 		<attribute key="weight" value="500" />
 		<attribute key="slotType" value="ring" />
@@ -526,6 +525,7 @@
 		<attribute key="skillClub" value="3" />
 		<attribute key="absorbPercentFire" value="8" />
 		<attribute key="magicPoints" value="1" />
+		<attribute key="set" value="embers" />
 		<attribute key="description" value="A claw of fire clamped around the finger. (Requires level 80.) Part of the Embers of Aranoth set." />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -566,12 +566,689 @@
 	<item id="10510" article="a" name="Widow's Last Vow">
 		<attribute key="weight" value="40" />
 		<attribute key="slotType" value="ring" />
-		<attribute key="lifeLeechChance" value="6" />
+		<attribute key="lifeLeechChance" value="4" />
 		<attribute key="lifeLeechAmount" value="5" />
-		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechChance" value="4" />
 		<attribute key="manaLeechAmount" value="5" />
 		<attribute key="maxHitPoints" value="100" />
 		<attribute key="description" value="A promise made to the grave, kept in blood. (Requires level 90.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 36659: our "pyre saint's grasp" (the Monk's fist weapon, server/tools/install_fist_weapons.py), client id 33659 -->
+	<item id="36659" article="the" name="Grasp of the Pyre Saint">
+		<attribute key="weight" value="2400" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="attack" value="64" />
+		<attribute key="defense" value="24" />
+		<attribute key="skillFist" value="5" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="absorbPercentFire" value="6" />
+		<attribute key="description" value="A saint walked into the pyre and did not stop; only the hand came back out. (Requires level 650, Monks only.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- The Ascended uniques (server/README.md "Ascended Omens and the Cinderheart"): they drop only from the Ascended Omens
+	     and the Cinderheart (chaos_unique_items.lua ascended = true; never in a rift or Omen chest). -->
+	<!-- 2408: stock "warlord sword", client id 3296 -->
+	<item id="2408" article="the" name="Sanguine Crescent">
+		<attribute key="weight" value="6400" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="78" />
+		<attribute key="defense" value="38" />
+		<attribute key="skillSword" value="8" />
+		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="lifeLeechChance" value="10" />
+		<attribute key="lifeLeechAmount" value="8" />
+		<attribute key="description" value="The red moon's last crescent, cut down and given an edge. It drinks before you do. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2493: stock "demon helmet", client id 3387 -->
+	<item id="2493" article="the" name="Hollow Crown of Morvane">
+		<attribute key="weight" value="2950" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="16" />
+		<attribute key="magicPoints" value="6" />
+		<attribute key="absorbPercentDeath" value="10" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="description" value="A crown with nothing inside it. Wear it and it is still empty. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2171: stock "platinum amulet", client id 3055 -->
+	<item id="2171" article="the" name="Eye of the Unbroken Storm">
+		<attribute key="weight" value="600" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="4" />
+		<attribute key="absorbPercentEnergy" value="12" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="skillDist" value="5" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="description" value="The seer saw every death but her own. The eye still watches for it. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2123: stock "ring of the sky", client id 3006 -->
+	<item id="2123" article="the" name="Cinderheart Signet">
+		<attribute key="weight" value="40" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="absorbPercentFire" value="12" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="lifeLeechChance" value="6" />
+		<attribute key="lifeLeechAmount" value="6" />
+		<attribute key="skillSword" value="3" />
+		<attribute key="skillAxe" value="3" />
+		<attribute key="skillClub" value="3" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="skillFist" value="3" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="description" value="The last coal of a dead sovereign, set in a ring. It is never cold. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- the Ember Descent's run-exclusive uniques (descent_config.lua rewards.uniques): only a descent's end rolls them -->
+	<!-- 7384: stock "mystic blade", client id 7384 -->
+	<item id="7384" article="the" name="Emberfall Blade">
+		<attribute key="weight" value="3500" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="50" />
+		<attribute key="defense" value="26" />
+		<attribute key="extraDef" value="2" />
+		<attribute key="skillSword" value="4" />
+		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="absorbPercentFire" value="5" />
+		<attribute key="description" value="Quenched in the ninth hall of the Descent; it still glows where the embers bit. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7891: stock "magma boots", client id 818 -->
+	<item id="7891" name="Ashwalker Treads">
+		<attribute key="weight" value="750" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="4" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="description" value="They remember every step down, and none back up. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2133: stock "ruby necklace", client id 3016 -->
+	<item id="2133" article="the" name="Heart of the Descent">
+		<attribute key="weight" value="570" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="3" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="lifeLeechChance" value="5" />
+		<attribute key="lifeLeechAmount" value="5" />
+		<attribute key="description" value="A coal from the last hall, still beating. (Requires level 200.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2357: stock "ring of wishes", client id 3245 -->
+	<item id="2357" article="the" name="Sigil of the Ninth Room">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="skillAxe" value="2" />
+		<attribute key="skillClub" value="2" />
+		<attribute key="skillDist" value="2" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="description" value="Nine doors, nine boons, one ring to show for them. (Requires level 250.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7402: stock "dragon slayer", client id 7402 -->
+	<item id="7402" article="the" name="Pyre Cleaver">
+		<attribute key="weight" value="8200" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="56" />
+		<attribute key="defense" value="28" />
+		<attribute key="skillSword" value="5" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="description" value="Carried out of the burning hall by the one who put the Tyrant down. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- the Ashen Sepulchre's raid uniques (raid_config.lua uniques): only a raid boss's personal loot rolls them -->
+	<!-- 7422: stock "jade hammer", client id 7422 -->
+	<item id="7422" article="the" name="Gravewarden's Verdict">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="attack" value="54" />
+		<attribute key="defense" value="26" />
+		<attribute key="extraDef" value="3" />
+		<attribute key="skillClub" value="5" />
+		<attribute key="skillShield" value="3" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="description" value="The warden's flail broke every shield brought to the first gate. Now it answers you. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8865: stock "dark lord's cape", client id 8037 -->
+	<item id="8865" article="the" name="Shroud of the Ash-Sister">
+		<attribute key="weight" value="2900" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="14" />
+		<attribute key="magicPoints" value="5" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="description" value="Woven from the ash of every lullaby she sang. It is warm, and it should not be. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2504: stock "dwarven legs", client id 3398 -->
+	<item id="2504" name="Marrowforged Greaves">
+		<attribute key="weight" value="4900" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="13" />
+		<attribute key="absorbPercentPhysical" value="8" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="skillShield" value="3" />
+		<attribute key="description" value="Plated with the Colossus's own bones. They creak when you stand still. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2124: stock "crystal ring", client id 3007 -->
+	<item id="2124" article="the" name="Eye of the Hexmaw">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="description" value="An effigy's eye, set in crystal. Every curse you hear, it hears first. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2498: stock "royal helmet", client id 3392 -->
+	<item id="2498" article="the" name="Crown of the Last Sovereign">
+		<attribute key="weight" value="4800" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="15" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="skillSword" value="3" />
+		<attribute key="skillAxe" value="3" />
+		<attribute key="skillClub" value="3" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="absorbPercentFire" value="6" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="lifeLeechChance" value="6" />
+		<attribute key="lifeLeechAmount" value="6" />
+		<attribute key="description" value="Varkhul wore it to the end of the world and back. It still expects a throne. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- the item set pieces (data/lib/chaos_item_sets_config.lua): uniques with a set key; ChaosMakeUnique writes it on the copy -->
+	<!-- 27658: stock "eldritch greataxe" -->
+	<item id="27658" article="a" name="Bloodsworn Greataxe">
+		<attribute key="weight" value="6500" />
+		<attribute key="weaponType" value="axe" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="58" />
+		<attribute key="defense" value="30" />
+		<attribute key="skillAxe" value="3" />
+		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="set" value="bloodsworn" />
+		<attribute key="description" value="Its edge was quenched in the Blood Colossus's altar and never quite dried. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25410: stock "visage of the end days" -->
+	<item id="25410" article="a" name="Bloodsworn Visage">
+		<attribute key="weight" value="3800" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="11" />
+		<attribute key="skillAxe" value="2" />
+		<attribute key="lifeLeechChance" value="4" />
+		<attribute key="lifeLeechAmount" value="4" />
+		<attribute key="set" value="bloodsworn" />
+		<attribute key="description" value="A face of hammered iron that smiles only when the wearer bleeds. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25175: stock "fireheart hauberk" -->
+	<item id="25175" article="a" name="Bloodsworn Hauberk">
+		<attribute key="weight" value="14500" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="18" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="set" value="bloodsworn" />
+		<attribute key="description" value="Each ring of the mail was sworn on a separate wound. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28100: stock "embersage legs" -->
+	<item id="28100" article="a pair of" name="Bloodsworn Legplates">
+		<attribute key="weight" value="5600" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="11" />
+		<attribute key="criticalHitChance" value="3" />
+		<attribute key="criticalHitAmount" value="10" />
+		<attribute key="set" value="bloodsworn" />
+		<attribute key="description" value="Plates that tighten when blood runs down them. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28101: stock "embersage boots" -->
+	<item id="28101" article="a pair of" name="Bloodsworn Treads">
+		<attribute key="weight" value="750" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="3" />
+		<attribute key="absorbPercentPhysical" value="2" />
+		<attribute key="set" value="bloodsworn" />
+		<attribute key="description" value="They leave red prints on clean stone. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29560: stock "Deathlord Headguard" -->
+	<item id="29560" article="an" name="Ashwarden Visor">
+		<attribute key="weight" value="4400" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="17" />
+		<attribute key="skillShield" value="3" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="set" value="ashwarden" />
+		<attribute key="description" value="The visor of a warden who swore the dead would stay down. They did. (Ashen Sepulchre.) (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29561: stock "Deathlord Cuirass" -->
+	<item id="29561" article="an" name="Ashwarden Cuirass">
+		<attribute key="weight" value="8800" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="26" />
+		<attribute key="skillShield" value="2" />
+		<attribute key="absorbPercentDeath" value="5" />
+		<attribute key="set" value="ashwarden" />
+		<attribute key="description" value="Ash fills its seams and never falls out. (Ashen Sepulchre.) (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29559: stock "Deathlord Shield" -->
+	<item id="29559" article="an" name="Ashwarden Bulwark">
+		<attribute key="weight" value="6150" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="48" />
+		<attribute key="skillShield" value="4" />
+		<attribute key="absorbPercentFire" value="5" />
+		<attribute key="set" value="ashwarden" />
+		<attribute key="description" value="Scorched black on the front, untouched on the back: everything behind it lived. (Ashen Sepulchre.) (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27403: stock "lion amulet" -->
+	<item id="27403" article="an" name="Ashwarden Seal">
+		<attribute key="weight" value="520" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="3" />
+		<attribute key="skillShield" value="2" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="set" value="ashwarden" />
+		<attribute key="description" value="The oath is cut into the stone; the stone is still warm. (Ashen Sepulchre.) (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27474: stock "grand sanguine crossbow" -->
+	<item id="27474" article="a" name="Gallows Arbalest">
+		<attribute key="weight" value="4700" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="78" />
+		<attribute key="range" value="6" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="set" value="gallows" />
+		<attribute key="description" value="Its string was a hangman's rope. It still pulls tight on its own. (Requires level 600.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29470: stock "hellstalker visor" -->
+	<item id="29470" article="a" name="Gallows Hood">
+		<attribute key="weight" value="2850" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="13" />
+		<attribute key="skillDist" value="2" />
+		<attribute key="set" value="gallows" />
+		<attribute key="description" value="The hood the hangman wore so the condemned would not see his face. (Requires level 600.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 15407: stock "depth lorica" -->
+	<item id="15407" article="a" name="Gallows Coat">
+		<attribute key="weight" value="14500" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="16" />
+		<attribute key="skillDist" value="2" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="set" value="gallows" />
+		<attribute key="description" value="Long, dark and quiet; the pockets hold one bolt each. (Requires level 600.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28114: stock "shadewalker legs" -->
+	<item id="28114" article="a pair of" name="Gallows Leggings">
+		<attribute key="weight" value="4350" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="10" />
+		<attribute key="criticalHitChance" value="3" />
+		<attribute key="criticalHitAmount" value="10" />
+		<attribute key="set" value="gallows" />
+		<attribute key="description" value="Made for standing still a long time on a cold scaffold. (Requires level 600.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27646: stock "jungle bow" -->
+	<item id="27646" article="a" name="Thornwake Longbow">
+		<attribute key="weight" value="4700" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="73" />
+		<attribute key="range" value="6" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="set" value="thornwake" />
+		<attribute key="description" value="Briar wood that still grows a thorn after every shot. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2500: stock "amazon armor" -->
+	<item id="2500" article="a" name="Thornwake Jerkin">
+		<attribute key="weight" value="4500" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="13" />
+		<attribute key="skillDist" value="1" />
+		<attribute key="absorbPercentEarth" value="4" />
+		<attribute key="set" value="thornwake" />
+		<attribute key="description" value="Bark and leather, stitched with living vine. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 18406: stock "prismatic boots" -->
+	<item id="18406" article="a pair of" name="Thornwake Striders">
+		<attribute key="weight" value="1800" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="3" />
+		<attribute key="absorbPercentEarth" value="3" />
+		<attribute key="set" value="thornwake" />
+		<attribute key="description" value="The undergrowth parts for them and closes behind. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28691: stock "ring of temptation" -->
+	<item id="28691" article="a" name="Thornwake Loop">
+		<attribute key="weight" value="80" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="armor" value="2" />
+		<attribute key="lifeLeechChance" value="3" />
+		<attribute key="lifeLeechAmount" value="3" />
+		<attribute key="set" value="thornwake" />
+		<attribute key="description" value="A ring of braided thorn; it pricks, and then it heals. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27666: stock "gilded eldritch wand" -->
+	<item id="27666" article="a" name="Cinderstorm Wand">
+		<attribute key="weight" value="3700" />
+		<attribute key="weaponType" value="wand" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="absorbPercentFire" value="4" />
+		<attribute key="set" value="cinderstorm" />
+		<attribute key="description" value="Half ember, half hoarfrost; it hisses when it is drawn. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29471: stock "dreadfire headpiece" -->
+	<item id="29471" article="a" name="Cinderstorm Crown">
+		<attribute key="weight" value="2250" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="11" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="absorbPercentFire" value="4" />
+		<attribute key="set" value="cinderstorm" />
+		<attribute key="description" value="A circlet of black glass that rains sparks in the wind. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7899: stock "magma coat" -->
+	<item id="7899" article="a" name="Cinderstorm Mantle">
+		<attribute key="weight" value="2250" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="12" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="absorbPercentFire" value="4" />
+		<attribute key="set" value="cinderstorm" />
+		<attribute key="description" value="Its hem is always smouldering, and never burnt. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7894: stock "magma legs" -->
+	<item id="7894" article="a" name="Cinderstorm Kilt">
+		<attribute key="weight" value="1900" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="9" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="set" value="cinderstorm" />
+		<attribute key="description" value="Embroidered with the same storm in fire and in frost. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 24637: stock "oriental shoes" -->
+	<item id="24637" article="a pair of" name="Cinderstorm Sandals">
+		<attribute key="weight" value="500" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="2" />
+		<attribute key="absorbPercentFire" value="3" />
+		<attribute key="set" value="cinderstorm" />
+		<attribute key="description" value="Light enough for a court mage, warm enough for a pyre. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28041: stock "Astro Ring" -->
+	<item id="28041" article="a" name="Cinderstorm Signet">
+		<attribute key="weight" value="125" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="armor" value="3" />
+		<attribute key="manaLeechChance" value="3" />
+		<attribute key="manaLeechAmount" value="4" />
+		<attribute key="set" value="cinderstorm" />
+		<attribute key="description" value="The seal of a court that burned itself down to win an argument. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29573: stock "Soulbinder Mask" -->
+	<item id="29573" article="a" name="Lichbound Mask">
+		<attribute key="weight" value="1760" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="13" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="absorbPercentDeath" value="5" />
+		<attribute key="set" value="lichbound" />
+		<attribute key="description" value="Bone-white and cold; the eyes behind it go dark. (Ember Descent.) (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8890: stock "robe of the underworld" -->
+	<item id="8890" article="a" name="Lichbound Robe">
+		<attribute key="weight" value="3100" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="13" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="absorbPercentDeath" value="4" />
+		<attribute key="set" value="lichbound" />
+		<attribute key="description" value="It whispers the names of the burned, one by one, all night. (Ember Descent.) (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29575: stock "Soulbinder Kilt" -->
+	<item id="29575" article="a" name="Lichbound Kilt">
+		<attribute key="weight" value="3200" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="11" />
+		<attribute key="absorbPercentDeath" value="4" />
+		<attribute key="set" value="lichbound" />
+		<attribute key="description" value="Grave linen bound with a cord of hair. (Ember Descent.) (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28126: stock "forbidden pendant" -->
+	<item id="28126" article="a" name="Lichbound Phylactery">
+		<attribute key="weight" value="490" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="absorbPercentDeath" value="5" />
+		<attribute key="lifeLeechChance" value="3" />
+		<attribute key="lifeLeechAmount" value="4" />
+		<attribute key="set" value="lichbound" />
+		<attribute key="description" value="Something inside it is still alive, and hungry. (Ember Descent.) (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28111: stock "vigils spellbook" -->
+	<item id="28111" article="a" name="Mirrorweave Codex">
+		<attribute key="weight" value="3375" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="25" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="set" value="mirrorweave" />
+		<attribute key="description" value="Every page shows the reader, a moment later. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28106: stock "vigils helmet" -->
+	<item id="28106" article="a" name="Mirrorweave Circlet">
+		<attribute key="weight" value="1820" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="11" />
+		<attribute key="absorbPercentHoly" value="4" />
+		<attribute key="set" value="mirrorweave" />
+		<attribute key="description" value="Silver threads that catch light that is not there. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28107: stock "vigils armor" -->
+	<item id="28107" article="a" name="Mirrorweave Robe">
+		<attribute key="weight" value="4270" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="19" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="set" value="mirrorweave" />
+		<attribute key="description" value="Spun twice: once for the wearer, once for the reflection. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28108: stock "vigils legs" -->
+	<item id="28108" article="a" name="Mirrorweave Skirt">
+		<attribute key="weight" value="3180" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="9" />
+		<attribute key="absorbPercentHoly" value="3" />
+		<attribute key="set" value="mirrorweave" />
+		<attribute key="description" value="It moves a heartbeat before the wearer does. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28109: stock "vigils boots" -->
+	<item id="28109" article="a pair of" name="Mirrorweave Slippers">
+		<attribute key="weight" value="750" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="3" />
+		<attribute key="absorbPercentPhysical" value="2" />
+		<attribute key="set" value="mirrorweave" />
+		<attribute key="description" value="They leave two sets of footprints. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28125: stock "forbidden ring" -->
+	<item id="28125" article="a" name="Mirrorweave Band">
+		<attribute key="weight" value="40" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="manaLeechChance" value="2" />
+		<attribute key="manaLeechAmount" value="3" />
+		<attribute key="set" value="mirrorweave" />
+		<attribute key="description" value="A ring with no front and no back. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7404: stock "assassin dagger" -->
+	<item id="7404" article="a" name="Duskstalker Fang">
+		<attribute key="weight" value="1700" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="42" />
+		<attribute key="defense" value="12" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="criticalHitChance" value="3" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="set" value="duskstalker" />
+		<attribute key="description" value="The first of a pair. It wants the other one in your off hand. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7418: stock "nightmare blade" -->
+	<item id="7418" article="a" name="Duskstalker Sting">
+		<attribute key="weight" value="4600" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="44" />
+		<attribute key="defense" value="20" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="lifeLeechChance" value="3" />
+		<attribute key="lifeLeechAmount" value="4" />
+		<attribute key="set" value="duskstalker" />
+		<attribute key="description" value="The second of a pair. It strikes where the Fang was. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28112: stock "shadewalker helmet" -->
+	<item id="28112" article="a" name="Duskstalker Cowl">
+		<attribute key="weight" value="2350" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="12" />
+		<attribute key="skillFist" value="2" />
+		<attribute key="skillSword" value="1" />
+		<attribute key="set" value="duskstalker" />
+		<attribute key="description" value="A hood that swallows the light around the face. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 11301: stock "Jadefen armor" -->
+	<item id="11301" article="a" name="Duskstalker Jerkin">
+		<attribute key="weight" value="9550" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="13" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="set" value="duskstalker" />
+		<attribute key="description" value="Black on black; blades slide off it like water. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 11304: stock "Jadefen legs" -->
+	<item id="11304" article="a pair of" name="Duskstalker Breeches">
+		<attribute key="weight" value="6600" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="9" />
+		<attribute key="absorbPercentEarth" value="4" />
+		<attribute key="set" value="duskstalker" />
+		<attribute key="description" value="Wrapped tight, for running along rooftops. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27249: stock "winged boots" -->
+	<item id="27249" article="a pair of" name="Duskstalker Tabi">
+		<attribute key="weight" value="1200" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="2" />
+		<attribute key="absorbPercentPhysical" value="2" />
+		<attribute key="set" value="duskstalker" />
+		<attribute key="description" value="Split-toed and silent; even the dust does not hear them. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 24718: stock "werewolf helmet" -->
+	<item id="24718" article="a" name="Hollowpack Mask">
+		<attribute key="weight" value="2500" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="9" />
+		<attribute key="skillDist" value="1" />
+		<attribute key="absorbPercentDeath" value="3" />
+		<attribute key="set" value="hollowpack" />
+		<attribute key="description" value="A wolf's skull for a helm. The pack smells you as kin. (Requires level 250.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 24741: stock "fur armor" -->
+	<item id="24741" article="a" name="Hollowpack Hide">
+		<attribute key="weight" value="4900" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="12" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="set" value="hollowpack" />
+		<attribute key="description" value="Furs of every beast that ever ran with the covenant. (Requires level 250.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2129: stock "wolf tooth chain" -->
+	<item id="2129" article="a" name="Hollowpack Fang Chain">
+		<attribute key="weight" value="330" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="2" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="set" value="hollowpack" />
+		<attribute key="description" value="One tooth for every pact kept. (Requires level 250.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26808: stock "butterfly ring" -->
+	<item id="26808" article="a" name="Hollowpack Bond">
+		<attribute key="weight" value="120" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="armor" value="2" />
+		<attribute key="lifeLeechChance" value="3" />
+		<attribute key="lifeLeechAmount" value="3" />
+		<attribute key="set" value="hollowpack" />
+		<attribute key="description" value="When it grows warm, something you summoned has fed. (Requires level 250.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
 </items>

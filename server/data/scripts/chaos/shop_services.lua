@@ -2,19 +2,23 @@
 --
 --   {kind = "service", service = "<handler>", ...}   something done for the character right away (stamina, world
 --                                                   buff, name change token, ...); handlers in S.services below
---   {kind = "unlock", unlock = "<name>"}            a permanent per-character flag (storage), see S.unlocks
+--   {kind = "unlock", unlock = "<name>"}            a permanent flag: per character (a storage, S.unlocks) or, for
+--                                                   a class, per account (class_unlocks.lua)
 --
 -- shop.lua calls ChaosShopServices.check(player, offer) BEFORE taking coins (a text = refused, nothing is taken)
 -- and ChaosShopServices.deliver(player, offer) after; deliver returns true or an error text, and shop.lua refunds
 -- the coins on an error.
 --
 -- Also here: the Temple Teleport Scroll (action id), world buffs (experience / Chaos loot / skill training for
--- everybody, !worldbuffs), !changename and !changevocation for the tokens. Auto Seller and Loot Pouch: autosell.lua.
+-- everybody, !worldbuffs), !changename and !changevocation for the tokens. Auto Seller: autosell.lua; store pouches: pouches.lua.
 -- Settings: Chaos.shopServices in chaos_constants.lua. Pure helpers at the top are covered by
 -- server/tests/shop_services_test.lua. Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
 
 ChaosShopServices = ChaosShopServices or {}
@@ -151,6 +155,9 @@ end
 -- info = {unique = bool, rarity = number, attributes = bool (custom name/description/text/modifiers)}
 -- allowRarity = the player opted in with "!autosell rarity on" (uniques are never sold).
 function S.sellBlocked(info, allowRarity)
+	if info.locked then
+		return "locked" -- the item lock (salvage.lua), whatever the opt-in
+	end
 	if info.unique then
 		return "unique"
 	end
@@ -212,9 +219,14 @@ function S.buffLeft(id)
 	return math.max(0, S.buffExpiry(id) - os.time())
 end
 
--- multiplier of a world buff (1 when it is not running)
-function S.buffMult(id)
+-- multiplier of a world buff (1 when it is not running). player (optional): the character it is for
+function S.buffMult(id, player)
 	if S.buffLeft(id) > 0 then
+		-- >>> Seasons: world buffs are bought with account-wide coins, so they never reach season characters
+		if player and ChaosSeason and ChaosSeason.realmOf and (ChaosSeason.realmOf(player) or 0) > 0 then
+			return 1
+		end
+		-- <<< Seasons
 		return 1 + S.worldBuffs[id].def.bonus
 	end
 	return 1
@@ -278,6 +290,12 @@ function S.teleportBlocked(player)
 	if ChaosRift and ChaosRift.isInside and ChaosRift.isInside(player) then
 		return "You cannot use this inside a rift."
 	end
+	-- every other registered instance (raid, Descent, battleground, Marches, guild boss, siege, arena, ...); a hideout
+	-- stays allowed (a teleport out of it is harmless)
+	local label = Chaos.inAnyInstance and select(2, Chaos.inAnyInstance(player, "hideout")) or nil
+	if label then
+		return "You cannot use this inside " .. label .. "."
+	end
 	return nil
 end
 
@@ -311,24 +329,49 @@ end
 -- ======================================================================== services
 
 S.unlocks = {
-	lootPouch = {storage = ST.shopLootPouch, name = "the Bottomless Loot Pouch",
-		done = "Autolooted items that do not fit now go to your stash (stackables) or your inbox."},
+	-- (lootPouch, the Bottomless Loot Pouch, is retired: storage 7100100 stays reserved, pouches.lua gives its owners a
+	-- Loot Pouch item; the store pouches are the "pouch" service below)
 	autoSeller = {storage = ST.shopAutoSeller, name = "the Auto Seller",
-		done = "Mark items with !autosell add <item name>; see !autosell for all commands."},
+		done = "Mark the items to sell in Economy > Auto Seller."},
 	rarityAutoloot = {storage = ST.shopRarityAutoloot, name = "Rarity Autoloot",
-		done = "Set it in the Loot Filter (!lootfilter or Hunt -> Loot Filter)."}
+		done = "Set it in the Loot Filter (Hunt > Loot Filter)."}
 }
+
+-- an unlock entry: S.unlocks (per character, a storage) or a class unlock (per account, class_unlocks.lua:
+-- {name, done, owned = fn(player), grant = fn(player)})
+local function unlockEntry(name)
+	local u = S.unlocks[name or ""]
+	if not u and ChaosClassUnlocks and ChaosClassUnlocks.storeUnlock then
+		u = ChaosClassUnlocks.storeUnlock(name)
+	end
+	if not u and ChaosPets and ChaosPets.storeUnlock then
+		u = ChaosPets.storeUnlock(name) -- a pet (pets.lua), per character
+	end
+	if not u and ChaosTownPortal and ChaosTownPortal.storeUnlock then
+		u = ChaosTownPortal.storeUnlock(name) -- a portal style (townportal.lua), per character
+	end
+	if not u and ChaosTransmog and ChaosTransmog.storeUnlock then
+		u = ChaosTransmog.storeUnlock(name) -- an appearance set (transmog.lua), per account
+	end
+	if not u and ChaosCosmetics and ChaosCosmetics.storeUnlock then
+		u = ChaosCosmetics.storeUnlock(name) -- a cosmetic (cosmetics.lua), per account
+	end
+	if not u and ChaosHideout and ChaosHideout.storeUnlock then
+		u = ChaosHideout.storeUnlock(name) -- a hideout decoration (hideout.lua), per account
+	end
+	return u
+end
 
 local function tokenService(storage, what, command)
 	return {
 		check = function(player)
 			if player:getStorageValue(storage) > 0 then
-				return "You already have an unused " .. what .. ". Use it first: " .. command
+				return "You already have an unused " .. what .. ". Use it first (" .. command .. ")."
 			end
 		end,
 		apply = function(player)
 			player:setStorageValue(storage, 1)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You received a " .. what .. ". Use it with " .. command .. ".")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You received a " .. what .. ". Use it in " .. command .. ".")
 			return true
 		end
 	}
@@ -398,9 +441,8 @@ S.services = {
 		end
 	},
 
-	nameToken = tokenService(ST.nameChangeTokens, "name change", "!changename <New Name>"),
-	vocationToken = tokenService(ST.vocationChangeTokens, "vocation change",
-		"!changevocation <" .. Chaos.shopServices.vocationWords .. ">"),
+	nameToken = tokenService(ST.nameChangeTokens, "name change", "Character > Services"),
+	vocationToken = tokenService(ST.vocationChangeTokens, "vocation change", "Character > Services"),
 
 	blessings = {
 		check = function(player)
@@ -497,17 +539,48 @@ S.services = {
 				"Your passive tree and Paragon points were reset. All points are free to spend again.")
 			return true
 		end
+	},
+
+	-- the store pouches (pouches.lua): {service = "pouch", pouch = "loot" | "orbs" | "keys"}; one of each per character
+	pouch = {
+		check = function(player, offer)
+			if not ChaosPouches then
+				return "This offer is not available."
+			end
+			return ChaosPouches.storeCheck(player, offer.pouch)
+		end,
+		apply = function(player, offer)
+			return ChaosPouches.storeGive(player, offer.pouch)
+		end
 	}
 }
 
 -- ------------------------------------------------------------------------ entry points for shop.lua
+-- an unlock offer the character (or its account) owns already: the store page shows it as owned
+function S.owns(player, offer)
+	local u = offer and offer.kind == "unlock" and unlockEntry(offer.unlock)
+	if not u then
+		return false
+	end
+	if u.owned then
+		return u.owned(player) == true
+	end
+	return u.storage ~= nil and player:getStorageValue(u.storage) > 0
+end
+
 function S.check(player, offer)
 	if offer.kind == "unlock" then
-		local u = S.unlocks[offer.unlock]
+		local u = unlockEntry(offer.unlock)
 		if not u then
 			return "This offer cannot be bought."
 		end
-		if player:getStorageValue(u.storage) > 0 then
+		local owned
+		if u.owned then
+			owned = u.owned(player)
+		else
+			owned = player:getStorageValue(u.storage) > 0
+		end
+		if owned then
 			return "You already own " .. u.name .. "."
 		end
 		return nil
@@ -521,11 +594,18 @@ end
 
 function S.deliver(player, offer)
 	if offer.kind == "unlock" then
-		local u = S.unlocks[offer.unlock]
+		local u = unlockEntry(offer.unlock)
 		if not u then
 			return "This offer cannot be bought."
 		end
-		player:setStorageValue(u.storage, 1)
+		if u.grant then
+			local ok, err = u.grant(player)
+			if not ok then
+				return err or "Something went wrong. Your coins were refunded."
+			end
+		else
+			player:setStorageValue(u.storage, 1)
+		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You unlocked " .. u.name .. ". " .. u.done)
 		return true
 	end
@@ -545,7 +625,16 @@ end
 
 -- world buff effects
 local xpCb = EventCallback
+-- season characters (season.lua realm > 0) get neither World Experience nor the double experience potion: the base
+-- player.lua doubled `exp` already while the potion runs (storage 6000), so it is halved back here
+local POTION_STORAGE = 6000
 xpCb.onGainExperience = function(self, source, exp, rawExp)
+	if ChaosSeason and ChaosSeason.realmOf and (ChaosSeason.realmOf(self) or 0) > 0 then
+		if self:getStorageValue(POTION_STORAGE) >= os.time() then
+			return math.floor(exp / 2)
+		end
+		return exp
+	end
 	local mult = S.buffMult("xp")
 	if mult ~= 1 and source and source:isMonster() then
 		return math.floor(exp * mult)
@@ -556,7 +645,7 @@ xpCb:register(5)
 
 local skillCb = EventCallback
 skillCb.onGainSkillTries = function(self, skill, tries)
-	local mult = S.buffMult("skill")
+	local mult = S.buffMult("skill", self) -- not for season characters
 	if mult ~= 1 and tries and tries > 0 then
 		local scaled = tries * mult
 		local whole = math.floor(scaled)
@@ -602,17 +691,17 @@ function login.onLogin(player)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "World buff active - " .. line)
 	end
 	if player:getStorageValue(ST.nameChangeTokens) > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You have an unused name change: !changename <New Name>")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You have an unused name change: Character > Services.")
 	end
 	if player:getStorageValue(ST.vocationChangeTokens) > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"You have an unused vocation change: !changevocation <" .. C().vocationWords .. ">")
+			"You have an unused vocation change: Character > Services.")
 	end
 	return true
 end
 login:register()
 
-local buffsTalk = TalkAction("!worldbuffs")
+local buffsTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "worldbuffs")
 function buffsTalk.onSay(player, words, param)
 	local lines = S.describeBuffs()
 	if #lines == 0 then
@@ -622,8 +711,7 @@ function buffsTalk.onSay(player, words, param)
 	end
 	return false
 end
-buffsTalk:separator(" ")
-buffsTalk:register()
+ChaosCommands.register("worldbuffs", function(player, param) return buffsTalk.onSay(player, "", param) end)
 
 -- temple teleport scroll
 local exhaust = {}
@@ -712,14 +800,14 @@ local function applyRename(guid, oldName, newName, tries)
 end
 S.applyRename = applyRename
 
-local renameTalk = TalkAction("!changename")
+local renameTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "changename")
 function renameTalk.onSay(player, words, param)
 	if player:getStorageValue(ST.nameChangeTokens) < 1 then
 		player:sendCancelMessage("You need a Name Change from the store first.")
 		return false
 	end
 	if trim(param) == "" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changename <New Name>  (3-20 letters, single spaces, " ..
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Type the new name (3-20 letters, single spaces, " ..
 			"in a protection zone, out of combat). You will be logged out and log in with the new name.")
 		return false
 	end
@@ -759,11 +847,10 @@ function renameTalk.onSay(player, words, param)
 	end, 1500, player:getId())
 	return false
 end
-renameTalk:separator(" ")
-renameTalk:register()
+ChaosCommands.register("changename", function(player, param) return renameTalk.onSay(player, "", param) end)
 
 -- ------------------------------------------------------------------------ !changevocation
-local vocTalk = TalkAction("!changevocation")
+local vocTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "changevocation")
 function vocTalk.onSay(player, words, param)
 	if player:getStorageValue(ST.vocationChangeTokens) < 1 then
 		player:sendCancelMessage("You need a Vocation Change from the store first.")
@@ -772,13 +859,22 @@ function vocTalk.onSay(player, words, param)
 	local current = player:getVocation()
 	local newId, err = S.vocationFor(param, current:getId())
 	if not newId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changevocation <" .. C().vocationWords .. ">. " .. err)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Choose one of: " .. C().vocationWords:gsub("|", ", ") .. ". " .. err)
 		return false
 	end
 	local newVoc = Vocation(newId)
 	if not newVoc then
 		player:sendCancelMessage("That vocation does not exist on this server.")
 		return false
+	end
+	-- the class lock (class_unlocks.lua): a locked class needs the account's unlock; the token is kept
+	if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
+		local allowed, lockMessage = ChaosClassUnlocks.canUseVocation(player, newId)
+		if not allowed then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, (lockMessage or "That class is locked. Unlock it in the store.")
+				.. " Your Vocation Change is kept.")
+			return false
+		end
 	end
 	if inCombat(player) then
 		player:sendCancelMessage("You cannot change your vocation in combat.")
@@ -824,5 +920,4 @@ function vocTalk.onSay(player, words, param)
 		newVoc:getDescription()))
 	return false
 end
-vocTalk:separator(" ")
-vocTalk:register()
+ChaosCommands.register("changevocation", function(player, param) return vocTalk.onSay(player, "", param) end)

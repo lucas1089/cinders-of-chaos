@@ -2,7 +2,7 @@
 <monster name="Elite Spider" nameDescription="an elite spider" race="venom" experience="131000" evented = "6" speed="470" skulled="1" looting="1" manacost="0">
 	<!-- Death Reaper -->
 	<health now="190000" max="190000"/>
-	<look type="909" corpse="6068"/>
+	<look type="1548" corpse="6068"/>
 	<level min="1300" max="1450"/>
 	<targetchange interval="3000" chance="20"/>
 	<strategy attack="100" defense="0"/>
@@ -57,8 +57,22 @@
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="5879" countmax="1" chance="800"/><!-- spider silk -->
 		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
-		<item id="8888;2500;2472;8885;8884;3983;2495;2469;7894" countmax="1" chance="3000" /><!-- armors -->
-		<item id="5462;2644;11118;11240;2537;2514;2499" countmax="1" chance="2000" /><!-- great shield;demon shield;crystal boots -->
+		<item id="8888" countmax="1" chance="333"/><!-- armors -->
+		<item id="2500" countmax="1" chance="333"/>
+		<item id="2472" countmax="1" chance="333"/>
+		<item id="8885" countmax="1" chance="333"/>
+		<item id="8884" countmax="1" chance="333"/>
+		<item id="3983" countmax="1" chance="333"/>
+		<item id="2495" countmax="1" chance="333"/>
+		<item id="2469" countmax="1" chance="333"/>
+		<item id="7894" countmax="1" chance="333"/>
+		<item id="5462" countmax="1" chance="286"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="286"/>
+		<item id="11118" countmax="1" chance="286"/>
+		<item id="11240" countmax="1" chance="286"/>
+		<item id="2537" countmax="1" chance="286"/>
+		<item id="2514" countmax="1" chance="286"/>
+		<item id="2499" countmax="1" chance="286"/>
 		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
 	</loot>
 </monster>

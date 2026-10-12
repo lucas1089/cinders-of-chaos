@@ -1,6 +1,12 @@
 -- Shared helpers for the Chaos spells.
 -- Loaded by every chaos spell with: dofile('data/spells/scripts/chaos/_common.lua')
 -- (path is relative to the server working dir, same convention as the rest of data/).
+if not ChaosSupportsSpell then -- spell supports: wraps every spell script loaded from here on (_supports.lua)
+	local ok, err = pcall(dofile, 'data/spells/scripts/chaos/_supports.lua')
+	if not ok then
+		print('[Chaos supports] ' .. tostring(err))
+	end
+end
 if not Fx or not FxMissile then
 	pcall(dofile, 'data/lib/chaos_fx.lua') -- real ids, once the merged dat/spr is in use
 	if not Fx or not FxMissile then
@@ -36,12 +42,121 @@ function ChaosSpell.cancel(creature, message)
 	return false
 end
 
+-- >>> Cosmetics: spell effect skins (data/scripts/chaos/cosmetics.lua). During a cast (the supports wrapper knows the
+-- caster and the spell, also in the cast's addEvent callbacks) an effect name may be swapped for its recoloured variant
+-- the caster chose; every viewer sees the variant. A variant the pair does not have falls back to the default effect.
+local function skinned(kind, name)
+	local C, W = ChaosCosmetics, ChaosSupportsSpell
+	if type(name) ~= "string" or not C or not C.swapFor or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	local ok, alt = pcall(C.swapFor, pid, spellId, kind, name)
+	return ok and alt or nil
+end
+ChaosSpell.skinned = skinned
+
+-- Fx / FxMissile (chaos_fx.lua) are also called inside the casts (heal and area effects): wrapped once
+local function wrapFx()
+	if Fx and Fx ~= ChaosSpellSkinFx then
+		local raw = Fx
+		ChaosSpellSkinFx = function(name, fallback)
+			local alt = skinned("fx", name)
+			if alt and ChaosFx and ChaosFx[alt] then
+				return raw(alt, fallback)
+			end
+			return raw(name, fallback)
+		end
+		Fx = ChaosSpellSkinFx
+	end
+	if FxMissile and FxMissile ~= ChaosSpellSkinFxMissile then
+		local raw = FxMissile
+		ChaosSpellSkinFxMissile = function(name, fallback)
+			local alt = skinned("missile", name)
+			if alt and ChaosFxMissile and ChaosFxMissile[alt] then
+				return raw(alt, fallback)
+			end
+			return raw(name, fallback)
+		end
+		FxMissile = ChaosSpellSkinFxMissile
+	end
+end
+wrapFx()
+-- <<< Cosmetics
+
 function ChaosSpell.fx(pos, name, fallback)
 	Position(pos):sendMagicEffect(Fx(name, fallback))
 end
 
 function ChaosSpell.shoot(fromPos, toPos, name, fallback)
 	Position(fromPos):sendDistanceEffect(Position(toPos), FxMissile(name, fallback))
+end
+
+-- Animated pack effects and missiles (data/lib/chaos_vfx.lua, client/tools/sprites/import_vfx.py). They are bigger
+-- than a tile and are sent at an offset tile by Vfx/VfxShoot. Without chaos_vfx.lua these send nothing (vfx/vfxDir)
+-- or fall back to the named chaos effect (vfxOr/vshoot).
+if not ChaosVfx then
+	pcall(dofile, 'data/lib/chaos_vfx.lua')
+end
+-- effects of our own art appended after them (bone_spear, bone_burst, bone_aura; client/tools/sprites/import_fx_art.py)
+if ChaosVfx and not ChaosVfx.bone_burst then
+	pcall(dofile, 'data/lib/chaos_vfx_art.lua')
+end
+
+-- direction (NORTH .. NORTHWEST) from one position to another, for the directional effects (VfxDir)
+function ChaosSpell.dirTo(fromPos, toPos)
+	local dx, dy = toPos.x - fromPos.x, toPos.y - fromPos.y
+	if dx == 0 and dy == 0 then
+		return SOUTH
+	end
+	local sx = dx > 0 and 1 or (dx < 0 and -1 or 0)
+	local sy = dy > 0 and 1 or (dy < 0 and -1 or 0)
+	if math.abs(dx) >= 2 * math.abs(dy) then
+		sy = 0
+	elseif math.abs(dy) >= 2 * math.abs(dx) then
+		sx = 0
+	end
+	for dir, step in pairs(DIR_STEP) do
+		if step[1] == sx and step[2] == sy then
+			return dir
+		end
+	end
+	return SOUTH
+end
+
+function ChaosSpell.vfx(pos, name)
+	if Vfx == nil or pos == nil then
+		return false
+	end
+	local alt = skinned("vfx", name) -- Cosmetics: the skin's variant first, the default when the pair lacks it
+	if alt and Vfx(Position(pos), alt) then
+		return true
+	end
+	return Vfx(Position(pos), name)
+end
+
+function ChaosSpell.vfxDir(pos, base, direction)
+	return VfxDir ~= nil and pos ~= nil and VfxDir(Position(pos), base, direction)
+end
+
+-- pack effect, or the chaos effect `name` / stock `fallback` when the pack effect is not there
+function ChaosSpell.vfxOr(pos, vname, name, fallback)
+	if not ChaosSpell.vfx(pos, vname) then
+		ChaosSpell.fx(pos, name, fallback)
+	end
+end
+
+function ChaosSpell.vshoot(fromPos, toPos, vname, name, fallback)
+	local alt = VfxShoot ~= nil and skinned("vmissile", vname) -- Cosmetics: the skin's variant first
+	if alt and VfxShoot(Position(fromPos), Position(toPos), alt) then
+		return
+	end
+	if not (VfxShoot ~= nil and VfxShoot(Position(fromPos), Position(toPos), vname)) then
+		ChaosSpell.shoot(fromPos, toPos, name, fallback)
+	end
 end
 
 -- Damage helper: returns positive min, max from the usual TFS level/magic-level formula, times `scale` (default 1,
@@ -60,8 +175,9 @@ function ChaosSpell.skillValues(player, skillId, mult, baseMin, baseMax)
 	return l + s * mult * 0.6 + baseMin, l + s * mult + baseMax
 end
 
--- Attack of the wielded distance weapon, the way the engine adds it up: bow/crossbow attack + ammunition attack,
--- or the attack of a throwing weapon. Item attack attributes (rarity rolls) win over the item type value.
+-- Attack of the wielded distance weapon, the way the engine adds it up: the bow's or crossbow's own attack (they fire
+-- without ammunition and carry its attack themselves: data/lib/chaos_archery_core.lua), or the attack of a throwing
+-- weapon. Item attack attributes (rarity rolls) win over the item type value.
 -- Never below 20 (an empty hand), so the spells still do something without a weapon.
 local function itemAttack(item)
 	local a = item:getAttribute(ITEM_ATTRIBUTE_ATTACK)
@@ -76,14 +192,7 @@ function ChaosSpell.distanceAttack(player)
 		local item = player:getSlotItem(slot)
 		local it = item and ItemType(item:getId())
 		if it and it:getWeaponType() == WEAPON_DISTANCE then
-			local attack = itemAttack(item)
-			if it:getAmmoType() ~= 0 then
-				local ammo = player:getSlotItem(CONST_SLOT_AMMO)
-				if ammo and ItemType(ammo:getId()):getAmmoType() == it:getAmmoType() then
-					attack = attack + itemAttack(ammo)
-				end
-			end
-			return math.max(20, attack)
+			return math.max(20, itemAttack(item))
 		end
 	end
 	return 20
@@ -129,6 +238,11 @@ function ChaosSpell.canAttack(caster, target)
 	local siege = ChaosSiege and ChaosSiege.canAttack and ChaosSiege.canAttack(casterPlayer, targetPlayer)
 	if siege ~= nil then
 		return siege
+	end
+	-- the Scorched Marches (data/scripts/chaos/pvpzone.lua): open PvP inside, its own refusals (nil = not its business)
+	local marches = ChaosPvpZone and ChaosPvpZone.canAttack and ChaosPvpZone.canAttack(casterPlayer, targetPlayer)
+	if marches ~= nil then
+		return marches
 	end
 	for _, pos in ipairs({targetPlayer:getPosition(), casterPlayer:getPosition()}) do
 		local tile = Tile(pos)
@@ -354,7 +468,9 @@ function ChaosSpell.shurikenPower(player)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
 		local it = item and ItemType(item:getId())
-		if it and it:getWeaponType() == WEAPON_DISTANCE and it:getAmmoType() == 0 then
+		-- a throwing weapon: one-handed (a bow or crossbow is two-handed and has no ammunition type any more either)
+		if it and it:getWeaponType() == WEAPON_DISTANCE and it:getAmmoType() == 0
+				and bit.band(it:getSlotPosition(), SLOTP_TWO_HAND) == 0 then
 			attack = math.max(attack, itemAttack(item))
 		end
 	end
@@ -364,9 +480,9 @@ end
 -- A weapon strike dealt by a spell: physical damage with a weapon origin (ORIGIN_MELEE or ORIGIN_RANGED), so the
 -- weapon-hit rules of data/scripts/chaos/thief_combat.lua apply to it (stealth ambush crit, Poison Blades, Bushido
 -- crit, the Ninja's off-hand strike after a melee strike). PvP rules as ChaosSpell.damageTarget.
--- Level factor of the Thief line's spell strikes (Chaos.classes.spellLevelScale): 1 up to level `from`, then +1 per
--- `per` levels, at most `max`. It stands in for the passive tree the Thief line does not have yet (the other classes'
--- level 1000 numbers carry 248 tree points); re-tune or drop it with the Thief-line tree (docs/CLASSES.md, phase 2).
+-- Level factor of the Thief line's spell strikes (Chaos.classes.spellLevelScale, when set): 1 up to level `from`, then +1
+-- per `per` levels, at most `max`. It stood in for the passive tree and was dropped with the class trees (docs/CLASSES.md
+-- "Phase 2b"): unset, so 1; the line's damage is scaled by class_tree.lua classDamage instead.
 function ChaosSpell.thiefLevelScale(player)
 	local s = Chaos and Chaos.classes and Chaos.classes.spellLevelScale
 	if not s or not player.getLevel then

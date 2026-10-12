@@ -1,5 +1,21 @@
 // Crafting bench window (game_crafting). Styles from client_chaos_theme (styles.otui).
+// Every text that can be long (orb previews and reasons, modifier lines, the item header, recent crafts, the status
+// line, the salvage texts) is a wrapping label that takes the height it needs; crafting.lua (followHeight) grows the row
+// or box around it, and the lists scroll. Nothing is cut at the window edge.
 
+// a label that breaks its text into lines and takes the height they need (the width comes from its anchors or layout)
+CraftWrapLabel < UILabel
+  height: 14
+  text-align: topLeft
+  text-wrap: true
+  text-vertical-auto-resize: true
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  phantom: true
+
+// one orb: icon, name and count, what it would do to the item on the bench (or why it cannot be used), wrapped over as
+// many lines as it needs (crafting.lua sets the row's height from `body`); a click on the row shows the orb's full
+// description under it
 CraftOrbRow < ChaosPanelDark
   height: 44
   margin-bottom: 3
@@ -13,31 +29,34 @@ CraftOrbRow < ChaosPanelDark
     virtual: true
     phantom: true
 
-  UILabel
-    id: name
+  UIWidget
+    id: body
     anchors.left: icon.right
     anchors.right: use.left
     anchors.top: parent.top
     margin-left: 8
     margin-right: 6
-    margin-top: 1
-    text-align: left
-    font: verdana-11px-rounded
-    color: #e8b84a
+    height: 30
     phantom: true
+    layout:
+      type: verticalBox
+      fit-children: true
 
-  UILabel
-    id: count
-    anchors.left: icon.right
-    anchors.right: use.left
-    anchors.bottom: parent.bottom
-    margin-left: 8
-    margin-right: 6
-    margin-bottom: 1
-    text-align: left
-    font: verdana-11px-antialised
-    color: #8c8070
-    phantom: true
+    CraftWrapLabel
+      id: name
+      font: verdana-11px-rounded
+      color: #e8b84a
+
+    CraftWrapLabel
+      id: text
+      margin-top: 1
+      color: #8c8070
+
+    CraftWrapLabel
+      id: desc
+      margin-top: 3
+      color: #b8ab92
+      visible: false
 
   ChaosButton
     id: use
@@ -50,24 +69,153 @@ CraftGearSlot < ChaosItemSlot
   size: 36 36
   virtual: true
 
-CraftModLabel < UILabel
+// a heading or a note in the modifier list
+CraftModLabel < CraftWrapLabel
   height: 16
-  text-align: left
-  font: verdana-11px-antialised
+  margin-top: 1
   color: #7fa8ff
-  phantom: true
 
-CraftHistoryLabel < UILabel
-  height: 14
-  text-align: left
-  font: verdana-11px-antialised
-  color: #d6c9ae
-  text-auto-resize: false
+// one modifier of the item on the bench: click it to aim an orb at it (Binding, Excision, Reforging); "bound" modifiers
+// are marked on the right
+CraftModRow < UIWidget
+  height: 17
+  margin-bottom: 1
+  phantom: false
+  focusable: false
+
+  CraftWrapLabel
+    id: text
+    anchors.left: parent.left
+    anchors.right: mark.left
+    anchors.top: parent.top
+    margin-left: 3
+    margin-top: 2
+    color: #7fa8ff
+
+  UILabel
+    id: mark
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-right: 4
+    margin-top: 2
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
+// one socket of the item on the bench: the gem (or "empty"), its effect, take it out for gold or shatter it
+CraftSocketRow < UIWidget
+  height: 30
+  margin-top: 2
+  phantom: false
+
+  UIItem
+    id: icon
+    size: 28 28
+    anchors.left: parent.left
+    anchors.top: parent.top
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: removeButton.left
+    anchors.top: parent.top
+    height: 15
+    margin-left: 5
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  CraftWrapLabel
+    id: text
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-left: 5
+    margin-right: 4
+    margin-top: 1
+
+  ChaosButton
+    id: removeButton
+    anchors.right: shatterButton.left
+    anchors.top: parent.top
+    margin-right: 3
+    width: 46
+    height: 15
+    font: verdana-11px-antialised
+
+  ChaosButton
+    id: shatterButton
+    anchors.right: parent.right
+    anchors.top: parent.top
+    width: 50
+    height: 15
+    font: verdana-11px-antialised
+    !text: tr('Shatter')
+
+// one recipe of the Salvage tab: shards -> an orb (a name that does not fit is shortened, the tooltip has it whole)
+CraftRecipeRow < ChaosPanelDark
+  size: 156 32
+  padding: 1
+  phantom: false
+
+  UIItem
+    id: icon
+    size: 28 28
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: make.left
+    anchors.top: parent.top
+    height: 14
+    margin-left: 4
+    margin-right: 2
+    margin-top: 2
+    text-align: topLeft
+    font: verdana-11px-antialised
+    color: #e8b84a
+    phantom: true
+
+  UILabel
+    id: cost
+    anchors.left: icon.right
+    anchors.right: make.left
+    anchors.bottom: parent.bottom
+    height: 14
+    margin-left: 4
+    margin-right: 2
+    margin-bottom: 2
+    text-align: bottomLeft
+    font: verdana-11px-antialised
+    color: #c0a0ff
+    phantom: true
+
+  ChaosButton
+    id: make
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 3
+    width: 36
+    height: 22
+    !text: tr('Make')
+
+CraftHistoryLabel < CraftWrapLabel
+  margin-bottom: 2
   phantom: false
 
 ChaosMainWindow
   id: craftingWindow
-  size: 700 560
+  size: 700 664
   !text: tr('Crafting Bench')
   @onEscape: modules.game_crafting.hide()
 
@@ -77,7 +225,7 @@ ChaosMainWindow
     anchors.top: parent.top
     anchors.left: parent.left
     width: 320
-    height: 236
+    height: 340
 
   ChaosItemSlot
     id: itemSlot
@@ -88,51 +236,87 @@ ChaosMainWindow
     virtual: true
     !tooltip: tr('Drag an item from your backpack here.')
 
-  UILabel
+  ChaosButton
+    id: lockButton
+    anchors.top: itemPanel.top
+    anchors.right: itemPanel.right
+    margin-top: 8
+    margin-right: 8
+    width: 58
+    height: 20
+    !text: tr('Lock')
+    visible: false
+    @onClick: modules.game_crafting.toggleLock()
+
+  // name, rarity line and modifier counts, each wrapped; the name stays left of the Lock button, the lines below it use
+  // the full width (crafting.lua puts the separator below them or the slot, whichever ends lower)
+  CraftWrapLabel
     id: itemName
     anchors.top: itemSlot.top
     anchors.left: itemSlot.right
-    anchors.right: itemPanel.right
+    anchors.right: lockButton.left
     margin-left: 10
-    margin-right: 8
-    text-align: left
+    margin-right: 6
     font: verdana-11px-rounded
     color: #e8b84a
     !text: tr('Empty bench')
 
-  ChaosLabel
+  CraftWrapLabel
     id: itemRarity
     anchors.top: itemName.bottom
     anchors.left: itemName.left
-    anchors.right: itemName.right
-    margin-top: 4
-    text-align: left
+    anchors.right: itemPanel.right
+    margin-top: 6
+    margin-right: 8
+    phantom: false
 
-  ChaosLabelDim
+  CraftWrapLabel
     id: itemSlots
     anchors.top: itemRarity.bottom
     anchors.left: itemName.left
-    anchors.right: itemName.right
-    margin-top: 3
-    text-align: left
+    anchors.right: itemPanel.right
+    margin-top: 2
+    margin-right: 8
+    color: #8c8070
+    phantom: false
 
   ChaosSeparator
     id: itemSep
-    anchors.top: itemSlot.bottom
+    anchors.top: itemPanel.top
     anchors.left: itemPanel.left
     anchors.right: itemPanel.right
-    margin: 6 8 0 8
+    margin: 66 8 0 8
 
-  UIWidget
-    id: modList
-    anchors.top: itemSep.bottom
+  ChaosProgressBar
+    id: qualityBar
     anchors.left: itemPanel.left
     anchors.right: itemPanel.right
     anchors.bottom: itemPanel.bottom
-    margin: 4 12 6 12
-    phantom: true
+    margin: 0 12 7 12
+    height: 15
+    background-color: #2f8f5a
+    visible: false
+
+  UIScrollArea
+    id: modList
+    anchors.top: itemSep.bottom
+    anchors.left: itemPanel.left
+    anchors.right: modScroll.left
+    anchors.bottom: qualityBar.top
+    margin: 4 2 4 12
+    vertical-scrollbar: modScroll
+    auto-focus: none
     layout:
       type: verticalBox
+
+  ChaosScrollBar
+    id: modScroll
+    anchors.top: itemSep.bottom
+    anchors.right: itemPanel.right
+    anchors.bottom: qualityBar.top
+    margin: 4 5 4 0
+    step: 18
+    pixels-scroll: true
 
   ChaosLabelDim
     id: emptyHint
@@ -142,8 +326,8 @@ ChaosMainWindow
     margin: 18 14 0 14
     text-wrap: true
     text-align: center
-    height: 60
-    !text: tr('Drag an item from your backpack onto the slot, or click one of your items below.')
+    height: 72
+    !text: tr('Drag an item or a Rift Key from your backpack onto the slot, or click one below. Orbs and gems also work without the bench: Use with on the orb or the gem, then click the item.')
 
   // ------------------------------------------------------------ gear in the backpack
   ChaosLabel
@@ -152,7 +336,7 @@ ChaosMainWindow
     anchors.left: parent.left
     margin-top: 8
     text-auto-resize: true
-    !text: tr('Gear in your backpack')
+    !text: tr('Gear and Rift Keys in your backpack')
 
   ChaosPanelDark
     id: gearFrame
@@ -193,28 +377,226 @@ ChaosMainWindow
     id: gearEmpty
     anchors.centerIn: gearFrame
     text-auto-resize: true
-    !text: tr('No gear in your backpack.')
+    !text: tr('No gear or Rift Key in your backpack.')
     visible: false
 
   // ------------------------------------------------------------ orbs
-  ChaosLabel
+  UIWidget
     id: orbLabel
     anchors.top: parent.top
     anchors.left: itemPanel.right
+    anchors.right: parent.right
     margin-left: 12
-    text-auto-resize: true
-    !text: tr('Orbs')
+    height: 24
+    phantom: true
 
-  UIWidget
+  ChaosTabButton
+    id: orbsTab
+    anchors.top: orbLabel.top
+    anchors.left: orbLabel.left
+    !text: tr('Orbs')
+    @onClick: modules.game_crafting.setMode('orbs')
+
+  ChaosTabButton
+    id: salvageTab
+    anchors.top: orbLabel.top
+    anchors.left: orbsTab.right
+    margin-left: 4
+    !text: tr('Salvage')
+    !tooltip: tr('Break rolled gear down into rune shards and combine the shards into orbs.')
+    @onClick: modules.game_crafting.setMode('salvage')
+
+  UIScrollArea
     id: orbList
+    anchors.top: orbLabel.bottom
+    anchors.left: orbLabel.left
+    anchors.right: orbScroll.left
+    margin-top: 4
+    margin-right: 3
+    height: 378
+    vertical-scrollbar: orbScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: orbScroll
+    anchors.top: orbLabel.bottom
+    anchors.right: parent.right
+    margin-top: 4
+    height: 378
+    step: 47
+    pixels-scroll: true
+
+  // ------------------------------------------------------------ salvage (the Salvage tab, in the place of the orbs)
+  // the boxes take the height their wrapped texts need (crafting.lua); the recipe grid gets the rest and scrolls
+  UIWidget
+    id: salvagePanel
     anchors.top: orbLabel.bottom
     anchors.left: orbLabel.left
     anchors.right: parent.right
     margin-top: 4
-    height: 330
+    height: 378
+    visible: false
     phantom: true
-    layout:
-      type: verticalBox
+
+    ChaosPanelDark
+      id: shardRow
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 36
+      padding: 1
+
+      UIItem
+        id: shardIcon
+        size: 32 32
+        anchors.left: parent.left
+        anchors.top: parent.top
+        margin-left: 4
+        margin-top: 1
+        virtual: true
+        phantom: true
+
+      UILabel
+        id: shardCount
+        anchors.left: shardIcon.right
+        anchors.right: parent.right
+        anchors.top: parent.top
+        margin-left: 8
+        margin-top: 3
+        height: 15
+        text-align: topLeft
+        font: verdana-11px-rounded
+        color: #c0a0ff
+
+      CraftWrapLabel
+        id: shardHint
+        anchors.left: shardIcon.right
+        anchors.right: parent.right
+        anchors.top: shardCount.bottom
+        margin-left: 8
+        margin-right: 6
+        color: #8c8070
+        !text: tr('Salvage gear into shards, shards into orbs.')
+
+    ChaosPanelDark
+      id: itemBox
+      anchors.top: shardRow.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 50
+      padding: 1
+
+      CraftWrapLabel
+        id: itemText
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: salvageButton.left
+        margin: 5 6 0 6
+
+      ChaosButton
+        id: salvageButton
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-right: 6
+        width: 70
+        !text: tr('Salvage')
+        @onClick: modules.game_crafting.salvageItem()
+
+    ChaosPanelDark
+      id: batchBox
+      anchors.top: itemBox.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 112
+      padding: 1
+
+      UILabel
+        id: batchInLabel
+        anchors.verticalCenter: bagCombo.verticalCenter
+        anchors.right: bagCombo.left
+        margin-right: 6
+        text-auto-resize: true
+        font: verdana-11px-antialised
+        color: #d6c9ae
+        !text: tr('Salvage all in')
+
+      ChaosComboBox
+        id: bagCombo
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin: 4 6 0 100
+
+      UILabel
+        id: batchUpLabel
+        anchors.verticalCenter: rarityCombo.verticalCenter
+        anchors.right: rarityCombo.left
+        margin-right: 6
+        text-auto-resize: true
+        font: verdana-11px-antialised
+        color: #d6c9ae
+        !text: tr('up to')
+
+      ChaosComboBox
+        id: rarityCombo
+        anchors.top: bagCombo.bottom
+        anchors.left: bagCombo.left
+        anchors.right: parent.right
+        margin: 3 6 0 0
+
+      CraftWrapLabel
+        id: batchText
+        anchors.top: rarityCombo.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin: 5 6 0 6
+
+      ChaosButton
+        id: batchButton
+        anchors.right: parent.right
+        anchors.top: batchText.bottom
+        margin: 4 6 0 0
+        width: 150
+        height: 22
+        !text: tr('Salvage all')
+        @onClick: modules.game_crafting.salvageAll()
+
+    ChaosLabel
+      id: combineTitle
+      anchors.top: batchBox.bottom
+      anchors.left: parent.left
+      margin-top: 5
+      text-auto-resize: true
+      !text: tr('Combine shards into orbs (Ctrl: up to 10)')
+
+    UIScrollArea
+      id: recipeList
+      anchors.top: combineTitle.bottom
+      anchors.left: parent.left
+      anchors.right: recipeScroll.left
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      margin-right: 3
+      vertical-scrollbar: recipeScroll
+      auto-focus: none
+      layout:
+        type: grid
+        cell-size: 156 32
+        cell-spacing: 2
+        flow: true
+
+    ChaosScrollBar
+      id: recipeScroll
+      anchors.top: combineTitle.bottom
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      step: 34
+      pixels-scroll: true
 
   // ------------------------------------------------------------ history
   ChaosLabel
@@ -233,20 +615,41 @@ ChaosMainWindow
     anchors.bottom: resultLabel.top
     margin-top: 4
     margin-bottom: 8
-    padding: 5
+
+  UIScrollArea
+    id: historyList
+    anchors.top: historyPanel.top
+    anchors.left: historyPanel.left
+    anchors.right: historyScroll.left
+    anchors.bottom: historyPanel.bottom
+    margin: 5 3 5 6
+    vertical-scrollbar: historyScroll
+    auto-focus: none
     layout:
       type: verticalBox
 
+  ChaosScrollBar
+    id: historyScroll
+    anchors.top: historyPanel.top
+    anchors.right: historyPanel.right
+    anchors.bottom: historyPanel.bottom
+    margin: 3 3 3 0
+    step: 16
+    pixels-scroll: true
+
   // ------------------------------------------------------------ bottom
-  ChaosLabel
+  // the status line: wrapped over as many lines as it needs (at most RESULT_LINES, crafting.lua), the gear grid and the
+  // recent crafts above it give up the room
+  CraftWrapLabel
     id: resultLabel
     anchors.left: parent.left
     anchors.right: closeButton.left
-    anchors.verticalCenter: closeButton.verticalCenter
-    margin-right: 8
+    anchors.bottom: parent.bottom
+    margin-right: 10
+    text-vertical-auto-resize: false
     text-align: left
-    text-wrap: true
-    height: 30
+    phantom: false
+    height: 22
 
   ChaosButton
     id: closeButton

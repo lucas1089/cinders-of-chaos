@@ -1,7 +1,7 @@
 Module
   name: client_chaos_topbar
-  description: Chaos menu bar at the top of the game map (category drop-downs; replaces the side button icons)
-  author: project-chaos
+  description: Cinders of Chaos menu bar at the top of the game map (category drop-downs with sub-menus and hotkeys; replaces the side button icons)
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ chaos_topbar ]
   dependencies:

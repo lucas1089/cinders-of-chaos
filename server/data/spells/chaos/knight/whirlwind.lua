@@ -30,6 +30,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if not combat:execute(creature, variant) then
 		return false
 	end
+	ChaosSpell.vfx(creature:getPosition(), "whirlwind")
 	addEvent(spin, 400, creature:getId(), variant)
 	addEvent(spin, 800, creature:getId(), variant)
 	return true

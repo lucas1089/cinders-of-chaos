@@ -1,0 +1,58 @@
+// Upcoming events window (game_invasion): invasions, the running world event, the Victory buff. Opened from the menu (Adventure > Events).
+InvasionEventRow < UIWidget
+  height: 20
+  margin-top: 2
+  phantom: true
+
+  UILabel
+    id: when
+    width: 110
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: when.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    font: verdana-11px-antialised
+    color: #e8dcc2
+    text-align: left
+    phantom: true
+
+ChaosMainWindow
+  id: invasionWindow
+  size: 470 270
+  !text: tr('Upcoming Events')
+  @onEscape: modules.game_invasion.hideWindow()
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-wrap: true
+    text-auto-resize: true
+    !text: tr('Invasions strike a town or a hunting ground; everyone may defend it. World events start at random every few hours. Server time.')
+
+  UIWidget
+    id: list
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_invasion.hideWindow()

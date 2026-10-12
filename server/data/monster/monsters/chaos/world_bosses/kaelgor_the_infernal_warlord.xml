@@ -2,7 +2,7 @@
 <!-- World boss (worldboss.lua). Fire and steel melee brute. Numbers: server/README.md "World bosses". -->
 <monster name="Kaelgor the Infernal Warlord" nameDescription="Kaelgor the Infernal Warlord" race="fire" experience="18000000" speed="300" manacost="0">
 	<health now="18000000" max="18000000" />
-	<look type="842" head="94" body="78" legs="94" feet="114" addons="1" corpse="2916" />
+	<look type="1536" head="94" body="78" legs="94" feet="114" addons="1" corpse="2916" />
 	<targetchange interval="5000" chance="15" />
 	<flags>
 		<flag isboss="1" />
@@ -77,8 +77,8 @@
 	</voices>
 	<loot>
 		<item id="2160" countmax="60" chance="100000" /><!-- crystal coin -->
-		<item id="29856" countmax="12" chance="100000" /><!-- Chaos Orb -->
-		<item id="29857" countmax="5" chance="80000" /><!-- Divine Orb -->
+		<item id="29856" countmax="12" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="5" chance="80000" /><!-- Orb of Fate -->
 		<item id="29879" chance="6000" /><!-- Dawnforged Plate -->
 		<item id="29884" chance="5000" /><!-- Dawnforged Longsword -->
 		<item id="29885" chance="5000" /><!-- Dawnforged Chopper -->

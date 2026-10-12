@@ -13,7 +13,6 @@
 		<flag pushable="0"/>
 		<flag canpushitems="1"/>
 		<flag canpushcreatures="1"/>
-		<flag ignorespawnboost="1"/>
 		<flag targetdistance="4"/>
 		<flag staticattack="90"/>
 		<flag runonhealth="65000"/>
@@ -64,4 +63,20 @@
 	<voices interval="5000" chance="10">
 		<voice sentence="Learn the secret of our magic! YOUR death!"/>
 	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="45" chance="65000"/><!-- platinum coin -->
+		<item id="2666" countmax="3" chance="20000"/><!-- meat -->
+		<item id="2147" countmax="3" chance="8000"/><!-- small ruby -->
+		<item id="2156" chance="4000"/><!-- red gem -->
+		<item id="7461" chance="500"/><!-- rimehorn helmet -->
+		<item id="7894" chance="300"/><!-- magma legs -->
+		<item id="7891" chance="300"/><!-- magma boots -->
+		<item id="7434" chance="300"/><!-- royal axe -->
+		<item id="7453" chance="200"/><!-- executioner -->
+		<item id="8926" chance="150"/><!-- demonwing axe -->
+		<item id="2522" chance="150"/><!-- great shield -->
+		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
+	</loot>
 </monster>

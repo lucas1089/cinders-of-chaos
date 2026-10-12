@@ -1,7 +1,7 @@
 // Arena window (game_arena). Styles from client_chaos_theme (styles.otui).
 
 ArenaModeCard < ChaosPanelDark
-  height: 112
+  height: 126
   phantom: false
 
   ChaosTitle
@@ -27,6 +27,16 @@ ArenaModeCard < ChaosPanelDark
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 4
     text-auto-resize: true
+    phantom: false
+
+  UILabel
+    id: season
+    anchors.top: record.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #8c8070
     phantom: false
 
   ChaosButton
@@ -90,7 +100,7 @@ ArenaMatchRow < ChaosPanelDark
 
 ChaosMainWindow
   id: arenaWindow
-  size: 560 520
+  size: 600 534
   !text: tr('Arena')
   @onEscape: modules.game_arena.hide()
 
@@ -98,15 +108,19 @@ ChaosMainWindow
     id: card1v1
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.right: parent.horizontalCenter
-    margin-right: 4
+    width: 186
 
   ArenaModeCard
     id: card2v2
     anchors.top: parent.top
-    anchors.left: parent.horizontalCenter
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 186
+
+  ArenaModeCard
+    id: card3v3
+    anchors.top: parent.top
     anchors.right: parent.right
-    margin-left: 4
+    width: 186
 
   ChaosPanelDark
     id: statusPanel

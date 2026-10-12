@@ -1,0 +1,220 @@
+// Codex window (game_codex). Styles from client_chaos_theme (styles.otui).
+// Every text wraps and takes the height it needs (CodexText); the rows and table rows around texts grow with them
+// (codex.lua), the list and the page scroll. Nothing is cut at the window edge. Fits a 1280x720 screen.
+
+CodexText < UILabel
+  height: 14
+  text-align: topLeft
+  text-wrap: true
+  text-vertical-auto-resize: true
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  phantom: true
+
+// one entry of the list: the name and a short line under it
+CodexListRow < UIWidget
+  height: 34
+  margin-bottom: 2
+  padding: 3 5 3 5
+  phantom: false
+  focusable: false
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+
+  CodexText
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  CodexText
+    id: sub
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 1
+    color: #8c8070
+
+// a heading of the page
+CodexHeading < CodexText
+  margin-top: 8
+  font: verdana-11px-rounded
+  color: #e8b84a
+
+CodexParagraph < CodexText
+  margin-top: 3
+
+// a link to another page of the Codex
+CodexLink < CodexText
+  margin-top: 3
+  color: #7fa8ff
+  phantom: false
+  change-cursor-image: true
+  cursor: pointer
+
+// one row of a table; codex.lua places the cells and sets the height
+CodexTableRow < UIWidget
+  height: 16
+  phantom: false
+  focusable: false
+
+CodexCell < CodexText
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 2
+
+ChaosMainWindow
+  id: codexWindow
+  size: 940 620
+  !text: tr('Codex')
+  @onEscape: modules.game_codex.hide()
+
+  UIWidget
+    id: tabBar
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  ChaosTextEdit
+    id: searchEdit
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    width: 200
+    !tooltip: tr('Search names and texts: every word must match.')
+
+  UILabel
+    id: searchHint
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.left
+    margin-left: 7
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #6b6258
+    phantom: true
+    !text: tr('Search...')
+
+  UIWidget
+    id: filterBar
+    anchors.top: searchEdit.top
+    anchors.left: searchEdit.right
+    anchors.right: countLabel.left
+    margin-left: 8
+    margin-right: 8
+    height: 22
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 6
+
+  UILabel
+    id: countLabel
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.right: parent.right
+    width: 80
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+
+  // ------------------------------------------------------------ the list
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: searchEdit.bottom
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-top: 8
+    width: 290
+
+  UIScrollArea
+    id: entryList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 5 3 5 5
+    vertical-scrollbar: listScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin: 3 3 3 0
+    step: 36
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyLabel
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listFrame.right
+    margin: 20 12 0 12
+    height: 40
+    text-wrap: true
+    text-align: center
+    visible: false
+    !text: tr('Nothing matches the search and the filters.')
+
+  // ------------------------------------------------------------ the page
+  ChaosPanelDark
+    id: pageFrame
+    anchors.top: listFrame.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 8
+
+  CodexText
+    id: pageTitle
+    anchors.top: pageFrame.top
+    anchors.left: pageFrame.left
+    anchors.right: pageFrame.right
+    margin: 8 12 0 12
+    font: verdana-11px-rounded
+    color: #f6cf72
+
+  CodexText
+    id: pageSub
+    anchors.top: pageTitle.bottom
+    anchors.left: pageTitle.left
+    anchors.right: pageTitle.right
+    margin-top: 2
+    color: #8c8070
+
+  ChaosSeparator
+    id: pageSep
+    anchors.top: pageSub.bottom
+    anchors.left: pageFrame.left
+    anchors.right: pageFrame.right
+    margin: 4 8 0 8
+
+  UIScrollArea
+    id: page
+    anchors.top: pageSep.bottom
+    anchors.left: pageFrame.left
+    anchors.right: pageScroll.left
+    anchors.bottom: pageFrame.bottom
+    margin: 2 4 8 12
+    vertical-scrollbar: pageScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: pageScroll
+    anchors.top: pageSep.bottom
+    anchors.right: pageFrame.right
+    anchors.bottom: pageFrame.bottom
+    margin: 2 3 3 0
+    step: 40
+    pixels-scroll: true

@@ -1,0 +1,13 @@
+Module
+  name: game_hideout
+  description: Hideout window - decoration catalogue, placement with a preview on the map, theme, visitors, visits and the showcase (server hideout.lua, extended opcode 192)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ hideoutlogic, hideout ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1003
+  @onLoad: init()
+  @onUnload: terminate()

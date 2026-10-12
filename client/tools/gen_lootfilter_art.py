@@ -3,6 +3,7 @@
   lf_glow.png   34x34 soft glow hugging the slot edge, transparent centre (highlighted items)
   lf_frame.png  34x34 crisp 1 px border with brighter corner ticks (items with a rarity that do not glow)
   lf_taken.png  34x34 check mark with a dark outline (loot channel: the item left the corpse; drawn untinted)
+  lf_empty.png  34x34 dark veil with a small slashed ring in the lower right (loot feed: the monster's corpse was empty; untinted)
 python3 -I client/tools/gen_lootfilter_art.py   (writes into client/overlay/modules/game_lootfilter/images/)"""
 import os
 from PIL import Image, ImageDraw
@@ -56,9 +57,23 @@ def taken():
     return big.resize((S, S), Image.LANCZOS)
 
 
+def empty():
+    k = 4
+    big = Image.new('RGBA', (S * k, S * k), (10, 8, 12, 120))
+    d = ImageDraw.Draw(big)
+    cx, cy, r = 25 * k, 25 * k, 6 * k
+    box = [cx - r, cy - r, cx + r, cy + r]
+    d.ellipse([box[0] - 2 * k, box[1] - 2 * k, box[2] + 2 * k, box[3] + 2 * k], fill=(10, 8, 6, 220))
+    d.ellipse(box, outline=(200, 184, 160, 255), width=int(1.6 * k))
+    off = int(r * 0.72)
+    d.line([(cx - off, cy + off), (cx + off, cy - off)], fill=(200, 184, 160, 255), width=int(1.6 * k))
+    return big.resize((S, S), Image.LANCZOS)
+
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     glow().save(os.path.join(OUT, 'lf_glow.png'))
     frame().save(os.path.join(OUT, 'lf_frame.png'))
     taken().save(os.path.join(OUT, 'lf_taken.png'))
+    empty().save(os.path.join(OUT, 'lf_empty.png'))
     print('wrote', OUT)

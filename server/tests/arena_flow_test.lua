@@ -223,8 +223,8 @@ eq(rb.rating, 980, "B rating -20")
 eq(S.ratingOf(a2:getGuid(), "2v2").wins, 1, "A2 win counted")
 eq(lastSend(a2, "end").delta, 20, "client told the change")
 eq(lastSend(b2, "end").result, "loss", "loser told")
-eq(a1.items[29857], 1, "first win of the day: Divine Orb")
-eq(a1.items[29856], 3, "win + first win Chaos Orbs")
+eq(a1.items[29857], 1, "first win of the day: Orb of Fate")
+eq(a1.items[29856], 3, "win + first win Orbs of Upheaval")
 eq(b1.items[29856], nil, "no reward for a loss")
 local boards = 0
 for _, r in ipairs(records) do if r[1] == "arena2v2" and r[4] == "max" then boards = boards + 1 end end
@@ -288,6 +288,127 @@ check(c1.msgs[#c1.msgs]:find("connection") ~= nil, "multi-client message")
 storages[Chaos.multiClient.offStorage] = 1
 check(S.join(c1, "1v1"), "allowed with the multi-client blocks off")
 S.leaveQueue(c1, true)
+
+-- ---------------------------------------------------------------- a shutdown / a closed server: no rating change
+storages[Chaos.multiClient.offStorage] = nil
+local function ratingSnapshot(list)
+  local out = {}
+  for _, p in ipairs(list) do local r = S.ratingOf(p:getGuid(), "1v1"); out[#out + 1] = r.rating .. "/" .. r.wins .. "/" .. r.losses .. "/" .. r.draws end
+  return table.concat(out, " ")
+end
+check(S.join(a1, "1v1"), "shutdown: queue A1"); check(S.join(b2, "1v1"), "shutdown: queue B2")
+advance(2000)
+local ms = S.matchOf[a1:getId()]
+check(ms ~= nil, "shutdown: match started")
+advance(10000)
+local before = ratingSnapshot({a1, b2})
+globals.ChaosArenaShutdown.onShutdown()
+eq(ms.phase, "done", "onShutdown stops the match")
+events.ChaosArenaLogout.onLogout(a1); events.ChaosArenaLogout.onLogout(b2) -- the kicks
+eq(ratingSnapshot({a1, b2}), before, "onShutdown: no rating change")
+check(a1.pos.x == 100 + a1.id % 10 and b2.pos.x == 100 + b2.id % 10, "onShutdown: both sent back")
+advance(cfg.endDelaySeconds * 1000)
+-- a closed server (no onShutdown): the first kick stops the match unrated
+check(S.join(a1, "1v1"), "closed: queue A1"); check(S.join(b2, "1v1"), "closed: queue B2")
+advance(2000)
+local mc = S.matchOf[a1:getId()]
+check(mc ~= nil, "closed: match started")
+advance(10000)
+before = ratingSnapshot({a1, b2})
+Game.getGameState = function() return GAME_STATE_CLOSED end
+events.ChaosArenaLogout.onLogout(b2)
+eq(mc.phase, "done", "closed: the kick stops the match")
+eq(ratingSnapshot({a1, b2}), before, "closed: no loss for the kicked player, no win for the other")
+events.ChaosArenaLogout.onLogout(a1)
+Game.getGameState = nil
+advance(cfg.endDelaySeconds * 1000)
+
+-- ---------------------------------------------------------------- 3v3 (a party of three) and the season hook
+local seasonCalls = {}
+ChaosPvpSeason = {recordArena = function(mode, sides, winner)
+  seasonCalls[#seasonCalls + 1] = {mode = mode, n1 = #sides[1], n2 = #sides[2], winner = winner}
+  local out = {}
+  for side = 1, 2 do for _, e in ipairs(sides[side]) do out[e.guid] = {before = 1500, after = side == winner and 1520 or 1480, delta = side == winner and 20 or -20} end end
+  return out
+end}
+local function party3(a, b, c)
+  local pt = {getLeader = function() return a end, getMembers = function() return {b, c} end}
+  a.party, b.party, c.party = pt, pt, pt
+end
+local t1 = {newPlayer("Hal", 900, 21, 1000), newPlayer("Ivo", 920, 22, 1000), newPlayer("Jun", 940, 23, 1000)}
+local t2 = {newPlayer("Kai", 910, 24, 1000), newPlayer("Lux", 930, 25, 1000), newPlayer("Mae", 950, 26, 1000)}
+party(t1[1], t1[2])
+check(not S.join(t1[1], "3v3"), "3v3 refused for a party of two")
+check(t1[1].msgs[#t1[1].msgs]:find("exactly 3") ~= nil, "3v3 party size message")
+party3(t1[1], t1[2], t1[3])
+party3(t2[1], t2[2], t2[3])
+check(S.join(t1[1], "3v3"), "3v3 party A queues")
+check(S.join(t2[1], "3v3"), "3v3 party B queues")
+advance(2000)
+local m6 = S.matchOf[t1[3]:getId()]
+check(m6 ~= nil and m6.mode == "3v3", "3v3 started")
+local L6 = A.layout(cfg, m6.slot)
+local spots = {}
+for _, p in ipairs({t1[1], t1[2], t1[3], t2[1], t2[2], t2[3]}) do
+  check(A.inArena(L6, p.pos), "3v3 fighter inside " .. p.name)
+  spots[p.pos.x .. "," .. p.pos.y] = true
+end
+local nspots = 0
+for _ in pairs(spots) do nspots = nspots + 1 end
+eq(nspots, 6, "six different spawn tiles")
+advance(10000)
+for _, p in ipairs(t2) do hit(p, t1[1], 99999) end
+advance(1000)
+eq(m6.phase, "done", "3v3: all three of B down")
+eq(m6.winner, 1, "3v3: A wins")
+eq(#seasonCalls, 1, "the season rating is recorded once")
+eq(seasonCalls[1].mode, "3v3", "for the 3v3 bracket")
+eq(seasonCalls[1].n1 + seasonCalls[1].n2, 6, "with all six")
+eq(lastSend(t1[2], "end").season.after, 1520, "the season change goes to the client")
+local b3 = 0
+for _, r in ipairs(records) do if r[1] == "arena3v3" then b3 = b3 + 1 end end
+eq(b3, 6, "the 3v3 board recorded for all six")
+advance(cfg.endDelaySeconds * 1000)
+ChaosPvpSeason = nil
+
+-- ---------------------------------------------------------------- instance limits (instance_limits.lua)
+-- warnings before the fight's end; a pair that finds every slot in use is told once, with the wait; the staff list and
+-- close (stopped, not rated); the waiting pair starts when the slot frees up
+do
+  GlobalEvent = function(name) local o = {}; function o:interval() end; function o:register() globals[name] = o end; return o end
+  dofile("data/scripts/chaos/instance_limits.lua")
+  local function said(p, text) for _, t in ipairs(p.msgs) do if t:find(text, 1, true) then return true end end return false end
+  local w1, w2 = newPlayer("Wren", 900, 31, 1000), newPlayer("Xan", 900, 32, 1000)
+  local y1, y2 = newPlayer("Yara", 900, 33, 1000), newPlayer("Zed", 900, 34, 1000)
+  local slots, fight = cfg.grid.slots, cfg.fightSeconds
+  cfg.grid.slots, cfg.fightSeconds = 1, 300
+  check(S.join(w1, "1v1") and S.join(w2, "1v1"), "limits: a 1v1 pair queues")
+  advance(2000)
+  local mm = S.matchOf[w1:getId()]
+  check(mm ~= nil, "limits: the match starts")
+  check(S.join(y1, "1v1") and S.join(y2, "1v1"), "limits: a second pair queues")
+  advance(2000)
+  check(S.matchOf[y1:getId()] == nil, "limits: no slot for the second pair")
+  check(said(y1, "Arena: All arenas are busy. Try again in ~6 min. Your match starts as soon as one frees up."),
+    "limits: the second pair is told the wait: " .. table.concat(y1.msgs, " | "))
+  local n1 = #y1.msgs
+  advance(4000)
+  eq(#y1.msgs, n1, "limits: told once")
+  advance(10000) -- the fight
+  mm.endAt = os.time() + 61
+  advance(1000)
+  check(said(w1, "Arena: 1 minute left"), "limits: the 1 minute warning: " .. table.concat(w1.msgs, " | "))
+  local found
+  for _, r in ipairs(ChaosInstanceLimits.runs()) do if r.key == "arena" then found = r end end
+  check(found and found.id == mm.id and found.players == 2 and found.left == 60, "limits: listed")
+  local okc = Chaos.instances.arena.close(mm.id)
+  check(okc and mm.phase == "done", "limits: a staff close stops the match")
+  advance(cfg.endDelaySeconds * 1000 + 2000)
+  check(S.matchOf[y1:getId()] ~= nil, "limits: the waiting pair starts when the slot frees up")
+  cfg.grid.slots, cfg.fightSeconds = slots, fight
+  S.stopAll()
+  advance(cfg.endDelaySeconds * 1000 + 1000)
+end
 
 print(string.format("arena_flow_test: %d checks, %d failed", count, fails))
 if fails > 0 then os.exit(1) end

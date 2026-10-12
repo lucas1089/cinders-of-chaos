@@ -23,34 +23,84 @@ LootFilterPreview < ChaosItemSlot
   margin-bottom: 2
   virtual: true
 
-// one kill in the loot channel: time + monster, then the item icons
+// one rule of the Rule counters and sounds panel: name, counters, sound, play, reset
+LootFilterRuleRow < UIWidget
+  height: 44
+  margin-bottom: 4
+  phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 4
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  ChaosLabelDim
+    id: count
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: sound.left
+    margin-top: 4
+    margin-right: 6
+    height: 14
+    text-align: left
+
+  ChaosButton
+    id: reset
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 24 22
+    padding: 0
+    text: x
+    !tooltip: tr('Reset this rule: session and total')
+
+  ChaosButton
+    id: play
+    anchors.right: reset.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 40 22
+    padding: 0
+    !text: tr('Play')
+    !tooltip: tr('Play the sound at the chosen volume')
+
+  ChaosComboBox
+    id: sound
+    anchors.right: play.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 92 22
+    !tooltip: tr('The sound when a drop of your kill matches this rule')
+
+// one loot feed row: the monster's icon, then the item icons (wrapping to more lines); no text
 LootChannelRow < UIWidget
-  height: 34
-  margin-bottom: 2
+  margin-bottom: 3
   phantom: true
   layout:
-    type: horizontalBox
-    spacing: 2
+    type: grid
+    cell-size: 32 32
+    cell-spacing: 2
+    flow: true
+    fit-children: true
 
-LootChannelHead < UILabel
-  width: 118
-  height: 32
-  font: verdana-11px-antialised
-  color: #b8a88a
-  text-align: left
-  text-wrap: true
-  phantom: true
+// the killed monster, drawn from its look (server kill.look) facing south, scaled into the cell
+LootChannelMonster < UICreature
+  size: 32 32
+  fixed-creature-size: true
+  padding: 1
+  background-color: #120c0a
+  border-width: 1
+  border-color: #4a3426
+  phantom: false
 
 LootChannelItem < Item
   size: 32 32
   virtual: true
   phantom: false
-
-LootChannelLine < UILabel
-  height: 14
-  font: verdana-11px-rounded
-  text-align: left
-  phantom: true
 
 // covers the console text while the Loot tab is selected
 LootChannelPanel < UIWidget
@@ -81,7 +131,7 @@ LootChannelPanel < UIWidget
     margin-top: 3
     margin-right: 3
     margin-bottom: 3
-    step: 36
+    step: 35
     pixels-scroll: true
 
   UILabel
@@ -97,7 +147,7 @@ LootChannelPanel < UIWidget
 
 ChaosMainWindow
   id: lootFilterWindow
-  size: 640 500
+  size: 1000 526
   !text: tr('Loot Filter')
   @onEscape: modules.game_lootfilter.hide()
 
@@ -111,7 +161,8 @@ ChaosMainWindow
     id: presets
     anchors.top: presetHeader.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: rulesPanel.left
+    margin-right: 12
     margin-top: 4
     height: 22
     phantom: true
@@ -122,7 +173,8 @@ ChaosMainWindow
     id: presetInfo
     anchors.top: presets.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: rulesPanel.left
+    margin-right: 12
     margin-top: 4
     height: 14
     text-align: left
@@ -131,7 +183,8 @@ ChaosMainWindow
     id: sep1
     anchors.top: presetInfo.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: rulesPanel.left
+    margin-right: 12
     margin-top: 6
 
   LootFilterHeader
@@ -167,9 +220,22 @@ ChaosMainWindow
     anchors.left: dimLabel.right
     margin-left: 10
 
+  LootFilterLabel
+    id: tierLabel
+    anchors.top: highlightLabel.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    !text: tr('Glow on a modifier of')
+
+  LootFilterCombo
+    id: tierCombo
+    anchors.verticalCenter: tierLabel.verticalCenter
+    anchors.left: parent.left
+    margin-left: 130
+
   ChaosCheckBox
     id: show_equipment
-    anchors.top: highlightLabel.bottom
+    anchors.top: tierLabel.bottom
     anchors.left: parent.left
     margin-top: 14
     width: 290
@@ -188,7 +254,7 @@ ChaosMainWindow
     anchors.left: parent.left
     margin-top: 6
     width: 290
-    !text: tr('Show supplies (potions, runes, ammo)')
+    !text: tr('Show supplies (potions, runes)')
 
   ChaosCheckBox
     id: show_other
@@ -201,7 +267,8 @@ ChaosMainWindow
     id: categoryHint
     anchors.top: show_supplies.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: rulesPanel.left
+    margin-right: 12
     margin-top: 6
     height: 14
     text-align: left
@@ -228,14 +295,16 @@ ChaosMainWindow
     id: sep2
     anchors.top: icons.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: rulesPanel.left
+    margin-right: 12
     margin-top: 8
 
   ChaosPanelDark
     id: autolootPanel
     anchors.top: sep2.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: rulesPanel.left
+    margin-right: 12
     margin-top: 4
     height: 96
 
@@ -305,7 +374,8 @@ ChaosMainWindow
     id: preview
     anchors.top: previewHeader.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: rulesPanel.left
+    margin-right: 12
     margin-top: 4
     height: 74
     phantom: true
@@ -315,6 +385,92 @@ ChaosMainWindow
       cell-spacing: 2
       flow: true
 
+  // ---------------------------------------------------------- rule counters and sounds
+  ChaosPanelDark
+    id: rulesPanel
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    width: 340
+    padding: 8
+
+    LootFilterHeader
+      id: rulesHeader
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr('Rule counters and sounds')
+
+    ChaosLabelDim
+      id: rulesHint
+      anchors.top: rulesHeader.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 42
+      text-wrap: true
+      text-align: topLeft
+      !text: tr('Items your kills drop that match a rule. Session: since you logged in. The first rule with a sound plays.')
+
+    UIWidget
+      id: ruleRows
+      anchors.top: rulesHint.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 240
+      phantom: true
+      layout:
+        type: verticalBox
+
+    LootFilterLabel
+      id: volumeLabel
+      anchors.top: ruleRows.bottom
+      anchors.left: parent.left
+      margin-top: 12
+      !text: tr('Volume')
+
+    ChaosComboBox
+      id: volumeCombo
+      anchors.verticalCenter: volumeLabel.verticalCenter
+      anchors.left: parent.left
+      margin-left: 70
+      size: 80 22
+
+    ChaosCheckBox
+      id: muteCheck
+      anchors.verticalCenter: volumeLabel.verticalCenter
+      anchors.left: volumeCombo.right
+      margin-left: 16
+      width: 140
+      !text: tr('Mute all')
+
+    ChaosCheckBox
+      id: huntCheck
+      anchors.top: volumeLabel.bottom
+      anchors.left: parent.left
+      margin-top: 14
+      width: 300
+      !text: tr('Show the counters in the Hunt Tracker')
+      !tooltip: tr('Hunt Tracker > Chaos Drops lists every rule with its counters.')
+
+    ChaosButton
+      id: resetSessionButton
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      size: 120 24
+      !text: tr('Reset session')
+      @onClick: modules.game_lootfilter.resetCounters('session')
+
+    ChaosButton
+      id: resetTotalButton
+      anchors.bottom: parent.bottom
+      anchors.left: resetSessionButton.right
+      margin-left: 8
+      size: 120 24
+      !text: tr('Reset totals')
+      @onClick: modules.game_lootfilter.resetCounters('total')
+
   ChaosButton
     id: closeButton
     anchors.right: parent.right
@@ -323,10 +479,30 @@ ChaosMainWindow
     !text: tr('Close')
     @onClick: modules.game_lootfilter.hide()
 
+  ChaosButton
+    id: groundLabelsButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    size: 110 24
+    !text: tr('Ground Labels')
+    !tooltip: tr('Names over the items on the ground, by these rules')
+    @onClick: if modules.game_groundlabels then modules.game_groundlabels.toggleSettings() end
+
+  ChaosButton
+    id: pouchButton
+    anchors.right: groundLabelsButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    size: 96 24
+    !text: tr('Loot Pouch')
+    !tooltip: tr('What your Loot Pouch (a store item) collects from your kills')
+    @onClick: if modules.game_pouches then modules.game_pouches.toggleSettings() end
+
   ChaosLabelDim
     id: savedLabel
     anchors.verticalCenter: closeButton.verticalCenter
     anchors.left: parent.left
-    anchors.right: closeButton.left
+    anchors.right: pouchButton.left
     text-align: left
-    !text: tr('Changes are saved on your character at once (!lootfilter opens this window).')
+    !text: tr('Changes are saved on your character at once.')

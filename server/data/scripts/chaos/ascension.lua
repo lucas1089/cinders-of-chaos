@@ -3,7 +3,9 @@
 --   !ascend              tells the player the choices
 --   !ascend <class>      a base class of level 100+ in a protection zone, out of combat, becomes that ascended class:
 --                        Warrior: juggernaut | berserker, Ranger: deadeye | beastmaster, Mystic: elementalist |
---                        illusionist, Thief: ninja | samurai
+--                        illusionist, Thief: ninja | samurai, Monk: shadowfist | ironsage, Necromancer: lich |
+--                        bonelord, Templar: inquisitor | sentinel (the last three need the account's class unlock,
+--                        class_unlocks.lua)
 --
 -- The engine knows one promotion per vocation (fromvoc), so the two-way choice is this script: it sets the vocation
 -- directly. The choice is final; only the store's Vocation Change (!changevocation <class>, shop_services.lua)
@@ -14,6 +16,9 @@
 -- Health, mana and capacity follow the new vocation's gains (ChaosShopServices.recomputeStats, as the vocation
 -- change does). The client learns the new vocation from a fresh basic-data packet (0x9F, the one the server sends at
 -- login), so its spell list and action bar switch without a relog.
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 
 if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")
@@ -76,22 +81,72 @@ function C.applyVocation(player, newVoc)
 	C.afterVocationChange(player)
 end
 
+-- the class's outfits (Chaos.classes.outfits) for both sexes; with wear, the first one is put on when the character had
+-- none of them yet (on a class change; at login only the unlock, the look stays the player's)
+function C.giveClassOutfits(player, wear)
+	local list = Chaos.classes.outfits and Chaos.classes.outfits[player:getVocation():getId()]
+	if not list then
+		return 0
+	end
+	local added, hadOne, names = 0, false, {}
+	for _, o in ipairs(list) do
+		names[#names + 1] = o.name
+		if player:hasOutfit(o.lookType) then
+			hadOne = true
+		else
+			player:addOutfit(o.lookType)
+			if player:hasOutfit(o.lookType) then
+				added = added + 1
+			end
+		end
+	end
+	if added > 0 then
+		if wear and not hadOne then
+			local look = player:getOutfit()
+			look.lookType = list[1].lookType
+			player:setOutfit(look)
+		end
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "New outfits: " .. table.concat(names, ", ") .. ".")
+	end
+	return added
+end
+
 -- after any vocation change (ascension, the free switch, the store's change): the Ninja's off-hand rule, companions
 -- go when the character is no Beastmaster any more, and the client learns the vocation without a relog
 function C.afterVocationChange(player)
 	C.syncDualWield(player)
+	-- the donor art outfits are given; the class's default look (class_looks.lua: a stock outfit, so it shows in any
+	-- 10.98 client) is the one put on
+	C.giveClassOutfits(player, false)
+	if ChaosClassLooks and ChaosClassLooks.apply then
+		ChaosClassLooks.apply(player, true)
+	end
 	if ChaosBeastmaster and ChaosBeastmaster.dismissIfNotBeastmaster then
 		ChaosBeastmaster.dismissIfNotBeastmaster(player)
+	end
+	-- the Necromancer's minions go when the character leaves the line (necro_minions.lua also trims them to the new
+	-- class's caps on its own every 0.5 s; this makes it immediate)
+	if ChaosNecroMinions and ChaosNecroMinions.onVocationChange then
+		ChaosNecroMinions.onVocationChange(player)
+	end
+	-- the Monk chi HUD (monk_chi_core.lua): shown for the Monk line, hidden when the character left it
+	if ChaosMonk and ChaosMonk.sendChi and ChaosMonk.getChi then
+		ChaosMonk.sendChi(player, ChaosMonk.getChi(player), true)
 	end
 	C.sendBasicData(player)
 end
 
 local EFFECT = {[8] = CONST_ME_GROUNDSHAKER, [14] = CONST_ME_DRAWBLOOD, [7] = CONST_ME_HOLYDAMAGE,
 	[15] = CONST_ME_MAGIC_GREEN, [5] = CONST_ME_FIREAREA, [10] = CONST_ME_PURPLEENERGY, [12] = CONST_ME_MORTAREA,
-	[13] = CONST_ME_GROUNDSHAKER}
+	[13] = CONST_ME_GROUNDSHAKER, [18] = CONST_ME_MORTAREA, [19] = CONST_ME_STONES, [21] = CONST_ME_MORTAREA,
+	[22] = CONST_ME_GROUNDSHAKER, [24] = CONST_ME_HOLYAREA, [25] = CONST_ME_BLOCKHIT}
 
-local talk = TalkAction("!ascend")
+local talk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "ascend")
 function talk.onSay(player, words, param)
+	-- the ascension quest (ascension_quest.lua): players ascend at the Ascendant Oracle; staff and the free switch keep this
+	if ChaosAscensionQuest and ChaosAscensionQuest.commandAllowed and not ChaosAscensionQuest.commandAllowed(player) then
+		return false
+	end
 	local voc = player:getVocation()
 	local key = Chaos.classes.storage.freeSwitch
 	local freeTo = player:getStorageValue(key)
@@ -105,6 +160,14 @@ function talk.onSay(player, words, param)
 	if not newVoc then
 		player:sendCancelMessage("That vocation does not exist on this server.")
 		return false
+	end
+	-- the class lock (class_unlocks.lua): the Monk, the Necromancer and the Templar need the account's unlock
+	if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
+		local allowed, lockMessage = ChaosClassUnlocks.canUseVocation(player, newId)
+		if not allowed then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, lockMessage or "That class is locked. Unlock it in the store.")
+			return false
+		end
 	end
 	C.applyVocation(player, newVoc)
 	if how == true then
@@ -129,5 +192,12 @@ function talk.onSay(player, words, param)
 	Game.broadcastMessage(string.format("%s has ascended to %s.", player:getName(), newVoc:getName()), MESSAGE_EVENT_ADVANCE)
 	return false
 end
-talk:separator(" ")
-talk:register()
+ChaosCommands.register("ascend", function(player, param) return talk.onSay(player, "", param) end)
+
+-- characters that were Ninja or Samurai before the class outfits existed get them at their next login
+local outfitLogin = CreatureEvent("ChaosClassOutfitsLogin")
+function outfitLogin.onLogin(player)
+	pcall(C.giveClassOutfits, player, false)
+	return true
+end
+outfitLogin:register()

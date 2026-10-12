@@ -1,0 +1,538 @@
+# Item custom attributes in item packets (client feature GameItemCustomAttributes = 126) and two Lua item methods.
+# Our client identifies itself after its version in the login packet (the strings "OTCv8TierByte" and "A"); only then
+# does the server announce feature 126 (0x43, sendFeatures) and write after every item: u16 count, then per entry
+# u16 key + u64 value. Keys (const.h ChaosItemAttrKey, Chaos.itemAttr in chaos_constants.lua, ChaosItemAttr in the
+# client): 1 rarity, 2 item level, 3 locked (reserved), 4 unique, 5 sockets, 6 per-item id ("chaos_iid", given the
+# first time the item is sent), 7 version (hash that changes when the item changes). Plain items get a count of 0.
+# Lua: item:sendUpdate() sends an item again after a script changed it; item:getClientAttributes() returns the keys.
+# Apply in the server source root after 0001 and 0002: patch -p1 < 0003-item-custom-attributes.patch, then rebuild
+# (protocolgame.h changes the class layout: rebuild every object, not only the changed files).
+--- a/src/const.h
++++ b/src/const.h
+@@ -690,7 +690,23 @@
+ 	GamePacketSizeU32 = 110,
+ 	GamePacketCompression = 111,
+ 
+-	LastGameFeature = 120
++	LastGameFeature = 120,
++
++	// Chaos: per-item custom attributes in every item the server sends (client feature 126, see ChaosItemAttrKey)
++	GameItemCustomAttributes = 126,
++};
++
++// Chaos: keys of the custom attributes written after each item (u16 count, then u16 key + u64 value per entry).
++// Same numbers in data/scripts/chaos/chaos_constants.lua (Chaos.itemAttr) and in the client
++// (modules/game_itemrarity, ChaosItemAttr); server/tests/item_tooltip_test.lua checks that the three agree.
++enum ChaosItemAttrKey : uint16_t {
++	CHAOS_ITEM_KEY_RARITY = 1, // custom attribute "rarity", 1..15 (0 = none, the key is left out)
++	CHAOS_ITEM_KEY_LEVEL = 2, // custom attribute "combatPowerLevel", the item level
++	CHAOS_ITEM_KEY_LOCKED = 3, // custom attribute "chaos_locked", 1 = locked (reserved: nothing sets it yet)
++	CHAOS_ITEM_KEY_UNIQUE = 4, // custom attribute "chaos_unique" present: 1
++	CHAOS_ITEM_KEY_SOCKETS = 5, // custom attribute "chaos_sockets", the socket count
++	CHAOS_ITEM_KEY_ID = 6, // custom attribute "chaos_iid", a per-item id given the first time the item is sent
++	CHAOS_ITEM_KEY_VERSION = 7, // hash of the item's id, attributes and custom attributes: changes when the item changes
+ };
+ 
+ static constexpr int32_t CHANNEL_GUILD = 0x00;
+--- a/src/item.h
++++ b/src/item.h
+@@ -872,6 +872,10 @@
+ 			return items[id].armor;
+ 		}
+ 
++		// Chaos: the custom attributes the client gets after this item (ChaosItemAttrKey, const.h). Gives the item its
++		// per-item id ("chaos_iid") the first time it is sent with any of them.
++		void getChaosClientAttributes(std::vector<std::pair<uint16_t, uint64_t>>& out);
++
+ 		int32_t getRarity() const {
+     		if (hasAttribute(ITEM_ATTRIBUTE_RARITY)) {
+         		return getIntAttr(ITEM_ATTRIBUTE_RARITY);
+--- a/src/item.cpp
++++ b/src/item.cpp
+@@ -12,6 +12,8 @@
+ #include "game.h"
+ #include "bed.h"
+ #include <vector>
++#include <cstdlib>
++#include <ctime>
+ #include <list>
+ #include <tuple>
+ #include <string>
+@@ -2457,6 +2459,168 @@
+ 	getTooltipOther(it, tooltipData);
+ }
+ 
++// Chaos: custom attributes for the client (GameItemCustomAttributes, keys in const.h ChaosItemAttrKey)
++namespace {
++
++constexpr uint64_t CHAOS_FNV_OFFSET = 14695981039346656037ULL;
++constexpr uint64_t CHAOS_FNV_PRIME = 1099511628211ULL;
++
++uint64_t chaosHash(uint64_t h, const void* data, size_t len)
++{
++	const uint8_t* p = static_cast<const uint8_t*>(data);
++	for (size_t i = 0; i < len; ++i) {
++		h ^= p[i];
++		h *= CHAOS_FNV_PRIME;
++	}
++	return h;
++}
++
++uint64_t chaosHashNumber(uint64_t h, int64_t v)
++{
++	return chaosHash(h, &v, sizeof(v));
++}
++
++int64_t chaosAttrNumber(const ItemAttributes::CustomAttribute& attr)
++{
++	const auto& v = attr.value;
++	if (const int64_t* i = boost::get<int64_t>(&v)) {
++		return *i;
++	}
++	if (const double* d = boost::get<double>(&v)) {
++		return static_cast<int64_t>(*d);
++	}
++	if (const bool* b = boost::get<bool>(&v)) {
++		return *b ? 1 : 0;
++	}
++	if (const std::string* s = boost::get<std::string>(&v)) {
++		char* end = nullptr;
++		const long long n = std::strtoll(s->c_str(), &end, 10);
++		return (end && end != s->c_str()) ? static_cast<int64_t>(n) : 0;
++	}
++	return 0;
++}
++
++uint64_t chaosHashAttr(uint64_t h, const ItemAttributes::CustomAttribute& attr)
++{
++	const auto& v = attr.value;
++	const uint8_t which = static_cast<uint8_t>(v.which());
++	h = chaosHash(h, &which, 1);
++	if (const std::string* s = boost::get<std::string>(&v)) {
++		return chaosHash(h, s->data(), s->size());
++	}
++	if (const double* d = boost::get<double>(&v)) {
++		return chaosHash(h, d, sizeof(*d));
++	}
++	return chaosHashNumber(h, chaosAttrNumber(attr));
++}
++
++// per-item ids: (unix time of the first id of a block) << 20 | counter. A new block starts every 2^20 ids and at every
++// start of the server, so ids stay unique across restarts; they stay below 2^53 (exact as a Lua number).
++uint64_t chaosNextItemId()
++{
++	static uint64_t base = 0;
++	static uint64_t counter = 0;
++	if (base == 0 || counter >= (1ULL << 20)) {
++		const uint64_t now = static_cast<uint64_t>(std::time(nullptr));
++		base = std::max<uint64_t>(now, base + 1);
++		counter = 0;
++	}
++	return (base << 20) | counter++;
++}
++
++}
++
++void Item::getChaosClientAttributes(std::vector<std::pair<uint16_t, uint64_t>>& out)
++{
++	out.clear();
++	const int32_t typeRarity = items[id].rarity;
++	ItemAttributes::CustomAttributeMap* custom = attributes ? attributes->getCustomAttributeMap() : nullptr;
++	if (!custom) {
++		if (typeRarity > 0) {
++			out.emplace_back(CHAOS_ITEM_KEY_RARITY, static_cast<uint64_t>(typeRarity));
++		}
++		return;
++	}
++
++	int64_t rarity = 0, level = 0, locked = 0, sockets = 0, itemId = 0;
++	bool unique = false;
++	uint64_t sum = 0; // order-independent: the map has no fixed order
++	for (const auto& entry : *custom) {
++		const std::string& key = entry.first; // stored lower case
++		if (key == "chaos_iid") {
++			itemId = chaosAttrNumber(entry.second);
++			continue;
++		}
++		const int64_t n = chaosAttrNumber(entry.second);
++		if (key == "rarity") {
++			rarity = n;
++		} else if (key == "combatpowerlevel") {
++			level = n;
++		} else if (key == "chaos_locked") {
++			locked = n;
++		} else if (key == "chaos_unique") {
++			unique = true;
++		} else if (key == "chaos_sockets") {
++			sockets = n;
++		}
++		uint64_t h = chaosHash(CHAOS_FNV_OFFSET, key.data(), key.size());
++		h = chaosHashAttr(h, entry.second);
++		sum += (h ^ (h >> 29)) * 0x9E3779B97F4A7C15ULL;
++	}
++	if (rarity <= 0) {
++		rarity = typeRarity;
++	}
++	if (rarity <= 0 && level <= 0 && locked <= 0 && !unique && sockets <= 0) {
++		return;
++	}
++
++	if (itemId <= 0) {
++		itemId = static_cast<int64_t>(chaosNextItemId());
++		std::string key = "chaos_iid";
++		ItemAttributes::CustomAttribute value;
++		value.set<int64_t>(itemId);
++		setCustomAttribute(key, value);
++	}
++
++	uint64_t v = chaosHashNumber(CHAOS_FNV_OFFSET ^ sum, id);
++	static const itemAttrTypes intTypes[] = {ITEM_ATTRIBUTE_ATTACK, ITEM_ATTRIBUTE_DEFENSE, ITEM_ATTRIBUTE_EXTRADEFENSE,
++		ITEM_ATTRIBUTE_ARMOR, ITEM_ATTRIBUTE_HITCHANCE, ITEM_ATTRIBUTE_SHOOTRANGE, ITEM_ATTRIBUTE_ATTACK_SPEED};
++	for (itemAttrTypes type : intTypes) {
++		if (hasAttribute(type)) {
++			v = chaosHashNumber(chaosHashNumber(v, static_cast<int64_t>(type)), getIntAttr(type));
++		}
++	}
++	static const itemAttrTypes strTypes[] = {ITEM_ATTRIBUTE_NAME, ITEM_ATTRIBUTE_DESCRIPTION};
++	for (itemAttrTypes type : strTypes) {
++		if (hasAttribute(type)) {
++			const std::string& s = getStrAttr(type);
++			v = chaosHash(chaosHashNumber(v, static_cast<int64_t>(type)), s.data(), s.size());
++		}
++	}
++	uint32_t version = static_cast<uint32_t>(v ^ (v >> 32));
++	if (version == 0) {
++		version = 1;
++	}
++
++	if (rarity > 0) {
++		out.emplace_back(CHAOS_ITEM_KEY_RARITY, static_cast<uint64_t>(rarity));
++	}
++	if (level > 0) {
++		out.emplace_back(CHAOS_ITEM_KEY_LEVEL, static_cast<uint64_t>(level));
++	}
++	if (locked > 0) {
++		out.emplace_back(CHAOS_ITEM_KEY_LOCKED, 1);
++	}
++	if (unique) {
++		out.emplace_back(CHAOS_ITEM_KEY_UNIQUE, 1);
++	}
++	if (sockets > 0) {
++		out.emplace_back(CHAOS_ITEM_KEY_SOCKETS, static_cast<uint64_t>(sockets));
++	}
++	out.emplace_back(CHAOS_ITEM_KEY_ID, static_cast<uint64_t>(itemId));
++	out.emplace_back(CHAOS_ITEM_KEY_VERSION, version);
++}
++
+ void Item::getRarityLevel(TooltipDataContainer& tooltipData)
+ {
+     int rarity = 0;
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -756,6 +756,8 @@
+ 		static int luaItemHasProperty(lua_State* L);
+ 		static int luaItemIsLoadedFromMap(lua_State* L);
+ 		static int luaItemGetRealUID(lua_State* L);
++		static int luaItemSendUpdate(lua_State* L);
++		static int luaItemGetClientAttributes(lua_State* L);
+ 		static int luaItemSetStoreItem(lua_State* L);
+ 		static int luaItemIsStoreItem(lua_State* L);
+ 
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2320,6 +2320,8 @@
+ 
+ 	registerMethod("Item", "setStoreItem", LuaScriptInterface::luaItemSetStoreItem);
+ 	registerMethod("Item", "getRealUID", LuaScriptInterface::luaItemGetRealUID);
++	registerMethod("Item", "sendUpdate", LuaScriptInterface::luaItemSendUpdate); // Chaos
++	registerMethod("Item", "getClientAttributes", LuaScriptInterface::luaItemGetClientAttributes); // Chaos
+ 	registerMethod("Item", "isStoreItem", LuaScriptInterface::luaItemIsStoreItem);
+ 
+ 	// Container
+@@ -7034,6 +7036,73 @@
+ 	}
+ 	return 1;
+ }
++// Chaos: send an item again to the clients that see it, after a script changed its attributes (the engine sends an item
++// only when it moves or its id or count changes; a client that reads custom attributes would keep the old ones).
++// Unlike transforming to the same id this touches nothing on the item (no decay or duration reset).
++int LuaScriptInterface::luaItemSendUpdate(lua_State* L)
++{
++	// item:sendUpdate()
++	Item* item = getUserdata<Item>(L, 1);
++	if (!item) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	bool sent = false;
++	Cylinder* parent = item->getParent();
++	if (parent) {
++		Creature* creature = parent->getCreature();
++		Player* owner = creature ? creature->getPlayer() : nullptr;
++		if (owner) {
++			const int32_t slot = owner->getThingIndex(item);
++			if (slot >= CONST_SLOT_FIRST && slot <= CONST_SLOT_LAST) {
++				owner->sendInventoryItem(static_cast<slots_t>(slot), item);
++				sent = true;
++			}
++		} else if (Container* container = parent->getContainer()) {
++			const int32_t index = container->getThingIndex(item);
++			if (index >= 0) {
++				SpectatorVec spectators;
++				g_game.map.getSpectators(spectators, container->getPosition(), false, true, 1, 1, 1, 1);
++				for (Creature* spectator : spectators) {
++					spectator->getPlayer()->sendUpdateContainerItem(container, static_cast<uint16_t>(index), item);
++				}
++				sent = true;
++			}
++		} else if (Tile* tile = parent->getTile()) {
++			if (tile->getThingIndex(item) >= 0) {
++				SpectatorVec spectators;
++				g_game.map.getSpectators(spectators, tile->getPosition(), true, true);
++				for (Creature* spectator : spectators) {
++					spectator->getPlayer()->sendUpdateTileItem(tile, tile->getPosition(), item);
++				}
++				sent = true;
++			}
++		}
++	}
++	pushBoolean(L, sent);
++	return 1;
++}
++
++int LuaScriptInterface::luaItemGetClientAttributes(lua_State* L)
++{
++	// item:getClientAttributes() -> {[key] = value} as the client gets them (keys: Chaos.itemAttr)
++	Item* item = getUserdata<Item>(L, 1);
++	if (!item) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	std::vector<std::pair<uint16_t, uint64_t>> attrs;
++	item->getChaosClientAttributes(attrs);
++	lua_createtable(L, 0, attrs.size());
++	for (const auto& attr : attrs) {
++		lua_pushnumber(L, static_cast<double>(attr.second));
++		lua_rawseti(L, -2, attr.first);
++	}
++	return 1;
++}
++
+ // Container
+ int LuaScriptInterface::luaContainerCreate(lua_State* L)
+ {
+--- a/src/protocolgame.h
++++ b/src/protocolgame.h
+@@ -263,6 +263,9 @@
+ 
+ 		// translate a tile to client-readable format
+ 		void GetTileDescription(const Tile* tile, NetworkMessage& msg);
++		// Chaos: an item, then its custom attributes for a client that reads them (GameItemCustomAttributes)
++		void AddItem(NetworkMessage& msg, const Item* item);
++		void AddItem(NetworkMessage& msg, uint16_t id, uint8_t count);
+ 
+ 		// translate a floor to client-readable format
+ 		void GetFloorDescription(NetworkMessage& msg, int32_t x, int32_t y, int32_t z,
+@@ -325,6 +328,8 @@
+ 		bool acceptPackets = false;
+ 		
+ 		uint16_t otclientV8 = 0;
++		bool chaosClient = false; // the client sent the markers of our client after its version (see onRecvFirstMessage)
++		bool chaosItemAttributes = false; // GameItemCustomAttributes announced: every item carries its custom attributes
+ 		struct AwareRange {
+ 			int width = 17;
+ 			int height = 13;
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -389,6 +389,10 @@
+ 	uint16_t otcV8StringLength = msg.get<uint16_t>();
+ 	if(otcV8StringLength == 5 && msg.getString(5) == "OTCv8") {
+ 		otclientV8 = msg.get<uint16_t>(); // 253, 260, 261, ...
++		// Chaos: our client follows its version with the strings "OTCv8TierByte" and "A"; only that client is told to
++		// read custom attributes after each item (sendFeatures), other OTC-family clients keep the plain item format
++		const std::string tierMarker = msg.getString();
++		chaosClient = tierMarker == "OTCv8TierByte" && msg.getString() == "A";
+ 	}
+ 
+ 	if (version < CLIENT_VERSION_MIN || version > CLIENT_VERSION_MAX) {
+@@ -592,6 +596,32 @@
+ 	}
+ }
+ 
++// Chaos: custom attributes after the item (client feature GameItemCustomAttributes): u16 count, then u16 key + u64
++// value per entry (keys: ChaosItemAttrKey in const.h). Every item the client reads with its item parser goes through
++// these two: map tiles, inventory, containers, trade, text windows.
++void ProtocolGame::AddItem(NetworkMessage& msg, const Item* item)
++{
++	msg.addItem(item);
++	if (!chaosItemAttributes) {
++		return;
++	}
++	std::vector<std::pair<uint16_t, uint64_t>> attrs;
++	const_cast<Item*>(item)->getChaosClientAttributes(attrs);
++	msg.add<uint16_t>(static_cast<uint16_t>(attrs.size()));
++	for (const auto& attr : attrs) {
++		msg.add<uint16_t>(attr.first);
++		msg.add<uint64_t>(attr.second);
++	}
++}
++
++void ProtocolGame::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
++{
++	msg.addItem(id, count);
++	if (chaosItemAttributes) {
++		msg.add<uint16_t>(0x00);
++	}
++}
++
+ void ProtocolGame::GetTileDescription(const Tile* tile, NetworkMessage& msg)
+ {
+ 	msg.add<uint16_t>(0x00); //environmental effects
+@@ -599,7 +629,7 @@
+ 	int32_t count;
+ 	Item* ground = tile->getGround();
+ 	if (ground) {
+-		msg.addItem(ground);
++		AddItem(msg, ground);
+ 		count = 1;
+ 	} else {
+ 		count = 0;
+@@ -608,7 +638,7 @@
+ 	const TileItemVector* items = tile->getItemList();
+ 	if (items) {
+ 		for (auto it = items->getBeginTopItem(), end = items->getEndTopItem(); it != end; ++it) {
+-			msg.addItem(*it);
++			AddItem(msg, *it);
+ 
+ 			if (++count == 10) {
+ 				break;
+@@ -633,7 +663,7 @@
+ 
+ 	if (items && count < 10) {
+ 		for (auto it = items->getBeginDownItem(), end = items->getEndDownItem(); it != end; ++it) {
+-			msg.addItem(*it);
++			AddItem(msg, *it);
+ 
+ 			if (++count == 10) {
+ 				return;
+@@ -1578,10 +1608,10 @@
+ 	msg.addByte(cid);
+ 
+ 	if (container->getID() == ITEM_BROWSEFIELD) {
+-		msg.addItem(ITEM_BAG, 1);
++		AddItem(msg, ITEM_BAG, 1);
+ 		msg.addString("Browse Field");
+ 	} else {
+-		msg.addItem(container);
++		AddItem(msg, container);
+ 		msg.addString(container->getName());
+ 	}
+ 
+@@ -1600,7 +1630,7 @@
+ 
+ 		msg.addByte(itemsToSend);
+ 		for (auto it = container->getItemList().begin() + firstIndex, end = it + itemsToSend; it != end; ++it) {
+-			msg.addItem(*it);
++			AddItem(msg, *it);
+ 		}
+ 	} else {
+ 		msg.addByte(0x00);
+@@ -2189,11 +2219,11 @@
+ 
+ 		msg.addByte(itemList.size());
+ 		for (const Item* listItem : itemList) {
+-			msg.addItem(listItem);
++			AddItem(msg, listItem);
+ 		}
+ 	} else {
+ 		msg.addByte(0x01);
+-		msg.addItem(item);
++		AddItem(msg, item);
+ 	}
+ 	writeToOutputBuffer(msg);
+ }
+@@ -2454,7 +2484,7 @@
+ 	msg.addByte(0x6A);
+ 	msg.addPosition(pos);
+ 	msg.addByte(stackpos);
+-	msg.addItem(item);
++	AddItem(msg, item);
+ 	writeToOutputBuffer(msg);
+ }
+ 
+@@ -2468,7 +2498,7 @@
+ 	msg.addByte(0x6B);
+ 	msg.addPosition(pos);
+ 	msg.addByte(stackpos);
+-	msg.addItem(item);
++	AddItem(msg, item);
+ 	writeToOutputBuffer(msg);
+ }
+ 
+@@ -2736,7 +2766,7 @@
+ 	if (item) {
+ 		msg.addByte(0x78);
+ 		msg.addByte(slot);
+-		msg.addItem(item);
++		AddItem(msg, item);
+ 	} else {
+ 		msg.addByte(0x79);
+ 		msg.addByte(slot);
+@@ -2772,7 +2802,7 @@
+ 	msg.addByte(0x70);
+ 	msg.addByte(cid);
+ 	msg.add<uint16_t>(slot);
+-	msg.addItem(item);
++	AddItem(msg, item);
+ 	writeToOutputBuffer(msg);
+ }
+ 
+@@ -2782,7 +2812,7 @@
+ 	msg.addByte(0x71);
+ 	msg.addByte(cid);
+ 	msg.add<uint16_t>(slot);
+-	msg.addItem(item);
++	AddItem(msg, item);
+ 	writeToOutputBuffer(msg);
+ }
+ 
+@@ -2793,7 +2823,7 @@
+ 	msg.addByte(cid);
+ 	msg.add<uint16_t>(slot);
+ 	if (lastItem) {
+-		msg.addItem(lastItem);
++		AddItem(msg, lastItem);
+ 	} else {
+ 		msg.add<uint16_t>(0x00);
+ 	}
+@@ -2805,7 +2835,7 @@
+ 	NetworkMessage msg;
+ 	msg.addByte(0x96);
+ 	msg.add<uint32_t>(windowTextId);
+-	msg.addItem(item);
++	AddItem(msg, item);
+ 
+ 	if (canWrite) {
+ 		msg.add<uint16_t>(maxlen);
+@@ -2838,7 +2868,7 @@
+ 	NetworkMessage msg;
+ 	msg.addByte(0x96);
+ 	msg.add<uint32_t>(windowTextId);
+-	msg.addItem(itemId, 1);
++	AddItem(msg, itemId, 1);
+ 	msg.add<uint16_t>(text.size());
+ 	msg.addString(text);
+ 	msg.add<uint16_t>(0x00);
+@@ -3383,6 +3413,10 @@
+ 	features[GameWingsAndAura] = true;
+ 	features[GameOutfitShaders] = true;
+ 	features[GameChangeMapAwareRange] = true;
++	if (chaosClient) {
++		features[GameItemCustomAttributes] = true;
++		chaosItemAttributes = true;
++	}
+ 	if(features.empty())
+ 		return;
+ 

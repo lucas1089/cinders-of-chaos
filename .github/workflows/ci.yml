@@ -65,6 +65,9 @@ jobs:
       - name: Client modules (otmod name, scripts)
         run: python3 -I tools/ci/check_modules.py
 
+      - name: Client layouts (no fit-children on anchor-sized widgets)
+        run: python3 -I tools/ci/check_layouts.py
+
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
 
@@ -74,10 +77,179 @@ jobs:
           python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
 
+      - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model)
+        run: python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
+
+      - name: Field timers generator (gen_field_timers.py on a small items.xml / items.otb)
+        run: python3 -I client/tools/gen_field_timers_test.py
+
+      - name: Client updater tools (manifest builder, signer, path rules)
+        run: python3 -I client/tools/make_update_manifest_test.py
+
+      - name: Server hang watchdog (status probe, restart decision)
+        run: python3 -I server/tools/chaos_watchdog_test.py
+
+      - name: Server health alerts (state changes, error-line rate limit, daily summary)
+        run: python3 -I server/tools/chaos_health_test.py
+
+      - name: Points of interest generator (gen_poi.py on a small built map)
+        run: python3 -I server/tools/gen_poi_test.py
+
+      - name: Load test tool (failure reasons, bot password hashes)
+        run: python3 -I server/tools/loadtest_test.py
+
+      - name: Incremental save, pure parts (C++; header from server src-patch 0026)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaossave\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0026-incremental-save.patch > "$d/chaossave.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaossave_test.cpp -o "$d/chaossave_test"
+          "$d/chaossave_test"
+
+      - name: Respawn zones index (C++; header from server src-patch 0027)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaoszones\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0027-game-loop-stalls.patch > "$d/chaoszones.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoszones_test.cpp -o "$d/chaoszones_test"
+          "$d/chaoszones_test"
+
+      - name: Backup shell scripts parse
+        run: |
+          bash -n server/tools/backup.sh
+          bash -n server/tools/backup_offsite.sh
+          sh -n server/tools/chaos_crashlog.sh
+
+      - name: Client update manifest (unsigned dry run over the overlay)
+        run: |
+          d=$(mktemp -d)
+          echo '-- CI stand-in for an assembled client' > "$d/init.lua"
+          cp -r client/overlay/modules client/overlay/data "$d/"
+          python3 -I client/tools/make_update_manifest.py build "$d" --dry-run
+
+      - name: Client updater signature vectors (C++, OpenSSL; header from base patch 0031)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaosupdate\.h/{p=1} p&&/^--- a\//&&!/chaosupdate\.h/{p=0} p' \
+            client/base-patches/0031-signed-updater.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src" client/tools/chaosupdate_test.cpp -lcrypto -o "$d/chaosupdate_test"
+          "$d/chaosupdate_test"
+
+      - name: Client guard handshake vectors (C++, OpenSSL; header from base patch 0035)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/client\/chaosguard\.h/{p=1} p&&/^--- a\//&&!/chaosguard\.h/{p=0} p' \
+            client/base-patches/0035-client-guard.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
+          "$d/chaosguard_test"
+
+      - name: PROXY protocol parser (C++; source from server src-patch 0025)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/proxyprotocol\.(cpp|h)/{p=1} p&&/^--- a\//&&!/proxyprotocol\./{p=0} p' \
+            server/src-patches/0025-proxy-protocol.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -I server/tools/proxyprotocol_stubs -I "$d/src" "$d/src/proxyprotocol.cpp" \
+            server/tools/proxyprotocol_test.cpp -o "$d/proxyprotocol_test"
+          "$d/proxyprotocol_test"
+
+      - name: Gateway and backend firewall scripts (render and check, no changes)
+        run: |
+          bash -n server/deploy/gateway/setup_gateway.sh
+          bash -n server/deploy/firewall/setup_backend_firewall.sh
+          server/deploy/gateway/setup_gateway.sh 203.0.113.10 --dry-run > /dev/null
+          server/deploy/firewall/setup_backend_firewall.sh 203.0.113.10,203.0.113.11 --admin-ips any --dry-run > /dev/null
+
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py
           git diff --exit-code data/lib/chaos_unique_specs.lua
 
+      - name: Codex data is up to date with the server data files
+        run: |
+          cd server
+          luajit tools/gen_codex_data.lua
+          lua5.3 tools/gen_codex_data.lua --check  # Lua 5.3 must write the same bytes
+          git diff --exit-code ../client/overlay/modules/game_codex/codex_data.lua
+
+      - name: Passive tree data is up to date with the client tree (Lua 5.3 and LuaJIT write the same file)
+        run: |
+          cd client/overlay/modules/game_passivetree/treedata
+          out=../../../../../server/data/scripts/chaos/passivetree_data.lua
+          luajit ../../../../../server/tools/gen_passivetree_data.lua "$out"
+          git diff --exit-code "$out"
+          lua5.3 ../../../../../server/tools/gen_passivetree_data.lua "$out"
+          git diff --exit-code "$out"
+
+      - name: Monster looks match client/tools/sprites/monster_looks/picks.csv
+        run: python3 -I server/tools/apply_monster_looks.py --check
+
+      - name: Sprite pair checker (check_pair.py on synthetic pairs, append-only guard)
+        run: python3 -I client/tools/sprites/check_pair_test.py
+
+      - name: Pair warning fixes (fix_pair_warnings.py on a synthetic pair)
+        run: python3 -I client/tools/sprites/fix_pair_warnings_test.py
+
+      - name: Outfit layer composer (compose_outfit.py on synthetic things, import round trip)
+        run: |
+          # system packages: python3 -I does not see pip's user site
+          sudo apt-get install -y -qq python3-numpy python3-pil
+          python3 -I client/tools/sprites/compose_outfit_test.py
+
+      - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
+        run: |
+          if ! php -r 'exit(extension_loaded("pdo_sqlite") && extension_loaded("mbstring") ? 0 : 1);' 2>/dev/null; then
+            sudo apt-get install -y -qq php-cli php-sqlite3 php-mbstring
+          fi
+          php --version | head -1
+
+      - name: Website PHP syntax
+        run: |
+          status=0
+          while IFS= read -r f; do
+            out=$(php -l "$f" 2>&1) || { echo "$out"; status=1; }
+          done < <(git ls-files 'website/*.php')
+          exit $status
+
+      - name: Website unit tests (php-cli, in-memory SQLite, no network)
+        run: |
+          status=0
+          for t in website/tests/*_test.php; do
+            php "$t" || { echo "FAILED: $t"; status=1; }
+          done
+          exit $status
+
       - name: No references to other servers or clients
         run: python3 -I tools/ci/check_names.py
+
+  live-pair:
+    name: Live sprite pair (check_pair.py on windows-assets)
+    # the pair is on this repository's windows-assets branch, which the default read token reaches; pull requests from
+    # forks have no access to it and skip the job
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the live pair (read only)
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            things
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Check the pair (client parse rules, sprite records, animations, masks)
+        run: |
+          set -euo pipefail
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir -p "$RUNNER_TEMP/pair"
+          tar -xJf assets/things/things-1098.tar.xz -C "$RUNNER_TEMP/pair"
+          python3 -I chaos/client/tools/sprites/check_pair.py "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"

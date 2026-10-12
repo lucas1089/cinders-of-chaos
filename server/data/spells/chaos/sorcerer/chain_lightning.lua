@@ -12,7 +12,8 @@ local function strike(casterId, fromPos, targetId, factor, min, max)
 		return
 	end
 	local toPos = target:getPosition()
-	ChaosSpell.shoot(fromPos, toPos, "lightning_orb", CONST_ANI_ENERGY)
+	ChaosSpell.vshoot(fromPos, toPos, "lightning_orb", "lightning_orb", CONST_ANI_ENERGY)
+	ChaosSpell.vfx(toPos, "lightning_hit")
 	ChaosSpell.damageTarget(caster, target, COMBAT_ENERGYDAMAGE, min * factor, max * factor,
 		Fx("chain_lightning", CONST_ME_ENERGYHIT))
 end

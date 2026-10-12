@@ -27,7 +27,7 @@ return {
 	fewSpawns = 20, -- hunt targets with fewer spawn entries than this get fewer kills (x fewSpawnsMult)
 	fewSpawnsMult = 0.6,
 
-	-- reward multiplier per contract type (gold and Chaos Orbs; Divine Orbs are rounded up)
+	-- reward multiplier per contract type (gold and Orbs of Upheaval; Orbs of Fate are rounded up)
 	typeMult = {hunt = 1.0, elite = 1.5, boss = 1.5},
 	-- experience: percent of the experience from level L to L+1, L = min(player level, band max level)
 	expPercent = {hunt = 3, elite = 4, boss = 4},
@@ -55,7 +55,8 @@ return {
 	weeklyChestId = 1990,
 	weeklyChestName = "bounty chest",
 	-- crafting orbs added to every weekly chest (data/lib/chaos_crafting.lua); {} for none
-	weeklyExtra = {{id = 29851, count = 3, name = "Orbs of Transmutation"}, {id = 24697, count = 1, name = "Orb of Annulment"}},
+	weeklyExtra = {{id = 29851, count = 3, name = "Orbs of Awakening"}, {id = 24697, count = 1, name = "Orb of Unmaking"},
+		{id = 32256, count = 5, name = "Whetstones"}, {id = 32251, count = 2, name = "Orbs of Tempering"}},
 
 	items = {chaos = 29856, divine = 29857}
 }

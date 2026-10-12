@@ -1,4 +1,4 @@
--- Project Chaos admin panel: core (registry, permission checks, audit log, opcode dispatch).
+-- Cinders of Chaos admin panel: core (registry, permission checks, audit log, opcode dispatch).
 -- Action files (actions_*.lua) only append definitions to the global ChaosAdminPending table, so the
 -- load order of files inside this directory does not matter.
 --
@@ -16,7 +16,7 @@ ChaosAdminConfig = {
 	-- Default minimum group per category (an individual action may raise it with its own minGroup).
 	categoryMinGroup = {
 		players = 4, server = 5, world = 4, economy = 5,
-		events = 5, content = 5, security = 5, tools = 4,
+		events = 5, content = 5, security = 5, tools = 4, store = 5,
 	},
 	-- Group required for actions flagged "dangerous" (shutdown, reload, set group, ...).
 	dangerousMinGroup = 6,
@@ -43,6 +43,7 @@ ChaosAdmin.categories = {
 	{id = "content",  label = "Content"},
 	{id = "security", label = "Accounts & Security"},
 	{id = "tools",    label = "Tools"},
+	{id = "store",    label = "Store"},
 }
 
 local function categoryExists(id)
@@ -291,8 +292,11 @@ end
 ------------------------------------------------------------------------------------------------
 -- Catalog + dispatch
 ------------------------------------------------------------------------------------------------
+-- The catalog is about 20 KB, over the 8192 bytes one extended opcode message can carry, so everything goes through
+-- Chaos.sendChunked (S/P/E parts; the client listens with ProtocolGame.registerExtendedJSONOpcode).
 local function send(player, action, data)
-	player:sendExtendedOpcode(CHAOS_ADMIN_OPCODE, json.encode({action = action, data = data}))
+	if not Chaos then dofile("data/scripts/chaos/chaos_constants.lua") end
+	Chaos.sendChunked(player, CHAOS_ADMIN_OPCODE, json.encode({action = action, data = data}))
 end
 
 function ChaosAdmin.buildCatalog(player)
@@ -328,6 +332,13 @@ function ChaosAdmin.buildCatalog(player)
 		if #c.actions > 0 then out[#out + 1] = c end
 	end
 	return {categories = out, group = gid}
+end
+
+-- true for the plain {"action":"catalog"} request the client sends by itself at login (and on refresh)
+function ChaosAdmin.isCatalogProbe(buffer)
+	if type(buffer) ~= "string" or #buffer > 256 then return false end
+	local ok, req = pcall(json.decode, buffer)
+	return ok and type(req) == "table" and req.action == "catalog"
 end
 
 local function handleRequest(player, req)
@@ -400,6 +411,8 @@ function extEvent.onExtendedOpcode(player, opcode, buffer)
 
 	-- Permission is evaluated here, on every single message. Non-admins get no reply at all.
 	if not ChaosAdmin.isAdmin(player) then
+		-- every client asks for the catalog once after login (game_admin): not worth a log line or a row
+		if ChaosAdmin.isCatalogProbe(buffer) then return end
 		local now = os.mtime and os.mtime() or os.time() * 1000
 		local last = ChaosAdmin.lastRequest[player:getId()] or 0
 		if now - last > 5000 then

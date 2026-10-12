@@ -1,10 +1,13 @@
 Module
   name: game_itemtooltip
-  description: Show item info on hover
-  author: Oen
+  description: Rich item tooltips from the server (extended opcode 242): rarity, item level, modifiers with tiers and ranges, sockets, uniques; Ctrl compares with the equipped item
+  author: Cinders of Chaos
   website: None
   sandboxed: true
   autoload: true
-  scripts: [ item_tooltip ]
+  autoload-priority: 1000
+  scripts: [ tooltiplogic, item_tooltip ]
+  dependencies:
+    - game_interface
   @onLoad: init()
   @onUnload: terminate()

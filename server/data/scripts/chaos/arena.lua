@@ -1,10 +1,12 @@
--- Ranked PvP arena: 1v1 and 2v2 with Elo ratings per mode (client game_arena, extended opcode 236, !arena).
+-- Ranked PvP arena: 1v1, 2v2 and 3v3 with Elo ratings per mode (client game_arena, extended opcode 236); the PvP
+-- season rating of each mode is kept by arena_season.lua (called from finish()).
 -- Settings: arena_config.lua. Pure part (ratings, matchmaking, level rule, death catch, timeout): arena_core.lua,
 -- tested by tests/arena_test.lua. Overview and numbers: server/README.md "Arena".
 --
 -- Flow
---   !arena queue 1v1 | 2v2 (or the window): only in a protection zone, out of combat, not multi-clienting, not inside
---   a dungeon / the tower / a rift / the world boss rooms / a siege; 2v2 = a party of exactly two, both checked.
+--   !arena queue 1v1 | 2v2 | 3v3 (or the window): only in a protection zone, out of combat, not multi-clienting, not inside
+--   a dungeon / the tower / a rift / the world boss rooms / a siege / the battleground; 2v2 = a party of exactly two,
+--   3v3 = a party of exactly three, everyone checked.
 --   -> every matchmakeSeconds the queue is paired by rating (window widens with the wait) and the level rule
 --   -> a free slot of the instance grid is built at runtime (Game.createTile, footprint checked as worldboss.lua does),
 --      everyone is checked again, teleported in, healed to full; countdown (no damage), then the fight
@@ -142,12 +144,40 @@ local function insideOther(player)
 	if ChaosSiege and ChaosSiege.isInside and ChaosSiege.isInside(player) then
 		return "a siege"
 	end
+	if ChaosBattleground and ChaosBattleground.isBusy and ChaosBattleground.isBusy(player) then
+		return "the battleground (queue or match)"
+	end
 	return nil
 end
 
 function S.isInside(player)
 	return S.matchOf[player:getId()] ~= nil
 end
+
+Chaos.registerInstance("arena", {label = "an arena match", inside = S.isInside, at = function(pos)
+	return A.slotOfPos(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, now = {}, os.time()
+	for slot, m in pairs(S.matches) do
+		local n = 0
+		for cid, e in pairs(m.players) do
+			if not e.gone and Player(cid) then
+				n = n + 1
+			end
+		end
+		out[#out + 1] = {id = m.id, what = string.format("%s, slot %d, %s", tostring(m.mode), slot, m.phase),
+			left = m.phase ~= "done" and math.max(0, m.endAt - now) or nil, players = n}
+	end
+	return out
+end, close = function(id) -- stopped, not rated (as /arena stop)
+	for _, m in pairs(S.matches) do
+		if m.id == id and m.phase ~= "done" and S._finish then
+			S._finish(m, 0, "stop")
+			return true, "Arena match " .. id .. " stopped (not rated)."
+		end
+	end
+	return false, "No running arena match " .. tostring(id) .. "."
+end})
 
 function S.isQueued(player)
 	return S.queued[player:getId()] ~= nil
@@ -162,7 +192,7 @@ local function refusal(player, ignoreQueue)
 		return "You are already in an arena match."
 	end
 	if not ignoreQueue and S.queued[player:getId()] then
-		return "You are already in the arena queue (!arena leave)."
+		return "You are already in the arena queue (leave it in the Arena window)."
 	end
 	if Chaos.isMultiClient and Chaos.isMultiClient(player) then
 		return "You cannot fight in the arena while another character from your connection is online."
@@ -220,6 +250,13 @@ function S.sendState(player, open)
 			after = row.rating_after, opponents = row.opponents, partner = row.partner, reason = row.reason, at = row.ended_at}
 	end
 	data.now = os.time()
+	-- PvP seasons (arena_season.lua): the season rating, tier and placement per bracket
+	if ChaosPvpSeason and ChaosPvpSeason.viewOf then
+		local ok, view = pcall(ChaosPvpSeason.viewOf, guid)
+		if ok then
+			data.season = {id = (ChaosPvpSeason.current()), brackets = view}
+		end
+	end
 	Chaos.send(player, OPCODE, "state", data)
 end
 
@@ -247,18 +284,20 @@ local function removeEntry(entry)
 	end
 end
 
--- members of a 2v2 party: exactly two, the player and one other; nil + reason otherwise
-local function partyPair(player)
+-- members of a team mode party (2v2: two, 3v3: three), the player included; nil + reason otherwise
+local function partyPair(player, size)
+	size = size or 2
+	local mode = size .. "v" .. size
 	local party = player:getParty()
 	if not party then
-		return nil, "2v2 is played as a party of two: invite your partner first."
+		return nil, string.format("%s is played as a party of %d: invite your partner%s first.", mode, size, size > 2 and "s" or "")
 	end
 	local list = {party:getLeader()}
 	for _, m in ipairs(party:getMembers() or {}) do
 		list[#list + 1] = m
 	end
-	if #list ~= 2 then
-		return nil, "2v2 is played as a party of exactly two players."
+	if #list ~= size then
+		return nil, string.format("%s is played as a party of exactly %d players.", mode, size)
 	end
 	return list
 end
@@ -266,12 +305,12 @@ end
 function S.join(player, mode)
 	local cfg = C()
 	if not cfg.modes[mode] then
-		player:sendCancelMessage("Arena modes: 1v1, 2v2.")
+		player:sendCancelMessage("Arena modes: " .. table.concat(cfg.modeOrder, ", ") .. ".")
 		return false
 	end
 	local members = {player}
-	if cfg.modes[mode].size == 2 then
-		local list, err = partyPair(player)
+	if cfg.modes[mode].size > 1 then
+		local list, err = partyPair(player, cfg.modes[mode].size)
 		if not list then
 			player:sendCancelMessage(err)
 			return false
@@ -307,7 +346,7 @@ function S.join(player, mode)
 		S.queued[cid] = entry
 		local m = Player(cid)
 		if m then
-			msg(m, string.format("Arena: you joined the %s queue (rating %d). Stay in a protection zone; !arena leave to leave.",
+			msg(m, string.format("Arena: you joined the %s queue (rating %d). Stay in a protection zone; the Arena window leaves the queue.",
 				mode, math.floor(entry.rating)))
 			stateLater(cid)
 		end
@@ -733,6 +772,19 @@ finish = function(m, winner, reason)
 			end
 		end
 	end
+	-- PvP seasons (arena_season.lua): the season rating of the mode's bracket
+	if rated and ChaosPvpSeason and ChaosPvpSeason.recordArena then
+		local ok, res = pcall(ChaosPvpSeason.recordArena, m.mode, list, winner)
+		if ok and res then
+			for side = 1, 2 do
+				for _, e in ipairs(list[side]) do
+					e.season = res[e.guid]
+				end
+			end
+		elseif not ok then
+			log("season: " .. tostring(res))
+		end
+	end
 	-- tell everyone, rewards
 	local title = winner == 0 and "Draw" or nil
 	eachOnline(m, function(p, e)
@@ -751,7 +803,7 @@ finish = function(m, winner, reason)
 		msg(p, text)
 		Chaos.send(p, OPCODE, "end", {mode = m.mode, result = e.result, before = e.before or e.rating, after = e.after or e.rating,
 			delta = e.delta or 0, reason = reason, reward = reward, firstWin = first, rated = rated,
-			opponents = names(list[3 - e.team]), title = title})
+			opponents = names(list[3 - e.team]), title = title, season = e.season})
 	end)
 	log(string.format("match %d ended: winner %d (%s)", m.id, winner, reason))
 	hud(m)
@@ -775,6 +827,7 @@ finish = function(m, winner, reason)
 		S.matches[slot] = nil
 	end, cfg.endDelaySeconds * 1000, m.slot, m.id)
 end
+S._finish = finish
 
 -- a fighter logged out or lost the connection: out of the fight (a loss), sent back at once
 local function leave(m, e, p, reason)
@@ -837,6 +890,13 @@ local function tickMatch(m)
 		finish(m, (A.timeoutWinner(list)), "timeout")
 		return
 	end
+	if m.phase == "fight" and ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		local ps = {}
+		eachOnline(m, function(p)
+			ps[#ps + 1] = p
+		end)
+		ChaosInstanceLimits.warn(m, m.endAt - now, ps, "Arena", cfg.limits)
+	end
 	hud(m)
 end
 
@@ -869,6 +929,26 @@ local function matchmake()
 	end
 	for _, pair in ipairs(A.findMatches(cfg, entries, now)) do
 		if not startMatch(pair[1], pair[2]) and not freeSlot() then
+			-- every slot in use: the pair hears it once (instance limits), with the wait, and stays first in the queue
+			if ChaosInstanceLimits then
+				local lefts = {}
+				for _, mm in pairs(S.matches) do
+					lefts[#lefts + 1] = (mm.phase == "done" and 0 or math.max(0, mm.endAt - now)) + cfg.endDelaySeconds
+				end
+				local K = ChaosInstanceLimits.core
+				local text = "Arena: " .. K.busyText("arenas", K.eta(lefts, 1)) .. " Your match starts as soon as one frees up."
+				for _, entry in ipairs(pair) do
+					if not entry.busyTold then
+						entry.busyTold = true
+						for _, e in ipairs(teamOf(entry)) do
+							local p = Player(e.cid)
+							if p then
+								msg(p, text)
+							end
+						end
+					end
+				end
+			end
 			break
 		end
 	end
@@ -939,7 +1019,8 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		return 0, primaryType, 0, secondaryType
 	end
 	local sd = secondaryType == COMBAT_HEALING and 0 or math.abs(secondaryDamage)
-	local p, s, caught = A.catchDamage(creature:getHealth(), math.abs(primaryDamage), sd)
+	-- the energy shield (engine patch 0015) takes its part after this event: a hit is lethal past health + shield
+	local p, s, caught = A.catchDamage(creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0), math.abs(primaryDamage), sd)
 	if caught then
 		local a = playerOf(attacker)
 		S.defeat(m, t, "defeated", a and a:getId() ~= creature:getId() and a:getName() or nil)
@@ -1032,6 +1113,13 @@ function logout.onLogout(player)
 		S.leaveQueue(player, true)
 	end
 	local m = S.matchOf[cid]
+	if m and m.phase ~= "done" then
+		-- kicked by a closing server (shutdown / server save): no loss for anyone, every match stops unrated
+		local state = Game.getGameState and Game.getGameState()
+		if state ~= nil and (state == GAME_STATE_SHUTDOWN or state == GAME_STATE_CLOSED) then
+			S.stopAll()
+		end
+	end
 	if m then
 		local e = m.players[cid]
 		if m.phase == "done" then
@@ -1047,6 +1135,14 @@ end
 logout:type("logout")
 logout:register()
 
+-- a clean shutdown: the matches stop unrated before the players are kicked (the logout above then sends them out)
+local shutdown = GlobalEvent("ChaosArenaShutdown")
+function shutdown.onShutdown()
+	S.stopAll()
+	return true
+end
+shutdown:register()
+
 local ext = CreatureEvent("ChaosArenaExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then
@@ -1054,6 +1150,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local m = Chaos.decode(buffer)
 	if not m then
+		return
+	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "arena." .. tostring(m.action), 300) then
 		return
 	end
 	local data = type(m.data) == "table" and m.data or {}
@@ -1089,7 +1189,7 @@ local function statusText(player)
 	elseif S.matchOf[player:getId()] then
 		text = text .. " You are in a match."
 	else
-		text = text .. " !arena queue 1v1, !arena queue 2v2 (party of two), !arena leave."
+		text = text .. " Queue for 1v1, 2v2 (party of two) or 3v3 (party of three) in the Arena window (Adventure > Arena)."
 	end
 	return text
 end
@@ -1100,7 +1200,7 @@ local function onArena(player, words, param)
 	if cmd == "queue" or cmd == "join" then
 		local mode = A.parseMode(C(), arg)
 		if not mode then
-			player:sendCancelMessage("Usage: !arena queue 1v1 or !arena queue 2v2")
+			player:sendCancelMessage("Choose 1v1, 2v2 or 3v3.")
 			return false
 		end
 		S.join(player, mode)
@@ -1120,11 +1220,14 @@ local function onArena(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!arena", "/arena"}) do
+for _, words in ipairs({"/arena"}) do -- staff only (players open the window from the menu)
 	local talk = TalkAction(words)
 	talk.onSay = function(player, w, param)
+		if not player:getGroup():getAccess() then
+			return false
+		end
 		-- staff: /arena stop | slots
-		if w == "/arena" and player:getGroup():getAccess() then
+		if w == "/arena" then
 			local cmd = tostring(param or ""):match("^%s*(%S*)")
 			if cmd == "stop" then
 				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Arena: %d match(es) stopped (not rated).", S.stopAll()))

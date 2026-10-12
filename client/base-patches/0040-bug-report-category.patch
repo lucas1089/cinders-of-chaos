@@ -1,0 +1,77 @@
+# Bug report (server/README.md "Bug reports"): the client half. The base engine bound g_game.reportBug(comment) with one string while game_bugreport calls reportBug(category, text, position), so the Lua binder dropped the extra arguments and sent the category digit ("0".."3") as the whole text, always as category 3 (other). Game::reportBug and ProtocolGame::sendBugReport now take the category (0 map, 1 typo, 2 technical, 3 other) and the position and send them as protocol 10.98 expects: u8 category, string text, and the position after it for a map report. game_bugreport passes the local player position when the dialog has none. Touches game.h/.cpp, protocolgame.h, protocolgamesend.cpp and modules/game_bugreport/bugreport.lua; no new Lua function.
+--- a/src/client/game.h
++++ b/src/client/game.h
+@@ -287,7 +287,7 @@
+     void cancelRuleViolation();
+ 
+     // reports
+-    void reportBug(const std::string& comment);
++    void reportBug(int category, const std::string& comment, const Position& position);
+     void reportRuleViolation(const std::string& target, int reason, int action, const std::string& comment, const std::string& statement, int statementId, bool ipBanishment);
+     void debugReport(const std::string& a, const std::string& b, const std::string& c, const std::string& d);
+ 
+--- a/src/client/game.cpp
++++ b/src/client/game.cpp
+@@ -1622,11 +1622,11 @@
+     m_protocolGame->sendCancelRuleViolation();
+ }
+ 
+-void Game::reportBug(const std::string& comment)
++void Game::reportBug(int category, const std::string& comment, const Position& position)
+ {
+     if(!canPerformGameAction())
+         return;
+-    m_protocolGame->sendBugReport(comment);
++    m_protocolGame->sendBugReport(category, comment, position);
+ }
+ 
+ void Game::reportRuleViolation(const std::string& target, int reason, int action, const std::string& comment, const std::string& statement, int statementId, bool ipBanishment)
+--- a/src/client/protocolgame.h
++++ b/src/client/protocolgame.h
+@@ -120,7 +120,7 @@
+     void sendAddVip(const std::string& name);
+     void sendRemoveVip(uint playerId);
+     void sendEditVip(uint playerId, const std::string& description, int iconId, bool notifyLogin);
+-    void sendBugReport(const std::string& comment);
++    void sendBugReport(int category, const std::string& comment, const Position& position);
+     void sendRuleViolation(const std::string& target, int reason, int action, const std::string& comment, const std::string& statement, int statementId, bool ipBanishment);
+     void sendDebugReport(const std::string& a, const std::string& b, const std::string& c, const std::string& d);
+     void sendRequestQuestLog();
+--- a/src/client/protocolgamesend.cpp
++++ b/src/client/protocolgamesend.cpp
+@@ -1237,14 +1237,20 @@
+     send(msg);
+ }
+ 
+-void ProtocolGame::sendBugReport(const std::string& comment)
++void ProtocolGame::sendBugReport(int category, const std::string& comment, const Position& position)
+ {
++    // 0 map (followed by the position), 1 typo, 2 technical, 3 other: the dialog's categories (game_bugreport)
++    if (category < 0 || category > 3)
++        category = 3;
+     auto msg = std::make_shared<OutputMessage>();
+     msg->addU8(Proto::ClientBugReport);
+     if (g_game.getProtocolVersion() > 1000) {
+-        msg->addU8(3); // other
++        msg->addU8(category);
+     }
+     msg->addString(comment);
++    if (g_game.getProtocolVersion() > 1000 && category == 0) {
++        addPosition(msg, position);
++    }
+     send(msg);
+ }
+ 
+--- a/modules/game_bugreport/bugreport.lua
++++ b/modules/game_bugreport/bugreport.lua
+@@ -22,7 +22,9 @@
+ end
+ 
+ function doReport()
+-  g_game.reportBug(currentCategory, bugTextEdit:getText(), currentPosition)
++  -- category 0..3 and the position: base patch 0040 (the engine took one string, so the text was lost)
++  local position = currentPosition or g_game.getLocalPlayer():getPosition()
++  g_game.reportBug(currentCategory, bugTextEdit:getText(), position)
+   bugReportWindow:hide()
+   modules.game_textmessage.displayGameMessage(tr('Bug report sent.'))
+ end

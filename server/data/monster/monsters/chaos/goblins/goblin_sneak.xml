@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Sneak" nameDescription="a goblin sneak" race="blood" experience="85" speed="240" manacost="0">
+	<health now="120" max="120" />
+	<look type="2003" head="57" body="76" legs="95" feet="117" corpse="36064" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="12" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-83" />
+	</attacks>
+	<defenses armor="9" defense="9">
+		<defense name="speed" interval="2000" chance="10" speedchange="250" duration="4000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Stab stab!" />
+		<voice sentence="You no see me!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="21" chance="60000" /><!-- gold coin -->
+		<item id="36010" countmax="2" chance="18000" /><!-- goblin tooth -->
+		<item id="36014" countmax="1" chance="8000" /><!-- frayed rope -->
+		<item id="36046" countmax="2" chance="12000" /><!-- oat cookie -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

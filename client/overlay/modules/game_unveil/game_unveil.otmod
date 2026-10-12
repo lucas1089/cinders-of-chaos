@@ -1,0 +1,13 @@
+Module
+  name: game_unveil
+  description: Unveil window of the Orb of Unveiling - three veiled modifiers to choose from (server veiled.lua, extended opcode 196)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ unveilview, unveil ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

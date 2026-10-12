@@ -80,3 +80,128 @@ To rebuild the client pair with them, run the two commands above (the dat must c
 server needs the updated `server/data/lib/chaos_fx.lua` (committed) loaded before `combat_fx.lua` (the script
 `dofile`s it when `ChaosFx` is missing). Without the new pair the client ignores the ids 415..423 ("invalid effect id"
 in its log) and only the text labels and the engine's own hit effects show.
+
+## Animated pack effects (effects 429..558, missiles 126..136, auras)
+
+Hand-drawn animated effects from three art sets the project owns, appended after the procedural ids by
+`client/tools/sprites/import_vfx.py` (spec table `client/tools/sprites/vfx_import.csv`; catalogue with sizes and send
+offsets: `vfx_catalog.csv`; Lua names: `server/data/lib/chaos_vfx.lua`, written by the tool):
+
+- 130 magic effects: 95 oblique spell effects (13 auras, 10 ground circles, 12 bursts, 8 impacts, 10 status loops, 2
+  melee, and 40 directional melee hits: 5 hits x 8 directions named `<hit>_n` .. `<hit>_nw`), 20 tinted energy effects
+  (power-up bursts, dome blasts, small hits, fist hits, a holy flash, light / shadow teleport pillars, chi charge,
+  rising stones, an energy sphere) and 15 pixel bursts (`px<sheet>_<colour>`). Frame timing as drawn (83 ms, 50 ms, or
+  the bursts' 50..100 ms); effects play once.
+- 11 missiles (8 directions each, missile patterns 3x3): arcane bolt, fireball, wind arrow, holy spear, ice lance,
+  lightning orb, shadow orb, venom glob, two energy blasts and a razor disc.
+- 19 auras (outfit things 1511..1529 on the current pair; auras.xml ids 6..24, `server/data/XML/chaos_auras.csv`,
+  installed by `server/tools/install_auras.py`, step `auras` of install_all.py; sold in the store's Auras category).
+
+**Send offset.** The client draws a thing with its bottom-right tile on the map tile, so art bigger than a tile that
+reaches right of / below the target cannot be centred there. Each pack effect is built so that its bottom-right tile is
+the target tile + (dx, dy) (0..3 tiles, per effect in `vfx_catalog.csv`) and must be sent there: always use
+`Vfx(pos, name)`, `VfxDir(pos, base, direction)` and `VfxShoot(fromPos, toPos, name)` from chaos_vfx.lua (spells:
+`ChaosSpell.vfx`, `vfxDir`, `vfxOr`, `vshoot` in `_common.lua`; `vfxOr` / `vshoot` fall back to the chaos effect when
+chaos_vfx.lua is missing). Sending the raw id with `sendMagicEffect` puts it one or more tiles up-left. A side effect: an
+effect whose offset tile is outside the player's view near the bottom/right edge of the screen is not shown.
+
+**Ids and limits.** Magic effects are u16 on the wire (GameMagicEffectU16, see above); the client reads the effect
+count from the dat, so 558 is fine and far from 65535. Missiles are u8 (`sendDistanceShoot`): 136 of 255 used.
+Aura look types are u16 (GameLooktypeU16); auras.xml ids are u8 (1..255) and the store marks ownership in a storage
+per 31 auras (base server `Player::addAura`).
+
+**Client features.** The auras are 2..3 tiles wide and reach into the tiles right of / below the creature. With the
+per-tile painter order those tiles' ground was drawn over them (cut edges); `GameMapDrawGroundFirst` (base patch
+0006, 10.98 profile) draws every ground first, so the auras show whole. Effects need no feature: their offset anchor
+keeps them over tiles that are drawn earlier.
+
+**Wired into the spells** (one pack effect at the cast point or impact; the per-tile area effects stay the procedural
+ones): Rime Bloom frost_nova; Witchfire Bolt fireball missile + fireball_hit; Forked Storm lightning_orb missile +
+lightning_hit; Crimson Covenant blood_pact; Falling Pyre infernal_seal at the mark, meteor_strike timed to land with the
+damage; Frozen Crypt ice_lance + frost_glyph; Doomtide dome_blast_fire / storm_ring / fire_explosion per wave;
+Blightswarm toxic_burst; Purifying Wellspring healing_bloom; Ironbark Hide stone_ward; Briar Prison earth_spikes;
+Moonfang Pack / Wild Bond teleport_in; Verdant Sanctuary grove_glyph; Primordial Squall earth_spikes / frost_nova;
+Dawnpiercer holy_spear + holy_hit; Skewering Line thrust (by facing); Blessed Earth / Consecration holy_seal;
+Lightward / Aegis of Faith dawn_aegis; Final Verdict / Judgement holy_spear + holy_smite; Reaping Gyre / Whirling Heel
+whirlwind; Earthbreaker earth_spikes; Red Frenzy / Bloodrage aura_burst_red; Iron Bellow / Banner Call / Bushido Focus /
+Zealotry aura_burst_gold; Vaulting Cleave / Skyfall Cleave heavy_cleave and Iaijutsu sword_slash and Feral Command
+claw_rake (towards the target); Colossus Fall earth_spikes + blunt_smash; Hall of Mirrors arcane_sigil; Umbral Stride /
+Shadow Step / Shadow Veil shade_vanish / shade_appear; Flickerdash blink_vanish / blink_appear; Shattered Psyche
+arcane_bolt + cursed; Wraithshroud shadow_shroud; Nightburst void_maw; Tear in the Weave void_rift; Lucid Reverie
+starfall_crown; Mirror Mend regenerating; Soulward / Counter Stance / Chi Ward shield_bubble; Hunter's Instinct gale_ring;
+Poison Blades poisoned; Smoke Bomb stunned; Raise Dead necro_seal; Withering Curse shadow_orb + cursed; Corpse
+Explosion px448_green + px633_indigo; Soul Rot toxic_burst (each tick px633_green); the rest of the Necromancer line:
+see "Necromancer line effects" below;
+Ashen Fist / Iron Palm punch_hit_gold; Sundering Palm punch_hit_red; Pressure Points / Shadowfist Flurry
+punch_hit_violet; Kindled Breath chi_charge; Mistborne Step gale_hit; Mantra of Stone stone_rise; Radiant Smite
+px652_white; Vow of Mending / Lay on Hands healing_bloom; Purging Nova dome_blast_holy; Rebuke solar_flash.
+
+**Building** (after every other step that appends to the pair; the ids depend on the counts of the input pair):
+```
+python3 -I import_vfx.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir out/vfx \
+    --src-spells <oblique effect set> --src-ki <tintable energy set> --src-fx <pixel burst set> \
+    --expect-first-effect 429 --expect-first-missile 126 --expect-first-outfit 1511 \
+    --lua-out ../../../server/data/lib/chaos_vfx.lua --catalog-out ../../../server/data/spells/vfx_catalog.csv \
+    --auras-out ../../../server/data/XML/chaos_auras.csv [--preview DIR]
+```
+The art sets are not in the repository. A pair with more outfits before this step moves the aura look types: pass the
+new `--expect-first-outfit` and keep the regenerated `chaos_auras.csv` (the auras.xml ids 6..24 stay the same). The tool
+verifies its output like `import_outfits.py` (re-parse, every new frame / pattern / layer pixel-exact, all old entries
+byte-identical, 3000 sampled old sprites) and is deterministic.
+
+## Bone effects (effects 583..585, missile 153; our own art)
+
+The Necromancer line's own effects, appended after everything above by `client/tools/sprites/import_fx_art.py` (spec
+`client/tools/sprites/art_import/fx_art.csv`, frame strips in `art_import/bone_fx/` built by `gen_fistfx_art.py` from
+PixelLab paintings of a bone spear, bone shards and skulls; the pieces are moved, flipped and turned per frame, never
+repainted). Lua names: `server/data/lib/chaos_vfx_art.lua` (written by the tool; merged into `ChaosVfx` /
+`ChaosVfxMissile`, loaded by `_common.lua`), catalogue `vfx_art_catalog.csv`.
+
+| id | name | size, offset | frames | use |
+|---|---|---|---|---|
+| 583 | bone_spear | 3x3, +1,+1 | 7 x 70 ms | fallback of Bone Spear's impact (replaced by necro_spear_hit) |
+| 584 | bone_burst | 3x3, +1,+1 | 9 x 80 ms | fallback of Bone Offering's burst and Corpse Explosion (replaced by bonelord_offering / px448_green): eight shards thrown out, a broken ring, dust |
+| 585 | bone_aura | 3x3, +1,+1 | 14 x 90 ms | fallback of Banner of Bones (each minion) and Bone Offering (the caster) (replaced by bonelord_rally / bonelord_ward): three skulls and four shards rise and circle once |
+| missile 153 | bone_spear | 1x1, 3x3 directions | 2 x 100 ms | Bone Spear's flight (`ChaosSpell.vshoot`) |
+
+Like the pack effects they must be sent with `Vfx` / `VfxShoot` (the spells use `vfxOr` / `vshoot`, which fall back to the
+stock effect when `chaos_vfx_art.lua` is missing). Build order and md5s: client/MANIFEST.md "Fist weapons and bone effects".
+
+## Necromancer line effects (effects 586..592; style sample art)
+
+The line's effects follow the owner-approved style sample (oblique view, light from the top-left, ash and bone with
+sickly green and violet soul light, a dark outline). **Donor art first:** before drawing anything, the effects already
+in the pair (this file, `vfx_catalog.csv`, `effects_catalog.csv`) and the unconverted libraries (the donor libraries'
+effect sheets, the raw VFX packs of the `sprite-libraries` branch, the pixel burst set) were surveyed for each spell. Pair
+effects fit the Lich (curses, rot, drain) and Raise Dead; the libraries' bone-coloured effects are dust and smoke puffs
+(no bones) in a flat, unoutlined style, and the raw packs are flat top-down pastel art, so the bone effects of the Bone
+Lord and the bone spear's impact are new. Choice per spell (pair ids on things_custom12):
+
+| spell | effects sent (first one known wins, then the older one, then the stock fallback) | source |
+|---|---|---|
+| Bone Spear | missile bone_spear 153 (kept); impact **necro_spear_hit 586**, then bone_spear 583 | our art (gen_necro_fx.py) |
+| Raise Dead | skull_orb missile 125, necro_seal 447 (kept) | pair: pack and procedural |
+| Withering Curse | shadow_orb 132, cursed 475, rot ticks stock 39 (all kept) | pair |
+| Soul Rot | skull_orb 125, toxic_burst 463 (was px633_green), each tick px633_green 556 (was the stock cloud) | pair: pack |
+| Life Siphon | skull_orb 125 (was blood_spear), **lich_soul_drain 587** (was px448_crimson), heal: heal_sparkle 412 (was red) | the style sample itself; pair |
+| Corpse Explosion | px448_green 552 (was bone_burst), px633_indigo 555 | pair: pixel bursts |
+| Bone Golem | **bonelord_golem_rise 588**, then necro_seal | our art |
+| Banner of Bones | caster **bonelord_banner 589**, then necro_seal; each minion **bonelord_rally 590**, then bone_aura | our art |
+| Bone Offering | the skeleton **bonelord_offering 591**, then bone_burst + px633_indigo; the caster **bonelord_ward 592**, then bone_aura | our art |
+
+| id | name | size, offset | frames | look |
+|---|---|---|---|---|
+| 586 | necro_spear_hit | 2x2, 0,0 | 7 x 70 ms | a violet snap, six bone splinters thrown out and falling |
+| 587 | lich_soul_drain | 2x2, 0,0 | 8 x 100 ms | the style sample: a rune circle, souls spiral up into an orb, a ghost skull |
+| 588 | bonelord_golem_rise | 2x2, 0,0 | 8 x 90 ms | the ground cracks, a crown of bone spikes, a ribcage and a skull with green eyes, they sink |
+| 589 | bonelord_banner | 2x2, 0,0 | 8 x 90 ms | a violet ring, six bone shards circle up into a crown, a green flare, they rain back |
+| 590 | bonelord_rally | 1x1, 0,0 | 6 x 90 ms | three shards spiral up a minion, a green spark |
+| 591 | bonelord_offering | 2x2, 0,0 | 8 x 85 ms | a skeleton bursts: ribs, long bones and the skull in a ring of ash, scattered |
+| 592 | bonelord_ward | 2x2, 0,0 | 8 x 90 ms | six rib plates grow over the caster, a violet rim, they crumble |
+
+The 2x2 effects have the target as their bottom-right tile (offset 0,0). Art: `client/tools/sprites/gen_necro_fx.py`
+(shapes in Python, one PixelLab "Edit images (Pro)" repaint of the whole sheet, moved back onto the shapes; sources in
+`art_import/necro_fx_src/`, strips in `art_import/necro_fx/`, spec `art_import/necro_fx.csv`), imported by
+`import_fx_art.py --merge` (the Lua names and catalogue rows are added to `chaos_vfx_art.lua` / `vfx_art_catalog.csv`).
+The spells send them through `NecroSpell.fx` (`_necro.lua`): a server without these Lua names sends the older effect or
+the stock one. Build commands and md5s: client/MANIFEST.md "Necromancer line effects". Test: `server/tests/necro_fx_test.lua`.

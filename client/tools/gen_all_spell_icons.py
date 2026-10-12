@@ -6,7 +6,11 @@ Writes spell-icons-32x32.png (RGBA), spell-icons-22x24.png (RGBA) and spell-icon
 cell n (1-based) at col (n-1)%20, row (n-1)//20, like Spells.getImageClipNormal.
  - cells named in the client's SpellIcons table: an icon derived from the spell's words (element, kind, tier);
    spells are matched by their icon key, never by their display name (the client renames them at runtime)
- - cells 201..249: the Chaos spell icons from gen_spell_icons.py (same drawings, same downscale)
+ - art: every cell that has an icon in spell_icon_art/spell_icons_32.png (built by build_spell_icon_art.py from the
+   element icon sets: the Chaos spells mapped by element and role in chaos_spell_icons.csv, the named stock cells by
+   element and kind) uses that pixel-art icon: 32x32 copied as it is, 22x24 and 20x20 redrawn from the inner art with a
+   1 px frame in the icon's own frame colour. Cells without art, and every cell with --no-art, are drawn as below
+ - cells 201..281: the Chaos spell icons from gen_spell_icons.py (same drawings, same downscale)
  - every other cell: a neutral filler (dark plate + plain sigil)
 Needs Pillow."""
 import argparse, math, os, re, sys
@@ -19,6 +23,7 @@ import gen_spell_icons as chaos  # noqa: E402
 S = 128
 COLS = 20
 CHAOS_FIRST = 201
+ART = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'spell_icon_art', 'spell_icons_32.png')
 SHEETS = [  # file suffix, cell w, cell h, mode, min rows
     ('32x32', 32, 32, 'RGBA', 12), ('22x24', 22, 24, 'RGBA', 12), ('20x20', 20, 20, 'RGB', 12)]
 
@@ -1033,13 +1038,47 @@ def parse_spells_lua(path):
         cells[cell] = dict(spells[key], key=key)
     return cells
 
-def build(cells):
+def load_art(path):
+    """cell -> 32x32 RGBA icon from the art sheet (laid out like the client sheets, 20 columns); {} without the file."""
+    if not path or not os.path.isfile(path):
+        return {}
+    sheet = Image.open(path).convert('RGBA')
+    out = {}
+    for i in range((sheet.width // 32) * (sheet.height // 32)):
+        im = sheet.crop(((i % 20) * 32, (i // 20) * 32, (i % 20) * 32 + 32, (i // 20) * 32 + 32))
+        if im.getchannel('A').getbbox():
+            out[1 + i] = im
+    return out
+
+def art_small(icon, w, h):
+    """a framed 32x32 pixel-art icon at w x h: the inner art (frame of 2 px cut off) area-averaged to (w-2) x (h-2),
+    then a crisp 1 px frame in the icon's frame colour, corners left clear like the 32 px original."""
+    frame = icon.getpixel((1, 0))
+    inner = icon.crop((2, 2, 30, 30)).resize((w - 2, h - 2), Image.BOX)
+    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(out)
+    d.rectangle([0, 0, w - 1, h - 1], outline=frame)
+    out.paste(inner, (1, 1))
+    for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        out.putpixel((x, y), (0, 0, 0, 0))
+    return out
+
+def build(cells, art=None):
     """cell -> (big 128 image or None, {size: small image}, label, spec)"""
+    art = art or {}
     last = max(max(cells, default=0), CHAOS_FIRST + len(chaos.ICONS) - 1)
     rows = max(SHEETS[0][4], (last - 1) // COLS + 1)
     total = rows * COLS
     out = {}
     for n in range(1, total + 1):
+        if n in art and (n in cells or CHAOS_FIRST <= n < CHAOS_FIRST + len(chaos.ICONS)):
+            icon = art[n]
+            smalls = {(w, h): icon if (w, h) == (32, 32) else art_small(icon, w, h) for _, w, h, _, _ in SHEETS}
+            if CHAOS_FIRST <= n < CHAOS_FIRST + len(chaos.ICONS):
+                out[n] = (smalls, chaos.ICONS[n - CHAOS_FIRST][0], {'kind': 'chaos-art'})
+            else:
+                out[n] = (smalls, cells[n]['name'], {'kind': 'art'})
+            continue
         if CHAOS_FIRST <= n < CHAOS_FIRST + len(chaos.ICONS):
             name, theme, glyph = chaos.ICONS[n - CHAOS_FIRST]
             big = chaos.render(theme, glyph)
@@ -1102,9 +1141,11 @@ def main():
     ap.add_argument('--spells-lua', required=True, help="the client's modules/gamelib/spells.lua")
     ap.add_argument('--out-dir', required=True)
     ap.add_argument('--preview', help='also write a labelled preview (32x32 icons at x2, plus 32/22x24/20 at x1)')
+    ap.add_argument('--art', default=ART, help='Chaos icon art sheet (default spell_icon_art/chaos_spell_icons_32.png)')
+    ap.add_argument('--no-art', action='store_true', help='draw every Chaos cell with gen_spell_icons.py')
     a = ap.parse_args()
     cells = parse_spells_lua(a.spells_lua)
-    icons, rows = build(cells)
+    icons, rows = build(cells, {} if a.no_art else load_art(a.art))
     write_sheets(icons, rows, a.out_dir)
     if a.preview:
         write_preview(icons, rows, a.preview)

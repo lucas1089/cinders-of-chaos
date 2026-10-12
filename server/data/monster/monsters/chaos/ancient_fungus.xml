@@ -54,4 +54,22 @@
 	<voices interval="5000" chance="10">
 		<voice sentence="Munch munch munch!" />
 	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
+		<item id="2152" countmax="80" chance="80000"/><!-- platinum coin -->
+		<item id="2160" countmax="2" chance="35000"/><!-- crystal coin -->
+		<item id="36022" countmax="3" chance="25000"/><!-- spore sack -->
+		<item id="36035" countmax="2" chance="15000"/><!-- cloud of royal spores -->
+		<item id="2149" countmax="5" chance="12000"/><!-- small emerald -->
+		<item id="2155" countmax="3" chance="10000"/><!-- green gem -->
+		<item id="2153" chance="4000"/><!-- violet gem -->
+		<item id="7903" chance="500"/><!-- terra hood -->
+		<item id="7884" chance="500"/><!-- terra mantle -->
+		<item id="7885" chance="500"/><!-- terra legs -->
+		<item id="7886" chance="500"/><!-- terra boots -->
+		<item id="8869" chance="400"/><!-- greenwood coat -->
+		<item id="8912" chance="400"/><!-- springsprout rod -->
+		<item id="25380" countmax="1" chance="50"/><!-- talent token -->
+	</loot>
 </monster>

@@ -1,4 +1,4 @@
--- Loot filter, loot channel and loot rays (client game_lootfilter, extended opcode ChaosOpcodes.lootfilter, !lootfilter).
+-- Loot filter, loot channel and loot rays (client game_lootfilter, extended opcode ChaosOpcodes.lootfilter).
 -- Rules and packing: lootfilter_core.lua (tested by server/tests/lootfilter_test.lua). Tunables: lootfilter_config.lua.
 --
 -- client -> server  {"action":"open"}                         settings + open the window
@@ -7,13 +7,20 @@
 --                   {"action":"preset","data":{"name":"hunter"}}
 --                   {"action":"peek","data":{"cid":N}}         rarity data of an open container (client container id)
 --                   {"action":"take","data":{"k":kill,"n":entry,"id":clientId,"one":bool}}   click to loot
--- server -> client  settings {s, unlocked, presets, samples, open}
---                   peek {cid, corpse, items = [{i (0-based index), id (client id), r, u, o, g}]}
---                   kill {k, m (monster), p (corpse position), items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
+--                   {"action":"sound","data":{"s":{rules = {rule = sound id}, vol, mute, hunt}}}   rule sounds (saved)
+--                   {"action":"reset","data":{"scope":"session"|"total"|"all","rule":key or nil}}   rule counters
+-- server -> client  settings {s, unlocked, presets, samples, open, snd, rules, sounds, counts = {session, total}}
+--                   counts {session, total}   (after a reset)
+--                   peek {cid, corpse, items = [{i (0-based index), id (client id), r, u, o, g, x}]}
+--                   kill {k, m (monster), look (its outfit as the client's UICreature takes it: type, auxType, head, body, legs,
+--                         feet, addons, shader; F.look), p (corpse position), items = [{n, id, c, r, u, o, g, x, nm, left}] (empty for
+--                         an empty corpse), drops = [{text, color, rank}],
+--                         hits = {rule = items} and counts = {session, total} when a rule matched (the client plays the sound)}
+--                   (x = the item's Chaos modifiers as one line, item_mods.lua; absent when it has none)
 --                   update {k, left = [remaining count per entry]}      decay {k}      msg {text} (a refused click)
 --
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 2 auto seller, 2.5 SNAPSHOT + hold back list items
--- below the Rarity Autoloot minimum, 3 base autoloot, 3.5 RARITY PICKUP, 4 loot pouch, 4.5 FINISH (held items back into
+-- below the Rarity Autoloot minimum, 2.7 store pouches (pouches.lua), 3 base autoloot, 3.5 RARITY PICKUP, 4.5 FINISH (held items back into
 -- the corpse, loot row, rare-drop lines, rays). Every step runs in pcall and returns nothing, so the chain never stops.
 
 if not Chaos then
@@ -37,6 +44,7 @@ end
 -- state survives /reload scripts
 ChaosLootFilterState = ChaosLootFilterState or {kills = {}, byGuid = {}, nextId = 1, tick = 0, event = nil}
 local state = ChaosLootFilterState
+state.session = state.session or {} -- guid -> rule counters since login (or the last session reset)
 
 -- ---------------------------------------------------------------- settings
 local function settingsOf(player)
@@ -45,6 +53,62 @@ end
 
 local function unlocked(player)
 	return player:getStorageValue(ST.shopRarityAutoloot) > 0
+end
+
+-- ---------------------------------------------------------------- rule counters and sounds
+local function soundOf(player)
+	return F.unpackSound(player:getStorageValue(cfg().soundStorage))
+end
+
+local function totalsOf(player)
+	local out = {}
+	for i, r in ipairs(F.RULES) do
+		out[r.key] = math.max(0, player:getStorageValue(cfg().totalStorageBase + i - 1))
+	end
+	return out
+end
+
+local function sessionOf(player)
+	local guid = player:getGuid()
+	state.session[guid] = state.session[guid] or F.counts(nil)
+	return state.session[guid]
+end
+
+local function countsOf(player)
+	return {session = F.counts(sessionOf(player)), total = F.counts(totalsOf(player))}
+end
+
+-- a kill's rule hits into the session and the saved totals; returns the counters
+local function addHits(player, hits)
+	F.addCounts(sessionOf(player), hits)
+	local totals = F.addCounts(totalsOf(player), hits)
+	for i, r in ipairs(F.RULES) do
+		if (hits[r.key] or 0) > 0 then
+			player:setStorageValue(cfg().totalStorageBase + i - 1, totals[r.key])
+		end
+	end
+	return countsOf(player)
+end
+
+local function resetCounts(player, scope, rule)
+	local plan = F.resetPlan(scope, rule)
+	if not plan then
+		return false
+	end
+	local session = sessionOf(player)
+	for _, key in ipairs(plan.rules) do
+		if plan.session then
+			session[key] = 0
+		end
+		if plan.total then
+			for i, r in ipairs(F.RULES) do
+				if r.key == key then
+					player:setStorageValue(cfg().totalStorageBase + i - 1, 0)
+				end
+			end
+		end
+	end
+	return true
 end
 
 local function sendSettings(player, open)
@@ -59,8 +123,16 @@ local function sendSettings(player, open)
 	end
 	local samples = {gear = cid(2392), unique = cid(ChaosUniqueItems and ChaosUniqueItems[1] and ChaosUniqueItems[1].id or 2400),
 		orb = cid(29856), coin = cid(2152), supply = cid(7618), other = cid(2229)}
+	local rules, sounds = {}, {}
+	for _, r in ipairs(F.RULES) do
+		rules[#rules + 1] = {key = r.key, name = r.name}
+	end
+	for i, x in ipairs(F.SOUNDS) do
+		sounds[#sounds + 1] = {id = i, key = x.key, name = x.name}
+	end
 	Chaos.send(player, OPCODE, "settings", {s = settingsOf(player), unlocked = unlocked(player), presets = presets,
-		samples = samples, open = open and true or false})
+		samples = samples, open = open and true or false, snd = soundOf(player), rules = rules, sounds = sounds,
+		counts = countsOf(player)})
 end
 
 local function saveSettings(player, s)
@@ -117,6 +189,10 @@ local function categoryOf(itemType, info)
 	if (weapon ~= 0 and weapon ~= WEAPON_AMMO) or itemType:getArmor() > 0 then
 		return "equipment"
 	end
+	-- a quiver (data/lib/chaos_archery_core.lua) is off-hand equipment
+	if ChaosItemMods and ChaosItemMods.kindOfType and ChaosItemMods.kindOfType(itemType) == "quiver" then
+		return "equipment"
+	end
 	local slots = itemType:getSlotPosition()
 	for _, b in ipairs(GEAR_SLOTS) do
 		if hasBit(slots, b) then
@@ -151,13 +227,44 @@ local function itemInfo(item)
 	info.orb = orbs[id] or (not info.unique and info.rarity == 0 and itemType:isStackable()
 		and (lname:find("%f[%a]orb$") or lname:find("^orb of ")) and true) or false
 	info.category = categoryOf(itemType, info)
+	-- item level and every modifier with its tier ("Item Level 57; Sword +2 (T3); Fire +3% (T5)",
+	-- data/lib/chaos_crafting.lua), shown in the tooltip; the best tier feeds the filter's tier rule
+	if ChaosCrafting and info.category == "equipment" then
+		local ok, text, best, level = pcall(function()
+			local C = ChaosCrafting
+			local parts, top = {}, 0
+			local lv = C.levelOf(item)
+			if lv > 0 then
+				parts[1] = "Item Level " .. lv
+			end
+			local power = false
+			for _, m in ipairs(C.readMods(item)) do
+				parts[#parts + 1] = C.modTierText(m)
+				if not info.unique and m.tier > top then
+					top = m.tier
+				end
+				power = power or m.power
+			end
+			info.power = power and not info.unique or nil -- a legendary power always glows
+			return table.concat(parts, "; "), top, lv
+		end)
+		info.mods = ok and text ~= "" and text or nil
+		info.bestTier = ok and best or 0
+		info.level = ok and level or 0
+		-- sockets and gems ("Sockets 1/2: Flawless Ruby (Fire Damage +9%), empty", data/lib/chaos_gems.lua)
+		local okG, gems = pcall(function() return ChaosGems and ChaosGems.summary(item) or "" end)
+		if okG and gems ~= "" then
+			info.mods = info.mods and (info.mods .. "; " .. gems) or gems
+		end
+	end
 	return info
 end
 ChaosLootFilter.itemInfo = itemInfo
 
 local function wire(info, extra)
 	local t = {id = info.clientId, c = info.count, r = info.rarity, u = info.unique and 1 or 0, o = info.orb and 1 or 0,
-		g = info.category}
+		g = info.category, x = info.mods, t = (info.bestTier or 0) > 0 and info.bestTier or nil,
+		il = (info.level or 0) > 0 and info.level or nil}
 	for k, v in pairs(extra or {}) do
 		t[k] = v
 	end
@@ -167,6 +274,9 @@ end
 -- ---------------------------------------------------------------- corpse helpers
 local function autolootSet(player)
 	local limit = player:isPremium() and Chaos.autoloot.premiumLimit or Chaos.autoloot.freeLimit
+	if ChaosPact and ChaosPact.limit then
+		limit = ChaosPact.limit(player, "lootRules") -- Chaos Pact loot rules (pact.lua)
+	end
 	local set = {}
 	for i = 1, limit do
 		local id = player:getStorageValue(ST.autolootBase + i)
@@ -219,6 +329,8 @@ local function canLoot(player, corpse)
 	end
 	return false
 end
+
+ChaosLootFilter.canLoot = canLoot -- also the ground labels' rule for showing what a corpse holds (groundloot.lua)
 
 local function findCorpse(kill)
 	local tile = Tile(kill.pos)
@@ -400,6 +512,29 @@ end
 -- ---------------------------------------------------------------- onDropLoot steps
 local current -- the drop in progress (one onDropLoot chain; all steps run in the same dispatcher task)
 
+-- tier shader names by id (data/XML/shaders.xml, read once; the engine's Lua has no lookup by id)
+local shaderNames
+local function shaders()
+	if not shaderNames then
+		shaderNames = {}
+		local f = io.open("data/XML/shaders.xml", "r")
+		if f then
+			shaderNames = F.parseShaders(f:read("*a"))
+			f:close()
+		end
+	end
+	return shaderNames
+end
+
+-- the monster's look as it died (rift looks, tier shaders), else its type's
+local function lookOf(monster)
+	local ok, look = pcall(function()
+		local mt = monster:getType()
+		return F.look(monster:getOutfit(), shaders(), mt and mt:getOutfit() or nil)
+	end)
+	return ok and look or nil
+end
+
 local function snapshot(monster, corpse)
 	current = nil
 	if not corpse:getType():isContainer() then
@@ -421,7 +556,7 @@ local function snapshot(monster, corpse)
 	end
 	local pos = corpse:getPosition()
 	current = {ownerId = owner:getId(), pos = {x = pos.x, y = pos.y, z = pos.z}, corpseId = corpse:getId(),
-		monster = monster:getName(), entries = entries, s = s, unlock = unlock}
+		monster = monster:getName(), look = lookOf(monster), entries = entries, s = s, unlock = unlock}
 	if #keep > 0 then
 		-- the bag lies on the corpse tile for the rest of this chain only; if a later callback raised an error the
 		-- items would stay in that bag on the ground instead of vanishing
@@ -444,16 +579,16 @@ local function pickup(monster, corpse)
 		return
 	end
 	local list = autolootSet(owner)
-	local taken, stashed, failed = {}, 0, 0
+	local taken, failed = {}, 0
 	for _, item in ipairs(corpse:getItems()) do
 		local info = itemInfo(item)
 		if F.autoloot(info, current.s, list[info.id], true) == "take" then
 			local label = F.label(info)
+			-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
+			if ChaosLoot and ChaosLoot.finalizeRarity then
+				item = ChaosLoot.finalizeRarity(item)
+			end
 			if intoBags(owner, item) then
-				taken[#taken + 1] = label
-			elseif owner:getStorageValue(ST.shopLootPouch) > 0 and ((ChaosStash and ChaosStash.storeItem(owner, item))
-				or (owner:getInbox() and item:moveTo(owner:getInbox()))) then
-				stashed = stashed + 1
 				taken[#taken + 1] = label
 			else
 				failed = failed + 1
@@ -461,8 +596,7 @@ local function pickup(monster, corpse)
 		end
 	end
 	if #taken > 0 then
-		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: " .. table.concat(taken, ", ")
-			.. (stashed > 0 and string.format(" (%d to your stash or inbox)", stashed) or "") .. ".")
+		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: " .. table.concat(taken, ", ") .. ".")
 	end
 	if failed > 0 then
 		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: no room or capacity, left in the corpse.")
@@ -482,12 +616,17 @@ local function finish(monster, corpse)
 		drop.bag:remove()
 	end
 	local owner = Player(drop.ownerId)
-	if not owner or #drop.entries == 0 then
+	if not owner then
 		return
 	end
 	local c = cfg()
 	local id = state.nextId
 	state.nextId = id + 1
+	if #drop.entries == 0 then
+		-- an empty corpse: a row with the monster only, nothing to track
+		Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, look = drop.look, p = drop.pos, items = {}, drops = {}})
+		return
+	end
 	corpse:setCustomAttribute(c.corpseAttribute, id)
 
 	local kill = {id = id, guid = owner:getGuid(), ownerId = drop.ownerId, pos = drop.pos, entries = {}, left = {}}
@@ -521,7 +660,11 @@ local function finish(monster, corpse)
 		kill.rayUntil = os.time() + c.rayDurationS
 		emitRay(kill, owner)
 	end
-	Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, p = drop.pos, items = rows, drops = drops})
+	-- the rule counters (everything the kill dropped, also what the autoloot already took)
+	local hits = F.countHits(drop.entries, drop.s)
+	local counts = next(hits) and addHits(owner, hits) or nil
+	Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, look = drop.look, p = drop.pos, items = rows, drops = drops,
+		hits = counts and hits or nil, counts = counts})
 	ensureTimer()
 end
 
@@ -605,14 +748,8 @@ local function take(player, data)
 			return reply(player, "Sorry, not possible.")
 		end
 	end
-	local ok = intoBags(player, moving)
-	if not ok and player:getStorageValue(ST.shopLootPouch) > 0 then
-		ok = (ChaosStash and ChaosStash.storeItem(player, moving))
-			or (player:getInbox() and moving:moveTo(player:getInbox())) or false
-		if ok then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Loot pouch: your backpack is full, sent to your stash or inbox.")
-		end
-	end
+	-- a carried store pouch that collects this kind of item first (pouches.lua), else the backpack
+	local ok = (ChaosPouches and ChaosPouches.stow and ChaosPouches.stow(player, moving)) or intoBags(player, moving)
 	if not ok then
 		if moving ~= item then
 			moving:moveTo(corpse) -- the split part goes back onto its stack
@@ -648,6 +785,7 @@ end
 -- ---------------------------------------------------------------- events
 local LoginEvent = CreatureEvent("ChaosLootFilterLogin")
 function LoginEvent.onLogin(player)
+	state.session[player:getGuid()] = nil -- a new session of the rule counters
 	player:registerEvent("ChaosLootFilterExtended")
 	player:registerEvent("ChaosLootFilterLogout")
 	addEvent(function(cid)
@@ -668,6 +806,7 @@ function LogoutEvent.onLogout(player)
 		state.kills[id] = nil
 	end
 	state.byGuid[guid] = nil
+	state.session[guid] = nil
 	return true
 end
 LogoutEvent:type("logout")
@@ -699,6 +838,13 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 				saveSettings(player, s)
 			end
 			sendSettings(player, false)
+		elseif msg.action == "sound" then
+			player:setStorageValue(cfg().soundStorage, F.packSound(data.s or data))
+			sendSettings(player, false)
+		elseif msg.action == "reset" then
+			if resetCounts(player, data.scope, data.rule) then
+				Chaos.send(player, OPCODE, "counts", countsOf(player))
+			end
 		elseif msg.action == "peek" then
 			peek(player, data)
 		elseif msg.action == "take" then
@@ -712,24 +858,3 @@ end
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
 
-local talk = TalkAction("!lootfilter")
-function talk.onSay(player, words, param)
-	local name = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-	if name ~= "" then
-		local s = F.applyPreset(name)
-		if not s then
-			player:sendCancelMessage("Presets: all, hunter, strict.")
-			return false
-		end
-		local old = settingsOf(player)
-		s.icons, s.notify = old.icons, old.notify
-		saveSettings(player, s)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Loot filter: preset " .. name .. ".")
-		sendSettings(player, false)
-		return false
-	end
-	sendSettings(player, true)
-	return false
-end
-talk:separator(" ")
-talk:register()

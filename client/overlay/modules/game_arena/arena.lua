@@ -1,14 +1,16 @@
 -- Ranked PvP arena: queue window, match HUD and the result toast.
 -- Server: server/data/scripts/chaos/arena.lua, extended opcode 236 (JSON {action, data}).
 --   server -> client  state {open, ratings = {['1v1'] = {rating, wins, losses, draws, best}, ...}, modes, queueCount,
+--                            season = {id, brackets = {['1v1'] = {rating, tierName, color, placed, placementLeft, ...}}} | nil,
 --                            queue = {mode, waited, window, rating} | nil, match = {mode, phase} | nil,
 --                            rules = {minLevel, levelLow, levelHigh, countdown, fight}, firstWinDone,
 --                            recent = [{mode, result, before, after, opponents, partner, reason, at}], now}
 --                     start {mode, team, countdown, fight}          (match found: HUD on, secure mode off)
 --                     hud {phase, mode, left, team, sides = [[{name, hp, defeated, cid}], [...]]}   (every second)
---                     end {mode, result, before, after, delta, reason, reward, firstWin, rated, opponents}
+--                     end {mode, result, before, after, delta, reason, reward, firstWin, rated, opponents,
+--                          season = {before, after, delta, tierName, placed, placementLeft} | nil}
 --   client -> server  open | queue {mode} | leave
--- !arena opens the window from the chat; the top menu (Chaos -> Arena) calls toggle().
+-- The top menu (Adventure > Arena) calls toggle().
 
 local OPCODE = 236
 local T = ArenaText
@@ -43,18 +45,27 @@ local function updateCards()
   local ratings = type(state.ratings) == 'table' and state.ratings or {}
   local inQueue = type(state.queue) == 'table'
   local inMatch = type(state.match) == 'table'
-  for _, mode in ipairs({ '1v1', '2v2' }) do
+  local season = type(state.season) == 'table' and type(state.season.brackets) == 'table' and state.season.brackets or {}
+  for _, mode in ipairs({ '1v1', '2v2', '3v3' }) do
     local card = window['card' .. mode]
     local r = type(ratings[mode]) == 'table' and ratings[mode] or {}
-    card.title:setText(mode == '1v1' and tr('Duel 1v1') or tr('Team 2v2'))
+    card.title:setText(T.MODE_TITLE[mode] or mode)
+    local line, color, tip = T.seasonLine(season[mode], state.season and state.season.id)
+    card.season:setText(line)
+    card.season:setColor(color)
+    card.season:setTooltip(tip)
     card.rating:setText(tostring(tonumber(r.rating) or 1000))
     card.record:setText(tr('W-L-D %s   best %d', T.record(r), tonumber(r.best) or tonumber(r.rating) or 1000))
     card.record:setTooltip(tr('%d wins, %d losses, %d draws', tonumber(r.wins) or 0, tonumber(r.losses) or 0, tonumber(r.draws) or 0))
     local waiting = (type(state.queueCount) == 'table' and tonumber(state.queueCount[mode])) or 0
-    card.queue:setText(mode == '1v1' and tr('Queue 1v1') or tr('Queue 2v2'))
+    card.queue:setText(tr('Queue %s', mode))
     card.queue:setEnabled(not inQueue and not inMatch)
-    card.queue:setTooltip(mode == '2v2' and tr('Party of exactly two; both must be in a protection zone. %d team(s) waiting.', waiting)
-      or tr('%d player(s) waiting.', waiting))
+    if mode == '1v1' then
+      card.queue:setTooltip(tr('%d player(s) waiting.', waiting))
+    else
+      card.queue:setTooltip(tr('Party of exactly %s; everyone must be in a protection zone. %d team(s) waiting.',
+        mode == '2v2' and tr('two') or tr('three'), waiting))
+    end
     card.queue.onClick = function() send('queue', { mode = mode }) end
   end
 end
@@ -200,6 +211,10 @@ local function onEnd(data)
     r.rating:setText(T.ratingLine(data.before, data.after, data.delta))
   end
   local reward = data.reward and data.reward ~= '' and (tr('Reward: %s', data.reward) .. (data.firstWin and tr(' (first win today)') or '')) or ''
+  local se = type(data.season) == 'table' and data.season or nil
+  if se and data.rated ~= false then
+    reward = (reward ~= '' and (reward .. '   ') or '') .. T.seasonDelta(se)
+  end
   r.reward:setText(reward)
   r:show()
   r:raise()

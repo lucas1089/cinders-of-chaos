@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/shop_services_test.lua (mock engine API; CI runs it)
 -- Covers the store services: name validation, world buff stacking and effects, the vocation mapping, stat
--- recomputation, the sell-price lookup, the unlock/service checks, the auto seller and the loot pouch callbacks.
+-- recomputation, the sell-price lookup, the unlock/service checks (and the store pouch service), the auto seller.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
   if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -143,6 +143,8 @@ eq(S.sellBlocked({rarity = 3}, false), "rarity", "rarity kept")
 eq(S.sellBlocked({attributes = true}, false), "rarity", "modifiers kept")
 eq(S.sellBlocked({rarity = 3}, true), nil, "rarity sold after opt-in")
 eq(S.sellBlocked({unique = true, rarity = 9}, true), "unique", "uniques never sold")
+eq(S.sellBlocked({locked = true, rarity = 3}, true), "locked", "locked items never sold (salvage.lua lock)")
+eq(S.sellBlocked({locked = true, rarity = 0}, false), "locked", "a locked plain item is kept too")
 local generated = dofile("data/scripts/chaos/sell_prices.lua")
 local count = 0
 for id, gold in pairs(generated) do
@@ -174,13 +176,49 @@ end
 
 -- unlocks: refused when owned, delivered as a storage flag
 local pl = newPlayer()
-local pouchOffer = {kind = "unlock", unlock = "lootPouch"}
-eq(S.check(pl, pouchOffer), nil, "pouch can be bought")
-eq(S.deliver(pl, pouchOffer), true, "pouch delivered")
-eq(pl.storage[Chaos.storage.shopLootPouch], 1, "pouch flag")
-assert(S.check(pl, pouchOffer):find("already own"), "pouch owned")
+local sellerOffer = {kind = "unlock", unlock = "autoSeller"}
+eq(S.check(pl, sellerOffer), nil, "auto seller can be bought")
+eq(S.deliver(pl, sellerOffer), true, "auto seller delivered")
+eq(pl.storage[Chaos.storage.shopAutoSeller], 1, "auto seller flag")
+assert(S.check(pl, sellerOffer):find("already own"), "auto seller owned")
+-- the retired Bottomless Loot Pouch unlock is no longer sold (pouches.lua gives its owners a Loot Pouch item)
+assert(S.check(pl, {kind = "unlock", unlock = "lootPouch"}), "the old loot pouch unlock is gone")
+-- the store pouches are a service handled by pouches.lua (pouches_test.lua covers the rules)
+assert(S.check(pl, {kind = "service", service = "pouch", pouch = "loot"}), "pouch offer refused without pouches.lua")
+do
+	local asked
+	ChaosPouches = {storeCheck = function(_, kind) asked = kind; return nil end,
+		storeGive = function(_, kind) return kind == "orbs" end}
+	eq(S.check(pl, {kind = "service", service = "pouch", pouch = "orbs"}), nil, "pouch offer checked by pouches.lua")
+	eq(asked, "orbs", "the offer's pouch kind is passed on")
+	eq(S.deliver(pl, {kind = "service", service = "pouch", pouch = "orbs"}), true, "pouch delivered by pouches.lua")
+	ChaosPouches = nil
+end
 assert(S.check(pl, {kind = "unlock", unlock = "nope"}), "unknown unlock refused")
 assert(S.check(pl, {kind = "service", service = "nope"}), "unknown service refused")
+
+-- a class unlock (class_unlocks.lua, per account): the store asks ChaosClassUnlocks.storeUnlock for the entry
+do
+	local owned, granted = false, 0
+	ChaosClassUnlocks = {storeUnlock = function(name)
+		if name ~= "unlockTemplar" then
+			return nil
+		end
+		return {name = "the Templar class", done = "",
+			owned = function() return owned end,
+			grant = function() granted = granted + 1; owned = true; return true end}
+	end}
+	local classOffer = {kind = "unlock", unlock = "unlockTemplar"}
+	eq(S.check(pl, classOffer), nil, "class unlock can be bought")
+	eq(S.deliver(pl, classOffer), true, "class unlock delivered")
+	eq(granted, 1, "granted through class_unlocks.lua")
+	assert(S.check(pl, classOffer):find("already own"), "class unlock owned")
+	assert(S.check(pl, {kind = "unlock", unlock = "unlockNope"}), "unknown class unlock refused")
+	ChaosClassUnlocks = {storeUnlock = function() return {name = "x", done = "", owned = function() return false end,
+		grant = function() return false, "db down" end} end}
+	eq(S.deliver(pl, classOffer), "db down", "a failed grant is an error (shop.lua refunds)")
+	ChaosClassUnlocks = nil
+end
 
 -- stamina: refused when full
 eq(S.check(pl, {kind = "service", service = "stamina"}), nil, "stamina not full")
@@ -216,6 +254,14 @@ eq(S.buffMult("loot"), 1, "other buffs independent")
 local monster = {isMonster = function() return true end}
 eq(callback("onGainExperience", 5)(nil, monster, 1000, 1000), 1250, "xp callback")
 eq(callback("onGainExperience", 5)(nil, {isMonster = function() return false end}, 1000, 1000), 1000, "only monster xp")
+-- season characters: no World Experience, and the base double experience potion (storage 6000) is undone
+ChaosSeason = {realmOf = function(p) return p.realm or 0 end}
+local seasonal = {realm = 1, st = {}, getStorageValue = function(self, k) return self.st[k] or -1 end}
+eq(callback("onGainExperience", 5)(seasonal, monster, 1000, 1000), 1000, "season: no world experience")
+seasonal.st[6000] = os.time() + 3600
+eq(callback("onGainExperience", 5)(seasonal, monster, 2000, 1000), 1000, "season: the potion's doubling undone")
+eq(callback("onGainExperience", 5)({realm = 0}, monster, 1000, 1000), 1250, "standard character keeps the buff")
+ChaosSeason = nil
 now = now + 3 * H + 1
 eq(S.buffMult("xp"), 1, "buff expired")
 eq(callback("onGainExperience", 5)(nil, monster, 1000, 1000), 1000, "expired: no bonus")
@@ -225,6 +271,17 @@ eq(tries, 125, "skill tries +25%")
 local sum = 0
 for _ = 1, 4000 do sum = sum + callback("onGainSkillTries", 5)(nil, 1, 1) end
 assert(sum > 4600 and sum < 5400, "fractional tries kept as a chance: " .. sum)
+-- >>> Seasons: World Training and World Loot skip season characters too (bought with account-wide coins)
+ChaosSeason = {realmOf = function(p) return p.realm or 0 end}
+eq(callback("onGainSkillTries", 5)({realm = 1}, 1, 100), 100, "season: no world training")
+eq(callback("onGainSkillTries", 5)({realm = 0}, 1, 100), 125, "standard: world training")
+S.deliver(pl, {kind = "service", service = "worldBuff", buff = "loot"})
+eq(S.buffMult("loot", {realm = 1}), 1, "season: no world loot")
+eq(S.buffMult("loot", {realm = 0}), 1.25, "standard: world loot")
+eq(S.buffMult("loot"), 1.25, "no player (rifts, goblins): world loot")
+ChaosSeason = nil
+eq(S.buffMult("loot", {realm = 1}), 1.25, "without seasons: everybody")
+-- <<< Seasons
 -- reload after a restart: memory empty, value read back from server_config
 global = {}
 db.storeQuery = function() return 1 end
@@ -270,6 +327,10 @@ seller.storage[Chaos.storage.autosellRarity] = 1
 callback("onDropLoot", 2)(nil, corpseOf("seller", {rare, unique}))
 eq(seller.bank, 120, "rarity item sold after opt-in")
 eq(unique.removed, false, "unique still kept")
+local locked = newItem(100, 1, {custom = {rarity = 2, chaos_locked = 1}})
+callback("onDropLoot", 2)(nil, corpseOf("seller", {locked}))
+eq(locked.removed, false, "a locked item is never sold, even after the opt-in (salvage.lua lock)")
+eq(seller.bank, 120, "nothing paid for the locked item")
 seller.storage[Chaos.storage.autosellPaused] = 1
 local again = newItem(100, 1)
 callback("onDropLoot", 2)(nil, corpseOf("seller", {again}))
@@ -279,29 +340,13 @@ seller.storage[Chaos.storage.shopAutoSeller] = -1
 callback("onDropLoot", 2)(nil, corpseOf("seller", {again}))
 eq(again.removed, false, "not unlocked: nothing sold")
 
--- ------------------------------------------------------------------ loot pouch (onDropLoot index 4)
-local looter = newPlayer({guid = 11})
-Player = function(id) if id == "looter" then return looter end end
-looter.storage[Chaos.storage.autolootBase + 1] = 300
-looter.storage[Chaos.storage.autolootBase + 2] = 301
-local inbox = {accepts = true}
-function looter:getInbox() return inbox end
-local stashed = {}
-ChaosStash = {storeItem = function(player, item)
-  if item.id == 300 then stashed[#stashed + 1] = item; item.removed = true; return true end
-  return false
-end}
-local a, b, c = newItem(300, 5), newItem(301, 1), newItem(999, 1)
-callback("onDropLoot", 4)(nil, corpseOf("looter", {a, b, c}))
-eq(a.removed, false, "no pouch: leftovers stay")
-looter.storage[Chaos.storage.shopLootPouch] = 1
-callback("onDropLoot", 4)(nil, corpseOf("looter", {a, b, c}))
-eq(stashed[1], a, "stackable leftover -> stash")
-eq(b.movedTo, inbox, "other leftover -> inbox")
-eq(c.removed, false, "item not on the autoloot list stays")
-assert(looter.msgs[#looter.msgs]:find("stash") and looter.msgs[#looter.msgs]:find("inbox"), "player told")
-local before = #looter.msgs
-callback("onDropLoot", 4)(nil, corpseOf("looter", {newItem(300, 1)}))
-eq(#looter.msgs, before, "notice at most once a minute")
+-- ------------------------------------------------------------------ never sold: what the store pouches collect
+ChaosPouches = {neverSell = function(id) return id == 100 end}
+seller.storage[Chaos.storage.shopAutoSeller] = 1
+local orb = newItem(100, 2)
+callback("onDropLoot", 2)(nil, corpseOf("seller", {orb}))
+eq(orb.removed, false, "an orb on the auto-sell list is never sold (ChaosPouches.neverSell)")
+ChaosPouches = nil
+assert(callback("onDropLoot", 4) == nil, "no loot pouch callback at index 4 any more")
 
 print("shop_services_test: ok")

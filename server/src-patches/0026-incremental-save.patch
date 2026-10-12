@@ -1,0 +1,875 @@
+# Autosave in steps (server/README.md "Autosave in steps"). Owner request: "Optimize the autosave time. Keep the
+# warnings." The stock hourly save wrote every online player and every house in one dispatcher task: the game stood
+# still for the whole save (1.2-1.4 s with 200 players, about 2.1-2.5 s at 400), and the backup's SIGUSR1 save did the same.
+#   * Game::saveIncremental / Lua Game.saveIncremental([playersPerTick = 10[, tickBudgetMs = 25[, tickDelayMs = 50
+#     [, housesPerTick = 100]]]]): the account storage in the first tick, then the online players one by one while
+#     the tick's budget allows (at most playersPerTick, and another player only when the time so far plus the last
+#     player's time fits tickBudgetMs), then the changed houses, with tickDelayMs (the scheduler's 50 ms minimum)
+#     between ticks so the game runs in between. Each player save is the stock IOLoginData::savePlayer (one
+#     transaction per player), so player:save() and the "save before credit" rule (Chaos.saveCharacter) keep their
+#     meaning. A player who logs out before his turn was saved by the logout; one who logs in during the pass is not
+#     in it. No game state change: no maintenance state, a closed server stays closed. False while a pass runs.
+#     Game.isSaving(). One console line at the end: players saved, logged out, failed, houses, ticks, longest tick,
+#     total time. A shutdown during a pass ends it (the shutdown saves everything).
+#   * SIGUSR1 (server/tools/backup.sh) starts the same pass instead of the full save.
+#   * Houses: Map::save (the full save of a shutdown, a closed server, /save, saveServer()) and the pass write only
+#     the houses whose database rows differ from memory: the `houses` row (owner, paid, warnings, name, town, rent,
+#     size, beds), the guest / subowner / door lists, the `tile_store` rows (anything on the house tiles: items added,
+#     removed, moved or changed, container contents, texts, beds). Compared by content (an FNV-1a signature of the
+#     sorted rows), so no change slips past a missed event. At startup loadHouseInfo / loadHouseItems record what the
+#     database holds per house, so the first save after a start writes only what differs; a database that could not
+#     be read (a new one) makes the first save write every house. One transaction per save (per chunk of
+#     housesPerTick in the pass) with one INSERT ... ON DUPLICATE KEY UPDATE for the rows and one DELETE + INSERT for
+#     the lists and the tile rows of the changed houses; rows of houses the map no longer has are deleted by the first
+#     save, as the stock full rewrite did. A failed write marks those houses unknown (written in full next time);
+#     house:save() keeps the record in step. A crash loses what it lost before: the changes since the last save.
+#   * New src/chaossave.h: the pure parts (tick budget, pass queue, signatures, change test), tested by
+#     server/tools/chaossave_test.cpp (CI). Header only: src/CMakeLists.txt is not touched.
+# Apply in the server source root after 0001-0025: patch -p1 < 0026-incremental-save.patch, then rebuild. It touches
+# none of the files of 0025, so it also applies without it. The base save.lua is switched to it by
+# tools/patch_base_save.py (install_all.py step autosave).
+diff --git a/src/chaossave.h b/src/chaossave.h
+new file mode 100644
+index 0000000..129d3d3
+--- /dev/null
++++ b/src/chaossave.h
+@@ -0,0 +1,184 @@
++// Chaos (src-patch 0026): the pure parts of the incremental save, without engine types so that
++// server/tools/chaossave_test.cpp can test them on their own.
++//   SavePass      the queue of one incremental pass: player ids first, then house ids; each tick takes work while
++//                 the tick's budget (count and milliseconds) allows
++//   houseTilesSignature, houseListsSignature, houseInfoKey
++//                 what a house looks like in the database, so that a save skips the houses that did not change
++#ifndef FS_CHAOSSAVE_H
++#define FS_CHAOSSAVE_H
++
++#include <algorithm>
++#include <cstddef>
++#include <cstdint>
++#include <string>
++#include <vector>
++
++namespace ChaosSave {
++
++// The defaults of Game.saveIncremental() and of SIGUSR1: players per tick, tick budget, pause between ticks (the
++// scheduler's minimum), houses per transaction
++constexpr uint32_t PLAYERS_PER_TICK = 10;
++constexpr uint32_t TICK_BUDGET_MS = 25;
++constexpr uint32_t TICK_DELAY_MS = 50;
++constexpr uint32_t HOUSES_PER_TICK = 100;
++
++// FNV-1a, 64 bits: the same value on every platform and run (the tests pin it)
++inline uint64_t fnv1a(const char* data, size_t size, uint64_t hash = 14695981039346656037ULL)
++{
++	for (size_t i = 0; i < size; ++i) {
++		hash ^= static_cast<unsigned char>(data[i]);
++		hash *= 1099511628211ULL;
++	}
++	return hash;
++}
++
++inline uint64_t fnv1a(const std::string& s, uint64_t hash = 14695981039346656037ULL)
++{
++	return fnv1a(s.data(), s.size(), hash);
++}
++
++// The tile rows of one house (each row: x, y, z, the item count, the items; the engine's own tile format). Rows are
++// sorted first, so the order of the tiles in memory and the order of the rows in the database do not matter (every
++// row starts with its own position, so two rows are never equal). Each row is hashed with its length, so moving bytes
++// from one row to the next changes the result.
++inline uint64_t houseTilesSignature(std::vector<std::string> rows)
++{
++	std::sort(rows.begin(), rows.end());
++	uint64_t hash = fnv1a("tiles", 5);
++	for (const std::string& row : rows) {
++		const uint64_t size = row.size();
++		hash = fnv1a(reinterpret_cast<const char*>(&size), sizeof(size), hash);
++		hash = fnv1a(row, hash);
++	}
++	return hash;
++}
++
++// The access lists of one house (guest, subowner and every door list) as (list id, text) pairs; empty lists are not
++// saved, so they do not count. Sorted by list id, then text.
++inline uint64_t houseListsSignature(std::vector<std::pair<int64_t, std::string>> lists)
++{
++	lists.erase(std::remove_if(lists.begin(), lists.end(), [](const std::pair<int64_t, std::string>& l) {
++		return l.second.empty();
++	}), lists.end());
++	std::sort(lists.begin(), lists.end());
++	uint64_t hash = fnv1a("lists", 5);
++	for (const auto& list : lists) {
++		const int64_t id = list.first;
++		const uint64_t size = list.second.size();
++		hash = fnv1a(reinterpret_cast<const char*>(&id), sizeof(id), hash);
++		hash = fnv1a(reinterpret_cast<const char*>(&size), sizeof(size), hash);
++		hash = fnv1a(list.second, hash);
++	}
++	return hash;
++}
++
++// The columns of the `houses` row that the engine writes, as one comparable string
++inline std::string houseInfoKey(uint64_t owner, uint64_t paid, uint64_t warnings, const std::string& name,
++	uint64_t townId, uint64_t rent, uint64_t size, uint64_t beds)
++{
++	return std::to_string(owner) + '|' + std::to_string(paid) + '|' + std::to_string(warnings) + '|' +
++		std::to_string(townId) + '|' + std::to_string(rent) + '|' + std::to_string(size) + '|' + std::to_string(beds) +
++		'|' + name;
++}
++
++// What a house needs written: each part is written only when it differs from what the database holds.
++struct HouseDiff {
++	bool info = false;
++	bool lists = false;
++	bool tiles = false;
++	bool any() const { return info || lists || tiles; }
++};
++
++// What the database holds for one house, as far as this process knows. `known` is false until the house was read
++// at startup or written once: an unknown house is written in full.
++struct SavedHouse {
++	bool known = false;
++	bool hasRow = false;
++	std::string info;
++	uint64_t lists = 0;
++	uint64_t tiles = 0;
++};
++
++inline HouseDiff compareHouse(const SavedHouse& saved, const std::string& info, uint64_t lists, uint64_t tiles)
++{
++	HouseDiff diff;
++	if (!saved.known) {
++		diff.info = diff.lists = diff.tiles = true;
++		return diff;
++	}
++	diff.info = !saved.hasRow || saved.info != info;
++	diff.lists = saved.lists != lists;
++	diff.tiles = saved.tiles != tiles;
++	return diff;
++}
++
++// The budget of one tick: at most maxItems pieces of work and about maxMs milliseconds. Another piece starts only when
++// the time spent so far plus what the last piece took still fits. The first piece always runs, so a pass always makes
++// progress, even when one piece alone takes longer than the budget.
++struct TickBudget {
++	uint32_t maxItems;
++	int64_t maxMs;
++
++	bool allows(uint32_t doneThisTick, int64_t elapsedMs, int64_t lastPieceMs = 0) const
++	{
++		if (doneThisTick == 0) {
++			return true;
++		}
++		return doneThisTick < maxItems && elapsedMs + std::max<int64_t>(0, lastPieceMs) <= maxMs;
++	}
++};
++
++// One incremental pass. Phases: players (ids taken one by one), then houses (ids taken in chunks), then done.
++class SavePass {
++	public:
++		enum Phase { IDLE, PLAYERS, HOUSES, DONE };
++
++		void start(std::vector<uint32_t> playerIds)
++		{
++			players = std::move(playerIds);
++			houses.clear();
++			nextPlayer = nextHouse = 0;
++			phase = PLAYERS;
++		}
++
++		Phase getPhase() const { return phase; }
++		bool running() const { return phase == PLAYERS || phase == HOUSES; }
++
++		bool hasPlayer() const { return phase == PLAYERS && nextPlayer < players.size(); }
++		uint32_t takePlayer() { return players[nextPlayer++]; }
++		size_t playersLeft() const { return players.size() - nextPlayer; }
++		size_t playerCount() const { return players.size(); }
++
++		// after the last player: the caller computes the changed houses and hands them over
++		bool playersDone() const { return phase == PLAYERS && nextPlayer >= players.size(); }
++		void setHouses(std::vector<uint32_t> houseIds)
++		{
++			houses = std::move(houseIds);
++			nextHouse = 0;
++			phase = HOUSES;
++		}
++
++		bool hasHouses() const { return phase == HOUSES && nextHouse < houses.size(); }
++		std::vector<uint32_t> takeHouses(size_t maxCount)
++		{
++			const size_t n = std::min(maxCount, houses.size() - nextHouse);
++			std::vector<uint32_t> chunk(houses.begin() + nextHouse, houses.begin() + nextHouse + n);
++			nextHouse += n;
++			return chunk;
++		}
++		size_t houseCount() const { return houses.size(); }
++
++		void finish() { phase = DONE; }
++		void abort() { phase = IDLE; players.clear(); houses.clear(); }
++
++	private:
++		std::vector<uint32_t> players;
++		std::vector<uint32_t> houses;
++		size_t nextPlayer = 0;
++		size_t nextHouse = 0;
++		Phase phase = IDLE;
++};
++
++} // namespace ChaosSave
++
++#endif
+diff --git a/src/game.cpp b/src/game.cpp
+index 36ff369..ed8eea6 100644
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -17,6 +17,7 @@
+ #include "globalevent.h"
+ #include "iologindata.h"
+ #include "iomarket.h"
++#include "iomapserialize.h"
+ #include "items.h"
+ #include "monster.h"
+ #include "movement.h"
+@@ -189,6 +190,110 @@ void Game::saveGameState()
+ 	}
+ }
+ 
++// Chaos (src-patch 0026): the autosave in small steps. The stock save (saveGameState) writes every online player and
++// every house in one dispatcher task, so the game stops for the whole save (1.3-1.6 s with 200 players). This pass
++// writes the account storage in the first tick, then players one by one while the tick's budget allows (at most
++// playersPerTick and about tickBudgetMs, judged by the last player's time), then the changed houses (housesPerTick
++// per transaction), with tickDelayMs between ticks so the game runs in between. Each player save is the stock one,
++// atomic per player (IOLoginData::savePlayer, one transaction), so player:save() / Chaos.saveCharacter keep their
++// meaning; a player who logs out before his turn was saved by the logout, one who logs in during the pass is not in
++// it. The game state does not change (no maintenance state, a closed server stays closed). The full save is still
++// the one of a shutdown, a closed server, /save and saveServer().
++bool Game::saveIncremental(uint32_t playersPerTick, uint32_t tickBudgetMs, uint32_t tickDelayMs, uint32_t housesPerTick)
++{
++	if (savePass.running() || gameState == GAME_STATE_SHUTDOWN) {
++		return false;
++	}
++
++	saveBudget = { std::max<uint32_t>(1, playersPerTick), std::max<int64_t>(1, tickBudgetMs) };
++	saveDelayMs = std::max<uint32_t>(SCHEDULER_MINTICKS, tickDelayMs);
++	saveHousesPerTick = std::max<uint32_t>(1, housesPerTick);
++
++	std::vector<uint32_t> guids;
++	guids.reserve(players.size());
++	for (const auto& it : players) {
++		guids.push_back(it.second->getGUID());
++	}
++
++	saveStats = {};
++	saveStats.start = OTSYS_TIME();
++	savePass.start(std::move(guids));
++	std::cout << "Saving server in steps (" << savePass.playerCount() << " players)..." << std::endl;
++
++	if (!saveAccountStorageValues()) {
++		std::cout << "[Error - Game::saveIncremental] Failed to save account-level storage values." << std::endl;
++	}
++	saveStats.ticks = 1;
++	saveStats.longestTick = OTSYS_TIME() - saveStats.start;
++
++	g_scheduler.addEvent(createSchedulerTask(saveDelayMs, [this]() { saveIncrementalStep(); }));
++	return true;
++}
++
++void Game::saveIncrementalStep()
++{
++	if (!savePass.running()) {
++		return;
++	}
++	if (gameState == GAME_STATE_SHUTDOWN) {
++		savePass.abort(); // the shutdown saves everything itself
++		return;
++	}
++
++	const int64_t start = OTSYS_TIME();
++	if (savePass.hasPlayer()) {
++		uint32_t done = 0;
++		while (savePass.hasPlayer() && saveBudget.allows(done, OTSYS_TIME() - start, saveStats.lastPlayerMs)) {
++			Player* player = getPlayerByGUID(savePass.takePlayer());
++			++done;
++			if (!player || player->isRemoved()) {
++				++saveStats.gone; // logged out: saved by the logout
++				continue;
++			}
++			const int64_t playerStart = OTSYS_TIME();
++			player->loginPosition = player->getPosition();
++			if (IOLoginData::savePlayer(player)) {
++				++saveStats.saved;
++			} else {
++				++saveStats.failed;
++				std::cout << "[Error - Game::saveIncremental] Could not save player " << player->getName() << '.' << std::endl;
++			}
++			saveStats.lastPlayerMs = OTSYS_TIME() - playerStart;
++		}
++	} else if (savePass.playersDone()) {
++		// the houses that changed, found in a tick of their own (it reads every house tile, no database work)
++		savePass.setHouses(IOMapSerialize::changedHouseIds());
++	} else if (savePass.hasHouses()) {
++		uint32_t chunks = 0;
++		while (savePass.hasHouses() && (chunks == 0 || OTSYS_TIME() - start < saveBudget.maxMs)) {
++			const std::vector<uint32_t> chunk = savePass.takeHouses(saveHousesPerTick);
++			++chunks;
++			if (IOMapSerialize::saveHouses(chunk)) {
++				saveStats.houses += chunk.size();
++			} else {
++				++saveStats.houseFailures; // they stay changed: the next save writes them
++				std::cout << "[Error - Game::saveIncremental] Could not save " << chunk.size() << " house(s)." << std::endl;
++			}
++		}
++	} else {
++		g_databaseTasks.flush();
++		savePass.finish();
++	}
++
++	const int64_t tick = OTSYS_TIME() - start;
++	++saveStats.ticks;
++	saveStats.longestTick = std::max(saveStats.longestTick, tick);
++
++	if (!savePass.running()) {
++		std::cout << "> Saved in steps: " << saveStats.saved << " players (" << saveStats.gone << " logged out before, "
++			<< saveStats.failed << " failed), " << saveStats.houses << " changed house(s); " << saveStats.ticks
++			<< " ticks, longest " << saveStats.longestTick << " ms, total " << (OTSYS_TIME() - saveStats.start) / (1000.)
++			<< " s" << std::endl;
++		return;
++	}
++	g_scheduler.addEvent(createSchedulerTask(saveDelayMs, [this]() { saveIncrementalStep(); }));
++}
++
+ bool Game::loadMainMap(const std::string& filename)
+ {
+ 	return map.loadMap("data/world/" + filename + ".otbm", true);
+diff --git a/src/game.h b/src/game.h
+index 8c66a6f..6211143 100644
+--- a/src/game.h
++++ b/src/game.h
+@@ -17,6 +17,7 @@
+ #include "wildcardtree.h"
+ #include "quests.h"
+ #include "shaders.h"
++#include "chaossave.h"
+ 
+ class ServiceManager;
+ class Creature;
+@@ -424,6 +425,11 @@ class Game
+ 		GameState_t getGameState() const;
+ 		void setGameState(GameState_t newState);
+ 		void saveGameState();
++		// Chaos (src-patch 0026): the autosave in small steps (Game.saveIncremental, SIGUSR1); false while one runs
++		bool saveIncremental(uint32_t playersPerTick, uint32_t tickBudgetMs, uint32_t tickDelayMs, uint32_t housesPerTick);
++		bool isIncrementalSaveRunning() const {
++			return savePass.running();
++		}
+ 
+ 		//Events
+ 		void checkCreatureWalk(uint32_t creatureId);
+@@ -521,6 +527,17 @@ class Game
+ 		}
+ 
+ 	private:
++		// Chaos (src-patch 0026): the running incremental save
++		void saveIncrementalStep();
++		ChaosSave::SavePass savePass;
++		ChaosSave::TickBudget saveBudget { ChaosSave::PLAYERS_PER_TICK, ChaosSave::TICK_BUDGET_MS };
++		uint32_t saveDelayMs = ChaosSave::TICK_DELAY_MS;
++		uint32_t saveHousesPerTick = ChaosSave::HOUSES_PER_TICK;
++		struct {
++			int64_t start = 0, longestTick = 0, lastPlayerMs = 0;
++			uint32_t ticks = 0, saved = 0, gone = 0, failed = 0, houses = 0, houseFailures = 0;
++		} saveStats;
++
+ 		bool playerSaySpell(Player* player, SpeakClasses type, const std::string& text);
+ 		void playerWhisper(Player* player, const std::string& text);
+ 		bool playerYell(Player* player, const std::string& text);
+diff --git a/src/iomapserialize.cpp b/src/iomapserialize.cpp
+index 176a97e..674d22f 100644
+--- a/src/iomapserialize.cpp
++++ b/src/iomapserialize.cpp
+@@ -6,23 +6,49 @@
+ #include "iomapserialize.h"
+ #include "game.h"
+ #include "bed.h"
++#include "chaossave.h"
+ 
+ #include <fmt/format.h>
+ 
+ extern Game g_game;
+ 
++// Chaos (src-patch 0026): what the database holds per house (read at startup, updated after each write), the house
++// ids of rows that belong to no house of the map (deleted by the next save, as the stock full rewrite did) and
++// whether the startup read worked (else every house is written once)
++namespace {
++std::unordered_map<uint32_t, ChaosSave::SavedHouse> savedHouses;
++std::map<uint32_t, std::vector<std::string>> loadedTileRows;
++std::map<uint32_t, std::vector<std::pair<int64_t, std::string>>> loadedLists;
++std::set<uint32_t> orphanHouseIds;
++bool houseInfoRead = false;
++
++std::string idList(const std::vector<uint32_t>& ids)
++{
++	std::string out;
++	for (uint32_t id : ids) {
++		if (!out.empty()) {
++			out.push_back(',');
++		}
++		out += std::to_string(id);
++	}
++	return out;
++}
++}
++
+ void IOMapSerialize::loadHouseItems(Map* map)
+ {
+ 	int64_t start = OTSYS_TIME();
+ 
+-	DBResult_ptr result = Database::getInstance().storeQuery("SELECT `data` FROM `tile_store`");
++	DBResult_ptr result = Database::getInstance().storeQuery("SELECT `house_id`, `data` FROM `tile_store`");
+ 	if (!result) {
++		recordLoadedHouses(); // Chaos (0026): no rows: every house has none
+ 		return;
+ 	}
+ 
+ 	do {
+ 		unsigned long attrSize;
+ 		const char* attr = result->getStream("data", attrSize);
++		loadedTileRows[result->getNumber<uint32_t>("house_id")].emplace_back(attr, attrSize); // Chaos (0026)
+ 
+ 		PropStream propStream;
+ 		propStream.init(attr, attrSize);
+@@ -47,6 +73,7 @@ void IOMapSerialize::loadHouseItems(Map* map)
+ 			loadItem(propStream, tile);
+ 		}
+ 	} while (result->next());
++	recordLoadedHouses(); // Chaos (0026): what the database holds per house
+ 	std::cout << "> Loaded house items in: " << (OTSYS_TIME() - start) / (1000.) << " s" << std::endl;
+ }
+ 
+@@ -256,7 +283,7 @@ bool IOMapSerialize::loadHouseInfo()
+ {
+ 	Database& db = Database::getInstance();
+ 
+-	DBResult_ptr result = db.storeQuery("SELECT `id`, `owner`, `paid`, `warnings` FROM `houses`");
++	DBResult_ptr result = db.storeQuery("SELECT `id`, `owner`, `paid`, `warnings`, `name`, `town_id`, `rent`, `size`, `beds` FROM `houses`");
+ 	if (!result) {
+ 		return false;
+ 	}
+@@ -267,18 +294,29 @@ bool IOMapSerialize::loadHouseInfo()
+ 			house->setOwner(result->getNumber<uint32_t>("owner"), false);
+ 			house->setPaidUntil(result->getNumber<time_t>("paid"));
+ 			house->setPayRentWarnings(result->getNumber<uint32_t>("warnings"));
++
++			// Chaos (0026): the row as the database holds it
++			ChaosSave::SavedHouse& saved = savedHouses[house->getId()];
++			saved.hasRow = true;
++			saved.info = ChaosSave::houseInfoKey(result->getNumber<uint64_t>("owner"), result->getNumber<uint64_t>("paid"),
++				result->getNumber<uint64_t>("warnings"), result->getString("name"), result->getNumber<uint64_t>("town_id"),
++				result->getNumber<uint64_t>("rent"), result->getNumber<uint64_t>("size"), result->getNumber<uint64_t>("beds"));
+ 		}
+ 	} while (result->next());
+ 
+ 	result = db.storeQuery("SELECT `house_id`, `listid`, `list` FROM `house_lists`");
+ 	if (result) {
+ 		do {
+-			House* house = g_game.map.houses.getHouse(result->getNumber<uint32_t>("house_id"));
++			const uint32_t houseId = result->getNumber<uint32_t>("house_id");
++			House* house = g_game.map.houses.getHouse(houseId);
++			const std::string list = result->getString("list");
++			loadedLists[houseId].emplace_back(result->getNumber<int64_t>("listid"), list); // Chaos (0026)
+ 			if (house) {
+-				house->setAccessList(result->getNumber<uint32_t>("listid"), result->getString("list"));
++				house->setAccessList(result->getNumber<uint32_t>("listid"), list);
+ 			}
+ 		} while (result->next());
+ 	}
++	houseInfoRead = true; // Chaos (0026)
+ 	return true;
+ }
+ 
+@@ -365,12 +403,14 @@ bool IOMapSerialize::saveHouse(House* house)
+ 	DBInsert stmt("INSERT INTO `tile_store` (`house_id`, `data`) VALUES ");
+ 
+ 	PropWriteStream stream;
++	std::vector<std::string> rows; // Chaos (0026)
+ 	for (HouseTile* tile : house->getTiles()) {
+ 		saveTile(stream, tile);
+ 
+ 		size_t attributesSize;
+ 		const char* attributes = stream.getStream(attributesSize);
+ 		if (attributesSize > 0) {
++			rows.emplace_back(attributes, attributesSize);
+ 			if (!stmt.addRow(fmt::format("{:d}, {:s}", houseId, db.escapeBlob(attributes, attributesSize)))) {
+ 				return false;
+ 			}
+@@ -383,5 +423,240 @@ bool IOMapSerialize::saveHouse(House* house)
+ 	}
+ 
+ 	//End the transaction
+-	return transaction.commit();
++	// Chaos (0026): the tile rows of this house are now what memory holds (unknown again if the commit failed)
++	auto saved = savedHouses.find(houseId);
++	if (!transaction.commit()) {
++		if (saved != savedHouses.end()) {
++			saved->second.known = false;
++		}
++		return false;
++	}
++	if (saved != savedHouses.end()) {
++		saved->second.tiles = ChaosSave::houseTilesSignature(std::move(rows));
++	}
++	return true;
++}
++
++// Chaos (src-patch 0026): at startup, after the house items were loaded: what the database holds for every house of
++// the map, and the rows of houses the map no longer has. When the `houses` table could not be read (a new database),
++// nothing is recorded and the first save writes every house.
++void IOMapSerialize::recordLoadedHouses()
++{
++	if (houseInfoRead) {
++		for (const auto& it : g_game.map.houses.getHouses()) {
++			ChaosSave::SavedHouse& saved = savedHouses[it.first];
++			saved.known = true;
++			saved.lists = ChaosSave::houseListsSignature(loadedLists[it.first]);
++			saved.tiles = ChaosSave::houseTilesSignature(loadedTileRows[it.first]);
++		}
++	}
++	for (const auto& it : loadedTileRows) {
++		if (!g_game.map.houses.getHouse(it.first)) {
++			orphanHouseIds.insert(it.first);
++		}
++	}
++	for (const auto& it : loadedLists) {
++		if (!g_game.map.houses.getHouse(it.first)) {
++			orphanHouseIds.insert(it.first);
++		}
++	}
++	loadedTileRows.clear();
++	loadedLists.clear();
++	houseInfoRead = false;
++}
++
++// Chaos (src-patch 0026): a house as the save would write it. info: the `houses` columns; lists: guest, subowner and
++// door lists; rows: the `tile_store` rows (the stock format, one per tile with saved items).
++void IOMapSerialize::collectHouse(House* house, std::string& info, std::vector<std::pair<int64_t, std::string>>& lists,
++	std::vector<std::string>& rows)
++{
++	info = ChaosSave::houseInfoKey(house->getOwner(), static_cast<uint64_t>(house->getPaidUntil()),
++		house->getPayRentWarnings(), house->getName(), house->getTownId(), house->getRent(), house->getTiles().size(),
++		house->getBedCount());
++
++	lists.clear();
++	std::string listText;
++	if (house->getAccessList(GUEST_LIST, listText) && !listText.empty()) {
++		lists.emplace_back(GUEST_LIST, listText);
++	}
++	listText.clear();
++	if (house->getAccessList(SUBOWNER_LIST, listText) && !listText.empty()) {
++		lists.emplace_back(SUBOWNER_LIST, listText);
++	}
++	for (Door* door : house->getDoors()) {
++		listText.clear();
++		if (door->getAccessList(listText) && !listText.empty()) {
++			lists.emplace_back(door->getDoorId(), listText);
++		}
++	}
++
++	rows.clear();
++	PropWriteStream stream;
++	for (HouseTile* tile : house->getTiles()) {
++		saveTile(stream, tile);
++		size_t size;
++		const char* data = stream.getStream(size);
++		if (size > 0) {
++			rows.emplace_back(data, size);
++			stream.clear();
++		}
++	}
++}
++
++// Chaos (src-patch 0026): the ids of the houses whose rows in the database differ from memory: owner, rent, warnings,
++// name, size or beds; an access or door list; or anything on the house tiles (items added, removed, moved, changed,
++// container contents, texts, beds). Compared by content, so no change can slip past a missed event.
++std::vector<uint32_t> IOMapSerialize::changedHouseIds()
++{
++	std::vector<uint32_t> changed;
++	std::string info;
++	std::vector<std::pair<int64_t, std::string>> lists;
++	std::vector<std::string> rows;
++	for (const auto& it : g_game.map.houses.getHouses()) {
++		collectHouse(it.second, info, lists, rows);
++		auto saved = savedHouses.find(it.first);
++		const ChaosSave::SavedHouse none;
++		if (ChaosSave::compareHouse(saved != savedHouses.end() ? saved->second : none, info,
++				ChaosSave::houseListsSignature(lists), ChaosSave::houseTilesSignature(rows)).any()) {
++			changed.push_back(it.first);
++		}
++	}
++	return changed;
++}
++
++// Chaos (src-patch 0026): writes the given houses (only the parts that differ from the database: the `houses` row,
++// the lists, the tile rows) in one transaction, with a few statements whatever the number of houses. On success the
++// per-house record is updated; on a failure those houses count as unknown, so the next save writes them in full.
++bool IOMapSerialize::saveHouses(const std::vector<uint32_t>& houseIds)
++{
++	struct Pending {
++		House* house;
++		ChaosSave::HouseDiff diff;
++		std::string info;
++		std::vector<std::pair<int64_t, std::string>> lists;
++		std::vector<std::string> rows;
++	};
++
++	std::vector<Pending> pending;
++	for (uint32_t houseId : houseIds) {
++		House* house = g_game.map.houses.getHouse(houseId);
++		if (!house) {
++			continue;
++		}
++		Pending p;
++		p.house = house;
++		collectHouse(house, p.info, p.lists, p.rows);
++		auto saved = savedHouses.find(houseId);
++		const ChaosSave::SavedHouse none;
++		p.diff = ChaosSave::compareHouse(saved != savedHouses.end() ? saved->second : none, p.info,
++			ChaosSave::houseListsSignature(p.lists), ChaosSave::houseTilesSignature(p.rows));
++		if (p.diff.any()) {
++			pending.push_back(std::move(p));
++		}
++	}
++
++	if (pending.empty() && orphanHouseIds.empty()) {
++		return true;
++	}
++
++	Database& db = Database::getInstance();
++	DBTransaction transaction;
++	if (!transaction.begin()) {
++		return false;
++	}
++
++	auto fail = [&pending]() {
++		for (const Pending& p : pending) {
++			savedHouses[p.house->getId()].known = false;
++		}
++		return false;
++	};
++
++	if (!orphanHouseIds.empty()) {
++		const std::string ids = idList(std::vector<uint32_t>(orphanHouseIds.begin(), orphanHouseIds.end()));
++		if (!db.executeQuery("DELETE FROM `tile_store` WHERE `house_id` IN (" + ids + ")") ||
++				!db.executeQuery("DELETE FROM `house_lists` WHERE `house_id` IN (" + ids + ")")) {
++			return fail();
++		}
++	}
++
++	// the `houses` rows: one INSERT ... ON DUPLICATE KEY UPDATE for all of them (a missing row is created)
++	std::vector<uint32_t> listIds, tileIds;
++	std::string upsert;
++	for (const Pending& p : pending) {
++		const uint32_t id = p.house->getId();
++		if (p.diff.lists) {
++			listIds.push_back(id);
++		}
++		if (p.diff.tiles) {
++			tileIds.push_back(id);
++		}
++		if (!p.diff.info) {
++			continue;
++		}
++		House* house = p.house;
++		upsert += fmt::format("{:s}({:d}, {:d}, {:d}, {:d}, {:s}, {:d}, {:d}, {:d}, {:d})", upsert.empty() ? "" : ",",
++			id, house->getOwner(), house->getPaidUntil(), house->getPayRentWarnings(), db.escapeString(house->getName()),
++			house->getTownId(), house->getRent(), house->getTiles().size(), house->getBedCount());
++	}
++	if (!upsert.empty() && !db.executeQuery("INSERT INTO `houses` (`id`, `owner`, `paid`, `warnings`, `name`, `town_id`, `rent`, `size`, `beds`) VALUES " +
++			upsert + " ON DUPLICATE KEY UPDATE `owner` = VALUES(`owner`), `paid` = VALUES(`paid`), `warnings` = VALUES(`warnings`), "
++			"`name` = VALUES(`name`), `town_id` = VALUES(`town_id`), `rent` = VALUES(`rent`), `size` = VALUES(`size`), `beds` = VALUES(`beds`)")) {
++		return fail();
++	}
++
++	if (!listIds.empty()) {
++		if (!db.executeQuery("DELETE FROM `house_lists` WHERE `house_id` IN (" + idList(listIds) + ")")) {
++			return fail();
++		}
++		DBInsert stmt("INSERT INTO `house_lists` (`house_id` , `listid` , `list`) VALUES ");
++		for (const Pending& p : pending) {
++			if (!p.diff.lists) {
++				continue;
++			}
++			for (const auto& list : p.lists) {
++				if (!stmt.addRow(fmt::format("{:d}, {:d}, {:s}", p.house->getId(), list.first, db.escapeString(list.second)))) {
++					return fail();
++				}
++			}
++		}
++		if (!stmt.execute()) {
++			return fail();
++		}
++	}
++
++	if (!tileIds.empty()) {
++		if (!db.executeQuery("DELETE FROM `tile_store` WHERE `house_id` IN (" + idList(tileIds) + ")")) {
++			return fail();
++		}
++		DBInsert stmt("INSERT INTO `tile_store` (`house_id`, `data`) VALUES ");
++		for (const Pending& p : pending) {
++			if (!p.diff.tiles) {
++				continue;
++			}
++			for (const std::string& row : p.rows) {
++				if (!stmt.addRow(fmt::format("{:d}, {:s}", p.house->getId(), db.escapeBlob(row.data(), row.size())))) {
++					return fail();
++				}
++			}
++		}
++		if (!stmt.execute()) {
++			return fail();
++		}
++	}
++
++	if (!transaction.commit()) {
++		return fail();
++	}
++
++	orphanHouseIds.clear();
++	for (Pending& p : pending) {
++		ChaosSave::SavedHouse& saved = savedHouses[p.house->getId()];
++		saved.known = true;
++		saved.hasRow = true;
++		saved.info = std::move(p.info);
++		saved.lists = ChaosSave::houseListsSignature(std::move(p.lists));
++		saved.tiles = ChaosSave::houseTilesSignature(std::move(p.rows));
++	}
++	return true;
+ }
+diff --git a/src/iomapserialize.h b/src/iomapserialize.h
+index 7a44138..2d39754 100644
+--- a/src/iomapserialize.h
++++ b/src/iomapserialize.h
+@@ -18,7 +18,15 @@ class IOMapSerialize
+ 
+ 		static bool saveHouse(House* house);
+ 
++		// Chaos (src-patch 0026): a save writes only the houses whose database rows differ from memory
++		static std::vector<uint32_t> changedHouseIds();
++		static bool saveHouses(const std::vector<uint32_t>& houseIds);
++
+ 	private:
++		static void recordLoadedHouses();
++		static void collectHouse(House* house, std::string& info, std::vector<std::pair<int64_t, std::string>>& lists,
++			std::vector<std::string>& rows);
++
+ 		static void saveItem(PropWriteStream& stream, const Item* item);
+ 		static void saveTile(PropWriteStream& stream, const Tile* tile);
+ 
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+index 7e736b5..74643d5 100644
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2166,6 +2166,8 @@ void LuaScriptInterface::registerFunctions()
+ 	registerMethod("Game", "getAccountStorageValue", LuaScriptInterface::luaGameGetAccountStorageValue);
+ 	registerMethod("Game", "setAccountStorageValue", LuaScriptInterface::luaGameSetAccountStorageValue);
+ 	registerMethod("Game", "saveAccountStorageValues", LuaScriptInterface::luaGameSaveAccountStorageValues);
++	registerMethod("Game", "saveIncremental", LuaScriptInterface::luaGameSaveIncremental); // Chaos (src-patch 0026)
++	registerMethod("Game", "isSaving", LuaScriptInterface::luaGameIsSaving); // Chaos (src-patch 0026)
+ 
+ 	registerMethod("Game", "setSpawnIntervalPercent", LuaScriptInterface::luaGameSetSpawnIntervalPercent);
+ 
+@@ -4876,6 +4878,23 @@ int LuaScriptInterface::luaGameSaveAccountStorageValues(lua_State* L)
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaGameSaveIncremental(lua_State* L)
++{
++	// Game.saveIncremental([playersPerTick = 10[, tickBudgetMs = 25[, tickDelayMs = 50[, housesPerTick = 100]]]])
++	// Chaos (src-patch 0026): starts the autosave in small steps (Game::saveIncremental); false when one is running
++	pushBoolean(L, g_game.saveIncremental(getNumber<uint32_t>(L, 1, ChaosSave::PLAYERS_PER_TICK),
++		getNumber<uint32_t>(L, 2, ChaosSave::TICK_BUDGET_MS), getNumber<uint32_t>(L, 3, ChaosSave::TICK_DELAY_MS),
++		getNumber<uint32_t>(L, 4, ChaosSave::HOUSES_PER_TICK)));
++	return 1;
++}
++
++int LuaScriptInterface::luaGameIsSaving(lua_State* L)
++{
++	// Game.isSaving(): true while an incremental save runs (Chaos, src-patch 0026)
++	pushBoolean(L, g_game.isIncrementalSaveRunning());
++	return 1;
++}
++
+ int LuaScriptInterface::luaGameSetSpawnIntervalPercent(lua_State* L)
+ {
+ 	// Game.setSpawnIntervalPercent(percent[, fromPosition, toPosition])
+diff --git a/src/luascript.h b/src/luascript.h
+index e1a8334..47d6396 100644
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -586,6 +586,8 @@ class LuaScriptInterface
+ 		static int luaGameGetAccountStorageValue(lua_State* L);
+ 		static int luaGameSetAccountStorageValue(lua_State* L);
+ 		static int luaGameSaveAccountStorageValues(lua_State* L);
++		static int luaGameSaveIncremental(lua_State* L);
++		static int luaGameIsSaving(lua_State* L);
+ 
+ 		static int luaGameSetSpawnIntervalPercent(lua_State* L);
+ 
+diff --git a/src/map.cpp b/src/map.cpp
+index 1caf719..f37136a 100644
+--- a/src/map.cpp
++++ b/src/map.cpp
+@@ -37,26 +37,17 @@ bool Map::loadMap(const std::string& identifier, bool loadHouses)
+ 
+ bool Map::save()
+ {
+-	bool saved = false;
++	// Chaos (src-patch 0026): only the houses that changed since the database was last written (owner, rent, lists,
++	// anything on their tiles), in one transaction; the stock save rewrote all of them and every tile row
++	int64_t start = OTSYS_TIME();
+ 	for (uint32_t tries = 0; tries < 3; tries++) {
+-		if (IOMapSerialize::saveHouseInfo()) {
+-			saved = true;
+-			break;
+-		}
+-	}
+-
+-	if (!saved) {
+-		return false;
+-	}
+-
+-	saved = false;
+-	for (uint32_t tries = 0; tries < 3; tries++) {
+-		if (IOMapSerialize::saveHouseItems()) {
+-			saved = true;
+-			break;
++		const std::vector<uint32_t> changed = IOMapSerialize::changedHouseIds();
++		if (IOMapSerialize::saveHouses(changed)) {
++			std::cout << "> Saved " << changed.size() << " changed house(s) in: " << (OTSYS_TIME() - start) / (1000.) << " s" << std::endl;
++			return true;
+ 		}
+ 	}
+-	return saved;
++	return false;
+ }
+ 
+ Tile* Map::getTile(uint16_t x, uint16_t y, uint8_t z) const
+diff --git a/src/signals.cpp b/src/signals.cpp
+index 24ce176..9bc3bfb 100644
+--- a/src/signals.cpp
++++ b/src/signals.cpp
+@@ -48,8 +48,13 @@ namespace {
+ void sigusr1Handler()
+ {
+ 	//Dispatcher thread
+-	std::cout << "SIGUSR1 received, saving the game state..." << std::endl;
+-	g_game.saveGameState();
++	// Chaos (src-patch 0026): the backup's save (server/tools/backup.sh) is the autosave in small steps, so it does
++	// not stop the game; a shutdown, /save and saveServer() still save in one go
++	std::cout << "SIGUSR1 received, saving the game state in steps..." << std::endl;
++	if (!g_game.saveIncremental(ChaosSave::PLAYERS_PER_TICK, ChaosSave::TICK_BUDGET_MS, ChaosSave::TICK_DELAY_MS,
++			ChaosSave::HOUSES_PER_TICK)) {
++		std::cout << "> A save is already running." << std::endl;
++	}
+ }
+ 
+ void sighupHandler()

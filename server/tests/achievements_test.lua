@@ -12,7 +12,7 @@ local index = K.build(data)
 
 -- ------------------------------------------------------------------ the list
 eq(#index.problems, 0, "no problems in achievements_data.lua: " .. table.concat(index.problems, "; "))
-eq(#index.list >= 60 and #index.list <= 100, true, "60-100 achievements (" .. #index.list .. ")")
+eq(#index.list >= 60 and #index.list <= 200, true, "60-200 achievements (" .. #index.list .. ")")
 local perCat, titles, rewards, hidden = {}, 0, 0, 0
 for _, def in ipairs(index.list) do
 	perCat[def.cat] = (perCat[def.cat] or 0) + 1
@@ -184,6 +184,185 @@ local cfg = {table = "t", bypass = {minGroup = 4, minAccountType = 5}, classes =
 eq(CK.autoUnlock("monk", {achievement = function(q) return K.has({ids = {}, points = 499}, q) end}, cfg), nil, "499 points")
 eq(CK.autoUnlock("monk", {achievement = function(q) return K.has({ids = {}, points = 500}, q) end}, cfg), "achievement")
 eq(CK.lockMessage("monk", cfg):find("earn 500 achievement points on your account", 1, true) ~= nil, true, "lock message")
+end
+
+-- ------------------------------------------------------------------ reward track: category completion
+-- (the point milestones and the cosmetics are cosmetics_config.lua; cosmetics_test.lua checks them against this list)
+local catKeys = {}
+for _, c in ipairs(data.categories) do
+	catKeys[#catKeys + 1] = c.key
+	local r = index.categoryRewards[c.key]
+	eq(r ~= nil, true, "category " .. c.key .. " has a completion reward")
+	eq(#r.title <= 24, true, c.key .. " title fits a name plate")
+end
+dofile("data/scripts/chaos/nameplate_core.lua")
+local seenTitles = {}
+for _, def in ipairs(index.list) do
+	if def.title then seenTitles[def.title] = true end
+end
+for key, r in pairs(index.categoryRewards) do
+	eq(r.frame == nil or ChaosNameplate.FRAMES[r.frame] == true, true, key .. ": frame " .. tostring(r.frame) .. " exists")
+	eq(r.frame ~= "gold" and r.frame ~= "crimson", true, key .. ": not the staff or siege frame")
+	eq(seenTitles[r.title], nil, key .. ": title " .. r.title .. " is not an achievement title already")
+	seenTitles[r.title] = true
+end
+local badRewards = K.build({categories = {{key = "a", name = "A"}}, list = {{id = "x", cat = "a", name = "X", points = 5, stat = "x"}},
+	categoryRewards = {a = {title = string.rep("y", 30)}, zz = {title = "Nope"}}})
+eq(#badRewards.problems, 2, "a long title and an unknown category"); eq(next(badRewards.categoryRewards), nil, "both left out")
+-- completion is account-wide (any character), hidden achievements count, nothing short of all of them
+local allIds, ridsAll = {}, {}
+for _, def in ipairs(index.list) do
+	allIds[def.id] = true
+	if def.cat == "rifts" then ridsAll[def.id] = true end
+end
+eq(next(K.completedCategories(index, {})), nil, "nothing done: no category")
+eq(K.completedCategories(index, ridsAll).rifts, true, "every rift achievement: Rifts complete")
+local allBut = {}
+for id in pairs(ridsAll) do allBut[id] = true end
+allBut.cinder_solo = nil -- a hidden one
+eq(K.completedCategories(index, allBut).rifts, nil, "a hidden one missing: not complete")
+local done = K.completedCategories(index, allIds)
+for _, key in ipairs(catKeys) do eq(done[key], true, "everything: " .. key .. " complete") end
+local twoChars = {"cinder_solo"} -- the hidden one on a second character, the rest on the first
+for id in pairs(allBut) do twoChars[#twoChars + 1] = id end
+local acct = K.accountFromIds(index, twoChars)
+eq(K.completedCategories(index, acct.ids).rifts, true, "two characters' achievements together complete it")
+-- titles: the completed categories, frame of the reward, key achievement_cat:<key>
+local ct = K.categoryTitles(index, ridsAll)
+eq(#ct, 1, "one category title"); eq(ct[1].text, "Riftwarden"); eq(ct[1].key, "achievement_cat:rifts"); eq(ct[1].frame, "violet")
+eq(#K.categoryTitles(index, allIds), #data.categories, "every category title")
+eq(#K.categoryTitles(index, {}), 0, "no title without completion")
+local tr = K.categoryTrack(index, {rift_t1 = true, level_50 = true})
+eq(#tr, #data.categories, "the track lists every category")
+eq(tr[1].key, "combat"); eq(tr[1].done, 1); eq(tr[1].complete, false); eq(tr[1].title, "Warmaster")
+eq(K.categoryTrack(index, ridsAll)[4].complete, true, "Rifts complete in the track")
+-- the point milestones need account points: an alt's achievements count once
+eq(K.accountFromIds(index, {"level_1000", "level_1000"}).points, 50, "an achievement on two characters counts once")
+
+-- ------------------------------------------------------------------ achievements.lua on a mocked engine (reward track)
+do
+	local sentMsgs, synced, registeredT, titleSources = {}, {}, {}, {}
+	CONST_ME_FIREWORK_YELLOW, MESSAGE_EVENT_ADVANCE, MESSAGE_INFO_DESCR = 29, 19, 22
+	json = {encode = function(t) return t end}
+	dofile("data/scripts/chaos/chaos_constants.lua")
+	local dbUnlocks = {} -- {player, id}
+	local dbDown = false
+	db = {query = function(q)
+		if dbDown then return false end
+		local guid, id = q:match("VALUES %((%d+), '([%w_]+)'")
+		if guid and q:find("chaos_achievements", 1, true) then dbUnlocks[#dbUnlocks + 1] = {tonumber(guid), id} end
+		return true
+	end, asyncQuery = function() return true end}
+	Chaos.select = function(q)
+		local out = {}
+		local accountId = tonumber(q:match("`account_id` = (%d+)"))
+		if accountId then
+			for _, u in ipairs(dbUnlocks) do
+				if u[1] == 1 or u[1] == 2 then out[#out + 1] = {achievement = u[2]} end -- guids 1 and 2: account 7
+			end
+		end
+		return out
+	end
+	local function event()
+		return function(name)
+			local e = {name = name}
+			function e:register() registeredT[name] = self end
+			function e:interval() end
+			function e:separator() end
+			return e
+		end
+	end
+	CreatureEvent, GlobalEvent, TalkAction = event(), event(), event()
+	EventCallback = {register = function() end}
+	addEvent = function() end
+	ChaosTitles = {register = function(source, fn) titleSources[source] = fn end}
+	ChaosCosmetics = {sync = function(p) synced[#synced + 1] = p:getName() end,
+		ownedOf = function() return {chat_ashen = true} end,
+		config = dofile("data/scripts/chaos/cosmetics_config.lua")}
+	dofile("data/scripts/chaos/cosmetics_core.lua")
+	local function mkPlayer(guid, name)
+		local p = {}
+		function p:getGuid() return guid end
+		function p:getName() return name end
+		function p:getId() return guid + 100 end
+		function p:getAccountId() return 7 end
+		function p:sendTextMessage() end
+		function p:sendExtendedOpcode(op, msg) sentMsgs[#sentMsgs + 1] = {to = name, op = op, msg = msg} end
+		function p:getPosition() return {sendMagicEffect = function() end} end
+		return p
+	end
+	dofile("data/scripts/chaos/achievements.lua")
+	local A = ChaosAchievements
+	local ann = mkPlayer(1, "Ann")
+	A.stats[1], A.unlocked[1], A.dirty[1] = {}, {}, {}
+	A.stats[1].level = 300 -- level 50..300: 5 + 10 + 10 + 15 = 40 points (A.set wants an engine Player)
+	A.evaluate(ann)
+	eq(#synced, 1, "new unlocks: the reward track is synced once"); eq(synced[1], "Ann")
+	-- one ACHIEVEMENT UNLOCKED toast per unlock, with the name and the points
+	local toasts = {}
+	for _, m in ipairs(sentMsgs) do if m.op == 79 and m.msg.action == "achievement" then toasts[#toasts + 1] = m.msg.message end end
+	eq(#toasts, 4, "four unlocks, four toasts")
+	eq(toasts[1], "Blooded: +5 points.", "the toast: name and points")
+	eq(#dbUnlocks, 4, "four unlock rows")
+	-- a relog: the unlocks come back from the database, nothing is unlocked or shown again
+	local before = #sentMsgs
+	A.unlocked[1] = {}
+	for _, u in ipairs(dbUnlocks) do if u[1] == 1 then A.unlocked[1][u[2]] = 1 end end
+	eq(#A.evaluate(ann, true), 0, "relog: nothing unlocked twice")
+	eq(#sentMsgs, before, "relog: no toast twice")
+	-- the unlock row cannot be written: no toast, no reward, still locked (the next check tries again)
+	A.stats[1].level = 500
+	dbDown = true
+	eq(#A.evaluate(ann), 0, "database down: nothing unlocked")
+	eq(A.unlocked[1].level_500, nil, "still locked")
+	eq(#sentMsgs, before, "and nothing shown")
+	dbDown = false
+	-- the login summary: the quiet check, then one toast with the reward (giveReward needs the engine: stubbed by a pcall
+	-- failure, so the summary is checked from the list it gets)
+	local list = {index.byId.level_500, index.byId.level_700, rewards = {level_500 = "5 Orb of Fate"}}
+	A.summaryToast(ann, list)
+	local last = sentMsgs[#sentMsgs].msg
+	eq(last.action, "achievement", "the summary toast")
+	eq(last.message, "2 achievements unlocked: +50 points: Shatterborn, Into the Abyss. Rewards: 5 Orb of Fate.", "summary with rewards")
+	A.stats[1].level = 300
+	eq(A.accountOf(ann).points, 40, "account points after the unlocks")
+	eq(A.accountOf(7).points, 40, "by account id")
+	A.evaluate(ann)
+	eq(#synced, 1, "nothing new: no sync")
+	A.grant(ann, "tutorial")
+	eq(#synced >= 2, true, "a staff grant syncs too")
+	-- the window's track message
+	sentMsgs = {}
+	A.sendTrack(ann)
+	local track
+	for _, m in ipairs(sentMsgs) do if m.msg.action == "track" then track = m.msg.data end end
+	eq(track ~= nil, true, "track sent"); eq(track.ap, 45, "with the account points")
+	eq(track.steps[1].o, 1, "owned milestone flagged"); eq(#track.cats, #data.categories, "and the categories")
+	-- the category titles join the achievement titles (account-wide: a second character's unlocks count)
+	for id in pairs(ridsAll) do dbUnlocks[#dbUnlocks + 1] = {2, id} end -- Bob (guid 2, offline) of the same account
+	A.accounts[7] = nil -- reloaded from the database (as at a login)
+	local titles = titleSources.achievement(ann)
+	local hasCat = false
+	for _, t in ipairs(titles) do if t.key == "achievement_cat:rifts" then hasCat = true end end
+	eq(hasCat, true, "Ann holds Riftwarden: Bob completed Rifts on the same account")
+	ChaosCosmetics, ChaosTitles, json = nil, nil, nil
+end
+
+-- ------------------------------------------------------------------ toasts
+do
+	local t, x = K.toast(index.byId.level_1000, "mount Doombringer")
+	eq(t, "The Thousandth Step", "toast title: the name")
+	eq(x, "+50 points. Title: the Unbroken. Reward: mount Doombringer.", "toast text: points, title, reward")
+	local t1, x1 = K.toast({id = "x", name = "One", points = 1}, "")
+	eq(t1 .. "|" .. x1, "One|+1 point.", "one point, no reward")
+	eq(K.summaryToast({}), nil, "no unlocks: no toast")
+	local s1, sx = K.summaryToast({index.byId.level_50}, {})
+	eq(s1 .. "|" .. sx, "Blooded|+5 points.", "one unlock: its own toast")
+	local defs = {}
+	for _, id in ipairs({"level_50", "level_100", "level_200", "level_300", "level_500"}) do defs[#defs + 1] = index.byId[id] end
+	local st, stext = K.summaryToast(defs, {level_300 = "a", level_500 = "b", level_200 = "c"})
+	eq(st, "5 achievements unlocked", "summary title")
+	eq(stext, "+65 points: Blooded, Ascendant's Threshold, Hardened and 2 more. Rewards: c, a and 1 more.", "summary text, rewards capped")
 end
 
 -- ------------------------------------------------------------------ SQL

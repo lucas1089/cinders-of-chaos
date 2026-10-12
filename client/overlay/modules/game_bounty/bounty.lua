@@ -5,7 +5,7 @@
 --                            outfit, reward = {gold, chaos, divine, exp}, state = open|active|done, progress}]}]}
 --                     progress {key, progress, count, state}
 --   client -> server  open | accept {key} | abandon {key}
--- !bounty opens it from the chat; the top menu (Chaos -> Bounty Board) calls toggle().
+-- The top menu (Adventure > Bounty Board) calls toggle().
 
 local OPCODE = 223
 
@@ -76,12 +76,12 @@ local function rewardText(r)
     exact[#exact + 1] = (comma_value and comma_value(r.gold) or tostring(r.gold)) .. ' gold to your bank'
   end
   if (tonumber(r.chaos) or 0) > 0 then
-    local t = r.chaos .. ' Chaos Orb' .. (r.chaos > 1 and 's' or '')
+    local t = r.chaos .. (r.chaos > 1 and ' Orbs of Upheaval' or ' Orb of Upheaval')
     parts[#parts + 1] = t
     exact[#exact + 1] = t
   end
   if (tonumber(r.divine) or 0) > 0 then
-    local t = r.divine .. ' Divine Orb' .. (r.divine > 1 and 's' or '')
+    local t = r.divine .. (r.divine > 1 and ' Orbs of Fate' or ' Orb of Fate')
     parts[#parts + 1] = t
     exact[#exact + 1] = t
   end

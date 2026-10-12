@@ -9,7 +9,7 @@
 -- rename vocations without touching this file. Other scripts extend the tables through ChaosNewPlayer.setKit /
 -- ChaosNewPlayer.kitFor (newplayer_core.lua).
 --
--- Slots: head, necklace, backpack, armor, right (the shield hand), left (the weapon hand), legs, feet, ring, ammo.
+-- Slots: head, necklace, backpack, armor, right (the shield hand), left (the weapon hand), legs, feet, ring, ammo (the second ring slot).
 -- An equip entry whose slot is taken goes into the kit backpack instead. `minLevel` + `fallback`: below minLevel the
 -- fallback is equipped and the real weapon goes into the backpack (a wand of level 7 is no use at level 1).
 -- Checked in the base server's weapons.xml / movements.xml: every item below can be worn or wielded by its classes at
@@ -39,7 +39,7 @@ return {
 		ranger = {
 			equip = {
 				{slot = "left", id = 2456}, -- bow (two-handed)
-				{slot = "ammo", id = 2544, count = 100}, -- arrows
+				-- no arrows: bows fire without ammunition (data/lib/chaos_archery_config.lua); quivers come from loot
 				{slot = "head", id = 2458}, -- chain helmet
 				{slot = "armor", id = 2660}, -- ranger's cloak
 				{slot = "legs", id = 2468}, -- studded legs
@@ -79,7 +79,47 @@ return {
 				{id = 7618, count = 10},
 				{id = 7620, count = 5}
 			},
-			role = "thief"
+			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
+		},
+		monk = { -- the Monk line fights unarmed: no weapon, the light armour the Ranger may wear (add_vocations.py)
+			equip = {
+				{slot = "head", id = 2461}, -- leather helmet
+				{slot = "armor", id = 2467}, -- leather armor
+				{slot = "legs", id = 2468}, -- studded legs
+				{slot = "feet", id = 2643}
+			},
+			backpack = {
+				{id = 7618, count = 10},
+				{id = 7620, count = 5}
+			},
+			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
+		},
+		necromancer = { -- the Necromancer line wields and wears what the Mystic does (add_vocations.py): the caster kit
+			base = "mystic"
+		},
+		templar = { -- the Templar line: a one-handed sword and a shield, the armour the Warrior wears (add_vocations.py)
+			base = "warrior"
+		},
+		berserker = { -- the Berserker wields two-handed weapons only (add_vocations.py): a battle axe, no shield. Not
+			-- based on "warrior": an inherited row would keep the warrior's shield hand
+			equip = {
+				{slot = "left", id = 2378}, -- battle axe (two-handed, no level)
+				{slot = "head", id = 2460}, -- brass helmet
+				{slot = "armor", id = 2465}, -- brass armor
+				{slot = "legs", id = 2478}, -- brass legs
+				{slot = "feet", id = 2643} -- leather boots
+			},
+			backpack = {
+				{id = 7618, count = 10},
+				{id = 7620, count = 5}
+			},
+			role = "melee"
+		},
+		samurai = { -- one katana-style sword: the base server's katana (a one-handed sword, no level) instead of the dagger
+			base = "thief",
+			equip = {
+				{slot = "left", id = 2412} -- katana
+			}
 		},
 		ninja = { -- like the Thief, with a second dagger for the off hand
 			base = "thief",
@@ -105,13 +145,14 @@ return {
 	},
 
 	-- vocation id -> kit, by the class ids of Chaos.classes.ids (chaos_constants.lua, docs/CLASSES.md): a character is
-	-- created as Warrior 4, Ranger 3, Mystic 1 or Thief 11; the ascended classes are listed too (staff re-grants, a
+	-- created as Warrior 4, Ranger 3, Mystic 1, Thief 11, Monk 17, Necromancer 20 or Templar 23 (the last three behind the
+	-- store's class unlock); the ascended classes are listed too (staff re-grants, a
 	-- class changed before the first login). The retired ids 2, 6 and 9 have no row (class_migration.lua moves them;
 	-- they would get `default`). A new class needs one row here, or ChaosNewPlayer.setKit from its own script.
 	vocations = {
 		[4] = "warrior", -- Warrior
 		[8] = "warrior", -- Juggernaut
-		[14] = "warrior", -- Berserker
+		[14] = "berserker", -- Berserker
 		[3] = "ranger", -- Ranger
 		[7] = "ranger", -- Deadeye
 		[15] = "ranger", -- Beastmaster
@@ -120,7 +161,16 @@ return {
 		[10] = "mystic", -- Illusionist
 		[11] = "thief", -- Thief
 		[12] = "ninja", -- Ninja
-		[13] = "thief" -- Samurai
+		[13] = "samurai", -- Samurai
+		[17] = "monk", -- Monk
+		[18] = "monk", -- Shadowfist
+		[19] = "monk", -- Iron Sage
+		[20] = "necromancer", -- Necromancer
+		[21] = "necromancer", -- Lich
+		[22] = "necromancer", -- Bone Lord
+		[23] = "templar", -- Templar
+		[24] = "templar", -- Inquisitor
+		[25] = "templar" -- Sentinel
 	},
 	-- vocations the kit never handles: the base server's creaturescripts/firstitems.lua already equips vocation 0
 	skipVocations = {[0] = true},
@@ -144,32 +194,32 @@ return {
 
 	-- ------------------------------------------------------------------ milestone gifts (one time per character)
 	-- potions by kit role; the base potions script refuses the strong ones to some vocations, so each role gets what
-	-- it may drink (the Thief line only the unrestricted ones, see docs/CLASSES.md "Limits of phase 1")
+	-- it may drink (add_vocations.py: the Thief and Monk lines drink the Royal Paladin's, "ranged")
 	milestones = {
 		{level = 20, orbs = 1, potions = {
-			melee = {{7618, 50}}, ranged = {{7618, 25}, {7620, 25}}, caster = {{7620, 50}}, thief = {{7618, 40}, {7620, 10}}}},
+			melee = {{7618, 50}}, ranged = {{7618, 25}, {7620, 25}}, caster = {{7620, 50}}}},
 		{level = 50, orbs = 2, potions = {
-			melee = {{7588, 50}}, ranged = {{7588, 25}, {7589, 25}}, caster = {{7589, 50}}, thief = {{7618, 75}, {7620, 25}}}},
+			melee = {{7588, 50}}, ranged = {{7588, 25}, {7589, 25}}, caster = {{7589, 50}}}},
 		{level = 100, orbs = 3, items = {{27990, 2}}, -- Stamina Extension (the store item, +2 h of stamina each)
-			potions = {melee = {{7591, 50}}, ranged = {{8472, 50}}, caster = {{7590, 50}}, thief = {{7618, 100}, {7620, 50}}}},
+			potions = {melee = {{7591, 50}}, ranged = {{8472, 50}}, caster = {{7590, 50}}}},
 		{level = 200, orbs = 5, potions = {
-			melee = {{8473, 50}}, ranged = {{26030, 50}}, caster = {{26029, 50}}, thief = {{7618, 150}, {7620, 50}}}}
+			melee = {{8473, 50}}, ranged = {{26030, 50}}, caster = {{26029, 50}}}}
 	},
-	orbId = 29856, -- Chaos Orb
+	orbId = 29856, -- Orb of Upheaval
 
 	-- ------------------------------------------------------------------ welcome (one time, after the kit)
 	welcome = {
-		title = "Welcome to Project Chaos",
-		-- %s = character name, %s = vocation name
+		title = "Welcome to Cinders of Chaos",
+		-- %s = character name, %s = vocation name, %s = the gift line (NP.giftLine: the milestone levels still ahead)
 		text = "Welcome, %s the %s.\n\n" ..
 			"Your starter kit is in your backpack. Next steps:\n" ..
-			"- !spells opens your spellbook: every spell of your class and what it does.\n" ..
+			"- Character > Spellbook (Alt+S): every spell of your class and what it does.\n" ..
 			"- The passive tree (top menu, Character): a point every 4 levels past level 8.\n" ..
-			"- !bounty: daily contracts that pay gold and Chaos Orbs.\n" ..
+			"- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n" ..
 			"- The store (top menu, Economy): temple scrolls, stamina and services.\n" ..
-			"- The top menu holds every Chaos window: dungeons, the tower, dailies, bank and stash.\n\n" ..
-			"Gifts wait for you at levels 20, 50, 100 and 200.",
-		toast = "Welcome to Project Chaos! Your kit is in your backpack. Try !spells, !bounty and the top menu.",
+			"- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n" ..
+			"%s",
+		toast = "Welcome to Cinders of Chaos! Your kit is in your backpack. Everything else is in the menu at the top.",
 		delayMs = 2500
 	},
 
@@ -180,8 +230,9 @@ return {
 		stage = 2, -- tutorial: 1..5 = station in progress, 100 = finished, 101 = skipped
 		done = 3, -- tutorial: bit (station - 1) set when that station's task is done
 		kills = 4, -- tutorial station 1: kills so far
-		orbBase = 5, -- tutorial station 4: Chaos Orbs owned after the orb was handed out
+		orbBase = 5, -- tutorial station 4: Orbs of Upheaval owned after the orb was handed out
 		flags = 6, -- tutorial bits: 1 spellbook opened, 2 spell cast, 4 passive point given, 8 orb given, 16 mana topped up
+		islandUsed = 7, -- tutorial: seconds spent on the island in earlier sessions (instance limits)
 		milestone = 10 -- + index into milestones (10 .. 19)
 	},
 	stageDone = 100,
@@ -190,6 +241,12 @@ return {
 	-- ------------------------------------------------------------------ tutorial island (newplayer_tutorial.lua)
 	tutorial = {
 		enabled = true,
+		-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a character spends at most
+		-- timeLimitMinutes online on the island (the stations take 5-10 minutes); then it leaves as with "Skip
+		-- tutorial": the kit, the welcome, its temple. Warnings at warnAt seconds left. The island is one shared place
+		-- (no copies, no cap); the training rats are at most maxMonsters at once.
+		timeLimitMinutes = 30,
+		limits = {warnAt = {300, 60}},
 		-- built at startup with Game.createTile, like the world boss arena. Footprint x 4598-4642, y 4598-4612, z 7:
 		-- the map has no tiles within x/y 4500-5600 (server/README.md "World bosses"); the build checks again and
 		-- refuses to build over tiles that are not its own. Then new characters get the kit at once (no island).
@@ -221,7 +278,7 @@ return {
 			ranger = {name = "Arcane Stitch", words = "saen tin", mana = 6},
 			mystic = {name = "Arcane Stitch", words = "saen tin", mana = 6}
 		},
-		-- station 4: the Chaos Orb and the item it is used on (a Common = rarity 1 leather armor)
+		-- station 4: the Orb of Upheaval and the item it is used on (a Common = rarity 1 leather armor)
 		orbItem = {id = 2467, rarity = 1},
 
 		lessons = {
@@ -230,31 +287,31 @@ return {
 					"Walk with the arrow keys or by clicking the ground. Attack a creature by clicking it in the battle list " ..
 					"or with ctrl + click / right click on it. Keep an eye on your health bar.\n\n" ..
 					"Task: kill %d of the rats in this pen. The gate to the east opens when you are done.\n\n" ..
-					"Experienced? Say !skiptutorial (or use the goblin statue) to take your kit and leave at once.",
+					"Experienced? Use the goblin statue (or Character > Services) to take your kit and leave at once.",
 				toast = "Station 1: kill %d rats in the first pen."},
 			{title = "Station 2: Spells",
-				text = "Every class has its own spells. !spells (or Character > Spellbook in the top menu) lists them with " ..
+				text = "Every class has its own spells. Character > Spellbook in the top menu (Alt+S) lists them with " ..
 					"their words, mana, level and what they do.\n\n" ..
-					"Task: open your spellbook with !spells%s",
-				toast = "Station 2: open !spells%s"},
+					"Task: open your spellbook (Character > Spellbook)%s",
+				toast = "Station 2: open your spellbook%s"},
 			{title = "Station 3: The passive tree",
 				text = "Every 4 levels past level 8 you get a passive point. Spend them in the passive tree (top menu, " ..
 					"Character > Passive Tree): start next to the centre and walk outwards. Big nodes are notables; the " ..
 					"keystones at the far ends change how your class plays.\n\n" ..
-					"Task: you get one free point now. Open the tree, click a node next to the centre and press Apply Points.",
-				toast = "Station 3: spend your free passive point (Apply Points)."},
+					"Task: you get one free point now. Open the tree, click a node next to the centre and press Apply Plan.",
+				toast = "Station 3: spend your free passive point (Apply Plan)."},
 			{title = "Station 4: Orbs and crafting",
-				text = "Monsters drop orbs. A Chaos Orb rerolls the modifiers of an item with a rarity, a Divine Orb rolls " ..
+				text = "Monsters drop orbs. An Orb of Upheaval rerolls the modifiers of an item with a rarity, an Orb of Fate rolls " ..
 					"a new rarity, and the other orbs add or remove modifiers.%s\n\n" ..
-					"Task: you got a Chaos Orb and a Common leather armor. Use the orb on the armor (right click the orb, " ..
+					"Task: you got an Orb of Upheaval and a Common leather armor. Use the orb on the armor (right click the orb, " ..
 					"Use with, then click the armor in your backpack).",
-				toast = "Station 4: use the Chaos Orb on the leather armor.",
-				craftHint = " The crafting bench (!craft, or Chaos > Crafting Bench) shows every orb and what it does."},
+				toast = "Station 4: use the Orb of Upheaval on the leather armor.",
+				craftHint = " The crafting bench (Economy > Crafting Bench) shows every orb and what it does."},
 			{title = "Station 5: Keystones, bounties and the store",
 				text = "Keystones are the big nodes at the edge of the passive tree: they change your class (Cleaving Arc, " ..
 					"Ricochet, Arcane Echo...). Plan your path towards one.\n\n" ..
-					"!bounty gives daily contracts per level band that pay gold and orbs. The store (top menu, Economy) sells " ..
-					"temple scrolls, stamina and services. Dungeons, the Infinity Tower and the dailies are under Chaos in " ..
+					"The bounty board (Adventure > Bounty Board) gives daily contracts per level band that pay gold and orbs. The store (top menu, Economy) sells " ..
+					"cosmetics, stamina and services. Dungeons, the Infinity Tower and the dailies are under Adventure in " ..
 					"the top menu.\n\n" ..
 					"Step into the forcefield to the east: you get your starter kit and arrive at the temple.",
 				toast = "Station 5: step into the forcefield to leave the island."}

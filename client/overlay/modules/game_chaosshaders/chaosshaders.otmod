@@ -1,7 +1,7 @@
 Module
   name: game_chaosshaders
   description: Outfit shaders used by the server (monster modifiers, store)
-  author: Chaos
+  author: Cinders of Chaos
   sandboxed: true
   autoload: true
   autoload-priority: 500

@@ -41,7 +41,7 @@ class ParseError(Exception):
 
 class Thing:
     __slots__ = ('id', 'flags', 'w', 'h', 'exact', 'layers', 'px', 'py', 'pz', 'phases',
-                 'anim', 'sprites', 'raw', 'cat', 'extras', 'spr_pos', 'u32')
+                 'anim', 'sprites', 'raw', 'cat', 'extras', 'spr_pos', 'u32', 'attr_end')
 
     def __repr__(self):
         return f'<Thing {self.cat}{self.id} {self.w}x{self.h} L{self.layers} P{self.px}{self.py}{self.pz} F{self.phases}>'
@@ -97,6 +97,7 @@ class Dat:
                     b0 = pos
                     b = d[pos]; pos += 1
                     if b == 0xFF:
+                        t.attr_end = b0   # offset of the 0xFF that ends the flag list
                         break
                     nm_ = tab.get(b)
                     if b in self.extra:

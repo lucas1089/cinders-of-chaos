@@ -28,17 +28,21 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
 
 1. **Extra rolls** (`extraRolls`): magic 1, rare 2, legendary 3, boss 2 additional passes over `MonsterType:getLoot()`
    using the stock chance test `getLootRandom() <= lootData.chance`. Counts: `random(min,max) * levelCountMult(stock
-   table, by Monster:getMonsterLevel()) * extraCountMult[tier] * rateMult`, floor, min 1; non-stackables always 1.
+   table, by Monster:getMonsterLevel()) * extraCountMult[tier]`, floor, min 1; non-stackables always 1. The rate
+   scales the chance only (rate x count squared the bonus).
    Extra gear gets the stock rarity roll (copied) so it is comparable with stock gear.
 2. **Gear quality**: every top-level corpse item that is gear (weapon/armor/hit/absorb/skill/special stats like the stock
-   `hasRelevantStats`; not ammo, stackable, container, not in `gear.excludedItems` (boats 27797-27802), not a unique
+   `hasRelevantStats`, or a quiver of `data/lib/chaos_archery_config.lua`, which has no stats of its type; not ammo, stackable, container, not in `gear.excludedItems` (boats 27797-27802), not a unique
    from `ChaosUniqueItems`) gets `L.upgradeRarity(tier, current, itemFind)`: floor (rare 3, legendary 5, boss 6, with
    `ensureChance`), then `bonusChance` % for +1..+3 steps (`bonusSteps` weights), capped at `maxRarity` (15). Never
    downgrades. If the target is higher, `Game.createItemWithRarity(id, 1, target)` is made, checked
    (`getCustomAttribute("rarity") == target`), added with `corpse:addItemEx`, and only then the old item is removed. On any
    failure the original stays.
 3. **Currency**: `currency.entries` (stock orbs 29857 Divine, 29856 Chaos; add your own) with `chance[tier]` per 10000,
-   plus `guaranteed[tier]` weighted draws (legendary 1, boss 1), count scaled by `countMult[tier]`.
+   plus `guaranteed[tier]` weighted draws (legendary 1, boss 1), count scaled by `countMult[tier]`. The chance scale
+   (rate x item find x orb find x Ember of the Forge) is capped at `currency.maxScale` (3.0).
+   3b. **Gems** (`data/lib/chaos_gems_config.lua` `drop`): chance by tier per 10000 x the rate x item find, quality by the
+   monster's level; gear with a rarity also gets its sockets in step 2b. See server/README.md "Gems and sockets".
 4. **Uniques**: see contract below.
 5. **Item find**: `player:getStorageValue(ChaosLootConfig.itemFindStorage)` (default 7100040) = +N % (clamped to
    `itemFindMaxPercent`, 300) on extra-roll chance, currency chance, unique chance, gear bonus chance. Corpse owner only.
@@ -46,7 +50,8 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
    rarity >= `announceRarityFrom` (10) is announced to nearby players like a unique find.
 
 `ChaosLootConfig.rateMult` (number or `function(ctx)`, ctx = `{tier, monster, player, level, itemFind}`) multiplies
-extra-roll chance + count and currency chance. Unique chance is only scaled by tier and item find.
+extra-roll chance and currency chance. loot.lua caps the result (guild wrapper included) at `ChaosLootConfig.maxRate`
+(3.0); `ChaosLoot.rateMult(ctx)` is the capped value. Unique chance is only scaled by tier and item find.
 
 ## Contract: ChaosUniqueItems (defined by the items agent)
 
@@ -108,3 +113,5 @@ only returns a table so this is harmless (loot.lua reads the global `ChaosLootCo
 * `ChaosTierDead` lives 10 s; if the death event does not fire (monster without the registered event) the tier falls back to
   `ChaosTierOf` and then `normal`.
 * Item find storage 7100040 is just a free key in the Chaos range; nothing sets it yet.
+* Arrows and bolts (bows fire without them, server/README.md "Infinite arrows and quivers"): `processKill` removes them from the
+  corpse first and the extra rolls skip them, for a monster whose loot table still lists them.

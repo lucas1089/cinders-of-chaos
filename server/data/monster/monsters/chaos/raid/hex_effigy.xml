@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Add of the Ashen Sepulchre (raid.lua): Immobile; while it stands everyone in the room gains Hexed stacks, and it detonates when its time runs out (kill the totem). Health and count are set by the script (x raid size, raid_config.lua); the stock look 995. No loot: the boss is the prize. -->
+<monster name="Hex Effigy" nameDescription="a hex effigy" race="undead" experience="1000" speed="0" manacost="0">
+	<health now="70000" max="70000" />
+	<look type="995" corpse="6068" />
+	<targetchange interval="4000" chance="15" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="0" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<defenses armor="40" defense="40" />
+	<elements>
+		<element physicalPercent="0" />
+		<element firePercent="0" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="0" />
+		<element holyPercent="-25" />
+		<element deathPercent="50" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+</monster>

@@ -1,6 +1,7 @@
 -- Registers the outfit shaders the server sends by name (data/XML/shaders.xml of the base server,
--- ids 1-17) so monster modifiers, store shaders and outfit shaders draw. Same list and files as the
--- base client's game_shaders module; the .frag files are in data/shaders.
+-- ids 1-17, and 18 ember_pixent of the exclusives) so monster modifiers, store shaders and outfit shaders
+-- draw. Same list and files as the base client's game_shaders module (plus ember_pixent); the .frag files
+-- are in data/shaders.
 -- The server names "blue Dortmond" (id 5) with a space, the base client "blue_Dortmond": both are registered.
 
 local SHADERS = {
@@ -23,6 +24,8 @@ local SHADERS = {
   { "yellow_pixent", "/shaders/expand_vertex", "/shaders/shine122" },
   { "green_pixent", "/shaders/expand_vertex", "/shaders/pixent_green" },
   { "blue_pixent", "/shaders/expand_vertex", "/shaders/pixent_blue" },
+  -- shader 18, never sold (server exclusives_config.lua, a boss drop; shaders.xml via server/tools/install_outfits.py)
+  { "ember_pixent", "/shaders/expand_vertex", "/shaders/pixent_ember" },
 }
 
 function init()

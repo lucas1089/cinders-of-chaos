@@ -1,7 +1,7 @@
 Module
   name: game_craftskills
   description: Profession skills (crafting, gathering, smithing) at the bottom of the skills window
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ craftskills ]
   dependencies:

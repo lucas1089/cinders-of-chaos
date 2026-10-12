@@ -20,9 +20,9 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
 	ChaosSpell.shoot(from, tpos, "shadow_bolt", CONST_ANI_DEATH)
-	ChaosSpell.fx(from, "shadow_smoke", CONST_ME_MORTAREA)
+	ChaosSpell.vfxOr(from, "shade_vanish", "shadow_smoke", CONST_ME_MORTAREA)
 	player:teleportTo(spots[1].pos)
-	ChaosSpell.fx(spots[1].pos, "shadow_smoke", CONST_ME_MORTAREA)
+	ChaosSpell.vfxOr(spots[1].pos, "shade_appear", "shadow_smoke", CONST_ME_MORTAREA)
 
 	local min, max = ChaosSpell.mlValues(player, 4.7, 7.9, 54, 99, 1.4)
 	ChaosSpell.damageTarget(player, target, COMBAT_DEATHDAMAGE, min, max, Fx("shadow_smoke", CONST_ME_MORTAREA))

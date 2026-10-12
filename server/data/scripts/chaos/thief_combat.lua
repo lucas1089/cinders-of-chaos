@@ -14,6 +14,13 @@
 --     file keeps at 1 for Ninjas (Chaos.classes.storage.dualWield).
 --   * Samurai Counter Stance (spell): the next melee hit within 2 s is parried and answered.
 --   * Samurai Bushido Focus (spell): crit chance stacks every second without taking damage.
+--   * The class section of the passive tree (class_tree.lua): Twin Fangs (off-hand share), Fleet Shadow (evasion),
+--     Living Shadow (Ninja keystone: a dodge or the first hit out of stealth opens a window of +25% weapon damage),
+--     Iron Parry (Counter Stance answers +50%, the window in the spell), Way of the Blade (Samurai keystone: the stance
+--     parries every melee hit while it lasts, a hit keeps half of the Bushido stacks).
+--   * Samurai, the duelist off-tank: Counter Stance also takes the guard off every hit it does not parry and taunts.
+--   * Blackblood Creed (the line's keystone in the main tree, node 383): every weapon hit poisons as Poison Blades does,
+--     with or without the buff, the poison +60%; evasion halved.
 -- Scripted strikes (off-hand, counter) are dealt with origin ORIGIN_NONE inside a guard flag, so they never trigger
 -- the weapon-hit rules again (no off-hand from an off-hand, no poison, no second ambush).
 
@@ -25,6 +32,7 @@ if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua")
 end
 local C = ChaosClasses
+local CT = ChaosClassTree -- the class nodes of the passive tree (classes.lua loads class_tree.lua)
 local function cfg()
 	return Chaos.classes
 end
@@ -100,12 +108,12 @@ local function offhandStrike(attackerId, targetId, amount, ctype)
 	end
 end
 
-local function poison(attacker, target, hit)
+local function poison(attacker, target, hit, bonus)
 	local p = cfg().poisonBlades
 	local c = Condition(CONDITION_POISON)
 	c:setParameter(CONDITION_PARAM_OWNER, attacker:getId())
 	c:setParameter(CONDITION_PARAM_DELAYED, true)
-	c:addDamage(p.ticks, p.tickMs, -C.poisonTick(hit))
+	c:addDamage(p.ticks, p.tickMs, -C.poisonTick(hit, bonus))
 	target:addCondition(c)
 end
 
@@ -130,9 +138,17 @@ local function onOffence(creature, attacker, primaryDamage, primaryType, seconda
 	local m, ends = C.stealthOnAttack(stealthed(player), isWeapon, amount)
 	if ends then
 		endStealth(player)
+		-- Living Shadow (Ninja keystone): the first hit out of Shadow Veil opens the window
+		if CT.has(player, "ksLivingShadow") then
+			C.livingOpen(player:getId(), now)
+		end
 	end
 	if m > 1 then
 		mult, crit = mult * m, true
+	end
+	-- Living Shadow: weapon hits and strikes in the window
+	if isWeapon then
+		mult = mult * C.livingFactor(player:getId(), now)
 	end
 
 	-- Bushido Focus: crit chance from the stacks (weapon hits; Iaijutsu rolls it itself)
@@ -152,16 +168,18 @@ local function onOffence(creature, attacker, primaryDamage, primaryType, seconda
 		ChaosCombatFx.crit(creature:getPosition(), player:getId())
 	end
 
-	-- Poison Blades
-	if isWeapon and hasCond(player, CONDITION_ATTRIBUTES, cfg().subId.poisonBlades) then
-		poison(player, creature, amount)
+	-- Poison Blades; Blackblood Creed (the line keystone): every weapon hit, and a stronger poison
+	local creed = CT.has(player, "ksBlackbloodCreed")
+	if C.weaponPoisons(isWeapon, hasCond(player, CONDITION_ATTRIBUTES, cfg().subId.poisonBlades), creed) then
+		poison(player, creature, amount, creed and CT.fx.ksBlackbloodCreed.poisonBonus or 0)
 	end
 
 	-- Ninja dual wield: an off-hand strike after each melee hit of the main hand
 	if origin == ORIGIN_MELEE then
 		local main, off = player:getSlotItem(CONST_SLOT_LEFT), player:getSlotItem(CONST_SLOT_RIGHT)
 		if C.dualWieldProc(voc, true, lightBlade(main), lightBlade(off), scripted, amount) then
-			local value = C.offhandDamage(amount, itemAttack(main), itemAttack(off), creature:isPlayer())
+			local value = C.offhandDamage(amount, itemAttack(main), itemAttack(off), creature:isPlayer(),
+				CT.value(player, "ctTwinFangs", "offhandShare"))
 			if value > 0 then
 				addEvent(offhandStrike, cfg().dualWield.delayMs, player:getId(), creature:getId(), value,
 					primaryType)
@@ -206,24 +224,38 @@ local function onDefence(player, attacker, primaryDamage, primaryType, secondary
 	local isMelee = origin == ORIGIN_MELEE
 	local isWeapon = isMelee or origin == ORIGIN_RANGED
 
-	-- Counter Stance: parry the next melee hit and answer it
+	-- Counter Stance: parry the next melee hit and answer it (Way of the Blade: every melee hit while it lasts); every
+	-- other hit taken in the stance is smaller (the guard)
 	if C.isSamurai(voc) then
 		local cond = player:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, cfg().subId.counter)
-		if C.counterTake(cond and cond:getTicks() or 0, isMelee, true) then
-			player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, cfg().subId.counter)
+		local left = cond and cond:getTicks() or 0
+		if C.counterTake(left, isMelee, true) then
+			if not CT.has(player, "ksWayOfTheBlade") then
+				player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, cfg().subId.counter)
+			end
 			player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 			if ChaosCombatFx then
 				ChaosCombatFx.label(player:getPosition(), "PARRY", 35)
 			end
-			addEvent(counterStrike, 100, player:getId(), attacker:getId(), C.counterDamage(amount))
+			addEvent(counterStrike, 100, player:getId(), attacker:getId(),
+				C.counterDamage(amount, CT.value(player, "ctIronParry", "bonus")))
 			return 0, 0
+		end
+		local guard = C.counterGuard(left)
+		if guard ~= 1 then
+			primaryDamage, secondaryDamage = scale(primaryDamage, guard), scale(secondaryDamage, guard)
+			amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
 		end
 	end
 
 	-- Evasion
-	if C.dodges(voc, isWeapon, math.random()) then
+	if C.dodges(voc, isWeapon, math.random(), CT.value(player, "ctFleetShadow", "evasion"),
+			CT.value(player, "ksBlackbloodCreed", "evasionScale", 1)) then
 		if ChaosCombatFx then
 			ChaosCombatFx.dodge(player)
+		end
+		if CT.has(player, "ksLivingShadow") then -- Living Shadow: a dodge opens the window
+			C.livingOpen(player:getId(), now)
 		end
 		return 0, 0
 	end
@@ -233,7 +265,7 @@ local function onDefence(player, attacker, primaryDamage, primaryType, secondary
 		endStealth(player)
 	end
 	if C.isSamurai(voc) and bushidoSync(player, now) then
-		C.bushidoOnDamaged(player:getId(), now)
+		C.bushidoOnDamaged(player:getId(), now, CT.value(player, "ksWayOfTheBlade", "keepShare"))
 	end
 	return primaryDamage, secondaryDamage
 end

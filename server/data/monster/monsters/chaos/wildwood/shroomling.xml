@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Shroomling" nameDescription="a shroomling" race="venom" experience="70" speed="170" manacost="0">
+	<health now="120" max="120" />
+	<look type="2016" head="58" body="2" legs="1" feet="41" corpse="36077" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="12" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-43" />
+		<attack name="earth" interval="2000" chance="12" radius="1" target="0" min="-18" max="-57">
+			<attribute key="areaEffect" value="greenspark" />
+		</attack>
+	</attacks>
+	<defenses armor="8" defense="8">
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Squeak!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="17" chance="60000" /><!-- gold coin -->
+		<item id="36022" countmax="2" chance="18000" /><!-- spore sack -->
+		<item id="36059" countmax="2" chance="12000" /><!-- bowl of mushroom stew -->
+	</loot>
+</monster>

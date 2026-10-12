@@ -6,9 +6,10 @@ return {
 	-- mode key -> players per side, the leaderboard board key (ChaosLeaderboard.record, mode "max") and the shown name
 	modes = {
 		["1v1"] = {size = 1, board = "arena1v1", name = "Arena 1v1"},
-		["2v2"] = {size = 2, board = "arena2v2", name = "Arena 2v2"}
+		["2v2"] = {size = 2, board = "arena2v2", name = "Arena 2v2"},
+		["3v3"] = {size = 3, board = "arena3v3", name = "Arena 3v3"} -- a party of exactly three (PvP seasons bracket)
 	},
-	modeOrder = {"1v1", "2v2"},
+	modeOrder = {"1v1", "2v2", "3v3"},
 
 	minLevel = 50,
 	-- level rule (one rule for both modes, over every player of the match): the lowest level must be at least
@@ -26,6 +27,10 @@ return {
 
 	countdownSeconds = 10, -- no damage between players until the fight starts
 	fightSeconds = 300, -- then the side with the higher remaining health share wins
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings at warnAt seconds before the
+	-- fight's end (the HUD shows the clock too). The queue is the waiting line: a pair that finds every slot (grid.slots)
+	-- in use is told so, with the wait, and starts when one frees up. A fighter gone for disconnectSeconds has left.
+	limits = {warnAt = {60, 10}, maxRuns = 0, waitlist = false},
 	endDelaySeconds = 4, -- result shown in the arena before everybody goes back
 	-- the base PvP rules make a player with secure mode on unattackable; the client module turns it off for the
 	-- match. A fighter who still has it on this long after the fight started is counted as defeated.
@@ -34,8 +39,8 @@ return {
 
 	-- rewards: every win (at most maxRewardedWinsPerDay a day) and once a day the first win on top
 	reward = {
-		win = {{id = 29856, count = 1}}, -- Chaos Orb
-		firstWin = {{id = 29857, count = 1}, {id = 29856, count = 2}}, -- Divine Orb, Chaos Orbs
+		win = {{id = 29856, count = 1}}, -- Orb of Upheaval
+		firstWin = {{id = 29857, count = 1}, {id = 29856, count = 2}}, -- Orb of Fate, Orbs of Upheaval
 		maxRewardedWinsPerDay = 10
 	},
 

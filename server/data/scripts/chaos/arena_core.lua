@@ -342,7 +342,7 @@ function A.reward(cfg, day, st)
 	return items, first, {firstWinDay = day, winsDay = day, winsCount = count + 1}
 end
 
--- "1v1" / "2v2" from a talk parameter ("1", "1v1", "2V2", "duo"...), or nil
+-- "1v1" / "2v2" / "3v3" from a talk parameter ("1", "1v1", "2V2", "duo", "trio"...), or nil
 function A.parseMode(cfg, text)
 	text = tostring(text or ""):lower():gsub("%s", "")
 	if cfg.modes[text] then
@@ -352,6 +352,8 @@ function A.parseMode(cfg, text)
 		return "1v1"
 	elseif text == "2" or text == "duo" then
 		return "2v2"
+	elseif text == "3" or text == "trio" then
+		return "3v3"
 	end
 	return nil
 end

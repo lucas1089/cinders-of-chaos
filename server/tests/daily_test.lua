@@ -128,9 +128,9 @@ local title, tdays = D.titleFor(SC, 45)
 eq(title, D.milestoneAt(SC, 30).title, "title at 45 days")
 eq(tdays, 30, "its days")
 eq(D.titleFor(SC, 500), D.milestoneAt(SC, 180).title, "highest title")
-local names = {[29856] = "Chaos Orb", [29857] = "Divine Orb", [29855] = "Exalted Orb"}
+local names = {[29856] = "Orb of Upheaval", [29857] = "Orb of Fate", [29855] = "Orb of Grafting"}
 local function nm(id) return names[id] or ("item " .. id) end
-eq(D.milestoneText(D.milestoneAt(SC, 7), nm), "2x Chaos Orb, 1x Divine Orb", "milestone text")
+eq(D.milestoneText(D.milestoneAt(SC, 7), nm), "2x Orb of Upheaval, 1x Orb of Fate", "milestone text")
 assert(D.milestoneText(D.milestoneAt(SC, 30), nm):find("and the title \"", 1, true), "title in the milestone text")
 eq(D.lookText(nil, 0, "He"), nil, "no look text without a title")
 eq(D.lookText("the Devoted", 30, "You"), "You hold the login streak title the Devoted (30 days in a row).", "look text")
@@ -285,6 +285,7 @@ assert(text:find("login streak title", 1, true), "look text with the title")
 local order = {}
 ChaosLoginWindows.register("first", 10, function() return true end, function() order[#order + 1] = "first" end)
 events = {}
+registry["ChaosDailyLogout"].onLogout(c) -- a new session (the earlier logins' pending starts were dropped above)
 registry["ChaosDailyLogin"].onLogin(c)
 local e = events[1]
 e.fn(table.unpack and table.unpack(e.args) or unpack(e.args))
@@ -295,4 +296,21 @@ eq(#sent, count, "a 'closed' for another window does nothing")
 ChaosLoginWindows.closed(c, "first")
 eq(#sent, count + 1, "then the daily window")
 eq(lastWindow().Login, 1, "as a login opening")
+-- no login windows while on the tutorial island; its end starts the queue once (one start at a time)
+registry["ChaosDailyLogout"].onLogout(c)
+local onIsland = true
+ChaosNewPlayer = {onTutorial = function() return onIsland end}
+order, events = {}, {}
+registry["ChaosDailyLogin"].onLogin(c)
+eq(#events, 1, "start scheduled")
+events[1].fn(table.unpack and table.unpack(events[1].args) or unpack(events[1].args))
+eq(#order, 0, "nothing opens on the tutorial island")
+eq(ChaosLoginWindows.state[c:getId()], nil, "no queue")
+onIsland, events = false, {}
+ChaosLoginWindows.start(c)
+ChaosLoginWindows.start(c)
+eq(#events, 1, "a second start while one is pending is ignored")
+events[1].fn(table.unpack and table.unpack(events[1].args) or unpack(events[1].args))
+eq(order[1], "first", "after the tutorial the queue opens")
+ChaosNewPlayer = nil
 print("daily_test: OK")

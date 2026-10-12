@@ -4,7 +4,8 @@ dofile('data/spells/scripts/chaos/_common.lua')
 local combat = Combat()
 combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_DEATHDAMAGE)
 combat:setParameter(COMBAT_PARAM_EFFECT, Fx("arcane_circle", CONST_ME_MORTAREA))
-combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, FxMissile("arcane_orb", CONST_ANI_DEATH))
+-- with the animated missiles (data/lib/chaos_vfx.lua) the bolt is shot by onCastSpell instead
+combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, ChaosVfxMissile and CONST_ANI_NONE or FxMissile("arcane_orb", CONST_ANI_DEATH))
 
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 5.7) + 55) * 1.4
@@ -22,6 +23,10 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	local target = ChaosSpell.targetOf(variant)
+	if target and ChaosVfxMissile then
+		VfxShoot(creature:getPosition(), target:getPosition(), "arcane_bolt")
+		ChaosSpell.vfx(target:getPosition(), "cursed")
+	end
 	if target and target ~= creature then
 		local dmg = math.max(3, math.floor(creature:getMagicLevel() * 0.3) + 4)
 		creature:addDamageCondition(target, CONDITION_CURSED, DAMAGELIST_EXPONENTIAL_DAMAGE, dmg)

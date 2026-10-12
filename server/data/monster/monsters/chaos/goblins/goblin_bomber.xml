@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Bomber" nameDescription="a goblin bomber" race="blood" experience="90" speed="190" manacost="0">
+	<health now="130" max="130" />
+	<look type="2004" head="62" body="22" legs="76" feet="39" corpse="36065" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="3" />
+		<flag staticattack="90" />
+		<flag runonhealth="13" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-34" />
+		<attack name="fire" interval="2000" chance="25" radius="1" target="1" min="-33" max="-92">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="explosionarea" />
+		</attack>
+	</attacks>
+	<defenses armor="9" defense="9">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="BOOM! Hehehe!" />
+		<voice sentence="Catch!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="22" chance="60000" /><!-- gold coin -->
+		<item id="36013" countmax="2" chance="18000" /><!-- pouch of black powder -->
+		<item id="36012" countmax="1" chance="8000" /><!-- piece of scrap metal -->
+		<item id="36057" countmax="2" chance="12000" /><!-- grilled sausage -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

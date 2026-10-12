@@ -78,6 +78,11 @@ local function doDeposit(player, currency, amount)
 		if not player:removeItem(cfg.starItemId, amount) then
 			return fail(player, "Could not take the stars from you.")
 		end
+		-- saved before the bank row is credited: a crash in between cannot leave the stars in both places
+		if not Chaos.saveCharacter(player) then
+			player:addItem(cfg.starItemId, amount)
+			return fail(player, "The bank is busy. Try again in a moment.")
+		end
 		addStarBank(player:getGuid(), amount)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You deposited %d stars.", amount))
 	else
@@ -149,6 +154,11 @@ local function doTransfer(player, currency, targetName, amount)
 			online:setBankBalance(online:getBankBalance() + amount)
 			online:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s transferred %d gold to your bank account.", player:getName(), amount))
 		else
+			-- an offline receiver is credited in the database: the sender is saved first (no crash window)
+			if not Chaos.saveCharacter(player) then
+				player:setBankBalance(balance)
+				return fail(player, "The bank is busy. Try again in a moment.")
+			end
 			db.query("UPDATE `players` SET `balance` = `balance` + " .. amount .. " WHERE `id` = " .. targetGuid)
 		end
 		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You transferred %d gold to %s.", amount, canonical))
@@ -228,13 +238,3 @@ LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
 
--- Convenience: "!bank" opens the window (the client also opens it from its top-bar button).
-local talk = TalkAction("!bank")
-
-function talk.onSay(player, words, param)
-	sendBankState(player)
-	return false
-end
-
-talk:separator(" ")
-talk:register()

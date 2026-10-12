@@ -1,11 +1,11 @@
--- Bounty board (client game_bounty, extended opcode ChaosOpcodes.bounty, !bounty)
+-- Bounty board (client game_bounty, extended opcode ChaosOpcodes.bounty)
 --
 -- Every day at Chaos.bountyConfig.rollHour the board rolls 4 contracts per level band (hunt, hunt, elite, boss), the
 -- same for everyone: the roll is seeded from the date (bounty_core.lua), so a restart gives the same board. Monsters
 -- come from bounty_pool.lua (tools/gen_bounty_pool.py: only monsters that spawn on the loaded map).
 -- A player sees the band of their level and the ones next to it, accepts up to maxActive contracts; kills count when
 -- the player made the kill (last hit or most damage, summons for their master) or a party member within partyRange
--- did. A finished contract pays at once: gold to the bank, Chaos/Divine Orbs to the backpack (inbox when full), a
+-- did. A finished contract pays at once: gold to the bank, Orbs of Upheaval and Fate to the backpack (inbox when full), a
 -- little experience. weeklyNeed contracts in a bounty week give a chest of orbs. Contracts expire at the next roll.
 -- State: table chaos_bounty (server/sql/chaos.sql), one row per accepted contract; the weekly bonus week in storage
 -- Chaos.storage.bountyWeekBonus. Multi-client: see mcReward in bounty_config.lua.
@@ -20,6 +20,11 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
 end
 dofile("data/scripts/chaos/bounty_core.lua")
 
@@ -203,16 +208,31 @@ local function giveWeekly(player, bandIndex)
 		chest:setAttribute(ITEM_ATTRIBUTE_NAME, cfg.weeklyChestName)
 	end
 	local container = Container(chest:getUniqueId())
+	-- the chest holds only a few stacks (a present: 5): what does not fit goes to the backpack / inbox afterwards
+	local overflow = {}
+	local function put(id, count)
+		if not container:addItem(id, count) then
+			overflow[#overflow + 1] = {id = id, count = count}
+		end
+	end
 	if r.chaos > 0 then
-		container:addItem(cfg.items.chaos, r.chaos)
+		put(cfg.items.chaos, r.chaos)
 	end
 	if r.divine > 0 then
-		container:addItem(cfg.items.divine, r.divine)
+		put(cfg.items.divine, r.divine)
 	end
 	local extra = {}
 	for _, e in ipairs(cfg.weeklyExtra or {}) do
-		container:addItem(e.id, e.count)
+		put(e.id, e.count)
 		extra[#extra + 1] = string.format(", %d %s", e.count, e.name)
+	end
+	-- gems (data/lib/chaos_gems_config.lua rewards.bountyWeekly)
+	local gems = ChaosGems and ChaosGems.rewardGems("bountyWeekly", {band = bandIndex}) or {}
+	for _, g in ipairs(gems) do
+		put(g.id, g.count)
+	end
+	if #gems > 0 then
+		extra[#extra + 1] = ", " .. ChaosGems.listText(gems)
 	end
 	local inbox = false
 	if player:addItemEx(chest, false) ~= RETURNVALUE_NOERROR then
@@ -222,8 +242,11 @@ local function giveWeekly(player, bandIndex)
 			inbox = true
 		end
 	end
+	for _, o in ipairs(overflow) do
+		inbox = giveStack(player, o.id, o.count) or inbox
+	end
 	player:setStorageValue(Chaos.storage.bountyWeekBonus, B.week(os.time(), cfg))
-	local text = string.format("Weekly bounty bonus: a %s with %d Chaos Orbs and %d Divine Orbs%s.%s",
+	local text = string.format("Weekly bounty bonus: a %s with %d Orbs of Upheaval and %d Orbs of Fate%s.%s",
 		cfg.weeklyChestName or "chest", r.chaos, r.divine, table.concat(extra), inbox and " It is in your inbox." or "")
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	notify(player, text)
@@ -241,6 +264,16 @@ local function payContract(player, c, e)
 	end
 	local inbox = giveStack(player, cfg.items.chaos, r.chaos)
 	inbox = giveStack(player, cfg.items.divine, r.divine) or inbox
+	-- gems (data/lib/chaos_gems_config.lua rewards.bounty: chance by contract type, quality by the level band)
+	local gems = ChaosGems and ChaosGems.rewardGems("bounty", {type = c.type, band = c.band}) or {}
+	for _, g in ipairs(gems) do
+		inbox = giveStack(player, g.id, g.count) or inbox
+	end
+	-- spell support runes (data/lib/chaos_supports_config.lua rewards.bounty)
+	local runes = ChaosSupports and ChaosSupports.rewardRunes("bounty", {type = c.type, band = c.band}) or {}
+	for _, g in ipairs(runes) do
+		inbox = giveStack(player, g.id, g.count) or inbox
+	end
 	if r.exp > 0 then
 		player:addExperience(r.exp, true)
 	end
@@ -249,10 +282,16 @@ local function payContract(player, c, e)
 		parts[#parts + 1] = r.gold .. " gold (bank)"
 	end
 	if r.chaos > 0 then
-		parts[#parts + 1] = r.chaos .. " Chaos Orb" .. (r.chaos > 1 and "s" or "")
+		parts[#parts + 1] = r.chaos .. (r.chaos > 1 and " Orbs of Upheaval" or " Orb of Upheaval")
 	end
 	if r.divine > 0 then
-		parts[#parts + 1] = r.divine .. " Divine Orb" .. (r.divine > 1 and "s" or "")
+		parts[#parts + 1] = r.divine .. (r.divine > 1 and " Orbs of Fate" or " Orb of Fate")
+	end
+	if #gems > 0 then
+		parts[#parts + 1] = ChaosGems.listText(gems)
+	end
+	if #runes > 0 then
+		parts[#parts + 1] = ChaosSupports.listText(runes)
 	end
 	if r.exp > 0 then
 		parts[#parts + 1] = r.exp .. " experience"
@@ -334,6 +373,9 @@ local function creditKill(player, c, tierName)
 			paid and "" or " No reward (multi-client)."), c.look)
 		if paid then
 			if ChaosLeaderboard and ChaosLeaderboard.record then ChaosLeaderboard.record("bounty", player, 1) end -- leaderboard.lua
+			if ChaosCharms and ChaosCharms.onSource then -- a charm drop (charms.lua)
+				pcall(ChaosCharms.onSource, player, "bounty", {level = player:getLevel()})
+			end
 			st.weekDone = st.weekDone + 1
 			local week = B.week(os.time(), cfg)
 			if st.weekDone >= cfg.weeklyNeed and player:getStorageValue(Chaos.storage.bountyWeekBonus) ~= week then
@@ -369,7 +411,7 @@ local function playerOf(creature)
 end
 
 function B.onKill(creature, killer, mostDamageKiller)
-	local list = B.board().byName[creature:getName():lower()]
+	local list = B.board().byName[typeNameOf(creature):lower()]
 	if not list then
 		return
 	end
@@ -396,7 +438,7 @@ function B.onKill(creature, killer, mostDamageKiller)
 		return members
 	end, function(p) return p:getPosition() end, cfg.partyRange, function(p) return p:getId() end)
 	for _, c in ipairs(list) do
-		if B.matches(c, creature:getName(), tier) then
+		if B.matches(c, typeNameOf(creature), tier) then
 			for _, p in ipairs(credited) do
 				creditKill(p, c, tier)
 			end
@@ -414,7 +456,7 @@ death:register()
 -- only monsters of the pool get the death event
 local spawn = EventCallback
 spawn.onSpawn = function(self, position, startup, artificial)
-	if B.names[self:getName():lower()] and not self:getMaster() then
+	if B.names[typeNameOf(self):lower()] and not self:getMaster() then
 		self:registerEvent("ChaosBountyDeath")
 	end
 	return true
@@ -429,7 +471,7 @@ function roll.onThink(interval)
 	if before and before ~= board.day then
 		for _, player in ipairs(Game.getPlayers()) do
 			stateOf(player)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The bounty board has new contracts (!bounty).")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The bounty board has new contracts (Adventure > Bounty Board).")
 		end
 	end
 	return true
@@ -465,6 +507,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "bounty." .. tostring(msg.action), 300) then
+		return
+	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	if msg.action == "open" then
 		B.sendBoard(player, true)
@@ -477,14 +523,3 @@ end
 ext:type("extendedopcode")
 ext:register()
 
-local function onBountyCommand(player, words, param)
-	B.sendBoard(player, true)
-	return false
-end
-
-for _, words in ipairs({"!bounty", "/bounty"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onBountyCommand
-	talk:separator(" ")
-	talk:register()
-end

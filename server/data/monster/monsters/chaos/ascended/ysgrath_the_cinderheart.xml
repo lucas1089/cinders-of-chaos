@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Cinderheart (uber.lua, the Cinderheart Sigil: one relic of each Ascended Omen). A cloaked sovereign wreathed in
+     cinders, on its own look 2126 (donor library, client/tools/sprites/monster_looks/picks.csv). Its four phases carry
+     the three omens' mechanics and end in the Last Cinder; the telegraphed hits, adds, hazards and the enrage are
+     scripted (uber_config.lua). Numbers: server/README.md "Ascended Omens and the Cinderheart". -->
+<monster name="Ysgrath the Cinderheart" nameDescription="Ysgrath the Cinderheart" race="fire" experience="15000000" speed="290" manacost="0">
+	<health now="1650000" max="1650000" />
+	<look type="2126" corpse="6068" />
+	<targetchange interval="4000" chance="15" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1300" max="-2600" />
+		<!-- Cinder Wave: a cone in front -->
+		<attack name="fire" interval="2000" chance="18" length="7" spread="3" min="-1800" max="-3400">
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+		<!-- Ember Bolt: thrown at a target, splashes radius 2 -->
+		<attack name="fire" interval="2000" chance="20" range="7" target="1" radius="2" min="-1600" max="-3000">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="explosionarea" />
+		</attack>
+		<!-- Smoulder: a burning curse, total 3-6k -->
+		<attack name="firecondition" interval="2000" chance="12" range="7" target="1" min="-3000" max="-6000" tick="2000">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+		<!-- Ashen Grasp: drains life around him -->
+		<attack name="lifedrain" interval="2000" chance="10" radius="4" min="-1400" max="-2600">
+			<attribute key="areaEffect" value="redshimmer" />
+		</attack>
+	</attacks>
+	<defenses armor="95" defense="95">
+		<defense name="speed" interval="2000" chance="8" speedchange="400" duration="4000">
+			<attribute key="areaEffect" value="redsmoke" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="15" />
+		<element firePercent="60" />
+		<element energyPercent="10" />
+		<element earthPercent="10" />
+		<element icePercent="-15" />
+		<element holyPercent="-10" />
+		<element deathPercent="20" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="I was the heart the omens kept from you." yell="1" />
+		<voice sentence="Every fire you ever lit was mine." yell="1" />
+		<voice sentence="KNEEL IN THE ASH!" yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="100" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="12" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="4" chance="80000" /><!-- Orb of Fate -->
+		<item id="29861" chance="8000" /><!-- Myst Regalia Helmet -->
+		<item id="29862" chance="8000" /><!-- Myst Regalia Mantle -->
+		<item id="29866" chance="6000" /><!-- Myst Regalia Wand -->
+		<item id="29869" chance="8000" /><!-- Seraphic Helmet -->
+		<item id="29870" chance="8000" /><!-- Seraphic Tabard -->
+		<item id="29875" chance="6000" /><!-- Seraphic Piercer -->
+		<item id="29878" chance="8000" /><!-- Dawnforged Helmet -->
+		<item id="29879" chance="8000" /><!-- Dawnforged Plate -->
+		<item id="29884" chance="6000" /><!-- Dawnforged Longsword -->
+		<item id="29886" chance="6000" /><!-- Dawnforged Great Axe -->
+		<item id="29889" chance="5000" /><!-- Dawnforged Amulet -->
+		<item id="29890" chance="5000" /><!-- Dawnforged Ring -->
+	</loot>
+</monster>

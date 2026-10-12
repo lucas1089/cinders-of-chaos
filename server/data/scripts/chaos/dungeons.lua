@@ -20,9 +20,13 @@
 -- Real: queueing, group formation, teleport in, time limit, monster-count progress, boss kill,
 -- completion, per-dungeon unlocked difficulty, challenges (speed / flawless), personal and group
 -- ranking in the DB, teleport out.
--- NOT real (see README): difficulty does not change monster stats, the loot panel is display
--- only (real loot is whatever the boss monster XML drops), bosses are assumed to exist in the
--- map (spawned by the map/spawn system or by SpawnMonsters), dungeons are one-run-at-a-time.
+-- Difficulty (dungeons_difficulty.lua, the numbers of the client's difficulty panel): every monster in the
+-- dungeon box during a run (seen at the start and by every queue tick, so respawns too) gets x health; its
+-- damage to the run's players x damage (health and mana events registered on the members); its kills give
+-- + experience, its corpse + gold coins and one more roll of every loot entry at + loot percent of its chance.
+-- NOT real (see README): the loot panel is display only (real loot is whatever the boss monster XML drops),
+-- bosses are assumed to exist in the map (spawned by the map/spawn system or by SpawnMonsters), dungeons are
+-- one-run-at-a-time.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -33,6 +37,10 @@ local cfg = Chaos.dungeons
 local TP = Chaos.tables.dungeonProgress
 local TR = Chaos.tables.dungeonRuns
 local TRP = Chaos.tables.dungeonRunPlayers
+
+ChaosDungeonDifficulty = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+local DIFF = ChaosDungeonDifficulty
+local scaledBy = {} -- [monster id] = run (the monster got the run's difficulty)
 
 local queues = {} -- [dungeonId] = array of {guid=, difficulty=, joined=}
 local queuedIn = {} -- [guid] = dungeonId
@@ -93,8 +101,21 @@ local function levelOf(dg)
 	return 1
 end
 
+-- the engine has no Game.getPlayerByGUID (that call made every queue tick fail): a scan of the online players
+-- when this server started (kept over a /reload): a character whose last logout is older was kicked by a shutdown or
+-- lost in a crash; one saved inside a dungeon box then goes to its temple at login (below)
+ChaosDungeonsBoot = ChaosDungeonsBoot or os.time()
+
 local function online(guid)
-	return Game.getPlayerByGUID(guid)
+	if Game.getPlayerByGUID then
+		return Game.getPlayerByGUID(guid)
+	end
+	for _, p in ipairs(Game.getPlayers()) do
+		if p:getGuid() == guid then
+			return p
+		end
+	end
+	return nil
 end
 
 local function send(player, action, data)
@@ -255,10 +276,25 @@ end
 
 -- ------------------------------------------------------------------ payload builders
 
+-- the run's length: the base server's DungeonTime, at most cfg.maxTimeSeconds (instance limits)
+local function durationOf(dg)
+	local t = dg.DungeonTime or 3600
+	if (cfg.maxTimeSeconds or 0) > 0 then
+		t = math.min(t, cfg.maxTimeSeconds)
+	end
+	return t * 1000
+end
+
 local function queueInfo(id, dg)
 	local waiting = queues[id] and #queues[id] or 0
 	local missing = math.max(0, groupSizeOf(dg) - waiting)
-	return {players = waiting, estimated = missing * 30000}
+	local estimated = missing * 30000
+	-- a run inside: the queue waits at least for its end (instance limits: the wait the window shows)
+	local run = runOfDungeon[id]
+	if run and not run.ended then
+		estimated = math.max(estimated, run.startedAt + (run.durationMs or durationOf(dg)) - nowMs() + cfg.exitDelayMs)
+	end
+	return {players = waiting, estimated = math.max(0, estimated)}
 end
 
 local function bossOutfit(id)
@@ -399,6 +435,35 @@ function ChaosDungeonIsInside(player)
 	return runOfPlayer[player:getGuid()] ~= nil
 end
 
+Chaos.registerInstance("dungeon", {label = "a dungeon", inside = ChaosDungeonIsInside, at = function(pos)
+	for _, dg in pairs(baseDungeons()) do
+		if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(dg, pos) then
+			return true
+		end
+	end
+	return false
+end, runs = function() -- /instances (instance_limits.lua)
+	local out = {}
+	for id, run in pairs(runs) do
+		local dg = baseDungeons()[run.dungeonId]
+		local n = 0
+		for _ in pairs(run.members) do
+			n = n + 1
+		end
+		out[#out + 1] = {id = id, what = string.format("%s, difficulty %d", dg and titleOf(run.dungeonId, dg) or "?", run.difficulty),
+			left = math.max(0, math.floor((run.startedAt + (run.durationMs or 0) - nowMs()) / 1000)), players = n,
+			note = (queues[run.dungeonId] and #queues[run.dungeonId] or 0) .. " queued"}
+	end
+	return out
+end, close = function(id) -- the failure rule of a time-out: everyone out where they entered, the cooldown
+	local run = runs[tonumber(id) or -1]
+	if not run or run.ended or not ChaosDungeons or not ChaosDungeons.endRun then
+		return false, "No running dungeon run " .. tostring(id) .. "."
+	end
+	ChaosDungeons.endRun(run, false, "A gamemaster closed the dungeon.")
+	return true, "Dungeon run " .. id .. " closed."
+end})
+
 local function entryProblem(player, id, dg, difficulty)
 	local guid = player:getGuid()
 	if runOfPlayer[guid] then
@@ -451,6 +516,37 @@ local function releasePlayer(run, guid)
 	if p then
 		p:unregisterEvent("ChaosDungeonKill")
 		p:unregisterEvent("ChaosDungeonDeath")
+		p:unregisterEvent("ChaosDungeonHit")
+		p:unregisterEvent("ChaosDungeonMana")
+	end
+end
+
+-- the run's difficulty on a monster (once per monster)
+local function scaleMonster(run, monster)
+	local mid = monster:getId()
+	if scaledBy[mid] then
+		return
+	end
+	scaledBy[mid] = run
+	local hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
+	if hp ~= monster:getMaxHealth() then
+		local share = monster:getHealth() / math.max(1, monster:getMaxHealth())
+		monster:setMaxHealth(hp)
+		monster:setHealth(math.max(1, math.floor(hp * share + 0.5)))
+	end
+end
+
+local function scaleList(run, monsterList)
+	for _, m in ipairs(monsterList or {}) do
+		scaleMonster(run, m)
+	end
+end
+
+local function forgetRun(run)
+	for mid, r in pairs(scaledBy) do
+		if r == run then
+			scaledBy[mid] = nil
+		end
 	end
 end
 
@@ -500,7 +596,9 @@ local function endRun(run, success, reason)
 		if dg then
 			cleanArea(dg, extra.bossName and extra.bossName:lower() or nil)
 		end
+		forgetRun(run)
 		runOfDungeon[run.dungeonId] = nil
+		broadcastQueue(run.dungeonId) -- the wait shown in the window drops
 	end
 
 	if not success then
@@ -524,6 +622,12 @@ local function endRun(run, success, reason)
 	for _, p in ipairs(memberPlayers(run)) do
 		local guid = p:getGuid()
 		send(p, "killed", {boss = true})
+		if ChaosSeasonJourney and ChaosSeasonJourney.emit then -- Seasonal Journey (season_journey.lua)
+			ChaosSeasonJourney.emit(p, "dungeon_clears", 1)
+		end
+		if ChaosCharms and ChaosCharms.onSource then -- a charm drop (charms.lua)
+			pcall(ChaosCharms.onSource, p, "dungeon", {difficulty = run.difficulty})
+		end
 
 		local progress = loadProgress(guid, run.dungeonId)
 		if run.difficulty >= progress.difficulty and progress.difficulty < cfg.maxDifficulty then
@@ -545,6 +649,10 @@ local function endRun(run, success, reason)
 		end
 		saveProgress(guid, run.dungeonId, progress)
 		send(p, "dungeon", dungeonPayload(p, run.dungeonId, dg))
+		-- item sets (itemsets.lua): a chase roll over the dungeon sets on a clear
+		if ChaosItemSets and ChaosItemSets.grantChase then
+			ChaosItemSets.grantChase(p, "dungeon", nil, {difficulty = run.difficulty})
+		end
 	end
 
 	addEvent(function(runId)
@@ -552,6 +660,9 @@ local function endRun(run, success, reason)
 		teardown()
 	end, cfg.exitDelayMs, run.id)
 end
+
+ChaosDungeons = ChaosDungeons or {}
+ChaosDungeons.endRun = endRun
 
 local function startRun(dungeonId, difficulty, players)
 	local dg = baseDungeons()[dungeonId]
@@ -588,16 +699,20 @@ local function startRun(dungeonId, difficulty, players)
 		runOfPlayer[guid] = run
 		p:registerEvent("ChaosDungeonKill")
 		p:registerEvent("ChaosDungeonDeath")
+		p:registerEvent("ChaosDungeonHit")
+		p:registerEvent("ChaosDungeonMana")
 		p:teleportTo(dg.DungeonPos)
 		p:getPosition():sendMagicEffect(40)
 		p:say(baseMessage("ToEntry", "Welcome to Dungeon"), TALKTYPE_MONSTER_SAY)
 	end
 
-	local monsters, bosses = scanArea(dg, bossName)
+	local monsters, bosses, _, monsterList = scanArea(dg, bossName)
 	run.total = monsters
 	run.bossSeen = bosses > 0
+	scaleList(run, monsterList)
 
-	local durationMs = (dg.DungeonTime or 3600) * 1000
+	local durationMs = durationOf(dg)
+	run.durationMs = durationMs
 	local objectives = {}
 	for i, ch in ipairs(extra.challenges or {}) do
 		objectives[i] = ch.title
@@ -707,7 +822,8 @@ tick = function()
 			local dg = baseDungeons()[run.dungeonId]
 			local extra = extraOf(run.dungeonId)
 			local bossName = extra.bossName and extra.bossName:lower() or nil
-			local monsters, bosses, playersInside = scanArea(dg, bossName)
+			local monsters, bosses, playersInside, monsterList = scanArea(dg, bossName)
+			scaleList(run, monsterList) -- respawns inside the box get the difficulty too
 
 			if bosses > 0 then
 				run.bossSeen = true
@@ -729,6 +845,7 @@ tick = function()
 				runs[runId] = nil
 				runOfDungeon[run.dungeonId] = nil
 				cleanArea(dg, bossName)
+				forgetRun(run)
 			else
 				local percent = 100
 				if run.total > 0 then
@@ -744,6 +861,11 @@ tick = function()
 				-- boss seen earlier and gone now (killed by someone onKill did not credit)
 				if run.bossSeen and bosses == 0 and percent >= cfg.progressNeeded then
 					endRun(run, true)
+				end
+				-- warnings before the time runs out (instance limits; the client counts the clock down itself)
+				if not run.ended and ChaosInstanceLimits then
+					local left = math.floor((run.startedAt + (run.durationMs or 0) - nowMs()) / 1000)
+					ChaosInstanceLimits.warn(run, left, memberPlayers(run), titleOf(run.dungeonId, dg), cfg.limits)
 				end
 			end
 		end
@@ -790,6 +912,83 @@ end
 DeathEvent:type("death")
 DeathEvent:register()
 
+-- difficulty: damage of the run's monsters to its players
+local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+	local run = attacker and attacker:isMonster() and scaledBy[attacker:getId()]
+	if run and not run.ended and primaryType ~= COMBAT_HEALING then
+		primaryDamage = DIFF.damage(primaryDamage, run.difficulty)
+		secondaryDamage = DIFF.damage(secondaryDamage, run.difficulty)
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+
+local HitEvent = CreatureEvent("ChaosDungeonHit")
+function HitEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	return scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+end
+HitEvent:register()
+
+local ManaEvent = CreatureEvent("ChaosDungeonMana")
+function ManaEvent.onManaChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	return scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+end
+ManaEvent:register()
+
+-- difficulty: experience of the run's kills (for the run's players)
+local xpCallback = EventCallback
+xpCallback.onGainExperience = function(player, source, exp, rawExp)
+	local run = source and source:isMonster() and scaledBy[source:getId()]
+	if run and exp > 0 and run.members[player:getGuid()] then
+		return DIFF.experience(exp, run.difficulty)
+	end
+	return exp
+end
+xpCallback:register(90) -- after the stages and Chaos bonuses, before the rift cap (100, not inside a dungeon)
+
+-- difficulty: gold coins and extra loot rolls in the corpse (after the Chaos loot layer at 1 and the rift's Echoing
+-- Spoils at 1.5, before the rift key drop at 2 and the loot snapshot at 2.5, so loot rays and autoloot see them)
+local lootCallback = EventCallback
+lootCallback.onDropLoot = function(monster, corpse)
+	local run = scaledBy[monster:getId()]
+	if not run or run.difficulty <= 1 then
+		return
+	end
+	local ok, err = pcall(function()
+		if not corpse or not corpse:isContainer() then
+			return
+		end
+		local add = {}
+		for _, item in ipairs(corpse:getItems(false) or {}) do
+			if DIFF.coins[item:getId()] then
+				local n = DIFF.extraGold(item:getCount(), run.difficulty, math.random)
+				if n > 0 then
+					add[#add + 1] = {item:getId(), n}
+				end
+			end
+		end
+		for _, e in ipairs(monster:getType():getLoot() or {}) do
+			local chance = DIFF.extraLootChance(e.chance or 0, run.difficulty)
+			if e.itemId and chance > 0 and math.random(1, 100000) <= chance then
+				local maxC = math.max(e.maxCount or 1, 1)
+				add[#add + 1] = {e.itemId, math.random(1, maxC)}
+			end
+		end
+		for _, a in ipairs(add) do
+			local id, n = a[1], a[2]
+			local stackable = ItemType(id):isStackable()
+			while n > 0 do
+				local k = stackable and math.min(n, 100) or 1
+				corpse:addItem(id, k, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+				n = n - k
+			end
+		end
+	end)
+	if not ok then
+		print("[ChaosDungeons] difficulty loot failed: " .. tostring(err))
+	end
+end
+lootCallback:register(1.7)
+
 local LogoutEvent = CreatureEvent("ChaosDungeonsLogout")
 
 function LogoutEvent.onLogout(player)
@@ -810,8 +1009,52 @@ local LoginEvent = CreatureEvent("ChaosDungeonsLogin")
 
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosDungeonsExtended")
+	-- the first login after a restart or a crash inside a dungeon box (a queue run here or a run of the base modal, whose
+	-- exit timer died with the server): out to the temple. A relog while the server runs stays (the run may go on).
+	-- A relog while the server runs: the logout already took the character out of its run (it counts as leaving, like
+	-- walking out: the cooldown), so it is not left standing in the box, where it would also hold the next group's run
+	-- back (instance limits).
+	if not runOfPlayer[player:getGuid()] then
+		local restart = (player:getLastLogout() or 0) < ChaosDungeonsBoot
+		local pos = player:getPosition()
+		for _, dg in pairs(baseDungeons()) do
+			if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(dg, pos) then
+				player:teleportTo(player:getTown():getTemplePosition())
+				if restart then
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your dungeon run was cut short by a server restart.")
+				else
+					setCooldown(player)
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You logged out inside the dungeon: your run is over.")
+				end
+				break
+			end
+		end
+	end
 	return true
 end
+
+-- a clean shutdown: every queue run ends without a cooldown, the members back where they entered (saved there by the kick)
+local ShutdownEvent = GlobalEvent("ChaosDungeonsShutdown")
+function ShutdownEvent.onShutdown()
+	for _, run in pairs(runs) do
+		if not run.ended then
+			run.ended = true
+			local dg = baseDungeons()[run.dungeonId]
+			for guid, origin in pairs(run.members) do
+				local p = online(guid)
+				if p then
+					send(p, "finish")
+					if dg and inBox(dg, p:getPosition()) then
+						p:teleportTo(origin or p:getTown():getTemplePosition())
+					end
+				end
+				releasePlayer(run, guid)
+			end
+		end
+	end
+	return true
+end
+ShutdownEvent:register()
 
 local ExtendedEvent = CreatureEvent("ChaosDungeonsExtended")
 

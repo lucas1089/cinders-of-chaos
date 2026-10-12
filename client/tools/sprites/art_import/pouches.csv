@@ -1,0 +1,4 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+pouch_orbs,item,look,orbs pouch,pouches,0,0,1,1,1,1,copy:8861,replace,32082,
+pouch_keys,item,look,rift key pouch,pouches,32,0,1,1,1,1,copy:7343,replace,32083,
+pouch_loot,item,look,loot pouch,pouches,64,0,1,1,1,1,copy:10325,replace,32081,

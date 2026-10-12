@@ -16,6 +16,7 @@ function onCastSpell(creature, variant, isHotkey)
 
 	local pos = player:getPosition()
 	ChaosSpell.fx(pos, "aura_ring", CONST_ME_SOUND_RED)
+	ChaosSpell.vfx(pos, "aura_burst_gold")
 	for _, c in ipairs(ChaosSpell.enemiesAround(player, pos, 4)) do
 		doChallengeCreature(player, c)
 		ChaosSpell.slow(c, 6000, 0.25)

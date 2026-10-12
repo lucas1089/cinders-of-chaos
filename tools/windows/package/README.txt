@@ -1,0 +1,43 @@
+Cinders of Chaos - Windows test package
+=======================================
+
+Runs the server and the client on your own computer.
+
+1. Extract the whole zip into a folder (a short path such as C:\CindersOfChaos).
+2. Double-click start-server.bat. The first start creates the database (about a minute); then the game
+   server window shows "Server Online". Leave both windows open.
+   If Windows asks whether MariaDB and ChaosServer may use the network, "Private networks" is enough.
+3. Double-click start-client.bat and log in:
+     account chaos / password chaos   staff character "Chaos Admin" (god: /coins, /worldboss, admin panel)
+     account test  / password test    Test Warrior, Test Ranger, Test Mystic, Test Thief (level 1, tutorial)
+4. To stop: close the game server window, then run stop-server.bat.
+   If the game server crashes, start-server.bat starts it again after 5 seconds (each crash is written to
+   crashes\crashes.log); after 5 crashes in a row it stops trying and leaves the window open.
+
+Map editor
+  open-map-editor.bat opens the map editor (Remere's Map Editor, version 10.98). The first time it asks where the
+  10.98 client files are: choose the folder client\data\things\1098 of this package. It already has the game's
+  items (including every Chaos item) and the Chaos monsters in its creature list.
+  The server's map is the .otbm file in server\data\world. Stop the game server before saving over it, keep a copy
+  of the old file, and restart the server to load the change. docs/MAP_GUIDE.md in the repository has the building
+  rules (sizes, borders, detail) for new areas.
+
+Folders
+  server\     the game server (ChaosServer.exe, config.lua, data\, the map)
+  client\     the Cinders of Chaos client (Chaos.exe; data\things\1098 holds the Chaos Tibia.dat and Tibia.spr)
+  mapeditor\  the map editor (open-map-editor.bat)
+  mariadb\    portable MariaDB (nothing is installed on Windows)
+  database\   made at the first start: the game database. Delete it (with the server and database stopped)
+              to start over with a fresh database and the test accounts above.
+
+Notes
+  - The database listens on 127.0.0.1:3307 only, user root without a password. This package is for playing
+    locally; do not open it to the internet as it is (docs/LAUNCH.md describes a real server).
+  - Problems of the first start are logged in database-setup.log. "Duplicate column name" and "znote_*"
+    errors in the server window are expected (docs/LAUNCH.md, "Database").
+  - The Visual C++ runtime is needed (most PCs have it). If ChaosServer.exe reports VCRUNTIME140.dll or
+    MSVCP140.dll missing, install "Microsoft Visual C++ Redistributable x64" from microsoft.com.
+  - BUILD_INFO.txt says which commits this package was built from.
+  - The same release also has the client and the server as separate downloads, for Windows and for Linux
+    (CindersOfChaos-Client-Windows.zip, CindersOfChaos-Server-Windows.zip, CindersOfChaos-Client-Linux.tar.gz,
+    CindersOfChaos-Server-Linux.tar.gz; the release notes say what each one holds).

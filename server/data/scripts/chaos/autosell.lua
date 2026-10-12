@@ -6,15 +6,18 @@
 --   so an item does not need an autoloot slot. Items with a rarity, modifiers or a custom name/description are
 --   kept unless the player opted in ("!autosell rarity on"); unique items are never sold.
 --   !autosell add <item> | remove <item> | list | clear | on | off | rarity on|off
--- Bottomless Loot Pouch (storage Chaos.storage.shopLootPouch): autoloot items the base autoloot callback could
---   not give to the character (backpack full, no capacity) go to the supply stash (stackable, attribute-free
---   items, stash.lua rules) or else to the character's inbox, instead of staying in the corpse.
+--   Never sold: what the store pouches collect (orbs, whetstones, rune shards, gems, Rift Keys, omen items;
+--   ChaosPouches.neverSell, pouches.lua), even when such an item is on the list.
+-- (The Bottomless Loot Pouch unlock that used to live here is retired: pouches.lua.)
 --
--- Both are EventCallback.onDropLoot, around the callbacks that already exist (lower index runs first):
---   0 stock loot, 1 Chaos loot layer (loot.lua), 2 AUTO SELLER, 3 base autoloot, 4 LOOT POUCH.
+-- An EventCallback.onDropLoot, around the callbacks that already exist (lower index runs first):
+--   0 stock loot, 1 Chaos loot layer (loot.lua), 2 AUTO SELLER, 2.7 store pouches (pouches.lua), 3 base autoloot.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
 
 local ST = Chaos.storage
@@ -68,6 +71,7 @@ local function itemInfo(item)
 	return {
 		unique = customAttr(item, "chaos_unique") ~= nil,
 		rarity = tonumber(customAttr(item, "rarity")) or 0,
+		locked = (tonumber(customAttr(item, "chaos_locked")) or 0) ~= 0, -- the item lock (salvage.lua): never sold
 		attributes = item:hasAttribute(ITEM_ATTRIBUTE_NAME) or item:hasAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
 			or item:hasAttribute(ITEM_ATTRIBUTE_TEXT) or item:hasAttribute(CUSTOM)
 	}
@@ -88,14 +92,18 @@ local function autoSell(monster, corpse)
 		return
 	end
 	local allowRarity = owner:getStorageValue(ST.autosellRarity) == 1
-	local sold, total, kept = {}, 0, 0
+	local sold, total, kept, keptLocked = {}, 0, 0, 0
 	for _, item in ipairs(corpse:getItems()) do
 		local id = item:getId()
-		if set[id] and not item:getType():isContainer() then
+		local protected = ChaosPouches and ChaosPouches.neverSell and ChaosPouches.neverSell(id, item)
+		if set[id] and not protected and not item:getType():isContainer() then
 			local count = item:getCount()
 			local gold = services().sellPrice(id, count, PRICES)
 			if gold > 0 then
-				if services().sellBlocked(itemInfo(item), allowRarity) then
+				local blocked = services().sellBlocked(itemInfo(item), allowRarity)
+				if blocked == "locked" then
+					keptLocked = keptLocked + 1
+				elseif blocked then
 					kept = kept + 1
 				else
 					local name = item:getType():getName()
@@ -114,7 +122,10 @@ local function autoSell(monster, corpse)
 	end
 	if kept > 0 then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
-			"Auto seller: kept an item with a rarity or modifiers (\"!autosell rarity on\" sells those too).")
+			"Auto seller: kept an item with a rarity or modifiers (Economy > Auto Seller can sell those too).")
+	end
+	if keptLocked > 0 then
+		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, "Auto seller: kept a locked item.")
 	end
 end
 
@@ -126,99 +137,6 @@ sellCb.onDropLoot = function(self, corpse)
 	end
 end
 sellCb:register(2)
-
--- ------------------------------------------------------------------------ loot pouch (index 4)
-local pending = {} -- [guid] = {stash = n, inbox = n, last = os.time of the last notice}
-
-local function autolootSet(player)
-	local limit = player:isPremium() and Chaos.autoloot.premiumLimit or Chaos.autoloot.freeLimit
-	local set = {}
-	for i = 1, limit do
-		local id = player:getStorageValue(ST.autolootBase + i)
-		if id and id > 0 then
-			set[id] = true
-		end
-	end
-	return set
-end
-
-local function notify(player)
-	local p = pending[player:getGuid()]
-	local now = os.time()
-	if not p or p.stash + p.inbox == 0 or now - p.last < Chaos.shopServices.pouchNoticeSeconds then
-		return
-	end
-	local parts = {}
-	if p.stash > 0 then
-		parts[#parts + 1] = p.stash .. " to your stash"
-	end
-	if p.inbox > 0 then
-		parts[#parts + 1] = p.inbox .. " to your inbox"
-	end
-	player:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, "Loot pouch: your backpack is full, loot sent " ..
-		table.concat(parts, " and ") .. " (!stash).")
-	p.stash, p.inbox, p.last = 0, 0, now
-end
-
-local function pouch(monster, corpse)
-	if not corpse:getType():isContainer() then
-		return
-	end
-	local owner = Player(corpse:getCorpseOwner())
-	if not owner or owner:getStorageValue(ST.shopLootPouch) < 1 then
-		return
-	end
-	local set = autolootSet(owner)
-	if next(set) == nil then
-		return
-	end
-	local guid = owner:getGuid()
-	pending[guid] = pending[guid] or {stash = 0, inbox = 0, last = 0}
-	local p = pending[guid]
-	local leftovers = {}
-	for _, item in ipairs(corpse:getItems()) do
-		if set[item:getId()] then
-			leftovers[#leftovers + 1] = item
-		end
-	end
-	for _, item in ipairs(leftovers) do
-		-- the base autoloot stops at the first item that does not fit; a lighter one may still fit
-		if not item:moveTo(owner) then
-			if ChaosStash and ChaosStash.storeItem(owner, item) then
-				p.stash = p.stash + 1
-			else
-				local inbox = owner:getInbox()
-				if inbox and item:moveTo(inbox) then
-					p.inbox = p.inbox + 1
-				end
-			end
-		end
-	end
-	notify(owner)
-end
-
-local pouchCb = EventCallback
-pouchCb.onDropLoot = function(self, corpse)
-	local ok, err = pcall(pouch, self, corpse)
-	if not ok then
-		print("[Chaos loot pouch] onDropLoot failed: " .. tostring(err))
-	end
-end
-pouchCb:register(4)
-
-local logout = CreatureEvent("ChaosLootPouchLogout")
-function logout.onLogout(player)
-	pending[player:getGuid()] = nil
-	return true
-end
-logout:register()
-
-local login = CreatureEvent("ChaosLootPouchLogin")
-function login.onLogin(player)
-	player:registerEvent("ChaosLootPouchLogout")
-	return true
-end
-login:register()
 
 -- ------------------------------------------------------------------------ !autosell
 local function lookup(text)
@@ -236,9 +154,9 @@ local function lookup(text)
 	return nil
 end
 
-local HELP = "Auto seller: !autosell add <item> | remove <item> | list | clear | on | off | rarity on|off"
+local HELP = "Auto seller: add or remove items, switch it on or off, and choose whether items with a rarity are sold."
 
-local talk = TalkAction("!autosell")
+local talk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "autosell")
 function talk.onSay(player, words, param)
 	if player:getStorageValue(ST.shopAutoSeller) < 1 then
 		player:sendCancelMessage("You need the Auto Seller from the store (Convenience).")
@@ -262,6 +180,8 @@ function talk.onSay(player, words, param)
 		if action == "add" then
 			if index then
 				player:sendCancelMessage(it:getName() .. " is already on your auto-sell list.")
+			elseif ChaosPouches and ChaosPouches.neverSell and ChaosPouches.neverSell(id) then
+				player:sendCancelMessage(it:getName() .. " is never auto-sold (orbs, gems and keys are kept).")
 			elseif (PRICES[id] or 0) <= 0 then
 				player:sendCancelMessage("No NPC buys " .. it:getName() .. ", so it cannot be auto-sold.")
 			elseif #list >= SLOTS then
@@ -304,5 +224,4 @@ function talk.onSay(player, words, param)
 	end
 	return false
 end
-talk:separator(" ")
-talk:register()
+ChaosCommands.register("autosell", function(player, param) return talk.onSay(player, "", param) end)

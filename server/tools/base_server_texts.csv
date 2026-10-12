@@ -1,0 +1,4 @@
+sha256,file,new,note
+e7677319658a94b49e497a5c7aaf91d6b708f72380d00c3a6259c8ef0a0a2b79,scripts/customs/actions/messages_text.lua,Welcome to Cinders of Chaos!,floating welcome text over the first temple (the base server's name)
+6acdeb4328dcc646357a4bcb35f7bc8664cb8258863bb7cadeadbbfa424c5d5c,scripts/customs/znote/znote_login.lua,= Cinders of Chaos Login =,console banner of the web login service (base data)
+b907664517507d7c7990d915114ad5ac04c5090cf4fce4d912aac3b7abffd636,scripts/customs/znote/znote_login.lua,= Cinders of Chaos Login =,the same banner after the worldtexts step renamed its first word

@@ -1,0 +1,238 @@
+# Right-click equips; the equip hotkey runs the Lua move events (server/README.md "Right-click equips"). Owner request:
+# "Make items get equipped on right-click."
+#   * Game::chaosUseEquip, called by Actions::internalUseItem when an item has no action (before the stock
+#     RETURNVALUE_CANNOTUSETHISOBJECT): a use of a piece of equipment the player carries in a container puts it on, a
+#     use of a worn one takes it off into the backpack. The use is what the client's mouse controls send (a right-click
+#     in the classic controls, Ctrl + click in the regular ones, a left-click in the smart ones, "Use" in the context
+#     menu), so the controls keep their meanings and the exact item clicked moves (the equip hotkey packet names an
+#     item type only and takes the first one found). Equipment: a head, necklace, armour, legs, feet or ring item, or a
+#     sword, club, axe, distance weapon, wand, shield or quiver (every item may be held in a hand by default, so the
+#     hands count by weapon type). Not: an item with an action (a scripted action that returns false still ends as
+#     before), a container, ammunition, the base's extra slots (deck, badge, ship, belt, gloves), an item on the
+#     ground, in a depot or someone else's, a hotkey use, an item that cannot be moved, and a player who turned it off
+#     (player storage 7101810 = 1, written by data/scripts/chaos/rightclick_equip.lua from the client option "Right-click
+#     equips items"). The slot is the equip hotkey's (getSlotType); a ring goes into the free ring slot (9 first), else
+#     into the slot of a might ring when it is one (one might ring at a time, 0023), else into slot 9 (the rings swap).
+#   * Game::playerUseItem: a multi-use item (the stock weapons are: their action is "break furniture", a use with) was
+#     never used plainly. A plain use of one the player carries now goes to chaosUseEquip (not a hotkey use; its
+#     action is a use with and is not run). The client sends that for the multi-use weapons the server lists
+#     (data/scripts/chaos/rightclick_equip.lua: not the tools with a use with of their own, such as the machete);
+#     every other click on them still starts the use with.
+#   * Game::chaosEquipMove: the equip hotkey (Game::playerEquipItem) and a use that equips move the item with the
+#     player as the actor and the client positions (an inventory slot {0xFFFF, slot, 0}, a container slot
+#     {0xFFFF, 0x40 | cid, index}; a container the player has not open: cid 0x3F), so Player:onMoveItem and the
+#     onMoveItem / onItemMoved callbacks run as for drag and drop. Before, the hotkey moved without them: the base
+#     rarity script never saw the item (a club ring put on by hotkey gave its own +4 club, not the +9 with its rarity;
+#     a worn item it swapped out kept its rarity conditions while the slot was taken), and neither did the item
+#     modifiers, archery or default_onMoveItem.lua's two-handed swap (a two-handed weapon by hotkey next to a shield
+#     was refused). Every refusal of the hotkey now shows its message (before: only the might ring's).
+#   * Game::chaosTakeOff: a worn item goes into the backpack first, then wherever the stock hotkey put it
+#     (Player::queryDestination) when the backpack has no room.
+# Apply in the server source root after 0001-0023: patch -p1 < 0024-equip-on-use.patch, then rebuild.
+--- a/src/actions.cpp
++++ b/src/actions.cpp
+@@ -386,6 +386,11 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
+ 		return RETURNVALUE_NOERROR;
+ 	}
+ 
++	// Chaos (src-patch 0024): equipment without an action of its own is put on (or taken off) by a use
++	if (!action) {
++		return g_game.chaosUseEquip(player, item, pos, isHotkey);
++	}
++
+ 	return RETURNVALUE_CANNOTUSETHISOBJECT;
+ }
+ 
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -1896,6 +1896,124 @@ slots_t getSlotType(const ItemType& it)
+ 	return slot;
+ }
+ 
++// Chaos (src-patch 0024): the client position of an item the player carries, for the Lua move events of the equip
++// hotkey and of a use that equips: an inventory slot {0xFFFF, slot, 0}, a container slot {0xFFFF, 0x40 | cid, index}.
++// A container the player has not open has no cid: 0x40 | 0x3F then (no client container has that id; a script that
++// asks player:getContainerById(y - 0x40) gets nil, the cylinders are passed as well).
++static Position chaosCarriedPosition(const Player* player, const Item* item)
++{
++	const Cylinder* parent = item->getParent();
++	if (parent == player) {
++		return Position(0xFFFF, static_cast<uint16_t>(static_cast<const Cylinder*>(player)->getThingIndex(item)), 0);
++	}
++	if (const Container* container = dynamic_cast<const Container*>(parent)) {
++		int8_t cid = player->getContainerID(container);
++		return Position(0xFFFF, 0x40 | (cid >= 0 ? cid : 0x3F), static_cast<uint8_t>(container->getThingIndex(item)));
++	}
++	return item->getPosition();
++}
++
++// Chaos 0024: an equipment move of the equip hotkey or of a use that equips, with the player as the actor and the
++// client positions, so Player:onMoveItem and the onMoveItem / onItemMoved callbacks run as for drag and drop (the base
++// rarity bonuses, the item modifiers, the hands rules and the two-handed swap of default_onMoveItem.lua, archery).
++// Before 0024 the hotkey moved without them: a ring put on showed its own skill bonus only, and a ring it swapped out
++// kept its rarity conditions.
++ReturnValue Game::chaosEquipMove(Player* player, Item* item, int32_t slot, const Position& fromPos)
++{
++	const Position toPos(0xFFFF, static_cast<uint16_t>(slot), 0);
++	return internalMoveItem(item->getParent(), player, slot, item, item->getItemCount(), nullptr, 0, player, nullptr, &fromPos, &toPos);
++}
++
++// Chaos 0024: take a worn item off into the containers. The backpack first (a weapon taken off never lands in the
++// other hand); when it has no room, wherever the stock hotkey put it (Player::queryDestination: a free slot of a fitting
++// kind, then the containers; a ring never goes into the other ring slot, 0023).
++ReturnValue Game::chaosTakeOff(Player* player, Item* item, const Position& fromPos)
++{
++	ReturnValue ret = RETURNVALUE_NOTPOSSIBLE;
++	Item* backpack = player->getInventoryItem(CONST_SLOT_BACKPACK);
++	if (backpack && backpack->getContainer()) {
++		ret = chaosEquipMove(player, item, CONST_SLOT_BACKPACK, fromPos);
++		if ((ret != RETURNVALUE_CONTAINERNOTENOUGHROOM && ret != RETURNVALUE_NOTENOUGHROOM) || item->isRemoved() ||
++		    item->getParent() != player) {
++			return ret;
++		}
++	}
++	return chaosEquipMove(player, item, CONST_SLOT_WHEREEVER, fromPos);
++}
++
++// Chaos 0024: the item types a use puts on: a head, necklace, armour, legs, feet or ring item, a weapon, shield or
++// quiver. Every item may be held in a hand by default (SLOTP_HAND), so the hands count by weapon type only;
++// ammunition, the base's extra slots (deck, badge, ship, belt, gloves) and the backpack slot do not count.
++bool Game::chaosEquipsOnUse(const ItemType& it)
++{
++	if (it.slotPosition & (SLOTP_HEAD | SLOTP_NECKLACE | SLOTP_ARMOR | SLOTP_LEGS | SLOTP_FEET | SLOTP_RING)) {
++		return true;
++	}
++	switch (it.weaponType) {
++		case WEAPON_SWORD:
++		case WEAPON_CLUB:
++		case WEAPON_AXE:
++		case WEAPON_SHIELD:
++		case WEAPON_DISTANCE:
++		case WEAPON_WAND:
++		case WEAPON_QUIVER:
++			return true;
++		default:
++			return false;
++	}
++}
++
++// Chaos 0024 (server/README.md "Right-click equips"): a use of an item that has no action of its own (Actions::
++// internalUseItem, a right-click in the classic controls, Ctrl + click in the regular ones, a click in the smart ones,
++// "Use" in the context menu) puts it on when it is equipment the player carries in a container, and takes it off into
++// the backpack when it is worn. The exact item clicked moves (the equip hotkey can only name an item type). Not for a
++// hotkey use, an item on the ground, in a depot or in another's hands, and not when the player turned it off (the
++// client option "Right-click equips items" sends it, storage CHAOS_EQUIP_ON_USE_OFF = 1). RETURNVALUE_CANNOTUSETHISOBJECT
++// when none of this applies, as before.
++static constexpr uint32_t CHAOS_EQUIP_ON_USE_OFF = 7101810;
++
++ReturnValue Game::chaosUseEquip(Player* player, Item* item, const Position& pos, bool isHotkey)
++{
++	if (isHotkey || pos.x != 0xFFFF || item->getTopParent() != player || item->getContainer()) {
++		return RETURNVALUE_CANNOTUSETHISOBJECT;
++	}
++
++	const ItemType& it = Item::items[item->getID()];
++	if (!chaosEquipsOnUse(it) || !item->isPickupable() || !item->isPushable() || item->hasAttribute(ITEM_ATTRIBUTE_UNIQUEID)) {
++		return RETURNVALUE_CANNOTUSETHISOBJECT;
++	}
++
++	int32_t off;
++	if (player->getStorageValue(CHAOS_EQUIP_ON_USE_OFF, off) && off == 1) {
++		return RETURNVALUE_CANNOTUSETHISOBJECT;
++	}
++
++	const Position fromPos = chaosCarriedPosition(player, item);
++	if (item->getParent() == player) {
++		return chaosTakeOff(player, item, fromPos);
++	}
++
++	slots_t slot = getSlotType(it);
++	if (slot == CONST_SLOT_RING) {
++		// the free ring slot (9 first), else the one holding a might ring when this is one (one might ring at a
++		// time, 0023), else slot 9 (the rings swap)
++		const Item* first = player->getInventoryItem(CONST_SLOT_RING);
++		const Item* second = player->getInventoryItem(CONST_SLOT_AMMO);
++		if (it.chaosMightRing && first && Item::items[first->getID()].chaosMightRing) {
++			slot = CONST_SLOT_RING;
++		} else if (it.chaosMightRing && second && Item::items[second->getID()].chaosMightRing) {
++			slot = CONST_SLOT_AMMO;
++		} else if (first && !second) {
++			slot = CONST_SLOT_AMMO;
++		}
++	} else if (slot != CONST_SLOT_HEAD && slot != CONST_SLOT_NECKLACE && slot != CONST_SLOT_ARMOR && slot != CONST_SLOT_LEGS &&
++	           slot != CONST_SLOT_FEET && slot != CONST_SLOT_LEFT && slot != CONST_SLOT_RIGHT) {
++		return RETURNVALUE_CANNOTUSETHISOBJECT;
++	}
++
++	return chaosEquipMove(player, item, slot, fromPos);
++}
++
+ //Implementation of player invoked events
+ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
+ {
+@@ -1928,15 +2046,17 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
+ 		}
+ 	}
+ 
++	// Chaos 0024: both moves run the Lua move events (chaosEquipMove), and every refusal is shown
++	ReturnValue ret = RETURNVALUE_NOERROR;
+ 	Item* slotItem = player->getInventoryItem(slot);
+ 	Item* equipItem = searchForItem(backpack, it.id);
+ 	if (slotItem && slotItem->getID() == it.id && (!it.stackable || slotItem->getItemCount() == 100 || !equipItem)) {
+-		internalMoveItem(slotItem->getParent(), player, CONST_SLOT_WHEREEVER, slotItem, slotItem->getItemCount(), nullptr);
++		ret = chaosTakeOff(player, slotItem, chaosCarriedPosition(player, slotItem));
+ 	} else if (equipItem) {
+-		ReturnValue ret = internalMoveItem(equipItem->getParent(), player, slot, equipItem, equipItem->getItemCount(), nullptr);
+-		if (ret == RETURNVALUE_ONLYONEMIGHTRING) {
+-			player->sendCancelMessage(ret); // Chaos 0023: say why the hotkey did nothing
+-		}
++		ret = chaosEquipMove(player, equipItem, slot, chaosCarriedPosition(player, equipItem));
++	}
++	if (ret != RETURNVALUE_NOERROR) {
++		player->sendCancelMessage(ret);
+ 	}
+ }
+ 
+@@ -2261,7 +2381,11 @@ void Game::playerUseItem(uint32_t playerId, const Position& pos, uint8_t stackPo
+ 	}
+ 
+ 	Item* item = thing->getItem();
+-	if (!item || item->isUseable() || item->getClientID() != spriteId) {
++	// Chaos 0024: a multi-use item is never used plainly (its action is a use with), except carried equipment, which a
++	// plain use puts on or takes off (chaosUseEquip; the client sends it for the weapons whose use with only breaks
++	// furniture, data/scripts/chaos/rightclick_equip.lua)
++	const bool chaosMultiUseEquip = item && item->isUseable() && !isHotkey && item->getTopParent() == player;
++	if (!item || (item->isUseable() && !chaosMultiUseEquip) || item->getClientID() != spriteId) {
+ 		player->sendCancelMessage(RETURNVALUE_CANNOTUSETHISOBJECT);
+ 		return;
+ 	}
+@@ -2298,6 +2422,15 @@ void Game::playerUseItem(uint32_t playerId, const Position& pos, uint8_t stackPo
+ 	player->resetIdleTime();
+ 	player->setNextActionTask(nullptr);
+ 
++	if (chaosMultiUseEquip) {
++		player->setNextAction(OTSYS_TIME() + g_config.getNumber(ConfigManager::ACTIONS_DELAY_INTERVAL));
++		ret = chaosUseEquip(player, item, pos, isHotkey);
++		if (ret != RETURNVALUE_NOERROR) {
++			player->sendCancelMessage(ret);
++		}
++		return;
++	}
++
+ 	g_actions->useItem(player, pos, index, item, isHotkey);
+ }
+ 
+--- a/src/game.h
++++ b/src/game.h
+@@ -322,6 +322,11 @@ class Game
+ 		void playerMoveItem(Player* player, const Position& fromPos,
+ 		                    uint16_t spriteId, uint8_t fromStackPos, const Position& toPos, uint8_t count, Item* item, Cylinder* toCylinder);
+ 		void playerEquipItem(uint32_t playerId, uint16_t spriteId);
++		// Chaos (src-patch 0024): equipment moves that run the Lua move events; a use that equips (Actions)
++		ReturnValue chaosEquipMove(Player* player, Item* item, int32_t slot, const Position& fromPos);
++		ReturnValue chaosTakeOff(Player* player, Item* item, const Position& fromPos);
++		ReturnValue chaosUseEquip(Player* player, Item* item, const Position& pos, bool isHotkey);
++		static bool chaosEquipsOnUse(const ItemType& it);
+ 		void playerMove(uint32_t playerId, Direction direction);
+ 		void playerCreatePrivateChannel(uint32_t playerId);
+ 		void playerChannelInvite(uint32_t playerId, const std::string& name);

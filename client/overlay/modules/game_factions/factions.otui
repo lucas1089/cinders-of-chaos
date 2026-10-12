@@ -1,0 +1,433 @@
+// Factions window (game_factions): faction cards with emblem and rank bar, the shown faction's lore, standing, tokens,
+// contracts and quartermaster. Styles from client_chaos_theme; emblems from client/tools/gen_faction_art.py.
+// Opened from the menu (Adventure > Factions) or by a faction NPC.
+
+FactionCard < UIWidget
+  height: 92
+  margin-bottom: 6
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  UIWidget
+    id: emblem
+    size: 48 48
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 8
+    margin-top: 8
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: emblem.right
+    anchors.right: parent.right
+    margin-top: 10
+    margin-left: 8
+    margin-right: 6
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: rank
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 4
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: near
+    anchors.top: rank.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 2
+    font: verdana-11px-antialised
+    color: #6fd86f
+    text-align: left
+    phantom: true
+
+  ChaosProgressBar
+    id: bar
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 8
+    margin-right: 8
+    margin-bottom: 8
+    height: 16
+    phantom: true
+
+FactionContractRow < UIWidget
+  height: 46
+  margin-bottom: 2
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UILabel
+    id: tag
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 8
+    width: 50
+    font: verdana-11px-rounded
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: label
+    anchors.top: parent.top
+    anchors.left: tag.right
+    anchors.right: rep.left
+    margin-top: 5
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: rep
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 5
+    margin-right: 10
+    width: 104
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: right
+    phantom: true
+
+  ChaosProgressBar
+    id: progress
+    anchors.left: label.left
+    anchors.right: action.left
+    anchors.bottom: parent.bottom
+    margin-bottom: 6
+    margin-right: 10
+    height: 15
+    phantom: true
+
+  ChaosButton
+    id: action
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    margin-bottom: 3
+    size: 74 20
+    !text: tr('Deliver')
+
+FactionOfferRow < UIWidget
+  height: 54
+  margin-bottom: 2
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: item.right
+    anchors.right: state.left
+    margin-top: 5
+    margin-left: 8
+    margin-right: 8
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: kind
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: action.left
+    margin-top: 2
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: price
+    anchors.top: kind.bottom
+    anchors.left: name.left
+    anchors.right: action.left
+    margin-top: 2
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: state
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 5
+    margin-right: 8
+    width: 150
+    font: verdana-11px-antialised
+    text-align: right
+    phantom: true
+
+  ChaosButton
+    id: action
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    margin-bottom: 5
+    size: 74 20
+
+ChaosMainWindow
+  id: factionsWindow
+  size: 820 590
+  !text: tr('Factions')
+  @onEscape: modules.game_factions.hide()
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-wrap: true
+    text-auto-resize: true
+    !text: tr('Four powers fight over what the Cinders left. Earn their trust with contracts, hunts, rifts, invasions, world bosses and tokens; their quartermasters open up as you rise. Rivals lose a little of what you give the other.')
+
+  UIWidget
+    id: cardList
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    width: 236
+    layout:
+      type: verticalBox
+
+  ChaosPanelDark
+    id: detail
+    anchors.top: hint.bottom
+    anchors.left: cardList.right
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-left: 8
+    margin-bottom: 8
+    padding: 10
+
+    UIWidget
+      id: emblem
+      size: 64 64
+      anchors.top: parent.top
+      anchors.left: parent.left
+      phantom: true
+
+    UILabel
+      id: name
+      anchors.top: parent.top
+      anchors.left: emblem.right
+      anchors.right: parent.right
+      margin-left: 10
+      margin-top: 2
+      font: verdana-11px-rounded
+      color: #f6cf72
+      text-align: left
+
+    UILabel
+      id: lore
+      anchors.top: name.bottom
+      anchors.left: name.left
+      anchors.right: parent.right
+      margin-top: 4
+      font: verdana-11px-antialised
+      color: #a89a84
+      text-wrap: true
+      text-auto-resize: true
+      text-align: topLeft
+
+    UILabel
+      id: rival
+      anchors.top: emblem.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 8
+      font: verdana-11px-antialised
+      color: #d07a5a
+      text-wrap: true
+      text-auto-resize: true
+      text-align: topLeft
+
+    ChaosProgressBar
+      id: rankBar
+      anchors.top: rival.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 8
+      height: 18
+
+    UILabel
+      id: nextLabel
+      anchors.top: rankBar.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      text-auto-resize: true
+      font: verdana-11px-antialised
+      color: #d6c9ae
+
+    UILabel
+      id: weekLabel
+      anchors.top: rankBar.bottom
+      anchors.right: parent.right
+      margin-top: 4
+      text-auto-resize: true
+      font: verdana-11px-antialised
+      color: #d6c9ae
+
+    UILabel
+      id: drLabel
+      anchors.top: nextLabel.bottom
+      anchors.left: parent.left
+      margin-top: 3
+      text-auto-resize: true
+      font: verdana-11px-antialised
+      color: #8c8070
+
+    UIItem
+      id: tokenItem
+      size: 32 32
+      anchors.top: drLabel.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      virtual: true
+      phantom: true
+
+    UILabel
+      id: tokenLabel
+      anchors.verticalCenter: tokenItem.verticalCenter
+      anchors.left: tokenItem.right
+      margin-left: 6
+      text-auto-resize: true
+      font: verdana-11px-antialised
+      color: #d6c9ae
+
+    ChaosButton
+      id: turnInButton
+      anchors.verticalCenter: tokenItem.verticalCenter
+      anchors.left: tokenLabel.right
+      margin-left: 10
+      size: 90 22
+      !text: tr('Turn in')
+      @onClick: modules.game_factions.turnIn()
+
+    UILabel
+      id: npcLabel
+      anchors.verticalCenter: tokenItem.verticalCenter
+      anchors.right: parent.right
+      text-auto-resize: true
+      font: verdana-11px-antialised
+      color: #8c8070
+
+    ChaosTabButton
+      id: contractsTab
+      anchors.top: tokenItem.bottom
+      anchors.left: parent.left
+      margin-top: 6
+      width: 130
+      !text: tr('Contracts')
+      @onClick: modules.game_factions.showTab('contracts')
+
+    ChaosTabButton
+      id: offersTab
+      anchors.top: contractsTab.top
+      anchors.left: contractsTab.right
+      margin-left: 4
+      width: 130
+      !text: tr('Quartermaster')
+      @onClick: modules.game_factions.showTab('offers')
+
+    ChaosPanelDark
+      id: listFrame
+      anchors.top: contractsTab.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      padding: 3
+
+    UIScrollArea
+      id: rowList
+      anchors.top: listFrame.top
+      anchors.left: listFrame.left
+      anchors.right: listScroll.left
+      anchors.bottom: listFrame.bottom
+      margin: 4
+      layout:
+        type: verticalBox
+      vertical-scrollbar: listScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: listScroll
+      anchors.top: listFrame.top
+      anchors.right: listFrame.right
+      anchors.bottom: listFrame.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 48
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: emptyText
+      anchors.centerIn: listFrame
+      text-auto-resize: true
+
+  ChaosLabelDim
+    id: resetLabel
+    anchors.left: parent.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    text-auto-resize: true
+
+  ChaosLabel
+    id: msgLabel
+    anchors.left: resetLabel.right
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-left: 16
+    margin-right: 8
+    text-align: right
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_factions.hide()

@@ -1,0 +1,303 @@
+# Map building guide
+
+Rules for building new areas so they match the best maps we have. Every number below was measured with
+`tools/map/` on real maps. The per-map and per-area numbers are in `docs/map_guide/stats.json` and
+`stats.csv`. The pictures are in `docs/map_guide/`. They are rendered at 32 px per tile with our 10.98
+sprites and show one floor only: no roofs from the floor above, no creatures and no light.
+
+Review a new area with `tools/map/score_area.py` (see "Reviewing a new area" at the end).
+
+## What was studied
+
+| map | size | notes |
+|---|---|---|
+| live base map (the map our server runs) | 18.2 M tiles, 5.5 M open, 16 floors, 20 towns, 1 057 houses, 50 338 spawns / 74 071 monsters | full world, items 3.57 |
+| map B (a large custom world) | 13.7 M tiles, 3.1 M open, 16 floors, 2 towns, 122 houses, 48 960 spawns | items 3.20, has some custom ids our sprites lack |
+| map C (an older full world, same lineage as the live map) | 5.2 M tiles, 1.0 M open, 16 floors, 12 towns, 150 houses, 13 563 spawns | items 3.62 |
+| 162 community maps (a local map pack and the shared-drive map collection) | 134 surveyed (10.x ids, 3 000+ tiles), 125 with natural areas ranked, 41 of them full-size (20 000+ natural open tiles) | quests, islands, hunts, whole worlds |
+
+Not analysed: 8 maps with old item ids (items major 1-2), 4 maps with item ids newer than ours (major 4)
+and 16 fragments under 3 000 tiles. One converted map ("community 088", 3.6 M open tiles) uses an id table
+that does not match ours: every ground shows up as flat and unknown, so its score of 15 says nothing about its
+quality. Eight server archives on the shared drive were listed. Seven of them hold no .otbm. The eighth holds
+a few small campaign and test maps, which were not used.
+
+Terms used below (they are defined exactly in `tools/map/analyze.py`):
+
+- **open tile**: terrain a player sees: a ground that is not mountain fill, deep water or a lava pool, and no wall on it.
+- **deco**: every item that is not ground, border, wall, door or floor change. It covers nature (grass tufts, stones,
+  flowers, bushes), furniture, lights and loose items.
+- **transition**: two neighbouring tiles whose grounds belong to different families (grass, earth, sand, ice, swamp,
+  lava, water, mountain, street).
+- **border coverage**: the share of transitions with a border item on either tile. "border or wall" also counts a
+  wall or mountain side as the edge.
+- **flat block**: a 16x16 block where one ground id covers 95 % or more of the main ground.
+- **ground variants**: the number of distinct ground ids of the main family in one 16x16 block.
+- **heavy tile**: an open tile with 3 or more deco items (spam).
+- **area type**: each 16x16 block of a floor is classed as town, building, dungeon, cave, forest, grassland, dirt,
+  desert, ice, swamp, lava, water or exotic.
+
+## Quality ranking
+
+The score (0-100) is computed by `tools/map/collect.py` over natural areas. It weighs border coverage (35),
+detail density (20), ground variation (15), no barren blocks (15) and no spam (15).
+
+Best full-size maps: community 001 (100), 060 (98.5), 139 (98.2), 017 (97.9), 018 (94.5), 007 (93.6),
+127 (93.2) and 025 (93.1). Next come 137 (91.1), 040 (90.7) and the **live base map at 90.6** (rank 11 of the 44 full-size maps),
+**map C 88.9** and **map B 86.7**. The weakest real maps are community 036 (74.6), 117 (73.3), 138 (70.0)
+and 107 (69.6). The four "shape" maps (generated terrain, no detail, no borders) score 44.6.
+
+What separates the best maps from the weak ones (medians of the natural areas):
+
+| sign | best maps | weak maps |
+|---|---|---|
+| ground transitions bordered (or walled) | 91-100 % (most 99-100 %) | 69-100 %; 138 leaves 31 % open |
+| flat 16x16 blocks (one ground id) | 0-24 % | 28-43 % |
+| barren share (flat **and** under 0.05 deco per tile) | 0-5 % | 21-35 % |
+| nature deco per open tile | 0.15-0.31 | 0.07-0.14 |
+| forest ground variants per block | 11 | 7 |
+| tiles with 3+ deco items | 0.0-0.3 % | 0.0-0.1 % (spam is rare; it is not what makes maps weak) |
+
+So weak maps are not spammy. They are **empty and flat**: big areas of one grass or sand id with nothing on
+them, and edges left unbordered. The live map loses points for the same reason: 24 % of its natural blocks
+are flat and 7 % are barren, against 0-5 % in the best maps.
+
+## Numbers per area type
+
+Values are the 10th percentile, median and 90th percentile over the best full-size maps (score 88 or more,
+18 maps, the live map included). Build inside the p10-p90 range. Aim for the median.
+
+| area | deco / open tile | empty tiles | ground variants / block | flat blocks | lights / 100 tiles | border coverage |
+|---|---|---|---|---|---|---|
+| town (streets, plazas) | 0.15 / **0.20** / 0.28 | 76-86 % | 1-2 | 43-71 % | 1.2 / 2.5 / 3.6 | 91-98 % |
+| building interiors | 0.11 / **0.18** / 0.27 | 77-90 % | 1-2 | 46-88 % | 2.5 / 3.1 / 5.9 | 80-96 % |
+| dungeon | 0.11 / **0.17** / 0.24 | 78-90 % | 1-2 | 43-90 % | 2.6 / 4.5 / 9.5 | walls do the edges (99 % with walls) |
+| cave | 0.09 / **0.19** / 0.26 | 77-91 % | 3.5-5 | 3-20 % | 0.6 / 4.2 / 6.1 | 49-96 %, 99.6 % with walls |
+| forest | 0.33 / **0.39** / 0.46 | 57-67 % | 7 / **11** / 15 | 0-24 % | ~0.3 | 97.5-99.6 % |
+| grassland | 0.13 / **0.15** / 0.21 | 79-88 % | 4 / **9** / 12 | 1-45 % | 0.1-1.6 | 95-99 % |
+| dirt / earth | 0.17 / **0.22** / 0.26 | 75-84 % | 5 / **11** / 16 | 9-31 % | 0.7-3.5 | 92-99 % |
+| desert | 0.03 / **0.11** / 0.19 | 83-97 % | 1-7 | 38-97 % | 0.1-3.0 | 94-100 % |
+| ice / snow | 0.02 / **0.07** / 0.13 | 88-98 % | 12 / **14** / 15 | 0-6 % | 0.1-7.8 | 94-99.6 % |
+| swamp | 0.08 / **0.14** / 0.20 | 82-93 % | 1 | 79-99 % | 0.6-4.7 | 88-98 % |
+| lava | 0.04 / **0.08** / 0.09 | 92-96 % | 1-3 | 38-78 % | 5 / **11** / 20 | 93-99 % |
+
+How to read it:
+
+- **Forest is the densest area**: about 2 tiles in 5 carry a deco item, and every 16x16 block mixes about 11 grass
+  ids. The live map's forest reaches 0.39 deco per tile, 15 ground variants and 98 % borders, the same as the best maps.
+- **Open land is quieter**. Grassland, desert and ice have 0.07-0.15 deco per tile. Variation comes from ground
+  ids (ice and snow mix 14 ids per block), not from clutter.
+- **Interiors** carry 0.02-0.06 furniture per tile and 0.18 deco per tile.
+- **Caves and dungeons need lights**: 3-5 per 100 open tiles, and lava areas 5-20 (lava itself glows).
+- **Spam** (3+ deco items on one tile) stays under 0.5 % of tiles in every good area. Above 1 % it looks cluttered.
+
+## Rules
+
+### Ground and borders
+1. **Border every ground transition.** The best maps border 97.5-99.6 % of natural transitions. The rest are edges
+   made by a wall or mountain side. Mountain sides and cave walls count as the edge, so no extra border is needed there.
+2. Most transitions are bordered from the "higher" ground over the lower one: grass over dirt, dirt over sand,
+   snow over ice and so on. The pairs that are always bordered in good maps are dirt-grass, dirt-sand, sand-earth,
+   ice-snow, ice-rock, lava-rock, lava-dirt, mud-dirt and dirt-water (100 % each).
+3. Pairs that weak areas forget: sand to shallow water (about 45 % bordered even in good maps; a beach needs the
+   water border), flowers-ground to grass (60 %), and two cave floors of the same family (muddy floor next to dirt
+   floor, 53-63 %). Use the matching border set every time.
+4. **Never leave a block of one ground id.** In forest, grassland, dirt and cave, mix the family's variants:
+   7-15 grass ids per 16x16 block in forests, 3-5 floor ids in caves, 12-15 ice/snow ids. Rooms in towns,
+   buildings and dungeons may use one floor id; that is normal there.
+5. Water: put kelp, bubbles, coral and stones on sea floors that players can see. Shore edges need the water
+   border on every tile (93-100 % in good maps).
+
+### Detail (decoration)
+6. Nature deco does most of the work. In order of use: grass tufts (ids 6216-6219), small stones (3610-3614,
+   3621-3623), dry grass (10738-10740, used in desert and dirt), flowers and mushrooms, and ice spikes and lumps
+   (6715-6718, 6939-6942) on ice.
+7. Scatter deco **evenly**. Over 16x16 blocks of good forest, the quietest quarter still has 0.28-0.35 deco per tile
+   and the busiest quarter 0.38-0.55. Clumps followed by empty stretches look like a weak map.
+8. One deco item per tile. Two only where it reads naturally (a stone under a bush). Three or more on under 0.5 % of tiles.
+9. Trees and bushes are walls on the map. They frame paths and break up open land. Good forests keep 57-67 %
+   of open tiles empty, so players can walk.
+
+### Towns
+Measured over the 14 towns of the live map with 10 or more houses, map C and the best community worlds:
+
+| item | value |
+|---|---|
+| town footprint | about 100-200 x 80-160 tiles (live median 132 x 124) |
+| street width | median 3-4 tiles. Main streets 4-6, alleys 2. Plazas 25-140 tiles (squares about 5x5 to 12x12) |
+| built share of the footprint | 0.14-0.33 (the rest is streets, plazas, gardens and nature) |
+| house size | median 40-60 tiles (p25 25, p75 80-90); footprint 6 x 7 (p25 5 x 6, p75 7 x 9) |
+| house floors | 77 % of live-map houses have 1 floor and 10 % have 2. The few big houses and guildhalls have 3-5 |
+| doors | 1 door per house (2 for big ones). The door sits in the wall line and faces a street |
+| roofs | 97-100 % of house tiles have a roof on the floor above |
+| house interior | 0.09 furniture per tile (p25-p75 0.05-0.13), 2 beds, 2 windows, deco 0.16 per tile; no empty houses |
+| lockers / depot | 6-25 depot lockers per town, in one depot building near the temple |
+| street detail | 0.05-0.30 deco per street tile; 75-97 % of street tiles stay empty |
+| floor changes | live-map towns have 43 stairs, ladders or holes per 1 000 open tiles, 10x the wilderness |
+
+Construction: walls are one tile thick, as a wall item on the outline tile. Corners use the corner piece. Frame
+walls (framework, stone, white stone, sandstone, brick) follow the town's style. Every building has a roof on z-1
+over all its tiles. In the pictures the temple sits on its own square with a main street leading to it. See shots
+01, 02, 03 and 17.
+
+### Wilderness
+These rules come from the pictures and were not measured.
+- Paths: dirt or earth roads 2-4 tiles wide, bordered on both sides, winding (no long straight lines).
+- Forest edges: trees thin out over 3-6 tiles into grassland. The ground changes with a border and is never cut
+  off straight. See shot 06.
+- Farms and fields: fenced plots with crop or soil ground, a 1-2 tile path around them. See shot 07.
+
+### Caves
+- Floor: earth or dirt-floor family with 3-5 ids per block (live map: earth 9026, dirt floor 9021-9025).
+- Walls: cave walls (5639-5642) or mountain walls (4468-4479) on the rock side of every edge. The rock fill is
+  mountain ground (919). In the classic style the wall pieces sit on the north and west sides of the floor and the
+  south and east edges use the matching border. See shot 10.
+- Detail: 0.19 deco per tile, mostly small stones (3610-3623), plus roots, mushrooms and moss near walls.
+- Lights: about 4 per 100 open tiles (torches, glowing mushrooms, crystals, coal basins); mines more (shot 11).
+- Shape: irregular edges. A straight wall run longer than 4-5 tiles looks built, not grown (compare shot 23).
+
+### Dungeons, tombs, halls
+- Floors may be one id per room, but rooms vary: tiles, marble, slate and sandstone, with carpets and patterns.
+  Debris (3653-3656) and stones break the floor up (shots 13, 14).
+- Walls 1 tile thick with matching pillars, arches and door frames. Furniture 0.012-0.036 per tile: shelves,
+  coffins, altars, statues.
+- Lights 2.6-9.5 per 100 tiles (wall lamps, coal basins, torch bearers).
+- Do not build a long hall of one floor id with nothing on it (shot 22).
+
+### Hunting areas
+Measured around every spawn (13 tiles around each monster) on the live map, with map B and map C in brackets:
+
+| item | value |
+|---|---|
+| corridor width (narrowest walkable run through a tile) | median 7 (8, 6), p25 4, p75 11. About 4 % of hunt tiles are 1 wide and 7 % are 2 wide |
+| rooms vs corridors | 68 % of hunt tiles are in rooms (5+ wide). Room size median 27 tiles, p75 64-71 |
+| loops | 13-14 per 1 000 hunt tiles. Every hunt has at least one circuit, so players can run a loop |
+| dead ends | 17-25 per 1 000 hunt tiles (short side pockets; good safe spots) |
+| monsters per spawn | mean 1.1-1.5 (most spawns hold 1 monster with radius 1; groups of 3-8 for packs) |
+| distance between spawn points | median 4-7 tiles (p25 3-4, p75 4-8) |
+| density | 2.7-4.4 monsters per 100 walkable hunt tiles. By area: forest/grass 1.2-1.7, desert/ice 1.7-2.0, dirt 2.2, swamp 2.5, cave 2.7-3.2, dungeon 3.3-3.6, lava 1.3-3.9 |
+| depth | 64 % of live-map spawns are on floors 7-11 and 21 % on floors 12-15. Above ground (0-6) holds 14 % |
+| floor changes | caves have 4 per 1 000 open tiles, dungeons 3.4. On the live map 98 % of ladders have a tile above, 79 % of stairs and 70 % of holes have a tile directly below |
+
+Layout rule: build a loop of rooms (5-10 wide, 25-70 tiles) joined by 3-4 wide corridors. Add 1-2 dead-end pockets
+per 50x50 area as safe spots. Put 1 monster per spawn point every 4-7 tiles. Give each room 1-3 lights.
+
+## Pack items in the map editor (palette)
+
+The map editor reads our items.otb / items.xml, so the pack items (server/README.md "Pack items and monsters") are in
+its item list by id and name. Each ground is followed by its 12 border pieces in this order: north, south, east and west
+edge, north-west, north-east, south-west and south-east corner, then the four inner corners (named after where the higher
+ground lies: the "north edge" goes on a tile with the ground to its north). A border piece goes on the
+lower neighbour tile, like a stock border, and draws the rim of the higher ground; rules 1-4 above apply.
+
+| ground | id | speed | border pieces |
+|---|---|---|---|
+| thick lush grass | 36300 | 150 | 36301-36312 |
+| dense grass | 36313 | 150 | 36314-36325 |
+| dry prairie grass | 36326 | 150 | 36327-36338 |
+| meadow grass | 36339 | 150 | 36340-36351 |
+| bright grass | 36352 | 150 | 36353-36364 |
+| loam | 36365 | 110 | 36366-36377 |
+| flagstone floor | 36378 | 100 | 36379-36390 |
+| jade tile floor | 36391 | 100 | 36392-36403 |
+| violet slate floor | 36404 | 100 | 36405-36416 |
+| red clay | 36417 | 110 | 36418-36429 |
+| fine sand | 36430 | 120 | 36431-36442 |
+| fresh snow | 36443 | 150 | 36444-36455 |
+
+Other pack items: water 36456-36463 (deep lake water, shallows over sand, pebbles and weeds, lagoon, murky, mountain lake,
+mountain shallows; animated, the four shallows walkable), shores 36464-36577 (border pieces placed on the water tile next to
+land: grass, sand, rock, snow, stone rim, mud; pieces named after the land sides, `in_` pieces for two or more sides,
+straight pieces vary along the shore by themselves), lake objects 36578-36626 (reeds, lilies, rocks, logs, buoys: use them
+like rule 5), dock props 36627-36650, trees 36100-36298 (even ids) with their stumps one id higher (36101-36299). Monsters:
+goblins and forest creatures in the editor's creature list (tools/windows/rme_creatures.py reads monsters/chaos).
+
+## Pictures
+
+Coordinates are the top-left tile. Each shot is 30 x 20 tiles.
+
+| file | what it shows | where |
+|---|---|---|
+| 01_town_street.jpg | cobbled main street 4 wide, framework houses, lamps and signs at the doors | live 32332,32204,7 |
+| 02_town_temple_square.jpg | temple on its square, marble, fountain, street to it | live 32345,31768,7 |
+| 03_house_garden.jpg | white stone house with hedge garden, pond, bordered grass | live 32346,32780,7 |
+| 04_jungle_village.jpg | wooden huts on jungle grass, mixed ground, tufts everywhere | live 32578,32728,7 |
+| 05_swamp_town.jpg | swamp settlement: mud, grass and water, all shores bordered | live 32935,32055,7 |
+| 06_forest_river.jpg | river with full shore border, forest edge thinning out, a ruin | live 32602,32222,7 |
+| 07_farmland.jpg | fenced fields, bordered paths | live 32202,32830,7 |
+| 08_desert.jpg | sand, grey sand and earth mixed and bordered, dry grass, stones | live 33050,31374,7 |
+| 09_ice_settlement.jpg | snow and ice mixed, a fenced field, shore borders | live 31994,31358,7 |
+| 10_cave_classic.jpg | classic cave: walls on north/west sides, stones scattered | live 33018,31118,13 |
+| 11_cave_mine_lit.jpg | grey-stone mine hall with many lights | live 33434,31310,8 |
+| 12_cave_jungle.jpg | jungle cave with water pools, roots, plants | live 32666,32846,9 |
+| 13_dungeon_tomb.jpg | sandstone tomb: pillars, patterned floors, bookcases, debris | live 32970,32398,10 |
+| 14_dungeon_halls.jpg | marble halls with patterned floors | live 32954,32398,13 |
+| 15_lava.jpg | basalt with lava streams, every lava edge bordered | live 33626,32638,14 |
+| 16_community_forest_coast.jpg | best-ranked community world: coast, rocks, forest | community 127, 1994,1614,7 |
+| 17_community_village.jpg | best-ranked community world: village street | community 060, 1050,1070,7 |
+| 18_weak_unbordered_draft.jpg | WEAK: grass, stone and water with no borders | community 138, 538,1166,7 |
+| 19_weak_barren_grass.jpg | WEAK: one grass id, almost no deco | community 036, 1290,926,7 |
+| 20_weak_patch_edges.jpg | WEAK: dark-grass patches framed by hedges, beds on grass | community 036, 1002,830,7 |
+| 21_weak_blocky_lava.jpg | WEAK: square lava blobs, blocky shapes | map B, 378,1918,15 |
+| 22_weak_flat_hall.jpg | WEAK: one floor id, a row of lamps, nothing else | map B, 1978,782,15 |
+| 23_weak_box_cave.jpg | WEAK: box-shaped cave room, plain floor | map C, 32858,31806,8 |
+
+## The live base map: references and weak spots
+
+Good references to copy from (the best-scoring 16x16 blocks of each type in the block survey):
+
+- Forest: 32640,31120,7 and 32624,31232,6 (0.72 deco per tile in the densest blocks, 15 ground variants).
+- Grassland: 33200,31456,7. Dirt: 32208,32832,7. Desert: 33056,31376,7 and 33248,31360,7. Ice: 32048,31104,6.
+- Caves: 33440,31312,8 (mine) and 32000,32080,12. Dungeons: 32912,32560,9 and 33440,32064,10.
+- Towns: the town around temple 32957,32076,7 is the densest (46 % built, 0.32 deco per street tile, street
+  width 3). Wider, more open towns are around 32369,32241,7 and 32787,31276,7.
+
+Weak spots (checked with `score_area.py` on 48 x 48 areas):
+
+- 32560-32607, 32752-32799, z7 (next to the town at 32594,32745): flat grassland with 0.02 deco per tile and
+  98 % empty tiles.
+- 32992-33071, 32848-32927, z7: desert with 0.015 deco per tile.
+- 31312-31359, 32800-32847, z10 and 31232-31279, 32880-32927, z12: dungeons with one floor id, 0.07-0.09 deco
+  per tile and 0-1.3 lights per 100 tiles.
+- 33056-33103, 31056-31103, z14: a cave with too much deco (0.8 per tile, 3.4 % of tiles with 3+ items).
+- 32336-32383, 32768-32815, z7: town edge where 5.5 % of transitions are unbordered.
+
+Over the whole live map: 24 % of natural 16x16 blocks are flat and 7 % are barren. These are the areas to touch up
+first. Many of its town streets are bare: the median is 0.09 deco per street tile, while the densest town has 0.32.
+
+## Checklist for a new area
+
+1. Every ground transition has a border or a wall. `score_area.py` border_or_wall is 0.97 or more, and the water
+   shore is bordered on every tile.
+2. No 16x16 block of natural ground uses one ground id. Forest has 6+ variants per block, cave 3+ and ice 10+.
+3. Deco per open tile is inside the band for the area type (table above). No empty stretch bigger than about 8x8
+   outside streets, plazas and arenas.
+4. Fewer than 1 % of tiles have 3+ deco items.
+5. Caves and dungeons have 2+ lights per 100 tiles. Lava areas have 5+.
+6. Edges are irregular: no straight wall or border run longer than 4-5 tiles in natural areas.
+7. Hunting area: a loop exists, corridors are 3-12 wide (median), there is a dead-end pocket or two, monsters
+   1.5-5 per 100 walkable tiles, and spawn points 4-7 tiles apart.
+8. Floor changes lead somewhere: each ladder has a walkable tile above, and each stair or hole lands on a walkable tile below.
+9. Buildings: walls 1 thick, a roof over every tile, 1 door to the street, 2 beds and furniture in each house,
+   and stairs inside multi-floor houses.
+10. Render the area (`render.py`) and look at it next to the matching shot in `docs/map_guide/`.
+
+## Reviewing a new area
+
+```
+# score a rectangle (exit code 1 when a value is out of band)
+python3 -I tools/map/score_area.py world.otbm items.otb items.xml X0 Y0 X1 Y1 Z [Z2 ...] \
+    --dat Tibia.dat [--type cave] [--spawn world-spawn.xml] [--png out.png --spr Tibia.spr]
+
+# render a crop at 32 px per tile
+python3 -I tools/map/render.py world.otbm items.otb items.xml Tibia.dat Tibia.spr X0 Y0 X1 Y1 Z out.png
+
+# survey a whole map, then rank several surveys (writes stats.json / stats.csv)
+python3 -I tools/map/survey.py world.otbm items.otb items.xml out.json --dat Tibia.dat \
+    --spawn world-spawn.xml --house world-house.xml --blocks out_blocks.npz
+python3 -I tools/map/collect.py OUT_DIR a.json b.json ...
+```
+
+An area type needs at least 3 blocks of 16x16 in the rectangle to be judged. Use rectangles of 48x48 or more, or
+force the type with `--type`. The bands are in `BANDS` at the top of `score_area.py`. They come from the 10-90 %
+range of the best maps, widened a little.

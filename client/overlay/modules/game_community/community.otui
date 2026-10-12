@@ -1,0 +1,340 @@
+// Community window (game_community): the community goal's bar with its four stages, your contribution and the top
+// contributors, the week's world modifiers; and the Brazier dialog (give gold to the Great Brazier). Styles from
+// client_chaos_theme; icons from client/tools/gen_community_icons.py (/images/game/buffs/community_* and wmod_*).
+// Opened from the menu (Adventure > Community) or by using the Great Brazier in the temple.
+
+CommunityStageChip < ChaosPanelDark
+  size: 166 58
+  margin-right: 8
+  phantom: false
+  focusable: false
+
+  UIWidget
+    id: icon
+    size: 26 26
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 0
+    margin-top: 0
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 6
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: pct
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-left: 6
+    margin-top: 1
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: line
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+CommunityMarker < UIWidget
+  size: 2 30
+  background-color: #f6cf7280
+  phantom: true
+
+CommunitySourceRow < UIWidget
+  height: 15
+  phantom: false
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-antialised
+    color: #b8ac94
+    text-auto-resize: true
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-auto-resize: true
+    phantom: true
+
+CommunityTopRow < UIWidget
+  height: 17
+  phantom: false
+
+  UILabel
+    id: place
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 22
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: place.right
+    anchors.right: value.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 80
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: right
+    phantom: true
+
+CommunityModRow < UIWidget
+  height: 34
+  margin-bottom: 4
+  background-color: #1a151a
+  phantom: false
+
+  UIWidget
+    id: icon
+    size: 26 26
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-left: 8
+    margin-top: 2
+    font: verdana-11px-rounded
+    color: #f08a4b
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: text
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 1
+    margin-right: 4
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+ChaosMainWindow
+  id: communityWindow
+  size: 720 600
+  !text: tr('Community')
+  @onEscape: modules.game_community.hide()
+
+  ChaosLabel
+    id: goalName
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  ChaosLabel
+    id: timeLabel
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    color: #f6cf72
+
+  ChaosLabelDim
+    id: goalText
+    anchors.top: goalName.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 28
+    text-align: topLeft
+    text-wrap: true
+
+  UIWidget
+    id: barArea
+    anchors.top: goalText.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    height: 24
+    phantom: true
+
+    ChaosProgressBar
+      id: goalBar
+      anchors.fill: parent
+      height: 24
+      background-color: #c8641e
+      text-offset: 0 4
+
+  UIWidget
+    id: stagePanel
+    anchors.top: barArea.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    height: 58
+    layout:
+      type: horizontalBox
+
+  ChaosPanelDark
+    id: mineFrame
+    anchors.top: stagePanel.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    size: 340 196
+
+    ChaosLabel
+      id: mineTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      text-auto-resize: true
+      color: #e8b84a
+      !text: tr('Your contribution')
+
+    ChaosLabel
+      id: mineLabel
+      anchors.top: mineTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-align: left
+      font: verdana-11px-rounded
+      color: #f6cf72
+
+    ChaosLabelDim
+      id: todayLabel
+      anchors.top: mineLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 2
+      text-align: left
+
+    UIWidget
+      id: sourceList
+      anchors.top: todayLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 90
+      layout:
+        type: verticalBox
+
+    ChaosLabel
+      id: rewardLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 42
+      text-align: topLeft
+      text-wrap: true
+      color: #b070ff
+
+  ChaosPanelDark
+    id: topFrame
+    anchors.top: mineFrame.top
+    anchors.right: parent.right
+    size: 340 196
+
+    ChaosLabel
+      id: topTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      text-auto-resize: true
+      color: #e8b84a
+      !text: tr('Top contributors')
+
+    UIWidget
+      id: topList
+      anchors.top: topTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      layout:
+        type: verticalBox
+
+    ChaosLabelDim
+      id: topEmpty
+      anchors.centerIn: parent
+      text-auto-resize: true
+      !text: tr('Nobody yet. Be the first!')
+      visible: false
+
+  ChaosLabel
+    id: weekTitle
+    anchors.top: mineFrame.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    text-auto-resize: true
+    color: #e8b84a
+
+  ChaosPanelDark
+    id: weekFrame
+    anchors.top: weekTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 4
+    margin-bottom: 8
+
+    UIWidget
+      id: modList
+      anchors.fill: parent
+      layout:
+        type: verticalBox
+
+  ChaosButton
+    id: brazierButton
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    width: 150
+    !text: tr('Feed the Brazier')
+    @onClick: modules.game_community.showBrazier()
+
+  ChaosLabel
+    id: msgLabel
+    anchors.left: brazierButton.right
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-left: 8
+    margin-right: 8
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_community.hide()

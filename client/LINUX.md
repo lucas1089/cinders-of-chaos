@@ -3,16 +3,38 @@
 Tested in a Ubuntu 24.04 cloud container (software OpenGL, virtual display): the client builds, logs in to the server
 and enters the game.
 
+## Download
+Every run of the **Windows package** workflow (`.github/workflows/windows-package.yml`, job `client-linux`) builds this
+client on Ubuntu 22.04 exactly as "Build" below says and publishes `CindersOfChaos-Client-Linux.tar.gz` on its
+prerelease. Extract it and run `./run-client.sh` (Ubuntu 22.04+, Debian 12+; `tools/linux/client/README.txt`).
+- `tools/linux/package_client.sh` copies the binary as `chaos-client` with init.lua, data, modules, mods and layouts.
+  `tools/linux/bundle_libs.sh` copies every library that is not a base system one into `lib/` (PhysicsFS, OpenAL,
+  libzip, sndio) and sets RUNPATH `$ORIGIN/lib`. It fails the job when ldd still finds a non-system library outside
+  `lib/`. OpenGL, X11, ALSA, OpenSSL 3, zlib and glibc come from the system.
+- The dat/spr pair, the updater settings (the same inputs as the Windows client) and the input `server_host`
+  (`client/tools/set_server_host.py`) are added before packing. The job then starts the packed client for 30 seconds
+  under Xvfb with software OpenGL and no sound device.
+- `run-client.sh` sets `ALSOFT_DRIVERS=null` when the machine has no sound device (see below).
+- No AppImage: it needs FUSE on the player's machine, which Ubuntu 22.04+ no longer installs by default
+  (`libfuse2`). A plain folder runs everywhere and keeps `init.lua` editable.
+
 ## Build
 ```
 sudo apt-get install -y cmake g++ libboost-all-dev libphysfs-dev libogg-dev libvorbis-dev zlib1g-dev libzip-dev \
   libbz2-dev libssl-dev libopenal-dev libglew-dev libluajit-5.1-dev libgl1-mesa-dev libglu1-mesa-dev libx11-dev
 tools/assemble_client.sh <base-client-dir> <game-dir>       # patches (C++ and Lua) + overlay (incl. spell icon sheets)
 mkdir build && cd build
-cmake <game-dir> -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON -DPHYSFS_LIBRARY=/usr/lib/x86_64-linux-gnu/libphysfs.so
+cmake <game-dir> -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON -DPHYSFS_LIBRARY=/usr/lib/x86_64-linux-gnu/libphysfs.so \
+  -DOPENAL_LIBRARY=/usr/lib/x86_64-linux-gnu/libopenal.so
 make -j$(nproc)
 ```
+Client guard (base patch 0035, `BASE.md` "Client guard: the build secret"): put `CHAOS_CLIENT_KEY=<64 hex digits>` in the
+environment of the `cmake` call and add `-DCHAOS_CLIENT_BUILD=N`; without the variable the client gets the public
+development key, which only a test server with `clientGuardAllowDevKey = true` accepts.
 `-DPHYSFS_LIBRARY=...so`: Ubuntu's static `libphysfs.a` has no archive index and the link fails without it.
+`-DOPENAL_LIBRARY=...so`: the sound framework is on (base patch 0032) and the base's `FindOpenAL.cmake` finds no
+`libopenal.a` on Ubuntu (there is none). With no sound card (a container, a server without ALSA devices) OpenAL's
+device probe aborted the client at start in our test; run it with `ALSOFT_DRIVERS=null` there (OpenAL's silent backend).
 
 ## Run
 Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or link the client binary that CMake built into
@@ -25,6 +47,13 @@ Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or l
 - Several imported modules depended on modules or UI styles of the clients they came from (stash, bank, event...);
   a missing style or module stops the client at start. Fixed with guards and `client_chaos_theme/compat.otui`.
 - The overlay used to replace `client_background`, which other base modules call; now only its images are replaced.
+- Accounts with more than one character could not log in (stuck at "Connecting to login server...",
+  `protocollogin.lua:338: attempt to index a nil value`). The server's character list (0x64) entry is world id u8,
+  name, then level u32, vocation u16 (server id), outfit (looktype u16; head, body, legs, feet, addons u8, or an item
+  id u16 when the looktype is 0) and mount u16; the client read only world id and name, so the second entry's world id
+  came out of the first one's level (with one character the leftover bytes were read as the account status and
+  premium time, hence "-20726 days left"). `base-patches/0025-chaos-character-list-entries.patch` reads the whole
+  entry for 1098, so the list also shows level, class and outfit. Tested with 1, 2 and 5 characters on an account.
 
 ## What the in-game test found (fixed)
 - The missing `getItemsPrice` in the base cyclopedia was not harmless: its `onGameStart` handler raised an error and every
@@ -48,11 +77,11 @@ boosted creature and boss, the event calendar and the players online. `init.lua`
   `g_game.onCraftingSkill(index, level, base, percent)`) and accepts slot 16.
 
 ## Branding
-`base-patches/0014-chaos-branding.patch` renames what the player reads in the base client: window title "Chaos",
+`base-patches/0014-chaos-branding.patch` renames what the player reads in the base client: window title "Cinders of Chaos",
 "Chaos Coins", "Cyclopedia", option help texts, rules and store texts. It also hides the Google sign-in button
 (our login server has none), turns the base client's built-in test servers (Ctrl+Alt+T) into a no-op, fetches
 store offer images only from `Services.storeWidget` when it is set, and replaces the paid-services terms of the
-base client's company with a short Chaos text. Map marker names in the minimap data are left as they are.
+base client's company with a short Cinders of Chaos text. Map marker names in the minimap data are left as they are.
 
 ## No scripting bot
 `base-patches/0015-no-bot-no-cavebot-no-scripts.patch` and `tools/assemble_client.sh` leave the vBot module (`game_bot`, Lua scripts
@@ -66,7 +95,7 @@ apart (the other vocations still arrive as their base vocation). The names Thief
 `g_game.getVocationName(Base)`, `translateVocationName` and `getVocationId`; `translateVocation` keeps 11-13 as they are (the spell
 data lists them), `Creature:isThief()` is new, and the helper treats the line as its class 6 (`game_chaosspells` fills its spell
 lists). 11-15 used to be other servers' promoted ids in those tables; with this server they are the Thief line. Tested: login as a
-Thief shows vocation 11 "Thief", and `!ascend ninja` switches the client to 12 "Ninja" without a relog (the server resends 0x9F).
+Thief shows vocation 11 "Thief", and the Ascendant Oracle switches the client to 12 "Ninja" without a relog (the server resends 0x9F).
 
 ## Name plates
 `base-patches/0022-chaos-nameplate.patch` adds `Creature:setNameplate(guild, font, guildColor, nameColor, frameImage, border)`:
