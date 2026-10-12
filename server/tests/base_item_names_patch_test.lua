@@ -81,6 +81,7 @@ writeFile(data .. "/monster/monsters/brute.xml", [[
 <monster name="Brute">
 	<loot>
 		<item name="old plain thing" chance="5000" />
+		<item id="30002" name="old test mask" chance="700" />
 		<item id="2148" countmax="20" chance="50000" />
 	</loot>
 </monster>
@@ -131,6 +132,8 @@ ok(boss:find('{id = "old test mask holder", chance = 500}', 1, true) ~= nil, "a 
 ok(boss:find('{name = "gold coin"', 1, true) ~= nil, "the rest kept")
 local brute = readFile(data .. "/monster/monsters/brute.xml")
 ok(brute:find('<item id="30003" chance="5000" />', 1, true) ~= nil, "XML loot by old name -> id")
+ok(brute:find('<item id="30002" chance="700" />', 1, true) ~= nil,
+	"XML loot with an id and an old name: the name goes, no second id (" .. brute .. ")")
 ok(brute:find('<item id="2148" countmax="20"', 1, true) ~= nil, "XML loot by id kept")
 local trader = readFile(data .. "/npc/Trader.xml")
 ok(trader:find("grim test mask,30002,900;old test mask holder,30004,50;", 1, true) ~= nil, "NPC shop: whole words only")
@@ -157,6 +160,21 @@ ok(out2:find("0 file(s) written", 1, true) ~= nil, "second run: nothing written 
 for p, text in pairs(before) do
 	eq(readFile(data .. p), text, "second run keeps " .. p)
 end
+
+-- a doubled id that an older version wrote into the loot (id="N" id="N") is written once, also with nothing to rename
+writeFile(data .. "/monster/monsters/leftover.xml", [[
+<monster name="Leftover">
+	<loot>
+		<item id="30003" id="30003" chance="300" />
+	</loot>
+</monster>
+]])
+local out3 = run()
+ok(out3:find("1 file(s) written", 1, true) ~= nil, "third run repairs one file (" .. out3 .. ")")
+local leftover = readFile(data .. "/monster/monsters/leftover.xml")
+ok(leftover:find('<item id="30003" chance="300" />', 1, true) ~= nil, "doubled id written once: " .. leftover)
+local out4 = run()
+ok(out4:find("0 file(s) written", 1, true) ~= nil, "fourth run: nothing written (" .. out4 .. ")")
 
 os.execute("rm -rf '" .. root .. "'")
 print(string.format("base_item_names_patch_test: %d checks, %d failures", checks, fails))
