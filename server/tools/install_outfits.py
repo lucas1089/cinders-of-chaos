@@ -17,7 +17,9 @@ Player:addOutfitAddon; outfits.xml has no way to grant addons, and unlocked="yes
 character). Same rules: rewritten when the list changed, refused when a look type has an entry outside the block.
 With the pair 19 switch on (class_looks_core.lua L.PAIR19_LOOKS = true) the six classes of L.pair19Looks get their
 things_custom19 looks (2161-2172) and their replaced looks stay as "<name> (old)" (on since 2026-10-12); with it off
-(the rollback) no line names 2161-2172, so a client on an older pair is never offered them.
+(the rollback) no line names 2161-2172, so a client on an older pair is never offered them. The pair 20 switch
+(L.PAIR20_LOOKS, L.pair20Looks: things_custom20, 2173-2184; off until that pair is on windows-assets) works the same
+way for its six classes.
 
 Mounts (MOUNTS below) go into mounts.xml the same way: a marked block before </mounts>; a mount id or client id that
 already has an entry outside the block stops the script.
@@ -154,9 +156,10 @@ def class_outfits(path=CONSTANTS):
 
 
 def class_looks(path=LOOKS):
-    """[(name, male look, female look)] in vocation id order: L.looks, with the pair 19 switch applied
-    (L.PAIR19_LOOKS = true: the L.pair19Looks ids replace their class's look, and the replaced looks follow as
-    "<name> (old)" so the characters that own them can still wear them; class_looks_core.lua L.usePair19)"""
+    """[(name, male look, female look)] in vocation id order: L.looks, with the pair switches applied
+    (L.PAIR19_LOOKS / L.PAIR20_LOOKS = true: the L.pair19Looks / L.pair20Looks ids replace their class's look, and the
+    replaced looks follow as "<name> (old)" so the characters that own them can still wear them; class_looks_core.lua
+    L.applyPairs)"""
     text = open(path, encoding='utf-8').read()
     m = re.search(r'L\.looks = \{(.*?)\n\}', text, re.S)
     if not m:
@@ -164,7 +167,10 @@ def class_looks(path=LOOKS):
     rows = re.findall(r'\[(\d+)\] = \{name = "([^"]+)", male = (\d+), female = (\d+)\}', m.group(1))
     if not rows:
         sys.exit('%s: L.looks has no entries' % path)
-    new = pair19_looks(text) if re.search(r'^L\.PAIR19_LOOKS = true$', text, re.M) else {}
+    new = {}
+    for n in (19, 20):
+        if re.search(r'^L\.PAIR%d_LOOKS = true$' % n, text, re.M):
+            new.update(pair_looks(text, n))
     looks, former = [], []
     for v, n, a, b in sorted(rows, key=lambda r: int(r[0])):
         if int(v) in new:
@@ -175,11 +181,11 @@ def class_looks(path=LOOKS):
     return looks + former
 
 
-def pair19_looks(text):
-    """{vocation id: (male, female)} of the L.pair19Looks block (the things_custom19 class looks)"""
-    m = re.search(r'L\.pair19Looks = \{(.*?)\n\}', text, re.S)
+def pair_looks(text, n=19):
+    """{vocation id: (male, female)} of the L.pair<n>Looks block (the things_custom<n> class looks)"""
+    m = re.search(r'L\.pair%dLooks = \{(.*?)\n\}' % n, text, re.S)
     if not m:
-        sys.exit('no L.pair19Looks block')
+        sys.exit('no L.pair%dLooks block' % n)
     return {int(v): (int(a), int(b)) for v, a, b in
             re.findall(r'\[(\d+)\] = \{male = (\d+), female = (\d+)\}', m.group(1))}
 

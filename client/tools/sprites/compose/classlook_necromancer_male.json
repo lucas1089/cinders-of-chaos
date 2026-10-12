@@ -1,0 +1,25 @@
+{
+  "key": "classlook_necromancer_male",
+  "name": "Necromancer class look (male)",
+  "note": "Necromancer class look (male): donor D 856 (blood hood on addon 2, blood drops and a violet orb on addon 1) with the blue skull of donor D 829's addon 1 added to addon 1. Donor pixels unchanged; the D 829 body is not used.",
+  "colours": {
+    "head": 78,
+    "body": 69,
+    "legs": 58,
+    "feet": 76
+  },
+  "layers": [
+    {
+      "src": "lib:D:outfit:856",
+      "base": true
+    },
+    {
+      "src": "lib:D:outfit:829",
+      "addons": {
+        "1": 1
+      },
+      "mask": "own",
+      "note": "only this addon part of the donor is used, not its body"
+    }
+  ]
+}

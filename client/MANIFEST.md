@@ -326,6 +326,8 @@ python3 -I client/tools/sprites/import_art_things.py --ours-dat P19/Tibia.dat --
 ```
 Planned ids (after pair 19, outfits 2161-2172): 2173 Lich F, 2174 Inquisitor F, 2175 / 2176 Necromancer M / F, 2177 /
 2178 Thief M / F, 2179 / 2180 Ninja M / F, 2181 / 2182 Templar M / F. Not imported, not in `class_looks_core.lua`.
+Superseded: after review the owner asked for donor art for these slots instead ("Class looks pair 20"; 2173-2184 are
+now donor looks). The tools stay.
 
 ## Spell icons from the element icon sets (new)
 The three spell icon sheets now use pixel-art ability icons (six element sets of 40, 32x32 with an element-coloured
@@ -898,6 +900,68 @@ sprites unchanged.
   read the branch's own `SHA256SUMS.parts`, so nothing in `main` pins the pair's md5.
 - Checked offline: a contact sheet of the twelve looks, addons 0 and 3, four directions and the mounted pattern,
   drawn with the client's colour shader. Not checked in a live client.
+
+## Class looks pair 20 (things_custom20, outfits 2173-2184, `tools/sprites/monster_looks/classlook_picks20.csv`, `tools/sprites/compose/classlook_*.json`)
+The owner found the generated art for the open slots ("New class look art") not good enough and asked for donor art.
+Twelve looks for six classes, donor-library pixels only: eight outfits imported unchanged and four composed from two
+donor outfits each (a donor body with its own addons plus one addon part of another donor outfit of the same body
+family). **Built, not pushed: the owner reviews the picks first.** Not on windows-assets; the server switch
+(`ChaosClassLooks.PAIR20_LOOKS`) is off.
+
+| looks | class | donor | look |
+|---|---|---|---|
+| 2173 / 2174 | Lich | D 219 / 220 | skeletal lord: skull face, skull cape, bone sceptre (a matched pair; replaces 2059 for both sexes) |
+| 2175 / 2176 | Thief | D 521 / 522 | hooded rogue, twin daggers |
+| 2177 / 2178 | Ninja | D 789 / 790 | black shinobi, red-eyed mask, katana |
+| 2179 / 2180 | Templar | D 609 / 610 | gilded holy knight, kite shield, sceptre / spear (displacement 8,8 added) |
+| 2181 / 2182 | Inquisitor | D 419 / 420 + D 827 / 828 addon 1 | witch-hunter hat, rapier, holy sceptre (composed; replaces 2077 for both sexes) |
+| 2183 / 2184 | Necromancer | D 856 / 857 + D 829 addon 1 | blood hood / witch hat, blood orb, skull (composed; replaces 2044 / 2064) |
+
+- Search: every masked 4-direction outfit of libraries B-V up to 3x3 that is not tagged "named character" or "do not
+  use live: branded" (1,259 rows; B, E and M have none with a colour mask). The owner also allowed "library only" rows
+  for these slots, marked as such; none was needed (S 54 / 55, retail-style, is the Templar alternative B).
+- Stock check, now by pixels (`donor_pick.py`): the silhouette IoU alone refused looks that only share a common body
+  shape (D 790 has 0.96 with the gold plate 1064). The pick's base pattern is compared pixel by pixel (and by luminance
+  correlation, for recolours) with the closest stock outfits; >= 0.6 is stock art and refused. Known copies score 1.00
+  (D 1001 = stock 152, D 1049 = 145); the picks 0.00-0.57. 0.7-0.9 IoU is still printed for a check by eye.
+- Every pick: a colour mask, both addon patterns (the class identity is in them), an 8-frame walk, a mounted pattern,
+  a look per sex. None duplicates a look of the pair (`donor_pick.py` and the importers check).
+- Placement: D 609 / 610 have no displacement although their art sits like a stock player outfit's, so the client would
+  draw them 8 px low and right of their tile; `donor_pick.py` edit `player-disp` sets 8,8 (no pixel changed). The
+  current Thief and Ninja looks 2051 / 2052 and 2069 / 2070 have the same fault (feet 6-8 px low); not changed here.
+- Composer: a layer's `addons` may now be a map (`{"2": 1}`: drawn only on output addon pattern 2, from its own addon
+  pattern 1, with its own mask). The Inquisitor's sceptre reaches past the tile, so the composer lowered the
+  displacement to 6,6 (the male look is 3x3).
+- Sheets (offline, the client's mask shader, the tile outlined): per slot 3-4 candidates with all directions, idle and
+  walk, addons 0 and 3, each addon alone, two tints; the alternatives are in the sheets and in the build notes.
+
+```
+python3 -I client/tools/sprites/donor_pick.py --picks client/tools/sprites/monster_looks/classlook_picks20.csv --lib-dir L \
+    --out-dir MINI8 --base-dat things_custom19/Tibia.dat --base-spr things_custom19/Tibia.spr
+python3 -I client/tools/sprites/import_outfits.py --src-dat MINI8/Tibia.dat --src-spr MINI8/Tibia.spr \
+    --ours-dat things_custom19/Tibia.dat --ours-spr things_custom19/Tibia.spr --looks 1,2,3,4,5,6,7,8 --first-outfit 2173 --out-dir P20A
+for k in inquisitor_male inquisitor_female necromancer_male necromancer_female; do
+    python3 -I client/tools/sprites/compose_outfit.py client/tools/sprites/compose/classlook_$k.json --lib-dir L \
+        --out-dir COMP --csv-out COMP/things.csv; done
+python3 -I client/tools/sprites/import_art_things.py --ours-dat P20A/Tibia.dat --ours-spr P20A/Tibia.spr \
+    --out-dir things_custom20 --things COMP/things.csv --first-outfit 2181 --expect-items 33659
+python3 -I client/tools/sprites/check_pair.py things_custom20/Tibia.dat things_custom20/Tibia.spr \
+    --old things_custom19/Tibia.dat things_custom19/Tibia.spr
+```
+MINI8: dat 140d66e2d7f5a54e8fa36158f3332ef9, spr e8761e87eb18fc49c353b7e8b47c995b. P20A: dat
+51a24ae40e7e44c996c140f8f5343aa5, spr af8deeececb87fe8a9e5aae9a7abdfc4. Input things_custom19 (dat
+e73621a13faaa9f1f5aa94bbef25d443). Output **things_custom20**: dat 4dfc1c79d0c0e46cd04994c5ff4e09f7 (4,917,362 bytes),
+spr 1a11296180c55dd64bbdce829580ec3b (599,349,497 bytes, 745,156 sprites, 11,358 appended), 33,659 items, 2,184
+outfits, 592 effects, 153 missiles. Built twice with identical md5s. The importers verified every old thing
+byte-identical, the new sprite slots pixel-identical to MINI8 and to the composed sheets, 3000 sampled old sprites
+unchanged.
+- `check_pair.py`: append-only against things_custom19 passes (36,477 old things and 733,798 old sprites compared; new:
+  12 outfits, 11,358 sprites). Full check: 0 errors, 121 warnings, the same groups as things_custom19; none in the
+  new looks.
+- `things-1098.tar.xz` like things_custom19's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
+  mtime 2026-10-12 16:00: sha256 4ec97152be8b54f2ede683ee27dfdfe7944b6c36ee9190785e7f069355d11202 (66,679,488 bytes).
+  Its two files unpack to the md5s above. A rebuild gives the same sha256.
+- Not checked in a live client. The push waits for the owner's approval of the picks.
 
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,

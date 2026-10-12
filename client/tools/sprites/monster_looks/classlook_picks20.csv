@@ -1,0 +1,9 @@
+key,look,lib,lib_id,recolour,family,rank,monsters,description,edit
+lich_male,2173,D,219,,classlook,necromancer,Lich,"Lich class look (male): skeletal lord, skull face, skull cape, bone sceptre; sil 0.45, stock pixels 0.00",
+lich_female,2174,D,220,,classlook,necromancer,Lich,"Lich class look (female): skeletal lord, skull face, skull cape, bone sceptre; sil 0.47, stock pixels 0.00",
+thief_male,2175,D,521,,classlook,thief,Thief,"Thief class look (male): hooded rogue, twin daggers, hood and satchel; sil 0.81, stock pixels 0.24",
+thief_female,2176,D,522,,classlook,thief,Thief,"Thief class look (female): hooded rogue, twin daggers, hood and satchel; sil 0.75, stock pixels 0.19",
+ninja_male,2177,D,789,,classlook,thief,Ninja,"Ninja class look (male): black shinobi, red-eyed mask, katana; sil 0.90 (a common body shape), stock pixels 0.39",
+ninja_female,2178,D,790,,classlook,thief,Ninja,"Ninja class look (female): black shinobi, red-eyed mask, katana; sil 0.96 (a common body shape), stock pixels 0.57",
+templar_male,2179,D,609,,classlook,templar,Templar,"Templar class look (male): gilded holy knight, kite shield, sceptre; sil 0.88, stock pixels 0.40; displacement 8,8",player-disp
+templar_female,2180,D,610,,classlook,templar,Templar,"Templar class look (female): gilded holy knight, kite shield, spear; sil 0.93 (a common body shape), stock pixels 0.48; displacement 8,8",player-disp

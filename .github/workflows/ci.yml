@@ -211,6 +211,7 @@ jobs:
           # system packages: python3 -I does not see pip's user site
           sudo apt-get install -y -qq python3-numpy python3-pil
           python3 -I client/tools/sprites/compose_outfit_test.py
+          python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
         run: python3 -I client/tools/outfit_art/class_art_test.py

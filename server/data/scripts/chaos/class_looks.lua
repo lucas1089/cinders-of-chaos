@@ -2,7 +2,7 @@
 --   first login (character creation): the looks of the class are given and the class's look is put on
 --   every later login: looks of the class the character does not own yet are given, both addons with each; the worn
 --   look stays, except a class look of the character that just got its addons (worn with them from now) or a look the
---   pair 19 switch replaced (ChaosClassLooks.PAIR19_LOOKS: the new look is put on)
+--   pair switch replaced (ChaosClassLooks.PAIR19_LOOKS, PAIR20_LOOKS: the new look of its sex is put on)
 --   a class change (ascension.lua ChaosClasses.afterVocationChange calls ChaosClassLooks.apply(player, true)): the new
 --   class's look is given and put on
 -- Nothing is ever taken away. Colours, mount and the other outfit parts stay the player's. A class look is worn
@@ -16,7 +16,7 @@ end
 local L = ChaosClassLooks
 
 -- gives the class's looks with both addons (only these looks' addons); with wear, puts the class's look on; at
--- other logins a worn class look of the character gets its addons once, and a look the pair 19 switch replaced
+-- other logins a worn class look of the character gets its addons once, and a look a pair switch replaced
 -- becomes the new one (ChaosClassLooks.loginOutfit). Returns the number of looks added.
 function L.apply(player, wear)
 	local voc, sex = player:getVocation():getId(), player:getSex()

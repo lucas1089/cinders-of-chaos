@@ -242,6 +242,34 @@ def test_masks():
     expect(c.flags() == 'bones:1:-2:3:-4:5:-6:7:-8', f'flags copy the seat: {c.flags()}')
 
 
+def test_addon_map():
+    """addons {"1": 2}: a layer drawn only on output addon pattern 1, from its own pattern 2 (with its mask)."""
+    def base_add(gi, x, y, z, layer, ph, w, h):
+        return block(YEL if layer else (A if y == 0 else C), 8, 8, 16, 16) if y < 2 else block(A, 0, 0, 0, 0)
+
+    def part(gi, x, y, z, layer, ph, w, h):                 # pattern 2 holds a hood at 4..8 (mask red), others blank
+        return block(RED if layer else B, 4, 4, 8, 8) if y == 2 else block(A, 0, 0, 0, 0)
+    srcs = {'live:outfit:1': Synth(base_add, layers=2, py=3), 'live:outfit:2': Synth(part, layers=2, py=3)}
+    c = compose({'key': 't', 'layers': [{'src': 'live:outfit:1'},
+                                        {'src': 'live:outfit:2', 'addons': {'1': 2}, 'mask': 'own'}]}, srcs)
+    expect(px(c, (0, 0, 2, 0, 0), 5, 5)[3] == 0, 'addon map: not drawn on pattern 0')
+    expect(px(c, (0, 0, 2, 1, 0), 5, 5) == B and px(c, (0, 0, 2, 1, 0), 5, 5, 1) == RED,
+           'addon map: drawn on pattern 1 from its pattern 2, with its mask')
+    expect(px(c, (0, 0, 2, 1, 0), 9, 9) == C, 'addon map: the base addon pattern is kept')
+    expect(px(c, (0, 0, 2, 2, 0), 5, 5)[3] == 0, 'addon map: not drawn on an unlisted pattern')
+    for bad in ({'1': 5}, {'x': 1}, {}):
+        try:
+            compose({'key': 't', 'layers': [{'src': 'live:outfit:1'}, {'src': 'live:outfit:2', 'addons': bad}]}, srcs)
+            expect(False, f'addon map {bad} must stop')
+        except co.SpecError:
+            pass
+    try:
+        compose({'key': 't', 'layers': [{'src': 'live:outfit:1'}, {'src': 'live:outfit:2', 'addons': {'3': 1}}]}, srcs)
+        expect(False, 'addon map: an output pattern the base lacks must stop')
+    except co.SpecError:
+        pass
+
+
 def test_glow():
     lay = Synth(lambda *a: block(B, 12, 12, 16, 16))
     for radius in (1, 2, 3):
@@ -382,7 +410,8 @@ def test_png_source(tmp):
 def main():
     tmp = tempfile.mkdtemp(prefix='compose_outfit_test_')
     try:
-        for f in (test_offsets, test_order_and_flip, test_opacity_and_frames, test_masks, test_glow, test_validation):
+        for f in (test_offsets, test_order_and_flip, test_opacity_and_frames, test_masks, test_addon_map, test_glow,
+                  test_validation):
             f()
         test_png_source(tmp)
         test_import_roundtrip(tmp)

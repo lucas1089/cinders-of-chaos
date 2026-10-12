@@ -2,7 +2,7 @@
 """Cut the chosen donor-library outfits into ONE small 10.98 pair, in pick order, recoloured where the pick says so.
 
 python3 -I donor_pick.py --picks monster_looks/picks.csv --lib-dir <donor library folder> --out-dir OUT \
-        [--base-dat <live pair Tibia.dat> --base-spr <live pair Tibia.spr>] [--sheets DIR]
+        [--base-dat <live pair Tibia.dat> --base-spr <live pair Tibia.spr>] [--sheets DIR] [--allow-library-only]
 
 picks.csv (one row per new look, in the order the looks get their ids): key, look (the planned client lookType), lib
 (B, C, D, ...: the library folder donor<lib>), lib_id (its outfit id), recolour (empty, or a rule below), and the
@@ -18,7 +18,22 @@ Recolour rules (applied to every sprite of the outfit, every group, frame, direc
                 fit the family (the Ashen Crypt's ember eyes, the Obsidian Hall's ember eye)
 Fully transparent pixels stay transparent; alpha is never changed.
 
+Catalogue tags: rows tagged "named character (do not use live)" or "do not use live: branded" are always refused;
+rows tagged "library only" (commercial server or retail-style art) only with --allow-library-only (the owner approved
+those picks one by one; the picks CSV should say so in its description).
+
+Stock check (with --base-dat): every pick's idle silhouette (4 directions) against the stock outfits 1..--stock-last.
+A silhouette IoU >= 0.7 is printed ("check by eye"). Then the pixels: the base pattern (addons 0, layer 0, idle phase 0)
+of each direction against the stock outfits with IoU >= 0.5, cropped to the art, aligned bottom-right with shifts of up
+to 2 px: `same` = the share of the union of opaque pixels where both are opaque and RGB is equal within 24; `lum` =
+the luminance correlation in the overlap times the overlap's share of the union (a recolour keeps it). A pick whose
+best value (mean of the 4 directions) is >= 0.6 is stock art (a copy, recoloured or retouched) and refused. A common
+body shape alone (IoU >= 0.9, pixels different) is no longer refused: unrelated stock bodies score about 0.2-0.4.
+
 Edits (optional column `edit`; no pixel is changed):
+  player-disp   a player-size outfit whose donor has no displacement although its art sits where the stock player
+                outfits' art sits (bottom-right of the frame): displacement 8, 8 like the stock looks, so it stands on
+                its tile like them (without it the client draws it 8 px low and right)
   aura-feet     an aura outfit from a library whose client placed auras its own way: its displacement is set so the
                 centre of the art (the bounding box of every frame, layer and direction of its first group) lands on
                 the feet point (14, 20) of the creature's tile, the point import_vfx.py puts our own auras on, after
@@ -81,6 +96,9 @@ def edit_flags(t, groups, edit, spr=None):
     f = dict(t.flags)
     if edit == '':
         return f
+    if edit == 'player-disp':
+        f['displacement'] = (8, 8)
+        return f
     if edit == 'aura-feet':
         g = groups[0]
         box = None
@@ -112,6 +130,45 @@ def masks(d, s, t):
     return out
 
 
+def _crop(a):
+    ys, xs = np.nonzero(a[..., 3])
+    return a[ys.min():ys.max() + 1, xs.min():xs.max() + 1] if len(ys) else a[:1, :1]
+
+
+def pixel_match(a, b):
+    """(same, lum) of two RGBA frames (see the docstring: stock check); 1.0 / 1.0 for a pixel copy."""
+    a, b = _crop(a).astype(np.int32), _crop(b).astype(np.int32)
+    H, W = max(a.shape[0], b.shape[0]) + 4, max(a.shape[1], b.shape[1]) + 4
+    A = np.zeros((H, W, 4), np.int32); B = np.zeros((H, W, 4), np.int32)
+    A[H - a.shape[0] - 2:H - 2, W - a.shape[1] - 2:W - 2] = a
+    la_all = 0.299 * A[..., 0] + 0.587 * A[..., 1] + 0.114 * A[..., 2]
+    best = (0.0, 0.0)
+    for dy in range(-2, 3):
+        for dx in range(-2, 3):
+            B[:] = 0
+            B[H - b.shape[0] - 2 + dy:H - 2 + dy, W - b.shape[1] - 2 + dx:W - 2 + dx] = b
+            oa, ob = A[..., 3] > 0, B[..., 3] > 0
+            u = (oa | ob).sum()
+            both = oa & ob
+            if not u or both.sum() < 30:
+                continue
+            same = (both & (np.abs(A[..., :3] - B[..., :3]).max(-1) <= 24)).sum() / u
+            la = la_all[both]
+            lb = (0.299 * B[..., 0] + 0.587 * B[..., 1] + 0.114 * B[..., 2])[both]
+            cr = float(np.corrcoef(la, lb)[0, 1]) if la.std() > 1 and lb.std() > 1 else 0.0
+            best = max(best, (float(same), cr * both.sum() / u))
+    return best
+
+
+def tag_refusal(desc, allow_library_only=False):
+    """why a catalogue row may not go live (None: it may)"""
+    if 'named character' in desc or 'do not use live' in desc:
+        return desc
+    if 'library only' in desc and not allow_library_only:
+        return desc + ' (pass --allow-library-only for an owner-approved pick)'
+    return None
+
+
 def mask_iou(a, b):
     """overlap of two cropped masks aligned at each corner (the best of the four)."""
     if a is None or b is None or abs(a.shape[0] - b.shape[0]) > 3 or abs(a.shape[1] - b.shape[1]) > 3:
@@ -135,6 +192,8 @@ def main():
     ap.add_argument('--stock-last', type=int, default=1465,
                     help='the last outfit id of the stock (commercial) art in the base pair: silhouette check against them')
     ap.add_argument('--sheets', default=None, help='directory for one PNG sheet per pick (first frame of each group)')
+    ap.add_argument('--allow-library-only', action='store_true',
+                    help='let rows tagged "library only" through (owner-approved picks); named and branded rows never')
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
     picks = list(csv.DictReader(open(a.picks, newline='')))
@@ -146,7 +205,8 @@ def main():
             libs[name] = (Dat(os.path.join(p, 'Tibia.dat')), Spr(os.path.join(p, 'Tibia.spr')))
         return libs[name]
 
-    # rows the library catalogue tags "named character (do not use live)" or "library only" never go live
+    # rows the library catalogue tags "named character (do not use live)" or "do not use live: branded" never go live,
+    # "library only" rows only with --allow-library-only
     tags = {}
     for pk in picks:
         cat = os.path.join(a.lib_dir, 'donor' + pk['lib'], 'catalogue.csv')
@@ -154,8 +214,11 @@ def main():
             tags[pk['lib']] = {r[1]: r[7] for r in csv.reader(open(cat, newline='')) if r and r[0] == 'outfit'} \
                 if os.path.isfile(cat) else {}
         desc = tags[pk['lib']].get(pk['lib_id'], '')
-        if 'named character' in desc or 'library only' in desc:
-            sys.exit(f"{pk['key']}: donor{pk['lib']} {pk['lib_id']} is tagged in the catalogue: {desc}")
+        why = tag_refusal(desc, a.allow_library_only)
+        if why:
+            sys.exit(f"{pk['key']}: donor{pk['lib']} {pk['lib_id']} is tagged in the catalogue: {why}")
+        if 'library only' in desc:
+            print(f"  {pk['key']}: donor{pk['lib']} {pk['lib_id']} is a library-only row, let through: {desc}")
 
     # --- sprites and entries
     records, rec_ids, entries, src = [], {}, [], []
@@ -272,22 +335,37 @@ def main():
                 stock.append((t.id, masks(bd, bs, t)))
             except Exception:  # noqa: BLE001
                 continue
+        stock_ids = {sid for sid, _ in stock}
         bad = 0
         for i in range(len(entries)):
-            m = masks(md, ms, md.outfit(i + 1))
-            best = (0.0, 0)
+            t = md.outfit(i + 1)
+            m = masks(md, ms, t)
+            ious = []
             for sid, sm in stock:
-                if len(sm) == len(m) and m[0] is not None and sm[0] is not None and \
-                        abs(m[0].shape[0] - sm[0].shape[0]) <= 3 and abs(m[0].shape[1] - sm[0].shape[1]) <= 3:
-                    v = float(np.mean([mask_iou(x, y) for x, y in zip(m, sm)]))
-                    best = max(best, (v, sid))
-            flag = 'STOCK SILHOUETTE' if best[0] >= 0.9 else ('check by eye' if best[0] >= 0.7 else '')
-            if flag:
-                print(f"  {picks[i]['key']}: silhouette {best[0]:.2f} of stock outfit {best[1]} {flag}")
-            bad += best[0] >= 0.9
+                if len(sm) == len(m) and m[0] is not None and sm[0] is not None:
+                    ious.append((float(np.mean([mask_iou(x, y) for x, y in zip(m, sm)])), sid))
+            ious.sort(reverse=True)
+            best = ious[0] if ious else (0.0, 0)
+            if best[0] >= 0.7:
+                print(f"  {picks[i]['key']}: silhouette {best[0]:.2f} of stock outfit {best[1]} (check by eye)")
+            g = parse_body(md, t)[0]
+            px = (0.0, 0.0, 0)
+            for iou, sid in ious[:8]:
+                if iou < 0.5 or sid not in stock_ids:
+                    break
+                sg = parse_body(bd, bd.outfit(sid))[0]
+                v = [pixel_match(frame(g, ms, d, 0, 0, 0), frame(sg, bs, min(d, sg.px - 1), 0, 0, 0))
+                     for d in range(min(4, g.px))]
+                same, lum = float(np.mean([x[0] for x in v])), float(np.mean([x[1] for x in v]))
+                px = max(px, (max(same, lum), same, sid))
+            if px[0] >= 0.6:
+                print(f"  {picks[i]['key']}: STOCK PIXELS: {px[0]:.2f} like stock outfit {px[2]} (same {px[1]:.2f})")
+                bad += 1
+            else:
+                print(f"  {picks[i]['key']}: stock pixels at most {px[0]:.2f} (stock outfit {px[2]}): own art")
         if bad:
-            sys.exit(f'{bad} pick(s) have the silhouette of a stock outfit (recoloured stock art)')
-        print(f'checked: no pick has the silhouette of a stock outfit 1..{a.stock_last} (all idle directions, IoU < 0.9)')
+            sys.exit(f'{bad} pick(s) are stock art (pixel copies, recoloured or retouched)')
+        print(f'checked: no pick is stock art of outfits 1..{a.stock_last} (pixels of all idle directions < 0.6)')
 
     with open(os.path.join(a.out_dir, 'picks_resolved.csv'), 'w', newline='') as fh:
         w = csv.writer(fh)

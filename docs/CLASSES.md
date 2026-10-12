@@ -149,6 +149,14 @@ for free, at the migration.
 
     A replaced look stays owned and wearable as "<class> Class (old)". A character wearing one gets the new look at its
     next login.
+
+    Proposed, pair 20 (`ChaosClassLooks.PAIR20_LOOKS`, off: things_custom20 is built and waits for the owner's review
+    of the picks; client/MANIFEST.md "Class looks pair 20"): Lich (21) 2173 / 2174 skeletal lord, skull cape, bone
+    sceptre (D 219 / 220); Inquisitor (24) 2181 / 2182 witch-hunter hat, rapier, holy sceptre (D 419 / 420, composed);
+    Necromancer (20) 2183 / 2184 blood hood or witch hat, blood orb, skull (D 856 / 857, composed); Thief (11)
+    2175 / 2176 hooded rogue, twin daggers (D 521 / 522); Ninja (12) 2177 / 2178 black shinobi, katana (D 789 / 790);
+    Templar (23) 2179 / 2180 gilded holy knight, kite shield (D 609 / 610). Lich and Inquisitor then have a look per
+    sex; a character in the old one look gets the new look of its sex.
   - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
     calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its
     base class, then `default`). See server/README.md "New players".

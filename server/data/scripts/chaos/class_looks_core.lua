@@ -28,6 +28,15 @@
 -- classes use the new looks, the looks they replace stay owned and wearable ("<name> (old)" in outfits.xml, listed
 -- in L.retired so the store never sells them), and a character wearing a replaced look of its class gets the new one
 -- at its next login.
+--
+-- Pair 20 switch (L.PAIR20_LOOKS, OFF until things_custom20 is on windows-assets and the Windows package is rebuilt):
+-- client pair things_custom20 = things_custom19 plus 2173-2184 (client/MANIFEST.md "Class looks pair 20"), six more
+-- class looks (L.pair20Looks): matched pairs for the Lich and the Inquisitor (one look for both sexes before) and the
+-- Necromancer (two unrelated outfits before), and new looks for the Thief, the Ninja and the Templar. Same rules as
+-- pair 19: an older pair draws nothing for those ids, so they are sent only with the switch on; the replaced looks
+-- stay owned as "<name> (old)" and retired; a character wearing a replaced look of its class gets the new one at its
+-- next login (for a replaced one-look class, the new look of the character's sex). The two switches are independent
+-- (L.applyPairs); the pair 20 classes are not pair 19 classes.
 
 ChaosClassLooks = ChaosClassLooks or {}
 local L = ChaosClassLooks
@@ -74,6 +83,18 @@ L.pair19Looks = {
 	[22] = {male = 2167, female = 2168}, -- Bone Lord: bone wings, skull rack (donor D 508/509)
 	[18] = {male = 2169, female = 2170}, -- Shadowfist: claws, violet glow (donor D 1057/1058)
 	[25] = {male = 2171, female = 2172} -- Sentinel: holy orbs, tower shield (donor D 992/993)
+}
+
+-- the things_custom20 looks (client/tools/sprites/monster_looks/classlook_picks20.csv and the compose specs
+-- client/tools/sprites/compose/classlook_*.json): used only with L.PAIR20_LOOKS on. vocation id -> {male, female}
+L.PAIR20_LOOKS = false
+L.pair20Looks = {
+	[21] = {male = 2173, female = 2174}, -- Lich: skeletal lord, skull cape, bone sceptre (donor D 219/220)
+	[11] = {male = 2175, female = 2176}, -- Thief: hooded rogue, twin daggers (donor D 521/522)
+	[12] = {male = 2177, female = 2178}, -- Ninja: black shinobi, red-eyed mask, katana (donor D 789/790)
+	[23] = {male = 2179, female = 2180}, -- Templar: gilded holy knight, kite shield (donor D 609/610)
+	[24] = {male = 2181, female = 2182}, -- Inquisitor: witch-hunter hat, rapier, holy sceptre (D 419/420 + D 827/828)
+	[20] = {male = 2183, female = 2184} -- Necromancer: blood hood / witch hat, blood orb, skull (D 856/857 + D 829)
 }
 
 -- the stock looks classes wore before (until 2026-10): characters own them already, so the store does not sell them
@@ -157,7 +178,7 @@ function L.loginOutfit(current, vocId, sex, wear, granted)
 	for _, look in ipairs(L.unlocksFor(vocId, sex)) do
 		mine[look] = true
 	end
-	local new = L.replaced[current.lookType]
+	local new = L.replacedFor(current.lookType, sex)
 	if new and mine[new] then
 		return withLook(current, new)
 	end
@@ -167,31 +188,53 @@ function L.loginOutfit(current, vocId, sex, wear, granted)
 	return nil
 end
 
--- the pair 19 switch: L.looks as of things_custom18 (L.pair18Looks, kept) with L.pair19Looks put in when `on`.
--- L.former: vocation id -> the replaced entry ({name = "<name> (old)", male, female}); L.replaced: old look type -> new
--- one; the replaced looks are appended to L.retired. Idempotent; run once at load with L.PAIR19_LOOKS.
-function L.usePair19(on)
+-- the new look of the character's sex for a replaced look (one of L.former), else nil
+function L.replacedFor(look, sex)
+	for vocId, e in pairs(L.former) do
+		if e.male == look or e.female == look then
+			local n = L.looks[vocId]
+			return sex == L.FEMALE and n.female or n.male
+		end
+	end
+	return nil
+end
+
+-- the pair switches: L.looks as of things_custom18 (L.pair18Looks, kept) with L.pair19Looks put in when `on19` and
+-- L.pair20Looks when `on20`. L.former: vocation id -> the replaced entry ({name = "<name> (old)", male, female});
+-- L.replaced: old look type -> new one (a one-look class's old look -> the new male look; logins use L.replacedFor);
+-- the replaced looks are appended to L.retired. Idempotent; run once at load with L.PAIR19_LOOKS and L.PAIR20_LOOKS.
+function L.applyPairs(on19, on20)
 	L.looks, L.former, L.replaced = {}, {}, {}
 	local retired = {}
 	for _, e in ipairs(L.retired18) do
 		retired[#retired + 1] = e
 	end
 	for vocId, e in pairs(L.pair18Looks) do
-		local n = on and L.pair19Looks[vocId]
+		local n = (on19 and L.pair19Looks[vocId]) or (on20 and L.pair20Looks[vocId])
 		if n then
 			L.looks[vocId] = {name = e.name, male = n.male, female = n.female}
 			L.former[vocId] = {name = e.name .. " (old)", male = e.male, female = e.female}
-			L.replaced[e.male], L.replaced[e.female] = n.male, n.female
+			L.replaced[e.female] = n.female
+			L.replaced[e.male] = n.male -- after the female line: a one-look class maps to the male look
 			retired[#retired + 1] = {male = e.male, female = e.female}
 		else
 			L.looks[vocId] = e
 		end
 	end
 	L.retired = retired
-	L.pair19 = on and true or false
+	L.pair19 = on19 and true or false
+	L.pair20 = on20 and true or false
+end
+
+-- one switch at a time, the other kept as applied
+function L.usePair19(on)
+	L.applyPairs(on, L.pair20)
+end
+function L.usePair20(on)
+	L.applyPairs(L.pair19, on)
 end
 L.pair18Looks, L.retired18 = L.looks, L.retired
-L.usePair19(L.PAIR19_LOOKS)
+L.applyPairs(L.PAIR19_LOOKS, L.PAIR20_LOOKS)
 
 -- the first login of a character (the engine's lastLoginSaved is 0 until the first logout is saved)
 function L.isFirstLogin(lastLoginSaved)

@@ -9011,6 +9011,16 @@ client/MANIFEST.md "Class looks pair" and "things_custom19").
   still have things_custom19.
 - Tests: `tests/class_kit_test.lua` (wear, login, addons, sources listed for every look, the switch both ways: on
   as shipped, off on a second copy of the core loaded with the switch line set to false).
+- Pair 20 switch: `L.PAIR20_LOOKS` in `class_looks_core.lua`, **off** (things_custom20 is built, not pushed: the owner
+  reviews the picks first; client/MANIFEST.md "Class looks pair 20"). On, the Lich, Inquisitor, Necromancer, Thief,
+  Ninja and Templar use outfits 2173-2184 (`L.pair20Looks`): matched pairs for the Lich and the Inquisitor (one look
+  for both sexes before) and the Necromancer (two unrelated outfits before). Same rules as pair 19 (one plain line,
+  "(old)" looks, `L.retired`, the store never sells 2173-2184). A replaced one-look class (Lich 2059, Inquisitor 2077)
+  moves each character to the new look of its sex (`L.replacedFor`). The switches are independent (`L.applyPairs`).
+  Flip step, only after the push: set the line to true with client/MANIFEST.md, ROADMAP.md C4 and this section, run
+  the CI checks, then `python3 -I tools/install_all.py SERVER_DIR --only outfits` and restart (33 class looks: the 21
+  and twelve "(old)"). Rollback as for pair 19. Tests: the same file, on a copy with the line forced to true, both off,
+  and toggles.
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 

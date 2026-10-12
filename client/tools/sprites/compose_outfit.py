@@ -54,7 +54,10 @@ Layer keys:
   mask      "own" (base default: the layer's second layer is its colour mask), "none" (default: uncoloured; clears the
             mask under it where it covers, alpha >= 128), "keep" (leaves the mask under it)
   addons    "base-only" (default: drawn on addon pattern 0 only; front layers also cut their shape out of the addon
-            patterns, which the client draws over pattern 0) or "own" (base default: the layer's addon pattern y)
+            patterns, which the client draws over pattern 0), "own" (base default: the layer's addon pattern y) or
+            {"1": 2}: drawn only on the listed output addon patterns, each from the given addon pattern of the layer
+            (moves an addon part of one outfit, e.g. a hood, onto another outfit's addon pattern; not on pattern 0
+            unless "0" is listed)
   mount     "same" (default: the output's z pattern, or the layer's last) or a z pattern of the layer (1 = mounted pose)
 Roles (as client base patches 0006 / 0034 draw them): "wings" go behind the body facing south and east and in front
 facing north and west, 6 px right / down of it (GameWingOffset), with the client's mounted shifts on z pattern 1; an
@@ -491,8 +494,19 @@ def validate_layer(L, i, is_base):
         raise SpecError(f'{w}.mask: an aura\'s second layer is its front layer, not a mask')
     o['mask'] = mask
     addons = L.get('addons', 'own' if is_base else 'base-only')
-    if addons not in ('own', 'base-only'):
-        raise SpecError(f'{w}.addons: own or base-only')
+    if isinstance(addons, dict):
+        if is_base:
+            raise SpecError(f'{w}.addons: the base layer takes own or base-only')
+        amap = {}
+        for k, v in addons.items():
+            if not (isinstance(k, str) and k.isdigit() and int(k) <= 3 and isinstance(v, int) and 0 <= v <= 3):
+                raise SpecError(f'{w}.addons: {{"<output pattern 0..3>": <layer pattern 0..3>}}, got {k!r}: {v!r}')
+            amap[int(k)] = v
+        if not amap:
+            raise SpecError(f'{w}.addons: an empty map draws nothing')
+        addons = amap
+    elif addons not in ('own', 'base-only'):
+        raise SpecError(f'{w}.addons: own, base-only or a map {{"1": 2}}')
     o['addons'] = addons
     mount = L.get('mount', 1 if role == 'rider' else 'same')
     if mount != 'same' and not (isinstance(mount, int) and 0 <= mount <= 1):
@@ -582,6 +596,14 @@ class Composer:
                 L['addons'] == 'own' and s.groups[0].py < self.py and not L['base']
                 for L, s in zip(spec['layers'], self.sources)):
             raise SpecError('a layer with addons "own" has fewer addon patterns than the base')
+        for L, s in zip(spec['layers'], self.sources):
+            if isinstance(L['addons'], dict):
+                if max(L['addons']) >= self.py:
+                    raise SpecError(f'{s.label}: addon map names output pattern {max(L["addons"])} but the base has '
+                                    f'{self.py}')
+                if max(L['addons'].values()) >= s.groups[0].py:
+                    raise SpecError(f'{s.label}: addon map names its pattern {max(L["addons"].values())} but it has '
+                                    f'{s.groups[0].py}')
         self.has_wings = any(L['role'] == 'wings' for L in spec['layers'])
         self.notes = []
 
@@ -646,12 +668,16 @@ class Composer:
         items = []
         n_out = self.groups[og][1]
         for li, (L, s) in enumerate(zip(self.spec['layers'], self.sources)):
+            amap = L['addons'] if isinstance(L['addons'], dict) else None
             own_addons = L['base'] or L['addons'] == 'own'
-            if y > 0 and not own_addons:
+            if amap is not None:
+                if y not in amap:
+                    continue
+            elif y > 0 and not own_addons:
                 continue
             sg, mode = self.src_group(L, s, og)
             g = s.groups[sg]
-            sy = y if own_addons else 0
+            sy = amap[y] if amap is not None else (y if own_addons else 0)
             if sy >= g.py:
                 continue
             sz = min(z if L['mount'] == 'same' else L['mount'], g.pz - 1)
