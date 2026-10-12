@@ -186,6 +186,15 @@ jobs:
       - name: Monster looks match client/tools/sprites/monster_looks/picks.csv
         run: python3 -I server/tools/apply_monster_looks.py --check
 
+      - name: Sprite pair checker (check_pair.py on synthetic pairs, append-only guard)
+        run: python3 -I client/tools/sprites/check_pair_test.py
+
+      - name: Outfit layer composer (compose_outfit.py on synthetic things, import round trip)
+        run: |
+          # system packages: python3 -I does not see pip's user site
+          sudo apt-get install -y -qq python3-numpy python3-pil
+          python3 -I client/tools/sprites/compose_outfit_test.py
+
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |
           if ! php -r 'exit(extension_loaded("pdo_sqlite") && extension_loaded("mbstring") ? 0 : 1);' 2>/dev/null; then
@@ -211,3 +220,33 @@ jobs:
 
       - name: No references to other servers or clients
         run: python3 -I tools/ci/check_names.py
+
+  live-pair:
+    name: Live sprite pair (check_pair.py on windows-assets)
+    # the pair is on this repository's windows-assets branch, which the default read token reaches; pull requests from
+    # forks have no access to it and skip the job
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the live pair (read only)
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            things
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Check the pair (client parse rules, sprite records, animations, masks)
+        run: |
+          set -euo pipefail
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir -p "$RUNNER_TEMP/pair"
+          tar -xJf assets/things/things-1098.tar.xz -C "$RUNNER_TEMP/pair"
+          python3 -I chaos/client/tools/sprites/check_pair.py "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"

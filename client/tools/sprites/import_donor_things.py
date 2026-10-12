@@ -54,7 +54,9 @@ Verification (always): the output dat is re-parsed by datspr (same variant as ou
 last byte; every converted thing has the expected flag bytes and the source's groups, sizes, patterns, phases and
 animator; every sprite slot decodes pixel-identical to the source slot (all groups, phases, directions, addons, layers);
 composed frames are compared for all frames of every 25th thing and the first frame of all others; for import, every
-old dat entry is byte-identical and 3000 sampled old sprites are unchanged.  Deterministic: same inputs, same bytes.
+old dat entry is byte-identical and 3000 sampled old sprites are unchanged, and check_pair.py's append-only guard
+runs (old things and sprite records byte-identical, the new ones valid for the client).  Deterministic: same inputs,
+same bytes.
 """
 import argparse
 import csv
@@ -1309,6 +1311,9 @@ def cmd_import(a, log):
     log(f'verified: output parses (datspr {md.variant}) to EOF; {len(pairs)} new things: {nslots} sprite slots '
         f'pixel-identical to the source, {nframes} composed frames identical, flags as converted; every old item, '
         f'outfit, effect and missile byte-identical; 3000 sampled old sprites unchanged')
+
+    from check_pair import check_append_only
+    check_append_only(a.ours_dat, a.ours_spr, dat_path, spr_path, log=log)
 
     with open(os.path.join(a.out_dir, 'donor_import.csv'), 'w', newline='') as fh:
         w = csv.writer(fh)

@@ -1,0 +1,11 @@
+{
+  "key": "warrior_bloodthorn",
+  "name": "Warrior with Bloodthorn Pinions",
+  "note": "Warrior class look (male, 2073) wearing the achievement wings 2140 as one outfit, with a thin ember glow on the wings. The wings follow the client's wing rules (behind facing south and east, in front facing north and west, 6 px right / down of the body).",
+  "colours": {"head": 78, "body": 94, "legs": 114, "feet": 76},
+  "layers": [
+    {"src": "live:outfit:2073", "base": true},
+    {"src": "live:outfit:2140", "role": "wings", "frames": "loop",
+     "glow": {"palette": "ember", "step": 5, "radius": 2, "strength": 0.7}}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "key": "mystic_pyrelight",
+  "name": "Mystic in the Pyrelight Mantle",
+  "note": "Mystic class look (male, 2060) standing in the faction aura 2136 (donor I, two layers: the ring's back half behind the body, its front half over it, centred on the tile as GameBigAurasCenter draws it).",
+  "colours": {"head": 0, "body": 114, "legs": 114, "feet": 95},
+  "layers": [
+    {"src": "live:outfit:2060", "base": true},
+    {"src": "live:outfit:2136", "role": "aura", "frames": "loop"}
+  ]
+}

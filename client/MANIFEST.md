@@ -677,6 +677,79 @@ old sprites unchanged. The mount seats of things_custom16 are kept (old entries 
   on a live server. The screenshots are kept outside the repository.
 - The wardrobe's source line (`howLabel`) now wraps to two lines: the longer achievement lines were cut off.
 
+## Sprite tools: outfit composer and pair checker (`tools/sprites/compose_outfit.py`, `tools/sprites/check_pair.py`)
+Two tools the owner approved; the ideas come from a third-party editor, the code is our own (none of it was read).
+
+**Outfit layer composer** (`compose_outfit.py`, specs in `tools/sprites/compose/`). Builds a new outfit (a creature
+look, a wings or aura cosmetic, a mount) from layers. A layer is a thing of the live pair (`live:outfit:2140`), of a
+donor library (`lib:I:outfit:286`, read from `--lib-dir`) or a PNG sheet. Per layer: offset (fixed, per direction,
+or the base's rider seat), flip per direction, opacity, order front / back per direction, a glow, frame mapping
+(loop, hold, repeat, still, a list; per frame group), colour mask (own, none, keep), addon and mount patterns. Roles
+`wings`, `aura` and `rider` place a layer as our client draws it (wings behind facing south / east and 6 px right /
+down, GameWingOffset; aura back and front layers, centred when big, GameBigAurasCenter; rider on the seat of patch 0034,
+mounted pattern). Frames are anchored bottom-right like the client; each layer lands at (output displacement - layer
+displacement + offset). Content past the tile's right / bottom edge lowers the output displacement (`"auto"`).
+- Mask rules: the base's mask is kept; an uncoloured front layer clears the mask where it covers (alpha >= 128); a
+  layer can bring its own mask; addon patterns are cut where a front layer covers, since the client draws them over
+  pattern 0. The glow is only on pixels the layer leaves empty, within 1-3 px, in one `gen_effects.py` palette ramp
+  with its crisp "glow" alpha levels and an ordered dither (no faint wash). It never touches the mask.
+- Output: `<key>.png` in the `import_art_things.py` outfit layout and `<key>.csv`, a things.csv row (`--csv-out`
+  collects rows). `--preview` draws every group, mount and addon pattern, phase and direction on one contact sheet,
+  with a tinted row when there is a mask and the creature's tile outlined.
+- `import_art_things.py` now reads more outfit layouts (all optional, old rows give the same bytes: checked on the 39
+  outfits of `things.csv`): phases per group (`8`, `1+8`), extra keys `gtypes`, `layers`, `addons`, `mounts`,
+  `exact`, `durs<g>`, `anim<g>`, outfit flags (`displacement` may be negative, `bones` = byte 39), atlas paths relative
+  to the things file.
+- Examples (`compose/`): `warrior_bloodthorn` (Warrior 2073 with wings 2140, ember glow; 3x3, displacement -12 -14),
+  `mystic_pyrelight` (Mystic 2060 in aura 2136; 3x3, -12 -21), `charger_rider` (Warrior 2073 riding the Pyrewarden
+  Charger 2132 as one look; 3x4, -32 -32, seat dropped). Built from things_custom17 and imported into a copy of it
+  (`--first-outfit 2161`: 3 outfits, 1,613 sprites appended, importer and guard checks passed); not in the live pair.
+- Tests: `compose_outfit_test.py` (synthetic things: offsets, size growth, auto displacement, order per direction,
+  wings role, flip, opacity, frame mapping, masks, addon cut, rider seat, glow bounds and colours, spec validation, a
+  PNG round trip, an import round trip on a tiny pair). CI installs `python3-numpy python3-pil` for it.
+
+```
+python3 -I client/tools/sprites/compose_outfit.py client/tools/sprites/compose/*.json --validate
+python3 -I client/tools/sprites/compose_outfit.py client/tools/sprites/compose/warrior_bloodthorn.json \
+    --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr [--lib-dir L] --out-dir OUT --preview [--csv-out OUT/things.csv]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --out-dir NEW \
+    --things OUT/things.csv --first-outfit N --expect-items 33659
+```
+
+**Pair checker** (`check_pair.py`, pure Python, no numpy). Parses the dat with the client's own 10.98 rules (not
+`datspr.py`), so a byte read differently shows up. Errors: header counts the client cannot load, truncated entries,
+no end byte within 255 flags, flag bytes that are not 10.98 and not ours (byte 39, the rider seat, is ours; 40-43
+are refused), a 0 dimension, more than 65535 sprites in a thing, an animator start phase out of range, sprite ids
+above the spr count, trailing bytes; in the spr a table that does not fit, bad offsets, truncated records or pixel
+runs that do not decode to 32x32. Sprite 0 is allowed everywhere (the client draws nothing). Warnings: odd but valid
+values (flag order and duplicates, item flags on other things, displacement, elevation, light, seats without a
+negative displacement, async / loop / durations, pattern counts, missiles above 254, empty things, ids pointing at
+empty slots, groups of one outfit with other layers or patterns, empty masks, masks holding art). Auras' second layer
+is a front layer: their ids come from `server/data/XML/chaos_auras*.csv` (`--aura-looks`).
+- Append-only mode (`--old OLD.dat OLD.spr`, `--new-only`, `--allow-changed 'outfit:1561,2132-2135'`): every old
+  thing and sprite record byte-identical, only new ids added. `import_art_things.py`, `import_outfits.py` and
+  `import_donor_things.py import` call it at the end of every run (`check_append_only`) and stop on an error.
+  `set_rider_seat.py` changes old entries on purpose: check its output with `--allow-changed`.
+- Live pair things_custom17 (windows-assets 854d34c, md5s above): 0 errors, 230 warnings, 12 s. Warnings: 95 phases
+  of 0 ms (items 22664 to 25886, missiles 83, 96, 102-106, outfits 1270, 1374, 1375); 64 odd exact sizes (items 25651..); outfit
+  267's groups differ in pattern z (the client indexes both with the walking group's); 7 outfits whose second layer
+  is art, not a mask (932, 936, 1207, 1208, 1228, 1229, and 2043, the unused former Inquisitor look); 18 missiles
+  without 3x3 patterns (43, 46, 47, 52, 137-149, 152); outfit 1239 has 8 directions; outfit 637 points at 9 empty sprite
+  slots; 34 items without a sprite. Info: 8,381 blank padding entries, 150,867 sprite ids without a record, 27,143
+  records no thing uses, 31 masks with a few stray pixels. Nothing was changed in the pair.
+- Libraries: G 0 errors, 156 warnings (148 exact sizes, 8 things over 8 tiles); I 0 / 33 (23 wings / auras with a
+  second art layer, 8 outfits with 4 addon patterns); K 0 / 30; U 0 / 31 (outfits 79, 189 with groups of different
+  layers). Append-only runs on the real history: things_custom16 -> 17 passes; 15 -> 16 fails on exactly the five
+  seated mounts and passes with `--allow-changed 'outfit:1561,2132-2135'`.
+- CI: `check_pair_test.py` (synthetic pairs: good, wrong counts, truncated dat and spr, bad runs, flags, animators,
+  masks, append-only violations) in the checks job; job `live-pair` checks out `windows-assets` (sparse `things`, read
+  only, default token; skipped for pull requests from forks), verifies the archive's sha256 and runs the checker.
+
+```
+python3 -I client/tools/sprites/check_pair.py P/Tibia.dat P/Tibia.spr [--verbose]
+python3 -I client/tools/sprites/check_pair.py NEW/Tibia.dat NEW/Tibia.spr --old P/Tibia.dat P/Tibia.spr --new-only
+```
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder

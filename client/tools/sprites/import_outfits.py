@@ -26,7 +26,8 @@ modified.  Deterministic: the same inputs give byte-identical outputs.
 Verification (always run): the output is re-parsed; every sprite slot of every group/frame/direction/addon/layer of
 the new outfits decodes pixel-identical to the donor slot, and every composed frame (all groups, phases, directions,
 addons, base layer) renders pixel-identical; flags and animator equal the donor's; all old dat entries are byte
-identical; 3000 sampled old sprites (plus the first and last) are unchanged.
+identical; 3000 sampled old sprites (plus the first and last) are unchanged; then check_pair.py's append-only guard
+(every old thing and sprite record byte-identical, the new outfits and sprites valid for the client).
 """
 import sys, os, csv, struct, argparse, random, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -307,6 +308,9 @@ def main():
           f'{pad} blank padding outfits; {len(entries) - pad} imported outfits: {nslots} sprite slots and {nframes} frames (every group, phase, direction, '
           f'addon) pixel-identical to the donor, flags/animator equal; {nours} old outfits and all items/effects/missiles '
           f'byte-identical; 3000 sampled old sprites unchanged')
+
+    from check_pair import check_append_only
+    check_append_only(a.ours_dat, a.ours_spr, os.path.join(a.out_dir, 'Tibia.dat'), os.path.join(a.out_dir, 'Tibia.spr'))
 
     if a.preview:
         os.makedirs(a.preview, exist_ok=True)
