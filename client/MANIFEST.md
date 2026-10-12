@@ -622,8 +622,15 @@ A re-run on its own output does too. `things-1098.tar.xz` is built like things_c
 sha256 5952476dde9fb93f866bb4e41ec7662490560aec777ad891806bc5a110c0e83b (65,521,896 bytes).
 Live on `windows-assets` at 1cae7c3 (owner's approval, 2026-10-11). A client still on things_custom15 keeps the old
 seats. No server change goes with it.
-- Not checked in a live client. The before/after contact sheets of all 145 mounts are offline renders, kept outside
-  the repository.
+- The before/after contact sheets of all 145 mounts are offline renders, kept outside the repository.
+- Checked in the Linux client on 2026-10-12 with the live pair things_custom17, which keeps these seats byte-identical.
+  Client: base client of `windows-assets` 854d34c + base patches 0001-0041 + overlay, built fresh. Server: base server
+  of `windows-assets` + src-patches + every `install_all.py` step, MariaDB, a god character on the Cinderhold temple
+  floor. Each of 1561, 2132, 2133, 2134 and 2135 ridden with rider look 128, standing and mid-step in all four
+  directions; again standing with look 136. The rider sits on the saddle or the back middle in every frame. The same
+  run on a client built without 0034 shows the old fault: the rider beside the mount, left of the saddle. Stock
+  mount 368 draws pixel-identical with and without 0034 when standing; walking frames differ only by step timing.
+  No seat needed a change. Screenshots kept outside the repository.
 
 ## Achievement wings (things_custom17, outfits 2140-2142, `tools/sprites/monster_looks/`)
 Three donor-library wings for the achievement exclusives (server/README.md "Exclusives"). Before this pair, wings were
