@@ -194,7 +194,7 @@ with `catalogue.csv` (library id, source id, size, frames, flags, short descript
 with the library ids. Only things whose art is not already in our pair are kept (pixel compare), exact duplicates and
 empty entries are dropped. `import_donor_things.py import` appends chosen library ids to a live pair (verified: old
 entries byte-identical, new ones pixel-identical to the library).
-Twelve more libraries (October 2026, same layout, outside git; each deduped against our pair and every earlier library,
+More libraries (October 2026, same layout, outside git; each deduped against our pair and every earlier library,
 by decoded sprite pixels; pass the earlier sprs with `--known-spr`, `--key-cache` keeps their pixel keys):
 
 | library | source format (`--source`) | outfits | items | effects | missiles | sprites | spr |
@@ -211,13 +211,45 @@ by decoded sprite pixels; pass the earlier sprs with `--known-spr`, `--key-cache
 | donor N | 15.11 protobuf appearances + LZMA sprite sheets (`v1511`, 64 px sprites cut into tiles) | 13 | 156 | 0 | 0 | 6,426 | 8 MB |
 | donor O | newer build of donor G: only what G lacks | 0 | 29 | 0 | 0 | 28 | 0.06 MB |
 | donor Q | 10.98 native dat, byte 40 read as displacement where the outfit has none (`--map-flags`); retail-style rows tagged "library only: retail-style art" | 495 | 2,077 | 508 | 107 | 181,398 | 287 MB |
+| donor R | 10.98, XOR'd dat, RGB spr (`v1098`); 4,217 rows "library only: retail-style art" | 233 | 3,997 | 45 | 28 | 55,514 | 70 MB |
+| donor S | 10.98 (`v1098`); 447 rows "library only: retail-style art" | 56 | 751 | 23 | 11 | 26,326 | 42 MB |
+| donor T | 15.x protobuf appearances + LZMA sheets (`v1511`): only the donor's extra (custom) appearances file, its main set is the retail set and was skipped; 34 rows "do not use live: branded" (the donor's coin, logo, name and people), 101 rows "library only: retail-style art" | 38 | 210 | 0 | 0 | 32,992 | 28 MB |
+| donor U | 8.60 extended dat with frame groups and durations (`v860`), alpha spr; 18 rows "do not use live: branded", 16 rows "named character (do not use live)", 201 rows "library only: retail-style art" | 325 | 257 | 148 | 9 | 84,703 | 88 MB |
+| donor V | 10.98 (`v1098`), 1.14 GB source spr; 11 rows "named character (do not use live)", 162 rows "library only: retail-style art"; items reviewed by sheet only | 309 | 4,874 | 180 | 43 | 89,559 | 143 MB |
+
+Donors T, U and V (October 12, 2026) are built but not yet on the library branch. U and V were read from the zips
+without storing the whole source spr: the spr was streamed twice into a compact copy that holds only the things with
+art not yet in our pair or an earlier library; things whose art was all known are listed in `skipped.csv` as "already
+in ours or an earlier library (compact spr)". The fourth client of that batch added no usable art (its 264 new
+sprites belong to no thing; its art is already library R). The tag ranges are in each library's `build.log`.
+Most useful for our gaps (library ids):
+- **T**: outfits 9-11 (a horned scorpion beast in three colours: rift or boss creature), 28-29 (a crystal nexus,
+  blue and red: battleground or siege objective), 30 (a blue drake), 33-38 (glowing ground runes in six colours:
+  marker or aura); items 121-123, 135, 155-158, 160, 163 (stone walls and pillars with gold or iron trim), 169-170
+  (wall torches with embers), 176 (an animated lightning floor), 184 (an ember training dummy), 237 (an orb with
+  light), 258-275 (animated red and blue crystal clusters and flame spires, crystal braziers 274-275).
+- **U**: wings 8, 18, 23, 36, 37, 39, 40, 47, 50, 57 (dark, bat, bone and demonic); auras 41, 42, 58-60, 64, 65,
+  73, 81; big beasts 85-95 (fire, void, shadow and demon beasts: mounts or rift bosses); bosses 96-98 (a fire
+  swarm, a blood colossus, a blood tentacle), 231 (a void eye), 267-268 (horned beasts, blue and red), 298;
+  effects 23 (smoke vortex), 24 (a demon burst), 81-84 (big sealed orbs: shields or wards), 86, 92-93, 105, 109
+  (arcane vortices), 126-128 (dark thorn rings), 136-137 (lightning strikes), 139 (a red slash), 146 (a meteor);
+  missiles 2, 3, 5 (crescent and spear bolts).
+- **V**: bosses and creatures 1 (a winged gold demon), 58, 59, 62, 63 (void and ice golems), 74, 76-78, 80-83
+  (fire demons and hellhounds), 101, 121, 122, 141-145 (void spiders and wraiths), 153, 155, 203, 207 (a burning
+  skull beast); 241, 243, 246 (crystal drakes, six colours 241-247); 277-281 (armoured beasts in five glow
+  colours: faction mounts); 283, 284, 287 (bone dragons, six colours 283-288); effects 17-18 (void portals), 20,
+  23 (dark planets), 46-48 (fire claws), 57, 59, 60 and 98, 100, 101 (rune and blood rings), 83 (a fire tornado),
+  106-145 (footprints in many colours and shapes), 155, 165, 167, 170; items 3553-3554 (blood pentagrams), 3190,
+  3194 (sigil floors), 3598 (a cage), 4210, 4215 (chains), 3115, 3133, 3164 (void and blood grounds and walls)
+  and the corrupted void biome 4600-4971 (grounds, crystals, vines, glowing shrines 4912-4923).
 
 Older layouts are converted: outfits without frame groups get an idle group (phase 0, the old standing frame) and a
 walking group (the walk frames), or one walking group when they animate always; animated groups without animator data
 get the old client's timing (items 500 ms, effects 75 ms once, missiles 100 ms, walking 300 ms). Flags are mapped by
 name; flags our table lacks (7.72 floor change, 15.x corpse, cyclopedia, ...) are listed in the `stripped` column.
-Rows tagged "named character (do not use live)" are characters of other franchises (donors D, F, G, J, K); donor E,
-named characters and "retail-style" rows are library only. `donor_b_selection.csv` is the recommended first
+Rows tagged "named character (do not use live)" are characters of other franchises (donors D, F, G, J, K, U, V);
+rows tagged "do not use live: branded" carry another server's name or logo (donors T, U); donor E,
+named characters, branded and "retail-style" rows are library only. `donor_b_selection.csv` is the recommended first
 live set (32 outfits incl. Golden Dragon and Scaleborn looks and class outfits, 24 effects, 16 missiles, 112 items),
 run with `--first-item 28000` after `gen_dark_tiles.py`; it writes `donor_items.csv`, which goes to
 `server/data/items/donor_items.csv` for `server/tools/install_donor_items.py` (install_all step `donoritems`).
