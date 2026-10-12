@@ -13,6 +13,10 @@
 --             and frees the room when it is empty, a login inside a closed room goes to the exit (inside its own
 --             running room it stays), a clean shutdown closes the rooms; the tool is idempotent, keeps CRLF, leaves
 --             other shapes alone, --dry-run writes nothing
+--   step-in   a stock-shaped miniboss file (two rooms entered by a tile, CRLF; written here): both rooms patched, a file
+--             with one room of another shape left alone whole; on the mocked engine each room locks on its own (the
+--             other room of the file stays free), the script's kick timer is stopped, a monster on the tile starts
+--             nothing, time up sends everyone to the room's exit and removes its monsters
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z][A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -630,6 +634,205 @@ creatureEvent:register()
 	-- the time cap: a 60 minute room gets 30
 	eq(ChaosBossRooms.limitOf({kickParticipantAfterSeconds = 3600}), 1800, "capped at 30 minutes")
 	eq(ChaosBossRooms.limitOf({kickParticipantAfterSeconds = 600}), 600, "a shorter room keeps its time")
+
+	-- ------------------------------------------------------------ step-in rooms (several in one file)
+	-- the stock miniboss template (names made up; the shape is the base server's): one config per room, a tile
+	-- (MoveEvent onStepIn) instead of a lever, an exit tile inside the room
+	local function stepRoom(aid, name, x, var)
+		return (([[
+local config = {
+    actionId = AID,
+    bossName = "NAME",
+    bossPosition = Position(X5, 2005, 7),
+    bossArea = {
+        fromPos = Position(X0, 2000, 7),
+        toPos = Position(X10, 2010, 7),
+        entrancePos = Position(X2, 2002, 7),
+        exitPosition = Position(X20, 1990, 7)
+    },
+    participantsAllowAnyCount = true,
+    participantsPos = {
+        Position(X20, 1995, 7),
+    },
+    attempts = {
+        level = 100,
+        storage = 721001,
+        seconds = 1800 -- 30 min
+    },
+    kickParticipantAfterSeconds = 60 * 10,
+}
+
+local function getSpectators()
+    if not config.centerPosition then
+        config.diffX = math.ceil((config.bossArea.toPos.x - config.bossArea.fromPos.x) / 2)
+        config.diffY = math.ceil((config.bossArea.toPos.y - config.bossArea.fromPos.y) / 2)
+        config.centerPosition = config.bossArea.fromPos + Position(config.diffX, config.diffY, 0)
+    end
+    return Game.getSpectators(config.centerPosition, false, false, config.diffX, config.diffX, config.diffY, config.diffY)
+end
+
+local VAR = MoveEvent()
+
+function VAR.onStepIn(player, item, fromPosition, target, toPos, isHotkey)
+    local participants = {}
+    for index, pos in pairs(config.participantsPos) do
+        local tile = Tile(pos)
+        if not tile then error("[Warning - Tile not found]") end
+        local participant = tile:getTopVisibleCreature(player)
+        if participant and participant:isPlayer() then
+            if index == 1 and participant ~= player then
+                player:sendCancelMessage("Only the first participant can pull the lever.")
+                return true
+            end
+
+            if participant:getStorageValue(config.attempts.storage) >= os.time() then
+                player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The player "..participant:getName().." must wait.")
+                return true
+            elseif participant:getLevel() < config.attempts.level then
+                player:sendCancelMessage(string.format("The player %s is not level %d.", participant:getName(), config.attempts.level))
+                return true
+            end
+            participants[#participants +1] = participant
+        end
+    end
+
+    local spectators = getSpectators()
+    for _, spectator in pairs(spectators) do
+        if spectator:isPlayer() then
+            player:sendCancelMessage("At this time the room is occupied, please try again later.")
+            return true
+        end
+    end
+
+    for _, spectator in pairs(spectators) do spectator:remove() end
+    local boss = Game.createMonster(config.bossName, config.bossPosition)
+    if not boss then error(Game.getReturnMessage(RETURNVALUE_NOTENOUGHROOM)) end
+    for index, participant in pairs(participants) do
+        participant:teleportTo(config.bossArea.entrancePos, false)
+        participant:setStorageValue(config.attempts.storage, os.time() + config.attempts.seconds)
+    end
+
+    config.kickEventId = addEvent(function ()
+        for _, spectator in pairs(getSpectators()) do
+            if spectator:isPlayer() then
+                spectator:teleportTo(config.bossArea.exitPosition, false)
+                spectator:sendTextMessage(MESSAGE_INFO_DESCR, "It's been a long time and you haven't managed to defeat the boss.")
+            else
+                spectator:remove()
+            end
+        end
+    end, config.kickParticipantAfterSeconds * 1000)
+    return true
+end
+
+VAR:aid(config.actionId)
+VAR:type("stepin")
+VAR:register()
+
+
+local exit = MoveEvent()
+function exit.onStepIn(player, item, fromPos, target, toPos, isHotkey)
+    if not player then
+        return false
+    end
+ player:teleportTo(Position(X20, 1990, 7))
+end
+
+exit:aid(AIDX)
+exit:type("stepin")
+exit:register()
+
+
+]]):gsub("AIDX", tostring(aid + 1)):gsub("AID", tostring(aid)):gsub("NAME", name):gsub("VAR", var)
+			:gsub("X(%d+)", function(d) return tostring(x + tonumber(d)) end))
+	end
+	local MINIS = (stepRoom(46001, "mire hag", 2000, "mireHag") .. stepRoom(46003, "bog lord", 2100, "bogLord"))
+		:gsub("\n", "\r\n")
+	-- a second miniboss file whose second room is of another shape: the whole file is left alone
+	local MIXED = stepRoom(46011, "reed witch", 2200, "reedWitch") ..
+		"local config = {\n    bossArea = {},\n    kickParticipantAfterSeconds = 60,\n}\n"
+	local mdir = data .. "/scripts/customs/extensions/marsh"
+	os.execute("mkdir -p '" .. mdir .. "'")
+	writeFile(mdir .. "/minibosses.lua", MINIS)
+	writeFile(mdir .. "/mixed.lua", MIXED)
+	out = sh(tool)
+	ok(out:find("marsh/minibosses.lua: patched aid46001, aid46003\n", 1, true) ~= nil, "both step-in rooms patched: " .. out)
+	ok(out:find("marsh/mixed.lua: unrecognised (room 2 of 2:", 1, true) ~= nil, "a file with a room of another shape: listed")
+	eq(readFile(mdir .. "/mixed.lua"), MIXED, "and left alone whole")
+	local minis = readFile(mdir .. "/minibosses.lua")
+	local _, mmarks = minis:gsub("patch_base_bossrooms%.py", "")
+	eq(mmarks, 8, "four marked lines per room")
+	ok(minis:find('    if ChaosBossRooms and not ChaosBossRooms.leverUse(player, "aid46003", config) then return true end' ..
+		' -- Chaos (patch_base_bossrooms.py)\r\n', 1, true) ~= nil, "the tile's onStepIn gets the lock, CRLF kept")
+	local _, mlf = minis:gsub("[^\r]\n", "")
+	eq(mlf, 0, "no bare LF in the CRLF file")
+	out = sh(tool)
+	ok(out:find("marsh/minibosses.lua: already patched", 1, true) ~= nil, "second run: already patched")
+	eq(readFile(mdir .. "/minibosses.lua"), minis, "idempotent")
+
+	-- the patched file on the mocked engine
+	local moves = {}
+	MoveEvent = function()
+		local e = {}
+		function e:aid(a) self.aidv = a end
+		function e:type(t) self.t = t end
+		function e:register() moves[self.aidv] = self end
+		return e
+	end
+	assert((loadstring or load)(minis, "=minibosses.lua"))()
+	ok(moves[46001] and moves[46002] and moves[46003] and moves[46004], "both rooms and both exit tiles register as before")
+	ChaosBossRooms.collect()
+	ok(ChaosBossRooms.rooms.aid46001 and ChaosBossRooms.rooms.aid46003, "both rooms known, each with its own config")
+	local function stepper(p)
+		p.storage = {}
+		function p:getStorageValue(k) return self.storage[k] or -1 end
+		function p:setStorageValue(k, v) self.storage[k] = v end
+		function p:getLevel() return 200 end
+		return p
+	end
+	local tile1, tile2 = P(2020, 1995, 7), P(2120, 1995, 7)
+	local fen = stepper(newPlayer(21, "Fen", tile1))
+	tiles["2020:1995:7"] = fen
+	moves[46001].onStepIn(fen, item, tile1)
+	eq(fen.pos.x, 2002, "stepping on the tile: in the room")
+	local ms = ChaosBossRooms.sessions.aid46001
+	ok(ms ~= nil and ms.limit == 600 and ms.bossId ~= nil, "a session of the room's 10 minutes, the boss known")
+	eq(ChaosBossRooms.rooms.aid46001.kickEventId, nil, "the script's own kick timer was stopped")
+	ok(bars["room:aid46001:lever"] ~= nil and bars["room:aid46001:lever"].pos.x == 2020, "the 'Room in use' bar over the tile")
+	eq(ChaosBossRooms.sessions.aid46003, nil, "the other room of the file is free")
+	-- a second player on the same tile: locked; the other room takes them
+	local gil = stepper(newPlayer(22, "Gil", tile1))
+	tiles["2020:1995:7"] = gil
+	moves[46001].onStepIn(gil, item, tile1)
+	ok((gil.cancels[1] or ""):find("frees up in ~10 min", 1, true) ~= nil, "locked, with the time: " .. tostring(gil.cancels[1]))
+	eq(gil.pos.x, 2020, "stays on the tile")
+	gil.pos = tile2
+	tiles["2020:1995:7"] = nil
+	tiles["2120:1995:7"] = gil
+	moves[46003].onStepIn(gil, item, tile2)
+	eq(gil.pos.x, 2102, "the other room of the file runs at the same time")
+	-- a monster walks onto the first tile: nothing starts (the stock script would make the boss for it)
+	local before = #creatures
+	local rat = newMonster("marsh rat", tile1)
+	tiles["2020:1995:7"] = rat
+	moves[46001].onStepIn(rat, item, tile1)
+	eq(#creatures, before + 1, "a monster on the tile: no boss made")
+	eq(ChaosBossRooms.sessions.aid46001, ms, "and the session is unchanged")
+	-- time up: everyone to the room's exit, the room's monsters removed
+	newMonster("bog add", P(2005, 2006, 7))
+	advance(601)
+	eq(fen.pos.x, 2020, "time up: at the room's exit")
+	eq(fen.pos.y, 1990, "the exit of this room")
+	eq(gil.pos.x, 2120, "the other room's group at its own exit")
+	local leftIn = 0
+	for _, cr in ipairs(creatures) do
+		if cr.isMonster and cr:isMonster() and (ChaosBossRooms.inRoom(ChaosBossRooms.rooms.aid46001, cr:getPosition())
+			or ChaosBossRooms.inRoom(ChaosBossRooms.rooms.aid46003, cr:getPosition())) then
+			leftIn = leftIn + 1
+		end
+	end
+	eq(leftIn, 0, "the bosses and the add were removed")
+	ok(ChaosBossRooms.sessions.aid46001 == nil and ChaosBossRooms.sessions.aid46003 == nil, "both rooms free")
 	os.execute("rm -rf '" .. root .. "'")
 end
 
