@@ -295,6 +295,38 @@ Result: dat 7ba1d4794c09c7d76dc943ff23e60a78, spr ade7204ff0c9393d6aa4836507515c
 stay in the pair unused (removing them would move every later id). The compare only knows the 10.98 stock art: a donor
 look ported from a later version of the commercial game would pass it.
 
+## New class look art (`tools/outfit_art/class_art.py`, `class_art_line.py`; not in any pair yet)
+Owner-approved new art for the class look slots with no usable donor art: Lich female (today 2059 for both sexes),
+Inquisitor female (today 2077 for both), a matched Necromancer pair (today 2044 / 2064, two unrelated outfits), and
+alternatives for the Thief, the Ninja and the Templar, both sexes. Ten looks in all. Our own art: the outfit rig of
+the Warrior line (signed-distance parts on a posed body, our palette, the shape is the art). No donor, stock or AI
+pixels. The PixelLab repaint step of the art studio is not used: no token in this environment.
+- Each look: 2 addons that carry the class identity, as the client draws them (an addon pattern holds only the pixels
+  that change when the addon is worn). Lich: bone-iron crown with void gems; phylactery and gold trim. Inquisitor:
+  censer on a chain; pointed hood with a gold seal (the base carries an upright holy mace). Necromancer: bone staff
+  with a skull head; skull mantle and collar (hooded base; hers shows ash-grey locks). Thief: hood and face scarf;
+  second dagger and a knife bandolier. Ninja: face mask and crimson headband; crimson scarf (black cowl base).
+  Templar: great helm with a cross visor and gold crest; kite shield with a holy cross (the base holds the sword up).
+- Layout (`import_art_things.py` keys): 2x2 tiles, displacement 8,8 (the stock player place), 2 layers (art + colour
+  template: head hair / hood / cowl, body robe / tunic / tabard, legs trousers / skirt, feet boots), 4 directions,
+  3 addon patterns, 2 mount patterns (on foot, riding). `--layout 2+4` (default): idle 2 phases (a 1 px breath,
+  600 ms), walking 4 phases; `--layout 1+8` gives the stock player layout.
+- Edges: a 2x2 outfit cannot draw past its frame's right or bottom edge. Weapons held low on the weapon side and a
+  long stride cross it in some directions, so weapons are held up and the stride is shorter than the Warrior line's
+  (7 degrees). `class_art.py edges` checks every pose, direction and addon: 0 of 1,920 overflow.
+- Test: `class_art_test.py` (designs, addon diff, the sheet read back by the importer's own layout code for both
+  layouts, quick renders with template colours only, deterministic, an import round trip on a tiny pair). CI runs it.
+
+```
+python3 -I client/tools/outfit_art/class_art.py look [KEY ...] --out-dir OUT     # standing, 4 directions, addons
+python3 -I client/tools/outfit_art/class_art.py edges [KEY ...]                  # overflow check, no drawing
+python3 -I client/tools/outfit_art/class_art.py build [KEY ...] --out-dir OUT    # sheets, things.csv, previews (~30 min)
+python3 -I client/tools/sprites/import_art_things.py --ours-dat P19/Tibia.dat --ours-spr P19/Tibia.spr --out-dir NEW \
+    --things OUT/things.csv --first-outfit 2173 --expect-items N
+```
+Planned ids (after pair 19, outfits 2161-2172): 2173 Lich F, 2174 Inquisitor F, 2175 / 2176 Necromancer M / F, 2177 /
+2178 Thief M / F, 2179 / 2180 Ninja M / F, 2181 / 2182 Templar M / F. Not imported, not in `class_looks_core.lua`.
+
 ## Spell icons from the element icon sets (new)
 The three spell icon sheets now use pixel-art ability icons (six element sets of 40, 32x32 with an element-coloured
 frame, owned by the project) instead of the generated drawings in 259 of the 280 cells: the 79 Chaos spells (cells
