@@ -48,7 +48,8 @@ loopback address, because the Chaos multi-client rule allows only 2 characters p
 
 Measured: how many bots really entered the game, and for every other bot why not, grouped (the server's text from
 the login error packet, a timeout and at which step, a connection the server closed without a message, a kick right
-after entering with the server's text); login time (p50 / p95 / max), bytes received, disconnects. A progress line
+after entering with the server's text); login time (p50 / p90 / p95 / max) and its first part, the character list
+(the login server's answer: account lookup and password check on the engine's login worker), bytes received, disconnects. A progress line
 every 10 s says how many bots are in game, still logging in and failed; Ctrl+C or SIGTERM ends the run early and
 still prints the report. Timeouts: 10 s per connect, 15 s for the login server's answer and for the game server's
 challenge, 20 s for the answer to the game login (--login-timeout S sets the last one). With --server-pid
@@ -335,6 +336,7 @@ class Bot:
         self.stats['connecting'] += 1
         try:
             session, world = await self.login_server()
+            self.stats.setdefault('charlist_ms', []).append((time.monotonic() - t0) * 1000)
             self.conn = await self.enter_game(session, world)
         except Exception as e:  # noqa: BLE001 - every failure is a result of the test
             self.stats['connecting'] -= 1
@@ -482,6 +484,12 @@ def pct(values, p):
     return s[min(len(s) - 1, int(round(p / 100.0 * (len(s) - 1))))]
 
 
+def spread(values):
+    """'p50 .. ms, p90 .. ms, p95 .. ms, max .. ms' of a list of times in ms"""
+    return 'p50 %.0f ms, p90 %.0f ms, p95 %.0f ms, max %.0f ms' % (
+        pct(values, 50), pct(values, 90), pct(values, 95), max(values or [0]))
+
+
 def probe_lines(path, start, end):
     out = []
     try:
@@ -497,8 +505,8 @@ def probe_lines(path, start, end):
 
 async def run_test(args):
     n = modulus_from_pem(args.key) if args.key else OT_RSA_N
-    stats = {'login_ms': [], 'failed': [], 'kicked': [], 'bytes': 0, 'disconnects': 0, 'walks': 0, 'says': 0,
-             'no_challenge': 0, 'in_game': 0, 'connecting': 0, 'stop': False}
+    stats = {'login_ms': [], 'charlist_ms': [], 'failed': [], 'kicked': [], 'bytes': 0, 'disconnects': 0, 'walks': 0,
+             'says': 0, 'no_challenge': 0, 'in_game': 0, 'connecting': 0, 'stop': False}
     sampler = Sampler(args.server_pid) if args.server_pid else None
     baseline = None
     if sampler:
@@ -551,8 +559,10 @@ def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
         args.count, args.duration, args.walk, args.say, ' (stopped early)' if s['stop'] else ''))
     print('  entered the game %d / %d; failed %d; kicked within 10 s of entering %d' % (
         ok, args.count, len(s['failed']), len(s['kicked'])))
-    print('  login time p50 %.0f ms, p95 %.0f ms, max %.0f ms' % (
-        pct(s['login_ms'], 50), pct(s['login_ms'], 95), max(s['login_ms'] or [0])))
+    print('  login time %s (connect to in game)' % spread(s['login_ms']))
+    if s.get('charlist_ms'):
+        print('  character list %s (%d answers; the login server part of the above)' % (
+            spread(s['charlist_ms']), len(s['charlist_ms'])))
     for count, reason, names in group_reasons(s['failed'] + s['kicked']):
         print('  %4d x %s (%s%s)' % (count, reason, ', '.join(names), ', ...' if count > len(names) else ''))
     print('  disconnects during the run: %d; steps sent %d, chat lines %d; received %.1f MB' % (

@@ -1,0 +1,96 @@
+# The login worker's own database connection (server/README.md "Account passwords", "Login rush on a busy machine").
+# Load test finding: the two login worker threads of 0014 used the engine's one database connection (Database::
+# getInstance, one recursive mutex) with the dispatcher, so in a login rush every character list and every game login
+# check queued behind the game's queries, and behind whole transactions (DBTransaction holds the lock from BEGIN to
+# COMMIT: a player save). Half the logins of 398 bots 0.15 s apart took over 11 s.
+#   * Each worker thread opens a connection of its own at its first login (a thread_local Database, the same class as
+#     the main connection and as DatabaseTasks' own: the same automatic reconnect and query retry rules) and closes it
+#     when the thread ends (PasswordWorker::shutdown joins them). Two more connections to the database server.
+#   * IOLoginData::loginserverAuthentication / gameworldAuthentication take the connection as a parameter: the account
+#     row, the character list, the character check and the password re-hash UPDATE (one autocommit statement) run on
+#     it. A DBResult is read and freed on the worker thread before the task ends; nothing of it reaches the dispatcher
+#     (the Account is copied out). No transaction on this path (DBTransaction always uses the main connection).
+#   * When the worker cannot connect, the login uses the shared connection as before (one console warning) and the
+#     next try comes 30 s later.
+# Untouched: every query of the dispatcher and of Lua (the main connection), DatabaseTasks, the database class itself.
+# Applies after 0001-0028.
+--- a/src/iologindata.cpp
++++ b/src/iologindata.cpp
+@@ -91,10 +91,31 @@ static bool checkAccountPassword(Database& db, uint32_t accountId, const std::st
+ 	return check.ok;
+ }
+ 
+-bool IOLoginData::loginserverAuthentication(const std::string& name, const std::string& password, Account& account)
++// Chaos (patch 0029): the login worker's own database connection, one per worker thread, opened at its first login
++// and closed when the thread ends. The worker no longer waits for the dispatcher's queries and transactions on the
++// engine's shared connection. The same Database class, so the same reconnect and retry rules. When it cannot connect,
++// the login uses the shared connection and the next try comes 30 s later.
++static Database& loginDatabase()
+ {
+-	Database& db = Database::getInstance();
++	thread_local std::unique_ptr<Database> own;
++	thread_local int64_t nextTry = 0;
++	if (!own) {
++		const int64_t now = OTSYS_TIME();
++		if (now >= nextTry) {
++			auto db = std::make_unique<Database>();
++			if (db->connect()) {
++				own = std::move(db);
++			} else {
++				nextTry = now + 30000;
++				std::cout << "[Warning - login worker] no database connection of its own, using the shared one" << std::endl;
++			}
++		}
++	}
++	return own ? *own : Database::getInstance();
++}
+ 
++bool IOLoginData::loginserverAuthentication(Database& db, const std::string& name, const std::string& password, Account& account)
++{
+ 	DBResult_ptr result = db.storeQuery(fmt::format("SELECT `id`, `name`, `password`, `secret`, `type`, `premium_ends_at` FROM `accounts` WHERE `name` = {:s}", db.escapeString(name)));
+ 	if (!result) {
+ 		PasswordHash::dummyVerify(password, PasswordHash::configuredIterations()); // same time as a real account
+@@ -133,10 +154,8 @@ bool IOLoginData::loginserverAuthentication(const std::string& name, const std::
+ 	return true;
+ }
+ 
+-uint32_t IOLoginData::gameworldAuthentication(const std::string& accountName, const std::string& password, std::string& characterName, std::string& token, uint32_t tokenTime)
++uint32_t IOLoginData::gameworldAuthentication(Database& db, const std::string& accountName, const std::string& password, std::string& characterName, std::string& token, uint32_t tokenTime)
+ {
+-	Database& db = Database::getInstance();
+-
+ 	DBResult_ptr result = db.storeQuery(fmt::format("SELECT `id`, `password`, `secret` FROM `accounts` WHERE `name` = {:s}", db.escapeString(accountName)));
+ 	if (!result) {
+ 		PasswordHash::dummyVerify(password, PasswordHash::configuredIterations()); // same time as a real account
+@@ -171,7 +190,7 @@ bool IOLoginData::loginserverAuthenticationAsync(const std::string& name, const
+ {
+ 	return g_passwordWorker.addTask([name, password, onDone]() {
+ 		auto account = std::make_shared<Account>();
+-		if (!loginserverAuthentication(name, password, *account)) {
++		if (!loginserverAuthentication(loginDatabase(), name, password, *account)) {
+ 			account.reset();
+ 		}
+ 		g_dispatcher.addTask(createTask([onDone, account]() { onDone(account); }));
+@@ -185,7 +204,7 @@ bool IOLoginData::gameworldAuthenticationAsync(const std::string& accountName, c
+ 	return g_passwordWorker.addTask([accountName, password, characterName, token, tokenTime, onDone]() {
+ 		std::string name = characterName;
+ 		std::string tokenCopy = token;
+-		const uint32_t accountId = gameworldAuthentication(accountName, password, name, tokenCopy, tokenTime);
++		const uint32_t accountId = gameworldAuthentication(loginDatabase(), accountName, password, name, tokenCopy, tokenTime);
+ 		g_dispatcher.addTask(createTask([onDone, accountId, name]() { onDone(accountId, name); }));
+ 	});
+ }
+--- a/src/iologindata.h
++++ b/src/iologindata.h
+@@ -15,8 +15,9 @@ class IOLoginData
+ 	public:
+ 		static Account loadAccount(uint32_t accno);
+ 
+-		static bool loginserverAuthentication(const std::string& name, const std::string& password, Account& account);
+-		static uint32_t gameworldAuthentication(const std::string& accountName, const std::string& password, std::string& characterName, std::string& token, uint32_t tokenTime);
++		// Chaos (patch 0029): db is the login worker's own connection (loginDatabase() in iologindata.cpp)
++		static bool loginserverAuthentication(Database& db, const std::string& name, const std::string& password, Account& account);
++		static uint32_t gameworldAuthentication(Database& db, const std::string& accountName, const std::string& password, std::string& characterName, std::string& token, uint32_t tokenTime);
+ 		// Chaos (patch 0014): the two checks above on the login worker (PasswordWorker, passwordhash.h), so the slow
+ 		// password hash never runs on the dispatcher or the network thread; onDone runs on the dispatcher with nullptr /
+ 		// 0 for a refused login. Both return false (and never call onDone) when the worker queue is full.

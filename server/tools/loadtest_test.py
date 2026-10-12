@@ -100,6 +100,10 @@ s = asyncio.run(scenario('close'))
 eq(s['failed'], [('Loadbot Aaa', 'connection closed by the server without a message at login server: waiting for the '
                                  'character list')], 'a closed connection names the step')
 
+# the login time spread of the report: nearest-rank percentiles, max
+eq(lt.spread([float(v) for v in range(0, 101)]), 'p50 50 ms, p90 90 ms, p95 95 ms, max 100 ms', 'p50 / p90 / p95 / max')
+eq(lt.spread([]), 'p50 0 ms, p90 0 ms, p95 0 ms, max 0 ms', 'no logins')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('loadtest_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

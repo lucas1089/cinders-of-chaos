@@ -114,6 +114,10 @@ server/
                                       chase of the attacked creature and its steps neither cancel nor delay the next attack;
                                       the chase resumes 400 ms after the walk; config: the client option, storage 7101820
                                       (see "Keep attacking while moving"; kitewalk.lua, client game_kitewalk, base patch 0039)
+  src-patches/0029-login-worker-database.patch   engine: the login worker threads (0014) use a database connection of
+                                      their own instead of the dispatcher's (see "Account passwords", "Login rush")
+  src-patches/0030-server-name.patch   engine: "Cinders of Chaos" and our version in the status protocol (server lists)
+                                      and the console (see "Server name"; tools/patch_base_server_name.py for the data)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     kitewalk.lua  kitewalk_core.lua (the client option "Keep attacking while moving", opcode 186, storage 7101820, see
@@ -307,6 +311,9 @@ server/
    `--dry-run`; `install_all.py` steps `npcnames`, `worldtexts` and `houses`, right after `towns`): the NPCs, every text
    that names the old world (dialogue, travel, quest log, raids, achievements, books and signs of the map) and the house
    names. See "Base NPC names", "Base world texts" and "Base houses".
+5l3. The base server's own name: `python3 -I server/tools/patch_base_server_name.py <server>/data [--dry-run]`
+   (idempotent; `install_all.py` step `servername`, after `worldtexts`): the welcome text over the first temple and a
+   console banner. The status protocol's name is engine patch 0030. See "Server name".
 5m. Spawns: `python3 -I server/tools/patch_base_spawns.py <server>/data [--dry-run] [--remove] [--report]` (idempotent;
    `install_all.py` step `spawns`, after `monsters`) fixes the dead monster registrations, the glitched spawntimes and the
    spawns on blocking tiles, shortens the 300-600 band's respawn and adds spawns in thin areas, all from
@@ -951,7 +958,7 @@ Level 1000 with strong haste: speed 2862 clamped to 2600, 100 ms predicted, 111 
 level 1-1000: speed 80 clamped to 120, 980 ms predicted, 1000-1070 ms measured. A clicked walk 6 east, 8 south took
 6 diagonal and 2 straight steps (630 / 450 ms), no cancels.
 
-## Account passwords (`src-patches/0014-salted-password-hashes.patch`, `sql/chaos_passwords.sql`)
+## Account passwords (`src-patches/0014-salted-password-hashes.patch`, `src-patches/0029-login-worker-database.patch`, `sql/chaos_passwords.sql`)
 
 The stock engine (and the stock website) stored an unsalted SHA-1 of every password. Now `accounts.password` holds
 
@@ -982,10 +989,31 @@ directions).
   on CPUs with them), far too long for the dispatcher. The check (database lookup + hash) runs on a login worker
   (2 threads, at most 64 waiting logins; more are refused with "Too many logins at the moment") and the answer goes back
   to the dispatcher. With 100 parallel wrong logins the dispatcher (status protocol round trip) kept a median of 1.8 ms.
-- **Login rush on a busy machine**: the worker shares the engine's one database connection with the dispatcher, so it
-  waits while the dispatcher runs the login scripts' queries. The SHA-1 migration adds a hash and an `UPDATE` (a
-  commit) to every first login. Measured (test server, full map, fresh database, 398 bots 0.15 s apart, a disk writer
-  running beside it): bots with SHA-1 passwords 249 of 398 in game (89 timeouts waiting for the character list, 51
+- **Login rush on a busy machine**: the worker shared the engine's one database connection with the dispatcher, so it
+  waited while the dispatcher ran the login scripts' queries and whole save transactions. Since engine patch 0029 each
+  worker thread has a connection of its own (opened at its first login, the same reconnect and retry rules as the main
+  one; two more connections to the database server). The account row, the character list, the character check and the
+  re-hash `UPDATE` run on it; every game and Lua query stays on the main connection. If the worker cannot connect it
+  uses the shared connection (one console warning) and tries again 30 s later. Checked: logins after a `KILL` of both
+  worker connections reconnect without a message; with the database account locked the logins went through the shared
+  connection with the warning, and after the unlock the worker connected again.
+  Measured with 0029 (the test server with every install step, a 64 x 64 test map, a fresh database each run, 398
+  bots with PBKDF2 passwords, `--ramp 0.15`, the bots' own start took 79-114 s on this 4-core machine; before and after
+  interleaved, same machine): with no extra database load nothing to tell apart (3 runs each: login p50 0.94-1.33 s
+  before, 0.98-1.14 s after; p90 1.2-2.1 s / 1.4-2.4 s; 398 of 398 every time). With the game's database work slowed
+  as on the busy machine (a TEST ONLY script: the dispatcher runs `SELECT SLEEP(1.5)` on the main connection, then
+  waits 1 s, again and again), 2 runs each:
+
+  | | in game | login p50 | login p90 | character list p50 / p90 |
+  |---|---|---|---|---|
+  | before 0029 | 237, 244 of 398 (126 / 123 "Too many logins" at the character list, 35 / 31 at the game login) | 24.4 s, 24.4 s | 27.0 s, 25.9 s | 11.9 / 14.0 s, 11.5 / 13.0 s |
+  | with 0029 | 398, 398 of 398 | 6.9 s, 6.8 s | 8.4 s, 9.7 s | 2.8 / 4.2 s, 2.9 / 4.3 s |
+
+  What is left is the dispatcher itself (it was blocked 60% of the time and posts every answer); with a lighter hold
+  (`SLEEP(0.3)`) both were alike (p50 1.3-1.5 s). `tools/loadtest.py` prints the login time p50 / p90 / p95 / max and
+  the character list part of it. The SHA-1 migration adds a hash and an `UPDATE` (a commit) to every first login.
+  Measured before 0029 (test server, full map, fresh database, 398 bots 0.15 s apart, a disk writer running beside
+  it): bots with SHA-1 passwords 249 of 398 in game (89 timeouts waiting for the character list, 51
   "Too many logins at the moment", 9 game login timeouts); the same bots right after (already PBKDF2) 398 of 398; fresh
   bots with PBKDF2 passwords and the archery fix below 395 of 398. This was the load test of the map markers (about 150
   of 398 on the first run, 395 after a restart, on a 4-core machine at load 13). A real launch has PBKDF2 accounts from
@@ -3598,6 +3626,37 @@ writes the names into `<mapName>-house.xml`; ids, entries, rents, towns and size
 database are untouched. The server writes the loaded names into the `houses` table at its next save; the website's
 house pages (ZnoteX `houses.php`) read that table. Checked: after a start and a shutdown the table has the 1,057 new
 names.
+
+## Server name (`src-patches/0030-server-name.patch`, `tools/patch_base_server_name.py`, `tools/base_server_texts.csv`)
+
+The base server still told players and server lists the name of the server it came from. Now ours everywhere:
+
+- **Status protocol** (engine patch 0030): the status document's `serverinfo` sends `server="Cinders of Chaos"
+  version="1.0"` (were the base server's name and version and the engine version), and the software info answer (0x23)
+  the same two. The console's first line is `Cinders of Chaos 1.0 (engine TFS 1.4.2)`; the root warning and the
+  Windows console title use the name. Constants `CHAOS_SERVER_NAME` and `CHAOS_SERVER_VERSION` in `definitions.h`; the
+  base constant stays there unused (a hunk that removed it would carry the old name into this repository).
+- **Data** (step `servername` of `install_all.py`, after `worldtexts`): the floating welcome text over the first temple
+  (`data/scripts/customs/actions/messages_text.lua`) says "Welcome to Cinders of Chaos!", the web login service's
+  console banner (`data/scripts/customs/znote/znote_login.lua`) "= Cinders of Chaos Login =". The world renames could
+  not do this: they replace single names, and a new row there would have doubled our name in the banner, where step
+  `worldtexts` already turned its first word into "Cinders of Chaos". This tool replaces exact whole Lua strings: each
+  row of `tools/base_server_texts.csv` is the sha256 of one old string's content as written (no old text in the
+  repository), its file and the new text. The banner has two rows (the base form and the form after `worldtexts`), so
+  the order of the steps does not matter and a tree installed before this change gets the same text. A second run
+  changes nothing ("already done"); a file with neither the old string nor the new text is reported (exit 1).
+  `tests/base_server_name_patch_test.lua` runs it on made-up strings.
+- **config.lua**: `serverName` (the character list, the status `servername`, `znote_global_storage`), `motd`, `url`,
+  `location` and the owner come from `tools/prod_config.py`; the base values stay on a server it was not run on.
+
+Checked on a fresh base tree with every install step: no other old server name in the data, the scripts or the SQL
+files. Left as they are (not shown to players): the Windows build files of the base (`vc17/`, the `.bat` restarters
+naming the base executable), the base map's file name and the spawn and house file names inside it, the base
+database name in the stock `config.lua`. The base map has one book that uses the English word for a mass departure
+in its title and text (lore of a desert people), not the server's name; it stays.
+Tested: the server built with 0001-0030 answered the status request with the new `server` and `version`, the software
+info request the same, printed the new console line; the old name is not in the binary. On the installed test tree the
+two strings changed, a second whole install changed nothing.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
