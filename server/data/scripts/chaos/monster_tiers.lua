@@ -145,6 +145,9 @@ table.sort(ChaosModList)
 -- creature id -> {tier = "rare", depth = 0, mods = {"blazing", ...}, step = 0}
 ChaosTierState = ChaosTierState or {}
 local state = ChaosTierState
+-- older versions applied the natural roll inside onSpawn, before the monster had an id, and left an entry under id 0
+-- (the table outlives a reload); no monster has id 0, drop it
+state[0] = nil
 local pendingTier -- set around the creation of an ambush copy (no natural roll for it)
 
 local function isBoss(monster)
