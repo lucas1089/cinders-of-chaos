@@ -119,6 +119,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                limit (the room's own kick time, at most 30 minutes) with warnings and a countdown, everyone out to the
                room's exit and its monsters removed at the end, an empty room frees up after 2 minutes, a login inside a
                closed room goes to its exit (README "Instance limits")
+  dungeonentry tools/patch_base_dungeonentry.py  the base dungeon window (modal entry) hands its group to a run of dungeons.lua:
+               one run per dungeon for the window and the queue, the 45 minute cap with warnings, the queue's wait, the
+               exit and cooldown of the window; no scan of the dungeon box's tiles and no Player object kept by a timer
+               (README "Dungeon queue", "Instance limits")
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -543,6 +547,13 @@ def step_bossrooms(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('stalls') + 1, 'bossrooms')  # after stalls, before sql
+
+
+def step_dungeonentry(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_dungeonentry.py'), data], 'patch_base_dungeonentry.py'))
+
+
+STEPS.insert(STEPS.index('bossrooms') + 1, 'dungeonentry')  # after bossrooms, before sql
 
 
 def step_autoloot(server, data, ctx):

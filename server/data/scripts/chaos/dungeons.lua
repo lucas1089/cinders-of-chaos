@@ -14,8 +14,10 @@
 -- Integration with the base server dungeon system (lib/core/dungeon.lua, global DUNGEON_SYSTEM):
 -- the dungeon list, level requirement, group size (AmountParty when NeedParty), DungeonPos,
 -- FromPos/ToPos, DungeonTime, SpawnMonsters/Monsters and the cooldown storage are all read from
--- DUNGEON_SYSTEM.Dungeons live. Entry here is by matchmaking queue instead of the modal window;
--- the old modal/stairs entry keeps working untouched (it just does not know about this module).
+-- DUNGEON_SYSTEM.Dungeons live. Entry here is by matchmaking queue instead of the modal window.
+-- The base modal entry (the dungeon tile's window) keeps its own checks, costs and texts, and hands its group to a run
+-- here (tools/patch_base_dungeonentry.py, ChaosDungeons.modal*): one run per dungeon for both ways in, the same time
+-- limit, warnings, exit and staff close; no ranking, difficulty or challenge for a modal run (it never had them).
 --
 -- Real: queueing, group formation, teleport in, time limit, monster-count progress, boss kill,
 -- completion, per-dungeon unlocked difficulty, challenges (speed / flawless), personal and group
@@ -123,12 +125,13 @@ local function send(player, action, data)
 end
 
 -- Box of a dungeon. The base server table is inconsistent for some entries (e.g. Forbidden Chevalier has
--- DungeonPos z=0 but FromPos/ToPos z=7), so the floor range is widened to include DungeonPos.
+-- DungeonPos z=0 but FromPos/ToPos z=7, Rootkraken's DungeonPos is 3 tiles south of its box), so the box is widened
+-- to include DungeonPos (else a run's players would count as "outside" at once).
 local function boundsOf(dg)
 	local f, t, d = dg.FromPos, dg.ToPos, dg.DungeonPos
 	return {
-		x1 = math.min(f.x, t.x), x2 = math.max(f.x, t.x),
-		y1 = math.min(f.y, t.y), y2 = math.max(f.y, t.y),
+		x1 = math.min(f.x, t.x, d.x), x2 = math.max(f.x, t.x, d.x),
+		y1 = math.min(f.y, t.y, d.y), y2 = math.max(f.y, t.y, d.y),
 		z1 = math.min(f.z, t.z, d.z), z2 = math.max(f.z, t.z, d.z)
 	}
 end
@@ -301,7 +304,7 @@ local function bossOutfit(id)
 	local bossName = extraOf(id).bossName
 	local outfit = {lookType = 0}
 	if bossName then
-		local monsterType = MonsterType(bossName)
+		local monsterType = MonsterType(extraOf(id).bossType or bossName) -- bossType: a boss with a shown name (areagen.lua)
 		if monsterType then
 			local o = monsterType:getOutfit()
 			if o then
@@ -450,7 +453,8 @@ end, runs = function() -- /instances (instance_limits.lua)
 		for _ in pairs(run.members) do
 			n = n + 1
 		end
-		out[#out + 1] = {id = id, what = string.format("%s, difficulty %d", dg and titleOf(run.dungeonId, dg) or "?", run.difficulty),
+		out[#out + 1] = {id = id, what = string.format(run.modal and "%s, entry window" or "%s, difficulty %d",
+			dg and titleOf(run.dungeonId, dg) or "?", run.difficulty),
 			left = math.max(0, math.floor((run.startedAt + (run.durationMs or 0) - nowMs()) / 1000)), players = n,
 			note = (queues[run.dungeonId] and #queues[run.dungeonId] or 0) .. " queued"}
 	end
@@ -557,10 +561,16 @@ local function cleanArea(dg, bossName)
 	end
 end
 
-local function setCooldown(player)
+-- a run of the base modal entry keeps the base cooldown's end: its entry + DungeonTime + CooldownTime (the base timer
+-- set the cooldown when the DungeonTime ran out); leaving earlier does not end it sooner or later
+local function setCooldown(player, run)
 	local storage = cooldownStorage()
 	if storage then
-		player:setStorageValue(storage, os.time() + cooldownSeconds())
+		local untilTime = os.time() + cooldownSeconds()
+		if run and run.cooldownUntil then
+			untilTime = math.max(run.cooldownUntil, player:getStorageValue(storage))
+		end
+		player:setStorageValue(storage, untilTime)
 	end
 end
 
@@ -576,7 +586,9 @@ local function endRun(run, success, reason)
 
 	local function teardown()
 		for _, p in ipairs(memberPlayers(run)) do
-			send(p, "finish")
+			if not run.modal then
+				send(p, "finish")
+			end
 			if dg and inBox(dg, p:getPosition()) then
 				local origin = run.members[p:getGuid()]
 				p:teleportTo(origin or p:getTown():getTemplePosition())
@@ -586,7 +598,7 @@ local function endRun(run, success, reason)
 				end
 			end
 			if not success or cfg.cooldownOnSuccess then
-				setCooldown(p)
+				setCooldown(p, run)
 			end
 		end
 		for guid in pairs(run.members) do
@@ -689,6 +701,10 @@ local function startRun(dungeonId, difficulty, players)
 		for monsterName, position in pairs(dg.Monsters) do
 			Game.createMonster(monsterName, position)
 		end
+	end
+	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run
+	if extra.populate then
+		pcall(extra.populate, dungeonId)
 	end
 
 	for _, p in ipairs(players) do
@@ -823,7 +839,9 @@ tick = function()
 			local extra = extraOf(run.dungeonId)
 			local bossName = extra.bossName and extra.bossName:lower() or nil
 			local monsters, bosses, playersInside, monsterList = scanArea(dg, bossName)
-			scaleList(run, monsterList) -- respawns inside the box get the difficulty too
+			if not run.modal then
+				scaleList(run, monsterList) -- respawns inside the box get the difficulty too
+			end
 
 			if bosses > 0 then
 				run.bossSeen = true
@@ -835,8 +853,10 @@ tick = function()
 				if not p or not inBox(dg, p:getPosition()) then
 					releasePlayer(run, guid)
 					if p then
-						send(p, "finish") -- hide the kill counter
-						setCooldown(p) -- leaving / dying counts as a failed attempt
+						if not run.modal then
+							send(p, "finish") -- hide the kill counter
+						end
+						setCooldown(p, run) -- leaving / dying counts as a failed attempt
 					end
 				end
 			end
@@ -846,6 +866,12 @@ tick = function()
 				runOfDungeon[run.dungeonId] = nil
 				cleanArea(dg, bossName)
 				forgetRun(run)
+			elseif run.modal then
+				-- a run of the base modal entry: no kill counter, no boss end (it never had one); the warnings
+				if ChaosInstanceLimits then
+					local left = math.floor((run.startedAt + (run.durationMs or 0) - nowMs()) / 1000)
+					ChaosInstanceLimits.warn(run, left, memberPlayers(run), titleOf(run.dungeonId, dg), cfg.limits)
+				end
 			else
 				local percent = 100
 				if run.total > 0 then
@@ -872,6 +898,115 @@ tick = function()
 	end
 
 	ensureTicker()
+end
+
+-- ------------------------------------------------------------------ the base modal entry
+-- tools/patch_base_dungeonentry.py wires the base server's dungeon window (its "Confirm" button) to these. The window
+-- keeps its own checks (level, party, leader, safe zone, cooldown, distance), costs and texts; these replace its scan of
+-- every tile of the dungeon box, its fixed DungeonTime timer per player and the Player objects that timer kept.
+
+-- guids of the players who hold the dungeon: the members of its run (queue or entry window) and anyone online in its
+-- box (also one left there by something else). A run with no member left yet (its tick ends it) still holds it (0).
+function ChaosDungeons.modalInside(id)
+	local list, seen = {}, {}
+	local function add(guid)
+		if not seen[guid] then
+			seen[guid] = true
+			list[#list + 1] = guid
+		end
+	end
+	local run = runOfDungeon[id]
+	if run and not run.ended then
+		for guid in pairs(run.members) do
+			add(guid)
+		end
+		add(0)
+	end
+	local dg = baseDungeons()[id]
+	if dg and dg.FromPos and dg.ToPos and dg.DungeonPos then
+		for _, p in ipairs(Game.getPlayers()) do
+			if inBox(dg, p:getPosition()) then
+				add(p:getGuid())
+			end
+		end
+	end
+	return list
+end
+
+-- appended to the window's "A team is already inside.": the latest the run inside ends (the queue window shows the same)
+function ChaosDungeons.modalWait(id)
+	local run = runOfDungeon[id]
+	if not run or run.ended then
+		return ""
+	end
+	local left = math.max(0, math.floor((run.startedAt + (run.durationMs or 0) - nowMs()) / 1000))
+	local K = ChaosInstanceLimitsCore
+	local about = K and K.about and K.about(left) or (math.ceil(left / 60) .. " min")
+	return " It frees up in " .. about .. " at the latest."
+end
+
+-- the window reads Storages.TimerCooldown and TimerDungeon, the table has timerCooldown and timerDungeon (both reads gave
+-- nil, so the engine used storage 0): the window now reads and writes the same cooldown as the queue
+function ChaosDungeons.modalStorages(sto)
+	sto = sto or {}
+	return setmetatable({TimerCooldown = cooldownStorage(), TimerDungeon = sto.timerDungeon or sto.TimerDungeon},
+		{__index = sto})
+end
+
+-- a player the window just teleported in: joins the run of its group (the leader's guid), or starts it. Only guids and
+-- the entry position are kept. The run lasts DungeonTime capped at maxTimeSeconds, with the warnings; time up: back
+-- to the entry position, the window's ToFail text, the cooldown, the monsters removed.
+function ChaosDungeons.modalJoin(id, guid, origin, leaderGuid)
+	local dg = baseDungeons()[id]
+	if not dg or not guid then
+		return false
+	end
+	leaderGuid = leaderGuid or guid
+	local run = runOfDungeon[id]
+	if run and run.ended then
+		run = nil
+	end
+	if run and not (run.modal and run.leader == leaderGuid) then
+		return false -- another group's run (the window checked before; not reached)
+	end
+	if not run then
+		local durationMs = durationOf(dg)
+		run = {
+			id = nextRunId,
+			dungeonId = id,
+			difficulty = 1,
+			modal = true,
+			leader = leaderGuid,
+			members = {},
+			startedAt = nowMs(),
+			durationMs = durationMs,
+			cooldownUntil = os.time() + (dg.DungeonTime or 3600) + cooldownSeconds(),
+			deaths = 0,
+			lastPercent = -1,
+			total = 0,
+			missingTicks = 0,
+			bossSeen = false
+		}
+		nextRunId = nextRunId + 1
+		runs[run.id] = run
+		runOfDungeon[id] = run
+		addEvent(function(runId)
+			local r = runs[runId]
+			if r and not r.ended then
+				endRun(r, false, baseMessage("ToFail", "You were unable to complete the dungeon in the respective time.\n\nNext time you will do it better!"))
+			end
+		end, durationMs, run.id)
+	end
+	local old = runOfPlayer[guid]
+	if old and old ~= run then
+		releasePlayer(old, guid)
+	end
+	leaveQueue(guid, true)
+	run.members[guid] = origin and Position(origin.x, origin.y, origin.z) or false
+	runOfPlayer[guid] = run
+	broadcastQueue(id)
+	ensureTicker()
+	return true
 end
 
 -- ------------------------------------------------------------------ events
