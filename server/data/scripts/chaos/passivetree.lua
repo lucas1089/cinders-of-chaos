@@ -12,6 +12,13 @@
 --                     {"action":"bossPoints","data":{got, total, label, bosses}} after every sendPoints (bosspoints.lua)
 --                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids],"vocation":"knight"}}
 --                     {"action":"sendMessage","data":{"title":"..","message":".."}}
+--   Planner and mastery nodes (rules in passivetree_core.lua, numbers in passivetree_config.lua), same opcode:
+--   client -> server  planApply {nodes:[ids to add], masteries:[{id, choice}]}  -> the whole plan checked like a save
+--                                                       (validatePlan) and saved at once, or nothing; then planResult
+--                     masteryChoose {id, choice}         -> the effect of a saved mastery changes for the single-node
+--                                                       refund price (respec.lua); then planResult
+--   server -> client  {"action":"planResult","data":{"ok":bool,"message":".."}} (sendNodes + sendPoints after a change)
+--                     sendNodes also carries "masteries":[{"id":n,"choice":c}] (the active preset's chosen effects)
 --   Paragon track (paragon.lua, ChaosParagon.actions), same opcode:
 --   client -> server  paragonRequest                     -> server paragonState
 --                     paragonApply {alloc:{stat:n}}      -> absolute allocation, validated; saved, applied, paragonState
@@ -29,6 +36,14 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosPassiveTreeConfig then
+	dofile("data/scripts/chaos/passivetree_config.lua")
+end
+if not ChaosPassiveTreeCore then
+	dofile("data/scripts/chaos/passivetree_core.lua")
+end
+local Core = ChaosPassiveTreeCore
+local planCfg = ChaosPassiveTreeConfig
 
 local OPCODE = ChaosOpcodes.passivetree
 local cfg = Chaos.passive
@@ -58,27 +73,26 @@ local function totalPoints(player)
 	return byLevel + math.max(0, extra) + bosses
 end
 
--- preset rows: {{preset=1,name="..",nodes={ids}}, ...} ordered by preset
+-- preset rows: {{preset=1,name="..",nodes={ids},masteries={[id]=choice}}, ...} ordered by preset
+-- (the nodes text is "ids" or "ids|id:choice,..." : passivetree_core.lua parseAlloc)
 local function loadPresets(guid)
 	local rows = Chaos.select(
 		"SELECT `preset`, `name`, `nodes` FROM `" .. T .. "` WHERE `player_id` = " .. guid .. " ORDER BY `preset`",
 		{{"preset", "n"}, {"name", "s"}, {"nodes", "s"}}
 	)
 	for _, row in ipairs(rows) do
-		local ids = {}
-		for token in (row.nodes or ""):gmatch("%d+") do
-			ids[#ids + 1] = tonumber(token)
-		end
-		row.nodes = ids
+		row.nodes, row.masteries = Core.parseAlloc(row.nodes)
 	end
 	return rows
 end
 
-local function savePreset(guid, preset, name, ids)
+-- masteries: the chosen effects to keep ({[id] = choice}); only those of nodes in ids are written. Callers that do not
+-- pass them drop every choice (a reset); a refund or a re-save passes the row's own (row.masteries).
+local function savePreset(guid, preset, name, ids, masteries)
 	table.sort(ids)
 	db.query(
 		"INSERT INTO `" .. T .. "` (`player_id`, `preset`, `name`, `nodes`) VALUES (" .. guid .. ", " .. preset .. ", " ..
-			db.escapeString(name) .. ", " .. db.escapeString(table.concat(ids, ",")) ..
+			db.escapeString(name) .. ", " .. db.escapeString(Core.formatAlloc(ids, masteries)) ..
 			") ON DUPLICATE KEY UPDATE `nodes` = VALUES(`nodes`)"
 	)
 end
@@ -112,6 +126,8 @@ local function sendNodes(player, rows)
 		preset = active and active.preset or 0,
 		presetsTable = presetsTable,
 		nodes = active and active.nodes or {},
+		-- the chosen effect of each allocated mastery node
+		masteries = Core.toList(active and Core.cleanMasteries(getTree(), active.nodes, active.masteries) or {}),
 		-- which per-class node variants (keystones) the client must show: the ones the server applies
 		vocation = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
 		-- the class (which class nodes it may take) and its line (whose class section the client shows)
@@ -189,9 +205,10 @@ function ChaosPassiveTree.lineKey(player)
 	return vocation and ChaosClasses.lineKey(vocation:getId()) or nil
 end
 
--- stats a node gives this vocation: its own variant (node.v) if it has one, else the shared stats
-function ChaosPassiveTree.nodeStats(node, vocationKey)
-	return (node.v and vocationKey and node.v[vocationKey]) or node.s
+-- stats a node gives this vocation: its own variant (node.v) if it has one, else the shared stats; a mastery node the
+-- chosen effect (choice; nothing without one)
+function ChaosPassiveTree.nodeStats(node, vocationKey, choice)
+	return Core.nodeStats(node, vocationKey, choice)
 end
 
 function ChaosPassiveTree.getBonuses(player)
@@ -205,7 +222,8 @@ function ChaosPassiveTree.getBonuses(player)
 		for _, id in ipairs(active.nodes) do
 			local node = tree.nodes[id]
 			-- a node of another class (a vocation change before the next login check) gives nothing
-			local stats = node and ChaosClassTree.allowed(node, classKey) and ChaosPassiveTree.nodeStats(node, vocationKey)
+			local stats = node and ChaosClassTree.allowed(node, classKey) and
+				ChaosPassiveTree.nodeStats(node, vocationKey, active.masteries and active.masteries[id])
 			if stats then
 				for stat, value in pairs(stats) do
 					bonuses[stat] = (bonuses[stat] or 0) + value
@@ -257,6 +275,7 @@ local function handleSave(player, data)
 	end
 
 	local rows = loadPresets(guid)
+	local tree = getTree()
 	-- Only one preset slot exists in the client UI: a save always goes to the active preset (activePreset: the lowest
 	-- saved one; slot 1 when none) and is checked against it. data.preset is ignored: saving a fresh set into another
 	-- slot number that then becomes the active one would be a free respec.
@@ -280,9 +299,111 @@ local function handleSave(player, data)
 			end
 		end
 	end
-	savePreset(guid, preset, name, ids)
+	-- mastery nodes: the saved choices stay; a newly added mastery needs its effect in data.masteries (planApply is the
+	-- client's way; this plain save keeps working for the rest)
+	local savedSet = {}
+	for _, id in ipairs(saved or {}) do
+		savedSet[id] = true
+	end
+	local choices = Core.toMap(data.masteries) or {}
+	local masteries = Core.cleanMasteries(tree, saved or {}, active and active.masteries)
+	for _, id in ipairs(ids) do
+		if not savedSet[id] and Core.isMastery(tree.nodes[id]) then
+			if not Core.validChoice(tree.nodes[id], choices[id]) then
+				sendMessageBox(player, "Error saving passive tree", "Choose an effect for every new mastery node.")
+				sendNodes(player)
+				sendPoints(player)
+				return
+			end
+			masteries[id] = choices[id]
+		end
+	end
+	savePreset(guid, preset, name, ids, masteries)
 	sendPoints(player)
 	applyBonuses(player)
+end
+
+local function planResult(player, ok, message)
+	Chaos.send(player, OPCODE, "planResult", {ok = ok == true, message = message})
+end
+
+-- the whole plan in one request: checked fully (validatePlan: the same rules as a save), saved at once or not at all
+local function handlePlanApply(player, data)
+	local guid = player:getGuid()
+	local rows = loadPresets(guid)
+	local active = activePreset(rows)
+	local tree = getTree()
+	local result, err = Core.validatePlan(tree, active and active.nodes or {}, active and active.masteries or {},
+		type(data) == "table" and data or nil, {
+			classKey = ChaosPassiveTree.classKey(player), allowed = ChaosClassTree.allowed, points = totalPoints(player),
+			maxNodes = planCfg.maxPlanNodes
+		})
+	if result then
+		-- and the plain save's own check once more on the final list (known ids, class, connected, points)
+		local ids, invalid = validateNodes(player, result.ids)
+		if not ids then
+			result, err = nil, invalid
+		end
+	end
+	if not result then
+		planResult(player, false, err)
+		sendNodes(player, rows)
+		sendPoints(player, rows)
+		return
+	end
+	local preset = active and active.preset or 1
+	savePreset(guid, preset, active and active.name or ("Preset " .. preset), result.ids, result.masteries)
+	sendNodes(player)
+	sendPoints(player)
+	applyBonuses(player)
+	planResult(player, true, string.format("%d node%s allocated.", #result.added, #result.added == 1 and "" or "s"))
+end
+
+-- a saved mastery takes another effect: the single-node refund price (respec.lua), the same free cases
+local function handleMasteryChoose(player, data)
+	if type(data) ~= "table" then
+		return
+	end
+	local guid = player:getGuid()
+	local rows = loadPresets(guid)
+	local active = activePreset(rows)
+	local tree = getTree()
+	local id, choice = Chaos.toInt(data.id, 1), Chaos.toInt(data.choice, 1)
+	local ok, err = Core.checkMasteryChange(tree, active and active.nodes or {}, active and active.masteries or {}, id, choice)
+	if not ok then
+		planResult(player, false, err)
+		sendNodes(player, rows)
+		return
+	end
+	local R = ChaosRespec
+	local cost = (planCfg.masteryChangeUsesNodePrice and R and R.nodeCost) and R.nodeCost(player) or 0
+	if cost > 0 and not R.pay(player, cost) then
+		planResult(player, false, string.format("You need %s gold coins (carried or in the bank) to change the effect.",
+			ChaosRespecCore and ChaosRespecCore.formatGold(cost) or tostring(cost)))
+		return
+	end
+	local masteries = Core.cleanMasteries(tree, active.nodes, active.masteries)
+	masteries[id] = choice
+	savePreset(guid, active.preset, active.name, active.nodes, masteries)
+	sendNodes(player)
+	sendPoints(player)
+	applyBonuses(player)
+	if R and R.sendInfo then
+		R.sendInfo(player)
+	end
+	planResult(player, true, cost > 0 and string.format("Mastery effect changed for %s gold coins.",
+		ChaosRespecCore and ChaosRespecCore.formatGold(cost) or tostring(cost)) or "Mastery effect changed (free).")
+end
+
+-- Inspect Player (inspect.lua): the public view of a character's active tree
+function ChaosPassiveTree.publicView(player)
+	local active = activePreset(loadPresets(player:getGuid()))
+	local nodes = active and active.nodes or {}
+	return {
+		nodes = nodes, masteries = Core.toList(Core.cleanMasteries(getTree(), nodes, active and active.masteries)),
+		cls = ChaosPassiveTree.classKey(player), line = ChaosPassiveTree.lineKey(player),
+		vocation = ChaosPassiveTree.vocationKey(player), total = totalPoints(player)
+	}
 end
 
 local function handleReset(player, data)
@@ -336,7 +457,8 @@ end
 -- respec.lua / buildshare.lua (single-node refund, priced full reset, build codes) use these, and add their opcode
 -- actions to ChaosPassiveTree.extraActions (checked first; a handler that returns true has handled the message)
 ChaosPassiveTree.internal = {getTree = getTree, loadPresets = loadPresets, savePreset = savePreset, sendNodes = sendNodes,
-	sendPoints = sendPoints, sendMessageBox = sendMessageBox, totalPoints = totalPoints, validateNodes = validateNodes}
+	sendPoints = sendPoints, sendMessageBox = sendMessageBox, totalPoints = totalPoints, validateNodes = validateNodes,
+	core = Core}
 ChaosPassiveTree.extraActions = ChaosPassiveTree.extraActions or {}
 
 local LoginEvent = CreatureEvent("ChaosPassiveTreeLogin")
@@ -368,7 +490,7 @@ local function refundForeignNodes(player)
 	for _, row in ipairs(loadPresets(player:getGuid())) do
 		local kept, removed = ChaosClassTree.sanitize(tree, row.nodes, classKey)
 		if #removed > 0 then
-			savePreset(player:getGuid(), row.preset, row.name, kept)
+			savePreset(player:getGuid(), row.preset, row.name, kept, row.masteries)
 			total = total + #removed
 		end
 	end
@@ -415,6 +537,17 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 			return
 		end
 		handleSave(player, msg.data)
+	elseif action == "planApply" then
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "passivetree.save", planCfg.rateMs or 1000) then
+			planResult(player, false, "Too fast: wait a moment and apply again.")
+			return
+		end
+		handlePlanApply(player, msg.data)
+	elseif action == "masteryChoose" then
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "passivetree.mastery", planCfg.rateMs or 1000) then
+			return
+		end
+		handleMasteryChoose(player, msg.data)
 	elseif action == "resetPreset" then
 		if ChaosRateLimit and not ChaosRateLimit.allow(player, "passivetree.reset", 1000) then
 			return

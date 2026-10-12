@@ -2,7 +2,7 @@
 -- Inspect Player (data/scripts/chaos/inspect_core.lua and inspect.lua) against a mocked engine: names, who may be
 -- inspected from where (range, privacy, hidden staff and ghosts answer like an unknown name), the request budget, the
 -- packets, and the handler: the public fields only, the equipment tooltips, the privacy toggle (default on, saved in a
--- storage), the refusals.
+-- storage), the refusals, the passive tree packet (sent after the equipment, only when the inspect is allowed).
 local checks = 0
 local function eq(a, b, m)
 	checks = checks + 1
@@ -88,10 +88,22 @@ eq(o.type, 128, "outfit type")
 eq(o.addons, 3, "addons")
 eq(o.mount, 0, "no mount")
 eq(I.outfitOf(nil).type, 0, "no outfit")
+local tp = I.treePayload("Anna", {nodes = {2, "9", 3.5, -1}, masteries = {{id = 665, choice = 2}, {id = "x"}}, cls = "ninja",
+	line = "thief", vocation = "ninja; drop", total = 70})
+eq(#tp.nodes, 2, "tree: whole positive ids only")
+eq(tp.nodes[2], 9, "tree: numbers")
+eq(#tp.masteries, 1, "tree: valid masteries only")
+eq(tp.cls, "ninja", "tree: class key")
+eq(tp.vocation, nil, "tree: a key must be a plain word")
+eq(tp.spent, 2, "tree: points spent")
+eq(#I.treePayload("x", nil).nodes, 0, "tree: no view")
 
 -- ---------------------------------------------------------------- handlers
 local sent, events, players = {}, {}, {}
-json = json or {encode = function(v) return tostring(#tostring(v)) .. string.rep("x", 10) end}
+json = json or {encode = function(v)
+	if type(v) == "table" and v.action then return "action:" .. v.action .. " name:" .. tostring(v.data and v.data.name) end
+	return tostring(#tostring(v)) .. string.rep("x", 10)
+end}
 function Chaos.send(player, opcode, action, data) sent[#sent + 1] = {to = player, opcode = opcode, action = action, data = data}; return true end
 Chaos.decode = function(buffer) return type(buffer) == "table" and buffer or nil end
 function CreatureEvent(name) local o = {}; function o:type() end; function o:register() events[name] = o end; return o end
@@ -103,6 +115,10 @@ ChaosItemTooltip.build = function(item) return {name = item.name, id = item.id} 
 ChaosClasses = {isAscended = function(v) return v == 8 end}
 ChaosAchievements = {stats = {[2] = {rift_tier = 7}}, pointsOf = function() return 120, 300 end}
 ChaosTrials = {tierCleared = function() return 2 end}
+local chunked = {}
+function Chaos.sendChunked(player, opcode, buffer) chunked[#chunked + 1] = {to = player, opcode = opcode, buffer = buffer}; return true end
+ChaosPassiveTree = {publicView = function(p) return {nodes = {626, 627, 628, 665}, masteries = {{id = 665, choice = 3}},
+	cls = "ninja", line = "thief", vocation = "ninja", total = 28} end}
 os.mtime = nil
 local clock = 100
 local realTime = os.time
@@ -147,7 +163,7 @@ local ghost = newPlayer("Ghosty", 4, {ghost = true})
 local far = newPlayer("Faraway", 5, {pos = {x = 300, y = 100, z = 7}})
 
 local function call(player, action, data)
-	sent = {}
+	sent, chunked = {}, {}
 	ext.onExtendedOpcode(player, ChaosOpcodes.inspect, {action = action, data = data})
 	return sent
 end
@@ -174,9 +190,14 @@ eq(#out[2].data.rows, 2, "two items")
 eq(out[2].data.rows[1].slot, 1, "slot 1")
 eq(out[2].data.rows[2].tip.name, "Magic Sword", "tooltip")
 for k in pairs(d) do
-	local known = {name = 1, level = 1, voc = 1, vocId = 1, ascended = 1, guild = 1, ach = 1, rift = 1, trials = 1, outfit = 1, self = 1, parts = 1}
+	local known = {name = 1, level = 1, voc = 1, vocId = 1, ascended = 1, guild = 1, ach = 1, rift = 1, trials = 1, outfit = 1, self = 1, parts = 1,
+		tree = 1}
 	eq(known[k], 1, "only public fields are sent: " .. k)
 end
+eq(d.tree, true, "a tree follows")
+eq(#chunked, 1, "the tree packet")
+eq(chunked[1].opcode, 240, "tree on the inspect opcode")
+eq(chunked[1].buffer, "action:tree name:Anna", "the tree of the inspected player")
 
 advance()
 out = call(viewer, "inspect", {cid = anna.pid})
@@ -223,6 +244,7 @@ eq(#anna.notes, 1, "told")
 advance()
 out = call(viewer, "inspect", {name = "Anna"})
 eq(out[1].data.code, "private", "refused")
+eq(#chunked, 0, "no tree for a private character")
 eq(out[1].data.text, "Anna does not allow others to inspect them.", "refusal text")
 advance()
 out = call(viewer, "inspect", {cid = anna.pid})

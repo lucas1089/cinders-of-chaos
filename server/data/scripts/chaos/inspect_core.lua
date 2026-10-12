@@ -3,9 +3,9 @@
 -- server/tests/inspect_test.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --
 -- What is public (and all that is ever sent): name, level, vocation and whether it is an ascended class, guild and
--- rank, achievement points, the best rift tier sealed, the highest Vocation Trial tier cleared, the outfit and the ten
--- equipment slots with their full tooltips. Nothing else: no health, mana, skills, passive tree, storages, gold,
--- containers. A character that switched "Allow others to inspect me" off (storage Chaos.storage.inspectOff, 1 = off,
+-- rank, achievement points, the best rift tier sealed, the highest Vocation Trial tier cleared, the outfit, the ten
+-- equipment slots with their full tooltips and the active passive tree (node ids, the chosen mastery effects, class and
+-- line; shown read-only). Nothing else: no health, mana, skills, storages, gold, containers. A character that switched "Allow others to inspect me" off (storage Chaos.storage.inspectOff, 1 = off,
 -- default on) answers with a refusal.
 
 ChaosInspect = ChaosInspect or {}
@@ -121,6 +121,31 @@ function I.chunk(rows, sizeOf, limit)
 		out[#out + 1] = cur
 	end
 	return out
+end
+
+-- the passive tree packet: view = ChaosPassiveTree.publicView (nodes, masteries = [{id, choice}], cls, line, vocation).
+-- Only whole positive ids and choices, the class keys as plain words.
+function I.treePayload(name, view)
+	view = type(view) == "table" and view or {}
+	local function word(v)
+		return type(v) == "string" and v:match("^%w+$") and v or nil
+	end
+	local nodes = {}
+	for _, id in ipairs(type(view.nodes) == "table" and view.nodes or {}) do
+		id = tonumber(id)
+		if id and id > 0 and id == math.floor(id) then
+			nodes[#nodes + 1] = id
+		end
+	end
+	local masteries = {}
+	for _, m in ipairs(type(view.masteries) == "table" and view.masteries or {}) do
+		local id, choice = tonumber(m.id), tonumber(m.choice)
+		if id and choice and id > 0 and choice > 0 then
+			masteries[#masteries + 1] = {id = math.floor(id), choice = math.floor(choice)}
+		end
+	end
+	return {name = name, nodes = nodes, masteries = masteries, cls = word(view.cls), line = word(view.line),
+		vocation = word(view.vocation), spent = #nodes, total = tonumber(view.total) or nil}
 end
 
 -- the outfit fields sent to the window

@@ -291,8 +291,8 @@ return {
 				text = "Every 4 levels past level 8 you get a passive point. Spend them in the passive tree (top menu, " ..
 					"Character > Passive Tree): start next to the centre and walk outwards. Big nodes are notables; the " ..
 					"keystones at the far ends change how your class plays.\n\n" ..
-					"Task: you get one free point now. Open the tree, click a node next to the centre and press Apply Points.",
-				toast = "Station 3: spend your free passive point (Apply Points)."},
+					"Task: you get one free point now. Open the tree, click a node next to the centre and press Apply Plan.",
+				toast = "Station 3: spend your free passive point (Apply Plan)."},
 			{title = "Station 4: Orbs and crafting",
 				text = "Monsters drop orbs. An Orb of Upheaval rerolls the modifiers of an item with a rarity, an Orb of Fate rolls " ..
 					"a new rarity, and the other orbs add or remove modifiers.%s\n\n" ..

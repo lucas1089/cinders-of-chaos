@@ -12093,7 +12093,7 @@ function getTreeNodes()
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
 			name = "Shadow-born", icon = "swordSkill", line = "thief", classes = {"thief", "ninja", "samurai"},
 			customStats = {swordSkill = 3, distanceSkill = 3, criticalHitChance = 1},
-			inputs = {627}, out = {629, 632}
+			inputs = {627}, out = {629, 632, 665}
 		},
 		--- 629 ---
 		{
@@ -12165,7 +12165,7 @@ function getTreeNodes()
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
 			name = "Dark Pact", icon = "life", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
 			customStats = {spirit = 4, vitality = 4},
-			inputs = {637}, out = {639, 642}
+			inputs = {637}, out = {639, 642, 666}
 		},
 		--- 639 ---
 		{
@@ -12238,7 +12238,7 @@ function getTreeNodes()
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
 			name = "Flowing Chi", icon = "criticalHitChance", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
 			customStats = {criticalHitChance = 2, speed = 200},
-			inputs = {647}, out = {649, 652}
+			inputs = {647}, out = {649, 652, 667}
 		},
 		--- 649 ---
 		{
@@ -12309,7 +12309,7 @@ function getTreeNodes()
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
 			name = "Righteous Arm", icon = "swordSkill", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
 			customStats = {swordSkill = 2, clubSkill = 2, strength = 3},
-			inputs = {657}, out = {659, 662}
+			inputs = {657}, out = {659, 662, 668}
 		},
 		--- 659 ---
 		{
@@ -12356,6 +12356,60 @@ function getTreeNodes()
 			customStats = {ksBastion = 1},
 			stats = {"Your aura: 4% less damage more and 1 sqm", "wider. Aegis of Faith also covers the party", "members under your aura, at half strength."},
 			inputs = {663}, out = {}
+		},
+		--- 665-668: the mastery node of each class section (one per line, above its third line node). A mastery offers 3-4
+		--- effects; the player picks one when planning it (free) and can change it later for the single-node refund price.
+		--- Each effect is about one notable's worth of ordinary tree stats (no new combat code): server/README.md
+		--- "Mastery nodes", numbers here only (the generator writes them to passivetree_data.lua `m`).
+		--- 665 ---
+		{
+			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
+			name = "Shadow Discipline", icon = "movementSpeed", line = "thief", classes = {"thief", "ninja", "samurai"},
+			stats = {"Mastery: choose one effect when you take it."},
+			masteries = {
+				{name = "Keen Edge", customStats = {criticalHitChance = 2, criticalHitAmount = 5}},
+				{name = "Light Step", customStats = {dexterity = 3, speed = 200}},
+				{name = "Tough Hide", customStats = {vitality = 4, absorbPhysical = 2}},
+				{name = "Venom Glands", customStats = {incrementEarth = 6, incrementPhysical = 3}}
+			},
+			inputs = {628}, out = {}
+		},
+		--- 666 ---
+		{
+			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
+			name = "Grave Mastery", icon = "lifeManaDrain", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
+			stats = {"Mastery: choose one effect when you take it."},
+			masteries = {
+				{name = "Withering Touch", customStats = {incrementDeath = 6, magicSkill = 1}},
+				{name = "Ossified Hide", customStats = {absorbPhysical = 3, vitality = 3}},
+				{name = "Soul Well", customStats = {spirit = 5, absorbDeath = 2}}
+			},
+			inputs = {638}, out = {}
+		},
+		--- 667 ---
+		{
+			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
+			name = "Inner Discipline", icon = "constitution", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
+			stats = {"Mastery: choose one effect when you take it."},
+			masteries = {
+				{name = "Iron Knuckles", customStats = {incrementPhysical = 6, strength = 2}},
+				{name = "Swift Palm", customStats = {criticalHitChance = 2, criticalHitAmount = 4}},
+				{name = "Still Water", customStats = {incrementHealth = 6, spirit = 3}},
+				{name = "Stone Body", customStats = {vitality = 4, absorbPhysical = 2}}
+			},
+			inputs = {648}, out = {}
+		},
+		--- 668 ---
+		{
+			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
+			name = "Sacred Oath", icon = "heartAndSoul", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
+			stats = {"Mastery: choose one effect when you take it."},
+			masteries = {
+				{name = "Oath of Flame", customStats = {incrementHoly = 6, strength = 2}},
+				{name = "Oath of the Wall", customStats = {shieldingSkill = 2, absorbPhysical = 2, absorbAllElements = 1}},
+				{name = "Oath of Mercy", customStats = {incrementHealth = 6, vitality = 3}}
+			},
+			inputs = {658}, out = {}
 		},
 }
 end

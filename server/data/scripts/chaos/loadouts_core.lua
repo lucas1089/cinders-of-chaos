@@ -100,9 +100,13 @@ function C.cleanIcon(icon, cfg)
 end
 
 -- ------------------------------------------------------------------------------------------------ node lists
+-- A saved tree text is "2,3,9" or, with mastery nodes, "2,3,9,665|665:2" (the chosen effect of each mastery node after
+-- "|"; the passive tree's own format, passivetree_core.lua parseAlloc / formatAlloc).
 function C.parseNodes(text)
 	local out, seen = {}, {}
-	for token in tostring(text or ""):gmatch("%d+") do
+	text = tostring(text or "")
+	text = text:match("^([^|]*)") or text
+	for token in text:gmatch("%d+") do
 		local id = tonumber(token)
 		if id and id > 0 and not seen[id] then
 			seen[id] = true
@@ -112,13 +116,59 @@ function C.parseNodes(text)
 	return out
 end
 
-function C.formatNodes(ids)
-	local copy = {}
+-- the chosen mastery effects of a tree text: {[id] = choice} (only ids of the text)
+function C.parseMasteries(text)
+	text = tostring(text or "")
+	local ids = {}
+	for _, id in ipairs(C.parseNodes(text)) do
+		ids[id] = true
+	end
+	local out = {}
+	for id, choice in (text:match("|(.*)$") or ""):gmatch("(%d+):(%d+)") do
+		id, choice = tonumber(id), tonumber(choice)
+		if ids[id] and choice > 0 then
+			out[id] = choice
+		end
+	end
+	return out
+end
+
+-- masteries: optional {[id] = choice}; only the listed ids' choices are written
+function C.formatNodes(ids, masteries)
+	local copy, set = {}, {}
 	for i, id in ipairs(ids or {}) do
 		copy[i] = id
+		set[id] = true
 	end
 	table.sort(copy)
-	return table.concat(copy, ",")
+	local text = table.concat(copy, ",")
+	local keys = {}
+	for id, choice in pairs(masteries or {}) do
+		if set[id] and tonumber(choice) and choice > 0 then
+			keys[#keys + 1] = id
+		end
+	end
+	if #keys == 0 then
+		return text
+	end
+	table.sort(keys)
+	local parts = {}
+	for i, id in ipairs(keys) do
+		parts[i] = id .. ":" .. math.floor(masteries[id])
+	end
+	return text .. "|" .. table.concat(parts, ",")
+end
+
+-- the choices of `masteries` that are still valid for the kept ids (a mastery node of the tree, an effect it has)
+function C.cleanMasteries(tree, ids, masteries)
+	local out = {}
+	for _, id in ipairs(ids or {}) do
+		local node, choice = tree.nodes[id], masteries and tonumber(masteries[id])
+		if node and type(node.m) == "table" and choice and choice >= 1 and choice <= #node.m and choice == math.floor(choice) then
+			out[id] = choice
+		end
+	end
+	return out
 end
 
 function C.sameSet(a, b)

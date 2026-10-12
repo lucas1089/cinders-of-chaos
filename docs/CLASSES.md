@@ -475,6 +475,19 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
   Line nodes: Thief Light Feet, Venom Craft, Shadow-born; Necromancer Grave Lore, Bone Craft, Dark Pact; Monk Iron Fist, Centered,
   Flowing Chi; Templar Holy Vigor, Shield of Faith, Righteous Arm (plain tree stats).
+- **Mastery nodes** (2026-10, nodes 665-668): each class section has one more node above its third line node, for every class
+  of the line. It costs a point like any node; the player picks one effect when planning it (free) and can change it later
+  for the single-node refund price. Each effect is ordinary tree stats, about one notable's worth:
+
+  | Line | Mastery | Effects |
+  |---|---|---|
+  | Thief | Shadow Discipline | Keen Edge (crit chance +2, crit amount +5), Light Step (dexterity +3, speed +20), Tough Hide (vitality +4, physical absorb +2), Venom Glands (earth +6, physical +3) |
+  | Necromancer | Grave Mastery | Withering Touch (death +6, magic level +1), Ossified Hide (physical absorb +3, vitality +3), Soul Well (spirit +5, death absorb +2) |
+  | Monk | Inner Discipline | Iron Knuckles (physical +6, strength +2), Swift Palm (crit chance +2, crit amount +4), Still Water (healing +6, spirit +3), Stone Body (vitality +4, physical absorb +2) |
+  | Templar | Sacred Oath | Oath of Flame (holy +6, strength +2), Oath of the Wall (shielding +2, physical absorb +2, all elements absorb +1), Oath of Mercy (healing +6, vitality +3) |
+
+  The Warrior, Ranger and Mystic lines have no class section and no mastery yet. Rules and saved data: server/README.md
+  "Passive tree planner and mastery nodes".
 - **Points** are unchanged (1 per 4 levels: 73 at level 300, 248 at level 1000); every class can hold more than 600 nodes, so
   the tree still cannot be completed. The Paragon track and the Vocation Trials nodes are separate bonus channels and unchanged.
 - **Save data**: no node id changed (the new nodes are 625-664). At login every preset loses, for free and with a message, the

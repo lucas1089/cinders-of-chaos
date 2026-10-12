@@ -87,8 +87,11 @@ function onNodeMousePress(widget, mousePos, button)
     return false
   end
   local id = tonumber(widget:getId())
+  if isTreeReadOnly and isTreeReadOnly() then
+    return false -- another character's tree (Inspect Player)
+  end
   if not id or not widget:isOn() or not widget.blocked then
-    return false -- not allocated, or allocated but not saved yet (left-click takes it back for free)
+    return false -- not allocated (a planned node: left-click takes it out of the plan)
   end
   closeRefund()
   local cost = respecInfo and respecInfo.node

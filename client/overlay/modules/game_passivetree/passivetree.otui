@@ -7,6 +7,7 @@ CommonNode < Panel
   icon-source: /images/passivetree/common_notallocated
   icon-size: 56 56
   icon-offset: -15 -15
+  icon-color: #ffffff
 
   $hover !$on:
     icon-source: /images/passivetree/commont_canallocate
@@ -15,6 +16,12 @@ CommonNode < Panel
   $on:
     icon-source: /images/passivetree/common_active
     image-color: #ffffff
+
+  // planned (planner.lua): the can-allocate frame, tinted
+  $checked !$on:
+    icon-source: /images/passivetree/commont_canallocate
+    icon-color: #7fd8ff
+    image-color: #cfefff
 
 InfoLabel < Label
   id: infoLabel
@@ -30,6 +37,7 @@ UncommonNode < Panel
   icon-source: /images/passivetree/uncommon_notallocated
   icon-size: 95 95
   icon-offset: -27 -27
+  icon-color: #ffffff
 
   $hover !$on:
     icon-source: /images/passivetree/uncommon_canallocate
@@ -38,6 +46,12 @@ UncommonNode < Panel
   $on:
     icon-source: /images/passivetree/uncommon_activated
     image-color: #ffffff
+
+  // planned (planner.lua): the can-allocate frame, tinted
+  $checked !$on:
+    icon-source: /images/passivetree/uncommon_canallocate
+    icon-color: #7fd8ff
+    image-color: #cfefff
 
 RareNode < Panel
   anchors.centerIn: parent
@@ -48,6 +62,7 @@ RareNode < Panel
   icon-source: /images/passivetree/rare_notallocated
   icon-size: 95 95
   icon-offset: -27 -27
+  icon-color: #ffffff
 
   $hover !$on:
     icon-source: /images/passivetree/rare_canallocate
@@ -56,6 +71,12 @@ RareNode < Panel
   $on:
     icon-source: /images/passivetree/rare_active
     image-color: #ffffff
+
+  // planned (planner.lua): the can-allocate frame, tinted
+  $checked !$on:
+    icon-source: /images/passivetree/rare_canallocate
+    icon-color: #7fd8ff
+    image-color: #cfefff
 
 VeryRareNode < Panel
   anchors.centerIn: parent
@@ -66,6 +87,7 @@ VeryRareNode < Panel
   icon-source: /images/passivetree/veryrare_notallocate
   icon-size: 95 95
   icon-offset: -27 -27
+  icon-color: #ffffff
 
   $hover !$on:
     icon-source: /images/passivetree/veryrare_canallocate
@@ -74,6 +96,12 @@ VeryRareNode < Panel
   $on:
     icon-source: /images/passivetree/veryrare_active
     image-color: #ffffff
+
+  // planned (planner.lua): the can-allocate frame, tinted
+  $checked !$on:
+    icon-source: /images/passivetree/veryrare_canallocate
+    icon-color: #7fd8ff
+    image-color: #cfefff
 
 MythicNode < Panel
   anchors.centerIn: parent
@@ -84,6 +112,7 @@ MythicNode < Panel
   icon-source: /images/passivetree/NotableFrameUnallocated
   icon-size: 95 95
   icon-offset: -27 -27
+  icon-color: #ffffff
 
   $hover !$on:
     icon-source: /images/passivetree/NotableFrameCanAllocate
@@ -92,6 +121,12 @@ MythicNode < Panel
   $on:
     icon-source: /images/passivetree/NotableFrameAllocated
     image-color: #ffffff
+
+  // planned (planner.lua): the can-allocate frame, tinted
+  $checked !$on:
+    icon-source: /images/passivetree/NotableFrameCanAllocate
+    icon-color: #7fd8ff
+    image-color: #cfefff
 
 DivineNode < Panel
   anchors.centerIn: parent
@@ -102,6 +137,7 @@ DivineNode < Panel
   icon-source: /images/passivetree/KeystoneFrameUnallocated
   icon-size: 143 149
   icon-offset: -42 -44
+  icon-color: #ffffff
 
   $hover !$on:
     icon-source: /images/passivetree/KeystoneFrameCanAllocate
@@ -110,6 +146,38 @@ DivineNode < Panel
   $on:
     icon-source: /images/passivetree/KeystoneFrameAllocated
     image-color: #ffffff
+
+  // planned (planner.lua): the can-allocate frame, tinted
+  $checked !$on:
+    icon-source: /images/passivetree/KeystoneFrameCanAllocate
+    icon-color: #7fd8ff
+    image-color: #cfefff
+
+MasteryNode < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/skills
+  image-color: #6f6f6f
+  size: 44 44
+  phantom: false
+  icon-source: /images/passivetree/rare_notallocated
+  icon-size: 105 105
+  icon-offset: -30 -30
+  icon-color: #e6c27a
+
+  $hover !$on:
+    icon-source: /images/passivetree/rare_canallocate
+    image-color: #ffffff
+
+  $on:
+    icon-source: /images/passivetree/rare_active
+    image-color: #ffffff
+    icon-color: #ffd98a
+
+  // planned (planner.lua)
+  $checked !$on:
+    icon-source: /images/passivetree/rare_canallocate
+    icon-color: #7fd8ff
+    image-color: #cfefff
 
 LineConnectorNormal < Panel
   anchors.centerIn: parent
@@ -373,8 +441,9 @@ UIWindow
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 40
     margin-right: 3
-    text: Apply Points
+    text: Apply Plan
     width: 110
+    !tooltip: tr('Allocate every planned node in one go (left-click a node to plan the path to it)')
     enabled: true
     @onClick: modules.game_passivetree.applyPoints()
 
@@ -542,6 +611,140 @@ UIWindow
 
 
     
+  // the planner (planner.lua): cost against the free points, undo / redo / clear
+  Panel
+    id: planBar
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 5
+    margin-right: 20
+    size: 380 64
+    background: #000000b0
+    padding: 4
+
+    Label
+      id: planCost
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 22
+      font: verdana-11px-rounded
+      text-align: center
+      text-auto-resize: false
+      text: No plan: click a node to plan the path to it.
+
+    TreeButton
+      id: planUndo
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: 118
+      text: Undo
+      enabled: false
+      !tooltip: tr('Undo the last plan change (Ctrl+Z)')
+      @onClick: modules.game_passivetree.plannerUndo()
+
+    TreeButton
+      id: planRedo
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      width: 118
+      text: Redo
+      enabled: false
+      !tooltip: tr('Redo (Ctrl+Y)')
+      @onClick: modules.game_passivetree.plannerRedo()
+
+    TreeButton
+      id: planClear
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      width: 118
+      text: Clear Plan
+      enabled: false
+      @onClick: modules.game_passivetree.plannerClear()
+
+  // search (search.lua): name or bonus text, every match framed, Next / Prev centre the view on it
+  Panel
+    id: searchBar
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-bottom: 5
+    margin-left: 20
+    size: 380 34
+    background: #000000b0
+    padding: 4
+
+    TextEdit
+      id: searchEdit
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      width: 150
+      height: 22
+      max-length: 40
+      placeholder: Search nodes
+      !tooltip: tr('Find nodes by name or bonus (Ctrl+F). Enter: next match.')
+      @onTextChange: modules.game_passivetree.onTreeSearchChange()
+
+    TreeButton
+      id: searchPrev
+      anchors.left: searchEdit.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      width: 52
+      height: 26
+      text: Prev
+      @onClick: modules.game_passivetree.treeSearchPrev()
+
+    TreeButton
+      id: searchNext
+      anchors.left: searchPrev.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      width: 52
+      height: 26
+      text: Next
+      @onClick: modules.game_passivetree.treeSearchNext()
+
+    Label
+      id: searchCount
+      anchors.left: searchNext.right
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      font: verdana-11px-rounded
+      text-align: center
+      text-auto-resize: false
+
+  // another character's tree (viewother.lua, from Inspect Player)
+  Panel
+    id: viewBanner
+    anchors.top: applyPoints.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 30
+    size: 460 34
+    background: #301c0cd8
+    padding: 4
+    visible: false
+
+    Label
+      id: viewText
+      anchors.left: parent.left
+      anchors.right: viewBack.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 6
+      font: verdana-11px-rounded
+      color: #f0d79a
+      text-align: center
+      text-auto-resize: false
+
+    TreeButton
+      id: viewBack
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      width: 130
+      height: 26
+      text: Back to my tree
+      @onClick: modules.game_passivetree.closeOtherTree()
+
   TreeButton
     id: zoomLess
     anchors.bottom: parent.bottom

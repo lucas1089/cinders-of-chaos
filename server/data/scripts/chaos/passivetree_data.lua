@@ -2,7 +2,8 @@
 -- Do not edit by hand: regenerate with server/tools/gen_passivetree_data.lua if the client tree changes.
 -- Format: ChaosPassiveTreeData.nodes[id] = { n = {neighbour ids (undirected)}, s = {customStats},
 --         v = {[variant key] = {customStats of that variant}} (keystones; replaces s for that key),
---         c = {[class key] = true} (only these classes may take the node; none = every class) }
+--         c = {[class key] = true} (only these classes may take the node; none = every class),
+--         m = {{customStats of effect 1}, ...} (mastery nodes: the player picks one effect) }
 if ChaosPassiveTreeData then return ChaosPassiveTreeData end
 ChaosPassiveTreeData = { root = 1, nodes = {
 [1]={n={2,3,4,5,6,7,626,636,646,656}},
@@ -630,7 +631,7 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [624]={n={623},v={beastmaster={ksPackAlpha=1},berserker={ksUndyingRage=1},deadeye={ksDeadeye=1},druid={ksThorns=1},illusionist={ksInspiringIllusion=1},juggernaut={ksBulwark=1},knight={ksBulwark=1},paladin={ksDeadeye=1},sorcerer={ksOverload=1}},c={beastmaster=true,berserker=true,deadeye=true,elementalist=true,illusionist=true,juggernaut=true,mystic=true,ranger=true,warrior=true}},
 [626]={n={1,627},s={dexterity=4,speed=200},c={ninja=true,samurai=true,thief=true}},
 [627]={n={626,628},s={incrementEarth=6,strength=3},c={ninja=true,samurai=true,thief=true}},
-[628]={n={627,629,632},s={criticalHitChance=1,distanceSkill=3,swordSkill=3},c={ninja=true,samurai=true,thief=true}},
+[628]={n={627,629,632,665},s={criticalHitChance=1,distanceSkill=3,swordSkill=3},c={ninja=true,samurai=true,thief=true}},
 [629]={n={628,630},s={ctTwinFangs=1,strength=2},c={ninja=true}},
 [630]={n={629,631},s={ctFleetShadow=1,dexterity=2},c={ninja=true}},
 [631]={n={630},s={ksLivingShadow=1},c={ninja=true}},
@@ -639,7 +640,7 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [634]={n={633},s={ksWayOfTheBlade=1},c={samurai=true}},
 [636]={n={1,637},s={intelligence=3,magicSkill=2},c={bonelord=true,lich=true,necromancer=true}},
 [637]={n={636,638},s={incrementDeath=4,incrementPhysical=6},c={bonelord=true,lich=true,necromancer=true}},
-[638]={n={637,639,642},s={spirit=4,vitality=4},c={bonelord=true,lich=true,necromancer=true}},
+[638]={n={637,639,642,666},s={spirit=4,vitality=4},c={bonelord=true,lich=true,necromancer=true}},
 [639]={n={638,640},s={ctSpreadingBlight=1,incrementDeath=3},c={lich=true}},
 [640]={n={639,641},s={ctLingeringRot=1,magicSkill=1},c={lich=true}},
 [641]={n={640},s={ksHoardedSouls=1},c={lich=true}},
@@ -648,7 +649,7 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [644]={n={643},s={ksBoneColossus=1},c={bonelord=true}},
 [646]={n={1,647},s={incrementPhysical=6,strength=3},c={ironsage=true,monk=true,shadowfist=true}},
 [647]={n={646,648},s={dexterity=4,vitality=3},c={ironsage=true,monk=true,shadowfist=true}},
-[648]={n={647,649,652},s={criticalHitChance=2,speed=200},c={ironsage=true,monk=true,shadowfist=true}},
+[648]={n={647,649,652,667},s={criticalHitChance=2,speed=200},c={ironsage=true,monk=true,shadowfist=true}},
 [649]={n={648,650},s={criticalHitAmount=6,criticalHitChance=2},c={shadowfist=true}},
 [650]={n={649,651},s={ctNerveStrike=1,strength=2},c={shadowfist=true}},
 [651]={n={650},s={ksHundredHands=1},c={shadowfist=true}},
@@ -657,12 +658,16 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [654]={n={653},s={ksFlowingMercy=1},c={ironsage=true}},
 [656]={n={1,657},s={incrementHoly=6,vitality=3},c={inquisitor=true,sentinel=true,templar=true}},
 [657]={n={656,658},s={absorbPhysical=2,shieldingSkill=3},c={inquisitor=true,sentinel=true,templar=true}},
-[658]={n={657,659,662},s={clubSkill=2,strength=3,swordSkill=2},c={inquisitor=true,sentinel=true,templar=true}},
+[658]={n={657,659,662,668},s={clubSkill=2,strength=3,swordSkill=2},c={inquisitor=true,sentinel=true,templar=true}},
 [659]={n={658,660},s={incrementHoly=8,magicSkill=2},c={inquisitor=true}},
 [660]={n={659,661},s={ctBurningZeal=1,strength=2},c={inquisitor=true}},
 [661]={n={660},s={ksDivineVerdict=1},c={inquisitor=true}},
 [662]={n={658,663},s={absorbAllElements=2,absorbPhysical=2},c={sentinel=true}},
 [663]={n={662,664},s={ctSanctuary=1,vitality=2},c={sentinel=true}},
 [664]={n={663},s={ksBastion=1},c={sentinel=true}},
+[665]={n={628},c={ninja=true,samurai=true,thief=true},m={{criticalHitAmount=5,criticalHitChance=2},{dexterity=3,speed=200},{absorbPhysical=2,vitality=4},{incrementEarth=6,incrementPhysical=3}}},
+[666]={n={638},c={bonelord=true,lich=true,necromancer=true},m={{incrementDeath=6,magicSkill=1},{absorbPhysical=3,vitality=3},{absorbDeath=2,spirit=5}}},
+[667]={n={648},c={ironsage=true,monk=true,shadowfist=true},m={{incrementPhysical=6,strength=2},{criticalHitAmount=4,criticalHitChance=2},{incrementHealth=6,spirit=3},{absorbPhysical=2,vitality=4}}},
+[668]={n={658},c={inquisitor=true,sentinel=true,templar=true},m={{incrementHoly=6,strength=2},{absorbAllElements=1,absorbPhysical=2,shieldingSkill=2},{incrementHealth=6,vitality=3}}},
 } }
 return ChaosPassiveTreeData

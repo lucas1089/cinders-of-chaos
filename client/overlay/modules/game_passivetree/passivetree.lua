@@ -36,6 +36,12 @@ local serverVocation = nil
 -- also from sendNodes (class keys of the server: ChaosClasses.classKey / lineKey)
 local serverClass, serverLine = nil, nil
 
+-- the tree of another character (Inspect Player, viewother.lua): {name, cls, line, vocation, nodes, masteries} while it
+-- is shown read-only in place of the own tree; nil otherwise
+local viewing = nil
+-- the chosen effect of each saved mastery node ([id] = choice), from sendNodes
+local savedMasteries = {}
+
 -- fallback before the server named them: the client reports server vocation ids (base patch 0016)
 local CLASS_OF = { [4] = "warrior", [8] = "juggernaut", [14] = "berserker", [3] = "ranger", [7] = "deadeye",
   [15] = "beastmaster", [1] = "mystic", [5] = "elementalist", [10] = "illusionist", [11] = "thief", [12] = "ninja",
@@ -48,6 +54,9 @@ local LINE_OF = { warrior = "warrior", juggernaut = "warrior", berserker = "warr
 local VARIANT_OF = { warrior = "knight", ranger = "paladin", mystic = "sorcerer", elementalist = "sorcerer" }
 
 local function getPlayerClass()
+  if viewing then
+    return viewing.cls
+  end
   if serverClass then
     return serverClass
   end
@@ -56,6 +65,9 @@ local function getPlayerClass()
 end
 
 local function getPlayerLine()
+  if viewing then
+    return viewing.line
+  end
   if serverLine then
     return serverLine
   end
@@ -63,6 +75,9 @@ local function getPlayerLine()
 end
 
 local function getPlayerVocation()
+  if viewing then
+    return viewing.vocation
+  end
   if serverVocation then
     return serverVocation
   end
@@ -110,6 +125,7 @@ local orbitDist = {
 }
 local allocNodes = {}
 local nodeMap = {}
+local spare = {} -- the window's own decoView / nodesView: the first layer's panels (startBuild)
 local treeData = {}
 
 passiveButton, VocationSelected = nil
@@ -224,6 +240,15 @@ function create()
 	nodesView:setMarginLeft(SCROLL_X)
 	nodesView:setMarginTop(SCROLL_Y)
 
+	spare = {decoView, nodesView}
+	-- the planner (planner.lua) and the search (search.lua)
+	g_keyboard.bindKeyDown('Ctrl+Z', function() plannerUndo() end, window)
+	g_keyboard.bindKeyDown('Ctrl+Y', function() plannerRedo() end, window)
+	g_keyboard.bindKeyDown('Ctrl+F', function() focusTreeSearch() end, window)
+	local searchEdit = window:recursiveGetChildById("searchEdit")
+	g_keyboard.bindKeyDown('Enter', function() treeSearchNext() end, searchEdit)
+	g_keyboard.bindKeyDown('Shift+Enter', function() treeSearchPrev() end, searchEdit)
+
 	view.onDragEnter = onDragEnter
 	view.onDragLeave = onDragLeave
 	view.onDragMove = onDragMove
@@ -286,6 +311,34 @@ local buildSliceStart = 0
 local pendingAlloc = nil -- {ids = {..}, block = bool}: applied as soon as the widgets are built
 local statsShown = false -- the bonus list matches the shown allocation
 
+-- Zoom levels are cached: the widgets of each zoom level of the shown class live in their own pair of panels (a layer,
+-- [treeKey] = {key, deco, nodes, nodeWidgets, connectorWidgets, connectorStyles, used}). A zoom step back to a level
+-- built before only swaps the visible layer and re-applies the node states (syncLayer) instead of destroying and
+-- creating ~1400 widgets again; layers of another class (a class change, an inspected tree) are dropped. Hidden panels
+-- are not drawn, so a cached level costs memory only. treeStats counts the work (getTreeStats(), the measurements in
+-- client/MANIFEST.md).
+local layers = {}
+local MAX_LAYERS = 3 -- the three zoom levels (0.7, 0.49, 0.343)
+local layerClock = 0
+local buildingPanels = nil -- the panels of the build in progress (destroyed if it is cancelled)
+local treeStats = {builds = 0, reuses = 0, widgets = 0, lastBuildWidgets = 0, lastBuildMs = 0, lastSwitchMs = 0}
+
+function getTreeStats()
+	local count, panels = 0, {}
+	for key, layer in pairs(layers) do
+		count = count + 1
+		panels[#panels + 1] = string.format("%s=%s/%s%s", key, layer.deco:getId(), layer.nodes:getId(), key == builtFor and "*" or "")
+	end
+	return {panels = table.concat(panels, " "), builds = treeStats.builds, reuses = treeStats.reuses, widgets = treeStats.widgets,
+		lastBuildWidgets = treeStats.lastBuildWidgets, lastBuildMs = treeStats.lastBuildMs, lastSwitchMs = treeStats.lastSwitchMs,
+		layers = count}
+end
+
+local function newTreeWidget(style, parent)
+	treeStats.widgets = treeStats.widgets + 1
+	return g_ui.createWidget(style, parent)
+end
+
 local function nowMs()
 	return g_clock.realMillis and g_clock.realMillis() or g_clock.millis()
 end
@@ -344,6 +397,70 @@ local function destroyChildrenJob(parent)
 	end
 end
 
+-- the tooltip of a node widget: name, stats, the class lines; a mastery node lists its effects and marks the chosen one
+-- (saved, planned, or the inspected character's)
+function setNodeTooltip(widget, node)
+	local vocationNode = node[getPlayerVocation()]
+	local tooltipType = 1
+	if node.isUncommon then
+		tooltipType = 2
+	elseif node.isRare or node.isMastery then
+		tooltipType = 3
+	elseif node.isVeryRare then
+		tooltipType = 7
+	elseif node.isMythic then
+		tooltipType = 6
+	elseif node.isDivine then
+		tooltipType = 8
+	end
+	local customStats = (vocationNode and vocationNode.customStats) or node.customStats
+	local nodeName = (vocationNode and vocationNode.name) or node.name or ""
+	local title = nodeName .. ((DEBUG and " (ID: " .. node.id .. ")") or "")
+	local texts
+	if node.isMastery then
+		texts = {}
+		for _, line in ipairs(node.stats or {}) do
+			table.insert(texts, line)
+		end
+		local chosen = getChosenMastery(node.id)
+		for i, effect in ipairs(node.masteries or {}) do
+			table.insert(texts, string.format("%d. %s%s: %s", i, effect.name or "", chosen == i and " (chosen)" or "",
+				table.concat(getCustomStatString(effect.customStats or {}), " ")))
+		end
+		if node.locked then
+			local names = {}
+			for _, key in ipairs(node.classes or {}) do
+				table.insert(names, CLASS_NAMES[key] or key)
+			end
+			table.insert(texts, "Requires: " .. table.concat(names, ", ") .. ".")
+		end
+	elseif customStats then
+		texts = getCustomStatString(customStats)
+		-- keystones: the class's own description lines under the stats (a class node: its own lines)
+		for _, line in ipairs((vocationNode and vocationNode.stats) or (node.classes and node.stats) or {}) do
+			table.insert(texts, line)
+		end
+		if node.locked then
+			local names = {}
+			for _, key in ipairs(node.classes) do
+				table.insert(names, CLASS_NAMES[key] or key)
+			end
+			table.insert(texts, "Requires: " .. table.concat(names, ", ") .. ".")
+		end
+	elseif node.stats then
+		texts = {}
+		for _, line in ipairs(node.stats) do
+			table.insert(texts, line)
+		end
+		if node.locked then
+			table.insert(texts, "Your class has no keystone here.")
+		end
+	end
+	if texts then
+		widget.setExtendedTooltip(widget, title, texts, tooltipType)
+	end
+end
+
 -- the jobs that build every widget of the tree at the current SCALE (sizes already scaled), in order
 local function buildTree()
 	local jobs = {}
@@ -387,7 +504,7 @@ local function buildTree()
 	t_insert(jobs, slicedJob(groups, function(entry)
 		local _, group = entry[1], entry[2]
 		if group.orbit ~= 0 then
-			widget = g_ui.createWidget("DecorationCircle", decoView)
+			widget = newTreeWidget("DecorationCircle", decoView)
 
 			widget.setMarginLeft(widget, group.x*SCALE)
 			widget.setMarginTop(widget, group.y*SCALE)
@@ -406,7 +523,7 @@ local function buildTree()
 			widget = nil
 
 			if group.mastery then
-				widget = g_ui.createWidget("DecorationCircle", decoView)
+				widget = newTreeWidget("DecorationCircle", decoView)
 
 				widget.setMarginLeft(widget, group.x*SCALE)
 				widget.setMarginTop(widget, group.y*SCALE)
@@ -456,7 +573,7 @@ local function buildTree()
 				node.alloc = true
 				node.x, node.y = group.x, group.y
 				allocNodes[node.id] = node
-				widget = g_ui.createWidget("DecorationCircle", decoView)
+				widget = newTreeWidget("DecorationCircle", decoView)
 
 				widget.setMarginLeft(widget, group.x*SCALE)
 				widget.setMarginTop(widget, group.y*SCALE)
@@ -477,7 +594,9 @@ local function buildTree()
 
 				local nodeClass = "CommonNode"
 
-				if node.isUncommon then
+				if node.isMastery then
+					nodeClass = "MasteryNode"
+				elseif node.isUncommon then
 					nodeClass = "UncommonNode"
 				elseif node.isRare then
 					nodeClass = "RareNode"
@@ -489,7 +608,7 @@ local function buildTree()
 					nodeClass = "DivineNode"
 				end
 
-				widget = g_ui.createWidget(nodeClass, nodesView)
+				widget = newTreeWidget(nodeClass, nodesView)
 
 				widget.setId(widget, node.id)
 				widget.setMarginLeft(widget, node.x*SCALE)
@@ -501,52 +620,11 @@ local function buildTree()
 					widget.setImageSource(widget, icon.file)
 				end
 
-				local tooltipType = 1
-
-				if node.isUncommon then
-					tooltipType = 2
-				elseif node.isRare then
-					tooltipType = 3
-				elseif node.isVeryRare then
-					tooltipType = 7
-				elseif node.isMythic then
-					tooltipType = 6
-				elseif node.isDivine then
-					tooltipType = 8
-				end
-
 				if DEBUG then
 					widget.setText(widget, id)
 				end
 
-				local customStats = (vocationNode and vocationNode.customStats) or node.customStats
-				local nodeName = (vocationNode and vocationNode.name) or node.name
-
-				if customStats then
-					local texts = getCustomStatString(customStats)
-					-- keystones: the class's own description lines under the stats (a class node: its own lines)
-					for _, line in ipairs((vocationNode and vocationNode.stats) or (node.classes and node.stats) or {}) do
-						table.insert(texts, line)
-					end
-					if node.locked then
-						local names = {}
-						for _, key in ipairs(node.classes) do
-							table.insert(names, CLASS_NAMES[key] or key)
-						end
-						table.insert(texts, "Requires: " .. table.concat(names, ", ") .. ".")
-					end
-
-					widget.setExtendedTooltip(widget, nodeName .. ((DEBUG and " (ID: " .. id .. ")") or ""), texts, tooltipType)
-				elseif node.stats then
-					local texts = {}
-					for _, line in ipairs(node.stats) do
-						table.insert(texts, line)
-					end
-					if node.locked then
-						table.insert(texts, "Your class has no keystone here.")
-					end
-					widget.setExtendedTooltip(widget, nodeName .. ((DEBUG and " (ID: " .. id .. ")") or ""), texts, tooltipType)
-				end
+				setNodeTooltip(widget, node)
 				if node.locked then
 					widget.setOpacity(widget, 0.45)
 				end
@@ -596,7 +674,7 @@ local function buildTree()
 
 			  local orbitType = getOrbitType(node1.orbit, dist, node1.id)
 			  local style = "Orbit" .. orbitType .. lineType
-			  local widget = g_ui.createWidget(style, decoView)
+			  local widget = newTreeWidget(style, decoView)
 			  widget:setId(node1.id .. "-" .. node2.id)
 			  connectorWidgets[node1.id .. "-" .. node2.id] = widget
 			  connectorStyles[widget] = style
@@ -633,7 +711,7 @@ local function buildTree()
   		end
 
   		local style = "LineConnector" .. lineType
-  		local widget = g_ui.createWidget(style, decoView)
+  		local widget = newTreeWidget(style, decoView)
   		widget:setId(node1.id .. "-" .. node2.id)
   		connectorWidgets[node1.id .. "-" .. node2.id] = widget
   		connectorStyles[widget] = style
@@ -699,9 +777,10 @@ local function refreshConnectors(node)
 				local other = nodeMap[otherId]
 				local lineType = "Normal"
 
+				-- allocated on both ends: active; the allocation's edge, or a link of the plan (planner.lua): intermediate
 				if node.alloc and other.alloc then
 					lineType = "Active"
-				elseif (node.alloc and not other.alloc) or (not node.alloc and other.alloc) then
+				elseif node.alloc or other.alloc or (node.planned and other.planned) then
 					lineType = "Intermediate"
 				end
 
@@ -781,9 +860,10 @@ local function applyAllocation(ids, blocked)
 		if alloc then
 			allocNodes[id] = node
 		end
+		node.blocked = (alloc and blocked) or nil
 		local widget = nodeWidgets[id]
 		if widget then
-			widget.blocked = (alloc and blocked) or nil
+			widget.blocked = node.blocked
 		end
 	end
 
@@ -800,6 +880,10 @@ local function applyAllocation(ids, blocked)
 	if #changed > 0 or not statsShown then
 		statsShown = true
 		calculateStats()
+	end
+	-- planner.lua: planned ids that are allocated now leave the plan; the planned marks follow the new allocation
+	if plannerOnAllocation then
+		plannerOnAllocation()
 	end
 end
 
@@ -862,23 +946,140 @@ local function cancelBuild()
 	end
 	jobs, jobIndex = {}, 1
 	buildingFor = nil
+	if buildingPanels then
+		-- a build that never finished: its half-built panels are not a layer
+		for _, panel in ipairs(buildingPanels) do
+			panel:destroy()
+		end
+		buildingPanels = nil
+	end
+end
+
+local function classOfKey(key)
+	return tostring(key or ""):match("^[^|]*|(.*)$")
+end
+
+local function dropLayer(key)
+	local layer = layers[key]
+	layers[key] = nil
+	if layer then
+		layer.deco:destroy()
+		layer.nodes:destroy()
+	end
+end
+
+local function layerPanels()
+	local deco = table.remove(spare, 1) or g_ui.createWidget("Panel", view)
+	local nodes = table.remove(spare, 1) or g_ui.createWidget("Panel", view)
+	for _, panel in ipairs({deco, nodes}) do
+		panel:centerIn("parent")
+		panel:setWidth(LIMIT_X)
+		panel:setHeight(LIMIT_Y)
+		-- where the view was dragged to (every child of the view moves together)
+		panel:setMarginLeft(background:getMarginLeft())
+		panel:setMarginTop(background:getMarginTop())
+	end
+	return deco, nodes
+end
+
+-- the widget states of the active layer from the node flags (alloc, planned, blocked) and the mastery tooltips
+local function syncLayer()
+	for id, node in pairs(nodeMap) do
+		local widget = nodeWidgets[id]
+		if widget then
+			local on = node.alloc == true
+			if widget:isOn() ~= on then
+				widget:setOn(on)
+			end
+			local planned = node.planned == true and not on
+			if widget:isChecked() ~= planned then
+				widget:setChecked(planned)
+			end
+			widget.blocked = node.blocked
+			if node.isMastery then
+				setNodeTooltip(widget, node)
+			end
+		end
+	end
+	for _, node in pairs(nodeMap) do
+		refreshConnectors(node)
+	end
+end
+
+-- planner.lua and search.lua mark the new widgets (a layer was built or shown)
+local function afterWidgetsReady()
+	if plannerRefresh then
+		plannerRefresh()
+	end
+	if refreshTreeSearch then
+		refreshTreeSearch()
+	end
 end
 
 local function startBuild(key)
 	cancelBuild()
+	local current = builtFor and layers[builtFor]
+	if current then
+		current.deco:setVisible(false)
+		current.nodes:setVisible(false)
+	end
 	builtFor = nil
+	for other in pairs(layers) do
+		if classOfKey(other) ~= classOfKey(key) then
+			dropLayer(other)
+		end
+	end
+	local cached = layers[key]
+	if cached then
+		-- a zoom level built before: show it, no widget is created
+		local started = nowMs()
+		decoView, nodesView = cached.deco, cached.nodes
+		nodeWidgets, connectorWidgets, connectorStyles = cached.nodeWidgets, cached.connectorWidgets, cached.connectorStyles
+		layerClock = layerClock + 1
+		cached.used = layerClock
+		syncLayer()
+		decoView:setVisible(true)
+		nodesView:setVisible(true)
+		builtFor = key
+		treeStats.reuses = treeStats.reuses + 1
+		applyPendingAllocation()
+		afterWidgetsReady()
+		treeStats.lastSwitchMs = nowMs() - started
+		return
+	end
+	local count, oldest = 0, nil
+	for other, layer in pairs(layers) do
+		count = count + 1
+		if not oldest or layer.used < layers[oldest].used then
+			oldest = other
+		end
+	end
+	if count >= MAX_LAYERS and oldest then
+		dropLayer(oldest)
+	end
+	decoView, nodesView = layerPanels()
+	buildingPanels = {decoView, nodesView}
 	buildingFor = key
 	statsShown = false
 	decoView:setVisible(false)
 	nodesView:setVisible(false)
 	buildSliceStart = nowMs()
+	local started, before = nowMs(), treeStats.widgets
 	local list = buildTree()
 	list[#list + 1] = function()
+		layerClock = layerClock + 1
+		layers[buildingFor] = {key = buildingFor, deco = decoView, nodes = nodesView, nodeWidgets = nodeWidgets,
+			connectorWidgets = connectorWidgets, connectorStyles = connectorStyles, used = layerClock}
+		buildingPanels = nil
 		builtFor = buildingFor
 		buildingFor = nil
 		decoView:setVisible(true)
 		nodesView:setVisible(true)
+		treeStats.builds = treeStats.builds + 1
+		treeStats.lastBuildMs = nowMs() - started
+		treeStats.lastBuildWidgets = treeStats.widgets - before
 		applyPendingAllocation()
+		afterWidgetsReady()
 		return false
 	end
 	queueJobs(list)
@@ -903,10 +1104,135 @@ local function showAllocation(ids, blocked)
 	startBuild(key)
 end
 
--- buildshare.lua: shows a build preview the same way sendNodes shows the saved allocation
-function showTreeAllocation(ids, blocked)
+-- buildshare.lua: shows a build preview the same way sendNodes shows the saved allocation (masteries: the preview's
+-- [{id, choice}]); the planner is closed while a preview is shown
+local previewShown = false
+function showTreeAllocation(ids, blocked, masteries)
 	changesPending = false
+	previewShown = true
+	if plannerReset then
+		plannerReset()
+	end
+	if masteries then
+		savedMasteries = masteryMap(masteries)
+	end
 	showAllocation(ids, blocked)
+end
+
+function isTreePreviewShown()
+	return previewShown
+end
+
+-- ------------------------------------------------------------------------------------------------ for planner.lua,
+-- search.lua and viewother.lua
+function masteryMap(list)
+	local out = {}
+	for _, m in pairs(type(list) == "table" and list or {}) do
+		local id, choice = tonumber(type(m) == "table" and m.id), tonumber(type(m) == "table" and m.choice)
+		if id and choice then
+			out[id] = choice
+		end
+	end
+	return out
+end
+
+function getTreeNodeMap()
+	return nodeMap
+end
+
+-- the per-class node variant shown (keystones 621 / 624)
+function getTreeVariant()
+	return getPlayerVocation()
+end
+
+function getTreeNodeWidget(id)
+	return nodeWidgets[id]
+end
+
+function getTreeAllocated()
+	return allocNodes
+end
+
+function getTreeFreePoints()
+	return pointsOwned
+end
+
+function isTreeBusy()
+	return isBuilding() or buildingFor ~= nil
+end
+
+function isTreeReadOnly()
+	return viewing ~= nil
+end
+
+function getTreeViewing()
+	return viewing
+end
+
+-- the saved effect of a mastery (the inspected character's while one is shown)
+function getSavedMastery(id)
+	if viewing then
+		return viewing.masteries[id]
+	end
+	return savedMasteries[id]
+end
+
+-- the effect shown for a mastery: the planned choice, else the saved one
+function getChosenMastery(id)
+	local planned = plannerChoice and plannerChoice(id)
+	return planned or getSavedMastery(id)
+end
+
+-- a node's widget and links after its planned flag (or chosen effect) changed
+function refreshTreeNode(node)
+	local widget = nodeWidgets[node.id]
+	if widget then
+		local planned = node.planned == true and not node.alloc
+		if widget:isChecked() ~= planned then
+			widget:setChecked(planned)
+		end
+		if node.isMastery then
+			setNodeTooltip(widget, node)
+		end
+	end
+	refreshConnectors(node)
+end
+
+-- centre the view on a node (search.lua): every child of the view moves together, within the drag limits
+function panTreeTo(node)
+	if not view or not node or not node.x then
+		return
+	end
+	local x = math.max(-LIMIT_X / 4, math.min(LIMIT_X / 4, -node.x * SCALE))
+	local y = math.max(-LIMIT_Y / 4, math.min(LIMIT_Y / 4, -node.y * SCALE))
+	for _, child in pairs(view:getChildren()) do
+		child:setMarginLeft(x)
+		child:setMarginTop(y)
+	end
+end
+
+-- viewother.lua: show another character's tree (data = {name, cls, line, vocation, nodes, masteries}) or, with nil,
+-- the own tree again (the last sendNodes that arrived meanwhile, else a fresh one)
+local ownNodes = nil
+function setTreeViewing(data)
+	if data then
+		viewing = {name = data.name, cls = data.cls, line = data.line, vocation = data.vocation, nodes = data.nodes or {},
+			masteries = masteryMap(data.masteries)}
+		showAllocation(viewing.nodes, true)
+		return
+	end
+	if not viewing then
+		return
+	end
+	viewing = nil
+	if ownNodes then
+		local data = ownNodes
+		ownNodes = nil
+		updateNodes(data)
+	else
+		showAllocation({}, true)
+		sendAction("requestNodesUnlocked")
+	end
 end
 
 local function allocatedIds()
@@ -931,6 +1257,10 @@ end
 -- synchronous full build (kept for callers outside the module); the window itself builds in slices
 function createNodes()
 	cancelBuild()
+	for key in pairs(layers) do
+		dropLayer(key)
+	end
+	decoView, nodesView = layerPanels()
 	syncBuild = true
 	local ok, err = pcall(function()
 		for _, job in ipairs(buildTree()) do
@@ -943,6 +1273,9 @@ function createNodes()
 		error(err)
 	end
 	builtFor = treeKey()
+	layerClock = layerClock + 1
+	layers[builtFor] = {key = builtFor, deco = decoView, nodes = nodesView, nodeWidgets = nodeWidgets,
+		connectorWidgets = connectorWidgets, connectorStyles = connectorStyles, used = layerClock}
 	decoView:setVisible(true)
 	nodesView:setVisible(true)
 end
@@ -982,6 +1315,12 @@ function onExtendedOpcode(protocol, code, buffer)
 end
 
 function updateNodes(data)
+	if viewing then
+		ownNodes = data -- shown when the inspected tree is closed
+		return
+	end
+	previewShown = false
+	savedMasteries = masteryMap(data.masteries)
 	if type(data.vocation) == "string" then
 		serverVocation = data.vocation
 	end
@@ -1029,56 +1368,17 @@ function updateLocal()
 	showAllocation(allocatedIds(), true)
 end
 
+-- a left click on a node: the planner (planner.lua) plans the path to it, takes a planned node out, or opens the choice
+-- of a mastery; nothing is sent before Apply
 function onClickNode(widget)
-	if isBuilding() then
+	if isBuilding() or viewing then
 		return false
 	end
-	local nodeId = tonumber(widget.getId(widget))
-	local node = nodeMap[nodeId]
-
-	if node then
-		if not node.alloc and not canAllocate(node) then
-			return false
-		end
-
-		if node.alloc and not canUnAllocate(node) then
-			return false
-		end
-
-		if widget.blocked and node.alloc then
-			return false
-		end
-
-		if node.alloc then
-			allocNodes[node.id] = nil
-
-			if not ignorePoints then
-				updatePoints(1)
-			end
-		else
-			if not ignorePoints and pointsOwned <= 0 then
-				return false
-			end
-
-			if not ignorePoints then
-				updatePoints(-1)
-			end
-
-			allocNodes[node.id] = node
-		end
-
-		node.alloc = not node.alloc
-
-		widget.setOn(widget, not widget.isOn(widget))
-
-		refreshConnectors(node)
+	local node = nodeMap[tonumber(widget.getId(widget))]
+	if not node then
+		return false
 	end
-
-	if not ISUPDATINGLOCAL then
-		calculateStats()
-	end
-    changesPending = true
-	return true
+	return plannerClick(node)
 end
 
 function canAllocate(node)
@@ -1326,11 +1626,16 @@ function onSpellLevelChange(widget, value)
 	return 
 end
 
-function getSkillTreeBonuses()
+-- the summed stats of the allocated nodes (planned: of the planner's nodes instead); a mastery gives its chosen effect
+function getSkillTreeBonuses(planned)
 	local nodes = {}
 
-	for k, v in pairs(allocNodes) do
-		table.insert(nodes, k)
+	if planned then
+		nodes = plannerIds and plannerIds() or {}
+	else
+		for k, v in pairs(allocNodes) do
+			table.insert(nodes, k)
+		end
 	end
 
 	local bonusTable = {}
@@ -1341,6 +1646,10 @@ function getSkillTreeBonuses()
 		if node then
 			local vocationNode = node[getPlayerVocation()]
 			local customStats = (vocationNode and vocationNode.customStats) or node.customStats
+			if node.isMastery then
+				local effect = (node.masteries or {})[getChosenMastery(id) or 0]
+				customStats = effect and effect.customStats or nil
+			end
 
 			if customStats then
 				for name, value in pairs(customStats) do
@@ -1414,8 +1723,20 @@ function calculateStats()
 		label:setText(v)
 	end
 
-	-- Paragon track (paragon.lua): the applied bonuses, added on top of the tree's by the server
-	local paragon = getParagonState and getParagonState()
+	-- the planner's nodes (planner.lua): what Apply would add
+	local plannedIds = plannerIds and plannerIds() or {}
+	if #plannedIds > 0 then
+		label = g_ui.createWidget("InfoLabel", labels)
+		label:setText(string.format("---------------- PLANNED (%d) ----------------", #plannedIds))
+		for _, v in pairs(getCustomStatString(getSkillTreeBonuses(true), true)) do
+			label = g_ui.createWidget("InfoLabel", labels)
+			label:setText(v)
+			label:setColor("#7fd0ff")
+		end
+	end
+
+	-- Paragon track (paragon.lua): the applied bonuses, added on top of the tree's by the server (not of an inspected tree)
+	local paragon = not viewing and getParagonState and getParagonState()
 	if paragon then
 		label = g_ui.createWidget("InfoLabel", labels)
 		label:setText("---------------- PARAGON ----------------")
@@ -1444,6 +1765,11 @@ function destroy()
 	cancelBuild()
 	builtFor = nil
 	pendingAlloc = nil
+	layers, spare = {}, {} -- the panels go with the window
+	viewing, savedMasteries = nil, {}
+	if destroyPlanner then
+		destroyPlanner() -- planner.lua
+	end
 	allocNodes = {}
 	nodeWidgets = {}
 	connectorWidgets = {}
@@ -1471,6 +1797,9 @@ function show()
 
 	if not window then
 		return 
+	end
+	if viewing and closeOtherTree then
+		closeOtherTree() -- viewother.lua: the own tree again
 	end
 
 	sendAction("requestPoints")
@@ -1507,6 +1836,12 @@ function hide()
 	window.presets:hide()
 	closeParagon()
 	closeTrials()
+	if closeMasteryChoice then
+		closeMasteryChoice() -- planner.lua
+	end
+	if viewing and closeOtherTree then
+		closeOtherTree() -- viewother.lua
+	end
 	window:hide()
 
 	if messageBox then
@@ -1539,22 +1874,12 @@ function sendAction(action, data)
 	return 
 end
 
+-- Apply: the planner's whole plan in one planApply request (planner.lua)
 function applyPoints()
-	if not changesPending then
+	if viewing then
 		return
 	end
-	local nodes = {}
-
-	for k, v in pairs(allocNodes) do
-		table.insert(nodes, k)
-	end
-
-	sendAction("sendNodes", {
-		nodes = nodes,
-		preset = currentPreset
-	})
-    changesPending = false
-	return 
+	plannerApply()
 end
 
 function presets()
@@ -1577,10 +1902,14 @@ function updatePoints(value)
 	pointsOwned = pointsOwned + value
 
 	window.pWindow.points:setText(formatShortNumber(pointsOwned) .. " points")
+	if plannerUpdateBar then
+		plannerUpdateBar() -- planner.lua: the plan's cost against the free points
+	end
 
 	return 
 end
 
+local zoomFrom = nil -- the SCALE before the last zoom step (updateZoom)
 SCALE_CHANGE = 0.70
 SCALE_MAX = 0.7
 SCALE_MIN = 0.4
@@ -1593,6 +1922,7 @@ function zoomLess()
 	end
 
 	window.zoomLess:setEnabled(true)
+	zoomFrom = SCALE
 	SCALE = SCALE * SCALE_CHANGE
 
 	updateZoom()
@@ -1605,13 +1935,24 @@ function zoomPlus()
 	end
 
 	window.zoomPlus:setEnabled(true)
+	zoomFrom = SCALE
 	SCALE = SCALE / SCALE_CHANGE
 
 	updateZoom()
 end
 
--- the widgets are built (and sized) for the new SCALE by updateLocal, a slice per frame
+-- the widgets are built (and sized) for the new SCALE by updateLocal, a slice per frame (or a cached zoom level is
+-- shown); the view keeps the same point of the tree in its centre
 function updateZoom()
+	if view and zoomFrom and zoomFrom > 0 then
+		local ratio = SCALE / zoomFrom
+		for _, child in pairs(view:getChildren()) do
+			local x = math.max(-LIMIT_X / 4, math.min(LIMIT_X / 4, child:getMarginLeft() * ratio))
+			local y = math.max(-LIMIT_Y / 4, math.min(LIMIT_Y / 4, child:getMarginTop() * ratio))
+			child:setMarginLeft(x)
+			child:setMarginTop(y)
+		end
+	end
 	updateLocal()
 	return 
 end

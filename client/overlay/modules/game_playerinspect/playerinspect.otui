@@ -125,9 +125,20 @@ ChaosMainWindow
     anchors.bottom: closeButton.bottom
     anchors.left: parent.left
     margin-bottom: 4
-    width: 260
+    width: 200
     !text: tr('Allow others to inspect me')
     @onCheckChange: modules.game_playerinspect.onPrivacyToggle()
+
+  ChaosButton
+    id: treeButton
+    anchors.bottom: parent.bottom
+    anchors.right: closeButton.left
+    margin-right: 6
+    width: 130
+    enabled: false
+    !text: tr('Passive Tree')
+    !tooltip: tr("Show this character's passive tree (read-only)")
+    @onClick: modules.game_playerinspect.openInspectedTree()
 
   ChaosButton
     id: closeButton

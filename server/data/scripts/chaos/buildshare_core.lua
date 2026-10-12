@@ -1,30 +1,36 @@
 -- Build sharing: the passive tree build code, without engine calls (buildshare.lua, server/tests/buildshare_test.lua).
 --
---   ChaosBuildShare.encode(build)            code string of {classId, nodes = {ids}, paragon = {statKey = points} | nil}
+--   ChaosBuildShare.encode(build[, version])  code string of {classId, nodes = {ids}, paragon = {statKey = points} | nil,
+--                                            masteries = {[id] = choice} | nil}; version 2 unless asked (1: no masteries)
 --   ChaosBuildShare.decode(code)             build, or nil + error text (bad format, old/unknown version, checksum)
 --   ChaosBuildShare.extract(text)            the first code inside any text (a chat line, a "build link"), or nil
 --   ChaosBuildShare.plan(tree, build, ctx)   what an import would do for a character (see below), or nil + error text
 --
--- Code format, version 1:  "CB1-" .. base64url(payload)   (CB = Chaos Build, 1 = format version)
+-- Code format, version 2:  "CB2-" .. base64url(payload)   (CB = Chaos Build, 2 = format version)
 --   payload = classId (1 byte: index of the class line in CLASS_LINES, 0 = no class; never a vocation id)
---             flags   (1 byte: 1 = a Paragon part follows)
+--             flags   (1 byte: 1 = a Paragon part follows, 2 = a mastery part follows)
 --             [Paragon: count (1 byte), then count x (stat index 1 byte, points 1 byte); stat index into PARAGON_KEYS]
+--             [masteries: count (1 byte), then count x (node id 2 bytes, high first, chosen effect 1 byte)]
 --             bitset of the allocated node ids: bit (id % 8) of byte floor(id / 8), trailing zero bytes dropped
---             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB1" and every byte before it
+--             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB2" and every byte before it
+-- Version 1 ("CB1-", handed out before the mastery nodes) is the same without the mastery part (flag 2 unused) and is
+-- still read: such a code has no mastery choices (an import keeps the character's own, else takes the first effect).
 -- Typical size: a 248 node level 1000 build ~110 characters, a 40 node build ~20-80.
 --
 -- The class byte is a class line, not a vocation id, so the vocation ids can change without breaking codes.
 -- Stability rule: the bitset is indexed by the node ids of passivetree_data.lua (the client's nodes.lua ids), not by
 -- array positions. New nodes are appended with new ids, existing ids are never renumbered or reused; a retired id makes
 -- the codes that use it invalid ("unknown node"), every other code stays valid. Paragon stats are indexed by
--- PARAGON_KEYS: append new stat keys at the end, never reorder. A new format gets a new version number; decode keeps
--- reading every version that was ever handed out (only version 1 exists).
+-- PARAGON_KEYS: append new stat keys at the end, never reorder. A mastery's effects are indexed by their position in the
+-- node's list: append new effects, never reorder. A new format gets a new version number; decode keeps reading every
+-- version that was ever handed out (B.READS: 1 and 2).
 
 ChaosBuildShare = ChaosBuildShare or {}
 local B = ChaosBuildShare
 
 B.PREFIX = "CB"
-B.VERSION = 1
+B.VERSION = 2
+B.READS = {[1] = true, [2] = true} -- every version ever handed out
 -- class lines (the base classes of Chaos.classes.ids); index = the code's class byte. Append only, never reorder.
 B.CLASS_LINES = {"warrior", "ranger", "mystic", "thief"}
 B.PARAGON_KEYS = {"damage", "critDamage", "health", "reduction", "speed", "mana", "goldFind", "itemFind"}
@@ -113,7 +119,8 @@ function B.lineName(index)
 	return line and (line:sub(1, 1):upper() .. line:sub(2)) or nil
 end
 
-function B.encode(build)
+function B.encode(build, version)
+	version = version or B.VERSION
 	local bytes = {math.max(0, math.min(255, math.floor(tonumber(build.classId) or 0)))}
 	local stats = {}
 	if build.paragon then
@@ -125,12 +132,35 @@ function B.encode(build)
 			end
 		end
 	end
-	bytes[2] = #stats > 0 and 1 or 0
+	local mastery = {}
+	if version >= 2 and type(build.masteries) == "table" then
+		for id, choice in pairs(build.masteries) do
+			id, choice = math.floor(tonumber(id) or 0), math.floor(tonumber(choice) or 0)
+			if id > 0 and id < 65536 and choice > 0 and choice < 256 then
+				mastery[#mastery + 1] = {id, choice}
+			end
+		end
+		table.sort(mastery, function(a, b)
+			return a[1] < b[1]
+		end)
+		while #mastery > 255 do
+			table.remove(mastery)
+		end
+	end
+	bytes[2] = (#stats > 0 and 1 or 0) + (#mastery > 0 and 2 or 0)
 	if #stats > 0 then
 		bytes[#bytes + 1] = #stats
 		for _, s in ipairs(stats) do
 			bytes[#bytes + 1] = s[1]
 			bytes[#bytes + 1] = s[2]
+		end
+	end
+	if #mastery > 0 then
+		bytes[#bytes + 1] = #mastery
+		for _, m in ipairs(mastery) do
+			bytes[#bytes + 1] = math.floor(m[1] / 256)
+			bytes[#bytes + 1] = m[1] % 256
+			bytes[#bytes + 1] = m[2]
 		end
 	end
 	local bits, maxByte = {}, -1
@@ -149,7 +179,7 @@ function B.encode(build)
 	for byte = 0, maxByte do
 		bytes[#bytes + 1] = bits[byte] or 0
 	end
-	local head = B.PREFIX .. B.VERSION
+	local head = B.PREFIX .. version
 	local h = checksum(head, bytes, #bytes)
 	bytes[#bytes + 1] = math.floor(h / 65536) % 256
 	bytes[#bytes + 1] = math.floor(h / 256) % 256
@@ -177,7 +207,7 @@ function B.decode(code)
 		return nil, "That is not a build code (codes start with " .. B.PREFIX .. B.VERSION .. "-)."
 	end
 	version = tonumber(version)
-	if version ~= B.VERSION then
+	if not B.READS[version] then
 		if version < B.VERSION then
 			return nil, string.format("That build code is from an old format (version %d) that is no longer read.", version)
 		end
@@ -213,6 +243,20 @@ function B.decode(code)
 			pos = pos + 2
 		end
 	end
+	if version >= 2 and math.floor(bytes[2] / 2) % 2 == 1 then
+		local count = bytes[pos] or 0
+		pos = pos + 1
+		build.masteries = {}
+		for _ = 1, count do
+			local hi, lo, choice = bytes[pos], bytes[pos + 1], bytes[pos + 2]
+			if not choice or pos + 2 > n - 3 then
+				return nil, "That build code is damaged."
+			end
+			build.masteries[hi * 256 + lo] = choice
+			pos = pos + 3
+		end
+	end
+	build.version = version
 	for i = pos, n - 3 do
 		local value = bytes[i]
 		local base = (i - pos) * 8
@@ -231,8 +275,12 @@ end
 --   classKey (the importer's class key: nodes marked for other classes are refused; nil = only unmarked nodes),
 --   current = {ids allocated now}, points = passive points owned,
 --   paragon = nil (no Paragon part handled) or {unlocked, total, current = {key = n}, max = {key = maxPoints}}
--- Returns plan {nodes (to save, path order), wanted, applied, skipped, added, removed, treeChange, treeReset,
---   paragon (allocation to save or nil), paragonChange, paragonReset, paragonSkipped, notes = {texts}} or nil, error.
+--   currentMasteries = {[id] = choice} of the current tree (the chosen effects of its mastery nodes)
+-- Returns plan {nodes (to save, path order), masteries ({[id] = choice} of the saved mastery nodes), wanted, applied,
+--   skipped, added, removed, masteryChanged, treeChange, treeReset, paragon (allocation to save or nil), paragonChange,
+--   paragonReset, paragonSkipped, notes = {texts}} or nil, error.
+-- Mastery nodes take the code's effect; a code without one (version 1) keeps the character's own, else the first effect
+-- (with a note). Changing the effect of a mastery the character holds is a respec: it counts as taking points back.
 -- Rule when the code needs more points than the character owns: the first N nodes in path order are applied
 -- (nodes the character already has first, then nearest to the start, then lowest id), the rest is listed as skipped.
 function B.plan(tree, build, ctx)
@@ -262,6 +310,16 @@ function B.plan(tree, build, ctx)
 	end
 	if wanted == 0 and not build.paragon then
 		return nil, "This build code has no allocated nodes."
+	end
+	for id, choice in pairs(build.masteries or {}) do
+		local node = tree.nodes[id]
+		local count = node and type(node.m) == "table" and #node.m or 0
+		if count == 0 then
+			return nil, string.format("This build code has a mastery effect for node %d, which is not a mastery node.", id)
+		end
+		if choice < 1 or choice > count then
+			return nil, string.format("This build code picks effect %d of mastery node %d, which has %d.", choice, id, count)
+		end
 	end
 
 	-- depth from the root through the build's own nodes; a node never reached is disconnected
@@ -342,13 +400,43 @@ function B.plan(tree, build, ctx)
 			removed = removed + 1
 		end
 	end
+	-- the effects of the mastery nodes saved
+	local masteries, masteryChanged, defaulted = {}, 0, 0
+	local held = ctx.currentMasteries or {}
+	for _, id in ipairs(nodes) do
+		local node = tree.nodes[id]
+		if type(node.m) == "table" and #node.m > 0 then
+			local choice = build.masteries and build.masteries[id]
+			if not choice then
+				choice = (current[id] and held[id] and held[id] >= 1 and held[id] <= #node.m) and held[id] or nil
+				if not choice then
+					choice, defaulted = 1, defaulted + 1
+				end
+			end
+			masteries[id] = choice
+			if current[id] and held[id] ~= choice then
+				masteryChanged = masteryChanged + 1
+			end
+		end
+	end
 	local plan = {
-		nodes = nodes, wanted = wanted, applied = #nodes, skipped = wanted - #nodes, added = added, removed = removed,
-		treeChange = added > 0 or removed > 0, treeReset = removed > 0, notes = {}
+		nodes = nodes, masteries = masteries, wanted = wanted, applied = #nodes, skipped = wanted - #nodes, added = added,
+		removed = removed, masteryChanged = masteryChanged,
+		treeChange = added > 0 or removed > 0 or masteryChanged > 0, treeReset = removed > 0 or masteryChanged > 0, notes = {}
 	}
 	if wanted == 0 then
 		-- a Paragon-only code leaves the tree alone
 		plan.nodes, plan.applied, plan.added, plan.removed, plan.treeChange, plan.treeReset = ctx.current or {}, 0, 0, 0, false, false
+		plan.masteries, plan.masteryChanged = held, 0
+	end
+	if masteryChanged > 0 and wanted > 0 then
+		plan.notes[#plan.notes + 1] = string.format("%d mastery node%s you hold change%s effect (a respec).", masteryChanged,
+			masteryChanged == 1 and "" or "s", masteryChanged == 1 and "s its" or " their")
+	end
+	if defaulted > 0 and wanted > 0 then
+		plan.notes[#plan.notes + 1] = string.format(
+			"The code names no effect for %d mastery node%s: the first effect is taken (change it in the tree).", defaulted,
+			defaulted == 1 and "" or "s")
 	end
 	if plan.skipped > 0 then
 		plan.notes[#plan.notes + 1] = string.format(

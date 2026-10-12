@@ -681,6 +681,16 @@ Mystic's 3363 / 4812; "Healing" above). The Samurai deals a bit less than the Ju
 in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level against the Sentinel's 17.3 and the Juggernaut's
 19.6 (21.3 with Immovable) in the toughness model of "Templar line". The Iron Sage's damage is below the Warrior's.
 
+### Mastery nodes of the class sections (2026-10-12, not measured)
+
+The four mastery nodes (665-668, server/README.md "Passive tree planner and mastery nodes") add one node to each class section;
+the table above was measured before them and is unchanged. Each effect is sized against the notables and line nodes of its
+section, never above them (for example Keen Edge crit chance +2 / amount +5 against Precise Strikes +2 / +6, Tough Hide
+vitality +4 / physical absorb +2 against Steel Discipline +5 / +3, Iron Knuckles physical +6 / strength +2 against Iron Fist
++6 / +3, Oath of Flame holy +6 / strength +2 against Holy Vigor holy +6 / vitality +3). A build takes it in place of one
+ordinary node (1-2 of a stat), so a tree build of 73 / 248 points changes by one notable at most. Not run on the dummies;
+measure with the C4 harness when the class factors are next tuned.
+
 ### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
 
 Bows and crossbows fire without ammunition (server/README.md "Infinite arrows and quivers"). The install tool gives each

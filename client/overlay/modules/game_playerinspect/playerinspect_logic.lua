@@ -2,6 +2,8 @@
 -- The server (extended opcode 240, server/data/scripts/chaos/inspect.lua + inspect_core.lua) answers
 --   result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts}
 --   equip  {name, rows = [{slot, tip}], part}      (parts packets of equipment follow a result)
+--   tree   {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}   the passive tree, after the
+--          equipment; a big one comes in parts "S..", "P..", "E.." (Chaos.sendChunked), joined by L.joinPart
 --   denied {code, text}      privacy {allow}
 
 PlayerInspectLogic = {}
@@ -68,7 +70,41 @@ function L.newState()
 end
 
 function L.onResult(state, d)
-  state.data, state.tips, state.parts, state.got = d, {}, tonumber(d.parts) or 0, 0
+  state.data, state.tips, state.parts, state.got, state.tree = d, {}, tonumber(d.parts) or 0, 0, nil
+end
+
+-- the tree packet; false when it belongs to another character than the result shown or is not a tree
+function L.onTree(state, d)
+  if not state.data or type(d) ~= 'table' or d.name ~= state.data.name or type(d.nodes) ~= 'table' then return false end
+  state.tree = d
+  return true
+end
+
+-- the Passive Tree button's text: "Passive Tree (42)" or nil when there is no tree to show
+function L.treeButtonText(state)
+  if not state.tree then return nil end
+  return string.format('Passive Tree (%d)', #state.tree.nodes)
+end
+
+-- the parts of a chunked message (Chaos.sendChunked: "S" first part, "P" middle parts, "E" last part; a message that fits
+-- comes whole, starting with "{"). Returns the whole text when it is complete, else nil. parts: a table kept per opcode.
+function L.joinPart(parts, buffer)
+  if type(buffer) ~= 'string' or buffer == '' then return nil end
+  local kind, rest = buffer:sub(1, 1), buffer:sub(2)
+  if kind == 'S' then
+    parts.buf = { rest }
+    return nil
+  elseif kind == 'P' then
+    if parts.buf then parts.buf[#parts.buf + 1] = rest end
+    return nil
+  elseif kind == 'E' then
+    if not parts.buf then return nil end
+    parts.buf[#parts.buf + 1] = rest
+    local whole = table.concat(parts.buf)
+    parts.buf = nil
+    return whole
+  end
+  return buffer
 end
 
 -- an equipment packet; false when it belongs to another character than the result shown

@@ -2,7 +2,10 @@
 -- of a player on the map (Inspect Player: within 10 tiles). Server: server/data/scripts/chaos/inspect.lua, extended opcode
 -- 240 (JSON {action, data}); the logic is in playerplayerinspect_logic.lua.
 --   client -> server  inspect {cid} | inspect {name}   privacy {} | privacy {allow}
---   server -> client  result {...}   equip {name, rows}   denied {code, text}   privacy {allow}
+--   server -> client  result {...}   equip {name, rows}   tree {name, nodes, masteries, cls, line, vocation}
+--                     denied {code, text}   privacy {allow}
+-- The Passive Tree button opens the inspected character's tree read-only in the passive tree window
+-- (game_passivetree viewother.lua showOtherTree); a big tree packet arrives in parts (L.joinPart).
 -- The checkbox "Allow others to inspect me" is the character's privacy setting (stored on the server, default on).
 
 local OPCODE = 240
@@ -12,6 +15,7 @@ local window
 local state = L.newState()
 local loadingPrivacy = false
 local hooked = false
+local chunkParts = {}
 
 local function safe(name, fn)
   local reported = false
@@ -98,7 +102,22 @@ local function buildSlots()
   end
 end
 
+local function refreshTreeButton()
+  if not window then return end
+  local text = L.treeButtonText(state)
+  window.treeButton:setEnabled(text ~= nil)
+  window.treeButton:setText(text or 'Passive Tree')
+end
+
+function openInspectedTree()
+  local tree = modules.game_passivetree
+  if not state.tree or not tree or not tree.showOtherTree then return end
+  hide() -- the tree window takes the screen; the menu opens this window again
+  tree.showOtherTree(state.tree)
+end
+
 local function clearAll()
+  refreshTreeButton()
   for slot = 1, 10 do clearSlot(slot) end
   window.infoPanel.lines:destroyChildren()
   window.infoPanel.charName:setText('')
@@ -121,6 +140,7 @@ local function showResult(d)
     label:setColor(line.color)
   end
   setStatus(d.self and 'This is you.' or '', L.COLORS.dim)
+  refreshTreeButton()
 end
 
 local function onEquip(d)
@@ -141,6 +161,8 @@ local function onPrivacy(d)
 end
 
 local function onExtendedOpcode(protocol, opcode, buffer)
+  buffer = L.joinPart(chunkParts, buffer)
+  if not buffer then return end
   local ok, msg = pcall(json.decode, buffer)
   if not ok or type(msg) ~= 'table' or type(msg.data) ~= 'table' or not window then return end
   if msg.action == 'result' then
@@ -148,6 +170,8 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     show()
   elseif msg.action == 'equip' then
     onEquip(msg.data)
+  elseif msg.action == 'tree' then
+    if L.onTree(state, msg.data) then refreshTreeButton() end
   elseif msg.action == 'denied' then
     onDenied(msg.data)
     show()

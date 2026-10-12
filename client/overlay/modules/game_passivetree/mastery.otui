@@ -1,0 +1,51 @@
+// The effect choice of a mastery node (planner.lua openMasteryChoice). Ornate skin styles from client_chaos_theme.
+MasteryEffectButton < ChaosButton
+  height: 40
+  text-wrap: true
+  text-align: center
+
+  $on:
+    color: #ffd98a
+
+ChaosWindow
+  id: masteryWindow
+  size: 380 250
+  anchors.centerIn: parent
+  @onEscape: modules.game_passivetree.closeMasteryChoice()
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 30
+    text-wrap: true
+    text-auto-resize: false
+    text-align: center
+
+  UIWidget
+    id: effects
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: cancelButton.top
+    margin-top: 6
+    margin-bottom: 8
+    layout:
+      type: verticalBox
+      spacing: 6
+
+  ChaosButton
+    id: removeButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 140
+    text: Remove from plan
+
+  ChaosButton
+    id: cancelButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 90
+    text: Cancel
+    @onClick: modules.game_passivetree.closeMasteryChoice()

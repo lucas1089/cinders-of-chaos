@@ -9,6 +9,9 @@
 --   server -> client  result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts}
 --                     equip {name, rows = [{slot, tip}], part}      parts packets follow `result`; slot 1-10 as the inventory,
 --                                                                    tip = the rich tooltip of item_tooltip_core.lua
+--                     tree {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent}   the active passive
+--                                                                    tree, read-only (ChaosInspect.treePayload), after the
+--                                                                    equipment; through Chaos.sendChunked when it is large
 --                     denied {code, text}
 --                     privacy {allow}
 -- Hidden staff and players in ghost mode answer like a name that is not online.
@@ -154,10 +157,18 @@ local function inspect(player, data)
 		name = target:getName(), level = target:getLevel(), voc = voc and voc:getName() or "", vocId = vocId,
 		ascended = ChaosClasses and ChaosClasses.isAscended(vocId) or false, guild = guildOf(target),
 		ach = achievementPoints(target), rift = riftBest(target), trials = trialsTier(target),
-		outfit = I.outfitOf(target:getOutfit()), self = target:getId() == pid, parts = #packets
+		outfit = I.outfitOf(target:getOutfit()), self = target:getId() == pid, parts = #packets,
+		tree = ChaosPassiveTree ~= nil and ChaosPassiveTree.publicView ~= nil
 	})
 	for i, group in ipairs(packets) do
 		reply(player, "equip", {name = target:getName(), rows = group, part = i})
+	end
+	-- the passive tree (allocations, mastery effects, class and line), shown read-only by the client's tree window
+	if ChaosPassiveTree and ChaosPassiveTree.publicView then
+		local view = pcallv(ChaosPassiveTree.publicView, target)
+		if view then
+			Chaos.sendChunked(player, OPCODE, json.encode({action = "tree", data = I.treePayload(target:getName(), view)}))
+		end
 	end
 end
 

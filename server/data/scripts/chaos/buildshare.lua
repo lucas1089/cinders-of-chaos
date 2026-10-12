@@ -11,10 +11,11 @@
 --   * the Paragon part is applied when the code has one and the track is unlocked
 --
 -- Protocol (opcode 65, through ChaosPassiveTree.extraActions in passivetree.lua):
---   client -> server  buildExport                  -> buildCode {code, nodes, paragon}
+--   client -> server  buildExport                  -> buildCode {code, nodes, paragon} (format version 2: with the masteries)
 --                     buildPreview {code}          -> buildPreview {code, nodes, current, wanted, applied, skipped, added,
 --                                                     removed, treeReset, paragon, paragonChange, paragonReset, cost,
---                                                     free, points, notes, change} or buildError {message}
+--                                                     free, points, notes, change, masteries = [{id, choice}]} or
+--                                                     buildError {message}
 --                     buildApply {code, cost}      -> applied (sendNodes, sendPoints, paragonState, respecInfo) and
 --                                                     buildApplied {message}, or buildError {message}; cost is the price
 --                                                     the preview showed: a higher price now is refused
@@ -61,6 +62,7 @@ local function context(T, player)
 	local active = activeRow(T, player)
 	local ctx = {
 		classId = classOf(player), className = className, current = active and active.nodes or {},
+		currentMasteries = active and T.core.cleanMasteries(T.getTree(), active.nodes, active.masteries) or {},
 		points = T.totalPoints(player),
 		keystoneKey = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
 		classKey = ChaosPassiveTree.classKey and ChaosPassiveTree.classKey(player) or nil
@@ -84,7 +86,8 @@ end
 function B.exportCode(player)
 	local T = ChaosPassiveTree.internal
 	local active = activeRow(T, player)
-	local build = {classId = classOf(player), nodes = active and active.nodes or {}}
+	local build = {classId = classOf(player), nodes = active and active.nodes or {},
+		masteries = active and T.core.cleanMasteries(T.getTree(), active.nodes, active.masteries) or nil}
 	if ChaosParagon and ChaosParagon.allocation then
 		local alloc = ChaosParagon.allocation(player)
 		if ChaosParagon.spent(alloc) > 0 then
@@ -121,7 +124,7 @@ function B.preview(player, code)
 		paragon = plan.paragon, paragonChange = plan.paragonChange or false, paragonReset = plan.paragonReset or false,
 		cost = cost, free = (plan.treeReset or plan.paragonReset) and R and R.freeText(player) or nil, points = ctx.points,
 		notes = plan.notes, change = plan.treeChange or plan.paragonChange or false,
-		className = className(build.classId)
+		className = className(build.classId), masteries = T.core.toList(plan.masteries)
 	}, nil, plan
 end
 
@@ -177,7 +180,7 @@ function B.apply(player, code, seenCost)
 	local guid = player:getGuid()
 	if plan.treeChange then
 		local active = activeRow(T, player)
-		T.savePreset(guid, active and active.preset or 1, active and active.name or "Preset 1", ids)
+		T.savePreset(guid, active and active.preset or 1, active and active.name or "Preset 1", ids, plan.masteries)
 	end
 	local P = ChaosParagon
 	if plan.paragon and plan.paragonChange and P then

@@ -1,6 +1,7 @@
 -- Run from the server/ folder: luajit tests/buildshare_test.lua (or lua5.3; CI runs both)
 -- Build codes (buildshare_core.lua): round trip, checksum, versions, wrong class, unknown / disconnected nodes, keystones,
 -- too many points (first N in path order), reset detection, the Paragon part, and that codes survive appended nodes.
+-- Format version 2 (the mastery part) and version 1 codes (handed out before it) still read, typos rejected in both.
 dofile("data/scripts/chaos/buildshare_core.lua")
 local B = ChaosBuildShare
 local tree = dofile("data/scripts/chaos/passivetree_data.lua")
@@ -42,7 +43,7 @@ end
 -- round trip
 local nodes = connected(40)
 local code = B.encode({classId = 4, nodes = nodes})
-check(code:match("^CB1%-[%w_%-]+$"), "code format " .. code)
+check(code:match("^CB2%-[%w_%-]+$"), "code format " .. code)
 local build = assert(B.decode(code))
 check(build.classId == 4, "class id round trip")
 check(sorted(build.nodes) == sorted(nodes), "nodes round trip")
@@ -73,7 +74,7 @@ for i = 1, #body do
 		local ch = body:sub(i, i)
 		local pos = alphabet:find(ch, 1, true)
 		local other = alphabet:sub((pos + k - 1) % 64 + 1, (pos + k - 1) % 64 + 1)
-		local bad = "CB1-" .. body:sub(1, i - 1) .. other .. body:sub(i + 1)
+		local bad = "CB2-" .. body:sub(1, i - 1) .. other .. body:sub(i + 1)
 		tried = tried + 1
 		local ok, err = B.decode(bad)
 		if not ok and err then
@@ -82,20 +83,41 @@ for i = 1, #body do
 	end
 end
 check(rejected == tried, string.format("typos rejected %d/%d", rejected, tried))
-local swapped = "CB1-" .. body:sub(2, 2) .. body:sub(1, 1) .. body:sub(3)
+local swapped = "CB2-" .. body:sub(2, 2) .. body:sub(1, 1) .. body:sub(3)
 check(body:sub(1, 1) == body:sub(2, 2) or B.decode(swapped) == nil, "swapped characters rejected")
 local _, err = B.decode(code:sub(1, -3))
 check(err and err:find("damaged"), "truncated code rejected: " .. tostring(err))
 _, err = B.decode("hello")
 check(err and err:find("not a build code"), "garbage rejected")
-_, err = B.decode("CB1-" .. body .. "!")
+_, err = B.decode("CB2-" .. body .. "!")
 check(err ~= nil, "bad character rejected")
 
 -- versions
 _, err = B.decode("CB0-" .. body)
 check(err and err:find("old format"), "old version: " .. tostring(err))
-_, err = B.decode("CB2-" .. body)
+_, err = B.decode("CB3-" .. body)
 check(err and err:find("newer format"), "newer version: " .. tostring(err))
+-- version 1 (before the masteries) still reads, the same nodes; its checksum covers "CB1"
+local v1 = B.encode({classId = 4, nodes = nodes, paragon = {damage = 3}}, 1)
+check(v1:match("^CB1%-"), "a version 1 code: " .. v1)
+local v1Build = assert(B.decode(v1))
+check(v1Build.version == 1 and sorted(v1Build.nodes) == sorted(nodes) and v1Build.paragon.damage == 3 and
+	v1Build.masteries == nil, "version 1 decodes")
+check(B.decode("CB2-" .. v1:sub(5)) == nil, "a version 1 body under the version 2 prefix fails its checksum")
+local v1body, v1rej, v1tried = v1:sub(5), 0, 0
+for i = 1, #v1body do
+	local ch = v1body:sub(i, i)
+	local pos = alphabet:find(ch, 1, true)
+	local other = alphabet:sub(pos % 64 + 1, pos % 64 + 1)
+	v1tried = v1tried + 1
+	if not B.decode("CB1-" .. v1body:sub(1, i - 1) .. other .. v1body:sub(i + 1)) then
+		v1rej = v1rej + 1
+	end
+end
+check(v1rej == v1tried, "version 1 typos rejected")
+check(B.encode({classId = 4, nodes = {626, 665}, masteries = {[665] = 2}}, 1):match("^CB1%-") and
+	B.decode(B.encode({classId = 4, nodes = {626, 665}, masteries = {[665] = 2}}, 1)).masteries == nil,
+	"version 1 has no mastery part")
 
 -- class lines: the class byte is a stable line index, not a vocation id
 check(B.lineIndex("warrior") == 1 and B.lineIndex("thief") == 4 and B.lineIndex("knight") == 0, "class line index")
@@ -208,6 +230,35 @@ check(plan.paragon.damage == 10 and plan.paragon.health == 2 and plan.paragonSki
 plan = assert(B.plan(tree, pBuild, {classId = 4, current = {}, points = 100,
 	paragon = {unlocked = false, total = 0, current = {}, max = max}}))
 check(plan.paragon == nil and #plan.notes == 1, "paragon locked: skipped with a note")
+
+-- mastery nodes: round trip, plan, effects kept / changed / defaulted
+local mNodes = {626, 627, 628, 665}
+local mCode = B.encode({classId = 4, nodes = mNodes, masteries = {[665] = 3}, paragon = {health = 2}})
+local mBuild = assert(B.decode(mCode))
+check(mBuild.version == 2 and mBuild.masteries[665] == 3 and mBuild.paragon.health == 2 and sorted(mBuild.nodes) == sorted(mNodes),
+	"mastery round trip with a Paragon part")
+local both = assert(B.decode(B.encode({classId = 4, nodes = {626, 627, 628, 665, 636}, masteries = {[665] = 1, [666] = 2}})))
+check(both.masteries[665] == 1 and both.masteries[666] == 2, "two mastery choices")
+local thief = {classId = 4, current = {}, points = 100, keystoneKey = "thief", classKey = "thief"}
+plan = assert(B.plan(tree, mBuild, thief))
+check(plan.masteries[665] == 3 and not plan.treeReset, "import takes the code's effect")
+plan = assert(B.plan(tree, mBuild, {classId = 4, current = mNodes, currentMasteries = {[665] = 3}, points = 100,
+	classKey = "thief"}))
+check(not plan.treeChange, "same build and effect: no change")
+plan = assert(B.plan(tree, mBuild, {classId = 4, current = mNodes, currentMasteries = {[665] = 1}, points = 100,
+	classKey = "thief"}))
+check(plan.treeChange and plan.treeReset and plan.masteryChanged == 1 and plan.masteries[665] == 3,
+	"another effect for a held mastery is a respec")
+local oldCode = assert(B.decode(B.encode({classId = 4, nodes = mNodes}, 1)))
+plan = assert(B.plan(tree, oldCode, {classId = 4, current = mNodes, currentMasteries = {[665] = 4}, points = 100,
+	classKey = "thief"}))
+check(plan.masteries[665] == 4 and not plan.treeChange, "a version 1 code keeps the held effect")
+plan = assert(B.plan(tree, oldCode, thief))
+check(plan.masteries[665] == 1 and #plan.notes == 1 and plan.notes[1]:find("first effect"), "no effect named: the first, with a note")
+plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 4, nodes = mNodes, masteries = {[665] = 7}}))), thief)
+check(not plan and err:find("effect 7"), "an effect the mastery does not have: " .. tostring(err))
+plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 4, nodes = {626}, masteries = {[626] = 1}}))), thief)
+check(not plan and err:find("not a mastery"), "a choice for a plain node: " .. tostring(err))
 
 -- stability: the tree gets new nodes appended (new ids), old codes stay valid and mean the same nodes
 local grown = {root = tree.root, nodes = {}}

@@ -1405,7 +1405,7 @@ CREATE TABLE IF NOT EXISTS `chaos_paragon` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
-- Client: the Paragon button next to Apply Points / Reset in the passive tree window (`game_passivetree/paragon.lua`,
+- Client: the Paragon button next to Apply Plan / Reset in the passive tree window (`game_passivetree/paragon.lua`,
   `paragon.otui`, maths in `paragonmath.lua`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list has a
   Paragon section.
 - `server/tests/paragon_test.lua`: points, caps, validation, the handlers against a mocked db, gold find maths, the login refund and
@@ -1487,6 +1487,59 @@ variant the server applies (the client's own vocation number did not match: an E
 - Tests: `server/tests/class_tree_test.lua` (flags, sanitize, the generated data, tooltips against the numbers, the class rules),
   `passivetree_keystones_test.lua`, `buildshare_test.lua`, `classes_test.lua`.
 
+## Passive tree planner and mastery nodes (`passivetree_core.lua`, `passivetree_config.lua`, client `game_passivetree`)
+The tree window plans a whole allocation and applies it in one request; four mastery nodes let the player pick one
+effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.lua` and the tree data.
+- **Planner (client `treeplan.lua`, `planner.lua`).** A left click on a node that is not allocated plans the shortest
+  path to it from the allocated set and the plan: a breadth-first walk over the nodes the class may take (another line's
+  section, a locked ascended path and start nodes are not walked). Planned nodes get a blue-tinted frame (the `checked`
+  state of the node styles), their links the allocation's edge style. A click on a planned node takes it out with every
+  planned node that hangs on it. The plan bar (bottom right) shows "Plan: n / free points" (red when short) with Undo,
+  Redo (Ctrl+Z / Ctrl+Y, whole plan states, 100 deep) and Clear Plan. "Info & Bonuses" lists the plan's bonuses under
+  PLANNED. Apply Plan sends the whole plan once. The Paragon track does not interact (its points are separate).
+- **Server check (`planApply {nodes, masteries}`).** `validatePlan` checks the whole plan like a save, then the plain
+  save's `validateNodes` runs on the final list: a table of 1 to `maxPlanNodes` (300) ids, every id known and not the
+  root, no id twice, none already allocated, every node one the class may hold (`ChaosClassTree.allowed`: class sections
+  and ascended paths), saved + planned <= points owned, every planned node connected to the start through saved and
+  planned nodes, every planned mastery with a valid effect, no effect for a saved mastery. All of it is saved at once, or
+  nothing, with the reason in `planResult {ok, message}`. Same rate limit as a save (one a second, key
+  `passivetree.save`); the tree has no zone or combat rule today and the planner adds none.
+- **Mastery nodes 665-668** (one per class section, above its third line node; any class of the line may take it): 1
+  point like every node; 3 or 4 effects of ordinary tree stats, about one notable each (no new combat code). The effect
+  is picked while the node is planned (free, changeable until Apply). Changing the effect of a saved mastery
+  (`masteryChoose {id, choice}`) costs the single-node refund price of `respec.lua` (free below level 50); a refund or a
+  reset drops the choice. Numbers: `treedata/nodes.lua` (`masteries`), generated into `passivetree_data.lua` as `m`.
+
+| Line | Mastery (node) | Effects |
+|---|---|---|
+| Thief | Shadow Discipline (665) | Keen Edge: crit chance +2, crit amount +5 / Light Step: dexterity +3, speed +20 / Tough Hide: vitality +4, physical absorb +2 / Venom Glands: earth +6, physical +3 |
+| Necromancer | Grave Mastery (666) | Withering Touch: death +6, magic level +1 / Ossified Hide: physical absorb +3, vitality +3 / Soul Well: spirit +5, death absorb +2 |
+| Monk | Inner Discipline (667) | Iron Knuckles: physical +6, strength +2 / Swift Palm: crit chance +2, crit amount +4 / Still Water: healing +6, spirit +3 / Stone Body: vitality +4, physical absorb +2 |
+| Templar | Sacred Oath (668) | Oath of Flame: holy +6, strength +2 / Oath of the Wall: shielding +2, physical absorb +2, all elements absorb +1 / Oath of Mercy: healing +6, vitality +3 |
+
+- **Saved data.** The `nodes` column of `chaos_passive_tree` stays "2,3,9"; with masteries it is "2,3,9,665|665:2" (the
+  chosen effect after "|"). Old rows read as before, so no SQL is needed. `sendNodes` carries `masteries = [{id,
+  choice}]`. Loadouts keep the same text in their `tree` column (a switch, save, park and the crash undo keep the
+  choices; a choice the node no longer has is dropped on load). Build codes carry them in format version 2.
+- **Search (client `search.lua`).** A box at the bottom left (Ctrl+F) frames every shown node whose name, stat lines,
+  description or mastery effects hold all typed words (any case, any order); Next / Prev (Enter / Shift+Enter) centre
+  the view on each match, the label counts them ("3 / 12").
+- **Zoom (client `passivetree.lua`).** Each zoom level of the shown class keeps its widgets in its own pair of panels
+  (at most three); a zoom step back to a level built before swaps the visible panels instead of destroying and creating
+  about 1,480 widgets again, and a zoom keeps the same point of the tree in the middle. The client has no render-to-texture
+  binding for Lua, so the links stay widgets; off-screen widgets were already skipped by the engine's draw.
+  Measured in the Linux client (software GL under Xvfb, other builds running): a build of a level 1,479 widgets in
+  1,658-2,452 ms (sliced over frames, as every zoom step before); a step to a cached level 27-70 ms and no widget.
+- Tests: `tests/passivetree_plan_test.lua` (text format, mastery data, every plan rule, mastery changes, the handlers,
+  loadouts text), `tests/buildshare_test.lua`, `tests/inspect_test.lua`, client `treeplan_test.lua` (paths, plan
+  undo / redo / remove, masteries, search) and `game_playerinspect/playerinspect_logic_test.lua`.
+- Tested in game (two clients): a planned path to a mastery with its choice, Apply (one request, saved with the
+  choice), the effect changed for 9,000 gold at level 105, a forged disconnected plan refused, a plan over the points,
+  search, zoom, a version 2 code exported and previewed on another character, the inspected tree read-only and a
+  private character refused. Screenshots in the session's scratchpad (`treework/shots`).
+- Not done: the Warrior, Ranger and Mystic lines have no class section and so no mastery yet; the masteries were not
+  measured on the dummies (one node of 73 / 248 points; each effect is sized like a notable of its section).
+
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
 validates and applies; the client only shows what the server sends.
@@ -1497,17 +1550,20 @@ validates and applies; the client only shows what the server sends.
   box showing the price) applies it, **Cancel Preview** shows the saved tree again.
 - **Chat:** the spoken `!build` commands are gone (everything is in the Build Code panel); a "build link" `[build CB1-...]`
   pasted in chat still opens the panel with that code.
-- **Code format, version 1:** `CB1-` + base64url of: class line (1 byte, index into `ChaosBuildShare.CLASS_LINES` = warrior,
-  ranger, mystic, thief; 0 = no class; never a vocation id), flags (1 byte, 1 = Paragon part), the optional Paragon part (count,
-  then stat index into `PARAGON_KEYS` + points, 1 byte each), a bitset of the allocated node ids (bit `id % 8` of byte `id / 8`,
-  trailing zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB1" and the bytes). Only the
+- **Code format, version 2:** `CB2-` + base64url of: class line (1 byte, index into `ChaosBuildShare.CLASS_LINES` = warrior,
+  ranger, mystic, thief; 0 = no class; never a vocation id), flags (1 byte, 1 = Paragon part, 2 = mastery part), the optional
+  Paragon part (count, then stat index into `PARAGON_KEYS` + points, 1 byte each), the optional mastery part (count, then node
+  id in 2 bytes and the chosen effect in 1 byte), a bitset of the allocated node ids (bit `id % 8` of byte `id / 8`, trailing
+  zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB2" and the bytes). Only the
   canonical base64 form is accepted, so every single-character typo is rejected (test). A 100 node build is ~60 characters, a
-  248 node level 1000 build ~110, the whole tree ~120.
+  248 node level 1000 build ~110, the whole tree ~120. **Version 1** (`CB1-`, the same without the mastery part) is still
+  read: an import of it keeps the character's own mastery effects, else takes the first one (the preview says so). An import
+  that changes the effect of a mastery the character holds counts as taking points back (the full reset price).
 - **Stability rule:** the bitset is indexed by the stable node ids of `passivetree_data.lua` (the client's `nodes.lua` ids), not
   by array positions. New nodes are appended with new ids; existing ids are never renumbered or reused, so old codes stay valid
   and mean the same nodes. A retired id makes codes that use it invalid ("node N is not in the passive tree"). Class lines and
-  Paragon stat keys are append-only lists. A new format gets a new version number; old versions are rejected with a clear message
-  unless `decode` keeps reading them (only version 1 exists).
+  Paragon stat keys are append-only lists, and so are a mastery's effects. A new format gets a new version number; `decode`
+  reads every version ever handed out (`ChaosBuildShare.READS`: 1 and 2), others are rejected with a clear message.
 - **Import rules (server):** same class line as the importer (Juggernaut and Berserker share the Warrior line; keystone variants
   follow the importer's class via `ChaosClasses.keystoneKey`), else "This build is for a Warrior line class; you are a ...";
   every node known and connected to the start through the build's own nodes; a keystone only if the importer's class has a variant
@@ -5599,13 +5655,18 @@ A window with the public side of another player. Extended opcode `ChaosOpcodes.i
 | client -> server | `privacy` | `{}` asks for the own setting, `{allow = true / false}` sets it |
 | server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts}` |
 | server -> client | `equip` | `{name, rows = [{slot, tip}], part}` `parts` packets follow a `result`, cut at about 12000 bytes of JSON; slot 1-10 as the inventory, `tip` the rich tooltip |
+| server -> client | `tree` | `{name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}` the active passive tree, after the equipment (`ChaosInspect.treePayload` of `ChaosPassiveTree.publicView`), through `Chaos.sendChunked`; `result.tree` says one follows |
 | server -> client | `denied` | `{code, text}` code: `notfound`, `private`, `range`, `rate`, `bad` |
 | server -> client | `privacy` | `{allow}` |
 
 **What is public** (and all that is ever sent): name, level, vocation and whether it is an ascended class, guild and rank,
 achievement points of the character (`ChaosAchievements.pointsOf`), the best rift tier sealed (the achievement counter
-`rift_tier`), the highest Vocation Trial tier cleared as the current vocation (`ChaosTrials.tierCleared`), the outfit and the
-ten equipment slots with their tooltips. No health, mana, skills, passive tree, storage, gold or backpack contents.
+`rift_tier`), the highest Vocation Trial tier cleared as the current vocation (`ChaosTrials.tierCleared`), the outfit, the
+ten equipment slots with their tooltips and the active passive tree (node ids, the chosen mastery effects, class and line). No
+health, mana, skills, storage, gold or backpack contents. The tree is sent only with an allowed `result`, so the privacy
+setting covers it. The window's **Passive Tree (n)** button shows it read-only in the passive tree window
+(`game_passivetree/viewother.lua`): that class's section and keystone variants, the effects in the tooltips, its bonuses
+in "Info & Bonuses", no planning, refund or apply, a banner with "Back to my tree".
 
 **Rules.**
 - `cid` (right-click): the same floor, at most 10 tiles away in x and y and in view (`player:canSee`). `name` (the menu
@@ -7816,7 +7877,7 @@ station opens a lesson (modal window + toast) when entered; its gate opens east 
    and cast the class spell (Warrior Salve of Scars `saen tin brak`, Ranger / Mystic Arcane Stitch `saen tin`), detected by
    the spell group cooldown condition (polled every 300 ms). A level 1 character with too little mana gets its maximum raised
    to the spell's cost once. The Thief line has no spell below level 20: opening the spellbook is enough.
-3. Passive tree: one free passive point (`passiveExtraPoints` +1, kept); allocating it and pressing Apply Points completes the
+3. Passive tree: one free passive point (`passiveExtraPoints` +1, kept); allocating it and pressing Apply Plan completes the
    station (a listener in `ChaosPassiveTree.listeners`).
 4. Orbs: an Orb of Upheaval and a Common (rarity 1) leather armor; the station completes when the orb is used (the character's orb
    count drops: the stock action and the crafting bench both consume it). The lesson mentions Economy > Crafting Bench when `ChaosCrafting`

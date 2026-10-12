@@ -165,7 +165,7 @@ local function liveTree(player)
 	return active and active.nodes or {}, active
 end
 
-local function setLiveTree(player, ids, presetRow)
+local function setLiveTree(player, ids, presetRow, masteries)
 	local T = treeApi()
 	if not T then
 		return
@@ -175,7 +175,7 @@ local function setLiveTree(player, ids, presetRow)
 	for i, id in ipairs(ids) do
 		copy[i] = id
 	end
-	T.savePreset(player:getGuid(), active and active.preset or 1, active and active.name or "Preset 1", copy)
+	T.savePreset(player:getGuid(), active and active.preset or 1, active and active.name or "Preset 1", copy, masteries)
 end
 
 local function liveParagon(player)
@@ -687,6 +687,7 @@ function L.switch(player, target)
 	end
 	local targetRow = rows[target]
 	local liveIds, presetRow = liveTree(player)
+	local liveMasteries = presetRow and presetRow.masteries or {}
 	local livePar = liveParagon(player)
 	local liveRunes = liveLayout(player)
 	local vocId = vocationId(player)
@@ -694,6 +695,7 @@ function L.switch(player, target)
 	-- the target, against the tree and the character now (free refunds of what the game took away)
 	local kept, removed = Core.validateTree(treeData(), Core.parseNodes(targetRow.tree),
 		{classKey = classKey(player), points = totalPoints(player), allowed = allowedFn()})
+	local keptMasteries = Core.cleanMasteries(treeData(), kept, Core.parseMasteries(targetRow.tree))
 	local par, parRemoved = paragonCheck(player, Core.decodeParagon(targetRow.paragon))
 
 	-- database first, with the undo record
@@ -701,20 +703,20 @@ function L.switch(player, target)
 	local serial = math.max(math.max(0, storage(player, ST.serial)), state and state.serial or 0) + 1
 	local parked = plan.park and rows[plan.park]
 	local undo = {
-		live = {nodes = Core.formatNodes(liveIds), preset = presetRow and presetRow.preset or 1, name = presetRow and presetRow.name or "Preset 1"},
+		live = {nodes = Core.formatNodes(liveIds, liveMasteries), preset = presetRow and presetRow.preset or 1, name = presetRow and presetRow.name or "Preset 1"},
 		paragon = Core.encodeParagon(livePar), slot = plan.park,
 		row = parked and {tree = parked.tree, paragon = parked.paragon, supports = parked.supports, voc = parked.voc} or nil,
 		target = target, targetTree = targetRow.tree, targetParagon = targetRow.paragon
 	}
 	writeState(guid, serial, json.encode(undo))
 	if parked then
-		parked.tree, parked.paragon, parked.voc = Core.formatNodes(liveIds), Core.encodeParagon(livePar), vocId
+		parked.tree, parked.paragon, parked.voc = Core.formatNodes(liveIds, liveMasteries), Core.encodeParagon(livePar), vocId
 		parked.supports, parked.updated = Core.encodeRunes(liveRunes), os.time()
 		writeRow(guid, plan.park, parked)
 	end
-	setLiveTree(player, kept, presetRow)
+	setLiveTree(player, kept, presetRow, keptMasteries)
 	setLiveParagon(player, par)
-	targetRow.tree, targetRow.paragon = Core.formatNodes(kept), Core.encodeParagon(par)
+	targetRow.tree, targetRow.paragon = Core.formatNodes(kept, keptMasteries), Core.encodeParagon(par)
 	writeRow(guid, target, targetRow)
 
 	-- then the storages: the runes move between the live sockets and the loadouts' own storages
@@ -849,12 +851,12 @@ function L.save(player, slot, name, icon)
 		return false, Core.msg(nil, "lowLevel", cfg.minLevel)
 	end
 	local old = rows[slot]
-	local liveIds = liveTree(player)
+	local liveIds, liveRow = liveTree(player)
 	local liveRunes = liveLayout(player)
 	local set = snapshotGear(player)
 	local row = {
 		name = Core.cleanName(name or (old and old.name), slot), icon = Core.cleanIcon(icon or (old and old.icon)),
-		voc = vocationId(player), tree = Core.formatNodes(liveIds), paragon = Core.encodeParagon(liveParagon(player)),
+		voc = vocationId(player), tree = Core.formatNodes(liveIds, liveRow and liveRow.masteries), paragon = Core.encodeParagon(liveParagon(player)),
 		-- a copy keeps the slot's own runes (runes are never duplicated); the active loadout's runes are the live ones
 		supports = plan.copy and (old and old.supports or "") or Core.encodeRunes(liveRunes),
 		gear = Core.encodeGear(set, cfg.gearSlots), serial = 0, undo = "", updated = os.time()
@@ -924,7 +926,8 @@ function L.recover(player)
 		if ok and type(undo) == "table" and type(undo.live) == "table" then
 			local T = treeApi()
 			if T then
-				T.savePreset(guid, tonumber(undo.live.preset) or 1, tostring(undo.live.name or "Preset 1"), Core.parseNodes(undo.live.nodes))
+				T.savePreset(guid, tonumber(undo.live.preset) or 1, tostring(undo.live.name or "Preset 1"), Core.parseNodes(undo.live.nodes),
+					Core.parseMasteries(undo.live.nodes))
 			end
 			setLiveParagon(player, Core.decodeParagon(undo.paragon))
 			local slot = tonumber(undo.slot)

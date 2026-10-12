@@ -6,6 +6,8 @@
 -- Per-class variants (node.knight / .juggernaut / ... , the keys of VARIANTS below, used by the keystones) with their own
 -- customStats are stored in `v`; passivetree.lua uses them instead of `s` for that variant key (ChaosClasses.keystoneKey).
 -- node.classes (the classes that may take the node) is stored as `c` = {[class key] = true} (class_tree.lua checks it).
+-- A mastery node (node.masteries = {{name, customStats}, ...}: 2-4 effects, the player picks one) is stored as
+-- `m` = {{customStats of effect 1}, {effect 2}, ...} in that order (passivetree_core.lua; never reorder, only append).
 -- Start nodes (isStartNode) other than the root are the start of a class section: they are not stored; their edges
 -- go to the root instead, so the section connects to the root like any other branch. Hidden nodes (node.hidden: a stray
 -- node of the original tree, never reachable) are not stored either.
@@ -39,7 +41,8 @@ w("-- passivetree_data.lua  (GENERATED from client/overlay/modules/game_passivet
 w("-- Do not edit by hand: regenerate with server/tools/gen_passivetree_data.lua if the client tree changes.")
 w("-- Format: ChaosPassiveTreeData.nodes[id] = { n = {neighbour ids (undirected)}, s = {customStats},")
 w("--         v = {[variant key] = {customStats of that variant}} (keystones; replaces s for that key),")
-w("--         c = {[class key] = true} (only these classes may take the node; none = every class) }")
+w("--         c = {[class key] = true} (only these classes may take the node; none = every class),")
+w("--         m = {{customStats of effect 1}, ...} (mastery nodes: the player picks one effect) }")
 w("if ChaosPassiveTreeData then return ChaosPassiveTreeData end")
 w("ChaosPassiveTreeData = { root = 1, nodes = {")
 local stats_total = 0
@@ -78,8 +81,19 @@ for _, id in ipairs(ids) do
     table.sort(keys)
     for _, k in ipairs(keys) do c[#c + 1] = k .. "=true" end
   end
-  w(string.format("[%d]={n={%s}%s%s%s},", id, table.concat(nb, ","), #s > 0 and (",s={" .. table.concat(s, ",") .. "}") or "",
-    #v > 0 and (",v={" .. table.concat(v, ",") .. "}") or "", #c > 0 and (",c={" .. table.concat(c, ",") .. "}") or ""))
+  local m = {}
+  if n.masteries then
+    assert(#n.masteries >= 2 and #n.masteries <= 4, "mastery node " .. id .. ": 2 to 4 effects")
+    for i, effect in ipairs(n.masteries) do
+      assert(type(effect.customStats) == "table" and next(effect.customStats), "mastery node " .. id .. " effect " .. i .. ": stats")
+      local ms = statList(effect.customStats)
+      stats_total = stats_total + #ms
+      m[#m + 1] = "{" .. table.concat(ms, ",") .. "}"
+    end
+  end
+  w(string.format("[%d]={n={%s}%s%s%s%s},", id, table.concat(nb, ","), #s > 0 and (",s={" .. table.concat(s, ",") .. "}") or "",
+    #v > 0 and (",v={" .. table.concat(v, ",") .. "}") or "", #c > 0 and (",c={" .. table.concat(c, ",") .. "}") or "",
+    #m > 0 and (",m={" .. table.concat(m, ",") .. "}") or ""))
   ::continue::
 end
 w("} }")

@@ -173,7 +173,7 @@ ChaosTreeHandlers.buildPreview = function(data)
     lines[#lines + 1] = 'The tree shows the build now. Apply Build to take it, Cancel Preview to go back.'
   end
   setPreviewText(table.concat(lines, '\n'), data.change and '#d8cfc0' or '#c0b080')
-  showTreeAllocation(data.nodes or {}, true)
+  showTreeAllocation(data.nodes or {}, true, data.masteries)
   refreshButtons()
 end
 
