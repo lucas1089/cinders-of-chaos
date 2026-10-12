@@ -115,7 +115,8 @@ check(count($s2['goals']) === 2 && $s2['goals'][0]['realm_name'] === 'Standard r
 
 // the page
 function render_page(): string {
-	global $config;
+	global $config, $now;
+	$chaos_page_now = $now;
 	ob_start();
 	include __DIR__ . '/../overlay/plugins/chaos/pages/community.php';
 	return (string)ob_get_clean();

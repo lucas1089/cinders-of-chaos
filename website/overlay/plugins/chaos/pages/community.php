@@ -8,7 +8,8 @@ if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once dirname(__DIR__) . '/community_lib.php';
 $GLOBALS['page_title'] = 'Community';
 
-$state = chaos_community_state(time(), 10);
+// tests pin the clock with $chaos_page_now (the goal rows are per week)
+$state = chaos_community_state(isset($chaos_page_now) ? (int)$chaos_page_now : time(), 10);
 $block = chaos_community_block_html($state, true);
 ?>
 <div class="chaos-page">
