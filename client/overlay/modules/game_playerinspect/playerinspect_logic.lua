@@ -1,7 +1,8 @@
 -- Inspect Player (game_playerinspect), the logic without client API (tested by playerinspect_logic_test.lua).
 -- The server (extended opcode 240, server/data/scripts/chaos/inspect.lua + inspect_core.lua) answers
 --   result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts}
---   equip  {name, rows = [{slot, tip}], part}      (parts packets of equipment follow a result)
+--   equip  {name, rows = [{slot, tip}], part}      (parts packets of equipment follow a result; each fits one message,
+--          a single big row comes in parts "S..", "P..", "E.." like the tree, joined by L.joinPart)
 --   tree   {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}   the passive tree, after the
 --          equipment; a big one comes in parts "S..", "P..", "E.." (Chaos.sendChunked), joined by L.joinPart
 --   denied {code, text}      privacy {allow}

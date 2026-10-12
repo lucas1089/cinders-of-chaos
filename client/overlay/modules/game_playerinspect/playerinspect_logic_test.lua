@@ -83,5 +83,48 @@ do
   eq(L.joinPart(parts, ''), nil, 'empty')
 end
 
+-- a full answer as the server sends it (inspect.lua): result whole, the equipment packets each at most 8000 bytes or,
+-- a single big row, in S/P/E parts (Chaos.sendChunked), then the tree. The window's handler joins every buffer with
+-- L.joinPart before it decodes; here the decoded messages are looked up by their text.
+do
+  local msgs = {
+    ['{"r":1}'] = { action = 'result', data = { name = 'Anna', parts = 3 } },
+    ['{"e":1}'] = { action = 'equip', data = { name = 'Anna', part = 1, rows = { { slot = 1, tip = { name = 'Helm' } } } } },
+    ['{"e":2,"big":"' .. string.rep('x', 9000) .. '"}'] = { action = 'equip', data = { name = 'Anna', part = 2,
+      rows = { { slot = 4, tip = { name = 'Armour' } } } } },
+    ['{"e":3}'] = { action = 'equip', data = { name = 'Anna', part = 3, rows = { { slot = 6, tip = { name = 'Sword' } } } } },
+    ['{"t":1}'] = { action = 'tree', data = { name = 'Anna', nodes = { 1, 2 } } },
+  }
+  local big = '{"e":2,"big":"' .. string.rep('x', 9000) .. '"}'
+  local wire = { '{"r":1}', '{"e":1}', 'S' .. big:sub(1, 4000), 'P' .. big:sub(4001, 8000), 'E' .. big:sub(8001), '{"e":3}',
+    'S{"t"', 'E:1}' }
+  local st, parts, decoded = L.newState(), {}, 0
+  for _, buffer in ipairs(wire) do
+    local whole = L.joinPart(parts, buffer)
+    if whole then
+      local m = msgs[whole]
+      eq(m ~= nil, true, 'every joined message is one the server sent')
+      decoded = decoded + 1
+      if m.action == 'result' then L.onResult(st, m.data)
+      elseif m.action == 'equip' then
+        L.onEquip(st, m.data)
+        if m.data.part < 3 then eq(L.complete(st), false, 'part ' .. m.data.part .. ' of 3') end
+      elseif m.action == 'tree' then L.onTree(st, m.data) end
+    end
+  end
+  eq(decoded, 5, 'five messages from eight buffers')
+  eq(L.complete(st), true, 'every equipment packet, the chunked one too')
+  eq(st.tips[1].name, 'Helm', 'packet 1')
+  eq(st.tips[4].name, 'Armour', 'the chunked packet')
+  eq(st.tips[6].name, 'Sword', 'the packet after it')
+  eq(L.treeButtonText(st), 'Passive Tree (2)', 'the tree after the equipment')
+  -- a part that is cut off (an S never ended) does not swallow the next answer
+  local p2 = {}
+  eq(L.joinPart(p2, 'S{"lost"'), nil, 'a start')
+  eq(L.joinPart(p2, '{"r":1}'), '{"r":1}', 'a whole message still passes')
+  eq(L.joinPart(p2, 'S{"e"'), nil, 'a new start')
+  eq(L.joinPart(p2, 'E:1}'), '{"e":1}', 'replaces the lost one')
+end
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('playerinspect_logic_test: ' .. checks .. ' checks ok')

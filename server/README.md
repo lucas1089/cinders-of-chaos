@@ -5773,7 +5773,7 @@ A window with the public side of another player. Extended opcode `ChaosOpcodes.i
 | client -> server | `inspect` | `{cid}` the creature id of a player the player right-clicked, or `{name}` typed in the window |
 | client -> server | `privacy` | `{}` asks for the own setting, `{allow = true / false}` sets it |
 | server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts}` |
-| server -> client | `equip` | `{name, rows = [{slot, tip}], part}` `parts` packets follow a `result`, cut at about 12000 bytes of JSON; slot 1-10 as the inventory, `tip` the rich tooltip |
+| server -> client | `equip` | `{name, rows = [{slot, tip}], part}` `parts` packets follow a `result`; slot 1-10 as the inventory, `tip` the rich tooltip. Each packet is at most 8000 bytes of JSON, the whole message counted (`ChaosInspect.equipPackets`, `config.packetBytes`), and goes through `Chaos.sendChunked`: a single row bigger than that arrives in `S`/`P`/`E` parts, joined by the client's `L.joinPart` like the tree |
 | server -> client | `tree` | `{name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}` the active passive tree, after the equipment (`ChaosInspect.treePayload` of `ChaosPassiveTree.publicView`), through `Chaos.sendChunked`; `result.tree` says one follows |
 | server -> client | `denied` | `{code, text}` code: `notfound`, `private`, `range`, `rate`, `bad` |
 | server -> client | `privacy` | `{allow}` |
@@ -5799,9 +5799,17 @@ in "Info & Bonuses", no planning, refund or apply, a banner with "Back to my tre
 - Menu: Social > Inspect Player (the window asks for the name; no spoken command) and "Inspect Player" in the right-click
   menu of a player (`game_interface.addMenuHook`). The base client's own "Inspect <name> Prestige" entry is a different thing.
 
+**Packet size.** An extended opcode message carries at most 8192 bytes (see "Extended opcode size limit" above). The equipment
+used to be cut at about 12000 bytes of rows: a rich item (Transcendent, 7 modifiers, three gems, a veiled slot, every
+protection) is 4.0-4.5 KB of JSON, so two of them made a packet of about 9 KB that `extended_opcode.lua` refused, and the
+window showed no equipment at all. Measured in `tests/inspect_test.lua` with ten such items (45.5 KB of rows): before, five
+packets of 8975-9964 bytes, all refused; now ten packets of 4518-5507 bytes, all delivered, and a single 9 KB row goes in
+two parts.
+
 Tests: `tests/inspect_test.lua` (names, who may be inspected from where, budget, packets, the handler against a mocked
-engine: public fields only, equipment tooltips, privacy default / off / on, hidden staff and ghosts, rate limit) and the
-client's `playerinspect_logic_test.lua`.
+engine: public fields only, equipment tooltips, privacy default / off / on, hidden staff and ghosts, rate limit; the wire
+under the engine's limit, joined by the client's own logic, for the largest realistic equipment) and the client's
+`playerinspect_logic_test.lua` (equipment and tree packets in parts).
 
 **Tested in game** (two clients): right-click menu (Ctrl + right-click with the classic controls) > Inspect Player on a
 player next to the inspector: outfit, level, class, achievement points, equipment with the rich tooltip on hover (slot name

@@ -8,7 +8,9 @@
 --                     privacy {allow = true | false}      set it ("Allow others to inspect me", default on)
 --   server -> client  result {name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit, self, parts}
 --                     equip {name, rows = [{slot, tip}], part}      parts packets follow `result`; slot 1-10 as the inventory,
---                                                                    tip = the rich tooltip of item_tooltip_core.lua
+--                                                                    tip = the rich tooltip of item_tooltip_core.lua; each
+--                                                                    packet at most 8000 bytes (ChaosInspect.equipPackets),
+--                                                                    through Chaos.sendChunked (a bigger single row in parts)
 --                     tree {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent}   the active passive
 --                                                                    tree, read-only (ChaosInspect.treePayload), after the
 --                                                                    equipment; through Chaos.sendChunked when it is large
@@ -149,8 +151,7 @@ local function inspect(player, data)
 	if not ok then
 		return deny(player, code, target and target:getName() or typed)
 	end
-	local rows = equipment(target)
-	local packets = I.chunk(rows, function(r) return #json.encode(r) end)
+	local packets = I.equipPackets(target:getName(), equipment(target), json.encode)
 	local voc = target:getVocation()
 	local vocId = voc and voc:getId() or 0
 	reply(player, "result", {
@@ -160,8 +161,9 @@ local function inspect(player, data)
 		outfit = I.outfitOf(target:getOutfit()), self = target:getId() == pid, parts = #packets,
 		tree = ChaosPassiveTree ~= nil and ChaosPassiveTree.publicView ~= nil
 	})
-	for i, group in ipairs(packets) do
-		reply(player, "equip", {name = target:getName(), rows = group, part = i})
+	-- each packet fits one extended opcode message (I.config.packetBytes); a single row bigger than that goes in parts
+	for _, packet in ipairs(packets) do
+		Chaos.sendChunked(player, OPCODE, packet)
 	end
 	-- the passive tree (allocations, mastery effects, class and line), shown read-only by the client's tree window
 	if ChaosPassiveTree and ChaosPassiveTree.publicView then

@@ -5,7 +5,7 @@
 --   server -> client  result {...}   equip {name, rows}   tree {name, nodes, masteries, cls, line, vocation}
 --                     denied {code, text}   privacy {allow}
 -- The Passive Tree button opens the inspected character's tree read-only in the passive tree window
--- (game_passivetree viewother.lua showOtherTree); a big tree packet arrives in parts (L.joinPart).
+-- (game_passivetree viewother.lua showOtherTree); a big tree or equipment packet arrives in parts (L.joinPart).
 -- The checkbox "Allow others to inspect me" is the character's privacy setting (stored on the server, default on).
 
 local OPCODE = 240

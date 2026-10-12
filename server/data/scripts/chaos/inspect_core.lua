@@ -17,7 +17,10 @@ I.config = {
 	cooldownMs = 1500, -- between two inspect requests of one player
 	bucketSize = 6, -- and at most 6 at once, then one every 5 seconds
 	bucketPerSecond = 0.2,
-	packetBytes = 12000, -- equipment rows are sent in packets of at most about this many bytes of JSON
+	-- equipment rows go in packets of at most this many bytes of JSON, whole message included (I.equipPackets), so a
+	-- packet fits one extended opcode message (Chaos.extendedOpcodeMax, 8192). A single row that is bigger still
+	-- arrives: every packet goes through Chaos.sendChunked.
+	packetBytes = 8000,
 	nameLength = 29
 }
 
@@ -119,6 +122,20 @@ function I.chunk(rows, sizeOf, limit)
 	end
 	if #cur > 0 then
 		out[#out + 1] = cur
+	end
+	return out
+end
+
+-- the equipment packets of one answer, encoded: each is the whole message {action = "equip", data = {name, rows, part}}
+-- and at most `limit` bytes unless one row alone is bigger (Chaos.sendChunked sends that one in parts). encode = json.encode.
+function I.equipPackets(name, rows, encode, limit)
+	limit = limit or I.config.packetBytes
+	-- the message around the rows; part 99 stands for any part number (10 slots: at most 10 parts)
+	local overhead = #encode({action = "equip", data = {name = name, rows = {{slot = 1}}, part = 99}}) - #encode({slot = 1})
+	local groups = I.chunk(rows, function(r) return #encode(r) + 1 end, limit - overhead) -- + 1: the comma
+	local out = {}
+	for i, group in ipairs(groups) do
+		out[i] = encode({action = "equip", data = {name = name, rows = group, part = i}})
 	end
 	return out
 end

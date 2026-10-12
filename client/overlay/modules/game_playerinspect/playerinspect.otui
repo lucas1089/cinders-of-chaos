@@ -12,12 +12,12 @@ InspectSlot < ChaosItemSlot
     phantom: true
     border-width: 0
 
+// a row of infoPanel.lines, a verticalBox: the layout places it and gives it the full width (no anchors: the client
+// refuses anchors on a child of a box layout and logs an error for each one)
 InspectLine < UILabel
   font: verdana-11px-antialised
   color: #d6c9ae
   text-align: left
-  anchors.left: parent.left
-  anchors.right: parent.right
   height: 15
   phantom: true
 
