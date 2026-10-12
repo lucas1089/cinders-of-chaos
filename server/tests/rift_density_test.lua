@@ -125,27 +125,35 @@ local function newPlayer(name, at)
 	return p
 end
 
+-- one generated layout (rift_layout_core.lua) of slot 3, band 2, as the slot pool builds it (the tiles are not built)
+local RL = ChaosRiftLayout
+local layoutL = RL.generate(cfg, dofile("data/scripts/chaos/areagen_config.lua"),
+	{theme = "Abyssal Rift", band = 2, seed = 4242, origin = RF.slotOrigin(3)}, {})
+layoutL.tiles = nil
+
 -- a dense run as RF.open builds it (no slot build): tier 8, solo, three kinds
 local function newRun(mods, players1)
 	local tier = 8
 	local fx = R.applyParty(cfg, R.effects(cfg, mods or {}, tier), 1, tier)
 	local types = {{name = "Low", level = 700}, {name = "Mid", level = 720}, {name = "High", level = 760}}
-	local rooms = {"east", "north", "west"}
 	local seed = 12345
-	local plan = R.plan(cfg, tier, fx, 1, types, rooms, function(a, b)
+	local function rnd(a, b)
 		seed = (seed * 16807) % 2147483647
 		return a + seed % (b - a + 1)
-	end)
-	local L = R.layout(cfg, 3)
-	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx)
+	end
+	local L = layoutL
+	local rooms = RL.sectionOrder(L, rnd)
+	local first = table.remove(rooms, 1)
+	local plan = R.plan(cfg, tier, fx, 1, types, rooms, rnd, {first = first, area = L.walkable})
+	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx, R.timeLimit(cfg, tier))
 	run.id, run.slot, run.L, run.key, run.fx, run.plan = 1, 3, L, {tier = tier, mods = mods or {}}, fx, plan
 	run.bonus, run.players, run.size, run.themeName, run.rooms = {quantity = 0, rarity = 0, experience = 0}, {}, 1, "Abyssal Rift", rooms
 	run.lives, run.livesMax, run.deaths, run.revive = 3, 3, 0, {}
 	run.typeNames = {"Low", "Mid", "High"}
 	run.density = plan.density
-	run.density.packHealth = R.packHealth(cfg, tier)
+	run.density.packHealth = R.packHealth(cfg, tier, L.walkable)
 	run.healthRatio = {low = 0.8, mid = 1.0, high = 1.2}
-	run.alive, run.aliveIds, run.extra = 0, {}, {}
+	run.alive, run.aliveIds, run.extra, run.visited = 0, {}, {}, {}
 	RF.runs[3] = run
 	for _, p in ipairs(players1 or {}) do
 		run.players[p.id] = {id = p.id, guid = p.guid, name = p.name, entry = pos(1, 1, 7), xp = {base = 0}}
@@ -167,7 +175,42 @@ do
 	hero.at = pos(run.L.start.x, run.L.start.y, 7)
 	run.players[hero.id] = {id = hero.id, guid = hero.guid, name = hero.name, entry = pos(1, 1, 7), xp = {base = 0}}
 	RF.runOf[hero.id] = run
-	local spawned = RF._spawnPacks(run)
+	ok(run.density.live > 100, "the live cap grows with the layout: " .. run.density.live)
+	ok(run.plan.total > 2 * run.density.live * 0.8, "the plan of the big layout: " .. run.plan.total)
+	-- the populate steps: the first step now, the rest by timer (perStep monsters a step)
+	local first = RF._spawnPacks(run)
+	ok(first <= cfg.density.populate.perStep + cfg.density.size[2] + 1, "first populate step: " .. first)
+	ok(#run.populate > 0, "the rest of the first packs come in steps")
+	local guard = 0
+	while #run.populate > 0 and guard < 100 do
+		guard = guard + 1
+		local list = timers
+		timers = {}
+		for _, t in ipairs(list) do
+			t.f((table.unpack or unpack)(t.args))
+		end
+	end
+	local spawned = run.alive
+	-- every monster on a walkable cell of the layout, none in the arrival's safe radius
+	local onFloor, inSafe, sectionsUsed = 0, 0, {}
+	for id, m in pairs(monsters) do
+		if RF.monsterRun[id] == run then
+			if RL.isFloor(run.L, m.at.x, m.at.y, m.at.z) then
+				onFloor = onFloor + 1
+			end
+			if m.at.z == run.L.start.z and math.max(math.abs(m.at.x - run.L.start.x), math.abs(m.at.y - run.L.start.y)) < cfg.layout.safeRadius - cfg.density.spread then
+				inSafe = inSafe + 1
+			end
+			sectionsUsed[math.floor((m.at.x - run.L.origin.x) / 40) .. ":" .. math.floor((m.at.y - run.L.origin.y) / 40)] = true
+		end
+	end
+	eq(onFloor, spawned, "every monster on a walkable cell")
+	eq(inSafe, 0, "none near the arrival")
+	local quarters = 0
+	for _ in pairs(sectionsUsed) do
+		quarters = quarters + 1
+	end
+	ok(quarters >= 15, "the first packs spread over the map: " .. quarters .. " of 25 squares")
 	run.total = run.plan.total - (run.planMissing or 0)
 	run.bossAt = math.ceil(run.total * cfg.bossAt / 100)
 	ok(spawned <= run.density.live and spawned >= run.density.live - cfg.density.size[2] - 1, "first packs fill the live cap: " .. spawned)
@@ -219,6 +262,30 @@ do
 		end
 	end
 	eq(leftHusk, 0, "husk flags of the dead are gone")
+	-- a husk drops no loot, and the engine then runs no death event for it: its kill comes from the killer's kill
+	-- event (once, even when a death event follows), and a husk that vanished is counted by the tick's sweep
+	local husk1, husk2
+	for id, m in pairs(monsters) do
+		if RF.monsterRun[id] == run and RF.isHusk(m) then
+			if not husk1 then
+				husk1 = m
+			elseif not husk2 then
+				husk2 = m
+			end
+		end
+	end
+	local k0, a0 = run.killed, run.alive
+	events.ChaosRiftPlayerKill.onKill(hero, husk1)
+	eq(run.killed, k0 + 1, "a husk's kill event counts it")
+	eq(run.alive, a0 - 1, "and frees its place")
+	death(husk1, nil, nil, nil)
+	monsters[husk1.id] = nil
+	eq(run.killed, k0 + 1, "a death event after it does not count it twice")
+	monsters[husk2.id] = nil -- gone without any event
+	hero.getTown = function() return {getTemplePosition = function() return pos(1, 1, 7) end} end
+	RF._tick(3, run.id)
+	eq(run.killed, k0 + 2, "the tick's sweep counts a monster that vanished")
+	timers = {}
 	local q0 = #run.queue
 	local seen = {}
 	local newIds = {}
@@ -235,15 +302,13 @@ do
 		end
 	end
 	ok(#newIds > 0, "reinforcements came")
-	-- all rooms too close: nothing
-	run.players[hero.id] = nil
-	local near = {}
-	for _, name in ipairs({"hub", "east", "north", "west"}) do
-		local c = name == "hub" and run.L.center or run.L.rooms[name].center
-		local p = newPlayer("Near" .. name, pos(c.x, c.y, 7))
-		run.players[p.id] = {id = p.id, guid = p.guid, name = p.name, entry = pos(1, 1, 7), xp = {base = 0}}
-		near[#near + 1] = p
+	-- every section reached (visited): nothing comes
+	local saved = run.visited
+	local all = {}
+	for _, sec in ipairs(run.L.sections) do
+		all[sec.name] = true
 	end
+	run.visited = all
 	for i = 1, 30 do -- make room
 		for id, m in pairs(monsters) do
 			if RF.monsterRun[id] == run then
@@ -253,8 +318,10 @@ do
 		end
 	end
 	local q1 = #run.queue
+	-- RL.visit marks only sections near the players: the hero stands at the arrival
 	RF._reinforce(run)
-	eq(#run.queue, q1, "every room has a player near: the queue waits")
+	eq(#run.queue, q1, "every section reached: the queue waits")
+	run.visited = saved
 	-- the guardian at the threshold of the whole plan
 	local spawnedBoss = false
 	for _ = 1, 400 do
@@ -270,9 +337,7 @@ do
 			end
 		end
 		if not any then
-			for _, p in ipairs(near) do
-				run.players[p.id] = nil
-			end
+			run.visited = {}
 			RF._reinforce(run)
 		end
 	end
@@ -295,7 +360,7 @@ do
 	local hero = newPlayer("Breacher", pos(0, 0, 7))
 	local run = newRun({{key = "breach", value = 25}}, {hero})
 	run.fx.breach = 100
-	RF._spawnPacks(run)
+	RF._spawnPacks(run, true)
 	run.total = run.plan.total
 	run.bossAt = math.ceil(run.total * cfg.bossAt / 100)
 	local victim
@@ -329,7 +394,7 @@ do
 	monsters, hits, conditions = {}, {}, {}
 	local hero = newPlayer("Walker", pos(0, 0, 7))
 	local run = newRun({{key = "rimefloor", value = 4}, {key = "veilstorm", value = 20}}, {hero})
-	hero.at = pos(run.L.center.x, run.L.center.y, 7)
+	hero.at = pos(run.L.start.x, run.L.start.y, 7)
 	RF._groundTick(run, 1000)
 	local n0 = 0
 	for _ in pairs(run.hazards) do

@@ -141,7 +141,8 @@ server/
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
-    rift.lua  rift_core.lua  rift_config.lua (rifts: keys, runtime-built instances, run HUD; see "Rifts")
+    rift.lua  rift_core.lua  rift_config.lua  rift_layout_core.lua (rifts: keys, a generated map per run built by a
+                                      slot pool, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
     craft_bonus.lua  craft_bonus_core.lua  craft_bonus_config.lua (the base crafting tables' bonus: rarity of crafted
@@ -379,7 +380,7 @@ working directory, as with the rest of the base server libs).
 | game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock, a counter (session / total) and an alert sound per filter rule. Tested in game (see "Loot filter"). |
 | game_groundlabels | `groundloot.lua`, `groundloot_core.lua` (client also `game_lootfilter`, `game_itemtooltip`) | 230 | Ground loot labels: names, rarity, category and decay of the items on the tiles in view and a short list of what lootable corpses hold; tooltips of ground items; `raise` puts an item lower in a pile on top so the normal move can pick it up. Tested in game (see "Ground loot labels") |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, Adventure > Bounty Board | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
-| game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua` | 228 (server -> client), Adventure > Rifts / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
+| game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua` | 228 (server -> client), Adventure > Rifts / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
 | game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, Adventure > Arena / `/arena` | Ranked PvP arena, 1v1, 2v2 and 3v3 with Elo per mode and a season rating per bracket (`arena_season.lua`), runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
 | game_battleground | `battleground.lua`, `battleground_core.lua`, `battleground_config.lua`, `arena_season.lua`, `sql/chaos_battleground.sql` | **200**, Adventure > Battleground, `/bg` (staff) | Ember Wells battleground (5v5 to 10v10, three braziers to 1000), role and rating balanced matchmaking per realm and level bracket, level normalisation, respawn waves, AFK and deserter rules, honor and its vendor; PvP seasons (Glicko-lite per bracket 1v1 / 2v2 / 3v3 / battleground, placement, tiers, soft reset, decay, season rewards). Unit and mocked-engine tests; tested on a live test server with two clients as a 1v1 (see "Battleground and PvP seasons"). |
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, Adventure > Guild Siege / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
@@ -7961,7 +7962,7 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 
 | Instance | Before | After | End of time | Idle | Cap | Logout inside, login | Restart |
 |---|---|---|---|---|---|---|---|
-| Rift | 10 min (Waning Veil -15-40%), no warnings, "Try again in a moment" | + warnings, idle 3 min, wait and line | fails: out to where the key was used, key spent | a run kept for fallen players closes after 3 min (fails) | 16 | out of the run, back at the entry; a fallen player returns at login while the run lives | key back once (unchanged) |
+| Rift | 10 min (Waning Veil -15-40%), no warnings, "Try again in a moment" | 12 / 13 / 15 min by map size (2026-10-12, "Rifts", Big maps), + warnings, idle 3 min, wait and line | fails: out to where the key was used, key spent | a run kept for fallen players closes after 3 min (fails) | 16 | out of the run, back at the entry; a fallen player returns at login while the run lives | key back once (unchanged) |
 | Omen arena | 10 min, as rifts | as rifts | as rifts | as rifts | shares the 16 rift slots | as rifts | as rifts |
 | Ember Descent | 45 min, no warnings | + warnings, wait and line | ends at the depth reached (its rewards), back at the entry | ends when the last player is out | 8 | ends for that player with its rewards; crash: temple | ends with rewards, temple |
 | Raid (Sepulchre) | no session limit, idle 10 min | session 150 min with warnings at 10 / 5 / 1 min and 10 s, idle 5 min, wait and line | everyone back where they came from, progress saved for the week (a fight then is a wipe) | 5 min (was 10), to the temple | 4 | removed (back where they came from); crash: temple | closed, temple, progress kept |
@@ -8056,7 +8057,11 @@ scripts stay in the base data untouched. A script is recognised as the script of
 `DUNGEON_SYSTEM` modal window and has one `onStepIn`; another shape is listed and left alone.
 
 **Load.** Every runtime area is built once per slot and kept (the engine cannot remove a tile); a run removes its
-monsters and loose items at the end. Tiles per slot, counted from the layouts: rift 1,657 (1,045 before the bigger rooms of 2026-10-12), Descent about 440, raid 3,574,
+monsters and loose items at the end. The rifts are the exception since the big maps of 2026-10-12 ("Rifts", Layouts and
+the slot pool): each run gets a new generated map of 9,700-50,500 tiles (both floors), built in 10 ms steps by one
+builder job at a time (0.3-1.8 s of game loop a map, measured), up to about 26 MB a slot and 420 MB for the 16 at the
+worst; at most 260 + 12 monsters a run alive, only those near the party active. The numbers below are of the first
+density pass. Tiles per slot, counted from the layouts: rift 1,657 (1,045 before the bigger rooms of 2026-10-12), Descent about 440, raid 3,574,
 Ascended 486, guild boss 574, arena 182, battleground 2,145, trial 529, ascension trial 225, tower 441, world boss
 about 1,220, tutorial about 680. All grids full: about 76,000 tiles, about 23 MB at roughly 300 bytes a tile with its
 ground and wall items, next to a map of millions. The game loop cost of a run is its tick (1 s or 250 ms; the players of
@@ -8100,9 +8105,9 @@ the queue runs the dungeon with its cap, a monster does nothing, the rate limit.
 siege got the same few lines (config, a warning call in the tick, the cap and the busy text, the registry) without an
 engine test of their own. Not run in game.
 
-## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, client `game_rift`)
+## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 
-**Limits** (`rift_config.lua` `limits`, "Instance limits"): 10 minutes a run (unchanged), warnings at 5 min, 1 min and 10 s; time up fails the rift (out to where the key was used, the key is spent); a run kept open only for fallen players who may come back closes after 3 minutes as a failed rift; at most 16 rifts and Omen arenas at once, a player who finds them busy hears the wait and waits in line.
+**Limits** (`rift_config.lua` `limits`, "Instance limits"): 12 / 13 / 15 minutes a run by the size of its map (tiers 1-5 / 6-10 / 11-15, `layout.sizes`; was 10 for all; Omen arenas keep 10), warnings at 5 min, 1 min and 10 s; time up fails the rift (out to where the key was used, the key is spent); a run kept open only for fallen players who may come back closes after 3 minutes as a failed rift; at most 16 rifts and Omen arenas at once, a player who finds them busy (or none ready yet) hears the wait and waits in line.
 
 Map devices (roadmap item 8). A consumable Rift Key opens a timed instance with random modifiers for the player and their
 party. All numbers are in `rift_config.lua`; the pure logic (key rolls, rewards, key odds, slots and layout, the timer, the
@@ -8270,24 +8275,23 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 - **Opening.** Use the key in a protection zone, out of combat, not multi-clienting (`Chaos.isMultiClient`), not in a
   dungeon, the tower or the world boss arena, at the tier's level. Party members within 8 sqm on the same floor come
   along (up to 5 players; was 4); members who fail a rule stay behind and both are told why.
-- **The instance** is built at runtime with `Game.createTile` in a grid of 16 slots (4 x 4, 64 sqm apart) at
-  x/y 8192-8447, z 7, where the map has no tiles (checked in the OTBM; other runtime areas: tower 2000+, tutorial island
-  4600+, world boss 5000+, siege 5100+, PvP arena 6000+). The first use of a slot checks every tile of its footprint like
-  `worldboss.lua` and refuses a slot that has a tile it did not build (the slot is marked unusable, the next one is
-  taken). Each slot is a 19 x 19 hub and four 15 x 15 side rooms joined by 3-wide corridors (were 15 x 15 and 11 x 11;
-  1,657 tiles a slot with the walls, was 1,045; 1,081 open floor with three rooms, was 642); every run opens 2-4 of them
-  (stone walls close the others) and picks a theme for the floor: Abyssal Rift (rift floor), Obsidian Hall (black marble),
-  Ashen Crypt (dark sandy / rutted stone) or Forsaken Sanctum (gilded stone), with coal basins for light. The engine has
-  no Lua call to remove a tile, so built slots stay for the server's lifetime and are reused: at the end of a run every
-  monster and loose item (corpses, drops, fields, the chest) on the floor is removed.
-- **The run.** Packs: with the density (below, on by default) 80 + 8 x (tier - 1) monsters solo, +25% per extra player,
-  in packs of 5-7 (+ Swarm), at most 60 alive (+10 per extra player, 100 at most), the rest coming in as the party
-  advances. Without it (`density.enabled = false`): 6 + tier/3 + 2 per extra player, of 3-4 monsters, all at once. One
-  type per pack; the first pack in the north of the hub, the rest in the open rooms. Every monster rolls magic 10% / rare 3% / legendary 0.6%
+- **The instance** is a generated map per run (see "Layouts and the slot pool" below), built at runtime with
+  `Game.createTile` in a grid of 16 slots (4 x 4, 256 sqm apart, floors z 7 and 8) at x/y 20480-21503, where the map has
+  no tiles (checked in the OTBM of the full map: x/y 15360-30719 hold only 26 tiles, at 16735,16438,15 and near
+  18944,18944,7; other runtime areas use 2000-15359). Until 2026-10-12 each slot was one fixed 19 x 19 hub with four 15 x 15
+  side rooms (1,657 tiles) at x/y 8192-8447. The first build of a slot after a start looks at every position of its
+  square on both floors and refuses a slot with a map tile (marked unusable, the next one is taken). The engine has no
+  Lua call to remove a tile, so a slot's tiles stay; a new layout clears the old one first (every item and creature of
+  its tiles) and a tile it does not use stays empty (no ground: not walkable, drawn black).
+- **The run.** Packs: with the density (below, on by default) 80 + 8 x (tier - 1) monsters solo x the map's area
+  factor (about 1.7-2.1), +25% per extra player, in packs of 5-7 (+ Swarm), about 100-165 alive (+10 per extra player,
+  260 at most), the rest coming in ahead of the party as it advances. Without it (`density.enabled = false`): 6 + tier/3
+  + 2 per extra player, of 3-4 monsters, all at once. One type per pack; the first pack in the section nearest to the
+  arrival, the rest spread over the whole map. Every monster rolls magic 10% / rare 3% / legendary 0.6%
   (x (1 + 0.05 tier) x the Elites modifier) through `ChaosApplyTier` (monster_tiers.lua; the natural spawn roll and the
-  ambush also still apply). After 75% of the monsters died the guardian appears in the hub: the strongest type of the
+  ambush also still apply). After 75% of the monsters died the guardian appears in its arena in the far corner: the strongest type of the
   rift, legendary, with 3x its base health (+100% per extra player). With a party every pack monster gets more health
-  too, so the rift's total monster health is +100% per extra player (see "Party scaling"). Time limit 10 minutes. The HUD (top left, under the
+  too, so the rift's total monster health is +100% per extra player (see "Party scaling"). Time limit 12-15 minutes by the map's size. The HUD (top left, under the
   character plate) shows tier, theme, time left, kills / left, the guardian, the modifiers and the bonuses.
 - **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a chest (1740, action id 47402)
   appears where it died and every finisher may open it once within 60 s; whoever did not gets it delivered at the exit
@@ -8327,9 +8331,10 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
     player as before, split over 25% more monsters each). Pack monsters hit x0.6 (`density.damage`): a pack is about
     twice the size of before. The guardian's base is the budget too (tier 10 about 113k before Dread / Twin / the party,
     was about 500k).
-  - **Reinforcements.** The run spawns packs up to the live cap (60, +10 per extra player, 100 at most); the rest wait in
-    a queue. Each second up to 2 queued packs come in, in the open room (or the hub's north half) farthest from the
-    players and at least 9 sqm from each, until the guardian appears. The guardian comes after 75% of the whole plan
+  - **Reinforcements.** The run spawns packs up to the live cap (first pass: 60, +10 per extra player, 100 at most; on
+    the big maps below 100-260); the rest wait in a queue. Each second up to 2 queued packs come in, away from the
+    players (first pass: the open room farthest from them, at least 9 sqm; on the big maps: the farthest unreached
+    section just ahead of the party, at least 16 sqm), until the guardian appears. The guardian comes after 75% of the whole plan
     (the HUD's total), so the party has to keep moving. A monster that cannot be created leaves the plan. Veilbreach and
     thralls are extra (12 above the cap at most).
   - **Spoils stay per run.** Of the monsters, the share old / new (about 0.2-0.27) decides: elite chances (and Warbands)
@@ -8346,11 +8351,59 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
     an hour gives 19-24 Upheaval, under the tier 15 model. Not changed: the chest, the atlas orb nodes (kept at the
     owner's earlier cut). If the fast turnaround should stay at the model, the lever is `reward.chaos.perTier` /
     `divine.perTier` (x0.75).
-  - **Bigger slots.** 19 x 19 hub and 15 x 15 rooms (above): the live cap is about 5.6 monsters a 100 open tiles with
-    three rooms, a whole tier 15 plan 18. The generated areas (`areagen_core.lua`) were considered for rift layouts:
-    16 seeded dungeon layouts, one per slot, would give variety, but the engine cannot remove a tile, so a slot keeps one
-    layout for the server's life, and `rift.lua` places packs, doors, the coffer and the arrival by the hub-and-rooms
-    model; that is a separate change (left open). The bigger fixed rooms needed no new code.
+  - **Bigger slots** (earlier the same day): a 19 x 19 hub and 15 x 15 rooms, the live cap about 5.6 monsters a 100 open
+    tiles. Replaced by the generated maps (below).
+  - **Big maps** (2026-10-12, second pass; owner request: "make the rifts big, much bigger than those pictures"). The
+    maps are 10-30 times the old slot (8,500 / 14,800 / 21,200 walkable tiles in a typical map of the three size bands,
+    was 1,081), so the density grows with them, the health budget stays, and the walk is part of the clear time:
+    - *Count*: the curve above x (walkable / 1,081) ^ 0.25 (`density.area`, 1 to 2.5): x1.67 / x1.92 / x2.10 for typical
+      maps. Tier 1 solo 132 (was 78), tier 10 294 (150), tier 15 402 (192); a party of 5 about twice. A smaller or
+      bigger map of the band gets fewer or more (a dungeon map has 30-40% less floor than a waste).
+    - *Live cap*: 60 + 10 per extra player + 0.5 per 100 walkable tiles (`density.live.per100`), at most 260: 102 / 134
+      / 166 solo in typical maps (was 60). About 1 alive a 100 tiles; the plan 1.5-2 a 100 tiles.
+    - *Health*: the same budget (225 s of area damage for the packs, 55 s of single-target damage for the guardian),
+      over more monsters: each pack monster has about half the health of the first density pass (tier 10 3.2k, was
+      6.1k). Packs stay 5-7, so area spells still hit five at a time.
+    - *Walk*: the clear time adds the map's walking distance from the arrival to the arena (200 / 265 / 340 steps in a
+      typical map, measured over 48 maps) x 1.8 (side branches, packs off the way) at the tier's level (engine patch
+      0018's speed: 3.7 tiles a second at level 100, 7.7 at 1000; `R.tilesPerSecond`, `R.walkSeconds`): 97 s at tier 1,
+      62 s at tier 10, 80 s at tier 15.
+    - *Placement*: the first packs (up to the live cap) go to the map's sections (16 x 16 cells with 24+ walkable,
+      `RL.sectionOrder`): the one nearest to the arrival first, the rest shuffled, so the whole map is populated; they
+      come 20 monsters a step every 100 ms (`density.populate`; one step costs about what the old run start did). No pack
+      within 12 sqm of the arrival, none in the arena.
+    - *Reinforcements* still come from the farthest area, now taken from the party's progress: sections a player came
+      within 10 sqm of count as reached; a queued pack comes in the unreached section farthest from the players among
+      those up to 90 walking steps past the farthest one reached (else the nearest unreached one ahead), at least 16 sqm
+      (out of sight) from every player, around the section's centre (`RL.reinforceSection`, `density.reinforce`).
+    - *Clear time and the limit* (typical solo player; a party of 5 the same within 2%; half damage in brackets):
+
+      | Tier | Map | Monsters solo / 5 | Alive solo / 5 | Pack health | Walk | Clear solo | Limit |
+      |---|---|---|---|---|---|---|---|
+      | 1 | 160 x 160 | 132 / 270 | 102 / 142 | 676 | 97 s | 6.3 min (11.0) | 12 min |
+      | 5 | 160 x 160 | 186 / 378 | 102 / 142 | 2.1k | 58 s | 5.6 min (10.3) | 12 min |
+      | 8 | 200 x 200 | 264 / 522 | 134 / 174 | 2.7k | 67 s | 5.8 min (10.5) | 13 min |
+      | 10 | 200 x 200 | 294 / 582 | 134 / 174 | 3.2k | 62 s | 5.7 min (10.4) | 13 min |
+      | 12 | 240 x 240 | 354 / 708 | 166 / 206 | 2.8k (x1.3) | 80 s | 7.4 min (13.5) | 15 min |
+      | 15 | 240 x 240 | 402 / 810 | 166 / 206 | 2.7k (x1.75) | 80 s | 9.5 min (17.6) | 15 min |
+
+      Why a longer limit and not less health: the fight stays the size the owner approved with the first density pass,
+      the walk is new time on top (1-1.6 minutes in the model, more for a party that explores or gets lost on a map it
+      has never seen: every run is a new one). 12 / 13 / 15 minutes keep the typical clear at 44-63% of the limit (the
+      first pass had 47% for tiers 1-10 and 82% at tier 15), so a half-strength player still seals tiers 1-12 and Waning
+      Veil V (-40%) still leaves 7.2-9 minutes. Tests: `tests/rift_test.lua` (every tier inside 70% of its band's limit,
+      half strength up to tier 12, the counts and the live cap, the walking speeds against the patch 0018 table).
+    - *Orbs*: per run unchanged (owner decision: the orb rates stay as they come out). Per hour a little lower at tier
+      15 (9.5 minutes a run: 4.1-4.8 runs an hour with 3-5 minutes around each, was 4.2-5.4), about the same at tiers
+      1-10 (5.3-7.0 an hour).
+  - **Husk deaths** (a bug of the first density pass, found in game while testing the big maps): a monster that drops
+    no loot (`setDropLoot(false)`, the husks) gets no death event from the engine (`Creature::dropCorpse` runs the
+    death events only for a monster with loot or a master), so husks never counted: the guardian could not come.
+    `rift.lua` now counts a husk from the kill event of the player who killed it (`ChaosRiftPlayerKill`, also through
+    the player's summons) and, for any monster of the run that is gone without a death the script saw, in the tick's
+    sweep; every monster counts once (`RF.dead`). The per-kill effects of a husk (Cinderdeath, Veilbreach) run from the
+    kill event. Checked in game: 316 and 478 kills counted, the guardian at 75%, sealed. Note for tests: a kill by a
+    gamemaster also clears the loot (the engine's NotGenerateLoot flag), so such a kill gets no death event either.
   - `density.enabled = false` brings back the packs, health and loot of before exactly (`tests/rift_test.lua` keeps the
     old checks on that path).
   - Tests: `tests/rift_test.lua` (the curve, the shares, elites and laden monsters per run as before, clear times of
@@ -8456,10 +8509,75 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   - `tests/rift_refund_test.lua` (rift.lua against a mocked engine) covers all of these.
 - **Other systems.** `ChaosRift.isInside(player)`; the temple scroll refuses inside a rift (`shop_services.lua`), a second
   character of the connection cannot log in while one is in a rift (`multiclient.lua`).
+- **Layouts and the slot pool** (`rift_layout_core.lua`, `rift_config.lua` `layout` / `build`, the rift themes of
+  `areagen_config.lua`; owner request 2026-10-12). Every run gets a map of its own from the area generator ("Generated
+  areas"): the arrival in one corner, the guardian's arena (a chamber of radius 9 kept clear, in a dungeon a 21 x 21
+  room) in the opposite one, loops and side branches, holes and ladders between two floors where the theme has them.
+  - *Size by tier*: tiers 1-5 160 x 160, 6-10 200 x 200, 11-15 240 x 240 (a two-floor map 0.8 x the side on each floor,
+    about 1.3 x the area). 48 maps measured (4 themes x 3 bands x 4 seeds, dark set): 6,000-28,000 walkable tiles,
+    9,700-50,500 tiles built, a walk of 140-490 steps from the arrival to the arena; the hunting areas of item 109 are
+    66 x 52 to 100 x 80 with 1,000-5,000 walkable tiles.
+  - *Kind and floors by theme* (`layout.themes`, weighted per run): Abyssal Rift an open waste (55) or a cave system
+    (45), one floor; Obsidian Hall a ruined complex (65) or marble halls cut into rock (mixed, 35), one or two floors;
+    Ashen Crypt catacombs: a cave with ruined chambers (50) or a ruined complex (50), always two floors; Forsaken
+    Sanctum a cave system (65) or a cave with chambers (35), one or two floors. The palettes keep each theme's look: the
+    old rift floors without the dark set; with it obsidian and magma with ash, moss and lava (Abyssal), black marble
+    halls with pillars and braziers (Obsidian), ash soil and bone earth with moss, bones and catacomb rooms (Crypt),
+    wet and mossy rock with moss and glowcaps and worn stone chambers (Sanctum). Every id is checked against the live
+    items.otb and pair (`areagen_export.py check`: 211 ids stock, 280 with the dark set, 0 problems).
+  - *Seeded*: the builder draws the seed of each layout; one seed always gives the same map (LuaJIT and Lua 5.3), and
+    the run's log line names it, so `tools/areagen_export.py preview OUT ... --area "rift:<theme>:<band>:<seed>"`
+    draws the map a player saw. A map the validator rejects (a link that did not fit) is made again with another
+    seed (none in 48 + 36 test maps).
+  - *The slot pool*: a slot is empty, building, ready, busy, dirty (a run ended there) or bad (a map tile in its
+    square). A key takes a ready slot of the asked theme and size band, else another theme of the band, else the theme
+    in another band, else any ready slot (the slot's map decides theme, size and time limit). The builder keeps
+    `build.poolReady` = 6 slots ready from the start and rebuilds every slot a run left; the next layout's theme and band
+    are the ones the keys asked for most against what is ready (decayed counts). No ready slot: the player hears the
+    wait and waits in line ("Instance limits"), and is told when a slot is ready.
+  - *Build cost*: one job at a time; the generator runs in a coroutine and yields every 10 ms of game loop
+    (`build.sliceMs`; areagen_core.lua calls `opts.tick` in its long loops, never inside a sort), the clean-up and the
+    tiles go in the same steps, one step every 40 ms (`build.everyMs`). Measured on the test server (cropped map, every
+    Chaos script, a machine shared with other test servers at load 5-20 on 4 cores, so the times are high): a whole
+    layout cost 0.30-1.35 s of game loop for 14,000-30,000 tiles and 1.45-1.8 s for 44,000-45,000 (clearing the old map
+    included), spread over 27-130 steps in 3-15 s; the median step 15-21 ms, a few 30-80 ms under that load (in LuaJIT
+    alone, unloaded, the longest stretch between two yields of the generator is 12 ms and a whole 240 x 240 layout
+    generates in 0.3-0.5 s). Nothing comes near the 100 ms slow task line in normal load or the 250 ms stalls of "Game
+    loop stalls". Building a 200 x 200 map in one task would have been 0.6-1.4 s: a stall, so the build is never done
+    in the task that uses a key. Opening a run: the key use itself took 24 ms under that load (18 of them the database save of the
+    refund marker, as before), then the first packs 20 monsters every 100 ms (one such step 28-93 ms under that load),
+    reinforcements 2 packs a second in the rift's tick (30-66 ms under that load).
+  - *Memory*: a layout keeps about 0.7 MB of Lua (sorted keys of its walkable cells and of its built tiles, the
+    sections); the tile model (up to 50 MB of Lua while it is made) is dropped once built. In the engine a slot holds up
+    to 50,500 tiles with 64,000 items (about 15 MB at the 300 bytes a tile of "Instance limits"); since tiles are never
+    freed, a slot that saw many layouts holds at most its square on both floors (131,072 positions, about 26 MB with
+    the empty ones). 16 slots: about 250 MB typical, 420 MB at the very worst, next to the 18.2 million tiles of the full
+    map. Monsters: at most 260 + 12 per run, 4,350 for 16 runs, but only those near a player are active (the engine
+    idles the others), so the creature checks see about one hunting group per rift as before.
+  - *Cap*: 16 slots and 16 parallel runs (rifts and Omen arenas) as before, 6 kept ready. The cap stays because the
+    load of a run is its active monsters near the party and its 1 s tick, not the size of its map; the memory above is
+    the price of the size. A smaller grid (`grid.cols` / `rows`) and `limits.maxRuns` lower both.
+  - *Omen arenas* take a ready map (their theme's when one is ready, any size): the party arrives at the mouth of its
+    guardian's arena, the rest of the map stays empty.
+  - The map overlay forgets the minimap of the slot's square on both floors at the start of every run (`map_marks.lua`).
+  - Tests: `tests/rift_layout_test.lua` (every theme in every band, stock and dark: valid, the band's size inside its
+    slot, the arena far, reachable and open, sections over the map, deterministic and varied; every kind a theme rolls;
+    the typical numbers of the model; sections reached, reinforcements ahead, spawn cells; the pool on a mocked engine:
+    built in many short steps, every tile built, a slot over a map tile refused, ready slots by theme and band, a slot
+    rebuilt after its run with nothing of the old map left, the demand steering the next build). `rift_density_test`
+    runs on a generated map (populate steps, every monster on a walkable cell, none near the arrival, packs over the
+    whole map, husk kills). Checked in game (test server above, one client, a level 1000 character): the pool built at
+    the start, a tier 8 run on a 200 x 200 Abyssal waste (269 monsters, 13 minutes, packs spread, the lives and the
+    return at the arrival after a death), a tier 12 and a tier 13 Ashen Crypt (two floors, 383 and 478 monsters:
+    every kill counted, reinforcements 15 a second ahead, the guardian at 75%, sealed with the chest), the slot
+    rebuilt with a new map after the run. Screenshots and previews of the owner pass are not in the repository.
 - **Commands.** Adventure > Rifts (dialog: the run status and every key carried with its modifiers). Gamemasters: `/rift key <tier>
-  [count | mods]`, `/rift status` (runs, built and unusable slots), `/rift fail`.
+  [count | mods]`, `/rift status` (runs, the state of every slot and its map, the builder), `/rift fail`.
 
-**Edits to shared files** (one line or block each): `chaos_constants.lua` (`ChaosOpcodes.rift = 228`,
+**Edits to shared files** (one line or block each): `map_marks.lua` (the rift square per floor), `atlas`: none (the
+Swift cells keep 50% of the base `timeLimit`, 5:00), `tools/gen_codex_data.lua` (the run text of the Codex),
+`areagen_core.lua` / `areagen_config.lua` / `tools/areagen_dump.lua` / `tools/areagen_export.py` (see "Generated
+areas"), `chaos_constants.lua` (`ChaosOpcodes.rift = 228`,
 `Chaos.storage.riftRun = 7100400`), `loot_config.lua` (rateMult x `ChaosRift.lootMult(ctx)`), `shop_services.lua`
 (`S.teleportBlocked`), `multiclient.lua` (`insideInstance`), `bounty.lua` (`payContract` calls `ChaosRift.onBountyPaid`),
 `monster_tiers.lua` (an ambush copy wears the killed monster's outfit and name, so a rift look carries over; the onSpawn rename callback for `Chaos.createMonsterNamed`; the boss and skip lists by type name), `bounty.lua` and `bestiary.lua` (`B.onKill` / `X.onKill`: no credit for a density husk, `ChaosRift.isHusk`), and the type-name lookups (`Chaos.monsterTypeName`) in `bestiary.lua`, `bounty.lua`, `loot.lua`, `pets.lua`, `supports.lua`, `item_mods.lua`, `achievements.lua`, `ascension_quest.lua` (see "Rift names").
@@ -9327,6 +9445,8 @@ A seeded generator builds hunting areas and dungeons that need no map edit (road
 exit). Two users read the same model:
 - `areagen.lua` builds it at startup with `Game.createTile` / `Game.createItem`, like the rifts and the tutorial
   island. It works on an installed server and needs no install step.
+- The rifts (2026-10-12): `rift_layout_core.lua` makes a map per run with the same core and the rift themes below, and
+  `rift.lua` builds it in short steps ("Rifts", Layouts and the slot pool).
 - `tools/areagen_export.py` runs the same core through LuaJIT (`tools/areagen_dump.lua`). It writes an OTBM piece and
   a spawn file for the map editor and renders previews.
 Why runtime first: no map edit, no merge with the 197 MB world file, and a config change ships with a restart. The OTBM
@@ -9342,6 +9462,20 @@ writer stays so the owner can open, review or hand-place an area in the map edit
   the tile south of the hole, and that tile is kept walkable.
 - Required points (arrival, holes, ladders, boss) are carved first and joined. Only the arrival's region is kept.
 - The walkable set is checked as one connected set over all floors, from the arrival through holes and ladders.
+- Options for big layouts (the rifts; an area without them comes out byte for byte as before, the fixed checksums of
+  the four areas are unchanged):
+  - `layout.scale` / `smooth`: the automaton runs on a grid `scale` times coarser, is scaled up and smoothed `smooth`
+    times, so a 200 x 200 cave gets wide caverns and tunnels instead of a fine maze (rifts: cave and mixed 2, waste 3).
+  - kind `mixed`: a cave with `rooms` rectangular chambers (corners cut) carved in and joined like any pocket; with the
+    theme's `mixedFloors` they get a floor of their own.
+  - `byKind = {kind = {...}}` in a theme (and in its `dark` part): overrides for one layout kind, so one theme serves
+    every kind its rift rolls.
+  - `bossAt` (the boss point, default the south-east corner), `layout.bossAnchor` (the boss room of a dungeon there),
+    `boss.clear` (no decoration, patch or obstacle within that many cells: an open arena), `linkAvoid` (no hole near
+    these points), `noExit` (no exit portal), `fastPaths` (the paths kept free from one search instead of one per
+    target: a dungeon of 40 rooms in 0.1 s instead of 0.7 s).
+  - `opts.tick` (A.generate, A.validate): called in the long loops (rows, every 1,024 steps of a search, never inside
+    a sort) and never drawing a random number, so a caller can run the generator in a coroutine and yield there.
 
 **Borders and walls.**
 - Every ground family has a z order. The higher family draws its 12 border pieces on the lower tile. The piece comes
@@ -9365,7 +9499,13 @@ writer stays so the owner can open, review or hand-place an area in the map edit
 - With the dark tile set installed the themes use its patches and props (dark moss, ash soil, glowcaps, braziers, dead
   trees). Without it the stock palette is used.
 - `areagen_export.py check` checked all 244 ids against the live items.otb (3.57) and things_custom18. Each id exists,
-  has a sprite and has the right kind.
+  has a sprite and has the right kind. With the rift themes (2026-10-12) it checks 211 ids stock and 280 with the dark
+  set (now also the `byKind` overrides), against an items.otb with the dark set and things_custom19: 0 problems.
+- Rift themes (`rift_abyss`, `rift_hall`, `rift_crypt`, `rift_sanctum`; "Rifts", Layouts and the slot pool): families
+  `riftfloor` (the old rift floor 25549, 25704-25709), `crypt` (dark sandy 13189, rutted stone 12237), `gilded` (415),
+  and with the dark set `obsidian` (obsidian / magma floor, its border set over any ground) and `wetrock` (wet / mossy
+  rock, its border set). Every transition between bordered families carries its pieces (the test checks it for every
+  theme in every band, stock and dark).
 
 **Spawns.**
 - Poisson-disc points at `minDistance`. Packs of 2-3 come with `packChance`. The density is per 100 walkable tiles
@@ -9425,6 +9565,7 @@ refused area logs why. Disabling an area at a restart drops its tiles; a charact
 `/areagen status | goto <id> | fill <id>` (group 4+).
 
 **Tests.**
+- `tests/rift_layout_test.lua` covers the rift layouts made with this core ("Rifts").
 - `tests/areagen_test.lua` covers:
   - the random generator and the 256 border patterns;
   - the wall table and the level scaling;
@@ -9445,7 +9586,8 @@ drew as black puddles. Not run: the entrances on the full map, real hunting bala
 
 **Previews.** `python3 -I server/tools/areagen_export.py preview OUT items.otb items.xml Tibia.dat Tibia.spr --dark --sheet`.
 Current ones are in `docs/map_guide/generated/`: sprite renders per floor, minimap maps with spawns, a contact sheet,
-the entrances, in-game shots.
+the entrances, in-game shots. A rift map: `--area "rift:<theme>:<band>:<seed>[:<kind>[:<floors>]]"` (the dump adds its
+sections, drawn orange on the minimap map; `summary` prints its tiles and walkable count).
 
 ## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
 

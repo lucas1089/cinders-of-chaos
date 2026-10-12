@@ -26,6 +26,25 @@ ChaosAreaGenCore = ChaosAreaGenCore or {}
 local A = ChaosAreaGenCore
 local floor, max, min, abs = math.floor, math.max, math.min, math.abs
 
+-- opts.tick (A.generate): called now and then in the long loops (never inside a sort), so a caller running the
+-- generator in a coroutine can yield there and spread one big layout over many short game loop tasks (rift.lua).
+-- It never draws a random number, so a model is the same with or without it.
+local tickFn
+local function T()
+	if tickFn then
+		tickFn()
+	end
+end
+local tickCount = 0
+-- (every 1024 steps of a hot loop)
+local function T2048()
+	tickCount = tickCount + 1
+	if tickCount >= 1024 then
+		tickCount = 0
+		T()
+	end
+end
+
 -- ====================================================================== random
 local MOD, MULT = 2147483647, 48271
 local Rng = {}
@@ -130,6 +149,7 @@ end
 local function flood(F, start, pass)
 	local seen, n, stack = {[start] = true}, 1, {start}
 	while #stack > 0 do
+		T2048()
 		local i = table.remove(stack)
 		local x, y = xy(F, i)
 		for _, d in ipairs(D8) do
@@ -151,6 +171,7 @@ end
 local function regions(F, pass)
 	local done, out = {}, {}
 	for i = 1, F.w * F.h do
+		T2048()
 		if not done[i] and pass(i) then
 			local set, n = flood(F, i, pass)
 			for j in pairs(set) do
@@ -172,6 +193,7 @@ end
 local function distances(F, from, pass)
 	local dist, queue, head = {[from] = 0}, {from}, 1
 	while head <= #queue do
+		T2048()
 		local i = queue[head]
 		head = head + 1
 		local x, y = xy(F, i)
@@ -263,13 +285,58 @@ end
 -- ====================================================================== layouts
 -- every layout sets F.open (the walkable design) and F.rooms; required points (arrival, links, boss) are open and joined
 
--- cellular automata cave (also the open waste with a lower fill)
-local function caveLayout(F, r, p, required)
+-- ruined chambers of a mixed layout: p.rooms = {min, max} rectangles of p.room = {min, max} sides, p.gap apart and
+-- away from the required points; carved into F.open (the cave's join pass links them), listed in F.rooms / F.roomIdx
+local function mixedRooms(F, r, p, required)
 	local w, h = F.w, F.h
+	local want = r:int(p.rooms[1], p.rooms[2])
+	local rooms = F.rooms
+	F.roomIdx = F.roomIdx or {}
+	local gap = p.gap or 3
+	for _ = 1, want * 8 do
+		if #rooms >= want then
+			break
+		end
+		T()
+		local rw, rh = r:int(p.room[1], p.room[2]), r:int(p.room[1], p.room[2])
+		local x1, y1 = r:int(5, w - rw - 4), r:int(5, h - rh - 4)
+		local x2, y2 = x1 + rw - 1, y1 + rh - 1
+		local fits = true
+		for _, q in ipairs(rooms) do
+			if x1 - gap <= q.x2 and x2 + gap >= q.x1 and y1 - gap <= q.y2 and y2 + gap >= q.y1 then
+				fits = false
+			end
+		end
+		for _, q in ipairs(required) do
+			local m = (q.r or 2) + gap
+			if q.x >= x1 - m and q.x <= x2 + m and q.y >= y1 - m and q.y <= y2 + m then
+				fits = false
+			end
+		end
+		if fits then
+			local q = {x1 = x1, y1 = y1, x2 = x2, y2 = y2, cx = floor((x1 + x2) / 2), cy = floor((y1 + y2) / 2), kind = "hunt"}
+			rooms[#rooms + 1] = q
+			for y = y1, y2 do
+				for x = x1, x2 do
+					-- the corners cut, so a chamber does not read as a pasted box
+					if not ((x == x1 or x == x2) and (y == y1 or y == y2)) then
+						F.open[idx(F, x, y)] = true
+						F.roomIdx[idx(F, x, y)] = #rooms
+					end
+				end
+			end
+		end
+	end
+end
+
+-- cellular automata cave (also the open waste with a lower fill)
+-- the cellular automaton on grid G (w, h): rock = true; border cells stay rock
+local function automaton(G, r, p)
+	local w, h = G.w, G.h
 	local rock = newGrid(w, h, true)
 	for y = 4, h - 3 do
 		for x = 4, w - 3 do
-			rock[idx(F, x, y)] = r:int(1, 1000) <= p.fill * 1000
+			rock[idx(G, x, y)] = r:int(1, 1000) <= p.fill * 1000
 		end
 	end
 	local function count(g, x, y, rad)
@@ -277,7 +344,7 @@ local function caveLayout(F, r, p, required)
 		for dy = -rad, rad do
 			for dx = -rad, rad do
 				local nx, ny = x + dx, y + dy
-				if not inside(F, nx, ny) or g[idx(F, nx, ny)] then
+				if not inside(G, nx, ny) or g[idx(G, nx, ny)] then
 					n = n + 1
 				end
 			end
@@ -287,8 +354,9 @@ local function caveLayout(F, r, p, required)
 	for step = 1, p.steps do
 		local nextG = {}
 		for y = 1, h do
+			T()
 			for x = 1, w do
-				local i = idx(F, x, y)
+				local i = idx(G, x, y)
 				if x < 4 or y < 4 or x > w - 3 or y > h - 3 then
 					nextG[i] = true
 				else
@@ -303,6 +371,50 @@ local function caveLayout(F, r, p, required)
 		end
 		rock = nextG
 	end
+	return rock, count
+end
+
+local function caveLayout(F, r, p, required)
+	local w, h = F.w, F.h
+	local rock
+	local s = p.scale or 1
+	if s <= 1 then
+		rock = automaton(F, r, p)
+	else
+		-- p.scale: the automaton on a grid s times coarser, scaled up and smoothed (p.smooth passes): the chambers
+		-- and passages of a big layout come out s times wider instead of a fine maze
+		local G = {w = floor((w + s - 1) / s), h = floor((h + s - 1) / s)}
+		local coarse = automaton(G, r, p)
+		rock = newGrid(w, h, true)
+		for y = 1, h do
+			for x = 1, w do
+				rock[idx(F, x, y)] = coarse[idx(G, floor((x - 1) / s) + 1, floor((y - 1) / s) + 1)]
+			end
+		end
+		for _ = 1, p.smooth or 1 do
+			local nextG = {}
+			for y = 1, h do
+				T()
+				for x = 1, w do
+					local i = idx(F, x, y)
+					if x < 4 or y < 4 or x > w - 3 or y > h - 3 then
+						nextG[i] = true
+					else
+						local n = 0
+						for dy = -1, 1 do
+							for dx = -1, 1 do
+								if rock[idx(F, x + dx, y + dy)] then
+									n = n + 1
+								end
+							end
+						end
+						nextG[i] = n >= 5
+					end
+				end
+			end
+			rock = nextG
+		end
+	end
 	F.open = {}
 	for i = 1, w * h do
 		F.open[i] = not rock[i] or nil
@@ -311,6 +423,11 @@ local function caveLayout(F, r, p, required)
 	for _, q in ipairs(required) do
 		carveDisc(F, q.x, q.y, q.r or 2, 3)
 	end
+	-- mixed layouts (p.rooms): ruined chambers cut into the cave, joined to it like any other pocket below
+	F.rooms = {}
+	if p.rooms then
+		mixedRooms(F, r, p, required)
+	end
 	-- drop small pockets, join the rest to the largest
 	local regs = regions(F, function(i) return F.open[i] end)
 	local keep = {}
@@ -318,6 +435,11 @@ local function caveLayout(F, r, p, required)
 		local needed = false
 		for _, q in ipairs(required) do
 			if reg.set[idx(F, q.x, q.y)] then
+				needed = true
+			end
+		end
+		for _, q in ipairs(F.rooms) do
+			if reg.set[idx(F, q.cx, q.cy)] then
 				needed = true
 			end
 		end
@@ -330,6 +452,7 @@ local function caveLayout(F, r, p, required)
 		end
 	end
 	for k = 2, #keep do
+		T()
 		-- the nearest pair of cells (sampled) between this region and the open set so far
 		local a = keep[k]
 		local best, bi, bj = nil, nil, nil
@@ -346,6 +469,7 @@ local function caveLayout(F, r, p, required)
 		local stepA = max(1, floor(#own / 60))
 		local stepB = max(1, floor(#mainCells / 400))
 		for s = 1, #own, stepA do
+			T()
 			local ax, ay = xy(F, own[s])
 			for t = 1, #mainCells, stepB do
 				local bx, by = xy(F, mainCells[t])
@@ -364,6 +488,7 @@ local function caveLayout(F, r, p, required)
 	end
 	-- single rock specks inside the open area open up (only adds walkable cells)
 	for y = 4, h - 3 do
+		T()
 		for x = 4, w - 3 do
 			local i = idx(F, x, y)
 			if not F.open[i] then
@@ -379,7 +504,6 @@ local function caveLayout(F, r, p, required)
 			end
 		end
 	end
-	F.rooms = {}
 end
 
 -- rooms joined by corridors (a spanning tree plus a few loops); the first room is the arrival room
@@ -423,7 +547,11 @@ local function roomsLayout(F, r, p, required, bossWanted)
 	-- the arrival room in the north-west, the boss room far from it, the required points get rooms of their own
 	place(r:int(p.room[1], p.room[2]), r:int(p.room[1], p.room[2]), "arrival", required[1].x, required[1].y)
 	if bossWanted then
-		place(p.bossRoom, p.bossRoom, "boss", w - floor(p.bossRoom / 2) - 6, h - floor(p.bossRoom / 2) - 6)
+		local bx, by = w - floor(p.bossRoom / 2) - 6, h - floor(p.bossRoom / 2) - 6
+		if p.bossAnchor then
+			bx, by = p.bossAnchor[1], p.bossAnchor[2]
+		end
+		place(p.bossRoom, p.bossRoom, "boss", bx, by)
 	end
 	for k = 2, #required do
 		local q = required[k]
@@ -435,6 +563,7 @@ local function roomsLayout(F, r, p, required, bossWanted)
 	local tries = 0
 	while #rooms < want and tries < want * 6 do
 		tries = tries + 1
+		T()
 		place(r:int(p.room[1], p.room[2]), r:int(p.room[1], p.room[2]), "hunt")
 	end
 	F.roomIdx = {}
@@ -452,6 +581,7 @@ local function roomsLayout(F, r, p, required, bossWanted)
 		return abs(a.cx - b.cx) + abs(a.cy - b.cy)
 	end
 	for _ = 2, #rooms do
+		T()
 		local bestD, ba, bb
 		for a = 1, #rooms do
 			if inTree[a] then
@@ -497,6 +627,7 @@ local function roomsLayout(F, r, p, required, bossWanted)
 	end
 	local pairs_ = {}
 	for a = 1, #rooms do
+		T()
 		for b = a + 1, #rooms do
 			if hops(a, b) >= 3 then
 				pairs_[#pairs_ + 1] = {a, b, dist(rooms[a], rooms[b])}
@@ -557,6 +688,7 @@ local function roomsLayout(F, r, p, required, bossWanted)
 		end
 	end
 	for _, e in ipairs(edges) do
+		T()
 		local a, b = rooms[e[1]], rooms[e[2]]
 		corridorL(a.cx, a.cy, b.cx, b.cy)
 	end
@@ -669,17 +801,20 @@ function A.levelScale(native, target, k)
 end
 
 -- ====================================================================== palette helpers
-local function resolve(theme, opts)
-	-- the theme with its dark overrides when the dark tile set is installed
-	if not (opts and opts.dark and theme.dark) then
+local function resolve(theme, opts, kind)
+	-- the theme with its dark overrides when the dark tile set is installed; a theme used by several layout kinds
+	-- (the rift themes) may hold byKind[kind] overrides, and so may its dark part
+	local byKind = theme.byKind and kind and theme.byKind[kind]
+	local dark = opts and opts.dark and theme.dark
+	local darkKind = dark and dark.byKind and kind and dark.byKind[kind]
+	if not (dark or byKind) then
 		return theme
 	end
 	local out = {}
-	for k, v in pairs(theme) do
-		out[k] = v
-	end
-	for k, v in pairs(theme.dark) do
-		out[k] = v
+	for _, src in ipairs({theme, byKind or {}, dark or {}, darkKind or {}}) do
+		for k, v in pairs(src) do
+			out[k] = v
+		end
 	end
 	return out
 end
@@ -722,11 +857,23 @@ local function pickLinks(r, def, w, h)
 		for j = 1, per do
 			local x, y
 			-- spread: the first link of a floor in the far half, the second elsewhere
-			if (k + j) % 2 == 0 then
-				x, y = r:int(floor(w / 2), w - 10), r:int(10, h - 11)
-			else
-				x, y = r:int(10, floor(w / 2)), r:int(floor(h / 2), h - 11)
-			end
+			local tries = 0
+			repeat
+				tries = tries + 1
+				if (k + j) % 2 == 0 then
+					x, y = r:int(floor(w / 2), w - 10), r:int(10, h - 11)
+				else
+					x, y = r:int(10, floor(w / 2)), r:int(floor(h / 2), h - 11)
+				end
+				-- def.linkAvoid = {{x, y, r}, ...}: no link within r cells of these points (the rifts' arena); only
+				-- drawn again when the def asks for it
+				local near = false
+				for _, q in ipairs(def.linkAvoid or {}) do
+					if abs(x - q[1]) <= q[3] and abs(y - q[2]) <= q[3] then
+						near = true
+					end
+				end
+			until not near or tries >= 30
 			links[#links + 1] = {floor = k, x = x, y = y}
 		end
 	end
@@ -820,6 +967,7 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 	-- cells: OPEN = the 8-neighbourhood of the design; rock (or walls in a dungeon) around it
 	F.cell = newGrid(F.w, F.h, VOID)
 	for i = 1, F.w * F.h do
+		T2048()
 		if F.open[i] then
 			F.cell[i] = OPEN
 		end
@@ -837,6 +985,7 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 	end
 	if def.kind == "dungeon" then
 		for y = 1, F.h do
+			T()
 			for x = 1, F.w do
 				local i = idx(F, x, y)
 				if F.cell[i] == VOID and nearOpen(x, y, 1) then
@@ -848,6 +997,7 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 		-- the floor reaches one cell past the design (those cells carry the rock edge pieces); rock rim behind it
 		local grow = {}
 		for y = 1, F.h do
+			T()
 			for x = 1, F.w do
 				local i = idx(F, x, y)
 				if F.cell[i] == VOID and nearOpen(x, y, 1) then
@@ -863,6 +1013,7 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 		local rim = theme.rimWidth or 2
 		local deep = {}
 		for y = 1, F.h do
+			T()
 			for x = 1, F.w do
 				local i = idx(F, x, y)
 				if F.cell[i] == VOID then
@@ -876,6 +1027,7 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 		end
 		local outside = {}
 		for y = 1, F.h do
+			T()
 			for x = 1, F.w do
 				local i = idx(F, x, y)
 				if deep[i] and not outside[i] and (x == 1 or y == 1 or x == F.w or y == F.h) then
@@ -894,6 +1046,7 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 	-- walkable: open cells with no rock or wall around them (the edge cells carry blocking pieces)
 	F.walk, F.blocked = {}, {}
 	for y = 1, F.h do
+		T()
 		for x = 1, F.w do
 			local i = idx(F, x, y)
 			if F.cell[i] == OPEN then
@@ -946,9 +1099,12 @@ local function paintGrounds(cfg, def, theme, opts, r, F, reserved)
 	local rooms = def.kind == "dungeon" and F.rooms or {}
 	-- dungeon rooms each get a floor family of their own; corridors and walls the corridor floor
 	local roomFam = {}
-	if def.kind == "dungeon" then
+	if def.kind == "mixed" and theme.mixedFloors then
+		rooms = F.rooms or {}
+	end
+	if def.kind == "dungeon" or (def.kind == "mixed" and theme.mixedFloors) then
 		for k, q in ipairs(rooms) do
-			local list = theme.roomFloors or {base}
+			local list = (def.kind == "mixed" and theme.mixedFloors) or theme.roomFloors or {base}
 			local fam = list[r:int(1, #list)]
 			if q.kind == "boss" and theme.bossFloor then
 				fam = theme.bossFloor
@@ -961,6 +1117,7 @@ local function paintGrounds(cfg, def, theme, opts, r, F, reserved)
 		end
 	end
 	for i = 1, F.w * F.h do
+		T2048()
 		local c = F.cell[i]
 		if c == OPEN or c == WALL then
 			F.fam[i] = roomFam[i] or base
@@ -987,6 +1144,7 @@ local function paintGrounds(cfg, def, theme, opts, r, F, reserved)
 	end
 	local walkList = {}
 	for i = 1, F.w * F.h do
+		T2048()
 		if F.walk[i] then
 			walkList[#walkList + 1] = i
 		end
@@ -995,8 +1153,9 @@ local function paintGrounds(cfg, def, theme, opts, r, F, reserved)
 	for _, pt in ipairs(theme.patches or {}) do
 		local target = floor(nWalk * pt.share)
 		local painted, guard = 0, 0
-		while painted < target and guard < 200 and nWalk > 0 do
+		while painted < target and guard < (pt.tries or 200) and nWalk > 0 do
 			guard = guard + 1
+			T()
 			local c = walkList[r:int(1, nWalk)]
 			local cx, cy = xy(F, c)
 			local rad = r:int(pt.radius[1], pt.radius[2])
@@ -1040,8 +1199,9 @@ local function paintGrounds(cfg, def, theme, opts, r, F, reserved)
 	for _, pl in ipairs(theme.pools or {}) do
 		local target = floor(nWalk * pl.share)
 		local made, guard = 0, 0
-		while made < target and guard < 300 and nWalk > 0 do
+		while made < target and guard < (pl.tries or 300) and nWalk > 0 do
 			guard = guard + 1
+			T()
 			local c = walkList[r:int(1, nWalk)]
 			local cx, cy = xy(F, c)
 			local rad = r:int(pl.radius[1], pl.radius[2])
@@ -1118,6 +1278,7 @@ local function paintGrounds(cfg, def, theme, opts, r, F, reserved)
 	end
 	-- ground ids: a weighted pick of the family's grounds (several ids per block, as the guide asks)
 	for i = 1, F.w * F.h do
+		T2048()
 		local fam = F.fam[i]
 		if fam then
 			local fd = cfg.families[fam]
@@ -1130,10 +1291,12 @@ end
 local function paintBorders(cfg, def, theme, opts, F)
 	F.items = {}
 	for i = 1, F.w * F.h do
+		T2048()
 		F.items[i] = {}
 	end
 	local fams = cfg.families
 	for y = 1, F.h do
+		T()
 		for x = 1, F.w do
 			local i = idx(F, x, y)
 			local f = F.fam[i]
@@ -1179,6 +1342,7 @@ local function paintBorders(cfg, def, theme, opts, F)
 	if def.kind == "dungeon" then
 		local ws = cfg.walls[theme.wall]
 		for y = 1, F.h do
+			T()
 			for x = 1, F.w do
 				local i = idx(F, x, y)
 				if F.cell[i] == WALL then
@@ -1197,9 +1361,39 @@ local function paintBorders(cfg, def, theme, opts, F)
 end
 
 -- paths: the shortest walks from the arrival to the links, the boss and the rooms (kept free of obstacles)
-local function markPaths(F, from, targets)
+local function markPaths(F, from, targets, fast)
 	F.path = {}
+	if fast then
+		-- one breadth-first search from the entry and a walk back along it for each target (big layouts: the rifts)
+		local parent, queue, head = {[from] = from}, {from}, 1
+		while head <= #queue do
+			T2048()
+			local i = queue[head]
+			head = head + 1
+			local x, y = xy(F, i)
+			for _, d in ipairs(D8) do
+				local nx, ny = x + d[1], y + d[2]
+				if inside(F, nx, ny) then
+					local j = idx(F, nx, ny)
+					if parent[j] == nil and F.walk[j] then
+						parent[j] = i
+						queue[#queue + 1] = j
+					end
+				end
+			end
+		end
+		for _, t in ipairs(targets) do
+			local i = parent[t] and t or nil
+			while i and not F.path[i] do
+				F.path[i] = true
+				i = i ~= from and parent[i] or nil
+			end
+		end
+		F.path[from] = true
+		return
+	end
 	for _, t in ipairs(targets) do
+		T()
 		local p = pathBetween(F, from, t, function(i) return F.walk[i] end)
 		for _, i in ipairs(p or {}) do
 			F.path[i] = true
@@ -1216,6 +1410,7 @@ end
 local function decorate(cfg, theme, opts, r, F, reserved, stats)
 	local walkList = {}
 	for i = 1, F.w * F.h do
+		T2048()
 		if F.walk[i] then
 			walkList[#walkList + 1] = i
 		end
@@ -1235,6 +1430,7 @@ local function decorate(cfg, theme, opts, r, F, reserved, stats)
 		local count = floor(n * cl.per1000 / 1000)
 		local rows = weightedIds(cfg, opts, cl.items)
 		for _ = 1, count do
+			T2048()
 			local c = walkList[r:int(1, n)]
 			local cx, cy = xy(F, c)
 			local k = r:int(cl.size[1], cl.size[2])
@@ -1260,6 +1456,7 @@ local function decorate(cfg, theme, opts, r, F, reserved, stats)
 	local share = deco.share or 0
 	if #rows > 0 and share > 0 then
 		for _, i in ipairs(walkList) do
+			T2048()
 			if free(i) and r:int(1, 10000) <= share * 10000 then
 				addItem(F, i, r:weighted(rows))
 				hasDeco[i] = true
@@ -1282,6 +1479,7 @@ local function decorate(cfg, theme, opts, r, F, reserved, stats)
 			if made >= target then
 				break
 			end
+			T2048()
 			if free(i) then
 				local x, y = xy(F, i)
 				local ok = true
@@ -1316,6 +1514,7 @@ local function edgePieces(cfg, theme, opts, r, F, reserved, stats, L, statKey)
 	end
 	local cand, nWalk = {}, 0
 	for i = 1, F.w * F.h do
+		T2048()
 		if F.walk[i] then
 			nWalk = nWalk + 1
 			local x, y = xy(F, i)
@@ -1339,6 +1538,7 @@ local function edgePieces(cfg, theme, opts, r, F, reserved, stats, L, statKey)
 		if made >= target then
 			break
 		end
+		T2048()
 		local x, y = xy(F, i)
 		local near = false
 		for _, p in ipairs(placed) do
@@ -1366,6 +1566,7 @@ local function spawns(cfg, def, r, F, safe, model, floorNo)
 	local cand = {}
 	local hunt = 0
 	for i = 1, F.w * F.h do
+		T2048()
 		if F.walk[i] and not safe[i] then
 			hunt = hunt + 1
 			cand[#cand + 1] = i
@@ -1448,9 +1649,25 @@ local function spawns(cfg, def, r, F, safe, model, floorNo)
 	return out, monsters, hunt
 end
 
+local generate
+
+-- def.fastPaths: one search for the paths kept free (big layouts); def.noExit: no exit portal (the rifts);
+-- def.bossAt = {x, y}: the boss point (default the south-east corner); def.boss.clear: no decoration, patch or
+-- obstacle within this many cells of the boss (an open arena); opts.tick: see T() above
 function A.generate(cfg, def, opts)
 	opts = opts or {}
-	local theme = resolve(cfg.themes[def.theme], opts)
+	local prev = tickFn
+	tickFn, tickCount = opts.tick, 0
+	local ok, model = pcall(generate, cfg, def, opts)
+	tickFn = prev
+	if not ok then
+		error(model, 0)
+	end
+	return model
+end
+
+generate = function(cfg, def, opts)
+	local theme = resolve(cfg.themes[def.theme], opts, def.kind)
 	assert(theme, "unknown theme " .. tostring(def.theme))
 	local seed = def.seed or A.hash(def.name)
 	local r = A.rng(seed)
@@ -1461,7 +1678,7 @@ function A.generate(cfg, def, opts)
 	local links = pickLinks(r, def, w, h)
 	local arrival = {x = def.arrival and def.arrival[1] or 8, y = def.arrival and def.arrival[2] or 8}
 	local bossFloor = def.boss and (def.boss.floor or nFloors) or nil
-	local bossAt = {x = w - 12, y = h - 12}
+	local bossAt = def.bossAt and {x = def.bossAt[1], y = def.bossAt[2]} or {x = w - 12, y = h - 12}
 	local Fs = {}
 	for k = 1, nFloors do
 		local F = {w = w, h = h, z = def.origin.z + k - 1, k = k}
@@ -1530,14 +1747,14 @@ function A.generate(cfg, def, opts)
 			end
 		end
 		if F.bossRoom then
-			ring(F, bossAt.x, bossAt.y, 1, reserved)
+			ring(F, bossAt.x, bossAt.y, def.boss.clear or 1, reserved)
 			targets[#targets + 1] = idx(F, bossAt.x, bossAt.y)
 		end
 		for _, q in ipairs(F.rooms or {}) do
 			targets[#targets + 1] = idx(F, q.cx, q.cy)
 		end
 		local from = idx(F, entry.x, entry.y)
-		markPaths(F, from, targets)
+		markPaths(F, from, targets, def.fastPaths)
 		paintGrounds(cfg, def, theme, opts, fr, F, reserved)
 		paintBorders(cfg, def, theme, opts, F)
 		local stats = model.stats
@@ -1556,8 +1773,12 @@ function A.generate(cfg, def, opts)
 		if k == 1 then
 			local ex = def.exit or {0, -1}
 			model.arrival = absPos(model, F, arrival.x, arrival.y)
-			model.exit = absPos(model, F, arrival.x + ex[1], arrival.y + ex[2])
-			addItem(F, idx(F, arrival.x + ex[1], arrival.y + ex[2]), cfg.items.portal)
+			if def.noExit then
+				model.exit = model.arrival
+			else
+				model.exit = absPos(model, F, arrival.x + ex[1], arrival.y + ex[2])
+				addItem(F, idx(F, arrival.x + ex[1], arrival.y + ex[2]), cfg.items.portal)
+			end
 		end
 		-- spawns (the boss room only holds the boss)
 		if F.bossRoom then
@@ -1592,6 +1813,7 @@ function A.generate(cfg, def, opts)
 		-- tiles
 		local walkable = 0
 		for y = 1, F.h do
+			T()
 			for x = 1, F.w do
 				local i = idx(F, x, y)
 				if F.walk[i] then
@@ -1639,7 +1861,7 @@ end
 
 -- every item id the area may use (theme, families, borders, walls, links, portal)
 function A.allowedIds(cfg, def, opts)
-	local theme = resolve(cfg.themes[def.theme], opts)
+	local theme = resolve(cfg.themes[def.theme], opts, def.kind)
 	local ok = {}
 	local function addRows(rows)
 		for _, row in ipairs(weightedIds(cfg, opts, rows)) do
@@ -1648,6 +1870,9 @@ function A.allowedIds(cfg, def, opts)
 	end
 	local fams = {theme.floor, theme.rock, theme.bossFloor}
 	for _, f in ipairs(theme.roomFloors or {}) do
+		fams[#fams + 1] = f
+	end
+	for _, f in ipairs(theme.mixedFloors or {}) do
 		fams[#fams + 1] = f
 	end
 	for _, p in ipairs(theme.patches or {}) do
@@ -1694,12 +1919,26 @@ function A.allowedIds(cfg, def, opts)
 	return ok
 end
 
--- problems of a model: [] when it is fine
+local validate
+
+-- problems of a model: [] when it is fine (opts.tick as in A.generate)
 function A.validate(cfg, model, opts)
+	local prev = tickFn
+	tickFn, tickCount = opts and opts.tick, 0
+	local ok, res = pcall(validate, cfg, model, opts)
+	tickFn = prev
+	if not ok then
+		error(res, 0)
+	end
+	return res
+end
+
+validate = function(cfg, model, opts)
 	local out = {}
 	local def = model.def
 	local allowed = A.allowedIds(cfg, def, opts)
 	for _, t in ipairs(model.tiles) do
+		T2048()
 		if not t.ground or not allowed[t.ground] then
 			out[#out + 1] = string.format("ground %s at %d,%d,%d is not in the palette", tostring(t.ground), t.x, t.y, t.z)
 			break
@@ -1736,6 +1975,7 @@ function A.validate(cfg, model, opts)
 		out[#out + 1] = "the arrival is not walkable"
 	end
 	while #stack > 0 do
+		T2048()
 		local c = table.remove(stack)
 		local x, y, z = c[1], c[2], c[3]
 		for _, d in ipairs(D8) do
@@ -1753,6 +1993,7 @@ function A.validate(cfg, model, opts)
 	local unreached = 0
 	for z, set in pairs(walk) do
 		for k in pairs(set) do
+			T2048()
 			if not (seen[z] and seen[z][k]) then
 				unreached = unreached + 1
 			end

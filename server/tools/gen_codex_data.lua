@@ -1397,12 +1397,22 @@ function Gen.riftEntries(D)
 			{h = "Tiers", p = {string.format("Tiers above %d reuse the last window: +%d levels to enter and +%d%% health, damage and +%d%% rewards per tier.",
 				#cfg.tiers, cfg.beyond.minLevelStep, floor(cfg.beyond.health * 100 + 0.5), floor(cfg.beyond.reward * 100 + 0.5))},
 				cols = {"Tier", "Level to enter", "Monster levels"}, w = {20, 40, 40}, rows = tierRows},
-			{h = "The run", p = {string.format("%d minutes; the guardian comes after %d%% of the monsters; %d shared lives + %d per extra player; up to %d players.",
-				floor(cfg.timeLimit / 60), cfg.bossAt, cfg.lives.base, cfg.lives.perExtraPlayer, cfg.maxPlayers),
-				R.densityOn and R.densityOn(cfg) and string.format("About %d monsters solo at tier 1 up to %d at tier %d (+%d%% per extra player), in packs of %d-%d; at most %d alive at once (+%d per extra player), the rest gather in the rooms away from you. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.",
+			{h = "The run", p = {cfg.layout and cfg.layout.enabled and string.format("Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: %s.",
+					(function()
+						local parts, from = {}, 1
+						for _, row in ipairs(cfg.layout.sizes) do
+							parts[#parts + 1] = string.format("tiers %d-%d %d x %d tiles, %d minutes", from, math.min(row[1], cfg.maxTier),
+								row[2], row[2], floor(row[3] / 60))
+							from = row[1] + 1
+						end
+						return table.concat(parts, "; ")
+					end)()) or "",
+				string.format("The guardian comes after %d%% of the monsters; %d shared lives + %d per extra player; up to %d players.",
+				cfg.bossAt, cfg.lives.base, cfg.lives.perExtraPlayer, cfg.maxPlayers),
+				R.densityOn and R.densityOn(cfg) and string.format("About %d monsters solo at tier 1 up to %d at tier %d on a map of typical size (+%d%% per extra player; a bigger map holds more), in packs of %d-%d over the whole map; about %d-%d alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.",
 					floor(R.density(cfg, 1, 1).count), floor(R.density(cfg, cfg.maxTier, 1).count), cfg.maxTier,
 					floor(cfg.density.count.perExtraPlayer * 100 + 0.5), cfg.density.size[1], cfg.density.size[2],
-					cfg.density.live.base, cfg.density.live.perExtraPlayer) or "",
+					R.liveCap(cfg, 1, nil, 1), R.liveCap(cfg, 1, nil, cfg.maxTier)) or "",
 				cfg.party and string.format("Each extra player: +%d%% monster health in total (more packs, tougher monsters), +%d%% guardian health, +%d%% damage taken; every finisher's chest +%s%% (at most +%d%%) and +%s%% kill loot (at most +%d%%).",
 					floor(cfg.party.healthPerExtraPlayer * 100 + 0.5), floor(cfg.boss.perExtraPlayer * 100 + 0.5),
 					floor(cfg.party.damagePerExtraPlayer * 100 + 0.5), Gen.num(cfg.party.rewardPerExtraPlayer), cfg.party.rewardCap,

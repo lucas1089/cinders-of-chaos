@@ -23,15 +23,18 @@ return {
 	useCooldown = 3, -- seconds between two key uses of one player (exhaust)
 
 	-- ------------------------------------------------------------------ the run
-	timeLimit = 600, -- seconds; when it runs out the rift fails: everyone is sent out, the key is lost
+	-- seconds; when it runs out the rift fails: everyone is sent out, the key is lost. With the generated layouts a run
+	-- takes the limit of its size band (layout.sizes: 12 / 13 / 15 minutes); this one is the base of the atlas's Swift
+	-- cells (atlas_config.lua swiftShare) and of a run without layouts
+	timeLimit = 600,
 	bossAt = 75, -- percent of the rift's monsters that must die before the boss appears
 	exitDelay = 60, -- seconds after the boss died: time to open the chest and loot; then everyone is sent out
 	hudEvery = 5, -- seconds between HUD refreshes (the client counts down by itself in between)
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings at these seconds left; a
 	-- running rift whose players are all gone (fallen players who may come back keep it open) closes after idleSeconds
 	-- as a failed rift (the key is spent, as when the time runs out); at most maxRuns rifts and Omen arenas at once (the
-	-- grid has 16 slots: about 1,650 runtime tiles each, see "Instance limits" for the load); a player who finds them all
-	-- busy waits in line and is told when one frees up
+	-- grid has 16 slots of 256 x 256 on two floors, up to about 50,000 runtime tiles a layout, see "Instance limits" for
+	-- the load); a player who finds them all busy (or none ready yet) waits in line and is told when one frees up
 	limits = {warnAt = {300, 60, 10}, idleSeconds = 180, maxRuns = 16, waitlist = true},
 
 	-- packs: count = packs.base + floor(tier / packs.perTiers) + packs.perExtraPlayer x (players - 1);
@@ -61,15 +64,29 @@ return {
 	-- Spoils stay per run as before (orbs, gold, uniques, keys, fragments, bounty and bestiary credit): elite chances x
 	-- the share (old monsters / new monsters), and only that share of the normal monsters carries loot (the others are
 	-- husks: experience only, no corpse loot, no kill credit).
+	-- Big generated layouts (2026-10-12, `layout` below): the plan and the live cap grow with the layout's walkable
+	-- tiles, the run's walking is part of the clear time:
+	--   area      count x (walkable / ref) ^ exp, 1 to maxMult (ref = the open floor of the old three-room slot);
+	--             typical layouts (layout.typical): band 1 x1.67, band 2 x1.92, band 3 x2.10. Tier 1 solo 134, tier
+	--             10 292, tier 15 403 (a party of 5 twice that).
+	--   live      + per100 per 100 walkable tiles: about 100 / 130 / 165 alive solo in the three bands, max 260
+	--   reinforce packs come in the section farthest from the players among the unvisited ones up to `window`
+	--             walking steps past the party's progress, at least minDistance sqm from each player (out of
+	--             sight); `visit` = a section counts as reached when a player comes this close to its centre
+	--   populate  the first packs are placed `perStep` monsters every stepMs (not all in the task that uses the key)
+	--   model.walk the clear time adds the layout's walking distance arrival -> arena x sweep at the tier's level
 	density = {
 		enabled = true,
 		count = {base = 80, perTier = 8, perExtraPlayer = 0.25},
+		area = {ref = 1081, exp = 0.25, maxMult = 2.5},
 		size = {5, 7},
 		spread = 3,
-		live = {base = 60, perExtraPlayer = 10, max = 100},
-		reinforce = {perTick = 2, minDistance = 9},
+		live = {base = 60, perExtraPlayer = 10, per100 = 0.5, max = 260},
+		reinforce = {perTick = 2, minDistance = 16, window = 90, visit = 10},
+		populate = {perStep = 20, stepMs = 100},
 		model = {dps5 = 5240, dps5Exp = 1.07, dps1 = 2600, dps1Exp = 0.87, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
-			packSeconds = 225, guardianSeconds = 55, tierHp = {magic = 2.0, rare = 3.5, legendary = 6.0}},
+			packSeconds = 225, guardianSeconds = 55, tierHp = {magic = 2.0, rare = 3.5, legendary = 6.0},
+			walk = {sweep = 1.8}},
 		damage = 0.6,
 		-- extra monsters (Veilbreach, the Wrathful Guardian's thralls) stop when this many more than `live` are up
 		extraSlack = 12
@@ -276,7 +293,7 @@ return {
 	-- A run has shared lives: base + perExtraPlayer x (players who entered - 1), minus the Fragile modifier, at least
 	-- min. A death inside costs one: the normal death of the engine (experience / skill / item loss, blessings and the
 	-- amulet as anywhere else, the death window), and the next login of that character puts it back at the rift's
-	-- entrance (the south of the hub) with shieldSeconds in which rift monsters cannot hurt it. The death that takes
+	-- entrance (the layout's arrival) with shieldSeconds in which rift monsters cannot hurt it. The death that takes
 	-- the last life collapses the rift: everyone out, no chest, the key is spent (as when the time runs out).
 	lives = {base = 3, perExtraPlayer = 1, min = 1, shieldSeconds = 5},
 
@@ -284,8 +301,9 @@ return {
 	-- Sealed rifts of tier minTier or more give every finisher Omen Fragments (chest.base + chest.perTier x (tier -
 	-- minTier), x (1 + quantity bonus), fractions a chance of one more); rare / legendary rift monsters of those tiers
 	-- carry one in the corpse eliteChance % of the time. Using keyCost fragments (anywhere in the backpack) binds an
-	-- Omen Key of a random kind; the key opens that kind's guardian arena: the same runtime-built rift slot with every
-	-- side room shut, the guardian appears startDelay seconds after the party arrives, timeLimit seconds, the rift's lives.
+	-- Omen Key of a random kind; the key opens that kind's guardian arena: the arena of a ready rift layout (the party
+	-- arrives at its mouth), the guardian appears startDelay seconds after the party arrives, timeLimit seconds, the
+	-- rift's lives.
 	-- The guardian has the health of its XML (data/monster/monsters/chaos/omens/) x (1 + healthPerExtraPlayer x
 	-- (players - 1)). Killed in time: a chest for every finisher (`reward`) x the party bonus (`party`). The two items
 	-- are new items.otb nodes
@@ -368,24 +386,61 @@ return {
 	},
 
 	-- ------------------------------------------------------------------ the instance (built at runtime)
-	-- A grid of slots far from the map: slot i is at origin + (i % cols, i // cols) x spacing. The real map has no
-	-- tiles there (its OTBM tile areas end below x/y 2600 apart from the main continent at 30720+ and two single
-	-- areas at 16640,16384 and 18944,18944; other runtime areas: Infinity Tower 2000-2660, tutorial island 4600+,
-	-- world boss 5000-5048, guild siege 5100+, PvP arena 6000-6100). The grid covers x/y 8192-8447.
-	-- Each slot: a hub room and four side rooms (N, E, S, W) joined by corridors; every run opens 2-4 of them.
-	grid = {origin = {x = 8192, y = 8192, z = 7}, cols = 4, rows = 4, spacing = 64},
-	-- half sizes include the wall. A 19 x 19 hub and 15 x 15 side rooms (were 15 x 15 and 11 x 11 with 4-long
-	-- corridors): the outer walls end 30 sqm from the slot centre, inside the 64 sqm spacing
-	room = {hubHalf = 10, sideHalf = 8, corridor = 3, corridorHalf = 1},
-	openRooms = {2, 4}, -- side rooms opened per run (random)
-	wallId = 5648, -- stone wall (also the blocker of a closed corridor)
-	basinId = 1481, -- coal basin (light) in the hub corners
-	-- dark tile set (server/README.md "Dark tile set"): when enabled and installed (items.otb, client pair), the walls
-	-- and hub lights use these and each theme with a darkStyle is painted by data/lib/chaos_dark_paint.lua (a main
-	-- ground, patches of a second ground with borders, decoration; solid pieces only against the walls). Without the
-	-- set, or with enabled = false, the stock ids above and the theme `grounds` are used.
+	-- A grid of slots far from the map: slot i is at origin + (i % cols, i // cols) x spacing, floors z and z + 1.
+	-- The real map has no tiles there (checked in the OTBM of the full map, 18,185,071 tiles: x/y 15360-30719 hold
+	-- only 26 tiles, at 16735,16438,15 and near 18944,18944,7; the main continent starts at 30720; other runtime
+	-- areas use x/y 2000-15359). The grid covers x/y 20480-21503. Before 2026-10-12 it was 16 slots of 64 sqm at 8192.
+	grid = {origin = {x = 20480, y = 20480, z = 7}, cols = 4, rows = 4, spacing = 256, floors = 2},
+	-- Every run gets a generated map (rift_layout_core.lua, the area generator's rift themes in areagen_config.lua).
+	-- Each slot holds one built layout at a time; a run that ends hands its slot to the builder, which clears it and
+	-- builds the next layout in short steps (`build`), so a key normally finds a slot ready (server/README.md "Rifts",
+	-- Layouts and the slot pool).
+	layout = {
+		enabled = true,
+		-- side of the square layout by key tier and the run's time limit (seconds): {up to tier, side, limit}. A two
+		-- floor layout has twoFloorScale x the side on each floor (about 1.3x the area of one floor).
+		sizes = {{5, 160, 720}, {10, 200, 780}, {15, 240, 900}},
+		-- walkable tiles and walking distance arrival -> arena of a typical layout per band (the mean of 16 layouts
+		-- per band over the four themes, tests/rift_layout_test.lua keeps them honest): the density's model
+		typical = {{walkable = 8500, route = 200}, {walkable = 14800, route = 265}, {walkable = 21200, route = 340}},
+		twoFloorScale = 0.8,
+		links = 2, -- holes (with a ladder below) per floor change
+		arrivalInset = 10, -- the arrival this many cells from its corner
+		-- the guardian's arena in the opposite corner: a chamber of `radius` (nothing in it within `clear`), in a
+		-- dungeon a room of `room` x `room`
+		arena = {radius = 9, clear = 6, room = 21, inset = 15},
+		safeRadius = 12, -- no pack within this many sqm of the arrival
+		section = 16, -- packs and reinforcements come by sections of section x section cells ...
+		minCells = 24, -- ... with at least this many walkable cells
+		attempts = 4, -- a layout the validator rejects is made again with another seed
+		-- areagen layout parameters per kind; *Per10k counts scale with the area (per 10,000 cells)
+		kinds = {
+			cave = {fill = 0.53, steps = 5, spread = 2, minRegion = 60, tunnelRadius = 1, scale = 2, smooth = 2},
+			waste = {fill = 0.47, steps = 4, spread = 1, minRegion = 80, tunnelRadius = 2, scale = 3, smooth = 2},
+			mixed = {fill = 0.54, steps = 5, spread = 2, minRegion = 60, tunnelRadius = 1, scale = 2, smooth = 2,
+				roomsPer10k = {3, 4}, room = {9, 15}, gap = 4},
+			dungeon = {roomsPer10k = {11, 14}, room = {10, 19}, gap = 3, corridor = 3, loopsPer10k = {2, 3}}
+		},
+		-- per rift theme: the areagen theme, the layout kinds {kind, weight} and the floors {count, weight}
+		themes = {
+			["Abyssal Rift"] = {areagen = "rift_abyss", kinds = {{"waste", 55}, {"cave", 45}}, floors = {{1, 100}}},
+			["Obsidian Hall"] = {areagen = "rift_hall", kinds = {{"dungeon", 65}, {"mixed", 35}}, floors = {{1, 60}, {2, 40}}},
+			["Ashen Crypt"] = {areagen = "rift_crypt", kinds = {{"mixed", 50}, {"dungeon", 50}}, floors = {{2, 100}}},
+			["Forsaken Sanctum"] = {areagen = "rift_sanctum", kinds = {{"cave", 65}, {"mixed", 35}}, floors = {{1, 70}, {2, 30}}}
+		}
+	},
+	-- the slot builder: one layout at a time, in steps of at most sliceMs of game loop every everyMs (the generator
+	-- runs in a coroutine and yields; the clean-up and the tiles go in batches); poolReady = the idle slots kept built
+	-- and ready (more are built only when the keys ask for them)
+	build = {sliceMs = 10, everyMs = 40, poolReady = 6, startDelayMs = 10000},
+	-- the Ember Descent (descent.lua) still builds its halls with these: wall, light, dark set and theme floors
+	wallId = 5648, -- stone wall
+	basinId = 1481, -- coal basin (light)
+	-- dark tile set (server/README.md "Dark tile set"): the Descent's walls and lights use these when installed, its
+	-- floors the theme's darkStyle (data/lib/chaos_dark_paint.lua); the rifts take the dark palettes of their
+	-- areagen themes instead
 	dark = {enabled = true, wall = "obsidian_wall", basin = "brazier"},
-	-- themes: grounds are picked at random per tile from the list (all full ground sprites, checked in the client)
+	-- themes (names: the atlas, the looks, the Descent): grounds and darkStyle are the Descent's floors
 	themes = {
 		{name = "Abyssal Rift", grounds = {25549, 25704, 25705, 25706, 25707, 25708, 25709}, darkStyle = "abyss"}, -- "rift floor"
 		{name = "Obsidian Hall", grounds = {407}, darkStyle = "hall"}, -- black marble floor

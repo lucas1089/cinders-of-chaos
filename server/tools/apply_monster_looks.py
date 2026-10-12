@@ -70,6 +70,9 @@ def main():
         problems.append(f'no monster file for "{name}"')
     # rift_config.lua: the families hold exactly the rift rows of picks.csv
     cfg = open(RIFT_CONFIG, encoding='utf-8').read()
+    # only the looks block: other tables of rift_config.lua are keyed by theme too (layouts, palettes)
+    fam = re.search(r'\blooks\s*=\s*\{.*?\bfamilies\s*=\s*\{', cfg, re.S)
+    cfg = cfg[fam.end():] if fam else cfg
     for r in rows:
         if r['family'] in FAMILY_THEME:
             line = re.search(r'\["%s"\]\s*=\s*\{([^}]*)\}' % re.escape(FAMILY_THEME[r['family']]), cfg)

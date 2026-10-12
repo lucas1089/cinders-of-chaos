@@ -289,60 +289,21 @@ do
 		ok(not seen[k], "distinct centres")
 		seen[k] = true
 	end
-	eq(R.slotOfPos(cfg, {x = 8191, y = 8200, z = 7}), nil, "west of the grid")
-	eq(R.slotOfPos(cfg, {x = 8200, y = 8200, z = 6}), nil, "other floor")
-	eq(R.slotOfPos(cfg, {x = 8192 + 64 * 4, y = 8200, z = 7}), nil, "east of the grid")
-	for _, s in ipairs({0, 5, 15}) do
-		local L = R.layout(cfg, s)
-		for _, list in ipairs({L.floorList, L.wallList}) do
-			for _, p in ipairs(list) do
-				if R.slotOfPos(cfg, p) ~= s then
-					ok(false, "layout tile outside its slot " .. s)
-					break
-				end
-			end
-		end
-		for k in pairs(L.walls) do
-			ok(not L.floor[k], "wall and floor never overlap")
-		end
-		ok(L.floor[L.start.x .. "," .. L.start.y] ~= nil, "start on the floor")
-		ok(L.floor[L.bossSpawn.x .. "," .. L.bossSpawn.y] ~= nil, "boss spawn on the floor")
-		-- everything is reachable from the start
-		local reach, queue = {[L.start.x .. "," .. L.start.y] = true}, {L.start}
-		while #queue > 0 do
-			local p = table.remove(queue)
-			for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
-				local k = (p.x + d[1]) .. "," .. (p.y + d[2])
-				if L.floor[k] and not reach[k] then
-					reach[k] = true
-					queue[#queue + 1] = L.floor[k]
-				end
-			end
-		end
-		local n = 0
-		for _ in pairs(reach) do
-			n = n + 1
-		end
-		eq(n, #L.floorList, "all floor connected, slot " .. s)
-		for _, d in ipairs(R.DIRS) do
-			eq(#L.doors[d.name], 3, "doorway width " .. d.name)
-			for _, p in ipairs(L.doors[d.name]) do
-				ok(L.floor[p.x .. "," .. p.y] ~= nil, "doorway is floor")
-			end
-			local rc = L.rooms[d.name].rect
-			eq(rc.x2 - rc.x1 + 1, 2 * cfg.room.sideHalf - 1, "side room width")
-		end
-		eq(L.hub.x2 - L.hub.x1 + 1, 2 * cfg.room.hubHalf - 1, "hub width")
+	local g = cfg.grid
+	eq(g.origin.x, 20480, "grid at x/y 20480 (no map tile there)")
+	eq(R.slotOfPos(cfg, {x = g.origin.x - 1, y = g.origin.y + 10, z = 7}), nil, "west of the grid")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + 10, y = g.origin.y + 10, z = 6}), nil, "the floor above")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + 10, y = g.origin.y + 10, z = 8}), 0, "the second floor belongs to the slot")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + 10, y = g.origin.y + 10, z = 9}), nil, "below the second floor")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + g.spacing * g.cols, y = g.origin.y, z = 7}), nil, "east of the grid")
+	-- every layout band fits its slot with a margin (rift_layout_test.lua checks the generated tiles)
+	for _, row in ipairs(cfg.layout.sizes) do
+		ok(row[2] + 16 <= g.spacing, "band side " .. row[2] .. " fits the slot with 8 cells each side")
 	end
-	local rand = rng(1)
-	for _ = 1, 200 do
-		local open = R.pickRooms(cfg, rand)
-		ok(#open >= 2 and #open <= 4, "2-4 rooms open")
-		local s = {}
-		for _, n in ipairs(open) do
-			ok(not s[n], "rooms unique")
-			s[n] = true
-		end
+	-- clear of every other runtime area (they use x/y 2000-15359)
+	local ag = dofile("data/scripts/chaos/areagen_config.lua")
+	for _, def in ipairs(ag.areas) do
+		ok(def.origin.x + def.size[1] < g.origin.x and def.origin.y + def.size[2] < g.origin.y, "clear of " .. def.id)
 	end
 end
 
@@ -1059,19 +1020,23 @@ do
 		local ladenNow = d1.count * (1 - R.eliteShare(cfg, t, d1.share)) * d1.normalShare
 		ok(near(ladenNow, eliteThen / R.eliteShare(cfg, t, 1) * (1 - R.eliteShare(cfg, t, 1)), 1e-6),
 			"laden normal monsters per run as before, tier " .. t)
-		-- the budget: a typical player clears tiers 1-10 in about 5 minutes, 11-15 in under 9; a party of 5 (4.98x the
-		-- damage, the Ascended model) in about the same time
+		-- the budget on the big layouts: fighting as before (about 4.7 minutes for tiers 1-10) plus the walk of a typical
+		-- layout of the tier's band, so tiers 1-10 take about 6 minutes, 11-15 up to about 9.5; a party of 5 (4.98x the
+		-- damage, the Ascended model) about the same time
 		local solo, party = R.clearSeconds(cfg, t, 1, 1), R.clearSeconds(cfg, t, 5, 4.98)
+		local limit = R.timeLimit(cfg, t)
 		if t <= 10 then
-			ok(solo >= 240 and solo <= 330, string.format("tier %d solo clear %.0f s: about 5 minutes", t, solo))
+			ok(solo >= 300 and solo <= 400, string.format("tier %d solo clear %.0f s: about 6 minutes", t, solo))
 		else
-			ok(solo > R.clearSeconds(cfg, t - 1, 1, 1) and solo <= 540, string.format("tier %d solo clear %.0f s: under 9 minutes", t, solo))
+			ok(solo > R.clearSeconds(cfg, t - 1, 1, 1) and solo <= 600, string.format("tier %d solo clear %.0f s: under 10 minutes", t, solo))
 		end
 		ok(math.abs(party / solo - 1) < 0.1, string.format("tier %d party of 5 %.0f s within 10%% of solo", t, party))
-		ok(solo < cfg.timeLimit * 0.9, "inside the limit with room, tier " .. t)
-		-- a half-strength player still clears tiers 1-10 inside the limit
-		if t <= 10 then
-			ok(R.clearSeconds(cfg, t, 1, 0.5) <= cfg.timeLimit + 30, "a weaker player still about makes tier " .. t)
+		ok(solo < limit * 0.7, string.format("inside the band's limit with room, tier %d: %.0f of %d s", t, solo, limit))
+		ok(R.walkSeconds(cfg, t) > 40 and R.walkSeconds(cfg, t) < 120, "walking 40-120 s, tier " .. t)
+		-- a half-strength player still clears tiers 1-12 inside the limit
+		if t <= 12 then
+			ok(R.clearSeconds(cfg, t, 1, 0.5) <= limit, string.format("a weaker player still makes tier %d (%.0f s)", t,
+				R.clearSeconds(cfg, t, 1, 0.5)))
 		end
 	end
 	-- the health of a pack monster grows with the tier up to 10; the guardian's base too
@@ -1079,11 +1044,33 @@ do
 		ok(R.packHealth(cfg, t) > R.packHealth(cfg, t - 1), "pack health grows, tier " .. t)
 		ok(R.guardianBase(cfg, t) > R.guardianBase(cfg, t - 1), "guardian grows, tier " .. t)
 	end
-	-- live cap and the worst case of all 16 slots (server/README.md "Instance limits", Load)
-	eq(R.liveCap(cfg, 1), 60, "60 alive solo")
-	eq(R.liveCap(cfg, 5), 100, "100 alive for 5")
-	eq(R.liveCap(cfg, 9), cfg.density.live.max, "capped")
-	ok(R.slotCount(cfg) * (R.liveCap(cfg, 5) + cfg.density.extraSlack) <= 2000, "every slot full: at most 2,000 monsters")
+	-- live cap: 60 (+10 per extra player) + 0.5 per 100 walkable tiles; the worst case of all 16 slots (server/README.md
+	-- "Instance limits", Load: the monsters away from every player are idle)
+	eq(R.liveCap(cfg, 1, 0), 60, "60 alive solo without area")
+	eq(R.liveCap(cfg, 5, 0), 100, "100 for 5 without area")
+	eq(R.liveCap(cfg, 1, 20000), 160, "a layout of 20,000 walkable tiles: 160 solo")
+	eq(R.liveCap(cfg, 1), 60 + math.floor(cfg.density.live.per100 * cfg.layout.typical[1].walkable / 100),
+		"no area: the typical layout of tier 1's band")
+	eq(R.liveCap(cfg, 5, 60000), cfg.density.live.max, "capped")
+	ok(R.slotCount(cfg) * (cfg.density.live.max + cfg.density.extraSlack) <= 4500, "every slot full: at most 4,500 monsters")
+	-- the plan grows with the layout's area: (walkable / ref) ^ exp
+	eq(R.areaMult(cfg, cfg.density.area.ref), 1, "the old open floor: x1")
+	ok(math.abs(R.areaMult(cfg, 20000) - (20000 / cfg.density.area.ref) ^ cfg.density.area.exp) < 1e-9, "x (area / ref) ^ exp")
+	eq(R.areaMult(cfg, 1e9), cfg.density.area.maxMult, "at most maxMult")
+	ok(R.densityCount(cfg, 10, 1, 20000) > R.densityCount(cfg, 10, 1, 8000), "a bigger layout plans more monsters")
+	ok(R.packHealth(cfg, 10, 20000) < R.packHealth(cfg, 10, 8000), "and each one is weaker (the same health budget)")
+	local typ15 = R.density(cfg, 15, 1)
+	ok(typ15.count >= 350 and typ15.count <= 450, "tier 15 solo on a typical big layout: 350-450 monsters (" .. typ15.count .. ")")
+	ok(R.density(cfg, 1, 1).count >= 120 and R.density(cfg, 1, 1).count <= 150, "tier 1 solo: 120-150 monsters")
+	-- walking speed (engine patch 0018 table: 3.70 tiles/s at level 100, 5.88 at 300, 7.69 at 1000)
+	ok(math.abs(R.tilesPerSecond(100) - 1000 / 270) < 1e-9, "level 100: 270 ms a step")
+	ok(math.abs(R.tilesPerSecond(300) - 1000 / 170) < 1e-9, "level 300: 170 ms")
+	ok(math.abs(R.tilesPerSecond(1000) - 1000 / 130) < 1e-9, "level 1000: 130 ms")
+	-- the time limit of the band and a run's limit
+	eq(R.timeLimit(cfg, 1), cfg.layout.sizes[1][3], "tier 1: band 1's limit")
+	eq(R.timeLimit(cfg, 15), cfg.layout.sizes[3][3], "tier 15: band 3's limit")
+	eq(R.newRun(cfg, 1000, 10, 8, {}, 900).limit, 900, "a run takes its base limit")
+	eq(R.newRun(cfg, 1000, 10, 8, {timeMult = 0.8}, 900).limit, 720, "Waning Veil on the band's limit")
 	eq(R.packDamage(cfg), cfg.density.damage, "pack damage")
 	eq(R.packDamage(legacy), 1, "pack damage off")
 	eq(R.effects(cfg, {}, 4).packDamage, cfg.density.damage, "effects carry the pack damage")
@@ -1137,11 +1124,14 @@ do
 	eq(R.reinforceRoom(centres, {{x = 18, y = 0}}, 9), "west", "away from the player")
 	eq(R.reinforceRoom(centres, {{x = 0, y = 0}}, 30), nil, "every room too close")
 	eq(R.reinforceRoom(centres, {}, 9), "east", "no players: any (by name)")
-	-- the bigger layout fits its slot and holds the live cap at about 6 a 100 tiles
-	local L = R.layout(cfg, 5)
-	local open3 = (2 * cfg.room.hubHalf - 1) ^ 2 + 3 * (2 * cfg.room.sideHalf - 1) ^ 2
-	ok(R.liveCap(cfg, 1) / open3 * 100 < 7, "solo live cap: under 7 monsters a 100 tiles")
-	ok(#L.floorList > 1200, "the bigger slot: " .. #L.floorList .. " floor tiles")
+	-- the big layouts spread the live cap: about 1 monster a 100 walkable tiles solo, the plan 1.5-2
+	for b, typ in ipairs(cfg.layout.typical) do
+		local tier = cfg.layout.sizes[b][1]
+		local live = R.liveCap(cfg, 1, typ.walkable) / typ.walkable * 100
+		ok(live >= 0.7 and live <= 1.3, string.format("band %d: %.2f alive a 100 tiles solo", b, live))
+		local plan = R.density(cfg, tier, 1, nil, typ.walkable).count / typ.walkable * 100
+		ok(plan >= 1.5 and plan <= 2.4, string.format("band %d: %.2f planned a 100 tiles solo", b, plan))
+	end
 end
 
 -- ------------------------------------------------------------------ third set of modifiers

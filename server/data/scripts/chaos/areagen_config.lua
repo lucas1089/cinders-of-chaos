@@ -47,7 +47,14 @@ return {
 		flagstone = {z = 1, grounds = {{3152, 25}, {3153, 25}, {3154, 5}, {3155, 5}, {3156, 3}, {3157, 1}}, indoor = true},
 		-- dark tile set (names, ids from ChaosDarkTiles when installed)
 		darkmoss = {z = 3000, grounds = {{"dark_moss", 1}}},
-		ash = {z = 2500, grounds = {{"ash_soil", 7}, {"bone_earth", 3}}}
+		ash = {z = 2500, grounds = {{"ash_soil", 7}, {"bone_earth", 3}}},
+		-- the rift themes (rift_layout_core.lua): the old rift floors (rift floor, dark sandy and rutted stone, gilded
+		-- stone) and two more dark grounds
+		riftfloor = {z = 2100, grounds = {{25549, 6}, {25704, 1}, {25705, 1}, {25706, 1}, {25707, 1}, {25708, 1}, {25709, 1}}},
+		crypt = {z = 1500, grounds = {{13189, 3}, {12237, 2}}},
+		gilded = {z = 1, grounds = {{415, 1}}, indoor = true},
+		obsidian = {z = 2800, grounds = {{"obsidian_floor", 9}, {"magma_floor", 1}}},
+		wetrock = {z = 2600, grounds = {{"wet_rock", 7}, {"mossy_rock", 3}}}
 	},
 
 	-- border pieces drawn over the lower family: borders[over][under] (or ["*"] for any lower family) = piece set
@@ -59,7 +66,9 @@ return {
 		rockfloor = {lava = "dark_rock", cracks = "dark_rock"},
 		basalt = {rockfloor = "basalt_edge"},
 		darkmoss = {["*"] = "dark_moss"},
-		ash = {["*"] = "ash_soil"}
+		ash = {["*"] = "ash_soil"},
+		obsidian = {["*"] = "obsidian_floor"},
+		wetrock = {["*"] = "wet_rock"}
 	},
 
 	-- the 12 pieces of each set (n, e, s, w: that side; c..: that corner only; d..: two sides and the corner);
@@ -94,7 +103,16 @@ return {
 		ash_soil = {n = "ash_soil_border_n", e = "ash_soil_border_e", s = "ash_soil_border_s", w = "ash_soil_border_w",
 			cnw = "ash_soil_border_outer_nw", cne = "ash_soil_border_outer_ne", csw = "ash_soil_border_outer_sw",
 			cse = "ash_soil_border_outer_se", dnw = "ash_soil_border_inner_nw", dne = "ash_soil_border_inner_ne",
-			dsw = "ash_soil_border_inner_sw", dse = "ash_soil_border_inner_se"}
+			dsw = "ash_soil_border_inner_sw", dse = "ash_soil_border_inner_se"},
+		obsidian_floor = {n = "obsidian_floor_border_n", e = "obsidian_floor_border_e", s = "obsidian_floor_border_s",
+			w = "obsidian_floor_border_w", cnw = "obsidian_floor_border_outer_nw", cne = "obsidian_floor_border_outer_ne",
+			csw = "obsidian_floor_border_outer_sw", cse = "obsidian_floor_border_outer_se",
+			dnw = "obsidian_floor_border_inner_nw", dne = "obsidian_floor_border_inner_ne",
+			dsw = "obsidian_floor_border_inner_sw", dse = "obsidian_floor_border_inner_se"},
+		wet_rock = {n = "wet_rock_border_n", e = "wet_rock_border_e", s = "wet_rock_border_s", w = "wet_rock_border_w",
+			cnw = "wet_rock_border_outer_nw", cne = "wet_rock_border_outer_ne", csw = "wet_rock_border_outer_sw",
+			cse = "wet_rock_border_outer_se", dnw = "wet_rock_border_inner_nw", dne = "wet_rock_border_inner_ne",
+			dsw = "wet_rock_border_inner_sw", dse = "wet_rock_border_inner_se"}
 	},
 
 	-- wall brushes (piece type -> weighted ids); the type per tile comes from A.wallPiece (measured on the live map)
@@ -220,6 +238,126 @@ return {
 				{9686, 1}, {9419, 1}, {9420, 1}}},
 			dark = {
 				lights = {per100 = 5, spacing = 5, items = {{"brazier", 2}, {1484, 1}}}
+			}
+		},
+
+		-- ---------------------------------------------------------------- the rift themes (rift_layout_core.lua)
+		-- One theme per rift theme of rift_config.lua; each serves every layout kind its rift theme rolls (a rock for
+		-- caves, wastes and mixed layouts, walls and room floors for dungeons, room floors for the chambers of a mixed
+		-- layout), byKind = overrides for one kind. Only ids of the palettes above, the old rift floors and the dark set.
+		-- Abyssal Rift: an eldritch waste or cave of rift floor (dark set: obsidian and magma with ash, moss and lava)
+		rift_abyss = {
+			floor = "riftfloor", rock = "mountain", wall = "darkstone", roomFloors = {"marble"}, rimWidth = 2,
+			decor = {
+				share = 0.07,
+				scatter = {{3610, 4}, {3611, 3}, {3612, 4}, {3613, 3}, {3621, 2}, {3622, 2}, {3623, 2}},
+				clusters = {{per1000 = 4, size = {3, 5}, radius = 1, items = {{3610, 3}, {3611, 3}, {3613, 2}, {3614, 2}}}}
+			},
+			obstacles = {share = 0.012, items = {{1356, 2}, {1357, 2}, {1358, 2}, {1359, 2}, {8361, 1}}},
+			lights = {per100 = 1.8, spacing = 7, items = {{17586, 2}, {17787, 1}}},
+			dark = {
+				floor = "obsidian",
+				patches = {
+					{family = "ash", share = 0.06, radius = {2, 4}},
+					{family = "darkmoss", share = 0.03, radius = {2, 3}}
+				},
+				pools = {{family = "lava", share = 0.02, radius = {2, 3}}},
+				decor = {
+					share = 0.07,
+					scatter = {{"rubble", 4}, {"bone_pile", 2}, {3610, 3}, {3612, 3}, {3621, 2}},
+					clusters = {{per1000 = 5, size = {3, 6}, radius = 2, items = {{"glowcap_purple", 3}, {"rubble", 2},
+						{3611, 2}}}}
+				},
+				obstacles = {share = 0.014, items = {{"blood_crystals", 3}, {"dark_boulder", 3}, {"rock_outcrop", 1}}},
+				lights = {per100 = 1.8, spacing = 7, items = {{"standing_torch", 2}, {"brazier", 1}, {17586, 1}}}
+			}
+		},
+		-- Obsidian Hall: a ruined complex of black marble halls in dark stone walls, or marble halls cut into rock
+		rift_hall = {
+			floor = "marble", rock = "mountain", wall = "darkstone", roomFloors = {"marble", "marble", "slate", "flagstone"},
+			bossFloor = "tiles", mixedFloors = {"marble"}, rimWidth = 2,
+			decor = {
+				share = 0.09,
+				scatter = {{3653, 3}, {3654, 3}, {3655, 2}, {3656, 2}, {2230, 1}, {2229, 1}},
+				clusters = {{per1000 = 5, size = {3, 5}, radius = 1, items = {{3653, 2}, {3654, 2}, {3655, 2}}}}
+			},
+			obstacles = {share = 0.006, items = {{1356, 1}, {1358, 1}}},
+			lights = {per100 = 4, spacing = 5, items = {{1484, 2}, {7059, 1}}},
+			byKind = {
+				dungeon = {props = {per100 = 2.5, spacing = 3, items = {{1442, 2}, {1443, 2}, {22308, 2}, {22309, 2},
+					{2034, 2}, {9419, 1}, {9420, 1}}}},
+				mixed = {floor = "rockfloor", lights = {per100 = 3, spacing = 6, items = {{1484, 2}, {7059, 1}}}}
+			},
+			dark = {
+				decor = {
+					share = 0.08,
+					scatter = {{3653, 3}, {3654, 3}, {"rubble", 2}, {"bone_pile", 1}},
+					clusters = {{per1000 = 5, size = {3, 5}, radius = 1, items = {{3653, 3}, {"rubble", 2}}}}
+				},
+				obstacles = {share = 0.008, items = {{"broken_pillar", 2}, {"ruined_pillar", 1}}},
+				lights = {per100 = 4, spacing = 5, items = {{"brazier", 2}, {1484, 1}}},
+				byKind = {
+					mixed = {patches = {{family = "ash", share = 0.05, radius = {2, 3}}},
+						lights = {per100 = 3, spacing = 6, items = {{"brazier", 2}, {"standing_torch", 1}}}}
+				}
+			}
+		},
+		-- Ashen Crypt: catacombs of slate and flagstone under dark sand (dark set: ash soil and bone earth, moss)
+		rift_crypt = {
+			floor = "crypt", rock = "earth", wall = "ruin", roomFloors = {"slate", "flagstone", "slate"}, bossFloor = "marble",
+			mixedFloors = {"slate", "flagstone"}, rimWidth = 2,
+			decor = {
+				share = 0.10,
+				scatter = {{3653, 3}, {3654, 3}, {2229, 1}, {2230, 2}, {2231, 1}, {3102, 1}},
+				clusters = {{per1000 = 6, size = {3, 5}, radius = 1, items = {{2229, 2}, {2230, 3}, {2231, 2}}}}
+			},
+			obstacles = {share = 0.008, items = {{1356, 1}, {1358, 1}}},
+			lights = {per100 = 3.5, spacing = 5, items = {{1484, 2}, {7059, 1}}},
+			byKind = {
+				dungeon = {props = {per100 = 2, spacing = 3, items = {{1442, 2}, {1443, 2}, {2034, 2}, {9419, 1}, {9420, 1}}}}
+			},
+			dark = {
+				floor = "ash",
+				patches = {{family = "darkmoss", share = 0.05, radius = {2, 3}}},
+				decor = {
+					share = 0.10,
+					scatter = {{"bone_pile", 3}, {"rubble", 2}, {2230, 1}, {3653, 2}},
+					clusters = {{per1000 = 6, size = {3, 5}, radius = 1, items = {{"bone_pile", 2}, {"glowcap_teal", 1},
+						{2229, 1}}}}
+				},
+				obstacles = {share = 0.01, items = {{"dead_bush", 2}, {"broken_pillar", 2}, {"dark_boulder", 1}}},
+				lights = {per100 = 3.5, spacing = 5, items = {{"standing_torch", 2}, {"brazier", 1}}}
+			}
+		},
+		-- Forsaken Sanctum: a blighted cave system with gilded chambers (dark set: wet and mossy rock, moss, glowcaps)
+		rift_sanctum = {
+			floor = "cave", rock = "earth", wall = "ruin", roomFloors = {"flagstone"}, mixedFloors = {"flagstone", "slate"}, rimWidth = 2,
+			patches = {
+				{family = "mud", share = 0.06, radius = {2, 3}},
+				{family = "cracks", share = 0.03, radius = {2, 3}}
+			},
+			decor = {
+				share = 0.09,
+				scatter = {{3610, 4}, {3611, 3}, {3612, 4}, {3613, 3}, {3621, 3}, {3622, 2}, {2230, 1}},
+				clusters = {{per1000 = 7, size = {3, 6}, radius = 2, items = {{2792, 3}, {2793, 2}, {2794, 2}, {2797, 2},
+					{4182, 2}, {4183, 1}}}}
+			},
+			obstacles = {share = 0.012, items = {{1356, 2}, {1357, 2}, {1358, 2}, {1359, 2}}},
+			lights = {per100 = 2.5, spacing = 6, items = {{17586, 3}, {17750, 2}, {1484, 1}}},
+			dark = {
+				floor = "wetrock",
+				patches = {
+					{family = "darkmoss", share = 0.08, radius = {2, 4}},
+					{family = "ash", share = 0.03, radius = {2, 3}}
+				},
+				decor = {
+					share = 0.09,
+					scatter = {{"glowcap_teal", 2}, {"glowcap_purple", 2}, {"rubble", 2}, {3610, 2}, {3612, 2}},
+					clusters = {{per1000 = 8, size = {3, 6}, radius = 2, items = {{"glowcap_teal", 3}, {"glowcap_purple", 3},
+						{2792, 1}}}}
+				},
+				obstacles = {share = 0.012, items = {{"dark_boulder", 3}, {"rock_outcrop", 1}, {1356, 1}, {1358, 1}}},
+				lights = {per100 = 2.5, spacing = 6, items = {{"standing_torch", 2}, {17586, 1}}}
 			}
 		}
 	},

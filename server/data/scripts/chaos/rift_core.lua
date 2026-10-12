@@ -597,14 +597,16 @@ function R.lookOf(plan, name, boss)
 end
 
 -- the run plan: {types, packs = {{room, name, count, elites = {tier or false, ...}}}, total, bossAt, boss}
--- rooms = list of room names the packs may use (open side rooms; "hub" gets at most one pack)
-function R.plan(cfg, tier, fx, players, types, rooms, rand)
+-- rooms = list of room names the packs may use (the layout's sections in the order they fill); the first pack goes
+-- to opts.first (default "hub"); opts.area = the layout's walkable tiles (density, R.density)
+function R.plan(cfg, tier, fx, players, types, rooms, rand, opts)
+	opts = opts or {}
 	players = math.max(1, players or 1)
 	local plan = {types = types, packs = {}, total = 0}
 	if #types == 0 then
 		return plan
 	end
-	local dens = R.density(cfg, tier, players, fx)
+	local dens = R.density(cfg, tier, players, fx, opts.area)
 	plan.density = dens
 	local count = dens and dens.packs or R.packCount(cfg, tier, players)
 	if not dens and (fx.packMult or 1) ~= 1 then
@@ -618,7 +620,7 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 	for i = 1, count do
 		local room
 		if i == 1 or #areas == 0 then
-			room = "hub"
+			room = opts.first or "hub"
 		else
 			room = areas[(i - 2) % #areas + 1]
 		end
@@ -686,11 +688,52 @@ local function mean(a, b)
 	return (a + b) / 2
 end
 
--- planned monsters before Teeming / Swarm: count.base + perTier x (t - 1), x (1 + perExtraPlayer x (players - 1))
-function R.densityCount(cfg, tier, players)
+-- the size band of a key tier (rift_config.lua layout.sizes): index, side, time limit; nil without layouts
+function R.band(cfg, tier)
+	local lc = cfg and cfg.layout
+	if not (lc and lc.enabled and lc.sizes) then
+		return nil
+	end
+	for i, row in ipairs(lc.sizes) do
+		if tier <= row[1] then
+			return i, row[2], row[3]
+		end
+	end
+	local last = lc.sizes[#lc.sizes]
+	return #lc.sizes, last[2], last[3]
+end
+
+-- walkable tiles and walking distance (arrival -> arena) of a typical layout of the tier's band (layout.typical,
+-- measured over the generated layouts); nil without layouts
+function R.typicalLayout(cfg, tier)
+	local b = R.band(cfg, R.clampTier(cfg, tier or 1))
+	return b and cfg.layout.typical and cfg.layout.typical[b] or nil
+end
+
+-- the plan's and the live cap's growth with the layout (density.area): (walkable / ref) ^ exp, 1 to maxMult.
+-- area nil: the typical layout of the tier's band; 1 without layouts
+function R.areaMult(cfg, area, tier)
+	local a = cfg.density.area
+	if not a then
+		return 1
+	end
+	if not area then
+		local t = R.typicalLayout(cfg, tier or 1)
+		area = t and t.walkable
+	end
+	if not area then
+		return 1
+	end
+	return math.min(a.maxMult, math.max(1, (area / a.ref) ^ a.exp))
+end
+
+-- planned monsters before Teeming / Swarm: count.base + perTier x (t - 1), x (1 + perExtraPlayer x (players - 1)),
+-- x the layout's area (R.areaMult; area = walkable tiles, nil = the band's typical layout)
+function R.densityCount(cfg, tier, players, area)
 	local c = cfg.density.count
 	players = math.max(1, floor(tonumber(players) or 1))
 	return (c.base + c.perTier * (R.clampTier(cfg, tier) - 1)) * (1 + c.perExtraPlayer * (players - 1))
+		* R.areaMult(cfg, area, tier)
 end
 
 -- expected monsters of the packs of before (density off) with the run's Teeming / atlas density and Swarm
@@ -722,27 +765,58 @@ end
 
 -- a run's density: {count, packs, share, normalShare, legacy, live} or nil (off). share = monsters of before / now
 -- (at most 1): the elite chances, Warbands and the laden share follow it, so the spoils of a run stay as before.
-function R.density(cfg, tier, players, fx)
+function R.density(cfg, tier, players, fx, area)
 	if not R.densityOn(cfg) then
 		return nil
 	end
 	local d = cfg.density
 	players = math.max(1, floor(tonumber(players) or 1))
 	local size = mean(d.size[1], d.size[2]) + (fx and fx.packBonus or 0)
-	local packs = math.max(1, floor(R.densityCount(cfg, tier, players) / mean(d.size[1], d.size[2]) * (fx and fx.packMult or 1) + 0.5))
+	local packs = math.max(1, floor(R.densityCount(cfg, tier, players, area) / mean(d.size[1], d.size[2]) * (fx and fx.packMult or 1) + 0.5))
 	local count = packs * size
 	local legacy = R.legacyMonsters(cfg, tier, players, fx)
 	local share = math.min(1, legacy / count)
 	local before = R.eliteShare(cfg, tier, 1)
 	local now = R.eliteShare(cfg, tier, share)
 	return {count = count, packs = packs, share = share, legacy = legacy,
-		normalShare = math.min(1, legacy * (1 - before) / (count * (1 - now))), live = R.liveCap(cfg, players)}
+		normalShare = math.min(1, legacy * (1 - before) / (count * (1 - now))), live = R.liveCap(cfg, players, area, tier),
+		area = area}
 end
 
--- monsters alive at once (the rest wait in the queue)
-function R.liveCap(cfg, players)
+-- monsters alive at once (the rest wait in the queue): base + perExtraPlayer x (players - 1) + per100 per 100
+-- walkable tiles of the layout (area nil: the typical layout of the tier's band, none without layouts), at most max
+function R.liveCap(cfg, players, area, tier)
 	local l = cfg.density.live
-	return math.min(l.max, l.base + l.perExtraPlayer * (math.max(1, floor(tonumber(players) or 1)) - 1))
+	if not area and l.per100 then
+		local t = R.typicalLayout(cfg, tier or 1)
+		area = t and t.walkable
+	end
+	local byArea = (area and l.per100) and floor(l.per100 * area / 100) or 0
+	return math.min(l.max, l.base + l.perExtraPlayer * (math.max(1, floor(tonumber(players) or 1)) - 1) + byArea)
+end
+
+-- walking speed of a player of `level` in tiles a second on straight steps (engine patch 0018's base speed, the
+-- engine's step formula, ground speed density.model.walk.ground, steps rounded up to 10 ms; no haste)
+function R.tilesPerSecond(level)
+	level = math.max(1, level or 1)
+	local speed = 270 + 2.5 * (math.min(level, 300) - 1) + math.max(0, level - 300)
+	local calc = math.max(1, floor(857.36 * math.log(speed / 2 + 261.29) - 4795.01 + 0.5))
+	local ms = math.ceil(1000 * 150 / calc / 10) * 10
+	return 1000 / ms
+end
+
+-- the model's walking time of a run: the layout's walking distance arrival -> arena (route; nil = the band's typical
+-- layout) x walk.sweep (side branches, packs off the way) at the tier's level
+function R.walkSeconds(cfg, tier, route)
+	local w = cfg.density.model.walk
+	if not w then
+		return 0
+	end
+	if not route then
+		local t = R.typicalLayout(cfg, tier)
+		route = t and t.route or 0
+	end
+	return route * w.sweep / R.tilesPerSecond(R.tierInfo(cfg, tier).minLevel)
 end
 
 -- the damage model of the budget (rift_config.lua density.model) at a player level: area (5 targets) and single target
@@ -754,11 +828,11 @@ end
 
 -- health of a normal pack monster of a tier (before its magic / rare / legendary tier, the modifiers, the tiers above
 -- 10 and the party): the packs up to the guardian take packSeconds of a typical solo player's area damage
-function R.packHealth(cfg, tier)
+function R.packHealth(cfg, tier, walkable)
 	local m = cfg.density.model
 	local t = R.tierInfo(cfg, tier)
 	local area = R.refDps(cfg, t.minLevel)
-	local d = R.density(cfg, t.tier, 1, nil)
+	local d = R.density(cfg, t.tier, 1, nil, walkable)
 	local budget = area * m.uptime * m.packSeconds / (cfg.bossAt / 100)
 	return math.max(1, floor(budget / (d.count * R.eliteHealthAvg(cfg, t.tier, d.share)) + 0.5))
 end
@@ -774,17 +848,23 @@ end
 
 -- the model's time of a run in seconds (packs up to the guardian, then the guardian) for `players` with `dps` times a
 -- typical player's damage in total (the party model: 4.98 for five), no modifiers
-function R.clearSeconds(cfg, tier, players, dps)
+function R.clearSeconds(cfg, tier, players, dps, walkable, route)
 	local m = cfg.density.model
 	local t = R.tierInfo(cfg, tier)
 	local area, single = R.refDps(cfg, t.minLevel)
-	local d = R.density(cfg, t.tier, players, nil)
+	local d = R.density(cfg, t.tier, players, nil, walkable)
 	local ps = R.party(cfg, players)
-	local packs = d.count * cfg.bossAt / 100 * R.packHealth(cfg, t.tier) * R.eliteHealthAvg(cfg, t.tier, d.share) * t.health
-		* R.partyMonsterHealth(cfg, t.tier, players)
+	local packs = d.count * cfg.bossAt / 100 * R.packHealth(cfg, t.tier, walkable) * R.eliteHealthAvg(cfg, t.tier, d.share)
+		* t.health * R.partyMonsterHealth(cfg, t.tier, players)
 	local guardian = R.guardianBase(cfg, t.tier) * R.guardianHealthMult(cfg, {health = t.health}, players)
 	dps = dps or 1
-	return packs / (area * m.uptime * dps) + guardian / (single * m.guardianUptime * dps)
+	return packs / (area * m.uptime * dps) + guardian / (single * m.guardianUptime * dps) + R.walkSeconds(cfg, t.tier, route)
+end
+
+-- the run's base time limit (before Waning Veil and charms): the band's (layout.sizes), else timeLimit
+function R.timeLimit(cfg, tier)
+	local _, _, limit = R.band(cfg, R.clampTier(cfg, tier or 1))
+	return limit or cfg.timeLimit
 end
 
 -- pack monster damage multiplier (the guardians keep theirs)
@@ -1146,7 +1226,7 @@ end
 -- the slot whose square contains pos, or nil
 function R.slotOfPos(cfg, pos)
 	local g = cfg.grid
-	if not pos or pos.z ~= g.origin.z then
+	if not pos or pos.z < g.origin.z or pos.z > g.origin.z + (g.floors or 1) - 1 then
 		return nil
 	end
 	local dx, dy = pos.x - g.origin.x, pos.y - g.origin.y
@@ -1160,106 +1240,11 @@ function R.slotOfPos(cfg, pos)
 	return row * g.cols + col
 end
 
-R.DIRS = {
-	{name = "north", dx = 0, dy = -1},
-	{name = "east", dx = 1, dy = 0},
-	{name = "south", dx = 0, dy = 1},
-	{name = "west", dx = -1, dy = 0}
-}
-
--- layout of a slot, all rooms: {center, hub = rect, rooms = {name = {center, rect}}, doors = {name = {pos...}},
--- floor = {[key] = pos}, walls = {[key] = pos}, floorList, wallList}. rect = inner floor {x1, y1, x2, y2}.
-function R.layout(cfg, slot)
-	local c = R.slotCenter(cfg, slot)
-	local rm = cfg.room
-	local z = c.z
-	local L = {center = c, rooms = {}, doors = {}, floor = {}, walls = {}, floorList = {}, wallList = {}}
-	local function key(x, y)
-		return x .. "," .. y
-	end
-	local function addFloor(x, y)
-		local k = key(x, y)
-		if not L.floor[k] then
-			L.floor[k] = {x = x, y = y, z = z}
-			L.floorList[#L.floorList + 1] = L.floor[k]
-		end
-	end
-	local hi = rm.hubHalf - 1
-	L.hub = {x1 = c.x - hi, y1 = c.y - hi, x2 = c.x + hi, y2 = c.y + hi}
-	for x = L.hub.x1, L.hub.x2 do
-		for y = L.hub.y1, L.hub.y2 do
-			addFloor(x, y)
-		end
-	end
-	local reach = rm.hubHalf + rm.corridor + 1 + rm.sideHalf -- hub centre -> side room centre
-	for _, d in ipairs(R.DIRS) do
-		local rc = {x = c.x + d.dx * reach, y = c.y + d.dy * reach, z = z}
-		local si = rm.sideHalf - 1
-		local rect = {x1 = rc.x - si, y1 = rc.y - si, x2 = rc.x + si, y2 = rc.y + si}
-		L.rooms[d.name] = {center = rc, rect = rect}
-		for x = rect.x1, rect.x2 do
-			for y = rect.y1, rect.y2 do
-				addFloor(x, y)
-			end
-		end
-		-- corridor from the hub wall to the room wall (both included: the doorways)
-		local door = {}
-		for s = rm.hubHalf, rm.hubHalf + rm.corridor + 1 do
-			for w = -rm.corridorHalf, rm.corridorHalf do
-				local x = c.x + d.dx * s + (d.dx == 0 and w or 0)
-				local y = c.y + d.dy * s + (d.dy == 0 and w or 0)
-				addFloor(x, y)
-				if s == rm.hubHalf then
-					door[#door + 1] = {x = x, y = y, z = z}
-				end
-			end
-		end
-		L.doors[d.name] = door
-	end
-	-- walls: every non-floor tile next to a floor tile (8 neighbours)
-	for _, p in ipairs(L.floorList) do
-		for ox = -1, 1 do
-			for oy = -1, 1 do
-				local k = key(p.x + ox, p.y + oy)
-				if not L.floor[k] and not L.walls[k] then
-					L.walls[k] = {x = p.x + ox, y = p.y + oy, z = z}
-					L.wallList[#L.wallList + 1] = L.walls[k]
-				end
-			end
-		end
-	end
-	table.sort(L.wallList, function(a, b)
-		return a.y == b.y and a.x < b.x or a.y < b.y
-	end)
-	L.start = {x = c.x, y = c.y + rm.hubHalf - 3, z = z} -- players arrive at the south part of the hub
-	L.bossSpawn = {x = c.x, y = c.y, z = z}
-	L.basins = {
-		{x = L.hub.x1, y = L.hub.y1, z = z}, {x = L.hub.x2, y = L.hub.y1, z = z},
-		{x = L.hub.x1, y = L.hub.y2, z = z}, {x = L.hub.x2, y = L.hub.y2, z = z}
-	}
-	return L
-end
-
--- which side rooms a run opens: a list of names (rand picks 2-4 of them)
-function R.pickRooms(cfg, rand)
-	local names = {}
-	for _, d in ipairs(R.DIRS) do
-		names[#names + 1] = d.name
-	end
-	local n = rand(cfg.openRooms[1], cfg.openRooms[2])
-	local open = {}
-	for _ = 1, math.min(n, #names) do
-		open[#open + 1] = table.remove(names, rand(1, #names))
-	end
-	table.sort(open)
-	return open
-end
-
 -- ===================================================================== run state
 -- run = R.newRun(cfg, now, total, bossAt[, fx]): {state = "running", startTime, deadline, limit, total, killed, bossAt,
 -- boss = "waiting", guardians}. fx (R.effects): Waning Veil shortens the limit, Twin Guardians makes two guardians.
-function R.newRun(cfg, now, total, bossAt, fx)
-	local limit = math.max(60, floor(cfg.timeLimit * (fx and fx.timeMult or 1) + 0.5))
+function R.newRun(cfg, now, total, bossAt, fx, base)
+	local limit = math.max(60, floor((base or cfg.timeLimit) * (fx and fx.timeMult or 1) + 0.5))
 	return {state = "running", startTime = now, deadline = now + limit, limit = limit, total = total, killed = 0,
 		bossAt = bossAt or total, boss = "waiting", guardians = (fx and (fx.twin or 0) > 0) and 2 or 1}
 end

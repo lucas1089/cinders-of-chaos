@@ -10,6 +10,9 @@ LuaJIT through tools/areagen_dump.lua, so the server and these files always show
     python3 -I server/tools/areagen_export.py preview OUT_DIR ITEMS.otb ITEMS.xml Tibia.dat Tibia.spr [--area ID] [--dark]
                                               [--scale 0.5] [--sheet]
 
+ID may also name a rift layout (rift_layout_core.lua): rift:<theme>:<band>:<seed>[:<kind>[:<floors>]], e.g.
+"rift:Ashen Crypt:3:1234"; its minimap marks the sections the packs stand in (orange) and the arena (magenta).
+
 summary  tiles, walkable tiles, monsters, density and the validator's problems per area.
 otbm     OUT_DIR/<id>.otbm (OTBM 2, items 3.57, the live map's size, every tile of the area with its items; the exit
          portal carries its action id) and OUT_DIR/<id>-spawn.xml (the spawn points; packs on the free tiles next to
@@ -84,6 +87,12 @@ def parse_dump(text):
         elif k == 'Q':
             v = list(map(int, p))
             cur.setdefault('rooms', []).append(dict(x1=v[0], y1=v[1], x2=v[2], y2=v[3], z=v[4]))
+        elif k == 'P':
+            v = list(map(int, p))
+            cur.setdefault('sections', []).append(dict(x=v[0], y=v[1], z=v[2], dist=v[3], cells=v[4]))
+        elif k == 'W':
+            v = list(map(int, p))
+            cur['rift'] = dict(walkable=v[0], route=v[1], items=v[2])
         elif k == 'C':
             cur['checksum'] = int(p[0])
     return areas
@@ -228,7 +237,11 @@ local function theme(t)
   for _, row in ipairs(t.lights and t.lights.items or {}) do put(row[1], "light") end
   for _, row in ipairs(t.props and t.props.items or {}) do put(row[1], "obstacle") end
 end
-for _, t in pairs(cfg.themes) do theme(t) if dark and t.dark then theme(t.dark) end end
+local function themeAll(t)
+  theme(t)
+  for _, k in pairs(t.byKind or {}) do theme(k) end
+end
+for _, t in pairs(cfg.themes) do themeAll(t) if dark and t.dark then themeAll(t.dark) end end
 put(cfg.items.hole, "hole") put(cfg.items.ladder, "ladder") put(cfg.items.portal, "portal")
 '''
     lua = os.environ.get('LUAJIT', 'luajit')
@@ -365,6 +378,8 @@ def preview(out_dir, items_otb, items_xml, dat, spr_path, area_id='all', dark=Fa
                 d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col)
         for s in area['spawns']:
             mark((s['x'], s['y'], s['z']), (230, 30, 30), 2 + s['count'])
+        for s in area.get('sections', []):  # a rift layout: the sections packs stand in
+            mark((s['x'], s['y'], s['z']), (255, 150, 30), 2)
         if area['boss']:
             b = area['boss']
             mark((b['x'], b['y'], b['z']), (230, 40, 230), 6)
