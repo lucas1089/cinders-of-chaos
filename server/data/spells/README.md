@@ -689,6 +689,163 @@ Mystic's 3363 / 4812; "Healing" above). The Samurai deals a bit less than the Ju
 in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level against the Sentinel's 17.3 and the Juggernaut's
 19.6 (21.3 with Immovable) in the toughness model of "Templar line". The Iron Sage's damage is below the Warrior's.
 
+### Line keystones, masteries and weapons measured in game (2026-10-12)
+
+Measured the C4 way (above): the test server with src-patches 0001-0032 and `install_all.py` (the repository of
+2026-10-12 15:05, before the build archetypes), level 300 / 1000 characters, stat window 20, the C4 gear and
+`zz_c4.lua` tree builds, the client rotation, 60 s, damage = health the dummies lost per second (1 target / 5 targets).
+A keystone or mastery is measured **on one build with and without it**: the build takes the path to it first, then
+grows greedily; "without" is the same build minus that one node. So the difference is the node itself; the path's cost
+against the plain C4 build is the "C4 build" row. One sample each; the spread was larger than the C4 estimate: +-5% at
+level 300, up to +-10% at level 1000 (auto-attack rolls and crits; two runs of the same Monk 1k build: 2817 / 2669).
+
+**Line keystones** (computed values: "Line keystones and the path notables" below):
+
+| Keystone | Class | C4 build | Without | With | Change | Computed | Note |
+|---|---|---|---|---|---|---|---|
+| Blackblood Creed | Thief 300 | 892 | 864 | 896 | +3.7% (poison +77/s: +8.9%) | +6% | |
+| | Ninja 300 | 1149 | 1116 | 1107 | -0.8% (poison +59/s: +5.3%) | +5% | |
+| | Samurai 300 | 774 | 669 | 726 | +8.5% (poison +48/s: +7.2%) | +5% | |
+| | Thief 1000 | 2525 | 2638 | 2824 | +7.1% (poison +383/s: +14.5%) | +6% (~2530) | **more than 10% over** |
+| | Ninja 1000 | 4062 | 4083 | 4566 | +11.8% (poison +458/s: +11.2%) | +5% (~3740) | **more than 10% over; level with the Deadeye** |
+| | Samurai 1000 | 2151 | 2426 | 2551 | +5.2% (poison +289/s: +11.9%) | +5% (~2130) | **more than 10% over** |
+| Covenant of the Grave (1 / 5 targets) | Necromancer 300 | 982 / 1064 | 1100 / 1242 | 1246 / 1258 | +13% / +1% | +8% | |
+| | Lich 300 | 1180 / 2083 | 1012 / 1767 | 889 / 1451 | -12% / -18% | -10% | |
+| | Bone Lord 300 | 1143 / 2275 | 1337 / 2715 | 1603 / 3186 | **+20%** / +17% | +2.5% / +18% | **single target far over; ahead of the Deadeye** |
+| | Necromancer 1000 | 2663 / 2918 | 2691 / 2744 | 3105 / 2963 | +15% / +8% | +11% | |
+| | Lich 1000 | 4363 / 8063 | 4323 / 8258 | 3886 / 6616 | -10% / -20% | -8% | |
+| | Bone Lord 1000 | 4316 / 8503 | 4153 / 8336 | 5113 / 10287 | **+23%** / +23% | +8% / +18% | **ahead of the Deadeye; area 5% under the Elementalist** |
+| Scarred Discipline | Monk 300 / 1000 | 979 / 2535 | 871 / 2575 | 863 / 2772 | -1% / +8% | unchanged | the dummies do not hit back: within the spread |
+| Penitent's Wrath | Templar 300 / 1000 | 922 / 2400 | 873 / 2328 | 917 / 2347 | +5% / +1% | unchanged | same |
+
+The Creed's own gain is the poison (`cond/earth` of the harness; weapon hits roll +-10% between runs): about +5% to +9%
+at level 300 as computed, but **+11% to +15% at level 1000**, twice the computed value (the poison scales with the bigger
+weapon hits and the tree's earth bonuses; the computed value took the level 300 share). The Covenant's minion share is
+larger than computed for the Bone Lord (64% of its damage from `1.5 m + 0.75 (1 - m) = 1.23`; Necromancer 51%).
+In-game checks of the price halves (hits from a monster, level 300): Blackblood halves evasion (Ninja: 27 of 200 hits
+dodged without, 10 with); Scarred Discipline gives a chi every 2 s of hits (1 -> 5 in 10 s), 693 taken at 3+ chi against
+770 below (-10%) and no dodge (0 of 80, 10 of 80 without); Penitent's Wrath answers every hit taken (600 holy per 922
+taken at magic level 30: 40% + 4 x magic level, x1.2 stat window) and the own aura falls 4% -> 2% (922 taken against
+903); Covenant skeletons have 15375 health against 10250 (+50%).
+
+**Class order** (the owner's rules above; the fixed numbers of "The combat log wrapper and the balance" below):
+- The Deadeye leads single target: 1258 / 4733 (mean of 2, fixed wrapper). Broken by the **Bone Lord with Covenant**
+  (1603 / 5113: +27% / +8% ahead of it), the **Necromancer with Covenant at 300** (1246, level) and the **Ninja with
+  Blackblood at 1000** (4566, 3.5% behind instead of 8-10%). Without the keystones the Bone Lord's path build is also
+  close (1337 / 4153).
+- The Elementalist leads area (3378 / 10882 fixed): the **Bone Lord with Covenant** is 6% / 5.5% behind (3186 / 10287),
+  not 8-10%.
+- Proposed (not changed: balance is the owner's call): Covenant of the Grave per class, minions +50% for the
+  Necromancer, **+20% for the Bone Lord** (`1.2 x 0.64 + 0.75 x 0.36 = 1.04`: +4% instead of +23%), and the Necromancer's
+  +50% only from level 400 or its own spells -35% at level 300; Blackblood Creed's poison **+60% -> +30%** (half the gain
+  at level 1000, about +6% as computed; level 300 about +3% to +5%). Then measure again with two samples each.
+
+**Mastery nodes** (one sample each; fixed hits of 1000 per damage type on a dummy, 40 each, give the exact effect of a
+choice on the build, `min / mean` with crits): every damage choice adds 2-4% to its own damage type, so a build changes
+by 1-3%, below the spread of a rotation run (no choice is out of line):
+
+| Mastery | Choice | Fixed hit 300 (without -> with) | Rotation 300 / 1000 (1 target) |
+|---|---|---|---|
+| Shadow Discipline (Thief) | none | | 877 / 2445 |
+| | Keen Edge | crit only: melee mean 1366 -> 1378 (+0.9%) | 897 / 2233 |
+| | Light Step | no damage: dexterity 21 -> 24 is over the cap of 20 at level 300 | 885 / 2502 |
+| | Tough Hide | no damage (absorb, vitality) | 870 / 2474 |
+| | Venom Glands | melee 1361 -> 1388 (+2.0%), earth 639 -> 673 (+5.3%, the poison) | 949 / 2482 |
+| Grave Mastery (Necromancer) | none | | 995 / 2668 |
+| | Withering Touch | death 2257 -> 2345 (+3.9%), magic level +1 on top | 1006 / 2695 |
+| | Ossified Hide | no damage | 1011 / 2785 |
+| | Soul Well | no damage | 1013 / 2805 |
+| Inner Discipline (Monk) | none | | 895 / 2817 |
+| | Iron Knuckles | melee 1858 -> 1930 (+3.9%), physical spells +3.8% | 1020 / 2667 |
+| | Swift Palm | crit only: +0.6% to +1.1% mean | 855 / 2504 |
+| | Still Water | no damage; with the fixed wrapper the Iron Sage's Kindled Breath at 5 chi heals 5052 (tree healing 16%) against 4356 x 1.10 = 4792 without it (+5.5%) | 936 / 2675 |
+| | Stone Body | no damage | 949 / 2669 |
+| Sacred Oath (Templar) | none | | 921 / 2527 |
+| | Oath of Flame | holy 1753 -> 1819 (+3.8%), melee +0.8% | 986 / 2660 |
+| | Oath of the Wall | no damage | 874 / 2171 |
+| | Oath of Mercy | no damage | 910 / 2240 |
+
+Light Step's dexterity does nothing for a C4 Thief build (already at the cap); its speed is the whole effect.
+
+**Weapon (auto attack) re-measured** (ROADMAP: the old harness set the target with `setTarget`, which skips
+`onTargetCombat`, so the tree and the weapon styles never reached the dummies). Auto attack only, no spells, C4 tree and
+gear, 60 s, the same characters: 1 target / 5 targets (5 targets: the main dummy and four around it; Cleaving Arc,
+Ricochet and the arrow splash reach the others):
+
+| Class (weapon) | Level 300 | Level 1000 | Old "Weapon" column (no tree) |
+|---|---|---|---|
+| Warrior (magic longsword / best two-handed, Cleaving Arc) | 500 / 1096 | 1524 / 2291 | knight 431 / two-handed 1283 |
+| Templar (one-handed + shield) | 323 / 311 | 1075 / 1096 | knight one-handed 1090 (1000) |
+| Ranger (royal crossbow / best crossbow, no bolts since the infinite arrows) | 464 / 539 | 2228 / 2513 | paladin crossbow 409 / 1366 |
+| Beastmaster (composite hornbow / best bow, splash, Ricochet) | 244 / 846 | 1613 / 6831 | bow ~845 + splash (1000) |
+| Mystic (wand of inferno / best wand) | 108 / 106 | 326 / 230 | sorcerer 107 / 372 |
+| Thief (sword) | 414 / 404 | 1078 / 727 | |
+| Ninja (two swords) | 719 / 755 | 2895 / 2662 | |
+| Monk (unarmed) | 474 / 444 | 1366 / 1239 | |
+
+The weapon now carries the tree (strength / dexterity / damage %), the class factor and the keystones, so the melee and
+bow numbers are 15-75% over the old column; the wand stays where it was (the tree has no wand bonus). The 5-target value
+of a single-target weapon is below its 1-target value by the spread only. The class tables of "Classes with the passive
+trees" were measured with the client's own attack and so already carry this.
+
+### Keystones verified in game
+
+Level 300, two or three clients (screenshots in the session's scratchpad, `keystonecheck/`):
+- **Ricochet** (Ranger, crossbow, 5 dummies, 254 shots): 83 chains (33%; config 30%), the first bounce 65% of the hit,
+  the second 65% of the first (916 -> 595 on average); the bolt flies from dummy to dummy.
+- **Deadeye**: 4 of 29 counted rolls hit (14%; config 15%), a golden cross and "CRIT!" on the target.
+- **Bulwark** (Warrior, magic sword and blessed shield, 70 melee hits of 1000): 10 blocked (14%; config 15%) with the
+  block effect and "DODGE"; every other hit reflected 270 (30% of the 750 taken) with the shockwave and the aegis.
+- **Thorns** (the druid variant, forced on a test character: no class has it since phase 2b): 292 earth back per 750
+  taken (30% + 2 x magic level 9), an earth missile and the plant attack.
+- **Overgrowth** (the druid variant, forced): a heal of 1626 left three pulses of 225 at 2, 4 and 6 s, with small plants.
+  Each pulse is a new heal by the healer, so the healing rules apply again (Weaver's Grace +16% for an Illusionist):
+  41% of the heal instead of 30%.
+- **Inspiring Illusion / Shared Phantasm** (Illusionist and Warrior in a party, fixed hits of the Warrior): 1200 without,
+  1296 with Inspiring Illusion (+8%), 1440 on an enemy the Illusionist marked (+20%: the two add up); the Illusionist's
+  own hits get nothing; two characters of one IP get nothing (the multi-client rule). The mark: a purple arcane circle;
+  the Warrior's hits on it heal him (78 per 1440 hit: the 4% after the Illusionist's healing rules).
+- Every proc is dealt by the player, so the base engine's stat window (+1% per point of strength for physical, of
+  intelligence for the rest: +20% at 20) is in every number above; the passive tree's bonuses are not (by design).
+
+### The combat log wrapper and the balance (fixed 2026-10-12)
+
+`combatlog.lua` wraps `doTargetCombat` (server/README.md "DPS meter and combat log"). Since 2026-10-10 its wrapper
+passed an origin the caller had left out as an explicit nil, which the engine reads as `ORIGIN_NONE`: those hits and heals
+ran no health events at all. Every `ChaosSpell.damageTarget` / `healTarget` call leaves the origin out: Forked Storm, Final
+Verdict, Hail of Dawn, Blessed Earth, Feral Command, both Consecrations, Purging Nova, Life Siphon, Umbral Stride and the
+heals Kindled Breath, Mantra of Stone, Vow of Mending, Lay on Hands, Purifying Wellspring, Verdant Sanctuary, Mirror
+Mend, Lucid Reverie, Shadow Mend. They lost the passive tree's bonuses, the class damage factor, the keystones (Arcane
+Echo, Shared Phantasm marks, Overgrowth), Weaver's Grace and the PvP healing reduction. The C4 table above was measured
+just before (2026-10-11, its harness server did not carry the wrapper yet), so it shows the intended numbers.
+
+What a damageTarget hit of 1000 deals on a dummy, before -> after the fix (C4 builds; 300 / 1000): Deadeye holy x1.34 /
+x2.35, Ranger and Beastmaster holy x1.65 / x2.0-2.2, Mystic and Elementalist energy x1.4 / x2.2, Lich death x0.96 / x1.22,
+Templar holy x1.46 / x1.38, Inquisitor holy x1.26 / x1.32, Sentinel holy x1.35 / x1.25 (heals: the healer's tree healing
+and intelligence, Weaver's Grace on others). The classes that cast them, 1 target / 5 targets:
+
+| Class | C4 table 300 | Bug 300 | Fixed 300 | C4 table 1000 | Bug 1000 | Fixed 1000 |
+|---|---|---|---|---|---|---|
+| Ranger | 1075 / 1409 | 1104 / 1265 | 1174 / 1231 | 3673 / 5305 | 3430 / 5329 | 3859 / 5804 |
+| Deadeye | 1312 / 1446 | 1058 (966-1209, 3 runs) / 1460 | 1258 (2 runs) / 1315 | 4571 / 5385 | 3537 (2 runs) / 5519 | 4733 (2 runs) / 5494 |
+| Beastmaster | 832 / 1919 | 623 / 1322 | 659 / 1414 | 3267 / 9255 | 3130 / 8752 | 3312 / 9579 |
+| Mystic | 803 / 2692 | 783 / 2640 | 804 / 2514 | 2439 / 8354 | 1701 / 6604 | 1824 / 6768 |
+| Elementalist | 913 / 3442 | 885 / 3354 | 903 / 3378 | 2954 / 11004 | 2644 / 8982 | 2858 / 10882 |
+| Lich | 1164 / 2057 | 1176 / 2130 | 1162 / 2031 | 4037 / 7696 | 4553 / 6900 | 4341 / 8043 |
+| Templar | 904 / 1422 | 914 / 1467 | 925 / 1468 | 2103 / 3375 | 2407 / 3650 | 2399 / 3788 |
+| Inquisitor | 1086 / 2056 | 1216 / 2276 | 1132 / 2276 | 3556 / 6192 | 3979 / 6846 | 3660 / 6864 |
+| Sentinel | 743 / 1285 | 772 / 1271 | 750 / 1211 | 1948 / 3429 | 2286 / 3623 | 2034 / 3495 |
+
+With the bug the Deadeye fell 20-25% (its Final Verdict, Hail of Dawn and Blessed Earth) and lost the single-target lead
+to the Lich, the Ninja and the Bone Lord; fixed it is back on the C4 table (1258 / 4733 against 1312 / 4571). The
+Elementalist's area lead came back at level 1000 (10882 against 8982). The others moved within the spread. Not explained
+by the bug: the Mystic at level 1000 measured 1701 / 1824 against the C4 table's 2439; its build took no fire nodes this
+time and its wand hit 153 / s against 339 in the C4 run: re-check its tree weights and the level 1000 wand.
+Healers with the fix (computed from the C4 builds; no heal measured on an ally): the Illusionist's healTarget heals x1.53 at level 300 / x2.13 at
+level 1000 (C4 build: tree healing 5% / 46%, intelligence 59 / 98, Weaver's Grace), the Iron Sage's x1.10 / x1.95
+(tree healing 10% / 58%, intelligence 0 / 54; Still Water +6 points). The order holds (Illusionist best, Iron Sage
+second); the Iron Sage gains most at level 1000: measure both on an ally before tuning.
+
 ### Mastery nodes of the class sections (2026-10-12, not measured)
 
 The four mastery nodes (665-668, server/README.md "Passive tree planner and mastery nodes") add one node to each class section;
@@ -696,10 +853,14 @@ the table above was measured before them and is unchanged. Each effect is sized 
 section, never above them (for example Keen Edge crit chance +2 / amount +5 against Precise Strikes +2 / +6, Tough Hide
 vitality +4 / physical absorb +2 against Steel Discipline +5 / +3, Iron Knuckles physical +6 / strength +2 against Iron Fist
 +6 / +3, Oath of Flame holy +6 / strength +2 against Holy Vigor holy +6 / vitality +3). A build takes it in place of one
-ordinary node (1-2 of a stat), so a tree build of 73 / 248 points changes by one notable at most. Not run on the dummies;
-measure with the C4 harness when the class factors are next tuned.
+ordinary node (1-2 of a stat), so a tree build of 73 / 248 points changes by one notable at most. Measured 2026-10-12
+("Line keystones, masteries and weapons measured in game" above): each damage choice +2-4% on its own damage type, a
+build 1-3%, below the spread of a run; as sized.
 
-### Line keystones and the path notables (2026-10-12, computed, not measured in game)
+### Line keystones and the path notables (2026-10-12, computed; the measured values are above)
+
+The keystones were measured on 2026-10-12: "Line keystones, masteries and weapons measured in game" above (Blackblood
+Creed and the Bone Lord's Covenant come out higher than computed at level 1000 and break the class order).
 
 Not run on the dummies: the C4 harness (`zz_c4.lua` and the client rotation, test-only) needs a live test server and was not
 run for this change. Every number below is computed from the tables above and the formulas, and marked so; the

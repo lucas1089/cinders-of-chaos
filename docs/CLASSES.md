@@ -521,7 +521,11 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Templar | Sacred Oath | Oath of Flame (holy +6, strength +2), Oath of the Wall (shielding +2, physical absorb +2, all elements absorb +1), Oath of Mercy (healing +6, vitality +3) |
 
   The Warrior, Ranger and Mystic lines have no class section and no mastery yet. Rules and saved data: server/README.md
-  "Passive tree planner and mastery nodes".
+  "Passive tree planner and mastery nodes". Measured 2026-10-12 (`server/data/spells/README.md` "Line keystones,
+  masteries and weapons measured in game"): each damage choice adds 2-4% to its own damage type (Venom Glands earth
+  +5.3%, Withering Touch death +3.9%, Iron Knuckles physical +3.9%, Oath of Flame holy +3.8%; the crit choices about +1%),
+  a build 1-3%, below the spread of a rotation run. Light Step's dexterity is over the cap of a typical Thief build at
+  level 300 (only its speed counts there).
 - **Line keystones** (2026-10): the Thief, Necromancer, Monk and Templar lines had one keystone per ascended class (in the
   section) and none for the base class, the other three lines two. Each of these lines now has a second keystone for
   another play style, for the base class and both ascended classes, on a converted mythic leaf of the main tree (18-21
@@ -535,8 +539,23 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Templar | **Penitent's Wrath** (376) | retaliation | a melee / ranged hit taken is answered with a holy strike: 40% of it + 4 x magic level (one every 0.5 s) | the defence aura's reduction halved, for the party too |
 
   The nodes were wisdom +10, spirit +10, healing +5% and life leech 5 / 7; a character that held one gets it refunded once,
-  for free, at the next login. Numbers: `server/data/spells/README.md` "Line keystones and the path notables" (computed,
-  not measured in game). Code: server/README.md "Passive tree: class sections and per-class keystones".
+  for free, at the next login. Numbers: `server/data/spells/README.md` "Line keystones and the path notables" (computed)
+  and "Line keystones, masteries and weapons measured in game" (measured 2026-10-12, level 300 / 1000, on one build with
+  and without the keystone, 1 target):
+
+  | Keystone | Class | Computed | Measured | Note |
+  |---|---|---|---|---|
+  | Blackblood Creed | Thief | +6% / +6% | poison +8.9% / +14.5% (total +3.7% / +7.1%) | level 1000 over the computed value |
+  | | Ninja | +5% / +5% | poison +5.3% / +11.2% (total -0.8% / +11.8%) | level 1000: 4566, level with the Deadeye |
+  | | Samurai | +5% / +5% | poison +7.2% / +11.9% (total +8.5% / +5.2%) | |
+  | Covenant of the Grave | Necromancer | +8% / +11% | +13% / +15% (5 targets +1% / +8%) | level 300: 1246, level with the Deadeye |
+  | | Lich | -10% / -8% | -12% / -10% (5 targets -18% / -20%) | as intended: not a Lich keystone |
+  | | Bone Lord | +2.5% / +8% (5 targets +18%) | **+20% / +23%** (5 targets +17% / +23%) | ahead of the Deadeye (1603 / 5113); area within 6% of the Elementalist |
+  | Scarred Discipline | Monk line | unchanged on dummies | -1% / +8% (spread) | in game: a chi every 2 s of hits, -10% taken at 3+ chi, no dodge |
+  | Penitent's Wrath | Templar line | unchanged on dummies | +5% / +1% (spread) | in game: 600 holy per 922 taken (magic level 30), own aura 4% -> 2% |
+
+  Proposed (owner's call, not changed): Covenant minions +20% for the Bone Lord (+50% for the Necromancer, with its own
+  spells -35% at level 300), Blackblood Creed's poison +60% -> +30%.
 - **Path notables** (2026-10): 27 small nodes in runs of three or more along the paths became notables with their own name
   (old stats plus a modest premium, same ids and links): server/README.md "Passive tree notables on the paths".
 - **Points** are unchanged (1 per 4 levels: 73 at level 300, 248 at level 1000); every class can hold more than 600 nodes, so

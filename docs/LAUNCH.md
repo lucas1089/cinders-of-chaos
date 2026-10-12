@@ -466,9 +466,9 @@ Still open:
   (draft, every decision marked "Owner decides"). Most of the open items below are on its test list.
 - Not run with a real group yet: rifts, Omens and the Ascended bosses with a full party, the Ashen Sepulchre raid, the
   Ember Descent with 2-4 players, the battleground at 5v5 and up, party credit for bounties and the bestiary.
-- Keystones not verified in game: Overgrowth, both Illusionist keystones (need a party), arrow Ricochet, and the
-  visuals of Bulwark / Thorns / Deadeye. The weapon (auto-attack) numbers in `server/data/spells/README.md` need a
-  re-measure (ROADMAP "Open decisions").
+- Keystones: verified in game 2026-10-12 (Ricochet, Deadeye, Bulwark, both Illusionist keystones in a party; Overgrowth
+  and Thorns belong to no class). Weapon numbers re-measured. Open: the Bone Lord with Covenant of the Grave and the
+  Ninja with Blackblood Creed break the Deadeye's single-target lead (ROADMAP "Open decisions"; proposals there).
 - The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class
   unlock; their price (750 Chaos Coins) is a placeholder (docs/OWNER_TODO.md). C2 / C3 polish and the C4 outfits and
   effects are still in progress (ROADMAP).

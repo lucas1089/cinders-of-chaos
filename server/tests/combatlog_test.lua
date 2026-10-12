@@ -379,9 +379,16 @@ local function engineHit(attacker, target, ctype, value, origin, crit)
 	return true
 end
 
--- the raw engine functions, before combatlog.lua wraps them
-function doTargetCombat(cid, target, ctype, mn, mx, effect, origin)
-	return engineHit(Creature(cid), Creature(target), ctype, math.abs(mn), origin or ORIGIN_SPELL)
+-- the raw engine functions, before combatlog.lua wraps them. Like the engine (getNumber(L, 7, ORIGIN_SPELL)): a
+-- missing origin is ORIGIN_SPELL, an explicit nil reads as 0 (ORIGIN_NONE)
+local rawArgCount
+function doTargetCombat(...)
+	rawArgCount = select("#", ...)
+	local cid, target, ctype, mn, mx, effect, origin = ...
+	if origin == nil then
+		origin = rawArgCount >= 7 and ORIGIN_NONE or ORIGIN_SPELL
+	end
+	return engineHit(Creature(cid), Creature(target), ctype, math.abs(mn), origin)
 end
 local areaTargets = {}
 function doAreaCombat(cid, ctype, pos, area, mn, mx, effect, origin)
@@ -531,10 +538,15 @@ itemModsFile(hero, dragon)
 local before = dragon.hp
 rarityFile(hero, dragon)
 eq(before - dragon.hp, 70, "the ORIGIN_NONE hit happened")
+eq(rawArgCount, 7, "an explicit origin is passed on")
 necroFile(hero, dragon)
 supportsCtx = {hero.id, 201}
 necroFile(hero, dragon) -- the library called by a spell: the spell
 spellFile(hero, dragon) -- a spell script: the cast
+-- no origin given (ChaosSpell.damageTarget / healTarget): the engine must get no origin argument at all, so it uses its
+-- default ORIGIN_SPELL and the health events (tree bonus, class factor, keystones, healing rules) run; an explicit nil
+-- was ORIGIN_NONE
+eq(rawArgCount, 6, "a call without an origin reaches the engine without one")
 supportsFile(hero, dragon) -- a support proc inside a cast: the support
 supportsCtx = nil
 questFile(hero, dragon)

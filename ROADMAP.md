@@ -191,11 +191,19 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 - Fixed: notification toasts (`game_chaosnotify`) had no background: the code loaded `images/background`, the file is
   `Background.png` (file names are case-sensitive on Linux); both the `.otui` and the `.lua` now load `images/Background`.
   (Fixed with item 20: the Daily Reward window no longer opens over other login windows.)
-- Re-measure the weapon (auto-attack) numbers in `server/data/spells/README.md`: the balance harness sets the
-  target with `setTarget`, which skips `onTargetCombat`, so the passive tree and weapon-style damage events were
-  never put on the dummies in those runs (two-handed x1.6, dexterity, keystones). Spell numbers are not affected.
-- Keystones not verified in game yet: Overgrowth, both Illusionist keystones (need a party), arrow Ricochet, and
-  the visuals of Bulwark/Thorns/Deadeye (`ChaosCombatFx`).
+- Done 2026-10-12: the weapon (auto-attack) numbers re-measured with the client's own attack (tree, weapon styles and
+  keystones on the dummies; `server/data/spells/README.md` "Line keystones, masteries and weapons measured in game"),
+  and the keystones verified in game: Ricochet, Deadeye, Bulwark (visuals), both Illusionist keystones in a party
+  ("Keystones verified in game"). Overgrowth and Thorns work when forced on a character but no class can take them
+  (the druid variants). The four line keystones and the masteries measured on the dummies.
+- Open (owner): the Bone Lord with Covenant of the Grave out-damages the Deadeye in single target (+27% / +8%) and comes
+  within 6% of the Elementalist in area; the Ninja with Blackblood Creed is level with the Deadeye at level 1000 (the
+  poison gain is twice the computed one). Proposed: Covenant minions +20% for the Bone Lord, the Creed's poison +30%.
+- Fixed 2026-10-12: the combat log's `doTargetCombat` wrapper turned a left-out origin into `ORIGIN_NONE`, so since
+  2026-10-10 every `ChaosSpell.damageTarget` / `healTarget` hit and heal ran no health events (no tree, class factor,
+  keystones, Weaver's Grace or PvP healing rule): the Deadeye was 20-25% low. Measured before / after in
+  `server/data/spells/README.md` "The combat log wrapper and the balance". Still open: the Mystic at level 1000 measured
+  1701-1824 against 2439 in the C4 table (its build and wand), and the two healers' numbers on an ally with the fix.
 - Fixed: the base rarity element script (`data/scripts/customs/rarity/rarity_onCombat_elementdamage.lua`) returned
   nothing when a player wore two different rarity elements, so the engine dealt 0 damage. `patch_base_events.py`
   (step 9) now hands that case to `chaos/rarity_elements.lua`: primary kept, each element its own share (one in the

@@ -1496,7 +1496,16 @@ variant the server applies (the client's own vocation number did not match: an E
   Deadeye 833/s (+9% in 90 s, +15% expected), Ricochet 742/s main + 312/s on the others; sorcerer Rime Bloom 5150 per cast on 5 targets,
   every cast echoing 7490 (+45%), with the real 35% chance +16% expected; alternating ice and fire spells +15% with Overload; Thorns
   reflected 569 per 970 melee hit (magic level 157), Bulwark blocked 2 of 20 hits and reflected 329 per hit.
-- Not measured in game: Overgrowth and the illusionist party bonuses (they need a second character); the unit test covers them.
+- Verified in game (2026-10-12, level 300, two clients; numbers and screenshots in `data/spells/README.md` "Keystones
+  verified in game"): Ricochet chains on 33% of crossbow hits (83 of 254), each bounce 65% of the one before; Deadeye
+  doubles 14% of the shots (golden cross and "CRIT!"); Bulwark blocks 14% (10 of 70 hits, "DODGE") and reflects 30% of
+  the rest (shockwave, aegis); Inspiring Illusion +8% (1296 for 1200) and a marked enemy +20% (1440: the two add up)
+  for the other party member, nothing for the Illusionist's own hits and nothing between two characters of one IP
+  (multi-client rule); the mark heals the ally 4% of its hits (before the healer's bonuses). Overgrowth and Thorns work
+  when forced on a character for the test (3 pulses at 2 / 4 / 6 s; 30% + 2 x magic level as earth damage), but no
+  class can take them since phase 2b (`ChaosClasses.keystoneKey` has no `druid` class). Every proc is dealt by a player,
+  so the base engine's stat window (+1% per strength or intelligence point) and, on heals, the healer's healing rules
+  (Weaver's Grace +16%) still apply to it; the passive tree's bonuses do not.
 - `server/tests/passivetree_keystones_test.lua`: chance maths, cleave and ricochet target choice, echo cooldown, overload priming, party
   bonus, the engine glue against mocked creatures, the recursion guard, the per-vocation data and that the client tooltips state the
   server's numbers.
@@ -7737,6 +7746,13 @@ client's g_settings node `chaosDpsMeter`.
 - Hits dealt with `ORIGIN_NONE` run no health events in the engine. The wrapper measures the target's health before
   and after such a `doTargetCombat` instead (rarity element shares, pets, companion hits). It cannot do this for
   `doAreaCombat` with `ORIGIN_NONE` or for engine-internal ones.
+- The wrapper passes the optional arguments on exactly as the caller gave them. Fixed 2026-10-12: it passed an origin
+  the caller left out as an explicit nil, which the engine reads as 0 (`ORIGIN_NONE`) where a missing one is
+  `ORIGIN_SPELL`; so from 2026-10-10 every `ChaosSpell.damageTarget` / `healTarget` hit (Forked Storm, Final Verdict,
+  Hail of Dawn, Blessed Earth, Feral Command, both Consecrations, Purging Nova, Life Siphon, Umbral Stride and every
+  Chaos heal that uses the helper) ran no health events: no tree bonus, class factor, keystone, Weaver's Grace or PvP
+  healing reduction. `tests/combatlog_test.lua` checks the argument count; the balance effect is in
+  `data/spells/README.md` "The combat log wrapper and the balance".
 - Life and mana leech, regeneration conditions and `addHealth` heals run no events: not counted.
 - Damage over time cannot be traced to the spell that applied it. It is listed by element.
 - Hits of spells the supports do not wrap, when they come later from an addEvent, are "Other".

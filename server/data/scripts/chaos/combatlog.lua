@@ -419,8 +419,12 @@ local function measured(attacker, victim, ctype, before)
 	end
 end
 
+-- the optional arguments (origin, blockArmor, ...) are passed on exactly as given: the engine reads an explicit nil
+-- origin as 0 (ORIGIN_NONE, no health events: no tree bonus, class factor, keystones or healing rules) where a missing
+-- one is ORIGIN_SPELL, so a wrapper that names the parameter must not pass it when the caller left it out
 local function wrapTarget(raw)
-	return function(cid, target, ctype, mn, mx, effect, origin, ...)
+	return function(cid, target, ctype, mn, mx, effect, ...)
+		local origin = ...
 		local label = callerLabel()
 		local attacker = creatureArg(cid)
 		local owner = attacker and ownerOf(attacker)
@@ -435,7 +439,7 @@ local function wrapTarget(raw)
 			victim = creatureArg(target)
 			before = victim and victim:getHealth()
 		end
-		local ok, res = pcall(raw, cid, target, ctype, mn, mx, effect, origin, ...)
+		local ok, res = pcall(raw, cid, target, ctype, mn, mx, effect, ...)
 		if ok and before then
 			pcall(measured, attacker, victim, ctype, before)
 		end
