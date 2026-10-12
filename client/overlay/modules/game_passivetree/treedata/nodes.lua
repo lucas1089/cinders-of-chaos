@@ -7093,7 +7093,7 @@ function getTreeNodes()
 			},
 			stats = {
 				"Necromancer line: your minions deal +50% damage",
-				"and have +50% health.",
+				"(Bone Lord: +20% damage) and have +50% health.",
 				"Your own spells deal 25% less damage."
 			},
 			classes = {"necromancer", "lich", "bonelord"},
@@ -7366,7 +7366,7 @@ function getTreeNodes()
 			stats = {
 				"Thief line: every weapon hit poisons the target",
 				"as Poison Blades does, with or without the buff,",
-				"and your poison deals +60% damage.",
+				"and your poison deals +30% damage.",
 				"Your evasion is halved."
 			},
 			classes = {"thief", "ninja", "samurai"},

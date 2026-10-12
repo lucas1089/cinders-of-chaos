@@ -533,8 +533,8 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
   | Line | Keystone (node) | Play style | Gain | Price |
   |---|---|---|---|---|
-  | Thief | **Blackblood Creed** (383) | poisoner | every weapon hit poisons (Poison Blades without the buff), the poison +60% | evasion halved |
-  | Necromancer | **Covenant of the Grave** (369) | minion master | minions +50% damage and +50% health | the own spells -25% |
+  | Thief | **Blackblood Creed** (383) | poisoner | every weapon hit poisons (Poison Blades without the buff), the poison +30% (+60% until 2026-10-12) | evasion halved |
+  | Necromancer | **Covenant of the Grave** (369) | minion master | minions +50% damage (Bone Lord +20% since 2026-10-12) and +50% health | the own spells -25% |
   | Monk | **Scarred Discipline** (390) | brawler who takes the hits | a hit taken gives a chi (one every 2 s); -10% damage taken at 3+ chi | no evasion at all |
   | Templar | **Penitent's Wrath** (376) | retaliation | a melee / ranged hit taken is answered with a holy strike: 40% of it + 4 x magic level (one every 0.5 s) | the defence aura's reduction halved, for the party too |
 
@@ -554,8 +554,22 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Scarred Discipline | Monk line | unchanged on dummies | -1% / +8% (spread) | in game: a chi every 2 s of hits, -10% taken at 3+ chi, no dodge |
   | Penitent's Wrath | Templar line | unchanged on dummies | +5% / +1% (spread) | in game: 600 holy per 922 taken (magic level 30), own aura 4% -> 2% |
 
-  Proposed (owner's call, not changed): Covenant minions +20% for the Bone Lord (+50% for the Necromancer, with its own
-  spells -35% at level 300), Blackblood Creed's poison +60% -> +30%.
+  Done 2026-10-12 (owner approved; computed, not measured in game; `server/data/spells/README.md` "Class order fixes"):
+  Covenant minion hits +20% for the Bone Lord (Necromancer and Lich +50%), Blackblood Creed's poison +60% -> +30%, and
+  the level 300 class factor of the Necromancer 1.0 -> 0.93 and the Bone Lord 0.75 -> 0.63. The keystone alone could
+  not fix level 300: the path build to Covenant, without it, was already level with the Deadeye. After (computed,
+  level 300 / 1000, 1 target):
+
+  | Keystone | Class | Before (measured) | After (computed) | Deadeye ahead (after) |
+  |---|---|---|---|---|
+  | Blackblood Creed | Thief | poison +8.9% / +14.5% | poison +5.8% / +8.9% (914 / 2873) | |
+  | | Ninja | poison +5.3% / +11.2% (1107 / 4566) | poison +3.4% / +7.1% (1154 / 4374) | +9.0% / +8.2% |
+  | | Samurai | poison +7.2% / +11.9% | poison +4.8% / +7.2% (701 / 2601) | |
+  | Covenant of the Grave | Necromancer | 1246 / 3105 | 1156 / 3103 | +8.8% / +52% |
+  | | Bone Lord | 1603 / 5113 (5 targets 3186 / 10287) | 1147 / 4327 (5 targets 2295 / 8705) | +9.6% / +9.4% (Elementalist +47% / +25%) |
+
+  The Mystic at level 1000 (1701-1824 measured against 2439) was the test kit: the character had lost levels and the
+  kit picked the level 300 wand. No game change; the C4 numbers stand.
 - **Path notables** (2026-10): 27 small nodes in runs of three or more along the paths became notables with their own name
   (old stats plus a modest premium, same ids and links): server/README.md "Passive tree notables on the paths".
 - **Points** are unchanged (1 per 4 levels: 73 at level 300, 248 at level 1000); every class can hold more than 600 nodes, so
@@ -623,7 +637,8 @@ passive trees"). The level factors that stood in for the tree are dropped; the f
 factor (`ChaosClassTree.classDamage`, level 300 to 1000). The owner's targets (2026-10-11): the Deadeye and the Elementalist at
 least 8-10% ahead of the next class, met by trimming the classes right behind (Ninja 0.45 / 0.57, Shadowfist 0.49 / 0.69, Lich
 0.50 / 0.57, Bone Lord 0.75 / 0.61, Inquisitor 0.65 / 0.58, Berserker 0.78 / 1.0, Ranger and Beastmaster 1.0 / 0.95; level 300 /
-1000), not by raising the leaders. Result (level 300 / 1000): Deadeye the best single target (1312 / 4571; Shadowfist -10% / -19%,
+1000), not by raising the leaders. 2026-10-12, after the keystone check: Necromancer 1.0 -> 0.93 and Bone Lord 0.75 -> 0.63
+at level 300 (Covenant path builds; "Line keystones" above). Result (level 300 / 1000): Deadeye the best single target (1312 / 4571; Shadowfist -10% / -19%,
 Lich -11% / -12%, Bone Lord -12% / -10%, Ninja -15% / -22%); Elementalist the best area (3442 / 11004; Berserker -15% / -25%,
 Beastmaster -44% / -16%); Illusionist the best healer (1985 / 3007 per second on an ally), Iron Sage the second (1765 / 2525,
 +20% / +24% over the Mystic's 1473 / 2039; group +20% / +22%); Samurai a bit under the Juggernaut's damage with off-tank toughness

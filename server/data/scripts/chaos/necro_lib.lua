@@ -231,7 +231,7 @@ end
 
 -- a minion's hit / health factor (field "hit" | "health"): Bone Colossus (the golem) and Covenant of the Grave (every kind)
 function M.minionFactor(player, kind, field)
-	local hit, health = N.covenant(covenant(player))
+	local hit, health = N.covenant(covenant(player), M.classOf(player))
 	local f = field == "hit" and hit or health
 	if kind == "golem" then
 		f = f * (1 + CT.value(player, "ksBoneColossus", field))
@@ -241,7 +241,7 @@ end
 
 -- the factor on the player's own spells: Covenant of the Grave takes ownSpell off (1 without it)
 function M.ownSpellFactor(player)
-	local _, _, own = N.covenant(covenant(player))
+	local _, _, own = N.covenant(covenant(player), M.classOf(player))
 	return own
 end
 

@@ -653,7 +653,9 @@ damage of these classes is x a per-class factor, linear between level 300 and 10
 0.30 / 0.37, Necromancer 1.0 / 0.64, Lich 0.50 / 0.57, Bone Lord 0.75 / 0.61, Monk 0.63 / 0.75, Shadowfist 0.49 / 0.69, Iron Sage
 0.61 / 0.75, Templar 0.78 / 0.60, Inquisitor 0.65 / 0.58, Sentinel 0.73 / 0.60). The owner's targets (2026-10-11: the Deadeye and
 the Elementalist at least 8-10% ahead, the classes right behind trimmed rather than the leaders raised) also set Berserker 0.78 /
-1.0, Ranger and Beastmaster 1.0 / 0.95. Every number below is with these factors.
+1.0, Ranger and Beastmaster 1.0 / 0.95. Every number below is with these factors. Since 2026-10-12 the level 300 factors
+of the Necromancer and the Bone Lord are 0.93 and 0.63 ("Class order fixes" below); their level 300 rows here are from
+before (computed with the new factors: Necromancer 938 / 994, Bone Lord 973 / 1954).
 
 | Class | Role | 300: 1 target | 300: 5 targets | 300: heal/s on an ally | 300: max health | 1000: 1 target | 1000: 5 targets | 1000: heal/s on an ally | 1000: max health |
 |---|---|---|---|---|---|---|---|---|---|
@@ -735,10 +737,9 @@ taken at magic level 30: 40% + 4 x magic level, x1.2 stat window) and the own au
   close (1337 / 4153).
 - The Elementalist leads area (3378 / 10882 fixed): the **Bone Lord with Covenant** is 6% / 5.5% behind (3186 / 10287),
   not 8-10%.
-- Proposed (not changed: balance is the owner's call): Covenant of the Grave per class, minions +50% for the
-  Necromancer, **+20% for the Bone Lord** (`1.2 x 0.64 + 0.75 x 0.36 = 1.04`: +4% instead of +23%), and the Necromancer's
-  +50% only from level 400 or its own spells -35% at level 300; Blackblood Creed's poison **+60% -> +30%** (half the gain
-  at level 1000, about +6% as computed; level 300 about +3% to +5%). Then measure again with two samples each.
+- Proposed then: Covenant of the Grave per class (minions +20% for the Bone Lord, +50% for the Necromancer) and
+  Blackblood Creed's poison +60% -> +30%. Approved by the owner and done 2026-10-12, with a level 300 class factor trim
+  for the Necromancer and the Bone Lord: "Class order fixes" below (computed; measure again with two samples each).
 
 **Mastery nodes** (one sample each; fixed hits of 1000 per damage type on a dummy, 40 each, give the exact effect of a
 choice on the build, `min / mean` with crits): every damage choice adds 2-4% to its own damage type, so a build changes
@@ -839,12 +840,79 @@ and intelligence, Weaver's Grace on others). The classes that cast them, 1 targe
 With the bug the Deadeye fell 20-25% (its Final Verdict, Hail of Dawn and Blessed Earth) and lost the single-target lead
 to the Lich, the Ninja and the Bone Lord; fixed it is back on the C4 table (1258 / 4733 against 1312 / 4571). The
 Elementalist's area lead came back at level 1000 (10882 against 8982). The others moved within the spread. Not explained
-by the bug: the Mystic at level 1000 measured 1701 / 1824 against the C4 table's 2439; its build took no fire nodes this
-time and its wand hit 153 / s against 339 in the C4 run: re-check its tree weights and the level 1000 wand.
+by the bug: the Mystic at level 1000 measured 1701 / 1824 against the C4 table's 2439. The cause was the test kit, not the
+game ("Class order fixes" below, "The Mystic at level 1000").
 Healers with the fix (computed from the C4 builds; no heal measured on an ally): the Illusionist's healTarget heals x1.53 at level 300 / x2.13 at
 level 1000 (C4 build: tree healing 5% / 46%, intelligence 59 / 98, Weaver's Grace), the Iron Sage's x1.10 / x1.95
 (tree healing 10% / 58%, intelligence 0 / 54; Still Water +6 points). The order holds (Illusionist best, Iron Sage
 second); the Iron Sage gains most at level 1000: measure both on an ally before tuning.
+
+### Class order fixes (2026-10-12, computed, not measured in game)
+
+The owner approved the proposals of "Line keystones, masteries and weapons measured in game" above. Changed in
+`class_tree.lua`:
+- **Covenant of the Grave**: minion hits +50% -> **+20% for the Bone Lord** (`fx.ksGraveCovenant.classMinionHit`,
+  `ChaosNecro.covenant(fx, classKey)`). The Necromancer and the Lich keep +50%. Minion health +50% and own spells -25%
+  stay for all three.
+- **Class damage factor at level 300** (`classDamage`): **Necromancer 1.0 -> 0.93, Bone Lord 0.75 -> 0.63**. Level 1000
+  is unchanged (0.64 / 0.61), linear in between. The keystone alone could not fix level 300. The path build to the
+  keystone, without it, already measured 1337 for the Bone Lord (C4 build 1143) and 1100 for the Necromancer (982).
+  The path takes about 40 more physical damage % (the minions' hits), which the C4 build weights skip.
+- **Blackblood Creed**: poison **+60% -> +30%**.
+
+Method (test-only; nothing run on the dummies): the measured with / without runs of the keystone check, split by damage
+type. Covenant: the minions are part of `spell/phys`; their share is solved from the two runs (minions x1.5, own spells
+x0.75). Then minions x(1 + new bonus), own spells x0.75, the wand unchanged, all x new factor / old factor. Check: the
+model gives back the measured "with" runs within 0.5% (1244 / 1600 / 3103 / 5088 against 1246 / 1603 / 3105 / 5113).
+Creed: the "with" run's poison / 1.6 x 1.3, added to the "without" run. Leaders: the fixed-wrapper means (Deadeye
+1258 / 4733, Elementalist 3378 / 10882).
+
+**Covenant of the Grave** (1 target / 5 targets; "before" measured, "after" computed):
+
+| Class | Level | Minion share | Without, before | With, before | Without, after | With, after | Leader ahead (after) |
+|---|---|---|---|---|---|---|---|
+| Necromancer | 300 | 49% / 34% | 1100 / 1242 | 1246 / 1258 | 1023 / 1155 | **1156** / 1172 | Deadeye +8.8% |
+| Necromancer | 1000 | 50% / 40% | 2691 / 2744 | 3105 / 2963 | unchanged | unchanged (3103 / 2944) | Deadeye +52% |
+| Bone Lord | 300 | 58% / 56% | 1337 / 2715 | 1603 / 3186 | 1123 / 2281 | **1147** / **2295** | Deadeye +9.6%, Elementalist +47% |
+| Bone Lord | 1000 | 61% / 63% | 4153 / 8336 | 5113 / 10287 | 4153 / 8336 | **4327** / **8705** | Deadeye +9.4%, Elementalist +25% |
+
+The Bone Lord's keystone gain is now +2% / +4% on one target and +1% / +4% in area, plus +50% minion health. Its area
+role holds. Level 300: 2295 is third behind the Berserker (2932) and the Mystic (2514), ahead of the Inquisitor (2276)
+and the Lich (2031). Level 1000: 8705 is behind the Elementalist and the Beastmaster (9579), ahead of the Berserker
+(8218) and the Lich (8043). The C4 builds at level 300: Necromancer 1009 / 1069 -> 938 / 994, Bone Lord 1158 / 2326 ->
+973 / 1954. The Lich is unchanged.
+
+**Blackblood Creed** (1 target; the poison is `cond/earth` of the harness):
+
+| Class | Level | Without (measured) | With +60% (measured) | Poison gain +60% | Poison gain +30% (computed) | With +30% (computed) | Deadeye ahead |
+|---|---|---|---|---|---|---|---|
+| Thief | 300 | 864 | 896 | +77 / s (+8.9%) | +50 / s (+5.8%) | 914 | +38% |
+| Ninja | 300 | 1116 | 1107 | +59 / s (+5.3%) | +38 / s (+3.4%) | 1154 | +9.0% |
+| Samurai | 300 | 669 | 726 | +48 / s (+7.2%) | +32 / s (+4.8%) | 701 | +79% |
+| Thief | 1000 | 2638 | 2824 | +383 / s (+14.5%) | +235 / s (+8.9%) | 2873 | +65% |
+| Ninja | 1000 | 4083 | 4566 | +458 / s (+11.2%) | +291 / s (+7.1%) | **4374** | +8.2% |
+| Samurai | 1000 | 2426 | 2551 | +289 / s (+11.9%) | +175 / s (+7.2%) | 2601 | +82% |
+
+Against the computed gain (+6% / +5% / +5%): level 300 now +5.8% / +3.4% / +4.8%, level 1000 +8.9% / +7.1% / +7.2%.
+That is 2-4 points over, no longer more than 10% over. The Ninja at level 1000 stays 8% behind the Deadeye: 4374, or 4399
+from the "with" run's own weapon hits. That is the edge of the owner's 8-10%. Its build without the Creed already
+measured 4083 (C4 build 4062 in the same session, C4 table 3565). Measure the Ninja first, two samples.
+
+Rows of the computed archetype tables below that move (computed): Effigy Caller Necromancer level 300 649 / 933 (was
+698 / 1003); Choir Herald Bone Lord level 300 876 / 1759 (was 1042 / 2093); Plaguebearer (Creed +30%) Thief ~830 /
+~2290 and Ninja ~1070 / ~3410 on one target (was ~850 / ~2340 and ~1090 / ~3480). The leaders and the order are as
+stated there.
+
+**The Mystic at level 1000** (1701 / 1824 measured against the C4 table's 2439): **the test kit, not the game.** In
+those runs the character had lost levels: 245 tree points instead of 248. The test kit (`zz_c4.lua` `C4.gear`,
+test-only) chose the kit by the current level, so it put on the level 300 caster kit. Its wand of inferno hit 149-155 / s;
+the level 1000 wand hits 326-339 / s (the same character's auto-attack-only run, and the C4 runs). The level 300 armour
+came with it. The build was not the cause: the run log printed only some stats and left out fire, ice and energy. The
+C4 planner run offline on the current tree data gives the Mystic and the Elementalist the same build (fire +55%, ice
++57-58%, energy +59%, Arcane Echo, Elemental Overload). The Elementalist measured 2858 with it, as in the C4 runs. The
+wand has no regression. Fixed in the harness: the kit goes by the character's target level, the level is put back
+first, and the log lists every damage stat. No game change. The C4 table's Mystic 2439 / 8354 stands (repeats 2350,
+2242). Measure it again with the fixed kit.
 
 ### Mastery nodes of the class sections (2026-10-12, not measured)
 
@@ -860,7 +928,9 @@ build 1-3%, below the spread of a run; as sized.
 ### Line keystones and the path notables (2026-10-12, computed; the measured values are above)
 
 The keystones were measured on 2026-10-12: "Line keystones, masteries and weapons measured in game" above (Blackblood
-Creed and the Bone Lord's Covenant come out higher than computed at level 1000 and break the class order).
+Creed and the Bone Lord's Covenant come out higher than computed at level 1000 and break the class order). The fixes of
+that day: "Class order fixes" above (the Creed's poison +30%, Covenant +20% for the Bone Lord). The table below is
+from before them.
 
 Not run on the dummies: the C4 harness (`zz_c4.lua` and the client rotation, test-only) needs a live test server and was not
 run for this change. Every number below is computed from the tables above and the formulas, and marked so; the

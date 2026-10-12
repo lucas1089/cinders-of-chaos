@@ -1548,8 +1548,8 @@ variant the server applies (the client's own vocation number did not match: an E
 
 | Line | Node | Keystone | Gain | Price |
 |---|---|---|---|---|
-| Thief | 383 | **Blackblood Creed** (`thief_combat.lua`, `classes.lua`) | every weapon hit poisons as Poison Blades does, buff or not; the poison +60% | evasion halved (Thief 8 -> 4%, Ninja 12 -> 6%, Samurai 5 -> 2.5%; Fleet Shadow too) |
-| Necromancer | 369 | **Covenant of the Grave** (`necro_lib.lua`, `necro_core.lua`, `_necro.lua`, `bone_offering.lua`) | minions +50% damage and +50% health (every kind; the golem multiplies with Bone Colossus) | the own spells -25% (spell formulas, the curse's rot, Bone Offering; not the wand) |
+| Thief | 383 | **Blackblood Creed** (`thief_combat.lua`, `classes.lua`) | every weapon hit poisons as Poison Blades does, buff or not; the poison +30% (+60% until 2026-10-12) | evasion halved (Thief 8 -> 4%, Ninja 12 -> 6%, Samurai 5 -> 2.5%; Fleet Shadow too) |
+| Necromancer | 369 | **Covenant of the Grave** (`necro_lib.lua`, `necro_core.lua`, `_necro.lua`, `bone_offering.lua`) | minions +50% damage (the Bone Lord +20%: `classMinionHit`, since 2026-10-12) and +50% health (every kind; the golem multiplies with Bone Colossus) | the own spells -25% (spell formulas, the curse's rot, Bone Offering; not the wand) |
 | Monk | 390 | **Scarred Discipline** (`monk_combat.lua`, `monk_chi_core.lua`) | a hit taken from a creature gives a chi (at most one every 2 s); 10% less damage taken while holding 3 chi or more | no evasion at all (Monk 6%, Shadowfist 8%, Iron Sage 4%, and Mistborne Step's +25%) |
 | Templar | 376 | **Penitent's Wrath** (`templar_combat.lua`, `templar_aura_core.lua`) | a melee / ranged hit taken is answered with a holy strike on the attacker: 40% of what was taken + 4 x magic level, at most one every 0.5 s (dealt like the keystone procs: `ChaosKeystones.depth` up, no passive bonus on it, PvP rules) | the own defence aura's reduction halved, for the party too (Templar 6 -> 3%, Inquisitor 4 -> 2%, Sentinel 12 -> 6%, with Bastion 16 -> 8%; the radius and the regeneration stay) |
 
@@ -1557,7 +1557,9 @@ variant the server applies (the client's own vocation number did not match: an E
   next login (presets and saved loadouts, with a message; `passivetree_config.lua` `reworked`, see "Passive tree planner
   and mastery nodes"); build codes made before (format versions 1 and 2) leave them out (see "Build sharing"). Icons:
   `client/tools/gen_keystone_icons.py` (cells 24-27 of `keystones.png`). Numbers: `server/data/spells/README.md` "Line
-  keystones and the path notables" (computed, not measured in game).
+  keystones and the path notables" (computed, not measured in game); measured 2026-10-12 and the class order fixes of
+  that day (the Creed's poison, the Bone Lord's Covenant, the level 300 factors of the Necromancer and the Bone Lord):
+  "Line keystones, masteries and weapons measured in game", "Class order fixes".
 - Tests: `server/tests/class_tree_test.lua` (flags, sanitize, the generated data, tooltips against the numbers, the class rules),
   `passivetree_keystones_test.lua`, `buildshare_test.lua`, `classes_test.lua`.
 

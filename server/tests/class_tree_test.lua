@@ -233,6 +233,7 @@ if fh then
 	has(383, nil, "+" .. math.floor(fx.ksBlackbloodCreed.poisonBonus * 100 + 0.5) .. "%")
 	has(383, nil, fx.ksBlackbloodCreed.evasionScale == 0.5 and "halved" or "?")
 	has(369, nil, "+" .. math.floor(fx.ksGraveCovenant.minionHit * 100 + 0.5) .. "% damage")
+	has(369, nil, "Bone Lord: +" .. math.floor(fx.ksGraveCovenant.classMinionHit.bonelord * 100 + 0.5) .. "% damage")
 	has(369, nil, "+" .. math.floor(fx.ksGraveCovenant.minionHealth * 100 + 0.5) .. "% health")
 	has(369, nil, math.floor(fx.ksGraveCovenant.ownSpell * 100 + 0.5) .. "% less")
 	has(390, nil, fx.ksScarredDiscipline.chi .. " chi")
@@ -348,12 +349,13 @@ eq(got[2], nil, "5 sqm without it")
 near(T.damageTakenFactor(nil, true, 0.5), 0.8, "Aegis at half for the party"); near(T.damageTakenFactor(nil, true), 0.6)
 
 -- ------------------------------------------------------------------ the line keystones (rules)
--- Blackblood Creed (Thief line): every weapon hit poisons, the poison +60%, evasion halved
+-- Blackblood Creed (Thief line): every weapon hit poisons, the poison +30% (+60% until 2026-10-12), evasion halved
 local creed = CT.fx.ksBlackbloodCreed
+near(creed.poisonBonus, 0.30, "the Creed's poison +30%")
 local hit = 1000
 local plainTick = C.poisonTick(hit)
 eq(plainTick, math.floor(hit * cfg.poisonBlades.share / cfg.poisonBlades.ticks + 0.5), "Poison Blades tick")
-eq(C.poisonTick(hit, creed.poisonBonus), math.floor(hit * cfg.poisonBlades.share * 1.6 / cfg.poisonBlades.ticks + 0.5), "+60%")
+eq(C.poisonTick(hit, creed.poisonBonus), math.floor(hit * cfg.poisonBlades.share * 1.3 / cfg.poisonBlades.ticks + 0.5), "+30%")
 eq(C.poisonTick(hit, 0), plainTick, "no bonus")
 eq(C.weaponPoisons(true, false, true), true, "the keystone poisons without the buff")
 eq(C.weaponPoisons(true, true, false), true, "the buff alone"); eq(C.weaponPoisons(true, false, false), false, "neither")
@@ -362,12 +364,17 @@ near(C.dodgeChance(12, 0, creed.evasionScale), 0.06, "Ninja 12% -> 6%")
 near(C.dodgeChance(12, 0.04, creed.evasionScale), 0.08, "Fleet Shadow is halved too")
 eq(C.dodges(11, true, 0.05, 0, creed.evasionScale), false, "Thief 8% -> 4%: a roll of 0.05 hits")
 eq(C.dodges(11, true, 0.05), true, "without the keystone it is a dodge")
--- Covenant of the Grave (Necromancer line): minions +50% hit and health, the own spells -25%
+-- Covenant of the Grave (Necromancer line): minions +50% hit (the Bone Lord +20%) and +50% health, the own spells -25%
 local cv = CT.fx.ksGraveCovenant
 local ch, chh, co = N.covenant(cv)
 near(ch, 1.5); near(chh, 1.5); near(co, 0.75)
+near((N.covenant(cv, "necromancer")), 1.5, "Necromancer: minion hits +50%")
+near((N.covenant(cv, "lich")), 1.5, "Lich: minion hits +50%")
+local bh, bhh, bo = N.covenant(cv, "bonelord")
+near(bh, 1.2, "Bone Lord: minion hits +20%"); near(bhh, 1.5, "Bone Lord: minion health +50%"); near(bo, 0.75)
 local a1n, b1n, c1n = N.covenant(nil)
 eq(a1n + b1n + c1n, 3, "without it: 1, 1, 1")
+eq(select("#", N.covenant(nil, "bonelord")), 3); near((N.covenant(nil, "bonelord")), 1, "without it the class does not matter")
 local s1 = select(2, N.minionHit(ncfg, "necromancer", "skeleton", 300, 100, false))
 local s2 = select(2, N.minionHit(ncfg, "necromancer", "skeleton", 300, 100, false, ch))
 eq(math.abs(s2 / s1 - 1.5) < 0.01, true, "a skeleton hit +50%")
@@ -395,6 +402,16 @@ if okLib and ChaosNecro and ChaosNecro.minionFactor then
 	near(NL.minionFactor(nec, "golem", "hit"), 1.5 * 1.6, "Covenant and Bone Colossus multiply on the golem")
 	near(NL.ownSpellFactor(nec), 0.75, "own spells -25%")
 	near(NL.spellFactor(nec), 0.75, "a Necromancer has no Soul Hoard: 0.75")
+	local bl = mkPlayer()
+	bl.getVocation = function() return {getId = function() return 22 end} end
+	bl.getLevel = function() return 300 end
+	bl.getMagicLevel = function() return 100 end
+	bl.getSummons = function() return {} end
+	CT.write(bl, {ksGraveCovenant = 1, ksBoneColossus = 1})
+	near(NL.minionFactor(bl, "skeleton", "hit"), 1.2, "Covenant: a Bone Lord's skeleton hits +20%")
+	near(NL.minionFactor(bl, "skeleton", "health"), 1.5, "Covenant: a Bone Lord's skeleton health +50%")
+	near(NL.minionFactor(bl, "golem", "hit"), 1.2 * 1.6, "a Bone Lord's golem: Covenant +20% x Bone Colossus")
+	near(NL.ownSpellFactor(bl), 0.75, "a Bone Lord's own spells -25%")
 	local a0 = select(2, N.values(ncfg, f, 300, 100, 1))
 	eq(select(2, NL.values(nec, f)), select(2, N.values(ncfg, f, 300, 100, 0.75)), "a spell's values with the keystone")
 	eq(a0 > select(2, NL.values(nec, f)), true, "lower than without")
@@ -429,5 +446,8 @@ near(CT.damageFactor("ninja", "thief", 300), 0.5, "the line's factor"); near(CT.
 near(CT.damageFactor("ninja", "thief", 100), 0.5, "below the first point"); near(CT.damageFactor("ninja", "thief", 2000), 0.4)
 near(CT.damageFactor("samurai", "thief", 1000), 0.2, "a class entry wins"); near(CT.damageFactor("warrior", "warrior", 1000), 1)
 CT.classDamage = saved
+-- the trims of 2026-10-12 (Covenant path builds at level 300); level 1000 unchanged
+near(CT.damageFactor("necromancer", "necromancer", 300), 0.93, "Necromancer 300"); near(CT.damageFactor("necromancer", nil, 1000), 0.64)
+near(CT.damageFactor("bonelord", "necromancer", 300), 0.63, "Bone Lord 300"); near(CT.damageFactor("bonelord", nil, 1000), 0.61)
 
 print("class_tree_test: " .. checks .. " checks, OK")
