@@ -18,8 +18,8 @@ character). Same rules: rewritten when the list changed, refused when a look typ
 With the pair 19 switch on (class_looks_core.lua L.PAIR19_LOOKS = true) the six classes of L.pair19Looks get their
 things_custom19 looks (2161-2172) and their replaced looks stay as "<name> (old)" (on since 2026-10-12); with it off
 (the rollback) no line names 2161-2172, so a client on an older pair is never offered them. The pair 20 switch
-(L.PAIR20_LOOKS, L.pair20Looks: things_custom20, 2173-2184; off until that pair is on windows-assets) works the same
-way for its six classes.
+(L.PAIR20_LOOKS, L.pair20Looks: things_custom20, 2173-2184; on since 2026-10-12) works the same way for its six
+classes.
 
 Mounts (MOUNTS below) go into mounts.xml the same way: a marked block before </mounts>; a mount id or client id that
 already has an entry outside the block stops the script.

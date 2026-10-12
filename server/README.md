@@ -8574,8 +8574,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 - **Commands.** Adventure > Rifts (dialog: the run status and every key carried with its modifiers). Gamemasters: `/rift key <tier>
   [count | mods]`, `/rift status` (runs, the state of every slot and its map, the builder), `/rift fail`.
 
-**Edits to shared files** (one line or block each): `map_marks.lua` (the rift square per floor), `atlas`: none (the
-Swift cells keep 50% of the base `timeLimit`, 5:00), `tools/gen_codex_data.lua` (the run text of the Codex),
+**Edits to shared files** (one line or block each): `map_marks.lua` (the rift square per floor), `atlas_core.lua`
+(the Swift time of a tier from the rift model, `A.swiftSeconds`; see "Rift Atlas"), `tools/gen_codex_data.lua` (the run text of the Codex),
 `areagen_core.lua` / `areagen_config.lua` / `tools/areagen_dump.lua` / `tools/areagen_export.py` (see "Generated
 areas"), `chaos_constants.lua` (`ChaosOpcodes.rift = 228`,
 `Chaos.storage.riftRun = 7100400`), `loot_config.lua` (rateMult x `ChaosRift.lootMult(ctx)`), `shop_services.lua`
@@ -8731,8 +8731,31 @@ table `chaos_rift_atlas`, no storages. Window: Adventure > Rift Atlas, or the Ri
 
 - **The grid (96 points).** First completions only, credited to every finisher of the run (an offline finisher's row is
   written straight to the database): each theme x tier (4 x 15 cells, 1 point each), Flawless per tier (sealed without a
-  death, any theme; 15 x 1), Swift per tier (sealed within half of the base time limit, 5:00, whatever the run's own
-  limit; 15 x 1) and each Omen guardian (Sangrith, Morvane, Thalcyra; 3 x 2). A message names the new cells.
+  death, any theme; 15 x 1), Swift per tier (sealed within the tier's Swift time, below; 15 x 1) and each Omen
+  guardian (Sangrith, Morvane, Thalcyra; 3 x 2). A message names the new cells.
+- **Swift times** (since 2026-10-12, when the rifts became big generated maps; owner approved). The old rule, half of
+  the base 10 minutes (5:00) for every tier, was out of reach on the big maps (the model's typical solo clear is about
+  6 minutes at tiers 1-10, 7.4 at tier 12, 9.5 at tier 15). Now each tier has its own time, `A.swiftSeconds`: the rift
+  model's clear time (`R.clearSeconds`: the packs up to the guardian, the guardian and the walk arrival -> arena) of
+  the tier on its size band's typical map, for a solo player with `swiftDps` = 1.25 x the model player's damage,
+  rounded down to `swiftRound` = 15 s (`atlas_config.lua`). It grows with the map size and the tier; a strong player
+  can earn it at every tier, a typical one cannot. The run's own limit (Waning Veil, Fleeting Sanctum, atlas time)
+  does not change it, and the map a run actually got (one or two floors) neither: the time is per tier, so the
+  atlas tooltip and the HUD show the same number.
+
+  | Size band | Map, limit | Tiers: Swift time | Model's typical solo clear |
+  |---|---|---|---|
+  | 1 | 160 x 160, 12:00 | 1: 5:15, 2: 5:00, 3-4: 4:45, 5: 4:30 | 6:17 -> 5:37 |
+  | 2 | 200 x 200, 13:00 | 6-10: 4:45 | 5:51 -> 5:42 |
+  | 3 | 240 x 240, 15:00 | 11: 5:30, 12: 6:00, 13: 6:30, 14: 7:15, 15: 7:45 | 6:41 -> 9:29 |
+
+  The times fall inside a band because the walk gets faster with the tier's level; a party of five (the party model)
+  gets the same times. Without the generated layouts (or without `rift_core.lua` loaded) it is `swiftShare` (0.5) of
+  `rift_config.lua` `timeLimit`, 5:00, as before. Swift cells already earned stay: the cells are stored by key and
+  never re-checked. The window's tooltip names each tier's time (tree payload `grid.swiftTiers`; `grid.swift` stays
+  5:00 for an older client); the rift HUD shows "Swift: seal within m:ss (m:ss to spare)" while the rift runs, then
+  "Swift: missed" (HUD field `swift`, none in an Omen arena; client `RiftMath.swiftLine`). `atlas.lua` loads
+  `rift_core.lua` when `rift.lua` has not yet (the hooks are kept).
 - **The map.** A core (start, four spokes of three small nodes toward the branches, four notables between them) and
   four theme branches of 16 nodes (gate, attunement notable, two arms with a notable each, a trunk with a notable, a
   join, the keystone at the far end). Costs: small 1, notable 2, keystone 3; the whole map costs 108. A full grid buys
@@ -8783,18 +8806,22 @@ table `chaos_rift_atlas`, no storages. Window: Adventure > Rift Atlas, or the Ri
   over the points are dropped, free). Season characters are characters of their own (season.lua), so each realm has its
   own atlas without extra rules; a migrated character keeps its atlas as it keeps its levels and items.
 - **Protocol** (JSON {action, data}): client `open {tree}` (tree = true: send the graph again) | `alloc {id}` | `refund {id, pay = gold|orb}` | `reset {pay}`; server
-  `tree` (the graph, positions, costs, tooltip lines, the grid's shape; once per login, through `Chaos.sendChunked`),
+  `tree` (the graph, positions, costs, tooltip lines, the grid's shape with `swiftTiers`, the Swift time of each tier;
+  once per login, through `Chaos.sendChunked`),
   `state {earned, spent, points, max, alloc, done, refund, reset, orb, totals, msg}`, `credit {cells, points}`.
 - **Staff:** `/atlas grant all` or `/atlas grant <cell key>`, `/atlas clear`, `/atlas` (status).
 - **Opcode check:** 210 is in no Chaos script, no client module and none of the reference server's opcodes (1, 67, 73, 89,
   91, 92, 99, 106, 107, 136, 181, 201, 202).
 - **Tests:** `tests/riftatlas_test.lua`: graph size and kinds, unique ids, known and symmetric links, no orphan node,
   keystones as leaves, every node reachable from the start, nodes at least 60 apart and links at least 24 from any
-  other node; grid cells and points, run cells (flawless, swift at exactly half, omen), credit once; allocate / refund /
+  other node; grid cells and points, run cells (flawless, swift at exactly the tier's time and a second over, omen), the Swift
+  times per tier (pinned, the strong player's model time, under the typical clear, a party the same, 5:00 without
+  layouts or the rift model, earned cells kept), credit once; allocate / refund /
   keystone limit / sanitize; resolve (themes, tier gates, caps, keystones); the effects in `rift_core.lua` (plan packs,
   time, lives, goblin and coffer rates, guardian, bonuses, chest, fragments, key odds and drops, theme pick, the same
   results without an atlas); `atlas.lua` against a mocked engine (open, credit online and offline, alloc, refund with gold
-  and an orb, reset, relog). Client: `riftatlasview_test.lua`. Rendered in the Linux client from payloads of the real core
+  and an orb, reset, relog). Client: `riftatlasview_test.lua` (the Swift tooltip per tier, the real tree's times) and
+  `game_rift/riftmath_test.lua` (the HUD's Swift line). Rendered in the Linux client from payloads of the real core
   (offline, login screen); not run on a live server yet.
 
 ## Daily reward and login streaks (`daily.lua`, `daily_core.lua`, `daily_config.lua`)
@@ -8979,7 +9006,7 @@ Templar the windborn colossus armor. No Lua errors.
 ## Class looks (`class_looks.lua`, `class_looks_core.lua`, `tools/install_outfits.py`)
 
 Every class has its own look, male and female (list and looks per class: docs/CLASSES.md "Content per class"; art:
-client/MANIFEST.md "Class looks pair" and "things_custom19").
+client/MANIFEST.md "Class looks pair", "things_custom19" and "Class looks pair 20").
 - Given and worn. First login and every class change: the class's look and its base class's look are given and the
   class's look is put on. Other logins: looks of the class not owned yet are given; the worn look stays. Colours and
   mount stay the player's. Nothing is taken away. A store outfit the player wears stays on; the class look is only the
@@ -9011,16 +9038,23 @@ client/MANIFEST.md "Class looks pair" and "things_custom19").
   still have things_custom19.
 - Tests: `tests/class_kit_test.lua` (wear, login, addons, sources listed for every look, the switch both ways: on
   as shipped, off on a second copy of the core loaded with the switch line set to false).
-- Pair 20 switch: `L.PAIR20_LOOKS` in `class_looks_core.lua`, **off** (things_custom20 is built, not pushed: the owner
-  reviews the picks first; client/MANIFEST.md "Class looks pair 20"). On, the Lich, Inquisitor, Necromancer, Thief,
-  Ninja and Templar use outfits 2173-2184 (`L.pair20Looks`): matched pairs for the Lich and the Inquisitor (one look
-  for both sexes before) and the Necromancer (two unrelated outfits before). Same rules as pair 19 (one plain line,
-  "(old)" looks, `L.retired`, the store never sells 2173-2184). A replaced one-look class (Lich 2059, Inquisitor 2077)
-  moves each character to the new look of its sex (`L.replacedFor`). The switches are independent (`L.applyPairs`).
-  Flip step, only after the push: set the line to true with client/MANIFEST.md, ROADMAP.md C4 and this section, run
-  the CI checks, then `python3 -I tools/install_all.py SERVER_DIR --only outfits` and restart (33 class looks: the 21
-  and twelve "(old)"). Rollback as for pair 19. Tests: the same file, on a copy with the line forced to true, both off,
-  and toggles.
+- Pair 20 switch: `L.PAIR20_LOOKS` in `class_looks_core.lua`, on since 2026-10-12 (things_custom20 on windows-assets
+  at 77b9cc9b; client/MANIFEST.md "Class looks pair 20"). On, the Lich, Inquisitor, Necromancer, Thief, Ninja and
+  Templar use outfits 2173-2184 (`L.pair20Looks`): matched pairs for the Lich and the Inquisitor (one look for both
+  sexes before) and the Necromancer (two unrelated outfits before). Off, no script, outfits.xml line or store list
+  names 2173-2184. Same rules as pair 19 (one plain line, "(old)" looks, `L.retired`, the store never sells
+  2173-2184). A replaced one-look class (Lich 2059, Inquisitor 2077) moves each character to the new look of its sex
+  (`L.replacedFor`). The switches are independent (`L.applyPairs`).
+- Pair 20 flip step: done 2026-10-12, after the owner approved the picks and things_custom20 went to windows-assets
+  (77b9cc9b, archive sha256 4ec97152be8b54f2ede683ee27dfdfe7944b6c36ee9190785e7f069355d11202). The switch line was
+  set to true, with client/MANIFEST.md, docs/CLASSES.md, ROADMAP.md C4 and this section. On each server, once the
+  Windows package is rebuilt from the branch: `python3 -I tools/install_all.py SERVER_DIR --only outfits`, then
+  restart. On a base outfits.xml, or one with the pair 19 block, it writes 33 class looks: the 21 looks and twelve
+  "(old)" ones. A second run changes nothing. Rollback: set the line back to false and re-run the step (27 class
+  looks again, pair 19 untouched). A character still wearing 2173-2184 keeps that look type until it changes outfit,
+  so roll back only while the clients still have things_custom20.
+- Tests (pair 20): the same file, the switch both ways: on as shipped, off on a second copy of the core loaded with
+  the pair 20 line set to false, both pairs off, and toggles.
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 

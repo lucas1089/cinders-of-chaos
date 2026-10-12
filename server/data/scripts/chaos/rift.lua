@@ -636,6 +636,18 @@ function RF.findReady(theme, band)
 end
 
 -- ======================================================================== HUD
+-- the Rift Atlas's Swift time of the run's tier (atlas_core.lua A.swiftSeconds): the HUD shows it; nil for an Omen
+-- arena, a tier off the grid or without the atlas
+local function swiftSeconds(run)
+	local A, acfg = ChaosAtlasCore, ChaosAtlasConfig
+	local tier = run.key and run.key.tier
+	if run.omen or not (A and A.swiftSeconds and acfg and tier) or tier < 1 or tier > (acfg.tiers or 0) then
+		return nil
+	end
+	run.swift = run.swift or A.swiftSeconds(acfg, C(), tier)
+	return run.swift
+end
+
 local function hudData(run)
 	local mods = {}
 	for _, m in ipairs(run.key.mods) do
@@ -682,7 +694,7 @@ local function hudData(run)
 		bossName = R.nameOf(run.looks, run.plan.boss, true) or run.plan.boss, -- the name the guardian shows
 		mods = mods, bonus = run.bonus, notes = notes, lives = run.lives,
 		livesMax = run.livesMax, omen = run.omen and R.omenKind(C(), run.omen).name or nil,
-		title = run.omen and ("Omen - " .. R.omenKind(C(), run.omen).name) or nil}
+		title = run.omen and ("Omen - " .. R.omenKind(C(), run.omen).name) or nil, swift = swiftSeconds(run)}
 end
 
 local function sendHud(run, action, player)

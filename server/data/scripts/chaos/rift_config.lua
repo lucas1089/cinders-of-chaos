@@ -24,8 +24,9 @@ return {
 
 	-- ------------------------------------------------------------------ the run
 	-- seconds; when it runs out the rift fails: everyone is sent out, the key is lost. With the generated layouts a run
-	-- takes the limit of its size band (layout.sizes: 12 / 13 / 15 minutes); this one is the base of the atlas's Swift
-	-- cells (atlas_config.lua swiftShare) and of a run without layouts
+	-- takes the limit of its size band (layout.sizes: 12 / 13 / 15 minutes); this one is the limit of a run without
+	-- layouts and then the base of the atlas's Swift cells (atlas_config.lua swiftShare; with layouts the Swift time
+	-- comes from the clear-time model, atlas_core.lua A.swiftSeconds)
 	timeLimit = 600,
 	bossAt = 75, -- percent of the rift's monsters that must die before the boss appears
 	exitDelay = 60, -- seconds after the boss died: time to open the chest and loot; then everyone is sent out

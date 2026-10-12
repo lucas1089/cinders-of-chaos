@@ -86,6 +86,20 @@ function RiftMath.livesColor(lives, max)
   return '#9fd89f'
 end
 
+-- the Rift Atlas's Swift line of a running rift: swift = the tier's Swift time (seconds, from the server), limit = the
+-- run's limit, left = seconds left now. Returns the text and its colour: '' when there is no Swift time (an Omen
+-- arena, an older server); blue with the time to spare while it can still be made, grey once it is missed.
+function RiftMath.swiftLine(swift, limit, left)
+  swift, limit, left = tonumber(swift), tonumber(limit), tonumber(left)
+  if not swift or swift <= 0 or not limit then return '', nil end
+  local elapsed = math.max(0, limit - (left or 0))
+  if elapsed <= swift then
+    return string.format('Swift: seal within %s (%s to spare)', RiftMath.clock(swift), RiftMath.clock(swift - elapsed)),
+      '#7fb8e8'
+  end
+  return string.format('Swift: missed (%s)', RiftMath.clock(swift)), '#8c8070'
+end
+
 -- colour of the clock: gold, orange under a minute, red under 20 s
 function RiftMath.clockColor(left)
   if left <= 20 then return '#ff4030' end

@@ -24,6 +24,11 @@ if not Chaos then
 end
 dofile("data/scripts/chaos/atlas_core.lua")
 ChaosAtlasConfig = ChaosAtlasConfig or dofile("data/scripts/chaos/atlas_config.lua")
+-- the Swift times come from the rift model (atlas_core.lua A.swiftSeconds -> rift_core.lua R.clearSeconds); rift.lua
+-- loads rift_core.lua too (it keeps R.hooks), whichever script comes first
+if not (ChaosRiftCore and ChaosRiftCore.clearSeconds) then
+	dofile("data/scripts/chaos/rift_core.lua")
+end
 ChaosRiftCore = ChaosRiftCore or {}
 ChaosRiftCore.hooks = ChaosRiftCore.hooks or {}
 

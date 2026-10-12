@@ -119,11 +119,12 @@ for free, at the migration.
     2039-2081 of things_custom10b, no stock art; list in `class_looks_core.lua`, sources in
     `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair"). Worn with both addons
     (addons 3); the character owns both addons of each class look it is given, and no other outfit's addons. Six looks
-    changed with the pair 19 switch (`ChaosClassLooks.PAIR19_LOOKS`, on since 2026-10-12: things_custom19 is live;
-    server/README.md "Class looks"). Looks per class (male / female look type; "before" = things_custom18, "pair 19" =
-    live now):
+    changed with the pair 19 switch (`ChaosClassLooks.PAIR19_LOOKS`, on since 2026-10-12: things_custom19 is live)
+    and six more with the pair 20 switch (`ChaosClassLooks.PAIR20_LOOKS`, on since 2026-10-12: things_custom20 is live
+    at windows-assets 77b9cc9b; server/README.md "Class looks"). Looks per class (male / female look type; "before" =
+    things_custom18, "pair 19 / 20" = live now):
 
-    | Line | Class (id) | Before | Pair 19 (live) |
+    | Line | Class (id) | Before | Pair 19 / 20 (live) |
     |---|---|---|---|
     | Warrior | Warrior (4) | 2073 / 2074 | kept |
     | | Juggernaut (8) | 2039 / 2040 | 2161 / 2162: gilded plate, tower shield (donor D 997 / 998) |
@@ -134,29 +135,23 @@ for free, at the migration.
     | Mystic | Mystic (1) | 2060 / 2061 | kept |
     | | Elementalist (5) | 2062 / 2063 | kept |
     | | Illusionist (10) | 2049 / 2050 | kept |
-    | Thief | Thief (11) | 2051 / 2052 | kept |
-    | | Ninja (12) | 2069 / 2070 | kept |
+    | Thief | Thief (11) | 2051 / 2052 | 2175 / 2176: hooded rogue, twin daggers (pair 20, donor D 521 / 522) |
+    | | Ninja (12) | 2069 / 2070 | 2177 / 2178: black shinobi, katana (pair 20, donor D 789 / 790) |
     | | Samurai (13) | 2071 / 2072 | kept |
     | Monk | Monk (17) | 2080 / 2081 | kept |
     | | Shadowfist (18) | 2053 / 2054 | 2169 / 2170: claws, violet glow (donor D 1057 / 1058) |
     | | Iron Sage (19) | 2055 / 2056 | kept |
-    | Necromancer | Necromancer (20) | 2044 / 2064 | kept |
-    | | Lich (21) | 2059 (one look) | kept |
+    | Necromancer | Necromancer (20) | 2044 / 2064 | 2183 / 2184: blood hood or witch hat, blood orb, skull (pair 20, D 856 / 857, composed) |
+    | | Lich (21) | 2059 (one look) | 2173 / 2174: skeletal lord, skull cape, bone sceptre (pair 20, donor D 219 / 220) |
     | | Bone Lord (22) | 2065 / 2066 | 2167 / 2168: bone wings, skull rack (donor D 508 / 509) |
-    | Templar | Templar (23) | 2067 / 2068 | kept |
-    | | Inquisitor (24) | 2077 (one look) | kept |
+    | Templar | Templar (23) | 2067 / 2068 | 2179 / 2180: gilded holy knight, kite shield (pair 20, donor D 609 / 610) |
+    | | Inquisitor (24) | 2077 (one look) | 2181 / 2182: witch-hunter hat, rapier, holy sceptre (pair 20, D 419 / 420, composed) |
     | | Sentinel (25) | 2042 / 2041 | 2171 / 2172: holy orbs, tower shield (donor D 992 / 993) |
 
     A replaced look stays owned and wearable as "<class> Class (old)". A character wearing one gets the new look at its
     next login.
 
-    Proposed, pair 20 (`ChaosClassLooks.PAIR20_LOOKS`, off: things_custom20 is built and waits for the owner's review
-    of the picks; client/MANIFEST.md "Class looks pair 20"): Lich (21) 2173 / 2174 skeletal lord, skull cape, bone
-    sceptre (D 219 / 220); Inquisitor (24) 2181 / 2182 witch-hunter hat, rapier, holy sceptre (D 419 / 420, composed);
-    Necromancer (20) 2183 / 2184 blood hood or witch hat, blood orb, skull (D 856 / 857, composed); Thief (11)
-    2175 / 2176 hooded rogue, twin daggers (D 521 / 522); Ninja (12) 2177 / 2178 black shinobi, katana (D 789 / 790);
-    Templar (23) 2179 / 2180 gilded holy knight, kite shield (D 609 / 610). Lich and Inquisitor then have a look per
-    sex; a character in the old one look gets the new look of its sex.
+    The Lich and the Inquisitor now have a look per sex; a character in the old one look gets the new look of its sex.
   - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
     calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its
     base class, then `default`). See server/README.md "New players".

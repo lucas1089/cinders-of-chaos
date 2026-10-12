@@ -29,14 +29,14 @@
 -- in L.retired so the store never sells them), and a character wearing a replaced look of its class gets the new one
 -- at its next login.
 --
--- Pair 20 switch (L.PAIR20_LOOKS, OFF until things_custom20 is on windows-assets and the Windows package is rebuilt):
+-- Pair 20 switch (L.PAIR20_LOOKS, on since 2026-10-12, when things_custom20 went to windows-assets at 77b9cc9b):
 -- client pair things_custom20 = things_custom19 plus 2173-2184 (client/MANIFEST.md "Class looks pair 20"), six more
 -- class looks (L.pair20Looks): matched pairs for the Lich and the Inquisitor (one look for both sexes before) and the
 -- Necromancer (two unrelated outfits before), and new looks for the Thief, the Ninja and the Templar. Same rules as
--- pair 19: an older pair draws nothing for those ids, so they are sent only with the switch on; the replaced looks
--- stay owned as "<name> (old)" and retired; a character wearing a replaced look of its class gets the new one at its
--- next login (for a replaced one-look class, the new look of the character's sex). The two switches are independent
--- (L.applyPairs); the pair 20 classes are not pair 19 classes.
+-- pair 19: an older pair draws nothing for those ids, so they are sent only with the switch on (rollback:
+-- server/README.md "Class looks"); the replaced looks stay owned as "<name> (old)" and retired; a character wearing
+-- a replaced look of its class gets the new one at its next login (for a replaced one-look class, the new look of
+-- the character's sex). The two switches are independent (L.applyPairs); the pair 20 classes are not pair 19 classes.
 
 ChaosClassLooks = ChaosClassLooks or {}
 local L = ChaosClassLooks
@@ -87,7 +87,7 @@ L.pair19Looks = {
 
 -- the things_custom20 looks (client/tools/sprites/monster_looks/classlook_picks20.csv and the compose specs
 -- client/tools/sprites/compose/classlook_*.json): used only with L.PAIR20_LOOKS on. vocation id -> {male, female}
-L.PAIR20_LOOKS = false
+L.PAIR20_LOOKS = true
 L.pair20Looks = {
 	[21] = {male = 2173, female = 2174}, -- Lich: skeletal lord, skull cape, bone sceptre (donor D 219/220)
 	[11] = {male = 2175, female = 2176}, -- Thief: hooded rogue, twin daggers (donor D 521/522)
