@@ -124,6 +124,9 @@ server/
                                       their own instead of the dispatcher's (see "Account passwords", "Login rush")
   src-patches/0030-server-name.patch   engine: "Cinders of Chaos" and our version in the status protocol (server lists)
                                       and the console (see "Server name"; tools/patch_base_server_name.py for the data)
+  src-patches/0031-login-reads-prefetch.patch   engine: the login scripts' SELECTs run on the login worker's own
+                                      connection before the login; config loginPrefetch, on by default (see "Login reads
+                                      off the game loop"; tools/chaosprefetch_test.cpp)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     kitewalk.lua  kitewalk_core.lua (the client option "Keep attacking while moving", opcode 186, storage 7101820, see
@@ -3617,8 +3620,8 @@ should stay around 100-150 ms with no stall over 250 ms from these causes.
 - Logins run 85-110 synchronous queries on the game loop (30-120 ms a login: the Chaos systems' login reads). In the 100 s
   login wave of a load test the database stalled for seconds at a time (a 13.6 s task, 5.6 s of it waiting for the
   connection the async query thread held, on this test machine's disk); with 1 bot a second it stayed under 120 ms. The
-  account check moved to the login workers' own connection ("Login rush on a busy machine", engine patch 0029); moving
-  the Chaos systems' login reads off the game loop is a larger change of many systems.
+  account check moved to the login workers' own connection ("Login rush on a busy machine", engine patch 0029); the
+  login scripts' reads moved there too since engine patch 0031 ("Login reads off the game loop").
 - A logout saves the character in one transaction on the game loop; its COMMIT waits for the database's log flush. When
   100-200 bots left at once on this test machine (its disk shared with other test servers), single logouts took
   0.3-1.7 s with 0 ms of Lua and a few ms of timed queries; `perf` showed the game loop thread blocked in the database
@@ -3653,6 +3656,66 @@ included) that took 100 ms or more, one console line:
 
 Off, it costs one config read per task. On, about 1 us per Lua call (well under 1% of the game loop at 200 online). Use
 it on a test server, or on the live one for an hour when players report lag. The log does not change what runs.
+
+## Login reads off the game loop (`src-patches/0031-login-reads-prefetch.patch`, `tools/chaosprefetch_test.cpp`)
+
+The onLogin scripts of the Chaos systems (and a few base ones) read about 70 result sets per login with `db.storeQuery`
+on the game loop: one or two per system, by player id, account id or name. With 200 bots on the full map that was
+14-15 ms of database time in a login task of 37-39 ms (p50), more when the database is busy ("Game loop stalls", "Left
+as it is"). Engine patch 0031 runs them on the login worker instead. No script changed.
+
+**How.** After the password check the login worker (patch 0014, its own connection since 0029) looks up the character
+id and runs the SELECTs earlier logins ran, for this player. While the onLogin scripts run, `db.storeQuery` answers a
+statement with exactly the same text from those rows. Anything else goes to the database as before: a different text,
+a write, a query outside the onLogin scripts, a table written meanwhile, rows older than 5 s.
+- *Which SELECTs.* Learnt from the logins themselves: each SELECT an onLogin script runs is kept with the player id,
+  the account id and the quoted name taken out, and run for the next logins. One that no login runs again is dropped
+  (after 2 prefetches if one login ran it, 50 if more did); at most 512, 256 per login. The first login after a start
+  reads everything on the game loop.
+- *Only plain reads.* A SELECT of tables of this database, nothing that depends on when or where it runs: no time,
+  random, lock or connection function, no user variable, `FOR UPDATE`, `INTO`, comment, other schema or stored
+  function of the database. A read that has the current time in its text (`referral.lua` bans check) never matches
+  and stays on the game loop.
+- *Same rows as on the game loop.* Every connection (the game loop's, the async query thread's, the login workers')
+  counts its writes per table after they are committed (in a transaction at its COMMIT or ROLLBACK). A write also
+  counts for the tables its foreign keys (`ON DELETE` / `ON UPDATE CASCADE`, `SET NULL`) and triggers reach, read
+  from `information_schema` at start and again after every `CREATE` / `ALTER` / `DROP` / `RENAME` (scripts create
+  tables at startup). A statement that cannot be told apart (a multi-table `UPDATE` or `DELETE`, `CALL`, DDL) counts
+  for every table. The worker notes the counts of a read's tables before the read; the rows are used only if they are
+  unchanged when the script asks. A write the website makes during the login has no order against it, as before: the
+  early read is the same as a login a few milliseconds earlier.
+- *Off.* `loginPrefetch = false` in `config.lua` (read at start) reads everything on the game loop as before. The
+  console says which at start (`>> Login reads: ...`). The slow task log counts the answered reads (`db prefetched N`).
+
+**Measured** (the setup of "Game loop stalls": the full map, every install step, a private MariaDB, 200 bots of
+`tools/loadtest.py` near the second temple with account ids different from the character ids; 3 runs before and 3
+after, taken in turns, 90 s at 200 online; a temporary timer around the login task and the onLogin scripts, not in the
+repo).
+
+| | before | after |
+|---|---|---|
+| login task on the game loop: p50 | 39.0 / 36.9 / 37.1 ms | 20.5 / 21.9 / 23.3 ms |
+| p90, p99 | 56.6, 79.5 / 52.7, 69.7 / 52.4, 74.0 ms | 30.2, 50.1 / 33.1, 63.5 / 35.7, 64.5 ms |
+| mean | 42.1 / 39.2 / 39.7 ms | 23.2 / 24.9 / 25.7 ms |
+| onLogin scripts: queries to the database, their time (p50) | 70, 13.9-15.0 ms | 1, 0.2-0.3 ms (69 answered from the worker's rows) |
+| the bots' login time p50 (connect to in game) | 531 / 521 / 543 ms | 497 / 525 / 556 ms |
+| in game | 200 / 200 each run | 200 / 200 each run |
+
+So about 16 ms less game loop per login (3 s over a wave of 200 logins); the worker's extra reads do not show in the
+login time. The longest login task after (112 ms, once) was 74 ms of Lua with 0.6 ms of database (`hideout.lua`, a
+collector sweep). What stays on the game loop per login: the scripts' own work (about 17 ms p50: `rightclick_equip.lua`,
+`hideout.lua` and the others), their writes (`INSERT IGNORE` of new achievements, the daily account row, the skill
+history), the reads of a table written meanwhile, and the engine's own player load (`IOLoginData::loadPlayerById`, about
+17 queries, untouched).
+
+**Checked.** A TEST ONLY build compared every answered read with a live read of the same text: 0 differences in
+13,700 answers with 200 bots, on the build measured and on the final one. With a write to the player's `players` row
+injected between the early read and the login (half as a plain `UPDATE`, half inside a `DBTransaction`), every read of
+`players` went to the database and the rest were answered, 0 differences. With `loginPrefetch = false` all 70 reads went
+to the database.
+
+Tests: `tools/chaosprefetch_test.cpp` in CI (which reads are prefetched, what a write writes from its first tokens,
+templates, the cascade and trigger closure, the clock with transactions and autocommit, the template set).
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 
