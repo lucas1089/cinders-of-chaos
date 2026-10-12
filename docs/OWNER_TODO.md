@@ -26,6 +26,7 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 - [ ] **Domain.** The site address must be `https://...` (`CHAOS_SITE_URL`).
 - [ ] **Hosting with DDoS protection** for the game server, the website and the database.
+  - Researched options, prices and three setups (budget, recommended, premium): [HOSTING.md](HOSTING.md) (2026-10-12).
   - Required: the database (MariaDB) on a local NVMe or SSD of the game server's machine, not a network or shared
     disk (decided 2026-10-12; `innodb_flush_log_at_trx_commit` stays 1). Each autosave step's COMMIT waits for the
     disk flush on the game loop: a slow shared disk gave 0.3-0.8 s freezes. Steps: [LAUNCH.md](LAUNCH.md) section 2.
