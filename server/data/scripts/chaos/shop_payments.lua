@@ -10,11 +10,11 @@
 -- panel (Store > Donations: refunds).
 --
 -- client -> server, extended opcode ChaosOpcodes.shop (218, shared with shop.lua; each script ignores the other's actions)
---   pay_packs                      -> "pay_packs" {notice, noticePt, thanks, methods, packs, firstBonusPct, open?}
+--   pay_packs                      -> "pay_packs" {notice, noticePt, thanks, terms, termsPt, methods, packs, firstBonusPct, open?}
 --   pay_create {pack, method}      -> "pay_order" (the order view) or "pay_error" {msg, order?}
 --   pay_status {id}                -> "pay_order"
 --   pay_cancel {id}                -> "pay_order"
--- server -> client "pay_paid" {id, coins, name, text, textPt} (+ status) when an order of the account is credited;
+-- server -> client "pay_paid" {id, coins, name, text, textPt, terms, termsPt} (+ status) when an order of the account is credited;
 --   "pay_reversal" {id, coins, text} (+ status) when coins of a refunded / charged back donation were taken back.
 -- Tables: chaos_coin_orders (shop.lua) and chaos_coin_payments (one row per order of this flow, server/sql/chaos.sql).
 
@@ -143,7 +143,8 @@ local function packsView(player)
 			break
 		end
 	end
-	return {notice = P.NOTICE_EN, noticePt = P.NOTICE_PT, thanks = P.THANKS, methods = P.methods(coinsCfg), packs = packs,
+	local terms, termsPt = P.terms()
+	return {notice = P.NOTICE_EN, noticePt = P.NOTICE_PT, thanks = P.THANKS, terms = terms, termsPt = termsPt, methods = P.methods(coinsCfg), packs = packs,
 		firstBonusPct = (coinsCfg.firstPurchase or {}).bonusPct or 0, firstOpen = first, open = open}
 end
 
@@ -243,7 +244,9 @@ function Pay.onCredited(orderId, accountId, credit, pack)
 	for _, p in ipairs(Game.getPlayers()) do
 		if p:getAccountId() == accountId then
 			local en, pt = P.thanks(credit.total)
-			send(p, "pay_paid", {id = orderId, coins = credit.total, name = pack and (pack.name or pack.key) or "", text = en, textPt = pt}, true)
+			local terms, termsPt = P.terms("credited")
+			send(p, "pay_paid", {id = orderId, coins = credit.total, name = pack and (pack.name or pack.key) or "", text = en, textPt = pt,
+				terms = terms, termsPt = termsPt}, true)
 		end
 	end
 end

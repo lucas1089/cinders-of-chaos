@@ -27,6 +27,13 @@ local function stopTimers()
   if payTickEvent then removeEvent(payTickEvent); payTickEvent = nil end
 end
 
+-- the refund sentence under the notice: "before" while picking or paying, "after" once paid or credited
+local function setTerms(status)
+  local en, pt = PayView.terms(status)
+  payWindow.termsNote:setText(en)
+  payWindow.termsNotePt:setText(pt)
+end
+
 local function createPay()
   if payWindow then return end
   payWindow = g_ui.displayUI('pay')
@@ -34,6 +41,7 @@ local function createPay()
   payWindow.notice:setText(PayView.NOTICE_EN)
   payWindow.noticePt:setText(PayView.NOTICE_PT)
   payWindow.thanksNote:setText(PayView.THANKS_NOTE)
+  setTerms()
 end
 
 function showPay()
@@ -64,6 +72,7 @@ function showPayPacks()
   if not payWindow then return end
   stopTimers()
   payWindow.orderPage:hide()
+  setTerms()
   payWindow.packsPage:show()
   renderPacks()
   if not payData then sendPay('pay_packs') end
@@ -176,6 +185,7 @@ function showPayOrder(view)
   if view.status == 'credited' then en, pt = PayView.thanks(view.coins) end
   page.orderStatus:setText(en)
   page.orderStatusPt:setText(pt)
+  setTerms(view.status)
   local qrText = view.status == 'open' and PayView.qrText(view) or nil
   drawQr(qrText)
   page.qrBox:setVisible(qrText ~= nil)

@@ -1,7 +1,8 @@
 -- payview.lua: pure logic of the donation window (pay.lua): texts, countdown, the QR layout, what an order view means.
 -- No client API here; tested by payview_test.lua (luajit / lua5.3 from the repo root).
 -- Text in this file is ASCII: the Portuguese accents are cp1252 byte escapes (the client draws cp1252; patch 0028
--- converts only server text). The server sends the same notice (shop_payments_core.lua); the test checks they match.
+-- converts only server text). The server sends the same notice and refund sentences (shop_payments_core.lua); the
+-- test checks they match.
 
 PayView = {}
 local V = PayView
@@ -10,6 +11,22 @@ local V = PayView
 V.NOTICE_PT = "Doa\231\227o volunt\225ria: ajuda a manter o servidor. Ningu\233m \233 obrigado a doar; o jogo \233 totalmente jog\225vel de gra\231a."
 V.NOTICE_EN = "Voluntary donation: it helps keep the server running. Nobody is required to donate; the game is fully playable for free."
 V.THANKS_NOTE = "Chaos Coins are our thank-you for your donation."
+-- the refund sentences of the website's donation page, before and after the donation
+V.BEFORE_EN = "A donation gives no right to a refund, except where the law requires one. It is not the purchase of a product: Chaos Coins are a thank-you and have no real-world value."
+-- "A doação não dá direito a reembolso, exceto quando a lei exigir. Ela não é a compra de um produto: as Chaos Coins são um agradecimento e não têm valor no mundo real."
+V.BEFORE_PT = "A doa\231\227o n\227o d\225 direito a reembolso, exceto quando a lei exigir. Ela n\227o \233 a compra de um produto: as Chaos Coins s\227o um agradecimento e n\227o t\234m valor no mundo real."
+V.AFTER_EN = "This was a voluntary donation, not a purchase. It gives no right to a refund, except where the law requires one."
+-- "Esta foi uma doação voluntária, não uma compra. Ela não dá direito a reembolso, exceto quando a lei exigir."
+V.AFTER_PT = "Esta foi uma doa\231\227o volunt\225ria, n\227o uma compra. Ela n\227o d\225 direito a reembolso, exceto quando a lei exigir."
+V.TERMS_URL = "page.php?plugin=chaos&p=legal&doc=donations"
+V.TERMS_EN = "Donation Terms on the website: " .. V.TERMS_URL
+V.TERMS_PT = "Termos de Doa\231\227o no site: " .. V.TERMS_URL
+
+-- the refund sentence and where the Donation Terms are; the "after" sentence once the order is paid or credited
+function V.terms(status)
+  local after = status == "paid" or status == "credited"
+  return (after and V.AFTER_EN or V.BEFORE_EN) .. " " .. V.TERMS_EN, (after and V.AFTER_PT or V.BEFORE_PT) .. " " .. V.TERMS_PT
+end
 
 function V.thanks(coins)
   coins = tonumber(coins) or 0

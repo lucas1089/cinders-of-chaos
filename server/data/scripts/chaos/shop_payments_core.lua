@@ -2,6 +2,7 @@
 -- tests/shop_payments_test.lua. The engine side is shop_payments.lua, the payment side the website's pay/ folder.
 --
 --   P.NOTICE_EN / P.NOTICE_PT                the voluntary donation notice shown before a pack is picked
+--   P.terms(status)                          the refund sentence (before / after payment) and where the Donation Terms are
 --   P.methods(coinsCfg)                      enabled methods {key, label, currency} in display order
 --   P.priceCents(pack, method, coinsCfg)     integer cents in the method's currency (usdCents, x brlPerUsd for Pix)
 --   P.money(cents, currency)                 "R$ 24,95" / "US$ 4.99"
@@ -18,6 +19,20 @@ local P = ChaosPayCore
 P.NOTICE_EN = "Voluntary donation: it helps keep the server running. Nobody is required to donate; the game is fully playable for free."
 P.NOTICE_PT = "Doação voluntária: ajuda a manter o servidor. Ninguém é obrigado a doar; o jogo é totalmente jogável de graça."
 P.THANKS = "Chaos Coins are our thank-you for your donation."
+-- the website's donation page says the same (legal_lib.php CHAOS_LEGAL_DONATION_*; the test checks they match)
+P.BEFORE_EN = "A donation gives no right to a refund, except where the law requires one. It is not the purchase of a product: Chaos Coins are a thank-you and have no real-world value."
+P.BEFORE_PT = "A doação não dá direito a reembolso, exceto quando a lei exigir. Ela não é a compra de um produto: as Chaos Coins são um agradecimento e não têm valor no mundo real."
+P.AFTER_EN = "This was a voluntary donation, not a purchase. It gives no right to a refund, except where the law requires one."
+P.AFTER_PT = "Esta foi uma doação voluntária, não uma compra. Ela não dá direito a reembolso, exceto quando a lei exigir."
+P.TERMS_URL = "page.php?plugin=chaos&p=legal&doc=donations"
+P.TERMS_EN = "Donation Terms on the website: " .. P.TERMS_URL
+P.TERMS_PT = "Termos de Doação no site: " .. P.TERMS_URL
+
+-- the refund sentence and where the Donation Terms are; the "after" sentence once the order is paid or credited
+function P.terms(status)
+	local after = status == "paid" or status == "credited"
+	return (after and P.AFTER_EN or P.BEFORE_EN) .. " " .. P.TERMS_EN, (after and P.AFTER_PT or P.BEFORE_PT) .. " " .. P.TERMS_PT
+end
 
 -- after the donation (toast, payment window, in-game message, website return page)
 function P.thanks(coins)

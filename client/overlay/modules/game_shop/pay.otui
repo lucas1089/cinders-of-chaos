@@ -80,7 +80,7 @@ PayToast < UIWidget
 MainWindow
   id: payWindow
   !text: tr('Donate - Chaos Coins')
-  size: 580 500
+  size: 580 560
   @onEscape: modules.game_shop.hidePay()
 
   Label
@@ -115,9 +115,31 @@ MainWindow
     color: #b0b0b0
     font: verdana-11px-rounded
 
+  Label
+    id: termsNote
+    anchors.top: thanksNote.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-wrap: true
+    text-auto-resize: true
+    color: #b0b0b0
+    font: verdana-11px-rounded
+
+  Label
+    id: termsNotePt
+    anchors.top: termsNote.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-wrap: true
+    text-auto-resize: true
+    color: #b0b0b0
+    font: verdana-11px-rounded
+
   HorizontalSeparator
     id: sep
-    anchors.top: thanksNote.bottom
+    anchors.top: termsNotePt.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 6

@@ -88,7 +88,10 @@ What the code does was read for these texts. These points are not settled by the
     `chaos_legal_acceptance`. Ask them to accept at launch (not built) or rely on the notice of the change.
 14. **Account deletion.** There is no self-service deletion. Requests go by e-mail and staff delete by hand. Write the
     steps for staff (which tables to clear, which records to keep).
-15. **The game client.** Store > Donate in the client shows the voluntary notice, but not yet the refund sentence or a
-    link to the Donation Terms. Add them there too.
+15. **The game client.** Store > Donate in the client shows the voluntary notice and the website's refund sentence
+    (no refund except where the law requires one, not the purchase of a product, coins without real-world value);
+    once the order is paid or credited, the "voluntary donation, not a purchase" sentence instead. The in-game message
+    after crediting carries that one too. Both name where the Donation Terms are, as text and not a link: the website
+    page `page.php?plugin=chaos&p=legal&doc=donations`. Check that this is enough in the client.
 16. **Discord webhooks.** The reports webhook sends character names to Discord (`CHAOS_REPORTS_WEBHOOK`); the health
     alerts may carry log lines. The policy mentions the reports notices.

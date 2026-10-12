@@ -1022,8 +1022,9 @@ function Shop.processOrders()
 				for _, p in ipairs(Game.getPlayers()) do
 					if p:getAccountId() == r.account_id then
 						-- coin packs are donations (shop_payments_core.lua ChaosPayCore.thanks)
-						p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you (%s%s).",
-							credit.total, pack.name or pack.key, credit.firstBonus > 0 and ", first donation bonus included" or ""))
+						p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you (%s%s).%s",
+							credit.total, pack.name or pack.key, credit.firstBonus > 0 and ", first donation bonus included" or "",
+							ChaosPayCore and " " .. (ChaosPayCore.terms("credited")) or ""))
 						break
 					end
 				end

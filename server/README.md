@@ -2142,14 +2142,19 @@ PayPal `usdCents` in USD (`ChaosPayCore.priceCents`; the website derives them th
 marks a row of `chaos_coin_orders` `paid` (the donation flow below, the website hook `chaos_coin_order_paid` or the
 admin action); `shop.lua` re-reads the row locked (`FOR UPDATE`: a refund that came meanwhile is not credited), credits
 it in one transaction (coins + bonus + first-purchase bonus), rejects unknown packs and a second starter, and thanks
-the account's online character ("Thank you for your voluntary donation! ...").
+the account's online character ("Thank you for your voluntary donation! ...", then the "voluntary donation, not a
+purchase" refund sentence and where the Donation Terms are).
 
 **Donations: Pix and PayPal** (`shop_payments.lua`, rules in `shop_payments_core.lua`, numbers in `shop_coins_config.lua`
 `payments`; website/README.md "Donations"). The client's Store has a Donate button: a window with the voluntary donation
-notice (English and Portuguese), the method (Pix (BRL) / PayPal (USD)) and the packs with their price and a Donate
+notice (English and Portuguese), the refund sentence of the website's donation page with where the Donation Terms
+are (`ChaosPayCore.terms`: "A donation gives no right to a refund..." before the donation, "This was a voluntary
+donation, not a purchase..." once paid or credited, then "Donation Terms on the website:
+page.php?plugin=chaos&p=legal&doc=donations"; the same strings as website legal_lib.php and the client's
+payview.lua), the method (Pix (BRL) / PayPal (USD)) and the packs with their price and a Donate
 button. JSON actions on opcode 218 (the store's own; `shop.lua` ignores them): `pay_packs`, `pay_create {pack, method}`,
-`pay_status {id}`, `pay_cancel {id}`; the server answers `pay_packs`, `pay_order` (the order view: status, price text,
-coins, Pix code as hex, PayPal link, seconds left), `pay_error`, and pushes `pay_paid` (the thank-you, with the balance)
+`pay_status {id}`, `pay_cancel {id}`; the server answers `pay_packs` (with the notice and the refund sentence), `pay_order` (the order view: status, price text,
+coins, Pix code as hex, PayPal link, seconds left), `pay_error`, and pushes `pay_paid` (the thank-you and the after-payment refund sentence, with the balance)
 and `pay_reversal`. The client never sends a price: `pay_create` writes a `pending` order with the amount from the
 config into `chaos_coin_orders` + `chaos_coin_payments`. Limits: one open order per account (asking again for the same
 pack and method shows it again), `maxPerHour` (6) started per hour, the starter once, `ChaosRateLimit` on every action.
@@ -2161,7 +2166,8 @@ refunded share of the credited coins is taken back, at most the balance, when `r
 listed in the admin panel) and fails orders that got no charge in 10 minutes (worker not running).
 Table `chaos_coin_payments` (`sql/chaos.sql`, also created at startup): one row per donation order (method, token,
 amount in cents, currency, provider ids, Pix code / link, expiry, reversal). **Tests:** `tests/shop_payments_test.lua`
-(prices derived from the USD table, money texts, the notice and thank-you texts, limits, reuse, starter, views, reversal
+(prices derived from the USD table, money texts, the notice and thank-you texts, the refund sentences equal to
+legal_lib.php's, limits, reuse, starter, views, reversal
 amounts; the engine file on a mocked database: packs, create, reuse, refusal, cancel by the owner only, the thank-you
 push, a refund and a chargeback after crediting), `shop_test.lua` (a refund between the crediting step's read and its
 locked re-read credits nothing). **Tested in game** (own server and database copy, mock providers, Linux client):

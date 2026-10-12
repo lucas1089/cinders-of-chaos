@@ -1,6 +1,7 @@
 -- luajit payview_test.lua && lua5.3 payview_test.lua (from the repo root or this folder)
 -- The donation window's logic: the voluntary donation notice (English and Portuguese, the same text the server sends,
--- in cp1252), the thank-you after the donation, "Donate" on the buttons, countdown, the Pix code from hex, the QR layout.
+-- in cp1252), the refund sentence before and after the donation with where the Donation Terms are (also the server's),
+-- the thank-you after the donation, "Donate" on the buttons, countdown, the Pix code from hex, the QR layout.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'payview.lua')
 local fails = 0
@@ -32,12 +33,28 @@ if f then
   local en, pt = ChaosPayCore.thanks(825)
   local cen, cpt = V.thanks(825)
   eq(cen, en, 'thanks = server'); eq(cpt, toCp1252(pt), 'thanks pt = server in cp1252')
+  for _, status in ipairs({ 'open', 'paid', 'credited' }) do
+    local sen, spt = ChaosPayCore.terms(status)
+    local ten, tpt = V.terms(status)
+    eq(ten, sen, 'terms = server ' .. status); eq(tpt, toCp1252(spt), 'terms pt = server in cp1252 ' .. status)
+  end
 else
   print('note: server folder not found, notice compared to the server skipped')
 end
-for _, s in ipairs({ V.NOTICE_PT, V.NOTICE_EN, (select(2, V.thanks(1))) }) do
+for _, s in ipairs({ V.NOTICE_PT, V.NOTICE_EN, (select(2, V.thanks(1))), select(2, V.terms()), select(2, V.terms('credited')) }) do
   ok(not s:find('[\128-\159]'), 'only Latin-1 letters (cp1252 safe): ' .. s)
 end
+
+-- the refund sentence: before while picking or paying, after once paid or credited; both say where the terms are
+local ben, bpt = V.terms()
+eq(ben, V.BEFORE_EN .. ' Donation Terms on the website: page.php?plugin=chaos&p=legal&doc=donations', 'terms before')
+ok(ben:find('no right to a refund', 1, true) and bpt:find('reembolso', 1, true), 'refund sentence before')
+eq(bpt, V.BEFORE_PT .. ' Termos de Doa\231\227o no site: page.php?plugin=chaos&p=legal&doc=donations', 'terms before pt')
+eq(V.terms('open'), ben, 'open order: before')
+local aen, apt = V.terms('credited')
+ok(aen:find('^This was a voluntary donation, not a purchase%.') and aen:find('doc=donations$'), 'terms after')
+ok(apt:find('^Esta foi uma doa\231\227o volunt\225ria, n\227o uma compra%.') and apt:find('doc=donations$'), 'terms after pt')
+eq(V.terms('paid'), aen, 'paid: after')
 
 -- after the donation
 local en, pt = V.toast({ coins = 975 })

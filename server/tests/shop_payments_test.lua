@@ -1,6 +1,8 @@
 -- Run from the server/ folder: luajit tests/shop_payments_test.lua (and lua5.3; CI runs both)
 -- Donations (Pix / PayPal): shop_payments_core.lua rules (prices derived from one USD table, money texts, limits,
--- reuse of an open order, starter once, views, the donation notice and thanks, coins taken back after a refund) and
+-- reuse of an open order, starter once, views, the donation notice and thanks, the refund sentences before and after
+-- the donation (the same as the website's legal_lib.php) with where the Donation Terms are, coins taken back after a
+-- refund) and
 -- shop_payments.lua against a mocked engine and database (pay_packs, pay_create, reuse, refusal, cancel, the thank-you
 -- after crediting, a refund after crediting with and without unspent coins).
 local function eq(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
@@ -39,6 +41,23 @@ ok(P.NOTICE_PT:find("Doação voluntária", 1, true) and P.NOTICE_PT:find("Ningu
 local en, pt = P.thanks(975)
 eq(en, "Thank you for your voluntary donation! You received 975 Chaos Coins as a thank-you.", "thanks en")
 eq(pt, "Obrigado pela sua doação voluntária! Você recebeu 975 Chaos Coins como agradecimento.", "thanks pt")
+local f = io.open("../website/overlay/plugins/chaos/legal_lib.php", "rb")
+if f then
+	local php = f:read("*a"); f:close()
+	for key, s in pairs({BEFORE_EN = P.BEFORE_EN, BEFORE_PT = P.BEFORE_PT, AFTER_EN = P.AFTER_EN, AFTER_PT = P.AFTER_PT}) do
+		eq(php:match("define%('CHAOS_LEGAL_DONATION_" .. key .. "', '([^']*)'%)"), s, key .. " = website")
+	end
+else
+	print("note: website folder not found, refund sentences compared to the website skipped")
+end
+en, pt = P.terms()
+eq(en, P.BEFORE_EN .. " Donation Terms on the website: page.php?plugin=chaos&p=legal&doc=donations", "terms before en")
+eq(pt, P.BEFORE_PT .. " Termos de Doação no site: page.php?plugin=chaos&p=legal&doc=donations", "terms before pt")
+eq(P.terms("open"), en, "an open order is before the donation")
+en, pt = P.terms("credited")
+ok(en:find("^This was a voluntary donation, not a purchase%.") and en:find("doc=donations$"), "terms after en")
+ok(pt:find("^Esta foi uma doação voluntária, não uma compra%.") and pt:find("doc=donations$"), "terms after pt")
+eq(P.terms("paid"), en, "paid is after the donation")
 
 -- ------------------------------------------------------------------ decide
 local now = 1800000000
@@ -228,6 +247,7 @@ eq(ask("buy", {}), nil, "the store's own actions are not answered here")
 
 local r = ask("pay_packs")
 eq(r.action, "pay_packs", "packs answer"); eq(r.data.notice, P.NOTICE_EN, "notice sent"); eq(r.data.noticePt, P.NOTICE_PT, "notice pt sent")
+eq(r.data.terms, (P.terms()), "refund sentence sent"); eq(r.data.termsPt, select(2, P.terms()), "refund sentence pt sent")
 eq(#r.data.packs, 5, "five packs"); eq(r.data.packs[2].prices.pix.text, "R$ 74,95", "Pix price text")
 eq(r.data.packs[2].prices.paypal.cents, 1499, "PayPal price"); eq(r.data.packs[2].total, 975, "first donation bonus in the preview")
 eq(r.data.packs[2].prices.card, nil, "no third method"); ok(r.status, "balance sent")
@@ -264,6 +284,7 @@ sent = {}
 ChaosShopPay.onCredited(2, 77, {total = 5800}, packs.coins4000)
 eq(sent[1].action, "pay_paid", "thank-you push"); eq(sent[1].data.coins, 5800, "coins in the push")
 eq(sent[1].data.text, "Thank you for your voluntary donation! You received 5800 Chaos Coins as a thank-you.", "push thanks")
+eq(sent[1].data.terms, (P.terms("credited")), "push receipt note"); eq(sent[1].data.termsPt, select(2, P.terms("credited")), "push receipt note pt")
 ok(sent[1].status, "balance with the push")
 DB.orders[#DB.orders + 1] = {id = 3, account_id = 77, pack_key = "coins250", provider = "pix", provider_ref = "x", status = "pending", created = now - 700}
 ChaosShopPay.poll(); eq(DB.orders[3].status, "failed", "stale pending order failed")
