@@ -400,6 +400,7 @@ working directory, as with the rest of the base server libs).
 | game_raid | `raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql` (buff source in `data/lib/chaos_buffs.lua`), monsters `monsters/chaos/raid/` | **213**, Adventure > Raid: Ashen Sepulchre, the portal next to the temple | The Ashen Sepulchre: a weekly raid for 5-15 players, five bosses with coordinated mechanics (tank swap, cleaves, soak circles, adds, spread, effigies, a hex to cleanse) behind trash in a runtime-built zone; personal loot once a week per boss and character, saved raids continued later the same week, Sepulchre Marks for a seeded weekly vendor, raid uniques, a guild trophy, a weekly fastest-clear board; window (lockouts, journal, vendor), HUD and call-outs (see "The Ashen Sepulchre, the weekly raid"). Unit and mocked-engine tests; tested alone on a live test server. |
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
+| game_deathrecap | `deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql` (one hook in `combatlog.lua`) | **154**, Hunt > Death Recap | Death recap: after a death (or a mode defeat) every attacker of the last 20 s with its look, damage, share, health / mana part and element split, the killing blow, the last hits, the experience and levels lost; the last 5 deaths per character; ghost staff hidden (see "Death recap"). Unit and mocked-engine tests; tested on a live test server with two clients. |
 | game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
 | game_charms | `charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py` (hooks in `item_mods.lua`, `loot.lua`, `rift.lua`, `bounty.lua`, `invasion.lua`, `dungeons.lua`, `descent.lua`, `factions.lua`, `market.lua`) | **198**, Character > Charms | Charms: a 5x4 grid of small charms with minor bonuses (see "Charms"); tested on a live test server with one client. |
 | game_professions | `professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, NPC `data/npc/Material Broker.xml` (buff source in `data/lib/chaos_buffs.lua`) | **195**, Economy > Professions, the Material Broker next to every temple | Four gathering professions (Delving, Wortcunning, Flaying, Angling) with levels 1-100, materials sold to the Material Broker (weekly demand, daily diminishing price and cap) and a passive experience bonus (+10% at the most); no gear, no orbs (see "Professions"). Unit and mocked-engine tests; tested on a live test server with one client. |
@@ -428,6 +429,8 @@ collision check") and be added here.
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
 | 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua` | `game_mapmarkers` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked` |
+| 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
+| 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
@@ -7113,6 +7116,83 @@ fist attacks. A spell on a fire-immune Dragon Lord counted nothing, as it dealt 
 in Healing and Received. Taken by Dragon / Pyrevorn / Environment (fire fields). Party mode showed both members. The
 Combat Log window, the dropdown, To chat (the line in the chat input) and the Hunt Tracker's Meter button were checked.
 Not in game: summons, support, keystone and item-power procs, pets, and a season realm split in a party.
+
+## Death recap (`deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql`, client `game_deathrecap`)
+
+Client `game_deathrecap`, extended opcode 154 (`ChaosOpcodes.deathRecap`), Hunt > Death Recap (added with
+`ChaosTopBar.addEntry`). Settings: `deathrecap_config.lua` (`Chaos.deathRecapConfig`). Table `chaos_death_recaps`
+(`Chaos.tables.deathRecaps`), created at startup when missing and in `sql/chaos_death_recaps.sql`. No player storages:
+the block 7101830 - 7101839 offered for it stays free. The pure logic is `deathrecap_core.lua`, tested by
+`tests/deathrecap_test.lua`.
+
+**What it shows.** After a death the window opens by itself. It names the killer and the killing blow (attacker,
+amount, element, critical). It lists every attacker of the last seconds with its look (`UICreature`), total damage,
+share, health and mana part, hits, crit rate, max hit and the split by element. A bar shows the elements of all damage
+taken. Under it are the time window, the number of hits and the last 6 hits. The header has the time, the level, the
+mode (instance label) and PvP. It also shows the experience and levels lost. The left column lists the character's last
+5 deaths; a click opens one. "Open after a death" (g_settings node `chaosDeathRecap`) turns the auto-open off.
+
+**Where the hits come from.** No second damage hook: `combatlog.lua` calls `ChaosCombatLog.takenHook` for every hit a
+character takes, with the same attribution as the meter's Taken tab. The hook gets the part a mana shield took
+(`mana = true`) and mana drain (`"manadrain"`, which the meter itself does not count). The recap keeps a rolling log per
+online character: a ring of `maxHits` (60) hits, and only hits within `windowMs` (20 s) of the death are shown. The log
+is dropped at death, at a mode defeat, at login and at logout. With the combat log off (`combatlog_config.lua`
+`enabled = false`) the log stays empty and a recap only names the killer.
+
+**When a recap is made.**
+- **A death** (`onDeath` of the character): rifts, dungeons, the tower, PvP, Hardcore season characters and every other
+  real death. The recap is stored at once (`seen = 0`). The engine takes the experience after `onDeath`, so at the next
+  login (`loginDelayMs`, 1.5 s after it) the experience and levels lost are filled in from the character as it logs in,
+  the row is marked seen and the client opens it. A row older than `autoOpenMaxAgeSeconds` (7 days) is only listed.
+- **A mode defeat.** The arena, the battleground, the Marches, the raid, the Ember Descent, the guild boss, Ascended
+  Omens, trials and the Trial of Ascension cancel the lethal hit in their `onPrepareDeath`. The recap's own
+  `onPrepareDeath` runs before theirs and never cancels. It notes the hit when the character stands in a
+  `Chaos.registerInstance` instance. `defeatCheckMs` (100 ms) later, a character still alive gets the recap at once: the
+  instance's label is the mode, nothing is lost, and the row is stored as seen. A cancelled hit outside every instance
+  (the Hardcore protection) is no death.
+- `hideModes` lists instance keys whose deaths and defeats get no recap on purpose. It is empty: every mode shows it.
+- **Order of the prepare-death events.** The engine runs login events by name, so `ChaosDeathRecapLogin` registers the
+  recap's prepare event before the Marches' (`ChaosMarchesLogin`). The other modes register theirs when a run starts.
+
+**Killing blow.** The last health hit of the log (a mana shield hit cannot kill). When the engine's killer is another
+attacker, or that hit is more than `killerGapMs` (1.5 s) before the death, the killer is named without an amount. That
+happens when the lethal hit ran no health event (a script's `doTargetCombatHealth` with `ORIGIN_NONE`).
+
+**Privacy.** Names are the ones the victim saw. A staff character in ghost mode the victim could not see
+(`canSeeCreature`) is `hiddenName` ("Unseen attacker"), also as the master of a summon. Its look is not sent and it does
+not mark the death as PvP. A character only reads its own rows (`player_id` = its guid in every query).
+
+**Bounds.** Names are cut to `nameMax` (40). At most `maxAttackers` (8) rows; the rest are summed into "Others". One
+recap is cut to `maxRecapBytes` (5000) of JSON: rows from the bottom into "Others", then the timeline. The history
+message (5 summaries and the newest recap) stays under 8192 bytes and still goes through `Chaos.sendChunked`. Five rows
+per character (`keep`); the older ones are deleted after each insert. Requests are rate limited (`rateLimitMs`, 300 ms).
+
+**Protocol** (JSON `{action, data}`). Client -> server: `open {id?}`, `get {id}`. Server -> client: `history {list, sel,
+recap}` and `recap {id, recap, auto}` (`auto`: open by itself). A summary: `{id, at, k (killer), kind, lvl, xl, ll, mode,
+pvp, tot, real}`. A recap: `{v, at, real (1 death, 0 defeat), mode, mk, lvl, exp, xl, ll, kb = {n, kind, m, el, a, c, mp},
+dur, win, tot, hp, mp, el, pvp, nh, att = [{n, kind, m, look, tot, hp, mp, h, c, x, el}], last = [{dt, n, el, a, c, mp}]}`.
+Kinds: `c` monster, `u` player, `s` the character itself, `e` environment, `h` hidden, `o` others.
+
+**Edits to shared files.** `chaos_constants.lua` (`ChaosOpcodes.deathRecap = 154`, `Chaos.tables.deathRecaps`).
+`combatlog.lua`: three hunks (`dealt` passes the mana flag and calls `CL.takenHook`; the mana event passes `true` and
+feeds mana drain to the hook).
+
+**Tests.** `tests/deathrecap_test.lua` (LuaJIT and Lua 5.3, 328 checks): the opcode collision check (reference server,
+base client `ExtendedIds`, every `ChaosOpcodes`, no client module on 154), the ring (order, count, age, a lowered cap),
+looks, the recap math (totals, health and mana, elements, killing blow, engine killer after a gap, window, timeline,
+"Others", PvP with a player or a player's summon), the payload bound with a real JSON encoder, the experience lost, the
+history of 5, the SQL. Against a mocked engine: the hook, a death, the row, the login that fills the loss and opens it,
+an arena defeat, a real death in an instance, a cancelled hit outside one, a hidden mode, 5 rows kept per character, the
+window's `open` / `get`, another character's id refused, bad input. Client: `game_deathrecap/deathrecaplogic_test.lua`.
+
+**Tested in game** (test server copy on the cropped map, two Linux clients, the engine without patches 0028-0030). A
+death to rats on the tutorial island; at the next login the window opened with 44.7M experience and 5 levels lost. A
+death to a Dragon, a player (Velka Dusk) and her War Wolf with a mana drain: three rows with their looks, health 1.95k
+and mana 150, Fire / Physical / Energy / Mana drain, PvP, the killing blow 980 fire. A defeat in a test instance that
+cancels the death like the arena: the window opened at once ("Defeated by", the mode, nothing lost). The same with the
+attacker in ghost mode: "Unseen attacker", no name in the row. The history list (older recaps opened), the Hunt menu
+entry, "Open after a death" off (no window), 5 rows kept. Not in game: the real arena, battleground and other modes,
+Hardcore, a mana shield.
 
 ## Loot filter, loot channel and loot rays (`lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua`, client `game_lootfilter`)
 

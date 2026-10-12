@@ -767,6 +767,12 @@ ChaosOpcodes.partyFinder = 208
 -- it (client game_levelwings; levelwings.lua, levelwings_core.lua, levelwings_config.lua); no storages, no tables
 ChaosOpcodes.levelWings = 191
 
+-- Death recap: who killed the character, with what and how fast; the last 5 deaths per character (client
+-- game_deathrecap; deathrecap.lua, deathrecap_core.lua, deathrecap_config.lua, sql/chaos_death_recaps.sql; fed by the
+-- combat log's damage-taken hook in combatlog.lua). No player storages.
+ChaosOpcodes.deathRecap = 154
+Chaos.tables.deathRecaps = "chaos_death_recaps"
+
 -- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
 -- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,
 -- Bloodrage) and beastmaster.lua (the companion), the spells in data/spells/chaos/<class>/.

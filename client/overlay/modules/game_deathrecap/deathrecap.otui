@@ -1,0 +1,331 @@
+// Death recap (client game_deathrecap; server deathrecap.lua, extended opcode 154). Styles from client_chaos_theme.
+// Left: the last 5 deaths of the character; right: the selected one (who, when, what was lost, the attackers with
+// their look, damage, share and element split, the killing blow and the last hits).
+
+DeathHistoryButton < ChaosTabButton
+  height: 38
+  margin-bottom: 3
+  text-align: left
+  text-offset: 6 0
+  padding: 0
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 4 6 0 6
+    height: 13
+    font: Verdana-9px-antialiased
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: killer
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 1 6 0 6
+    height: 13
+    font: verdana-11px-antialised
+    color: #f2e8d0
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin: 4 6 0 0
+    text-auto-resize: true
+    font: Verdana-9px-antialiased
+    color: #e03a1e
+    phantom: true
+
+DeathAttackerRow < UIWidget
+  height: 44
+  margin-bottom: 2
+  background-color: #1a151a
+  phantom: false
+
+  $hover:
+    background-color: #2a2128
+
+  UICreature
+    id: creature
+    size: 36 36
+    fixed-creature-size: true
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 3
+    phantom: true
+
+  UIWidget
+    id: kindIcon
+    size: 36 36
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 3
+    image-smooth: true
+    phantom: true
+    visible: false
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: creature.right
+    anchors.right: value.left
+    margin-top: 4
+    margin-left: 6
+    margin-right: 6
+    height: 14
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f2e8d0
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 4
+    margin-right: 6
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UIWidget
+    id: bar
+    anchors.top: name.bottom
+    anchors.left: creature.right
+    anchors.right: parent.right
+    margin-top: 3
+    margin-left: 6
+    margin-right: 6
+    height: 6
+    background-color: #0d0b0e
+    phantom: true
+
+  UILabel
+    id: info
+    anchors.top: bar.bottom
+    anchors.left: creature.right
+    anchors.right: parent.right
+    margin-top: 2
+    margin-left: 6
+    margin-right: 6
+    height: 12
+    text-align: left
+    font: Verdana-9px-antialiased
+    color: #8c8070
+    phantom: true
+
+DeathBarSegment < UIWidget
+  anchors.top: parent.top
+  anchors.bottom: parent.bottom
+  phantom: true
+
+DeathTimelineLine < UILabel
+  height: 13
+  text-align: left
+  font: Verdana-9px-antialiased
+  color: #d6c9ae
+  phantom: true
+
+ChaosMainWindow
+  id: deathRecapWindow
+  size: 680 520
+  !text: tr('Death Recap')
+  @onEscape: modules.game_deathrecap.hide()
+
+  ChaosLabel
+    id: historyTitle
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 170
+    height: 16
+    color: #e8b84a
+    !text: tr('Last deaths')
+
+  ChaosPanelDark
+    id: historyFrame
+    anchors.top: historyTitle.bottom
+    anchors.left: parent.left
+    anchors.bottom: autoOpen.top
+    width: 170
+    margin-top: 4
+    margin-bottom: 8
+
+  UIWidget
+    id: historyList
+    anchors.top: historyFrame.top
+    anchors.left: historyFrame.left
+    anchors.right: historyFrame.right
+    anchors.bottom: historyFrame.bottom
+    margin: 5
+    layout:
+      type: verticalBox
+
+  ChaosLabelDim
+    id: historyEmpty
+    anchors.centerIn: historyFrame
+    text-auto-resize: true
+    !text: tr('No deaths yet.')
+    visible: false
+
+  ChaosPanelHighlight
+    id: headPanel
+    anchors.top: parent.top
+    anchors.left: historyFrame.right
+    anchors.right: parent.right
+    margin-left: 10
+    height: 74
+
+    ChaosLabel
+      id: title
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: -3
+      height: 16
+      font: verdana-11px-rounded
+      color: #e03a1e
+      text-align: left
+
+    ChaosLabelDim
+      id: sub
+      anchors.top: title.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      text-align: left
+
+    ChaosLabel
+      id: loss
+      anchors.top: sub.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      color: #f6cf72
+      text-align: left
+
+    ChaosLabel
+      id: blow
+      anchors.top: loss.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      text-align: left
+
+  ChaosLabel
+    id: window
+    anchors.top: headPanel.bottom
+    anchors.left: headPanel.left
+    anchors.right: headPanel.right
+    margin-top: 6
+    height: 14
+    text-align: left
+    color: #8c8070
+
+  ChaosLabel
+    id: totals
+    anchors.top: window.bottom
+    anchors.left: headPanel.left
+    anchors.right: headPanel.right
+    height: 14
+    text-align: left
+    color: #e8b84a
+
+  UIWidget
+    id: elementBar
+    anchors.top: totals.bottom
+    anchors.left: headPanel.left
+    anchors.right: headPanel.right
+    margin-top: 3
+    height: 8
+    background-color: #0d0b0e
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: elementBar.bottom
+    anchors.left: headPanel.left
+    anchors.right: headPanel.right
+    anchors.bottom: timelineFrame.top
+    margin-top: 6
+    margin-bottom: 6
+
+  UIScrollArea
+    id: rowList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 46
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    visible: false
+
+  ChaosPanelDark
+    id: timelineFrame
+    anchors.left: headPanel.left
+    anchors.right: headPanel.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    height: 100
+
+    ChaosLabel
+      id: timelineTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      color: #e8b84a
+      text-align: left
+      !text: tr('Final hits')
+
+    UIWidget
+      id: timeline
+      anchors.top: timelineTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 2
+      layout:
+        type: verticalBox
+
+  ChaosCheckBox
+    id: autoOpen
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-bottom: 4
+    width: 170
+    !text: tr('Open after a death')
+    !tooltip: tr('Open this window by itself after a death (at the next login) or a defeat in a mode')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_deathrecap.hide()

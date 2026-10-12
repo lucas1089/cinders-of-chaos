@@ -336,7 +336,8 @@ local function takenSource(attacker)
 	return CL.takenSource(attacker:isPlayer() and "u" or "c", attacker:getName())
 end
 
-local function dealt(creature, attacker, amount, ptype, origin, critical, now)
+-- mana: true for the part a mana shield took (the death recap tells health and mana damage apart)
+local function dealt(creature, attacker, amount, ptype, origin, critical, now, mana)
 	local el = EL[ptype]
 	local owner, summon = ownerOf(attacker)
 	if owner and owner ~= creature then
@@ -350,7 +351,13 @@ local function dealt(creature, attacker, amount, ptype, origin, critical, now)
 		local a = actorOf(creature)
 		a.sessionOn = huntRunning(creature)
 		local boss = attacker and attacker:isMonster() and bossName(attacker) or nil
-		CL.add(a, now, TAKEN, takenSource(attacker), amount, critical, 0, el, nil, boss)
+		local src = takenSource(attacker)
+		CL.add(a, now, TAKEN, src, amount, critical, 0, el, nil, boss)
+		-- the death recap's rolling log (deathrecap.lua) takes the same hits with the same attribution
+		local hook = CL.takenHook
+		if hook then
+			pcall(hook, creature, attacker, src, amount, el, critical, now, mana)
+		end
 	end
 end
 
@@ -495,7 +502,13 @@ function mana.onManaChange(creature, attacker, pd, pt, sd, st, origin)
 		and creature:hasCondition(CONDITION_MANASHIELD) then
 		local total = min(abs(pd or 0) + abs(sd or 0), creature:getMana())
 		if total > 0 then
-			dealt(creature, attacker, total, pt, origin, false, nowMs())
+			dealt(creature, attacker, total, pt, origin, false, nowMs(), true)
+		end
+	elseif cfg.enabled and pt == COMBAT_MANADRAIN and CL.takenHook and creature:isPlayer() then
+		-- mana drain is no damage taken for the meter, but the death recap lists it as mana damage
+		local total = min(abs(pd or 0) + abs(sd or 0), creature:getMana())
+		if total > 0 then
+			pcall(CL.takenHook, creature, attacker, takenSource(attacker), total, "manadrain", false, nowMs(), true)
 		end
 	end
 	return pd, pt, sd, st
