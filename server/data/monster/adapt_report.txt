@@ -131,8 +131,8 @@ Tarrasque: corpse 41162 -> 6068
 Tarrasque: dropped 1 loot lines for ids [41409]
 Thal: corpse 41162 -> 6068
 Thal: dropped 1 loot lines for ids [40407]
-Titanica: corpse 41162 -> 6068
-Titanica: dropped 1 loot lines for ids [40407]
+Fenmaw: corpse 41162 -> 6068
+Fenmaw: dropped 1 loot lines for ids [40407]
 Tundra Troll: corpse 41162 -> 6068
 Tundra Troll: dropped 1 loot lines for ids [40407]
 Twisted Shaper: corpse 41162 -> 6068

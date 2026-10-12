@@ -3314,9 +3314,9 @@ every new text reads back, writes through a temporary file and keeps `<map>.otbm
 usually made it already). Read back with `tools/map/otbm.py`: the same 18,185,071 tiles and 23,317,821 item entries,
 every item id in place, towns and temples the same. Pure Python, about 15 s on the reference map.
 
-**Fresh install:** 1,222 old names found (239 world, 831 NPC, 152 monster rows), 6,268 replacements in 642 files (towns
+**Fresh install:** 1,222 old names found (239 world, 831 NPC, 152 monster rows), 6,271 replacements in 642 files (towns
 1,956, NPCs 2,350, places 739, worlds and demonyms 493, gods 192, monsters 149, factions 103, lore 129, persons 119,
-mount words 38), 564 map texts (1,164 replacements). A second whole install changes nothing (0 files, the map's md5
+mount words 41), 564 map texts (1,164 replacements). A second whole install changes nothing (0 files, the map's md5
 unchanged). Every `.lua` of `data/` compiles with `luajit -b` (3,743 files).
 
 **Tested on the full map** (test MariaDB, three bot characters over the game protocol, `tools/loadtest.py` setup): the
@@ -3329,8 +3329,17 @@ part one only one console line differs: the base script that the apostrophe brok
 quest folders, the merchant's town maps, script paths, storage and event identifiers such as `portal_<town>`), the
 names of items and monsters that are also old NPC names or plain English words (a staff, a shield and flowers named
 after plain words, one barbarian boss, one expedition monster and a letter that names its family), common English words
-written in lower case in prose ("skip the tutorial"), one engine effect name, and one of our Chaos monsters with the
-base mount of the same coined name.
+written in lower case in prose ("skip the tutorial"), and one engine effect name.
+
+**Fenmaw.** One of our Chaos monsters (`monsters/chaos/fenmaw.xml`, look 374) and the base mount 7 had the same coined
+name of the old world. Both are now Fenmaw: a colossal swamp beast that hisses, chokes its prey in bog water and roots
+it in creepers. The mount is that beast, saddled. The monster file, its name and `nameDescription` were renamed in the
+repository. The mount has the hashed `look` row of `data/npc/base_world_names.csv`: as long as a monster of the data
+carried the old name, the row could not apply (names the data looks things up by stay). Now this step renames it in
+`mounts.xml` and in the two base mount menu scripts (3 replacements), and `tools/gen_shop_cosmetics.py` writes the store
+offer `mount:7` with the new name. A server installed before this change keeps the old monster file and its
+`monsters.xml` line (the `files` step never deletes): delete the other file of `data/monster/monsters/chaos` with look 374 and its line, then
+run `install_all.py` again; the old name is then gone from the data and the mount follows.
 
 ## Base houses (`tools/patch_base_houses.py`, `tools/base_house_names.csv`)
 

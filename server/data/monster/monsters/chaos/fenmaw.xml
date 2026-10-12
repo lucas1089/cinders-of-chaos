@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Titanica" nameDescription="a titanica" race="blood" experience="14250" speed="658" evented = "2" skulled="1" looting="1" manacost="390">
+<monster name="Fenmaw" nameDescription="a fenmaw" race="blood" experience="14250" speed="658" evented = "2" skulled="1" looting="1" manacost="390">
 	<health now="12000" max="12000" />
 	<level min="200" max="250"/>
 	<look type="374" corpse="6068" />

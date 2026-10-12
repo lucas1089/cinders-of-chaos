@@ -192,7 +192,7 @@ return {
 		{key = "mount:10", id = 10, clientid = 377, name = "Rapid Boar", cost = 350, premium = true},
 		{key = "mount:9", id = 9, clientid = 376, name = "Blazebringer", cost = 350, premium = true},
 		{key = "mount:8", id = 8, clientid = 375, name = "Tin Lizzard", cost = 350, premium = true},
-		{key = "mount:7", id = 7, clientid = 374, name = "Titanica", cost = 350, premium = true},
+		{key = "mount:7", id = 7, clientid = 374, name = "Fenmaw", cost = 350, premium = true},
 		{key = "mount:6", id = 6, clientid = 373, name = "Raptor Drake", cost = 350, premium = true},
 		{key = "mount:5", id = 5, clientid = 372, name = "Midnight Panther", cost = 350, premium = true},
 		{key = "mount:4", id = 4, clientid = 371, name = "Black Sheep", cost = 350, premium = true},
