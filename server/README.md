@@ -23,6 +23,7 @@ server/
   tools/patch_base_spawns.py, spawn_tuning.json   spawn density and respawn (see "Spawn density and respawn")
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
   tools/patch_base_bossrooms.py       the base lever boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
+  tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -337,6 +338,10 @@ server/
 7c. Base lever boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `bossrooms`, after `stalls`): the lever is locked while a group is inside, a time limit with
    warnings, the exit and the clean-up. See "Instance limits".
+7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
+   Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
+   dungeon entry".
 8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
@@ -730,8 +735,9 @@ dungeons
   DungeonPos so players are not treated as "outside".
 - Cooldown (`DUNGEON_SYSTEM.CooldownTime`, 1 h) is also applied after a win (`cooldownOnSuccess`) and when a
   member leaves/dies, and when a member who logged out inside logs in again while the server runs (sent to the temple).
-- The run's time is `DungeonTime` capped at `Chaos.dungeons.maxTimeSeconds` (45 min); the base modal entry keeps its own
-  `DungeonTime` timer ("Instance limits").
+- The run's time is `DungeonTime` capped at `Chaos.dungeons.maxTimeSeconds` (45 min). The base modal entry tile opens
+  this window instead of its modal window (`tools/patch_base_dungeon.py`, "Instance limits", "Base modal dungeon
+  entry"), so its own `DungeonTime` timer never starts.
 - Ranking: solo = best time per player (party size 1), group = best runs with 2+ players. Times in ms.
 
 infinitytower
@@ -7699,7 +7705,7 @@ sizes, switching labels off and on. **Not verified:** two players at once, a sea
 items (the engine refuses the move; the label still shows), labels while walking fast over many piles (positions follow
 the engine, the scan lags at most 400 ms).
 
-## Instance limits (`instance_limits.lua`, `instance_limits_core.lua`, `instance_limits_config.lua`, `tools/patch_base_bossrooms.py`)
+## Instance limits (`instance_limits.lua`, `instance_limits_core.lua`, `instance_limits_config.lua`, `tools/patch_base_bossrooms.py`, `tools/patch_base_dungeon.py`)
 
 Owner request: a time limit on quests and dungeons, so the instances do not fill up or overload (roadmap item 108). Every
 place with its own way in and out has a time limit, warnings before it runs out, a rule for the end, an idle rule, a cap
@@ -7740,7 +7746,7 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | Vocation Trial | 8 / 9 / 10 min | + warnings at 2 / 1 min and 10 s, wait and line | lost (nothing lost, 60 s cooldown), back where it began | solo: a logout ends it | 8 | ends (no cooldown); crash: out at login | out at login |
 | Ascension trial | 3 min, a line every 30 s | + wait and line | lost (10 min cooldown), back to the Oracle | solo | 8 | ends (the cooldown) | out at login |
 | Infinity Tower | 5 min a floor, no run limit | run limit 60 min with warnings, floor warnings at 1 min and 10 s, wait and line | ends like a lost floor: back at the entry, floors cleared recorded | ends when the last player is out | 16 | ends (floors recorded); login inside: temple | login inside: temple |
-| Dungeon (queue) | base DungeonTime 60 / 30 min; a relog stayed in the box (and held the next group's run back) | capped at 45 min, warnings, the queue shows the wait of the run inside, a relog inside goes to the temple (a failed attempt: the cooldown) | back where they entered, cooldown, monsters removed | ends when the last member is out | 1 per dungeon, queue | released; login: temple + cooldown | temple, no cooldown |
+| Dungeon | queue: base DungeonTime 60 / 30 min; a relog stayed in the box (and held the next group's run back). Next to it the base modal entry (tile 26702): its own run in the same boxes, 60 / 30 min, no warning, a scan of every tile of the box on each use (37,074 / 61,325 tiles), an exit timer holding the player object, at its end every monster of the box removed (also a queue run's) | queue only: the entry tile opens the dungeon window (`patch_base_dungeon.py`); capped at 45 min, warnings, the queue shows the wait of the run inside, a relog inside goes to the temple (a failed attempt: the cooldown) | back where they entered, cooldown, monsters removed | ends when the last member is out | 1 per dungeon, queue | released; login: temple + cooldown | temple, no cooldown |
 | World boss | 45 min after the boss | + warnings | the boss withdraws, temple after 90 s, arena cleaned | event (not per group) | 1 arena, 40 players | stays in the event | login inside an idle arena: temple |
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
 | Tutorial island | none | 30 min online (offline time does not count), warnings at 5 and 1 min | leaves as with Skip tutorial: kit, welcome, temple | shared island, no copies | none needed | time kept; a login past the limit leaves at once | unchanged |
@@ -7758,9 +7764,32 @@ latest."), and after the group went in `ChaosBossRooms.started` takes over the k
 a "Time left" bar over the entrance and a "Room in use" bar over the lever (tilebars.lua). At the end everyone inside goes
 to the script's exitPosition and every monster in the room is removed; after a boss kill the script's own exit runs and
 the room frees up when it is empty. Without the Chaos scripts the rooms work as before. Left alone (listed by the tool or
-of another shape, owner decision): 2 files with several step-in rooms each, the soul pit and the tower defence, the base
-modal dungeon entry (its own fixed timer and "a team is inside" check; it scans every tile of the dungeon box on use), and
-about a dozen old XML quest levers and pits; whether these places exist on the map was not checked.
+of another shape): 2 files with several step-in rooms each, the soul pit and the tower defence, and about a dozen old XML
+quest levers and pits. All of them are on the map (checked on the base map, the action and unique ids of every
+map item): the 7 step-in miniboss rooms of `extensions/fear_feaster/minibosses.lua` (entry tiles aid 33717 / 33719 /
+33721) and `extensions/lions/minibosses.lua` (33723 / 33725 / 33727 / 33729), each with its exit tile; the soul pit (its
+start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11
+XML lever and pit scripts that teleport a group into a fight with a timer or a room check, 9 have their ids on the map
+(annihilator, elemental spheres, the new frontier arena, the warzones and their lever, children of the revolution,
+Pythius, the two Killing in the Name of boss rooms); the Payback Time lever (uid 3198) and the demon oak (item 8293, set at
+runtime) are not. These are left for a later change.
+
+**Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
+`dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
+step-in tile (item 26702, one on the map at 32365,32233,7; movements `dungeon.lua`) opens a modal window, and its answer
+(creaturescripts `dungeon_mod.lua`) runs a dungeon of its own in the same boxes as the queue. Neither knew about the
+other. Its weak spots: "a team is already inside" looked at every tile of the box on each Confirm (Bones 222 x 167 =
+37,074 tiles, Master of the Elements 223 x 275 = 61,325; the same pattern as "Game loop stalls"); its exit timer held
+the player object (stale after a logout); its 60 / 30 minutes had no warning and no cap; at the end it removed every
+monster in the box, also those of a queue run that had started there; and its runs had no difficulty, records or
+challenges. Owner decision: the tile opens the Chaos dungeon window instead (rather than a second patched entry). The
+tool adds one marked line at the top of the step-in's `onStepIn`: `ChaosDungeonsOpen(player)` sends the dungeon list (at
+most once a second per player, as the window's own fetch) and the new server action `open` (opcode
+`ChaosOpcodes.dungeons`), and the client's `game_dungeons` shows the window. The modal window is never sent, so the
+modal answer, its box scan and its timer never run; every run goes through the queue (one per box, the time cap and
+warnings above). A monster on the tile does nothing. Without the Chaos scripts the tile works as before. The modal
+scripts stay in the base data untouched. A script is recognised as the script of a StepIn movevent that sends the
+`DUNGEON_SYSTEM` modal window and has one `onStepIn`; another shape is listed and left alone.
 
 **Load.** Every runtime area is built once per slot and kept (the engine cannot remove a tile); a run removes its
 monsters and loose items at the end. Tiles per slot, counted from the layouts: rift 1,045, Descent about 440, raid 3,574,
@@ -7786,7 +7815,11 @@ warnings, time up with the exit and the monsters removed, the idle grace, a kill
 shutdown), `tests/instance_limits_systems_test.lua` (dungeons and the tutorial island on their real files), and an
 "instance limits" part in `rift_refund_test`, `raid_test`, `uber_test`, `guildboss_test`, `trials_flow_test`,
 `arena_flow_test`, `battleground_flow_test`, `infinitytower_run_test` and `worldboss_test` (each system's limit,
-warnings, cap and line, idle close, staff list and close where it applies). The Descent, the ascension trial and the
+warnings, cap and line, idle close, staff list and close where it applies). `tests/base_dungeon_patch_test.lua`: the
+tool on the stock entry (written there with made-up dungeons: dry run, idempotence, CRLF, another shape and a non
+StepIn script left alone), then the stock and the patched entry on a mocked engine: without the Chaos scripts the same
+modal window and answer; with `dungeons.lua` loaded no modal window, not one tile looked at, the list and `open` sent,
+the queue runs the dungeon with its cap, a monster does nothing, the rate limit. The Descent, the ascension trial and the
 siege got the same few lines (config, a warning call in the tick, the cap and the busy text, the registry) without an
 engine test of their own. Not run in game.
 

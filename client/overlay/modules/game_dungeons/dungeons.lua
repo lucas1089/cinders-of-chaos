@@ -184,6 +184,12 @@ function onExtendedOpcode(protocol, code, buffer)
     onChallengeCompleted(data)
   elseif action == "stopQueue" then
     onStopQueue()
+  elseif action == "open" then
+    -- the dungeon entry tile was stepped on
+    show()
+    if windowButton then
+      windowButton:setOn(true)
+    end
   end
 end
 

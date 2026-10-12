@@ -10,12 +10,14 @@
 --                     prepare            start {boss,left,duration,objectives}
 --                     killed {percent,left} | {boss=true}    objective {id,finished}
 --                     challenge "<title>"   difficulty {id,difficulty}   finish
+--                     open               (the base dungeon entry tile was stepped on: show the window)
 --
 -- Integration with the base server dungeon system (lib/core/dungeon.lua, global DUNGEON_SYSTEM):
 -- the dungeon list, level requirement, group size (AmountParty when NeedParty), DungeonPos,
 -- FromPos/ToPos, DungeonTime, SpawnMonsters/Monsters and the cooldown storage are all read from
--- DUNGEON_SYSTEM.Dungeons live. Entry here is by matchmaking queue instead of the modal window;
--- the old modal/stairs entry keeps working untouched (it just does not know about this module).
+-- DUNGEON_SYSTEM.Dungeons live. Entry here is by matchmaking queue instead of the modal window: the base
+-- entry tile (movements dungeon.lua, item 26702) opens this window (ChaosDungeonsOpen below, wired in by
+-- tools/patch_base_dungeon.py), so the old modal run (its own timer, box scan and clean-up) never starts.
 --
 -- Real: queueing, group formation, teleport in, time limit, monster-count progress, boss kill,
 -- completion, per-dungeon unlocked difficulty, challenges (speed / flawless), personal and group
@@ -1055,6 +1057,22 @@ function ShutdownEvent.onShutdown()
 	return true
 end
 ShutdownEvent:register()
+
+-- The base dungeon entry tile (data/movements/scripts/dungeon.lua, patched by tools/patch_base_dungeon.py) calls this
+-- first: the window opens with the list instead of the base modal window, so every entry goes through the queue.
+-- true = handled (the stock modal is not sent), also for a monster or a summon on the tile.
+function ChaosDungeonsOpen(creature)
+	if not creature or not creature:isPlayer() then
+		return true
+	end
+	-- the list reads progress and rankings from the database: one read a second, as the window's own fetch
+	if not ChaosRateLimit or ChaosRateLimit.allow(creature, "dungeons.fetch", 1000) then
+		subscribers[creature:getGuid()] = true
+		sendAll(creature)
+	end
+	send(creature, "open", {})
+	return true
+end
 
 local ExtendedEvent = CreatureEvent("ChaosDungeonsExtended")
 
