@@ -63,3 +63,5 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - Guild boss orbs (3 Upheaval + 1 Fate per participant): kept.
 
 - Crafting: when a removal fails partway, the craft gives back what that attempt took, and gives no item. This is already implemented, see server/README.md "Base crafting script".
+- Rift density (2026-10-12): orbs per hour stay as they come out of the new density (tier 15: 4-5 runs an hour, up
+  to +34% orbs for very fast runs). The chest orb rates are not cut.
