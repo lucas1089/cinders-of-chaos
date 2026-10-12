@@ -1164,6 +1164,20 @@ function Chaos.heal(creature, amount)
 	return creature:getHealth() - before
 end
 
+-- The base of a "share of the maximum health" hit on a player (rift ground and storms, raid and Ascended / guild boss
+-- telegraphs): the maximum health, or for a Hollow Vessel health + maximum energy shield (archetypes.lua percentBase),
+-- so its fixed 100 health is no way around them. Without the archetypes module: the maximum health.
+function Chaos.percentBase(player)
+	local A = ChaosArchetypes
+	if A and A.percentBase then
+		local ok, base = pcall(A.percentBase, player)
+		if ok and type(base) == "number" then
+			return base
+		end
+	end
+	return player:getMaxHealth()
+end
+
 -- ---------------------------------------------------------------------------
 -- Monster names
 -- ---------------------------------------------------------------------------

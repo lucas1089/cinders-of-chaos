@@ -808,6 +808,30 @@ eq(lich.c.es, math.floor(lich:getMaxEnergyShield() * 350 * 500 / 1000000), "half
 -- the rifts' percent hits count health and shield
 eq(M.percentBase(lich), 100 + lich:getMaxEnergyShield(), "percent base of a holder")
 eq(M.percentBase(foe), 90000, "anyone else: the health")
+-- the one shared helper every percent hit uses (chaos_constants.lua Chaos.percentBase): the rift, the raid, the
+-- Ascended Omens and the guild boss
+do
+	local mockChaos = Chaos
+	Chaos = nil
+	dofile("data/scripts/chaos/chaos_constants.lua")
+	local percentBase = Chaos.percentBase
+	Chaos = mockChaos
+	eq(percentBase(lich), 100 + lich:getMaxEnergyShield(), "Chaos.percentBase: health + shield for a holder")
+	eq(percentBase(foe), 90000, "Chaos.percentBase: the health for anyone else")
+	ChaosArchetypes = nil
+	eq(percentBase(lich), 100, "Chaos.percentBase without the archetypes module: the health")
+	ChaosArchetypes = {percentBase = function() error("boom") end}
+	eq(percentBase(foe), 90000, "Chaos.percentBase: a failing module falls back to the health")
+	ChaosArchetypes = M
+	for _, f in ipairs({"rift.lua", "raid.lua", "uber.lua", "guildboss.lua"}) do
+		local h = assert(io.open("data/scripts/chaos/" .. f, "r"))
+		local src = h:read("*a")
+		h:close()
+		check(src:find("Chaos.percentBase(", 1, true) ~= nil, f .. ": its percent hits use Chaos.percentBase")
+		check(src:find("shareDamage(player:getMaxHealth()", 1, true) == nil and src:find("percentHit(p:getMaxHealth()", 1, true) == nil,
+			f .. ": no percent hit reads the health alone")
+	end
+end
 -- the robe and the diadem
 local robe = {getId = function() return 27390 end, getCustomAttribute = function() return 1 end}
 lich.c.slots[CONST_SLOT_ARMOR] = robe

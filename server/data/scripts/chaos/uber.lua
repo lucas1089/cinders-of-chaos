@@ -812,10 +812,11 @@ local function setHealth(monster, hp)
 	end
 end
 
--- a share of max health as one scripted hit of the boss (not scaled again by the enrage)
+-- a share of max health as one scripted hit of the boss (not scaled again by the enrage); a Hollow Vessel counts health +
+-- maximum energy shield (Chaos.percentBase)
 local function shareHit(run, player, share, effect)
 	local boss = bossOf(run)
-	local dmg = U.shareDamage(player:getMaxHealth(), share)
+	local dmg = U.shareDamage(Chaos.percentBase(player), share)
 	run.scripted = true
 	if hitFn then
 		pcall(hitFn, boss and boss:getId() or 0, player, combatOf(run.def), -dmg, -dmg, effect or CONST_ME_NONE, ORIGIN_SPELL)
@@ -1708,6 +1709,11 @@ function talk.onSay(player, words, param)
 	local g = player:getGroup()
 	if not g or g:getId() < C().staffGroup then
 		return true
+	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): sigils, relics and shards need an administrator
+	local cmd = ((param or ""):match("^%s*([^,%s]+)") or ""):lower()
+	if not Chaos.staffCommand(player, words, param, cmd == "sigil" or cmd == "relic" or cmd == "shards") then
+		return false
 	end
 	onCommand(player, param)
 	return false

@@ -939,6 +939,11 @@ local function onStaffCommand(player, words, param)
 		say("/guild xp|bank|info|log|rent|hall <guild name>[, value]: guild not found.")
 		return false
 	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): the guild bank, guild XP and a paid rent need an administrator
+	local value = sub == "bank" or sub == "xp" or (sub == "rent" and (arg or ""):lower():match("^%s*paid") ~= nil)
+	if not Chaos.staffCommand(player, words, param, value) then
+		return false
+	end
 	if sub == "xp" then
 		local n = G.addXp(gid, 0, "staff", tonumber(arg) or 0, true)
 		G.logRow(gid, player, "staff", 0, 0, n, "staff added " .. n .. " GXP")

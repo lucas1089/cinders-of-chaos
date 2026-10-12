@@ -600,6 +600,10 @@ game (admin and player logins without the exception, admin panel filled and runn
   market and the orb exchange do. Otherwise a crash between the two duplicated it.
 - **Staff talkactions.** `Chaos.staffCommand(player, words, param, economy)`: `/coins`, `/charm give` and `/pact` (all but
   `info`) need group 5 (`Chaos.economyMinGroup`), `/market` and `/orbx` staff access; every staff use goes to `ChaosAdmin.log`.
+  Staff never give value (docs/GM_HANDBOOK.md section 2, decided): `/rift key|omen|fragments`, `/ascended sigil|relic|shards`,
+  `/newplayerkit` (the kit, a milestone, `reset`), `/guild bank|xp` and `rent <guild>, paid`, `/classunlock`, `/cosmetic`,
+  `/exclusive` (a grant or `roll`) and `/transmog` grants, and `/pet give` need group 5 the same way (2026-10-12); what only
+  looks, tests or takes away (status, sync, revoke, info) stays at group 4 and is logged too.
   The admin panel's `players.give_item` and `world.create_item` need group 5 too (like `economy.*`).
 - **Rate limits.** `Chaos.limited(player, key, ms)` (over `ratelimit.lua`) drops a request inside 300 ms of the same action in the
   opcode handlers of season, siege, arena, bounty, rift, season journey, season modes, daily, hunt, invasion, infinity tower, patch
@@ -1714,16 +1718,18 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   icons `keystones.png` cells 28-39 (`client/tools/gen_keystone_icons.py`). The second round (96, 99, 102, 105, the
   ends of the four other elemental clusters): reworked version 3, build code format 5, `keystones.png` cells 40-43,
   flag bits 13-16 of storage 7100024.
-- **Hollow Vessel and the other rules.** The rifts' percent-of-maximum-health hits (`rift.lua` `percentHit`: Scorched
-  Earth, Rimefloor, Veilstorm, the Wrathful Guardian's nova) take `ChaosArchetypes.percentBase(player)`: health +
-  maximum energy shield for a holder, so the fixed 100 health is no way around them. Festering Wounds is a poison
+- **Hollow Vessel and the other rules.** Every percent-of-maximum-health hit on a player takes `Chaos.percentBase(player)`
+  (`chaos_constants.lua`, over `ChaosArchetypes.percentBase`): health + maximum energy shield for a holder, so the fixed
+  100 health is no way around them. That is the rifts' `percentHit` (Scorched Earth, Rimefloor, Veilstorm, the Wrathful
+  Guardian's nova) and, since 2026-10-12, the scripted `shareHit` of the raid (`raid.lua`: Crushing Verdict, cleave,
+  sweep, soak and the other telegraphs), the Ascended Omens and the Cinderheart (`uber.lua`) and the guild boss
+  (`guildboss.lua`). The world boss event (`worldboss.lua`) has no percent hits (its pulse is a flat range). Festering Wounds is a poison
   condition: a holder takes none. The hexes and Parched Veins work as on anyone. Pyre Oath, Sanguine Covenant's cap
   and Thornbound Oath's cap read the maximum health (100). The mana shield and the Trials' Mana Ward come before the
-  energy shield as before. The other systems' percent-of-health damage (raids, world bosses) still read the health
-  alone: not changed in this round.
+  energy shield as before. Still on the health alone: the Vocation Trials' and the ascension trial's own percent hits
+  (`trials.lua`, `ascension_quest.lua`).
 - **Not done.** A spell cast by name on a critical hit needs an engine call; not added (it would skip the cast
-  checks), Cascade Edge deals its own burst. The vigils have no buff bar entry yet (the reservation shows as a lower
-  maximum mana).
+  checks), Cascade Edge deals its own burst.
 - Tests: `tests/archetypes_test.lua` (rules, data, tooltips, uniques, the glue against a mocked engine; the second
   round's prices, the vigils' hit multipliers and Hollow Vessel), `tests/snares_test.lua`, `tests/vigils_test.lua`,
   `tests/buildshare_test.lua` (format 5), `tests/passivetree_plan_test.lua` (reworked version 3). Not run on a live
@@ -1777,13 +1783,22 @@ switches the vigil in storage 7100025 (a bit each) and costs nothing.
   keeps the cover 1.5 s after the last think that saw it. Haste: a haste condition (sub id 71094, +15% of the base
   speed, refreshed each think). Clarity: `addMana` each think, none while the member's rift run has Parched Veins
   (`ChaosRift.runOf[id].fx.noMana`).
+- **Buff bar** (2026-10-12; `data/lib/chaos_buffs.lua` source `vigils`, opcode 234, client `game_buffbar` unchanged): one
+  row per vigil that covers the player, `vigil_wrath`, `vigil_iron`, `vigil_haste`, `vigil_clarity`, named after the vigil,
+  stacks = its effect in whole percent (the text has the exact one, e.g. "+7.5% damage dealt"), no timer; the text says
+  whether it is your own (and what it reserves of your mana, or health) or a party member's, and Clarity under Parched
+  Veins. Iron Tithe adds `vigil_tithe` ("Iron Tithe", stacks = the health reserved). `ChaosVigils.buffItem` reads what
+  the last think saw (no engine call); the texts are `vigils_core.lua` `V.buffItem`. A row goes when the cover does
+  (1.5 s after the holder leaves the range); a quiet vigil costs no traffic. Icons `buff:vigil_*`: a banner with the
+  vigil's emblem (`client/tools/gen_buff_icons.py`).
 - **Hits.** `archetypes.lua` onHealthChange (on every player and every monster already) multiplies a covered
   attacker's hits by `ChaosVigils.dealt` and a covered player's damage taken by `ChaosVigils.taken`. Wrath does not add
   on top of Inspiring Illusion (a giver in range: only what is above its +8% counts); Iron does not add on top of the
   Templar line's defence aura (`ChaosTemplar.activeAura`: only what is above its reduction counts).
 - Tests: `tests/vigils_test.lua` (rules; the toggle spells; the glue against a mocked engine: reservation, renewal,
   death, Iron Tithe, the party, haste, Clarity under Parched Veins, what no longer fits, the hit factors with the
-  Templar aura and Inspiring Illusion; the spells in the XML). Not run on a live server.
+  Templar aura and Inspiring Illusion, the buff bar rows; the spells in the XML), `tests/buffs_test.lua` (the source).
+  Not run on a live server.
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
@@ -2332,7 +2347,8 @@ Protocol (JSON on `ChaosOpcodes.cosmetics` = 225): client -> server `open | sele
 preview {id} | hello | close` (`hello`: the client is in the game, the full `style`, `colors` and `looks` again); server -> client `state {open, line, lineName, rows}`, `style {accent}` (the character's own label
 accent), `colors {names = {[name] = "#rrggbb" | false}, full}` (sent in full at login, a change to everyone online),
 `result {ok, text}`. API: `ChaosCosmetics.swapFor / storeUnlock / storePreview / offerPreview / grant / revoke / owns`.
-Staff: `/cosmetic <character>, <key | all>[, revoke]` and `/cosmetic <character>, sync` (group 4+). Store action `preview {category, page, offer}`
+Staff: `/cosmetic <character>, <key | all>[, revoke]` and `/cosmetic <character>, sync` (group 4+; a grant needs group 5,
+`Chaos.staffCommand`). Store action `preview {category, page, offer}`
 (`shop.lua`, cosmetic unlocks only).
 
 Install: the `files`, `spells` (the `_common.lua` / `_supports.lua` hook) and `sql` steps of `install_all.py`. Client:
@@ -2463,7 +2479,7 @@ own character (outfits, mounts, wings, auras, shaders); owned ones first, "Earne
 the store.
 
 Staff: `/exclusive <character>, <key | all>[, revoke]` (revoke removes the account row; what was applied stays on the
-characters) and `/exclusive <character>, roll, <kill key>` (group 4+). API: `ChaosExclusives.grant / revoke / owns / sync /
+characters) and `/exclusive <character>, roll, <kill key>` (group 4+; a grant or a roll needs group 5, `Chaos.staffCommand`). API: `ChaosExclusives.grant / revoke / owns / sync /
 bossKill / worldBossKill / rows / apply / applyAll`.
 
 **Achievement wings (things_custom17).** The three achievement wings are donor I wings (8.60, the wings and auras
@@ -3113,7 +3129,7 @@ Protocol (opcode `ChaosOpcodes.transmog` = 212, JSON, server -> client through `
 `open | looks {kind} | apply {slot, look} | remove {slot} | close`; server -> client `state {open, money, fee, slots, kinds,
 total, sets}`, `looks {kind, rows}`, `result {ok, text}`. API (other scripts): `ChaosTransmog.lookOf / setLook / clearLook /
 isUnlocked / unlockLook / grantSet / revokeSet / ownsSet / storeUnlock / sendState`. Staff: `/transmog <character>, <set key |
-all | look id>[, revoke]`.
+all | look id>[, revoke]` (an unlock needs group 5, a revoke group 4; `Chaos.staffCommand`).
 
 Install: the `files` and `sql` steps of `install_all.py` (no other installer). Engine: build with patches 0001-0019; client:
 base patches 0001-0030. Tests: `tests/transmog_test.lua`, `tests/item_tooltip_test.lua` (key 8 in the engine, the constants and
@@ -8680,7 +8696,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
     every kill counted, reinforcements 15 a second ahead, the guardian at 75%, sealed with the chest), the slot
     rebuilt with a new map after the run. Screenshots and previews of the owner pass are not in the repository.
 - **Commands.** Adventure > Rifts (dialog: the run status and every key carried with its modifiers). Gamemasters: `/rift key <tier>
-  [count | mods]`, `/rift status` (runs, the state of every slot and its map, the builder), `/rift fail`.
+  [count | mods]`, `/rift status` (runs, the state of every slot and its map, the builder), `/rift fail`; `key`, `omen`
+  and `fragments` hand out value and need an administrator (group 5, `Chaos.staffCommand`).
 
 **Edits to shared files** (one line or block each): `map_marks.lua` (the rift square per floor), `atlas_core.lua`
 (the Swift time of a tier from the rift model, `A.swiftSeconds`; see "Rift Atlas"), `tools/gen_codex_data.lua` (the run text of the Codex),
@@ -8736,7 +8753,8 @@ milestones, island layout, station state machine) in `newplayer_core.lua`, teste
   adds or changes a kit (a `def` with `base = "warrior"` inherits that kit); docs/CLASSES.md.
 - **Staff:** `/newplayerkit <name>` gives the kit again (ignores the flag); `, welcome` shows the welcome; `, milestone <n>`
   gives gift n; `, reset` clears every new-player storage; `, tutorial` sends the character to the island's first station.
-  Online characters only; logged to the console.
+  Online characters only; every use in the admin audit log (`Chaos.staffCommand`); the kit, a milestone and `reset` need
+  an administrator (group 5).
 
 ### Tutorial island (`newplayer_tutorial.lua`)
 
@@ -9177,7 +9195,8 @@ account storage, which is only saved at server save).
 - Gates: the Ascendant Oracle (ascension.lua) and Character > Services (shop_services.lua; the token is kept) refuse a locked class; at login a
   character on a locked vocation goes to its temple, cannot attack and gains no experience or skills until the account unlocks
   the class (the store works in that state). Staff (group 4+, or account type 5+) is never locked.
-- Character > Character Info shows the account's state; staff: `/classunlock <character>, <class>[, revoke]`.
+- Character > Character Info shows the account's state; staff: `/classunlock <character>, <class>[, revoke]`
+  (an unlock needs group 5, a revoke group 4; `Chaos.staffCommand`).
 - Characters are created on the website (the base server has no in-game character creation): it should offer the three classes
   only to unlocked accounts; the login check holds even if it does not.
 - Tested in game (2026-10-09): a locked account's Necromancer logs in to its temple with the warning (also as a window, one
@@ -10123,7 +10142,7 @@ meantime). The server is the authority: the client draws what it is told and cou
   The Ember Descent's entries `descent_boon` / `descent_curse` (source `descent`, one item per boon or curse held, icons
   `descent_b_<key>` / `descent_c_<key>`) are drawn by `client/tools/gen_descent_icons.py`; `gen_buff_icons.py` leaves the
   `descent_*` names to it.
-- Covered (61 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
+- Covered (84 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
   shield, invisible, light, spell / potion buffs (attributes without a sub id), poison, burning, energy, bleeding, drowning,
   freezing, dazzled, cursed, paralyze (shown as "Slowed"), drunk, pacified, muted, in fight (also the PZ lock, the engine keeps
   one condition for both), white / red / black skull with the time the engine keeps it; the class buffs by sub id (Crimson
@@ -10139,13 +10158,15 @@ meantime). The server is the authority: the client draws what it is told and cou
   **Templar aura** (source `templarAura`, from `ChaosTemplar.auraState` of `templar_combat.lua`): "<Templar>'s Aura" (or
   "Your Sentinel Aura"), stacks = the damage it takes off in percent, the text names the Templar, the class, the reduction,
   the Sentinel's regeneration and Bastion; no timer (it lasts while the Templar is near), so it is sent when it starts, when
-  another Templar's aura takes over or the numbers change, and when it ends, never while it simply holds. `tests/buffs_test.lua` checks the sub ids against the spell files and the class configs.
+  another Templar's aura takes over or the numbers change, and when it ends, never while it simply holds; the **vigils**
+  (source `vigils`, section "Vigils"): a row per vigil that covers the player and Iron Tithe's health row, stacks = the
+  effect in percent, no timer. `tests/buffs_test.lua` checks the sub ids against the spell files and the class configs.
 - Not on the bar: the passive tree's own conditions (permanent, sub ids 7200-7240); the item ailments of `item_mods.lua`
   (bleed, ignite, poison, chill, shock), which are only ever put on monsters, so they cannot appear on a player; what a monster
   does to a player (poison, burning, slow ...) is an engine condition and is covered. Hex / Brand marks sit on monsters (the
   `hexes` table of `supports.lua` is local to it): the optional row under the monster bar for the player's own marks is **not done**.
 - Icons (`icon` of an entry): always `buff:<name>`, our own 26x26 pixel art at the bar's cell size
-  (`client/overlay/data/images/game/buffs/`, 62 icons from `client/tools/gen_buff_icons.py`, one per registry key). Buffs sit in
+  (`client/overlay/data/images/game/buffs/`, 80 icons from `client/tools/gen_buff_icons.py`, one per registry key). Buffs sit in
   an ember-gold frame, debuffs in a blood-red frame with thorns in the corners (the same colours as the client's border). The
   class buffs that come from a Chaos spell show that spell's pixel-art icon inside the buff frame; everything else is drawn by
   the tool. No stock condition art and no spell sheet lookup any more: `validate` refuses any other form, and
@@ -10666,7 +10687,7 @@ shapes and timing, hazards, the caught lethal hit, rewards, the balance model) i
   inside a slot without a run goes to the temple. Logout inside: out of the run, back where the player came from.
 - **Staff.** `/ascended` (the runs), `/ascended sigil, <kind>`, `/ascended shards, <kind>[, n]`, `/ascended relic, <kind>`,
   `/ascended phase, <n>` (your boss to that phase), `/ascended enrage`, `/ascended end`. Kinds: bloodmoon, hollow, storm,
-  cinder.
+  cinder. `sigil`, `shards` and `relic` need an administrator (group 5, `Chaos.staffCommand`).
 
 ### Balance
 

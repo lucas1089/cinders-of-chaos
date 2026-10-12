@@ -7,7 +7,8 @@
 --     members within the radius on its floor; Iron Tithe and a multi-client holder: itself only), Haste as a haste
 --     condition, Clarity's mana (none under the rift's Parched Veins);
 --   * ChaosVigils.dealt / ChaosVigils.taken: the hit multipliers archetypes.lua applies in its onHealthChange (Wrath:
---     not on top of Inspiring Illusion; Iron: not on top of the Templar defence aura).
+--     not on top of Inspiring Illusion; Iron: not on top of the Templar defence aura);
+--   * ChaosVigils.buffItem: the buff bar rows (data/lib/chaos_buffs.lua source "vigils", texts in vigils_core.lua).
 -- Vigils that no longer fit (a unique taken off) are switched off, the last first, with a message.
 
 if not Chaos then
@@ -35,6 +36,7 @@ end
 M.applied = M.applied or {} -- player id -> {mana = reserved, health = reserved}
 M.covered = M.covered or {} -- player id -> {entry = {wrath, iron, haste, clarity}, untilTime}
 M.holders = M.holders or {} -- player id -> mask (the holders of the last think)
+M.holderMods = M.holderMods or {} -- player id -> mods (the holders of the last think; the buff bar reads them)
 
 local function isMultiClient(player)
 	return Chaos and Chaos.isMultiClient and Chaos.isMultiClient(player) or false
@@ -162,7 +164,7 @@ end
 function M.think()
 	local t = now()
 	local holders, candidates, seen = {}, {}, {}
-	local fresh = {}
+	local fresh, freshMods = {}, {}
 	for _, player in ipairs(Game.getPlayers() or {}) do
 		local ok, h = pcall(holderOf, player, t)
 		if not ok then
@@ -170,6 +172,7 @@ function M.think()
 		elseif h then
 			holders[#holders + 1] = h
 			fresh[h.id] = h.mask
+			freshMods[h.id] = h.mods
 			-- the holder and its party members are the only players it can cover
 			local list = {h.player}
 			local party = h.player:getParty()
@@ -188,7 +191,7 @@ function M.think()
 			end
 		end
 	end
-	M.holders = fresh
+	M.holders, M.holderMods = fresh, freshMods
 	-- the players who left: their reservation memory
 	for pid in pairs(M.applied) do
 		if not Player(pid) then
@@ -276,6 +279,18 @@ function M.taken(player)
 	end
 	local aura = ChaosTemplar and ChaosTemplar.activeAura and ChaosTemplar.activeAura(player:getId(), t)
 	return V.takenFactor(entry, aura and aura.reduction or 0)
+end
+
+-- a row of the buff bar (data/lib/chaos_buffs.lua source "vigils"): key = a vigil's key or "tithe"; nil when it does
+-- not apply. Reads what the last think saw (the cover, the holder's mask and mods): no engine call.
+function M.buffItem(player, key, t)
+	local pid = player:getId()
+	local entry = entryOf(pid, t or now())
+	local mask = M.holders[pid]
+	if not entry and not mask then
+		return nil
+	end
+	return V.buffItem(key, entry, mask, mask and M.holderMods[pid] or nil, parched(pid))
 end
 
 -- is anyone covered at all (archetypes.lua skips the work otherwise)

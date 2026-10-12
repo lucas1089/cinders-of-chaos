@@ -803,7 +803,11 @@ eq(M.offerPreview("transmog_falconer"), nil, "nothing for other unlocks")
 
 -- staff
 local gm = newPlayer(9, "Gm", 90, "Warrior")
-gm.getGroup = function() return {getId = function() return 6 end} end
+gm.getGroup = function() return {getId = function() return 6 end, getAccess = function() return true end} end
+-- a gamemaster (group 4) may not grant (docs/GM_HANDBOOK.md: staff never give value); sync and revoke stay at group 4
+local gm4 = newPlayer(19, "Gmfour", 91, "Warrior")
+gm4.getGroup = function() return {getId = function() return 4 end, getAccess = function() return true end} end
+gm4.sendCancelMessage = function(self, text) self.cancel = text end
 db.storeQuery = (function(old)
 	return function(q)
 		if q:find("FROM `players`", 1, true) then
@@ -813,10 +817,13 @@ db.storeQuery = (function(old)
 	end
 end)(db.storeQuery)
 result.getNumber = function(r) return Player(r.player) and Player(r.player).account or nil end
+registered["/cosmetic"].onSay(gm4, "/cosmetic", "Carl, kill_sunring")
+eq(M.owns(30, "kill_sunring"), false, "a gamemaster cannot grant")
+eq(gm4.cancel ~= nil, true, "and is told why")
 registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, kill_sunring")
 eq(M.owns(30, "kill_sunring"), true, "/cosmetic grants")
-registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, kill_sunring, revoke")
-eq(M.owns(30, "kill_sunring"), false, "/cosmetic revokes")
+registered["/cosmetic"].onSay(gm4, "/cosmetic", "Carl, kill_sunring, revoke")
+eq(M.owns(30, "kill_sunring"), false, "/cosmetic revokes (a gamemaster may)")
 -- /cosmetic <character>, sync: the account's achievement cosmetics and reward track (idempotent)
 accounts[30] = {ids = {}, points = 600}
 registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, sync")

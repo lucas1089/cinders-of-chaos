@@ -230,8 +230,10 @@ Behind gateways (section "Gateways and DDoS") 7171, 7172 and 8090 are open to th
   needs group 4+, some categories and actions 5 or 6. Staff characters are left out of every leaderboard
   (`staffGroup = 4`). Use a separate staff account. Commands that create economy value need group 5 or higher
   (`Chaos.economyMinGroup` in `chaos_constants.lua`, checked by `Chaos.staffCommand`): `/coins`, `/charm give` and
-  `/pact` (all but `info`); so do the admin panel's Economy and Store categories and its Give item / Create item.
-  `/classunlock`, `/worldboss`, `/siege`, `/newplayerkit` and `/towerrun` are open to every group with access (4+);
+  `/pact` (all but `info`); so do the admin panel's Economy and Store categories and its Give item / Create item, and
+  every command that hands out value (`/rift key`, `/ascended sigil`, `/classunlock`, `/cosmetic`, `/pet give`, the
+  `/newplayerkit` kit and the others in docs/GM_HANDBOOK.md section 2). `/worldboss`, `/siege`, `/towerrun` and the
+  looking and testing parts of the others are open to every group with access (4+);
   `/goblin`, `/blessing`, `/season start|end`, `/seasonpass` and `/journey` need a god account (type 5). Every staff
   use of a guarded command goes to the admin audit log. Who may do what, and the rules for staff:
   [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12).
@@ -416,7 +418,7 @@ loot), autoloot, crafting, store, auto seller, store pouches, daily reward, towe
 | Daily, tower milestones, bounty | server-side state decides; rewards all or nothing | safe |
 | Party invites (151) | accept only with a pending invitation | safe |
 | Leaderboard (229) | the class ladder counts the players ahead on every request | safe; rate limited: one `get` every 150 ms (`leaderboard.lua`) |
-| Staff talkactions | every `/` command checks the group's access flag (`/goblin`: gods, admin panel and `/testkit`: group 4+); `/coins`, `/charm give` and `/pact` (all but `info`) need group 5 (`Chaos.staffCommand`, `Chaos.economyMinGroup`), every use in the admin audit log | safe (`tests/staff_permissions_test.lua`) |
+| Staff talkactions | every `/` command checks the group's access flag (`/goblin`: gods, admin panel and `/testkit`: group 4+); `/coins`, `/charm give`, `/pact` (all but `info`) and every command that hands out value need group 5 (`Chaos.staffCommand`, `Chaos.economyMinGroup`), every use in the admin audit log | safe (`tests/staff_permissions_test.lua`) |
 | `clientservices.py` | no socket timeout (an idle connection held a thread); a negative `Content-Length` blocked a thread | **fixed** |
 | Test servers' `zz_test_lua.lua` | `/lua` runs any Lua for any player | never ship (section 11) |
 

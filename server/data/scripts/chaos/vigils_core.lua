@@ -225,6 +225,61 @@ function V.haste(entry)
 	return entry and entry.haste or 0
 end
 
+-- ------------------------------------------------------------------------------------------------ the buff bar
+-- One row of the buff bar (data/lib/chaos_buffs.lua, source "vigils"). key: a vigil's key, or "tithe" (Iron Tithe's
+-- health reservation). entry: what covers the player now (V.coverage, nil: nothing); mask / mods: the player's own
+-- vigils and mods (nil: it holds none); parched: its rift run has Parched Veins. Returns {name, desc, stacks} or nil;
+-- stacks = the effect (or the health reserved) in whole percent. No timer: a vigil lasts while it is on and in range.
+local EFFECT_TEXT = {
+	wrath = "+%s%% damage dealt",
+	iron = "-%s%% damage taken",
+	haste = "+%s%% speed",
+	clarity = "%s%% of your maximum mana back every second",
+}
+
+local function wholePct(share)
+	return math.floor((share or 0) * 100 + 0.5)
+end
+
+-- a share as a percent with at most one decimal ("5", "7.5")
+local function pctText(share)
+	local tenths = math.floor((share or 0) * 1000 + 0.5)
+	if tenths % 10 == 0 then
+		return string.format("%d", math.floor(tenths / 10))
+	end
+	return string.format("%d.%d", math.floor(tenths / 10), tenths % 10)
+end
+V.pctText = pctText
+
+function V.buffItem(key, entry, mask, mods, parched)
+	mods = mods or {}
+	if key == "tithe" then
+		if not mods.tithe or not mask or mask <= 0 then
+			return nil
+		end
+		local reserved = wholePct(math.min(V.totalReserve(mask, mods), cfg().maxReserve))
+		return {name = "Iron Tithe", stacks = reserved, desc = string.format("Your vigils reserve %d%% of your maximum " ..
+			"health instead of mana. They cover you alone, %d%% stronger.", reserved, wholePct(cfg().tithe.self - 1))}
+	end
+	local e = V.byKey[key]
+	local value = e and entry and entry[key] or 0
+	if value <= 0 then
+		return nil
+	end
+	local text = string.format(EFFECT_TEXT[key], pctText(value))
+	if key == "clarity" and parched then
+		text = text .. " (none under Parched Veins)"
+	end
+	local tail
+	if mask and V.has(mask, key) then
+		tail = string.format("Your own: it reserves %d%% of your maximum %s.", wholePct(V.reserve(key, mods)),
+			mods.tithe and "health" or "mana")
+	else
+		tail = "From a party member's vigil."
+	end
+	return {name = e.def.name, stacks = math.max(1, wholePct(value)), desc = text .. ". " .. tail}
+end
+
 -- the text of a toggle (the spell's message)
 function V.toggleText(key, on, total, mods)
 	local e = V.byKey[key]

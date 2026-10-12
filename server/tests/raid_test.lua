@@ -1007,11 +1007,16 @@ behind.pos = Position(boss.pos.x - 3, boss.pos.y, 7)
 for _, p in ipairs(raiders) do
 	p.hp = p.maxhp
 end
+-- the one in front is a Hollow Vessel (archetypes.lua percentBase via Chaos.percentBase): health + maximum energy shield
+ChaosArchetypes = {percentBase = function(p) return p.vessel and (p.maxhp + p.vessel) or p.maxhp end}
+front_.vessel = 5000
 runTo(T + 300)
 runTo(T + cfg.telegraph.warnMs + 100)
 check(front_.hp < front_.maxhp, "the cleave hits the one in front")
 eq(behind.hp, behind.maxhp, "not the one behind")
 eq(off.hp, off.maxhp, "not the tank")
+eq(front_.lastHit, K.shareDamage(front_.maxhp + 5000, cfg.mechanics.cleave.share), "the cleave on a Hollow Vessel counts its shield")
+ChaosArchetypes, front_.vessel = nil, nil
 
 -- a lethal hit is caught: the hall, healed, out of the fight
 behind.hp = 100

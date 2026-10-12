@@ -82,6 +82,8 @@ on through logout and death until you switch it off.
 All four together reserve 110%, so they do not fit without help. Covenant of Vigils takes them to 77%; with the
 Choirmaster's Circlet to 65%. Two holders' vigils of one kind do not add up: the strongest counts. A vigil that no
 longer fits (a unique taken off) is switched off, the last one first, with a message.
+Every vigil that covers you shows on the buff bar with its effect in percent, and says whether it is yours or a party
+member's. With Iron Tithe an "Iron Tithe" entry shows the health your vigils reserve.
 
 ## Hollow Vessel: a life on the energy shield
 
@@ -95,8 +97,9 @@ regeneration, heals, potions and leech fill only those 100 points. Poison and li
   -36%). One hit that breaks the shield kills. A login starts with an empty shield, as for everyone.
 - **With our other rules**: health leech and Sanguine Covenant have nothing to fill; Pyre Oath's aura and burn and
   Thornbound Oath's cap read the 100 health, so they do not suit it. The mana shield and the Trials' Mana Ward still
-  come first and work as before. The rifts' percent-of-health hits (Scorched Earth, Rimefloor, Veilstorm, the
-  Wrathful Guardian's nova) count your health plus your maximum shield. Festering Wounds is poison: no effect. The
+  come first and work as before. The percent-of-health hits of the rifts (Scorched Earth, Rimefloor, Veilstorm, the
+  Wrathful Guardian's nova), the raid, the Ascended Omens and the guild boss count your health plus your maximum
+  shield. Festering Wounds is poison: no effect. The
   hexes (Searing, Flaying, Sapping) work as on anyone. Parched Veins does not touch the shield. Iron Tithe has no
   effect next to it.
 

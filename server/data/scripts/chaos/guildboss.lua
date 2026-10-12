@@ -927,9 +927,11 @@ local function setHealth(monster, hp)
 	end
 end
 
+-- a share of max health as one scripted hit of the boss; a Hollow Vessel counts health + maximum energy shield
+-- (Chaos.percentBase)
 local function shareHit(run, player, share)
 	local boss = bossOf(run)
-	local dmg = U.shareDamage(player:getMaxHealth(), share)
+	local dmg = U.shareDamage(Chaos.percentBase(player), share)
 	run.scripted = true
 	if hitFn then
 		pcall(hitFn, boss and boss:getId() or 0, player, _G[COMBAT[C().boss.element] or "COMBAT_PHYSICALDAMAGE"] or COMBAT_PHYSICALDAMAGE,

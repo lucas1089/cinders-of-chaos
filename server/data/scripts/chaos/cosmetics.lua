@@ -559,6 +559,10 @@ function gm.onSay(player, words, param)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
 		return false
 	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): a grant needs an administrator; sync and revoke do not
+	if not Chaos.staffCommand(player, words, param, what ~= "sync" and mode ~= "revoke") then
+		return false
+	end
 	if what == "sync" then
 		-- re-sync the achievement cosmetics (reward track too) of the account; only adds, never takes back
 		local target = Player(name)

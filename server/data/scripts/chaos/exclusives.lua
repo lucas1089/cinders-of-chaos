@@ -350,6 +350,10 @@ function gm.onSay(player, words, param)
 			"/exclusive <character>, roll, <kill key>")
 		return false
 	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): a grant or a roll needs an administrator, a revoke does not
+	if not Chaos.staffCommand(player, words, param, mode ~= "revoke") then
+		return false
+	end
 	local target = Player(name)
 	if what == "roll" then
 		if not target then

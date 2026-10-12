@@ -2,11 +2,12 @@
 -- The vigils, auras that reserve mana (docs/BUILDS.md "Vigils", server/README.md "Vigils"):
 --   * the pure rules (vigils_core.lua): the mask, the reservation with the keystones and the uniques, what fits, the
 --     coverage of a party (radius, floor, Iron Tithe, multi-client), the strongest of two holders, the hit factors with
---     Inspiring Illusion and the Templar aura, Clarity under Parched Veins;
+--     Inspiring Illusion and the Templar aura, Clarity under Parched Veins, the buff bar rows and their texts;
 --   * the toggle spells' side (data/spells/chaos/_vigils.lua) against mocks: on, off, too much reserved, the keystone;
 --   * the scripts' glue (vigils.lua) against a mocked engine: the reserved mana as a lower maximum (renewed when the
 --     maximum changes, given back when switched off, re-applied after death), Iron Tithe on health, the party in range,
---     haste and Clarity, vigils that no longer fit switched off, the hit multipliers;
+--     haste and Clarity, vigils that no longer fit switched off, the hit multipliers, the rows on the buff bar
+--     (data/lib/chaos_buffs.lua: holder, party member, stranger, no traffic when quiet, Iron Tithe);
 --   * the data: the spells in spells_chaos.xml, the storage and Inspiring Illusion's numbers match their sources.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
@@ -111,6 +112,32 @@ eq(V.clarityMana({clarity = 0.01}, 2000, false), 20, "clarity 1% a second")
 eq(V.clarityMana({clarity = 0.01}, 2000, true), 0, "not under Parched Veins")
 check(V.toggleText("wrath", true, 0.35, {}):find("35%% of your maximum mana"), "toggle text")
 check(V.toggleText("wrath", true, 0.21, {tithe = true}):find("health"), "toggle text: health with Iron Tithe")
+-- the buff bar rows: one per vigil that covers the player (stacks = the effect in percent), Iron Tithe's health
+eq(V.pctText(0.05), "5", "percent text"); eq(V.pctText(0.075), "7.5", "percent text with a decimal")
+local own = V.buffItem("wrath", {wrath = 0.05, haste = 0.15}, V.with(0, "wrath", true), {})
+check(own and own.name == "Vigil of Wrath" and own.stacks == 5, "own wrath: name and stacks")
+eq(own.desc, "+5% damage dealt. Your own: it reserves 35% of your maximum mana.", "own wrath text")
+local from = V.buffItem("haste", {wrath = 0.05, haste = 0.15}, V.with(0, "wrath", true), {})
+eq(from.desc, "+15% speed. From a party member's vigil.", "a party member's haste")
+eq(from.stacks, 15, "haste stacks")
+eq(V.buffItem("iron", {wrath = 0.05}, nil, nil), nil, "no iron, no row")
+eq(V.buffItem("iron", nil, nil, nil), nil, "not covered, no row")
+eq(V.buffItem("iron", {iron = 0.06 * 1.2}, nil, nil).desc, "-7.2% damage taken. From a party member's vigil.",
+	"a Covenant holder's iron on the party")
+local clar = V.buffItem("clarity", {clarity = 0.01}, nil, nil, true)
+eq(clar.desc, "1% of your maximum mana back every second (none under Parched Veins). From a party member's vigil.",
+	"clarity under Parched Veins")
+eq(clar.stacks, 1, "clarity stacks")
+local titheMods = {tithe = true}
+local titheMask = V.with(V.with(0, "wrath", true), "iron", true)
+local tw = V.buffItem("wrath", {wrath = 0.075, iron = 0.09}, titheMask, titheMods)
+eq(tw.desc, "+7.5% damage dealt. Your own: it reserves 21% of your maximum health.", "Iron Tithe: health, x1.5")
+eq(tw.stacks, 8, "7.5% rounds to 8 stacks")
+local tt = V.buffItem("tithe", {wrath = 0.075, iron = 0.09}, titheMask, titheMods)
+check(tt and tt.name == "Iron Tithe" and tt.stacks == 42, "the Iron Tithe row: 42% of the health reserved")
+eq(tt.desc, "Your vigils reserve 42% of your maximum health instead of mana. They cover you alone, 50% stronger.", "Iron Tithe text")
+eq(V.buffItem("tithe", {wrath = 0.05}, V.with(0, "wrath", true), {}), nil, "no Iron Tithe row without the keystone")
+eq(V.buffItem("tithe", nil, 0, titheMods), nil, "no Iron Tithe row without a vigil on")
 
 -- ------------------------------------------------------------------------------------------------ engine mocks
 NOW = 100000
@@ -222,6 +249,28 @@ check(haste and haste.formula[1] == 0.15 and haste.params[CONDITION_PARAM_TICKS]
 eq(friend.c.mana, 110, "clarity: 1% of the friend's maximum mana")
 near(M.dealt(friend), 1.05, "the friend deals 5% more")
 near(M.taken(friend), 1, "no iron: nothing taken off")
+-- the buff bar (data/lib/chaos_buffs.lua, source "vigils"): the holder and the friend see the rows, the stranger none
+dofile("data/lib/chaos_buffs.lua")
+local BB = ChaosBuffs
+local function rows(p)
+	local out = {}
+	for _, it in ipairs(BB.collect(p, NOW)) do
+		if it.key:match("^vigil_") then out[it.key] = it end
+	end
+	return out
+end
+local hr, fr = rows(holder), rows(friend)
+check(hr.vigil_wrath and hr.vigil_haste and hr.vigil_clarity and not hr.vigil_iron and not hr.vigil_tithe,
+	"the holder: wrath, haste, clarity")
+check(hr.vigil_wrath.desc:find("Your own: it reserves 35%% of your maximum mana") ~= nil, "the holder's own text")
+check(hr.vigil_wrath.leftMs == nil and hr.vigil_wrath.stacks == 5 and hr.vigil_wrath.icon == "buff:vigil_wrath",
+	"no timer, the effect as stacks, its own icon")
+check(fr.vigil_haste and fr.vigil_haste.desc:find("From a party member's vigil", 1, true) and fr.vigil_haste.stacks == 15,
+	"the friend: the holder's haste")
+check(next(rows(stranger)) == nil and next(rows(farFriend)) == nil, "a stranger and a friend far away: no rows")
+local sentBar = {}
+BB.full(sentBar, BB.collect(friend, NOW), NOW)
+eq(BB.diff(sentBar, BB.collect(friend, NOW + 1000), NOW + 1000), nil, "an unchanged vigil sends nothing")
 -- the maximum changes (a level, the tree): the reservation follows the unreserved maximum
 holder.c.maxMana = 2400
 registered.ChaosVigilsThink.onThink(1000)
@@ -244,6 +293,9 @@ check(M.applied[holder:getId()] == nil, "forgotten")
 NOW = NOW + 2000
 registered.ChaosVigilsThink.onThink(1000)
 check(M.covered[friend:getId()] == nil, "the cover runs out")
+check(next(rows(friend)) == nil, "no cover, no rows on the bar")
+local gone = BB.diff(sentBar, BB.collect(friend, NOW), NOW)
+check(gone and gone.del and #gone.del == 3, "the three rows are removed from the friend's bar")
 
 -- Iron Tithe: the health is reserved, only the holder is covered, x1.5
 ChaosArchetypes = {flags = {[holder:getId()] = {arIronTithe = true}}, uniques = {}}
@@ -254,6 +306,11 @@ eq(holder:getMaxHealth(), 5000 - math.floor(5000 * 0.7 * 0.6), "Iron Tithe: 42% 
 check(M.covered[holder:getId()] and not M.covered[friend:getId()], "Iron Tithe: the holder alone")
 near(M.dealt(holder), 1.075, "wrath x1.5 on the holder")
 near(M.taken(holder), 0.91, "iron x1.5 on the holder")
+hr = rows(holder)
+check(hr.vigil_tithe and hr.vigil_tithe.stacks == 42 and hr.vigil_tithe.name == "Iron Tithe", "the bar: Iron Tithe, 42% health")
+check(hr.vigil_iron and hr.vigil_iron.desc:find("of your maximum health", 1, true) and hr.vigil_iron.stacks == 9,
+	"the bar: iron x1.5, reserved from the health")
+check(next(rows(friend)) == nil, "the friend: nothing under Iron Tithe")
 -- the Templar aura: the stronger counts
 ChaosTemplar = {activeAura = function(id) return id == holder:getId() and {reduction = 0.12} or nil end}
 near(M.taken(holder), 1, "under the Sentinel's 12%: nothing more")

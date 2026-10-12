@@ -8,7 +8,7 @@
 --   * sources        everything else, a function B.sources[name](player, nowMs, def) that returns a list of items: skull
 --                    timers, world buffs, the Victory buff, the Golden Hour / Chaos Storm world events, the day's events,
 --                    the double experience potion, Vocation Trials kill stacks (Bloodlust and the like), the Monk's
---                    chi, the Berserker's Rage, Reprisal, the Iron Palm stun on a player, the Templar aura. A source reads the other modules' globals guarded (a module
+--                    chi, the Berserker's Rage, Reprisal, the Iron Palm stun on a player, the Templar aura, the vigils. A source reads the other modules' globals guarded (a module
 --                    that is not loaded simply adds nothing).
 --   Item ailments (bleed / ignite / poison / chill / shock of item_mods.lua) are only ever put on monsters, so they
 --   never show here; what a monster does to a player (poison, burning, slow ...) is an engine condition above.
@@ -125,6 +125,13 @@ source("chi", "chi", "buff", "Chi", "buff:chi", "Your strikes build chi, finishe
 source("rage", "rage", "buff", "Rage", "buff:rage", "You hit harder the lower your health.", 22)
 source("reprisal", "reprisal", "buff", "Reprisal", "buff:reprisal", "Monsters that hit you may be struck back.", 23)
 source("templar_aura", "templarAura", "buff", "Templar Aura", "buff:templar_aura", "A Templar's aura shields you.", 24)
+-- the vigils (vigils.lua): one row per vigil that covers you, yours or a party member's (stacks = the effect in percent,
+-- no timer), and Iron Tithe's health reservation for its holder; the four vigils show their spell's icon
+source("vigil_wrath", "vigils", "buff", "Vigil of Wrath", "buff:vigil_wrath", "A vigil covers you: more damage dealt.", 24, {vigil = "wrath"})
+source("vigil_iron", "vigils", "buff", "Vigil of Iron", "buff:vigil_iron", "A vigil covers you: less damage taken.", 24, {vigil = "iron"})
+source("vigil_haste", "vigils", "buff", "Vigil of Haste", "buff:vigil_haste", "A vigil covers you: you move faster.", 24, {vigil = "haste"})
+source("vigil_clarity", "vigils", "buff", "Vigil of Clarity", "buff:vigil_clarity", "A vigil covers you: mana comes back every second.", 24, {vigil = "clarity"})
+source("vigil_tithe", "vigils", "buff", "Iron Tithe", "buff:vigil_tithe", "Your vigils reserve maximum health instead of mana.", 24, {vigil = "tithe"})
 source("stunned", "stun", "debuff", "Stunned", "buff:stunned", "You cannot move, attack or cast attack spells. Healing still works.", 40)
 cond("stun_immune", "CONDITION_ATTRIBUTES", 71035, "buff", "Stun Immunity", "buff:stun_immune",
 	"You were stunned: no stun can hold you until this ends, and the next one is shorter.", 25)
@@ -429,6 +436,18 @@ function S.templarAura(player, now, def)
 	end
 	it.desc = clip(text .. ".", B.cfg.maxDesc)
 	return {it}
+end
+
+-- the vigils (vigils.lua): ChaosVigils.buffItem(player, def.vigil, now) -> {name, desc, stacks} or nil
+function S.vigils(player, now, def)
+	local X = ChaosVigils
+	local it = X and X.buffItem and X.buffItem(player, def.vigil, now)
+	if not it then
+		return nil
+	end
+	local out = item(def, nil, it.stacks)
+	out.name, out.desc = clip(it.name or def.name, B.cfg.maxName), clip(it.desc or def.desc, B.cfg.maxDesc)
+	return {out}
 end
 
 -- season modes (season_modes.lua): ChaosSeason.modesBuffItem(player, def) returns the item or nil

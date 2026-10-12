@@ -545,6 +545,11 @@ function gm.onSay(player, words, param)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /transmog <character>, <set key | all | look id>[, revoke]")
 		return false
 	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): an unlock needs an administrator, revoking a set does not
+	local value = not (mode == "revoke" and what ~= "all" and not tonumber(what))
+	if not Chaos.staffCommand(player, words, param, value) then
+		return false
+	end
 	local accountId
 	local id = db.storeQuery("SELECT `account_id` FROM `players` WHERE `name` = " .. db.escapeString(name))
 	if id then

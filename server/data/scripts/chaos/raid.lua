@@ -765,11 +765,12 @@ local function telegraph(run, tiles, hitFnc, warnMs, centers)
 	end, hitMs)
 end
 
--- a share of max health as one scripted hit of the boss (not scaled again by the sunder or the enrage)
+-- a share of max health as one scripted hit of the boss (not scaled again by the sunder or the enrage); a Hollow Vessel
+-- counts health + maximum energy shield (Chaos.percentBase)
 local function shareHit(run, player, share, ctype)
 	local f = run.fight
 	local boss = f and bossOf(run, f.idx)
-	local dmg = K.shareDamage(player:getMaxHealth(), share)
+	local dmg = K.shareDamage(Chaos.percentBase(player), share)
 	run.scripted = true
 	if hitFn then
 		pcall(hitFn, boss and boss:getId() or 0, player, ctype or COMBAT_PHYSICALDAMAGE, -dmg, -dmg, CONST_ME_NONE,

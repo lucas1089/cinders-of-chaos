@@ -1011,6 +1011,10 @@ function gm.onSay(player, words, param)
 	end
 	local cmd, rest = (param or ""):match("^%s*(%a+)%s*(.-)%s*$")
 	cmd = (cmd or ""):lower()
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): /pet give needs an administrator
+	if not Chaos.staffCommand(player, words, param, cmd == "give") then
+		return false
+	end
 	local live = P.live[player:getId()]
 	if cmd == "give" then
 		local key, who = rest:match("^([%w_]+)%s*,?%s*(.-)$")

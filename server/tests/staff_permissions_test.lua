@@ -2,6 +2,9 @@
 -- Economy-creating staff tools need an administrator (group >= 5): the admin panel's players.give_item and
 -- world.create_item (like economy.*), and the talkactions /coins, /charm give, /pact days|extra (Chaos.staffCommand in
 -- chaos_constants.lua). Every staff use of /coins, /charm, /pact, /market and /orbx is written to the audit log.
+-- Staff never give value (docs/GM_HANDBOOK.md section 2): /rift key|omen|fragments, /ascended sigil|relic|shards,
+-- /newplayerkit (kit, milestone, reset), /guild bank|xp|rent paid, /classunlock, /cosmetic, /exclusive, /transmog
+-- grants and /pet give need an administrator too; their guards are read from the files and evaluated per subcommand.
 -- The staff ladder of docs/GM_HANDBOOK.md section 4: mutes up to 24 h, bans of 30 days or more by an administrator.
 local checks = 0
 local function eq(a, b, m)
@@ -102,5 +105,68 @@ for f, economy in pairs({["shop.lua"] = "true", ["charms.lua"] = "true", ["marke
 end
 eq(src("pact.lua"):find('Chaos.staffCommand(player, words, param, sub ~= nil and sub ~= "info")', 1, true) ~= nil, true,
 	"pact.lua: days / extra / end / claimreset need an administrator")
+
+-- staff never give value (docs/GM_HANDBOOK.md section 2, decided): every staff command that hands something out needs
+-- an administrator; what only looks, tests or takes away stays at group 4
+local valueGuards = {
+	["rift.lua"] = 'if gm and (args[1] == "key" or args[1] == "omen" or args[1] == "fragments")\n\t\t\tand not Chaos.staffCommand(player, words, param, true) then',
+	["uber.lua"] = 'Chaos.staffCommand(player, words, param, cmd == "sigil" or cmd == "relic" or cmd == "shards")',
+	["newplayer.lua"] = 'local value = what == "" or what == "kit" or what:match("^milestone") ~= nil or what == "reset"\n\tif not Chaos.staffCommand(player, words, param, value) then',
+	["guild.lua"] = 'local value = sub == "bank" or sub == "xp" or (sub == "rent" and (arg or ""):lower():match("^%s*paid") ~= nil)\n\tif not Chaos.staffCommand(player, words, param, value) then',
+	["class_unlocks.lua"] = 'Chaos.staffCommand(player, words, param, mode ~= "revoke")',
+	["cosmetics.lua"] = 'Chaos.staffCommand(player, words, param, what ~= "sync" and mode ~= "revoke")',
+	["exclusives.lua"] = 'Chaos.staffCommand(player, words, param, mode ~= "revoke")',
+	["transmog.lua"] = 'local value = not (mode == "revoke" and what ~= "all" and not tonumber(what))\n\tif not Chaos.staffCommand(player, words, param, value) then',
+	["pets.lua"] = 'Chaos.staffCommand(player, words, param, cmd == "give")',
+}
+for f, guard in pairs(valueGuards) do
+	eq(src(f):find(guard, 1, true) ~= nil, true, f .. ": the value it hands out needs an administrator")
+end
+-- the guards' conditions as written in the files, evaluated for each subcommand: value -> administrator, the rest not
+local function cond(f, pattern)
+	local e = src(f):match(pattern)
+	assert(e, f .. ": guard not found")
+	return function(env)
+		env.tonumber = tonumber
+		local chunk
+		if setfenv then
+			chunk = assert(loadstring("return " .. e))
+			setfenv(chunk, env)
+		else
+			chunk = assert(load("return " .. e, f, "t", env))
+		end
+		return chunk() == true
+	end
+end
+local checksOf = {
+	{cond("uber.lua", "Chaos%.staffCommand%(player, words, param, (cmd == .-)%) then"),
+		{{{cmd = "sigil"}, true}, {{cmd = "relic"}, true}, {{cmd = "shards"}, true}, {{cmd = "phase"}, false}, {{cmd = "end"}, false}}},
+	{cond("newplayer.lua", "local value = (.-)\n"),
+		{{{what = ""}, true}, {{what = "kit"}, true}, {{what = "milestone 2"}, true}, {{what = "reset"}, true},
+		{{what = "welcome"}, false}, {{what = "tutorial"}, false}}},
+	{cond("guild.lua", "local value = (.-)\n"),
+		{{{sub = "bank", arg = "1000"}, true}, {{sub = "xp", arg = "50"}, true}, {{sub = "rent", arg = "paid"}, true},
+		{{sub = "rent", arg = "due"}, false}, {{sub = "info"}, false}, {{sub = "hall"}, false}}},
+	{cond("class_unlocks.lua", "Chaos%.staffCommand%(player, words, param, (.-)%) then"),
+		{{{mode = ""}, true}, {{mode = "revoke"}, false}}},
+	{cond("cosmetics.lua", "Chaos%.staffCommand%(player, words, param, (.-)%) then"),
+		{{{what = "all", mode = ""}, true}, {{what = "kill_sunring", mode = ""}, true}, {{what = "sync", mode = ""}, false},
+		{{what = "kill_sunring", mode = "revoke"}, false}}},
+	{cond("exclusives.lua", "Chaos%.staffCommand%(player, words, param, (.-)%) then"),
+		{{{what = "roll", mode = "raid_sovereign"}, true}, {{what = "all", mode = ""}, true}, {{what = "x", mode = "revoke"}, false}}},
+	{cond("transmog.lua", "local value = (.-)\n"),
+		{{{what = "all", mode = ""}, true}, {{what = "all", mode = "revoke"}, true}, {{what = "3456", mode = "revoke"}, true},
+		{{what = "falconer", mode = ""}, true}, {{what = "falconer", mode = "revoke"}, false}}},
+	{cond("pets.lua", "Chaos%.staffCommand%(player, words, param, (.-)%) then"),
+		{{{cmd = "give"}, true}, {{cmd = "xp"}, false}, {{cmd = "species"}, false}}},
+}
+for i, c in ipairs(checksOf) do
+	for _, case in ipairs(c[2]) do
+		local words = {}
+		for k, v in pairs(case[1]) do words[#words + 1] = k .. "=" .. v end
+		table.sort(words)
+		eq(c[1](case[1]), case[2], "guard " .. i .. " (" .. table.concat(words, " ") .. ")")
+	end
+end
 
 print(string.format("staff_permissions_test: %d checks OK", checks))

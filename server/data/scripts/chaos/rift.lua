@@ -1710,10 +1710,9 @@ local function targets(run, now)
 end
 
 -- value share of each listed player's max health as damage of the element (no attacker: nothing scales it again).
--- A Hollow Vessel (archetypes.lua percentBase) counts health + maximum energy shield, its health being fixed and low.
+-- A Hollow Vessel counts health + maximum energy shield, its health being fixed and low (Chaos.percentBase).
 local function percentHit(p, share, element)
-	local base = ChaosArchetypes and ChaosArchetypes.percentBase and ChaosArchetypes.percentBase(p) or p:getMaxHealth()
-	local amount = R.percentHit(base, share)
+	local amount = R.percentHit(Chaos.percentBase(p), share)
 	doTargetCombatHealth(0, p, combatOf(element), -amount, -amount, effectOf(element))
 end
 
@@ -2970,6 +2969,11 @@ local function onRift(player, words, param)
 		args[#args + 1] = w:lower()
 	end
 	local gm = player:getGroup():getAccess()
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): keys, omen keys and fragments need an administrator
+	if gm and (args[1] == "key" or args[1] == "omen" or args[1] == "fragments")
+			and not Chaos.staffCommand(player, words, param, true) then
+		return false
+	end
 	if gm and args[1] == "key" then
 		local tier = R.clampTier(cfg, tonumber(args[2]) or 1)
 		local key

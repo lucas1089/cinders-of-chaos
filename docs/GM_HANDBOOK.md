@@ -20,7 +20,7 @@ community ranking (`staffGroup = 4` in the configs) and are never scored by the 
 | 1 | player | nothing extra |
 | 2, 3 | tutor, senior tutor (base server) | base Help channel tools (`!mute` / `!unmute` inside Help); no `/` commands, no admin panel |
 | 4 | **gamemaster** | the admin panel (Admin Panel button in the top bar, or Ctrl+Shift+F12; extended opcode 120): Players (info, kick, ban, unban, mute, set level / skill / vocation, remove item, give premium, teleport, summon, heal, set storage), World (spawn monster / NPC, remove items on a tile, teleport to town, start a raid), Tools (invisible, speed, whitelisted talkactions); most `/` commands (section 2); player reports (`/reports`) |
-| 5 | **administrator** (base name: community manager) | everything of group 4, plus the admin panel's Server (broadcast, save, online, stats), Economy (gold, bank, stash, market views), Events, Content, Accounts & Security (account lookup, ban lists, IP ban, sessions, admin log) and Store (sales, donations, give Chaos Coins) categories, Give item, Create item, God mode; the economy commands `/coins`, `/charm give`, `/pact` (all but `info`) |
+| 5 | **administrator** (base name: community manager) | everything of group 4, plus the admin panel's Server (broadcast, save, online, stats), Economy (gold, bank, stash, market views), Events, Content, Accounts & Security (account lookup, ban lists, IP ban, sessions, admin log) and Store (sales, donations, give Chaos Coins) categories, Give item, Create item, God mode; the economy commands `/coins`, `/charm give`, `/pact` (all but `info`) and every command that hands out value (section 2) |
 | 6 | **god** | everything, plus the admin panel's dangerous actions (reload, shutdown / restart, open / close the server, set group, clean map), Ghost mode, Record a donation |
 | account type 5 | god account | `/goblin`, `/blessing`, `/season start / end`, `/seasonpass`, `/journey`; never locked out of a class |
 
@@ -42,19 +42,22 @@ access flag (gamemaster or higher).
 | `/reports`, `/reports list closed\|all\|bugs`, `show <id>`, `score <name>`, `log <name>`, `check <name>`, `close <id>, <text>`, `clear <name>` | 4+ | player reports and the anti-bot (section 3) |
 | `/gmnotify <message>` | 4+ | a toast to every online player |
 | `/patchnotes reload\|unseen` | 4+ | read the notes folder now; forget your account's last seen week |
-| `/rift key <tier> [count \| mods]`, `/rift status`, `/rift fail` | 4+ | Rift Keys for tests, the runs and slots, fail your run |
+| `/rift status`, `/rift fail` | 4+ | the runs and slots, fail your run |
+| `/rift key <tier> [count \| mods]`, `/rift omen`, `/rift fragments` | **5+** | Rift Keys, Omen Keys and fragments for staff test characters |
 | `/worldboss start [name\|number\|random]`, `stop`, `arena` | 4+ | the world boss event |
 | `/invasion start <area\|random> [faction]`, `stop`, `status`, `schedule <minutes> ...` | 4+ | invasions |
 | `/siege start\|match\|end\|stop\|portal\|arena [n]\|signup <guild>\|clear` | 4+ | the guild siege |
 | `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ | arena, battleground, Scorched Marches |
-| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ | the instanced content: runs, phases, test items (sigils, shards) |
+| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ | the instanced content: runs, phases |
+| `/ascended sigil\|shards\|relic, <kind>` | **5+** | Ascended test items for staff test characters |
 | `/instances`, `/instances <type>`, `/instances close <type> <id>`, `/instances line [type]` | 4+ | every running instance (rift, descent, raid, ascended, guildboss, trials, ascension, tower, dungeon, arena, battleground, worldboss, siege, tutorial, bossroom) with its id, time left, players and idle grace; close one by its system's failure rule (nobody gets a reward, nothing is refunded that a time-out would not refund); who waits in line for a free slot (server/README.md "Instance limits") |
 | `/community status\|modifier <key>\|modifier auto\|add <points>\|stage <n>` | 4+ | the community goal and the weekly modifier |
-| `/guild xp\|bank\|info\|log\|rent\|hall <guild>[, value]`, `/guildwar list\|end, <id>\|expire, <id>` | 4+ | guilds and guild wars |
-| `/classunlock <character>, <class>[, revoke]` | 4+ | a class unlock for the whole account |
-| `/cosmetic`, `/exclusive`, `/transmog <character>, <key>[, revoke]` | 4+ | grant or revoke account cosmetics |
-| `/faction`, `/professions`, `/pet`, `/gamble`, `/mentor`, `/referral`, `/hideout`, `/achievements`, `/atlas` | 4+ | per-system inspection and test tools |
-| `/newplayerkit <name>[, welcome\|milestone <n>\|reset\|tutorial]`, `/towerrun <floors>,<seconds>` | 4+ | new-player kit and tutorial; a fake tower run on yourself |
+| `/guild info\|log\|rent\|hall <guild>[, value]`, `/guildwar list\|end, <id>\|expire, <id>` | 4+ | guilds and guild wars (`rent <guild>, paid`: 5+) |
+| `/guild xp\|bank <guild>, <value>` | **5+** | guild XP and the guild bank |
+| `/classunlock <character>, <class>[, revoke]` | **5+** (revoke: 4+) | a class unlock for the whole account |
+| `/cosmetic`, `/exclusive`, `/transmog <character>, <key>[, revoke]` | **5+** (revoke, `/cosmetic ..., sync`: 4+) | grant or revoke account cosmetics; `/exclusive ..., roll` is 5+ too |
+| `/faction`, `/professions`, `/pet`, `/gamble`, `/mentor`, `/referral`, `/hideout`, `/achievements`, `/atlas` | 4+ | per-system inspection and test tools (`/pet give`: 5+) |
+| `/newplayerkit <name>[, welcome\|milestone <n>\|reset\|tutorial]`, `/towerrun <floors>,<seconds>` | 4+ (the kit, `milestone`, `reset`: **5+**) | new-player kit and tutorial; a fake tower run on yourself |
 | `/market sweep\|info <id>\|orders`, `/orbx sweep\|info <id>\|escrow` | 4+ | market and Orb Exchange checks |
 | `/treestats [<class> [band] [n]]`, `/treestats export` | 4+ | passive tree picks per class line and level band (counts only); the CSV goes to the server's `data/` folder (server/README.md "Passive tree pick statistics") |
 | `/daily`, `/leaderboard`, `/season status`, `/spells reload`, `/supports reload` | 4+ | state and test clocks (`shift`: test servers only) |
@@ -63,12 +66,14 @@ access flag (gamemaster or higher).
 | `/goblin`, `/blessing`, `/season start\|end`, `/seasonpass`, `/journey` | **god account** | test and season tools |
 | base server `/` commands (ban, kick, teleport, create item, ...) | per the base server's groups | the admin panel covers the common ones with logging; prefer it |
 
-Many group 4 commands hand out value (`/rift key`, `/ascended sigil`, `/newplayerkit`, `/guild bank`, `/classunlock`,
-`/cosmetic`, `/pet give`). The code only guards `/coins`, `/charm give` and `/pact` at group 5.
+The commands that hand out value (`/rift key|omen|fragments`, `/ascended sigil|shards|relic`, `/newplayerkit` kit,
+milestone and reset, `/guild xp|bank` and `rent <guild>, paid`, `/classunlock`, `/cosmetic`, `/exclusive` and `/transmog`
+grants, `/pet give`) need group 5, like `/coins`, `/charm give` and `/pact`.
 **Rule (decided):** staff never give anything to a player character with any command; these tools are for staff test
 characters only. A refund after a confirmed bug goes through an administrator (group 5) with a written reason
-(section 6). Why: every gift to a player is economy value nobody earned. To do: move those commands behind
-`Chaos.staffCommand(..., true)` too, so the code enforces the rule.
+(section 6). Why: every gift to a player is economy value nobody earned. Done (2026-10-12): those commands sit behind
+`Chaos.staffCommand(..., true)`, so the code enforces the rule; a gamemaster is refused with a message and every use,
+refused or not, is in the admin audit log (`tests/staff_permissions_test.lua`).
 
 ## 3. Report handling
 
