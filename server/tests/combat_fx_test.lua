@@ -101,4 +101,22 @@ eq(callbacks[1][1](player, target), RETURNVALUE_NOERROR)
 eq(registered[1], "ChaosCombatFx")
 callbacks[1][1](creature(9, 1, 1, false), target)
 eq(#registered, 1, "monster attackers do not register")
+
+-- label colours: a palette byte passes through, "#rrggbb" maps to r*36 + g*6 + b (51 per step), anything else white
+eq(fx.paletteByte(154), 154, "byte kept"); eq(fx.paletteByte(0), 0); eq(fx.paletteByte(255), 255)
+eq(fx.paletteByte("#ff6633"), 193, "ember"); eq(fx.paletteByte("#66ccff"), 101, "frost")
+eq(fx.paletteByte("#ffb347"), 205, "rounds to nearest step"); eq(fx.paletteByte("#FFFFFF"), 215, "upper case hex")
+eq(fx.paletteByte("#000000"), 0, "black")
+for _, bad in ipairs({256, -1, 1.5, "ff6633", "#ff663", "orange", true}) do
+  eq(fx.paletteByte(bad), fx.defaultColor, "fallback for " .. tostring(bad))
+end
+eq(fx.paletteByte(nil), fx.defaultColor, "fallback for nil")
+reset()
+assert(fx.label(pos(5, 5), "Death Blast", "#ff6633"))
+eq(#packets, 1); eq(packets[1].bytes[1], 0x84, "animated text opcode")
+eq(packets[1].bytes[2], 193, "hex sent as its palette byte"); eq(packets[1].text, "Death Blast")
+reset()
+assert(fx.label(pos(5, 5), "x", 154)); eq(packets[1].bytes[2], 154, "byte sent as is")
+reset()
+assert(fx.label(pos(5, 5), "x")); eq(packets[1].bytes[2], fx.defaultColor, "no colour: white")
 print("combat_fx_test: ok")
