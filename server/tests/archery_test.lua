@@ -657,6 +657,32 @@ eq(sdone and sp, 40, "the next try sweeps the stash")
 eq(pl2.bank, bank2 + 40, "and pays once")
 eq(#dbq, 1, "and deletes the row")
 
+-- a character with nothing to sweep (made after the update): both marks set, no save (a login rush on a busy disk)
+local fresh = newPlayer()
+fresh.getDepotChest = function() return nil end
+fresh.getInbox = function() return newItem(1988) end
+stashRows = {}
+saves, dbq = 0, {}
+local fn, fg = A.sweep(fresh)
+eq(fn, 0, "nothing swept")
+eq(fg, 0, "nothing paid")
+eq(saves, 0, "no save at the first login of a fresh character")
+eq(fresh.storage[A_CFG.storage], 1, "the item sweep is marked done (saved with the character later)")
+eq(fresh.storage[A_CFG.storage + 1], 1, "the stash part too")
+eq(#dbq, 0, "no stash query")
+eq(#fresh.msgs, 0, "no message")
+-- arrows but no stash rows: one save (the items), none for the empty stash
+local onlyBag = newPlayer()
+onlyBag.getDepotChest = function() return nil end
+onlyBag.getInbox = function() return newItem(1988) end
+local bag3 = newItem(1988)
+onlyBag.slots[CONST_SLOT_BACKPACK] = bag3
+bag3:addInner(newItem(2544, 7))
+saves = 0
+eq((A.sweep(onlyBag)), 7, "the arrows are swept")
+eq(saves, 1, "one save: the items; an empty stash needs none")
+eq(onlyBag.storage[A_CFG.storage + 1], 1, "the empty stash is marked done")
+
 -- the hands at login (A.checkHands): the mock engine refuses what Player::queryAdd (0023) refuses
 function Item:clone()
 	local c = newItem(self.id, self.count)

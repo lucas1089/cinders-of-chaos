@@ -962,7 +962,9 @@ directions).
   with fewer iterations than configured is upgraded the same way. `sql/chaos_passwords.sql` widens the column from
   CHAR(40) to VARCHAR(255) (idempotent; `tools/install_all.py` runs it with the other `sql/*.sql`, and the website's
   installer makes the same change). Until it ran, old passwords keep working but stay SHA-1 (one console warning).
-  Accounts inserted with `SHA1(...)` (the Windows package's `test_accounts.sql`, `tools/loadtest.py`) work the same way.
+  Accounts inserted with `SHA1(...)` (the Windows package's `test_accounts.sql`, `tools/loadtest.py setup
+  --hash-iterations 0`) work the same way. `tools/loadtest.py setup` writes PBKDF2 hashes by default, as the website
+  does, so the bots' first logins cost what a new player's does.
 - **Where it is checked**: the login server (character list) and the game server (entering the game: the client's
   session key carries the password, so it is checked a second time). The engine has no other password path, and no
   Lua script reads or writes passwords (the admin panel's account lookup never shows them), so there is no Lua binding.
@@ -973,6 +975,14 @@ directions).
   on CPUs with them), far too long for the dispatcher. The check (database lookup + hash) runs on a login worker
   (2 threads, at most 64 waiting logins; more are refused with "Too many logins at the moment") and the answer goes back
   to the dispatcher. With 100 parallel wrong logins the dispatcher (status protocol round trip) kept a median of 1.8 ms.
+- **Login rush on a busy machine**: the worker shares the engine's one database connection with the dispatcher, so it
+  waits while the dispatcher runs the login scripts' queries. The SHA-1 migration adds a hash and an `UPDATE` (a
+  commit) to every first login. Measured (test server, full map, fresh database, 398 bots 0.15 s apart, a disk writer
+  running beside it): bots with SHA-1 passwords 249 of 398 in game (89 timeouts waiting for the character list, 51
+  "Too many logins at the moment", 9 game login timeouts); the same bots right after (already PBKDF2) 398 of 398; fresh
+  bots with PBKDF2 passwords and the archery fix below 395 of 398. This was the load test of the map markers (about 150
+  of 398 on the first run, 395 after a restart, on a 4-core machine at load 13). A real launch has PBKDF2 accounts from
+  the website; the migration of old accounts happens once per account.
 - **config.lua**: `passwordHashIterations = 120000` (iterations of new hashes; 1000 .. 10000000; the website's
   `CHAOS_PASSWORD_ITERATIONS` should be the same). `passwordType` is not read by the engine; `tools/prod_config.py`
   sets it to `"pbkdf2-sha256"` as a reminder of the scheme.
@@ -2921,7 +2931,11 @@ Throwing weapons (spears, stars, knives) are not ammunition and stay.
 **What players own** (`archery.lua`). At the first login after the update every arrow and bolt in the inventory, the depot
 chests of every town and the inbox goes, and the refund goes to the bank: half the cheapest NPC price (no NPC buys
 ammunition; `ammo` in the config, 1 gold for an unlisted arrow), then the character is saved (`Chaos.saveCharacter`;
-storage 7101100). All of it is in memory and saved as one: a crash before the save keeps nothing, the next login sweeps
+storage 7101100). A character with nothing to sweep (every character made after the update) only gets the two marks,
+without a save (they go with the next save; a crash before it looks at an empty inventory again). Before, each first
+login saved the character twice. Load test, fresh database, per bot over a short session: 13.7 InnoDB fsyncs and 12.5
+DELETEs before, 10.4 and 2.0 with this; 3.9 fsyncs on a second run. On a busy disk those writes held the login worker
+behind the dispatcher ("Account passwords", "Login rush"). All of it is in memory and saved as one: a crash before the save keeps nothing, the next login sweeps
 again. The stash (`chaos_stash`) is a step of its own (storage 7101101): refund and mark first, saved, and only then the
 rows are deleted; a failed save takes refund and mark back and leaves the rows. Later logins look at the inventory again
 (a base reward the tool did not know), and ammunition that reaches the inventory by a move (a map chest, a trade) is turned

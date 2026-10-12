@@ -92,6 +92,9 @@ jobs:
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
 
+      - name: Load test tool (failure reasons, bot password hashes)
+        run: python3 -I server/tools/loadtest_test.py
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)

@@ -13,7 +13,8 @@
 --     inbox goes, the refund goes to the bank, then the character is saved. All of that is in memory and is saved as one
 --     (Chaos.saveCharacter); a crash before the save keeps nothing and the next login sweeps again. The stash (a database
 --     table) is its own step (storage +1): the refund and the mark are saved first, the rows deleted after a good save;
---     a failed save takes the refund and the mark back and leaves the rows for the next login.
+--     a failed save takes the refund and the mark back and leaves the rows for the next login. Nothing to sweep (a
+--     character made after the update): only the marks are set, no save (they go with the next save).
 --   * the hands at login (A.checkHands): the quiver is worn in the shield hand next to a bow or crossbow and the
 --     ammunition slot is a second ring slot, rings only (engine src-patch 0023); the engine loads a character without
 --     its slot rules, so a quiver left in the ammunition slot moves to the shield hand (else the backpack or the
@@ -193,11 +194,16 @@ function A.sweepItems(player)
 		return pieces, gold, true
 	end
 	local take, gold, pieces = A.plan(entriesOf(A.belongings(player, true)))
+	player:setStorageValue(STORE_DONE, 1)
+	if #take == 0 then
+		-- nothing to sweep (every character made after the update): only the mark, saved with the character. No save
+		-- here: two full saves at every first login were most of its database writes (a login rush on a busy disk)
+		return 0, 0, true
+	end
 	for _, e in ipairs(take) do
 		e.item:remove()
 	end
 	credit(player, gold)
-	player:setStorageValue(STORE_DONE, 1)
 	local saved = Chaos.saveCharacter(player)
 	if not saved then
 		-- everything above is in memory: the next save (the logout's) keeps it all together
@@ -218,6 +224,11 @@ function A.sweepStash(player)
 	local guid = player:getGuid()
 	local rows = Chaos.select("SELECT `item_id`, `count` FROM `" .. T .. "` WHERE `player_id` = " .. guid,
 		{{"item_id", "n"}, {"count", "n"}})
+	if #rows == 0 then
+		-- no stash rows: only the mark, saved with the character (a crash before that looks at the empty stash again)
+		player:setStorageValue(STASH_DONE, 1)
+		return 0, 0, true
+	end
 	local entries = {}
 	for _, r in ipairs(rows) do
 		entries[#entries + 1] = {id = r.item_id, count = r.count, it = ItemType(r.item_id)}
