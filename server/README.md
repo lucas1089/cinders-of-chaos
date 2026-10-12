@@ -10620,9 +10620,14 @@ placed charms sized by their shape with the rarity colour as border and their ic
 locked), Your Charms (the charms in the backpack), Totals, Salvage / Reforge / Close. Drag a charm from the list onto the grid
 (the cells it would cover light up green or red under it), drag a placed charm to move it or onto the list to take it out; an
 item dragged in from an open backpack works too. Each charm has a tooltip (name, rarity, item level, shape, modifiers,
-signature, inactive, salvage / reforge cost). Icons: `client/tools/gen_charm_icons.py` (cells of the element ability icon
-sets in a round charm setting, one per modifier and unique; the padlock is drawn). Logic without client API:
-`charmsview.lua` (`charmsview_test.lua`).
+signature, inactive, salvage / reforge cost). Looks: each charm is drawn as an item sprite of the live pair (a UIItem),
+picked by its `icon` key (the unique, else its first modifier) in `charmsview.lua` `V.LOOKS`: one trinket per modifier and
+unique, none shared (dragon necklace for Damage to Dragons, glacier amulet for Ice Resistance, compass for the Wanderer's
+Compass, ...). A key without an entry shows the charm item's own look (`item`, the client id the state carries). 32 px; a
+2x2 charm 64 px (twice, whole pixels). Cells and charms sit in the skin's slots (`gen_skin.py` `charmslot_1x1/2x1/1x2/2x2`,
+drawn at the exact tile size); the rarity is the frame colour, and Glowing, Radiant and Unique charms also glow; locked
+cells are dimmed slots with the depot padlock. The server side is unchanged. Logic without client API: `charmsview.lua`
+(`charmsview_test.lua`: one look per key of `charms_config.lua`, none shared, a slot image per shape at the right size).
 
 **Tested on a live test server** (own server copy and database, one client, a level 1000 character): six charms placed through
 the protocol and by dragging with the mouse (the green preview, a drop on the locked achievement cells refused with the

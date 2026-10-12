@@ -86,7 +86,53 @@ local ul = V.unlockLines(s)
 has(ul[1].text, '[open]', 'open group'); has(ul[2].text, '[locked] Reach level 400: 3 cells', 'locked group')
 has(V.header(s), '10 of 20 cells open', 'header cells'); has(V.header(s), '2 charms placed', 'header placed')
 has(V.header(s), '7 charm shards', 'header shards')
-eq(V.iconPath(nil), '/images/game/charms/charm', 'default icon')
+
+-- looks: every pool key and unique of the server config has its own item sprite, none shared
+local here = arg and arg[0] and arg[0]:match('^(.*[/\\])') or ''
+local cfg = dofile(here .. '../../../../server/data/scripts/chaos/charms_config.lua')
+local keys = {}
+for _, m in ipairs(cfg.pool) do keys[#keys + 1] = m.key end
+for k in pairs(cfg.uniques) do keys[#keys + 1] = k end
+local seen = {}
+for _, k in ipairs(keys) do
+  local id = V.LOOKS[k]
+  eq(type(id), 'number', 'look of ' .. k)
+  n = n + 1
+  if id < 100 or id ~= math.floor(id) then error('look of ' .. k .. ' is no client item id: ' .. tostring(id)) end
+  if seen[id] then error('look ' .. id .. ' shared by ' .. seen[id] .. ' and ' .. k) end
+  seen[id] = k
+end
+local count = 0
+for k in pairs(V.LOOKS) do
+  count = count + 1
+  if not seen[V.LOOKS[k]] then error('look for a key the server has not: ' .. k) end
+end
+eq(count, #keys, 'one look per key')
+eq(V.lookOf(s.placed[1]), V.LOOKS.dmg_undead, 'look of a rolled charm: its first modifier')
+eq(V.lookOf(s.placed[2]), V.LOOKS.gravewarden, 'look of a unique')
+eq(V.lookOf({ icon = 'charm', item = 9223 }), 9223, 'no entry: the item look the server sends')
+eq(V.lookOf({ icon = 'charm' }), V.DEFAULT_LOOK, 'no entry, no item: the small charm look')
+eq(V.lookOf(nil), V.DEFAULT_LOOK, 'nil charm')
+eq(V.lookSide(1, 1), 32, '1x1 side'); eq(V.lookSide(2, 1), 32, '2x1 side'); eq(V.lookSide(1, 2), 32, '1x2 side')
+eq(V.lookSide(2, 2), 64, '2x2 side: twice, whole pixels')
+-- every charm shape of the server has its slot image, drawn at the tile's exact size (no slicing)
+local function pngSize(path)
+  local f = io.open(path, 'rb')
+  if not f then return nil end
+  local head = f:read(24); f:close()
+  local function u32(i) local a, b, c, d = head:byte(i, i + 3) return ((a * 256 + b) * 256 + c) * 256 + d end
+  return u32(17), u32(21)
+end
+for key, shape in pairs(cfg.shapes) do
+  local img = V.slotImage(shape.w, shape.h)
+  eq(type(img), 'string', 'slot image of ' .. key)
+  local r = V.rect(1, 1, shape.w, shape.h)
+  local pw, ph = pngSize(here .. '../../data' .. img .. '.png')
+  eq(pw, r.width, key .. ' slot width'); eq(ph, r.height, key .. ' slot height')
+end
+eq(V.slotImage(3, 1), nil, 'no slot for an unknown shape')
+eq(V.glows(s.placed[1]), true, 'Radiant glows'); eq(V.glows(s.placed[2]), true, 'Unique glows')
+eq(V.glows(s.bag[1]), false, 'Faint: no glow'); eq(V.glows({ rarity = 'Glowing' }), true, 'Glowing glows')
 eq(V.bagEntry(s, 's3.0').sid, 32303, 'bag entry'); eq(V.placedEntry(s, 12).unique, 'gravewarden', 'placed entry')
 
 print('charmsview_test: ' .. n .. ' checks passed')

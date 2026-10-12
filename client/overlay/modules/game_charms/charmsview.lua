@@ -9,15 +9,66 @@ local V = CharmsView
 
 V.CELL = 44 -- pixels per grid cell
 V.GAP = 2
-V.ICON_DIR = '/images/game/charms/'
+V.LOCK_IMAGE = '/images/game/depot/lock' -- the padlock of a locked cell (our depot art, 10x12, drawn at 2x)
+
+-- The look of each charm in the window: an item sprite of the live pair (client id), drawn with a UIItem. The key is
+-- the charm's `icon` from the server (its unique key, else the key of its first modifier). Every key has its own
+-- trinket, none shared (charmsview_test.lua checks it against server charms_config.lua). A key without an entry
+-- shows the charm item's own look (`item`, the client id the server sends), else the small charm's.
+V.LOOKS = {
+  dmg_dragons = 3085, -- dragon necklace
+  dmg_demons = 9041, -- vampiric crest
+  dmg_undead = 22191, -- skull fetish
+  dmg_humans = 9222, -- royal medal
+  dmg_humanoids = 10198, -- tribal crest
+  dmg_beasts = 3102, -- paw amulet
+  dmg_elementals = 16113, -- prismatic necklace
+  dmg_vermin = 3018, -- scarab amulet
+  res_fire = 817, -- magma amulet
+  res_ice = 815, -- glacier amulet
+  res_energy = 816, -- lightning pendant
+  res_earth = 814, -- terra amulet
+  res_death = 22195, -- onyx pendant
+  res_holy = 6561, -- ceremonial ankh
+  lifeonkill = 10341, -- phoenix charm
+  goldfind = 21974, -- golden lotus brooch
+  orbfind = 8822, -- ghost charm (a glowing orb)
+  oocspeed = 3254, -- roc feather
+  reputation = 5785, -- medal of honour
+  rifttime = 9660, -- mystical hourglass
+  gravewarden = 22184, -- shamanic talisman (unique: Gravewarden's Seal)
+  compass = 10302, -- compass (unique: Wanderer's Compass)
+  hoard = 22707, -- opticompass sphere (unique: Eye of the Hoard)
+  tally = 17856, -- basalt fetish (unique: Ashen Tally)
+}
+V.DEFAULT_LOOK = 9219 -- arcane insignia, the small charm item's look
+-- rarities drawn with a glow behind the frame (Faint: the frame only)
+V.GLOW = { Glowing = true, Radiant = true, Unique = true }
 V.COLORS = { gold = '#e8b84a', text = '#d8ccb4', dim = '#8c8070', good = '#8fd16a', bad = '#e07060', warn = '#e0a050',
-  open = '#2a1f1a', locked = '#141012', ok = '#3f7a2f', no = '#7a2f2a' }
+  open = '#ffffff', locked = '#4a403c', ok = '#5fb04a', no = '#c0463c', select = '#fff0c0' }
 
 local function num(v) return tonumber(v) or 0 end
 
-function V.iconPath(icon)
-  if not icon or icon == '' then icon = 'charm' end
-  return V.ICON_DIR .. icon
+-- the client id a charm is drawn with
+function V.lookOf(c)
+  if not c then return V.DEFAULT_LOOK end
+  return V.LOOKS[c.icon or ''] or (num(c.item) > 0 and num(c.item)) or V.DEFAULT_LOOK
+end
+
+-- the drawn size of a charm's sprite: 32 px, or 64 px (twice, whole pixels) when the charm covers 2 x 2 cells or more
+function V.lookSide(w, h)
+  return math.min(num(w), num(h)) >= 2 and 64 or 32
+end
+
+-- the slot image of a charm tile w x h cells (drawn at its exact size), nil for a shape without one
+V.SLOTS = { ['1x1'] = true, ['2x1'] = true, ['1x2'] = true, ['2x2'] = true }
+function V.slotImage(w, h)
+  local k = string.format('%dx%d', num(w), num(h))
+  return V.SLOTS[k] and ('/images/chaos/charmslot_' .. k) or nil
+end
+
+function V.glows(c)
+  return c ~= nil and V.GLOW[c.rarity or ''] == true
 end
 
 function V.key(x, y) return x .. ',' .. y end
