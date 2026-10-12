@@ -4935,7 +4935,8 @@ CodexData = {
 								{"Bounty chest", "3 in every weekly bounty chest (7 contracts in a week)."}
 							}
 						}
-					}
+					},
+					items = {29851}
 				},
 				{
 					id = "orb:alchemy",
@@ -4963,7 +4964,8 @@ CodexData = {
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 7.4% of those are this one."}
 							}
 						}
-					}
+					},
+					items = {24691}
 				},
 				{
 					id = "orb:exalted",
@@ -4991,7 +4993,8 @@ CodexData = {
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 1.5% of those are this one."}
 							}
 						}
-					}
+					},
+					items = {29855}
 				},
 				{
 					id = "orb:annulment",
@@ -5017,7 +5020,8 @@ CodexData = {
 								{"Bounty chest", "1 in every weekly bounty chest (7 contracts in a week)."}
 							}
 						}
-					}
+					},
+					items = {24697}
 				},
 				{
 					id = "orb:scouring",
@@ -5045,7 +5049,8 @@ CodexData = {
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 8.8% of those are this one."}
 							}
 						}
-					}
+					},
+					items = {24688}
 				},
 				{
 					id = "orb:chaos",
@@ -5078,7 +5083,8 @@ CodexData = {
 								{"World boss", "3 for every eligible player, plus a share of 60 split by contribution."}
 							}
 						}
-					}
+					},
+					items = {29856}
 				},
 				{
 					id = "orb:divine",
@@ -5114,7 +5120,8 @@ CodexData = {
 								{"World boss", "1 for every eligible player, plus a share of 25 split by contribution."}
 							}
 						}
-					}
+					},
+					items = {29857}
 				},
 				{
 					id = "orb:sockets",
@@ -5142,7 +5149,8 @@ CodexData = {
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 2.2% of those are this one."}
 							}
 						}
-					}
+					},
+					items = {24692}
 				},
 				{
 					id = "orb:tempering",
@@ -5174,7 +5182,8 @@ CodexData = {
 								{"Bounty chest", "2 in every weekly bounty chest (7 contracts in a week)."}
 							}
 						}
-					}
+					},
+					items = {32251}
 				},
 				{
 					id = "orb:binding",
@@ -5202,7 +5211,8 @@ CodexData = {
 								{"Store", "1 for 30 Chaos Coins, 3 a week per account."}
 							}
 						}
-					}
+					},
+					items = {32252}
 				},
 				{
 					id = "orb:excision",
@@ -5231,7 +5241,8 @@ CodexData = {
 								{"Store", "1 for 25 Chaos Coins, 3 a week per account."}
 							}
 						}
-					}
+					},
+					items = {32253}
 				},
 				{
 					id = "orb:reforging",
@@ -5258,7 +5269,8 @@ CodexData = {
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 2.9% of those are this one."}
 							}
 						}
-					}
+					},
+					items = {32254}
 				},
 				{
 					id = "orb:ruin",
@@ -5285,7 +5297,8 @@ CodexData = {
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 0.7% of those are this one."}
 							}
 						}
-					}
+					},
+					items = {32255}
 				},
 				{
 					id = "orb:whetstone",
@@ -5314,7 +5327,8 @@ CodexData = {
 								{"Bounty chest", "5 in every weekly bounty chest (7 contracts in a week)."}
 							}
 						}
-					}
+					},
+					items = {32256}
 				},
 				{
 					id = "orb:unveiling",
@@ -5375,7 +5389,8 @@ CodexData = {
 								{"Raid vendor", "2 orbs for 90 Sepulchre Marks, once a week."}
 							}
 						}
-					}
+					},
+					items = {32257}
 				},
 				{
 					id = "cur:29853",
@@ -5389,7 +5404,8 @@ CodexData = {
 							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
 						},
 						{h = "Sources", p = {"Monster loot lists of the base world."}}
-					}
+					},
+					items = {29853}
 				},
 				{
 					id = "cur:29858",
@@ -5403,7 +5419,8 @@ CodexData = {
 							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
 						},
 						{h = "Sources", p = {"Monster loot lists of the base world."}}
-					}
+					},
+					items = {29858}
 				},
 				{
 					id = "cur:29852",
@@ -5417,7 +5434,8 @@ CodexData = {
 							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
 						},
 						{h = "Sources", p = {"Monster loot lists of the base world."}}
-					}
+					},
+					items = {29852}
 				},
 				{
 					id = "cur:omenfragment",
@@ -5439,7 +5457,8 @@ CodexData = {
 								{"Rift monsters", "Rare 8%, legendary 25% of the time in rifts of tier 6 or more."}
 							}
 						}
-					}
+					},
+					items = {32071}
 				},
 				{
 					id = "cur:omenkey",
@@ -5452,7 +5471,8 @@ CodexData = {
 							h = "What it does",
 							p = {"It hums with a guardian's name. Use it in a protection zone to open its arena.", "Bound from 60 omen fragments; it opens one guardian's arena (Rift tab > Omens)."}
 						}
-					}
+					},
+					items = {32072}
 				},
 				{
 					id = "cur:29859",
@@ -5466,7 +5486,8 @@ CodexData = {
 							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
 						},
 						{h = "Sources", p = {"Monster loot lists of the base world."}}
-					}
+					},
+					items = {29859}
 				},
 				{
 					id = "cur:riftkey",
@@ -5484,7 +5505,8 @@ CodexData = {
 							p = {"Rift tab > Rift Keys has the sources and the orbs that work on keys."},
 							links = {"rift:keys"}
 						}
-					}
+					},
+					items = {10155}
 				},
 				{
 					id = "cur:shard",
@@ -5541,7 +5563,8 @@ CodexData = {
 							},
 							links = {"orb:transmutation", "orb:chaos", "orb:scouring", "orb:alchemy", "orb:annulment", "orb:divine", "orb:sockets", "orb:exalted", "orb:whetstone", "orb:tempering", "orb:reforging", "orb:excision", "orb:binding", "orb:ruin"}
 						}
-					}
+					},
+					items = {32051}
 				},
 				{
 					id = "cur:29854",
@@ -5555,7 +5578,8 @@ CodexData = {
 							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
 						},
 						{h = "Sources", p = {"Monster loot lists of the base world."}}
-					}
+					},
+					items = {29854}
 				}
 			},
 			filters = {
@@ -5615,7 +5639,8 @@ CodexData = {
 								{"World boss", "2 for every eligible player."}
 							}
 						}
-					}
+					},
+					items = {32001, 32002, 32003, 32004, 32005}
 				},
 				{
 					id = "gem:sapphire",
@@ -5656,7 +5681,8 @@ CodexData = {
 								{"World boss", "2 for every eligible player."}
 							}
 						}
-					}
+					},
+					items = {32006, 32007, 32008, 32009, 32010}
 				},
 				{
 					id = "gem:emerald",
@@ -5697,7 +5723,8 @@ CodexData = {
 								{"World boss", "2 for every eligible player."}
 							}
 						}
-					}
+					},
+					items = {32011, 32012, 32013, 32014, 32015}
 				},
 				{
 					id = "gem:amethyst",
@@ -5738,7 +5765,8 @@ CodexData = {
 								{"World boss", "2 for every eligible player."}
 							}
 						}
-					}
+					},
+					items = {32016, 32017, 32018, 32019, 32020}
 				},
 				{
 					id = "gem:topaz",
@@ -5779,7 +5807,8 @@ CodexData = {
 								{"World boss", "2 for every eligible player."}
 							}
 						}
-					}
+					},
+					items = {32021, 32022, 32023, 32024, 32025}
 				},
 				{
 					id = "gem:diamond",
@@ -5820,7 +5849,8 @@ CodexData = {
 								{"World boss", "2 for every eligible player."}
 							}
 						}
-					}
+					},
+					items = {32026, 32027, 32028, 32029, 32030}
 				},
 				{
 					id = "gem:onyx",
@@ -5861,7 +5891,8 @@ CodexData = {
 								{"World boss", "2 for every eligible player."}
 							}
 						}
-					}
+					},
+					items = {32031, 32032, 32033, 32034, 32035}
 				},
 				{
 					id = "gem:sockets",
@@ -5969,7 +6000,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {11395}
 				},
 				{
 					id = "unique:27647",
@@ -6008,7 +6040,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {27647}
 				},
 				{
 					id = "unique:27658",
@@ -6046,7 +6079,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {27658}
 				},
 				{
 					id = "unique:25175",
@@ -6085,7 +6119,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {25175}
 				},
 				{
 					id = "unique:28100",
@@ -6120,7 +6155,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28100}
 				},
 				{
 					id = "unique:28101",
@@ -6152,7 +6188,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28101}
 				},
 				{
 					id = "unique:25410",
@@ -6187,7 +6224,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {25410}
 				},
 				{
 					id = "unique:7379",
@@ -6229,7 +6267,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {7379}
 				},
 				{
 					id = "unique:3972",
@@ -6268,7 +6307,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {3972}
 				},
 				{
 					id = "unique:11374",
@@ -6307,7 +6347,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {11374}
 				},
 				{
 					id = "unique:8925",
@@ -6346,7 +6387,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {8925}
 				},
 				{
 					id = "unique:10314",
@@ -6385,7 +6427,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {10314}
 				},
 				{
 					id = "unique:2123",
@@ -6422,7 +6465,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {2123}
 				},
 				{
 					id = "unique:8892",
@@ -6461,7 +6505,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {8892}
 				},
 				{
 					id = "unique:29471",
@@ -6496,7 +6541,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {29471}
 				},
 				{
 					id = "unique:7894",
@@ -6531,7 +6577,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {7894}
 				},
 				{
 					id = "unique:7899",
@@ -6570,7 +6617,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {7899}
 				},
 				{
 					id = "unique:24637",
@@ -6605,7 +6653,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {24637}
 				},
 				{
 					id = "unique:28041",
@@ -6640,7 +6689,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28041}
 				},
 				{
 					id = "unique:27666",
@@ -6675,7 +6725,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {27666}
 				},
 				{
 					id = "unique:7462",
@@ -6711,7 +6762,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {7462}
 				},
 				{
 					id = "unique:27230",
@@ -6750,7 +6802,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {27230}
 				},
 				{
 					id = "unique:11304",
@@ -6785,7 +6838,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {11304}
 				},
 				{
 					id = "unique:28112",
@@ -6820,7 +6874,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28112}
 				},
 				{
 					id = "unique:7404",
@@ -6858,7 +6913,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {7404}
 				},
 				{
 					id = "unique:11301",
@@ -6897,7 +6953,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {11301}
 				},
 				{
 					id = "unique:7418",
@@ -6935,7 +6992,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {7418}
 				},
 				{
 					id = "unique:27249",
@@ -6970,7 +7028,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {27249}
 				},
 				{
 					id = "unique:29866",
@@ -7013,7 +7072,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {29866}
 				},
 				{
 					id = "unique:27692",
@@ -7052,7 +7112,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {27692}
 				},
 				{
 					id = "unique:3975",
@@ -7091,7 +7152,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {3975}
 				},
 				{
 					id = "unique:2440",
@@ -7133,7 +7195,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {2440}
 				},
 				{
 					id = "unique:2171",
@@ -7170,7 +7233,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {2171}
 				},
 				{
 					id = "unique:24790",
@@ -7206,7 +7270,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {24790}
 				},
 				{
 					id = "unique:27474",
@@ -7244,7 +7309,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {27474}
 				},
 				{
 					id = "unique:15407",
@@ -7283,7 +7349,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {15407}
 				},
 				{
 					id = "unique:29470",
@@ -7318,7 +7385,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {29470}
 				},
 				{
 					id = "unique:28114",
@@ -7353,7 +7421,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28114}
 				},
 				{
 					id = "unique:8849",
@@ -7392,7 +7461,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {8849}
 				},
 				{
 					id = "unique:11426",
@@ -7431,7 +7501,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {11426}
 				},
 				{
 					id = "unique:23590",
@@ -7470,7 +7541,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {23590}
 				},
 				{
 					id = "unique:36659",
@@ -7512,7 +7584,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {36659}
 				},
 				{
 					id = "unique:10301",
@@ -7554,7 +7627,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {10301}
 				},
 				{
 					id = "unique:10218",
@@ -7593,7 +7667,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {10218}
 				},
 				{
 					id = "unique:10221",
@@ -7635,7 +7710,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {10221}
 				},
 				{
 					id = "unique:19390",
@@ -7674,7 +7750,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {19390}
 				},
 				{
 					id = "unique:16111",
@@ -7713,7 +7790,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
-					}
+					},
+					items = {16111}
 				},
 				{
 					id = "unique:2493",
@@ -7750,7 +7828,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {2493}
 				},
 				{
 					id = "unique:26808",
@@ -7785,7 +7864,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {26808}
 				},
 				{
 					id = "unique:2129",
@@ -7817,7 +7897,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {2129}
 				},
 				{
 					id = "unique:24741",
@@ -7856,7 +7937,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {24741}
 				},
 				{
 					id = "unique:24718",
@@ -7891,7 +7973,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {24718}
 				},
 				{
 					id = "unique:21693",
@@ -7930,7 +8013,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {21693}
 				},
 				{
 					id = "unique:2496",
@@ -7969,7 +8053,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {2496}
 				},
 				{
 					id = "unique:3961",
@@ -8011,7 +8096,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {3961}
 				},
 				{
 					id = "unique:27288",
@@ -8050,7 +8136,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {27288}
 				},
 				{
 					id = "unique:25418",
@@ -8089,7 +8176,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {25418}
 				},
 				{
 					id = "unique:28125",
@@ -8121,7 +8209,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28125}
 				},
 				{
 					id = "unique:28106",
@@ -8156,7 +8245,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28106}
 				},
 				{
 					id = "unique:28111",
@@ -8191,7 +8281,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28111}
 				},
 				{
 					id = "unique:28107",
@@ -8230,7 +8321,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28107}
 				},
 				{
 					id = "unique:28108",
@@ -8265,7 +8357,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28108}
 				},
 				{
 					id = "unique:28109",
@@ -8297,7 +8390,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28109}
 				},
 				{
 					id = "unique:27231",
@@ -8336,7 +8430,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
-					}
+					},
+					items = {27231}
 				},
 				{
 					id = "unique:27232",
@@ -8372,7 +8467,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {27232}
 				},
 				{
 					id = "unique:2412",
@@ -8414,7 +8510,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {2412}
 				},
 				{
 					id = "unique:27693",
@@ -8453,7 +8550,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {27693}
 				},
 				{
 					id = "unique:10318",
@@ -8492,7 +8590,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {10318}
 				},
 				{
 					id = "unique:10296",
@@ -8531,7 +8630,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {10296}
 				},
 				{
 					id = "unique:13760",
@@ -8570,7 +8670,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
-					}
+					},
+					items = {13760}
 				},
 				{
 					id = "unique:2206",
@@ -8606,7 +8707,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {2206}
 				},
 				{
 					id = "unique:2408",
@@ -8643,7 +8745,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {2408}
 				},
 				{
 					id = "unique:27228",
@@ -8682,7 +8785,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {27228}
 				},
 				{
 					id = "unique:8209",
@@ -8724,7 +8828,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {8209}
 				},
 				{
 					id = "unique:29571",
@@ -8766,7 +8871,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {29571}
 				},
 				{
 					id = "unique:24851",
@@ -8805,7 +8911,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {24851}
 				},
 				{
 					id = "unique:2500",
@@ -8844,7 +8951,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {2500}
 				},
 				{
 					id = "unique:27646",
@@ -8883,7 +8991,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {27646}
 				},
 				{
 					id = "unique:28691",
@@ -8922,7 +9031,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {28691}
 				},
 				{
 					id = "unique:18406",
@@ -8961,7 +9071,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
-					}
+					},
+					items = {18406}
 				},
 				{
 					id = "unique:22474",
@@ -8997,7 +9108,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {22474}
 				},
 				{
 					id = "unique:29868",
@@ -9033,7 +9145,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {29868}
 				},
 				{
 					id = "unique:27675",
@@ -9072,7 +9185,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {27675}
 				},
 				{
 					id = "unique:28020",
@@ -9114,7 +9228,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {28020}
 				},
 				{
 					id = "unique:26133",
@@ -9153,7 +9268,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {26133}
 				},
 				{
 					id = "unique:10510",
@@ -9195,7 +9311,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {10510}
 				},
 				{
 					id = "unique:22690",
@@ -9237,7 +9354,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
-					}
+					},
+					items = {22690}
 				},
 				{
 					id = "unique:27295",
@@ -9276,7 +9394,8 @@ CodexData = {
 							h = "Rules",
 							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
-					}
+					},
+					items = {27295}
 				}
 			},
 			filters = {
@@ -11316,7 +11435,8 @@ CodexData = {
 							h = "Selling",
 							p = {"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32351}
 				},
 				{
 					id = "mat:32352",
@@ -11338,7 +11458,8 @@ CodexData = {
 							h = "Selling",
 							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32352}
 				},
 				{
 					id = "mat:32353",
@@ -11360,7 +11481,8 @@ CodexData = {
 							h = "Selling",
 							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32353}
 				},
 				{
 					id = "mat:32354",
@@ -11382,7 +11504,8 @@ CodexData = {
 							h = "Selling",
 							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32354}
 				},
 				{
 					id = "mat:32355",
@@ -11404,7 +11527,8 @@ CodexData = {
 							h = "Selling",
 							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32355}
 				},
 				{
 					id = "mat:32356",
@@ -11426,7 +11550,8 @@ CodexData = {
 							h = "Selling",
 							p = {"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32356}
 				},
 				{
 					id = "mat:32357",
@@ -11448,7 +11573,8 @@ CodexData = {
 							h = "Selling",
 							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32357}
 				},
 				{
 					id = "mat:32358",
@@ -11470,7 +11596,8 @@ CodexData = {
 							h = "Selling",
 							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32358}
 				},
 				{
 					id = "mat:32359",
@@ -11492,7 +11619,8 @@ CodexData = {
 							h = "Selling",
 							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32359}
 				},
 				{
 					id = "mat:32360",
@@ -11514,7 +11642,8 @@ CodexData = {
 							h = "Selling",
 							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32360}
 				},
 				{
 					id = "mat:32361",
@@ -11536,7 +11665,8 @@ CodexData = {
 							h = "Selling",
 							p = {"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32361}
 				},
 				{
 					id = "mat:32362",
@@ -11558,7 +11688,8 @@ CodexData = {
 							h = "Selling",
 							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32362}
 				},
 				{
 					id = "mat:32363",
@@ -11580,7 +11711,8 @@ CodexData = {
 							h = "Selling",
 							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32363}
 				},
 				{
 					id = "mat:32364",
@@ -11602,7 +11734,8 @@ CodexData = {
 							h = "Selling",
 							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32364}
 				},
 				{
 					id = "mat:32365",
@@ -11624,7 +11757,8 @@ CodexData = {
 							h = "Selling",
 							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32365}
 				},
 				{
 					id = "mat:32366",
@@ -11646,7 +11780,8 @@ CodexData = {
 							h = "Selling",
 							p = {"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32366}
 				},
 				{
 					id = "mat:32367",
@@ -11668,7 +11803,8 @@ CodexData = {
 							h = "Selling",
 							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32367}
 				},
 				{
 					id = "mat:32368",
@@ -11690,7 +11826,8 @@ CodexData = {
 							h = "Selling",
 							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32368}
 				},
 				{
 					id = "mat:32369",
@@ -11712,7 +11849,8 @@ CodexData = {
 							h = "Selling",
 							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32369}
 				},
 				{
 					id = "mat:32370",
@@ -11734,7 +11872,8 @@ CodexData = {
 							h = "Selling",
 							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
-					}
+					},
+					items = {32370}
 				}
 			},
 			filters = {

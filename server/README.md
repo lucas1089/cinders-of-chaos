@@ -388,6 +388,7 @@ working directory, as with the rest of the base server libs).
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
 | game_chatlinks | `itemlink.lua`, `itemlink_core.lua` (client also `game_itemtooltip`) | 249, Shift+click an item | Item links in chat: the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; the link travels as ordinary speech `[Item Name]{<r><id>}` in every channel; receivers ask for the snapshot on hover. Limits, Help channel rule (`tools/patch_help_itemlinks.py`); tested in game with two clients (see "Item links in chat"). |
+| game_itemfinder | `itemfinder.lua`, `itemfinder_core.lua`, `itemfinder_sources.lua`, `itemfinder_config.lua` | **155**, Economy > Item Finder, right-click an item > Where to find, the Codex | Item finder: search any item by name (type-ahead, pages) or right-click one, and see every source (monsters and bosses with the chance, Chaos drops, chests and rewards, recipes, NPC shops with the price and town, the store and vendors, the Gambler, gathering) and every use (recipes, NPCs that buy it). One index in memory built at startup; see "Item finder". Tested on a live test server with one client. |
 | game_playerinspect | `inspect.lua`, `inspect_core.lua` | 240, Social > Inspect Player, right-click a player | Inspect Player: outfit, level, class, guild, achievement points, rift and trial records and the equipment with full tooltips; right-click within 10 tiles or any online player by name; privacy setting per character (storage `Chaos.storage.inspectOff`); tested in game with two clients (see "Inspect Player"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
@@ -429,6 +430,7 @@ collision check") and be added here.
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
 | 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua` | `game_mapmarkers` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked` |
+| 155 | `itemFinder` | `itemfinder.lua` | `game_itemfinder` | answers through `Chaos.sendChunked` |
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
@@ -5081,6 +5083,69 @@ The output has no clock and no `pairs()` order, and Lua 5.3 writes the same byte
 and percent texts, the Lua writer, modifier value texts) and the build on the real data (every modifier, power, orb,
 currency item, gem, unique, rift modifier and support present, unique ids, every link and shared section resolvable, eight
 tiers per modifier, no old orb names in the player texts).
+
+## Item finder (`itemfinder.lua`, `itemfinder_core.lua`, `itemfinder_sources.lua`, `itemfinder_config.lua`, client `game_itemfinder`)
+
+"Where does this drop": search any item by name, or right-click one, and see every source and every use. Extended
+opcode **155** (`ChaosOpcodes.itemFinder`; free in `ChaosOpcodes`, in the reference server's list and in the base
+client's `ExtendedIds`, checked by `tests/itemfinder_test.lua`). No storages, no tables.
+
+**The index.** Built once at startup (GlobalEvent `ChaosItemFinderStartup`) and kept in memory; one record per server
+item id with at least one row. Every name is read at runtime from the engine and the installed files, so they are the
+renamed ones: items `ItemType(id):getName()`, monsters `MonsterType:name()`, NPCs the `name` attribute of their file,
+towns `Game.getTowns()`. The sections and what fills them:
+
+| Section | From |
+|---|---|
+| Monsters and bosses | `MonsterType:getLoot()` of every bestiary entry (its exclusions: scenery, summons, dummies), child loot included; the chance is the list chance x the loot rate (`rateLoot`, capped at 100%); the bestiary's level (left out when it is the capped estimate) and spawn places, the hunting-area level band of the map markers (`data/chaos_poi.lua`) |
+| Chaos drops | `loot_config.lua` currency (chance by monster tier), `chaos_gems_config.lua` gem drops, uniques (`ChaosLoot.uniqueList()`: their monsters, minimum tier, boss only, season), Rift Keys and omen fragments from monsters |
+| Chests and rewards | daily reward and login streak, bounty contracts and the weekly chest, rift chest and completion, Infinity Tower milestones and season chests, world bosses, invasions, arena, battleground, guild boss, the Descent, the raid uniques, dungeon loot lists, treasure goblins, achievements (hidden ones never: they are secrets), faction tokens, the Ascended Omens |
+| Crafted from | the base crafting tables (the global `Crafting` of the base crafting script: station, level, gold, materials), salvage and the shard recipes, gem combining, faction recipes, omen keys, Ascended sigils |
+| NPCs that sell it / buy it | the NPCs of the map's spawn file: `data/npc/<name>.xml` (`shop_buyable`, `shop_sellable`, `shop_buyable_containers`) and their scripts (`addBuyableItem`, `addBuyableItemContainer`, `addSellableItem`; scripts with their own trade window: `{id, buy, sell}` tables); the town is the nearest temple to each place of the NPC. Plus the Material Broker (tools, materials), the Wandering Merchant and the faction quartermasters |
+| Store and vendors | Chaos store item offers and bundle parts (`shop_config.lua`), the battleground vendor (honor) |
+| The Gambler | `gamble_config.lua` pool: slot and level |
+| Gathering | `professions_config.lua` materials: profession, tier, levels, the areas with nodes |
+| Used to make, other uses | the recipes above the other way round; guild boss ember donations, faction token turn-ins |
+
+Hidden (`itemfinder_config.lua` `hidden`): server item ids, monster names, NPC names and source names; monsters by name
+patterns (dummies, training, summons) also without the bestiary. A source that throws while building is printed
+(`[Chaos itemfinder] rewards <key>: ...`) and only its rows are missing.
+
+**Protocol** (JSON `{action, data}`; answers through `Chaos.sendChunked`): `search {q, p}` -> `results {q, p, pages,
+total, rows = [{id, cid, name, n, kinds}]}`; `item {id}` or `item {cid}` -> `item {id, cid, name, total, secs = [{k, p,
+pages, total, rows}]}` (or `none = true`); `page {id, k, p}` -> one page of one section; `busy {}` while the index is
+missing. A row is `{n, d, v, c, i, l, b, m}`: name, detail, value (chance, price), count, linked item (client and
+server id), boss, materials. Search: at least 2 characters, at most 40; exact name first, then names that start with
+the text, then names whose words start with every word typed, then names containing the text, then names containing
+every word; ties by the shorter name. 12 results a page, 15 rows a page per section. One request per player per 200 ms
+(`Chaos.limited`, `ratelimit.lua`); a dropped request gets no answer and the window sends it once more after 0.9 s.
+
+**Staff.** `/itemfinder` (items, rows, build time, memory), `/itemfinder rebuild` (after `/reload scripts`: the index
+is not rebuilt by a reload), `/itemfinder <text>` (the first results in the console). Group 4 and up.
+
+**Measured** on the test server (reference data, the full map's NPCs and spawn file, the machine under load from other
+builds): 3,034 items with 30,092 rows; built in 0.49-0.54 s (monsters 0.15 s, NPC files 0.27-0.32 s, the rest under
+0.05 s); the index takes about 9.5-10 MB of Lua memory (measured with `collectgarbage("count")` with and without it).
+The spawn file parse (9 MB) takes 0.04 s.
+
+**Client and Codex.** `game_itemfinder` (Economy > Item Finder; the game's right-click menu of an item: Where to find;
+a right-click on a market row or a loot channel icon). The Codex has a "Where to find" link on the page of every item
+it knows (orbs, currency, rift items, gems by tier, uniques, materials: `items` of the entries, written by
+`tools/gen_codex_data.lua`), and the item finder a Codex button for those items. See `client/MANIFEST.md`.
+
+**Tests.** `tests/itemfinder_test.lua`: the opcode is free; texts; the parsers (shop lists, NPC files, NPC scripts, the
+spawn file, hunting bands, towns); the index from mocked sources (child loot, the loot rate, hidden items and sources,
+duplicates, recipes both ways); every reward source on the real configs; search ranking and paging; sections and their
+pages; the dispatch; the engine part on a mocked engine (build from the bestiary, NPC files and a spawn file, answers,
+`Chaos.sendChunked` for long answers, the rate limit). Tested in game (one client): search, results, an item with its
+sections, section pages, links between items, Back, the Codex both ways, the right-click menu of an inventory item, the
+menu on a virtual item, the rate limit (3 requests at once: 1 answer).
+
+**Not covered.** Base quest chests (their contents are items on the map, not data the scripts can read), the rift
+chest's random item rolls (any rift monster's loot), cosmetic store offers, and the base NPCs placed by scripts instead
+of the spawn file. The chances are the loot list's; the Chaos loot layer's extra rolls for magic, rare, legendary and
+boss monsters come on top. The market right-click was checked with the same `attach` call on a test widget, not on a
+real offer (the test database had none).
 
 ## Gems and sockets (`data/lib/chaos_gems.lua`, `chaos_gems_config.lua`, `gems.lua`, `tools/install_gems.py`)
 

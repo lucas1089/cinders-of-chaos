@@ -307,6 +307,10 @@ Chaos.storage.rightClickEquipOff = 7101810
 -- CHAOS_KITE_WALK_OFF in game.cpp). No tables.
 ChaosOpcodes.kiteWalk = 186
 Chaos.storage.kiteWalkOff = 7101820
+-- Item finder: where an item drops, who sells and buys it, the recipes that make or use it (client game_itemfinder;
+-- itemfinder.lua, itemfinder_core.lua, itemfinder_sources.lua, itemfinder_config.lua; server/README.md "Item finder").
+-- One index in memory, built at startup. No storages, no tables.
+ChaosOpcodes.itemFinder = 155
 
 -- ---------------------------------------------------------------------------
 -- Module settings

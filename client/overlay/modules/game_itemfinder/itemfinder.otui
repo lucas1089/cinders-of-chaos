@@ -1,0 +1,346 @@
+// Item finder window (game_itemfinder): the search on the left (type-ahead, item icons, pages), the item on the right
+// (its sources by section, each section with its own pages). Styles from client_chaos_theme. Fits a 1280x720 screen.
+
+ItemFinderText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  phantom: true
+
+// one search result: the icon, the name and what the item has
+ItemFinderResult < UIWidget
+  height: 40
+  margin-bottom: 2
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+
+  $hover:
+    image-color: #f6cf72
+
+  UIItem
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    virtual: true
+    phantom: true
+
+  ItemFinderText
+    id: name
+    anchors.top: parent.top
+    anchors.left: icon.right
+    anchors.right: parent.right
+    margin-top: 5
+    margin-left: 6
+    margin-right: 4
+    height: 14
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  ItemFinderText
+    id: kinds
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 2
+    height: 14
+    color: #8c8070
+
+// the head of a section
+ItemFinderHeading < UIWidget
+  height: 22
+  margin-top: 6
+  phantom: true
+
+  ItemFinderText
+    id: text
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  ChaosButton
+    id: nextPage
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 22 20
+    padding: 0
+    text: >
+    visible: false
+
+  ItemFinderText
+    id: pageText
+    anchors.right: nextPage.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    text-auto-resize: true
+    color: #8c8070
+
+  ChaosButton
+    id: prevPage
+    anchors.right: pageText.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 22 20
+    padding: 0
+    text: <
+    visible: false
+
+// one source: an icon (a linked item), the name, the detail, the value; recipes show their materials below
+ItemFinderRow < UIWidget
+  height: 36
+  margin-bottom: 1
+  background-color: #00000000
+  phantom: false
+  focusable: false
+
+  UIItem
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 2
+    virtual: true
+    phantom: true
+    visible: false
+
+  ItemFinderText
+    id: value
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-top: 3
+    margin-right: 4
+    width: 110
+    text-align: right
+    color: #f6cf72
+
+  ItemFinderText
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: value.left
+    margin-top: 3
+    margin-left: 4
+    margin-right: 6
+    height: 14
+
+  ItemFinderText
+    id: detail
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: parent.right
+    margin-top: 1
+    margin-right: 4
+    height: 14
+    color: #8c8070
+
+  UIWidget
+    id: mats
+    anchors.top: detail.bottom
+    anchors.left: name.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 0
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 3
+
+// a material of a recipe (clicking it opens that item)
+ItemFinderMat < UIItem
+  size: 26 26
+  virtual: true
+  phantom: false
+  image-source: /images/chaos/itemslot
+  image-border: 4
+  padding: 1
+  font: verdana-11px-rounded
+
+ChaosMainWindow
+  id: itemFinderWindow
+  size: 820 580
+  !text: tr('Item Finder')
+  @onEscape: modules.game_itemfinder.hide()
+
+  ChaosTextEdit
+    id: searchEdit
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 280
+    !tooltip: tr('An item name or a part of it (at least two letters).')
+
+  UILabel
+    id: searchHint
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.left
+    margin-left: 7
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #6b6258
+    phantom: true
+    !text: tr('Search an item...')
+
+  ChaosLabelDim
+    id: status
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.left: searchEdit.right
+    anchors.right: parent.right
+    margin-left: 10
+    height: 16
+    text-align: left
+
+  // ------------------------------------------------------------ the results
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: searchEdit.bottom
+    anchors.left: parent.left
+    anchors.bottom: listPager.top
+    margin-top: 8
+    margin-bottom: 4
+    width: 280
+
+  UIScrollArea
+    id: resultList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: resultScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 5 3 5 5
+    vertical-scrollbar: resultScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: resultScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin: 3 3 3 0
+    step: 42
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: listInfo
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listFrame.right
+    margin: 20 12 0 12
+    height: 60
+    text-wrap: true
+    text-align: center
+
+  UIWidget
+    id: listPager
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    width: 280
+    height: 24
+    phantom: true
+
+    ChaosButton
+      id: prevButton
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      size: 70 22
+      !text: tr('Previous')
+
+    ChaosButton
+      id: nextButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      size: 70 22
+      !text: tr('Next')
+
+    ChaosLabel
+      id: pageLabel
+      anchors.left: prevButton.right
+      anchors.right: nextButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      text-align: center
+
+  // ------------------------------------------------------------ the item
+  ChaosPanelDark
+    id: pageFrame
+    anchors.top: listFrame.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 8
+
+  ChaosItemSlot
+    id: itemIcon
+    anchors.top: pageFrame.top
+    anchors.left: pageFrame.left
+    margin: 8 0 0 10
+    virtual: true
+
+  ChaosButton
+    id: backButton
+    anchors.top: pageFrame.top
+    anchors.right: pageFrame.right
+    margin: 10 10 0 0
+    size: 60 22
+    !text: tr('Back')
+    !tooltip: tr('The item you looked at before (Backspace).')
+
+  ChaosButton
+    id: codexButton
+    anchors.top: backButton.top
+    anchors.right: backButton.left
+    margin-right: 6
+    size: 70 22
+    !text: tr('Codex')
+    !tooltip: tr('Open this item in the Codex.')
+    visible: false
+
+  ItemFinderText
+    id: itemName
+    anchors.top: itemIcon.top
+    anchors.left: itemIcon.right
+    anchors.right: codexButton.left
+    margin: 2 8 0 10
+    height: 16
+    font: verdana-11px-rounded
+    color: #f6cf72
+
+  ItemFinderText
+    id: itemSub
+    anchors.top: itemName.bottom
+    anchors.left: itemName.left
+    anchors.right: backButton.right
+    margin-top: 2
+    height: 14
+    color: #8c8070
+
+  ChaosSeparator
+    id: pageSep
+    anchors.top: itemIcon.bottom
+    anchors.left: pageFrame.left
+    anchors.right: pageFrame.right
+    margin: 6 8 0 8
+
+  UIScrollArea
+    id: detail
+    anchors.top: pageSep.bottom
+    anchors.left: pageFrame.left
+    anchors.right: detailScroll.left
+    anchors.bottom: pageFrame.bottom
+    margin: 2 4 8 12
+    vertical-scrollbar: detailScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: detailScroll
+    anchors.top: pageSep.bottom
+    anchors.right: pageFrame.right
+    anchors.bottom: pageFrame.bottom
+    margin: 2 3 3 0
+    step: 38
+    pixels-scroll: true

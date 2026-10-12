@@ -294,6 +294,7 @@ local function addRow(list, offer, mode)
   local icon = row:getChildById('icon')
   icon:setItemId(tonumber(offer.item) or 0)
   showLook(icon, offer.look)
+  if modules.game_itemfinder and modules.game_itemfinder.attach then modules.game_itemfinder.attach(row, tonumber(offer.item)) end -- right-click: Where to find
   if (offer.count or 1) > 1 then icon:setItemCount(offer.count) end
   local color = rarityColor(offer)
   if (offer.rarity or 0) > 0 or offer.unique then
@@ -960,6 +961,7 @@ local function addOrderRow(list, row)
   w.order = row
   local icon = w:getChildById('icon')
   icon:setItemId(tonumber(row.item) or 0)
+  if modules.game_itemfinder and modules.game_itemfinder.attach then modules.game_itemfinder.attach(w, tonumber(row.item)) end -- right-click: Where to find
   local left = (tonumber(row.qty) or 0) - (tonumber(row.filled) or 0)
   if row.stack and left > 1 then icon:setItemCount(math.min(left, 100)) end
   local f = row.filter or {}

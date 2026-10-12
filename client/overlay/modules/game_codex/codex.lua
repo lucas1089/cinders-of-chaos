@@ -6,7 +6,8 @@
 --
 -- codex_data.lua: CodexData = {rarities, tierLevels, tierWeights, tierWindow, shared = {ref -> section},
 --   tabs = [{id, name, filters = [{key, label, match = "eq"|"has"|"max"|"ilvl", options = [{value, text}]}],
---            entries = [{id, name, color, sub, f = {filter key -> value}, tiers, tv, sections}]}]}
+--            entries = [{id, name, color, sub, f = {filter key -> value}, tiers, tv, sections,
+--                       items = [server item ids: "Where to find" opens game_itemfinder]}]}]}
 --   section = {h, p = [paragraphs], cols = [names], w = [relative widths], rows = [[cells]], links = [entry id | ""],
 --              tiers = true (rows are T1..T8: the item level filter marks the ones that roll)} | {ref = shared key}
 -- Opened from the top menu (Economy > Codex, Alt+K) and from the crafting bench (right-click a modifier: open(id)).
@@ -150,6 +151,15 @@ local function showEntry(entry)
   if entry.color then window.pageTitle:setColor(entry.color) else window.pageTitle:setColor('#f6cf72') end
   window.pageSub:setText(CodexView.subline(entry, level, data))
   local page = window.page
+  -- an item of the game (orb, currency, gem, unique, material): where to find it (game_itemfinder, server opcode 155)
+  local finder = modules.game_itemfinder
+  if type(entry.items) == 'table' and #entry.items > 0 and finder and finder.open then
+    for i, itemId in ipairs(entry.items) do
+      local link = g_ui.createWidget('CodexLink', page)
+      link:setText(#entry.items > 1 and tr('Where to find: tier %d', i) or tr('Where to find: drops, shops, recipes and rewards'))
+      link.onClick = function() finder.open(itemId) end
+    end
+  end
   for _, raw in ipairs(entry.sections or {}) do
     local s = CodexView.section(raw, data.shared)
     if s then
@@ -309,6 +319,9 @@ function toggle()
   if not window then return end
   if window:isVisible() then hide() else show() end
 end
+
+-- the Codex data (game_itemfinder maps item ids to pages with it)
+function getData() return data end
 
 -- open the page of an entry id ("mod:chaos_mod_attackspeed", "orb:ruin", "unique:8209"); fromLink keeps a way back
 function open(id, fromLink)

@@ -238,6 +238,7 @@ local CATEGORIES = {
     entry('Crafting Bench',  'proficiency', { modules = { 'game_crafting' },  fns = { 'toggle' }, key = 'Alt+C' }),
     entry('Salvage',         'proficiency', { modules = { 'game_crafting' },  fns = { 'openSalvage' } }),
     entry('Codex',           'help',        { modules = { 'game_codex' },     fns = { 'toggle' }, key = 'Alt+K' }),
+    entry('Item Finder',     'help',        { modules = { 'game_itemfinder' }, fns = { 'toggle' } }), -- where an item drops, who sells it
     entry('Store',           'market',      { modules = { 'game_shop' },      fns = { 'toggle' } }),
     entry('Market',          'market',      { modules = { 'game_market' }, fns = { 'toggle' }, key = 'Alt+E' }), -- our market (gold, Chaos Coins)
     entry('Bank',            'bank',        { modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } }),

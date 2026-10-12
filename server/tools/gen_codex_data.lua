@@ -867,7 +867,7 @@ function Gen.orbEntries(D)
 		end
 		sections[#sections + 1] = {h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = srcRows}
 		out[#out + 1] = {id = "orb:" .. orb.key, name = orb.name, color = COLORS.orb, sub = orb.text,
-			f = {group = "orb"}, sections = sections}
+			f = {group = "orb"}, items = {orb.id}, sections = sections}
 	end
 	-- the base world's renamed currency items without a crafting use
 	local crafting = {}
@@ -877,7 +877,7 @@ function Gen.orbEntries(D)
 	for _, r in ipairs(O.config.renames) do
 		if not crafting[r.id] then
 			out[#out + 1] = {id = "cur:" .. r.id, name = r.name, color = COLORS.currency,
-				sub = "Currency of the character upgrades; no crafting use.", f = {group = "currency"},
+				sub = "Currency of the character upgrades; no crafting use.", f = {group = "currency"}, items = {r.id},
 				sections = {{h = "What it does", p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}},
 					{h = "Sources", p = {"Monster loot lists of the base world."}}}}
 		end
@@ -895,7 +895,7 @@ function Gen.orbEntries(D)
 	end
 	out[#out + 1] = {id = "cur:shard", name = (sv.shard.name:gsub("^%l", string.upper):gsub(" %l", string.upper)),
 		color = COLORS.currency, sub = "Salvage gear with a rarity into shards; combine shards into orbs.",
-		f = {group = "currency"}, sections = {
+		f = {group = "currency"}, items = {sv.shard.id}, sections = {
 			{h = "What it does", p = {sv.shard.description,
 				string.format("Shards per item: the rarity's base, up to %d%% more by item level, +%d per modifier of T%d or better, +%d per empty socket. Uniques are never salvaged.",
 					floor(sv.levelBonus * 100 + 0.5), sv.perHighTier, sv.highTier, sv.perSocket)}},
@@ -905,11 +905,12 @@ function Gen.orbEntries(D)
 	local rf, om = D.rift, D.rift.omen
 	out[#out + 1] = {id = "cur:riftkey", name = "Rift Key", color = COLORS.rift,
 		sub = "Opens a rift of its tier; carries up to " .. rf.key.maxMods .. " map modifiers.", f = {group = "rift"},
+		items = {rf.key.itemId},
 		sections = {{h = "What it does", p = {string.format("Use it in a protection zone: you and up to %d party members within %d sqm enter a rift of the key's tier (%d tiers). See the Rift tab for its modifiers.",
 			rf.maxPlayers - 1, rf.partyRange, rf.maxTier)}}, {h = "More", p = {"Rift tab > Rift Keys has the sources and the orbs that work on keys."},
 			links = {"rift:keys"}}}}
 	out[#out + 1] = {id = "cur:omenfragment", name = (om.fragment.name:gsub("^%l", string.upper):gsub(" %l", string.upper)),
-		color = COLORS.rift, sub = om.fragment.description, f = {group = "rift"},
+		color = COLORS.rift, sub = om.fragment.description, f = {group = "rift"}, items = {om.fragment.id},
 		sections = {{h = "What it does", p = {om.fragment.description}},
 			{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = {
 				{"Rift chest", string.format("Rifts of tier %d or more: %d + %d per tier above %d for every finisher.", om.minTier,
@@ -917,7 +918,7 @@ function Gen.orbEntries(D)
 				{"Rift monsters", string.format("Rare %d%%, legendary %d%% of the time in rifts of tier %d or more.",
 					om.eliteChance.rare, om.eliteChance.legendary, om.minTier)}}}}}
 	out[#out + 1] = {id = "cur:omenkey", name = (om.key.name:gsub("^%l", string.upper):gsub(" %l", string.upper)),
-		color = COLORS.rift, sub = om.key.description, f = {group = "rift"},
+		color = COLORS.rift, sub = om.key.description, f = {group = "rift"}, items = {om.key.id},
 		sections = {{h = "What it does", p = {om.key.description, string.format("Bound from %d omen fragments; it opens one guardian's arena (Rift tab > Omens).", om.keyCost)}}}}
 	-- the crafting orbs in the bench's order, then the other currency and the rift items by name
 	local orbs, rest = {}, {}
@@ -962,8 +963,13 @@ function Gen.gemEntries(D)
 	for _, t in ipairs(TIER_ORDER) do
 		dropParts[#dropParts + 1] = TIER_NAME[t] .. " " .. Gen.per10k(cfg.drop.chance[t])
 	end
-	for _, t in ipairs(cfg.types) do
+	for ti, t in ipairs(cfg.types) do
 		local name = t.name:gsub("^%l", string.upper)
+		-- the server ids of its tiers (chaos_gems_config.lua: firstId + (type - 1) x tiers + tier - 1), for the item finder
+		local gemIds = {}
+		for tier = 1, #cfg.tiers do
+			gemIds[tier] = cfg.firstId + (ti - 1) * #cfg.tiers + (tier - 1)
+		end
 		local rows = {}
 		for tier = 1, #cfg.tiers do
 			rows[tier] = {cfg.tiers[tier], effectCell(t.weapon, tier), effectCell(t.armour, tier), effectCell(t.jewel, tier),
@@ -972,7 +978,7 @@ function Gen.gemEntries(D)
 		out[#out + 1] = {id = "gem:" .. t.key, name = name, color = t.color,
 			sub = string.format("Weapon: %s; armour: %s; jewellery: %s", cfg.effects[t.weapon.effect].label,
 				cfg.effects[t.armour.effect].label, cfg.effects[t.jewel.effect].label),
-			f = {group = "gem"},
+			f = {group = "gem"}, items = gemIds,
 			sections = {
 				{h = "Effects by tier", p = {"A gem gives one effect, chosen by the item it sits in: weapons, armour (every other gear) or jewellery (amulets and rings). Remove = gold to take it out intact (Shatter is free and destroys it)."},
 					cols = {"Tier", "Weapon", "Armour", "Jewellery", "Remove"}, w = {14, 24, 24, 24, 14}, rows = rows},
@@ -1164,6 +1170,7 @@ function Gen.uniqueEntries(D)
 			sub = string.format("%s, level %d.%s", SLOT_NAME[u.slot] or u.slot, u.level,
 				#stats > 0 and (" " .. table.concat(stats, ", ")) or ""),
 			f = {kind = {kind}, level = u.level, source = u.bossOnly and "boss" or "monster", season = u.season and "season" or nil},
+			items = {u.id},
 			sections = {
 				{h = "Description", p = p},
 				{h = "Stats", p = statLines},
@@ -1641,6 +1648,7 @@ function Gen.materialEntries(D)
 		end
 		out[#out + 1] = {id = "mat:" .. m.id, name = m.name:gsub("^%l", string.upper), color = t.color,
 			sub = string.format("%s, tier %d (%s), base price %d gold", p.name, m.tier, t.name, t.price), f = {group = m.prof},
+			items = {m.id},
 			sections = {
 				{h = "Gathering", p = {string.format("Needs %s %d; a character below level %d gets a lower tier instead.",
 					p.name, t.profLevel, t.charLevel), m.description}, cols = {"Where", "How"}, w = {20, 80}, rows = where},

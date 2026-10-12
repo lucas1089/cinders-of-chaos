@@ -354,6 +354,7 @@ local function onKill(data)
       end
       return false
     end
+    if modules.game_itemfinder and modules.game_itemfinder.attach then modules.game_itemfinder.attach(w, tonumber(info.id)) end -- right-click: Where to find
     setIconState(icon)
   end
   rows[k] = row
