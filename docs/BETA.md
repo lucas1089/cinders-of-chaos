@@ -166,6 +166,7 @@ Weekend 1 (31 Oct to 1 Nov): fresh characters, the real start, and load.
 | Invasions and world events | the Sunday 17:30 invasion on the real map areas (proposed from the map file, never walked) | #29 |
 | Guild siege | Saturday 20:00 with real guilds | #15 |
 | Reports and the anti-bot | real false-positive rates in `chaos_antibot_log` | #56 |
+| Instance limits | the warnings and the end of a rift, a trial, a tower run and a base lever boss room; every slot of one type busy (the wait and the "your turn" message); a lever room left empty and unlocked after 2 minutes; `/instances` and `/instances close` during the busy hours; the slow task log on while slots are built for the first time | #108 |
 
 Weekend 2 (7 to 8 Nov): groups and the endgame, with prepared characters where needed.
 

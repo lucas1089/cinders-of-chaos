@@ -58,6 +58,11 @@ return {
 	exitDelay = 25, -- seconds after the kill before everyone is sent back
 	tickMs = 250,
 	hudEvery = 2, -- seconds between HUD refreshes (the rift HUD, opcode 228; the client counts down in between)
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): the boss's own `limit` (13-18 minutes
+	-- after it appears) is the time limit; warnings at warnAt seconds left; at most maxRuns arenas at once (the grid's 4);
+	-- a party that finds them all in use waits in line and is told when one frees up. A run ends at once when its last
+	-- player is gone, so no idle grace is needed.
+	limits = {warnAt = {300, 60, 10}, maxRuns = 4, waitlist = true},
 
 	-- ------------------------------------------------------------------ the arenas (runtime-built, like the rift slots)
 	-- Slot i of a grid far from the map: origin + (i % cols, i // cols) x spacing; x/y 7600-7700 (between the ascension

@@ -51,6 +51,10 @@ return {
 		-- fight needs room to move); else the ids above are used
 		dark = {enabled = true, wall = "ruined_wall", basin = "brazier", style = "trial"},
 		timeLimitSeconds = 180,
+		-- instance limits (instance_limits.lua, server/README.md "Instance limits"): the trial already says the time left
+		-- every 30 s; at most maxRuns trials at once (the grid's 8 rooms); a player who finds them all in use waits in
+		-- line and is told when one frees up. Solo: a logout ends it at once.
+		limits = {maxRuns = 8, waitlist = true},
 		countdownSeconds = 3, -- the guardian appears after this
 		cooldownSeconds = 600, -- after a failed attempt
 		winExitSeconds = 6, -- after the victory, back to the Oracle

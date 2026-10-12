@@ -156,6 +156,27 @@ end
 
 Chaos.registerInstance("arena", {label = "an arena match", inside = S.isInside, at = function(pos)
 	return A.slotOfPos(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, now = {}, os.time()
+	for slot, m in pairs(S.matches) do
+		local n = 0
+		for cid, e in pairs(m.players) do
+			if not e.gone and Player(cid) then
+				n = n + 1
+			end
+		end
+		out[#out + 1] = {id = m.id, what = string.format("%s, slot %d, %s", tostring(m.mode), slot, m.phase),
+			left = m.phase ~= "done" and math.max(0, m.endAt - now) or nil, players = n}
+	end
+	return out
+end, close = function(id) -- stopped, not rated (as /arena stop)
+	for _, m in pairs(S.matches) do
+		if m.id == id and m.phase ~= "done" and S._finish then
+			S._finish(m, 0, "stop")
+			return true, "Arena match " .. id .. " stopped (not rated)."
+		end
+	end
+	return false, "No running arena match " .. tostring(id) .. "."
 end})
 
 function S.isQueued(player)
@@ -806,6 +827,7 @@ finish = function(m, winner, reason)
 		S.matches[slot] = nil
 	end, cfg.endDelaySeconds * 1000, m.slot, m.id)
 end
+S._finish = finish
 
 -- a fighter logged out or lost the connection: out of the fight (a loss), sent back at once
 local function leave(m, e, p, reason)
@@ -868,6 +890,13 @@ local function tickMatch(m)
 		finish(m, (A.timeoutWinner(list)), "timeout")
 		return
 	end
+	if m.phase == "fight" and ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		local ps = {}
+		eachOnline(m, function(p)
+			ps[#ps + 1] = p
+		end)
+		ChaosInstanceLimits.warn(m, m.endAt - now, ps, "Arena", cfg.limits)
+	end
 	hud(m)
 end
 
@@ -900,6 +929,26 @@ local function matchmake()
 	end
 	for _, pair in ipairs(A.findMatches(cfg, entries, now)) do
 		if not startMatch(pair[1], pair[2]) and not freeSlot() then
+			-- every slot in use: the pair hears it once (instance limits), with the wait, and stays first in the queue
+			if ChaosInstanceLimits then
+				local lefts = {}
+				for _, mm in pairs(S.matches) do
+					lefts[#lefts + 1] = (mm.phase == "done" and 0 or math.max(0, mm.endAt - now)) + cfg.endDelaySeconds
+				end
+				local K = ChaosInstanceLimits.core
+				local text = "Arena: " .. K.busyText("arenas", K.eta(lefts, 1)) .. " Your match starts as soon as one frees up."
+				for _, entry in ipairs(pair) do
+					if not entry.busyTold then
+						entry.busyTold = true
+						for _, e in ipairs(teamOf(entry)) do
+							local p = Player(e.cid)
+							if p then
+								msg(p, text)
+							end
+						end
+					end
+				end
+			end
 			break
 		end
 	end

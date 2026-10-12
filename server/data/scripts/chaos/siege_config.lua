@@ -26,6 +26,9 @@ return {
 	-- timing
 	gatherSeconds = 180, -- portals open, everyone waits in the guild's base; the gates open at the end of it
 	matchMinutes = 25,
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings to everyone inside at warnAt
+	-- seconds before the match ends (the HUD shows the clock too); one siege a week, one arena per bracket
+	limits = {warnAt = {300, 60, 10}},
 	lateJoin = true, -- portals stay open during the match (members can still come in)
 	downedSeconds = 3, -- a "dead" player lies down this long, then wakes up in the guild's base
 	exitDelaySeconds = 30, -- after the end: time to read the results before everyone goes to their temple

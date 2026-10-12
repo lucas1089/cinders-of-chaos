@@ -147,5 +147,39 @@ done, text = T.choose(p, 1, 1)
 ok(not done and text:find("during a trial"), "no changes during a trial")
 T.runs[77] = nil
 
+-- instance limits (instance_limits.lua): every chamber in use -> the wait of the first run to end and a place in line;
+-- the staff list shows each trial with its time left
+do
+	Player = function() return nil end
+	Tile = function() return nil end
+	Position = function(x, y, z) return {x = x, y = y, z = z} end
+	addEvent = function() return 0 end
+	dofile("data/scripts/chaos/instance_limits.lua")
+	local mc, pz = Chaos.isMultiClient, Chaos.trials.enter.needProtectionZone
+	Chaos.isMultiClient = function() return false end
+	Chaos.trials.enter.needProtectionZone = false
+	local ms = os.mtime and os.mtime() or os.time() * 1000
+	for i = 1, Chaos.trials.room.grid.slots do
+		T.runs[1000 + i] = {over = false, deadline = ms + (60 + i * 30) * 1000, slot = i, phase = "fight",
+			tierDef = Chaos.trials.tiers[1]}
+		T.slotBusy[i] = 1000 + i
+	end
+	p.getPosition = function() return {x = 100, y = 100, z = 7} end
+	p.getGuid = function() return 77 end
+	p.getName = function() return "Jugg" end
+	local entered, why = T.enter(p, 1, {})
+	ok(not entered and (why or ""):find("All trial chambers are busy. Try again in ~2 min. You are 1st in line", 1, true),
+		"limits: busy with the wait: " .. tostring(why))
+	local listed = 0
+	for _, r in ipairs(ChaosInstanceLimits.runs()) do
+		if r.key == "trials" and r.left and r.left > 0 then listed = listed + 1 end
+	end
+	eq(listed, Chaos.trials.room.grid.slots, "limits: every trial listed with its time left")
+	for i = 1, Chaos.trials.room.grid.slots do
+		T.runs[1000 + i], T.slotBusy[i] = nil, nil
+	end
+	Chaos.isMultiClient, Chaos.trials.enter.needProtectionZone = mc, pz
+end
+
 print(string.format("trials_flow_test: %d checks, %d failures", checks, fails))
 if fails > 0 then os.exit(1) end

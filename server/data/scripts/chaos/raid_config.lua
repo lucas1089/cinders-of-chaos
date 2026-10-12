@@ -46,7 +46,15 @@ return {
 	aid = {portal = 47801, exit = 47802, font = 47803},
 	objects = {exit = 1387, font = 1360}, -- the exit forcefield in the hall; the Font of Ash (a fountain, used from next
 	-- to it) in the corners of the rooms with hexes
-	idleMinutes = 10, -- an empty instance (nobody inside) is closed after this; its progress stays saved for the week
+	idleMinutes = 5, -- an empty instance (nobody inside) is closed after this; its progress stays saved for the week (was 10)
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): one opening of a raid lasts at most
+	-- sessionMinutes; then everyone goes back where they came from and the slot closes. Nothing is lost: the kills and
+	-- cleared corridors are saved for the week and the raid can be continued (a fight still going at that moment ends as
+	-- a wipe). 150 minutes: five enrage timers (8 + 8 + 8 + 8.5 + 13 minutes) and the trash take about 60-90 minutes with
+	-- a few wipes. Warnings at warnAt seconds left; at most maxRuns raids at once (the 2 x 2 grid); a party that finds
+	-- every wing taken waits in line and is told when one frees up.
+	sessionMinutes = 150,
+	limits = {warnAt = {600, 300, 60, 10}, maxRuns = 4, waitlist = true},
 	tickMs = 250,
 	hudEvery = 2, -- seconds between HUD refreshes (the client counts the clock down in between)
 	wipeSeconds = 4, -- a fight with nobody standing in the room for this long is a wipe: the boss resets

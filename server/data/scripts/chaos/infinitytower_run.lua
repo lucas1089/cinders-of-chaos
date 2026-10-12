@@ -33,6 +33,14 @@ local cfg = {
 	maxPartySize = 4,
 	partyRange = 12, -- members farther than this from the leader stay out
 	floorTimeLimit = 300, -- seconds per floor
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a whole run lasts at most runTimeLimit
+	-- seconds (0 = no limit); then it ends like a lost floor: everyone back where they entered, the floors cleared so far
+	-- are recorded (gold was paid per floor). 60 minutes: about 30 floors at two minutes a floor, three bosses deep; the
+	-- weekly ranking is by floors, so a long run cannot hold a slot for hours. Warnings at warnAt seconds left of the run
+	-- and at floorWarnAt seconds left of a floor; at most maxRuns runs (maxSlots arenas); a group that finds every arena
+	-- busy waits in line and is told when one frees up. A run ends at once when its last player is out.
+	runTimeLimit = 3600,
+	limits = {warnAt = {300, 60, 10}, floorWarnAt = {60, 10}, maxRuns = 16, waitlist = true},
 	startDelay = 5, -- seconds before floor 1
 	nextFloorDelay = 6, -- seconds between floors
 	healBetweenFloors = 0.5, -- fraction of missing health and mana restored
@@ -223,6 +231,9 @@ local function endRun(run, reason)
 	end
 	clearArena(run.slot)
 	runs[run.slot] = nil
+	if ChaosInstanceLimits then
+		ChaosInstanceLimits.freed("tower", "the Infinity Tower")
+	end
 end
 
 local startFloor
@@ -298,6 +309,7 @@ startFloor = function(run)
 	local plan = ChaosTowerFloorPlan(run.floor, count)
 	run.remaining = spawnPlan(run, plan, math.random)
 	run.floorStart = os.time()
+	run.floorWarn = {} -- the floor's own warnings (instance limits)
 	say(run, plan.boss and string.format("Floor %d: BOSS!", run.floor) or string.format("Floor %d", run.floor))
 	if run.remaining == 0 then
 		floorCleared(run) -- nothing could be created: do not trap the group
@@ -310,6 +322,42 @@ startFloor = function(run)
 		end
 	end, cfg.floorTimeLimit * 1000, run.slot, run.floor)
 end
+
+-- ------------------------------------------------------------------ the run's clock (instance limits)
+-- seconds left of the whole run (nil without a run limit)
+local function runLeft(run, now)
+	if (cfg.runTimeLimit or 0) <= 0 then
+		return nil
+	end
+	return math.max(0, run.startTime + cfg.runTimeLimit - (now or os.time()))
+end
+ChaosTowerRun.runLeft = runLeft
+
+local function clockTick(slot, startTime)
+	local run = runs[slot]
+	if not run or run.ended or run.startTime ~= startTime then
+		return
+	end
+	local now = os.time()
+	local left = runLeft(run, now)
+	if left and left <= 0 then
+		endRun(run, "Time is up: your tower run ends here.")
+		return
+	end
+	local IL = ChaosInstanceLimits
+	if IL then
+		local players = IL.playersOf(run.players)
+		if left then
+			IL.warn(run, left, players, "Infinity Tower", cfg.limits)
+		end
+		if run.floorWarn and run.remaining > 0 and run.floorStart then
+			IL.warn(run.floorWarn, run.floorStart + cfg.floorTimeLimit - now, players, "Floor " .. run.floor,
+				{warnAt = cfg.limits.floorWarnAt})
+		end
+	end
+	addEvent(clockTick, 1000, slot, startTime)
+end
+ChaosTowerRun._clockTick = clockTick
 
 -- ------------------------------------------------------------------ entering
 local function freeSlot()
@@ -369,9 +417,18 @@ function ChaosTowerRun.start(player)
 			return false
 		end
 	end
-	local slot = freeSlot()
+	local IL = ChaosInstanceLimits
+	local slot = not (IL and IL.capped("tower", ChaosTowerRun.activeRuns(), cfg.limits)) and freeSlot() or nil
 	if not slot then
-		player:sendCancelMessage("All tower arenas are busy. Try again in a moment.")
+		if IL then
+			local lefts = {}
+			for _, r in pairs(runs) do
+				lefts[#lefts + 1] = runLeft(r) or cfg.floorTimeLimit
+			end
+			player:sendCancelMessage(IL.busy(player, "tower", "tower arenas", lefts, cfg.limits))
+		else
+			player:sendCancelMessage("All tower arenas are busy. Try again in a moment.")
+		end
 		return false
 	end
 
@@ -393,6 +450,7 @@ function ChaosTowerRun.start(player)
 			startFloor(r)
 		end
 	end, cfg.startDelay * 1000, slot)
+	addEvent(clockTick, 1000, slot, run.startTime)
 	return true
 end
 
@@ -401,7 +459,26 @@ function ChaosTowerRun.isInside(player)
 end
 
 if Chaos.registerInstance then -- chaos_constants.lua (a test may stub Chaos)
-	Chaos.registerInstance("tower", {label = "the Infinity Tower", inside = ChaosTowerRun.isInside, at = inArena})
+	Chaos.registerInstance("tower", {label = "the Infinity Tower", inside = ChaosTowerRun.isInside, at = inArena,
+		runs = function() -- /instances (instance_limits.lua)
+			local out = {}
+			for slot, run in pairs(runs) do
+				local n = 0
+				for _ in pairs(run.players) do
+					n = n + 1
+				end
+				out[#out + 1] = {id = slot, what = string.format("slot %d, floor %d (%d cleared)", slot, run.floor, run.cleared),
+					left = runLeft(run), players = n}
+			end
+			return out
+		end, close = function(id) -- as when the time runs out: everyone out, the cleared floors recorded
+			local run = runs[tonumber(id) or -1]
+			if not run or run.ended then
+				return false, "No tower run in slot " .. tostring(id) .. "."
+			end
+			endRun(run, "A gamemaster closed the tower run.")
+			return true, "Tower run in slot " .. id .. " closed."
+		end})
 end
 
 function ChaosTowerRun.leave(player)

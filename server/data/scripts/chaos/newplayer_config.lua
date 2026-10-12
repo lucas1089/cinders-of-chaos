@@ -232,6 +232,7 @@ return {
 		kills = 4, -- tutorial station 1: kills so far
 		orbBase = 5, -- tutorial station 4: Orbs of Upheaval owned after the orb was handed out
 		flags = 6, -- tutorial bits: 1 spellbook opened, 2 spell cast, 4 passive point given, 8 orb given, 16 mana topped up
+		islandUsed = 7, -- tutorial: seconds spent on the island in earlier sessions (instance limits)
 		milestone = 10 -- + index into milestones (10 .. 19)
 	},
 	stageDone = 100,
@@ -240,6 +241,12 @@ return {
 	-- ------------------------------------------------------------------ tutorial island (newplayer_tutorial.lua)
 	tutorial = {
 		enabled = true,
+		-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a character spends at most
+		-- timeLimitMinutes online on the island (the stations take 5-10 minutes); then it leaves as with "Skip
+		-- tutorial": the kit, the welcome, its temple. Warnings at warnAt seconds left. The island is one shared place
+		-- (no copies, no cap); the training rats are at most maxMonsters at once.
+		timeLimitMinutes = 30,
+		limits = {warnAt = {300, 60}},
 		-- built at startup with Game.createTile, like the world boss arena. Footprint x 4598-4642, y 4598-4612, z 7:
 		-- the map has no tiles within x/y 4500-5600 (server/README.md "World bosses"); the build checks again and
 		-- refuses to build over tiles that are not its own. Then new characters get the kit at once (no island).

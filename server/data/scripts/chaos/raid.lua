@@ -1450,6 +1450,9 @@ closeRun = function(run, mode)
 	cleanSlot(run.L)
 	X.runs[run.slot] = nil
 	S().saveInstance(run.inst)
+	if ChaosInstanceLimits then
+		ChaosInstanceLimits.freed("raid", C().name)
+	end
 	log(string.format("raid %d closed (slot %d)", run.inst.id, run.slot))
 end
 
@@ -1465,6 +1468,28 @@ end
 
 Chaos.registerInstance("raid", {label = "a raid", inside = X.isInside, at = function(pos)
 	return ChaosRiftCore.slotOfPos(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, now = {}, os.time()
+	for slot, run in pairs(X.runs) do
+		local n = 0
+		for _ in pairs(run.players) do
+			n = n + 1
+		end
+		out[#out + 1] = {id = run.inst.id, what = string.format("slot %d, %d of %d bosses slain%s", slot,
+			K.bitCount(run.inst.killed, #C().bosses), #C().bosses, run.fight and ", in a fight" or ""),
+			left = run.endsAt and math.max(0, run.endsAt - now) or nil, players = n,
+			idle = n == 0 and math.max(0, C().idleMinutes * 60 - (now - (run.lastActive or now))) or nil}
+	end
+	return out
+end, close = function(id) -- everyone to the temple; the progress stays saved (as the idle close)
+	for _, run in pairs(X.runs) do
+		if run.inst.id == id then
+			say(run, "A gamemaster closed the raid. Your progress is saved for the week.")
+			closeRun(run, "temple")
+			return true, "Raid " .. id .. " closed."
+		end
+	end
+	return false, "No open raid " .. tostring(id) .. "."
 end})
 
 local function memberProblem(m)
@@ -1563,8 +1588,23 @@ function X.open(player, id, force)
 		return false, string.format("The Sepulchre opens for a party of %d to %d (within %d sqm). You have %d.",
 			cfg.minPlayers, cfg.maxPlayers, cfg.partyRange, #group)
 	end
-	local slot, L = takeSlot()
+	local IL = ChaosInstanceLimits
+	local running = 0
+	for _ in pairs(X.runs) do
+		running = running + 1
+	end
+	local slot, L
+	if not (IL and IL.capped("raid", running, cfg.limits)) then
+		slot, L = takeSlot()
+	end
 	if not slot then
+		if IL then
+			local lefts, t = {}, os.time()
+			for _, r in pairs(X.runs) do
+				lefts[#lefts + 1] = math.max(0, (r.endsAt or t) - t)
+			end
+			return false, IL.busy(player, "raid", "wings of the Sepulchre", lefts, cfg.limits)
+		end
 		return false, "Every wing of the Sepulchre is taken right now. Try again in a moment."
 	end
 	if not inst then
@@ -1576,7 +1616,8 @@ function X.open(player, id, force)
 		X.inst[newId] = inst
 	end
 	local run = {inst = inst, slot = slot, L = L, players = {}, mons = {}, bossId = {}, bossBase = {}, trashLeft = {},
-		trashUp = {}, alerts = {}, lastActive = os.time(),
+		trashUp = {}, alerts = {}, lastActive = os.time(), openedAt = os.time(),
+		endsAt = (cfg.sessionMinutes or 0) > 0 and os.time() + cfg.sessionMinutes * 60 or nil,
 		session = {startKilled = K.bitCount(inst.killed, #cfg.bosses), kills = 0}}
 	X.runs[slot] = run
 	cleanSlot(L)
@@ -1775,6 +1816,19 @@ function X.tick(slot, id)
 		end
 	else
 		run.lastActive = os.time()
+	end
+	-- the session's time limit (instance limits): everyone back where they came from, the progress stays saved
+	if run.endsAt then
+		local left = run.endsAt - os.time()
+		if left <= 0 then
+			say(run, string.format("Time is up: %s closes. Your progress is saved for the week; continue it from the raid window.",
+				cfg.name))
+			closeRun(run, "exit")
+			return
+		end
+		if ChaosInstanceLimits then
+			ChaosInstanceLimits.warn(run, left, ChaosInstanceLimits.playersOf(run.players), cfg.name, cfg.limits)
+		end
 	end
 	-- the trash of the corridors: cleared sections open their door
 	for i, left in pairs(run.trashLeft) do

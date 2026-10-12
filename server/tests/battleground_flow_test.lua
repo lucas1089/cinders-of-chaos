@@ -459,5 +459,37 @@ eq(B.rowOf(7001).honor, cfg.season.tiers[5].honor, "season honor")
 Chaos.select = realSelect
 ChaosAchievements = nil
 
+-- ---------------------------------------------------------------- instance limits (instance_limits.lua)
+-- warnings before the match's end, the found teams are told once when every field is in use, the staff list and close
+do
+  dofile("data/scripts/chaos/instance_limits.lua")
+  local function said(p, text) for _, t in ipairs(p.msgs) do if t:find(text, 1, true) then return true end end return false end
+  local slots = cfg.grid.slots
+  cfg.grid.slots = 1
+  local g1, g2 = {}, {}
+  for i = 1, 10 do g1[i] = newPlayer("First" .. i, 450, i % 3 == 0 and 8 or 5); check(B.join(g1[i], nil), "limits: first " .. i .. " queues") end
+  advance((cfg.fillSeconds + cfg.matchmakeSeconds) * 1000)
+  local mm = B.matchOf[g1[1]:getId()]
+  check(mm ~= nil, "limits: a match")
+  for i = 1, 10 do g2[i] = newPlayer("Second" .. i, 450, i % 3 == 0 and 8 or 5); check(B.join(g2[i], nil), "limits: second " .. i .. " queues") end
+  advance((cfg.fillSeconds + cfg.matchmakeSeconds) * 1000)
+  check(B.matchOf[g2[1]:getId()] == nil, "limits: no field for the second match")
+  check(said(g2[1], "Battleground: All battlefields are busy. Try again in ~"), "limits: told the wait: " .. table.concat(g2[1].msgs, " | "))
+  advance((cfg.prepSeconds + 1) * 1000)
+  mm.endAt = os.time() + 61
+  advance(1000)
+  check(said(g1[1], "Battleground: 1 minute left"), "limits: the 1 minute warning")
+  local found
+  for _, r in ipairs(ChaosInstanceLimits.runs()) do if r.key == "battleground" then found = r end end
+  check(found and found.id == mm.id and found.players == 10, "limits: listed")
+  check(Chaos.instances.battleground.close(mm.id) and mm.phase == "done", "limits: a staff close stops the match")
+  eq(lastSend(g1[1], "end").rated, false, "limits: not rated")
+  advance(cfg.endDelaySeconds * 1000 + (cfg.matchmakeSeconds + 1) * 1000)
+  check(B.matchOf[g2[1]:getId()] ~= nil, "limits: the waiting teams start when the field frees up")
+  cfg.grid.slots = slots
+  B.stopAll()
+  advance(cfg.endDelaySeconds * 1000)
+end
+
 print(string.format("battleground_flow_test: %d checks, %d failed", count, fails))
 if fails > 0 then os.exit(1) end

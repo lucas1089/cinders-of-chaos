@@ -578,4 +578,46 @@ GB.syncLockout(leader)
 eq(leader.storage, 0, "no lockout next week")
 eq(GB.weekRow(4).killed_at, 0, "a fresh week")
 
+-- instance limits (instance_limits.lua): warnings before the limit, the staff list and close (a
+-- failed attempt: half of the need stays as fuel)
+do
+	dofile("data/scripts/chaos/instance_limits.lua")
+	local week2 = B.weekKey(cfg, NOW)
+	local key2 = "4:" .. week2
+	if not WEEK[key2] then
+		local row = {}
+		for k, v in pairs(WEEK[key]) do row[k] = v end
+		row.attempts, row.killed_at, row.pool = 0, 0, 0
+		WEEK[key2] = row
+	end
+	WEEK[key2].fuel = 800
+	NOW = NOW + 2
+	local oks, why2 = GB.handle(leader, "bossSummon", {})
+	eq(oks, true, "limits: summoned: " .. tostring(why2))
+	local r = GB.guildRun[4]
+	local gcfg = Chaos.guildBossConfig
+	local limit = gcfg.boss.limit
+	gcfg.boss.limit = 290
+	r.bossDueAt = os.mtime() + 11000
+	GB._tick(r.slot, r.id)
+	r.bossDueAt = os.mtime() + 10000
+	leader.msgs = {}
+	GB._tick(r.slot, r.id)
+	local warned = false
+	for _, t in ipairs(leader.msgs) do
+		if t:find(gcfg.boss.boss .. ": 5 minutes left", 1, true) then warned = true end
+	end
+	ok(warned, "limits: the 5 minute warning")
+	gcfg.boss.limit = limit
+	local found
+	for _, x in ipairs(ChaosInstanceLimits.runs()) do
+		if x.key == "guildboss" then found = x end
+	end
+	ok(found and found.id == r.id and found.players == 2, "limits: listed")
+	local fuel = WEEK[key2].fuel
+	local okc = Chaos.instances.guildboss.close(r.id)
+	ok(okc and r.state == "failed" and GB.guildRun[4] == nil, "limits: a staff close fails the attempt")
+	eq(WEEK[key2].fuel, fuel + B.fuelAfterFail(0, r.need, cfg), "limits: half of the need stays (the failure rule)")
+end
+
 print(string.format("guildboss_test: %d checks OK", checks))

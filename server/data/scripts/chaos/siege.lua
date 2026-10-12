@@ -137,7 +137,24 @@ end
 function S.isInside(player)
 	return player ~= nil and locate(player:getPosition()) ~= nil
 end
-Chaos.registerInstance("siege", {label = "a guild siege", at = S.isInsidePos})
+Chaos.registerInstance("siege", {label = "a guild siege", at = S.isInsidePos, runs = function() -- /instances
+	if not S.state or S.state.phase == "idle" then
+		return {}
+	end
+	local n = 0
+	for _, p in pairs(S.state.players or {}) do
+		if p.inside then
+			n = n + 1
+		end
+	end
+	return {{id = "siege", what = S.state.phase, left = S.state.endAt and math.max(0, S.state.endAt - os.time()) or nil, players = n}}
+end, close = function() -- as /siege stop (no rewards)
+	if not S.state or S.state.phase == "idle" then
+		return false, "No guild siege is running."
+	end
+	S.stop()
+	return true, "Guild siege stopped."
+end})
 
 local function team(p)
 	local br = state.brackets and state.brackets[p.bracket]
@@ -750,6 +767,16 @@ local function tick(token)
 	if match and now >= state.endAt then
 		finish("time")
 		return
+	end
+	if match and ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		local inside = {}
+		for guid, p in pairs(state.players) do
+			local player = p.inside and Player(p.name)
+			if player and player:getGuid() == guid then
+				inside[#inside + 1] = player
+			end
+		end
+		ChaosInstanceLimits.warn(state, state.endAt - now, inside, "Guild siege", cfg.limits)
 	end
 	addEvent(tick, 1000, token)
 end

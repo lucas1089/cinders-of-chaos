@@ -1263,6 +1263,87 @@ f.nextHex = T
 runTo(T + 300)
 X.interruptAll()
 
+-- ================================================================== instance limits (instance_limits.lua)
+-- the session's time limit with its warnings (progress kept), the idle close after idleMinutes, the cap with the wait
+-- and the waiting line, the staff list and close
+do
+	dofile("data/scripts/chaos/instance_limits.lua")
+	local byId = Player
+	Player = function(x) -- the engine also finds a player by name
+		if type(x) == "string" then
+			for _, c in pairs(creatures) do
+				if c.player and c.name == x then
+					return c
+				end
+			end
+			return nil
+		end
+		return byId(x)
+	end
+	local function told(p, text)
+		for _, t in ipairs(p.texts) do
+			if t:find(text, 1, true) then
+				return true
+			end
+		end
+		return false
+	end
+	eq(cfg.sessionMinutes, 150, "limits: a session lasts 150 minutes")
+	eq(cfg.idleMinutes, 5, "limits: an empty raid closes after 5 minutes")
+	for i = 1, 5 do
+		raiders[i].pos = Position(99 + i, 100, 7)
+		raiders[i].texts = {}
+	end
+	check(X.open(lead), "limits: open")
+	run = X.runOf[lead.id]
+	eq(run.endsAt, os.time() + cfg.sessionMinutes * 60, "limits: the session's end")
+	runTo(T + 300)
+	run.endsAt = os.time() + 600
+	runTo(T + 300)
+	check(told(raiders[2], "The Ashen Sepulchre: 10 minutes left"), "limits: the 10 minute warning to every raider")
+	-- the cap: one raid at most; a second party is refused with the wait and waits in line
+	ChaosRaidConfig.limits.maxRuns = 1
+	local other = newPlayer("Other", 300, 110)
+	local okO, whyO = X.open(other, nil, true)
+	check(not okO and whyO:find("All wings of the Sepulchre are busy. Try again in ~10 min. You are 1st in line", 1, true),
+		"limits: busy with the wait: " .. tostring(whyO))
+	ChaosRaidConfig.limits.maxRuns = 4
+	-- staff list
+	local found
+	for _, r in ipairs(ChaosInstanceLimits.runs()) do
+		if r.key == "raid" then found = r end
+	end
+	check(found and found.players == 5 and found.left == 600, "limits: /instances lists the raid")
+	-- time up: everyone back where they came from, the slot closes, the progress stays
+	run.inst.killed = 1
+	X.store.saveInstance(run.inst)
+	run.endsAt = os.time() + 1
+	runTo(T + 1500)
+	check(X.runOf[lead.id] == nil and next(X.runs) == nil, "limits: time up closes the raid")
+	eq(lead.pos.x, 100, "limits: back where the raider came from")
+	check(told(lead, "Time is up: The Ashen Sepulchre closes. Your progress is saved for the week"), "limits: told")
+	eq(mem.inst[run.inst.id].killed, 1, "limits: the progress is kept")
+	check(told(other, "A place in The Ashen Sepulchre is free now"), "limits: the first in line is told")
+	-- idle: everyone leaves; the empty raid closes after idleMinutes
+	check(X.open(lead), "limits: open again")
+	run = X.runOf[lead.id]
+	for i = 1, 5 do
+		raiders[i].pos = Position(99 + i, 100, 7)
+	end
+	runTo(T + 300)
+	check(next(run.players) == nil and X.runs[run.slot] == run, "limits: empty, still open")
+	runTo(T + (cfg.idleMinutes * 60 - 2) * 1000)
+	check(X.runs[run.slot] == run, "limits: open until the idle time")
+	runTo(T + 3000)
+	check(X.runs[run.slot] == nil, "limits: closed after idleMinutes")
+	-- staff close
+	check(X.open(lead), "limits: open for the staff close")
+	run = X.runOf[lead.id]
+	local okC = Chaos.instances.raid.close(run.inst.id)
+	check(okC and next(X.runs) == nil, "limits: staff close")
+	eq(lead.pos.x, 1000, "limits: a staff close sends to the temple")
+end
+
 print(string.format("raid_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

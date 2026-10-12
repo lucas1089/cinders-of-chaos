@@ -107,6 +107,24 @@ end
 
 Chaos.registerInstance("worldboss", {label = "the world boss arena", at = function(pos)
 	return W.inside(pos)
+end, runs = function() -- /instances (instance_limits.lua)
+	local st = W.state
+	if not st or st.phase == "idle" then
+		return {}
+	end
+	local n = 0
+	for _, p in ipairs(Game.getPlayers()) do
+		if W.inside(p:getPosition()) then
+			n = n + 1
+		end
+	end
+	return {{id = "event", what = st.phase, left = st.fightEnd and math.max(0, st.fightEnd - os.time()) or nil, players = n}}
+end, close = function() -- as /worldboss stop: the boss withdraws, everyone to the temple
+	if not W.state or W.state.phase == "idle" then
+		return false, "No world boss event is running."
+	end
+	W.stop()
+	return true, "World boss event stopped."
 end})
 
 -- Every tile of both rooms: {x, y, z, wall = bool, lobby = bool}
@@ -1009,6 +1027,9 @@ local function tick(token)
 	local boss = state.bossId and Monster(state.bossId)
 	if boss and state.phase == "fight" then
 		sendBossInfo(boss, inside)
+		if ChaosInstanceLimits and state.fightEnd then -- warnings before the boss withdraws (instance_limits.lua)
+			ChaosInstanceLimits.warn(state, state.fightEnd - os.time(), inside, bossCfg().name, C().limits)
+		end
 		if state.enraged and os.time() >= (state.nextPulse or 0) then
 			local b = bossCfg()
 			pulse(boss, b)

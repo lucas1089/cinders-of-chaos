@@ -668,6 +668,9 @@ finishExit = function(run)
 	cleanSlot(run.L)
 	if RF.runs[run.slot] == run then
 		RF.runs[run.slot] = nil
+		if ChaosInstanceLimits and not run.restart then
+			ChaosInstanceLimits.freed("rift", "the rifts")
+		end
 	end
 	print(string.format("[ChaosRift] run %d (slot %d, tier %d) ended: %s", run.id, run.slot, run.key.tier, run.state))
 end
@@ -1356,6 +1359,16 @@ local function tick(slot, rid)
 		fail(run, "Time is up!")
 		return
 	end
+	-- instance limits (instance_limits.lua): warnings before the end; a run kept open only for fallen players who may
+	-- come back closes after the idle grace, as a failed rift
+	local IL = ChaosInstanceLimits
+	if IL and run.state == "running" then
+		IL.warn(run, R.timeLeft(run, now), IL.playersOf(run.players), run.omen and "Omen arena" or "Rift", C().limits)
+		if IL.idle(run, next(run.players) ~= nil, C().limits, now) then
+			fail(run, "Nobody came back in time.")
+			return
+		end
+	end
 	-- the omen guardian comes startDelay seconds after the party arrived
 	if run.omen and run.boss == "waiting" and now >= (run.bossDueAt or 0) then
 		run.boss = "alive"
@@ -1384,6 +1397,7 @@ local function tick(slot, rid)
 	end
 	addEvent(tick, 1000, slot, rid)
 end
+RF._tick = tick
 
 -- ======================================================================== opening
 local exhaust = {}
@@ -1488,12 +1502,28 @@ local function gather(player, t)
 end
 
 -- a free slot, built (or buildable); L or nil (message sent)
+-- seconds until each running rift frees its slot (instance limits: the wait estimate)
+local function slotLefts()
+	local lefts, now = {}, os.time()
+	for _, r in pairs(RF.runs) do
+		lefts[#lefts + 1] = r.state == "running" and R.timeLeft(r, now) or C().exitDelay
+	end
+	return lefts
+end
+RF.slotLefts = slotLefts
+
 local function takeSlot(player)
 	local cfg = C()
+	local IL = ChaosInstanceLimits
+	local running = 0
+	for _ in pairs(RF.runs) do
+		running = running + 1
+	end
 	while true do
-		local slot = R.allocSlot(cfg, RF.runs, RF.bad)
+		local slot = not (IL and IL.capped("rift", running, cfg.limits)) and R.allocSlot(cfg, RF.runs, RF.bad) or nil
 		if not slot then
-			player:sendCancelMessage("Every rift is open right now. Try again in a moment.")
+			player:sendCancelMessage(IL and IL.busy(player, "rift", "rifts", slotLefts(), cfg.limits)
+				or "Every rift is open right now. Try again in a moment.")
 			return nil
 		end
 		local L, why = buildSlot(slot)
@@ -1504,6 +1534,7 @@ local function takeSlot(player)
 		print(string.format("[ChaosRift] slot %d not usable: %s", slot, why))
 	end
 end
+RF._takeSlot = takeSlot
 
 -- teleports the group in and registers the run's events
 local function enter(run, group)
@@ -1691,6 +1722,30 @@ end
 
 Chaos.registerInstance("rift", {label = "a rift", inside = RF.isInside, at = function(pos)
 	return ChaosRiftCore.slotOfPos(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, now = {}, os.time()
+	for slot, run in pairs(RF.runs) do
+		local n = 0
+		for _ in pairs(run.players) do
+			n = n + 1
+		end
+		out[#out + 1] = {id = run.id, what = string.format("%s, slot %d, %s", run.omen and "omen arena" or ("tier " .. run.key.tier),
+			slot, run.state), left = run.state == "running" and R.timeLeft(run, now) or nil, players = n,
+			idle = ChaosInstanceLimits and ChaosInstanceLimits.idleLeft(run, C().limits, now)}
+	end
+	return out
+end, close = function(id) -- the failure rule of a time-out: everyone out, no chest, the key is spent
+	for _, run in pairs(RF.runs) do
+		if run.id == id and not run.ended then
+			if run.state == "running" then
+				fail(run, "A gamemaster closed the rift.")
+			else
+				finishExit(run)
+			end
+			return true, "Rift " .. id .. " closed."
+		end
+	end
+	return false, "No running rift " .. tostring(id) .. "."
 end})
 
 -- loot_config.lua rateMult: the Quantity bonus of the rift the corpse owner / chest opener is in, x the party's loot bonus

@@ -57,6 +57,21 @@ Chaos.registerInstance("ascension", {label = "an ascension trial", inside = func
 	return S.trials[player:getId()] ~= nil
 end, at = function(pos)
 	return Q.slotAt(pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, ms = {}, os.mtime and os.mtime() or os.time() * 1000
+	for pid, tr in pairs(S.trials) do
+		local p = Player(pid)
+		out[#out + 1] = {id = pid, what = string.format("%s, slot %d, %s", p and p:getName() or "?", tr.slot,
+			tr.over and "ending" or tr.phase), left = tr.deadline and not tr.over and math.max(0, math.floor((tr.deadline - ms) / 1000))
+			or nil, players = p and 1 or 0}
+	end
+	return out
+end, close = function(id) -- ended without a cooldown ("Nothing is lost"), back to the Oracle
+	if S.trials[id] and not S.trials[id].over and S.finish then
+		S.finish(id, "error", "A gamemaster closed the Trial. Nothing is lost.")
+		return true, "Ascension trial of player " .. id .. " closed."
+	end
+	return false, "No running ascension trial " .. tostring(id) .. "."
 end})
 
 local function C()
@@ -480,6 +495,9 @@ function S.finish(pid, how, text)
 			S.slotBusy[slot] = nil
 		end
 		cleanSlot(tr.L)
+		if ChaosInstanceLimits then
+			ChaosInstanceLimits.freed("ascension", "the ascension trial rooms")
+		end
 	end, delay)
 end
 
@@ -676,8 +694,21 @@ function S.enterTrial(player)
 	if not oracle then
 		return false, "The Trial is entered at the " .. C().npc.name .. "."
 	end
-	local slot = freeSlot()
+	local running = 0
+	for _ in pairs(S.trials) do
+		running = running + 1
+	end
+	local IL = ChaosInstanceLimits
+	local lim = C().trial.limits
+	local slot = not (IL and IL.capped("ascension", running, lim)) and freeSlot() or nil
 	if not slot then
+		if IL then
+			local lefts, ms = {}, os.mtime and os.mtime() or os.time() * 1000
+			for _, tr in pairs(S.trials) do
+				lefts[#lefts + 1] = tr.deadline and math.max(0, math.floor((tr.deadline - ms) / 1000)) or C().trial.timeLimitSeconds
+			end
+			return false, IL.busy(player, "ascension", "trial chambers", lefts, lim)
+		end
 		return false, "Every trial chamber is in use. Try again in a moment."
 	end
 	local L, err = S.buildSlot(slot)

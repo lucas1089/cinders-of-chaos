@@ -400,6 +400,12 @@ Chaos.dungeons = {
 	--   * list / levels / party size / DungeonPos / FromPos / ToPos / DungeonTime / cooldown storage
 	-- Everything the base server table does not have is declared here, per base server dungeon id.
 	exitDelayMs = 10000, -- delay between finishing and teleporting the group out
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a queue run lasts the base server's
+	-- DungeonTime (60 / 30 minutes) but at most maxTimeSeconds (45 minutes: two to three times the speed challenge of
+	-- 15-20 minutes); warnings at warnAt seconds left. One run per dungeon at a time (the base dungeon is one map area):
+	-- the queue is the waiting line and shows the wait of the run inside.
+	maxTimeSeconds = 2700,
+	limits = {warnAt = {300, 60, 10}},
 	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the base server modal only did on failure)
 	queueTickMs = 3000,
 	maxDifficulty = 6, -- client has 6 difficulty buttons
@@ -528,6 +534,9 @@ Chaos.worldBoss = {
 	exitDelaySeconds = 90, -- after the end: time to loot before everyone is sent to their temple
 	minLevel = 300,
 	maxPlayers = 40, -- players inside lobby + arena at once (0 = no limit)
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings to everyone inside at warnAt
+	-- seconds before the boss withdraws (fightMinutes); one arena, one event at a time
+	limits = {warnAt = {300, 60, 10}},
 	allowPvp = false, -- no player-vs-player damage in the lobby and the arena
 	-- multi-client characters (Chaos.isMultiClient) may enter and fight, but get no participation reward
 	mcReward = false,
@@ -1208,6 +1217,8 @@ end
 --   Chaos.inAnyInstance(player[, except]) -> key, label   (taking part in one, or standing in one's area)
 --   Chaos.instanceAt(pos[, except]) -> key, label         (area only)
 --   Chaos.sweepIntruders(inArea, isMember[, text]) -> n   non-staff players in the area who are not members go home
+--   optional runs = function() -> {{id, what, left, players, idle}}, close = function(id) -> ok, text: the staff view
+--       /instances of instance_limits.lua (server/README.md "Instance limits")
 -- A check that errors counts as "no" (one broken module must not lock everybody in place).
 -- ---------------------------------------------------------------------------
 Chaos.instances = {}

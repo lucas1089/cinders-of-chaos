@@ -571,6 +571,17 @@ local function bossOf(run)
 	return run.bossId and Monster(run.bossId) or nil
 end
 
+-- seconds until the run's time limit (the boss's limit after it appears, plus the wait before it)
+local function timeLeft(run, t)
+	local def = C().boss
+	if run.bossAt then
+		local _, _, tl = U.clock(def, (t - run.bossAt) / 1000)
+		return math.max(0, math.floor(tl))
+	end
+	return def.limit + math.max(0, math.ceil(((run.bossDueAt or t) - t) / 1000))
+end
+GB.timeLeft = timeLeft
+
 local function hudData(run)
 	local def = C().boss
 	local t = mnow()
@@ -690,6 +701,9 @@ finishExit = function(run)
 	cleanSlot(run.L)
 	if GB.runs[run.slot] == run then
 		GB.runs[run.slot] = nil
+		if ChaosInstanceLimits and not run.restart then
+			ChaosInstanceLimits.freed("guildboss", "the guild boss arenas")
+		end
 	end
 	if GB.guildRun[run.gid] == run then
 		GB.guildRun[run.gid] = nil
@@ -1208,12 +1222,16 @@ local function tick(slot, rid)
 	if run.ended then
 		return
 	end
+	if run.state == "running" and ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		ChaosInstanceLimits.warn(run, timeLeft(run, t), ChaosInstanceLimits.playersOf(run.players), cfg.boss.boss, cfg.limits)
+	end
 	if t >= (run.nextHud or 0) then
 		run.nextHud = t + cfg.hudEvery * 1000
 		sendHud(run, "update")
 	end
 	addEvent(tick, cfg.tickMs, slot, rid)
 end
+GB._tick = tick
 
 -- ======================================================================== summoning
 local function insideOther(player)
@@ -1247,8 +1265,23 @@ function GB.summon(player)
 	if #group < cfg.minPlayers then
 		return false, string.format("At least %d members (level %d+) must stand in the hall.", cfg.minPlayers, cfg.minLevel)
 	end
-	local slot, L = takeSlot()
+	local IL = ChaosInstanceLimits
+	local running = 0
+	for _ in pairs(GB.runs) do
+		running = running + 1
+	end
+	local slot, L
+	if not (IL and IL.capped("guildboss", running, cfg.limits)) then
+		slot, L = takeSlot()
+	end
 	if not slot then
+		if IL then
+			local lefts, t = {}, mnow()
+			for _, r in pairs(GB.runs) do
+				lefts[#lefts + 1] = r.state == "running" and timeLeft(r, t) or cfg.exitDelay
+			end
+			return false, IL.busy(player, "guildboss", "guild boss arenas", lefts, cfg.limits)
+		end
 		return false, "Every guild boss arena is in use. Try again in a moment."
 	end
 	if G().exec(string.format("UPDATE `%s` SET `fuel` = `fuel` - %d, `attempts` = `attempts` + 1, `updated_at` = %d WHERE `guild_id` = %d " ..
@@ -1289,6 +1322,29 @@ end
 
 Chaos.registerInstance("guildboss", {label = "the guild boss arena", inside = GB.isInside, at = function(pos)
 	return U.slotAt(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out = {}
+	for slot, run in pairs(GB.runs) do
+		local n = 0
+		for _ in pairs(run.players) do
+			n = n + 1
+		end
+		out[#out + 1] = {id = run.id, what = string.format("%s, slot %d, %s", tostring(run.guildName), slot, run.state),
+			left = run.state == "running" and timeLeft(run, mnow()) or nil, players = n}
+	end
+	return out
+end, close = function(id) -- a failed attempt, as when the time runs out (failKeep of the fuel stays)
+	for _, run in pairs(GB.runs) do
+		if run.id == id and not run.ended then
+			if run.state == "running" then
+				fail(run, "A gamemaster closed the arena.")
+			else
+				finishExit(run)
+			end
+			return true, "Guild boss run " .. id .. " closed."
+		end
+	end
+	return false, "No running guild boss arena " .. tostring(id) .. "."
 end})
 
 local function fall(run, pid)

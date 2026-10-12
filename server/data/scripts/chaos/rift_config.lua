@@ -27,6 +27,12 @@ return {
 	bossAt = 75, -- percent of the rift's monsters that must die before the boss appears
 	exitDelay = 60, -- seconds after the boss died: time to open the chest and loot; then everyone is sent out
 	hudEvery = 5, -- seconds between HUD refreshes (the client counts down by itself in between)
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings at these seconds left; a
+	-- running rift whose players are all gone (fallen players who may come back keep it open) closes after idleSeconds
+	-- as a failed rift (the key is spent, as when the time runs out); at most maxRuns rifts and Omen arenas at once (the
+	-- grid has 16 slots: about 800 runtime tiles each, see "Instance limits" for the load); a player who finds them all
+	-- busy waits in line and is told when one frees up
+	limits = {warnAt = {300, 60, 10}, idleSeconds = 180, maxRuns = 16, waitlist = true},
 
 	-- packs: count = packs.base + floor(tier / packs.perTiers) + packs.perExtraPlayer x (players - 1);
 	-- size = a random number in packs.size, + the Swarm modifier. One monster type per pack.

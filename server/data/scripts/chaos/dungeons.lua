@@ -276,10 +276,25 @@ end
 
 -- ------------------------------------------------------------------ payload builders
 
+-- the run's length: the base server's DungeonTime, at most cfg.maxTimeSeconds (instance limits)
+local function durationOf(dg)
+	local t = dg.DungeonTime or 3600
+	if (cfg.maxTimeSeconds or 0) > 0 then
+		t = math.min(t, cfg.maxTimeSeconds)
+	end
+	return t * 1000
+end
+
 local function queueInfo(id, dg)
 	local waiting = queues[id] and #queues[id] or 0
 	local missing = math.max(0, groupSizeOf(dg) - waiting)
-	return {players = waiting, estimated = missing * 30000}
+	local estimated = missing * 30000
+	-- a run inside: the queue waits at least for its end (instance limits: the wait the window shows)
+	local run = runOfDungeon[id]
+	if run and not run.ended then
+		estimated = math.max(estimated, run.startedAt + (run.durationMs or durationOf(dg)) - nowMs() + cfg.exitDelayMs)
+	end
+	return {players = waiting, estimated = math.max(0, estimated)}
 end
 
 local function bossOutfit(id)
@@ -427,6 +442,26 @@ Chaos.registerInstance("dungeon", {label = "a dungeon", inside = ChaosDungeonIsI
 		end
 	end
 	return false
+end, runs = function() -- /instances (instance_limits.lua)
+	local out = {}
+	for id, run in pairs(runs) do
+		local dg = baseDungeons()[run.dungeonId]
+		local n = 0
+		for _ in pairs(run.members) do
+			n = n + 1
+		end
+		out[#out + 1] = {id = id, what = string.format("%s, difficulty %d", dg and titleOf(run.dungeonId, dg) or "?", run.difficulty),
+			left = math.max(0, math.floor((run.startedAt + (run.durationMs or 0) - nowMs()) / 1000)), players = n,
+			note = (queues[run.dungeonId] and #queues[run.dungeonId] or 0) .. " queued"}
+	end
+	return out
+end, close = function(id) -- the failure rule of a time-out: everyone out where they entered, the cooldown
+	local run = runs[tonumber(id) or -1]
+	if not run or run.ended or not ChaosDungeons or not ChaosDungeons.endRun then
+		return false, "No running dungeon run " .. tostring(id) .. "."
+	end
+	ChaosDungeons.endRun(run, false, "A gamemaster closed the dungeon.")
+	return true, "Dungeon run " .. id .. " closed."
 end})
 
 local function entryProblem(player, id, dg, difficulty)
@@ -563,6 +598,7 @@ local function endRun(run, success, reason)
 		end
 		forgetRun(run)
 		runOfDungeon[run.dungeonId] = nil
+		broadcastQueue(run.dungeonId) -- the wait shown in the window drops
 	end
 
 	if not success then
@@ -625,6 +661,9 @@ local function endRun(run, success, reason)
 	end, cfg.exitDelayMs, run.id)
 end
 
+ChaosDungeons = ChaosDungeons or {}
+ChaosDungeons.endRun = endRun
+
 local function startRun(dungeonId, difficulty, players)
 	local dg = baseDungeons()[dungeonId]
 	local extra = extraOf(dungeonId)
@@ -672,7 +711,8 @@ local function startRun(dungeonId, difficulty, players)
 	run.bossSeen = bosses > 0
 	scaleList(run, monsterList)
 
-	local durationMs = (dg.DungeonTime or 3600) * 1000
+	local durationMs = durationOf(dg)
+	run.durationMs = durationMs
 	local objectives = {}
 	for i, ch in ipairs(extra.challenges or {}) do
 		objectives[i] = ch.title
@@ -822,6 +862,11 @@ tick = function()
 				if run.bossSeen and bosses == 0 and percent >= cfg.progressNeeded then
 					endRun(run, true)
 				end
+				-- warnings before the time runs out (instance limits; the client counts the clock down itself)
+				if not run.ended and ChaosInstanceLimits then
+					local left = math.floor((run.startedAt + (run.durationMs or 0) - nowMs()) / 1000)
+					ChaosInstanceLimits.warn(run, left, memberPlayers(run), titleOf(run.dungeonId, dg), cfg.limits)
+				end
 			end
 		end
 	end
@@ -966,12 +1011,21 @@ function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosDungeonsExtended")
 	-- the first login after a restart or a crash inside a dungeon box (a queue run here or a run of the base modal, whose
 	-- exit timer died with the server): out to the temple. A relog while the server runs stays (the run may go on).
-	if not runOfPlayer[player:getGuid()] and (player:getLastLogout() or 0) < ChaosDungeonsBoot then
+	-- A relog while the server runs: the logout already took the character out of its run (it counts as leaving, like
+	-- walking out: the cooldown), so it is not left standing in the box, where it would also hold the next group's run
+	-- back (instance limits).
+	if not runOfPlayer[player:getGuid()] then
+		local restart = (player:getLastLogout() or 0) < ChaosDungeonsBoot
 		local pos = player:getPosition()
 		for _, dg in pairs(baseDungeons()) do
 			if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(dg, pos) then
 				player:teleportTo(player:getTown():getTemplePosition())
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your dungeon run was cut short by a server restart.")
+				if restart then
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your dungeon run was cut short by a server restart.")
+				else
+					setCooldown(player)
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You logged out inside the dungeon: your run is over.")
+				end
 				break
 			end
 		end

@@ -371,5 +371,44 @@ eq(b3, 6, "the 3v3 board recorded for all six")
 advance(cfg.endDelaySeconds * 1000)
 ChaosPvpSeason = nil
 
+-- ---------------------------------------------------------------- instance limits (instance_limits.lua)
+-- warnings before the fight's end; a pair that finds every slot in use is told once, with the wait; the staff list and
+-- close (stopped, not rated); the waiting pair starts when the slot frees up
+do
+  GlobalEvent = function(name) local o = {}; function o:interval() end; function o:register() globals[name] = o end; return o end
+  dofile("data/scripts/chaos/instance_limits.lua")
+  local function said(p, text) for _, t in ipairs(p.msgs) do if t:find(text, 1, true) then return true end end return false end
+  local w1, w2 = newPlayer("Wren", 900, 31, 1000), newPlayer("Xan", 900, 32, 1000)
+  local y1, y2 = newPlayer("Yara", 900, 33, 1000), newPlayer("Zed", 900, 34, 1000)
+  local slots, fight = cfg.grid.slots, cfg.fightSeconds
+  cfg.grid.slots, cfg.fightSeconds = 1, 300
+  check(S.join(w1, "1v1") and S.join(w2, "1v1"), "limits: a 1v1 pair queues")
+  advance(2000)
+  local mm = S.matchOf[w1:getId()]
+  check(mm ~= nil, "limits: the match starts")
+  check(S.join(y1, "1v1") and S.join(y2, "1v1"), "limits: a second pair queues")
+  advance(2000)
+  check(S.matchOf[y1:getId()] == nil, "limits: no slot for the second pair")
+  check(said(y1, "Arena: All arenas are busy. Try again in ~6 min. Your match starts as soon as one frees up."),
+    "limits: the second pair is told the wait: " .. table.concat(y1.msgs, " | "))
+  local n1 = #y1.msgs
+  advance(4000)
+  eq(#y1.msgs, n1, "limits: told once")
+  advance(10000) -- the fight
+  mm.endAt = os.time() + 61
+  advance(1000)
+  check(said(w1, "Arena: 1 minute left"), "limits: the 1 minute warning: " .. table.concat(w1.msgs, " | "))
+  local found
+  for _, r in ipairs(ChaosInstanceLimits.runs()) do if r.key == "arena" then found = r end end
+  check(found and found.id == mm.id and found.players == 2 and found.left == 60, "limits: listed")
+  local okc = Chaos.instances.arena.close(mm.id)
+  check(okc and mm.phase == "done", "limits: a staff close stops the match")
+  advance(cfg.endDelaySeconds * 1000 + 2000)
+  check(S.matchOf[y1:getId()] ~= nil, "limits: the waiting pair starts when the slot frees up")
+  cfg.grid.slots, cfg.fightSeconds = slots, fight
+  S.stopAll()
+  advance(cfg.endDelaySeconds * 1000 + 1000)
+end
+
 print(string.format("arena_flow_test: %d checks, %d failed", count, fails))
 if fails > 0 then os.exit(1) end

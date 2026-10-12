@@ -381,6 +381,62 @@ do
 	ok(not RF.runOf[b2.id], "and not put back into the ended run")
 end
 
+-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings before the end, a run kept open
+-- only for a fallen player closes after the idle grace as a failed rift (no key back), the cap with the wait and the
+-- waiting line, the staff list and close
+do
+	restart()
+	dofile("data/scripts/chaos/instance_limits.lua")
+	local IL = ChaosInstanceLimits
+	local a = newPlayer(31, "Limits")
+	local run = openRun(a, {}, key)
+	local t0 = os.time()
+	run.deadline = t0 + 400
+	RF._tick(run.slot, run.id)
+	eq(#a.msgs, 0, "limits: no warning at 400 s")
+	run.deadline = t0 + 300
+	RF._tick(run.slot, run.id)
+	ok((a.msgs[#a.msgs] or ""):find("Rift: 5 minutes left", 1, true) ~= nil, "limits: 5 minute warning")
+	run.deadline = t0 + 9
+	RF._tick(run.slot, run.id)
+	ok((a.msgs[#a.msgs] or ""):find("Rift: 10 seconds left", 1, true) ~= nil, "limits: 10 s warning")
+	-- the cap: one rift at most, a second opener waits in line and is told when it frees up
+	cfg.limits.maxRuns = 1
+	local b = newPlayer(32, "Waiting")
+	b.sendCancelMessage = function(_, t) b.msgs[#b.msgs + 1] = t end
+	eq(RF._takeSlot(b), nil, "limits: the cap refuses a second rift")
+	ok((b.msgs[#b.msgs] or ""):find("All rifts are busy. One frees up in under a minute. You are 1st in line", 1, true) ~= nil,
+		"limits: busy text with the wait and the place: " .. tostring(b.msgs[#b.msgs]))
+	cfg.limits.maxRuns = 16
+	-- the staff list
+	local found
+	for _, r in ipairs(IL.runs()) do
+		if r.key == "rift" and r.id == run.id then found = r end
+	end
+	ok(found and found.players == 1 and found.left == 9, "limits: /instances lists the rift with its time left")
+	-- the opener falls with lives left and logs out: the run stays open for the idle grace, then fails
+	run.players[a.id] = nil
+	RF.runOf[a.id] = nil
+	run.revive = {[a.guid] = true}
+	RF.revive[a.guid] = run
+	run.deadline = t0 + 500
+	RF._tick(run.slot, run.id)
+	ok(not run.ended, "limits: a fallen player keeps the run open (grace)")
+	run._limits.emptySince = os.time() - cfg.limits.idleSeconds
+	RF._tick(run.slot, run.id)
+	ok(run.ended and run.state == "failed", "limits: empty for the grace: the rift fails")
+	ok((run.endText or ""):find("Nobody came back in time", 1, true) ~= nil, "limits: why")
+	eq(RF.revive[a.guid], nil, "limits: no return to a closed rift")
+	ok((b.msgs[#b.msgs] or ""):find("A place in the rifts is free now", 1, true) ~= nil, "limits: the first in line is told")
+	-- staff close: the time-out rule
+	local c = newPlayer(33, "Closed")
+	local run2 = openRun(c, {}, key)
+	local okc = Chaos.instances.rift.close(run2.id)
+	ok(okc and run2.ended and run2.state == "failed", "limits: staff close fails the rift")
+	eq(#keysOf(c), 0, "limits: no key back for a staff close")
+	eq(c.at.x, 50, "limits: back where the key was used")
+end
+
 print(string.format("rift_refund_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

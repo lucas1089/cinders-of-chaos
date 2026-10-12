@@ -1212,6 +1212,9 @@ finish = function(run, result)
 		if r and r.id == rid then
 			cleanSlot(r.L)
 			X.runs[slot] = nil
+			if ChaosInstanceLimits and not r.restart then
+				ChaosInstanceLimits.freed("descent", "the Ember Descent")
+			end
 		end
 	end, run.restart and 0 or C().exitDelay * 1000)
 	if run.restart then
@@ -1320,8 +1323,23 @@ function X.start(player, weekly)
 			end
 		end
 	end
-	local slot, L = takeSlot()
+	local IL = ChaosInstanceLimits
+	local running = 0
+	for _ in pairs(X.runs) do
+		running = running + 1
+	end
+	local slot, L
+	if not (IL and IL.capped("descent", running, cfg.limits)) then
+		slot, L = takeSlot()
+	end
 	if not slot then
+		if IL then
+			local lefts, t = {}, os.time()
+			for _, r in pairs(X.runs) do
+				lefts[#lefts + 1] = r.ended and cfg.exitDelay or math.max(0, r.deadline - t)
+			end
+			return false, IL.busy(player, "descent", "halls of the Descent", lefts, cfg.limits)
+		end
 		return false, "Every hall of the Descent is taken right now. Try again in a moment."
 	end
 	-- payment: the free run of the mode, or one sigil
@@ -1387,6 +1405,9 @@ function X.tick(slot, rid)
 		say(run, "The embers burn out: your descent ends here.")
 		finish(run, "time")
 		return
+	end
+	if ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		ChaosInstanceLimits.warn(run, run.deadline - now, ChaosInstanceLimits.playersOf(run.players), "Ember Descent", C().limits)
 	end
 	for pid, pe in pairs(run.players) do
 		local p = Player(pid)
@@ -1817,6 +1838,26 @@ end
 
 Chaos.registerInstance("descent", {label = "the Ember Descent", inside = X.isInside, at = function(pos)
 	return R.slotOfPos(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, now = {}, os.time()
+	for slot, run in pairs(X.runs) do
+		local n = 0
+		for _ in pairs(run.players) do
+			n = n + 1
+		end
+		out[#out + 1] = {id = run.id, what = string.format("slot %d, room %d of %d%s", slot, run.idx or 0, run.plan.count,
+			run.ended and ", ending" or ""), left = not run.ended and math.max(0, run.deadline - now) or nil, players = n}
+	end
+	return out
+end, close = function(id) -- as when the time runs out: every player out with the rewards of the depth reached
+	for _, run in pairs(X.runs) do
+		if run.id == id and not run.ended then
+			say(run, "A gamemaster closed the Descent.")
+			finish(run, "time")
+			return true, "Descent run " .. id .. " closed."
+		end
+	end
+	return false, "No running Descent run " .. tostring(id) .. "."
 end})
 
 if ChaosTitles and ChaosTitles.register then

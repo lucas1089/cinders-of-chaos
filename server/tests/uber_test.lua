@@ -1036,6 +1036,58 @@ check(rec and rec[1] == "cinder_solo" and rec[2] == "Hero" and rec[3] >= 59 and 
 eq(ChaosAchievements.got["Hero:cinder_solo"], 1, "the solo achievement stat")
 check(Game.lastBroadcast and Game.lastBroadcast:find("extinguished the Cinderheart", 1, true) ~= nil, "the broadcast")
 
+-- ================================================================== instance limits (instance_limits.lua)
+-- warnings before the boss's limit, the cap with the wait and the waiting line, the staff list and close (the sigil is
+-- spent, as when the time runs out)
+do
+	dofile("data/scripts/chaos/instance_limits.lua")
+	A.interruptAll()
+	local function told(p, text)
+		for _, t in ipairs(p.texts) do
+			if t:find(text, 1, true) then
+				return true
+			end
+		end
+		return false
+	end
+	hero.party, friend.party = nil, nil
+	hero.pos, friend.pos = Position(100, 100, 7), Position(101, 100, 7)
+	hero.hp, friend.hp = hero.maxhp, friend.maxhp
+	local function sigilFor(p)
+		local it = p:addItem(cfg.items.sigil.id, 1)
+		it.custom.ascended_kind = "bloodmoon"
+		return it
+	end
+	T = T + 5000
+	sigilUse.onUse(hero, sigilFor(hero))
+	local r = A.runOf[hero.id]
+	check(r ~= nil, "limits: a run")
+	runTo(T + cfg.startDelay * 1000 + 500)
+	check(r.bossAt ~= nil, "limits: the boss is up")
+	r.bossAt = T - (r.def.limit - 300) * 1000
+	runTo(T + 300)
+	check(told(hero, r.def.boss .. ": 5 minutes left"), "limits: the 5 minute warning")
+	-- the cap
+	ChaosUberConfig.limits.maxRuns = 1
+	T = T + 5000
+	friend.texts = {}
+	sigilUse.onUse(friend, sigilFor(friend))
+	check(A.runOf[friend.id] == nil, "limits: the cap refuses a second arena")
+	check(told(friend, "All Ascended arenas are busy. Try again in ~5 min. You are 1st in line"), "limits: busy text")
+	ChaosUberConfig.limits.maxRuns = 4
+	local found
+	for _, x in ipairs(ChaosInstanceLimits.runs()) do
+		if x.key == "ascended" then found = x end
+	end
+	check(found and found.id == r.id and found.players == 1 and found.left <= 300 and found.left >= 290, "limits: listed: " ..
+		tostring(found and (found.id .. " " .. found.players .. " " .. tostring(found.left))))
+	-- staff close
+	local okC = Chaos.instances.ascended.close(r.id)
+	check(okC and r.state == "failed" and A.runs[r.slot] == nil, "limits: a staff close fails the run")
+	eq(hero.storage[Chaos.storage.ascendedRun], 0, "limits: the sigil is spent (no refund marker)")
+	check(told(friend, "A place in the Ascended arenas is free now"), "limits: the first in line is told")
+end
+
 print(string.format("uber_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

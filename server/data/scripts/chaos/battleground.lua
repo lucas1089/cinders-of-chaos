@@ -257,6 +257,27 @@ end
 
 Chaos.registerInstance("battleground", {label = "a battleground", inside = B.isInside, at = function(pos)
 	return K.slotOfPos(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, now = {}, os.time()
+	for slot, m in pairs(B.matches) do
+		local n = 0
+		for cid, e in pairs(m.players) do
+			if not e.gone and Player(cid) then
+				n = n + 1
+			end
+		end
+		out[#out + 1] = {id = m.id, what = string.format("%dv%d, slot %d, %s", m.size or 0, m.size or 0, slot, m.phase),
+			left = m.phase ~= "done" and math.max(0, m.endAt - now) or nil, players = n}
+	end
+	return out
+end, close = function(id) -- stopped, not rated (as /bg stop)
+	for _, m in pairs(B.matches) do
+		if m.id == id and m.phase ~= "done" and B._finish then
+			B._finish(m, 0, "stop")
+			return true, "Battleground match " .. id .. " stopped (not rated)."
+		end
+	end
+	return false, "No running battleground match " .. tostring(id) .. "."
 end})
 
 -- queued or in a match (the arena refuses those)
@@ -884,6 +905,7 @@ finish = function(m, winner, reason)
 		B.matches[slot] = nil
 	end, cfg.endDelaySeconds * 1000, m.slot, m.id)
 end
+B._finish = finish
 
 -- ======================================================================== match start
 local function startMatch(found)
@@ -1137,6 +1159,13 @@ local function tickMatch(m)
 		finish(m, 0, "stop")
 		return
 	end
+	if m.phase == "fight" and ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		local ps = {}
+		eachOnline(m, function(p)
+			ps[#ps + 1] = p
+		end)
+		ChaosInstanceLimits.warn(m, m.endAt - now, ps, "Battleground", cfg.limits)
+	end
 	hud(m)
 	if now - m.lastBoard >= 3 then
 		m.lastBoard = now
@@ -1172,6 +1201,29 @@ local function matchmake()
 	end
 	for _, found in ipairs(K.findMatches(cfg, entries, now)) do
 		if not startMatch(found) and not freeSlot() then
+			-- every field in use: the found teams hear it once (instance limits), with the wait, and stay queued
+			if ChaosInstanceLimits then
+				local lefts = {}
+				for _, mm in pairs(B.matches) do
+					lefts[#lefts + 1] = (mm.phase == "done" and 0 or math.max(0, mm.endAt - now)) + C().endDelaySeconds
+				end
+				local IK = ChaosInstanceLimits.core
+				local text = "Battleground: " .. IK.busyText("battlefields", IK.eta(lefts, 1)) ..
+					" Your match starts as soon as one frees up."
+				for side = 1, 2 do
+					for _, entry in ipairs(found.teams[side] or {}) do
+						if not entry.busyTold then
+							entry.busyTold = true
+							for _, mem in ipairs(entry.members) do
+								local p = Player(mem.cid)
+								if p then
+									msg(p, text)
+								end
+							end
+						end
+					end
+				end
+			end
 			break
 		end
 	end

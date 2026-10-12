@@ -647,4 +647,31 @@ clock = (W.nextAt - base) * 1000
 globals["ChaosWorldBossSchedule"].onThink()
 assertEq(W.state.phase, "gather", "scheduled start")
 
+-- ---------------------------------------------------------------- instance limits (instance_limits.lua)
+-- warnings to everyone inside before the boss withdraws; the staff list and close (as /worldboss stop)
+do
+  CreatureEvent = function(name) local o = {}; function o:register() registry[name] = o end; function o:type() end; return o end
+  dofile("data/scripts/chaos/instance_limits.lua")
+  advance(11000)
+  if W.state.phase ~= "idle" then W.stop(); advance(11000) end
+  talks["/worldboss"].onSay(gm, "/worldboss", "start")
+  local L = W.layout()
+  a.pos = Position(L.bossSpawn.x, L.bossSpawn.y + 5, L.z)
+  a.msgs = {}
+  advance(cfg.gatherSeconds * 1000)
+  assertEq(W.state.phase, "fight", "limits: fight")
+  advance((cfg.fightMinutes * 60 - 299) * 1000)
+  local warned = false
+  for _, t in ipairs(a.msgs) do if t:find(": 5 minutes left", 1, true) then warned = true end end
+  assert(warned, "limits: the 5 minute warning to the players inside")
+  local list = ChaosInstanceLimits.runs()
+  local found
+  for _, r in ipairs(list) do if r.key == "worldboss" then found = r end end
+  assert(found and found.left <= 299 and found.left >= 290 and found.players >= 1, "limits: listed")
+  assert(Chaos.instances.worldboss.close(), "limits: staff close")
+  assertEq(W.state.phase, "ending", "limits: stopped")
+  advance(11000)
+  assertEq(W.state.phase, "idle", "limits: idle")
+end
+
 print("worldboss_test: ok")

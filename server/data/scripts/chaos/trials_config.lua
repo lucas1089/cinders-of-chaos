@@ -75,6 +75,10 @@ return {
 
 	-- entering. Solo only; in a protection zone, out of combat, not multi-clienting.
 	enter = {needProtectionZone = true, failCooldownSeconds = 60},
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): each tier's `time` is the limit;
+	-- warnings at warnAt seconds left; at most maxRuns trials at once (the grid's 8 chambers); a player who finds them all
+	-- in use waits in line and is told when one frees up. Solo: a logout ends the trial at once (no idle grace needed).
+	limits = {warnAt = {120, 60, 10}, maxRuns = 8, waitlist = true},
 
 	-- the NPC that tells the story and opens the same door as the tree window's Trials button
 	npc = {

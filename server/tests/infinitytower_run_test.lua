@@ -174,4 +174,58 @@ for _, f in ipairs({"data/scripts/chaos/infinitytower.lua", "data/scripts/chaos/
 	h:close()
 end
 assertEq(names["ChaosTowerLogin"], "data/scripts/chaos/infinitytower.lua", "ChaosTowerLogin stays infinitytower.lua's")
+-- ---- instance limits (instance_limits.lua, server/README.md "Instance limits"): the whole run's time limit with its
+-- warnings, the floor warnings, the cap with the waiting line, the staff list and close
+do
+  local base = 1000000
+  os.time = function() return base + math.floor(clock / 1000) end -- luacheck: ignore
+  CreatureEvent = function(name) local o = {}; function o:register() registry[name] = o end; function o:type() end; return o end
+  Chaos.instanceOrder, Chaos.instances = {}, {}
+  Chaos.registerInstance = function(k, d) if not Chaos.instances[k] then Chaos.instanceOrder[#Chaos.instanceOrder + 1] = k end; Chaos.instances[k] = d end
+  Chaos.inAnyInstance = function(p) return ChaosTowerRun.isInside(p) and "tower" or nil end
+  Chaos.staffCommand = function() return true, true end
+  local byId = Player
+  Player = function(k) if type(k) == "string" then for _, p in pairs(players) do if p.name == k then return p end end return nil end return byId(k) end
+  dofile("data/scripts/chaos/instance_limits.lua")
+  dofile("data/scripts/chaos/infinitytower_run.lua") -- again, now with the registry
+  local cfg = ChaosTowerRunConfig
+  cfg.runTimeLimit = 400
+  cfg.limits.maxRuns = 1
+  local f = mkPlayer(6, "Fay"); players[6] = f
+  assertEq(ChaosTowerRun.start(f), true, "limits: start")
+  local g = mkPlayer(7, "Gus"); players[7] = g
+  assertEq(ChaosTowerRun.start(g), false, "limits: the cap refuses a second run")
+  assert(g.cancel:find("All tower arenas are busy. Try again in ~7 min. You are 1st in line", 1, true), "limits: busy text: " .. g.cancel)
+  local function said(p, text) for _, m in ipairs(p.msgs) do if m:find(text, 1, true) then return true end end return false end
+  local start = clock
+  advance(100000) -- 100 s: 300 s of the run left
+  assert(said(f, "Infinity Tower: 5 minutes left"), "limits: run warning at 5 minutes")
+  advance(146000) -- 246 s: floor 1 began at 5 s, 59 s of it left
+  assert(said(f, "Floor 1: 1 minute left"), "limits: floor warning at 1 minute")
+  local floorMonsters = {}
+  for _, m in ipairs(created) do if not m.removed and not m.dead then floorMonsters[#floorMonsters + 1] = m end end
+  for _, m in ipairs(floorMonsters) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
+  advance(94000) -- 340 s
+  assert(said(f, "Infinity Tower: 1 minute left"), "limits: run warning at 1 minute")
+  local before = #recorded
+  advance(61000) -- 401 s: the run's limit
+  assertEq(ChaosTowerRun.activeRuns(), 0, "limits: the run limit ends the run")
+  assert(said(f, "Time is up: your tower run ends here."), "limits: told why")
+  assertEq(recorded[#recorded].floors, 1, "limits: the cleared floor is recorded")
+  assertEq(#recorded, before + 1, "limits: recorded once")
+  assertEq(f.pos.x, 10, "limits: back where the run began")
+  assert(said(g, "A place in the Infinity Tower is free now"), "limits: the first in line is told")
+  -- staff: listed with the time left, closed by slot
+  assertEq(ChaosTowerRun.start(g), true, "limits: the one in line starts")
+  local list = ChaosInstanceLimits.runs()
+  assertEq(#list, 1, "limits: one run listed")
+  assertEq(list[1].key, "tower", "limits: by type")
+  assertEq(list[1].left, 400, "limits: time left")
+  local okc = Chaos.instances.tower.close(list[1].id)
+  assertEq(okc, true, "limits: staff close")
+  assertEq(ChaosTowerRun.activeRuns(), 0, "limits: closed")
+  assert(said(g, "A gamemaster closed the tower run."), "limits: told")
+  cfg.runTimeLimit, cfg.limits.maxRuns = 3600, 16
+  local _ = start
+end
 print("infinity tower run: all asserts passed")

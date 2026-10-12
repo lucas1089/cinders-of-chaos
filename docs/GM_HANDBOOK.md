@@ -47,6 +47,7 @@ access flag (gamemaster or higher).
 | `/siege start\|match\|end\|stop\|portal\|arena [n]\|signup <guild>\|clear` | 4+ | the guild siege |
 | `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ | arena, battleground, Scorched Marches |
 | `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ | the instanced content: runs, phases, test items (sigils, shards) |
+| `/instances`, `/instances <type>`, `/instances close <type> <id>`, `/instances line [type]` | 4+ | every running instance (rift, descent, raid, ascended, guildboss, trials, ascension, tower, dungeon, arena, battleground, worldboss, siege, tutorial, bossroom) with its id, time left, players and idle grace; close one by its system's failure rule (nobody gets a reward, nothing is refunded that a time-out would not refund); who waits in line for a free slot (server/README.md "Instance limits") |
 | `/community status\|modifier <key>\|modifier auto\|add <points>\|stage <n>` | 4+ | the community goal and the weekly modifier |
 | `/guild xp\|bank\|info\|log\|rent\|hall <guild>[, value]`, `/guildwar list\|end, <id>\|expire, <id>` | 4+ | guilds and guild wars |
 | `/classunlock <character>, <class>[, revoke]` | 4+ | a class unlock for the whole account |

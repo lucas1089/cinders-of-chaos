@@ -40,6 +40,11 @@ return {
 	exitDelay = 25, -- seconds after the kill before everyone is sent back to the hall
 	tickMs = 250,
 	hudEvery = 2, -- the rift HUD (opcode 228) like the Ascended arenas
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): the boss's `limit` (13 minutes after it
+	-- appears) is the time limit; warnings at warnAt seconds left; at most maxRuns arenas at once (the grid's 8); a
+	-- guild that finds them all in use waits in line (its summoner) and is told when one frees up. A run ends at once
+	-- when its last player is gone (a failed attempt keeps failKeep of the fuel), so no idle grace is needed.
+	limits = {warnAt = {300, 60, 10}, maxRuns = 8, waitlist = true},
 
 	-- ------------------------------------------------------------------ the arena (runtime-built, uber_core.lua layout)
 	-- x 11264-11455, y 10000-10095, z 7: 4 x 2 slots of 48. Free: no map tiles between x/y 3000 and 16000 (server/README.md

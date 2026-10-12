@@ -22,11 +22,15 @@ server/
   tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
   tools/patch_base_spawns.py, spawn_tuning.json   spawn density and respawn (see "Spawn density and respawn")
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
+  tools/patch_base_bossrooms.py       the base lever boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
     dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Iron Bellow spell)
     combat_fx.lua (crit / dodge / reflect / elemental weapon hit visuals, ChaosCombatFx)
+    instance_limits.lua  instance_limits_core.lua  instance_limits_config.lua
+                                                   time limits, warnings, caps and the waiting line of every instance,
+                                                   /instances, the base boss rooms (see "Instance limits")
     classes.lua  ascension.lua                     the classes (docs/CLASSES.md): class rules, the Ascendant Oracle
     class_migration.lua                            one-time move of the old vocations (startup SQL + login message)
     thief_combat.lua                               the Thief line: stealth / evasion / poison blades / dual wield / counter / bushido
@@ -330,6 +334,9 @@ server/
    (idempotent; `install_all.py` step `stalls`, after `autosave`): the expedition announcements look at the players
    online instead of every tile of an island, the upgrade-slot check keeps its parse per item description. See "Game
    loop stalls".
+7c. Base lever boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `bossrooms`, after `stalls`): the lever is locked while a group is inside, a time limit with
+   warnings, the exit and the clean-up. See "Instance limits".
 8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
@@ -349,7 +356,7 @@ working directory, as with the rest of the base server libs).
 | game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
-| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). |
+| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
 | game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests: "Infinity Tower season rewards"; `/towerseason` staff status. |
 | game_stash | `stash.lua` | **110** (new), Economy > Supply Stash | Deposit by drag, redeem, categories, block list, the Stash All button, DB persistence. Stash tabs per account limit (free / Chaos Pact / bought), Orbs / Gems / Keys tabs; tested in game (see "Chaos Pact and account storage"). |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
@@ -722,7 +729,9 @@ dungeons
   `DUNGEON_SYSTEM.Dungeons[3]` has `DungeonPos` z=0 but `FromPos/ToPos` z=7; the box is widened to include
   DungeonPos so players are not treated as "outside".
 - Cooldown (`DUNGEON_SYSTEM.CooldownTime`, 1 h) is also applied after a win (`cooldownOnSuccess`) and when a
-  member leaves/dies.
+  member leaves/dies, and when a member who logged out inside logs in again while the server runs (sent to the temple).
+- The run's time is `DungeonTime` capped at `Chaos.dungeons.maxTimeSeconds` (45 min); the base modal entry keeps its own
+  `DungeonTime` timer ("Instance limits").
 - Ranking: solo = best time per player (party size 1), group = best runs with 2+ players. Times in ms.
 
 infinitytower
@@ -1763,7 +1772,7 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
   machine's memory limit during that run) and the Paragon reset dialog (character below level 1000).
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
-The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
+The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
 - Not done: a visible ladder of floors in the client window, and per-floor loot beyond what the monsters drop. Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
@@ -3881,6 +3890,8 @@ two strings changed, a second whole install changed nothing.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
+**Limits** (`Chaos.worldBoss.limits`, "Instance limits"): the boss withdraws 45 minutes after it appears (unchanged); everyone inside now gets warnings at 5 min, 1 min and 10 s. One arena, at most 40 players; `/instances close worldboss event` is `/worldboss stop`.
+
 A server-wide event: a portal opens next to every temple, players gather in a lobby, one of five world bosses appears in an
 arena built at runtime, and everyone who took real part (damage, healing other players, tanking) is rewarded, not only the
 corpse owner; the top 3 damage dealers, healers and tanks get extra rewards and a title. Settings: `Chaos.worldBoss` in
@@ -5487,6 +5498,8 @@ life leech and attack speed from gems in a fight.
 
 ## Vocation Trials (`trials*.lua`, `TRIALS.md`, client `game_passivetree/trials*.lua`)
 
+**Limits** (`trials_config.lua` `limits`, "Instance limits"): 8 / 9 / 10 minutes by tier (unchanged) with warnings at 2 min, 1 min and 10 s; time up loses the trial (nothing is lost, the 60 s cooldown); at most 8 chambers, the wait and the waiting line when all are in use; a staff close ends a trial without a cooldown.
+
 A layer on the passive tree: per vocation (21: 7 base classes and both ascensions of each, in 7 trial families) a
 solo runtime-built challenge arena (x / y 9000+, 8 / 9 / 10 minutes, 3 / 3 / 2 lives, Normal / Cruel / Merciless at level
 100 / 250 / 400) and 3 pairs of special nodes (126 in all); each cleared tier opens one pair, a character holds one node
@@ -6216,6 +6229,8 @@ Portal Style window. Not verified in game: an invasion or treasure goblin record
 
 ## Guild siege (`siege.lua`, `siege_core.lua`, `siege_config.lua`, `sql/chaos_siege.sql`)
 
+**Limits** (`siege_config.lua` `limits`, "Instance limits"): the 25 minute match (unchanged) with warnings at 5 min, 1 min and 10 s to everyone inside; `/instances close siege siege` is `/siege stop`.
+
 A weekly scheduled war between guilds for the Chaos Obelisk. Client: `game_siege` (HUD + sign-up window, extended
 opcode 233, Adventure > Guild Siege in the top menu). Every number below is in `siege_config.lua`.
 
@@ -6888,6 +6903,8 @@ the kill log, a surrender (1,800,000 to the winner, 200,000 burnt), emblems gone
 
 ## The weekly guild boss (`guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, monsters `monsters/chaos/guildboss/`)
 
+**Limits** (`guildboss_config.lua` `limits`, "Instance limits"): the boss's limit (13 minutes after it appears) with warnings at 5 min, 1 min and 10 s; time up is a failed attempt (half of the need stays as fuel, everyone back in the hall); at most 8 arenas, the wait and the waiting line when all are in use.
+
 A guild-only instanced boss, Gorvath the Banner-Eater, once per guild and week (Monday 06:00). Window: the Guild Boss tab
 of `game_guildwar` (opcode 197), also opened by using the **Summoning Stone**, an obelisk (1560, action id 47609) that
 every guild hall gets on the east wall below the depot spot (`guild_hall.lua`'s `G.furnish` is wrapped, nothing edited
@@ -6943,6 +6960,8 @@ the lockout and the Boss Spawns row. The gold pool split is covered by the unit 
 on the live test server).
 
 ## Arena (`arena.lua`, `arena_core.lua`, `arena_config.lua`, client `game_arena`)
+
+**Limits** (`arena_config.lua` `limits`, "Instance limits"): 10 s of countdown and 5 minutes of fight (unchanged) with warnings at 1 minute and 10 s; a pair that finds every slot in use is told once, with the wait, and starts when one frees up. `/instances close arena <id>` stops a match (not rated).
 
 Ranked PvP: 1v1 and 2v2, an Elo rating per mode, matches in arena instances built at runtime. Settings are in
 `arena_config.lua`, the pure part (ratings, matchmaking, level rule, death catch, timeout) in `arena_core.lua`
@@ -7037,6 +7056,8 @@ items (potions and runes are used up as normal). The world type must allow PvP (
 the engine blocks the damage before the scripts see it.
 
 ## Battleground and PvP seasons (`battleground.lua`, `battleground_core.lua`, `battleground_config.lua`, `arena_season.lua`, `sql/chaos_battleground.sql`, client `game_battleground`)
+
+**Limits** (`battleground_config.lua` `limits`, "Instance limits"): 30 s of preparation and 15 minutes (unchanged) with warnings at 5 min, 1 min and 10 s; teams found while every field is in use are told once, with the wait, and start when one frees up. `/instances close battleground <id>` stops a match (not rated).
 
 **Ember Wells**, an objective battleground for 5v5 to 10v10, and **PvP seasons** for the arena brackets (1v1, 2v2, 3v3)
 and the battleground. Every number is in `battleground_config.lua`; the pure part (season dates, Glicko-lite, decay,
@@ -7678,7 +7699,100 @@ sizes, switching labels off and on. **Not verified:** two players at once, a sea
 items (the engine refuses the move; the label still shows), labels while walking fast over many piles (positions follow
 the engine, the scan lags at most 400 ms).
 
+## Instance limits (`instance_limits.lua`, `instance_limits_core.lua`, `instance_limits_config.lua`, `tools/patch_base_bossrooms.py`)
+
+Owner request: a time limit on quests and dungeons, so the instances do not fill up or overload (roadmap item 108). Every
+place with its own way in and out has a time limit, warnings before it runs out, a rule for the end, an idle rule, a cap
+on parallel copies with a wait estimate, and a staff view. Each system keeps its own numbers in its config (`limits`);
+`instance_limits_config.lua` has the shared defaults. No new opcode and no new table; one new storage (the tutorial's
+`islandUsed`, 7100257, in the new player block).
+
+- **Warnings** (`limits.warnAt`, default 5 min / 1 min / 10 s): a red status line and a chat line to everyone inside
+  ("Rift: 1 minute left. Everyone inside is sent out when the time runs out."), the marks of a minute or more also as a
+  toast. Each mark once per run; a mark already behind when a run starts is skipped (a 3 minute trial gets no "5
+  minutes left"). The HUDs that already count down (rift HUD, arena, battleground, dungeon window) keep doing so.
+- **The end** is each system's own failure rule (table below): nobody gets a reward for it, nothing is lost twice.
+- **Idle**: the systems that end a run at once when its last player is out keep doing so. The rift (a fallen player who
+  may come back kept it open until the timer), the raid and the base boss rooms close an empty instance after a grace.
+- **Caps** (`limits.maxRuns`, default the grid's slots): a player who finds every copy busy hears the wait of the first
+  to end ("All rifts are busy. Try again in ~4 min. You are 2nd in line: you will be told when one is free.") and waits in
+  line (`waitlist`): when a slot frees up the first in line who is online and outside every instance is told (chat and a
+  toast) and taken off the line; nobody is moved in automatically, so the key, sigil or party check stays the player's.
+  An entry stays 15 minutes (`waitMinutes`, at most `waitMax` = 50), a logout leaves the line, a closing server tells
+  nobody. Arena, battleground and dungeons have their own queue, which now also says the wait.
+- **Staff** (`/instances`, group 4+, logged like every guarded command): `/instances` lists every running instance with
+  its type, id, time left, players and the idle grace; `/instances <type>` one type; `/instances close <type> <id>` ends
+  one by its system's failure rule; `/instances line [type]` shows who waits. The registry of `chaos_constants.lua`
+  (`Chaos.registerInstance`) takes two optional fields for this: `runs()` and `close(id)`.
+
+**Before and after** (time = the limit of one run; "out" = where the player is sent):
+
+| Instance | Before | After | End of time | Idle | Cap | Logout inside, login | Restart |
+|---|---|---|---|---|---|---|---|
+| Rift | 10 min (Waning Veil -15-40%), no warnings, "Try again in a moment" | + warnings, idle 3 min, wait and line | fails: out to where the key was used, key spent | a run kept for fallen players closes after 3 min (fails) | 16 | out of the run, back at the entry; a fallen player returns at login while the run lives | key back once (unchanged) |
+| Omen arena | 10 min, as rifts | as rifts | as rifts | as rifts | shares the 16 rift slots | as rifts | as rifts |
+| Ember Descent | 45 min, no warnings | + warnings, wait and line | ends at the depth reached (its rewards), back at the entry | ends when the last player is out | 8 | ends for that player with its rewards; crash: temple | ends with rewards, temple |
+| Raid (Sepulchre) | no session limit, idle 10 min | session 150 min with warnings at 10 / 5 / 1 min and 10 s, idle 5 min, wait and line | everyone back where they came from, progress saved for the week (a fight then is a wipe) | 5 min (was 10), to the temple | 4 | removed (back where they came from); crash: temple | closed, temple, progress kept |
+| Ascended Omen | boss limit 13 min (Cinderheart 18) + 8 s | + warnings, wait and line | fails, out, sigil spent | ends when the last player is out | 4 | out | sigil back once |
+| Guild boss | boss limit 13 min + 10 s | + warnings, wait and line | failed attempt (half the fuel stays), out to the hall | ends when the last player is out | 8 | out | fuel back (unchanged) |
+| Arena | 10 s + 5 min | + warnings at 1 min and 10 s, the paired players hear the wait | the higher health share wins | a fighter gone 3 s has lost | 8 slots, queue | a loss | stopped, not rated |
+| Battleground | 30 s + 15 min | + warnings, the found teams hear the wait | the higher score wins | AFK kick 2 min (unchanged) | 4 fields, queue | a deserter | stopped, not rated |
+| Vocation Trial | 8 / 9 / 10 min | + warnings at 2 / 1 min and 10 s, wait and line | lost (nothing lost, 60 s cooldown), back where it began | solo: a logout ends it | 8 | ends (no cooldown); crash: out at login | out at login |
+| Ascension trial | 3 min, a line every 30 s | + wait and line | lost (10 min cooldown), back to the Oracle | solo | 8 | ends (the cooldown) | out at login |
+| Infinity Tower | 5 min a floor, no run limit | run limit 60 min with warnings, floor warnings at 1 min and 10 s, wait and line | ends like a lost floor: back at the entry, floors cleared recorded | ends when the last player is out | 16 | ends (floors recorded); login inside: temple | login inside: temple |
+| Dungeon (queue) | base DungeonTime 60 / 30 min; a relog stayed in the box (and held the next group's run back) | capped at 45 min, warnings, the queue shows the wait of the run inside, a relog inside goes to the temple (a failed attempt: the cooldown) | back where they entered, cooldown, monsters removed | ends when the last member is out | 1 per dungeon, queue | released; login: temple + cooldown | temple, no cooldown |
+| World boss | 45 min after the boss | + warnings | the boss withdraws, temple after 90 s, arena cleaned | event (not per group) | 1 arena, 40 players | stays in the event | login inside an idle arena: temple |
+| Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
+| Tutorial island | none | 30 min online (offline time does not count), warnings at 5 and 1 min | leaves as with Skip tutorial: kit, welcome, temple | shared island, no copies | none needed | time kept; a login past the limit leaves at once | unchanged |
+| Base lever boss rooms (51) | the script's own kick 10-60 min, no warning; the lever free whenever nobody stood inside; the old kick timer also hit the next group; monsters stayed | lever locked while a group's session runs, limit = the room's own time at most 30 min, warnings, countdown bars over the entrance and the lever | everyone to the room's exit, monsters removed | empty room frees up after 2 min (at once after a kill) | 1 group per room | login inside a closed room: its exit; inside its own running room: stays | closed at shutdown (exit) |
+| Invasions, Scorched Marches, hideouts | open world / personal | unchanged | | | | | |
+
+**Base lever boss rooms** (`tools/patch_base_bossrooms.py`, install step `bossrooms`; `ChaosBossRooms` in
+`instance_limits.lua`). 51 base scripts share one template (a `config` with bossArea, participantsPos and
+kickParticipantAfterSeconds; a lever Action; a boss death that opens a teleport out). The tool adds three marked lines to
+each, the rest untouched: the room's config is registered at load (`ChaosBossRoomsPending["aid<actionId>"]`), the lever's
+onUse first asks `ChaosBossRooms.leverUse` (refused with "A group is fighting in there. The room frees up in ~X at the
+latest."), and after the group went in `ChaosBossRooms.started` takes over the kick: the script's own timer is stopped
+(it was never stopped when a room emptied and so hit the next group), the time limit is the room's own time capped at
+`bossRooms.maxSeconds` (30 min: one boss fight, twice the longest Chaos boss limit; 3 of the 51 rooms had more), warnings,
+a "Time left" bar over the entrance and a "Room in use" bar over the lever (tilebars.lua). At the end everyone inside goes
+to the script's exitPosition and every monster in the room is removed; after a boss kill the script's own exit runs and
+the room frees up when it is empty. Without the Chaos scripts the rooms work as before. Left alone (listed by the tool or
+of another shape, owner decision): 2 files with several step-in rooms each, the soul pit and the tower defence, the base
+modal dungeon entry (its own fixed timer and "a team is inside" check; it scans every tile of the dungeon box on use), and
+about a dozen old XML quest levers and pits; whether these places exist on the map was not checked.
+
+**Load.** Every runtime area is built once per slot and kept (the engine cannot remove a tile); a run removes its
+monsters and loose items at the end. Tiles per slot, counted from the layouts: rift 1,045, Descent about 440, raid 3,574,
+Ascended 486, guild boss 574, arena 182, battleground 2,145, trial 529, ascension trial 225, tower 441, world boss
+about 1,220, tutorial about 680. All grids full: about 66,000 tiles, about 20 MB at roughly 300 bytes a tile with its
+ground and wall items, next to a map of millions. The game loop cost of a run is its tick (1 s or 250 ms; the players of
+the run, the HUD, a sweep for strangers every 3 s) and its monsters. Ticks: well under 1 ms each, under 10 ms a second
+with every slot of every type running (about 85). Monsters: a run is about one hunting group (rift tier 15 with five
+players: 19 packs, about 76 monsters; Descent at most 14 a wave; tower at most 22; raid about 40 awake), so all caps full
+is about 2,000 active monsters, 200 in each of the engine's 10 creature-check tasks a second; at the measured 20-50 us a
+monster that is 5-10 ms a task (the worst rift modifiers, Teeming and Swarm V, about 4,600 monsters and 10-25 ms), far
+from the 100 ms slow task line and the 250 ms stalls of "Game loop stalls". The one-off cost is building a slot the first
+time (about 3 items a tile: estimated 10 ms for a rift, 30-60 ms for a raid slot) and clearing it at the end (a Tile
+lookup per floor tile, a few ms). So the caps stay at the grid sizes, which were sized to free map areas; a full set of
+every type holds more players than the 200-400 online the server was load tested with, so the cap binds only in a burst.
+Not measured on a running server (no disk for a build this time); the slow task log (`slowTaskLogMs = 100`) on the test
+server shows a slot build or a clean-up if one is slower than estimated.
+
+**Tests.** `tests/instance_limits_test.lua` (the core: marks, idle, wait, line, texts; the glue on a mocked engine: the
+warnings and toasts, busy and line, freed, `/instances`; the patch tool on a stock-shaped room in LF and CRLF, dry run,
+idempotence, another shape left alone; the patched room script on the mocked engine: lock, the old timer stopped,
+warnings, time up with the exit and the monsters removed, the idle grace, a kill, the login rules, staff close,
+shutdown), `tests/instance_limits_systems_test.lua` (dungeons and the tutorial island on their real files), and an
+"instance limits" part in `rift_refund_test`, `raid_test`, `uber_test`, `guildboss_test`, `trials_flow_test`,
+`arena_flow_test`, `battleground_flow_test`, `infinitytower_run_test` and `worldboss_test` (each system's limit,
+warnings, cap and line, idle close, staff list and close where it applies). The Descent, the ascension trial and the
+siege got the same few lines (config, a warning call in the tick, the cap and the busy text, the registry) without an
+engine test of their own. Not run in game.
+
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, client `game_rift`)
+
+**Limits** (`rift_config.lua` `limits`, "Instance limits"): 10 minutes a run (unchanged), warnings at 5 min, 1 min and 10 s; time up fails the rift (out to where the key was used, the key is spent); a run kept open only for fallen players who may come back closes after 3 minutes as a failed rift; at most 16 rifts and Omen arenas at once, a player who finds them busy hears the wait and waits in line.
 
 Map devices (roadmap item 8). A consumable Rift Key opens a timed instance with random modifiers for the player and their
 party. All numbers are in `rift_config.lua`; the pure logic (key rolls, rewards, key odds, slots and layout, the timer, the
@@ -7956,7 +8070,7 @@ rule was switched off after checking the refusal), balance of tiers 8-15 against
 Roadmap items 21 and 22. Every number, item and text is in `newplayer_config.lua`; the pure logic (kit lookup, flags,
 milestones, island layout, station state machine) in `newplayer_core.lua`, tested by `tests/newplayer_test.lua`. Storages
 `Chaos.storage.newPlayer` = 7100250 - 7100269 (kit, welcome, tutorial stage / done mask / kills / orb count / flags,
-milestones at +10..+19). Tested in game on the test server (fresh level 1 characters, see "Verified" below).
++7 the tutorial island time of earlier sessions, milestones at +10..+19). Tested in game on the test server (fresh level 1 characters, see "Verified" below).
 
 - **Kit** (one time): a character logging in for the very first time (`lastLoginSaved` 0, kit storage unset) gets the kit of
   its class: weapon and armour equipped (into the backpack when the slot is taken), a backpack with potions, 20 brown
@@ -7988,6 +8102,8 @@ milestones at +10..+19). Tested in game on the test server (fresh level 1 charac
   Online characters only; logged to the console.
 
 ### Tutorial island (`newplayer_tutorial.lua`)
+
+**Limits** (`newplayer_config.lua` `tutorial.timeLimitMinutes`, "Instance limits"): a character spends at most 30 minutes online on the island (offline time does not count; storage 7100257 keeps the time of earlier sessions), warnings at 5 and 1 minute; then it leaves as with Skip tutorial (the kit, the welcome, its temple). A login past the limit leaves at once. `/instances tutorial` lists the characters on the island; `/instances close tutorial <name>` sends one out.
 
 Built at startup with `Game.createTile` like the world boss arena (nothing is saved to the map): footprint x 4598-4642,
 y 4598-4612, z 7 (the map has no tiles within x/y 4500-5600; every tile is checked first and the island is not built over
@@ -8237,6 +8353,8 @@ Staff: `/daily` shows the own account's state, `/daily shift <days>` moves the d
 characters of one account (a base client character-list error), so this is covered by the mocked test only.
 
 ## Ascension quest (`ascension_quest.lua`, `ascension_quest_core.lua`, `ascension_quest_config.lua`, the Ascendant Oracle)
+
+**Limits** (`ascension_quest_config.lua` `trial.limits`, "Instance limits"): the Trial's 3 minutes (unchanged, a line every 30 s); at most 8 rooms, the wait and the waiting line when all are in use; a staff close ends a Trial without a cooldown.
 
 Players ascend through a quest, not a command (docs/CLASSES.md "Ascension quest"). Install: step 4b (the NPC and the promotion
 patch) plus the scripts (step 1) and the guardian monsters (`data/monster/monsters/chaos/ascension/`, registered with the
@@ -9590,6 +9708,8 @@ careful bot with human-like random delays on every signal is not caught by this;
 
 ## Ascended Omens and the Cinderheart (`uber.lua`, `uber_core.lua`, `uber_config.lua`, `tools/install_ascended.py`)
 
+**Limits** (`uber_config.lua` `limits`, "Instance limits"): the boss's own limit (13 minutes after it appears, the Cinderheart 18) with warnings at 5 min, 1 min and 10 s; time up fails the run (out, the sigil is spent); at most 4 arenas, the wait and the waiting line when all are in use.
+
 The top challenge above the Omen Keys (roadmap item 57): Ascended versions of the three Omen guardians and one final
 boss, Ysgrath the Cinderheart. ("uber" is only in the file names; players read "Ascended" and "Cinderheart".) Every
 number is in `uber_config.lua`; the pure logic (kinds, the item chain, scaling, the phase machine, enrage, telegraph
@@ -9824,6 +9944,8 @@ from the real core (screenshots kept outside the repository).
 
 ## The Ember Descent (`descent.lua`, `descent_core.lua`, `descent_config.lua`, `sql/chaos_descent.sql`, client `game_descent`)
 
+**Limits** (`descent_config.lua` `limits`, "Instance limits"): 45 minutes a run (unchanged) with warnings at 5 min, 1 min and 10 s; the end gives the rewards of the depth reached, back at the entry; at most 8 runs, the wait and the waiting line when every hall is taken.
+
 A roguelike trial (roadmap item 59). Every number is in `descent_config.lua`; the pure logic (the seeded generator, the
 room chain, escalation, waves, boon offers, picks, stacks and curses, the hit maths, embers, prices, rewards, titles,
 free runs) is `descent_core.lua`, tested by `tests/descent_test.lua` with LuaJIT and Lua 5.3, including fixed values of
@@ -9915,6 +10037,8 @@ crash marker, a clean shutdown during a run.
 
 ## The Ashen Sepulchre, the weekly raid (`raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql`, client `game_raid`)
 
+**Limits** (`raid_config.lua` `sessionMinutes`, `idleMinutes`, `limits`, "Instance limits"): one opening lasts at most 150 minutes, warnings at 10, 5 and 1 minute and 10 s; then everyone goes back where they came from, the slot closes and the progress stays saved for the week (a fight still going ends as a wipe). An empty raid closes after 5 minutes (was 10). At most 4 raids, the wait and the waiting line when every wing is taken.
+
 Guild content for 5 to 15 players (roadmap item 61): five bosses in sequence in one instanced raid zone, trash between
 them, a loot lockout per character, boss and week, and a raid that is saved so a group can continue it another day of
 the same week. Every number is in `raid_config.lua`; the pure logic (the lockout week, lockouts and loot eligibility, the
@@ -9939,7 +10063,7 @@ per boss a corridor (10 x 5, the trash) and the boss room (23 x 23). Tiles are b
 slots and painted with the dark tile set (style "hall") when it is installed. Doors (iron bars, 1546) close the
 corridors: a corridor's west door opens when the boss before it is slain, its east door when its trash is cleared; a boss
 fight seals its room. The rooms of the bosses that cast hexes have a Font of Ash (fountain 1360, action id 47803) in each
-corner. A slot nobody stands in closes after 10 minutes (its progress stays saved).
+corner. A slot nobody stands in closes after 5 minutes (its progress stays saved; was 10).
 
 **Trash.** Each corridor holds 2-3 packs of the raid's trash (Sepulchre Ghoul, Bone Lancer, Hex Cultist, Cinder Hound,
 Marrow Knight, Ashen Reaper; stock looks, 42-60k health, level 900 hits), 3 + 1 per 3 raiders each (at most 8: 4 at five,

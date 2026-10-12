@@ -43,6 +43,21 @@ Chaos.registerInstance("trials", {label = "a trial", inside = function(player)
 	return T.runs ~= nil and T.runs[player:getId()] ~= nil
 end, at = function(pos)
 	return M.slotAt(pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out, ms = {}, os.mtime and os.mtime() or os.time() * 1000
+	for pid, tr in pairs(T.runs or {}) do
+		local p = Player(pid)
+		out[#out + 1] = {id = pid, what = string.format("%s, %s, slot %d, %s", p and p:getName() or "?", tr.tierDef.name, tr.slot,
+			tr.over and "ending" or tr.phase), left = not tr.over and math.max(0, math.floor((tr.deadline - ms) / 1000)) or nil,
+			players = p and 1 or 0}
+	end
+	return out
+end, close = function(id) -- ended without a cooldown or a reward, back where the trial began ("Nothing is lost")
+	if T.runs and T.runs[id] and not T.runs[id].over and T.finish then
+		T.finish(id, "abort", "A gamemaster closed the trial.")
+		return true, "Trial of player " .. id .. " closed."
+	end
+	return false, "No running trial " .. tostring(id) .. "."
 end})
 local OPCODE = ChaosOpcodes.passivetree
 local RIFT_OPCODE = ChaosOpcodes.rift
@@ -740,6 +755,9 @@ local function tick(pid)
 			finish(pid, "time", "Time is up: the trial is lost.")
 			return
 		end
+		if ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+			ChaosInstanceLimits.warn(tr, math.floor((tr.deadline - ms) / 1000), {player}, "Trial", C().limits)
+		end
 		for id in pairs(tr.adds) do -- thralls that lost their target take the player again
 			local m = Monster(id)
 			if m and m.getTarget and not m:getTarget() and m.selectTarget then
@@ -926,6 +944,9 @@ function finish(pid, how, text)
 			T.slotBusy[slot] = nil
 		end
 		cleanSlot(tr.L)
+		if ChaosInstanceLimits then
+			ChaosInstanceLimits.freed("trials", "the trial chambers")
+		end
 	end, exitDelay)
 end
 T.finish = finish
@@ -1125,8 +1146,20 @@ function T.enter(player, tierIdx, opts)
 	if opts.needNpc and not T.keeperNear(player) then
 		return false, "The trial is entered at the " .. c.npc.name .. "."
 	end
-	local slot = freeSlot()
+	local running = 0
+	for _ in pairs(T.runs) do
+		running = running + 1
+	end
+	local IL = ChaosInstanceLimits
+	local slot = not (IL and IL.capped("trials", running, c.limits)) and freeSlot() or nil
 	if not slot then
+		if IL then
+			local lefts, ms = {}, mnow()
+			for _, tr in pairs(T.runs) do
+				lefts[#lefts + 1] = tr.over and c.exitSeconds or math.max(0, math.floor((tr.deadline - ms) / 1000))
+			end
+			return false, IL.busy(player, "trials", "trial chambers", lefts, c.limits)
+		end
 		return false, "Every trial chamber is in use. Try again in a moment."
 	end
 	local L, err = T.buildSlot(slot)

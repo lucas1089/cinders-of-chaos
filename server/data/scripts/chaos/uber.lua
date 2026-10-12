@@ -393,12 +393,36 @@ local function cleanSlot(L)
 	end
 end
 
+-- seconds until the run's time limit (the boss's limit after it appears, plus the wait before it)
+local function timeLeft(run, nowMs)
+	local def = run.def
+	if run.bossAt then
+		local _, _, toLimit = U.clock(def, (nowMs - run.bossAt) / 1000)
+		return math.max(0, math.floor(toLimit))
+	end
+	return def.limit + math.max(0, math.ceil(((run.bossDueAt or nowMs) - nowMs) / 1000))
+end
+A.timeLeft = timeLeft
+
 local function takeSlot(player)
 	local cfg = C()
+	local IL = ChaosInstanceLimits
+	local running = 0
+	for _ in pairs(A.runs) do
+		running = running + 1
+	end
 	while true do
-		local slot = U.allocSlot(cfg, A.runs, A.bad)
+		local slot = not (IL and IL.capped("ascended", running, cfg.limits)) and U.allocSlot(cfg, A.runs, A.bad) or nil
 		if not slot then
-			player:sendCancelMessage("Every Ascended arena is in use. Try again in a moment.")
+			local text = "Every Ascended arena is in use. Try again in a moment."
+			if IL then
+				local lefts = {}
+				for _, r in pairs(A.runs) do
+					lefts[#lefts + 1] = r.state == "running" and timeLeft(r, mnow()) or cfg.exitDelay
+				end
+				text = IL.busy(player, "ascended", "Ascended arenas", lefts, cfg.limits)
+			end
+			player:sendCancelMessage(text)
 			return nil
 		end
 		local L, why = buildSlot(slot)
@@ -544,6 +568,9 @@ finishExit = function(run)
 	cleanSlot(run.L)
 	if A.runs[run.slot] == run then
 		A.runs[run.slot] = nil
+		if ChaosInstanceLimits and not run.restart then
+			ChaosInstanceLimits.freed("ascended", "the Ascended arenas")
+		end
 	end
 	log(string.format("run %d (slot %d, %s) ended: %s", run.id, run.slot, run.def.key, run.state))
 end
@@ -1110,6 +1137,9 @@ local function tick(slot, rid)
 	if run.ended then
 		return
 	end
+	if run.state == "running" and ChaosInstanceLimits then -- warnings before the end (instance_limits.lua)
+		ChaosInstanceLimits.warn(run, timeLeft(run, now), ChaosInstanceLimits.playersOf(run.players), run.def.boss, cfg.limits)
+	end
 	if now >= (run.nextHud or 0) then
 		run.nextHud = now + cfg.hudEvery * 1000
 		sendHud(run, "update")
@@ -1281,6 +1311,29 @@ end
 
 Chaos.registerInstance("ascended", {label = "an Ascended Omen", inside = A.isInside, at = function(pos)
 	return U.slotAt(C(), pos) ~= nil
+end, runs = function() -- /instances (instance_limits.lua)
+	local out = {}
+	for slot, run in pairs(A.runs) do
+		local n = 0
+		for _ in pairs(run.players) do
+			n = n + 1
+		end
+		out[#out + 1] = {id = run.id, what = string.format("%s, slot %d, %s", run.def.boss, slot, run.state),
+			left = run.state == "running" and timeLeft(run, mnow()) or nil, players = n}
+	end
+	return out
+end, close = function(id) -- the failure rule of a time-out: everyone out, the sigil is spent
+	for _, run in pairs(A.runs) do
+		if run.id == id and not run.ended then
+			if run.state == "running" then
+				fail(run, "A gamemaster closed the arena.")
+			else
+				finishExit(run)
+			end
+			return true, "Ascended run " .. id .. " closed."
+		end
+	end
+	return false, "No running Ascended arena " .. tostring(id) .. "."
 end})
 
 -- a caught lethal hit: to the antechamber, one life less (the last one ends the run)

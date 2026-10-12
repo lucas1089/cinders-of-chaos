@@ -27,6 +27,10 @@ return {
 
 	countdownSeconds = 10, -- no damage between players until the fight starts
 	fightSeconds = 300, -- then the side with the higher remaining health share wins
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings at warnAt seconds before the
+	-- fight's end (the HUD shows the clock too). The queue is the waiting line: a pair that finds every slot (grid.slots)
+	-- in use is told so, with the wait, and starts when one frees up. A fighter gone for disconnectSeconds has left.
+	limits = {warnAt = {60, 10}, maxRuns = 0, waitlist = false},
 	endDelaySeconds = 4, -- result shown in the arena before everybody goes back
 	-- the base PvP rules make a player with secure mode on unattackable; the client module turns it off for the
 	-- match. A fighter who still has it on this long after the fight started is counted as defeated.

@@ -54,6 +54,10 @@ return {
 	nextRoomDelay = 4, -- seconds between the last pick (or the exit) and the next room
 	exitDelay = 8, -- seconds between the end of a run and the trip out
 	hudEvery = 5, -- seconds between HUD refreshes
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings at these seconds left before
+	-- timeLimit; at most maxRuns runs at once (8 halls of 19 x 19); a party that finds every hall taken waits in line and
+	-- is told when one frees up. A run ends at once when its last player is out, so no idle grace is needed.
+	limits = {warnAt = {300, 60, 10}, maxRuns = 8, waitlist = true},
 	readySeconds = 90, -- shrine / merchant rooms: after this the party moves on even if not everyone is ready
 
 	-- waves of a combat room: waves = base + floor(depth x perDepth) (at most max); monsters per wave = size.base +

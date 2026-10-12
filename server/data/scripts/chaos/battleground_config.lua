@@ -46,6 +46,10 @@ return {
 	-- ------------------------------------------------------------------ the match
 	prepSeconds = 30, -- in the bases, gates closed (anyone outside is sent back), no damage
 	matchSeconds = 900, -- then the higher score wins (equal = draw)
+	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): warnings at warnAt seconds before the
+	-- match's end (the HUD shows the clock too). The queue is the waiting line: a match found while every field
+	-- (grid.slots) is in use is told so, with the wait, and starts when one frees up.
+	limits = {warnAt = {300, 60, 10}, maxRuns = 0, waitlist = false},
 	endDelaySeconds = 12, -- the summary is shown, then everyone goes back where they stood
 	winScore = 1000,
 	-- every tickSeconds each team scores perTick[number of braziers it holds] (2 s ticks: 1 = 2/s, 2 = 5/s, 3 = 10/s)
