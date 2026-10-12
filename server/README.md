@@ -7904,17 +7904,23 @@ scripts stay in the base data untouched. A script is recognised as the script of
 `DUNGEON_SYSTEM` modal window and has one `onStepIn`; another shape is listed and left alone.
 
 **Load.** Every runtime area is built once per slot and kept (the engine cannot remove a tile); a run removes its
-monsters and loose items at the end. Tiles per slot, counted from the layouts: rift 1,045, Descent about 440, raid 3,574,
+monsters and loose items at the end. Tiles per slot, counted from the layouts: rift 1,657 (1,045 before the bigger rooms of 2026-10-12), Descent about 440, raid 3,574,
 Ascended 486, guild boss 574, arena 182, battleground 2,145, trial 529, ascension trial 225, tower 441, world boss
-about 1,220, tutorial about 680. All grids full: about 66,000 tiles, about 20 MB at roughly 300 bytes a tile with its
+about 1,220, tutorial about 680. All grids full: about 76,000 tiles, about 23 MB at roughly 300 bytes a tile with its
 ground and wall items, next to a map of millions. The game loop cost of a run is its tick (1 s or 250 ms; the players of
 the run, the HUD, a sweep for strangers every 3 s) and its monsters. Ticks: well under 1 ms each, under 10 ms a second
-with every slot of every type running (about 85). Monsters: a run is about one hunting group (rift tier 15 with five
-players: 19 packs, about 76 monsters; Descent at most 14 a wave; tower at most 22; raid about 40 awake), so all caps full
-is about 2,000 active monsters, 200 in each of the engine's 10 creature-check tasks a second; at the measured 20-50 us a
-monster that is 5-10 ms a task (the worst rift modifiers, Teeming and Swarm V, about 4,600 monsters and 10-25 ms), far
-from the 100 ms slow task line and the 250 ms stalls of "Game loop stalls". The one-off cost is building a slot the first
-time (about 3 items a tile: estimated 10 ms for a rift, 30-60 ms for a raid slot) and clearing it at the end (a Tile
+with every slot of every type running (about 85). Monsters: a run is about one hunting group (Descent at most 14 a
+wave; tower at most 22; raid about 40 awake). A dense rift (2026-10-12, "Rifts", Density) has at most 60 monsters alive
+solo and 100 for five, +12 extra (Veilbreach, thralls); the rest of its plan (up to about 380, or more with Teeming and
+Swarm) waits in a queue. So all caps full is about 2,600 active monsters (16 rifts x 112 = 1,792 of them; before: 16 x 76
+and about 2,000 in all), 260 in each of the engine's 10 creature-check tasks a second; at the measured 20-50 us a monster
+that is 5-13 ms a task, far from the 100 ms slow task line and the 250 ms stalls of "Game loop stalls". The cap also
+bounds the worst rift modifiers: Teeming and Swarm V used to put about 4,600 monsters in the grid at once (10-25 ms a
+task); now their plans get longer, not wider. A rift's first packs (up to 100 monsters with name, look, tier and events,
+estimated 0.2-0.3 ms each) cost 20-30 ms once, in the task that uses the key; reinforcements are at most 2 packs (14
+monsters, 3-5 ms) a second per rift, each run in its own timer task; ground and storm hazards are a few effects and one
+position check per player a second. The caps stay at 16 rifts. The one-off cost is building a slot the first
+time (about 3 items a tile: estimated 16 ms for a rift, 30-60 ms for a raid slot) and clearing it at the end (a Tile
 lookup per floor tile, a few ms). So the caps stay at the grid sizes, which were sized to free map areas; a full set of
 every type holds more players than the 200-400 online the server was load tested with, so the cap binds only in a burst.
 Not measured on a running server (no disk for a build this time); the slow task log (`slowTaskLogMs = 100`) on the test
@@ -7985,6 +7991,37 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Blighted Mending | players receive 20-50% less healing (spells, potions, runes) | 70, 2+ | rarity 0.5x, experience 0.3x, quantity 0.2x |
   | Waning Veil | the time limit is 15-30% shorter | 70, 1+ | quantity 1x, experience 0.5x |
   | Dread Guardian | the guardian(s) +50-150% health and damage | 60, 4+ | rarity 0.2x, quantity 0.1x |
+
+  Map modifiers, third set (2026-10-12; appended after Fragile, indexes 20-36, so old keys and refund markers decode
+  unchanged). Every modifier now has a side: a **prefix** makes the monsters or the guardian stronger, a **suffix** makes
+  the players or the area worse (Withering, Blighted Mending, Waning Veil and Fragile are suffixes, the boons have no side;
+  the HUD shows suffixes in violet). A key carries one modifier of a `group` at most and never an `excludes` pair: rolls,
+  orbs (`R.addMods`) and the Ember Tides draw around them, and `R.decodeMods` drops the second of a pair. Values are the
+  tier I-V range; reward per point of value as the older ones (each sums to 15-50% at the top of tier III, the band of the
+  first eight):
+
+  | Modifier | Side, group | Effect | Range (I-V), weight, tier | Reward bonus |
+  |---|---|---|---|---|
+  | Emberbrand / Frostbrand / Stormbrand | prefix, brand | rift monsters deal +10-50% of their hit again as fire / ice / energy (the free secondary slot of the hit, else on the primary) | 10-50, 40 each, 2+ | quantity 0.5x, rarity 0.3x |
+  | Keen Fangs | prefix | 5-30% of monster hits deal x1.5 | 5-30, 60, 1+ | rarity 0.8x, quantity 0.4x |
+  | Ironhide | prefix | monsters take 10-40% less physical damage (Warding's physical twin; hardest on melee, arrows, bolts) | 10-40, 60, 2+ | quantity 0.75x, rarity 0.5x |
+  | Festering Wounds | prefix | 10-50% of monster hits fester: 40% of the hit again as earth over 6 s (a poison condition without an owner, so nothing scales it twice) | 10-50, 50, 3+ | quantity 0.4x, rarity 0.25x |
+  | Spiteglass | prefix, reflect | monsters reflect 5-22% of the elemental damage that lands (energy back; hardest on casters) | 5-22, 50, 3+ | experience 1x, quantity 0.7x |
+  | Single Brood | prefix | every pack is of the run's strongest kind | flat, 40, 2+ | +12% quantity, +8% rarity |
+  | Wrathful Guardian | prefix, excludes Twin Guardians | every 8 s a ring of 3 sqm around each guardian is marked, 1.2 s later it hits for 10-30% of max health (death); every 20 s 2 thralls (husks of the weakest kind, at most 6) | 10-30, 50, 4+ | rarity 0.6x, quantity 0.4x |
+  | Veilbreach | prefix | 5-25% of slain pack monsters tear open a breach: 2 more monsters 0.8 s later (elite and laden by the run's shares; they do not count towards the guardian and open no breach) | 5-25, 50, 3+ | quantity 0.8x, experience 0.5x |
+  | Searing Hex / Flaying Hex | suffix, hex | players take +10-40% elemental / physical damage from rift monsters | 10-40, 50 each, 2+ | quantity 0.4x, rarity 0.4x |
+  | Sapping Hex | suffix, hex | players (and their summons) deal 10-30% less damage to rift monsters | 10-30, 50, 3+ | quantity 0.7x, rarity 0.4x, experience 0.3x |
+  | Parched Veins | suffix, regen (never with Withering) | no mana regeneration (food regeneration swapped for one with health only; back on leaving) | flat, 50, 2+ | +10% experience, +15% quantity, +5% rarity |
+  | Scorched Earth / Rimefloor | suffix, ground | every 3 s a patch (a plus of 5 tiles) within 2 sqm of each player for 6 s; standing in one costs 2-6% of max health a second (fire / ice; Rimefloor also slows 40% for 1.5 s) | 2-6, 50 each, 2+ | quantity 4x / 4.5x, rarity 3x |
+  | Veilstorm | suffix | every 6 s a marked strike within 2 sqm of each player, 1.2 s later 10-30% of max health (energy) within 1 sqm | 10-30, 50, 3+ | quantity 0.8x, rarity 0.4x |
+
+  The hits are pure functions (`R.monsterHit`: the run's damage, x Dread Guardian or x the density's pack damage, Keen
+  Fangs, the brand, the hexes, Festering Wounds; `R.monsterTaken`: Warding, Ironhide, Sapping Hex and the elemental part
+  for Spiteglass). Ground, storm and nova damage is a share of the player's max health with no attacker, so the rift's
+  damage rules do not scale it again; a player back from a lost life is spared for its shield seconds. Not ported (no
+  engine hook without a patch): less cooldown recovery, shorter potion effects (Blighted Mending covers healing), no
+  leech, lower resistance caps (the engine has no caps; Searing Hex does the same job), monster curses on skills.
 
   The summed bonuses of a key are capped (`bonusCap`): quantity 80%, rarity 75%, experience 60%. These caps sit above
   every three-modifier sum of the first eight modifiers.
@@ -8085,13 +8122,16 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   x/y 8192-8447, z 7, where the map has no tiles (checked in the OTBM; other runtime areas: tower 2000+, tutorial island
   4600+, world boss 5000+, siege 5100+, PvP arena 6000+). The first use of a slot checks every tile of its footprint like
   `worldboss.lua` and refuses a slot that has a tile it did not build (the slot is marked unusable, the next one is
-  taken). Each slot is a 15 x 15 hub and four 11 x 11 side rooms joined by 3-wide corridors; every run opens 2-4 of them
+  taken). Each slot is a 19 x 19 hub and four 15 x 15 side rooms joined by 3-wide corridors (were 15 x 15 and 11 x 11;
+  1,657 tiles a slot with the walls, was 1,045; 1,081 open floor with three rooms, was 642); every run opens 2-4 of them
   (stone walls close the others) and picks a theme for the floor: Abyssal Rift (rift floor), Obsidian Hall (black marble),
   Ashen Crypt (dark sandy / rutted stone) or Forsaken Sanctum (gilded stone), with coal basins for light. The engine has
   no Lua call to remove a tile, so built slots stay for the server's lifetime and are reused: at the end of a run every
   monster and loose item (corpses, drops, fields, the chest) on the floor is removed.
-- **The run.** Packs: 6 + tier/3 + 2 per extra player, of 3-4 monsters (+ Swarm), one type per pack; the first pack in
-  the north of the hub, the rest in the open rooms. Every monster rolls magic 10% / rare 3% / legendary 0.6%
+- **The run.** Packs: with the density (below, on by default) 80 + 8 x (tier - 1) monsters solo, +25% per extra player,
+  in packs of 5-7 (+ Swarm), at most 60 alive (+10 per extra player, 100 at most), the rest coming in as the party
+  advances. Without it (`density.enabled = false`): 6 + tier/3 + 2 per extra player, of 3-4 monsters, all at once. One
+  type per pack; the first pack in the north of the hub, the rest in the open rooms. Every monster rolls magic 10% / rare 3% / legendary 0.6%
   (x (1 + 0.05 tier) x the Elites modifier) through `ChaosApplyTier` (monster_tiers.lua; the natural spawn roll and the
   ambush also still apply). After 75% of the monsters died the guardian appears in the hub: the strongest type of the
   rift, legendary, with 3x its base health (+100% per extra player). With a party every pack monster gets more health
@@ -8102,6 +8142,73 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   (or at the next login when offline). Time up: "the rift collapses", everyone is sent back to where they used the key,
   the key is lost. Death inside: the normal death rules (temple, losses), the player is out of the run. Logout inside: the
   player is put back at their entry position and is out of the run. A run whose last player left fails.
+- **Density** (`rift_config.lua` `density`, `R.density` / `R.packHealth` / `R.guardianBase` / `R.clearSeconds` in
+  `rift_core.lua`, glue in `rift.lua`; owner request 2026-10-12: "350-700 monsters per endgame map elsewhere, ours seem
+  much lower"). Measured from the configs and spawn logic before this change (typical = the median class of the level
+  1000 table in `data/spells/README.md`, area damage x(level/1000)^1.07, x1.15 for gear as the Ascended model, 60% of
+  the time hitting; the pool's monsters at their level, the late-game set at 80-185k health):
+
+  | Tier (level) | Monsters solo / party of 5, before | Health of a normal monster, before | Typical solo clear, before | Monsters solo / party of 5, now | Health, now | Typical solo clear, now |
+  |---|---|---|---|---|---|---|
+  | 1 (100) | 21 / 49 | 6.4k | 7.7 min | 78 / 162 | 1.1k | 4.7 min |
+  | 3 (200) | 24.5 / 52.5 | 17k | 11.3 min | 96 / 192 | 1.9k | 4.7 min |
+  | 5 (400) | 24.5 / 52.5 | 35k | 11.8 min | 114 / 222 | 3.4k | 4.7 min |
+  | 8 (700) | 28 / 56 | 108k | 23 min | 138 / 270 | 5.1k | 4.7 min |
+  | 10 (900) | 31.5 / 59.5 | 167k | 31 min | 150 / 306 | 6.1k | 4.7 min |
+  | 12 (950) | 35 / 63 | 217k | 42 min | 168 / 336 | 5.7k (x1.3) | 6.1 min |
+  | 15 (1025) | 38.5 / 66.5 | 292k | 58 min | 192 / 384 | 5.4k (x1.75) | 8.2 min |
+
+  So before, the rifts were not short of monsters by count alone: they held 3-6 monsters a 100 tiles (open hunts have
+  2.7-4.4), but each late monster was 20-40 times what a typical player kills quickly, and from tier 3 a typical solo
+  player could not seal a rift in its 10 minutes (tier 10 about 31 minutes, tier 15 about an hour; untested in game,
+  "balance of tiers 8-15 against geared characters" was open). Against the reference: 350-700 monsters in about 5 minutes
+  is 1-2 kills a second with one-hit monsters; our combat is auto attacks every second and area spells on 2 s group
+  cooldowns, so the target is fewer but quick monsters: a pack of 5-7 falls to two or three area casts, about 0.3-0.5
+  kills a second solo. The curve: 80 + 8 per tier solo (tier 1 78, tier 15 192 after rounding to packs; a party of 5
+  twice that, 162-384: the lower half of the reference band for a full party, a third of it solo).
+  - **Health budget.** Every pack monster gets the health a typical player needs: the packs up to the guardian take
+    225 s of the tier's level area damage, the guardian 55 s of single-target damage (75% of the time hitting). So tiers
+    1-10 take a typical solo player about 4.7 minutes, tiers 11-15 (their +15% health a tier on top) 5.4-8.2 minutes, a
+    party of 5 (4.98x the damage, the Ascended model) the same, and a player with half the damage still makes tier 10
+    (`tests/rift_test.lua` checks every tier). A kind keeps its share against the run's other kinds (XML health against
+    their mean, 0.5-2x), its magic / rare / legendary tier, Vitality and the party share (+100% total health per extra
+    player as before, split over 25% more monsters each). Pack monsters hit x0.6 (`density.damage`): a pack is about
+    twice the size of before. The guardian's base is the budget too (tier 10 about 113k before Dread / Twin / the party,
+    was about 500k).
+  - **Reinforcements.** The run spawns packs up to the live cap (60, +10 per extra player, 100 at most); the rest wait in
+    a queue. Each second up to 2 queued packs come in, in the open room (or the hub's north half) farthest from the
+    players and at least 9 sqm from each, until the guardian appears. The guardian comes after 75% of the whole plan
+    (the HUD's total), so the party has to keep moving. A monster that cannot be created leaves the plan. Veilbreach and
+    thralls are extra (12 above the cap at most).
+  - **Spoils stay per run.** Of the monsters, the share old / new (about 0.2-0.27) decides: elite chances (and Warbands)
+    x the share, so a run has as many magic+ monsters as before; normal monsters carry loot with the share that gives as
+    many laden normals as before; the others are **husks** (`Creature:setDropLoot(false)`): experience only (under the
+    rift's experience cap), no corpse loot, no bounty or bestiary credit (`ChaosRift.isHusk`, asked by `bounty.lua` and
+    `bestiary.lua`). Teeming, Swarm and the atlas density keep their extra loot: the share is taken against the packs of
+    before with the same modifiers. Orbs, uniques, keys and Omen Fragments from kills, the gold and items of corpses
+    and kill credit per run are the same as before; the chest is unchanged.
+  - **Orbs an hour.** The income model above already assumed four sealed tier 15 rifts an hour; before this change a
+    typical player could not seal one. Now a run of tier 15 takes 8.2 minutes, so with 3-5 minutes around it (key, travel,
+    the 60 s chest, town) 4.2-5.4 runs an hour: 24-33 Orbs of Upheaval and 12-16 Orbs of Fate solo, the model's 24 / 12 up
+    to +34% for a player who turns runs around in 3 minutes (inside the test's 15x hunting bound). Tier 10 at 6-8 runs
+    an hour gives 19-24 Upheaval, under the tier 15 model. Not changed: the chest, the atlas orb nodes (kept at the
+    owner's earlier cut). If the fast turnaround should stay at the model, the lever is `reward.chaos.perTier` /
+    `divine.perTier` (x0.75).
+  - **Bigger slots.** 19 x 19 hub and 15 x 15 rooms (above): the live cap is about 5.6 monsters a 100 open tiles with
+    three rooms, a whole tier 15 plan 18. The generated areas (`areagen_core.lua`) were considered for rift layouts:
+    16 seeded dungeon layouts, one per slot, would give variety, but the engine cannot remove a tile, so a slot keeps one
+    layout for the server's life, and `rift.lua` places packs, doors, the coffer and the arrival by the hub-and-rooms
+    model; that is a separate change (left open). The bigger fixed rooms needed no new code.
+  - `density.enabled = false` brings back the packs, health and loot of before exactly (`tests/rift_test.lua` keeps the
+    old checks on that path).
+  - Tests: `tests/rift_test.lua` (the curve, the shares, elites and laden monsters per run as before, clear times of
+    every tier solo and for 5, the live cap of 16 slots, the plan's packs, Warbands, Single Brood, the reinforcement
+    room; the third set: sides, groups and exclusions over 20,000 keys and the orbs, decode, effects, `R.monsterHit` /
+    `R.monsterTaken`, rewards in the band, the tier 15 pace and its orbs). `tests/rift_density_test.lua` (`rift.lua` on
+    a mocked engine: first packs up to the cap, the queue, budget health, husks without loot, reinforcements away from
+    the player and none when every room is near one, the guardian at 75% of the whole plan with its budget health,
+    Veilbreach extras, Rimefloor and Veilstorm, the Wrathful Guardian's nova and thralls, Parched Veins, a brand on a
+    hit). Not run in game (no build this time): a dense run, the hazards' look, the reinforcement feel.
 - **The chest** (per finisher): gold to the bank 5,000 x tier^2, Orbs of Upheaval 0.5 + 0.085 x tier, Orbs of Fate
   0.06 x tier, item rolls 2 + 0.5 x tier (each draws one entry of a random rift monster's loot table weighted by its
   chance; gear gets a rarity from `ChaosLoot.upgradeRarity` at magic (tiers 1-3) / rare (4-6) / legendary (7-10) / boss
@@ -8203,7 +8310,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 **Edits to shared files** (one line or block each): `chaos_constants.lua` (`ChaosOpcodes.rift = 228`,
 `Chaos.storage.riftRun = 7100400`), `loot_config.lua` (rateMult x `ChaosRift.lootMult(ctx)`), `shop_services.lua`
 (`S.teleportBlocked`), `multiclient.lua` (`insideInstance`), `bounty.lua` (`payContract` calls `ChaosRift.onBountyPaid`),
-`monster_tiers.lua` (an ambush copy wears the killed monster's outfit and name, so a rift look carries over; the onSpawn rename callback for `Chaos.createMonsterNamed`; the boss and skip lists by type name), and the type-name lookups (`Chaos.monsterTypeName`) in `bestiary.lua`, `bounty.lua`, `loot.lua`, `pets.lua`, `supports.lua`, `item_mods.lua`, `achievements.lua`, `ascension_quest.lua` (see "Rift names").
+`monster_tiers.lua` (an ambush copy wears the killed monster's outfit and name, so a rift look carries over; the onSpawn rename callback for `Chaos.createMonsterNamed`; the boss and skip lists by type name), `bounty.lua` and `bestiary.lua` (`B.onKill` / `X.onKill`: no credit for a density husk, `ChaosRift.isHusk`), and the type-name lookups (`Chaos.monsterTypeName`) in `bestiary.lua`, `bounty.lua`, `loot.lua`, `pets.lua`, `supports.lua`, `item_mods.lua`, `achievements.lua`, `ascension_quest.lua` (see "Rift names").
 
 **Verified on the test server** (cropped map, level 1000 test characters): open a rift from a key (and the refusals: no
 protection zone, in a fight, multi-client); the build and the four themes; the HUD (start, live updates, the guardian,

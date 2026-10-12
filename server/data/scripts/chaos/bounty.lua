@@ -411,6 +411,10 @@ local function playerOf(creature)
 end
 
 function B.onKill(creature, killer, mostDamageKiller)
+	-- a husk of a dense rift gives no kill credit (rift.lua, server/README.md "Rifts", Density)
+	if ChaosRift and ChaosRift.isHusk and ChaosRift.isHusk(creature) then
+		return
+	end
 	local list = B.board().byName[typeNameOf(creature):lower()]
 	if not list then
 		return

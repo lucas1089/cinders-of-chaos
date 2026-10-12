@@ -4,7 +4,8 @@
 --                                     state, bossName, mods = [{name, text, boon}], bonus = {quantity, rarity, experience},
 --                                     notes = [text] (live lines: sealed coffer, goblin, twin guardians, fallen players),
 --                                     lives, livesMax (shared lives), mods[].tier (modifier tier 1-5 or none),
---                                     omen (kind name) and title (an Omen Key arena)}
+--                                     omen (kind name) and title (an Omen Key arena),
+--                                     mods[].side ("prefix" | "suffix", none for a boon)}
 --                     end {result = success|failed, text, exitIn}
 --   client -> server  query (after a module reload: the server answers with start when the player is in a rift)
 -- The Rift Keys page of the Info & Services window (game_chaosinfo) shows the keys the player carries and the run status.
@@ -88,7 +89,9 @@ local function render()
   for _, m in ipairs(list) do
     local label = g_ui.createWidget('RiftModLabel', mods)
     label:setText('- ' .. RiftMath.modLine(m))
-    if m.boon then label:setColor('#e8c060') end -- a pure reward modifier (coffer, goblin, echoing spoils)
+    -- gold: a boon (a pure reward); violet: a suffix (the players or the area get worse); prefixes keep the label colour
+    local color = RiftMath.modColor(m)
+    if color then label:setColor(color) end
   end
   local notes = child('notes')
   notes:destroyChildren()

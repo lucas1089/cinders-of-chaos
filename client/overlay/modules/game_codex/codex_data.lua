@@ -9975,7 +9975,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Players receive 20-70% less healing.", "Reward bonus: +0.2% quantity, +0.5% rarity, +0.3% experience per point.", "Roll weight 70; on keys of tier 2 or higher."}
+							p = {"Players receive 20-70% less healing.", "Reward bonus: +0.2% quantity, +0.5% rarity, +0.3% experience per point.", "Suffix: the players or the area get worse.", "Roll weight 70; on keys of tier 2 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10001,7 +10001,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters deal +15-60% damage.", "Reward bonus: +0.75% rarity, +0.25% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters deal +15-60% damage.", "Reward bonus: +0.75% rarity, +0.25% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10027,7 +10027,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Slain monsters burst for 5-25% health.", "Reward bonus: +1.2% quantity, +0.8% rarity per point.", "Roll weight 70; on keys of tier 3 or higher."}
+							p = {"Slain monsters burst for 5-25% health.", "Reward bonus: +1.2% quantity, +0.8% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 70; on keys of tier 3 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10053,7 +10053,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Guardian +50-250% health and damage.", "Reward bonus: +0.1% quantity, +0.2% rarity per point.", "Roll weight 60; on keys of tier 4 or higher."}
+							p = {"Guardian +50-250% health and damage.", "Reward bonus: +0.1% quantity, +0.2% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 60; on keys of tier 4 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10105,7 +10105,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"+50-300% magic, rare and legendary monsters.", "Reward bonus: +0.1% quantity, +0.15% rarity per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"+50-300% magic, rare and legendary monsters.", "Reward bonus: +0.1% quantity, +0.15% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10123,6 +10123,84 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:emberbrand",
+					name = "Emberbrand",
+					color = "#c0a0ff",
+					sub = "Monsters deal +10-50% of their damage as extra fire",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters deal +10-50% of their damage as extra fire.", "Reward bonus: +0.5% quantity, +0.3% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Frostbrand, Stormbrand.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35-40", "caps +8/+8/+6"},
+								{"V", "45-50", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:festering",
+					name = "Festering Wounds",
+					color = "#c0a0ff",
+					sub = "Monster hits have a 10-50% chance to fester for 40% more as earth over 6 s",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monster hits have a 10-50% chance to fester for 40% more as earth over 6 s.", "Reward bonus: +0.4% quantity, +0.25% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "20", ""},
+								{"III", "30", ""},
+								{"IV", "40", "caps +8/+8/+6"},
+								{"V", "50", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:flaying",
+					name = "Flaying Hex",
+					color = "#c0a0ff",
+					sub = "Players take 10-40% more physical damage",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players take 10-40% more physical damage.", "Reward bonus: +0.4% quantity, +0.4% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Searing Hex, Sapping Hex.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35", "caps +8/+8/+6"},
+								{"V", "40", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
 					id = "rift:fragile",
 					name = "Fragile",
 					color = "#c0a0ff",
@@ -10131,9 +10209,35 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"1-2 fewer shared lives.", "Reward bonus: +7% quantity, +7% rarity, +5% experience per point.", "Roll weight 50; on keys of tier 4 or higher."}
+							p = {"1-2 fewer shared lives.", "Reward bonus: +7% quantity, +7% rarity, +5% experience per point.", "Suffix: the players or the area get worse.", "Roll weight 50; on keys of tier 4 or higher."}
 						},
 						{h = "Modifier tiers", p = {"No tiers: value 1-2."}}
+					}
+				},
+				{
+					id = "rift:frostbrand",
+					name = "Frostbrand",
+					color = "#c0a0ff",
+					sub = "Monsters deal +10-50% of their damage as extra ice",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters deal +10-50% of their damage as extra ice.", "Reward bonus: +0.5% quantity, +0.3% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Emberbrand, Stormbrand.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35-40", "caps +8/+8/+6"},
+								{"V", "45-50", "caps +16/+16/+12"}
+							}
+						}
 					}
 				},
 				{
@@ -10171,7 +10275,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters move +40-180 faster.", "Reward bonus: +0.15% quantity per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters move +40-180 faster.", "Reward bonus: +0.15% quantity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10189,6 +10293,72 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:ironhide",
+					name = "Ironhide",
+					color = "#c0a0ff",
+					sub = "Monsters take 10-40% less physical damage",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters take 10-40% less physical damage.", "Reward bonus: +0.75% quantity, +0.5% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Hardest on physical builds (melee, arrows and bolts).", "Roll weight 60; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35", "caps +8/+8/+6"},
+								{"V", "40", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:keen",
+					name = "Keen Fangs",
+					color = "#c0a0ff",
+					sub = "Monster hits have a 5-30% chance to deal 50% more",
+					f = {group = "mod", level = 1},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monster hits have a 5-30% chance to deal 50% more.", "Reward bonus: +0.4% quantity, +0.8% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 60; on keys of tier 1 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "5", ""},
+								{"II", "10", ""},
+								{"III", "15", ""},
+								{"IV", "20", "caps +8/+8/+6"},
+								{"V", "25-30", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:parched",
+					name = "Parched Veins",
+					color = "#c0a0ff",
+					sub = "Players do not regenerate mana",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players do not regenerate mana.", "Reward bonus: +15% quantity, +5% rarity, +10% experience (flat).", "Suffix: the players or the area get worse.", "Hardest on casters. Never with Withering.", "Never on a key with Withering.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{h = "Modifier tiers", p = {"No tiers: value 1."}}
+					}
+				},
+				{
 					id = "rift:reflection",
 					name = "Reflection",
 					color = "#c0a0ff",
@@ -10197,7 +10367,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters reflect 5-22% of the damage they take.", "Reward bonus: +1% quantity, +1.5% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters reflect 5-22% of the damage they take.", "Reward bonus: +1% quantity, +1.5% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Spiteglass.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10210,6 +10380,84 @@ CodexData = {
 								{"III", "12-15", ""},
 								{"IV", "16-18", "caps +8/+8/+6"},
 								{"V", "19-22", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:rimefloor",
+					name = "Rimefloor",
+					color = "#c0a0ff",
+					sub = "Freezing ground under the players: 2-6% of max health a second and slowed",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Freezing ground under the players: 2-6% of max health a second and slowed.", "Reward bonus: +4.5% quantity, +3% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Scorched Earth.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "2", ""},
+								{"II", "3", ""},
+								{"III", "4", ""},
+								{"IV", "5", "caps +8/+8/+6"},
+								{"V", "6", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:sapping",
+					name = "Sapping Hex",
+					color = "#c0a0ff",
+					sub = "Players deal 10-30% less damage",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players deal 10-30% less damage.", "Reward bonus: +0.7% quantity, +0.4% rarity, +0.3% experience per point.", "Suffix: the players or the area get worse.", "Never on a key with Searing Hex, Flaying Hex.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "15", ""},
+								{"III", "20", ""},
+								{"IV", "25", "caps +8/+8/+6"},
+								{"V", "30", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:scorched",
+					name = "Scorched Earth",
+					color = "#c0a0ff",
+					sub = "Burning ground under the players: 2-6% of max health a second",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Burning ground under the players: 2-6% of max health a second.", "Reward bonus: +4% quantity, +3% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Rimefloor.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "2", ""},
+								{"II", "3", ""},
+								{"III", "4", ""},
+								{"IV", "5", "caps +8/+8/+6"},
+								{"V", "6", "caps +16/+16/+12"}
 							}
 						}
 					}
@@ -10235,6 +10483,98 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:searing",
+					name = "Searing Hex",
+					color = "#c0a0ff",
+					sub = "Players take 10-40% more elemental damage",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players take 10-40% more elemental damage.", "Reward bonus: +0.4% quantity, +0.4% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Flaying Hex, Sapping Hex.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35", "caps +8/+8/+6"},
+								{"V", "40", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:brood",
+					name = "Single Brood",
+					color = "#c0a0ff",
+					sub = "Every pack is of the rift's strongest kind",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Every pack is of the rift's strongest kind.", "Reward bonus: +12% quantity, +8% rarity (flat).", "Prefix: the monsters or the guardian get stronger.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{h = "Modifier tiers", p = {"No tiers: value 1."}}
+					}
+				},
+				{
+					id = "rift:spiteglass",
+					name = "Spiteglass",
+					color = "#c0a0ff",
+					sub = "Monsters reflect 5-22% of the elemental damage they take",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters reflect 5-22% of the elemental damage they take.", "Reward bonus: +0.7% quantity, +1% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Hardest on casters and elemental builds. Never with Reflection.", "Never on a key with Reflection.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "5-8", ""},
+								{"II", "9-11", ""},
+								{"III", "12-15", ""},
+								{"IV", "16-18", "caps +8/+8/+6"},
+								{"V", "19-22", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:stormbrand",
+					name = "Stormbrand",
+					color = "#c0a0ff",
+					sub = "Monsters deal +10-50% of their damage as extra energy",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters deal +10-50% of their damage as extra energy.", "Reward bonus: +0.5% quantity, +0.3% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Emberbrand, Frostbrand.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35-40", "caps +8/+8/+6"},
+								{"V", "45-50", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
 					id = "rift:swarm",
 					name = "Swarm",
 					color = "#c0a0ff",
@@ -10243,7 +10583,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"+1-5 monsters in every pack.", "Reward bonus: +8% quantity, +5% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"+1-5 monsters in every pack.", "Reward bonus: +8% quantity, +5% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10269,7 +10609,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"+20-70% monster packs.", "Reward bonus: +0.5% quantity, +0.3% experience per point.", "Roll weight 80; on keys of tier 1 or higher."}
+							p = {"+20-70% monster packs.", "Reward bonus: +0.5% quantity, +0.3% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 80; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10295,7 +10635,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Twin guardians, 55-85% health each.", "Reward bonus: +0.2% quantity, +0.25% rarity per point.", "Roll weight 50; on keys of tier 3 or higher."}
+							p = {"Twin guardians, 55-85% health each.", "Reward bonus: +0.2% quantity, +0.25% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Wrathful Guardian.", "Roll weight 50; on keys of tier 3 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10313,6 +10653,58 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:breach",
+					name = "Veilbreach",
+					color = "#c0a0ff",
+					sub = "5-25% of slain monsters tear open a breach of two more",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"5-25% of slain monsters tear open a breach of two more.", "Reward bonus: +0.8% quantity, +0.5% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "5", ""},
+								{"II", "10", ""},
+								{"III", "15", ""},
+								{"IV", "20", "caps +8/+8/+6"},
+								{"V", "25", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:veilstorm",
+					name = "Veilstorm",
+					color = "#c0a0ff",
+					sub = "Marked storm strikes near the players: 10-30% of max health",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Marked storm strikes near the players: 10-30% of max health.", "Reward bonus: +0.8% quantity, +0.4% rarity per point.", "Suffix: the players or the area get worse.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "15", ""},
+								{"III", "20", ""},
+								{"IV", "25", "caps +8/+8/+6"},
+								{"V", "30", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
 					id = "rift:vitality",
 					name = "Vitality",
 					color = "#c0a0ff",
@@ -10321,7 +10713,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters have +20-90% health.", "Reward bonus: +0.5% quantity, +0.25% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters have +20-90% health.", "Reward bonus: +0.5% quantity, +0.25% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10347,7 +10739,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"The rift closes 15-40% sooner.", "Reward bonus: +1% quantity, +0.5% experience per point.", "Roll weight 70; on keys of tier 1 or higher."}
+							p = {"The rift closes 15-40% sooner.", "Reward bonus: +1% quantity, +0.5% experience per point.", "Suffix: the players or the area get worse.", "Roll weight 70; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10373,7 +10765,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"10-40% of packs are rare warbands.", "Reward bonus: +0.3% quantity, +1% rarity per point.", "Roll weight 60; on keys of tier 2 or higher."}
+							p = {"10-40% of packs are rare warbands.", "Reward bonus: +0.3% quantity, +1% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 60; on keys of tier 2 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10399,7 +10791,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters resist 10-40% elemental damage.", "Reward bonus: +0.75% quantity, +0.5% rarity per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters resist 10-40% elemental damage.", "Reward bonus: +0.75% quantity, +0.5% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10425,9 +10817,35 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Players do not regenerate health.", "Reward bonus: +15% quantity, +15% experience (flat).", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Players do not regenerate health.", "Reward bonus: +15% quantity, +15% experience (flat).", "Suffix: the players or the area get worse.", "Never on a key with Parched Veins.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{h = "Modifier tiers", p = {"No tiers: value 1."}}
+					}
+				},
+				{
+					id = "rift:wrath",
+					name = "Wrathful Guardian",
+					color = "#c0a0ff",
+					sub = "The guardian's nova hits for 10-30% of max health every 8 s; it calls thralls",
+					f = {group = "mod", level = 4},
+					sections = {
+						{
+							h = "Effect",
+							p = {"The guardian's nova hits for 10-30% of max health every 8 s; it calls thralls.", "Reward bonus: +0.4% quantity, +0.6% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "The nova is marked first: step out of it.", "Never on a key with Twin Guardians.", "Roll weight 50; on keys of tier 4 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "15", ""},
+								{"III", "20", ""},
+								{"IV", "25", "caps +8/+8/+6"},
+								{"V", "30", "caps +16/+16/+12"}
+							}
+						}
 					}
 				},
 				{
@@ -10498,7 +10916,7 @@ CodexData = {
 						},
 						{
 							h = "The run",
-							p = {"10 minutes; the guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
+							p = {"10 minutes; the guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "About 78 monsters solo at tier 1 up to 192 at tier 15 (+25% per extra player), in packs of 5-7; at most 60 alive at once (+10 per extra player), the rest gather in the rooms away from you. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
 						},
 						{
 							h = "Chest (per player)",

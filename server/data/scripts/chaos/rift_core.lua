@@ -144,11 +144,40 @@ local function rollValue(def, rand, tier, cfg)
 end
 R.rollValue = rollValue
 
--- indexes of cfg.mods a key of `tier` may still roll (not in `have` = {key = true})
+-- true when two modifier definitions never share a key: the same `group`, or one `excludes` the other
+function R.modConflict(a, b)
+	if not a or not b or a.key == b.key then
+		return false
+	end
+	if a.group and a.group == b.group then
+		return true
+	end
+	for _, def in ipairs({a, b}) do
+		local other = def == a and b or a
+		for _, k in ipairs(def.excludes or {}) do
+			if k == other.key then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function conflictsWith(cfg, def, have)
+	for k in pairs(have or {}) do
+		if R.modConflict(def, R.modDef(cfg, k)) then
+			return true
+		end
+	end
+	return false
+end
+
+-- indexes of cfg.mods a key of `tier` may still roll (not in `have` = {key = true}, and no conflict with them)
 local function modPool(cfg, tier, have)
 	local pool = {}
 	for i, def in ipairs(cfg.mods) do
-		if R.modAllowed(def, tier) and not (have and have[def.key]) and R.modWeight(def) > 0 then
+		if R.modAllowed(def, tier) and not (have and have[def.key]) and R.modWeight(def) > 0
+				and not conflictsWith(cfg, def, have) then
 			pool[#pool + 1] = i
 		end
 	end
@@ -156,10 +185,14 @@ local function modPool(cfg, tier, have)
 end
 R.modPool = modPool
 
--- draws up to `count` different indexes from pool (weighted, without replacement)
+-- draws up to `count` different indexes from pool (weighted, without replacement); a pick takes every modifier it
+-- conflicts with (R.modConflict) out of the pool. Without groups the draws are the same as before.
 local function drawMods(cfg, pool, count, rand)
 	local picked = {}
-	for _ = 1, math.min(count, #pool) do
+	for _ = 1, count do
+		if #pool == 0 then
+			break
+		end
 		local total = 0
 		for _, i in ipairs(pool) do
 			total = total + R.modWeight(cfg.mods[i])
@@ -170,6 +203,12 @@ local function drawMods(cfg, pool, count, rand)
 			if roll <= acc then
 				picked[#picked + 1] = table.remove(pool, k)
 				break
+			end
+		end
+		local got = cfg.mods[picked[#picked]]
+		for k = #pool, 1, -1 do
+			if R.modConflict(got, cfg.mods[pool[k]]) then
+				table.remove(pool, k)
 			end
 		end
 	end
@@ -228,7 +267,8 @@ function R.decodeMods(cfg, text)
 	local max = cfg.key and cfg.key.maxMods or 3
 	for key, value in text:gmatch("([%a_]+):(%-?%d+)") do
 		local def = R.modDef(cfg, key)
-		if def and not seen[key] and #mods < max then
+		-- a modifier that conflicts with one already read is dropped (the first in the text stays)
+		if def and not seen[key] and #mods < max and not conflictsWith(cfg, def, seen) then
 			seen[key] = true
 			mods[#mods + 1] = {key = key, value = clamp(tonumber(value), def.range[1], def.range[2])}
 		end
@@ -372,9 +412,45 @@ function R.effects(cfg, mods, tier)
 	local t = R.tierInfo(cfg, tier)
 	local fx = {health = t.health, damage = t.damage, speed = 0, elite = 1, reflect = 0, resist = 0, noRegen = false, packBonus = 0,
 		packMult = 1, gilded = 0, warband = 0, coffer = 0, twin = 0, echo = 0, cinder = 0, healMult = 1, timeMult = 1,
-		boss = 1, fragile = 0}
+		boss = 1, fragile = 0,
+		-- third set: brand {element, share}, crit chance, physical damage taken, fester chance (percent), elemental
+		-- reflect, one brood, guardian nova share, breach chance (percent), hexes, no mana, ground {kind, element,
+		-- percent}, storm share
+		brand = nil, crit = 0, physResist = 0, fester = 0, spite = 0, brood = false, wrath = 0, breach = 0, hexElem = 0,
+		hexPhys = 0, sap = 0, noMana = false, ground = nil, storm = 0}
 	for _, m in ipairs(mods or {}) do
 		local v = m.value
+		local brand = cfg.brands and cfg.brands[m.key]
+		if brand then
+			fx.brand = {element = brand, share = v / 100}
+		elseif m.key == "keen" then
+			fx.crit = v / 100
+		elseif m.key == "ironhide" then
+			fx.physResist = v / 100
+		elseif m.key == "festering" then
+			fx.fester = v
+		elseif m.key == "spiteglass" then
+			fx.spite = v / 100
+		elseif m.key == "brood" then
+			fx.brood = true
+		elseif m.key == "wrath" then
+			fx.wrath = v / 100
+		elseif m.key == "breach" then
+			fx.breach = v
+		elseif m.key == "searing" then
+			fx.hexElem = v / 100
+		elseif m.key == "flaying" then
+			fx.hexPhys = v / 100
+		elseif m.key == "sapping" then
+			fx.sap = v / 100
+		elseif m.key == "parched" then
+			fx.noMana = true
+		elseif m.key == "scorched" or m.key == "rimefloor" then
+			local el = cfg.ground and cfg.ground.element and cfg.ground.element[m.key] or "fire"
+			fx.ground = {kind = m.key, element = el, percent = v}
+		elseif m.key == "veilstorm" then
+			fx.storm = v / 100
+		end
 		if m.key == "vitality" then
 			fx.health = fx.health * (1 + v / 100)
 		elseif m.key == "brutality" then
@@ -415,6 +491,7 @@ function R.effects(cfg, mods, tier)
 			fx.fragile = fx.fragile + v -- fewer lives
 		end
 	end
+	fx.packDamage = R.packDamage(cfg) -- density: pack monsters hit softer (R.monsterHit)
 	return fx
 end
 
@@ -456,8 +533,9 @@ function R.pickTypes(cfg, pool, tier, rand, known)
 	return picked
 end
 
-local function eliteTier(cfg, fx, tier, rand)
-	local mult = fx.elite * (1 + cfg.elite.perTier * tier)
+-- scale (optional): the density share (R.density), so a denser rift has about as many elites as before
+local function eliteTier(cfg, fx, tier, rand, scale)
+	local mult = fx.elite * (1 + cfg.elite.perTier * tier) * (scale or 1)
 	local roll = rand(1, 1000000)
 	local acc = 0
 	for _, name in ipairs({"legendary", "rare", "magic"}) do
@@ -526,10 +604,13 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 	if #types == 0 then
 		return plan
 	end
-	local count = R.packCount(cfg, tier, players)
-	if (fx.packMult or 1) ~= 1 then
+	local dens = R.density(cfg, tier, players, fx)
+	plan.density = dens
+	local count = dens and dens.packs or R.packCount(cfg, tier, players)
+	if not dens and (fx.packMult or 1) ~= 1 then
 		count = floor(count * fx.packMult + 0.5) -- Teeming
 	end
+	local sizes = dens and cfg.density.size or cfg.packs.size
 	local areas = {}
 	for _, r in ipairs(rooms) do
 		areas[#areas + 1] = r
@@ -541,13 +622,23 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 		else
 			room = areas[(i - 2) % #areas + 1]
 		end
-		local size = rand(cfg.packs.size[1], cfg.packs.size[2]) + (fx.packBonus or 0)
+		local size = rand(sizes[1], sizes[2]) + (fx.packBonus or 0)
 		local name = types[rand(1, #types)].name
-		local elites = {}
-		for k = 1, size do
-			elites[k] = eliteTier(cfg, fx, tier, rand) or false
+		if fx.brood then
+			name = types[#types].name -- Single Brood: every pack of the strongest kind
 		end
-		local warband = (fx.warband or 0) > 0 and chance(fx.warband, rand)
+		local elites, laden = {}, nil
+		for k = 1, size do
+			elites[k] = eliteTier(cfg, fx, tier, rand, dens and dens.share) or false
+		end
+		if dens then
+			-- husks: only the share of the normal monsters that the packs of before had carries loot
+			laden = {}
+			for k = 1, size do
+				laden[k] = elites[k] and true or chance(dens.normalShare * 100, rand)
+			end
+		end
+		local warband = (fx.warband or 0) > 0 and chance(fx.warband * (dens and dens.share or 1), rand)
 		if warband then -- Warbands: every member at least rare, the first legendary
 			for k = 1, size do
 				if elites[k] ~= "legendary" then
@@ -555,8 +646,12 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 				end
 			end
 			elites[1] = "legendary"
+			for k = 1, laden and size or 0 do
+				laden[k] = true
+			end
 		end
-		plan.packs[#plan.packs + 1] = {room = room, name = name, count = size, elites = elites, warband = warband or nil}
+		plan.packs[#plan.packs + 1] = {room = room, name = name, count = size, elites = elites, warband = warband or nil,
+			laden = laden}
 		plan.total = plan.total + size
 	end
 	plan.bossAt = math.max(1, math.ceil(plan.total * cfg.bossAt / 100))
@@ -578,6 +673,123 @@ end
 function R.packCount(cfg, tier, players)
 	players = math.max(1, floor(tonumber(players) or 1))
 	return cfg.packs.base + floor(tier / cfg.packs.perTiers) + cfg.packs.perExtraPlayer * (players - 1)
+end
+
+-- ===================================================================== density
+-- cfg.density (rift_config.lua): many more, weaker monsters per run. Off (or no block): every function returns nil /
+-- the values of before.
+function R.densityOn(cfg)
+	return cfg and cfg.density and cfg.density.enabled and true or false
+end
+
+local function mean(a, b)
+	return (a + b) / 2
+end
+
+-- planned monsters before Teeming / Swarm: count.base + perTier x (t - 1), x (1 + perExtraPlayer x (players - 1))
+function R.densityCount(cfg, tier, players)
+	local c = cfg.density.count
+	players = math.max(1, floor(tonumber(players) or 1))
+	return (c.base + c.perTier * (R.clampTier(cfg, tier) - 1)) * (1 + c.perExtraPlayer * (players - 1))
+end
+
+-- expected monsters of the packs of before (density off) with the run's Teeming / atlas density and Swarm
+function R.legacyMonsters(cfg, tier, players, fx)
+	local packs = R.packCount(cfg, tier, players)
+	if fx and (fx.packMult or 1) ~= 1 then
+		packs = floor(packs * fx.packMult + 0.5)
+	end
+	return packs * (mean(cfg.packs.size[1], cfg.packs.size[2]) + (fx and fx.packBonus or 0))
+end
+
+-- the share of a monster that is magic or better (before the Elites modifier), x scale
+function R.eliteShare(cfg, tier, scale)
+	local m = (1 + cfg.elite.perTier * tier) * (scale or 1)
+	return math.min(1, (cfg.elite.magic + cfg.elite.rare + cfg.elite.legendary) * m / 100)
+end
+
+-- the average health multiplier of a monster from its tier (monster_tiers.lua), elite chances x scale
+function R.eliteHealthAvg(cfg, tier, scale)
+	local hp = cfg.density.model.tierHp
+	local m = (1 + cfg.elite.perTier * tier) * (scale or 1)
+	local avg, rest = 0, 1
+	for _, k in ipairs({"magic", "rare", "legendary"}) do
+		local p = cfg.elite[k] / 100 * m
+		avg, rest = avg + p * hp[k], rest - p
+	end
+	return avg + math.max(0, rest)
+end
+
+-- a run's density: {count, packs, share, normalShare, legacy, live} or nil (off). share = monsters of before / now
+-- (at most 1): the elite chances, Warbands and the laden share follow it, so the spoils of a run stay as before.
+function R.density(cfg, tier, players, fx)
+	if not R.densityOn(cfg) then
+		return nil
+	end
+	local d = cfg.density
+	players = math.max(1, floor(tonumber(players) or 1))
+	local size = mean(d.size[1], d.size[2]) + (fx and fx.packBonus or 0)
+	local packs = math.max(1, floor(R.densityCount(cfg, tier, players) / mean(d.size[1], d.size[2]) * (fx and fx.packMult or 1) + 0.5))
+	local count = packs * size
+	local legacy = R.legacyMonsters(cfg, tier, players, fx)
+	local share = math.min(1, legacy / count)
+	local before = R.eliteShare(cfg, tier, 1)
+	local now = R.eliteShare(cfg, tier, share)
+	return {count = count, packs = packs, share = share, legacy = legacy,
+		normalShare = math.min(1, legacy * (1 - before) / (count * (1 - now))), live = R.liveCap(cfg, players)}
+end
+
+-- monsters alive at once (the rest wait in the queue)
+function R.liveCap(cfg, players)
+	local l = cfg.density.live
+	return math.min(l.max, l.base + l.perExtraPlayer * (math.max(1, floor(tonumber(players) or 1)) - 1))
+end
+
+-- the damage model of the budget (rift_config.lua density.model) at a player level: area (5 targets) and single target
+function R.refDps(cfg, level)
+	local m = cfg.density.model
+	local x = math.max(1, level) / 1000
+	return m.dps5 * x ^ m.dps5Exp * m.gear, m.dps1 * x ^ m.dps1Exp * m.gear
+end
+
+-- health of a normal pack monster of a tier (before its magic / rare / legendary tier, the modifiers, the tiers above
+-- 10 and the party): the packs up to the guardian take packSeconds of a typical solo player's area damage
+function R.packHealth(cfg, tier)
+	local m = cfg.density.model
+	local t = R.tierInfo(cfg, tier)
+	local area = R.refDps(cfg, t.minLevel)
+	local d = R.density(cfg, t.tier, 1, nil)
+	local budget = area * m.uptime * m.packSeconds / (cfg.bossAt / 100)
+	return math.max(1, floor(budget / (d.count * R.eliteHealthAvg(cfg, t.tier, d.share)) + 0.5))
+end
+
+-- the guardian's base health (x boss.healthMult = what R.guardianHealthMult multiplies): guardianSeconds of a typical
+-- solo player's single-target damage
+function R.guardianBase(cfg, tier)
+	local m = cfg.density.model
+	local t = R.tierInfo(cfg, tier)
+	local _, single = R.refDps(cfg, t.minLevel)
+	return math.max(1, floor(single * m.guardianUptime * m.guardianSeconds / cfg.boss.healthMult + 0.5))
+end
+
+-- the model's time of a run in seconds (packs up to the guardian, then the guardian) for `players` with `dps` times a
+-- typical player's damage in total (the party model: 4.98 for five), no modifiers
+function R.clearSeconds(cfg, tier, players, dps)
+	local m = cfg.density.model
+	local t = R.tierInfo(cfg, tier)
+	local area, single = R.refDps(cfg, t.minLevel)
+	local d = R.density(cfg, t.tier, players, nil)
+	local ps = R.party(cfg, players)
+	local packs = d.count * cfg.bossAt / 100 * R.packHealth(cfg, t.tier) * R.eliteHealthAvg(cfg, t.tier, d.share) * t.health
+		* R.partyMonsterHealth(cfg, t.tier, players)
+	local guardian = R.guardianBase(cfg, t.tier) * R.guardianHealthMult(cfg, {health = t.health}, players)
+	dps = dps or 1
+	return packs / (area * m.uptime * dps) + guardian / (single * m.guardianUptime * dps)
+end
+
+-- pack monster damage multiplier (the guardians keep theirs)
+function R.packDamage(cfg)
+	return R.densityOn(cfg) and cfg.density.damage or 1
 end
 
 -- ===================================================================== party scaling
@@ -608,6 +820,9 @@ function R.partyMonsterHealth(cfg, tier, players)
 	local ps = R.party(cfg, players)
 	if ps.players <= 1 then
 		return 1
+	end
+	if R.densityOn(cfg) then
+		return math.max(1, ps.health * R.densityCount(cfg, tier, 1) / R.densityCount(cfg, tier, ps.players))
 	end
 	return math.max(1, ps.health * R.packCount(cfg, tier, 1) / R.packCount(cfg, tier, ps.players))
 end
@@ -678,6 +893,111 @@ function R.cinderDamage(cfg, maxHealth, share, tier)
 	end
 	local c = cfg.cinder
 	return math.max(1, floor(math.min((maxHealth or 0) * share, c.capBase + c.capPerTier * R.clampTier(cfg, tier))))
+end
+
+-- ---------------------------------------------------------------- hits (third set of modifiers)
+-- T = the engine's combat types: {physical, none, brand = {fire = ..., ice = ..., energy = ...}}.
+-- A rift monster hits a player: hit = {primary, ptype, secondary, stype, boss = true for a guardian}. Returns
+-- primary, ptype, secondary, stype, info = {crit = true, fester = amount (positive) or nil}.
+-- Order: the run's damage (Brutality, tiers above 10, party, x Dread Guardian for a guardian, x density.damage for a
+-- pack monster), Keen Fangs, the brand (extra damage of its element, in the free secondary slot, else on the primary),
+-- the hexes on the parts of their kind, Festering Wounds on the total.
+function R.monsterHit(cfg, fx, hit, T, rand)
+	local p, pt, s, st = hit.primary or 0, hit.ptype, hit.secondary or 0, hit.stype
+	local info = {}
+	local mult = fx.damage or 1
+	if hit.boss then
+		mult = mult * (fx.boss or 1)
+	else
+		mult = mult * (fx.packDamage or 1)
+	end
+	if (fx.crit or 0) > 0 and chance(fx.crit * 100, rand) then
+		mult = mult * (cfg.keen and cfg.keen.critMult or 1.5)
+		info.crit = true
+	end
+	if mult ~= 1 then
+		p, s = floor(p * mult), floor(s * mult)
+	end
+	if fx.brand and fx.brand.share > 0 and T.brand and T.brand[fx.brand.element] then
+		local extra = floor((p + s) * fx.brand.share)
+		local bt = T.brand[fx.brand.element]
+		if s == 0 or st == T.none or st == nil or st == bt then
+			s, st = s + extra, bt
+		else
+			p = p + extra
+		end
+	end
+	local function hex(v, t)
+		if v == 0 or t == nil or t == T.none then
+			return v
+		end
+		if t == T.physical then
+			return (fx.hexPhys or 0) > 0 and floor(v * (1 + fx.hexPhys)) or v
+		end
+		return (fx.hexElem or 0) > 0 and floor(v * (1 + fx.hexElem)) or v
+	end
+	p, s = hex(p, pt), hex(s, st)
+	if (fx.fester or 0) > 0 and chance(fx.fester, rand) then
+		local n = floor((math.abs(p) + math.abs(s)) * (cfg.festering and cfg.festering.share or 0.4))
+		info.fester = n > 0 and n or nil
+	end
+	return p, pt, s, st, info
+end
+
+-- a player (or a player's summon, fromPlayer) hits a rift monster: Warding (non-physical), Ironhide (physical), Sapping
+-- Hex (fromPlayer). Returns primary, secondary, elemental = the non-physical part after them (for Spiteglass).
+function R.monsterTaken(fx, hit, T)
+	local p, s = hit.primary or 0, hit.secondary or 0
+	local function cut(v, t)
+		if v == 0 or t == nil or t == T.none then
+			return v, 0
+		end
+		if t == T.physical then
+			return (fx.physResist or 0) > 0 and floor(v * (1 - fx.physResist)) or v, 0
+		end
+		v = (fx.resist or 0) > 0 and floor(v * (1 - fx.resist)) or v
+		return v, v
+	end
+	local ep, es
+	p, ep = cut(p, hit.ptype)
+	s, es = cut(s, hit.stype)
+	if hit.fromPlayer and (fx.sap or 0) > 0 then
+		local k = 1 - fx.sap
+		p, s, ep, es = floor(p * k), floor(s * k), floor(ep * k), floor(es * k)
+	end
+	return p, s, math.abs(ep) + math.abs(es)
+end
+
+-- a share of a player's max health as a hit (ground, storm, nova): at least 1
+function R.percentHit(maxHealth, share)
+	return math.max(1, floor((maxHealth or 0) * share + 0.5))
+end
+
+-- a patch of ground: a plus of 5 tiles around its centre
+function R.plus(c)
+	return {{x = c.x, y = c.y, z = c.z}, {x = c.x + 1, y = c.y, z = c.z}, {x = c.x - 1, y = c.y, z = c.z},
+		{x = c.x, y = c.y + 1, z = c.z}, {x = c.x, y = c.y - 1, z = c.z}}
+end
+
+-- a tile within `near` sqm of pos (rand)
+function R.nearTile(pos, near, rand)
+	return {x = pos.x + rand(-near, near), y = pos.y + rand(-near, near), z = pos.z}
+end
+
+-- the open room (or "hub") for the next reinforcement: the one whose centre is farthest from the nearest player,
+-- if that is at least minDistance sqm (Chebyshev); nil when every room is too close. centres = {name = pos}
+function R.reinforceRoom(centres, players, minDistance)
+	local best, bestD
+	for name, c in pairs(centres) do
+		local d = math.huge
+		for _, p in ipairs(players) do
+			d = math.min(d, math.max(math.abs(p.x - c.x), math.abs(p.y - c.y)))
+		end
+		if d >= minDistance and (not bestD or d > bestD or (d == bestD and name < best)) then
+			best, bestD = name, d
+		end
+	end
+	return best
 end
 
 -- Sealed Coffer: number of monsters in the wave

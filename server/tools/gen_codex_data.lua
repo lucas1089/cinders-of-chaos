@@ -1313,6 +1313,23 @@ function Gen.riftEntries(D)
 		local p = {example .. ".", "Reward bonus: " .. rewardText(m.reward) .. "."}
 		if m.boon then
 			p[#p + 1] = "A boon: a pure reward without a reward bonus of its own."
+		elseif m.side == "prefix" then
+			p[#p + 1] = "Prefix: the monsters or the guardian get stronger."
+		elseif m.side == "suffix" then
+			p[#p + 1] = "Suffix: the players or the area get worse."
+		end
+		if m.note then
+			p[#p + 1] = m.note
+		end
+		-- the modifiers it never shares a key with (same group, or excluded)
+		local never = {}
+		for _, o in ipairs(cfg.mods) do
+			if R.modConflict and R.modConflict(m, o) then
+				never[#never + 1] = o.name
+			end
+		end
+		if #never > 0 then
+			p[#p + 1] = "Never on a key with " .. table.concat(never, ", ") .. "."
 		end
 		p[#p + 1] = string.format("Roll weight %d; on keys of tier %d or higher.", R.modWeight(m), m.minTier or 1)
 		local sections = {{h = "Effect", p = p}}
@@ -1382,6 +1399,10 @@ function Gen.riftEntries(D)
 				cols = {"Tier", "Level to enter", "Monster levels"}, w = {20, 40, 40}, rows = tierRows},
 			{h = "The run", p = {string.format("%d minutes; the guardian comes after %d%% of the monsters; %d shared lives + %d per extra player; up to %d players.",
 				floor(cfg.timeLimit / 60), cfg.bossAt, cfg.lives.base, cfg.lives.perExtraPlayer, cfg.maxPlayers),
+				R.densityOn and R.densityOn(cfg) and string.format("About %d monsters solo at tier 1 up to %d at tier %d (+%d%% per extra player), in packs of %d-%d; at most %d alive at once (+%d per extra player), the rest gather in the rooms away from you. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.",
+					floor(R.density(cfg, 1, 1).count), floor(R.density(cfg, cfg.maxTier, 1).count), cfg.maxTier,
+					floor(cfg.density.count.perExtraPlayer * 100 + 0.5), cfg.density.size[1], cfg.density.size[2],
+					cfg.density.live.base, cfg.density.live.perExtraPlayer) or "",
 				cfg.party and string.format("Each extra player: +%d%% monster health in total (more packs, tougher monsters), +%d%% guardian health, +%d%% damage taken; every finisher's chest +%s%% (at most +%d%%) and +%s%% kill loot (at most +%d%%).",
 					floor(cfg.party.healthPerExtraPlayer * 100 + 0.5), floor(cfg.boss.perExtraPlayer * 100 + 0.5),
 					floor(cfg.party.damagePerExtraPlayer * 100 + 0.5), Gen.num(cfg.party.rewardPerExtraPlayer), cfg.party.rewardCap,

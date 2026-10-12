@@ -95,8 +95,16 @@ RF.revive = RF.revive or {} -- guid -> run: died inside with lives left; the nex
 -- ======================================================================== pool
 local rawPool = dofile("data/scripts/chaos/bounty_pool.lua")
 RF.poolLevel = {}
+RF.poolHealth = {} -- the XML health (density: a kind's health relative to the run's other kinds)
 for _, e in ipairs(rawPool.hunt or {}) do
 	RF.poolLevel[e.name:lower()] = e.level
+	RF.poolHealth[e.name:lower()] = e.health
+end
+RF.husk = RF.husk or {} -- monster id -> true: a density husk (no loot, no kill credit; bounty.lua, bestiary.lua ask)
+
+-- a husk of a dense rift: experience only (bounty.lua and bestiary.lua give it no kill credit)
+function RF.isHusk(creature)
+	return creature ~= nil and RF.husk[creature:getId()] == true
 end
 
 local knownCache = {}
@@ -408,6 +416,7 @@ local function cleanSlot(L)
 			for _, c in ipairs(tile:getCreatures() or {}) do
 				if c:isMonster() then
 					RF.monsterRun[c:getId()] = nil
+					RF.husk[c:getId()] = nil
 					c:remove()
 				end
 			end
@@ -480,7 +489,7 @@ local function hudData(run)
 	for _, m in ipairs(run.key.mods) do
 		local def = R.modDef(C(), m.key)
 		mods[#mods + 1] = {name = def and def.name or m.key, text = R.modText(C(), m), boon = def and def.boon or nil,
-			tier = def and R.modTier(def, m.value) or nil}
+			tier = def and R.modTier(def, m.value) or nil, side = def and def.side or nil}
 	end
 	-- live lines of the map modifiers (coffer, goblin, twin guardians)
 	local notes = {}
@@ -510,6 +519,9 @@ local function hudData(run)
 	if waiting > 0 and run.state == "running" then
 		notes[#notes + 1] = string.format("%d fallen player%s may still return.", waiting, waiting == 1 and "" or "s")
 	end
+	if run.queue and #run.queue > 0 and run.boss == "waiting" and run.state == "running" then
+		notes[#notes + 1] = string.format("%d more pack%s gather.", #run.queue, #run.queue == 1 and "" or "s")
+	end
 	if run.atlasNote then
 		notes[#notes + 1] = run.atlasNote -- Rift Atlas
 	end
@@ -536,7 +548,8 @@ local function sendHud(run, action, player)
 end
 
 -- ======================================================================== withering (no health regeneration)
-local function wither(player, entry)
+-- fx.noRegen (Withering): no health; fx.noMana (Parched Veins): no mana; the other one stays the vocation's
+local function wither(player, entry, fx)
 	local cond = player:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
 	if not cond then
 		entry.withered = false -- ours ran out; food eaten later creates a normal one, converted on the next tick
@@ -548,12 +561,14 @@ local function wither(player, entry)
 	local ticks = cond:getTicks()
 	player:removeCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
 	local voc = player:getVocation()
+	local noHealth = not fx or fx.noRegen
+	local noMana = fx and fx.noMana
 	local c = Condition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
 	c:setTicks(ticks)
-	c:setParameter(CONDITION_PARAM_HEALTHGAIN, 0)
-	c:setParameter(CONDITION_PARAM_HEALTHTICKS, 60000)
-	c:setParameter(CONDITION_PARAM_MANAGAIN, voc:getManaGainAmount())
-	c:setParameter(CONDITION_PARAM_MANATICKS, voc:getManaGainTicks() * 1000)
+	c:setParameter(CONDITION_PARAM_HEALTHGAIN, noHealth and 0 or voc:getHealthGainAmount())
+	c:setParameter(CONDITION_PARAM_HEALTHTICKS, noHealth and 60000 or voc:getHealthGainTicks() * 1000)
+	c:setParameter(CONDITION_PARAM_MANAGAIN, noMana and 0 or voc:getManaGainAmount())
+	c:setParameter(CONDITION_PARAM_MANATICKS, noMana and 60000 or voc:getManaGainTicks() * 1000)
 	player:addCondition(c)
 	entry.withered = true
 end
@@ -1015,7 +1030,9 @@ local function randomIn(rect, margin)
 	return {x = rand(rect.x1 + margin, rect.x2 - margin), y = rand(rect.y1 + margin, rect.y2 - margin), z = rect.z}
 end
 
-local function spawnOne(run, name, pos, tier, boss)
+-- opts (optional): {laden = false: a density husk (no loot, no kill credit); extra = true: does not count towards the
+-- guardian (Veilbreach, thralls)}
+local function spawnOne(run, name, pos, tier, boss, opts)
 	-- the rift-exclusive name (rift_config.lua looks.names), set before the placement; credit stays with the type
 	local shown = R.nameOf(run.looks, name, boss)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
@@ -1032,11 +1049,19 @@ local function spawnOne(run, name, pos, tier, boss)
 	if tier and ChaosApplyTier then
 		ChaosApplyTier(m, tier)
 	end
+	local dense = run.density ~= nil
 	local hp
 	if boss and run.omen then
 		hp = math.floor(base * R.omenHealthMult(C(), run.size))
 	elseif boss then
-		hp = math.floor(base * R.guardianHealthMult(C(), run.fx, run.size)) -- + Dread Guardian, Twin Guardians share
+		-- density: the guardian's base is the budget (rift_core.lua R.guardianBase), not the kind's own health
+		local gb = dense and R.guardianBase(C(), run.key.tier) or base
+		hp = math.floor(gb * R.guardianHealthMult(C(), run.fx, run.size)) -- + Dread Guardian, Twin Guardians share
+	elseif dense then
+		-- the budget health x the kind's share x its magic / rare / legendary tier (and random modifiers)
+		local tierMult = base > 0 and m:getMaxHealth() / base or 1
+		hp = math.floor(run.density.packHealth * (run.healthRatio and run.healthRatio[name:lower()] or 1) * tierMult
+			* run.fx.health * (run.fx.partyHealth or 1))
 	else
 		hp = math.floor(m:getMaxHealth() * run.fx.health * (run.fx.partyHealth or 1)) -- + the party's share (R.applyParty)
 	end
@@ -1049,29 +1074,119 @@ local function spawnOne(run, name, pos, tier, boss)
 	end
 	m:registerEvent("ChaosRiftMonsterDeath")
 	m:registerEvent("ChaosRiftMonsterHealth")
-	RF.monsterRun[m:getId()] = run
+	local id = m:getId()
+	RF.monsterRun[id] = run
+	if not boss then
+		run.alive = (run.alive or 0) + 1
+		run.aliveIds = run.aliveIds or {}
+		run.aliveIds[id] = true
+	end
+	if opts and opts.laden == false then
+		RF.husk[id] = true
+		if m.setDropLoot then
+			m:setDropLoot(false)
+		end
+	end
+	if opts and opts.extra then
+		run.extra = run.extra or {}
+		run.extra[id] = true
+	end
 	return m
 end
 
+-- the room rect a pack stands in ("hub": its north half, away from the arrival)
+local function packRect(run, room)
+	local r
+	if room == "hub" or not run.L.rooms[room] then
+		r = {x1 = run.L.hub.x1, y1 = run.L.hub.y1, x2 = run.L.hub.x2, y2 = run.L.center.y - 2}
+	else
+		r = run.L.rooms[room].rect
+	end
+	return {x1 = r.x1, y1 = r.y1, x2 = r.x2, y2 = r.y2, z = run.L.center.z}
+end
+
+-- one pack of the plan into a room; returns how many came (density: the queue's packs one by one)
+local function spawnPack(run, pack, room)
+	local cfg = C()
+	local center = randomIn(packRect(run, room), 2)
+	local spread = run.density and cfg.density.spread or cfg.packs.spread
+	local n = 0
+	for k = 1, pack.count do
+		local pos = {x = center.x + rand(-spread, spread), y = center.y + rand(-spread, spread), z = center.z}
+		local husk = pack.laden ~= nil and pack.laden[k] == false
+		if spawnOne(run, pack.name, pos, pack.elites[k] or nil, false, husk and {laden = false} or nil) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+-- the run's packs: all of them (density off), or as many as the live cap allows; the rest wait in run.queue
 local function spawnPacks(run)
 	local spawned = 0
-	local hubNorth = {x1 = run.L.hub.x1, y1 = run.L.hub.y1, x2 = run.L.hub.x2, y2 = run.L.center.y - 2, z = run.L.center.z}
-	for _, pack in ipairs(run.plan.packs) do
-		local rect = pack.room == "hub" and hubNorth or run.L.rooms[pack.room].rect
-		rect = {x1 = rect.x1, y1 = rect.y1, x2 = rect.x2, y2 = rect.y2, z = run.L.center.z}
-		local center = randomIn(rect, 2)
-		local spread = C().packs.spread
-		for k = 1, pack.count do
-			local pos = {x = center.x + rand(-spread, spread), y = center.y + rand(-spread, spread), z = center.z}
-			if spawnOne(run, pack.name, pos, pack.elites[k] or nil, false) then
-				spawned = spawned + 1
-			end
+	run.queue = {}
+	for i, pack in ipairs(run.plan.packs) do
+		if run.density and i > 1 and (run.alive or 0) + pack.count > run.density.live then
+			run.queue[#run.queue + 1] = pack
+		else
+			local n = spawnPack(run, pack, pack.room)
+			spawned = spawned + n
+			run.planMissing = (run.planMissing or 0) + (pack.count - n)
 		end
 	end
 	return spawned
 end
 
-local function spawnBoss(run)
+local spawnBoss
+
+-- density: queued packs come in when there is room, in the open room farthest from the players, a few a second,
+-- until the guardian appears. Monsters that could not be created leave the plan (the guardian threshold follows).
+local function reinforce(run)
+	local cfg = C()
+	if not run.density or not run.queue or #run.queue == 0 or run.boss ~= "waiting" or run.state ~= "running" then
+		return
+	end
+	local centres = {hub = {x = run.L.center.x, y = run.L.hub.y1 + 3}}
+	for _, name in ipairs(run.rooms) do
+		centres[name] = run.L.rooms[name].center
+	end
+	local pos = {}
+	for id in pairs(run.players) do
+		local p = Player(id)
+		if p then
+			pos[#pos + 1] = p:getPosition()
+		end
+	end
+	local came = 0
+	for _ = 1, cfg.density.reinforce.perTick do
+		local pack = run.queue[1]
+		if not pack or (run.alive or 0) + pack.count > run.density.live then
+			break
+		end
+		local room = R.reinforceRoom(centres, pos, cfg.density.reinforce.minDistance)
+		if not room then
+			break
+		end
+		table.remove(run.queue, 1)
+		local n = spawnPack(run, pack, room)
+		came = came + n
+		if n < pack.count then
+			run.total = math.max(0, run.total - (pack.count - n))
+			run.bossAt = math.max(1, math.ceil(run.total * cfg.bossAt / 100))
+		end
+	end
+	if came > 0 then
+		run.reinforced = (run.reinforced or 0) + came
+	end
+	if run.boss == "waiting" and run.killed >= run.bossAt and run.total > 0 then
+		run.boss = "alive"
+		spawnBoss(run)
+	end
+end
+RF._reinforce = reinforce
+RF._spawnPacks, RF._spawnOne = spawnPacks, spawnOne
+
+function spawnBoss(run) -- the forward-declared local (reinforce)
 	local cfg = C()
 	run.bossIds = run.bossIds or {}
 	local first
@@ -1348,6 +1463,198 @@ local function cinderBurst(run, pos, maxHealth)
 	end, cfg.cinder.delayMs, {x = pos.x, y = pos.y, z = pos.z}, dmg)
 end
 
+-- ======================================================================== hazards (third set of modifiers)
+local function combatOf(element)
+	return ({fire = COMBAT_FIREDAMAGE, ice = COMBAT_ICEDAMAGE, energy = COMBAT_ENERGYDAMAGE, earth = COMBAT_EARTHDAMAGE,
+		death = COMBAT_DEATHDAMAGE, physical = COMBAT_PHYSICALDAMAGE})[element]
+end
+RF.combatOf = combatOf
+
+-- the engine's combat types for rift_core.lua R.monsterHit / R.monsterTaken
+local typesCache
+local function hitTypes()
+	if not typesCache then
+		typesCache = {physical = COMBAT_PHYSICALDAMAGE, none = COMBAT_NONE,
+			brand = {fire = COMBAT_FIREDAMAGE, ice = COMBAT_ICEDAMAGE, energy = COMBAT_ENERGYDAMAGE}}
+	end
+	return typesCache
+end
+
+local function effectOf(element)
+	return ({fire = CONST_ME_FIREAREA, ice = CONST_ME_ICEAREA, energy = CONST_ME_ENERGYAREA,
+		death = CONST_ME_MORTAREA})[element] or CONST_ME_POFF
+end
+
+-- the run's players as {player, entry} (shielded ones, back from a lost life, left out)
+local function targets(run, now)
+	local out = {}
+	for id, entry in pairs(run.players) do
+		local p = Player(id)
+		if p and (entry.shieldUntil or 0) <= now then
+			out[#out + 1] = p
+		end
+	end
+	return out
+end
+
+-- value share of each listed player's max health as damage of the element (no attacker: nothing scales it again)
+local function percentHit(p, share, element)
+	local amount = R.percentHit(p:getMaxHealth(), share)
+	doTargetCombatHealth(0, p, combatOf(element), -amount, -amount, effectOf(element))
+end
+
+-- Scorched Earth / Rimefloor: patches near the players; standing in one hurts every second
+local function groundTick(run, now)
+	local cfg = C()
+	local g = run.fx.ground
+	run.hazards = run.hazards or {}
+	if now >= (run.groundAt or 0) then
+		run.groundAt = now + cfg.ground.every
+		for _, p in ipairs(targets(run, now)) do
+			for _, t in ipairs(R.plus(R.nearTile(p:getPosition(), cfg.ground.near, rand))) do
+				local k = t.x .. "," .. t.y
+				if run.L.floor[k] then
+					run.hazards[k] = {x = t.x, y = t.y, z = t.z, untilAt = now + cfg.ground.lastSeconds}
+				end
+			end
+		end
+	end
+	local eff = effectOf(g.element)
+	for k, h in pairs(run.hazards) do
+		if h.untilAt <= now then
+			run.hazards[k] = nil
+		else
+			P(h):sendMagicEffect(eff)
+		end
+	end
+	for _, p in ipairs(targets(run, now)) do
+		local at = p:getPosition()
+		if run.hazards[at.x .. "," .. at.y] then
+			percentHit(p, g.percent / 100, g.element)
+			if g.kind == "rimefloor" and CONDITION_PARALYZE and Condition then
+				local c = Condition(CONDITION_PARALYZE)
+				c:setParameter(CONDITION_PARAM_TICKS, cfg.ground.slowMs)
+				c:setFormula(-cfg.ground.slowPercent / 100, 0, -cfg.ground.slowPercent / 100, 0)
+				p:addCondition(c)
+			end
+		end
+	end
+end
+
+-- a marked strike: the mark now, the hit warnMs later on every run player within radius of it
+local function markedStrike(run, at, radius, warnMs, share, element, markEffect)
+	local rid, slot = run.id, run.slot
+	for dx = -radius, radius do
+		for dy = -radius, radius do
+			if math.max(math.abs(dx), math.abs(dy)) == radius or radius <= 1 then
+				Position(at.x + dx, at.y + dy, at.z):sendMagicEffect(markEffect or CONST_ME_MAGIC_RED or CONST_ME_POFF)
+			end
+		end
+	end
+	addEvent(function(p0)
+		local r = RF.runs[slot]
+		if not r or r.id ~= rid or r.ended or r.state ~= "running" then
+			return
+		end
+		local now = os.time()
+		Position(p0.x, p0.y, p0.z):sendMagicEffect(effectOf(element))
+		for _, p in ipairs(targets(r, now)) do
+			local q = p:getPosition()
+			if q.z == p0.z and math.max(math.abs(q.x - p0.x), math.abs(q.y - p0.y)) <= radius then
+				percentHit(p, share, element)
+			end
+		end
+	end, warnMs, {x = at.x, y = at.y, z = at.z})
+end
+
+-- Veilstorm: a marked strike near every player
+local function stormTick(run, now)
+	local s = C().veilstorm
+	if now < (run.stormAt or 0) then
+		return
+	end
+	run.stormAt = now + s.every
+	for _, p in ipairs(targets(run, now)) do
+		markedStrike(run, R.nearTile(p:getPosition(), s.near, rand), s.radius, s.warnMs, run.fx.storm, "energy",
+			CONST_ME_PURPLEENERGY)
+	end
+end
+
+-- Wrathful Guardian: the nova around each guardian, and thralls (husks of the weakest kind) now and then
+local function wrathTick(run, now)
+	local w = C().wrath
+	if run.boss ~= "alive" or not run.bossIds then
+		return
+	end
+	local nova = now >= (run.novaAt or 0)
+	local thrall = now >= (run.thrallAt or 0)
+	if run.novaAt == nil then -- first nova one period after the guardian came
+		run.novaAt, run.thrallAt = now + w.novaEvery, now + w.thrallEvery
+		return
+	end
+	for id in pairs(run.bossIds) do
+		local g = Monster(id)
+		if g then
+			local at = g:getPosition()
+			if nova then
+				markedStrike(run, at, w.radius, w.warnMs, run.fx.wrath, "death", CONST_ME_MAGIC_RED)
+			end
+			if thrall then
+				run.thrallIds = run.thrallIds or {}
+				local up = 0
+				for tid in pairs(run.thrallIds) do
+					if Monster(tid) then
+						up = up + 1
+					else
+						run.thrallIds[tid] = nil
+					end
+				end
+				for _ = 1, math.min(w.thralls, w.maxThralls - up) do
+					local m = spawnOne(run, run.typeNames[1], R.nearTile(at, 2, rand), nil, false, {laden = false, extra = true})
+					if m then
+						run.thrallIds[m:getId()] = true
+					end
+				end
+			end
+		end
+	end
+	if nova then
+		run.novaAt = now + w.novaEvery
+	end
+	if thrall then
+		run.thrallAt = now + w.thrallEvery
+	end
+end
+
+-- Veilbreach: a slain pack monster may tear open a breach of more monsters (extra: not towards the guardian)
+local function breach(run, pos)
+	local cfg = C()
+	local b = cfg.breach
+	local cap = (run.density and run.density.live or 100) + (cfg.density and cfg.density.extraSlack or 12)
+	if (run.alive or 0) >= cap then
+		return
+	end
+	local rid, slot = run.id, run.slot
+	Position(pos.x, pos.y, pos.z):sendMagicEffect(CONST_ME_PURPLEENERGY or CONST_ME_TELEPORT)
+	addEvent(function(p0)
+		local r = RF.runs[slot]
+		if not r or r.id ~= rid or r.ended or r.state ~= "running" then
+			return
+		end
+		for _ = 1, b.count do
+			local tierName = R.eliteTier(C(), r.fx, r.key.tier, rand, r.density and r.density.share)
+			local laden = true
+			if r.density and not tierName then
+				laden = R.chance(r.density.normalShare * 100, rand)
+			end
+			spawnOne(r, r.typeNames[rand(1, #r.typeNames)], R.nearTile(p0, b.spread, rand), tierName, false,
+				{laden = laden, extra = true})
+		end
+	end, b.delayMs, {x = pos.x, y = pos.y, z = pos.z})
+end
+
+RF._groundTick, RF._stormTick, RF._wrathTick, RF._breach, RF._wither = groundTick, stormTick, wrathTick, breach, wither
+
 -- ======================================================================== tick
 local function tick(slot, rid)
 	local run = RF.runs[slot]
@@ -1384,11 +1691,26 @@ local function tick(slot, rid)
 			removePlayer(run, id, "none")
 		elseif R.slotOfPos(C(), p:getPosition()) ~= run.slot then
 			removePlayer(run, id, "none")
-		elseif run.fx.noRegen and run.state == "running" then
-			wither(p, entry)
+		elseif (run.fx.noRegen or run.fx.noMana) and run.state == "running" then
+			wither(p, entry, run.fx)
 		end
 		if run.ended then
 			return
+		end
+	end
+	if run.state == "running" then
+		reinforce(run) -- density: queued packs
+		if run.ended then
+			return
+		end
+		if run.fx.ground then
+			groundTick(run, now)
+		end
+		if (run.fx.storm or 0) > 0 then
+			stormTick(run, now)
+		end
+		if (run.fx.wrath or 0) > 0 then
+			wrathTick(run, now)
 		end
 	end
 	if run.state == "running" and now >= (run.hudAt or 0) then
@@ -1616,14 +1938,34 @@ function RF.open(player, item)
 	for _, e in ipairs(types) do
 		run.typeNames[#run.typeNames + 1] = e.name
 	end
+	-- density (rift_config.lua density): the budget health of a pack monster and each kind's share of it (its XML
+	-- health against the run's mean, 0.5-2)
+	if plan.density then
+		run.density = plan.density
+		run.density.packHealth = R.packHealth(cfg, key.tier)
+		local sum, n = 0, 0
+		for _, e in ipairs(types) do
+			local h = RF.poolHealth[e.name:lower()] or e.health
+			if h and h > 0 then
+				sum, n = sum + h, n + 1
+			end
+		end
+		run.healthRatio = {}
+		for _, e in ipairs(types) do
+			local h = RF.poolHealth[e.name:lower()] or e.health
+			run.healthRatio[e.name:lower()] = (n > 0 and h and h > 0) and math.max(0.5, math.min(2, h * n / sum)) or 1
+		end
+	end
+	run.alive, run.aliveIds, run.extra = 0, {}, {}
 	RF.runs[slot] = run
 
 	enter(run, group)
 	local spawned = spawnPacks(run)
-	run.total = spawned
-	run.bossAt = math.max(1, math.ceil(spawned * cfg.bossAt / 100))
+	-- density: the whole plan counts (the queue comes later); monsters that could not be created leave it
+	run.total = run.density and math.max(0, plan.total - (run.planMissing or 0)) or spawned
+	run.bossAt = math.max(1, math.ceil(run.total * cfg.bossAt / 100))
 	if plan.gildedAt then
-		plan.gildedAt = math.min(plan.gildedAt, math.max(1, spawned))
+		plan.gildedAt = math.min(plan.gildedAt, math.max(1, run.total))
 	end
 	placeCoffer(run)
 	local names = {}
@@ -1636,6 +1978,9 @@ function RF.open(player, item)
 	local partyNote = R.partyNote(fx.party, fx.party.health)
 	if partyNote then
 		say(run, partyNote)
+	end
+	if run.queue and #run.queue > 0 then
+		say(run, string.format("%d more packs gather in the rooms away from you as you advance.", #run.queue))
 	end
 	sendHud(run, "start")
 	run.hudAt = os.time() + cfg.hudEvery
@@ -1891,6 +2236,14 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 	local mid = creature:getId()
 	local run = RF.monsterRun[mid]
 	RF.monsterRun[mid] = nil
+	if RF.husk[mid] then
+		-- the other death events (bounty, bestiary) still ask RF.isHusk in this same death; gone a moment later
+		addEvent(function(id) RF.husk[id] = nil end, 1000, mid)
+	end
+	if run and run.aliveIds and run.aliveIds[mid] then
+		run.aliveIds[mid] = nil
+		run.alive = math.max(0, (run.alive or 1) - 1)
+	end
 	if not run or run.ended or run.state ~= "running" then
 		return true
 	end
@@ -1913,6 +2266,20 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 	end
 	if run.fx.cinder > 0 then
 		cinderBurst(run, creature:getPosition(), creature:getMaxHealth())
+	end
+	-- Veilbreach and the Wrathful Guardian's thralls: extra monsters do not count towards the guardian (and never
+	-- open a breach themselves)
+	if run.extra and run.extra[mid] then
+		run.extra[mid] = nil
+		if run.thrallIds then
+			run.thrallIds[mid] = nil
+		end
+		sendHud(run, "update")
+		return true
+	end
+	local cfMid = run.coffer and run.coffer.wave and run.coffer.wave[mid]
+	if (run.fx.breach or 0) > 0 and not cfMid and R.chance(run.fx.breach, rand) then
+		breach(run, creature:getPosition())
 	end
 	-- Sealed Coffer guards do not count towards the guardian
 	local cf = run.coffer
@@ -2004,22 +2371,20 @@ function monsterHealth.onHealthChange(creature, attacker, primaryDamage, primary
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local fx = run.fx
-	if fx.resist > 0 then
-		if primaryType ~= COMBAT_PHYSICALDAMAGE then
-			primaryDamage = math.floor(primaryDamage * (1 - fx.resist))
-		end
-		if secondaryType ~= COMBAT_PHYSICALDAMAGE and secondaryType ~= COMBAT_NONE then
-			secondaryDamage = math.floor(secondaryDamage * (1 - fx.resist))
-		end
-	end
 	local p = playerOf(attacker)
-	if fx.reflect > 0 and p and not reflecting then
-		-- of the damage that lands (overkill is not reflected)
-		local landed = math.min(math.abs(primaryDamage) + math.abs(secondaryDamage), creature:getHealth())
-		local amount = math.floor(landed * fx.reflect)
+	-- Warding, Ironhide, Sapping Hex (rift_core.lua R.monsterTaken)
+	local elemental
+	primaryDamage, secondaryDamage, elemental = R.monsterTaken(fx, {primary = primaryDamage, ptype = primaryType,
+		secondary = secondaryDamage, stype = secondaryType, fromPlayer = p ~= nil}, hitTypes())
+	if p and not reflecting then
+		-- of the damage that lands (overkill is not reflected): Reflection all of it, Spiteglass the elemental part
+		local health = creature:getHealth()
+		local landed = math.min(math.abs(primaryDamage) + math.abs(secondaryDamage), health)
+		local amount = math.floor(landed * (fx.reflect or 0) + math.min(elemental, health) * (fx.spite or 0))
 		if amount > 0 then
 			reflecting = true
-			doTargetCombatHealth(creature:getId(), p, COMBAT_PHYSICALDAMAGE, -amount, -amount, CONST_ME_NONE)
+			doTargetCombatHealth(creature:getId(), p, (fx.spite or 0) > 0 and COMBAT_ENERGYDAMAGE or COMBAT_PHYSICALDAMAGE,
+				-amount, -amount, CONST_ME_NONE)
 			reflecting = false
 		end
 	end
@@ -2036,13 +2401,22 @@ local function scaleHit(creature, attacker, primaryDamage, primaryType, secondar
 		if entry and (entry.shieldUntil or 0) > os.time() then
 			return 0, primaryType, 0, secondaryType
 		end
-		local mult = run.fx.damage
-		if run.bossIds and run.bossIds[attacker:getId()] then
-			mult = mult * run.fx.boss -- Dread Guardian
+		-- Brutality, tiers, party, Dread Guardian, density, Keen Fangs, brands, hexes (rift_core.lua R.monsterHit)
+		local info
+		primaryDamage, primaryType, secondaryDamage, secondaryType, info = R.monsterHit(C(), run.fx,
+			{primary = primaryDamage, ptype = primaryType, secondary = secondaryDamage, stype = secondaryType,
+				boss = run.bossIds and run.bossIds[attacker:getId()] or false}, hitTypes(), rand)
+		if info.crit then
+			creature:getPosition():sendMagicEffect(CONST_ME_DRAWBLOOD or CONST_ME_HITAREA)
 		end
-		if mult ~= 1 then
-			primaryDamage = math.floor(primaryDamage * mult)
-			secondaryDamage = math.floor(secondaryDamage * mult)
+		if info.fester and CONDITION_POISON and Condition then
+			-- Festering Wounds: no owner, so the ticks are not scaled again here
+			local f = C().festering
+			local c = Condition(CONDITION_POISON)
+			c:setParameter(CONDITION_PARAM_DELAYED, true)
+			c:addDamage(f.rounds, f.intervalMs, -math.max(1, math.floor(info.fester / f.rounds)))
+			creature:addCondition(c)
+			creature:getPosition():sendMagicEffect(CONST_ME_HITBYPOISON or CONST_ME_POFF)
 		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType

@@ -62,6 +62,14 @@ function RiftMath.modLine(m)
   return name ~= '' and name or text
 end
 
+-- the colour of a modifier line: gold for a boon, violet for a suffix (players and area), nil (the label's) for a prefix
+function RiftMath.modColor(m)
+  if type(m) ~= 'table' then return nil end
+  if m.boon then return '#e8c060' end
+  if m.side == 'suffix' then return '#c9a6ff' end
+  return nil
+end
+
 -- "Lives: 2 / 4" (shared lives of the run; '' when the server sent none)
 function RiftMath.livesLine(lives, max)
   lives, max = tonumber(lives), tonumber(max)
