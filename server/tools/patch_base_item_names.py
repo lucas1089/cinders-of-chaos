@@ -11,8 +11,8 @@ own items.xml at install time.
 1. data/items/items.xml: the entry of each id (one `<item id="N" ...>` line, or a `<item fromid="N" toid="M" ...>` range
    whose fromid is N; an id that is only inside a range is left alone and listed) gets the new name, article and plural.
 2. The loot of the base monsters refers to items by id or by name. Every loot entry that names a renamed item by its old
-   name is changed to its id: `id = "old name"` in monster Lua files, `<item name="old name" .../>` in monster XML. Loot
-   by id needs nothing.
+   name is changed to its id: `id = "old name"` in monster Lua files, `<item name="old name" .../>` in monster XML (an
+   entry that has an id as well only loses the name). Loot by id needs nothing.
 3. Every other mention of an old name in the base data (NPC shop lists, quest and reward texts, scripts; not
    data/scripts/chaos, not data/lib/chaos_*.lua, not data/items) is replaced, case-insensitively and whole words only;
    an all-lower-case mention gets the new name in lower case. In Lua files only string literals change, and a new
@@ -164,15 +164,25 @@ def patch_monster_lua(text, renamed):
 
 
 def patch_monster_xml(text, renamed):
+    """loot by old name -> loot by id; an entry that already has an id (<item id="N" name="old"/>) only loses its name,
+    so it never gets a second id attribute. A doubled id that older versions of this tool wrote (id="N" id="N") is
+    written once again."""
     n = [0]
 
-    def sub(m):
+    def tag(t):
+        t = t.group(0)
+        t = re.sub(r'(\sid="(\d+)")\s+id="\2"', r'\1', t)
+        m = re.search(r'(\s)name="([^"]*)"', t)
+        if not m:
+            return t
         iid = renamed.get(m.group(2).lower())
         if not iid:
-            return m.group(0)
+            return t
         n[0] += 1
-        return '%sid="%d"' % (m.group(1), iid[0])
-    out = re.sub(r'(<item\b[^>]*?\s)name="([^"]*)"', sub, text)
+        if re.search(r'\sid="', t):
+            return t[:m.start()] + t[m.end():]
+        return '%s%sid="%d"%s' % (t[:m.start()], m.group(1), iid[0], t[m.end():])
+    out = re.sub(r'<item\b[^>]*>', tag, text)
     return out, n[0]
 
 
@@ -231,10 +241,17 @@ def ref_files(data):
 def patch_references(data, renamed, names=()):
     """-> {path: new text}, loot changes, text changes; names: every item name of items.xml (lower case)"""
     writes, loot, words = {}, 0, 0
+    monster = os.path.join(data, 'monster') + os.sep
     if not renamed:
+        # nothing left to rename; the monster XML still loses a doubled id an older version wrote
+        for p in ref_files(data):
+            if p.startswith(monster) and p.endswith('.xml'):
+                t = read(p)
+                new = patch_monster_xml(t, renamed)[0]
+                if new != t:
+                    writes[p] = new
         return writes, 0, 0
     longer = longer_names(renamed, set(names))
-    monster = os.path.join(data, 'monster') + os.sep
     for p in ref_files(data):
         t = read(p)
         new, k = t, 0
