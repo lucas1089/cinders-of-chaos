@@ -38,8 +38,18 @@ local function textWidth(label)
   return label.getTextSize and label:getTextSize().width or label:getWidth()
 end
 
+local PLATE_PAD = 28 -- the plate's 9-slice borders and a little air around the text
+
+-- the width of `text` in `label`'s font (the label keeps the text it ends with)
+local function measureWith(label)
+  return function(text)
+    label:setText(text)
+    return textWidth(label)
+  end
+end
+
 local function fitPlate(plate, label, minW, maxW)
-  local w = textWidth(label) + 28
+  local w = textWidth(label) + PLATE_PAD
   plate:setWidth(math.max(minW, math.min(maxW, w)))
 end
 
@@ -63,10 +73,8 @@ local function paintInfo(info)
   window:getChildById('frame'):setImageSource(img.frame)
   window:getChildById('fill'):setImageSource(img.fill)
   local name = window:getChildById('name')
-  name:setText(S.title(key, info.label, info.name))
-  if textWidth(name) + 28 > NAME_MAX then
-    name:setText(tostring(info.name or '')) -- a long name: the frame alone tells the tier
-  end
+  -- a long title drops its tag (the frame tells the tier); a name too long for the plate is cut with '...'
+  name:setText(S.fitTitle(key, info.label, info.name, measureWith(name), NAME_MAX - PLATE_PAD))
   name:setColor(st.name)
   local plate = window:getChildById('namePlate')
   plate:setImageSource(img.plaque)

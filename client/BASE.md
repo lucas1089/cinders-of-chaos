@@ -130,6 +130,13 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     had `Tile:setTimer` (one timer per tile, at most 60 s, tenths of seconds, no unknown state), which did not fit the
     fields (fire lasts up to 6 minutes). Applies after 0001-0040 (checked with `patch --dry-run` on the base tree with
     0001-0040 applied).
+22. `0042` (C++ `src/client/mapview.cpp`): creature names and their small health bars are drawn over the light.
+    `MapView::drawMapForeground` queued the light view after the creature information, so the ambient light darkened
+    names like the ground: in an unlit arena a world boss's name came out at about 40% of its colour (the README shot
+    `endgame_worldboss`: `#e03a1e` read as `#59150c` on the boss's red body). The light is now queued just before the
+    creature information; static and animated texts were already after it. No Lua change. No other patch touches
+    `mapview.cpp`, so it applies after 0001-0041 (`patch --dry-run` on the base file); not built yet (no room on the
+    build machine).
 
 ### Client guard: the build secret
 

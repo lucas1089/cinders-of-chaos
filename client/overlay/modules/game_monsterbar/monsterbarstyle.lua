@@ -13,10 +13,36 @@ S.STYLES = {
   magic     = { name = '#7fb0ff', label = 'Magic', world = '#7fb0ff' },
   rare      = { name = '#f6cf72', label = 'Rare', world = '#f6cf72' },
   legendary = { name = '#ff9a4a', label = 'Legendary', world = '#ff9a4a' },
-  boss      = { name = '#e03a1e', label = '', world = '#e03a1e' },
-  guardian  = { name = '#e03a1e', label = 'Rift Guardian', world = '#e03a1e', role = true },
+  boss      = { name = '#ff6a50', label = '', world = '#ff6a50' },
+  guardian  = { name = '#ff6a50', label = 'Rift Guardian', world = '#ff6a50', role = true },
   omen      = { name = '#c79bff', label = 'Omen Guardian', world = '#c79bff', role = true },
 }
+
+-- The boss red is the bright one of the fill's sheen (gen_monsterbar_art.py): the in-world name sits on dark ground
+-- and often on the boss's own red body, where the UI red #e03a1e was hard to read. S.GROUND is the darkest ground a
+-- name is checked against (monsterbarstyle_test.lua: every tier colour at least S.MIN_CONTRAST on it).
+S.GROUND = '#2a0c0a'
+S.MIN_CONTRAST = 4.5
+
+local function channel(c)
+  c = c / 255
+  if c <= 0.03928 then return c / 12.92 end
+  return ((c + 0.055) / 1.055) ^ 2.4
+end
+
+-- relative luminance of '#rrggbb' (WCAG)
+function S.luminance(hex)
+  local r, g, b = tostring(hex):match('^#(%x%x)(%x%x)(%x%x)$')
+  if not r then return 0 end
+  return 0.2126 * channel(tonumber(r, 16)) + 0.7152 * channel(tonumber(g, 16)) + 0.0722 * channel(tonumber(b, 16))
+end
+
+-- contrast ratio of two colours, 1 .. 21
+function S.contrast(a, b)
+  local la, lb = S.luminance(a), S.luminance(b)
+  if la < lb then la, lb = lb, la end
+  return (la + 0.05) / (lb + 0.05)
+end
 
 -- the look of a monster: its role (guardian, omen) wins over its tier; anything unknown looks normal
 function S.key(tier, role)
@@ -43,6 +69,22 @@ function S.title(key, label, name)
   name = tostring(name or '')
   if tag == '' then return name end
   return tag .. ' ' .. name
+end
+
+-- the text of the name plate: the title (tag and name) when it fits in `maxWidth` pixels, else the name alone (the
+-- frame still tells the tier), else the name cut with '...'. `width(text)` measures a text in the plate's font.
+function S.fitTitle(key, label, name, width, maxWidth)
+  local full = S.title(key, label, name)
+  if width(full) <= maxWidth then return full end
+  name = tostring(name or '')
+  if width(name) <= maxWidth then return name end
+  local n = #name
+  while n > 1 do
+    n = n - 1
+    local cut = name:sub(1, n):gsub('[%s%p]+$', '') .. '...'
+    if width(cut) <= maxWidth then return cut end
+  end
+  return '...'
 end
 
 function S.levelText(level)
