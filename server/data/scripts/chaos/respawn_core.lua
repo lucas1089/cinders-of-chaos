@@ -126,4 +126,21 @@ function R.plan(state, zones, cfg)
 	return calls
 end
 
+-- a plan as the arguments of one Game.setSpawnIntervalZones call (engine patch 0027): the global percent and the list
+-- of zones {x0, y0, x1, y1, z, percent} in the plan's order (a later zone wins). The engine applies them through an index
+-- of its spawns, so a tick costs the spawns of the zones, not one pass over every map spawn per zone (about 50,000 on the
+-- full map, 6-10 ms a pass). nil for an empty plan (nothing changed).
+function R.zoneList(plan)
+	if #plan == 0 then
+		return nil
+	end
+	local list = {}
+	for i = 2, #plan do
+		local call = plan[i]
+		list[#list + 1] = {x0 = call.from.x, y0 = call.from.y, x1 = call.to.x, y1 = call.to.y, z = call.from.z,
+			percent = call.percent}
+	end
+	return plan[1].percent, list
+end
+
 return R

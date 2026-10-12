@@ -53,8 +53,18 @@ local function num(v)
 	return tonumber(v)
 end
 
+-- pcall on named functions, not on a closure made per call: these run for every modifier of every worn item of
+-- every player in the equipment check, and the closures were most of its garbage (server/README.md "Game loop stalls")
+local function getCustom(item, key)
+	return item:getCustomAttribute(key)
+end
+
+local function slotPositionOf(item)
+	return ItemType(item:getId()):getSlotPosition()
+end
+
 local function customNumber(item, key)
-	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	local ok, v = pcall(getCustom, item, key)
 	return ok and floor(num(v) or 0) or 0
 end
 
@@ -208,7 +218,7 @@ local function rarityOf(item)
 end
 
 local function twoHanded(item)
-	local ok, slots = pcall(function() return ItemType(item:getId()):getSlotPosition() end)
+	local ok, slots = pcall(slotPositionOf, item)
 	local bit = SLOTP_TWO_HAND or 2048
 	return ok and floor((tonumber(slots) or 0) / bit) % 2 == 1
 end

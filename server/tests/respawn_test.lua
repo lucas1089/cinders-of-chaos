@@ -116,6 +116,22 @@ calls = R.plan(state, {}, half)
 eq(#calls, 1, "global percent changed: one call")
 eq(calls[1].percent, 80, "global percent")
 
+-- ------------------------------------------------------------------ zoneList (one Game.setSpawnIntervalZones call)
+eq(R.zoneList({}), nil, "empty plan: no call")
+local zplan = R.plan({}, zs, cfg)
+local zglobal, zlist = R.zoneList(zplan)
+eq(zglobal, 100, "zoneList: the reset's percent is the global one")
+eq(#zlist, #zs, "zoneList: one entry per zone")
+for i, z in ipairs(zs) do
+	local e = zlist[i]
+	ok(e.x0 == z.x0 and e.y0 == z.y0 and e.x1 == z.x1 and e.y1 == z.y1 and e.z == z.z and e.percent == z.percent,
+		"zoneList: zone " .. i .. " box and percent, in the plan's order")
+end
+eq(zlist[#zlist].percent, 55, "zoneList: busiest last (it wins where zones overlap)")
+local onlyReset, none = R.zoneList(R.plan({signature = "x"}, {}, cfg))
+eq(onlyReset, 100, "zoneList: a plain reset")
+eq(#none, 0, "zoneList: a plain reset has no zones")
+
 -- ------------------------------------------------------------------ glue (respawn.lua) against a mocked engine
 TILESTATE_PROTECTIONZONE, CONDITION_INFIGHT = 1, 2
 local globals = {}
@@ -199,6 +215,30 @@ engine = {}
 tick.onThink(20000)
 eq(#engine, 0, "off: then nothing")
 ChaosRespawnConfig.enabled = true
+-- with engine patch 0027: the whole plan in one Game.setSpawnIntervalZones call
+local zoneCalls = {}
+Game.setSpawnIntervalZones = function(global, list)
+	zoneCalls[#zoneCalls + 1] = {global = global, list = list}
+	return #list
+end
+engine = {}
+ChaosRespawn.state = {}
+players = {newPlayer(100, 100, 1), newPlayer(102, 100, 2)}
+tick.onThink(20000)
+eq(#engine, 0, "0027: no per-zone calls")
+eq(#zoneCalls, 1, "0027: one call")
+eq(zoneCalls[1].global, 100, "0027: global percent")
+eq(#zoneCalls[1].list, 1, "0027: one zone")
+eq(zoneCalls[1].list[1].percent, 85, "0027: two hunters: 85%")
+eq(zoneCalls[1].list[1].z, 7, "0027: zone floor")
+tick.onThink(20000)
+eq(#zoneCalls, 1, "0027: nothing changed: no engine call")
+players = {}
+tick.onThink(20000)
+eq(#zoneCalls, 2, "0027: they left: one call")
+eq(#zoneCalls[2].list, 0, "0027: no zones left")
+Game.setSpawnIntervalZones = nil
+
 -- an engine error is caught and logged, the event still returns true
 Game.getPlayers = function() error("boom") end
 printed = {}

@@ -45,8 +45,18 @@ S.load()
 -- ---------------------------------------------------------------------------------------------------------------
 -- pieces
 -- ---------------------------------------------------------------------------------------------------------------
+-- pcall on named functions, not on a closure made per call: these run for every modifier of every worn item of
+-- every player in the equipment check, and the closures were most of its garbage (server/README.md "Game loop stalls")
+local function getCustom(item, key)
+	return item:getCustomAttribute(key)
+end
+
+local function getItemId(item)
+	return item:getId()
+end
+
 local function custom(item, key)
-	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	local ok, v = pcall(getCustom, item, key)
 	if ok then
 		return v
 	end
@@ -64,7 +74,7 @@ function S.setKeyOf(item)
 		return key
 	end
 	if custom(item, "chaos_unique") ~= nil then
-		local ok, id = pcall(function() return item:getId() end)
+		local ok, id = pcall(getItemId, item)
 		local spec = ok and ChaosUniqueSpecs and ChaosUniqueSpecs[id]
 		return spec and spec.set or nil
 	end
@@ -77,7 +87,7 @@ function S.pieceOf(item)
 	if not key then
 		return nil
 	end
-	local ok, id = pcall(function() return item:getId() end)
+	local ok, id = pcall(getItemId, item)
 	local e = ok and S.pieceById[id]
 	if e and e.set.key == key then
 		return e.set, e.piece

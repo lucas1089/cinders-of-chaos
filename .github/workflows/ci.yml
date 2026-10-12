@@ -103,6 +103,14 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaossave_test.cpp -o "$d/chaossave_test"
           "$d/chaossave_test"
 
+      - name: Respawn zones index (C++; header from server src-patch 0027)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaoszones\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0027-game-loop-stalls.patch > "$d/chaoszones.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoszones_test.cpp -o "$d/chaoszones_test"
+          "$d/chaoszones_test"
+
       - name: Backup shell scripts parse
         run: |
           bash -n server/tools/backup.sh

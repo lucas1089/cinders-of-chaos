@@ -1,0 +1,635 @@
+# Game loop stalls (server/README.md "Game loop stalls" and "Slow task log"). With 200 bots on the full map the game
+# loop stood still for 250-650 ms every 20-25 s outside saves. Two engine parts:
+#   * Slow task log, off by default (config.lua slowTaskLogMs = 0). With slowTaskLogMs = N the dispatcher times every
+#     task (scheduler events run as dispatcher tasks too) and logs each one that took N ms or more, one console line:
+#       [slow task] 265 ms | lua 265 ms in 1 call(s), longest 265 ms data/scripts/chaos/item_mods.lua:203
+#         | lua gc freed 59981 KB | db 3 ms in 10 queries (waiting for the connection 0 ms), longest 1 ms: INSERT ...
+#         | task std::_Bind<void (LuaEnvironment::*(LuaEnvironment*, unsigned int))(unsigned int)>
+#     Lua: every outermost Lua call of the task (LuaScriptInterface::protectedCall: globalevents, creaturescripts,
+#     revscripts, addEvent callbacks, events) with its time; the longest is named by file and the line where its
+#     function starts. "lua gc freed": the Lua heap shrank by that much during one call, so the collector swept there.
+#     Database: the queries the dispatcher ran itself (Database::executeQuery / storeQuery / commit / rollback on that
+#     thread), their time, the part spent waiting for the connection (the async query thread holds the same connection)
+#     and the longest query's first 95 characters (a COMMIT waits for the database's log flush). Task: the C++ function type of the task (demangled with GCC / Clang). Off, the cost is
+#     one config read per task; on, about 1 us per Lua call. For finding stalls on a test or live server.
+#   * Game.setSpawnIntervalZones(globalPercent, zones) for the dynamic respawn (data/scripts/chaos/respawn.lua, patch
+#     0022): every map spawn gets globalPercent, a spawn whose centre lies in one of the zones ({x0, y0, x1, y1, z,
+#     percent}, a later zone wins) that zone's percent; the same result as Game.setSpawnIntervalPercent(globalPercent)
+#     and then one call per zone. Game.setSpawnIntervalPercent makes one pass over every map spawn per call (the full
+#     map has about 50,000: 6-10 ms a pass), and respawn.lua made one call per busy zone every 20 s. Spawns keeps an
+#     index of its spawns by 16x16 cell and floor (built at the first call) and touches only the spawns of the new zones
+#     and of the last call's zones (every spawn when the global percent changed, or after a Game.setSpawnIntervalPercent
+#     call). New src/chaoszones.h: the index, header only, tested by server/tools/chaoszones_test.cpp (CI); a spawn whose
+#     percent does not change is not touched, so its pending check keeps its time.
+# Apply in the server source root after 0001-0026: patch -p1 < 0027-game-loop-stalls.patch, then rebuild.
+# src/CMakeLists.txt is not touched. The Lua side needs no new opcode or storage.
+diff --git a/src/chaoszones.h b/src/chaoszones.h
+new file mode 100644
+index 0000000..14d1201
+--- /dev/null
++++ b/src/chaoszones.h
+@@ -0,0 +1,131 @@
++// Chaos (src-patches/0027): the dynamic respawn's zones applied without a pass over every map spawn.
++// Game.setSpawnIntervalZones (luascript.cpp) hands the busy zones of data/scripts/chaos/respawn.lua to Spawns, which keeps
++// an index of its spawns by 16x16 cell and floor and touches only the spawns in the new zones and those the last call
++// lowered. The full map has about 50,000 spawns: one pass over all of them took 6-10 ms, and the old calls made one
++// pass per zone every 20 s. Pure template code (no engine types), tested by server/tools/chaoszones_test.cpp.
++#ifndef FS_CHAOSZONES_H
++#define FS_CHAOSZONES_H
++
++#include <algorithm>
++#include <cstdint>
++#include <unordered_map>
++#include <vector>
++
++namespace ChaosZones {
++
++// a box on one floor (inclusive) and the respawn percent for the spawns whose centre lies in it
++struct Zone {
++	int32_t x0, y0, x1, y1, z;
++	uint16_t percent;
++};
++
++inline uint16_t clampPercent(int64_t percent)
++{
++	return static_cast<uint16_t>(std::max<int64_t>(10, std::min<int64_t>(percent, 1000)));
++}
++
++// S: getCenterPos() with x, y, z members and setIntervalPercent(uint16_t), which does nothing when the percent is the same
++template <typename S>
++class Index
++{
++	public:
++		static constexpr int32_t CELL = 16;
++
++		bool built() const {
++			return isBuilt;
++		}
++
++		template <typename Range>
++		void build(Range& spawns) {
++			cells.clear();
++			all.clear();
++			lowered.clear();
++			for (S& spawn : spawns) {
++				const auto& c = spawn.getCenterPos();
++				cells[key(c.x / CELL, c.y / CELL, c.z)].push_back(&spawn);
++				all.push_back(&spawn);
++			}
++			isBuilt = true;
++			dirty = true;
++		}
++
++		// the next apply() sets every spawn again (another script set percents directly)
++		void invalidate() {
++			dirty = true;
++		}
++
++		// every spawn gets globalPercent, a spawn whose centre lies in a zone that zone's percent (a later zone wins
++		// where two overlap). The same result as setting every spawn to globalPercent and then each zone in turn, but
++		// only the spawns of the new zones and of the last call's zones are touched (all of them when the global
++		// percent changed). Returns how many spawns are in a zone.
++		size_t apply(uint16_t globalPercent, const std::vector<Zone>& zones) {
++			globalPercent = clampPercent(globalPercent);
++			if (dirty || globalPercent != lastGlobal) {
++				for (S* spawn : all) {
++					spawn->setIntervalPercent(globalPercent);
++				}
++				lowered.clear();
++				lastGlobal = globalPercent;
++				dirty = false;
++			}
++
++			std::unordered_map<S*, uint16_t> wanted;
++			std::vector<S*> order;
++			for (const Zone& zone : zones) {
++				if (zone.x1 < zone.x0 || zone.y1 < zone.y0) {
++					continue;
++				}
++				const uint16_t percent = clampPercent(zone.percent);
++				const int32_t cx0 = std::max<int32_t>(0, zone.x0) / CELL, cx1 = std::max<int32_t>(0, zone.x1) / CELL;
++				const int32_t cy0 = std::max<int32_t>(0, zone.y0) / CELL, cy1 = std::max<int32_t>(0, zone.y1) / CELL;
++				for (int32_t cx = cx0; cx <= cx1; ++cx) {
++					for (int32_t cy = cy0; cy <= cy1; ++cy) {
++						auto it = cells.find(key(cx, cy, zone.z));
++						if (it == cells.end()) {
++							continue;
++						}
++						for (S* spawn : it->second) {
++							const auto& c = spawn->getCenterPos();
++							if (c.x < zone.x0 || c.x > zone.x1 || c.y < zone.y0 || c.y > zone.y1) {
++								continue;
++							}
++							auto ins = wanted.emplace(spawn, percent);
++							if (ins.second) {
++								order.push_back(spawn);
++							} else {
++								ins.first->second = percent;
++							}
++						}
++					}
++				}
++			}
++
++			for (S* spawn : lowered) {
++				if (wanted.find(spawn) == wanted.end()) {
++					spawn->setIntervalPercent(lastGlobal);
++				}
++			}
++			for (S* spawn : order) {
++				spawn->setIntervalPercent(wanted[spawn]);
++			}
++			lowered = std::move(order);
++			return lowered.size();
++		}
++
++	private:
++		static uint64_t key(int64_t cx, int64_t cy, int64_t z) {
++			return (static_cast<uint64_t>(cx & 0xFFFFF) << 28) | (static_cast<uint64_t>(cy & 0xFFFFF) << 8)
++				| static_cast<uint64_t>(z & 0xFF);
++		}
++
++		std::unordered_map<uint64_t, std::vector<S*>> cells;
++		std::vector<S*> all;
++		std::vector<S*> lowered; // spawns a zone of the last call covered
++		uint16_t lastGlobal = 100;
++		bool isBuilt = false;
++		bool dirty = true;
++};
++
++} // namespace ChaosZones
++
++#endif
+diff --git a/src/configmanager.cpp b/src/configmanager.cpp
+index 8b2afed..4d981c8 100644
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -336,6 +336,9 @@ bool ConfigManager::load()
+ 	// proxyProtocolRequired = true: every other address is refused (127.0.0.0/8 excepted: the watchdog, health checks)
+ 	string[PROXY_PROTOCOL_TRUSTED] = getGlobalString(L, "proxyProtocolTrusted", "");
+ 	boolean[PROXY_PROTOCOL_REQUIRED] = getGlobalBoolean(L, "proxyProtocolRequired", false);
++	// Chaos (patch 0027): log every dispatcher task that takes this many ms or more, with its Lua calls and database
++	// queries (server/README.md "Slow task log"). 0: off
++	integer[SLOW_TASK_LOG_MS] = getGlobalNumber(L, "slowTaskLogMs", 0);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+diff --git a/src/configmanager.h b/src/configmanager.h
+index 1f9396a..546313a 100644
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -147,6 +147,7 @@ class ConfigManager
+ 			PLAYER_SPEED_SOFT_LEVEL,
+ 			PLAYER_SPEED_PER_TEN_LEVELS_ABOVE,
+ 			CLIENT_GUARD_TIMEOUT, // Chaos (patch 0021): client guard
++			SLOW_TASK_LOG_MS, // Chaos (patch 0027): slow task log
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+diff --git a/src/database.cpp b/src/database.cpp
+index e5f3f03..2751fa3 100644
+--- a/src/database.cpp
++++ b/src/database.cpp
+@@ -5,6 +5,7 @@
+ 
+ #include "configmanager.h"
+ #include "database.h"
++#include "tasks.h"
+ 
+ #include <mysql/errmsg.h>
+ 
+@@ -55,7 +56,15 @@ bool Database::beginTransaction()
+ 
+ bool Database::rollback()
+ {
+-	if (mysql_rollback(handle) != 0) {
++	// Chaos (patch 0027): slow task log, the database part (dispatcher thread only)
++	const bool timed = TaskTiming::current != nullptr;
++	const auto start = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
++	const bool ok = mysql_rollback(handle) == 0;
++	if (timed) {
++		TaskTiming::dbQueryDone("ROLLBACK", std::chrono::duration_cast<std::chrono::microseconds>(
++			std::chrono::steady_clock::now() - start).count(), 0);
++	}
++	if (!ok) {
+ 		std::cout << "[Error - mysql_rollback] Message: " << mysql_error(handle) << std::endl;
+ 		databaseLock.unlock();
+ 		return false;
+@@ -67,7 +76,16 @@ bool Database::rollback()
+ 
+ bool Database::commit()
+ {
+-	if (mysql_commit(handle) != 0) {
++	// Chaos (patch 0027): slow task log, the database part (dispatcher thread only): a COMMIT waits for the database's
++	// log flush
++	const bool timed = TaskTiming::current != nullptr;
++	const auto start = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
++	const bool ok = mysql_commit(handle) == 0;
++	if (timed) {
++		TaskTiming::dbQueryDone("COMMIT", std::chrono::duration_cast<std::chrono::microseconds>(
++			std::chrono::steady_clock::now() - start).count(), 0);
++	}
++	if (!ok) {
+ 		std::cout << "[Error - mysql_commit] Message: " << mysql_error(handle) << std::endl;
+ 		databaseLock.unlock();
+ 		return false;
+@@ -81,8 +99,18 @@ bool Database::executeQuery(const std::string& query)
+ {
+ 	bool success = true;
+ 
++	// Chaos (patch 0027): slow task log, the database part (dispatcher thread only)
++	const bool timed = TaskTiming::current != nullptr;
++	std::chrono::steady_clock::time_point start, locked;
++	if (timed) {
++		start = std::chrono::steady_clock::now();
++	}
++
+ 	// executes the query
+ 	databaseLock.lock();
++	if (timed) {
++		locked = std::chrono::steady_clock::now();
++	}
+ 
+ 	while (mysql_real_query(handle, query.c_str(), query.length()) != 0) {
+ 		std::cout << "[Error - mysql_real_query] Query: " << query.substr(0, 256) << std::endl << "Message: " << mysql_error(handle) << std::endl;
+@@ -101,12 +129,26 @@ bool Database::executeQuery(const std::string& query)
+ 		mysql_free_result(m_res);
+ 	}
+ 
++	if (timed) {
++		const auto end = std::chrono::steady_clock::now();
++		TaskTiming::dbQueryDone(query, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count(),
++			std::chrono::duration_cast<std::chrono::microseconds>(locked - start).count());
++	}
+ 	return success;
+ }
+ 
+ DBResult_ptr Database::storeQuery(const std::string& query)
+ {
++	// Chaos (patch 0027): slow task log, the database part (dispatcher thread only)
++	const bool timed = TaskTiming::current != nullptr;
++	std::chrono::steady_clock::time_point start, locked;
++	if (timed) {
++		start = std::chrono::steady_clock::now();
++	}
+ 	databaseLock.lock();
++	if (timed) {
++		locked = std::chrono::steady_clock::now();
++	}
+ 
+ 	retry:
+ 	while (mysql_real_query(handle, query.c_str(), query.length()) != 0) {
+@@ -132,6 +174,12 @@ DBResult_ptr Database::storeQuery(const std::string& query)
+ 	}
+ 	databaseLock.unlock();
+ 
++	if (timed) {
++		const auto end = std::chrono::steady_clock::now();
++		TaskTiming::dbQueryDone(query, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count(),
++			std::chrono::duration_cast<std::chrono::microseconds>(locked - start).count());
++	}
++
+ 	// retrieving results of query
+ 	DBResult_ptr result = std::make_shared<DBResult>(res);
+ 	if (!result->hasNext()) {
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+index 74643d5..51604c0 100644
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -21,6 +21,7 @@
+ #include "bed.h"
+ #include "monster.h"
+ #include "scheduler.h"
++#include "tasks.h"
+ #include "databasetasks.h"
+ #include "decay.h"
+ #include "events.h"
+@@ -285,7 +286,25 @@ int LuaScriptInterface::protectedCall(lua_State* L, int nargs, int nresults)
+ 	lua_pushcfunction(L, luaErrorHandler);
+ 	lua_insert(L, error_index);
+ 
++	// Chaos (patch 0027): slow task log, the Lua part (only while the dispatcher times a task)
++	TaskTiming::Record* timing = TaskTiming::current;
++	if (!timing) {
++		int ret = lua_pcall(L, nargs, nresults, error_index);
++		lua_remove(L, error_index);
++		return ret;
++	}
++
++	lua_Debug ar;
++	lua_pushvalue(L, error_index + 1);
++	lua_getinfo(L, ">S", &ar);
++	const int64_t heapBefore = static_cast<int64_t>(lua_gc(L, LUA_GCCOUNT, 0)) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
++	const auto start = std::chrono::steady_clock::now();
++	++timing->luaDepth;
+ 	int ret = lua_pcall(L, nargs, nresults, error_index);
++	--timing->luaDepth;
++	const int64_t us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count();
++	const int64_t heapAfter = static_cast<int64_t>(lua_gc(L, LUA_GCCOUNT, 0)) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
++	TaskTiming::luaCallDone(ar.source, ar.linedefined, us, heapBefore, heapAfter);
+ 	lua_remove(L, error_index);
+ 	return ret;
+ }
+@@ -2170,6 +2189,7 @@ void LuaScriptInterface::registerFunctions()
+ 	registerMethod("Game", "isSaving", LuaScriptInterface::luaGameIsSaving); // Chaos (src-patch 0026)
+ 
+ 	registerMethod("Game", "setSpawnIntervalPercent", LuaScriptInterface::luaGameSetSpawnIntervalPercent);
++	registerMethod("Game", "setSpawnIntervalZones", LuaScriptInterface::luaGameSetSpawnIntervalZones);
+ 
+ 	// Variant
+ 	registerClass("Variant", "", LuaScriptInterface::luaVariantCreate);
+@@ -4918,10 +4938,48 @@ int LuaScriptInterface::luaGameSetSpawnIntervalPercent(lua_State* L)
+ 		spawn.setIntervalPercent(percent);
+ 		++count;
+ 	}
++	g_game.map.spawns.invalidateIntervalZones(); // Chaos (src-patches/0027)
+ 	lua_pushnumber(L, count);
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaGameSetSpawnIntervalZones(lua_State* L)
++{
++	// Game.setSpawnIntervalZones(globalPercent, zones) (Chaos, src-patches/0027)
++	// every map spawn respawns after globalPercent of its spawntime, a spawn whose centre lies in one of the zones
++	// ({x0 =, y0 =, x1 =, y1 =, z =, percent =}, a later zone wins) after that zone's percent; percents 10-1000. The same
++	// result as Game.setSpawnIntervalPercent(globalPercent) and then one call per zone, without a pass over every
++	// spawn per zone. Returns how many spawns are in a zone.
++	const uint16_t globalPercent = ChaosZones::clampPercent(getNumber<int32_t>(L, 1));
++	std::vector<ChaosZones::Zone> zones;
++	if (lua_istable(L, 2)) {
++		for (int i = 1; ; ++i) {
++			lua_rawgeti(L, 2, i);
++			if (!lua_istable(L, -1)) {
++				lua_pop(L, 1);
++				break;
++			}
++			ChaosZones::Zone zone;
++			auto field = [L](const char* name) {
++				lua_getfield(L, -1, name);
++				const int32_t value = static_cast<int32_t>(lua_tonumber(L, -1));
++				lua_pop(L, 1);
++				return value;
++			};
++			zone.x0 = field("x0");
++			zone.y0 = field("y0");
++			zone.x1 = field("x1");
++			zone.y1 = field("y1");
++			zone.z = field("z");
++			zone.percent = ChaosZones::clampPercent(field("percent"));
++			zones.push_back(zone);
++			lua_pop(L, 1);
++		}
++	}
++	lua_pushnumber(L, g_game.map.spawns.setIntervalZones(globalPercent, zones));
++	return 1;
++}
++
+ // Variant
+ int LuaScriptInterface::luaVariantCreate(lua_State* L)
+ {
+diff --git a/src/luascript.h b/src/luascript.h
+index 47d6396..04bd0f4 100644
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -590,6 +590,7 @@ class LuaScriptInterface
+ 		static int luaGameIsSaving(lua_State* L);
+ 
+ 		static int luaGameSetSpawnIntervalPercent(lua_State* L);
++		static int luaGameSetSpawnIntervalZones(lua_State* L);
+ 
+ 		// Variant
+ 		static int luaVariantCreate(lua_State* L);
+diff --git a/src/spawn.cpp b/src/spawn.cpp
+index 0e5f5eb..af4a903 100644
+--- a/src/spawn.cpp
++++ b/src/spawn.cpp
+@@ -214,6 +214,14 @@ void Spawns::startup()
+ 	started = true;
+ }
+ 
++size_t Spawns::setIntervalZones(uint16_t globalPercent, const std::vector<ChaosZones::Zone>& zones)
++{
++	if (!zoneIndex.built()) {
++		zoneIndex.build(spawnList);
++	}
++	return zoneIndex.apply(globalPercent, zones);
++}
++
+ void Spawns::clear()
+ {
+ 	for (Spawn& spawn : spawnList) {
+diff --git a/src/spawn.h b/src/spawn.h
+index 054e7b4..4973be9 100644
+--- a/src/spawn.h
++++ b/src/spawn.h
+@@ -6,6 +6,7 @@
+ 
+ #include "tile.h"
+ #include "position.h"
++#include "chaoszones.h"
+ 
+ #include <utility>
+ #include <vector>
+@@ -97,9 +98,18 @@ class Spawns
+ 			return spawnList;
+ 		}
+ 
++		// Chaos (src-patches/0027): the dynamic respawn's zones, through an index (chaoszones.h); see
++		// Game.setSpawnIntervalZones
++		size_t setIntervalZones(uint16_t globalPercent, const std::vector<ChaosZones::Zone>& zones);
++		// a percent set another way (Game.setSpawnIntervalPercent): the next setIntervalZones sets every spawn again
++		void invalidateIntervalZones() {
++			zoneIndex.invalidate();
++		}
++
+ 	private:
+ 		std::forward_list<Npc*> npcList;
+ 		std::forward_list<Spawn> spawnList;
++		ChaosZones::Index<Spawn> zoneIndex;
+ 		std::string filename;
+ 		bool loaded = false;
+ 		bool started = false;
+diff --git a/src/tasks.cpp b/src/tasks.cpp
+index f10daf1..15720c5 100644
+--- a/src/tasks.cpp
++++ b/src/tasks.cpp
+@@ -5,8 +5,110 @@
+ 
+ #include "tasks.h"
+ #include "game.h"
++#include "configmanager.h"
++
++#if defined(__GNUC__)
++#include <cxxabi.h>
++#endif
+ 
+ extern Game g_game;
++extern ConfigManager g_config;
++
++namespace TaskTiming {
++
++thread_local Record* current = nullptr;
++
++static void copyLabel(char* dest, size_t size, const std::string& text)
++{
++	size_t n = std::min(text.size(), size - 1);
++	std::copy_n(text.data(), n, dest);
++	dest[n] = '\0';
++}
++
++void luaCallDone(const char* source, int line, int64_t us, int64_t heapBefore, int64_t heapAfter)
++{
++	Record* r = current;
++	if (!r) {
++		return;
++	}
++	if (heapBefore - heapAfter > r->gcFreedBytes) {
++		r->gcFreedBytes = heapBefore - heapAfter;
++	}
++	if (r->luaDepth > 0) {
++		return; // nested in another Lua call: counted there
++	}
++	r->luaUs += us;
++	++r->luaCalls;
++	if (us > r->longestLuaUs) {
++		r->longestLuaUs = us;
++		// "@/path/to/server/data/scripts/x.lua" -> "data/scripts/x.lua"
++		std::string file = source ? source : "?";
++		if (!file.empty() && file[0] == '@') {
++			file.erase(0, 1);
++		}
++		const size_t data = file.rfind("/data/");
++		if (data != std::string::npos) {
++			file.erase(0, data + 1);
++		}
++		copyLabel(r->longestLua, sizeof(r->longestLua), file + ':' + std::to_string(line));
++	}
++}
++
++void dbQueryDone(const std::string& query, int64_t us, int64_t lockUs)
++{
++	Record* r = current;
++	if (!r) {
++		return;
++	}
++	r->dbUs += us;
++	r->dbLockUs += lockUs;
++	++r->dbQueries;
++	if (us > r->longestDbUs) {
++		r->longestDbUs = us;
++		std::string q = query.substr(0, 95);
++		std::replace(q.begin(), q.end(), '\n', ' ');
++		copyLabel(r->longestDb, sizeof(r->longestDb), q);
++	}
++}
++
++static std::string taskName(const Task* task)
++{
++	const char* mangled = task->getFuncType().name();
++#if defined(__GNUC__)
++	int status = 0;
++	char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
++	std::string name = (status == 0 && demangled) ? demangled : mangled;
++	std::free(demangled);
++#else
++	std::string name = mangled; // MSVC: already readable
++#endif
++	if (name.size() > 160) {
++		name.resize(160);
++	}
++	return name;
++}
++
++static void logSlowTask(const Task* task, const Record& r, int64_t us)
++{
++	std::ostringstream ss;
++	ss << "[slow task] " << (us / 1000) << " ms";
++	if (r.luaCalls > 0) {
++		ss << " | lua " << (r.luaUs / 1000) << " ms in " << r.luaCalls << " call(s), longest " << (r.longestLuaUs / 1000)
++		   << " ms " << r.longestLua;
++	}
++	if (r.gcFreedBytes >= 1024) {
++		ss << " | lua gc freed " << (r.gcFreedBytes / 1024) << " KB";
++	}
++	if (r.dbQueries > 0) {
++		ss << " | db " << (r.dbUs / 1000) << " ms in " << r.dbQueries << " quer" << (r.dbQueries == 1 ? "y" : "ies")
++		   << " (waiting for the connection " << (r.dbLockUs / 1000) << " ms), longest " << (r.longestDbUs / 1000)
++		   << " ms: " << r.longestDb;
++	}
++	ss << " | task " << taskName(task);
++	std::cout << ss.str() << std::endl;
++}
++
++} // namespace TaskTiming
+ 
+ Task* createTask(TaskFunc&& f)
+ {
+@@ -38,7 +140,21 @@ void Dispatcher::threadMain()
+ 			if (!task->hasExpired()) {
+ 				++dispatcherCycle;
+ 				// execute it
+-				(*task)();
++				const int64_t slowMs = g_config.getNumber(ConfigManager::SLOW_TASK_LOG_MS);
++				if (slowMs <= 0) {
++					(*task)();
++				} else {
++					TaskTiming::Record record;
++					TaskTiming::current = &record;
++					const auto start = std::chrono::steady_clock::now();
++					(*task)();
++					const int64_t us = std::chrono::duration_cast<std::chrono::microseconds>(
++						std::chrono::steady_clock::now() - start).count();
++					TaskTiming::current = nullptr;
++					if (us >= slowMs * 1000) {
++						TaskTiming::logSlowTask(task, record, us);
++					}
++				}
+ 			}
+ 			delete task;
+ 		}
+diff --git a/src/tasks.h b/src/tasks.h
+index bd7b91c..c4eae95 100644
+--- a/src/tasks.h
++++ b/src/tasks.h
+@@ -25,6 +25,11 @@ class Task
+ 			func();
+ 		}
+ 
++		// Chaos (patch 0027): the type of the wrapped function, named in the slow task log
++		const std::type_info& getFuncType() const {
++			return func.target_type();
++		}
++
+ 		void setDontExpire() {
+ 			expiration = SYSTEM_TIME_ZERO;
+ 		}
+@@ -71,4 +76,29 @@ class Dispatcher : public ThreadHolder<Dispatcher> {
+ 
+ extern Dispatcher g_dispatcher;
+ 
++// Chaos (patch 0027): slow task log (config slowTaskLogMs, 0 = off). The dispatcher times every task; while a task
++// runs, the Lua calls and the database queries it makes are timed too, so a task over the limit is logged with what
++// took the time. server/README.md "Slow task log".
++namespace TaskTiming {
++	struct Record {
++		int64_t luaUs = 0;          // outermost Lua calls, summed
++		uint32_t luaCalls = 0;
++		int64_t longestLuaUs = 0;
++		char longestLua[96] = {0};  // source:line of the longest outermost Lua call
++		int64_t gcFreedBytes = 0;   // the most the Lua heap shrank during one call: the collector swept there
++		int64_t dbUs = 0;
++		int64_t dbLockUs = 0;       // waiting for the connection (the async query thread holds it)
++		uint32_t dbQueries = 0;
++		int64_t longestDbUs = 0;
++		char longestDb[96] = {0};
++		int luaDepth = 0;
++	};
++
++	// non-null only on the dispatcher thread while a task runs with the log on
++	extern thread_local Record* current;
++
++	void luaCallDone(const char* source, int line, int64_t us, int64_t heapBefore, int64_t heapAfter);
++	void dbQueryDone(const std::string& query, int64_t us, int64_t lockUs);
++}
++
+ #endif

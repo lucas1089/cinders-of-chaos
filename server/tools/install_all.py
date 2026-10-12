@@ -107,6 +107,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                in small batches over several ticks, only the changed houses) and keeps the game state (a closed server
                stays closed); the warnings stay; the logout writes the outfit columns and the skill history row only
                when they changed (README "Autosave in steps"; after commands, which also edits login.lua)
+  stalls       tools/patch_base_stalls.py        the base expedition scripts announce a new NPC or boss to the players on its
+               island from the list of players online instead of a scan of every tile of the island (627,000 tiles,
+               0.6-0.9 s of frozen game loop at each spawn time; same players, sounds, marks and broadcasts); the base
+               upgrade-slot check (every 100 ms per player) keeps the slots it parsed per item description (README "Game
+               loop stalls")
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -136,7 +141,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -513,6 +518,10 @@ def step_commands(server, data, ctx):
 
 def step_autosave(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_save.py'), data], 'patch_base_save.py'))
+
+
+def step_stalls(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_stalls.py'), data], 'patch_base_stalls.py'))
 
 
 def step_autoloot(server, data, ctx):

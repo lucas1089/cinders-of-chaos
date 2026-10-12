@@ -109,6 +109,29 @@ function addEvent(fn, ms, ...)
 	timers[#timers + 1] = {fn = fn, ms = ms, args = {...}}
 end
 
+-- the periodic equipment check: the startup timer and the 11 after it (one group of the players online each, every group
+-- once in 3 s). Returns the number of groups run and the time they span.
+local function runCheckCycle()
+	timers = {}
+	events.ChaosItemModsStartup.onStartup()
+	local steps, elapsed = 0, 0
+	while steps < 12 do
+		local t
+		for i, timer in ipairs(timers) do
+			if timer.ms == 250 then
+				t = table.remove(timers, i)
+				break
+			end
+		end
+		if not t then
+			break
+		end
+		steps, elapsed = steps + 1, elapsed + t.ms
+		t.fn((table.unpack or unpack)(t.args))
+	end
+	return steps, elapsed
+end
+
 local hits = {} -- doTargetCombatHealth calls
 function doTargetCombatHealth(cid, target, ctype, min, max, effect)
 	hits[#hits + 1] = {from = cid, to = target, type = ctype, min = min}
@@ -405,13 +428,9 @@ events.ChaosItemModsAdvance.onAdvance(player, SKILL_LEVEL, 10, 11)
 eq(player.speed, 30, "6% of 500")
 -- an item that leaves its slot without a move event is caught by the periodic check
 player.slots[CONST_SLOT_FEET] = nil
-events.ChaosItemModsStartup.onStartup()
-for _, timer in ipairs(timers) do
-	if timer.ms == 3000 then
-		timer.fn()
-		break
-	end
-end
+local steps, elapsed = runCheckCycle()
+eq(steps, 12, "the check runs in 12 groups")
+eq(elapsed, 3000, "every group once in 3 s")
 eq(player.speed, 0, "periodic check removed it")
 
 -- experience
@@ -633,15 +652,23 @@ local plate = newItem(2466)
 M.set(plate, "regen", 10)
 equip(plate, CONST_SLOT_ARMOR)
 player.health = 100
-timers = {}
-events.ChaosItemModsStartup.onStartup()
-for _, timer in ipairs(timers) do
-	if timer.ms == 3000 then
-		timer.fn()
-		break
+runCheckCycle()
+eq(player.health, 130, "+10 per second, every 3 s (one check of this player per cycle)")
+-- each player is in exactly one group: player id modulo 12
+do
+	local seen = {}
+	for slice = 0, 11 do
+		seen[slice] = 0
 	end
+	for id = 0x10000001, 0x10000030 do
+		seen[id % 12] = seen[id % 12] + 1
+	end
+	local even = true
+	for slice = 0, 11 do
+		even = even and seen[slice] == 4
+	end
+	eq(even, true, "48 consecutive player ids: 4 in each group")
 end
-eq(player.health, 130, "+10 per second, every 3 s")
 eq(M.regenAmount(10, 3000), 30)
 unequip(CONST_SLOT_ARMOR)
 -- equipped items for the spell side (cooldown and mana cost reduction)

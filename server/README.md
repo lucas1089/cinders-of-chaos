@@ -107,6 +107,9 @@ server/
   src-patches/0026-incremental-save.patch   engine: Game.saveIncremental (the autosave in small steps, also SIGUSR1),
                                       saves write only the houses that changed (see "Autosave in steps";
                                       tools/patch_base_save.py, tools/chaossave_test.cpp)
+  src-patches/0027-game-loop-stalls.patch   engine: Game.setSpawnIntervalZones (the respawn zones through a spawn
+                                      index, src/chaoszones.h) and the slow task log, config slowTaskLogMs, off by default
+                                      (see "Game loop stalls"; tools/patch_base_stalls.py, tools/chaoszones_test.cpp)
   src-patches/0028-kite-walk.patch   engine: a walk the player asks for (a map or minimap click, a key) wins over the
                                       chase of the attacked creature and its steps neither cancel nor delay the next attack;
                                       the chase resumes 400 ms after the walk; config: the client option, storage 7101820
@@ -316,6 +319,10 @@ server/
    `autosave`, after `commands`) switches the base hourly autosave to `Game.saveIncremental` and keeps the game state;
    the logout writes the outfit columns and the skill history row only on a change. Needs engine patch 0026 for the
    steps (without it the stock full save runs). See "Autosave in steps".
+7b. Base scripts that stalled the game loop: `python3 -I server/tools/patch_base_stalls.py <server>/data [--dry-run]`
+   (idempotent; `install_all.py` step `stalls`, after `autosave`): the expedition announcements look at the players
+   online instead of every tile of an island, the upgrade-slot check keeps its parse per item description. See "Game
+   loop stalls".
 8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
@@ -3257,6 +3264,122 @@ test). On a live test server: a change on a house tile, a container's contents o
 each saved by the next pass (1 or 2 changed houses), survived a restart, and the first save after the restart wrote 0
 houses; reverting them was saved the same way.
 
+## Game loop stalls (`src-patches/0027-game-loop-stalls.patch`, `tools/patch_base_stalls.py`, `item_mods.lua`, `respawn.lua`)
+
+The autosave work measured, outside saves, game loop stalls of 250-650 ms every 20-25 s (once about 0.9 s) with 200 bots
+on the full map. Found and fixed here.
+
+**How it was found.** The test setup of "Autosave in steps": the full base map with every Chaos system, a private MariaDB,
+200 bots of `tools/loadtest.py` (walking every second, talking every 20 s), here spread over ten town temples with a
+seeded inventory (7 worn rarity items, a backpack with two bags and 36 more rarity items). Engine patch 0027 adds the
+slow task log (below), which names the Lua script and line, the database queries and the collector's sweep of every
+task over a limit. Two TEST ONLY scripts that are not in the repo: a 50 ms timer that records its own lag (the tick
+jitter) and a per-script count of Lua heap growth (an engine build with a temporary allocation counter). `perf` showed
+no C++ hotspot behind the stalls (pathfinding, decay, spawns and creature think stayed under 20 ms a task); the time
+was in Lua.
+
+**Causes, with the evidence.**
+1. *The equipment check of `item_mods.lua`* (every 3 s, every player online in one task): 50-120 ms at 200 online, and
+   160-270 ms whenever the Lua collector finished a cycle inside it (`[slow task] 265 ms | lua 265 ms ...
+   item_mods.lua:203 | lua gc freed 59981 KB`). 94-97 of the 96-126 tasks over 50 ms in each 5 minute run were this one.
+   It was also the largest source of Lua garbage: 265 MB a minute, half of all (540 MB), mostly a closure made per call
+   by `pcall(function() ... end)` for every catalogue modifier of every worn item (`data/lib/chaos_item_mods.lua`
+   `custom`). The heap went 60 -> 120 MB and back every 20-40 s; the end of each cycle swept 20-60 MB inside one task,
+   which made the stalls of 250-650 ms every 20-25 s.
+2. *The expedition announcements of the base server* (`data/scripts/customs/expeditions_system/`, 24 scripts, about 11
+   spawn times a day each): every tile of an island box (627,000 tiles) was looked at for players, 0.6-0.9 s each time
+   (`spawn_npc_aurostor.lua:39` 884 ms, `spawn_npc_abxal.lua:38` 839 ms, `spawn_npc_myrianus.lua:38` 608-665 ms). This
+   was the 0.9 s stall.
+3. *The dynamic respawn* (`respawn.lua`, every 20 s): one pass over all 50,522 map spawns per busy zone, 6-10 ms a pass
+   (25-60 ms a tick at a few zones, 250 ms and more with dozens of hunting groups).
+4. *The upgrade-slot check of the base server* (`customs/upgrade/upgrade_slot_item.lua`, every 100 ms per player): no
+   stall by itself (0.1 ms a call) but 11 s of every minute of game loop at 200 online and 170 MB a minute of garbage
+   (a pattern iterator and tables per worn item, ten times a second).
+
+Not a cause (looked at): synchronous database queries outside logins (none over 20 ms in the steady state), JSON
+payloads, the leaderboards, the bounty board, community goals, world events, the anti-bot, the market and orb exchange
+sweeps, the season, invasions and the base raids (each under 20 ms a run). A login runs 85-110 queries on the
+game loop (30-120 ms a login); see "Left as it is".
+
+**Fixes.** Same behaviour in each case.
+1. `item_mods.lua`: the check runs in 12 groups of players (player id modulo 12), one group every 250 ms, so every player
+   is still checked every 3 s with the same regeneration. `chaos_item_mods.lua`, `chaos_gems.lua`, `chaos_veiled.lua`
+   and `chaos_item_sets.lua` call `pcall` on named functions instead of a new closure per call: the check makes 85% less
+   garbage (40 MB a minute instead of 265) in half the time.
+2. `tools/patch_base_stalls.py` (install step `stalls`): each expedition scan loops over the positions of the players
+   online inside the box (the same x-then-y order) instead of every tile; the body is untouched, and a tile without a
+   player never had a player as its top creature, so the same players get the same sound, marks and broadcasts.
+3. Engine patch 0027 `Game.setSpawnIntervalZones(globalPercent, zones)`: the respawn tick's zones in one call, through an
+   index of the spawns by 16 x 16 cell (`src/chaoszones.h`); only the spawns of the new and the last zones are touched.
+   `respawn.lua` uses it when the engine has it, else the old calls.
+4. `tools/patch_base_stalls.py` again: the upgrade-slot check keeps the slots it parsed per item description text (the
+   same text gives the same slots; the description is still read every time): 56 MB of garbage a minute instead of 170,
+   8 s of game loop a minute instead of 11.
+5. The Lua collector's settings are not changed: with LuaJIT the pause and step multiplier only move the same sweep work
+   between tasks. Less garbage (1, 4) is what shortened the sweeps: all Lua together made about 540 MB a minute before
+   and about 215 MB after (200 online, no rain).
+
+**Measured** (the setup above, 200 bots, 3 runs each, before and after taken in turns; 5 minutes at 200 online per
+run; the box ran other test servers and builds at the same time, so single outliers can be the machine). A stall is a
+game loop task of 250 ms or more. Tick jitter: the lag of a 50 ms timer over the engine's 50 ms floor.
+
+| | before | after |
+|---|---|---|
+| stalls of 250 ms and more | 2.1 / 3.0 / 3.2 a minute (every 19-29 s), 2 of 0.8-0.9 s | 0 / 0.2 / 0 a minute (the one: a 272 ms task with 0 ms of Lua, the machine) |
+| tasks of 100 ms and more | 6.4 / 7.8 / 13.1 a minute | 0 / 0.6 / 0 a minute |
+| longest task | 314 / 884 / 420 ms | 86 / 273 / 77 ms |
+| tasks over 20 ms: p90, p99 | 232, 312 / 247, 839 / 176, 385 ms | 73, 85 / 67, 272 / 63, 77 ms |
+| all tasks: p99.99 | 56 / 61 / 76 ms | 12 / 19 / 12 ms |
+| 50 ms timer lag: standard deviation, worst | 26 / 38 / 36 ms, 375 / 907 / 575 ms | 4 / 9 / 4 ms, 130 / 290 / 124 ms |
+| game loop CPU (loadtest.py, % of one core) | 44 / 44 / 58 | 38 / 55 / 43 |
+
+Runs 3 (before) and 2 (after) had the base weather's rain on (`customs/globalevents/rain.lua`: an effect per player every
+100 ms, 10-20% more game loop), hence their higher CPU. At 400 online (estimate, not measured): before, the equipment
+check alone would take 110-240 ms every 3 s and the collector's cycles end about twice as often, so stalls of 0.5-1 s
+every 10-20 s; after, a group of the check takes 5-10 ms and the sweeps grow with the garbage, so the longest tasks
+should stay around 100-150 ms with no stall over 250 ms from these causes.
+
+**Left as it is.**
+- Logins run 85-110 synchronous queries on the game loop (30-120 ms a login: the Chaos systems' login reads). In the 100 s
+  login wave of a load test the database stalled for seconds at a time (a 13.6 s task, 5.6 s of it waiting for the
+  connection the async query thread held, on this test machine's disk); with 1 bot a second it stayed under 120 ms. The
+  account check moved to the login workers' own connection ("Login rush on a busy machine", engine patch 0029); moving
+  the Chaos systems' login reads off the game loop is a larger change of many systems.
+- A logout saves the character in one transaction on the game loop; its COMMIT waits for the database's log flush. When
+  100-200 bots left at once on this test machine (its disk shared with other test servers), single logouts took
+  0.3-1.7 s with 0 ms of Lua and a few ms of timed queries; `perf` showed the game loop thread blocked in the database
+  client's poll inside the save, so the COMMIT, which the slow task log did not count then (it does since this patch).
+  A calm repeat with 100 bots: every logout under 30 ms, the longest part a 12 ms COMMIT. Not a steady-state stall.
+- The upgrade-slot check still reads every worn item's description and removes up to 9 conditions per slot ten times a
+  second per player (about 13% of the game loop at 200 online). A longer interval would change when the bonuses apply;
+  owner decision.
+- The base weather's rain (above) when it rains (6 s of game loop and 57 MB of garbage a minute at 200 online, ticks
+  of 10-20 ms, a few of 70-180 ms); the base rarity check (`customs/rarity/base_rarity.lua`, 2 s and 42 MB a minute).
+  Both are base scripts that work as designed; no stall over 250 ms from either in these runs.
+
+Tests: `tests/item_mods_test.lua` (the 12 groups, every player once in 3 s, regeneration), `tests/respawn_test.lua`
+(`R.zoneList`, the glue with `Game.setSpawnIntervalZones`), `tests/base_stalls_patch_test.lua` (the tool on the stock
+code; the stock and patched scripts give the same players, marks, broadcasts and conditions against a mocked engine;
+idempotence, dry run), `tools/chaoszones_test.cpp` in CI (the index against the old way over 300 random zone lists).
+
+### Slow task log (`slowTaskLogMs`, engine patch 0027)
+
+Off by default. `slowTaskLogMs = 100` in `config.lua` logs every game loop task (the dispatcher's tasks, scheduler events
+included) that took 100 ms or more, one console line:
+
+    [slow task] 265 ms | lua 265 ms in 1 call(s), longest 265 ms data/scripts/chaos/item_mods.lua:203 | lua gc freed
+      59981 KB | db 3 ms in 10 queries (waiting for the connection 0 ms), longest 1 ms: INSERT ... | task std::_Bind<...>
+
+- *lua*: the Lua calls the task made (globalevents, creaturescripts, revscripts, `addEvent` callbacks, events), their
+  time, and the longest by its file and the line where its function starts.
+- *lua gc freed*: the Lua heap shrank by that much during one call: the collector swept there.
+- *db*: the queries the game loop ran itself, their time, the part spent waiting for the connection (the async query
+  thread uses the same one) and the start of the longest.
+- *task*: the C++ type of the task (a `std::_Bind` names the function's signature; with GCC and Clang it is demangled).
+
+Off, it costs one config read per task. On, about 1 us per Lua call (well under 1% of the game loop at 200 online). Use
+it on a test server, or on the live one for an hour when players report lag. The log does not change what runs.
+
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 
 The base map came with the towns of another world. `patch_base_towns.py` (step `towns` of `install_all.py`) gives them
@@ -4617,7 +4740,8 @@ Salvage yields `floor(base x (1 + 0.5 x item level / 150))` shards plus one per 
 
 **Storage and caps on the character** (`item_mods.lua`). Like `base_rarity.lua`, the totals of the equipped items (in a slot
 they fit, `M.equippedItems`) are worked out again when an item is put on or taken off (EventCallback onItemMoved, after
-base_rarity), at login, on level up (speed) and by a check every 3 s. They live in memory (`ChaosItemModsCache`), capped per
+base_rarity), at login, on level up (speed) and by a check every 3 s (each player every 3 s; the players are checked in
+12 groups by id, one group every 250 ms, see "Game loop stalls"). They live in memory (`ChaosItemModsCache`), capped per
 modifier; nothing is written to storages. `ChaosItemMods.playerBonus(player, key)` is the API (loot.lua reads item and rarity
 find with it).
 
@@ -8165,7 +8289,10 @@ Every 20 s `respawn.lua` counts the hunters: online, not staff, not in a protect
 one IP count once. Where 2 or more hunt within 10 sqm on one floor, the spawns in that 16 x 16 sqm cell (plus 8 sqm
 around it) respawn faster: 2 hunters 85%, 3 70%, 4 55%, 5 or more 50%. When they leave, the cell goes back to 100%.
 The tick makes no engine call while nothing changes. Without patch 0022 it logs one line and does nothing. Every
-number is in `respawn_config.lua`; `globalPercent` (100) changes the whole map, for an event.
+number is in `respawn_config.lua`; `globalPercent` (100) changes the whole map, for an event. With engine patch 0027
+the tick hands its zones to `Game.setSpawnIntervalZones` in one call, which touches only the spawns of the old and new
+zones through an index; before, each zone was one pass over all ~50,000 map spawns (6-10 ms each, see "Game loop
+stalls").
 
 ### Checked
 

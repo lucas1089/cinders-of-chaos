@@ -49,8 +49,14 @@ local function num(v)
 	return tonumber(v)
 end
 
+-- pcall on named functions, not on a closure made per call: these run for every modifier of every worn item of
+-- every player in the equipment check, and the closures were most of its garbage (server/README.md "Game loop stalls")
+local function getCustom(item, key)
+	return item:getCustomAttribute(key)
+end
+
 local function custom(item, key)
-	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	local ok, v = pcall(getCustom, item, key)
 	if ok then
 		return v
 	end

@@ -48,7 +48,12 @@ local M = ChaosItemMods
 ChaosItemModsCache = ChaosItemModsCache or {} -- player id -> totals {key -> value}
 local cache = ChaosItemModsCache
 local applied = {} -- player id -> {speed = n, sig = "..."}
-local CHECK_INTERVAL = 3000 -- ms between two checks of the equipment of everyone online
+local CHECK_INTERVAL = 3000 -- ms between two checks of the same player's equipment
+-- the players online are checked in this many groups (player id modulo CHECK_SLICES), one group every
+-- CHECK_INTERVAL / CHECK_SLICES ms, so every player is still checked every CHECK_INTERVAL ms. A check of everyone in one
+-- tick held the game loop for 50-120 ms at 200 online (250 ms and more when a Lua GC cycle ended in it; server/README.md
+-- "Game loop stalls")
+local CHECK_SLICES = 12
 local guard = false -- reflect / thorns hits must not trigger more reflect / thorns
 
 -- ---------------------------------------------------------------- equipped items
@@ -200,19 +205,21 @@ local function regenerate(player)
 	end
 end
 
-local function checkAll()
+-- one group of the players online (CHECK_SLICES above); the next group CHECK_INTERVAL / CHECK_SLICES ms later
+local function checkSlice(slice)
 	for _, player in ipairs(Game.getPlayers()) do
-		if applied[player:getId()] then
+		local id = player:getId()
+		if id % CHECK_SLICES == slice and applied[id] then
 			M.refresh(player)
 			regenerate(player)
 		end
 	end
-	addEvent(checkAll, CHECK_INTERVAL)
+	addEvent(checkSlice, CHECK_INTERVAL / CHECK_SLICES, (slice + 1) % CHECK_SLICES)
 end
 
 local startup = GlobalEvent("ChaosItemModsStartup")
 function startup.onStartup()
-	addEvent(checkAll, CHECK_INTERVAL)
+	addEvent(checkSlice, CHECK_INTERVAL / CHECK_SLICES, 0)
 	return true
 end
 startup:register()

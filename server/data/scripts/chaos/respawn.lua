@@ -1,7 +1,8 @@
 -- Dynamic respawn (server/README.md "Spawn density and respawn"): where several players hunt close together the map
 -- spawns around them respawn faster. Every tickSeconds the hunters online are counted (respawn_core.lua) and the
 -- spawn intervals are set with Game.setSpawnIntervalPercent, which engine patch src-patches/0022-dynamic-respawn.patch
--- adds; without that patch this file only logs once that the function is missing. Numbers: respawn_config.lua.
+-- adds, or in one call with Game.setSpawnIntervalZones (src-patches/0027-game-loop-stalls.patch); without patch 0022
+-- this file only logs once that the function is missing. Numbers: respawn_config.lua.
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -45,6 +46,15 @@ function R.tick()
 	end
 	local zones = cfg.enabled and R.zones(R.collect(cfg), cfg) or {}
 	local plan = R.plan(R.state, zones, cfg.enabled and cfg or {globalPercent = 100})
+	-- engine patch 0027: the whole plan in one call through the engine's spawn index (the calls below make one pass
+	-- over every map spawn per zone)
+	if Game.setSpawnIntervalZones then
+		local global, list = R.zoneList(plan)
+		if global then
+			Game.setSpawnIntervalZones(global, list)
+		end
+		return #plan
+	end
 	for _, call in ipairs(plan) do
 		if call.from then
 			Game.setSpawnIntervalPercent(call.percent, Position(call.from.x, call.from.y, call.from.z),

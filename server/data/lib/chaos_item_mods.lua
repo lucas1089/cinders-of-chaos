@@ -264,18 +264,32 @@ local function hasBit(value, b)
 	return floor((value or 0) / b) % 2 == 1
 end
 
+-- pcall on named functions, not on a closure made per call: these run for every modifier of every worn item of
+-- every player in the equipment check, and the closures were most of its garbage (server/README.md "Game loop stalls")
+local function itemTypeOf(item)
+	return ItemType(item:getId())
+end
+
+local function callMethod(obj, method)
+	return obj[method](obj)
+end
+
+local function getCustom(item, key)
+	return item:getCustomAttribute(key)
+end
+
 local function typeOf(item)
-	local ok, it = pcall(function() return ItemType(item:getId()) end)
+	local ok, it = pcall(itemTypeOf, item)
 	return ok and it or nil
 end
 
 local function typeNumber(it, method)
-	local ok, v = pcall(function() return it[method](it) end)
+	local ok, v = pcall(callMethod, it, method)
 	return ok and tonumber(v) or 0
 end
 
 local function custom(item, key)
-	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	local ok, v = pcall(getCustom, item, key)
 	return ok and num(v) or nil
 end
 
