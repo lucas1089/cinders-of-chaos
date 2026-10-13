@@ -1,0 +1,15 @@
+# windows-assets (private build inputs, not code)
+
+Inputs of the `Windows package` workflow (`.github/workflows/windows-package.yml` on `main`). Nothing here is
+built or edited by hand; the branch has no history in common with `main`.
+
+| File | What it is |
+|---|---|
+| `server/base-server.tar.xz` | the base server download (Hellgrave_Exodus_Server_v3.7.5: engine source, Windows exe and DLLs, data, map, SQL_Server), unchanged, repacked from the uploaded `.rar` |
+| `client/base-client.tar.xz.partNN` | the base client (AstraClient-main), unchanged; the parts are one file cut at 95 MB (GitHub refuses files over 100 MB): `cat base-client.tar.xz.part* > base-client.tar.xz` |
+| `things/things-1098.tar.xz` | the merged Chaos `Tibia.dat` + `Tibia.spr` (10.98) |
+| `mapeditor/map-editor.tar.xz` | the map editor (Remere's Map Editor build for 10.98, GPL; sources: github.com/hjnilsson/rme), unchanged; the package swaps in our items.otb/items.xml and adds our monsters to its creature list |
+| `SHA256SUMS.parts` | checksums of the files above |
+
+To replace one: build the new archive the same way, update `SHA256SUMS.parts`, commit to this branch.
+To remove everything: delete the branch (`git push origin --delete windows-assets`).
