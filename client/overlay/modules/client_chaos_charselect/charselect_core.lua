@@ -205,6 +205,10 @@ function C.anchorOf(anchors, id, thing)
 end
 
 C.HOVER = 5   -- sprite pixels a flying character hovers over the top face
+-- sprite pixels every character is moved right of the dais centre (negative: left), a fine-tuning knob. -2: the body
+-- centroid alone read a little right of the dais (owner, 2026-10-13: "move the characters left"; compared with the
+-- full figure's box and a blend, which moved most looks right: client/MANIFEST.md "Where a character stands")
+C.NUDGE_X = -2
 
 -- The whole picture around the anchor point (the point that goes on the dais centre): the body, its wings (drawn at
 -- the same place) and its aura (the client moves a big aura by (w - 1) * 16, (h - 1) * 16: GameBigAurasCenter).
@@ -221,7 +225,7 @@ function C.figure(anchors, outfit, things, wingLift)
   local winged = (tonumber(outfit.wings) or 0) > 0
   local lift = winged and (tonumber(wingLift) or 0) or 0
   local hover = (lift > 0) and lift or ((winged or body.float) and C.HOVER or 0)
-  local f = { fx = body.fx - lift, fy = body.fy - lift + hover, top = body.top - lift, left = body.left - lift,
+  local f = { fx = body.fx - lift - (tonumber(C.NUDGE_X) or 0), fy = body.fy - lift + hover, top = body.top - lift, left = body.left - lift,
     right = body.right - lift, hover = hover, reach = body.reach }
   for _, kind in ipairs({ 'wings', 'aura' }) do
     local id = tonumber(outfit[kind]) or 0

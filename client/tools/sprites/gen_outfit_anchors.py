@@ -13,7 +13,7 @@ relative to the top left of the creature's own tile, displacement applied (the c
 32x32 cell on its tile, the other cells up and left, all moved up and left by the displacement).
 
   [id] = {cx, ground, top, left, right, w, h, float, reach}
-    cx       the body's visual centre: the alpha-weighted centroid of its solid pixels, what it holds (a blade, a
+    cx       the horizontal anchor (--centre; default body): the body's visual centre: the alpha-weighted centroid of its solid pixels, what it holds (a blade, a
              staff, a torch, a chain up to four pixels wide) left out by an opening of the mask, and of what is left
              only the biggest connected part (the leaves at a staff's end fall away)
     ground   the row the body stands on: where the lowest GROUND_MASS of its solid mass begins (the feet and shins),
@@ -50,6 +50,11 @@ TRIM = 0.03         # reach: columns trimmed on each side
 # Looks drawn floating, chosen by eye on the pair (a robe or a wraith tail, no pair of feet): the Lich's chained
 # black robe, the robed wizard, the Bone Lord wraiths and the Necromancer ascension's robes. Winged characters float
 # by the engine's own lift (GameWingOffset) and need no entry.
+# The horizontal anchor. Compared live on the ten test characters and the class looks (owner, 2026-10-13: "move the
+# characters left"): the full figure's box and the blend move most looks right (weapons and staffs held out to the
+# left and right), the body centroid with CharSelectCore.NUDGE_X = -2 read best. --centre writes the others.
+CENTRES = ('body', 'bbox', 'blend')
+CENTRE = 'body'
 FLOATING = {2059, 2077, 2167, 2168, 2183, 2184}
 
 
@@ -120,7 +125,7 @@ def largest_part(mask):
     return out
 
 
-def measure(alpha, ox=0, oy=0, floating=False):
+def measure(alpha, ox=0, oy=0, floating=False, centre='body'):
     """(cx, ground, top, left, right, float, reach) of one frame's alpha (canvas pixel + (ox, oy) = tile pixel), or
     None when nothing is visible"""
     mask = alpha >= ALPHA
@@ -133,6 +138,10 @@ def measure(alpha, ox=0, oy=0, floating=False):
     cy, cxs = np.nonzero(body)
     w = alpha[cy, cxs].astype(np.float64)
     cx = float((cxs + 0.5) @ w / w.sum())
+    # the horizontal anchor (CENTRES): the body's centroid; the box of the whole figure (body, weapons, shields,
+    # addons; a body thing has no wings or aura); or halfway between the two
+    box = (xs.min() + xs.max() + 1) / 2
+    body_cx, cx = cx, {'body': cx, 'bbox': box, 'blend': (cx + box) / 2}[centre]
     # the ground: legs are thin, so only lines one or two pixels wide are left out (r = 1), and only the columns the
     # body spans count (a staff held out beside it does not)
     core = solid(mask, 1)
@@ -143,19 +152,19 @@ def measure(alpha, ox=0, oy=0, floating=False):
     from_bottom = np.cumsum(rows[::-1]) / rows.sum()
     ground = len(rows) - int(np.searchsorted(from_bottom, GROUND_MASS))
     lo, hi = np.quantile(cxs, TRIM), np.quantile(cxs + 1, 1 - TRIM)
-    reach = max(cx - lo, hi - cx)
+    reach = max(body_cx - lo, hi - body_cx)   # the body's own spread, whatever the anchor
     return (int(np.floor(cx + ox + 0.5)), ground + oy, int(ys.min()) + oy, int(xs.min()) + ox,
             int(xs.max()) + 1 + ox, 1 if floating else 0, int(np.ceil(reach)))
 
 
-def anchor_of(t, spr, lid=0):
+def anchor_of(t, spr, lid=0, centre='body'):
     """measure() of a creature thing's first south frame, in its tile pixels"""
     W, H = t.w * 32, t.h * 32
     dx, dy = t.flags.get('displacement', (0, 0)) if isinstance(t.flags.get('displacement'), tuple) else (0, 0)
-    return measure(south_alpha(t, spr), -(W - 32) - dx, -(H - 32) - dy, lid in FLOATING)
+    return measure(south_alpha(t, spr), -(W - 32) - dx, -(H - 32) - dy, lid in FLOATING, centre)
 
 
-def build(dat_path, spr_path):
+def build(dat_path, spr_path, centre=CENTRE):
     dat = Dat(dat_path)
     spr = Spr(spr_path)
     md5 = hashlib.md5(open(dat_path, 'rb').read()).hexdigest()
@@ -163,7 +172,7 @@ def build(dat_path, spr_path):
     for i, t in enumerate(dat.outfits, 1):
         if not t.sprites:
             continue
-        a = anchor_of(t, spr, i)
+        a = anchor_of(t, spr, i, centre)
         if a is None:
             continue
         rows.append('[%d]={%d,%d,%d,%d,%d,%d,%d,%d,%d}' % ((i,) + a[:5] + (t.w, t.h) + a[5:]))
@@ -186,8 +195,9 @@ def main(argv=None):
     ap.add_argument('spr')
     ap.add_argument('--out', default=OUT)
     ap.add_argument('--check', action='store_true')
+    ap.add_argument('--centre', choices=CENTRES, default=CENTRE, help='the horizontal anchor (default %(default)s)')
     a = ap.parse_args(argv)
-    text, n = build(a.dat, a.spr)
+    text, n = build(a.dat, a.spr, a.centre)
     if a.check:
         have = open(a.out, encoding='utf-8').read() if os.path.exists(a.out) else ''
         if have != text:

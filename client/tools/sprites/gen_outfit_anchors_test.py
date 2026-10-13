@@ -63,6 +63,11 @@ leafy[10:40, 15] = 255
 leafy[4:12, 8:20] = 255
 check(goa.measure(leafy)[0] == cx, 'the leaves at the end of a staff do not move the centre: %s' % (goa.measure(leafy),))
 
+# the other horizontal anchors: the box of the whole figure (the staff included) and halfway to it
+check(goa.measure(staff, centre='bbox')[0] == (2 + 38) // 2, 'bbox centre: the whole figure')
+check(goa.measure(staff, centre='blend')[0] == int((cx + 20) / 2 + 0.5), 'blend: halfway')
+check(goa.measure(staff, centre='body')[1:] == goa.measure(staff, centre='bbox')[1:], 'only the centre changes')
+
 # a cape that is a real part of the body (wide) does count: the centre moves towards it
 heavy = figure()
 heavy[24:50, 38:46] = 255

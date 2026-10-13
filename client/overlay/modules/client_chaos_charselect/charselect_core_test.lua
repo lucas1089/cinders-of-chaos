@@ -157,6 +157,11 @@ if cl then
   check(looks >= 21, 'every class look checked: ' .. looks)
 end
 
+-- the placement maths below without the fine-tuning nudge; the nudge itself is checked after them
+local NUDGE = C.NUDGE_X
+check(type(NUDGE) == 'number' and NUDGE <= 0 and NUDGE >= -4, 'a small leftward nudge by default: ' .. tostring(NUDGE))
+C.NUDGE_X = 0
+
 -- wings and an aura make the picture taller and wider, never move the body's centre; a big aura is moved by
 -- (w - 1) * 16; a winged character flies: without the engine's lift it hovers HOVER pixels over the dais
 local body = C.anchorOf(A, 2161)
@@ -191,6 +196,14 @@ local cape = C.figure(capeA, { type = 1 })
 x, y = C.placeRect(cape, 128, 500, 400)
 check(x + (4 + 32) * 4 == 500 and y + (20 + 32) * 4 == 400 and cape.hover == 0, 'a cape-tip look: its ground on the dais')
 check(C.figure({}, { type = 1 }, function() return { w = 1, h = 1, dx = 8, dy = 8 } end).hover == 0, 'fallback: standing')
+
+-- the nudge: every character moves NUDGE sprite pixels right of the dais centre (negative: left), nothing else moves
+C.NUDGE_X = NUDGE
+local nudged, plain0 = C.figure(A, { type = 2073 }), (function() C.NUDGE_X = 0; local f = C.figure(A, { type = 2073 }); C.NUDGE_X = NUDGE; return f end)()
+check(nudged.fx == plain0.fx - NUDGE and nudged.fy == plain0.fy and nudged.top == plain0.top, 'the nudge moves only x')
+x = C.placeRect(nudged, 128, 500, 400)
+check(x + (plain0.fx + 32) * 4 == 500 + NUDGE * 4, 'the body centre NUDGE px right of the dais centre at 4x')
+C.NUDGE_X = 0
 
 -- the scale: 4x with room, 3x when the wings do not fit at 4x, the feet moved down when not even 3x fits
 local plain = C.figure(A, { type = 2073 })
