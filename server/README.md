@@ -8825,8 +8825,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Thalcyra the Stormbound Seer (Omen) | 2118 (3x3, 4-phase walk) | 2212 | repainted at 4x4, 8-frame walk, 4-frame idle |
 
   The world bosses (looks 842, 1472, 238, 862, 591) were left out: their looks are stock art, not frames of our own,
-  so they were not sent to PixelLab. Outfits 2208-2212 are in things_custom24 (built 2026-10-13, not on windows-assets
-  yet; client/MANIFEST.md "Bigger guardians"); the ids are the ones in `looks.bigGuardians`. Turn on only when a client
+  so they were not sent to PixelLab. Outfits 2208-2212 are in things_custom24 (on windows-assets 407ad9b6
+  since 2026-10-13; client/MANIFEST.md "Bigger guardians"); the ids are the ones in `looks.bigGuardians`. Turn on only when a client
   pair with outfits 2208-2212 is on windows-assets (an older pair draws nothing): set `bigGuardiansOn = true`, flip its check in `tests/rift_test.lua`, and append
   `monster_looks/big_boss_picks.csv` to picks.csv. Rollback: the switch. `tests/rift_test.lua` checks the mapping (every
   key a rift or Omen guardian look, every big look its own and unused by monster files), off and on.
@@ -9709,7 +9709,7 @@ animated effects of the oblique spell effect set instead. Effects only: no damag
   marked strike by element (fire_explosion / frost_nova / lightning_strike / shadow_eruption; the per-tile marks stay
   stock); world boss arrival void_maw, enrage blood_pact, adds teleport_in.
 - Cuts in things_custom24, effects 628-634 (`client/tools/sprites/gen_pack_fx.py`, ids in `data/lib/chaos_pack_fx_ids.lua`
-  written by `import_fx_art.py`, 2026-10-13; built, not pushed; switch off, so they fall back to stock): reflect reflect_bubble (`combat_fx.lua`, was
+  written by `import_fx_art.py`, 2026-10-13; on windows-assets 407ad9b6; switch off, so they fall back to stock): reflect reflect_bubble (`combat_fx.lua`, was
   reflect_aegis), item bleed / ignite / poison / chill procs tick_bleed / tick_burn / tick_poison / tick_chill, rift
   Cinderdeath mark tick_burn, crit wounds tick_bleed, Festering Wounds tick_poison, snare holy heal tick_regen.
   tick_curse is cut but not used yet. Crit and dodge keep crit_burst / dodge_whoosh (the set has no crit art).
@@ -9743,7 +9743,7 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   the boss's element (`ChaosBigFx.hits`). Cones, rings with a safe middle and marks round players get nothing more.
   The stock warning marks and hits stay; the big ones are drawn on top.
 - Not wired yet: big_nova_arcane_7 (in the pair for later).
-- Ids: `data/lib/chaos_big_fx_ids.lua` (effects 635-655 of things_custom24, built 2026-10-13, not pushed), written by
+- Ids: `data/lib/chaos_big_fx_ids.lua` (effects 635-655 of things_custom24, on windows-assets 407ad9b6), written by
   `import_fx_art.py`; with the switch off nothing big is sent and every site sends exactly what it sent before.
 - Flip step, once the pair with them is on the client: set `C.BIG_FX = true` (and flip the check in
   `tests/big_fx_test.lua`), `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. Rollback: false.
