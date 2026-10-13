@@ -246,6 +246,38 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     writes it (https only; `--allow-http` takes 127.0.0.1 for a local test site). Lua only. The chain 0001-0045, 0048,
     0049, 0050 applies to the `windows-assets` base client with no fuzz (`patch --dry-run`, then applied).
 
+29. `0051` (C++ `src/client/creaturehit.h` (new), `thingtype.h/.cpp`, `outfit.h/.cpp`, `creature.cpp`, `mapview.h/.cpp`,
+    `uimap.h/.cpp`, `luafunctions_client.cpp`, `CMakeLists.txt`; Lua / OTUI `game_interface/widgets/uigamemap.lua`,
+    `game_interface/gameinterface.lua`, `game_hotkeys/hotkeys_manager.lua`, `game_actionbar/actionbar.lua`,
+    `client_settings/classes/dataset.lua`, `client_settings/options/interface.otui`): big creature click. A creature
+    drawn over more than its own tile (the 4x4 guardians 2208-2212, world bosses, 2x2 bosses, class looks and mounts
+    wider than a tile, a draw scale above 1 from `0020`) takes a click on any visible pixel; before, only its own
+    bottom-right tile did. Covered: left and right-click attack, the right-click menu, look, the use-with crosshair,
+    Alt-click attack and Shift-right-click follow, the hotkey crosshair and the action bar's smart cast. How:
+    `ThingType::getTexture` keeps a one-bit alpha mask of each creature texture it builds (1/32 of the texture).
+    `Outfit::draw` records the parts it queues (mount, body, addons: the parts the outline of `0038` collects; wings and
+    auras do not count), and `Creature::draw` gives the map view one record per drawn creature: the stock one-tile click
+    box, the parts (rect, texture rect, mask), the draw scale and the floor. `MapView::getCreatureAt` maps the mouse
+    into the map framebuffer like `getPositionOffset` (zoom, walking camera), undoes the draw scale and tests the masks
+    of the last frame's records. Only creatures on the clicked tile's floor or above count (a creature under an upper
+    floor is not taken). The topmost one drawn wins; the own character is left out of that pass and keeps every click
+    that only a big creature's overhang would take. Pure maths in `creaturehit.h`, tested by
+    `tools/creaturehit_test.cpp` (CI step "Big creature click maths"). Lua: `UIMap:getCreatureAt(mousePos)`, nil when
+    the point is on no creature, then the tile's own lookups apply as before. `uigamemap.lua` takes it for look,
+    creature and attack; the tile's use thing stays the tile's own, so a use never goes to the creature. The use-with
+    crosshair and the hotkey crosshair prefer it unless the tile's target is a force-use item. The battle list is
+    unchanged. Hover: a big creature under the mouse gets the soft outline of `0044` (`DrawQueueItemItemOutline`, warm
+    white, 2 px) under its largest part; option `bigCreatureHover` ("Outline big creatures under the mouse", on) in a
+    new panel after "Right-click equips items" in Options > Interface, `UIMap.setBigCreatureHover(bool)`. The chain
+    0001-0045, 0048-0051 applies to the `windows-assets` base client with no fuzz. Built and run in the Linux client
+    (things_custom24 pair) against a local server (base, src-patches 0001-0036, `install_all.py`): on a 2x2 look (35)
+    its top-left tile was attacked, looked at ("You see a rat") and hit with a Hexdart rune through the crosshair; the
+    4x4 guardian (2208) attacked and looked at two tiles up and left of its own; the own character kept clicks under the
+    guardian; a rat under the guardian was taken only where the guardian is transparent; hits matched the sprites at
+    two zoom levels and with the guardian's own tile under the console; the option turned the outline off and on;
+    Smart control's click and Regular control's Alt-click attacked the guardian by its overhang. Not run: a creature
+    on a floor above (no upper floor near the test spot).
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

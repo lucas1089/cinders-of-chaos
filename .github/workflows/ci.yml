@@ -188,6 +188,15 @@ jobs:
           g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
           "$d/chaosguard_test"
 
+      - name: Big creature click maths (C++; header from base patch 0051)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/client\/creaturehit\.h/{p=1} p&&/^--- a\//&&!/creaturehit\.h/{p=0} p' \
+            client/base-patches/0051-big-creature-click.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src/client" client/tools/creaturehit_test.cpp -o "$d/creaturehit_test"
+          "$d/creaturehit_test"
+
       - name: PROXY protocol parser (C++; source from server src-patch 0025)
         run: |
           d=$(mktemp -d)

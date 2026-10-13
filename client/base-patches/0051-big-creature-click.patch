@@ -1,0 +1,804 @@
+# Big creature click (BASE.md 29): a creature drawn over more than its own tile (4x4 guardians, world bosses, 2x2 bosses, class looks and mounts wider than a tile, draw scale above 1) takes a click on any of its visible pixels: left/right-click attack, the right-click menu, look, the use-with crosshair, Alt-click attack and Shift-right-click follow, the hotkey crosshair and the action bar's smart cast. Before, only its own (bottom-right) tile did.
+#   * ThingType::getTexture keeps a one-bit alpha mask of each creature texture it builds (getAlphaMask(phase), 1/32 of the texture's size).
+#   * Outfit::draw records the parts it queues (mount, body, addons; the same parts the outline of 0038 collects; wings and auras do not count) when Creature::draw asks for them; Creature::draw hands MapView one record per drawn creature: its stock one-tile click box, those parts (rect, texture rect, mask), its draw scale (0020) and floor.
+#   * MapView keeps the last frame's records in draw order. MapView::getCreatureAt maps a point of the map widget into the framebuffer (zoom and walking camera as getPositionOffset), undoes the draw scale and tests each part's mask; only creatures on the clicked tile's floor or above it count. The topmost one drawn wins; the own character is skipped in that pass and keeps every click that only a big creature's overhang would take. Pure maths in src/client/creaturehit.h (new, header only; tests client/tools/creaturehit_test.cpp, CI).
+#   * Lua: UIMap:getCreatureAt(mousePos) (nil when the point is on no creature; the tile's own lookups then apply as before). uigamemap.lua takes it for look, creature and attack (the tile's use thing stays the tile's own, so a use never goes to the creature); onUseWith and the hotkey crosshair prefer it unless the tile's target is a force-use item; onTradeWith and the smart cast use it too. The battle list is unchanged.
+#   * Hover: a big creature under the mouse gets the soft outline of 0044 (DrawQueueItemItemOutline, warm white, 2 px) under its largest part. Option "Outline big creatures under the mouse" (bigCreatureHover, on) in a new panel after "Right-click equips items" in Options > Interface; UIMap.setBigCreatureHover(bool) / isBigCreatureHover().
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1869,6 +1869,17 @@ return {
+ 		end,
+ 	},
+ 
++	-- a soft outline on a creature bigger than one tile under the mouse (base patch 0051, UIMap.setBigCreatureHover)
++	bigCreatureHover = {
++		value = true,
++		apply = function(value)
++			if UIMap and UIMap.setBigCreatureHover then
++				UIMap.setBigCreatureHover(value ~= false)
++			end
++			return true
++		end,
++	},
++
+ 	-- keep attacking while moving (overlay module game_kitewalk, server src-patch 0028): a walk by click or key keeps
+ 	-- the attack target and the attacks going and wins over the chase; the module tells the server when this changes
+ 	keepAttackingWhileMoving = {
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -288,6 +288,42 @@ InterfaceWindow < Panel
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('When checked, using a piece of equipment you carry puts it on, and\nusing a worn one takes it off into your backpack. The use is a right-click\nwith Classic Controls, Ctrl + click with Regular Controls and a click\nwith Left Smart-Click. Items with a use of their own (potions, runes,\nfood, tools, keys) and containers work as before.')
+ 
++  FlatPanel
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: bigCreatureHover
++      size: 12 12
++      !text: tr('Outline big creatures under the mouse')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('bigCreatureHover')
++        self:setChecked(value ~= false)
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 5
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('A creature bigger than one square can be clicked, attacked, looked at\nand targeted on any part of it you can see. When checked, such a\ncreature gets a soft outline while the mouse is over it.')
++
+   FlatPanel
+     size: 505 22
+     anchors.top: prev.bottom
+--- a/modules/game_actionbar/actionbar.lua
++++ b/modules/game_actionbar/actionbar.lua
+@@ -1776,7 +1776,14 @@ function onExecuteAction(button, isPress)
+ 
+ 		local gameMapPanel = m_interface.gameMapPanel
+ 		gameMapPanel:scheduleBlockMouseRelease(300)
+-		g_game.useWith(button.item:getItem(), tile:getTopUseThing(), button.item:getItemSubType() or -1)
++		-- Chaos (base patch 0051): a rune goes to the creature by what is drawn of it (a big one on any visible pixel)
++		local target = tile:getTopUseThing()
++		local drawnCreature = clickedWidget.getCreatureAt and clickedWidget:getCreatureAt(pos)
++		local useItem = button.item:getItem()
++		if drawnCreature and useItem and useItem:isMultiUse() and not (target and target:isItem() and target:isForceUse()) then
++			target = drawnCreature
++		end
++		g_game.useWith(useItem, target, button.item:getItemSubType() or -1)
+ 	end
+ 
+ 	if button.item and not g_ui.getCustomInputWidget() then
+--- a/modules/game_hotkeys/hotkeys_manager.lua
++++ b/modules/game_hotkeys/hotkeys_manager.lua
+@@ -1060,7 +1060,14 @@ function executeHotkeyItem(action, itemId, subType)
+ 
+     local virtualItem = Item.create(itemId)
+     if virtualItem:isFluidContainer() or virtualItem:isMultiUse() then
+-      return tile:getTopMultiUseThing()
++      -- Chaos (base patch 0051): a creature by what is drawn of it (a big one on any visible pixel), unless the
++      -- tile's own target is an item that must be used
++      local target = tile:getTopMultiUseThing()
++      local drawnCreature = mapPanel.getCreatureAt and mapPanel:getCreatureAt(mousePosition)
++      if drawnCreature and not (target and target:isItem() and target:isForceUse()) then
++        return drawnCreature
++      end
++      return target
+     end
+     return tile:getTopUseThing()
+   end
+--- a/modules/game_interface/gameinterface.lua
++++ b/modules/game_interface/gameinterface.lua
+@@ -1341,7 +1341,14 @@ function onUseWith(clickedWidget, mousePosition)
+           -- special version for mwall
+           g_game.useWith(selectedThing, tile:getTopUseThing(), selectedSubtype)
+         else
+-          g_game.useWith(selectedThing, tile:getTopMultiUseThingEx(clickedWidget:getPositionOffset(mousePosition)), selectedSubtype)
++          -- Chaos (base patch 0051): a creature by what is drawn of it (a big one on any visible pixel), unless the
++          -- tile's own target is an item that must be used (a lever, a door)
++          local target = tile:getTopMultiUseThingEx(clickedWidget:getPositionOffset(mousePosition))
++          local drawnCreature = clickedWidget.getCreatureAt and clickedWidget:getCreatureAt(mousePosition)
++          if drawnCreature and not (target and target:isItem() and target:isForceUse()) then
++            target = drawnCreature
++          end
++          g_game.useWith(selectedThing, target, selectedSubtype)
+         end
+       else
+         g_game.useWith(selectedThing, tile:getTopUseThing(), selectedSubtype)
+@@ -1361,7 +1368,8 @@ function onTradeWith(clickedWidget, mousePosition)
+   if clickedWidget:getClassName() == 'UIGameMap' then
+     local tile = clickedWidget:getTile(mousePosition)
+     if tile then
+-      g_game.requestTrade(selectedThing, tile:getTopCreatureEx(clickedWidget:getPositionOffset(mousePosition)))
++      local drawnCreature = clickedWidget.getCreatureAt and clickedWidget:getCreatureAt(mousePosition) -- base patch 0051
++      g_game.requestTrade(selectedThing, drawnCreature or tile:getTopCreatureEx(clickedWidget:getPositionOffset(mousePosition)))
+     end
+   elseif clickedWidget:getClassName() == 'UICreatureButton' then
+     local creature = clickedWidget:getCreature()
+--- a/modules/game_interface/widgets/uigamemap.lua
++++ b/modules/game_interface/widgets/uigamemap.lua
+@@ -173,6 +173,13 @@ function UIGameMap:updateMarkedCreature()
+       attackCreature = autoWalkTile:getTopCreatureEx(positionOffset)
+     end
+ 
++    -- Chaos (base patch 0051): the creature by what is drawn of it (a big one on any visible pixel)
++    local drawnCreature = self.getCreatureAt and self:getCreatureAt(mousePosition)
++    if drawnCreature then
++      creatureThing = drawnCreature
++      attackCreature = drawnCreature
++    end
++
+     if attackCreature then
+       self:markThing(attackCreature, 'yellow')
+     elseif creatureThing then
+@@ -245,18 +252,27 @@ function UIGameMap:onMouseRelease(mousePosition, mouseButton)
+   local multiUseThing
+   local attackCreature
+ 
++  -- Chaos (base patch 0051): the creature a click takes by what is drawn of it: a big creature on any visible pixel,
++  -- the topmost of overlapping ones, never a big one's overhang over the own character. Look and attack take it;
++  -- the tile's use thing stays the tile's own, so a use never goes to the creature.
++  local drawnCreature = self.getCreatureAt and self:getCreatureAt(mousePosition)
+   local tile = self:getTile(mousePosition)
++  if not tile and drawnCreature then
++    tile = drawnCreature:getTile()
++  end
+   if tile then
+-    lookThing = tile:getTopLookThingEx(positionOffset)
++    lookThing = drawnCreature or tile:getTopLookThingEx(positionOffset)
+     useThing = tile:getTopUseThing()
+-    creatureThing = tile:getTopCreatureEx(positionOffset)
++    creatureThing = drawnCreature or tile:getTopCreatureEx(positionOffset)
+     if not creatureThing then
+       creatureThing = g_map.getCreatureById(tile:getCollisionCreatureId())
+     end
+   end
+ 
+   local autoWalkTile = g_map.getTile(autoWalkPos)
+-  if autoWalkTile then
++  if drawnCreature then
++    attackCreature = drawnCreature
++  elseif autoWalkTile then
+     attackCreature = autoWalkTile:getTopCreatureEx(positionOffset)
+   end
+ 
+--- a/src/client/CMakeLists.txt
++++ b/src/client/CMakeLists.txt
+@@ -17,6 +17,7 @@ set(client_SOURCES ${client_SOURCES}
+     ${CMAKE_CURRENT_LIST_DIR}/container.h
+     ${CMAKE_CURRENT_LIST_DIR}/creature.cpp
+     ${CMAKE_CURRENT_LIST_DIR}/creature.h
++    ${CMAKE_CURRENT_LIST_DIR}/creaturehit.h
+     ${CMAKE_CURRENT_LIST_DIR}/declarations.h
+     ${CMAKE_CURRENT_LIST_DIR}/effect.cpp
+     ${CMAKE_CURRENT_LIST_DIR}/effect.h
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -32,6 +32,8 @@
+ #include "lightview.h"
+ #include "healthbars.h"
+ #include "negativeoffset.h"
++#include "mapview.h"
++#include "creaturehit.h"
+ 
+ #include <framework/graphics/graphics.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -168,13 +170,57 @@ void Creature::draw(const Point& dest, bool animate, LightView* lightView)
+         animationOffset -= getDisplacement();
+ 
+     size_t drawQueueSize = g_drawQueue->size();
++    // Chaos (base patch 0051): a map draw records the parts it queues, so a click can take the creature by any of
++    // its drawn pixels; a big creature under the mouse gets the soft outline of base patch 0044 under its largest part
++    MapView* hitView = animate ? MapView::recordingCreatureHits() : nullptr;
++    std::vector<CreatureHitPart> hitParts;
++    DrawQueueItemItemOutline* hoverOutline = nullptr;
++    if (hitView && hitView->isHoverCreature(this)) {
++        auto outline = std::make_unique<DrawQueueItemItemOutline>(Color(255, 236, 190, 190), 2, 0, g_sprites.getOffsetFactor());
++        hoverOutline = outline.get();
++        g_drawQueue->add(std::move(outline));
++    }
++    m_outfit.setHitParts(hitView ? &hitParts : nullptr);
+     m_outfit.setDrawOutline(m_outline.width > 0 ? &m_outline : nullptr);
+     m_outfit.draw(dest - jumpOffset + animationOffset, m_walking ? m_walkDirection : m_direction, m_walkAnimationPhase, true, lightView);
+     m_outfit.setDrawOutline(nullptr);
++    m_outfit.setHitParts(nullptr);
++    if (hoverOutline) {
++        DrawQueueItemTexturedRect* largest = nullptr;
++        for (const CreatureHitPart& part : hitParts) {
++            if (part.item && (!largest || part.dest.width() * part.dest.height() > largest->m_dest.width() * largest->m_dest.height()))
++                largest = part.item;
++        }
++        hoverOutline->setPart(largest);
++    }
+     if (m_drawScale != 1.0f) {
+         // scale around the feet (bottom middle of the creature's tile) so it stays on its square
+         g_drawQueue->setScale(drawQueueSize, creatureCenter + Point(0, sprSize / 2), m_drawScale);
+     }
++    if (hitView) {
++        int widthTiles = 1, heightTiles = 1;
++        if (m_outfit.getCategory() == ThingCategoryCreature) {
++            for (int id : { m_outfit.getId(), m_outfit.getMount() }) {
++                ThingType* type = id > 0 ? g_things.rawGetThingType(id, ThingCategoryCreature) : nullptr;
++                if (type) {
++                    widthTiles = std::max<int>(widthTiles, type->getWidth());
++                    heightTiles = std::max<int>(heightTiles, type->getHeight());
++                }
++            }
++        }
++        MapView::DrawnCreature drawn;
++        drawn.creature = static_self_cast<Creature>();
++        // the stock click box: the creature's own tile where it stands now (Creature::isInsideOffset)
++        const Point ownTile = dest + m_walkOffset - logicalDisplacement;
++        const CreatureHit::Box box = CreatureHit::drawnBox(ownTile.x, ownTile.y, 0, 0, 1, 1, sprSize);
++        drawn.ownTile = Rect(box.x, box.y, box.w, box.h);
++        drawn.parts = std::move(hitParts);
++        drawn.big = CreatureHit::isBig(widthTiles, heightTiles) || m_drawScale > 1.0f;
++        drawn.scaleCenter = creatureCenter + Point(0, sprSize / 2);
++        drawn.scale = m_drawScale;
++        drawn.z = m_position.z;
++        hitView->recordCreatureHit(std::move(drawn));
++    }
+     if (m_marked) {
+         g_drawQueue->setMark(drawQueueSize, updatedMarkedColor());
+     }
+--- a/src/client/creaturehit.h
++++ b/src/client/creaturehit.h
+@@ -0,0 +1,129 @@
++// Cinders of Chaos (base patch 0051): the pure maths of clicking a creature by what is drawn of it.
++// No engine types: MapView records what each creature drew in the last frame and asks these functions which one a
++// point of the map's framebuffer takes. Tested by client/tools/creaturehit_test.cpp (CI).
++#ifndef CREATUREHIT_H
++#define CREATUREHIT_H
++
++#include <cmath>
++#include <cstddef>
++#include <cstdint>
++#include <vector>
++
++namespace CreatureHit
++{
++// a rectangle in framebuffer or texture pixels (x, y the top-left pixel)
++struct Box {
++    int x = 0, y = 0, w = 0, h = 0;
++    bool contains(int px, int py) const { return w > 0 && h > 0 && px >= x && py >= y && px < x + w && py < y + h; }
++};
++
++// the box a thing of widthTiles x heightTiles tiles covers when drawn at dest (the top-left of its own tile): it grows
++// up and left from that tile and moves by its displacement (positive = up and left), as ThingType::draw places it
++inline Box drawnBox(int destX, int destY, int dispX, int dispY, int widthTiles, int heightTiles, int spriteSize)
++{
++    return Box{ destX - dispX - (widthTiles - 1) * spriteSize, destY - dispY - (heightTiles - 1) * spriteSize,
++                widthTiles * spriteSize, heightTiles * spriteSize };
++}
++
++// true when a creature is drawn over more than its own tile (any part wider or taller than one tile)
++inline bool isBig(int widthTiles, int heightTiles) { return widthTiles > 1 || heightTiles > 1; }
++
++// a point drawn through a scale of `factor` around (cx, cy) (Creature draw scale, base patch 0020) back to where it was
++// queued: the inverse of p' = c + (p - c) * factor
++inline void unscale(float factor, int cx, int cy, int& px, int& py)
++{
++    if (!(factor > 0.f) || factor == 1.f)
++        return;
++    px = cx + (int)std::floor((px - cx) / factor);
++    py = cy + (int)std::floor((py - cy) / factor);
++}
++
++// the texel of src that the point (px, py) of dest shows (dest may be another size than src; flip 1 mirrors x, 2
++// mirrors y, as DrawQueueItemTexturedRect::setFlipDirection); false when the point is outside dest
++inline bool texelAt(const Box& dest, const Box& src, int flip, int px, int py, int& tx, int& ty)
++{
++    if (!dest.contains(px, py) || src.w <= 0 || src.h <= 0)
++        return false;
++    int dx = (int)((int64_t)(px - dest.x) * src.w / dest.w);
++    int dy = (int)((int64_t)(py - dest.y) * src.h / dest.h);
++    if (flip == 1)
++        dx = src.w - 1 - dx;
++    else if (flip == 2)
++        dy = src.h - 1 - dy;
++    tx = src.x + dx;
++    ty = src.y + dy;
++    return true;
++}
++
++// one bit per pixel of a thing type's texture: set where the pixel is not transparent
++struct AlphaMask {
++    int width = 0, height = 0;
++    std::vector<uint8_t> bits;
++
++    void reset(int w, int h)
++    {
++        width = w > 0 ? w : 0;
++        height = h > 0 ? h : 0;
++        bits.assign(((size_t)width * height + 7) / 8, 0);
++    }
++    void set(int x, int y)
++    {
++        if (x < 0 || y < 0 || x >= width || y >= height)
++            return;
++        const size_t i = (size_t)y * width + x;
++        bits[i >> 3] |= (uint8_t)(1u << (i & 7));
++    }
++    bool get(int x, int y) const
++    {
++        if (x < 0 || y < 0 || x >= width || y >= height)
++            return false;
++        const size_t i = (size_t)y * width + x;
++        return (bits[i >> 3] >> (i & 7)) & 1;
++    }
++};
++
++// does (px, py) fall on an opaque pixel of a part drawn from src to dest? Without a mask the part's box counts (its
++// rect is already cropped to the frame's opaque pixels)
++inline bool partHit(const Box& dest, const Box& src, int flip, const AlphaMask* mask, int px, int py)
++{
++    int tx = 0, ty = 0;
++    if (!texelAt(dest, src, flip, px, py, tx, ty))
++        return false;
++    return !mask || mask->bits.empty() || mask->get(tx, ty);
++}
++
++// what a point hits of one drawn creature
++struct Candidate {
++    bool ownTile = false;     // the creature's own tile (the stock one-tile click box)
++    bool pixels = false;      // a drawn pixel of a big creature, anywhere (its own tile included)
++    bool localPlayer = false; // the player's own character
++};
++
++// the creature a click takes, candidates in draw order (the last one is drawn on top); -1 for none.
++// The topmost hit wins. The player's own character is left out of that pass (a creature over it is still clicked, as
++// before) but keeps every click on it that only the overhang of a big creature would take: a big creature hit outside
++// its own tile never steals the own character.
++inline int pick(const std::vector<Candidate>& candidates)
++{
++    int top = -1, self = -1;
++    for (int i = (int)candidates.size() - 1; i >= 0; --i) {
++        const Candidate& c = candidates[i];
++        if (!c.ownTile && !c.pixels)
++            continue;
++        if (c.localPlayer) {
++            if (self < 0)
++                self = i;
++            continue;
++        }
++        if (top < 0)
++            top = i;
++    }
++    if (top < 0)
++        return self;
++    if (self >= 0 && !candidates[top].ownTile)
++        return self;
++    return top;
++}
++}
++
++#endif
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -1173,6 +1173,9 @@ void Client::registerLuaFunctions()
+     g_lua.bindClassMemberFunction<UIMap>("getPosition", &UIMap::getPosition);
+     g_lua.bindClassMemberFunction<UIMap>("getPositionOffset", &UIMap::getPositionOffset);
+     g_lua.bindClassMemberFunction<UIMap>("getTile", &UIMap::getTile);
++    g_lua.bindClassMemberFunction<UIMap>("getCreatureAt", &UIMap::getCreatureAt);
++    g_lua.bindClassStaticFunction<UIMap>("setBigCreatureHover", &UIMap::setBigCreatureHover);
++    g_lua.bindClassStaticFunction<UIMap>("isBigCreatureHover", &UIMap::isBigCreatureHover);
+     g_lua.bindClassMemberFunction<UIMap>("getMaxZoomIn", &UIMap::getMaxZoomIn);
+     g_lua.bindClassMemberFunction<UIMap>("getMaxZoomOut", &UIMap::getMaxZoomOut);
+     g_lua.bindClassMemberFunction<UIMap>("getZoom", &UIMap::getZoom);
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -50,6 +50,8 @@
+ #include <framework/util/extras.h>
+ #include <framework/core/adaptiverenderer.h>
+ 
++MapView* MapView::s_recordingHits = nullptr;
++
+ MapView::MapView()
+ {
+     m_fadingFloorTimers.resize(g_gameConfig.getMapMaxZ() + 1);
+@@ -138,6 +140,10 @@ void MapView::drawMapBackground(const Rect& rect, const TilePtr& crosshairTile)
+                                                   std::max<int>(m_minimumAmbientLight * 255, ambientLight.intensity));
+     }
+ 
++    // Chaos (base patch 0051): the creatures this frame queues, for clicks on what is drawn of them
++    m_drawnCreaturesNext.clear();
++    s_recordingHits = this;
++
+     int firstFloor = m_floorFading > 0 ? m_cachedFirstFadingFloor : m_cachedFirstVisibleFloor;
+     for (int z = m_cachedLastVisibleFloor; z >= firstFloor; --z) {
+         float fading = 1.0;
+@@ -160,6 +166,13 @@ void MapView::drawMapBackground(const Rect& rect, const TilePtr& crosshairTile)
+             g_drawQueue->setOpacity(floorStart, fading);
+     }
+ 
++    s_recordingHits = nullptr;
++    m_drawnCreatures.swap(m_drawnCreaturesNext);
++    for (auto& drawn : m_drawnCreatures) {
++        for (auto& part : drawn.parts)
++            part.item = nullptr; // the queue items go with the frame
++    }
++
+     if(!m_shader.empty() && isFollowingCreature()) {
+         g_drawQueue->setShader(m_shader);
+ 
+@@ -576,6 +589,49 @@ Point MapView::getPositionOffset(const Point& point, const Size& mapSize)
+     return Point(realPos.x % g_sprites.spriteSize(), realPos.y % g_sprites.spriteSize());
+ }
+ 
++CreaturePtr MapView::getCreatureAt(const Point& point, const Size& mapSize, int maxZ, bool* big)
++{
++    if (big)
++        *big = false;
++    if (!getCameraPosition().isValid() || m_drawnCreatures.empty())
++        return nullptr;
++
++    // the point in the map's framebuffer, where the creatures were queued (as getPositionOffset, without the tile)
++    Rect srcRect = calcFramebufferSource(mapSize);
++    float sh = srcRect.width() / (float)mapSize.width();
++    float sv = srcRect.height() / (float)mapSize.height();
++    const Point framebufferPoint = Point(point.x * sh, point.y * sv) + srcRect.topLeft();
++
++    std::vector<CreatureHit::Candidate> candidates(m_drawnCreatures.size());
++    for (size_t i = 0; i < m_drawnCreatures.size(); ++i) {
++        const DrawnCreature& drawn = m_drawnCreatures[i];
++        CreatureHit::Candidate& candidate = candidates[i];
++        if (!drawn.creature || drawn.z > maxZ || drawn.creature->isRemoved())
++            continue;
++        candidate.localPlayer = drawn.creature->isLocalPlayer();
++        candidate.ownTile = drawn.ownTile.contains(framebufferPoint);
++        if (!drawn.big)
++            continue;
++        int px = framebufferPoint.x, py = framebufferPoint.y;
++        CreatureHit::unscale(drawn.scale, drawn.scaleCenter.x, drawn.scaleCenter.y, px, py);
++        for (const CreatureHitPart& part : drawn.parts) {
++            const CreatureHit::Box dest{ part.dest.x(), part.dest.y(), part.dest.width(), part.dest.height() };
++            const CreatureHit::Box src{ part.src.x(), part.src.y(), part.src.width(), part.src.height() };
++            if (CreatureHit::partHit(dest, src, part.flip, part.mask.get(), px, py)) {
++                candidate.pixels = true;
++                break;
++            }
++        }
++    }
++
++    const int index = CreatureHit::pick(candidates);
++    if (index < 0)
++        return nullptr;
++    if (big)
++        *big = m_drawnCreatures[index].big;
++    return m_drawnCreatures[index].creature;
++}
++
+ void MapView::move(int x, int y)
+ {
+     m_moveOffset.x += x;
+--- a/src/client/mapview.h
++++ b/src/client/mapview.h
+@@ -29,6 +29,7 @@
+ #include <framework/luaengine/luaobject.h>
+ #include <framework/core/declarations.h>
+ #include "lightview.h"
++#include "outfit.h"
+ 
+ // @bindclass
+ class MapView : public LuaObject
+@@ -132,6 +133,25 @@ public:
+ 
+     MapViewPtr asMapView() { return static_self_cast<MapView>(); }
+ 
++    // Chaos (base patch 0051): clicking a creature by what is drawn of it. Creature::draw records each creature the
++    // map queues (its own tile box and its drawn parts); a click asks the last frame's records which one it takes.
++    struct DrawnCreature {
++        CreaturePtr creature;
++        Rect ownTile;                       // the stock one-tile click box (framebuffer pixels)
++        std::vector<CreatureHitPart> parts; // body, addons, mount as drawn
++        bool big = false;                   // drawn over more than its own tile: its pixels take clicks
++        Point scaleCenter;                  // its draw scale (base patch 0020) around this point
++        float scale = 1.f;
++        int z = 0;
++    };
++    static MapView* recordingCreatureHits() { return s_recordingHits; }
++    void recordCreatureHit(DrawnCreature&& drawn) { m_drawnCreaturesNext.push_back(std::move(drawn)); }
++    // the creature a point of the map widget (relative to it) takes, among those on floor maxZ or above; big set to
++    // whether that creature is drawn over more than its tile. nullptr when the point is on none.
++    CreaturePtr getCreatureAt(const Point& point, const Size& mapSize, int maxZ, bool* big = nullptr);
++    void setHoverCreature(const CreaturePtr& creature) { m_hoverCreature = creature; }
++    bool isHoverCreature(const Creature* creature) const { return creature && m_hoverCreature.get() == creature; }
++
+ private:
+     Rect calcFramebufferSource(const Size& destSize, bool inNextFrame = false);
+     int calcFirstVisibleFloor(bool forFading = false);
+@@ -182,6 +202,11 @@ private:
+     TexturePtr m_lightTexture;
+ 
+     Color m_floorShadow = Color(0.0f, 0.0f, 0.0f, 0.5f);
++
++    static MapView* s_recordingHits;
++    std::vector<DrawnCreature> m_drawnCreatures;     // the last frame (draw order: the last one is on top)
++    std::vector<DrawnCreature> m_drawnCreaturesNext; // the frame being queued
++    CreaturePtr m_hoverCreature;
+ };
+ 
+ #endif
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -153,9 +153,14 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+     int zPattern = m_mount > 0 ? std::min<int>(1, type->getNumPatternZ() - 1) : 0;
+     // Cinders of Chaos: the silhouette outline, queued under the mount and the body; collects their parts
+     DrawQueueItemOutfitOutline* outline = nullptr;
+-    auto addOutlinePart = [&](DrawQueueItem* item) {
++    auto addOutlinePart = [&](DrawQueueItem* item, ThingType* partType, int partPhase) {
+         if (outline && item)
+             outline->addPart(item);
++        // Chaos (base patch 0051): the same parts are what a click on the creature can hit
++        if (m_hitParts && item && partType) {
++            if (auto* rect = dynamic_cast<DrawQueueItemTexturedRect*>(item))
++                m_hitParts->push_back(CreatureHitPart{ rect->m_dest, rect->m_src, rect->getFlipDirection(), partType->getAlphaMask(partPhase), rect });
++        }
+     };
+     auto drawMount = [&] {
+         // The isolated editor preview must not depend on the base outfit
+@@ -238,7 +243,7 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+                 mountDrawItem = mountType->draw(
+                     dest, 0, direction, 0, 0, mountAnimationPhase, Color::white, mountLightView);
+             }
+-            addOutlinePart(mountDrawItem);
++            addOutlinePart(mountDrawItem, mountType, mountAnimationPhase);
+ 
+             if (mountDrawItem && lightView && !mountLightView && mountType->hasLight())
+                 lightView->addLight(logicalCreatureCenter, mountType->getLight());
+@@ -421,11 +426,11 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+                 if (yPattern == 0)
+                     center = outfitParams->dest.center();
+                 auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, 0, m_shader);
+-                addOutlinePart(shaded.get());
++                addOutlinePart(shaded.get(), type, animationPhase);
+                 g_drawQueue->add(std::move(shaded));
+                 continue;
+             }
+-            addOutlinePart(type->draw(dest, 0, direction, yPattern, zPattern, animationPhase, Color::white, baseLightView));
++            addOutlinePart(type->draw(dest, 0, direction, yPattern, zPattern, animationPhase, Color::white, baseLightView), type, animationPhase);
+             continue;
+         }
+ 
+@@ -436,13 +441,13 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+ 
+         if (m_shader.empty()) {
+             auto layered = std::make_unique<DrawQueueItemOutfit>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, colors, outfitParams->color);
+-            addOutlinePart(layered.get());
++            addOutlinePart(layered.get(), type, animationPhase);
+             g_drawQueue->add(std::move(layered));
+         } else {
+             if (yPattern == 0)
+                 center = outfitParams->dest.center();
+             auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, colors, m_shader);
+-            addOutlinePart(shaded.get());
++            addOutlinePart(shaded.get(), type, animationPhase);
+             g_drawQueue->add(std::move(shaded));
+         }
+     }
+--- a/src/client/outfit.h
++++ b/src/client/outfit.h
+@@ -25,6 +25,7 @@
+ 
+ #include <framework/util/color.h>
+ #include "thingtypemanager.h"
++#include "creaturehit.h"
+ #include <framework/graphics/drawqueue.h>
+ 
+ // Cinders of Chaos (base patch 0038): a silhouette outline around the outfit (body, addons, mount and rider, the
+@@ -37,6 +38,16 @@ struct OutfitOutline {
+     int pulseMs = 0;               // > 0: the alpha breathes over this period
+ };
+ 
++// Cinders of Chaos (base patch 0051): one drawn part of an outfit (body, addon, mount) as the map queued it, so a click
++// can be matched against what is drawn of the creature. item is only valid while the frame is being queued.
++struct CreatureHitPart {
++    Rect dest;
++    Rect src;
++    uint8_t flip = 0;
++    std::shared_ptr<const CreatureHit::AlphaMask> mask;
++    DrawQueueItemTexturedRect* item = nullptr;
++};
++
+ class Outfit
+ {
+ public:
+@@ -68,6 +79,8 @@ public:
+     void setCenter(bool value) { m_center = value; }
+     // the outline the next map draw queues (Creature::draw sets it around its draw call; nullptr = none)
+     void setDrawOutline(const OutfitOutline* outline) { m_drawOutline = outline; }
++    // the parts the next map draw records for clicks (Creature::draw sets it around its draw call; nullptr = none)
++    void setHitParts(std::vector<CreatureHitPart>* parts) { m_hitParts = parts; }
+ 
+     void resetClothes();
+     void resetShader() { m_shader = ""; }
+@@ -95,6 +108,7 @@ private:
+     std::string m_shader;
+     bool m_center = false;
+     const OutfitOutline* m_drawOutline = nullptr;
++    std::vector<CreatureHitPart>* m_hitParts = nullptr;
+ };
+ 
+ struct DrawQueueItemOutfit : public DrawQueueItemTexturedRect {
+--- a/src/client/thingtype.cpp
++++ b/src/client/thingtype.cpp
+@@ -485,6 +485,7 @@ void ThingType::unserialize(uint16 clientId, ThingCategory category, const FileS
+     m_texturesFramesRects.resize(m_animationPhases);
+     m_texturesFramesOriginRects.resize(m_animationPhases);
+     m_texturesFramesOffsets.resize(m_animationPhases);
++    m_texturesAlphaMasks.resize(m_animationPhases);
+ 
+     m_lastUsage = g_clock.seconds();
+ }
+@@ -590,11 +591,13 @@ void ThingType::unload()
+     m_texturesFramesRects.clear();
+     m_texturesFramesOriginRects.clear();
+     m_texturesFramesOffsets.clear();
++    m_texturesAlphaMasks.clear();
+ 
+     m_textures.resize(m_animationPhases);
+     m_texturesFramesRects.resize(m_animationPhases);
+     m_texturesFramesOriginRects.resize(m_animationPhases);
+     m_texturesFramesOffsets.resize(m_animationPhases);
++    m_texturesAlphaMasks.resize(m_animationPhases);
+ 
+     m_loaded = false;
+ }
+@@ -867,6 +870,13 @@ const TexturePtr& ThingType::getTexture(int animationPhase)
+         m_texturesFramesOriginRects[animationPhase].resize(indexSize);
+         m_texturesFramesOffsets[animationPhase].resize(indexSize);
+ 
++        // Chaos (base patch 0051): a creature's opaque pixels, for clicking it by what is drawn of it
++        std::shared_ptr<CreatureHit::AlphaMask> alphaMask;
++        if (m_category == ThingCategoryCreature) {
++            alphaMask = std::make_shared<CreatureHit::AlphaMask>();
++            alphaMask->reset(fullImage->getWidth(), fullImage->getHeight());
++        }
++
+         for(int z = 0; z < m_numPatternZ; ++z) {
+             for(int y = 0; y < m_numPatternY; ++y) {
+                 for(int x = 0; x < m_numPatternX; ++x) {
+@@ -896,6 +906,8 @@ const TexturePtr& ThingType::getTexture(int animationPhase)
+                             for(int y = framePos.y; y < framePos.y + m_size.height() * spriteSize; ++y) {
+                                 uint8 *p = fullImage->getPixel(x,y);
+                                 if(p[3] != 0x00) {
++                                    if (alphaMask)
++                                        alphaMask->set(x, y);
+                                     drawRect.setTop   (std::min<int>(y, (int)drawRect.top()));
+                                     drawRect.setLeft  (std::min<int>(x, (int)drawRect.left()));
+                                     drawRect.setBottom(std::max<int>(y, (int)drawRect.bottom()));
+@@ -912,6 +924,8 @@ const TexturePtr& ThingType::getTexture(int animationPhase)
+             }
+         }
+         animationPhaseTexture = std::make_shared<Texture>(fullImage, true, false, false);
++        if (animationPhase < (int)m_texturesAlphaMasks.size())
++            m_texturesAlphaMasks[animationPhase] = alphaMask;
+         m_loaded = true;
+     }
+     return animationPhaseTexture;
+--- a/src/client/thingtype.h
++++ b/src/client/thingtype.h
+@@ -25,6 +25,7 @@
+ 
+ #include "declarations.h"
+ #include "animator.h"
++#include "creaturehit.h"
+ 
+ #include <framework/core/declarations.h>
+ #include <framework/otml/declarations.h>
+@@ -269,6 +270,12 @@ public:
+     int getDisplacementX() { return getDisplacement().x; }
+     int getDisplacementY() { return getDisplacement().y; }
+     bool hasNegativeDisplacement() const;
++    // Chaos (base patch 0051): the opaque pixels of a creature type's texture of that phase (built with the texture;
++    // nullptr for other categories or before the texture exists)
++    std::shared_ptr<const CreatureHit::AlphaMask> getAlphaMask(int animationPhase) const
++    {
++        return animationPhase >= 0 && animationPhase < (int)m_texturesAlphaMasks.size() ? m_texturesAlphaMasks[animationPhase] : nullptr;
++    }
+     bool setDisplacement(const Point& displacement);
+     bool setDisplacementEnabled(bool enabled);
+     bool hasPendingDisplacementChange() const { return m_displacementEdited; }
+@@ -380,6 +387,7 @@ private:
+     std::vector<std::vector<Rect>> m_texturesFramesRects;
+     std::vector<std::vector<Rect>> m_texturesFramesOriginRects;
+     std::vector<std::vector<Point>> m_texturesFramesOffsets;
++    std::vector<std::shared_ptr<const CreatureHit::AlphaMask>> m_texturesAlphaMasks; // Chaos (base patch 0051)
+ 
+     bool m_loaded = false;
+     time_t m_lastUsage;
+--- a/src/client/uimap.cpp
++++ b/src/client/uimap.cpp
+@@ -34,6 +34,7 @@
+ #include <framework/platform/platformwindow.h>
+ #include "localplayer.h"
+ #include "weathermanager.h"
++#include "gameconfig.h"
+ 
+ UIMap::UIMap()
+ {
+@@ -79,6 +80,15 @@ void UIMap::drawSelf(Fw::DrawPane drawPane)
+         g_drawQueue->addBoundingRect(m_mapRect.expanded(1), 1, Color::black);
+         g_drawQueue->markMapPosition();
+     } else if(drawPane == Fw::MapBackgroundPane) {
++        // Chaos (base patch 0051): a big creature under the mouse (by the last frame) is outlined in this one
++        CreaturePtr hover;
++        if (s_bigCreatureHover && isHovered() && g_game.isOnline()) {
++            bool big = false;
++            hover = pickCreature(m_mousePosition, &big);
++            if (hover && (!big || hover->isLocalPlayer()))
++                hover = nullptr;
++        }
++        m_mapView->setHoverCreature(hover);
+         m_mapView->drawMapBackground(m_mapRect, getTile(m_mousePosition));
+     } else if (drawPane == Fw::MapForegroundPane) {
+         m_mapView->drawMapForeground(m_mapRect);
+@@ -191,6 +201,20 @@ TilePtr UIMap::getTile(const Point& mousePos)
+     return tile;
+ }
+ 
++bool UIMap::s_bigCreatureHover = true;
++
++CreaturePtr UIMap::pickCreature(const Point& mousePos, bool* big)
++{
++    if (big)
++        *big = false;
++    if (!m_mapRect.contains(mousePos))
++        return nullptr;
++    // only creatures on the clicked tile's floor or above it (drawn over it); over no tile, any floor
++    TilePtr tile = getTile(mousePos);
++    const int maxZ = tile ? tile->getPosition().z : g_gameConfig.getMapMaxZ();
++    return m_mapView->getCreatureAt(mousePos - m_mapRect.topLeft(), m_mapRect.size(), maxZ, big);
++}
++
+ void UIMap::resetCursorToDefault()
+ {
+     if (g_mouse.isCursorChanged() || g_mouse.isUsingNativeCursor()) {
+--- a/src/client/uimap.h
++++ b/src/client/uimap.h
+@@ -88,6 +88,13 @@ public:
+     Position getPosition(const Point& mousePos);
+     Point getPositionOffset(const Point& mousePos);
+     TilePtr getTile(const Point& mousePos);
++    // Chaos (base patch 0051): the creature a click at mousePos takes by what is drawn of it (any visible pixel of a
++    // big creature, the own tile of any creature; the topmost; never a big creature's overhang over the own
++    // character); nil when the point is on none, then the tile's own lookups apply as before
++    CreaturePtr getCreatureAt(const Point& mousePos) { return pickCreature(mousePos, nullptr); }
++    // the soft outline on a big creature under the mouse (option "bigCreatureHover", on by default)
++    static void setBigCreatureHover(bool enabled) { s_bigCreatureHover = enabled; }
++    static bool isBigCreatureHover() { return s_bigCreatureHover; }
+     int getMaxZoomIn() { return m_maxZoomIn; }
+     int getMaxZoomOut() { return m_maxZoomOut; }
+     int getZoom() { return m_zoom; }
+@@ -114,11 +121,13 @@ private:
+     void updateMapSize();
+     void resetCursorToDefault();
+     void updateCursor(const TilePtr& tile);
++    CreaturePtr pickCreature(const Point& mousePos, bool* big);
+ 
+     int m_zoom;
+     MapViewPtr m_mapView;
+     Rect m_mapRect;
+     Point m_mousePosition;
++    static bool s_bigCreatureHover;
+     float m_aspectRatio;
+     bool m_keepAspectRatio;
+     bool m_limitVisibleRange;
