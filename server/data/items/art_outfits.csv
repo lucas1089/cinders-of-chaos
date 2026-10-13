@@ -16,8 +16,8 @@ look_type,key,name,size,head,body,legs,feet
 2014,outfit_goblin_chieftain,Goblin Chieftain,4x4,56,95,95,19
 2015,outfit_wolf,Forest Wolf,2x2,40,39,22,2
 2016,outfit_shroomling,Shroomling,2x2,58,2,1,41
-2017,outfit_boar,Wild Boar,2x2,40,39,39,95
-2018,outfit_giant_hornet,Giant Hornet,2x2,78,79,116,19
+2017,outfit_boar,Gloomtusk Boar,2x2,40,39,39,95
+2018,outfit_giant_hornet,Blightwing Hornet,2x2,78,79,116,19
 2019,outfit_morel_imp,Morel Imp,2x2,22,2,1,95
 2020,outfit_moss_slime,Moss Slime,2x2,61,44,44,56
 2021,outfit_pixie,Forest Pixie,2x2,1,43,10,18

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Mutated Visco" nameDescription="a Mutated Visco" race="blood" experience="480500" speed="650" manacost="0">
-	<health now="380000" max="380000"/>
+<monster name="Mutated Visco" nameDescription="a Mutated Visco" race="blood" experience="13500" speed="47" manacost="0">
+	<health now="21400" max="21400"/>
 	<look type="554" corpse="6068"/>
-	<level min="2000" max="2500"/>
+	<level min="930" max="970"/>
 	<targetchange interval="3000" chance="50"/>
 	<flags>
 		<flag summonable="0"/>
@@ -18,20 +18,20 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-	<attack name="melee" interval="2000" min="-6000" max="-9500"/>
-		<attack name="earth" interval="2000" chance="20" radius="3" target="0" min="-7000" max="-10000">
+	<attack name="melee" interval="2000" min="-570" max="-900"/>
+		<attack name="earth" interval="2000" chance="20" radius="3" target="0" min="-660" max="-950">
 			<attribute key="areaEffect" value="poison" />
 		</attack>
-		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-6000" max="-11000">
+		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-570" max="-1040">
 			<attribute key="areaEffect" value="energyarea"/>		
 			<attribute key="shootEffect" value="energyball"/>
 		</attack>
-		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-5000" max="-7000">
+		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-470" max="-660">
 			<attribute key="areaEffect" value="energyarea"/>
 		</attack>
 	</attacks>
 	<defenses armor="50" defense="60">
-		<defense name="healing" interval="1000" chance="15" min="1520" max="2300">
+		<defense name="healing" interval="1000" chance="15" min="1410" max="2140">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Captain Bloodbeard" nameDescription="a captain bloodbeard" race="fire" experience="165000" speed="470">
-	<health now="250000" max="250000" />
+<monster name="Captain Bloodbeard" nameDescription="a captain bloodbeard" race="fire" experience="8600" speed="51">
+	<health now="17600" max="17600" />
 	<look type="1491" corpse="6068" />
-	<level min="1650" max="1800"/>
+	<level min="790" max="830"/>
 	<targetchange interval="4000" chance="20" />
 	<flags>
 		<flag summonable="0" />
@@ -18,19 +18,13 @@
 		<flag runonhealth="0" />
 	</flags>
 	<attacks>
-		<attack name="physical" interval="1500" chance="100" range="7" min="-4000" max="-6500">
-			<attribute key="shootEffect" value="spear" />
-		</attack>
-		<attack name="physical" interval="2000" chance="20" range="7" radius="1" target="1" min="-3500" max="-7000">
-			<attribute key="shootEffect" value="explosion" />
-			<attribute key="areaEffect" value="explosionarea" />
-		</attack>
-		<attack name="physical" interval="2000" chance="35" range="4" min="-3500" max="-7000">
-			<attribute key="shootEffect" value="throwingknife" />
+		<attack name="melee" interval="2000" min="0" max="-780"/>
+		<attack name="physical" interval="2000" chance="35" range="4" min="-460" max="-930">
+			<attribute key="shootEffect" value="throwingknife"/>
 		</attack>
 	</attacks>
 	<defenses armor="44" defense="44">
-		<defense name="healing" interval="2000" chance="15" min="1180" max="2200">
+		<defense name="healing" interval="2000" chance="15" min="940" max="1760">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 		<defense name="speed" interval="2000" chance="15" speedchange="320" duration="5000">
@@ -52,6 +46,9 @@
 		<immunity paralyze="1" />
 		<immunity invisible="1" />
 	</immunities>
+	<summons maxSummons="3">
+		<summon name="Pirate Skeleton" interval="2000" chance="15"/>
+	</summons>
 	<voices interval="5000" chance="10">
 		<voice sentence="Give up!" />
 		<voice sentence="Hiyaa" />

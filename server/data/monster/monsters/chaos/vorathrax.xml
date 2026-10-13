@@ -26,7 +26,7 @@
 			<attribute key="shootEffect" value="fire" />
 			<attribute key="areaEffect" value="firearea" />
 		</attack>
-		<attack name="earth" interval="1000" chance="20" target="1" radius="4" min="-2005500" max="-2005500">
+		<attack name="earth" interval="1000" chance="20" target="1" radius="4" min="-26000" max="-32000">
 			<attribute key="areaEffect" value="poff" />
 		</attack>
 		<attack name="poisoncondition" interval="2000" chance="10" target="1" min="-800" max="-2000">

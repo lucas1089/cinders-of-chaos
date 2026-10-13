@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Thal" nameDescription="a Thal" race="blood" experience="3900000" speed="850" manacost="0">
-	<health now="2900000" max="2900000"/>
+<monster name="Thal" nameDescription="a Thal" race="blood" experience="25450" speed="40" manacost="0">
+	<health now="27000" max="27000"/>
 	<look type="1485" corpse="6068" />
-	<level min="5500" max="6000"/>
+	<level min="1240" max="1280"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />
@@ -21,9 +21,9 @@
 		<flag canwalkonpoison="0" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="1000" min="-30000" max="-40000" />
+		<attack name="melee" interval="1000" min="-770" max="-1030" />
 		<attack name="Frostbite" interval="2000" chance="45" min="-32000" max="-45000"/>
-		<attack name="ice" range="7" target="1" radius="3" interval="2000" chance="40" min="-30000" max="-50000">
+		<attack name="ice" range="7" target="1" radius="3" interval="2000" chance="40" min="-770" max="-1290">
 			<attribute key="shootEffect" value="ice"/>
 			<attribute key="areaEffect" value="icearea"/>
 		</attack>
@@ -33,7 +33,7 @@
 		</attack>
 	</attacks>
 	<defenses armor="80" defense="87">
-		<defense name="healing" interval="1000" chance="20" min="12000" max="220000">
+		<defense name="healing" interval="1000" chance="20" min="150" max="2700">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 	</defenses>

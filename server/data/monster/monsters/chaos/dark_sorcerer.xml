@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Dark Sorcerer" nameDescription="a dark sorcerer" race="blood" experience="165000" speed="550" manacost="0">
-	<health now="255000" max="255000"/>
+<monster name="Dark Sorcerer" nameDescription="a dark sorcerer" race="blood" experience="9250" speed="51" manacost="0">
+	<health now="18200" max="18200"/>
 	<look type="1541" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
-	<level min="1650" max="1800"/>
+	<level min="810" max="850"/>
 	<targetchange interval="3000" chance="50"/>
 	<flags>
 		<flag summonable="0"/>
@@ -18,21 +18,21 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-	<attack name="melee" interval="2000" min="-3500" max="-6000" energy="600" />
-		<attack name="energy" interval="2000" chance="100" range="7" target="1" min="-4250" max="-7500" >
+	<attack name="melee" interval="2000" min="-370" max="-630" energy="600" />
+		<attack name="energy" interval="2000" chance="100" range="7" target="1" min="-450" max="-790" >
 			<attribute key="areaEffect" value="energyarea"/>
 			<attribute key="shootEffect" value="energy"/>
 		</attack>
-		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-4250" max="-8900">
+		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-450" max="-940">
 			<attribute key="areaEffect" value="energyarea"/>		
 			<attribute key="shootEffect" value="energyball"/>
 		</attack>
-		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-4300" max="-7990">
+		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-450" max="-840">
 			<attribute key="areaEffect" value="energyarea"/>
 		</attack>
 	</attacks>
 	<defenses armor="25" defense="35">
-		<defense name="healing" interval="1000" chance="15" min="1520" max="2300">
+		<defense name="healing" interval="1000" chance="15" min="1200" max="1820">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

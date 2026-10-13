@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Ironhook Corsair" nameDescription="an ironhook corsair" race="fire" experience="165000" speed="470">
-	<health now="250000" max="250000" />
+<monster name="Ironhook Corsair" nameDescription="an ironhook corsair" race="fire" experience="9950" speed="50">
+	<health now="18800" max="18800" />
 	<look type="1492" corpse="6068" />
-	<level min="1650" max="1800"/>
+	<level min="830" max="870"/>
 	<targetchange interval="4000" chance="20" />
 	<flags>
 		<flag summonable="0" />
@@ -13,24 +13,21 @@
 		<flag pushable="0" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="1" />
-		<flag targetdistance="1" />
+		<flag targetdistance="4" />
 		<flag staticattack="70" />
 		<flag runonhealth="0" />
 	</flags>
 	<attacks>
-		<attack name="physical" interval="1500" chance="100" range="7" min="-4000" max="-6500">
-			<attribute key="shootEffect" value="spear" />
+		<attack name="physical" interval="2000" chance="100" range="7" min="-340" max="-690">
+			<attribute key="shootEffect" value="spear"/>
 		</attack>
-		<attack name="physical" interval="2000" chance="20" range="7" radius="1" target="1" min="-3500" max="-7000">
-			<attribute key="shootEffect" value="explosion" />
-			<attribute key="areaEffect" value="explosionarea" />
-		</attack>
-		<attack name="physical" interval="2000" chance="35" range="4" min="-3500" max="-7000">
-			<attribute key="shootEffect" value="throwingknife" />
+		<attack name="physical" interval="2000" chance="20" range="7" radius="1" target="1" min="-480" max="-960">
+			<attribute key="shootEffect" value="explosion"/>
+			<attribute key="areaEffect" value="explosionarea"/>
 		</attack>
 	</attacks>
 	<defenses armor="44" defense="44">
-		<defense name="healing" interval="2000" chance="15" min="1180" max="2200">
+		<defense name="healing" interval="2000" chance="15" min="1010" max="1880">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 		<defense name="speed" interval="2000" chance="15" speedchange="320" duration="5000">

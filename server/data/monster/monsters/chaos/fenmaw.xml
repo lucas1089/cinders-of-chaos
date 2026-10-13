@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Fenmaw" nameDescription="a fenmaw" race="blood" experience="14250" speed="658" manacost="390">
+<monster name="Fenmaw" nameDescription="a fenmaw" race="blood" experience="4750" speed="190" manacost="390">
 	<health now="12000" max="12000" />
 	<level min="200" max="250"/>
 	<look type="374" corpse="6068" />

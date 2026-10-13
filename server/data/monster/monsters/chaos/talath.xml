@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Talath" nameDescription="a talath" race="undead" experience="600000000" speed="800" manacost="0">
+<monster name="Talath" nameDescription="a talath" race="undead" experience="21000000" speed="800" manacost="0">
   <health now="510000000" max="510000000"/>
   <look type="1473" corpse="6068" />
    <targetchange interval="2500" chance="20"/>

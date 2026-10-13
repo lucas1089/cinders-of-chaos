@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Acid Hydra" nameDescription="an acid hydra" race="venom" experience="480500" speed="650">
-	<health now="380000" max="380000"/>
+<monster name="Acid Hydra" nameDescription="an acid hydra" race="venom" experience="12800" speed="48">
+	<health now="20900" max="20900"/>
 	<look type="563" corpse="6068"/>
 	<targetchange interval="5000" chance="10"/>
-	<level min="2000" max="2500"/>
+	<level min="910" max="950"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -18,24 +18,24 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-6000" max="-9000"/>
-		<attack name="earth" interval="2000" chance="30" radius="2" min="-6000" max="-10000">
+		<attack name="melee" interval="2000" min="-610" max="-920"/>
+		<attack name="earth" interval="2000" chance="30" radius="2" min="-610" max="-1020">
 			<attribute key="areaEffect" value="smallplants"/>
 		</attack>
-		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-5000" max="-7500">
+		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-510" max="-760">
 			<attribute key="areaEffect" value="energyarea"/>		
 			<attribute key="shootEffect" value="energyball"/>
 		</attack>
-         <attack name="earth" interval="2000" chance="35" range="4" target="1" min="-6000" max="-9000">
+         <attack name="earth" interval="2000" chance="35" range="4" target="1" min="-610" max="-920">
 			<attribute key="shootEffect" value="earth"/>
 			<attribute key="areaEffect" value="yellowbubble"/>
 		</attack>
-		<attack name="energy" interval="2000" chance="50" length="4" spread="3" min="-7500" max="-10000">
+		<attack name="energy" interval="2000" chance="50" length="4" spread="3" min="-760" max="-1020">
 			<attribute key="areaEffect" value="greenbubble"/>
 		</attack>
 	</attacks>
 	<defenses armor="50" defense="60">
-		<defense name="healing" interval="1000" chance="15" min="1520" max="2300">
+		<defense name="healing" interval="1000" chance="15" min="1380" max="2090">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

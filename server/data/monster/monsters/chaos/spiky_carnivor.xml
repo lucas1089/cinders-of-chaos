@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Spiky Carnivor" nameDescription="a Spiky carnivor" race="blood" experience="1500000" speed="650" manacost="0">
-	<health now="2000000" max="2000000"/>
+<monster name="Spiky Carnivor" nameDescription="a Spiky carnivor" race="blood" experience="22250" speed="42" manacost="0">
+	<health now="25800" max="25800"/>
 	<look type="1478" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068" />
-	<level min="3500" max="4000"/>
+	<level min="1160" max="1200"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag summonable="0" />
@@ -18,9 +18,9 @@
 		<flag runonhealth="0" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-15000" max="-23000" />
-		<attack name="manadrain" interval="2000" chance="40" range="7" min="-15000" max="-24000" />
-		<attack name="lifedrain" interval="2000" chance="30" length="8" spread="0" min="-16000" max="-25000">
+		<attack name="melee" interval="2000" min="-730" max="-1120" />
+		<attack name="manadrain" interval="2000" chance="40" range="7" min="-730" max="-1170" />
+		<attack name="lifedrain" interval="2000" chance="30" length="8" spread="0" min="-780" max="-1220">
 			<attribute key="areaEffect" value="purpleenergy" />
 		</attack>
 		<attack name="arc bolt" interval="2000" chance="15" range="1" min="-15010" max="-22100">
@@ -30,7 +30,7 @@
 		</attack>
 	</attacks>
 	<defenses armor="71" defense="71">
-		<defense name="healing" interval="2000" chance="15" min="2000" max="6000">
+		<defense name="healing" interval="2000" chance="15" min="860" max="2580">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 		<defense name="speed" interval="2000" chance="15" speedchange="320" duration="5000">

@@ -64,8 +64,10 @@
 		<voice sentence="Vihil Ealuel!" />
 	</voices>
 	<loot>
-		<item id="2148" countmax="80" chance="46000"/><!-- gold coin -->
-		<item id="2148" countmax="70" chance="46000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- platinum coin -->
 		<item id="18425" countmax="1" chance="400"/><!-- blazing bone -->
 		<item id="2498" countmax="1" chance="375"/><!-- royal helmet dragon shield golden armor golden legs-->
 		<item id="2516" countmax="1" chance="375"/>

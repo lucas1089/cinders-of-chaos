@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Wild Boar" nameDescription="a wild boar" race="blood" experience="120" speed="210" manacost="0">
+<monster name="Gloomtusk Boar" nameDescription="a gloomtusk boar" race="blood" experience="120" speed="210" manacost="0">
 	<health now="220" max="220" />
 	<look type="2017" head="40" body="39" legs="39" feet="95" corpse="36078" />
 	<targetchange interval="4000" chance="10" />

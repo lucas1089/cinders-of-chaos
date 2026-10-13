@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Black Stag" nameDescription="a black stag" race="fire" experience="142000" speed="470">
-	<health now="200000" max="200000" />
+<monster name="Black Stag" nameDescription="a black stag" race="fire" experience="7950" speed="52">
+	<health now="17000" max="17000" />
 	<look type="686" corpse="6068" />
-	<level min="1500" max="1650"/>
+	<level min="770" max="810"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0"/>
@@ -18,30 +18,30 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-3000" max="-5000"/>
-		<attack name="physical" interval="2000" chance="38" length="3" spread="0" min="-3500" max="-6000">
+		<attack name="melee" interval="2000" min="-360" max="-610"/>
+		<attack name="physical" interval="2000" chance="38" length="3" spread="0" min="-420" max="-730">
 			<attribute key="areaEffect" value="groundshaker"/>
 		</attack>
 		<attack name="dread" interval="4000" chance="40" radius="4" target="0" success="35" duration="5000">
 			<attribute key="areaEffect" value="rednote"/>
 		</attack>
-		<attack name="physical" interval="2000" chance="30" radius="3" target="0" min="-3500" max="-6000">
+		<attack name="physical" interval="2000" chance="30" radius="3" target="0" min="-420" max="-730">
 			<attribute key="areaEffect" value="groundshaker"/>
 		</attack>
-		<attack name="fire" interval="2000" chance="25" range="7" target="1" min="-3000" max="-7000">
+		<attack name="fire" interval="2000" chance="25" range="7" target="1" min="-360" max="-850">
 			<attribute key="shootEffect" value="fire"/>
 			<attribute key="areaEffect" value="redspark"/>
 		</attack>
-		<attack name="death" interval="2000" chance="30" length="8" spread="0" min="-3000" max="-6500">
+		<attack name="death" interval="2000" chance="30" length="8" spread="0" min="-360" max="-790">
 			<attribute key="areaEffect" value="redspark" />
 		</attack>
-		<attack name="lifedrain" interval="2000" chance="10" range="7" target="1" radius="4" min="-2500" max="-7500">
+		<attack name="lifedrain" interval="2000" chance="10" range="7" target="1" radius="4" min="-300" max="-910">
 			<attribute key="shootEffect" value="largerock"/>
 			<attribute key="areaEffect" value="explosionarea"/>
 		</attack>
 	</attacks>
 	<defenses armor="77" defense="77">
-		<defense name="healing" interval="2000" chance="9" min="1500" max="5000">
+		<defense name="healing" interval="2000" chance="9" min="510" max="1700">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

@@ -77,8 +77,8 @@ client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,
 33075,36075,corpse_goblin_chieftain,corpse,new,dead goblin chieftain,3x3,2,67108864,0,0,0,0,race=blood
 33076,36076,corpse_wolf,corpse,new,dead forest wolf,2x2,2,67108864,0,0,0,0,race=blood
 33077,36077,corpse_shroomling,corpse,new,dead shroomling,1x1,2,67108864,0,0,0,0,race=venom
-33078,36078,corpse_boar,corpse,new,dead wild boar,2x2,2,67108864,0,0,0,0,race=blood
-33079,36079,corpse_giant_hornet,corpse,new,dead giant hornet,2x2,2,67108864,0,0,0,0,race=venom
+33078,36078,corpse_boar,corpse,new,dead gloomtusk boar,2x2,2,67108864,0,0,0,0,race=blood
+33079,36079,corpse_giant_hornet,corpse,new,dead blightwing hornet,2x2,2,67108864,0,0,0,0,race=venom
 33080,36080,corpse_morel_imp,corpse,new,dead morel imp,2x2,2,67108864,0,0,0,0,race=venom
 33081,36081,corpse_moss_slime,corpse,new,dead moss slime,1x1,2,67108864,0,0,0,0,race=venom
 33082,36082,corpse_pixie,corpse,new,dead forest pixie,2x2,2,67108864,0,0,0,0,race=blood

@@ -133,8 +133,8 @@ return {
 			{name = "Goblin Chieftain", level = 80}
 		}},
 		wildwood = {name = "Wildwood Uprising", color = "#5fa860", monsters = {
-			{name = "Forest Wolf", level = 10}, {name = "Shroomling", level = 12}, {name = "Wild Boar", level = 18},
-			{name = "Giant Hornet", level = 20}, {name = "Morel Imp", level = 22}, {name = "Moss Slime", level = 22},
+			{name = "Forest Wolf", level = 10}, {name = "Shroomling", level = 12}, {name = "Gloomtusk Boar", level = 18},
+			{name = "Blightwing Hornet", level = 20}, {name = "Morel Imp", level = 22}, {name = "Moss Slime", level = 22},
 			{name = "Forest Pixie", level = 25}, {name = "Glowcap Cluster", level = 28}, {name = "Treant Sapling", level = 30},
 			{name = "Inkcap Creeper", level = 32}, {name = "Myconid Shaman", level = 38}, {name = "Grove Dryad", level = 40},
 			{name = "Dire Bear", level = 60}, {name = "Giant Thornback Toad", level = 65}, {name = "Owlbear", level = 70},

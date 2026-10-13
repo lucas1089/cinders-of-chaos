@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Scourgejaw" nameDescription="a scourgejaw" race="fire" experience="165000" speed="470">
-	<health now="250000" max="250000" />
+<monster name="Scourgejaw" nameDescription="a scourgejaw" race="fire" experience="10650" speed="49">
+	<health now="19400" max="19400" />
 	<look type="1493" corpse="6068" />
-	<level min="1650" max="1800"/>
+	<level min="850" max="890"/>
 	<targetchange interval="4000" chance="20" />
 	<flags>
 		<flag summonable="0" />
@@ -18,19 +18,16 @@
 		<flag runonhealth="0" />
 	</flags>
 	<attacks>
-		<attack name="physical" interval="1500" chance="100" range="7" min="-4000" max="-6500">
-			<attribute key="shootEffect" value="spear" />
+		<attack name="melee" interval="2000" min="0" max="-980"/>
+		<attack name="physical" interval="2000" chance="30" length="4" spread="2" min="-490" max="-910">
+			<attribute key="areaEffect" value="blackspark"/>
 		</attack>
-		<attack name="physical" interval="2000" chance="20" range="7" radius="1" target="1" min="-3500" max="-7000">
-			<attribute key="shootEffect" value="explosion" />
-			<attribute key="areaEffect" value="explosionarea" />
-		</attack>
-		<attack name="physical" interval="2000" chance="35" range="4" min="-3500" max="-7000">
-			<attribute key="shootEffect" value="throwingknife" />
+		<attack name="bleedcondition" interval="2000" chance="15" range="1" target="1" min="-280" max="-420" tick="2000">
+			<attribute key="areaEffect" value="redspark"/>
 		</attack>
 	</attacks>
 	<defenses armor="44" defense="44">
-		<defense name="healing" interval="2000" chance="15" min="1180" max="2200">
+		<defense name="healing" interval="2000" chance="15" min="1040" max="1940">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 		<defense name="speed" interval="2000" chance="15" speedchange="320" duration="5000">

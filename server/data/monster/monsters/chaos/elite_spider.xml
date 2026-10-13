@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Elite Spider" nameDescription="an elite spider" race="venom" experience="131000" speed="470" manacost="0">
+<monster name="Elite Spider" nameDescription="an elite spider" race="venom" experience="6050" speed="54" manacost="0">
 	<!-- Death Reaper -->
-	<health now="190000" max="190000"/>
+	<health now="14900" max="14900"/>
 	<look type="1548" corpse="6068"/>
-	<level min="1300" max="1450"/>
+	<level min="710" max="750"/>
 	<targetchange interval="3000" chance="20"/>
 	<flags>
 		<flag summonable="0"/>
@@ -19,12 +19,12 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-2500" max="-5000"/>
-		<attack name="earth" interval="2000" chance="10" range="7" radius="1" target="1" min="-3000" max="-5500">
+		<attack name="melee" interval="2000" min="-360" max="-720"/>
+		<attack name="earth" interval="2000" chance="10" range="7" radius="1" target="1" min="-430" max="-790">
 			<attribute key="shootEffect" value="poison"/>
 			<attribute key="areaEffect" value="poison"/>
 		</attack>
-		<attack name="earth" interval="2000" chance="20" range="7" radius="3" target="1" min="-3000" max="-6000">
+		<attack name="earth" interval="2000" chance="20" range="7" radius="3" target="1" min="-430" max="-860">
 			<attribute key="areaEffect" value="poison"/>
 		</attack>
 	</attacks>

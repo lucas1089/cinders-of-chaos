@@ -55,10 +55,10 @@
 		<voice sentence="Forle Bramma!"/>
 	</voices>
 	<loot>
-   		<item id="2148" countmax="100" chance="36450" /><!-- gold coin -->
-		<item id="2148" countmax="100" chance="36450" /><!-- gold coin -->
-		<item id="2148" countmax="32" chance="36450" /><!-- gold coin -->
-		<item id="2152" countmax="5" chance="2450" /><!-- platinum coin -->
+   		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+   		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+   		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+   		<item id="2152" countmax="25" chance="65000"/><!-- platinum coin -->
 		<item id="11302" countmax="1" chance="375" /><!-- jadefen helmet -->
 		<item id="11301" countmax="1" chance="375" />
 		<item id="11304" countmax="1" chance="375" />

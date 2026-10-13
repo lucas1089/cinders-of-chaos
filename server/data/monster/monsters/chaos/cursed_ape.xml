@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Cursed Ape" nameDescription="cursed ape" race="undead" experience="142000" speed="470">
-	<health now="200000" max="200000" />
+<monster name="Cursed Ape" nameDescription="cursed ape" race="undead" experience="6700" speed="54">
+	<health now="15700" max="15700" />
 	<look type="1495" corpse="6068" />
-	<level min="1300" max="1500"/>
+	<level min="730" max="770"/>
 	<targetchange interval="5000" chance="8" />
 	<flags>
 		<flag summonable="0" />
@@ -18,16 +18,16 @@
 		<flag runonhealth="0" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-3500" max="-5500"/>
-		<attack name="physical" interval="2000" chance="40" range="7" min="-3330" max="-6210">
+		<attack name="melee" interval="2000" min="-490" max="-770"/>
+		<attack name="physical" interval="2000" chance="40" range="7" min="-470" max="-870">
 			<attribute key="shootEffect" value="largerock"/>
 		</attack>
-		<attack name="physical" interval="2000" chance="30" range="2" min="-3130" max="-6250">
+		<attack name="physical" interval="2000" chance="30" range="2" min="-440" max="-880">
 			<attribute key="areaEffect" value="redspark"/>
 		</attack>
 	</attacks>
 	<defenses armor="80" defense="80">
-		<defense name="healing" interval="2000" chance="15" min="300" max="1500">
+		<defense name="healing" interval="2000" chance="15" min="310" max="1570">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 	</defenses>

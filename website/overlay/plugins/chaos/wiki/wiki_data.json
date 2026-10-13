@@ -27448,6 +27448,22 @@
 					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
+					"id": "monster:blightwing-hornet",
+					"name": "Blightwing Hornet",
+					"sub": "Invasion: Wildwood Uprising.",
+					"color": "#d6c9ae",
+					"sections": [
+						{
+							"h": "Monster",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [["Health", "180"], ["Experience", "130"]]
+						},
+						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
+					],
+					"icon": "wiki/i/k-ember-banner.png"
+				},
+				{
 					"id": "monster:bracket-fungus-golem",
 					"name": "Bracket Fungus Golem",
 					"sub": "Invasion: Wildwood Uprising.",
@@ -27608,22 +27624,6 @@
 					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
-					"id": "monster:giant-hornet",
-					"name": "Giant Hornet",
-					"sub": "Invasion: Wildwood Uprising.",
-					"color": "#d6c9ae",
-					"sections": [
-						{
-							"h": "Monster",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [["Health", "180"], ["Experience", "130"]]
-						},
-						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					],
-					"icon": "wiki/i/k-ember-banner.png"
-				},
-				{
 					"id": "monster:giant-stag-beetle",
 					"name": "Giant Stag Beetle",
 					"sub": "Invasion: Wildwood Uprising.",
@@ -27650,6 +27650,22 @@
 							"cols": ["", ""],
 							"w": [35, 65],
 							"rows": [["Health", "1,200"], ["Experience", "880"]]
+						},
+						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
+					],
+					"icon": "wiki/i/k-ember-banner.png"
+				},
+				{
+					"id": "monster:gloomtusk-boar",
+					"name": "Gloomtusk Boar",
+					"sub": "Invasion: Wildwood Uprising.",
+					"color": "#d6c9ae",
+					"sections": [
+						{
+							"h": "Monster",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [["Health", "220"], ["Experience", "120"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
 					],
@@ -28518,22 +28534,6 @@
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]}
 					],
 					"icon": "wiki/i/k-blood-skull.png"
-				},
-				{
-					"id": "monster:wild-boar",
-					"name": "Wild Boar",
-					"sub": "Invasion: Wildwood Uprising.",
-					"color": "#d6c9ae",
-					"sections": [
-						{
-							"h": "Monster",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [["Health", "220"], ["Experience", "120"]]
-						},
-						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					],
-					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:ysgrath-the-cinderheart",

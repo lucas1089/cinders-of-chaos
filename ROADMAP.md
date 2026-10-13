@@ -179,9 +179,11 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 ## Open decisions and loose ends
 
-- Open (monster lint, server/README.md "Monster lint"): Wild Boar and Giant Hornet of the wildwood share their names
-  with base Lua monsters, which overwrite ours at load; rename one side. Vharok's melee bleed value does nothing.
-  Vorathrax and Gloomfire carry a 2,005,500 hit. 33 dormant donor imports need clamped levels before they spawn.
+- Done (monster lint follow-up, server/README.md "Monster lint", `tools/tune_monsters.py`): Wild Boar and Giant
+  Hornet renamed Gloomtusk Boar and Blightwing Hornet; donor boss experience in the world boss band; the 2,005,500
+  hits and Vharok's dead bleed fixed; late-game gold, Garack's loot, Azure Dragon's elements; Orcaruz, Fenmaw,
+  Plagueroot and Mushroom King retuned; the 32 dormant imports clamped to levels 650-1300; four pirate roles.
+  Open: computed, not measured in game.
 - Decided and done (owner: rename all of it): monsters and items (part one), NPCs, dialogue, quests, raids,
   achievements, map texts and houses (part two), row 88. Every list is keyed by the sha256 of the old name, so the
   repository holds no old name. Left on purpose: file and folder names that players never see (NPC scripts, raid and

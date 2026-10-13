@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Elite Tidecrest Serpent" nameDescription="an elite tidecrest serpent" race="venom"  experience="500000" speed="650" manacost="0">
-	<health now="450000" max="450000"/>
+<monster name="Elite Tidecrest Serpent" nameDescription="an elite tidecrest serpent" race="venom"  experience="14200" speed="46" manacost="0">
+	<health now="21800" max="21800"/>
 	<look type="675" corpse="6068"/>
-	<level min="2500" max="3000"/>
+	<level min="950" max="990"/>
   	<targetchange interval="2000" chance="9" />
   	<flags>
 		<flag summonable="0" />
@@ -18,23 +18,23 @@
 		<flag runonhealth="0" />
   	</flags>
   	<attacks>
-    	<attack name="melee" interval="2000" min="-15000" max="-20000" />
-		<attack name="death" interval="2000" chance="30" range="7" target="1" min="-15000" max="-22000">
+    	<attack name="melee" interval="2000" min="-530" max="-710" />
+		<attack name="death" interval="2000" chance="30" range="7" target="1" min="-530" max="-780">
       		<attribute key="shootEffect" value="earth" />
 			<attribute key="areaEffect" value="rednote" />
     	</attack>
-		<attack name="lifedrain" interval="2000" chance="25" target="0" radius="3" min="-15000" max="-25000">
+		<attack name="lifedrain" interval="2000" chance="25" target="0" radius="3" min="-530" max="-880">
       		<attribute key="areaEffect" value="redshimmer" />
     	</attack>
-		<attack name="ice" interval="2000" chance="30" length="8" spread="3" min="-19000" max="-30000">
+		<attack name="ice" interval="2000" chance="30" length="8" spread="3" min="-670" max="-1060">
 			<attribute key="areaEffect" value="watersplash" />
 		</attack>
-		<attack name="physical" interval="2000" chance="25" length="4" spread="0" min="-15000" max="-22000">
+		<attack name="physical" interval="2000" chance="25" length="4" spread="0" min="-530" max="-780">
       		<attribute key="areaEffect" value="blueshimmer" />
     	</attack>
   	</attacks>
   	<defenses armor="51" defense="51">
-    	<defense name="healing" interval="2000" chance="15" min="7000" max="12000">
+    	<defense name="healing" interval="2000" chance="15" min="1270" max="2180">
       		<attribute key="areaEffect" value="bluenote" />
     	</defense>
     	<defense name="melee" interval="2000" chance="10">

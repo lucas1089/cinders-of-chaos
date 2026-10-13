@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Mercenary Ranger" nameDescription="a mercenary ranger" race="blood" experience="111000" speed="390" manacost="0">
-	<health now="102000" max="102000"/>
+<monster name="Mercenary Ranger" nameDescription="a mercenary ranger" race="blood" experience="5450" speed="55" manacost="0">
+	<health now="14200" max="14200"/>
 	<look type="1503" head="133" corpse="6068"/>
-	<level min="1200" max="1300"/>
+	<level min="690" max="730"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0"/>
@@ -18,14 +18,14 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="melee" interval="1500" range="6" min="-3570" max="-5000">
+		<attack name="melee" interval="1500" range="6" min="-540" max="-760">
 		<attribute key="shootEffect" value="poisonarrow"/>
 		</attack>
-		<attack name="energy" range="7" target="1" interval="2000" chance="66" min="-3550" max="-5600">
+		<attack name="energy" range="7" target="1" interval="2000" chance="66" min="-540" max="-850">
 			<attribute key="shootEffect" value="throwingstar"/>
 			<attribute key="areaEffect" value="energy"/>
 		</attack>
-		<attack name="bleedcondition" interval="2000" chance="20" target="0" radius="3" range="7" min="-1800" max="-2600">
+		<attack name="bleedcondition" interval="2000" chance="20" target="0" radius="3" range="7" min="-270" max="-390">
 			<attribute key="shootEffect" value="shiverarrow"/>
 		</attack>
 	</attacks>

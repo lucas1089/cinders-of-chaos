@@ -4558,13 +4558,62 @@ registered, and a base Lua type of the same name refills ours when the Lua monst
 - 17 wrong articles in nameDescription; 240 donor `<monster>` attributes and 83 `<strategy>` / `<levelconfig>` lines
   the base never reads.
 
-**Open (in `ALLOW`, owner decisions):** Wild Boar and Giant Hornet (wildwood, invasion monsters) share their names with
-base Lua types, which refill ours at load: ours fight with the base stats and looks. Renaming either side touches
-generated tables (`bounty_pool.lua`, `bestiary_spawns.lua`, the wiki). Vharok's melee `bleed="900"` does nothing (the
-base reads no value there). Vorathrax and Gloomfire have a 2,005,500 earth hit (they spawn nowhere). The 33 dormant
-donor imports (`DORMANT_IMPORTS`) have levels up to 6500, so the level scaling gives them speeds far above 2000:
-clamp them like the late game set before spawning one. The five Lua imports (butterflies, Scar Tribe Warrior,
-Overcharged Energy Elemental) replace base types of the same name on purpose.
+**Kept on purpose (in `ALLOW`):** the five Lua imports (butterflies, Scar Tribe Warrior, Overcharged Energy
+Elemental) replace base types of the same name; the three goblins flee from the first hit.
+
+**Follow-up 2026-10-13 (owner approval; `tools/tune_monsters.py`, idempotent, `--check` / `--table`).** Each change
+is a row of its `TUNING` table; `check_content.py` fails on a file the tool would still change. Computed from the
+spawned late-game set, not measured in game.
+- Renamed: Wild Boar -> Gloomtusk Boar, Giant Hornet -> Blightwing Hornet (files `wildwood/gloomtusk_boar.xml`,
+  `wildwood/blightwing_hornet.xml`; `invasion_config.lua`; the corpses "dead gloomtusk boar", "dead blightwing
+  hornet" and the outfit names in `art_import/things.csv`, `art_items.csv`, `art_outfits.csv`; the wiki). The base
+  Lua types keep their names, and so do `bounty_pool.lua`, `bestiary_spawns.lua` and `chaos_poi.lua`, which name
+  the base hornet of the base map (level 192).
+- Vharok: the dead `bleed="900"` is gone from its melee (its Hemorrhage stays the bleed). Vorathrax and Gloomfire:
+  the 2,005,500 earth hit is now 26,000-32,000 and 36,000-42,000, the range of each one's own ranged fire.
+- Lady bug keeps its element table: it is immune to earth, which beats the +20 of its peers.
+
+| Monster | Before | After |
+|---|---|---|
+| Ormathulak (910M health) | 500,000,000 exp | 22,000,000 |
+| Talath (510M, armor 200, heals 200k) | 600,000,000 | 21,000,000 |
+| Gloomfire (510M) | 600,000,000 | 20,000,000 |
+| Saga (45M) | 80,000,000 | 18,000,000 |
+| Legendary Warrior (7M) | 45,000,000 | 7,000,000 (the world bosses' ~1 exp per health) |
+| Fenmaw (level 200-250, 12,000 health) | 14,250 exp, speed 658 (2,056 at 250) | 4,750 (1.0 exp per health at the level), speed 190 (594) |
+| Plagueroot (level 320-380, 27,000) | 33,000 exp (3.6 per health) | 9,700 (1.05) |
+| Mushroom King (6,000 health) | strongest hit 365 (6%) | 900 (15%, like Ancient Treant 601 / 4,000) |
+| Orcaruz (level 200) | 30 crystal coins at 66%: ~102,300 gold | ~250 (the late-game coin lines, 5 platinum) |
+| Blazebringer / Frost Maiden / Tundra Troll / Azure Dragon | 35 / 63 / 50 / 63 gold | ~899 each (the set's coin lines) |
+| Garack | 3 coin lines | the tier 1 loot (coins and the 16-item equipment pool of Orclops Ravager) |
+| Azure Dragon | no element table | the set's: physical and holy -15, fire, energy, ice, earth +20, death +10 |
+
+**Dormant imports clamped.** The 32 donor imports that spawn nowhere keep their order but move to levels 650-1300
+(ranges of 40, from Cunning Hyaena 650-690 to Facetis 1260-1300). At the middle level L each gets the late-game
+curves fitted over the 18 spawned monsters: health at the level 75,000 + 345 (L - 670), experience per health
+1.15 + 0.0039 (L - 670), speed at the level 380-480, the strongest hit 800 + 0.8 (L - 650) before the level bonus
+(other attacks by the same factor), heals 10% of the base health. At 670 that gives exactly Shaper Matriarch
+(12,600 / 4,300 / 57). Before / after (level, base health, exp, speed, strongest hit):
+
+| Monster | Before | After |
+|---|---|---|
+| Cunning Hyaena | 1200-1300 / 110,000 / 125,000 / 620 / 7,500 | 650-690 / 12,600 / 4,300 / 57 / 820 |
+| Elite Spider | 1300-1450 / 190,000 / 131,000 / 470 / 6,000 | 710-750 / 14,900 / 6,050 / 54 / 860 |
+| Captain Bloodbeard | 1650-1800 / 250,000 / 165,000 / 470 / 7,000 | 790-830 / 17,600 / 8,600 / 51 / 930 |
+| Scourgejaw | 1650-1800 / 250,000 / 165,000 / 470 / 7,000 | 850-890 / 19,400 / 10,650 / 49 / 980 |
+| Acid Hydra | 2000-2500 / 380,000 / 480,500 / 650 / 10,000 | 910-950 / 20,900 / 12,800 / 48 / 1,020 |
+| Elite Twisted Shaper | 2500-3000 / 4,000,000 / 650,000 / 650 / 26,000 | 960-1000 / 22,000 / 14,550 / 46 / 1,060 |
+| Jungle Warrior | 2800-3200 / 600,000 / 790,000 / 650 / 16,000 | 1100-1140 / 24,800 / 19,900 / 43 / 1,180 |
+| Vyrm | 5000-5500 / 2,300,000 / 4,000,000 / 850 / 36,000 | 1180-1220 / 26,100 / 23,050 / 41 / 1,240 |
+| Facetis | 6000-6500 / 3,900,000 / 4,900,000 / 850 / 50,000 | 1260-1300 / 27,300 / 26,250 / 40 / 1,300 |
+
+(`python3 -I tools/tune_monsters.py --table` prints all rows.)
+
+**Pirates.** Captain Bloodbeard, Ironhook Corsair, Scourgejaw and Stormy Seadevil were one file under four names.
+Roles of about the same expected damage per second before the scaling (~2,000-2,500): Scourgejaw the melee bruiser
+(melee, a cleave wave, a bleed), Ironhook Corsair ranged (spear every turn, a blast; targetdistance 4), Stormy
+Seadevil the caster (energy beam, ice ball, a slow; targetdistance 3), Captain Bloodbeard the summoner (melee,
+knives, up to 3 Pirate Skeletons). Loot, elements and looks unchanged.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
@@ -4604,7 +4653,7 @@ monster_tiers' `cfg.skip`: no random modifiers (Regenerating, Juggernaut or Expl
 | Skaldra the Rime Queen (frost wyrm queen, look 1472) | 16M | melee 2-4.5k, rime breath (length 9) 3.5-6.5k, hailstorm r3 3-5.5k, shatter r6 2.5-4k, frostbite DoT 6-9k, slow r4 | 70% 3 Frost Dragons, 40% enrage (blizzard r7 2-3.5k / 7 s), 15% 4 Ice Golems | fire -20% / ice immune | Seraphic set (tabard, piercer, greaves, quiver, ring), Myst galoshes |
 | The Rotmother (plague abomination, look 238) | 22M | poisoned melee 2-4k, bile wave 3.5-6k, spore burst r4 3-5k, miasma DoT r6 6-10k, lifedrain 2.5-4k; heals 40-60k | 75% 5 Defilers, 50% 4 Plaguesmiths, 25% enrage (miasma r8 1.5-2.5k / 6 s) | fire -25%, holy -10% / earth immune | legs and boots of all three sets, Myst amulet |
 | Nyxareth the Void Archon (void caster, look 862, keeps distance 4) | 15M | oblivion bolt r3 3.5-6k, rift beam (length 8) 4.5-8k, mana drain r6 3-5k, curse DoT 5-8k, drunk r5 | 70% 4 Phantasms, 40% enrage (void pulse r7 2.5-4k / 7 s), 15% 4 Lost Souls | holy -25%, physical -10% / death immune | Myst Regalia set (helmet, mantle, spellbook, wand, ring), Seraphic necklace |
-| Vharok the Blood Colossus (blood colossus, look 591) | 24M | bleeding melee 3-6.5k, crimson cleave wave 4-7.5k, quake r4 3-5k, blood leech r3 3-5k, hemorrhage DoT 6-9k; heals 60-100k | 75% 4 Blood Beasts, 45% enrage (blood nova r6 2.5-4.5k / 7 s, +5k health per player hit), 20% 3 Juggernauts | holy -20% / physical 40% resist, lifedrain immune | Dawnforged plate, great axe, skull crusher, mace, amulet; Seraphic helmet |
+| Vharok the Blood Colossus (blood colossus, look 591) | 24M | melee 3-6.5k, crimson cleave wave 4-7.5k, quake r4 3-5k, blood leech r3 3-5k, hemorrhage DoT 6-9k; heals 60-100k | 75% 4 Blood Beasts, 45% enrage (blood nova r6 2.5-4.5k / 7 s, +5k health per player hit), 20% 3 Juggernauts | holy -20% / physical 40% resist, lifedrain immune | Dawnforged plate, great axe, skull crusher, mace, amulet; Seraphic helmet |
 
 Every boss: 55-75 crystal coins, 12-15 Orbs of Upheaval, 5-7 Orbs of Fate (80-90%), 4-6% per set item; immune to paralyze,
 invisibility, outfit and drunk. Adds get the configured health (100k-200k) so they matter at level 1000. Look types are

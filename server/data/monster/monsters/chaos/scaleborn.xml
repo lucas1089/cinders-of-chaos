@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Scaleborn" nameDescription="a Scaleborn" race="fire" experience="500000" speed="650" manacost="0">
-	<health now="450000" max="450000"/>
+<monster name="Scaleborn" nameDescription="a Scaleborn" race="fire" experience="16100" speed="45" manacost="0">
+	<health now="22900" max="22900"/>
 	<look type="1531" corpse="6068" />
-	<level min="2500" max="3000"/>
+	<level min="1000" max="1040"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0"/>
@@ -18,26 +18,26 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-6000" max="-10000"/>
-		<attack name="physical" interval="2000" chance="38" range="7" target="1" min="-3000" max="-7000">
+		<attack name="melee" interval="2000" min="-470" max="-790"/>
+		<attack name="physical" interval="2000" chance="38" range="7" target="1" min="-240" max="-550">
 			<attribute key="shootEffect" value="largerock"/>
 			<attribute key="areaEffect" value="groundshaker"/>
 		</attack>
-		<attack name="death" interval="2000" chance="30" target="1" range="7" radius="3" min="-7000" max="-14000">
+		<attack name="death" interval="2000" chance="30" target="1" range="7" radius="3" min="-550" max="-1100">
 			<attribute key="areaEffect" value="mortarea" />
 			<attribute key="shootEffect" value="suddendeath" />
 		</attack>
-		<attack name="lifedrain" interval="2000" chance="25" range="7" target="1" radius="4" min="-6500" max="-11500">
+		<attack name="lifedrain" interval="2000" chance="25" range="7" target="1" radius="4" min="-510" max="-900">
 			<attribute key="shootEffect" value="largerock"/>
 			<attribute key="areaEffect" value="explosionarea"/>
 		</attack>
-		<attack name="fire" interval="2000" chance="34" range="7" radius="7" target="1" min="-6500" max="-11800">
+		<attack name="fire" interval="2000" chance="34" range="7" radius="7" target="1" min="-510" max="-930">
 			<attribute key="shootEffect" value="fire"/>
 			<attribute key="areaEffect" value="firearea"/>
 		</attack>
 	</attacks>
 	<defenses armor="77" defense="77">
-		<defense name="healing" interval="2000" chance="9" min="1500" max="5000">
+		<defense name="healing" interval="2000" chance="9" min="690" max="2290">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

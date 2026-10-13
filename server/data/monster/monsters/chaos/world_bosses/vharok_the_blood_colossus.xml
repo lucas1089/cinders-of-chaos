@@ -22,7 +22,7 @@
 		<flag canwalkonpoison="1" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-3000" max="-6500" bleed="900" />
+		<attack name="melee" interval="2000" min="-3000" max="-6500" />
 		<!-- Crimson Cleave: wide wave in front -->
 		<attack name="physical" interval="2000" chance="15" length="6" spread="3" min="-4000" max="-7500">
 			<attribute key="areaEffect" value="redsmoke" />

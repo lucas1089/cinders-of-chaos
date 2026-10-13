@@ -29,6 +29,7 @@ longer matches fails too):
  - scripts: every <event name> a CreatureEvent of server/data/scripts (or BASE_EVENTS), script= files present
  - loot: chance 1-100000, countmax >= 1; speed 0-MAX_SPEED at the top level
  - Lua monsters: name, lookType, corpse and loot ids by the same rules
+ - the rows of server/tools/tune_monsters.py are applied (names, experience, levels, loot of the lint follow-up)
 Options (not used by CI): --base DATA_DIR also checks every loot and corpse id against that items.xml and that a
 corpse is a container; --pair Tibia.dat recounts the outfits and blank outfits of a pair and compares PAIR_*.
 Usage: python3 tools/ci/check_content.py [--base DATA_DIR] [--pair Tibia.dat]"""
@@ -103,6 +104,7 @@ if os.path.exists(np_):
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'server', 'tools'))
 sys.dont_write_bytecode = True
 import fix_monster_xml as fmx
+import tune_monsters as tune
 KNOWN_SPELLS, KNOWN_FLAGS, KNOWN_ELEMENTS = fmx.known_spells(), fmx.known_flags(), set(fmx.ELEMENTS)
 
 def check_monster_body(f, t):
@@ -132,6 +134,9 @@ def check_monster_body(f, t):
                 fail(f'{f}: unknown element key {k!r}')
     if fmx.fix_text(t, KNOWN_FLAGS) != t:
         fail(f'{f}: run server/tools/fix_monster_xml.py on it')
+    rel = os.path.relpath(f, 'server/data/monster/monsters/chaos').replace(os.sep, '/')
+    if rel in tune.TUNING and tune.apply(t, tune.TUNING[rel]) != t:
+        fail(f'{f}: run server/tools/tune_monsters.py on it')
 
 # experience > 0 but no loot on purpose: adds and bosses whose system pays the rewards (uber.lua, guildboss.lua,
 # raid.lua). Experience 0 (summons, pets, goblins, wardens) needs no entry. Every other monster needs a loot item.
@@ -284,25 +289,7 @@ ALLOW = {
     ('name.base-type', 'yellow butterfly'): 'Lua import meant to replace the base type of that name',
     ('name.base-type', 'scar tribe warrior'): 'Lua import meant to replace the base type of that name',
     ('name.base-type', 'overcharged energy elemental'): 'Lua import meant to replace the base type of that name',
-    ('name.base-type', 'wild boar'): 'OPEN: a base Lua type of this name refills ours at load; renaming either side is '
-                                     'an owner decision (generated tables and the wiki name it), see server/README.md',
-    ('name.base-type', 'giant hornet'): 'OPEN: as Wild Boar',
-    ('spell.melee-bleed', 'vharok the blood colossus'): 'OPEN: bleed="900" was meant as damage; the base reads none, '
-                                                        'a real bleed changes the measured boss balance',
-    ('spell.big-hit', 'vorathrax'): 'OPEN: donor value 2,005,500, spawns nowhere; retune before it spawns',
-    ('spell.big-hit', 'gloomfire'): 'OPEN: as Vorathrax',
 }
-# imported donor monsters that spawn nowhere (data/monster/CUSTOM_MONSTERS.md); their <level> runs to 6500, so at the top
-# of it the global level scaling gives speeds far above MAX_SPEED. Clamp the level and speed (as late_game.py's set was)
-# before one of them spawns, then drop it from this list.
-DORMANT_IMPORTS = ('acid hydra', 'black stag', 'black vixen', 'captain bloodbeard', 'celestial wyrm', 'cunning hyaena',
-                   'cursed ape', 'dark sorcerer', 'elite spider', 'elite tidecrest serpent', 'elite twisted shaper',
-                   'facetis', 'fenmaw', 'golden dragon', 'ice lich', 'ironhook corsair', 'jungle warrior', 'mercenary',
-                   'mercenary ranger', 'mutated visco', 'nexweaver', 'scaleborn', 'scourgejaw', 'silicron',
-                   'spiky carnivor', 'spirit of purity', 'stormy seadevil', 'thal', 'twisted shaper', 'vorkhaz', 'vyrm',
-                   'webbound crawler', 'winterstride')
-for _n in DORMANT_IMPORTS:
-    ALLOW[('speed', _n)] = 'dormant donor import, spawns nowhere (DORMANT_IMPORTS)'
 allow_used = set()
 
 def rule(code, name, f, msg):

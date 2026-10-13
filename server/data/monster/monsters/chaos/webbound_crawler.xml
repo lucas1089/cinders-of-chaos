@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Webbound Crawler" nameDescription="a webbound crawler" race="blood" experience="136000" speed="470">
-	<health now="200000" max="200000" />
+<monster name="Webbound Crawler" nameDescription="a webbound crawler" race="blood" experience="7300" speed="53">
+	<health now="16300" max="16300" />
 	<look type="579" corpse="6068" />
-	<level min="1400" max="1550"/>
+	<level min="750" max="790"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag summonable="0" />
@@ -20,23 +20,23 @@
 		<flag canwalkonfire="0" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-2800" max="-4000"/>
-		<attack name="death" interval="2000" chance="9" range="7" radius="4" target="1" min="-2800" max="-4100">
+		<attack name="melee" interval="2000" min="-460" max="-650"/>
+		<attack name="death" interval="2000" chance="9" range="7" radius="4" target="1" min="-460" max="-670">
 			<attribute key="shootEffect" value="suddendeath"/>
 			<attribute key="areaEffect" value="mortarea"/>
 		</attack>
-		<attack name="lifedrain" interval="2000" chance="9" length="5" spread="0" min="-3500" max="-5000">
+		<attack name="lifedrain" interval="2000" chance="9" length="5" spread="0" min="-570" max="-820">
 			<attribute key="areaEffect" value="redshimmer"/>
 		</attack>
-		<attack name="earth" interval="2000" chance="12" range="5" length="5" spread="3" min="-3500" max="-5500">
+		<attack name="earth" interval="2000" chance="12" range="5" length="5" spread="3" min="-570" max="-900">
 			<attribute key="areaEffect" value="greenbubble"/>
 	 	</attack>
-		<attack name="physical" interval="2000" chance="11" radius="3" target="0" min="-3100" max="-5300">
+		<attack name="physical" interval="2000" chance="11" radius="3" target="0" min="-510" max="-870">
 			<attribute key="areaEffect" value="blackspark"/>
 		</attack>
 	</attacks>
 	<defenses armor="50" defense="50">
-		<defense name="healing" interval="2000" chance="25" min="2000" max="2195">
+		<defense name="healing" interval="2000" chance="25" min="1490" max="1630">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

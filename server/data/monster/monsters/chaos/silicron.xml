@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Silicron" nameDescription="a Silicron" race="blood" experience="3900000" speed="850" manacost="0">
-	<health now="2900000" max="2900000"/>
+<monster name="Silicron" nameDescription="a Silicron" race="blood" experience="24650" speed="41" manacost="0">
+	<health now="26700" max="26700"/>
 	<look type="875" corpse="6068" />
-	<level min="5500" max="6000"/>
+	<level min="1220" max="1260"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />
@@ -21,19 +21,19 @@
 		<flag canwalkonpoison="0" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-30000" max="-40000"/>
-		<attack name="physical" interval="2000" chance="35" range="6" min="-32000" max="-48000">
+		<attack name="melee" interval="2000" min="-760" max="-1020"/>
+		<attack name="physical" interval="2000" chance="35" range="6" min="-810" max="-1220">
 			<attribute key="shootEffect" value="largerock"/>
 		</attack>
-		<attack name="ice" interval="2000" chance="55" radius="3" target="0" min="-32000" max="-48000">
+		<attack name="ice" interval="2000" chance="55" radius="3" target="0" min="-810" max="-1220">
 			<attribute key="areaEffect" value="poff"/>
 		</attack>
-		<attack name="ice" interval="2000" chance="65" range="7" radius="3" target="1" min="-32000" max="-50000">
+		<attack name="ice" interval="2000" chance="65" range="7" radius="3" target="1" min="-810" max="-1270">
 			<attribute key="shootEffect" value="snowball"/>
 		</attack>
 	</attacks>
 	<defenses armor="80" defense="87">
-		<defense name="healing" interval="1000" chance="20" min="12000" max="220000">
+		<defense name="healing" interval="1000" chance="20" min="150" max="2670">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 	</defenses>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Plagueroot" nameDescription="a plagueroot" race="blood" experience="33000" speed="440" manacost="0">
+<monster name="Plagueroot" nameDescription="a plagueroot" race="blood" experience="9700" speed="440" manacost="0">
 	<health now="27000" max="27000"/>
 	<level min="320" max="380"/>
 	<look type="1477" corpse="6068"/>
