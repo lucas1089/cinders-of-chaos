@@ -609,6 +609,27 @@ hero.sent = {}
 registry.ChaosDeathRecapExtended.onExtendedOpcode(hero, 154, json.encode({action = "get", data = {id = olderId}}))
 eq(#hero.sent, 1, "older recap sent")
 eq(json.decode(hero.sent[1].s).data.id, olderId, "the asked one")
+-- the display scale (display_scale_core.lua): each recap at the factor of the level the character had at that death
+-- (a level-1000 death: x1000), whatever its level now; the stored rows stay raw
+dofile("data/scripts/chaos/display_scale_core.lua")
+local newest
+for _, r in ipairs(rows) do if r.player_id == 7 and (not newest or r.id > newest.id) then newest = r end end
+local rawData = newest.data
+local stored = json.decode(newest.data)
+stored.lvl = 1000
+newest.data = json.encode(stored)
+local storedAfter = newest.data
+hero.sent = {}
+registry.ChaosDeathRecapExtended.onExtendedOpcode(hero, 154, json.encode({action = "open", data = {}}))
+local hs = json.decode(hero.sent[1].s)
+eq(hs.data.recap.kb.a, 106 * 1000, "a level-1000 death: the killing blow x1000")
+eq(hs.data.recap.tot, stored.tot * 1000, "its total x1000")
+eq(hs.data.list[1].tot, stored.tot * 1000, "its summary x1000")
+eq(hs.data.list[2].tot, h.data.list[2].tot, "a level-120 death stays (x1)")
+eq(hs.data.recap.exp, stored.exp, "experience stays")
+eq(newest.data, storedAfter, "the stored row is not changed by the send")
+newest.data = rawData
+ChaosDisplayScale = nil
 -- another character's id: nothing
 local foeId
 for _, r in ipairs(rows) do if r.player_id == 8 then foeId = r.id end end

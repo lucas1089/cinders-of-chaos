@@ -595,6 +595,9 @@ end
 
 local function signature(player, w, a)
 	local sig = tostring(a.ver) .. ":" .. tostring(w.seg) .. ":" .. (a.share and 1 or 0)
+	if ChaosDisplayScale and ChaosDisplayScale.forPlayer then -- a new display scale (a level up) is a new state
+		sig = sig .. ":x" .. ChaosDisplayScale.forPlayer(player)
+	end
 	if w.party then
 		local party = player:getParty()
 		if party then
@@ -618,6 +621,11 @@ local function send(player, w)
 	end
 	w.seg = st.sel
 	w.sig = signature(player, w, a)
+	-- the viewer's display scale (display_scale_core.lua): totals, rows, elements and the party's totals
+	local DS = ChaosDisplayScale
+	if DS and DS.apply then
+		st = DS.apply("combatLogState", player, st)
+	end
 	Chaos.sendChunked(player, OPCODE, json.encode({action = "state", data = st}))
 end
 CL.send = send

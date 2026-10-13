@@ -35,6 +35,10 @@ local function nowMs()
 end
 
 local function send(player, action, data)
+	-- the viewer's display scale (display_scale_core.lua): the members' health and mana
+	if action == "state" and ChaosDisplayScale and ChaosDisplayScale.apply then
+		data = ChaosDisplayScale.apply("partyState", player, data)
+	end
 	Chaos.send(player, OPCODE, action, data)
 end
 

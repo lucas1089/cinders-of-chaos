@@ -1,0 +1,346 @@
+# The display scale (server/README.md "Display scale"). Every combat number a player sees is the internal number x the
+# factor of that player's own level; the internal numbers (health, damage, balance, the database) never change. The
+# factors come from Lua once at load: Game.setDisplayScale(factors) with factors[level] for levels 1..n (whole numbers,
+# data/scripts/chaos/display_scale.lua and display_scale_config.lua: 1 up to level 100, 1000 at level 1000, 10000 from
+# level 1500 on); a higher level uses the last entry. Without a table every factor is 1 and nothing changes.
+#   * ProtocolGame::sendTextMessage: the damage and heal messages (MESSAGE_DAMAGE_DEALT / _RECEIVED / _OTHERS,
+#     MESSAGE_HEALED / _OTHERS) that a player receives carry their values x that player's factor (uint32, clamped) and
+#     the numbers of the text that count hitpoints, mana, energy shield or health x the same factor ("1 hitpoint" shown
+#     as more becomes "hitpoints"). So each spectator sees its own scale: the attacker, the target and the bystanders
+#     of one hit each get their own numbers. The experience messages and every other type are unchanged.
+#   * ProtocolGame::AddPlayerStats: the player's own health, max health, mana and max mana x its factor (uint32,
+#     clamped). Health bars of creatures stay percentages.
+#   * Player::sendEnergyShield (patch 0015): "es:<current>:<max>" x the player's factor.
+#   * Lua: Game.setDisplayScale(factors) (returns the levels in the table), player:getDisplayScale().
+# New header src/chaosdisplay.h (pure functions: the table, the clamp, the text rule; tests in
+# server/tools/chaosdisplay_test.cpp, CI). A whole-number factor keeps sums exact: the shown parts of a hit add up to
+# the shown total, and a shown health minus the shown hits is the new shown health. Guard: tools/display_scale_patch_test.py
+# (CI). Applies after 0001-0036.
+diff --git a/src/chaosdisplay.h b/src/chaosdisplay.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaosdisplay.h
+@@ -0,0 +1,107 @@
++// Chaos (patch 0037): the display scale. Every combat number a player sees is the internal number x the factor of
++// that player's level; the internal numbers (health, damage, the database) never change. The factors come from Lua
++// (Game.setDisplayScale, data/scripts/chaos/display_scale.lua: whole numbers, 1 up to level 100, 1000 at level
++// 1000, capped); without a table every factor is 1 and nothing changes. Pure functions, no engine types, so
++// server/tools/chaosdisplay_test.cpp tests them alone.
++
++#ifndef FS_CHAOSDISPLAY_H
++#define FS_CHAOSDISPLAY_H
++
++#include <algorithm>
++#include <cctype>
++#include <cstdint>
++#include <limits>
++#include <string>
++#include <vector>
++
++namespace ChaosDisplay {
++
++// the largest number written into a text: the same bound as the Lua side's JSON numbers (2^53)
++constexpr uint64_t TEXT_MAX = 9007199254740992ULL;
++
++// factor of level 1..n at index level - 1; a level past the end uses the last entry (the cap)
++inline std::vector<uint32_t>& table()
++{
++	static std::vector<uint32_t> factors;
++	return factors;
++}
++
++inline uint32_t factorOf(uint32_t level)
++{
++	const std::vector<uint32_t>& factors = table();
++	if (factors.empty()) {
++		return 1;
++	}
++	const size_t index = std::min<size_t>(std::max<uint32_t>(level, 1), factors.size()) - 1;
++	return std::max<uint32_t>(factors[index], 1);
++}
++
++// value x factor, clamped to [0, max]
++inline uint64_t scale(uint64_t value, uint32_t factor, uint64_t max)
++{
++	if (factor <= 1) {
++		return std::min<uint64_t>(value, max);
++	}
++	if (value > max / factor) {
++		return max;
++	}
++	return value * factor;
++}
++
++// a uint32 packet field (TextMessage values, the stats packet): a negative value is 0
++inline uint32_t scaleU32(int64_t value, uint32_t factor)
++{
++	if (value <= 0) {
++		return 0;
++	}
++	return static_cast<uint32_t>(scale(static_cast<uint64_t>(value), factor, std::numeric_limits<uint32_t>::max()));
++}
++
++// the numbers of a damage / heal text: a run of digits followed by " hitpoint", " mana", " energy shield" or
++// " health" ("A dragon loses 120 hitpoints due to your attack." -> "... loses 120000 hitpoints ..."); other numbers
++// (a name, a level, experience) stay as they are. "1 hitpoint" that became more than one is "hitpoints".
++inline std::string scaleText(const std::string& text, uint32_t factor)
++{
++	if (factor <= 1) {
++		return text;
++	}
++	static const char* const units[] = {" hitpoint", " mana", " energy shield", " health"};
++	std::string out;
++	out.reserve(text.size() + 16);
++	size_t i = 0;
++	while (i < text.size()) {
++		if (text[i] < '0' || text[i] > '9' || (i > 0 && (std::isalnum(static_cast<unsigned char>(text[i - 1])) || text[i - 1] == '.'))) {
++			out.push_back(text[i++]);
++			continue;
++		}
++		size_t end = i;
++		while (end < text.size() && text[end] >= '0' && text[end] <= '9') {
++			++end;
++		}
++		const char* unit = nullptr;
++		for (const char* u : units) {
++			if (text.compare(end, std::char_traits<char>::length(u), u) == 0) {
++				unit = u;
++				break;
++			}
++		}
++		if (!unit || end - i > 18) {
++			out.append(text, i, end - i);
++			i = end;
++			continue;
++		}
++		const uint64_t shown = scale(std::stoull(text.substr(i, end - i)), factor, TEXT_MAX);
++		out += std::to_string(shown);
++		i = end;
++		static const std::string singular = " hitpoint";
++		if (unit == units[0] && shown != 1 && text.compare(end, singular.size() + 1, singular + "s") != 0) {
++			out += singular + "s";
++			i = end + singular.size();
++		}
++	}
++	return out;
++}
++
++} // namespace ChaosDisplay
++
++#endif
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -10,6 +10,7 @@
+ #include "chat.h"
+ #include "player.h"
+ #include "clientguard.h"
++#include "chaosdisplay.h"
+ #include "game.h"
+ #include "protocolstatus.h"
+ #include "spells.h"
+@@ -2190,6 +2191,7 @@ void LuaScriptInterface::registerFunctio
+ 
+ 	registerMethod("Game", "setSpawnIntervalPercent", LuaScriptInterface::luaGameSetSpawnIntervalPercent);
+ 	registerMethod("Game", "setSpawnIntervalZones", LuaScriptInterface::luaGameSetSpawnIntervalZones);
++	registerMethod("Game", "setDisplayScale", LuaScriptInterface::luaGameSetDisplayScale); // Chaos (src-patch 0037)
+ 
+ 	// Variant
+ 	registerClass("Variant", "", LuaScriptInterface::luaVariantCreate);
+@@ -2528,6 +2530,7 @@ void LuaScriptInterface::registerFunctio
+ 	registerMethod("Player", "getMaxMana", LuaScriptInterface::luaPlayerGetMaxMana);
+ 	registerMethod("Player", "setMaxMana", LuaScriptInterface::luaPlayerSetMaxMana);
+ 	registerMethod("Player", "getEnergyShield", LuaScriptInterface::luaPlayerGetEnergyShield); // Chaos (patch 0015)
++	registerMethod("Player", "getDisplayScale", LuaScriptInterface::luaPlayerGetDisplayScale); // Chaos (patch 0037)
+ 	registerMethod("Player", "setEnergyShield", LuaScriptInterface::luaPlayerSetEnergyShield);
+ 	registerMethod("Player", "getMaxEnergyShield", LuaScriptInterface::luaPlayerGetMaxEnergyShield);
+ 	registerMethod("Player", "setMaxEnergyShield", LuaScriptInterface::luaPlayerSetMaxEnergyShield);
+@@ -4943,6 +4946,38 @@ int LuaScriptInterface::luaGameSetSpawnI
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaGameSetDisplayScale(lua_State* L)
++{
++	// Game.setDisplayScale(factors) (Chaos, src-patch 0037): factors[level] for levels 1..n, whole numbers >= 1 (a
++	// missing or smaller entry is 1); a level above n uses factors[n]. The engine shows damage / heal text messages,
++	// a player's own health and mana and the energy shield in the receiving player's factor. An empty table turns
++	// it off. Returns how many levels the table has.
++	if (!isTable(L, 1)) {
++		reportErrorFunc(L, "Game.setDisplayScale: a table of factors expected");
++		pushBoolean(L, false);
++		return 1;
++	}
++	std::vector<uint32_t> factors;
++	lua_pushnil(L);
++	while (lua_next(L, 1) != 0) {
++		if (lua_isnumber(L, -2) && lua_isnumber(L, -1)) {
++			const double key = lua_tonumber(L, -2);
++			const double value = lua_tonumber(L, -1);
++			if (key >= 1 && key <= 100000) {
++				const size_t level = static_cast<size_t>(key);
++				if (factors.size() < level) {
++					factors.resize(level, 1);
++				}
++				factors[level - 1] = static_cast<uint32_t>(std::max<double>(1, std::min<double>(value, 1000000000)));
++			}
++		}
++		lua_pop(L, 1);
++	}
++	ChaosDisplay::table() = std::move(factors);
++	lua_pushnumber(L, ChaosDisplay::table().size());
++	return 1;
++}
++
+ int LuaScriptInterface::luaGameSetSpawnIntervalZones(lua_State* L)
+ {
+ 	// Game.setSpawnIntervalZones(globalPercent, zones) (Chaos, src-patches/0027)
+@@ -9085,6 +9120,19 @@ int LuaScriptInterface::luaPlayerSetMaxM
+ 	} else {
+ 		lua_pushnil(L);
+ 	}
++	return 1;
++}
++
++// Chaos (patch 0037): the display scale
++int LuaScriptInterface::luaPlayerGetDisplayScale(lua_State* L)
++{
++	// player:getDisplayScale(): the factor of the player's level in the table of Game.setDisplayScale (1 without one)
++	const Player* player = getUserdata<const Player>(L, 1);
++	if (player) {
++		lua_pushnumber(L, ChaosDisplay::factorOf(player->getLevel()));
++	} else {
++		lua_pushnil(L);
++	}
+ 	return 1;
+ }
+ 
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -591,6 +591,7 @@ class LuaScriptInterface
+ 
+ 		static int luaGameSetSpawnIntervalPercent(lua_State* L);
+ 		static int luaGameSetSpawnIntervalZones(lua_State* L);
++		static int luaGameSetDisplayScale(lua_State* L); // Chaos (src-patch 0037)
+ 
+ 		// Variant
+ 		static int luaVariantCreate(lua_State* L);
+@@ -918,6 +919,7 @@ class LuaScriptInterface
+ 		static int luaPlayerGetMaxMana(lua_State* L);
+ 		static int luaPlayerSetMaxMana(lua_State* L);
+ 		static int luaPlayerGetEnergyShield(lua_State* L); // Chaos (patch 0015)
++		static int luaPlayerGetDisplayScale(lua_State* L); // Chaos (patch 0037)
+ 		static int luaPlayerSetEnergyShield(lua_State* L);
+ 		static int luaPlayerGetMaxEnergyShield(lua_State* L);
+ 		static int luaPlayerSetMaxEnergyShield(lua_State* L);
+diff --git a/src/player.cpp b/src/player.cpp
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -16,6 +16,7 @@
+ #include "movement.h"
+ #include "scheduler.h"
+ #include "weapons.h"
++#include "chaosdisplay.h"
+ 
+ #include <fmt/format.h>
+ 
+@@ -461,7 +462,10 @@ void Player::sendEnergyShield(bool force
+ 	NetworkMessage msg;
+ 	msg.addByte(0x32);
+ 	msg.addByte(static_cast<uint8_t>(opcode));
+-	msg.addString(fmt::format("es:{:d}:{:d}", energyShield, maxEnergyShield));
++	// Chaos (patch 0037): in the player's display scale
++	const uint32_t displayFactor = ChaosDisplay::factorOf(getLevel());
++	msg.addString(fmt::format("es:{:d}:{:d}", ChaosDisplay::scale(std::max<int32_t>(energyShield, 0), displayFactor, ChaosDisplay::TEXT_MAX),
++		ChaosDisplay::scale(std::max<int32_t>(maxEnergyShield, 0), displayFactor, ChaosDisplay::TEXT_MAX)));
+ 	client->writeToOutputBuffer(msg);
+ }
+ 
+diff --git a/src/protocolgame.cpp b/src/protocolgame.cpp
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -20,6 +20,7 @@
+ #include "clientguard.h"
+ #include "scheduler.h"
+ #include "monster.h"
++#include "chaosdisplay.h"
+ #include <fmt/format.h>
+ 
+ extern ConfigManager g_config;
+@@ -1671,6 +1672,20 @@ void ProtocolGame::sendBasicData()
+ 
+ void ProtocolGame::sendTextMessage(const TextMessage& message)
+ {
++	// Chaos (patch 0037): damage and heal numbers in this player's display scale (values and the numbers in the text)
++	uint32_t displayFactor = 1;
++	switch (message.type) {
++		case MESSAGE_DAMAGE_DEALT:
++		case MESSAGE_DAMAGE_RECEIVED:
++		case MESSAGE_DAMAGE_OTHERS:
++		case MESSAGE_HEALED:
++		case MESSAGE_HEALED_OTHERS:
++			displayFactor = player ? ChaosDisplay::factorOf(player->getLevel()) : 1;
++			break;
++		default:
++			break;
++	}
++
+ 	NetworkMessage msg;
+ 	msg.addByte(0xB4);
+ 	msg.addByte(message.type);
+@@ -1679,14 +1694,19 @@ void ProtocolGame::sendTextMessage(const
+ 		case MESSAGE_DAMAGE_RECEIVED:
+ 		case MESSAGE_DAMAGE_OTHERS: {
+ 			msg.addPosition(message.position);
+-			msg.add<uint32_t>(message.primary.value);
++			msg.add<uint32_t>(displayFactor > 1 ? ChaosDisplay::scaleU32(message.primary.value, displayFactor) : message.primary.value);
+ 			msg.addByte(message.primary.color);
+-			msg.add<uint32_t>(message.secondary.value);
++			msg.add<uint32_t>(displayFactor > 1 ? ChaosDisplay::scaleU32(message.secondary.value, displayFactor) : message.secondary.value);
+ 			msg.addByte(message.secondary.color);
+ 			break;
+ 		}
+ 		case MESSAGE_HEALED:
+-		case MESSAGE_HEALED_OTHERS:
++		case MESSAGE_HEALED_OTHERS: {
++			msg.addPosition(message.position);
++			msg.add<uint32_t>(displayFactor > 1 ? ChaosDisplay::scaleU32(message.primary.value, displayFactor) : message.primary.value);
++			msg.addByte(message.primary.color);
++			break;
++		}
+ 		case MESSAGE_EXPERIENCE:
+ 		case MESSAGE_EXPERIENCE_OTHERS: {
+ 			msg.addPosition(message.position);
+@@ -1703,7 +1723,7 @@ void ProtocolGame::sendTextMessage(const
+ 			break;
+ 		}
+ 	}
+-	msg.addString(message.text);
++	msg.addString(displayFactor > 1 ? ChaosDisplay::scaleText(message.text, displayFactor) : message.text);
+ 	writeToOutputBuffer(msg);
+ }
+ 
+@@ -3350,8 +3370,10 @@ void ProtocolGame::AddPlayerStats(Networ
+ {
+ 	msg.addByte(0xA0);
+ 
+-	msg.add<uint32_t>(std::min<int64_t>(player->getHealth(), std::numeric_limits<uint32_t>::max()));
+-	msg.add<uint32_t>(std::min<int64_t>(player->getMaxHealth(), std::numeric_limits<uint32_t>::max()));
++	// Chaos (patch 0037): health and mana in the player's display scale
++	const uint32_t displayFactor = ChaosDisplay::factorOf(player->getLevel());
++	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getHealth(), displayFactor));
++	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMaxHealth(), displayFactor));
+ 
+ 	msg.add<uint32_t>(player->getFreeCapacity());
+ 	msg.add<uint32_t>(player->getCapacity());
+@@ -3367,8 +3389,8 @@ void ProtocolGame::AddPlayerStats(Networ
+ 	msg.add<uint16_t>(0); // xp boost
+ 	msg.add<uint16_t>(100); // stamina multiplier (100 = x1.0)
+ 
+-	msg.add<uint32_t>(std::min<int64_t>(player->getMana(), std::numeric_limits<uint32_t>::max()));
+-	msg.add<uint32_t>(std::min<int64_t>(player->getMaxMana(), std::numeric_limits<uint32_t>::max()));
++	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMana(), displayFactor));
++	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMaxMana(), displayFactor));
+ 
+ 	msg.addByte(std::min<uint32_t>(player->getMagicLevel(), std::numeric_limits<uint8_t>::max()));
+ 	msg.addByte(std::min<uint32_t>(player->getBaseMagicLevel(), std::numeric_limits<uint8_t>::max()));

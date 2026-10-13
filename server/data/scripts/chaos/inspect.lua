@@ -120,7 +120,8 @@ local function equipment(target)
 			end
 			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs})
 			if ok then
-				rows[#rows + 1] = {slot = slot, tip = tip}
+				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
+				rows[#rows + 1] = {slot = slot, tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)}
 			else
 				print("[inspect] " .. tostring(tip))
 			end

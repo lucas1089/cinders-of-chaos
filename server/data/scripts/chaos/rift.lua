@@ -1428,6 +1428,14 @@ function spawnBoss(run) -- the forward-declared local (reinforce)
 		if m then
 			run.bossIds[m:getId()] = true
 			run.bossId = run.bossId or m:getId()
+			-- boss mechanics (boss_mechanics.lua): the Omen guardians by name, every other guardian the light profile
+			-- by the rift's tier; the arena is the chamber round the boss spawn
+			if ChaosBossMech and ChaosBossMech.attach then
+				local key = run.omen and m:getName() or "rift_guardian"
+				local radius = cfg.layout and cfg.layout.arena and cfg.layout.arena.radius or 9
+				pcall(ChaosBossMech.attach, m, key, {center = run.L.bossSpawn, radius = radius, tier = run.key and run.key.tier or nil,
+					solo = (run.size or 1) == 1})
+			end
 			first = first or m
 			packFx(P(at), "rift_boss_arrives", CONST_ME_MORTAREA)
 		end

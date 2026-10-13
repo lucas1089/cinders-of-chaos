@@ -9,7 +9,9 @@
 --    pw = a legendary power),
 --    sockets = {count, max, list = [{name, text, color}]},
 --    veil = {s = 'veiled'} | {s = 'open', n, t, tr, tn, lo, hi, h} (the veiled slot: name, text, veiled tier, range, hook),
---    req = {level, magic, voc}, weight, desc, note, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
+--    req = {level, magic, voc}, weight, desc, note, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low, sc}], cmp = [slot, ...],
+--    ds (display scale: the factor of the item's level requirement; flat health / mana / damage / heal numbers are
+--    already x ds, and the stats rows marked sc carry them: server display_scale_core.lua DS.itemTip)}
 
 ItemTooltipLogic = {}
 local L = ItemTooltipLogic
@@ -372,12 +374,30 @@ function L.compareWith(tip, equippedBySlot, hoveredKey)
   return out
 end
 
+-- a stat of the other item in this item's display scale (server display_scale_core.lua DS.itemTip): a row marked sc
+-- carries a flat health / mana / damage / heal value x its item's factor ds (the factor of its level requirement), so
+-- it is brought to the hovered item's factor before the two are compared. Unmarked rows and tooltips without ds as
+-- they are.
+function L.toScale(v, from, to)
+  v = tonumber(v) or 0
+  from, to = tonumber(from) or 1, tonumber(to) or 1
+  if from == to or from <= 0 then return v end
+  return math.floor(v / from * to + 0.5)
+end
+
 -- differences hovered - equipped per number: [{k, l, d, fmt, better}] (d ~= 0), in the hovered item's order, then
--- what only the equipped one has
+-- what only the equipped one has; scaled rows compared in the hovered item's display scale (L.toScale)
 function L.diff(a, b)
   local rows, seen = {}, {}
   local bv = {}
-  for _, s in ipairs((b and b.stats) or {}) do bv[s.k] = s end
+  local ads, bds = a and a.ds, b and b.ds
+  for _, s in ipairs((b and b.stats) or {}) do
+    if s.sc then
+      bv[s.k] = { k = s.k, l = s.l, v = L.toScale(s.v, bds, ads), fmt = s.fmt, low = s.low, sc = s.sc }
+    else
+      bv[s.k] = s
+    end
+  end
   local function push(k, l, d, fmt, low)
     if d ~= 0 then
       local better = (low and d < 0) or (not low and d > 0)
@@ -391,7 +411,7 @@ function L.diff(a, b)
   end
   for _, s in ipairs((b and b.stats) or {}) do
     if not seen[s.k] then
-      push(s.k, s.l, -(tonumber(s.v) or 0), s.fmt, s.low)
+      push(s.k, s.l, -(tonumber(bv[s.k].v) or 0), s.fmt, s.low)
     end
   end
   return rows

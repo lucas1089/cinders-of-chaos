@@ -27,7 +27,8 @@ local W = {}
 W.SOURCES = {"tools/gen_codex_data.lua (and every file it reads)", "data/XML/chaos_vocations*.xml",
 	"data/spells/chaos/spells_chaos.xml", "data/spells/chaos/*/*.lua (first comment)",
 	"data/scripts/chaos/chaos_constants.lua", "data/scripts/chaos/*_config.lua", "data/scripts/chaos/class_unlocks_core.lua",
-	"data/scripts/chaos/dungeons_difficulty.lua", "data/monster/monsters/chaos/**.xml", "tools/late_game_spawns.csv",
+	"data/scripts/chaos/dungeons_difficulty.lua", "data/scripts/chaos/display_scale_core.lua",
+	"data/monster/monsters/chaos/**.xml", "tools/late_game_spawns.csv",
 	"client/overlay/modules/game_passivetree/treedata/nodes.lua", "client/overlay/modules/game_passivetree/passivetree.lua"}
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -249,6 +250,8 @@ function W.load()
 	D.invasion = cfg("invasion_config")
 	D.siege = cfg("siege_config")
 	D.guildboss = cfg("guildboss_config")
+	D.mech = cfg("boss_mechanics_config")
+	dofile("data/scripts/chaos/boss_mechanics_core.lua")
 	D.goblin = cfg("treasure_goblin_config")
 	D.atlas = cfg("atlas_config")
 	D.season = cfg("season_config")
@@ -271,6 +274,7 @@ function W.load()
 	D.respec = cfg("respec_config")
 	D.difficulty = cfg("dungeons_difficulty")
 	D.antibot = cfg("antibot_config")
+	D.scale = cfg("display_scale_config")
 	dofile("data/scripts/chaos/class_unlocks_core.lua")
 	D.unlocks = ChaosClassUnlocksCore.config
 	dofile("data/scripts/chaos/atlas_core.lua")
@@ -692,6 +696,54 @@ local function scheduleHours(wb)
 	return hours
 end
 
+-- the boss mechanics of a profile (boss_mechanics_config.lua): rows of {mechanic, warning, counterplay}
+local MECHKIND = {circle = "circle", cone = "cone", line = "line", ring = "ring", cross = "cross", puddles = "puddles",
+	follow = "follows you", marks = "marks", channel = "channel", soak = "soak", los = "line of sight"}
+local function mechRows(D, key)
+	local p = D.mech.profiles[key]
+	if not p then
+		return nil
+	end
+	local G = ChaosBossMechCore
+	local rows = {}
+	local function warnText(spec)
+		local ms = G.warnMs(spec, p.difficulty or 0.2, p.fair)
+		if spec.kind == "channel" then
+			ms = math.max(ms, spec.channelMs or 8000)
+		elseif spec.kind == "los" then
+			ms = math.max(ms, spec.hideMs or 3000)
+		end
+		return string.format("%.1f s", ms / 1000)
+	end
+	for _, t in ipairs(p.telegraphs or {}) do
+		rows[#rows + 1] = {t.label .. " (" .. MECHKIND[t.kind] .. (t.minTier and (", tier " .. t.minTier .. "+") or "") .. ")",
+			warnText(t), t.tip}
+	end
+	for _, m in ipairs(p.timed or {}) do
+		rows[#rows + 1] = {m.label .. " (" .. MECHKIND[m.kind] .. ")", warnText(m), m.tip}
+	end
+	for _, a in ipairs(p.adds or {}) do
+		rows[#rows + 1] = {a.name .. " (adds, " .. a.mode .. ")", floor(a.at * 100 + 0.5) .. "% health", a.tip}
+	end
+	if p.debuff then
+		rows[#rows + 1] = {p.debuff.label .. " (stacks)", "on its hits", p.debuff.tip}
+	end
+	if p.softEnrage then
+		rows[#rows + 1] = {"Soft enrage", seconds(p.softEnrage.at), string.format("+%d%% damage a minute after that: keep the damage up.",
+			floor(p.softEnrage.perMin * 100 + 0.5))}
+	end
+	return rows
+end
+local function mechSection(D, key, intro)
+	local rows = mechRows(D, key)
+	if not rows or #rows == 0 then
+		return nil
+	end
+	return {h = "Mechanics", p = {intro or "Red marks pulse on the ground where the hit will land; the hit lands only on the tiles still marked, so walk out. A bar under the monster bar names the next mechanic and counts down."},
+		cols = {"Mechanic", "Warning", "Counterplay"}, w = {30, 14, 56}, rows = rows}
+end
+W.mechRows = mechRows
+
 function W.bossEntries(D)
 	local out = {}
 	local wb = D.C0.worldBoss
@@ -746,7 +798,11 @@ function W.bossEntries(D)
 					money(pulse.min), money(pulse.max), pulse.radius, pulse.every,
 					pulse.healPerHit and string.format(" Every player hit heals it by %s.", money(pulse.healPerHit)) or "")}},
 				{h = "Phases", cols = {"Health", "What happens", "Yell"}, w = {14, 46, 40}, rows = rows},
+				mechSection(D, b.name:lower()),
 				{h = "More", p = {"Schedule, rules and rewards: World bosses."}, links = {"boss:world"}}}}
+		if not out[#out].sections[3] then
+			table.remove(out[#out].sections, 3)
+		end
 	end
 	-- the raid
 	local rc = D.raid
@@ -821,6 +877,16 @@ function W.bossEntries(D)
 					U.shardCost, U.maxPlayers),
 				"One relic of each omen makes a Cinderheart Sigil, which opens the Cinderheart's arena."}},
 			{h = "Bosses", cols = {"Omen", "Ascended boss", "Omen guardian"}, w = {25, 40, 35}, rows = kRows},
+			{h = "Mechanics on top of the phases", p = {"Each Ascended boss and the Cinderheart add these to their telegraphs, hazards and adds."},
+				cols = {"Boss", "Mechanic", "Counterplay"}, w = {22, 30, 48}, rows = (function()
+					local rows = {}
+					for _, k in ipairs(U.kinds) do
+						for _, r in ipairs(mechRows(D, k.boss:lower()) or {}) do
+							rows[#rows + 1] = {k.boss, r[1], r[3]}
+						end
+					end
+					return rows
+				end)()},
 			{h = "Rewards (per finisher)", cols = {"Fight", "Gold", "Orbs", "Unique rolls"}, w = {25, 25, 30, 20}, rows = {
 				{"Ascended", money(U.reward.ascended.gold), string.format("%d Upheaval, %d Fate, %d Exalted", U.reward.ascended.chaos,
 					U.reward.ascended.divine, U.reward.ascended.exalted), num(U.reward.ascended.uniqueRolls)},
@@ -834,7 +900,31 @@ function W.bossEntries(D)
 		sections = {{h = "The fight", p = {
 			"Guild members feed the Summoning Stone in the guild hall with materials, then summon the boss into an instanced arena.",
 			string.format("%d to %d players of level %d or more; %d attempts a week. It enrages after %s.", G.minPlayers, G.maxPlayers,
-				G.minLevel, G.maxAttempts, seconds(G.boss.enrageAt))}}}}
+				G.minLevel, G.maxAttempts, seconds(G.boss.enrageAt))}},
+			mechSection(D, G.boss.boss:lower(), "On top of its telegraphs, pools and adds:")}}
+	-- the other bosses with mechanics (boss_mechanics_config.lua): the Omen guardians, the rift guardians, the Hollow Vault,
+	-- the generated areas' bosses and the dormant donor bosses
+	local others = {
+		{"Omen guardians", {"sangrith the bloodmoon herald", "morvane the hollow crown", "thalcyra the stormbound seer"}},
+		{"Rift guardians (every tier; more from tier 8 and 12)", {"rift_guardian"}},
+		{"Dungeons and hunting grounds", {"vault keeper ossrim", "the emberdeep maw", "the ossuary warden", "cinderwing"}},
+		{"Dormant bosses (not spawned yet)", {"ormathulak", "talath", "gloomfire", "saga", "legendary warrior"}}}
+	local mSections = {{h = "How to read a mechanic", p = {
+		"A red mark pulses on every tile the hit will land on, from 1.5 to 3 seconds before it (harder content warns later). The hit lands only on the tiles still marked: walk out. There is always a safe tile you can reach in time at normal speed.",
+		"Orange warnings name the big casts, and a bar under the monster bar names the next mechanic with a countdown: red = move out, purple = kill the totem, green = stand in the circle, blue = hide behind a pillar."}}}
+	for _, grp in ipairs(others) do
+		local rows = {}
+		for _, key in ipairs(grp[2]) do
+			local p = D.mech.profiles[key]
+			for _, r in ipairs(mechRows(D, key) or {}) do
+				rows[#rows + 1] = {key == "rift_guardian" and "Rift guardian" or titleCase(key), r[1], r[2], r[3]}
+			end
+		end
+		mSections[#mSections + 1] = {h = grp[1], cols = {"Boss", "Mechanic", "Warning", "Counterplay"}, w = {18, 24, 10, 48},
+			rows = rows}
+	end
+	out[#out + 1] = {id = "boss:mechanics", name = "Boss mechanics", color = COLORS.boss, group = "world",
+		sub = "Telegraphs, adds, totems, soaks and pillars: what each boss does and how to answer it.", sections = mSections}
 	return out
 end
 
@@ -1455,6 +1545,18 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["arena.on"] = D.arena.enabled ~= false
 	f["arena.minLevel"] = D.arena.minLevel
 	f["multiclient.perIp"] = C0.multiClient.maxPerIp
+	-- the display scale (display_scale_config.lua, server/README.md "Display scale"): the wiki quotes the internal
+	-- numbers (what a character up to the first point's level sees); the FAQ gives the factor of a few levels
+	dofile("data/scripts/chaos/display_scale_core.lua")
+	local DSc = ChaosDisplayScale
+	DSc.configure(D.scale)
+	f["scale.from"] = D.scale.curve[1][1]
+	for _, level in ipairs({200, 300, 500, 700, 1000}) do
+		f["scale.l" .. level] = num(DSc.factor(level))
+	end
+	local capPoint = D.scale.curve[#D.scale.curve]
+	f["scale.capLevel"] = capPoint[1]
+	f["scale.cap"] = num(capPoint[2])
 	-- reports
 	f["reports.minLevel"] = D.antibot.reports.minLevel or 8
 	f["reports.perDay"] = D.antibot.reports.perDay

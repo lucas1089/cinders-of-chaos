@@ -735,7 +735,7 @@ end
 -- ======================================================================== telegraphs
 -- marks the tiles now and every turn until the hit; fn(run) at the hit (only while the same fight goes on). centers:
 -- circles of radius 1 (soak, marks, the verdict) get the 3 x 3 warning picture centred on them, whatever the tile
-local function telegraph(run, tiles, hitFnc, warnMs, centers)
+local function telegraph(run, tiles, hitFnc, warnMs, centers, label)
 	local cfg = C()
 	local f = run.fight
 	if not f or #tiles == 0 then
@@ -749,13 +749,37 @@ local function telegraph(run, tiles, hitFnc, warnMs, centers)
 		local r = X.runs[slot]
 		return r and r.fight and r.fight.id == fid and r or nil
 	end
-	local marks = {0}
-	local turn = cfg.telegraph.turnMs
-	while turn and turn > 0 and marks[#marks] + turn < hitMs do
-		marks[#marks + 1] = marks[#marks] + turn
+	-- the danger mark pulses until the hit, the filling mark in the last turn (boss_mechanics_core.lua G.pulses when
+	-- loaded, else a mark every turn); never under 1.5 s
+	hitMs = math.max(1500, hitMs)
+	local marks, kinds = {0}, {"zone"}
+	local G = ChaosBossMechCore
+	if G and G.pulses then
+		marks, kinds = {}, {}
+		for _, pl in ipairs(G.pulses(hitMs, cfg.telegraph.pulseMs or 600, cfg.telegraph.fillMs)) do
+			marks[#marks + 1] = pl.at
+			kinds[#kinds + 1] = pl.kind
+		end
+	else
+		local turn = cfg.telegraph.turnMs
+		while turn and turn > 0 and marks[#marks] + turn < hitMs do
+			marks[#marks + 1] = marks[#marks] + turn
+			kinds[#kinds + 1] = "fill"
+		end
+	end
+	-- the cast bar on the monster bar (game_monsterbar, opcode 125 action "mech", server/README.md "Boss mechanics")
+	if G and G.castPayload and ChaosOpcodes and ChaosOpcodes.monsterbar then
+		local boss = bossOf(run, f.idx)
+		if boss then
+			local payload = G.castPayload(boss:getId(), boss:getName(), label or "Telegraph", hitMs, "telegraph")
+			each(run, function(p)
+				pcall(Chaos.send, p, ChaosOpcodes.monsterbar, "mech", payload)
+			end)
+		end
 	end
 	for i, ms in ipairs(marks) do
-		local effect = i == 1 and cfg.telegraph.warnEffect or cfg.telegraph.fillEffect
+		local filling = kinds[i] == "fill"
+		local effect = filling and cfg.telegraph.fillEffect or cfg.telegraph.warnEffect
 		addEvent(function()
 			if not live() then
 				return
@@ -767,7 +791,7 @@ local function telegraph(run, tiles, hitFnc, warnMs, centers)
 				fxAt(P(t), effect, CONST_ME_MAGIC_RED)
 			end
 			for _, t in ipairs(plan.small) do
-				P(t):sendMagicEffect(i == 1 and CONST_ME_MAGIC_RED or CONST_ME_DRAWBLOOD)
+				P(t):sendMagicEffect(filling and CONST_ME_DRAWBLOOD or CONST_ME_MAGIC_RED)
 			end
 		end, ms)
 	end
@@ -847,7 +871,7 @@ function M.cleave(run, back)
 				shareHit(r, p, m.share)
 			end
 		end)
-	end)
+	end, nil, nil, back and "Sweep" or "Cleave")
 end
 
 function M.sweep(run)
@@ -872,7 +896,7 @@ function M.marks(run)
 		onTiles(r, f.idx, set, function(p)
 			shareHit(r, p, m.share, COMBAT_DEATHDAMAGE)
 		end)
-	end, nil, m.radius == 1 and centers or nil)
+	end, nil, m.radius == 1 and centers or nil, "Bone Bloom")
 end
 
 function M.soak(run)
@@ -924,7 +948,7 @@ function M.soak(run)
 				end
 			end
 		end
-	end, m.warnMs, m.radius == 1 and centers or nil)
+	end, m.warnMs, m.radius == 1 and centers or nil, "Soak")
 end
 
 local function freeTile(run, i, near, spread)
@@ -1090,7 +1114,7 @@ local function sunderAfterHit(run, target)
 			alert(r, string.format(K.ANNOUNCE.verdict, t:getName()), "fail")
 			shareHit(r, t, K.verdictShare(cfg, K.sunderStacks(r.fight.sunder, tid)))
 		end
-	end, cfg.mechanics.sunder.warnMs, {tp})
+	end, cfg.mechanics.sunder.warnMs, {tp}, "Crushing Verdict")
 end
 
 -- ======================================================================== fights

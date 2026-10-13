@@ -692,6 +692,53 @@ clock = clock + 2000
 globals.ChaosCombatLogThink.onThink(1000)
 ok(#sent > before3, "a new hit: pushed")
 ok(pushed >= 0, "first tick")
+-- the display scale (display_scale_core.lua, server/README.md "Display scale"): the state a viewer gets is x the factor
+-- of its own level (totals, rows, elements, the party's totals); hits, crits and durations stay; the meter's own
+-- numbers stay raw; a new factor (a level up) is a new state for the push
+dofile("data/scripts/chaos/display_scale_core.lua")
+ChaosDisplayScale.configure(dofile("data/scripts/chaos/display_scale_config.lua"))
+function C:getLevel() return self.level or 1 end
+local plainState = msg(hero, "seg", {id = "s"}).data
+hero.level = 1000
+local scaledState = msg(hero, "seg", {id = "s"}).data
+local pt, st = plainState.v.t[DMG], scaledState.v.t[DMG]
+ok(pt.tot > 0, "the session has damage")
+eq(st.tot, pt.tot * 1000, "scaled: damage total")
+eq(scaledState.v.t[HEAL].tot, plainState.v.t[HEAL].tot * 1000, "scaled: healing total")
+eq(st.r[1][5], pt.r[1][5] * 1000, "scaled: a row's total")
+eq(st.r[1][8], pt.r[1][8] * 1000, "scaled: a row's max hit")
+eq(st.r[1][6], pt.r[1][6], "hits stay")
+eq(st.r[1][7], pt.r[1][7], "crits stay")
+local elSum, rowSum = 0, 0
+for _, a in pairs(st.el) do elSum = elSum + a end
+for _, r in ipairs(st.r) do rowSum = rowSum + r[5] end
+local plainElSum = 0
+for _, a in pairs(pt.el) do plainElSum = plainElSum + a end
+eq(elSum, plainElSum * 1000, "elements x1000")
+ok(rowSum <= st.tot, "the shown rows add up within the shown total")
+eq(scaledState.segs[1][4], plainState.segs[1][4] * 1000, "segment list: damage")
+eq(scaledState.segs[1][3], plainState.segs[1][3], "segment list: duration stays")
+eq(scaledState.v.dur, plainState.v.dur, "duration stays")
+local function byName(list) local o = {} for _, m in ipairs(list or {}) do o[m.n] = m end return o end
+local pp, sp = byName(plainState.party), byName(scaledState.party)
+eq(sp.Mage.sh, pp.Mage.sh * 1000, "a party member's totals in the viewer's scale")
+eq(sp.Mage.sdur, pp.Mage.sdur, "a party member's duration stays")
+eq(CL.actors[hero.guid].session.tabs[DMG].total, pt.tot, "the meter's own numbers stay raw")
+mage.level = 300
+local mageView = msg(mage, "open", {seg = "s", party = true, share = true}).data
+eq(byName(mageView.party).Hero.sd, pp.Hero.sd * 5, "another viewer: its own scale (level 300: x5)")
+msg(mage, "close", {})
+-- the factor is part of the push signature: a level change alone pushes the state again
+clock = clock + 2000
+globals.ChaosCombatLogThink.onThink(1000)
+local beforeLevel = #sent
+hero.level = 700
+clock = clock + 2000
+globals.ChaosCombatLogThink.onThink(1000)
+ok(#sent > beforeLevel, "a new factor: pushed")
+eq(sent[#sent].data.v.t[DMG].tot, pt.tot * 100, "level 700: x100")
+hero.level, mage.level = nil, nil
+C.getLevel = nil
 -- hunt: paused hunt keeps the session still, a hunt reset starts it over
 ChaosHunt.sessions[hero.guid] = {paused = true}
 local sBefore = CL.actors[hero.guid].session.tabs[DMG].total

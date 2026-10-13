@@ -582,7 +582,9 @@ local function runAbilities(player, live, pet, rule, pvp, ms)
 		if healed > 0 then
 			live.nextMend = ms + cfg.abilities.mend.cooldown * 1000
 			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
-			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, string.format("Your pet mends you (+%d).", healed))
+			-- the shown amount in the player's display scale (display_scale_core.lua)
+			local shown = ChaosDisplayScale and ChaosDisplayScale.scale(healed, ChaosDisplayScale.forPlayer(player)) or healed
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, string.format("Your pet mends you (+%.0f).", shown))
 		end
 	end
 	if abilityOn(live, "ward", rule, pvp) and ms >= live.nextWard and pct < cfg.abilities.ward.below and hp > 0 then

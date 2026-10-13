@@ -130,6 +130,17 @@ jobs:
       - name: Outfit shaders can be owned (server src-patch 0036)
         run: python3 -I server/tools/outfit_shader_patch_test.py
 
+      - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
+        run: python3 -I server/tools/display_scale_patch_test.py
+
+      - name: Display scale, pure parts (C++; header from server src-patch 0037)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosdisplay\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0037-display-scale.patch > "$d/chaosdisplay.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
+          "$d/chaosdisplay_test"
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)

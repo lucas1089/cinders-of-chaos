@@ -468,6 +468,9 @@ function LB.sendBoard(player, key, groupKey, season, mode)
 	end
 	data.week = LB.current and LB.current.week or weekNow()
 	data.resetIn = math.max(0, LB.nextReset(now, cfg.resetHour) - now)
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the damage / healing boards
+		data = ChaosDisplayScale.apply("leaderboard", player, data)
+	end
 	Chaos.send(player, OPCODE, "board", data)
 end
 

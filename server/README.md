@@ -142,6 +142,12 @@ server/
   src-patches/0036-outfit-shader-storage.patch   engine: Player::addStorageValue accepts the outfit shaders' reserved
                                       keys, so Player:addShader keeps a shader (it stored nothing: no shader was ever owned,
                                       listed or wearable; see "Chaos outfit shaders"; tools/outfit_shader_patch_test.py)
+  src-patches/0037-display-scale.patch   engine: damage / heal text messages, the own health and mana and the energy
+                                      shield in the receiving player's display scale (Game.setDisplayScale, header
+                                      src/chaosdisplay.h; see "Display scale"; tools/display_scale_patch_test.py,
+                                      tools/chaosdisplay_test.cpp)
+    display_scale.lua  display_scale_core.lua  display_scale_config.lua (every combat number shown x the factor of the
+                                      viewer's level, opcode 157, see "Display scale")
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     kitewalk.lua  kitewalk_core.lua (the client option "Keep attacking while moving", opcode 186, storage 7101820, see
@@ -445,11 +451,13 @@ working directory, as with the rest of the base server libs).
 | game_raid | `raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql` (buff source in `data/lib/chaos_buffs.lua`), monsters `monsters/chaos/raid/` | **213**, Adventure > Raid: Ashen Sepulchre, the portal next to the temple | The Ashen Sepulchre: a weekly raid for 5-15 players, five bosses with coordinated mechanics (tank swap, cleaves, soak circles, adds, spread, effigies, a hex to cleanse) behind trash in a runtime-built zone; personal loot once a week per boss and character, saved raids continued later the same week, Sepulchre Marks for a seeded weekly vendor, raid uniques, a guild trophy, a weekly fastest-clear board; window (lockouts, journal, vendor), HUD and call-outs (see "The Ashen Sepulchre, the weekly raid"). Unit and mocked-engine tests; tested alone on a live test server. |
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
+| game_chaosscale | `display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037` (hooks in the combat log, death recap, party frames, hunt, leaderboard, season boards, battleground, guild war, bestiary, spellbook, item tooltip, inspect, item link, ground loot, market and pets scripts) | **157** (server -> client `scale`, client -> server `hello`) | Display scale: every combat number a player sees x the factor of its level (x1 to level 100, x1000 at 1000, x10000 cap from 1500); internal numbers unchanged (see "Display scale"). Unit, mocked-engine, C++ header and patch guard tests; checked live at levels 100, 300, 700 and 1000. |
 | game_deathrecap | `deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql` (one hook in `combatlog.lua`) | **154**, Hunt > Death Recap | Death recap: after a death (or a mode defeat) every attacker of the last 20 s with its look, damage, share, health / mana part and element split, the killing blow, the last hits, the experience and levels lost; the last 5 deaths per character; ghost staff hidden (see "Death recap"). Unit and mocked-engine tests; tested on a live test server with two clients. |
 | game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
 | game_charms | `charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py` (hooks in `item_mods.lua`, `loot.lua`, `rift.lua`, `bounty.lua`, `invasion.lua`, `dungeons.lua`, `descent.lua`, `factions.lua`, `market.lua`) | **198**, Character > Charms | Charms: a 5x4 grid of small charms with minor bonuses (see "Charms"); tested on a live test server with one client. |
 | game_professions | `professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, NPC `data/npc/Material Broker.xml` (buff source in `data/lib/chaos_buffs.lua`) | **195**, Economy > Professions, the Material Broker next to every temple | Four gathering professions (Delving, Wortcunning, Flaying, Angling) with levels 1-100, materials sold to the Material Broker (weekly demand, daily diminishing price and cap) and a passive experience bonus (+10% at the most); no gear, no orbs (see "Professions"). Unit and mocked-engine tests; tested on a live test server with one client. |
 | game_gamble | `gamble.lua`, `gamble_core.lua`, `gamble_config.lua`, `tools/install_gamble.py`, NPC `data/npc/Mordecai Ashwager.xml` | **199**, Economy > The Gambler, the Gambler next to the main temple | The Gambler: per character a stock of 14 sealed pieces (base type, slot and item level shown, rarity hidden) from a seed of the character and the 4-hour window (00:00, 04:00, ... server time), sold slots in player storages, gold prices by item level and slot (about 18% of an hour of hunting per piece), the rarity rolled at the purchase with the loot layer's roll after the gold and a save, a paid early refresh (see "The Gambler"). Unit and mocked-engine tests; tested on a live test server (full map) with one client. |
+| game_monsterbar (cast bar) | `boss_mechanics.lua`, `boss_mechanics_core.lua`, `boss_mechanics_config.lua` (hooks in `worldboss.lua`, `uber.lua`, `guildboss.lua`, `rift.lua`; `raid.lua` sends the cast bar too) | 125 (action `mech`, server -> client; no new opcode) | Boss mechanics: telegraphs, adds phases, soft enrage, debuffs, soak, channels with totems, pillar blasts and the cast bar (see "Boss mechanics"). Unit, grid-simulation and mocked-engine tests; not run on a live server. |
 
 ### Extended opcodes in use
 
@@ -477,6 +485,7 @@ collision check") and be added here.
 | 155 | `itemFinder` | `itemfinder.lua` | `game_itemfinder` | answers through `Chaos.sendChunked` |
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
+| 157 | `displayScale` | `display_scale.lua` | `game_chaosscale` | server -> client `scale {level, f}`, client -> server `hello` (see "Display scale") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
@@ -4744,6 +4753,196 @@ the four 350k brothers 22 of 20, the five court rooms of 10 minutes 11-23, King 
 18 of 15): group rooms, so no change proposed. The tower's floor 90 boss (Ashvoran, 270k, heals 1,750/s) took 5:18 of
 its 5:00 floor alone at level 1000; since 2026-10-13 (owner approval) a boss floor has twice `floorTimeLimit`
 (`bossFloorTimeMult` 2: 10:00, `ChaosTowerFloorLimit`), so it fits with 4:42 to spare.
+
+## Boss mechanics (`boss_mechanics.lua`, `boss_mechanics_core.lua`, `boss_mechanics_config.lua`, client `game_monsterbar`)
+
+One tested system gives the key bosses fight mechanics: marked area attacks you dodge by walking, adds phases, soft
+enrage, stacking debuffs, soak circles, channels stopped by killing a totem and room-wide blasts you hide from behind a
+pillar. The pure logic is `boss_mechanics_core.lua` (shapes, timing, fairness, the per-fight state machine, balance);
+every number is `boss_mechanics_config.lua`, one profile per boss; `boss_mechanics.lua` drives the engine.
+`tests/boss_mechanics_test.lua` runs all three (6,288 checks in both interpreters). No opcode, storage or table of its
+own: the cast bar rides on the monster bar's opcode 125 (`ChaosOpcodes.monsterbar`) as the new action `mech`
+(server -> client), next to `info` (monster_tiers.lua, worldboss.lua). raid.lua sends the same action.
+
+**Who gets it.** `ChaosBossMech.attach(monster, key, opts)` from the systems that know their arena: `worldboss.lua` (the
+31 x 31 floor, its four pillars count as cover), `uber.lua` and `guildboss.lua` (the arena floor; the hits go through
+their own `shareHit`, so the lethal-hit catch still works), `rift.lua` (the Omen guardians by name, every other guardian
+the light profile `rift_guardian` with the key's tier; the chamber of radius 9 round the boss spawn). Every other monster
+whose shown name has a profile (Vault Keeper Ossrim, the Emberdeep Maw, the Ossuary Warden, Cinderwing, the dormant
+donor bosses) is attached at its first think after the spawn (an `onSpawn` EventCallback registers a think event, as
+monster_tiers.lua does), with a box of radius 8 round it as the arena (walkable tiles only). The Ascended bosses, the
+Cinderheart and the guild boss keep their own telegraphs, hazards, adds and enrage (`ownTelegraphs`); the profile adds
+the mechanics below on top, and while one of those runs (`ChaosBossMech.busy`) they draw no telegraph of their own.
+
+**The kit** (all per profile, all in the core):
+- Telegraphs: circle, cone, line (beam), ring (donut), cross, puddles (on players and at random), follow (a circle that
+  tracks the target for 1.5 s, then locks; the last 1.5 s+ count as the warning), plus uber's marks, half, lines, eye. A
+  danger mark (`warning_zone`) pulses on every tile of the shape every 600 ms from the cast until the hit, the last
+  pulse is the filling mark (`warning_fill`), the round ones also get the big warning circle of pair 24
+  (`ChaosBigFx.telegraph`, effects 635-637). The hit effect is a big or pack effect of the boss's element (pair 24,
+  effects 628-655, `chaos_big_fx_ids.lua`, `chaos_pack_fx_ids.lua`) with a stock effect as fallback. The hit lands only on
+  the tiles still marked; it costs a share of the victim's max health (`Chaos.percentBase`).
+- Adds phases at a health threshold, each once: `immune` (no damage while they live), `shield` (less damage), `empower`
+  (+damage per living add), `heal` (a share of max health per add every 5 s). The adds and totems are the raid's
+  immobile Hex Effigy renamed (Infernal Wardstone, Plague Heart, Void Anchor, ...) with the profile's health.
+- Timed: `channel` (a cast bar of 8-10 s and a totem; kill it and the cast is interrupted, else a hit on everyone),
+  `soak` (a green circle: the players inside split the total; nobody inside, everyone takes the miss share; `min`
+  counts a lone soaker as several), `los` (pillars rise round the boss; after 3.5 s a blast hits everyone it can see, by
+  a Bresenham line from the boss; the pillars go away after). One at a time; no telegraph meanwhile.
+- Soft enrage (+x% a minute after a time) and stacking debuffs (each boss hit on a player adds a stack, +x% damage taken
+  from that boss, one falls off every 6 s).
+- Warnings: an orange yell over the boss and the same line in the console of everyone in the fight ("Kaelgor is shielded
+  by 3 Infernal Wardstones! Break them!"), and the cast bar.
+
+**Fairness** (enforced in the core, checked by the grid simulation of the test):
+- The warning is 3.0 s at difficulty 0 down to 1.5 s at difficulty 1, never under 1.5 s (`G.warnMs`); the profiles sit
+  at 2.4-3.0 s (rift guardians 3.0 s at tier 1, 2.6 s at tier 15). Enraged adds 0.3 difficulty. The Ascended and guild
+  boss telegraphs now warn 2.5 s (were 2.0 s), enraged 1.5 s (were 1.0 / 1.2 s); the raid's enraged warning is held at
+  1.5 s (was 2.2 x 0.6 = 1.32 s).
+- Walking follows the player rules of patch 0018 (`data/lib/chaos_speed.lua`: 10 ms rounding, diagonal 7/5): the
+  reference is a player of the content's level (vocation base 220, no haste, normal ground), 0.5 s to react.
+- Every telegraph is made fair before it is drawn (`G.makeFair`): a player with no unmarked tile in walking reach gets a
+  pocket (a tile and its four neighbours) cut out of the shape at a reachable tile, as far from the boss as the walk
+  allows. With telegraphs still pending, the union counts and the budget is the earliest pending hit. The telegraph
+  cadence is never shorter than the warning + 1.5 s, so the shared engine never overlaps two by itself.
+- Shapes grow with the boss: size 4 (the Omen guardians, the Ascended, the Cinderheart, the 4 x 4 rift guardians) adds
+  1 sqm to radii and lengths and measures from the whole 4 x 4 body.
+- Solo content (`ref.solo`) has no mechanic that needs two players: soaks count one soaker, a lone soaker takes at most
+  60%; one player kills a totem in 60% of the channel; the adds of a solo phase die within 45 s.
+- The test's grid simulation: four arenas (open 19 x 19, the world boss room with pillars, a round rift chamber, a
+  9 x 21 hall), every telegraph of every profile at size 1 and its own size, 8 difficulties from 0 to 1.4, 1-8 players
+  at random: 10,032 dodges, each bot walks its cheapest path (straight / diagonal costs) to a safe tile before the hit,
+  and again 300 ms into its walk when a second telegraph lands on top; the slowest walk needed 980 ms. Every
+  line-of-sight blast leaves a hidden tile in reach from every tile of a 19 x 19 room.
+
+**Per boss** (warning = the cast time at the profile's difficulty; adds at a health threshold):
+
+| Boss | Mechanic | Warning | Counterplay |
+|---|---|---|---|
+| Kaelgor the Infernal Warlord | Meteor Rain (puddles) | 2.7 s | Red circles land under four players and around the arena: step off them. |
+|  | Hellfire Breath (cone) | 2.7 s | A cone towards his target: tank to the side, everyone else behind him. |
+|  | Infernal Wardstone (adds: immune) | 55% health | At 55% he takes no damage until the 3 Infernal Wardstones die. |
+|  | Soft enrage | 30 min | +8% damage a minute after that, at most x2.0. |
+| Skaldra the Rime Queen | Rime Breath (line) | 2.7 s | A three-wide beam towards her target, wall to wall: step out sideways. |
+|  | Glacial Ring (ring) | 2.7 s | A ring of ice: hug her (inside 3 sqm) or run far out. |
+|  | Absolute Zero (line of sight) | 3.5 s | Ice pillars rise round her: break line of sight behind one before the blast. |
+| The Rotmother | Creeping Bile (follow) | 2.7 s + 1.5 s follow | A circle follows her target, then stops: walk out once it stops moving. |
+|  | Spore Field (puddles) | 2.7 s | Spore patches all over the arena: find a clear tile. |
+|  | Plague Heart (adds: heal) | 60% health | At 60% three Plague Hearts heal her 0.4% each per 5 s: kill them first. |
+|  | Festering (stacks) | on its hits | Her hits stack Festering (+5% damage taken each): swap tanks or step away for a few seconds. |
+| Nyxareth the Void Archon | Void Cross (cross) | 2.6 s | Two beams through him, wall to wall: stand on a diagonal. |
+|  | Event Horizon (soak, groups only) | 2.6 s | A circle opens: at least three players stand in it to split the hit; nobody in it hurts everyone. |
+|  | Oblivion (channel + totem) | 9.0 s | A Void Anchor appears while he channels: kill it before the cast bar ends. |
+| Vharok the Blood Colossus | Crimson Cleave (cone) | 2.7 s | A wide cone in front: only his target and those beside it should be there, and then step aside. |
+|  | Quake (circle) | 2.7 s | Everything within 4 sqm of him: back off. |
+|  | Blood Idol (adds: empower) | 50% health | At 50% three Blood Idols give him +15% damage each: kill them. |
+|  | Hemorrhage (stacks) | on its hits | His hits stack Hemorrhage (+4% damage taken each): swap tanks. |
+| Sangrith the Bloodmoon Herald | Red Crescent (cone) | 2.6 s | A cone towards you: step around him. |
+|  | Blood Moon (follow) | 2.6 s + 1.5 s follow | The red moon follows you, then stops: walk out of it. |
+|  | Bloodmoon Wardstone (adds: immune) | 50% health | At 50% he is immune until his 2 Wardstones die (about 10 s each alone). |
+| Morvane the Hollow Crown | Crown's Cross (cross) | 2.6 s | Beams through him: stand on a diagonal. |
+|  | Hollow Ring (ring) | 2.6 s | A ring: hug him or run out past it. |
+|  | Dirge of the Empty Throne (channel + totem) | 10.0 s | A Hollow Totem rises while he sings: kill it (about 8 s alone) before the cast ends. |
+| Thalcyra the Stormbound Seer | Storm Marks (puddles) | 2.6 s | Bolts on you and around: step off the marks. |
+|  | Sky Lance (line) | 2.6 s | A line towards you: one step sideways. |
+|  | Skyfall (line of sight) | 3.5 s | Stone pillars rise: put one between you and her before the sky falls. |
+| Ascended Sangrith | Sanguine Wardstone (adds: immune) | 50% health | At 50% he is immune until the 2 Sanguine Wardstones die. |
+|  | Blood Price (stacks) | on its hits | Every hit stacks Blood Price (+4% damage taken): step out for a few seconds to let it fall off. |
+| Ascended Morvane | Dirge of the Empty Throne (channel + totem) | 9.0 s | Kill the Hollow Totem before the cast ends. |
+|  | Crown of Night (line of sight) | 3.5 s | Hide behind a pillar. |
+| Ascended Thalcyra | Skyfall (line of sight) | 3.5 s | Hide behind a pillar. |
+|  | Conduit (soak) | 2.4 s | Stand in the circle: alone you take 60% of your health, a party splits it; nobody in it: 45% to all. |
+| Ysgrath the Cinderheart | The Last Light (channel + totem) | 9.0 s | Kill the Ember Totem before the cast ends. |
+|  | Cinder Wardstone (adds: immune) | 60% health | At 60% it is immune until the 3 Cinder Wardstones die. |
+|  | Cinderburn (stacks) | on its hits | Its hits stack Cinderburn (+4% damage taken): let it fall off between pulls. |
+| Rift guardian (tier 1-15) | Guardian Slam (circle) | 3.0-2.6 s | Back away from the guardian. |
+|  | Guardian Sweep (cone) | 3.0-2.6 s | Step to its side. |
+|  | Rift Scatter (puddles, tier 8+) | 3.0-2.6 s | Tier 8+: marks under you: step off. |
+|  | Rift Anchor (adds: shield, tier 12+) | 50% health | Tier 12+: at 50% it takes 60% less damage until 2 Rift Anchors die. |
+| Vault Keeper Ossrim | Vault Slam (circle) | 2.9 s | Everything within 3 sqm: back off. |
+|  | Rolling Stones (line) | 2.9 s | A three-wide line towards you: sidestep. |
+|  | Vault Warden (adds: shield) | 50% health | At 50% he takes 75% less damage until the 2 Vault Wardens die. |
+| The Emberdeep Maw | Magma Spew (cone) | 2.8 s | Step to its side. |
+|  | Ember Rain (puddles) | 2.8 s | Step off the circles. |
+| The Ossuary Warden | Bone Ring (ring) | 2.8 s | Hug it or run out past the ring. |
+|  | Bone Requiem (channel + totem) | 9.0 s | Kill the Bone Totem in time. |
+| Cinderwing | Cinder Breath (line) | 2.8 s | A beam towards you: sidestep. |
+|  | Falling Ash (follow) | 2.8 s + 1.5 s follow | It follows you, then stops: walk out. |
+| Gorvath the Banner-Eater | Devour the Standard (channel + totem) | 9.0 s | Kill the Gnawed Standard before the cast ends. |
+|  | Shared Oath (soak) | 2.6 s | Two or more stand in the circle to split the hit. |
+|  | Gnawed (stacks) | on its hits | His bites stack Gnawed (+3% damage taken): swap tanks. |
+| Ormathulak | Cataclysm (circle) | 2.6 s | Back off 4 sqm. |
+|  | Rain of Fire (puddles) | 2.6 s | Step off the circles. |
+|  | Infernal Seal (adds: immune) | 50% health | At 50% immune until 3 Infernal Seals die. |
+| Talath | Frost Lance (line) | 2.6 s | Sidestep the beam. |
+|  | Winter Ring (ring) | 2.6 s | Hug him or run out. |
+|  | Deep Freeze (line of sight) | 3.5 s | Hide behind a pillar. |
+| Gloomfire | Gloom Cross (cross) | 2.6 s | Stand on a diagonal. |
+|  | Shadow Pursuit (follow) | 2.6 s + 1.5 s follow | Walk out once it stops. |
+|  | Eclipse (channel + totem) | 9.0 s | Kill the Gloom Totem in time. |
+| Saga | Storm Verse (puddles) | 2.6 s | Step off the marks. |
+|  | Thunder Cone (cone) | 2.6 s | Step to her side. |
+|  | Chorus (soak, groups only) | 2.6 s | Three or more stand in the circle. |
+| Legendary Warrior | Whirlwind (circle) | 2.8 s | Back off 2 sqm. |
+|  | Charge (line) | 2.8 s | Sidestep the line. |
+|  | Sundered (stacks) | on its hits | His hits stack Sundered (+3% damage taken): step away now and then. |
+
+The raid bosses (Ashen Sepulchre) keep their own kit (sunder, cleave, sweep, soak, adds, marks, effigies, hex: "The Ashen
+Sepulchre"); their telegraphs now pulse like the others (`G.pulses`, the filling mark in the last turn), send the cast
+bar (Cleave / Sweep / Bone Bloom / Soak / Crushing Verdict) and never warn under 1.5 s. No new mechanic and no downtime
+was added there, so the enrage times (9 / 10 / 11 / 11 / 16 min) and the 15-25% margin of `tests/raid_test.lua` stay.
+
+**Kill times** ("Solo kill times": health / (damage x uptime - heal)). The mechanics cost time: moving out of the marks
+(1.2 s per telegraph), the totems and adds (their health / damage), the hiding and soaking. To keep each fight's time,
+the boss's health is multiplied at attach by the factor `G.balance` finds (`hpMult`, at least 0.6); for the solo Omen
+and Ascended fights also at the weakest class's damage (`weakDps` 1,950), the lower factor wins. Group fights use the
+"Solo kill times" group numbers (10 x 2,600 for world bosses, 20 x 2,600 for the donors, 5 x 1,400 at 75% for the guild
+boss). The tests keep every final time within 5% above the old one and inside the limit:
+
+| Boss | Reference (health, damage, uptime) | Limit | Time before | With the mechanics, same health | Health x | Expected now |
+|---|---|---|---|---|---|---|
+| Kaelgor the Infernal Warlord | 18.00M, 10 x 2600, 100% | 45:00 | 12:06 | 15:01 | 0.789 | 12:06 |
+| Skaldra the Rime Queen | 16.00M, 10 x 2600, 100% | 45:00 | 10:45 | 13:23 | 0.804 | 10:45 |
+| The Rotmother | 22.00M, 10 x 2600, 100% | 45:00 | 15:36 | 18:19 | 0.848 | 15:36 |
+| Nyxareth the Void Archon | 15.00M, 10 x 2600, 100% | 45:00 | 10:05 | 15:02 | 0.671 | 10:05 |
+| Vharok the Blood Colossus | 24.00M, 10 x 2600, 100% | 45:00 | 17:33 | 20:38 | 0.846 | 17:33 |
+| Sangrith the Bloodmoon Herald | 500k, 2600, 75% | 12:00 | 5:13 | 6:50 | 0.750 | 5:13 |
+| Morvane the Hollow Crown | 500k, 2600, 75% | 12:00 | 5:13 | 8:09 | 0.600 | 4:54 |
+| Thalcyra the Stormbound Seer | 500k, 2600, 75% | 12:00 | 5:13 | 7:12 | 0.726 | 5:13 |
+| Ascended Sangrith | 1.20M, 3000, 75% | 14:00 | 8:53 | 9:23 | 0.944 | 8:53 |
+| Ascended Morvane | 1.20M, 3000, 75% | 14:00 | 8:53 | 11:26 | 0.718 | 8:12 |
+| Ascended Thalcyra | 1.20M, 3000, 75% | 14:00 | 8:53 | 10:08 | 0.878 | 8:53 |
+| Ysgrath the Cinderheart | 1.65M, 3000, 75% | 20:00 | 12:13 | 15:08 | 0.742 | 11:24 |
+| Rift guardian (tier 1-15) | 300k, 2180, 80% | none | 2:52 | 3:33 | 0.795 | 2:52 |
+| Vault Keeper Ossrim | 1.13M, 2180, 100% | 30:00 | 8:38 | 10:09 | 0.846 | 8:38 |
+| The Emberdeep Maw | 1.64M, 2600, 100% | none | 10:31 | 12:01 | 0.875 | 10:31 |
+| The Ossuary Warden | 1.73M, 2600, 100% | none | 11:05 | 14:30 | 0.765 | 11:05 |
+| Cinderwing | 1.70M, 2600, 100% | none | 10:54 | 12:27 | 0.875 | 10:54 |
+| Gorvath the Banner-Eater | 2.21M, 5 x 1400, 75% | 13:00 | 7:01 | 9:20 | 0.751 | 7:01 |
+| Ormathulak | 22.00M, 20 x 2600, 100% | none | 7:13 | 9:03 | 0.779 | 7:13 |
+| Talath | 21.00M, 20 x 2600, 100% | none | 6:53 | 8:31 | 0.808 | 6:53 |
+| Gloomfire | 20.00M, 20 x 2600, 100% | none | 6:34 | 8:59 | 0.731 | 6:34 |
+| Saga | 18.00M, 20 x 2600, 100% | none | 5:54 | 7:02 | 0.839 | 5:54 |
+| Legendary Warrior | 1.00M, 2600, 100% | none | 7:45 | 8:51 | 0.875 | 7:45 |
+
+The weakest class (1,950) alone: Omen guardians 7:31 (Morvane 7:43) of 12:00, the Ascended 13:41 of 14:00, the
+Cinderheart 18:48 of 20:00: the same as before the mechanics. The Hollow Vault at difficulty 6 (x2.25 health, 2,180):
+19:03 of the run's 30:00 (19:26 before). The Ascended Morvane and the Cinderheart get a little faster for a strong build
+(8:12 and 11:24 at 3,000) because the weak build sets their factor. The rift guardian's factor is taken at tier 15 (its
+puddles and shield phase); lower tiers have fewer mechanics and a factor nearer 1 (attach passes the tier).
+
+**Client** (`game_monsterbar`, `monsterbarmech.lua` pure + `monsterbarmech_test.lua`, `monsterbarmech.otui`): a cast bar
+under the monster bar (in its place when nothing is targeted): "Kaelgor: Meteor Rain 2.4s - move out", filling to the
+hit; red = move out, purple = kill the totem, green = stand in the circle, blue = hide behind a pillar; an interrupted
+channel turns grey. `previewMech({...})` shows it without a server.
+
+**Checked.** The tests above, the existing suites of the systems it touches (uber, guildboss, raid, worldboss, rift,
+big_fx) in both interpreters, and offline renders of the telegraphs from the core's real plans and the pair 24 strips in
+git (Kaelgor's puddles and cone, Skaldra's ring and pillar blast, Nyxareth's cross in the world boss room; Thalcyra's
+line, puddles and blast and Morvane's ring as 4 x 4 Omen guardians in a rift chamber). **Not checked:** a live server
+and client (the machine had 3.6 GB free, under the 4 GB a test server needs); the `warning_zone` / `warning_fill`
+strips are in the client pair only, so the renders draw a red tile in their place. The attach paths in worldboss.lua,
+uber.lua, guildboss.lua and rift.lua are guarded (`ChaosBossMech` nil in their tests) and not exercised by those tests.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
@@ -12693,3 +12892,116 @@ backend source address as the only trusted one; `tools/loadtest.py` through it):
   ranges and bad entries, loopback, required. CI also renders and checks both setup scripts with `--dry-run`.
 Not run: `setup_gateway.sh` and `setup_backend_firewall.sh` for real (apt, systemd, files under /etc; their dry runs,
 which render and check every file, were run), a gateway on a real VPS with real DDoS filtering, the Windows build.
+
+## Display scale (`display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037-display-scale.patch`, client `game_chaosscale`)
+
+Owner request (2026-10-13): end-game damage in the millions, as a **visual** scale. Every combat number a player sees is
+the internal number x a factor of a level; the internal numbers (health, damage, the balance of
+`data/spells/README.md`, everything in the database) stay exactly as they are and the engine keeps int32 health.
+
+**The curve** (`display_scale_config.lua` `curve`): factor 1 up to level 100, then exponential (a straight line of
+log(factor)) to x1000 at level 1000, then slower (x10 over 500 levels) to the cap x10000 at level 1500 and above. The
+factor is rounded to a whole number. The first steps are 1 -> 2 at level 153, 3 at 220, 4 at 264, 5 at 296, 10 at
+394; from about level 400 one level adds under 10%. Median single-target DPS: measured at levels 300 (913) and 1000
+(2598, the 21 classes of `data/spells/README.md` "Class damage factor"); the other levels are estimates on the power
+law through those two (DPS ~ level^0.87).
+
+| Level | Factor | Median DPS (internal) | Median DPS shown |
+|---|---|---|---|
+| 50 | 1 | about 190 (estimate) | about 190 |
+| 100 | 1 | about 350 (estimate) | about 350 |
+| 200 | 2 | about 640 (estimate) | about 1.3k |
+| 300 | 5 | 913 (measured) | 4.6k |
+| 500 | 22 | about 1420 (estimate) | about 31k |
+| 700 | 100 | about 1900 (estimate) | about 190k |
+| 1000 | 1000 | 2598 (measured) | 2.6M |
+| 1500 | 10000 (cap) | about 3700 (estimate) | about 37M |
+
+**Why a whole-number factor.** Shown numbers then add up exactly: the shown parts of a hit (primary + secondary) are
+the shown total, the shown hits of a fight are the meter's shown total, and a shown health minus the shown hits is the
+next shown health (no rounding drift; `tests/display_scale_test.lua` checks it at x1 to x10000). The price is the first
+steps (x1 -> x2 at level 153); from level 400 on they are small.
+
+**Whose level.** The viewer's own level, for everything that viewer sees: its damage dealt and taken, heals, its own
+health and mana, monster and boss health numbers, the DPS meter and combat log, the death recap, party frames, damage
+boards, the bestiary's monster health, the spellbook's mana costs. Percentages stay percentages (monster bars, boss
+HUDs, party frame bars and every percent stat send percents anyway). Edge cases:
+- **PvP:** each side sees its own scale. A level-1000 hit on a level-300 player reads x1000 to the attacker, x5 to the
+  victim and x(own) to every bystander; the engine scales each spectator's message on its own (`sendTextMessage` runs
+  once per receiving player).
+- **Party members and party frames:** a member's health and mana in the frames are in the VIEWER's scale (the same as
+  that member's damage numbers the viewer sees), so two members of different levels see each other's bars with
+  different numbers but the same percents. The combat log's party view and the battleground scoreboard likewise.
+- **Spectators:** a bystander sees a fight in its own scale, like the PvP case.
+- **Death recap:** at the level the character had at that death (`recap.lvl`), the numbers it saw while dying, also
+  when it is opened after a level up; a recap stored before this change without a level uses the viewer's factor.
+- **Items traded between players of different levels:** an item's tooltip uses the factor of the item's level
+  requirement (`req.level`), not the viewer's. Why: an item is the same thing for everybody; its tooltip reaches
+  players of every level (the market, chat links, Inspect, trade, ground labels) and has to read the same for the
+  seller and the buyer, and chat links and market offers keep one snapshot for every reader. `tip.ds` carries that
+  factor and the client's compare view brings a worn item's flat rows to the hovered item's scale (`L.toScale`), so
+  two items of different levels compare by their real numbers. Only flat health / mana / damage / heal rows are scaled
+  (`itemFlatKeys`: max health, max mana, thorns, life / mana on kill and on hit, health regeneration, the Smoldering
+  Aura power, flat gems); attack, defence, armour, skills, speeds and every percent stay. The price: such a row is not
+  in the wearer's scale (a level-500 wearer of a level-1000 helmet's "+200,000 Max Health" gains x22 on its bar, not
+  x1000).
+- **Consistency on one screen:** everything the viewer sees about combat uses one factor, its own (the boss bar's
+  numbers, the damage numbers, its health, the meter); item tooltips are the one exception above.
+
+**Where the numbers come from, scaled at the last step before sending.**
+- Engine (`src-patches/0037`, `src/chaosdisplay.h`): the damage and heal text messages (MESSAGE_DAMAGE_DEALT /
+  _RECEIVED / _OTHERS, MESSAGE_HEALED / _OTHERS: both values, uint32 clamped, and the numbers of the text that count
+  hitpoints, mana, energy shield or health; "1 hitpoint" shown as more becomes "hitpoints"), the player's own health,
+  max health, mana and max mana in the stats packet (uint32, clamped), and the energy shield's "es:" message (patch
+  0015). A C++ patch because TFS 1.4.2 has no Lua event per spectator message: the text is built once per hit and sent
+  to every spectator. The factors come from Lua once at load (`Game.setDisplayScale(table)`, levels 1..1500, a higher
+  level uses the last entry; `player:getDisplayScale()`); without the table every factor is 1.
+- Lua, right before each json.encode (`ChaosDisplayScale.apply(site, viewer, payload)`, a scaled copy: shared and cached
+  payloads stay raw): `combatlog.lua` (totals, rows, max hits, elements, the party's totals; the factor is part of the
+  push signature, so a level up re-sends), `deathrecap.lua`, `partyframes.lua`, `hunt.lua` (damage, DPS, healing),
+  `leaderboard.lua`, `season.lua`, `season_modes.lua` (the World Boss, Boss Healer and Boss Tank boards only:
+  `leaderboardBoards`), `battleground.lua` (scoreboard damage and healing), `guildwar.lua` (the guild boss damage
+  board), `bestiary.lua` (monster health), `spellbook.lua` (flat mana costs; a percent cost stays), the item tooltips of
+  `item_tooltip.lua`, `inspect.lua`, `itemlink.lua`, `groundloot.lua` and `market.lua` (`DS.itemTip`), and the text
+  "Your pet mends you (+N)" of `pets.lua`.
+- Client (`game_chaosscale`, opcode 157): the server sends `scale {level, f}` at login, at a level up that changes the
+  factor, and as the answer to the client's `hello` (sent at every game start, when the module loads in game and when
+  the own level differs from the last factor's: a reattach to a lingering character runs no onLogin, and a lost level
+  runs no onAdvance). The client scales what it works out itself: the flat mana cost of every spell in `SpellInfo`
+  (action bar, spell list; a cost in percent of max mana already follows the scaled max mana). The short numbers
+  (`client_chaos_numbers`, base patch 0018 above the map) already write k / M / B / T with three significant digits;
+  the DPS meter and the hunt tracker wrote "kk" / "kkk" and now use M / B / T too.
+- Opcode 157 is free in the base server, the base client and every Chaos module ("Opcode collision check").
+
+**Never scaled:** gold, experience, levels, skills, item counts, prices, timers and durations, hits and crits counts,
+percentages, ratings, points, kills, and anything stored (the combat log's own numbers, death recaps, market snapshots,
+chat link snapshots, boards in the database). Not scaled on purpose or not reached: the passive tree's flat stat texts
+(client tree data, read as stats like skills), the Codex and the website wiki (reference tables in the internal numbers,
+which are what a level 1-100 character sees; the wiki's FAQ has the factor of a few levels from this config, see
+`tools/gen_wiki_data.lua` facts `scale.*`), the item look text of the engine (the description attribute, written once
+into the item), the market search filters (typed against the internal values), the base server's own inspect opcode 107
+(no module of our client reads it).
+
+**Tests:** `tests/display_scale_test.lua` (the curve against this table, whole and monotone factors, smoothness, the
+rounding, the 2^53 and uint32 clamps, additivity at x1 to x10000, the text rule, the engine table; every site function
+on payloads made by the real cores: combat log, death recap, party frames, hunt tracker, plus the boards, battleground,
+guild boss, bestiary, spellbook and item tooltips; the engine glue against a mocked engine: the table to the engine,
+the opcode at login, at a level change that changes the factor and at hello; a scan that every hook site calls its
+function right before it sends), hook sites against the mocked engines of `tests/combatlog_test.lua` (a level-1000 and
+a level-300 viewer of one meter, the push at a level change), `tests/deathrecap_test.lua` (a recap at its death's
+level, the stored row unchanged) and `tests/item_tooltip_test.lua` (a built tooltip as sent), the engine header in
+`tools/chaosdisplay_test.cpp` (CI, the header cut out of the patch), the patch guard `tools/display_scale_patch_test.py`
+(CI: the chain is numbered without gaps, 0037's hunks are well formed, the last patch writing each function scales it,
+the Lua binding and the opcode), client `game_chaosscale/scalelogic_test.lua`, `game_itemtooltip/tooltiplogic_test.lua`
+(the compare across scales), `client_chaos_numbers/numbers_test.lua`, `game_dpsmeter/dpsmath_test.lua` and
+`game_hunt/huntmath_test.lua` (M / B / T).
+
+**Checked live (2026-10-13):** the base server source with src-patches 0001-0037 (the chain applies to the base and
+builds without warnings), `install_all.py`, the Linux client with the overlay, the live sprite pair. A Warrior at level
+1000 hitting a target with raw 2600 fire and 1800 physical saw "2.6M" and "1.8M" above it, "A rat loses 2.6M hitpoints
+due to your attack." in the Server Log, "You lose 300k hitpoints" and "You healed yourself for 450k hitpoints", its
+health as 15.9M / 15.9M and mana 5.36M, and the DPS meter at 66M in 18 s (3.5M DPS; the meter's raw total was exactly
+66,000). The same character at level 100 saw 260, 180, 45, health 2.47k and the meter at a few hundred DPS; at level
+300 its health read 21.9k / 27.3k (x5) and at level 700 1.14M (x100). A level lost (removed experience) and a reattach
+after the client was killed brought the right factor to the client. Not checked live: two players at once (PvP, a
+party), the item tooltips and the energy shield in a client, the Windows build.

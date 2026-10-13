@@ -316,6 +316,14 @@
 		"rift.mods": 36,
 		"rift.omenKeyCost": 60,
 		"rift.omenMinTier": 6,
+		"scale.cap": "10000",
+		"scale.capLevel": 1500,
+		"scale.from": 100,
+		"scale.l1000": "1000",
+		"scale.l200": "2",
+		"scale.l300": "5",
+		"scale.l500": "22",
+		"scale.l700": "100",
 		"season.finish": "2027-01-31",
 		"season.joinMaxLevel": 7,
 		"season.modes": 1,
@@ -364,6 +372,7 @@
 		"data/scripts/chaos/*_config.lua",
 		"data/scripts/chaos/class_unlocks_core.lua",
 		"data/scripts/chaos/dungeons_difficulty.lua",
+		"data/scripts/chaos/display_scale_core.lua",
 		"data/monster/monsters/chaos/**.xml",
 		"tools/late_game_spawns.csv",
 		"client/overlay/modules/game_passivetree/treedata/nodes.lua",
@@ -26888,6 +26897,32 @@
 								["15%", "4 x Hellspawn (150,000 health)", "My guard dies before I do!"]
 							]
 						},
+						{
+							"h": "Mechanics",
+							"p": [
+								"Red marks pulse on the ground where the hit will land; the hit lands only on the tiles still marked, so walk out. A bar under the monster bar names the next mechanic and counts down."
+							],
+							"cols": ["Mechanic", "Warning", "Counterplay"],
+							"w": [30, 14, 56],
+							"rows": [
+								[
+									"Meteor Rain (puddles)",
+									"2.7 s",
+									"Red circles land under four players and around the arena: step off them."
+								],
+								[
+									"Hellfire Breath (cone)",
+									"2.7 s",
+									"A cone towards his target: tank to the side, everyone else behind him."
+								],
+								[
+									"Infernal Wardstone (adds, immune)",
+									"55% health",
+									"At 55% he takes no damage until the 3 Infernal Wardstones die."
+								],
+								["Soft enrage", "30 min", "+8% damage a minute after that: keep the damage up."]
+							]
+						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
 					],
 					"icon": "wiki/i/k-fire-meteor.png"
@@ -26914,6 +26949,31 @@
 								["70%", "3 x Frost Dragon (200,000 health)", "My brood, wake!"],
 								["40%", "enrage: a pulse hits everyone around it", "THE LONG WINTER BEGINS!"],
 								["15%", "4 x Ice Golem (120,000 health)", "Shards, protect your queen!"]
+							]
+						},
+						{
+							"h": "Mechanics",
+							"p": [
+								"Red marks pulse on the ground where the hit will land; the hit lands only on the tiles still marked, so walk out. A bar under the monster bar names the next mechanic and counts down."
+							],
+							"cols": ["Mechanic", "Warning", "Counterplay"],
+							"w": [30, 14, 56],
+							"rows": [
+								[
+									"Rime Breath (line)",
+									"2.7 s",
+									"A three-wide beam towards her target, wall to wall: step out sideways."
+								],
+								[
+									"Glacial Ring (ring)",
+									"2.7 s",
+									"A ring of ice: hug her (inside 3 sqm) or run far out."
+								],
+								[
+									"Absolute Zero (line of sight)",
+									"3.5 s",
+									"Ice pillars rise round her: break line of sight behind one before the blast."
+								]
 							]
 						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
@@ -26944,6 +27004,36 @@
 								["25%", "enrage: a pulse hits everyone around it", "BREATHE ME IN!"]
 							]
 						},
+						{
+							"h": "Mechanics",
+							"p": [
+								"Red marks pulse on the ground where the hit will land; the hit lands only on the tiles still marked, so walk out. A bar under the monster bar names the next mechanic and counts down."
+							],
+							"cols": ["Mechanic", "Warning", "Counterplay"],
+							"w": [30, 14, 56],
+							"rows": [
+								[
+									"Creeping Bile (follows you)",
+									"2.7 s",
+									"A circle follows her target, then stops: walk out once it stops moving."
+								],
+								[
+									"Spore Field (puddles)",
+									"2.7 s",
+									"Spore patches all over the arena: find a clear tile."
+								],
+								[
+									"Plague Heart (adds, heal)",
+									"60% health",
+									"At 60% three Plague Hearts heal her 0.4% each per 5 s: kill them first."
+								],
+								[
+									"Festering (stacks)",
+									"on its hits",
+									"Her hits stack Festering (+5% damage taken each): swap tanks or step away for a few seconds."
+								]
+							]
+						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
 					],
 					"icon": "wiki/i/k-poison-thorns.png"
@@ -26972,6 +27062,31 @@
 								["15%", "4 x Lost Soul (100,000 health)", "Your dead serve me now."]
 							]
 						},
+						{
+							"h": "Mechanics",
+							"p": [
+								"Red marks pulse on the ground where the hit will land; the hit lands only on the tiles still marked, so walk out. A bar under the monster bar names the next mechanic and counts down."
+							],
+							"cols": ["Mechanic", "Warning", "Counterplay"],
+							"w": [30, 14, 56],
+							"rows": [
+								[
+									"Void Cross (cross)",
+									"2.6 s",
+									"Two beams through him, wall to wall: stand on a diagonal."
+								],
+								[
+									"Event Horizon (soak)",
+									"2.6 s",
+									"A circle opens: at least three players stand in it to split the hit; nobody in it hurts everyone."
+								],
+								[
+									"Oblivion (channel)",
+									"9.0 s",
+									"A Void Anchor appears while he channels: kill it before the cast bar ends."
+								]
+							]
+						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
 					],
 					"icon": "wiki/i/k-shadow-skull.png"
@@ -26998,6 +27113,32 @@
 								["75%", "4 x Blood Beast (150,000 health)", "FEED ME!"],
 								["45%", "enrage: a pulse hits everyone around it", "BLOOD FOR THE COLOSSUS!"],
 								["20%", "3 x Juggernaut (200,000 health)", "CRUSH THEM!"]
+							]
+						},
+						{
+							"h": "Mechanics",
+							"p": [
+								"Red marks pulse on the ground where the hit will land; the hit lands only on the tiles still marked, so walk out. A bar under the monster bar names the next mechanic and counts down."
+							],
+							"cols": ["Mechanic", "Warning", "Counterplay"],
+							"w": [30, 14, 56],
+							"rows": [
+								[
+									"Crimson Cleave (cone)",
+									"2.7 s",
+									"A wide cone in front: only his target and those beside it should be there, and then step aside."
+								],
+								["Quake (circle)", "2.7 s", "Everything within 4 sqm of him: back off."],
+								[
+									"Blood Idol (adds, empower)",
+									"50% health",
+									"At 50% three Blood Idols give him +15% damage each: kill them."
+								],
+								[
+									"Hemorrhage (stacks)",
+									"on its hits",
+									"His hits stack Hemorrhage (+4% damage taken each): swap tanks."
+								]
 							]
 						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
@@ -27196,6 +27337,53 @@
 							]
 						},
 						{
+							"h": "Mechanics on top of the phases",
+							"p": [
+								"Each Ascended boss and the Cinderheart add these to their telegraphs, hazards and adds."
+							],
+							"cols": ["Boss", "Mechanic", "Counterplay"],
+							"w": [22, 30, 48],
+							"rows": [
+								[
+									"Ascended Sangrith",
+									"Sanguine Wardstone (adds, immune)",
+									"At 50% he is immune until the 2 Sanguine Wardstones die."
+								],
+								[
+									"Ascended Sangrith",
+									"Blood Price (stacks)",
+									"Every hit stacks Blood Price (+4% damage taken): step out for a few seconds to let it fall off."
+								],
+								[
+									"Ascended Morvane",
+									"Dirge of the Empty Throne (channel)",
+									"Kill the Hollow Totem before the cast ends."
+								],
+								["Ascended Morvane", "Crown of Night (line of sight)", "Hide behind a pillar."],
+								["Ascended Thalcyra", "Skyfall (line of sight)", "Hide behind a pillar."],
+								[
+									"Ascended Thalcyra",
+									"Conduit (soak)",
+									"Stand in the circle: alone you take 60% of your health, a party splits it; nobody in it: 45% to all."
+								],
+								[
+									"Ysgrath the Cinderheart",
+									"The Last Light (channel)",
+									"Kill the Ember Totem before the cast ends."
+								],
+								[
+									"Ysgrath the Cinderheart",
+									"Cinder Wardstone (adds, immune)",
+									"At 60% it is immune until the 3 Cinder Wardstones die."
+								],
+								[
+									"Ysgrath the Cinderheart",
+									"Cinderburn (stacks)",
+									"Its hits stack Cinderburn (+4% damage taken): let it fall off between pulls."
+								]
+							]
+						},
+						{
 							"h": "Rewards (per finisher)",
 							"cols": ["Fight", "Gold", "Orbs", "Unique rolls"],
 							"w": [25, 25, 30, 20],
@@ -27220,9 +27408,205 @@
 								"Guild members feed the Summoning Stone in the guild hall with materials, then summon the boss into an instanced arena.",
 								"2 to 20 players of level 150 or more; 3 attempts a week. It enrages after 10 min."
 							]
+						},
+						{
+							"h": "Mechanics",
+							"p": ["On top of its telegraphs, pools and adds:"],
+							"cols": ["Mechanic", "Warning", "Counterplay"],
+							"w": [30, 14, 56],
+							"rows": [
+								[
+									"Devour the Standard (channel)",
+									"9.0 s",
+									"Kill the Gnawed Standard before the cast ends."
+								],
+								["Shared Oath (soak)", "2.6 s", "Two or more stand in the circle to split the hit."],
+								[
+									"Gnawed (stacks)",
+									"on its hits",
+									"His bites stack Gnawed (+3% damage taken): swap tanks."
+								]
+							]
 						}
 					],
 					"icon": "wiki/i/k-holy-banner.png"
+				},
+				{
+					"id": "boss:mechanics",
+					"name": "Boss mechanics",
+					"sub": "Telegraphs, adds, totems, soaks and pillars: what each boss does and how to answer it.",
+					"color": "#ff7050",
+					"group": "world",
+					"sections": [
+						{
+							"h": "How to read a mechanic",
+							"p": [
+								"A red mark pulses on every tile the hit will land on, from 1.5 to 3 seconds before it (harder content warns later). The hit lands only on the tiles still marked: walk out. There is always a safe tile you can reach in time at normal speed.",
+								"Orange warnings name the big casts, and a bar under the monster bar names the next mechanic with a countdown: red = move out, purple = kill the totem, green = stand in the circle, blue = hide behind a pillar."
+							]
+						},
+						{
+							"h": "Omen guardians",
+							"cols": ["Boss", "Mechanic", "Warning", "Counterplay"],
+							"w": [18, 24, 10, 48],
+							"rows": [
+								[
+									"Sangrith The Bloodmoon Herald",
+									"Red Crescent (cone)",
+									"2.6 s",
+									"A cone towards you: step around him."
+								],
+								[
+									"Sangrith The Bloodmoon Herald",
+									"Blood Moon (follows you)",
+									"2.6 s",
+									"The red moon follows you, then stops: walk out of it."
+								],
+								[
+									"Sangrith The Bloodmoon Herald",
+									"Bloodmoon Wardstone (adds, immune)",
+									"50% health",
+									"At 50% he is immune until his 2 Wardstones die (about 10 s each alone)."
+								],
+								[
+									"Morvane The Hollow Crown",
+									"Crown's Cross (cross)",
+									"2.6 s",
+									"Beams through him: stand on a diagonal."
+								],
+								[
+									"Morvane The Hollow Crown",
+									"Hollow Ring (ring)",
+									"2.6 s",
+									"A ring: hug him or run out past it."
+								],
+								[
+									"Morvane The Hollow Crown",
+									"Dirge of the Empty Throne (channel)",
+									"10.0 s",
+									"A Hollow Totem rises while he sings: kill it (about 8 s alone) before the cast ends."
+								],
+								[
+									"Thalcyra The Stormbound Seer",
+									"Storm Marks (puddles)",
+									"2.6 s",
+									"Bolts on you and around: step off the marks."
+								],
+								[
+									"Thalcyra The Stormbound Seer",
+									"Sky Lance (line)",
+									"2.6 s",
+									"A line towards you: one step sideways."
+								],
+								[
+									"Thalcyra The Stormbound Seer",
+									"Skyfall (line of sight)",
+									"3.5 s",
+									"Stone pillars rise: put one between you and her before the sky falls."
+								]
+							]
+						},
+						{
+							"h": "Rift guardians (every tier; more from tier 8 and 12)",
+							"cols": ["Boss", "Mechanic", "Warning", "Counterplay"],
+							"w": [18, 24, 10, 48],
+							"rows": [
+								["Rift guardian", "Guardian Slam (circle)", "3.0 s", "Back away from the guardian."],
+								["Rift guardian", "Guardian Sweep (cone)", "3.0 s", "Step to its side."],
+								[
+									"Rift guardian",
+									"Rift Scatter (puddles, tier 8+)",
+									"3.0 s",
+									"Tier 8+: marks under you: step off."
+								],
+								[
+									"Rift guardian",
+									"Rift Anchor (adds, shield)",
+									"50% health",
+									"Tier 12+: at 50% it takes 60% less damage until 2 Rift Anchors die."
+								]
+							]
+						},
+						{
+							"h": "Dungeons and hunting grounds",
+							"cols": ["Boss", "Mechanic", "Warning", "Counterplay"],
+							"w": [18, 24, 10, 48],
+							"rows": [
+								[
+									"Vault Keeper Ossrim",
+									"Vault Slam (circle)",
+									"2.9 s",
+									"Everything within 3 sqm: back off."
+								],
+								[
+									"Vault Keeper Ossrim",
+									"Rolling Stones (line)",
+									"2.9 s",
+									"A three-wide line towards you: sidestep."
+								],
+								[
+									"Vault Keeper Ossrim",
+									"Vault Warden (adds, shield)",
+									"50% health",
+									"At 50% he takes 75% less damage until the 2 Vault Wardens die."
+								],
+								["The Emberdeep Maw", "Magma Spew (cone)", "2.8 s", "Step to its side."],
+								["The Emberdeep Maw", "Ember Rain (puddles)", "2.8 s", "Step off the circles."],
+								[
+									"The Ossuary Warden",
+									"Bone Ring (ring)",
+									"2.8 s",
+									"Hug it or run out past the ring."
+								],
+								[
+									"The Ossuary Warden",
+									"Bone Requiem (channel)",
+									"9.0 s",
+									"Kill the Bone Totem in time."
+								],
+								["Cinderwing", "Cinder Breath (line)", "2.8 s", "A beam towards you: sidestep."],
+								[
+									"Cinderwing",
+									"Falling Ash (follows you)",
+									"2.8 s",
+									"It follows you, then stops: walk out."
+								]
+							]
+						},
+						{
+							"h": "Dormant bosses (not spawned yet)",
+							"cols": ["Boss", "Mechanic", "Warning", "Counterplay"],
+							"w": [18, 24, 10, 48],
+							"rows": [
+								["Ormathulak", "Cataclysm (circle)", "2.6 s", "Back off 4 sqm."],
+								["Ormathulak", "Rain of Fire (puddles)", "2.6 s", "Step off the circles."],
+								[
+									"Ormathulak",
+									"Infernal Seal (adds, immune)",
+									"50% health",
+									"At 50% immune until 3 Infernal Seals die."
+								],
+								["Talath", "Frost Lance (line)", "2.6 s", "Sidestep the beam."],
+								["Talath", "Winter Ring (ring)", "2.6 s", "Hug him or run out."],
+								["Talath", "Deep Freeze (line of sight)", "3.5 s", "Hide behind a pillar."],
+								["Gloomfire", "Gloom Cross (cross)", "2.6 s", "Stand on a diagonal."],
+								["Gloomfire", "Shadow Pursuit (follows you)", "2.6 s", "Walk out once it stops."],
+								["Gloomfire", "Eclipse (channel)", "9.0 s", "Kill the Gloom Totem in time."],
+								["Saga", "Storm Verse (puddles)", "2.6 s", "Step off the marks."],
+								["Saga", "Thunder Cone (cone)", "2.6 s", "Step to her side."],
+								["Saga", "Chorus (soak)", "2.6 s", "Three or more stand in the circle."],
+								["Legendary Warrior", "Whirlwind (circle)", "2.8 s", "Back off 2 sqm."],
+								["Legendary Warrior", "Charge (line)", "2.8 s", "Sidestep the line."],
+								[
+									"Legendary Warrior",
+									"Sundered (stacks)",
+									"on its hits",
+									"His hits stack Sundered (+3% damage taken): step away now and then."
+								]
+							]
+						}
+					],
+					"icon": "wiki/i/k-bone-skull.png"
 				}
 			],
 			"banner": "wiki/hero/tab-bosses.webp",

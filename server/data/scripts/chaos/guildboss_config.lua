@@ -64,7 +64,8 @@ return {
 	lives = {base = 3, perPlayers = 3, reenterSeconds = 8, shieldSeconds = 3}, -- base + 1 per perPlayers players
 
 	-- ------------------------------------------------------------------ telegraphs (uber_core.lua U.pattern / markPlan)
-	telegraph = {warnMs = 2000, turnMs = 1000, enragedWarnMs = 1200, share = 0.5, enragedShare = 0.75,
+	-- the mark pulses every turnMs until the hit, never under 1.5 s (server/README.md "Boss mechanics")
+	telegraph = {warnMs = 2500, turnMs = 600, enragedWarnMs = 1500, share = 0.5, enragedShare = 0.75,
 		warnEffect = "warning_zone", fillEffect = "warning_fill"},
 	hazard = {share = 0.06, pulseMs = 1000},
 	enrage = {damageMult = 1.6, everyMult = 0.5, pulseShare = 0.07, pulseMs = 4000},

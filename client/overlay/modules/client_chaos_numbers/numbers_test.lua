@@ -25,6 +25,18 @@ local short = {
 for _, c in ipairs(short) do
   eq(formatShortNumber(c[1]), c[2], 'formatShortNumber(' .. tostring(c[1]) .. ')')
 end
+-- the display scale's range (server/README.md "Display scale"): a level-1000 median DPS of about 2600 x 1000, a
+-- big hit, the uint32 packet limit, a boss's health x the cap, a session total near 2^53
+local scaled = {
+  { 2598000, '2.59M' }, { 2600000, '2.6M' }, { 46416000, '46.4M' }, { 128000000, '128M' }, { 4294967295, '4.29B' },
+  { 1000000000000, '1T' }, { 999999999999, '999B' }, { 9007199254740992, '9007T' },
+}
+for _, c in ipairs(scaled) do
+  eq(formatShortNumber(c[1]), c[2], 'scaled formatShortNumber(' .. tostring(c[1]) .. ')')
+end
+eq(shortNumbersIn('A dragon loses 2600000 hitpoints due to your attack.'), 'A dragon loses 2.6M hitpoints due to your attack.',
+  'a scaled damage message')
+eq(shortNumbersIn('You lose 4294967295 hitpoints.'), 'You lose 4.29B hitpoints.', 'the uint32 limit in a message')
 eq(formatShortNumber(nil), 'nil', 'formatShortNumber(nil)')
 eq(formatShortNumber('abc'), 'abc', 'formatShortNumber(abc)')
 

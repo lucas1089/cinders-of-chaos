@@ -215,6 +215,24 @@ for _, row in ipairs(ql) do
   if row.text:find('^Works only') then eq(row.color, L.COLORS.gold, 'note colour') end
 end
 
+-- ---------------------------------------------------------------- display scale (server display_scale_core.lua DS.itemTip)
+-- a level-1000 helmet (ds 1000) against a worn level-500 one (ds 22): the flat rows (sc) are compared in the hovered
+-- item's scale; percent rows as they are
+local hiHelm = { kind = 'helmet', ds = 1000, stats = { { k = 'maxhealth', l = 'Max Health', v = 200000, sc = 1 },
+  { k = 'chaos_mod_lifeonkill', l = 'Life on Kill', v = 50000, sc = 1 }, { k = 'chaos_mod_itemfind', l = 'Item Find', v = 5, fmt = 'pct' } } }
+local loHelm = { kind = 'helmet', ds = 22, stats = { { k = 'maxhealth', l = 'Max Health', v = 4400, sc = 1 },
+  { k = 'chaos_mod_lifeonhit', l = 'Health on Hit', v = 220, sc = 1 }, { k = 'chaos_mod_itemfind', l = 'Item Find', v = 3, fmt = 'pct' } } }
+local dd = {}
+for _, r in ipairs(L.diff(hiHelm, loHelm)) do dd[r.k] = r.d end
+eq(dd.maxhealth, nil, 'the same raw max health (200) is no difference across scales')
+eq(dd.chaos_mod_lifeonkill, 50000, 'only on the hovered one')
+eq(dd.chaos_mod_lifeonhit, -10000, 'only on the worn one: brought to x1000 (10 raw)')
+eq(dd.chaos_mod_itemfind, 2, 'a percent row is not converted')
+eq(L.toScale(4400, 22, 1000), 200000, 'toScale')
+eq(L.toScale(7, nil, nil), 7, 'tooltips without ds')
+local plainA, plainB = { stats = { { k = 'maxhealth', v = 300, sc = 1 } } }, { stats = { { k = 'maxhealth', v = 100, sc = 1 } } }
+eq(L.diff(plainA, plainB)[1].d, 200, 'no ds: as before')
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

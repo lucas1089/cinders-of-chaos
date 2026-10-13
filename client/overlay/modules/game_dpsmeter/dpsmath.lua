@@ -98,8 +98,11 @@ function DpsMath.short(n)
     local s = string.format('%.1f', math.floor(v * 10) / 10):gsub('%.0$', '')
     return sign .. s .. suffix
   end
-  if n >= 1e9 then return fmt(n / 1e9, 'kkk') end
-  if n >= 1e6 then return fmt(n / 1e6, 'kk') end
+  -- the units of the rest of the client (client_chaos_numbers): k, M, B, T; the display scale (server/README.md
+  -- "Display scale") puts a level-1000 meter in the millions and billions
+  if n >= 1e12 then return fmt(n / 1e12, 'T') end
+  if n >= 1e9 then return fmt(n / 1e9, 'B') end
+  if n >= 1e6 then return fmt(n / 1e6, 'M') end
   if n >= 1e3 then return fmt(n / 1e3, 'k') end
   return sign .. tostring(math.floor(n))
 end

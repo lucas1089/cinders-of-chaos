@@ -84,9 +84,11 @@ return {
 	lives = {reenterSeconds = 8, shieldSeconds = 3},
 
 	-- ------------------------------------------------------------------ telegraphs, hazards, enrage
-	-- A telegraph marks its tiles (warning effect) at once and again one turn later, then hits warnMs after the first
-	-- mark: share x max health to every player still on a marked tile (enraged: enragedShare, warn enragedWarnMs).
-	telegraph = {warnMs = 2000, turnMs = 1000, enragedWarnMs = 1000, share = 0.55, enragedShare = 0.8,
+	-- A telegraph marks its tiles (warning effect) at once and pulses every turnMs until the hit (the filling effect in
+	-- the last turn; boss_mechanics_core.lua G.pulses), then hits warnMs after the first mark: share x max health to
+	-- every player still on a marked tile (enraged: enragedShare, warn enragedWarnMs). Never under 1.5 s; the shapes are
+	-- made fair (a safe tile in walking reach, G.makeFair). server/README.md "Boss mechanics".
+	telegraph = {warnMs = 2500, turnMs = 600, enragedWarnMs = 1500, share = 0.55, enragedShare = 0.8,
 		warnEffect = "warning_zone", fillEffect = "warning_fill"},
 	-- hazard tiles hurt share x max health per second while stood on (effect every second)
 	hazard = {share = 0.07, pulseMs = 1000},

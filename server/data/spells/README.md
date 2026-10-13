@@ -657,6 +657,10 @@ the Elementalist at least 8-10% ahead, the classes right behind trimmed rather t
 of the Necromancer and the Bone Lord are 0.93 and 0.63 ("Class order fixes" below); their level 300 rows here are from
 before (computed with the new factors: Necromancer 938 / 994, Bone Lord 973 / 1954).
 
+Every number in this file is internal (health lost per second); a player sees it x the display scale of its level
+(x5 at level 300, x1000 at level 1000: server/README.md "Display scale"), so the level 1000 median of about 2600 shows as
+about 2.6M. The balance is measured and tuned on the internal numbers only.
+
 | Class | Role | 300: 1 target | 300: 5 targets | 300: heal/s on an ally | 300: max health | 1000: 1 target | 1000: 5 targets | 1000: heal/s on an ally | 1000: max health |
 |---|---|---|---|---|---|---|---|---|---|
 | Warrior | area / melee | 886 | 2127 | 0 | 4565 | 2351 | 6280 | 0 | 15065 |

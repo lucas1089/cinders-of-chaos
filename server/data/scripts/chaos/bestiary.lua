@@ -433,6 +433,9 @@ local function sendEntry(player, id)
 	if can then
 		data.task.reward = C.taskReward(task, player:getLevel(), cfg, bountyCfg)
 	end
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the monster's health
+		data = ChaosDisplayScale.apply("bestiaryEntry", player, data)
+	end
 	Chaos.send(player, OPCODE, "entry", data)
 end
 

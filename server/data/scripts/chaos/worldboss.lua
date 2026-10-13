@@ -1066,6 +1066,26 @@ local function spawnBoss(token)
 		finish(false, "spawn failed")
 		return
 	end
+	-- boss mechanics (boss_mechanics.lua): telegraphs, adds phases, blasts behind the pillars; the health factor that
+	-- keeps the kill time is applied here, before the fight reads the boss's max health
+	if ChaosBossMech and ChaosBossMech.attach then
+		local floor = {}
+		local skip = {}
+		for _, t in ipairs(L.pillars) do
+			skip[t.x .. "," .. t.y] = true
+		end
+		for _, t in ipairs(L.basins) do
+			skip[t.x .. "," .. t.y] = true
+		end
+		for y = L.arena.y1 + 1, L.arena.y2 - 1 do
+			for x = L.arena.x1 + 1, L.arena.x2 - 1 do
+				if not skip[x .. "," .. y] then
+					floor[#floor + 1] = {x = x, y = y, z = L.z}
+				end
+			end
+		end
+		pcall(ChaosBossMech.attach, boss, nil, {tiles = floor, players = playersInside, pillars = L.pillars})
+	end
 	state.bossId = boss:getId()
 	state.maxHealth = boss:getMaxHealth()
 	state.phase = "fight"

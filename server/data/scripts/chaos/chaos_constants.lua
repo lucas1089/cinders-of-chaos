@@ -84,6 +84,8 @@ ChaosOpcodes = {
 ChaosOpcodes.riftAtlas = 210
 -- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
 ChaosOpcodes.combatLog = 204
+-- Display scale: the viewer's level and factor, server -> client (client game_chaosscale; display_scale*.lua)
+ChaosOpcodes.displayScale = 157
 -- Client guard (engine src-patch 0021, client base patch 0035, clientguard*.lua; server/README.md "Client guard"): 189 is
 -- the engine's HMAC handshake, both ways, handled in C++ on both sides (it never reaches Lua; listed so that no module
 -- takes it); 190 is the module hello of client game_chaosguard, client -> server
