@@ -277,6 +277,30 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     two zoom levels and with the guardian's own tile under the console; the option turned the outline off and on;
     Smart control's click and Regular control's Alt-click attacked the guardian by its overhang. Not run: a creature
     on a floor above (no upper floor near the test spot).
+30. `0052` (Lua `mods/game_helper/helper.lua`, `classes/magic_shooter.lua`, `tools_panel.lua`): the helper's rotation
+    against our server. Every cast of the magic shooter (spells, runes) and of the healing waits for the server's answer:
+    the cooldown packets (`onSpellCooldown` / `onSpellGroupCooldown` signals) confirm it, no answer within 1.2 s (3 round
+    trips on a slow line) means refused and that spell backs off 2, 4, 8, 16 s while the rest of the rotation goes on
+    (overlay `game_helperrotation`, `ChaosHelperRotation`). Before, a spell the server refused (level, target, room, a
+    corpse) went out every 200 ms for ever and the spells below it in its group never did; with a round trip over 200 ms
+    the next spell of a group went into the group cooldown. The helper's own 200 ms pre-cooldowns no longer pass for
+    server packets; the shooter's casts go through the `0026` rate guard too. The shooter checks the level and skips
+    spells the server does not have (`notOnServer`, `game_chaosspells/spellfix.lua`); healing checks class, level and
+    mana, so a refused heal no longer ends the priority loop above the next heal. A class casts a spell when its server
+    vocation id is in the entry (the old map let a Mystic try Elementalist-only spells and kept the Illusionist,
+    Berserker and Beastmaster from their own Chaos spells). A self-centred Chaos attack spell (no area table) needs a
+    monster within 3 sqm instead of always counting one. A spell that needs a target is targetable even with an area
+    (Radiant Shard). While a cast-time spell charges (`ChaosHelperRotation.CAST_MS`, or `game_castbar.isCasting()`)
+    the shooter casts nothing and a heal waits unless health is below 50%: any other spell interrupted it and the
+    server refunded its cooldown, so Colossus Fall took every attack turn and never landed. Magic shield: the server has
+    no spell that ends it, so the "exana" option does nothing (before, the helper shouted "exana vita" every 50 ms, or
+    Bushido Focus, which has id 245, and held the shooter's support spells back while the shield was up). Lua only;
+    applies after 0001-0051 (checked against the assembled tree). Tested in the Linux client (0001-0052, things_custom24
+    pair) against a local server (base, src-patches 0001-0036, `install_all.py`), 90-150 s per class against bears:
+    Berserker 157 casts sent, 157 accepted; Elementalist 82/82; Deadeye 48/48; Lich and Illusionist only their refused
+    spells failed (Corpse Explosion with no corpse, Umbral Stride with no room: 7-12 tries in 2 minutes, the rest of
+    the rotation unaffected); no "You are exhausted"; every accepted spell at least its cooldown apart, the attack group
+    at least 2 s; a 2.5 s client stall was followed by 1-4 casts in the next 6 s, no burst. Not run on Windows.
 
 ### Client guard: the build secret
 

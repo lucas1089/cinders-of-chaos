@@ -1,0 +1,8 @@
+Module
+  name: game_helperrotation
+  description: The helper's cast bookkeeping (ChaosHelperRotation; used by mods/game_helper through base patch 0052)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 100
+  scripts: [ rotation ]

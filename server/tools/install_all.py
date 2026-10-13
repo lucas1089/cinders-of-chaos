@@ -78,6 +78,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
                respawn"; after monsters, which it reads)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
+               tools/patch_spell_ids.py          base spells with a spellid over 255 (or used twice) get their own id
+                                                 below 256 (README "Spell ids below 256")
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
                the class lines (Necromancer / Monk / Templar) put their own spell or data installers there
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
@@ -486,6 +488,10 @@ def step_spawns(server, data, ctx):
 
 def step_spells(server, data, ctx):
     ok, lines = run_tool([tool('register_spells.py'), data], 'register_spells.py')
+    if not ok:
+        return False, lines, []
+    ok, more = run_tool([tool('patch_spell_ids.py'), data], 'patch_spell_ids.py')
+    lines += more
     if not ok:
         return False, lines, []
     # CLASS HOOK (see the docstring): installers of the class lines, run after the Chaos spell block exists

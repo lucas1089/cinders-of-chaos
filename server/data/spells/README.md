@@ -1486,14 +1486,20 @@ server/README.md "Second ring slot"). So the might ring stays at 20% absorbed; e
 The client's helper only offers spells from its own per-vocation id lists; `game_chaosspells` adds the Chaos spells to them at game start
 (attack spells to the shooter, healing spells to the healing list, support spells to the support list). Tested: a druid's helper heals with
 Purifying Wellspring at 80% health, and the shooter casts Rime Bloom / Blightswarm on cooldown without "You are exhausted" spam.
+Since client base patch 0052 (client/BASE.md) the helper waits for the server's answer to each cast, backs off a spell the server
+refuses, does not cut a cast-time spell off and knows each class's spells by the server's vocation ids; tested with five classes
+(client/MANIFEST.md "Helper rotation").
 
 ## Honest notes / limitations
 
 - Tested on the base server (TFS 1.4 based, protocol 10.98) with the real client: every spell was cast through its script against dummies and
   against a second player, see "Roles and balance". Not tested: party rules (needs two clients in one party), very large crowds.
-- spellid: 200-249 without 237 (the base server's Duelist's Oath has 237), a block no other stock spell (server or client) uses. Ids must stay below 256: the 10.98 cooldown packet
-  (`ProtocolGame::sendSpellCooldown`) sends the id as one byte, so an id like 410 arrives as 154 and the client (action bar,
-  helper) puts the cooldown on the wrong spell. A few stock spells of the base server (ids 258-268) already wrap that way.
+- spellid: 200-249 without 237 (the base server's Duelist's Oath has 237), a block no other stock spell of the server uses (the client's
+  stock table had ten of these ids for spells the server does not have or has under another id; `game_chaosspells/spellfix.lua` moves
+  them). Ids must stay below 256: the engine keeps a spell id in one byte and the 10.98 cooldown packet
+  (`ProtocolGame::sendSpellCooldown`) sends it as one byte, so an id like 410 arrives as 154 and the engine and the client (action bar,
+  helper) put the cooldown on the wrong spell. The base spells with ids 258-397 are renumbered below 256 by `tools/patch_spell_ids.py`
+  (server/README.md "Spell ids below 256").
   The stock file also has a duplicate spellid (106) not related to this work.
   The new lines use ids that are free in the base server's spells.xml and in the client's stock spell list: 180-188 (the
   Necromancer line), 63-72 (the Monk line; 73, 74 kept free), 189-191, 198, 199 and 250-253 (the Templar line).

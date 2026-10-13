@@ -1151,6 +1151,23 @@ directions).
   `CHAOS_PASSWORD_ITERATIONS` should be the same). `passwordType` is not read by the engine; `tools/prod_config.py`
   sets it to `"pbkdf2-sha256"` as a reminder of the scheme.
 
+## Spell ids below 256 (`tools/patch_spell_ids.py`, install step `spells`)
+
+The engine keeps a spell id in one byte (`Spell::spellId` is `uint8_t`; `spellid` in spells.xml is cut to 8 bits) and
+the 10.98 cooldown packet sends one byte. Fifteen base spells had ids 258-397 and two shared 106, so for the engine
+Radiant Shard (258) was spell 2: casting it put Deep Mending on its 26 s cooldown; Arcane Ripple (394) locked Smoulder
+Brand (138), Break Glamour (395) Hex of Withering, Gravity Snare (396) Galvanic Mark, Shatterfrost (262) Fleetfoot
+(6); and the client showed the cooldown on the wrong spell. `patch_spell_ids.py DATA_DIR [--dry-run]` (run by the
+`spells` step after `register_spells.py`) finds each of them by its script and gives it a fixed free id: Radiant Shard 34,
+Lance of the Grave 35, Headsman's Hurl 37, Shatterfrost 40, Quakeburst 41, Hallowed Ground 46, Fading Step 47, Crossfire
+Hex 52, Bewitching Hex 53, Wash Taint 58, Dread 60, Arcane Ripple 85, Break Glamour 164, Gravity Snare 165, Riftbolt 168,
+Sunder Guard 171 (Earthrend keeps 106). Three base scripts also start their own cooldown condition with the old id as sub
+id (`divine_grenade.lua`, `executioners_throw.lua`, `divine_empowerment.lua`); that number changes with it. Idempotent;
+refuses when a new id is taken. The client's spell table uses the same ids (`client/overlay/modules/game_chaosspells/
+spellfix.lua`). Run on the test server: 16 ids and 3 sub ids changed, a second run changed nothing, Radiant Shard came
+back as spell 34 with its 26 s cooldown in the client. Not changed (balance, owner's call): Sunder Guard's attack group
+cooldown is 12 s (base data), so a Mystic who casts it has no attack spell for 12 s.
+
 ## Engine: decay manager, hardening, spell events (`src-patches/0006`, `0007`, `0008`)
 
 **Decay manager (0006).** The base engine kept every decaying item (fields, corpses, rings and amulets with a duration,
