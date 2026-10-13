@@ -2590,6 +2590,16 @@ frame switched on for the roller only, transmog / pets / cosmetics handed to the
 `syncTrack`, a later login, the rows, the staff command). Also `transmog_test.lua`, `pets_test.lua`, `townportal_test.lua`,
 `cosmetics_test.lua`, `season_test.lua`.
 
+**Scarlet Glimmer displacement (things_custom23, on windows-assets since 2026-10-13, c91dd6f9).** The owner approved the fix. Pair things_custom23
+gives look 712 displacement 17,17, the value of Fire Essence 932 (client/MANIFEST.md "Aura displacement
+(things_custom23)"). Measured, not guessed: in every direction the Glimmer's art runs along the centre of the frame's
+bottom-right tile, as the stock ground auras' does. With 0,0 the client drew it 15 px right and below the tile centre;
+with 17,17 its centre sits 4 px up-left, inside the stock range. The art does differ per direction (the orb leads
+facing north or west and sits on the body facing south or east); no single value centres both axes. A scan of every
+aura and wings look of the pair found no other look with this fault. No server change: auras.xml 30 keeps look 712.
+Not on `windows-assets` until the owner says "pode mandar o par para o windows-assets". A client on things_custom22
+still draws the Glimmer off its tile.
+
 ## Hideouts (`hideout.lua`, `hideout_core.lua`, `hideout_config.lua`, `hideout_store.lua`, `sql/chaos_hideout.sql`, client `game_hideout`)
 
 A personal room for every character (a season character is another character, so it has its own), built at runtime and

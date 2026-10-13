@@ -1068,7 +1068,7 @@ Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Which 
 - Checked offline only (frame sheets and the mock scenes); not run in a client.
 
 ## Aura displacement (things_custom23, `tools/sprites/fix_pair_warnings.py` kind `displacement`)
-**Built, not pushed.** The owner approved fixing the Scarlet Glimmer aura (look 712, auras.xml 30, the boss exclusive
+**On windows-assets since 2026-10-13 (c91dd6f9, owner approved).** The owner approved fixing the Scarlet Glimmer aura (look 712, auras.xml 30, the boss exclusive
 `aura_scarlet`). It had no displacement (the client reads 0,0). In a live client it drew about 17 x 12 units right and
 below its place (server/README.md "Exclusives", the in-game check). Only the dat changes: 712 gets dat byte 25 =
 17,17, the value of the stock Fire Essence 932. No sprite is added or edited.
@@ -1115,8 +1115,7 @@ changed, 36,523 byte-identical. Built twice with identical md5s; a run on its ow
   warnings, line for line those of things_custom22.
 - `things-1098.tar.xz` like things_custom22's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
   mtime 2026-10-13 04:00: sha256 a866a48ef97451c53334f6361ba30a14122617bc9432c5393890792bfcf8672b (66,722,480 bytes).
-  It unpacks to the md5s above. A rebuild gives the same sha256. Not on windows-assets: the owner must say "pode
-  mandar o par para o windows-assets" (the push steps are kept with the build, not in the repo).
+  It unpacks to the md5s above. A rebuild gives the same sha256. On windows-assets since 2026-10-13 (c91dd6f9).
 - No server change: the look id stays 712. A client on things_custom22 keeps drawing the Glimmer off its tile.
 - Checked offline: a before / after sheet, four directions, on a tile grid with the stock look 128 and Fire Essence
   932, by the client's draw rule. The "before" column matches the in-game screenshots direction by direction. The
