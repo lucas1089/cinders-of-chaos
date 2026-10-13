@@ -165,6 +165,15 @@ check(fig.fx == body.fx and fig.fy == body.fy, 'wings and aura keep the feet')
 check(fig.top == math.min(body.top, wingA.top, auraA.top + (auraA.h - 1) * 16), 'the top over body, wings and the moved aura')
 check(fig.left <= body.left and fig.right >= body.right, 'wider with wings and aura')
 
+-- a winged character flies 6 px up and left (GameWingOffset): its feet with it, its wings not
+local lifted = C.figure(A, { type = 2161, wings = 1179 }, nil, 6)
+local still = C.figure(A, { type = 2161, wings = 1179 })
+check(lifted.fx == still.fx - 6 and lifted.fy == still.fy - 6, 'wings lift the feet by 6')
+check(C.figure(A, { type = 2161 }, nil, 6).fy == C.anchorOf(A, 2161).fy, 'no wings, no lift')
+x, y = C.placeRect(lifted, 128, 500, 400)
+fx, fy = C.feetOf(lifted, x, y, 256)
+check(fx == 500 and fy == 400 and y == 400 - (C.anchorOf(A, 2161).fy - 6 + 32) * 4, 'the lifted feet still on the platform')
+
 -- the scale: 4x with room, 3x when the wings do not fit at 4x, the feet moved down when not even 3x fits
 local plain = C.figure(A, { type = 2073 })
 local T, sc, drop = C.fitPreview(plain, { above = 400, half = 300, below = 100 })
@@ -180,6 +189,38 @@ T, sc = C.fitPreview(plain, { above = 1000, half = (plain.right - plain.fx) * 4 
 check(sc == 3, 'too wide for 4x: 3x')
 T, sc = C.fitPreview(plain, { above = 1000, half = 10, below = 0 }, { 3, 2 })
 check(sc == 2 and T == 64, 'other scales (the create window falls back to 2x)')
+
+-- the platform: 2.2 tiles wide in the image's proportions, the feet on its top face's centre
+for _, T in ipairs({ 64, 96, 128 }) do
+  local px, py, pw, ph = C.platformRect(T, 500, 400)
+  check(math.abs(pw - 2.2 * T) <= 0.5 and math.abs(ph - pw * 96 / 256) <= 0.5, 'platform size at ' .. T)
+  check(math.abs(px + pw / 2 - 500) <= 0.5 and math.abs(py + ph * C.PLATFORM_FEET - 400) <= 0.5, 'platform under the feet at ' .. T)
+end
+
+-- auras: a small ring at the feet is drawn, a tall one (the "red crystal" behind the Juggernaut: 1512) is not;
+-- wings always are
+check(C.smallAura(A, 932) and not C.smallAura(A, 1512) and not C.smallAura(A, 1514) and not C.smallAura(A, 99999), 'which auras stay')
+local po = C.previewOutfit(A, { type = 2161, head = 94, addons = 3, wings = 1179, aura = 1512 })
+check(po.aura == 0 and po.wings == 1179 and po.type == 2161 and po.head == 94 and po.addons == 3, 'a tall aura left out, wings kept')
+local orig = { type = 2164, aura = 932 }
+po = C.previewOutfit(A, orig)
+check(po.aura == 932 and po ~= orig, 'a small aura at the feet kept, on a copy')
+check(C.previewOutfit(A, nil) == nil, 'no outfit')
+local tallFig = C.figure(A, C.previewOutfit(A, { type = 2161, wings = 1179, aura = 1512 }))
+check(tallFig.top == math.min(C.anchorOf(A, 2161).top, C.anchorOf(A, 1179).top), 'the bounds without the left-out aura')
+
+-- the slots line never shows more used than the limit
+check(C.slotsText(3, { used = 3, limit = 5 }) == '3 characters, 3 of 5 slots used', 'slots: some free')
+check(C.slotsText(1, { used = 1, limit = 5 }) == '1 character, 1 of 5 slots used', 'slots: one character')
+check(C.slotsText(5, { used = 5, limit = 5 }) == '5 characters, no free slot', 'slots: all used')
+check(C.slotsText(10, { used = 10, limit = 5 }) == '10 characters, no free slot', 'slots: more characters than the limit')
+check(C.slotsText(10, { used = 4, limit = 5 }) == '10 characters, no free slot', 'slots: the list counts more than the site')
+check(C.slotsText(4, nil) == '4 characters', 'slots: no website')
+local line, bad = C.slotsLine({ used = 2, limit = 5 })
+check(line == 'Character slots: 2 of 5 used.' and bad == false, 'create window: slots free')
+line, bad = C.slotsLine({ used = 10, limit = 5 })
+check(line:find('No free character slot', 1, true) == 1 and bad == true and not line:find('10'), 'create window: no slot free, no "10 of 5"')
+check(C.slotsLine(nil) == '', 'create window: no website')
 
 -- a look of a newer pair (not in the table): its size and displacement
 local fb = C.anchorOf(A, 99999, { w = 1, h = 1, dx = 8, dy = 8 })

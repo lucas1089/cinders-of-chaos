@@ -237,8 +237,29 @@ select over the login scene; the stock module stays loaded and keeps every funct
   ascension ("Juggernaut (Warrior)"), level, world, last login ("Last played 2 hours ago", from the website), season
   tag. Mouse: click chooses, double-click plays, the wheel scrolls. Keys: Up / Down / Left / Right, Home / End,
   Page Up / Page Down choose, Enter plays, Escape goes back.
-- **The chosen character** stands large on an ember pedestal, its feet on the pedestal's centre, walks in place for a
-  moment when chosen, then idles; a click on it turns it. Name, class and level, world, season and last login under it.
+- **The chosen character** stands large on a dark stone platform, its feet on the platform's centre, walks in place
+  for a moment when chosen, then idles; a click on it turns it. Name, class and level, world, season and last login
+  under it.
+- **Platform (2026-10-13, owner: the orange pedestal made the character look odd).** `platform.png` (256x96) is a
+  low dark grey stone dais with a carved groove, a faint cool rim and a soft shadow under the feet;
+  `gen_charselect_art.py` draws it, our own art. The feet point is 44% down the image
+  (`CharSelectCore.PLATFORM_FEET`); `platformRect` sizes it to 2.2 tiles of the drawn scale. Three designs were
+  compared on five characters (dais, rune circle, plain shadow); the rune circle and the shadow almost vanish on the
+  dark floor. `python3 -I client/tools/gen_charselect_art.py platforms DIR` writes all three outside the repo. The
+  Create character window uses the same platform.
+- **No tall auras in the preview (owner: the red crystal behind Varek).** The tall red spike was the character's aura
+  from the website (1512, Crimson Blaze). `CharSelectCore.previewOutfit` keeps an aura only when it is small and sits
+  at the feet (`smallAura`: at most 32 sprite pixels above its feet point, feet at least 8 pixels down): 932, 934 and
+  1487 are kept; 712, 933, 935, 936, 1511-1529 and 2136-2139 are left out. Wings always show. The game itself still
+  draws every aura.
+- **Wing lift.** With wings, the engine (`GameWingOffset`, on) draws the body 6 sprite pixels up and left of the
+  wings. `CharSelectCore.figure` takes that lift, so a winged character's feet also land on the platform (before:
+  about 24 px above it at 4x).
+- **Slots line.** The header reads "3 characters, 3 of 5 slots used". The limit is the website's
+  `chaos_character_limit`: the pact's free slots (`characters.free`, 5) plus bought `charSlots` and
+  `charSlotsLegacy`. An account with as many characters as slots or more (characters inserted by hand) reads
+  "10 characters, no free slot", never more used than the total (`slotsText`); the Create character window then says
+  where more slots are sold (`slotsLine`).
 - **Feet on the pedestal (fixed 2026-10-13, owner: the first version stood looks off-centre).** `UICreature` draws a
   creature at its tile's top left and maps the square (-32, -32)..(32, 32) of those pixels onto its rect, so where a
   look's feet land depends on its art and displacement: a 1x1 look stands in its own tile, our 2x2 class looks are
@@ -286,7 +307,8 @@ select over the login scene; the stock module stays loaded and keeps every funct
   problem). The four styles (`ChaosComboBoxPopupMenu`, `...PopupMenuButton`, `...PopupScrollMenu`,
   `...PopupScrollMenuButton`) are now in the theme.
 - **Tests.** `charselect_core_test.lua` (LuaJIT and Lua 5.3, CI): classes against `chaos_constants.lua`, icons, card
-  text, last login, world names, outfit merge, navigation, the feet maths (every thing of the anchor table at 3x and
+  text, last login, world names, outfit merge, navigation, the platform rect, the aura filter, the slots text, the wing
+  lift, the feet maths (every thing of the anchor table at 3x and
   4x, 1x1 and 2x2 looks, wings and auras, the scale choice, the fallback, every class look present), name hints,
   requests, error texts, URLs.
   `website/tests/chaos_client_api_test.php` for the site's side. Run in the Linux client (base patches 0001-0045,

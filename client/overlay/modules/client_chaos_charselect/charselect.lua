@@ -20,7 +20,7 @@ CharSelect = {}
 local Core = CharSelectCore
 local Api = ChaosAccountApi
 
-local screen, stage, preview, pedestal, area
+local screen, stage, preview, pedestal, area   -- pedestal: the platform widget (platform.png)
 local cards = {}           -- { widget, model, row (the stock list's row) }
 local selected = 0
 local orig = {}
@@ -101,11 +101,17 @@ local function thingInfo(id)
   return { w = get('getWidth'), h = get('getHeight'), dx = get('getDisplacementX'), dy = get('getDisplacementY') }
 end
 
+-- the lift of a winged character (Outfit::draw with the feature GameWingOffset)
+local function wingLift()
+  local ok, on = pcall(function() return GameWingOffset and g_game.getFeature(GameWingOffset) end)
+  return (ok and on) and 6 or 0
+end
+
 local TOP_ROOM = 56        -- px kept free at the top of the stage (the top menu's System button)
 local BELOW_ROOM = 150     -- px under the feet for the name, class and info lines and the hint
 local heroFigure           -- CharSelectCore.figure of the shown outfit
 
--- the feet of the shown character on the pedestal's centre: the look's own feet (outfit_anchors.lua), 4x when the
+-- the feet of the shown character on the platform's centre: the look's own feet (outfit_anchors.lua), 4x when the
 -- whole picture (wings and aura too) fits under the top menu, else 3x, else 3x with the feet lower
 local function relayout()
   if not alive(stage) then return end
@@ -119,7 +125,7 @@ local function relayout()
   feet = feet + drop
   local x, y, size = Core.placeRect(fig, T, cx, feet)
   place(preview, x, y, size, size)
-  place(pedestal, cx - 1.1 * T, feet - 0.43 * T, 2.2 * T, 0.86 * T)
+  place(pedestal, Core.platformRect(T, cx, feet))
   local name = stage:getChildById('heroName')
   name:breakAnchors()
   name:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
@@ -140,9 +146,10 @@ local function showHero(m, animate)
   end
   pedestal:setVisible(true)
   preview:setVisible(m.outfit ~= nil)
-  heroFigure = Core.figure(CharSelectAnchors, m.outfit, thingInfo)
-  if m.outfit then
-    preview:setOutfit(m.outfit)
+  local drawn = Core.previewOutfit(CharSelectAnchors, m.outfit)  -- a tall aura left out (CharSelectCore.smallAura)
+  heroFigure = Core.figure(CharSelectAnchors, drawn, thingInfo, wingLift())
+  if drawn then
+    preview:setOutfit(drawn)
     preview:setDirection(direction)
   end
   relayout()
@@ -208,12 +215,7 @@ local function rebuild()
     cards[i] = { widget = w, model = m, row = rows[i] }
   end
   local count = screen:recursiveGetChildById('count')
-  local text = #cards == 1 and tr('1 character') or tr('%d characters', #cards)
-  local slots = st and st.account and st.account.slots
-  if type(slots) == 'table' and tonumber(slots.limit) then
-    text = text .. tr(', %d of %d slots used', tonumber(slots.used) or #cards, tonumber(slots.limit))
-  end
-  count:setText(text)
+  count:setText(Core.slotsText(#cards, st and st.account and st.account.slots))
   local focused = list and list:getFocusedChild()
   local index = #cards > 0 and 1 or 0
   for i, c in ipairs(cards) do

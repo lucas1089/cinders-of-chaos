@@ -47,11 +47,12 @@ local function updatePreview()
   if look and look > 0 then
     p:setVisible(true)
     p:setOutfit({ type = look, head = STARTER.head, body = STARTER.body, legs = STARTER.legs, feet = STARTER.feet, addons = 3 })
-    -- the feet on the pedestal's centre (CharSelectCore.placeRect; outfit_anchors.lua): 3x, 2x for a very tall look
+    -- the feet on the platform's centre (CharSelectCore.placeRect; outfit_anchors.lua): 3x, 2x for a very tall look
     local panel = win.previewPanel
     local ped = panel.pedestal
     local cx = math.floor(panel:getWidth() / 2)
-    local feet = panel:getHeight() - ped:getMarginBottom() - math.floor(ped:getHeight() / 2) -- the style's numbers
+    -- the style's numbers: the platform's top face centre (CharSelectCore.PLATFORM_FEET of its height)
+    local feet = panel:getHeight() - ped:getMarginBottom() - ped:getHeight() + math.floor(ped:getHeight() * Core.PLATFORM_FEET)
     local fig = Core.figure(CharSelectAnchors, { type = look })
     local T = Core.fitPreview(fig, { above = feet - 6, half = cx - 2, below = 0 }, { 3, 2 })
     local x, y, size = Core.placeRect(fig, T, cx, feet)
@@ -143,8 +144,7 @@ local function fill(state)
   win.season:setCurrentIndex(1)
   local slots = acc.slots
   if type(slots) == 'table' and tonumber(slots.limit) then
-    setStatus(tr('Character slots: %d of %d used.', tonumber(slots.used) or 0, tonumber(slots.limit)),
-      (tonumber(slots.used) or 0) >= tonumber(slots.limit))
+    setStatus(Core.slotsLine(slots))
   else
     setStatus('')
   end

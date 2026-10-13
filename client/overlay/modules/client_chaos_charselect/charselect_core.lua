@@ -203,11 +203,15 @@ end
 
 -- the whole picture around the feet: the body, its wings (drawn at the same place) and its aura (the client moves a
 -- big aura by (w - 1) * 16, (h - 1) * 16: GameBigAurasCenter). things(id) -> thing info for the fallback, or nil.
-function C.figure(anchors, outfit, things)
+-- wingLift: with the client feature GameWingOffset a character with wings is drawn lifted that many pixels up and
+-- left (6: it flies; Outfit::draw), its wings not: the feet then sit that much higher and further left.
+function C.figure(anchors, outfit, things, wingLift)
   if type(outfit) ~= 'table' then return nil end
   local function info(id) return things and things(id) or nil end
   local body = C.anchorOf(anchors, outfit.type, info(outfit.type))
-  local f = { fx = body.fx, fy = body.fy, top = body.top, left = body.left, right = body.right }
+  local lift = ((tonumber(outfit.wings) or 0) > 0) and (tonumber(wingLift) or 0) or 0
+  local f = { fx = body.fx - lift, fy = body.fy - lift, top = body.top - lift, left = body.left - lift,
+    right = body.right - lift }
   for _, kind in ipairs({ 'wings', 'aura' }) do
     local id = tonumber(outfit[kind]) or 0
     if id > 0 then
@@ -239,6 +243,34 @@ function C.fitPreview(fig, room, scales)
   return sc * 32, sc, drop
 end
 
+-- The platform under the feet (data/images/chaos/charselect/platform.png, client/tools/gen_charselect_art.py): 256x96,
+-- the feet go on the middle of its top face, PLATFORM_FEET of its height from its top. Its rect (x, y, w, h) for a
+-- tile size T: 2.2 tiles wide, the image's own proportions.
+C.PLATFORM_W, C.PLATFORM_H, C.PLATFORM_FEET = 256, 96, 0.44
+function C.platformRect(T, cx, feetY)
+  local w = math.floor(2.2 * T + 0.5)
+  local h = math.floor(w * C.PLATFORM_H / C.PLATFORM_W + 0.5)
+  return math.floor(cx - w / 2 + 0.5), math.floor(feetY - h * C.PLATFORM_FEET + 0.5), w, h
+end
+
+-- An aura is drawn in the preview only when it is small and sits at the feet (a ring on the ground: at most one tile
+-- tall, and its bottom no higher than the feet's tile); a tall aura (flames, smoke, a pillar of light) stood behind
+-- the character like a crystal and hid it (owner, 2026-10-13). Wings are always drawn.
+function C.smallAura(anchors, id)
+  local a = anchors and anchors[tonumber(id) or 0]
+  if type(a) ~= 'table' then return false end
+  return (a[2] - a[3]) <= 32 and a[2] >= 8
+end
+
+-- the outfit the preview draws: the character's, its aura left out unless C.smallAura
+function C.previewOutfit(anchors, outfit)
+  if type(outfit) ~= 'table' then return nil end
+  local o = {}
+  for k, v in pairs(outfit) do o[k] = v end
+  if (tonumber(o.aura) or 0) > 0 and not C.smallAura(anchors, o.aura) then o.aura = 0 end
+  return o
+end
+
 -- the UICreature rect (x, y, size) that puts the feet of `fig` at (cx, feetY) with tile size T
 function C.placeRect(fig, T, cx, feetY)
   local s = T / 32
@@ -249,6 +281,31 @@ end
 function C.feetOf(fig, x, y, size)
   local s = size / 64
   return x + (fig.fx + 32) * s, y + (fig.fy + 32) * s
+end
+
+-- ---------------------------------------------------------------- slots
+-- The header under the select's title and the create window's line. The limit is the website's
+-- (chaos_character_limit: pact_config.lua `characters.free` plus Character Slots bought and the slots the game server
+-- gave once to older accounts); an account may hold more characters than that (made before the limit, or by staff), so
+-- "used" is never shown above the limit: then it says that no slot is free.
+function C.slotsText(count, slots)
+  count = tonumber(count) or 0
+  local text = count == 1 and '1 character' or string.format('%d characters', count)
+  local limit = type(slots) == 'table' and tonumber(slots.limit)
+  if not limit then return text end
+  local used = math.max(count, tonumber(slots.used) or count)
+  if used >= limit then return text .. ', no free slot' end
+  return text .. string.format(', %d of %d slots used', used, limit)
+end
+
+function C.slotsLine(slots)
+  local limit = type(slots) == 'table' and tonumber(slots.limit)
+  if not limit then return '', false end
+  local used = tonumber(slots.used) or 0
+  if used >= limit then
+    return 'No free character slot: more are sold in the game store (Storage & Slots > Character Slot).', true
+  end
+  return string.format('Character slots: %d of %d used.', used, limit), false
 end
 
 -- ---------------------------------------------------------------- the create window

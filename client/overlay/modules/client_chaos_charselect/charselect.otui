@@ -229,7 +229,7 @@ ChaosCharSelectScreen < UIWidget
 
     UIWidget
       id: pedestal
-      image-source: /images/chaos/charselect/pedestal
+      image-source: /images/chaos/charselect/platform
       image-smooth: true
       phantom: true
 
@@ -318,11 +318,11 @@ ChaosCreateWindow < ChaosStaticMainWindow
 
     UIWidget
       id: pedestal
-      size: 170 60
+      size: 170 64
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.bottom: parent.bottom
       margin-bottom: 28
-      image-source: /images/chaos/charselect/pedestal
+      image-source: /images/chaos/charselect/platform
       image-smooth: true
       phantom: true
 
