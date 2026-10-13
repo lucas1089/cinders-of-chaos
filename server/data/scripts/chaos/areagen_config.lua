@@ -420,8 +420,12 @@ return {
 				level = {800, 850},
 				monsters = {{"Orclops Ravager", 3}, {"Shaper Matriarch", 3}, {"Grove Keeper", 2}, {"Blazebringer", 2},
 					{"Garack", 2}}},
-			boss = {monster = "Garack", name = "Vault Keeper Ossrim", level = 900, healthMult = 12, damageMult = 1.4},
+			-- the boss: Garack's 14,800 x the engine level bonus (1 + 0.0074 x 900) x healthMult 10 = 1.13M; difficulty
+			-- multiplies it by bossHealth, not by the dungeon table's 100-1300%, so a solo run stays inside 30 minutes
+			-- (server/README.md "Generated areas", The Hollow Vault)
+			boss = {monster = "Garack", name = "Vault Keeper Ossrim", level = 900, healthMult = 10, damageMult = 1.4},
 			dungeon = {id = 5, level = 800, party = 1, time = 1800, title = "The Hollow Vault",
+				bossHealth = {100, 125, 150, 175, 200, 225},
 				loot = {{id = 2160, count = 12}},
 				challenges = {
 					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 12 minutes.",

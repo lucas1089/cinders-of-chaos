@@ -11662,7 +11662,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Omens",
-							p = {"Rifts of tier 6 or more give omen fragments; 60 fragments bind an Omen Key of a random kind. The key opens that guardian's arena (level 800, 10 minutes, the rift's lives). Omen keys have no modifiers."},
+							p = {"Rifts of tier 6 or more give omen fragments; 60 fragments bind an Omen Key of a random kind. The key opens that guardian's arena (level 800, 12 minutes, the rift's lives). Omen keys have no modifiers."},
 							links = {"cur:omenfragment"}
 						},
 						{

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <monster name="Ormathulak" nameDescription="the Ormathulak" race="venom" experience="22000000" speed="800" manacost="0">
-    <health now="910000000" max="910000000"/>
+    <health now="22000000" max="22000000"/>
     <look type="1091" corpse="6068"/>
     <targetchange interval="20000" chance="30"/>
     <flags>
@@ -17,49 +17,49 @@
         <flag runonhealth="0"/>
     </flags>
     <attacks>    
-        <attack name="melee" interval="2000" min="-38000" max="-58000"/>
-        <attack name="death" interval="1000" chance="35" radius="9" target="0" min="-38000" max="-42000">
+        <attack name="melee" interval="2000" min="-6550" max="-10000"/>
+        <attack name="death" interval="1000" chance="35" radius="9" target="0" min="-6550" max="-7240">
             <attribute key="areaEffect" value="mortarea"/>
         </attack>
         <attack name="speed" target="1" speedchange="-700" duration="3000" interval="2000" chance="60" range="8">
         	<attribute key="shootEffect" value="largerock"/>
         	<attribute key="areaEffect" value="stun"/>
         </attack>
-        <attack name="death" interval="1000" chance="35" radius="5" target="0" min="-38000" max="-49000">
+        <attack name="death" interval="1000" chance="35" radius="5" target="0" min="-6550" max="-8450">
             <attribute key="areaEffect" value="mortarea"/>
             <attribute key="shootEffect" value="death"/>
         </attack>   
         <attack name="drunk" interval="2000" chance="10" length="3" spread="2" duration="5000">
             <attribute key="areaEffect" value="rednote" />
         </attack> 
-        <attack name="fire" interval="2000" chance="50" length="8" spread="3" min="-38000" max="-49000">
+        <attack name="fire" interval="2000" chance="50" length="8" spread="3" min="-6550" max="-8450">
             <attribute key="shootEffect" value="fire"/>
             <attribute key="areaEffect" value="firearea"/>
         </attack>
-        <attack name="earth" interval="2000" chance="50" target="1" range="5" radius="2" min="-38000" max="-49000">
+        <attack name="earth" interval="2000" chance="50" target="1" range="5" radius="2" min="-6550" max="-8450">
             <attribute key="shootEffect" value="poison"/>
             <attribute key="areaEffect" value="poison"/>
         </attack>
-        <attack name="fire" interval="2000" chance="30" range="7" radius="7" target="1" min="-38000" max="-49000">
+        <attack name="fire" interval="2000" chance="30" range="7" radius="7" target="1" min="-6550" max="-8450">
             <attribute key="shootEffect" value="fire"/>
             <attribute key="areaEffect" value="firearea"/>
         </attack>
-        <attack name="manadrain" interval="1000" chance="25" radius="4" target="0" min="-38000" max="-49000">
+        <attack name="manadrain" interval="1000" chance="25" radius="4" target="0" min="-6550" max="-8450">
             <attribute key="areaEffect" value="energyarea"/>
         </attack>
-        <attack name="poisoncondition" interval="2000" chance="35" length="0" spread="0" min="-4280" max="-5800">
+        <attack name="poisoncondition" interval="2000" chance="35" length="0" spread="0" min="-740" max="-1000">
             <attribute key="areaEffect" value="greenspark"/>
         </attack>
-        <attack name="lifedrain" interval="1000" chance="30" radius="14" target="0" min="-38000" max="-49000">
+        <attack name="lifedrain" interval="1000" chance="30" radius="14" target="0" min="-6550" max="-8450">
             <attribute key="areaEffect" value="greenshimmer"/>
         </attack>
-         <attack name="ice" range="7" target="1" radius="3" interval="2000" chance="24" min="-38000" max="-49000">
+         <attack name="ice" range="7" target="1" radius="3" interval="2000" chance="24" min="-6550" max="-8450">
          	<attribute key="shootEffect" value="ice"/>
          	<attribute key="areaEffect" value="icearea"/>
          </attack>
     </attacks>
-    <defenses armor="200" defense="200">
-        <defense name="healing" interval="5000" chance="35" min="100000" max="200000">
+    <defenses armor="150" defense="150">
+        <defense name="healing" interval="2000" chance="8" min="20000" max="40000">
             <attribute key="areaEffect" value="greenshimmer"/>
         </defense>
         <defense name="speed" interval="1000" chance="8" speedchange="1901" duration="5000">

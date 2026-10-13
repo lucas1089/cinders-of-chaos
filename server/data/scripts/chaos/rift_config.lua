@@ -320,7 +320,7 @@ return {
 		key = {id = 32072, sourceId = 21703, article = "an", name = "omen key", plural = "omen keys", weight = 50,
 			description = "It hums with a guardian's name. Use it in a protection zone to open its arena."},
 		minLevel = 800,
-		timeLimit = 600,
+		timeLimit = 720, -- 12 minutes, was 10 (server/README.md "Solo kill times")
 		startDelay = 5,
 		healthPerExtraPlayer = 1.0,
 		-- theme: index of `themes` for the arena floor

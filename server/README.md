@@ -4616,6 +4616,135 @@ Roles of about the same expected damage per second before the scaling (~2,000-2,
 Seadevil the caster (energy beam, ice ball, a slow; targetdistance 3), Captain Bloodbeard the summoner (melee,
 knives, up to 3 Pirate Skeletons). Loot, elements and looks unchanged.
 
+**Donor bosses at world-boss scale (2026-10-13, `tune_monsters.py`).** After the experience pass their health and heals
+were still the donors': no player or group could kill them. Health now one per experience point like the world
+bosses, the world bosses' heal (20-40k at chance 8 every 2 s: 1,200 per second), armor 80-150 and the strongest hit
+9-10k (the other attacks by the same factor). Legendary Warrior becomes a solo boss. All stay dormant (no spawn).
+
+| Boss | Health before / after | Heal per second before / after | Armor before / after | Strongest hit before / after |
+|---|---|---|---|---|
+| Ormathulak | 910,000,000 / 22,000,000 | 10,500 / 1,200 | 200 / 150 | 58,000 / 10,000 |
+| Talath | 510,000,000 / 21,000,000 | 10,500 / 1,200 | 200 / 140 | 60,000 / 10,000 |
+| Gloomfire | 510,000,000 / 20,000,000 | 1,990 / 1,200 | 90 / 90 | 60,000 / 9,000 |
+| Saga | 45,000,000 / 18,000,000 | 65,600 / 1,200 | 68 / 80 | 41,000 / 9,000 |
+| Legendary Warrior | 7,000,000 / 1,000,000 (experience 7M / 1M) | 450 / 450 | 65 / 65 | 20,000 / 2,500 |
+
+## Solo kill times (computed, not measured in game)
+
+Kill time = boss health / (damage per second - the boss's heals per second). Damage: the measured one-target damage
+of the classes (data/spells/README.md "Classes with the passive trees", C4 harness): median 913 at level 300 and 2,600
+at level 1000, interpolated in between (825: 2,180) and scaled by the level below 300 (a rough guess: 100 -> 304).
+The weakest class at level 1000 deals about 1,950, the best 4,570. Armor is left out (the C4 dummies have none), and
+so are the monster tiers, the trash before a boss and moving out of telegraphs except where a model counts uptime.
+
+**Our content** (the systems' own models where they have one):
+
+| Content | Boss / run | Model | Limit | Time | Notes |
+|---|---|---|---|---|---|
+| Rift tier 1 / 5 / 10 / 13 / 15 (solo) | packs + guardian | rift_core.lua R.clearSeconds | 12:00 / 12:00 / 13:00 / 15:00 / 15:00 | 6:17 / 5:38 / 5:42 / 8:06 / 9:29 | ok |
+| Omen guardian (solo) | 500k, heals 330-380/s | 2,600 at 75% uptime | 12:00 (was 10:00) | 5:18; at half damage ~14:00 | weak builds still need a partner or better gear |
+| Ascended Omen (solo) | 1.20M | uber_core.lua U.killTime, 75% uptime | enrage 10:00, close 14:00 (was 13:00) | 3,000: 8:53; 2,600: 10:15; 1,950: 13:41 | the weakest builds now finish before the close |
+| Ascended Omen (5) | 6.00M | the same, one healer | the same | 3,000: 8:56; 2,600: 10:05; 1,950: 12:45 | ok |
+| Cinderheart (solo) | 1.65M | the same | enrage 15:00, close 20:00 (was 18:00) | 3,000: 12:13; 2,600: 14:06; 1,950: 18:48 | ok |
+| Cinderheart (5) | 8.25M | the same | the same | 3,000: 12:17; 2,600: 13:52; 1,950: 17:32 | ok |
+| Hollow Vault boss (solo, level 825: 2,180) | 1.13M x difficulty curve | health / dps | 30:00 the whole run | difficulty 1-6: 8:40 / 10:51 / 13:01 / 15:11 / 17:21 / 19:31 | was 10:25 / 20:50 / 33:20 / 52:03 / 83:15 / 135:20 |
+| Ascension Trial (level 100-130) | 6,000-7,800 | health / dps | 3:00 | ~0:20 | ok |
+| Vocation Trials boss | 9k / 40k / 130k at the tier's level, x(level / min)^1.5 | health / dps | 8:00 / 9:00 / 10:00 the run | Merciless at 1000: 514k, 3:18 | ok, waves on top |
+| World bosses (group only) | 15-24M, heals 1,200-3,200/s | health / dps | 45:00 | solo 3-4 h or never (Vharok heals more than one player deals); 10 players 10:06-17:33; 20 players 4:56-8:12 | group content, as designed |
+| Raid bosses (5+) | 4.0-7.2M, +18% per raider over 5 | raid_core.lua K.killTime | enrage 8:00-13:00, session 150 min | 5 at 3,000: 6:26-11:36; 5 at 2,600: 7:26-13:23 | at the median 2,600 every boss meets its enrage (it hits harder; not a wipe) |
+| Donor bosses (dormant) | 18-22M after, see "Monster lint" | health / dps | none | solo 3.6-4.4 h; 20 players 5:54-7:13 | before: never (heals above any damage) |
+| Legendary Warrior (dormant) | 1.0M (was 7.0M) | health / dps | none | 7:45 (was 54:16) | a solo boss now |
+
+**Hollow Vault.** The engine already adds the level bonus: the boss is Garack (14,800) at level 900, x(1 + 0.0074 x
+900) = 7.66 from the engine (src monster.cpp, `monsterBonusHealth`; areagen.lua scales from the native level to 900,
+the same here), x `healthMult`. Before: x12 = 1.36M, and the dungeon's difficulty multiplied it by 100-1300% like every
+monster. Now x10 = 1.13M and the boss has its own curve `bossHealth` 100 / 125 / 150 / 175 / 200 / 225% (dungeons.lua,
+`ChaosDungeonDifficulty.bossHealth`; the trash keeps the table). An area boss also gets no natural monster tier any more
+(magic x2 to legendary x6 health, 7.75% of spawns: a legendary Ossrim was 8.2M at difficulty 1). Not measured on a
+test server.
+
+**Base server bosses** (read from the base copy of windows-assets 407ad9b6; names after the renames). Limit: a lever
+room's own kick time capped at 30 minutes (instance_limits_config.lua), a dungeon's `DungeonTime`, a tower boss floor's
+`floorTimeLimit`. "Entry" is the room's required level (100 when it has none; tower bosses: level 1000 only); x2 = two
+rooms with the same boss.
+
+| Place | Boss | Entry level | Health | Armor | Heal/s | Damage at entry | Time at entry | Time at 1000 | Limit | Result |
+|---|---|---|---|---|---|---|---|---|---|---|
+| lever room | Prince Skeletal | 200 | 200,000 | 90 | 56 | 609 | 6:02 | 1:19 | 30:00 | ok |
+| lever room | Forbidden Chevalier | 500 | 550,000 | 90 | 300 | 1395 | 8:22 | 3:59 | 30:00 | ok |
+| lever room | the Rootmaw | 500 | 685,000 | 145 | 0 | 1395 | 8:11 | 4:23 | 30:00 | ok |
+| lever room | Gorevast | 100 | 660,000 | 135 | 150 | 304 | 71:16 | 4:29 | 20:00 | over at entry level |
+| lever room | Skelgrath | 100 | 350,000 | 105 | 37 | 304 | 21:49 | 2:17 | 20:00 | over at entry level |
+| lever room | Ulgarath | 100 | 350,000 | 105 | 33 | 304 | 21:30 | 2:16 | 20:00 | over at entry level |
+| lever room | Sulvorn | 100 | 350,000 | 105 | 38 | 304 | 21:54 | 2:17 | 20:00 | over at entry level |
+| lever room | Sorvenath | 100 | 350,000 | 105 | 38 | 304 | 21:54 | 2:17 | 20:00 | over at entry level |
+| lever room | Grand Master Varion | 200 | 30,000 | 82 | 0 | 609 | 0:49 | 0:12 | 25:00 | ok |
+| lever room | Grisk the Twisted (x2) | 100 | 32,000 | 82 | 0 | 304 | 1:45 | 0:12 | 10:00 | ok |
+| lever room | Skrix the Frail | 100 | 24,000 | 82 | 0 | 304 | 1:19 | 0:09 | 10:00 | ok |
+| lever room | the Grave Bride | 200 | 300,000 | 10 | 210 | 609 | 12:33 | 2:06 | 15:00 | ok |
+| lever room | the Dread Glutton | 200 | 300,000 | 10 | 210 | 609 | 12:33 | 2:06 | 15:00 | ok |
+| lever room | the Bleached Wyrm | 200 | 420,000 | 10 | 210 | 609 | 17:34 | 2:56 | 15:00 | over at entry level |
+| lever room | the Unbidden | 200 | 300,000 | 10 | 210 | 609 | 12:33 | 2:06 | 15:00 | ok |
+| lever room | Count Varethil | 100 | 300,000 | 78 | 18 | 304 | 17:28 | 1:56 | 10:00 | over at entry level |
+| lever room | Duke Varrow | 100 | 300,000 | 78 | 18 | 304 | 17:28 | 1:56 | 10:00 | over at entry level |
+| lever room | Earl Mardek | 100 | 300,000 | 78 | 79 | 304 | 22:11 | 1:59 | 10:00 | over at entry level |
+| lever room | King Morthal | 100 | 480,000 | 78 | 255 | 304 | 162:10 | 3:25 | 30:00 | over at entry level |
+| lever room | Lord Vethram | 100 | 300,000 | 78 | 88 | 304 | 23:07 | 1:59 | 10:00 | over at entry level |
+| lever room | Sir Corvane | 100 | 150,000 | 78 | 79 | 304 | 11:06 | 1:00 | 10:00 | over at entry level |
+| lever room | Furious Scorpion | 100 | 15,000 | 28 | 0 | 304 | 0:49 | 0:06 | 25:00 | ok |
+| lever room | Ssarvi Amber-Eye | 100 | 6,200 | 35 | 28 | 304 | 0:22 | 0:02 | 10:00 | ok |
+| lever room | Vossk Azurescale | 100 | 6,300 | 78 | 0 | 304 | 0:21 | 0:02 | 10:00 | ok |
+| lever room | Vatek Bloodtongue | 100 | 6,300 | 0 | 0 | 304 | 0:21 | 0:02 | 10:00 | ok |
+| lever room | Ketu Stonesting | 100 | 6,400 | 42 | 4 | 304 | 0:21 | 0:02 | 10:00 | ok |
+| lever room | the Bane of Ending | 200 | 250,000 | 160 | 146 | 609 | 9:00 | 1:42 | 30:00 | ok |
+| lever room | Zinderoth | 200 | 150,000 | 28 | 0 | 609 | 4:06 | 0:58 | 25:00 | ok |
+| lever room | Sulgrath | 200 | 150,000 | 40 | 0 | 609 | 4:06 | 0:58 | 25:00 | ok |
+| lever room | Vaskathor | 200 | 150,000 | 40 | 0 | 609 | 4:06 | 0:58 | 25:00 | ok |
+| lever room | Zindrafel | 200 | 150,000 | 40 | 0 | 609 | 4:06 | 0:58 | 25:00 | ok |
+| lever room | Seldrith's Megalomania | 200 | 500,000 | 160 | 100 | 609 | 16:23 | 3:20 | 25:00 | ok |
+| lever room | Seldrith's Cruelty | 200 | 300,000 | 160 | 100 | 609 | 9:50 | 2:00 | 25:00 | ok |
+| lever room | Seldrith's Greed | 200 | 300,000 | 160 | 100 | 609 | 9:50 | 2:00 | 25:00 | ok |
+| lever room | Seldrith's Hatred | 200 | 300,000 | 160 | 100 | 609 | 9:50 | 2:00 | 25:00 | ok |
+| lever room | Seldrith's Malice | 200 | 300,000 | 160 | 100 | 609 | 9:50 | 2:00 | 25:00 | ok |
+| lever room | Seldrith's Spite | 200 | 300,000 | 160 | 100 | 609 | 9:50 | 2:00 | 25:00 | ok |
+| lever room | Terror Spider | 200 | 135,000 | 90 | 175 | 609 | 5:11 | 0:56 | 30:00 | ok |
+| lever room | Arodis Saron | 200 | 300,000 | 130 | 49 | 609 | 8:56 | 1:58 | 30:00 | ok |
+| lever room | Astro King | 200 | 300,000 | 130 | 49 | 609 | 8:56 | 1:58 | 30:00 | ok |
+| lever room | Blessed Archangel | 200 | 225,000 | 85 | 49 | 609 | 6:42 | 1:28 | 30:00 | ok |
+| lever room | Candy Fairy | 200 | 250,000 | 110 | 0 | 609 | 6:51 | 1:36 | 30:00 | ok |
+| lever room | Sugar Daddy | 200 | 220,000 | 120 | 0 | 609 | 6:01 | 1:25 | 30:00 | ok |
+| lever room | Mercurial Mage | 200 | 300,000 | 130 | 49 | 609 | 8:56 | 1:58 | 30:00 | ok |
+| lever room | Fury of the fallen king | 200 | 28,800 | 65 | 0 | 609 | 0:47 | 0:11 | 30:00 | ok |
+| lever room | Vorgrun of the Jade Fangs (x2) | 500 | 300,000 | 200 | 0 | 1395 | 3:35 | 1:55 | 30:00 | ok |
+| lever room | Fractalis the Shardmaw (x2) | 500 | 350,000 | 220 | 0 | 1395 | 4:11 | 2:15 | 30:00 | ok |
+| lever room | Frostreaver the Glacialblade (x2) | 500 | 400,000 | 200 | 0 | 1395 | 4:47 | 2:34 | 30:00 | ok |
+| lever room | Rhazgor the Crimson Slayer (x2) | 500 | 450,000 | 200 | 0 | 1395 | 5:23 | 2:53 | 30:00 | ok |
+| lever room | Morgrath the Umbral Archmage (x2) | 500 | 650,000 | 200 | 0 | 1395 | 7:46 | 4:10 | 30:00 | ok |
+| lever room | Nyxdrath the Midnight Terror (x2) | 500 | 1,000,000 | 220 | 0 | 1395 | 11:57 | 6:25 | 30:00 | ok |
+| dungeon 1 | Prince Skeletal | 150 | 200,000 | 90 | 56 | 456 | 8:19 | 1:19 | 60:00 | ok |
+| dungeon 2 | Master of the Elements | 200 | 300,000 | 95 | 0 | 609 | 8:13 | 1:55 | 60:00 | ok |
+| dungeon 3 | Forbidden Chevalier | 500 | 550,000 | 90 | 300 | 1395 | 8:22 | 3:59 | 60:00 | ok |
+| dungeon 4 | the Rootmaw | 600 | 685,000 | 145 | 0 | 1636 | 6:59 | 4:23 | 30:00 | ok |
+| tower boss floor | the Grey Widow (floor 10) | - | 3,200 | 45 | 42 | - | - | 0:01 | 5:00 | ok |
+| tower boss floor | the Ashen Count (floor 20) | - | 50,000 | 75 | 0 | - | - | 0:19 | 5:00 | ok |
+| tower boss floor | Zeburoth (floor 30) | - | 110,000 | 160 | 1750 | - | - | 2:09 | 5:00 | ok |
+| tower boss floor | Pestrogh (floor 40) | - | 80,000 | 188 | 300 | - | - | 0:35 | 5:00 | ok |
+| tower boss floor | Morgashal (floor 50) | - | 22,500 | 90 | 316 | - | - | 0:10 | 5:00 | ok |
+| tower boss floor | Moloveth (floor 60) | - | 60,000 | 55 | 64 | - | - | 0:24 | 5:00 | ok |
+| tower boss floor | Vharagoth (floor 70) | - | 55,000 | 55 | 64 | - | - | 0:22 | 5:00 | ok |
+| tower boss floor | Ssylvath the Corruptor (floor 80) | - | 28,000 | 96 | 250 | - | - | 0:12 | 5:00 | ok |
+| tower boss floor | Ashvoran (floor 90) | - | 270,000 | 165 | 1750 | - | - | 5:18 | 5:00 | **over at 1000** |
+| tower boss floor | Massacre (floor 100) | - | 32,000 | 15 | 0 | - | - | 0:12 | 5:00 | ok |
+| tower boss floor | Jungle's Revenge (floor 110) | - | 1,800 | 30 | 204 | - | - | 0:01 | 5:00 | ok |
+| tower boss floor | Vhalkareth (floor 120) | - | 50,000 | 100 | 60 | - | - | 0:20 | 5:00 | ok |
+
+Flags: every room and dungeon is in time at level 1000 and from level 300 on. At their entry level (100-200, a rough
+damage guess) 12 lever rooms built for 4-10 players take longer than their kick time alone (Gorevast 71 min of 20,
+the four 350k brothers 22 of 20, the five court rooms of 10 minutes 11-23, King Morthal 162 of 30, the Bleached Wyrm
+18 of 15): group rooms, so no change proposed. The tower's floor 90 boss (Ashvoran, 270k, heals 1,750/s) takes 5:18 of
+its 5:00 floor alone at level 1000; proposal (ours, `infinitytower_run.lua`, not done): boss floors get twice
+`floorTimeLimit`.
+
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
 **Limits** (`Chaos.worldBoss.limits`, "Instance limits"): the boss withdraws 45 minutes after it appears (unchanged); everyone inside now gets warnings at 5 min, 1 min and 10 s. One arena, at most 40 players; `/instances close worldboss event` is `/worldboss stop`.
@@ -8758,7 +8887,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 - **Omens.** Sealed rifts of tier 6+ add Omen Fragments (item 32071, copy of the red crystal fragment) to every finisher's
   chest: 2 + 1 per tier above 6, x quantity; rare / legendary monsters of those rifts carry one 8% / 25%. Using 60
   fragments binds an Omen Key (item 32072, copy of the eye of the storm; attribute omen_kind) of a random kind. The key
-  opens a guardian arena: a rift slot with every side room shut, level 800+, 10 minutes, the rift lives, the guardian
+  opens a guardian arena: a rift slot with every side room shut, level 800+, 12 minutes (10 until 2026-10-13, "Solo kill times"), the rift lives, the guardian
   after 5 s, health from its XML (+100% per extra player; was +75%), +10% damage per extra player. Guardians (rift-exclusive outfits 2116, 2117, 2118 of things_custom11, see "Rift looks" below; 500k
   health each, `monsters/chaos/omens/`): Sangrith the Bloodmoon Herald, Morvane the Hollow Crown, Thalcyra the
   Stormbound Seer. Chest per finisher: 3,000 gold x the finisher's level (at least 800; 3M at level 1000; was a flat 5M),
@@ -10290,7 +10419,7 @@ writer stays so the owner can open, review or hand-place an area in the map edit
 | Emberdeep Hollows | cave: dirt walls, mud and lava cracks, lava pools | 2 (z 9-10), 2 holes | 66 x 52 | 3,307 | 1000-1100 | 65 (2.4 / 100): Tundra Troll, Loricate Orger, Lady bug, Lacewing Moth, Grindmaw | The Emberdeep Maw | 33221,33135,8: a lava-cracked dirt cave beside the Aegis Sentinel / Gloomstinger hunt |
 | Sunken Ossuary | ruins: rooms of slate, marble, flagstone, tiles in stone walls | 2 (z 9-10), 1 hole | 90 x 70 | 2,797 | 1100-1200 | 68 (2.8 / 100; rooms 3.5): Royal Man, Golden Lord, Dawn Strayer, Frost Maiden, Dreamgorger | The Ossuary Warden | 34295,31100,13: the stone halls of Nightglass Core (the 860-1000 late-game area) |
 | Cinderfall Wastes | open waste of grey rock, basalt fields, lava, mountain cliffs, dead trees | 1 (z 7, under the sky) | 100 x 80 | 4,993 | 1200-1300 | 72 (1.6 / 100): Azure Dragon, Jungle Beasts, Blazebringer, Swamp Snapper, Garack | Cinderwing | 31667,31269,7: the volcanic rock slopes of the Pyrrhaxis / Brinebrute hunt |
-| The Hollow Vault | dungeon of the dungeon system (base dungeon 5, level 800, 30 minutes) | 1 (z 9) | 76 x 64 | 1,062 | 800-850 | 24 (rooms 3.9) + Vault Keeper Ossrim | yes | the Dungeons window |
+| The Hollow Vault | dungeon of the dungeon system (base dungeon 5, level 800, 30 minutes) | 1 (z 9) | 76 x 64 | 1,062 | 800-850 | 24 (rooms 3.9) + Vault Keeper Ossrim (1.13M, its own difficulty curve: "Solo kill times") | yes | the Dungeons window |
 
 - Entrance spots were chosen with the live map data. Each is a free walkable tile with a wall or rock behind it, a free
   tile south of it, 5+ tiles from any spawn, inside a 700-1,500 tile region, next to a level 900-1300 hunt of
@@ -11316,7 +11445,7 @@ shapes and timing, hazards, the caught lethal hit, rewards, the balance model) i
   18-20 s), storm columns (move every 9-10 s), the creeping dark (the arena edge, one ring deeper every 18-20 s, up to
   3); 7% of max health per second while stood on. **Harvest** (Bloodmoon 35%, the Last Cinder): the boss heals 1%
   (0.5%) of its health per living add every 5 s. **Enrage** at 10:00 (Cinderheart 15:00): boss and add hits x1.75,
-  telegraphs twice as often, a pulse of 8% of max health on everyone every 4 s; the arena closes at 13:00 (18:00).
+  telegraphs twice as often, a pulse of 8% of max health on everyone every 4 s; the arena closes at 14:00 (20:00; 13:00 / 18:00 until 2026-10-13).
 - **The bosses.** Ascended Sangrith (Bloodmoon; look 2116; adds Bloodmoon Thrall): Red Night (cone, ring, marks),
   Blood Pools (pools, a thrall wave), Harvest (+cross, thralls every 30 s, the heal). Ascended Morvane (Hollow Crown;
   2117; Hollow Wraith): Empty Throne (cross, circle, half), Wraith Court (wraiths every 35 s), Creeping Dark (+ring, the
@@ -11376,6 +11505,11 @@ keeps every target within 5%):
 | 3 | 3.60M | 9:22 | 4.95M | 12:53 |
 | 4 | 4.80M | 9:05 | 6.60M | 12:30 |
 | 5 | 6.00M | 8:55 | 8.25M | 12:16 |
+
+At the measured median 2,600 (2026-10-13, "Solo kill times"): Ascended solo 10:15 / party of 5 10:05, Cinderheart
+14:06 / 13:52; at the weakest class's 1,950: 13:41 / 12:45 and 18:48 / 17:32. The arena now closes at 14:00 / 20:00
+(was 13:00 / 18:00), so the weakest builds finish inside it after the enrage; `model.refDps` stays 3,000 (a geared
+character with the uniques).
 
 Targets: Ascended solo 9:00 / party of 5 9:00 (enrage 10:00), Cinderheart solo 12:10 / party 12:15 (enrage 15:00), so a
 well-geared player or party kills before the enrage and a weaker one meets it. Health is +100% per extra player since

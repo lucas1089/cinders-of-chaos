@@ -21,6 +21,8 @@ Row keys:
   summons_xml       the whole <summons> block (added before <voices> / <loot> when missing)
   hit               the strongest damage value of <attacks> (min/max) becomes this; the others scale with it
   heal              the same for the healing <defense> spells
+  heal_spell        {attr: value} on every healing <defense> (interval, chance, min, max)
+  armor             armor and defense of <defenses>
   coins             platinum countmax: the coin lines become COIN_BLOCK with it (the late-game set's gold, ~899 at 25)
   loot              the whole <loot> block (LOOT_*)
 
@@ -40,6 +42,7 @@ from fix_monster_xml import DAMAGE_SPELLS, _set_attr, _num
 LATE_ELEMENTS = [('physicalPercent', -15), ('holyPercent', -15), ('firePercent', 20), ('energyPercent', 20),
                  ('icePercent', 20), ('earthPercent', 20), ('deathPercent', 10)]
 COIN_IDS = ('2148', '2152', '2160')
+WORLD_BOSS_HEAL = {'interval': '2000', 'chance': '8', 'min': '20000', 'max': '40000'}
 
 
 def coin_block(platinum, indent):
@@ -137,11 +140,16 @@ TUNING = {
     'wildwood/gloomtusk_boar.xml': {'name': 'Gloomtusk Boar', 'desc': 'a gloomtusk boar'},
     'wildwood/blightwing_hornet.xml': {'name': 'Blightwing Hornet', 'desc': 'a blightwing hornet'},
     # 2. donor bosses: experience in the world boss band (16-22M for 15-24M health), by health and difficulty
-    'ormathulak.xml': {'experience': 22000000},
-    'talath.xml': {'experience': 21000000},
-    'gloomfire.xml': {'experience': 20000000, 'attack': {3: {'min': '-36000', 'max': '-42000'}}},
-    'saga.xml': {'experience': 18000000},
-    'legendary_warrior.xml': {'experience': 7000000},
+    #    and since the solo kill times pass (README "Solo kill times") their health, heals, armor and hits too: health
+    #    one per experience point like the world bosses, the world bosses' heal (20-40k at chance 8 every 2 s, ~1.2k/s),
+    #    armor 80-150 and the strongest hit 8-10k. They stay dormant (no spawn).
+    'ormathulak.xml': {'experience': 22000000, 'health': 22000000, 'armor': 150, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 10000},
+    'talath.xml': {'experience': 21000000, 'health': 21000000, 'armor': 140, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 10000},
+    # (Gloomfire's 2,005,500 earth hit became 36-42k on 2026-10-13; `hit` now scales it with the rest)
+    'gloomfire.xml': {'experience': 20000000, 'health': 20000000, 'armor': 90, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 9000},
+    'saga.xml': {'experience': 18000000, 'health': 18000000, 'armor': 80, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 9000},
+    # a solo boss: ~1M health (7.7 min at the level 1000 median 2,600 per second, less its 450 heal per second)
+    'legendary_warrior.xml': {'experience': 1000000, 'health': 1000000, 'hit': 2500},
     'vorathrax.xml': {'attack': {3: {'min': '-26000', 'max': '-32000'}}},
     'world_bosses/vharok_the_blood_colossus.xml': {'drop_melee': ['bleed']},
     # 3. the late-game gold for its level (~1.25 gold per level: ~250)
@@ -238,6 +246,16 @@ def _is_heal(tag):
     return bool(re.search(r'\sname="healing"', tag, re.I))
 
 
+def _heal_attrs(tag, attrs):
+    if not _is_heal(tag):
+        return tag
+    for k, v in attrs.items():
+        if k == 'interval' and re.search(r'\sspeed="', tag) and not re.search(r'\sinterval="', tag):
+            k = 'speed'
+        tag = _set_attr(tag, k, v)
+    return tag
+
+
 def apply(t, row):
     for k in ('name', 'experience', 'speed'):
         if k in row:
@@ -270,6 +288,10 @@ def apply(t, row):
         t = re.sub(r'(<attack\s+name="melee"[^>]*?)\s+%s="[^"]*"' % k, r'\1', t)
     if 'hit' in row:
         t = _scale(t, 'attacks', _is_damage, row['hit'])
+    if 'armor' in row:
+        t = _tag(t, r'<defenses\s[^>]*>', {'armor': row['armor'], 'defense': row['armor']})
+    if 'heal_spell' in row:
+        t = re.sub(r'<defense\s[^>]*>', lambda m: _heal_attrs(m.group(0), row['heal_spell']), t)
     if 'heal' in row:
         t = _scale(t, 'defenses', _is_heal, row['heal'])
     if 'coins' in row:

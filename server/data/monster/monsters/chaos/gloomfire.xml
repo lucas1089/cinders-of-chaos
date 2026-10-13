@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Gloomfire" nameDescription="a gloomfire" race="blood" experience="20000000" speed="800" manacost="0">
-	<health now="510000000" max="510000000"/>
+	<health now="20000000" max="20000000"/>
 	<look type="2120" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
 	<flags>
@@ -18,30 +18,30 @@
 		<flag canwalkonenergy="0" />
 	</flags>
 	<attacks>
-		<attack name="fire" interval="1000" chance="100" min="-40000" max="-56000" />
-		<attack name="fire" interval="2000" chance="45" length="4" spread="3" min="-38000" max="-46800">
+		<attack name="fire" interval="1000" chance="100" min="-6000" max="-8400" />
+		<attack name="fire" interval="2000" chance="45" length="4" spread="3" min="-5700" max="-7020">
 			<attribute key="areaEffect" value="explosion" />
 		</attack>
-		<attack name="fire" interval="2000" chance="35" range="7" target="1" min="-35000" max="-41550">
+		<attack name="fire" interval="2000" chance="35" range="7" target="1" min="-5250" max="-6230">
 			<attribute key="shootEffect" value="fire" />
 			<attribute key="areaEffect" value="firearea" />
 		</attack>
-		<attack name="earth" interval="1000" chance="20" target="1" radius="4" min="-36000" max="-42000">
+		<attack name="earth" interval="1000" chance="20" target="1" radius="4" min="-5400" max="-6300">
 			<attribute key="areaEffect" value="poff" />
 		</attack>
-		<attack name="manadrain" interval="1000" chance="35" radius="4" target="0" min="-42000" max="-60000">
+		<attack name="manadrain" interval="1000" chance="35" radius="4" target="0" min="-6300" max="-9000">
             <attribute key="areaEffect" value="energyarea"/>
         </attack>
-        <attack name="death" interval="1000" chance="40" radius="5" target="0" min="-36000" max="-50600">
+        <attack name="death" interval="1000" chance="40" radius="5" target="0" min="-5400" max="-7590">
             <attribute key="areaEffect" value="mortarea"/>
             <attribute key="shootEffect" value="death"/>
         </attack>
-		<attack name="poisoncondition" interval="2000" chance="10" target="1" min="-800" max="-2000">
+		<attack name="poisoncondition" interval="2000" chance="10" target="1" min="-120" max="-300">
 			<attribute key="shootEffect" value="poison" />
 		</attack>
 	</attacks>
-	<defenses armor="90" defense="85">
-		<defense name="healing" interval="2000" chance="15" min="18000" max="35000">
+	<defenses armor="90" defense="90">
+		<defense name="healing" interval="2000" chance="8" min="20000" max="40000">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 	</defenses>

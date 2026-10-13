@@ -556,7 +556,13 @@ local function scaleMonster(run, monster)
 		return
 	end
 	scaledBy[mid] = run
-	local hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
+	local ex = extraOf(run.dungeonId)
+	local hp
+	if ex.bossHealth and ex.bossName and monster:getName():lower() == ex.bossName:lower() then
+		hp = DIFF.bossHealth(monster:getMaxHealth(), run.difficulty, ex.bossHealth)
+	else
+		hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
+	end
 	if hp ~= monster:getMaxHealth() then
 		local share = monster:getHealth() / math.max(1, monster:getMaxHealth())
 		monster:setMaxHealth(hp)

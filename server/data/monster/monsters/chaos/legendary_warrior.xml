@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Legendary Warrior" nameDescription="legendary warrior" race="blood" experience="7000000" speed="450" manacost="0">
-	<health now="7000000" max="7000000"/>
+<monster name="Legendary Warrior" nameDescription="legendary warrior" race="blood" experience="1000000" speed="450" manacost="0">
+	<health now="1000000" max="1000000"/>
 	<look type="1497" corpse="6068" />
 	<targetchange interval="5000" chance="10" />
 	<flags>
@@ -17,18 +17,18 @@
 		<flag runonhealth="0" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="1500" min="-12000" max="-18000" />
-		<attack name="fire" interval="2000" chance="25" length="5" spread="3" min="-11000" max="-20000">
+		<attack name="melee" interval="1500" min="-1500" max="-2250" />
+		<attack name="fire" interval="2000" chance="25" length="5" spread="3" min="-1380" max="-2500">
 			<attribute key="areaEffect" value="explosion" />
 		</attack>
-		<attack name="earth" interval="2000" chance="15" range="7" min="-6500" max="-15500">
+		<attack name="earth" interval="2000" chance="15" range="7" min="-810" max="-1940">
 			<attribute key="shootEffect" value="poison" />
 		</attack>
-		<attack name="earth" interval="2000" chance="12" target="1" radius="4" range="4" min="-8600" max="-18000">
+		<attack name="earth" interval="2000" chance="12" target="1" radius="4" range="4" min="-1080" max="-2250">
 			<attribute key="shootEffect" value="earth" />
 			<attribute key="areaEffect" value="poff" />
 		</attack>
-		<attack name="poisoncondition" interval="2000" chance="11" range="7" min="-1500" max="-4000">
+		<attack name="poisoncondition" interval="2000" chance="11" range="7" min="-190" max="-500">
 			<attribute key="shootEffect" value="poison" />
 		</attack>
 	</attacks>

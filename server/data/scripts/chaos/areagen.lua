@@ -181,6 +181,13 @@ local function spawnPoint(point)
 		m:setHealth(hp)
 	end
 	m:registerEvent("ChaosAreaGenDeath")
+	if point.boss then
+		-- a boss keeps its set health: no natural monster tier (magic x2 ... legendary x6, monster_tiers.lua), whose roll
+		-- the spawn registered as a first-think event
+		for _, ev in ipairs({"ChaosTierRollMagic", "ChaosTierRollRare", "ChaosTierRollLegendary"}) do
+			pcall(function() m:unregisterEvent(ev) end)
+		end
+	end
 	AG.scaled[m:getId()] = {damage = sc.damage * (point.damageMult or 1), experience = sc.experience}
 	AG.pointOf[m:getId()] = point
 	point.alive[#point.alive + 1] = m:getId()
@@ -250,7 +257,7 @@ local function registerDungeon(entry)
 		-- the boss shows its own name (Chaos.createMonsterNamed); the dungeon matches the kill by that name
 		bossName = b and ((Chaos.createMonsterNamed and b.name or b.monster):lower()) or nil,
 		bossType = b and b.monster or nil,
-		loot = d.loot, challenges = d.challenges,
+		loot = d.loot, challenges = d.challenges, bossHealth = d.bossHealth,
 		-- every run: the monsters of every point and the boss (dungeons.lua startRun; its teardown removes them)
 		populate = function()
 			for _, point in ipairs(entry.points) do

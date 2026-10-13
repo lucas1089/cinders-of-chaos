@@ -121,7 +121,7 @@ return {
 	-- level 1000 damage of the classes (data/spells/README.md "Classes with the passive trees"), uber_core.lua U.killTime.
 	kinds = {
 		{key = "bloodmoon", name = "Bloodmoon", boss = "Ascended Sangrith", omenBoss = "Sangrith the Bloodmoon Herald",
-			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
+			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 840, lives = {base = 3, perExtraPlayer = 1},
 			add = "Bloodmoon Thrall", element = "physical", hitEffect = "px197_crimson", unique = "Sanguine Crescent",
 			phases = {
 				{at = 1.0, name = "The Red Night", every = 9000, patterns = {"cone", "ring", "marks"},
@@ -134,7 +134,7 @@ return {
 					yell = "EVERY DROP RETURNS TO ME!"}
 			}},
 		{key = "hollow", name = "Hollow Crown", boss = "Ascended Morvane", omenBoss = "Morvane the Hollow Crown",
-			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
+			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 840, lives = {base = 3, perExtraPlayer = 1},
 			add = "Hollow Wraith", element = "death", hitEffect = "shadow_eruption", unique = "Hollow Crown of Morvane",
 			phases = {
 				{at = 1.0, name = "The Empty Throne", every = 9000, patterns = {"cross", "circle", "half"},
@@ -146,7 +146,7 @@ return {
 					yell = "THE DARK CLOSES IN. THERE IS NOWHERE LEFT."}
 			}},
 		{key = "storm", name = "Storm", boss = "Ascended Thalcyra", omenBoss = "Thalcyra the Stormbound Seer",
-			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
+			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 840, lives = {base = 3, perExtraPlayer = 1},
 			add = "Storm Shard", element = "energy", hitEffect = "lightning_strike", unique = "Eye of the Unbroken Storm",
 			phases = {
 				{at = 1.0, name = "Gathering Storm", every = 9000, patterns = {"marks", "lines", "eye"},
@@ -159,7 +159,7 @@ return {
 			}},
 		-- the Cinderheart: the sigil comes from one relic of each Ascended Omen
 		{key = "cinder", name = "Cinderheart", boss = "Ysgrath the Cinderheart", final = true,
-			minLevel = 1000, healthPerExtraPlayer = 1.0, enrageAt = 900, limit = 1080, lives = {base = 2, perExtraPlayer = 1},
+			minLevel = 1000, healthPerExtraPlayer = 1.0, enrageAt = 900, limit = 1200, lives = {base = 2, perExtraPlayer = 1},
 			add = "Cinderspawn", element = "fire", hitEffect = "meteor_strike", unique = "Cinderheart Signet",
 			phases = {
 				{at = 1.0, name = "Red Night Remembered", every = 8000, patterns = {"cone", "ring", "marks"},

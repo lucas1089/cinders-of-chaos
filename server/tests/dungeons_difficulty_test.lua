@@ -67,6 +67,14 @@ eq(math.abs(eights / n - 0.5) < 0.04, true, "the fraction is a chance (" .. eigh
 eq(D.extraGold(10, 1, rand), 0, "no extra gold at normal")
 eq(D.extraGold(100, 6, rand), 400, "difficulty 6 +400% gold")
 
+-- a boss with its own curve (the Hollow Vault): its percents, not the table's; without a curve the table's
+local vault = {100, 125, 150, 175, 200, 225}
+eq(D.bossHealth(1000000, 1, vault), 1000000, "boss curve difficulty 1")
+eq(D.bossHealth(1000000, 3, vault), 1500000, "boss curve difficulty 3")
+eq(D.bossHealth(1000000, 6, vault), 2250000, "boss curve difficulty 6")
+eq(D.bossHealth(1000000, 9, vault), 2250000, "boss curve clamped")
+eq(D.bossHealth(1000000, 6, nil), 13000000, "no curve: the table's 1300%")
+
 print(string.format("dungeons difficulty tests: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)
