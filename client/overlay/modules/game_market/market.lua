@@ -1284,9 +1284,44 @@ local function showTab(i)
 end
 
 -- ---------------------------------------------------------------- server messages
+-- the shape of what the server sent (game_chaosguard/opcode_fuzz_test.lua): lists keep their tables (rows) or their
+-- strings and numbers (categories, sorts, durations), counts are numbers; anything else is left out, so a window is
+-- never left half drawn by a bad row
+local ROW_LISTS = { 'rows', 'active', 'closed', 'items' }
+local VALUE_LISTS = { 'categories', 'sorts', 'durations' }
+local NUMBERS = { 'page', 'pages', 'total', 'used', 'max', 'owed', 'maxActive', 'realm', 'defaultDuration' }
+local OBJECTS = { 'fee', 'tax', 'price', 'orders', 'modFilter' }
+local function shaped(data)
+  for _, k in ipairs(OBJECTS) do
+    if type(data[k]) ~= 'table' then data[k] = nil end
+  end
+  for _, k in ipairs(ROW_LISTS) do
+    if data[k] ~= nil then
+      local out = {}
+      for _, r in ipairs(type(data[k]) == 'table' and data[k] or {}) do
+        if type(r) == 'table' then out[#out + 1] = r end
+      end
+      data[k] = out
+    end
+  end
+  for _, k in ipairs(VALUE_LISTS) do
+    if data[k] ~= nil then
+      local out = {}
+      for _, v in ipairs(type(data[k]) == 'table' and data[k] or {}) do
+        if type(v) == 'string' or type(v) == 'number' then out[#out + 1] = v end
+      end
+      data[k] = out
+    end
+  end
+  for _, k in ipairs(NUMBERS) do
+    if data[k] ~= nil then data[k] = tonumber(data[k]) end
+  end
+  return data
+end
+
 local function onMessage(protocol, opcode, msg)
   if not window or type(msg) ~= 'table' then return end
-  local data = type(msg.data) == 'table' and msg.data or {}
+  local data = shaped(type(msg.data) == 'table' and msg.data or {})
   local a = msg.action
   if a == 'meta' then
     meta = data

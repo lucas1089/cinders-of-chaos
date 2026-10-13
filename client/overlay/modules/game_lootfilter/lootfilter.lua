@@ -203,7 +203,7 @@ local function onPeek(data)
   if not cid then return end
   local items = {}
   for _, r in ipairs(list(data.items)) do
-    items[tonumber(r.i) or -1] = r
+    if type(r) == 'table' then items[tonumber(r.i) or -1] = r end
   end
   peekData[cid] = { corpse = data.corpse and true or false, items = items }
   local container = g_game.getContainer(cid)
@@ -276,7 +276,11 @@ local function dropRow(k)
   end
 end
 
-local function showFlash(drops)
+local function showFlash(list)
+  local drops = {} -- an entry that is no table is left out
+  for _, x in ipairs(type(list) == 'table' and list or {}) do
+    if type(x) == 'table' then drops[#drops + 1] = x end
+  end
   if #drops == 0 then return end
   local gi = modules.game_interface
   local root = gi and ((gi.getMapPanel and gi.getMapPanel()) or (gi.getRootPanel and gi.getRootPanel()))
@@ -662,7 +666,10 @@ end
 local function onSettings(data)
   settings = L.normalize(data.s)
   unlocked = data.unlocked and true or false
-  presets = list(data.presets)
+  presets = {} -- tables with a key (sent back by a click); anything else is left out
+  for _, p in ipairs(list(data.presets)) do
+    if type(p) == 'table' and type(p.key) == 'string' then presets[#presets + 1] = p end
+  end
   if type(data.samples) == 'table' then samples = data.samples end
   if type(data.snd) == 'table' then snd = L.normalizeSound(data.snd) end
   if type(data.counts) == 'table' then

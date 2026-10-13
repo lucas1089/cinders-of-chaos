@@ -22,7 +22,7 @@ function V.filter(rows, cat, query, knownOnly)
   local out = {}
   local q = tostring(query or ''):lower():gsub('^%s+', ''):gsub('%s+$', '')
   for _, r in ipairs(rows or {}) do
-    if (cat == nil or cat == V.ALL or r.cat == cat) and (not knownOnly or r.stage >= 1)
+    if type(r) == 'table' and (cat == nil or cat == V.ALL or r.cat == cat) and (not knownOnly or r.stage >= 1)
         and (q == '' or r.name:lower():find(q, 1, true)) then
       out[#out + 1] = r
     end
@@ -58,7 +58,7 @@ end
 function V.stagePercent(kills, th)
   kills = num(kills)
   local prev = 0
-  for _, k in ipairs(th or {}) do
+  for _, k in ipairs(type(th) == 'table' and th or {}) do
     if kills < num(k) then
       return math.floor((kills - prev) * 100 / math.max(1, num(k) - prev))
     end
@@ -77,7 +77,8 @@ V.pctText = pctText
 -- {name, pct} rows (positive = takes less damage) -> "fire -20%, energy +10%" as damage taken
 function V.elementsText(list)
   local parts = {}
-  for _, e in ipairs(list or {}) do
+  for _, e in ipairs(type(list) == 'table' and list or {}) do
+    if type(e) ~= 'table' then e = {} end
     local taken = -num(e.pct)
     parts[#parts + 1] = string.format('%s %s%s', tostring(e.name), taken > 0 and '+' or '', pctText(taken))
   end

@@ -311,6 +311,10 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   local data = type(msg.data) == 'table' and msg.data or {}
   if msg.action == 'state' then
     local first = state == nil
+    -- the parts the window indexes must be tables (game_chaosguard/opcode_fuzz_test.lua)
+    for _, k in ipairs({ 'season', 'daily', 'weekly' }) do
+      if type(data[k]) ~= 'table' then data[k] = nil end
+    end
     state = data
     stateAt = g_clock.seconds()
     showState()

@@ -1668,6 +1668,9 @@ end
 -- requests that read the database on every call before: from the third rapid call on, none may
 local rapid = {
 	{"ChaosStashExtended", ChaosOpcodes.stash, {action = "Stash", data = {make = "Stash", UpdateList = true, Pos = 1}}},
+	-- a real item the stash refuses (the equipped backpack), named again and again: the echo is limited too
+	{"ChaosStashExtended", ChaosOpcodes.stash, {action = "Stash", data = {make = "Stash", UpdateList = true,
+		Pos = {x = 65535, y = CONST_SLOT_BACKPACK, z = 0}}}},
 	{"ChaosCraftingExtended", ChaosOpcodes.crafting, {action = "apply", data = {path = 1, id = 1}}},
 	{"ChaosCraftingExtended", ChaosOpcodes.crafting, {action = "gem", data = {path = 1, id = 1}}},
 	{"ChaosShopExtended", ChaosOpcodes.shop, {action = "init", data = {}}},

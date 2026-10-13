@@ -31,10 +31,13 @@ local function send(action, data)
   end
 end
 
+-- the rows of a server list; an entry that is no table is left out (game_chaosguard/opcode_fuzz_test.lua)
 local function list(value)
   local out = {}
   if type(value) == 'table' then
-    for _, v in ipairs(value) do out[#out + 1] = v end
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
   end
   return out
 end
@@ -115,9 +118,11 @@ local function buildCategories()
       tip = tr('Cosmetics earned by playing: account point milestones and complete categories. Never sold.') }
   end
   for _, c in ipairs(list(state.categories)) do
-    local reward = V.categoryReward(track, c.key)
-    entries[#entries + 1] = { key = c.key, label = V.categoryLabel(c),
-      tip = tr('%d of %d points', tonumber(c.points) or 0, tonumber(c.max) or 0) .. (reward and ('\n' .. reward) or '') }
+    if c.key ~= nil then -- a category without a key has no button
+      local reward = V.categoryReward(track, c.key)
+      entries[#entries + 1] = { key = c.key, label = V.categoryLabel(c),
+        tip = tr('%d of %d points', tonumber(c.points) or 0, tonumber(c.max) or 0) .. (reward and ('\n' .. reward) or '') }
+    end
   end
   for _, e in ipairs(entries) do
     local b = g_ui.createWidget('AchievementCategory', window.categoryPanel)

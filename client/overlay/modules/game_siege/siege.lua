@@ -116,12 +116,14 @@ local function updateWindow(data)
   window.guildPanel.leaveButton:setEnabled(data.canLeave == true)
   local signups = {}
   for i, s in ipairs(list(data.signups)) do
+    if type(s) ~= 'table' then s = {} end
     signups[#signups + 1] = { text = i .. '. ' .. tostring(s.name), color = s.own and '#ffe7a6' or nil }
   end
   window.signupsHeader:setText(tr('Signed up (%d / %d)', #signups, tonumber(data.capacity) or 0))
   fillList(window.signups, signups, tr('No guild yet.'))
   local champs = {}
   for _, c in ipairs(list(data.champions)) do
+    if type(c) ~= 'table' then c = {} end
     champs[#champs + 1] = { text = tostring(c.name) .. ' - ' .. tr('until %s', c.untilText or '?'), color = '#f6cf72' }
   end
   fillList(window.champions, champs, tr('No champions this week.'))

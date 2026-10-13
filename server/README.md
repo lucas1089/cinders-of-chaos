@@ -593,12 +593,17 @@ nothing), an answer over 8192 bytes, a client string in SQL unescaped, NaN / inf
 integer, a player passed where a position is expected, a database read after a refused rate limit or on every one of five
 rapid calls, and an opcode that differs from the table above or from `ChaosOpcodes` (fallbacks `ChaosOpcodes.x or n` and
 `cfg.opcode` too; handlers sharing an opcode never answer the same action). The client test loads every module with a
-stubbed client API and feeds every registered handler bad buffers, `data` of the wrong type and chunk sequences with parts
-missing, repeated or out of order; it also checks each module's opcode against this table and `ChaosOpcodes`.
+stubbed client API and feeds every registered handler, through the client's own dispatcher (client base patch 0043, read
+from the patch), bad buffers, `data` and every field of the wrong type or shape (rows that are numbers, ...) and chunk
+sequences with parts missing, repeated or out of order; any Lua error fails it, also one the module or the dispatcher
+catches and logs (under Lua 5.3 `"%d"` takes fractions as the client's LuaJIT does). It also checks each module's opcode
+against this table and `ChaosOpcodes`. The client modules check the shape of what they draw from (lists keep their
+tables, objects must be tables), so a bad row cannot leave a window half drawn.
 - `Chaos.toInt` (and `int` in `market_core.lua`, `orbexchange_core.lua`) refuses numbers beyond +-2^53: `1e308` stayed a
   float, which `"%d"` refuses under Lua 5.3 and turns into -2^63 under LuaJIT.
 - `ratelimit.lua` keeps at most 512 keys per player and none longer than 64 bytes: keys are built from the client's action
   names, so made-up actions grew the table until logout.
+- The stash's "Stash" request answers with the list (a database read) at most every 100 ms, whatever item it names.
 - Values the client sent are echoed only after a check (`seq` of the market, the item link request number, the loot filter
   kill id, the command page id, the crafting orb key): inf or a table made `json.encode` raise, a 60 KB string made the
   answer too big to send.

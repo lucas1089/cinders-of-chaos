@@ -46,6 +46,17 @@ local function list(value)
   return out
 end
 
+-- the rows of a server list; an entry that is no table is left out (game_chaosguard/opcode_fuzz_test.lua)
+local function rowsOf(value)
+  local out = {}
+  if type(value) == 'table' then
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
+  end
+  return out
+end
+
 local function short(n)
   n = tonumber(n) or 0
   if formatShortNumber then return formatShortNumber(n) end
@@ -75,7 +86,7 @@ local function valueText(v, b, exactly)
 end
 
 local function boardMeta(key)
-  for _, b in ipairs(list(meta and meta.boards)) do
+  for _, b in ipairs(rowsOf(meta and meta.boards)) do
     if b.key == key then return b end
   end
   return nil
@@ -89,7 +100,7 @@ local function currentGroup()
 end
 
 local function groupName(key)
-  for _, g in ipairs(list(meta and meta.groups)) do
+  for _, g in ipairs(rowsOf(meta and meta.groups)) do
     if g.key == key then return g.name end
   end
   return '?'
@@ -165,7 +176,7 @@ local function showBoard()
   window.rowList:destroyChildren()
   local player = g_game.getLocalPlayer()
   local ownName = player and player:getName() or nil
-  local rows = list(current.rows)
+  local rows = rowsOf(current.rows)
   for _, r in ipairs(rows) do createRow(r, b, ownName) end
 
   window.infoLabel:setText(b.info or '')
@@ -174,7 +185,7 @@ local function showBoard()
 
   -- last week's title holders (weekly boards) / the class shown (ladder)
   if b.weekly then
-    local champions = list(current.champions)
+    local champions = rowsOf(current.champions)
     window.championPanel.championTitle:setText(tr('%s: the title holders this week (last week\'s top 3)', b.title or ''))
     if #champions == 0 then
       window.championPanel.championNames:setText(tr('Nobody yet: the top 3 of this week get the title on Monday.'))
@@ -285,7 +296,7 @@ local function buildGroupTabs()
   window.groupTabs:setHeight(visible and 22 or 0)
   window.groupTabs:setMarginTop(visible and 4 or 0)
   if not visible then return end
-  local groups, items = list(meta.groups), {}
+  local groups, items = rowsOf(meta.groups), {}
   if byClass then
     -- a weekly board with class tabs: "All classes" first (key 'all' = no filter)
     table.insert(groups, 1, { key = 'all', name = tr('All classes') })
@@ -344,14 +355,14 @@ end
 
 local function buildTabs()
   tabs = {}
-  local boards, items = list(meta.boards), {}
+  local boards, items = rowsOf(meta.boards), {}
   for i, b in ipairs(boards) do
     local key = b.key
     items[i] = { text = b.name or b.key, checked = key == selected, onClick = function() selectBoard(key) end,
                  tooltip = b.weekly and tr('Weekly: %s', b.info or '') or (b.info or '') }
   end
   for i, tab in pairs(buildTabRows(window.tabs, 'LeaderboardTab', items)) do
-    tabs[boards[i].key] = tab
+    if boards[i] and boards[i].key ~= nil then tabs[boards[i].key] = tab end
   end
 end
 
@@ -371,7 +382,14 @@ local function onMeta(data)
   if data.open then show() end
 end
 
+-- a board or group key as the server sent it: a string or a finite number, else nothing (it is sent back in "get")
+local function boardKey(v)
+  if type(v) == 'string' or (type(v) == 'number' and v == v and v ~= math.huge and v ~= -math.huge) then return v end
+  return nil
+end
+
 local function onBoardData(data)
+  data.key, data.group = boardKey(data.key), boardKey(data.group)
   current = data
   boardAt = g_clock.seconds()
   refreshAsked = false

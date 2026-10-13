@@ -40,7 +40,7 @@ function CL.tabRows(rows, kind, line, lineName)
   local anySelected = false
   local mine, other = {}, {}
   for _, r in ipairs(type(rows) == 'table' and rows or {}) do
-    if r.kind == kind then
+    if type(r) == 'table' and r.kind == kind then
       if kind == 'spellskin' then
         if r.line == line then
           mine[#mine + 1] = r
@@ -56,7 +56,7 @@ function CL.tabRows(rows, kind, line, lineName)
   end
   if kind ~= 'spellskin' or line then
     out[1] = { id = 0, kind = kind, line = line, name = 'Default', owned = true, selected = not anySelected,
-      desc = CL.DEFAULT_TEXT[kind], how = kind == 'spellskin' and ('Every spell of your ' .. (lineName or 'line')) or
+      desc = CL.DEFAULT_TEXT[kind], how = kind == 'spellskin' and ('Every spell of your ' .. (type(lineName) == 'string' and lineName or 'line')) or
       'Every character' }
   end
   for _, r in ipairs(mine) do out[#out + 1] = r end
@@ -105,7 +105,7 @@ function CL.subText(r)
   if r.collection then
     return (r.kindName or r.kind or '') .. (r.owned and ' - Unlocked' or (' - ' .. (r.how or 'Locked')))
   end
-  if r.otherLine then return (r.lineName or 'Another line') .. ' - not your class' end
+  if r.otherLine then return tostring(r.lineName or 'Another line') .. ' - not your class' end
   if r.id == 0 then return r.selected and 'In use' or 'Default' end
   if r.selected then return 'In use' end
   if r.owned then return 'Unlocked' end

@@ -32,10 +32,13 @@ local function send(action, data)
   end
 end
 
+-- the rows of a server list (matches, players); an entry that is no table is left out
 local function list(value)
   local out = {}
   if type(value) == 'table' then
-    for _, v in ipairs(value) do out[#out + 1] = v end
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
   end
   return out
 end
@@ -50,7 +53,7 @@ local function updateCards()
     local card = window['card' .. mode]
     local r = type(ratings[mode]) == 'table' and ratings[mode] or {}
     card.title:setText(T.MODE_TITLE[mode] or mode)
-    local line, color, tip = T.seasonLine(season[mode], state.season and state.season.id)
+    local line, color, tip = T.seasonLine(season[mode], type(state.season) == 'table' and state.season.id or nil)
     card.season:setText(line)
     card.season:setColor(color)
     card.season:setTooltip(tip)

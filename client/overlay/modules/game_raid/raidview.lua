@@ -236,6 +236,7 @@ function RaidView.lootSummary(d)
   if not d.eligible then
     return string.format('%s slain. You looted it already this week: no spoils until the reset.', tostring(d.boss or '?'))
   end
-  local lines = type(d.lines) == 'table' and d.lines or {}
+  local lines = {}
+  for _, l in ipairs(type(d.lines) == 'table' and d.lines or {}) do lines[#lines + 1] = tostring(l) end
   return string.format('Spoils of %s: %s', tostring(d.boss or '?'), table.concat(lines, ', '))
 end

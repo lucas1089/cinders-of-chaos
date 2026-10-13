@@ -81,7 +81,10 @@ local function renderLock(list)
     row:getChildById('state'):setColor(r.color)
   end
   addLabel(list, 'RaidHead', tr('Raids of this week'), '#e8b84a')
-  local saved = type(info.saved) == 'table' and info.saved or {}
+  local saved = {} -- the saved raids; an entry that is no table is left out
+  for _, s in ipairs(type(info.saved) == 'table' and info.saved or {}) do
+    if type(s) == 'table' then saved[#saved + 1] = s end
+  end
   if #saved == 0 then
     addLabel(list, 'RaidWrap', tr('No raid of yours this week. Open a new one with a party of 5 to 15.'), '#8c8070')
   end

@@ -20,7 +20,9 @@ end
 -- teams sorted by score (then kills, then name), the original table untouched
 function SiegeMath.sorted(teams)
   local list = {}
-  for _, t in ipairs(type(teams) == 'table' and teams or {}) do list[#list + 1] = t end
+  for _, t in ipairs(type(teams) == 'table' and teams or {}) do
+    if type(t) == 'table' then list[#list + 1] = t end -- an entry that is no table is left out
+  end
   table.sort(list, function(a, b)
     local sa, sb = tonumber(a.score) or 0, tonumber(b.score) or 0
     if sa ~= sb then return sa > sb end
@@ -36,7 +38,9 @@ function SiegeMath.holder(data)
   data = type(data) == 'table' and data or {}
   if data.phase == 'gather' then return 'Gates open in ' .. SiegeMath.clock(data.left), '#d6c9ae' end
   if data.phase == 'ending' then return 'The siege is over', '#8c8070' end
-  if data.holder and data.holder ~= '' then return 'Obelisk: ' .. data.holder, data.holderColor ~= '' and data.holderColor or '#f6cf72' end
+  if data.holder and data.holder ~= '' then
+    return 'Obelisk: ' .. tostring(data.holder), type(data.holderColor) == 'string' and data.holderColor ~= '' and data.holderColor or '#f6cf72'
+  end
   if data.contested then return 'Obelisk: contested', '#e8582a' end
   return 'Obelisk: neutral', '#8c8070'
 end

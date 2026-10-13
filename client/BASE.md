@@ -137,6 +137,16 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     creature information; static and animated texts were already after it. No Lua change. No other patch touches
     `mapview.cpp`, so it applies after 0001-0041 (`patch --dry-run` on the base file); not built yet (no room on the
     build machine).
+23. `0043` (Lua `modules/gamelib/protocolgame.lua`): extended opcode handlers and stray parts. `ProtocolGame:onExtendedOpcode`
+    calls every module's handler (plain and JSON) through `pcall`: an error is logged as `Extended [JSON ]opcode <n>: ...`
+    and stops nothing else (the JSON handler of the same opcode, the next message). It joins the parts of
+    `Chaos.sendChunked` ("S", "P", "E"); a "P" or "E" with no "S" before it concatenated nil and raised from the
+    dispatcher, now it is dropped with a warning. The decode-error message concatenated the pcall status (a boolean),
+    which raised a second error in place of the message; it now names the opcode and uses `tostring`. The hunk carries
+    the whole function and the tables before it as context: the client protocol fuzz test
+    (`game_chaosguard/opcode_fuzz_test.lua`) loads the function from the patch and sends every message through it. No
+    other patch touches `protocolgame.lua`; the whole chain 0001-0043 applies (`patch --dry-run`, then applied, on the
+    base tree of the `windows-assets` branch); no C++ change, not built yet.
 
 ### Client guard: the build secret
 

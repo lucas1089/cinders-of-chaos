@@ -47,7 +47,11 @@ end
 local function renderCards()
   local list = window.cardList
   list:destroyChildren()
+  local factions = {} -- an entry that is no table is left out
   for _, f in ipairs(type(data.factions) == 'table' and data.factions or {}) do
+    if type(f) == 'table' then factions[#factions + 1] = f end
+  end
+  for _, f in ipairs(factions) do
     local card = g_ui.createWidget('FactionCard', list)
     card.emblem:setImageSource(emblem(f.k))
     card.emblem:setImageSize({ width = 48, height = 48 })
@@ -200,8 +204,9 @@ local function onMessage(protocol, opcode, msg)
   elseif msg.action == 'msg' then
     showMessage(d.text, d.ok)
   elseif msg.action == 'npc' then
-    selected = d.f or selected
-    show(d.f)
+    local f = type(d.f) == 'string' and d.f or nil -- a faction key; anything else is not echoed back
+    selected = f or selected
+    show(f)
   end
 end
 

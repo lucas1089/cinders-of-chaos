@@ -239,6 +239,10 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   end
   local data = type(msg.data) == 'table' and msg.data or {}
   if msg.action == 'state' then
+    -- the parts the window indexes are tables, or left out (game_chaosguard/opcode_fuzz_test.lua)
+    for _, k in ipairs({ 'guild', 'perks' }) do
+      if type(data[k]) ~= 'table' then data[k] = nil end
+    end
     state = data
     if data.open and data.tab and FILL[data.tab] then currentTab = data.tab end
     render()

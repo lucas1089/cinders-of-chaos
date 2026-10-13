@@ -243,7 +243,7 @@ local function showList()
     row.onClick = function() pick(id) end
     rowWidgets[id] = row
   end
-  local status = currentTab == 'spellskin' and (state.lineName and (tr('Your class line: ') .. state.lineName) or
+  local status = currentTab == 'spellskin' and (type(state.lineName) == 'string' and (tr('Your class line: ') .. state.lineName) or
     tr('Your class has no spell skins yet.')) or tr('Unlocks are for your whole account; each character chooses.')
   if CL.DRAWN[currentTab] then
     status = tr('Account-wide; each character chooses.') -- room for the checkbox beside it

@@ -15,6 +15,35 @@ local VERBOSE = os.getenv('FUZZ_VERBOSE') == '1'
 if jit then
 	jit.off() -- the instruction count hook (endless loops, see run) only fires in the interpreter
 end
+-- The client runs its modules on LuaJIT (base client CMake option LUAJIT, client/LINUX.md), where string.format turns
+-- a fraction, inf or NaN given to %d / %i / %x / %X / %c / %o / %u into an integer; Lua 5.3 raises instead. Under 5.3
+-- the modules get LuaJIT's behaviour, so this test reports what fails in the real client and not a 5.3 difference.
+if math.type then
+	local realFormat = string.format
+	local unpackArgs = table.unpack
+	string.format = function(fmt, ...)
+		local ok, text = pcall(realFormat, fmt, ...)
+		if ok or type(fmt) ~= 'string' then
+			return ok and text or realFormat(fmt, ...)
+		end
+		local args, n = {...}, select('#', ...)
+		local i = 0
+		for conv in fmt:gmatch('%%[-+ #0]*%d*%.?%d*([%a%%])') do
+			if conv ~= '%' then
+				i = i + 1
+				local v = args[i]
+				if conv:find('[diouxXc]') and math.type(v) == 'float' then
+					if v ~= v or v >= 2^63 or v < -2^63 then
+						args[i] = math.mininteger
+					else
+						args[i] = v >= 0 and math.floor(v) or math.ceil(v)
+					end
+				end
+			end
+		end
+		return realFormat(fmt, unpackArgs(args, 1, n))
+	end
+end
 local realPrint = print
 local checks = 0
 local failures, failureSeen = {}, {}
@@ -522,7 +551,6 @@ do
 	p:close()
 end
 local sources = {} -- module -> all its scripts as one text
-local failure2 = failure -- strict or lenient, see run
 local function drain(who, label)
 	local ran = 0
 	while #queue > 0 and ran < 30 do
@@ -530,7 +558,7 @@ local function drain(who, label)
 		ran = ran + 1
 		local ok, err = xpcall(fn, traced)
 		if not ok then
-			failure2('error in scheduleEvent', who, locate(err), function() return label() .. '\n      ' .. err.msg end)
+			failure('error in scheduleEvent', who, locate(err), function() return label() .. '\n      ' .. err.msg end)
 		end
 	end
 	queue = {}
@@ -583,10 +611,11 @@ currentModule = nil
 queue = {}
 
 -- ---------------------------------------------------------------- delivering a message
--- the base client's ProtocolGame:onExtendedOpcode: a plain handler gets the buffer; a JSON handler gets the parts of
--- a chunked message joined ("S" start, "P" part, "E" end; anything else is a whole message) and decoded. A "P" or "E"
--- with no "S" before it makes the base code concatenate nil, and a failed decode raises: both end in the client's
--- error log, the module never sees them (recorded in baseDrops, not failures of the module).
+-- Through the client's own ProtocolGame:onExtendedOpcode as client/base-patches/0043 leaves it (its hunk carries the
+-- function and the tables before it): a plain handler gets the buffer; a JSON handler gets the parts of a chunked
+-- message joined ("S" start, "P" part, "E" end; anything else is a whole message) and decoded; a stray "P" / "E" is
+-- dropped with a warning; each handler runs under pcall and an error in it is logged (which fails this test, see run).
+-- A message that does not decode raises "Invalid data in extended JSON opcode": that is the client's own report.
 local tokens, tokenN = {}, 0
 local function copy(v, depth)
 	depth = depth or 0
@@ -626,33 +655,44 @@ G.json.decode = function(buffer)
 	end
 	return copy(d.v)
 end
-local joined = {}
-local baseDrops = {}
-local function deliver(reg, buffer)
-	if reg.kind == 'ext' then
-		return reg.fn(protocol, reg.opcode, buffer)
-	end
-	local status, data = buffer:sub(1, 1), buffer:sub(2)
-	if status ~= 'E' and status ~= 'P' then
-		joined[reg.opcode] = ''
-	end
-	if status ~= 'S' and status ~= 'P' and status ~= 'E' then
-		joined[reg.opcode] = buffer
-	elseif joined[reg.opcode] == nil then
-		baseDrops[#baseDrops + 1] = 'a "' .. status .. '" part without its "S"'
-		return
-	else
-		joined[reg.opcode] = joined[reg.opcode] .. data
-	end
-	if status ~= 'S' and status ~= 'P' then
-		local whole = joined[reg.opcode]
-		joined[reg.opcode] = nil
-		local ok, value = pcall(G.json.decode, whole)
-		if not ok then
-			baseDrops[#baseDrops + 1] = 'undecodable JSON'
-			return
+local dispatch, plainCallbacks, jsonCallbacks
+do
+	local text = readFile('client/base-patches/0043-extended-json-stray-parts.patch') or ''
+	local lines, inHunk, inFunction = {}, false, false
+	for line in text:gmatch('([^\n]*)\n') do
+		if line:find('^@@') then
+			inHunk = true
+		elseif inHunk and not inFunction or (inFunction and lines[#lines] ~= 'end') then
+			local c = line:sub(1, 1)
+			if c == ' ' or c == '+' then
+				lines[#lines + 1] = line:sub(2)
+				inFunction = inFunction or line:find('^.function ProtocolGame:onExtendedOpcode') ~= nil
+			end
 		end
-		return reg.fn(protocol, reg.opcode, value)
+	end
+	lines[#lines + 1] = 'return extendedCallbacks, extendedJSONCallbacks'
+	local env = setmetatable({ProtocolGame = {}}, {__index = function(_, k)
+		if G[k] ~= nil then return G[k] end
+		return _G[k]
+	end})
+	local f = loadText(table.concat(lines, '\n'), env)
+	check(f ~= nil and inFunction, 'base patch 0043', 'client/base-patches', 'onExtendedOpcode',
+		'the patch no longer carries ProtocolGame:onExtendedOpcode with its tables')
+	if f then
+		plainCallbacks, jsonCallbacks = f()
+		dispatch = env.ProtocolGame.onExtendedOpcode
+	end
+end
+local function deliver(reg, buffer)
+	plainCallbacks[reg.opcode], jsonCallbacks[reg.opcode] = nil, nil
+	if reg.kind == 'ext' then
+		plainCallbacks[reg.opcode] = reg.fn
+	else
+		jsonCallbacks[reg.opcode] = reg.fn
+	end
+	local ok, err = pcall(dispatch, protocol, reg.opcode, buffer)
+	if not ok and not tostring(err):find('Invalid data in extended JSON opcode', 1, true) then
+		error(err, 0)
 	end
 end
 
@@ -660,19 +700,6 @@ local function who(reg)
 	return reg.module .. ' (' .. reg.opcode .. ')'
 end
 local slow = {}
--- strict: a failure fails the test. Lenient (a list or object where the module expects something else, e.g. rows of
--- numbers): counted in `lenient` and listed with FUZZ_VERBOSE=1; see the report at the end
-local strict = true
-local lenient = {}
-failure2 = function(kind, whoName, where, detail)
-	if strict then
-		return failure(kind, whoName, where, detail)
-	end
-	local key = whoName .. ' ' .. tostring(where)
-	if not lenient[key] then
-		lenient[key] = type(detail) == 'function' and detail() or tostring(detail)
-	end
-end
 local function run(reg, buffers, label)
 	logged, sentToServer, queue = {}, {}, {}
 	if type(buffers) ~= 'table' then
@@ -686,9 +713,7 @@ local function run(reg, buffers, label)
 		local ok, err = xpcall(function() return deliver(reg, buffer) end, traced)
 		debug.sethook()
 		if not ok then
-			-- a runaway loop freezes the client whatever the message was: always a failure
-			local report = err.msg:find('endless loop', 1, true) and failure or failure2
-			report('error', who(reg), locate(err), function() return label() .. '\n      ' .. err.msg end)
+			failure('error', who(reg), locate(err), function() return label() .. '\n      ' .. err.msg end)
 		end
 	end
 	drain(who(reg), label)
@@ -700,7 +725,7 @@ local function run(reg, buffers, label)
 		local at = l.text:match('(modules/[%w_/%.]+:%d+):') or l.text:match('([%w_]+%.lua:%d+):')
 		checks = checks + 1
 		if at then
-			failure2('error caught by the module', who(reg), at, function() return label() .. '\n      ' .. l.text:sub(1, 200) end)
+			failure('error caught by the module', who(reg), at, function() return label() .. '\n      ' .. l.text:sub(1, 200) end)
 		end
 	end
 end
@@ -930,15 +955,13 @@ local function discover(reg)
 end
 
 -- ---------------------------------------------------------------- fuzz every registration
--- Strict first, for every module: buffers that are no JSON object, msg.data missing or not a table, unknown actions,
--- chunk sequences. Then the lenient cases (a field or msg.data holding a list or an object of the wrong shape); they
--- run last so that what they leave in a module's state cannot turn up as a strict failure.
+-- First, for every module: buffers that are no JSON object, msg.data missing or not a table, unknown actions, chunk
+-- sequences. Then a field or msg.data holding a list or an object of the wrong shape (a list of numbers where rows are
+-- expected, ...): the second round runs last, so a failure of the first never comes from a state the second left.
 local delivered = 0
 local t0 = os.clock()
-local function goFor(reg, e, msg, what, lenientCase)
-	strict = not lenientCase
+local function goFor(reg, e, msg, what)
 	run(reg, token(msg), function() return 'action ' .. describe(e.action) .. ', ' .. what .. ': ' .. describe(msg) end)
-	strict = true
 end
 for _, reg in ipairs(registrations) do
 	for i, raw in ipairs(rawBuffers) do
@@ -979,16 +1002,54 @@ for _, reg in ipairs(registrations) do
 				check(delivered == 1, 'chunks', who(reg), 'whole', 'S, P, E delivered ' .. delivered .. ' messages')
 			end
 		end
-		joined[reg.opcode] = nil
+		run(reg, '{"action":"__reset__"}', function() return 'chunks: reset' end)
 	end
 end
--- regressions, strict whatever the draw: a tier count of 1e308 ran the season pass loop "for t = 1, total" for ever
+-- regressions, whatever the draw: one message per place that failed before (a tier count of 1e308 ran the season
+-- pass loop "for t = 1, total" for ever; the others indexed a number or a boolean, or sent inf back in a request)
+local INF = math.huge
+local regressions = {
+	game_battlepass = {{action = 'tiers', data = {season = 77, total = 1e308, rows = {}}},
+		{action = 'tiers', data = {season = 78, total = 2147483648, rows = {5}}}, {action = 'state', data = {season = 1}}},
+	game_market = {{action = 'orders', data = {page = {}, pages = 0.5, rows = {5}, total = -1}},
+		{action = 'meta', data = {categories = {{}, 5}, fee = 1e308, orders = 1, durations = {{}}}},
+		{action = 'mine', data = {active = true}}, {action = 'myOrders', data = {active = ''}},
+		{action = 'orderFind', data = {items = {5}}}, {action = 'sellable', data = {items = true}}},
+	game_achievements = {{action = 'state', data = {categories = {{}, 5}, heldTitles = {5}, recent = {5}}},
+		{action = 'track', data = {steps = {5}}}, {action = 'list', data = {first = true, last = true, rows = {5}}}},
+	game_admin = {{action = 'catalog', data = {categories = {5, {{}}, {id = 'x', actions = {5, {id = 1}}}}}}},
+	game_arena = {{action = 'state', data = {season = 1, recent = {5}}}},
+	game_bestiary = {{action = 'summary', data = {cats = {5, {{}}}}}, {action = 'list', data = {first = 1, last = 1, rows = {5}}},
+		{action = 'entry', data = {id = 1, th = {{}}, points = {{}}, immunities = {{}}, bonus = 1}},
+		{action = 'board', data = {tasks = {5}, offers = {5}}}},
+	game_bounty = {{action = 'board', data = {bands = {5, {{}}}}}},
+	game_chatlinks = {{action = 'registered', data = {links = {5}, n = 1}}},
+	game_cosmetics = {{action = 'state', data = {rows = {5}, lineName = true, open = true}}},
+	game_crafting = {{action = 'state', data = {item = 1, items = {5}, history = {5}, open = true}}},
+	game_factions = {{action = 'state', data = {factions = {5}}}, {action = 'npc', data = {f = INF}}},
+	game_groundlabels = {{action = 'tiles', data = {t = {5}}}},
+	game_guild = {{action = 'state', data = {guild = true, perks = 1, open = true}}},
+	game_invasion = {{action = 'calendar', data = {list = {5}, open = true}}, {action = 'hud', data = {top = {5}}}},
+	game_leaderboard = {{action = 'meta', data = {boards = {5, {{}}}, open = true}},
+		{action = 'board', data = {key = INF, group = -INF, rows = true, champions = {5}}}},
+	game_lootfilter = {{action = 'kill', data = {drops = {5}}}, {action = 'peek', data = {cid = 1, items = {5}}},
+		{action = 'settings', data = {presets = {5, {key = INF}}}}},
+	game_pets = {{action = 'state', data = {catalog = {5}, pets = {5, {{}}}, cooldowns = 1, active = 1, rest = true}}},
+	game_raid = {{action = 'info', data = {saved = {5}}}, {action = 'loot', data = {eligible = true, lines = {{}}}}},
+	game_siege = {{action = 'info', data = {signups = {5}, champions = {5}}}, {action = 'hud', data = {teams = {5}, holder = true}}},
+	game_spellsupports = {{action = 'state', data = {spells = {5}, runes = {5, {{}}}}}},
+	game_townportal = {{action = 'state', data = {styles = {5, {{}}}, cooldown = 1}}},
+	game_unveil = {{action = 'open', data = {rarityName = true}}},
+}
+local regressionModules = {}
 for _, reg in ipairs(registrations) do
-	if reg.module == 'game_battlepass' then
-		goFor(reg, {action = 'tiers'}, {action = 'tiers', data = {season = 77, total = 1e308, rows = {}}}, 'total = 1e308')
-		goFor(reg, {action = 'tiers'}, {action = 'tiers', data = {season = 78, total = 2147483648, rows = {5}}},
-			'total = 2^31, a row that is no table')
+	for i, msg in ipairs(regressions[reg.module] or {}) do
+		regressionModules[reg.module] = true
+		goFor(reg, {action = msg.action}, msg, 'regression ' .. i)
 	end
+end
+for name in pairs(regressions) do
+	check(regressionModules[name], 'regression', name, 'opcode handler', 'no longer registered: move its cases')
 end
 for _, reg in ipairs(registrations) do
 	for _, e in ipairs(reg.actions) do
@@ -996,12 +1057,12 @@ for _, reg in ipairs(registrations) do
 			if type(g[2]) == 'table' then
 				local msg = build(e)
 				msg.data = g[2]
-				goFor(reg, e, msg, 'data = ' .. g[1], true)
+				goFor(reg, e, msg, 'data = ' .. g[1])
 			end
 		end
 		for _, f in ipairs(e.fields) do
 			for _, g in ipairs(fieldGarbage) do
-				goFor(reg, e, build(e, f, g[2]), f.key .. ' = ' .. g[1], true)
+				goFor(reg, e, build(e, f, g[2]), f.key .. ' = ' .. g[1])
 			end
 		end
 		for _ = 1, (#e.fields > 0 and 5 or 0) do
@@ -1012,7 +1073,7 @@ for _, reg in ipairs(registrations) do
 				what[#what + 1] = f.key .. ' = ' .. g[1]
 				setField(msg, f.key, f.raw, g[2])
 			end
-			goFor(reg, e, msg, table.concat(what, ', '), true)
+			goFor(reg, e, msg, table.concat(what, ', '))
 		end
 	end
 end
@@ -1094,13 +1155,6 @@ if VERBOSE then
 	for _, line in ipairs(slow) do
 		realPrint('slow', line)
 	end
-	for _, k in ipairs(sortedKeys(lenient)) do
-		realPrint('lenient', k, '\n      ' .. lenient[k])
-	end
-end
-local nLenient = 0
-for _ in pairs(lenient) do
-	nLenient = nLenient + 1
 end
 if #failures > 0 then
 	for _, f in ipairs(failures) do
@@ -1108,6 +1162,5 @@ if #failures > 0 then
 	end
 	error(string.format('opcode_fuzz_test (client): %d failures (FUZZ_VERBOSE=1 for the details)', #failures), 0)
 end
-realPrint(string.format('opcode_fuzz_test (client): %d modules, %d opcode handlers, %d checks passed (%.1f s); %d places ' ..
-	'trust the shape of a list or object in a server message (FUZZ_VERBOSE=1 lists them)', #moduleNames, #registrations,
-	checks, os.clock() - t0, nLenient))
+realPrint(string.format('opcode_fuzz_test (client): %d modules, %d opcode handlers, %d checks passed (%.1f s)',
+	#moduleNames, #registrations, checks, os.clock() - t0))

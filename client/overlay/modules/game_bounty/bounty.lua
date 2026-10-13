@@ -92,10 +92,13 @@ local function rewardText(r)
   return table.concat(parts, ', '), tr('Reward:') .. '\n' .. table.concat(exact, '\n')
 end
 
+-- the rows of a server list; an entry that is no table is left out (game_chaosguard/opcode_fuzz_test.lua)
 local function list(value)
   local out = {}
   if type(value) == 'table' then
-    for _, v in ipairs(value) do out[#out + 1] = v end
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
   end
   return out
 end
@@ -214,7 +217,7 @@ local function buildTabs()
     if band.own then tab:setTooltip(tr('Your level')) end
     local index = band.index
     tab.onClick = function() showBand(index) end
-    tabs[index] = tab
+    if index ~= nil then tabs[index] = tab end
     if index == selectedBand then keep = index end
   end
   if not keep then keep = tonumber(board.band) end
