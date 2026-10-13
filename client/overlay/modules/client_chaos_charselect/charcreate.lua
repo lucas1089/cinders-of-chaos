@@ -49,14 +49,16 @@ local function updatePreview()
   if look and look > 0 then
     p:setVisible(true)
     p:setOutfit({ type = look, head = STARTER.head, body = STARTER.body, legs = STARTER.legs, feet = STARTER.feet, addons = 3 })
-    -- the feet on the platform's centre (CharSelectCore.placeRect; outfit_anchors.lua): 3x, 2x for a very tall
-    -- look; the platform reaches below the feet (top-down view), the class name under it
+    -- the body centred on the dais, standing on its top face or hovering over it (CharSelectCore.placeRect;
+    -- outfit_anchors.lua): 3x, 2x for a very tall look; the dais reaches below its centre (seen from above), the
+    -- class name under it
     local panel = win.previewPanel
     local cx = math.floor(panel:getWidth() / 2)
     local fig = Core.figure(CharSelectAnchors, { type = look })
+    local plat = Core.platformFor(fig)
     local T, feet
     for _, sc in ipairs({ 3, 2 }) do
-      T, feet = sc * 32, panel:getHeight() - CREATE_TEXT_ROOM - Core.platformBelow(sc * 32)
+      T, feet = sc * 32, panel:getHeight() - CREATE_TEXT_ROOM - Core.platformBelow(sc * 32, plat)
       if Core.fitsAt(fig, { above = feet - 6, half = cx - 2 }, sc) then break end
     end
     local x, y, size = Core.placeRect(fig, T, cx, feet)
@@ -68,7 +70,10 @@ local function updatePreview()
       w:setMarginTop(py)
       w:setSize({ width = pw, height = ph })
     end
-    place(panel.pedestal, Core.platformRect(T, cx, feet))
+    panel.pedestal:setImageSource(Core.ICON_DIR .. plat.image)
+    place(panel.pedestal, Core.platformRect(T, cx, feet, plat))
+    panel.hoverShadow:setVisible((fig.hover or 0) > 0)
+    place(panel.hoverShadow, Core.shadowRect(T, cx, feet))
     place(p, x, y, size, size)
     p:setDirection(2)
     p:setIdleAnimate(false)
@@ -76,6 +81,7 @@ local function updatePreview()
     win.previewPanel.previewText:setText(c.name)
   else
     p:setVisible(false)
+    win.previewPanel.hoverShadow:setVisible(false)
     win.previewPanel.previewText:setText(c and c.name or tr('Choose a class'))
   end
 end

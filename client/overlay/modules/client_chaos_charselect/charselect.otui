@@ -233,6 +233,13 @@ ChaosCharSelectScreen < UIWidget
       image-smooth: false
       phantom: true
 
+    UIWidget
+      id: hoverShadow
+      image-source: /images/chaos/charselect/hover_shadow
+      image-smooth: false
+      visible: false
+      phantom: true
+
     UICreature
       id: preview
       phantom: false
@@ -323,6 +330,16 @@ ChaosCreateWindow < ChaosStaticMainWindow
       anchors.top: parent.top
       image-source: /images/chaos/charselect/platform
       image-smooth: false
+      phantom: true
+
+    UIWidget
+      id: hoverShadow
+      size: 66 24
+      anchors.left: parent.left
+      anchors.top: parent.top
+      image-source: /images/chaos/charselect/hover_shadow
+      image-smooth: false
+      visible: false
       phantom: true
 
     UICreature

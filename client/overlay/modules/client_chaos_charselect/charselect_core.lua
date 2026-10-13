@@ -186,32 +186,43 @@ end
 -- creature's own tile being the rect's lower right quarter. Where the feet are in those pixels differs per look (a 1x1
 -- stock outfit, a 2x2 class look drawn in the middle of its frame, the look's displacement): outfit_anchors.lua
 -- (client/tools/sprites/gen_outfit_anchors.py, from the pair) has them, per creature thing:
---   [id] = {feet x, feet y, top, left, right, width, height}   (pixels at 1x, displacement applied; tiles)
+--   [id] = {centre x, ground row, top, left, right, width, height, floating, reach}   (pixels at 1x; tiles)
+-- The centre and ground are what the eye reads (the body's solid mass, not its lowest pixel: owner, 2026-10-13).
 
 -- the anchor of a creature thing; for a thing the table lacks (a look of a newer pair), its size and displacement
 -- (thing = {w, h, dx, dy}, the client's ThingType values) give the middle of its own tile's bottom
 function C.anchorOf(anchors, id, thing)
   local a = anchors and anchors[tonumber(id) or 0]
   if type(a) == 'table' then
-    return { fx = a[1], fy = a[2], top = a[3], left = a[4], right = a[5], w = a[6] or 1, h = a[7] or 1 }
+    return { fx = a[1], fy = a[2], top = a[3], left = a[4], right = a[5], w = a[6] or 1, h = a[7] or 1,
+      float = a[8] == 1, reach = a[9] }
   end
   thing = thing or {}
   local w, h = tonumber(thing.w) or 1, tonumber(thing.h) or 1
   local dx, dy = tonumber(thing.dx) or 8, tonumber(thing.dy) or 8
-  return { fx = 16 - dx, fy = 32 - dy, top = 32 - dy - 32 * h, left = 32 - dx - 32 * w, right = 32 - dx, w = w, h = h }
+  return { fx = 16 - dx, fy = 32 - dy, top = 32 - dy - 32 * h, left = 32 - dx - 32 * w, right = 32 - dx, w = w, h = h,
+    float = false }
 end
 
--- the whole picture around the feet: the body, its wings (drawn at the same place) and its aura (the client moves a
--- big aura by (w - 1) * 16, (h - 1) * 16: GameBigAurasCenter). things(id) -> thing info for the fallback, or nil.
--- wingLift: with the client feature GameWingOffset a character with wings is drawn lifted that many pixels up and
--- left (6: it flies; Outfit::draw), its wings not: the feet then sit that much higher and further left.
+C.HOVER = 5   -- sprite pixels a flying character hovers over the top face
+
+-- The whole picture around the anchor point (the point that goes on the dais centre): the body, its wings (drawn at
+-- the same place) and its aura (the client moves a big aura by (w - 1) * 16, (h - 1) * 16: GameBigAurasCenter).
+-- things(id) -> thing info for the fallback, or nil. The body's centre goes on the dais centre and its ground row on
+-- the top face, except a flying character: it hovers `hover` sprite pixels above it (fig.hover, a shadow under it).
+-- A winged character flies: with the client feature GameWingOffset the engine draws its body wingLift pixels (6) up
+-- and left of its wings, and bobs it up to 4 more while it animates (Outfit::draw). That lift is its hover (the
+-- left shift is taken back, so the body stays centred); without the feature it hovers HOVER. A floating look (a robe
+-- or a wraith tail, no feet: the table's flag) hovers HOVER.
 function C.figure(anchors, outfit, things, wingLift)
   if type(outfit) ~= 'table' then return nil end
   local function info(id) return things and things(id) or nil end
   local body = C.anchorOf(anchors, outfit.type, info(outfit.type))
-  local lift = ((tonumber(outfit.wings) or 0) > 0) and (tonumber(wingLift) or 0) or 0
-  local f = { fx = body.fx - lift, fy = body.fy - lift, top = body.top - lift, left = body.left - lift,
-    right = body.right - lift }
+  local winged = (tonumber(outfit.wings) or 0) > 0
+  local lift = winged and (tonumber(wingLift) or 0) or 0
+  local hover = (lift > 0) and lift or ((winged or body.float) and C.HOVER or 0)
+  local f = { fx = body.fx - lift, fy = body.fy - lift + hover, top = body.top - lift, left = body.left - lift,
+    right = body.right - lift, hover = hover, reach = body.reach }
   for _, kind in ipairs({ 'wings', 'aura' }) do
     local id = tonumber(outfit[kind]) or 0
     if id > 0 then
@@ -245,19 +256,43 @@ function C.fitPreview(fig, room, scales)
   return sc * 32, sc, drop
 end
 
--- The platform under the feet (data/images/chaos/charselect/platform.png, client/tools/gen_charselect_art.py): drawn
--- in sprite pixels in the sprites' own projection, `size` pixels square, the feet on the centre of its top face at
--- (feet, feet). The client draws it at the character's scale, T / 32, unsmoothed, so its pixels match the sprites.
-C.PLATFORM = { size = 46, feet = 20 }
--- its rect (x, y, w, h) for tile size T with the feet at (cx, feetY)
-function C.platformRect(T, cx, feetY)
-  local s = T / 32
-  local size = math.floor(C.PLATFORM.size * s + 0.5)
-  return math.floor(cx - C.PLATFORM.feet * s + 0.5), math.floor(feetY - C.PLATFORM.feet * s + 0.5), size, size
+-- The dais under the character (data/images/chaos/charselect/platform*.png, client/tools/gen_charselect_art.py):
+-- drawn in sprite pixels in the sprites' own projection, `size` pixels square, the centre of its top face at
+-- (feet, feet), its lower step `r` pixels from that centre to a side. The client draws it at the character's scale,
+-- T / 32, unsmoothed, so its pixels match the sprites. Three sizes: a wide body gets a bigger dais, so it never
+-- overhangs the edge by more than OVERHANG pixels (the dais grows, never the character shrinks).
+C.PLATFORMS = {
+  { r = 19, size = 46, feet = 20, image = 'platform' },
+  { r = 23, size = 54, feet = 24, image = 'platform_l' },
+  { r = 27, size = 62, feet = 28, image = 'platform_xl' },
+}
+C.OVERHANG = 3
+-- the dais for a figure: the smallest one its body's reach fits
+function C.platformFor(fig)
+  local reach = fig and tonumber(fig.reach) or 0
+  for _, p in ipairs(C.PLATFORMS) do
+    if reach <= p.r + C.OVERHANG then return p end
+  end
+  return C.PLATFORMS[#C.PLATFORMS]
 end
--- how far the platform reaches below the feet at tile size T (the text under it starts lower)
-function C.platformBelow(T)
-  return math.ceil((C.PLATFORM.size - C.PLATFORM.feet) * T / 32)
+-- its rect (x, y, w, h) for tile size T with the centre of its top face at (cx, feetY)
+function C.platformRect(T, cx, feetY, plat)
+  plat = plat or C.PLATFORMS[1]
+  local s = T / 32
+  local size = math.floor(plat.size * s + 0.5)
+  return math.floor(cx - plat.feet * s + 0.5), math.floor(feetY - plat.feet * s + 0.5), size, size
+end
+-- how far the dais reaches below the centre of its top face at tile size T (the text under it starts lower)
+function C.platformBelow(T, plat)
+  plat = plat or C.PLATFORMS[1]
+  return math.ceil((plat.size - plat.feet) * T / 32)
+end
+-- the shadow of a flying character on the top face (hover_shadow.png, the same generator): its rect, centred
+C.SHADOW = { w = 22, h = 8 }
+function C.shadowRect(T, cx, feetY)
+  local s = T / 32
+  local w, h = math.floor(C.SHADOW.w * s + 0.5), math.floor(C.SHADOW.h * s + 0.5)
+  return math.floor(cx - w / 2 + 0.5), math.floor(feetY - h / 2 + 0.5), w, h
 end
 
 -- An aura is drawn in the preview only when it is small and sits at the feet (a ring on the ground: at most one tile
@@ -266,7 +301,7 @@ end
 function C.smallAura(anchors, id)
   local a = anchors and anchors[tonumber(id) or 0]
   if type(a) ~= 'table' then return false end
-  return (a[2] - a[3]) <= 32 and a[2] >= 8
+  return (a[2] - a[3]) <= 30 and a[2] >= 8   -- a[2]: the ground row of its mass (outfit_anchors.lua)
 end
 
 -- the outfit the preview draws: the character's, its aura left out unless C.smallAura

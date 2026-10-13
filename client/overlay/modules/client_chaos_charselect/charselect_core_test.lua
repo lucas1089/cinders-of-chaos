@@ -157,22 +157,40 @@ if cl then
   check(looks >= 21, 'every class look checked: ' .. looks)
 end
 
--- wings and an aura make the picture taller and wider, never move the feet; a big aura is moved by (w - 1) * 16
+-- wings and an aura make the picture taller and wider, never move the body's centre; a big aura is moved by
+-- (w - 1) * 16; a winged character flies: without the engine's lift it hovers HOVER pixels over the dais
 local body = C.anchorOf(A, 2161)
 local fig = C.figure(A, { type = 2161, wings = 1179, aura = 1512 })
 local wingA, auraA = C.anchorOf(A, 1179), C.anchorOf(A, 1512)
-check(fig.fx == body.fx and fig.fy == body.fy, 'wings and aura keep the feet')
+check(fig.fx == body.fx and fig.fy == body.fy + C.HOVER and fig.hover == C.HOVER, 'winged: centred, hovering')
 check(fig.top == math.min(body.top, wingA.top, auraA.top + (auraA.h - 1) * 16), 'the top over body, wings and the moved aura')
 check(fig.left <= body.left and fig.right >= body.right, 'wider with wings and aura')
 
--- a winged character flies 6 px up and left (GameWingOffset): its feet with it, its wings not
+-- a winged character with the engine's lift (GameWingOffset: its body 6 px up and left of its wings): the left
+-- shift is taken back (the body stays centred), the lift is its hover
 local lifted = C.figure(A, { type = 2161, wings = 1179 }, nil, 6)
-local still = C.figure(A, { type = 2161, wings = 1179 })
-check(lifted.fx == still.fx - 6 and lifted.fy == still.fy - 6, 'wings lift the feet by 6')
-check(C.figure(A, { type = 2161 }, nil, 6).fy == C.anchorOf(A, 2161).fy, 'no wings, no lift')
+check(lifted.fx == body.fx - 6 and lifted.fy == body.fy and lifted.hover == 6, 'wings: the lift is the hover')
+local plainFig = C.figure(A, { type = 2161 }, nil, 6)
+check(plainFig.fy == body.fy and plainFig.fx == body.fx and plainFig.hover == 0, 'no wings, no lift, no hover')
 x, y = C.placeRect(lifted, 128, 500, 400)
-fx, fy = C.feetOf(lifted, x, y, 256)
-check(fx == 500 and fy == 400 and y == 400 - (C.anchorOf(A, 2161).fy - 6 + 32) * 4, 'the lifted feet still on the platform')
+-- the body's ground row is drawn 6 px higher by the engine: 6 * 4 px over the dais centre, its centre on it
+check(x + (body.fx - 6 + 32) * 4 == 500 and y + (body.fy - 6 + 32) * 4 == 400 - 6 * 4, 'winged: hovering 6 px, centred')
+
+-- a floating look (a robe, no feet: the table's flag) hovers HOVER pixels over the top face, centred
+local robe = C.anchorOf(A, 2184)
+check(robe.float == true and C.anchorOf(A, 2161).float == false, 'the floating flag')
+local fl = C.figure(A, { type = 2184 })
+check(fl.fx == robe.fx and fl.fy == robe.fy + C.HOVER and fl.hover == C.HOVER, 'floating: hovering HOVER px')
+x, y = C.placeRect(fl, 96, 500, 400)
+check(y + (robe.fy + 32) * 3 == 400 - C.HOVER * 3, 'floating: its ground row HOVER px over the dais centre at 3x')
+
+-- a look whose lowest pixel is a cape tip or a weapon: the table's ground row is in its solid mass, above its lowest
+-- pixel, and that row (not the bounds) goes on the dais (gen_outfit_anchors_test.py checks the measuring)
+local capeA = { [1] = { 4, 20, -14, -20, 26, 1, 1, 0, 12 } }
+local cape = C.figure(capeA, { type = 1 })
+x, y = C.placeRect(cape, 128, 500, 400)
+check(x + (4 + 32) * 4 == 500 and y + (20 + 32) * 4 == 400 and cape.hover == 0, 'a cape-tip look: its ground on the dais')
+check(C.figure({}, { type = 1 }, function() return { w = 1, h = 1, dx = 8, dy = 8 } end).hover == 0, 'fallback: standing')
 
 -- the scale: 4x with room, 3x when the wings do not fit at 4x, the feet moved down when not even 3x fits
 local plain = C.figure(A, { type = 2073 })
@@ -191,14 +209,31 @@ T, sc = C.fitPreview(plain, { above = 1000, half = 10, below = 0 }, { 3, 2 })
 check(sc == 2 and T == 64, 'other scales (the create window falls back to 2x)')
 check(C.fitsAt(plain, { above = 1000, half = 1000 }, 4) and not C.fitsAt(plain, { above = 1000, half = 10 }, 3), 'fitsAt')
 
--- the platform: drawn at the character's own scale (whole sprite pixels), the feet on its top face's centre
-for _, T in ipairs({ 64, 96, 128 }) do
-  local s = T / 32
-  local px, py, pw, ph = C.platformRect(T, 500, 400)
-  check(pw == C.PLATFORM.size * s and ph == pw, 'platform at the sprites\' scale at ' .. T)
-  check(px + C.PLATFORM.feet * s == 500 and py + C.PLATFORM.feet * s == 400, 'platform under the feet at ' .. T)
-  check(C.platformBelow(T) == ph - C.PLATFORM.feet * s, 'what the platform covers below the feet at ' .. T)
+-- the dais: drawn at the character's own scale (whole sprite pixels), the centre of its top face on the anchor point
+for _, plat in ipairs(C.PLATFORMS) do
+  for _, T in ipairs({ 64, 96, 128 }) do
+    local s = T / 32
+    local px, py, pw, ph = C.platformRect(T, 500, 400, plat)
+    check(pw == plat.size * s and ph == pw, 'dais at the sprites\' scale at ' .. T)
+    check(px + plat.feet * s == 500 and py + plat.feet * s == 400, 'dais centre on the anchor point at ' .. T)
+    check(C.platformBelow(T, plat) == ph - plat.feet * s, 'what the dais covers below its centre at ' .. T)
+  end
 end
+check(C.platformRect(128, 500, 400) == C.platformRect(128, 500, 400, C.PLATFORMS[1]), 'the small dais by default')
+-- a wide body gets a wider dais, never more than OVERHANG px over its edge; the widest gets the biggest
+check(C.platformFor({ reach = 15 }) == C.PLATFORMS[1] and C.platformFor({}) == C.PLATFORMS[1], 'a narrow body: the small dais')
+check(C.platformFor({ reach = 22 }) == C.PLATFORMS[1] and C.platformFor({ reach = 23 }) == C.PLATFORMS[2], 'the overhang limit')
+check(C.platformFor({ reach = 30 }) == C.PLATFORMS[3] and C.platformFor({ reach = 99 }) == C.PLATFORMS[3], 'the biggest dais')
+check(C.platformFor(C.figure(A, { type = 2039 })).r > C.PLATFORMS[1].r, 'the Juggernaut gets a wider dais')
+for id, e in pairs(A) do
+  if type(id) == 'number' and e[9] and e[9] <= C.PLATFORMS[#C.PLATFORMS].r + C.OVERHANG then
+    local p = C.platformFor(C.figure(A, { type = id }))
+    check(e[9] <= p.r + C.OVERHANG, 'look ' .. id .. ' within its dais')
+  end
+end
+-- the shadow of a flying character, centred on the dais centre
+local sx, sy, sw, sh = C.shadowRect(128, 500, 400)
+check(sw == C.SHADOW.w * 4 and sh == C.SHADOW.h * 4 and sx + sw / 2 == 500 and sy + sh / 2 == 400, 'hover shadow')
 
 -- auras: a small ring at the feet is drawn, a tall one (the "red crystal" behind the Juggernaut: 1512) is not;
 -- wings always are

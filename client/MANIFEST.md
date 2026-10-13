@@ -237,9 +237,9 @@ select over the login scene; the stock module stays loaded and keeps every funct
   ascension ("Juggernaut (Warrior)"), level, world, last login ("Last played 2 hours ago", from the website), season
   tag. Mouse: click chooses, double-click plays, the wheel scrolls. Keys: Up / Down / Left / Right, Home / End,
   Page Up / Page Down choose, Enter plays, Escape goes back.
-- **The chosen character** stands large on a stone dais, its feet on the centre of the dais's top face, walks in
-  place for a moment when chosen, then idles; a click on it turns it. Name, class and level, world, season and last
-  login under the dais.
+- **The chosen character** stands large on a stone dais, its body centred on the dais and standing on the centre of
+  its top face (a flying one hovering over it), walks in place for a moment when chosen, then idles; a click on it
+  turns it. Name, class and level, world, season and last login under the dais.
 - **Platform (2026-10-13, owner: first the orange pedestal made the character look odd, then the character stood at
   the wrong angle on the grey dais that replaced it).** That dais was a flat ellipse with a front wall, seen from a low
   camera; the sprites use the game's own projection, so the figure looked pasted on at the dais's back edge. Now
@@ -248,46 +248,57 @@ select over the login scene; the stock module stays loaded and keeps every funct
   squashed one); height drawn down and right at 45 degrees, one pixel per pixel of height; the light from the upper
   left (lit top and left edges, a lighter lip, the wall facing right lighter than the one facing down); the game's
   dithered checker shadow along the lower right base and a few checker pixels under the feet. It is a two-step
-  octagonal dais, each step 2 pixels thick, dark cool grey. The feet go on the centre of its top face
-  (`CharSelectCore.PLATFORM = { size = 46, feet = 20 }`; the generator refuses to write art that does not match).
+  octagonal dais, each step 2 pixels thick, dark cool grey, in three sizes: `platform.png` 46x46, `platform_l.png`
+  54x54 and `platform_xl.png` 62x62 (lower step 19, 23 and 27 pixels from the centre). `CharSelectCore.platformFor`
+  picks the smallest one the body's reach fits with at most 3 pixels over its edge (`OVERHANG`): a wide body gets a
+  wider dais, the character is never shrunk (`CharSelectCore.PLATFORMS`; the generator refuses to write art that does
+  not match).
   The client draws it at the character's own scale (T / 32: 2x, 3x, 4x) with `image-smooth: false`, so its pixels
   are the sprites' pixels (`platformRect`). Seen from above it reaches as far below the feet as above them, so the
   name lines start under it (`platformBelow`) and the Create character preview panel is 240x300. Three designs in
   this projection were compared on five characters (a round slab, a flat rune slab one pixel thick, the octagonal
   dais); `python3 -I client/tools/gen_charselect_art.py platforms DIR` writes all three outside the repo. The
-  octagon's 45 degree sides run along its 45 degree walls, as the stock blocks do. Measured in the client at
-  1280x720 and 1920x1080: the lowest row of every look's body on the feet point exactly, the feet column within one
-  sprite pixel; the Create character window within 1.5 sprite pixels. A winged character bobs 0 to 4 sprite pixels
-  above it while it animates (the engine's `GameWingOffset` float, as in the game).
+  octagon's 45 degree sides run along its 45 degree walls, as the stock blocks do.
 - **No tall auras in the preview (owner: the red crystal behind Varek).** The tall red spike was the character's aura
   from the website (1512, Crimson Blaze). `CharSelectCore.previewOutfit` keeps an aura only when it is small and sits
-  at the feet (`smallAura`: at most 32 sprite pixels above its feet point, feet at least 8 pixels down): 932, 934 and
+  at the feet (`smallAura`: at most 30 sprite pixels above its ground row, that row at least 8 pixels down): 932, 934 and
   1487 are kept; 712, 933, 935, 936, 1511-1529 and 2136-2139 are left out. Wings always show. The game itself still
   draws every aura.
-- **Wing lift.** With wings, the engine (`GameWingOffset`, on) draws the body 6 sprite pixels up and left of the
-  wings. `CharSelectCore.figure` takes that lift, so a winged character's feet also land on the platform (before:
-  about 24 px above it at 4x).
+- **Flying characters.** A floating look (a robe or a wraith tail, no feet: the Lich 2059, the robed wizard 2077,
+  the Bone Lord wraiths 2167 / 2168 and the Necromancer ascension's robes 2183 / 2184; the table's flag) hovers
+  `CharSelectCore.HOVER` (5) sprite pixels over the top face. A winged character flies too: the engine
+  (`GameWingOffset`, on) draws its body 6 sprite pixels up and left of its wings, and bobs it 0 to 4 more while it
+  animates; `CharSelectCore.figure` takes the left shift back (the body stays centred) and keeps the lift as its hover.
+  Under a flying character a soft dark shadow (`hover_shadow.png`, 22x8 sprite pixels, dithered rim) lies on the top
+  face (`shadowRect`).
 - **Slots line.** The header reads "3 characters, 3 of 5 slots used". The limit is the website's
   `chaos_character_limit`: the pact's free slots (`characters.free`, 5) plus bought `charSlots` and
   `charSlotsLegacy`. An account with as many characters as slots or more (characters inserted by hand) reads
   "10 characters, no free slot", never more used than the total (`slotsText`); the Create character window then says
   where more slots are sold (`slotsLine`).
-- **Feet on the pedestal (fixed 2026-10-13, owner: the first version stood looks off-centre).** `UICreature` draws a
-  creature at its tile's top left and maps the square (-32, -32)..(32, 32) of those pixels onto its rect, so where a
-  look's feet land depends on its art and displacement: a 1x1 look stands in its own tile, our 2x2 class looks are
-  drawn in the middle of their 64 px frame (the Juggernaut's feet 8 px left of its tile), and a fixed offset left some
-  looks up-left or up-right of the pedestal. `client/tools/sprites/gen_outfit_anchors.py` reads the pair and writes
-  `outfit_anchors.lua`: per creature thing (outfits, wings, auras) the feet (the median column of the lowest quarter
-  of the first south frame with every addon, and its lowest row) and the visible bounds, in those pixels. The CI job
-  `live-pair` runs it with `--check` against `windows-assets`; regenerate it with every new pair (a look missing from
-  it falls back to its size and displacement). `CharSelectCore.figure` adds the wings and the aura (a big aura moved by
-  `(w - 1) * 16, (h - 1) * 16`, as `GameBigAurasCenter` draws it) to the bounds, `fitPreview` picks 4x when the whole
-  picture fits under the top menu, else 3x, else 3x with the feet lower, and `placeRect` puts the feet exactly on the
-  pedestal's centre (the create window: 3x, 2x for a look too wide for its panel). Measured in the Linux client at
-  1280x720 and 1920x1080 by diffing frames with and without the creature on a plain background: the 42 class looks of
-  `class_looks_core.lua`, two stock 2x2 looks and two 1x1 looks, at 4x and 3x, have their drawn feet within about two
-  sprite pixels of the pedestal's centre (the feet row exact); the ten class looks of the create window within 1.5.
-  The turned directions use the south anchor (the feet move a pixel or two).
+- **Where a character stands (fixed 2026-10-13, twice: owner, first "off-centre", then "still displaced, the flying
+  one most").** `UICreature` draws a creature at its tile's top left and maps the square (-32, -32)..(32, 32) of those
+  pixels onto its rect, so where a body lands depends on its art and displacement (a 1x1 look in its own tile, our 2x2
+  class looks in the middle of their 64 px frame). Our sprites are oblique: the body leans up and left with its height,
+  and its lowest pixel is often a cape tip, a weapon or a trailing robe, not the feet. So the anchor is what the eye
+  reads. `client/tools/sprites/gen_outfit_anchors.py` reads the pair and writes `outfit_anchors.lua`, per creature
+  thing (outfits, wings, auras) from the first south frame with every addon: the body's centre (the alpha-weighted
+  centroid of its solid pixels: an opening of the mask leaves out what it holds, a blade, a staff, a torch, up to four
+  pixels wide, and only the biggest connected part is kept, so the leaves at a staff's end fall away), its ground row
+  (where the lowest 12% of its solid mass begins, the legs' columns only: a cape tip or a weapon under the feet does
+  not count), the visible bounds, the size in tiles, the floating flag (`FLOATING`, chosen by eye) and the body's
+  reach (how far it spreads either side of its centre, for the dais size). `gen_outfit_anchors_test.py` (CI) checks
+  the measuring on synthetic figures: a cape tip, thin and thick staffs, a leafy staff, a leaning body, a robe.
+  The CI job `live-pair` runs the tool with `--check` against `windows-assets`; regenerate it with every new pair (a
+  look missing from it falls back to its size and displacement). `CharSelectCore.figure` adds the wings and the aura
+  (a big aura moved by `(w - 1) * 16, (h - 1) * 16`, as `GameBigAurasCenter` draws it) to the bounds, `fitPreview`
+  picks 4x when the whole picture fits under the top menu, else 3x, else 3x lower, and `placeRect` puts the body's
+  centre on the dais centre and its ground row on the top face, or HOVER above it (the create window: 3x, 2x for a
+  look too wide for its panel). Measured in the Linux client at 1280x720 and 1920x1080 by diffing frames with and
+  without the body on a plain background: the 42 class looks of `class_looks_core.lua` and the ten test characters
+  have their drawn centre and ground row on the target exactly (one sprite pixel for a character whose own addons
+  differ from the all-addon frame); checked by eye on 2x close crops of all of them. The turned directions use the
+  south anchor.
 - **No text through the dialogs.** While the select shows, the login screen's logo and its server status line
   ("Connecting..." / "Server online") are hidden; a dark veil covers the select behind the Create character window, so
   the hero's world line no longer shows beside it.
@@ -319,10 +330,11 @@ select over the login scene; the stock module stays loaded and keeps every funct
   problem). The four styles (`ChaosComboBoxPopupMenu`, `...PopupMenuButton`, `...PopupScrollMenu`,
   `...PopupScrollMenuButton`) are now in the theme.
 - **Tests.** `charselect_core_test.lua` (LuaJIT and Lua 5.3, CI): classes against `chaos_constants.lua`, icons, card
-  text, last login, world names, outfit merge, navigation, the platform rect and its reach below the feet, `fitsAt`, the aura filter, the slots text, the wing
-  lift, the feet maths (every thing of the anchor table at 3x and
-  4x, 1x1 and 2x2 looks, wings and auras, the scale choice, the fallback, every class look present), name hints,
-  requests, error texts, URLs.
+  text, last login, world names, outfit merge, navigation, the dais rects, sizes and reach below the centre, `fitsAt`, the hover shadow, the aura filter, the
+  slots text, the wing lift and hover, a floating look, a cape-tip look, the placement maths (every thing of the
+  anchor table at 3x and 4x, 1x1 and 2x2 looks, wings and auras, the scale choice, the fallback, every class look
+  present, every look within its dais), name hints, requests, error texts, URLs. `gen_outfit_anchors_test.py` for the
+  anchor measuring.
   `website/tests/chaos_client_api_test.php` for the site's side. Run in the Linux client (base patches 0001-0045,
   0048-0050, Xvfb, software OpenGL) at 1280x720 and 1920x1080 against a local test server (a test build of the
   engine with the current Chaos scripts; the login server's 10.98 list) and the local site (pinned ZnoteX with every patch, PHP's built-in server, MariaDB):

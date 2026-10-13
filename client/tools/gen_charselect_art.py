@@ -51,12 +51,17 @@ def gen_icons():
 # thickness is the same face copied one pixel down and right per pixel of height, and its shadow is a checker of
 # dark pixels along that lower right base. Our own art, no stock pixels.
 # The client draws it at T / 32 (2x, 3x, 4x) without smoothing, so its pixels match the character's.
-# Size and feet point: CharSelectCore.PLATFORM (charselect_core.lua); `check_core` keeps the two the same.
-# Three designs were compared under the live select (client/MANIFEST.md "Character select"); `PLATFORM` is the one
-# shipped, `python3 -I client/tools/gen_charselect_art.py platforms DIR` writes all three outside the repository.
-PS = 46              # canvas, sprite pixels
-PF = 20              # the feet: the centre of the top face, (PF, PF)
-PR = 19              # radius of the top face (38 px across: a little over a tile)
+# Three sizes, so a wide body gets a wider dais (SIZES; CharSelectCore.PLATFORMS in charselect_core.lua names the
+# same, `check_core` keeps the two the same). Three designs were compared under the live select (client/MANIFEST.md
+# "Character select"); `PLATFORM` is the one shipped, `python3 -I client/tools/gen_charselect_art.py platforms DIR`
+# writes all three outside the repository.
+SIZES = [(19, 'platform'), (23, 'platform_l'), (27, 'platform_xl')]   # lower step radius, image
+PS = PF = PR = 0     # set by _size: canvas, the centre of the top face (PF, PF), the lower step's radius
+
+
+def _size(r):
+    global PS, PF, PR
+    PR, PF, PS = r, r + 1, 2 * r + 8
 STONE = {'face': (60, 61, 68), 'lit': (90, 91, 100), 'lip': (74, 75, 83), 'wall_r': (44, 45, 51),
          'wall_d': (34, 35, 40), 'base': (25, 25, 29), 'groove': (40, 41, 47)}
 
@@ -223,17 +228,41 @@ PLATFORM = 'octagon'   # the one shipped as platform.png
 
 
 def check_core():
-    """CharSelectCore.PLATFORM must name this canvas and feet point"""
+    """CharSelectCore.PLATFORMS must name these sizes and centres"""
     core = open(os.path.join(REPO, 'client', 'overlay', 'modules', 'client_chaos_charselect',
                              'charselect_core.lua')).read()
-    want = 'C.PLATFORM = { size = %d, feet = %d }' % (PS, PF)
-    if want not in core:
-        sys.exit('charselect_core.lua must say: ' + want)
+    for r, name in SIZES:
+        want = "{ r = %d, size = %d, feet = %d, image = '%s' }" % (r, 2 * r + 8, r + 1, name)
+        if want not in core:
+            sys.exit('charselect_core.lua must list: ' + want)
+    if 'C.SHADOW = { w = %d, h = %d }' % SHADOW not in core:
+        sys.exit('charselect_core.lua must say: C.SHADOW = { w = %d, h = %d }' % SHADOW)
 
 
 def gen_platform():
     check_core()
-    save(PLATFORMS[PLATFORM](), 'platform.png')
+    for r, name in SIZES:
+        _size(r)
+        save(PLATFORMS[PLATFORM](), name + '.png')
+
+
+# the shadow of a flying character on the top face: a dark ellipse in sprite pixels, its rim dithered as the game's
+# shadows are (CharSelectCore.SHADOW)
+SHADOW = (22, 8)
+
+
+def hover_shadow():
+    w, h = SHADOW
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    xx, yy = xx + 0.5 - w / 2, yy + 0.5 - h / 2
+    outer = (xx / (w / 2)) ** 2 + (yy / (h / 2)) ** 2 <= 1
+    inner = (xx / (w / 2 - 3)) ** 2 + (yy / (h / 2 - 1.4)) ** 2 <= 1
+    checker = ((np.floor(xx + w / 2) + np.floor(yy + h / 2)) % 2) == 0
+    a = np.where(inner, 0.5, np.where(outer & checker, 0.4, np.where(outer, 0.16, 0.0)))
+    img = np.zeros((h, w, 4), np.float32)
+    img[..., :3] = 8
+    img[..., 3] = a * 255
+    return Image.fromarray(np.clip(img + 0.5, 0, 255).astype(np.uint8), 'RGBA')
 
 
 def gen_shade():
@@ -249,10 +278,12 @@ def gen_shade():
 if __name__ == '__main__':
     if len(sys.argv) == 3 and sys.argv[1] == 'platforms':
         os.makedirs(sys.argv[2], exist_ok=True)
+        _size(SIZES[0][0])
         for key, fn in PLATFORMS.items():
             fn().save(os.path.join(sys.argv[2], 'platform_%s.png' % key))
             print('wrote', os.path.join(sys.argv[2], 'platform_%s.png' % key))
         sys.exit(0)
     gen_icons()
     gen_platform()
+    save(hover_shadow(), 'hover_shadow.png')
     gen_shade()

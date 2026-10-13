@@ -111,28 +111,34 @@ local TOP_ROOM = 56        -- px kept free at the top of the stage (the top menu
 local BELOW_TEXT = 92      -- px under the platform for the name, class and info lines and the hint
 local heroFigure           -- CharSelectCore.figure of the shown outfit
 
--- the feet of the shown character on the platform's centre: the look's own feet (outfit_anchors.lua), 4x when the
--- whole picture (wings and aura too) fits under the top menu, else 3x, else 3x with the feet lower
+-- the shown character on the dais: its body's centre on the dais centre, its ground row on the top face (a flying one
+-- hovering over it, its shadow under it; outfit_anchors.lua), 4x when the whole picture (wings and aura too) fits
+-- under the top menu, else 3x, else 3x lower; the dais as wide as the body needs (CharSelectCore.platformFor)
 local function relayout()
   if not alive(stage) then return end
   local W, H = stage:getWidth(), stage:getHeight()
   if W < 50 or H < 50 then return end
   local cx = math.floor(W / 2)
-  -- the platform is seen from above, so it reaches as far below the feet as above them: room for it at 4x
-  local belowRoom = BELOW_TEXT + Core.platformBelow(128)
-  local feet = math.floor(math.min(H * 0.64, H - belowRoom))
   local fig = heroFigure or Core.figure(CharSelectAnchors, { type = 128 })
+  local plat = Core.platformFor(fig)
+  -- the dais is seen from above, so it reaches as far below its centre as above it: room for it at 4x
+  local belowRoom = BELOW_TEXT + Core.platformBelow(128, plat)
+  local feet = math.floor(math.min(H * 0.64, H - belowRoom))
   local T, _, drop = Core.fitPreview(fig, { above = feet - TOP_ROOM, half = cx - 8,
     below = math.max(0, H - belowRoom - feet) })
   feet = feet + drop
   local x, y, size = Core.placeRect(fig, T, cx, feet)
   place(preview, x, y, size, size)
-  place(pedestal, Core.platformRect(T, cx, feet))
+  pedestal:setImageSource(Core.ICON_DIR .. plat.image)
+  place(pedestal, Core.platformRect(T, cx, feet, plat))
+  local shadow = stage:getChildById('hoverShadow')
+  shadow:setVisible(pedestal:isVisible() and (fig.hover or 0) > 0)
+  place(shadow, Core.shadowRect(T, cx, feet))
   local name = stage:getChildById('heroName')
   name:breakAnchors()
   name:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
   name:addAnchor(AnchorTop, 'parent', AnchorTop)
-  name:setMarginTop(feet + Core.platformBelow(T) + 2)
+  name:setMarginTop(feet + Core.platformBelow(T, plat) + 2)
 end
 
 local function showHero(m, animate)
@@ -141,6 +147,7 @@ local function showHero(m, animate)
     heroFigure = nil
     preview:setVisible(false)
     pedestal:setVisible(false)
+    stage:getChildById('hoverShadow'):setVisible(false)
     name:setText(tr('No character yet'))
     cls:setText(tr('Create one with the button below.'))
     info:setText('')
