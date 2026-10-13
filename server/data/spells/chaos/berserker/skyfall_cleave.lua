@@ -50,5 +50,11 @@ function onCastSpell(creature, variant, isHotkey)
 		ChaosSpell.shoot(from, spots[1].pos, "blood_spear", CONST_ANI_WHIRLWINDAXE)
 	end
 	ChaosSpell.vfxDir(tpos, "heavy_cleave", ChaosSpell.dirTo(player:getPosition(), tpos))
+	-- the class effect on the slammed spot (server/README.md "Class signature effects"): the combat's own effect id is
+	-- fixed when the script loads, outside any cast, so the swap is asked here
+	local cls = not ChaosSpell.skinned("fx", "ground_slam") and ChaosSpell.classFx("ground_slam")
+	if cls and Vfx then
+		Vfx(Position(tpos), cls)
+	end
 	return combat:execute(player, Variant(tpos))
 end

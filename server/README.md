@@ -617,6 +617,16 @@ one console line per player a minute. After a reload of the scripts with players
 handler runs for them until they log in again. Handlers made with the table constructor (`CreatureEvent({...})`) and the
 base server's own events (`ExtendedOpcode`, the tasks module) stay with the engine. Without the engine API (the unit
 tests' mocks) nothing changes, so the fuzz test still calls every handler directly.
+- Load order fix, 2026-10-13. A spell loads this file first: `thief/shadow_veil.lua` calls `ChaosSpell.loadClasses`,
+  which runs `classes.lua`. That is the spells' interface, where `CreatureEvent()` gives nil. The load stopped there and
+  the Scripts interface's own load returned at `if Chaos then return end`. So `ChaosOpcodeDispatch` was never made and
+  `Player:registerEvent` was never hooked: no client request reached a Chaos handler. Now `D.install()` makes the events
+  and the hook once, on the first load that can. The guard at the top calls it. The console still shows one
+  "CreatureEvents can only be registered in the Scripts interface" error at start; it is harmless.
+  Test: `tests/opcode_dispatch_load_test.lua`, which fails on the old file.
+- Checked in a live client, 2026-10-13: before the fix the bestiary, achievements, leaderboard, siege and pets windows
+  never opened and the market stayed empty. After it all six open with their data; `Chaos.opcodeDispatch.players`
+  holds the player.
 
 ### Protocol fuzz test (`tests/opcode_fuzz_test.lua`, client `game_chaosguard/opcode_fuzz_test.lua`)
 The server test loads every script under `data/scripts` against a mocked engine and feeds every `onExtendedOpcode` handler
@@ -1590,6 +1600,11 @@ variant the server applies (the client's own vocation number did not match: an E
   may take 621 / 624 (`c` in the data; the Iron Sage only 621, the Sentinel only 624). No character could hold them before
   (the login sanitize removed them), so nothing is refunded; the node ids and links are unchanged, so the build code
   format stays. Numbers: `data/spells/README.md` "Overgrowth and Thorns for the Iron Sage and the Sentinel" (computed).
+- Checked in a live client, 2026-10-13, level 300, tree build with the node. Thorns, Sentinel 624, ML 25: 20 melee
+  hits of 750, 568 taken each, sent back 264 earth each. That is 30% of 568 plus 2 x 25, x1.2 stat window; earth
+  number and plant effect on the attacker. Overgrowth, Iron Sage 621: Kindled Breath on a party ally healed 5138, then
+  3 pulses of 171 at +2, +4 and +6 s. That is 10% of the heal. The pulses are plain health: no second heal event, no
+  healer bonuses.
 - **Class sections** (nodes 625-664, top left of the tree, one group at (-1800, -2350); the four lines share it, the client shows
   only the player's line): the start node in the centre (not a server node: the generator links its first node to the root; the
   client draws that link from the medallion's rim), three line nodes going up to a ring of radius 300 and the two ascended paths
@@ -9585,6 +9600,14 @@ art); looks per effect: `data/spells/README_FX.md` "Class signature effects".
 - Tests: `tests/class_fx_test.lua` (vocations equal `Chaos.classes.ids`; every swap is a spell the class may cast,
   a name its script sends, an effect in the spec and the ids; line inheritance; switch off: nothing changes; on: the
   hooks send the class effect at its offset, a skin wins, the default outside a cast, `Fx` only for 0,0 effects).
+- Skyfall Cleave fix, 2026-10-13. Its swap name `ground_slam` was only the combat's `COMBAT_PARAM_EFFECT`. That id is
+  fixed when the script loads, outside any cast, so no class effect was sent. The cast now sends it on the slammed
+  spot, unless a skin is chosen. The test checks that every swapped name is also asked during the cast.
+- Checked in a live client, 2026-10-13, pair things_custom23: every class's signature spells were cast; the server
+  sent each class effect at its offset. Berserker and Ranger were cast again after the fix. Skyfall Cleave sends 598 at the target + 1,1. Hail of Dawn sends 600 on all
+  12 hits. A cosmetic skin still wins: Red Frenzy with Voidborn War Cries sends 526, without it 597. Note: Hail of
+  Dawn's cast effect at the caster uses the same name, so the Ranger also gets the arrowfall on its own tile while it
+  casts.
 
 ## Pack effects for procs and bosses (`data/lib/chaos_pack_fx.lua`, switch `ChaosPackFx.PACK_FX`, off)
 Item powers, snares, rift modifiers, world bosses and the reflect sent stock effects. With the switch on they send

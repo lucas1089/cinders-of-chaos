@@ -105,8 +105,18 @@ for key, bySpell in pairs(C.swaps) do
 		if sp then
 			ok(sp.vocs[key] == true, key .. " may cast spell " .. id)
 			local s = readFile("data/spells/chaos/" .. sp.script) or ""
+			-- a combat's COMBAT_PARAM_EFFECT is set when the script loads, outside any cast: no swap reaches it, so the
+			-- name must also be asked during the cast (Skyfall Cleave sent no class effect, found in a live client)
+			local runtime = {}
+			for line in s:gmatch("[^\n]+") do
+				if not line:find("COMBAT_PARAM_EFFECT", 1, true) then
+					runtime[#runtime + 1] = line
+				end
+			end
+			runtime = table.concat(runtime, "\n")
 			for from, to in pairs(map) do
 				ok(s:find('"' .. from .. '"', 1, true) ~= nil, sp.script .. " sends " .. from)
+				ok(runtime:find('"' .. from .. '"', 1, true) ~= nil, sp.script .. " asks for " .. from .. " during the cast")
 				ok(spec[to] ~= nil, to .. " is drawn")
 				used[to] = true
 			end
@@ -179,6 +189,9 @@ castPid, castSpell = 4, 219
 eq(Fx("holy_smite", 1), ChaosVfx.ranger_arrowfall.id, "Hail of Dawn: the arrowfall on every tile")
 castPid, castSpell = 4, 218
 ok(Fx("holy_smite", 1) ~= ChaosVfx.deadeye_mark.id, "a Ranger has no Final Verdict mark")
+vocOf[5] = 14
+castPid, castSpell = 5, 246
+eq(ChaosSpell.classFx("ground_slam"), "berserker_cleave", "Skyfall Cleave: the Berserker's cleave on the slammed spot")
 -- a cosmetic skin wins over the class effect
 ChaosCosmetics = {swapFor = function(pid, spellId, kind, name)
 	return (kind == "vfx" and name == "aura_burst_gold") and "aura_burst_violet" or nil

@@ -9,6 +9,11 @@
 -- Lua dialect: TFS 1.4.2 / LuaJIT (Lua 5.1 semantics). Do not use 5.3-only syntax here.
 
 if Chaos then
+	-- the first load can come from a spell (classes.lua), outside the Scripts interface: the opcode dispatch's engine
+	-- events are made on the load that can make them (Chaos.opcodeDispatch.install)
+	if Chaos.opcodeDispatch and Chaos.opcodeDispatch.install then
+		Chaos.opcodeDispatch.install()
+	end
 	return
 end
 
@@ -1507,41 +1512,62 @@ if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and ge
 		return true
 	end
 
-	local dispatcher = CreatureEvent("ChaosOpcodeDispatch")
-	dispatcher:type("extendedopcode")
-	engineOn(dispatcher, D.dispatch)
-	dispatcher:register()
-	local logout = CreatureEvent("ChaosOpcodeDispatchLogout")
-	function logout.onLogout(player)
-		D.forget(player:getId())
+	-- the engine events and the registerEvent hook, once. CreatureEvent() gives nil outside the Scripts interface (a
+	-- spell's dofile of classes.lua loads this file first, in the spells' interface): then nothing is installed here and
+	-- the Scripts interface's own load of this file installs it (the guard at the top). Without that every Chaos
+	-- handler stayed in D and no client request reached one (found in a live client, 2026-10-13).
+	function D.install()
+		if D.installed then
+			return true
+		end
+		local dispatcher = CreatureEvent("ChaosOpcodeDispatch")
+		if not dispatcher then
+			return false
+		end
+		dispatcher:type("extendedopcode")
+		engineOn(dispatcher, D.dispatch)
+		dispatcher:register()
+		local logout = CreatureEvent("ChaosOpcodeDispatchLogout")
+		if logout then
+			function logout.onLogout(player)
+				D.forget(player:getId())
+				return true
+			end
+			logout:register()
+		end
+		D.installed = true
+		D.hookRegister()
 		return true
 	end
-	logout:register()
 
-	local engineRegister, engineUnregister = Player.registerEvent, Player.unregisterEvent
-	function Player.registerEvent(self, name)
-		if not D.byName[name] then
-			return engineRegister(self, name)
+	-- Player:registerEvent of a dispatched name registers the one engine event (D.install, once)
+	function D.hookRegister()
+		local engineRegister, engineUnregister = Player.registerEvent, Player.unregisterEvent
+		function Player.registerEvent(self, name)
+			if not D.byName[name] then
+				return engineRegister(self, name)
+			end
+			local pid = self:getId()
+			local mine = D.players[pid]
+			if not mine then
+				mine = {}
+				D.players[pid] = mine
+				engineRegister(self, "ChaosOpcodeDispatch")
+				engineRegister(self, "ChaosOpcodeDispatchLogout")
+			end
+			mine[name] = true
+			return true
 		end
-		local pid = self:getId()
-		local mine = D.players[pid]
-		if not mine then
-			mine = {}
-			D.players[pid] = mine
-			engineRegister(self, "ChaosOpcodeDispatch")
-			engineRegister(self, "ChaosOpcodeDispatchLogout")
+		function Player.unregisterEvent(self, name)
+			if not D.byName[name] then
+				return engineUnregister(self, name)
+			end
+			local mine = D.players[self:getId()]
+			if mine then
+				mine[name] = nil
+			end
+			return true
 		end
-		mine[name] = true
-		return true
 	end
-	function Player.unregisterEvent(self, name)
-		if not D.byName[name] then
-			return engineUnregister(self, name)
-		end
-		local mine = D.players[self:getId()]
-		if mine then
-			mine[name] = nil
-		end
-		return true
-	end
+	D.install()
 end
