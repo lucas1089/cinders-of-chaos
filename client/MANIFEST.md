@@ -163,16 +163,35 @@ No base patch: the module restyles the stock `client_background` and `client_ent
 
 ## Login scene (new, `client_chaos_login`: `loginscene_core.lua`, `loginscene.lua`)
 The login background can be a piece of our own world instead of the artwork: a ruined courtyard in the ash wastes
-("The Cinder Ossuary") built from game tiles, with our own monsters idling in it. Lua and OTUI only, no base patch.
+("The Cinder Ossuary") built from game tiles, with our own monsters walking in it. Lua and OTUI only, no base patch.
 - **Tiles**: the dark tile set (client ids 27484-27557, "Dark tile set"): obsidian floor with magma veins, ash and
   bone earth with their border pieces, a moss bed and a wet rock shelf, a cursed pool, a road of ruined flagstones up to
   a wall of dark, ruined and obsidian wall pieces along the top; torches at the wall's foot, braziers and pillars along
   the road, dead trees, outcrops, glowcaps, blood crystals, bones and rubble. Each is a `UIItem` whose item gets a map
   position, so the 4x4 seamless ground patterns tile as on the map; things bigger than a tile are drawn up and left
   of their tile, as on the map. Tiles are 32 px times a whole factor (about 11 rows: 64 px at 720p, 96 px at 1080p).
-- **Monsters** (`UICreature`, idle frames, or walking frames in place for the floating ones; each turns now and then):
-  Death Mage with two Risen Skeletons, Dark Sorcerer, Bone Golem, Lich Shade, Gloomfire, Dreamgorger, Grindmaw the
-  Mauler (server/data/monster/monsters/chaos). They stand at the sides, never behind the logo or the sign-in panel.
+- **Monsters** (`UICreature`): Death Mage with two Risen Skeletons, Dark Sorcerer, Bone Golem, Lich Shade, Gloomfire,
+  Dreamgorger, Grindmaw the Mauler (server/data/monster/monsters/chaos). They are at the sides, never behind the logo
+  or the sign-in panel (their whole footprint, two tiles for the big ones), and never on the outer columns or the
+  bottom row, which hang over the window's edges. They and their patrols are placed before the small scattered things
+  (bones, rubble, bushes, glowcaps), so those keep off the patrols; all nine get a place at 1024x768 to 1920x1080.
+- **Patrols**: most monsters walk. `layout` gives each one a patrol where it fits: 2 to 4 tiles back and forth along
+  its row (or 2 to 3 along its column), or a small loop of 3x2 tiles, with a pause of 1.5 to 5 s at each end (at one
+  corner of a loop). Two passes: first every monster takes its shortest patrol (where it is crowded one tile out and
+  back), then each grows to the longest that still fits. A monster with no room at all stands and turns now and then
+  (at 1280x720 all nine walk, at 1920x1080 eight, at 1024x768 six). Every tile a patrol may cover (the big
+  ones' 2x2 footprint at each node) is taken for it, so monsters never meet, never cross an object, the pool, the
+  wall rows, the logo or the panel area, and stay in the scene. Steps are one straight tile, timed like the client's
+  `Creature::getStepDuration` for a monster on 10.98: 1000 x ground speed (the dat's, from `dark_tiles.csv`) / speed,
+  rounded up to the 50 ms server beat, with a stroll speed per monster (110-190; their hunting speeds of 49-800 would
+  crawl or race). `newWalker(path)` turns a patrol into position (fractional while stepping), facing and
+  stepping/standing for a time, and the tile it is on (while stepping, the one it steps to, as on the map);
+  `loginscene.lua` moves the widgets on a 25 ms timer of its own (only the walkers, only while the scene shows), faces
+  the walk direction, shows the walking frames while stepping and the idle frames while standing (the floating ones
+  always drift), starts them at staggered times, and the name tag follows its monster. A walker that reaches a new
+  tile moves in the widget order to where a thing on that tile draws (by row, then column), so it passes in front of
+  and behind its neighbours as on the map. The frames are the outfit's own walking frames at the `UICreature` frame
+  rate (`UI_CREATURE_TICKS_PER_FRAME`); a widget has no step-synced walk phase as a creature on the map has.
   A creature's widget is two tiles square ending on its own tile: `DrawQueue::correctOutfit` maps two tiles onto the
   rect, so they draw at the map's scale.
 - **Layout** (`loginscene_core.lua`, no client API): `layout(cols, rows, seed, keep)` decides every ground, border
@@ -1487,8 +1506,9 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
   verify 5.0 s, joined MD5 09f3a073b0a071d54b9604a422a9dffd = the single file's; a second split gave the same bytes.
 - **Assembly**: `tools/assemble_client.sh <base> <out> <things-dir>` copies the dat and splits and verifies the spr
   (`CHAOS_SPR_SHARDS=0` copies the single file instead); without the third argument the pair is left to you as before.
-  The Windows package workflow still ships the single `Tibia.spr`: its map editor reads the sprites from
-  `client\data\things\1098`, and a client loads the single file when there is no index.
+  The Windows package keeps the single `Tibia.spr` for now (owner decision, 2026-10-13): its map editor reads the
+  sprites from `client\data\things\1098`, and a client loads the single file when there is no index. Shards reach
+  players through updates only.
 - **Loading**: the index wins over `Tibia.spr` when both are there; a broken set (missing or short shard, bad index)
   falls back to `Tibia.spr`. Measurements: client/BASE.md 0048 (load already took only milliseconds, since the engine
   streams sprite records; sharded it blocks for about 1.6 ms against 6.4 ms cold).

@@ -149,6 +149,125 @@ end
 check(same, 'same size and seed: same scene')
 check(a.place and #a.place > 0 and not a.place:find('[^ -~]'), 'the caption is ASCII (display font: space..~)')
 
+-- step timing: as Creature::getStepDuration (1000 * ground speed / speed, up to the 50 ms beat)
+check(C.stepDuration(100, 200) == 500, 'step 100/200')
+check(C.stepDuration(120, 150) == 800, 'step 120/150')
+check(C.stepDuration(130, 180) == 750, 'step 130/180 rounds up to the beat (722 -> 750)')
+check(C.stepDuration(0, 150) == 1000, 'ground speed 0 counts as 150')
+check(C.stepDuration(100, 100000) == 50, 'never below one beat')
+check(C.stepDuration(100, 0) == 0, 'no speed: no step')
+-- ground speeds match the dark tile csv
+local csv = io.open(dir .. '/../../../../server/data/items/dark_tiles.csv')
+if csv then
+  local n = 0
+  for line in csv:lines() do
+    local id, kind, speed = line:match('^(%d+),[^,]*,[^,]*,[^,]*,(%a+),[^,]*,[^,]*,[^,]*,[^,]*,[^,]*,(%d+),')
+    if id and kind == 'ground' then
+      n = n + 1
+      check(C.GROUND_SPEED[tonumber(id)] == tonumber(speed), 'ground speed of ' .. id)
+    end
+  end
+  csv:close()
+  check(n == 9, 'nine grounds in the csv')
+end
+
+-- the walker: a back-and-forth of 2 tiles with pauses at the ends
+local path = { { x = 5, y = 6, ms = 400, pause = 1000 }, { x = 6, y = 6, ms = 400, pause = 0 },
+               { x = 7, y = 6, ms = 500, pause = 2000 }, { x = 6, y = 6, ms = 400, pause = 0 } }
+local wk = C.newWalker(path)
+local x, y, d, moving = wk.update(500)
+check(x == 5 and y == 6 and not moving, 'stands through its first pause')
+x, y, d, moving = wk.update(700)   -- 1200 ms: 200 into the first step
+check(moving and math.abs(x - 5.5) < 1e-9 and y == 6 and d == C.EAST, 'half way through the first step, facing east')
+check(select(5, wk.update(0)) == 6 and select(6, wk.update(0)) == 6, 'while stepping it is on the tile it steps to')
+x, y, d, moving = wk.update(200 + 500)   -- 1900: the second step (500 ms) ends exactly
+check(x == 7 and not moving and select(5, wk.update(0)) == 7, 'at the far end, pausing')
+x, y, d, moving = wk.update(2000 + 200)
+check(moving and d == C.WEST and math.abs(x - 6.5) < 1e-9, 'walks back west after the pause')
+-- a whole cycle is the sum of steps and pauses: after it, the same place again
+local w2 = C.newWalker(path)
+local cycle = 1000 + 400 + 500 + 2000 + 400 + 400
+local ax, ay = w2.update(1234)
+local bx, by = w2.update(cycle)
+check(math.abs(ax - bx) < 1e-9 and ay == by, 'periodic over one cycle')
+-- small updates move at most a tile per step and never diagonally
+local w3 = C.newWalker(path)
+local px, py = w3.update(0)
+for _ = 1, 400 do
+  local nx, ny = w3.update(25)
+  check(math.abs(nx - px) <= 25 / 400 + 1e-9 and ny == py, 'smooth, axis-aligned motion')
+  px, py = nx, ny
+end
+check(select(1, C.newWalker({ { x = 3, y = 4, pause = 0 } }).update(100)) == 3, 'a one-node path stands')
+check(select(3, C.newWalker(path, 500, C.WEST).update(100)) == C.WEST, 'faces its own way until it sets off')
+check(select(3, C.newWalker(path).update(100)) == C.SOUTH, 'faces south by default')
+
+-- patrols in the layout: every monster that has one stays legal on every tile of it, apart from the others
+local function patrolChecks(cols, rows, seed, keep)
+  keep = keep or { { math.floor(cols * 0.3), 1, math.ceil(cols * 0.7), math.floor(rows * 0.45) },
+                   { math.floor(cols * 0.35), math.floor(rows * 0.6), math.ceil(cols * 0.65), rows } }
+  local s = C.layout(cols, rows, seed, keep)
+  local tag = string.format(' (%dx%d seed %d)', cols, rows, seed)
+  local static = {}
+  for _, t in ipairs(s.things) do
+    if t.kind == 'object' then
+      for yy = t.y - t.h + 1, t.y do for xx = t.x - t.w + 1, t.x do static[yy * 10000 + xx] = true end end
+    end
+  end
+  local owner, walkers = {}, 0
+  for ci, t in ipairs(s.things) do
+    if t.kind == 'creature' then
+      local nodes = t.path or { { x = t.x, y = t.y } }
+      if t.path then
+        walkers = walkers + 1
+        check(#t.path >= 2 and #t.path % 2 == 0, 'a patrol has steps out and back' .. tag)
+        check(t.path[1].x == t.x and t.path[1].y == t.y, 'a patrol starts where the monster stands' .. tag)
+        local pauses = 0
+        for i, nd in ipairs(t.path) do
+          local nx = t.path[i % #t.path + 1]
+          check(math.abs(nx.x - nd.x) + math.abs(nx.y - nd.y) == 1, 'one straight tile per step' .. tag)
+          check(nd.ms and nd.ms >= 50 and nd.ms <= 2000, 'step time' .. tag)
+          if nd.pause > 0 then pauses = pauses + 1 end
+        end
+        check(pauses >= 1, 'pauses on the patrol' .. tag)
+      end
+      for ni, nd in ipairs(nodes) do
+        check(nd.x - t.w + 1 >= 2 and nd.x <= cols - 1 and nd.y <= rows - 1,
+              'monsters and patrols stay off the edge columns and row that hang over the window' .. tag)
+        for yy = nd.y - t.w + 1, nd.y do
+          for xx = nd.x - t.w + 1, nd.x do
+            check(xx >= 1 and xx <= cols and yy >= 4 and yy <= rows, 'patrol inside the scene, below the wall' .. tag)
+            check(not static[yy * 10000 + xx], 'no patrol through an object' .. tag)
+            check(s.ground[yy][xx] ~= C.GROUND.pool, 'no patrol over the pool' .. tag)
+            for _, k in ipairs(keep) do
+              check(not (xx >= k[1] and xx <= k[3] and yy >= k[2] and yy <= k[4]), 'no patrol behind the panel or logo' .. tag)
+            end
+            local o = owner[yy * 10000 + xx]
+            check(o == nil or o == ci, 'no two monsters share a patrol tile' .. tag)
+            owner[yy * 10000 + xx] = ci
+          end
+        end
+      end
+    end
+  end
+  local placed = 0
+  for _, t in ipairs(s.things) do if t.kind == 'creature' then placed = placed + 1 end end
+  check(placed == 9, 'all nine monsters are placed' .. tag .. ': ' .. placed)
+  check(walkers >= 6, 'most monsters walk' .. tag .. ': ' .. walkers)
+end
+patrolChecks(21, 13, 1666)
+patrolChecks(31, 13, 1666)
+patrolChecks(20, 12, 1)
+patrolChecks(30, 17, 9)
+patrolChecks(40, 23, 3)
+-- the sign-in screen's own keep rects (logo, panel) at 1280x720, 1920x1080 (96 px tiles), 1024x768, 1366x768
+-- and 1600x900
+patrolChecks(21, 13, 1666, { { 7, 4, 15, 10 }, { 6, 9, 16, 12 } })
+patrolChecks(21, 13, 1666, { { 7, 4, 15, 10 }, { 8, 9, 14, 11 } })
+patrolChecks(17, 13, 1666, { { 6, 5, 12, 9 }, { 4, 9, 14, 12 } })
+patrolChecks(23, 13, 1666, { { 7, 4, 17, 10 }, { 7, 9, 17, 13 } })
+patrolChecks(26, 16, 1666, { { 8, 5, 19, 12 }, { 9, 11, 18, 14 } })
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

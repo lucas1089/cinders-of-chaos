@@ -34,19 +34,94 @@ M.FAMILY = {
 -- the patch families that draw their border over their neighbours (the base obsidian does not)
 M.PATCH_FAMILIES = { 'ash', 'wetRock', 'moss' }
 
--- our own monsters (server/data/monster/monsters/chaos): look type, name, how they idle
---   'idle'  the outfit's idle frames (or still), turns now and then
---   'hover' its walking frames in place (ghosts, flames: they drift)
+-- our own monsters (server/data/monster/monsters/chaos): look type, name, how they stand
+--   'idle'  the outfit's idle frames (or still) while it stands
+--   'hover' its walking frames all the time (ghosts, flames: they drift)
+-- speed: a stroll speed in the server's units (their hunting speeds of 49 to 800 would crawl or race); it gives the
+-- step time the way the client's Creature::getStepDuration does
 M.CREATURES = {
-  { look = 1539, name = 'Death Mage', idle = 'idle' },
-  { look = 1542, name = 'Risen Skeleton', idle = 'idle' },
-  { look = 1549, name = 'Bone Golem', idle = 'idle', big = true },
-  { look = 1545, name = 'Lich Shade', idle = 'hover' },
-  { look = 2120, name = 'Gloomfire', idle = 'hover', big = true },
-  { look = 1479, name = 'Dreamgorger', idle = 'hover', big = true },
-  { look = 1541, name = 'Dark Sorcerer', idle = 'idle', colors = { 133, 133, 133, 133 }, addons = 3 },
-  { look = 1476, name = 'Grindmaw the Mauler', idle = 'idle', big = true },
+  { look = 1539, name = 'Death Mage', idle = 'idle', speed = 180 },
+  { look = 1542, name = 'Risen Skeleton', idle = 'idle', speed = 150 },
+  { look = 1549, name = 'Bone Golem', idle = 'idle', big = true, speed = 120 },
+  { look = 1545, name = 'Lich Shade', idle = 'hover', speed = 160 },
+  { look = 2120, name = 'Gloomfire', idle = 'hover', big = true, speed = 140 },
+  { look = 1479, name = 'Dreamgorger', idle = 'hover', big = true, speed = 110 },
+  { look = 1541, name = 'Dark Sorcerer', idle = 'idle', colors = { 133, 133, 133, 133 }, addons = 3, speed = 190 },
+  { look = 1476, name = 'Grindmaw the Mauler', idle = 'idle', big = true, speed = 120 },
 }
+
+-- ground speed of each ground (the dat's ground attribute, server/data/items/dark_tiles.csv column "speed")
+M.GROUND_SPEED = {
+  [27484] = 100, [27485] = 100, [27486] = 120, [27487] = 120, [27488] = 120, [27489] = 120, [27490] = 130,
+  [27491] = 100, [27492] = 100,
+}
+M.SERVER_BEAT = 50
+
+-- one step's time in ms, as Creature::getStepDuration for a monster on 10.98 (no new speed law): 1000 * ground
+-- speed / speed, rounded up to the server beat (a ground of speed 0 counts as 150), never below one beat
+function M.stepDuration(groundSpeed, speed, beat)
+  beat = beat or M.SERVER_BEAT
+  if not speed or speed < 1 then return 0 end
+  local gs = (groundSpeed and groundSpeed > 0) and groundSpeed or 150
+  local interval = math.floor(1000 * gs / speed)
+  interval = math.ceil(interval / beat) * beat
+  return math.max(interval, beat)
+end
+
+function M.dirOf(dx, dy)
+  if dx > 0 then return M.EAST elseif dx < 0 then return M.WEST elseif dy < 0 then return M.NORTH end
+  return M.SOUTH
+end
+
+-- A creature on its patrol. path: { {x, y, ms = step time to reach this node, pause = ms to stand here}, ... },
+-- walked as a cycle (the last node steps back to the first). update(dt) moves it on by dt ms and returns
+-- x, y (tiles, fractional while stepping), the direction it faces, whether it is stepping, and the tile it is on
+-- (tx, ty: while stepping already the one it steps to, as a walking creature on the map). dir: the facing before its
+-- first step (south when left out).
+function M.newWalker(path, startDelay, dir)
+  local w = { path = path, i = 1, t = 0, stepping = false, wait = startDelay or path[1].pause or 0 }
+  w.dir = dir or M.SOUTH
+  function w.update(dt)
+    local n = #w.path
+    if n < 2 then
+      local p = w.path[1]
+      return p.x, p.y, w.dir, false, p.x, p.y
+    end
+    local left = dt
+    while left > 0 do
+      if not w.stepping then
+        if w.wait > left then
+          w.wait = w.wait - left
+          left = 0
+        else
+          left = left - w.wait
+          w.wait = 0
+          w.stepping, w.t = true, 0
+          local a, b = w.path[w.i], w.path[w.i % n + 1]
+          w.dir = M.dirOf(b.x - a.x, b.y - a.y)
+        end
+      else
+        local b = w.path[w.i % n + 1]
+        local ms = math.max(1, b.ms or 500)
+        if w.t + left < ms then
+          w.t = w.t + left
+          left = 0
+        else
+          left = left - (ms - w.t)
+          w.i = w.i % n + 1
+          w.stepping, w.t = false, 0
+          w.wait = w.path[w.i].pause or 0
+        end
+      end
+    end
+    local a = w.path[w.i]
+    if not w.stepping then return a.x, a.y, w.dir, false, a.x, a.y end
+    local b = w.path[w.i % n + 1]
+    local f = w.t / math.max(1, b.ms or 500)
+    return a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f, w.dir, true, b.x, b.y
+  end
+  return w
+end
 
 M.NORTH, M.EAST, M.SOUTH, M.WEST = 0, 1, 2, 3
 
@@ -290,6 +365,165 @@ function M.layout(cols, rows, seed, keep)
     local y = r.int(5, rows)
     if object(big[(placedBig % #big) + 1], x, y) then placedBig = placedBig + 1 end
   end
+  -- the monsters (before the small things, so they and their patrols get room): a necromancer with his risen dead
+  -- on the left, the big ones and the spirits on the right, facing the courtyard
+  local list = M.CREATURES
+  local slots = {
+    { 0.12, 0.6, 1 }, { 0.2, 0.72, 2 }, { 0.07, 0.8, 2 }, { 0.86, 0.62, 3 }, { 0.76, 0.42, 4 },
+    { 0.28, 0.92, 5 }, { 0.92, 0.9, 6 }, { 0.22, 0.46, 7 }, { 0.68, 0.88, 8 },
+  }
+  for _, s in ipairs(slots) do
+    local c = list[s[3]]
+    local x0, y0 = math.floor(cols * s[1] + 0.5), math.floor(rows * s[2] + 0.5)
+    local w = c.big and 2 or 1
+    local done = false
+    -- the slot's tile, else the nearest free one in growing rings around it
+    for ring = 0, 6 do
+      for dy = -ring, ring do
+        for dx = -ring, ring do
+          local x, y = x0 + dx, y0 + dy
+          -- not on the outer columns or the bottom row: they hang over the window's edges
+          if not done and math.max(math.abs(dx), math.abs(dy)) == ring and x >= w + 1 and x <= cols - 1 and y >= 4
+              and y <= rows - 1 and free(x, y, w, w) and not blocked(x, y, keep) and not blocked(x - w + 1, y - w + 1, keep)
+              and not blocked(x - w + 1, y, keep) and not blocked(x, y - w + 1, keep) and ground[y][x] ~= G.pool then
+            take(x, y, w, w)
+            local dir = x < cols / 2 and M.EAST or M.WEST
+            if r.chance(0.3) then dir = M.SOUTH end
+            things[#things + 1] = { kind = 'creature', x = x, y = y, w = w, h = w, look = c.look, name = c.name,
+                                    idle = c.idle, colors = c.colors, addons = c.addons, dir = dir, speed = c.speed }
+            done = true
+          end
+        end
+      end
+    end
+  end
+
+  -- patrols: each monster walks a few tiles back and forth along its row (or its column), or round a small loop,
+  -- pausing at the turns. Every tile a patrol may cover is taken for it, so no two monsters ever meet and none walks
+  -- through an object, onto the pool, behind the logo or the sign-in panel, or out of the scene. The outer column on
+  -- each side and the bottom row hang over the window's edges (the grid is one tile bigger than the window), so
+  -- neither a monster nor its patrol is ever on them. Two passes: first the shortest patrol of each monster's kind,
+  -- so a crowded corner still gives everyone room to walk, then each one grows to the longest that still fits.
+  local patrolOf = {}   -- tile -> the creature whose patrol covers it
+  local function patrolFree(x, y, t)
+    local w = t.w
+    if x - w + 1 < 2 or x > cols - 1 or y - w + 1 < 4 or y > rows - 1 then return false end
+    for yy = y - w + 1, y do
+      for xx = x - w + 1, x do
+        local k = key(xx, yy)
+        local own = xx >= t.x - w + 1 and xx <= t.x and yy >= t.y - w + 1 and yy <= t.y
+        if (used[k] and not own) or (patrolOf[k] and patrolOf[k] ~= t) or blocked(xx, yy, keep)
+            or ground[yy][xx] == G.pool then
+          return false
+        end
+      end
+    end
+    return true
+  end
+  local function nodesOf(t, c, flip)
+    local nodes = {}
+    if c.kind == 'line' then
+      local dx, dy = c.dx * flip, c.dy * flip
+      for i = 0, c.len do nodes[#nodes + 1] = { x = t.x + dx * i, y = t.y + dy * i } end
+      for i = c.len - 1, 1, -1 do nodes[#nodes + 1] = { x = t.x + dx * i, y = t.y + dy * i } end
+    else
+      local x0, y0 = t.x, t.y
+      for i = 0, c.a do nodes[#nodes + 1] = { x = x0 + c.sx * i, y = y0 } end
+      for j = 1, c.b do nodes[#nodes + 1] = { x = x0 + c.sx * c.a, y = y0 + c.sy * j } end
+      for i = c.a - 1, 0, -1 do nodes[#nodes + 1] = { x = x0 + c.sx * i, y = y0 + c.sy * c.b } end
+      for j = c.b - 1, 1, -1 do nodes[#nodes + 1] = { x = x0, y = y0 + c.sy * j } end
+    end
+    nodes.kind = c.kind
+    return nodes
+  end
+  local function fits(t, nodes)
+    for _, nd in ipairs(nodes) do
+      if not patrolFree(nd.x, nd.y, t) then return false end
+    end
+    return true
+  end
+  local function mark(t, nodes, who)
+    for _, nd in ipairs(nodes) do
+      for yy = nd.y - t.w + 1, nd.y do
+        for xx = nd.x - t.w + 1, nd.x do patrolOf[key(xx, yy)] = who end
+      end
+    end
+  end
+  -- candidates, longest first: lines of 4 to 2 tiles along the row, 3 to 2 along the column, loops of 3x2 tiles
+  local cands = {}
+  for _, len in ipairs({ 4, 3, 2 }) do
+    cands[#cands + 1] = { kind = 'line', dx = 1, dy = 0, len = len }
+    cands[#cands + 1] = { kind = 'line', dx = -1, dy = 0, len = len }
+  end
+  for _, len in ipairs({ 3, 2 }) do
+    cands[#cands + 1] = { kind = 'line', dx = 0, dy = 1, len = len }
+    cands[#cands + 1] = { kind = 'line', dx = 0, dy = -1, len = len }
+  end
+  local LOOPS = #cands + 1
+  cands[#cands + 1] = { kind = 'loop', sx = 1, sy = 1, a = 2, b = 1 }
+  cands[#cands + 1] = { kind = 'loop', sx = -1, sy = 1, a = 2, b = 1 }
+  cands[#cands + 1] = { kind = 'loop', sx = 1, sy = -1, a = 2, b = 1 }
+  -- last resort where it is crowded: one tile out and back, along the row, else the column
+  local ONE = #cands + 1
+  cands[#cands + 1] = { kind = 'line', dx = 1, dy = 0, len = 1 }
+  cands[#cands + 1] = { kind = 'line', dx = -1, dy = 0, len = 1 }
+  cands[#cands + 1] = { kind = 'line', dx = 0, dy = 1, len = 1 }
+  cands[#cands + 1] = { kind = 'line', dx = 0, dy = -1, len = 1 }
+  local SHORT = { 5, 6, 9, 10, LOOPS, LOOPS + 1, LOOPS + 2, ONE, ONE + 1, ONE + 2, ONE + 3 }
+  local walkers = {}
+  for _, t in ipairs(things) do
+    if t.kind == 'creature' then
+      -- a loop for every third monster, else the longest free line; flip: which side it tries first
+      walkers[#walkers + 1] = { t = t, loop = r.chance(0.34), flip = r.chance(0.5) and -1 or 1 }
+    end
+  end
+  for _, wk in ipairs(walkers) do
+    local order = {}
+    if wk.loop then order = { LOOPS, LOOPS + 1, LOOPS + 2, 5, 6, 9, 10, ONE, ONE + 1, ONE + 2, ONE + 3 } else order = SHORT end
+    for _, ci in ipairs(order) do
+      local nodes = nodesOf(wk.t, cands[ci], wk.flip)
+      if fits(wk.t, nodes) then
+        wk.nodes = nodes
+        mark(wk.t, nodes, wk.t)
+        break
+      end
+    end
+  end
+  for _, wk in ipairs(walkers) do
+    if wk.nodes then
+      mark(wk.t, wk.nodes, nil)
+      -- the loops first for a loop walker, else the lines longest first; a one-tile shuffle only if nothing else fits
+      local first = wk.loop and LOOPS or 1
+      for k = 0, ONE - 2 do
+        local nodes = nodesOf(wk.t, cands[(first + k - 1) % (ONE - 1) + 1], wk.flip)
+        if fits(wk.t, nodes) then
+          wk.nodes = nodes
+          break
+        end
+      end
+      mark(wk.t, wk.nodes, wk.t)
+    end
+  end
+  for _, wk in ipairs(walkers) do
+    local t, tiles = wk.t, wk.nodes
+    if tiles then
+      local n = #tiles
+      for i, nd in ipairs(tiles) do
+        -- the step that reaches this node: the ground under the creature's own tile there
+        nd.ms = M.stepDuration(M.GROUND_SPEED[ground[nd.y][nd.x]], t.speed)
+        -- pauses at the turns (both ends of a line, one corner of a loop), 1.5 to 5 s
+        local turn = (tiles.kind == 'line' and (i == 1 or i == math.floor(n / 2) + 1))
+          or (tiles.kind == 'loop' and i == 1)
+        nd.pause = turn and (1500 + r.int(0, 35) * 100) or 0
+        -- taken: the small things scattered next keep off the patrols
+        for yy = nd.y - t.w + 1, nd.y do
+          for xx = nd.x - t.w + 1, nd.x do used[key(xx, yy)] = true end
+        end
+      end
+      t.path = tiles
+    end
+  end
+
   local small = math.floor(cols * rows / 10)
   for _ = 1, small * 3 do
     if small <= 0 then break end
@@ -313,37 +547,6 @@ function M.layout(cols, rows, seed, keep)
   for y = 1, rows do
     for x = 1, cols do
       if ground[y][x] == G.magma and r.chance(0.3) then lights[#lights + 1] = { x = x, y = y, kind = 'magma' } end
-    end
-  end
-
-  -- the monsters: a necromancer with his risen dead on the left, the big ones and the spirits on the right,
-  -- facing the courtyard
-  local list = M.CREATURES
-  local slots = {
-    { 0.12, 0.6, 1 }, { 0.2, 0.72, 2 }, { 0.07, 0.8, 2 }, { 0.86, 0.62, 3 }, { 0.76, 0.42, 4 },
-    { 0.28, 0.92, 5 }, { 0.92, 0.9, 6 }, { 0.22, 0.46, 7 }, { 0.68, 0.88, 8 },
-  }
-  for _, s in ipairs(slots) do
-    local c = list[s[3]]
-    local x0, y0 = math.floor(cols * s[1] + 0.5), math.floor(rows * s[2] + 0.5)
-    local w = c.big and 2 or 1
-    local done = false
-    -- the slot's tile, else the nearest free one in growing rings around it
-    for ring = 0, 4 do
-      for dy = -ring, ring do
-        for dx = -ring, ring do
-          local x, y = x0 + dx, y0 + dy
-          if not done and math.max(math.abs(dx), math.abs(dy)) == ring and x >= w and x <= cols and y >= 4
-              and y <= rows and free(x, y, w, w) and not blocked(x, y, keep) and ground[y][x] ~= G.pool then
-            take(x, y, w, w)
-            local dir = x < cols / 2 and M.EAST or M.WEST
-            if r.chance(0.3) then dir = M.SOUTH end
-            things[#things + 1] = { kind = 'creature', x = x, y = y, w = w, h = w, look = c.look, name = c.name,
-                                    idle = c.idle, colors = c.colors, addons = c.addons, dir = dir }
-            done = true
-          end
-        end
-      end
     end
   end
 

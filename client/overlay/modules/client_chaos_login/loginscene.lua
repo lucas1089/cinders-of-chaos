@@ -1,8 +1,9 @@
 -- Cinders of Chaos login scene: a piece of our own world behind the login widgets (client/MANIFEST.md "Login scene").
 --
 -- loginscene_core.lua lays out a ruined courtyard in the ash wastes from the dark tile set (UIItem widgets: grounds,
--- borders, walls, objects) with our own monsters standing in it (UICreature widgets, idle frames, turning now and
--- then). Warm light pools flicker over braziers, torches, glowcaps and magma, a vignette darkens the edges and a dark
+-- borders, walls, objects) with our own monsters in it (UICreature widgets): most walk a short patrol with pauses,
+-- tile to tile at the client's step time, facing where they go, in their walking frames (idle frames while they
+-- stand); the rest stand and turn now and then. Warm light pools flicker over braziers, torches, glowcaps and magma, a vignette darkens the edges and a dark
 -- pool sits behind the logo. Captions use the bordered Chaos fonts (ChaosTheme roles 'display' and 'outlineSmall').
 -- The setting 'chaosLoginBackground' picks the background: 'scene' (default), 'art' (the login artwork, the
 -- earlier look, kept as the fallback) or 'alternate' (the two crossfade every 40 s). Without the dat/spr pair the
@@ -19,8 +20,11 @@ local SEED = 1666
 local layer, built, shade, logoShade, caption, nameTag
 local tiles = {}        -- every widget of the current build (destroyed on rebuild)
 local creatures, lights = {}, {}
+local stack = {}        -- walls, objects and monsters in drawing order: {w, y, k, x} (a walker's entry moves)
 local clock, nameClock, nameIndex = 0, 0, 0
 local opacity = 1        -- scene layer opacity now (1 = scene, 0 = artwork)
+local walkEvent, walkLast, nameOwner
+local WALK_MS = 25       -- the walkers move on their own timer: smooth steps for a handful of widgets
 local keepRects          -- function returning screen rects (relative to the parent) to keep free
 
 local function alive(w)
@@ -71,7 +75,7 @@ local function clear()
   for _, w in ipairs(tiles) do
     if alive(w) then w:destroy() end
   end
-  tiles, creatures, lights = {}, {}, {}
+  tiles, creatures, lights, stack = {}, {}, {}, {}
   built = nil
 end
 
@@ -136,10 +140,18 @@ local function build()
       if t.idle == 'hover' then c:setAnimate(true) else c:setIdleAnimate(true) end
       place(c, x, y, w, h)
       tiles[#tiles + 1] = c
-      creatures[#creatures + 1] = { w = c, t = t, next = 3 + math.random() * 8, cx = px(t.x - t.w + 1) + t.w * T / 2,
-                                    top = py(t.y - t.h + 1) - math.floor(T * 0.15) }
+      stack[#stack + 1] = { w = c, y = t.y, k = 3, x = t.x }
+      local rec = { w = c, t = t, next = 3 + math.random() * 8, cx = px(t.x - t.w + 1) + t.w * T / 2,
+                    top = py(t.y - t.h + 1) - math.floor(T * 0.15), ox = ox, oy = oy, T = T }
+      if t.path then
+        -- a staggered start, so the monsters do not all set off together
+        rec.walker = Core.newWalker(t.path, math.random(0, 3000), t.dir)
+        rec.moving = false
+        rec.entry = stack[#stack]
+      end
+      creatures[#creatures + 1] = rec
     else
-      item(t.id, x, y, w, h, t.x, t.y)
+      stack[#stack + 1] = { w = item(t.id, x, y, w, h, t.x, t.y), y = t.y, k = t.kind == 'wall' and 1 or 2, x = t.x }
     end
   end
   for _, l in ipairs(s.lights) do
@@ -153,6 +165,72 @@ local function build()
   caption:raise()
   nameTag:raise()
   built = key
+end
+
+-- a walker on a new tile is drawn where a thing on that tile would be (by row, then walls, objects, monsters, then
+-- column, as layout sorts them): its widget moves just before the first thing that draws after it
+local function drawsBefore(a, b)
+  if a.y ~= b.y then return a.y < b.y end
+  if a.k ~= b.k then return a.k < b.k end
+  return a.x < b.x
+end
+local function restack(e)
+  local nextIdx, lastIdx
+  for _, o in ipairs(stack) do
+    if o ~= e and alive(o.w) then
+      local i = layer:getChildIndex(o.w)
+      if drawsBefore(e, o) then
+        if not nextIdx or i < nextIdx then nextIdx = i end
+      elseif not lastIdx or i > lastIdx then
+        lastIdx = i
+      end
+    end
+  end
+  local j = layer:getChildIndex(e.w)
+  local to
+  if nextIdx then to = (j < nextIdx) and nextIdx - 1 or nextIdx
+  elseif lastIdx then to = (j < lastIdx) and lastIdx or lastIdx + 1 end
+  if to and to ~= j then layer:moveChildToIndex(e.w, to) end
+end
+
+-- the walkers: position (fractional tiles while stepping), facing, walking or idle frames; the name tag follows
+local function walkStep()
+  if not alive(layer) or opacity <= 0.001 or not layer:isVisible() then walkLast = nil return end
+  local parent = layer:getParent()
+  if parent and not parent:isVisible() then walkLast = nil return end
+  local now = g_clock.millis()
+  local dt = walkLast and math.min(200, now - walkLast) or 0
+  walkLast = now
+  for _, c in ipairs(creatures) do
+    if c.walker and alive(c.w) then
+      local x, y, dir, moving, tx, ty = c.walker.update(dt)
+      local e = c.entry
+      if e and (e.x ~= tx or e.y ~= ty) then
+        e.x, e.y = tx, ty
+        restack(e)
+      end
+      local T, w = c.T, c.t.w
+      c.w:setMarginLeft(math.floor(c.ox + (x - 2) * T + 0.5))
+      c.w:setMarginTop(math.floor(c.oy + (y - 2) * T + 0.5))
+      c.cx = c.ox + (x - w) * T + w * T / 2
+      c.top = c.oy + (y - w) * T - math.floor(T * 0.15)
+      if dir ~= c.dir then
+        c.w:setDirection(dir)
+        c.dir = dir
+      end
+      if moving ~= c.moving then
+        c.moving = moving
+        if c.t.idle ~= 'hover' then
+          c.w:setIdleAnimate(not moving)
+          c.w:setAnimate(moving)
+        end
+      end
+      if nameOwner == c and alive(nameTag) then
+        nameTag:setMarginLeft(math.floor(c.cx - nameTag:getWidth() / 2))
+        nameTag:setMarginTop(math.floor(c.top - 4))
+      end
+    end
+  end
 end
 
 -- parent: the background widget (client_background); keep: function() -> list of {x, y, width, height} relative to it
@@ -194,6 +272,7 @@ function LoginScene.create(parent, keep)
     th.applyFont(nameTag, 'outlineSmall')
   end
   build()   -- or on the first tick, when the layer has its size
+  walkEvent = cycleEvent(walkStep, WALK_MS)
   return true
 end
 
@@ -235,10 +314,10 @@ function LoginScene.tick(dt)
     l.w:setOpacity(math.max(0.2, math.min(1, base + 0.14 * math.sin(clock * l.sp + l.ph)
       + 0.08 * math.sin(clock * l.sp * 2.7 + 1.1) + 0.06 * (math.random() - 0.5))))
   end
-  -- idle monsters: now and then one turns (towards the courtyard or the viewer) or looks around
+  -- standing monsters: now and then one turns (towards the courtyard or the viewer) or looks around
   for _, c in ipairs(creatures) do
     c.next = c.next - dt
-    if c.next <= 0 and alive(c.w) then
+    if not c.walker and c.next <= 0 and alive(c.w) then
       local d = c.t.dir
       local roll = math.random()
       if roll < 0.45 then d = Core.SOUTH elseif roll < 0.8 then d = c.t.dir else d = (c.t.dir + 2) % 4 end
@@ -252,6 +331,7 @@ function LoginScene.tick(dt)
     if nameClock <= 0 then
       nameIndex = nameIndex % #creatures + 1
       local c = creatures[nameIndex]
+      nameOwner = c
       nameTag:setText(c.t.name)
       nameTag:breakAnchors()
       place(nameTag, c.cx - nameTag:getWidth() / 2, c.top - 4)
@@ -263,6 +343,8 @@ function LoginScene.tick(dt)
 end
 
 function LoginScene.destroy()
+  if walkEvent then removeEvent(walkEvent) end
+  walkEvent, walkLast, nameOwner = nil, nil, nil
   clear()
   for _, w in ipairs({ shade, logoShade, caption, nameTag, layer }) do
     if alive(w) then w:destroy() end
