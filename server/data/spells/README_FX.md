@@ -149,6 +149,11 @@ new `--expect-first-outfit` and keep the regenerated `chaos_auras.csv` (the aura
 verifies its output like `import_outfits.py` (re-parse, every new frame / pattern / layer pixel-exact, all old entries
 byte-identical, 3000 sampled old sprites) and is deterministic.
 
+**More uses (switch `ChaosPackFx.PACK_FX`, off):** item powers, snares, rift modifiers, world bosses and the
+reflect can send these effects and seven short cuts of the status loops (reflect_bubble, tick_*; next pair, built by
+`client/tools/sprites/gen_pack_fx.py`). Which use sends which: server/README.md "Pack effects for procs and bosses";
+the cuts and the set's licence: client/MANIFEST.md "Pack effect cuts".
+
 ## Bone effects (effects 583..585, missile 153; our own art)
 
 The Necromancer line's own effects, appended after everything above by `client/tools/sprites/import_fx_art.py` (spec

@@ -25,6 +25,10 @@
 if not ChaosFx then
 	pcall(dofile, "data/lib/chaos_fx.lua")
 end
+-- pack effects (data/lib/chaos_pack_fx.lua): with its switch on the reflect sends reflect_bubble, else reflect_aegis
+if not ChaosPackFx then
+	pcall(dofile, "data/lib/chaos_pack_fx.lua")
+end
 
 ChaosCombatFx = ChaosCombatFx or {}
 local M = ChaosCombatFx
@@ -217,13 +221,15 @@ local function show(kind, pos, source, labelOn)
 	if not M.allow(kind, source, pos) then
 		return false
 	end
-	local shown = sendEffect(pos, fx(M.effectNames[kind]))
+	local use = M.packUses[kind]
+	local shown = use and ChaosPackFx and ChaosPackFx.send(pos, use) or sendEffect(pos, fx(M.effectNames[kind]))
 	if labelOn and cfg.labels[kind] and M.allowLabel(kind, source) then
 		M.label(pos, cfg.labels[kind], cfg.colors[kind])
 	end
 	return shown
 end
 M.effectNames = {crit = "crit_burst", dodge = "dodge_whoosh", reflect = "reflect_aegis"}
+M.packUses = {reflect = "reflect"}   -- ChaosPackFx use per kind (switch off: the effect above)
 
 function M.crit(pos, sourceId)
 	return show("crit", toPos(pos), sourceId, cfg.critLabel)

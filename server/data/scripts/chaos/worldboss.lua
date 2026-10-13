@@ -45,6 +45,19 @@ end
 dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosWorldBoss = ChaosWorldBoss or {}
+-- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX; off: exactly the stock effect as before)
+if not ChaosPackFx then
+	pcall(dofile, "data/lib/chaos_pack_fx.lua")
+end
+local function packFx(pos, use, stock)
+	if ChaosPackFx then
+		return ChaosPackFx.send(pos, use, stock)
+	end
+	if stock then
+		pos:sendMagicEffect(stock)
+	end
+	return false
+end
 local W = ChaosWorldBoss
 
 local function C()
@@ -982,14 +995,14 @@ local function runPhase(token, i)
 					Chaos.heal(m, phase.adds.health)
 				end
 				state.adds[m:getId()] = true
-				m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+				packFx(m:getPosition(), "wb_adds", CONST_ME_TELEPORT)
 			end
 		end
 	end
 	if phase.enrage then
 		state.enraged = true
 		state.nextPulse = os.time() + (b.pulse and b.pulse.every or 8)
-		boss:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
+		packFx(boss:getPosition(), "wb_enrage", CONST_ME_MAGIC_RED)
 	end
 end
 
@@ -1060,7 +1073,7 @@ local function spawnBoss(token)
 	state.fightEnd = os.time() + C().fightMinutes * 60
 	boss:registerEvent("ChaosWorldBossHealth")
 	boss:registerEvent("ChaosWorldBossDeath")
-	boss:getPosition():sendMagicEffect(CONST_ME_MORTAREA)
+	packFx(boss:getPosition(), "wb_arrives", CONST_ME_MORTAREA)
 	boss:say(b.intro, TALKTYPE_MONSTER_YELL)
 	announce(string.format("%s has appeared in the world boss arena! You have %d minutes to bring it down.", b.name, C().fightMinutes), true)
 	addEvent(function(t)

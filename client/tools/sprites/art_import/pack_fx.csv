@@ -1,0 +1,8 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,reflect_bubble,pack_fx/reflect_bubble.png,3,3,9,70,1,1,reflect: a hex shield bubble flashes round the creature and is gone (cut of shield_bubble 0-7)
+effect,tick_bleed,pack_fx/tick_bleed.png,3,2,13,70,1,1,"tick: blood bursts from the wound (bleed proc, crit wounds) (cut of bleeding 0-11)"
+effect,tick_burn,pack_fx/tick_burn.png,2,3,13,70,0,1,"tick: flames lick up the body, a puff of smoke (ignite proc, cinder mark) (cut of burning 0-11)"
+effect,tick_poison,pack_fx/tick_poison.png,3,3,13,70,1,1,"tick: green venom drips, a small skull (poison proc, festering wounds) (cut of poisoned 0-11)"
+effect,tick_chill,pack_fx/tick_chill.png,3,3,11,70,1,1,tick: ice crystals grow over the body and break (chill proc) (cut of frozen 0-9)
+effect,tick_curse,pack_fx/tick_curse.png,3,3,13,70,1,1,tick: a violet eye sigil and curse runes circle the body (cut of cursed 0-11)
+effect,tick_regen,pack_fx/tick_regen.png,3,3,13,70,1,1,tick: green crosses and a leaf vine rise round the body (heal pulse) (cut of regenerating 0-11)

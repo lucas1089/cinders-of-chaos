@@ -227,6 +227,8 @@ jobs:
           python3 -m venv /tmp/fxenv
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
+          # pack effect cuts: spec and sums match gen_pack_fx.py's table (the art set and the strips are not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)

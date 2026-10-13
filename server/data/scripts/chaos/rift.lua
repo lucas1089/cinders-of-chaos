@@ -39,6 +39,19 @@ ChaosRiftConfig = dofile("data/scripts/chaos/rift_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosRift = ChaosRift or {}
+-- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX; off: exactly the stock effect as before)
+if not ChaosPackFx then
+	pcall(dofile, "data/lib/chaos_pack_fx.lua")
+end
+local function packFx(pos, use, stock)
+	if ChaosPackFx then
+		return ChaosPackFx.send(pos, use, stock)
+	end
+	if stock then
+		pos:sendMagicEffect(stock)
+	end
+	return false
+end
 local RF = ChaosRift
 local R = ChaosRiftCore
 local RL = ChaosRiftLayout
@@ -1406,7 +1419,7 @@ function spawnBoss(run) -- the forward-declared local (reinforce)
 			run.bossIds[m:getId()] = true
 			run.bossId = run.bossId or m:getId()
 			first = first or m
-			P(at):sendMagicEffect(CONST_ME_MORTAREA)
+			packFx(P(at), "rift_boss_arrives", CONST_ME_MORTAREA)
 		end
 	end
 	if not first and run.omen then
@@ -1657,7 +1670,7 @@ local function cinderBurst(run, pos, maxHealth)
 	if dmg <= 0 then
 		return
 	end
-	pos:sendMagicEffect(CONST_ME_HITBYFIRE)
+	packFx(pos, "rift_cinder_mark", CONST_ME_HITBYFIRE)
 	local rid, slot = run.id, run.slot
 	addEvent(function(p, amount)
 		local r = RF.runs[slot]
@@ -1665,7 +1678,7 @@ local function cinderBurst(run, pos, maxHealth)
 			return
 		end
 		local at = Position(p.x, p.y, p.z)
-		at:sendMagicEffect(CONST_ME_FIREAREA)
+		packFx(at, "rift_cinder_burst", CONST_ME_FIREAREA)
 		local rad = cfg.cinder.radius
 		for _, pl in ipairs(Game.getSpectators(at, false, true, rad, rad, rad, rad)) do
 			if r.players[pl:getId()] then
@@ -1770,7 +1783,7 @@ local function markedStrike(run, at, radius, warnMs, share, element, markEffect)
 			return
 		end
 		local now = os.time()
-		Position(p0.x, p0.y, p0.z):sendMagicEffect(effectOf(element))
+		packFx(Position(p0.x, p0.y, p0.z), "rift_strike_" .. tostring(element), effectOf(element))
 		for _, p in ipairs(targets(r, now)) do
 			local q = p:getPosition()
 			if q.z == p0.z and math.max(math.abs(q.x - p0.x), math.abs(q.y - p0.y)) <= radius then
@@ -2691,7 +2704,7 @@ local function scaleHit(creature, attacker, primaryDamage, primaryType, secondar
 			{primary = primaryDamage, ptype = primaryType, secondary = secondaryDamage, stype = secondaryType,
 				boss = run.bossIds and run.bossIds[attacker:getId()] or false}, hitTypes(), rand)
 		if info.crit then
-			creature:getPosition():sendMagicEffect(CONST_ME_DRAWBLOOD or CONST_ME_HITAREA)
+			packFx(creature:getPosition(), "rift_crit_wound", CONST_ME_DRAWBLOOD or CONST_ME_HITAREA)
 		end
 		if info.fester and CONDITION_POISON and Condition then
 			-- Festering Wounds: no owner, so the ticks are not scaled again here
@@ -2700,7 +2713,7 @@ local function scaleHit(creature, attacker, primaryDamage, primaryType, secondar
 			c:setParameter(CONDITION_PARAM_DELAYED, true)
 			c:addDamage(f.rounds, f.intervalMs, -math.max(1, math.floor(info.fester / f.rounds)))
 			creature:addCondition(c)
-			creature:getPosition():sendMagicEffect(CONST_ME_HITBYPOISON or CONST_ME_POFF)
+			packFx(creature:getPosition(), "rift_fester", CONST_ME_HITBYPOISON or CONST_ME_POFF)
 		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType

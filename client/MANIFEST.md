@@ -1067,6 +1067,34 @@ Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Which 
   is on; a client still on things_custom21 draws nothing for the 35 new effect ids.
 - Checked offline only (frame sheets and the mock scenes); not run in a client.
 
+## Pack effect cuts (next pair, `tools/sprites/gen_pack_fx.py`, `art_import/pack_fx.csv`; not built yet)
+**Source and licence.** The oblique spell effect set that `import_vfx.py` reads (`--src-spells`; effects 429-558 are
+all of its 68 effects). The owner re-uploaded it on 2026-10-13: byte-identical to the copy used for effects 429-558,
+plus preview GIFs and an engine helper script. Its licence: use in unlimited personal and commercial projects (games
+included), modified or unmodified; no attribution needed; no reselling, redistributing, sublicensing or sharing of the
+assets themselves, alone or inside another asset pack, template or generator, even modified; no machine-learning
+training. Shipping the art inside the game client is use in a game. The set and anything cut from it stay out of git:
+`art_import/pack_fx/` is ignored, only the spec and `art_import/pack_fx.sums` (sha256 of each strip's RGBA pixels) are
+committed. The set itself is kept with the art libraries outside the repository.
+- 7 one-shot cuts of status loops for things sent on every proc or tick (the full loops run 1.3-2 s): reflect_bubble
+  (shield bubble 0-7), tick_bleed, tick_burn, tick_poison, tick_curse, tick_regen (frames 0-11), tick_chill (frozen
+  0-9); 70 ms per frame, alpha 0 / 255 (soft glows become an ordered 4x4 dither), the last three frames dissolve in the
+  same dither, an empty last frame; placed like `import_vfx.py` (the set's feet point on (14, 20)), cut to whole
+  tiles: 3x3 sent at +1,+1, tick_bleed 3x2 at +1,+1, tick_burn 2x3 at 0,+1. About 690 sprites.
+- `python3 -I gen_pack_fx.py build --src SET` writes the strips, the spec and the sums; `build --check` (CI, Pillow
+  12.3.0 / numpy 2.5.3 like the class effects) compares the spec and sums with the script's table without the set,
+  and rebuilds byte-exact when `--src` is given. `preview --out DIR`: frame sheets and GIFs per cut.
+- Append to the next pair after everything else (ids = its effect count + 1..; 628.. when things_custom24 adds no
+  effects to things_custom23's 627):
+  ```
+  python3 -I client/tools/sprites/gen_pack_fx.py build --src SET
+  python3 -I client/tools/sprites/import_fx_art.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir OUT \
+      --spec client/tools/sprites/art_import/pack_fx.csv --expect-first-effect N \
+      --lua-out server/data/lib/chaos_pack_fx_ids.lua --catalog-out server/data/spells/pack_fx_catalog.csv
+  python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old IN/Tibia.dat IN/Tibia.spr
+  ```
+  Server use: server/README.md "Pack effects for procs and bosses" (switch `ChaosPackFx.PACK_FX`, off).
+
 ## Aura displacement (things_custom23, `tools/sprites/fix_pair_warnings.py` kind `displacement`)
 **On windows-assets since 2026-10-13 (c91dd6f9, owner approved).** The owner approved fixing the Scarlet Glimmer aura (look 712, auras.xml 30, the boss exclusive
 `aura_scarlet`). It had no displacement (the client reads 0,0). In a live client it drew about 17 x 12 units right and

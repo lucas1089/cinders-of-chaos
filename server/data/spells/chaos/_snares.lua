@@ -24,6 +24,19 @@ end
 if not ChaosArchetypesCore then
 	pcall(dofile, "data/scripts/chaos/archetypes_core.lua") -- the keystone flags (storage) and the unique keys
 end
+-- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX; off: exactly the stock effect as before)
+if not ChaosPackFx then
+	pcall(dofile, "data/lib/chaos_pack_fx.lua")
+end
+local function packFx(pos, use, stock)
+	if ChaosPackFx then
+		return ChaosPackFx.send(pos, use, stock)
+	end
+	if stock then
+		pos:sendMagicEffect(stock)
+	end
+	return false
+end
 local S = ChaosSnaresCore
 local function cfg()
 	return ChaosSnaresConfig
@@ -185,7 +198,7 @@ local function burst(snare)
 	end
 	local radius = S.burstRadius(snare.kind, snare.element)
 	local center = Position(snare.pos.x, snare.pos.y, snare.pos.z)
-	center:sendMagicEffect(const(AREA_FX[snare.element], CONST_ME_EXPLOSIONAREA or CONST_ME_POFF))
+	packFx(center, "snare_" .. tostring(snare.element), const(AREA_FX[snare.element], CONST_ME_EXPLOSIONAREA or CONST_ME_POFF))
 	local targets = S.pickTargets(enemiesNear(owner, snare.pos, radius, true), snare.pos, radius,
 		cfg()[snare.kind].maxTargets)
 	local ctype = const(TYPES[snare.element], COMBAT_PHYSICALDAMAGE)
@@ -230,7 +243,7 @@ local function burst(snare)
 		for _, ally in ipairs(ChaosSpell.alliesAround(owner, center, holy.radius, false)) do
 			if ally:isPlayer() and ally:getHealth() > 0 then
 				ally:addHealth(math.floor(ally:getMaxHealth() * holy.holy))
-				ally:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE or CONST_ME_POFF)
+				packFx(ally:getPosition(), "snare_holy_heal", CONST_ME_MAGIC_BLUE or CONST_ME_POFF)
 			end
 		end
 	end

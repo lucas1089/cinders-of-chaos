@@ -9453,6 +9453,29 @@ art); looks per effect: `data/spells/README_FX.md` "Class signature effects".
   a name its script sends, an effect in the spec and the ids; line inheritance; switch off: nothing changes; on: the
   hooks send the class effect at its offset, a skin wins, the default outside a cast, `Fx` only for 0,0 effects).
 
+## Pack effects for procs and bosses (`data/lib/chaos_pack_fx.lua`, switch `ChaosPackFx.PACK_FX`, off)
+Item powers, snares, rift modifiers, world bosses and the reflect sent stock effects. With the switch on they send
+animated effects of the oblique spell effect set instead. Effects only: no damage, chance, timing or target changes.
+- `ChaosPackFx.uses`: use key -> effect name. Call sites: `packFx(pos, use, stockEffect)` (a local in each file that
+  calls `ChaosPackFx.send`); off, unknown use or unknown name: exactly the stock effect the line sent before.
+- Effects already in the pair (429-558, work on things_custom23): item shock lightning_hit, item execute
+  shadow_eruption; snare bursts fire_explosion / frost_nova / lightning_strike / toxic_burst / shadow_eruption /
+  holy_hit by element (physical keeps the stock burst); rift boss arrival void_maw, Cinderdeath burst fire_explosion,
+  marked strike by element (fire_explosion / frost_nova / lightning_strike / shadow_eruption; the per-tile marks stay
+  stock); world boss arrival void_maw, enrage blood_pact, adds teleport_in.
+- Cuts for the next pair (`client/tools/sprites/gen_pack_fx.py`, ids in `data/lib/chaos_pack_fx_ids.lua` written by
+  `import_fx_art.py`; until then they fall back to stock): reflect reflect_bubble (`combat_fx.lua`, was
+  reflect_aegis), item bleed / ignite / poison / chill procs tick_bleed / tick_burn / tick_poison / tick_chill, rift
+  Cinderdeath mark tick_burn, crit wounds tick_bleed, Festering Wounds tick_poison, snare holy heal tick_regen.
+  tick_curse is cut but not used yet. Crit and dodge keep crit_burst / dodge_whoosh (the set has no crit art).
+- Flip step: set `C.PACK_FX = true` (and flip the check in `tests/pack_fx_test.lua`),
+  `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. The pair's pack effects show at once; the cuts
+  once the pair with them is on the client. Rollback: set it back to false.
+- Item procs have no throttle of their own: a proc on every hit sends one 3x3 effect per hit, as the stock effect did.
+- Tests: `tests/pack_fx_test.lua` (switch off; every use names a pair effect or a cut of the spec; every call site's
+  use exists and every use is sent; off: the stock id; on: Vfx, the stock id for unknown names or no chaos_vfx.lua).
+  Not run on a live server.
+
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 
 The Necromancer, the Monk and the Templar (docs/CLASSES.md, classes five to seven) need an account-wide unlock. The method is one
