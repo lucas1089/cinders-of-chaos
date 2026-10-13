@@ -28,7 +28,20 @@ def ok(cond, what):
 
 EX = os.path.join(HERE, 'areaplan', 'examples')
 examples = {f[:-5]: json.load(open(os.path.join(EX, f))) for f in sorted(os.listdir(EX)) if f.endswith('.json')}
-ok(sorted(examples) == ['crypt_boss', 'lava_cave', 'swamp_hunt'], 'three example plans: %s' % sorted(examples))
+ok(sorted(examples) == ['crypt_boss', 'lava_cave', 'swamp_hunt', 'temple_throne'], 'four example plans: %s' % sorted(examples))
+NUMERIC = {'size', 'floors', 'level', 'seed', 'count', 'respawn', 'pack', 'width', 'at', 'x', 'y', 'z', 'gold',
+           'experience', 'chest_action', 'floor'}
+
+
+def numbers_outside(v, key=None):
+    """numbers under keys that are not plain quantities (an item id would show up here)"""
+    if isinstance(v, dict):
+        return [n for k, x in v.items() for n in numbers_outside(x, k)]
+    if isinstance(v, list):
+        return [n for x in v for n in numbers_outside(x, key)]
+    if isinstance(v, int) and not isinstance(v, bool) and key not in NUMERIC:
+        return [(key, v)]
+    return []
 cat = C.catalogue(False)
 ok({'swamp', 'crypt', 'lava', 'forest', 'ice', 'cave'} <= set(cat['biomes']), 'the biomes of the catalogue')
 
@@ -45,8 +58,7 @@ def has(plan, text, level='ERROR'):
 # ------------------------------------------------------------------------------------------------ the examples
 for name, plan in examples.items():
     ok(not msgs(plan), name + ': validates: %s' % msgs(plan))
-    text = json.dumps(plan)
-    ok('"item' not in text and '"id": 1' not in text, name + ': no item id in the plan')
+    ok(not numbers_outside(plan), name + ': no item id in the plan: %s' % numbers_outside(plan)[:3])
 
 base = examples['crypt_boss']
 
@@ -210,7 +222,14 @@ for name, plan in examples.items():
 crypt = results['crypt_boss']
 ok(crypt['stats']['entry_to_boss'] and crypt['boss']['monster'] == 'Morgashal', 'crypt: the boss is reached (%s steps)'
    % crypt['stats']['entry_to_boss'])
-ok(len(crypt['links']) == 1 and crypt['links'][0]['ladder'], 'crypt: the stairs have a hole and a ladder')
+lk = crypt['links'][0]
+ok(len(crypt['links']) == 1 and lk['brush'] == 'stairs', 'crypt: the stairs use the stair brush (%s)' % lk['brush'])
+kit = __import__('area_plan_decor').kits()
+ok(crypt['tiles'][lk['hole']]['ground'] == kit['brushes']['stairs_down_ground'], 'crypt: the stairs ground above')
+ok(kit['brushes']['stairs_up'] in [i for i, _a in crypt['tiles'][lk['stair']]['items']], 'crypt: the stone stairs below')
+ok(lk['landing'] == (lk['stair'][0], lk['stair'][1] + 1, lk['stair'][2]) and lk['up'] == (lk['hole'][0], lk['hole'][1] - 1, lk['hole'][2]),
+   'crypt: down lands south of the stairs, up north of the stairs ground')
+ok(lk['landing'] in crypt['walk'] and lk['up'] in crypt['walk'], 'crypt: both stair landings are walkable')
 ok(any(a.get('tele') for t in crypt['tiles'].values() for _i, a in t['items']), 'crypt: the teleport carries its destination')
 ok('Wandering Merchant' in results['swamp_hunt']['spawn_xml'], 'swamp: the NPC in the spawn file')
 exit_items = [a for t in crypt['tiles'].values() for i, a in t['items'] if a.get('aid') == 47951]
@@ -262,7 +281,7 @@ with tempfile.TemporaryDirectory() as tmp:
     for name, res in results.items():
         KB.approve(db, examples[name], res['stats'], now=1)
     KB.approve(db, examples['swamp_hunt'], results['swamp_hunt']['stats'], now=2)
-    ok(len(KB.rows(db)) == 3, 'kb: one row per plan')
+    ok(len(KB.rows(db)) == len(results), 'kb: one row per plan')
     s1 = KB.suggest(db, 'swamp', 60, 120)
     ok(s1['approved'] == 1 and s1['typical']['width'] == 72 and 'Bog Raider' in s1['monsters_used'], 'kb: suggest: %s' % s1.get('typical'))
     p = copy.deepcopy(examples['swamp_hunt'])
@@ -308,6 +327,176 @@ ok('"chaos-area-plan/1"' in seen[0][0] and 'lava (cave' in seen[0][0] and 'Cinde
 answers[:] = ['not json'] * 5
 plan, issues, rounds = AI.plan_from_prompt('x', fake, cat, None, log=lambda *a: None)
 ok(rounds == AI.MAX_FIX_ROUNDS and plan is None, 'ai: at most %d fix rounds' % AI.MAX_FIX_ROUNDS)
+
+# ------------------------------------------------------------------------------------------------ decoration
+import area_plan_decor as D
+import area_plan_place as PL
+import subprocess
+ok(set(kit['biome_kit']) >= set(cat['biomes']), 'decor: every biome has a kit: %s' % (set(cat['biomes']) - set(kit['biome_kit'])))
+for kname, k in kit['kits'].items():
+    for c, rows in k.items():
+        if c in ('hall', 'rates'):
+            continue
+        for g, _w in rows:
+            ok(g in kit['groups'], 'decor: kit %s %s names group %s' % (kname, c, g))
+            if c in ('floor', 'around', 'path_edge', 'wall_h', 'wall_v', 'light_small', 'light_wall_h', 'light_wall_v'):
+                ok(not kit['groups'][g]['block'], 'decor: %s %s %s does not block' % (kname, c, g))
+ok(all(g['light'] for c in ('light_floor', 'light_wall_h', 'light_wall_v') for k in kit['kits'].values()
+       for g in [kit['groups'][r[0]] for r in k.get(c, [])]), 'decor: the light categories give light')
+for name, res in results.items():
+    st = res['stats']['decoration']
+    ok(st['added'] > 100, name + ': the dressing adds %d pieces' % st['added'])
+    ok(st['spam_share'] < 0.01, name + ': under 1%% of tiles with 3+ decoration items (%.3f)' % st['spam_share'])
+    ok(not any(t in res['dresser'].protected for t, _i, _g, _c in res['dresser'].placed),
+       name + ': nothing on a spawn, teleport, link, chest, NPC or the boss')
+    ok(not any('decoration' in m for m in PC.qa_errors(res)), name + ': decoration cuts no path')
+    raw = PC.compile_plan(examples[name], pair24=False, cat=cat, dress=False)
+    ok(set(res['zone_steps'] if 'zone_steps' in res else res['stats']['zone_steps']) == set(raw['stats']['zone_steps']),
+       name + ': the same zones reached with and without decoration')
+temple = results['temple_throne']
+cats = temple['stats']['decoration']['by_category']
+ok(cats.get('hall pillars', 0) >= 8 and cats.get('throne') == 1 and cats.get('braziers') == 2,
+   'temple: pillar rows, the throne and its braziers: %s' % cats)
+ok(cats.get('wall lights', 0) > 0 and cats.get('wall decor', 0) > 0, 'temple: torches and tapestries on the walls')
+pil = [(t, i) for t, i, g, c in temple['dresser'].placed if c == 'hall pillars']
+ok(len({i for _t, i in pil}) == 1, 'temple: one pillar look per area')
+hung = [i for _t, i, g, c in temple['dresser'].placed if c == 'wall decor' and g.startswith('tapestry')]
+ok(len({kit['groups']['tapestry_h']['ids'].index(i) if i in kit['groups']['tapestry_h']['ids'] else
+        kit['groups']['tapestry_v']['ids'].index(i) for i in hung}) <= 1, 'temple: one tapestry colour')
+counts = {}
+for level in ('sparse', 'normal', 'dense'):
+    p = copy.deepcopy(examples['lava_cave'])
+    p['decoration'] = level
+    counts[level] = PC.compile_plan(p, pair24=False, cat=cat)['stats']['decoration']['added']
+ok(counts['sparse'] < counts['normal'] < counts['dense'], 'decor: sparse < normal < dense: %s' % counts)
+lights = {}
+for level in ('dark', 'bright'):
+    p = copy.deepcopy(examples['crypt_boss'])
+    p['light'] = level
+    lights[level] = PC.compile_plan(p, pair24=False, cat=cat)['stats']['decoration']['lights_added']
+ok(lights['dark'] < lights['bright'], 'decor: the light setting scales the lights: %s' % lights)
+# a blocking piece never cuts a route: the dresser's own check on a narrow corridor
+walk = {(x, 5, 7) for x in range(10)} | {(x, y, 7) for x in range(3) for y in range(3, 8)}
+ok(not D._simple(walk, (5, 5, 7)) and D._simple(walk, (0, 3, 7)), 'decor: a corridor tile is not simple, a corner is')
+lane = D.lanes(walk, (9, 5, 7), [(0, 3, 7)])
+ok((5, 5, 7) in lane and (0, 3, 7) in lane, 'decor: the lane runs from the arrival to the target')
+
+# ------------------------------------------------------------------------------------------------ biomes without the pack
+for b in ('forest', 'ice'):
+    p = copy.deepcopy(examples['swamp_hunt'])
+    p['biome'] = b
+    res = PC.compile_plan(p, pair24=False, cat=cat)
+    ids = {i for t in res['tiles'].values() for i in [t['ground']] + [x for x, _a in t['items']]}
+    ok(not any(36000 <= i < 37000 for i in ids), '%s: no pack item without the packitems step' % b)
+    ok(not C.validate(p, cat) or not any('pack items' in str(i) for i in C.validate(p, cat)), '%s: no pack warning' % b)
+p = copy.deepcopy(examples['swamp_hunt'])
+p['biome'] = 'ice'
+ice = PC.compile_plan(p, pair24=False, cat=cat)
+grounds = {t['ground'] for t in ice['tiles'].values()}
+ok(len(grounds & set(range(6580, 6627)) | (grounds & {670})) >= 10, 'ice: 10+ snow ground ids (%d)' % len(grounds))
+ok(ice['stats']['unbordered'] == 0, 'ice: every snow and ice edge bordered')
+p['biome'] = 'forest_pack'
+ok(any('pack items' in str(i) for i in C.validate(p, cat)), 'forest_pack: warns that it needs the pack items')
+
+# ------------------------------------------------------------------------------------------------ roofs
+p = copy.deepcopy(examples['crypt_boss'])
+p['origin'] = {'x': 14800, 'y': 14800, 'z': 6}
+roofed = PC.compile_plan(p, pair24=False, cat=cat)
+ok(roofed['stats']['roof_tiles'] > 0 and not PC.qa_errors(roofed), 'roof: a crypt at z 6 gets a roof (%d)' % roofed['stats']['roof_tiles'])
+ok(all(roofed['tiles'][(x, y, 5)]['ground'] == kit['roof']['ground'][0] for (x, y, z) in roofed['tiles'] if z == 6
+       and (x, y, 5) in roofed['tiles']), 'roof: over floor 1 on z 5')
+ok(crypt['stats']['roof_tiles'] == 0, 'roof: none underground')
+
+# ------------------------------------------------------------------------------------------------ chests and NPC stubs
+ok(all(C.CHEST_ACTION_BLOCK[0] <= c['aid'] <= C.CHEST_ACTION_BLOCK[1] for r in results.values() for c in r['chests']),
+   'chests: the action id in the block')
+ok(all(C.CHEST_STORAGE_BLOCK[0] <= c['storage'] <= C.CHEST_STORAGE_BLOCK[1] for r in results.values() for c in r['chests']),
+   'chests: the storage in the block')
+ok(all(dict(temple['tiles'][c['at']]['items']).get(1740, {}).get('aid') == c['aid'] for c in temple['chests']),
+   'chests: the chest item carries the action id')
+p = copy.deepcopy(examples['temple_throne'])
+p['chests'][0]['reward']['items'][0]['name'] = 'Orb of Upheavel'
+r, m = has(p, 'no item "Orb of Upheavel"')
+ok(r and any('Orb of Upheaval' in x for x in m), 'chests: an unknown reward item, with the close name: %s' % m)
+p = copy.deepcopy(examples['temple_throne'])
+p['npcs'][0]['name'] = 'Wandering Merchant'
+ok(has(p, 'exists already')[0], 'npcs: a new NPC may not reuse a name')
+script = temple['stubs']['data/scripts/chaos_areaplan/sunfallen_temple_chests.lua']
+ok('npc/Brother Aldwen.xml' in ' '.join(temple['stubs']) and 'data/npc/scripts/brother_aldwen.lua' in temple['stubs'],
+   'npcs: the new NPC stubs')
+with tempfile.TemporaryDirectory() as tmp:
+    sp = os.path.join(tmp, 'chests.lua')
+    open(sp, 'w').write(script)
+    c = temple['chests'][0]
+    harness = os.path.join(tmp, 'run.lua')
+    open(harness, 'w').write("""
+MESSAGE_INFO_DESCR = 1
+local reg
+function Action() local a = {} function a:aid(n) self.id = n end function a:register() reg = self end return a end
+function ItemType(id) return {getWeight = function(self, n) return n end} end
+dofile("%s")
+local store, got, gold, last = {}, {}, 0, ""
+local player = {getStorageValue = function(s, k) return store[k] or -1 end, setStorageValue = function(s, k, v) store[k] = v end,
+  getFreeCapacity = function() return 1000 end, addItem = function(s, id, n) got[#got + 1] = id .. "x" .. n end,
+  addMoney = function(s, g) gold = gold + g end, addExperience = function() end, sendTextMessage = function(s, t, m) last = m end}
+local item = {getPosition = function() return {x = %d, y = %d, z = %d} end}
+reg.onUse(player, item)
+local first = table.concat(got, ",") .. " " .. gold .. " " .. last
+reg.onUse(player, item)
+print(reg.id, first, #got, gold, last)
+""" % (sp, c['at'][0], c['at'][1], c['at'][2]))
+    for lua in ('luajit', 'lua5.3'):
+        try:
+            out = subprocess.run([lua, harness], capture_output=True, text=True).stdout.strip()
+        except FileNotFoundError:
+            continue
+        ok(out.split('\t') == [str(c['aid']), '29856x2,32251x1 250000 You take the relic offerings.', '2', '250000',
+                                'The chest is empty.'], 'chests: the script gives the reward once (%s): %s' % (lua, out))
+    # ------------------------------------------------------------------------------------------------ place, install
+    a_dir, w_dir = os.path.join(tmp, 'a'), os.path.join(tmp, 'w')
+    PC.write_outputs(temple, a_dir)
+    PC.write_outputs(results['swamp_hunt'], w_dir)
+    world = os.path.join(w_dir, 'mirewater_fen.otbm')
+    before = open(world, 'rb').read()
+    copy_ = os.path.join(tmp, 'copy.otbm')
+    out = PL.place(os.path.join(a_dir, 'sunfallen_temple.otbm'), world, copy_, (14900, 14700, 9),
+                   os.path.join(w_dir, 'mirewater_fen-spawn.xml'), os.path.join(tmp, 'copy-spawn.xml'), log=lambda *a: None)
+    ok(open(world, 'rb').read() == before, 'place: the world file is untouched')
+    _h, back, probs = PC.read_otbm_full(open(copy_, 'rb').read())
+    ok(not probs and len(back) == len(results['swamp_hunt']['tiles']) + len(temple['tiles']), 'place: the copy holds both')
+    d = out['shift']
+    moved_exit = (temple['exit']['at'][0] + d[0], temple['exit']['at'][1] + d[1], temple['exit']['at'][2] + d[2])
+    ok(any(a.get('aid') == temple['exit']['aid'] for _i, a in back[moved_exit]['items']), 'place: tiles and items shifted')
+    tele = [a['tele'] for t in back.values() for _i, a in t['items'] if a.get('tele')]
+    ok(all(x in back for x in tele), 'place: teleport destinations follow the area')
+    sp_text = open(os.path.join(tmp, 'copy-spawn.xml')).read()
+    ok(sp_text.count('<spawn ') == results['swamp_hunt']['spawn_xml'].count('<spawn ') + temple['spawn_xml'].count('<spawn '),
+       'place: the spawn copy holds both spawn files')
+    ok('local ORIGIN = {x = 14900, y = 14700, z = 9}' in open(out['chest_script']).read(), 'place: the chest script follows')
+    try:
+        PL.place(os.path.join(a_dir, 'sunfallen_temple.otbm'), world, os.path.join(tmp, 'c2.otbm'),
+                 tuple(results['swamp_hunt']['manifest']['origin']), log=lambda *a: None)
+        ok(False, 'place: an overlap is refused')
+    except PL.PlaceError as e:
+        ok('land on tiles the world map has' in str(e), 'place: an overlap is refused')
+    try:
+        PL.place(os.path.join(a_dir, 'sunfallen_temple.otbm'), world, world, (14900, 14700, 9), log=lambda *a: None)
+        ok(False, 'place: never the world file')
+    except PL.PlaceError:
+        ok(True, 'place: never the world file')
+    srv = os.path.join(tmp, 'srv')
+    os.makedirs(os.path.join(srv, 'data'))
+    done = PL.install(a_dir, srv, log=lambda *a: None)
+    ok(len(done) == 3 and all(a == 'write' for a, _p in done), 'install: three files written')
+    done = PL.install(a_dir, srv, log=lambda *a: None)
+    ok(all(a == 'same' for a, _p in done), 'install: idempotent')
+    other = os.path.join(srv, 'data', 'scripts', 'chaos_areaplan', 'other_chests.lua')
+    open(other, 'w').write('action:aid(%d)\n' % temple['chests'][0]['aid'])
+    try:
+        PL.install(a_dir, srv, log=lambda *a: None)
+        ok(False, 'install: an action id clash stops it')
+    except PL.PlaceError as e:
+        ok('action id' in str(e), 'install: an action id clash stops it')
 
 print('area planner: %d checks, %d failed' % (checks, fails))
 sys.exit(1 if fails else 0)

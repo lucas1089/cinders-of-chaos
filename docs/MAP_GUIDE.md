@@ -367,7 +367,8 @@ plans (server/README.md "Area planner").
 
 ### The plan
 Schema `chaos-area-plan/1`: `server/tools/areaplan/schema.json`. Examples: `server/tools/areaplan/examples/`
-(`swamp_hunt.json`, `crypt_boss.json` with 2 floors and a boss, `lava_cave.json`).
+(`swamp_hunt.json`, `crypt_boss.json` with 2 floors and a boss, `lava_cave.json`, `temple_throne.json`: a dense
+temple with a nave, chapels and a boss throne room).
 
 | key | what |
 |---|---|
@@ -377,13 +378,16 @@ Schema `chaos-area-plan/1`: `server/tools/areaplan/schema.json`. Examples: `serv
 | `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor or tunnel |
 | `connections` | `stairs`, `ladder` (hole and ladder, both ways), `hole` (one way down), `teleport` (any two zones, `two_way`) |
 | `entry`, `exit` | the arrival zone (floor 1); the exit portal's zone and optional world target |
-| `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn; the boss in the boss room; NPCs of our list; quest chests with a quest key |
+| `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn; the boss in the boss room; NPCs of our list; quest chests with a quest key and a `reward` (item names, gold, experience); `new` NPCs with `lines`; `chest_action` |
 
 Biomes map to our areagen themes (`python3 -I server/tools/area_planner.py catalogue`): cave (emberdeep), lava and
-waste (cinderfall), swamp (emberdeep with wide mud and swamp trees; with the pair 24 switch on, the pair 24 swamp ground
-and water and acid pools), crypt (ossuary), vault, catacomb, hall, abyss, sanctum (the rift themes), forest and ice (the
-pack grounds, trees and borders; they need the packitems step). Every id comes from our tables: `areagen_config.lua`,
-`chaos_dark_tiles.lua`, `chaos_theme_items.lua`, `data/items/art_items.csv` and `rift_config.lua` (the chest).
+waste (cinderfall), swamp (emberdeep with wide mud, swamp trees and glowing mushrooms; with the pair 24 switch on, the
+pair 24 swamp ground and water and acid pools), crypt (ossuary), vault, catacomb, hall, abyss, sanctum (the rift
+themes), forest (16 stock grass ids, dirt patches, the grass border set, stock trees) and ice (27 stock snow ids, ice
+sheets and grey rock with the snow and ice border sets, snowy trees). `forest_pack` and `ice_pack` use the pack
+grounds and need the packitems step. Every id comes from our tables: `areagen_config.lua`, `chaos_dark_tiles.lua`,
+`chaos_theme_items.lua`, `data/items/art_items.csv`, `rift_config.lua` (the chest), the stock grounds and borders
+listed in `server/tools/areaplan_build.lua`, and the decoration kits in `server/tools/areaplan/decor_kits.json`.
 
 ### Rules the validator checks
 - The schema: unknown keys are refused, so an item id cannot slip in.
@@ -393,17 +397,23 @@ pack grounds, trees and borders; they need the packitems step). Every id comes f
 - No spawn in a PZ zone. The boss room has exactly one way in; a one-way teleport out does not count.
 - Teleport, stairs, chest, NPC and spawn targets exist. Stairs and holes join floors next to each other.
 - Zones fit inside the 4-tile rim with 3 tiles between them. Each message ends with a fix an AI can apply.
+- Chest rewards name items of our item tables (close names are suggested); two quest keys may not share a storage;
+  a `new` NPC may not reuse an existing name.
 
 ### What compile does
 1. Lays the zones out (fixed `at`, compass `place`, or next to their neighbours) and routes each path around the other
    zones; the boss room is never crossed. Holes go inside the upper zone; the zone below is placed under them.
 2. Runs the area generator with a planned layout (`layout.plan`, `links` in `areagen_core.lua`): our grounds, patches,
    pools, auto-borders, walls, decoration, lights, hole and ladder. Same seed, same bytes in LuaJIT and Lua 5.3.
-3. Places teleports (with their destination), the exit portal (action id 47951 or a world target), chests against a
-   wall, NPCs, the boss and the spawn points (4 tiles apart, packs on one point), and flags PZ tiles.
+3. Places the stair brush (stairs ground above, stone stairs below), teleports (with their destination), the exit
+   portal (action id 47951 or a world target), chests against a wall (with the area's chest action id), NPCs, the
+   boss and the spawn points (4 tiles apart, packs on one point), flags PZ tiles, and roofs dungeon floors at z 7 or
+   above.
+3b. Dresses the area with the biome's decoration kit (below).
 4. QA on the written file: OTBM structure and attributes, known tile flags, no id outside the biome's catalogue, every
    ground transition bordered and no walkable edge open, every zone and the boss reached, one way into the boss room,
-   no spawn on a PZ or blocked tile, density inside 1-6 per 100 tiles (warning).
+   no spawn on a PZ or blocked tile, density inside 1-6 per 100 tiles (warning), no walkable tile cut off by the
+   decoration and nothing on a protected tile, under 1 % of tiles with 3+ decoration items (warning).
 5. Stats: walkable tiles, monsters per 100 walkable tiles and per screen (15 x 11), steps from the entry to the boss
    and to each zone.
 
@@ -417,11 +427,42 @@ python3 -I server/tools/area_planner.py approve my_area.json             # into 
 python3 -I server/tools/area_planner.py suggest swamp 50 140             # numbers and monsters for a new plan
 python3 -I server/tools/area_planner.py similar my_area.json
 python3 -I server/tools/area_planner.py plan --from-prompt "a two-floor crypt for 150-280 with a boss" --out my_area.json
+python3 -I server/tools/area_planner.py place OUT/my_area.otbm world.otbm copy.otbm --at X Y Z \
+    --spawn world-spawn.xml copy-spawn.xml                              # a COPY of the map with the area in it
+python3 -I server/tools/area_planner.py install OUT SERVER_DIR          # chest script and new NPCs into data/
+python3 -I server/tools/area_planner.py check-kits items.otb items.xml Tibia.dat
 ```
-Then open the `.otbm` in the map editor next to a copy of the world map, check it with `tools/map/score_area.py`, and
-place it by hand. The planner never writes the world map. Render only for review: the pair stays out of git.
+Open the `.otbm` (or the placed copy) in the map editor, check it with `tools/map/score_area.py`, then use the copy.
+The planner never writes the world map. Render only for review: the pair stays out of git.
+
+### Decoration
+The generator's scatter alone reads clean but bare, so compile dresses every area with its biome's kit
+(`decor_kits.json`: groups of stock items of one look and role, `check-kits` verifies them on the pair):
+
+| rule | what |
+|---|---|
+| halls (dungeon rooms 11x9 and up, every room at `dense`) | one pillar look in two mirrored rows 2 tiles in from the walls, every 4 tiles; statues in the inner corners |
+| boss room | the throne 1-2 tiles north of the boss, a brazier on each side |
+| walls | torches and candles (as often as `light` asks), tapestries, banners, carvings on the north and west walls of rooms, one colour per area, every 4 tiles |
+| light props | braziers, lava holes, glowing mushrooms, crystals against the walls, about 1 per 100 tiles x `light` |
+| corners | cobwebs, stalagmites, bones, reeds in the room corners |
+| wall props | coffins, crates, barrels, rubble, rocks, reeds along the walls |
+| clusters | an anchor piece 2-3 tiles from a wall and 2-5 small pieces around it, about 2 per 100 tiles |
+| path edging | small pieces along the sides of the corridors and tunnels |
+| floor detail | 14 % of the tiles next to a wall, 8 % one tile further, 3 % in the middle: dense at the edges, open where the fights are |
+
+Never on a spawn, teleport (or its landing), link, chest, NPC or the boss; nothing blocking inside a planned path or on
+the walk from the arrival to every zone and special tile, and a blocking piece only where its neighbours stay joined.
+`decoration` scales every rate (sparse x0.55, normal x1, dense x1.5); a kit may raise its own rates (lava). The
+result sits above the bands of rule 6 on purpose (owner, 2026-10-13: "more decoration"); `stats` shows decoration per
+open tile, lights per 100 tiles and the spam share.
+
+### Proposals for new sprites (not drawn)
+- A stair-down ground and a stone stair in the dark stone and rift floor colours (the stock stairs are light grey).
+- Wall-hung torches and moss for cave rock and mountain edges (the hung pieces fit only built walls).
+- More snow and ice variants with soft drifts, and a frozen water ground with its border, for the ice biome.
+- A flat roof and roof edge set matching the dark stone walls.
 
 ### What it does not do
-- No towns, houses or roofs. Stairs use our hole and ladder (no stair brush in the catalogue).
-- Chests carry no action id; the manifest lists each chest's tile under its quest key for the quest script.
-- Ice has one snow ground id, so it reads flatter than rule 4 asks. Forest and ice need the pack items installed.
+- No towns, houses or house roofs (only a flat roof over a dungeon above ground).
+- The chest script gives items, gold and experience; quest logic beyond that is hand-written.

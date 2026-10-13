@@ -1,0 +1,2229 @@
+{
+ "biome_kit": {
+  "abyss": "abyss",
+  "catacomb": "crypt",
+  "cave": "cave",
+  "crypt": "crypt",
+  "forest": "forest",
+  "forest_pack": "forest",
+  "hall": "vault",
+  "ice": "ice",
+  "ice_pack": "ice",
+  "lava": "lava",
+  "sanctum": "cave",
+  "swamp": "swamp",
+  "vault": "vault",
+  "waste": "lava"
+ },
+ "brushes": {
+  "stairs_down_ground": 411,
+  "stairs_up": 3687
+ },
+ "coins": {
+  "crystal": 2160,
+  "gold": 2148,
+  "platinum": 2152
+ },
+ "groups": {
+  "altars": {
+   "block": true,
+   "ids": [
+    17247
+   ],
+   "light": 0,
+   "name": "ancient altar",
+   "size": 1
+  },
+  "ashes": {
+   "block": false,
+   "ids": [
+    2249,
+    7349
+   ],
+   "light": 0,
+   "name": "ashes",
+   "size": 1
+  },
+  "banner_h": {
+   "block": false,
+   "ids": [
+    9495,
+    9496,
+    9497,
+    9498,
+    10378,
+    10379,
+    10380
+   ],
+   "light": 0,
+   "name": "banner",
+   "size": 2
+  },
+  "banner_v": {
+   "block": false,
+   "ids": [
+    9499,
+    9500,
+    9501,
+    9502
+   ],
+   "light": 0,
+   "name": "banner",
+   "size": 2
+  },
+  "barrels": {
+   "block": true,
+   "ids": [
+    9466,
+    9467
+   ],
+   "light": 0,
+   "name": "rain barrel",
+   "size": 2
+  },
+  "big_coal_basin": {
+   "block": true,
+   "ids": [
+    1486
+   ],
+   "light": 7,
+   "name": "stone coal basin",
+   "size": 2
+  },
+  "big_dead_tree": {
+   "block": true,
+   "ids": [
+    26672
+   ],
+   "light": 0,
+   "name": "Dead Tree",
+   "size": 3
+  },
+  "big_mushrooms": {
+   "block": true,
+   "ids": [
+    4172,
+    4173,
+    17753
+   ],
+   "light": 2,
+   "name": "moss cap mushroom",
+   "size": 2
+  },
+  "black_crystals_small": {
+   "block": false,
+   "ids": [
+    11799,
+    11801
+   ],
+   "light": 0,
+   "name": "black crystals",
+   "size": 2
+  },
+  "bone_heap": {
+   "block": true,
+   "ids": [
+    11253,
+    11351
+   ],
+   "light": 0,
+   "name": "large pile of bones",
+   "size": 2
+  },
+  "bone_pillar": {
+   "block": true,
+   "ids": [
+    6413
+   ],
+   "light": 0,
+   "name": "bone pillar",
+   "size": 2
+  },
+  "bone_throne": {
+   "block": false,
+   "ids": [
+    12156
+   ],
+   "light": 0,
+   "name": "bone throne",
+   "size": 2
+  },
+  "boulders": {
+   "block": true,
+   "ids": [
+    9419,
+    9421,
+    13867
+   ],
+   "light": 0,
+   "name": "stone pile",
+   "size": 2
+  },
+  "brass_throne": {
+   "block": false,
+   "ids": [
+    9445
+   ],
+   "light": 0,
+   "name": "brass throne",
+   "size": 2
+  },
+  "broken_pillars": {
+   "block": true,
+   "ids": [
+    3766,
+    3792,
+    22308,
+    22310,
+    22312
+   ],
+   "light": 0,
+   "name": "stone pillar",
+   "size": 2
+  },
+  "bushes": {
+   "block": true,
+   "ids": [
+    2767,
+    2785
+   ],
+   "light": 0,
+   "name": "bush",
+   "size": 1
+  },
+  "candle_h": {
+   "block": false,
+   "ids": [
+    9512
+   ],
+   "light": 5,
+   "name": "candle",
+   "size": 2
+  },
+  "candle_v": {
+   "block": false,
+   "ids": [
+    9511
+   ],
+   "light": 5,
+   "name": "candle",
+   "size": 2
+  },
+  "candles": {
+   "block": false,
+   "ids": [
+    21350,
+    21351,
+    21352
+   ],
+   "light": 4,
+   "name": "dripping candles",
+   "size": 2
+  },
+  "carving_h": {
+   "block": false,
+   "ids": [
+    9847,
+    9848,
+    9849,
+    9850
+   ],
+   "light": 0,
+   "name": "stone carving",
+   "size": 2
+  },
+  "coal_basin": {
+   "block": true,
+   "ids": [
+    1481,
+    1484
+   ],
+   "light": 8,
+   "name": "coal basin",
+   "size": 1
+  },
+  "cobweb_corner": {
+   "block": false,
+   "ids": [
+    1906
+   ],
+   "light": 0,
+   "name": "cobwebs",
+   "size": 2
+  },
+  "cracks": {
+   "block": false,
+   "ids": [
+    22509,
+    25834
+   ],
+   "light": 0,
+   "name": "some cracks",
+   "size": 1
+  },
+  "crates": {
+   "block": true,
+   "ids": [
+    7481,
+    9686,
+    10088,
+    21396
+   ],
+   "light": 0,
+   "name": "crate",
+   "size": 1
+  },
+  "crystals": {
+   "block": true,
+   "ids": [
+    8633,
+    8634,
+    8636,
+    17580,
+    17574,
+    17582
+   ],
+   "light": 4,
+   "name": "large crystal",
+   "size": 2
+  },
+  "dead_trees": {
+   "block": true,
+   "ids": [
+    2709,
+    2710,
+    2717,
+    2718,
+    26673
+   ],
+   "light": 0,
+   "name": "dead tree",
+   "size": 2
+  },
+  "debris_grey": {
+   "block": false,
+   "ids": [
+    1308,
+    1311,
+    1313,
+    1315
+   ],
+   "light": 0,
+   "name": "debris",
+   "size": 2
+  },
+  "debris_red": {
+   "block": false,
+   "ids": [
+    1320,
+    1325
+   ],
+   "light": 0,
+   "name": "debris",
+   "size": 2
+  },
+  "dry_grass": {
+   "block": false,
+   "ids": [
+    10738,
+    10739,
+    10740
+   ],
+   "light": 0,
+   "name": "dry grass",
+   "size": 1
+  },
+  "ferns": {
+   "block": true,
+   "ids": [
+    4015,
+    4018
+   ],
+   "light": 0,
+   "name": "big fern",
+   "size": 2
+  },
+  "flowers": {
+   "block": false,
+   "ids": [
+    6226,
+    6227,
+    6228
+   ],
+   "light": 0,
+   "name": "flowers",
+   "size": 2
+  },
+  "gargoyles": {
+   "block": true,
+   "ids": [
+    1452,
+    1453
+   ],
+   "light": 0,
+   "name": "gargoyle statue",
+   "size": 2
+  },
+  "glow_mushrooms_big": {
+   "block": true,
+   "ids": [
+    17750,
+    17751
+   ],
+   "light": 5,
+   "name": "blue glowing mushroom",
+   "size": 1
+  },
+  "glow_mushrooms_h": {
+   "block": false,
+   "ids": [
+    17742,
+    17743
+   ],
+   "light": 4,
+   "name": "small glowing mushrooms",
+   "size": 2
+  },
+  "glow_mushrooms_v": {
+   "block": false,
+   "ids": [
+    17741,
+    17752
+   ],
+   "light": 4,
+   "name": "small glowing mushrooms",
+   "size": 2
+  },
+  "glowing_skull_pillar": {
+   "block": true,
+   "ids": [
+    7059
+   ],
+   "light": 7,
+   "name": "glowing skull pillar",
+   "size": 2
+  },
+  "grass_tufts": {
+   "block": false,
+   "ids": [
+    6216,
+    6217,
+    6218,
+    6219
+   ],
+   "light": 0,
+   "name": "grass",
+   "size": 1
+  },
+  "grave": {
+   "block": false,
+   "ids": [
+    1406
+   ],
+   "light": 0,
+   "name": "grave",
+   "size": 2
+  },
+  "grave_stones": {
+   "block": true,
+   "ids": [
+    1407,
+    1408
+   ],
+   "light": 0,
+   "name": "grave stone",
+   "size": 1
+  },
+  "guardians": {
+   "block": true,
+   "ids": [
+    8836,
+    8837
+   ],
+   "light": 0,
+   "name": "guardian statue",
+   "size": 2
+  },
+  "high_grass": {
+   "block": true,
+   "ids": [
+    10914,
+    10915
+   ],
+   "light": 0,
+   "name": "high grass",
+   "size": 2
+  },
+  "ice_blocks": {
+   "block": true,
+   "ids": [
+    6708,
+    6709,
+    6710
+   ],
+   "light": 0,
+   "name": "ice",
+   "size": 1
+  },
+  "ice_light": {
+   "block": true,
+   "ids": [
+    6730,
+    8574
+   ],
+   "light": 6,
+   "name": "ice pillar",
+   "size": 2
+  },
+  "ice_pillar": {
+   "block": true,
+   "ids": [
+    6741
+   ],
+   "light": 0,
+   "name": "frozen pillar",
+   "size": 2
+  },
+  "ice_stones": {
+   "block": true,
+   "ids": [
+    28895,
+    28896
+   ],
+   "light": 0,
+   "name": "ice stone",
+   "size": 2
+  },
+  "icicles": {
+   "block": true,
+   "ids": [
+    6966
+   ],
+   "light": 0,
+   "name": "icicles",
+   "size": 2
+  },
+  "jagged_stone": {
+   "block": false,
+   "ids": [
+    8220
+   ],
+   "light": 0,
+   "name": "jagged stone",
+   "size": 1
+  },
+  "jagged_white": {
+   "block": true,
+   "ids": [
+    8214,
+    8215,
+    8216
+   ],
+   "light": 0,
+   "name": "jagged stones",
+   "size": 2
+  },
+  "large_black_crystal": {
+   "block": true,
+   "ids": [
+    11753
+   ],
+   "light": 4,
+   "name": "large black crystal",
+   "size": 2
+  },
+  "lava_cracks": {
+   "block": false,
+   "ids": [
+    5840,
+    5841,
+    5842,
+    5843
+   ],
+   "light": 0,
+   "name": "small lava cracks",
+   "size": 2
+  },
+  "lava_holes": {
+   "block": true,
+   "ids": [
+    389,
+    8575,
+    22571
+   ],
+   "light": 6,
+   "name": "lava hole",
+   "size": 1
+  },
+  "limestone_pillar": {
+   "block": true,
+   "ids": [
+    10198
+   ],
+   "light": 0,
+   "name": "limestone pillar",
+   "size": 2
+  },
+  "marble_pillar": {
+   "block": true,
+   "ids": [
+    1515
+   ],
+   "light": 0,
+   "name": "marble pillar",
+   "size": 2
+  },
+  "moss_h": {
+   "block": false,
+   "ids": [
+    9415,
+    22360
+   ],
+   "light": 0,
+   "name": "moss",
+   "size": 2
+  },
+  "moss_v": {
+   "block": false,
+   "ids": [
+    9416,
+    22361
+   ],
+   "light": 0,
+   "name": "moss",
+   "size": 2
+  },
+  "mossy_corner": {
+   "block": true,
+   "ids": [
+    17711
+   ],
+   "light": 0,
+   "name": "small mossy corner",
+   "size": 2
+  },
+  "mud_debris": {
+   "block": true,
+   "ids": [
+    18684,
+    18685,
+    18686
+   ],
+   "light": 0,
+   "name": "mud debris",
+   "size": 2
+  },
+  "mud_stone": {
+   "block": false,
+   "ids": [
+    18689
+   ],
+   "light": 0,
+   "name": "mud stone",
+   "size": 1
+  },
+  "mushroom_stalks": {
+   "block": true,
+   "ids": [
+    17747,
+    17760
+   ],
+   "light": 0,
+   "name": "paxillus mushroom",
+   "size": 1
+  },
+  "orange_rubble": {
+   "block": true,
+   "ids": [
+    21934,
+    21935
+   ],
+   "light": 0,
+   "name": "stone rubble",
+   "size": 2
+  },
+  "pebbles": {
+   "block": false,
+   "ids": [
+    3610,
+    3611,
+    3613
+   ],
+   "light": 0,
+   "name": "stones",
+   "size": 1
+  },
+  "plants": {
+   "block": false,
+   "ids": [
+    8011,
+    8012,
+    8013,
+    8014
+   ],
+   "light": 0,
+   "name": "plants",
+   "size": 2
+  },
+  "purple_pebbles": {
+   "block": false,
+   "ids": [
+    26032
+   ],
+   "light": 0,
+   "name": "stones",
+   "size": 1
+  },
+  "red_crystals": {
+   "block": true,
+   "ids": [
+    8635,
+    17588
+   ],
+   "light": 4,
+   "name": "large crystal",
+   "size": 2
+  },
+  "red_stalagmites": {
+   "block": true,
+   "ids": [
+    13478
+   ],
+   "light": 0,
+   "name": "strange stalagmite",
+   "size": 1
+  },
+  "rib_bones": {
+   "block": true,
+   "ids": [
+    6395,
+    6396,
+    6398,
+    6400
+   ],
+   "light": 0,
+   "name": "bones",
+   "size": 2
+  },
+  "rock_spikes": {
+   "block": true,
+   "ids": [
+    22110,
+    22111,
+    22112,
+    22113
+   ],
+   "light": 0,
+   "name": "rock spikes",
+   "size": 2
+  },
+  "rotten_plants": {
+   "block": true,
+   "ids": [
+    10802,
+    10803
+   ],
+   "light": 0,
+   "name": "putrid plant",
+   "size": 2
+  },
+  "rubble": {
+   "block": true,
+   "ids": [
+    5619,
+    5620,
+    5621,
+    5622,
+    5707
+   ],
+   "light": 0,
+   "name": "rubble",
+   "size": 2
+  },
+  "ruddy_rocks": {
+   "block": true,
+   "ids": [
+    24939,
+    24940,
+    24941,
+    24942,
+    24943,
+    24944
+   ],
+   "light": 0,
+   "name": "ruddy rock",
+   "size": 2
+  },
+  "sarcophagi": {
+   "block": true,
+   "ids": [
+    7361,
+    7362
+   ],
+   "light": 0,
+   "name": "sarcophagus",
+   "size": 1
+  },
+  "skeleton_h": {
+   "block": false,
+   "ids": [
+    6524,
+    7567,
+    7568
+   ],
+   "light": 0,
+   "name": "skeleton",
+   "size": 2
+  },
+  "skeleton_v": {
+   "block": false,
+   "ids": [
+    6525
+   ],
+   "light": 0,
+   "name": "skeleton",
+   "size": 2
+  },
+  "skull_pillar": {
+   "block": true,
+   "ids": [
+    7058
+   ],
+   "light": 0,
+   "name": "skull pillar",
+   "size": 2
+  },
+  "small_bones": {
+   "block": false,
+   "ids": [
+    3124,
+    3125,
+    3126
+   ],
+   "light": 0,
+   "name": "pile of bones",
+   "size": 1
+  },
+  "small_dead_trees": {
+   "block": true,
+   "ids": [
+    2713,
+    2714,
+    2715,
+    2716
+   ],
+   "light": 0,
+   "name": "dead tree",
+   "size": 1
+  },
+  "small_mushrooms": {
+   "block": false,
+   "ids": [
+    4181,
+    4182,
+    4183,
+    17744,
+    17745
+   ],
+   "light": 0,
+   "name": "cat's food mushrooms",
+   "size": 1
+  },
+  "small_needles": {
+   "block": true,
+   "ids": [
+    22114,
+    22115
+   ],
+   "light": 0,
+   "name": "small rock needle",
+   "size": 2
+  },
+  "snow_bits": {
+   "block": false,
+   "ids": [
+    6715,
+    6716,
+    6717,
+    6718
+   ],
+   "light": 0,
+   "name": "ice",
+   "size": 1
+  },
+  "snowy_dead_trees": {
+   "block": true,
+   "ids": [
+    2697,
+    7020,
+    7021,
+    7022
+   ],
+   "light": 0,
+   "name": "snowy dead tree",
+   "size": 2
+  },
+  "snowy_stones": {
+   "block": true,
+   "ids": [
+    6999,
+    7000,
+    7002
+   ],
+   "light": 0,
+   "name": "snowy stone",
+   "size": 1
+  },
+  "stalagmites": {
+   "block": true,
+   "ids": [
+    386,
+    387,
+    390,
+    391,
+    17765
+   ],
+   "light": 0,
+   "name": "stalagmites",
+   "size": 1
+  },
+  "statues": {
+   "block": true,
+   "ids": [
+    1443,
+    1448,
+    1450
+   ],
+   "light": 0,
+   "name": "statue",
+   "size": 2
+  },
+  "stone_circle": {
+   "block": false,
+   "ids": [
+    1421
+   ],
+   "light": 0,
+   "name": "stone circle",
+   "size": 1
+  },
+  "stone_coffins": {
+   "block": true,
+   "ids": [
+    1410,
+    1411,
+    1412,
+    1413,
+    1414
+   ],
+   "light": 0,
+   "name": "stone coffin",
+   "size": 1
+  },
+  "stone_pile": {
+   "block": true,
+   "ids": [
+    1335
+   ],
+   "light": 0,
+   "name": "stone pile",
+   "size": 1
+  },
+  "stone_pile_small": {
+   "block": false,
+   "ids": [
+    1336
+   ],
+   "light": 0,
+   "name": "stone pile",
+   "size": 1
+  },
+  "stone_pillars": {
+   "block": true,
+   "ids": [
+    1514,
+    9304
+   ],
+   "light": 0,
+   "name": "stone pillar",
+   "size": 2
+  },
+  "stone_throne": {
+   "block": false,
+   "ids": [
+    7277
+   ],
+   "light": 0,
+   "name": "stone throne",
+   "size": 2
+  },
+  "strange_candles": {
+   "block": true,
+   "ids": [
+    21447
+   ],
+   "light": 2,
+   "name": "some strange candles",
+   "size": 2
+  },
+  "sulphur_small": {
+   "block": false,
+   "ids": [
+    11538,
+    11539
+   ],
+   "light": 0,
+   "name": "sulphur stone",
+   "size": 1
+  },
+  "sulphur_stones": {
+   "block": true,
+   "ids": [
+    11534,
+    11535,
+    11536,
+    11537
+   ],
+   "light": 0,
+   "name": "sulphur stone",
+   "size": 1
+  },
+  "swamp_claw": {
+   "block": false,
+   "ids": [
+    18665
+   ],
+   "light": 0,
+   "name": "swamp claw",
+   "size": 2
+  },
+  "swamp_gnarls": {
+   "block": true,
+   "ids": [
+    18659,
+    18661
+   ],
+   "light": 0,
+   "name": "swamp gnarl",
+   "size": 2
+  },
+  "swamp_lichen": {
+   "block": false,
+   "ids": [
+    18865,
+    18866,
+    18867,
+    18896,
+    18897
+   ],
+   "light": 0,
+   "name": "swamp lichen",
+   "size": 2
+  },
+  "swamp_reeds": {
+   "block": true,
+   "ids": [
+    2774,
+    2775,
+    2777,
+    2780
+   ],
+   "light": 0,
+   "name": "swamp reed",
+   "size": 2
+  },
+  "tapestry_h": {
+   "block": false,
+   "ids": [
+    1855,
+    1858,
+    1861,
+    1864,
+    1867,
+    1870,
+    1878
+   ],
+   "light": 0,
+   "name": "purple tapestry",
+   "size": 2
+  },
+  "tapestry_v": {
+   "block": false,
+   "ids": [
+    1856,
+    1859,
+    1862,
+    1865,
+    1868,
+    1871
+   ],
+   "light": 0,
+   "name": "purple tapestry",
+   "size": 2
+  },
+  "thorn_bushes": {
+   "block": true,
+   "ids": [
+    3986
+   ],
+   "light": 0,
+   "name": "thorn bush",
+   "size": 1
+  },
+  "tiny_needles": {
+   "block": false,
+   "ids": [
+    22116
+   ],
+   "light": 0,
+   "name": "tiny rock needles",
+   "size": 1
+  },
+  "torch_h": {
+   "block": false,
+   "ids": [
+    2059,
+    3944
+   ],
+   "light": 6,
+   "name": "lit torch bearer",
+   "size": 2
+  },
+  "torch_v": {
+   "block": false,
+   "ids": [
+    2061,
+    3946
+   ],
+   "light": 6,
+   "name": "lit torch bearer",
+   "size": 2
+  },
+  "weapons_h": {
+   "block": false,
+   "ids": [
+    5596
+   ],
+   "light": 0,
+   "name": "crossed weapons",
+   "size": 2
+  },
+  "weapons_v": {
+   "block": false,
+   "ids": [
+    5597
+   ],
+   "light": 0,
+   "name": "crossed weapons",
+   "size": 2
+  },
+  "web_h": {
+   "block": false,
+   "ids": [
+    10357,
+    10358
+   ],
+   "light": 0,
+   "name": "spider webs",
+   "size": 2
+  },
+  "web_v": {
+   "block": false,
+   "ids": [
+    10360,
+    10361
+   ],
+   "light": 0,
+   "name": "spider webs",
+   "size": 2
+  },
+  "wooden_coffins": {
+   "block": true,
+   "ids": [
+    1742,
+    1743,
+    1744
+   ],
+   "light": 0,
+   "name": "wooden coffin",
+   "size": 1
+  }
+ },
+ "kits": {
+  "abyss": {
+   "around": [
+    [
+     "purple_pebbles",
+     3
+    ],
+    [
+     "black_crystals_small",
+     2
+    ],
+    [
+     "small_bones",
+     1
+    ]
+   ],
+   "centre": [
+    [
+     "large_black_crystal",
+     2
+    ],
+    [
+     "crystals",
+     2
+    ],
+    [
+     "rib_bones",
+     1
+    ],
+    [
+     "skull_pillar",
+     1
+    ]
+   ],
+   "corner": [
+    [
+     "stalagmites",
+     2
+    ],
+    [
+     "cobweb_corner",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "purple_pebbles",
+     3
+    ],
+    [
+     "cracks",
+     2
+    ],
+    [
+     "small_bones",
+     2
+    ],
+    [
+     "black_crystals_small",
+     2
+    ],
+    [
+     "debris_grey",
+     1
+    ]
+   ],
+   "light_floor": [
+    [
+     "crystals",
+     2
+    ]
+   ],
+   "light_small": [],
+   "path_edge": [
+    [
+     "purple_pebbles",
+     2
+    ],
+    [
+     "cracks",
+     2
+    ]
+   ],
+   "wall_side": [
+    [
+     "boulders",
+     2
+    ],
+    [
+     "stalagmites",
+     2
+    ],
+    [
+     "rubble",
+     1
+    ],
+    [
+     "large_black_crystal",
+     1
+    ]
+   ]
+  },
+  "cave": {
+   "around": [
+    [
+     "small_mushrooms",
+     3
+    ],
+    [
+     "pebbles",
+     3
+    ],
+    [
+     "glow_mushrooms_h",
+     1
+    ],
+    [
+     "glow_mushrooms_v",
+     1
+    ]
+   ],
+   "centre": [
+    [
+     "stalagmites",
+     3
+    ],
+    [
+     "big_mushrooms",
+     2
+    ],
+    [
+     "boulders",
+     1
+    ],
+    [
+     "rib_bones",
+     1
+    ]
+   ],
+   "corner": [
+    [
+     "stalagmites",
+     2
+    ],
+    [
+     "mossy_corner",
+     1
+    ],
+    [
+     "cobweb_corner",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "pebbles",
+     4
+    ],
+    [
+     "small_mushrooms",
+     2
+    ],
+    [
+     "moss_h",
+     1
+    ],
+    [
+     "moss_v",
+     1
+    ],
+    [
+     "debris_grey",
+     2
+    ],
+    [
+     "small_bones",
+     1
+    ],
+    [
+     "cracks",
+     1
+    ],
+    [
+     "stone_pile_small",
+     1
+    ]
+   ],
+   "light_floor": [
+    [
+     "glow_mushrooms_big",
+     2
+    ],
+    [
+     "crystals",
+     1
+    ]
+   ],
+   "light_small": [
+    [
+     "glow_mushrooms_h",
+     1
+    ],
+    [
+     "glow_mushrooms_v",
+     1
+    ]
+   ],
+   "path_edge": [
+    [
+     "pebbles",
+     3
+    ],
+    [
+     "small_mushrooms",
+     1
+    ],
+    [
+     "cracks",
+     1
+    ]
+   ],
+   "wall_side": [
+    [
+     "stalagmites",
+     4
+    ],
+    [
+     "boulders",
+     2
+    ],
+    [
+     "rubble",
+     1
+    ],
+    [
+     "stone_pile",
+     2
+    ],
+    [
+     "mushroom_stalks",
+     1
+    ],
+    [
+     "small_needles",
+     1
+    ]
+   ]
+  },
+  "crypt": {
+   "around": [
+    [
+     "small_bones",
+     3
+    ],
+    [
+     "candles",
+     2
+    ],
+    [
+     "debris_grey",
+     2
+    ],
+    [
+     "skeleton_h",
+     1
+    ]
+   ],
+   "centre": [
+    [
+     "sarcophagi",
+     3
+    ],
+    [
+     "gargoyles",
+     2
+    ],
+    [
+     "broken_pillars",
+     2
+    ],
+    [
+     "altars",
+     1
+    ],
+    [
+     "bone_pillar",
+     1
+    ]
+   ],
+   "corner": [
+    [
+     "cobweb_corner",
+     3
+    ],
+    [
+     "bone_heap",
+     1
+    ],
+    [
+     "rubble",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "small_bones",
+     3
+    ],
+    [
+     "debris_grey",
+     3
+    ],
+    [
+     "cracks",
+     3
+    ],
+    [
+     "skeleton_h",
+     1
+    ],
+    [
+     "skeleton_v",
+     1
+    ],
+    [
+     "web_h",
+     1
+    ]
+   ],
+   "hall": {
+    "brazier": [
+     "coal_basin"
+    ],
+    "pillar": [
+     "skull_pillar"
+    ],
+    "statue": [
+     "gargoyles"
+    ],
+    "throne": [
+     "bone_throne"
+    ]
+   },
+   "light_floor": [
+    [
+     "coal_basin",
+     2
+    ],
+    [
+     "glowing_skull_pillar",
+     1
+    ]
+   ],
+   "light_small": [
+    [
+     "candles",
+     1
+    ]
+   ],
+   "light_wall_h": [
+    [
+     "torch_h",
+     2
+    ],
+    [
+     "candle_h",
+     1
+    ]
+   ],
+   "light_wall_v": [
+    [
+     "torch_v",
+     2
+    ],
+    [
+     "candle_v",
+     1
+    ]
+   ],
+   "path_edge": [
+    [
+     "small_bones",
+     2
+    ],
+    [
+     "debris_grey",
+     2
+    ],
+    [
+     "cracks",
+     2
+    ]
+   ],
+   "wall_h": [
+    [
+     "tapestry_h",
+     2
+    ],
+    [
+     "banner_h",
+     1
+    ],
+    [
+     "carving_h",
+     2
+    ],
+    [
+     "web_h",
+     2
+    ]
+   ],
+   "wall_side": [
+    [
+     "stone_coffins",
+     3
+    ],
+    [
+     "wooden_coffins",
+     2
+    ],
+    [
+     "sarcophagi",
+     2
+    ],
+    [
+     "bone_heap",
+     2
+    ],
+    [
+     "grave_stones",
+     2
+    ],
+    [
+     "stone_pile",
+     1
+    ],
+    [
+     "rubble",
+     1
+    ]
+   ],
+   "wall_v": [
+    [
+     "tapestry_v",
+     2
+    ],
+    [
+     "banner_v",
+     1
+    ],
+    [
+     "web_v",
+     2
+    ]
+   ]
+  },
+  "forest": {
+   "around": [
+    [
+     "grass_tufts",
+     3
+    ],
+    [
+     "flowers",
+     3
+    ],
+    [
+     "pebbles",
+     1
+    ]
+   ],
+   "centre": [
+    [
+     "ferns",
+     2
+    ],
+    [
+     "bushes",
+     2
+    ],
+    [
+     "dead_trees",
+     1
+    ],
+    [
+     "boulders",
+     1
+    ]
+   ],
+   "corner": [
+    [
+     "bushes",
+     2
+    ],
+    [
+     "ferns",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "grass_tufts",
+     5
+    ],
+    [
+     "dry_grass",
+     2
+    ],
+    [
+     "flowers",
+     2
+    ],
+    [
+     "pebbles",
+     1
+    ]
+   ],
+   "light_floor": [],
+   "light_small": [],
+   "path_edge": [
+    [
+     "grass_tufts",
+     3
+    ],
+    [
+     "dry_grass",
+     2
+    ],
+    [
+     "pebbles",
+     1
+    ]
+   ],
+   "wall_side": [
+    [
+     "bushes",
+     3
+    ],
+    [
+     "ferns",
+     2
+    ],
+    [
+     "thorn_bushes",
+     1
+    ],
+    [
+     "boulders",
+     1
+    ]
+   ]
+  },
+  "ice": {
+   "around": [
+    [
+     "snow_bits",
+     4
+    ]
+   ],
+   "centre": [
+    [
+     "snowy_dead_trees",
+     3
+    ],
+    [
+     "ice_stones",
+     2
+    ],
+    [
+     "ice_pillar",
+     1
+    ],
+    [
+     "jagged_white",
+     1
+    ]
+   ],
+   "corner": [
+    [
+     "ice_blocks",
+     2
+    ],
+    [
+     "snowy_stones",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "snow_bits",
+     5
+    ],
+    [
+     "pebbles",
+     1
+    ]
+   ],
+   "light_floor": [
+    [
+     "ice_light",
+     1
+    ]
+   ],
+   "light_small": [],
+   "path_edge": [
+    [
+     "snow_bits",
+     3
+    ]
+   ],
+   "wall_side": [
+    [
+     "snowy_stones",
+     3
+    ],
+    [
+     "ice_blocks",
+     2
+    ],
+    [
+     "icicles",
+     2
+    ],
+    [
+     "jagged_white",
+     1
+    ]
+   ]
+  },
+  "lava": {
+   "around": [
+    [
+     "lava_cracks",
+     2
+    ],
+    [
+     "debris_red",
+     3
+    ],
+    [
+     "pebbles",
+     1
+    ]
+   ],
+   "centre": [
+    [
+     "lava_holes",
+     2
+    ],
+    [
+     "ruddy_rocks",
+     2
+    ],
+    [
+     "dead_trees",
+     1
+    ],
+    [
+     "rib_bones",
+     1
+    ],
+    [
+     "red_crystals",
+     1
+    ],
+    [
+     "sulphur_stones",
+     1
+    ]
+   ],
+   "corner": [
+    [
+     "red_stalagmites",
+     2
+    ],
+    [
+     "orange_rubble",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "lava_cracks",
+     3
+    ],
+    [
+     "debris_red",
+     3
+    ],
+    [
+     "pebbles",
+     2
+    ],
+    [
+     "small_bones",
+     1
+    ],
+    [
+     "cracks",
+     2
+    ],
+    [
+     "sulphur_small",
+     2
+    ],
+    [
+     "tiny_needles",
+     1
+    ]
+   ],
+   "light_floor": [
+    [
+     "lava_holes",
+     3
+    ],
+    [
+     "red_crystals",
+     1
+    ]
+   ],
+   "light_small": [],
+   "path_edge": [
+    [
+     "debris_red",
+     2
+    ],
+    [
+     "pebbles",
+     2
+    ],
+    [
+     "cracks",
+     1
+    ]
+   ],
+   "rates": {
+    "clusters_per100": 1.6,
+    "corner": 1.2,
+    "floor_near": 1.4,
+    "floor_wall": 1.4,
+    "light_floor_per100": 1.5,
+    "wall_side": 2.0
+   },
+   "wall_side": [
+    [
+     "red_stalagmites",
+     3
+    ],
+    [
+     "ruddy_rocks",
+     3
+    ],
+    [
+     "rock_spikes",
+     2
+    ],
+    [
+     "stalagmites",
+     1
+    ],
+    [
+     "orange_rubble",
+     2
+    ],
+    [
+     "sulphur_stones",
+     1
+    ]
+   ]
+  },
+  "swamp": {
+   "around": [
+    [
+     "swamp_lichen",
+     3
+    ],
+    [
+     "plants",
+     2
+    ],
+    [
+     "small_mushrooms",
+     1
+    ]
+   ],
+   "centre": [
+    [
+     "dead_trees",
+     2
+    ],
+    [
+     "big_dead_tree",
+     1
+    ],
+    [
+     "high_grass",
+     2
+    ],
+    [
+     "big_mushrooms",
+     1
+    ],
+    [
+     "swamp_reeds",
+     2
+    ]
+   ],
+   "corner": [
+    [
+     "swamp_reeds",
+     2
+    ],
+    [
+     "swamp_gnarls",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "swamp_lichen",
+     4
+    ],
+    [
+     "plants",
+     2
+    ],
+    [
+     "mud_stone",
+     2
+    ],
+    [
+     "small_mushrooms",
+     2
+    ],
+    [
+     "moss_h",
+     1
+    ],
+    [
+     "moss_v",
+     1
+    ],
+    [
+     "swamp_claw",
+     1
+    ]
+   ],
+   "light_floor": [
+    [
+     "glow_mushrooms_big",
+     1
+    ]
+   ],
+   "light_small": [
+    [
+     "glow_mushrooms_h",
+     1
+    ],
+    [
+     "glow_mushrooms_v",
+     1
+    ]
+   ],
+   "path_edge": [
+    [
+     "swamp_lichen",
+     3
+    ],
+    [
+     "mud_stone",
+     1
+    ],
+    [
+     "plants",
+     1
+    ]
+   ],
+   "wall_side": [
+    [
+     "swamp_reeds",
+     4
+    ],
+    [
+     "swamp_gnarls",
+     2
+    ],
+    [
+     "mud_debris",
+     2
+    ],
+    [
+     "small_dead_trees",
+     2
+    ],
+    [
+     "rotten_plants",
+     1
+    ]
+   ]
+  },
+  "vault": {
+   "around": [
+    [
+     "debris_grey",
+     3
+    ],
+    [
+     "cracks",
+     2
+    ],
+    [
+     "candles",
+     1
+    ]
+   ],
+   "centre": [
+    [
+     "broken_pillars",
+     2
+    ],
+    [
+     "guardians",
+     2
+    ],
+    [
+     "altars",
+     2
+    ],
+    [
+     "statues",
+     1
+    ]
+   ],
+   "corner": [
+    [
+     "cobweb_corner",
+     2
+    ],
+    [
+     "crates",
+     2
+    ],
+    [
+     "barrels",
+     1
+    ]
+   ],
+   "floor": [
+    [
+     "debris_grey",
+     3
+    ],
+    [
+     "cracks",
+     2
+    ],
+    [
+     "small_bones",
+     1
+    ]
+   ],
+   "hall": {
+    "brazier": [
+     "coal_basin",
+     "big_coal_basin"
+    ],
+    "pillar": [
+     "marble_pillar"
+    ],
+    "statue": [
+     "guardians"
+    ],
+    "throne": [
+     "stone_throne",
+     "brass_throne"
+    ]
+   },
+   "light_floor": [
+    [
+     "coal_basin",
+     2
+    ],
+    [
+     "big_coal_basin",
+     1
+    ]
+   ],
+   "light_small": [
+    [
+     "candles",
+     1
+    ]
+   ],
+   "light_wall_h": [
+    [
+     "torch_h",
+     2
+    ]
+   ],
+   "light_wall_v": [
+    [
+     "torch_v",
+     2
+    ]
+   ],
+   "path_edge": [
+    [
+     "debris_grey",
+     2
+    ],
+    [
+     "cracks",
+     2
+    ]
+   ],
+   "wall_h": [
+    [
+     "tapestry_h",
+     2
+    ],
+    [
+     "banner_h",
+     2
+    ],
+    [
+     "weapons_h",
+     1
+    ],
+    [
+     "carving_h",
+     1
+    ]
+   ],
+   "wall_side": [
+    [
+     "crates",
+     3
+    ],
+    [
+     "barrels",
+     2
+    ],
+    [
+     "rubble",
+     1
+    ],
+    [
+     "stone_pile",
+     1
+    ],
+    [
+     "broken_pillars",
+     1
+    ]
+   ],
+   "wall_v": [
+    [
+     "tapestry_v",
+     2
+    ],
+    [
+     "banner_v",
+     2
+    ],
+    [
+     "weapons_v",
+     1
+    ]
+   ]
+  }
+ },
+ "roof": {
+  "ground": [
+   920
+  ],
+  "note": "flat tiled roof over dungeon floors above ground (z 7 and up)"
+ }
+}

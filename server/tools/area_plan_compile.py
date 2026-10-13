@@ -17,6 +17,7 @@ import json, os, random, struct, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import area_plan_core as C
+import area_plan_decor as D
 import areagen_export as AX
 
 FLAG_PZ = 1
@@ -269,7 +270,7 @@ def _simple(walk, t):
     return groups <= 1
 
 
-def compile_plan(plan, pair24=None, dark=False, cat=None):
+def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     """the compiled area: dict(otbm, spawn_xml, manifest, tiles, walk, ...); raises CompileError with the plan's
     errors when it does not validate"""
     if pair24 is None:
@@ -311,7 +312,10 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
         if 'cannot be reached' in p or 'links,' in p:
             continue
         E('area generator: ' + p)
-    # links: the generator keeps a link only when its three tiles are walkable
+    # links: the generator keeps a link only when its three tiles are walkable. stairs: our stair brush (a stairs
+    # ground above, stone stairs below) when its tiles allow, else the hole and ladder; hole: the ladder goes
+    kit = D.kits()
+    brush = kit['brushes']
     link_out = []
     got = {(l['hole'][0], l['hole'][1], l['hole'][2]): l for l in area['links']}
     for l in lay['links']:
@@ -323,16 +327,29 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
               % (l['conn'], c['type'], c['from'], c['to'], hole[0], hole[1], hole[2]))
             continue
         ladder, up = tuple(g['ladder']), tuple(g['up'])
-        if c['type'] == 'hole':
-            # one way down: the ladder goes
+        north = (hole[0], hole[1] - 1, hole[2])
+        south_below = (ladder[0], ladder[1] + 1, ladder[2])
+        if c['type'] == 'stairs' and north in walk and south_below in walk:
+            # going down lands south of the stone stairs; the stairs lead up to the tile north of the stairs ground
+            tiles[hole]['ground'] = brush['stairs_down_ground']
+            tiles[hole]['items'] = [it for it in tiles[hole]['items'] if it[0] != meta['hole']]
+            tiles[ladder]['items'] = [it for it in tiles[ladder]['items'] if it[0] != meta['ladder']] + \
+                [(brush['stairs_up'], {})]
+            link_out.append(dict(conn=l['conn'], type='stairs', brush='stairs', hole=hole, ladder=None, landing=south_below,
+                                 up=north, stair=ladder, edges=[(hole, south_below), (ladder, north)]))
+        elif c['type'] == 'hole':
             tiles[ladder]['items'] = [it for it in tiles[ladder]['items'] if it[0] != meta['ladder']]
-            link_out.append(dict(conn=l['conn'], type='hole', hole=hole, ladder=None, landing=ladder, up=up))
+            link_out.append(dict(conn=l['conn'], type='hole', brush='hole', hole=hole, ladder=None, landing=ladder, up=up,
+                                 edges=[(hole, ladder)]))
         else:
-            link_out.append(dict(conn=l['conn'], type=c['type'], hole=hole, ladder=ladder, landing=ladder, up=up))
+            if c['type'] == 'stairs':
+                Wn('connection %d: no room for the stair brush at %d,%d,%d; a hole and a ladder instead' % ((l['conn'],) + hole))
+            link_out.append(dict(conn=l['conn'], type=c['type'], brush='hole and ladder', hole=hole, ladder=ladder,
+                                 landing=ladder, up=up, edges=[(hole, ladder), (ladder, up)]))
     arrival = tuple(area['arrival'])
     special = {arrival}
     for l in link_out:
-        special.update(t for t in (l['hole'], l['landing'], l['up']) if t)
+        special.update(t for t in (l['hole'], l['landing'], l['up'], l.get('stair')) if t)
     near_special = lambda t, d=1: any(max(abs(t[0] - s[0]), abs(t[1] - s[1])) <= d and t[2] == s[2] for s in special)
 
     def zone_cells(zid, avoid=1):
@@ -408,6 +425,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
             tiles[t]['items'].append((portal, attrs))
             exit_out = dict(at=t, to=attrs.get('tele'), aid=attrs['aid'])
     chest_out = []
+    chest_aid = C.chest_action(plan)
     for i, ch in enumerate(plan.get('chests', [])):
         cells = [t for t in zone_cells(ch['zone'], 2) if _simple(walk, t)]
         # against a wall or rock edge first, then away from the zone's centre
@@ -418,15 +436,17 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
             E('chest %d (%s) in zone %s: no free tile against a wall' % (i, ch['quest'], ch['zone']))
             continue
         t = cells[0]
-        tiles[t]['items'].append((meta['chest'], {}))
+        tiles[t]['items'].append((meta['chest'], {'aid': chest_aid}))
         walk.discard(t)
         special.add(t)
-        chest_out.append(dict(quest=ch['quest'], zone=ch['zone'], at=t))
+        chest_out.append(dict(quest=ch['quest'], zone=ch['zone'], at=t, aid=chest_aid, storage=C.chest_storage(ch['quest']),
+                              reward=C.resolve_reward(ch.get('reward'))))
     npc_out = []
     for n in plan.get('npcs', []):
         t = pick(n['zone'], 'NPC %s' % n['name'], min_d=1)
         if t:
-            npc_out.append(dict(name=C.npcs()[n['name'].lower()], x=t[0], y=t[1], z=t[2], zone=n['zone']))
+            npc_out.append(dict(name=C.npcs().get(n['name'].lower(), n['name']), x=t[0], y=t[1], z=t[2], zone=n['zone'],
+                                new=bool(n.get('new')), lines=n.get('lines', [])))
     boss_out = None
     if 'boss' in plan:
         b = plan['boss']
@@ -473,6 +493,77 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
         if left > 0:
             E('spawn %d (%d %s) in zone %s: only room for %d point(s) of %d; make the zone bigger or lower the count'
               % (i, s['count'], name, zid, npts - (left + pack - 1) // pack, npts))
+    # ---------------------------------------------------------------------------------------- decoration
+    edges = [e for l in link_out for e in l['edges']] + list(teleports)
+    sets = meta['sets'] if isinstance(meta['sets'], dict) else {}
+    meta['sets'] = sets
+    plain = set(meta['allowed']) & set(i for s_ in sets.values() for i in s_)
+    wall_kind, wall_ids = {}, set()
+    for kind_, ids_ in (meta.get('walls') or {}).items():
+        wall_ids.update(ids_)
+    for k, t in tiles.items():
+        for i, _a in t['items']:
+            for kind_, ids_ in (meta.get('walls') or {}).items():
+                if i in ids_:
+                    wall_kind[k] = kind_
+    plain |= wall_ids | {meta['hole'], meta['ladder'], meta['portal'], meta['chest'], brush['stairs_up']}
+    protected = set(special) | {(s_['x'], s_['y'], s_['z']) for s_ in spawn_out}
+    if boss_out:
+        protected.add((boss_out['x'], boss_out['y'], boss_out['z']))
+    for a, b in teleports:
+        protected.update((a, b))
+    # routes kept free of blocking pieces: from the arrival to every zone, spawn and special tile
+    targets = set(special) | {b for _a, b in teleports}
+    for zid in zones:
+        cells = by_center(zid, [t for t in walk if t[2] == zrect[zid][4] and zrect[zid][0] <= t[0] <= zrect[zid][2]
+                                and zrect[zid][1] <= t[1] <= zrect[zid][3]])
+        if cells:
+            targets.add(cells[0])
+    keep = D.lanes(walk, arrival, sorted(targets), (), edges)
+    for t in list(protected):
+        for dx, dy in C.D8:
+            keep.add((t[0] + dx, t[1] + dy, t[2]))
+    corridor = set()
+    for f, paths in lay['paths'].items():
+        for q in paths:
+            for x, y in C.route_cells(q['points'], q['width'] + (2 if q['style'] == 'tunnel' else 0)):
+                a = absp(x, y, f)
+                if not any(r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
+                    corridor.add(a)
+    zone_list = [dict(id=zid, rect=zrect[zid], shape=C.zone_shape(z, biome), role=z.get('role', 'hunt'))
+                 for zid, z in sorted(zones.items())]
+    reach_before = set(C.tile_reach(walk, arrival, (), edges))
+    dresser = D.Dresser(tiles, walk, zone_list, meta['kind'], plan['biome'], protected, keep, corridor, plain, wall_kind,
+                        random.Random(seed * 977 + 5), plan.get('decoration', 'normal'),
+                        plan.get('light') or biome.get('light', 'normal'),
+                        boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None)
+    if dress:
+        dresser.run(wall_ids)
+    reach_after = set(C.tile_reach(walk, arrival, (), edges))
+    cut = reach_before - reach_after - dresser.blocked
+    if cut:
+        E('decoration cuts %d walkable tile(s) off the routes (first %s)' % (len(cut), sorted(cut)[0]))
+    for t in protected:
+        if t in reach_before and t not in reach_after:
+            E('decoration blocks the way to %s' % (t,))
+    for t, _i, _g, _c in dresser.placed:
+        if t in protected:
+            E('decoration on a protected tile %s' % (t,))
+    # roofs: a dungeon floor at ground level or above gets a flat roof on the floor over it (the client hides it
+    # while a player is inside); floors under another floor of the plan are covered already
+    roofs = 0
+    if meta['kind'] == 'dungeon':
+        for f in range(1, plan['floors'] + 1):
+            z = oz + f - 1
+            if z > 7 or z == 0:
+                continue
+            for (x, y, zz) in [k for k in tiles if k[2] == z]:
+                above = (x, y, z - 1)
+                if above not in tiles:
+                    tiles[above] = dict(ground=kit['roof']['ground'][0], items=[], flags=0)
+                    roofs += 1
+        if roofs:
+            Wn('a flat roof of %d tiles covers the floors above ground' % roofs)
     # ---------------------------------------------------------------------------------------- OTBM and QA
     spawn_name, house_name = plan['id'] + '-spawn.xml', plan['id'] + '-house.xml'
     data = otbm_bytes(plan['name'], plan['id'], 'seed %d' % seed, tiles, spawn_name, house_name)
@@ -483,7 +574,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
         E('OTBM: header %s' % (header,))
     if len(back) != len(tiles):
         E('OTBM: %d tiles written, %d read back' % (len(tiles), len(back)))
-    allowed = set(meta['allowed']) | {meta['chest'], meta['portal'], meta['hole'], meta['ladder']}
+    allowed = set(meta['allowed']) | {meta['chest'], meta['portal'], meta['hole'], meta['ladder']} | D.all_ids()
     unknown = {}
     for k, t in back.items():
         if t['ground'] is None:
@@ -540,10 +631,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
     if unbordered:
         E('%d of %d ground transitions have no border piece' % (unbordered, transitions))
     # reachability, entry to every zone and the boss
-    links_t = [(l['hole'], l['ladder'] if l['ladder'] else l['landing'], l['up'] if l['ladder'] else None)
-               for l in link_out]
-    dist = C.tile_reach(walk, arrival, links_t, teleports)
-    unreached = [t for t in walk if t not in dist]
+    dist = C.tile_reach(walk, arrival, (), edges)
+    unreached = [t for t in walk if t not in dist and t[2] in {oz + f for f in range(plan['floors'])}]
     zone_steps = {}
     for zid in zones:
         x1, y1, x2, y2, z = zrect[zid]
@@ -600,7 +689,11 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
                  entry_to_boss=boss_steps, zone_steps=zone_steps,
                  farthest_zone=max(zone_steps.values()) if zone_steps else None,
                  transitions=transitions, unbordered=unbordered, unknown_ids=len(unknown),
+                 decoration=deco_stats(tiles, walk, plain, dresser, oz, plan['floors']), roof_tiles=roofs,
                  checksum=area.get('checksum'))
+    if stats['decoration']['spam_share'] > 0.01:
+        Wn('%.1f%% of the walkable tiles carry 3 or more decoration items (the guide keeps it under 1%%)'
+           % (100 * stats['decoration']['spam_share']))
     manifest = dict(schema=plan.get('schema'), id=plan['id'], name=plan['name'], biome=plan['biome'], theme=meta['theme'],
                     kind=meta['kind'], seed=seed, origin=[ox, oy, oz], size=plan['size'], floors=plan['floors'],
                     pair24=bool(pair24), dark=bool(dark),
@@ -610,7 +703,15 @@ def compile_plan(plan, pair24=None, dark=False, cat=None):
                     npcs=npc_out, boss=boss_out, spawns=len(spawn_out), entry_from_world=plan['entry'].get('from_world'),
                     stats=stats, qa=[dict(level=l, message=m) for l, m in qa],
                     plan_issues=[i.as_dict() for i in issues])
+    stubs = {}
+    if chest_out:
+        stubs['data/scripts/chaos_areaplan/%s_chests.lua' % plan['id']] = chest_script(plan, chest_out, (ox, oy, oz))
+    for n in npc_out:
+        if n['new']:
+            stubs.update(npc_stub(n))
+    manifest['stubs'] = sorted(stubs)
     return dict(otbm=data, spawn_xml=spawn_xml(spawn_out, boss_out, npc_out, walk), manifest=manifest, tiles=tiles,
+                stubs=stubs, dresser=dresser,
                 walk=walk, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
                 stats=stats, plan_issues=issues)
@@ -629,6 +730,12 @@ def write_outputs(result, out_dir):
         p = os.path.join(out_dir, name)
         with open(p, mode) as f:
             f.write(data)
+        paths.append(p)
+    for rel, text in sorted(result.get('stubs', {}).items()):
+        p = os.path.join(out_dir, rel)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, 'w') as f:
+            f.write(text)
         paths.append(p)
     return paths
 
@@ -718,3 +825,131 @@ def render_floors(result, out_dir, items_otb, items_xml, dat, spr_path, scale=0.
     mm.save(p, optimize=True)
     out.append((p, 0))
     return out
+
+
+# ================================================================================================= stats, stubs
+def deco_stats(tiles, walk, plain, dresser, oz, floors):
+    """decoration per open tile (walkable or holding a blocking decoration piece) on the plan's floors, the share of
+    tiles with 3+ decoration items, and what the dressing pass added per category"""
+    zs = {oz + f for f in range(floors)}
+    open_ = {t for t in walk if t[2] in zs} | {t for t in dresser.blocked if t[2] in zs}
+    n_deco, spam = 0, 0
+    for t in open_:
+        k = sum(1 for i, _a in tiles[t]['items'] if i not in plain)
+        n_deco += k
+        if k >= 3:
+            spam += 1
+    lights = sum(1 for _t, _i, g, _c in dresser.placed if dresser.groups[g]['light'])
+    return dict(per_open=round(n_deco / max(1, len(open_)), 3), spam_share=round(spam / max(1, len(open_)), 4),
+                added=len(dresser.placed), lights_added=lights,
+                lights_per100=round(100.0 * lights / max(1, len(open_)), 2),
+                by_category=dict(sorted(dresser.counts.items())), kit=dresser.kit_name)
+
+
+def _lua_str(s):
+    return '"' + str(s).replace('\\', '\\\\').replace('"', '\\"').replace('\n', ' ') + '"'
+
+
+def chest_script(plan, chests, origin):
+    """the quest chest script of one area (revscript Action on the area's chest action id): each chest gives its
+    reward once per character, keyed by the chest's tile; drop it into data/scripts/ (area_planner.py install)"""
+    aid = chests[0]['aid']
+    rows = []
+    for c in chests:
+        x, y, z = c['at']
+        r = c['reward'] or dict(gold=0, experience=0, message='', items=[])
+        items = ', '.join('{id = %d, count = %d}' % (i, n) for i, n, _name in r['items'])
+        names = ', '.join('%d %s' % (n, name) for _i, n, name in r['items'])
+        x, y, z = x - origin[0], y - origin[1], z - origin[2]
+        rows.append('\t["%d:%d:%d"] = {quest = %s, storage = %d, gold = %d, experience = %d, message = %s,\n'
+                    '\t\titems = {%s}}, -- %s' % (x, y, z, _lua_str(c['quest']), c['storage'], r['gold'], r['experience'],
+                                                   _lua_str(r['message']), items, names or 'no items'))
+    return '''-- Quest chests of the planned area "%(name)s" (%(id)s). GENERATED by server/tools/area_planner.py compile from the
+-- plan's chests; install with `area_planner.py install` (server/README.md "Area planner"). Action id %(aid)d (block
+-- 47960-47999), one player storage per chest (block 7101200-7101299). Each chest gives its reward once per character.
+-- The chests are keyed by their offset from ORIGIN, the area's top-left tile of floor 1; `area_planner.py place` writes
+-- the ORIGIN of the place it pastes the area to.
+local ORIGIN = {x = %(ox)d, y = %(oy)d, z = %(oz)d}
+local CHESTS = {
+%(rows)s
+}
+
+local action = Action()
+
+function action.onUse(player, item, fromPosition, target, toPosition, isHotkey)
+	local pos = item:getPosition()
+	local chest = CHESTS[(pos.x - ORIGIN.x) .. ":" .. (pos.y - ORIGIN.y) .. ":" .. (pos.z - ORIGIN.z)]
+	if not chest then
+		return false
+	end
+	if player:getStorageValue(chest.storage) > 0 then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "The chest is empty.")
+		return true
+	end
+	local weight = 0
+	for _, it in ipairs(chest.items) do
+		weight = weight + ItemType(it.id):getWeight(it.count)
+	end
+	if weight > player:getFreeCapacity() then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "The reward is too heavy for you.")
+		return true
+	end
+	for _, it in ipairs(chest.items) do
+		player:addItem(it.id, it.count)
+	end
+	if chest.gold > 0 then
+		player:addMoney(chest.gold)
+	end
+	if chest.experience > 0 then
+		player:addExperience(chest.experience, true)
+	end
+	player:setStorageValue(chest.storage, 1)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, chest.message ~= "" and chest.message or "You found a reward.")
+	return true
+end
+
+action:aid(%(aid)d)
+action:register()
+''' % dict(name=plan['name'], id=plan['id'], aid=aid, rows='\n'.join(rows), ox=origin[0], oy=origin[1], oz=origin[2])
+
+
+def npc_file(name):
+    return ''.join(c if c.isalnum() else '_' for c in name.lower()).strip('_')
+
+
+def npc_stub(n):
+    """a new NPC: data/npc/<Name>.xml and data/npc/scripts/<name>.lua (greeting and simple answers)"""
+    lines = list(n.get('lines') or [])
+    greet = lines[0] if lines else 'Greetings, |PLAYERNAME|.'
+    fname = npc_file(n['name'])
+    xml = '''<?xml version="1.0" encoding="UTF-8"?>
+<!-- %(name)s: an NPC of a planned area. GENERATED by server/tools/area_planner.py compile; edit the look and the
+     answers, then install with `area_planner.py install` (server/README.md "Area planner"). -->
+<npc name="%(name)s" script="%(file)s.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="128" head="78" body="69" legs="58" feet="76" addons="0" />
+	<parameters>
+		<parameter key="message_greet" value="%(greet)s" />
+		<parameter key="message_farewell" value="Farewell, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="Farewell." />
+	</parameters>
+</npc>
+''' % dict(name=n['name'], file=fname, greet=greet.replace('"', "'").replace('&', 'and'))
+    answers = '\n'.join('keywordHandler:addKeyword({%s}, StdModule.say, {npcHandler = npcHandler, text = %s})'
+                        % (_lua_str(l.split(':', 1)[0].strip().lower()), _lua_str(l.split(':', 1)[1].strip()))
+                        for l in lines[1:] if ':' in l)
+    lua = '''-- %(name)s: an NPC of a planned area. GENERATED by server/tools/area_planner.py compile. Lines of the plan written
+-- "keyword: answer" become answers; the first line is the greeting (the XML).
+local keywordHandler = KeywordHandler:new()
+local npcHandler = NpcHandler:new(keywordHandler)
+NpcSystem.parseParameters(npcHandler)
+
+function onCreatureAppear(cid)			npcHandler:onCreatureAppear(cid)			end
+function onCreatureDisappear(cid)		npcHandler:onCreatureDisappear(cid)			end
+function onCreatureSay(cid, type, msg)		npcHandler:onCreatureSay(cid, type, msg)		end
+function onThink()				npcHandler:onThink()					end
+
+%(answers)s
+npcHandler:addModule(FocusModule:new())
+''' % dict(name=n['name'], answers=answers)
+    return {'data/npc/%s.xml' % n['name']: xml, 'data/npc/scripts/%s.lua' % fname: lua}

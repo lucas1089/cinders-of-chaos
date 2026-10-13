@@ -15,6 +15,9 @@ tools/areaplan_build.lua).
     python3 -I server/tools/area_planner.py similar PLAN.json [-n 5]
     python3 -I server/tools/area_planner.py catalogue [--monsters] [--npcs] [--json]
     python3 -I server/tools/area_planner.py plan --from-prompt "TEXT" [--out PLAN.json] [--level LO HI]
+    python3 -I server/tools/area_planner.py place OUT/<id>.otbm WORLD.otbm COPY.otbm --at X Y Z [--spawn WORLD-spawn.xml COPY-spawn.xml]
+    python3 -I server/tools/area_planner.py install OUT SERVER_DIR [--dry-run]
+    python3 -I server/tools/area_planner.py check-kits ITEMS.otb ITEMS.xml Tibia.dat
 
 validate  the schema and the game rules (reachability, monsters and level tiers, PZ, boss room, links, sizes); exit 1
           on an error. Each line: LEVEL path: message. Fix: hint.
@@ -25,6 +28,14 @@ render    compile, then OUT_DIR/<id>_z<z>.png per floor with the client sprites 
 stats     walkable tiles, monsters, density per 100 tiles and per screen, steps from the entry to the boss and zones.
 suggest   numbers from the approved plans of a biome near a level band, and our monsters and bosses of that band.
 similar   the approved plans closest to a plan.
+          --no-dress leaves out the decoration pass (to compare before and after).
+place     paste a compiled area into a COPY of the world map (never the world file) at X Y Z: refused when a tile lands
+          on a world tile; with --spawn also a copy of the world spawn file with the area's spawns; the chest script's
+          ORIGIN follows the area.
+install   copy OUT/data/... (the quest chest script, new NPCs) into a server's data folder; idempotent, refuses a
+          clash of action id, storage or file.
+check-kits every id of the decoration kits, stair brush and roof against items.otb, items.xml and the pair (known,
+          has a sprite, blocks or not as the kit says, gives light, floor change); exit 1 on a problem.
 plan      ask an LLM for a plan (only with an endpoint set in the environment; see area_plan_ai.py), with up to 3 fix
           rounds on the validator's errors. Without one it says how to set one up and exits.
 The knowledge base: $AREAPLAN_KB or ~/.local/share/cinders-of-chaos/area_planner/kb.sqlite3 (outside git).
@@ -62,6 +73,7 @@ def main(argv):
     args = list(argv)
     as_json = _flag(args, '--json')
     dark = _flag(args, '--dark')
+    dress = not _flag(args, '--no-dress')
     p24 = _opt(args, '--pair24')
     pair24 = None if p24 is None else p24 == 'on'
     if not args:
@@ -84,7 +96,7 @@ def main(argv):
         scale = float(_opt(args, '--scale', '0.5'))
         plan = load_plan(args[0])
         try:
-            res = PC.compile_plan(plan, pair24=pair24, dark=dark)
+            res = PC.compile_plan(plan, pair24=pair24, dark=dark, dress=dress)
         except PC.CompileError as e:
             print(e)
             return 1
@@ -161,6 +173,39 @@ def main(argv):
             print('decoration %s, light %s, pair 24 %s' % (', '.join(sorted(out['decoration'])), ', '.join(sorted(out['light'])),
                                                           'on' if out['pair24'] else 'off'))
         return 0
+    if cmd == 'place':
+        import area_plan_place as PL
+        at = _opt(args, '--at', None, 3)
+        sp = _opt(args, '--spawn', None, 2)
+        if not at or len(args) < 3:
+            print(__doc__)
+            return 2
+        try:
+            out = PL.place(args[0], args[1], args[2], tuple(map(int, at)), sp[0] if sp else None, sp[1] if sp else None)
+        except PL.PlaceError as e:
+            print('not placed: %s' % e)
+            return 1
+        print('placed %d tiles, shift %s, into %s (the world map itself is untouched)' % (out['tiles'], out['shift'], out['out']))
+        if out['touching']:
+            print('WARN %d world tiles touch the area; check the seam in the map editor' % out['touching'])
+        if out.get('roof'):
+            print('WARN ' + out['roof'])
+        for k in ('spawn_blocks', 'chest_script'):
+            if k in out:
+                print('%s: %s' % (k, out[k]))
+        return 0
+    if cmd == 'install':
+        import area_plan_place as PL
+        dry = _flag(args, '--dry-run')
+        try:
+            PL.install(args[0], args[1], dry)
+        except PL.PlaceError as e:
+            print('not installed: %s' % e)
+            return 1
+        return 0
+    if cmd == 'check-kits':
+        import area_plan_decor as D
+        return 0 if D.check_kits(args[0], args[1], args[2]) else 1
     if cmd == 'plan':
         import area_plan_ai as AI
         prompt = _opt(args, '--from-prompt')

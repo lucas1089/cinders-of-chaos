@@ -127,6 +127,66 @@ def tier_window(lo, hi):
     return t, min(b[2] for b in t), max(b[3] for b in t)
 
 
+CHEST_ACTION_BLOCK = (47960, 47999)    # one action id per planned area with chests (server/README.md "Area planner")
+CHEST_STORAGE_BLOCK = (7101200, 7101299)  # one player storage per quest chest (server/README.md "Storage keys")
+
+
+def chest_action(plan):
+    """the action id of the area's quest chests: the plan's chest_action, else one from the block by the area id"""
+    if plan.get('chest_action'):
+        return plan['chest_action']
+    lo, hi = CHEST_ACTION_BLOCK
+    return lo + zlib.crc32(plan['id'].encode()) % (hi - lo + 1)
+
+
+def chest_storage(quest):
+    lo, hi = CHEST_STORAGE_BLOCK
+    return lo + zlib.crc32(quest.encode()) % (hi - lo + 1)
+
+
+def reward_items():
+    """{lower name: (id, name)} of the items a chest may give, from our item tables: renamed base items
+    (data/items/base_item_names.csv), our uniques (chaos_items.xml), the crafting orbs (chaos_orbs_config.lua) and the
+    pack products and food (art_items.csv)"""
+    if 'rewards' in _cache:
+        return _cache['rewards']
+    out = {}
+    d = os.path.join(SERVER, 'data')
+
+    def add(i, name):
+        if name and name.lower() not in out:
+            out[name.lower()] = (int(i), name)
+    for line in open(os.path.join(d, 'items', 'base_item_names.csv'), encoding='utf-8').read().splitlines()[1:]:
+        p = line.split(',')
+        if len(p) >= 3 and p[0].isdigit():
+            add(p[0], p[2])
+    for m in re.finditer(r'<item id="(\d+)"[^>]*name="([^"]+)"', open(os.path.join(d, 'items', 'chaos_items.xml'),
+                                                                      encoding='utf-8').read()):
+        add(m.group(1), m.group(2))
+    for m in re.finditer(r'\{id = (\d+),[^\n]*?name = "([^"]+)"', open(os.path.join(d, 'lib', 'chaos_orbs_config.lua'),
+                                                                     encoding='utf-8').read()):
+        add(m.group(1), m.group(2))
+    import csv
+    with open(os.path.join(d, 'items', 'art_items.csv'), encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            if r.get('kind') in ('product', 'food'):
+                add(r['server_id'], r['name'])
+    _cache['rewards'] = out
+    return out
+
+
+def resolve_reward(reward):
+    """a chest's reward with item ids: {gold, experience, message, items: [(id, count, name)]}"""
+    if not reward:
+        return None
+    items = []
+    for it in reward.get('items', []):
+        i, name = reward_items()[it['name'].lower()]
+        items.append((i, it.get('count', 1), name))
+    return dict(gold=reward.get('gold', 0), experience=reward.get('experience', 0), message=reward.get('message', ''),
+                items=items)
+
+
 # ================================================================================================= schema
 def load_schema():
     if 'schema' not in _cache:
@@ -483,14 +543,38 @@ def validate(plan, cat=None, pair24=None):
     for i, n in enumerate(plan.get('npcs', [])):
         p = 'plan.npcs[%d]' % i
         z = ref(p + '.zone', n['zone'])
-        if n['name'].lower() not in nlist:
+        if n.get('new'):
+            if n['name'].lower() in nlist:
+                E(p + '.name', 'NPC %s exists already; "new" is for an NPC the compile writes a stub for' % n['name'],
+                  'drop "new" to place the existing NPC')
+            elif not re.match(r"^[A-Z][A-Za-z' -]{2,30}$", n['name']):
+                E(p + '.name', 'a new NPC name needs a capital letter first and 3-31 letters, spaces or apostrophes')
+        elif n['name'].lower() not in nlist:
             close = difflib.get_close_matches(n['name'].lower(), list(nlist), 3)
             E(p + '.name', 'no NPC "%s" in our NPC list' % n['name'],
               ('did you mean %s?' % ', '.join('"%s"' % nlist[c] for c in close)) if close else 'see `area_planner.py catalogue --npcs`')
         if z and not z.get('pz'):
             W(p + '.zone', 'NPC %s stands outside a protection zone' % n['name'], 'set "pz": true on %s' % z['id'])
+    rewards = reward_items()
+    slots = {}
     for i, c in enumerate(plan.get('chests', [])):
         ref('plan.chests[%d].zone' % i, c['zone'])
+        st = chest_storage(c['quest'])
+        if st in slots and slots[st] != c['quest']:
+            E('plan.chests[%d].quest' % i, 'quest keys %s and %s share storage %d' % (slots[st], c['quest'], st),
+              'rename one of the quest keys')
+        slots[st] = c['quest']
+        rw = c.get('reward')
+        if not rw:
+            W('plan.chests[%d]' % i, 'chest %s has no reward; its script gives nothing' % c['quest'],
+              'add "reward": {"gold": ..., "items": [{"name": ..., "count": ...}]}')
+            continue
+        for j, it in enumerate(rw.get('items', [])):
+            if it['name'].lower() not in rewards:
+                close = difflib.get_close_matches(it['name'].lower(), list(rewards), 3)
+                E('plan.chests[%d].reward.items[%d].name' % (i, j), 'no item "%s" in our item tables' % it['name'],
+                  ('did you mean %s?' % ', '.join('"%s"' % rewards[x][1] for x in close)) if close else
+                  'use a name from data/items/base_item_names.csv, chaos_items.xml or the orbs')
     keys = [c['quest'] for c in plan.get('chests', [])]
     for k in set(keys):
         if keys.count(k) > 1:

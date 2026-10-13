@@ -137,6 +137,49 @@ local function addPack()
 	end
 end
 addPack()
+
+-- stock grounds of the 10.98 pair with their border pieces (the planner's own catalogue; pieces named like the
+-- generator's sets, checked on renders of each piece: n = the higher ground lies north, c.. = that corner only,
+-- d.. = two sides and the corner). Snow over ice and rock, ice over rock, grass over dirt (docs/MAP_GUIDE.md rule 2).
+local function set12(first)
+	return {n = first, e = first + 1, s = first + 2, w = first + 3, cnw = first + 4, cne = first + 5, csw = first + 6,
+		cse = first + 7, dnw = first + 8, dne = first + 9, dsw = first + 10, dse = first + 11}
+end
+local function addStock()
+	local snow = {{670, 8}}
+	for _, id in ipairs({6580, 6587, 6588, 6589, 6590, 6591, 6592, 6593, 6594, 6595, 6597, 6602, 6603, 6604, 6605, 6606,
+		6607, 6608}) do
+		snow[#snow + 1] = {id, 2}
+	end
+	for _, id in ipairs({6581, 6583, 6584, 6596, 6598, 6599, 6600, 6601}) do
+		snow[#snow + 1] = {id, 1}
+	end
+	cfg.families.st_snow = {z = 3650, grounds = snow}
+	cfg.families.st_ice = {z = 3550, grounds = {{671, 4}, {6683, 1}, {6684, 1}, {6685, 1}, {6686, 1}}}
+	-- the light grass family (106 is a darker grass that does not blend with it)
+	local grass = {{4526, 6}}
+	for id = 4527, 4541 do
+		grass[#grass + 1] = {id, 1}
+	end
+	cfg.families.st_grass = {z = 3600, grounds = grass}
+	cfg.families.st_dirt = {z = 3450, grounds = {{103, 1}}}
+	cfg.pieces.st_snow = set12(4737)
+	cfg.pieces.st_ice = set12(6695)
+	cfg.pieces.st_grass = set12(4542)
+	cfg.borders.st_snow = {["*"] = "st_snow"}
+	cfg.borders.st_ice = {["*"] = "st_ice"}
+	cfg.borders.st_grass = {["*"] = "st_grass"}
+end
+addStock()
+
+local function ids(list)
+	local rows = {}
+	for _, id in ipairs(list) do
+		rows[#rows + 1] = {id, 1}
+	end
+	return rows
+end
+
 if pair24 then
 	addPair24()
 end
@@ -192,7 +235,8 @@ local BIOMES = {
 	swamp = {kind = "cave", theme = "emberdeep", z = 8, light = "dim",
 		desc = "sunken swamp: cave floor with wide mud (pair 24: swamp ground, water and acid pools), swamp trees",
 		override = {patches = {{family = "mud", share = 0.16, radius = {2, 4}}}, pools = {},
-			obstacles = {share = 0.02, items = "trees:swamp,dead"}},
+			obstacles = {share = 0.02, items = "trees:swamp,dead"},
+			lights = {per100 = 2, spacing = 6, items = "ids:17750,17751,17749"}},
 		pair24 = {patches = {{family = "p24_swamp", share = 0.14, radius = {2, 4}}, {family = "mud", share = 0.05,
 			radius = {2, 3}}}, pools = {{family = "p24_water", share = 0.03, radius = {2, 3}},
 			{family = "p24_acid", share = 0.008, radius = {1, 2}}}}},
@@ -208,15 +252,33 @@ local BIOMES = {
 		desc = "eldritch waste or cave of rift floor"},
 	sanctum = {kind = "cave", theme = "rift_sanctum", z = 9, light = "dim",
 		desc = "blighted cave with mud and cracks (dark set: wet and mossy rock, moss, glowcaps)"},
-	forest = {kind = "waste", theme = "cinderfall", z = 7, light = "normal", needs = "pack items (install step packitems)",
-		desc = "forest glade: dense grass with lush and meadow grass and loam, trees, stones, cliffs",
+	-- forest and ice of stock grounds (no install step needed); the pack versions need the packitems step
+	forest = {kind = "waste", theme = "cinderfall", z = 7, light = "normal",
+		desc = "forest glade: grass (16 stock ids) with dirt patches, trees, bushes and tufts, cliffs",
+		override = {floor = "st_grass", rock = "mountain",
+			patches = {{family = "st_dirt", share = 0.05, radius = {2, 3}}},
+			pools = {}, obstacles = {share = 0.05, items = "ids:2700,2701,2702,2703,2704,2706,2707,2708,2711,2712,2722,2767,2785"},
+			decor = {share = 0.12, scatter = "ids:6216,6217,6218,6219,10738,10739,3610,3611,3613,6226,6227",
+				clusters = {{per1000 = 6, size = {3, 5}, radius = 2, items = "ids:6216,6217,6218,6219,6228"}}},
+			lights = {per100 = 0.2, spacing = 12, items = "theme:cinderfall:lights"}}},
+	ice = {kind = "waste", theme = "cinderfall", z = 7, light = "normal",
+		desc = "snow field: 27 stock snow grounds with ice sheets and grey rock, snowy trees and stones, cliffs",
+		override = {floor = "st_snow", rock = "mountain",
+			patches = {{family = "st_ice", share = 0.09, radius = {2, 4}}, {family = "rockfloor", share = 0.03,
+				radius = {1, 3}}},
+			pools = {}, obstacles = {share = 0.025, items = "ids:2697,7020,7021,7022,2698,6999,7000,7002,6707,6708"},
+			decor = {share = 0.07, scatter = "ids:6715,6716,6717,6718,7001,7003",
+				clusters = {{per1000 = 4, size = {2, 4}, radius = 1, items = "ids:6715,6716,6717"}}},
+			lights = {per100 = 0.3, spacing = 10, items = "theme:cinderfall:lights"}}},
+	forest_pack = {kind = "waste", theme = "cinderfall", z = 7, light = "normal", needs = "pack items (install step packitems)",
+		desc = "forest glade of the pack grounds: dense grass with lush and meadow grass and loam, pack trees, stones, cliffs",
 		override = {floor = "pk_dense_grass", rock = "mountain",
 			patches = {{family = "pk_lush_grass", share = 0.10, radius = {2, 4}}, {family = "pk_meadow_grass", share = 0.07,
 				radius = {2, 4}}, {family = "pk_loam", share = 0.04, radius = {2, 3}}},
 			pools = {}, obstacles = {share = 0.05, items = "trees:broadleaf,conifer,fruit"},
 			lights = {per100 = 0.3, spacing = 10, items = "theme:cinderfall:lights"}}},
-	ice = {kind = "waste", theme = "cinderfall", z = 7, light = "normal", needs = "pack items (install step packitems)",
-		desc = "snow field: fresh snow with grey rock patches, frost trees and stones, cliffs",
+	ice_pack = {kind = "waste", theme = "cinderfall", z = 7, light = "normal", needs = "pack items (install step packitems)",
+		desc = "snow field of the pack grounds: fresh snow with grey rock patches, frost trees and stones, cliffs",
 		override = {floor = "pk_fresh_snow", rock = "mountain",
 			patches = {{family = "rockfloor", share = 0.06, radius = {2, 4}}}, pools = {},
 			obstacles = {share = 0.02, items = "trees:frost"},
@@ -239,6 +301,14 @@ local function rows(v)
 		end
 		return trees(list)
 	end
+	local list = v:match("^ids:([%d,]+)$")
+	if list then
+		local out = {}
+		for id in list:gmatch("%d+") do
+			out[#out + 1] = tonumber(id)
+		end
+		return ids(out)
+	end
 	local th, key = v:match("^theme:([%w_]+):([%w_]+)$")
 	if th then
 		return rowsOf(th, key)
@@ -252,6 +322,12 @@ local function resolveOverride(o)
 		v = copy(v)
 		if type(v) == "table" and v.items then
 			v.items = rows(v.items)
+		end
+		if type(v) == "table" and v.scatter then
+			v.scatter = rows(v.scatter)
+			for _, cl in ipairs(v.clusters or {}) do
+				cl.items = rows(cl.items)
+			end
 		end
 		out[k] = v
 	end
@@ -486,5 +562,14 @@ table.sort(allowed)
 local fams, borders, sets = materials(theme)
 put("J " .. json({allowed = allowed, families = fams, borders = borders, sets = sets, chest = riftCfg.chest.itemId,
 	portal = cfg.items.portal, hole = cfg.items.hole, ladder = cfg.items.ladder, exitAction = cfg.aid.exit,
-	kind = def.kind, theme = b.theme}))
+	kind = def.kind, theme = b.theme, walls = theme.wall and cfg.walls[theme.wall] and (function()
+		local w = {}
+		for kind, rws in pairs(cfg.walls[theme.wall]) do
+			w[kind] = {}
+			for _, row in ipairs(rws) do
+				w[kind][#w[kind] + 1] = row[1]
+			end
+		end
+		return w
+	end)() or nil}))
 io.write(table.concat(out, "\n"), "\n")

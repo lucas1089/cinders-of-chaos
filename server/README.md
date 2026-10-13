@@ -576,6 +576,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
+| 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
 | 7101400 - 7101419 | boss points (`bosspoints_config.lua`) |
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
@@ -10338,23 +10339,50 @@ editor through the area generator above (owner approval, 2026-10-13). The plan n
 connections, spawns, boss, NPCs, chests, entry, exit, PZ zones, decoration and light; it never holds an item id.
 Details and rules: docs/MAP_GUIDE.md "Area planner".
 
-- **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-spawn.xml`, `<id>.json` manifest), `render` (floor PNGs and a
-  marked minimap; needs items.otb/xml and the pair), `stats`, `approve`, `suggest`, `similar`, `catalogue`,
-  `plan --from-prompt`. Offline tool: no install step, nothing runs on the server, the world map is never written.
+- **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-spawn.xml`, `<id>.json` manifest, `data/...` stubs;
+  `--no-dress` without decoration), `render` (floor PNGs and a marked minimap; needs items.otb/xml and the pair),
+  `stats`, `approve`, `suggest`, `similar`, `catalogue`, `plan --from-prompt`, `place`, `install`, `check-kits`.
+  Nothing runs on the live server; the world map is never written (`place` writes a copy).
 - **Generator hooks** (`areagen_core.lua`): `def.layout.plan[floor]` (zones, paths, landing spots, anchor) carves a
   planned layout instead of a random one, and `def.links` gives the hole points. The four areas and the rifts are
   unchanged (same checksums).
 - **Catalogue:** `tools/areaplan_build.lua` maps biomes to our themes and reads ids only from `areagen_config.lua`,
   `chaos_dark_tiles.lua`, `chaos_theme_items.lua` (pair 24 grounds, only with `ChaosThemeArt.PAIR24` on or
-  `--pair24 on`), `data/items/art_items.csv` (pack grounds, borders, trees) and `rift_config.lua` (chest).
-  Monsters and levels: `bounty_pool.lua` and `monster/monsters/chaos`; tiers: `bounty_config.lua` bands; NPCs: `data/npc`.
+  `--pair24 on`), `data/items/art_items.csv` (pack grounds, borders, trees) and `rift_config.lua` (chest); stock
+  snow, ice and grass grounds with their border sets for `ice` and `forest` (no install step needed; `forest_pack`
+  and `ice_pack` need the packitems step). Monsters and levels: `bounty_pool.lua` and `monster/monsters/chaos`;
+  tiers: `bounty_config.lua` bands; NPCs: `data/npc`; reward items: `data/items/base_item_names.csv`,
+  `chaos_items.xml`, `data/lib/chaos_orbs_config.lua`, `art_items.csv`.
+- **Decoration** (`tools/area_plan_decor.py`, kits `tools/areaplan/decor_kits.json`): 107 groups (267 stock 10.98
+  ids, each checked on the pair for sprite, blocking and light by `check-kits`), one kit per biome. Placed by rules:
+  hall pillar rows, throne and braziers in boss rooms, corner statues, torches and tapestries on north and west
+  walls, light props, corner pieces, wall props, clusters of 2-5, path edging, floor detail denser near walls. Never on
+  a spawn, teleport, link, chest, NPC or boss tile; nothing blocking on the routes or the planned paths; the QA checks
+  that no walkable tile is cut off. `decoration` sparse/normal/dense = x0.55/x1/x1.5, `light` scales the lights.
+- **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
+  south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
+- **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
+- **Quest chests:** chest 1740 with the area's action id (block **47960-47999**, plan `chest_action` or one from the
+  block by the area id) and one player storage per chest (block **7101200-7101299**, by the quest key). The compile
+  writes `data/scripts/chaos_areaplan/<id>_chests.lua`: a revscript Action that gives the plan's `reward` (item names
+  from our item tables, gold, experience) once per character, keyed by the chest's offset from the area's ORIGIN.
+- **New NPCs** (`"new": true` in the plan): `data/npc/<Name>.xml` and `data/npc/scripts/<name>.lua` stubs (greeting
+  and "keyword: answer" lines); edit the look before going live.
+- **Install a planned area** (owner, after the review):
+  1. `compile` the plan with `origin` set to where it will go (or any place, then step 2 moves it).
+  2. `place OUT/<id>.otbm WORLD.otbm COPY.otbm --at X Y Z --spawn WORLD-spawn.xml COPY-spawn.xml`: a copy of the map and
+     of the spawn file; refused when a tile lands on a world tile.
+  3. Check the copy in the map editor, then use it (and the spawn copy) as the server's map.
+  4. `install OUT SERVER_DIR [--dry-run]`: the chest script and NPC stubs into `data/`; idempotent, refuses a clash
+     of action id, storage or file. Restart the server.
 - **Knowledge base:** SQLite outside git, `$AREAPLAN_KB` or `~/.local/share/cinders-of-chaos/area_planner/kb.sqlite3`.
 - **AI adapter** (`area_plan_ai.py`, optional): only with `ANTHROPIC_API_KEY` and `AREAPLAN_LLM_MODEL` (no model name is kept in the repo) or
   `AREAPLAN_LLM=openai` with `AREAPLAN_LLM_ENDPOINT` / `AREAPLAN_LLM_MODEL` (a local Ollama needs no key) set by the
   user. Keys are read from those variables only, never stored or printed. Up to 3 fix rounds with the validator's errors.
-- **Tests:** `tools/area_planner_test.py` (CI; validator rules, reachability maths, layout, the three examples compiled
-  with QA, determinism, pair 24 switch, knowledge base, AI fix loop on a fake endpoint). Previews of the examples were
-  rendered with things_custom23 for review only.
+- **Tests:** `tools/area_planner_test.py` (CI; validator rules, reachability maths, layout, the four examples compiled
+  with QA, determinism, decoration rules and rates, stairs, roofs, chest script run on a mocked engine, place and
+  install on synthetic maps, pair 24 switch, knowledge base, AI fix loop on a fake endpoint). Previews of the examples
+  were rendered with things_custom23 for review only.
 
 ## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
 
