@@ -3,6 +3,7 @@
 -- quoted strings whose content hashes to a row of that file change, in either quote style; a longer string, another
 -- file and identifiers stay; two old forms of one phrase give the same new text; --dry-run writes nothing; a second
 -- run changes nothing; a file with neither the old string nor the new text is an error; a missing file is skipped.
+-- config.lua next to data/: only a serverName value that hashes to a row changes; an own name stays.
 -- And the real list (tools/base_server_texts.csv) is well formed.
 local fails, checks = 0, 0
 local function ok(cond, what)
@@ -118,6 +119,40 @@ writeFile(bad, "sha256,file,new,note\n" .. sha256(OLD_WELCOME) .. ",scripts/cust
 out = sh("python3 -I tools/patch_base_server_name.py '" .. data .. "' --list '" .. bad .. "'")
 ok(out:find("has a quote") and out:find("rc=1"), "a quote in the new text is refused: " .. out)
 
+-- config.lua next to data/: only the serverName value, only when it hashes to a config.lua row
+local OLD_NAME = "Oldworld"
+local cfgList = root .. "/cfg.csv"
+writeFile(cfgList, "sha256,file,new,note\n" .. sha256(OLD_NAME) .. ",config.lua,Cinders of Chaos,base name\n")
+local cfgPath = root .. "/config.lua"
+local CFG = "ownerName = \"" .. OLD_NAME .. "\"\nserverName = \"" .. OLD_NAME .. "\"\nmotd = \"Welcome to " .. OLD_NAME
+	.. "\"\n"
+local CFG_NEW = "ownerName = \"" .. OLD_NAME .. "\"\nserverName = \"Cinders of Chaos\"\nmotd = \"Welcome to " .. OLD_NAME
+	.. "\"\n"
+writeFile(cfgPath, CFG)
+local cfgTool = "python3 -I tools/patch_base_server_name.py '" .. data .. "' --list '" .. cfgList .. "'"
+out = sh(cfgTool .. " --dry-run")
+ok(out:find("config.lua: 1 string replaced %(dry run") and out:find("rc=0"), "config dry run: " .. out)
+ok(readFile(cfgPath) == CFG, "config dry run wrote nothing")
+out = sh(cfgTool)
+ok(out:find("config.lua: 1 string replaced") and out:find("rc=0"), "config replaced: " .. out)
+ok(readFile(cfgPath) == CFG_NEW, "only the serverName value changed: " .. tostring(readFile(cfgPath)))
+out = sh(cfgTool)
+ok(out:find("config.lua: already done") and out:find("rc=0"), "config second run: " .. out)
+ok(readFile(cfgPath) == CFG_NEW, "config second run wrote nothing")
+-- an owner's own name (or prod_config.py's line) stays
+local OWN = "  serverName = 'My Own World'\n"
+writeFile(cfgPath, OWN)
+out = sh(cfgTool)
+ok(out:find("left as it is") and out:find("rc=0"), "own name kept: " .. out)
+ok(readFile(cfgPath) == OWN, "own name not written")
+-- no serverName line: reported
+writeFile(cfgPath, "motd = 'hi'\n")
+out = sh(cfgTool)
+ok(out:find("no serverName line") and out:find("rc=1"), "missing serverName line: " .. out)
+os.remove(cfgPath)
+out = sh(cfgTool)
+ok(out:find("config.lua: not there, skipped") and out:find("rc=0"), "missing config.lua skipped: " .. out)
+
 -- the real list
 local real = readFile("tools/base_server_texts.csv")
 ok(real ~= nil, "tools/base_server_texts.csv is there")
@@ -127,7 +162,8 @@ for line in (real or ""):gmatch("[^\n]+") do
 		rows = rows + 1
 		local key, file, new = line:match("^(%x+),([^,]+),([^,]+),")
 		ok(key and #key == 64, "row " .. rows .. ": sha256")
-		ok(file and file:find("^scripts/") and file:find("%.lua$"), "row " .. rows .. ": a Lua file of data/")
+		ok(file == "config.lua" or (file and file:find("^scripts/") and file:find("%.lua$")),
+			"row " .. rows .. ": config.lua or a Lua file of data/")
 		ok(new and new:find("Cinders of Chaos", 1, true) and not new:find("['\"\\]"), "row " .. rows .. ": new text")
 	end
 end

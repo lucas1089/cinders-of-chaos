@@ -79,7 +79,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.exam
 |---|---|---|
 | `ip` | the public DNS name (`--public-host`) | the login server hands it to the client as text and the client resolves it, so a DNS change needs no restart. Behind gateways it is the gateways' name, never the real server's IP (section "Gateways and DDoS"); 127.0.0.1 only works on the machine itself |
 | `loginProtocolPort` / `gameProtocolPort` / `statusProtocolPort` | 7171 / 7172 / 7171 | the stock ports (the test servers use 74xx) |
-| `serverName`, `motd`, `ownerName`, `ownerEmail`, `url`, `location` | ours | the download ships its own name and someone else's contact data |
+| `serverName`, `motd`, `ownerName`, `ownerEmail`, `url`, `location` | ours | the download ships its own name and someone else's contact data. `install_all.py` (step `servername`) already turns the base `serverName` into "Cinders of Chaos"; `--name` overrides it, and a later install never touches a name that is not the base value |
 | `maxPlayers` | e.g. 300 | 0 means unlimited; pick a number from the load test (section 9) |
 | `worldType` | `pvp` (or `no-pvp`, `pvp-enforced`) | the arena and the guild siege never use real deaths, so they work in every type |
 | `allowClones`, `onePlayerOnlinePerAccount` | false, false | the multi-client rules live in `multiclient.lua` (2 characters per IP; the second cannot attack players or enter dungeons) |

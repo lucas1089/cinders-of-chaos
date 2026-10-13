@@ -319,7 +319,8 @@ server/
    names. See "Base NPC names", "Base world texts" and "Base houses".
 5l3. The base server's own name: `python3 -I server/tools/patch_base_server_name.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `servername`, after `worldtexts`): the welcome text over the first temple and a
-   console banner. The status protocol's name is engine patch 0030. See "Server name".
+   console banner, and `serverName` in `config.lua` while it is still the base value. The status protocol's name is
+   engine patch 0030. See "Server name".
 5m. Spawns: `python3 -I server/tools/patch_base_spawns.py <server>/data [--dry-run] [--remove] [--report]` (idempotent;
    `install_all.py` step `spawns`, after `monsters`) fixes the dead monster registrations, the glitched spawntimes and the
    spawns on blocking tiles, shortens the 300-600 band's respawn and adds spawns in thin areas, all from
@@ -3893,8 +3894,15 @@ The base server still told players and server lists the name of the server it ca
   the order of the steps does not matter and a tree installed before this change gets the same text. A second run
   changes nothing ("already done"); a file with neither the old string nor the new text is reported (exit 1).
   `tests/base_server_name_patch_test.lua` runs it on made-up strings.
-- **config.lua**: `serverName` (the character list, the status `servername`, `znote_global_storage`), `motd`, `url`,
-  `location` and the owner come from `tools/prod_config.py`; the base values stay on a server it was not run on.
+- **config.lua `serverName`** (the world name of the character list, so the client's corner label, highscores and
+  console tabs; the status `servername`; `znote_global_storage`): the same step sets it to "Cinders of Chaos" while it
+  still holds the base server's value, so a test server installed with `install_all.py` alone shows our world name.
+  The rows with file `config.lua` hash the base values (no old text in the repository); only the value of the
+  `serverName = "..."` line is checked, nothing else in `config.lua`. Any other value (an owner's own name, the line
+  `tools/prod_config.py --name` wrote) stays ("left as it is", exit 0); a second run says "already done"; `--dry-run`
+  writes nothing; a `config.lua` without the line is reported (exit 1).
+- **config.lua, the rest**: `motd`, `url`, `location` and the owner come from `tools/prod_config.py`; the base values
+  stay on a server it was not run on.
 
 Checked on a fresh base tree with every install step: no other old server name in the data, the scripts or the SQL
 files. Left as they are (not shown to players): the Windows build files of the base (`vc17/`, the `.bat` restarters
