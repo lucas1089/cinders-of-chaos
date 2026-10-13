@@ -1,7 +1,7 @@
 -- Registers the outfit shaders the server sends by name (data/XML/shaders.xml of the base server,
--- ids 1-17, and 18 ember_pixent of the exclusives) so monster modifiers, store shaders and outfit shaders
--- draw. Same list and files as the base client's game_shaders module (plus ember_pixent); the .frag files
--- are in data/shaders.
+-- ids 1-17, 18 ember_pixent of the exclusives, 19-24 the chaos_* shaders of the cosmetics) so monster
+-- modifiers, store shaders and outfit shaders draw. Same list and files as the base client's game_shaders module
+-- (plus ember_pixent and the chaos_* ones); the .frag files are in data/shaders.
 -- The server names "blue Dortmond" (id 5) with a space, the base client "blue_Dortmond": both are registered.
 
 local SHADERS = {
@@ -26,6 +26,14 @@ local SHADERS = {
   { "blue_pixent", "/shaders/expand_vertex", "/shaders/pixent_blue" },
   -- shader 18, never sold (server exclusives_config.lua, a boss drop; shaders.xml via server/tools/install_outfits.py)
   { "ember_pixent", "/shaders/expand_vertex", "/shaders/pixent_ember" },
+  -- the Chaos outfit shaders, written for this server (server cosmetics_config.lua outfitShaders, shaders.xml ids
+  -- 19-24 via server/tools/install_outfits.py; off on the server until the owner turns them on and prices them)
+  { "chaos_ember_glow", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_ember_glow" },
+  { "chaos_frost_rime", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_frost_rime" },
+  { "chaos_void_flicker", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_void_flicker" },
+  { "chaos_holy_radiance", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_holy_radiance" },
+  { "chaos_blood_pulse", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_blood_pulse" },
+  { "chaos_spectral_ghost", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_spectral_ghost" },
 }
 
 function init()

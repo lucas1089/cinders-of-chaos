@@ -147,6 +147,11 @@ jobs:
           cp -r client/overlay/modules client/overlay/data "$d/"
           python3 -I client/tools/make_update_manifest.py build "$d" --dry-run
 
+      - name: Client shaders compile (glslangValidator; GLSL 1.10 and ES 1.00; files and base patch programs)
+        run: |
+          sudo apt-get install -y -qq glslang-tools
+          python3 -I client/tools/check_shaders.py --require-glslang
+
       - name: Client updater signature vectors (C++, OpenSSL; header from base patch 0031)
         run: |
           d=$(mktemp -d)

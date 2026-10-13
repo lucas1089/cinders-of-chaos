@@ -1,0 +1,737 @@
+# Item rarity outline and UI widget shaders (client/MANIFEST.md "game_shaderfx" and "game_itemrarity", BASE.md 24). Items: a soft glow in the rarity colour around a dropped item of a rarity on the map and around items in inventory and container slots (UIItem decides: inventory slot styles and container "itemN" widgets; UIItem:setRarityOutlineMode(-1 auto, 0 never, 1 always)). Item::draw queues one DrawQueueItemItemOutline before the sprite and draws it from the sprite's final queue item at draw time: the sprite once more, grown by the reach, through a program that samples the sprite's alpha in rings and paints a smooth falloff where the sprite is transparent (the creature outline of 0038 does the same with a hard line). Colours, reach, the lowest rarity and pulsing come from Lua: Item.setRarityOutlineColor(rarity 1-15 or 16 = unique, r, g, b, a), Item.setRarityOutlineEnabled(onMap, inSlots), Item.setRarityOutlineStyle(width, minRarity, pulseFromRarity, pulseMs), item:getRarityOutlineColor(); with no colour set nothing is drawn. UI: the base parsed image-shader in OTUI but bound no Lua setter (corelib globals keeps setImageShader as a Lua field); UIWidget:setUiShader(name) / getUiShader() and setUiShaderParams(a, b, c, d) / getUiShaderParam(i) set the image shader and four values the shader reads as u_Params (PainterShaderProgram PARAMS_UNIFORM 17, set before each widget draw); an image shader that is not registered draws the plain image instead of nothing. Options (Graphics, new panel): rarityOutlineMap, rarityOutlineSlots, rarityFrameShine (on) and liquidOrbs (off). Touches item.h/.cpp, uiitem.h/.cpp, luafunctions_client.cpp, framework drawqueue.h/.cpp, paintershaderprogram.h/.cpp, uiwidget.h, uiwidgetimage.cpp, luafunctions.cpp, client_settings dataset.lua and options/graphics.otui.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1984,6 +1984,45 @@ return {
+     value = true,
+   },
+ 
++  -- Cinders of Chaos shaders (base patch 0044): the soft rarity outline of items (overlay module game_itemrarity) on
++  -- the map and in inventory / container slots, the shine on legendary and unique frames and the liquid orbs
++  -- (overlay module game_shaderfx); each module reads the value again when it changes
++  rarityOutlineMap = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_itemrarity
++      if m and m.onOutlineOption then m.onOutlineOption('map', value) end
++      return true
++    end,
++  },
++
++  rarityOutlineSlots = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_itemrarity
++      if m and m.onOutlineOption then m.onOutlineOption('slots', value) end
++      return true
++    end,
++  },
++
++  rarityFrameShine = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_shaderfx
++      if m and m.onOption then m.onOption('shine', value) end
++      return true
++    end,
++  },
++
++  liquidOrbs = {
++    value = false,
++    apply = function(value)
++      local m = modules.game_shaderfx
++      if m and m.onOption then m.onOption('orbs', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -324,6 +324,96 @@ GraphicsWindow < Panel
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('If you are logged into the game, you can see your current frame \nrate here. Press Alt+F8 to show or hide your current frame rate in \nthe game window.')
+ 
++  FlatPanel
++    size: 505 44
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: rarityOutlineMap
++      size: 12 12
++      !text: tr('Rarity outline on dropped items')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('rarityOutlineMap')
++        self:setChecked(value ~= false)
++
++    SettingsCheckBox
++      id: rarityOutlineSlots
++      size: 12 12
++      !text: tr('Rarity outline in bags and inventory')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 7
++      margin-left: 250
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('rarityOutlineSlots')
++        self:setChecked(value ~= false)
++
++    SettingsCheckBox
++      id: rarityFrameShine
++      size: 12 12
++      !text: tr('Shine on legendary and unique frames')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 25
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('rarityFrameShine')
++        self:setChecked(value ~= false)
++
++    SettingsCheckBox
++      id: liquidOrbs
++      size: 12 12
++      !text: tr('Liquid health and mana orbs')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 25
++      margin-left: 250
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('liquidOrbs')
++        self:setChecked(value == true)
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 7
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('A soft glow in the rarity colour around items of a rarity, on the\nground and in your bags and inventory; a light sweep across the frames\nof legendary and unique items; two liquid orbs for health and mana\nunder the game window. Turn them off if your frame rate drops.')
++
+   Button
+     id: resetButton
+     size: 43 20
+--- a/src/client/item.cpp
++++ b/src/client/item.cpp
+@@ -36,6 +36,8 @@
+ #include <framework/core/filestream.h>
+ #include <framework/core/binarytree.h>
+ #include <framework/graphics/shadermanager.h>
++#include <framework/graphics/painter.h>
++#include <cmath>
+ 
+ #include <framework/util/stats.h>
+ 
+@@ -111,6 +113,19 @@ static void appearancePatterns(ThingType* look, const Position& pos, bool animat
+     }
+ }
+ 
++// Chaos (base patch 0044): the rarity outline style (set from Lua) and the queue item that starts an outline
++static ItemRarityOutlineStyle s_rarityOutline;
++
++static DrawQueueItemItemOutline* queueRarityOutline(const Color& color)
++{
++    if (color.aF() <= 0.f)
++        return nullptr;
++    auto outline = std::make_unique<DrawQueueItemItemOutline>(color, s_rarityOutline.width, 0, g_sprites.getOffsetFactor());
++    auto* ptr = outline.get();
++    g_drawQueue->add(std::move(outline));
++    return ptr;
++}
++
+ void Item::draw(const Point& dest, bool animate, LightView* lightView)
+ {
+     if (m_clientId == 0)
+@@ -132,12 +147,18 @@ void Item::draw(const Point& dest, bool animate, LightView* lightView)
+         type = look;
+         appearancePatterns(look, m_position, animate, xPattern, yPattern, zPattern, animationPhase);
+     }
++    // Chaos (base patch 0044): a dropped item of a rarity gets its soft outline under the sprite
++    DrawQueueItemItemOutline* outline = s_rarityOutline.onMap ? queueRarityOutline(getRarityOutlineColor()) : nullptr;
+     if (!m_shader.empty()) {
+         type->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, m_shader, color, lightView);
+     }
+     else {
+         type->draw(dest, 0, xPattern, yPattern, zPattern, animationPhase, color, lightView);
+     }
++    if (outline) {
++        outline->setPart(g_drawQueue->size() > drawQueueSize + 1 ? g_drawQueue->last() : nullptr);
++        outline->m_pulseMs = getRarityOutlinePulseMs();
++    }
+     if (m_marked) {
+         g_drawQueue->setMark(drawQueueSize, updatedMarkedColor());
+     }
+@@ -148,7 +169,7 @@ void Item::setLootHighlight(bool enabled)
+     m_lootHighlight = enabled;
+ }
+ 
+-void Item::draw(const Rect& dest, bool animate)
++void Item::draw(const Rect& dest, bool animate, bool outline)
+ {
+     if (m_clientId == 0)
+         return;
+@@ -169,12 +190,19 @@ void Item::draw(const Rect& dest, bool animate)
+         type = look;
+         appearancePatterns(look, m_position, animate, xPattern, yPattern, zPattern, animationPhase);
+     }
++    // Chaos (base patch 0044): in an inventory or container slot the soft rarity outline goes under the sprite
++    const size_t drawQueueSize = g_drawQueue->size();
++    DrawQueueItemItemOutline* outlineItem = outline && s_rarityOutline.inSlots ? queueRarityOutline(getRarityOutlineColor()) : nullptr;
+     if (!m_shader.empty()) {
+         type->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, m_shader, color);
+     }
+     else {
+         type->draw(dest, 0, xPattern, yPattern, zPattern, animationPhase, color);
+     }
++    if (outlineItem) {
++        outlineItem->setPart(g_drawQueue->size() > drawQueueSize + 1 ? g_drawQueue->last() : nullptr);
++        outlineItem->m_pulseMs = getRarityOutlinePulseMs();
++    }
+ }
+ 
+ bool Item::drawToImage(const Point& dest, ImagePtr image)
+@@ -676,3 +704,186 @@ ThingType* Item::rawGetThingType()
+ {
+     return g_things.rawGetThingType(m_clientId, ThingCategoryItem);
+ }
++
++// Chaos (base patch 0044): the rarity outline of items
++Color Item::getRarityOutlineColor()
++{
++    const bool unique = m_customAttribs.get<uint64>(ITEM_CUSTOM_ATTR_UNIQUE) > 0;
++    const uint64 rarity = m_customAttribs.get<uint64>(ITEM_CUSTOM_ATTR_RARITY);
++    if (unique && s_rarityOutline.colors[ItemRarityOutlineStyle::UNIQUE].aF() > 0.f)
++        return s_rarityOutline.colors[ItemRarityOutlineStyle::UNIQUE];
++    if (rarity < 1 || rarity > 15 || (int)rarity < s_rarityOutline.minRarity)
++        return Color::alpha;
++    return s_rarityOutline.colors[rarity];
++}
++
++int Item::getRarityOutlinePulseMs()
++{
++    const int from = s_rarityOutline.pulseFromRarity;
++    if (from <= 0)
++        return 0;
++    const bool unique = m_customAttribs.get<uint64>(ITEM_CUSTOM_ATTR_UNIQUE) > 0;
++    const uint64 rarity = m_customAttribs.get<uint64>(ITEM_CUSTOM_ATTR_RARITY);
++    return unique || (int)rarity >= from ? s_rarityOutline.pulseMs : 0;
++}
++
++void Item::setRarityOutlineColor(int rarity, int r, int g, int b, int a)
++{
++    if (rarity < 1 || rarity > ItemRarityOutlineStyle::UNIQUE)
++        return;
++    auto channel = [](int v) { return (uint8)std::max(0, std::min(255, v)); };
++    s_rarityOutline.colors[rarity] = Color(channel(r), channel(g), channel(b), channel(a));
++}
++
++void Item::setRarityOutlineEnabled(bool onMap, bool inSlots)
++{
++    s_rarityOutline.onMap = onMap;
++    s_rarityOutline.inSlots = inSlots;
++}
++
++void Item::setRarityOutlineStyle(int width, int minRarity, int pulseFromRarity, int pulseMs)
++{
++    s_rarityOutline.width = std::max(1, std::min(4, width));
++    s_rarityOutline.minRarity = std::max(1, std::min(15, minRarity));
++    s_rarityOutline.pulseFromRarity = std::max(0, std::min(16, pulseFromRarity));
++    s_rarityOutline.pulseMs = std::max(200, std::min(60000, pulseMs));
++}
++
++bool Item::isRarityOutlineOnMap()
++{
++    return s_rarityOutline.onMap;
++}
++
++bool Item::isRarityOutlineInSlots()
++{
++    return s_rarityOutline.inSlots;
++}
++
++namespace
++{
++// a_TexCoord stays in texture pixels (the rings are measured in them)
++const std::string glslItemOutlineVertexShader = "\n\
++    attribute vec2 a_Vertex;\n\
++    attribute vec2 a_TexCoord;\n\
++    uniform mat3 u_TransformMatrix;\n\
++    uniform mat3 u_ProjectionMatrix;\n\
++    varying vec2 v_TexCoord;\n\
++    void main()\n\
++    {\n\
++        gl_Position = vec4((u_ProjectionMatrix * u_TransformMatrix * vec3(a_Vertex.xy, 1.0)).xy, 0.0, 1.0);\n\
++        v_TexCoord = a_TexCoord;\n\
++    }\n";
++
++// the sprite's alpha at a texture pixel (nothing outside its own frame rect: the texture holds other frames there).
++// Per ring i (1..n) the 8 neighbours at i steps; the nearest opaque ring counts most (smooth falloff), so the glow is
++// strongest at the edge and fades out over the reach. Only where the sprite itself is transparent.
++const std::string glslItemOutlineFragmentShader = "\n\
++    uniform mat3 u_TextureMatrix;\n\
++    uniform sampler2D u_Tex0;\n\
++    uniform vec4 u_Color;\n\
++    uniform vec4 u_GlowSrc;\n\
++    uniform vec3 u_GlowRing;\n\
++    varying vec2 v_TexCoord;\n\
++    float alphaAt(vec2 p)\n\
++    {\n\
++        if (p.x < u_GlowSrc.x || p.y < u_GlowSrc.y || p.x >= u_GlowSrc.z || p.y >= u_GlowSrc.w)\n\
++            return 0.0;\n\
++        return texture2D(u_Tex0, (u_TextureMatrix * vec3(p, 1.0)).xy).a;\n\
++    }\n\
++    float ringAt(vec2 c, vec2 s)\n\
++    {\n\
++        vec2 d = s * 0.7071;\n\
++        float a = max(max(alphaAt(c + vec2(s.x, 0.0)), alphaAt(c - vec2(s.x, 0.0))),\n\
++                      max(alphaAt(c + vec2(0.0, s.y)), alphaAt(c - vec2(0.0, s.y))));\n\
++        a = max(a, max(max(alphaAt(c + d), alphaAt(c - d)),\n\
++                       max(alphaAt(c + vec2(d.x, -d.y)), alphaAt(c + vec2(-d.x, d.y)))));\n\
++        return a;\n\
++    }\n\
++    void main()\n\
++    {\n\
++        float inside = alphaAt(v_TexCoord);\n\
++        if (inside > 0.98)\n\
++            discard;\n\
++        float glow = 0.0;\n\
++        for (int i = 1; i <= 4; i++) {\n\
++            float fi = float(i);\n\
++            if (fi > u_GlowRing.z)\n\
++                break;\n\
++            float t = (fi - 0.5) / u_GlowRing.z;\n\
++            float fall = 1.0 - t * t * (3.0 - 2.0 * t);\n\
++            glow = max(glow, ringAt(v_TexCoord, u_GlowRing.xy * fi) * fall);\n\
++            glow = max(glow, ringAt(v_TexCoord, u_GlowRing.xy * (fi - 0.5)) * min(1.0, fall + 0.15));\n\
++        }\n\
++        float a = glow * (1.0 - inside);\n\
++        if (a < 0.01)\n\
++            discard;\n\
++        gl_FragColor = vec4(u_Color.rgb, u_Color.a * a);\n\
++    }\n";
++
++enum {
++    ITEM_GLOW_SRC_UNIFORM = 24,
++    ITEM_GLOW_RING_UNIFORM = 25
++};
++
++constexpr float ITEM_GLOW_PULSE_LOW = 0.5f; // the lowest alpha of a pulsing item outline
++constexpr int ITEM_GLOW_MAX_RINGS = 4;      // the fragment shader's loop
++
++PainterShaderProgramPtr itemOutlineProgram()
++{
++    static PainterShaderProgramPtr program;
++    static bool failed = false;
++    if (program || failed)
++        return program;
++    program = PainterShaderProgram::create("chaosItemOutlineProgram", glslItemOutlineVertexShader, glslItemOutlineFragmentShader);
++    if (!program) {
++        failed = true;
++        g_logger.error("item outline program could not be built; rarity outlines are off");
++        return nullptr;
++    }
++    program->bindUniformLocation(ITEM_GLOW_SRC_UNIFORM, "u_GlowSrc");
++    program->bindUniformLocation(ITEM_GLOW_RING_UNIFORM, "u_GlowRing");
++    return program;
++}
++}
++
++void DrawQueueItemItemOutline::draw()
++{
++    if (!m_part || !m_part->m_texture || m_part->m_dest.isEmpty() || m_part->m_src.isEmpty() || m_width <= 0)
++        return;
++    PainterShaderProgramPtr program = itemOutlineProgram();
++    if (!program)
++        return;
++
++    // the queue's opacity (setOpacity, a fading item) applies to the outline too
++    float alpha = m_color.aF() * m_outlineColor.aF();
++    if (m_pulseMs > 0) {
++        const float phase = (float)(g_clock.millis() % m_pulseMs) / m_pulseMs;
++        alpha *= ITEM_GLOW_PULSE_LOW + (1.f - ITEM_GLOW_PULSE_LOW) * (0.5f - 0.5f * std::cos(phase * 6.2831853f));
++    }
++    if (alpha <= 0.f)
++        return;
++    Color color = m_outlineColor;
++    color.setAlpha(alpha);
++
++    const Rect& src = m_part->m_src;
++    const Rect& dest = m_part->m_dest;
++    // the reach in texture pixels: sprite pixels times the sprite size factor (HD upscaling keeps the look)
++    const float radiusTex = std::max(1.f, m_width * m_pixelScale);
++    const float sx = (float)src.width() / dest.width();
++    const float sy = (float)src.height() / dest.height();
++    const int rings = std::max(1, std::min(ITEM_GLOW_MAX_RINGS, (int)std::ceil(radiusTex)));
++
++    g_painter->setShaderProgram(program);
++    program->bind();
++    program->setUniformValue(ITEM_GLOW_SRC_UNIFORM, (float)src.left(), (float)src.top(), (float)(src.right() + 1), (float)(src.bottom() + 1));
++    program->setUniformValue(ITEM_GLOW_RING_UNIFORM, radiusTex / rings, radiusTex / rings, (float)rings);
++    g_painter->setColor(color);
++    // the quad grows by the reach on each side, in destination pixels and in texture pixels alike
++    const int growX = std::max(1, (int)std::ceil(radiusTex / sx)), growY = std::max(1, (int)std::ceil(radiusTex / sy));
++    const Rect grownDest(Point(dest.left() - growX, dest.top() - growY), Size(dest.width() + 2 * growX, dest.height() + 2 * growY));
++    const int texX = (int)std::ceil(growX * sx), texY = (int)std::ceil(growY * sy);
++    const Rect grownSrc(Point(src.left() - texX, src.top() - texY), Size(src.width() + 2 * texX, src.height() + 2 * texY));
++    g_painter->drawTexturedRect(grownDest, m_part->m_texture, grownSrc, m_part->getFlipDirection());
++    g_painter->resetShaderProgram();
++    g_painter->resetColor();
++}
+--- a/src/client/item.h
++++ b/src/client/item.h
+@@ -28,6 +28,7 @@
+ #include "thing.h"
+ #include "effect.h"
+ #include "itemtype.h"
++#include <framework/graphics/drawqueue.h>
+ 
+ enum ItemAttr : uint8
+ {
+@@ -73,6 +74,22 @@ enum ItemAttr : uint8
+ 
+ // Chaos: custom attribute key of the transmog look (server ChaosItemAttrKey CHAOS_ITEM_KEY_APPEARANCE, server patch 0019)
+ static constexpr uint16 ITEM_CUSTOM_ATTR_APPEARANCE = 8;
++// Chaos (base patch 0044): custom attribute keys of the rarity outline (server ChaosItemAttrKey, client ChaosItemAttr)
++static constexpr uint16 ITEM_CUSTOM_ATTR_RARITY = 1; // 1..15
++static constexpr uint16 ITEM_CUSTOM_ATTR_UNIQUE = 4; // 1 = a unique item
++
++// Chaos (base patch 0044): the soft rarity outline of items, one style for every item. Lua (game_itemrarity) sets the
++// colours; nothing is drawn while a rarity has no colour (alpha 0), so a client without the module draws as before.
++struct ItemRarityOutlineStyle {
++    static constexpr int UNIQUE = 16;   // colours[16] is the unique colour (a unique item uses it over its rarity's)
++    Color colors[17];                   // by rarity 0..15 (0 = no rarity, never drawn) and UNIQUE
++    bool onMap = true;                  // dropped items on the map
++    bool inSlots = true;                // inventory and container slots (UIItem decides which widgets are slots)
++    int width = 2;                      // the glow's reach in sprite pixels (1-4), scaled like the creature outline
++    int minRarity = 1;                  // rarities below get no outline (uniques always do)
++    int pulseFromRarity = 0;            // this rarity and above breathe (0 = none)
++    int pulseMs = 2000;
++};
+ 
+ // @bindclass
+ #pragma pack(push,1) // disable memory alignment
+@@ -86,7 +103,8 @@ public:
+     static ItemPtr createFromOtb(int id);
+ 
+     void draw(const Point& dest, bool animate = true, LightView* lightView = nullptr);
+-    void draw(const Rect& dest, bool animate = true);
++    // outline (Chaos, base patch 0044): true in an inventory or container slot (UIItem), the rarity outline is drawn
++    void draw(const Rect& dest, bool animate = true, bool outline = false);
+     bool drawToImage(const Point& dest, ImagePtr image);
+ 
+     void setId(uint32 id);
+@@ -226,6 +244,16 @@ public:
+     void setAppearanceId(uint16 id) { m_customAttribs.set(ITEM_CUSTOM_ATTR_APPEARANCE, static_cast<uint64>(id)); }
+     ThingType* getAppearanceThingType();
+ 
++    // Chaos (base patch 0044): the rarity outline. The colour this item's outline has (alpha 0 = none): the unique
++    // colour for a unique item, else its rarity's (custom attributes 4 and 1)
++    Color getRarityOutlineColor();
++    int getRarityOutlinePulseMs(); // > 0 when this item's outline breathes
++    static void setRarityOutlineColor(int rarity, int r, int g, int b, int a);
++    static void setRarityOutlineEnabled(bool onMap, bool inSlots);
++    static void setRarityOutlineStyle(int width, int minRarity, int pulseFromRarity, int pulseMs);
++    static bool isRarityOutlineOnMap();
++    static bool isRarityOutlineInSlots();
++
+     AnimatorPtr getAnimator() override { return m_animator; }
+     AnimatorPtr getIdleAnimator() override { return m_idleAnimator; }
+ 
+@@ -266,4 +294,23 @@ private:
+ 
+ #pragma pack(pop)
+ 
++// Chaos (base patch 0044): queued just before the item's own sprite and drawn from it at draw time (its final rect,
++// after flips): the sprite once more as a quad grown by the glow's reach, through a program that samples the sprite's
++// alpha in rings and paints a soft falloff where the sprite is transparent. The sprite is drawn over it.
++struct DrawQueueItemItemOutline : public DrawQueueItem {
++    DrawQueueItemItemOutline(const Color& color, int width, int pulseMs, float pixelScale) :
++        DrawQueueItem(nullptr, Color::white), m_outlineColor(color), m_width(width), m_pulseMs(pulseMs), m_pixelScale(pixelScale)
++    {};
++
++    void setPart(DrawQueueItem* item) { m_part = dynamic_cast<DrawQueueItemTexturedRect*>(item); }
++    void draw() override;
++    bool cache() override { return false; }
++
++    Color m_outlineColor;
++    int m_width;
++    int m_pulseMs;
++    float m_pixelScale; // map units per sprite pixel (g_sprites.getOffsetFactor())
++    DrawQueueItemTexturedRect* m_part = nullptr; // the item's sprite, an item of the same queue drawn after this one
++};
++
+ #endif
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -870,6 +870,13 @@ void Client::registerLuaFunctions()
+     g_lua.bindClassMemberFunction<Item>("getCustomAttribute", &Item::getCustomAttribute);
+     g_lua.bindClassMemberFunction<Item>("getAppearanceId", &Item::getAppearanceId); // Chaos transmog
+     g_lua.bindClassMemberFunction<Item>("setAppearanceId", &Item::setAppearanceId); // Chaos transmog
++    // Chaos (base patch 0044): the soft rarity outline of items
++    g_lua.bindClassMemberFunction<Item>("getRarityOutlineColor", &Item::getRarityOutlineColor);
++    g_lua.bindClassStaticFunction<Item>("setRarityOutlineColor", &Item::setRarityOutlineColor);
++    g_lua.bindClassStaticFunction<Item>("setRarityOutlineEnabled", &Item::setRarityOutlineEnabled);
++    g_lua.bindClassStaticFunction<Item>("setRarityOutlineStyle", &Item::setRarityOutlineStyle);
++    g_lua.bindClassStaticFunction<Item>("isRarityOutlineOnMap", &Item::isRarityOutlineOnMap);
++    g_lua.bindClassStaticFunction<Item>("isRarityOutlineInSlots", &Item::isRarityOutlineInSlots);
+ 
+     g_lua.registerClass<Effect, Thing>();
+     g_lua.bindClassStaticFunction<Effect>("create", []{ return std::make_shared<Effect>(); });
+@@ -1068,6 +1075,8 @@ void Client::registerLuaFunctions()
+     g_lua.bindClassMemberFunction<UIItem>("setShowCount", &UIItem::setShowCount);
+     g_lua.bindClassMemberFunction<UIItem>("setShowCountAlways", &UIItem::setShowCountAlways);
+     g_lua.bindClassMemberFunction<UIItem>("setItemShader", &UIItem::setItemShader);
++    g_lua.bindClassMemberFunction<UIItem>("setRarityOutlineMode", &UIItem::setRarityOutlineMode); // Chaos (0044)
++    g_lua.bindClassMemberFunction<UIItem>("getRarityOutlineMode", &UIItem::getRarityOutlineMode);
+     g_lua.bindClassMemberFunction<UIItem>("setItemColor", &UIItem::setItemColor);
+     g_lua.bindClassMemberFunction<UIItem>("clearItem", &UIItem::clearItem);
+     g_lua.bindClassMemberFunction<UIItem>("getItemId", &UIItem::getItemId);
+--- a/src/client/uiitem.cpp
++++ b/src/client/uiitem.cpp
+@@ -86,7 +86,7 @@ void UIItem::drawSelf(Fw::DrawPane drawPane)
+ 
+         m_item->setColor(m_itemColor);
+         const auto itemDrawQueueStart = g_drawQueue->size();
+-        m_item->draw(drawRect);
++        m_item->draw(drawRect, true, drawsRarityOutline());
+         if (m_flipDirection != 0) {
+             g_drawQueue->setFlip(itemDrawQueueStart, drawRect.center(), m_flipDirection);
+         }
+@@ -271,6 +271,15 @@ bool UIItem::shouldDrawExpiryState() const
+     }
+ }
+ 
++// Chaos (base patch 0044): by default only inventory and container slots draw the rarity outline (not the store, the
++// market, tooltips or the action bar)
++bool UIItem::drawsRarityOutline()
++{
++    if (m_rarityOutlineMode >= 0)
++        return m_rarityOutlineMode == 1;
++    return m_expiryDisplayContext == ExpiryDisplayContext::Inventory || m_expiryDisplayContext == ExpiryDisplayContext::Container;
++}
++
+ void UIItem::cacheCountText()
+ {
+     int count = m_item->getCountOrSubType();
+--- a/src/client/uiitem.h
++++ b/src/client/uiitem.h
+@@ -47,6 +47,11 @@ public:
+     void setItemColor(const Color& color) { m_itemColor = color; }
+     void setHash(const std::string& hash) { if(m_item) m_item->setHash(hash); }
+     void setFlipDirection(uint8_t direction);
++    // Chaos (base patch 0044): the rarity outline in this widget. -1 = by the slot (inventory and container slots
++    // only, the default), 0 = never, 1 = always (a preview of an item)
++    void setRarityOutlineMode(int mode) { m_rarityOutlineMode = std::max(-1, std::min(1, mode)); }
++    int getRarityOutlineMode() { return m_rarityOutlineMode; }
++    bool drawsRarityOutline();
+ 
+     int getItemId() { return m_item ? m_item->getId() : 0; }
+     int getItemCount() { return m_item ? m_item->getCount() : 0; }
+@@ -80,6 +85,7 @@ protected:
+     std::string m_countText;
+     std::string m_virtualCount;
+     uint8_t m_flipDirection = 0;
++    int m_rarityOutlineMode = -1;
+     ExpiryDisplayContext m_expiryDisplayContext = ExpiryDisplayContext::Unused;
+ 
+     ticks_t m_lastDecayUpdate;
+--- a/src/framework/graphics/drawqueue.cpp
++++ b/src/framework/graphics/drawqueue.cpp
+@@ -94,10 +94,12 @@ void DrawQueueItemImageWithShader::draw()
+ {
+     if (!m_texture) return;
+     PainterShaderProgramPtr shader = g_shaders.getShader(m_shader);
+-    if (!shader) return;
++    // Chaos (base patch 0044): a shader that is not (yet) registered draws the plain image, not nothing
++    if (!shader) return DrawQueueItemTextureCoords::draw();
+ 
+     g_painter->setShaderProgram(shader);
+     shader->bindMultiTextures();
++    shader->setParams(m_params[0], m_params[1], m_params[2], m_params[3]);
+     g_painter->setColor(m_color);
+     const auto flipped = beginFlip(m_flipDirection, m_flipCenter);
+     g_painter->drawTextureCoords(m_coordsBuffer, m_texture);
+@@ -109,7 +111,7 @@ void DrawQueueItemImageWithShader::draw(const Point& pos)
+ {
+     if (!m_texture) return;
+     PainterShaderProgramPtr shader = g_shaders.getShader(m_shader);
+-    if (!shader) return;
++    if (!shader) return DrawQueueItemTextureCoords::draw(pos);
+ 
+     g_painter->setShaderProgram(shader);
+     shader->bindMultiTextures();
+--- a/src/framework/graphics/drawqueue.h
++++ b/src/framework/graphics/drawqueue.h
+@@ -3,6 +3,7 @@
+ 
+ #include <memory>
+ #include <vector>
++#include <array>
+ #include <framework/graphics/declarations.h>
+ #include <framework/graphics/coordsbuffer.h>
+ #include <framework/graphics/paintershaderprogram.h>
+@@ -106,6 +107,10 @@ struct DrawQueueItemImageWithShader : public DrawQueueItemTextureCoords {
+     DrawQueueItemImageWithShader(CoordsBuffer& coords, const TexturePtr& texture, const Color& color, const std::string& shader) :
+         DrawQueueItemTextureCoords(coords, texture, color), m_shader(shader)
+     {};
++    // Chaos (base patch 0044): a widget's shader values (UIWidget:setShaderParams), the shader's u_Params
++    DrawQueueItemImageWithShader(CoordsBuffer& coords, const TexturePtr& texture, const Color& color, const std::string& shader, const std::array<float, 4>& params) :
++        DrawQueueItemTextureCoords(coords, texture, color), m_shader(shader), m_params(params)
++    {};
+ 
+     void draw() override;
+     void draw(const Point& pos) override;
+@@ -114,6 +119,7 @@ struct DrawQueueItemImageWithShader : public DrawQueueItemTextureCoords {
+     }
+ 
+     std::string m_shader;
++    std::array<float, 4> m_params = {0.f, 0.f, 0.f, 0.f};
+ };
+ 
+ struct DrawQueueItemFilledRect : public DrawQueueItem {
+@@ -333,6 +339,11 @@ public:
+     {
+         return m_queue.size();
+     }
++    // Chaos (base patch 0044): the item queued last (nullptr when empty); the item outline draws from it
++    DrawQueueItem* last()
++    {
++        return m_queue.empty() ? nullptr : m_queue.back().get();
++    }
+ 
+     void setOpacity(size_t start, float opacity)
+     {
+--- a/src/framework/graphics/paintershaderprogram.cpp
++++ b/src/framework/graphics/paintershaderprogram.cpp
+@@ -59,6 +59,7 @@ void PainterShaderProgram::setupUniforms()
+     bindUniformLocation(CENTER_UNIFORM, "u_Center");
+ 
+     bindUniformLocation(MAP_WALKOFFSET_UNIFORM, "u_WalkOffset");
++    bindUniformLocation(PARAMS_UNIFORM, "u_Params");
+ 
+     // VALUES
+     setUniformValue(TRANSFORM_MATRIX_UNIFORM, m_transformMatrix);
+@@ -216,6 +217,13 @@ void PainterShaderProgram::updateWalkOffset(const PointF& offset)
+     setUniformValue(MAP_WALKOFFSET_UNIFORM, m_walkOffset.x, m_walkOffset.y);
+ }
+ 
++// Chaos (base patch 0044): set before each widget draw (several widgets share one program, each with its own values)
++void PainterShaderProgram::setParams(float a, float b, float c, float d)
++{
++    bind();
++    setUniformValue(PARAMS_UNIFORM, a, b, c, d);
++}
++
+ void PainterShaderProgram::addMultiTexture(const std::string& file)
+ {
+     if (m_multiTextures.size() > 3)
+--- a/src/framework/graphics/paintershaderprogram.h
++++ b/src/framework/graphics/paintershaderprogram.h
+@@ -54,7 +54,8 @@ protected:
+         RESOLUTION_UNIFORM = 13,
+         OFFSET_UNIFORM = 14,
+         CENTER_UNIFORM = 15,
+-        MAP_WALKOFFSET_UNIFORM = 16
++        MAP_WALKOFFSET_UNIFORM = 16,
++        PARAMS_UNIFORM = 17 // Chaos (base patch 0044): u_Params, a widget's own values (UIWidget:setUiShaderParams)
+     };
+ 
+     friend class Painter;
+@@ -77,6 +78,7 @@ public:
+     void setCenter(const Point& center);
+     void updateTime();
+     void updateWalkOffset(const PointF& offset);
++    void setParams(float a, float b, float c, float d);
+ 
+     void addMultiTexture(const std::string& file);
+     void bindMultiTextures();
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -739,6 +739,10 @@ void Application::registerLuaFunctions()
+     g_lua.bindClassMemberFunction<UIWidget>("setImageBorderLeft", &UIWidget::setImageBorderLeft);
+     g_lua.bindClassMemberFunction<UIWidget>("setImageBorder", &UIWidget::setImageBorder);
+     g_lua.bindClassMemberFunction<UIWidget>("setPixelTesting", &UIWidget::setPixelTesting);
++    g_lua.bindClassMemberFunction<UIWidget>("setUiShader", &UIWidget::setUiShader); // Chaos (base patch 0044)
++    g_lua.bindClassMemberFunction<UIWidget>("getUiShader", &UIWidget::getUiShader);
++    g_lua.bindClassMemberFunction<UIWidget>("setUiShaderParams", &UIWidget::setUiShaderParams);
++    g_lua.bindClassMemberFunction<UIWidget>("getUiShaderParam", &UIWidget::getUiShaderParam);
+     g_lua.bindClassMemberFunction<UIWidget>("getImageSource", &UIWidget::getImageSource);
+     g_lua.bindClassMemberFunction<UIWidget>("getImageClip", &UIWidget::getImageClip);
+     g_lua.bindClassMemberFunction<UIWidget>("getImageOffsetX", &UIWidget::getImageOffsetX);
+--- a/src/framework/ui/uiwidget.h
++++ b/src/framework/ui/uiwidget.h
+@@ -32,6 +32,7 @@
+ #include <framework/graphics/bitmapfont.h>
+ #include <framework/graphics/coordsbuffer.h>
+ #include <framework/core/timer.h>
++#include <array>
+ 
+ enum WidgetEvents : int {
+     EVENT_TEXT_CLICK = 1,
+@@ -492,6 +493,7 @@ protected:
+     stdext::boolean<false> m_imageAutoResize;
+     EdgeGroup<int> m_imageBorder;
+     std::string m_shader;
++    std::array<float, 4> m_shaderParams = {0.f, 0.f, 0.f, 0.f}; // Chaos (base patch 0044): the shader's u_Params
+ 
+ public:
+     void setQRCode(const std::string& code, int border);
+@@ -516,6 +518,12 @@ public:
+     void setImageBorderLeft(int border) { m_imageBorder.left = border; configureBorderImage(); }
+     void setImageBorder(int border) { m_imageBorder.set(border); configureBorderImage(); }
+     void setImageShader(const std::string& str) { m_shader = str; }
++    // Chaos (base patch 0044): Lua names of the image shader (setImageShader stays a Lua field of corelib's globals,
++    // so the base modules' calls keep doing nothing) and four values for it (u_Params in the shader)
++    void setUiShader(const std::string& str) { m_shader = str; }
++    std::string getUiShader() { return m_shader; }
++    void setUiShaderParams(float a, float b, float c, float d) { m_shaderParams = {a, b, c, d}; }
++    float getUiShaderParam(int index) { return index >= 0 && index < 4 ? m_shaderParams[index] : 0.f; }
+ 
+     std::string getImageSource() { return m_imageSource; }
+     Rect getImageClip() { return m_imageClipRect; }
+--- a/src/framework/ui/uiwidgetimage.cpp
++++ b/src/framework/ui/uiwidgetimage.cpp
+@@ -180,7 +180,7 @@ void UIWidget::drawImage(const Rect& screenCoords)
+ 
+     m_imageTexture->setSmooth(m_imageSmooth);
+     if (!m_shader.empty()) {
+-        g_drawQueue->add(std::make_unique<DrawQueueItemImageWithShader>(m_imageCoordsBuffer, m_imageTexture, m_imageColor, m_shader));
++        g_drawQueue->add(std::make_unique<DrawQueueItemImageWithShader>(m_imageCoordsBuffer, m_imageTexture, m_imageColor, m_shader, m_shaderParams));
+     }
+     else {
+         g_drawQueue->addTextureCoords(m_imageCoordsBuffer, m_imageTexture, m_imageColor);

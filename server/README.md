@@ -2495,6 +2495,26 @@ other client; Frost Shatter on a killing blow seen by the other client; the Fros
 to an item link; the Azure accent on Legendary / Rare / Mythic labels; Veteran's Gold granted from the achievement at login;
 the Ember plate frame. Screenshots outside the repository.
 
+### Chaos outfit shaders (`cosmetics_config.lua` `outfitShaders`, OFF as shipped)
+Six engine outfit shaders written for this server (client `game_chaosshaders`, `data/shaders/chaos_outfit_*.frag`; client
+`MANIFEST.md`): Ember Glow, Frost Rime, Void Flicker, Holy Radiance, Heartblood, Spectral Ghost, shaders.xml ids 19-24
+(`chaos_ember_glow` ... `chaos_spectral_ghost`, written into the Chaos shaders block by `install_outfits.py` whatever the
+switch; a shaders.xml shader stays locked until `Player:addShader`). Unlocked like a cosmetic (account-wide, a
+`chaos_cosmetics` row `shader_<name>`, store unlock `cosmetic_shader_<name>`) and worn through the Outfit window, like the
+store's other shaders. Deliberately not a kind of `kinds` / `cosmetics`: the Cosmetics window has nothing to choose for
+them; they show in its Collection tab as kind `shader` rows (owned or how to get them). **Off switch:**
+`outfitShaders.enabled = false` (shipped): nothing is listed, granted, sold or added. On: an owned one is added to every
+character of the account at login and to the buyer when bought (`addOwnedShaders`). **Not priced** (the owner decides): an
+entry without `price` is never sold ("Store: not on sale yet"). To sell: set `price = N` on the entries and add
+`dofile("data/scripts/chaos/cosmetics_store.lua")("outfitshader")` (category "Chaos Shaders") to the Cosmetics hunk of
+`shop_config.lua`; `K.validate` refuses an offer while the switch is off, without a price or at another price.
+`K.validateOutfitShaders` (run by the startup check and the test): keys unique and not a cosmetic's, ids 19..255 and unused,
+names `chaos_*` registered by the client, whole prices, a swatch colour, no power fields. **Tests:** `tests/cosmetics_test.lua`
+(off: nothing listed, sold, granted or added at login; the client registers every name and has the files; on: listing,
+owned ids, Collection rows, a priced unlock sold and added to the buyer and to the account's other character at login, an
+unpriced one not sold; validator refusals). Not run in game. Open: this client's Outfit window lists no shaders yet
+(ROADMAP 86), so an owned one cannot be worn until it does; leave the switch off until then.
+
 ## Footprints and outlines (`cosmetics*.lua` kinds `footprint` / `outline`, client `game_cosmeticfx`, client base patch 0038, art `client/tools/gen_cosmeticfx_art.py`)
 
 Two more cosmetic kinds of `cosmetics_config.lua`, account-wide like the others, chosen per character in Character >

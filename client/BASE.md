@@ -148,6 +148,39 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     other patch touches `protocolgame.lua`; the whole chain 0001-0043 applies (`patch --dry-run`, then applied, on the
     base tree of the `windows-assets` branch); no C++ change, not built yet.
 
+24. `0044` (C++ `src/client/item.h/.cpp`, `uiitem.h/.cpp`, `luafunctions_client.cpp`; framework
+    `graphics/drawqueue.h/.cpp`, `graphics/paintershaderprogram.h/.cpp`, `ui/uiwidget.h`, `ui/uiwidgetimage.cpp`,
+    `luafunctions.cpp`; Lua / OTUI `client_settings/classes/dataset.lua`, `client_settings/options/graphics.otui`):
+    the soft rarity outline of items and UI widget shaders (`MANIFEST.md` "game_itemrarity", "game_shaderfx").
+    Items: `Item::draw` (the map) and `Item::draw(Rect, animate, outline)` (a slot) queue one
+    `DrawQueueItemItemOutline` before the sprite and point it at the sprite's own queue item (the plain one or the item
+    shader's, `DrawQueue::last()`); at draw time it draws that sprite once more, grown by the reach, through its own
+    program: the alpha of the sprite in 8 directions on rings of half and whole steps (clamped to the sprite's frame
+    rect), the nearest opaque ring weighted most (a smooth falloff), painted only where the sprite is transparent. The
+    sprite draws over it. Same approach as the creature outline of `0038` (one extra quad per item, no framebuffer),
+    with a soft edge instead of a line. The colour comes from the item's custom attributes (4 unique, else 1 rarity)
+    and a style Lua sets: `Item.setRarityOutlineColor(rarity 1-15 | 16 unique, r, g, b, a)`,
+    `Item.setRarityOutlineStyle(width 1-4, minRarity, pulseFromRarity, pulseMs)`,
+    `Item.setRarityOutlineEnabled(onMap, inSlots)`, `isRarityOutlineOnMap()` / `isRarityOutlineInSlots()`,
+    `item:getRarityOutlineColor()`. No colour set: nothing drawn (a client without `game_itemrarity` draws as before).
+    Slots: `UIItem` draws it in inventory slot styles and container `itemN` widgets only (the same test as the expiry
+    timers), not in the store, market, tooltips or the action bar; `UIItem:setRarityOutlineMode(-1 by slot, 0 never,
+    1 always)`. The reach is in sprite pixels times `g_sprites.getOffsetFactor()` (HD upscaling keeps the look); the
+    queue's opacity and a pulse (50%-100% alpha) apply. UI: the base parsed `image-shader` in OTUI and drew it through
+    `DrawQueueItemImageWithShader`, but bound no Lua setter (corelib's `globals.lua` keeps `setImageShader` as a Lua
+    field, so the base modules' calls never reached C++; they still do not). New Lua: `UIWidget:setUiShader(name)`,
+    `getUiShader()`, `setUiShaderParams(a, b, c, d)`, `getUiShaderParam(i)`; the four values reach the shader as
+    `uniform vec4 u_Params` (`PainterShaderProgram` `PARAMS_UNIFORM` 17, set right before each widget draws, so widgets
+    sharing a program keep their own values). An image shader that is not registered now draws the plain image (it drew
+    nothing). Options: a new panel at the bottom of Options > Graphics with `rarityOutlineMap` ("Rarity outline on
+    dropped items"), `rarityOutlineSlots` ("Rarity outline in bags and inventory"), `rarityFrameShine` ("Shine on
+    legendary and unique frames"), all on, and `liquidOrbs` ("Liquid health and mana orbs", off); each `apply` hands
+    the value to `game_itemrarity` / `game_shaderfx`. Checked: the chain 0001-0044 applies to the `windows-assets` base
+    client with no fuzz and 0048 applies after it (`patch --dry-run`); every changed C++ file compiles
+    (`g++ -std=c++20 -fsyntax-only`); the two GLSL programs in the patch compile as desktop GLSL 1.10 and GLSL ES 1.00
+    (`tools/check_shaders.py` with glslangValidator). Not built into a client or run (no room on the build machine):
+    previews were rendered offline from the shader math with numpy, outside the repository.
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

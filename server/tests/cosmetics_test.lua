@@ -249,6 +249,89 @@ local services = readFile("data/scripts/chaos/shop_services.lua")
 eq(services:find("ChaosTransmog.storeUnlock(name)", 1, true) ~= nil, true, "unlockEntry asks the transmog sets")
 eq(services:find("ChaosCosmetics.storeUnlock(name)", 1, true) ~= nil, true, "unlockEntry asks the cosmetics")
 
+-- ---------------------------------------------------------------- Chaos outfit shaders (cfg.outfitShaders, off)
+do
+	local os_ = cfg.outfitShaders
+	eq(os_.enabled, false, "the outfit shaders ship switched off")
+	eq(#os_.list, 6, "six outfit shaders")
+	local ids, priced = {}, 0
+	for _, s in ipairs(os_.list) do
+		ids[s.shaderId] = true
+		priced = priced + (s.price and 1 or 0)
+	end
+	eq(priced, 0, "store-ready but unpriced (the owner decides)")
+	for id = 19, 24 do
+		eq(ids[id], true, "shaders.xml id " .. id)
+	end
+	-- off: nothing listed, granted, sold or added
+	eq(#K.outfitShaderList(cfg), 0, "off: no list")
+	eq(K.outfitShaderByKey(cfg, "shader_ember_glow"), nil, "off: no key")
+	eq(#K.outfitShaderIds(cfg, {shader_ember_glow = true}), 0, "off: an owned one is not added")
+	eq(#K.outfitShaderRows(cfg, {}), 0, "off: no Collection rows")
+	eq(#dofile("data/scripts/chaos/cosmetics_store.lua")("outfitshader").offers, 0, "off: no store offers")
+	-- the client registers every shader name (game_chaosshaders) and has its fragment file
+	local client = readFile("../client/overlay/modules/game_chaosshaders/chaosshaders.lua") or ""
+	local clientShaders = {}
+	for name, frag in client:gmatch('{ "([%w_ ]+)", "/shaders/[%w_]+", "/shaders/([%w_]+)" }') do
+		clientShaders[name] = frag
+	end
+	for _, s in ipairs(os_.list) do
+		eq(clientShaders[s.shader] ~= nil, true, s.shader .. " registered by the client")
+		eq(readFile("../client/overlay/data/shaders/" .. (clientShaders[s.shader] or "?") .. ".frag") ~= nil, true,
+			s.shader .. ": its fragment file")
+	end
+	-- no shaders.xml id of the exclusives or the store's shader offers
+	local taken = {}
+	for _, cat in ipairs(shop.categories) do
+		for _, o in ipairs(cat.offers or {}) do
+			if o.kind == "shader" then taken[o.id] = true end
+		end
+	end
+	for _, line in ipairs({readFile("data/scripts/chaos/exclusives_config.lua") or ""}) do
+		for id in line:gmatch('kind = "shader", id = (%d+)') do taken[tonumber(id)] = true end
+	end
+	eq(#K.validateOutfitShaders(cfg, {clientShaders = clientShaders, takenShaderIds = taken}), 0, "the shipped list is valid")
+	-- switched on (a copy): listed, owned ids, rows in the Collection format, only priced ones sold
+	local on = {cosmetics = cfg.cosmetics, outfitShaders = {enabled = true, list = {}}}
+	for i, s in ipairs(os_.list) do
+		local c = {}
+		for k, v in pairs(s) do c[k] = v end
+		on.outfitShaders.list[i] = c
+	end
+	on.outfitShaders.list[1].price = 300
+	eq(#K.outfitShaderList(on), 6, "on: listed")
+	eq(K.outfitShaderByKey(on, "shader_frost_rime").shaderId, 20, "on: by key")
+	local owned = K.outfitShaderIds(on, {shader_frost_rime = true, shader_spectral_ghost = true, kill_sunring = true})
+	eq(#owned, 2, "on: the owned ones only") eq(owned[1], 20, "frost id") eq(owned[2], 24, "ghost id")
+	local rows = K.outfitShaderRows(on, {shader_frost_rime = true})
+	eq(#rows, 6, "on: six Collection rows") eq(rows[2].owned, true, "owned row") eq(rows[1].owned, nil, "missing row")
+	eq(rows[2].kind, "shader", "shown like a shader exclusive") eq(rows[2].with, "shader", "on the character's outfit")
+	eq(rows[2].shader, "chaos_frost_rime", "the shader's name") eq(rows[1].how, "Store: 300 Chaos Coins", "priced how")
+	eq(rows[2].how, "Store: not on sale yet", "unpriced how")
+	eq(K.outfitShaderOfUnlock(on, "cosmetic_shader_ember_glow").shaderId, 19, "a priced one is a store unlock")
+	eq(K.outfitShaderOfUnlock(on, "cosmetic_shader_frost_rime"), nil, "an unpriced one is not")
+	eq(K.outfitShaderOfUnlock(cfg, "cosmetic_shader_ember_glow"), nil, "off: not a store unlock")
+	-- the validator
+	local function badShaders(change)
+		local c = {cosmetics = cfg.cosmetics, outfitShaders = {enabled = false, list = {}}}
+		for i, s in ipairs(os_.list) do
+			local cc = {}
+			for k, v in pairs(s) do cc[k] = v end
+			c.outfitShaders.list[i] = cc
+		end
+		change(c.outfitShaders.list, c)
+		return table.concat(K.validateOutfitShaders(c, {clientShaders = clientShaders, takenShaderIds = taken}), "\n")
+	end
+	eq(badShaders(function(l) l[2].shaderId = 19 end):find("used twice", 1, true) ~= nil, true, "id twice")
+	eq(badShaders(function(l) l[1].shaderId = 16 end):find("19..255", 1, true) ~= nil, true, "a base / exclusive id")
+	eq(badShaders(function(l) l[1].shader = "chaos_nope" end):find("not registered", 1, true) ~= nil, true, "unknown to the client")
+	eq(badShaders(function(l) l[1].key = "kill_sunring" end):find("key used twice", 1, true) ~= nil, true, "a cosmetic's key")
+	eq(badShaders(function(l) l[1].price = 0 end):find("price", 1, true) ~= nil, true, "a zero price")
+	eq(badShaders(function(l) l[1].damage = 5 end):find("not cosmetic", 1, true) ~= nil, true, "power")
+	eq(badShaders(function(l, c) c.outfitShaders.enabled = "yes" end):find("enabled = true / false", 1, true) ~= nil, true,
+		"the switch is a boolean")
+end
+
 -- ---------------------------------------------------------------- core rules
 local owned = {skin_warrior_void = true, kill_soulspark = true, chat_frost = true}
 eq(K.owns(owned, K.byKey(cfg, "kill_soulspark")), true, "owned")
@@ -831,6 +914,44 @@ eq(M.owns(30, "kill_verdigris"), true, "/cosmetic sync grants the 500 milestone"
 eq(sent[#sent].text:find("Synced the account of Carl", 1, true) ~= nil, true, "the staff member is told")
 registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, sync")
 eq(sent[#sent].text:find("every cosmetic it earned", 1, true) ~= nil, true, "a second sync changes nothing")
+
+-- the Chaos outfit shaders on the engine: off (as shipped) nothing; switched on, a priced one is sold, added to the
+-- buyer and to the account's other characters at login, and listed in the Collection tab
+do
+	local shaders = {}
+	local dee = newPlayer(40, "Dee", 50, "Monk")
+	function dee:addShader(id) shaders[#shaders + 1] = id end
+	eq(M.storeUnlock("cosmetic_shader_ember_glow"), nil, "off: not sold")
+	eq(M.grant(50, "shader_ember_glow"), false, "off: not granted")
+	registered.ChaosCosmeticsLogin.onLogin(dee)
+	eq(#shaders, 0, "off: nothing added at login")
+	local live = ChaosCosmeticsConfig.outfitShaders
+	live.enabled = true
+	live.list[1].price = 300
+	local u2 = M.storeUnlock("cosmetic_shader_ember_glow")
+	eq(u2 ~= nil and u2.name, "Ember Glow", "on and priced: a store unlock")
+	eq(M.storeUnlock("cosmetic_shader_frost_rime"), nil, "on but unpriced: not sold")
+	eq(u2.grant(dee), true, "bought")
+	eq(shaders[#shaders], 19, "added to the buyer")
+	eq(u2.owned(dee), true, "owned by the account")
+	local state
+	for i = #sent, 1, -1 do
+		if sent[i].to == "Dee" and sent[i].msg and sent[i].msg.action == "state" then state = sent[i].msg.data break end
+	end
+	local found
+	for _, r in ipairs(state and state.collection or {}) do
+		if r.key == "shader_ember_glow" then found = r end
+	end
+	eq(found ~= nil and found.owned, true, "in the Collection tab, owned")
+	eq(found and found.icon, nil, "the icon became a client item id")
+	local dee2 = newPlayer(41, "Dee Two", 50, "Monk")
+	local shaders2 = {}
+	function dee2:addShader(id) shaders2[#shaders2 + 1] = id end
+	registered.ChaosCosmeticsLogin.onLogin(dee2)
+	eq(shaders2[1], 19, "the account's other character gets it at login")
+	live.enabled = false
+	live.list[1].price = nil
+end
 
 -- the client side files exist
 for _, f in ipairs({"game_cosmetics/game_cosmetics.otmod", "game_cosmetics/cosmetics.lua", "game_cosmetics/cosmeticslogic.lua"}) do

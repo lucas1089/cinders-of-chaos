@@ -66,6 +66,36 @@ return {
 	glows = {"gold", "crimson", "void", "frost", "ember", "verdant", "radiant", "abyssal", "storm",
 		"absolute", "chronicle", "corona", "cinder"},
 
+	-- ------------------------------------------------------------------ Chaos outfit shaders (store-ready, OFF)
+	-- Six outfit shaders written for this server (client data/shaders/chaos_outfit_*.frag, registered by client
+	-- game_chaosshaders under `shader`; shaders.xml ids `shaderId` 19-24 by server/tools/install_outfits.py). Kept out
+	-- of `cosmetics` and `kinds` on purpose: they are engine outfit shaders, chosen in the Outfit window like the store's
+	-- other shaders, so the Cosmetics window lists them but has no "use" for them.
+	-- enabled = false (the off switch): nothing is granted, listed or sold; owned unlocks stay in chaos_cosmetics.
+	-- enabled = true: an owned one is added to every character of the account at login and when it is unlocked
+	-- (Player:addShader), and the Cosmetics window shows them. Unpriced (no `price`): not sold yet. To sell one, give it
+	-- price = N (Chaos Coins) and add dofile("data/scripts/chaos/cosmetics_store.lua")("outfitshader") to the
+	-- Cosmetics hunk of shop_config.lua; cosmetics_test.lua checks the offers against these prices.
+	-- Entry: {key, shaderId, shader, icon, color (the window's swatch), name, desc[, price]}; key is the unlock
+	-- "cosmetic_<key>" and must not clash with a key of `cosmetics`.
+	outfitShaders = {
+		enabled = false,
+		list = {
+			{key = "shader_ember_glow", shaderId = 19, shader = "chaos_ember_glow", icon = 2187, color = "#ff7a2a",
+				name = "Ember Glow", desc = "Your outfit smoulders: a flickering ember edge and sparks drifting up."},
+			{key = "shader_frost_rime", shaderId = 20, shader = "chaos_frost_rime", icon = 2146, color = "#bfe6ff",
+				name = "Frost Rime", desc = "Your outfit turns to ice, rimed at the edges, with crystals that glint."},
+			{key = "shader_void_flicker", shaderId = 21, shader = "chaos_void_flicker", icon = 2153, color = "#9a4ce0",
+				name = "Void Flicker", desc = "Your outfit sinks into violet dark; its edge flickers and slips away."},
+			{key = "shader_holy_radiance", shaderId = 22, shader = "chaos_holy_radiance", icon = 2145, color = "#ffe08a",
+				name = "Holy Radiance", desc = "A golden light breathes through your outfit, rays crossing it slowly."},
+			{key = "shader_blood_pulse", shaderId = 23, shader = "chaos_blood_pulse", icon = 9020, color = "#c81e24",
+				name = "Heartblood", desc = "A heartbeat floods your outfit red and lights the veins beneath."},
+			{key = "shader_spectral_ghost", shaderId = 24, shader = "chaos_spectral_ghost", icon = 2150, color = "#a8f0f0",
+				name = "Spectral Ghost", desc = "Your outfit fades to a pale, see-through ghost with a cold glow."}
+		}
+	},
+
 	-- class lines (spell skins): slot = storage offset (skinBase + slot); the Necromancer line has no skins yet
 	lines = {
 		{key = "warrior", slot = 0, name = "Warrior line", vocations = {"Warrior", "Juggernaut", "Berserker"}},

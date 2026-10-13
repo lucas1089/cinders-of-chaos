@@ -363,6 +363,129 @@ function C.offerPreview(c)
 	return {effect = true}
 end
 
+-- ---------------------------------------------------------------- Chaos outfit shaders (cfg.outfitShaders)
+-- Engine outfit shaders unlocked like a cosmetic (account-wide, table chaos_cosmetics, key "cosmetic_<key>") and
+-- worn through the Outfit window (Player:addShader). Behind cfg.outfitShaders.enabled: while it is false they are not
+-- listed, granted, sold or added to characters.
+function C.outfitShadersOn(cfg)
+	return type(cfg.outfitShaders) == "table" and cfg.outfitShaders.enabled == true
+end
+
+-- the entries while the switch is on (else an empty list)
+function C.outfitShaderList(cfg)
+	if not C.outfitShadersOn(cfg) then
+		return {}
+	end
+	return cfg.outfitShaders.list or {}
+end
+
+function C.outfitShaderByKey(cfg, key)
+	for _, s in ipairs(C.outfitShaderList(cfg)) do
+		if s.key == key then
+			return s
+		end
+	end
+	return nil
+end
+
+-- a store unlock "cosmetic_<key>" of a priced outfit shader (nil while off or unpriced)
+function C.outfitShaderOfUnlock(cfg, unlockName)
+	if type(unlockName) ~= "string" or unlockName:sub(1, #C.UNLOCK_PREFIX) ~= C.UNLOCK_PREFIX then
+		return nil
+	end
+	local s = C.outfitShaderByKey(cfg, unlockName:sub(#C.UNLOCK_PREFIX + 1))
+	return (s and type(s.price) == "number" and s.price > 0) and s or nil
+end
+
+-- the shaders.xml ids the account owns (owned = {[key] = true}), for Player:addShader on each character
+function C.outfitShaderIds(cfg, owned)
+	local out = {}
+	for _, s in ipairs(C.outfitShaderList(cfg)) do
+		if type(owned) == "table" and owned[s.key] then
+			out[#out + 1] = s.shaderId
+		end
+	end
+	return out
+end
+
+-- rows of the window's Collection tab, in the format of exclusives_core.lua K.rows (client game_cosmetics shows a
+-- kind "shader" row on the character's own outfit): {key, kind, kindName, name, desc, how, use, owned, source, with,
+-- shader, icon (server item id; cosmetics.lua turns it into the client id)}
+function C.outfitShaderRows(cfg, owned)
+	local rows = {}
+	for _, s in ipairs(C.outfitShaderList(cfg)) do
+		rows[#rows + 1] = {key = s.key, kind = "shader", kindName = "Outfit Shader", name = s.name, desc = s.desc,
+			how = s.price and ("Store: " .. tostring(s.price) .. " Chaos Coins") or "Store: not on sale yet",
+			use = "Choose it in the Outfit window.", owned = (type(owned) == "table" and owned[s.key] == true) or nil,
+			source = "store", with = "shader", shader = s.shader, icon = s.icon}
+	end
+	return rows
+end
+
+-- problems of cfg.outfitShaders (checked whether the switch is on or off): keys, ids, names, prices, colours
+function C.validateOutfitShaders(cfg, opts)
+	opts = opts or {}
+	local problems = {}
+	local function bad(fmt, ...)
+		problems[#problems + 1] = string.format(fmt, ...)
+	end
+	local block = cfg.outfitShaders
+	if block == nil then
+		return problems
+	end
+	if type(block) ~= "table" or type(block.enabled) ~= "boolean" or type(block.list) ~= "table" then
+		bad("outfitShaders: {enabled = true / false, list = {...}}")
+		return problems
+	end
+	local cosmeticKeys = {}
+	for _, c in ipairs(cfg.cosmetics or {}) do
+		cosmeticKeys[c.key or ""] = true
+	end
+	local keys, ids, names = {}, {}, {}
+	for i, s in ipairs(block.list) do
+		local w = "outfit shader " .. tostring(s.key or i)
+		if type(s.key) ~= "string" or not s.key:match("^[%w_]+$") or #s.key > 40 then
+			bad("%s: key letters, digits and _ only, 40 at most", w)
+		elseif keys[s.key] or cosmeticKeys[s.key] then
+			bad("%s: key used twice", w)
+		end
+		keys[s.key or "?"] = true
+		-- ids 1-18 are the base server's shaders and the exclusives' (shaders.xml); the engine keeps 1-255 in storages
+		if type(s.shaderId) ~= "number" or s.shaderId % 1 ~= 0 or s.shaderId < 19 or s.shaderId > 255 then
+			bad("%s: shaderId a whole number 19..255", w)
+		elseif ids[s.shaderId] or (opts.takenShaderIds and opts.takenShaderIds[s.shaderId]) then
+			bad("%s: shaderId %d used twice", w, s.shaderId)
+		end
+		ids[s.shaderId or -1] = true
+		if type(s.shader) ~= "string" or not s.shader:match("^chaos_[a-z_]+$") then
+			bad("%s: shader name chaos_<letters and _>", w)
+		elseif names[s.shader] then
+			bad("%s: shader %s used twice", w, s.shader)
+		elseif opts.clientShaders and not opts.clientShaders[s.shader] then
+			bad("%s: shader %s is not registered by the client (game_chaosshaders)", w, s.shader)
+		end
+		names[s.shader or "?"] = true
+		if type(s.name) ~= "string" or s.name == "" or type(s.desc) ~= "string" or s.desc == "" then
+			bad("%s: name and desc needed", w)
+		end
+		if s.price ~= nil and (type(s.price) ~= "number" or s.price <= 0 or s.price % 1 ~= 0) then
+			bad("%s: price a whole number above 0, or none (not on sale)", w)
+		end
+		if not hex(s.color) or #s.color ~= 7 then
+			bad("%s: color #RRGGBB (the window's swatch)", w)
+		end
+		if type(s.icon) ~= "number" then
+			bad("%s: icon (a server item id)", w)
+		end
+		for k in pairs(s) do
+			if k == "damage" or k == "area" or k == "bonus" or k == "chance" or k == "stats" then
+				bad("%s: field %s is not cosmetic", w, k)
+			end
+		end
+	end
+	return problems
+end
+
 -- ---------------------------------------------------------------- SQL
 local function sqlKey(s)
 	return (tostring(s or ""):gsub("[^%w_]", ""):sub(1, 40))
@@ -597,6 +720,9 @@ function C.validate(cfg, opts)
 			end
 		end
 	end
+	for _, p in ipairs(C.validateOutfitShaders(cfg, opts)) do
+		problems[#problems + 1] = p
+	end
 	-- the store offers: every store cosmetic has its offer at its price; nothing else is sold as a cosmetic
 	if opts.shop then
 		local offers = {}
@@ -609,6 +735,21 @@ function C.validate(cfg, opts)
 					offers[o.unlock] = o
 				end
 			end
+		end
+		-- outfit shaders: an offer only for a priced one while the switch is on, at its price
+		for _, s in ipairs((type(cfg.outfitShaders) == "table" and cfg.outfitShaders.list) or {}) do
+			local name = C.UNLOCK_PREFIX .. tostring(s.key)
+			local o = offers[name]
+			if o then
+				if not C.outfitShadersOn(cfg) then
+					bad("outfit shader %s is sold while outfitShaders is off", tostring(s.key))
+				elseif type(s.price) ~= "number" then
+					bad("outfit shader %s is sold but has no price", tostring(s.key))
+				elseif o.cost ~= s.price then
+					bad("outfit shader %s: store price %s, config price %s", tostring(s.key), tostring(o.cost), tostring(s.price))
+				end
+			end
+			offers[name] = nil
 		end
 		for _, c in ipairs(cfg.cosmetics or {}) do
 			local o = offers[C.unlockName(c)]
