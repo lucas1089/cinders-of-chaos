@@ -1256,7 +1256,7 @@ Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Which 
   windows-assets: the class effects draw at the placements the server sends. Skyfall Cleave drew nothing of its own
   before a server fix; server/README.md "Class signature effects".
 
-## Pack effect cuts (things_custom24, effects 628-634, `tools/sprites/gen_pack_fx.py`, `art_import/pack_fx.csv`; on windows-assets 407ad9b6, switch off)
+## Pack effect cuts (things_custom24, effects 628-634, `tools/sprites/gen_pack_fx.py`, `art_import/pack_fx.csv`; on windows-assets 407ad9b6, switch on since 2026-10-13 (pair 24 at 407ad9b6))
 **Source and licence.** The oblique spell effect set that `import_vfx.py` reads (`--src-spells`; effects 429-558 are
 all of its 68 effects). The owner re-uploaded it on 2026-10-13: byte-identical to the copy used for effects 429-558,
 plus preview GIFs and an engine helper script. Its licence: use in unlimited personal and commercial projects (games
@@ -1273,8 +1273,8 @@ committed. The set itself is kept with the art libraries outside the repository.
 - `python3 -I gen_pack_fx.py build --src SET` writes the strips, the spec and the sums; `build --check` (CI, Pillow
   12.3.0 / numpy 2.5.3 like the class effects) compares the spec and sums with the script's table without the set,
   and rebuilds byte-exact when `--src` is given. `preview --out DIR`: frame sheets and GIFs per cut.
-- Append to the next pair after everything else (ids = its effect count + 1..; 628.. when things_custom24 adds no
-  effects to things_custom23's 627):
+- Appended to things_custom24 after everything else (ids = its effect count + 1..; 628.., things_custom23 ends at
+  effect 627):
   ```
   python3 -I client/tools/sprites/gen_pack_fx.py build --src SET
   python3 -I client/tools/sprites/import_fx_art.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir OUT \
@@ -1282,11 +1282,11 @@ committed. The set itself is kept with the art libraries outside the repository.
       --lua-out server/data/lib/chaos_pack_fx_ids.lua --catalog-out server/data/spells/pack_fx_catalog.csv
   python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old IN/Tibia.dat IN/Tibia.spr
   ```
-  Server use: server/README.md "Pack effects for procs and bosses" (switch `ChaosPackFx.PACK_FX`, off).
+  Server use: server/README.md "Pack effects for procs and bosses" (switch `ChaosPackFx.PACK_FX`, on since 2026-10-13 (pair 24 at 407ad9b6)).
 
-## Large spell effects (things_custom24, effects 635-655, `tools/sprites/gen_big_fx.py`, `art_import/big_fx.csv`; on windows-assets 407ad9b6, switch off)
+## Large spell effects (things_custom24, effects 635-655, `tools/sprites/gen_big_fx.py`, `art_import/big_fx.csv`; on windows-assets 407ad9b6, switch on since 2026-10-13 (pair 24 at 407ad9b6))
 Our own procedural art: big soft glowing effects for boss telegraphs and big attacks, rift guardians and the strongest
-area spells of each class line (server/README.md "Large spell effects", switch `ChaosBigFx.BIG_FX`, off).
+area spells of each class line (server/README.md "Large spell effects", switch `ChaosBigFx.BIG_FX`, on since 2026-10-13 (pair 24 at 407ad9b6)).
 - Drawing: each frame is computed as fields at 4x supersampling with numpy only (radial gradients, seeded value noise,
   rings, glow, particles, jagged bolts, leaning beams), coloured through the element ramps of
   `item_forge_data/style.json` (fire, ice, lightning, poison, holy, void, blood; arcane has its own teal ramp in the
@@ -1312,7 +1312,7 @@ area spells of each class line (server/README.md "Large spell effects", switch `
   `preview --out DIR [--dat D --spr S]`: a GIF per effect on an 11x11 tile area with a player look for scale, and a
   sheet of every frame. About 2 minutes for either.
 - The spec has an `alpha` column (`soft`): `import_fx_art.py` keeps the alpha levels for such rows (other specs keep
-  the 0 / 255 cut at 128). Append to the next pair after the queued packs:
+  the 0 / 255 cut at 128). Appended to things_custom24 after the pack cuts (effects 635-655):
   ```
   python3 -I client/tools/sprites/gen_big_fx.py build
   python3 -I client/tools/sprites/import_fx_art.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir OUT \
@@ -1324,7 +1324,7 @@ area spells of each class line (server/README.md "Large spell effects", switch `
   centre; near the right or bottom edge of the view that tile can be outside what the client draws and the effect is
   cut. Not seen in a client yet.
 
-## Rift rank variants (things_custom24, outfits 2200-2207, `tools/sprites/rift_variants.py`, `art_import/rift_variants.csv`; on windows-assets 407ad9b6, switch off)
+## Rift rank variants (things_custom24, outfits 2200-2207, `tools/sprites/rift_variants.py`, `art_import/rift_variants.csv`; on windows-assets 407ad9b6, switch on since 2026-10-13 (pair 24 at 407ad9b6))
 Eight new looks of rift monsters, our own art: PixelLab (edit-animation, owner approved) repainted the frames of a rift
 look of our pair, so each variant keeps its base's size, frame groups, phases, timing, flags and feet line. Only our
 own frames were sent as input; no outside reference art. Base looks (donor-library art of things_custom11, sources in
@@ -1346,9 +1346,9 @@ own frames were sent as input; no outside reference art. Base looks (donor-libra
   A trial on a scratch copy of things_custom23 (`--expect-items 33659`, things_custom24: 33903): 8 outfits, 15 blank,
   716 new sprites (715 appended), 808 sprite slots pixel-identical, old things byte-identical, check_pair's append-only
   guard passed. Leave out `--sheets`: with no item rows the importer's item sheet fails on an empty image.
-  Server use: server/README.md "Rift rank variants" (`looks.variantsOn`, off).
+  Server use: server/README.md "Rift rank variants" (`looks.variantsOn`, on since 2026-10-13 (pair 24 at 407ad9b6)).
 
-## Bigger guardians (things_custom24, outfits 2208-2212, `tools/sprites/big_bosses.py`, `art_import/big_bosses.csv`; on windows-assets 407ad9b6, switch off)
+## Bigger guardians (things_custom24, outfits 2208-2212, `tools/sprites/big_bosses.py`, `art_import/big_bosses.csv`; on windows-assets 407ad9b6, switch on since 2026-10-13 (pair 24 at 407ad9b6))
 Five 4x4 looks of our own for the rift guardians and the Omen seer, each with a 4-frame idle group and an 8-frame walk
 group (the bases had 2-4 walk phases and a still idle). Only our own frames went to PixelLab: the guardian looks of our
 pair (donor-library art of things_custom11, as for the rank variants). The world boss looks (842, 1472, 238, 862, 591)
@@ -1378,7 +1378,7 @@ are stock art and were left out.
   one palette per look (32 colours plus up to 4 glow accents), a dark rim on bright edges. Sheets
   `art_import/big_bosses/<key>.png`: idle phases 0-3 then walk phases 0-7, one row each, columns north, east, south,
   west, 128 px cells; rows in `art_import/big_bosses.csv` (groups 0 / 1, exact 128, 300 ms per phase, no flags);
-  `monster_looks/big_boss_picks.csv` (family `bigguardian`, append to picks.csv with the pair). `check` and
+  `monster_looks/big_boss_picks.csv` (family `bigguardian`, appended to picks.csv with the pair on 2026-10-13). `check` and
   `big_bosses_test.py` need no pair.
 - Append after the rank variants (ids from 2208; the importer pads blank outfits up to `--first-outfit`):
   ```
@@ -1389,8 +1389,9 @@ are stock art and were left out.
   In things_custom24 as its last step (2026-10-13, the art of the second walk pass, 07891edb; "Themed sets"): 5
   outfits 2208-2212 as planned, no blank padding, 2,769 sprites appended, `check_pair.py --old`: no new warning.
   Walk and idle GIFs read back from the pair were checked offline; not run in a client. The ids are fixed in
-  `rift_config.lua` `looks.bigGuardians` (no ids file); `big_boss_picks.csv` is not appended to picks.csv yet.
-  Server use: server/README.md "Bigger guardians" (`looks.bigGuardiansOn`, off).
+  `rift_config.lua` `looks.bigGuardians` (no ids file); `big_boss_picks.csv` and `rift_variant_picks.csv` were appended
+  to picks.csv on 2026-10-13 (check_content.py's outfit limit is now 2212).
+  Server use: server/README.md "Bigger guardians" (`looks.bigGuardiansOn`, on since 2026-10-13 (pair 24 at 407ad9b6)).
 
 ## Painted icons (setting "Painted icons", off; `tools/gen_painted_icons.py`, `tools/painted_icon_art/`)
 A painted set of the buff bar's icons, the Chaos spells (spellbook) and the passive tree's keystones and masteries:
@@ -1474,7 +1475,7 @@ changed, 36,523 byte-identical. Built twice with identical md5s; a run on its ow
   fixed pair was not run in a live client.
 
 ## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
-**On windows-assets (407ad9b6, owner approved 2026-10-13); switches off.** Our own art for the themes of five reference sheets and four set showcases the owner
+**On windows-assets (407ad9b6, owner approved 2026-10-13); switches on since 2026-10-13 (pair 24 at 407ad9b6).** Our own art for the themes of five reference sheets and four set showcases the owner
 showed: ten equipment sets, two auras, a pair of wings, four grounds with borders, six monster recolours. The sheets
 were looked at for themes, palettes and silhouettes only. No pixel of them was copied, traced, cropped, recoloured or
 resampled, no image code read them and none was sent to a painting service. The item icons are PixelLab paintings
@@ -1574,9 +1575,10 @@ compared), 124 warnings: the 121 of things_custom23 line for line plus `size-lar
   mtime 2026-10-13 17:00: sha256 b1dbdf8d809e2a981955691439650978ad1a9562dc3a8830e0a6d35911e31e80 (72,714,268 bytes), packed
   twice with the same sha256. It unpacks to the md5s above; the same
   command on things_custom23 gives its published sha256 (a866a48e...). Pushed to windows-assets at 407ad9b6 (owner approved 2026-10-13; the archive's sha256 checked, it unpacks to the md5s above).
-- Server side: server/README.md "Themed sets, auras and grounds" (switch `ChaosThemeArt.PAIR24`, off). A client on
-  things_custom23 draws nothing for the new ids, so the switch goes on only after the pair is on windows-assets.
-  The pack, big effect, rank variant and bigger guardian switches stay off too.
+- Server side: server/README.md "Themed sets, auras and grounds" (switch `ChaosThemeArt.PAIR24`, on since 2026-10-13 (pair 24 at 407ad9b6)). A
+  client on things_custom23 draws nothing for the new ids. The pack, big effect, rank variant and bigger guardian
+  switches are on since the same day. The client has no switch of its own for this pair: it draws whatever the pair
+  holds.
 - Checked offline only (contact sheets, inventory slots at 1x and 4x, an equipment panel per set, the variants, the new effects frame by frame, the auras and wings on looks 128 and 2073 in four
   directions by the client's draw rule, ground patches, everything read back from the pair). Not run in a client.
 

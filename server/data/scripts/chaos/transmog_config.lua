@@ -154,7 +154,7 @@ local cfg = {
 	maxLooksSent = 4000 -- the window's wardrobe list is cut at this many looks (it is sent in chunks)
 }
 
--- the themed sets of client pair things_custom24 (data/lib/chaos_theme_art.lua, switch ChaosThemeArt.PAIR24): the
+-- the themed sets of client pair things_custom24 (data/lib/chaos_theme_art.lua, switch ChaosThemeArt.PAIR24, on since 2026-10-13): the
 -- appearance sets when the switch is on, else their item ids out of the catalogue (nothing changes for players)
 local okTheme, theme = pcall(dofile, "data/lib/chaos_theme_art.lua")
 if okTheme and type(theme) == "table" then

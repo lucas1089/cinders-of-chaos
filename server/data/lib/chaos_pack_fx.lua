@@ -3,10 +3,10 @@
 -- Two kinds of names:
 --   * full pack effects already in the pair since effects 429-558 (data/lib/chaos_vfx.lua, vfx_catalog.csv);
 --   * short cuts of the same art set for things sent on every proc or tick (reflect_bubble, tick_*): strips from
---     client/tools/sprites/gen_pack_fx.py (art_import/pack_fx.csv), appended to the next pair by import_fx_art.py,
---     which writes their ids to data/lib/chaos_pack_fx_ids.lua (absent until that pair exists).
+--     client/tools/sprites/gen_pack_fx.py (art_import/pack_fx.csv), appended to things_custom24 (effects 628-634) by
+--     import_fx_art.py, which wrote their ids to data/lib/chaos_pack_fx_ids.lua.
 --
--- Switch (C.PACK_FX): off. Off, nothing changes: every call site sends exactly the stock effect it sent before. On,
+-- Switch (C.PACK_FX): on since 2026-10-13 (pair 24 at 407ad9b6, effects 628-634). Off, nothing changes: every call site sends exactly the stock effect it sent before. On,
 -- a use sends its effect at its offset tile (Vfx); a name the server does not know yet (a cut before its pair, or no
 -- chaos_vfx.lua) falls back to the stock effect. Flip step: server/README.md "Pack effects for procs and bosses".
 -- Lua 5.1 / LuaJIT / 5.3.
@@ -14,7 +14,7 @@
 ChaosPackFx = ChaosPackFx or {}
 local C = ChaosPackFx
 
-C.PACK_FX = false
+C.PACK_FX = true
 
 -- use key -> effect name (ChaosVfx). Call sites: ChaosPackFx.send(pos, use, stockEffect).
 C.uses = {
@@ -51,7 +51,7 @@ C.uses = {
 	wb_adds = "teleport_in",
 }
 
--- the cuts: in the next pair only (their ids come from chaos_pack_fx_ids.lua)
+-- the cuts: in things_custom24 (effects 628-634; their ids come from chaos_pack_fx_ids.lua)
 C.cuts = {"reflect_bubble", "tick_bleed", "tick_burn", "tick_poison", "tick_chill", "tick_curse", "tick_regen"}
 
 -- the effect name of a use, or nil (pure: no switch, no ids)
@@ -78,7 +78,7 @@ end
 
 -- send the use's effect at its offset tile; else the stock `fallback` (switch off, unknown use or name)
 function C.send(pos, use, fallback)
-	-- large effects (data/lib/chaos_big_fx.lua, its own switch ChaosBigFx.BIG_FX, off: false here) come first
+	-- large effects (data/lib/chaos_big_fx.lua, its own switch ChaosBigFx.BIG_FX, on since 2026-10-13) come first
 	if not ChaosBigFx then
 		pcall(dofile, "data/lib/chaos_big_fx.lua")
 	end

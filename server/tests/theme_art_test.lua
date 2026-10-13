@@ -1,6 +1,7 @@
 -- Run from the server/ folder: luajit tests/theme_art_test.lua (and lua5.3; CI runs both)
 -- The themed art of client pair things_custom24 (data/lib/chaos_theme_art.lua, chaos_theme_items.lua): the switch is
--- off and then nothing changes for players (no set, no exclusive, the item ids out of the transmog catalogue, grounds
+-- on since 2026-10-13 (pair 24 at 407ad9b6) and the shipped configs carry the sets and exclusives; forced off, nothing
+-- changes for players (no set, no exclusive, the item ids out of the transmog catalogue, grounds
 -- fall back); the generated ids match the manifest; with the switch on, the transmog sets and the exclusives validate
 -- with the real configs and their cores, and the ground helper gives the installed ids.
 CONST_ME_FIREWORK_YELLOW = CONST_ME_FIREWORK_YELLOW or 29 -- shop_config.lua reads it
@@ -19,7 +20,7 @@ local function eq(a, b, m)
 end
 
 local M = dofile("data/lib/chaos_theme_art.lua")
-eq(M.PAIR24, false, "the pair 24 switch is off until things_custom24 is on windows-assets")
+eq(M.PAIR24, true, "the pair 24 switch is on: things_custom24 is on windows-assets (407ad9b6)")
 
 -- ---------------------------------------------------------------- the generated ids against the manifest
 local rows = {}
@@ -59,7 +60,37 @@ for fam, g in pairs(M.items.grounds) do
 end
 eq(nGround, 4, "four ground families")
 
+-- ---------------------------------------------------------------- the shipped configs (switch on)
+do
+	local shipped = dofile("data/scripts/chaos/transmog_config.lua")
+	local nThemed = 0
+	for _, s in ipairs(shipped.sets) do
+		if s.key:find("^theme_") then
+			nThemed = nThemed + 1
+		end
+	end
+	eq(nThemed, 6 + 4 * 3, "shipped: the themed transmog sets are in")
+	eq(ChaosTransmogCore.isExcluded(shipped, 36700), false, "shipped: a themed item is in the transmog catalogue")
+	local shippedExcl = dofile("data/scripts/chaos/exclusives_config.lua")
+	local nLook = 0
+	for _, e in ipairs(shippedExcl.exclusives) do
+		if e.look and e.look >= 2185 then
+			nLook = nLook + 1
+		end
+	end
+	eq(nLook, 3, "shipped: the two auras and the wings are exclusives")
+end
+
 -- ---------------------------------------------------------------- switch off: nothing for players
+-- (the shipped line is on; the off path is tested by turning it off here: the configs get this M from dofile)
+M.PAIR24 = false
+local realDofile = dofile
+dofile = function(path, ...)
+	if path == "data/lib/chaos_theme_art.lua" then
+		return M
+	end
+	return realDofile(path, ...)
+end
 local transmog = dofile("data/scripts/chaos/transmog_config.lua")
 for _, s in ipairs(transmog.sets) do
 	eq(s.key:find("^theme_") == nil, true, "no themed transmog set while off")
@@ -73,6 +104,7 @@ for _, e in ipairs(excl.exclusives) do
 end
 eq(M.ground("lava", nil, 598), 598, "grounds fall back while off")
 eq(M.ground("water", "n", 4644), 4644, "border pieces fall back while off")
+dofile = realDofile
 
 -- ---------------------------------------------------------------- switch on: the sets and exclusives validate
 M.PAIR24 = true

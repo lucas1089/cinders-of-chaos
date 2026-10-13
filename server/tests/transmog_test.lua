@@ -73,6 +73,17 @@ local FIXTURE = {
 	[27662] = {name = "gilded eldritch bow", kind = "distance"},
 	[27672] = {name = "gilded eldritch rod", kind = "wand"}
 }
+-- the themed set pieces of things_custom24 (ChaosThemeArt.PAIR24, on since 2026-10-13), as install_theme_items.py
+-- writes them to items.xml: the name and the weapon type or slot of their kind
+local THEME_KIND = {sword = "sword", axe = "axe", club = "club", bow = "distance", crossbow = "distance", wand = "wand",
+	rod = "wand", shield = "shield", spellbook = "shield", helmet = "helmet", armor = "armor", legs = "legs",
+	boots = "boots"}
+local themeArt = dofile("data/lib/chaos_theme_art.lua")
+for _, p in ipairs(themeArt.items.pieces) do
+	if THEME_KIND[p.kind] then
+		FIXTURE[p.id] = {name = p.name, kind = THEME_KIND[p.kind]}
+	end
+end
 local function describe(id)
 	return FIXTURE[id]
 end
@@ -102,7 +113,8 @@ for _, s in ipairs(cfg.sets) do
 	end
 end
 eq(sources.store, 9, "nine store sets") eq(sources.achievement, 4, "four achievement sets")
-eq(sources.season, 1, "one season set") eq(sources.exclusive, 1, "one exclusive set")
+-- exclusive: one of the base sets and the 18 themed sets of things_custom24 (source exclusive until the owner picks)
+eq(sources.season, 1, "one season set") eq(sources.exclusive, 1 + 18, "one exclusive set and the 18 themed sets")
 eq(sources.boss, 4, "four boss sets (exclusives_config.lua drops)")
 eq(K.setHow(K.setByKey(cfg, "deathlord")), "Boss: Varkhul the Ashen Sovereign (rare drop)", "a boss set's line")
 eq(K.setHow(K.setByKey(cfg, "haloed")):find("Achievement: Lifeline", 1, true) ~= nil, true, "an achievement set's own line")
@@ -307,6 +319,8 @@ local function scan(path)
 	-- the store offers of the store sets (shop_config.lua) and the season pass reward of the season set
 	-- (seasonpass_config.lua kind "transmog") show a set look as their icon: the set's own source, a picture
 	text = text:gsub("[^\n]*unlock = \"transmog_[%w_]+\"[^\n]*", ""):gsub("[^\n]*kind = \"transmog\"[^\n]*", "")
+	-- negative numbers are damage values (a monster's max="-36800"), not item ids
+	text = text:gsub("%-%d+", "")
 	for num in text:gmatch("%f[%d](%d%d%d%d%d)%f[%D]") do
 		if setLooks[tonumber(num)] then
 			error(path .. " names the set look " .. num .. " (set " .. setLooks[tonumber(num)] .. ")")
@@ -317,7 +331,8 @@ local ok, pipe = pcall(io.popen, "find data/monster data/npc data/scripts data/l
 local scanned = 0
 if ok and pipe then
 	for path in pipe:lines() do
-		if not path:find("transmog", 1, true) then
+		-- the theme art libs define the themed set pieces (pair 24): the sets' own source
+		if not path:find("transmog", 1, true) and not path:find("chaos_theme_", 1, true) then
 			scan(path)
 			scanned = scanned + 1
 		end

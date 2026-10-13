@@ -46,7 +46,7 @@ def _max_outfit():
                      'monster_looks', 'picks.csv')
     looks = [int(r['look']) for r in csv.DictReader(open(p, newline=''))] if os.path.exists(p) else []
     return max([BASE_OUTFIT] + looks)
-MAX_OUTFIT = _max_outfit()  # 2125 with things_custom11 / things_custom12 (see server/data/monster/CUSTOM_MONSTERS.md)
+MAX_OUTFIT = _max_outfit()  # 2212 with things_custom24 (see server/data/monster/CUSTOM_MONSTERS.md)
 bad = 0
 
 def fail(msg):

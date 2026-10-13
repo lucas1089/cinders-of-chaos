@@ -45,7 +45,7 @@ end
 dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosWorldBoss = ChaosWorldBoss or {}
--- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX; off: exactly the stock effect as before)
+-- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX, on since 2026-10-13; off: exactly the stock effect as before)
 if not ChaosPackFx then
 	pcall(dofile, "data/lib/chaos_pack_fx.lua")
 end

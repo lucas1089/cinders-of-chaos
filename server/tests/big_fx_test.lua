@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/big_fx_test.lua (no engine needed; CI runs it with luajit and lua5.3)
--- Large spell effects (data/lib/chaos_big_fx.lua): the switch is one plain line, off; the effect list is the client
+-- Large spell effects (data/lib/chaos_big_fx.lua): the switch is one plain line, on (since 2026-10-13); the effect list is the client
 -- spec's (art_import/big_fx.csv) in order; every spell swap names a spell of spells_chaos.xml whose script sends that
 -- effect name, every use is a ChaosPackFx use sent by a call site, every name is one of the set; the round telegraph
 -- test (sizes, cones, rings, marks); off, nothing big is sent and the pack / stock effects go out exactly as before;
@@ -36,9 +36,10 @@ local function reset() effects, vfxSent = {}, {} end
 dofile("data/lib/chaos_big_fx.lua")
 local C = ChaosBigFx
 
--- the switch: one plain line, off until the owner turns it on
+-- the switch: one plain line, on since 2026-10-13 (things_custom24 with effects 635-655 is on windows-assets at 407ad9b6)
 local src = readFile("data/lib/chaos_big_fx.lua") or ""
-eq(src:match("\nC%.BIG_FX = (%a+)\n"), "false", "the switch is one plain line, off")
+eq(src:match("\nC%.BIG_FX = (%a+)\n"), "true", "the switch is one plain line, on")
+eq(C.BIG_FX, true, "the shipped switch is on")
 
 -- the set: the client spec's names, sizes and send offsets
 local spec, order = {}, {}
@@ -190,7 +191,8 @@ eq(C.circleOf(twoFloors), nil, "tiles on two floors")
 eq(C.circleOf({}), nil, "no tiles")
 eq(C.circleOf(nil), nil, "nil tiles")
 
--- switch off: nothing big, Vfx never asked, the pack lib sends exactly the stock effect
+-- switch off: nothing big, Vfx never asked, the pack lib sends exactly the stock effect (the shipped line is on; the
+-- off path is tested by turning it off here)
 ChaosVfx = {big_telegraph_7 = {id = 630, dx = 3, dy = 3}, big_nova_void_7 = {id = 640, dx = 3, dy = 3},
 	big_rift_void_7 = {id = 646, dx = 3, dy = 3}, big_telegraph_5 = {id = 628, dx = 2, dy = 2}}
 Vfx = function(pos, name) vfxSent[#vfxSent + 1] = {name = name, x = pos.x, y = pos.y}; return true end

@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/pack_fx_test.lua (no engine needed; CI runs it with luajit and lua5.3)
 -- Pack effects for procs, snares, rift modifiers, world bosses and the reflect (data/lib/chaos_pack_fx.lua): the
--- switch is one plain line, off; every use names an effect of the pair (vfx_catalog.csv) or a cut of the next pair
--- (client art_import/pack_fx.csv); every use is sent by a call site and every call site's use exists; off, a call
+-- switch is one plain line, on (since 2026-10-13, pair 24 at 407ad9b6); every use names an effect of the pair
+-- (vfx_catalog.csv) or a cut of things_custom24 (client art_import/pack_fx.csv); every use is sent by a call site and every call site's use exists; off, a call
 -- sends exactly the stock effect; on, the pack effect at its offset tile, the stock one for a name not known yet.
 local failures = 0
 local function ok(c, msg)
@@ -33,13 +33,18 @@ end
 local function reset() effects, vfxSent = {}, {} end
 
 dofile("data/lib/chaos_pack_fx.lua")
+-- the large effects come first in ChaosPackFx.send; their switch is on since 2026-10-13. This test is about the pack
+-- uses alone, so it is off here (tests/big_fx_test.lua covers the two together).
+dofile("data/lib/chaos_big_fx.lua")
+ChaosBigFx.BIG_FX = false
 local C = ChaosPackFx
 
--- the switch: one plain line, off until the owner turns it on
+-- the switch: one plain line, on since 2026-10-13 (things_custom24 with the cuts is on windows-assets at 407ad9b6)
 local src = readFile("data/lib/chaos_pack_fx.lua") or ""
-eq(src:match("\nC%.PACK_FX = (%a+)\n"), "false", "the switch is one plain line, off")
+eq(src:match("\nC%.PACK_FX = (%a+)\n"), "true", "the switch is one plain line, on")
+eq(C.PACK_FX, true, "the shipped switch is on")
 
--- names: the pair's pack effects and the cuts of the next pair
+-- names: the pair's pack effects and the cuts of things_custom24
 local inPair = {}
 for line in (readFile("data/spells/vfx_catalog.csv") or ""):gmatch("[^\n]+") do
 	local kind, id, name = line:match("^(%a+),(%d+),([%w_]+),")
@@ -114,7 +119,9 @@ for use in pairs(C.uses) do
 	ok(sent[use], use .. " is sent by a call site")
 end
 
--- switch off: the stock effect, exactly, and Vfx is never asked
+-- switch off: the stock effect, exactly, and Vfx is never asked (the shipped line is on; the off path is tested by
+-- turning it off here)
+C.PACK_FX = false
 ChaosVfx = {void_maw = {id = 449, dx = 1, dy = 2}}
 Vfx = function(pos, name) vfxSent[#vfxSent + 1] = {name = name, x = pos.x, y = pos.y}; return true end
 reset()

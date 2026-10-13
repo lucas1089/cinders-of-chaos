@@ -5612,8 +5612,8 @@ blood crystals, bones, rubble).
 
 Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,
 two auras, a pair of wings, four grounds with borders, six monster recolours. **Behind the switch
-`ChaosThemeArt.PAIR24` (off)**: a client on things_custom23 draws nothing for client items 33660-33903 and outfits
-2185-2193, so the switch goes on only after the pair is on windows-assets and the owner says so.
+`ChaosThemeArt.PAIR24` (on since 2026-10-13 (pair 24 at 407ad9b6); owner: "pode ligar todos os switches")**: a client on things_custom23 draws
+nothing for client items 33660-33903 and outfits 2185-2193. Rollback: set the line back to false.
 
 - **Items** (server ids 36660-36903 = client id + 3000, `data/items/theme_items.csv`, written by the importer):
   - 192 set pieces: appearance items. `items.xml` gives each the weapon type or slot of its kind and nothing else: no
@@ -5624,12 +5624,13 @@ two auras, a pair of wings, four grounds with borders, six monster recolours. **
     DATA_DIR [--dry-run]`): items.otb nodes (group and flags of the stock item of each kind) and an items.xml block,
     idempotent, refused when a server id belongs to another item. `--lua` rewrites `data/lib/chaos_theme_items.lua`
     from the manifest; `--lua --check` (CI) says when it is stale.
-- **Switch off** (now): nothing names the items. `transmog_config.lua` and `exclusives_config.lua` call
+- **Switch off** (rollback only): nothing names the items. `transmog_config.lua` and `exclusives_config.lua` call
   `ChaosThemeArt.addTransmog` / `addExclusives` at their end: off, the transmog catalogue gets the excludeRange
   36660-36903 (installed items unlock nothing and do not count in the collection) and no exclusive is added.
   `ChaosThemeArt.ground(family, piece, fallback)` returns the fallback. `install_auras.py` reads
   `data/XML/chaos_auras_theme.csv` and `install_outfits.py` the wings line of `chaos_theme_art.lua` only when on.
-- **Switch on** (after the pair push): proposed mapping, to be confirmed by the owner:
+- **Switch on** (on since 2026-10-13 (pair 24 at 407ad9b6)): the mapping below is live; the set sources stay `exclusive` until the owner picks
+  store, season or achievement sources:
   - Transmog appearance sets, 18 of them: one per full set (13 looks each: the weapons, shield, spellbook and four
     armour pieces; amulets, rings, backpacks and ammunition have no transmog kind) and one per class kit of the four
     kit sets (Rimeglass Warplate, Vestments, Hunter's Garb, and so on). Source `exclusive` for now; proposal: the six
@@ -5643,9 +5644,10 @@ two auras, a pair of wings, four grounds with borders, six monster recolours. **
     naming (n / e / s / w, outer_*, inner_*), placed on the lower tile like the dark set.
   - Recolours (`ChaosThemeArt.looks`): frost, venom and void variants of the Ashen Crypt skeleton (2108) and the
     Obsidian Hall hound (2104) for rift elemental packs; no monster file uses them yet.
-- Tests: `tests/theme_art_test.lua` (the ids against the manifest; switch off: no set, no exclusive, the catalogue
-  range, grounds fall back; switch on: the transmog sets and the exclusives validate with the real configs and cores,
-  the ground helper). Not run in game.
+- Tests: `tests/theme_art_test.lua` (the ids against the manifest; the shipped configs carry the 18 sets and the 3
+  exclusives; switch forced off: no set, no exclusive, the catalogue range, grounds fall back; switch on: the transmog sets and the exclusives validate with the real configs and cores,
+  the ground helper). Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; the transmog catalogue grew from 1,454 to 1,604 looks, 18 themed sets, auras.xml up to
+  aura 32 (client 2186), wings.xml with the Runic Wings. Not played in a client.
 
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `chaos_crafting.lua`, `item_mods.lua`)
 
@@ -8791,7 +8793,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   distinct, and that no monster file uses a family look. `server/tools/apply_monster_looks.py --check` compares the config
   with picks.csv. Checked in game: a tier 8 rift of each theme, the packs and the guardian.
 - **Rift rank variants** (`rift_config.lua` `looks.variants`, `looks.variantsOn`, `looks.variantShare`;
-  `R.pickVariant` in `rift_core.lua`; **off**). Eight looks of our own, 2200-2207, painted with PixelLab over the frames
+  `R.pickVariant` in `rift_core.lua`; **on since 2026-10-13 (pair 24 at 407ad9b6)**). Eight looks of our own, 2200-2207, painted with PixelLab over the frames
   of a rank's look, so size, frame groups, phases and timing stay the base's (`client/tools/sprites/rift_variants.py`,
   spec `monster_looks/rift_variants.json`, sheets and rows in `art_import/rift_variants*`). With the switch on, a pack
   monster of a rank that has variants wears one with chance `variantShare` (0.4; one roll per spawn in `spawnOne`,
@@ -8805,12 +8807,12 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Ashen Crypt | 2205 Crypt Ashwalker (of 2108) | | |
   | Forsaken Sanctum | 2201 Sanctum Gloomcap (of 2112) | 2206 Sanctum Thornrot (of 2113) | 2207 Sanctum Mosstomb (of 2114) |
 
-  Turn on only when a client pair with outfits 2200-2207 is on windows-assets (an older pair draws nothing): then set
-  `variantsOn = true`, flip its check in `tests/rift_test.lua`, and append `monster_looks/rift_variant_picks.csv` to
-  picks.csv (`apply_monster_looks.py --check` then also checks that `looks.variants` lists each). Rollback: the switch.
+  Turned on 2026-10-13 with things_custom24 (outfits 2200-2207) on windows-assets at 407ad9b6 (an older pair draws
+  nothing): `variantsOn = true`, its check in `tests/rift_test.lua` flipped, and `monster_looks/rift_variant_picks.csv`
+  appended to picks.csv (`apply_monster_looks.py --check` checks that `looks.variants` lists each). Rollback: the switch.
   `tests/rift_test.lua` checks the looks, names, ranks and the share.
 - **Bigger guardians** (`rift_config.lua` `looks.bigGuardians`, `looks.bigGuardiansOn`; `R.bigLook` in `rift_core.lua`;
-  **off**). Five 4x4 looks of our own, 2208-2212, with an 8-frame walk and a 4-frame idle, painted with PixelLab over our
+  **on since 2026-10-13 (pair 24 at 407ad9b6)**). Five 4x4 looks of our own, 2208-2212, with an 8-frame walk and a 4-frame idle, painted with PixelLab over our
   own frames of the guardian's look (`client/tools/sprites/big_bosses.py`, spec `monster_looks/big_bosses.json`, sheets
   and rows in `art_import/big_bosses*`, client/MANIFEST.md "Bigger guardians"). With the switch on, the family guardian
   (and both Twin Guardians) wears the big look in `R.lookPlan`, and an Omen guardian whose own look is listed gets it in
@@ -8826,10 +8828,14 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 
   The world bosses (looks 842, 1472, 238, 862, 591) were left out: their looks are stock art, not frames of our own,
   so they were not sent to PixelLab. Outfits 2208-2212 are in things_custom24 (on windows-assets 407ad9b6
-  since 2026-10-13; client/MANIFEST.md "Bigger guardians"); the ids are the ones in `looks.bigGuardians`. Turn on only when a client
-  pair with outfits 2208-2212 is on windows-assets (an older pair draws nothing): set `bigGuardiansOn = true`, flip its check in `tests/rift_test.lua`, and append
-  `monster_looks/big_boss_picks.csv` to picks.csv. Rollback: the switch. `tests/rift_test.lua` checks the mapping (every
+  since 2026-10-13; client/MANIFEST.md "Bigger guardians"); the ids are the ones in `looks.bigGuardians`. Turned on 2026-10-13
+  (an older pair draws nothing): `bigGuardiansOn = true`, its check in `tests/rift_test.lua` flipped, and
+  `monster_looks/big_boss_picks.csv` appended to picks.csv (`apply_monster_looks.py --check` checks that
+  `looks.bigGuardians` maps each). Rollback: the switch. `tests/rift_test.lua` checks the mapping (every
   key a rift or Omen guardian look, every big look its own and unused by monster files), off and on.
+  Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error. Through `ChaosRift._spawnOne` with a look plan per theme: the four family guardians came with looks 2208-2211
+  and their rift names, Thalcyra as an Omen guardian with 2212; with the variant roll forced to 0 every rank with a
+  variant wore it (2200-2207, its own name), the others kept the family look. A full rift run was not played.
 - **Rift names** (`rift_config.lua` `looks.names`, `R.nameOf`). Each look shows a name of its own, family word first:
 
   | Theme | Minion | Brute | Elite | Guardian |
@@ -9698,7 +9704,7 @@ art); looks per effect: `data/spells/README_FX.md` "Class signature effects".
   cast effect at the caster uses the same name, so the Ranger also gets the arrowfall on its own tile while it casts:
   kept on purpose (owner, 2026-10-13).
 
-## Pack effects for procs and bosses (`data/lib/chaos_pack_fx.lua`, switch `ChaosPackFx.PACK_FX`, off)
+## Pack effects for procs and bosses (`data/lib/chaos_pack_fx.lua`, switch `ChaosPackFx.PACK_FX`, on since 2026-10-13 (pair 24 at 407ad9b6))
 Item powers, snares, rift modifiers, world bosses and the reflect sent stock effects. With the switch on they send
 animated effects of the oblique spell effect set instead. Effects only: no damage, chance, timing or target changes.
 - `ChaosPackFx.uses`: use key -> effect name. Call sites: `packFx(pos, use, stockEffect)` (a local in each file that
@@ -9709,19 +9715,19 @@ animated effects of the oblique spell effect set instead. Effects only: no damag
   marked strike by element (fire_explosion / frost_nova / lightning_strike / shadow_eruption; the per-tile marks stay
   stock); world boss arrival void_maw, enrage blood_pact, adds teleport_in.
 - Cuts in things_custom24, effects 628-634 (`client/tools/sprites/gen_pack_fx.py`, ids in `data/lib/chaos_pack_fx_ids.lua`
-  written by `import_fx_art.py`, 2026-10-13; on windows-assets 407ad9b6; switch off, so they fall back to stock): reflect reflect_bubble (`combat_fx.lua`, was
+  written by `import_fx_art.py`, 2026-10-13; on windows-assets 407ad9b6; switch on since 2026-10-13 (pair 24 at 407ad9b6)): reflect reflect_bubble (`combat_fx.lua`, was
   reflect_aegis), item bleed / ignite / poison / chill procs tick_bleed / tick_burn / tick_poison / tick_chill, rift
   Cinderdeath mark tick_burn, crit wounds tick_bleed, Festering Wounds tick_poison, snare holy heal tick_regen.
   tick_curse is cut but not used yet. Crit and dodge keep crit_burst / dodge_whoosh (the set has no crit art).
-- Flip step: set `C.PACK_FX = true` (and flip the check in `tests/pack_fx_test.lua`),
-  `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. The pair's pack effects show at once; the cuts
-  once the pair with them is on the client. Rollback: set it back to false.
+- Flip step (done 2026-10-13): `C.PACK_FX = true` (the check in `tests/pack_fx_test.lua` flipped),
+  `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. A client on things_custom23 shows the pair's
+  pack effects but not the cuts. Rollback: set it back to false.
 - Item procs have no throttle of their own: a proc on every hit sends one 3x3 effect per hit, as the stock effect did.
-- Tests: `tests/pack_fx_test.lua` (switch off; every use names a pair effect or a cut of the spec; every call site's
+- Tests: `tests/pack_fx_test.lua` (the switch on; big effects forced off there; every use names a pair effect or a cut of the spec; every call site's
   use exists and every use is sent; off: the stock id; on: Vfx, the stock id for unknown names or no chaos_vfx.lua).
-  Not run on a live server.
+  Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; `ChaosPackFx.live()` true, reflect_bubble = 628, sends of wb_arrives and item_bleed went out. Not seen in a client.
 
-## Large spell effects (`data/lib/chaos_big_fx.lua`, switch `ChaosBigFx.BIG_FX`, off)
+## Large spell effects (`data/lib/chaos_big_fx.lua`, switch `ChaosBigFx.BIG_FX`, on since 2026-10-13 (pair 24 at 407ad9b6))
 21 big soft effects of our own art (5x5 to 9x9 tiles, 10-13 frames, alpha kept): boss telegraph circles, shockwave
 rings, novas, pillars, a meteor, a lightning burst, a holy sanctum, a void rift and a blood geyser
 (`client/tools/sprites/gen_big_fx.py`, client/MANIFEST.md "Large spell effects"). Effects only: no damage, area,
@@ -9744,15 +9750,15 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   The stock warning marks and hits stay; the big ones are drawn on top.
 - Not wired yet: big_nova_arcane_7 (in the pair for later).
 - Ids: `data/lib/chaos_big_fx_ids.lua` (effects 635-655 of things_custom24, on windows-assets 407ad9b6), written by
-  `import_fx_art.py`; with the switch off nothing big is sent and every site sends exactly what it sent before.
-- Flip step, once the pair with them is on the client: set `C.BIG_FX = true` (and flip the check in
-  `tests/big_fx_test.lua`), `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. Rollback: false.
+  `import_fx_art.py`; with the switch off (rollback) nothing big is sent and every site sends exactly what it sent before.
+- Flip step (done 2026-10-13, pair 24 at 407ad9b6): `C.BIG_FX = true` (the check in `tests/big_fx_test.lua`
+  flipped), `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. Rollback: false.
 - The client's one spell effect opacity slider (Options > Effects, 25-100%, client base patch 0049) scales these
   like every magic effect; players who find them too strong can turn them down.
-- Tests: `tests/big_fx_test.lua` (the switch; the effect list against the client spec; every spell swap names a spell
+- Tests: `tests/big_fx_test.lua` (the switch, on; the effect list against the client spec; every spell swap names a spell
   whose script sends that name, every use is a pack use; the round telegraph test; off: nothing big and the pack lib
-  sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites). Not run on a
-  live server or seen in the client (no pair built).
+  sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites).
+  Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; `ChaosBigFx.live()` true, big_rift_void_7 = 654, a 7x7 telegraph sent. Not seen in a client.
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 

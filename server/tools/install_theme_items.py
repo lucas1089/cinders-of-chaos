@@ -19,9 +19,10 @@ the same group and flags is replaced, anything else with that server id stops th
 original the first time; the written file is parsed again and every node checked. items.xml: a block between two
 marker comments before </items>, rewritten when the manifest changed; an id with an entry outside the block stops it.
 
-Without the matching client pair (things_custom24) the items show as nothing in the client. Nothing in the game uses
-them while ChaosThemeArt.PAIR24 is off (data/lib/chaos_theme_art.lua): the transmog catalogue skips their ids and no
-set, exclusive or area names them. Idempotent: a second run changes nothing.
+Without the matching client pair (things_custom24) the items show as nothing in the client. ChaosThemeArt.PAIR24
+(data/lib/chaos_theme_art.lua) is on since 2026-10-13 (pair 24 at 407ad9b6): the transmog sets use them. Off
+(rollback), nothing in the game uses them: the transmog catalogue skips their ids and no set, exclusive or area names
+them. Idempotent: a second run changes nothing.
 """
 import os, re, sys
 

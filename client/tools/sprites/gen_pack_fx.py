@@ -25,8 +25,9 @@ a rebuild can be checked without the art. Deterministic: no randomness; made wit
 
 Rules every strip is checked against (build stops otherwise): alpha 0 / 255; every frame but the last has art; the
 last frame is empty; at most 4x4 tiles; the send offset (dx, dy) lies inside the thing.
-Append to the next pair with import_fx_art.py (client/MANIFEST.md "Pack effect cuts"); server side
-server/data/lib/chaos_pack_fx.lua (which use sends which effect, behind the switch ChaosPackFx.PACK_FX).
+Appended to things_custom24 (effects 628-634) with import_fx_art.py (client/MANIFEST.md "Pack effect cuts"); server
+side server/data/lib/chaos_pack_fx.lua (which use sends which effect, behind the switch ChaosPackFx.PACK_FX, on since
+2026-10-13).
 """
 import argparse
 import csv

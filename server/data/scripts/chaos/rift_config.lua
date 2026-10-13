@@ -482,8 +482,8 @@ return {
 		-- client/tools/sprites/rift_variants.py, art_import/rift_variants.csv, monster_looks/rift_variant_picks.csv). A
 		-- pack monster of a rank listed here wears one of its variants (evenly) with chance variantShare, else the rank's
 		-- look; each variant shows its own name (family word first, never a monster type's name). Guardians have none.
-		-- variantsOn = false until a client pair with looks 2200-2207 is on windows-assets (an older pair draws nothing).
-		variantsOn = false,
+		-- variantsOn: on since 2026-10-13 (pair 24 at 407ad9b6 has looks 2200-2207; an older pair draws nothing).
+		variantsOn = true,
 		variantShare = 0.4,
 		variants = {
 			["Abyssal Rift"] = {
@@ -506,9 +506,9 @@ return {
 		-- bigger guardians: 4x4 looks of our own painted over a guardian's frames with an 8-frame walk and a 4-frame idle
 		-- (client/tools/sprites/big_bosses.py, spec monster_looks/big_bosses.json, art_import/big_bosses*; client looks
 		-- 2208-2212). With bigGuardiansOn a rift guardian (and both Twin Guardians) and an Omen guardian whose own look is
-		-- listed here wear the big look; name, stats, spells and loot stay. bigGuardiansOn = false until a client pair
-		-- with looks 2208-2212 is on windows-assets (an older pair draws nothing).
-		bigGuardiansOn = false,
+		-- listed here wear the big look; name, stats, spells and loot stay. bigGuardiansOn: on since 2026-10-13 (pair
+		-- 24 at 407ad9b6 has looks 2208-2212; an older pair draws nothing).
+		bigGuardiansOn = true,
 		bigGuardians = {
 			[2103] = 2208, -- Abyssal Sovereign: void spectre, 8-frame walk (was 3 phases)
 			[2107] = 2209, -- Obsidian Colossus: magma golem, 8-frame walk (was 2 phases)

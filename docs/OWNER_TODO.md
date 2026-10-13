@@ -86,7 +86,10 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - Sprite pair 16 (mount rider seats): approved and pushed to `windows-assets` (1cae7c3).
 - Sprite pair 17 (achievement wings): approved and pushed to `windows-assets` (854d34c).
 - Sprite pair 24 (themed sets, rift rank variants, pack and large effects, bigger guardians): approved and pushed to
-  `windows-assets` (407ad9b6, 2026-10-13). Its switches stay off until turned on.
+  `windows-assets` (407ad9b6, 2026-10-13). Its switches are on since 2026-10-13 (pair 24 at 407ad9b6; owner: "pode
+  ligar todos os switches"): `ChaosThemeArt.PAIR24`, `ChaosPackFx.PACK_FX`, `ChaosBigFx.BIG_FX`, rift
+  `looks.variantsOn` and `looks.bigGuardiansOn`. Still open: the sources of the 18 themed transmog sets (now
+  `exclusive`, staff / events only).
 - Rift atlas: the orb nodes stay cut about 3x (a full Hall atlas with Lone Ember lands at about 10.6x hunting orbs).
 - Lone Ember and Fleeting Sanctum raise gold and item rolls, not orbs: kept.
 - Guild boss orbs (3 Upheaval + 1 Fate per participant): kept.

@@ -778,6 +778,11 @@ end
 -- ------------------------------------------------------------------ rift-exclusive looks
 do
 	local L = cfg.looks
+	-- the shipped switches are on since 2026-10-13 (things_custom24 with looks 2200-2212 is on windows-assets at
+	-- 407ad9b6); the plain look plan is tested with both off, the on paths below
+	eq(L.variantsOn, true, "rank variants on: looks 2200-2207 are in the live client pair")
+	eq(L.bigGuardiansOn, true, "big guardians on: looks 2208-2212 are in the live client pair")
+	L.variantsOn, L.bigGuardiansOn = false, false
 	ok(L and L.enabled, "rift looks on")
 	local all = {}
 	for _, th in ipairs(cfg.themes) do
@@ -829,9 +834,8 @@ do
 			end
 		end
 	end
-	-- rank variants (looks.variants): off until a client pair with looks 2200+ ships; each a look and a name of its own
-	-- (the name check against the monster files below covers them too); pack ranks only
-	eq(L.variantsOn, false, "rank variants off: looks 2200+ are not in the live client pair yet")
+	-- rank variants (looks.variants): on since 2026-10-13 (pair 24), off here until the on part; each a look and a name
+	-- of its own (the name check against the monster files below covers them too); pack ranks only
 	ok(type(L.variantShare) == "number" and L.variantShare > 0 and L.variantShare < 1, "variant share in (0, 1)")
 	local nVar = 0
 	for theme, ranks in pairs(L.variants) do
@@ -887,9 +891,8 @@ do
 	end
 	ok(math.abs(hits / 4000 - L.variantShare) < 0.03, "about variantShare of the spawns wear a variant: " .. hits)
 	L.variantsOn = false
-	-- bigger guardians (looks.bigGuardians): off until a client pair with looks 2208+ ships; on, a listed guardian look
-	-- (rift family or Omen) becomes its big look, everything else stays
-	eq(L.bigGuardiansOn, false, "big guardians off: looks 2208+ are not in the live client pair yet")
+	-- bigger guardians (looks.bigGuardians): on since 2026-10-13 (pair 24), off here until the on part; on, a listed
+	-- guardian look (rift family or Omen) becomes its big look, everything else stays
 	local nBig, omenLooks = 0, {[2116] = true, [2117] = true, [2118] = true}
 	local guardianLooks = {}
 	for _, f in pairs(L.families) do

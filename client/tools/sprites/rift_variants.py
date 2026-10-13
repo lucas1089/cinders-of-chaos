@@ -10,9 +10,8 @@ Spec: monster_looks/rift_variants.json (one entry per variant: key, planned look
 the PixelLab jobs that painted it with their prompts and seeds, and the post-processing numbers). The raw PixelLab
 results stay out of git (RAW_DIR/<job tag>.json, the background job's response); the post-processed sheets are
 committed: art_import/rift_variants/<key>.png, rows in art_import/rift_variants.csv (things.csv format, one outfit
-row per variant) and monster_looks/rift_variant_picks.csv (the picks.csv rows of the looks, family riftvariant: append
-them to picks.csv in the same step as the pair, as classlook_picks20.csv was; until then check_content.py's outfit
-limit must not count them). Append them to a pair with the normal importer:
+row per variant) and monster_looks/rift_variant_picks.csv (the picks.csv rows of the looks, family riftvariant:
+appended to picks.csv on 2026-10-13 with pair 24 at 407ad9b6, so check_content.py's outfit limit counts them). Append them to a pair with the normal importer:
     python3 -I import_art_things.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --out-dir NEW \
         --things art_import/rift_variants.csv --first-outfit <first look of the spec> --expect-items <items of P>
 (the outfit rows are in look order; --first-outfit pads blank outfits up to the first id).

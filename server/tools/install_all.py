@@ -51,8 +51,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   fistweapons  tools/install_fist_weapons.py     the Monk line's fist weapons in items.otb / items.xml, their Monk-only equip
                entries in movements.xml and the weapon dealers' / Grimgan's shops (README "Fist weapons")
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
-               items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; unused while
-               ChaosThemeArt.PAIR24 is off; README "Themed sets, auras and grounds")
+               items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
+               ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)

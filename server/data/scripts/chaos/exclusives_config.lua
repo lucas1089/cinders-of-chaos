@@ -169,7 +169,7 @@ local cfg = {
 	}
 }
 
--- the auras and wings of client pair things_custom24 (data/lib/chaos_theme_art.lua, switch ChaosThemeArt.PAIR24):
+-- the auras and wings of client pair things_custom24 (data/lib/chaos_theme_art.lua, switch ChaosThemeArt.PAIR24, on since 2026-10-13):
 -- appended with their boss groups only when the switch is on
 local okTheme, theme = pcall(dofile, "data/lib/chaos_theme_art.lua")
 if okTheme and type(theme) == "table" then

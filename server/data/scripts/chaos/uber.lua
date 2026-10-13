@@ -131,7 +131,7 @@ local function say(run, text, kind)
 	end
 end
 
--- large effects (data/lib/chaos_big_fx.lua, switch ChaosBigFx.BIG_FX; off: nothing more is sent): the big warning
+-- large effects (data/lib/chaos_big_fx.lua, switch ChaosBigFx.BIG_FX, on since 2026-10-13; off: nothing more is sent): the big warning
 -- circle over a round telegraph, the big hit of the boss's element
 if not ChaosBigFx then
 	pcall(dofile, "data/lib/chaos_big_fx.lua")

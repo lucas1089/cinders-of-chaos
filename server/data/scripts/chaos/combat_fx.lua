@@ -229,7 +229,7 @@ local function show(kind, pos, source, labelOn)
 	return shown
 end
 M.effectNames = {crit = "crit_burst", dodge = "dodge_whoosh", reflect = "reflect_aegis"}
-M.packUses = {reflect = "reflect"}   -- ChaosPackFx use per kind (switch off: the effect above)
+M.packUses = {reflect = "reflect"}   -- ChaosPackFx use per kind (switch on since 2026-10-13; off: the effect above)
 
 function M.crit(pos, sourceId)
 	return show("crit", toPos(pos), sourceId, cfg.critLabel)

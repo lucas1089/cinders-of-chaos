@@ -18,8 +18,8 @@ with prompts and seeds, the post-processing numbers. Per guardian:
     (`stride_poses`, "Edit images (Pro)"). Frames 0, 2, 4, 6 of each half make the 8-frame cycle.
 The raw results stay out of git (RAW_DIR/<tag>.json); the post-processed sheets are committed:
 art_import/big_bosses/<key>.png, rows in art_import/big_bosses.csv (things.csv format, one outfit row per look) and
-monster_looks/big_boss_picks.csv (picks.csv rows, family bigguardian; append them to picks.csv in the same step as the
-pair). Server use: rift_config.lua looks.bigGuardians, switch looks.bigGuardiansOn (off).
+monster_looks/big_boss_picks.csv (picks.csv rows, family bigguardian; appended to picks.csv on 2026-10-13 with pair 24
+at 407ad9b6). Server use: rift_config.lua looks.bigGuardians, switch looks.bigGuardiansOn (on since 2026-10-13).
 
 build, deterministic (the same raw results and base frames give byte-identical sheets):
   1. every frame on the 128 px canvas, alpha cut to 0 / 255 and specks dropped (rift_variants.cut_alpha);

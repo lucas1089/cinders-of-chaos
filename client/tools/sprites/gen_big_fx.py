@@ -28,9 +28,9 @@ ignores them).
 Rules every strip is checked against (build stops otherwise): N x N tiles, N odd, 5..9; 10..13 frames; every frame
 but the last has art; the last frame is empty; the outermost pixel ring of every frame is transparent (nothing touches
 the frame's edge); the send offset is the centre tile (dx = dy = (N - 1) / 2: the art's centre tile is the target).
-Append to the next pair with import_fx_art.py --spec art_import/big_fx.csv --merge (the spec's `alpha` column, soft,
-keeps the alpha levels). Server side: server/data/lib/chaos_big_fx.lua (which spell, boss telegraph and use sends
-which effect, behind the switch ChaosBigFx.BIG_FX) and chaos_big_fx_ids.lua (written by import_fx_art.py).
+Appended to things_custom24 (effects 635-655) with import_fx_art.py --spec art_import/big_fx.csv --merge (the spec's
+`alpha` column, soft, keeps the alpha levels). Server side: server/data/lib/chaos_big_fx.lua (which spell, boss
+telegraph and use sends which effect, behind the switch ChaosBigFx.BIG_FX, on since 2026-10-13) and chaos_big_fx_ids.lua (written by import_fx_art.py).
 """
 import argparse
 import csv

@@ -163,7 +163,8 @@ function Creature:addHealth(a, b) -- this engine: (damage type, amount); a lone 
 end
 function Creature:addMana(v) self.mana = self.mana + v end
 function Creature:registerEvent(name) self.registered[name] = true end
-function Creature:getPosition() return {sendMagicEffect = function() end} end
+-- x, y, z: the item power procs send pack effects at an offset tile (ChaosPackFx, switch on since 2026-10-13)
+function Creature:getPosition() return {x = 100, y = 100, z = 7, sendMagicEffect = function() end} end
 function Creature:getType() return {isBoss = function() return self.boss == true end} end
 function ChaosTierOf(c) return c.tier end
 
@@ -548,7 +549,7 @@ marked.isContainer = function() return true end
 marked.getItems = function() return {dropped} end
 marked.getPosition = function() return {x = 1, y = 2, z = 7} end
 Tile = function() return {getItems = function() return {marked} end} end
-Position = function(x, y, z) return {x = x, y = y, z = z} end
+Position = function(x, y, z) return {x = x, y = y, z = z, sendMagicEffect = function() end} end
 timers = {}
 M.afterDrop(marked)
 eq(marked:getCustomAttribute("chaos_mods_pending"), 1, "corpse marked")

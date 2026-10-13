@@ -1,9 +1,9 @@
 -- Large soft spell effects (5x5 to 9x9 tiles): boss telegraph circles, boss hits, world boss and rift guardian moments
 -- and the strongest area spells of each class line. Effects only: no damage, area, timing or target changes.
--- The art: client/tools/sprites/gen_big_fx.py (art_import/big_fx.csv), appended to the next client pair by
--- import_fx_art.py --merge, which writes the ids to data/lib/chaos_big_fx_ids.lua (absent until that pair exists).
+-- The art: client/tools/sprites/gen_big_fx.py (art_import/big_fx.csv), appended to things_custom24 (effects
+-- 635-655) by import_fx_art.py --merge, which wrote the ids to data/lib/chaos_big_fx_ids.lua.
 --
--- Switch (C.BIG_FX): off. Off, nothing changes: every call site sends exactly what it sent before. On:
+-- Switch (C.BIG_FX): on since 2026-10-13 (pair 24 at 407ad9b6, effects 635-655). Off, nothing changes: every call site sends exactly what it sent before. On:
 --   * spells: during a cast (the supports wrapper knows the spell, also in the cast's addEvent callbacks) an effect
 --     name in C.spells for that spell is sent as the big effect instead (ChaosSpell.vfx in
 --     data/spells/chaos/_common.lua; a cosmetic spell skin the player chose wins, the big effect wins over the class
@@ -19,7 +19,7 @@
 ChaosBigFx = ChaosBigFx or {}
 local C = ChaosBigFx
 
-C.BIG_FX = false
+C.BIG_FX = true
 
 -- the effects, in the spec's order (client art_import/big_fx.csv; checked by tests/big_fx_test.lua)
 C.effects = {

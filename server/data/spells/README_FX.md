@@ -149,8 +149,9 @@ new `--expect-first-outfit` and keep the regenerated `chaos_auras.csv` (the aura
 verifies its output like `import_outfits.py` (re-parse, every new frame / pattern / layer pixel-exact, all old entries
 byte-identical, 3000 sampled old sprites) and is deterministic.
 
-**More uses (switch `ChaosPackFx.PACK_FX`, off):** item powers, snares, rift modifiers, world bosses and the
-reflect can send these effects and seven short cuts of the status loops (reflect_bubble, tick_*; next pair, built by
+**More uses (switch `ChaosPackFx.PACK_FX`, on since 2026-10-13 (pair 24 at 407ad9b6)):** item powers, snares, rift modifiers, world bosses and
+the reflect send these effects and seven short cuts of the status loops (reflect_bubble, tick_*; effects 628-634 of
+things_custom24, built by
 `client/tools/sprites/gen_pack_fx.py`). Which use sends which: server/README.md "Pack effects for procs and bosses";
 the cuts and the set's licence: client/MANIFEST.md "Pack effect cuts".
 
@@ -261,12 +262,12 @@ server/README.md "Class signature effects". Build and md5s: client/MANIFEST.md "
 | 626 | vigil_haste | 3x3, 1,1 | 8 x 90 ms | vigil: a green banner with a wing rises from the ground (Vigil of Haste) |
 | 627 | vigil_clarity | 3x3, 1,1 | 8 x 90 ms | vigil: a blue banner with an eye rises from the ground (Vigil of Clarity) |
 
-## Large spell effects (next pair; our own procedural art, soft alpha)
+## Large spell effects (things_custom24, effects 635-655; our own procedural art, soft alpha)
 
 21 big glowing effects, 5x5 to 9x9 tiles, 10-13 frames, each sent at its centre tile: boss telegraph circles (5, 7,
 9), shockwave rings (fire, frost, lightning, holy, blood), novas (fire 9x9, frost, poison, holy, void, arcane), pillars
 of light (holy, arcane), a meteor, a lightning burst, a holy sanctum, a void rift and a blood geyser. Drawn by
 `client/tools/sprites/gen_big_fx.py` (spec `art_import/big_fx.csv`; the element ramps of `item_forge_data/style.json`);
-their alpha stays soft, unlike the pixel-art sets above. Not in a pair yet: the ids will be in
+their alpha stays soft, unlike the pixel-art sets above. In things_custom24 (effects 635-655); the ids are in
 `server/data/lib/chaos_big_fx_ids.lua`. Which spell, boss and use sends which, and the switch `ChaosBigFx.BIG_FX`
-(off): server/README.md "Large spell effects". Sizes and build: client/MANIFEST.md "Large spell effects".
+(on since 2026-10-13 (pair 24 at 407ad9b6)): server/README.md "Large spell effects". Sizes and build: client/MANIFEST.md "Large spell effects".

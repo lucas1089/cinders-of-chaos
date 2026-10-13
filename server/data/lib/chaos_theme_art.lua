@@ -2,8 +2,9 @@
 -- Loaded with  ChaosThemeArt = dofile("data/lib/chaos_theme_art.lua")  (transmog_config.lua and exclusives_config.lua
 -- do so at their end). Plain Lua, no engine calls at load (server/tests/theme_art_test.lua reads it with plain Lua).
 --
--- Pair switch (M.PAIR24, OFF until things_custom24 is on windows-assets and the owner turns it on): a client on an
--- older pair draws nothing for client items 33660..33903 and outfits 2185..2193. While it is off nothing in the game
+-- Pair switch (M.PAIR24, ON since 2026-10-13: things_custom24 is on windows-assets at 407ad9b6, owner approved): a
+-- client on an older pair draws nothing for client items 33660..33903 and outfits 2185..2193. Rollback: set it to
+-- false. While it is off nothing in the game
 -- names them: the transmog catalogue skips the item ids (an excludeRange, so installed items do not count in the
 -- collection), no transmog set, exclusive or ground helper returns them, and install_auras.py / install_outfits.py
 -- leave the aura and wings lines out of auras.xml / wings.xml.
@@ -18,7 +19,7 @@
 
 local M = {}
 
-M.PAIR24 = false
+M.PAIR24 = true
 
 local ok, items = pcall(dofile, "data/lib/chaos_theme_items.lua")
 M.items = ok and items or {first = 36660, last = 36903, pieces = {}, grounds = {}}

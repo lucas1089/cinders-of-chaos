@@ -197,6 +197,11 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
     picks = list(csv.DictReader(open(a.picks, newline='')))
+    # rows of our own art (lib "own": rift_variants.py, big_bosses.py) come from no donor library: skipped
+    own = [pk['key'] for pk in picks if pk['lib'] == 'own']
+    if own:
+        print(f"  skipped {len(own)} rows of our own art (lib own): {', '.join(own)}")
+    picks = [pk for pk in picks if pk['lib'] != 'own']
     libs = {}
 
     def lib(name):
