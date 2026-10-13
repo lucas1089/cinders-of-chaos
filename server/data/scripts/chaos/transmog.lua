@@ -52,7 +52,9 @@ T.attr = ATTR
 local typeInfo = {} -- [id] = {cid, name, kind} (false = no such item)
 
 local function describe(id)
-	id = tonumber(id) or 0
+	-- an item id from the client: an integer in the item range, so that no NaN or float key reaches typeInfo and the
+	-- cache cannot grow with made-up ids
+	id = Chaos.toInt(id, 0, 65535) or 0
 	local info = typeInfo[id]
 	if info ~= nil then
 		return info or nil

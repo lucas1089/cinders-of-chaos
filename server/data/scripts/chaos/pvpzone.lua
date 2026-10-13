@@ -590,12 +590,17 @@ local function release(player, why)
 	send(player, "hide", {why = why})
 end
 
+-- ChaosHideout.isInside takes a position, not a player (given the player it never matched)
+local function inHideout(player)
+	return ChaosHideout ~= nil and ChaosHideout.isInside ~= nil and ChaosHideout.isInside(player:getPosition())
+end
+
 local function insideOther(player)
 	local checks = {
 		{ChaosDungeonIsInside, "a dungeon", true},
 		{ChaosTowerRun, "the Infinity Tower"}, {ChaosRift, "a rift"}, {ChaosSiege, "a siege"},
 		{ChaosDescent, "the Ember Descent"}, {ChaosRaid, "a raid"}, {ChaosAscended, "an Ascended Omen"},
-		{ChaosBattleground, "the battleground"}, {ChaosHideout, "a hideout"}
+		{ChaosBattleground, "the battleground"}, {inHideout, "a hideout", true}
 	}
 	for _, c in ipairs(checks) do
 		local mod, what, plain = c[1], c[2], c[3]

@@ -887,6 +887,12 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if not msg or type(msg.data) ~= "table" then
 		return
 	end
+	-- the views read the account's purchases from the database (Shop.view): per action (ratelimit.lua); buy, history
+	-- and gift_coins have their own limits below
+	local viewAction = msg.action == "init" or msg.action == "get_page" or msg.action == "preview"
+	if viewAction and ChaosRateLimit and not ChaosRateLimit.allow(player, "shop." .. msg.action, 100) then
+		return
+	end
 	if msg.action == "init" then
 		send(player, "categories", categoriesView(player), true)
 	elseif msg.action == "get_page" then

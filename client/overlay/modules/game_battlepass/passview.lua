@@ -93,13 +93,16 @@ end
 
 -- the tier rows of a season arrive in parts: cache = {season, total, rows = {[tier] = row}}; returns the cache and
 -- true once every tier is there
+PassView.MAX_TIERS = 1000 -- far above any season (seasonpass_config.lua maxTier)
 function PassView.mergeTiers(cache, msg)
   if type(msg) ~= 'table' then return cache, false end
   if not cache or cache.season ~= msg.season then
-    cache = { season = msg.season, total = tonumber(msg.total) or 0, rows = {} }
+    -- at most MAX_TIERS: the loop below runs to `total` (1e308 froze the client; tests/opcode_fuzz_test.lua)
+    local total = math.floor(tonumber(msg.total) or 0)
+    cache = { season = msg.season, total = math.max(0, math.min(total, PassView.MAX_TIERS)), rows = {} }
   end
   for _, r in ipairs(type(msg.rows) == 'table' and msg.rows or {}) do
-    if tonumber(r.tier) then cache.rows[tonumber(r.tier)] = r end
+    if type(r) == 'table' and tonumber(r.tier) then cache.rows[tonumber(r.tier)] = r end
   end
   local complete = cache.total > 0
   for t = 1, cache.total do

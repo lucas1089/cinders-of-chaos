@@ -349,7 +349,7 @@ end
 --   state = {tier = highest tier cleared, picks = {p1,p2,p3}, tokens = n, level = n}
 function M.planPick(state, pair, side)
 	pair, side = floor(tonumber(pair) or 0), floor(tonumber(side) or 0)
-	if pair < 1 or pair > 3 or (side ~= 0 and side ~= 1 and side ~= 2) then
+	if pair ~= pair or pair < 1 or pair > 3 or (side ~= 0 and side ~= 1 and side ~= 2) then
 		return nil, "That is not a choice of your trial nodes."
 	end
 	if pair > (state.tier or 0) then

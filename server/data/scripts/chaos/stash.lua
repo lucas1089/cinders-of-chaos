@@ -529,8 +529,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		if item then
 			stashItem(player, item)
 		end
-		if data.UpdateList then
-			sendItems(player) -- always echo, even when rejected (the client relies on this)
+		-- always echo, even when rejected (the client relies on this); a request that names no item at all is limited
+		-- like SendItems, or it would read the database on every packet
+		if data.UpdateList and (item or not ChaosRateLimit or ChaosRateLimit.allow(player, "stash.SendItems", 300)) then
+			sendItems(player)
 		end
 	elseif data.make == "Redeem" then
 		redeem(player, data)

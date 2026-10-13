@@ -1406,7 +1406,7 @@ end
 
 function GB.handle(player, action, data)
 	if limited(player, "guildboss.act", 1000) then
-		return false, "Slow down."
+		return false, "Slow down.", true -- refused: guildwar.lua answers without the state (a database read)
 	end
 	if action == "bossGold" then
 		return donateGold(player, data.amount)

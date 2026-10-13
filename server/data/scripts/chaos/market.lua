@@ -1666,7 +1666,8 @@ function MK.orders(player, f)
 			offset), ORDER_COLS)) do
 		rows[#rows + 1] = MO.rowView(r, t, guid)
 	end
-	send(player, "orders", {rows = rows, page = page, pages = pages, total = total, seq = f.seq, mine = f.mine and true or nil})
+	-- seq is the client's own counter, echoed: a number only (inf or a table would break json.encode)
+	send(player, "orders", {rows = rows, page = page, pages = pages, total = total, seq = MC.int(f.seq), mine = f.mine and true or nil})
 end
 
 function MK.myOrders(player)
@@ -1782,7 +1783,7 @@ function MK.browse(player, filter)
 	if ChaosMarketHistory then
 		pcall(ChaosMarketHistory.markRows, rows, list, realm) -- typical price marks (market_history.lua)
 	end
-	send(player, "page", {rows = addLooks(list), page = page, pages = pages, total = total, seq = filter and filter.seq})
+	send(player, "page", {rows = addLooks(list), page = page, pages = pages, total = total, seq = MC.int(filter and filter.seq)})
 end
 
 function MK.tip(player, d)
@@ -1882,7 +1883,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	elseif a == "history" then
 		MK.history(player)
 	elseif a == "wallet" then
-		sendWallet(player)
+		if rate(player, "wallet") then -- a database read (ratelimit.lua)
+			sendWallet(player)
+		end
 	elseif a == "orders" then
 		MK.orders(player, d)
 	elseif a == "myOrders" then

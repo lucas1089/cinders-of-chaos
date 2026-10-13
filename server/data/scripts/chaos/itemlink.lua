@@ -103,7 +103,7 @@ local function reply(player, action, data)
 end
 
 local function register(player, data)
-	local n = tonumber(data.n) or 0
+	local n = Chaos.toInt(data.n) or 0 -- echoed: never inf
 	local function refuse(reason)
 		reply(player, "refused", {n = n, reason = reason})
 	end

@@ -1063,10 +1063,11 @@ function Chaos.sendChunked(player, opcode, buffer)
 	return true
 end
 
--- Positive integer from client input, or nil.
+-- Positive integer from client input, or nil. Beyond +-2^53 a number is no exact integer (1e308 stays a float, which
+-- string.format("%d") refuses in Lua 5.3 and LuaJIT turns into -2^63): nil too (tests/opcode_fuzz_test.lua).
 function Chaos.toInt(value, minimum, maximum)
 	local n = tonumber(value)
-	if not n or n ~= n or n == math.huge or n == -math.huge then
+	if not n or n ~= n or n > 9007199254740992 or n < -9007199254740992 then
 		return nil
 	end
 	n = math.floor(n)

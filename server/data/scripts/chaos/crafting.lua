@@ -341,7 +341,11 @@ local function gemAction(player, data)
 	local pid = player:getId()
 	local now = nowMs()
 	if lastAction[pid] and now - lastAction[pid] < MIN_INTERVAL then
-		sendState(player, false)
+		-- too soon: the client disabled the button, give it back; a flood of these must not read the history from
+		-- the database every time (ratelimit.lua)
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "crafting.state", 150) then
+			sendState(player, false)
+		end
 		return
 	end
 	lastAction[pid] = now
@@ -365,11 +369,14 @@ local function apply(player, data)
 	local pid = player:getId()
 	local now = nowMs()
 	if lastAction[pid] and now - lastAction[pid] < MIN_INTERVAL then
-		sendState(player, false) -- the client disabled the button; give it back
+		-- the client disabled the button; give it back (at most every 150 ms: the answer reads the database)
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "crafting.state", 150) then
+			sendState(player, false)
+		end
 		return
 	end
 	lastAction[pid] = now
-	local orbKey = type(data.orb) == "string" and data.orb or ""
+	local orbKey = type(data.orb) == "string" and data.orb:sub(1, 64) or "" -- echoed in the answer
 	local item = itemAt(player, data.path)
 	local id = Chaos.toInt(data.id, 1, 65535)
 	if not item or item:getId() ~= id or (data.sig and C.signature(item) ~= data.sig) then

@@ -1188,7 +1188,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		local what = data.what == "premium" and "premium" or Chaos.toInt(data.what, 1, 9)
 		local price, name = SP.giftPrice(player, what or 0, type(data.gift) == "string" and data.gift or "")
 		if price then
-			Chaos.send(player, OPCODE, "giftPrice", {what = data.what, name = name, price = price})
+			Chaos.send(player, OPCODE, "giftPrice", {what = what, name = name, price = price})
 		else
 			notice(player, name)
 		end

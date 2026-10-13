@@ -775,7 +775,12 @@ local function handle(player, action, data)
 		return
 	elseif action:sub(1, 4) == "boss" then
 		if ChaosGuildBoss and ChaosGuildBoss.handle then
-			ok, text = ChaosGuildBoss.handle(player, action, data)
+			local refused
+			ok, text, refused = ChaosGuildBoss.handle(player, action, data)
+			if refused then
+				W.message(player, false, text)
+				return
+			end
 		else
 			return
 		end

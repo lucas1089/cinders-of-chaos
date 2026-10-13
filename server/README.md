@@ -583,6 +583,26 @@ it. Big JSON goes through `Chaos.sendChunked(player, opcode, json)` (parts `S...
 the client's `ProtocolGame.registerExtendedJSONOpcode`); the admin panel uses it. `tests/extended_opcode_test.lua`; tested in
 game (admin and player logins without the exception, admin panel filled and running actions).
 
+### Protocol fuzz test (`tests/opcode_fuzz_test.lua`, client `game_chaosguard/opcode_fuzz_test.lua`)
+The server test loads every script under `data/scripts` against a mocked engine and feeds every `onExtendedOpcode` handler
+(fixed seed, about 5 s per interpreter): malformed and truncated JSON, every action found in the script with each field it
+reads missing or of the wrong type (negative, fractional, NaN, inf, 2^53, 60 KB strings, 5000-entry arrays, 300-deep
+nesting), database rows of another character, rapid repeats with the clock stopped, requests after logout, removal and
+death. It fails on a Lua error (also one a module catches and prints), anything granted to the fuzz player (who owns
+nothing), an answer over 8192 bytes, a client string in SQL unescaped, NaN / inf / a fraction handed to the engine as an
+integer, a player passed where a position is expected, a database read after a refused rate limit or on every one of five
+rapid calls, and an opcode that differs from the table above or from `ChaosOpcodes` (fallbacks `ChaosOpcodes.x or n` and
+`cfg.opcode` too; handlers sharing an opcode never answer the same action). The client test loads every module with a
+stubbed client API and feeds every registered handler bad buffers, `data` of the wrong type and chunk sequences with parts
+missing, repeated or out of order; it also checks each module's opcode against this table and `ChaosOpcodes`.
+- `Chaos.toInt` (and `int` in `market_core.lua`, `orbexchange_core.lua`) refuses numbers beyond +-2^53: `1e308` stayed a
+  float, which `"%d"` refuses under Lua 5.3 and turns into -2^63 under LuaJIT.
+- `ratelimit.lua` keeps at most 512 keys per player and none longer than 64 bytes: keys are built from the client's action
+  names, so made-up actions grew the table until logout.
+- Values the client sent are echoed only after a check (`seq` of the market, the item link request number, the loot filter
+  kill id, the command page id, the crafting orb key): inf or a table made `json.encode` raise, a 60 KB string made the
+  answer too big to send.
+
 ## Shared security rules (`chaos_constants.lua`)
 
 - **Instances.** Every system with its own way in and out registers with `Chaos.registerInstance(key, {label, inside(player),

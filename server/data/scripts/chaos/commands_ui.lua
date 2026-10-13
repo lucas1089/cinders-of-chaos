@@ -232,7 +232,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 				parts[#parts + 1] = {id = ids[i], text = text}
 			end
 		end
-		Chaos.send(player, OPCODE, "result", {page = type(msg.page) == "string" and msg.page or "", parts = parts})
+		Chaos.send(player, OPCODE, "result", {page = type(msg.page) == "string" and msg.page:sub(1, 64) or "", parts = parts})
 	end
 end
 ext:type("extendedopcode")

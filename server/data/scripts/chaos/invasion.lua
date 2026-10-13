@@ -1170,7 +1170,8 @@ function opcode.onExtendedOpcode(player, op, buffer)
 			sendHud(player, list, index)
 		end
 	elseif msg.action == "calendar" then
-		Chaos.send(player, OPCODE, "calendar", {list = V.calendar(), open = msg.data and msg.data.open and true or false})
+		local open = type(msg.data) == "table" and msg.data.open and true or false
+		Chaos.send(player, OPCODE, "calendar", {list = V.calendar(), open = open})
 	end
 end
 opcode:register()

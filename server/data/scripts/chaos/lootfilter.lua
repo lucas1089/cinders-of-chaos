@@ -707,7 +707,7 @@ local function take(player, data)
 	local c = cfg()
 	local kill = state.kills[Chaos.toInt(data.k, 1) or 0]
 	if not kill or kill.guid ~= player:getGuid() then
-		Chaos.send(player, OPCODE, "decay", {k = tonumber(data.k) or 0})
+		Chaos.send(player, OPCODE, "decay", {k = Chaos.toInt(data.k) or 0}) -- echoed: never inf
 		return reply(player, "That loot is gone.")
 	end
 	local n = Chaos.toInt(data.n, 1, #kill.entries)

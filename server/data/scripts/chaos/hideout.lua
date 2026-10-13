@@ -987,7 +987,7 @@ function M.kick(player)
 end
 
 function M.like(player, owner)
-	owner = tonumber(owner)
+	owner = Chaos.toInt(owner, 1)
 	local _, room = M.roomAt(player:getPosition())
 	local acc = player:getAccountId()
 	local today = Chaos.select(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `account_id` = %d AND `liked_at` >= %d",

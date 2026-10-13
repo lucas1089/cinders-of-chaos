@@ -23,7 +23,8 @@ C.STATE_NAME = {[0] = "active", [1] = "sold", [2] = "cancelled", [3] = "expired"
 
 local function int(v)
 	v = tonumber(v)
-	if not v or v ~= v or v == math.huge or v == -math.huge then
+	-- beyond +-2^53 no exact integer: "%d" in an SQL string fails (Lua 5.3) or reads -2^63 (LuaJIT)
+	if not v or v ~= v or v > 9007199254740992 or v < -9007199254740992 then
 		return nil
 	end
 	return floor(v)
