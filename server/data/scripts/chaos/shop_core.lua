@@ -59,6 +59,23 @@ function C.frameStorage(S, i)
 	return S.shopFrameBase2 + i - 9
 end
 
+-- ------------------------------------------------------------------ outfit shaders
+-- a store or season pass shader leaves a mark in Chaos.storage.shopShaderBase + id (7100701-7100759) and the engine's
+-- ownership (Player:addShader). Before server src-patch 0036 the engine dropped that ownership, so the mark stayed
+-- alone and the Outfit window listed nothing; shop.lua adds the ownership again at login for every marked id.
+C.SHADER_MARKS = 59
+
+-- the shaders.xml ids with a mark: value(id) is the mark's storage value
+function C.markedShaders(value)
+	local ids = {}
+	for id = 1, C.SHADER_MARKS do
+		if (tonumber(value(id)) or 0) > 0 then
+			ids[#ids + 1] = id
+		end
+	end
+	return ids
+end
+
 -- ------------------------------------------------------------------ keys
 function C.offerKey(o)
 	if o.key then

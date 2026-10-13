@@ -225,6 +225,20 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     Built (0001-0043 + 0048) and tested in the Linux client: the login screen draws from the shards, and the single
     file loads when the index is renamed.
 
+27. `0045` (Lua / OTUI `modules/game_outfit/outfit.lua`, `data/styles/40-outfitwindow.otui`): a Shader row in the
+    Outfit window (ROADMAP 86). The 10.98 outfit window packet lists the shaders the character owns and the engine
+    reads them (`GameOutfitShaders`, `parseOpenOutfitWindow` -> `shaderList`), but this window had no row for them, so
+    no shader could be picked. The Shader row takes the Familiar row's place (10.98 has no familiars; with
+    `GamePlayerFamiliars` on the Familiar row stays). It lists "None" and the owned shaders by name ("Ember Glow",
+    "Blood Pulse"), each button previewing the current outfit with that shader; the search box filters them. The pick
+    shows in the preview, survives a preset pick (presets store no shader) and goes out in the set-outfit packet; only
+    a shader of the list is sent (else none), since the server refuses the whole change for a shader the character
+    does not own. `updateAppearanceText` ignores a key with no row (worn wings). Logic: `OutfitShaderList` of the
+    overlay module `game_chaosshaders` (`MANIFEST.md` "Outfit shaders in the Outfit window"); without it the row stays
+    hidden. The other half is server src-patch 0036 (the engine kept no shader ownership). The chain 0001-0045,
+    0048, 0049 applies to the `windows-assets` base client with no fuzz. Run in the Linux client against a live
+    server with 0036 (server/README.md "Chaos outfit shaders").
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

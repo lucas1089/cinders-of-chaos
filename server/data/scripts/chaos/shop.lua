@@ -1059,9 +1059,23 @@ end
 startup:register()
 
 local login = CreatureEvent("ChaosShopLogin")
+-- the engine's ownership of every shader the character bought or got from the season pass (shop_core.lua
+-- markedShaders: before server src-patch 0036 Player:addShader stored nothing); adding one twice changes nothing
+function Shop.syncShaders(player)
+	if not player.addShader then
+		return 0
+	end
+	local ids = K.markedShaders(function(id) return player:getStorageValue(S.shopShaderBase + id) end)
+	for _, id in ipairs(ids) do
+		player:addShader(id)
+	end
+	return #ids
+end
+
 function login.onLogin(player)
 	player:registerEvent("ChaosShopExtended")
 	registerFrames()
+	Shop.syncShaders(player)
 	addEvent(function(cid)
 		local p = Player(cid)
 		if p then

@@ -655,6 +655,32 @@ do
 	ChaosAdmin = nil
 end
 
+-- outfit shaders: a mark without the engine's ownership (bought before server src-patch 0036) gets it at login
+do
+	local K = ChaosShopCore
+	local marks = {[3] = 1, [10] = 1, [12] = 0, [59] = 1, [60] = 1}
+	local ids = K.markedShaders(function(id) return marks[id] or -1 end)
+	eq(table.concat(ids, ","), "3,10,59", "marked shader ids (0 and past the block are not marks)")
+	local P = newPlayer("Shadered", {})
+	P.storage[Chaos.storage.shopShaderBase + 11] = 1
+	P.storage[Chaos.storage.shopShaderBase + 24] = 1
+	registry.ChaosShopLogin.onLogin(P)
+	ok(P.shaders[11] and P.shaders[24], "login adds the engine's ownership of the marked shaders")
+	eq(P.shaders[10], nil, "an unmarked shader is not added")
+	eq(Shop.syncShaders(P), 2, "a second sync adds the same two again (idempotent in the engine)")
+	local noApi = newPlayer("NoShaderApi", {})
+	noApi.addShader = nil
+	noApi.storage[Chaos.storage.shopShaderBase + 11] = 1
+	eq(Shop.syncShaders(noApi), 0, "an engine without Player:addShader: nothing to do")
+	-- buying one sets the mark and the ownership; the next login keeps both
+	local C1 = newPlayer("Shaderbuyer", {})
+	ok(Shop.deliver(C1, {kind = "shader", id = 11}) == true, "a store shader delivered")
+	ok(C1.shaders[11] and C1.storage[Chaos.storage.shopShaderBase + 11] == 1, "mark and ownership")
+	C1.shaders = {}
+	registry.ChaosShopLogin.onLogin(C1)
+	ok(C1.shaders[11], "ownership back at login")
+end
+
 -- a reload builds the same store and keeps what was bought
 local keysBefore = #Shop.view(A)
 loadShop()

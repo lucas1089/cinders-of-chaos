@@ -1,10 +1,10 @@
 Module
   name: game_chaosshaders
-  description: Outfit shaders used by the server (monster modifiers, store)
+  description: Outfit shaders used by the server (monster modifiers, store) and the Shader list of the Outfit window
   author: Cinders of Chaos
   sandboxed: true
   autoload: true
   autoload-priority: 500
-  scripts: [ chaosshaders ]
+  scripts: [ outfitshaderlist, chaosshaders ]
   @onLoad: init()
   @onUnload: terminate()

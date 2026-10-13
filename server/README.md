@@ -139,6 +139,9 @@ server/
   src-patches/0035-takeover-cancelled.patch   engine: a takeover whose new connection closed within its 1 s clears
                                       isConnecting, so the character is removed by the no-pong kick instead of staying in
                                       the game without a client for good (see "Stress test"; tools/reattach_ping_patch_test.py)
+  src-patches/0036-outfit-shader-storage.patch   engine: Player::addStorageValue accepts the outfit shaders' reserved
+                                      keys, so Player:addShader keeps a shader (it stored nothing: no shader was ever owned,
+                                      listed or wearable; see "Chaos outfit shaders"; tools/outfit_shader_patch_test.py)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     kitewalk.lua  kitewalk_core.lua (the client option "Keep attacking while moving", opcode 186, storage 7101820, see
@@ -2512,8 +2515,28 @@ entry without `price` is never sold ("Store: not on sale yet"). To sell: set `pr
 names `chaos_*` registered by the client, whole prices, a swatch colour, no power fields. **Tests:** `tests/cosmetics_test.lua`
 (off: nothing listed, sold, granted or added at login; the client registers every name and has the files; on: listing,
 owned ids, Collection rows, a priced unlock sold and added to the buyer and to the account's other character at login, an
-unpriced one not sold; validator refusals). Not run in game. Open: this client's Outfit window lists no shaders yet
-(ROADMAP 86), so an owned one cannot be worn until it does; leave the switch off until then.
+unpriced one not sold; validator refusals).
+
+**Worn through the Outfit window (fixed, ROADMAP 86).** No shader could be worn, the store's neither, for two reasons.
+(1) Server: `Player:addShader` keeps a character's shaders as bits in the reserved storage keys 10002034-10002044, but
+the base `Player::addStorageValue` accepted only the mount, wing and aura ranges there and dropped them ("Warning:
+unknown reserved key: 10002034"), at the grant and when the keys were read at login. `hasShader` was false for every
+shader, so the outfit window packet (it sends wings, auras and the owned shaders to our client) listed none, and a
+set-outfit request with a shader was refused. Engine src-patch `0036` accepts the range. (2) Client: the base Outfit
+window had no row for shaders, though the client read them from the packet; client base patch `0045` adds a Shader row
+(client/BASE.md 27, MANIFEST.md "Outfit shaders in the Outfit window"). **Ownership** is checked by the engine on every
+set-outfit request (`Game::playerChangeOutfit`: an unknown name is no shader; a shader without `hasShader` refuses the
+whole change); the client sends only a shader of the list. **Earlier buyers:** a store or season pass shader left its
+mark (`Chaos.storage.shopShaderBase` + id) but no ownership; `shop.lua` `Shop.syncShaders` adds the ownership again at
+login for every marked id (`shop_core.lua` `markedShaders`), idempotent. **Tests:** `tests/shop_test.lua` (marks, the
+login sync, delivery), `tools/outfit_shader_patch_test.py` (the chain's allow line has the shader range; every
+configured shader id fits the 310 the range holds), client `outfitshaderlist_test.lua`. **Tested on a live test
+server** (0001-0036, Linux client 0001-0045): with 0035 only, `addShader` returned true and the storage stayed -1, the
+packet listed 0 shaders; with 0036, four granted (11, 19, 21, 23) listed and shown in the window with previews, Ember
+Glow picked and worn (`lookShader` 19), an unowned `chaos_frost_rime` sent straight from the client refused (19 kept),
+an owned one and none accepted, and ownership and the worn shader kept over a relog. A second run on fresh builds of
+both chains also checked the login sync: a store mark for 19 with no ownership got the ownership at the next login
+(listed, picked, worn). The switch stays off (prices are the owner's call).
 
 ## Footprints and outlines (`cosmetics*.lua` kinds `footprint` / `outline`, client `game_cosmeticfx`, client base patch 0038, art `client/tools/gen_cosmeticfx_art.py`)
 
