@@ -1282,7 +1282,7 @@ own frames were sent as input; no outside reference art. Base looks (donor-libra
   guard passed. Leave out `--sheets`: with no item rows the importer's item sheet fails on an empty image.
   Server use: server/README.md "Rift rank variants" (`looks.variantsOn`, off).
 
-## Bigger guardians (next pair, outfits 2208-2212, `tools/sprites/big_bosses.py`, `art_import/big_bosses.csv`; not built yet)
+## Bigger guardians (things_custom24, outfits 2208-2212, `tools/sprites/big_bosses.py`, `art_import/big_bosses.csv`; built, not pushed)
 Five 4x4 looks of our own for the rift guardians and the Omen seer, each with a 4-frame idle group and an 8-frame walk
 group (the bases had 2-4 walk phases and a still idle). Only our own frames went to PixelLab: the guardian looks of our
 pair (donor-library art of things_custom11, as for the rank variants). The world boss looks (842, 1472, 238, 862, 591)
@@ -1320,9 +1320,11 @@ are stock art and were left out.
       --things client/tools/sprites/art_import/big_bosses.csv --first-outfit 2208 --expect-items <items of IN>
   python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old IN/Tibia.dat IN/Tibia.spr
   ```
-  Not in things_custom24: their walk legs were being redone when that pair was built (2026-10-13), so they wait for
-  the next pair (ids from 2208 still free). Server use: server/README.md "Bigger guardians"
-  (`looks.bigGuardiansOn`, off).
+  In things_custom24 as its last step (2026-10-13, the art of the second walk pass, 07891edb; "Themed sets"): 5
+  outfits 2208-2212 as planned, no blank padding, 2,769 sprites appended, `check_pair.py --old`: no new warning.
+  Walk and idle GIFs read back from the pair were checked offline; not run in a client. The ids are fixed in
+  `rift_config.lua` `looks.bigGuardians` (no ids file); `big_boss_picks.csv` is not appended to picks.csv yet.
+  Server use: server/README.md "Bigger guardians" (`looks.bigGuardiansOn`, off).
 
 ## Painted icons (setting "Painted icons", off; `tools/gen_painted_icons.py`, `tools/painted_icon_art/`)
 A painted set of the buff bar's icons, the Chaos spells (spellbook) and the passive tree's keystones and masteries:
@@ -1413,7 +1415,7 @@ resampled, no image code read them and none was sent to a painting service. The 
 (2026-10-13, below); auras, wings and grounds are drawn in Python: shape masks and material ramps lit from the upper
 left, 128 px downsampled 4:1 for grounds (`darklib.py`), the class effect canvas for auras and wings
 (`gen_class_fx.Canvas`). The same pair also carries the rift rank variants, the pack effect cuts and the large spell
-effects (their sections); the bigger guardians are not in it.
+effects and, as its last step, the bigger guardians (their sections).
 - Modules: `theme_items.py` (the 18 kind drawers and 10 motifs), `theme_sets.py` (set names, materials, shapes, the
   class kits), `theme_grounds.py` (textures, rims, the dark set's border geometry, `pieces_for`, preview scenes),
   `theme_cosmetics.py` (auras, wings, placement), `theme_recolour.py` (variants of our own monster looks).
@@ -1478,9 +1480,11 @@ python3 -I client/tools/sprites/import_art_things.py --ours-dat S2/Tibia.dat --o
 python3 -I client/tools/sprites/import_fx_art.py --ours-dat S3/Tibia.dat --ours-spr S3/Tibia.spr --out-dir S4 \
     --spec client/tools/sprites/art_import/pack_fx.csv --expect-first-effect 628 \
     --lua-out server/data/lib/chaos_pack_fx_ids.lua --catalog-out server/data/spells/pack_fx_catalog.csv
-python3 -I client/tools/sprites/import_fx_art.py --ours-dat S4/Tibia.dat --ours-spr S4/Tibia.spr --out-dir things_custom24 \
+python3 -I client/tools/sprites/import_fx_art.py --ours-dat S4/Tibia.dat --ours-spr S4/Tibia.spr --out-dir S5 \
     --spec client/tools/sprites/art_import/big_fx.csv --expect-first-effect 635 \
     --lua-out server/data/lib/chaos_big_fx_ids.lua --catalog-out server/data/spells/big_fx_catalog.csv
+python3 -I client/tools/sprites/import_art_things.py --ours-dat S5/Tibia.dat --ours-spr S5/Tibia.spr \
+    --out-dir things_custom24 --things client/tools/sprites/art_import/big_bosses.csv --first-outfit 2208 --expect-items 33903
 python3 -I client/tools/sprites/check_pair.py things_custom24/Tibia.dat things_custom24/Tibia.spr \
     --old things_custom23/Tibia.dat things_custom23/Tibia.spr
 python3 -I client/tools/sprites/gen_theme_art.py preview --out PREVIEWS --dat things_custom24/Tibia.dat --spr things_custom24/Tibia.spr
@@ -1489,20 +1493,24 @@ python3 -I client/tools/sprites/gen_theme_art.py preview --out PREVIEWS --dat th
 effect strips must be on disk (`gen_pack_fx.py build --src SET`, `gen_big_fx.py build`; both `--check` OK).
 Input things_custom23 (the windows-assets archive at c91dd6f9, sha256 a866a48e... checked against SHA256SUMS.parts;
 dat 8ca5332525db229ca0472fe292653986, spr 09f3a073b0a071d54b9604a422a9dffd). Output **things_custom24** (2026-10-13,
-replaces the procedural-item build of the same name, which was never pushed): dat 54864ed636af3071b6f5ca8fecbb6b30
-(5,021,907 bytes), spr 83ea0f2ae0940b1d9ba72092adf34cec (629,084,240 bytes, 760,191 sprites, 14,538 appended),
-33,903 items, 2,207 outfits, 655 effects, 153 missiles. New: items 33660-33903, outfits 2185-2193 (themed),
-2194-2199 (blank padding), 2200-2207 (rift rank variants), effects 628-634 (pack cuts), 635-655 (large effects).
+rebuilt with the bigger guardians; replaces the guardian-less build of the same name, dat 54864ed6..., spr
+83ea0f2a..., and the procedural-item build before it, neither pushed): dat 734dda1f0dbabb247c3710f809fe5324
+(5,037,907 bytes), spr fb385bf2d0214c37c594bda64c3d190b (634,416,681 bytes, 762,960 sprites, 17,307 appended),
+33,903 items, 2,212 outfits, 655 effects, 153 missiles. New: items 33660-33903, outfits 2185-2193 (themed),
+2194-2199 (blank padding), 2200-2207 (rift rank variants), 2208-2212 (bigger guardians), effects 628-634 (pack cuts),
+635-655 (large effects). S5 is the guardian-less build (its md5s above). The guardian step: 5 outfits, 0 blank,
+3,840 sprite slots pixel-identical to the art, 2,772 distinct sprites (2,769 appended, 3 reused).
 Built twice with identical md5s and identical ids files; each importer verified its new frames pixel-identical to the
 art and every old thing byte-identical. `check_pair.py --old`: 0 errors (36,524 old things and 745,653 old sprites
 compared), 124 warnings: the 121 of things_custom23 line for line plus `size-large` for the three 9x9 effects 637,
-642, 643 (expected; "Large spell effects").
+642, 643 (expected; "Large spell effects"). The guardians add no warning (INFO `sprite-zero-slots` 4,041 -> 4,046).
 - `things-1098.tar.xz` like things_custom23's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
-  mtime 2026-10-13 16:00: sha256 9ccef286ee539c630835944a16e64a157eb2af1344b4fb4ac6b2cf1dc0585842 (72,142,852 bytes). It unpacks to the md5s above; the same
+  mtime 2026-10-13 17:00: sha256 b1dbdf8d809e2a981955691439650978ad1a9562dc3a8830e0a6d35911e31e80 (72,714,268 bytes), packed
+  twice with the same sha256. It unpacks to the md5s above; the same
   command on things_custom23 gives its published sha256 (a866a48e...). Not pushed: it waits for the owner's approval.
 - Server side: server/README.md "Themed sets, auras and grounds" (switch `ChaosThemeArt.PAIR24`, off). A client on
   things_custom23 draws nothing for the new ids, so the switch goes on only after the pair is on windows-assets.
-  The pack, big effect and rank variant switches stay off too.
+  The pack, big effect, rank variant and bigger guardian switches stay off too.
 - Checked offline only (contact sheets, inventory slots at 1x and 4x, an equipment panel per set, the variants, the new effects frame by frame, the auras and wings on looks 128 and 2073 in four
   directions by the client's draw rule, ground patches, everything read back from the pair). Not run in a client.
 
