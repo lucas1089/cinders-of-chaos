@@ -594,6 +594,23 @@ it. Big JSON goes through `Chaos.sendChunked(player, opcode, json)` (parts `S...
 the client's `ProtocolGame.registerExtendedJSONOpcode`); the admin panel uses it. `tests/extended_opcode_test.lua`; tested in
 game (admin and player logins without the exception, admin panel filled and running actions).
 
+### Extended opcode dispatch (`chaos_constants.lua`, `tests/opcode_dispatch_test.lua`)
+The engine runs every `extendedopcode` creature event a player registered for every extended opcode the client sends.
+With about 80 Chaos handlers that was 80 Lua calls per request, all but one returning at once (about 0.2 ms of game loop
+each request; "Stress test"). `chaos_constants.lua` (loaded before any module defines its handler) keeps each handler a
+module defines with `function ev.onExtendedOpcode` in `Chaos.opcodeDispatch` instead of the engine, under the opcode of
+its guard: the upvalue `OPCODE` of the handler (every such handler starts with `if opcode ~= OPCODE then return end`, or
+`... ~= OPCODE or ...`; the test checks every source). A handler without that upvalue (notifications.lua with its two
+opcodes, the admin panel) is called for every opcode, as before. `player:registerEvent` of such a name records it for
+the player and registers the one engine event `ChaosOpcodeDispatch`, which calls the handlers of the opcode the player
+registered, in the order they were defined (the shared opcodes 246, 218 and 153 keep their order), each in its own
+protected call (an error is printed with its traceback and the next handler still runs). `unregisterEvent` and logout
+work as before. A request over `Chaos.opcodeRequestMax` (16,384 bytes) is dropped before any handler decodes it, with
+one console line per player a minute. After a reload of the scripts with players online (their records are gone) every
+handler runs for them until they log in again. Handlers made with the table constructor (`CreatureEvent({...})`) and the
+base server's own events (`ExtendedOpcode`, the tasks module) stay with the engine. Without the engine API (the unit
+tests' mocks) nothing changes, so the fuzz test still calls every handler directly.
+
 ### Protocol fuzz test (`tests/opcode_fuzz_test.lua`, client `game_chaosguard/opcode_fuzz_test.lua`)
 The server test loads every script under `data/scripts` against a mocked engine and feeds every `onExtendedOpcode` handler
 (fixed seed, about 5 s per interpreter): malformed and truncated JSON, every action found in the script with each field it
@@ -633,7 +650,9 @@ tables, objects must be tables), so a bad row cannot leave a window half drawn.
 - **Save before a database credit.** Value that leaves the character in memory and is credited to a row (stash deposit and Stash
   All, star bank deposit, gold transfer to an offline character, guild bank deposit, guild depot, guild boss gold and materials) is
   credited only after `player:save()` succeeded (`Chaos.saveCharacter`); a failed save gives it back and credits nothing, as the
-  market and the orb exchange do. Otherwise a crash between the two duplicated it.
+  market and the orb exchange do. Otherwise a crash between the two duplicated it. The other way round, value credited to
+  a character after a row or another saved character paid it (a gold transfer to an online character, a guild bank
+  withdrawal) is saved at once after the credit, so a crash cannot lose it ("Stress test").
 - **Staff talkactions.** `Chaos.staffCommand(player, words, param, economy)`: `/coins`, `/charm give` and `/pact` (all but
   `info`) need group 5 (`Chaos.economyMinGroup`), `/market` and `/orbx` staff access; every staff use goes to `ChaosAdmin.log`.
   Staff never give value (docs/GM_HANDBOOK.md section 2, decided): `/rift key|omen|fragments`, `/ascended sigil|relic|shards`,
@@ -4113,23 +4132,29 @@ shared with another job (its clients kept all 4 cores busy), so the times are pe
   the ancestral points with a SELECT on the game loop and pushed them on opcode 89 for every request any module sends.
   300 bots at 4 requests a second put the game loop 5 s behind. Now at most once every 2 s per player.
 
-**Seen, not changed (proposals).**
-- Every extended opcode runs all of about 80 `extendedopcode` creature events (each checks its opcode first): about
-  0.2 ms of game loop per request. One table from opcode to handler would make it one call.
-- A request is decoded before any rate limit: a 60 KB JSON array costs about 5 ms to decode, so one modified client at
-  the engine's 50 packets a second could take a quarter of the game loop. Cap the size of requests (the client sends far
-  under 8 KB) in the engine or in `Chaos.decode` for the opcode handlers.
-- A crash keeps the sender's side of a transfer to an online character when the sender was saved later for another
-  reason (a transfer to an offline character, a rift key): about 10,000 gold of 300 bots' transfer spam was lost per
-  `kill -9`. Saving both characters after an online transfer would close it. The guild bank withdrawal credits the
-  player in memory only (the guild row is already debited), so a crash before the next save loses that gold.
+**Fixed after the run (owner approved, unit level; not yet run on a live server).**
+- *One handler per opcode* (`chaos_constants.lua`, "Extended opcode dispatch" below). Every extended opcode ran all of
+  about 80 `extendedopcode` creature events (each checking its opcode first): about 0.2 ms of game loop per request.
+  Now one engine event calls only the handlers of that opcode. `tests/opcode_dispatch_test.lua`.
+- *A size cap before the JSON decode.* A 60 KB JSON array costs about 5 ms to decode, so one modified client at the
+  engine's 50 packets a second could take a quarter of the game loop. Requests over `Chaos.opcodeRequestMax` (16,384
+  bytes; the client's largest, a passive tree plan, is about 3 KB) are dropped before any handler, one console line
+  per player a minute. Same test.
+- *A transfer to an online character* (`bank.lua`). A crash kept the sender's side when the sender had been saved
+  (the save before the credit) but the receiver had not: about 10,000 gold of 300 bots' transfer spam lost per
+  `kill -9`. The receiver is now saved right after the credit. `tests/save_before_credit_test.lua` (the gold sum a
+  crash would keep).
+- *The guild bank withdrawal* (`guild.lua`). The guild row is debited first and the gold credited in memory; the
+  character is now saved right after, so a crash cannot lose it. Same test.
+
+**Seen, not changed.**
 - A reconnect while the dispatcher is more than 1 s behind can get "You are already logged in." (stock); a client that
   connects more than 5 times in 2 s is closed without a message (stock flood rule).
 - Logout saves run on the game loop: a mass disconnect lands many in one creature check (tasks of 0.3-0.7 s).
 
 **Tools.** `loadtest.py run` takes `--reconnect MIN,MAX`, `--drop P`, `--abort P`, `--opcodes FILE` with
 `--opcode-every S` ("{name}", "{online}", "{other}" in the payloads), `--pm S` and `--party S`; a bot answers a late
-client guard challenge. `tests`: `tools/loadtest_test.py`, `tools/decay_loop_patch_test.py`,
+client guard challenge. `tests`: `tests/opcode_dispatch_test.lua`, `tools/loadtest_test.py`, `tools/decay_loop_patch_test.py`,
 `tools/reattach_ping_patch_test.py`, `tests/base_stalls_patch_test.lua` (step 6).
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)

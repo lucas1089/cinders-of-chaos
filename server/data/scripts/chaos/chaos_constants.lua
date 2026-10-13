@@ -1382,3 +1382,166 @@ end
 function Chaos.limited(player, key, ms)
 	return ChaosRateLimit ~= nil and ChaosRateLimit.allow ~= nil and not ChaosRateLimit.allow(player, key, ms or 300)
 end
+
+-- ---------------------------------------------------------------------------
+-- Extended opcode dispatch (server/README.md "Stress test", "Extended opcode dispatch"). The engine runs every
+-- extendedopcode creature event a player registered for every extended opcode the client sends: about 80 Chaos handlers,
+-- each returning at once unless the opcode is its own (about 0.2 ms of game loop per request). Here each handler a
+-- module defines (`function ev.onExtendedOpcode`) is kept in Chaos.opcodeDispatch instead of the engine, under the
+-- opcode of its guard (its upvalue OPCODE: every Chaos handler starts with `if opcode ~= OPCODE then return end`;
+-- tests/opcode_dispatch_test.lua checks the sources) or, without one, for every opcode (notifications, admin). A
+-- player's registerEvent of such a name registers the one engine event ChaosOpcodeDispatch, which calls the handlers of
+-- the opcode the player registered, in the order they were defined. A request over Chaos.opcodeRequestMax bytes is
+-- dropped before any handler decodes it (one console line per player a minute). Handlers defined with the table
+-- constructor and the base server's own events stay with the engine. Without the engine API (the unit tests' mocks)
+-- nothing changes.
+-- ---------------------------------------------------------------------------
+Chaos.opcodeRequestMax = 16384 -- bytes; the client's requests are far under 8 KB (the largest, a passive tree plan, ~3 KB)
+
+local D = {byName = {}, byOpcode = {}, any = {}, players = {}, seq = 0, warned = {}}
+Chaos.opcodeDispatch = D
+
+-- the opcode of a handler's guard (an upvalue named OPCODE holding a number), else nil
+function D.opcodeOf(fn)
+	if type(fn) ~= "function" or not debug or not debug.getupvalue then
+		return nil
+	end
+	for i = 1, 255 do
+		local name, value = debug.getupvalue(fn, i)
+		if name == nil then
+			return nil
+		end
+		if name == "OPCODE" and type(value) == "number" then
+			return value
+		end
+	end
+	return nil
+end
+
+function D.add(name, fn)
+	D.seq = D.seq + 1
+	local entry = {name = name, fn = fn, order = D.seq, opcode = D.opcodeOf(fn)}
+	D.byName[name] = entry
+	if entry.opcode then
+		local list = D.byOpcode[entry.opcode] or {}
+		D.byOpcode[entry.opcode] = list
+		list[#list + 1] = entry
+	else
+		D.any[#D.any + 1] = entry
+	end
+	return entry
+end
+
+-- the handlers for an opcode, in the order they were defined (own opcode and the ones for every opcode)
+function D.handlersFor(opcode)
+	local own, any = D.byOpcode[opcode] or {}, D.any
+	if #any == 0 then
+		return own
+	end
+	local out, i, j = {}, 1, 1
+	while i <= #own or j <= #any do
+		if j > #any or (i <= #own and own[i].order < any[j].order) then
+			out[#out + 1] = own[i]
+			i = i + 1
+		else
+			out[#out + 1] = any[j]
+			j = j + 1
+		end
+	end
+	return out
+end
+
+local function nowMs()
+	return os.mtime and os.mtime() or os.time() * 1000
+end
+
+function D.dispatch(player, opcode, buffer)
+	local pid = player:getId()
+	if type(buffer) == "string" and #buffer > Chaos.opcodeRequestMax then
+		local t = nowMs()
+		if not D.warned[pid] or t - D.warned[pid] >= 60000 then
+			D.warned[pid] = t
+			print(string.format("[Warning - Chaos] extended opcode %d from %s: %d bytes is over %d, dropped", opcode,
+				player:getName(), #buffer, Chaos.opcodeRequestMax))
+		end
+		return
+	end
+	-- no record of the player's registrations (a reload of the scripts while online): every handler, as all register
+	local mine = D.players[pid]
+	for _, e in ipairs(D.handlersFor(opcode)) do
+		if not mine or mine[e.name] then
+			-- an error in one handler is reported and the next ones still run, as with one engine event each
+			local ok, err = xpcall(function() return e.fn(player, opcode, buffer) end, debug and debug.traceback or tostring)
+			if not ok then
+				print(string.format("[Error - Chaos opcode dispatch] %s (opcode %d): %s", e.name, opcode, tostring(err)))
+			end
+		end
+	end
+end
+
+function D.forget(pid)
+	D.players[pid] = nil
+	D.warned[pid] = nil
+end
+
+if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and getmetatable(CreatureEvent)
+		and type(rawget(CreatureEvent, "onExtendedOpcode")) == "function" and type(Player) == "table"
+		and type(Player.registerEvent) == "function" then
+	local names = setmetatable({}, {__mode = "k"}) -- event object -> its name
+	local MT = getmetatable(CreatureEvent)
+	local construct = MT.__call
+	MT.__call = function(self, def, ...)
+		local obj = construct(self, def, ...)
+		if obj and type(def) == "string" then
+			names[obj] = def
+		end
+		return obj
+	end
+	local engineOn = CreatureEvent.onExtendedOpcode
+	CreatureEvent.onExtendedOpcode = function(self, fn)
+		local name = names[self]
+		if not name or type(fn) ~= "function" or D.byName[name] then
+			return engineOn(self, fn)
+		end
+		D.add(name, fn) -- not given to the engine: ev:register() then registers nothing
+		return true
+	end
+
+	local dispatcher = CreatureEvent("ChaosOpcodeDispatch")
+	dispatcher:type("extendedopcode")
+	engineOn(dispatcher, D.dispatch)
+	dispatcher:register()
+	local logout = CreatureEvent("ChaosOpcodeDispatchLogout")
+	function logout.onLogout(player)
+		D.forget(player:getId())
+		return true
+	end
+	logout:register()
+
+	local engineRegister, engineUnregister = Player.registerEvent, Player.unregisterEvent
+	function Player.registerEvent(self, name)
+		if not D.byName[name] then
+			return engineRegister(self, name)
+		end
+		local pid = self:getId()
+		local mine = D.players[pid]
+		if not mine then
+			mine = {}
+			D.players[pid] = mine
+			engineRegister(self, "ChaosOpcodeDispatch")
+			engineRegister(self, "ChaosOpcodeDispatchLogout")
+		end
+		mine[name] = true
+		return true
+	end
+	function Player.unregisterEvent(self, name)
+		if not D.byName[name] then
+			return engineUnregister(self, name)
+		end
+		local mine = D.players[self:getId()]
+		if mine then
+			mine[name] = nil
+		end
+		return true
+	end
+end

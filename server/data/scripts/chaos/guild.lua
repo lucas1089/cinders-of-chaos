@@ -635,6 +635,9 @@ function G.withdraw(player, amount)
 		return false, string.format("The guild bank holds %s gold.", C.money(G.row(gid).bank))
 	end
 	player:setBankBalance(player:getBankBalance() + amount)
+	-- the guild row is debited already: saved now, else a crash before the next save lost the gold (server/README.md
+	-- "Stress test"); a failed save keeps the credit in memory for the next one
+	Chaos.saveCharacter(player)
 	G.logRow(gid, player, "withdraw", amount)
 	return true, string.format("You withdrew %s gold to your bank balance (guild bank now %s).", C.money(amount), C.money(G.row(gid).bank))
 end
