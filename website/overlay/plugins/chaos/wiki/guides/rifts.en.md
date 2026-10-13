@@ -12,8 +12,8 @@ Rifts are the main endgame content. Every rift is a new map, generated on the sp
 
 => @key | Rift Key | Tier 1 to {{rift.maxTier}}, up to {{rift.maxMods}} modifiers.
 => @rift | Open the rift | You and your party, up to {{rift.maxPlayers}} players.
-=> @drop | Clear the map | At {{rift.bossAt}}% of the monsters, the guardian comes.
-=> @guardian | The guardian | Kill it before the time runs out.
+=> @riftclear | Clear the map | At {{rift.bossAt}}% of the monsters, the guardian comes.
+=> @riftguardian | The guardian | Kill it before the time runs out.
 => @chest | Your chest | Gold, orbs, items, gems and supports.
 => @atlas | Atlas points | First completions give Atlas points.
 

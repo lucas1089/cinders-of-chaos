@@ -12,8 +12,8 @@ Rifts são o principal conteúdo de fim de jogo. Cada rift é um mapa novo, gera
 
 => @key | Rift Key | Tier 1 a {{rift.maxTier}}, até {{rift.maxMods}} modificadores.
 => @rift | Abra o rift | Você e seu grupo, até {{rift.maxPlayers}} jogadores.
-=> @drop | Limpe o mapa | Com {{rift.bossAt}}% dos monstros mortos, o guardião aparece.
-=> @guardian | O guardião | Mate-o antes que o tempo acabe.
+=> @riftclear | Limpe o mapa | Com {{rift.bossAt}}% dos monstros mortos, o guardião aparece.
+=> @riftguardian | O guardião | Mate-o antes que o tempo acabe.
 => @chest | Seu baú | Ouro, orbes, itens, gemas e suportes.
 => @atlas | Pontos do Atlas | Primeiras vezes dão pontos do Atlas.
 

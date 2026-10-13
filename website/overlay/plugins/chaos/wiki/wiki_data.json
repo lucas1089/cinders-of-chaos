@@ -61,14 +61,15 @@
 			{
 				"id": "rifts",
 				"hero": "wiki/hero/guide-rifts.webp",
-				"icon": "wiki/i/k-arcane-rift.png",
+				"icon": "wiki/i/rx-portal.png",
 				"icons": [
-					"wiki/i/k-ember-gate.png",
-					"wiki/i/k-fire-flame.png",
-					"wiki/i/k-frost-crystal.png",
-					"wiki/i/k-arcane-eye.png",
-					"wiki/i/k-shadow-skull.png",
-					"wiki/i/k-light-nodes.png"
+					"wiki/i/rk-9.png",
+					"wiki/i/rx-clear.png",
+					"wiki/i/rg-crypt.png",
+					"wiki/i/rx-lives.png",
+					"wiki/i/rx-chest.png",
+					"wiki/i/rx-atlas.png",
+					"wiki/i/rx-omenkey.png"
 				],
 				"tone": "#a064e6"
 			},
@@ -196,22 +197,25 @@
 		"steps": {
 			"account": "wiki/i/top-options.png",
 			"ascend": "wiki/i/k-holy-cross.png",
-			"atlas": "wiki/i/k-light-nodes.png",
+			"atlas": "wiki/i/rx-atlas.png",
 			"bench": "wiki/i/k-steel-hammer.png",
-			"chest": "wiki/i/k-light-gate.png",
+			"chest": "wiki/i/rx-chest.png",
 			"create": "wiki/i/top-skills.png",
 			"download": "wiki/i/top-console.png",
 			"drop": "wiki/i/k-blood-skull.png",
 			"gem": "wiki/i/gem-ff5a4a.png",
 			"guardian": "wiki/i/k-shadow-skull.png",
-			"key": "wiki/i/k-ember-gate.png",
+			"key": "wiki/i/rk-9.png",
 			"ladder": "wiki/i/top-battlepass.png",
 			"level": "wiki/i/k-steel-arrowup.png",
+			"lives": "wiki/i/rx-lives.png",
 			"note": "wiki/i/top-help.png",
-			"omen": "wiki/i/k-arcane-eye.png",
+			"omen": "wiki/i/rx-omenkey.png",
 			"orb": "wiki/i/orb-arcane-swirl.png",
 			"reward": "wiki/i/top-daily.png",
-			"rift": "wiki/i/k-arcane-rift.png",
+			"rift": "wiki/i/rx-portal.png",
+			"riftclear": "wiki/i/rx-clear.png",
+			"riftguardian": "wiki/i/rg-crypt.png",
 			"salvage": "wiki/i/k-bone-crystal.png",
 			"season": "wiki/i/top-ranking.png",
 			"sell": "wiki/i/top-market.png",
@@ -23096,7 +23100,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-crystal.png"
+					"icon": "wiki/i/rx-omenfragment.png"
 				},
 				{
 					"id": "cur:omenkey",
@@ -23112,7 +23116,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-gate.png"
+					"icon": "wiki/i/rx-omenkey.png"
 				},
 				{
 					"id": "cur:29859",
@@ -23148,7 +23152,7 @@
 							"links": ["rift:keys"]
 						}
 					],
-					"icon": "wiki/i/k-ember-gate.png"
+					"icon": "wiki/i/rk-5.png"
 				},
 				{
 					"id": "cur:shard",
@@ -24981,7 +24985,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-poison-drop.png"
+					"icon": "wiki/i/rm-suffix-blight.png"
 				},
 				{
 					"id": "rift:brutality",
@@ -25014,7 +25018,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-slam.png"
+					"icon": "wiki/i/rm-prefix-brutality.png"
 				},
 				{
 					"id": "rift:cinder",
@@ -25047,7 +25051,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-fire-burst.png"
+					"icon": "wiki/i/rm-prefix-cinder.png"
 				},
 				{
 					"id": "rift:dread",
@@ -25080,7 +25084,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-skull.png"
+					"icon": "wiki/i/rm-prefix-dread.png"
 				},
 				{
 					"id": "rift:echo",
@@ -25113,7 +25117,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-twin.png"
+					"icon": "wiki/i/rm-boon-echo.png"
 				},
 				{
 					"id": "rift:elites",
@@ -25146,7 +25150,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-banner.png"
+					"icon": "wiki/i/rm-prefix-elites.png"
 				},
 				{
 					"id": "rift:emberbrand",
@@ -25180,7 +25184,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-fire-flame.png"
+					"icon": "wiki/i/rm-prefix-emberbrand.png"
 				},
 				{
 					"id": "rift:festering",
@@ -25213,7 +25217,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-poison-dots.png"
+					"icon": "wiki/i/rm-prefix-festering.png"
 				},
 				{
 					"id": "rift:flaying",
@@ -25247,7 +25251,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-daggers.png"
+					"icon": "wiki/i/rm-suffix-flaying.png"
 				},
 				{
 					"id": "rift:fragile",
@@ -25266,7 +25270,7 @@
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1-2."]}
 					],
-					"icon": "wiki/i/k-bone-ribs.png"
+					"icon": "wiki/i/rm-suffix-fragile.png"
 				},
 				{
 					"id": "rift:frostbrand",
@@ -25300,7 +25304,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-frost-crystal.png"
+					"icon": "wiki/i/rm-prefix-frostbrand.png"
 				},
 				{
 					"id": "rift:gilded",
@@ -25333,7 +25337,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-paw.png"
+					"icon": "wiki/i/rm-boon-gilded.png"
 				},
 				{
 					"id": "rift:haste",
@@ -25366,7 +25370,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-dash.png"
+					"icon": "wiki/i/rm-prefix-haste.png"
 				},
 				{
 					"id": "rift:ironhide",
@@ -25400,7 +25404,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-shield.png"
+					"icon": "wiki/i/rm-prefix-ironhide.png"
 				},
 				{
 					"id": "rift:keen",
@@ -25433,7 +25437,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-fang.png"
+					"icon": "wiki/i/rm-prefix-keen.png"
 				},
 				{
 					"id": "rift:parched",
@@ -25454,7 +25458,7 @@
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1."]}
 					],
-					"icon": "wiki/i/k-water-drop.png"
+					"icon": "wiki/i/rm-suffix-parched.png"
 				},
 				{
 					"id": "rift:reflection",
@@ -25488,7 +25492,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-twin.png"
+					"icon": "wiki/i/rm-prefix-reflection.png"
 				},
 				{
 					"id": "rift:rimefloor",
@@ -25522,7 +25526,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-frost-wave.png"
+					"icon": "wiki/i/rm-suffix-rimefloor.png"
 				},
 				{
 					"id": "rift:sapping",
@@ -25556,7 +25560,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-drop.png"
+					"icon": "wiki/i/rm-suffix-sapping.png"
 				},
 				{
 					"id": "rift:scorched",
@@ -25590,7 +25594,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-fire-wave.png"
+					"icon": "wiki/i/rm-suffix-scorched.png"
 				},
 				{
 					"id": "rift:coffer",
@@ -25617,7 +25621,7 @@
 							"rows": [["I", "40", ""], ["II", "60", ""], ["III", "80-100", ""]]
 						}
 					],
-					"icon": "wiki/i/k-light-gate.png"
+					"icon": "wiki/i/rm-boon-coffer.png"
 				},
 				{
 					"id": "rift:searing",
@@ -25651,7 +25655,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-burst.png"
+					"icon": "wiki/i/rm-suffix-searing.png"
 				},
 				{
 					"id": "rift:brood",
@@ -25670,7 +25674,7 @@
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1."]}
 					],
-					"icon": "wiki/i/k-nature-paw.png"
+					"icon": "wiki/i/rm-prefix-brood.png"
 				},
 				{
 					"id": "rift:spiteglass",
@@ -25705,7 +25709,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-crystal.png"
+					"icon": "wiki/i/rm-prefix-spiteglass.png"
 				},
 				{
 					"id": "rift:stormbrand",
@@ -25739,7 +25743,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-bolt.png"
+					"icon": "wiki/i/rm-prefix-stormbrand.png"
 				},
 				{
 					"id": "rift:swarm",
@@ -25772,7 +25776,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-poison-dots.png"
+					"icon": "wiki/i/rm-prefix-swarm.png"
 				},
 				{
 					"id": "rift:teeming",
@@ -25805,7 +25809,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-nature-dots.png"
+					"icon": "wiki/i/rm-prefix-teeming.png"
 				},
 				{
 					"id": "rift:twin",
@@ -25839,7 +25843,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-twin.png"
+					"icon": "wiki/i/rm-prefix-twin.png"
 				},
 				{
 					"id": "rift:breach",
@@ -25872,7 +25876,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-rift.png"
+					"icon": "wiki/i/rm-prefix-breach.png"
 				},
 				{
 					"id": "rift:veilstorm",
@@ -25905,7 +25909,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-meteor.png"
+					"icon": "wiki/i/rm-suffix-veilstorm.png"
 				},
 				{
 					"id": "rift:vitality",
@@ -25938,7 +25942,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-blood-cross.png"
+					"icon": "wiki/i/rm-prefix-vitality.png"
 				},
 				{
 					"id": "rift:waning",
@@ -25971,7 +25975,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-smoke.png"
+					"icon": "wiki/i/rm-suffix-waning.png"
 				},
 				{
 					"id": "rift:warband",
@@ -26004,7 +26008,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-banner.png"
+					"icon": "wiki/i/rm-prefix-warband.png"
 				},
 				{
 					"id": "rift:warding",
@@ -26037,7 +26041,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-shield.png"
+					"icon": "wiki/i/rm-prefix-warding.png"
 				},
 				{
 					"id": "rift:withering",
@@ -26057,7 +26061,7 @@
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1."]}
 					],
-					"icon": "wiki/i/k-necrotic-skull.png"
+					"icon": "wiki/i/rm-suffix-withering.png"
 				},
 				{
 					"id": "rift:wrath",
@@ -26092,7 +26096,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-fire-burst.png"
+					"icon": "wiki/i/rm-prefix-wrath.png"
 				},
 				{
 					"id": "rift:keys",
@@ -26158,7 +26162,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-gate.png"
+					"icon": "wiki/i/rk-9.png"
 				},
 				{
 					"id": "rift:tiers",
@@ -26184,6 +26188,18 @@
 								["8", "700", "680-840"],
 								["9", "800", "780-940"],
 								["10", "900", "880-1100"]
+							],
+							"icons": [
+								"wiki/i/rk-1.png",
+								"wiki/i/rk-2.png",
+								"wiki/i/rk-3.png",
+								"wiki/i/rk-4.png",
+								"wiki/i/rk-5.png",
+								"wiki/i/rk-6.png",
+								"wiki/i/rk-7.png",
+								"wiki/i/rk-8.png",
+								"wiki/i/rk-9.png",
+								"wiki/i/rk-10.png"
 							]
 						},
 						{
@@ -26205,7 +26221,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-arrowup.png"
+					"icon": "wiki/i/rx-portal.png"
 				},
 				{
 					"id": "rift:omens",
@@ -26228,7 +26244,8 @@
 								["Bloodmoon", "Sangrith the Bloodmoon Herald"],
 								["Hollow", "Morvane the Hollow Crown"],
 								["Stormcall", "Thalcyra the Stormbound Seer"]
-							]
+							],
+							"icons": ["wiki/i/ro-bloodmoon.png", "wiki/i/ro-hollow.png", "wiki/i/ro-storm.png"]
 						},
 						{
 							"h": "Reward (per finisher)",
@@ -26237,7 +26254,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-eye.png"
+					"icon": "wiki/i/rx-omenkey.png"
 				},
 				{
 					"id": "rift:atlas",
@@ -26382,14 +26399,98 @@
 								["Second Wind", "Notable", "core", "+1 shared lives (tier 8+)"],
 								["Teeming Abyss", "Notable", "Abyssal Rift", "+15% monster packs in Abyssal Rift"],
 								["Unbroken Line", "Notable", "core", "+1 shared lives (tier 12+) +4% rift time"]
+							],
+							"icons": [
+								"wiki/i/an-keystone-crypt-ks_ascent.png",
+								"wiki/i/an-keystone-sanctum-ks_hourglass.png",
+								"wiki/i/an-keystone-abyss-ks_ember.png",
+								"wiki/i/an-keystone-hall-ks_crown.png",
+								"wiki/i/an-notable-abyss-theme.png",
+								"wiki/i/an-notable-crypt-theme.png",
+								"wiki/i/an-notable-core-reward.png",
+								"wiki/i/an-notable-crypt-life.png",
+								"wiki/i/an-notable-crypt-key.png",
+								"wiki/i/an-notable-abyss-density.png",
+								"wiki/i/an-notable-abyss-elite.png",
+								"wiki/i/an-notable-hall-reward.png",
+								"wiki/i/an-notable-sanctum-goblin.png",
+								"wiki/i/an-notable-hall-orb.png",
+								"wiki/i/an-notable-core-key.png",
+								"wiki/i/an-notable-hall-gold.png",
+								"wiki/i/an-notable-hall-theme.png",
+								"wiki/i/an-notable-crypt-upgrade.png",
+								"wiki/i/an-notable-sanctum-coffer.png",
+								"wiki/i/an-notable-sanctum-time.png",
+								"wiki/i/an-notable-sanctum-theme.png",
+								"wiki/i/an-notable-core-life.png",
+								"wiki/i/an-notable-abyss-density.png",
+								"wiki/i/an-notable-core-life.png"
 							]
 						}
 					],
-					"icon": "wiki/i/k-light-nodes.png"
+					"icon": "wiki/i/rx-atlas.png"
+				},
+				{
+					"id": "rift:themes",
+					"name": "Rift Themes and Guardians",
+					"sub": "The 4 rift themes, their maps and the guardian at the end of each.",
+					"color": "#d6c9ae",
+					"group": "key",
+					"sections": [
+						{
+							"h": "Themes",
+							"p": [
+								"A key opens a rift of a random theme; the theme decides the map, the monsters' looks and the guardian."
+							],
+							"cols": ["Theme", "Map", "Guardian"],
+							"w": [30, 35, 35],
+							"rows": [
+								["Abyssal Rift", "waste and cave", "Abyssal Sovereign"],
+								["Obsidian Hall", "dungeon and mixed", "Obsidian Colossus"],
+								["Ashen Crypt", "mixed and dungeon", "Crypt Dreadknight"],
+								["Forsaken Sanctum", "cave and mixed", "Sanctum Warden"]
+							],
+							"icons": [
+								"wiki/i/rt-abyss.png",
+								"wiki/i/rt-hall.png",
+								"wiki/i/rt-crypt.png",
+								"wiki/i/rt-sanctum.png"
+							]
+						},
+						{
+							"h": "Guardians",
+							"p": [
+								"The guardian appears when enough of the rift's monsters are dead. Its pack wears the theme's looks."
+							],
+							"cols": ["Guardian", "Theme", "Its pack"],
+							"w": [28, 24, 48],
+							"rows": [
+								["Abyssal Sovereign", "Abyssal Rift", "Abyssal Spawn, Abyssal Gazer, Abyssal Shade"],
+								[
+									"Obsidian Colossus",
+									"Obsidian Hall",
+									"Obsidian Hound, Obsidian Brute, Obsidian Ravager"
+								],
+								["Crypt Dreadknight", "Ashen Crypt", "Crypt Thrall, Crypt Bonehulk, Crypt Reaper"],
+								[
+									"Sanctum Warden",
+									"Forsaken Sanctum",
+									"Sanctum Sporeling, Sanctum Creeper, Sanctum Blightstone"
+								]
+							],
+							"icons": [
+								"wiki/i/rg-abyss.png",
+								"wiki/i/rg-hall.png",
+								"wiki/i/rg-crypt.png",
+								"wiki/i/rg-sanctum.png"
+							]
+						}
+					],
+					"icon": "wiki/i/rt-abyss.png"
 				}
 			],
 			"banner": "wiki/hero/tab-rift.webp",
-			"icon": "wiki/i/k-arcane-rift.png",
+			"icon": "wiki/i/rx-portal.png",
 			"tone": "#a064e6"
 		},
 		{
@@ -26972,6 +27073,12 @@
 								["Hollow Crown", "Ascended Morvane", "Morvane the Hollow Crown"],
 								["Storm", "Ascended Thalcyra", "Thalcyra the Stormbound Seer"],
 								["Cinderheart", "Ysgrath the Cinderheart", "(the last step)"]
+							],
+							"icons": [
+								"wiki/i/ro-bloodmoon-asc.png",
+								"wiki/i/ro-hollow-asc.png",
+								"wiki/i/ro-storm-asc.png",
+								"wiki/i/rx-ascended.png"
 							]
 						},
 						{
@@ -26984,7 +27091,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-eye.png"
+					"icon": "wiki/i/rx-ascended.png"
 				},
 				{
 					"id": "boss:guild",
@@ -27160,7 +27267,7 @@
 						},
 						{"h": "Where", "p": ["Ascended boss"]}
 					],
-					"icon": "wiki/i/k-blood-skull.png"
+					"icon": "wiki/i/ro-hollow-asc.png"
 				},
 				{
 					"id": "monster:ascended-sangrith",
@@ -27176,7 +27283,7 @@
 						},
 						{"h": "Where", "p": ["Ascended boss"]}
 					],
-					"icon": "wiki/i/k-blood-skull.png"
+					"icon": "wiki/i/ro-bloodmoon-asc.png"
 				},
 				{
 					"id": "monster:ascended-thalcyra",
@@ -27192,7 +27299,7 @@
 						},
 						{"h": "Where", "p": ["Ascended boss"]}
 					],
-					"icon": "wiki/i/k-blood-skull.png"
+					"icon": "wiki/i/ro-storm-asc.png"
 				},
 				{
 					"id": "monster:azure-dragon",
@@ -27912,7 +28019,7 @@
 						},
 						{"h": "Where", "p": ["Omen guardian"]}
 					],
-					"icon": "wiki/i/k-blood-skull.png"
+					"icon": "wiki/i/ro-hollow.png"
 				},
 				{
 					"id": "monster:morwen-the-ash-sister",
@@ -28088,7 +28195,7 @@
 						},
 						{"h": "Where", "p": ["Omen guardian"]}
 					],
-					"icon": "wiki/i/k-blood-skull.png"
+					"icon": "wiki/i/ro-bloodmoon.png"
 				},
 				{
 					"id": "monster:shaper-matriarch",
@@ -28184,7 +28291,7 @@
 						},
 						{"h": "Where", "p": ["Omen guardian"]}
 					],
-					"icon": "wiki/i/k-blood-skull.png"
+					"icon": "wiki/i/rg-seer.png"
 				},
 				{
 					"id": "monster:the-marrow-colossus",

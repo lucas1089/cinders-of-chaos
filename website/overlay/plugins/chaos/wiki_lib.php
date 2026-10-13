@@ -5,7 +5,7 @@
  *
  *  - Reference data: wiki/wiki_data.json, generated from the game server's data files by
  *    server/tools/gen_wiki_data.lua (CI runs it with --check, so it never drifts). Tabs of entries in the Codex format:
- *    {id, name, sub, color, group, soon, sections = [{h, p, cols, w, rows, links}]}. The names and tables are the
+ *    {id, name, sub, color, group, soon, icon, sections = [{h, p, cols, w, rows, links, icons}]}. The names and tables are the
  *    game's own (English); the page around them is in both languages.
  *  - Guides: wiki/guides/<slug>.<pt-BR|en>.md, short texts for players. A small Markdown subset (headings, paragraphs,
  *    lists, bold, links). {{key}} is a number of the generated facts; a block between "::: if key" and "::: end" shows
@@ -469,6 +469,7 @@ function chaos_wiki_entry_html(array $e, string $lang): string {
 			$out[] = '<p>' . $h($p) . '</p>';
 		}
 		$links = array_values((array)($s['links'] ?? array()));
+		$icons = array_values((array)($s['icons'] ?? array()));
 		$rows = (array)($s['rows'] ?? array());
 		if ($rows) {
 			$cols = (array)($s['cols'] ?? array());
@@ -481,7 +482,13 @@ function chaos_wiki_entry_html(array $e, string $lang): string {
 				$cells = array();
 				foreach (array_values((array)$row) as $ci => $cell) {
 					$text = is_scalar($cell) ? (string)$cell : '';
-					$cells[] = '<td>' . ($ci === 0 && isset($links[$i]) && is_string($links[$i]) ? $link($links[$i], $text) : $h($text)) . '</td>';
+					if ($ci === 0 && isset($links[$i]) && is_string($links[$i]) && $links[$i] !== '') {
+						$cells[] = '<td>' . $link($links[$i], $text) . '</td>';
+					} else {
+						// a section's own icon of the row (a rift tier's key, an omen's emblem, ...)
+						$icon = $ci === 0 && is_string($icons[$i] ?? null) ? chaos_wiki_icon(array('icon' => $icons[$i], 'name' => $text), 24, 'chaos-wiki-icon chaos-wiki-icon--row') : '';
+						$cells[] = '<td>' . $icon . $h($text) . '</td>';
+					}
 				}
 				$table .= '<tr>' . implode('', $cells) . '</tr>';
 			}

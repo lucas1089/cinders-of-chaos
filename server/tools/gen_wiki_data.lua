@@ -1201,19 +1201,26 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 function W.atlasEntry(D)
 	local cfgA, A = D.atlas, D.A
-	local rows = {}
+	local items = {}
 	for _, n in ipairs(cfgA.nodes or {}) do
 		if n.kind == "keystone" or n.kind == "notable" then
-			rows[#rows + 1] = {n.name, n.kind == "keystone" and "Keystone" or "Notable", n.branch or "core",
-				table.concat(A.nodeLines(cfgA, n), " ")}
+			items[#items + 1] = {row = {n.name, n.kind == "keystone" and "Keystone" or "Notable", n.branch or "core",
+				table.concat(A.nodeLines(cfgA, n), " ")}, icon = W.atlasNodeIcon(n)}
 		end
 	end
-	table.sort(rows, function(a, b)
-		if a[2] ~= b[2] then
-			return a[2] < b[2]
+	table.sort(items, function(a, b)
+		if a.row[2] ~= b.row[2] then
+			return a.row[2] < b.row[2]
 		end
-		return a[1] < b[1]
+		if a.row[1] ~= b.row[1] then
+			return a.row[1] < b.row[1]
+		end
+		return a.icon < b.icon
 	end)
+	local rows, icons = {}, {}
+	for i, it in ipairs(items) do
+		rows[i], icons[i] = it.row, it.icon
+	end
 	local maxPts = A.maxPoints(cfgA, D.rift)
 	return {id = "rift:atlas", name = "Rift Atlas", color = COLORS.basics, group = "key",
 		sub = string.format("First completions give points; spend them on a map of rift bonuses (%d points in all).", maxPts),
@@ -1223,7 +1230,37 @@ function W.atlasEntry(D)
 				string.format("Nodes cost %d (small), %d (notable) and %d (keystone) points; you hold at most %d keystone. Refunding a node costs %s gold or %d %s.",
 					cfgA.costs.small, cfgA.costs.notable, cfgA.costs.keystone, cfgA.keystoneMax, money(cfgA.respec.gold),
 					cfgA.respec.orbCount, cfgA.respec.orbName)}},
-			{h = "Notables and keystones", cols = {"Node", "Kind", "Branch", "Effect"}, w = {22, 12, 20, 46}, rows = rows}}}
+			{h = "Notables and keystones", cols = {"Node", "Kind", "Branch", "Effect"}, w = {22, 12, 20, 46}, rows = rows,
+				icons = icons}}}
+end
+
+-- the rift themes and their guardians (an entry of the rift tab; the looks of rift_config.lua)
+function W.riftThemesEntry(D)
+	local R = D.rift
+	local tRows, tIcons, gRows, gIcons = {}, {}, {}, {}
+	for _, th in ipairs(R.themes or {}) do
+		local lay = R.layout and R.layout.themes and R.layout.themes[th.name] or {}
+		local kinds = {}
+		for _, k in ipairs(lay.kinds or {}) do
+			kinds[#kinds + 1] = k[1]
+		end
+		local names = R.looks and R.looks.names and R.looks.names[th.name] or {}
+		local slug = W.riftThemeSlug(th.name)
+		tRows[#tRows + 1] = {th.name, sentence(kinds), names.guardian or "-"}
+		tIcons[#tIcons + 1] = W.ICON .. "rt-" .. slug .. ".png"
+		if names.guardian then
+			gRows[#gRows + 1] = {names.guardian, th.name, string.format("%s, %s, %s", names.minion or "-", names.brute or "-",
+				names.elite or "-")}
+			gIcons[#gIcons + 1] = W.ICON .. "rg-" .. slug .. ".png"
+		end
+	end
+	return {id = "rift:themes", name = "Rift Themes and Guardians", color = COLORS.basics, group = "key",
+		sub = string.format("The %d rift themes, their maps and the guardian at the end of each.", #tRows),
+		sections = {
+			{h = "Themes", p = {"A key opens a rift of a random theme; the theme decides the map, the monsters' looks and the guardian."},
+				cols = {"Theme", "Map", "Guardian"}, w = {30, 35, 35}, rows = tRows, icons = tIcons},
+			{h = "Guardians", p = {"The guardian appears when enough of the rift's monsters are dead. Its pack wears the theme's looks."},
+				cols = {"Guardian", "Theme", "Its pack"}, w = {28, 24, 48}, rows = gRows, icons = gIcons}}}
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -1475,7 +1512,7 @@ end
 local TAB_ICON = {classes = top("skills"), spells = top("spells"), tree = top("passivetree"), basics = top("help"),
 	modifiers = kit("arcane", "nodes"), powers = kit("fire", "flame"), uniques = item("sunsworn", "sword"),
 	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gem("#ff5a4a"),
-	supports = ICON .. "sup-emberbrand.png", rift = kit("arcane", "rift"), dungeons = top("dungeons"),
+	supports = ICON .. "sup-emberbrand.png", rift = ICON .. "rx-portal.png", dungeons = top("dungeons"),
 	bosses = kit("blood", "skull"), events = top("events"), monsters = kit("shadow", "ghost"),
 	materials = kit("nature", "leaf"), store = top("vip")}
 -- the banner's tint
@@ -1501,20 +1538,33 @@ local ORBS = {transmutation = {"light", "arrowup"}, alchemy = {"holy", "crystal"
 	whetstone = {"steel", "sword"}, unveiling = {"arcane", "eye"}}
 -- the other currency: by a word of the name
 local CURRENCY = {{"crown", orb("holy", "banner")}, {"dawn", orb("light", "burst")}, {"ember", orb("fire", "flame")},
-	{"echoes", orb("arcane", "twin")}, {"void", orb("shadow", "rift")}, {"omen fragment", kit("arcane", "crystal")},
-	{"omen key", kit("arcane", "gate")}, {"rift key", kit("ember", "gate")}, {"shard", kit("bone", "crystal")}}
-local RIFT = {blight = {"poison", "drop"}, brutality = {"blood", "slam"}, cinder = {"fire", "burst"},
-	dread = {"shadow", "skull"}, echo = {"arcane", "twin"}, elites = {"holy", "banner"}, emberbrand = {"fire", "flame"},
-	festering = {"poison", "dots"}, flaying = {"blood", "daggers"}, fragile = {"bone", "ribs"},
-	frostbrand = {"frost", "crystal"}, gilded = {"light", "paw"}, haste = {"light", "dash"}, ironhide = {"steel", "shield"},
-	keen = {"blood", "fang"}, parched = {"water", "drop"}, reflection = {"steel", "twin"}, rimefloor = {"frost", "wave"},
-	sapping = {"shadow", "drop"}, scorched = {"fire", "wave"}, coffer = {"light", "gate"}, searing = {"ember", "burst"},
-	brood = {"nature", "paw"}, spiteglass = {"arcane", "crystal"}, stormbrand = {"light", "bolt"},
-	swarm = {"poison", "dots"}, teeming = {"nature", "dots"}, twin = {"shadow", "twin"}, breach = {"arcane", "rift"},
-	veilstorm = {"light", "meteor"}, vitality = {"blood", "cross"}, waning = {"shadow", "smoke"},
-	warband = {"ember", "banner"}, warding = {"arcane", "shield"}, withering = {"necrotic", "skull"},
-	wrath = {"fire", "burst"}, keys = {"ember", "gate"}, tiers = {"steel", "arrowup"}, omens = {"arcane", "eye"},
-	atlas = {"light", "nodes"}}
+	{"echoes", orb("arcane", "twin")}, {"void", orb("shadow", "rift")}, {"omen fragment", ICON .. "rx-omenfragment.png"},
+	{"omen key", ICON .. "rx-omenkey.png"}, {"rift key", ICON .. "rk-5.png"}, {"shard", kit("bone", "crystal")}}
+-- the rifts (website/tools/wiki_rift_art.py draws these: painted, one frame per side)
+local function rift(kind, name)
+	return ICON .. kind .. "-" .. name .. ".png"
+end
+local RIFT_THEME_SLUG = {["Abyssal Rift"] = "abyss", ["Obsidian Hall"] = "hall", ["Ashen Crypt"] = "crypt",
+	["Forsaken Sanctum"] = "sanctum"}
+function W.riftThemeSlug(name)
+	return RIFT_THEME_SLUG[name] or "abyss"
+end
+W.ICON = ICON
+-- the omen guardian with a portrait of our own rift looks; the others show their omen's emblem
+local OMEN_PORTRAIT = {storm = rift("rg", "seer")}
+-- a Rift Atlas node: a star map medallion of its branch, its own glyph (atlas_config.lua)
+function W.atlasNodeIcon(n)
+	local branch = n.branch and W.riftThemeSlug(n.branch) or "core"
+	return rift("an", (n.kind or "notable") .. "-" .. branch .. "-" .. tostring(n.glyph or "reward"))
+end
+-- a rift modifier: rm-<side>-<key>; the side (prefix, suffix or boon) comes from the modifier's own data
+function W.riftModIcon(m)
+	local side = m.boon and "boon" or (m.side == "prefix" or m.side == "suffix") and m.side or "boon"
+	return rift("rm", side .. "-" .. m.key)
+end
+local RIFT_KEY_ICON = rift("rk", "9")
+local RIFT_ENTRY = {keys = RIFT_KEY_ICON, tiers = rift("rx", "portal"), omens = rift("rx", "omenkey"),
+	atlas = rift("rx", "atlas"), themes = rift("rt", "abyss")}
 local DUNGEON_WORDS = {{"bone", kit("bone", "skull")}, {"element", kit("arcane", "swirl")},
 	{"chevalier", kit("steel", "sword")}, {"root", kit("nature", "thorns")}}
 local BOSS_ELEMENT_GLYPH = {fire = "meteor", ice = "crystal", earth = "thorns", death = "skull", physical = "greataxe"}
@@ -1583,7 +1633,7 @@ function W.uniqueIcon(e)
 	return item(set, kind)
 end
 
-function W.loadArtSources()
+function W.loadArtSources(D)
 	local saved = ChaosSpellData
 	dofile("../client/overlay/modules/game_chaosspells/spelldata.lua")
 	local clientOf = {}
@@ -1595,7 +1645,25 @@ function W.loadArtSources()
 	dofile(TREE_DIR .. "treedata/painted.lua")
 	local painted = getPaintedTreeIcons()
 	getPaintedTreeIcons = savedP
-	return {clientOf = clientOf, painted = painted}
+	-- the rift data: modifiers by key, the omen of each guardian (and of each Ascended boss)
+	local mods, omenOf, omenByName, omenByBoss = {}, {}, {}, {}
+	if D then
+		for _, m in ipairs(D.rift.mods or {}) do
+			mods[m.key] = m
+		end
+		for _, k in ipairs(D.rift.omen.kinds or {}) do
+			omenByName[k.name] = k.key
+			omenByBoss[k.boss] = k.key
+			omenOf[k.boss:lower()] = OMEN_PORTRAIT[k.key] or rift("ro", k.key)
+			for _, u in ipairs(D.uberCfg.kinds or {}) do
+				if u.omenBoss == k.boss then
+					omenOf[tostring(u.boss):lower()] = rift("ro", k.key .. "-asc")
+				end
+			end
+		end
+	end
+	return {clientOf = clientOf, painted = painted, mods = mods, omenOf = omenOf, omenByName = omenByName,
+		omenByBoss = omenByBoss}
 end
 
 -- the icon of one entry of tab `tab`
@@ -1648,8 +1716,10 @@ function W.entryIcon(tab, e, src)
 	elseif tab == "supports" then
 		return ICON .. "sup-" .. rest .. ".png"
 	elseif tab == "rift" then
-		local r = RIFT[rest] or {"arcane", "rift"}
-		return kit(r[1], r[2])
+		if src.mods[rest] then
+			return W.riftModIcon(src.mods[rest])
+		end
+		return RIFT_ENTRY[rest] or rift("rx", "portal")
 	elseif tab == "dungeons" then
 		if id == "dungeon:about" then
 			return top("dungeons")
@@ -1671,7 +1741,7 @@ function W.entryIcon(tab, e, src)
 		elseif id == "boss:raid" then
 			return kit("ember", "gate")
 		elseif id == "boss:ascended" then
-			return kit("arcane", "eye")
+			return rift("rx", "ascended")
 		elseif id == "boss:guild" then
 			return kit("holy", "banner")
 		elseif id:find("^boss:world:") then
@@ -1686,6 +1756,9 @@ function W.entryIcon(tab, e, src)
 		return EV[id] or top("events")
 	elseif tab == "monsters" then
 		local sub = tostring(e.sub)
+		if src.omenOf[tostring(e.name):lower()] then
+			return src.omenOf[tostring(e.name):lower()]
+		end
 		if sub:find("boss") or sub:find("Omen guardian") then
 			return kit("blood", "skull")
 		elseif sub:find("Treasure goblin") then
@@ -1738,9 +1811,9 @@ function W.guideArt(src)
 		items = {tone = "#ff9c3a", emblem = orb("arcane", "swirl"),
 			icons = {item("sunsworn", "sword"), item("moonsilver", "helmet"), item("voidmourn", "armor"),
 				item("oathsteel", "shield"), item("cryptbone", "wand"), item("wildroot", "bow")}},
-		rifts = {tone = "#a064e6", emblem = kit("arcane", "rift"),
-			icons = {kit("ember", "gate"), kit("fire", "flame"), kit("frost", "crystal"), kit("arcane", "eye"),
-				kit("shadow", "skull"), kit("light", "nodes")}},
+		rifts = {tone = "#a064e6", emblem = rift("rx", "portal"),
+			icons = {RIFT_KEY_ICON, rift("rx", "clear"), rift("rg", "crypt"), rift("rx", "lives"), rift("rx", "chest"),
+				rift("rx", "atlas"), rift("rx", "omenkey")}},
 		dungeons = {tone = "#c0a0ff", emblem = top("dungeons"),
 			icons = {kit("bone", "skull"), kit("arcane", "swirl"), top("infinitytower"), kit("fire", "flame"),
 				kit("steel", "sword"), kit("nature", "thorns")}},
@@ -1778,12 +1851,36 @@ end
 function W.stepIcons()
 	return {account = top("options"), download = top("console"), create = top("skills"), tutorial = kit("holy", "gate"),
 		temple = top("quests"), level = kit("steel", "arrowup"), ascend = kit("holy", "cross"), drop = kit("blood", "skull"),
-		bench = kit("steel", "hammer"), orb = orb("arcane", "swirl"), key = kit("ember", "gate"), rift = kit("arcane", "rift"),
-		guardian = kit("shadow", "skull"), chest = kit("light", "gate"), atlas = kit("light", "nodes"),
-		omen = kit("arcane", "eye"), season = top("ranking"), ladder = top("battlepass"), reward = top("daily"),
+		bench = kit("steel", "hammer"), orb = orb("arcane", "swirl"), key = RIFT_KEY_ICON, rift = rift("rx", "portal"),
+		guardian = kit("shadow", "skull"), chest = rift("rx", "chest"), atlas = rift("rx", "atlas"),
+		omen = rift("rx", "omenkey"), riftclear = rift("rx", "clear"), riftguardian = rift("rg", "crypt"),
+		lives = rift("rx", "lives"), season = top("ranking"), ladder = top("battlepass"), reward = top("daily"),
 		salvage = kit("bone", "crystal"), sell = top("market"), gem = gem("#ff5a4a"),
 		-- the callout boxes ("> [tip] ...")
 		tip = kit("light", "eye"), warn = kit("blood", "burst"), note = top("help")}
+end
+
+-- icons in the first cell of some tables (`icons`, one per row): the key of each rift tier, the omens' emblems
+function W.sectionIcons(e, src)
+	for _, sec in ipairs(e.sections or {}) do
+		local icons, any = {}, false
+		for i, row in ipairs(sec.rows or {}) do
+			local icon = ""
+			if e.id == "rift:tiers" and sec.h == "Tiers" and tonumber(row[1]) then
+				icon = rift("rk", tostring(math.floor(tonumber(row[1]))))
+			elseif e.id == "rift:omens" and sec.h == "Guardians" and src.omenByName[row[1]] then
+				icon = rift("ro", src.omenByName[row[1]])
+			elseif e.id == "boss:ascended" and sec.h == "Bosses" then
+				local k = src.omenByBoss[row[3]]
+				icon = k and rift("ro", k .. "-asc") or rift("rx", "ascended")
+			end
+			icons[i] = icon
+			any = any or icon ~= ""
+		end
+		if any and not sec.icons then
+			sec.icons = icons
+		end
+	end
 end
 
 -- icons, banners and the art table; the entries' iconKey (a helper) is dropped
@@ -1795,6 +1892,7 @@ function W.decorate(tabs, src)
 		for _, e in ipairs(t.entries) do
 			e.icon = W.entryIcon(t.id, e, src)
 			e.iconKey = nil
+			W.sectionIcons(e, src)
 		end
 	end
 end
@@ -1857,6 +1955,7 @@ function W.build(D)
 		end
 	end
 	table.insert(codex.rift.entries, W.atlasEntry(D))
+	table.insert(codex.rift.entries, W.riftThemesEntry(D))
 	local dungeons, bosses, events = W.dungeonEntries(D), W.bossEntries(D), W.eventEntries(D)
 	W.markSoon(D, {dungeons, bosses, events})
 	local tabs = {
@@ -1872,7 +1971,7 @@ function W.build(D)
 		codex.materials,
 		{id = "store", name = "Store", entries = store}
 	}
-	local src = W.loadArtSources()
+	local src = W.loadArtSources(D)
 	W.decorate(tabs, src)
 	return {
 		generator = "server/tools/gen_wiki_data.lua",

@@ -361,6 +361,18 @@ Icons, hero images and banners make the wiki easier to scan. `server/tools/gen_w
   site's class badges and backdrop (`gen_site_art.py`); orbs and gems are drawn by the script. A unique's icon is a themed
   piece of its slot, an illustration and not the item's own sprite. No screenshots: the client's screens show base
   sprites and donor outfits, which are not ours to publish. No text in the images, so both languages use the same files.
+- **Rift art** (`website/tools/wiki_rift_art.py`, imported by `gen_wiki_art.py`): every rift icon is painted for what it
+  is, not taken from the spell icon kit. Shapes are masks shaded by a height field lit from the upper left, on one
+  framed plate: a modifier's motif says what it does (read from its key; `rm-<side>-<key>`), the frame says who it hits
+  (prefix crimson: the monsters, suffix violet: the players or the ground, boon gold: a reward); Rift Keys per tier
+  (`rk-<tier>`: the tier band's gem and metal, pips for the tier inside the band); the torn rift, the rift chest
+  spilling orbs, the Atlas star map, the shared lives, the Omen Key and fragment, each Omen's emblem and its Ascended
+  form; a vignette per rift theme (`rt-*`); Rift Atlas nodes as star map medallions in the branch's colour with the
+  node's glyph (`an-*`). Guardian portraits (`rg-*`) and the pack of `rx-clear` are crops of our own rift looks, kept
+  as a snapshot in `website/tools/wiki_art_src/rift_creatures.png` (`gen_wiki_art.py import-creatures` refreshes it from
+  `client/tools/sprites/art_import/big_bosses/` and `rift_variants/`), so a repaint there never makes `--check` fail.
+  The data adds `icons` to a table section (one per row, shown in its first cell): the key of each rift tier, the Atlas
+  nodes, the omens, and the new entry `rift:themes` (themes and guardians).
 - **Guides**: a callout box is `> [tip] text`, `> [warn] text` or `> [note] text` (more `> ` lines continue it); a step
   diagram is a run of lines `=> icon | title | text`, the icon `@name` (`art.steps`), an entry id or `tab:<id>`. Steps
   show as a row of numbered cards on a computer and a vertical list on a phone.

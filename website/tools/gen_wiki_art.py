@@ -3,12 +3,15 @@
 every guide and a banner for every reference tab.
 
 Run:  python3 -I website/tools/gen_wiki_art.py            write every image (and remove ones nothing names any more)
+      python3 -I website/tools/gen_wiki_art.py import-creatures   refresh wiki_art_src/rift_creatures.png from the
+                                                                  rift looks (art_import/big_bosses, rift_variants)
       python3 -I website/tools/gen_wiki_art.py --check    exit 1 when a file differs from a fresh build (CI)
       python3 -I website/tools/gen_wiki_art.py --sheet OUT.png   a contact sheet of every icon (for review)
 
 The list comes from the generated wiki data (website/overlay/plugins/chaos/wiki/wiki_data.json, written by
 server/tools/gen_wiki_data.lua): the `icon` of every tab and entry, the `banner` and `tone` of every tab and
-`art.guides` (hero file, emblem, icons, tone), `art.steps` (icons of the guide step diagrams). The Lua file decides
+`art.guides` (hero file, emblem, icons, tone), `art.steps` (icons of the guide step diagrams) and
+the `icons` of a table section (one per row, shown in its first cell). The Lua file decides
 what shows what; this file only draws. Icon names (wiki/i/<name>.png, 48 x 48, items 64 x 64):
   k-<theme>-<glyph>    client/tools/gen_spell_icons.py `render` (our procedural spell icon kit)
   orb-<theme>-<glyph>  a glowing orb drawn here, with a kit glyph in it
@@ -19,6 +22,7 @@ what shows what; this file only draws. Icon names (wiki/i/<name>.png, 48 x 48, i
   it-<set>-<kind>      a cell of client/tools/sprites/art_import/theme/items_<set>.png (theme_things.csv), 2x crisp
   top-<name>           client/overlay/data/images/chaos/topbutton_<name>.png (gen_theme_art.py)
   img/class-<key>.png  the class badges of website/tools/gen_site_art.py (not written here, only checked)
+  rm-, rk-, ro-, rt-, rg-, an-, rx-   the painted rift icons of wiki_rift_art.py (64 x 64; its docstring has the names)
 Heroes and banners (wiki/hero/*.webp, 960 x 300 and 960 x 180): the site's dark backdrop (gen_site_art.backdrop,
 the client's login background), a haze in the tone, embers, a medallion with the emblem and the icons around it.
 No text in the images (the page is in two languages), no screenshots: our client's screens show base sprites and
@@ -46,6 +50,7 @@ sys.path.insert(0, os.path.join(REPO, "client", "tools"))
 sys.path.insert(0, HERE)
 import gen_spell_icons as kit  # noqa: E402  (COL, GLYPH, render)
 import gen_site_art as site  # noqa: E402  (backdrop, badge, divider, palette)
+import wiki_rift_art as rift  # noqa: E402  (the painted rift icons)
 
 PLUGIN = os.path.join(REPO, "website", "overlay", "plugins", "chaos")
 DATA = os.path.join(PLUGIN, "wiki", "wiki_data.json")
@@ -178,6 +183,10 @@ def source_image(name):
         return site.badge(name[len("img/class-"):-4], S), False
     base = os.path.basename(name)[:-4]
     kind, _, rest = base.partition("-")
+    if kind in rift.RIFT_KINDS:
+        if ("rift", base) not in _CACHE:
+            _CACHE[("rift", base)] = rift.draw(base)
+        return _CACHE[("rift", base)], False
     if kind == "k":
         theme, glyph = rest.split("-", 1)
         return kit.render(theme, glyph), False
@@ -201,8 +210,14 @@ def source_image(name):
     raise ValueError("unknown icon %r" % name)
 
 
+def is_rift(name):
+    return os.path.basename(name).partition("-")[0] in rift.RIFT_KINDS
+
+
 def icon_at(name, size):
     im, crisp = source_image(name)
+    if is_rift(name):
+        return rift.finish(im, size)
     if crisp:
         k = max(1, size // im.width)
         im = im.resize((im.width * k, im.height * k), Image.NEAREST)
@@ -313,6 +328,8 @@ def plan(data):
         icons.add(t["icon"])
         for e in t["entries"]:
             icons.add(e["icon"])
+            for sec in e.get("sections", []):
+                icons.update(i for i in sec.get("icons", []) if i)
         seen, row = set(), []
         for e in t["entries"]:
             if e["icon"] not in seen and e["icon"] != t["icon"]:
@@ -341,7 +358,7 @@ def seed_of(text):
 
 def render(kind, spec):
     if kind == "icon":
-        size = ITEM if os.path.basename(spec).startswith("it-") else ICON
+        size = ITEM if os.path.basename(spec).startswith("it-") or is_rift(spec) else ICON
         return png_bytes(icon_at(spec, size))
     if kind == "hero":
         return webp_bytes(scene(spec, 960, 300, seed_of(spec["seed"])))
@@ -415,6 +432,9 @@ def sheet(out):
 
 
 def main(argv):
+    if len(argv) > 1 and argv[1] == "import-creatures":
+        print("wrote " + os.path.relpath(rift.import_creatures(), REPO))
+        return 0
     if len(argv) > 2 and argv[1] == "--sheet":
         return sheet(argv[2])
     if len(argv) > 1 and argv[1] not in ("--check",):

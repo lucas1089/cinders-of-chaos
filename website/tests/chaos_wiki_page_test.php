@@ -88,6 +88,29 @@ foreach ($data['tabs'] as $t) {
 	}
 }
 check($noIcon === 0, "art: every entry has an icon on disk ($noIcon without; " . implode(', ', array_slice($missing, 0, 3)) . ')');
+$rowIcons = 0;
+$badRow = 0;
+foreach ($data['tabs'] as $t) {
+	foreach ($t['entries'] as $e) {
+		foreach ($e['sections'] as $sec) {
+			foreach ((array)($sec['icons'] ?? array()) as $i => $icon) {
+				$rowIcons += $icon !== '' ? 1 : 0;
+				if ($icon !== '' && !$haveArt((string)$icon) || count((array)$sec['icons']) !== count((array)($sec['rows'] ?? array()))) {
+					$badRow++;
+				}
+			}
+		}
+	}
+}
+check($rowIcons > 30 && $badRow === 0, "art: table row icons on disk, one per row ($rowIcons, $badRow bad)");
+// the rifts have their own painted art (website/tools/wiki_rift_art.py), not the spell icon kit
+$riftKit = array_filter(chaos_wiki_tab('rift')['entries'], static function (array $e): bool { return strpos((string)$e['icon'], 'wiki/i/k-') === 0; });
+check($riftKit === array() && chaos_wiki_tab('rift')['icon'] === 'wiki/i/rx-portal.png', 'art: every rift entry has a rift icon');
+check(preg_match('#^wiki/i/rm-(prefix|suffix|boon)-vitality\.png$#', (string)chaos_wiki_entry('rift:vitality')['entry']['icon']) === 1
+	&& chaos_wiki_entry('rift:themes') !== null && chaos_wiki_entry('cur:riftkey')['entry']['icon'] === 'wiki/i/rk-5.png', 'art: rift modifiers, themes, keys');
+foreach (array('key' => 'rk-', 'rift' => 'rx-portal', 'riftclear' => 'rx-clear', 'riftguardian' => 'rg-', 'chest' => 'rx-chest', 'atlas' => 'rx-atlas') as $step => $want) {
+	check(strpos(chaos_wiki_ref_icon('@' . $step), 'wiki/i/' . $want) === 0, "art: rift step @$step");
+}
 $artIds = array_map(static function (array $g): string { return (string)$g['id']; }, (array)($data['art']['guides'] ?? array()));
 check($artIds === array_keys(chaos_wiki_guides()), 'art: one guide art per guide, in the same order as chaos_wiki_guides()');
 foreach ((array)($data['art']['guides'] ?? array()) as $g) {
@@ -202,6 +225,8 @@ foreach ($guides as $slug => $titles) {
 list($page) = render_wiki(array('t' => 'guide:rifts', 'l' => 'en'));
 check(strpos($page, '<figure class="chaos-wiki-hero"><img class="chaos-wiki-hero__img" src="plugins/chaos/assets/wiki/hero/guide-rifts.webp" alt="Guide art: Rifts and the Atlas" width="960" height="300"') !== false, 'guide: hero image with alt text and size');
 check(substr_count($page, 'class="chaos-wiki-steps__step"') === 6 && strpos($page, 'chaos-wiki-callout--warn') !== false, 'guide: step diagram and callout');
+list($page) = render_wiki(array('t' => 'rift:tiers', 'l' => 'en'));
+check(strpos($page, 'src="plugins/chaos/assets/wiki/i/rk-1.png" alt="1" width="24" height="24" loading="lazy" decoding="async">1</td>') !== false, 'entry: a key icon per rift tier row');
 list($page) = render_wiki(array());
 check(substr_count($page, 'class="chaos-wiki-card__img"') === count($guides) && strpos($page, 'src="plugins/chaos/assets/wiki/hero/guide-start.webp" alt="Primeiros passos" width="960" height="300" loading="lazy"') !== false, 'index: a lazy hero thumbnail per guide card');
 check(strpos($page, 'src="plugins/chaos/assets/wiki/i/top-spells.png" alt="Magias" width="32" height="32" loading="lazy"') !== false, 'index: tab icons, alt text in the page language');
