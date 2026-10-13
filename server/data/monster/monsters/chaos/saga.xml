@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Saga" nameDescription="an saga" race="venom" experience="80000000" speed="550" manacost="0" damagereduction="10" damagepenetration="15" evented = "25" skulled="2" looting="1">
+<monster name="Saga" nameDescription="a saga" race="venom" experience="80000000" speed="550" manacost="0">
 	<health now="45000000" max="45000000"/>
-	<look type="2119"/>
+	<look type="2119" corpse="6068"/>
 	<targetchange interval="3000" chance="20"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -17,12 +16,8 @@
 		<flag runonhealth="0"/>
 		<flag staticattack="90"/>
 	</flags>
-	<script>
-		<event name="saga_outfit_boss"/>
-		<event name="first_boss_kill_talent"/>
-	</script>
 	<attacks>
-		<attack name="physical" interval="1000" min="-21000" max="-28000"/>
+		<attack name="physical" interval="1000" chance="100" min="-21000" max="-28000"/>
 		<attack name="physical" interval="2000" chance="25"  length="7" spread="0" min="-28000" max="-37000">
 			<attribute key="areaEffect" value="holyarea"/>
 		</attack> 
@@ -38,7 +33,7 @@
 			<attribute key="shootEffect" value="explosion"/>
 			<attribute key="areaEffect" value="explosionarea"/>
 		</attack>
-		<attack name="speed" interval="2000" chance="17" radius="6" target="0" speedchange="-500000" duration="6000">
+		<attack name="speed" interval="2000" chance="17" radius="6" target="0" speedchange="-1000" duration="6000">
 			<attribute key="areaEffect" value="smallplants"/>
 		</attack>
 	</attacks> 

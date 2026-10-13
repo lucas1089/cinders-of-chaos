@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Lacewing Moth" nameDescription="a Lacewing Moth" race="blood" experience="12400" evented = "5" skulled="1" looting="1" speed="53">
+<monster name="Lacewing Moth" nameDescription="a Lacewing Moth" race="blood" experience="12400" speed="53">
 	<health now="19900" max="19900"/>
 	<look type="1480" corpse="6068" />
 	<level min="900" max="940"/>

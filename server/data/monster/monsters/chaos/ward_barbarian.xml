@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Ward Barbarian" nameDescription="a ward barbarian" race="blood" experience="110000" evented = "25" speed="450" skulled="2" looting="1" manacost="0">
+<monster name="Ward Barbarian" nameDescription="a ward barbarian" race="blood" experience="110000" speed="450" manacost="0">
 	<health now="200000" max="200000"/>
 	<look type="264" head="0" body="0" legs="0" feet="0" addons="1" corpse="6068"/>
 	<targetchange interval="5000" chance="30"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -17,11 +16,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="65000"/>
 	</flags>
-	<script>
-        <event name="RewardChestDeath"/>
-        <event name="first_boss_kill_talent"/>
-        <event name="spawn_for_time"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="1500" min="-1500" max="-3000"/>
 		<attack name="physical" interval="1000" chance="35" range="7" min="-1200" max="-2500">

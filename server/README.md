@@ -4528,6 +4528,44 @@ Tested: the server built with 0001-0030 answered the status request with the new
 info request the same, printed the new console line; the old name is not in the binary. On the installed test tree the
 two strings changed, a second whole install changed nothing.
 
+## Monster lint (`tools/ci/check_content.py`, `tools/fix_monster_xml.py`, `tools/hash_base_monsters.py`)
+
+`check_content.py` checks every Chaos monster against what the base loader reads and does (its docstring lists the
+rules, each finding carries a code such as `[flag.tameable]`). Exceptions sit in its `ALLOW` table with a reason; an
+entry that matches nothing fails, so the table cannot go stale. Rules that need data outside git run locally only:
+`--base DATA_DIR` checks every loot and corpse id against that items.xml (and that a corpse is a container), `--pair
+Tibia.dat` recounts the outfits and blank outfits of a pair against `PAIR_OUTFITS` / `PAIR_BLANK` (things_custom23:
+2184 outfits, 687 blank). In CI the item rule covers our own ids (above 29926, `data/items/`).
+
+**Base names.** `data/monster/base_monster_hashes.txt` holds the SHA-256 of every monster type of a fresh base server
+(1487: `monsters.xml` and `Game.createMonsterType`). Rebuild it from an untouched base data folder with
+`python3 -I tools/hash_base_monsters.py BASE_DATA_DIR` (`--check` compares). After the renames of
+`base_monster_names.csv`, no Chaos monster may take a base name: `register_monsters.py` skips a name that is already
+registered, and a base Lua type of the same name refills ours when the Lua monsters load (after the XML ones).
+
+**Fixed 2026-10-13** (all through `fix_monster_xml.py`, idempotent, except the pet):
+- the pet Bog Frog never loaded: the base has its own "Bog Frog", so `register_monsters.py` skipped our file and
+  `pets.lua` summoned the base frog (attackable, its own look). The pet type is now "Pet Bog Frog" (`pets_config.lua`
+  `monster`); the pet still shows "Bog Frog" or its given name;
+- 20 summonable / convinceable flags on 13 imported monsters (Thal, Vyrm, Silicron, Facetis, ... with manacost 0):
+  the summon spell and the convince rune could hand a player one of them; all off;
+- 139 donor event names on 54 monsters (registered nowhere: one console warning per spawn) removed;
+- Saga had loot but no corpse (the loot was lost): corpse 6068, the import fallback;
+- Jungle Warrior's energy beam had min 9000 / max -15000 (a lost minus: some rolls healed the player): min -9000;
+- Bone Lancer's area effect `hitarea` is no base name (nothing showed): `blackspark`, the hit-area effect;
+- load warnings with the same behaviour: 14 spells without chance (now 100), 13 targetdistance 0 (now 1), 3 heals
+  with min above max, a voices chance 200, a speedchange -500000 (now -1000), pushable next to canpushcreatures;
+- 17 wrong articles in nameDescription; 240 donor `<monster>` attributes and 83 `<strategy>` / `<levelconfig>` lines
+  the base never reads.
+
+**Open (in `ALLOW`, owner decisions):** Wild Boar and Giant Hornet (wildwood, invasion monsters) share their names with
+base Lua types, which refill ours at load: ours fight with the base stats and looks. Renaming either side touches
+generated tables (`bounty_pool.lua`, `bestiary_spawns.lua`, the wiki). Vharok's melee `bleed="900"` does nothing (the
+base reads no value there). Vorathrax and Gloomfire have a 2,005,500 earth hit (they spawn nowhere). The 33 dormant
+donor imports (`DORMANT_IMPORTS`) have levels up to 6500, so the level scaling gives them speeds far above 2000:
+clamp them like the late game set before spawning one. The five Lua imports (butterflies, Scar Tribe Warrior,
+Overcharged Energy Elemental) replace base types of the same name on purpose.
+
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
 **Limits** (`Chaos.worldBoss.limits`, "Instance limits"): the boss withdraws 45 minutes after it appears (unchanged); everyone inside now gets warnings at 5 min, 1 min and 10 s. One arena, at most 40 players; `/instances close worldboss event` is `/worldboss stop`.

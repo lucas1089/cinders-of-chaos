@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Plagueroot" nameDescription="a plagueroot" race="blood" experience="33000" speed="440" skulled="1" evented = "2" looting="1" manacost="0">
+<monster name="Plagueroot" nameDescription="a plagueroot" race="blood" experience="33000" speed="440" manacost="0">
 	<health now="27000" max="27000"/>
 	<level min="320" max="380"/>
 	<look type="1477" corpse="6068"/>
 	<targetchange interval="5000" chance="8"/>
-	<strategy attack="100" defense="0"/>
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -19,11 +17,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-        <event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-1000" max="-1550"/>
 		<attack name="earth" interval="2000" chance="15" length="8" spread="3" min="-1100" max="-1700">

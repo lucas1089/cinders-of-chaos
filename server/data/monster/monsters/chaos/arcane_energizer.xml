@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Arcane Energizer" nameDescription="a arcane energizer" race="blood" experience="5000000" evented = "25" skulled="2" looting="1" speed="700" manacost="0">
+<monster name="Arcane Energizer" nameDescription="an arcane energizer" race="blood" experience="5000000" speed="700" manacost="0">
 	<health now="60000000" max="60000000"/>
 	<look type="1496" corpse="6068"/>
 	<targetchange interval="4000" chance="0"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -17,10 +16,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-       <event name="auto_loot"/>
-       <event name="first_boss_kill_talent"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-16000" max="-26000"/>
 		<attack name="energy" interval="2000" chance="20" range="7" target="1" min="-18000" max="-28000">

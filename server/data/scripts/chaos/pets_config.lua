@@ -131,7 +131,7 @@ return {
 			abilities = {"mend", "ward"},
 			source = {store = "petAshenHare"},
 			how = "Store (Pets): 400 Chaos Coins."},
-		{key = "bog_frog", name = "Bog Frog", monster = "Bog Frog", look = 224, element = "earth",
+		{key = "bog_frog", name = "Bog Frog", monster = "Pet Bog Frog", look = 224, element = "earth",
 			abilities = {"goldFind", "itemFind"},
 			source = {store = "petBogFrog"},
 			how = "Store (Pets): 400 Chaos Coins."},

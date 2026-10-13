@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Mercenary Ranger" nameDescription="a mercenary ranger" race="blood" experience="111000" speed="390" evented = "5" skulled="1" looting="1" manacost="0">
+<monster name="Mercenary Ranger" nameDescription="a mercenary ranger" race="blood" experience="111000" speed="390" manacost="0">
 	<health now="102000" max="102000"/>
 	<look type="1503" head="133" corpse="6068"/>
 	<level min="1200" max="1300"/>
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0"/>
@@ -18,11 +17,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-        <event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-    </script> 
 	<attacks>
 		<attack name="melee" interval="1500" range="6" min="-3570" max="-5000">
 		<attribute key="shootEffect" value="poisonarrow"/>

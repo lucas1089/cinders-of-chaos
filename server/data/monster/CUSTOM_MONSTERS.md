@@ -10,6 +10,14 @@
 
 **Base loader rules.** `server/tools/fix_monster_xml.py` (idempotent; default folder `monsters/chaos`) rewrites what the base server cannot read: a loot list `<item id="a;b;c" chance="C"/>` becomes one `<item>` per id with chance C/N (other attributes kept), monster spells it does not know become the built-in attack of the same role with the same numbers (its `SPELL_FIX` table), unknown flags are removed, element keys get the base's case and stray text in `<attacks>`/`<defenses>` goes. `tools/ci/check_content.py` fails on loot id lists, unknown spells (built-ins, the base monster instants, `spell_names.csv` and `spells_chaos.xml`), unknown flags (base list plus flags added by `src-patches`) and element keys. Split ids missing from `items.otb` were dropped by hand (see `adapt_report.txt`).
 
+**Lint (2026-10-13).** `fix_monster_xml.py` also removes the donor events, the `<monster>` attributes and the
+`<strategy>` / `<levelconfig>` lines the base never reads, sets what the base would clamp or default with a warning,
+turns summonable and convinceable off and gives a monster with loot and no corpse the fallback corpse 6068.
+`tools/ci/check_content.py` checks names (also against the base types, `base_monster_hashes.txt`), flags, elements,
+spells, effects, summons, events, loot, corpses and lookTypes against the client pair. A new monster must not take
+the name of a base monster: use a name of its own (the pet frog is "Pet Bog Frog" for that reason). See
+`server/README.md` "Monster lint".
+
 ## What was imported
 **Correction (they did not spawn).** The figures below were counted over two spawn files, and the 19,530 spawns of the imported
 names are almost all in the spawn file of a second map that the server does not load (`mapName` in `config.lua` names the

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Webbound Crawler" nameDescription="a webbound crawler" race="blood" experience="136000" evented = "6" skulled="1" looting="1" speed="470">
+<monster name="Webbound Crawler" nameDescription="a webbound crawler" race="blood" experience="136000" speed="470">
 	<health now="200000" max="200000" />
 	<look type="579" corpse="6068" />
 	<level min="1400" max="1550"/>
 	<targetchange interval="4000" chance="10" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0" />
 		<flag attackable="1" />
@@ -20,11 +19,6 @@
 		<flag canwalkonenergy="0" />
 		<flag canwalkonfire="0" />
 	</flags>
-	<script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-2800" max="-4000"/>
 		<attack name="death" interval="2000" chance="9" range="7" radius="4" target="1" min="-2800" max="-4100">

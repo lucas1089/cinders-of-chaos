@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Fire Man" nameDescription="a fire man" race="fire" experience="30500" skulled="2" looting="1" speed="650" manacost="0">
+<monster name="Fire Man" nameDescription="a fire man" race="fire" experience="30500" speed="650" manacost="0">
 	<health now="35500" max="35500" />
 	<look type="1481" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
 	<targetchange interval="4000" chance="10"/>

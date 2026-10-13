@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Tundra Troll" nameDescription="a tundra troll" race="blood" experience="9650" evented = "4" skulled="1" looting="1" speed="52">
+<monster name="Tundra Troll" nameDescription="a tundra troll" race="blood" experience="9650" speed="52">
 	<health now="18200" max="18200"/>
 	<level min="810" max="850"/>
 	<look type="257" corpse="6068"/>
 	<targetchange interval="4000" chance="20"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
 		<flag hostile="1"/>
 		<flag illusionable="1"/>
-		<flag convinceable="1"/>
+		<flag convinceable="0"/>
 		<flag pushable="0"/>
 		<flag canpushitems="1"/>
 		<flag staticattack="80"/>

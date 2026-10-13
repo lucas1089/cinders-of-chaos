@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Mercenary" nameDescription="a mercenary" race="blood" experience="125000" evented = "5" speed="620" skulled="1" looting="1" manacost="305">
+<monster name="Mercenary" nameDescription="a mercenary" race="blood" experience="125000" speed="620" manacost="305">
 	<health now="110000" max="110000" />
 	<look type="1502" head="133" corpse="6068"/>
 	<level min="1200" max="1300"/>
 	<targetchange interval="4000" chance="20"/>
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -19,11 +17,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-        <event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-3550" max="-5600"/>
 		<attack name="physical" interval="2000" chance="65" range="5" min="-3500" max="-5000">
@@ -43,7 +36,7 @@
 		</attack>
 	</attacks>
 	<defenses armor="95" defense="95">
-		<defense name="healing" interval="2000" chance="15" min="1500" max="300">
+		<defense name="healing" interval="2000" chance="15" min="300" max="1500">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 	</defenses>

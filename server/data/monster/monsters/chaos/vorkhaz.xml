@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Vorkhaz" nameDescription="a vorkhaz" race="blood" experience="730000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
+<monster name="Vorkhaz" nameDescription="a vorkhaz" race="blood" experience="730000" speed="650" manacost="0">
 	<health now="500000" max="500000"/>
 	<level min="2800" max="3000"/>
 	<look type="842" addons="3" head="133" body="133" legs="133" feet="133" corpse="6068" />
 	<targetchange interval="2000" chance="5" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0" />
 		<flag attackable="1" />
@@ -21,11 +20,6 @@
 		<flag canwalkonenergy="0" />
 		<flag canwalkonpoison="0" />
 	</flags>
-	<script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-9000" max="-13000" energy="1200" />
 		<attack name="manadrain" interval="2000" chance="20" range="7" min="-8000" max="-13000">

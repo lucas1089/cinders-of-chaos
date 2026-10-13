@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Azure Dragon" nameDescription="an azure dragon" race="undead" experience="12250" evented = "4" skulled="1" looting="1" speed="52">
+<monster name="Azure Dragon" nameDescription="an azure dragon" race="undead" experience="12250" speed="52">
 	<health now="20000" max="20000"/>
 	<level min="860" max="900"/>
 	<look type="248" corpse="6068"/>
 	<targetchange speed="4000" chance="20"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>

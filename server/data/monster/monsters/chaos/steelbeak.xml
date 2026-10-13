@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Steelbeak" nameDescription="a steelbeak boss" race="blood" experience="165000" speed="550" skulled="1" looting="1" manacost="0">
+<monster name="Steelbeak" nameDescription="a steelbeak boss" race="blood" experience="165000" speed="550" manacost="0">
 	<health now="400000" max="400000"/>
 	<look type="522"  corpse="6068"/>
 	<targetchange interval="4000" chance="10"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -17,9 +16,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-		 <event name="boss_tp_death"/>
-	</script> 
     <attacks>
 	<attack name="melee" interval="1500" min="-4000" max="-6000"/>
 	<attack name="lifedrain" interval="2000" chance="20" length="8" spread="3" min="-4500" max="-8000">

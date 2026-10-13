@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Lady bug" nameDescription="Lady bug" race="venom" experience="12900" evented = "5" skulled="1" looting="1" speed="52">
+<monster name="Lady bug" nameDescription="Lady bug" race="venom" experience="12900" speed="52">
 	<health now="20400" max="20400"/>
 	<level min="940" max="980"/>
 	<look type="448" corpse="6068" />
@@ -10,10 +10,10 @@
 		<flag hostile="1" />
 		<flag illusionable="0" />
 		<flag convinceable="0" />
-		<flag pushable="1" />
+		<flag pushable="0" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="1" />
-		<flag targetdistance="0" />
+		<flag targetdistance="1" />
 		<flag runonhealth="91000" />
 	</flags>
 	<attacks>

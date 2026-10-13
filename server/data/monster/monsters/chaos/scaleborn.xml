@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Scaleborn" nameDescription="a Scaleborn" race="fire" experience="500000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
+<monster name="Scaleborn" nameDescription="a Scaleborn" race="fire" experience="500000" speed="650" manacost="0">
 	<health now="450000" max="450000"/>
 	<look type="1531" corpse="6068" />
 	<level min="2500" max="3000"/>
 	<targetchange interval="4000" chance="0" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -18,11 +17,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-6000" max="-10000"/>
 		<attack name="physical" interval="2000" chance="38" range="7" target="1" min="-3000" max="-7000">

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Serpent Pride" nameDescription="a serpent spawn pride" race="venom" experience="15000" speed="550" skulled="1" looting="1" manacost="0">
+<monster name="Serpent Pride" nameDescription="a serpent spawn pride" race="venom" experience="15000" speed="550" manacost="0">
 	<health now="800000" max="800000"/>
 	<look type="220" corpse="6068"/>
 	<targetchange interval="5000" chance="8"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>

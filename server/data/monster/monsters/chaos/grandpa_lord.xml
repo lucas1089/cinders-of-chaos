@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Grandpa Lord" nameDescription="a grandpa lord" race="undead" experience="190000" speed="1000" manacost="0" bosses="2">
+<monster name="Grandpa Lord" nameDescription="a grandpa lord" race="undead" experience="190000" speed="1000" manacost="0">
 	<health now="999999" max="999999"/>
 	<look type="332" head="19" body="96" legs="21" feet="81" corpse="6068"/>
 	<targetchange interval="2000" chance="10"/>
-	<strategy attack="65" defense="5"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -17,7 +16,7 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="physical" interval="1000"  range="5" min="-7500" max="-9000">
+		<attack name="physical" interval="1000" chance="100"  range="5" min="-7500" max="-9000">
             <attribute key="shootEffect" value="arrow"/>
         </attack>
 		<attack name="manadrain" interval="1500" chance="7" range="5" min="-2500" max="-5500">

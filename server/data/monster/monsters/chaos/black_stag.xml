@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Black Stag" nameDescription="a black stag" race="fire" experience="142000" evented = "6" skulled="1" looting="1" speed="470">
+<monster name="Black Stag" nameDescription="a black stag" race="fire" experience="142000" speed="470">
 	<health now="200000" max="200000" />
 	<look type="686" corpse="6068" />
 	<level min="1500" max="1650"/>
 	<targetchange interval="4000" chance="0" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -18,11 +17,6 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-3000" max="-5000"/>
 		<attack name="physical" interval="2000" chance="38" length="3" spread="0" min="-3500" max="-6000">

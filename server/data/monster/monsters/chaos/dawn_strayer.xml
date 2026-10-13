@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Dawn Strayer" nameDescription="a dawn strayer" race="blood" experience="13900" evented = "6" skulled="1" looting="1" speed="50">
+<monster name="Dawn Strayer" nameDescription="a dawn strayer" race="blood" experience="13900" speed="50">
 	<health now="22000" max="22000"/>
 	<look type="2122" corpse="6068"/>
 	<level min="960" max="1000"/>

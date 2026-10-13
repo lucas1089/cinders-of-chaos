@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Plant" nameDescription="a plant" race="venom" experience="0" speed="0" manacost="0" damagereduction="10" damagepenetration="35" evented = "25" skulled="2" looting="1">
+<monster name="Plant" nameDescription="a plant" race="venom" experience="0" speed="0" manacost="0">
 	<health now="55000" max="55000"/>
 	<look type="2123" corpse="0"/>
 	<targetchange interval="5000" chance="8"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -18,7 +17,7 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="earth" interval="2000" radius="6" target="0" min="-25000" max="-31000">
+		<attack name="earth" interval="2000" chance="100" radius="6" target="0" min="-25000" max="-31000">
 			<attribute key="areaEffect" value="poison"/>
 		</attack>
 		<attack name="dread" interval="2000" chance="25" radius="4" target="0" success="35" duration="5000">

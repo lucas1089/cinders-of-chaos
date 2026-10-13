@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Legendary Warrior" nameDescription="legendary warrior" race="blood" experience="45000000" evented = "25"  skulled="1" looting="2" speed="450" manacost="0">
+<monster name="Legendary Warrior" nameDescription="legendary warrior" race="blood" experience="45000000" speed="450" manacost="0">
 	<health now="7000000" max="7000000"/>
 	<look type="1497" corpse="6068" />
 	<targetchange interval="5000" chance="10" />
@@ -16,10 +16,6 @@
 		<flag staticattack="90" />
 		<flag runonhealth="0" />
 	</flags>
-	<script>
-		<event name="boss_summoner"/>
-		<event name="first_boss_kill_talent"/>
-	</script>
 	<attacks>
 		<attack name="melee" interval="1500" min="-12000" max="-18000" />
 		<attack name="fire" interval="2000" chance="25" length="5" spread="3" min="-11000" max="-20000">

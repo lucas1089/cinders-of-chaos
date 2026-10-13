@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Grindmaw the Mauler" nameDescription="Grindmaw the Mauler" race="undead" experience="14150" evented = "6" skulled="1" looting="1" speed="49">
+<monster name="Grindmaw the Mauler" nameDescription="Grindmaw the Mauler" race="undead" experience="14150" speed="49">
 	<health now="22400" max="22400"/>
 	<look type="1476" corpse="6068" />
 	<level min="960" max="1000"/>
@@ -13,7 +13,7 @@
 		<flag pushable="0" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="1" />
-		<flag targetdistance="0" />
+		<flag targetdistance="1" />
 		<flag staticattack="80" />
 		<flag runonhealth="0" />
 	</flags>

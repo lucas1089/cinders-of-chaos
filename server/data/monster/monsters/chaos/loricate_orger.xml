@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Loricate Orger" nameDescription="an Loricate Orger" race="venom" experience="8900" speed="55" evented = "4" skulled="1" looting="1" manacost="0">
+<monster name="Loricate Orger" nameDescription="a Loricate Orger" race="venom" experience="8900" speed="55" manacost="0">
 	<health now="17200" max="17200"/>
 	<look type="403" corpse="6068" />
 	<targetchange interval="5000" chance="0" />
