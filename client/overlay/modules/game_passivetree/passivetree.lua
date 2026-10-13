@@ -198,6 +198,24 @@ function terminate()
 	return 
 end
 
+-- client setting "Painted icons" (g_settings 'chaosPaintedIcons', the Buff Bar settings; off by default): a keystone's
+-- or mastery's painted 64 px icon (treedata/painted.lua, client/tools/gen_painted_icons.py), else nil (the normal one).
+-- Read when the tree is drawn, so a change shows the next time the tree opens.
+function paintedTreeIcon(node, vocationNode)
+	if type(treeData.painted) ~= "table" then
+		return nil
+	end
+	local ok, on = pcall(g_settings.getBoolean, "chaosPaintedIcons")
+	if not (ok and on == true) then
+		return nil
+	end
+	local key = node.icon
+	if not node.isStartNode and vocationNode and treeData.icons[vocationNode.icon] then
+		key = vocationNode.icon
+	end
+	return key and treeData.painted[key] or nil
+end
+
 function create()
 	if window then
 		return 
@@ -563,6 +581,7 @@ local function buildTree()
 			if not node.isStartNode and vocationNode then
 				icon = treeData.icons[vocationNode.icon] or icon
 			end
+			icon = paintedTreeIcon(node, vocationNode) or icon
 
 			node.id = id
 			node.linkedId = {}

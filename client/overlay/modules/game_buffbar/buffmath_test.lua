@@ -108,6 +108,12 @@ eq(M.ownName('spell:utani hur', 'haste'), 'haste', 'spell: the key'); eq(M.ownNa
 eq(M.ownName('junk', '../x'), 'spellbuff', 'nothing valid'); eq(M.ownName(nil, nil), 'spellbuff', 'no spec, no key')
 eq(M.OWN_CLIP, '0 0 ' .. M.ICON_SIZE .. ' ' .. M.ICON_SIZE, 'own icons are drawn 1:1 at the cell size')
 eq(M.ownPath('world_xp'), '/images/game/buffs/world_xp', 'own path'); eq(M.ownPath('../../x'), nil, 'own path is checked')
+eq(M.iconPath('regen', false), '/images/game/buffs/regen', 'painted off: the own icon')
+eq(M.iconPath('regen', true), '/images/game/buffs_painted/regen', 'painted on')
+eq(M.iconPath('regen', true, function(f) return f == '/images/game/buffs_painted/regen.png' end),
+  '/images/game/buffs_painted/regen', 'painted on, the file is there')
+eq(M.iconPath('new_one', true, function() return false end), '/images/game/buffs/new_one', 'no painted icon: the own one')
+eq(M.iconPath('../x', true), nil, 'painted path is checked too')
 
 if fails > 0 then os.exit(1) end
 print('buff bar tests OK (' .. checks .. ' checks)')

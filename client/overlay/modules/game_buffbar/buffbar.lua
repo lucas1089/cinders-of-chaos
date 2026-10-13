@@ -70,14 +70,24 @@ end
 
 -- ---------------------------------------------------------------- icons
 -- the image of an icon spec: always our own 26 px icon (/images/game/buffs/<name>, BuffMath.ownName: "buff:<name>",
--- else the key's own icon); `key` names the fallback. Also used by the party frames (modules.game_buffbar.iconFor),
--- so the clip is always given.
+-- else the key's own icon; with "Painted icons" on, the painted one of that name when there is one); `key` names the
+-- fallback. Also used by the party frames (modules.game_buffbar.iconFor), so the clip is always given.
+local function paintedOn()
+  local ok, v = pcall(g_settings.getBoolean, BuffMath.PAINTED_SETTING)
+  return ok and v == true
+end
+
+local function fileExists(file)
+  local ok, v = pcall(g_resources.fileExists, file)
+  return ok and v == true
+end
+
 function iconFor(spec, key)
   spec = tostring(spec or '')
   key = key or 'spellbuff'
   local hit = iconCache[spec .. '|' .. key]
   if hit then return hit end
-  local found = { src = BuffMath.ownPath(BuffMath.ownName(spec, key)), clip = BuffMath.OWN_CLIP }
+  local found = { src = BuffMath.iconPath(BuffMath.ownName(spec, key), paintedOn(), fileExists), clip = BuffMath.OWN_CLIP }
   iconCache[spec .. '|' .. key] = found
   return found
 end
@@ -86,6 +96,20 @@ local function applyIcon(widget, entry)
   local icon = iconFor(entry.icon, entry.key)
   widget:setImageSource(icon.src)
   widget:setImageClip(icon.clip or BuffMath.OWN_CLIP)
+end
+
+-- the "Painted icons" setting (buff bar, spellbook, passive tree; g_settings, off by default). The bar redraws now;
+-- the spellbook and the passive tree pick it up the next time they draw their icons.
+function isPainted() return paintedOn() end
+
+function setPainted(value)
+  if paintedOn() == (value == true) then return end
+  pcall(g_settings.set, BuffMath.PAINTED_SETTING, value == true)
+  pcall(g_settings.save)
+  iconCache = {}
+  for key, w in pairs(widgets) do
+    if alive(w) and state.buffs[key] then applyIcon(w, state.buffs[key]) end
+  end
 end
 
 -- ---------------------------------------------------------------- layout
@@ -242,6 +266,7 @@ local function syncSettingsWindow()
   if not alive(settingsWindow) then return end
   settingsWindow:recursiveGetChildById('shownBox'):setChecked(settings.shown)
   settingsWindow:recursiveGetChildById('timersBox'):setChecked(settings.timers)
+  settingsWindow:recursiveGetChildById('paintedBox'):setChecked(paintedOn())
 end
 
 function toggleSettings()

@@ -502,6 +502,19 @@ return {
 				brute = {{look = 2206, name = "Sanctum Thornrot"}}, -- crimson-brown thorn vines, orange pustules (base 2113)
 				elite = {{look = 2207, name = "Sanctum Mosstomb"}} -- grave-stone boulder, ash fungus, shelf mushrooms (base 2114)
 			}
+		},
+		-- bigger guardians: 4x4 looks of our own painted over a guardian's frames with an 8-frame walk and a 4-frame idle
+		-- (client/tools/sprites/big_bosses.py, spec monster_looks/big_bosses.json, art_import/big_bosses*; client looks
+		-- 2208-2212). With bigGuardiansOn a rift guardian (and both Twin Guardians) and an Omen guardian whose own look is
+		-- listed here wear the big look; name, stats, spells and loot stay. bigGuardiansOn = false until a client pair
+		-- with looks 2208-2212 is on windows-assets (an older pair draws nothing).
+		bigGuardiansOn = false,
+		bigGuardians = {
+			[2103] = 2208, -- Abyssal Sovereign: void spectre, 8-frame walk (was 3 phases)
+			[2107] = 2209, -- Obsidian Colossus: magma golem, 8-frame walk (was 2 phases)
+			[2111] = 2210, -- Crypt Dreadknight: black plate knight, 3x3 -> 4x4 repaint, 8-frame walk (was 2 phases)
+			[2115] = 2211, -- Sanctum Warden: moss golem, 8-frame walk (was 3 phases)
+			[2118] = 2212 -- Thalcyra the Stormbound Seer (Omen): storm seer, 3x3 -> 4x4 repaint, 8-frame walk (was 4)
 		}
 	}
 }

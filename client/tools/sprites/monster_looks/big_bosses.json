@@ -1,0 +1,358 @@
+{
+ "about": "bigger guardian looks (4x4, 8-frame walk, 4-frame idle) painted with PixelLab over the frames of our own guardian looks (big_bosses.py). Raw results are not in git; the sheets are (art_import/big_bosses/).",
+ "first_outfit": 2208,
+ "looks": [
+  {
+   "key": "abyss_guardian_big",
+   "look": 2208,
+   "base": 2103,
+   "name": "Abyssal Sovereign",
+   "monsters": "rift guardian (Abyssal Rift)",
+   "description": "void spectre lord in violet lightning, 8-frame walk and 4-frame idle on its own 4x4 frames",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.95,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "walk": [
+    {
+     "tag": "sovereign_walk_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9103,
+     "prompt": "the void spectre lord wreathed in violet lightning walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "sovereign_walk_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9104,
+     "prompt": "the void spectre lord wreathed in violet lightning walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "sovereign_walk_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9105,
+     "prompt": "the void spectre lord wreathed in violet lightning walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "sovereign_walk_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9106,
+     "prompt": "the void spectre lord wreathed in violet lightning walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    }
+   ],
+   "idle": [
+    {
+     "tag": "sovereign_idle_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9113,
+     "prompt": "the void spectre lord wreathed in violet lightning standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "sovereign_idle_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9114,
+     "prompt": "the void spectre lord wreathed in violet lightning standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "sovereign_idle_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9115,
+     "prompt": "the void spectre lord wreathed in violet lightning standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "sovereign_idle_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9116,
+     "prompt": "the void spectre lord wreathed in violet lightning standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    }
+   ]
+  },
+  {
+   "key": "obsidian_guardian_big",
+   "look": 2209,
+   "base": 2107,
+   "name": "Obsidian Colossus",
+   "monsters": "rift guardian (Obsidian Hall)",
+   "description": "magma golem with glowing cracks, 8-frame walk and 4-frame idle on its own 4x4 frames",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.95,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "walk": [
+    {
+     "tag": "colossus_walk_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9107,
+     "prompt": "the magma golem walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "colossus_walk_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9108,
+     "prompt": "the magma golem walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "colossus_walk_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9109,
+     "prompt": "the magma golem walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "colossus_walk_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9110,
+     "prompt": "the magma golem walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    }
+   ],
+   "idle": [
+    {
+     "tag": "colossus_idle_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9117,
+     "prompt": "the magma golem standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "colossus_idle_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9118,
+     "prompt": "the magma golem standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "colossus_idle_d2b",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9131,
+     "prompt": "the magma golem standing still in place: idle breathing loop, the chest rises and falls, the lava cracks pulse softly; feet do not move; it keeps its size, colours and place; no face, no new shapes"
+    },
+    {
+     "tag": "colossus_idle_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9120,
+     "prompt": "the magma golem standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    }
+   ]
+  },
+  {
+   "key": "crypt_guardian_big",
+   "look": 2210,
+   "base": 2111,
+   "name": "Crypt Dreadknight",
+   "monsters": "rift guardian (Ashen Crypt)",
+   "description": "black plate dread knight repainted from 3x3 to 4x4, violet visor, long sword; 8-frame walk, 4-frame idle",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.95,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "up": {
+    "tag": "dread_up",
+    "endpoint": "/edit-images-v2",
+    "seed": 8111,
+    "prompt": "the same black plate armoured dread knight with a violet-lit visor, horned helm and a long dark sword, drawn larger with finer armour detail; keep the exact pose, facing direction, silhouette and colours of each frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+   },
+   "walk": [
+    {
+     "tag": "dread_walk_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9111,
+     "prompt": "the armoured dread knight walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "dread_walk_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9112,
+     "prompt": "the armoured dread knight walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "dread_walk_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9113,
+     "prompt": "the armoured dread knight walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "dread_walk_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9114,
+     "prompt": "the armoured dread knight walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    }
+   ],
+   "idle": [
+    {
+     "tag": "dread_idle_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9121,
+     "prompt": "the armoured dread knight standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "dread_idle_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9122,
+     "prompt": "the armoured dread knight standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "dread_idle_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9123,
+     "prompt": "the armoured dread knight standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "dread_idle_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9124,
+     "prompt": "the armoured dread knight standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    }
+   ]
+  },
+  {
+   "key": "sanctum_guardian_big",
+   "look": 2211,
+   "base": 2115,
+   "name": "Sanctum Warden",
+   "monsters": "rift guardian (Forsaken Sanctum)",
+   "description": "moss stone golem with a teal core, 8-frame walk and 4-frame idle on its own 4x4 frames",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.95,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "walk": [
+    {
+     "tag": "warden_walk_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9115,
+     "prompt": "the moss stone golem walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "warden_walk_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9116,
+     "prompt": "the moss stone golem walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "warden_walk_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9117,
+     "prompt": "the moss stone golem walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "warden_walk_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9118,
+     "prompt": "the moss stone golem walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    }
+   ],
+   "idle": [
+    {
+     "tag": "warden_idle_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9125,
+     "prompt": "the moss stone golem standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "warden_idle_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9126,
+     "prompt": "the moss stone golem standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "warden_idle_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9127,
+     "prompt": "the moss stone golem standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "warden_idle_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9128,
+     "prompt": "the moss stone golem standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    }
+   ]
+  },
+  {
+   "key": "omen_seer_big",
+   "look": 2212,
+   "base": 2118,
+   "name": "Thalcyra the Stormbound Seer",
+   "monsters": "Omen guardian (Thalcyra)",
+   "description": "white storm seer repainted from 3x3 to 4x4, cyan halo and lightning staff; 8-frame walk, 4-frame idle",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.95,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "up": {
+    "tag": "seer_up",
+    "endpoint": "/edit-images-v2",
+    "seed": 8118,
+    "prompt": "the same white robed storm seer with a glowing cyan halo ring and a cyan crackling lightning staff, drawn larger with finer robe and armour detail; keep the exact pose, facing direction, silhouette and colours of each frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+   },
+   "walk": [
+    {
+     "tag": "seer_walk_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9118,
+     "prompt": "the storm seer walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "seer_walk_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9119,
+     "prompt": "the storm seer walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "seer_walk_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9120,
+     "prompt": "the storm seer walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    },
+    {
+     "tag": "seer_walk_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9121,
+     "prompt": "the storm seer walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+    }
+   ],
+   "idle": [
+    {
+     "tag": "seer_idle_d0",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9128,
+     "prompt": "the storm seer standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "seer_idle_d1",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9129,
+     "prompt": "the storm seer standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "seer_idle_d2",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9130,
+     "prompt": "the storm seer standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    },
+    {
+     "tag": "seer_idle_d3",
+     "endpoint": "/animate-with-text-v3",
+     "seed": 9131,
+     "prompt": "the storm seer standing still in place: idle breathing loop, the chest rises and falls, glows pulse softly; feet do not move; it keeps its size, colours and place"
+    }
+   ]
+  }
+ ]
+}

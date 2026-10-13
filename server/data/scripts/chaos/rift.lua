@@ -1225,6 +1225,14 @@ local function spawnOne(run, name, pos, tier, boss, opts)
 	local base = m:getMaxHealth()
 	-- the rift-exclusive look (rift_config.lua looks), before the tier so its shader goes on that look
 	local look = variant and variant.look or R.lookOf(run.looks, name, boss)
+	if not look and boss and run.omen then
+		-- an Omen guardian keeps its own look (its XML), or its big one (looks.bigGuardians, with looks.bigGuardiansOn)
+		local own = m:getOutfit().lookType
+		local big = R.bigLook(C().looks, own)
+		if big ~= own then
+			look = big
+		end
+	end
 	if look then
 		m:setOutfit({lookType = look})
 	end

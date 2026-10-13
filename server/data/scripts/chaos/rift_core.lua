@@ -559,7 +559,7 @@ function R.lookPlan(cfg, themeName, types)
 		return nil
 	end
 	local names = L.names and L.names[themeName] or {}
-	local plan = {byName = {}, guardian = fam.guardian, names = {}, guardianName = names.guardian}
+	local plan = {byName = {}, guardian = R.bigLook(L, fam.guardian), names = {}, guardianName = names.guardian}
 	local n = #types
 	for i, e in ipairs(types) do
 		local rank = "brute"
@@ -578,6 +578,15 @@ function R.lookPlan(cfg, themeName, types)
 	end
 	plan.variantShare = L.variantShare or 0
 	return plan
+end
+
+-- a guardian's bigger look (cfg.looks.bigGuardians, only with looks.bigGuardiansOn): the big look listed for `look`,
+-- else `look` itself (also nil). L = cfg.looks.
+function R.bigLook(L, look)
+	if L and L.bigGuardiansOn and L.bigGuardians and look and L.bigGuardians[look] then
+		return L.bigGuardians[look]
+	end
+	return look
 end
 
 -- the rank variant a pack monster wears (cfg.looks.variants, only with looks.variantsOn): {look, name} or nil (the

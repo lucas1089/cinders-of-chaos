@@ -887,6 +887,34 @@ do
 	end
 	ok(math.abs(hits / 4000 - L.variantShare) < 0.03, "about variantShare of the spawns wear a variant: " .. hits)
 	L.variantsOn = false
+	-- bigger guardians (looks.bigGuardians): off until a client pair with looks 2208+ ships; on, a listed guardian look
+	-- (rift family or Omen) becomes its big look, everything else stays
+	eq(L.bigGuardiansOn, false, "big guardians off: looks 2208+ are not in the live client pair yet")
+	local nBig, omenLooks = 0, {[2116] = true, [2117] = true, [2118] = true}
+	local guardianLooks = {}
+	for _, f in pairs(L.families) do
+		guardianLooks[f.guardian] = true
+	end
+	for from, to in pairs(L.bigGuardians) do
+		nBig = nBig + 1
+		ok(guardianLooks[from] or omenLooks[from], from .. ": a rift or Omen guardian's look")
+		ok(type(to) == "number" and to >= 2208 and to <= 2299, from .. ": big look in 2208-2299")
+		ok(not all[to], to .. ": a look of its own")
+		all[to] = "big guardian " .. from
+	end
+	eq(nBig, 5, "five big guardians")
+	eq(R.lookPlan(cfg, "Ashen Crypt", types).guardian, 2111, "big guardians off: the family's guardian look")
+	eq(R.bigLook(L, 2118), 2118, "off: an Omen keeps its look")
+	L.bigGuardiansOn = true
+	local bp = R.lookPlan(cfg, "Ashen Crypt", types)
+	eq(R.lookOf(bp, "anything", true), L.bigGuardians[2111], "on: the guardian wears the big look")
+	eq(R.lookOf(bp, "weak one", false), L.families["Ashen Crypt"].minion, "on: packs keep theirs")
+	eq(R.nameOf(bp, "anything", true), L.names["Ashen Crypt"].guardian, "on: the name stays")
+	eq(R.bigLook(L, 2118), 2212, "on: the Omen seer's big look")
+	eq(R.bigLook(L, 2116), 2116, "on: an Omen without a big look keeps its own")
+	eq(R.bigLook(L, nil), nil, "no look: nil")
+	eq(R.bigLook(nil, 2103), 2103, "no looks config: the look")
+	L.bigGuardiansOn = false
 	L.enabled = false
 	eq(R.lookPlan(cfg, "Abyssal Rift", types), nil, "looks off")
 	eq(R.nameOf(R.lookPlan(cfg, "Abyssal Rift", types), "Strong", true), nil, "looks off: own names")

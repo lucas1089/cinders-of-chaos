@@ -8673,6 +8673,26 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   `variantsOn = true`, flip its check in `tests/rift_test.lua`, and append `monster_looks/rift_variant_picks.csv` to
   picks.csv (`apply_monster_looks.py --check` then also checks that `looks.variants` lists each). Rollback: the switch.
   `tests/rift_test.lua` checks the looks, names, ranks and the share.
+- **Bigger guardians** (`rift_config.lua` `looks.bigGuardians`, `looks.bigGuardiansOn`; `R.bigLook` in `rift_core.lua`;
+  **off**). Five 4x4 looks of our own, 2208-2212, with an 8-frame walk and a 4-frame idle, painted with PixelLab over our
+  own frames of the guardian's look (`client/tools/sprites/big_bosses.py`, spec `monster_looks/big_bosses.json`, sheets
+  and rows in `art_import/big_bosses*`, client/MANIFEST.md "Bigger guardians"). With the switch on, the family guardian
+  (and both Twin Guardians) wears the big look in `R.lookPlan`, and an Omen guardian whose own look is listed gets it in
+  `spawnOne` (rift.lua); name, stats, spells, loot and credit stay.
+
+  | Guardian | Look | Big look | What changed |
+  |---|---|---|---|
+  | Abyssal Sovereign | 2103 (4x4, 3-phase walk) | 2208 | 8-frame walk, 4-frame idle |
+  | Obsidian Colossus | 2107 (4x4, 2-phase walk) | 2209 | 8-frame walk, 4-frame idle |
+  | Crypt Dreadknight | 2111 (3x3, 2-phase walk) | 2210 | repainted at 4x4, 8-frame walk, 4-frame idle |
+  | Sanctum Warden | 2115 (4x4, 3-phase walk) | 2211 | 8-frame walk, 4-frame idle |
+  | Thalcyra the Stormbound Seer (Omen) | 2118 (3x3, 4-phase walk) | 2212 | repainted at 4x4, 8-frame walk, 4-frame idle |
+
+  The world bosses (looks 842, 1472, 238, 862, 591) were left out: their looks are stock art, not frames of our own,
+  so they were not sent to PixelLab. Turn on only when a client pair with outfits 2208-2212 is on windows-assets (an
+  older pair draws nothing): set `bigGuardiansOn = true`, flip its check in `tests/rift_test.lua`, and append
+  `monster_looks/big_boss_picks.csv` to picks.csv. Rollback: the switch. `tests/rift_test.lua` checks the mapping (every
+  key a rift or Omen guardian look, every big look its own and unused by monster files), off and on.
 - **Rift names** (`rift_config.lua` `looks.names`, `R.nameOf`). Each look shows a name of its own, family word first:
 
   | Theme | Minion | Brute | Elite | Guardian |

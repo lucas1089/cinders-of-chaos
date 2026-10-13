@@ -77,6 +77,9 @@ jobs:
           python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
 
+      - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
+        run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
+
       - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model)
         run: python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
 
