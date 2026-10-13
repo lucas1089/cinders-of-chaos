@@ -1213,8 +1213,10 @@ end
 -- opts (optional): {laden = false: a density husk (no loot, no kill credit); extra = true: does not count towards the
 -- guardian (Veilbreach, thralls)}
 local function spawnOne(run, name, pos, tier, boss, opts)
-	-- the rift-exclusive name (rift_config.lua looks.names), set before the placement; credit stays with the type
-	local shown = R.nameOf(run.looks, name, boss)
+	-- the rift-exclusive name (rift_config.lua looks.names), set before the placement; credit stays with the type.
+	-- A rank variant (looks.variants, with looks.variantsOn) brings its own look and name.
+	local variant = R.pickVariant(run.looks, name, boss, math.random())
+	local shown = variant and variant.name or R.nameOf(run.looks, name, boss)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 	local m = create(name, P(pos), true, false, shown) or create(name, P(pos), true, true, shown)
 	if not m then
@@ -1222,7 +1224,7 @@ local function spawnOne(run, name, pos, tier, boss, opts)
 	end
 	local base = m:getMaxHealth()
 	-- the rift-exclusive look (rift_config.lua looks), before the tier so its shader goes on that look
-	local look = R.lookOf(run.looks, name, boss)
+	local look = variant and variant.look or R.lookOf(run.looks, name, boss)
 	if look then
 		m:setOutfit({lookType = look})
 	end

@@ -829,6 +829,64 @@ do
 			end
 		end
 	end
+	-- rank variants (looks.variants): off until a client pair with looks 2200+ ships; each a look and a name of its own
+	-- (the name check against the monster files below covers them too); pack ranks only
+	eq(L.variantsOn, false, "rank variants off: looks 2200+ are not in the live client pair yet")
+	ok(type(L.variantShare) == "number" and L.variantShare > 0 and L.variantShare < 1, "variant share in (0, 1)")
+	local nVar = 0
+	for theme, ranks in pairs(L.variants) do
+		ok(L.families[theme] ~= nil, "variants of a theme with a family: " .. theme)
+		for rank, list in pairs(ranks) do
+			ok(rank == "minion" or rank == "brute" or rank == "elite", theme .. " " .. rank .. ": a pack rank")
+			for _, e in ipairs(list) do
+				nVar = nVar + 1
+				ok(type(e.look) == "number" and e.look >= 2200 and e.look <= 2299, e.name .. ": look in 2200-2299")
+				ok(not all[e.look], e.name .. ": a look of its own")
+				all[e.look] = e.name
+				ok(type(e.name) == "string" and #e.name <= 30 and e.name:match("^[%a ]+$") ~= nil,
+					e.name .. ": a name of letters and spaces")
+				local word = L.names[theme].minion:match("^(%a+)")
+				ok(e.name:sub(1, #word + 1) == word .. " ", e.name .. ": the family word first")
+				ok(not shown[e.name:lower()], e.name .. ": a name of its own")
+				shown[e.name:lower()] = true
+			end
+		end
+	end
+	eq(nVar, 8, "eight rank variants")
+	eq(plan.variants, nil, "variants off: the plan has none")
+	eq(R.pickVariant(plan, "weak one", false, 0), nil, "variants off: the rank's own look")
+	L.variantsOn = true
+	local vp = R.lookPlan(cfg, "Abyssal Rift", types)
+	local mv = L.variants["Abyssal Rift"].minion[1]
+	eq(R.pickVariant(vp, "Weak One", false, 0), mv, "variants on, a low roll: the variant (any case)")
+	eq(R.pickVariant(vp, "weak one", false, L.variantShare - 1e-9), mv, "just under the share: the variant")
+	eq(R.pickVariant(vp, "weak one", false, L.variantShare), nil, "at the share: the rank's own look")
+	eq(R.pickVariant(vp, "Strong", true, 0), nil, "a guardian: no variant")
+	eq(R.pickVariant(vp, "Treasure Goblin", false, 0), nil, "no rift type: no variant")
+	eq(R.pickVariant(nil, "weak one", false, 0), nil, "no plan: no variant")
+	eq(R.lookOf(vp, "weak one", false), fam.minion, "the rank's look is kept for the other rolls")
+	eq(R.nameOf(vp, "weak one", false), names.minion, "and its name")
+	local op = R.lookPlan(cfg, "Obsidian Hall", types)
+	eq(R.pickVariant(op, "weak one", false, 0), nil, "a rank without variants: none")
+	eq((R.pickVariant(op, "strong", false, 0) or {}).look, 2204, "Obsidian Hall elite: the Ashmane")
+	local one2 = R.lookPlan(cfg, "Forsaken Sanctum", {types[2]})
+	eq((R.pickVariant(one2, "middle", false, 0) or {}).look, 2207, "one type is the elite: the elite's variant")
+	-- two variants of a rank share the rolls evenly
+	local list = L.variants["Abyssal Rift"].minion
+	list[2] = {look = 2299, name = "Abyssal Test"}
+	local tp = R.lookPlan(cfg, "Abyssal Rift", types)
+	eq(R.pickVariant(tp, "weak one", false, 0.25 * L.variantShare).look, 2202, "two variants: the first")
+	eq(R.pickVariant(tp, "weak one", false, 0.75 * L.variantShare).look, 2299, "two variants: the second")
+	list[2] = nil
+	-- the share over many spawns
+	local rand, hits = rng(11), 0
+	for _ = 1, 4000 do
+		if R.pickVariant(vp, "weak one", false, (rand(1, 1000000) - 1) / 1000000) then
+			hits = hits + 1
+		end
+	end
+	ok(math.abs(hits / 4000 - L.variantShare) < 0.03, "about variantShare of the spawns wear a variant: " .. hits)
+	L.variantsOn = false
 	L.enabled = false
 	eq(R.lookPlan(cfg, "Abyssal Rift", types), nil, "looks off")
 	eq(R.nameOf(R.lookPlan(cfg, "Abyssal Rift", types), "Strong", true), nil, "looks off: own names")

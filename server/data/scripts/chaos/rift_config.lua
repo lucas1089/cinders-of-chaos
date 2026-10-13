@@ -477,6 +477,31 @@ return {
 				guardian = "Crypt Dreadknight"},
 			["Forsaken Sanctum"] = {minion = "Sanctum Sporeling", brute = "Sanctum Creeper", elite = "Sanctum Blightstone",
 				guardian = "Sanctum Warden"}
+		},
+		-- rank variants: our own looks painted over the rank's look (same size, frames and timing; client looks 2200-2207,
+		-- client/tools/sprites/rift_variants.py, art_import/rift_variants.csv, monster_looks/rift_variant_picks.csv). A
+		-- pack monster of a rank listed here wears one of its variants (evenly) with chance variantShare, else the rank's
+		-- look; each variant shows its own name (family word first, never a monster type's name). Guardians have none.
+		-- variantsOn = false until a client pair with looks 2200-2207 is on windows-assets (an older pair draws nothing).
+		variantsOn = false,
+		variantShare = 0.4,
+		variants = {
+			["Abyssal Rift"] = {
+				minion = {{look = 2202, name = "Abyssal Bloodeel"}}, -- crimson eel, bone fins, amber eye (base 2100)
+				brute = {{look = 2200, name = "Abyssal Pallid Gazer"}}, -- bone-white, teal tentacles, cyan eyes (base 2101)
+				elite = {{look = 2203, name = "Abyssal Runeshade"}} -- indigo shade, bone mask, cyan runes (base 2102)
+			},
+			["Obsidian Hall"] = {
+				elite = {{look = 2204, name = "Obsidian Ashmane"}} -- ash-dusted obsidian, blue-white spirit-fire mane (base 2106)
+			},
+			["Ashen Crypt"] = {
+				minion = {{look = 2205, name = "Crypt Ashwalker"}} -- pale ash skeleton, ember cracks, red hood (base 2108)
+			},
+			["Forsaken Sanctum"] = {
+				minion = {{look = 2201, name = "Sanctum Gloomcap"}}, -- violet toadstool, pale green spots (base 2112)
+				brute = {{look = 2206, name = "Sanctum Thornrot"}}, -- crimson-brown thorn vines, orange pustules (base 2113)
+				elite = {{look = 2207, name = "Sanctum Mosstomb"}} -- grave-stone boulder, ash fungus, shelf mushrooms (base 2114)
+			}
 		}
 	}
 }

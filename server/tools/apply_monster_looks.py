@@ -10,7 +10,9 @@ ignores them. The corpse and every other attribute stay. The rift family rows (a
 to no monster file (rift.lua puts them on the rift's monsters); --check makes sure no file uses them, and that
 rift_config.lua `looks.families` holds exactly these ids. Rows of family "faction" (mounts and auras) belong to no
 monster file either (mounts.xml / auras.xml, factions_config.lua), nor do rows of family "exclusive" (the achievement
-wings of exclusives_config.lua, wings.xml); --check makes sure no monster file uses them.
+wings of exclusives_config.lua, wings.xml); --check makes sure no monster file uses them. Rows of family "riftvariant"
+(rank variants of the rift looks, client/tools/sprites/monster_looks/rift_variant_picks.csv) belong to no monster file
+either; --check makes sure rift_config.lua `looks.variants` lists each.
 Idempotent: a second run changes nothing. --check changes nothing and exits 1 when a file is not up to date.
 """
 import csv, os, re, sys
@@ -41,7 +43,8 @@ def main():
     mdir = args[0] if args else os.path.join(REPO, 'server', 'data', 'monster')
     rows = list(csv.DictReader(open(picks, newline='')))
     want = {r['monsters']: int(r['look']) for r in rows if r['family'] in ('world', 'omen', 'raid')}
-    rift = {int(r['look']): r['key'] for r in rows if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive')}
+    rift = {int(r['look']): r['key'] for r in rows
+            if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive', 'riftvariant')}
     found, changed, problems = set(), 0, []
     for root, _, files in os.walk(mdir):
         for f in sorted(files):
@@ -79,6 +82,13 @@ def main():
             v = line and re.search(r'\b%s\s*=\s*(\d+)' % r['rank'], line.group(1))
             if not v or int(v.group(1)) != int(r['look']):
                 problems.append(f"rift_config.lua looks.families[\"{FAMILY_THEME[r['family']]}\"].{r['rank']} is not {r['look']}")
+    # rank variants (family riftvariant, client/tools/sprites/monster_looks/rift_variant_picks.csv until their pair
+    # ships): each look is in rift_config.lua looks.variants
+    var = re.search(r'\bvariants\s*=\s*\{', cfg)
+    vcfg = cfg[var.end():] if var else ''
+    for r in rows:
+        if r['family'] == 'riftvariant' and not re.search(r'\blook\s*=\s*%d\b' % int(r['look']), vcfg):
+            problems.append(f"rift_config.lua looks.variants has no look {r['look']} ({r['key']})")
     for p in problems:
         print('PROBLEM', p)
     print(f'{len(found)} monster files matched, {changed} {"to update" if check else "updated"}, {len(problems)} problems')

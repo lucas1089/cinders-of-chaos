@@ -570,8 +570,29 @@ function R.lookPlan(cfg, themeName, types)
 		end
 		plan.byName[e.name:lower()] = fam[rank]
 		plan.names[e.name:lower()] = names[rank]
+		local var = L.variantsOn and L.variants and L.variants[themeName] and L.variants[themeName][rank]
+		if var and #var > 0 then
+			plan.variants = plan.variants or {}
+			plan.variants[e.name:lower()] = var
+		end
 	end
+	plan.variantShare = L.variantShare or 0
 	return plan
+end
+
+-- the rank variant a pack monster wears (cfg.looks.variants, only with looks.variantsOn): {look, name} or nil (the
+-- rank's own look and name). roll in [0, 1), one per spawn: below variantShare it picks one of the rank's variants
+-- (evenly), else none. Guardians have no variants.
+function R.pickVariant(plan, name, boss, roll)
+	if not plan or boss or not plan.variants then
+		return nil
+	end
+	local list = plan.variants[tostring(name):lower()]
+	local share = plan.variantShare or 0
+	if not list or #list == 0 or not roll or roll >= share then
+		return nil
+	end
+	return list[math.min(#list, floor(roll / share * #list) + 1)]
 end
 
 -- the name a rift monster shows: its rank's name (the guardian's for a guardian); nil = its type's own

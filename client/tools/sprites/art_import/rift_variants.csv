@@ -1,0 +1,9 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+abyss_brute_pallid,outfit,creature,Abyssal Pallid Gazer,rift_variants/abyss_brute_pallid,0,0,2,2,4,1+2,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=300:300/300:300|anim1=0:0:0
+sanctum_minion_gloomcap,outfit,creature,Sanctum Gloomcap,rift_variants/sanctum_minion_gloomcap,0,0,2,2,4,1+2,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=300:300/300:300|anim1=0:0:0
+abyss_minion_bloodeel,outfit,creature,Abyssal Bloodeel,rift_variants/abyss_minion_bloodeel,0,0,2,2,4,1+3,,new,,layers=1|gtypes=0+1|exact=32+32|durs1=300:300/300:300/300:300|anim1=0:0:0
+abyss_elite_runeshade,outfit,creature,Abyssal Runeshade,rift_variants/abyss_elite_runeshade,0,0,3,3,4,3,animateAlways,new,,layers=1|gtypes=1|exact=90|durs0=150:150/150:150/150:150|anim0=0:0:-1
+obsidian_elite_ashmane,outfit,creature,Obsidian Ashmane,rift_variants/obsidian_elite_ashmane,0,0,3,3,4,1+2,,new,,layers=1|gtypes=0+1|exact=96+96|durs1=300:300/300:300|anim1=0:0:0
+crypt_minion_ashwalker,outfit,creature,Crypt Ashwalker,rift_variants/crypt_minion_ashwalker,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=300:300/300:300/300:300/300:300/300:300/300:300/300:300/300:300|anim1=0:0:0
+sanctum_brute_thornrot,outfit,creature,Sanctum Thornrot,rift_variants/sanctum_brute_thornrot,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=300:300/300:300/300:300/300:300/300:300/300:300/300:300/300:300|anim1=0:0:0
+sanctum_elite_mosstomb,outfit,creature,Sanctum Mosstomb,rift_variants/sanctum_elite_mosstomb,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=300:300/300:300/300:300/300:300/300:300/300:300/300:300/300:300|anim1=0:0:0

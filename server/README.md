@@ -8634,6 +8634,25 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   and names; a client pair without outfits 2100+ needs it. `tests/rift_test.lua` checks the ranks, that every look is
   distinct, and that no monster file uses a family look. `server/tools/apply_monster_looks.py --check` compares the config
   with picks.csv. Checked in game: a tier 8 rift of each theme, the packs and the guardian.
+- **Rift rank variants** (`rift_config.lua` `looks.variants`, `looks.variantsOn`, `looks.variantShare`;
+  `R.pickVariant` in `rift_core.lua`; **off**). Eight looks of our own, 2200-2207, painted with PixelLab over the frames
+  of a rank's look, so size, frame groups, phases and timing stay the base's (`client/tools/sprites/rift_variants.py`,
+  spec `monster_looks/rift_variants.json`, sheets and rows in `art_import/rift_variants*`). With the switch on, a pack
+  monster of a rank that has variants wears one with chance `variantShare` (0.4; one roll per spawn in `spawnOne`,
+  several variants share it evenly) and shows the variant's name; the other spawns keep the rank's look and name.
+  Guardians have none. Stats, spells, loot and credit stay the type's.
+
+  | Theme | Minion | Brute | Elite |
+  |---|---|---|---|
+  | Abyssal Rift | 2202 Abyssal Bloodeel (of 2100) | 2200 Abyssal Pallid Gazer (of 2101) | 2203 Abyssal Runeshade (of 2102) |
+  | Obsidian Hall | | | 2204 Obsidian Ashmane (of 2106) |
+  | Ashen Crypt | 2205 Crypt Ashwalker (of 2108) | | |
+  | Forsaken Sanctum | 2201 Sanctum Gloomcap (of 2112) | 2206 Sanctum Thornrot (of 2113) | 2207 Sanctum Mosstomb (of 2114) |
+
+  Turn on only when a client pair with outfits 2200-2207 is on windows-assets (an older pair draws nothing): then set
+  `variantsOn = true`, flip its check in `tests/rift_test.lua`, and append `monster_looks/rift_variant_picks.csv` to
+  picks.csv (`apply_monster_looks.py --check` then also checks that `looks.variants` lists each). Rollback: the switch.
+  `tests/rift_test.lua` checks the looks, names, ranks and the share.
 - **Rift names** (`rift_config.lua` `looks.names`, `R.nameOf`). Each look shows a name of its own, family word first:
 
   | Theme | Minion | Brute | Elite | Guardian |

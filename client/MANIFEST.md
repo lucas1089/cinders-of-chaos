@@ -1095,6 +1095,30 @@ committed. The set itself is kept with the art libraries outside the repository.
   ```
   Server use: server/README.md "Pack effects for procs and bosses" (switch `ChaosPackFx.PACK_FX`, off).
 
+## Rift rank variants (next pair, outfits 2200-2207, `tools/sprites/rift_variants.py`, `art_import/rift_variants.csv`; not built yet)
+Eight new looks of rift monsters, our own art: PixelLab (edit-animation, owner approved) repainted the frames of a rift
+look of our pair, so each variant keeps its base's size, frame groups, phases, timing, flags and feet line. Only our
+own frames were sent as input; no outside reference art. Base looks (donor-library art of things_custom11, sources in
+`monster_looks/sources.csv`): 2100, 2101, 2102, 2106, 2108, 2112, 2113, 2114.
+- Spec `monster_looks/rift_variants.json`: per variant the key, planned look, base, theme, rank, name, the PixelLab jobs
+  with prompts and seeds, and the post-processing numbers. The raw PixelLab results are not in git.
+- `rift_variants.py extract` writes the base frames from a pair. `build` post-processes deterministically: alpha 0 / 255,
+  specks dropped, one alignment shift per variant against the base's opaque core (all 0, 0: the edits came back
+  registered; the lowest row of every frame equals the base's), a darker grade, one palette per variant (18-32 colours,
+  glow accents kept), a dark rim on bright edges. Output: `art_import/rift_variants/<key>.png` (import_art_things.py
+  layout, layers=1), `art_import/rift_variants.csv` and `monster_looks/rift_variant_picks.csv` (picks.csv rows, family
+  `riftvariant`, appended to picks.csv with the pair). `check` and `rift_variants_test.py` need no pair.
+- Append (ids from 2200; on things_custom24, which ends at outfit 2193, the importer pads 2194-2199 with blank outfits):
+  ```
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir OUT \
+      --things client/tools/sprites/art_import/rift_variants.csv --first-outfit 2200 --expect-items <items of IN>
+  python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old IN/Tibia.dat IN/Tibia.spr
+  ```
+  A trial on a scratch copy of things_custom23 (`--expect-items 33659`, things_custom24: 33903): 8 outfits, 15 blank,
+  716 new sprites (715 appended), 808 sprite slots pixel-identical, old things byte-identical, check_pair's append-only
+  guard passed. Leave out `--sheets`: with no item rows the importer's item sheet fails on an empty image.
+  Server use: server/README.md "Rift rank variants" (`looks.variantsOn`, off).
+
 ## Aura displacement (things_custom23, `tools/sprites/fix_pair_warnings.py` kind `displacement`)
 **On windows-assets since 2026-10-13 (c91dd6f9, owner approved).** The owner approved fixing the Scarlet Glimmer aura (look 712, auras.xml 30, the boss exclusive
 `aura_scarlet`). It had no displacement (the client reads 0,0). In a live client it drew about 17 x 12 units right and

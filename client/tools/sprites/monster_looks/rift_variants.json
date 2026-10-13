@@ -1,0 +1,535 @@
+{
+ "about": "rift monster variants painted with PixelLab over the frames of our own rift looks (rift_variants.py). Raw results are not in git; the sheets are (art_import/rift_variants/).",
+ "first_outfit": 2200,
+ "variants": [
+  {
+   "key": "abyss_brute_pallid",
+   "look": 2200,
+   "base": 2101,
+   "theme": "Abyssal Rift",
+   "family": "abyss",
+   "rank": "brute",
+   "name": "Abyssal Pallid Gazer",
+   "description": "bone-white tentacled horror with teal tentacles and three cyan eyes",
+   "colours": 32,
+   "grade": [
+    0.86,
+    0.9
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "abyss_brute_v1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2101,
+     "frames": [
+      "g0_d0_p0",
+      "g0_d1_p0",
+      "g0_d2_p0",
+      "g0_d3_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g1_d1_p0",
+      "g1_d1_p1",
+      "g1_d2_p0",
+      "g1_d2_p1",
+      "g1_d3_p0",
+      "g1_d3_p1"
+     ],
+     "prompt": "turn the violet tentacled eye creature into a pale bone-white deep abyss horror with sickly teal-green tentacles and three glowing cyan eyes; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "abyss_brute_v1_north",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2102,
+     "input": "abyss_brute_v1",
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1"
+     ],
+     "prompt": "this is the creature seen from behind: remove the three cyan eyes, paint plain pale bone-white skin with faint grey veins where the eyes were; change nothing else, keep every pixel of the silhouette and the tentacles"
+    }
+   ]
+  },
+  {
+   "key": "sanctum_minion_gloomcap",
+   "look": 2201,
+   "base": 2112,
+   "theme": "Forsaken Sanctum",
+   "family": "sanctum",
+   "rank": "minion",
+   "name": "Sanctum Gloomcap",
+   "description": "dark violet-capped toadstool sprout with glowing pale-green spots",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.9,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "sanctum_minion_v1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2112,
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g0_d1_p0",
+      "g1_d1_p0",
+      "g1_d1_p1",
+      "g0_d2_p0",
+      "g1_d2_p0",
+      "g1_d2_p1",
+      "g0_d3_p0",
+      "g1_d3_p0",
+      "g1_d3_p1"
+     ],
+     "prompt": "turn the red-capped mushroom sprout into a sickly dark violet-capped toadstool with glowing pale green spots on the cap and a grey-white rotten stalk; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    }
+   ]
+  },
+  {
+   "key": "abyss_minion_bloodeel",
+   "look": 2202,
+   "base": 2100,
+   "theme": "Abyssal Rift",
+   "family": "abyss",
+   "rank": "minion",
+   "name": "Abyssal Bloodeel",
+   "description": "crimson void eel with bone-white fin spines and a glowing amber eye",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.9,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "abyss_minion_v1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2100,
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g1_d0_p2",
+      "g0_d1_p0",
+      "g1_d1_p0",
+      "g1_d1_p1",
+      "g1_d1_p2",
+      "g0_d2_p0",
+      "g1_d2_p0",
+      "g1_d2_p1",
+      "g1_d2_p2",
+      "g0_d3_p0",
+      "g1_d3_p0",
+      "g1_d3_p1",
+      "g1_d3_p2"
+     ],
+     "prompt": "turn the dark blue void eel into a deep crimson blood eel with bone-white spiny fins along its back and a single glowing amber eye; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    }
+   ]
+  },
+  {
+   "key": "abyss_elite_runeshade",
+   "look": 2203,
+   "base": 2102,
+   "theme": "Abyssal Rift",
+   "family": "abyss",
+   "rank": "elite",
+   "name": "Abyssal Runeshade",
+   "description": "deep indigo shade with cyan-runed tentacles and a pale bone mask",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.9,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "abyss_elite_v1_c0",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2102,
+     "frames": [
+      "g0_d0_p0",
+      "g0_d0_p1",
+      "g0_d0_p2",
+      "g0_d1_p0",
+      "g0_d1_p1",
+      "g0_d1_p2"
+     ],
+     "prompt": "turn the black tentacled shade into a deep indigo-violet shade with a pale cracked bone mask and glowing cyan runes along its tentacles; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur",
+     "crop": 80
+    },
+    {
+     "tag": "abyss_elite_v1_c1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2102,
+     "frames": [
+      "g0_d2_p0",
+      "g0_d2_p1",
+      "g0_d2_p2",
+      "g0_d3_p0",
+      "g0_d3_p1",
+      "g0_d3_p2"
+     ],
+     "prompt": "turn the black tentacled shade into a deep indigo-violet shade with a pale cracked bone mask and glowing cyan runes along its tentacles; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur",
+     "crop": 80
+    },
+    {
+     "tag": "abyss_elite_v1_east",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2104,
+     "input": "abyss_elite_v1_c0",
+     "frames": [
+      "g0_d1_p0",
+      "g0_d1_p1",
+      "g0_d1_p2"
+     ],
+     "prompt": "every frame must show the same large pale cracked bone skull mask on the shade's face, as in the first two frames: add it to the frame that lacks it; change nothing else, keep every pixel of the silhouette, colours and motion"
+    }
+   ]
+  },
+  {
+   "key": "obsidian_elite_ashmane",
+   "look": 2204,
+   "base": 2106,
+   "theme": "Obsidian Hall",
+   "family": "obsidian",
+   "rank": "elite",
+   "name": "Obsidian Ashmane",
+   "description": "ash-dusted black obsidian beast with red cracks and a blue-white spirit-fire mane",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.9,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "obsidian_elite_v1_c0",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2106,
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g0_d1_p0",
+      "g1_d1_p0",
+      "g1_d1_p1"
+     ],
+     "prompt": "turn the molten maned beast into a beast of cooled black obsidian with grey ash-dusted hide, thin cracks glowing deep red, and a mane of pale blue-white spirit fire; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur",
+     "crop": 80
+    },
+    {
+     "tag": "obsidian_elite_v1_c1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2106,
+     "frames": [
+      "g0_d2_p0",
+      "g1_d2_p0",
+      "g1_d2_p1",
+      "g0_d3_p0",
+      "g1_d3_p0",
+      "g1_d3_p1"
+     ],
+     "prompt": "turn the molten maned beast into a beast of cooled black obsidian with grey ash-dusted hide, thin cracks glowing deep red, and a mane of pale blue-white spirit fire; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur",
+     "crop": 80
+    }
+   ]
+  },
+  {
+   "key": "crypt_minion_ashwalker",
+   "look": 2205,
+   "base": 2108,
+   "theme": "Ashen Crypt",
+   "family": "crypt",
+   "rank": "minion",
+   "name": "Crypt Ashwalker",
+   "description": "pale ash-white skeleton with ember-glowing cracks and a ragged dark red hood",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.9,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "crypt_minion_v2_c0",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2208,
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g1_d0_p2",
+      "g1_d0_p3",
+      "g1_d0_p4",
+      "g1_d0_p5",
+      "g1_d0_p6",
+      "g1_d0_p7"
+     ],
+     "prompt": "turn the skeleton into a pale ash-white skeleton whose bones are cracked with glowing ember-orange fissures, ember-orange glowing eye sockets and a ragged dark red hood; keep a bright orange ember glow around the outline; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, no blur"
+    },
+    {
+     "tag": "crypt_minion_v2_c1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2208,
+     "frames": [
+      "g0_d1_p0",
+      "g1_d1_p0",
+      "g1_d1_p1",
+      "g1_d1_p2",
+      "g1_d1_p3",
+      "g1_d1_p4",
+      "g1_d1_p5",
+      "g1_d1_p6",
+      "g1_d1_p7"
+     ],
+     "prompt": "turn the skeleton into a pale ash-white skeleton whose bones are cracked with glowing ember-orange fissures, ember-orange glowing eye sockets and a ragged dark red hood; keep a bright orange ember glow around the outline; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, no blur"
+    },
+    {
+     "tag": "crypt_minion_v2_c2",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2208,
+     "frames": [
+      "g0_d2_p0",
+      "g1_d2_p0",
+      "g1_d2_p1",
+      "g1_d2_p2",
+      "g1_d2_p3",
+      "g1_d2_p4",
+      "g1_d2_p5",
+      "g1_d2_p6",
+      "g1_d2_p7"
+     ],
+     "prompt": "turn the skeleton into a pale ash-white skeleton whose bones are cracked with glowing ember-orange fissures, ember-orange glowing eye sockets and a ragged dark red hood; keep a bright orange ember glow around the outline; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, no blur"
+    },
+    {
+     "tag": "crypt_minion_v2_c3",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2208,
+     "frames": [
+      "g0_d3_p0",
+      "g1_d3_p0",
+      "g1_d3_p1",
+      "g1_d3_p2",
+      "g1_d3_p3",
+      "g1_d3_p4",
+      "g1_d3_p5",
+      "g1_d3_p6",
+      "g1_d3_p7"
+     ],
+     "prompt": "turn the skeleton into a pale ash-white skeleton whose bones are cracked with glowing ember-orange fissures, ember-orange glowing eye sockets and a ragged dark red hood; keep a bright orange ember glow around the outline; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, no blur"
+    },
+    {
+     "tag": "crypt_minion_v2_north",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2209,
+     "input": "crypt_minion_v2_c0",
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g1_d0_p2",
+      "g1_d0_p3",
+      "g1_d0_p4",
+      "g1_d0_p5",
+      "g1_d0_p6",
+      "g1_d0_p7"
+     ],
+     "prompt": "this skeleton is seen from behind: the dark red hood covers the back of its head, so no skull face and no eyes are visible; change nothing else, keep every pixel of the silhouette, colours and motion"
+    }
+   ]
+  },
+  {
+   "key": "sanctum_brute_thornrot",
+   "look": 2206,
+   "base": 2113,
+   "theme": "Forsaken Sanctum",
+   "family": "sanctum",
+   "rank": "brute",
+   "name": "Sanctum Thornrot",
+   "description": "rotting crimson-brown thorn vine mass with bone fragments and orange pustules",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.9,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "sanctum_brute_v1_c0",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2113,
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g1_d0_p2",
+      "g1_d0_p3",
+      "g1_d0_p4",
+      "g1_d0_p5",
+      "g1_d0_p6",
+      "g1_d0_p7"
+     ],
+     "prompt": "turn the green blight tendril mass into a rotting mass of dark crimson-brown thorned vines with pale bone fragments and dull orange glowing pustules; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "sanctum_brute_v1_c1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2113,
+     "frames": [
+      "g0_d1_p0",
+      "g1_d1_p0",
+      "g1_d1_p1",
+      "g1_d1_p2",
+      "g1_d1_p3",
+      "g1_d1_p4",
+      "g1_d1_p5",
+      "g1_d1_p6",
+      "g1_d1_p7"
+     ],
+     "prompt": "turn the green blight tendril mass into a rotting mass of dark crimson-brown thorned vines with pale bone fragments and dull orange glowing pustules; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "sanctum_brute_v1_c2",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2113,
+     "frames": [
+      "g0_d2_p0",
+      "g1_d2_p0",
+      "g1_d2_p1",
+      "g1_d2_p2",
+      "g1_d2_p3",
+      "g1_d2_p4",
+      "g1_d2_p5",
+      "g1_d2_p6",
+      "g1_d2_p7"
+     ],
+     "prompt": "turn the green blight tendril mass into a rotting mass of dark crimson-brown thorned vines with pale bone fragments and dull orange glowing pustules; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "sanctum_brute_v1_c3",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2113,
+     "frames": [
+      "g0_d3_p0",
+      "g1_d3_p0",
+      "g1_d3_p1",
+      "g1_d3_p2",
+      "g1_d3_p3",
+      "g1_d3_p4",
+      "g1_d3_p5",
+      "g1_d3_p6",
+      "g1_d3_p7"
+     ],
+     "prompt": "turn the green blight tendril mass into a rotting mass of dark crimson-brown thorned vines with pale bone fragments and dull orange glowing pustules; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    }
+   ]
+  },
+  {
+   "key": "sanctum_elite_mosstomb",
+   "look": 2207,
+   "base": 2114,
+   "theme": "Forsaken Sanctum",
+   "family": "sanctum",
+   "rank": "elite",
+   "name": "Sanctum Mosstomb",
+   "description": "cracked grey grave-stone boulder crusted with ash-white fungus and orange shelf mushrooms",
+   "colours": 32,
+   "accents": 4,
+   "grade": [
+    0.9,
+    0.95
+   ],
+   "outline": 80,
+   "speck": 4,
+   "jobs": [
+    {
+     "tag": "sanctum_elite_v1_c0",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2114,
+     "frames": [
+      "g0_d0_p0",
+      "g1_d0_p0",
+      "g1_d0_p1",
+      "g1_d0_p2",
+      "g1_d0_p3",
+      "g1_d0_p4",
+      "g1_d0_p5",
+      "g1_d0_p6",
+      "g1_d0_p7"
+     ],
+     "prompt": "turn the blight boulder into a cracked grey grave-stone boulder crusted with pale ash-white fungus and small orange shelf mushrooms, with dark brown root tendrils; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "sanctum_elite_v1_c1",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2114,
+     "frames": [
+      "g0_d1_p0",
+      "g1_d1_p0",
+      "g1_d1_p1",
+      "g1_d1_p2",
+      "g1_d1_p3",
+      "g1_d1_p4",
+      "g1_d1_p5",
+      "g1_d1_p6",
+      "g1_d1_p7"
+     ],
+     "prompt": "turn the blight boulder into a cracked grey grave-stone boulder crusted with pale ash-white fungus and small orange shelf mushrooms, with dark brown root tendrils; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "sanctum_elite_v1_c2",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2114,
+     "frames": [
+      "g0_d2_p0",
+      "g1_d2_p0",
+      "g1_d2_p1",
+      "g1_d2_p2",
+      "g1_d2_p3",
+      "g1_d2_p4",
+      "g1_d2_p5",
+      "g1_d2_p6",
+      "g1_d2_p7"
+     ],
+     "prompt": "turn the blight boulder into a cracked grey grave-stone boulder crusted with pale ash-white fungus and small orange shelf mushrooms, with dark brown root tendrils; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "sanctum_elite_v1_c3",
+     "endpoint": "/edit-animation-v2",
+     "seed": 2114,
+     "frames": [
+      "g0_d3_p0",
+      "g1_d3_p0",
+      "g1_d3_p1",
+      "g1_d3_p2",
+      "g1_d3_p3",
+      "g1_d3_p4",
+      "g1_d3_p5",
+      "g1_d3_p6",
+      "g1_d3_p7"
+     ],
+     "prompt": "turn the blight boulder into a cracked grey grave-stone boulder crusted with pale ash-white fungus and small orange shelf mushrooms, with dark brown root tendrils; keep the exact pose, size, silhouette and motion of every frame; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    }
+   ]
+  }
+ ]
+}
