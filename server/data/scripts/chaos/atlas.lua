@@ -288,6 +288,10 @@ function talk.onSay(player, words, param)
 		return false
 	end
 	local cmd, arg = (param or ""):match("^%s*(%S*)%s*(.-)%s*$")
+	-- cells give atlas points: an administrator only, logged (docs/GM_HANDBOOK.md section 2)
+	if cmd == "grant" and not Chaos.staffCommand(player, words, param, true) then
+		return false
+	end
 	local st = S.get(player:getGuid())
 	if cmd == "grant" then
 		local keys = {}

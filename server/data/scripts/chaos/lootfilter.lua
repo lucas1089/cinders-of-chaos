@@ -722,7 +722,10 @@ local function take(player, data)
 	if not canLoot(player, corpse) then
 		return reply(player, "You are not the owner.")
 	end
-	if not F.inReach(player:getPosition(), kill.pos, c.reach) then
+	-- in clear sight, like groundloot.lua: no looting through a wall
+	local me = player:getPosition()
+	local okSight, sight = pcall(function() return me:isSightClear(Position(kill.pos.x, kill.pos.y, kill.pos.z), true) end)
+	if not F.inReach(me, kill.pos, c.reach, okSight and sight == true) then
 		return reply(player, "The corpse is too far away.")
 	end
 	local left = kill.left[n] or 0

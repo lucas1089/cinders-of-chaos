@@ -266,11 +266,16 @@ function F.reconcile(entries, present)
 	return out
 end
 
-function F.inReach(from, to, range)
+-- sightClear (optional): false = a wall, door or bars between them; only the squares next to the player skip it
+function F.inReach(from, to, range, sightClear)
 	if not from or not to or from.z ~= to.z then
 		return false
 	end
-	return math.abs(from.x - to.x) <= range.x and math.abs(from.y - to.y) <= range.y
+	local dx, dy = math.abs(from.x - to.x), math.abs(from.y - to.y)
+	if sightClear == false and (dx > 1 or dy > 1) then
+		return false
+	end
+	return dx <= range.x and dy <= range.y
 end
 
 function F.label(info)

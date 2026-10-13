@@ -7975,7 +7975,7 @@ Treasure goblins add their hoard in their death event, which the engine runs bef
   (`F.signature`, `F.reconcile`); identical items are interchangeable.
 - Click = loot all of that entry, Shift+click = one of a stack. `take {k, n, id, one}`: the server checks the kill belongs to
   the player, the corpse still exists and holds a matching item, the player may open it (owner or a party member of the
-  owner, the engine's `canOpenCorpse` rule), same floor and within 7x5 squares (`reach`). The item goes into the backpack
+  owner, the engine's `canOpenCorpse` rule), same floor, within 7x5 squares (`reach`) and in clear sight (a corpse next to the player always). The item goes into the backpack
   and the bags inside it (capacity checked; never into an equipment slot), or first into a carried store pouch that collects
   that kind of item (`ChaosPouches.stow`), else it is refused ("You do not have enough capacity or room.", shown over the map; a split stack goes back).
 - Greying: `update {k, left}` after autoloot (in the same drop), after a click, after any player move out of the corpse

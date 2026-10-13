@@ -47,16 +47,16 @@ access flag (gamemaster or higher).
 | `/worldboss start [name\|number\|random]`, `stop`, `arena` | 4+ | the world boss event |
 | `/invasion start <area\|random> [faction]`, `stop`, `status`, `schedule <minutes> ...` | 4+ | invasions |
 | `/siege start\|match\|end\|stop\|portal\|arena [n]\|signup <guild>\|clear` | 4+ | the guild siege |
-| `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ | arena, battleground, Scorched Marches |
-| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ | the instanced content: runs, phases |
+| `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ (`/marches embers`: **5+**) | arena, battleground, Scorched Marches |
+| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ (`/raid marks`, `/descent sigil`, `/trial tokens`: **5+**) | the instanced content: runs, phases |
 | `/ascended sigil\|shards\|relic, <kind>` | **5+** | Ascended test items for staff test characters |
 | `/instances`, `/instances <type>`, `/instances close <type> <id>`, `/instances line [type]` | 4+ | every running instance (rift, descent, raid, ascended, guildboss, trials, ascension, tower, dungeon, arena, battleground, worldboss, siege, tutorial, bossroom) with its id, time left, players and idle grace; close one by its system's failure rule (nobody gets a reward, nothing is refunded that a time-out would not refund); who waits in line for a free slot (server/README.md "Instance limits") |
-| `/community status\|modifier <key>\|modifier auto\|add <points>\|stage <n>` | 4+ | the community goal and the weekly modifier |
+| `/community status\|modifier <key>\|modifier auto\|add <points>\|stage <n>` | 4+ (`add`: **5+**) | the community goal and the weekly modifier |
 | `/guild info\|log\|rent\|hall <guild>[, value]`, `/guildwar list\|end, <id>\|expire, <id>` | 4+ | guilds and guild wars (`rent <guild>, paid`: 5+) |
 | `/guild xp\|bank <guild>, <value>` | **5+** | guild XP and the guild bank |
 | `/classunlock <character>, <class>[, revoke]` | **5+** (revoke: 4+) | a class unlock for the whole account |
 | `/cosmetic`, `/exclusive`, `/transmog <character>, <key>[, revoke]` | **5+** (revoke, `/cosmetic ..., sync`: 4+) | grant or revoke account cosmetics; `/exclusive ..., roll` is 5+ too |
-| `/faction`, `/professions`, `/pet`, `/gamble`, `/mentor`, `/referral`, `/hideout`, `/achievements`, `/atlas` | 4+ | per-system inspection and test tools (`/pet give`: 5+) |
+| `/faction`, `/professions`, `/pet`, `/gamble`, `/mentor`, `/referral`, `/hideout`, `/achievements`, `/atlas` | 4+ | per-system inspection and test tools (`/pet give`, `/achievements grant\|add`, `/atlas grant`: 5+) |
 | `/newplayerkit <name>[, welcome\|milestone <n>\|reset\|tutorial]`, `/towerrun <floors>,<seconds>` | 4+ (the kit, `milestone`, `reset`: **5+**) | new-player kit and tutorial; a fake tower run on yourself |
 | `/market sweep\|info <id>\|orders`, `/orbx sweep\|info <id>\|escrow` | 4+ | market and Orb Exchange checks |
 | `/treestats [<class> [band] [n]]`, `/treestats export` | 4+ | passive tree picks per class line and level band (counts only); the CSV goes to the server's `data/` folder (server/README.md "Passive tree pick statistics") |
@@ -68,7 +68,8 @@ access flag (gamemaster or higher).
 
 The commands that hand out value (`/rift key|omen|fragments`, `/ascended sigil|shards|relic`, `/newplayerkit` kit,
 milestone and reset, `/guild xp|bank` and `rent <guild>, paid`, `/classunlock`, `/cosmetic`, `/exclusive` and `/transmog`
-grants, `/pet give`, the test clocks `/daily shift|set` and `/leaderboard shift`) need group 5, like `/coins`, `/charm give`
+grants, `/pet give`, the test clocks `/daily shift|set` and `/leaderboard shift`, `/raid marks`, `/descent sigil`,
+`/marches embers`, `/trial tokens`, `/achievements grant|add`, `/atlas grant`, `/community add`) need group 5, like `/coins`, `/charm give`
 and `/pact`.
 **Rule (decided):** staff never give anything to a player character with any command; these tools are for staff test
 characters only. A refund after a confirmed bug goes through an administrator (group 5) with a written reason

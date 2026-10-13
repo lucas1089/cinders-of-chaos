@@ -626,7 +626,7 @@ do
 		end
 		function p:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
 		function p:registerEvent() end
-		function p:getGroup() return {getAccess = function() return true end} end
+		function p:getGroup() return {getAccess = function() return true end, getId = function() return self.group or 5 end} end
 		players[cid] = p
 		return p
 	end
@@ -652,6 +652,11 @@ do
 		return ev
 	end
 	_G.Chaos = {
+		-- chaos_constants.lua Chaos.staffCommand: value needs group 5
+		staffCommand = function(player, words, param, economy)
+			local g = player:getGroup()
+			return g.getAccess() and (not economy or g.getId() >= 5), g.getAccess()
+		end,
 		send = function(player, op, action, data)
 			sent[#sent + 1] = {p = player, op = op, action = action, data = data}
 		end,
@@ -735,7 +740,11 @@ do
 	-- omen arenas credit their cell, and nothing else
 	R.hooks.onSealed({omen = "bloodmoon", tier = 15, deaths = 1, secs = 500, guids = {777}})
 	eq(A.earned(cfg, rcfg, S.state[777].done), 5, "omen +2")
-	-- staff grant
+	-- staff grant: an administrator only (a gamemaster, group 4, is refused)
+	q.group = 4
+	events["/atlas"].onSay(q, "/atlas", "grant all")
+	eq(A.earned(cfg, rcfg, S.state[777].done), 5, "a gamemaster cannot grant cells")
+	q.group = 5
 	events["/atlas"].onSay(q, "/atlas", "grant all")
 	eq(A.earned(cfg, rcfg, S.state[777].done), 96, "grant all")
 	R.hooks.atlasMods, R.hooks.onSealed = nil, nil

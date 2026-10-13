@@ -127,6 +127,19 @@ ana.saveOk = true
 bankEvent.onExtendedOpcode(ana, OP, {action = "transfer", data = {"gold", "Offline", 300}})
 eq(wrote("UPDATE `players` SET `balance` = `balance` %+ 300 WHERE `id` = 77"), true, "offline receiver credited after the save")
 eq(ana.bank, 700, "taken from the sender")
+-- an online receiver: credited in memory only after the sender's save (the receiver may be saved first at its logout)
+local cara = newPlayer(78, "Cara")
+Chaos.findPlayer = function(name) if name == "Cara" then return 78, "Cara", cara end return nil end
+ana.saveOk = false
+bankEvent.onExtendedOpcode(ana, OP, {action = "transfer", data = {"gold", "Cara", 200}})
+eq(cara.bank, 0, "no online credit when the sender's save fails")
+eq(ana.bank, 700, "the gold is back")
+ana.saveOk = true
+local savesBefore = ana.saves
+bankEvent.onExtendedOpcode(ana, OP, {action = "transfer", data = {"gold", "Cara", 200}})
+eq(cara.bank, 200, "online receiver credited after the save")
+eq(ana.bank, 500, "taken from the sender")
+eq(ana.saves, savesBefore + 1, "the sender was saved")
 
 -- ---------------------------------------------------------------- guild.lua: the guild bank deposit
 dofile("data/scripts/chaos/guild.lua")

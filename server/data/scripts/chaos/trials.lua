@@ -1338,6 +1338,10 @@ function talk.onSay(player, words, param)
 	for w in (param or ""):gmatch("%S+") do
 		args[#args + 1] = w:lower()
 	end
+	-- tokens buy Trial rewards: an administrator only, logged (docs/GM_HANDBOOK.md section 2)
+	if args[1] == "tokens" and not Chaos.staffCommand(player, words, param, true) then
+		return false
+	end
 	local voc = vocId(player)
 	local reply = function(text)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, text)

@@ -123,6 +123,10 @@ local valueGuards = {
 	["descent.lua"] = 'if cmd == "sigil" and not Chaos.staffCommand(player, words, param, true) then',
 	["raid.lua"] = 'if cmd == "marks" and not Chaos.staffCommand(player, "/raid", param, true) then',
 	["pvpzone.lua"] = 'if cmd == "embers" and not Chaos.staffCommand(player, words, param, true) then',
+	["trials.lua"] = 'if args[1] == "tokens" and not Chaos.staffCommand(player, words, param, true) then',
+	["achievements.lua"] = 'if not Chaos.staffCommand(player, words, param, cmd == "grant" or cmd == "add") then',
+	["atlas.lua"] = 'if cmd == "grant" and not Chaos.staffCommand(player, words, param, true) then',
+	["community.lua"] = 'if cmd == "add" and not Chaos.staffCommand(player, words, param, true) then',
 }
 for f, guard in pairs(valueGuards) do
 	eq(src(f):find(guard, 1, true) ~= nil, true, f .. ": the value it hands out needs an administrator")
@@ -167,6 +171,9 @@ local checksOf = {
 	-- /daily shift moves the day of every account (all claim again), /daily set writes a streak (milestone rewards)
 	{cond("daily.lua", "local value = (.-)\n"),
 		{{{cmd = "shift"}, true}, {{cmd = "set"}, true}, {{cmd = ""}, false}, {{cmd = "status"}, false}}},
+	-- /achievements grant|add pay achievement rewards; stat and reset only set or take away
+	{cond("achievements.lua", "Chaos%.staffCommand%(player, words, param, (.-)%) then"),
+		{{{cmd = "grant"}, true}, {{cmd = "add"}, true}, {{cmd = "stat"}, false}, {{cmd = "reset"}, false}}},
 	-- /leaderboard shift: each shift past a week end awards that week's titles and orbs
 	{cond("leaderboard.lua", "local value = (.-)\n"),
 		{{{cmd = "shift"}, true}, {{cmd = "reset"}, false}, {{cmd = ""}, false}}},
