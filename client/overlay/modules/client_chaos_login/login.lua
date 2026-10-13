@@ -14,6 +14,9 @@
 --     boosted / cast panels go under the sign-in panel or beside it when there is room;
 --   * the small four-pointed mark in the artwork's bottom right corner (left by the image generator) stays visible:
 --     no widget is placed on it and particles are not drawn over it.
+--   * the living scene (loginscene.lua): a piece of our world built from game tiles with our monsters idling in it,
+--     shown instead of the artwork or crossfading with it (setting 'chaosLoginBackground': scene / art / alternate;
+--     the small "Background" link in the top right corner switches it). Without the dat/spr pair the artwork shows.
 -- Art: client/tools/gen_login_art.py (data/images/title.png and data/images/chaos/login/).
 
 ChaosLogin = {}
@@ -37,7 +40,7 @@ local SPLASH = true                    -- "Press any key to start" before the pa
 local root, bg, enterGame
 local logo, logoHot, glowW, emberLayer, sparkLayer, pressW, splashW, spinner
 local medL, medR, crestT, crestB
-local verLabel, statusLabel, statusDot, serverCaption
+local verLabel, statusLabel, statusDot, serverCaption, sceneLink
 local view = { cx = 0, cy = 0, sx = 1, sy = 1 }   -- crop of title.png and its scale on screen
 local mark = { x0 = -1, y0 = -1, x1 = -1, y1 = -1 } -- the sparkle mark on screen (relative to bg)
 local statusChecking = true
@@ -130,6 +133,7 @@ local function relayout()
   -- the logo layer on the logo of the picture
   local x, y, lw, lh = artBox(LOGO_BOX)
   place(logo, x, y, lw, lh)
+  if LoginScene and LoginScene.isActive() then LoginScene.setLogoBox(x, y, lw, lh) end
   mark.x0, mark.y0, mark.x1, mark.y1 = artX(MARK_BOX[1]), artY(MARK_BOX[2]), artX(MARK_BOX[3]), artY(MARK_BOX[4])
 
   -- splash: the bar, the status line and the spinner where the artwork painted them
@@ -143,6 +147,49 @@ local function relayout()
   enterGame:setMarginTop(math.max(0, top))
   if placeStatus then placeStatus() end
   if layoutInfo then layoutInfo() end
+  if LoginScene and LoginScene.isActive() then LoginScene.relayout() end
+end
+
+-- ---------------------------------------------------------------- living scene (loginscene.lua)
+-- where no monster or tall object of the scene goes: behind the logo and the sign-in panel
+local function sceneKeep()
+  if not alive(bg) then return {} end
+  local x, y, lw, lh = artBox(LOGO_BOX)
+  local top = alive(enterGame) and enterGame:getMarginTop() or artY(PANEL_Y)
+  return { { x = x, y = y, width = lw, height = lh },
+           { x = math.floor((bg:getWidth() - PANEL_W) / 2) - 40, y = top - 20, width = PANEL_W + 80, height = PANEL_H + 40 } }
+end
+
+local function updateSceneLink()
+  if not alive(sceneLink) then return end
+  sceneLink:setText(tr('Background') .. ': ' .. tr(LoginSceneCore.MODE_LABEL[LoginScene.mode()]))
+end
+
+local function applySceneMode()
+  if LoginScene.mode() == 'art' then
+    LoginScene.destroy()
+  elseif not LoginScene.isActive() then
+    LoginScene.create(bg, sceneKeep)
+    relayout()
+  end
+  if alive(glowW) then glowW:setVisible(not LoginScene.isActive() or LoginScene.mode() == 'alternate') end
+  updateSceneLink()
+end
+
+local function createSceneLink()
+  sceneLink = newWidget('ChaosLoginLink', bg, 'chaosSceneLink')
+  sceneLink:setPhantom(false)
+  sceneLink:setTextAutoResize(true)
+  sceneLink:addAnchor(AnchorRight, 'parent', AnchorRight)
+  sceneLink:addAnchor(AnchorTop, 'parent', AnchorTop)
+  sceneLink:setMarginRight(14)
+  sceneLink:setMarginTop(30)
+  sceneLink:setTooltip(tr('The login background: the living scene, the artwork, or both in turn'))
+  sceneLink.onClick = function()
+    LoginScene.setMode(LoginSceneCore.nextMode(LoginScene.mode()))
+    applySceneMode()
+  end
+  updateSceneLink()
 end
 
 -- ---------------------------------------------------------------- panel
@@ -640,9 +687,14 @@ local function tick()
   animEvent = scheduleEvent(tick, 50)
   if not alive(bg) or not bg:isVisible() then return end
   clock = clock + 0.05
+  local artWeight = 1
+  if LoginScene and LoginScene.isActive() then
+    LoginScene.tick(0.05)
+    artWeight = 1 - LoginScene.opacity()
+  end
   if alive(glowW) then
-    glowW:setOpacity(math.max(0.25, math.min(1, 0.62 + 0.18 * math.sin(clock * 1.6) + 0.14 * math.sin(clock * 5.1 + 1.3)
-      + 0.06 * (math.random() - 0.5))))
+    glowW:setOpacity(artWeight * math.max(0.25, math.min(1, 0.62 + 0.18 * math.sin(clock * 1.6)
+      + 0.14 * math.sin(clock * 5.1 + 1.3) + 0.06 * (math.random() - 0.5))))
   end
   local w, h = bg:getWidth(), bg:getHeight()
   for _, e in ipairs(embers) do
@@ -813,6 +865,8 @@ function init()
   layoutCorners()
   createDecor()
   relayout()
+  try(createSceneLink)
+  try(applySceneMode)
   updateStatus()
   try(hookSchedule)
 
@@ -855,8 +909,9 @@ function terminate()
   for _, m in ipairs(moved) do
     if alive(m[1]) and alive(m[2]) then m[1]:setParent(m[2]) end
   end
+  if LoginScene then try(LoginScene.destroy) end
   for _, w in ipairs({ medL, medR, crestT, crestB, logo, glowW, emberLayer, sparkLayer, pressW, spinner, splashW,
-                       verLabel, statusLabel, statusDot, serverCaption }) do
+                       verLabel, statusLabel, statusDot, serverCaption, sceneLink }) do
     if alive(w) then w:destroy() end
   end
   ChaosLogin = nil

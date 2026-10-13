@@ -79,6 +79,26 @@ end
 ChaosSpell.classFx = classFx
 -- <<< Class signature effects
 
+-- >>> Large spell effects (data/lib/chaos_big_fx.lua, switch ChaosBigFx.BIG_FX): the strongest area spells may send a
+-- big effect for the effect they send at the centre of their area; nil when the switch is off or no swap fits.
+if not ChaosBigFx then
+	pcall(dofile, 'data/lib/chaos_big_fx.lua')
+end
+local function bigFx(name)
+	local B, W = ChaosBigFx, ChaosSupportsSpell
+	if type(name) ~= "string" or not B or not B.swapFor or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	local ok, alt = pcall(B.swapFor, spellId, name)
+	return ok and alt or nil
+end
+ChaosSpell.bigFx = bigFx
+-- <<< Large spell effects
+
 -- Fx / FxMissile (chaos_fx.lua) are also called inside the casts (heal and area effects): wrapped once
 local function wrapFx()
 	if Fx and Fx ~= ChaosSpellSkinFx then
@@ -162,6 +182,10 @@ function ChaosSpell.vfx(pos, name)
 	end
 	local alt = skinned("vfx", name) -- Cosmetics: the skin's variant first, the default when the pair lacks it
 	if alt and Vfx(Position(pos), alt) then
+		return true
+	end
+	local big = not alt and bigFx(name) -- the large effect, unless a skin was chosen; it wins over the class effect
+	if big and Vfx(Position(pos), big) then
 		return true
 	end
 	local cls = not alt and classFx(name) -- the class effect, unless a skin was chosen

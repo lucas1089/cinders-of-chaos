@@ -1,0 +1,4 @@
+# strips made by gen_big_fx.py build (deterministic, about 5 MB of PNG): not committed; the committed
+# art_import/big_fx.sums holds their pixel sums (gen_big_fx.py build --check)
+*
+!.gitignore

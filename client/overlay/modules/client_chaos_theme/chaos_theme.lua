@@ -159,6 +159,9 @@ local TITLE_COLOR = '#e8c477'
 --   dialogue  IM Fell English 15  what NPCs say (game_npctalk)
 --   body      Alegreya Sans Medium 13 (or 12): a trial body font for the Codex text, OFF unless the setting
 --             'chaosBodyFont' names it (ChaosTheme.setBodyFont(true | 'chaos-body-12px' | false))
+--   outline   Alegreya Sans Medium 12 with an antialiased 1 px dark border: text over the game picture
+--   outlineSmall  the same at 11 px (the login scene's name plates)
+--   display   Cinzel Bold 16 with the border and a shadow, glyphs space..~ only (ASCII captions: the login scene)
 ChaosTheme.fonts = {
   title = { name = 'chaos-title-15px', titleDy = -3 }, -- titleDy: moves the title text (the font is taller)
   splash = { name = 'chaos-splash-20px' },
@@ -166,6 +169,9 @@ ChaosTheme.fonts = {
   heading = { name = 'chaos-heading-14px' },
   dialogue = { name = 'chaos-dialogue-15px' },
   body = { name = 'chaos-body-13px', setting = 'chaosBodyFont', choices = { 'chaos-body-13px', 'chaos-body-12px' } },
+  outline = { name = 'chaos-outline-12px' },
+  outlineSmall = { name = 'chaos-outline-11px' },
+  display = { name = 'chaos-display-16px' },
 }
 
 local function fontLoaded(name)

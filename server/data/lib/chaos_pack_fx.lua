@@ -78,6 +78,16 @@ end
 
 -- send the use's effect at its offset tile; else the stock `fallback` (switch off, unknown use or name)
 function C.send(pos, use, fallback)
+	-- large effects (data/lib/chaos_big_fx.lua, its own switch ChaosBigFx.BIG_FX, off: false here) come first
+	if not ChaosBigFx then
+		pcall(dofile, "data/lib/chaos_big_fx.lua")
+	end
+	if pos and ChaosBigFx and ChaosBigFx.sendUse then
+		local ok, sent = pcall(ChaosBigFx.sendUse, pos, use)
+		if ok and sent then
+			return true
+		end
+	end
 	local name = C.live() and C.pick(use)
 	if name and ChaosVfx[name] and Vfx(pos, name) then
 		return true

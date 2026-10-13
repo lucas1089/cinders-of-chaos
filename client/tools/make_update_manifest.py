@@ -7,12 +7,18 @@
           the repository (refused inside a git work tree). Prints the public key for init.lua (Services.update).
   build   CLIENT_DIR --out PUBLISH_DIR [--key PATH] [--version N] [--min-version N] [--min-package N]
           [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--hardlink]
+          [--with-single-spr]
           Hashes every file under the roots of an assembled client folder (client/tools/assemble_client.sh, with
           the Tibia.dat/.spr pair in data/things/1098/), copies each distinct file once to
           PUBLISH_DIR/files/<sha[:2]>/<sha> and writes PUBLISH_DIR/manifest.json, signed with the private key from
           --key or the environment variable CHAOS_UPDATE_KEY (a path, never the key itself). The manifest is
           written last, so a client never sees a manifest whose files are not there yet.
           --dry-run: no key needed, nothing written; checks the folder and prints what would be published (CI).
+          Sprite shards (tools/sprites/spr_shards.py, base patch 0048): a <name>.sprshards index in data/things/
+          is checked against its shard files (sizes, headers, SHA-256) and each shard is its own manifest file, so
+          a sprite change downloads only the shards that hold it. Refused: a shard set next to its single .spr
+          (both would be downloaded; --with-single-spr ships both on purpose) and a shard set without --min-package
+          (a client built before patch 0048 ignores shards and would draw the new dat with its old .spr).
   verify  PUBLISH_DIR --public HEX
           Checks the signature, the payload and every blob's size and SHA-256.
 
@@ -249,6 +255,40 @@ def check_payload(m, last_version=None):
     return None
 
 
+def check_sprite_shards(client_dir, entries, min_package, with_single_spr=False):
+    """problems with sprite shard sets in data/things/ (texts; 'warning: ...' ones do not stop the build)"""
+    sys.path.insert(0, os.path.join(HERE, 'sprites'))
+    import spr_shards
+    by_path = {p: h for p, h, _ in entries}
+    out = []
+    for path in sorted(by_path):
+        if not (path.startswith('data/things/') and path.endswith('.sprshards')):
+            continue
+        folder, name = path.rsplit('/', 1)
+        name = name[:-len('.sprshards')]
+        try:
+            idx = spr_shards.check(os.path.join(client_dir, folder), name, quiet=True, hashes=False)
+        except spr_shards.ShardError as e:
+            out.append(f'{path}: {e}')
+            continue
+        for _, _, fname, _, sha in idx['shards']:
+            if by_path.get(f'{folder}/{fname}') != sha:
+                out.append(f'{folder}/{fname}: SHA-256 differs from {path} (split again with spr_shards.py)')
+        single = f'{folder}/{name}.spr'
+        if single in by_path and not with_single_spr:
+            out.append(f'{single} and the shard set {path} are both here: players would download the sprites twice. '
+                       f'Remove {name}.spr, or pass --with-single-spr to ship both on purpose')
+        if single not in by_path and not min_package:
+            out.append(f'{path}: a shard set needs --min-package (the first package built with base patch 0048); '
+                       f'an older client ignores the shards and would draw the new dat with its old {name}.spr')
+    for path in sorted(by_path):
+        if path.startswith('data/things/') and path.endswith('.spr') and not path[:-4].rsplit('.', 1)[-1].isdigit():
+            if path[:-4] + '.sprshards' not in by_path:
+                out.append(f'warning: {path} without a shard set: a client whose install has {path[:-4]}.sprshards '
+                           f'keeps loading its shards (client/BASE.md 0048)')
+    return out
+
+
 def previous_version(out_dir):
     try:
         env = json.load(open(os.path.join(out_dir, 'manifest.json'), encoding='utf-8'))
@@ -281,6 +321,11 @@ def build(args):
     things = [e for e in entries if e[0].startswith('data/things/') and e[0].lower().endswith(('.dat', '.spr'))]
     if not things:
         print('warning: no Tibia.dat/.spr under data/things/ (the pair is not part of this update)', file=sys.stderr)
+    for problem in check_sprite_shards(client_dir, entries, args.min_package, args.with_single_spr):
+        if problem.startswith('warning: '):
+            print(problem, file=sys.stderr)
+        else:
+            sys.exit(problem)
 
     prev = previous_version(args.out) if args.out else 0
     version = args.version if args.version is not None else prev + 1
@@ -407,6 +452,8 @@ def main(argv=None):
     b.add_argument('--channel', default='live')
     b.add_argument('--roots', default=','.join(DEFAULT_ROOTS))
     b.add_argument('--dry-run', action='store_true')
+    b.add_argument('--with-single-spr', action='store_true',
+                   help='ship a single .spr next to its shard set (for clients built before base patch 0048)')
     b.add_argument('--hardlink', action='store_true',
                    help='hard-link blobs instead of copying (same disk; only if the client folder is never edited after)')
     v = sub.add_parser('verify')

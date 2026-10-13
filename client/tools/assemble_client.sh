@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Assemble the Cinders of Chaos client: the base client source (you supply it) + patches + overlay.
-# Usage: tools/assemble_client.sh <base-client-dir> <output-dir>
+# Usage: tools/assemble_client.sh <base-client-dir> <output-dir> [<things-dir>]
 # The base client tree is ~300 MB, so it is not committed here.
-# Does NOT include Tibia.spr/.dat: copy your 10.98 pair into <out>/data/things/1098/ yourself.
+# <things-dir>: a folder with the 10.98 Tibia.dat and Tibia.spr. The dat is copied and the spr is split into sprite
+# shards (tools/sprites/spr_shards.py, base patch 0048: Tibia.sprshards + Tibia.NNN.spr, checked against the spr);
+# CHAOS_SPR_SHARDS=0 copies the single Tibia.spr instead (a client or map editor that needs it). Without
+# <things-dir> the pair is not included: copy it into <out>/data/things/1098/ yourself.
 set -euo pipefail
-SRC=${1:?base client dir (the folder with init.lua, modules/, mods/)}; OUT=${2:?output dir}
+SRC=${1:?base client dir (the folder with init.lua, modules/, mods/)}; OUT=${2:?output dir}; THINGS=${3:-}
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 [ -f "$SRC/init.lua" ] && [ -d "$SRC/modules" ] || { echo "not an the base client tree: $SRC"; exit 1; }
 mkdir -p "$OUT"; cp -a "$SRC"/. "$OUT"/
@@ -38,4 +41,20 @@ else
   echo "python3 not found: font atlas check skipped"
 fi
 mkdir -p "$OUT/data/things/1098"
-echo "Done. Put Tibia.spr and Tibia.dat (10.98) in $OUT/data/things/1098/, then build with CMake."
+if [ -n "$THINGS" ]; then
+  [ -f "$THINGS/Tibia.dat" ] && [ -f "$THINGS/Tibia.spr" ] || { echo "no Tibia.dat / Tibia.spr in $THINGS"; exit 1; }
+  cp "$THINGS/Tibia.dat" "$OUT/data/things/1098/"
+  if [ "${CHAOS_SPR_SHARDS:-1}" = "0" ]; then
+    rm -f "$OUT"/data/things/1098/Tibia.sprshards "$OUT"/data/things/1098/Tibia.[0-9][0-9][0-9].spr
+    cp "$THINGS/Tibia.spr" "$OUT/data/things/1098/"
+  else
+    # one shard per 16384 sprites: a sprite change (new sprites are appended) updates only the shards that hold
+    # it; the shards are byte-checked against the spr before the single file is left out
+    rm -f "$OUT/data/things/1098/Tibia.spr"
+    python3 -I "$HERE/tools/sprites/spr_shards.py" split "$THINGS/Tibia.spr" "$OUT/data/things/1098"
+    python3 -I "$HERE/tools/sprites/spr_shards.py" verify "$THINGS/Tibia.spr" "$OUT/data/things/1098"
+  fi
+  echo "Done. The pair is in $OUT/data/things/1098/; build with CMake."
+else
+  echo "Done. Put Tibia.spr and Tibia.dat (10.98) in $OUT/data/things/1098/ (or pass a things dir), then build with CMake."
+fi

@@ -10,6 +10,8 @@ The spec (one row per thing, in id order within its kind): kind (effect | missil
 w, h (tiles), phases, ms (per frame), dx, dy (send offset: the bottom-right tile of the art is the target tile +
 (dx, dy), as in import_vfx.py / chaos_vfx.lua), note.
   effect:  the PNG is the frames left to right, each w*32 x h*32; it plays once.
+  alpha (optional column): `soft` keeps the art's alpha levels 1..254 (the pair's spr has an alpha channel and the
+           client blends it; art_import/big_fx.csv); otherwise alpha is cut to 0 / 255 at 128 (pixel art).
   missile: 3 x 3 direction patterns (the client's missile layout: x west/centre/east, y north/centre/south), each a
            block of `phases` frames left to right: frame f of pattern (x, y) is at ((x * phases + f) * w*32, y * h*32);
            it loops while flying.
@@ -55,8 +57,11 @@ def read_spec(path):
 def build(r):
     """-> the dict import_vfx.entry_bytes takes: frames {(phase, x, y, layer): canvas}"""
     a = np.asarray(Image.open(os.path.join(ART, r['file'])).convert('RGBA')).copy()
-    a[a[:, :, 3] < 128] = 0
-    a[:, :, 3] = np.where(a[:, :, 3] > 0, 255, 0)            # the client draws 0 or 255
+    if r.get('alpha') == 'soft':                             # soft art (gen_big_fx.py): every alpha level is kept
+        a[a[:, :, 3] == 0] = 0
+    else:                                                    # pixel art: hard edges, alpha 0 / 255
+        a[a[:, :, 3] < 128] = 0
+        a[:, :, 3] = np.where(a[:, :, 3] > 0, 255, 0)
     W, H, n = r['w'] * 32, r['h'] * 32, r['phases']
     frames = {}
     if r['kind'] == 'effect':

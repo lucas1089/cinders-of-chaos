@@ -180,6 +180,50 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     (`g++ -std=c++20 -fsyntax-only`); the two GLSL programs in the patch compile as desktop GLSL 1.10 and GLSL ES 1.00
     (`tools/check_shaders.py` with glslangValidator). Not built into a client or run (no room on the build machine):
     previews were rendered offline from the shader math with numpy, outside the repository.
+25. `0049` (Lua / OTUI `client_settings/classes/dataset.lua`, `client_settings/options/effects.otui`,
+    `modules/game_healthcircle/option_healthcircle.otui`): one spell effect opacity control. The base had six: Options >
+    Effects "Opacity Effects" (`opacityEffects`) and "Own Spells / Other Player Spells / Creature Spells / Boss Area
+    Creature Effect", plus the same four per-source sliders in the HP/MP circle options (`spellOpacityOwn` ...). On
+    10.98 the server sends no effect source (`GameEffectSource` off), so `Effect::draw` uses the "own" alpha for every
+    magic effect: "Opacity Effects", "Own Spells" and the circle's "Own Spells" all set that one value (the last one
+    applied won) and the other three did nothing. Now `opacityEffects` is the only control, labelled "Spell effects
+    opacity", 25-100% in steps of 5 (boss warning circles never vanish); its `apply` clamps to 25..100 and sets the
+    alpha of all four sources. The four per-source sliders are removed from both windows (the Effects panel shrinks
+    from 205 to 137 px; the HP/MP circle window keeps its size, with room left at the bottom; its Lua skips sliders it
+    does not find). The g_settings key `opacityEffects` is kept; the overlay module `game_effectopacity` moves an old
+    lower "Own Spells" value into it once and clamps an old stored 0-24 (`MANIFEST.md`). Missiles keep their own
+    slider; the loot highlight, drawn with the own alpha, follows it as before. No C++ change. The chain 0001-0044,
+    0048, 0049 applies to the `windows-assets` base tree with no fuzz (`patch`), and the patched `dataset.lua` parses in
+    LuaJIT and Lua 5.3. Not run in a client.
+
+26. `0048` (C++ `src/client/spritemanager.h/.cpp`): the sprite file split into shards, read on several threads
+    (`MANIFEST.md` "Sharded sprites"). `SpriteManager::loadSpr` looks for `<name>.sprshards` before `<name>.spr`. The
+    index (text, written by `tools/sprites/spr_shards.py`) lists the shard files `<name>.NNN.spr`; each is a normal
+    `.spr` with a u32 count (signature, count, address table, records) holding one range of sprite ids (16384 by
+    default: 46 shards for the 745,653 sprites of things_custom23). `loadSpr` reads the index and checks on the main
+    thread that every shard is there with the size the index gives (`PHYSFS_stat`); a bad line, a gap in the ranges,
+    a missing or short shard drops the whole set and the single `.spr` loads as before. Then it returns: up to 8
+    background threads (`hardware_concurrency`, at most 8; none in the browser build) open the shards and read their
+    address tables into one table (each thread its own range, a lock and a ready flag per shard). A sprite needed
+    before its shard is read reads that shard on the spot. A shard whose header (signature, count) or an address turns
+    out wrong draws nothing and is logged once. Sprite reads then go to the shard's own file. The workers only call
+    PhysFS with paths resolved on the main thread and never log; `unload`, a new `loadSpr` and the destructor join
+    them. The log says `Sprites: N in 46 shard files, loaded in X ms` (or `in one file`) and, at the first sprite drawn
+    after the background reads end, how long they took. No Lua binding changes.
+    Measured on the things_custom23 pair (599,654,574 bytes, 46 shards; Linux build of 0001-0043 + 0048, Mesa
+    software GL; 9 loads each through `g_sprites.loadSpr`, page cache dropped with `posix_fadvise` before each cold
+    load; a virtual disk, so "cold" still came from the host's cache): one file cold median 6.4 ms (3.5-12.3), warm
+    1.3 ms; sharded cold median 1.6 ms (1.3-8.0), warm 1.7 ms (1.3-15.6: the long ones waited for the previous load's
+    threads). The engine never read sprite data at load (it streams records), so the load was already only the 3 MB
+    address table: sharding makes it shorter, but the gain is milliseconds. A loader harness (the same PhysFS calls,
+    31 runs): the blocking part 0.3 ms sharded against 1.8 ms single (cold), 0.2 against 0.6 ms (warm); the 46 tables
+    in the background in 5.3 ms on 8 threads, 5.9 ms on 4 and 14.5 ms on 1 (cold), 1.0-3.9 ms warm (on a warm cache
+    the threads cost more than they save, off the main thread). The real gain is in updates: a sprite change downloads
+    only its shards (`docs/LAUNCH.md` "Client updates"), and no file reaches the 512 MB limit of
+    `ResourceManager::readFileContents` (the single spr is 600 MB). No other patch touches `spritemanager.*`; the
+    whole chain 0001-0049 applies to the `windows-assets` base client (`patch --dry-run`, then applied, no fuzz).
+    Built (0001-0043 + 0048) and tested in the Linux client: the login screen draws from the shards, and the single
+    file loads when the index is renamed.
 
 ### Client guard: the build secret
 

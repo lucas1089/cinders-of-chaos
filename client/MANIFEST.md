@@ -52,6 +52,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_hideout | extended opcode 192 (JSON through `registerExtendedJSONOpcode`: `open` / `get` / `enter` / `leave` / `visit {guid}` / `place {key, x, y, r}` / `move {id, x, y, r}` / `remove {id}` / `clear` / `theme {key}` / `perm {level}` / `kick` / `visits` / `like {owner}` out; `state`, `visits`, `result` back), server `hideout.lua` | none (uses the engine's `Tile:setWidget` for the preview) | The Hideout window (Character > Hideout, next to Town Portal; a Go to Hideout button in the Portal Style window; Chaos skin, 720 x 500): Decorate (catalogue with kind / source / unlocked-only / search filters, lock reasons, Place, Open the Store for store decorations, the placed list with Move / Remove / Put all away), Hideout (themes, who may visit, Enter / Leave / Send visitors out / Like), Visit (VIP, party and guild hideouts, the showcase by likes or visits, recent visits). Placement mode: the window steps aside, a bar over the map (Rotate, Done), the hovered tile shows the decoration framed green or red (`HideoutLogic.check`, the server's rules), left click places, wheel rotates, right click ends. Logic `hideoutlogic.lua` (`hideoutlogic_test.lua` in CI); tested in game against a server copy (server/README.md "Hideouts") |
 | game_groundlabels | extended opcode 230 (JSON), server `groundloot.lua`, `groundloot_core.lua` | none (uses the engine's `Tile:setWidget`) | Ground loot labels (PoE style): a name plate over every item on the ground worth seeing, in its rarity colour (uniques orange, orbs teal), stack count and rarity in the text ("Rare Fire Sword", "3x Chaos Orb"), framed in the colour when the loot filter makes it glow. The loot filter decides (`game_lootfilter`'s rules and settings, `getSettings()`): hidden items get no label, Rare+ always (setting), the rest only while Alt is held (hidden ones faded). "Corpse: 2 items" over a corpse you may loot that holds loot the filter cares about. A despawn timer where something decays (a corpse: until its loot is gone, all its container stages summed; ground items do not vanish on their own in this server). Labels of one tile stack, neighbours are moved up or down past each other, at most 40 (best first). Left click picks the item up into the backpack with the normal move (the engine walks there; an item lower in a pile is first put on top by the server, `raise`) or opens the corpse; right click the usual item menu; hover the rich tooltip (`game_itemtooltip.showTip`) or the corpse contents. Tiles in view are compared every 400 ms and when the player moves (the engine has no tile-change callback for Lua); only changed tiles are asked about. Settings (on/off, Rare+, Alt, corpses, timers, size) in g_settings, window from the Loot Filter's "Ground Labels" button. Logic `groundlabelslogic.lua` (tested by `groundlabels_test.lua`); tested in game at 1280x720 and 1920x1080 (server/README.md "Ground loot labels") The loot label accent cosmetic: `setAccent(color)` (called by `game_cosmetics`) gives highlighted labels that background; text and border keep the rarity colour (`GL.style`, tested) |
 | game_levelwings | extended opcode 191 (JSON `play {id, lv, n}`, server -> client, sent to every player who sees the character; server `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua`) | base patch 0036 (the two options; without it both count as on). Uses the engine's creature widgets (`Creature:addBottomWidget` / `addTopWidget` / `clearBottomWidgets`), no .dat / .spr change | Level-up wings: when a character on screen gains a level, a pair of golden wings opens behind it (in front while it faces north) and fades out: 12 frames over 660 ms, held to 1150 ms, gone at 1800 ms (`levelwingsmath.lua`). The widget is centred on the creature by the engine and sized by `g_sprites.spriteSize()` and the creature's draw scale, so it follows walks and HD scaling. One pair per creature (a new play restarts it), at most 12 at once. The stock level-up text and effect stay. No sound (the sound framework has no fitting asset). Settings: Options > Graphics > Effects, "Level-up wings on my character" / "on other characters". Frames `images/wings_01..12.png` (192 x 160, 2x a 32 px tile) from `client/tools/gen_levelwings_art.py` (drawn from scratch). Note: the engine's `Creature::removeBottomWidget` walks the wrong list, so the module only calls `clearBottomWidgets` when its widget is the creature's only bottom widget and otherwise leaves it blank for reuse. The map light tints the wings like everything else on the map (brownish gold in a dim, torch-lit room). Pure helpers tested by `levelwingsmath_test.lua`; tested in the Linux client against a live test server with two clients (own view and a spectator, both settings) |
+| game_effectopacity | none (client only) | base patch 0049 (the one slider); without it the module only migrates the stored value | Spell effect opacity: base patch 0049 leaves one control, Options > Effects "Spell effects opacity" (the base's `opacityEffects` slider and g_settings key), 25-100% in steps of 5, for every magic effect (boss warning circles never vanish; missiles have their own slider). This module, at start: once per settings file, the value becomes the lowest one the player had set on the old controls (`opacityEffects`, Options > Effects "Own Spells" `ownSpellOpacity`, HP/MP circle "Own Spells" `spellOpacityOwn`; on 10.98 they all drove the same alpha), clamped to 25..100 (flag `chaosEffectOpacityMigrated`); later starts only clamp an out-of-range stored value. It goes through `GameOptions:setOption`, so the slider and the engine follow. No UI of its own. Logic `effectopacitylogic.lua` (tested by `effectopacitylogic_test.lua`, which also reads patch 0049: the 25 minimum, the clamp, the removed sliders, no C++). Not run in a client |
 | game_rightclickequip | extended opcode 188 (JSON: `{on}` out at every login and when the option changes; `multiuse {ids}` back at login, the client ids of the multi-use weapons a right-click equips; server `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`) | base patch 0037 (the option; without it it counts as on). Server src-patch 0024 does the equipping | Right-click equips items: the server puts on equipment that is used and has no use of its own, and takes a worn piece off into the backpack (server/README.md "Right-click equips"), so the base mouse controls do it with their own use click: a right-click in Classic Controls, Ctrl + click in Regular Controls, a left-click in Left Smart-Click, "Use" in the context menu. Ctrl / Shift / Alt keep their meanings. One hook: the base starts a use with on a multi-use item, and the stock weapons are multi-use (their use with breaks furniture); `game_interface`'s `processMouseAction` is wrapped so that the preset's use click on a listed multi-use weapon in the inventory or an open container sends a plain use instead. Tools that are also weapons (machete, crowbar, scythe) are not listed and keep their use with; "Use with ..." stays in the menu. Option "Right-click equips items" in Options > Interface. Logic `rightclickequiplogic.lua` (the option, the message, the list, the click per mouse preset, the decision), tested by `rightclickequiplogic_test.lua`; tested in the Linux client against a live test server (every slot, both ring slots, two-handed swaps, bow and quiver, the three mouse presets, the option off) |
 | game_kitewalk | extended opcode 186 (JSON: `{on}` out at every login and when the option changes; server `kitewalk.lua`, `kitewalk_core.lua`) | base patch 0039 (the option, and "Auto Chase Off" no longer switching the stance while it is on; without the patch the option counts as on). Server src-patch 0028 does the kiting | Keep attacking while moving: a walk by a click on the map or the minimap, or by keys, keeps the attack target and the attacks; the clicked path wins over Chase Opponent, melee hits when adjacent, a bow, wand or spell in range, and the chase starts again when the walk ends (server/README.md "Keep attacking while moving"). The base client never cancelled the attack on a click walk; its option "Auto Chase Off" (Options > Gameplay, on by default) switched the stance to Don't Chase on every manual walk while attacking, which 0039 skips while this option is on. Option "Keep attacking while moving" in Options > Interface (on by default). Logic `kitewalklogic.lua` (the option, the message, when to send), tested by `kitewalklogic_test.lua` (also checks patch 0039); tested in the Linux client against a live test server |
 | game_tileoverlays | extended opcode 156 (JSON: `bars {s = [{i, p, n, c, v | l + t}], d}`, `clear` in; `hello` out at every game start), server `tilebars.lua`, `tilebars_core.lua` | base patch 0041 (`Tile:addOverlayWidget`, the option "Field timers over magic walls and fields"); without it a tile's single widget slot is used when free and the option counts as on | Two things drawn over map tiles, each a widget the engine draws over its tile, so they follow walking, scrolling, zoom and floor changes and take no mouse input. **Field timers** (client only): the seconds left over magic walls, wild growth, fire / poison / energy fields ("1:05" past a minute, orange in the last 5 s). The table client item id -> time until gone (each stage of a decay chain summed) is `fielddata.lua`, made by `client/tools/gen_field_timers.py SERVER_DIR` from the installed base's `items.xml` (type magicfield with a duration) and `items.otb` (server -> client ids); cycles and client ids shared by different times are left out; run it again when items change (`--check` tells). The engine's `Tile.onAddThing` / `onRemoveThing` callbacks (on while the option is on) start a timer when a field appears on a tile that was already in view, judged from where the player stood before the step that brought new tiles in; a field that came into view with its tile (walking, a floor change, the login, turning the option on) shows "~", never a guessed number. A tile the server sends again keeps its timer (same field back within 250 ms). Out of view the timers are dropped. No Chaos system creates timed fields (checked: spells and scripts). **Server bars**: a label (with "m:ss" for a countdown) over a 64 px bar in the server's colour, stacked when one tile has several; brazier captures, profession node respawns, the invasion breach (server/README.md "Progress bars over tiles"). Option "Field timers over magic walls and fields" in Options > Interface (on by default). Logic `tileoverlayslogic.lua`, tested by `tileoverlayslogic_test.lua` (also the generated table and patch 0041); generator test `client/tools/gen_field_timers_test.py` (CI) |
@@ -95,7 +96,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_event | none seen in the module | none | Client-only UI; wiring to a server event system is open |
 | game_creatureinformation | none | engine APIs this client lacks | Not included |
 | client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`); self test `numbers_test.lua` runs in CI; not run in a client |
-| client_chaos_login | none | none | Login screen layout (see "Login screen" below); art from `tools/gen_login_art.py` (from the login artwork in `tools/art_src/`); tested in the Linux client at 1280x720, 1366x768, 1920x1080 and 1024x768 |
+| client_chaos_login | none | none | Login screen layout (see "Login screen" below); art from `tools/gen_login_art.py` (from the login artwork in `tools/art_src/`); tested in the Linux client at 1280x720, 1366x768, 1920x1080 and 1024x768. The living scene behind it (see "Login scene"): `loginscene_core.lua` (tested by `loginscene_core_test.lua` in CI), `loginscene.lua`; tested in the Linux client at 1280x720 and 1920x1080 |
 | client_chaos_updater | none (HTTPS from the website) | base patch 0031 | Signed updater on the login screen (see "Signed updater" below); `updater_core_test.lua` runs in CI; tested in the Linux client |
 | game_chaosguard | extended opcode 190 (JSON `hello {build, modules}`, client -> server, once per login) | base patch 0035 (`g_game.getChaosClientBuild`; the HMAC answer on opcode 189 is C++ only) | The client guard's Lua hello (server/README.md "Client guard"): the build and how many of our modules (`game_*`, `client_chaos_*`) are loaded; the server expects it within 30 s and at least 20 modules. `guardhello_test.lua` runs in CI; tested in the Linux client. Also holds `opcode_fuzz_test.lua`, the client half of the protocol fuzz test (every module's opcode handlers through base patch 0043's dispatcher, server/README.md "Protocol fuzz test") |
 
@@ -159,6 +160,38 @@ No base patch: the module restyles the stock `client_background` and `client_ent
 - **Background and logo**: `data/images/title.png` is 1920x1536: the artwork upscaled to a 1920x1072 band at row 232, with a darkened, blurred mirror of its edges above and below, so every window from 16:9 to 5:4 shows the full width without stretching (wider windows crop rows, keeping the bottom; narrower ones crop the sides). The logo stays painted in the picture; `chaos/logo.png` (the logo cut out of the artwork) is placed exactly on it, so it is never drawn twice, and carries the animation: `chaos/login/logo_hot.png` (the hottest parts of the letters) breathes over it and 12 sparks (`spark.png`) rise off the tops of CINDERS and CHAOS. Also: `chaos/login/glow.png` (lava and lit windows, same frame as `title.png`) flickers, 22 rising embers and 10 falling ash flakes; all on one timer at 20 per second that does nothing while the login screen is hidden. Positions are artwork pixels mapped through the crop (`LOGO_BOX`, `PRESS_BOX`, `STATUS_Y`, `SPIN_*`, `PANEL_Y` in `login.lua`).
 - **Generator**: `python3 -I client/tools/gen_login_art.py [bg] [ui] [logo] [brand]` (Pillow, numpy, scipy and `opencv-contrib-python-headless`; deterministic for given library versions). `bg` cleans the artwork of its mock interface and writes `title.png` and `glow.png`: the bar's darkening is divided out (per column and colour channel) to bring back the stairs under it, its lettering is covered by a gradient-domain copy of the stairs above, CONNECTING... and the spinner are filled by FSR inpainting (OpenCV xphoto), the LOGIN button, the top right icon and the bottom right LOGIN + crosshair icon are replaced by gradient-domain copies (seamlessClone) of the rock and stonework next to them; upscale: Lanczos + light unsharp mask. `logo` writes `chaos/logo.png` (1168x740, 2x), `logo_small.png`, `ui/logo.png` and `chaos/login/logo_hot.png`: alpha from a hand-traced outline of the thorn frame (`LOGO_LEFT` / `LOGO_RIGHT`) snapped to the picture by a guided filter, plus the flames and sparks outside it keyed by heat, background colour removed from the soft edges. `brand` writes `docs/brand/` (the logo on transparency, on black, and a 1024x1024 icon). `ui` writes the panel, crest, medallions, button and field sheets, press-key bar and lettering, spinner, ember, spark and ash. The website (`website/tools/gen_site_art.py`) and README banner (`docs/tools/gen_readme_art.py`) take the logo from here.
 - **Not covered**: the custom server host box of the stock window (only shown when `ALLOW_CUSTOM_SERVERS` is on) is not laid out; the invalid-email warning is hidden because accounts are names. `Services.createAccount` and `Services.recoveryPassword` (init.lua) are empty, so both links show a short note instead of opening a page.
+
+## Login scene (new, `client_chaos_login`: `loginscene_core.lua`, `loginscene.lua`)
+The login background can be a piece of our own world instead of the artwork: a ruined courtyard in the ash wastes
+("The Cinder Ossuary") built from game tiles, with our own monsters idling in it. Lua and OTUI only, no base patch.
+- **Tiles**: the dark tile set (client ids 27484-27557, "Dark tile set"): obsidian floor with magma veins, ash and
+  bone earth with their border pieces, a moss bed and a wet rock shelf, a cursed pool, a road of ruined flagstones up to
+  a wall of dark, ruined and obsidian wall pieces along the top; torches at the wall's foot, braziers and pillars along
+  the road, dead trees, outcrops, glowcaps, blood crystals, bones and rubble. Each is a `UIItem` whose item gets a map
+  position, so the 4x4 seamless ground patterns tile as on the map; things bigger than a tile are drawn up and left
+  of their tile, as on the map. Tiles are 32 px times a whole factor (about 11 rows: 64 px at 720p, 96 px at 1080p).
+- **Monsters** (`UICreature`, idle frames, or walking frames in place for the floating ones; each turns now and then):
+  Death Mage with two Risen Skeletons, Dark Sorcerer, Bone Golem, Lich Shade, Gloomfire, Dreamgorger, Grindmaw the
+  Mauler (server/data/monster/monsters/chaos). They stand at the sides, never behind the logo or the sign-in panel.
+  A creature's widget is two tiles square ending on its own tile: `DrawQueue::correctOutfit` maps two tiles onto the
+  rect, so they draw at the map's scale.
+- **Layout** (`loginscene_core.lua`, no client API): `layout(cols, rows, seed, keep)` decides every ground, border
+  piece (the sample scene's rule of `gen_dark_tiles.py`: a piece is named by where its family's ground lies), object,
+  light and creature, in drawing order; deterministic (a Park-Miller generator, the same in LuaJIT and Lua 5.3), so
+  a resize to the same grid gives the same picture. Tests: `loginscene_core_test.lua` (CI).
+- **Mood**: warm light pools flicker over torches, braziers and magma, violet and teal ones over the glowcaps; a
+  vignette darkens the edges and a dark pool sits behind the logo so its flames read over the tiles; the embers, ash,
+  logo sparks, splash bar and sign-in panel stay as they are. Art: `tools/gen_login_art.py scene`
+  (`data/images/chaos/login/scene_*.png`, radial falloffs drawn in code).
+- **Captions** in the bordered Chaos fonts ("OFL fonts"): the place name bottom right in `chaos-display-16px`, and every
+  six seconds one monster's name fades in over it in `chaos-outline-11px`.
+- **Setting**: `chaosLoginBackground` (g_settings): `scene` (default), `art` (the artwork of "Login screen", kept as
+  the fallback) or `alternate` (scene and artwork crossfade every 40 s, 2.5 s fades). The link "Background: ..." in
+  the top right corner cycles it. Without the dat/spr pair the artwork shows: the scene loads the pair at start the
+  way `client_entergame` does at sign in (client version 1098 first, so the 10.98 features apply); sign in then finds
+  it loaded.
+- Checked in the Linux client (Mesa software GL) at 1280x720 and 1920x1080: splash and panel over the scene, the art
+  setting, the switch to alternate and its fade to the artwork; screenshots outside the repository.
 
 ## Paragon panel (new)
 `game_passivetree` has a Paragon button next to Apply Plan / Reset. It opens a `ChaosWindow` (ornate skin: `ChaosPanelDark` per category, `ChaosButton` +/-, Apply / Reset / Close) inside the tree window, built from the server's `paragonState` (`paragon.lua`, `paragon.otui`): points available / spent / total, four categories with two stats each (points / max, value / cap, tooltips with the per-point value), shift-click for 5 points, Apply sends the absolute allocation (`paragonApply`), Reset asks first (level x 250 gold, `paragonReset`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list gets a Paragon section. The +/- maths are in `paragonmath.lua` (tested by `paragonmath_test.lua`); the server validates everything (server/README.md "Paragon"). Checked in the Linux client at 1280x800.
@@ -1096,6 +1129,46 @@ committed. The set itself is kept with the art libraries outside the repository.
   ```
   Server use: server/README.md "Pack effects for procs and bosses" (switch `ChaosPackFx.PACK_FX`, off).
 
+## Large spell effects (next pair, `tools/sprites/gen_big_fx.py`, `art_import/big_fx.csv`; not built yet)
+Our own procedural art: big soft glowing effects for boss telegraphs and big attacks, rift guardians and the strongest
+area spells of each class line (server/README.md "Large spell effects", switch `ChaosBigFx.BIG_FX`, off).
+- Drawing: each frame is computed as fields at 4x supersampling with numpy only (radial gradients, seeded value noise,
+  rings, glow, particles, jagged bolts, leaning beams), coloured through the element ramps of
+  `item_forge_data/style.json` (fire, ice, lightning, poison, holy, void, blood; arcane has its own teal ramp in the
+  script) with a hot tip, over an optional dark smoke field; box-averaged to the 32 px grid with premultiplied alpha.
+  The alpha stays soft (1..254; under 12 is cut to 0): the pair's spr has an alpha channel and the client blends it,
+  like the animated pack effects 429-558. No pixel of any other game or client is read or used.
+- 21 effects, every one sent at its centre tile (offset (N-1)/2):
+  telegraph 5x5 / 7x7 / 9x9 (red rim, translucent fill, a timer ring growing to the rim, turning ticks; 10 x 100 ms);
+  shockwave rings fire 7, frost 7, lightning 7, holy 5, blood 9 (10 frames); novas fire 9, frost 7, poison 7, holy 7,
+  void 7 (gathers in first, 13 frames), arcane 7 (12 x 70 ms); pillars of light holy 5 and arcane 5 (a beam lands,
+  leaning like the pair's tall things, a glyph ring, rising motes); meteor fire 7 (falls 8 frames, impact at 560 ms,
+  13 x 70 ms); lightning burst 7 (forked bolts, new every second frame, a sky bolt; 10 x 60 ms); holy sanctum 5
+  (two rings, a turning hexagram, rune ticks; 12 x 80 ms); void rift 7 (an upright tear, spiral arms, motes drawn in;
+  13 x 80 ms); blood geyser 5 (a pool, a spout, ballistic droplets). Every strip: last frame empty, nothing on the
+  frame's edge, 10-13 frames.
+- Size: 6,751 sprites, 17,622,095 bytes added to Tibia.spr (things_custom22: 599.7 MB -> 617.3 MB, +2.9%); xz of the
+  whole spr grows by about 4.3 MB. Soft pixels are what costs: a 9x9 telegraph is 606 sprites / 2.1 MB alone. A trial
+  import on things_custom22 (scratch only, no pair kept) verified all 237 frames pixel-identical after the round trip.
+  `gen_big_fx.py stats` prints the table per effect.
+- `python3 -I gen_big_fx.py build` writes the strips (`art_import/big_fx/`, about 5 MB of PNG, ignored by git), the
+  spec and `art_import/big_fx.sums` (sha256 of each strip's RGBA pixels); `build --check` (CI, Pillow 12.3.0 /
+  numpy 2.5.3 like the class effects) renders again and compares the spec, the sums and the strips on disk.
+  `preview --out DIR [--dat D --spr S]`: a GIF per effect on an 11x11 tile area with a player look for scale, and a
+  sheet of every frame. About 2 minutes for either.
+- The spec has an `alpha` column (`soft`): `import_fx_art.py` keeps the alpha levels for such rows (other specs keep
+  the 0 / 255 cut at 128). Append to the next pair after the queued packs:
+  ```
+  python3 -I client/tools/sprites/gen_big_fx.py build
+  python3 -I client/tools/sprites/import_fx_art.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir OUT \
+      --spec client/tools/sprites/art_import/big_fx.csv --expect-first-effect N \
+      --lua-out server/data/lib/chaos_big_fx_ids.lua --catalog-out server/data/spells/big_fx_catalog.csv
+  python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old IN/Tibia.dat IN/Tibia.spr
+  ```
+- The client draws a thing from its bottom-right tile, so a 9x9 effect is drawn with the tile 4 right / 4 down of its
+  centre; near the right or bottom edge of the view that tile can be outside what the client draws and the effect is
+  cut. Not seen in a client yet.
+
 ## Rift rank variants (next pair, outfits 2200-2207, `tools/sprites/rift_variants.py`, `art_import/rift_variants.csv`; not built yet)
 Eight new looks of rift monsters, our own art: PixelLab (edit-animation, owner approved) repainted the frames of a rift
 look of our pair, so each variant keeps its base's size, frame groups, phases, timing, flags and feet line. Only our
@@ -1257,10 +1330,12 @@ holds the font file used, its `OFL.txt` and a README (source URL, version, upstr
 |---|---|---|---|---|
 | Cinzel | Cinzel-VariableFont_wght.ttf (2.000), weight 700 | `chaos-title-15px` (shadow) | `title` | every Chaos-skinned window title |
 | | | `chaos-splash-20px` (outline + shadow, glyphs space..Z) | `splash` | the login "PRESS ANY KEY TO START" |
+| | | `chaos-display-16px` (antialiased border + shadow, glyphs space..~) | `display` | the login scene's place name |
 | Alegreya SC | AlegreyaSC-Bold.ttf (2.003) | `chaos-subtitle-16px` (shadow) | `subtitle` | Codex page title, the item on the crafting bench |
 | | | `chaos-heading-14px` (shadow) | `heading` | Codex section headings, the NPC's name in the dialogue bubble |
 | IM Fell English | IMFeENrm28P.ttf (3.00) | `chaos-dialogue-15px` | `dialogue` | what NPCs say in the dialogue bubble (`game_npctalk`) |
 | Alegreya Sans | AlegreyaSans-Medium.ttf (2.004) | `chaos-body-13px`, `chaos-body-12px` | `body` (off) | trial body font: Codex paragraphs, only when switched on |
+| | | `chaos-outline-12px`, `chaos-outline-11px` (antialiased border) | `outline`, `outlineSmall` | text straight over the game picture: the login scene's monster names (11); 12 for later uses |
 
 Everything else keeps the stock Verdana. `client_chaos_theme`: `ChaosTheme.font(role[, fallback])` gives the role's
 font name when that font is loaded, `ChaosTheme.applyFont(widget, role)` sets it (nothing changes without the font).
@@ -1269,6 +1344,21 @@ The `body` role is off unless the setting `chaosBodyFont` (g_settings) names one
 terminal; the Codex uses it from the next page it shows. The bitmap fonts are named by role, not family: the OFL does
 not let a modified (converted) font use a Reserved Font Name, and IM Fell's own copyright string reserves "IM FELL
 English Roman".
+
+**Bordered fonts** (`--border`, 2026-10-13): text drawn straight over the game picture needs a dark rim to read on
+light and dark ground alike. `make_fonts.py --border R` draws an antialiased round border of R pixels (a fraction is
+fine) from the glyph's own antialiased mask: each pixel's coverage spread over a 4x4 block, the maximum over a disc
+of 4R sub-pixels, averaged back (box), so the ring is never wider than R, has soft edges and round corners and stays
+aligned with the hinted glyph (the older `--outline N` grows by whole pixels with a square step). `--max-cell-width N`
+squeezes the few glyphs wider than the cell (the per mille sign and the em dash) horizontally, so they do not decide
+the cell of the whole sheet: with it the 11 and 12 px bordered sheets keep a 256 slot of the font atlas. The three
+sheets take 3 slots of 256: the room comes from `var-cip-font-wheel.otfont`, a second atlas copy (512 slot) of the
+Verdana Bold 11 wheel sheet under the name `$var-cip-font-wheel`, which nothing looks up (the styles' value
+`$var-cip-font-wheel` is resolved to `Verdana Bold-11px-wheel` by the UI before the lookup, no Lua names it), now a
+copy of `Icon-VBold-11px` like the other replaced fonts. `--atlas-check` on the assembled client: 35 fonts, 96.9%
+used, 2 slots of 256 free; the Linux client agrees (`g_atlas.getStats()` font part `0 0 0 2 0 0 0`, all three fonts
+loaded). So the "one 256x256 slot free" below is two now. Tests: `make_fonts_test.py` (disc, ring pad, squeeze, a bordered render: white ink, dark
+soft ring, nothing wraps round the cell).
 
 **Licence.** The OFL allows bundling the fonts and fonts made from them with the game (free or sold) if every copy
 carries the copyright notice and the licence, the fonts are never sold by themselves and stay under the OFL. So
@@ -1319,6 +1409,34 @@ Checked in the Linux build at 1280x720 and 1920x1080 (login splash, Codex, craft
 Glyphs 32..255 and patch 0028 checked in the Linux client at 1280x720: every role with accents and cp1252 symbols, the
 ASCII lines compared pixel by pixel with the previous sheets, a server modal dialog (title in the title font) and an
 NPC line in the bubble's style through `InputMessage::getString` (no server: the bytes were fed in from Lua).
+
+## Sharded sprites (new, base patch 0048, `tools/sprites/spr_shards.py`)
+The 600 MB `Tibia.spr` can ship as shard files that the client reads on several threads and the updater replaces one
+by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
+- **Files** in `data/things/1098/`: `Tibia.sprshards` (text index: format line `chaos-spr-shards 1`, signature, sprite
+  count, shard size, then one line per shard: first id, count, file name, size, SHA-256) and `Tibia.000.spr` ..
+  `Tibia.045.spr`. Each shard is a normal `.spr` with a u32 count holding 16384 sprite ids (the last one the rest),
+  its records byte for byte as in the single file. Ids are cut by range, not by bytes: new sprites are appended at the
+  end of the pair, so an import changes the last shard (and adds new ones), not all of them. A record two ids share
+  stays shared inside one shard and is copied when the ids fall in two shards.
+- **Tool**: `python3 -I client/tools/sprites/spr_shards.py split Tibia.spr OUT_DIR [--per-shard 16384]` (deterministic:
+  same input, same bytes; removes shard files of an older split), `verify Tibia.spr OUT_DIR` (every record of every id
+  byte-identical to the single file, empty ids included, the index's sizes and SHA-256, and the shards joined in
+  memory compared by MD5 with the single file), `check OUT_DIR` (the index alone), `join OUT_DIR OUT.spr`. Tests:
+  `spr_shards_test.py` (CI). On things_custom23: 745,653 sprites into 46 shards (571.9 MB, largest 29.1 MB) in 5.7 s,
+  verify 5.0 s, joined MD5 09f3a073b0a071d54b9604a422a9dffd = the single file's; a second split gave the same bytes.
+- **Assembly**: `tools/assemble_client.sh <base> <out> <things-dir>` copies the dat and splits and verifies the spr
+  (`CHAOS_SPR_SHARDS=0` copies the single file instead); without the third argument the pair is left to you as before.
+  The Windows package workflow still ships the single `Tibia.spr`: its map editor reads the sprites from
+  `client\data\things\1098`, and a client loads the single file when there is no index.
+- **Loading**: the index wins over `Tibia.spr` when both are there; a broken set (missing or short shard, bad index)
+  falls back to `Tibia.spr`. Measurements: client/BASE.md 0048 (load already took only milliseconds, since the engine
+  streams sprite records; sharded it blocks for about 1.6 ms against 6.4 ms cold).
+- **Updates**: `make_update_manifest.py` lists every shard as its own file and checks the set before publishing (index,
+  sizes, headers, each shard's SHA-256 against the index). It refuses a shard set next to the single `Tibia.spr`
+  (players would download both; `--with-single-spr` ships both on purpose) and a shard set without `--min-package`
+  (a client built before 0048 ignores the shards and would draw a new dat with its old spr). It warns when it publishes
+  a single `Tibia.spr` with no shard set: a client whose install has an index keeps loading its shards.
 
 ## Signed updater (new, `client_chaos_updater`, base patch 0031)
 

@@ -9554,6 +9554,39 @@ animated effects of the oblique spell effect set instead. Effects only: no damag
   use exists and every use is sent; off: the stock id; on: Vfx, the stock id for unknown names or no chaos_vfx.lua).
   Not run on a live server.
 
+## Large spell effects (`data/lib/chaos_big_fx.lua`, switch `ChaosBigFx.BIG_FX`, off)
+21 big soft effects of our own art (5x5 to 9x9 tiles, 10-13 frames, alpha kept): boss telegraph circles, shockwave
+rings, novas, pillars, a meteor, a lightning burst, a holy sanctum, a void rift and a blood geyser
+(`client/tools/sprites/gen_big_fx.py`, client/MANIFEST.md "Large spell effects"). Effects only: no damage, area,
+timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so the art is centred on the target.
+- Spells (`ChaosBigFx.spells`, spell id -> effect name -> big effect; asked by `ChaosSpell.vfx` in
+  `data/spells/chaos/_common.lua` during a cast; a chosen cosmetic skin wins, the big effect wins over the class
+  effect): Doomtide's waves (fire nova 9x9, storm ring, fire ring), Primordial Squall's waves (venom nova, frost
+  nova), Falling Pyre's meteor (lands on the impact), Forked Storm's jumps (lightning burst), Tear in the Weave (void
+  rift), Nightburst (void nova), Colossus Fall (fire ring, in place of warrior_quake), Blessed Earth and Consecration
+  (holy sanctum 5x5), Final Verdict and Judgement (pillar of light), Corpse Explosion and Bone Offering (blood geyser
+  per corpse), Whirling Heel (golden ring 5x5, in place of monk_heel), Purging Nova (holy nova). The Thief line has
+  no area spell with an effect at its centre and is left out.
+- Uses (`ChaosBigFx.uses`, asked first by `ChaosPackFx.send`, whatever `ChaosPackFx.PACK_FX` is): world boss
+  arrival (void rift), world boss enrage (blood ring 9x9), rift guardian arrival (arcane pillar), the Wrathful
+  Guardian's nova (void nova; radius 3). The Veilstorm and Cinderdeath strikes (radius 1) keep theirs.
+- Boss telegraphs (`uber.lua`, `guildboss.lua`, `raid.lua`): a telegraph whose tiles are round (a 5x5, 7x7 or 9x9
+  box reached on all four sides, centre tile in, 45%+ filled: `ChaosBigFx.circleOf`) also gets the red warning
+  circle of its size on its first mark; the Ascended and guild boss hits over such a telegraph get the big effect of
+  the boss's element (`ChaosBigFx.hits`). Cones, rings with a safe middle and marks round players get nothing more.
+  The stock warning marks and hits stay; the big ones are drawn on top.
+- Not wired yet: big_nova_arcane_7 (in the pair for later).
+- Ids: `data/lib/chaos_big_fx_ids.lua`, written by `import_fx_art.py` when the next pair is built; until then (or with
+  the switch off) nothing big is sent and every site sends exactly what it sent before.
+- Flip step, once the pair with them is on the client: set `C.BIG_FX = true` (and flip the check in
+  `tests/big_fx_test.lua`), `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. Rollback: false.
+- The client's one spell effect opacity slider (Options > Effects, 25-100%, client base patch 0049) scales these
+  like every magic effect; players who find them too strong can turn them down.
+- Tests: `tests/big_fx_test.lua` (the switch; the effect list against the client spec; every spell swap names a spell
+  whose script sends that name, every use is a pack use; the round telegraph test; off: nothing big and the pack lib
+  sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites). Not run on a
+  live server or seen in the client (no pair built).
+
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 
 The Necromancer, the Monk and the Templar (docs/CLASSES.md, classes five to seven) need an account-wide unlock. The method is one

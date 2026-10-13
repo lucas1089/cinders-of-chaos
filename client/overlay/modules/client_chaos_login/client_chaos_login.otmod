@@ -3,7 +3,7 @@ Module
   description: Cinders of Chaos login screen (full-screen gothic scene, logo, framed sign-in panel with rune medallions, press-any-key splash, status and version corners)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ login ]
+  scripts: [ loginscene_core, loginscene, login ]
   dependencies:
     - client_chaos_theme
     - client_entergame

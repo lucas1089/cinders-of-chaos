@@ -131,6 +131,17 @@ local function say(run, text, kind)
 	end
 end
 
+-- large effects (data/lib/chaos_big_fx.lua, switch ChaosBigFx.BIG_FX; off: nothing more is sent): the big warning
+-- circle over a round telegraph, the big hit of the boss's element
+if not ChaosBigFx then
+	pcall(dofile, "data/lib/chaos_big_fx.lua")
+end
+local function bigFx(fn, ...)
+	if ChaosBigFx and ChaosBigFx[fn] then
+		pcall(ChaosBigFx[fn], ...)
+	end
+end
+
 local function fx(pos, name, fallback)
 	if Vfx and ChaosVfx and ChaosVfx[name] then
 		Vfx(pos, name)
@@ -899,6 +910,9 @@ local function telegraph(run, name)
 			if not live() then
 				return
 			end
+			if i == 1 then
+				bigFx("telegraph", tiles)
+			end
 			for _, t in ipairs(plan.big) do
 				fx(P(t), effect, CONST_ME_MAGIC_RED)
 			end
@@ -920,6 +934,7 @@ local function telegraph(run, name)
 				fx(P(t), r.def.hitEffect, CONST_ME_EXPLOSIONAREA)
 			end
 		end
+		bigFx("bossHit", tiles, r.def.element)
 		local now = os.time()
 		for _, p in ipairs(arenaPlayers(r)) do
 			local pp = p:getPosition()

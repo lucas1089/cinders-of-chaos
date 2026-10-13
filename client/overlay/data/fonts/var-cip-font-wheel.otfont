@@ -1,0 +1,12 @@
+// Cinders of Chaos: this stock font ("$var-cip-font-wheel") is a second font atlas copy of the Verdana Bold 11 wheel
+// sheet (a 512 slot). Nothing asks for it by that name: the styles write "$var-cip-font-wheel", which the UI resolves
+// to the variable's value "Verdana Bold-11px-wheel" (data/styles/0-vars.otui) before it looks the font up, and no Lua
+// code names it. Its room goes to the bordered Chaos fonts (data/fonts/chaos/chaos-outline-*, chaos-display-16px;
+// client/MANIFEST.md "OFL fonts"). This file replaces it with a copy of Icon-VBold-11px: the client loads a font name
+// once (FontManager::importFont), so the copy takes no atlas slot.
+Font
+  name: Icon-VBold-11px
+  texture: Icon-VBold-11px
+  height: 15
+  glyph-size: 22 15
+  space-width: 4

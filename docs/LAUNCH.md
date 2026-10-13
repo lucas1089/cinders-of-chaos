@@ -853,6 +853,22 @@ that number so older clients send their players to the download page (`Services.
 old and new build in `clientGuardBuilds` for the switch, or point `clientGuardManifest` at the published manifest so its
 `min_package` refuses the old exe on the server as well.
 
+**Sprites in shards** (client/MANIFEST.md "Sharded sprites", client/BASE.md 0048). Whole files are compared by
+SHA-256, so a change to the single 600 MB `Tibia.spr` makes every player download all of it again. Split it instead:
+assemble with the pair as third argument (`client/tools/assemble_client.sh <base> <client> <things-dir>`, which writes
+`data/things/1098/Tibia.sprshards` and `Tibia.000.spr` .. `Tibia.045.spr` and checks them against the spr), or run
+`python3 -I client/tools/sprites/spr_shards.py split Tibia.spr <client>/data/things/1098` and `verify` and remove
+`Tibia.spr` there. Each shard (16384 sprite ids, 10-30 MB) is its own manifest file: a new pair that appends sprites
+re-sends the index, the dat and the last shard or two, not 600 MB. Rules the build step enforces:
+- The first update with shards needs `--min-package N`, N the first package whose exe has base patch 0048: an older
+  exe ignores the shards and would draw the new dat with its old spr. Players on that package download all shards
+  once (about 572 MB); their package's own `Tibia.spr` stays on disk unused.
+- Never publish the shards and `Tibia.spr` together (refused: both would be downloaded); `--with-single-spr` does it
+  on purpose while packages without 0048 must still be served.
+- Once players have shards, keep publishing shards: a client with an index loads its shards before any `Tibia.spr`
+  (the build warns when it publishes a single spr with no shard set).
+- The Windows package keeps the single `Tibia.spr` for now (its map editor reads it from `client\data\things\1098`).
+
 **Production is HTTPS.** The updater warns in the client log when the manifest URL is plain HTTP;
 `client/tools/serve_updates.py` (HTTP, local) is only for tests.
 

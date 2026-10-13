@@ -260,3 +260,13 @@ server/README.md "Class signature effects". Build and md5s: client/MANIFEST.md "
 | 625 | vigil_iron | 3x3, 1,1 | 8 x 90 ms | vigil: a steel banner with a shield rises from the ground (Vigil of Iron) |
 | 626 | vigil_haste | 3x3, 1,1 | 8 x 90 ms | vigil: a green banner with a wing rises from the ground (Vigil of Haste) |
 | 627 | vigil_clarity | 3x3, 1,1 | 8 x 90 ms | vigil: a blue banner with an eye rises from the ground (Vigil of Clarity) |
+
+## Large spell effects (next pair; our own procedural art, soft alpha)
+
+21 big glowing effects, 5x5 to 9x9 tiles, 10-13 frames, each sent at its centre tile: boss telegraph circles (5, 7,
+9), shockwave rings (fire, frost, lightning, holy, blood), novas (fire 9x9, frost, poison, holy, void, arcane), pillars
+of light (holy, arcane), a meteor, a lightning burst, a holy sanctum, a void rift and a blood geyser. Drawn by
+`client/tools/sprites/gen_big_fx.py` (spec `art_import/big_fx.csv`; the element ramps of `item_forge_data/style.json`);
+their alpha stays soft, unlike the pixel-art sets above. Not in a pair yet: the ids will be in
+`server/data/lib/chaos_big_fx_ids.lua`. Which spell, boss and use sends which, and the switch `ChaosBigFx.BIG_FX`
+(off): server/README.md "Large spell effects". Sizes and build: client/MANIFEST.md "Large spell effects".

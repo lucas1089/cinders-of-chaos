@@ -86,6 +86,9 @@ jobs:
       - name: Client updater tools (manifest builder, signer, path rules)
         run: python3 -I client/tools/make_update_manifest_test.py
 
+      - name: Sprite shard tool (split, verify, join on small synthetic .spr files)
+        run: python3 -I client/tools/sprites/spr_shards_test.py
+
       - name: Server hang watchdog (status probe, restart decision)
         run: python3 -I server/tools/chaos_watchdog_test.py
 
@@ -237,6 +240,8 @@ jobs:
           python3 -I server/tools/install_theme_items.py --lua --check
           # pack effect cuts: spec and sums match gen_pack_fx.py's table (the art set and the strips are not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
+          # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
