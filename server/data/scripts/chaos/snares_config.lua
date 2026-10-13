@@ -5,7 +5,7 @@
 -- A snare is a spot on the map, not an item: nothing is created on the tile, nothing is saved, nothing can be picked up
 -- or moved. The spells keep a list in memory; a scheduler looks at a few of them every tick (scan below), so a full
 -- screen of snares costs a bounded amount of work per tick, like the archetypes' chain budget.
--- Computed balance (not measured in game): server/data/spells/README.md "Snares and vigils".
+-- Computed balance: server/data/spells/README.md "Snares, vigils and Hollow Vessel" (recomputed after the in-game measure).
 
 ChaosSnaresConfig = {
 	-- how many snares one player may have out at once; the oldest goes when a new one passes the cap. The keystone and
@@ -36,11 +36,13 @@ ChaosSnaresConfig = {
 
 	-- the snare's hit (per target), before the tree, the class factor and the prices; power = the best of distance skill
 	-- x distance attack, sword skill x blade attack and the shuriken power (ChaosSpell.distanceAttack, bladePower,
-	-- shurikenPower). About 3 Skewering Line hits at the same power (its formula: level / 5 + power x 0.0195 + 20 ..
+	-- shurikenPower). About 1.6 Skewering Line hits at the same power (its formula: level / 5 + power x 0.0195 + 20 ..
 	-- level / 5 + power x 0.0325 + 40): a snare costs a cast and hits only when a monster comes, so it hits harder.
+	-- Halved on 2026-10-13 (was 0.4 / 0.09 / 20 .. 0.4 / 0.135 / 40): measured in game, the Ranger and Deadeye snare
+	-- builds dealt 40-90% over their computed rows on the dummies and passed the Elementalist in area.
 	damage = {
-		min = {perLevel = 0.4, perPower = 0.09, base = 20},
-		max = {perLevel = 0.4, perPower = 0.135, base = 40}
+		min = {perLevel = 0.2, perPower = 0.045, base = 10},
+		max = {perLevel = 0.2, perPower = 0.0675, base = 20}
 	},
 
 	-- the element a snare carries: the word after the spell's words (drai snar "fire"), else the element remembered from

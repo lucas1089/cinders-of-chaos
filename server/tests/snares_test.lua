@@ -61,7 +61,14 @@ eq(S.lifeMs("mine", {fusewright = true}), 12000, "the charm: a longer fuse")
 local D = C.damage
 local baseMin = 300 * D.min.perLevel + 5000 * D.min.perPower + D.min.base
 local baseMax = 300 * D.max.perLevel + 5000 * D.max.perPower + D.max.base
-eq(baseMin, 300 * 0.4 + 5000 * 0.09 + 20, "the formula's numbers")
+-- halved on 2026-10-13 after the in-game measure (was 0.4 / 0.09 / 20 .. 0.4 / 0.135 / 40)
+check(math.abs(baseMin - (300 * 0.2 + 5000 * 0.045 + 10)) < 1e-9, "the formula's numbers (min)")
+check(math.abs(baseMax - (300 * 0.2 + 5000 * 0.0675 + 20)) < 1e-9, "the formula's numbers (max)")
+-- the computed tables (server/data/spells/README.md "Snares, vigils and Hollow Vessel"): the average hit per target
+-- before the tree, 353 / 924 at level 300 / 1000 (power 110 x 45 / 140 x 90), half of the 707 / 1848 before
+local function avg(level, power) local a, b = S.damage(level, power, "trap", "fire", {}); return (a + b) / 2 end
+check(math.abs(avg(300, 110 * 45) - 353) <= 1, "level 300: 353 a hit, got " .. avg(300, 110 * 45))
+check(math.abs(avg(1000, 140 * 90) - 924) <= 1, "level 1000: 924 a hit, got " .. avg(1000, 140 * 90))
 local min, max = S.damage(300, 5000, "trap", "fire", {})
 eq(min, math.floor(baseMin), "trap min")
 eq(max, math.floor(baseMax), "trap max")

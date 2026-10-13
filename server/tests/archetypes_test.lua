@@ -359,7 +359,11 @@ local function runEvents(untilTime)
 end
 local registered, callbacks = {}, {}
 EventCallback = setmetatable({}, {__newindex = function(t, k, v) rawset(t, "_last", {k, v}) end})
-rawset(EventCallback, "register", function(self) local l = rawget(self, "_last"); callbacks[l[1]] = callbacks[l[1]] or {}; table.insert(callbacks[l[1]], l[2]) end)
+local callbackIndex = {}
+rawset(EventCallback, "register", function(self, index)
+	local l = rawget(self, "_last"); callbacks[l[1]] = callbacks[l[1]] or {}; table.insert(callbacks[l[1]], l[2])
+	callbackIndex[l[2]] = tonumber(index) or 0
+end)
 function CreatureEvent(name) local o = {}; function o:register() registered[name] = o end; return o end
 function GlobalEvent(name) local o = {}; function o:interval() end; function o:register() registered[name] = o end; return o end
 bit = bit or {band = function(a, b) return (a % (2 * b) >= b) and b or 0 end}
@@ -857,6 +861,25 @@ NOW = NOW + 1800
 registered.ChaosArchetypesThink.onThink(1000)
 eq(sage.c.es, math.floor(740 * 300 * 800 / 1000000), "the diadem's early start without the keystone")
 ChaosEnergyShield = nil
+
+-- ------------------------------------------------------------------------------------------------ spawn registration
+-- the engine runs onSpawn before the placement: the monster's id is 0 until it is placed. The events must still land on
+-- it (before the fix the callback looked the monster up by id 0 a tick later, found nothing, and no monster got the
+-- hit event, so the vigils did nothing for players without a keystone or unique)
+eq(#(callbacks.onSpawn or {}), 1, "one spawn callback")
+local spawning = mk("monster", {hp = 500, pos = P(1300, 1300)})
+local realId = spawning.c.id
+creatures[realId] = nil
+spawning.c.id = 0
+for _, cb in ipairs(callbacks.onSpawn or {}) do
+	check(cb(spawning, P(1300, 1300), false, false) ~= false, "the spawn goes on")
+	check(callbackIndex[cb] > 0, "the spawn callback runs after the passive tree's (index 0)")
+end
+spawning.c.id = realId
+creatures[realId] = spawning
+runEvents()
+check(spawning.c.events.ChaosArchetypesHit, "a new monster gets the hit event")
+check(spawning.c.events.ChaosArchetypesDeath, "a new monster gets the death event")
 
 print(string.format("archetypes_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

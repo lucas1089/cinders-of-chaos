@@ -1162,6 +1162,14 @@ function Gen.uniqueEntries(D)
 			rules[#rules + 1] = "Part of the set " .. setOf[u.id] .. ": its bonuses are on the Sets tab."
 		end
 		local kind = SLOT_KIND[u.slot] or "other"
+		local itemRows = {{"Slot", SLOT_NAME[u.slot] or u.slot}, {"Required level", Gen.num(u.level)}}
+		if spec and spec.equip and spec.equip.lines and #spec.equip.lines > 0 then
+			-- a unique with an equip rule of its own (chaos_unique_equip.lua): the class lines that may wear it
+			local lines = spec.equip.lines
+			local text = #lines == 1 and lines[1] or (table.concat(lines, ", ", 1, #lines - 1) .. " and " .. lines[#lines])
+			itemRows[#itemRows + 1] = {"Worn by", text .. " lines"}
+		end
+		itemRows[#itemRows + 1] = {"Drops from", TIER_NAME[u.minTier] .. (u.bossOnly and " (bosses only)" or " monsters and stronger")}
 		local p = {}
 		if spec then
 			p[#p + 1] = spec.description
@@ -1174,8 +1182,7 @@ function Gen.uniqueEntries(D)
 			sections = {
 				{h = "Description", p = p},
 				{h = "Stats", p = statLines},
-				{h = "Item", cols = {"", ""}, w = {35, 65}, rows = {{"Slot", SLOT_NAME[u.slot] or u.slot}, {"Required level", Gen.num(u.level)},
-					{"Drops from", TIER_NAME[u.minTier] .. (u.bossOnly and " (bosses only)" or " monsters and stronger")}}},
+				{h = "Item", cols = {"", ""}, w = {35, 65}, rows = itemRows},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = sources},
 				{h = "Rules", p = rules}
 			}}

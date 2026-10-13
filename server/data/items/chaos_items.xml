@@ -1388,7 +1388,10 @@
 		<attribute key="description" value="Its smoke kneels before it rises. Reliquary Vow: your Reliquary Warden pulses 25% stronger. (Requires level 220.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- the build archetype uniques, second round (2026-10-12, docs/BUILDS.md): snares, vigils, Hollow Vessel -->
+	<!-- the build archetype uniques, second round (2026-10-12, docs/BUILDS.md): snares, vigils, Hollow Vessel.
+	     equipLevel / equipLines: who may wear the unique copy (the classes its archetype names; 2026-10-13). The base
+	     item's own movements.xml rule stays for stock copies: tools/install_unique_equip.py, server/README.md
+	     "Unique equip rules" -->
 	<!-- 28115: stock "shadewalker boots" -->
 	<item id="28115" article="a" name="Snarewalker Greaves">
 		<attribute key="weight" value="900" />
@@ -1397,7 +1400,9 @@
 		<attribute key="skillDist" value="2" />
 		<attribute key="absorbPercentEarth" value="4" />
 		<attribute key="archetype" value="snarewalker" />
-		<attribute key="description" value="Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. (Requires level 120.)" />
+		<attribute key="description" value="Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. (Requires level 120. Ranger and Thief lines.)" />
+		<attribute key="equipLevel" value="120" />
+		<attribute key="equipLines" value="Ranger,Thief" />
 		<attribute key="showattributes" value="1" />
 	</item>
 	<!-- 7890: stock "magma amulet" -->
@@ -1408,7 +1413,9 @@
 		<attribute key="criticalHitChance" value="2" />
 		<attribute key="criticalHitAmount" value="8" />
 		<attribute key="archetype" value="fusewright" />
-		<attribute key="description" value="It ticks when no one is listening. Snares: two more mines may be out, they hit 10% harder and their fuse burns 4 s longer. (Requires level 150.)" />
+		<attribute key="description" value="It ticks when no one is listening. Snares: two more mines may be out, they hit 10% harder and their fuse burns 4 s longer. (Requires level 150. Ranger and Thief lines.)" />
+		<attribute key="equipLevel" value="150" />
+		<attribute key="equipLines" value="Ranger,Thief" />
 		<attribute key="showattributes" value="1" />
 	</item>
 	<!-- 27667: stock "eldritch cowl" -->
@@ -1419,7 +1426,9 @@
 		<attribute key="magicPoints" value="3" />
 		<attribute key="absorbPercentHoly" value="5" />
 		<attribute key="archetype" value="choirmaster" />
-		<attribute key="description" value="The choir sings so that you need not. Vigils: each reserves 15% less. (Requires level 200.)" />
+		<attribute key="description" value="The choir sings so that you need not. Vigils: each reserves 15% less. (Requires level 200. Warrior, Mystic, Necromancer, Monk and Templar lines.)" />
+		<attribute key="equipLevel" value="200" />
+		<attribute key="equipLines" value="Warrior,Mystic,Necromancer,Monk,Templar" />
 		<attribute key="showattributes" value="1" />
 	</item>
 	<!-- 15453: stock "warrior's shield" -->
@@ -1430,7 +1439,9 @@
 		<attribute key="skillShield" value="2" />
 		<attribute key="absorbPercentPhysical" value="3" />
 		<attribute key="archetype" value="oathkeeper" />
-		<attribute key="description" value="Those who stand under it keep their oaths. Vigils: each reserves 10% less and reaches 2 sqm farther. (Requires level 180.)" />
+		<attribute key="description" value="Those who stand under it keep their oaths. Vigils: each reserves 10% less and reaches 2 sqm farther. (Requires level 180. Warrior, Mystic, Necromancer, Monk and Templar lines.)" />
+		<attribute key="equipLevel" value="180" />
+		<attribute key="equipLines" value="Warrior,Mystic,Necromancer,Monk,Templar" />
 		<attribute key="showattributes" value="1" />
 	</item>
 	<!-- 27668: stock "eldritch hood" -->
@@ -1441,7 +1452,9 @@
 		<attribute key="magicPoints" value="2" />
 		<attribute key="absorbPercentEnergy" value="5" />
 		<attribute key="archetype" value="hollowglass" />
-		<attribute key="description" value="Light passes through it and comes out colder. Energy shield: recharges 10% of its maximum a second faster and starts 1 s after a hit, with or without Hollow Vessel. (Requires level 250.)" />
+		<attribute key="description" value="Light passes through it and comes out colder. Energy shield: recharges 10% of its maximum a second faster and starts 1 s after a hit, with or without Hollow Vessel. (Requires level 250. Mystic, Necromancer, Monk and Templar lines.)" />
+		<attribute key="equipLevel" value="250" />
+		<attribute key="equipLines" value="Mystic,Necromancer,Monk,Templar" />
 		<attribute key="showattributes" value="1" />
 	</item>
 	<!-- 27390: stock "soulmantle" -->
@@ -1452,7 +1465,9 @@
 		<attribute key="magicPoints" value="3" />
 		<attribute key="absorbPercentDeath" value="6" />
 		<attribute key="archetype" value="stillheart" />
-		<attribute key="description" value="Woven for a body that no longer bleeds. Hollow Vessel: the items' energy shield counts 40% more. (Requires level 300.)" />
+		<attribute key="description" value="Woven for a body that no longer bleeds. Hollow Vessel: the items' energy shield counts 40% more. (Requires level 300. Mystic, Necromancer, Monk and Templar lines.)" />
+		<attribute key="equipLevel" value="300" />
+		<attribute key="equipLines" value="Mystic,Necromancer,Monk,Templar" />
 		<attribute key="showattributes" value="1" />
 	</item>
 </items>

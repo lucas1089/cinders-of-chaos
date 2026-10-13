@@ -83,6 +83,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the base two-handed swap keeps a quiver, arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
                vocations, which still reads the launchers' ammo type, and after spells)
+  uniqueequip  tools/install_unique_equip.py     the uniques with an equip rule of their own (chaos_items.xml equipLevel /
+               equipLines: the second round's archetype uniques) get it: their base items' Equip entries in
+               movements.xml check the looser rule and a movement script holds each copy to its own (unique or
+               stock; README "Unique equip rules"; after vocations and archery)
   itemnames    tools/patch_base_item_names.py    Chaos names of the base items with names of another world, by id
                (data/items/base_item_names.csv): items.xml, the monsters' loot by old name becomes loot by
                id, other mentions in the base data renamed (README "Base item names"; after archery)
@@ -161,7 +165,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'uniqueequip', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -481,6 +485,10 @@ def step_spells(server, data, ctx):
 
 def step_archery(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
+
+
+def step_uniqueequip(server, data, ctx):
+    return tool_result(run_tool([tool('install_unique_equip.py'), data], 'install_unique_equip.py'))
 
 
 def step_itemnames(server, data, ctx):

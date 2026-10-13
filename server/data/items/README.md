@@ -54,6 +54,10 @@ attribute: the effect `data/scripts/chaos/archetypes.lua` reads on the worn copy
 | Hollowglass Diadem | head | 27668 | eldritch hood | 250 | legendary | energy shield recharge +10% a second, starts 1 s after a hit (no keystone needed) |
 | Stillheart Robe | body | 27390 | soulmantle | 300 | legendary | Hollow Vessel: the items' energy shield +40% more |
 
+The six of the second round carry `equipLevel` and `equipLines` (2026-10-13): their copies are worn by that level and
+those class lines, not by the base item's movements.xml rule, which stays for stock copies
+(`tools/install_unique_equip.py`, `data/lib/chaos_unique_equip.lua`, server/README.md "Unique equip rules").
+
 
 Columns: server id / client id, the stock item that was overridden, required level (see caveats), drop tier (`minTier`), key stats.
 
@@ -129,7 +133,8 @@ attributes of the stock item (boots of haste style timers, equip transforms) wer
   copy of the stock items.xml (idempotent).
 * **Level requirements are text only.** `items.xml` has no minimum-level attribute in this engine; stock items enforce levels with
   movement/weapon Lua scripts. The level is written into each description ("Requires level N.") and in `ChaosUniqueItems[].level`.
-  Nothing stops a low-level player from equipping them until you add a MoveEvent/`onEquip` check.
+  Nothing stops a low-level player from equipping them until you add a MoveEvent/`onEquip` check. Exception: the
+  uniques with `equipLevel` / `equipLines` (above), held to their own rule by the `uniqueequip` install step.
 * **Client display:** the 10.98 client shows item names and descriptions from the server (look/inspect text), but the item
   *sprite* and the client-side name in some windows (e.g. trade lists, market, container titles built from `.dat` names) can stay those of the
   stock item. Sprites are always those of the original item.

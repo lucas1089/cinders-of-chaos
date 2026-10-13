@@ -207,6 +207,12 @@ function ChaosMakeUnique(item)
 	return true
 end
 
+-- The uniques with an equip rule of their own (spec `equip`): data/lib/chaos_unique_equip.lua, called from the movement
+-- script tools/install_unique_equip.py writes (server/README.md "Unique equip rules").
+if not ChaosUniqueEquip then
+	dofile('data/lib/chaos_unique_equip.lua')
+end
+
 -- Give one unique to a player (admin/quest/reward helper). Accepts the name (case-insensitive) or the server id.
 -- Returns the Item, or nil + reason. Falls back to dropping on the floor if the backpack is full.
 function ChaosGiveUnique(player, name)

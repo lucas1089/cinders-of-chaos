@@ -6439,7 +6439,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The choir sings so that you need not. Vigils: each reserves 15% less. (Requires level 200.)"}
+							p = {"The choir sings so that you need not. Vigils: each reserves 15% less. (Requires level 200. Warrior, Mystic, Necromancer, Monk and Templar lines.)"}
 						},
 						{h = "Stats", p = {"Armor 7", "Holy Absorb +5%", "Magic Level +3"}},
 						{
@@ -6449,6 +6449,7 @@ CodexData = {
 							rows = {
 								{"Slot", "Helmet"},
 								{"Required level", "200"},
+								{"Worn by", "Warrior, Mystic, Necromancer, Monk and Templar lines"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
 						},
@@ -7442,7 +7443,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"It ticks when no one is listening. Snares: two more mines may be out, they hit 10% harder and their fuse burns 4 s longer. (Requires level 150.)"}
+							p = {"It ticks when no one is listening. Snares: two more mines may be out, they hit 10% harder and their fuse burns 4 s longer. (Requires level 150. Ranger and Thief lines.)"}
 						},
 						{h = "Stats", p = {"Critical Hit: chance +2%, damage +8%", "Fire Absorb +6%"}},
 						{
@@ -7452,6 +7453,7 @@ CodexData = {
 							rows = {
 								{"Slot", "Amulet"},
 								{"Required level", "150"},
+								{"Worn by", "Ranger and Thief lines"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
 						},
@@ -8040,7 +8042,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Light passes through it and comes out colder. Energy shield: recharges 10% of its maximum a second faster and starts 1 s after a hit, with or without Hollow Vessel. (Requires level 250.)"}
+							p = {"Light passes through it and comes out colder. Energy shield: recharges 10% of its maximum a second faster and starts 1 s after a hit, with or without Hollow Vessel. (Requires level 250. Mystic, Necromancer, Monk and Templar lines.)"}
 						},
 						{h = "Stats", p = {"Armor 6", "Energy Absorb +5%", "Magic Level +2"}},
 						{
@@ -8050,6 +8052,7 @@ CodexData = {
 							rows = {
 								{"Slot", "Helmet"},
 								{"Required level", "250"},
+								{"Worn by", "Mystic, Necromancer, Monk and Templar lines"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
 						},
@@ -8842,7 +8845,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Those who stand under it keep their oaths. Vigils: each reserves 10% less and reaches 2 sqm farther. (Requires level 180.)"}
+							p = {"Those who stand under it keep their oaths. Vigils: each reserves 10% less and reaches 2 sqm farther. (Requires level 180. Warrior, Mystic, Necromancer, Monk and Templar lines.)"}
 						},
 						{h = "Stats", p = {"Defense 36", "Physical Absorb +3%", "Shielding +2"}},
 						{
@@ -8852,6 +8855,7 @@ CodexData = {
 							rows = {
 								{"Slot", "Shield"},
 								{"Required level", "180"},
+								{"Worn by", "Warrior, Mystic, Necromancer, Monk and Templar lines"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
 						},
@@ -9280,7 +9284,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. (Requires level 120.)"}
+							p = {"Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. (Requires level 120. Ranger and Thief lines.)"}
 						},
 						{h = "Stats", p = {"Armor 3", "Distance +2", "Earth Absorb +4%"}},
 						{
@@ -9290,6 +9294,7 @@ CodexData = {
 							rows = {
 								{"Slot", "Boots"},
 								{"Required level", "120"},
+								{"Worn by", "Ranger and Thief lines"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
 						},
@@ -9486,7 +9491,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Woven for a body that no longer bleeds. Hollow Vessel: the items' energy shield counts 40% more. (Requires level 300.)"}
+							p = {"Woven for a body that no longer bleeds. Hollow Vessel: the items' energy shield counts 40% more. (Requires level 300. Mystic, Necromancer, Monk and Templar lines.)"}
 						},
 						{h = "Stats", p = {"Armor 14", "Death Absorb +6%", "Magic Level +3"}},
 						{
@@ -9496,6 +9501,7 @@ CodexData = {
 							rows = {
 								{"Slot", "Body armour"},
 								{"Required level", "300"},
+								{"Worn by", "Mystic, Necromancer, Monk and Templar lines"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
 						},

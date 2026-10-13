@@ -971,21 +971,18 @@ targetCb.onTargetCombat = function(creature, target)
 end
 targetCb:register(1)
 
--- area hits reach monsters nobody targeted: every monster gets the events when it appears (like the passive tree's),
--- one tick later, so they come after the passive tree's event (the shares are taken of the hit with its bonuses)
+-- area hits reach monsters nobody targeted: every monster gets the events when it appears (like the passive tree's).
+-- The engine runs onSpawn before the placement and gives the monster its id only there (getId() is 0 here; see
+-- monster_tiers.lua), so the events go straight onto the creature, as the passive tree's, bestiary's and bounty's do; no
+-- id and no timer. Index 10 runs after the passive tree's callback (index 0), so its event comes first on the monster
+-- and the shares are taken of the hit with its bonuses (equal indices have no fixed order).
 local spawnCb = EventCallback
 spawnCb.onSpawn = function(self, position, startup, artificial)
-	local id = self:getId()
-	addEvent(function()
-		local c = Creature(id)
-		if c then
-			c:registerEvent("ChaosArchetypesHit")
-			c:registerEvent("ChaosArchetypesDeath")
-		end
-	end, 0)
+	self:registerEvent("ChaosArchetypesHit")
+	self:registerEvent("ChaosArchetypesDeath")
 	return true
 end
-spawnCb:register()
+spawnCb:register(10)
 
 local moved = EventCallback
 moved.onItemMoved = function(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
