@@ -1,6 +1,6 @@
 -- Cinders of Chaos character select: the pure part (no client API; charselect_core_test.lua runs it under LuaJIT and
 -- Lua 5.3). The classes and their icons, the card text, the outfit drawn (the login server's list plus the website's
--- looks), the world name shown, keyboard navigation, the name pre-check of the create window and the account API's
+-- looks) and where it stands (its feet on the pedestal), the world name shown, keyboard navigation, the name pre-check of the create window and the account API's
 -- requests and answers (website/README.md "Client API").
 
 CharSelectCore = CharSelectCore or {}
@@ -181,13 +181,74 @@ function C.initialIndex(characters, lastName)
 end
 
 -- ---------------------------------------------------------------- the preview
--- Tile size for the big preview: UICreature draws the creature's 2x2-tile frame into its rect, so a rect of 2 * T px
--- is a scale of T / 32. The scale is 3 to 4, as much as the space allows (whole pixels per sprite pixel look best).
-function C.previewTile(availW, availH)
-  local fit = math.floor(math.min(tonumber(availW) or 0, tonumber(availH) or 0) / 2)
-  local scale = math.floor(fit / 32)
-  scale = math.max(3, math.min(4, scale))
-  return scale * 32, scale
+-- UICreature draws a creature at its tile's top left (0, 0) and maps the square from (-32, -32) to (32, 32) of those
+-- pixels onto its rect (DrawQueue::correctOutfit): a rect of 2 * T px draws at T / 32 px per sprite pixel, the
+-- creature's own tile being the rect's lower right quarter. Where the feet are in those pixels differs per look (a 1x1
+-- stock outfit, a 2x2 class look drawn in the middle of its frame, the look's displacement): outfit_anchors.lua
+-- (client/tools/sprites/gen_outfit_anchors.py, from the pair) has them, per creature thing:
+--   [id] = {feet x, feet y, top, left, right, width, height}   (pixels at 1x, displacement applied; tiles)
+
+-- the anchor of a creature thing; for a thing the table lacks (a look of a newer pair), its size and displacement
+-- (thing = {w, h, dx, dy}, the client's ThingType values) give the middle of its own tile's bottom
+function C.anchorOf(anchors, id, thing)
+  local a = anchors and anchors[tonumber(id) or 0]
+  if type(a) == 'table' then
+    return { fx = a[1], fy = a[2], top = a[3], left = a[4], right = a[5], w = a[6] or 1, h = a[7] or 1 }
+  end
+  thing = thing or {}
+  local w, h = tonumber(thing.w) or 1, tonumber(thing.h) or 1
+  local dx, dy = tonumber(thing.dx) or 8, tonumber(thing.dy) or 8
+  return { fx = 16 - dx, fy = 32 - dy, top = 32 - dy - 32 * h, left = 32 - dx - 32 * w, right = 32 - dx, w = w, h = h }
+end
+
+-- the whole picture around the feet: the body, its wings (drawn at the same place) and its aura (the client moves a
+-- big aura by (w - 1) * 16, (h - 1) * 16: GameBigAurasCenter). things(id) -> thing info for the fallback, or nil.
+function C.figure(anchors, outfit, things)
+  if type(outfit) ~= 'table' then return nil end
+  local function info(id) return things and things(id) or nil end
+  local body = C.anchorOf(anchors, outfit.type, info(outfit.type))
+  local f = { fx = body.fx, fy = body.fy, top = body.top, left = body.left, right = body.right }
+  for _, kind in ipairs({ 'wings', 'aura' }) do
+    local id = tonumber(outfit[kind]) or 0
+    if id > 0 then
+      local a = C.anchorOf(anchors, id, info(id))
+      local ox, oy = 0, 0
+      if kind == 'aura' and (a.w > 1 or a.h > 1) then ox, oy = (a.w - 1) * 16, (a.h - 1) * 16 end
+      f.top = math.min(f.top, a.top + oy)
+      f.left = math.min(f.left, a.left + ox)
+      f.right = math.max(f.right, a.right + ox)
+    end
+  end
+  return f
+end
+
+-- the scale and how far the feet move down: 4x when the whole picture fits (above the feet: room.above px; on each
+-- side of the feet: room.half px), else the next of `scales` (default 4, 3); when even the last one is too tall, the
+-- feet move down by what is missing, at most room.below px. Returns tile size T (px), scale, drop (px).
+function C.fitPreview(fig, room, scales)
+  scales = scales or { 4, 3 }
+  local function fits(sc)
+    return (fig.fy - fig.top) * sc <= room.above and (fig.fx - fig.left) * sc <= room.half
+      and (fig.right - fig.fx) * sc <= room.half
+  end
+  for _, sc in ipairs(scales) do
+    if fits(sc) then return sc * 32, sc, 0 end
+  end
+  local sc = scales[#scales]
+  local drop = math.max(0, math.min(tonumber(room.below) or 0, (fig.fy - fig.top) * sc - room.above))
+  return sc * 32, sc, drop
+end
+
+-- the UICreature rect (x, y, size) that puts the feet of `fig` at (cx, feetY) with tile size T
+function C.placeRect(fig, T, cx, feetY)
+  local s = T / 32
+  return math.floor(cx - (fig.fx + 32) * s + 0.5), math.floor(feetY - (fig.fy + 32) * s + 0.5), 2 * T
+end
+
+-- where the feet are drawn for a rect (the inverse of placeRect; the tests check both)
+function C.feetOf(fig, x, y, size)
+  local s = size / 64
+  return x + (fig.fx + 32) * s, y + (fig.fy + 32) * s
 end
 
 -- ---------------------------------------------------------------- the create window

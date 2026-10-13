@@ -104,13 +104,89 @@ check(C.move(2, 20, 'PageDown', 6) == 8 and C.move(2, 20, 'PageUp', 6) == 1, 'pa
 check(C.move(1, 0, 'Down') == 0, 'empty list')
 check(C.initialIndex(chars, 'Ash Runner') == 2 and C.initialIndex(chars, 'Nobody') == 1 and C.initialIndex({}, 'x') == 0, 'first selection')
 
--- ---------------------------------------------------------------- the preview scale
-local t, s = C.previewTile(1000, 1000)
-check(t == 128 and s == 4, 'room: 4x')
-t, s = C.previewTile(220, 260)
-check(t == 96 and s == 3, 'little room: 3x')
-t, s = C.previewTile(240, 300)
-check(s == 3, '3x below 256 px')
+-- ---------------------------------------------------------------- the preview: feet on the pedestal
+local A = dofile(dir .. '/outfit_anchors.lua')
+check(type(A) == 'table' and type(A.dat) == 'string' and #A.dat == 32, 'anchor table with its pair md5')
+
+-- the rect puts the feet exactly where asked, for every thing of the pair, at 3x and 4x, anywhere on screen
+local n, worst = 0, 0
+for id, e in pairs(A) do
+  if type(id) == 'number' then
+    n = n + 1
+    local fig = C.figure(A, { type = id })
+    for _, T in ipairs({ 96, 128 }) do
+      for _, at in ipairs({ { 454, 418 }, { 90, 172 }, { 777, 641 } }) do
+        local x, y, size = C.placeRect(fig, T, at[1], at[2])
+        local fx, fy = C.feetOf(fig, x, y, size)
+        worst = math.max(worst, math.abs(fx - at[1]), math.abs(fy - at[2]))
+        check(size == 2 * T, 'rect size 2T')
+      end
+    end
+    check(e[3] < e[2] and e[4] < e[5] and e[4] <= e[1] and e[1] <= e[5], 'anchor ' .. id .. ': feet inside its bounds')
+  end
+end
+check(n > 1000, 'anchors for the pair\'s creature things: ' .. n)
+check(worst <= 0.5, 'feet within half a pixel of the pedestal centre for every look (worst ' .. worst .. ')')
+
+-- the maths by hand: a 1x1 look with its feet at (16, 24) on a 2x2 rect of 256 px (4x) at (500, 400)
+local one = { fx = 16, fy = 24, top = -8, left = -8, right = 24 }
+local x, y, size = C.placeRect(one, 128, 500, 400)
+check(x == 500 - 48 * 4 and y == 400 - 56 * 4 and size == 256, '1x1: rect from the feet at 4x')
+x, y, size = C.placeRect(one, 96, 500, 400)
+check(x == 500 - 48 * 3 and y == 400 - 56 * 3 and size == 192, '1x1: rect from the feet at 3x')
+-- a 2x2 class look drawn in the middle of its frame (feet left of its own tile) lands with its feet on the same spot
+local wide = { fx = -8, fy = 17, top = -19, left = -23, right = 17 }
+x, y = C.placeRect(wide, 128, 500, 400)
+local fx, fy = C.feetOf(wide, x, y, 256)
+check(fx == 500 and fy == 400 and x == 500 - 24 * 4, '2x2 look centred on the feet')
+
+-- one stock 1x1-sized and the 2x2 class looks are in the table, and every class look of the server is
+local function hasW(w)
+  for id, e in pairs(A) do if type(id) == 'number' and e[6] == w and e[7] == w then return true end end
+end
+check(hasW(1) and hasW(2), '1x1 and 2x2 things in the table')
+local cl = io.open(dir .. '/../../../../server/data/scripts/chaos/class_looks_core.lua', 'r')
+if cl then
+  local text = cl:read('*a')
+  cl:close()
+  local looks = 0
+  for male, female in text:gmatch('male = (%d+), female = (%d+)') do
+    looks = looks + 1
+    check(A[tonumber(male)] ~= nil and A[tonumber(female)] ~= nil, 'class look ' .. male .. ' / ' .. female .. ' has its feet')
+  end
+  check(looks >= 21, 'every class look checked: ' .. looks)
+end
+
+-- wings and an aura make the picture taller and wider, never move the feet; a big aura is moved by (w - 1) * 16
+local body = C.anchorOf(A, 2161)
+local fig = C.figure(A, { type = 2161, wings = 1179, aura = 1512 })
+local wingA, auraA = C.anchorOf(A, 1179), C.anchorOf(A, 1512)
+check(fig.fx == body.fx and fig.fy == body.fy, 'wings and aura keep the feet')
+check(fig.top == math.min(body.top, wingA.top, auraA.top + (auraA.h - 1) * 16), 'the top over body, wings and the moved aura')
+check(fig.left <= body.left and fig.right >= body.right, 'wider with wings and aura')
+
+-- the scale: 4x with room, 3x when the wings do not fit at 4x, the feet moved down when not even 3x fits
+local plain = C.figure(A, { type = 2073 })
+local T, sc, drop = C.fitPreview(plain, { above = 400, half = 300, below = 100 })
+check(T == 128 and sc == 4 and drop == 0, 'a plain look: 4x')
+local tall = (fig.fy - fig.top)
+T, sc, drop = C.fitPreview(fig, { above = tall * 4 - 1, half = 1000, below = 100 })
+check(T == 96 and sc == 3 and drop == 0, 'wings too tall for 4x: 3x')
+T, sc, drop = C.fitPreview(fig, { above = tall * 3 - 30, half = 1000, below = 100 })
+check(sc == 3 and drop == 30, 'too tall even at 3x: the feet move down by what is missing')
+T, sc, drop = C.fitPreview(fig, { above = tall * 3 - 300, half = 1000, below = 100 })
+check(drop == 100, 'never further down than allowed')
+T, sc = C.fitPreview(plain, { above = 1000, half = (plain.right - plain.fx) * 4 - 1, below = 0 })
+check(sc == 3, 'too wide for 4x: 3x')
+T, sc = C.fitPreview(plain, { above = 1000, half = 10, below = 0 }, { 3, 2 })
+check(sc == 2 and T == 64, 'other scales (the create window falls back to 2x)')
+
+-- a look of a newer pair (not in the table): its size and displacement
+local fb = C.anchorOf(A, 99999, { w = 1, h = 1, dx = 8, dy = 8 })
+check(fb.fx == 8 and fb.fy == 24 and fb.top == -8 and fb.left == -8 and fb.right == 24, 'fallback from displacement')
+local fb2 = C.anchorOf(nil, 5, nil)
+check(fb2.fy == 24 and fb2.w == 1, 'fallback without a table')
+check(C.figure(A, nil) == nil, 'no outfit, no figure')
 
 -- ---------------------------------------------------------------- the create window
 local rules = { minL = 3, maxL = 20, maxW = 3 }

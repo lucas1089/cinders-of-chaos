@@ -237,9 +237,27 @@ select over the login scene; the stock module stays loaded and keeps every funct
   ascension ("Juggernaut (Warrior)"), level, world, last login ("Last played 2 hours ago", from the website), season
   tag. Mouse: click chooses, double-click plays, the wheel scrolls. Keys: Up / Down / Left / Right, Home / End,
   Page Up / Page Down choose, Enter plays, Escape goes back.
-- **The chosen character** stands large on an ember pedestal (3 or 4 times its size: `previewTile`, whole pixels per
-  sprite pixel), walks in place for a moment when chosen, then idles; a click on it turns it. Name, class and level,
-  world, season and last login under it.
+- **The chosen character** stands large on an ember pedestal, its feet on the pedestal's centre, walks in place for a
+  moment when chosen, then idles; a click on it turns it. Name, class and level, world, season and last login under it.
+- **Feet on the pedestal (fixed 2026-10-13, owner: the first version stood looks off-centre).** `UICreature` draws a
+  creature at its tile's top left and maps the square (-32, -32)..(32, 32) of those pixels onto its rect, so where a
+  look's feet land depends on its art and displacement: a 1x1 look stands in its own tile, our 2x2 class looks are
+  drawn in the middle of their 64 px frame (the Juggernaut's feet 8 px left of its tile), and a fixed offset left some
+  looks up-left or up-right of the pedestal. `client/tools/sprites/gen_outfit_anchors.py` reads the pair and writes
+  `outfit_anchors.lua`: per creature thing (outfits, wings, auras) the feet (the median column of the lowest quarter
+  of the first south frame with every addon, and its lowest row) and the visible bounds, in those pixels. The CI job
+  `live-pair` runs it with `--check` against `windows-assets`; regenerate it with every new pair (a look missing from
+  it falls back to its size and displacement). `CharSelectCore.figure` adds the wings and the aura (a big aura moved by
+  `(w - 1) * 16, (h - 1) * 16`, as `GameBigAurasCenter` draws it) to the bounds, `fitPreview` picks 4x when the whole
+  picture fits under the top menu, else 3x, else 3x with the feet lower, and `placeRect` puts the feet exactly on the
+  pedestal's centre (the create window: 3x, 2x for a look too wide for its panel). Measured in the Linux client at
+  1280x720 and 1920x1080 by diffing frames with and without the creature on a plain background: the 42 class looks of
+  `class_looks_core.lua`, two stock 2x2 looks and two 1x1 looks, at 4x and 3x, have their drawn feet within about two
+  sprite pixels of the pedestal's centre (the feet row exact); the ten class looks of the create window within 1.5.
+  The turned directions use the south anchor (the feet move a pixel or two).
+- **No text through the dialogs.** While the select shows, the login screen's logo and its server status line
+  ("Connecting..." / "Server online") are hidden; a dark veil covers the select behind the Create character window, so
+  the hero's world line no longer shows beside it.
 - **Outfit, and the "generic outfit" seen before.** The 10.98 character list of our login server carries each
   character's look type, colours and addons (base patch 0025 reads them; the stock list drew them). What looked
   generic was the data: characters made on the website kept ZnoteX's starter outfit (look 128 / 136, the same
@@ -268,7 +286,9 @@ select over the login scene; the stock module stays loaded and keeps every funct
   problem). The four styles (`ChaosComboBoxPopupMenu`, `...PopupMenuButton`, `...PopupScrollMenu`,
   `...PopupScrollMenuButton`) are now in the theme.
 - **Tests.** `charselect_core_test.lua` (LuaJIT and Lua 5.3, CI): classes against `chaos_constants.lua`, icons, card
-  text, last login, world names, outfit merge, navigation, preview scale, name hints, requests, error texts, URLs.
+  text, last login, world names, outfit merge, navigation, the feet maths (every thing of the anchor table at 3x and
+  4x, 1x1 and 2x2 looks, wings and auras, the scale choice, the fallback, every class look present), name hints,
+  requests, error texts, URLs.
   `website/tests/chaos_client_api_test.php` for the site's side. Run in the Linux client (base patches 0001-0045,
   0048-0050, Xvfb, software OpenGL) at 1280x720 and 1920x1080 against a local test server (a test build of the
   engine with the current Chaos scripts; the login server's 10.98 list) and the local site (pinned ZnoteX with every patch, PHP's built-in server, MariaDB):

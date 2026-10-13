@@ -7,7 +7,7 @@ CharCreate = {}
 local Core = CharSelectCore
 local Api = ChaosAccountApi
 
-local win
+local win, shade
 local form = {}
 local choices, seasons = {}, {}
 local rules = { minL = 3, maxL = 20, maxW = 3 }
@@ -47,6 +47,20 @@ local function updatePreview()
   if look and look > 0 then
     p:setVisible(true)
     p:setOutfit({ type = look, head = STARTER.head, body = STARTER.body, legs = STARTER.legs, feet = STARTER.feet, addons = 3 })
+    -- the feet on the pedestal's centre (CharSelectCore.placeRect; outfit_anchors.lua): 3x, 2x for a very tall look
+    local panel = win.previewPanel
+    local ped = panel.pedestal
+    local cx = math.floor(panel:getWidth() / 2)
+    local feet = panel:getHeight() - ped:getMarginBottom() - math.floor(ped:getHeight() / 2) -- the style's numbers
+    local fig = Core.figure(CharSelectAnchors, { type = look })
+    local T = Core.fitPreview(fig, { above = feet - 6, half = cx - 2, below = 0 }, { 3, 2 })
+    local x, y, size = Core.placeRect(fig, T, cx, feet)
+    p:breakAnchors()
+    p:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    p:addAnchor(AnchorTop, 'parent', AnchorTop)
+    p:setMarginLeft(x)
+    p:setMarginTop(y)
+    p:setSize({ width = size, height = size })
     p:setDirection(2)
     p:setIdleAnimate(false)
     p:setAnimate(true)
@@ -150,6 +164,8 @@ function CharCreate.open()
     win:focus()
     return
   end
+  if not alive(shade) then shade = g_ui.createWidget('ChaosCreateShade', g_ui.getRootWidget()) end
+  shade:raise()
   win = g_ui.createWidget('ChaosCreateWindow', g_ui.getRootWidget())
   local th = theme()
   if th and th.decorateWindow then pcall(th.decorateWindow, win) end
@@ -235,6 +251,9 @@ function CharCreate.close()
   if alive(win) then
     win:destroy()
   end
-  win = nil
+  if alive(shade) then
+    shade:destroy()
+  end
+  win, shade = nil, nil
   if CharSelect and CharSelect.restoreFocus then CharSelect.restoreFocus() end
 end

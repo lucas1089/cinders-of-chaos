@@ -93,28 +93,44 @@ local function walk(ms)
   walkEvent = scheduleEvent(idle, ms or 2400)
 end
 
+-- the client's size and displacement of a creature thing (for a look outfit_anchors.lua does not know)
+local function thingInfo(id)
+  local ok, t = pcall(function() return g_things.getThingType(id, ThingCategoryCreature) end)
+  if not ok or not t then return nil end
+  local function get(m) local okm, v = pcall(t[m], t) return okm and v or nil end
+  return { w = get('getWidth'), h = get('getHeight'), dx = get('getDisplacementX'), dy = get('getDisplacementY') }
+end
+
+local TOP_ROOM = 56        -- px kept free at the top of the stage (the top menu's System button)
+local BELOW_ROOM = 150     -- px under the feet for the name, class and info lines and the hint
+local heroFigure           -- CharSelectCore.figure of the shown outfit
+
+-- the feet of the shown character on the pedestal's centre: the look's own feet (outfit_anchors.lua), 4x when the
+-- whole picture (wings and aura too) fits under the top menu, else 3x, else 3x with the feet lower
 local function relayout()
   if not alive(stage) then return end
   local W, H = stage:getWidth(), stage:getHeight()
   if W < 50 or H < 50 then return end
-  local T = Core.previewTile(W * 0.8, (H - 150) * 0.95)
   local cx = math.floor(W / 2)
-  local feet = math.floor(H * 0.64)
-  -- UICreature draws the creature's 2x2-tile frame into its rect, the creature's own tile being the lower right one,
-  -- shifted up and left by the look's displacement: measured on our class looks, the body's middle is about 0.85 tile
-  -- and the feet about 1.6 tiles from the rect's left and top
-  place(preview, cx - 0.85 * T, feet - 1.6 * T, 2 * T, 2 * T)
-  place(pedestal, cx - 1.15 * T, feet - 0.42 * T, 2.3 * T, 0.86 * T)
+  local feet = math.floor(math.min(H * 0.64, H - BELOW_ROOM))
+  local fig = heroFigure or Core.figure(CharSelectAnchors, { type = 128 })
+  local T, _, drop = Core.fitPreview(fig, { above = feet - TOP_ROOM, half = cx - 8,
+    below = math.max(0, H - BELOW_ROOM - feet) })
+  feet = feet + drop
+  local x, y, size = Core.placeRect(fig, T, cx, feet)
+  place(preview, x, y, size, size)
+  place(pedestal, cx - 1.1 * T, feet - 0.43 * T, 2.2 * T, 0.86 * T)
   local name = stage:getChildById('heroName')
   name:breakAnchors()
   name:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
   name:addAnchor(AnchorTop, 'parent', AnchorTop)
-  name:setMarginTop(math.floor(feet + 0.5 * T))
+  name:setMarginTop(math.floor(feet + 0.45 * T))
 end
 
 local function showHero(m, animate)
   local name, cls, info = stage:getChildById('heroName'), stage:getChildById('heroClass'), stage:getChildById('heroInfo')
   if not m then
+    heroFigure = nil
     preview:setVisible(false)
     pedestal:setVisible(false)
     name:setText(tr('No character yet'))
@@ -124,10 +140,12 @@ local function showHero(m, animate)
   end
   pedestal:setVisible(true)
   preview:setVisible(m.outfit ~= nil)
+  heroFigure = Core.figure(CharSelectAnchors, m.outfit, thingInfo)
   if m.outfit then
     preview:setOutfit(m.outfit)
     preview:setDirection(direction)
   end
+  relayout()
   name:setText(m.name)
   cls:setText(m.classText .. (m.levelText ~= '' and (', ' .. m.levelText) or ''))
   local parts = { m.world }
@@ -314,14 +332,21 @@ function CharSelect.isVisible()
 end
 
 -- the login screen's logo (client_chaos_login: chaosLogo with its glow, chaosSparks) would stand behind the character;
--- it is hidden while the select shows and comes back with the login screen
+-- it is hidden while the select shows and comes back with the login screen,
+-- and its server status line (top left, "Server online" / "Connecting..." while the status service has not answered)
+-- (login.lua sets the status dot's visibility itself every few seconds, so those two are hidden by opacity)
 local LOGO_IDS = { 'chaosLogo', 'chaosSparks' }
+local STATUS_IDS = { 'chaosStatus', 'chaosStatusDot' }
 local function setLogoHidden(hidden)
   local bg = modules.client_background and modules.client_background.getBackground and modules.client_background.getBackground()
   if not alive(bg) then return end
   for _, id in ipairs(LOGO_IDS) do
     local w = bg:getChildById(id)
     if alive(w) then w:setVisible(not hidden) end
+  end
+  for _, id in ipairs(STATUS_IDS) do
+    local w = bg:getChildById(id)
+    if alive(w) then w:setOpacity(hidden and 0 or 1) end
   end
 end
 

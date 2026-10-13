@@ -325,3 +325,8 @@ jobs:
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_theme_art.py recolour --check \
               --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Character select feet table matches the pair (gen_outfit_anchors.py --check)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_outfit_anchors.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"

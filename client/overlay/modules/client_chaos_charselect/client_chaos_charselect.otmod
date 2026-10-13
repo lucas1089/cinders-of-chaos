@@ -3,7 +3,7 @@ Module
   description: Cinders of Chaos character select (cards, the chosen character drawn large over the login scene) and character creation in the client (through the website's account API)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ charselect_core, accountapi, charcreate, charselect ]
+  scripts: [ outfit_anchors, charselect_core, accountapi, charcreate, charselect ]
   dependencies:
     - client_chaos_theme
     - client_entergame

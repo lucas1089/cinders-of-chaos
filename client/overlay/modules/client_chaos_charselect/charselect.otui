@@ -295,25 +295,33 @@ ChaosCreateClass < UIWidget
     anchors.centerIn: parent
     phantom: true
 
+// a dark veil over the select while the create window is open (the select's own text stays behind it)
+ChaosCreateShade < UIWidget
+  id: chaosCreateShade
+  anchors.fill: parent
+  background-color: #0b0807c0
+  phantom: false
+  focusable: false
+
 ChaosCreateWindow < ChaosStaticMainWindow
   id: chaosCreateCharacter
-  size: 640 470
+  size: 700 470
   !text: tr('Create a character')
 
   UIWidget
     id: previewPanel
     anchors.top: parent.top
     anchors.left: parent.left
-    size: 180 230
+    size: 240 230
     image-source: /images/chaos/panel_dark
     image-border: 6
 
     UIWidget
       id: pedestal
-      size: 150 56
+      size: 170 60
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.bottom: parent.bottom
-      margin-bottom: 30
+      margin-bottom: 28
       image-source: /images/chaos/charselect/pedestal
       image-smooth: true
       phantom: true
@@ -323,8 +331,6 @@ ChaosCreateWindow < ChaosStaticMainWindow
       size: 192 192
       anchors.left: parent.left
       anchors.top: parent.top
-      margin-left: 8
-      margin-top: 18
       phantom: true
 
     UILabel
