@@ -1,0 +1,16 @@
+gravebound_armor 17cad79ffdc9d21b
+gravebound_axe f45c45fd439f8d9d
+gravebound_boots 210453fe7052db90
+gravebound_helmet 1ad7a1d2328aa5dd
+gravebound_legs 52999f620c004399
+gravebound_rod d54caf1e005d5ef9
+gravebound_shield 07b568ce52d33e44
+gravebound_sword c1fcf57e2223bacf
+sunsworn_armor 4bebb7ff196692f8
+sunsworn_axe 6a3b4e777ee40ae0
+sunsworn_boots 8bc3d18f11100bdb
+sunsworn_helmet 5764b5b3fa8f15b2
+sunsworn_legs 91f1dcd548cc1f8b
+sunsworn_rod 0e2dd461c59107c2
+sunsworn_shield 24b1328e027852cc
+sunsworn_sword 6ccf6f9498e0a6f4
