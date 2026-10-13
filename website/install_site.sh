@@ -184,14 +184,14 @@ if [ -n "${CHAOS_SPRITE_PAIR:-}" ]; then
   SP_OTB_ARG=()
   if [ -f "$SP_OTB" ]; then SP_OTB_ARG=(--otb "$SP_OTB"); else
     echo "note: no items.otb at $SP_OTB: only our own items get images (set CHAOS_SPRITE_OTB)."; SP_OTB=""; fi
-  SP_KEY="$( { sha256 "$SP_DAT"; sha256 "$SP_SPR"; [ -z "$SP_OTB" ] || sha256 "$SP_OTB"; echo "${CHAOS_SPRITE_PUBLISH:-own}";
+  SP_KEY="$( { sha256 "$SP_DAT"; sha256 "$SP_SPR"; [ -z "$SP_OTB" ] || sha256 "$SP_OTB"; echo "${CHAOS_SPRITE_PUBLISH:-own,donor}";
               sha256 "$HERE/tools/gen_sprite_images.py"; sha256 "$HERE/tools/sprite_owners.csv"; } \
             | { if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi; } | cut -d' ' -f1)"
   if [ "$(cat "$SPRITES/.chaos-key" 2>/dev/null || true)" != "$SP_KEY" ]; then
-    echo "Drawing the sprite images (publish ${CHAOS_SPRITE_PUBLISH:-own}) ..."
+    echo "Drawing the sprite images (publish ${CHAOS_SPRITE_PUBLISH:-own,donor}) ..."
     rm -rf "$SPRITES.new" "$SPRITES.old"
     python3 -I "$HERE/tools/gen_sprite_images.py" --dat "$SP_DAT" --spr "$SP_SPR" ${SP_OTB_ARG[@]+"${SP_OTB_ARG[@]}"} \
-      --publish "${CHAOS_SPRITE_PUBLISH:-own}" --out-dir "$SPRITES.new"
+      --publish "${CHAOS_SPRITE_PUBLISH:-own,donor}" --out-dir "$SPRITES.new"
     echo "$SP_KEY" > "$SPRITES.new/.chaos-key"
     [ ! -d "$SPRITES" ] || mv "$SPRITES" "$SPRITES.old"
     mv "$SPRITES.new" "$SPRITES"

@@ -3,13 +3,16 @@
  * Item and outfit images from our own client pair (website/README.md "Sprite images").
  *
  * website/tools/gen_sprite_images.py writes <site>/chaos-sprites/ at install time (install_site.sh, CHAOS_SPRITE_PAIR):
- * items/<server id>.png (and -c<n> stack, -f<k> fluid variants), outfits/<look>.png layer sheets, outfits/<look>-d.png
- * default renders, two placeholders and index.json. Only the tiers the owner publishes are drawn (CHAOS_SPRITE_PUBLISH,
- * website/tools/sprite_owners.csv); every other item or look is a neutral placeholder. This file never reads the pair.
+ * items/<server id>.png (and -c<n> stack, -f<k> fluid variants), outfits/<look>.png layer sheets and the same sheets as
+ * outfits/<look>.raw (zlib: u16 width, u16 height, RGBA rows), two placeholders and index.json. Only the tiers the
+ * owner publishes are drawn (CHAOS_SPRITE_PUBLISH, default own,donor; website/tools/sprite_owners.csv); every other
+ * item or look is a neutral placeholder. This file never reads the pair.
  *
  * chaos_outfit.php (site root, ZnoteX's show_outfits imageServer) draws a look with the player's colours, addons and
  * mount from the sheets: the same maths as gen_sprite_images.py tint() / place() / compose() (the client's own drawing:
- * exact template colours, multiply, addon patterns over pattern 0). Needs PHP's gd; without it the default render.
+ * exact template colours, multiply, addon patterns over pattern 0; a mount placed as Outfit::draw with base patch 0034
+ * does, checked against our client: website/README.md "Sprite images").
+ * Needs only zlib: the .raw sheets are read and the PNG is written here, so PHP gives the same pixels as the tool.
  * Rendered images are cached in engine/cache/chaos-outfits/ (at most CHAOS_SPRITE_CACHE_MAX files).
  */
 
@@ -184,17 +187,25 @@ function chaos_outfit_place(array $rider, ?array $mount): array {
 	return array(array($x - $dx - ($w - 1) * 32, $y - $dy - ($h - 1) * 32), $mxy, 1);
 }
 
-/** RGBA pixels (8-bit alpha) of a rectangle of a GD image: list of [r, g, b, a] rows. */
-function chaos_sprite_pixels($img, int $x0, int $y0, int $w, int $h): array {
+/** A .raw sheet: ['w' => width, 'h' => height, 'px' => RGBA bytes], or null when it is missing or broken. */
+function chaos_sprite_sheet(string $path): ?array {
+	$data = is_file($path) ? @gzuncompress((string)file_get_contents($path)) : false;
+	if (!is_string($data) || strlen($data) < 4) {
+		return null;
+	}
+	$wh = unpack('vw/vh', $data);
+	if (strlen($data) !== 4 + $wh['w'] * $wh['h'] * 4) {
+		return null;
+	}
+	return array('w' => $wh['w'], 'h' => $wh['h'], 'px' => substr($data, 4));
+}
+
+/** RGBA pixels of a rectangle of a sheet: list of [r, g, b, a] rows (8-bit alpha, as written). */
+function chaos_sprite_pixels(array $sheet, int $x0, int $y0, int $w, int $h): array {
 	$out = array();
 	for ($y = 0; $y < $h; $y++) {
-		$row = array();
-		for ($x = 0; $x < $w; $x++) {
-			$c = imagecolorat($img, $x0 + $x, $y0 + $y);
-			$a7 = ($c >> 24) & 0x7F;
-			$row[] = array(($c >> 16) & 0xFF, ($c >> 8) & 0xFF, $c & 0xFF, $a7 >= 127 ? 0 : ($a7 === 0 ? 255 : (int)round((127 - $a7) * 255 / 127)));
-		}
-		$out[] = $row;
+		$bytes = array_values(unpack('C*', substr($sheet['px'], (($y0 + $y) * $sheet['w'] + $x0) * 4, $w * 4)));
+		$out[] = array_chunk($bytes, 4);
 	}
 	return $out;
 }
@@ -210,13 +221,13 @@ function chaos_sprite_over(array &$canvas, array $src, int $x0, int $y0): void {
 			$d = &$canvas[$y0 + $y][$x0 + $x];
 			if ($sa === 255 || $d[3] === 0) {
 				$d = $s;
-			} else {
+			} else {   // the same float steps as gen_sprite_images.py over(), rounded half up
 				$fs = $sa / 255; $fd = $d[3] / 255;
 				$oa = $fs + $fd * (1 - $fs);
 				for ($k = 0; $k < 3; $k++) {
-					$d[$k] = (int)round(($s[$k] * $fs + $d[$k] * $fd * (1 - $fs)) / $oa);
+					$d[$k] = (int)floor(($s[$k] * $fs + $d[$k] * $fd * (1 - $fs)) / $oa + 0.5);
 				}
-				$d[3] = (int)round($oa * 255);
+				$d[3] = (int)floor($oa * 255 + 0.5);
 			}
 			unset($d);
 		}
@@ -245,11 +256,11 @@ function chaos_sprite_tint(array &$canvas, array $mask, array $colours, int $x0,
 	}
 }
 
-/** The look as a canvas of RGBA rows (gen_sprite_images.py compose()), or null when it is not ours or gd is missing.
+/** The look as a canvas of RGBA rows (gen_sprite_images.py compose()), or null when it is not ours.
  *  p = chaos_outfit_params(); the mount is drawn only when it is ours too and the look has a mounted pattern. */
 function chaos_outfit_canvas(array $p): ?array {
 	$i = chaos_sprite_index();
-	if ($i === null || !function_exists('imagecreatefrompng') || !chaos_outfit_published($p['id'])) {
+	if ($i === null || !chaos_outfit_published($p['id'])) {
 		return null;
 	}
 	$rider = $i['outfits'][(string)$p['id']];
@@ -266,13 +277,13 @@ function chaos_outfit_canvas(array $p): ?array {
 	$canvas = array_fill(0, $bottom - $top, array_fill(0, $right - $left, array(0, 0, 0, 0)));
 	$dir = chaos_sprite_root() . '/outfits/';
 	if ($mxy !== null) {
-		$ms = is_file($dir . $p['mount'] . '.png') ? @imagecreatefrompng($dir . $p['mount'] . '.png') : false;
-		if ($ms !== false) {
+		$ms = chaos_sprite_sheet($dir . $p['mount'] . '.raw');
+		if ($ms !== null) {
 			chaos_sprite_over($canvas, chaos_sprite_pixels($ms, 0, 0, $mount[0] * 32, $mount[1] * 32), $mxy[0] - $left, $mxy[1] - $top);
 		}
 	}
-	$sheet = is_file($dir . $p['id'] . '.png') ? @imagecreatefrompng($dir . $p['id'] . '.png') : false;
-	if ($sheet === false) {
+	$sheet = chaos_sprite_sheet($dir . $p['id'] . '.raw');
+	if ($sheet === null) {
 		return null;
 	}
 	$cw = $w * 32; $ch = $h * 32;
@@ -290,21 +301,21 @@ function chaos_outfit_canvas(array $p): ?array {
 	return $canvas;
 }
 
-/** PNG bytes of a canvas. */
+/** PNG bytes of a canvas: 8-bit RGBA, filter 0 rows, zlib (no gd, so the alpha keeps all 8 bits). */
 function chaos_sprite_png(array $canvas): string {
 	$h = count($canvas); $w = $h ? count($canvas[0]) : 0;
-	$img = imagecreatetruecolor(max(1, $w), max(1, $h));
-	imagealphablending($img, false);
-	imagesavealpha($img, true);
-	foreach ($canvas as $y => $row) {
-		foreach ($row as $x => $c) {
-			$a7 = 127 - (int)round($c[3] * 127 / 255);
-			imagesetpixel($img, $x, $y, ($a7 << 24) | ($c[0] << 16) | ($c[1] << 8) | $c[2]);
+	$raw = '';
+	foreach ($canvas as $row) {
+		$raw .= "\0";
+		foreach ($row as $c) {
+			$raw .= pack('C4', $c[0], $c[1], $c[2], $c[3]);
 		}
 	}
-	ob_start();
-	imagepng($img);
-	return (string)ob_get_clean();
+	$chunk = static function (string $type, string $data): string {
+		return pack('N', strlen($data)) . $type . $data . pack('N', crc32($type . $data));
+	};
+	return "\x89PNG\r\n\x1a\n" . $chunk('IHDR', pack('NNC5', $w, $h, 8, 6, 0, 0, 0))
+		. $chunk('IDAT', (string)gzcompress($raw, 9)) . $chunk('IEND', '');
 }
 
 /** A file's bytes, '' when it is not there. */
@@ -312,16 +323,13 @@ function chaos_sprite_read(string $path): string {
 	return is_file($path) ? (string)file_get_contents($path) : '';
 }
 
-/** [PNG bytes, source] of an outfit request: 'render', 'cache', 'default' (no gd) or 'placeholder'. */
+/** [PNG bytes, source] of an outfit request: 'render', 'cache' or 'placeholder'. */
 function chaos_outfit_image(array $get, ?string $cacheDir = null): array {
 	$p = chaos_outfit_params($get);
 	$i = chaos_sprite_index();
 	$root = chaos_sprite_root();
 	if ($i === null || !chaos_outfit_published($p['id'])) {
 		return array(chaos_sprite_read($root . '/placeholder-outfit.png'), 'placeholder');
-	}
-	if (!function_exists('imagecreatefrompng')) {
-		return array(chaos_sprite_read($root . '/outfits/' . $p['id'] . '-d.png'), 'default');
 	}
 	$key = sha1($i['stamp'] . '|' . implode(',', $p));
 	$file = $cacheDir !== null ? $cacheDir . '/' . $key . '.png' : null;

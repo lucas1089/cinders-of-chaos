@@ -61,7 +61,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `tools/gen_sprite_images.py`, `tools/sprite_owners.csv` | item and outfit images drawn from our client pair at install time, only our art (see "Sprite images") |
 | `overlay/chaos_outfit.php`, `overlay/plugins/chaos/sprite_lib.php` | outfit images with the player's colours, addons and mount; item image URLs; the wiki's real sprites (see "Sprite images") |
-| `tests/chaos_sprites_test.php`, `tools/gen_sprite_images_test.py` | `php website/tests/chaos_sprites_test.php` (php-cli with gd): URLs, placeholder fallback, request values, colours, drawing, cache, wiki; `python3 -I website/tools/gen_sprite_images_test.py`: the colour maths on hand-made masks and a synthetic pair |
+| `tests/chaos_sprites_test.php`, `tools/gen_sprite_images_test.py` | `php website/tests/chaos_sprites_test.php` (php-cli, zlib only): URLs, placeholder fallback, request values, colours, drawing, cache, wiki; `python3 -I website/tools/gen_sprite_images_test.py`: the colour maths on hand-made masks and a synthetic pair |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
 
 ## Install
@@ -363,7 +363,7 @@ Icons, hero images and banners make the wiki easier to scan. `server/tools/gen_w
   themed set item pieces (`client/tools/sprites/art_import/theme/items_<set>.png`), the client's top menu buttons, the
   site's class badges and backdrop (`gen_site_art.py`); orbs and gems are drawn by the script. A unique's icon is a themed
   piece of its slot, an illustration and not the item's own sprite. No screenshots: the client's screens show base
-  sprites and donor outfits, which are not ours to publish. No text in the images, so both languages use the same files.
+  sprites, the base game's art, which is never published (donor art is shown only as sprites, see "Sprite images"). No text in the images, so both languages use the same files.
 - **Rift art** (`website/tools/wiki_rift_art.py`, imported by `gen_wiki_art.py`): every rift icon is painted for what it
   is, not taken from the spell icon kit. Shapes are masks shaded by a height field lit from the upper left, on one
   framed plate: a modifier's motif says what it does (read from its key; `rm-<side>-<key>`), the frame says who it hits
@@ -394,7 +394,7 @@ and ZnoteX's item slots, drawn from our own client pair. ZnoteX's own outfit and
   client draws it alone: all layers, phase 0, count 1; stackables also `-c2` ... `-c50` for the client's stack patterns,
   fluid containers `-f1` ... `-f8` for the client fluid colours), `outfits/<look>.png` (a layer sheet: idle group,
   phase 0, facing south, one column per addon and mount pattern, the art row and the colour template row),
-  `outfits/<look>-d.png` (default colours 78/69/58/76), two placeholders and `index.json` (what is ours, each look's
+  `outfits/<look>.raw` (the same sheet for PHP: zlib of u16 width, u16 height, RGBA rows), two placeholders and `index.json` (what is ours, each look's
   size, displacement, patterns and rider seat). The server's `items.otb` maps server ids to client ids; without it only
   the items of our manifests (`server/data/items/*.csv`) are known. `--preview DIR` writes contact sheets.
 - **Install**: `install_site.sh` step 3d, only when `CHAOS_SPRITE_PAIR` (a folder with `Tibia.dat` and `Tibia.spr`) is
@@ -407,25 +407,33 @@ and ZnoteX's item slots, drawn from our own client pair. ZnoteX's own outfit and
   pre-drawn (133^4 colour choices), so `chaos_outfit.php` colours the pre-cut sheets of one look per request: clamped
   integer parameters only, no database, no ZnoteX bootstrap, PNG out. A render takes a few milliseconds and is cached
   in `engine/cache/chaos-outfits/` (denied by the web server rules; at most 20,000 files, then rendered without
-  caching; cleared when the set is rebuilt). Without PHP's gd the default-colour image is served.
+  caching; cleared when the set is rebuilt). PHP needs only zlib: it reads the `.raw` sheets and writes the PNG itself
+  (no gd, whose 7-bit alpha would change semi-transparent pixels).
 - **Colours**: as the client draws a creature: the template layer's exact yellow / red / green / blue pixels select
   head / body / legs / feet, and the art under them is multiplied by that outfit colour (`(v * c + 127) / 255`); the
   colour table is the client's 19 hues x 7 shades (`outfit_colour`, the same as `client/tools/sprites/compose_outfit.py`);
   addon patterns 1 and 2 are drawn over pattern 0 when worn; a mount is drawn under its rider in the rider's mounted
   pattern, placed as `Outfit::draw` with client base patch 0034 does (rider seat of negative-displacement mounts). The
   idea comes from open-tibia-library (Gesior, MIT); this follows its documented method (four-colour template mask,
-  colour table, addon layers). No code of it was read for this or copied. PHP and Python give the same pixels for opaque
-  art; semi-transparent pixels may differ by one step (gd keeps 7-bit alpha).
+  colour table, addon layers). No code of it was read for this or copied. PHP and Python give the same pixels (418 renders
+  of every published look, 225 of them mounted, byte for byte).
+- **Mounts, checked in our client** (2026-10-13; base patches 0001-0050, pair things_custom23, Xvfb, a 9x9 map at 2x,
+  the local player's outfit set by Lua, facing south): each part of our render was found in the screenshot by pixel
+  match. Frame top-left relative to the tile, rider / mount: rider 2073 on stock 368: -32,-32 / -32,-32; on 1561:
+  -26,-44 / -32,-64; on 2132: -26,-48 / -32,-64; on 2133: -26,-42 / -32,-64; on 2134: -26,-50 / -64,-64; on 2135:
+  -26,-48 / -32,-96 (the same for rider 2161; 2173, with no displacement, 8 px right and down). All 18 rider and mount pairs are where
+  the renderer puts them. A look without a mounted pattern rides nothing, in the client too. On the donor mounts the
+  rider sits high on the back seen from the front: that is the seat of things_custom16 (client/MANIFEST.md "Rider
+  seat on donor mounts"), the same in game.
 - **Only our art** (`tools/sprite_owners.csv`, client id ranges from client/MANIFEST.md, theme_things.csv, the class looks
   and the monster look sources): `own` (drawn for the project or licensed to it: the dark tiles, the October art sets,
   pouches, fist weapons, themed sets, auras and wings), `donor` (donor-library art the project picked and ships in the
   client: class looks, monster, boss, faction and wings looks, donor B items) and `stock` (the base pair: the commercial
   game's art and the base client's additions, also our recolours or templated copies of it). A later row of the table
-  wins, so exceptions follow their range. `CHAOS_SPRITE_PUBLISH` picks the tiers drawn: `own` (default), `own,donor` or
+  wins, so exceptions follow their range. `CHAOS_SPRITE_PUBLISH` picks the tiers drawn: `own,donor` (default), `own` or
   `all`. Anything not drawn is a neutral placeholder of our own (a dim slot, a grey hooded figure): stock art never
-  leaves the pair. **Owner decision**: whether donor art may be shown on the website (it already ships in the public
-  client, but this README has said donor outfits are not ours to publish; the default stays `own` until the owner
-  decides; never `all`).
+  leaves the pair. **Decision** (owner, 2026-10-13: own,donor): donor art is shown on the website as it is in the public
+  client; stock art never (`all` is not used).
 - **Where**: `setup/write_config.php` points ZnoteX's `show_outfits` (character page, online list, highscores) at
   `/chaos_outfit.php` and the item images (character equipment, shop) at `/chaos-sprites/items/<id>.png` when the set is
   installed; our highscores view has an outfit column. The wiki: `gen_wiki_data.lua` adds `sprite` ({item: server id})

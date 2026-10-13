@@ -2,7 +2,7 @@
 """Item and outfit images for the website, drawn from our client pair (website/README.md "Sprite images").
 
     python3 -I website/tools/gen_sprite_images.py --dat P/Tibia.dat --spr P/Tibia.spr --out-dir OUT \
-        [--otb SERVER/data/items/items.otb] [--publish own] [--preview DIR]
+        [--otb SERVER/data/items/items.otb] [--publish own,donor] [--preview DIR]
 
 The pair is not in git: take it from the windows-assets branch (things/things-1098.tar.xz) or the client folder.
 Only the art of the tiers named by --publish is drawn (website/tools/sprite_owners.csv says which client ids are
@@ -18,7 +18,7 @@ Output (OUT, the site's chaos-sprites/ folder; install_site.sh builds it when CH
   outfits/<look>.png            the look's layer sheet: idle group, phase 0, facing south; one column per
                                 (addon pattern y, mount pattern z), column = z * patterns_y + y; row 0 the art,
                                 row 1 the colour template (yellow head, red body, green legs, blue feet)
-  outfits/<look>-d.png          the look drawn with the default colours 78/69/58/76, no addons (no-GD fallback)
+  outfits/<look>.raw            the same sheet for PHP: zlib(u16 width, u16 height, RGBA rows), 8-bit alpha kept
   placeholder-item.png, placeholder-outfit.png
   index.json                    {version, stamp, publish, pair, items: {sid: "" | "c" | "f"}, outfits: {look: meta}}
                                 meta = [w, h, dx, dy, patterns_y, patterns_z, layers, negative, bones, bx, by]
@@ -38,6 +38,7 @@ import json
 import os
 import struct
 import sys
+import zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
@@ -46,11 +47,11 @@ sys.path.insert(0, os.path.join(REPO, 'server', 'tools'))
 import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
-VERSION = 1
+VERSION = 2
 OWNERS = os.path.join(HERE, 'sprite_owners.csv')
 ITEM_MANIFESTS = ('art_items.csv', 'dark_tiles.csv', 'donor_items.csv', 'fist_items.csv', 'theme_items.csv')
 TIERS = ('own', 'donor', 'stock')
-DEFAULT_PUBLISH = ('own',)
+DEFAULT_PUBLISH = ('own', 'donor')   # owner, 2026-10-13: own,donor (never stock)
 DEFAULT_COLOURS = (78, 69, 58, 76)
 STACKS = (1, 2, 3, 4, 5, 10, 25, 50)
 FLUIDS = range(1, 9)
@@ -110,8 +111,8 @@ def over(canvas, img, at):
     da = dst[..., 3:4] / 255
     oa = sa + da * (1 - sa)
     rgb = np.where(oa > 0, (src[..., :3] * sa + dst[..., :3] * da * (1 - sa)) / np.maximum(oa, 1e-9), 0)
-    canvas[y0:y0 + h, x0:x0 + w, :3] = np.rint(rgb).astype(np.uint8)
-    canvas[y0:y0 + h, x0:x0 + w, 3:4] = np.rint(oa * 255).astype(np.uint8)
+    canvas[y0:y0 + h, x0:x0 + w, :3] = np.floor(rgb + 0.5).astype(np.uint8)   # half up, as sprite_lib.php
+    canvas[y0:y0 + h, x0:x0 + w, 3:4] = np.floor(oa * 255 + 0.5).astype(np.uint8)
     return canvas
 
 
@@ -322,6 +323,20 @@ def save_png(arr_or_img, path):
     im.save(path, optimize=True)
 
 
+def save_raw(arr, path):
+    """a sheet for sprite_lib.php: zlib of u16 width, u16 height and the RGBA rows (no PNG decoder, no gd needed;
+    gd would keep 7-bit alpha and the PHP image would differ from this tool's by a step)."""
+    h, w = arr.shape[:2]
+    with open(path, 'wb') as f:
+        f.write(zlib.compress(struct.pack('<HH', w, h) + np.ascontiguousarray(arr, np.uint8).tobytes(), 9))
+
+
+def read_raw(path):
+    data = zlib.decompress(open(path, 'rb').read())
+    w, h = struct.unpack_from('<HH', data, 0)
+    return np.frombuffer(data, np.uint8, w * h * 4, 4).reshape(h, w, 4).copy()
+
+
 def link_or_copy(src, dst):
     try:
         os.link(src, dst)
@@ -388,7 +403,7 @@ def build(dat_path, spr_path, out_dir, otb=None, publish=DEFAULT_PUBLISH, owners
         meta = outfit_meta(t)
         sheet = outfit_sheet(t, spr)
         save_png(sheet, os.path.join(out_dir, 'outfits', f'{t.id}.png'))
-        save_png(compose(meta, sheet), os.path.join(out_dir, 'outfits', f'{t.id}-d.png'))
+        save_raw(sheet, os.path.join(out_dir, 'outfits', f'{t.id}.raw'))
         outfits[str(t.id)] = meta
     pair = {'dat': md5(dat_path), 'spr': md5(spr_path), 'otb': md5(otb) if otb else ''}
     stamp = hashlib.sha256(json.dumps([VERSION, pair, list(publish), md5(owners)]).encode()).hexdigest()[:16]
@@ -446,7 +461,7 @@ def main(argv=None):
     ap.add_argument('--out-dir', required=True)
     ap.add_argument('--otb', help="the game server's data/items/items.otb (server id -> client id of every item)")
     ap.add_argument('--publish', default=os.environ.get('CHAOS_SPRITE_PUBLISH', ''),
-                    help='tiers to draw: own, donor, stock (comma separated) or all; default own')
+                    help='tiers to draw: own, donor, stock (comma separated) or all; default own,donor (owner, 2026-10-13)')
     ap.add_argument('--owners', default=OWNERS)
     ap.add_argument('--preview', help='also write contact sheets (items.png, outfits.png) into this folder')
     a = ap.parse_args(argv)

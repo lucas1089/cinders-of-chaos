@@ -2,7 +2,7 @@
 // php website/tests/chaos_sprites_test.php : the sprite images of plugins/chaos/sprite_lib.php and chaos_outfit.php
 // (README "Sprite images"): the item and outfit URLs, the placeholder fallback for art that is not ours, the request
 // values, the colour table, the outfit drawing on a hand-made sheet (template colours, addons, mount), the cache, the
-// wiki's real sprites, the config and the highscores column. php-cli with gd; no pair, no database.
+// wiki's real sprites, the config and the highscores column. php-cli with zlib only (no gd); no pair, no database.
 require __DIR__ . '/../overlay/plugins/chaos/sprite_lib.php';
 require __DIR__ . '/../overlay/plugins/chaos/wiki_lib.php';
 
@@ -32,17 +32,44 @@ check(!chaos_item_published(2466) && !chaos_outfit_published(2073), 'no images: 
 check($png === '' && $src === 'placeholder', 'no images: no outfit image (404)');
 
 // ---------------------------------------------------------------- a hand-made set
-$png = static function (int $w, int $h, array $px): string {
-	$im = imagecreatetruecolor($w, $h);
-	imagealphablending($im, false);
-	imagesavealpha($im, true);
-	imagefill($im, 0, 0, 127 << 24);
+$canvas = static function (int $w, int $h, array $px): array {
+	$c = array_fill(0, $h, array_fill(0, $w, array(0, 0, 0, 0)));
 	foreach ($px as [$x, $y, $r, $g, $b, $a]) {
-		imagesetpixel($im, $x, $y, ((127 - intdiv($a * 127, 255)) << 24) | ($r << 16) | ($g << 8) | $b);
+		$c[$y][$x] = array($r, $g, $b, $a);
 	}
-	ob_start();
-	imagepng($im);
-	return (string)ob_get_clean();
+	return $c;
+};
+$png = static function (int $w, int $h, array $px) use ($canvas): string {
+	return chaos_sprite_png($canvas($w, $h, $px));
+};
+// a .raw sheet as gen_sprite_images.py save_raw() writes it: zlib(u16 width, u16 height, RGBA rows)
+$raw = static function (int $w, int $h, array $px) use ($canvas): string {
+	$bytes = '';
+	foreach ($canvas($w, $h, $px) as $row) {
+		foreach ($row as $c) {
+			$bytes .= pack('C4', ...$c);
+		}
+	}
+	return (string)gzcompress(pack('vv', $w, $h) . $bytes, 9);
+};
+// [width, height, rows of [r, g, b, a]] of a PNG written by chaos_sprite_png (8-bit RGBA, filter 0)
+$decode = static function (string $png): array {
+	$p = 8; $idat = ''; $w = $h = 0;
+	while ($p < strlen($png)) {
+		$len = unpack('N', substr($png, $p, 4))[1]; $type = substr($png, $p + 4, 4); $data = substr($png, $p + 8, $len);
+		check(unpack('N', substr($png, $p + 8 + $len, 4))[1] === crc32($type . $data), "PNG chunk $type CRC");
+		if ($type === 'IHDR') { $wh = unpack('Nw/Nh', $data); $w = $wh['w']; $h = $wh['h']; }
+		if ($type === 'IDAT') { $idat .= $data; }
+		$p += 12 + $len;
+	}
+	$bytes = (string)gzuncompress($idat);
+	$rows = array();
+	for ($y = 0; $y < $h; $y++) {
+		$line = substr($bytes, $y * (1 + 4 * $w), 1 + 4 * $w);
+		check($line[0] === "\0", 'PNG row filter 0');
+		$rows[] = array_chunk(array_values(unpack('C*', substr($line, 1))), 4);
+	}
+	return array($w, $h, $rows);
 };
 $out = $tmp . '/out';
 file_put_contents("$out/placeholder-item.png", $png(32, 32, array(array(5, 5, 44, 40, 42, 255))));
@@ -59,10 +86,9 @@ foreach (array(0, 3) as $c0) {                       // z 0 and z 1 (mounted) dr
 	$px[] = array(($c0 + 1) * 32 + 5, 0 + $dy, 10, 20, 30, 255);   // addon 1
 	$px[] = array(($c0 + 2) * 32 + 6, 0 + $dy, 40, 50, 60, 255);   // addon 2
 }
-file_put_contents("$out/outfits/10.png", $png(6 * 32, 64, $px));
-file_put_contents("$out/outfits/10-d.png", $png(32, 32, array(array(0, 0, 1, 2, 3, 255))));
+file_put_contents("$out/outfits/10.raw", $raw(6 * 32, 64, $px));
 // look 20: a 1x1 mount with a negative displacement (-16, -16), no seat; look 30: not ours (no sheet)
-file_put_contents("$out/outfits/20.png", $png(32, 32, array(array(31, 31, 9, 9, 9, 255))));
+file_put_contents("$out/outfits/20.raw", $raw(32, 32, array(array(31, 31, 9, 9, 9, 255))));
 $index = array('version' => 1, 'stamp' => 'abcdef0123456789', 'publish' => array('own', 'donor'),
 	'items' => array('2466' => '', '27990' => 'c', '2006' => 'f'),
 	'outfits' => array('10' => array(1, 1, 0, 0, 3, 2, 2, 0, 0, 0, 0), '20' => array(1, 1, -16, -16, 1, 1, 1, 1, 0, 0, 0)));
@@ -101,41 +127,54 @@ for ($c = 0; $c < 19; $c++) {
 }
 
 // ---------------------------------------------------------------- drawing a look from its sheet
-$pixel = static function (string $bytes, int $x, int $y): array {
-	$im = imagecreatefromstring($bytes);
-	$c = imagecolorat($im, $x, $y);
-	return array(($c >> 16) & 255, ($c >> 8) & 255, $c & 255, 127 - (($c >> 24) & 127));
+$pixel = static function (string $bytes, int $x, int $y) use ($decode): array {
+	return $decode($bytes)[2][$y][$x];
 };
 [$img, $src] = chaos_outfit_image(array('id' => '10', 'head' => '1', 'body' => '19', 'legs' => '114', 'feet' => '0'));
 check($src === 'render', 'our look is drawn');
 $mul = static function (array $rgb, int $c): array {
 	$k = chaos_outfit_colour($c);
-	return array(intdiv($rgb[0] * $k[0] + 127, 255), intdiv($rgb[1] * $k[1] + 127, 255), intdiv($rgb[2] * $k[2] + 127, 255), 127);
+	return array(intdiv($rgb[0] * $k[0] + 127, 255), intdiv($rgb[1] * $k[1] + 127, 255), intdiv($rgb[2] * $k[2] + 127, 255), 255);
 };
 $art = array(200, 100, 50);
 check($pixel($img, 0, 0) === $mul($art, 1), 'head part x colour 1');
 check($pixel($img, 1, 0) === $mul($art, 19), 'body part x colour 19');
 check($pixel($img, 2, 0) === $mul($art, 114), 'legs part x colour 114');
-check($pixel($img, 3, 0) === array(200, 100, 50, 127), 'feet part x white: unchanged');
-check($pixel($img, 4, 0) === array(200, 100, 50, 127), 'an inexact template colour is left alone');
+check($pixel($img, 3, 0) === array(200, 100, 50, 255), 'feet part x white: unchanged');
+check($pixel($img, 4, 0) === array(200, 100, 50, 255), 'an inexact template colour is left alone');
 check($pixel($img, 5, 0)[3] === 0 && $pixel($img, 6, 0)[3] === 0, 'no addons without addons');
 [$img] = chaos_outfit_image(array('id' => '10', 'addons' => '1'));
-check($pixel($img, 5, 0) === array(10, 20, 30, 127) && $pixel($img, 6, 0)[3] === 0, 'addon 1 only');
+check($pixel($img, 5, 0) === array(10, 20, 30, 255) && $pixel($img, 6, 0)[3] === 0, 'addon 1 only');
 [$img] = chaos_outfit_image(array('id' => '10', 'addons' => '3'));
-check($pixel($img, 5, 0)[3] === 127 && $pixel($img, 6, 0) === array(40, 50, 60, 127), 'both addons');
+check($pixel($img, 5, 0)[3] === 255 && $pixel($img, 6, 0) === array(40, 50, 60, 255), 'both addons');
 // a mount of ours: the mounted pattern (one pixel lower) and the mount drawn by its own displacement
 [$img, $src] = chaos_outfit_image(array('id' => '10', 'mount' => '20', 'head' => '0', 'body' => '0', 'legs' => '0', 'feet' => '0'));
-$im = imagecreatefromstring($img);
-check($src === 'render' && imagesx($im) === 48 && imagesy($im) === 48, 'mounted: canvas covers rider and mount (' . imagesx($im) . 'x' . imagesy($im) . ')');
-check($pixel($img, 47, 47) === array(9, 9, 9, 127), 'mount pixel at its place');
-check($pixel($img, 0, 1) === array(200, 100, 50, 127) && $pixel($img, 0, 0)[3] === 0, 'rider in its mounted pattern');
+[$iw, $ih] = $decode($img);
+check($src === 'render' && $iw === 48 && $ih === 48, "mounted: canvas covers rider and mount ({$iw}x{$ih})");
+check($pixel($img, 47, 47) === array(9, 9, 9, 255), 'mount pixel at its place');
+check($pixel($img, 0, 1) === array(200, 100, 50, 255) && $pixel($img, 0, 0)[3] === 0, 'rider in its mounted pattern');
+// a half-transparent pixel keeps its 8-bit alpha (no gd round trip), as gen_sprite_images.py writes it
+file_put_contents("$out/outfits/20.raw", $raw(32, 32, array(array(31, 31, 9, 9, 9, 255), array(30, 31, 90, 60, 30, 101))));
+[$img] = chaos_outfit_image(array('id' => '10', 'mount' => '20'));
+check($pixel($img, 46, 47) === array(90, 60, 30, 101), 'alpha 101 kept exactly');
 check(chaos_outfit_place(array(2, 2, 8, 8, 3, 2, 2, 0, 0, 0, 0), array(3, 4, -32, -32, 1, 1, 1, 1, 1, 14, -2)) === array(array(-26, -42), array(-32, -64), 1),
 	'a donor mount with a rider seat (base patch 0034): same as gen_sprite_images.py');
+// measured in our client (website/README.md "Sprite images"): frame top-left of rider and mount, facing south
+$measured = array(
+	array(array(2, 2, 8, 8, 3, 2, 2, 0, 0, 0, 0), array(3, 4, -32, -32, 1, 2, 1, 1, 1, 14, -2), array(-26, -42), array(-32, -64)),   // 2073 on 2133
+	array(array(2, 2, 8, 8, 3, 2, 2, 0, 0, 0, 0), array(5, 4, -64, -32, 1, 2, 1, 1, 1, 14, -10), array(-26, -50), array(-64, -64)),  // 2073 on 2134
+	array(array(2, 2, 8, 8, 3, 2, 2, 0, 0, 0, 0), array(3, 5, -32, -32, 1, 2, 1, 1, 1, 14, -8), array(-26, -48), array(-32, -96)),   // 2073 on 2135
+	array(array(2, 2, 8, 8, 3, 2, 2, 0, 0, 0, 0), array(2, 2, 0, 0, 1, 1, 1, 0, 0, 0, 0), array(-32, -32), array(-32, -32)),         // 2073 on stock 368
+);
+foreach ($measured as $k => [$rider, $mount, $rxy, $mxy]) {
+	[$r, $m] = chaos_outfit_place($rider, $mount);
+	check($r === $rxy && $m === $mxy, "client measurement $k: rider " . implode(',', $r) . ' mount ' . implode(',', $m));
+}
 // a mount that is not ours is left out; a look that is not ours is the placeholder
 [$img, $src] = chaos_outfit_image(array('id' => '10', 'mount' => '30'));
-check($src === 'render' && imagesx(imagecreatefromstring($img)) === 32, 'a mount that is not ours: drawn on foot');
+check($src === 'render' && $decode($img)[0] === 32, 'a mount that is not ours: drawn on foot');
 [$img, $src] = chaos_outfit_image(array('id' => '30'));
-check($src === 'placeholder' && $pixel($img, 40, 40) === array(58, 54, 56, 127), 'a look that is not ours: the placeholder');
+check($src === 'placeholder' && $pixel($img, 40, 40) === array(58, 54, 56, 255), 'a look that is not ours: the placeholder');
 [$img, $src] = chaos_outfit_image(array('id' => 'abc'));
 check($src === 'placeholder', 'a bad id: the placeholder');
 
