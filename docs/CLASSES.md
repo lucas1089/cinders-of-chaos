@@ -571,13 +571,18 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   not fix level 300: the path build to Covenant, without it, was already level with the Deadeye. After (computed,
   level 300 / 1000, 1 target):
 
-  | Keystone | Class | Before (measured) | After (computed) | Deadeye ahead (after) |
-  |---|---|---|---|---|
-  | Blackblood Creed | Thief | poison +8.9% / +14.5% | poison +5.8% / +8.9% (914 / 2873) | |
-  | | Ninja | poison +5.3% / +11.2% (1107 / 4566) | poison +3.4% / +7.1% (1154 / 4374) | +9.0% / +8.2% |
-  | | Samurai | poison +7.2% / +11.9% | poison +4.8% / +7.2% (701 / 2601) | |
-  | Covenant of the Grave | Necromancer | 1246 / 3105 | 1156 / 3103 | +8.8% / +52% |
-  | | Bone Lord | 1603 / 5113 (5 targets 3186 / 10287) | 1147 / 4327 (5 targets 2295 / 8705) | +9.6% / +9.4% (Elementalist +47% / +25%) |
+  | Keystone | Class | Before (measured) | After (computed) | Deadeye ahead (after) | After, measured in game 2026-10-13 (two samples where near a limit) |
+  |---|---|---|---|---|---|
+  | Blackblood Creed | Thief | poison +8.9% / +14.5% | poison +5.8% / +8.9% (914 / 2873) | | 891 / 2578 (**flag**: -10.3% at 1000; Deadeye +43% / +81%) |
+  | | Ninja | poison +5.3% / +11.2% (1107 / 4566) | poison +3.4% / +7.1% (1154 / 4374) | +9.0% / +8.2% | 1083, 1123 / 4327, 3948 (Deadeye +15% / +13%) |
+  | | Samurai | poison +7.2% / +11.9% | poison +4.8% / +7.2% (701 / 2601) | | 654 / 2218 (**flag**: -14.7% at 1000; Deadeye +94% / +111%) |
+  | Covenant of the Grave | Necromancer | 1246 / 3105 | 1156 / 3103 | +8.8% / +52% | 1158, 1150 / 2970, 2952 (Deadeye +10% / +58%) |
+  | | Bone Lord | 1603 / 5113 (5 targets 3186 / 10287) | 1147 / 4327 (5 targets 2295 / 8705) | +9.6% / +9.4% (Elementalist +47% / +25%) | 1162, 1177 / 4190, 4227 (5 targets 2318 / 8303, 8159; Deadeye +8.6% / +11%, Elementalist +51% / +34%) |
+
+  Measured in game 2026-10-13 (`server/data/spells/README.md` "Class order fixes", the end of the section): every row
+  within 10% of the computed one but the Thief and the Samurai with the Creed at level 1000, below it; the class order
+  holds. Proposed for the two flags: no number change (far behind the Deadeye); the measured values become their
+  reference. The Mystic at level 1000 with the fixed kit: 2455 / 2605 (C4 table 2439).
 
   The Mystic at level 1000 (1701-1824 measured against 2439) was the test kit: the character had lost levels and the
   kit picked the level 300 wand. No game change; the C4 numbers stand.
@@ -627,7 +632,8 @@ The three families left out at first: snares (traps and mines), vigils (auras th
 energy shield alone. Four more keystones on the ends of the four other elemental clusters (96, 99, 102, 105; refunded
 once, build code format 5), six uniques, seven spells (Snare Trap, Seeker Mine, Detonate Mines for the Ranger and
 Thief lines; four vigils for every class). Guide docs/BUILDS.md; rules server/README.md "Build archetypes", "Snares",
-"Vigils"; computed numbers server/data/spells/README.md "Snares, vigils and Hollow Vessel" (not measured in game).
+"Vigils"; computed numbers server/data/spells/README.md "Snares, vigils and Hollow Vessel", measured in game
+2026-10-13 in "Snares, vigils and Hollow Vessel measured in game".
 
 | Line | New options |
 |---|---|
@@ -639,8 +645,15 @@ Thief lines; four vigils for every class). Guide docs/BUILDS.md; rules server/RE
 | Monk | **Hollow Palm** (Hollow Vessel with Aether Edge, Shadowfist), **Tithebound** |
 | Templar | **Choir Herald** (Sentinel), **Tithebound** (Inquisitor), Hollow Vessel |
 
-The role order holds: the Deadeye and the Elementalist stay the leaders (the closest, a Mine-layer Deadeye in area at
-level 300, +2% on the dummies' best case), the Illusionist and the Iron Sage stay the healers.
+The role order holds: the Deadeye and the Elementalist stay the leaders, the Illusionist and the Iron Sage stay the
+healers. Measured in game (2026-10-13) the snares passed the Elementalist in area, so the snare hit was halved; the
+snare rows are computed again (the best, a Mine-layer Deadeye, now -43% in area on the computed rows and about -3% /
+-18% at level 300 / 1000 when the halving is applied to the measured snare share; measured again after the halving:
+the Mine-layer Deadeye 3372 in area at level 300, the Mine-layer Ranger 10536 at level 1000, just under the
+Elementalist's 3496 / 10837-11275). **Flag (measured, not applied):** the Hollow Palm with the Aetherbound Plate deals
+5342 on one target at level 1000, 14% over the Deadeye's 4670-4685 (computed 4367); proposed fix: Aether Edge counts
+only the items' part of the shield while Hollow Vessel is held (about 4300 then). The vigils, Iron Tithe and Hollow
+Vessel's shield, recharge and immunities measured as written.
 
 ### Balance with the trees
 

@@ -58,12 +58,20 @@ the tile, so nothing can be picked up and nothing is saved.
   members near the snare by 2% of their health, physical hits 15% harder. The choice is remembered. Without one, a
   brand rune socketed in the spell picks it (Emberbrand fire, Rimebrand ice, Dawnbrand holy, Gravebrand death,
   Stormbrand energy). Otherwise physical.
-- **The hit** scales with your best of bow, blade or shuriken power and your level. It is about three Skewering
-  Line hits: a snare costs a cast and waits for a monster.
+- **The hit** scales with your best of bow, blade or shuriken power and your level. It is about one and a half
+  Skewering Line hits: a snare costs a cast and waits for a monster. Halved on 2026-10-13 after the in-game measure;
+  the new rows are computed (`server/data/spells/README.md` "Snares, vigils and Hollow Vessel").
 - **Gone** when you log out, die, change floor, walk 30 sqm away or step into a protection zone. Only monsters set
   them off and only monsters are hit, never players.
 - **The game loop.** One scheduler looks at 60 snares every 0.2 s and fires at most 16 bursts. All players together
   may have 400 snares out. A full screen of snares costs about 2 ms a tick at most.
+- **Measured in game (2026-10-13), before the halving.** The snares hit much harder than computed: a Ranger or Deadeye
+  snare build dealt 40-90% more than its computed row and passed the Elementalist in area at both levels, even
+  against a moving pack (a third less). On one target the Mine-layer Deadeye passed the Deadeye's own build. The
+  Thief, Ninja and Beastmaster rows stayed below the leaders. The hit was then halved (applied, owner approved).
+  Measured again after it: the Mine-layer Deadeye 1046 / 3372 at level 300 and the Mine-layer Ranger 3252 / 10536 at
+  level 1000 (one / five targets), just under the leaders. `server/data/spells/README.md` "Snares, vigils and Hollow
+  Vessel measured in game". Caps, arming, the element and the DPS meter names work as written.
 
 ## Vigils: auras that reserve mana
 
@@ -85,6 +93,13 @@ longer fits (a unique taken off) is switched off, the last one first, with a mes
 Every vigil that covers you shows on the buff bar with its effect in percent, and says whether it is yours or a party
 member's. With Iron Tithe an "Iron Tithe" entry shows the health your vigils reserve.
 
+Measured in game (2026-10-13): every reservation, effect and range above is exact (35 / 70 / 90%, Clarity refused at
+110%; Covenant 77%, with the Circlet 65%; Iron Tithe 21% + 12% of the health, Wrath +7.5%, Iron -9%, Haste +22%; the
+party +5% / +6% with Covenant, out of range at 6 / 9 sqm). One bug was found: Vigil of Wrath works only on a monster
+that carries the archetypes' hit event, and no spawned monster got it, so a holder or party member without an
+archetype keystone or unique got no +5%. Fixed 2026-10-13 (applied, owner approved): every monster gets the event at
+spawn; measured again, +5.0%. `server/data/spells/README.md` "Snares, vigils and Hollow Vessel measured in game".
+
 ## Hollow Vessel: a life on the energy shield
 
 The keystone sets your maximum health to 100 and gives you a large energy shield that comes back fast. Health
@@ -102,6 +117,16 @@ regeneration, heals, potions and leech fill only those 100 points. Poison and li
   shield. Festering Wounds is poison: no effect. The
   hexes (Searing, Flaying, Sapping) work as on anyone. Parched Veins does not touch the shield. Iron Tithe has no
   effect next to it.
+- **Measured in game (2026-10-13).** Shield sizes within 3% of the numbers above, health 100, recharge 35% a second
+  (45% with the Diadem) from about 1 s after a hit, full again 2.75-4.75 s after a break; poison and life drain do
+  nothing; a rift percent hit takes 10% of health + maximum shield. Against one monster hitting every 2 s the shield
+  never breaks; against two (a hit every second) it never starts its recharge, and the character dies as fast as
+  without the keystone. At level 1000 the pool is 51-56% smaller for the Lich, the Shadowfist and the Inquisitor, more
+  than the 20-40% above (flag, not applied). The base items' equip rules kept the Robe at level 400 and the Diadem off
+  the Elementalist; fixed 2026-10-13 (applied, the uniques' own equip rules): measured again, an Elementalist at level
+  300 wears both, shield 2,343, recharge 45%. The Hollow Palm with the Plate passes the Deadeye at level 1000 (5,342
+  against 4,670-4,685; flag, not applied). `server/data/spells/README.md` "Snares, vigils and Hollow Vessel measured
+  in game".
 
 ## The archetypes per class line
 
@@ -140,12 +165,12 @@ level 25), 816 per 2000 hit at level 1000 (magic level 40), still far below the 
 | **Reliquary Keeper** (new) | Templar | Sentinel | Reliquary Vow, Bastion; Reliquary Censer; Rebuke, Lay on Hands | a guardian relic heals and buffs the party and burns the pack | the best party support of the line | own damage 10% lower | 300: magic level and holy nodes. 1000: the Censer |
 | **Iron Pilgrim** (new) | Templar, or any but Monk | Templar or Sentinel | Open Hand Creed; Knuckles of the Unbound; a shield; Radiant Smite, Consecration | bare fists and a shield; Radiant Strikes ride on every punch | no weapon to chase; strong shield play | the Warrior's skill spells see no weapon | 300: fist skill trains with use. 1000: the Knuckles |
 | Holy area | Templar | Inquisitor | Divine Verdict, Burning Zeal; Judgement, Purging Nova, Zealotry | the existing holy area | area with self heals | needs a group to shine | holy nodes |
-| **Trapper** (new, round 2) | Ranger | Deadeye; Ranger works | Snarewright's Creed, Hunter's Focus; Snarewalker Greaves; Snare Trap with fire or ice, Skewering Line | throw traps into the pack's path and keep shooting | strong pack clear from range; ice traps slow the pack | single target 20-30% below the line's own | 300: bow power, the Greaves. 1000: distance skill, fire nodes |
+| **Trapper** (new, round 2) | Ranger | Deadeye; Ranger works | Snarewright's Creed, Hunter's Focus; Snarewalker Greaves; Snare Trap with fire or ice, Skewering Line | throw traps into the pack's path and keep shooting | strong pack clear from range; ice traps slow the pack | single target 40-50% below the line's own (computed) | 300: bow power, the Greaves. 1000: distance skill, fire nodes |
 | **Mine-layer** (new, round 2) | Ranger or Thief | Deadeye or Ninja | Snarewright's Creed; Fusewright's Charm; Seeker Mine, Detonate Mines | lay five to ten mines, set them all off at once | the best burst of the snares; the Ninja gets an area tool | needs set-up; mines waste when the pack moves | 300: the Charm, earth for poison. 1000: crit and blade power |
 | **Choir Herald** (new, round 2) | Templar, Mystic or Necromancer | Sentinel, Illusionist or Bone Lord | Covenant of Vigils; Choirmaster's Circlet, Oathkeeper's Standard; Vigil of Wrath, Haste, Clarity | run three vigils for the party | +6% damage, +18% speed and mana for the whole party | own damage 10% lower; about half the mana is reserved | 300: maximum mana, the Circlet. 1000: the Standard |
 | **Tithebound** (new, round 2) | Warrior, Monk or Templar | Berserker, Shadowfist or Inquisitor | Iron Tithe; Vigil of Wrath and Haste on health | a fighter that pays its auras in blood | +7.5% damage and +22% speed for itself, the mana stays free | a third of the health reserved; no party buff | 300: health nodes. 1000: the uniques |
 | **Hollow Caster** (new, round 2) | Mystic or Necromancer | Elementalist or Lich | Hollow Vessel; Stillheart Robe, Hollowglass Diadem; four Maximum Energy Shield mods | cast from behind a shield that comes back in three seconds | immune to poison and life drain; heals not needed | a burst through the shield kills | 300: four T5 shield mods. 1000: the Robe, recharge mods |
-| **Hollow Palm** (new, round 2) | Monk | Shadowfist | Hollow Vessel and Aether Edge; Aetherbound Plate | Storm Palm with three times the shield | Storm Palm's single target +12% / +19% (level 300 / 1000, with the Plate) | as the Hollow Caster | 300: shield mods. 1000: the Plate and the Robe |
+| **Hollow Palm** (new, round 2) | Monk | Shadowfist | Hollow Vessel and Aether Edge; Aetherbound Plate | Storm Palm with three times the shield | Storm Palm's single target +12% / +19% (level 300 / 1000, with the Plate; computed). Measured 1392 / 5342 with the Plate | as the Hollow Caster | 300: shield mods. 1000: the Plate and the Hollowglass Diadem (the Robe is body armour like the Plate, so not both) |
 
 Cross-line picks: Sanguine Covenant, Thornbound Oath and Cascade Edge are open to every class. Pyre Oath also suits
 the Templar line. Aether Edge also suits the Inquisitor. The vigils are open to every class without a keystone; a
@@ -160,6 +185,10 @@ and Hollow Palm; Templar Choir Herald, Tithebound and Hollow Vessel.
 - Keystones need their paths. The leaves at 8 or 9 points are early picks (96, 99, 102 and 105 too); 253, 262, 355 and
   362 take 18 to 21.
 - Uniques drop from monsters of their themes. The Codex lists where. Two of them work without the keystone.
+- The second round's six uniques have their own equip rule (2026-10-13): the level of the unique and the classes of
+  its archetype. Greaves 120 and Charm 150: Ranger and Thief lines. Circlet 200 and Standard 180: Warrior, Mystic,
+  Necromancer, Monk and Templar lines. Diadem 250 and Robe 300: Mystic, Necromancer, Monk and Templar lines. A stock
+  copy of the same base item keeps the base rule. Details: `server/README.md` "Unique equip rules".
 - A changed tree is a respec. The free refund only covers the converted leaves, once per round.
 - Snare Trap comes at level 40, Seeker Mine and Detonate Mines at 60. The vigils come at 40 and 60.
 

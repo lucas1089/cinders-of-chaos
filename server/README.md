@@ -318,6 +318,10 @@ server/
    `chaosMightRing`: one at a time, "Second ring slot"), keeps both rings of a ring slot swap in the base rarity
    script and clears there a hand the base two-handed swap emptied ("Right-click equips"), keeps a quiver in the base's two-handed swap and takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
    (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
+5j2. Unique equip rules: `python3 -I server/tools/install_unique_equip.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `uniqueequip`, after `archery`) gives the uniques with `equipLevel` / `equipLines` in
+   `chaos_items.xml` their own rule: movements.xml entries of their base items and
+   `data/movements/scripts/chaos_unique_equip.lua`. See "Unique equip rules".
 5k. Base item names: `python3 -I server/tools/patch_base_item_names.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `itemnames`, after `archery`) gives the base items of `data/items/base_item_names.csv` their
    Chaos names by id and moves the monster loot that named them to their ids. See "Base item names".
@@ -1771,8 +1775,9 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   Edge) is a spell of the player with `ChaosArchetypes.source` set: tree bonuses and the class factor apply, the
   archetype's own price does not, only the leech and the marks react. The rift's Spiteglass reflect runs inside a
   guarded reflect, so a reflect never bounces back and forth.
-- **Events.** `ChaosArchetypesHit` (onHealthChange) on every monster a tick after it spawns (after the passive tree's
-  event, so shares are of the hit with its bonuses), on attacked targets and on players at login;
+- **Events.** `ChaosArchetypesHit` (onHealthChange) on every monster as it spawns (onSpawn index 10, after the passive
+  tree's callback, so its event comes first and shares are of the hit with its bonuses; registered on the creature
+  itself, since the monster has no id before its placement), on attacked targets and on players at login;
   `ChaosArchetypesDeath` on the same monsters; a passive tree listener writes the holders, the flag storage
   `Chaos.storage.archetypeFlags` (7100024, a bit per keystone for the spells' Lua state) and the Aether Edge
   condition; one global think a second runs Pyre Oath, the effigies, sigils and the relic for holders only.
@@ -1789,7 +1794,8 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   Greaves (28115) and Fusewright's Charm (7890) for the snares, Choirmaster's Circlet (27667) and Oathkeeper's Standard
   (15453) for the vigils, Hollowglass Diadem (27668) and Stillheart Robe (27390) for the energy shield; the spells'
   Lua state reads them with `ChaosArchetypesCore.wornUniques` (the snare and vigil spells), the scripts with
-  `archetypes.lua`. The snare uniques and the Diadem work without a keystone.
+  `archetypes.lua`. The snare uniques and the Diadem work without a keystone. The six have their own level and class
+  lines, not their base items' ("Unique equip rules").
 - **Save data.** The twelve nodes keep their ids and links (`tests/passivetree_layout_test.lua`); reworked version 2
   refunds them once; build code format 4 (older codes leave them out). Client: `game_passivetree` tooltips and names,
   icons `keystones.png` cells 28-39 (`client/tools/gen_keystone_icons.py`). The second round (96, 99, 102, 105, the
@@ -1828,7 +1834,8 @@ Traps and mines for the Ranger and Thief lines (2026-10-12): Snare Trap (spell 9
   away or into a protection zone (`archetypes.lua` clears them at once at logout and death when the two sides share
   a Lua state). At most 16 bursts a tick (a 5x5 query and up to 8 hits each), 200 waiting. Worst case about 2 ms a tick,
   far under the 20 ms task class of "Game loop stalls".
-- **The hit.** level x 0.4 + power x 0.09 + 20 .. level x 0.4 + power x 0.135 + 40, power the best of distance skill x
+- **The hit.** level x 0.2 + power x 0.045 + 10 .. level x 0.2 + power x 0.0675 + 20 (halved on 2026-10-13 after the
+  in-game measure: the Ranger and Deadeye snare builds were 40-90% over their computed rows), power the best of distance skill x
   distance attack, sword skill x blade attack and the shuriken power; a mine x1.15; the keystone x1.25, Greaves traps
   x1.1, Charm mines x1.1; physical x1.15, energy x0.85 with 1 sqm more radius. Dealt with `doTargetCombat` from the
   owner (`ORIGIN_SPELL`; tree bonuses and the class factor apply in the scripts' events) to monsters that are not a
@@ -1879,6 +1886,39 @@ switches the vigil in storage 7100025 (a bit each) and costs nothing.
   death, Iron Tithe, the party, haste, Clarity under Parched Veins, what no longer fits, the hit factors with the
   Templar aura and Inspiring Illusion, the buff bar rows; the spells in the XML), `tests/buffs_test.lua` (the source).
   Not run on a live server.
+
+## Unique equip rules (`data/lib/chaos_unique_equip.lua`, `tools/install_unique_equip.py`, `chaos_items.xml` `equipLevel` / `equipLines`)
+A unique is a copy of a stock base item, and the engine's equip check (movements.xml: level and vocations) belongs to
+the base item id. Measured in game (2026-10-13) the second round's archetype uniques followed their base items:
+Stillheart Robe (soulmantle) level 400, Hollowglass Diadem (eldritch hood) no Elementalist, Choirmaster's Circlet
+(eldritch cowl) Mystic and Necromancer lines only, Snarewalker Greaves (shadewalker boots) level 300. Since then a unique
+may carry its own rule: `equipLevel` (its drop level) and `equipLines` (class lines) in `chaos_items.xml`, generated
+into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
+
+| Unique | Level | Worn by (the classes its archetype names) | The base item's stock rule (kept for stock copies) |
+|---|---|---|---|
+| Snarewalker Greaves (28115) | 120 | Ranger and Thief lines (Snarewright's Creed) | 300; Ranger, Thief and Monk lines |
+| Fusewright's Charm (7890) | 150 | Ranger and Thief lines (Snarewright's Creed) | 60; everyone |
+| Choirmaster's Circlet (27667) | 200 | Warrior, Mystic, Necromancer, Monk and Templar lines (Covenant of Vigils, Iron Tithe) | 230; Mystic and Necromancer lines |
+| Oathkeeper's Standard (15453) | 180 | Warrior, Mystic, Necromancer, Monk and Templar lines (Covenant of Vigils, Iron Tithe) | none |
+| Hollowglass Diadem (27668) | 250 | Mystic, Necromancer, Monk and Templar lines (Hollow Vessel) | 230; Mystic (no Elementalist) and Necromancer lines |
+| Stillheart Robe (27390) | 300 | Mystic, Necromancer, Monk and Templar lines (Hollow Vessel) | 400; Mystic and Necromancer lines |
+
+- **Install** (`install_unique_equip.py`, step `uniqueequip`, after `vocations` and `archery`): the stock Equip entry of
+  each base id is taken out of movements.xml and recorded as a comment in a marked block before `</movements>`; the
+  block's entry has the lower of the two levels, both vocation lists (none when either side lets everyone wear it),
+  `function="onEquipItem"` and `script="chaos_unique_equip.lua"`. A base id without a DeEquip entry gets one. The
+  unique's classes show in the look text, stock-only ones are hidden. `data/movements/scripts/chaos_unique_equip.lua`
+  is written with the recorded stock rules. A re-run rebuilds the same block; `add_vocations.py` leaves it alone. A stock
+  entry with its own script, two Equip entries or a range over the id stop the tool.
+- **The check.** The engine checks the looser rule, then the script's `onEquip` (`ChaosUniqueEquip.onEquip`) decides on
+  the check pass: a copy with `chaos_unique` whose spec has `equip` is held to that rule, every other copy to the stock
+  rule. Refused: the engine's "You cannot dress this object there." Staff with the weapon check flag pass, as in the
+  engine. A copy worn before the rule stays worn until taken off.
+- **Look text.** The engine's "can only be wielded properly by" line shows the entry's level (the lower one: 60 for the
+  Charm, 230 for the Diadem, where the unique asks more); the unique's description says its own level and lines.
+- Tests: `tests/unique_equip_test.lua` (every round-two unique can be worn by the classes its archetype names and not
+  below its level; unique and stock copies; the tool on a small movements.xml, idempotent; the generated script).
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
@@ -2575,9 +2615,21 @@ silhouette and in-pair checks, the stock wings placement, so no displacement edi
 (16) in the wings.xml block of `install_outfits.py`. They go to achievements with no exclusive yet: Colossus Hunter
 (`wb_all`), Nobody Kneels (`raid_flawless`, hidden, so the window shows "???" until owned) and Lord of Thresholds
 (`rift_100`). **Needs the new pair:** a client on things_custom16 draws no wings for 2140-2142. Ship the server change
-with things_custom17 (not on `windows-assets` yet; docs/OWNER_TODO.md). Still open from the plan: the Scarlet Glimmer aura
-(look 712) has no displacement in the dat; check it in game, and if it draws off the feet set it in a later pair (flags
-only).
+with things_custom17 (not on `windows-assets` yet; docs/OWNER_TODO.md). The Scarlet Glimmer aura (look 712) has no
+displacement in the dat. Checked in game:
+
+**Scarlet Glimmer checked in game (2026-10-13, things_custom21, Linux client under Xvfb).** On a player (look 130),
+four directions, next to the stock aura Fire Essence (932) and the Ashen Murmuration (1487). The client reads
+displacement 0,0 for 712; the stock auras have 10-17 x 12-20 (932: 17,17; 933: 13,15; 934: 10,12; 935: 12,13;
+936: 17,20; 1487: 17,14). **It is drawn off its tile, down and to the right.** The centre of its pixels (48 frames, the
+player's own pixels taken out) sits 44 px right and 32 px down of the tile centre, at 85.3 px a tile: about 17 x 12
+dat units. Fire Essence sits 15 px left, 0 px down; the Ashen Murmuration 15 px left, 16 px up. So the Glimmer is
+about 22 units right and 12-18 units down of where the stock auras draw: its red orb and sparkles hang off the
+player's lower right corner, half on the next tile. The direction does not change it (an aura has one direction).
+Proposed fix: displacement 17,17 (as Fire Essence) on outfit 712 in the next pair, with
+`client/tools/sprites/fix_pair_warnings.py` kind `displacement` (flags only, needs the owner's approval). The pair was not
+edited. Screenshots (test-only, not in the repo): `aura_grid.png` (rows: no aura, 712, 932; columns: the four
+directions), `aura_montage.png`, `aura_heat.png` (where each aura's pixels fall over 48 frames).
 
 Tests: `tests/exclusives_test.lua` (LuaJIT and Lua 5.3): the shipped config against the store, the generated store list, the
 achievements, the cosmetics, transmog sets, pets, portal styles and frames; refusals (a sold look, a price, a chance too high,

@@ -848,7 +848,7 @@ level 1000 (C4 build: tree healing 5% / 46%, intelligence 59 / 98, Weaver's Grac
 (tree healing 10% / 58%, intelligence 0 / 54; Still Water +6 points). The order holds (Illusionist best, Iron Sage
 second); the Iron Sage gains most at level 1000: measure both on an ally before tuning.
 
-### Class order fixes (2026-10-12, computed, not measured in game)
+### Class order fixes (2026-10-12, computed; measured in game 2026-10-13 at the end of this section)
 
 The owner approved the proposals of "Line keystones, masteries and weapons measured in game" above. Changed in
 `class_tree.lua`:
@@ -914,6 +914,36 @@ C4 planner run offline on the current tree data gives the Mystic and the Element
 wand has no regression. Fixed in the harness: the kit goes by the character's target level, the level is put back
 first, and the log lists every damage stat. No game change. The C4 table's Mystic 2439 / 8354 stands (repeats 2350,
 2242). Measure it again with the fixed kit.
+
+**Measured in game (2026-10-13)** on a test server with the rebalance in (same harness and C4 builds as the keystone
+check; the fixed test kit; the Necromancer, Monk and Templar unlocks granted to the test accounts). One target / five
+targets; the Deadeye's and the Elementalist's C4 builds measured on the same server: Deadeye 1271 / 4670 and 4685,
+Elementalist in area 3496 / 10837 and 11275.
+
+| Build | Level | Computed | Measured (sample 1, sample 2) | Against computed | Deadeye ahead |
+|---|---|---|---|---|---|
+| Necromancer + Covenant | 300 | 1156 / 1172 | 1158, 1150 / 1135, 1135 | -0.2% / -3% | +10% |
+| Necromancer + Covenant | 1000 | 3103 / 2944 | 2970, 2952 / 2923, 2763 | -4.6% / -3.4% | +58% |
+| Bone Lord + Covenant | 300 | 1147 / 2295 | 1162, 1177 / 2318 (second sample broken) | +2% / +1% | +8.6% (Elementalist +51%) |
+| Bone Lord + Covenant | 1000 | 4327 / 8705 | 4190, 4227 / 8303, 8159 | -2.7% / -5.4% | +11% (Elementalist +34%) |
+| Thief + Blackblood Creed | 300 | 914 | 891 (without: 559, an outlier run) | -2.5% | +43% |
+| Thief + Creed | 1000 | 2873 | 2578 (without 2291: poison +292 / s) | -10.3% | +81% |
+| Ninja + Creed | 300 | 1154 | 1083, 1123 (without 1072) | -4.4% | +15% |
+| Ninja + Creed | 1000 | 4374 | 4327, 3948 (without 3864) | -5.4% | +13% |
+| Samurai + Creed | 300 | 701 | 654 (without 686) | -6.7% | +94% |
+| Samurai + Creed | 1000 | 2601 | 2218 (without 2153) | -14.7% | +111% |
+| Mystic, C4 build, fixed kit | 1000 | 2439 / 8354 (C4 table) | 2455, 2605 / 7883, 7419 | +3.7% / -8% | +85% |
+
+- Every row is within 10% of its computed value but two. **Flag:** the Thief (-10.3%) and the Samurai (-14.7%) with
+  the Creed at level 1000 are under their computed rows. Proposed fix: none to the numbers (both are far behind the
+  Deadeye and the order holds); take the measured values as the reference for these two rows. The Creed's gain at level 1000
+  is +12.5% (Thief), +7.1-12% (Ninja), +3% (Samurai) against the computed +8.9% / +7.1% / +7.2%: the runs spread too
+  much to read it closer.
+- The class order holds: the Deadeye leads one target (the Bone Lord 8.6% / 11% behind, the Ninja 13-15%, the
+  Necromancer 10% at level 300), the Elementalist leads area (the Bone Lord 34-51% behind). The Mystic at level 1000
+  with the fixed kit measures 2455 / 2605, as in the C4 table: the kit was the cause, as written above.
+- Notes: the Shadowfist's C4 plan at level 1000 spends only 192-199 of its 248 points (the harness planner stops; the
+  same as the keystone check); not a game issue.
 
 ### Overgrowth and Thorns for the Iron Sage and the Sentinel (2026-10-12, computed, not measured in game)
 
@@ -1084,7 +1114,7 @@ Reliquary Vow: 0.3% of the maximum health a second + magic level for every party
 second on an ally of 4000 / 13000 health), far below the Iron Sage's 1765 / 2525; the +5% party damage is under
 Inspiring Illusion's +8%.
 
-### Snares, vigils and Hollow Vessel (2026-10-12, computed, not measured in game)
+### Snares, vigils and Hollow Vessel (2026-10-12, computed; measured in game: the next section)
 
 The second round of build archetypes (docs/BUILDS.md; server/README.md "Build archetypes", "Snares", "Vigils"). Not
 run on the dummies: the C4 harness needs a live test server. Every number below is computed from the C4 table above
@@ -1096,19 +1126,25 @@ cooldown), no other attack spell; the weapon share of the damage 38% / 49% for t
 for the Thief line; power 110 x 45 / 140 x 90 (distance or sword skill x attack); the tree and the class factor on a
 snare's hit x1.10 / x1.20 and `ChaosClassTree.classDamage` (Ranger line 1.0 / 0.95, Deadeye 1.0, Thief 0.48 / 0.53,
 Ninja 0.45 / 0.57); every burst hits all 5 dummies (they stand within 2 sqm); a mine x1.15 and detonated at once.
-Snare hit per target before the tree: 707 / 1848 (level 300 / 1000).
+Snare hit per target before the tree: 353 / 924 (level 300 / 1000).
+
+**Snare rows recomputed on 2026-10-13, computed after the in-game measure.** The measure found the snare builds 40-90%
+over the rows computed with the first hit (707 / 1848) on the dummies, passing the Elementalist in area, and 30-34%
+under them against a moving pack that hits back. The snare hit was halved (`snares_config.lua` `damage`: 0.2 / 0.045 /
+10 .. 0.2 / 0.0675 / 20) and the snare rows below are computed again with the same assumptions. They are computed, not
+measured; the other rows are unchanged.
 
 | Archetype (keystone, unique) | Class | 300: 1 target | 300: 5 targets | 1000: 1 target | 1000: 5 targets | Against the leaders (300 / 1000) |
 |---|---|---|---|---|---|---|
-| Trapper (Snarewright's Creed) | Ranger | 1075 -> 833 | 1409 -> 2777 | 3673 -> 2846 | 5305 -> 8111 | 1T -36% / -38%, 5T -19% / -26% |
-| Trapper + Snarewalker Greaves | Ranger | 1075 -> 881 | 1409 -> 3020 | 3673 -> 2977 | 5305 -> 8769 | 1T -33% / -35%, 5T -12% / -20% |
-| Trapper + Greaves | Deadeye | 1312 -> 958 | 1446 -> 3096 | 4571 -> 3428 | 5385 -> 9524 | 1T -27% / -25%, 5T -10% / -13% |
-| Mine-layer + Fusewright's Charm | Deadeye | 1312 -> 1038 | 1446 -> 3497 | 4571 -> 3656 | 5385 -> 10667 | 1T -21% / -20%, 5T +2% / -3% |
-| Mine-layer + Charm | Ranger | 1075 -> 961 | 1409 -> 3421 | 3673 -> 3194 | 5305 -> 9855 | 1T -27% / -30%, 5T -1% / -10% |
-| Trapper + Greaves (the pets apart) | Beastmaster | 832 -> 803 | 1919 -> 2941 | 3267 -> 2808 | 9255 -> 8600 | 1T -39% / -39%, 5T -15% / -22% |
-| Mine-layer + Charm | Ninja | 1121 -> 753 | 1424 -> 1859 | 3565 -> 2514 | 5101 -> 6510 | 1T -43% / -45%, 5T -46% / -41% |
-| Trapper + Greaves | Thief | 870 -> 626 | 870 -> 1652 | 2391 -> 1823 | 2297 -> 5055 | 1T -52% / -60%, 5T -52% / -54% |
-| Snare Trap without the keystone | Ranger | 1075 -> 797 | 1409 -> 2352 | 3673 -> 2852 | 5305 -> 7065 | 1T -39% / -38%, 5T -32% / -36% |
+| Trapper (Snarewright's Creed) | Ranger | 1075 -> 590 | 1409 -> 1562 | 3673 -> 2187 | 5305 -> 4820 | 1T -55% / -52%, 5T -55% / -56% |
+| Trapper + Snarewalker Greaves | Ranger | 1075 -> 614 | 1409 -> 1683 | 3673 -> 2253 | 5305 -> 5149 | 1T -53% / -51%, 5T -51% / -53% |
+| Trapper + Greaves | Deadeye | 1312 -> 691 | 1446 -> 1760 | 4571 -> 2665 | 5385 -> 5714 | 1T -47% / -42%, 5T -49% / -48% |
+| Mine-layer + Fusewright's Charm | Deadeye | 1312 -> 731 | 1446 -> 1960 | 4571 -> 2780 | 5385 -> 6285 | 1T -44% / -39%, 5T -43% / -43% |
+| Mine-layer + Charm | Ranger | 1075 -> 654 | 1409 -> 1884 | 3673 -> 2362 | 5305 -> 5692 | 1T -50% / -48%, 5T -45% / -48% |
+| Trapper + Greaves (the pets apart) | Beastmaster | 832 -> 536 | 1919 -> 1605 | 3267 -> 2084 | 9255 -> 4980 | 1T -59% / -54%, 5T -53% / -55% |
+| Mine-layer + Charm | Ninja | 1121 -> 614 | 1424 -> 1168 | 3565 -> 2014 | 5101 -> 4012 | 1T -53% / -56%, 5T -66% / -64% |
+| Trapper + Greaves | Thief | 870 -> 498 | 870 -> 1011 | 2391 -> 1420 | 2297 -> 3035 | 1T -62% / -69%, 5T -71% / -72% |
+| Snare Trap without the keystone | Ranger | 1075 -> 602 | 1409 -> 1380 | 3673 -> 2326 | 5305 -> 4432 | 1T -54% / -49%, 5T -60% / -60% |
 | Tithebound (Iron Tithe: Wrath x1.5, +7.5%) | Berserker | 974 -> 1047 | 2932 -> 3151 | 2634 -> 2831 | 8218 -> 8834 | 1T -20% / -38%, 5T -8% / -20% |
 | Tithebound | Shadowfist | 1181 -> 1269 | 1262 -> 1356 | 3683 -> 3959 | 3948 -> 4244 | 1T -3% / -13%, 5T -61% / -61% |
 | Tithebound | Inquisitor | 1086 -> 1167 | 2056 -> 2210 | 3556 -> 3822 | 6192 -> 6656 | 1T -11% / -16%, 5T -36% / -40% |
@@ -1118,17 +1154,24 @@ Snare hit per target before the tree: 707 / 1848 (level 300 / 1000).
 | Vigil of Wrath on mana (anyone) | Elementalist | 913 -> 958 | 3442 -> 3614 | 2954 -> 3101 | 11004 -> 11554 | the leader itself +5% |
 | Hollow Palm (Hollow Vessel + Aether Edge) | Shadowfist | 1181 -> 1266 | 1262 -> 1347 | 3683 -> 4094 | 3948 -> 4359 | 1T -4% / -10% |
 | Hollow Palm + Aetherbound Plate | Shadowfist | 1181 -> 1323 | 1262 -> 1404 | 3683 -> 4367 | 3948 -> 4632 | 1T +1% / -4% |
-| Hollow Palm + Plate + Stillheart Robe | Shadowfist | 1181 -> 1337 | 1262 -> 1418 | 3683 -> 4417 | 3948 -> 4682 | 1T +2% / -3% |
+| Hollow Palm + Plate + Hollowglass Diadem (wearable; the Robe is body armour like the Plate) | Shadowfist | 1181 -> 1323 | 1262 -> 1404 | 3683 -> 4367 | 3948 -> 4632 | 1T +1% / -4% (the Diadem adds recharge, no damage) |
 
-Hollow Palm: Aether Edge's 6% (10% with the Plate) of a shield of 2,831 / 8,244 (Robe: 3,127 / 8,844; the health
-after Aether Edge's x0.8), at 0.5 / 0.83 hits a second (the rate the first round's Storm Palm row implies).
+Hollow Palm: Aether Edge's 6% (10% with the Plate) of a shield of 2,831 / 8,244 (the health after Aether Edge's x0.8),
+at 0.5 / 0.83 hits a second (the rate the first round's Storm Palm row implies). The Plate and the Stillheart Robe are
+both body armour, so the row "Hollow Palm + Plate + Stillheart Robe" (1337 / 4417, Robe shield 3,127 / 8,844) could not
+be worn; it is replaced by the Plate with the Hollowglass Diadem (computed, 2026-10-13).
 
 Leaders after the change (the owner's order kept): the Deadeye leads single target and the Elementalist leads area at
-both levels. Closest: the Mine-layer Deadeye at level 300, 3497 in area, +2% over the Elementalist's 3442 (the dummies'
-best case: every mine detonated in the pack); the Hollow Palm with the Plate and the Robe, 1337 / 4417 on one target,
-+2% / -3% against the Deadeye's 1312 / 4571. No archetype passes a leader by more than the ~10% the rule allows. The
-vigils lift everyone who runs them by the same 5%: compared with the leaders running Vigil of Wrath too, the order is
-unchanged (Tithebound Berserker -13% / -24% in area, the Herald's party +6% instead of +5%).
+both levels. Closest: the Hollow Palm with the Plate, 1323 / 4367 on one target, +1% / -4% against the Deadeye's
+1312 / 4571 (computed; measured 1392 / 5342, which passes the Deadeye at level 1000: flag in the measured section). With the halved hit the best snare row, the Mine-layer Deadeye, computes to 1960 / 6285 in area
+(-43% against the Elementalist) and 731 / 2780 on one target (computed, after the measure). Since the computed rows
+fell 40-90% short of the dummies, the same halving applied to the measured snare share (the measured section) is the
+better guide: the Mine-layer Deadeye about 3350 / 9260 in area, under the Elementalist's 3442 computed / 11275
+measured, and about 3700 on one target at level 1000, under the Deadeye's 4670 measured (measured after the halving:
+3372 / 10536 in area, see the measured section). On the computed rows no archetype passes a leader by more than the
+~10% the rule allows; measured, the Hollow Palm with the Plate does at level 1000 (+14%). The vigils lift everyone who runs them by the same 5%: compared with
+the leaders running Vigil of Wrath too, the order is unchanged (Tithebound Berserker -13% / -24% in area, the
+Herald's party +6% instead of +5%).
 
 Toughness (computed): Hollow Vessel's pool and recharge against health + shield without it (items 740 / 1,500 of
 shield, health x1.20 / x1.25 of the vocation's):
@@ -1145,6 +1188,177 @@ Without the keystone the shield recharges 148 / 300 a second (20% of 740 / 1,500
 the pool is smaller but comes back about five times as fast, starting after 1 s, and poison and life drain do nothing.
 The vigils: Iron Tithe's Wrath and Haste reserve a third of the health (21% + 12%); Vigil of Iron's -6% is about +6%
 effective health for the party, nothing more under the Sentinel's 12% aura.
+
+### Snares, vigils and Hollow Vessel measured in game (2026-10-13)
+
+Measured on a test server (base + src-patches 0001-0032 + install_all, cropped map, private MariaDB) with the Linux
+client (base patches through 0042, pair things_custom21) under Xvfb. Same harness as the keystone check: C4 builds with
+the keystone forced (`KS.build`), the fixed test kit (gear by the target level), 60 s on the Chaos Dummies after a
+warm-up, health the dummies lost per second (1 target / 5 targets). Snares thrown as ice (no extra damage), one snare
+cast every 2 s and Detonate Mines as soon as a mine is armed, no other attack spell, auto attack on. Raw output and the
+harness are test-only and not in the repo.
+
+**Snares** (measured, computed in brackets; leaders measured on the same server: Deadeye 1271 / 4670-4685, Elementalist
+3496 / 10837-11275 in area):
+
+| Archetype | Class | 300: 1 target | 300: 5 targets | 1000: 1 target | 1000: 5 targets |
+|---|---|---|---|---|---|
+| Trapper (Snarewright's Creed) | Ranger | 1215 (833) | 4558 (2777) | 4176 (2846) | 13726 (8111) |
+| Trapper + Snarewalker Greaves | Ranger | 1271 (881) | 4879 (3020) | 4282 (2977) | 15236 (8769) |
+| Trapper + Greaves | Deadeye | 1407 (958) | 5538 (3096) | 3962 (3428) | 14900 (9524) |
+| Mine-layer + Fusewright's Charm | Deadeye | 1568 (1038) | 6238 (3497) | 5271 (3656) | 16439 (10667) |
+| Mine-layer + Charm | Ranger | 1462 (961) | 5691 (3421) | 4439 (3194) | 17353 (9855) |
+| Trapper + Greaves (no pets out) | Beastmaster | 866 (803) | 3347 (2941) | 3643 (2808) | 16491 (8600) |
+| Mine-layer + Charm | Ninja | 1050 (753) | 2545 (1859) | 3303 (2514) | 9463 (6510) |
+| Trapper + Greaves | Thief | 709 (626) | 2109 (1652) | 1937 (1823) | 6165 (5055) |
+| Snare Trap without the keystone (C4 build) | Ranger | 1217 (797) | 4133 (2352) | 4079 (2852) | 12845 (7065) |
+
+- Every Ranger and Deadeye snare row is 40-90% over its computed value. In area all of them pass the Elementalist
+  (+18% to +78% at level 300, +16% to +57% at level 1000), the plain Snare Trap without the keystone too. On one
+  target the Mine-layer Deadeye passes the Deadeye's own build (1568 against 1271, 5271 against 4670-4685) and the
+  Mine-layer Ranger passes the Deadeye at level 300 (1462). The Thief, Ninja and Beastmaster rows are near the
+  computed ones (+6% to +45%), below the leaders. At level 1000 the Beastmaster run had its pets' hits in it
+  (`spell/phys` 3813 a second), so its area number is not "the pets apart".
+- Why: the computation assumed power 110 x 45 (4,950) and x1.10 / x1.20 from the tree on a snare's hit. Measured: power
+  8,094-8,165 at level 300 (royal crossbow attack 71 with its band) and 12,714 at level 1000 (as assumed); a fixed ice
+  spell hit of 1000 lands as 1262 at level 300 and 2079 at level 1000 on the Ranger's Snarewright build (crit chance,
+  ice and spell increments, the class factor), not 1100 / 1140. One trap per target: 868-1252 before the tree at
+  level 300 (computed 707 average).
+- The table above was measured **before** the snare hit was halved. **Applied 2026-10-13 (owner approved):** the hit
+  halved in `snares_config.lua` `damage` (min 0.2 per level, 0.045 per power, 10; max 0.2 per level, 0.0675 per power,
+  20). Measured again after the change, same server and harness: Mine-layer + Charm Deadeye level 300 1046 / 3372
+  (was 1568 / 6238; the Deadeye 1271, the Elementalist 3496 in the same session); Mine-layer + Charm Ranger level 1000
+  3252 / 10536 (was 4439 / 17353; the Elementalist 10837-11275); Mine-layer + Charm Deadeye level 1000 9037 in area
+  (was 16439; its one-target run lost half its casts, not counted). The snares now sit just under the Elementalist in
+  area on the dummies' best case and under the Deadeye on one target. The other rows were not run again.
+- Snare hits carry their spell's name in the DPS meter ("Snare Trap", "Detonate Mines" with their icons; a mine that
+  goes off by its fuse is "Seeker Mine"). Screenshot `dps_snares.png`.
+
+**Snares against a pack that walks and hits back** (before the halving; Ranger, five Chaos Walkers that walk at speed 220 and hit 300
+every 2 s each, health lost per second by the five; "arriving": the pack walks 6 sqm to the player once and stays;
+"moving": the player jumps 7 sqm every 6 s, so the pack walks after it nine times a minute):
+
+| Archetype | Level | Dummies, 5 targets | Arriving pack | Moving pack |
+|---|---|---|---|---|
+| Trapper + Greaves | 300 | 4879 | 4750 (-3%) | 3287 (-33%) |
+| Mine-layer + Charm | 300 | 5691 | 5417 (-5%) | 3850 (-32%) |
+| Trapper + Greaves | 1000 | 15236 | 15175 (0%) | 10664 (-30%) |
+| Mine-layer + Charm | 1000 | 17353 | 17768 (+2%) | 11427 (-34%) |
+
+A moving pack costs about a third of the snares' damage, as the docs expect ("a moving pack loses some snares"). Even
+then the Ranger's snares match or pass the Elementalist's area on the dummies (3,378 / 10,837).
+
+**Vigils** (Mystic 300 as the holder, Ally Warrior 300 in its party; a fixed hit of 1000 dealt or taken):
+
+| What | Measured | Docs |
+|---|---|---|
+| Reservation, one by one | Wrath 35.0%, + Iron 70.0%, + Haste 90.0%; Clarity refused ("would reserve more than all of your mana") | 35 / 35 / 20 / 20%, all four 110% do not fit |
+| With Covenant of Vigils | 24.5%, 49%, 63%, 77% (all four) | 77% |
+| Covenant + Choirmaster's Circlet | 65.4% (all four) | 65% |
+| Iron Tithe (Berserker 300) | health 21.0%, + Haste 33.0%, + Iron 54.0%; mana untouched | 21% + 12% |
+| Wrath on the holder | 1311 -> 1378 (+5.0%) | +5% |
+| Wrath, Iron Tithe | 1786 -> 1921 (+7.6%) | +7.5% |
+| Iron on the holder | 500 -> 470 taken (-6.0%) | -6% |
+| Iron, Iron Tithe (Berserker) | 390 -> 354 taken (-9.2%) | -9% |
+| Haste | speed +152 on a base of 1017 (+15.0%); Iron Tithe +228 (+22.4%) | +15% / +22.5% |
+| Clarity | 53 mana a second = 1% of the reduced maximum (5,388) | 1% of the maximum |
+| Covenant of Vigils, own damage | 1311 -> 1180 (-10.0%) | -10% |
+| Party member, plain holder, 2 sqm | +5.0% dealt, +15% speed; none at 6 sqm | +5%, 5 sqm |
+| Party member, Covenant holder | +6.0% dealt, -7.2% taken, +18.0% speed at 2 and 7 sqm; none at 9 sqm | +6%, +20% effects, 8 sqm |
+
+The buff bar shows one row per vigil with its percent and whose it is ("Your own: it reserves 35% of your maximum mana"
+on the holder, "From a party member's vigil" on the ally; screenshots `vigils_holder_crop.png`, `vigils_ally_crop.png`).
+
+**Bug found (fixed 2026-10-13, owner approved, by another helper):** in game Vigil of Wrath does nothing for a holder or a party member who has no archetype
+keystone and no archetype unique. The hit rule is in the creature event `ChaosArchetypesHit` on the monster.
+`archetypes.lua` registers it in two ways: on attack (`onTargetCombat`) only for players with an archetype flag or
+unique, and at spawn through `onSpawn`, which looks the monster up by `self:getId()` one tick later. The engine calls
+`onSpawn` before it places the monster, so the id is still 0 (engine `game.cpp` gives the id in `placeCreature`;
+`bossspawns_config.lua` notes the same). No spawned monster gets the event. The fixed hits above were measured with the
+event registered on the dummy. Without it the Wrath hit stays 1311 (+0%). As a result, as the code stands, area hits
+on monsters nobody targeted also miss every archetype hit rule (the Snarewright price, Covenant of Vigils' -10%,
+Effigy, Sigil, Cascade Edge and the shatter and poison marks), and the archetypes' death event is missing on them.
+The fix in `archetypes.lua`: `spawnCb.onSpawn` registers the two events on `self` at once, after the passive tree's
+callback. Measured again after it (no registration by the harness): a vigil-only Mystic's fixed hit 1311 -> 1376
+(+5.0%) with Wrath on. The rotation rows below were measured before the fix, with the dummies registered by the
+harness as the fixed code does.
+
+**Vigil, Iron Tithe, Covenant and Hollow Palm builds on the dummies** (measured, computed in brackets; 1 target / 5
+targets; the dummies carried the archetypes' hit event as the fixed code gives it). The rotations spread about +-10%
+from run to run (the Deadeye's C4 build: 1204-1271 at level 300, 4086-4685 at level 1000), so they cannot show a 5%
+vigil; the fixed hits above can.
+
+| Build | Class | 300 | 1000 |
+|---|---|---|---|
+| Tithebound (Iron Tithe, Wrath + Haste on health) | Berserker | 874 (1047) / 2884 (3151) | 2585 and 2536 (2831) / 9058 and 9091 (8834) |
+| Tithebound | Shadowfist | 1283 (1269) / 1357 (1356) | 4477 (3959) / 4516 (4244) |
+| Tithebound | Inquisitor | 1173 (1167) / 2266 (2210) | 4094 (3822) / 6676 (6656) |
+| Choir Herald (Covenant of Vigils), own damage | Sentinel | 668 (668) / 1177 (1156) | 1945 (1753) / 3058 (3086) |
+| Choir Herald, own damage | Bone Lord | 815 (876) / 1489 (1759) | 3695 (3693) / 7216 (7094) |
+| Vigil of Wrath on mana | Deadeye | 1204 (1377) / 1321 (1518); C4 build 1271 / 1323 | 4086 (4799) / 5376 (5654); C4 build 4670 / 4922 |
+| Vigil of Wrath on mana | Elementalist | 955 (958) / 3531 (3614); C4 build 933 / 3496 | 3050 (3101) / 10868 (11554); C4 build 2751 / 11275 |
+| Hollow Palm (Hollow Vessel + Aether Edge) | Shadowfist | 1224 (1266) / 1356 (1347) | 4623 (4094) / 4642 (4359) |
+| Hollow Palm + Aetherbound Plate | Shadowfist | 1392 (1323) / 1334 (1404) | 5342 (4367) / 5605 (4632) |
+
+- Hollow Palm shields: 2,279 / 8,026 (computed 2,831 / 8,244; Aether Edge's -20% health). The Plate and the
+  Stillheart Robe are both body armour, so the computed "Hollow Palm + Plate + Stillheart Robe" row cannot be worn;
+  the wearable set is the Plate row (measured).
+- Over 10% off the computed value: the Tithebound Berserker at level 300 (-17% on one target), the Tithebound
+  Shadowfist at level 1000 (+13%), the Choir Herald Sentinel at level 1000 (+11%), the Choir Herald Bone Lord at
+  level 300 in area (-15%), the Hollow Palm at level 1000 (+13%) and with the Plate (+22% / +21%). All but the
+  Hollow Palm rows stay below every leader: no change proposed for them (flag noted, the measured values are the
+  reference).
+- **Flag (class order): the Hollow Palm with the Plate at level 1000 (5,342) passes the Deadeye (4,670-4,685) by
+  14%**; without the Plate it is level with it (4,623, -1%). The Tithebound Shadowfist at level 1000 (4,477) is 4%
+  behind, inside the 8-10% the owner wants. Aether Edge's energy is 858 / 1,426 a second of it: it reads the whole
+  shield, and Hollow Vessel's shield is mostly health given up. Proposed fix (not applied): Aether Edge counts only
+  the items' part of the shield (`hollowShield`'s item term) when Hollow Vessel is held. From the measured share the
+  Plate row then comes to about 4,300 (Deadeye +9%) and the plain Hollow Palm to about 4,000. A cap on the Plate
+  (10% -> 7%) alone would not do: about 4,915.
+
+**Hollow Vessel** (keystone 96 forced, items' energy shield 740 at level 300 / 1,500 at level 1000; "without": the C4
+build with the same items; pool = health + maximum shield):
+
+| Class | Level | Shield (computed) | Pool with / without (change; computed) | Recharge to full after a break | Without the keystone |
+|---|---|---|---|---|---|
+| Elementalist | 300 | 2048 (2047) | 2148 / 2773 (-23%; -21%) | first gain at 1.25-1.5 s, full at 4.0-4.75 s | first gain 2.5 s, full 7.5 s |
+| Lich | 300 | 2400 (2397) | 2500 / 3788 (-34%; -27%) | 2.0 s, full 4.25 s | 2.25 s, 7.25 s |
+| Shadowfist (no Aether Edge) | 300 | 3274 | 3374 / 5387 (-37%) | 2.0 s, full 4.25 s | 3.0 s, 7.0 s |
+| Inquisitor | 300 | 3450 (3448) | 3550 / 5660 (-37%; -36%) | 1.5 s, full 4.75 s | 2.5 s, 7.5 s |
+| Elementalist | 1000 | 5293 (5415) | 5393 / 8476 (-36%; -30%) | 1.75 s, full 3.75 s | 2.5 s, 5.75 s |
+| Elementalist + Stillheart Robe | 1000 | 5892 (Robe + Diadem 6015) | 5992 | 1.5 s, full 3.25 s | |
+| Lich | 1000 | 6488 (6655) | 6588 / 13390 (-51%; -35%) | 1.5 s, full 3.5 s | 2.25 s, 5.25 s |
+| Lich + Robe + Hollowglass Diadem | 1000 | 7088 | 7188 | recharge 45% a second, full 3.25 s | |
+| Shadowfist (no Aether Edge) | 1000 | 9472 | 9572 / 21953 (-56%) | 2.0 s, full 3.75 s | 2.75 s, 5.75 s |
+| Inquisitor | 1000 | 10063 (10375) | 10163 / 22063 (-54%; -41%) | 1.75 s, full 2.75 s | 2.75 s, 4.75 s |
+
+- Maximum health 100, recharge 35% a second (45% with the Diadem), the first gain 1 s after the hit (the 1 s think
+  rounds it to 1.25-2 s); the plain shield starts after 2 s and recharges 20%.
+- Life drain of 400: nothing taken. Poison (5 x 100, a condition): nothing taken. An earth hit of 400 (not a
+  condition): taken from the shield, as intended. Without the keystone the drain and the poison come off the shield.
+- The rifts' percent hit (`ChaosRiftCore.percentHit(Chaos.percentBase(p), share)` with no attacker, as `rift.lua`
+  deals Scorched Earth / Rimefloor; 10%): 10% of health + maximum shield (215 of 2,148, 1,016 of 10,163), all from the
+  shield; without the keystone 10% of the health.
+- A monster hitting back (Elementalist 300, Chaos Walkers of 300 per 2 s, no heals): one walker never gets through
+  (the shield is back to full between hits: 1,772-1,778); the same character without the keystone dies after about
+  19.5 s. Two walkers (a hit about every second): the shield never starts its recharge and the character dies after
+  about 10 s, with or without the keystone.
+- **Flag (pool, not applied):** at level 1000 the pool is 51-56% smaller for the Lich, the Shadowfist and the Inquisitor, more than
+  the docs' "20-40%" (computed -35% / -41%): the C4 builds take 45-48% tree health at level 1000, and only half of the
+  health given up comes back as shield. Proposed fix: `arHollowVessel.fromHealth` 0.5 -> 0.65 (the Inquisitor 1000
+  then about -43%, the Lich about -40%), or keep it and change the docs to "20-55%".
+- **Uniques, the base items' equip rules (found here; fixed 2026-10-13, owner approved, step `uniqueequip`,
+  server/README.md "Unique equip rules"):** the Stillheart Robe (base item 27390) needs level 400 in
+  `movements.xml` and only the Mystic and Necromancer lines may wear it (its text says level 300); the Hollowglass
+  Diadem (27668) is refused to the Elementalist ("You don't have the required profession"; Mystic, Illusionist and the
+  Necromancer line only), and the Monk and Templar lines may wear neither. The Elementalist at level 300 can wear
+  neither, so the "Hollow Caster, Robe + Diadem, Elementalist" rows and "Hollow Palm + Plate + Stillheart Robe"
+  (the Plate and the Robe are both body armour) cannot be built in game. The Choirmaster's Circlet (27667) is likewise
+  limited to the Mystic and Necromancer lines, so a Sentinel Choir Herald cannot wear it, and the Snarewalker Greaves
+  (28115) needed level 300 (text: 120). Measured again after the fix: the Elementalist at level 300 wears the Robe
+  and the Diadem, shield 2,343 (computed 2,343), recharge 45% a second.
+
+The aura check (Scarlet Glimmer, look 712) is in server/README.md "Exclusives".
 
 ### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
 
