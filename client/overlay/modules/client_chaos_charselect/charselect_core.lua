@@ -262,9 +262,9 @@ end
 -- T / 32, unsmoothed, so its pixels match the sprites. Three sizes: a wide body gets a bigger dais, so it never
 -- overhangs the edge by more than OVERHANG pixels (the dais grows, never the character shrinks).
 C.PLATFORMS = {
-  { r = 19, size = 46, feet = 20, image = 'platform' },
-  { r = 23, size = 54, feet = 24, image = 'platform_l' },
-  { r = 27, size = 62, feet = 28, image = 'platform_xl' },
+  { r = 19, size = 41, feet = 20, image = 'platform' },
+  { r = 23, size = 49, feet = 24, image = 'platform_l' },
+  { r = 27, size = 57, feet = 28, image = 'platform_xl' },
 }
 C.OVERHANG = 3
 -- the dais for a figure: the smallest one its body's reach fits

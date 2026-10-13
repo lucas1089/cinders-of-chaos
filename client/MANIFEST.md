@@ -243,13 +243,20 @@ select over the login scene; the stock module stays loaded and keeps every funct
 - **Platform (2026-10-13, owner: first the orange pedestal made the character look odd, then the character stood at
   the wrong angle on the grey dais that replaced it).** That dais was a flat ellipse with a front wall, seen from a low
   camera; the sprites use the game's own projection, so the figure looked pasted on at the dais's back edge. Now
-  `platform.png` (46x46 sprite pixels, `gen_charselect_art.py`, our own art) is drawn in that projection, as the
+  `platform.png` (41x41 sprite pixels, `gen_charselect_art.py`, our own art) is drawn in that projection, as the
   pair's stock blocks and stairs are: the ground seen straight from above, so the top face is a true octagon (not a
   squashed one); height drawn down and right at 45 degrees, one pixel per pixel of height; the light from the upper
   left (lit top and left edges, a lighter lip, the wall facing right lighter than the one facing down); the game's
   dithered checker shadow along the lower right base and a few checker pixels under the feet. It is a two-step
-  octagonal dais, each step 2 pixels thick, dark cool grey, in three sizes: `platform.png` 46x46, `platform_l.png`
-  54x54 and `platform_xl.png` 62x62 (lower step 19, 23 and 27 pixels from the centre). `CharSelectCore.platformFor`
+  octagonal dais, both steps centred on the feet point, each one pixel thick, dark cool grey, a faint ground shadow one
+  pixel all around it, in three sizes: `platform.png` 41x41, `platform_l.png` 49x49 and `platform_xl.png` 57x57
+  (lower step 19, 23 and 27 pixels from the centre). Centred dais (2026-10-13, owner: "still misaligned"; the
+  characters were right, the art was not): the first octagon had its top step 2 pixels up and left of its lower step,
+  2-pixel walls and a 2-pixel shadow down and right, so its whole silhouette's centre sat 3.5 sprite pixels down and
+  right of the feet point (14 px at 4x) and every character read up and left of the dais. Now the steps share one
+  centre (an equal rim on every side, seen from above) and the silhouette, shadow included, fills the canvas with its
+  centre within half a pixel of the feet point (the one-pixel wall); `gen_charselect_art.py` `check_core` refuses
+  art that breaks this, and `charselect_core_test.lua` checks `PLATFORMS` against the image sizes. `CharSelectCore.platformFor`
   picks the smallest one the body's reach fits with at most 3 pixels over its edge (`OVERHANG`): a wide body gets a
   wider dais, the character is never shrunk (`CharSelectCore.PLATFORMS`; the generator refuses to write art that does
   not match).

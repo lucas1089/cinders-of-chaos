@@ -219,6 +219,20 @@ for _, plat in ipairs(C.PLATFORMS) do
     check(C.platformBelow(T, plat) == ph - plat.feet * s, 'what the dais covers below its centre at ' .. T)
   end
 end
+-- each dais image is its table entry's size, and its silhouette fills it (gen_charselect_art.py check_core), so the
+-- feet point is the silhouette's centre within half a pixel: the dais reads centred under the character
+for _, plat in ipairs(C.PLATFORMS) do
+  local f = io.open(dir .. '/../../data/images/chaos/charselect/' .. plat.image .. '.png', 'rb')
+  check(f ~= nil, 'dais image ' .. plat.image)
+  if f then
+    local head = f:read(24)
+    f:close()
+    local function u32(i) local a, b, c, d = head:byte(i, i + 3) return ((a * 256 + b) * 256 + c) * 256 + d end
+    check(u32(17) == plat.size and u32(21) == plat.size, plat.image .. ': image size ' .. u32(17) .. ' = ' .. plat.size)
+  end
+  check(math.abs(plat.feet - plat.size / 2) <= 0.5, plat.image .. ': feet on the silhouette centre')
+  check(plat.feet == plat.r + 1 and plat.size == 2 * plat.r + 3, plat.image .. ': steps centred on the feet')
+end
 check(C.platformRect(128, 500, 400) == C.platformRect(128, 500, 400, C.PLATFORMS[1]), 'the small dais by default')
 -- a wide body gets a wider dais, never more than OVERHANG px over its edge; the widest gets the biggest
 check(C.platformFor({ reach = 15 }) == C.PLATFORMS[1] and C.platformFor({}) == C.PLATFORMS[1], 'a narrow body: the small dais')

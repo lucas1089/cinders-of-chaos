@@ -6,9 +6,11 @@ Output: client/overlay/data/images/chaos/charselect/
   class_<line>.png   40x40 class badges, the same badges as the website's class cards (website/tools/gen_site_art.py
                      `badge`, built on this folder's gen_theme_art.py glyphs), one per class line
   class_none.png     the empty badge plate (a class id the client does not know)
-  platform.png       52x52 sprite pixels, the stone slab the big character stands on, in the sprites' own
-                     projection (three designs below; `platforms DIR` writes all three for a comparison, outside the
-                     repository)
+  platform.png       41x41 sprite pixels, the stone dais the big character stands on, in the sprites' own
+                     projection, centred on its feet point; platform_l.png 49x49 and platform_xl.png 57x57 the same
+                     dais for wider bodies (three designs below; `platforms DIR` writes all three for a comparison,
+                     outside the repository)
+  hover_shadow.png   22x8 sprite pixels, the shadow under a flying character
   shade.png          64x256 dark vertical fade behind the character cards (stretched to the column)
 Needs Pillow + numpy. Deterministic.
 """
@@ -61,7 +63,7 @@ PS = PF = PR = 0     # set by _size: canvas, the centre of the top face (PF, PF)
 
 def _size(r):
     global PS, PF, PR
-    PR, PF, PS = r, r + 1, 2 * r + 8
+    PR, PF, PS = r, r + 1, 2 * r + 3
 STONE = {'face': (60, 61, 68), 'lit': (90, 91, 100), 'lip': (74, 75, 83), 'wall_r': (44, 45, 51),
          'wall_d': (34, 35, 40), 'base': (25, 25, 29), 'groove': (40, 41, 47)}
 
@@ -163,6 +165,23 @@ class Slab:
         feet = (((xx - PF - 1) / 7.5) ** 2 + ((yy - PF - 0.5) / 3.2) ** 2 <= 1) & self.solid & checker
         self.rgb[feet] *= 0.8
 
+    def ground_shadow(self, footprint):
+        """a faint ground shadow one pixel all around the footprint, darker (dithered) along its lower right base, and
+        a few checker pixels under the feet"""
+        ring = footprint.copy()
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                ring |= np.roll(np.roll(footprint, dy, 0), dx, 1)
+        ring &= ~self.solid
+        xx, yy = _grid()
+        checker = ((xx - 0.5 + yy - 0.5) % 2) == 0
+        base = _shift(footprint, 1) & ring
+        self.alpha[ring] = 0.18
+        self.alpha[base] = np.where(checker[base], 0.55, 0.30)
+        self.rgb[ring] = 0
+        feet = (((xx - PF) / 7.5) ** 2 + ((yy - PF) / 3.2) ** 2 <= 1) & self.solid & checker
+        self.rgb[feet] *= 0.8
+
     def image(self):
         img = np.zeros((PS, PS, 4), np.float32)
         img[..., :3] = self.rgb
@@ -212,15 +231,28 @@ def platform_runes():
 
 
 def platform_octagon():
-    """a two-step octagonal dais: a wide low step and a smaller top, each two pixels thick"""
+    """a two-step octagonal dais, both steps centred on the feet point (an equal rim on every side, seen from above),
+    each one pixel thick (the height cue down and right, the light from the upper left), a faint ground shadow one
+    pixel all around it and darker along its lower right base. Its whole silhouette is centred on the feet point within
+    half a pixel (the wall adds one pixel down and right): `silhouette_centre`, checked by `check_core`. The first
+    version had its top step 2 pixels up and left of its lower step and 2-pixel walls and a 2-pixel shadow down and
+    right: the dais read 3.5 pixels down and right of the feet (owner, 2026-10-13: "still misaligned")."""
     s = Slab(5)
-    low = _octagon(PF + 2, PF + 2, PR)
-    s.block(low, 2, (PF + 2, PF + 2))
-    s.groove(_octagon(PF + 2, PF + 2, PR - 2) & ~_octagon(PF + 2, PF + 2, PR - 3))
+    low = _octagon(PF, PF, PR)
+    s.block(low, 1, (PF, PF))
+    s.groove(_octagon(PF, PF, PR - 2) & ~_octagon(PF, PF, PR - 3))
     top = _octagon(PF, PF, PR - 6)
-    s.block(top, 2, (PF, PF))
-    s.shadow(_shift(low, 2))
+    s.block(top, 1, (PF, PF))
+    s.ground_shadow(low | _shift(low, 1))
     return s.image()
+
+
+def silhouette_centre(img):
+    """the centre of the box around every visible pixel (shadow included), in pixel coordinates (a pixel i spans
+    i..i+1), x and y"""
+    a = np.asarray(img)[..., 3] > 0
+    ys, xs = np.nonzero(a)
+    return (xs.min() + xs.max() + 1) / 2, (ys.min() + ys.max() + 1) / 2
 
 
 PLATFORMS = {'slab': platform_slab, 'runes': platform_runes, 'octagon': platform_octagon}
@@ -232,9 +264,19 @@ def check_core():
     core = open(os.path.join(REPO, 'client', 'overlay', 'modules', 'client_chaos_charselect',
                              'charselect_core.lua')).read()
     for r, name in SIZES:
-        want = "{ r = %d, size = %d, feet = %d, image = '%s' }" % (r, 2 * r + 8, r + 1, name)
+        _size(r)
+        want = "{ r = %d, size = %d, feet = %d, image = '%s' }" % (r, PS, PF, name)
         if want not in core:
             sys.exit('charselect_core.lua must list: ' + want)
+        # the feet point (the top face's centre) on the centre of the whole silhouette, shadow included
+        img = PLATFORMS[PLATFORM]()
+        cx, cy = silhouette_centre(img)
+        box = Image.fromarray((np.asarray(img)[..., 3] > 0).astype(np.uint8)).getbbox()
+        if box != (0, 0, PS, PS):
+            # charselect_core_test.lua checks the feet against the image size: the silhouette must fill the canvas
+            sys.exit('%s: the silhouette %s does not fill the canvas %dx%d' % (name, box, PS, PS))
+        if abs(cx - PF) > 0.5 or abs(cy - PF) > 0.5:
+            sys.exit('%s: the feet point (%d, %d) is not the silhouette centre (%.1f, %.1f)' % (name, PF, PF, cx, cy))
     if 'C.SHADOW = { w = %d, h = %d }' % SHADOW not in core:
         sys.exit('charselect_core.lua must say: C.SHADOW = { w = %d, h = %d }' % SHADOW)
 
