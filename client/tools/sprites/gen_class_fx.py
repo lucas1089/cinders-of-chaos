@@ -10,7 +10,9 @@
 Our own procedural art, drawn here frame by frame: discs, capsules, triangles, polygons and rings on a 4x supersample,
 quantised per material to hard colour ramps with a dark outline, in the oblique view of the pair (a point at height h
 is drawn 0.85 h up and 0.3 h left). No pixel of any other game, client or reference sheet is used, and no painting
-service is called: the build is plain Python and deterministic (fixed seeds per effect).
+service is called: the build is plain Python and deterministic (fixed seeds per effect) for one Pillow and numpy
+version. The checked-in strips were made with Pillow 12.3.0 and numpy 2.5.3; Pillow's polygon fill differs between
+versions, so CI checks with those (a rebuild with others changes the strips and then needs a new sprite pair).
 
 Rules every strip is checked against (build stops otherwise): alpha 0 / 255; every frame but the last has art; the
 last frame is empty; nothing touches the frame's edge; the 1x1 area effects (sent on every tile of an area) keep at
