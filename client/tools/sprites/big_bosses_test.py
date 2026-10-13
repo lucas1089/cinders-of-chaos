@@ -80,6 +80,17 @@ with tempfile.TemporaryDirectory() as t:
     sh = BB.RV.sheet(BB.layout(), frames)
     ok(sh.shape == (12 * 128, 4 * 128, 4), 'sheet: 12 rows of 4 directions')
 
+# a stride walk: frames 0, 2, 4, 6 of each half, the halves' first frames are the key poses
+with tempfile.TemporaryDirectory() as t:
+    for tag, base_v in (('A', 10), ('B', 100)):
+        fr = [blob(128, (40, 40, 90, 120), (base_v + i, 0, 0)) for i in range(9)]
+        json.dump({'last_response': {'images': [png(f) for f in fr]}}, open(os.path.join(t, tag + '.json'), 'w'))
+    w, keys = BB.walk_frames({'stride': [{'tag': 'A'}, {'tag': 'B'}]}, t)
+    ok([int(f[60, 60, 0]) for f in w] == [10, 12, 14, 16, 100, 102, 104, 106], 'stride frame order')
+    ok([int(k[60, 60, 0]) for k in keys] == [10, 100], 'stride key poses')
+    w, keys = BB.walk_frames({'tag': 'A'}, t)
+    ok([int(f[60, 60, 0]) for f in w] == list(range(11, 19)) and keys == [], 'plain walk: frames 1-8')
+
 # loose props away from the body are dropped, the body and what is near it stay
 body = blob(128, (40, 40, 90, 120), (100, 100, 100))
 a = body.copy()

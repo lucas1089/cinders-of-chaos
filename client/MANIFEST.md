@@ -1299,8 +1299,16 @@ are stock art and were left out.
 - Painting: for a 3x3 base one "Edit images (Pro)" call over our four idle frames scaled to the 128 px canvas; then per
   direction one "Animate with text (v3)" call for the walk (8 frames) and one for the idle (4 frames), each from that
   direction's idle frame. Prompts and seeds per call in the spec `monster_looks/big_bosses.json`; raw results outside git.
+- Second walk pass (owner approved): where the legs barely moved, the walk is now a stride between two of the look's
+  own walk phases (Animate with text, first and last frame, phase a to b and back; frames 0, 2, 4, 6 of each half):
+  Sanctum Warden all four directions (phases 1 and 2), Obsidian Colossus north and west (phases 0 and 1), Crypt
+  Dreadknight all four (two stride poses of its 4x4 repaint, left and right leg forward, Edit images). Thalcyra east and
+  west use a re-animation closed on the source frame (steadier silhouette). Colossus east and south keep the first walk
+  (their strides grew lava flare blobs); the Abyssal Sovereign floats and keeps its walk. Calls tried and not used are
+  listed per look in the spec (`tried_not_used`).
 - `big_bosses.py build` (deterministic): alpha 0 / 255 and specks dropped, one shift per direction against its source
-  frame (the animations drift), one vertical shift onto the base's feet line moved to the 4x4 canvas, a light grade,
+  frame (the animations drift), pixels over 8 px from the source frame or a stride's key poses and islands under 12 px
+  dropped (loose sparks and props), one vertical shift onto the base's feet line moved to the 4x4 canvas, a light grade,
   one palette per look (32 colours plus up to 4 glow accents), a dark rim on bright edges. Sheets
   `art_import/big_bosses/<key>.png`: idle phases 0-3 then walk phases 0-7, one row each, columns north, east, south,
   west, 128 px cells; rows in `art_import/big_bosses.csv` (groups 0 / 1, exact 128, 300 ms per phase, no flags);

@@ -87,10 +87,21 @@
    "speck": 4,
    "walk": [
     {
-     "tag": "colossus_walk_d0",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9107,
-     "prompt": "the magma golem walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "colossus_key_d0_ab",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9407,
+       "prompt": "the magma golem walking away from the viewer, seen from behind: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "colossus_key_d0_ba",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9408,
+       "prompt": "the magma golem walking away from the viewer, seen from behind: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "colossus_walk_d0"
     },
     {
      "tag": "colossus_walk_d1",
@@ -105,11 +116,30 @@
      "prompt": "the magma golem walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
     },
     {
-     "tag": "colossus_walk_d3",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9110,
-     "prompt": "the magma golem walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "colossus_key_d3_ab",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9437,
+       "prompt": "the magma golem walking to the left: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "colossus_key_d3_ba",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9438,
+       "prompt": "the magma golem walking to the left: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "colossus_walk_d3"
     }
+   ],
+   "tried_not_used": [
+    "colossus_walk2_d0",
+    "colossus_key_d1_ab (lava flare blobs)",
+    "colossus_key_d1_ba (lava flare blobs)",
+    "colossus_key_d2_ab (lava flare blobs)",
+    "colossus_key_d2_ba (lava flare blobs)",
+    "colossus_walk2_d2"
    ],
    "idle": [
     {
@@ -161,28 +191,97 @@
    },
    "walk": [
     {
-     "tag": "dread_walk_d0",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9111,
-     "prompt": "the armoured dread knight walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "dread_stride_d0_lr",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9611,
+       "prompt": "the armoured dread knight walking away from the viewer, seen from behind: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "dread_stride_d0_rl",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9612,
+       "prompt": "the armoured dread knight walking away from the viewer, seen from behind: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "dread_walk_d0"
     },
     {
-     "tag": "dread_walk_d1",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9112,
-     "prompt": "the armoured dread knight walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "dread_stride_d1_lr",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9621,
+       "prompt": "the armoured dread knight walking to the right: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "dread_stride_d1_rl",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9622,
+       "prompt": "the armoured dread knight walking to the right: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "dread_walk_d1"
     },
     {
-     "tag": "dread_walk_d2",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9113,
-     "prompt": "the armoured dread knight walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "dread_stride_d2_lr",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9631,
+       "prompt": "the armoured dread knight walking toward the viewer: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "dread_stride_d2_rl",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9632,
+       "prompt": "the armoured dread knight walking toward the viewer: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "dread_walk_d2"
     },
     {
-     "tag": "dread_walk_d3",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9114,
-     "prompt": "the armoured dread knight walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "dread_stride_d3_lr",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9641,
+       "prompt": "the armoured dread knight walking to the left: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "dread_stride_d3_rl",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9642,
+       "prompt": "the armoured dread knight walking to the left: it shifts its weight and swings the other leg forward, a heavy armoured stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "dread_walk_d3"
+    }
+   ],
+   "tried_not_used": [
+    "dread_walk2_d0",
+    "dread_walk2_d1",
+    "dread_walk2_d2",
+    "dread_walk2_d3",
+    "dread_key_d0_ab",
+    "dread_key_d0_ba",
+    "dread_key_d1_ab",
+    "dread_upwalk_a",
+    "dread_upwalk_b"
+   ],
+   "stride_poses": [
+    {
+     "tag": "dread_pose_l",
+     "endpoint": "/edit-images-v2",
+     "seed": 8131,
+     "prompt": "change only the legs: the same armoured dread knight caught mid-stride while walking, its left leg stepping forward and the right leg back, knees bent; the rest of the body, the armour, the helm, the sword, the size, the colours and the facing direction stay exactly the same; dark fantasy pixel art, crisp pixels, dark outline, no blur"
+    },
+    {
+     "tag": "dread_pose_r",
+     "endpoint": "/edit-images-v2",
+     "seed": 8132,
+     "prompt": "change only the legs: the same armoured dread knight caught mid-stride while walking, its right leg stepping forward and the left leg back, knees bent; the rest of the body, the armour, the helm, the sword, the size, the colours and the facing direction stay exactly the same; dark fantasy pixel art, crisp pixels, dark outline, no blur"
     }
    ],
    "idle": [
@@ -229,29 +328,80 @@
    "speck": 4,
    "walk": [
     {
-     "tag": "warden_walk_d0",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9115,
-     "prompt": "the moss stone golem walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "warden_key_d0_ab",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9415,
+       "prompt": "the moss stone golem walking away from the viewer, seen from behind: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "warden_key_d0_ba",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9416,
+       "prompt": "the moss stone golem walking away from the viewer, seen from behind: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "warden_walk_d0"
     },
     {
-     "tag": "warden_walk_d1",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9116,
-     "prompt": "the moss stone golem walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "warden_key_d1_ab",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9425,
+       "prompt": "the moss stone golem walking to the right: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "warden_key_d1_ba",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9426,
+       "prompt": "the moss stone golem walking to the right: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "warden_walk_d1"
     },
     {
-     "tag": "warden_walk_d2",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9117,
-     "prompt": "the moss stone golem walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "warden_key_d2_ab",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9415,
+       "prompt": "the moss stone golem walking toward the viewer: it shifts its weight and swings the other front leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "warden_key_d2_ba",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9436,
+       "prompt": "the moss stone golem walking toward the viewer: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "warden_walk_d2"
     },
     {
-     "tag": "warden_walk_d3",
-     "endpoint": "/animate-with-text-v3",
-     "seed": 9118,
-     "prompt": "the moss stone golem walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "stride": [
+      {
+       "tag": "warden_key_d3_ab",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9445,
+       "prompt": "the moss stone golem walking to the left: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      },
+      {
+       "tag": "warden_key_d3_ba",
+       "endpoint": "/animate-with-text-v3",
+       "seed": 9446,
+       "prompt": "the moss stone golem walking to the left: it shifts its weight and swings the other leg forward, a heavy stomping stride; it keeps its size, colours and place"
+      }
+     ],
+     "replaces": "warden_walk_d3"
     }
+   ],
+   "tried_not_used": [
+    "warden_walk2_d0",
+    "warden_walk2_d1",
+    "warden_walk2_d2",
+    "warden_walk2_d3",
+    "warden_int_d2_a (/interpolation-v2 test: 2 frames for 10 generations)"
    ],
    "idle": [
     {
@@ -309,10 +459,12 @@
      "prompt": "the storm seer walking away from the viewer, seen from behind: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
     },
     {
-     "tag": "seer_walk_d1",
+     "tag": "seer_walk2_d1",
      "endpoint": "/animate-with-text-v3",
-     "seed": 9119,
-     "prompt": "the storm seer walking to the right: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "seed": 9219,
+     "prompt": "the storm seer, white robes, cyan halo, lightning staff, walking to the right: a clear walk cycle, the left leg steps forward then the right leg steps forward, knees bend and each foot lifts off the ground in turn, arms and body sway with the steps; the head and torso keep their shape, size, colours and place; the last frame returns to the first pose",
+     "replaces": "seer_walk_d1",
+     "last_frame": "the source frame"
     },
     {
      "tag": "seer_walk_d2",
@@ -321,10 +473,12 @@
      "prompt": "the storm seer walking toward the viewer: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
     },
     {
-     "tag": "seer_walk_d3",
+     "tag": "seer_walk2_d3",
      "endpoint": "/animate-with-text-v3",
-     "seed": 9121,
-     "prompt": "the storm seer walking to the left: a heavy looping walk cycle with clear alternating steps, the body bobs slightly; it keeps its size, colours and place"
+     "seed": 9221,
+     "prompt": "the storm seer, white robes, cyan halo, lightning staff, walking to the left: a clear walk cycle, the left leg steps forward then the right leg steps forward, knees bend and each foot lifts off the ground in turn, arms and body sway with the steps; the head and torso keep their shape, size, colours and place; the last frame returns to the first pose",
+     "replaces": "seer_walk_d3",
+     "last_frame": "the source frame"
     }
    ],
    "idle": [

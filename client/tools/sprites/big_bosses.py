@@ -12,7 +12,10 @@ with prompts and seeds, the post-processing numbers. Per guardian:
     canvas: the same creature repainted at 4x4 with finer detail;
   * per direction `walk` and `idle`: "Animate with text (v3)" from that direction's idle frame (the repainted one, or
     our own for a 4x4 base): 8 walk frames and 4 idle frames. The first image of each result is the input frame and is
-    not used.
+    not used. A walk may instead be a `stride`: two "Animate with text (v3)" calls between two of our own walk phases
+    as first and last frame (phase a to b, then b to a), so the legs follow the look's own stride; for a repainted 3x3
+    base the two key poses are its repainted idle frames edited mid-stride, left and right leg forward
+    (`stride_poses`, "Edit images (Pro)"). Frames 0, 2, 4, 6 of each half make the 8-frame cycle.
 The raw results stay out of git (RAW_DIR/<tag>.json); the post-processed sheets are committed:
 art_import/big_bosses/<key>.png, rows in art_import/big_bosses.csv (things.csv format, one outfit row per look) and
 monster_looks/big_boss_picks.csv (picks.csv rows, family bigguardian; append them to picks.csv in the same step as the
@@ -114,22 +117,37 @@ def clip_to(a, ref, n):
     return RV.cut_alpha(out, 12)
 
 
+def walk_frames(w, raw_dir):
+    """the 8 walk frames of one direction and the key poses they were drawn between:
+    {'tag': T}: frames 1-8 of one animation from the idle frame (its frame 0 is the input);
+    {'stride': [A, B]}: two half strides between two of our own walk phases (A from phase a to b, B back from b to a):
+    frames 0, 2, 4, 6 of A, then 0, 2, 4, 6 of B (frame 0 of each is its key pose)"""
+    if 'stride' in w:
+        a, b = (images(raw_dir, j['tag']) for j in w['stride'])
+        assert len(a) >= 7 and len(b) >= 7, 'a half stride needs 7 frames or more'
+        return [a[0], a[2], a[4], a[6], b[0], b[2], b[4], b[6]], [a[0], b[0]]
+    return images(raw_dir, w['tag'])[1:1 + WALK], []
+
+
 def process(v, base_dir, raw_dir):
     """{(group, direction, phase): RGBA array} of spec entry `v`, plus a report"""
     src = sources(v, base_dir, raw_dir)
     frames, report = {}, {'shift': {}, 'iou': {}}
     for d in range(4):
-        walk = images(raw_dir, v['walk'][d]['tag'])[1:1 + WALK]
+        walk, keys = walk_frames(v['walk'][d], raw_dir)
         idle = images(raw_dir, v['idle'][d]['tag'])[1:1 + IDLE]
         assert len(walk) == WALK and len(idle) == IDLE, (v['key'], d, 'frame count', len(walk), len(idle))
         got = [(0, p, a) for p, a in enumerate(idle)] + [(1, p, a) for p, a in enumerate(walk)]
         got = [(g, p, RV.cut_alpha(on_canvas(a), v.get('speck', 4))) for g, p, a in got]
         ref = src[d].copy()
         ref[..., 3] = np.where(ref[..., 3] > 0, 255, 0)
+        near = ref.copy()   # what a frame may cover: the source frame and a stride's key poses
+        for k in keys:
+            near[..., 3] = np.maximum(near[..., 3], np.where(on_canvas(k)[..., 3] > 0, 255, 0).astype(np.uint8))
         dx, dy = RV.best_shift([(a, ref) for _, _, a in got])
         report['shift'][d] = (dx, dy)
         for g, p, a in got:
-            frames[(g, d, p)] = clip_to(RV.shift(a, dx, dy), ref, v.get('reach', 8))
+            frames[(g, d, p)] = clip_to(RV.shift(a, dx, dy), near, v.get('reach', 8))
             report['iou'][(g, d, p)] = round(RV.iou(frames[(g, d, p)], ref), 3)
     low = max(RV.feet(s) for s in src)
     fy = int(np.clip(feet_line(base_dir, v['base']) - low, -8, 8)) if v.get('feet', True) else 0
