@@ -6508,10 +6508,10 @@ disabled, so no script could see a trade) and makes `Player:onMoveItem` (`data/e
 the return value of the last `onMoveItem` callback. Without the tool the server logs a warning at startup and only the
 party, bank and unique rules apply.
 
-**How a character joins (and why this way).** Characters are created on the website: the base server has no account
-manager, no in-game creation and the client has no creation screen (the base ships `ADD_DEPOT_BOXES_NEW_PLAYERS.txt`,
-a snippet for the website's `users.php`). A creation option would need website work, so a fresh character opts in in
-game: Adventure > Season, Join, then the confirmation within 60 s (the window is the only way in: there is no chat command for
+**How a character joins (and why this way).** Characters are created on the website (also from the client's Create
+character, which goes through the website): the base server has no account manager and no in-game creation (the base ships `ADD_DEPOT_BOXES_NEW_PLAYERS.txt`,
+a snippet for the website's `users.php`). A fresh character opts in in game (or at creation from the client, below):
+Adventure > Season, Join, then the confirmation within 60 s (the window is the only way in: there is no chat command for
 players). The window follows level ups, so an open confirmation closes by itself once the character passes `join.maxLevel`.
 Allowed while a season runs for a character of level 7 or lower (`join.maxLevel`; level 8 comes within minutes) that never
 joined a season, has an empty depot, inbox and store inbox, is not in a party and owns no house. Joining destroys every
@@ -6519,6 +6519,16 @@ carried item, empties the bank balance, the Chaos bank stars and the supply stas
 over before the join comes along), then gives the new-player kit again when the character had received it. The flag is a
 row in `chaos_season_players`; the look text says "He is a Season of Ash character [S1]." (after the season: "a veteran
 of ...").
+
+**Joining at creation (the client's Create character).** The client's character creation (website/README.md "Client
+API") can pick the running season and a mode. The website then writes a row in `chaos_season_requests` (player,
+season, mode; `sql/chaos_season.sql`, also created at startup and by the website's plugin). At the character's first
+login `S.applyRequest` (season.lua, from the login event) runs the in-game join: `S.joinCheck` for the character
+now, the join itself (`doJoin`: nothing to wipe on a new character) and the mode (`S.modesPick` / `S.modesJoined`),
+so the realm, mode and Hardcore caches are the in-game join's. The row is deleted either way; when the season ended
+before the first login, or the character may no longer join (a depot filled by `CHAOS_DEPOT_BOXES=1`), the player is
+told why (`S.requestOutcome` in `season_core.lua`, tested in `tests/season_test.lua`) and plays as a standard
+character. The website accepts only the season running at creation and Hardcore modes only with "I understand".
 
 **Season record.** `seasons = {{id, name, tag, start, finish, hour, modifier}}`: dates as YYYYMMDD (at `hour`, server
 time) or unix time. The modifier is shown in the window; `expMult` multiplies the monster experience of that season's
@@ -9491,7 +9501,9 @@ Templar the windborn colossus armor. No Lua errors.
 Every class has its own look, male and female (list and looks per class: docs/CLASSES.md "Content per class"; art:
 client/MANIFEST.md "Class looks pair", "things_custom19" and "Class looks pair 20").
 - Given and worn. First login and every class change: the class's look and its base class's look are given and the
-  class's look is put on. Other logins: looks of the class not owned yet are given; the worn look stays. Colours and
+  class's look is put on. The website (form and the client's Create character) already writes the class look with
+  both addons into a new character's row (website/README.md "Client API"), so the character lists show it before the
+  first login; the first login then gives the look as above. Other logins: looks of the class not owned yet are given; the worn look stays. Colours and
   mount stay the player's. Nothing is taken away. A store outfit the player wears stays on; the class look is only the
   default.
 - Addons. A class look is worn with both addons (`ChaosClassLooks.ADDONS` = 3). Each class look given comes with both

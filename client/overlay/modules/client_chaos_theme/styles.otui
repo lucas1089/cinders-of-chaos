@@ -289,6 +289,40 @@ ChaosComboBox < UIComboBox
     color: #6b6258
     opacity: 0.8
 
+// The drop-down list of a ChaosComboBox: UIComboBox creates "<its style>PopupMenu" (or "PopupScrollMenu") and
+// UIPopupMenu "<that style>Button" per option, so these four must exist or the list never opens
+// ("'ChaosComboBoxPopupMenu' is not a defined style", found with the character select's season box).
+ChaosComboBoxPopupMenu < ComboBoxPopupMenu
+  image-source: /images/chaos/panel_dark
+  image-clip: 0 0 0 0
+  image-border: 6
+  padding: 3
+
+ChaosComboBoxPopupMenuButton < ComboBoxPopupMenuButton
+  height: 18
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  $hover !disabled:
+    color: #f6cf72
+    background-color: #5a0a0a88
+  $disabled:
+    color: #6b6258
+
+ChaosComboBoxPopupScrollMenu < ComboBoxPopupScrollMenu
+  image-source: /images/chaos/panel_dark
+  image-clip: 0 0 0 0
+  image-border: 6
+
+ChaosComboBoxPopupScrollMenuButton < ComboBoxPopupScrollMenuButton
+  height: 18
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  $hover !disabled:
+    color: #f6cf72
+    background-color: #5a0a0a88
+  $disabled:
+    color: #6b6258
+
 // ---------------------------------------------------------------- separator
 ChaosSeparator < UIWidget
   image-source: /images/chaos/separator

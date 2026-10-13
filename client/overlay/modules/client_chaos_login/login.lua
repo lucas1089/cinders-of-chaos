@@ -833,6 +833,14 @@ local function onGameStart()
   if alive(enterGame) and enterGame:isVisible() then enterGame:hide() end
 end
 
+-- the character list opened while the splash still waited (a launcher or scripted login): the splash ends without the
+-- login panel, so its "CONNECTING..." line and spinner do not sit over the character select (client_chaos_charselect)
+function ChaosLogin.endSplash()
+  if not state.splash then return end
+  endSplash()
+  syncVisibility()
+end
+
 local function shouldSplash()
   if not SPLASH then return false end
   if g_game.isOnline() or g_game.isLogging() or G.characters then return false end

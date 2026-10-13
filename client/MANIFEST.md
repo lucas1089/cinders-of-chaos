@@ -97,6 +97,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_creatureinformation | none | engine APIs this client lacks | Not included |
 | client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`); self test `numbers_test.lua` runs in CI; not run in a client |
 | client_chaos_login | none | none | Login screen layout (see "Login screen" below); art from `tools/gen_login_art.py` (from the login artwork in `tools/art_src/`); tested in the Linux client at 1280x720, 1366x768, 1920x1080 and 1024x768. The living scene behind it (see "Login scene"): `loginscene_core.lua` (tested by `loginscene_core_test.lua` in CI), `loginscene.lua`; tested in the Linux client at 1280x720 and 1920x1080 |
+| client_chaos_charselect | none (HTTPS to the website's account API) | base patch 0050 (`Services.account`); base patch 0025 (the 10.98 list's outfits) | The character select and Create character (see "Character select" below); `charselect_core_test.lua` runs in CI; art from `tools/gen_charselect_art.py`; tested in the Linux client at 1280x720 and 1920x1080 |
 | client_chaos_updater | none (HTTPS from the website) | base patch 0031 | Signed updater on the login screen (see "Signed updater" below); `updater_core_test.lua` runs in CI; tested in the Linux client |
 | game_chaosguard | extended opcode 190 (JSON `hello {build, modules}`, client -> server, once per login) | base patch 0035 (`g_game.getChaosClientBuild`; the HMAC answer on opcode 189 is C++ only) | The client guard's Lua hello (server/README.md "Client guard"): the build and how many of our modules (`game_*`, `client_chaos_*`) are loaded; the server expects it within 30 s and at least 20 modules. `guardhello_test.lua` runs in CI; tested in the Linux client. Also holds `opcode_fuzz_test.lua`, the client half of the protocol fuzz test (every module's opcode handlers through base patch 0043's dispatcher, server/README.md "Protocol fuzz test") |
 
@@ -213,7 +214,68 @@ The login background can be a piece of our own world instead of the artwork: a r
   way `client_entergame` does at sign in (client version 1098 first, so the 10.98 features apply); sign in then finds
   it loaded.
 - Checked in the Linux client (Mesa software GL) at 1280x720 and 1920x1080: splash and panel over the scene, the art
-  setting, the switch to alternate and its fade to the artwork; screenshots outside the repository.
+  setting, the switch to alternate and its fade to the artwork; screenshots outside the repository. Patrols checked at
+  1280x720, 1920x1080 and 1024x768 (2026-10-13): every walker moved, no script errors, drawing order right as they
+  pass each other.
+
+## Character select (new, `client_chaos_charselect`, base patch 0050)
+The stock character list (a restyled table, base patch 0021) is replaced on screen by a full-screen character
+select over the login scene; the stock module stays loaded and keeps every function. Lua and OTUI only.
+- **How it hooks in.** `charselect.lua` wraps `CharacterList.show / hide / isVisible / destroy /
+  rebuildCharactersList`: when the stock window opens before the game it is hidden and the new screen shows (input
+  lock on it); in the game (switching characters) the stock window shows as before; the setting
+  `chaosCharSelect = stock` keeps the stock window everywhere. The cards follow the stock list's rows (its sort and
+  pins); choosing a card focuses that row, so Play is the stock `CharacterList.doLogin()`. Back is the stock Cancel
+  (`CharacterList.hide(true)`), auto reconnect is `CharacterList.toggleAutoReconnect()`, the account status line is
+  read from the stock window, "Show hidden characters" is shown on and greyed as in the stock window (10.98 sends no
+  hidden flag), "Record session" is the same setting. Login queue, error boxes and the waiting window are the stock
+  ones. A scripted or launcher login that skipped "press any key" no longer leaves the splash's CONNECTING line over
+  the list (`ChaosLogin.endSplash` in `client_chaos_login/login.lua`).
+- **Cards.** Class badge (`tools/gen_charselect_art.py`: the website's class badges at 40 px), name, class and
+  ascension ("Juggernaut (Warrior)"), level, world, last login ("Last played 2 hours ago", from the website), season
+  tag. Mouse: click chooses, double-click plays, the wheel scrolls. Keys: Up / Down / Left / Right, Home / End,
+  Page Up / Page Down choose, Enter plays, Escape goes back.
+- **The chosen character** stands large on an ember pedestal (3 or 4 times its size: `previewTile`, whole pixels per
+  sprite pixel), walks in place for a moment when chosen, then idles; a click on it turns it. Name, class and level,
+  world, season and last login under it.
+- **Outfit, and the "generic outfit" seen before.** The 10.98 character list of our login server carries each
+  character's look type, colours and addons (base patch 0025 reads them; the stock list drew them). What looked
+  generic was the data: characters made on the website kept ZnoteX's starter outfit (look 128 / 136, the same
+  colours for everyone) until their first login put the class look on, and the test characters had been inserted
+  with one look for all. Fixed at the cause on the website: a new character gets its class's look with both addons at
+  creation (website/README.md "Client API"). The list cannot carry wings, aura and shader (the base server keeps them
+  in `players.wings_id` / `aura_id` / `shader_id`); the character select adds them from the website's account API
+  (`accountapi.lua`, one HTTPS login per character select, then a token), so a changed login packet was not needed.
+  `CharSelectCore.mergeOutfit`: the list's look type, colours and addons win, the website adds wings, aura, shader.
+- **World name.** A card shows the world name the login server sends only when it is a name of the client's own
+  `Servers` config; anything else (a test server whose `config.lua` still has its base data's `serverName`) shows the
+  chosen server's name instead. Production sets `serverName` with `server/tools/prod_config.py` (docs/LAUNCH.md).
+- **Create character** (`charcreate.lua`): name with the website's rules as a hint (letters and spaces, 3-20, up to
+  3 words, no one-letter word), the seven classes as badges (Monk, Necromancer and Templar greyed with "locked for
+  this account" unless the account unlocked them), Male / Female with a walking preview of the class look in the
+  starter colours, the season (none, or a mode of the running season; Hardcore needs "I understand"), the slots
+  used. The website checks everything again with the website form's own code; its errors show in the window. After
+  a creation the character list is read again from the login server and the new character is chosen. Without
+  `Services.account` the button is off with a tooltip pointing to the website.
+- **Credentials.** The account name and password the stock client already holds in memory for the login (`G.account`,
+  `G.password`) go to the website once per character select, over HTTPS; the token it answers lives in memory only
+  and is ended on the site when the select goes back to the login screen. Nothing new is written to the settings.
+- **Theme fix found here.** A `ChaosComboBox` never opened its list: `UIComboBox` creates the style
+  `<style>PopupMenu` and `UIPopupMenu` `<that>Button`, and `client_chaos_theme/styles.otui` had neither
+  ("'ChaosComboBoxPopupMenu' is not a defined style"; the loot filter's and ground labels' combo boxes had the same
+  problem). The four styles (`ChaosComboBoxPopupMenu`, `...PopupMenuButton`, `...PopupScrollMenu`,
+  `...PopupScrollMenuButton`) are now in the theme.
+- **Tests.** `charselect_core_test.lua` (LuaJIT and Lua 5.3, CI): classes against `chaos_constants.lua`, icons, card
+  text, last login, world names, outfit merge, navigation, preview scale, name hints, requests, error texts, URLs.
+  `website/tests/chaos_client_api_test.php` for the site's side. Run in the Linux client (base patches 0001-0045,
+  0048-0050, Xvfb, software OpenGL) at 1280x720 and 1920x1080 against a local test server (a test build of the
+  engine with the current Chaos scripts; the login server's 10.98 list) and the local site (pinned ZnoteX with every patch, PHP's built-in server, MariaDB):
+  the cards and the large character with wings and aura from the site, arrow keys / Home / click choosing the stock
+  row, Escape and Back to the login screen (logo back), a logout returning to the select; Create character: the
+  locked Monk and Templar, the Necromancer unlocked, the female preview, the season list, Hardcore refused without
+  "I understand", a taken name and a sixth character refused by the site, then a Hardcore Self-Found Necromancer
+  created, the list read again with it chosen (class look, [S1]), and at its first login the server joined it to the
+  season with that mode (`chaos_season_players`, `chaos_season_modes`, the request row gone).
 
 ## Paragon panel (new)
 `game_passivetree` has a Paragon button next to Apply Plan / Reset. It opens a `ChaosWindow` (ornate skin: `ChaosPanelDark` per category, `ChaosButton` +/-, Apply / Reset / Close) inside the tree window, built from the server's `paragonState` (`paragon.lua`, `paragon.otui`): points available / spent / total, four categories with two stats each (points / max, value / cap, tooltips with the per-point value), shift-click for 5 points, Apply sends the absolute allocation (`paragonApply`), Reset asks first (level x 250 gold, `paragonReset`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list gets a Paragon section. The +/- maths are in `paragonmath.lua` (tested by `paragonmath_test.lua`); the server validates everything (server/README.md "Paragon"). Checked in the Linux client at 1280x800.

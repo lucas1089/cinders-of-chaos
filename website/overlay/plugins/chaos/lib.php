@@ -139,6 +139,55 @@ function chaos_line_ids(int $base): array {
 	return array_merge(array($base), array_keys($lines[$base]['asc']));
 }
 
+/**
+ * The class look a character of this class and sex wears (class_looks_core.lua: L.looks with the pair switches
+ * L.PAIR19_LOOKS / L.PAIR20_LOOKS and their lists), or null (no server data, unknown class). Sex 0 = female.
+ * New characters get it at creation (plugin.php), so the character list shows the class's look before the first
+ * login; the game server puts the same look on at that login (class_looks.lua).
+ */
+function chaos_class_look(int $vocation, int $sex): ?int {
+	$text = chaos_read_server_file('scripts/chaos/class_looks_core.lua');
+	if ($text === '') {
+		return null;
+	}
+	$table = static function (string $name) use ($text): array {
+		$out = array();
+		if (preg_match_all('/\[(\d+)\]\s*=\s*\{([^{}]*)\}/', chaos_lua_block($text, $name), $m, PREG_SET_ORDER)) {
+			foreach ($m as $e) {
+				$out[(int)$e[1]] = array('male' => (int)(chaos_lua_field($e[2], 'male') ?? 0), 'female' => (int)(chaos_lua_field($e[2], 'female') ?? 0));
+			}
+		}
+		return $out;
+	};
+	$pick = $table('looks')[$vocation] ?? null;
+	foreach (array(19, 20) as $pair) {
+		$swap = $table('pair' . $pair . 'Looks')[$vocation] ?? null;
+		if ($swap !== null && preg_match('/^L\.PAIR' . $pair . '_LOOKS\s*=\s*true\b/m', $text)) {
+			$pick = $swap;
+			break;
+		}
+	}
+	if ($pick === null) {
+		return null;
+	}
+	$look = $sex === 0 ? $pick['female'] : $pick['male'];
+	return $look > 0 ? $look : null;
+}
+
+/** Puts the class look on a new character (by name): look type of its class and sex, both addons (ChaosClassLooks.ADDONS). */
+function chaos_apply_class_look(string $name): bool {
+	$row = $name === '' ? false : db()->fetchOne('SELECT `id`, `vocation`, `sex` FROM `players` WHERE `name` = ? LIMIT 1;', [$name]);
+	if (!is_array($row)) {
+		return false;
+	}
+	$look = chaos_class_look((int)$row['vocation'], (int)$row['sex']);
+	if ($look === null) {
+		return false;
+	}
+	db()->execute('UPDATE `players` SET `looktype` = ?, `lookaddons` = 3 WHERE `id` = ?;', [$look, (int)$row['id']]);
+	return true;
+}
+
 // ---------------------------------------------------------------------------
 // Database
 // ---------------------------------------------------------------------------

@@ -11,6 +11,8 @@
  *  - Character slots: $config['max_characters'] is the account's limit (free
  *    slots of pact_config.lua plus Character Slots bought in the store), so
  *    createcharacter.php refuses one more character server-side.
+ *  - New characters wear their class's look (class_looks_core.lua, both addons) from the start, not ZnoteX's starter
+ *    outfit, on the character.created hook (website form and client, chaos_client_api.php).
  *  - Optional starter depot boxes for new characters (the base server's
  *    ADD_DEPOT_BOXES_NEW_PLAYERS snippet), on the character.created hook. Off by
  *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
@@ -84,6 +86,11 @@ if ($chaosAccountId > 0) {
 unset($chaosAccountId);
 
 // ---------------------------------------------------------------- new characters
+// The class's look (class_looks_core.lua, both addons) instead of ZnoteX's starter outfit, so the character lists of
+// the client and the site show the class from the start; the game server puts the same look on at the first login.
+znote_hook_register('character.created', static function (array $data): void {
+	chaos_apply_class_look((string)($data['name'] ?? ''));
+});
 znote_hook_register('character.created', static function (array $data): void {
 	if (!chaos_cfg('depot_boxes', false) || !chaos_table_exists('player_depotitems') || !chaos_table_exists('towns')) {
 		return;

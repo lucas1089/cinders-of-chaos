@@ -110,3 +110,52 @@ CREATE TABLE IF NOT EXISTS `chaos_legal_acceptance` (
   PRIMARY KEY (`id`),
   KEY `chaos_legal_acceptance_account` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- The client's account API (client_api_lib.php, README "Client API"). Website only.
+-- Session tokens: the SHA-256 of the random token (never the token), the account, the mark of its password hash at
+-- login (a password change ends the token), the address it came from, and when it ends.
+CREATE TABLE IF NOT EXISTS `chaos_client_tokens` (
+  `token_hash` char(64) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `pass_mark` varchar(96) NOT NULL,
+  `ip` varchar(64) NOT NULL DEFAULT '',
+  `created` int(10) unsigned NOT NULL,
+  `expires` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`token_hash`),
+  KEY `chaos_client_tokens_account` (`account_id`),
+  KEY `chaos_client_tokens_expires` (`expires`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Requests per address (the per-minute limit) and characters created per account and address (the hourly limits).
+-- Rows older than a day are deleted by the site.
+CREATE TABLE IF NOT EXISTS `chaos_client_api_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ip` varchar(64) NOT NULL,
+  `account_id` int(11) NOT NULL DEFAULT 0,
+  `action` varchar(16) NOT NULL,
+  `ok` tinyint(1) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_client_api_log_ip` (`ip`, `created`),
+  KEY `chaos_client_api_log_account` (`account_id`, `action`, `created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Nonces of login and create requests (a replayed request is refused), kept two hours.
+CREATE TABLE IF NOT EXISTS `chaos_client_nonces` (
+  `nonce` varchar(64) NOT NULL,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`nonce`),
+  KEY `chaos_client_nonces_created` (`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- A season join chosen when the character was created (server/sql/chaos_season.sql; the game server also creates it
+-- at startup). The game server joins the character at its first login with the in-game join (season.lua) and deletes
+-- the row.
+CREATE TABLE IF NOT EXISTS `chaos_season_requests` (
+  `player_id` int(11) NOT NULL,
+  `season` smallint(5) unsigned NOT NULL,
+  `mode` varchar(16) NOT NULL DEFAULT 'standard',
+  `requested_at` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`player_id`),
+  CONSTRAINT `chaos_season_requests_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

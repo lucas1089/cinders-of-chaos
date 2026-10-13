@@ -179,6 +179,26 @@ function S.joinCheck(info, cfg, now, ov)
 	return season, nil
 end
 
+-- A season join chosen when the character was created (the client's character creation on the website,
+-- table chaos_season_requests): season.lua carries it out at the character's first login with the in-game join.
+-- request = {season = id, mode = key}; joinSeason, reason = what S.joinCheck answers for the character then.
+-- Returns "join" when the requested season is the one the character may join now, else "drop" and the text for the
+-- player (the request is deleted either way).
+function S.requestOutcome(request, joinSeason, reason)
+	if not request then
+		return nil
+	end
+	if joinSeason and joinSeason.id == request.season then
+		return "join"
+	end
+	if joinSeason then
+		return "drop", string.format("The season chosen when this character was created is over. %s is running now: " ..
+			"Adventure > Season to join it.", joinSeason.name)
+	end
+	return "drop", "The season chosen when this character was created could not be joined: " .. tostring(reason or
+		"no season is running.")
+end
+
 -- Does joinCheck read info.items for this info? Only a character without a season row, at or below the join level,
 -- with requireEmptyDepot on. season.lua counts the stored items only then: counting opens every depot chest with
 -- player:getDepotChest, and the engine then rewrites that character's whole depot at every save and logout.

@@ -1,0 +1,494 @@
+// Cinders of Chaos character select (charselect.lua) and the create window (charcreate.lua).
+// Colours: the Chaos theme palette (client_chaos_theme/styles.otui). Art: /images/chaos/charselect/
+// (client/tools/gen_charselect_art.py).
+
+ChaosCharCard < UIWidget
+  height: 60
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover !checked:
+    image-source: /images/chaos/panel
+
+  $checked:
+    image-source: /images/chaos/panel_highlight
+
+  UIWidget
+    id: icon
+    size: 40 40
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 9
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: icon.right
+    anchors.right: season.left
+    margin-top: 6
+    margin-left: 10
+    text-auto-resize: false
+    height: 18
+    color: #e8c477
+    font: verdana-11px-rounded
+    phantom: true
+
+  UILabel
+    id: season
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 7
+    margin-right: 10
+    text-auto-resize: true
+    color: #e03a1e
+    font: verdana-11px-rounded
+    phantom: true
+
+  UILabel
+    id: line
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: parent.right
+    margin-right: 8
+    height: 14
+    color: #d6c9ae
+    font: verdana-11px-antialised
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.top: line.bottom
+    anchors.left: name.left
+    anchors.right: parent.right
+    margin-right: 8
+    height: 14
+    color: #8c8070
+    font: verdana-11px-antialised
+    phantom: true
+
+ChaosCharSelectScreen < UIWidget
+  id: chaosCharSelect
+  anchors.fill: parent
+  phantom: false
+  focusable: true
+  visible: false
+
+  UIWidget
+    id: footer
+    height: 66
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    image-source: /images/chaos/charselect/shade
+    phantom: false
+
+    UIWidget
+      id: accountIcon
+      size: 22 20
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-left: 22
+      margin-top: 10
+      image-clip: 0 0 22 20
+      phantom: true
+
+    UILabel
+      id: accountStatus
+      anchors.left: accountIcon.right
+      anchors.verticalCenter: accountIcon.verticalCenter
+      margin-left: 6
+      text-auto-resize: true
+      color: #d6c9ae
+      font: verdana-11px-antialised
+      phantom: true
+      $on:
+        color: #e03a1e
+
+    ChaosCheckBox
+      id: hiddenBox
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-left: 22
+      margin-bottom: 12
+      width: 200
+      !text: tr('Show hidden characters')
+      checked: true
+      enabled: false
+
+    ChaosCheckBox
+      id: recordBox
+      anchors.left: hiddenBox.right
+      anchors.bottom: parent.bottom
+      margin-left: 8
+      margin-bottom: 12
+      width: 130
+      !text: tr('Record session')
+
+    ChaosButton
+      id: autoReconnect
+      anchors.left: recordBox.right
+      anchors.verticalCenter: recordBox.verticalCenter
+      margin-left: 8
+      width: 150
+
+    ChaosButton
+      id: playButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 22
+      size: 130 34
+      !text: tr('Play')
+
+    ChaosButton
+      id: cancelButton
+      anchors.right: playButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 10
+      size: 96 28
+      !text: tr('Back')
+
+    ChaosButton
+      id: createButton
+      anchors.right: cancelButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 10
+      size: 150 28
+      !text: tr('Create character')
+
+  UIWidget
+    id: column
+    width: 372
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.bottom: footer.top
+    image-source: /images/chaos/charselect/shade
+    phantom: false
+
+    UILabel
+      id: title
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 62
+      height: 22
+      text-align: center
+      color: #e8c477
+      font: verdana-11px-rounded
+      !text: tr('Choose your character')
+      phantom: true
+
+    UILabel
+      id: count
+      anchors.top: title.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      text-align: center
+      color: #8c8070
+      font: verdana-11px-antialised
+      phantom: true
+
+    UIScrollArea
+      id: cards
+      anchors.top: count.bottom
+      anchors.left: parent.left
+      anchors.right: cardScroll.left
+      anchors.bottom: parent.bottom
+      margin-top: 10
+      margin-left: 16
+      margin-right: 6
+      margin-bottom: 12
+      vertical-scrollbar: cardScroll
+      layout:
+        type: verticalBox
+        spacing: 6
+
+    ChaosScrollBar
+      id: cardScroll
+      anchors.top: count.bottom
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 10
+      margin-bottom: 12
+      margin-right: 12
+      step: 66
+      pixels-scroll: true
+
+  UIWidget
+    id: stage
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: column.left
+    anchors.bottom: footer.top
+    phantom: true
+
+    UIWidget
+      id: pedestal
+      image-source: /images/chaos/charselect/pedestal
+      image-smooth: true
+      phantom: true
+
+    UICreature
+      id: preview
+      phantom: false
+      change-cursor-image: true
+      cursor: pointer
+
+    UILabel
+      id: heroName
+      anchors.horizontalCenter: parent.horizontalCenter
+      text-auto-resize: true
+      color: #f6cf72
+      font: verdana-11px-rounded
+      phantom: true
+
+    UILabel
+      id: heroClass
+      anchors.top: heroName.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 4
+      text-auto-resize: true
+      color: #d6c9ae
+      font: verdana-11px-rounded
+      phantom: true
+
+    UILabel
+      id: heroInfo
+      anchors.top: heroClass.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 3
+      text-auto-resize: true
+      color: #8c8070
+      font: verdana-11px-antialised
+      phantom: true
+
+    UILabel
+      id: hint
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-bottom: 8
+      text-auto-resize: true
+      color: #6b6258
+      font: verdana-11px-antialised
+      !text: tr('Double-click a card or press Enter to play. Arrow keys choose, Escape goes back.')
+      phantom: true
+
+ChaosCreateClass < UIWidget
+  size: 56 56
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  change-cursor-image: true
+  cursor: pointer
+  $hover !checked:
+    image-source: /images/chaos/panel
+  $checked:
+    image-source: /images/chaos/panel_highlight
+
+  UIWidget
+    id: icon
+    size: 40 40
+    anchors.centerIn: parent
+    phantom: true
+
+ChaosCreateWindow < ChaosStaticMainWindow
+  id: chaosCreateCharacter
+  size: 640 470
+  !text: tr('Create a character')
+
+  UIWidget
+    id: previewPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 180 230
+    image-source: /images/chaos/panel_dark
+    image-border: 6
+
+    UIWidget
+      id: pedestal
+      size: 150 56
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.bottom: parent.bottom
+      margin-bottom: 30
+      image-source: /images/chaos/charselect/pedestal
+      image-smooth: true
+      phantom: true
+
+    UICreature
+      id: preview
+      size: 192 192
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-left: 8
+      margin-top: 18
+      phantom: true
+
+    UILabel
+      id: previewText
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 8
+      height: 14
+      text-align: center
+      color: #8c8070
+      font: verdana-11px-antialised
+      phantom: true
+
+  UILabel
+    id: nameLabel
+    anchors.top: parent.top
+    anchors.left: previewPanel.right
+    margin-left: 16
+    text-auto-resize: true
+    color: #e8c477
+    !text: tr('Name')
+
+  ChaosTextEdit
+    id: nameEdit
+    anchors.top: nameLabel.bottom
+    anchors.left: nameLabel.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 24
+    max-length: 20
+
+  UILabel
+    id: nameHint
+    anchors.top: nameEdit.bottom
+    anchors.left: nameLabel.left
+    anchors.right: parent.right
+    margin-top: 3
+    height: 14
+    color: #8c8070
+    font: verdana-11px-antialised
+
+  UILabel
+    id: classLabel
+    anchors.top: nameHint.bottom
+    anchors.left: nameLabel.left
+    margin-top: 8
+    text-auto-resize: true
+    color: #e8c477
+    !text: tr('Class')
+
+  UIWidget
+    id: classes
+    anchors.top: classLabel.bottom
+    anchors.left: nameLabel.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 56
+    layout:
+      type: horizontalBox
+      spacing: 3
+
+  UILabel
+    id: classText
+    anchors.top: classes.bottom
+    anchors.left: nameLabel.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 28
+    text-wrap: true
+    color: #d6c9ae
+    font: verdana-11px-antialised
+
+  UILabel
+    id: sexLabel
+    anchors.top: classText.bottom
+    anchors.left: nameLabel.left
+    margin-top: 8
+    text-auto-resize: true
+    color: #e8c477
+    !text: tr('Sex')
+
+  ChaosTabButton
+    id: male
+    anchors.top: sexLabel.bottom
+    anchors.left: nameLabel.left
+    margin-top: 4
+    !text: tr('Male')
+
+  ChaosTabButton
+    id: female
+    anchors.top: male.top
+    anchors.left: male.right
+    margin-left: 6
+    !text: tr('Female')
+
+  UILabel
+    id: seasonLabel
+    anchors.top: male.bottom
+    anchors.left: nameLabel.left
+    margin-top: 10
+    text-auto-resize: true
+    color: #e8c477
+    !text: tr('Season')
+
+  ChaosComboBox
+    id: season
+    anchors.top: seasonLabel.bottom
+    anchors.left: nameLabel.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 22
+
+  UILabel
+    id: seasonWarning
+    anchors.top: season.bottom
+    anchors.left: nameLabel.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 30
+    text-wrap: true
+    color: #8c8070
+    font: verdana-11px-antialised
+
+  ChaosCheckBox
+    id: hardcore
+    anchors.top: seasonWarning.bottom
+    anchors.left: nameLabel.left
+    margin-top: 2
+    width: 300
+    !text: tr('I understand: this character has one life')
+    visible: false
+
+  UILabel
+    id: status
+    anchors.left: parent.left
+    anchors.right: createButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 10
+    height: 42
+    text-wrap: true
+    color: #d6c9ae
+    font: verdana-11px-antialised
+
+  ChaosButton
+    id: termsButton
+    anchors.left: parent.left
+    anchors.bottom: status.top
+    margin-bottom: 4
+    width: 180
+    !text: tr('Accept the Terms')
+    visible: false
+
+  ChaosButton
+    id: createButton
+    anchors.right: cancelButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    size: 110 28
+    !text: tr('Create')
+
+  ChaosButton
+    id: cancelButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 90 28
+    !text: tr('Close')

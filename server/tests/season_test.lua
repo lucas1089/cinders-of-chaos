@@ -384,4 +384,18 @@ eq(S.lookLine({season = 1, migrated = 0}, during, seasons, nil, "You"), "You are
 eq(S.lookLine({season = 1, migrated = 5}, after, seasons, nil, "He"), "He is a veteran of Season of Ash.", "veteran")
 eq(S.lookLine(nil, during, seasons), nil, "standard: no line")
 
+-- ---------------------------------------------------------------- a join chosen at character creation (website)
+local req = {season = 1, mode = "hcssf"}
+local js, jwhy = join({level = 1, items = 0})
+eq(S.requestOutcome(req, js, jwhy), "join", "request: the running season, a fresh character joins at its first login")
+js, jwhy = join({level = 1, items = 0}, after)
+local outcome, text = S.requestOutcome(req, js, jwhy)
+eq(outcome, "drop", "request: the season ended before the first login")
+eq(text:find("could not be joined: Season of Frost has not started yet", 1, true) ~= nil, true, "request: told why")
+js, jwhy = join({level = 1, items = 3})
+outcome, text = S.requestOutcome(req, js, jwhy)
+eq(outcome, "drop", "request: depot not empty (starter depot boxes on)")
+eq(S.requestOutcome({season = 9, mode = "standard"}, seasons[1], nil), "drop", "request: another season than the running one")
+eq(S.requestOutcome(nil, seasons[1], nil), nil, "no request")
+
 print("season_test: OK")

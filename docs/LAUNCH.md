@@ -335,6 +335,11 @@ Write down the date and how long it took; that time is the rollback time.
 - Ship the client with the merged 10.98 `Tibia.dat` / `Tibia.spr` in `data/things/1098/`.
 - Client updates after launch: the signed updater (section "Client updates" below). Turn it on in the package
   (`windows-package.yml` inputs `update_manifest` and `update_public_key`) before the first public download.
+- Character select and Create character (client/MANIFEST.md "Character select"): set the website's account API URL
+  in the client's `init.lua` (`Services.account`, base patch 0050) before packing:
+  `python3 -I client/tools/set_account_api.py <client> https://<site>/chaos_client_api.php`. Empty (the default) keeps
+  the character select working with the login server's looks only (no wings, aura or shader) and the Create character
+  button off; characters are then made on the website. The site must serve it over HTTPS (section "Website").
 
 ## 9. Monitoring
 
@@ -756,6 +761,14 @@ It covers section 6's rules: the four base classes only, the Monk / Necromancer 
 `chaos_class_unlocks` row (checked server-side), level 1 characters with `lastlogin = 0` and no items. Set
 `CHAOS_SERVER_DATA` to `/opt/chaos/server/data` (patch notes, seasons), the site and game addresses, the client
 download links and the Discord invite, and `CHAOS_ADMIN_ACCOUNTS`; then edit the Rules page in the admin panel.
+
+**Client API** (`chaos_client_api.php`, `website/README.md` "Client API"): on by default (`CHAOS_CLIENT_API=0` in
+`site.env` turns it off). It is what the client's `Services.account` points at (section 8). Check after the install:
+`curl -s -X POST https://<site>/chaos_client_api.php -d '{"action":"state","token":"x"}'` answers
+`{"ok":false,"error":"token",...}` (401). With nginx add its `location` block with `limit_req` (website/README.md
+"Web server"). New characters, from the site or the client, wear their class look from creation and a season chosen
+in the client is joined at the first login (needs the server's `sql/chaos_season.sql` table `chaos_season_requests`;
+the server and the site's plugin both create it).
 
 **Mail** (account recovery links, website 2FA codes; `website/README.md` "Mail"): fill `CHAOS_SMTP_HOST`,
 `CHAOS_SMTP_PORT` (587), `CHAOS_SMTP_TLS` (`starttls`), `CHAOS_SMTP_USER`, `CHAOS_SMTP_PASSWORD` and `CHAOS_MAIL_FROM`

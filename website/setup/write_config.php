@@ -268,6 +268,9 @@ $out = "<?php\n"
 	. "\$config['twoFactorV2']['email_otp_enabled'] = " . export($mailOn) . ";\n\n"
 	. "// Account creation: at most this many accounts per IP address per hour (plugins/chaos/register_guard.php)\n"
 	. "\$config['chaos_register_limit'] = " . export(array('per_ip' => max(0, (int)env('CHAOS_REGISTER_PER_IP_HOUR', '3')), 'window_seconds' => 3600)) . ";\n\n"
+	. "// The client's account API (chaos_client_api.php, plugins/chaos/client_api_lib.php): character looks and creation\n"
+	. "\$config['chaos_client_api'] = " . export(array('enabled' => env('CHAOS_CLIENT_API', '1') !== '0', 'token_seconds' => 1800,
+		'per_ip_minute' => 30, 'create_per_account_hour' => 3, 'create_per_ip_hour' => 5)) . ";\n\n"
 	. "// Cinders of Chaos (plugins/chaos)\n"
 	. "\$config['chaos'] = " . export(array(
 		'server_data' => $serverData,

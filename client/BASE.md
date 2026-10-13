@@ -239,6 +239,13 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     0048, 0049 applies to the `windows-assets` base client with no fuzz. Run in the Linux client against a live
     server with 0036 (server/README.md "Chaos outfit shaders").
 
+28. `0050` (`init.lua`): `Services.account`, the HTTPS URL of the website's account API (`chaos_client_api.php`,
+    website/README.md "Client API"), empty by default. The overlay module `client_chaos_charselect` (`MANIFEST.md`
+    "Character select") reads it: the character select asks the site for each character's wings, aura and shader, and
+    "Create character" creates characters there; empty turns both off. `client/tools/set_account_api.py <client> URL`
+    writes it (https only; `--allow-http` takes 127.0.0.1 for a local test site). Lua only. The chain 0001-0045, 0048,
+    0049, 0050 applies to the `windows-assets` base client with no fuzz (`patch --dry-run`, then applied).
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

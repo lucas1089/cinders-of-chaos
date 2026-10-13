@@ -67,3 +67,15 @@ CREATE TABLE IF NOT EXISTS `chaos_season_modes` (
   KEY `chaos_season_modes_season` (`season`, `fallen_at`),
   CONSTRAINT `chaos_season_modes_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- A season join chosen when the character was created (the client's character creation on the website,
+-- website/README.md "Client API"; the website's plugin creates the table too). season.lua joins the character at its
+-- first login with the in-game join (S.applyRequest) and deletes the row; mode = a key of season_config.lua modes.list.
+CREATE TABLE IF NOT EXISTS `chaos_season_requests` (
+  `player_id` int(11) NOT NULL,
+  `season` smallint(5) unsigned NOT NULL,
+  `mode` varchar(16) NOT NULL DEFAULT 'standard',
+  `requested_at` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`player_id`),
+  CONSTRAINT `chaos_season_requests_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

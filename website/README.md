@@ -51,6 +51,9 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/legal_lib.php`, `pages/legal.php` | the legal pages: Terms of Use, Privacy Policy, Donation Terms in Portuguese and English, from `docs/legal/` (see "Legal pages") |
 | `tests/chaos_legal_pages_test.php` | `php website/tests/chaos_legal_pages_test.php`: the pages, the renderer's escaping, the footer links, the Terms checkbox and its refusal, the acceptance row, the donation notes before and after payment (php-cli only, a fake database) |
 | `tests/chaos_legal_accept_test.php` | `php website/tests/chaos_legal_accept_test.php`: existing accounts accept the current texts: the gate (which requests pass), the way back (this site only), the form (token, checkbox), the row (no IP), a new version asking again, the setup writing the version for the game (php-cli only, SQLite in memory) |
+| `overlay/chaos_client_api.php`, `overlay/plugins/chaos/client_api_lib.php` | the game client's account API: character looks for the character select, character creation in the client (see "Client API") |
+| `overlay/engine/function/chaos_character.php`, `patches/znotex-chaos-character-create.patch` | the character creation checks and insert of ZnoteX's `createcharacter.php`, moved unchanged into two functions that the form and the client API both call (see "Client API") |
+| `tests/chaos_client_api_test.php` | `php website/tests/chaos_client_api_test.php`: the API's login, state and creation with every refusal (bad and taken names, locked class, slots, bad token, Terms, season mode, replays, the login guard, the hourly and per-minute limits, a password change), the patch moving the form's lines unchanged, and the class look table against `class_looks_core.lua` (php-cli with pdo_sqlite) |
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/wiki_lib.php`, `pages/wiki.php`, `wiki/` | the player wiki: guides in Portuguese and English, the reference generated from the server data by `server/tools/gen_wiki_data.lua`, the search (see "Wiki") |
 | `tests/chaos_wiki_page_test.php` | `php website/tests/chaos_wiki_page_test.php`: every wiki page in both languages, the guides, search, escaping and 404s (php-cli only) |
@@ -204,6 +207,12 @@ server {
     # the donation webhook: each PayPal call makes the site call PayPal back, so limit it per address
     location = /chaos_pay_webhook.php {
         limit_req zone=chaos_webhook burst=20 nodelay;
+        limit_req_status 429;
+        include snippets/chaos-php.conf;
+    }
+    # the client's account API (README "Client API"; it also limits itself per address, account and minute)
+    location = /chaos_client_api.php {
+        limit_req zone=chaos_forms burst=10 nodelay;
         limit_req_status 429;
         include snippets/chaos-php.conf;
     }
@@ -417,6 +426,7 @@ Check: request a recovery link for your own account on the live site; the mail's
   `class_unlocks_core.lua`; staff accounts of type 5+ always). It does so by narrowing `$config['available_vocations']`
   on every request before `createcharacter.php` validates the form, so a forged form for a locked class is refused by
   the server ("wrong vocation"), not only hidden. The game server checks the lock again at login.
+  The client creates characters through the same checks (see "Client API").
 - **New characters** are level 1 with `lastlogin = 0` and no items, at position 0,0,0 of the chosen home town: the
   server's tutorial island (`newplayer_tutorial.lua`) takes them at the first login and gives the class kit, and the
   island's exit leads to that town's temple. Home towns: `CHAOS_START_TOWNS`, checked against the `towns` table (the
@@ -739,6 +749,75 @@ location ^~ /updates/ {
 ```
 
 `install_site.sh` copies `overlay/updates/.htaccess` and never touches `updates/live/`.
+
+## Client API
+
+The game client's character select talks to the site through one endpoint, `chaos_client_api.php` (site root, POST,
+JSON in and out, `Cache-Control: no-store`, a body of at most 8 KB). The client's URL setting is `Services.account` in
+its `init.lua` (client base patch 0050, `client/tools/set_account_api.py`, docs/LAUNCH.md); empty turns it off and
+characters are then created here only. The logic is `plugins/chaos/client_api_lib.php`; the endpoint loads ZnoteX as
+a page does (database, settings, the plugin's hooks). `CHAOS_CLIENT_API=0` in `site.env` switches it off (answer 503).
+
+| Action | Body | Answer |
+|---|---|---|
+| `login` | `account`, `password`, `nonce` | a session `token` (`expiresIn` 1800 s) and the state |
+| `state` | `token` | the state: the account's character `looks` (look type, colours, addons, wings, aura, shader name, level, class, last login, season tag) and `account` (Terms accepted, the accept page, slots used and allowed, the seven class lines with `locked` and each line's class look for both sexes, towns, the name rules, the running season with its modes) |
+| `create` | `token`, `nonce`, `name`, `vocation`, `sex`, optional `town`, `season`, `mode`, `hardcore` | `name` (as stored) and its `look`, or `errors` |
+| `logout` | `token` | the token ends |
+
+**Why the website, not a game packet.** The 10.98 login server has no creation, and every creation rule already lives
+here: ZnoteX's name rules and limits, the class lock and the character slots of our plugin, the Terms. A login server
+packet would have meant a second copy of all of it in C++. The looks come from here too: the login server's 10.98
+character list carries the look type, colours and addons (base patch 0025 reads them), but not the wings, aura and
+shader, which the base server keeps in `players.wings_id`, `aura_id` and `shader_id` (its login / logout scripts); a
+change of the list's packet would break every client of the old format at once, an HTTPS call breaks nothing.
+
+**The same checks as the form.** `patches/znotex-chaos-character-create.patch` moves the lines of `createcharacter.php`
+that check and create a character, unchanged, into `engine/function/chaos_character.php`
+(`chaos_character_form_errors`, `chaos_character_create`); the page calls them, the API calls them. So both refuse
+the same names (letters and spaces, `minL`-`maxL` letters, at most `maxW` words, no one-letter word, the restricted
+words and creature names, a taken name), a class outside `available_vocations` (the API narrows it to the account's
+class lock, as `plugin.php` does for a logged-in page; a locked line gets a clear "locked for your account" message),
+a town or sex that does not exist, one character more than `max_characters` (the account's slots) and a bad IP. Only
+the form's CSRF token is the page's own. The `character.created` hook runs for both (class look, depot boxes).
+On top, the API refuses an account without the acceptance of the current Terms (403 with the accept page's URL: the
+player accepts once on the site) and checks the season choice: only the season running now, a mode of
+`season_config.lua` `modes.list`, Hardcore modes only with `hardcore: true` (the client's "I understand").
+
+**Season at creation.** A season choice writes `chaos_season_requests` (player, season, mode). The game server
+carries it out at the character's first login with its own join (`season.lua` `S.applyRequest`: `S.joinCheck`, the
+join, the mode; server/README.md "Seasons"), so its caches and rules stay the only ones; the row is deleted either
+way and a request the server can no longer honour (the season ended, `CHAOS_DEPOT_BOXES=1` left items in the depot)
+is explained to the player.
+
+**New characters wear their class look.** ZnoteX writes its starter outfit (look type 128 / 136) into every new
+character; the game server put the class look on only at the first login, so the client's character list (and the
+site) showed the same plain citizen for every character not yet played. The plugin's `character.created` hook
+(`chaos_apply_class_look`, `lib.php` `chaos_class_look`: `class_looks_core.lua` with its pair switches, read through
+`CHAOS_SERVER_DATA`) now sets the class's look with both addons at creation, on the form and through the API. The game
+server puts the same look on at the first login, so nothing changes there.
+
+**Security.**
+- HTTPS only (the web server; the client refuses an `http://` URL except 127.0.0.1 / localhost for a local test site).
+- The password is checked exactly as the website login checks it: ZnoteX's login guard (5 failures per address,
+  10 per account name in 15 minutes lock that address or name, shared with the website login and counted in
+  `znote_login_attempts`), the dummy hash for an unknown account (same answer, about the same time), the server
+  adapter's login (salted PBKDF2, an old SHA-1 still accepted), the e-mail activation when it is on.
+- The client sends the password once per character select, in the login request; it is never stored by the site.
+  The token is 32 random bytes; only its SHA-256 is kept (`chaos_client_tokens`) with the mark of the account's
+  password hash (the session guard's): a password change, logout or 30 minutes end it.
+- Replays: every login and create carries a fresh nonce (16-64 hex digits), kept two hours (`chaos_client_nonces`,
+  longer than a token lives); a nonce seen twice is refused (409), so a repeated create never makes two characters.
+- Floods: 30 requests per address per minute (all actions; an IPv6 address counts by its /64, as the register
+  guard), 3 new characters per account and 5 per address per hour (`chaos_client_api_log`, rows older than a day
+  are deleted); the nginx block above adds `limit_req`. Settings: `$config['chaos_client_api']` (`write_config.php`).
+- CSRF does not apply: the API reads no cookie (ZnoteX's session cookie is ignored), the token travels in the body.
+- Every query is a prepared statement; the answers are JSON (`json_encode`), nothing is printed into HTML.
+
+Test: `php website/tests/chaos_client_api_test.php` (php-cli with pdo_sqlite: ZnoteX's functions are small stand-ins
+with its behaviour). Also run against the real pinned ZnoteX with every patch applied, a local MariaDB copy of the test
+server's database and the PHP built-in server (`setup/router.php`), with the Linux client (client/MANIFEST.md
+"Character select").
 
 ## Mentors
 
