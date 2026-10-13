@@ -10282,6 +10282,31 @@ Current ones are in `docs/map_guide/generated/`: sprite renders per floor, minim
 the entrances, in-game shots. A rift map: `--area "rift:<theme>:<band>:<seed>[:<kind>[:<floors>]]"` (the dump adds its
 sections, drawn orange on the minimap map; `summary` prints its tiles and walkable count).
 
+## Area planner (`tools/area_planner.py`, `tools/area_plan_*.py`, `tools/areaplan_build.lua`, `tools/areaplan/`)
+
+A semantic plan (JSON, `tools/areaplan/schema.json`, version `chaos-area-plan/1`) becomes an OTBM piece for the map
+editor through the area generator above (owner approval, 2026-10-13). The plan names a biome, zones, paths,
+connections, spawns, boss, NPCs, chests, entry, exit, PZ zones, decoration and light; it never holds an item id.
+Details and rules: docs/MAP_GUIDE.md "Area planner".
+
+- **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-spawn.xml`, `<id>.json` manifest), `render` (floor PNGs and a
+  marked minimap; needs items.otb/xml and the pair), `stats`, `approve`, `suggest`, `similar`, `catalogue`,
+  `plan --from-prompt`. Offline tool: no install step, nothing runs on the server, the world map is never written.
+- **Generator hooks** (`areagen_core.lua`): `def.layout.plan[floor]` (zones, paths, landing spots, anchor) carves a
+  planned layout instead of a random one, and `def.links` gives the hole points. The four areas and the rifts are
+  unchanged (same checksums).
+- **Catalogue:** `tools/areaplan_build.lua` maps biomes to our themes and reads ids only from `areagen_config.lua`,
+  `chaos_dark_tiles.lua`, `chaos_theme_items.lua` (pair 24 grounds, only with `ChaosThemeArt.PAIR24` on or
+  `--pair24 on`), `data/items/art_items.csv` (pack grounds, borders, trees) and `rift_config.lua` (chest).
+  Monsters and levels: `bounty_pool.lua` and `monster/monsters/chaos`; tiers: `bounty_config.lua` bands; NPCs: `data/npc`.
+- **Knowledge base:** SQLite outside git, `$AREAPLAN_KB` or `~/.local/share/cinders-of-chaos/area_planner/kb.sqlite3`.
+- **AI adapter** (`area_plan_ai.py`, optional): only with `ANTHROPIC_API_KEY` and `AREAPLAN_LLM_MODEL` (no model name is kept in the repo) or
+  `AREAPLAN_LLM=openai` with `AREAPLAN_LLM_ENDPOINT` / `AREAPLAN_LLM_MODEL` (a local Ollama needs no key) set by the
+  user. Keys are read from those variables only, never stored or printed. Up to 3 fix rounds with the validator's errors.
+- **Tests:** `tools/area_planner_test.py` (CI; validator rules, reachability maths, layout, the three examples compiled
+  with QA, determinism, pair 24 switch, knowledge base, AI fix loop on a fake endpoint). Previews of the examples were
+  rendered with things_custom23 for review only.
+
 ## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
 
 Over every player the client draws three lines, like a name plate: the **active title** (coloured by where it comes from),

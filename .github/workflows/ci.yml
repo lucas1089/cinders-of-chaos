@@ -101,6 +101,15 @@ jobs:
       - name: Area generator export (the Lua generator's dump, OTBM writer and reader, spawn file)
         run: python3 -I server/tools/areagen_export_test.py
 
+      - name: Area planner (validator, reachability maths, layout, compiler; the example plans validated and compiled)
+        run: |
+          python3 -I server/tools/area_planner_test.py
+          d=$(mktemp -d)
+          for p in server/tools/areaplan/examples/*.json; do
+            python3 -I server/tools/area_planner.py validate "$p"
+            python3 -I server/tools/area_planner.py compile "$p" "$d"
+          done
+
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
 

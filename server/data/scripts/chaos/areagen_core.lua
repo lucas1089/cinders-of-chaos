@@ -852,6 +852,13 @@ end
 -- the floors' link anchors: a hole on floor k at (x, y) with the climb arrival (x, y + 1), a ladder on floor k + 1
 local function pickLinks(r, def, w, h)
 	local links = {}
+	if def.links then
+		-- def.links = {{floor = k, x, y}, ...}: the link anchors given (the area planner, tools/area_planner.py); no draw
+		for _, l in ipairs(def.links) do
+			links[#links + 1] = {floor = l.floor, x = l.x, y = l.y}
+		end
+		return links
+	end
 	local per = def.linksPerFloor or 1
 	for k = 1, (def.floors or 1) - 1 do
 		for j = 1, per do
@@ -956,10 +963,127 @@ local function blob(F, r, cx, cy, rad, fn)
 	end
 end
 
+-- a planned layout (the area planner, tools/area_planner.py): the zones, paths and spots of one floor are given, in
+-- local cells. p.zones = {{x1, y1, x2, y2, shape = "room" | "cave" | "arena", kind = "hunt" | "boss" | ...}},
+-- p.paths = {{width = n, style = "corridor" | "tunnel", points = {{x, y}, ...}}}, p.spots = {{x, y, r}} (landings
+-- under a hole). Zones become F.rooms (room floors, paths kept free, spawn caps); corridor cells F.corridor.
+local function plannedLayout(F, r, p, required)
+	F.open, F.rooms, F.roomIdx, F.corridor = {}, {}, {}, {}
+	local function mark(k, i)
+		F.open[i] = true
+		F.roomIdx[i] = k
+	end
+	for k, z in ipairs(p.zones or {}) do
+		T()
+		local x1, y1, x2, y2 = z.x1, z.y1, z.x2, z.y2
+		local cx, cy = floor((x1 + x2) / 2), floor((y1 + y2) / 2)
+		local function inZone(x, y)
+			return x >= x1 and x <= x2 and y >= y1 and y <= y2 and inside(F, x, y)
+		end
+		if z.shape == "cave" then
+			-- blobs along the long side, kept inside the zone; the centre always open
+			local w, h = x2 - x1 + 1, y2 - y1 + 1
+			local rad = max(1, floor((min(w, h) - 1) / 2) - 1)
+			local n = max(1, floor(max(w, h) / max(2, 2 * rad)) + 1)
+			for j = 0, n - 1 do
+				local bx, by
+				if w >= h then
+					bx, by = x1 + rad + floor(j * max(0, w - 1 - 2 * rad) / max(1, n - 1)), cy
+				else
+					bx, by = cx, y1 + rad + floor(j * max(0, h - 1 - 2 * rad) / max(1, n - 1))
+				end
+				blob(F, r, bx, by, rad, function(i)
+					local x, y = xy(F, i)
+					if inZone(x, y) then
+						mark(k, i)
+					end
+				end)
+			end
+			for dy = -1, 1 do
+				for dx = -1, 1 do
+					if inZone(cx + dx, cy + dy) then
+						mark(k, idx(F, cx + dx, cy + dy))
+					end
+				end
+			end
+		elseif z.shape == "arena" then
+			local rad = floor((min(x2 - x1, y2 - y1)) / 2)
+			for y = y1, y2 do
+				for x = x1, x2 do
+					local dx, dy = x - cx, y - cy
+					if inZone(x, y) and dx * dx + dy * dy <= rad * rad + rad then
+						mark(k, idx(F, x, y))
+					end
+				end
+			end
+		else
+			for y = y1, y2 do
+				for x = x1, x2 do
+					if inZone(x, y) then
+						mark(k, idx(F, x, y))
+					end
+				end
+			end
+		end
+		F.rooms[k] = {x1 = x1, y1 = y1, x2 = x2, y2 = y2, cx = cx, cy = cy, kind = z.kind or "hunt"}
+	end
+	local function open(i)
+		if not F.open[i] then
+			F.corridor[i] = true
+		end
+		F.open[i] = true
+	end
+	for _, pa in ipairs(p.paths or {}) do
+		T()
+		local wd = max(1, pa.width or 3)
+		local half = floor((wd - 1) / 2)
+		local pts = pa.points or {}
+		for j = 1, #pts - 1 do
+			local ax, ay, bx, by = pts[j][1], pts[j][2], pts[j + 1][1], pts[j + 1][2]
+			if pa.style == "tunnel" then
+				local before = {}
+				for i in pairs(F.open) do
+					before[i] = true
+				end
+				tunnel(F, r, ax, ay, bx, by, half)
+				for i in pairs(F.open) do
+					if not before[i] then
+						F.corridor[i] = true
+					end
+				end
+			else
+				-- straight runs (horizontal, then vertical when the points are not in line)
+				for x = min(ax, bx), max(ax, bx) do
+					for d = -half, wd - 1 - half do
+						if inside(F, x, ay + d) then
+							open(idx(F, x, ay + d))
+						end
+					end
+				end
+				for y = min(ay, by), max(ay, by) do
+					for d = -half, wd - 1 - half do
+						if inside(F, bx + d, y) then
+							open(idx(F, bx + d, y))
+						end
+					end
+				end
+			end
+		end
+	end
+	for _, s in ipairs(p.spots or {}) do
+		carveDisc(F, s[1], s[2], s[3] or 1, 3)
+	end
+	for _, q in ipairs(required) do
+		carveDisc(F, q.x, q.y, min(q.r or 1, 1), 3)
+	end
+end
+
 -- the generator of one floor
 local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 	local lay = def.layout or {}
-	if def.kind == "dungeon" then
+	if lay.plan then
+		plannedLayout(F, r, lay.plan[F.k] or {}, required)
+	elseif def.kind == "dungeon" then
 		roomsLayout(F, r, lay, required, bossWanted)
 	else
 		caveLayout(F, r, lay, required)
@@ -1064,8 +1188,25 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 			end
 		end
 	end
-	-- keep the region of the first required point; anything walkable elsewhere is closed with rock
+	-- keep the region of the first required point; anything walkable elsewhere is closed with rock (a planned layout
+	-- keeps every region that holds a zone or a required point: zones may be joined by a teleport only)
 	local main = flood(F, idx(F, required[1].x, required[1].y), function(i) return F.walk[i] end)
+	if lay.plan then
+		local anchors = {}
+		for _, q in ipairs(F.rooms or {}) do
+			anchors[#anchors + 1] = idx(F, q.cx, q.cy)
+		end
+		for _, q in ipairs(required) do
+			anchors[#anchors + 1] = idx(F, q.x, q.y)
+		end
+		for _, a in ipairs(anchors) do
+			if F.walk[a] and not main[a] then
+				for i in pairs(flood(F, a, function(j) return F.walk[j] end)) do
+					main[i] = true
+				end
+			end
+		end
+	end
 	for i in pairs(F.walk) do
 		if not main[i] then
 			F.walk[i] = nil
@@ -1688,6 +1829,19 @@ generate = function(cfg, def, opts)
 		if k == 1 then
 			req[1] = {x = arrival.x, y = arrival.y, r = 3}
 		end
+		local planned = def.layout and def.layout.plan and def.layout.plan[k]
+		if k > 1 and planned and planned.anchor then
+			-- a planned floor reached by a teleport only has no ladder: its anchor (a zone centre) is its entry
+			local hasLink = false
+			for _, l in ipairs(links) do
+				if l.floor == k - 1 then
+					hasLink = true
+				end
+			end
+			if not hasLink then
+				req[1] = {x = planned.anchor[1], y = planned.anchor[2], r = 1}
+			end
+		end
 		for _, l in ipairs(links) do
 			if l.floor == k - 1 then
 				req[#req + 1] = {x = l.x, y = l.y, r = 2}
@@ -2003,7 +2157,7 @@ validate = function(cfg, model, opts)
 		out[#out + 1] = unreached .. " walkable tiles cannot be reached from the arrival"
 	end
 	-- links
-	local wantLinks = ((def.floors or 1) - 1) * (def.linksPerFloor or 1)
+	local wantLinks = def.links and #def.links or ((def.floors or 1) - 1) * (def.linksPerFloor or 1)
 	if #model.links ~= wantLinks then
 		out[#out + 1] = string.format("%d links, %d wanted", #model.links, wantLinks)
 	end
