@@ -1,0 +1,23 @@
+# A cancelled takeover no longer leaves the character in the game for good. A login of a character that is still
+# connected disconnects the old client, marks the character isConnecting and attaches the new connection 1 s later
+# (ProtocolGame::connect). When the new connection was closed in that second, connect() returned early and left
+# isConnecting set; Player::sendPing() never removes a character that is connecting, so it stayed in the world
+# without a client (attackable, holding its instance, counted online) until its owner logged in again. Found in the
+# stress test (server/README.md "Stress test"): a reconnect storm left a character online for good; reproduced with a
+# second login closed right after it was sent (still online 75 s later, where the no-pong kick removes it after 60 s).
+# connect() now clears isConnecting before it gives up. Guard: tools/reattach_ping_patch_test.py (CI).
+# Applies after 0001-0034.
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -424,6 +424,11 @@
+ 	if (isConnectionExpired()) {
+ 		//ProtocolGame::release() has been called at this point and the Connection object
+ 		//no longer exists, so we return to prevent leakage of the Player.
++		// Chaos (patch 0035): the takeover is off, so the character is no longer waiting for this connection. Left
++		// set, isConnecting kept Player::sendPing() from ever removing the character: it stayed in the game without
++		// a client until its owner logged in again (a login that replaced a connected client and was closed within
++		// the 1 s before this call).
++		foundPlayer->isConnecting = false;
+ 		return;
+ 	}
+ 

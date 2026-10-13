@@ -1,0 +1,52 @@
+# A decay that cannot change the item no longer freezes the game loop. Game::startDecay() of an item with no time
+# left calls Game::internalDecayItem(), which transforms the item to its decayTo and calls startDecay() again. When
+# transformItem() returns the item unchanged (a decayTo of its own id, a decayTo of 0 or an unknown id in the item's
+# own ITEM_ATTRIBUTE_DECAYTO, an item without an index in its parent) the two called each other forever; with -O3 the
+# calls are compiled as jumps, so the dispatcher thread spun at 100% and the whole game stood still (no saves, no
+# logins answered, every player frozen) until the process was killed.
+# Found in the stress test (server/README.md "Stress test"): the base items.xml has item 23827 "dead dawnfly" with
+# decayTo 23827 (the second stage of the Dawnfly corpse; the third stage 23828 is never reached). Every killed Dawnfly
+# (52 spawns on the map, bestiary_spawns.lua) froze the server 15 minutes later, when its corpse reached that stage.
+# Now: a decayTo of the item's own id or 0 removes the item (as decayTo 0 does; one console warning per item id), a
+# negative one and a failed transform stop the decay (the item stays as it is). Every other decay is unchanged.
+# Guard: tools/decay_loop_patch_test.py (CI). Applies after 0001-0032.
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -5037,8 +5037,35 @@
+ {
+ 	const ItemType& it = Item::items[item->getID()];
+ 	if (it.decayTo != 0) {
+-		Item* newItem = transformItem(item, item->getDecayTo());
+-		startDecay(newItem);
++		// Chaos (patch 0033): a decay that cannot change the item ends here. startDecay() of an item with no time left
++		// calls this function again, so an item that transformItem() leaves as it was (a decayTo of its own id, as the
++		// base items.xml has for 23827 "dead dawnfly"; a decayTo of 0 or an unknown id in the item's own attribute; no
++		// index in its parent) looped here forever and froze the game loop (the stress test: one Dawnfly corpse, 15
++		// minutes after the kill). Its own id or 0 removes the item, as decayTo 0 does; a failed transform stops the decay.
++		const int32_t decayTo = item->getDecayTo();
++		const uint16_t oldId = item->getID();
++		if (decayTo > 0 && decayTo != oldId) {
++			Item* newItem = transformItem(item, static_cast<uint16_t>(decayTo));
++			if (newItem && newItem == item && newItem->getID() == oldId) {
++				stopDecay(item);
++				return;
++			}
++			startDecay(newItem);
++			return;
++		}
++		if (decayTo < 0) {
++			stopDecay(item);
++			return;
++		}
++		static std::unordered_set<uint16_t> warned;
++		if (decayTo == oldId && warned.insert(oldId).second) {
++			std::cout << "[Warning - Game::internalDecayItem] item " << oldId << " decays to itself (items.xml); removed "
++			          << "at the end of its time instead" << std::endl;
++		}
++		ReturnValue ret = internalRemoveItem(item);
++		if (ret != RETURNVALUE_NOERROR) {
++			std::cout << "[Debug - Game::internalDecayItem] internalDecayItem failed, error code: " << static_cast<uint32_t>(ret) << ", item id: " << item->getID() << std::endl;
++		}
+ 	} else {
+ 		ReturnValue ret = internalRemoveItem(item);
+ 		if (ret != RETURNVALUE_NOERROR) {

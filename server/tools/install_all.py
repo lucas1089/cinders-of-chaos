@@ -116,7 +116,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                upgrade-slot check keeps the slots it parsed per item description and runs at login, at once on an
                equip move and once a second per player in 12 groups instead of every 100 ms, and adds and
                removes each slot bonus under one condition id, forgetting the bonus of an emptied slot (README
-               "Game loop stalls")
+               "Game loop stalls"); the base extended opcode script reads and pushes the ancestral points at most
+               once every 2 s per player instead of a database read for every request a client sends (README
+               "Stress test")
   bossrooms    tools/patch_base_bossrooms.py     the base lever boss rooms and the step-in miniboss rooms (several in one file):
                the lever (or entry tile) is locked while a group is inside, a time limit (the room's own kick time, at
                most 30 minutes) with warnings and a countdown, everyone out to the room's exit and its monsters removed

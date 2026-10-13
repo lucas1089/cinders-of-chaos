@@ -130,6 +130,15 @@ server/
   src-patches/0032-network-message-buffer.patch   engine: a network message is no longer cleared (90 KB copied or
                                       zeroed per packet piece sent: about a quarter of the game loop at 300 online); undoes
                                       the buffer part of 0007 (see "Load test on the full map"; tools/netmsg_buffer_patch_test.py)
+  src-patches/0033-decay-loop.patch   engine: a decay that cannot change the item ends (its own id or 0: removed; a
+                                      failed transform: stops) instead of looping forever on the game loop; the base item
+                                      23827 "dead dawnfly" decays to itself (see "Stress test"; tools/decay_loop_patch_test.py)
+  src-patches/0034-reattach-ping.patch   engine: a login that takes over its lingering character (connection lost,
+                                      still in the game) renews the last pong, so the 60 s no-pong kick no longer logs the
+                                      new client out at once (see "Stress test"; tools/reattach_ping_patch_test.py)
+  src-patches/0035-takeover-cancelled.patch   engine: a takeover whose new connection closed within its 1 s clears
+                                      isConnecting, so the character is removed by the no-pong kick instead of staying in
+                                      the game without a client for good (see "Stress test"; tools/reattach_ping_patch_test.py)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     kitewalk.lua  kitewalk_core.lua (the client option "Keep attacking while moving", opcode 186, storage 7101820, see
@@ -343,7 +352,9 @@ server/
    (idempotent; `install_all.py` step `stalls`, after `autosave`): the expedition announcements look at the players
    online instead of every tile of an island, the upgrade-slot check keeps its parse per item description and runs
    once a second per player (at once on an equip move) instead of every 100 ms, and adds and removes each slot bonus
-   under one condition id, forgetting the bonus of an emptied slot. See "Game loop stalls".
+   under one condition id, forgetting the bonus of an emptied slot. See "Game loop stalls". The base extended opcode
+   script reads and pushes the ancestral points at most once every 2 s per player instead of for every request a
+   client sends (see "Stress test").
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
@@ -4058,6 +4069,68 @@ counted as 1.5-2 bots. The knee here is 450-500 bots (dispatcher 83-96%); on the
   measure the beta weekend (the probe lag, the slow task log for an hour at the peak).
 - **Launch: 400** (the `prod_config.py` default). Raise to 500 after a week whose peak hour kept the timer lag under
   70 ms on average and the slow task log (`slowTaskLogMs = 100`) under a few tasks a minute; lower to 300 if it did not.
+
+## Stress test (`tools/loadtest.py` storms and spam, `src-patches/0033`-`0035`, `tools/patch_base_stalls.py` step 6)
+
+A QA pass for bugs under load (2026-10-13). Setup as "Load test on the full map": the engine with 0001-0032 (then the
+fixes below), every `install_all.py` step, the production `config.lua` with the bots' development key, a private
+MariaDB, `slowTaskLogMs = 50`, the probe and `loadtest_hunt.lua`, 500 bot characters (`setup --spread`). The machine was
+shared with another job (its clients kept all 4 cores busy), so the times are pessimistic.
+
+**What ran.**
+- 400 bots spread over the towns and hunting areas, 10 minutes: 400 of 400 in game, login p50 0.30 s, probe lag avg
+  62 ms (max 1.5 s: a test script), RSS 4.64 to 4.73 GB, no Lua error. Meanwhile 20 solo and 10 party rifts (6 ready at
+  once, the builder filled the 16 slots in 30-60 s, 640 ms of game loop per map at most, the 17th key heard the wait
+  and joined the line), 5 raids (4 slots, the 5th waited), 6 Descents, 14 tower runs, the world boss with 55 bots
+  (32 in the arena; random walkers leave by the side fields), deaths and logouts inside each.
+- A burst of 400 logins in 2 s: 61 in game at first, 303 + 29 "Too many logins at the moment" (the login worker's
+  queue of 64, "Account passwords"); the client retries by hand.
+- Reconnect storms: 300 bots, each 5-25 s in game, 30% of the sessions dropped without a logout, 15% of the logins cut
+  off half way (after the character list, right after the game login, after the first answer), 6 minutes: 5,583
+  sessions, 1,707 dropped, 1,116 cut off. No Lua error, no crash, RSS +50 MB. The game loop fell behind by seconds when
+  many logout saves met a slow disk (COMMITs of 0.5-2.3 s; "Load test on the full map").
+- Spam: 60 bots at 20 extended opcodes a second each (null opcode, bank transfer, market browse), 300 bots with
+  module requests, bank transfers, chat every 4 s, private messages every 5 s and party invites, joins and leaves.
+- Economy: bank transfers between 100 bots, half of the targets offline, with reconnect loops and drops: the sum of
+  every bank balance of the 500 bot characters was 50,000,000 before and after (38,000 and 32,000 transfers in two runs).
+- Saves: the daily save (shutdown) with 300 online took 11 s, every character saved (the bank sum exact); `kill -9`
+  in the middle of a save pass and in the middle of the daily save: every rift opener got the key back exactly once,
+  every character woke at the temple; a global read lock on the database for 15 s froze the game loop 13.7 s (the
+  first write waits), nobody was kicked, the loop caught up within 5 s.
+
+**Found and fixed.**
+- *A decay that loops forever* (0033, critical). The base items.xml has 23827 "dead dawnfly" decaying to itself.
+  `Game::internalDecayItem` and `startDecay` then called each other without end: one Dawnfly corpse froze the whole
+  server 15 minutes after the kill (no saves, no logins answered). Now its own id (or 0) removes the item and a
+  failed transform stops the decay. Reproduced with one corpse and a 2 s duration; fixed build checked the same way.
+- *A reconnect thrown out at once* (0034). A character whose client vanished stays 60 s (the no-pong kick). A login
+  that took it over did not renew the last pong, so the next check logged the new client out before its first ping,
+  without a message. Reproduced (logged out 1.5 s after a takeover 56 s after the drop); fixed build stays connected.
+- *A character left in the game for good* (0035). A login that replaced a connected client waits 1 s; when its own
+  connection closed in that second the character stayed marked as connecting, and the no-pong kick never removes such
+  a character. Found as a bot still online 10 minutes after the storm; reproduced and fixed (removed after 60 s).
+- *A database read for every extended opcode* (`patch_base_stalls.py` step 6). The base `ExtendedOpcode` script read
+  the ancestral points with a SELECT on the game loop and pushed them on opcode 89 for every request any module sends.
+  300 bots at 4 requests a second put the game loop 5 s behind. Now at most once every 2 s per player.
+
+**Seen, not changed (proposals).**
+- Every extended opcode runs all of about 80 `extendedopcode` creature events (each checks its opcode first): about
+  0.2 ms of game loop per request. One table from opcode to handler would make it one call.
+- A request is decoded before any rate limit: a 60 KB JSON array costs about 5 ms to decode, so one modified client at
+  the engine's 50 packets a second could take a quarter of the game loop. Cap the size of requests (the client sends far
+  under 8 KB) in the engine or in `Chaos.decode` for the opcode handlers.
+- A crash keeps the sender's side of a transfer to an online character when the sender was saved later for another
+  reason (a transfer to an offline character, a rift key): about 10,000 gold of 300 bots' transfer spam was lost per
+  `kill -9`. Saving both characters after an online transfer would close it. The guild bank withdrawal credits the
+  player in memory only (the guild row is already debited), so a crash before the next save loses that gold.
+- A reconnect while the dispatcher is more than 1 s behind can get "You are already logged in." (stock); a client that
+  connects more than 5 times in 2 s is closed without a message (stock flood rule).
+- Logout saves run on the game loop: a mass disconnect lands many in one creature check (tasks of 0.3-0.7 s).
+
+**Tools.** `loadtest.py run` takes `--reconnect MIN,MAX`, `--drop P`, `--abort P`, `--opcodes FILE` with
+`--opcode-every S` ("{name}", "{online}", "{other}" in the payloads), `--pm S` and `--party S`; a bot answers a late
+client guard challenge. `tests`: `tools/loadtest_test.py`, `tools/decay_loop_patch_test.py`,
+`tools/reattach_ping_patch_test.py`, `tests/base_stalls_patch_test.lua` (step 6).
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 

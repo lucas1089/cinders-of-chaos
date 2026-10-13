@@ -104,6 +104,12 @@ jobs:
       - name: Network message buffer stays unzeroed (server src-patch 0032)
         run: python3 -I server/tools/netmsg_buffer_patch_test.py
 
+      - name: A decay that cannot change the item ends (server src-patch 0033)
+        run: python3 -I server/tools/decay_loop_patch_test.py
+
+      - name: A reconnect to a lingering character is not thrown out nor left in the game (server src-patches 0034, 0035)
+        run: python3 -I server/tools/reattach_ping_patch_test.py
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)

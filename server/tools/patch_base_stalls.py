@@ -42,6 +42,14 @@ usage: python3 -I patch_base_stalls.py DATA_DIR [--dry-run]
    re-adds every bonus anyway and the stale entry did nothing; with a compare by value (the base's intent) a bonus put
    back on with the same value would stay off. The removal now drops the entry too.
 
+6. The base extended opcode script (data/creaturescripts/scripts/extendedopcode.lua, the "ExtendedOpcode" event the
+   engine registers for every OTClient player). On every extended opcode a client sends (each module's request, every
+   window, every click of the Chaos modules) it read the player's ancestral points from the database on the game loop
+   and pushed them back on opcode 89: 300 players sending 4 requests a second were 1,200 SELECTs a second and the game
+   loop fell seconds behind (server/README.md "Stress test"). The read and the push now happen at most once every 2 s
+   per player (and always for opcode 1, the client's first message); the rest of the script is unchanged. The points
+   only change through the store and the task scripts, and the next request after 2 s brings them.
+
 Every change carries a marker and is made once (3, 4 and 5 have their own markers, so a base patched by an older
 version of this tool gets them too) (a second run changes nothing). A file without the stock code is left
 alone: exit status 0, an install without these base scripts has nothing to do.
@@ -213,6 +221,59 @@ UPGRADE_REMOVE_ID_RE = re.compile(r'^([ \t]*)local subid = slotAttribute\.baseSu
 UPGRADE_FORGET = '{i}slotAttribute.cache[playerId][subid] = nil -- %s: the bonus is taken off below\n' % MARK_EMPTY
 
 
+# ------------------------------------------------------------------------------------------------ 6. extended opcode
+MARK_OPCODE = 'Chaos (patch_base_stalls.py, ancestral points)'
+OPCODE_SCRIPT = ('creaturescripts', 'scripts', 'extendedopcode.lua')
+OPCODE_FN_RE = re.compile(r'^function onExtendedOpcode\(player, opcode, buffer\)[ \t]*\r?\n', re.M)
+# the stock read and push, from "local points = 0" to the send of opcode 89
+OPCODE_BLOCK_RE = re.compile(
+    r'^(?P<i>[ \t]*)local points = 0[ \t]*\r?\n'
+    r'[ \t]*local resultId = db\.storeQuery\("SELECT `ancestral_points` FROM `players` WHERE `id` = " \.\. '
+    r'player:getGuid\(\)\)[ \t]*\r?\n'
+    r'(?:(?![ \t]*player:sendExtendedOpcode\(89, points\)).*\r?\n){0,6}'
+    r'[ \t]*player:sendExtendedOpcode\(89, points\)[ \t]*\r?\n', re.M)
+OPCODE_HELPER = (
+    '-- %s: the database read and the push of opcode 89 below ran for\n'
+    '-- every extended opcode a client sends (each module request): at most once every 2 s per player now, and always for\n'
+    '-- opcode 1 (the client\'s first message). The points change only through the store and the task scripts.\n'
+    'local chaosAncestralAt, chaosAncestralCount = {}, 0\n'
+    'local function chaosAncestralDue(player, opcode)\n'
+    '\tlocal now = os.mtime and os.mtime() or os.time() * 1000\n'
+    '\tlocal id = player:getId()\n'
+    '\tlocal last = chaosAncestralAt[id]\n'
+    '\tif last and opcode ~= 1 and now >= last and now - last < 2000 then\n'
+    '\t\treturn false\n'
+    '\tend\n'
+    '\tif not last then\n'
+    '\t\tchaosAncestralCount = chaosAncestralCount + 1\n'
+    '\t\tif chaosAncestralCount > 5000 then -- players who left: forget everyone now and then (one extra read each)\n'
+    '\t\t\tchaosAncestralAt, chaosAncestralCount = {}, 1\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\tchaosAncestralAt[id] = now\n'
+    '\treturn true\n'
+    'end\n'
+    '\n') % MARK_OPCODE
+
+
+def patch_opcode(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_OPCODE in text:
+        return text, 'already'
+    fn = OPCODE_FN_RE.search(text)
+    block = fn and OPCODE_BLOCK_RE.search(text, fn.end())
+    if not block:
+        return text, 'none'
+    i = block.group('i')
+    lines = block.group(0).splitlines(True)
+    inner = ''.join(((i or '\t') + l) if l.strip() else l for l in lines)
+    wrapped = (crlf(text, '%sif chaosAncestralDue(player, opcode) then -- %s\n' % (i, MARK_OPCODE)) + inner
+               + crlf(text, '%send\n' % i))
+    new = (text[:fn.start()] + crlf(text, OPCODE_HELPER) + text[fn.start():block.start()] + wrapped
+           + text[block.end():])
+    return new, 'patched'
+
+
 def crlf(text, new):
     return new.replace('\n', '\r\n') if '\r\n' in text else new
 
@@ -340,6 +401,9 @@ def files(data):
     path = os.path.join(data, *UPGRADE)
     if os.path.isfile(path):
         yield path, patch_upgrade
+    path = os.path.join(data, *OPCODE_SCRIPT)
+    if os.path.isfile(path):
+        yield path, patch_opcode
 
 
 def main(argv):
@@ -363,7 +427,7 @@ def main(argv):
                 f.write(new)
         print('data/%s: %s%s' % (rel, st, ' (dry run, not written)' if dry and st.startswith('patched') else ''))
     if not found:
-        print('no expedition scan loop and no upgrade slot check found (nothing to do)')
+        print('no expedition scan loop, no upgrade slot check and no extended opcode read found (nothing to do)')
     return 0
 
 

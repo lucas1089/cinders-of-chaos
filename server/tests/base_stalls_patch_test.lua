@@ -12,6 +12,8 @@
 --                            script fails this, and so does the patch without its clear of the old ids; every slot
 --                            and index adds under its own sub id and is removed under the same one
 --   upgrade emptied slots    with a compare by value the sword put back on gets its bonus again, not without the drop
+--   extended opcode script   the ancestral points read and push of opcode 89 at most every 2 s per player (the stock
+--                            script read the database for every opcode a client sends), opcode 1 always, CRLF kept
 -- and: a second run changes nothing, --dry-run writes nothing, a removal loop (not a player scan) is left alone, CRLF
 -- files stay CRLF, a script patched by an older tool (slot cache only, steps 2 and 3, or 2 to 4) gets the missing
 -- steps.
@@ -802,6 +804,97 @@ ok(reloadOk, "after a reload: one chain, every player still once a second")
 -- the stock check parses each description it reads; the patched one reads it the same way and parses each text once
 ok(stock.described == stock.reads and new.described == new.reads + new.texts, "upgrade: each description parsed "
 	.. "once: " .. new.described .. " reads " .. new.reads .. " texts " .. new.texts)
+
+-- ---------------------------------------------------------------- 6. the base extended opcode script (ancestral points)
+-- the stock script (data/creaturescripts/scripts/extendedopcode.lua of the base server): a database read and a push of
+-- opcode 89 for every extended opcode a client sends
+local OPCODE_STOCK = [[
+local OPCODE_LANGUAGE = 1
+
+function onExtendedOpcode(player, opcode, buffer)
+    local points = 0
+    local resultId = db.storeQuery("SELECT `ancestral_points` FROM `players` WHERE `id` = " .. player:getGuid())
+    if resultId ~= false then
+      points = result.getDataInt(resultId, "ancestral_points")
+      result.free(resultId)
+    end
+    player:sendExtendedOpcode(89, points)
+    if opcode == OPCODE_LANGUAGE then
+        -- otclient language
+        if buffer == 'en' or buffer == 'pt' then
+            -- example, setting player language, because otclient is multi-language...
+            -- player:setStorageValue(SOME_STORAGE_ID, SOME_VALUE)
+        end
+    else
+        -- other opcodes can be ignored, and the server will just work fine...
+    end
+end
+]]
+local opData = root .. "/opdata"
+local opPath = opData .. "/creaturescripts/scripts/extendedopcode.lua"
+os.execute("mkdir -p '" .. opData .. "/creaturescripts/scripts'")
+writeFile(opPath, OPCODE_STOCK)
+local opTool = "python3 -I tools/patch_base_stalls.py '" .. opData .. "'"
+out = sh(opTool .. " --dry-run")
+ok(out:find("extendedopcode.lua: patched %(dry run") and readFile(opPath) == OPCODE_STOCK, "opcode script: dry run: " .. out)
+out = sh(opTool)
+ok(out:find("extendedopcode.lua: patched"), "opcode script patched: " .. out)
+local opPatched = readFile(opPath)
+ok(sh(opTool):find("extendedopcode.lua: already") and readFile(opPath) == opPatched, "opcode script: second run: already")
+-- the stock and the patched script on a mocked engine: 3 players, each sends 20 opcodes a second for 5 s
+local function runOpcode(src)
+	local env = {queries = 0, pushes = {}, clock = 0}
+	local G = setmetatable({}, {__index = _G})
+	G.os = {time = function() return math.floor(env.clock / 1000) end, mtime = function() return env.clock end}
+	G.db = {storeQuery = function(q) env.queries = env.queries + 1 return 1 end}
+	G.result = {getDataInt = function() return 42 end, free = function() end}
+	local chunk = assert((loadstring or load)(src, "extendedopcode", "t", G))
+	if setfenv then setfenv(chunk, G) end
+	chunk()
+	local players = {}
+	for id = 1, 3 do
+		local pl = {id = id}
+		function pl:getId() return self.id end
+		function pl:getGuid() return self.id end
+		function pl:sendExtendedOpcode(op, v)
+			env.pushes[#env.pushes + 1] = {id = self.id, op = op, v = v, t = env.clock}
+		end
+		players[id] = pl
+	end
+	for _, id in ipairs({1, 2, 3}) do
+		G.onExtendedOpcode(players[id], 1, "en") -- the client's first message
+	end
+	for step = 1, 100 do
+		env.clock = env.clock + 50
+		for id = 1, 3 do
+			G.onExtendedOpcode(players[id], 200 + step % 40, "{}")
+		end
+	end
+	G.onExtendedOpcode(players[1], 1, "en") -- opcode 1 again: always answered
+	return env
+end
+local stockRun, newRun = runOpcode(OPCODE_STOCK), runOpcode(opPatched)
+ok(stockRun.queries == 304 and #stockRun.pushes == 304, "stock: a read and a push for every opcode: " .. stockRun.queries)
+ok(newRun.queries == #newRun.pushes and newRun.queries <= 3 + 3 * 3 + 1, "patched: at most one read and push every 2 s "
+	.. "per player: " .. newRun.queries)
+local firstOk, gapOk, last = true, true, {}
+for i, p in ipairs(newRun.pushes) do
+	if i <= 3 and (p.op ~= 89 or p.v ~= 42 or p.t ~= 0) then
+		firstOk = false
+	end
+	if last[p.id] and p.t - last[p.id] < 2000 and not (i == #newRun.pushes and p.id == 1) then
+		gapOk = false
+	end
+	last[p.id] = p.t
+end
+ok(firstOk, "patched: the first opcode of each player still gets the points (opcode 89)")
+ok(gapOk and newRun.pushes[#newRun.pushes].id == 1, "patched: 2 s apart, and opcode 1 always answered")
+ok(newRun.queries >= 3 + 3 * 2, "patched: the points come again after 2 s: " .. newRun.queries)
+-- CRLF stays CRLF
+writeFile(opPath, (OPCODE_STOCK:gsub("\n", "\r\n")))
+sh(opTool)
+local crlfText = readFile(opPath)
+ok(crlfText:find("chaosAncestralDue", 1, true) and not crlfText:gsub("\r\n", ""):find("\n"), "opcode script: CRLF kept")
 
 os.execute("rm -rf '" .. root .. "'")
 if fails > 0 then

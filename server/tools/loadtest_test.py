@@ -94,6 +94,40 @@ eq(lt.parse(['setup', '--health', '60000']).health, 60000, '--health')
 eq(lt.parse(['run', '--hunt']).hunt, True, '--hunt')
 eq(lt.parse(['run']).hunt, False, 'no --hunt')
 
+# ---------------------------------------------------------------- storms and spam (server/README.md "Stress test")
+a = lt.parse(['run', '--reconnect', '5,25', '--drop', '0.3', '--abort', '0.15', '--pm', '4', '--party', '9'])
+eq(a.reconnect, (5.0, 25.0), '--reconnect MIN,MAX')
+eq((a.drop, a.abort, a.pm, a.party), (0.3, 0.15, 4.0, 9.0), 'chances and intervals')
+eq(lt.parse(['run']).reconnect, '', 'one session by default')
+for bad in (['--reconnect', '9,2'], ['--reconnect', 'x'], ['--drop', '2'], ['--abort', '-1']):
+    try:
+        lt.parse(['run'] + bad)
+        eq('accepted', 'refused', 'bad option %r' % (bad,))
+    except SystemExit:
+        eq(True, True, 'bad option %r refused' % (bad,))
+import json as _json
+import tempfile as _tempfile
+with _tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as f:
+    _json.dump([[60, {'action': 'transfer', 'data': ['gold', '{other}', 7]}], [109, '{"action":"fetch"}']], f)
+ops = lt.load_opcodes(f.name)
+eq(ops[0], (60, '{"action":"transfer","data":["gold","{other}",7]}'), 'an object payload is sent as compact JSON')
+eq(ops[1], (109, '{"action":"fetch"}'), 'a string payload as it is')
+a = lt.parse(['run', '--count', '3', '--opcodes', f.name, '--opcode-every', '0.5'])
+eq((len(a.opcode_list), a.opcode_every), (2, 0.5), '--opcodes and --opcode-every')
+bot = lt.Bot(1, a, lt.OT_RSA_N, {})
+for _ in range(20):
+    eq(bot.fill('{other}') in (lt.bot_name(0), lt.bot_name(2)), True, '{other}: another bot of the run, never itself')
+eq(bot.fill('{name}'), lt.bot_name(1), '{name}: the bot itself')
+eq(bot.fill('{online}'), lt.bot_name(1), '{online} with nobody else in game: the bot itself')
+with open(f.name, 'w') as g:
+    _json.dump([[300, 'x']], g)
+try:
+    lt.load_opcodes(f.name)
+    eq('accepted', 'refused', 'opcode over 255')
+except SystemExit:
+    eq(True, True, 'opcode over 255 refused')
+os.unlink(f.name)
+
 # ---------------------------------------------------------------- a fake login server: the refusal text reaches the report
 KEY = [1, 2, 3, 4]
 
