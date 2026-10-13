@@ -37,6 +37,8 @@ python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 python3 client/tools/make_fonts_test.py
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
+python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
+for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 
 # generated files must be committed up to date (CI diffs them)
 python3 client/tools/gen_spell_data.py                       # -> game_chaosspells/spelldata.lua

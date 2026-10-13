@@ -15924,7 +15924,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-armor.png"
+					"icon": "wiki/i/it-cryptbone-armor.png",
+					"sprite": {"item": 2466}
 				},
 				{
 					"id": "unique:11395",
@@ -15981,7 +15982,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-sword.png"
+					"icon": "wiki/i/it-sunsworn-sword.png",
+					"sprite": {"item": 11395}
 				},
 				{
 					"id": "unique:27647",
@@ -16038,7 +16040,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-boots.png"
+					"icon": "wiki/i/it-sunsworn-boots.png",
+					"sprite": {"item": 27647}
 				},
 				{
 					"id": "unique:27658",
@@ -16091,7 +16094,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-axe.png"
+					"icon": "wiki/i/it-sunsworn-axe.png",
+					"sprite": {"item": 27658}
 				},
 				{
 					"id": "unique:25175",
@@ -16143,7 +16147,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-armor.png"
+					"icon": "wiki/i/it-sunsworn-armor.png",
+					"sprite": {"item": 25175}
 				},
 				{
 					"id": "unique:28100",
@@ -16191,7 +16196,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-legs.png"
+					"icon": "wiki/i/it-sunsworn-legs.png",
+					"sprite": {"item": 28100}
 				},
 				{
 					"id": "unique:28101",
@@ -16236,7 +16242,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-boots.png"
+					"icon": "wiki/i/it-sunsworn-boots.png",
+					"sprite": {"item": 28101}
 				},
 				{
 					"id": "unique:25410",
@@ -16286,7 +16293,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-helmet.png"
+					"icon": "wiki/i/it-sunsworn-helmet.png",
+					"sprite": {"item": 25410}
 				},
 				{
 					"id": "unique:7379",
@@ -16343,7 +16351,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-club.png"
+					"icon": "wiki/i/it-cryptbone-club.png",
+					"sprite": {"item": 7379}
 				},
 				{
 					"id": "unique:3972",
@@ -16397,7 +16406,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-helmet.png"
+					"icon": "wiki/i/it-cryptbone-helmet.png",
+					"sprite": {"item": 3972}
 				},
 				{
 					"id": "unique:18403",
@@ -16453,7 +16463,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-helmet.png"
+					"icon": "wiki/i/it-oathsteel-helmet.png",
+					"sprite": {"item": 18403}
 				},
 				{
 					"id": "unique:11374",
@@ -16507,7 +16518,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-amulet.png"
+					"icon": "wiki/i/it-sunsworn-amulet.png",
+					"sprite": {"item": 11374}
 				},
 				{
 					"id": "unique:27667",
@@ -16564,7 +16576,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-helmet.png"
+					"icon": "wiki/i/it-oathsteel-helmet.png",
+					"sprite": {"item": 27667}
 				},
 				{
 					"id": "unique:8925",
@@ -16618,7 +16631,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-axe.png"
+					"icon": "wiki/i/it-moonsilver-axe.png",
+					"sprite": {"item": 8925}
 				},
 				{
 					"id": "unique:10314",
@@ -16675,7 +16689,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-ring.png"
+					"icon": "wiki/i/it-cryptbone-ring.png",
+					"sprite": {"item": 10314}
 				},
 				{
 					"id": "unique:2123",
@@ -16731,7 +16746,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-ring.png"
+					"icon": "wiki/i/it-oathsteel-ring.png",
+					"sprite": {"item": 2123}
 				},
 				{
 					"id": "unique:8892",
@@ -16791,7 +16807,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-armor.png"
+					"icon": "wiki/i/it-cryptbone-armor.png",
+					"sprite": {"item": 8892}
 				},
 				{
 					"id": "unique:29471",
@@ -16839,7 +16856,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-helmet.png"
+					"icon": "wiki/i/it-oathsteel-helmet.png",
+					"sprite": {"item": 29471}
 				},
 				{
 					"id": "unique:7894",
@@ -16887,7 +16905,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-legs.png"
+					"icon": "wiki/i/it-sunsworn-legs.png",
+					"sprite": {"item": 7894}
 				},
 				{
 					"id": "unique:7899",
@@ -16939,7 +16958,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-armor.png"
+					"icon": "wiki/i/it-moonsilver-armor.png",
+					"sprite": {"item": 7899}
 				},
 				{
 					"id": "unique:24637",
@@ -16987,7 +17007,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-boots.png"
+					"icon": "wiki/i/it-voidmourn-boots.png",
+					"sprite": {"item": 24637}
 				},
 				{
 					"id": "unique:28041",
@@ -17037,7 +17058,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-ring.png"
+					"icon": "wiki/i/it-moonsilver-ring.png",
+					"sprite": {"item": 28041}
 				},
 				{
 					"id": "unique:27666",
@@ -17085,7 +17107,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-wand.png"
+					"icon": "wiki/i/it-cryptbone-wand.png",
+					"sprite": {"item": 27666}
 				},
 				{
 					"id": "unique:7462",
@@ -17136,7 +17159,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-helmet.png"
+					"icon": "wiki/i/it-sunsworn-helmet.png",
+					"sprite": {"item": 7462}
 				},
 				{
 					"id": "unique:27230",
@@ -17192,7 +17216,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-bow.png"
+					"icon": "wiki/i/it-wildroot-bow.png",
+					"sprite": {"item": 27230}
 				},
 				{
 					"id": "unique:11304",
@@ -17240,7 +17265,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-legs.png"
+					"icon": "wiki/i/it-voidmourn-legs.png",
+					"sprite": {"item": 11304}
 				},
 				{
 					"id": "unique:28112",
@@ -17288,7 +17314,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-helmet.png"
+					"icon": "wiki/i/it-voidmourn-helmet.png",
+					"sprite": {"item": 28112}
 				},
 				{
 					"id": "unique:7404",
@@ -17339,7 +17366,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-sword.png"
+					"icon": "wiki/i/it-voidmourn-sword.png",
+					"sprite": {"item": 7404}
 				},
 				{
 					"id": "unique:11301",
@@ -17391,7 +17419,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-armor.png"
+					"icon": "wiki/i/it-voidmourn-armor.png",
+					"sprite": {"item": 11301}
 				},
 				{
 					"id": "unique:7418",
@@ -17442,7 +17471,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-sword.png"
+					"icon": "wiki/i/it-voidmourn-sword.png",
+					"sprite": {"item": 7418}
 				},
 				{
 					"id": "unique:27249",
@@ -17490,7 +17520,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-boots.png"
+					"icon": "wiki/i/it-voidmourn-boots.png",
+					"sprite": {"item": 27249}
 				},
 				{
 					"id": "unique:29866",
@@ -17554,7 +17585,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-wand.png"
+					"icon": "wiki/i/it-voidmourn-wand.png",
+					"sprite": {"item": 29866}
 				},
 				{
 					"id": "unique:22423",
@@ -17610,7 +17642,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-shield.png"
+					"icon": "wiki/i/it-voidmourn-shield.png",
+					"sprite": {"item": 22423}
 				},
 				{
 					"id": "unique:27692",
@@ -17670,7 +17703,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-legs.png"
+					"icon": "wiki/i/it-sunsworn-legs.png",
+					"sprite": {"item": 27692}
 				},
 				{
 					"id": "unique:3975",
@@ -17727,7 +17761,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-shield.png"
+					"icon": "wiki/i/it-sunsworn-shield.png",
+					"sprite": {"item": 3975}
 				},
 				{
 					"id": "unique:2440",
@@ -17784,7 +17819,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-axe.png"
+					"icon": "wiki/i/it-sunsworn-axe.png",
+					"sprite": {"item": 2440}
 				},
 				{
 					"id": "unique:2171",
@@ -17835,7 +17871,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-amulet.png"
+					"icon": "wiki/i/it-oathsteel-amulet.png",
+					"sprite": {"item": 2171}
 				},
 				{
 					"id": "unique:24790",
@@ -17888,7 +17925,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-amulet.png"
+					"icon": "wiki/i/it-oathsteel-amulet.png",
+					"sprite": {"item": 24790}
 				},
 				{
 					"id": "unique:7890",
@@ -17945,7 +17983,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-amulet.png"
+					"icon": "wiki/i/it-cryptbone-amulet.png",
+					"sprite": {"item": 7890}
 				},
 				{
 					"id": "unique:27474",
@@ -17998,7 +18037,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-crossbow.png"
+					"icon": "wiki/i/it-cryptbone-crossbow.png",
+					"sprite": {"item": 27474}
 				},
 				{
 					"id": "unique:15407",
@@ -18050,7 +18090,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-armor.png"
+					"icon": "wiki/i/it-oathsteel-armor.png",
+					"sprite": {"item": 15407}
 				},
 				{
 					"id": "unique:29470",
@@ -18100,7 +18141,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-helmet.png"
+					"icon": "wiki/i/it-sunsworn-helmet.png",
+					"sprite": {"item": 29470}
 				},
 				{
 					"id": "unique:28114",
@@ -18148,7 +18190,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-legs.png"
+					"icon": "wiki/i/it-sunsworn-legs.png",
+					"sprite": {"item": 28114}
 				},
 				{
 					"id": "unique:8849",
@@ -18202,7 +18245,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-crossbow.png"
+					"icon": "wiki/i/it-oathsteel-crossbow.png",
+					"sprite": {"item": 8849}
 				},
 				{
 					"id": "unique:11426",
@@ -18256,7 +18300,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-sword.png"
+					"icon": "wiki/i/it-wildroot-sword.png",
+					"sprite": {"item": 11426}
 				},
 				{
 					"id": "unique:23590",
@@ -18310,7 +18355,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-club.png"
+					"icon": "wiki/i/it-sunsworn-club.png",
+					"sprite": {"item": 23590}
 				},
 				{
 					"id": "unique:36659",
@@ -18375,7 +18421,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-sword.png"
+					"icon": "wiki/i/it-oathsteel-sword.png",
+					"sprite": {"item": 36659}
 				},
 				{
 					"id": "unique:10301",
@@ -18432,7 +18479,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-axe.png"
+					"icon": "wiki/i/it-oathsteel-axe.png",
+					"sprite": {"item": 10301}
 				},
 				{
 					"id": "unique:10218",
@@ -18486,7 +18534,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-amulet.png"
+					"icon": "wiki/i/it-cryptbone-amulet.png",
+					"sprite": {"item": 10218}
 				},
 				{
 					"id": "unique:10221",
@@ -18543,7 +18592,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-amulet.png"
+					"icon": "wiki/i/it-moonsilver-amulet.png",
+					"sprite": {"item": 10221}
 				},
 				{
 					"id": "unique:19390",
@@ -18597,7 +18647,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-bow.png"
+					"icon": "wiki/i/it-sunsworn-bow.png",
+					"sprite": {"item": 19390}
 				},
 				{
 					"id": "unique:16111",
@@ -18652,7 +18703,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-crossbow.png"
+					"icon": "wiki/i/it-voidmourn-crossbow.png",
+					"sprite": {"item": 16111}
 				},
 				{
 					"id": "unique:2493",
@@ -18703,7 +18755,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-helmet.png"
+					"icon": "wiki/i/it-moonsilver-helmet.png",
+					"sprite": {"item": 2493}
 				},
 				{
 					"id": "unique:27668",
@@ -18760,7 +18813,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-helmet.png"
+					"icon": "wiki/i/it-wildroot-helmet.png",
+					"sprite": {"item": 27668}
 				},
 				{
 					"id": "unique:26808",
@@ -18808,7 +18862,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-ring.png"
+					"icon": "wiki/i/it-cryptbone-ring.png",
+					"sprite": {"item": 26808}
 				},
 				{
 					"id": "unique:2129",
@@ -18853,7 +18908,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-amulet.png"
+					"icon": "wiki/i/it-oathsteel-amulet.png",
+					"sprite": {"item": 2129}
 				},
 				{
 					"id": "unique:24741",
@@ -18905,7 +18961,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-armor.png"
+					"icon": "wiki/i/it-moonsilver-armor.png",
+					"sprite": {"item": 24741}
 				},
 				{
 					"id": "unique:24718",
@@ -18953,7 +19010,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-helmet.png"
+					"icon": "wiki/i/it-sunsworn-helmet.png",
+					"sprite": {"item": 24718}
 				},
 				{
 					"id": "unique:21693",
@@ -19007,7 +19065,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-ring.png"
+					"icon": "wiki/i/it-moonsilver-ring.png",
+					"sprite": {"item": 21693}
 				},
 				{
 					"id": "unique:2496",
@@ -19064,7 +19123,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-helmet.png"
+					"icon": "wiki/i/it-cryptbone-helmet.png",
+					"sprite": {"item": 2496}
 				},
 				{
 					"id": "unique:28023",
@@ -19120,7 +19180,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-ring.png"
+					"icon": "wiki/i/it-moonsilver-ring.png",
+					"sprite": {"item": 28023}
 				},
 				{
 					"id": "unique:3961",
@@ -19177,7 +19238,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-club.png"
+					"icon": "wiki/i/it-cryptbone-club.png",
+					"sprite": {"item": 3961}
 				},
 				{
 					"id": "unique:27288",
@@ -19231,7 +19293,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-boots.png"
+					"icon": "wiki/i/it-cryptbone-boots.png",
+					"sprite": {"item": 27288}
 				},
 				{
 					"id": "unique:25418",
@@ -19285,7 +19348,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-club.png"
+					"icon": "wiki/i/it-wildroot-club.png",
+					"sprite": {"item": 25418}
 				},
 				{
 					"id": "unique:28125",
@@ -19330,7 +19394,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-ring.png"
+					"icon": "wiki/i/it-moonsilver-ring.png",
+					"sprite": {"item": 28125}
 				},
 				{
 					"id": "unique:28106",
@@ -19378,7 +19443,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-helmet.png"
+					"icon": "wiki/i/it-oathsteel-helmet.png",
+					"sprite": {"item": 28106}
 				},
 				{
 					"id": "unique:28111",
@@ -19426,7 +19492,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-shield.png"
+					"icon": "wiki/i/it-voidmourn-shield.png",
+					"sprite": {"item": 28111}
 				},
 				{
 					"id": "unique:28107",
@@ -19478,7 +19545,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-armor.png"
+					"icon": "wiki/i/it-moonsilver-armor.png",
+					"sprite": {"item": 28107}
 				},
 				{
 					"id": "unique:28108",
@@ -19526,7 +19594,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-legs.png"
+					"icon": "wiki/i/it-oathsteel-legs.png",
+					"sprite": {"item": 28108}
 				},
 				{
 					"id": "unique:28109",
@@ -19571,7 +19640,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-boots.png"
+					"icon": "wiki/i/it-oathsteel-boots.png",
+					"sprite": {"item": 28109}
 				},
 				{
 					"id": "unique:27231",
@@ -19626,7 +19696,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-helmet.png"
+					"icon": "wiki/i/it-oathsteel-helmet.png",
+					"sprite": {"item": 27231}
 				},
 				{
 					"id": "unique:27232",
@@ -19680,7 +19751,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-armor.png"
+					"icon": "wiki/i/it-sunsworn-armor.png",
+					"sprite": {"item": 27232}
 				},
 				{
 					"id": "unique:2412",
@@ -19743,7 +19815,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-sword.png"
+					"icon": "wiki/i/it-voidmourn-sword.png",
+					"sprite": {"item": 2412}
 				},
 				{
 					"id": "unique:27693",
@@ -19797,7 +19870,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-legs.png"
+					"icon": "wiki/i/it-voidmourn-legs.png",
+					"sprite": {"item": 27693}
 				},
 				{
 					"id": "unique:15453",
@@ -19854,7 +19928,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-shield.png"
+					"icon": "wiki/i/it-oathsteel-shield.png",
+					"sprite": {"item": 15453}
 				},
 				{
 					"id": "unique:10318",
@@ -19911,7 +19986,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-shield.png"
+					"icon": "wiki/i/it-sunsworn-shield.png",
+					"sprite": {"item": 10318}
 				},
 				{
 					"id": "unique:10296",
@@ -19965,7 +20041,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-armor.png"
+					"icon": "wiki/i/it-cryptbone-armor.png",
+					"sprite": {"item": 10296}
 				},
 				{
 					"id": "unique:8881",
@@ -20021,7 +20098,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-armor.png"
+					"icon": "wiki/i/it-voidmourn-armor.png",
+					"sprite": {"item": 8881}
 				},
 				{
 					"id": "unique:27251",
@@ -20077,7 +20155,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-amulet.png"
+					"icon": "wiki/i/it-oathsteel-amulet.png",
+					"sprite": {"item": 27251}
 				},
 				{
 					"id": "unique:13760",
@@ -20132,7 +20211,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-wand.png"
+					"icon": "wiki/i/it-wildroot-wand.png",
+					"sprite": {"item": 13760}
 				},
 				{
 					"id": "unique:2206",
@@ -20183,7 +20263,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-ring.png"
+					"icon": "wiki/i/it-sunsworn-ring.png",
+					"sprite": {"item": 2206}
 				},
 				{
 					"id": "unique:21691",
@@ -20239,7 +20320,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-amulet.png"
+					"icon": "wiki/i/it-voidmourn-amulet.png",
+					"sprite": {"item": 21691}
 				},
 				{
 					"id": "unique:2408",
@@ -20290,7 +20372,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-sword.png"
+					"icon": "wiki/i/it-wildroot-sword.png",
+					"sprite": {"item": 2408}
 				},
 				{
 					"id": "unique:26756",
@@ -20349,7 +20432,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-wand.png"
+					"icon": "wiki/i/it-wildroot-wand.png",
+					"sprite": {"item": 26756}
 				},
 				{
 					"id": "unique:27228",
@@ -20405,7 +20489,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-armor.png"
+					"icon": "wiki/i/it-cryptbone-armor.png",
+					"sprite": {"item": 27228}
 				},
 				{
 					"id": "unique:28115",
@@ -20462,7 +20547,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-boots.png"
+					"icon": "wiki/i/it-oathsteel-boots.png",
+					"sprite": {"item": 28115}
 				},
 				{
 					"id": "unique:8209",
@@ -20525,7 +20611,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-sword.png"
+					"icon": "wiki/i/it-cryptbone-sword.png",
+					"sprite": {"item": 8209}
 				},
 				{
 					"id": "unique:29571",
@@ -20588,7 +20675,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-wand.png"
+					"icon": "wiki/i/it-cryptbone-wand.png",
+					"sprite": {"item": 29571}
 				},
 				{
 					"id": "unique:15413",
@@ -20644,7 +20732,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-shield.png"
+					"icon": "wiki/i/it-wildroot-shield.png",
+					"sprite": {"item": 15413}
 				},
 				{
 					"id": "unique:28049",
@@ -20700,7 +20789,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-ring.png"
+					"icon": "wiki/i/it-oathsteel-ring.png",
+					"sprite": {"item": 28049}
 				},
 				{
 					"id": "unique:27390",
@@ -20757,7 +20847,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-armor.png"
+					"icon": "wiki/i/it-cryptbone-armor.png",
+					"sprite": {"item": 27390}
 				},
 				{
 					"id": "unique:8858",
@@ -20813,7 +20904,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-bow.png"
+					"icon": "wiki/i/it-wildroot-bow.png",
+					"sprite": {"item": 8858}
 				},
 				{
 					"id": "unique:24851",
@@ -20870,7 +20962,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-amulet.png"
+					"icon": "wiki/i/it-voidmourn-amulet.png",
+					"sprite": {"item": 24851}
 				},
 				{
 					"id": "unique:2500",
@@ -20925,7 +21018,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-armor.png"
+					"icon": "wiki/i/it-wildroot-armor.png",
+					"sprite": {"item": 2500}
 				},
 				{
 					"id": "unique:27646",
@@ -20980,7 +21074,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-bow.png"
+					"icon": "wiki/i/it-wildroot-bow.png",
+					"sprite": {"item": 27646}
 				},
 				{
 					"id": "unique:28691",
@@ -21035,7 +21130,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-ring.png"
+					"icon": "wiki/i/it-wildroot-ring.png",
+					"sprite": {"item": 28691}
 				},
 				{
 					"id": "unique:18406",
@@ -21090,7 +21186,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-boots.png"
+					"icon": "wiki/i/it-wildroot-boots.png",
+					"sprite": {"item": 18406}
 				},
 				{
 					"id": "unique:22474",
@@ -21141,7 +21238,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-shield.png"
+					"icon": "wiki/i/it-sunsworn-shield.png",
+					"sprite": {"item": 22474}
 				},
 				{
 					"id": "unique:29868",
@@ -21192,7 +21290,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-ring.png"
+					"icon": "wiki/i/it-cryptbone-ring.png",
+					"sprite": {"item": 29868}
 				},
 				{
 					"id": "unique:27652",
@@ -21248,7 +21347,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-amulet.png"
+					"icon": "wiki/i/it-sunsworn-amulet.png",
+					"sprite": {"item": 27652}
 				},
 				{
 					"id": "unique:27675",
@@ -21302,7 +21402,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-helmet.png"
+					"icon": "wiki/i/it-moonsilver-helmet.png",
+					"sprite": {"item": 27675}
 				},
 				{
 					"id": "unique:28020",
@@ -21366,7 +21467,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-legs.png"
+					"icon": "wiki/i/it-voidmourn-legs.png",
+					"sprite": {"item": 28020}
 				},
 				{
 					"id": "unique:26133",
@@ -21420,7 +21522,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-boots.png"
+					"icon": "wiki/i/it-voidmourn-boots.png",
+					"sprite": {"item": 26133}
 				},
 				{
 					"id": "unique:10510",
@@ -21477,7 +21580,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-ring.png"
+					"icon": "wiki/i/it-sunsworn-ring.png",
+					"sprite": {"item": 10510}
 				},
 				{
 					"id": "unique:22690",
@@ -21535,7 +21639,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-sword.png"
+					"icon": "wiki/i/it-sunsworn-sword.png",
+					"sprite": {"item": 22690}
 				},
 				{
 					"id": "unique:27295",
@@ -21591,7 +21696,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-armor.png"
+					"icon": "wiki/i/it-voidmourn-armor.png",
+					"sprite": {"item": 27295}
 				}
 			],
 			"banner": "wiki/hero/tab-uniques.webp",
@@ -21670,7 +21776,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-axe.png"
+					"icon": "wiki/i/it-oathsteel-axe.png",
+					"sprite": {"item": 27658}
 				},
 				{
 					"id": "set:cinderstorm",
@@ -21744,7 +21851,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-rod.png"
+					"icon": "wiki/i/it-sunsworn-rod.png",
+					"sprite": {"item": 27666}
 				},
 				{
 					"id": "set:duskstalker",
@@ -21822,7 +21930,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-voidmourn-helmet.png"
+					"icon": "wiki/i/it-voidmourn-helmet.png",
+					"sprite": {"item": 7404}
 				},
 				{
 					"id": "set:embers",
@@ -21886,7 +21995,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-sunsworn-spellbook.png"
+					"icon": "wiki/i/it-sunsworn-spellbook.png",
+					"sprite": {"item": 2496}
 				},
 				{
 					"id": "set:gallows",
@@ -21951,7 +22061,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-crossbow.png"
+					"icon": "wiki/i/it-cryptbone-crossbow.png",
+					"sprite": {"item": 27474}
 				},
 				{
 					"id": "set:hollowpack",
@@ -22019,7 +22130,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-amulet.png"
+					"icon": "wiki/i/it-wildroot-amulet.png",
+					"sprite": {"item": 24718}
 				},
 				{
 					"id": "set:lichbound",
@@ -22159,7 +22271,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-armor.png"
+					"icon": "wiki/i/it-moonsilver-armor.png",
+					"sprite": {"item": 28111}
 				},
 				{
 					"id": "set:ashwarden",
@@ -22290,7 +22403,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-wildroot-bow.png"
+					"icon": "wiki/i/it-wildroot-bow.png",
+					"sprite": {"item": 27646}
 				}
 			],
 			"banner": "wiki/hero/tab-sets.webp",
@@ -29235,7 +29349,8 @@
 									"Bundle",
 									"Once per account, up to level 300: Auto Seller, Discoverer outfit with addons, 100 Supreme Health Potions. (once per account, up to level 300)"
 								]
-							]
+							],
+							"sprites": [{"item": 8472}, {"item": 1988}, {"item": 2160}]
 						}
 					],
 					"icon": "wiki/i/top-daily.png"
@@ -29271,7 +29386,8 @@
 									"Bundle",
 									"Dreadbone Spectra, the Umbral Smoke aura, the Spectral Pulse shader and the Bone Steed mount."
 								]
-							]
+							],
+							"sprites": [{"item": 7290}, {"item": 2187}, {"item": 2436}]
 						}
 					],
 					"icon": "wiki/i/top-stash.png"
@@ -29625,6 +29741,64 @@
 									"Cosmetic",
 									"Full Pirate outfit with both addons, male and female look. Premium account needed to wear it."
 								]
+							],
+							"sprites": [
+								{"addons": 3, "outfit": 1299},
+								{"addons": 3, "outfit": 1262},
+								{"addons": 3, "outfit": 1237},
+								{"addons": 3, "outfit": 1228},
+								{"addons": 3, "outfit": 1224},
+								{"addons": 3, "outfit": 1221},
+								{"addons": 3, "outfit": 1219},
+								{"addons": 3, "outfit": 1217},
+								{"addons": 3, "outfit": 1215},
+								{"addons": 3, "outfit": 1213},
+								{"addons": 3, "outfit": 1211},
+								{"addons": 3, "outfit": 1208},
+								{"addons": 3, "outfit": 1207},
+								{"addons": 3, "outfit": 1198},
+								{"addons": 3, "outfit": 1197},
+								{"addons": 3, "outfit": 1196},
+								{"addons": 3, "outfit": 1195},
+								{"addons": 3, "outfit": 1194},
+								{"addons": 3, "outfit": 1064},
+								{"addons": 3, "outfit": 1037},
+								{"addons": 3, "outfit": 999},
+								{"addons": 3, "outfit": 997},
+								{"addons": 3, "outfit": 972},
+								{"addons": 3, "outfit": 917},
+								{"addons": 3, "outfit": 909},
+								{"addons": 3, "outfit": 899},
+								{"addons": 3, "outfit": 873},
+								{"addons": 3, "outfit": 760},
+								{"addons": 3, "outfit": 750},
+								{"addons": 3, "outfit": 746},
+								{"addons": 3, "outfit": 733},
+								{"addons": 3, "outfit": 725},
+								{"addons": 3, "outfit": 695},
+								{"addons": 3, "outfit": 619},
+								{"addons": 3, "outfit": 610},
+								{"addons": 3, "outfit": 577},
+								{"addons": 3, "outfit": 574},
+								{"addons": 3, "outfit": 541},
+								{"addons": 3, "outfit": 516},
+								{"addons": 3, "outfit": 512},
+								{"addons": 3, "outfit": 472},
+								{"addons": 3, "outfit": 465},
+								{"addons": 3, "outfit": 463},
+								{"addons": 3, "outfit": 432},
+								{"addons": 3, "outfit": 430},
+								{"addons": 3, "outfit": 367},
+								{"addons": 3, "outfit": 335},
+								{"addons": 3, "outfit": 328},
+								{"addons": 3, "outfit": 325},
+								{"addons": 3, "outfit": 273},
+								{"addons": 3, "outfit": 268},
+								{"addons": 3, "outfit": 251},
+								{"addons": 3, "outfit": 154},
+								{"addons": 3, "outfit": 153},
+								{"addons": 3, "outfit": 152},
+								{"addons": 3, "outfit": 151}
 							]
 						}
 					],
@@ -29697,6 +29871,17 @@
 									"Cosmetic",
 									"Both addons of the Oriental outfit, male and female look. Premium account needed to wear it."
 								]
+							],
+							"sprites": [
+								{"addons": 3, "outfit": 128},
+								{"addons": 3, "outfit": 129},
+								{"addons": 3, "outfit": 132},
+								{"addons": 3, "outfit": 133},
+								{"addons": 3, "outfit": 134},
+								{"addons": 3, "outfit": 143},
+								{"addons": 3, "outfit": 144},
+								{"addons": 3, "outfit": 145},
+								{"addons": 3, "outfit": 146}
 							]
 						}
 					],
@@ -30105,6 +30290,133 @@
 									"Cosmetic",
 									"The Widow Queen mount, yours for good. Premium account needed to wear it."
 								]
+							],
+							"sprites": [
+								{"outfit": 1561},
+								{"outfit": 1376},
+								{"outfit": 1346},
+								{"outfit": 1345},
+								{"outfit": 1344},
+								{"outfit": 1343},
+								{"outfit": 1342},
+								{"outfit": 1341},
+								{"outfit": 1340},
+								{"outfit": 1339},
+								{"outfit": 1338},
+								{"outfit": 1337},
+								{"outfit": 1336},
+								{"outfit": 1335},
+								{"outfit": 1334},
+								{"outfit": 1333},
+								{"outfit": 1332},
+								{"outfit": 1301},
+								{"outfit": 1236},
+								{"outfit": 1235},
+								{"outfit": 1234},
+								{"outfit": 1225},
+								{"outfit": 1222},
+								{"outfit": 1191},
+								{"outfit": 1190},
+								{"outfit": 1076},
+								{"outfit": 1063},
+								{"outfit": 1062},
+								{"outfit": 1036},
+								{"outfit": 1030},
+								{"outfit": 996},
+								{"outfit": 903},
+								{"outfit": 902},
+								{"outfit": 901},
+								{"outfit": 928},
+								{"outfit": 890},
+								{"outfit": 889},
+								{"outfit": 888},
+								{"outfit": 887},
+								{"outfit": 886},
+								{"outfit": 883},
+								{"outfit": 870},
+								{"outfit": 869},
+								{"outfit": 868},
+								{"outfit": 850},
+								{"outfit": 849},
+								{"outfit": 763},
+								{"outfit": 761},
+								{"outfit": 740},
+								{"outfit": 739},
+								{"outfit": 738},
+								{"outfit": 736},
+								{"outfit": 735},
+								{"outfit": 734},
+								{"outfit": 728},
+								{"outfit": 727},
+								{"outfit": 726},
+								{"outfit": 693},
+								{"outfit": 692},
+								{"outfit": 691},
+								{"outfit": 690},
+								{"outfit": 689},
+								{"outfit": 688},
+								{"outfit": 687},
+								{"outfit": 686},
+								{"outfit": 685},
+								{"outfit": 682},
+								{"outfit": 674},
+								{"outfit": 673},
+								{"outfit": 672},
+								{"outfit": 671},
+								{"outfit": 670},
+								{"outfit": 669},
+								{"outfit": 651},
+								{"outfit": 650},
+								{"outfit": 648},
+								{"outfit": 647},
+								{"outfit": 631},
+								{"outfit": 630},
+								{"outfit": 629},
+								{"outfit": 628},
+								{"outfit": 627},
+								{"outfit": 624},
+								{"outfit": 622},
+								{"outfit": 621},
+								{"outfit": 606},
+								{"outfit": 580},
+								{"outfit": 572},
+								{"outfit": 571},
+								{"outfit": 559},
+								{"outfit": 548},
+								{"outfit": 547},
+								{"outfit": 546},
+								{"outfit": 526},
+								{"outfit": 522},
+								{"outfit": 521},
+								{"outfit": 515},
+								{"outfit": 506},
+								{"outfit": 503},
+								{"outfit": 502},
+								{"outfit": 450},
+								{"outfit": 447},
+								{"outfit": 427},
+								{"outfit": 426},
+								{"outfit": 406},
+								{"outfit": 405},
+								{"outfit": 402},
+								{"outfit": 401},
+								{"outfit": 392},
+								{"outfit": 390},
+								{"outfit": 389},
+								{"outfit": 388},
+								{"outfit": 387},
+								{"outfit": 379},
+								{"outfit": 378},
+								{"outfit": 377},
+								{"outfit": 376},
+								{"outfit": 375},
+								{"outfit": 374},
+								{"outfit": 373},
+								{"outfit": 372},
+								{"outfit": 371},
+								{"outfit": 370},
+								{"outfit": 369},
+								{"outfit": 368}
 							]
 						}
 					],
@@ -30265,6 +30577,21 @@
 									"Cosmetic",
 									"A storm-blue frame edged in white round your name plate, for good. Switch frames in Info & Services > Services."
 								]
+							],
+							"sprites": [
+								{"item": 2153},
+								{"item": 2154},
+								{"item": 2156},
+								{"item": 2155},
+								{"item": 2230},
+								{"item": 2229},
+								{"item": 2146},
+								{"item": 2145},
+								{"item": 2155},
+								{"item": 2148},
+								{"item": 2153},
+								{"item": 2154},
+								{"item": 7759}
 							]
 						}
 					],
@@ -30319,6 +30646,14 @@
 									"Cosmetic",
 									"Town Portal style: a white palace door with a red veil. Choose it in Character > Portal Style."
 								]
+							],
+							"sprites": [
+								{"item": 29640},
+								{"item": 29641},
+								{"item": 29632},
+								{"item": 29630},
+								{"item": 29631},
+								{"item": 29636}
 							]
 						}
 					],
@@ -30409,6 +30744,20 @@
 									"Cosmetic",
 									"Zealotry and Purging Nova burn in red and fire. Seen by all. Character > Cosmetics."
 								]
+							],
+							"sprites": [
+								{"item": 7762},
+								{"item": 7759},
+								{"item": 2187},
+								{"item": 2153},
+								{"item": 7760},
+								{"item": 2145},
+								{"item": 7761},
+								{"item": 2156},
+								{"item": 2150},
+								{"item": 2154},
+								{"item": 18414},
+								{"item": 18420}
 							]
 						}
 					],
@@ -30457,7 +30806,8 @@
 									"Cosmetic",
 									"A white sun ring shines over your kills. Seen by all. Character > Cosmetics."
 								]
-							]
+							],
+							"sprites": [{"item": 5944}, {"item": 2304}, {"item": 2274}, {"item": 9020}, {"item": 10305}]
 						}
 					],
 					"icon": "wiki/i/k-blood-skull.png"
@@ -30499,7 +30849,8 @@
 									"Cosmetic",
 									"Your highlighted loot labels sit on royal violet. Rarity colours stay. Character > Cosmetics."
 								]
-							]
+							],
+							"sprites": [{"item": 18420}, {"item": 18415}, {"item": 18418}, {"item": 18414}]
 						}
 					],
 					"icon": "wiki/i/k-light-eye.png"
@@ -30547,7 +30898,8 @@
 									"Cosmetic",
 									"Your name in chat shows rose for everyone. Character > Cosmetics."
 								]
-							]
+							],
+							"sprites": [{"item": 2147}, {"item": 2146}, {"item": 2149}, {"item": 2150}, {"item": 2145}]
 						}
 					],
 					"icon": "wiki/i/top-console.png"
@@ -30619,6 +30971,17 @@
 									"Cosmetic",
 									"Crackling sparks jump from every step. Seen by all. Character > Cosmetics."
 								]
+							],
+							"sprites": [
+								{"item": 2187},
+								{"item": 2274},
+								{"item": 9020},
+								{"item": 2229},
+								{"item": 18415},
+								{"item": 2149},
+								{"item": 2150},
+								{"item": 2154},
+								{"item": 7759}
 							]
 						}
 					],
@@ -30691,6 +31054,17 @@
 									"Cosmetic",
 									"A violet outline of darkness that swells and fades. Seen by all. Character > Cosmetics."
 								]
+							],
+							"sprites": [
+								{"item": 2154},
+								{"item": 2156},
+								{"item": 2153},
+								{"item": 2146},
+								{"item": 2149},
+								{"item": 2187},
+								{"item": 7759},
+								{"item": 2145},
+								{"item": 6500}
 							]
 						}
 					],
@@ -30763,6 +31137,17 @@
 									"Cosmetic",
 									"Hideout decoration (Rugs), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
 								]
+							],
+							"sprites": [
+								{"item": 7277},
+								{"item": 10950},
+								{"item": 9439},
+								{"item": 1452},
+								{"item": 1448},
+								{"item": 11753},
+								{"item": 10952},
+								{"item": 1870},
+								{"item": 1804}
 							]
 						}
 					],
@@ -30835,6 +31220,17 @@
 									"Cosmetic",
 									"Transmog looks: grand sanguine blade, cudgel, hatchet, bow and coil. Character > Transmog."
 								]
+							],
+							"sprites": [
+								{"item": 27200},
+								{"item": 27402},
+								{"item": 26709},
+								{"item": 27389},
+								{"item": 27391},
+								{"item": 28383},
+								{"item": 27213},
+								{"item": 27400},
+								{"item": 27459}
 							]
 						}
 					],
@@ -30895,6 +31291,15 @@
 									"Pet (small abilities)",
 									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
 								]
+							],
+							"sprites": [
+								{"item": 2050},
+								{"item": 2148},
+								{"item": 2050},
+								{"item": 2148},
+								{"item": 2050},
+								{"item": 2148},
+								{"item": 2050}
 							]
 						}
 					],
@@ -30931,7 +31336,8 @@
 									"Crafting item",
 									"Binds one modifier: the orbs that change modifiers leave it alone. 3 per week. (3 a week)"
 								]
-							]
+							],
+							"sprites": [{"item": 32256}, {"item": 32253}, {"item": 32252}]
 						}
 					],
 					"icon": "wiki/i/k-steel-hammer.png"
@@ -30982,6 +31388,16 @@
 									"Convenience",
 									"A backpack with more room than any other."
 								]
+							],
+							"sprites": [
+								{"item": 7590},
+								{"item": 8472},
+								{"item": 8473},
+								{"item": 26031},
+								{"item": 2268},
+								{"item": 2304},
+								{"item": 2273},
+								{"item": 2365}
 							]
 						}
 					],
@@ -31030,7 +31446,8 @@
 									"Boost",
 									"All five blessings at once: less experience and item loss when you die."
 								]
-							]
+							],
+							"sprites": [{"item": 27990}, {"item": 27990}, {"item": 28095}, {"item": 28095}, {"item": 11260}]
 						}
 					],
 					"icon": "wiki/i/k-light-arrowup.png"
@@ -31066,7 +31483,8 @@
 									"Boost",
 									"+25% skill and magic level training for every standard (not season) character for 1 hour. Up to 3 hours."
 								]
-							]
+							],
+							"sprites": [{"item": 7440}, {"item": 2148}, {"item": 7443}]
 						}
 					],
 					"icon": "wiki/i/k-holy-burst.png"
@@ -31114,7 +31532,8 @@
 									"Service",
 									"Refunds every passive tree and Paragon point at once, without the gold cost of the normal resets."
 								]
-							]
+							],
+							"sprites": [{"item": 25427}, {"item": 2175}, {"item": 9019}, {"item": 2229}, {"item": 18559}]
 						}
 					],
 					"icon": "wiki/i/top-options.png"
@@ -31162,7 +31581,8 @@
 									"Convenience",
 									"Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."
 								]
-							]
+							],
+							"sprites": [{"item": 32081}, {"item": 32082}, {"item": 32083}, {"item": 2160}, {"item": 2472}]
 						}
 					],
 					"icon": "wiki/i/top-autoloot.png"
@@ -31198,7 +31618,8 @@
 									"Class unlock",
 									"Unlocks the Templar class (Inquisitor, Sentinel) for every character of your account."
 								]
-							]
+							],
+							"sprites": [{"item": 2436}, {"item": 7422}, {"item": 2523}]
 						}
 					],
 					"icon": "wiki/i/k-holy-sword.png"
@@ -31342,6 +31763,29 @@
 									"Consumable item",
 									"Use the chest to get a shield with 14400 training charges."
 								]
+							],
+							"sprites": [
+								{"item": 27761},
+								{"item": 27762},
+								{"item": 27763},
+								{"item": 27764},
+								{"item": 27765},
+								{"item": 27766},
+								{"item": 27767},
+								{"item": 27768},
+								{"item": 27769},
+								{"item": 27770},
+								{"item": 27771},
+								{"item": 27772},
+								{"item": 27773},
+								{"item": 27774},
+								{"item": 27775},
+								{"item": 27776},
+								{"item": 27777},
+								{"item": 27778},
+								{"item": 27779},
+								{"item": 27780},
+								{"item": 27781}
 							]
 						}
 					],
@@ -31366,7 +31810,8 @@
 									"Chaos Pact",
 									"30 days, stacks: more tabs, listings, builds, rules, daily coins, a title."
 								]
-							]
+							],
+							"sprites": [{"item": 16101}]
 						}
 					],
 					"icon": "wiki/i/top-battlepass.png"
@@ -31420,6 +31865,14 @@
 									"Account storage",
 									"Permanent, account-wide: one more saved passive tree build. Up to 6."
 								]
+							],
+							"sprites": [
+								{"item": 2365},
+								{"item": 29856},
+								{"item": 32005},
+								{"item": 32072},
+								{"item": 1949},
+								{"item": 18559}
 							]
 						}
 					],
@@ -31450,7 +31903,8 @@
 									"Account storage",
 									"Permanent, account-wide: four more depot tabs of 100 items each."
 								]
-							]
+							],
+							"sprites": [{"item": 25453}, {"item": 25456}]
 						}
 					],
 					"icon": "wiki/i/top-stash.png"
@@ -31492,7 +31946,8 @@
 									"Season pass",
 									"Blaze Pack, Chaos Acolyte outfit, Wrathfire Pegasus, title Inferno-Crowned, 500 coins, 10 tier skips."
 								]
-							]
+							],
+							"sprites": [{"item": 26031}, {"item": 26031}, {"item": 26031}, {"item": 26031}]
 						}
 					],
 					"icon": "wiki/i/top-battlepass.png"

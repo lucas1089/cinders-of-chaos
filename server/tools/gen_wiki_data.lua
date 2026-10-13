@@ -1119,12 +1119,27 @@ function W.offerType(o)
 	return "service"
 end
 
+-- the sprite of a store offer's row (website/README.md "Sprite images"): an item by server id, an outfit with both
+-- addons, a mount look, a bundle's or name plate's icon item; false when the offer has no picture of its own
+function W.offerSprite(o)
+	if o.kind == "item" and tonumber(o.id) then
+		return {item = o.id}
+	elseif (o.kind == "outfit" or o.kind == "addons") and tonumber(o.looktype) then
+		return {outfit = o.looktype, addons = 3}
+	elseif o.kind == "mount" and tonumber(o.clientid) then
+		return {outfit = o.clientid}
+	elseif tonumber(o.icon) then
+		return {item = o.icon}
+	end
+	return false
+end
+
 function W.storeEntries(D)
 	local out = {}
 	local summary, sumLinks = {}, {}
 	local typeCount = {}
 	for ci, cat in ipairs(D.shop.categories) do
-		local rows = {}
+		local rows, sprites, anySprite = {}, {}, false
 		local lo, hi
 		local types = {}
 		local typeSeen = {}
@@ -1158,6 +1173,8 @@ function W.storeEntries(D)
 				if o.seasonBlocked then
 					note[#note + 1] = "not for season characters"
 				end
+				sprites[#rows + 1] = W.offerSprite(o)
+				anySprite = anySprite or sprites[#rows + 1] ~= false
 				rows[#rows + 1] = {o.name, cost and num(cost) or (o.pct and ("-" .. num(o.pct) .. "% of the parts") or ""),
 					TYPE_NAME[t], ((o.description or "") .. (#note > 0 and (" (" .. table.concat(note, ", ") .. ")") or ""))}
 			end
@@ -1172,7 +1189,7 @@ function W.storeEntries(D)
 				table.concat(types, ", "))}}}
 			if #rows > 0 then
 				sections[#sections + 1] = {h = "Offers", cols = {"Offer", "Coins", "Type", "What it is"}, w = {24, 10, 16, 50},
-					rows = rows}
+					rows = rows, sprites = anySprite and sprites or nil}
 			else
 				sections[#sections + 1] = {h = "Offers", p = {"Each one is shown with a preview in the store window (Store > " .. cat.name .. ")."}}
 			end
@@ -1470,6 +1487,8 @@ end
 --   top-<name>           a top menu button (client images/chaos/topbutton_<name>.png, gen_theme_art.py)
 --   img/class-<key>.png  the website's class badges (website/tools/gen_site_art.py)
 -- The art of an icon only illustrates the entry: a unique shows a themed piece of its slot, not its own sprite.
+-- The real sprite is a separate field (`sprite`, W.entrySprite, and `sprites` of the store's offer rows): the website
+-- draws it from our client pair only when that art is ours and published (website/README.md "Sprite images").
 W.SOURCES[#W.SOURCES + 1] = "client/overlay/modules/game_chaosspells/spelldata.lua"
 W.SOURCES[#W.SOURCES + 1] = "client/overlay/modules/game_passivetree/treedata/painted.lua"
 
@@ -1884,6 +1903,25 @@ function W.sectionIcons(e, src)
 end
 
 -- icons, banners and the art table; the entries' iconKey (a helper) is dropped
+-- the real sprite of an entry (website/README.md "Sprite images"): {item = <server id>} for a unique, the first piece
+-- of a set; the website shows it only when the item's art is ours and published, else the themed icon above
+function W.entrySprite(tab, e)
+	if tab == "uniques" then
+		local sid = tonumber(tostring(e.id):match("^unique:(%d+)$"))
+		return sid and {item = sid} or nil
+	elseif tab == "sets" then
+		for _, s in ipairs(e.sections or {}) do
+			for _, l in ipairs(s.links or {}) do
+				local sid = tonumber(tostring(l):match("^unique:(%d+)$"))
+				if sid then
+					return {item = sid}
+				end
+			end
+		end
+	end
+	return nil
+end
+
 function W.decorate(tabs, src)
 	for _, t in ipairs(tabs) do
 		t.icon = TAB_ICON[t.id]
@@ -1891,6 +1929,7 @@ function W.decorate(tabs, src)
 		t.tone = TAB_TONE[t.id] or "#d6c9ae"
 		for _, e in ipairs(t.entries) do
 			e.icon = W.entryIcon(t.id, e, src)
+			e.sprite = W.entrySprite(t.id, e)
 			e.iconKey = nil
 			W.sectionIcons(e, src)
 		end

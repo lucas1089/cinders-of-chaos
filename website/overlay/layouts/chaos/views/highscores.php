@@ -3,7 +3,8 @@
  * Highscores with the Cinders of Chaos classes.
  *
  * Prepared by highscores.php: $vocGroups, $vocation ('all' or a class id), $type, $page, $highscore,
- * $configVocations, $loadFlags, $loadOutfits. Each class is its own group (config: fromVoc false), and the class
+ * $configVocations, $loadFlags, $loadOutfits (rows then carry type, addons, head, body, legs, feet: the look, drawn by
+ * chaos_outfit.php, README "Sprite images"). Each class is its own group (config: fromVoc false), and the class
  * filter lists them by line; the Leaderboards page has the class lines together (the Class Ladder).
  */
 $h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
@@ -13,6 +14,7 @@ $className = static function (int $id): string {
 $types = array(7 => t('skill.experience'), 8 => t('skill.magic'), 5 => t('skill.shield'), 2 => t('skill.sword'), 1 => t('skill.club'),
 	3 => t('skill.axe'), 4 => t('skill.distance'), 6 => t('skill.fishing'), 9 => t('skill.fist'));
 $lines = function_exists('chaos_class_lines') ? chaos_class_lines() : array();
+$showLooks = !empty($loadOutfits) && function_exists('chaos_outfit_url');
 ?>
 <div class="chaos-page">
 <div class="chaos-box">
@@ -55,16 +57,17 @@ $lines = function_exists('chaos_class_lines') ? chaos_class_lines() : array();
 
 	<table class="chaos-table" id="highscoresTable">
 		<thead><tr>
-			<th>#</th><th><?= $h(t('common.name')) ?></th><th>Class</th>
+			<th>#</th><?php if ($showLooks): ?><th class="chaos-look-col"></th><?php endif; ?><th><?= $h(t('common.name')) ?></th><th>Class</th>
 			<th class="num"><?= $h($type === 7 ? t('common.level') : $types[$type] ?? '') ?></th>
 			<?php if ($type === 7): ?><th class="num"><?= $h(t('common.points')) ?></th><?php endif; ?>
 		</tr></thead>
 		<tbody>
 		<?php if ($rows === false): ?>
-			<tr><td colspan="5" class="chaos-empty"><?= $h(t('common.nothing')) ?></td></tr>
+			<tr><td colspan="<?= $showLooks ? 6 : 5 ?>" class="chaos-empty"><?= $h(t('common.nothing')) ?></td></tr>
 		<?php else: foreach ($rows as $i => $r): if (!pageCheck($i, $page, $rowsPerPage)) continue; ?>
 			<tr class="<?= $i < 3 ? 'chaos-top chaos-top-' . ($i + 1) : '' ?>">
 				<td><?= $i + 1 ?></td>
+				<?php if ($showLooks): ?><td class="chaos-look-col"><img class="chaos-look" src="<?= $h(chaos_outfit_url((int)($r['type'] ?? 0), (int)($r['addons'] ?? 0), (int)($r['head'] ?? 0), (int)($r['body'] ?? 0), (int)($r['legs'] ?? 0), (int)($r['feet'] ?? 0))) ?>" alt="" width="64" height="64" loading="lazy" decoding="async"></td><?php endif; ?>
 				<td><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= $h($r['name']) ?></a></td>
 				<td><?= $h($className((int)$r['vocation'])) ?></td>
 				<td class="num"><?= (int)$r['value'] ?></td>

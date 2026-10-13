@@ -263,6 +263,9 @@ jobs:
       - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
         run: python3 -I client/tools/outfit_art/class_art_test.py
 
+      - name: Website sprite images (gen_sprite_images_test.py; outfit colours on hand-made masks, a synthetic pair)
+        run: python3 -I website/tools/gen_sprite_images_test.py
+
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |
           if ! php -r 'exit(extension_loaded("pdo_sqlite") && extension_loaded("mbstring") ? 0 : 1);' 2>/dev/null; then
@@ -330,3 +333,8 @@ jobs:
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_outfit_anchors.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Website sprite images draw from the live pair (gen_sprite_images.py, our art only, no items.otb)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/website/tools/gen_sprite_images.py \
+              --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr" --out-dir "$RUNNER_TEMP/siteimg"

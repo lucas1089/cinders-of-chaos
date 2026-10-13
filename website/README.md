@@ -59,6 +59,9 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_wiki_page_test.php` | `php website/tests/chaos_wiki_page_test.php`: every wiki page in both languages, the guides, search, escaping and 404s (php-cli only) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
+| `tools/gen_sprite_images.py`, `tools/sprite_owners.csv` | item and outfit images drawn from our client pair at install time, only our art (see "Sprite images") |
+| `overlay/chaos_outfit.php`, `overlay/plugins/chaos/sprite_lib.php` | outfit images with the player's colours, addons and mount; item image URLs; the wiki's real sprites (see "Sprite images") |
+| `tests/chaos_sprites_test.php`, `tools/gen_sprite_images_test.py` | `php website/tests/chaos_sprites_test.php` (php-cli with gd): URLs, placeholder fallback, request values, colours, drawing, cache, wiki; `python3 -I website/tools/gen_sprite_images_test.py`: the colour maths on hand-made masks and a synthetic pair |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
 
 ## Install
@@ -371,6 +374,7 @@ Icons, hero images and banners make the wiki easier to scan. `server/tools/gen_w
   node's glyph (`an-*`). Guardian portraits (`rg-*`) and the pack of `rx-clear` are crops of our own rift looks, kept
   as a snapshot in `website/tools/wiki_art_src/rift_creatures.png` (`gen_wiki_art.py import-creatures` refreshes it from
   `client/tools/sprites/art_import/big_bosses/` and `rift_variants/`), so a repaint there never makes `--check` fail.
+  The real sprite of a unique, a set or a store offer is drawn only from our own art (see "Sprite images").
   The data adds `icons` to a table section (one per row, shown in its first cell): the key of each rift tier, the Atlas
   nodes, the omens, and the new entry `rift:themes` (themes and guardians).
 - **Guides**: a callout box is `> [tip] text`, `> [warn] text` or `> [note] text` (more `> ` lines continue it); a step
@@ -379,6 +383,62 @@ Icons, hero images and banners make the wiki easier to scan. `server/tools/gen_w
 - **Page**: guide heroes on top of each guide and as thumbnails on the index cards, tab banners on the tab pages, icons in
   the tab lists, the index, search results, the entry heading and the first cell of every table row that links an entry.
   Every image has alt text, a width and height and `loading="lazy"` (the hero at the top of a page loads at once).
+
+## Sprite images
+
+Item and outfit images for the character page, the online list, the highscores, the wiki (uniques, sets, store offers)
+and ZnoteX's item slots, drawn from our own client pair. ZnoteX's own outfit and item image services stay unused.
+
+- **Build** (static, at install time): `tools/gen_sprite_images.py --dat --spr [--otb] --publish --out-dir` reads the
+  pair with `client/tools/sprites/datspr.py` and writes `<site>/chaos-sprites/`: `items/<server id>.png` (the item as the
+  client draws it alone: all layers, phase 0, count 1; stackables also `-c2` ... `-c50` for the client's stack patterns,
+  fluid containers `-f1` ... `-f8` for the client fluid colours), `outfits/<look>.png` (a layer sheet: idle group,
+  phase 0, facing south, one column per addon and mount pattern, the art row and the colour template row),
+  `outfits/<look>-d.png` (default colours 78/69/58/76), two placeholders and `index.json` (what is ours, each look's
+  size, displacement, patterns and rider seat). The server's `items.otb` maps server ids to client ids; without it only
+  the items of our manifests (`server/data/items/*.csv`) are known. `--preview DIR` writes contact sheets.
+- **Install**: `install_site.sh` step 3d, only when `CHAOS_SPRITE_PAIR` (a folder with `Tibia.dat` and `Tibia.spr`) is
+  set; `CHAOS_SPRITE_OTB` defaults to `$CHAOS_SERVER_DATA/items/items.otb`. Rebuilt only when the pair, the otb, the
+  setting, the tool or the owners table changed (key in `chaos-sprites/.chaos-key`), into a new folder that is then
+  swapped in. Needs python3-numpy and python3-pil on the machine that runs it (about 10 s, under 10 MB). Without a pair
+  nothing is built and the outfit images stay off, as before.
+- **Why static plus a small renderer**: the pair (600 MB) never goes to the web server and PHP never parses it; the
+  build reads it once with the tools the client pipeline already trusts. Items are plain files. Outfits cannot all be
+  pre-drawn (133^4 colour choices), so `chaos_outfit.php` colours the pre-cut sheets of one look per request: clamped
+  integer parameters only, no database, no ZnoteX bootstrap, PNG out. A render takes a few milliseconds and is cached
+  in `engine/cache/chaos-outfits/` (denied by the web server rules; at most 20,000 files, then rendered without
+  caching; cleared when the set is rebuilt). Without PHP's gd the default-colour image is served.
+- **Colours**: as the client draws a creature: the template layer's exact yellow / red / green / blue pixels select
+  head / body / legs / feet, and the art under them is multiplied by that outfit colour (`(v * c + 127) / 255`); the
+  colour table is the client's 19 hues x 7 shades (`outfit_colour`, the same as `client/tools/sprites/compose_outfit.py`);
+  addon patterns 1 and 2 are drawn over pattern 0 when worn; a mount is drawn under its rider in the rider's mounted
+  pattern, placed as `Outfit::draw` with client base patch 0034 does (rider seat of negative-displacement mounts). The
+  idea comes from open-tibia-library (Gesior, MIT); this follows its documented method (four-colour template mask,
+  colour table, addon layers). No code of it was read for this or copied. PHP and Python give the same pixels for opaque
+  art; semi-transparent pixels may differ by one step (gd keeps 7-bit alpha).
+- **Only our art** (`tools/sprite_owners.csv`, client id ranges from client/MANIFEST.md, theme_things.csv, the class looks
+  and the monster look sources): `own` (drawn for the project or licensed to it: the dark tiles, the October art sets,
+  pouches, fist weapons, themed sets, auras and wings), `donor` (donor-library art the project picked and ships in the
+  client: class looks, monster, boss, faction and wings looks, donor B items) and `stock` (the base pair: the commercial
+  game's art and the base client's additions, also our recolours or templated copies of it). A later row of the table
+  wins, so exceptions follow their range. `CHAOS_SPRITE_PUBLISH` picks the tiers drawn: `own` (default), `own,donor` or
+  `all`. Anything not drawn is a neutral placeholder of our own (a dim slot, a grey hooded figure): stock art never
+  leaves the pair. **Owner decision**: whether donor art may be shown on the website (it already ships in the public
+  client, but this README has said donor outfits are not ours to publish; the default stays `own` until the owner
+  decides; never `all`).
+- **Where**: `setup/write_config.php` points ZnoteX's `show_outfits` (character page, online list, highscores) at
+  `/chaos_outfit.php` and the item images (character equipment, shop) at `/chaos-sprites/items/<id>.png` when the set is
+  installed; our highscores view has an outfit column. The wiki: `gen_wiki_data.lua` adds `sprite` ({item: server id})
+  to every unique and set and `sprites` to the store's offer tables (items, outfits with addons, mounts, bundle and
+  plate icons); `wiki_lib.php` shows the real sprite when it is ours and keeps the themed icon otherwise (today most
+  uniques are stock items, so they keep their themed icon; Grasp of the Pyre Saint shows its own).
+- **Not done**: walking animations (one standing frame only), other directions, the item's own count or fluid on
+  ZnoteX pages (they ask for `<id>.png`).
+- nginx: `chaos_outfit.php` is an ordinary PHP script (the `\.php$` block); to keep floods off PHP add
+  `limit_req_zone $binary_remote_addr zone=chaos_img:10m rate=30r/s;` and
+  `location = /chaos_outfit.php { limit_req zone=chaos_img burst=100 nodelay; include snippets/chaos-php.conf; }`.
+- Test: `php website/tests/chaos_sprites_test.php`, `python3 -I website/tools/gen_sprite_images_test.py` (CI); the
+  `live-pair` CI job builds the set from the live pair.
 
 ## Mail
 

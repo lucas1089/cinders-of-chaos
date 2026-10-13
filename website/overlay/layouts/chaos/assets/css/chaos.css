@@ -449,3 +449,10 @@ html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
   .chaos-wiki-entry__icon { width: 48px; height: 48px; }
   .chaos-wiki-hero { margin: -4px -6px 12px; }
 }
+
+/* Sprite images from our client pair (README "Sprite images"): crisp pixels, any frame size fitted into its box */
+.chaos-look, .chaos-sprite { image-rendering: pixelated; object-fit: contain; object-position: right bottom; }
+.chaos-look-col { width: 72px; padding-top: 2px; padding-bottom: 2px; }
+.chaos-look { display: block; width: 64px; height: 64px; }
+.chaos-wiki-icon.chaos-sprite { object-position: center; }
+.cp-current-outfit img, .outfitColumn img { image-rendering: pixelated; }

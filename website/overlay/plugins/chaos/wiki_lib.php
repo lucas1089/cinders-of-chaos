@@ -17,8 +17,13 @@
  *    image per guide (`art`); website/tools/gen_wiki_art.py draws them into assets/wiki/. Guides may add callout
  *    boxes ("> [tip|warn|note] text") and step diagrams (lines "=> icon | title | text", icon = @name of art.steps,
  *    an entry id or tab:<id>). Every image has alt text, a size and loading="lazy".
+ *  - Real sprites (website/README.md "Sprite images"): a unique or set may carry `sprite` ({item: server id}) and the
+ *    store's offer tables `sprites` (one per row: {item} or {outfit, addons}, false for none). Drawn from our client
+ *    pair by sprite_lib.php, only when that art is ours and published; otherwise the themed icon stays.
  * Portuguese (pt-BR) by default, English with &l=en, like the legal pages.
  */
+
+require_once __DIR__ . '/sprite_lib.php';
 
 if (!function_exists('chaos_wiki_data')) {
 
@@ -214,8 +219,13 @@ function chaos_wiki_img(string $path, string $alt, int $w, int $h, string $class
 		. ($lazy ? ' loading="lazy"' : '') . ' decoding="async">';
 }
 
-/** The small icon of an entry or a tab (its name as alt text), or ''. */
+/** The small icon of an entry or a tab (its name as alt text), or ''. An entry whose `sprite` is published shows
+ *  the real sprite instead (pixel art scaled by whole steps where it fits). */
 function chaos_wiki_icon(array $e, int $size, string $class = 'chaos-wiki-icon'): string {
+	$sprite = is_array($e['sprite'] ?? null) ? chaos_sprite_ref($e['sprite']) : null;
+	if ($sprite !== null) {
+		return chaos_sprite_img($sprite[0], (string)($e['name'] ?? ''), $size, $size, $class . ' chaos-sprite');
+	}
 	$icon = $e['icon'] ?? '';
 	return is_string($icon) && $icon !== '' ? chaos_wiki_img($icon, (string)($e['name'] ?? ''), $size, $size, $class) : '';
 }
@@ -446,7 +456,7 @@ function chaos_wiki_entry_html(array $e, string $lang): string {
 		if ($target === null) {
 			return $h($text);
 		}
-		$icon = chaos_wiki_icon(array('icon' => $target['entry']['icon'] ?? '', 'name' => $text), 24, 'chaos-wiki-icon chaos-wiki-icon--row');
+		$icon = chaos_wiki_icon(array('icon' => $target['entry']['icon'] ?? '', 'sprite' => $target['entry']['sprite'] ?? null, 'name' => $text), 24, 'chaos-wiki-icon chaos-wiki-icon--row');
 		return $icon . '<a href="' . $h(chaos_wiki_url($id, $lang)) . '">' . $h($text) . '</a>';
 	};
 	$out = array();
@@ -470,6 +480,7 @@ function chaos_wiki_entry_html(array $e, string $lang): string {
 		}
 		$links = array_values((array)($s['links'] ?? array()));
 		$icons = array_values((array)($s['icons'] ?? array()));
+		$sprites = array_values((array)($s['sprites'] ?? array()));
 		$rows = (array)($s['rows'] ?? array());
 		if ($rows) {
 			$cols = (array)($s['cols'] ?? array());
@@ -486,7 +497,8 @@ function chaos_wiki_entry_html(array $e, string $lang): string {
 						$cells[] = '<td>' . $link($links[$i], $text) . '</td>';
 					} else {
 						// a section's own icon of the row (a rift tier's key, an omen's emblem, ...)
-						$icon = $ci === 0 && is_string($icons[$i] ?? null) ? chaos_wiki_icon(array('icon' => $icons[$i], 'name' => $text), 24, 'chaos-wiki-icon chaos-wiki-icon--row') : '';
+						$icon = $ci === 0 && (is_string($icons[$i] ?? null) || is_array($sprites[$i] ?? null))
+							? chaos_wiki_icon(array('icon' => $icons[$i] ?? '', 'sprite' => $sprites[$i] ?? null, 'name' => $text), 24, 'chaos-wiki-icon chaos-wiki-icon--row') : '';
 						$cells[] = '<td>' . $icon . $h($text) . '</td>';
 					}
 				}

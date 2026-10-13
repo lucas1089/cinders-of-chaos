@@ -115,6 +115,8 @@ $siteUrl = env('CHAOS_SITE_URL');
 if ($siteUrl === '') {
 	fwrite(STDERR, "note: CHAOS_SITE_URL is empty: links in mails and from PayPal will not work.\n");
 }
+// Sprite images (README "Sprite images"): install_site.sh sets CHAOS_SPRITES=1 when chaos-sprites/index.json is there.
+$sprites = env('CHAOS_SPRITES') === '1';
 $https = stripos($siteUrl, 'https://') === 0;
 $captchaSite = env('CHAOS_RECAPTCHA_SITE_KEY');
 $captchaSecret = env('CHAOS_RECAPTCHA_SECRET');
@@ -219,8 +221,13 @@ $out = "<?php\n"
 		array('key' => 'windows_client', 'label' => 'Windows client', 'section' => 'client', 'enabled' => true, 'url' => $winUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for Windows 10 and 11 (64-bit).'),
 		array('key' => 'linux_client', 'label' => 'Linux client', 'section' => 'client', 'enabled' => true, 'url' => $linuxUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for 64-bit Linux.'),
 	)) . ";\n\n"
-	. "// Outfit images are drawn by an external service; off until the owner picks one he trusts.\n"
-	. "\$config['show_outfits'] = array('shop' => false, 'highscores' => false, 'characterprofile' => false, 'onlinelist' => false, 'imageServer' => '');\n\n"
+	. ($sprites
+		? "// Outfit and item images drawn from our own client pair (README \"Sprite images\"): chaos_outfit.php and chaos-sprites/\n"
+			. "\$config['show_outfits'] = array('shop' => true, 'highscores' => true, 'characterprofile' => true, 'onlinelist' => true, 'imageServer' => '/chaos_outfit.php');\n"
+			. "\$config['shop']['imageServer'] = '/chaos-sprites/items';\n"
+			. "\$config['shop']['imageType'] = 'png';\n\n"
+		: "// No sprite images on this site (CHAOS_SPRITE_PAIR not set, README \"Sprite images\"): outfit images off.\n"
+			. "\$config['show_outfits'] = array('shop' => false, 'highscores' => false, 'characterprofile' => false, 'onlinelist' => false, 'imageServer' => '');\n\n")
 	. "// Not used on this server (README \"Not used on this server\"): the store is in the game and donations are the Donate\n"
 	. "// page, so no website shop, points or house purchase with points; no forum. Their pages lead to plugins/chaos/pages/notused.php.\n"
 	. "\$config['shop']['enabled'] = false;\n"

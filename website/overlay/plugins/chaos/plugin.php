@@ -46,6 +46,8 @@ require_once __DIR__ . '/recovery_lib.php';
 require_once __DIR__ . '/session_guard.php';
 // the community goal and the week's world modifiers (read only: the front page block and pages/community.php)
 require_once __DIR__ . '/community_lib.php';
+// item and outfit images drawn from our client pair (chaos-sprites/, chaos_outfit.php; README "Sprite images")
+require_once __DIR__ . '/sprite_lib.php';
 
 // ---------------------------------------------------------------- pages not used on this server
 // The stock shop, points, creature / spell library and forum pages (chaos_unused_pages) lead to the short note of
