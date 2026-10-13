@@ -12,6 +12,14 @@ python3 -I fix_pair_warnings.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --
         four, and its offset from the median of the IDS looks that have displacement 8,8. A candidate list for review
         by eye: trailing capes or chains lower the feet line, so a premise pass alone is no proof.
 
+python3 -I fix_pair_warnings.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --scan-aura-displacement --looks IDS \
+        [--wings IDS]
+        (writes nothing) for each aura look of --looks: its displacement and the centre of its art as the client draws
+        it (see the aura premise below; px from the tile centre, + = right / down); "premise ok" marks a look with no
+        displacement whose centre is AURA_OFF px or more right and below. The stock auras show where art belongs.
+        --wings: the same for wings looks, drawn by the wings rule (the frame's bottom-right tile on the creature's
+        tile, no centring offset).
+
 The spec CSV (kind, cat, id, group, arg, reason) lists every fix; nothing else in the pair changes. Kinds:
   durations          arg "P:MS" or "P-Q:MS": phases P..Q of the group's animator get min = max = MS. A phase must
                      be 0 ms (or MS already). Async, loop count and start phase stay as they are.
@@ -31,6 +39,13 @@ The spec CSV (kind, cat, id, group, arg, reason) lists every fix; nothing else i
                      (row FEET_STOCK of the tile), so X, Y = 8, 8 brings it closer. Art drawn for no displacement keeps
                      about 8 px clear of the edges. With the fault the client draws the look 8 px low and right of its
                      tile, and its name, health bar and target square sit 8 px off too.
+                     An aura look (--aura-looks, default the client ids of server/data/XML/chaos_auras*.csv) has its
+                     own premise: no displacement (or 0, 0), every frame group 2x2 or larger, and the centre of its art
+                     stands AURA_OFF px or more right and below the creature's tile centre, and within AURA_NEAR px of
+                     it (both axes) with X, Y. The centre: per direction the mean of the art pixels of the idle group
+                     (all phases and layers), drawn by the client's aura rule (GameBigAurasCenter: the frame moves
+                     (w-1)*16, (h-1)*16 right / down, then back by the displacement and (w-1)*32, (h-1)*32), the
+                     median of the four directions. The stock ground auras (932-934) and 1487 put it 1-7 px up-left.
 group is a frame-group index or "*" (all groups). Outfits only for the last three kinds.
 
 Idempotent: a fix that is already applied changes nothing, so a run on its own output gives the same files.
@@ -57,6 +72,8 @@ FIRST = cp.FIRST
 EDGE_GAP = 3        # displacement premise: art within this many px of the frame's bottom and right edges
 FEET_STOCK = 24     # feet line of the stock player looks (displacement 8,8): row 24 of the tile (things_custom20 median)
 FEET_LOW = 5        # displacement premise: feet line at least this far below FEET_STOCK with no displacement
+AURA_OFF = 8        # aura displacement premise: art centre at least this far right and below the tile centre
+AURA_NEAR = 6       # aura displacement premise: with the new displacement the centre within this of the tile centre
 TEMPLATE = {bytes(c) for c in ((255, 255, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255))}   # mask colours (RGB)
 
 
@@ -130,8 +147,40 @@ def art_gaps(t, spr):
     return g.w * 32 - right, g.h * 32 - bottom
 
 
-def set_displacement(row, t, chunks, spr, log):
-    """the `displacement` fix: edit chunks (flag list) in place."""
+def art_centre(t, spr, disp, wings=False):
+    """(x, y) px from the creature's tile centre of the art centre as the client draws an aura (wings: a wings look)
+    with displacement disp: per direction the mean of the art pixels (idle group, all phases and layers), then the
+    median of the directions; None when the art is empty."""
+    g = t.groups[0]
+    cx, cy = [], []
+    for x in range(min(g.px, 4)):
+        sx = sy = n = 0
+        for ph in range(g.phases):
+            for layer in range(g.layers):
+                for hh in range(g.h):
+                    for ww in range(g.w):
+                        sid = g.sprites[cp.sprite_index(g, x=x, layer=layer, phase=ph, ww=ww, hh=hh)]
+                        for i, v in decode(spr, sid).items():
+                            if v[3]:
+                                sx += (g.w - 1 - ww) * 32 + i % 32
+                                sy += (g.h - 1 - hh) * 32 + i // 32
+                                n += 1
+        if n:
+            k = 32 if wings else 16          # GameBigAurasCenter moves an aura (w-1)*16 back; wings get no offset
+            cx.append(sx / n - (g.w - 1) * k - disp[0] - 16)
+            cy.append(sy / n - (g.h - 1) * k - disp[1] - 16)
+    if not cx:
+        return None
+
+    def med(v):
+        v = sorted(v)
+        m = len(v)
+        return v[m // 2] if m % 2 else (v[m // 2 - 1] + v[m // 2]) / 2
+    return round(med(cx), 1), round(med(cy), 1)
+
+
+def set_displacement(row, t, chunks, spr, log, auras=()):
+    """the `displacement` fix: edit chunks (flag list) in place (auras: the aura look ids, own premise)."""
     if t.cat != 'outfit':
         raise SystemExit(f'{t.ref}: displacement is for outfits')
     if row['group'] != '*':
@@ -152,14 +201,23 @@ def set_displacement(row, t, chunks, spr, log):
     for gi, g in enumerate(t.groups):
         if g.w < 2 or g.h < 2:
             raise SystemExit(f'{t.ref} group {gi}: {g.w}x{g.h}, not 2x2 or larger')
-    gaps = art_gaps(t, spr)
-    if gaps is None or max(gaps) > EDGE_GAP:
-        raise SystemExit(f'{t.ref}: art keeps {gaps} px (right, bottom) clear of the frame edges, more than {EDGE_GAP}: '
-                         'it is drawn for no displacement, not like a stock 8,8 look')
-    feet = feet_line(t, spr, (0, 0))
-    if feet < FEET_STOCK + FEET_LOW:
-        raise SystemExit(f'{t.ref}: feet line {feet} with no displacement, less than {FEET_LOW} px below the stock '
-                         f'{FEET_STOCK}: it does not stand low')
+    if t.id in auras:
+        c0, c1 = art_centre(t, spr, (0, 0)) or (0, 0), art_centre(t, spr, (x, y)) or (0, 0)
+        if min(c0) < AURA_OFF:
+            raise SystemExit(f'{t.ref}: aura art centre {c0} px from the tile centre with no displacement, not '
+                             f'{AURA_OFF} px or more right and below: it does not stand off its tile')
+        if max(abs(c1[0]), abs(c1[1])) > AURA_NEAR:
+            raise SystemExit(f'{t.ref}: aura art centre {c1} px from the tile centre with {x},{y}, more than '
+                             f'{AURA_NEAR} px: the displacement does not bring it onto the tile')
+    else:
+        gaps = art_gaps(t, spr)
+        if gaps is None or max(gaps) > EDGE_GAP:
+            raise SystemExit(f'{t.ref}: art keeps {gaps} px (right, bottom) clear of the frame edges, more than '
+                             f'{EDGE_GAP}: it is drawn for no displacement, not like a stock 8,8 look')
+        feet = feet_line(t, spr, (0, 0))
+        if feet < FEET_STOCK + FEET_LOW:
+            raise SystemExit(f'{t.ref}: feet line {feet} with no displacement, less than {FEET_LOW} px below the stock '
+                             f'{FEET_STOCK}: it does not stand low')
     if old:
         chunks[chunks.index(old[0])] = new
         log.append(('*', 'displacement', 'flag 25', '0,0', f'{x},{y}'))
@@ -438,6 +496,31 @@ def scan_displacement(things, spr, ids):
     return [t.id for t, _ in cand]
 
 
+def scan_aura_displacement(things, spr, ids, wings=()):
+    outs = things['outfit']
+    found = []
+    for kind, group in (('aura', sorted(ids)), ('wings', sorted(wings))):
+        for o in group:
+            if not 1 <= o <= len(outs):
+                raise SystemExit(f'outfit {o} is not in the pair')
+            t = outs[o - 1]
+            if cp.is_blank(t):
+                continue
+            disp = t.flag('displacement')
+            c = art_centre(t, spr, disp or (0, 0), wings=kind == 'wings')
+            if c is None:
+                continue
+            g = t.groups[0]
+            off = disp in (None, (0, 0)) and min(c) >= AURA_OFF and all(gr.w > 1 and gr.h > 1 for gr in t.groups)
+            if off:
+                found.append(o)
+            print(f'  {kind} {o}: {g.w}x{g.h}, displacement {"none" if disp is None else "%d,%d" % disp}, art centre '
+                  f'{c[0]:+},{c[1]:+} px{"; premise ok (stands right and below)" if off else ""}')
+    print(f'{len(found)} looks with no displacement stand {AURA_OFF} px or more right and below: '
+          + (','.join(map(str, found)) or 'none'))
+    return found
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--ours-dat', required=True)
@@ -449,7 +532,20 @@ def main(argv=None):
     ap.add_argument('--link-spr', action='store_true', help='hard-link the spr instead of copying it (saves disk)')
     ap.add_argument('--scan-displacement', action='store_true', help='list displacement candidates, write nothing')
     ap.add_argument('--looks', default='', help='with --scan-displacement: outfit ids to scan (e.g. 128-160,2051)')
+    ap.add_argument('--scan-aura-displacement', action='store_true',
+                    help='list aura (--looks) and wings (--wings) looks with their art centre, write nothing')
+    ap.add_argument('--wings', default='', help='with --scan-aura-displacement: wings look ids')
+    ap.add_argument('--aura-looks', default=None, help='outfit ids that are auras (own displacement premise; default: '
+                    'client ids of server/data/XML/chaos_auras*.csv)')
     a = ap.parse_args(argv)
+    auras = cp.default_auras() if a.aura_looks is None else parse_ids(a.aura_looks)
+    if a.scan_aura_displacement:
+        with open(a.ours_dat, 'rb') as f:
+            _, _, things, _ = cp.parse_dat(f.read(), None)
+        spr = cp.SprFile(a.ours_spr)
+        scan_aura_displacement(things, spr, parse_ids(a.looks), parse_ids(a.wings))
+        spr.close()
+        return 0
     if a.scan_displacement:
         with open(a.ours_dat, 'rb') as f:
             _, _, things, _ = cp.parse_dat(f.read(), None)
@@ -492,7 +588,7 @@ def main(argv=None):
         for row in rows:
             log = []
             if row['kind'] == 'displacement':
-                set_displacement(row, t, chunks, spr, log)
+                set_displacement(row, t, chunks, spr, log, auras)
             else:
                 apply_fix(row, t, spr, log)
             for gi, field, where, old, new in log:
@@ -546,7 +642,7 @@ def main(argv=None):
     if md5(osp) != md5(a.ours_spr):
         raise SystemExit('verify: spr differs')
     allow = set(changed)
-    rep = cp.check(od, osp, old=(a.ours_dat, a.ours_spr), new_only=True, allow_changed=allow)
+    rep = cp.check(od, osp, old=(a.ours_dat, a.ours_spr), new_only=True, allow_changed=allow, auras=auras)
     if not rep.ok:
         print(rep.text())
         raise SystemExit('verify: check_pair append-only check with --allow-changed failed')

@@ -1067,6 +1067,61 @@ Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Which 
   is on; a client still on things_custom21 draws nothing for the 35 new effect ids.
 - Checked offline only (frame sheets and the mock scenes); not run in a client.
 
+## Aura displacement (things_custom23, `tools/sprites/fix_pair_warnings.py` kind `displacement`)
+**Built, not pushed.** The owner approved fixing the Scarlet Glimmer aura (look 712, auras.xml 30, the boss exclusive
+`aura_scarlet`). It had no displacement (the client reads 0,0). In a live client it drew about 17 x 12 units right and
+below its place (server/README.md "Exclusives", the in-game check). Only the dat changes: 712 gets dat byte 25 =
+17,17, the value of the stock Fire Essence 932. No sprite is added or edited.
+- Draw rule (`Outfit::draw`, 1098 profile with GameBigAurasCenter): an aura frame moves (w-1)*16, (h-1)*16 right and
+  down, then back by its displacement and (w-1)*32, (h-1)*32. A frame pixel lands at (x - dx - (w-1)*16, y - dy -
+  (h-1)*16) from the tile's top left. Wings get no centring offset: (x - dx - (w-1)*32, y - dy - (h-1)*32).
+- Measure (`--scan-aura-displacement`): per direction the mean of the art pixels (idle group, every phase and layer),
+  drawn by that rule, then the median of the four directions; px from the tile centre, + = right / down. The stock
+  ground auras 932 / 933 / 934 sit at -4.5,-3.3 / -0.9,-1.0 / -3.3,-3.1; 1487 at -5.5,-7.1; the head-height 935 / 936
+  at -9 to -16. 712 at +12.8,+12.8. Its art differs per direction (an orb with sparkles, mirrored N/S and E/W). In every
+  direction its cross axis is frame px 47.0, the centre of the frame's bottom-right tile, where 932 and 933 also put
+  theirs (44.1-44.5). Drawn with 0,0 that axis is 15 px right / below the tile centre; with 17,17 it is 2 px up-left,
+  and the median centre -4.2,-4.2, inside the ground auras' range. One value cannot centre both axes. Along its
+  direction the art mirrors about the frame centre, not the bottom-right tile. So the orb leads the wearer facing
+  north or west and sits on the body facing south or east.
+- Scan of every aura and wings look of the pair (auras.xml 1-30: 932-936, 1511-1529, 2136-2139, 1487, 712; wings.xml
+  1-19: 937-941, 1177-1186, 1486, 2140-2142): only 712 has no displacement and stands 8 px or more right and below.
+  The seven 3x3 Chaos auras without displacement (1518, 1519, 1521, 1522, 1524, 1526, 1528) sit at -11 to -2 / -3 to
+  +4: the centring offset places them. Every wings look sits at -12 to -27 up-left, like the stock wings (0,0). The
+  donor auras 2136-2139 sit 8-9 px low but have displacements of their own (things_custom14): not this fault, left.
+- `fix_pair_warnings.py`: the `displacement` kind has an aura premise for looks of `--aura-looks` (default the client
+  ids of `server/data/XML/chaos_auras*.csv`): no displacement or 0,0, every frame group 2x2 or larger, centre 8 px
+  or more right and below with no displacement (`AURA_OFF`), within 6 px of the tile centre with the new value
+  (`AURA_NEAR`). The player-look premise is unchanged. New `--scan-aura-displacement --looks IDS [--wings IDS]`.
+  Tests: `fix_pair_warnings_test.py` `test_aura_displacement` (17,17 inserted, 0,0 replaced, a no-op on its output,
+  each refusal, the scan, the wings rule).
+
+```
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat things_custom22/Tibia.dat --ours-spr things_custom22/Tibia.spr \
+    --scan-aura-displacement --looks 932-936,1511-1529,2136-2139,1487,712 --wings 937-941,1177-1186,1486,2140-2142
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat things_custom22/Tibia.dat --ours-spr things_custom22/Tibia.spr \
+    --out-dir things_custom23 --expect-dat-md5 9d1591bef8f9f89d102219baf8c38578 --link-spr \
+    --changes-out client/tools/sprites/pair_fixes/things_custom23_changes.csv
+python3 -I client/tools/sprites/check_pair.py things_custom23/Tibia.dat things_custom23/Tibia.spr \
+    --old things_custom22/Tibia.dat things_custom22/Tibia.spr --allow-changed 'outfit:712'
+```
+Input things_custom22 (dat 9d1591bef8f9f89d102219baf8c38578, spr 09f3a073b0a071d54b9604a422a9dffd; the
+windows-assets archive, sha256 checked against SHA256SUMS.parts). Output **things_custom23**: dat
+8ca5332525db229ca0472fe292653986 (4,929,192 bytes, +5), spr 09f3a073b0a071d54b9604a422a9dffd (unchanged), 33,659
+items, 2,184 outfits, 627 effects, 153 missiles. The earlier fixes.csv rows are no-ops on things_custom22. 1 thing
+changed, 36,523 byte-identical. Built twice with identical md5s; a run on its own output changes nothing.
+`pair_fixes/things_custom23_changes.csv`: 1 row.
+- `check_pair.py`: append-only with `outfit:712`: 0 errors (without it: 1 error). Full check: 0 errors, 121
+  warnings, line for line those of things_custom22.
+- `things-1098.tar.xz` like things_custom22's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
+  mtime 2026-10-13 04:00: sha256 a866a48ef97451c53334f6361ba30a14122617bc9432c5393890792bfcf8672b (66,722,480 bytes).
+  It unpacks to the md5s above. A rebuild gives the same sha256. Not on windows-assets: the owner must say "pode
+  mandar o par para o windows-assets" (the push steps are kept with the build, not in the repo).
+- No server change: the look id stays 712. A client on things_custom22 keeps drawing the Glimmer off its tile.
+- Checked offline: a before / after sheet, four directions, on a tile grid with the stock look 128 and Fire Essence
+  932, by the client's draw rule. The "before" column matches the in-game screenshots direction by direction. The
+  fixed pair was not run in a live client.
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder
