@@ -117,8 +117,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                raids, achievements, item descriptions, script messages and the map's signs and books
                (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
   servername   tools/patch_base_server_name.py   the base server's own name in whole strings of its data: the welcome text
-               over the first temple, the web login service's console banner (tools/base_server_texts.csv, keyed by
-               the sha256 of the old string; README "Server name"; after worldtexts)
+               over the first temple, the web login service's console banner, config.lua's serverName while it is
+               the base value (tools/base_server_texts.csv, keyed by the sha256 of the old string; README "Server
+               name"; after worldtexts)
   houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
                in the map's house file (README "Base houses")
   poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
