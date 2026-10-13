@@ -19,7 +19,14 @@ There are {{class.lines}} class lines. Each starts with a base class and ascends
 
 ## Ascension
 
-At level {{class.ascensionLevel}}, talk to the Ascendant Oracle in the temple. First comes the Proof of Strength: {{ascension.proofPoints}} points from rare and legendary monsters. Then the Trial: you alone against a guardian, within {{ascension.trialTime}}. If you fail, you can try again after {{ascension.retry}}.
+At level {{class.ascensionLevel}}, talk to the Ascendant Oracle in the temple. First comes the Proof of Strength: {{ascension.proofPoints}} points from rare and legendary monsters. Then the Trial: you alone against a guardian, within {{ascension.trialTime}}.
+
+=> @level | Level {{class.ascensionLevel}} | Talk to the Ascendant Oracle in the temple.
+=> @drop | Proof of Strength | {{ascension.proofPoints}} points from rare and legendary monsters.
+=> @guardian | The Trial | Alone against a guardian, within {{ascension.trialTime}}.
+=> @ascend | Ascended | Your new class, with its own spells.
+
+> [warn] If you fail the Trial, you can try again after {{ascension.retry}}.
 
 ## Which one?
 

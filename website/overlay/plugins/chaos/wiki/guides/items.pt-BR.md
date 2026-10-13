@@ -22,6 +22,14 @@ Os [orbes](wiki:tab:orbs) mudam itens. Use o orbe no item, ou abra Economy > Cra
 - Orb of Grafting adiciona um modificador. Orb of Unmaking remove um.
 - Orb of Upheaval rola de novo os modificadores. Orb of Fate rola uma nova raridade, muitas vezes nenhuma.
 
+=> @drop | Ache um item | Monstros, rifts e chefes dropam equipamentos.
+=> @bench | Crafting Bench | Economy > Crafting Bench mostra o resultado antes.
+=> @orb | Use um orbe | Adicione, role de novo ou remova modificadores.
+=> @gem | Gemas | Encaixe gemas para mais atributos.
+=> @salvage | Desmanche | O que você não usa vira rune shards, e os shards viram orbes.
+
+> [tip] Itens únicos têm atributos fixos: nenhum orbe muda. Crie em itens com raridade.
+
 ## Gemas e suportes
 
 Itens podem ter até {{gem.maxSockets}} [encaixes](wiki:gem:sockets) para [gemas](wiki:tab:gems). Suas magias aceitam [suportes](wiki:tab:supports), até {{support.sockets}} por magia, que mudam como elas funcionam.

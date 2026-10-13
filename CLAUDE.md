@@ -45,6 +45,7 @@ cd server && luajit tools/gen_codex_data.lua                 # -> client game_co
 cd server && lua5.3 tools/gen_codex_data.lua --check
 cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json
 cd server && lua5.3 tools/gen_wiki_data.lua --check
+python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

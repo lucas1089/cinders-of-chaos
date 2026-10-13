@@ -19,7 +19,14 @@ Há {{class.lines}} linhas de classe. Cada uma começa com uma classe base e asc
 
 ## A ascensão
 
-No nível {{class.ascensionLevel}}, fale com o Ascendant Oracle no templo. Primeiro vem a Proof of Strength: {{ascension.proofPoints}} pontos de monstros raros e lendários. Depois vem o Trial: você sozinho contra um guardião, em {{ascension.trialTime}}. Se falhar, pode tentar de novo depois de {{ascension.retry}}.
+No nível {{class.ascensionLevel}}, fale com o Ascendant Oracle no templo. Primeiro vem a Proof of Strength: {{ascension.proofPoints}} pontos de monstros raros e lendários. Depois vem o Trial: você sozinho contra um guardião, em {{ascension.trialTime}}.
+
+=> @level | Nível {{class.ascensionLevel}} | Fale com o Ascendant Oracle no templo.
+=> @drop | Proof of Strength | {{ascension.proofPoints}} pontos de monstros raros e lendários.
+=> @guardian | O Trial | Sozinho contra um guardião, em {{ascension.trialTime}}.
+=> @ascend | Ascendido | Sua nova classe, com magias próprias.
+
+> [warn] Se falhar no Trial, pode tentar de novo depois de {{ascension.retry}}.
 
 ## Qual escolher?
 

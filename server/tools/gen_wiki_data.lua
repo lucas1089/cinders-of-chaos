@@ -571,12 +571,13 @@ function W.tree(D, vocs)
 					for _, x in ipairs(variants) do
 						local keys = VARIANT_CLASSES[x.key] or {x.key}
 						local e = {id = "tree:" .. id .. ":" .. x.key, name = x.v.name, classes = classNames(keys), text = lines(x.v),
-							node = id}
+							node = id, iconKey = x.v.icon or n.icon}
 						keystones[#keystones + 1] = e
 						addFor(keys, e)
 					end
 				else
-					local e = {id = "tree:" .. id, name = n.name, classes = classNames(n.classes), text = lines(n), node = id}
+					local e = {id = "tree:" .. id, name = n.name, classes = classNames(n.classes), text = lines(n), node = id,
+						iconKey = n.icon}
 					keystones[#keystones + 1] = e
 					addFor(n.classes, e)
 				end
@@ -586,7 +587,7 @@ function W.tree(D, vocs)
 					rows[#rows + 1] = {m.name, table.concat(statText(m.customStats or {}), " ")}
 				end
 				masteries[#masteries + 1] = {id = "tree:" .. id, name = n.name, classes = classNames(n.classes), rows = rows,
-					node = id}
+					node = id, iconKey = n.icon}
 			elseif n.name and n.name ~= "Attribute" and not n.name:find("^Wrath") and lines(n) ~= "" then
 				notables[#notables + 1] = {id = "tree:" .. id, name = n.name, classes = classNames(n.classes), text = lines(n),
 					node = id}
@@ -636,7 +637,7 @@ function W.treeEntries(D, T)
 				cols = {"Group", "Stat", "Per point", "Points", "At most"}, w = {18, 30, 16, 16, 20}, rows = pRows}
 		}}
 	for _, k in ipairs(T.keystones) do
-		out[#out + 1] = {id = k.id, name = k.name, color = COLORS.tree, group = "keystone",
+		out[#out + 1] = {id = k.id, name = k.name, color = COLORS.tree, group = "keystone", iconKey = k.iconKey,
 			sub = "Keystone. " .. k.classes .. ".", sections = {
 				{h = "Effect", p = {k.text}},
 				{h = "Who", p = {"Classes: " .. k.classes .. "."}}}}
@@ -648,7 +649,7 @@ function W.treeEntries(D, T)
 				{h = "Who", p = {"Classes: " .. k.classes .. "."}}}}
 	end
 	for _, m in ipairs(T.masteries) do
-		out[#out + 1] = {id = m.id, name = m.name, color = "#9fdc7f", group = "mastery",
+		out[#out + 1] = {id = m.id, name = m.name, color = "#9fdc7f", group = "mastery", iconKey = m.iconKey,
 			sub = "Mastery: pick one effect. " .. m.classes .. ".", sections = {
 				{h = "Effects", p = {"The node costs a point like any other; you choose one effect and can change it later for the price of a single-node refund."},
 					cols = {"Effect", "Stats"}, w = {30, 70}, rows = m.rows},
@@ -1419,6 +1420,386 @@ function W.facts(D, vocs, spells, T, typeCount)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
+-- art: the icon of every tab and entry, the guides' hero images and the tabs' banners (website/README.md "Wiki art")
+-- ---------------------------------------------------------------------------------------------------------------
+-- An icon is a path under the chaos plugin's assets/ folder. website/tools/gen_wiki_art.py reads this file's output
+-- and draws every wiki/i/<name>.png and wiki/hero/<name>.webp it names, only from our own committed art:
+--   k-<theme>-<glyph>    the Chaos spell icon kit (client/tools/gen_spell_icons.py: COL themes, GLYPH drawings)
+--   orb-<theme>-<glyph>  a glowing orb with a kit glyph            gem-<rrggbb>  a cut gem of that colour
+--   sp-<clientId>        a Chaos spell's painted icon (client images/game/spells_painted/, gen_painted_icons.py)
+--   tr-<iconKey>         a painted keystone or mastery (images/passivetree/painted_nodes.png, treedata/painted.lua)
+--   sup-<key>            a support rune (images/game/supports/, gen_support_icons.py)
+--   it-<set>-<kind>      an item of a themed set (client/tools/sprites/art_import/theme/items_<set>.png)
+--   top-<name>           a top menu button (client images/chaos/topbutton_<name>.png, gen_theme_art.py)
+--   img/class-<key>.png  the website's class badges (website/tools/gen_site_art.py)
+-- The art of an icon only illustrates the entry: a unique shows a themed piece of its slot, not its own sprite.
+W.SOURCES[#W.SOURCES + 1] = "client/overlay/modules/game_chaosspells/spelldata.lua"
+W.SOURCES[#W.SOURCES + 1] = "client/overlay/modules/game_passivetree/treedata/painted.lua"
+
+local ICON = "wiki/i/"
+local function kit(theme, glyph)
+	return ICON .. "k-" .. theme .. "-" .. glyph .. ".png"
+end
+local function orb(theme, glyph)
+	return ICON .. "orb-" .. theme .. "-" .. glyph .. ".png"
+end
+local function top(name)
+	return ICON .. "top-" .. name .. ".png"
+end
+local function item(set, kind)
+	return ICON .. "it-" .. set .. "-" .. kind .. ".png"
+end
+local function gem(hex)
+	return ICON .. "gem-" .. tostring(hex):gsub("^#", ""):lower() .. ".png"
+end
+local function classBadge(key)
+	return "img/class-" .. key .. ".png"
+end
+W.icon = {kit = kit, orb = orb, top = top, item = item, gem = gem, class = classBadge}
+
+-- element words of the data -> kit theme
+local ELEMENT_THEME = {fire = "fire", ice = "frost", energy = "light", earth = "poison", death = "shadow", holy = "holy",
+	physical = "steel", arcane = "arcane", blood = "blood", lightning = "light", poison = "poison"}
+
+local function themeOfText(text, fallback)
+	local t = tostring(text):lower()
+	for _, w in ipairs({"fire", "ice", "energy", "earth", "death", "holy", "physical", "arcane", "lightning", "poison"}) do
+		if t:find(w, 1, true) then
+			return ELEMENT_THEME[w]
+		end
+	end
+	return fallback
+end
+
+-- the reference tabs
+local TAB_ICON = {classes = top("skills"), spells = top("spells"), tree = top("passivetree"), basics = top("help"),
+	modifiers = kit("arcane", "nodes"), powers = kit("fire", "flame"), uniques = item("sunsworn", "sword"),
+	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gem("#ff5a4a"),
+	supports = ICON .. "sup-emberbrand.png", rift = kit("arcane", "rift"), dungeons = top("dungeons"),
+	bosses = kit("blood", "skull"), events = top("events"), monsters = kit("shadow", "ghost"),
+	materials = kit("nature", "leaf"), store = top("vip")}
+-- the banner's tint
+local TAB_TONE = {classes = "#f6cf72", spells = "#9fdc7f", tree = "#e8b84a", basics = "#d6c9ae", modifiers = "#7d96ff",
+	powers = "#ff9a3c", uniques = "#ff9c3a", sets = "#58c878", orbs = "#e8b84a", gems = "#ff5a4a", supports = "#ff8228",
+	rift = "#a064e6", dungeons = "#c0a0ff", bosses = "#ff7050", events = "#ffb050", monsters = "#d6c9ae",
+	materials = "#7ec46a", store = "#ff70c0"}
+
+local BASICS = {["basics:items"] = top("inventory"), ["basics:rarity"] = kit("light", "crystal"),
+	["basics:tiers"] = kit("steel", "arrowup"), ["basics:itemlevel"] = kit("ember", "arrowup"),
+	["basics:sides"] = kit("steel", "twin"), ["basics:quality"] = kit("steel", "hammer"),
+	["basics:basebonus"] = kit("steel", "shield")}
+local MOD_GLYPH = {chaos = "rift", skill = "sword", absorb = "shield", element = "burst", special = "eye"}
+local MOD_THEME = {chaos = "arcane", skill = "steel", absorb = "water", element = "fire", special = "holy"}
+local POWERS = {arclightning = {"light", "bolt"}, bloodrush = {"blood", "drop"}, crimsonburst = {"blood", "burst"},
+	critecho = {"steel", "twin"}, deathblast = {"shadow", "skull"}, echoshot = {"steel", "arrows"},
+	emberstep = {"ember", "dash"}, frostward = {"frost", "shield"}, hunterrush = {"poison", "dash"},
+	lastbreath = {"holy", "cross"}, shattersplash = {"frost", "crystal"}, smolderaura = {"fire", "flame"}}
+local ORBS = {transmutation = {"light", "arrowup"}, alchemy = {"holy", "crystal"}, exalted = {"arcane", "nodes"},
+	annulment = {"shadow", "smoke"}, scouring = {"water", "wave"}, chaos = {"arcane", "swirl"}, divine = {"holy", "cross"},
+	sockets = {"steel", "ring"}, tempering = {"ember", "hammer"}, binding = {"steel", "shield"},
+	excision = {"blood", "daggers"}, reforging = {"fire", "hammer"}, ruin = {"blood", "burst"},
+	whetstone = {"steel", "sword"}, unveiling = {"arcane", "eye"}}
+-- the other currency: by a word of the name
+local CURRENCY = {{"crown", orb("holy", "banner")}, {"dawn", orb("light", "burst")}, {"ember", orb("fire", "flame")},
+	{"echoes", orb("arcane", "twin")}, {"void", orb("shadow", "rift")}, {"omen fragment", kit("arcane", "crystal")},
+	{"omen key", kit("arcane", "gate")}, {"rift key", kit("ember", "gate")}, {"shard", kit("bone", "crystal")}}
+local RIFT = {blight = {"poison", "drop"}, brutality = {"blood", "slam"}, cinder = {"fire", "burst"},
+	dread = {"shadow", "skull"}, echo = {"arcane", "twin"}, elites = {"holy", "banner"}, emberbrand = {"fire", "flame"},
+	festering = {"poison", "dots"}, flaying = {"blood", "daggers"}, fragile = {"bone", "ribs"},
+	frostbrand = {"frost", "crystal"}, gilded = {"light", "paw"}, haste = {"light", "dash"}, ironhide = {"steel", "shield"},
+	keen = {"blood", "fang"}, parched = {"water", "drop"}, reflection = {"steel", "twin"}, rimefloor = {"frost", "wave"},
+	sapping = {"shadow", "drop"}, scorched = {"fire", "wave"}, coffer = {"light", "gate"}, searing = {"ember", "burst"},
+	brood = {"nature", "paw"}, spiteglass = {"arcane", "crystal"}, stormbrand = {"light", "bolt"},
+	swarm = {"poison", "dots"}, teeming = {"nature", "dots"}, twin = {"shadow", "twin"}, breach = {"arcane", "rift"},
+	veilstorm = {"light", "meteor"}, vitality = {"blood", "cross"}, waning = {"shadow", "smoke"},
+	warband = {"ember", "banner"}, warding = {"arcane", "shield"}, withering = {"necrotic", "skull"},
+	wrath = {"fire", "burst"}, keys = {"ember", "gate"}, tiers = {"steel", "arrowup"}, omens = {"arcane", "eye"},
+	atlas = {"light", "nodes"}}
+local DUNGEON_WORDS = {{"bone", kit("bone", "skull")}, {"element", kit("arcane", "swirl")},
+	{"chevalier", kit("steel", "sword")}, {"root", kit("nature", "thorns")}}
+local BOSS_ELEMENT_GLYPH = {fire = "meteor", ice = "crystal", earth = "thorns", death = "skull", physical = "greataxe"}
+local RAID_BOSS = {ulthar = {"bone", "skull"}, morwen = {"fire", "ghost"}, colossus = {"bone", "golem"},
+	hexmaw = {"shadow", "eye"}, sovereign = {"ember", "banner"}}
+local MAT_GLYPH = {Delving = "mountain", Wortcunning = "leaf", Flaying = "paw", Angling = "wave"}
+local MAT_THEME = {Common = "steel", Fine = "nature", Rare = "frost", Grim = "shadow", Infernal = "fire"}
+local STORE = {["Starter"] = top("daily"), ["Bundles"] = top("stash"), ["Outfits"] = kit("arcane", "hood"),
+	["Outfit Addons"] = kit("holy", "hood"), ["Mounts"] = kit("nature", "paw"), ["Wings"] = kit("holy", "arrowup"),
+	["Auras"] = kit("light", "ring"), ["Outfit Shaders"] = kit("arcane", "swirl"), ["Name Plates"] = kit("steel", "banner"),
+	["Portal Styles"] = kit("arcane", "gate"), ["Spell Effects"] = kit("fire", "burst"), ["Kill Effects"] = kit("blood", "skull"),
+	["Loot Labels"] = kit("light", "eye"), ["Chat Colours"] = top("console"), ["Footprints"] = kit("ember", "kick"),
+	["Outlines"] = kit("light", "shield"), ["Hideout Decorations"] = kit("ember", "banner"),
+	["Appearances"] = kit("arcane", "twin"), ["Pets"] = kit("nature", "fang"), ["Crafting"] = kit("steel", "hammer"),
+	["Supplies"] = kit("blood", "drop"), ["Boosts"] = kit("light", "arrowup"), ["World Buffs"] = kit("holy", "burst"),
+	["Services"] = top("options"), ["Convenience"] = top("autoloot"), ["Classes"] = kit("holy", "sword"),
+	["Training"] = kit("steel", "sword"), ["Chaos Pact"] = top("battlepass"), ["Storage & Slots"] = top("stash"),
+	["Depot Tabs"] = top("stash"), ["Season Pass"] = top("battlepass"), ["Premium Time"] = top("vip")}
+-- the ten unique sets: a themed piece that matches the set's look (set strip, kind)
+local SETS = {bloodsworn = {"oathsteel", "axe"}, cinderstorm = {"sunsworn", "rod"}, duskstalker = {"voidmourn", "helmet"},
+	embers = {"sunsworn", "spellbook"}, gallows = {"cryptbone", "crossbow"}, hollowpack = {"wildroot", "amulet"},
+	lichbound = {"cryptbone", "wand"}, mirrorweave = {"moonsilver", "armor"}, ashwarden = {"oathsteel", "shield"},
+	thornwake = {"wildroot", "bow"}}
+-- a unique's slot (the first words of its line) -> item kind; "weapon" and "Distance weapon" look at the name
+local SLOT_KIND = {["Body armour"] = "armor", ["Helmet"] = "helmet", ["Legs"] = "legs", ["Boots"] = "boots",
+	["Ring"] = "ring", ["Amulet"] = "amulet", ["Shield"] = "shield", ["Sword"] = "sword", ["Axe"] = "axe",
+	["Club"] = "club", ["Wand / rod"] = "wand", ["Spellbook"] = "spellbook", ["Backpack"] = "backpack",
+	["Quiver"] = "arrow"}
+local WEAPON_WORDS = {{"crossbow", "crossbow"}, {"arbalest", "crossbow"}, {"bow", "bow"}, {"axe", "axe"},
+	{"cleaver", "axe"}, {"hammer", "club"}, {"maul", "club"}, {"mace", "club"}, {"club", "club"}, {"staff", "rod"},
+	{"rod", "rod"}, {"wand", "wand"}, {"sceptre", "rod"}, {"tome", "spellbook"}, {"grimoire", "spellbook"},
+	{"shield", "shield"}, {"blade", "sword"}, {"sword", "sword"}, {"edge", "sword"}, {"fang", "sword"}}
+-- the set strip of a unique: by a word of its name and text, else by its id
+local UNIQUE_SET_WORDS = {{"blood", "sunsworn"}, {"crimson", "sunsworn"}, {"ember", "sunsworn"}, {"sun", "sunsworn"},
+	{"dawn", "oathsteel"}, {"holy", "oathsteel"}, {"oath", "oathsteel"}, {"void", "voidmourn"}, {"shadow", "voidmourn"},
+	{"night", "voidmourn"}, {"dusk", "voidmourn"}, {"bone", "cryptbone"}, {"grave", "cryptbone"}, {"lich", "cryptbone"},
+	{"soul", "cryptbone"}, {"thorn", "wildroot"}, {"wild", "wildroot"}, {"root", "wildroot"}, {"beast", "wildroot"},
+	{"moon", "moonsilver"}, {"silver", "moonsilver"}, {"frost", "moonsilver"}, {"star", "moonsilver"}}
+local SET_STRIPS = {"cryptbone", "voidmourn", "wildroot", "moonsilver", "sunsworn", "oathsteel"}
+
+function W.uniqueIcon(e)
+	local slot = tostring(e.sub or ""):match("^([^,]+),") or ""
+	local name = tostring(e.name or ""):lower()
+	local kind = SLOT_KIND[slot]
+	if not kind then
+		for _, w in ipairs(WEAPON_WORDS) do
+			if name:find(w[1], 1, true) then
+				kind = w[2]
+				break
+			end
+		end
+		kind = kind or (slot:find("Distance") and "bow") or "sword"
+	end
+	local text = name .. " " .. tostring(e.sub or ""):lower()
+	local set
+	for _, w in ipairs(UNIQUE_SET_WORDS) do
+		if text:find(w[1], 1, true) then
+			set = w[2]
+			break
+		end
+	end
+	if not set then
+		local n = tonumber(tostring(e.id):match("(%d+)$")) or 0
+		set = SET_STRIPS[n % #SET_STRIPS + 1]
+	end
+	return item(set, kind)
+end
+
+function W.loadArtSources()
+	local saved = ChaosSpellData
+	dofile("../client/overlay/modules/game_chaosspells/spelldata.lua")
+	local clientOf = {}
+	for _, s in ipairs(ChaosSpellData) do
+		clientOf[s.id] = s.clientId
+	end
+	ChaosSpellData = saved
+	local savedP = getPaintedTreeIcons
+	dofile(TREE_DIR .. "treedata/painted.lua")
+	local painted = getPaintedTreeIcons()
+	getPaintedTreeIcons = savedP
+	return {clientOf = clientOf, painted = painted}
+end
+
+-- the icon of one entry of tab `tab`
+function W.entryIcon(tab, e, src)
+	local id = tostring(e.id)
+	local rest = id:match("^[^:]+:(.*)$") or ""
+	if tab == "classes" then
+		return classBadge(rest)
+	elseif tab == "spells" then
+		local c = src.clientOf[tonumber(rest)]
+		return c and (ICON .. "sp-" .. c .. ".png") or kit("arcane", "burst")
+	elseif tab == "tree" then
+		if id == "tree:about" then
+			return top("passivetree")
+		elseif e.iconKey and src.painted[e.iconKey] then
+			return ICON .. "tr-" .. e.iconKey .. ".png"
+		elseif e.group == "mastery" then
+			return kit("nature", "nodes")
+		elseif e.group == "keystone" then
+			return kit("holy", "nodes")
+		end
+		return kit("light", "nodes")
+	elseif tab == "basics" then
+		return BASICS[id] or top("help")
+	elseif tab == "modifiers" then
+		local g = e.group or "special"
+		local theme = (g == "element" or g == "absorb") and themeOfText(e.name, MOD_THEME[g]) or MOD_THEME[g] or "holy"
+		return kit(theme, MOD_GLYPH[g] or "eye")
+	elseif tab == "powers" then
+		local p = POWERS[rest] or {"fire", "flame"}
+		return kit(p[1], p[2])
+	elseif tab == "uniques" then
+		return W.uniqueIcon(e)
+	elseif tab == "sets" then
+		local s = SETS[rest] or {"oathsteel", "armor"}
+		return item(s[1], s[2])
+	elseif tab == "orbs" then
+		if ORBS[rest] then
+			return orb(ORBS[rest][1], ORBS[rest][2])
+		end
+		local name = tostring(e.name):lower()
+		for _, c in ipairs(CURRENCY) do
+			if name:find(c[1], 1, true) then
+				return c[2]
+			end
+		end
+		return orb("arcane", "swirl")
+	elseif tab == "gems" then
+		return rest == "sockets" and kit("steel", "ring") or gem(e.color or "#d6c9ae")
+	elseif tab == "supports" then
+		return ICON .. "sup-" .. rest .. ".png"
+	elseif tab == "rift" then
+		local r = RIFT[rest] or {"arcane", "rift"}
+		return kit(r[1], r[2])
+	elseif tab == "dungeons" then
+		if id == "dungeon:about" then
+			return top("dungeons")
+		elseif id == "dungeon:tower" then
+			return top("infinitytower")
+		elseif id == "dungeon:descent" then
+			return kit("fire", "flame")
+		end
+		local name = tostring(e.name):lower()
+		for _, w in ipairs(DUNGEON_WORDS) do
+			if name:find(w[1], 1, true) then
+				return w[2]
+			end
+		end
+		return kit("shadow", "gate")
+	elseif tab == "bosses" then
+		if id == "boss:world" then
+			return kit("blood", "skull")
+		elseif id == "boss:raid" then
+			return kit("ember", "gate")
+		elseif id == "boss:ascended" then
+			return kit("arcane", "eye")
+		elseif id == "boss:guild" then
+			return kit("holy", "banner")
+		elseif id:find("^boss:world:") then
+			local el = tostring(e.sub):match("World boss, (%a+)") or "physical"
+			return kit(ELEMENT_THEME[el] or "blood", BOSS_ELEMENT_GLYPH[el] or "skull")
+		end
+		local r = RAID_BOSS[id:match("^boss:raid:(.*)$") or ""] or {"bone", "skull"}
+		return kit(r[1], r[2])
+	elseif tab == "events" then
+		local EV = {["event:calendar"] = top("events"), ["event:invasion"] = kit("blood", "banner"),
+			["event:siege"] = top("pvp"), ["event:goblin"] = kit("light", "paw")}
+		return EV[id] or top("events")
+	elseif tab == "monsters" then
+		local sub = tostring(e.sub)
+		if sub:find("boss") or sub:find("Omen guardian") then
+			return kit("blood", "skull")
+		elseif sub:find("Treasure goblin") then
+			return kit("light", "paw")
+		elseif sub:find("^Invasion") then
+			return kit("ember", "banner")
+		end
+		return kit("shadow", "ghost")
+	elseif tab == "materials" then
+		if id == "mat:professions" then
+			return kit("steel", "hammer")
+		end
+		local prof, tier = tostring(e.sub):match("^(%a+), tier %d+ %((%a+)%)")
+		return kit(MAT_THEME[tier] or "steel", MAT_GLYPH[prof] or "dots")
+	elseif tab == "store" then
+		return id == "store:about" and top("vip") or STORE[e.name] or top("vip")
+	end
+	return nil
+end
+
+-- the guides: slug -> the hero image's motif. emblem = the big icon in the middle, icons = the ring around it,
+-- tone = the tint of the scene. website/overlay/plugins/chaos/wiki_lib.php lists the same slugs (its test checks).
+W.GUIDE_ORDER = {"start", "classes", "tree", "items", "rifts", "dungeons", "bosses", "seasons", "economy", "social", "pvp",
+	"store", "rules", "faq"}
+
+function W.guideArt(src)
+	local function painted(n)
+		local keys = {}
+		for k in pairs(src.painted) do
+			if k:find("^ks") then
+				keys[#keys + 1] = k
+			end
+		end
+		table.sort(keys)
+		local out = {}
+		for i = 1, math.min(n, #keys) do
+			out[i] = ICON .. "tr-" .. keys[floor((i - 1) * #keys / n) + 1] .. ".png"
+		end
+		return out
+	end
+	local classes = {}
+	for _, k in ipairs({"warrior", "ranger", "mystic", "thief", "monk", "necromancer", "templar"}) do
+		classes[#classes + 1] = classBadge(k)
+	end
+	local G = {
+		start = {tone = "#e8b84a", emblem = kit("holy", "gate"),
+			icons = {top("quests"), top("spells"), top("passivetree"), top("daily"), top("inventory"), top("market")}},
+		classes = {tone = "#f6cf72", emblem = kit("holy", "cross"), icons = classes},
+		tree = {tone = "#e8b84a", emblem = top("passivetree"), icons = painted(6)},
+		items = {tone = "#ff9c3a", emblem = orb("arcane", "swirl"),
+			icons = {item("sunsworn", "sword"), item("moonsilver", "helmet"), item("voidmourn", "armor"),
+				item("oathsteel", "shield"), item("cryptbone", "wand"), item("wildroot", "bow")}},
+		rifts = {tone = "#a064e6", emblem = kit("arcane", "rift"),
+			icons = {kit("ember", "gate"), kit("fire", "flame"), kit("frost", "crystal"), kit("arcane", "eye"),
+				kit("shadow", "skull"), kit("light", "nodes")}},
+		dungeons = {tone = "#c0a0ff", emblem = top("dungeons"),
+			icons = {kit("bone", "skull"), kit("arcane", "swirl"), top("infinitytower"), kit("fire", "flame"),
+				kit("steel", "sword"), kit("nature", "thorns")}},
+		bosses = {tone = "#ff7050", emblem = kit("blood", "skull"),
+			icons = {kit("fire", "meteor"), kit("frost", "crystal"), kit("poison", "thorns"), kit("shadow", "skull"),
+				kit("ember", "gate"), kit("holy", "banner")}},
+		seasons = {tone = "#ffb050", emblem = top("ranking"),
+			icons = {top("battlepass"), top("events"), kit("holy", "banner"), top("infinitytower"), top("daily")}},
+		economy = {tone = "#d9a53a", emblem = top("market"),
+			icons = {top("bank"), orb("holy", "crystal"), orb("arcane", "swirl"), kit("frost", "wave"),
+				kit("nature", "leaf"), top("stash")}},
+		social = {tone = "#7ec46a", emblem = top("community"),
+			icons = {kit("holy", "banner"), top("pvp"), kit("water", "drop"), top("quests"), kit("arcane", "twin")}},
+		pvp = {tone = "#e03a1e", emblem = top("pvp"),
+			icons = {kit("steel", "sword"), kit("blood", "skull"), kit("ember", "gate"), kit("steel", "shield"),
+				kit("holy", "banner")}},
+		store = {tone = "#ff70c0", emblem = top("vip"),
+			icons = {kit("arcane", "hood"), kit("nature", "paw"), kit("holy", "arrowup"), kit("light", "ring"),
+				top("battlepass"), top("stash")}},
+		rules = {tone = "#b8160f", emblem = kit("holy", "shield"),
+			icons = {top("notifications"), kit("light", "eye"), top("help"), kit("steel", "hammer")}},
+		faq = {tone = "#d6c9ae", emblem = top("help"),
+			icons = {top("options"), top("quests"), top("spells"), top("market"), top("community")}}
+	}
+	local out = {}
+	for _, slug in ipairs(W.GUIDE_ORDER) do
+		local g = assert(G[slug], "no art for guide " .. slug)
+		out[#out + 1] = {id = slug, icon = g.emblem, hero = "wiki/hero/guide-" .. slug .. ".webp", tone = g.tone,
+			icons = g.icons}
+	end
+	return out
+end
+
+-- the icons the guides may name in a step ("=> @name | ...") and the icons of the callout boxes
+function W.stepIcons()
+	return {account = top("options"), download = top("console"), create = top("skills"), tutorial = kit("holy", "gate"),
+		temple = top("quests"), level = kit("steel", "arrowup"), ascend = kit("holy", "cross"), drop = kit("blood", "skull"),
+		bench = kit("steel", "hammer"), orb = orb("arcane", "swirl"), key = kit("ember", "gate"), rift = kit("arcane", "rift"),
+		guardian = kit("shadow", "skull"), chest = kit("light", "gate"), atlas = kit("light", "nodes"),
+		omen = kit("arcane", "eye"), season = top("ranking"), ladder = top("battlepass"), reward = top("daily"),
+		salvage = kit("bone", "crystal"), sell = top("market"), gem = gem("#ff5a4a"),
+		-- the callout boxes ("> [tip] ...")
+		tip = kit("light", "eye"), warn = kit("blood", "burst"), note = top("help")}
+end
+
+-- icons, banners and the art table; the entries' iconKey (a helper) is dropped
+function W.decorate(tabs, src)
+	for _, t in ipairs(tabs) do
+		t.icon = TAB_ICON[t.id]
+		t.banner = "wiki/hero/tab-" .. t.id .. ".webp"
+		t.tone = TAB_TONE[t.id] or "#d6c9ae"
+		for _, e in ipairs(t.entries) do
+			e.icon = W.entryIcon(t.id, e, src)
+			e.iconKey = nil
+		end
+	end
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
 -- the whole wiki data
 -- ---------------------------------------------------------------------------------------------------------------
 -- systems behind an off switch: their entries stay listed with soon = true (the website shows "coming soon"), so the
@@ -1491,10 +1872,13 @@ function W.build(D)
 		codex.materials,
 		{id = "store", name = "Store", entries = store}
 	}
+	local src = W.loadArtSources()
+	W.decorate(tabs, src)
 	return {
 		generator = "server/tools/gen_wiki_data.lua",
 		sources = W.SOURCES,
 		facts = W.facts(D, vocs, spells, T, typeCount),
+		art = {guides = W.guideArt(src), steps = W.stepIcons()},
 		tabs = tabs
 	}
 end

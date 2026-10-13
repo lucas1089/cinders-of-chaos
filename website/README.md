@@ -343,6 +343,31 @@ A player wiki: short guides and a reference of everything the game has, generate
 - Test: `php website/tests/chaos_wiki_page_test.php` (every guide in both languages, their facts and links, every
   guide, tab and entry page in both languages, breadcrumbs, search, escaping, 404s, no PHP notices).
 
+### Wiki art
+
+Icons, hero images and banners make the wiki easier to scan. `server/tools/gen_wiki_data.lua` decides what shows what
+(the single source); `website/tools/gen_wiki_art.py` draws it.
+
+- **Data**: every tab and entry of `wiki_data.json` has an `icon` (a path under `plugins/chaos/assets/`), every tab a
+  `banner` and a `tone`, and `art.guides` gives each guide a hero image, an emblem, the icons around it and a tone.
+  `art.steps` names the icons the guides may use in steps (`@key`, `@bench`, ...) and the callout icons.
+- **Images**: `python3 -I website/tools/gen_wiki_art.py` writes `assets/wiki/i/*.png` (48 px icons, 64 px for the pixel
+  art items) and `assets/wiki/hero/*.webp` (guide heroes 960x300, tab banners 960x180) and removes images nothing names
+  any more; `--check` fails on a stale or extra file (CI, with the pinned Pillow and numpy of the other art checks);
+  `--sheet OUT.png` writes a contact sheet of every icon. Run it after `gen_wiki_data.lua` when an icon changes.
+- **Sources**, all our own committed art: the Chaos spell icon kit (`client/tools/gen_spell_icons.py`), the painted spell
+  icons and painted keystones and masteries (`gen_painted_icons.py`), the support runes (`gen_support_icons.py`), the
+  themed set item pieces (`client/tools/sprites/art_import/theme/items_<set>.png`), the client's top menu buttons, the
+  site's class badges and backdrop (`gen_site_art.py`); orbs and gems are drawn by the script. A unique's icon is a themed
+  piece of its slot, an illustration and not the item's own sprite. No screenshots: the client's screens show base
+  sprites and donor outfits, which are not ours to publish. No text in the images, so both languages use the same files.
+- **Guides**: a callout box is `> [tip] text`, `> [warn] text` or `> [note] text` (more `> ` lines continue it); a step
+  diagram is a run of lines `=> icon | title | text`, the icon `@name` (`art.steps`), an entry id or `tab:<id>`. Steps
+  show as a row of numbered cards on a computer and a vertical list on a phone.
+- **Page**: guide heroes on top of each guide and as thumbnails on the index cards, tab banners on the tab pages, icons in
+  the tab lists, the index, search results, the entry heading and the first cell of every table row that links an entry.
+  Every image has alt text, a width and height and `loading="lazy"` (the hero at the top of a page loads at once).
+
 ## Mail
 
 The site sends mail for **account recovery** (a one-time link) and the **e-mail login codes** of ZnoteX's website 2FA

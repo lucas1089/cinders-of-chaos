@@ -406,8 +406,46 @@ html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
 .chaos-wiki-hits__kind { margin-left: 8px; font-size: 12px; color: var(--c-muted); }
 .chaos-wiki-hits p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .chaos-wiki mark { background: rgba(217,165,58,.3); color: var(--c-gold4); padding: 0 2px; }
+/* wiki art (website/tools/gen_wiki_art.py): icons, heroes, banners, step diagrams, callouts */
+.chaos-wiki img { max-width: 100%; height: auto; }
+.chaos-wiki-icon { display: inline-block; vertical-align: middle; width: 32px; height: 32px; margin-right: 8px; flex: none; }
+.chaos-wiki-icon--row { width: 24px; height: 24px; margin-right: 6px; }
+.chaos-wiki-hero { margin: -4px 0 14px; border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron3), 0 0 18px rgba(0,0,0,.6); background: #000; line-height: 0; }
+.chaos-wiki-hero__img { display: block; width: 100%; height: auto; }
+.chaos-wiki-card > a:not(.chaos-wiki-card__art) { vertical-align: middle; }
+.chaos-wiki-card__art { display: block; margin: -12px -14px 10px; line-height: 0; border-bottom: 1px solid var(--c-iron3); }
+.chaos-wiki-card__img { display: block; width: 100%; height: 86px; object-fit: cover; }
+.chaos-wiki-tabs li a { display: inline-flex; align-items: center; }
+.chaos-wiki-entry__head { display: flex; align-items: center; gap: 12px; }
+.chaos-wiki-entry__head .chaos-wiki-entry__title { margin: 0; flex: 1; min-width: 0; }
+.chaos-wiki-entry__icon { width: 64px; height: 64px; flex: none; filter: drop-shadow(0 0 8px rgba(0,0,0,.8)); }
+.chaos-wiki-list .chaos-wiki-list__item { display: flow-root; }
+.chaos-wiki-list__icon { float: left; margin: 2px 10px 2px 0; }
+.chaos-wiki-table td:first-child:has(> .chaos-wiki-icon) { min-width: 150px; }
+.chaos-wiki-table td > .chaos-wiki-icon--row { float: left; margin-top: -2px; }
+.chaos-wiki-hits li .chaos-wiki-icon { margin-right: 4px; }
+.chaos-wiki-steps { list-style: none; margin: 12px 0 16px; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); }
+.chaos-wiki-steps__step { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 12px 10px; background: rgba(5,4,5,.55); border: 1px solid #000; box-shadow: inset 0 0 0 1px var(--c-iron3); }
+.chaos-wiki-steps__step:not(:last-child)::after { content: '›'; position: absolute; right: -10px; top: 30px; width: 10px; text-align: center; color: var(--c-gold2); font-size: 22px; line-height: 1; z-index: 1; }
+.chaos-wiki-steps__badge { position: relative; display: inline-block; width: 48px; height: 48px; border-radius: 50%; background: radial-gradient(circle, rgba(184,22,15,.35), rgba(5,4,5,.9) 70%); box-shadow: 0 0 0 1px var(--c-gold1), 0 0 12px rgba(217,165,58,.25); }
+.chaos-wiki-steps__icon { position: absolute; left: 4px; top: 4px; width: 40px; height: 40px; }
+.chaos-wiki-steps__n { position: absolute; right: -6px; bottom: -4px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: var(--c-blood2); color: var(--c-gold4); font: 700 12px/20px var(--c-display); box-shadow: 0 0 0 1px var(--c-gold1); }
+.chaos-wiki-steps__body strong { display: block; font-family: var(--c-display); color: var(--c-gold3); font-size: 14px; letter-spacing: .03em; }
+.chaos-wiki-steps__body span { display: block; margin-top: 3px; font-size: 13px; line-height: 1.5; color: var(--c-text); }
+.chaos-wiki-callout { display: flex; gap: 12px; align-items: flex-start; margin: 12px 0; padding: 10px 14px; background: rgba(5,4,5,.6); border-left: 3px solid var(--c-gold2); box-shadow: inset 0 0 0 1px var(--c-iron3); }
+.chaos-wiki-callout--warn { border-left-color: var(--c-blood4); background: rgba(90,10,10,.25); }
+.chaos-wiki-callout--note { border-left-color: var(--c-iron4); }
+.chaos-wiki-callout__icon { width: 32px; height: 32px; flex: none; }
+.chaos-wiki-callout div { line-height: 1.6; }
+.chaos-wiki-callout__label { font-family: var(--c-display); color: var(--c-gold3); letter-spacing: .04em; }
 @media (max-width: 600px) {
   .chaos-wiki-search { flex-direction: column; }
   .chaos-wiki-cards, .chaos-wiki-tabs { grid-template-columns: 1fr; }
   .chaos-wiki-table { font-size: 12px; }
+  .chaos-wiki-steps { grid-template-columns: 1fr; }
+  .chaos-wiki-steps__step { flex-direction: row; text-align: left; align-items: flex-start; }
+  .chaos-wiki-steps__badge { flex: none; }
+  .chaos-wiki-steps__step:not(:last-child)::after { content: '⌄'; right: auto; left: 30px; top: auto; bottom: -14px; font-size: 18px; }
+  .chaos-wiki-entry__icon { width: 48px; height: 48px; }
+  .chaos-wiki-hero { margin: -4px -6px 12px; }
 }

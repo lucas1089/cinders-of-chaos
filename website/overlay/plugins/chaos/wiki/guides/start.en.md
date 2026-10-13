@@ -8,9 +8,17 @@ Cinders of Chaos is a dark fantasy online RPG with its own client. You hunt, col
 - Download the client from the downloads page and log in with your account.
 - Create a character on the website. The free classes are {{class.openNames}}.
 
+=> @account | Account | Create it on the website and accept the Terms of Use.
+=> @download | Client | Download it and log in with your account.
+=> @create | Character | Pick one of the free classes.
+=> @tutorial | Tutorial island | Fighting, spells, the passive tree and orbs.
+=> @temple | Your town | The temple, with your class kit.
+
 ## The tutorial island
 
-At your first login you arrive on a small island. Each station teaches one thing: fighting, spells, the passive tree and orbs. You get a passive point and an Orb of Upheaval to practise with. Nobody dies on the island. You can skip the tutorial at the goblin statue. When you leave, you go to your town's temple with your class kit.
+At your first login you arrive on a small island. Each station teaches one thing: fighting, spells, the passive tree and orbs. You get a passive point and an Orb of Upheaval to practise with. Nobody dies on the island. When you leave, you go to your town's temple with your class kit.
+
+> [tip] Already know the game? Skip the tutorial at the goblin statue.
 
 ## The first levels
 

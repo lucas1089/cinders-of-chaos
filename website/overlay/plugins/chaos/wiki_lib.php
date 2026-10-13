@@ -13,6 +13,10 @@
  *  - Topics (&t=): guide:<slug>, tab:<tab id> or an entry id (class:warrior, spell:12, ...). Anything else is a 404.
  *  - Search (&q=): on the server, over the guides of the page's language and every entry; the query is never echoed
  *    unescaped.
+ *  - Art (website/README.md "Wiki art"): the data names an icon for every tab and entry, a banner per tab and a hero
+ *    image per guide (`art`); website/tools/gen_wiki_art.py draws them into assets/wiki/. Guides may add callout
+ *    boxes ("> [tip|warn|note] text") and step diagrams (lines "=> icon | title | text", icon = @name of art.steps,
+ *    an entry id or tab:<id>). Every image has alt text, a size and loading="lazy".
  * Portuguese (pt-BR) by default, English with &l=en, like the legal pages.
  */
 
@@ -69,6 +73,14 @@ function chaos_wiki_t(string $key, string $lang): string {
 		'unavailable'=> array('pt-BR' => 'A wiki ainda não está disponível.', 'en' => 'The wiki is not available yet.'),
 		'next'       => array('pt-BR' => 'Próximo guia', 'en' => 'Next guide'),
 		'crumbs'     => array('pt-BR' => 'Você está em', 'en' => 'You are here'),
+		'tip'        => array('pt-BR' => 'Dica', 'en' => 'Tip'),
+		'warn'       => array('pt-BR' => 'Atenção', 'en' => 'Watch out'),
+		'note'       => array('pt-BR' => 'Nota', 'en' => 'Note'),
+		'steps'      => array('pt-BR' => 'Passo a passo', 'en' => 'Step by step'),
+		'step'       => array('pt-BR' => 'Passo', 'en' => 'Step'),
+		'heroalt'    => array('pt-BR' => 'Arte do guia', 'en' => 'Guide art'),
+		'banneralt'  => array('pt-BR' => 'Arte da seção', 'en' => 'Section art'),
+		'icon'       => array('pt-BR' => 'Ícone', 'en' => 'Icon'),
 	);
 	return $words[$key][$lang] ?? $key;
 }
@@ -108,12 +120,13 @@ function chaos_wiki_url(string $topic = '', string $lang = 'pt-BR', string $quer
 function chaos_wiki_data(): array {
 	static $data = null;
 	if ($data === null) {
-		$data = array('facts' => array(), 'tabs' => array());
+		$data = array('facts' => array(), 'tabs' => array(), 'art' => array());
 		$file = chaos_wiki_dir() . '/wiki_data.json';
 		$text = is_file($file) ? file_get_contents($file) : false;
 		$json = $text === false ? null : json_decode($text, true);
 		if (is_array($json) && isset($json['tabs']) && is_array($json['tabs'])) {
-			$data = array('facts' => is_array($json['facts'] ?? null) ? $json['facts'] : array(), 'tabs' => $json['tabs']);
+			$data = array('facts' => is_array($json['facts'] ?? null) ? $json['facts'] : array(), 'tabs' => $json['tabs'],
+				'art' => is_array($json['art'] ?? null) ? $json['art'] : array());
 		}
 	}
 	return $data;
@@ -180,6 +193,63 @@ function chaos_wiki_resolve(string $topic): ?array {
 	return $e !== null ? array('kind' => 'entry') + $e : null;
 }
 
+// ---------------------------------------------------------------------------------------------------------------- art
+
+/** The URL of a wiki image (a path under the plugin's assets/), or '' for a path that is not one of ours. */
+function chaos_wiki_asset(string $path): string {
+	if (!preg_match('#^(img|wiki/i|wiki/hero)/[a-z0-9][a-z0-9_.-]*\.(png|webp)$#i', $path) || strpos($path, '..') !== false) {
+		return '';
+	}
+	return function_exists('znote_plugin_asset') ? (string)znote_plugin_asset('chaos', $path) : 'plugins/chaos/assets/' . $path;
+}
+
+/** An <img> of a wiki image: escaped, alt text, width and height, lazy. '' when the path is not one of ours. */
+function chaos_wiki_img(string $path, string $alt, int $w, int $h, string $class, bool $lazy = true): string {
+	$url = chaos_wiki_asset($path);
+	if ($url === '') {
+		return '';
+	}
+	$e = static function (string $v): string { return htmlspecialchars($v, ENT_QUOTES, 'UTF-8'); };
+	return '<img class="' . $e($class) . '" src="' . $e($url) . '" alt="' . $e($alt) . '" width="' . $w . '" height="' . $h . '"'
+		. ($lazy ? ' loading="lazy"' : '') . ' decoding="async">';
+}
+
+/** The small icon of an entry or a tab (its name as alt text), or ''. */
+function chaos_wiki_icon(array $e, int $size, string $class = 'chaos-wiki-icon'): string {
+	$icon = $e['icon'] ?? '';
+	return is_string($icon) && $icon !== '' ? chaos_wiki_img($icon, (string)($e['name'] ?? ''), $size, $size, $class) : '';
+}
+
+/** The art of a guide: {id, icon, hero, tone, icons}, or null. */
+function chaos_wiki_guide_art(string $slug): ?array {
+	foreach ((array)(chaos_wiki_data()['art']['guides'] ?? array()) as $g) {
+		if (is_array($g) && (string)($g['id'] ?? '') === $slug) {
+			return $g;
+		}
+	}
+	return null;
+}
+
+/** The icon path of a step or callout reference: @name (art.steps), tab:<id> or an entry id. '' = unknown. */
+function chaos_wiki_ref_icon(string $ref): string {
+	if (strncmp($ref, '@', 1) === 0) {
+		$icon = chaos_wiki_data()['art']['steps'][substr($ref, 1)] ?? '';
+		return is_string($icon) ? $icon : '';
+	}
+	if (strncmp($ref, 'tab:', 4) === 0) {
+		$tab = chaos_wiki_tab(substr($ref, 4));
+		return $tab !== null ? (string)($tab['icon'] ?? '') : '';
+	}
+	$e = chaos_wiki_entry($ref);
+	return $e !== null ? (string)($e['entry']['icon'] ?? '') : '';
+}
+
+/** A hero or banner figure (full width, lazy unless it is the first thing on the page). */
+function chaos_wiki_hero(string $path, string $alt, int $w, int $h, bool $lazy): string {
+	$img = chaos_wiki_img($path, $alt, $w, $h, 'chaos-wiki-hero__img', $lazy);
+	return $img === '' ? '' : '<figure class="chaos-wiki-hero">' . $img . '</figure>';
+}
+
 // ---------------------------------------------------------------------------------------------------------------- guides
 
 /** A fact as text ("" for an unknown key). */
@@ -240,13 +310,42 @@ function chaos_wiki_inline(string $line, string $lang): string {
 	return (string)preg_replace('/(?<![\w])_(.+?)_(?![\w])/u', '<em>$1</em>', $s);
 }
 
-/** A guide as HTML: the "::: if" blocks, then headings (# is the page title), paragraphs, lists. */
+/** A step diagram: "=> icon | title | text" lines as a numbered flow with icons. */
+function chaos_wiki_steps_html(array $steps, string $lang): string {
+	$items = array();
+	foreach ($steps as $i => $st) {
+		$parts = array_map('trim', explode('|', $st, 3));
+		$icon = chaos_wiki_ref_icon($parts[0]);
+		$title = $parts[1] ?? '';
+		$img = $icon !== '' ? chaos_wiki_img($icon, chaos_wiki_plain($title), 40, 40, 'chaos-wiki-steps__icon') : '';
+		$items[] = '<li class="chaos-wiki-steps__step"><span class="chaos-wiki-steps__badge">' . $img
+			. '<span class="chaos-wiki-steps__n" aria-hidden="true">' . ($i + 1) . '</span></span>'
+			. '<span class="chaos-wiki-steps__body"><strong>' . chaos_wiki_inline($title, $lang) . '</strong>'
+			. (($parts[2] ?? '') !== '' ? '<span>' . chaos_wiki_inline($parts[2], $lang) . '</span>' : '') . '</span></li>';
+	}
+	return '<ol class="chaos-wiki-steps" aria-label="' . htmlspecialchars(chaos_wiki_t('steps', $lang), ENT_QUOTES, 'UTF-8') . '">'
+		. implode('', $items) . '</ol>';
+}
+
+/** A callout box: "> [tip|warn|note] text" (following "> " lines continue it). */
+function chaos_wiki_callout_html(string $kind, array $lines, string $lang): string {
+	$icon = chaos_wiki_ref_icon('@' . $kind);
+	$label = chaos_wiki_t($kind, $lang);
+	$img = $icon !== '' ? chaos_wiki_img($icon, $label, 32, 32, 'chaos-wiki-callout__icon') : '';
+	return '<aside class="chaos-wiki-callout chaos-wiki-callout--' . $kind . '">' . $img . '<div><strong class="chaos-wiki-callout__label">'
+		. htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</strong> ' . chaos_wiki_inline(implode(' ', $lines), $lang) . '</div></aside>';
+}
+
+/** A guide as HTML: the "::: if" blocks, then headings (# is the page title), paragraphs, lists, step diagrams and
+ * callout boxes. */
 function chaos_wiki_guide_html(string $md, string $lang): string {
 	$md = chaos_wiki_conditions($md, $lang);
 	$out = array();
 	$para = array();
 	$list = array();
-	$flush = static function () use (&$out, &$para, &$list, $lang): void {
+	$steps = array();
+	$callout = null;
+	$flush = static function () use (&$out, &$para, &$list, &$steps, &$callout, $lang): void {
 		if ($para) {
 			$out[] = '<p>' . chaos_wiki_inline(implode(' ', $para), $lang) . '</p>';
 			$para = array();
@@ -257,11 +356,29 @@ function chaos_wiki_guide_html(string $md, string $lang): string {
 			}, $list)) . '</ul>';
 			$list = array();
 		}
+		if ($steps) {
+			$out[] = chaos_wiki_steps_html($steps, $lang);
+			$steps = array();
+		}
+		if ($callout !== null) {
+			$out[] = chaos_wiki_callout_html($callout[0], $callout[1], $lang);
+			$callout = null;
+		}
 	};
 	foreach (explode("\n", $md) as $line) {
 		$t = rtrim($line);
 		if ($t === '') {
 			$flush();
+		} elseif (preg_match('/^=> (.+)$/', $t, $m)) {
+			if ($para || $list || $callout !== null) {
+				$flush();
+			}
+			$steps[] = $m[1];
+		} elseif (preg_match('/^> \[(tip|warn|note)\] (.+)$/', $t, $m)) {
+			$flush();
+			$callout = array($m[1], array($m[2]));
+		} elseif ($callout !== null && preg_match('/^> (.+)$/', $t, $m)) {
+			$callout[1][] = $m[1];
 		} elseif (preg_match('/^(#{1,3}) (.+)$/', $t, $m)) {
 			$flush();
 			$level = strlen($m[1]);
@@ -290,7 +407,7 @@ function chaos_wiki_guide_summary(string $md, string $lang): string {
 	$md = chaos_wiki_conditions($md, $lang);
 	foreach (preg_split('/\n\s*\n|\n(?=#)/', $md) as $block) {
 		$block = trim($block);
-		if ($block !== '' && $block[0] !== '#' && $block[0] !== '-') {
+		if ($block !== '' && $block[0] !== '#' && $block[0] !== '-' && $block[0] !== '=' && $block[0] !== '>') {
 			$text = chaos_wiki_plain($block);
 			if (mb_strlen($text, 'UTF-8') > 220) {
 				$text = rtrim((string)preg_replace('/\s+\S*$/u', '', mb_substr($text, 0, 220, 'UTF-8')), ' ,.:;') . '…';
@@ -308,7 +425,8 @@ function chaos_wiki_plain(string $md): string {
 	}, $md);
 	$s = (string)preg_replace('/\[([^\]]+)\]\([^)\s]+\)/', '$1', $s);
 	$s = str_replace(array('**', '::: end'), '', $s);
-	$s = (string)preg_replace('/^(#{1,3} |[-*] |::: if \S+)/m', '', $s);
+	$s = (string)preg_replace('/^(#{1,3} |[-*] |::: if \S+|=> \S+ \| |> \[(tip|warn|note)\] |> )/m', '', $s);
+	$s = str_replace(' | ', ': ', $s);
 	$s = (string)preg_replace('/(?<![\w])_(.+?)_(?![\w])/u', '$1', $s);
 	return trim((string)preg_replace('/\s+/', ' ', $s));
 }
@@ -324,10 +442,16 @@ function chaos_wiki_color(array $e): string {
 function chaos_wiki_entry_html(array $e, string $lang): string {
 	$h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
 	$link = static function (string $id, string $text) use ($lang, $h): string {
-		return chaos_wiki_entry($id) !== null ? '<a href="' . $h(chaos_wiki_url($id, $lang)) . '">' . $h($text) . '</a>' : $h($text);
+		$target = chaos_wiki_entry($id);
+		if ($target === null) {
+			return $h($text);
+		}
+		$icon = chaos_wiki_icon(array('icon' => $target['entry']['icon'] ?? '', 'name' => $text), 24, 'chaos-wiki-icon chaos-wiki-icon--row');
+		return $icon . '<a href="' . $h(chaos_wiki_url($id, $lang)) . '">' . $h($text) . '</a>';
 	};
 	$out = array();
-	$out[] = '<h1 class="chaos-heading chaos-wiki-entry__title" style="border-left-color:' . chaos_wiki_color($e) . '">' . $h($e['name'] ?? '') . '</h1>';
+	$icon = chaos_wiki_icon($e, 64, 'chaos-wiki-entry__icon');
+	$out[] = '<div class="chaos-wiki-entry__head">' . $icon . '<h1 class="chaos-heading chaos-wiki-entry__title" style="border-left-color:' . chaos_wiki_color($e) . '">' . $h($e['name'] ?? '') . '</h1></div>';
 	if (!empty($e['soon'])) {
 		$out[] = '<p class="chaos-wiki-soon">' . $h(chaos_wiki_t('soontext', $lang)) . '</p>';
 	}

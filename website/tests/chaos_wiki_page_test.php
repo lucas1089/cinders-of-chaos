@@ -2,8 +2,9 @@
 // php website/tests/chaos_wiki_page_test.php : the player wiki (plugins/chaos/wiki_lib.php, pages/wiki.php) with the
 // generated data (wiki/wiki_data.json, server/tools/gen_wiki_data.lua) and the guides (wiki/guides/*.md): every guide in
 // both languages, their facts and links, the index, every guide, tab and entry page in both languages, breadcrumbs,
-// the search (finds, escapes, accents), the 404 of an unknown topic, the "coming soon" blocks, the link rules, and the
-// menu, footer and home page links. Any PHP notice or warning fails the test. php-cli only, no ZnoteX, no database.
+// the search (finds, escapes, accents), the 404 of an unknown topic, the "coming soon" blocks, the link rules, the
+// art (an icon for every tab and entry, guide heroes, tab banners, step diagrams and callouts, every image on disk,
+// with alt text and a size), and the menu, footer and home page links. Any PHP notice or warning fails the test. php-cli only, no ZnoteX, no database.
 $config = array();
 $GLOBALS['config'] = $config;
 
@@ -66,6 +67,49 @@ foreach ($data['tabs'] as $t) {
 }
 check($dangling === 0, "data: no dangling entry links ($dangling)");
 
+// ---------------------------------------------------------------- the art (website/tools/gen_wiki_art.py)
+$assets = __DIR__ . '/../overlay/plugins/chaos/assets/';
+$missing = array();
+$haveArt = static function (string $path) use ($assets, &$missing): bool {
+	$ok = chaos_wiki_asset($path) !== '' && is_file($assets . $path);
+	if (!$ok) {
+		$missing[] = $path;
+	}
+	return $ok;
+};
+$noIcon = 0;
+foreach ($data['tabs'] as $t) {
+	check(is_string($t['icon'] ?? null) && $haveArt($t['icon']), 'art: tab ' . $t['id'] . ' icon on disk');
+	check(is_string($t['banner'] ?? null) && $haveArt($t['banner']), 'art: tab ' . $t['id'] . ' banner on disk');
+	foreach ($t['entries'] as $e) {
+		if (!is_string($e['icon'] ?? null) || !$haveArt($e['icon'])) {
+			$noIcon++;
+		}
+	}
+}
+check($noIcon === 0, "art: every entry has an icon on disk ($noIcon without; " . implode(', ', array_slice($missing, 0, 3)) . ')');
+$artIds = array_map(static function (array $g): string { return (string)$g['id']; }, (array)($data['art']['guides'] ?? array()));
+check($artIds === array_keys(chaos_wiki_guides()), 'art: one guide art per guide, in the same order as chaos_wiki_guides()');
+foreach ((array)($data['art']['guides'] ?? array()) as $g) {
+	check($haveArt((string)$g['hero']) && $haveArt((string)$g['icon']), 'art: guide ' . $g['id'] . ' hero and icon on disk');
+}
+foreach ((array)($data['art']['steps'] ?? array()) as $name => $icon) {
+	check($haveArt((string)$icon), "art: step icon @$name on disk");
+}
+foreach (array('tip', 'warn', 'note') as $k) {
+	check(chaos_wiki_ref_icon('@' . $k) !== '', "art: callout icon $k");
+}
+check(chaos_wiki_asset('wiki/i/../x.png') === '' && chaos_wiki_asset('https://x.example/a.png') === '' && chaos_wiki_asset('wiki/i/x.svg') === ''
+	&& chaos_wiki_asset('wiki/i/a"b.png') === '' && chaos_wiki_asset('wiki/i/k-fire-burst.png') === 'plugins/chaos/assets/wiki/i/k-fire-burst.png', 'art: only our image paths');
+check(chaos_wiki_ref_icon('class:warrior') === 'img/class-warrior.png' && chaos_wiki_ref_icon('tab:spells') !== '' && chaos_wiki_ref_icon('@nope') === '' && chaos_wiki_ref_icon('nope') === '', 'art: step references');
+$bytes = 0;
+foreach (array('wiki/i', 'wiki/hero') as $d) {
+	foreach ((array)glob($assets . $d . '/*') as $f) {
+		$bytes += (int)filesize($f);
+	}
+}
+check($bytes > 0 && $bytes < 5 * 1024 * 1024, 'art: under 5 MB in all (' . intdiv($bytes, 1024) . ' KB)');
+
 // ---------------------------------------------------------------- the guides
 $guides = chaos_wiki_guides();
 check(count($guides) >= 14, 'guides: at least 14');
@@ -87,6 +131,11 @@ foreach ($guides as $slug => $titles) {
 		foreach ($m[1] as $target) {
 			check(chaos_wiki_link($target, $lang) !== '', "$slug.$lang: link $target resolves");
 		}
+		preg_match_all('/^=> ([^|]+?) \|/m', $md, $m);
+		foreach ($m[1] as $ref) {
+			check(chaos_wiki_ref_icon($ref) !== '', "$slug.$lang: step icon $ref resolves");
+		}
+		check(preg_match_all('/^=> /m', $md) === preg_match_all('/^=> [^|]+ \| [^|]+ \| .+$/m', $md), "$slug.$lang: every step has an icon, a title and a text");
 		$sections[$lang] = substr_count($md, "\n## ");
 		$html = chaos_wiki_guide_html($md, $lang);
 		check(strpos($html, '{{') === false && strpos($html, ':::') === false, "$slug.$lang: no raw markers left");
@@ -109,6 +158,12 @@ check(strpos($html, '<h1 class="chaos-heading">T &lt;b&gt;</h1>') !== false, 're
 check(strpos($html, '<script>') === false && strpos($html, '&lt;script&gt;') !== false && strpos($html, 'javascript') === false, 'renderer: no script, no javascript link');
 check(strpos($html, '<a href="page.php?plugin=chaos&amp;p=wiki&amp;t=guide%3Afaq&amp;l=en">y</a>') !== false && strpos($html, '<strong>b</strong>') !== false, 'renderer: wiki link and bold');
 check(strpos($html, '<li>one two</li>') !== false, 'renderer: list item continued');
+$html = chaos_wiki_guide_html("Intro\n\n=> @key | <b>One</b> | the **first** {{rift.maxTier}}\n=> @nope | Two | x\n\n> [warn] Careful <i>\n> still\n\nAfter", 'en');
+check(substr_count($html, 'class="chaos-wiki-steps__step"') === 2 && strpos($html, '<strong>&lt;b&gt;One&lt;/b&gt;</strong>') !== false
+	&& strpos($html, '<strong>first</strong> ' . chaos_wiki_fact('rift.maxTier')) !== false, 'renderer: step diagram, escaped, inline marks and facts');
+check(substr_count($html, 'chaos-wiki-steps__icon') === 1 && strpos($html, 'alt="&lt;b&gt;One&lt;/b&gt;"') !== false && strpos($html, 'alt="<b>') === false, 'renderer: a step without a known icon has none; the alt text escaped');
+check(strpos($html, '<aside class="chaos-wiki-callout chaos-wiki-callout--warn">') !== false && strpos($html, 'Careful &lt;i&gt; still</div></aside>') !== false && strpos($html, '<p>After</p>') !== false, 'renderer: callout box, continued, escaped');
+check(chaos_wiki_plain("=> @key | Title | text\n> [tip] Tip text") === 'Title: text Tip text', 'plain: steps and callouts');
 check(chaos_wiki_conditions("a\n::: if nope.off\nhidden\n::: end\nb", 'en') === "a\n_Coming soon: not open in the game yet._\nb", 'a block behind a false fact reads coming soon');
 check(chaos_wiki_conditions("a\n::: if class.ascensionLevel\nshown\n::: end\nb", 'pt-BR') === "a\nshown\nb", 'a block behind a true fact stays');
 $entry = chaos_wiki_entry_html(array('id' => 'x', 'name' => '<i>N</i>', 'sub' => 'S&', 'color' => 'red;x:y', 'soon' => true,
@@ -144,6 +199,19 @@ foreach ($guides as $slug => $titles) {
 		check(strpos($page, '{{') === false, "guide $slug.$lang: no raw fact");
 	}
 }
+list($page) = render_wiki(array('t' => 'guide:rifts', 'l' => 'en'));
+check(strpos($page, '<figure class="chaos-wiki-hero"><img class="chaos-wiki-hero__img" src="plugins/chaos/assets/wiki/hero/guide-rifts.webp" alt="Guide art: Rifts and the Atlas" width="960" height="300"') !== false, 'guide: hero image with alt text and size');
+check(substr_count($page, 'class="chaos-wiki-steps__step"') === 6 && strpos($page, 'chaos-wiki-callout--warn') !== false, 'guide: step diagram and callout');
+list($page) = render_wiki(array());
+check(substr_count($page, 'class="chaos-wiki-card__img"') === count($guides) && strpos($page, 'src="plugins/chaos/assets/wiki/hero/guide-start.webp" alt="Primeiros passos" width="960" height="300" loading="lazy"') !== false, 'index: a lazy hero thumbnail per guide card');
+check(strpos($page, 'src="plugins/chaos/assets/wiki/i/top-spells.png" alt="Magias" width="32" height="32" loading="lazy"') !== false, 'index: tab icons, alt text in the page language');
+list($page) = render_wiki(array('t' => 'tab:spells', 'l' => 'en'));
+check(strpos($page, 'wiki/hero/tab-spells.webp" alt="Section art: Spells"') !== false && substr_count($page, 'chaos-wiki-list__icon') === count(chaos_wiki_tab('spells')['entries']), 'tab: banner and an icon per entry');
+list($page) = render_wiki(array('t' => 'class:warrior', 'l' => 'en'));
+check(strpos($page, '<img class="chaos-wiki-entry__icon" src="plugins/chaos/assets/img/class-warrior.png" alt="Warrior" width="64" height="64" loading="lazy"') !== false, 'entry: its icon in the heading');
+check(preg_match('/<img class="chaos-wiki-icon chaos-wiki-icon--row" src="plugins\/chaos\/assets\/wiki\/i\/sp-\d+\.png" alt="[^"]+" width="24" height="24" loading="lazy" decoding="async"><a href=/', $page) === 1, 'entry: spell icons in the table rows');
+list($page) = render_wiki(array('q' => 'Pyre Oath', 'l' => 'en'));
+check(strpos($page, 'chaos-wiki-icon--row') !== false, 'search: result icons');
 list($page) = render_wiki(array('t' => 'guide:start'));
 check(strpos($page, 'Próximo guia') !== false && strpos($page, 't=guide%3Aclasses"') !== false, 'guide: next guide link');
 
@@ -158,6 +226,12 @@ foreach ($data['tabs'] as $t) {
 			$ok = $code2 === 200 && $title2 === $e['name'] . ' - Wiki' && strpos($page2, chaos_h($e['name']) . '</h1>') !== false
 				&& strpos($page2, 'href="' . chaos_h(chaos_wiki_url('tab:' . $t['id'], $lang)) . '"') !== false;
 			check($ok, 'entry ' . $e['id'] . " ($lang): page and breadcrumb to its tab");
+			preg_match_all('/<img [^>]*>/', $page2, $imgs);
+			$badImg = array_filter($imgs[0], static function (string $t): bool {
+				return !preg_match('/ alt="[^"]+" width="\d+" height="\d+"( loading="lazy")? decoding="async">$/', $t)
+					|| (strpos($t, 'loading="lazy"') === false && strpos($t, 'chaos-wiki-hero__img') === false);
+			});
+			check($imgs[0] !== array() && $badImg === array(), 'entry ' . $e['id'] . " ($lang): images have alt text, a size and lazy loading");
 			$entries++;
 		}
 	}
@@ -210,8 +284,10 @@ check(strpos((string)file_get_contents(__DIR__ . '/../setup/chaos_setup.php'), "
 check(strpos((string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/index.php'), 'href="page.php?plugin=chaos&amp;p=wiki">Read the guide</a>') !== false, 'home page button');
 $css = (string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/assets/css/chaos.css');
 check(strpos($css, '.chaos-wiki-search') !== false && strpos($css, '.chaos-wiki-scroll') !== false, 'layout styles');
+check(strpos($css, '.chaos-wiki-steps') !== false && strpos($css, '.chaos-wiki-callout') !== false && strpos($css, '.chaos-wiki-hero__img') !== false, 'layout styles: wiki art');
 $ci = (string)file_get_contents($repo . '/.github/workflows/ci.yml');
 check(strpos($ci, 'gen_wiki_data.lua --check') !== false, 'CI checks the generated data');
+check(strpos($ci, 'gen_wiki_art.py --check') !== false, 'CI checks the wiki art');
 check(strpos((string)file_get_contents($repo . '/CLAUDE.md'), 'gen_wiki_data.lua') !== false, 'CLAUDE.md lists the generator');
 
 check($notices === array(), 'no PHP notices or warnings: ' . implode(' | ', array_slice($notices, 0, 3)));

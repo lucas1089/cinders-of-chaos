@@ -22,6 +22,14 @@ There are {{item.uniques}} [uniques](wiki:tab:uniques), with fixed stats that no
 - Orb of Grafting adds a modifier. Orb of Unmaking removes one.
 - Orb of Upheaval rerolls the modifiers. Orb of Fate rolls a new rarity, often none.
 
+=> @drop | Find an item | Monsters, rifts and bosses drop gear.
+=> @bench | Crafting Bench | Economy > Crafting Bench shows the result first.
+=> @orb | Use an orb | Add, reroll or remove modifiers.
+=> @gem | Gems | Socket gems for more stats.
+=> @salvage | Salvage | Gear you do not need becomes rune shards, and shards become orbs.
+
+> [tip] Uniques have fixed stats: no orb changes them. Craft on items with a rarity.
+
 ## Gems and supports
 
 Gear can have up to {{gem.maxSockets}} [sockets](wiki:gem:sockets) for [gems](wiki:tab:gems). Your spells take [supports](wiki:tab:supports), up to {{support.sockets}} per spell, that change how they work.

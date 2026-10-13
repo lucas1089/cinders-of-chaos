@@ -8,9 +8,17 @@ Cinders of Chaos é um RPG online de fantasia sombria, com cliente próprio. Voc
 - Baixe o cliente na página de downloads e entre com sua conta.
 - Crie um personagem no site. As classes livres são {{class.openNames}}.
 
+=> @account | Conta | Crie no site e aceite os Termos de Uso.
+=> @download | Cliente | Baixe e entre com sua conta.
+=> @create | Personagem | Escolha uma das classes livres.
+=> @tutorial | Ilha do tutorial | Luta, magias, a árvore passiva e os orbes.
+=> @temple | Sua cidade | O templo, com o kit da sua classe.
+
 ## A ilha do tutorial
 
-No primeiro login você chega a uma pequena ilha. Cada estação ensina uma coisa: lutar, usar magias, a árvore passiva e os orbes. Você ganha um ponto passivo e um Orb of Upheaval para treinar. Ninguém morre na ilha. Dá para pular o tutorial na estátua do goblin. Ao sair, você vai para o templo da sua cidade com o kit da sua classe.
+No primeiro login você chega a uma pequena ilha. Cada estação ensina uma coisa: lutar, usar magias, a árvore passiva e os orbes. Você ganha um ponto passivo e um Orb of Upheaval para treinar. Ninguém morre na ilha. Ao sair, você vai para o templo da sua cidade com o kit da sua classe.
+
+> [tip] Já conhece o jogo? Pule o tutorial na estátua do goblin.
 
 ## Os primeiros níveis
 

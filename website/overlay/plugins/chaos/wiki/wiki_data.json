@@ -1,4 +1,226 @@
 {
+	"art": {
+		"guides": [
+			{
+				"id": "start",
+				"hero": "wiki/hero/guide-start.webp",
+				"icon": "wiki/i/k-holy-gate.png",
+				"icons": [
+					"wiki/i/top-quests.png",
+					"wiki/i/top-spells.png",
+					"wiki/i/top-passivetree.png",
+					"wiki/i/top-daily.png",
+					"wiki/i/top-inventory.png",
+					"wiki/i/top-market.png"
+				],
+				"tone": "#e8b84a"
+			},
+			{
+				"id": "classes",
+				"hero": "wiki/hero/guide-classes.webp",
+				"icon": "wiki/i/k-holy-cross.png",
+				"icons": [
+					"img/class-warrior.png",
+					"img/class-ranger.png",
+					"img/class-mystic.png",
+					"img/class-thief.png",
+					"img/class-monk.png",
+					"img/class-necromancer.png",
+					"img/class-templar.png"
+				],
+				"tone": "#f6cf72"
+			},
+			{
+				"id": "tree",
+				"hero": "wiki/hero/guide-tree.webp",
+				"icon": "wiki/i/top-passivetree.png",
+				"icons": [
+					"wiki/i/tr-ksArcaneEcho.png",
+					"wiki/i/tr-ksBulwark.png",
+					"wiki/i/tr-ksGraveCovenant.png",
+					"wiki/i/tr-ksInspiringIllusion.png",
+					"wiki/i/tr-ksPackAlpha.png",
+					"wiki/i/tr-ksSharedPhantasm.png"
+				],
+				"tone": "#e8b84a"
+			},
+			{
+				"id": "items",
+				"hero": "wiki/hero/guide-items.webp",
+				"icon": "wiki/i/orb-arcane-swirl.png",
+				"icons": [
+					"wiki/i/it-sunsworn-sword.png",
+					"wiki/i/it-moonsilver-helmet.png",
+					"wiki/i/it-voidmourn-armor.png",
+					"wiki/i/it-oathsteel-shield.png",
+					"wiki/i/it-cryptbone-wand.png",
+					"wiki/i/it-wildroot-bow.png"
+				],
+				"tone": "#ff9c3a"
+			},
+			{
+				"id": "rifts",
+				"hero": "wiki/hero/guide-rifts.webp",
+				"icon": "wiki/i/k-arcane-rift.png",
+				"icons": [
+					"wiki/i/k-ember-gate.png",
+					"wiki/i/k-fire-flame.png",
+					"wiki/i/k-frost-crystal.png",
+					"wiki/i/k-arcane-eye.png",
+					"wiki/i/k-shadow-skull.png",
+					"wiki/i/k-light-nodes.png"
+				],
+				"tone": "#a064e6"
+			},
+			{
+				"id": "dungeons",
+				"hero": "wiki/hero/guide-dungeons.webp",
+				"icon": "wiki/i/top-dungeons.png",
+				"icons": [
+					"wiki/i/k-bone-skull.png",
+					"wiki/i/k-arcane-swirl.png",
+					"wiki/i/top-infinitytower.png",
+					"wiki/i/k-fire-flame.png",
+					"wiki/i/k-steel-sword.png",
+					"wiki/i/k-nature-thorns.png"
+				],
+				"tone": "#c0a0ff"
+			},
+			{
+				"id": "bosses",
+				"hero": "wiki/hero/guide-bosses.webp",
+				"icon": "wiki/i/k-blood-skull.png",
+				"icons": [
+					"wiki/i/k-fire-meteor.png",
+					"wiki/i/k-frost-crystal.png",
+					"wiki/i/k-poison-thorns.png",
+					"wiki/i/k-shadow-skull.png",
+					"wiki/i/k-ember-gate.png",
+					"wiki/i/k-holy-banner.png"
+				],
+				"tone": "#ff7050"
+			},
+			{
+				"id": "seasons",
+				"hero": "wiki/hero/guide-seasons.webp",
+				"icon": "wiki/i/top-ranking.png",
+				"icons": [
+					"wiki/i/top-battlepass.png",
+					"wiki/i/top-events.png",
+					"wiki/i/k-holy-banner.png",
+					"wiki/i/top-infinitytower.png",
+					"wiki/i/top-daily.png"
+				],
+				"tone": "#ffb050"
+			},
+			{
+				"id": "economy",
+				"hero": "wiki/hero/guide-economy.webp",
+				"icon": "wiki/i/top-market.png",
+				"icons": [
+					"wiki/i/top-bank.png",
+					"wiki/i/orb-holy-crystal.png",
+					"wiki/i/orb-arcane-swirl.png",
+					"wiki/i/k-frost-wave.png",
+					"wiki/i/k-nature-leaf.png",
+					"wiki/i/top-stash.png"
+				],
+				"tone": "#d9a53a"
+			},
+			{
+				"id": "social",
+				"hero": "wiki/hero/guide-social.webp",
+				"icon": "wiki/i/top-community.png",
+				"icons": [
+					"wiki/i/k-holy-banner.png",
+					"wiki/i/top-pvp.png",
+					"wiki/i/k-water-drop.png",
+					"wiki/i/top-quests.png",
+					"wiki/i/k-arcane-twin.png"
+				],
+				"tone": "#7ec46a"
+			},
+			{
+				"id": "pvp",
+				"hero": "wiki/hero/guide-pvp.webp",
+				"icon": "wiki/i/top-pvp.png",
+				"icons": [
+					"wiki/i/k-steel-sword.png",
+					"wiki/i/k-blood-skull.png",
+					"wiki/i/k-ember-gate.png",
+					"wiki/i/k-steel-shield.png",
+					"wiki/i/k-holy-banner.png"
+				],
+				"tone": "#e03a1e"
+			},
+			{
+				"id": "store",
+				"hero": "wiki/hero/guide-store.webp",
+				"icon": "wiki/i/top-vip.png",
+				"icons": [
+					"wiki/i/k-arcane-hood.png",
+					"wiki/i/k-nature-paw.png",
+					"wiki/i/k-holy-arrowup.png",
+					"wiki/i/k-light-ring.png",
+					"wiki/i/top-battlepass.png",
+					"wiki/i/top-stash.png"
+				],
+				"tone": "#ff70c0"
+			},
+			{
+				"id": "rules",
+				"hero": "wiki/hero/guide-rules.webp",
+				"icon": "wiki/i/k-holy-shield.png",
+				"icons": [
+					"wiki/i/top-notifications.png",
+					"wiki/i/k-light-eye.png",
+					"wiki/i/top-help.png",
+					"wiki/i/k-steel-hammer.png"
+				],
+				"tone": "#b8160f"
+			},
+			{
+				"id": "faq",
+				"hero": "wiki/hero/guide-faq.webp",
+				"icon": "wiki/i/top-help.png",
+				"icons": [
+					"wiki/i/top-options.png",
+					"wiki/i/top-quests.png",
+					"wiki/i/top-spells.png",
+					"wiki/i/top-market.png",
+					"wiki/i/top-community.png"
+				],
+				"tone": "#d6c9ae"
+			}
+		],
+		"steps": {
+			"account": "wiki/i/top-options.png",
+			"ascend": "wiki/i/k-holy-cross.png",
+			"atlas": "wiki/i/k-light-nodes.png",
+			"bench": "wiki/i/k-steel-hammer.png",
+			"chest": "wiki/i/k-light-gate.png",
+			"create": "wiki/i/top-skills.png",
+			"download": "wiki/i/top-console.png",
+			"drop": "wiki/i/k-blood-skull.png",
+			"gem": "wiki/i/gem-ff5a4a.png",
+			"guardian": "wiki/i/k-shadow-skull.png",
+			"key": "wiki/i/k-ember-gate.png",
+			"ladder": "wiki/i/top-battlepass.png",
+			"level": "wiki/i/k-steel-arrowup.png",
+			"note": "wiki/i/top-help.png",
+			"omen": "wiki/i/k-arcane-eye.png",
+			"orb": "wiki/i/orb-arcane-swirl.png",
+			"reward": "wiki/i/top-daily.png",
+			"rift": "wiki/i/k-arcane-rift.png",
+			"salvage": "wiki/i/k-bone-crystal.png",
+			"season": "wiki/i/top-ranking.png",
+			"sell": "wiki/i/top-market.png",
+			"temple": "wiki/i/top-quests.png",
+			"tip": "wiki/i/k-light-eye.png",
+			"tutorial": "wiki/i/k-holy-gate.png",
+			"warn": "wiki/i/k-blood-burst.png"
+		}
+	},
 	"facts": {
 		"arena.minLevel": 50,
 		"arena.on": true,
@@ -141,7 +363,9 @@
 		"data/monster/monsters/chaos/**.xml",
 		"tools/late_game_spawns.csv",
 		"client/overlay/modules/game_passivetree/treedata/nodes.lua",
-		"client/overlay/modules/game_passivetree/passivetree.lua"
+		"client/overlay/modules/game_passivetree/passivetree.lua",
+		"client/overlay/modules/game_chaosspells/spelldata.lua",
+		"client/overlay/modules/game_passivetree/treedata/painted.lua"
 	],
 	"tabs": [
 		{
@@ -268,7 +492,8 @@
 								"tree:77"
 							]
 						}
-					]
+					],
+					"icon": "img/class-warrior.png"
 				},
 				{
 					"id": "class:ranger",
@@ -393,7 +618,8 @@
 								"tree:77"
 							]
 						}
-					]
+					],
+					"icon": "img/class-ranger.png"
 				},
 				{
 					"id": "class:mystic",
@@ -568,7 +794,8 @@
 								"tree:355"
 							]
 						}
-					]
+					],
+					"icon": "img/class-mystic.png"
 				},
 				{
 					"id": "class:thief",
@@ -687,7 +914,8 @@
 							],
 							"links": ["tree:383", "tree:78", "tree:107", "tree:109", "tree:81", "tree:105", "tree:77"]
 						}
-					]
+					],
+					"icon": "img/class-thief.png"
 				},
 				{
 					"id": "class:monk",
@@ -803,7 +1031,8 @@
 							],
 							"links": ["tree:362", "tree:78", "tree:96", "tree:102", "tree:81", "tree:390", "tree:77"]
 						}
-					]
+					],
+					"icon": "img/class-monk.png"
 				},
 				{
 					"id": "class:necromancer",
@@ -935,7 +1164,8 @@
 								"tree:355"
 							]
 						}
-					]
+					],
+					"icon": "img/class-necromancer.png"
 				},
 				{
 					"id": "class:templar",
@@ -1076,9 +1306,13 @@
 								"tree:77"
 							]
 						}
-					]
+					],
+					"icon": "img/class-templar.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-classes.webp",
+			"icon": "wiki/i/top-skills.png",
+			"tone": "#f6cf72"
 		},
 		{
 			"id": "spells",
@@ -1112,7 +1346,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-280.png"
 				},
 				{
 					"id": "spell:63",
@@ -1139,7 +1374,8 @@
 								["Classes", "Monk, Shadowfist, Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-259.png"
 				},
 				{
 					"id": "spell:181",
@@ -1166,7 +1402,8 @@
 								["Classes", "Necromancer, Lich, Bone Lord"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-251.png"
 				},
 				{
 					"id": "spell:180",
@@ -1193,7 +1430,8 @@
 								["Classes", "Necromancer, Lich, Bone Lord"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-250.png"
 				},
 				{
 					"id": "spell:189",
@@ -1220,7 +1458,8 @@
 								["Classes", "Templar, Inquisitor, Sentinel"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-269.png"
 				},
 				{
 					"id": "spell:200",
@@ -1242,7 +1481,8 @@
 								["Classes", "Mystic, Elementalist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-201.png"
 				},
 				{
 					"id": "spell:236",
@@ -1269,7 +1509,8 @@
 								["Classes", "Thief, Ninja, Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-237.png"
 				},
 				{
 					"id": "spell:98",
@@ -1296,7 +1537,8 @@
 								["Classes", "Thief, Ninja, Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-281.png"
 				},
 				{
 					"id": "spell:207",
@@ -1318,7 +1560,8 @@
 								["Classes", "Mystic, Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-208.png"
 				},
 				{
 					"id": "spell:235",
@@ -1348,7 +1591,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-236.png"
 				},
 				{
 					"id": "spell:64",
@@ -1375,7 +1619,8 @@
 								["Classes", "Monk, Shadowfist, Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-260.png"
 				},
 				{
 					"id": "spell:191",
@@ -1402,7 +1647,8 @@
 								["Classes", "Templar, Inquisitor, Sentinel"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-271.png"
 				},
 				{
 					"id": "spell:201",
@@ -1424,7 +1670,8 @@
 								["Classes", "Mystic, Elementalist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-202.png"
 				},
 				{
 					"id": "spell:214",
@@ -1451,7 +1698,8 @@
 								["Classes", "Ranger, Deadeye, Beastmaster"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-215.png"
 				},
 				{
 					"id": "spell:220",
@@ -1478,7 +1726,8 @@
 								["Classes", "Warrior, Juggernaut, Berserker"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-221.png"
 				},
 				{
 					"id": "spell:67",
@@ -1505,7 +1754,8 @@
 								["Classes", "Monk, Shadowfist, Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-263.png"
 				},
 				{
 					"id": "spell:232",
@@ -1535,7 +1785,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-233.png"
 				},
 				{
 					"id": "spell:66",
@@ -1562,7 +1813,8 @@
 								["Classes", "Monk, Shadowfist, Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-262.png"
 				},
 				{
 					"id": "spell:99",
@@ -1589,7 +1841,8 @@
 								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-282.png"
 				},
 				{
 					"id": "spell:161",
@@ -1619,7 +1872,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-287.png"
 				},
 				{
 					"id": "spell:162",
@@ -1649,7 +1903,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-288.png"
 				},
 				{
 					"id": "spell:182",
@@ -1676,7 +1931,8 @@
 								["Classes", "Necromancer, Lich, Bone Lord"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-252.png"
 				},
 				{
 					"id": "spell:190",
@@ -1703,7 +1959,8 @@
 								["Classes", "Templar, Inquisitor, Sentinel"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-270.png"
 				},
 				{
 					"id": "spell:208",
@@ -1730,7 +1987,8 @@
 								["Classes", "Mystic, Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-209.png"
 				},
 				{
 					"id": "spell:226",
@@ -1757,7 +2015,8 @@
 								["Classes", "Mystic, Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-227.png"
 				},
 				{
 					"id": "spell:238",
@@ -1784,7 +2043,8 @@
 								["Classes", "Thief, Ninja, Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-238.png"
 				},
 				{
 					"id": "spell:65",
@@ -1811,7 +2071,8 @@
 								["Classes", "Monk, Shadowfist, Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-261.png"
 				},
 				{
 					"id": "spell:202",
@@ -1838,7 +2099,8 @@
 								["Classes", "Mystic, Elementalist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-203.png"
 				},
 				{
 					"id": "spell:96",
@@ -1865,7 +2127,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-278.png"
 				},
 				{
 					"id": "spell:100",
@@ -1892,7 +2155,8 @@
 								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-283.png"
 				},
 				{
 					"id": "spell:104",
@@ -1919,7 +2183,8 @@
 								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-284.png"
 				},
 				{
 					"id": "spell:179",
@@ -1949,7 +2214,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-285.png"
 				},
 				{
 					"id": "spell:209",
@@ -1971,7 +2237,8 @@
 								["Classes", "Mystic, Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-210.png"
 				},
 				{
 					"id": "spell:215",
@@ -1998,7 +2265,8 @@
 								["Classes", "Ranger, Deadeye, Beastmaster"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-216.png"
 				},
 				{
 					"id": "spell:221",
@@ -2023,7 +2291,8 @@
 								["Classes", "Warrior, Juggernaut, Berserker"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-222.png"
 				},
 				{
 					"id": "spell:233",
@@ -2053,7 +2322,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-234.png"
 				},
 				{
 					"id": "spell:239",
@@ -2080,7 +2350,8 @@
 								["Classes", "Thief, Ninja, Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-239.png"
 				},
 				{
 					"id": "spell:255",
@@ -2110,7 +2381,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-286.png"
 				},
 				{
 					"id": "spell:210",
@@ -2135,7 +2407,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-211.png"
 				},
 				{
 					"id": "spell:227",
@@ -2160,7 +2433,8 @@
 								["Classes", "Mystic, Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-228.png"
 				},
 				{
 					"id": "spell:234",
@@ -2190,7 +2464,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-235.png"
 				},
 				{
 					"id": "spell:203",
@@ -2215,7 +2490,8 @@
 								["Classes", "Mystic, Elementalist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-204.png"
 				},
 				{
 					"id": "spell:68",
@@ -2242,7 +2518,8 @@
 								["Classes", "Shadowfist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-264.png"
 				},
 				{
 					"id": "spell:70",
@@ -2269,7 +2546,8 @@
 								["Classes", "Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-266.png"
 				},
 				{
 					"id": "spell:183",
@@ -2296,7 +2574,8 @@
 								["Classes", "Lich"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-253.png"
 				},
 				{
 					"id": "spell:186",
@@ -2323,7 +2602,8 @@
 								["Classes", "Bone Lord"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-256.png"
 				},
 				{
 					"id": "spell:198",
@@ -2350,7 +2630,8 @@
 								["Classes", "Inquisitor"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-272.png"
 				},
 				{
 					"id": "spell:216",
@@ -2377,7 +2658,8 @@
 								["Classes", "Ranger, Deadeye, Beastmaster"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-217.png"
 				},
 				{
 					"id": "spell:222",
@@ -2402,7 +2684,8 @@
 								["Classes", "Warrior, Juggernaut, Berserker"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-223.png"
 				},
 				{
 					"id": "spell:240",
@@ -2429,7 +2712,8 @@
 								["Classes", "Ninja"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-240.png"
 				},
 				{
 					"id": "spell:243",
@@ -2456,7 +2740,8 @@
 								["Classes", "Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-243.png"
 				},
 				{
 					"id": "spell:246",
@@ -2483,7 +2768,8 @@
 								["Classes", "Berserker"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-246.png"
 				},
 				{
 					"id": "spell:248",
@@ -2510,7 +2796,8 @@
 								["Classes", "Beastmaster"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-248.png"
 				},
 				{
 					"id": "spell:251",
@@ -2537,7 +2824,8 @@
 								["Classes", "Sentinel"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-275.png"
 				},
 				{
 					"id": "spell:228",
@@ -2562,7 +2850,8 @@
 								["Classes", "Mystic, Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-229.png"
 				},
 				{
 					"id": "spell:249",
@@ -2589,7 +2878,8 @@
 								["Classes", "Beastmaster"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-249.png"
 				},
 				{
 					"id": "spell:71",
@@ -2616,7 +2906,8 @@
 								["Classes", "Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-267.png"
 				},
 				{
 					"id": "spell:97",
@@ -2643,7 +2934,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-279.png"
 				},
 				{
 					"id": "spell:187",
@@ -2670,7 +2962,8 @@
 								["Classes", "Bone Lord"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-257.png"
 				},
 				{
 					"id": "spell:199",
@@ -2697,7 +2990,8 @@
 								["Classes", "Inquisitor"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-273.png"
 				},
 				{
 					"id": "spell:211",
@@ -2724,7 +3018,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-212.png"
 				},
 				{
 					"id": "spell:223",
@@ -2751,7 +3046,8 @@
 								["Classes", "Warrior, Juggernaut"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-224.png"
 				},
 				{
 					"id": "spell:244",
@@ -2778,7 +3074,8 @@
 								["Classes", "Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-244.png"
 				},
 				{
 					"id": "spell:247",
@@ -2805,7 +3102,8 @@
 								["Classes", "Berserker"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-247.png"
 				},
 				{
 					"id": "spell:252",
@@ -2832,7 +3130,8 @@
 								["Classes", "Sentinel"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-276.png"
 				},
 				{
 					"id": "spell:184",
@@ -2859,7 +3158,8 @@
 								["Classes", "Lich"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-254.png"
 				},
 				{
 					"id": "spell:241",
@@ -2886,7 +3186,8 @@
 								["Classes", "Ninja"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-241.png"
 				},
 				{
 					"id": "spell:217",
@@ -2908,7 +3209,8 @@
 								["Classes", "Ranger, Deadeye, Beastmaster"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-218.png"
 				},
 				{
 					"id": "spell:69",
@@ -2935,7 +3237,8 @@
 								["Classes", "Shadowfist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-265.png"
 				},
 				{
 					"id": "spell:72",
@@ -2962,7 +3265,8 @@
 								["Classes", "Iron Sage"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-268.png"
 				},
 				{
 					"id": "spell:188",
@@ -2989,7 +3293,8 @@
 								["Classes", "Bone Lord"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-258.png"
 				},
 				{
 					"id": "spell:204",
@@ -3016,7 +3321,8 @@
 								["Classes", "Mystic, Elementalist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-205.png"
 				},
 				{
 					"id": "spell:229",
@@ -3038,7 +3344,8 @@
 								["Classes", "Mystic, Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-230.png"
 				},
 				{
 					"id": "spell:245",
@@ -3065,7 +3372,8 @@
 								["Classes", "Samurai"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-245.png"
 				},
 				{
 					"id": "spell:250",
@@ -3092,7 +3400,8 @@
 								["Classes", "Inquisitor"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-274.png"
 				},
 				{
 					"id": "spell:253",
@@ -3119,7 +3428,8 @@
 								["Classes", "Sentinel"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-277.png"
 				},
 				{
 					"id": "spell:185",
@@ -3146,7 +3456,8 @@
 								["Classes", "Lich"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-255.png"
 				},
 				{
 					"id": "spell:224",
@@ -3171,7 +3482,8 @@
 								["Classes", "Warrior, Juggernaut, Berserker"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-225.png"
 				},
 				{
 					"id": "spell:212",
@@ -3198,7 +3510,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-213.png"
 				},
 				{
 					"id": "spell:242",
@@ -3225,7 +3538,8 @@
 								["Classes", "Ninja"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-242.png"
 				},
 				{
 					"id": "spell:218",
@@ -3247,7 +3561,8 @@
 								["Classes", "Deadeye"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-219.png"
 				},
 				{
 					"id": "spell:230",
@@ -3272,7 +3587,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-231.png"
 				},
 				{
 					"id": "spell:205",
@@ -3299,7 +3615,8 @@
 								["Classes", "Elementalist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-206.png"
 				},
 				{
 					"id": "spell:213",
@@ -3326,7 +3643,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-214.png"
 				},
 				{
 					"id": "spell:225",
@@ -3353,7 +3671,8 @@
 								["Classes", "Warrior, Juggernaut, Berserker"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-226.png"
 				},
 				{
 					"id": "spell:219",
@@ -3380,7 +3699,8 @@
 								["Classes", "Ranger, Deadeye"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-220.png"
 				},
 				{
 					"id": "spell:231",
@@ -3407,7 +3727,8 @@
 								["Classes", "Illusionist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-232.png"
 				},
 				{
 					"id": "spell:206",
@@ -3434,9 +3755,13 @@
 								["Classes", "Elementalist"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sp-207.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-spells.webp",
+			"icon": "wiki/i/top-spells.png",
+			"tone": "#9fdc7f"
 		},
 		{
 			"id": "tree",
@@ -3474,7 +3799,8 @@
 								["Fortune", "Item Find", "+0.5%", "40", "+20%"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-passivetree.png"
 				},
 				{
 					"id": "tree:362",
@@ -3490,7 +3816,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/tr-arAetherEdge.png"
 				},
 				{
 					"id": "tree:621:sorcerer",
@@ -3506,7 +3833,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Mystic, Elementalist."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksArcaneEcho.png"
 				},
 				{
 					"id": "tree:664",
@@ -3522,7 +3850,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksBastion.png"
 				},
 				{
 					"id": "tree:383",
@@ -3538,7 +3867,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksBlackbloodCreed.png"
 				},
 				{
 					"id": "tree:644",
@@ -3549,7 +3879,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["Your Bone Golem hits +60% harder and has +50% health."]},
 						{"h": "Who", "p": ["Classes: Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksBoneColossus.png"
 				},
 				{
 					"id": "tree:624:juggernaut",
@@ -3565,7 +3896,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Juggernaut."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksBulwark.png"
 				},
 				{
 					"id": "tree:624:knight",
@@ -3581,7 +3913,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Warrior."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksBulwark.png"
 				},
 				{
 					"id": "tree:78",
@@ -3597,7 +3930,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/tr-arCascade.png"
 				},
 				{
 					"id": "tree:621:berserker",
@@ -3611,7 +3945,8 @@
 							"p": ["Two-handed melee hits cleave: up to 3 other enemies next to you take 40% of the hit."]
 						},
 						{"h": "Who", "p": ["Classes: Berserker."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksCleavingArc.png"
 				},
 				{
 					"id": "tree:621:knight",
@@ -3625,7 +3960,8 @@
 							"p": ["Two-handed melee hits cleave: up to 3 other enemies next to you take 40% of the hit."]
 						},
 						{"h": "Who", "p": ["Classes: Warrior."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksCleavingArc.png"
 				},
 				{
 					"id": "tree:107",
@@ -3641,7 +3977,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
-					]
+					],
+					"icon": "wiki/i/tr-arContagion.png"
 				},
 				{
 					"id": "tree:99",
@@ -3662,7 +3999,8 @@
 								"Classes: Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arVigils.png"
 				},
 				{
 					"id": "tree:369",
@@ -3678,7 +4016,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksGraveCovenant.png"
 				},
 				{
 					"id": "tree:624:deadeye",
@@ -3692,7 +4031,8 @@
 							"p": ["Crossbow and bolts: 15% chance for a Deadeye shot that deals double damage (+100%)."]
 						},
 						{"h": "Who", "p": ["Classes: Deadeye."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksDeadeye.png"
 				},
 				{
 					"id": "tree:624:paladin",
@@ -3706,7 +4046,8 @@
 							"p": ["Crossbow and bolts: 15% chance for a Deadeye shot that deals double damage (+100%)."]
 						},
 						{"h": "Who", "p": ["Classes: Ranger."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksDeadeye.png"
 				},
 				{
 					"id": "tree:661",
@@ -3722,7 +4063,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Inquisitor."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksDivineVerdict.png"
 				},
 				{
 					"id": "tree:262",
@@ -3741,7 +4083,8 @@
 							"h": "Who",
 							"p": ["Classes: Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord."]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arEffigy.png"
 				},
 				{
 					"id": "tree:624:sorcerer",
@@ -3757,7 +4100,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Mystic, Elementalist."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksOverload.png"
 				},
 				{
 					"id": "tree:654",
@@ -3773,7 +4117,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksFlowingMercy.png"
 				},
 				{
 					"id": "tree:641",
@@ -3789,7 +4134,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Lich."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksHoardedSouls.png"
 				},
 				{
 					"id": "tree:96",
@@ -3810,7 +4156,8 @@
 								"Classes: Mystic, Elementalist, Illusionist, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arHollowVessel.png"
 				},
 				{
 					"id": "tree:651",
@@ -3821,7 +4168,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["Focus critical hits also give you a chi (at most one per second)."]},
 						{"h": "Who", "p": ["Classes: Shadowfist."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksHundredHands.png"
 				},
 				{
 					"id": "tree:621:deadeye",
@@ -3837,7 +4185,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Deadeye."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksHuntersFocus.png"
 				},
 				{
 					"id": "tree:621:juggernaut",
@@ -3848,7 +4197,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["You take 8% less damage, 16% less while below 50% health."]},
 						{"h": "Who", "p": ["Classes: Juggernaut."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksImmovable.png"
 				},
 				{
 					"id": "tree:624:illusionist",
@@ -3862,7 +4212,8 @@
 							"p": ["Support (needs a party): other party members within 8 sqm of you deal +8% damage."]
 						},
 						{"h": "Who", "p": ["Classes: Illusionist."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksInspiringIllusion.png"
 				},
 				{
 					"id": "tree:102",
@@ -3883,7 +4234,8 @@
 								"Classes: Warrior, Juggernaut, Berserker, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arIronTithe.png"
 				},
 				{
 					"id": "tree:631",
@@ -3899,7 +4251,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Ninja."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksLivingShadow.png"
 				},
 				{
 					"id": "tree:109",
@@ -3920,7 +4273,8 @@
 								"Classes: Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arOpenHand.png"
 				},
 				{
 					"id": "tree:621:ironsage",
@@ -3936,7 +4290,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksOvergrowth.png"
 				},
 				{
 					"id": "tree:624:beastmaster",
@@ -3952,7 +4307,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Beastmaster."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksPackAlpha.png"
 				},
 				{
 					"id": "tree:376",
@@ -3968,7 +4324,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksPenitentWrath.png"
 				},
 				{
 					"id": "tree:108",
@@ -3987,7 +4344,8 @@
 							"h": "Who",
 							"p": ["Classes: Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel."]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arPyreOath.png"
 				},
 				{
 					"id": "tree:253",
@@ -4003,7 +4361,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/tr-arReliquary.png"
 				},
 				{
 					"id": "tree:621:beastmaster",
@@ -4019,7 +4378,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Beastmaster."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksRicochet.png"
 				},
 				{
 					"id": "tree:621:paladin",
@@ -4035,7 +4395,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Ranger."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksRicochet.png"
 				},
 				{
 					"id": "tree:81",
@@ -4051,7 +4412,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/tr-arSanguine.png"
 				},
 				{
 					"id": "tree:390",
@@ -4067,7 +4429,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksScarredDiscipline.png"
 				},
 				{
 					"id": "tree:621:illusionist",
@@ -4083,7 +4446,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Illusionist."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksSharedPhantasm.png"
 				},
 				{
 					"id": "tree:106",
@@ -4102,7 +4466,8 @@
 							"h": "Who",
 							"p": ["Classes: Mystic, Elementalist, Illusionist, Templar, Inquisitor, Sentinel."]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arCinderSigil.png"
 				},
 				{
 					"id": "tree:105",
@@ -4118,7 +4483,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai."]}
-					]
+					],
+					"icon": "wiki/i/tr-arSnarewright.png"
 				},
 				{
 					"id": "tree:82",
@@ -4134,7 +4500,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster."]}
-					]
+					],
+					"icon": "wiki/i/tr-arStormstring.png"
 				},
 				{
 					"id": "tree:77",
@@ -4150,7 +4517,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/tr-arThornbound.png"
 				},
 				{
 					"id": "tree:624:sentinel",
@@ -4166,7 +4534,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksThorns.png"
 				},
 				{
 					"id": "tree:624:berserker",
@@ -4180,7 +4549,8 @@
 							"p": ["Melee weapon hits heal you for 4% of the damage dealt, 8% while below 50% health."]
 						},
 						{"h": "Who", "p": ["Classes: Berserker."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksUndyingRage.png"
 				},
 				{
 					"id": "tree:634",
@@ -4196,7 +4566,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Samurai."]}
-					]
+					],
+					"icon": "wiki/i/tr-ksWayOfTheBlade.png"
 				},
 				{
 					"id": "tree:355",
@@ -4215,7 +4586,8 @@
 							"h": "Who",
 							"p": ["Classes: Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord."]
 						}
-					]
+					],
+					"icon": "wiki/i/tr-arWinterLattice.png"
 				},
 				{
 					"id": "tree:21",
@@ -4223,7 +4595,8 @@
 					"sub": "Notable. +1.0 Fire Absorption.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+1.0 Fire Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+1.0 Fire Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:15",
@@ -4234,7 +4607,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+1.0 Arcane Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:14",
@@ -4242,7 +4616,8 @@
 					"sub": "Notable. +2.0 Arcane Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Arcane Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Arcane Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:244",
@@ -4258,7 +4633,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:599",
@@ -4274,7 +4650,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:281",
@@ -4290,7 +4667,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:319",
@@ -4301,7 +4679,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Physical Absorption. +1.0 Shielding Skill."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:85",
@@ -4317,7 +4696,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:643",
@@ -4328,7 +4708,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["Banner of Bones: your minions deal +45% damage (instead of 30%)."]},
 						{"h": "Who", "p": ["Classes: Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:329",
@@ -4339,7 +4720,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+5.0 strength. +5.0 spirit. +5.0 wisdom. +10.0 vitality."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:603",
@@ -4350,7 +4732,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Water Damage. +1.0 Water Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:563",
@@ -4364,7 +4747,8 @@
 							"p": ["+1.0 Health Spells. +2.0 Life Leech Chance. +2.0 Life Leech Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:526",
@@ -4380,7 +4764,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:316",
@@ -4396,7 +4781,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:637",
@@ -4407,7 +4793,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+6.0 Physical Damage. +4.0 Death Damage."]},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:409",
@@ -4418,7 +4805,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+15.0 Fire Damage. +6.0 Fire Absorption. +3.0 Shielding Skill."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:542",
@@ -4434,7 +4822,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:660",
@@ -4448,7 +4837,8 @@
 							"p": ["Radiant Strikes: the holy strike deals 30% of the hit (instead of 25%)."]
 						},
 						{"h": "Who", "p": ["Classes: Inquisitor."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:647",
@@ -4459,7 +4849,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+4.0 dexterity. +3.0 vitality."]},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:393",
@@ -4470,7 +4861,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Fire Damage. +1.0 Fire Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:561",
@@ -4486,7 +4878,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:276",
@@ -4500,7 +4893,8 @@
 							"p": ["+1.0 Shielding Skill. +2.0 Critical Hit Chance. +2.0 Critical Hit Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:638",
@@ -4511,7 +4905,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+4.0 spirit. +4.0 vitality."]},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:24",
@@ -4519,7 +4914,8 @@
 					"sub": "Notable. +1.0 Death Absorption.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+1.0 Death Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+1.0 Death Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:23",
@@ -4527,7 +4923,8 @@
 					"sub": "Notable. +2.0 Death Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Death Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Death Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:653",
@@ -4538,7 +4935,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["Mantra of Stone: 11% less damage taken (instead of 8%)."]},
 						{"h": "Who", "p": ["Classes: Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:288",
@@ -4554,7 +4952,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:580",
@@ -4570,7 +4969,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:466",
@@ -4586,7 +4986,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:10",
@@ -4594,7 +4995,8 @@
 					"sub": "Notable. +1.0 Drown Absorption.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+1.0 Drown Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+1.0 Drown Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:8",
@@ -4602,7 +5004,8 @@
 					"sub": "Notable. +2.0 Drown Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Drown Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Drown Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:487",
@@ -4613,7 +5016,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Drown Damage. +2.0 Drown Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:33",
@@ -4621,7 +5025,8 @@
 					"sub": "Notable. +2.0 Earth Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Earth Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Earth Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:148",
@@ -4635,7 +5040,8 @@
 							"p": ["+3.0 spirit. +3.0 Earth Absorption. +2.0 Mana Leech Chance. +3.0 Mana Leech Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:620",
@@ -4649,7 +5055,8 @@
 							"p": ["+4.0 Physical Damage. +4.0 Health Spells. +4.0 Increase all damage elements."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:28",
@@ -4660,7 +5067,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+1.0 Energy Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:26",
@@ -4668,7 +5076,8 @@
 					"sub": "Notable. +2.0 Energy Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Energy Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Energy Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:347",
@@ -4682,7 +5091,8 @@
 							"p": ["+2.0 Ice Damage. +2.0 Energy Damage. +1.0 Fire Absorption. +1.0 Earth Absorption."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:20",
@@ -4690,7 +5100,8 @@
 					"sub": "Notable. +2.0 Fire Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Fire Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Fire Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:630",
@@ -4698,7 +5109,8 @@
 					"sub": "Notable. Evasion +4%.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["Evasion +4%."]}, {"h": "Who", "p": ["Classes: Ninja."]}]
+					"sections": [{"h": "Effect", "p": ["Evasion +4%."]}, {"h": "Who", "p": ["Classes: Ninja."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:648",
@@ -4709,7 +5121,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+20.0 Increased Speed. +2.0 Critical Hit Chance."]},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:618",
@@ -4725,7 +5138,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:219",
@@ -4736,7 +5150,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 intelligence. +3.0 Ice Damage."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:84",
@@ -4750,7 +5165,8 @@
 							"p": ["+2.0 Holy Damage. +2.0 Earth Damage. +3.0 Earth Absorption. +2.0% Loot Increased."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:331",
@@ -4766,7 +5182,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:619",
@@ -4777,7 +5194,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Physical Damage. +3.0 Increase all damage elements."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:146",
@@ -4793,7 +5211,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:636",
@@ -4804,7 +5223,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 intelligence. +2.0 Magic Level."]},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:468",
@@ -4815,7 +5235,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Death Damage. +1.0 Death Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:297",
@@ -4829,7 +5250,8 @@
 							"p": ["+1.0 Distance Skill. +2.0 Critical Hit Chance. +2.0 Critical Hit Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:290",
@@ -4843,7 +5265,8 @@
 							"p": ["+2.0 Critical Hit Chance. +2.0 Critical Hit Amount. +1.0 Life Leech Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:652",
@@ -4854,7 +5277,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 vitality. +8.0 Health Spells."]},
 						{"h": "Who", "p": ["Classes: Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:27",
@@ -4862,7 +5286,8 @@
 					"sub": "Notable. +2.0 Health Spells.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Health Spells."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Health Spells."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:507",
@@ -4873,7 +5298,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Ice Damage. +2.0 Ice Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:149",
@@ -4887,7 +5313,8 @@
 							"p": ["+3.0 spirit. +3.0 Energy Absorption. +2.0 Mana Leech Chance. +3.0 Mana Leech Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:34",
@@ -4895,7 +5322,8 @@
 					"sub": "Notable. +1.0 Holy Absorption.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+1.0 Holy Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+1.0 Holy Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:32",
@@ -4903,7 +5331,8 @@
 					"sub": "Notable. +2.0 Holy Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Holy Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Holy Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:656",
@@ -4914,7 +5343,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 vitality. +6.0 Holy Damage."]},
 						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:18",
@@ -4922,7 +5352,8 @@
 					"sub": "Notable. +1.0 Ice Absorption.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+1.0 Ice Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+1.0 Ice Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:17",
@@ -4930,7 +5361,8 @@
 					"sub": "Notable. +2.0 Ice Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Ice Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Ice Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:147",
@@ -4944,7 +5376,8 @@
 							"p": ["+3.0 vitality. +3.0 Fire Absorption. +2.0 Life Leech Chance. +3.0 Life Leech Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:161",
@@ -4955,7 +5388,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+1.0 strength. +3.0 Physical Damage. +1.0 Physical Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:646",
@@ -4966,7 +5400,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 strength. +6.0 Physical Damage."]},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:633",
@@ -4980,7 +5415,8 @@
 							"p": ["Counter Stance: the answer deals +50% and the stance lasts 1 s longer."]
 						},
 						{"h": "Who", "p": ["Classes: Samurai."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:622",
@@ -4991,7 +5427,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 spirit. +2.0 vitality."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:642",
@@ -5002,7 +5439,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["Raise Dead: one more skeleton."]},
 						{"h": "Who", "p": ["Classes: Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:29",
@@ -5013,7 +5451,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Life Drain Damage. +2.0 Mana Drain Damage."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:626",
@@ -5024,7 +5463,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+4.0 dexterity. +20.0 Increased Speed."]},
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:640",
@@ -5032,7 +5472,8 @@
 					"sub": "Notable. Soul Rot deals +25% damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["Soul Rot deals +25% damage."]}, {"h": "Who", "p": ["Classes: Lich."]}]
+					"sections": [{"h": "Effect", "p": ["Soul Rot deals +25% damage."]}, {"h": "Who", "p": ["Classes: Lich."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:545",
@@ -5043,7 +5484,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Holy Damage. +1.0 Holy Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:243",
@@ -5059,7 +5501,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:295",
@@ -5075,7 +5518,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:412",
@@ -5086,7 +5530,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Physical Damage. +1.0 Physical Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:309",
@@ -5102,7 +5547,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:358",
@@ -5113,7 +5559,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 vitality. +3.0 Health Spells."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:302",
@@ -5129,7 +5576,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:345",
@@ -5143,7 +5591,8 @@
 							"p": ["+2.0 Earth Damage. +2.0 Fire Damage. +1.0 Fire Absorption. +1.0 Earth Absorption."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:650",
@@ -5154,7 +5603,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["Pressure Points: +6% damage taken per stack (instead of 5%)."]},
 						{"h": "Who", "p": ["Classes: Shadowfist."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:381",
@@ -5165,7 +5615,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 dexterity. +3.0 Earth Damage."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:83",
@@ -5181,7 +5632,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:11",
@@ -5192,7 +5644,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+1.0 Physical Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:9",
@@ -5200,7 +5653,8 @@
 					"sub": "Notable. +2.0 Physical Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Physical Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Physical Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:649",
@@ -5211,7 +5665,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Critical Hit Chance. +6.0 Critical Hit Amount."]},
 						{"h": "Who", "p": ["Classes: Shadowfist."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:330",
@@ -5222,7 +5677,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+10.0 strength. +2.0 Life Leech Chance. +3.0 Life Leech Amount."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:153",
@@ -5233,7 +5689,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 strength. +3.0 Holy Damage."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:135",
@@ -5244,7 +5701,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Critical Hit Chance. +3.0 Critical Hit Amount."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:485",
@@ -5260,7 +5718,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:523",
@@ -5274,7 +5733,8 @@
 							"p": ["+15.0 Ice Damage. +6.0 Ice Absorption. +60.0 Increased Speed. +2.0 Magic Level."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:658",
@@ -5285,7 +5745,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 strength. +2.0 Sword Skill. +2.0 Club Skill."]},
 						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:335",
@@ -5296,7 +5757,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Ice Damage. +1.0 Ice Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:449",
@@ -5307,7 +5769,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Earth Damage. +1.0 Earth Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:659",
@@ -5318,7 +5781,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+8.0 Holy Damage. +2.0 Magic Level."]},
 						{"h": "Who", "p": ["Classes: Inquisitor."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:332",
@@ -5334,7 +5798,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:663",
@@ -5348,7 +5813,8 @@
 							"p": ["Your aura regenerates 0.5% of the maximum health per second (instead of 0.4%)."]
 						},
 						{"h": "Who", "p": ["Classes: Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:260",
@@ -5359,7 +5825,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 vitality. +2.0 Physical Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:628",
@@ -5370,7 +5837,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Sword Skill. +3.0 Distance Skill. +1.0 Critical Hit Chance."]},
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:504",
@@ -5386,7 +5854,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:657",
@@ -5397,7 +5866,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Physical Absorption. +3.0 Shielding Skill."]},
 						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:344",
@@ -5408,7 +5878,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 dexterity. +3.0 spirit. +3.0 vitality. +5.0 intelligence."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:110",
@@ -5416,7 +5887,8 @@
 					"sub": "Notable. +50.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:115",
@@ -5424,7 +5896,8 @@
 					"sub": "Notable. +50.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:120",
@@ -5432,7 +5905,8 @@
 					"sub": "Notable. +50.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:125",
@@ -5440,7 +5914,8 @@
 					"sub": "Notable. +50.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+50.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:264",
@@ -5448,7 +5923,8 @@
 					"sub": "Notable. +20.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:268",
@@ -5456,7 +5932,8 @@
 					"sub": "Notable. +20.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:269",
@@ -5464,7 +5941,8 @@
 					"sub": "Notable. +20.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:272",
@@ -5472,7 +5950,8 @@
 					"sub": "Notable. +20.0 Increased Speed.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+20.0 Increased Speed."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:639",
@@ -5483,7 +5962,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["Withering Curse spreads to one more enemy."]},
 						{"h": "Who", "p": ["Classes: Lich."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:662",
@@ -5494,7 +5974,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Physical Absorption. +2.0 Absorb all Elements."]},
 						{"h": "Who", "p": ["Classes: Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:632",
@@ -5505,7 +5986,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+5.0 vitality. +3.0 Physical Absorption."]},
 						{"h": "Who", "p": ["Classes: Samurai."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:430",
@@ -5516,7 +5998,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Energy Damage. +1.0 Energy Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:447",
@@ -5532,7 +6015,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:246",
@@ -5543,7 +6027,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+1.0 intelligence. +3.0 Energy Damage. +1.0 Energy Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:629",
@@ -5557,7 +6042,8 @@
 							"p": ["Dual wield: the off-hand strike deals 65% of the main-hand hit (instead of 50%)."]
 						},
 						{"h": "Who", "p": ["Classes: Ninja."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:623",
@@ -5568,7 +6054,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 Physical Absorption. +2.0 Absorb all Elements."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:210",
@@ -5579,7 +6066,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+2.0 dexterity. +3.0 Water Damage."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:627",
@@ -5590,7 +6078,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 strength. +6.0 Earth Damage."]},
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:583",
@@ -5601,7 +6090,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Arcane Damage. +1.0 Arcane Absorption."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:31",
@@ -5609,7 +6099,8 @@
 					"sub": "Notable. +1.0 Water Absorption.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+1.0 Water Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+1.0 Water Absorption."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:30",
@@ -5617,7 +6108,8 @@
 					"sub": "Notable. +2.0 Water Damage.",
 					"color": "#c8b890",
 					"group": "notable",
-					"sections": [{"h": "Effect", "p": ["+2.0 Water Damage."]}, {"h": "Who", "p": ["Classes: every class."]}]
+					"sections": [{"h": "Effect", "p": ["+2.0 Water Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:428",
@@ -5633,7 +6125,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:346",
@@ -5644,7 +6137,8 @@
 					"sections": [
 						{"h": "Effect", "p": ["+1.0 Magic Level. +2.0 Mana Leech Chance. +3.0 Mana Leech Amount."]},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:138",
@@ -5658,7 +6152,8 @@
 							"p": ["+2.0 Critical Hit Chance. +2.0 Critical Hit Amount. +1.0 Mana Leech Amount."]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
 					"id": "tree:666",
@@ -5681,7 +6176,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
-					]
+					],
+					"icon": "wiki/i/tr-msGraveMastery.png"
 				},
 				{
 					"id": "tree:667",
@@ -5705,7 +6201,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
-					]
+					],
+					"icon": "wiki/i/tr-msInnerDiscipline.png"
 				},
 				{
 					"id": "tree:668",
@@ -5731,7 +6228,8 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
-					]
+					],
+					"icon": "wiki/i/tr-msSacredOath.png"
 				},
 				{
 					"id": "tree:665",
@@ -5755,9 +6253,13 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
-					]
+					],
+					"icon": "wiki/i/tr-msShadowDiscipline.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-tree.webp",
+			"icon": "wiki/i/top-passivetree.png",
+			"tone": "#e8b84a"
 		},
 		{
 			"id": "basics",
@@ -5779,7 +6281,8 @@
 								"Uniques have fixed stats and are never changed by orbs."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-inventory.png"
 				},
 				{
 					"id": "basics:rarity",
@@ -5813,7 +6316,8 @@
 							]
 						},
 						{"h": "Powers", "p": ["Legendary powers: from Legendary, 1 per item."]}
-					]
+					],
+					"icon": "wiki/i/k-light-crystal.png"
 				},
 				{
 					"id": "basics:tiers",
@@ -5855,7 +6359,8 @@
 								["150", "T8 6.5%, T7 12%, T6 19%, T5 27.2%, T4 35.3%"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-arrowup.png"
 				},
 				{
 					"id": "basics:itemlevel",
@@ -5889,7 +6394,8 @@
 								["6000", "145"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-arrowup.png"
 				},
 				{
 					"id": "basics:sides",
@@ -5905,7 +6411,8 @@
 								"A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-twin.png"
 				},
 				{
 					"id": "basics:quality",
@@ -5934,7 +6441,8 @@
 							],
 							"links": ["orb:ruin"]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-hammer.png"
 				},
 				{
 					"id": "basics:basebonus",
@@ -5967,9 +6475,13 @@
 								["Transcendent", "9-15"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-shield.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-basics.webp",
+			"icon": "wiki/i/top-help.png",
+			"tone": "#d6c9ae"
 		},
 		{
 			"id": "modifiers",
@@ -6080,6 +6592,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -6185,6 +6698,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -6289,6 +6803,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				},
 				{
@@ -6389,6 +6904,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -6488,6 +7004,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -6589,6 +7106,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "prefix"
 				},
 				{
@@ -6688,6 +7206,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -6795,6 +7314,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -6895,6 +7415,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -6995,6 +7516,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -7102,6 +7624,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -7202,6 +7725,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -7303,6 +7827,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "prefix"
 				},
 				{
@@ -7409,6 +7934,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -7513,6 +8039,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				},
 				{
@@ -7621,6 +8148,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-holy-eye.png",
 					"side": "prefix"
 				},
 				{
@@ -7720,6 +8248,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -7824,6 +8353,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -7930,6 +8460,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -8036,6 +8567,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -8143,6 +8675,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-shadow-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -8248,6 +8781,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-shadow-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -8347,6 +8881,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -8451,6 +8986,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "prefix"
 				},
 				{
@@ -8559,6 +9095,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -8666,6 +9203,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-water-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -8773,6 +9311,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-poison-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -8872,6 +9411,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -8977,6 +9517,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-poison-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -9083,6 +9624,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -9190,6 +9732,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-light-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -9289,6 +9832,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -9394,6 +9938,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-light-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -9493,6 +10038,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -9592,6 +10138,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -9691,6 +10238,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -9795,6 +10343,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -9902,6 +10451,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-fire-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -10001,6 +10551,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -10106,6 +10657,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-fire-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -10210,6 +10762,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				},
 				{
@@ -10311,6 +10864,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "prefix"
 				},
 				{
@@ -10418,6 +10972,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -10521,6 +11076,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -10630,6 +11186,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -10739,6 +11296,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -10843,6 +11401,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				},
 				{
@@ -10950,6 +11509,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-holy-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -11055,6 +11615,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-holy-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -11162,6 +11723,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-frost-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -11261,6 +11823,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -11366,6 +11929,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-frost-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -11465,6 +12029,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -11569,6 +12134,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				},
 				{
@@ -11677,6 +12243,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-holy-eye.png",
 					"side": "suffix"
 				},
 				{
@@ -11784,6 +12351,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -11888,6 +12456,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "prefix"
 				},
 				{
@@ -11991,6 +12560,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -12099,6 +12669,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-holy-eye.png",
 					"side": "suffix"
 				},
 				{
@@ -12208,6 +12779,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -12315,6 +12887,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -12419,6 +12992,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -12523,6 +13097,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -12627,6 +13202,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				},
 				{
@@ -12727,6 +13303,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -12834,6 +13411,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -12940,6 +13518,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -13039,6 +13618,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -13138,6 +13718,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -13242,6 +13823,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "prefix"
 				},
 				{
@@ -13346,6 +13928,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "prefix"
 				},
 				{
@@ -13449,6 +14032,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
 				},
 				{
@@ -13548,6 +14132,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -13655,6 +14240,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-water-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -13760,6 +14346,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-fire-burst.png",
 					"side": "prefix"
 				},
 				{
@@ -13864,6 +14451,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				},
 				{
@@ -13968,9 +14556,13 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-sword.png",
 					"side": "suffix"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-modifiers.webp",
+			"icon": "wiki/i/k-arcane-nodes.png",
+			"tone": "#7d96ff"
 		},
 		{
 			"id": "powers",
@@ -14076,6 +14668,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-light-bolt.png",
 					"side": "prefix"
 				},
 				{
@@ -14185,6 +14778,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-blood-drop.png",
 					"side": "prefix"
 				},
 				{
@@ -14291,6 +14885,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-blood-burst.png",
 					"side": "suffix"
 				},
 				{
@@ -14393,6 +14988,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-twin.png",
 					"side": "prefix"
 				},
 				{
@@ -14495,6 +15091,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-shadow-skull.png",
 					"side": "prefix"
 				},
 				{
@@ -14597,6 +15194,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-steel-arrows.png",
 					"side": "prefix"
 				},
 				{
@@ -14704,6 +15302,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-ember-dash.png",
 					"side": "suffix"
 				},
 				{
@@ -14815,6 +15414,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-frost-shield.png",
 					"side": "prefix"
 				},
 				{
@@ -14925,6 +15525,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-poison-dash.png",
 					"side": "suffix"
 				},
 				{
@@ -15036,6 +15637,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-holy-cross.png",
 					"side": "suffix"
 				},
 				{
@@ -15138,6 +15740,7 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-frost-crystal.png",
 					"side": "prefix"
 				},
 				{
@@ -15251,9 +15854,13 @@
 							]
 						}
 					],
+					"icon": "wiki/i/k-fire-flame.png",
 					"side": "suffix"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-powers.webp",
+			"icon": "wiki/i/k-fire-flame.png",
+			"tone": "#ff9a3c"
 		},
 		{
 			"id": "uniques",
@@ -15312,7 +15919,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-armor.png"
 				},
 				{
 					"id": "unique:11395",
@@ -15368,7 +15976,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-sword.png"
 				},
 				{
 					"id": "unique:27647",
@@ -15424,7 +16033,8 @@
 								"Part of the set Embers of Aranoth: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-boots.png"
 				},
 				{
 					"id": "unique:27658",
@@ -15476,7 +16086,8 @@
 								"Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-axe.png"
 				},
 				{
 					"id": "unique:25175",
@@ -15527,7 +16138,8 @@
 								"Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-armor.png"
 				},
 				{
 					"id": "unique:28100",
@@ -15574,7 +16186,8 @@
 								"Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-legs.png"
 				},
 				{
 					"id": "unique:28101",
@@ -15618,7 +16231,8 @@
 								"Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-boots.png"
 				},
 				{
 					"id": "unique:25410",
@@ -15667,7 +16281,8 @@
 								"Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-helmet.png"
 				},
 				{
 					"id": "unique:7379",
@@ -15723,7 +16338,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-club.png"
 				},
 				{
 					"id": "unique:3972",
@@ -15776,7 +16392,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-helmet.png"
 				},
 				{
 					"id": "unique:18403",
@@ -15831,7 +16448,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-helmet.png"
 				},
 				{
 					"id": "unique:11374",
@@ -15884,7 +16502,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-amulet.png"
 				},
 				{
 					"id": "unique:27667",
@@ -15940,7 +16559,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-helmet.png"
 				},
 				{
 					"id": "unique:8925",
@@ -15993,7 +16613,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-axe.png"
 				},
 				{
 					"id": "unique:10314",
@@ -16049,7 +16670,8 @@
 								"Part of the set Embers of Aranoth: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-ring.png"
 				},
 				{
 					"id": "unique:2123",
@@ -16104,7 +16726,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-ring.png"
 				},
 				{
 					"id": "unique:8892",
@@ -16163,7 +16786,8 @@
 								"Part of the set Embers of Aranoth: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-armor.png"
 				},
 				{
 					"id": "unique:29471",
@@ -16210,7 +16834,8 @@
 								"Part of the set Cinderstorm Court: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-helmet.png"
 				},
 				{
 					"id": "unique:7894",
@@ -16257,7 +16882,8 @@
 								"Part of the set Cinderstorm Court: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-legs.png"
 				},
 				{
 					"id": "unique:7899",
@@ -16308,7 +16934,8 @@
 								"Part of the set Cinderstorm Court: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-armor.png"
 				},
 				{
 					"id": "unique:24637",
@@ -16355,7 +16982,8 @@
 								"Part of the set Cinderstorm Court: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-boots.png"
 				},
 				{
 					"id": "unique:28041",
@@ -16404,7 +17032,8 @@
 								"Part of the set Cinderstorm Court: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-ring.png"
 				},
 				{
 					"id": "unique:27666",
@@ -16451,7 +17080,8 @@
 								"Part of the set Cinderstorm Court: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-wand.png"
 				},
 				{
 					"id": "unique:7462",
@@ -16501,7 +17131,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-helmet.png"
 				},
 				{
 					"id": "unique:27230",
@@ -16556,7 +17187,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-bow.png"
 				},
 				{
 					"id": "unique:11304",
@@ -16603,7 +17235,8 @@
 								"Part of the set Duskstalker Garb: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-legs.png"
 				},
 				{
 					"id": "unique:28112",
@@ -16650,7 +17283,8 @@
 								"Part of the set Duskstalker Garb: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-helmet.png"
 				},
 				{
 					"id": "unique:7404",
@@ -16700,7 +17334,8 @@
 								"Part of the set Duskstalker Garb: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-sword.png"
 				},
 				{
 					"id": "unique:11301",
@@ -16751,7 +17386,8 @@
 								"Part of the set Duskstalker Garb: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-armor.png"
 				},
 				{
 					"id": "unique:7418",
@@ -16801,7 +17437,8 @@
 								"Part of the set Duskstalker Garb: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-sword.png"
 				},
 				{
 					"id": "unique:27249",
@@ -16848,7 +17485,8 @@
 								"Part of the set Duskstalker Garb: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-boots.png"
 				},
 				{
 					"id": "unique:29866",
@@ -16911,7 +17549,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-wand.png"
 				},
 				{
 					"id": "unique:22423",
@@ -16966,7 +17605,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-shield.png"
 				},
 				{
 					"id": "unique:27692",
@@ -17025,7 +17665,8 @@
 								"Part of the set Embers of Aranoth: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-legs.png"
 				},
 				{
 					"id": "unique:3975",
@@ -17081,7 +17722,8 @@
 								"Part of the set Embers of Aranoth: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-shield.png"
 				},
 				{
 					"id": "unique:2440",
@@ -17137,7 +17779,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-axe.png"
 				},
 				{
 					"id": "unique:2171",
@@ -17187,7 +17830,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-amulet.png"
 				},
 				{
 					"id": "unique:24790",
@@ -17239,7 +17883,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-amulet.png"
 				},
 				{
 					"id": "unique:7890",
@@ -17295,7 +17940,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-amulet.png"
 				},
 				{
 					"id": "unique:27474",
@@ -17347,7 +17993,8 @@
 								"Part of the set Gallows Marksman: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-crossbow.png"
 				},
 				{
 					"id": "unique:15407",
@@ -17398,7 +18045,8 @@
 								"Part of the set Gallows Marksman: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-armor.png"
 				},
 				{
 					"id": "unique:29470",
@@ -17447,7 +18095,8 @@
 								"Part of the set Gallows Marksman: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-helmet.png"
 				},
 				{
 					"id": "unique:28114",
@@ -17494,7 +18143,8 @@
 								"Part of the set Gallows Marksman: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-legs.png"
 				},
 				{
 					"id": "unique:8849",
@@ -17547,7 +18197,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-crossbow.png"
 				},
 				{
 					"id": "unique:11426",
@@ -17600,7 +18251,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-sword.png"
 				},
 				{
 					"id": "unique:23590",
@@ -17653,7 +18305,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-club.png"
 				},
 				{
 					"id": "unique:36659",
@@ -17717,7 +18370,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-sword.png"
 				},
 				{
 					"id": "unique:10301",
@@ -17773,7 +18427,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-axe.png"
 				},
 				{
 					"id": "unique:10218",
@@ -17826,7 +18481,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-amulet.png"
 				},
 				{
 					"id": "unique:10221",
@@ -17882,7 +18538,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-amulet.png"
 				},
 				{
 					"id": "unique:19390",
@@ -17935,7 +18592,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-bow.png"
 				},
 				{
 					"id": "unique:16111",
@@ -17989,7 +18647,8 @@
 								"Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-crossbow.png"
 				},
 				{
 					"id": "unique:2493",
@@ -18039,7 +18698,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-helmet.png"
 				},
 				{
 					"id": "unique:27668",
@@ -18095,7 +18755,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-helmet.png"
 				},
 				{
 					"id": "unique:26808",
@@ -18142,7 +18803,8 @@
 								"Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-ring.png"
 				},
 				{
 					"id": "unique:2129",
@@ -18186,7 +18848,8 @@
 								"Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-amulet.png"
 				},
 				{
 					"id": "unique:24741",
@@ -18237,7 +18900,8 @@
 								"Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-armor.png"
 				},
 				{
 					"id": "unique:24718",
@@ -18284,7 +18948,8 @@
 								"Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-helmet.png"
 				},
 				{
 					"id": "unique:21693",
@@ -18337,7 +19002,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-ring.png"
 				},
 				{
 					"id": "unique:2496",
@@ -18393,7 +19059,8 @@
 								"Part of the set Embers of Aranoth: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-helmet.png"
 				},
 				{
 					"id": "unique:28023",
@@ -18448,7 +19115,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-ring.png"
 				},
 				{
 					"id": "unique:3961",
@@ -18504,7 +19172,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-club.png"
 				},
 				{
 					"id": "unique:27288",
@@ -18557,7 +19226,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-boots.png"
 				},
 				{
 					"id": "unique:25418",
@@ -18610,7 +19280,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-club.png"
 				},
 				{
 					"id": "unique:28125",
@@ -18654,7 +19325,8 @@
 								"Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-ring.png"
 				},
 				{
 					"id": "unique:28106",
@@ -18701,7 +19373,8 @@
 								"Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-helmet.png"
 				},
 				{
 					"id": "unique:28111",
@@ -18748,7 +19421,8 @@
 								"Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-shield.png"
 				},
 				{
 					"id": "unique:28107",
@@ -18799,7 +19473,8 @@
 								"Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-armor.png"
 				},
 				{
 					"id": "unique:28108",
@@ -18846,7 +19521,8 @@
 								"Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-legs.png"
 				},
 				{
 					"id": "unique:28109",
@@ -18890,7 +19566,8 @@
 								"Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-boots.png"
 				},
 				{
 					"id": "unique:27231",
@@ -18944,7 +19621,8 @@
 								"Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-helmet.png"
 				},
 				{
 					"id": "unique:27232",
@@ -18997,7 +19675,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-armor.png"
 				},
 				{
 					"id": "unique:2412",
@@ -19059,7 +19738,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-sword.png"
 				},
 				{
 					"id": "unique:27693",
@@ -19112,7 +19792,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-legs.png"
 				},
 				{
 					"id": "unique:15453",
@@ -19168,7 +19849,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-shield.png"
 				},
 				{
 					"id": "unique:10318",
@@ -19224,7 +19906,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-shield.png"
 				},
 				{
 					"id": "unique:10296",
@@ -19277,7 +19960,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-armor.png"
 				},
 				{
 					"id": "unique:8881",
@@ -19332,7 +20016,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-armor.png"
 				},
 				{
 					"id": "unique:27251",
@@ -19387,7 +20072,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-amulet.png"
 				},
 				{
 					"id": "unique:13760",
@@ -19441,7 +20127,8 @@
 								"Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-wand.png"
 				},
 				{
 					"id": "unique:2206",
@@ -19491,7 +20178,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-ring.png"
 				},
 				{
 					"id": "unique:21691",
@@ -19546,7 +20234,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-amulet.png"
 				},
 				{
 					"id": "unique:2408",
@@ -19596,7 +20285,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-sword.png"
 				},
 				{
 					"id": "unique:26756",
@@ -19654,7 +20344,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-wand.png"
 				},
 				{
 					"id": "unique:27228",
@@ -19709,7 +20400,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-armor.png"
 				},
 				{
 					"id": "unique:28115",
@@ -19765,7 +20457,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-boots.png"
 				},
 				{
 					"id": "unique:8209",
@@ -19827,7 +20520,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-sword.png"
 				},
 				{
 					"id": "unique:29571",
@@ -19889,7 +20583,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-wand.png"
 				},
 				{
 					"id": "unique:15413",
@@ -19944,7 +20639,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-shield.png"
 				},
 				{
 					"id": "unique:28049",
@@ -19999,7 +20695,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-ring.png"
 				},
 				{
 					"id": "unique:27390",
@@ -20055,7 +20752,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-armor.png"
 				},
 				{
 					"id": "unique:8858",
@@ -20110,7 +20808,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-bow.png"
 				},
 				{
 					"id": "unique:24851",
@@ -20166,7 +20865,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-amulet.png"
 				},
 				{
 					"id": "unique:2500",
@@ -20220,7 +20920,8 @@
 								"Part of the set Thornwake Volley: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-armor.png"
 				},
 				{
 					"id": "unique:27646",
@@ -20274,7 +20975,8 @@
 								"Part of the set Thornwake Volley: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-bow.png"
 				},
 				{
 					"id": "unique:28691",
@@ -20328,7 +21030,8 @@
 								"Part of the set Thornwake Volley: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-ring.png"
 				},
 				{
 					"id": "unique:18406",
@@ -20382,7 +21085,8 @@
 								"Part of the set Thornwake Volley: its bonuses are on the Sets tab."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-boots.png"
 				},
 				{
 					"id": "unique:22474",
@@ -20432,7 +21136,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-shield.png"
 				},
 				{
 					"id": "unique:29868",
@@ -20482,7 +21187,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-ring.png"
 				},
 				{
 					"id": "unique:27652",
@@ -20537,7 +21243,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-amulet.png"
 				},
 				{
 					"id": "unique:27675",
@@ -20590,7 +21297,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-helmet.png"
 				},
 				{
 					"id": "unique:28020",
@@ -20653,7 +21361,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-legs.png"
 				},
 				{
 					"id": "unique:26133",
@@ -20706,7 +21415,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-boots.png"
 				},
 				{
 					"id": "unique:10510",
@@ -20762,7 +21472,8 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-ring.png"
 				},
 				{
 					"id": "unique:22690",
@@ -20819,7 +21530,8 @@
 								"Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-sword.png"
 				},
 				{
 					"id": "unique:27295",
@@ -20874,9 +21586,13 @@
 								"1 socket, fixed (gems may be socketed and taken out)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-armor.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-uniques.webp",
+			"icon": "wiki/i/it-sunsworn-sword.png",
+			"tone": "#ff9c3a"
 		},
 		{
 			"id": "sets",
@@ -20949,7 +21665,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-axe.png"
 				},
 				{
 					"id": "set:cinderstorm",
@@ -21022,7 +21739,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-rod.png"
 				},
 				{
 					"id": "set:duskstalker",
@@ -21099,7 +21817,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-voidmourn-helmet.png"
 				},
 				{
 					"id": "set:embers",
@@ -21162,7 +21881,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-sunsworn-spellbook.png"
 				},
 				{
 					"id": "set:gallows",
@@ -21226,7 +21946,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-crossbow.png"
 				},
 				{
 					"id": "set:hollowpack",
@@ -21293,7 +22014,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-amulet.png"
 				},
 				{
 					"id": "set:lichbound",
@@ -21355,7 +22077,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-cryptbone-wand.png"
 				},
 				{
 					"id": "set:mirrorweave",
@@ -21431,7 +22154,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-moonsilver-armor.png"
 				},
 				{
 					"id": "set:ashwarden",
@@ -21493,7 +22217,8 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-oathsteel-shield.png"
 				},
 				{
 					"id": "set:thornwake",
@@ -21560,9 +22285,13 @@
 								"Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/it-wildroot-bow.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-sets.webp",
+			"icon": "wiki/i/it-oathsteel-armor.png",
+			"tone": "#58c878"
 		},
 		{
 			"id": "orbs",
@@ -21606,7 +22335,8 @@
 								["Bounty chest", "3 in every weekly bounty chest (7 contracts in a week)."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-light-arrowup.png"
 				},
 				{
 					"id": "orb:alchemy",
@@ -21645,7 +22375,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-holy-crystal.png"
 				},
 				{
 					"id": "orb:exalted",
@@ -21682,7 +22413,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-arcane-nodes.png"
 				},
 				{
 					"id": "orb:annulment",
@@ -21717,7 +22449,8 @@
 								["Bounty chest", "1 in every weekly bounty chest (7 contracts in a week)."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-shadow-smoke.png"
 				},
 				{
 					"id": "orb:scouring",
@@ -21756,7 +22489,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-water-wave.png"
 				},
 				{
 					"id": "orb:chaos",
@@ -21810,7 +22544,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-arcane-swirl.png"
 				},
 				{
 					"id": "orb:divine",
@@ -21866,7 +22601,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-holy-cross.png"
 				},
 				{
 					"id": "orb:sockets",
@@ -21903,7 +22639,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-steel-ring.png"
 				},
 				{
 					"id": "orb:tempering",
@@ -21946,7 +22683,8 @@
 								["Bounty chest", "2 in every weekly bounty chest (7 contracts in a week)."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-ember-hammer.png"
 				},
 				{
 					"id": "orb:binding",
@@ -21985,7 +22723,8 @@
 								["Store", "1 for 30 Chaos Coins, 3 a week per account."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-steel-shield.png"
 				},
 				{
 					"id": "orb:excision",
@@ -22025,7 +22764,8 @@
 								["Store", "1 for 25 Chaos Coins, 3 a week per account."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-blood-daggers.png"
 				},
 				{
 					"id": "orb:reforging",
@@ -22063,7 +22803,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-fire-hammer.png"
 				},
 				{
 					"id": "orb:ruin",
@@ -22101,7 +22842,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-blood-burst.png"
 				},
 				{
 					"id": "orb:whetstone",
@@ -22141,7 +22883,8 @@
 								["Bounty chest", "5 in every weekly bounty chest (7 contracts in a week)."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-steel-sword.png"
 				},
 				{
 					"id": "orb:unveiling",
@@ -22279,7 +23022,8 @@
 								["Raid vendor", "2 orbs for 90 Sepulchre Marks, once a week."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/orb-arcane-eye.png"
 				},
 				{
 					"id": "cur:29853",
@@ -22294,7 +23038,8 @@
 							]
 						},
 						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
-					]
+					],
+					"icon": "wiki/i/orb-holy-banner.png"
 				},
 				{
 					"id": "cur:29858",
@@ -22309,7 +23054,8 @@
 							]
 						},
 						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
-					]
+					],
+					"icon": "wiki/i/orb-light-burst.png"
 				},
 				{
 					"id": "cur:29852",
@@ -22324,7 +23070,8 @@
 							]
 						},
 						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
-					]
+					],
+					"icon": "wiki/i/orb-fire-flame.png"
 				},
 				{
 					"id": "cur:omenfragment",
@@ -22348,7 +23095,8 @@
 								["Rift monsters", "Rare 8%, legendary 25% of the time in rifts of tier 6 or more."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-crystal.png"
 				},
 				{
 					"id": "cur:omenkey",
@@ -22363,7 +23111,8 @@
 								"Bound from 60 omen fragments; it opens one guardian's arena (Rift tab > Omens)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-gate.png"
 				},
 				{
 					"id": "cur:29859",
@@ -22378,7 +23127,8 @@
 							]
 						},
 						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
-					]
+					],
+					"icon": "wiki/i/orb-arcane-twin.png"
 				},
 				{
 					"id": "cur:riftkey",
@@ -22397,7 +23147,8 @@
 							"p": ["Rift tab > Rift Keys has the sources and the orbs that work on keys."],
 							"links": ["rift:keys"]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-gate.png"
 				},
 				{
 					"id": "cur:shard",
@@ -22471,7 +23222,8 @@
 								"orb:ruin"
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-bone-crystal.png"
 				},
 				{
 					"id": "cur:29854",
@@ -22486,9 +23238,13 @@
 							]
 						},
 						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
-					]
+					],
+					"icon": "wiki/i/orb-shadow-rift.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-orbs.webp",
+			"icon": "wiki/i/orb-arcane-swirl.png",
+			"tone": "#e8b84a"
 		},
 		{
 			"id": "gems",
@@ -22542,7 +23298,8 @@
 								["World boss", "2 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/gem-ff5a4a.png"
 				},
 				{
 					"id": "gem:sapphire",
@@ -22592,7 +23349,8 @@
 								["World boss", "2 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/gem-5a8cff.png"
 				},
 				{
 					"id": "gem:emerald",
@@ -22670,7 +23428,8 @@
 								["World boss", "2 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/gem-4fd06a.png"
 				},
 				{
 					"id": "gem:amethyst",
@@ -22754,7 +23513,8 @@
 								["World boss", "2 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/gem-b070ff.png"
 				},
 				{
 					"id": "gem:topaz",
@@ -22832,7 +23592,8 @@
 								["World boss", "2 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/gem-f6cf4a.png"
 				},
 				{
 					"id": "gem:diamond",
@@ -22916,7 +23677,8 @@
 								["World boss", "2 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/gem-e8f4ff.png"
 				},
 				{
 					"id": "gem:onyx",
@@ -23000,7 +23762,8 @@
 								["World boss", "2 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/gem-9a8c8c.png"
 				},
 				{
 					"id": "gem:sockets",
@@ -23061,9 +23824,13 @@
 							"p": ["Rolls a new number of sockets for a piece of gear (gems already socketed stay)."],
 							"links": ["orb:sockets"]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-ring.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-gems.webp",
+			"icon": "wiki/i/gem-ff5a4a.png",
+			"tone": "#ff5a4a"
 		},
 		{
 			"id": "supports",
@@ -23130,7 +23897,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-bloodthirst.png"
 				},
 				{
 					"id": "support:breadth",
@@ -23192,7 +23960,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-breadth.png"
 				},
 				{
 					"id": "support:dawnbrand",
@@ -23240,7 +24009,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-dawnbrand.png"
 				},
 				{
 					"id": "support:deathburst",
@@ -23302,7 +24072,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-deathburst.png"
 				},
 				{
 					"id": "support:echo",
@@ -23365,7 +24136,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-echo.png"
 				},
 				{
 					"id": "support:emberbrand",
@@ -23413,7 +24185,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-emberbrand.png"
 				},
 				{
 					"id": "support:fork",
@@ -23460,7 +24233,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-fork.png"
 				},
 				{
 					"id": "support:gravebrand",
@@ -23508,7 +24282,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-gravebrand.png"
 				},
 				{
 					"id": "support:hex",
@@ -23571,7 +24346,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-hex.png"
 				},
 				{
 					"id": "support:keenedge",
@@ -23619,7 +24395,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-keenedge.png"
 				},
 				{
 					"id": "support:mercy",
@@ -23663,7 +24440,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-mercy.png"
 				},
 				{
 					"id": "support:quickening",
@@ -23711,7 +24489,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-quickening.png"
 				},
 				{
 					"id": "support:reprisal",
@@ -23773,7 +24552,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-reprisal.png"
 				},
 				{
 					"id": "support:rimebrand",
@@ -23821,7 +24601,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-rimebrand.png"
 				},
 				{
 					"id": "support:shatter",
@@ -23868,7 +24649,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-shatter.png"
 				},
 				{
 					"id": "support:siphon",
@@ -23931,7 +24713,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-siphon.png"
 				},
 				{
 					"id": "support:stormbrand",
@@ -23979,7 +24762,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-stormbrand.png"
 				},
 				{
 					"id": "support:sunder",
@@ -24042,7 +24826,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-sunder.png"
 				},
 				{
 					"id": "support:surge",
@@ -24104,7 +24889,8 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-surge.png"
 				},
 				{
 					"id": "support:thrift",
@@ -24152,9 +24938,13 @@
 								["World boss", "1 for every eligible player."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/sup-thrift.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-supports.webp",
+			"icon": "wiki/i/sup-emberbrand.png",
+			"tone": "#ff8228"
 		},
 		{
 			"id": "rift",
@@ -24190,7 +24980,8 @@
 								["V", "70", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-poison-drop.png"
 				},
 				{
 					"id": "rift:brutality",
@@ -24222,7 +25013,8 @@
 								["V", "55-60", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-slam.png"
 				},
 				{
 					"id": "rift:cinder",
@@ -24254,7 +25046,8 @@
 								["V", "25", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
 					"id": "rift:dread",
@@ -24286,7 +25079,8 @@
 								["V", "225-250", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-skull.png"
 				},
 				{
 					"id": "rift:echo",
@@ -24318,7 +25112,8 @@
 								["V", "25", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-twin.png"
 				},
 				{
 					"id": "rift:elites",
@@ -24350,7 +25145,8 @@
 								["V", "275-300", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-holy-banner.png"
 				},
 				{
 					"id": "rift:emberbrand",
@@ -24383,7 +25179,8 @@
 								["V", "45-50", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-flame.png"
 				},
 				{
 					"id": "rift:festering",
@@ -24415,7 +25212,8 @@
 								["V", "50", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-poison-dots.png"
 				},
 				{
 					"id": "rift:flaying",
@@ -24448,7 +25246,8 @@
 								["V", "40", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-daggers.png"
 				},
 				{
 					"id": "rift:fragile",
@@ -24466,7 +25265,8 @@
 							]
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1-2."]}
-					]
+					],
+					"icon": "wiki/i/k-bone-ribs.png"
 				},
 				{
 					"id": "rift:frostbrand",
@@ -24499,7 +25299,8 @@
 								["V", "45-50", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-frost-crystal.png"
 				},
 				{
 					"id": "rift:gilded",
@@ -24531,7 +25332,8 @@
 								["V", "90-100", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-paw.png"
 				},
 				{
 					"id": "rift:haste",
@@ -24563,7 +25365,8 @@
 								["V", "160-180", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-dash.png"
 				},
 				{
 					"id": "rift:ironhide",
@@ -24596,7 +25399,8 @@
 								["V", "40", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-shield.png"
 				},
 				{
 					"id": "rift:keen",
@@ -24628,7 +25432,8 @@
 								["V", "25-30", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-fang.png"
 				},
 				{
 					"id": "rift:parched",
@@ -24648,7 +25453,8 @@
 							]
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1."]}
-					]
+					],
+					"icon": "wiki/i/k-water-drop.png"
 				},
 				{
 					"id": "rift:reflection",
@@ -24681,7 +25487,8 @@
 								["V", "19-22", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-twin.png"
 				},
 				{
 					"id": "rift:rimefloor",
@@ -24714,7 +25521,8 @@
 								["V", "6", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-frost-wave.png"
 				},
 				{
 					"id": "rift:sapping",
@@ -24747,7 +25555,8 @@
 								["V", "30", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-drop.png"
 				},
 				{
 					"id": "rift:scorched",
@@ -24780,7 +25589,8 @@
 								["V", "6", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-wave.png"
 				},
 				{
 					"id": "rift:coffer",
@@ -24806,7 +25616,8 @@
 							"w": [16, 34, 50],
 							"rows": [["I", "40", ""], ["II", "60", ""], ["III", "80-100", ""]]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-gate.png"
 				},
 				{
 					"id": "rift:searing",
@@ -24839,7 +25650,8 @@
 								["V", "40", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-burst.png"
 				},
 				{
 					"id": "rift:brood",
@@ -24857,7 +25669,8 @@
 							]
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1."]}
-					]
+					],
+					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
 					"id": "rift:spiteglass",
@@ -24891,7 +25704,8 @@
 								["V", "19-22", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-crystal.png"
 				},
 				{
 					"id": "rift:stormbrand",
@@ -24924,7 +25738,8 @@
 								["V", "45-50", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-bolt.png"
 				},
 				{
 					"id": "rift:swarm",
@@ -24956,7 +25771,8 @@
 								["V", "5", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-poison-dots.png"
 				},
 				{
 					"id": "rift:teeming",
@@ -24988,7 +25804,8 @@
 								["V", "70", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-nature-dots.png"
 				},
 				{
 					"id": "rift:twin",
@@ -25021,7 +25838,8 @@
 								["V", "85", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-twin.png"
 				},
 				{
 					"id": "rift:breach",
@@ -25053,7 +25871,8 @@
 								["V", "25", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-rift.png"
 				},
 				{
 					"id": "rift:veilstorm",
@@ -25085,7 +25904,8 @@
 								["V", "30", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-meteor.png"
 				},
 				{
 					"id": "rift:vitality",
@@ -25117,7 +25937,8 @@
 								["V", "80-90", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-cross.png"
 				},
 				{
 					"id": "rift:waning",
@@ -25149,7 +25970,8 @@
 								["V", "40", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-smoke.png"
 				},
 				{
 					"id": "rift:warband",
@@ -25181,7 +26003,8 @@
 								["V", "40", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "rift:warding",
@@ -25213,7 +26036,8 @@
 								["V", "40", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-shield.png"
 				},
 				{
 					"id": "rift:withering",
@@ -25232,7 +26056,8 @@
 							]
 						},
 						{"h": "Modifier tiers", "p": ["No tiers: value 1."]}
-					]
+					],
+					"icon": "wiki/i/k-necrotic-skull.png"
 				},
 				{
 					"id": "rift:wrath",
@@ -25266,7 +26091,8 @@
 								["V", "30", "caps +16/+16/+12"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
 					"id": "rift:keys",
@@ -25331,7 +26157,8 @@
 								"orb:excision"
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-gate.png"
 				},
 				{
 					"id": "rift:tiers",
@@ -25377,7 +26204,8 @@
 								"Gems and spell supports too (Gems and Supports tabs). Gold, orbs and rolls x (1 + quantity bonus)."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-arrowup.png"
 				},
 				{
 					"id": "rift:omens",
@@ -25408,7 +26236,8 @@
 								"3000 x your level in gold to the bank, 4 Orb of Upheaval, 2 Orb of Fate, 8 item rolls of the guardian's loot (x1.5 rarity), 2 unique rolls (x2 find), gems and supports as a tier 15 rift. Drops in the arena get +15 item level."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-eye.png"
 				},
 				{
 					"id": "rift:atlas",
@@ -25555,9 +26384,13 @@
 								["Unbroken Line", "Notable", "core", "+1 shared lives (tier 12+) +4% rift time"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-nodes.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-rift.webp",
+			"icon": "wiki/i/k-arcane-rift.png",
+			"tone": "#a064e6"
 		},
 		{
 			"id": "dungeons",
@@ -25606,7 +26439,8 @@
 								["6", "1300%", "600%", "+400%", "+400%", "+60%"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-dungeons.png"
 				},
 				{
 					"id": "dungeon:1",
@@ -25629,7 +26463,8 @@
 							]
 						},
 						{"h": "More", "p": ["Queue and difficulty: Dungeons."], "links": ["dungeon:about"]}
-					]
+					],
+					"icon": "wiki/i/k-bone-skull.png"
 				},
 				{
 					"id": "dungeon:2",
@@ -25654,7 +26489,8 @@
 							]
 						},
 						{"h": "More", "p": ["Queue and difficulty: Dungeons."], "links": ["dungeon:about"]}
-					]
+					],
+					"icon": "wiki/i/k-arcane-swirl.png"
 				},
 				{
 					"id": "dungeon:3",
@@ -25677,7 +26513,8 @@
 							]
 						},
 						{"h": "More", "p": ["Queue and difficulty: Dungeons."], "links": ["dungeon:about"]}
-					]
+					],
+					"icon": "wiki/i/k-steel-sword.png"
 				},
 				{
 					"id": "dungeon:4",
@@ -25700,7 +26537,8 @@
 							]
 						},
 						{"h": "More", "p": ["Queue and difficulty: Dungeons."], "links": ["dungeon:about"]}
-					]
+					],
+					"icon": "wiki/i/k-nature-thorns.png"
 				},
 				{
 					"id": "dungeon:tower",
@@ -25738,7 +26576,8 @@
 								["3", "Copper Tower Chest", "6 Orb of Fate, 12 Orb of Upheaval"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-infinitytower.png"
 				},
 				{
 					"id": "dungeon:descent",
@@ -25755,9 +26594,13 @@
 								"1 free run a day and a weekly seeded run with its own leaderboard; an Ember Sigil (forged from 25 shards and 50,000 gold) gives one more run."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-flame.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-dungeons.webp",
+			"icon": "wiki/i/top-dungeons.png",
+			"tone": "#c0a0ff"
 		},
 		{
 			"id": "bosses",
@@ -25799,7 +26642,8 @@
 							],
 							"links": ["boss:world:1", "boss:world:2", "boss:world:3", "boss:world:4", "boss:world:5"]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "boss:world:1",
@@ -25830,7 +26674,8 @@
 							]
 						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
-					]
+					],
+					"icon": "wiki/i/k-fire-meteor.png"
 				},
 				{
 					"id": "boss:world:2",
@@ -25857,7 +26702,8 @@
 							]
 						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
-					]
+					],
+					"icon": "wiki/i/k-frost-crystal.png"
 				},
 				{
 					"id": "boss:world:3",
@@ -25884,7 +26730,8 @@
 							]
 						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
-					]
+					],
+					"icon": "wiki/i/k-poison-thorns.png"
 				},
 				{
 					"id": "boss:world:4",
@@ -25911,7 +26758,8 @@
 							]
 						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-skull.png"
 				},
 				{
 					"id": "boss:world:5",
@@ -25938,7 +26786,8 @@
 							]
 						},
 						{"h": "More", "p": ["Schedule, rules and rewards: World bosses."], "links": ["boss:world"]}
-					]
+					],
+					"icon": "wiki/i/k-steel-greataxe.png"
 				},
 				{
 					"id": "boss:raid",
@@ -25986,7 +26835,8 @@
 								["Crown of the Last Sovereign", "Varkhul the Ashen Sovereign"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-gate.png"
 				},
 				{
 					"id": "boss:raid:ulthar",
@@ -26006,7 +26856,8 @@
 							]
 						},
 						{"h": "More", "p": ["The raid: The Ashen Sepulchre."], "links": ["boss:raid"]}
-					]
+					],
+					"icon": "wiki/i/k-bone-skull.png"
 				},
 				{
 					"id": "boss:raid:morwen",
@@ -26026,7 +26877,8 @@
 							]
 						},
 						{"h": "More", "p": ["The raid: The Ashen Sepulchre."], "links": ["boss:raid"]}
-					]
+					],
+					"icon": "wiki/i/k-fire-ghost.png"
 				},
 				{
 					"id": "boss:raid:colossus",
@@ -26046,7 +26898,8 @@
 							]
 						},
 						{"h": "More", "p": ["The raid: The Ashen Sepulchre."], "links": ["boss:raid"]}
-					]
+					],
+					"icon": "wiki/i/k-bone-golem.png"
 				},
 				{
 					"id": "boss:raid:hexmaw",
@@ -26066,7 +26919,8 @@
 							]
 						},
 						{"h": "More", "p": ["The raid: The Ashen Sepulchre."], "links": ["boss:raid"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-eye.png"
 				},
 				{
 					"id": "boss:raid:sovereign",
@@ -26091,7 +26945,8 @@
 							]
 						},
 						{"h": "More", "p": ["The raid: The Ashen Sepulchre."], "links": ["boss:raid"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "boss:ascended",
@@ -26128,7 +26983,8 @@
 								["Cinderheart", "40,000,000", "40 Upheaval, 20 Fate, 3 Exalted", "3"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-eye.png"
 				},
 				{
 					"id": "boss:guild",
@@ -26144,9 +27000,13 @@
 								"2 to 20 players of level 150 or more; 3 attempts a week. It enrages after 10 min."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-holy-banner.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-bosses.webp",
+			"icon": "wiki/i/k-blood-skull.png",
+			"tone": "#ff7050"
 		},
 		{
 			"id": "events",
@@ -26187,7 +27047,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-events.png"
 				},
 				{
 					"id": "event:invasion",
@@ -26222,7 +27083,8 @@
 								["Wildwood Uprising", "Mushroom King, Ancient Treant"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-banner.png"
 				},
 				{
 					"id": "event:siege",
@@ -26239,7 +27101,8 @@
 								"The winner: 500,000 gold to each member's bank and the title Siege Champions for 7 days; the others 150,000 gold."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-pvp.png"
 				},
 				{
 					"id": "event:goblin",
@@ -26255,9 +27118,13 @@
 								"Kinds: ."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-paw.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-events.webp",
+			"icon": "wiki/i/top-events.png",
+			"tone": "#ffb050"
 		},
 		{
 			"id": "monsters",
@@ -26276,7 +27143,8 @@
 							"rows": [["Health", "4,000"], ["Experience", "3,000"]]
 						},
 						{"h": "Where", "p": ["Invasion boss: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:ascended-morvane",
@@ -26291,7 +27159,8 @@
 							"rows": [["Health", "1,200,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:ascended-sangrith",
@@ -26306,7 +27175,8 @@
 							"rows": [["Health", "1,200,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:ascended-thalcyra",
@@ -26321,7 +27191,8 @@
 							"rows": [["Health", "1,200,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:azure-dragon",
@@ -26336,7 +27207,8 @@
 							"rows": [["Health", "20,000"], ["Experience", "12,250"], ["Level", "860-900"]]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:blazebringer",
@@ -26351,7 +27223,8 @@
 							"rows": [["Health", "13,400"], ["Experience", "4,700"], ["Level", "700-740"]]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:bracket-fungus-golem",
@@ -26366,7 +27239,8 @@
 							"rows": [["Health", "2,000"], ["Experience", "1,400"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:dawn-strayer",
@@ -26381,7 +27255,8 @@
 							"rows": [["Health", "22,000"], ["Experience", "13,900"], ["Level", "960-1000"]]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:dire-bear",
@@ -26396,7 +27271,8 @@
 							"rows": [["Health", "1,100"], ["Experience", "800"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:dreamgorger",
@@ -26411,7 +27287,8 @@
 							"rows": [["Health", "16,200"], ["Experience", "8,200"], ["Level", "760-800"]]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:elk-guardian",
@@ -26426,7 +27303,8 @@
 							"rows": [["Health", "2,400"], ["Experience", "1,800"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:forest-pixie",
@@ -26441,7 +27319,8 @@
 							"rows": [["Health", "160"], ["Experience", "140"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:forest-wolf",
@@ -26456,7 +27335,8 @@
 							"rows": [["Health", "90"], ["Experience", "45"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:frost-maiden",
@@ -26471,7 +27351,8 @@
 							"rows": [["Health", "16,300"], ["Experience", "8,450"], ["Level", "800-840"]]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:garack",
@@ -26486,7 +27367,8 @@
 							"rows": [["Health", "14,800"], ["Experience", "5,400"], ["Level", "710-750"]]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:giant-forest-spider",
@@ -26501,7 +27383,8 @@
 							"rows": [["Health", "1,000"], ["Experience", "850"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:giant-hornet",
@@ -26516,7 +27399,8 @@
 							"rows": [["Health", "180"], ["Experience", "130"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:giant-stag-beetle",
@@ -26531,7 +27415,8 @@
 							"rows": [["Health", "1,400"], ["Experience", "900"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:giant-thornback-toad",
@@ -26546,7 +27431,8 @@
 							"rows": [["Health", "1,200"], ["Experience", "880"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:glowcap-cluster",
@@ -26561,7 +27447,8 @@
 							"rows": [["Health", "260"], ["Experience", "190"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-archer",
@@ -26576,7 +27463,8 @@
 							"rows": [["Health", "110"], ["Experience", "70"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-bomber",
@@ -26591,7 +27479,8 @@
 							"rows": [["Health", "130"], ["Experience", "90"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-brute",
@@ -26606,7 +27495,8 @@
 							"rows": [["Health", "650"], ["Experience", "420"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-chieftain",
@@ -26621,7 +27511,8 @@
 							"rows": [["Health", "2,500"], ["Experience", "1,800"]]
 						},
 						{"h": "Where", "p": ["Invasion boss: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:goblin-grunt",
@@ -26636,7 +27527,8 @@
 							"rows": [["Health", "120"], ["Experience", "60"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-sapper",
@@ -26651,7 +27543,8 @@
 							"rows": [["Health", "180"], ["Experience", "95"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-shaman",
@@ -26666,7 +27559,8 @@
 							"rows": [["Health", "150"], ["Experience", "110"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-sneak",
@@ -26681,7 +27575,8 @@
 							"rows": [["Health", "120"], ["Experience", "85"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-spearman",
@@ -26696,7 +27591,8 @@
 							"rows": [["Health", "140"], ["Experience", "75"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-trapper",
@@ -26711,7 +27607,8 @@
 							"rows": [["Health", "160"], ["Experience", "95"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-war-drummer",
@@ -26726,7 +27623,8 @@
 							"rows": [["Health", "170"], ["Experience", "105"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-warlock",
@@ -26741,7 +27639,8 @@
 							"rows": [["Health", "900"], ["Experience", "750"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-witch",
@@ -26756,7 +27655,8 @@
 							"rows": [["Health", "160"], ["Experience", "120"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:goblin-wolf-rider",
@@ -26771,7 +27671,8 @@
 							"rows": [["Health", "700"], ["Experience", "480"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:golden-lord",
@@ -26786,7 +27687,8 @@
 							"rows": [["Health", "20,900"], ["Experience", "12,750"], ["Level", "880-920"]]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:gorvath-the-banner-eater",
@@ -26801,7 +27703,8 @@
 							"rows": [["Health", "650,000"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Weekly guild boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:gravewarden-ulthar",
@@ -26816,7 +27719,8 @@
 							"rows": [["Health", "4,000,000"], ["Experience", "2,500,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:grindmaw-the-mauler",
@@ -26831,7 +27735,8 @@
 							"rows": [["Health", "22,400"], ["Experience", "14,150"], ["Level", "960-1000"]]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:grove-dryad",
@@ -26846,7 +27751,8 @@
 							"rows": [["Health", "400"], ["Experience", "330"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:grove-keeper",
@@ -26861,7 +27767,8 @@
 							"rows": [["Health", "13,800"], ["Experience", "4,850"], ["Level", "680-720"]]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:hobgoblin-captain",
@@ -26876,7 +27783,8 @@
 							"rows": [["Health", "950"], ["Experience", "700"]]
 						},
 						{"h": "Where", "p": ["Invasion: Goblin Tribe"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:inkcap-creeper",
@@ -26891,7 +27799,8 @@
 							"rows": [["Health", "300"], ["Experience", "220"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:jungle-beasts",
@@ -26906,7 +27815,8 @@
 							"rows": [["Health", "21,400"], ["Experience", "13,300"], ["Level", "920-960"]]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:kaelgor-the-infernal-warlord",
@@ -26921,7 +27831,8 @@
 							"rows": [["Health", "18,000,000"], ["Experience", "18,000,000"]]
 						},
 						{"h": "Where", "p": ["World boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:lacewing-moth",
@@ -26936,7 +27847,8 @@
 							"rows": [["Health", "19,900"], ["Experience", "12,400"], ["Level", "900-940"]]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:lady-bug",
@@ -26951,7 +27863,8 @@
 							"rows": [["Health", "20,400"], ["Experience", "12,900"], ["Level", "940-980"]]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:loricate-orger",
@@ -26966,7 +27879,8 @@
 							"rows": [["Health", "17,200"], ["Experience", "8,900"], ["Level", "790-830"]]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:morel-imp",
@@ -26981,7 +27895,8 @@
 							"rows": [["Health", "200"], ["Experience", "140"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:morvane-the-hollow-crown",
@@ -26996,7 +27911,8 @@
 							"rows": [["Health", "500,000"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:morwen-the-ash-sister",
@@ -27011,7 +27927,8 @@
 							"rows": [["Health", "4,400,000"], ["Experience", "2,700,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:moss-slime",
@@ -27026,7 +27943,8 @@
 							"rows": [["Health", "250"], ["Experience", "150"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:mushroom-king",
@@ -27041,7 +27959,8 @@
 							"rows": [["Health", "6,000"], ["Experience", "4,500"]]
 						},
 						{"h": "Where", "p": ["Invasion boss: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:mycelium-horror",
@@ -27056,7 +27975,8 @@
 							"rows": [["Health", "2,600"], ["Experience", "2,000"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:myconid-shaman",
@@ -27071,7 +27991,8 @@
 							"rows": [["Health", "380"], ["Experience", "320"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:nyxareth-the-void-archon",
@@ -27086,7 +28007,8 @@
 							"rows": [["Health", "15,000,000"], ["Experience", "16,000,000"]]
 						},
 						{"h": "Where", "p": ["World boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:orclops-ravager",
@@ -27101,7 +28023,8 @@
 							"rows": [["Health", "13,400"], ["Experience", "4,550"], ["Level", "650-690"]]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:owlbear",
@@ -27116,7 +28039,8 @@
 							"rows": [["Health", "1,300"], ["Experience", "950"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:puffball-brute",
@@ -27131,7 +28055,8 @@
 							"rows": [["Health", "1,600"], ["Experience", "1,100"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:royal-man",
@@ -27146,7 +28071,8 @@
 							"rows": [["Health", "17,500"], ["Experience", "9,300"], ["Level", "810-850"]]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:sangrith-the-bloodmoon-herald",
@@ -27161,7 +28087,8 @@
 							"rows": [["Health", "500,000"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:shaper-matriarch",
@@ -27176,7 +28103,8 @@
 							"rows": [["Health", "12,600"], ["Experience", "4,300"], ["Level", "650-690"]]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:shroomling",
@@ -27191,7 +28119,8 @@
 							"rows": [["Health", "120"], ["Experience", "70"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:skaldra-the-rime-queen",
@@ -27206,7 +28135,8 @@
 							"rows": [["Health", "16,000,000"], ["Experience", "16,000,000"]]
 						},
 						{"h": "Where", "p": ["World boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:snapjaw-flytrap",
@@ -27221,7 +28151,8 @@
 							"rows": [["Health", "1,500"], ["Experience", "1,000"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:swamp-snapper",
@@ -27236,7 +28167,8 @@
 							"rows": [["Health", "16,200"], ["Experience", "8,200"], ["Level", "760-800"]]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:thalcyra-the-stormbound-seer",
@@ -27251,7 +28183,8 @@
 							"rows": [["Health", "500,000"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:the-marrow-colossus",
@@ -27266,7 +28199,8 @@
 							"rows": [["Health", "4,800,000"], ["Experience", "2,900,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:the-rotmother",
@@ -27281,7 +28215,8 @@
 							"rows": [["Health", "22,000,000"], ["Experience", "20,000,000"]]
 						},
 						{"h": "Where", "p": ["World boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:treant-sapling",
@@ -27296,7 +28231,8 @@
 							"rows": [["Health", "300"], ["Experience", "180"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:tundra-troll",
@@ -27311,7 +28247,8 @@
 							"rows": [["Health", "18,200"], ["Experience", "9,650"], ["Level", "810-850"]]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
-					]
+					],
+					"icon": "wiki/i/k-shadow-ghost.png"
 				},
 				{
 					"id": "monster:varkhul-the-ashen-sovereign",
@@ -27326,7 +28263,8 @@
 							"rows": [["Health", "7,200,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:vharok-the-blood-colossus",
@@ -27341,7 +28279,8 @@
 							"rows": [["Health", "24,000,000"], ["Experience", "22,000,000"]]
 						},
 						{"h": "Where", "p": ["World boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:vhoss-the-hexmaw",
@@ -27356,7 +28295,8 @@
 							"rows": [["Health", "5,000,000"], ["Experience", "3,100,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "monster:wild-boar",
@@ -27371,7 +28311,8 @@
 							"rows": [["Health", "220"], ["Experience", "120"]]
 						},
 						{"h": "Where", "p": ["Invasion: Wildwood Uprising"]}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "monster:ysgrath-the-cinderheart",
@@ -27386,9 +28327,13 @@
 							"rows": [["Health", "1,650,000"], ["Experience", "15,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-monsters.webp",
+			"icon": "wiki/i/k-shadow-ghost.png",
+			"tone": "#d6c9ae"
 		},
 		{
 			"id": "materials",
@@ -27431,7 +28376,8 @@
 								"Each week every material gets one of the demand multipliers x1.5, x1.25, x1, x1, x0.75 (Economy > Professions shows the week's board). Per material and day the broker pays the full price for 100 units, then 50% of it up to 200, then takes no more until the next day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-hammer.png"
 				},
 				{
 					"id": "mat:32351",
@@ -27460,7 +28406,8 @@
 								"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-mountain.png"
 				},
 				{
 					"id": "mat:32352",
@@ -27489,7 +28436,8 @@
 								"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-nature-mountain.png"
 				},
 				{
 					"id": "mat:32353",
@@ -27518,7 +28466,8 @@
 								"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-frost-mountain.png"
 				},
 				{
 					"id": "mat:32354",
@@ -27547,7 +28496,8 @@
 								"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-mountain.png"
 				},
 				{
 					"id": "mat:32355",
@@ -27576,7 +28526,8 @@
 								"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-mountain.png"
 				},
 				{
 					"id": "mat:32356",
@@ -27605,7 +28556,8 @@
 								"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-leaf.png"
 				},
 				{
 					"id": "mat:32357",
@@ -27634,7 +28586,8 @@
 								"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-nature-leaf.png"
 				},
 				{
 					"id": "mat:32358",
@@ -27663,7 +28616,8 @@
 								"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-frost-leaf.png"
 				},
 				{
 					"id": "mat:32359",
@@ -27692,7 +28646,8 @@
 								"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-leaf.png"
 				},
 				{
 					"id": "mat:32360",
@@ -27721,7 +28676,8 @@
 								"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-leaf.png"
 				},
 				{
 					"id": "mat:32361",
@@ -27750,7 +28706,8 @@
 								"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-paw.png"
 				},
 				{
 					"id": "mat:32362",
@@ -27779,7 +28736,8 @@
 								"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
 					"id": "mat:32363",
@@ -27808,7 +28766,8 @@
 								"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-frost-paw.png"
 				},
 				{
 					"id": "mat:32364",
@@ -27837,7 +28796,8 @@
 								"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-paw.png"
 				},
 				{
 					"id": "mat:32365",
@@ -27866,7 +28826,8 @@
 								"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-paw.png"
 				},
 				{
 					"id": "mat:32366",
@@ -27895,7 +28856,8 @@
 								"20 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-wave.png"
 				},
 				{
 					"id": "mat:32367",
@@ -27924,7 +28886,8 @@
 								"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-nature-wave.png"
 				},
 				{
 					"id": "mat:32368",
@@ -27953,7 +28916,8 @@
 								"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-frost-wave.png"
 				},
 				{
 					"id": "mat:32369",
@@ -27982,7 +28946,8 @@
 								"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-shadow-wave.png"
 				},
 				{
 					"id": "mat:32370",
@@ -28011,9 +28976,13 @@
 								"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-wave.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-materials.webp",
+			"icon": "wiki/i/k-nature-leaf.png",
+			"tone": "#7ec46a"
 		},
 		{
 			"id": "store",
@@ -28125,7 +29094,8 @@
 								["Bundle", "6"]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-vip.png"
 				},
 				{
 					"id": "store:1",
@@ -28160,7 +29130,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-daily.png"
 				},
 				{
 					"id": "store:2",
@@ -28195,7 +29166,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-stash.png"
 				},
 				{
 					"id": "store:3",
@@ -28548,7 +29520,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-hood.png"
 				},
 				{
 					"id": "store:4",
@@ -28619,7 +29592,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-holy-hood.png"
 				},
 				{
 					"id": "store:5",
@@ -29026,7 +30000,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
 					"id": "store:6",
@@ -29040,7 +30015,8 @@
 							"h": "Offers",
 							"p": ["Each one is shown with a preview in the store window (Store > Wings)."]
 						}
-					]
+					],
+					"icon": "wiki/i/k-holy-arrowup.png"
 				},
 				{
 					"id": "store:7",
@@ -29054,7 +30030,8 @@
 							"h": "Offers",
 							"p": ["Each one is shown with a preview in the store window (Store > Auras)."]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-ring.png"
 				},
 				{
 					"id": "store:8",
@@ -29087,7 +30064,8 @@
 								["Golden Pulse", "150", "Cosmetic", "A pulsing golden glow."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-swirl.png"
 				},
 				{
 					"id": "store:9",
@@ -29182,7 +30160,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-banner.png"
 				},
 				{
 					"id": "store:10",
@@ -29235,7 +30214,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-gate.png"
 				},
 				{
 					"id": "store:11",
@@ -29324,7 +30304,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
 					"id": "store:12",
@@ -29371,7 +30352,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
 					"id": "store:13",
@@ -29412,7 +30394,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-eye.png"
 				},
 				{
 					"id": "store:14",
@@ -29459,7 +30442,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-console.png"
 				},
 				{
 					"id": "store:15",
@@ -29530,7 +30514,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-kick.png"
 				},
 				{
 					"id": "store:16",
@@ -29601,7 +30586,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-shield.png"
 				},
 				{
 					"id": "store:17",
@@ -29672,7 +30658,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
 					"id": "store:18",
@@ -29743,7 +30730,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-arcane-twin.png"
 				},
 				{
 					"id": "store:19",
@@ -29802,7 +30790,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-nature-fang.png"
 				},
 				{
 					"id": "store:20",
@@ -29837,7 +30826,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-hammer.png"
 				},
 				{
 					"id": "store:21",
@@ -29887,7 +30877,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-blood-drop.png"
 				},
 				{
 					"id": "store:22",
@@ -29934,7 +30925,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-light-arrowup.png"
 				},
 				{
 					"id": "store:23",
@@ -29969,7 +30961,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-holy-burst.png"
 				},
 				{
 					"id": "store:24",
@@ -30016,7 +31009,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-options.png"
 				},
 				{
 					"id": "store:25",
@@ -30063,7 +31057,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-autoloot.png"
 				},
 				{
 					"id": "store:26",
@@ -30098,7 +31093,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-holy-sword.png"
 				},
 				{
 					"id": "store:27",
@@ -30241,7 +31237,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/k-steel-sword.png"
 				},
 				{
 					"id": "store:28",
@@ -30264,7 +31261,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-battlepass.png"
 				},
 				{
 					"id": "store:29",
@@ -30317,7 +31315,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-stash.png"
 				},
 				{
 					"id": "store:30",
@@ -30346,7 +31345,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-stash.png"
 				},
 				{
 					"id": "store:31",
@@ -30387,7 +31387,8 @@
 								]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-battlepass.png"
 				},
 				{
 					"id": "store:32",
@@ -30407,9 +31408,13 @@
 								["180 Days of Premium", "1200", "Premium time", "Premium account for 180 days."]
 							]
 						}
-					]
+					],
+					"icon": "wiki/i/top-vip.png"
 				}
-			]
+			],
+			"banner": "wiki/hero/tab-store.webp",
+			"icon": "wiki/i/top-vip.png",
+			"tone": "#ff70c0"
 		}
 	]
 }
