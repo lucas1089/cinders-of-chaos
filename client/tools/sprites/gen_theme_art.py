@@ -10,10 +10,15 @@
                                                    # contact sheets 1x / 4x, items on an inventory background,
                                                    # auras and wings on a player look in four directions (from the
                                                    # pair D / S when given), ground patches with their borders
+    python3 -I gen_theme_art.py items-import --raw RAW_DIR
+                                                   # the item strips art_import/theme_items/<set>.png from the raw
+                                                   # PixelLab candidates and art_import/theme_items_picks.csv
 
-Our own procedural art (theme_items.py, theme_cosmetics.py, theme_grounds.py): shapes, noise and ramps in Python,
-fixed seeds, no painting service, and no pixel of any other game, client or reference sheet is read. The reference
-sheets the owner showed were looked at for themes only. Deterministic for one Pillow and numpy version: the
+Items: PixelLab paintings of our own prompts, picked and cleaned (theme_items.py says how); the build reads the
+committed strips and adds the arrow and bolt stack patterns and the item_forge.py variants. Auras, wings, grounds and
+recolours: our own procedural art (theme_cosmetics.py, theme_grounds.py, theme_recolour.py): shapes, noise and ramps
+in Python, fixed seeds, no painting service. No pixel of any other game, client or reference sheet is read; the
+reference sheets the owner showed were looked at for themes only. Deterministic for one Pillow and numpy version: the
 checked-in atlases were made with Pillow 12.3.0 and numpy 2.5.3 (CI checks with those, as for gen_class_fx.py).
 
 Output, imported by import_art_things.py (client/MANIFEST.md "Themed sets, auras and grounds"):
@@ -23,6 +28,8 @@ Output, imported by import_art_things.py (client/MANIFEST.md "Themed sets, auras
   grounds   theme/grounds_<family>.png: the ground and its 12 border pieces side by side, each 16 patterns (4 x 4,
             stacked down) by its phases (across).
   outfits   theme/<key>.png in the import outfit layout: rows = phases, columns = layer * 4 + direction.
+Not imported (a proposal, nothing reads them yet): theme_variants/<set>.png, one column per piece as in items_<set>,
+one row per item_forge variant (rare, epic, fire, ice, poison, void), listed in theme_variants.csv with a proposed use.
 Checks (build stops otherwise): alpha 0 / 255 everywhere; every item, ground pattern and outfit frame has art; grounds
 opaque; border pieces continuous along the edges they continue; auras and wings never touch the frame edge.
 """
@@ -43,6 +50,16 @@ OUT = os.path.join(ART, 'theme')
 SPEC = os.path.join(ART, 'theme_things.csv')
 RC_OUT = os.path.join(ART, 'theme_recolour')
 RC_SPEC = os.path.join(ART, 'theme_recolour.csv')
+VAR_OUT = os.path.join(ART, 'theme_variants')
+VAR_SPEC = os.path.join(ART, 'theme_variants.csv')
+IF_VARIANTS = ('rare', 'epic', 'fire', 'ice', 'poison', 'void')   # item_forge.py variants of every base piece
+VARIANT_USE = {   # a proposal only: nothing reads these yet (no client ids, no server items)
+    'rare': 'tier look: a rare drop of the set piece (sapphire accents)',
+    'epic': 'tier look: an epic drop of the set piece (amethyst accents, glints)',
+    'fire': 'element transmog style: fire', 'ice': 'element transmog style: ice',
+    'poison': 'element transmog style: poison', 'void': 'element transmog style: void',
+}
+VAR_FIELDS = ['key', 'set', 'piece', 'kind', 'variant', 'atlas', 'x', 'y', 'proposal']
 
 COPY = {   # dat flags of a stock item per kind (client ids of the 10.98 pair)
     'sword': 3264, 'axe': 3274, 'club': 3270, 'bow': 3350, 'crossbow': 3349, 'wand': 3066, 'rod': 3066,
@@ -73,15 +90,27 @@ def build(log=print):
     """-> ({atlas name: RGBA array}, spec rows, problems)"""
     import theme_items as TI
     import theme_sets as TS
+    import item_forge as IF
+    import item_post as IP
     import theme_cosmetics as TC
     import theme_grounds as TG
     atlases, rows, bad = {}, [], []
+    variants, vrows = {}, []
     # ---- items
     for s in TS.SETS:
         ps = TS.pieces(s)
+        base = TI.load_strip(s['key'], len(ps))
         sheet = np.zeros((8 * 32, len(ps) * 32, 4), np.uint8)
+        vsheet = np.zeros((len(IF_VARIANTS) * 32, len(ps) * 32, 4), np.uint8)
         for i, (key, kind, style, name, kit) in enumerate(ps):
-            tiles = TI.render(kind, s['th'], style)
+            bad += ['%s: %s' % (key, b) for b in IP.check(base[i], 24, 1)]
+            vs = IF.variant_set(base[i])
+            for j, v in enumerate(IF_VARIANTS):
+                vsheet[j * 32:(j + 1) * 32, i * 32:(i + 1) * 32] = vs[v]
+                vrows.append(dict(key='%s_%s' % (key, v), set=s['key'], piece=key, kind=kind, variant=v,
+                                  atlas='theme_variants/%s' % s['key'], x=i * 32, y=j * 32,
+                                  proposal=VARIANT_USE[v]))
+            tiles = TI.render(base[i], kind)
             for p, t in enumerate(tiles):
                 if not t[..., 3].any():
                     bad.append('%s pattern %d: empty' % (key, p))
@@ -95,6 +124,7 @@ def build(log=print):
                              w=1, h=1, patterns=n, phases=1, flags='copy:%d' % COPY[kind], mode='new', server_id='',
                              extra=extra))
         atlases['items_%s' % s['key']] = sheet
+        variants[s['key']] = vsheet
         log('items %s: %d pieces' % (s['key'], len(ps)))
     # ---- grounds
     for fam in TG.FAMILIES:
@@ -146,7 +176,7 @@ def build(log=print):
                          patterns=4, phases=TC.PHASES, flags=flags, mode='new', server_id='',
                          extra='gtypes=1|layers=%d|exact=96|durs0=%s|anim0=0:0:0' % (layers, '/'.join([str(ms)] * TC.PHASES))))
         log('%s: %s, 3x3, %d layer(s), %d phases' % (key, role, layers, TC.PHASES))
-    return atlases, rows, bad
+    return atlases, rows, bad, variants, vrows
 
 
 FIELDS = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode', 'server_id',
@@ -163,14 +193,26 @@ def spec_text(rows):
 
 
 def cmd_build(check):
-    atlases, rows, bad = build()
+    atlases, rows, bad, variants, vrows = build()
     if bad:
         for b in bad[:40]:
             print('problem:', b)
         sys.exit('%d problems: nothing written' % len(bad))
     text = spec_text(rows)
+    b = io.StringIO()
+    w = csv.DictWriter(b, VAR_FIELDS, lineterminator='\n')
+    w.writeheader()
+    for r in vrows:
+        w.writerow(r)
+    vtext = b.getvalue()
     if check:
         diff = []
+        for name, arr in variants.items():
+            path = os.path.join(VAR_OUT, name + '.png')
+            if not os.path.isfile(path) or not np.array_equal(np.asarray(Image.open(path).convert('RGBA')), arr):
+                diff.append('differs: ' + path)
+        if not os.path.isfile(VAR_SPEC) or open(VAR_SPEC, newline='').read() != vtext:
+            diff.append('differs: ' + VAR_SPEC)
         for name, arr in atlases.items():
             path = os.path.join(OUT, name + '.png')
             if not os.path.isfile(path):
@@ -192,6 +234,10 @@ def cmd_build(check):
     for name, arr in atlases.items():
         open(os.path.join(OUT, name + '.png'), 'wb').write(png_bytes(arr))
     open(SPEC, 'w', newline='').write(text)
+    os.makedirs(VAR_OUT, exist_ok=True)
+    for name, arr in variants.items():
+        open(os.path.join(VAR_OUT, name + '.png'), 'wb').write(png_bytes(arr))
+    open(VAR_SPEC, 'w', newline='').write(vtext)
     n_items = sum(1 for r in rows if r['cat'] == 'item')
     print('wrote %d atlases to %s and %s (%d items, %d outfits)' % (len(atlases), os.path.relpath(OUT, HERE),
                                                                    os.path.relpath(SPEC, HERE), n_items,
@@ -422,9 +468,14 @@ def main():
     r = sub.add_parser('recolour'); r.add_argument('--dat', required=True); r.add_argument('--spr', required=True)
     r.add_argument('--check', action='store_true')
     p = sub.add_parser('preview'); p.add_argument('--out', required=True); p.add_argument('--dat'); p.add_argument('--spr')
+    i = sub.add_parser('items-import'); i.add_argument('--raw', required=True)
     a = ap.parse_args()
     if a.cmd == 'build':
         cmd_build(a.check)
+    elif a.cmd == 'items-import':
+        import theme_items as TI
+        import theme_sets as TS
+        TI.import_picks(a.raw, TS.SETS, TS.pieces)
     elif a.cmd == 'recolour':
         cmd_recolour(a.dat, a.spr, a.check)
     else:

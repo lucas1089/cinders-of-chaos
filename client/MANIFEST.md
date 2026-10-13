@@ -1120,7 +1120,7 @@ Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Which 
   is on; a client still on things_custom21 draws nothing for the 35 new effect ids.
 - Checked offline only (frame sheets and the mock scenes); not run in a client.
 
-## Pack effect cuts (next pair, `tools/sprites/gen_pack_fx.py`, `art_import/pack_fx.csv`; not built yet)
+## Pack effect cuts (things_custom24, effects 628-634, `tools/sprites/gen_pack_fx.py`, `art_import/pack_fx.csv`; built, not pushed)
 **Source and licence.** The oblique spell effect set that `import_vfx.py` reads (`--src-spells`; effects 429-558 are
 all of its 68 effects). The owner re-uploaded it on 2026-10-13: byte-identical to the copy used for effects 429-558,
 plus preview GIFs and an engine helper script. Its licence: use in unlimited personal and commercial projects (games
@@ -1148,7 +1148,7 @@ committed. The set itself is kept with the art libraries outside the repository.
   ```
   Server use: server/README.md "Pack effects for procs and bosses" (switch `ChaosPackFx.PACK_FX`, off).
 
-## Large spell effects (next pair, `tools/sprites/gen_big_fx.py`, `art_import/big_fx.csv`; not built yet)
+## Large spell effects (things_custom24, effects 635-655, `tools/sprites/gen_big_fx.py`, `art_import/big_fx.csv`; built, not pushed)
 Our own procedural art: big soft glowing effects for boss telegraphs and big attacks, rift guardians and the strongest
 area spells of each class line (server/README.md "Large spell effects", switch `ChaosBigFx.BIG_FX`, off).
 - Drawing: each frame is computed as fields at 4x supersampling with numpy only (radial gradients, seeded value noise,
@@ -1188,7 +1188,7 @@ area spells of each class line (server/README.md "Large spell effects", switch `
   centre; near the right or bottom edge of the view that tile can be outside what the client draws and the effect is
   cut. Not seen in a client yet.
 
-## Rift rank variants (next pair, outfits 2200-2207, `tools/sprites/rift_variants.py`, `art_import/rift_variants.csv`; not built yet)
+## Rift rank variants (things_custom24, outfits 2200-2207, `tools/sprites/rift_variants.py`, `art_import/rift_variants.csv`; built, not pushed)
 Eight new looks of rift monsters, our own art: PixelLab (edit-animation, owner approved) repainted the frames of a rift
 look of our pair, so each variant keeps its base's size, frame groups, phases, timing, flags and feet line. Only our
 own frames were sent as input; no outside reference art. Base looks (donor-library art of things_custom11, sources in
@@ -1242,7 +1242,8 @@ are stock art and were left out.
       --things client/tools/sprites/art_import/big_bosses.csv --first-outfit 2208 --expect-items <items of IN>
   python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old IN/Tibia.dat IN/Tibia.spr
   ```
-  Not run: no pair was built (other packs queue for the same pair). Server use: server/README.md "Bigger guardians"
+  Not in things_custom24: their walk legs were being redone when that pair was built (2026-10-13), so they wait for
+  the next pair (ids from 2208 still free). Server use: server/README.md "Bigger guardians"
   (`looks.bigGuardiansOn`, off).
 
 ## Painted icons (setting "Painted icons", off; `tools/gen_painted_icons.py`, `tools/painted_icon_art/`)
@@ -1330,10 +1331,11 @@ changed, 36,523 byte-identical. Built twice with identical md5s; a run on its ow
 **Built, not on windows-assets.** Our own art for the themes of five reference sheets and four set showcases the owner
 showed: ten equipment sets, two auras, a pair of wings, four grounds with borders, six monster recolours. The sheets
 were looked at for themes, palettes and silhouettes only. No pixel of them was copied, traced, cropped, recoloured or
-resampled, and no image code read them. Every item, aura, wing and ground is drawn in Python: shape masks and
-material ramps lit from the upper left, a 1 px outline tinted to the item's own darkest colour, 128 px downsampled
-4:1 for items and grounds (the pouch look method, `darklib.py`), the class effect canvas for auras and wings
-(`gen_class_fx.Canvas`). No painting service was called (no PixelLab token is configured).
+resampled, no image code read them and none was sent to a painting service. The item icons are PixelLab paintings
+(2026-10-13, below); auras, wings and grounds are drawn in Python: shape masks and material ramps lit from the upper
+left, 128 px downsampled 4:1 for grounds (`darklib.py`), the class effect canvas for auras and wings
+(`gen_class_fx.Canvas`). The same pair also carries the rift rank variants, the pack effect cuts and the large spell
+effects (their sections); the bigger guardians are not in it.
 - Modules: `theme_items.py` (the 18 kind drawers and 10 motifs), `theme_sets.py` (set names, materials, shapes, the
   class kits), `theme_grounds.py` (textures, rims, the dark set's border geometry, `pieces_for`, preview scenes),
   `theme_cosmetics.py` (auras, wings, placement), `theme_recolour.py` (variants of our own monster looks).
@@ -1344,8 +1346,29 @@ material ramps lit from the upper left, a 1 px outline tinted to the item's own 
   (warhelm, plate, greaves, sabatons, blade, bulwark), a caster kit (hat, robe, kilt, slippers, staff, grimoire), a
   ranged kit (hood, jerkin, leggings, striders, longbow, arbalest) and a shared amulet, ring and backpack: Rimeglass
   (blue ice crystal), Emeraldine (gold, emeralds), Starwing (winged gold, teal stones), Thornwild (green leaf, orange
-  wood, green glow). Dat flags copied from a stock item of each kind (`copy:`), so slots, stackable and container
-  stay stock. Arrows and bolts have the 8 stack patterns (1, 2, 3, 4, 5, 10, 25, 50 pieces, fanned).
+  wood, green glow). Same client and server ids and transmog sets as the procedural build they replace. Dat flags
+  copied from a stock item of each kind (`copy:`), so slots, stackable and container stay stock. Arrows and bolts:
+  one painted piece each, the 8 stack patterns (1, 2, 3, 4, 5, 10, 25, 50 pieces) made by `theme_items.py`.
+- Item painting (owner approved the subscription, then the US$ 25 credits): PixelLab "Create image (Pro)"
+  (`/generate-image-v2`), style A: classic 32x32 icons, near-black 1 px outline, light from the top-left. One text
+  prompt per piece or per pair of pieces (two side by side on a 64x32 canvas), the set's palette (`theme_items.M`
+  ramps, at most 24 colours) and one stock item of our 10.98 pair as style reference. 110 calls, 1,100 generations
+  of the subscription, 2,624 candidates; the credits were not touched. Every call is logged (prompt, size, seed,
+  reference, usage); `art_import/theme_items_prompts.csv` keeps the job of every piece. Raw candidates stay outside git.
+- Picks: a deterministic score ranks the candidates (dark outline share, size against a target per kind, art cut
+  by the cell edge or the pair's split line, specks left out, colour count); an eye pass over the shortlists chose
+  another candidate for 129 of 192 pieces, 8 of them from the first style round (`art_import/theme_items_picks.csv`,
+  column `by`). `gen_theme_art.py items-import --raw RAW` runs `item_post.py` on the picks (alpha 0 / 255, biggest
+  blob, at least 1 px margin, area averaging for shrinks under 0.85, a dark rim, palette clamp to 24 colours) and
+  writes `art_import/theme_items/<set>.png`; a rerun gives byte-identical strips. `item_post.py --check
+  art_import/theme_items` checks them cell by cell. `build` reads the committed strips, never the raw results.
+- Variants (a proposal, not in the pair, not wired): `item_forge.py` recolours every base piece as rare (sapphire),
+  epic (amethyst, white cross glints), fire, ice, poison and void (a deep violet ramp of our own). `build` writes
+  `art_import/theme_variants/<set>.png` (one column per piece, one row per variant) and `art_import/theme_variants.csv`
+  with a proposed use: rare and epic as drop tier looks, the four elements as element transmog styles.
+- Learning: `item_forge_learn.py --own art_import/theme_items` adds the picks to the forge's statistics (source
+  `pixellab-own`) and three parts cut from them (`item_forge_data/parts.csv`: a winged helm, a crescent round shield,
+  a skull club).
 - Grounds (client 33852-33903, 52): swamp (walkable, speed 170), acid pool, lava, deep water (blocking, 8 phases of
   160 / 180 / 200 ms, synchronised; lava and acid give light), each a 4x4 pattern ground and 12 border pieces with
   the same phases. A piece lies on the lower tile next to the family, carries its texture at that tile's world
@@ -1368,29 +1391,41 @@ material ramps lit from the upper left, a 1 px outline tinted to the item's own 
 python3 -I client/tools/sprites/gen_theme_art.py build
 python3 -I client/tools/sprites/gen_theme_art.py recolour --dat things_custom23/Tibia.dat --spr things_custom23/Tibia.spr
 python3 -I client/tools/sprites/import_art_things.py --ours-dat things_custom23/Tibia.dat --ours-spr things_custom23/Tibia.spr \
-    --out-dir STAGE --things client/tools/sprites/art_import/theme_things.csv --first-item 33660 --first-outfit 2185 \
+    --out-dir S1 --things client/tools/sprites/art_import/theme_things.csv --first-item 33660 --first-outfit 2185 \
     --expect-items 33659 --manifest-out server/data/items/theme_items.csv
-python3 -I client/tools/sprites/import_art_things.py --ours-dat STAGE/Tibia.dat --ours-spr STAGE/Tibia.spr \
-    --out-dir things_custom24 --things client/tools/sprites/art_import/theme_recolour.csv --first-outfit 2188 --expect-items 33903
+python3 -I client/tools/sprites/import_art_things.py --ours-dat S1/Tibia.dat --ours-spr S1/Tibia.spr \
+    --out-dir S2 --things client/tools/sprites/art_import/theme_recolour.csv --first-outfit 2188 --expect-items 33903
+python3 -I client/tools/sprites/import_art_things.py --ours-dat S2/Tibia.dat --ours-spr S2/Tibia.spr \
+    --out-dir S3 --things client/tools/sprites/art_import/rift_variants.csv --first-outfit 2200 --expect-items 33903
+python3 -I client/tools/sprites/import_fx_art.py --ours-dat S3/Tibia.dat --ours-spr S3/Tibia.spr --out-dir S4 \
+    --spec client/tools/sprites/art_import/pack_fx.csv --expect-first-effect 628 \
+    --lua-out server/data/lib/chaos_pack_fx_ids.lua --catalog-out server/data/spells/pack_fx_catalog.csv
+python3 -I client/tools/sprites/import_fx_art.py --ours-dat S4/Tibia.dat --ours-spr S4/Tibia.spr --out-dir things_custom24 \
+    --spec client/tools/sprites/art_import/big_fx.csv --expect-first-effect 635 \
+    --lua-out server/data/lib/chaos_big_fx_ids.lua --catalog-out server/data/spells/big_fx_catalog.csv
 python3 -I client/tools/sprites/check_pair.py things_custom24/Tibia.dat things_custom24/Tibia.spr \
-    --old things_custom23/Tibia.dat things_custom23/Tibia.spr --new-only
+    --old things_custom23/Tibia.dat things_custom23/Tibia.spr
 python3 -I client/tools/sprites/gen_theme_art.py preview --out PREVIEWS --dat things_custom24/Tibia.dat --spr things_custom24/Tibia.spr
 ```
-`import_art_things.py` knows the otb group and flags of the 18 kinds now (OTB table; old rows unchanged).
-Input things_custom23 (the windows-assets archive, sha256 a866a48e... checked against SHA256SUMS.parts; dat
-8ca5332525db229ca0472fe292653986, spr 09f3a073b0a071d54b9604a422a9dffd). STAGE: dat 36bcd1deef1985264bed2af652ce0ce5,
-spr 26b05503c6ecc7bc317f3284d3dc1ab0. Output **things_custom24**: dat 92d495e7bc00d7006f3fb7c86511e23c (4,968,339
-bytes), spr 29f07b49755792430f8c9aafda88b07d (609,880,527 bytes, 752,358 sprites, 6,705 appended), 33,903 items,
-2,193 outfits, 627 effects, 153 missiles. Built twice with identical md5s; the importer verified every new sprite slot
-pixel-identical to the atlases and every old thing byte-identical. `check_pair.py`: append-only 0 errors (36,524 old
-things and 745,653 old sprites compared; new: 244 items, 9 outfits, 6,705 sprites); full check 0 errors, 121
-warnings, line for line those of things_custom23.
+`import_art_things.py` knows the otb group and flags of the 18 kinds (OTB table; old rows unchanged). The pack and big
+effect strips must be on disk (`gen_pack_fx.py build --src SET`, `gen_big_fx.py build`; both `--check` OK).
+Input things_custom23 (the windows-assets archive at c91dd6f9, sha256 a866a48e... checked against SHA256SUMS.parts;
+dat 8ca5332525db229ca0472fe292653986, spr 09f3a073b0a071d54b9604a422a9dffd). Output **things_custom24** (2026-10-13,
+replaces the procedural-item build of the same name, which was never pushed): dat 54864ed636af3071b6f5ca8fecbb6b30
+(5,021,907 bytes), spr 83ea0f2ae0940b1d9ba72092adf34cec (629,084,240 bytes, 760,191 sprites, 14,538 appended),
+33,903 items, 2,207 outfits, 655 effects, 153 missiles. New: items 33660-33903, outfits 2185-2193 (themed),
+2194-2199 (blank padding), 2200-2207 (rift rank variants), effects 628-634 (pack cuts), 635-655 (large effects).
+Built twice with identical md5s and identical ids files; each importer verified its new frames pixel-identical to the
+art and every old thing byte-identical. `check_pair.py --old`: 0 errors (36,524 old things and 745,653 old sprites
+compared), 124 warnings: the 121 of things_custom23 line for line plus `size-large` for the three 9x9 effects 637,
+642, 643 (expected; "Large spell effects").
 - `things-1098.tar.xz` like things_custom23's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
-  mtime 2026-10-13 07:00: sha256 399b8df9d00e404eef3b3648c93e0a786cff0daf9c6b4da25d945f67c9b08258 (68,367,580 bytes).
-  It unpacks to the md5s above. A rebuild gives the same sha256. Not pushed: it waits for the owner's approval.
+  mtime 2026-10-13 16:00: sha256 9ccef286ee539c630835944a16e64a157eb2af1344b4fb4ac6b2cf1dc0585842 (72,142,852 bytes). It unpacks to the md5s above; the same
+  command on things_custom23 gives its published sha256 (a866a48e...). Not pushed: it waits for the owner's approval.
 - Server side: server/README.md "Themed sets, auras and grounds" (switch `ChaosThemeArt.PAIR24`, off). A client on
   things_custom23 draws nothing for the new ids, so the switch goes on only after the pair is on windows-assets.
-- Checked offline only (contact sheets, an inventory panel, the auras and wings on looks 128 and 2073 in four
+  The pack, big effect and rank variant switches stay off too.
+- Checked offline only (contact sheets, inventory slots at 1x and 4x, an equipment panel per set, the variants, the new effects frame by frame, the auras and wings on looks 128 and 2073 in four
   directions by the client's draw rule, ground patches, everything read back from the pair). Not run in a client.
 
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)

@@ -9561,8 +9561,8 @@ animated effects of the oblique spell effect set instead. Effects only: no damag
   holy_hit by element (physical keeps the stock burst); rift boss arrival void_maw, Cinderdeath burst fire_explosion,
   marked strike by element (fire_explosion / frost_nova / lightning_strike / shadow_eruption; the per-tile marks stay
   stock); world boss arrival void_maw, enrage blood_pact, adds teleport_in.
-- Cuts for the next pair (`client/tools/sprites/gen_pack_fx.py`, ids in `data/lib/chaos_pack_fx_ids.lua` written by
-  `import_fx_art.py`; until then they fall back to stock): reflect reflect_bubble (`combat_fx.lua`, was
+- Cuts in things_custom24, effects 628-634 (`client/tools/sprites/gen_pack_fx.py`, ids in `data/lib/chaos_pack_fx_ids.lua`
+  written by `import_fx_art.py`, 2026-10-13; built, not pushed; switch off, so they fall back to stock): reflect reflect_bubble (`combat_fx.lua`, was
   reflect_aegis), item bleed / ignite / poison / chill procs tick_bleed / tick_burn / tick_poison / tick_chill, rift
   Cinderdeath mark tick_burn, crit wounds tick_bleed, Festering Wounds tick_poison, snare holy heal tick_regen.
   tick_curse is cut but not used yet. Crit and dodge keep crit_burst / dodge_whoosh (the set has no crit art).
@@ -9596,8 +9596,8 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   the boss's element (`ChaosBigFx.hits`). Cones, rings with a safe middle and marks round players get nothing more.
   The stock warning marks and hits stay; the big ones are drawn on top.
 - Not wired yet: big_nova_arcane_7 (in the pair for later).
-- Ids: `data/lib/chaos_big_fx_ids.lua`, written by `import_fx_art.py` when the next pair is built; until then (or with
-  the switch off) nothing big is sent and every site sends exactly what it sent before.
+- Ids: `data/lib/chaos_big_fx_ids.lua` (effects 635-655 of things_custom24, built 2026-10-13, not pushed), written by
+  `import_fx_art.py`; with the switch off nothing big is sent and every site sends exactly what it sent before.
 - Flip step, once the pair with them is on the client: set `C.BIG_FX = true` (and flip the check in
   `tests/big_fx_test.lua`), `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. Rollback: false.
 - The client's one spell effect opacity slider (Options > Effects, 25-100%, client base patch 0049) scales these

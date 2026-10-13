@@ -130,7 +130,14 @@ reset()
 C.send({x = 5, y = 6, z = 7}, "reflect", 3)
 eq(effects[1] and effects[1].x, 5, "off: a plain table position still gets its stock effect")
 
--- switch on: pack names the server knows go through Vfx, the others fall back
+-- switch on: pack names the server knows go through Vfx, the others fall back. The cuts' ids file
+-- (data/lib/chaos_pack_fx_ids.lua) is kept out here, as on a server whose pair lacks the cuts; it is read below.
+local idsPath = "data/lib/chaos_pack_fx_ids.lua"
+local plainDofile = dofile
+dofile = function(p, ...)
+	if p == idsPath then error("no ids file in this pair") end
+	return plainDofile(p, ...)
+end
 C.PACK_FX = true
 C.loaded = nil
 reset()
@@ -140,6 +147,7 @@ eq(vfxSent[1] and vfxSent[1].name, "void_maw", "on: the use's effect")
 reset()
 eq(C.send(Position(100, 100, 7), "reflect", 3), false, "on, cut not in this pair: fallback")
 eq(effects[1] and effects[1].id, 3, "on, cut not in this pair: the stock id")
+dofile = plainDofile
 reset()
 ChaosVfx.reflect_bubble = {id = 700, dx = 1, dy = 1}
 eq(C.send(Position(100, 100, 7), "reflect", 3), true, "on, cut in the ids: sent")
@@ -151,6 +159,32 @@ reset()
 Vfx = function() return false end
 eq(C.send(Position(1, 1, 7), "wb_arrives", 18), false, "on, Vfx refuses: fallback")
 eq(effects[1] and effects[1].id, 18, "on, Vfx refuses: the stock id")
+
+-- the ids file of the pair that has the cuts (written by import_fx_art.py): when present, every cut in spec
+-- order from one first id, with the spec's offsets, the same ids as data/spells/pack_fx_catalog.csv
+if readFile(idsPath) then
+	local saved = ChaosVfx
+	ChaosVfx = {}
+	plainDofile(idsPath)
+	local first = ChaosVfx[cutOrder[1]] and ChaosVfx[cutOrder[1]].id
+	ok(first ~= nil, "ids file: the first cut has an id")
+	local cat = {}
+	for line in (readFile("data/spells/pack_fx_catalog.csv") or ""):gmatch("[^\n]+") do
+		local id, name = line:match("^effect,(%d+),([%w_]+),")
+		if id then cat[name] = tonumber(id) end
+	end
+	for i, name in ipairs(cutOrder) do
+		local e = ChaosVfx[name]
+		ok(e ~= nil, "ids file: " .. name)
+		if e and first then
+			eq(e.id, first + i - 1, "ids file: " .. name .. " id in spec order")
+			eq(e.dx, cutSpec[name].dx, "ids file: " .. name .. " dx")
+			eq(e.dy, cutSpec[name].dy, "ids file: " .. name .. " dy")
+			eq(cat[name], e.id, "ids file: " .. name .. " id as in pack_fx_catalog.csv")
+		end
+	end
+	ChaosVfx = saved
+end
 
 -- on without chaos_vfx.lua (Vfx missing): not live, stock effects
 C.loaded = nil

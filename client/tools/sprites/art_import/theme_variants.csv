@@ -1,0 +1,1153 @@
+key,set,piece,kind,variant,atlas,x,y,proposal
+cryptbone_sword_rare,cryptbone,cryptbone_sword,sword,rare,theme_variants/cryptbone,0,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_sword_epic,cryptbone,cryptbone_sword,sword,epic,theme_variants/cryptbone,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_sword_fire,cryptbone,cryptbone_sword,sword,fire,theme_variants/cryptbone,0,64,element transmog style: fire
+cryptbone_sword_ice,cryptbone,cryptbone_sword,sword,ice,theme_variants/cryptbone,0,96,element transmog style: ice
+cryptbone_sword_poison,cryptbone,cryptbone_sword,sword,poison,theme_variants/cryptbone,0,128,element transmog style: poison
+cryptbone_sword_void,cryptbone,cryptbone_sword,sword,void,theme_variants/cryptbone,0,160,element transmog style: void
+cryptbone_axe_rare,cryptbone,cryptbone_axe,axe,rare,theme_variants/cryptbone,32,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_axe_epic,cryptbone,cryptbone_axe,axe,epic,theme_variants/cryptbone,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_axe_fire,cryptbone,cryptbone_axe,axe,fire,theme_variants/cryptbone,32,64,element transmog style: fire
+cryptbone_axe_ice,cryptbone,cryptbone_axe,axe,ice,theme_variants/cryptbone,32,96,element transmog style: ice
+cryptbone_axe_poison,cryptbone,cryptbone_axe,axe,poison,theme_variants/cryptbone,32,128,element transmog style: poison
+cryptbone_axe_void,cryptbone,cryptbone_axe,axe,void,theme_variants/cryptbone,32,160,element transmog style: void
+cryptbone_club_rare,cryptbone,cryptbone_club,club,rare,theme_variants/cryptbone,64,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_club_epic,cryptbone,cryptbone_club,club,epic,theme_variants/cryptbone,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_club_fire,cryptbone,cryptbone_club,club,fire,theme_variants/cryptbone,64,64,element transmog style: fire
+cryptbone_club_ice,cryptbone,cryptbone_club,club,ice,theme_variants/cryptbone,64,96,element transmog style: ice
+cryptbone_club_poison,cryptbone,cryptbone_club,club,poison,theme_variants/cryptbone,64,128,element transmog style: poison
+cryptbone_club_void,cryptbone,cryptbone_club,club,void,theme_variants/cryptbone,64,160,element transmog style: void
+cryptbone_bow_rare,cryptbone,cryptbone_bow,bow,rare,theme_variants/cryptbone,96,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_bow_epic,cryptbone,cryptbone_bow,bow,epic,theme_variants/cryptbone,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_bow_fire,cryptbone,cryptbone_bow,bow,fire,theme_variants/cryptbone,96,64,element transmog style: fire
+cryptbone_bow_ice,cryptbone,cryptbone_bow,bow,ice,theme_variants/cryptbone,96,96,element transmog style: ice
+cryptbone_bow_poison,cryptbone,cryptbone_bow,bow,poison,theme_variants/cryptbone,96,128,element transmog style: poison
+cryptbone_bow_void,cryptbone,cryptbone_bow,bow,void,theme_variants/cryptbone,96,160,element transmog style: void
+cryptbone_crossbow_rare,cryptbone,cryptbone_crossbow,crossbow,rare,theme_variants/cryptbone,128,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_crossbow_epic,cryptbone,cryptbone_crossbow,crossbow,epic,theme_variants/cryptbone,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_crossbow_fire,cryptbone,cryptbone_crossbow,crossbow,fire,theme_variants/cryptbone,128,64,element transmog style: fire
+cryptbone_crossbow_ice,cryptbone,cryptbone_crossbow,crossbow,ice,theme_variants/cryptbone,128,96,element transmog style: ice
+cryptbone_crossbow_poison,cryptbone,cryptbone_crossbow,crossbow,poison,theme_variants/cryptbone,128,128,element transmog style: poison
+cryptbone_crossbow_void,cryptbone,cryptbone_crossbow,crossbow,void,theme_variants/cryptbone,128,160,element transmog style: void
+cryptbone_wand_rare,cryptbone,cryptbone_wand,wand,rare,theme_variants/cryptbone,160,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_wand_epic,cryptbone,cryptbone_wand,wand,epic,theme_variants/cryptbone,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_wand_fire,cryptbone,cryptbone_wand,wand,fire,theme_variants/cryptbone,160,64,element transmog style: fire
+cryptbone_wand_ice,cryptbone,cryptbone_wand,wand,ice,theme_variants/cryptbone,160,96,element transmog style: ice
+cryptbone_wand_poison,cryptbone,cryptbone_wand,wand,poison,theme_variants/cryptbone,160,128,element transmog style: poison
+cryptbone_wand_void,cryptbone,cryptbone_wand,wand,void,theme_variants/cryptbone,160,160,element transmog style: void
+cryptbone_rod_rare,cryptbone,cryptbone_rod,rod,rare,theme_variants/cryptbone,192,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_rod_epic,cryptbone,cryptbone_rod,rod,epic,theme_variants/cryptbone,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_rod_fire,cryptbone,cryptbone_rod,rod,fire,theme_variants/cryptbone,192,64,element transmog style: fire
+cryptbone_rod_ice,cryptbone,cryptbone_rod,rod,ice,theme_variants/cryptbone,192,96,element transmog style: ice
+cryptbone_rod_poison,cryptbone,cryptbone_rod,rod,poison,theme_variants/cryptbone,192,128,element transmog style: poison
+cryptbone_rod_void,cryptbone,cryptbone_rod,rod,void,theme_variants/cryptbone,192,160,element transmog style: void
+cryptbone_shield_rare,cryptbone,cryptbone_shield,shield,rare,theme_variants/cryptbone,224,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_shield_epic,cryptbone,cryptbone_shield,shield,epic,theme_variants/cryptbone,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_shield_fire,cryptbone,cryptbone_shield,shield,fire,theme_variants/cryptbone,224,64,element transmog style: fire
+cryptbone_shield_ice,cryptbone,cryptbone_shield,shield,ice,theme_variants/cryptbone,224,96,element transmog style: ice
+cryptbone_shield_poison,cryptbone,cryptbone_shield,shield,poison,theme_variants/cryptbone,224,128,element transmog style: poison
+cryptbone_shield_void,cryptbone,cryptbone_shield,shield,void,theme_variants/cryptbone,224,160,element transmog style: void
+cryptbone_helmet_rare,cryptbone,cryptbone_helmet,helmet,rare,theme_variants/cryptbone,256,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_helmet_epic,cryptbone,cryptbone_helmet,helmet,epic,theme_variants/cryptbone,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_helmet_fire,cryptbone,cryptbone_helmet,helmet,fire,theme_variants/cryptbone,256,64,element transmog style: fire
+cryptbone_helmet_ice,cryptbone,cryptbone_helmet,helmet,ice,theme_variants/cryptbone,256,96,element transmog style: ice
+cryptbone_helmet_poison,cryptbone,cryptbone_helmet,helmet,poison,theme_variants/cryptbone,256,128,element transmog style: poison
+cryptbone_helmet_void,cryptbone,cryptbone_helmet,helmet,void,theme_variants/cryptbone,256,160,element transmog style: void
+cryptbone_armor_rare,cryptbone,cryptbone_armor,armor,rare,theme_variants/cryptbone,288,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_armor_epic,cryptbone,cryptbone_armor,armor,epic,theme_variants/cryptbone,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_armor_fire,cryptbone,cryptbone_armor,armor,fire,theme_variants/cryptbone,288,64,element transmog style: fire
+cryptbone_armor_ice,cryptbone,cryptbone_armor,armor,ice,theme_variants/cryptbone,288,96,element transmog style: ice
+cryptbone_armor_poison,cryptbone,cryptbone_armor,armor,poison,theme_variants/cryptbone,288,128,element transmog style: poison
+cryptbone_armor_void,cryptbone,cryptbone_armor,armor,void,theme_variants/cryptbone,288,160,element transmog style: void
+cryptbone_legs_rare,cryptbone,cryptbone_legs,legs,rare,theme_variants/cryptbone,320,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_legs_epic,cryptbone,cryptbone_legs,legs,epic,theme_variants/cryptbone,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_legs_fire,cryptbone,cryptbone_legs,legs,fire,theme_variants/cryptbone,320,64,element transmog style: fire
+cryptbone_legs_ice,cryptbone,cryptbone_legs,legs,ice,theme_variants/cryptbone,320,96,element transmog style: ice
+cryptbone_legs_poison,cryptbone,cryptbone_legs,legs,poison,theme_variants/cryptbone,320,128,element transmog style: poison
+cryptbone_legs_void,cryptbone,cryptbone_legs,legs,void,theme_variants/cryptbone,320,160,element transmog style: void
+cryptbone_boots_rare,cryptbone,cryptbone_boots,boots,rare,theme_variants/cryptbone,352,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_boots_epic,cryptbone,cryptbone_boots,boots,epic,theme_variants/cryptbone,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_boots_fire,cryptbone,cryptbone_boots,boots,fire,theme_variants/cryptbone,352,64,element transmog style: fire
+cryptbone_boots_ice,cryptbone,cryptbone_boots,boots,ice,theme_variants/cryptbone,352,96,element transmog style: ice
+cryptbone_boots_poison,cryptbone,cryptbone_boots,boots,poison,theme_variants/cryptbone,352,128,element transmog style: poison
+cryptbone_boots_void,cryptbone,cryptbone_boots,boots,void,theme_variants/cryptbone,352,160,element transmog style: void
+cryptbone_amulet_rare,cryptbone,cryptbone_amulet,amulet,rare,theme_variants/cryptbone,384,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_amulet_epic,cryptbone,cryptbone_amulet,amulet,epic,theme_variants/cryptbone,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_amulet_fire,cryptbone,cryptbone_amulet,amulet,fire,theme_variants/cryptbone,384,64,element transmog style: fire
+cryptbone_amulet_ice,cryptbone,cryptbone_amulet,amulet,ice,theme_variants/cryptbone,384,96,element transmog style: ice
+cryptbone_amulet_poison,cryptbone,cryptbone_amulet,amulet,poison,theme_variants/cryptbone,384,128,element transmog style: poison
+cryptbone_amulet_void,cryptbone,cryptbone_amulet,amulet,void,theme_variants/cryptbone,384,160,element transmog style: void
+cryptbone_ring_rare,cryptbone,cryptbone_ring,ring,rare,theme_variants/cryptbone,416,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_ring_epic,cryptbone,cryptbone_ring,ring,epic,theme_variants/cryptbone,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_ring_fire,cryptbone,cryptbone_ring,ring,fire,theme_variants/cryptbone,416,64,element transmog style: fire
+cryptbone_ring_ice,cryptbone,cryptbone_ring,ring,ice,theme_variants/cryptbone,416,96,element transmog style: ice
+cryptbone_ring_poison,cryptbone,cryptbone_ring,ring,poison,theme_variants/cryptbone,416,128,element transmog style: poison
+cryptbone_ring_void,cryptbone,cryptbone_ring,ring,void,theme_variants/cryptbone,416,160,element transmog style: void
+cryptbone_backpack_rare,cryptbone,cryptbone_backpack,backpack,rare,theme_variants/cryptbone,448,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_backpack_epic,cryptbone,cryptbone_backpack,backpack,epic,theme_variants/cryptbone,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_backpack_fire,cryptbone,cryptbone_backpack,backpack,fire,theme_variants/cryptbone,448,64,element transmog style: fire
+cryptbone_backpack_ice,cryptbone,cryptbone_backpack,backpack,ice,theme_variants/cryptbone,448,96,element transmog style: ice
+cryptbone_backpack_poison,cryptbone,cryptbone_backpack,backpack,poison,theme_variants/cryptbone,448,128,element transmog style: poison
+cryptbone_backpack_void,cryptbone,cryptbone_backpack,backpack,void,theme_variants/cryptbone,448,160,element transmog style: void
+cryptbone_spellbook_rare,cryptbone,cryptbone_spellbook,spellbook,rare,theme_variants/cryptbone,480,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_spellbook_epic,cryptbone,cryptbone_spellbook,spellbook,epic,theme_variants/cryptbone,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_spellbook_fire,cryptbone,cryptbone_spellbook,spellbook,fire,theme_variants/cryptbone,480,64,element transmog style: fire
+cryptbone_spellbook_ice,cryptbone,cryptbone_spellbook,spellbook,ice,theme_variants/cryptbone,480,96,element transmog style: ice
+cryptbone_spellbook_poison,cryptbone,cryptbone_spellbook,spellbook,poison,theme_variants/cryptbone,480,128,element transmog style: poison
+cryptbone_spellbook_void,cryptbone,cryptbone_spellbook,spellbook,void,theme_variants/cryptbone,480,160,element transmog style: void
+cryptbone_arrow_rare,cryptbone,cryptbone_arrow,arrow,rare,theme_variants/cryptbone,512,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_arrow_epic,cryptbone,cryptbone_arrow,arrow,epic,theme_variants/cryptbone,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_arrow_fire,cryptbone,cryptbone_arrow,arrow,fire,theme_variants/cryptbone,512,64,element transmog style: fire
+cryptbone_arrow_ice,cryptbone,cryptbone_arrow,arrow,ice,theme_variants/cryptbone,512,96,element transmog style: ice
+cryptbone_arrow_poison,cryptbone,cryptbone_arrow,arrow,poison,theme_variants/cryptbone,512,128,element transmog style: poison
+cryptbone_arrow_void,cryptbone,cryptbone_arrow,arrow,void,theme_variants/cryptbone,512,160,element transmog style: void
+cryptbone_bolt_rare,cryptbone,cryptbone_bolt,bolt,rare,theme_variants/cryptbone,544,0,tier look: a rare drop of the set piece (sapphire accents)
+cryptbone_bolt_epic,cryptbone,cryptbone_bolt,bolt,epic,theme_variants/cryptbone,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+cryptbone_bolt_fire,cryptbone,cryptbone_bolt,bolt,fire,theme_variants/cryptbone,544,64,element transmog style: fire
+cryptbone_bolt_ice,cryptbone,cryptbone_bolt,bolt,ice,theme_variants/cryptbone,544,96,element transmog style: ice
+cryptbone_bolt_poison,cryptbone,cryptbone_bolt,bolt,poison,theme_variants/cryptbone,544,128,element transmog style: poison
+cryptbone_bolt_void,cryptbone,cryptbone_bolt,bolt,void,theme_variants/cryptbone,544,160,element transmog style: void
+voidmourn_sword_rare,voidmourn,voidmourn_sword,sword,rare,theme_variants/voidmourn,0,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_sword_epic,voidmourn,voidmourn_sword,sword,epic,theme_variants/voidmourn,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_sword_fire,voidmourn,voidmourn_sword,sword,fire,theme_variants/voidmourn,0,64,element transmog style: fire
+voidmourn_sword_ice,voidmourn,voidmourn_sword,sword,ice,theme_variants/voidmourn,0,96,element transmog style: ice
+voidmourn_sword_poison,voidmourn,voidmourn_sword,sword,poison,theme_variants/voidmourn,0,128,element transmog style: poison
+voidmourn_sword_void,voidmourn,voidmourn_sword,sword,void,theme_variants/voidmourn,0,160,element transmog style: void
+voidmourn_axe_rare,voidmourn,voidmourn_axe,axe,rare,theme_variants/voidmourn,32,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_axe_epic,voidmourn,voidmourn_axe,axe,epic,theme_variants/voidmourn,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_axe_fire,voidmourn,voidmourn_axe,axe,fire,theme_variants/voidmourn,32,64,element transmog style: fire
+voidmourn_axe_ice,voidmourn,voidmourn_axe,axe,ice,theme_variants/voidmourn,32,96,element transmog style: ice
+voidmourn_axe_poison,voidmourn,voidmourn_axe,axe,poison,theme_variants/voidmourn,32,128,element transmog style: poison
+voidmourn_axe_void,voidmourn,voidmourn_axe,axe,void,theme_variants/voidmourn,32,160,element transmog style: void
+voidmourn_club_rare,voidmourn,voidmourn_club,club,rare,theme_variants/voidmourn,64,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_club_epic,voidmourn,voidmourn_club,club,epic,theme_variants/voidmourn,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_club_fire,voidmourn,voidmourn_club,club,fire,theme_variants/voidmourn,64,64,element transmog style: fire
+voidmourn_club_ice,voidmourn,voidmourn_club,club,ice,theme_variants/voidmourn,64,96,element transmog style: ice
+voidmourn_club_poison,voidmourn,voidmourn_club,club,poison,theme_variants/voidmourn,64,128,element transmog style: poison
+voidmourn_club_void,voidmourn,voidmourn_club,club,void,theme_variants/voidmourn,64,160,element transmog style: void
+voidmourn_bow_rare,voidmourn,voidmourn_bow,bow,rare,theme_variants/voidmourn,96,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_bow_epic,voidmourn,voidmourn_bow,bow,epic,theme_variants/voidmourn,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_bow_fire,voidmourn,voidmourn_bow,bow,fire,theme_variants/voidmourn,96,64,element transmog style: fire
+voidmourn_bow_ice,voidmourn,voidmourn_bow,bow,ice,theme_variants/voidmourn,96,96,element transmog style: ice
+voidmourn_bow_poison,voidmourn,voidmourn_bow,bow,poison,theme_variants/voidmourn,96,128,element transmog style: poison
+voidmourn_bow_void,voidmourn,voidmourn_bow,bow,void,theme_variants/voidmourn,96,160,element transmog style: void
+voidmourn_crossbow_rare,voidmourn,voidmourn_crossbow,crossbow,rare,theme_variants/voidmourn,128,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_crossbow_epic,voidmourn,voidmourn_crossbow,crossbow,epic,theme_variants/voidmourn,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_crossbow_fire,voidmourn,voidmourn_crossbow,crossbow,fire,theme_variants/voidmourn,128,64,element transmog style: fire
+voidmourn_crossbow_ice,voidmourn,voidmourn_crossbow,crossbow,ice,theme_variants/voidmourn,128,96,element transmog style: ice
+voidmourn_crossbow_poison,voidmourn,voidmourn_crossbow,crossbow,poison,theme_variants/voidmourn,128,128,element transmog style: poison
+voidmourn_crossbow_void,voidmourn,voidmourn_crossbow,crossbow,void,theme_variants/voidmourn,128,160,element transmog style: void
+voidmourn_wand_rare,voidmourn,voidmourn_wand,wand,rare,theme_variants/voidmourn,160,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_wand_epic,voidmourn,voidmourn_wand,wand,epic,theme_variants/voidmourn,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_wand_fire,voidmourn,voidmourn_wand,wand,fire,theme_variants/voidmourn,160,64,element transmog style: fire
+voidmourn_wand_ice,voidmourn,voidmourn_wand,wand,ice,theme_variants/voidmourn,160,96,element transmog style: ice
+voidmourn_wand_poison,voidmourn,voidmourn_wand,wand,poison,theme_variants/voidmourn,160,128,element transmog style: poison
+voidmourn_wand_void,voidmourn,voidmourn_wand,wand,void,theme_variants/voidmourn,160,160,element transmog style: void
+voidmourn_rod_rare,voidmourn,voidmourn_rod,rod,rare,theme_variants/voidmourn,192,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_rod_epic,voidmourn,voidmourn_rod,rod,epic,theme_variants/voidmourn,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_rod_fire,voidmourn,voidmourn_rod,rod,fire,theme_variants/voidmourn,192,64,element transmog style: fire
+voidmourn_rod_ice,voidmourn,voidmourn_rod,rod,ice,theme_variants/voidmourn,192,96,element transmog style: ice
+voidmourn_rod_poison,voidmourn,voidmourn_rod,rod,poison,theme_variants/voidmourn,192,128,element transmog style: poison
+voidmourn_rod_void,voidmourn,voidmourn_rod,rod,void,theme_variants/voidmourn,192,160,element transmog style: void
+voidmourn_shield_rare,voidmourn,voidmourn_shield,shield,rare,theme_variants/voidmourn,224,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_shield_epic,voidmourn,voidmourn_shield,shield,epic,theme_variants/voidmourn,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_shield_fire,voidmourn,voidmourn_shield,shield,fire,theme_variants/voidmourn,224,64,element transmog style: fire
+voidmourn_shield_ice,voidmourn,voidmourn_shield,shield,ice,theme_variants/voidmourn,224,96,element transmog style: ice
+voidmourn_shield_poison,voidmourn,voidmourn_shield,shield,poison,theme_variants/voidmourn,224,128,element transmog style: poison
+voidmourn_shield_void,voidmourn,voidmourn_shield,shield,void,theme_variants/voidmourn,224,160,element transmog style: void
+voidmourn_helmet_rare,voidmourn,voidmourn_helmet,helmet,rare,theme_variants/voidmourn,256,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_helmet_epic,voidmourn,voidmourn_helmet,helmet,epic,theme_variants/voidmourn,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_helmet_fire,voidmourn,voidmourn_helmet,helmet,fire,theme_variants/voidmourn,256,64,element transmog style: fire
+voidmourn_helmet_ice,voidmourn,voidmourn_helmet,helmet,ice,theme_variants/voidmourn,256,96,element transmog style: ice
+voidmourn_helmet_poison,voidmourn,voidmourn_helmet,helmet,poison,theme_variants/voidmourn,256,128,element transmog style: poison
+voidmourn_helmet_void,voidmourn,voidmourn_helmet,helmet,void,theme_variants/voidmourn,256,160,element transmog style: void
+voidmourn_armor_rare,voidmourn,voidmourn_armor,armor,rare,theme_variants/voidmourn,288,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_armor_epic,voidmourn,voidmourn_armor,armor,epic,theme_variants/voidmourn,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_armor_fire,voidmourn,voidmourn_armor,armor,fire,theme_variants/voidmourn,288,64,element transmog style: fire
+voidmourn_armor_ice,voidmourn,voidmourn_armor,armor,ice,theme_variants/voidmourn,288,96,element transmog style: ice
+voidmourn_armor_poison,voidmourn,voidmourn_armor,armor,poison,theme_variants/voidmourn,288,128,element transmog style: poison
+voidmourn_armor_void,voidmourn,voidmourn_armor,armor,void,theme_variants/voidmourn,288,160,element transmog style: void
+voidmourn_legs_rare,voidmourn,voidmourn_legs,legs,rare,theme_variants/voidmourn,320,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_legs_epic,voidmourn,voidmourn_legs,legs,epic,theme_variants/voidmourn,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_legs_fire,voidmourn,voidmourn_legs,legs,fire,theme_variants/voidmourn,320,64,element transmog style: fire
+voidmourn_legs_ice,voidmourn,voidmourn_legs,legs,ice,theme_variants/voidmourn,320,96,element transmog style: ice
+voidmourn_legs_poison,voidmourn,voidmourn_legs,legs,poison,theme_variants/voidmourn,320,128,element transmog style: poison
+voidmourn_legs_void,voidmourn,voidmourn_legs,legs,void,theme_variants/voidmourn,320,160,element transmog style: void
+voidmourn_boots_rare,voidmourn,voidmourn_boots,boots,rare,theme_variants/voidmourn,352,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_boots_epic,voidmourn,voidmourn_boots,boots,epic,theme_variants/voidmourn,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_boots_fire,voidmourn,voidmourn_boots,boots,fire,theme_variants/voidmourn,352,64,element transmog style: fire
+voidmourn_boots_ice,voidmourn,voidmourn_boots,boots,ice,theme_variants/voidmourn,352,96,element transmog style: ice
+voidmourn_boots_poison,voidmourn,voidmourn_boots,boots,poison,theme_variants/voidmourn,352,128,element transmog style: poison
+voidmourn_boots_void,voidmourn,voidmourn_boots,boots,void,theme_variants/voidmourn,352,160,element transmog style: void
+voidmourn_amulet_rare,voidmourn,voidmourn_amulet,amulet,rare,theme_variants/voidmourn,384,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_amulet_epic,voidmourn,voidmourn_amulet,amulet,epic,theme_variants/voidmourn,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_amulet_fire,voidmourn,voidmourn_amulet,amulet,fire,theme_variants/voidmourn,384,64,element transmog style: fire
+voidmourn_amulet_ice,voidmourn,voidmourn_amulet,amulet,ice,theme_variants/voidmourn,384,96,element transmog style: ice
+voidmourn_amulet_poison,voidmourn,voidmourn_amulet,amulet,poison,theme_variants/voidmourn,384,128,element transmog style: poison
+voidmourn_amulet_void,voidmourn,voidmourn_amulet,amulet,void,theme_variants/voidmourn,384,160,element transmog style: void
+voidmourn_ring_rare,voidmourn,voidmourn_ring,ring,rare,theme_variants/voidmourn,416,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_ring_epic,voidmourn,voidmourn_ring,ring,epic,theme_variants/voidmourn,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_ring_fire,voidmourn,voidmourn_ring,ring,fire,theme_variants/voidmourn,416,64,element transmog style: fire
+voidmourn_ring_ice,voidmourn,voidmourn_ring,ring,ice,theme_variants/voidmourn,416,96,element transmog style: ice
+voidmourn_ring_poison,voidmourn,voidmourn_ring,ring,poison,theme_variants/voidmourn,416,128,element transmog style: poison
+voidmourn_ring_void,voidmourn,voidmourn_ring,ring,void,theme_variants/voidmourn,416,160,element transmog style: void
+voidmourn_backpack_rare,voidmourn,voidmourn_backpack,backpack,rare,theme_variants/voidmourn,448,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_backpack_epic,voidmourn,voidmourn_backpack,backpack,epic,theme_variants/voidmourn,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_backpack_fire,voidmourn,voidmourn_backpack,backpack,fire,theme_variants/voidmourn,448,64,element transmog style: fire
+voidmourn_backpack_ice,voidmourn,voidmourn_backpack,backpack,ice,theme_variants/voidmourn,448,96,element transmog style: ice
+voidmourn_backpack_poison,voidmourn,voidmourn_backpack,backpack,poison,theme_variants/voidmourn,448,128,element transmog style: poison
+voidmourn_backpack_void,voidmourn,voidmourn_backpack,backpack,void,theme_variants/voidmourn,448,160,element transmog style: void
+voidmourn_spellbook_rare,voidmourn,voidmourn_spellbook,spellbook,rare,theme_variants/voidmourn,480,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_spellbook_epic,voidmourn,voidmourn_spellbook,spellbook,epic,theme_variants/voidmourn,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_spellbook_fire,voidmourn,voidmourn_spellbook,spellbook,fire,theme_variants/voidmourn,480,64,element transmog style: fire
+voidmourn_spellbook_ice,voidmourn,voidmourn_spellbook,spellbook,ice,theme_variants/voidmourn,480,96,element transmog style: ice
+voidmourn_spellbook_poison,voidmourn,voidmourn_spellbook,spellbook,poison,theme_variants/voidmourn,480,128,element transmog style: poison
+voidmourn_spellbook_void,voidmourn,voidmourn_spellbook,spellbook,void,theme_variants/voidmourn,480,160,element transmog style: void
+voidmourn_arrow_rare,voidmourn,voidmourn_arrow,arrow,rare,theme_variants/voidmourn,512,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_arrow_epic,voidmourn,voidmourn_arrow,arrow,epic,theme_variants/voidmourn,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_arrow_fire,voidmourn,voidmourn_arrow,arrow,fire,theme_variants/voidmourn,512,64,element transmog style: fire
+voidmourn_arrow_ice,voidmourn,voidmourn_arrow,arrow,ice,theme_variants/voidmourn,512,96,element transmog style: ice
+voidmourn_arrow_poison,voidmourn,voidmourn_arrow,arrow,poison,theme_variants/voidmourn,512,128,element transmog style: poison
+voidmourn_arrow_void,voidmourn,voidmourn_arrow,arrow,void,theme_variants/voidmourn,512,160,element transmog style: void
+voidmourn_bolt_rare,voidmourn,voidmourn_bolt,bolt,rare,theme_variants/voidmourn,544,0,tier look: a rare drop of the set piece (sapphire accents)
+voidmourn_bolt_epic,voidmourn,voidmourn_bolt,bolt,epic,theme_variants/voidmourn,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+voidmourn_bolt_fire,voidmourn,voidmourn_bolt,bolt,fire,theme_variants/voidmourn,544,64,element transmog style: fire
+voidmourn_bolt_ice,voidmourn,voidmourn_bolt,bolt,ice,theme_variants/voidmourn,544,96,element transmog style: ice
+voidmourn_bolt_poison,voidmourn,voidmourn_bolt,bolt,poison,theme_variants/voidmourn,544,128,element transmog style: poison
+voidmourn_bolt_void,voidmourn,voidmourn_bolt,bolt,void,theme_variants/voidmourn,544,160,element transmog style: void
+wildroot_sword_rare,wildroot,wildroot_sword,sword,rare,theme_variants/wildroot,0,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_sword_epic,wildroot,wildroot_sword,sword,epic,theme_variants/wildroot,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_sword_fire,wildroot,wildroot_sword,sword,fire,theme_variants/wildroot,0,64,element transmog style: fire
+wildroot_sword_ice,wildroot,wildroot_sword,sword,ice,theme_variants/wildroot,0,96,element transmog style: ice
+wildroot_sword_poison,wildroot,wildroot_sword,sword,poison,theme_variants/wildroot,0,128,element transmog style: poison
+wildroot_sword_void,wildroot,wildroot_sword,sword,void,theme_variants/wildroot,0,160,element transmog style: void
+wildroot_axe_rare,wildroot,wildroot_axe,axe,rare,theme_variants/wildroot,32,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_axe_epic,wildroot,wildroot_axe,axe,epic,theme_variants/wildroot,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_axe_fire,wildroot,wildroot_axe,axe,fire,theme_variants/wildroot,32,64,element transmog style: fire
+wildroot_axe_ice,wildroot,wildroot_axe,axe,ice,theme_variants/wildroot,32,96,element transmog style: ice
+wildroot_axe_poison,wildroot,wildroot_axe,axe,poison,theme_variants/wildroot,32,128,element transmog style: poison
+wildroot_axe_void,wildroot,wildroot_axe,axe,void,theme_variants/wildroot,32,160,element transmog style: void
+wildroot_club_rare,wildroot,wildroot_club,club,rare,theme_variants/wildroot,64,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_club_epic,wildroot,wildroot_club,club,epic,theme_variants/wildroot,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_club_fire,wildroot,wildroot_club,club,fire,theme_variants/wildroot,64,64,element transmog style: fire
+wildroot_club_ice,wildroot,wildroot_club,club,ice,theme_variants/wildroot,64,96,element transmog style: ice
+wildroot_club_poison,wildroot,wildroot_club,club,poison,theme_variants/wildroot,64,128,element transmog style: poison
+wildroot_club_void,wildroot,wildroot_club,club,void,theme_variants/wildroot,64,160,element transmog style: void
+wildroot_bow_rare,wildroot,wildroot_bow,bow,rare,theme_variants/wildroot,96,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_bow_epic,wildroot,wildroot_bow,bow,epic,theme_variants/wildroot,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_bow_fire,wildroot,wildroot_bow,bow,fire,theme_variants/wildroot,96,64,element transmog style: fire
+wildroot_bow_ice,wildroot,wildroot_bow,bow,ice,theme_variants/wildroot,96,96,element transmog style: ice
+wildroot_bow_poison,wildroot,wildroot_bow,bow,poison,theme_variants/wildroot,96,128,element transmog style: poison
+wildroot_bow_void,wildroot,wildroot_bow,bow,void,theme_variants/wildroot,96,160,element transmog style: void
+wildroot_crossbow_rare,wildroot,wildroot_crossbow,crossbow,rare,theme_variants/wildroot,128,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_crossbow_epic,wildroot,wildroot_crossbow,crossbow,epic,theme_variants/wildroot,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_crossbow_fire,wildroot,wildroot_crossbow,crossbow,fire,theme_variants/wildroot,128,64,element transmog style: fire
+wildroot_crossbow_ice,wildroot,wildroot_crossbow,crossbow,ice,theme_variants/wildroot,128,96,element transmog style: ice
+wildroot_crossbow_poison,wildroot,wildroot_crossbow,crossbow,poison,theme_variants/wildroot,128,128,element transmog style: poison
+wildroot_crossbow_void,wildroot,wildroot_crossbow,crossbow,void,theme_variants/wildroot,128,160,element transmog style: void
+wildroot_wand_rare,wildroot,wildroot_wand,wand,rare,theme_variants/wildroot,160,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_wand_epic,wildroot,wildroot_wand,wand,epic,theme_variants/wildroot,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_wand_fire,wildroot,wildroot_wand,wand,fire,theme_variants/wildroot,160,64,element transmog style: fire
+wildroot_wand_ice,wildroot,wildroot_wand,wand,ice,theme_variants/wildroot,160,96,element transmog style: ice
+wildroot_wand_poison,wildroot,wildroot_wand,wand,poison,theme_variants/wildroot,160,128,element transmog style: poison
+wildroot_wand_void,wildroot,wildroot_wand,wand,void,theme_variants/wildroot,160,160,element transmog style: void
+wildroot_rod_rare,wildroot,wildroot_rod,rod,rare,theme_variants/wildroot,192,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_rod_epic,wildroot,wildroot_rod,rod,epic,theme_variants/wildroot,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_rod_fire,wildroot,wildroot_rod,rod,fire,theme_variants/wildroot,192,64,element transmog style: fire
+wildroot_rod_ice,wildroot,wildroot_rod,rod,ice,theme_variants/wildroot,192,96,element transmog style: ice
+wildroot_rod_poison,wildroot,wildroot_rod,rod,poison,theme_variants/wildroot,192,128,element transmog style: poison
+wildroot_rod_void,wildroot,wildroot_rod,rod,void,theme_variants/wildroot,192,160,element transmog style: void
+wildroot_shield_rare,wildroot,wildroot_shield,shield,rare,theme_variants/wildroot,224,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_shield_epic,wildroot,wildroot_shield,shield,epic,theme_variants/wildroot,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_shield_fire,wildroot,wildroot_shield,shield,fire,theme_variants/wildroot,224,64,element transmog style: fire
+wildroot_shield_ice,wildroot,wildroot_shield,shield,ice,theme_variants/wildroot,224,96,element transmog style: ice
+wildroot_shield_poison,wildroot,wildroot_shield,shield,poison,theme_variants/wildroot,224,128,element transmog style: poison
+wildroot_shield_void,wildroot,wildroot_shield,shield,void,theme_variants/wildroot,224,160,element transmog style: void
+wildroot_helmet_rare,wildroot,wildroot_helmet,helmet,rare,theme_variants/wildroot,256,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_helmet_epic,wildroot,wildroot_helmet,helmet,epic,theme_variants/wildroot,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_helmet_fire,wildroot,wildroot_helmet,helmet,fire,theme_variants/wildroot,256,64,element transmog style: fire
+wildroot_helmet_ice,wildroot,wildroot_helmet,helmet,ice,theme_variants/wildroot,256,96,element transmog style: ice
+wildroot_helmet_poison,wildroot,wildroot_helmet,helmet,poison,theme_variants/wildroot,256,128,element transmog style: poison
+wildroot_helmet_void,wildroot,wildroot_helmet,helmet,void,theme_variants/wildroot,256,160,element transmog style: void
+wildroot_armor_rare,wildroot,wildroot_armor,armor,rare,theme_variants/wildroot,288,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_armor_epic,wildroot,wildroot_armor,armor,epic,theme_variants/wildroot,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_armor_fire,wildroot,wildroot_armor,armor,fire,theme_variants/wildroot,288,64,element transmog style: fire
+wildroot_armor_ice,wildroot,wildroot_armor,armor,ice,theme_variants/wildroot,288,96,element transmog style: ice
+wildroot_armor_poison,wildroot,wildroot_armor,armor,poison,theme_variants/wildroot,288,128,element transmog style: poison
+wildroot_armor_void,wildroot,wildroot_armor,armor,void,theme_variants/wildroot,288,160,element transmog style: void
+wildroot_legs_rare,wildroot,wildroot_legs,legs,rare,theme_variants/wildroot,320,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_legs_epic,wildroot,wildroot_legs,legs,epic,theme_variants/wildroot,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_legs_fire,wildroot,wildroot_legs,legs,fire,theme_variants/wildroot,320,64,element transmog style: fire
+wildroot_legs_ice,wildroot,wildroot_legs,legs,ice,theme_variants/wildroot,320,96,element transmog style: ice
+wildroot_legs_poison,wildroot,wildroot_legs,legs,poison,theme_variants/wildroot,320,128,element transmog style: poison
+wildroot_legs_void,wildroot,wildroot_legs,legs,void,theme_variants/wildroot,320,160,element transmog style: void
+wildroot_boots_rare,wildroot,wildroot_boots,boots,rare,theme_variants/wildroot,352,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_boots_epic,wildroot,wildroot_boots,boots,epic,theme_variants/wildroot,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_boots_fire,wildroot,wildroot_boots,boots,fire,theme_variants/wildroot,352,64,element transmog style: fire
+wildroot_boots_ice,wildroot,wildroot_boots,boots,ice,theme_variants/wildroot,352,96,element transmog style: ice
+wildroot_boots_poison,wildroot,wildroot_boots,boots,poison,theme_variants/wildroot,352,128,element transmog style: poison
+wildroot_boots_void,wildroot,wildroot_boots,boots,void,theme_variants/wildroot,352,160,element transmog style: void
+wildroot_amulet_rare,wildroot,wildroot_amulet,amulet,rare,theme_variants/wildroot,384,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_amulet_epic,wildroot,wildroot_amulet,amulet,epic,theme_variants/wildroot,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_amulet_fire,wildroot,wildroot_amulet,amulet,fire,theme_variants/wildroot,384,64,element transmog style: fire
+wildroot_amulet_ice,wildroot,wildroot_amulet,amulet,ice,theme_variants/wildroot,384,96,element transmog style: ice
+wildroot_amulet_poison,wildroot,wildroot_amulet,amulet,poison,theme_variants/wildroot,384,128,element transmog style: poison
+wildroot_amulet_void,wildroot,wildroot_amulet,amulet,void,theme_variants/wildroot,384,160,element transmog style: void
+wildroot_ring_rare,wildroot,wildroot_ring,ring,rare,theme_variants/wildroot,416,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_ring_epic,wildroot,wildroot_ring,ring,epic,theme_variants/wildroot,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_ring_fire,wildroot,wildroot_ring,ring,fire,theme_variants/wildroot,416,64,element transmog style: fire
+wildroot_ring_ice,wildroot,wildroot_ring,ring,ice,theme_variants/wildroot,416,96,element transmog style: ice
+wildroot_ring_poison,wildroot,wildroot_ring,ring,poison,theme_variants/wildroot,416,128,element transmog style: poison
+wildroot_ring_void,wildroot,wildroot_ring,ring,void,theme_variants/wildroot,416,160,element transmog style: void
+wildroot_backpack_rare,wildroot,wildroot_backpack,backpack,rare,theme_variants/wildroot,448,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_backpack_epic,wildroot,wildroot_backpack,backpack,epic,theme_variants/wildroot,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_backpack_fire,wildroot,wildroot_backpack,backpack,fire,theme_variants/wildroot,448,64,element transmog style: fire
+wildroot_backpack_ice,wildroot,wildroot_backpack,backpack,ice,theme_variants/wildroot,448,96,element transmog style: ice
+wildroot_backpack_poison,wildroot,wildroot_backpack,backpack,poison,theme_variants/wildroot,448,128,element transmog style: poison
+wildroot_backpack_void,wildroot,wildroot_backpack,backpack,void,theme_variants/wildroot,448,160,element transmog style: void
+wildroot_spellbook_rare,wildroot,wildroot_spellbook,spellbook,rare,theme_variants/wildroot,480,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_spellbook_epic,wildroot,wildroot_spellbook,spellbook,epic,theme_variants/wildroot,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_spellbook_fire,wildroot,wildroot_spellbook,spellbook,fire,theme_variants/wildroot,480,64,element transmog style: fire
+wildroot_spellbook_ice,wildroot,wildroot_spellbook,spellbook,ice,theme_variants/wildroot,480,96,element transmog style: ice
+wildroot_spellbook_poison,wildroot,wildroot_spellbook,spellbook,poison,theme_variants/wildroot,480,128,element transmog style: poison
+wildroot_spellbook_void,wildroot,wildroot_spellbook,spellbook,void,theme_variants/wildroot,480,160,element transmog style: void
+wildroot_arrow_rare,wildroot,wildroot_arrow,arrow,rare,theme_variants/wildroot,512,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_arrow_epic,wildroot,wildroot_arrow,arrow,epic,theme_variants/wildroot,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_arrow_fire,wildroot,wildroot_arrow,arrow,fire,theme_variants/wildroot,512,64,element transmog style: fire
+wildroot_arrow_ice,wildroot,wildroot_arrow,arrow,ice,theme_variants/wildroot,512,96,element transmog style: ice
+wildroot_arrow_poison,wildroot,wildroot_arrow,arrow,poison,theme_variants/wildroot,512,128,element transmog style: poison
+wildroot_arrow_void,wildroot,wildroot_arrow,arrow,void,theme_variants/wildroot,512,160,element transmog style: void
+wildroot_bolt_rare,wildroot,wildroot_bolt,bolt,rare,theme_variants/wildroot,544,0,tier look: a rare drop of the set piece (sapphire accents)
+wildroot_bolt_epic,wildroot,wildroot_bolt,bolt,epic,theme_variants/wildroot,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+wildroot_bolt_fire,wildroot,wildroot_bolt,bolt,fire,theme_variants/wildroot,544,64,element transmog style: fire
+wildroot_bolt_ice,wildroot,wildroot_bolt,bolt,ice,theme_variants/wildroot,544,96,element transmog style: ice
+wildroot_bolt_poison,wildroot,wildroot_bolt,bolt,poison,theme_variants/wildroot,544,128,element transmog style: poison
+wildroot_bolt_void,wildroot,wildroot_bolt,bolt,void,theme_variants/wildroot,544,160,element transmog style: void
+moonsilver_sword_rare,moonsilver,moonsilver_sword,sword,rare,theme_variants/moonsilver,0,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_sword_epic,moonsilver,moonsilver_sword,sword,epic,theme_variants/moonsilver,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_sword_fire,moonsilver,moonsilver_sword,sword,fire,theme_variants/moonsilver,0,64,element transmog style: fire
+moonsilver_sword_ice,moonsilver,moonsilver_sword,sword,ice,theme_variants/moonsilver,0,96,element transmog style: ice
+moonsilver_sword_poison,moonsilver,moonsilver_sword,sword,poison,theme_variants/moonsilver,0,128,element transmog style: poison
+moonsilver_sword_void,moonsilver,moonsilver_sword,sword,void,theme_variants/moonsilver,0,160,element transmog style: void
+moonsilver_axe_rare,moonsilver,moonsilver_axe,axe,rare,theme_variants/moonsilver,32,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_axe_epic,moonsilver,moonsilver_axe,axe,epic,theme_variants/moonsilver,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_axe_fire,moonsilver,moonsilver_axe,axe,fire,theme_variants/moonsilver,32,64,element transmog style: fire
+moonsilver_axe_ice,moonsilver,moonsilver_axe,axe,ice,theme_variants/moonsilver,32,96,element transmog style: ice
+moonsilver_axe_poison,moonsilver,moonsilver_axe,axe,poison,theme_variants/moonsilver,32,128,element transmog style: poison
+moonsilver_axe_void,moonsilver,moonsilver_axe,axe,void,theme_variants/moonsilver,32,160,element transmog style: void
+moonsilver_club_rare,moonsilver,moonsilver_club,club,rare,theme_variants/moonsilver,64,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_club_epic,moonsilver,moonsilver_club,club,epic,theme_variants/moonsilver,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_club_fire,moonsilver,moonsilver_club,club,fire,theme_variants/moonsilver,64,64,element transmog style: fire
+moonsilver_club_ice,moonsilver,moonsilver_club,club,ice,theme_variants/moonsilver,64,96,element transmog style: ice
+moonsilver_club_poison,moonsilver,moonsilver_club,club,poison,theme_variants/moonsilver,64,128,element transmog style: poison
+moonsilver_club_void,moonsilver,moonsilver_club,club,void,theme_variants/moonsilver,64,160,element transmog style: void
+moonsilver_bow_rare,moonsilver,moonsilver_bow,bow,rare,theme_variants/moonsilver,96,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_bow_epic,moonsilver,moonsilver_bow,bow,epic,theme_variants/moonsilver,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_bow_fire,moonsilver,moonsilver_bow,bow,fire,theme_variants/moonsilver,96,64,element transmog style: fire
+moonsilver_bow_ice,moonsilver,moonsilver_bow,bow,ice,theme_variants/moonsilver,96,96,element transmog style: ice
+moonsilver_bow_poison,moonsilver,moonsilver_bow,bow,poison,theme_variants/moonsilver,96,128,element transmog style: poison
+moonsilver_bow_void,moonsilver,moonsilver_bow,bow,void,theme_variants/moonsilver,96,160,element transmog style: void
+moonsilver_crossbow_rare,moonsilver,moonsilver_crossbow,crossbow,rare,theme_variants/moonsilver,128,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_crossbow_epic,moonsilver,moonsilver_crossbow,crossbow,epic,theme_variants/moonsilver,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_crossbow_fire,moonsilver,moonsilver_crossbow,crossbow,fire,theme_variants/moonsilver,128,64,element transmog style: fire
+moonsilver_crossbow_ice,moonsilver,moonsilver_crossbow,crossbow,ice,theme_variants/moonsilver,128,96,element transmog style: ice
+moonsilver_crossbow_poison,moonsilver,moonsilver_crossbow,crossbow,poison,theme_variants/moonsilver,128,128,element transmog style: poison
+moonsilver_crossbow_void,moonsilver,moonsilver_crossbow,crossbow,void,theme_variants/moonsilver,128,160,element transmog style: void
+moonsilver_wand_rare,moonsilver,moonsilver_wand,wand,rare,theme_variants/moonsilver,160,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_wand_epic,moonsilver,moonsilver_wand,wand,epic,theme_variants/moonsilver,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_wand_fire,moonsilver,moonsilver_wand,wand,fire,theme_variants/moonsilver,160,64,element transmog style: fire
+moonsilver_wand_ice,moonsilver,moonsilver_wand,wand,ice,theme_variants/moonsilver,160,96,element transmog style: ice
+moonsilver_wand_poison,moonsilver,moonsilver_wand,wand,poison,theme_variants/moonsilver,160,128,element transmog style: poison
+moonsilver_wand_void,moonsilver,moonsilver_wand,wand,void,theme_variants/moonsilver,160,160,element transmog style: void
+moonsilver_rod_rare,moonsilver,moonsilver_rod,rod,rare,theme_variants/moonsilver,192,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_rod_epic,moonsilver,moonsilver_rod,rod,epic,theme_variants/moonsilver,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_rod_fire,moonsilver,moonsilver_rod,rod,fire,theme_variants/moonsilver,192,64,element transmog style: fire
+moonsilver_rod_ice,moonsilver,moonsilver_rod,rod,ice,theme_variants/moonsilver,192,96,element transmog style: ice
+moonsilver_rod_poison,moonsilver,moonsilver_rod,rod,poison,theme_variants/moonsilver,192,128,element transmog style: poison
+moonsilver_rod_void,moonsilver,moonsilver_rod,rod,void,theme_variants/moonsilver,192,160,element transmog style: void
+moonsilver_shield_rare,moonsilver,moonsilver_shield,shield,rare,theme_variants/moonsilver,224,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_shield_epic,moonsilver,moonsilver_shield,shield,epic,theme_variants/moonsilver,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_shield_fire,moonsilver,moonsilver_shield,shield,fire,theme_variants/moonsilver,224,64,element transmog style: fire
+moonsilver_shield_ice,moonsilver,moonsilver_shield,shield,ice,theme_variants/moonsilver,224,96,element transmog style: ice
+moonsilver_shield_poison,moonsilver,moonsilver_shield,shield,poison,theme_variants/moonsilver,224,128,element transmog style: poison
+moonsilver_shield_void,moonsilver,moonsilver_shield,shield,void,theme_variants/moonsilver,224,160,element transmog style: void
+moonsilver_helmet_rare,moonsilver,moonsilver_helmet,helmet,rare,theme_variants/moonsilver,256,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_helmet_epic,moonsilver,moonsilver_helmet,helmet,epic,theme_variants/moonsilver,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_helmet_fire,moonsilver,moonsilver_helmet,helmet,fire,theme_variants/moonsilver,256,64,element transmog style: fire
+moonsilver_helmet_ice,moonsilver,moonsilver_helmet,helmet,ice,theme_variants/moonsilver,256,96,element transmog style: ice
+moonsilver_helmet_poison,moonsilver,moonsilver_helmet,helmet,poison,theme_variants/moonsilver,256,128,element transmog style: poison
+moonsilver_helmet_void,moonsilver,moonsilver_helmet,helmet,void,theme_variants/moonsilver,256,160,element transmog style: void
+moonsilver_armor_rare,moonsilver,moonsilver_armor,armor,rare,theme_variants/moonsilver,288,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_armor_epic,moonsilver,moonsilver_armor,armor,epic,theme_variants/moonsilver,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_armor_fire,moonsilver,moonsilver_armor,armor,fire,theme_variants/moonsilver,288,64,element transmog style: fire
+moonsilver_armor_ice,moonsilver,moonsilver_armor,armor,ice,theme_variants/moonsilver,288,96,element transmog style: ice
+moonsilver_armor_poison,moonsilver,moonsilver_armor,armor,poison,theme_variants/moonsilver,288,128,element transmog style: poison
+moonsilver_armor_void,moonsilver,moonsilver_armor,armor,void,theme_variants/moonsilver,288,160,element transmog style: void
+moonsilver_legs_rare,moonsilver,moonsilver_legs,legs,rare,theme_variants/moonsilver,320,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_legs_epic,moonsilver,moonsilver_legs,legs,epic,theme_variants/moonsilver,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_legs_fire,moonsilver,moonsilver_legs,legs,fire,theme_variants/moonsilver,320,64,element transmog style: fire
+moonsilver_legs_ice,moonsilver,moonsilver_legs,legs,ice,theme_variants/moonsilver,320,96,element transmog style: ice
+moonsilver_legs_poison,moonsilver,moonsilver_legs,legs,poison,theme_variants/moonsilver,320,128,element transmog style: poison
+moonsilver_legs_void,moonsilver,moonsilver_legs,legs,void,theme_variants/moonsilver,320,160,element transmog style: void
+moonsilver_boots_rare,moonsilver,moonsilver_boots,boots,rare,theme_variants/moonsilver,352,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_boots_epic,moonsilver,moonsilver_boots,boots,epic,theme_variants/moonsilver,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_boots_fire,moonsilver,moonsilver_boots,boots,fire,theme_variants/moonsilver,352,64,element transmog style: fire
+moonsilver_boots_ice,moonsilver,moonsilver_boots,boots,ice,theme_variants/moonsilver,352,96,element transmog style: ice
+moonsilver_boots_poison,moonsilver,moonsilver_boots,boots,poison,theme_variants/moonsilver,352,128,element transmog style: poison
+moonsilver_boots_void,moonsilver,moonsilver_boots,boots,void,theme_variants/moonsilver,352,160,element transmog style: void
+moonsilver_amulet_rare,moonsilver,moonsilver_amulet,amulet,rare,theme_variants/moonsilver,384,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_amulet_epic,moonsilver,moonsilver_amulet,amulet,epic,theme_variants/moonsilver,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_amulet_fire,moonsilver,moonsilver_amulet,amulet,fire,theme_variants/moonsilver,384,64,element transmog style: fire
+moonsilver_amulet_ice,moonsilver,moonsilver_amulet,amulet,ice,theme_variants/moonsilver,384,96,element transmog style: ice
+moonsilver_amulet_poison,moonsilver,moonsilver_amulet,amulet,poison,theme_variants/moonsilver,384,128,element transmog style: poison
+moonsilver_amulet_void,moonsilver,moonsilver_amulet,amulet,void,theme_variants/moonsilver,384,160,element transmog style: void
+moonsilver_ring_rare,moonsilver,moonsilver_ring,ring,rare,theme_variants/moonsilver,416,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_ring_epic,moonsilver,moonsilver_ring,ring,epic,theme_variants/moonsilver,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_ring_fire,moonsilver,moonsilver_ring,ring,fire,theme_variants/moonsilver,416,64,element transmog style: fire
+moonsilver_ring_ice,moonsilver,moonsilver_ring,ring,ice,theme_variants/moonsilver,416,96,element transmog style: ice
+moonsilver_ring_poison,moonsilver,moonsilver_ring,ring,poison,theme_variants/moonsilver,416,128,element transmog style: poison
+moonsilver_ring_void,moonsilver,moonsilver_ring,ring,void,theme_variants/moonsilver,416,160,element transmog style: void
+moonsilver_backpack_rare,moonsilver,moonsilver_backpack,backpack,rare,theme_variants/moonsilver,448,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_backpack_epic,moonsilver,moonsilver_backpack,backpack,epic,theme_variants/moonsilver,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_backpack_fire,moonsilver,moonsilver_backpack,backpack,fire,theme_variants/moonsilver,448,64,element transmog style: fire
+moonsilver_backpack_ice,moonsilver,moonsilver_backpack,backpack,ice,theme_variants/moonsilver,448,96,element transmog style: ice
+moonsilver_backpack_poison,moonsilver,moonsilver_backpack,backpack,poison,theme_variants/moonsilver,448,128,element transmog style: poison
+moonsilver_backpack_void,moonsilver,moonsilver_backpack,backpack,void,theme_variants/moonsilver,448,160,element transmog style: void
+moonsilver_spellbook_rare,moonsilver,moonsilver_spellbook,spellbook,rare,theme_variants/moonsilver,480,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_spellbook_epic,moonsilver,moonsilver_spellbook,spellbook,epic,theme_variants/moonsilver,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_spellbook_fire,moonsilver,moonsilver_spellbook,spellbook,fire,theme_variants/moonsilver,480,64,element transmog style: fire
+moonsilver_spellbook_ice,moonsilver,moonsilver_spellbook,spellbook,ice,theme_variants/moonsilver,480,96,element transmog style: ice
+moonsilver_spellbook_poison,moonsilver,moonsilver_spellbook,spellbook,poison,theme_variants/moonsilver,480,128,element transmog style: poison
+moonsilver_spellbook_void,moonsilver,moonsilver_spellbook,spellbook,void,theme_variants/moonsilver,480,160,element transmog style: void
+moonsilver_arrow_rare,moonsilver,moonsilver_arrow,arrow,rare,theme_variants/moonsilver,512,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_arrow_epic,moonsilver,moonsilver_arrow,arrow,epic,theme_variants/moonsilver,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_arrow_fire,moonsilver,moonsilver_arrow,arrow,fire,theme_variants/moonsilver,512,64,element transmog style: fire
+moonsilver_arrow_ice,moonsilver,moonsilver_arrow,arrow,ice,theme_variants/moonsilver,512,96,element transmog style: ice
+moonsilver_arrow_poison,moonsilver,moonsilver_arrow,arrow,poison,theme_variants/moonsilver,512,128,element transmog style: poison
+moonsilver_arrow_void,moonsilver,moonsilver_arrow,arrow,void,theme_variants/moonsilver,512,160,element transmog style: void
+moonsilver_bolt_rare,moonsilver,moonsilver_bolt,bolt,rare,theme_variants/moonsilver,544,0,tier look: a rare drop of the set piece (sapphire accents)
+moonsilver_bolt_epic,moonsilver,moonsilver_bolt,bolt,epic,theme_variants/moonsilver,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+moonsilver_bolt_fire,moonsilver,moonsilver_bolt,bolt,fire,theme_variants/moonsilver,544,64,element transmog style: fire
+moonsilver_bolt_ice,moonsilver,moonsilver_bolt,bolt,ice,theme_variants/moonsilver,544,96,element transmog style: ice
+moonsilver_bolt_poison,moonsilver,moonsilver_bolt,bolt,poison,theme_variants/moonsilver,544,128,element transmog style: poison
+moonsilver_bolt_void,moonsilver,moonsilver_bolt,bolt,void,theme_variants/moonsilver,544,160,element transmog style: void
+sunsworn_sword_rare,sunsworn,sunsworn_sword,sword,rare,theme_variants/sunsworn,0,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_sword_epic,sunsworn,sunsworn_sword,sword,epic,theme_variants/sunsworn,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_sword_fire,sunsworn,sunsworn_sword,sword,fire,theme_variants/sunsworn,0,64,element transmog style: fire
+sunsworn_sword_ice,sunsworn,sunsworn_sword,sword,ice,theme_variants/sunsworn,0,96,element transmog style: ice
+sunsworn_sword_poison,sunsworn,sunsworn_sword,sword,poison,theme_variants/sunsworn,0,128,element transmog style: poison
+sunsworn_sword_void,sunsworn,sunsworn_sword,sword,void,theme_variants/sunsworn,0,160,element transmog style: void
+sunsworn_axe_rare,sunsworn,sunsworn_axe,axe,rare,theme_variants/sunsworn,32,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_axe_epic,sunsworn,sunsworn_axe,axe,epic,theme_variants/sunsworn,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_axe_fire,sunsworn,sunsworn_axe,axe,fire,theme_variants/sunsworn,32,64,element transmog style: fire
+sunsworn_axe_ice,sunsworn,sunsworn_axe,axe,ice,theme_variants/sunsworn,32,96,element transmog style: ice
+sunsworn_axe_poison,sunsworn,sunsworn_axe,axe,poison,theme_variants/sunsworn,32,128,element transmog style: poison
+sunsworn_axe_void,sunsworn,sunsworn_axe,axe,void,theme_variants/sunsworn,32,160,element transmog style: void
+sunsworn_club_rare,sunsworn,sunsworn_club,club,rare,theme_variants/sunsworn,64,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_club_epic,sunsworn,sunsworn_club,club,epic,theme_variants/sunsworn,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_club_fire,sunsworn,sunsworn_club,club,fire,theme_variants/sunsworn,64,64,element transmog style: fire
+sunsworn_club_ice,sunsworn,sunsworn_club,club,ice,theme_variants/sunsworn,64,96,element transmog style: ice
+sunsworn_club_poison,sunsworn,sunsworn_club,club,poison,theme_variants/sunsworn,64,128,element transmog style: poison
+sunsworn_club_void,sunsworn,sunsworn_club,club,void,theme_variants/sunsworn,64,160,element transmog style: void
+sunsworn_bow_rare,sunsworn,sunsworn_bow,bow,rare,theme_variants/sunsworn,96,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_bow_epic,sunsworn,sunsworn_bow,bow,epic,theme_variants/sunsworn,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_bow_fire,sunsworn,sunsworn_bow,bow,fire,theme_variants/sunsworn,96,64,element transmog style: fire
+sunsworn_bow_ice,sunsworn,sunsworn_bow,bow,ice,theme_variants/sunsworn,96,96,element transmog style: ice
+sunsworn_bow_poison,sunsworn,sunsworn_bow,bow,poison,theme_variants/sunsworn,96,128,element transmog style: poison
+sunsworn_bow_void,sunsworn,sunsworn_bow,bow,void,theme_variants/sunsworn,96,160,element transmog style: void
+sunsworn_crossbow_rare,sunsworn,sunsworn_crossbow,crossbow,rare,theme_variants/sunsworn,128,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_crossbow_epic,sunsworn,sunsworn_crossbow,crossbow,epic,theme_variants/sunsworn,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_crossbow_fire,sunsworn,sunsworn_crossbow,crossbow,fire,theme_variants/sunsworn,128,64,element transmog style: fire
+sunsworn_crossbow_ice,sunsworn,sunsworn_crossbow,crossbow,ice,theme_variants/sunsworn,128,96,element transmog style: ice
+sunsworn_crossbow_poison,sunsworn,sunsworn_crossbow,crossbow,poison,theme_variants/sunsworn,128,128,element transmog style: poison
+sunsworn_crossbow_void,sunsworn,sunsworn_crossbow,crossbow,void,theme_variants/sunsworn,128,160,element transmog style: void
+sunsworn_wand_rare,sunsworn,sunsworn_wand,wand,rare,theme_variants/sunsworn,160,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_wand_epic,sunsworn,sunsworn_wand,wand,epic,theme_variants/sunsworn,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_wand_fire,sunsworn,sunsworn_wand,wand,fire,theme_variants/sunsworn,160,64,element transmog style: fire
+sunsworn_wand_ice,sunsworn,sunsworn_wand,wand,ice,theme_variants/sunsworn,160,96,element transmog style: ice
+sunsworn_wand_poison,sunsworn,sunsworn_wand,wand,poison,theme_variants/sunsworn,160,128,element transmog style: poison
+sunsworn_wand_void,sunsworn,sunsworn_wand,wand,void,theme_variants/sunsworn,160,160,element transmog style: void
+sunsworn_rod_rare,sunsworn,sunsworn_rod,rod,rare,theme_variants/sunsworn,192,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_rod_epic,sunsworn,sunsworn_rod,rod,epic,theme_variants/sunsworn,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_rod_fire,sunsworn,sunsworn_rod,rod,fire,theme_variants/sunsworn,192,64,element transmog style: fire
+sunsworn_rod_ice,sunsworn,sunsworn_rod,rod,ice,theme_variants/sunsworn,192,96,element transmog style: ice
+sunsworn_rod_poison,sunsworn,sunsworn_rod,rod,poison,theme_variants/sunsworn,192,128,element transmog style: poison
+sunsworn_rod_void,sunsworn,sunsworn_rod,rod,void,theme_variants/sunsworn,192,160,element transmog style: void
+sunsworn_shield_rare,sunsworn,sunsworn_shield,shield,rare,theme_variants/sunsworn,224,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_shield_epic,sunsworn,sunsworn_shield,shield,epic,theme_variants/sunsworn,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_shield_fire,sunsworn,sunsworn_shield,shield,fire,theme_variants/sunsworn,224,64,element transmog style: fire
+sunsworn_shield_ice,sunsworn,sunsworn_shield,shield,ice,theme_variants/sunsworn,224,96,element transmog style: ice
+sunsworn_shield_poison,sunsworn,sunsworn_shield,shield,poison,theme_variants/sunsworn,224,128,element transmog style: poison
+sunsworn_shield_void,sunsworn,sunsworn_shield,shield,void,theme_variants/sunsworn,224,160,element transmog style: void
+sunsworn_helmet_rare,sunsworn,sunsworn_helmet,helmet,rare,theme_variants/sunsworn,256,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_helmet_epic,sunsworn,sunsworn_helmet,helmet,epic,theme_variants/sunsworn,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_helmet_fire,sunsworn,sunsworn_helmet,helmet,fire,theme_variants/sunsworn,256,64,element transmog style: fire
+sunsworn_helmet_ice,sunsworn,sunsworn_helmet,helmet,ice,theme_variants/sunsworn,256,96,element transmog style: ice
+sunsworn_helmet_poison,sunsworn,sunsworn_helmet,helmet,poison,theme_variants/sunsworn,256,128,element transmog style: poison
+sunsworn_helmet_void,sunsworn,sunsworn_helmet,helmet,void,theme_variants/sunsworn,256,160,element transmog style: void
+sunsworn_armor_rare,sunsworn,sunsworn_armor,armor,rare,theme_variants/sunsworn,288,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_armor_epic,sunsworn,sunsworn_armor,armor,epic,theme_variants/sunsworn,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_armor_fire,sunsworn,sunsworn_armor,armor,fire,theme_variants/sunsworn,288,64,element transmog style: fire
+sunsworn_armor_ice,sunsworn,sunsworn_armor,armor,ice,theme_variants/sunsworn,288,96,element transmog style: ice
+sunsworn_armor_poison,sunsworn,sunsworn_armor,armor,poison,theme_variants/sunsworn,288,128,element transmog style: poison
+sunsworn_armor_void,sunsworn,sunsworn_armor,armor,void,theme_variants/sunsworn,288,160,element transmog style: void
+sunsworn_legs_rare,sunsworn,sunsworn_legs,legs,rare,theme_variants/sunsworn,320,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_legs_epic,sunsworn,sunsworn_legs,legs,epic,theme_variants/sunsworn,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_legs_fire,sunsworn,sunsworn_legs,legs,fire,theme_variants/sunsworn,320,64,element transmog style: fire
+sunsworn_legs_ice,sunsworn,sunsworn_legs,legs,ice,theme_variants/sunsworn,320,96,element transmog style: ice
+sunsworn_legs_poison,sunsworn,sunsworn_legs,legs,poison,theme_variants/sunsworn,320,128,element transmog style: poison
+sunsworn_legs_void,sunsworn,sunsworn_legs,legs,void,theme_variants/sunsworn,320,160,element transmog style: void
+sunsworn_boots_rare,sunsworn,sunsworn_boots,boots,rare,theme_variants/sunsworn,352,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_boots_epic,sunsworn,sunsworn_boots,boots,epic,theme_variants/sunsworn,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_boots_fire,sunsworn,sunsworn_boots,boots,fire,theme_variants/sunsworn,352,64,element transmog style: fire
+sunsworn_boots_ice,sunsworn,sunsworn_boots,boots,ice,theme_variants/sunsworn,352,96,element transmog style: ice
+sunsworn_boots_poison,sunsworn,sunsworn_boots,boots,poison,theme_variants/sunsworn,352,128,element transmog style: poison
+sunsworn_boots_void,sunsworn,sunsworn_boots,boots,void,theme_variants/sunsworn,352,160,element transmog style: void
+sunsworn_amulet_rare,sunsworn,sunsworn_amulet,amulet,rare,theme_variants/sunsworn,384,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_amulet_epic,sunsworn,sunsworn_amulet,amulet,epic,theme_variants/sunsworn,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_amulet_fire,sunsworn,sunsworn_amulet,amulet,fire,theme_variants/sunsworn,384,64,element transmog style: fire
+sunsworn_amulet_ice,sunsworn,sunsworn_amulet,amulet,ice,theme_variants/sunsworn,384,96,element transmog style: ice
+sunsworn_amulet_poison,sunsworn,sunsworn_amulet,amulet,poison,theme_variants/sunsworn,384,128,element transmog style: poison
+sunsworn_amulet_void,sunsworn,sunsworn_amulet,amulet,void,theme_variants/sunsworn,384,160,element transmog style: void
+sunsworn_ring_rare,sunsworn,sunsworn_ring,ring,rare,theme_variants/sunsworn,416,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_ring_epic,sunsworn,sunsworn_ring,ring,epic,theme_variants/sunsworn,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_ring_fire,sunsworn,sunsworn_ring,ring,fire,theme_variants/sunsworn,416,64,element transmog style: fire
+sunsworn_ring_ice,sunsworn,sunsworn_ring,ring,ice,theme_variants/sunsworn,416,96,element transmog style: ice
+sunsworn_ring_poison,sunsworn,sunsworn_ring,ring,poison,theme_variants/sunsworn,416,128,element transmog style: poison
+sunsworn_ring_void,sunsworn,sunsworn_ring,ring,void,theme_variants/sunsworn,416,160,element transmog style: void
+sunsworn_backpack_rare,sunsworn,sunsworn_backpack,backpack,rare,theme_variants/sunsworn,448,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_backpack_epic,sunsworn,sunsworn_backpack,backpack,epic,theme_variants/sunsworn,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_backpack_fire,sunsworn,sunsworn_backpack,backpack,fire,theme_variants/sunsworn,448,64,element transmog style: fire
+sunsworn_backpack_ice,sunsworn,sunsworn_backpack,backpack,ice,theme_variants/sunsworn,448,96,element transmog style: ice
+sunsworn_backpack_poison,sunsworn,sunsworn_backpack,backpack,poison,theme_variants/sunsworn,448,128,element transmog style: poison
+sunsworn_backpack_void,sunsworn,sunsworn_backpack,backpack,void,theme_variants/sunsworn,448,160,element transmog style: void
+sunsworn_spellbook_rare,sunsworn,sunsworn_spellbook,spellbook,rare,theme_variants/sunsworn,480,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_spellbook_epic,sunsworn,sunsworn_spellbook,spellbook,epic,theme_variants/sunsworn,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_spellbook_fire,sunsworn,sunsworn_spellbook,spellbook,fire,theme_variants/sunsworn,480,64,element transmog style: fire
+sunsworn_spellbook_ice,sunsworn,sunsworn_spellbook,spellbook,ice,theme_variants/sunsworn,480,96,element transmog style: ice
+sunsworn_spellbook_poison,sunsworn,sunsworn_spellbook,spellbook,poison,theme_variants/sunsworn,480,128,element transmog style: poison
+sunsworn_spellbook_void,sunsworn,sunsworn_spellbook,spellbook,void,theme_variants/sunsworn,480,160,element transmog style: void
+sunsworn_arrow_rare,sunsworn,sunsworn_arrow,arrow,rare,theme_variants/sunsworn,512,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_arrow_epic,sunsworn,sunsworn_arrow,arrow,epic,theme_variants/sunsworn,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_arrow_fire,sunsworn,sunsworn_arrow,arrow,fire,theme_variants/sunsworn,512,64,element transmog style: fire
+sunsworn_arrow_ice,sunsworn,sunsworn_arrow,arrow,ice,theme_variants/sunsworn,512,96,element transmog style: ice
+sunsworn_arrow_poison,sunsworn,sunsworn_arrow,arrow,poison,theme_variants/sunsworn,512,128,element transmog style: poison
+sunsworn_arrow_void,sunsworn,sunsworn_arrow,arrow,void,theme_variants/sunsworn,512,160,element transmog style: void
+sunsworn_bolt_rare,sunsworn,sunsworn_bolt,bolt,rare,theme_variants/sunsworn,544,0,tier look: a rare drop of the set piece (sapphire accents)
+sunsworn_bolt_epic,sunsworn,sunsworn_bolt,bolt,epic,theme_variants/sunsworn,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+sunsworn_bolt_fire,sunsworn,sunsworn_bolt,bolt,fire,theme_variants/sunsworn,544,64,element transmog style: fire
+sunsworn_bolt_ice,sunsworn,sunsworn_bolt,bolt,ice,theme_variants/sunsworn,544,96,element transmog style: ice
+sunsworn_bolt_poison,sunsworn,sunsworn_bolt,bolt,poison,theme_variants/sunsworn,544,128,element transmog style: poison
+sunsworn_bolt_void,sunsworn,sunsworn_bolt,bolt,void,theme_variants/sunsworn,544,160,element transmog style: void
+oathsteel_sword_rare,oathsteel,oathsteel_sword,sword,rare,theme_variants/oathsteel,0,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_sword_epic,oathsteel,oathsteel_sword,sword,epic,theme_variants/oathsteel,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_sword_fire,oathsteel,oathsteel_sword,sword,fire,theme_variants/oathsteel,0,64,element transmog style: fire
+oathsteel_sword_ice,oathsteel,oathsteel_sword,sword,ice,theme_variants/oathsteel,0,96,element transmog style: ice
+oathsteel_sword_poison,oathsteel,oathsteel_sword,sword,poison,theme_variants/oathsteel,0,128,element transmog style: poison
+oathsteel_sword_void,oathsteel,oathsteel_sword,sword,void,theme_variants/oathsteel,0,160,element transmog style: void
+oathsteel_axe_rare,oathsteel,oathsteel_axe,axe,rare,theme_variants/oathsteel,32,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_axe_epic,oathsteel,oathsteel_axe,axe,epic,theme_variants/oathsteel,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_axe_fire,oathsteel,oathsteel_axe,axe,fire,theme_variants/oathsteel,32,64,element transmog style: fire
+oathsteel_axe_ice,oathsteel,oathsteel_axe,axe,ice,theme_variants/oathsteel,32,96,element transmog style: ice
+oathsteel_axe_poison,oathsteel,oathsteel_axe,axe,poison,theme_variants/oathsteel,32,128,element transmog style: poison
+oathsteel_axe_void,oathsteel,oathsteel_axe,axe,void,theme_variants/oathsteel,32,160,element transmog style: void
+oathsteel_club_rare,oathsteel,oathsteel_club,club,rare,theme_variants/oathsteel,64,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_club_epic,oathsteel,oathsteel_club,club,epic,theme_variants/oathsteel,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_club_fire,oathsteel,oathsteel_club,club,fire,theme_variants/oathsteel,64,64,element transmog style: fire
+oathsteel_club_ice,oathsteel,oathsteel_club,club,ice,theme_variants/oathsteel,64,96,element transmog style: ice
+oathsteel_club_poison,oathsteel,oathsteel_club,club,poison,theme_variants/oathsteel,64,128,element transmog style: poison
+oathsteel_club_void,oathsteel,oathsteel_club,club,void,theme_variants/oathsteel,64,160,element transmog style: void
+oathsteel_bow_rare,oathsteel,oathsteel_bow,bow,rare,theme_variants/oathsteel,96,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_bow_epic,oathsteel,oathsteel_bow,bow,epic,theme_variants/oathsteel,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_bow_fire,oathsteel,oathsteel_bow,bow,fire,theme_variants/oathsteel,96,64,element transmog style: fire
+oathsteel_bow_ice,oathsteel,oathsteel_bow,bow,ice,theme_variants/oathsteel,96,96,element transmog style: ice
+oathsteel_bow_poison,oathsteel,oathsteel_bow,bow,poison,theme_variants/oathsteel,96,128,element transmog style: poison
+oathsteel_bow_void,oathsteel,oathsteel_bow,bow,void,theme_variants/oathsteel,96,160,element transmog style: void
+oathsteel_crossbow_rare,oathsteel,oathsteel_crossbow,crossbow,rare,theme_variants/oathsteel,128,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_crossbow_epic,oathsteel,oathsteel_crossbow,crossbow,epic,theme_variants/oathsteel,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_crossbow_fire,oathsteel,oathsteel_crossbow,crossbow,fire,theme_variants/oathsteel,128,64,element transmog style: fire
+oathsteel_crossbow_ice,oathsteel,oathsteel_crossbow,crossbow,ice,theme_variants/oathsteel,128,96,element transmog style: ice
+oathsteel_crossbow_poison,oathsteel,oathsteel_crossbow,crossbow,poison,theme_variants/oathsteel,128,128,element transmog style: poison
+oathsteel_crossbow_void,oathsteel,oathsteel_crossbow,crossbow,void,theme_variants/oathsteel,128,160,element transmog style: void
+oathsteel_wand_rare,oathsteel,oathsteel_wand,wand,rare,theme_variants/oathsteel,160,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_wand_epic,oathsteel,oathsteel_wand,wand,epic,theme_variants/oathsteel,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_wand_fire,oathsteel,oathsteel_wand,wand,fire,theme_variants/oathsteel,160,64,element transmog style: fire
+oathsteel_wand_ice,oathsteel,oathsteel_wand,wand,ice,theme_variants/oathsteel,160,96,element transmog style: ice
+oathsteel_wand_poison,oathsteel,oathsteel_wand,wand,poison,theme_variants/oathsteel,160,128,element transmog style: poison
+oathsteel_wand_void,oathsteel,oathsteel_wand,wand,void,theme_variants/oathsteel,160,160,element transmog style: void
+oathsteel_rod_rare,oathsteel,oathsteel_rod,rod,rare,theme_variants/oathsteel,192,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_rod_epic,oathsteel,oathsteel_rod,rod,epic,theme_variants/oathsteel,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_rod_fire,oathsteel,oathsteel_rod,rod,fire,theme_variants/oathsteel,192,64,element transmog style: fire
+oathsteel_rod_ice,oathsteel,oathsteel_rod,rod,ice,theme_variants/oathsteel,192,96,element transmog style: ice
+oathsteel_rod_poison,oathsteel,oathsteel_rod,rod,poison,theme_variants/oathsteel,192,128,element transmog style: poison
+oathsteel_rod_void,oathsteel,oathsteel_rod,rod,void,theme_variants/oathsteel,192,160,element transmog style: void
+oathsteel_shield_rare,oathsteel,oathsteel_shield,shield,rare,theme_variants/oathsteel,224,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_shield_epic,oathsteel,oathsteel_shield,shield,epic,theme_variants/oathsteel,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_shield_fire,oathsteel,oathsteel_shield,shield,fire,theme_variants/oathsteel,224,64,element transmog style: fire
+oathsteel_shield_ice,oathsteel,oathsteel_shield,shield,ice,theme_variants/oathsteel,224,96,element transmog style: ice
+oathsteel_shield_poison,oathsteel,oathsteel_shield,shield,poison,theme_variants/oathsteel,224,128,element transmog style: poison
+oathsteel_shield_void,oathsteel,oathsteel_shield,shield,void,theme_variants/oathsteel,224,160,element transmog style: void
+oathsteel_helmet_rare,oathsteel,oathsteel_helmet,helmet,rare,theme_variants/oathsteel,256,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_helmet_epic,oathsteel,oathsteel_helmet,helmet,epic,theme_variants/oathsteel,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_helmet_fire,oathsteel,oathsteel_helmet,helmet,fire,theme_variants/oathsteel,256,64,element transmog style: fire
+oathsteel_helmet_ice,oathsteel,oathsteel_helmet,helmet,ice,theme_variants/oathsteel,256,96,element transmog style: ice
+oathsteel_helmet_poison,oathsteel,oathsteel_helmet,helmet,poison,theme_variants/oathsteel,256,128,element transmog style: poison
+oathsteel_helmet_void,oathsteel,oathsteel_helmet,helmet,void,theme_variants/oathsteel,256,160,element transmog style: void
+oathsteel_armor_rare,oathsteel,oathsteel_armor,armor,rare,theme_variants/oathsteel,288,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_armor_epic,oathsteel,oathsteel_armor,armor,epic,theme_variants/oathsteel,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_armor_fire,oathsteel,oathsteel_armor,armor,fire,theme_variants/oathsteel,288,64,element transmog style: fire
+oathsteel_armor_ice,oathsteel,oathsteel_armor,armor,ice,theme_variants/oathsteel,288,96,element transmog style: ice
+oathsteel_armor_poison,oathsteel,oathsteel_armor,armor,poison,theme_variants/oathsteel,288,128,element transmog style: poison
+oathsteel_armor_void,oathsteel,oathsteel_armor,armor,void,theme_variants/oathsteel,288,160,element transmog style: void
+oathsteel_legs_rare,oathsteel,oathsteel_legs,legs,rare,theme_variants/oathsteel,320,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_legs_epic,oathsteel,oathsteel_legs,legs,epic,theme_variants/oathsteel,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_legs_fire,oathsteel,oathsteel_legs,legs,fire,theme_variants/oathsteel,320,64,element transmog style: fire
+oathsteel_legs_ice,oathsteel,oathsteel_legs,legs,ice,theme_variants/oathsteel,320,96,element transmog style: ice
+oathsteel_legs_poison,oathsteel,oathsteel_legs,legs,poison,theme_variants/oathsteel,320,128,element transmog style: poison
+oathsteel_legs_void,oathsteel,oathsteel_legs,legs,void,theme_variants/oathsteel,320,160,element transmog style: void
+oathsteel_boots_rare,oathsteel,oathsteel_boots,boots,rare,theme_variants/oathsteel,352,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_boots_epic,oathsteel,oathsteel_boots,boots,epic,theme_variants/oathsteel,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_boots_fire,oathsteel,oathsteel_boots,boots,fire,theme_variants/oathsteel,352,64,element transmog style: fire
+oathsteel_boots_ice,oathsteel,oathsteel_boots,boots,ice,theme_variants/oathsteel,352,96,element transmog style: ice
+oathsteel_boots_poison,oathsteel,oathsteel_boots,boots,poison,theme_variants/oathsteel,352,128,element transmog style: poison
+oathsteel_boots_void,oathsteel,oathsteel_boots,boots,void,theme_variants/oathsteel,352,160,element transmog style: void
+oathsteel_amulet_rare,oathsteel,oathsteel_amulet,amulet,rare,theme_variants/oathsteel,384,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_amulet_epic,oathsteel,oathsteel_amulet,amulet,epic,theme_variants/oathsteel,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_amulet_fire,oathsteel,oathsteel_amulet,amulet,fire,theme_variants/oathsteel,384,64,element transmog style: fire
+oathsteel_amulet_ice,oathsteel,oathsteel_amulet,amulet,ice,theme_variants/oathsteel,384,96,element transmog style: ice
+oathsteel_amulet_poison,oathsteel,oathsteel_amulet,amulet,poison,theme_variants/oathsteel,384,128,element transmog style: poison
+oathsteel_amulet_void,oathsteel,oathsteel_amulet,amulet,void,theme_variants/oathsteel,384,160,element transmog style: void
+oathsteel_ring_rare,oathsteel,oathsteel_ring,ring,rare,theme_variants/oathsteel,416,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_ring_epic,oathsteel,oathsteel_ring,ring,epic,theme_variants/oathsteel,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_ring_fire,oathsteel,oathsteel_ring,ring,fire,theme_variants/oathsteel,416,64,element transmog style: fire
+oathsteel_ring_ice,oathsteel,oathsteel_ring,ring,ice,theme_variants/oathsteel,416,96,element transmog style: ice
+oathsteel_ring_poison,oathsteel,oathsteel_ring,ring,poison,theme_variants/oathsteel,416,128,element transmog style: poison
+oathsteel_ring_void,oathsteel,oathsteel_ring,ring,void,theme_variants/oathsteel,416,160,element transmog style: void
+oathsteel_backpack_rare,oathsteel,oathsteel_backpack,backpack,rare,theme_variants/oathsteel,448,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_backpack_epic,oathsteel,oathsteel_backpack,backpack,epic,theme_variants/oathsteel,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_backpack_fire,oathsteel,oathsteel_backpack,backpack,fire,theme_variants/oathsteel,448,64,element transmog style: fire
+oathsteel_backpack_ice,oathsteel,oathsteel_backpack,backpack,ice,theme_variants/oathsteel,448,96,element transmog style: ice
+oathsteel_backpack_poison,oathsteel,oathsteel_backpack,backpack,poison,theme_variants/oathsteel,448,128,element transmog style: poison
+oathsteel_backpack_void,oathsteel,oathsteel_backpack,backpack,void,theme_variants/oathsteel,448,160,element transmog style: void
+oathsteel_spellbook_rare,oathsteel,oathsteel_spellbook,spellbook,rare,theme_variants/oathsteel,480,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_spellbook_epic,oathsteel,oathsteel_spellbook,spellbook,epic,theme_variants/oathsteel,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_spellbook_fire,oathsteel,oathsteel_spellbook,spellbook,fire,theme_variants/oathsteel,480,64,element transmog style: fire
+oathsteel_spellbook_ice,oathsteel,oathsteel_spellbook,spellbook,ice,theme_variants/oathsteel,480,96,element transmog style: ice
+oathsteel_spellbook_poison,oathsteel,oathsteel_spellbook,spellbook,poison,theme_variants/oathsteel,480,128,element transmog style: poison
+oathsteel_spellbook_void,oathsteel,oathsteel_spellbook,spellbook,void,theme_variants/oathsteel,480,160,element transmog style: void
+oathsteel_arrow_rare,oathsteel,oathsteel_arrow,arrow,rare,theme_variants/oathsteel,512,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_arrow_epic,oathsteel,oathsteel_arrow,arrow,epic,theme_variants/oathsteel,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_arrow_fire,oathsteel,oathsteel_arrow,arrow,fire,theme_variants/oathsteel,512,64,element transmog style: fire
+oathsteel_arrow_ice,oathsteel,oathsteel_arrow,arrow,ice,theme_variants/oathsteel,512,96,element transmog style: ice
+oathsteel_arrow_poison,oathsteel,oathsteel_arrow,arrow,poison,theme_variants/oathsteel,512,128,element transmog style: poison
+oathsteel_arrow_void,oathsteel,oathsteel_arrow,arrow,void,theme_variants/oathsteel,512,160,element transmog style: void
+oathsteel_bolt_rare,oathsteel,oathsteel_bolt,bolt,rare,theme_variants/oathsteel,544,0,tier look: a rare drop of the set piece (sapphire accents)
+oathsteel_bolt_epic,oathsteel,oathsteel_bolt,bolt,epic,theme_variants/oathsteel,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+oathsteel_bolt_fire,oathsteel,oathsteel_bolt,bolt,fire,theme_variants/oathsteel,544,64,element transmog style: fire
+oathsteel_bolt_ice,oathsteel,oathsteel_bolt,bolt,ice,theme_variants/oathsteel,544,96,element transmog style: ice
+oathsteel_bolt_poison,oathsteel,oathsteel_bolt,bolt,poison,theme_variants/oathsteel,544,128,element transmog style: poison
+oathsteel_bolt_void,oathsteel,oathsteel_bolt,bolt,void,theme_variants/oathsteel,544,160,element transmog style: void
+rimeglass_melee_helmet_rare,rimeglass,rimeglass_melee_helmet,helmet,rare,theme_variants/rimeglass,0,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_melee_helmet_epic,rimeglass,rimeglass_melee_helmet,helmet,epic,theme_variants/rimeglass,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_melee_helmet_fire,rimeglass,rimeglass_melee_helmet,helmet,fire,theme_variants/rimeglass,0,64,element transmog style: fire
+rimeglass_melee_helmet_ice,rimeglass,rimeglass_melee_helmet,helmet,ice,theme_variants/rimeglass,0,96,element transmog style: ice
+rimeglass_melee_helmet_poison,rimeglass,rimeglass_melee_helmet,helmet,poison,theme_variants/rimeglass,0,128,element transmog style: poison
+rimeglass_melee_helmet_void,rimeglass,rimeglass_melee_helmet,helmet,void,theme_variants/rimeglass,0,160,element transmog style: void
+rimeglass_melee_armor_rare,rimeglass,rimeglass_melee_armor,armor,rare,theme_variants/rimeglass,32,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_melee_armor_epic,rimeglass,rimeglass_melee_armor,armor,epic,theme_variants/rimeglass,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_melee_armor_fire,rimeglass,rimeglass_melee_armor,armor,fire,theme_variants/rimeglass,32,64,element transmog style: fire
+rimeglass_melee_armor_ice,rimeglass,rimeglass_melee_armor,armor,ice,theme_variants/rimeglass,32,96,element transmog style: ice
+rimeglass_melee_armor_poison,rimeglass,rimeglass_melee_armor,armor,poison,theme_variants/rimeglass,32,128,element transmog style: poison
+rimeglass_melee_armor_void,rimeglass,rimeglass_melee_armor,armor,void,theme_variants/rimeglass,32,160,element transmog style: void
+rimeglass_melee_legs_rare,rimeglass,rimeglass_melee_legs,legs,rare,theme_variants/rimeglass,64,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_melee_legs_epic,rimeglass,rimeglass_melee_legs,legs,epic,theme_variants/rimeglass,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_melee_legs_fire,rimeglass,rimeglass_melee_legs,legs,fire,theme_variants/rimeglass,64,64,element transmog style: fire
+rimeglass_melee_legs_ice,rimeglass,rimeglass_melee_legs,legs,ice,theme_variants/rimeglass,64,96,element transmog style: ice
+rimeglass_melee_legs_poison,rimeglass,rimeglass_melee_legs,legs,poison,theme_variants/rimeglass,64,128,element transmog style: poison
+rimeglass_melee_legs_void,rimeglass,rimeglass_melee_legs,legs,void,theme_variants/rimeglass,64,160,element transmog style: void
+rimeglass_melee_boots_rare,rimeglass,rimeglass_melee_boots,boots,rare,theme_variants/rimeglass,96,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_melee_boots_epic,rimeglass,rimeglass_melee_boots,boots,epic,theme_variants/rimeglass,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_melee_boots_fire,rimeglass,rimeglass_melee_boots,boots,fire,theme_variants/rimeglass,96,64,element transmog style: fire
+rimeglass_melee_boots_ice,rimeglass,rimeglass_melee_boots,boots,ice,theme_variants/rimeglass,96,96,element transmog style: ice
+rimeglass_melee_boots_poison,rimeglass,rimeglass_melee_boots,boots,poison,theme_variants/rimeglass,96,128,element transmog style: poison
+rimeglass_melee_boots_void,rimeglass,rimeglass_melee_boots,boots,void,theme_variants/rimeglass,96,160,element transmog style: void
+rimeglass_melee_sword_rare,rimeglass,rimeglass_melee_sword,sword,rare,theme_variants/rimeglass,128,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_melee_sword_epic,rimeglass,rimeglass_melee_sword,sword,epic,theme_variants/rimeglass,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_melee_sword_fire,rimeglass,rimeglass_melee_sword,sword,fire,theme_variants/rimeglass,128,64,element transmog style: fire
+rimeglass_melee_sword_ice,rimeglass,rimeglass_melee_sword,sword,ice,theme_variants/rimeglass,128,96,element transmog style: ice
+rimeglass_melee_sword_poison,rimeglass,rimeglass_melee_sword,sword,poison,theme_variants/rimeglass,128,128,element transmog style: poison
+rimeglass_melee_sword_void,rimeglass,rimeglass_melee_sword,sword,void,theme_variants/rimeglass,128,160,element transmog style: void
+rimeglass_melee_shield_rare,rimeglass,rimeglass_melee_shield,shield,rare,theme_variants/rimeglass,160,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_melee_shield_epic,rimeglass,rimeglass_melee_shield,shield,epic,theme_variants/rimeglass,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_melee_shield_fire,rimeglass,rimeglass_melee_shield,shield,fire,theme_variants/rimeglass,160,64,element transmog style: fire
+rimeglass_melee_shield_ice,rimeglass,rimeglass_melee_shield,shield,ice,theme_variants/rimeglass,160,96,element transmog style: ice
+rimeglass_melee_shield_poison,rimeglass,rimeglass_melee_shield,shield,poison,theme_variants/rimeglass,160,128,element transmog style: poison
+rimeglass_melee_shield_void,rimeglass,rimeglass_melee_shield,shield,void,theme_variants/rimeglass,160,160,element transmog style: void
+rimeglass_caster_helmet_rare,rimeglass,rimeglass_caster_helmet,helmet,rare,theme_variants/rimeglass,192,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_caster_helmet_epic,rimeglass,rimeglass_caster_helmet,helmet,epic,theme_variants/rimeglass,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_caster_helmet_fire,rimeglass,rimeglass_caster_helmet,helmet,fire,theme_variants/rimeglass,192,64,element transmog style: fire
+rimeglass_caster_helmet_ice,rimeglass,rimeglass_caster_helmet,helmet,ice,theme_variants/rimeglass,192,96,element transmog style: ice
+rimeglass_caster_helmet_poison,rimeglass,rimeglass_caster_helmet,helmet,poison,theme_variants/rimeglass,192,128,element transmog style: poison
+rimeglass_caster_helmet_void,rimeglass,rimeglass_caster_helmet,helmet,void,theme_variants/rimeglass,192,160,element transmog style: void
+rimeglass_caster_armor_rare,rimeglass,rimeglass_caster_armor,armor,rare,theme_variants/rimeglass,224,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_caster_armor_epic,rimeglass,rimeglass_caster_armor,armor,epic,theme_variants/rimeglass,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_caster_armor_fire,rimeglass,rimeglass_caster_armor,armor,fire,theme_variants/rimeglass,224,64,element transmog style: fire
+rimeglass_caster_armor_ice,rimeglass,rimeglass_caster_armor,armor,ice,theme_variants/rimeglass,224,96,element transmog style: ice
+rimeglass_caster_armor_poison,rimeglass,rimeglass_caster_armor,armor,poison,theme_variants/rimeglass,224,128,element transmog style: poison
+rimeglass_caster_armor_void,rimeglass,rimeglass_caster_armor,armor,void,theme_variants/rimeglass,224,160,element transmog style: void
+rimeglass_caster_legs_rare,rimeglass,rimeglass_caster_legs,legs,rare,theme_variants/rimeglass,256,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_caster_legs_epic,rimeglass,rimeglass_caster_legs,legs,epic,theme_variants/rimeglass,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_caster_legs_fire,rimeglass,rimeglass_caster_legs,legs,fire,theme_variants/rimeglass,256,64,element transmog style: fire
+rimeglass_caster_legs_ice,rimeglass,rimeglass_caster_legs,legs,ice,theme_variants/rimeglass,256,96,element transmog style: ice
+rimeglass_caster_legs_poison,rimeglass,rimeglass_caster_legs,legs,poison,theme_variants/rimeglass,256,128,element transmog style: poison
+rimeglass_caster_legs_void,rimeglass,rimeglass_caster_legs,legs,void,theme_variants/rimeglass,256,160,element transmog style: void
+rimeglass_caster_boots_rare,rimeglass,rimeglass_caster_boots,boots,rare,theme_variants/rimeglass,288,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_caster_boots_epic,rimeglass,rimeglass_caster_boots,boots,epic,theme_variants/rimeglass,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_caster_boots_fire,rimeglass,rimeglass_caster_boots,boots,fire,theme_variants/rimeglass,288,64,element transmog style: fire
+rimeglass_caster_boots_ice,rimeglass,rimeglass_caster_boots,boots,ice,theme_variants/rimeglass,288,96,element transmog style: ice
+rimeglass_caster_boots_poison,rimeglass,rimeglass_caster_boots,boots,poison,theme_variants/rimeglass,288,128,element transmog style: poison
+rimeglass_caster_boots_void,rimeglass,rimeglass_caster_boots,boots,void,theme_variants/rimeglass,288,160,element transmog style: void
+rimeglass_caster_rod_rare,rimeglass,rimeglass_caster_rod,rod,rare,theme_variants/rimeglass,320,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_caster_rod_epic,rimeglass,rimeglass_caster_rod,rod,epic,theme_variants/rimeglass,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_caster_rod_fire,rimeglass,rimeglass_caster_rod,rod,fire,theme_variants/rimeglass,320,64,element transmog style: fire
+rimeglass_caster_rod_ice,rimeglass,rimeglass_caster_rod,rod,ice,theme_variants/rimeglass,320,96,element transmog style: ice
+rimeglass_caster_rod_poison,rimeglass,rimeglass_caster_rod,rod,poison,theme_variants/rimeglass,320,128,element transmog style: poison
+rimeglass_caster_rod_void,rimeglass,rimeglass_caster_rod,rod,void,theme_variants/rimeglass,320,160,element transmog style: void
+rimeglass_caster_spellbook_rare,rimeglass,rimeglass_caster_spellbook,spellbook,rare,theme_variants/rimeglass,352,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_caster_spellbook_epic,rimeglass,rimeglass_caster_spellbook,spellbook,epic,theme_variants/rimeglass,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_caster_spellbook_fire,rimeglass,rimeglass_caster_spellbook,spellbook,fire,theme_variants/rimeglass,352,64,element transmog style: fire
+rimeglass_caster_spellbook_ice,rimeglass,rimeglass_caster_spellbook,spellbook,ice,theme_variants/rimeglass,352,96,element transmog style: ice
+rimeglass_caster_spellbook_poison,rimeglass,rimeglass_caster_spellbook,spellbook,poison,theme_variants/rimeglass,352,128,element transmog style: poison
+rimeglass_caster_spellbook_void,rimeglass,rimeglass_caster_spellbook,spellbook,void,theme_variants/rimeglass,352,160,element transmog style: void
+rimeglass_ranged_helmet_rare,rimeglass,rimeglass_ranged_helmet,helmet,rare,theme_variants/rimeglass,384,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_ranged_helmet_epic,rimeglass,rimeglass_ranged_helmet,helmet,epic,theme_variants/rimeglass,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_ranged_helmet_fire,rimeglass,rimeglass_ranged_helmet,helmet,fire,theme_variants/rimeglass,384,64,element transmog style: fire
+rimeglass_ranged_helmet_ice,rimeglass,rimeglass_ranged_helmet,helmet,ice,theme_variants/rimeglass,384,96,element transmog style: ice
+rimeglass_ranged_helmet_poison,rimeglass,rimeglass_ranged_helmet,helmet,poison,theme_variants/rimeglass,384,128,element transmog style: poison
+rimeglass_ranged_helmet_void,rimeglass,rimeglass_ranged_helmet,helmet,void,theme_variants/rimeglass,384,160,element transmog style: void
+rimeglass_ranged_armor_rare,rimeglass,rimeglass_ranged_armor,armor,rare,theme_variants/rimeglass,416,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_ranged_armor_epic,rimeglass,rimeglass_ranged_armor,armor,epic,theme_variants/rimeglass,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_ranged_armor_fire,rimeglass,rimeglass_ranged_armor,armor,fire,theme_variants/rimeglass,416,64,element transmog style: fire
+rimeglass_ranged_armor_ice,rimeglass,rimeglass_ranged_armor,armor,ice,theme_variants/rimeglass,416,96,element transmog style: ice
+rimeglass_ranged_armor_poison,rimeglass,rimeglass_ranged_armor,armor,poison,theme_variants/rimeglass,416,128,element transmog style: poison
+rimeglass_ranged_armor_void,rimeglass,rimeglass_ranged_armor,armor,void,theme_variants/rimeglass,416,160,element transmog style: void
+rimeglass_ranged_legs_rare,rimeglass,rimeglass_ranged_legs,legs,rare,theme_variants/rimeglass,448,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_ranged_legs_epic,rimeglass,rimeglass_ranged_legs,legs,epic,theme_variants/rimeglass,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_ranged_legs_fire,rimeglass,rimeglass_ranged_legs,legs,fire,theme_variants/rimeglass,448,64,element transmog style: fire
+rimeglass_ranged_legs_ice,rimeglass,rimeglass_ranged_legs,legs,ice,theme_variants/rimeglass,448,96,element transmog style: ice
+rimeglass_ranged_legs_poison,rimeglass,rimeglass_ranged_legs,legs,poison,theme_variants/rimeglass,448,128,element transmog style: poison
+rimeglass_ranged_legs_void,rimeglass,rimeglass_ranged_legs,legs,void,theme_variants/rimeglass,448,160,element transmog style: void
+rimeglass_ranged_boots_rare,rimeglass,rimeglass_ranged_boots,boots,rare,theme_variants/rimeglass,480,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_ranged_boots_epic,rimeglass,rimeglass_ranged_boots,boots,epic,theme_variants/rimeglass,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_ranged_boots_fire,rimeglass,rimeglass_ranged_boots,boots,fire,theme_variants/rimeglass,480,64,element transmog style: fire
+rimeglass_ranged_boots_ice,rimeglass,rimeglass_ranged_boots,boots,ice,theme_variants/rimeglass,480,96,element transmog style: ice
+rimeglass_ranged_boots_poison,rimeglass,rimeglass_ranged_boots,boots,poison,theme_variants/rimeglass,480,128,element transmog style: poison
+rimeglass_ranged_boots_void,rimeglass,rimeglass_ranged_boots,boots,void,theme_variants/rimeglass,480,160,element transmog style: void
+rimeglass_ranged_bow_rare,rimeglass,rimeglass_ranged_bow,bow,rare,theme_variants/rimeglass,512,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_ranged_bow_epic,rimeglass,rimeglass_ranged_bow,bow,epic,theme_variants/rimeglass,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_ranged_bow_fire,rimeglass,rimeglass_ranged_bow,bow,fire,theme_variants/rimeglass,512,64,element transmog style: fire
+rimeglass_ranged_bow_ice,rimeglass,rimeglass_ranged_bow,bow,ice,theme_variants/rimeglass,512,96,element transmog style: ice
+rimeglass_ranged_bow_poison,rimeglass,rimeglass_ranged_bow,bow,poison,theme_variants/rimeglass,512,128,element transmog style: poison
+rimeglass_ranged_bow_void,rimeglass,rimeglass_ranged_bow,bow,void,theme_variants/rimeglass,512,160,element transmog style: void
+rimeglass_ranged_crossbow_rare,rimeglass,rimeglass_ranged_crossbow,crossbow,rare,theme_variants/rimeglass,544,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_ranged_crossbow_epic,rimeglass,rimeglass_ranged_crossbow,crossbow,epic,theme_variants/rimeglass,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_ranged_crossbow_fire,rimeglass,rimeglass_ranged_crossbow,crossbow,fire,theme_variants/rimeglass,544,64,element transmog style: fire
+rimeglass_ranged_crossbow_ice,rimeglass,rimeglass_ranged_crossbow,crossbow,ice,theme_variants/rimeglass,544,96,element transmog style: ice
+rimeglass_ranged_crossbow_poison,rimeglass,rimeglass_ranged_crossbow,crossbow,poison,theme_variants/rimeglass,544,128,element transmog style: poison
+rimeglass_ranged_crossbow_void,rimeglass,rimeglass_ranged_crossbow,crossbow,void,theme_variants/rimeglass,544,160,element transmog style: void
+rimeglass_amulet_rare,rimeglass,rimeglass_amulet,amulet,rare,theme_variants/rimeglass,576,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_amulet_epic,rimeglass,rimeglass_amulet,amulet,epic,theme_variants/rimeglass,576,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_amulet_fire,rimeglass,rimeglass_amulet,amulet,fire,theme_variants/rimeglass,576,64,element transmog style: fire
+rimeglass_amulet_ice,rimeglass,rimeglass_amulet,amulet,ice,theme_variants/rimeglass,576,96,element transmog style: ice
+rimeglass_amulet_poison,rimeglass,rimeglass_amulet,amulet,poison,theme_variants/rimeglass,576,128,element transmog style: poison
+rimeglass_amulet_void,rimeglass,rimeglass_amulet,amulet,void,theme_variants/rimeglass,576,160,element transmog style: void
+rimeglass_ring_rare,rimeglass,rimeglass_ring,ring,rare,theme_variants/rimeglass,608,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_ring_epic,rimeglass,rimeglass_ring,ring,epic,theme_variants/rimeglass,608,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_ring_fire,rimeglass,rimeglass_ring,ring,fire,theme_variants/rimeglass,608,64,element transmog style: fire
+rimeglass_ring_ice,rimeglass,rimeglass_ring,ring,ice,theme_variants/rimeglass,608,96,element transmog style: ice
+rimeglass_ring_poison,rimeglass,rimeglass_ring,ring,poison,theme_variants/rimeglass,608,128,element transmog style: poison
+rimeglass_ring_void,rimeglass,rimeglass_ring,ring,void,theme_variants/rimeglass,608,160,element transmog style: void
+rimeglass_backpack_rare,rimeglass,rimeglass_backpack,backpack,rare,theme_variants/rimeglass,640,0,tier look: a rare drop of the set piece (sapphire accents)
+rimeglass_backpack_epic,rimeglass,rimeglass_backpack,backpack,epic,theme_variants/rimeglass,640,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+rimeglass_backpack_fire,rimeglass,rimeglass_backpack,backpack,fire,theme_variants/rimeglass,640,64,element transmog style: fire
+rimeglass_backpack_ice,rimeglass,rimeglass_backpack,backpack,ice,theme_variants/rimeglass,640,96,element transmog style: ice
+rimeglass_backpack_poison,rimeglass,rimeglass_backpack,backpack,poison,theme_variants/rimeglass,640,128,element transmog style: poison
+rimeglass_backpack_void,rimeglass,rimeglass_backpack,backpack,void,theme_variants/rimeglass,640,160,element transmog style: void
+emeraldine_melee_helmet_rare,emeraldine,emeraldine_melee_helmet,helmet,rare,theme_variants/emeraldine,0,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_melee_helmet_epic,emeraldine,emeraldine_melee_helmet,helmet,epic,theme_variants/emeraldine,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_melee_helmet_fire,emeraldine,emeraldine_melee_helmet,helmet,fire,theme_variants/emeraldine,0,64,element transmog style: fire
+emeraldine_melee_helmet_ice,emeraldine,emeraldine_melee_helmet,helmet,ice,theme_variants/emeraldine,0,96,element transmog style: ice
+emeraldine_melee_helmet_poison,emeraldine,emeraldine_melee_helmet,helmet,poison,theme_variants/emeraldine,0,128,element transmog style: poison
+emeraldine_melee_helmet_void,emeraldine,emeraldine_melee_helmet,helmet,void,theme_variants/emeraldine,0,160,element transmog style: void
+emeraldine_melee_armor_rare,emeraldine,emeraldine_melee_armor,armor,rare,theme_variants/emeraldine,32,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_melee_armor_epic,emeraldine,emeraldine_melee_armor,armor,epic,theme_variants/emeraldine,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_melee_armor_fire,emeraldine,emeraldine_melee_armor,armor,fire,theme_variants/emeraldine,32,64,element transmog style: fire
+emeraldine_melee_armor_ice,emeraldine,emeraldine_melee_armor,armor,ice,theme_variants/emeraldine,32,96,element transmog style: ice
+emeraldine_melee_armor_poison,emeraldine,emeraldine_melee_armor,armor,poison,theme_variants/emeraldine,32,128,element transmog style: poison
+emeraldine_melee_armor_void,emeraldine,emeraldine_melee_armor,armor,void,theme_variants/emeraldine,32,160,element transmog style: void
+emeraldine_melee_legs_rare,emeraldine,emeraldine_melee_legs,legs,rare,theme_variants/emeraldine,64,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_melee_legs_epic,emeraldine,emeraldine_melee_legs,legs,epic,theme_variants/emeraldine,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_melee_legs_fire,emeraldine,emeraldine_melee_legs,legs,fire,theme_variants/emeraldine,64,64,element transmog style: fire
+emeraldine_melee_legs_ice,emeraldine,emeraldine_melee_legs,legs,ice,theme_variants/emeraldine,64,96,element transmog style: ice
+emeraldine_melee_legs_poison,emeraldine,emeraldine_melee_legs,legs,poison,theme_variants/emeraldine,64,128,element transmog style: poison
+emeraldine_melee_legs_void,emeraldine,emeraldine_melee_legs,legs,void,theme_variants/emeraldine,64,160,element transmog style: void
+emeraldine_melee_boots_rare,emeraldine,emeraldine_melee_boots,boots,rare,theme_variants/emeraldine,96,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_melee_boots_epic,emeraldine,emeraldine_melee_boots,boots,epic,theme_variants/emeraldine,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_melee_boots_fire,emeraldine,emeraldine_melee_boots,boots,fire,theme_variants/emeraldine,96,64,element transmog style: fire
+emeraldine_melee_boots_ice,emeraldine,emeraldine_melee_boots,boots,ice,theme_variants/emeraldine,96,96,element transmog style: ice
+emeraldine_melee_boots_poison,emeraldine,emeraldine_melee_boots,boots,poison,theme_variants/emeraldine,96,128,element transmog style: poison
+emeraldine_melee_boots_void,emeraldine,emeraldine_melee_boots,boots,void,theme_variants/emeraldine,96,160,element transmog style: void
+emeraldine_melee_sword_rare,emeraldine,emeraldine_melee_sword,sword,rare,theme_variants/emeraldine,128,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_melee_sword_epic,emeraldine,emeraldine_melee_sword,sword,epic,theme_variants/emeraldine,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_melee_sword_fire,emeraldine,emeraldine_melee_sword,sword,fire,theme_variants/emeraldine,128,64,element transmog style: fire
+emeraldine_melee_sword_ice,emeraldine,emeraldine_melee_sword,sword,ice,theme_variants/emeraldine,128,96,element transmog style: ice
+emeraldine_melee_sword_poison,emeraldine,emeraldine_melee_sword,sword,poison,theme_variants/emeraldine,128,128,element transmog style: poison
+emeraldine_melee_sword_void,emeraldine,emeraldine_melee_sword,sword,void,theme_variants/emeraldine,128,160,element transmog style: void
+emeraldine_melee_shield_rare,emeraldine,emeraldine_melee_shield,shield,rare,theme_variants/emeraldine,160,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_melee_shield_epic,emeraldine,emeraldine_melee_shield,shield,epic,theme_variants/emeraldine,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_melee_shield_fire,emeraldine,emeraldine_melee_shield,shield,fire,theme_variants/emeraldine,160,64,element transmog style: fire
+emeraldine_melee_shield_ice,emeraldine,emeraldine_melee_shield,shield,ice,theme_variants/emeraldine,160,96,element transmog style: ice
+emeraldine_melee_shield_poison,emeraldine,emeraldine_melee_shield,shield,poison,theme_variants/emeraldine,160,128,element transmog style: poison
+emeraldine_melee_shield_void,emeraldine,emeraldine_melee_shield,shield,void,theme_variants/emeraldine,160,160,element transmog style: void
+emeraldine_caster_helmet_rare,emeraldine,emeraldine_caster_helmet,helmet,rare,theme_variants/emeraldine,192,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_caster_helmet_epic,emeraldine,emeraldine_caster_helmet,helmet,epic,theme_variants/emeraldine,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_caster_helmet_fire,emeraldine,emeraldine_caster_helmet,helmet,fire,theme_variants/emeraldine,192,64,element transmog style: fire
+emeraldine_caster_helmet_ice,emeraldine,emeraldine_caster_helmet,helmet,ice,theme_variants/emeraldine,192,96,element transmog style: ice
+emeraldine_caster_helmet_poison,emeraldine,emeraldine_caster_helmet,helmet,poison,theme_variants/emeraldine,192,128,element transmog style: poison
+emeraldine_caster_helmet_void,emeraldine,emeraldine_caster_helmet,helmet,void,theme_variants/emeraldine,192,160,element transmog style: void
+emeraldine_caster_armor_rare,emeraldine,emeraldine_caster_armor,armor,rare,theme_variants/emeraldine,224,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_caster_armor_epic,emeraldine,emeraldine_caster_armor,armor,epic,theme_variants/emeraldine,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_caster_armor_fire,emeraldine,emeraldine_caster_armor,armor,fire,theme_variants/emeraldine,224,64,element transmog style: fire
+emeraldine_caster_armor_ice,emeraldine,emeraldine_caster_armor,armor,ice,theme_variants/emeraldine,224,96,element transmog style: ice
+emeraldine_caster_armor_poison,emeraldine,emeraldine_caster_armor,armor,poison,theme_variants/emeraldine,224,128,element transmog style: poison
+emeraldine_caster_armor_void,emeraldine,emeraldine_caster_armor,armor,void,theme_variants/emeraldine,224,160,element transmog style: void
+emeraldine_caster_legs_rare,emeraldine,emeraldine_caster_legs,legs,rare,theme_variants/emeraldine,256,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_caster_legs_epic,emeraldine,emeraldine_caster_legs,legs,epic,theme_variants/emeraldine,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_caster_legs_fire,emeraldine,emeraldine_caster_legs,legs,fire,theme_variants/emeraldine,256,64,element transmog style: fire
+emeraldine_caster_legs_ice,emeraldine,emeraldine_caster_legs,legs,ice,theme_variants/emeraldine,256,96,element transmog style: ice
+emeraldine_caster_legs_poison,emeraldine,emeraldine_caster_legs,legs,poison,theme_variants/emeraldine,256,128,element transmog style: poison
+emeraldine_caster_legs_void,emeraldine,emeraldine_caster_legs,legs,void,theme_variants/emeraldine,256,160,element transmog style: void
+emeraldine_caster_boots_rare,emeraldine,emeraldine_caster_boots,boots,rare,theme_variants/emeraldine,288,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_caster_boots_epic,emeraldine,emeraldine_caster_boots,boots,epic,theme_variants/emeraldine,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_caster_boots_fire,emeraldine,emeraldine_caster_boots,boots,fire,theme_variants/emeraldine,288,64,element transmog style: fire
+emeraldine_caster_boots_ice,emeraldine,emeraldine_caster_boots,boots,ice,theme_variants/emeraldine,288,96,element transmog style: ice
+emeraldine_caster_boots_poison,emeraldine,emeraldine_caster_boots,boots,poison,theme_variants/emeraldine,288,128,element transmog style: poison
+emeraldine_caster_boots_void,emeraldine,emeraldine_caster_boots,boots,void,theme_variants/emeraldine,288,160,element transmog style: void
+emeraldine_caster_rod_rare,emeraldine,emeraldine_caster_rod,rod,rare,theme_variants/emeraldine,320,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_caster_rod_epic,emeraldine,emeraldine_caster_rod,rod,epic,theme_variants/emeraldine,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_caster_rod_fire,emeraldine,emeraldine_caster_rod,rod,fire,theme_variants/emeraldine,320,64,element transmog style: fire
+emeraldine_caster_rod_ice,emeraldine,emeraldine_caster_rod,rod,ice,theme_variants/emeraldine,320,96,element transmog style: ice
+emeraldine_caster_rod_poison,emeraldine,emeraldine_caster_rod,rod,poison,theme_variants/emeraldine,320,128,element transmog style: poison
+emeraldine_caster_rod_void,emeraldine,emeraldine_caster_rod,rod,void,theme_variants/emeraldine,320,160,element transmog style: void
+emeraldine_caster_spellbook_rare,emeraldine,emeraldine_caster_spellbook,spellbook,rare,theme_variants/emeraldine,352,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_caster_spellbook_epic,emeraldine,emeraldine_caster_spellbook,spellbook,epic,theme_variants/emeraldine,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_caster_spellbook_fire,emeraldine,emeraldine_caster_spellbook,spellbook,fire,theme_variants/emeraldine,352,64,element transmog style: fire
+emeraldine_caster_spellbook_ice,emeraldine,emeraldine_caster_spellbook,spellbook,ice,theme_variants/emeraldine,352,96,element transmog style: ice
+emeraldine_caster_spellbook_poison,emeraldine,emeraldine_caster_spellbook,spellbook,poison,theme_variants/emeraldine,352,128,element transmog style: poison
+emeraldine_caster_spellbook_void,emeraldine,emeraldine_caster_spellbook,spellbook,void,theme_variants/emeraldine,352,160,element transmog style: void
+emeraldine_ranged_helmet_rare,emeraldine,emeraldine_ranged_helmet,helmet,rare,theme_variants/emeraldine,384,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_ranged_helmet_epic,emeraldine,emeraldine_ranged_helmet,helmet,epic,theme_variants/emeraldine,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_ranged_helmet_fire,emeraldine,emeraldine_ranged_helmet,helmet,fire,theme_variants/emeraldine,384,64,element transmog style: fire
+emeraldine_ranged_helmet_ice,emeraldine,emeraldine_ranged_helmet,helmet,ice,theme_variants/emeraldine,384,96,element transmog style: ice
+emeraldine_ranged_helmet_poison,emeraldine,emeraldine_ranged_helmet,helmet,poison,theme_variants/emeraldine,384,128,element transmog style: poison
+emeraldine_ranged_helmet_void,emeraldine,emeraldine_ranged_helmet,helmet,void,theme_variants/emeraldine,384,160,element transmog style: void
+emeraldine_ranged_armor_rare,emeraldine,emeraldine_ranged_armor,armor,rare,theme_variants/emeraldine,416,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_ranged_armor_epic,emeraldine,emeraldine_ranged_armor,armor,epic,theme_variants/emeraldine,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_ranged_armor_fire,emeraldine,emeraldine_ranged_armor,armor,fire,theme_variants/emeraldine,416,64,element transmog style: fire
+emeraldine_ranged_armor_ice,emeraldine,emeraldine_ranged_armor,armor,ice,theme_variants/emeraldine,416,96,element transmog style: ice
+emeraldine_ranged_armor_poison,emeraldine,emeraldine_ranged_armor,armor,poison,theme_variants/emeraldine,416,128,element transmog style: poison
+emeraldine_ranged_armor_void,emeraldine,emeraldine_ranged_armor,armor,void,theme_variants/emeraldine,416,160,element transmog style: void
+emeraldine_ranged_legs_rare,emeraldine,emeraldine_ranged_legs,legs,rare,theme_variants/emeraldine,448,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_ranged_legs_epic,emeraldine,emeraldine_ranged_legs,legs,epic,theme_variants/emeraldine,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_ranged_legs_fire,emeraldine,emeraldine_ranged_legs,legs,fire,theme_variants/emeraldine,448,64,element transmog style: fire
+emeraldine_ranged_legs_ice,emeraldine,emeraldine_ranged_legs,legs,ice,theme_variants/emeraldine,448,96,element transmog style: ice
+emeraldine_ranged_legs_poison,emeraldine,emeraldine_ranged_legs,legs,poison,theme_variants/emeraldine,448,128,element transmog style: poison
+emeraldine_ranged_legs_void,emeraldine,emeraldine_ranged_legs,legs,void,theme_variants/emeraldine,448,160,element transmog style: void
+emeraldine_ranged_boots_rare,emeraldine,emeraldine_ranged_boots,boots,rare,theme_variants/emeraldine,480,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_ranged_boots_epic,emeraldine,emeraldine_ranged_boots,boots,epic,theme_variants/emeraldine,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_ranged_boots_fire,emeraldine,emeraldine_ranged_boots,boots,fire,theme_variants/emeraldine,480,64,element transmog style: fire
+emeraldine_ranged_boots_ice,emeraldine,emeraldine_ranged_boots,boots,ice,theme_variants/emeraldine,480,96,element transmog style: ice
+emeraldine_ranged_boots_poison,emeraldine,emeraldine_ranged_boots,boots,poison,theme_variants/emeraldine,480,128,element transmog style: poison
+emeraldine_ranged_boots_void,emeraldine,emeraldine_ranged_boots,boots,void,theme_variants/emeraldine,480,160,element transmog style: void
+emeraldine_ranged_bow_rare,emeraldine,emeraldine_ranged_bow,bow,rare,theme_variants/emeraldine,512,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_ranged_bow_epic,emeraldine,emeraldine_ranged_bow,bow,epic,theme_variants/emeraldine,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_ranged_bow_fire,emeraldine,emeraldine_ranged_bow,bow,fire,theme_variants/emeraldine,512,64,element transmog style: fire
+emeraldine_ranged_bow_ice,emeraldine,emeraldine_ranged_bow,bow,ice,theme_variants/emeraldine,512,96,element transmog style: ice
+emeraldine_ranged_bow_poison,emeraldine,emeraldine_ranged_bow,bow,poison,theme_variants/emeraldine,512,128,element transmog style: poison
+emeraldine_ranged_bow_void,emeraldine,emeraldine_ranged_bow,bow,void,theme_variants/emeraldine,512,160,element transmog style: void
+emeraldine_ranged_crossbow_rare,emeraldine,emeraldine_ranged_crossbow,crossbow,rare,theme_variants/emeraldine,544,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_ranged_crossbow_epic,emeraldine,emeraldine_ranged_crossbow,crossbow,epic,theme_variants/emeraldine,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_ranged_crossbow_fire,emeraldine,emeraldine_ranged_crossbow,crossbow,fire,theme_variants/emeraldine,544,64,element transmog style: fire
+emeraldine_ranged_crossbow_ice,emeraldine,emeraldine_ranged_crossbow,crossbow,ice,theme_variants/emeraldine,544,96,element transmog style: ice
+emeraldine_ranged_crossbow_poison,emeraldine,emeraldine_ranged_crossbow,crossbow,poison,theme_variants/emeraldine,544,128,element transmog style: poison
+emeraldine_ranged_crossbow_void,emeraldine,emeraldine_ranged_crossbow,crossbow,void,theme_variants/emeraldine,544,160,element transmog style: void
+emeraldine_amulet_rare,emeraldine,emeraldine_amulet,amulet,rare,theme_variants/emeraldine,576,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_amulet_epic,emeraldine,emeraldine_amulet,amulet,epic,theme_variants/emeraldine,576,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_amulet_fire,emeraldine,emeraldine_amulet,amulet,fire,theme_variants/emeraldine,576,64,element transmog style: fire
+emeraldine_amulet_ice,emeraldine,emeraldine_amulet,amulet,ice,theme_variants/emeraldine,576,96,element transmog style: ice
+emeraldine_amulet_poison,emeraldine,emeraldine_amulet,amulet,poison,theme_variants/emeraldine,576,128,element transmog style: poison
+emeraldine_amulet_void,emeraldine,emeraldine_amulet,amulet,void,theme_variants/emeraldine,576,160,element transmog style: void
+emeraldine_ring_rare,emeraldine,emeraldine_ring,ring,rare,theme_variants/emeraldine,608,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_ring_epic,emeraldine,emeraldine_ring,ring,epic,theme_variants/emeraldine,608,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_ring_fire,emeraldine,emeraldine_ring,ring,fire,theme_variants/emeraldine,608,64,element transmog style: fire
+emeraldine_ring_ice,emeraldine,emeraldine_ring,ring,ice,theme_variants/emeraldine,608,96,element transmog style: ice
+emeraldine_ring_poison,emeraldine,emeraldine_ring,ring,poison,theme_variants/emeraldine,608,128,element transmog style: poison
+emeraldine_ring_void,emeraldine,emeraldine_ring,ring,void,theme_variants/emeraldine,608,160,element transmog style: void
+emeraldine_backpack_rare,emeraldine,emeraldine_backpack,backpack,rare,theme_variants/emeraldine,640,0,tier look: a rare drop of the set piece (sapphire accents)
+emeraldine_backpack_epic,emeraldine,emeraldine_backpack,backpack,epic,theme_variants/emeraldine,640,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+emeraldine_backpack_fire,emeraldine,emeraldine_backpack,backpack,fire,theme_variants/emeraldine,640,64,element transmog style: fire
+emeraldine_backpack_ice,emeraldine,emeraldine_backpack,backpack,ice,theme_variants/emeraldine,640,96,element transmog style: ice
+emeraldine_backpack_poison,emeraldine,emeraldine_backpack,backpack,poison,theme_variants/emeraldine,640,128,element transmog style: poison
+emeraldine_backpack_void,emeraldine,emeraldine_backpack,backpack,void,theme_variants/emeraldine,640,160,element transmog style: void
+starwing_melee_helmet_rare,starwing,starwing_melee_helmet,helmet,rare,theme_variants/starwing,0,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_melee_helmet_epic,starwing,starwing_melee_helmet,helmet,epic,theme_variants/starwing,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_melee_helmet_fire,starwing,starwing_melee_helmet,helmet,fire,theme_variants/starwing,0,64,element transmog style: fire
+starwing_melee_helmet_ice,starwing,starwing_melee_helmet,helmet,ice,theme_variants/starwing,0,96,element transmog style: ice
+starwing_melee_helmet_poison,starwing,starwing_melee_helmet,helmet,poison,theme_variants/starwing,0,128,element transmog style: poison
+starwing_melee_helmet_void,starwing,starwing_melee_helmet,helmet,void,theme_variants/starwing,0,160,element transmog style: void
+starwing_melee_armor_rare,starwing,starwing_melee_armor,armor,rare,theme_variants/starwing,32,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_melee_armor_epic,starwing,starwing_melee_armor,armor,epic,theme_variants/starwing,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_melee_armor_fire,starwing,starwing_melee_armor,armor,fire,theme_variants/starwing,32,64,element transmog style: fire
+starwing_melee_armor_ice,starwing,starwing_melee_armor,armor,ice,theme_variants/starwing,32,96,element transmog style: ice
+starwing_melee_armor_poison,starwing,starwing_melee_armor,armor,poison,theme_variants/starwing,32,128,element transmog style: poison
+starwing_melee_armor_void,starwing,starwing_melee_armor,armor,void,theme_variants/starwing,32,160,element transmog style: void
+starwing_melee_legs_rare,starwing,starwing_melee_legs,legs,rare,theme_variants/starwing,64,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_melee_legs_epic,starwing,starwing_melee_legs,legs,epic,theme_variants/starwing,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_melee_legs_fire,starwing,starwing_melee_legs,legs,fire,theme_variants/starwing,64,64,element transmog style: fire
+starwing_melee_legs_ice,starwing,starwing_melee_legs,legs,ice,theme_variants/starwing,64,96,element transmog style: ice
+starwing_melee_legs_poison,starwing,starwing_melee_legs,legs,poison,theme_variants/starwing,64,128,element transmog style: poison
+starwing_melee_legs_void,starwing,starwing_melee_legs,legs,void,theme_variants/starwing,64,160,element transmog style: void
+starwing_melee_boots_rare,starwing,starwing_melee_boots,boots,rare,theme_variants/starwing,96,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_melee_boots_epic,starwing,starwing_melee_boots,boots,epic,theme_variants/starwing,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_melee_boots_fire,starwing,starwing_melee_boots,boots,fire,theme_variants/starwing,96,64,element transmog style: fire
+starwing_melee_boots_ice,starwing,starwing_melee_boots,boots,ice,theme_variants/starwing,96,96,element transmog style: ice
+starwing_melee_boots_poison,starwing,starwing_melee_boots,boots,poison,theme_variants/starwing,96,128,element transmog style: poison
+starwing_melee_boots_void,starwing,starwing_melee_boots,boots,void,theme_variants/starwing,96,160,element transmog style: void
+starwing_melee_sword_rare,starwing,starwing_melee_sword,sword,rare,theme_variants/starwing,128,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_melee_sword_epic,starwing,starwing_melee_sword,sword,epic,theme_variants/starwing,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_melee_sword_fire,starwing,starwing_melee_sword,sword,fire,theme_variants/starwing,128,64,element transmog style: fire
+starwing_melee_sword_ice,starwing,starwing_melee_sword,sword,ice,theme_variants/starwing,128,96,element transmog style: ice
+starwing_melee_sword_poison,starwing,starwing_melee_sword,sword,poison,theme_variants/starwing,128,128,element transmog style: poison
+starwing_melee_sword_void,starwing,starwing_melee_sword,sword,void,theme_variants/starwing,128,160,element transmog style: void
+starwing_melee_shield_rare,starwing,starwing_melee_shield,shield,rare,theme_variants/starwing,160,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_melee_shield_epic,starwing,starwing_melee_shield,shield,epic,theme_variants/starwing,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_melee_shield_fire,starwing,starwing_melee_shield,shield,fire,theme_variants/starwing,160,64,element transmog style: fire
+starwing_melee_shield_ice,starwing,starwing_melee_shield,shield,ice,theme_variants/starwing,160,96,element transmog style: ice
+starwing_melee_shield_poison,starwing,starwing_melee_shield,shield,poison,theme_variants/starwing,160,128,element transmog style: poison
+starwing_melee_shield_void,starwing,starwing_melee_shield,shield,void,theme_variants/starwing,160,160,element transmog style: void
+starwing_caster_helmet_rare,starwing,starwing_caster_helmet,helmet,rare,theme_variants/starwing,192,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_caster_helmet_epic,starwing,starwing_caster_helmet,helmet,epic,theme_variants/starwing,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_caster_helmet_fire,starwing,starwing_caster_helmet,helmet,fire,theme_variants/starwing,192,64,element transmog style: fire
+starwing_caster_helmet_ice,starwing,starwing_caster_helmet,helmet,ice,theme_variants/starwing,192,96,element transmog style: ice
+starwing_caster_helmet_poison,starwing,starwing_caster_helmet,helmet,poison,theme_variants/starwing,192,128,element transmog style: poison
+starwing_caster_helmet_void,starwing,starwing_caster_helmet,helmet,void,theme_variants/starwing,192,160,element transmog style: void
+starwing_caster_armor_rare,starwing,starwing_caster_armor,armor,rare,theme_variants/starwing,224,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_caster_armor_epic,starwing,starwing_caster_armor,armor,epic,theme_variants/starwing,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_caster_armor_fire,starwing,starwing_caster_armor,armor,fire,theme_variants/starwing,224,64,element transmog style: fire
+starwing_caster_armor_ice,starwing,starwing_caster_armor,armor,ice,theme_variants/starwing,224,96,element transmog style: ice
+starwing_caster_armor_poison,starwing,starwing_caster_armor,armor,poison,theme_variants/starwing,224,128,element transmog style: poison
+starwing_caster_armor_void,starwing,starwing_caster_armor,armor,void,theme_variants/starwing,224,160,element transmog style: void
+starwing_caster_legs_rare,starwing,starwing_caster_legs,legs,rare,theme_variants/starwing,256,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_caster_legs_epic,starwing,starwing_caster_legs,legs,epic,theme_variants/starwing,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_caster_legs_fire,starwing,starwing_caster_legs,legs,fire,theme_variants/starwing,256,64,element transmog style: fire
+starwing_caster_legs_ice,starwing,starwing_caster_legs,legs,ice,theme_variants/starwing,256,96,element transmog style: ice
+starwing_caster_legs_poison,starwing,starwing_caster_legs,legs,poison,theme_variants/starwing,256,128,element transmog style: poison
+starwing_caster_legs_void,starwing,starwing_caster_legs,legs,void,theme_variants/starwing,256,160,element transmog style: void
+starwing_caster_boots_rare,starwing,starwing_caster_boots,boots,rare,theme_variants/starwing,288,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_caster_boots_epic,starwing,starwing_caster_boots,boots,epic,theme_variants/starwing,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_caster_boots_fire,starwing,starwing_caster_boots,boots,fire,theme_variants/starwing,288,64,element transmog style: fire
+starwing_caster_boots_ice,starwing,starwing_caster_boots,boots,ice,theme_variants/starwing,288,96,element transmog style: ice
+starwing_caster_boots_poison,starwing,starwing_caster_boots,boots,poison,theme_variants/starwing,288,128,element transmog style: poison
+starwing_caster_boots_void,starwing,starwing_caster_boots,boots,void,theme_variants/starwing,288,160,element transmog style: void
+starwing_caster_rod_rare,starwing,starwing_caster_rod,rod,rare,theme_variants/starwing,320,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_caster_rod_epic,starwing,starwing_caster_rod,rod,epic,theme_variants/starwing,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_caster_rod_fire,starwing,starwing_caster_rod,rod,fire,theme_variants/starwing,320,64,element transmog style: fire
+starwing_caster_rod_ice,starwing,starwing_caster_rod,rod,ice,theme_variants/starwing,320,96,element transmog style: ice
+starwing_caster_rod_poison,starwing,starwing_caster_rod,rod,poison,theme_variants/starwing,320,128,element transmog style: poison
+starwing_caster_rod_void,starwing,starwing_caster_rod,rod,void,theme_variants/starwing,320,160,element transmog style: void
+starwing_caster_spellbook_rare,starwing,starwing_caster_spellbook,spellbook,rare,theme_variants/starwing,352,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_caster_spellbook_epic,starwing,starwing_caster_spellbook,spellbook,epic,theme_variants/starwing,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_caster_spellbook_fire,starwing,starwing_caster_spellbook,spellbook,fire,theme_variants/starwing,352,64,element transmog style: fire
+starwing_caster_spellbook_ice,starwing,starwing_caster_spellbook,spellbook,ice,theme_variants/starwing,352,96,element transmog style: ice
+starwing_caster_spellbook_poison,starwing,starwing_caster_spellbook,spellbook,poison,theme_variants/starwing,352,128,element transmog style: poison
+starwing_caster_spellbook_void,starwing,starwing_caster_spellbook,spellbook,void,theme_variants/starwing,352,160,element transmog style: void
+starwing_ranged_helmet_rare,starwing,starwing_ranged_helmet,helmet,rare,theme_variants/starwing,384,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_ranged_helmet_epic,starwing,starwing_ranged_helmet,helmet,epic,theme_variants/starwing,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_ranged_helmet_fire,starwing,starwing_ranged_helmet,helmet,fire,theme_variants/starwing,384,64,element transmog style: fire
+starwing_ranged_helmet_ice,starwing,starwing_ranged_helmet,helmet,ice,theme_variants/starwing,384,96,element transmog style: ice
+starwing_ranged_helmet_poison,starwing,starwing_ranged_helmet,helmet,poison,theme_variants/starwing,384,128,element transmog style: poison
+starwing_ranged_helmet_void,starwing,starwing_ranged_helmet,helmet,void,theme_variants/starwing,384,160,element transmog style: void
+starwing_ranged_armor_rare,starwing,starwing_ranged_armor,armor,rare,theme_variants/starwing,416,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_ranged_armor_epic,starwing,starwing_ranged_armor,armor,epic,theme_variants/starwing,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_ranged_armor_fire,starwing,starwing_ranged_armor,armor,fire,theme_variants/starwing,416,64,element transmog style: fire
+starwing_ranged_armor_ice,starwing,starwing_ranged_armor,armor,ice,theme_variants/starwing,416,96,element transmog style: ice
+starwing_ranged_armor_poison,starwing,starwing_ranged_armor,armor,poison,theme_variants/starwing,416,128,element transmog style: poison
+starwing_ranged_armor_void,starwing,starwing_ranged_armor,armor,void,theme_variants/starwing,416,160,element transmog style: void
+starwing_ranged_legs_rare,starwing,starwing_ranged_legs,legs,rare,theme_variants/starwing,448,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_ranged_legs_epic,starwing,starwing_ranged_legs,legs,epic,theme_variants/starwing,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_ranged_legs_fire,starwing,starwing_ranged_legs,legs,fire,theme_variants/starwing,448,64,element transmog style: fire
+starwing_ranged_legs_ice,starwing,starwing_ranged_legs,legs,ice,theme_variants/starwing,448,96,element transmog style: ice
+starwing_ranged_legs_poison,starwing,starwing_ranged_legs,legs,poison,theme_variants/starwing,448,128,element transmog style: poison
+starwing_ranged_legs_void,starwing,starwing_ranged_legs,legs,void,theme_variants/starwing,448,160,element transmog style: void
+starwing_ranged_boots_rare,starwing,starwing_ranged_boots,boots,rare,theme_variants/starwing,480,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_ranged_boots_epic,starwing,starwing_ranged_boots,boots,epic,theme_variants/starwing,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_ranged_boots_fire,starwing,starwing_ranged_boots,boots,fire,theme_variants/starwing,480,64,element transmog style: fire
+starwing_ranged_boots_ice,starwing,starwing_ranged_boots,boots,ice,theme_variants/starwing,480,96,element transmog style: ice
+starwing_ranged_boots_poison,starwing,starwing_ranged_boots,boots,poison,theme_variants/starwing,480,128,element transmog style: poison
+starwing_ranged_boots_void,starwing,starwing_ranged_boots,boots,void,theme_variants/starwing,480,160,element transmog style: void
+starwing_ranged_bow_rare,starwing,starwing_ranged_bow,bow,rare,theme_variants/starwing,512,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_ranged_bow_epic,starwing,starwing_ranged_bow,bow,epic,theme_variants/starwing,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_ranged_bow_fire,starwing,starwing_ranged_bow,bow,fire,theme_variants/starwing,512,64,element transmog style: fire
+starwing_ranged_bow_ice,starwing,starwing_ranged_bow,bow,ice,theme_variants/starwing,512,96,element transmog style: ice
+starwing_ranged_bow_poison,starwing,starwing_ranged_bow,bow,poison,theme_variants/starwing,512,128,element transmog style: poison
+starwing_ranged_bow_void,starwing,starwing_ranged_bow,bow,void,theme_variants/starwing,512,160,element transmog style: void
+starwing_ranged_crossbow_rare,starwing,starwing_ranged_crossbow,crossbow,rare,theme_variants/starwing,544,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_ranged_crossbow_epic,starwing,starwing_ranged_crossbow,crossbow,epic,theme_variants/starwing,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_ranged_crossbow_fire,starwing,starwing_ranged_crossbow,crossbow,fire,theme_variants/starwing,544,64,element transmog style: fire
+starwing_ranged_crossbow_ice,starwing,starwing_ranged_crossbow,crossbow,ice,theme_variants/starwing,544,96,element transmog style: ice
+starwing_ranged_crossbow_poison,starwing,starwing_ranged_crossbow,crossbow,poison,theme_variants/starwing,544,128,element transmog style: poison
+starwing_ranged_crossbow_void,starwing,starwing_ranged_crossbow,crossbow,void,theme_variants/starwing,544,160,element transmog style: void
+starwing_amulet_rare,starwing,starwing_amulet,amulet,rare,theme_variants/starwing,576,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_amulet_epic,starwing,starwing_amulet,amulet,epic,theme_variants/starwing,576,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_amulet_fire,starwing,starwing_amulet,amulet,fire,theme_variants/starwing,576,64,element transmog style: fire
+starwing_amulet_ice,starwing,starwing_amulet,amulet,ice,theme_variants/starwing,576,96,element transmog style: ice
+starwing_amulet_poison,starwing,starwing_amulet,amulet,poison,theme_variants/starwing,576,128,element transmog style: poison
+starwing_amulet_void,starwing,starwing_amulet,amulet,void,theme_variants/starwing,576,160,element transmog style: void
+starwing_ring_rare,starwing,starwing_ring,ring,rare,theme_variants/starwing,608,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_ring_epic,starwing,starwing_ring,ring,epic,theme_variants/starwing,608,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_ring_fire,starwing,starwing_ring,ring,fire,theme_variants/starwing,608,64,element transmog style: fire
+starwing_ring_ice,starwing,starwing_ring,ring,ice,theme_variants/starwing,608,96,element transmog style: ice
+starwing_ring_poison,starwing,starwing_ring,ring,poison,theme_variants/starwing,608,128,element transmog style: poison
+starwing_ring_void,starwing,starwing_ring,ring,void,theme_variants/starwing,608,160,element transmog style: void
+starwing_backpack_rare,starwing,starwing_backpack,backpack,rare,theme_variants/starwing,640,0,tier look: a rare drop of the set piece (sapphire accents)
+starwing_backpack_epic,starwing,starwing_backpack,backpack,epic,theme_variants/starwing,640,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+starwing_backpack_fire,starwing,starwing_backpack,backpack,fire,theme_variants/starwing,640,64,element transmog style: fire
+starwing_backpack_ice,starwing,starwing_backpack,backpack,ice,theme_variants/starwing,640,96,element transmog style: ice
+starwing_backpack_poison,starwing,starwing_backpack,backpack,poison,theme_variants/starwing,640,128,element transmog style: poison
+starwing_backpack_void,starwing,starwing_backpack,backpack,void,theme_variants/starwing,640,160,element transmog style: void
+thornwild_melee_helmet_rare,thornwild,thornwild_melee_helmet,helmet,rare,theme_variants/thornwild,0,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_melee_helmet_epic,thornwild,thornwild_melee_helmet,helmet,epic,theme_variants/thornwild,0,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_melee_helmet_fire,thornwild,thornwild_melee_helmet,helmet,fire,theme_variants/thornwild,0,64,element transmog style: fire
+thornwild_melee_helmet_ice,thornwild,thornwild_melee_helmet,helmet,ice,theme_variants/thornwild,0,96,element transmog style: ice
+thornwild_melee_helmet_poison,thornwild,thornwild_melee_helmet,helmet,poison,theme_variants/thornwild,0,128,element transmog style: poison
+thornwild_melee_helmet_void,thornwild,thornwild_melee_helmet,helmet,void,theme_variants/thornwild,0,160,element transmog style: void
+thornwild_melee_armor_rare,thornwild,thornwild_melee_armor,armor,rare,theme_variants/thornwild,32,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_melee_armor_epic,thornwild,thornwild_melee_armor,armor,epic,theme_variants/thornwild,32,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_melee_armor_fire,thornwild,thornwild_melee_armor,armor,fire,theme_variants/thornwild,32,64,element transmog style: fire
+thornwild_melee_armor_ice,thornwild,thornwild_melee_armor,armor,ice,theme_variants/thornwild,32,96,element transmog style: ice
+thornwild_melee_armor_poison,thornwild,thornwild_melee_armor,armor,poison,theme_variants/thornwild,32,128,element transmog style: poison
+thornwild_melee_armor_void,thornwild,thornwild_melee_armor,armor,void,theme_variants/thornwild,32,160,element transmog style: void
+thornwild_melee_legs_rare,thornwild,thornwild_melee_legs,legs,rare,theme_variants/thornwild,64,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_melee_legs_epic,thornwild,thornwild_melee_legs,legs,epic,theme_variants/thornwild,64,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_melee_legs_fire,thornwild,thornwild_melee_legs,legs,fire,theme_variants/thornwild,64,64,element transmog style: fire
+thornwild_melee_legs_ice,thornwild,thornwild_melee_legs,legs,ice,theme_variants/thornwild,64,96,element transmog style: ice
+thornwild_melee_legs_poison,thornwild,thornwild_melee_legs,legs,poison,theme_variants/thornwild,64,128,element transmog style: poison
+thornwild_melee_legs_void,thornwild,thornwild_melee_legs,legs,void,theme_variants/thornwild,64,160,element transmog style: void
+thornwild_melee_boots_rare,thornwild,thornwild_melee_boots,boots,rare,theme_variants/thornwild,96,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_melee_boots_epic,thornwild,thornwild_melee_boots,boots,epic,theme_variants/thornwild,96,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_melee_boots_fire,thornwild,thornwild_melee_boots,boots,fire,theme_variants/thornwild,96,64,element transmog style: fire
+thornwild_melee_boots_ice,thornwild,thornwild_melee_boots,boots,ice,theme_variants/thornwild,96,96,element transmog style: ice
+thornwild_melee_boots_poison,thornwild,thornwild_melee_boots,boots,poison,theme_variants/thornwild,96,128,element transmog style: poison
+thornwild_melee_boots_void,thornwild,thornwild_melee_boots,boots,void,theme_variants/thornwild,96,160,element transmog style: void
+thornwild_melee_sword_rare,thornwild,thornwild_melee_sword,sword,rare,theme_variants/thornwild,128,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_melee_sword_epic,thornwild,thornwild_melee_sword,sword,epic,theme_variants/thornwild,128,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_melee_sword_fire,thornwild,thornwild_melee_sword,sword,fire,theme_variants/thornwild,128,64,element transmog style: fire
+thornwild_melee_sword_ice,thornwild,thornwild_melee_sword,sword,ice,theme_variants/thornwild,128,96,element transmog style: ice
+thornwild_melee_sword_poison,thornwild,thornwild_melee_sword,sword,poison,theme_variants/thornwild,128,128,element transmog style: poison
+thornwild_melee_sword_void,thornwild,thornwild_melee_sword,sword,void,theme_variants/thornwild,128,160,element transmog style: void
+thornwild_melee_shield_rare,thornwild,thornwild_melee_shield,shield,rare,theme_variants/thornwild,160,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_melee_shield_epic,thornwild,thornwild_melee_shield,shield,epic,theme_variants/thornwild,160,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_melee_shield_fire,thornwild,thornwild_melee_shield,shield,fire,theme_variants/thornwild,160,64,element transmog style: fire
+thornwild_melee_shield_ice,thornwild,thornwild_melee_shield,shield,ice,theme_variants/thornwild,160,96,element transmog style: ice
+thornwild_melee_shield_poison,thornwild,thornwild_melee_shield,shield,poison,theme_variants/thornwild,160,128,element transmog style: poison
+thornwild_melee_shield_void,thornwild,thornwild_melee_shield,shield,void,theme_variants/thornwild,160,160,element transmog style: void
+thornwild_caster_helmet_rare,thornwild,thornwild_caster_helmet,helmet,rare,theme_variants/thornwild,192,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_caster_helmet_epic,thornwild,thornwild_caster_helmet,helmet,epic,theme_variants/thornwild,192,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_caster_helmet_fire,thornwild,thornwild_caster_helmet,helmet,fire,theme_variants/thornwild,192,64,element transmog style: fire
+thornwild_caster_helmet_ice,thornwild,thornwild_caster_helmet,helmet,ice,theme_variants/thornwild,192,96,element transmog style: ice
+thornwild_caster_helmet_poison,thornwild,thornwild_caster_helmet,helmet,poison,theme_variants/thornwild,192,128,element transmog style: poison
+thornwild_caster_helmet_void,thornwild,thornwild_caster_helmet,helmet,void,theme_variants/thornwild,192,160,element transmog style: void
+thornwild_caster_armor_rare,thornwild,thornwild_caster_armor,armor,rare,theme_variants/thornwild,224,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_caster_armor_epic,thornwild,thornwild_caster_armor,armor,epic,theme_variants/thornwild,224,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_caster_armor_fire,thornwild,thornwild_caster_armor,armor,fire,theme_variants/thornwild,224,64,element transmog style: fire
+thornwild_caster_armor_ice,thornwild,thornwild_caster_armor,armor,ice,theme_variants/thornwild,224,96,element transmog style: ice
+thornwild_caster_armor_poison,thornwild,thornwild_caster_armor,armor,poison,theme_variants/thornwild,224,128,element transmog style: poison
+thornwild_caster_armor_void,thornwild,thornwild_caster_armor,armor,void,theme_variants/thornwild,224,160,element transmog style: void
+thornwild_caster_legs_rare,thornwild,thornwild_caster_legs,legs,rare,theme_variants/thornwild,256,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_caster_legs_epic,thornwild,thornwild_caster_legs,legs,epic,theme_variants/thornwild,256,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_caster_legs_fire,thornwild,thornwild_caster_legs,legs,fire,theme_variants/thornwild,256,64,element transmog style: fire
+thornwild_caster_legs_ice,thornwild,thornwild_caster_legs,legs,ice,theme_variants/thornwild,256,96,element transmog style: ice
+thornwild_caster_legs_poison,thornwild,thornwild_caster_legs,legs,poison,theme_variants/thornwild,256,128,element transmog style: poison
+thornwild_caster_legs_void,thornwild,thornwild_caster_legs,legs,void,theme_variants/thornwild,256,160,element transmog style: void
+thornwild_caster_boots_rare,thornwild,thornwild_caster_boots,boots,rare,theme_variants/thornwild,288,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_caster_boots_epic,thornwild,thornwild_caster_boots,boots,epic,theme_variants/thornwild,288,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_caster_boots_fire,thornwild,thornwild_caster_boots,boots,fire,theme_variants/thornwild,288,64,element transmog style: fire
+thornwild_caster_boots_ice,thornwild,thornwild_caster_boots,boots,ice,theme_variants/thornwild,288,96,element transmog style: ice
+thornwild_caster_boots_poison,thornwild,thornwild_caster_boots,boots,poison,theme_variants/thornwild,288,128,element transmog style: poison
+thornwild_caster_boots_void,thornwild,thornwild_caster_boots,boots,void,theme_variants/thornwild,288,160,element transmog style: void
+thornwild_caster_rod_rare,thornwild,thornwild_caster_rod,rod,rare,theme_variants/thornwild,320,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_caster_rod_epic,thornwild,thornwild_caster_rod,rod,epic,theme_variants/thornwild,320,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_caster_rod_fire,thornwild,thornwild_caster_rod,rod,fire,theme_variants/thornwild,320,64,element transmog style: fire
+thornwild_caster_rod_ice,thornwild,thornwild_caster_rod,rod,ice,theme_variants/thornwild,320,96,element transmog style: ice
+thornwild_caster_rod_poison,thornwild,thornwild_caster_rod,rod,poison,theme_variants/thornwild,320,128,element transmog style: poison
+thornwild_caster_rod_void,thornwild,thornwild_caster_rod,rod,void,theme_variants/thornwild,320,160,element transmog style: void
+thornwild_caster_spellbook_rare,thornwild,thornwild_caster_spellbook,spellbook,rare,theme_variants/thornwild,352,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_caster_spellbook_epic,thornwild,thornwild_caster_spellbook,spellbook,epic,theme_variants/thornwild,352,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_caster_spellbook_fire,thornwild,thornwild_caster_spellbook,spellbook,fire,theme_variants/thornwild,352,64,element transmog style: fire
+thornwild_caster_spellbook_ice,thornwild,thornwild_caster_spellbook,spellbook,ice,theme_variants/thornwild,352,96,element transmog style: ice
+thornwild_caster_spellbook_poison,thornwild,thornwild_caster_spellbook,spellbook,poison,theme_variants/thornwild,352,128,element transmog style: poison
+thornwild_caster_spellbook_void,thornwild,thornwild_caster_spellbook,spellbook,void,theme_variants/thornwild,352,160,element transmog style: void
+thornwild_ranged_helmet_rare,thornwild,thornwild_ranged_helmet,helmet,rare,theme_variants/thornwild,384,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_ranged_helmet_epic,thornwild,thornwild_ranged_helmet,helmet,epic,theme_variants/thornwild,384,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_ranged_helmet_fire,thornwild,thornwild_ranged_helmet,helmet,fire,theme_variants/thornwild,384,64,element transmog style: fire
+thornwild_ranged_helmet_ice,thornwild,thornwild_ranged_helmet,helmet,ice,theme_variants/thornwild,384,96,element transmog style: ice
+thornwild_ranged_helmet_poison,thornwild,thornwild_ranged_helmet,helmet,poison,theme_variants/thornwild,384,128,element transmog style: poison
+thornwild_ranged_helmet_void,thornwild,thornwild_ranged_helmet,helmet,void,theme_variants/thornwild,384,160,element transmog style: void
+thornwild_ranged_armor_rare,thornwild,thornwild_ranged_armor,armor,rare,theme_variants/thornwild,416,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_ranged_armor_epic,thornwild,thornwild_ranged_armor,armor,epic,theme_variants/thornwild,416,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_ranged_armor_fire,thornwild,thornwild_ranged_armor,armor,fire,theme_variants/thornwild,416,64,element transmog style: fire
+thornwild_ranged_armor_ice,thornwild,thornwild_ranged_armor,armor,ice,theme_variants/thornwild,416,96,element transmog style: ice
+thornwild_ranged_armor_poison,thornwild,thornwild_ranged_armor,armor,poison,theme_variants/thornwild,416,128,element transmog style: poison
+thornwild_ranged_armor_void,thornwild,thornwild_ranged_armor,armor,void,theme_variants/thornwild,416,160,element transmog style: void
+thornwild_ranged_legs_rare,thornwild,thornwild_ranged_legs,legs,rare,theme_variants/thornwild,448,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_ranged_legs_epic,thornwild,thornwild_ranged_legs,legs,epic,theme_variants/thornwild,448,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_ranged_legs_fire,thornwild,thornwild_ranged_legs,legs,fire,theme_variants/thornwild,448,64,element transmog style: fire
+thornwild_ranged_legs_ice,thornwild,thornwild_ranged_legs,legs,ice,theme_variants/thornwild,448,96,element transmog style: ice
+thornwild_ranged_legs_poison,thornwild,thornwild_ranged_legs,legs,poison,theme_variants/thornwild,448,128,element transmog style: poison
+thornwild_ranged_legs_void,thornwild,thornwild_ranged_legs,legs,void,theme_variants/thornwild,448,160,element transmog style: void
+thornwild_ranged_boots_rare,thornwild,thornwild_ranged_boots,boots,rare,theme_variants/thornwild,480,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_ranged_boots_epic,thornwild,thornwild_ranged_boots,boots,epic,theme_variants/thornwild,480,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_ranged_boots_fire,thornwild,thornwild_ranged_boots,boots,fire,theme_variants/thornwild,480,64,element transmog style: fire
+thornwild_ranged_boots_ice,thornwild,thornwild_ranged_boots,boots,ice,theme_variants/thornwild,480,96,element transmog style: ice
+thornwild_ranged_boots_poison,thornwild,thornwild_ranged_boots,boots,poison,theme_variants/thornwild,480,128,element transmog style: poison
+thornwild_ranged_boots_void,thornwild,thornwild_ranged_boots,boots,void,theme_variants/thornwild,480,160,element transmog style: void
+thornwild_ranged_bow_rare,thornwild,thornwild_ranged_bow,bow,rare,theme_variants/thornwild,512,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_ranged_bow_epic,thornwild,thornwild_ranged_bow,bow,epic,theme_variants/thornwild,512,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_ranged_bow_fire,thornwild,thornwild_ranged_bow,bow,fire,theme_variants/thornwild,512,64,element transmog style: fire
+thornwild_ranged_bow_ice,thornwild,thornwild_ranged_bow,bow,ice,theme_variants/thornwild,512,96,element transmog style: ice
+thornwild_ranged_bow_poison,thornwild,thornwild_ranged_bow,bow,poison,theme_variants/thornwild,512,128,element transmog style: poison
+thornwild_ranged_bow_void,thornwild,thornwild_ranged_bow,bow,void,theme_variants/thornwild,512,160,element transmog style: void
+thornwild_ranged_crossbow_rare,thornwild,thornwild_ranged_crossbow,crossbow,rare,theme_variants/thornwild,544,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_ranged_crossbow_epic,thornwild,thornwild_ranged_crossbow,crossbow,epic,theme_variants/thornwild,544,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_ranged_crossbow_fire,thornwild,thornwild_ranged_crossbow,crossbow,fire,theme_variants/thornwild,544,64,element transmog style: fire
+thornwild_ranged_crossbow_ice,thornwild,thornwild_ranged_crossbow,crossbow,ice,theme_variants/thornwild,544,96,element transmog style: ice
+thornwild_ranged_crossbow_poison,thornwild,thornwild_ranged_crossbow,crossbow,poison,theme_variants/thornwild,544,128,element transmog style: poison
+thornwild_ranged_crossbow_void,thornwild,thornwild_ranged_crossbow,crossbow,void,theme_variants/thornwild,544,160,element transmog style: void
+thornwild_amulet_rare,thornwild,thornwild_amulet,amulet,rare,theme_variants/thornwild,576,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_amulet_epic,thornwild,thornwild_amulet,amulet,epic,theme_variants/thornwild,576,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_amulet_fire,thornwild,thornwild_amulet,amulet,fire,theme_variants/thornwild,576,64,element transmog style: fire
+thornwild_amulet_ice,thornwild,thornwild_amulet,amulet,ice,theme_variants/thornwild,576,96,element transmog style: ice
+thornwild_amulet_poison,thornwild,thornwild_amulet,amulet,poison,theme_variants/thornwild,576,128,element transmog style: poison
+thornwild_amulet_void,thornwild,thornwild_amulet,amulet,void,theme_variants/thornwild,576,160,element transmog style: void
+thornwild_ring_rare,thornwild,thornwild_ring,ring,rare,theme_variants/thornwild,608,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_ring_epic,thornwild,thornwild_ring,ring,epic,theme_variants/thornwild,608,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_ring_fire,thornwild,thornwild_ring,ring,fire,theme_variants/thornwild,608,64,element transmog style: fire
+thornwild_ring_ice,thornwild,thornwild_ring,ring,ice,theme_variants/thornwild,608,96,element transmog style: ice
+thornwild_ring_poison,thornwild,thornwild_ring,ring,poison,theme_variants/thornwild,608,128,element transmog style: poison
+thornwild_ring_void,thornwild,thornwild_ring,ring,void,theme_variants/thornwild,608,160,element transmog style: void
+thornwild_backpack_rare,thornwild,thornwild_backpack,backpack,rare,theme_variants/thornwild,640,0,tier look: a rare drop of the set piece (sapphire accents)
+thornwild_backpack_epic,thornwild,thornwild_backpack,backpack,epic,theme_variants/thornwild,640,32,"tier look: an epic drop of the set piece (amethyst accents, glints)"
+thornwild_backpack_fire,thornwild,thornwild_backpack,backpack,fire,theme_variants/thornwild,640,64,element transmog style: fire
+thornwild_backpack_ice,thornwild,thornwild_backpack,backpack,ice,theme_variants/thornwild,640,96,element transmog style: ice
+thornwild_backpack_poison,thornwild,thornwild_backpack,backpack,poison,theme_variants/thornwild,640,128,element transmog style: poison
+thornwild_backpack_void,thornwild,thornwild_backpack,backpack,void,theme_variants/thornwild,640,160,element transmog style: void

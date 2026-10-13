@@ -7,6 +7,8 @@ The forge never reads a library at run time. This script reads them once and wri
 Sources (all read-only, none of them in git):
     --pair DIR       the live pair (stock and Chaos items; things_custom23)
     --library DIR    a donor library folder (Tibia.dat, Tibia.spr, catalogue.csv), repeatable
+    --own DIR        our own PixelLab item picks (art_import/theme_items: one strip per themed set, pieces in
+                     theme_sets.pieces() order; source name "pixellab-own"): statistics and parts like the pair's
     --vfx DIR        the spell effect set: ONLY colour statistics are read from it (its licence forbids shipping its
                      pixels in a generator or training a model on it). A few ramp colours per element are stored, no
                      frame, cut or pixel pattern.
@@ -17,7 +19,7 @@ wand/rod 21), else the cloth slot, else a nearest-neighbour vote on the 16x16 si
 (7 neighbours, 6 must agree). Rows tagged "named character" or "branded" in a catalogue are skipped. Rows tagged
 "library only" (retail-style, commercial server art) count for statistics but never give parts.
 
-    python3 -I item_forge_learn.py style --pair P --library L1 --library L2 ... --vfx V   # write style.json
+    python3 -I item_forge_learn.py style --pair P --library L1 --library L2 ... --own O --vfx V   # write style.json
     python3 -I item_forge_learn.py parts --pair P --library L1 ...                         # write parts.json
     python3 -I item_forge_learn.py style ... --check / parts ... --check    # rebuild in memory, compare
     python3 -I item_forge_learn.py check        # without the libraries (CI): both files parse, digests match
@@ -152,6 +154,34 @@ class Source:
         return self.usable(iid) and not any(k in d for k in LIB_ONLY_TAGS)
 
 
+class OwnSource:
+    """our own PixelLab picks: the themed item strips; ids are the piece keys of theme_sets.py"""
+    own = True
+
+    def __init__(self, path):
+        import theme_sets as TS
+        self.name, self.path, self.live = 'pixellab-own', path, False
+        self.items = {}
+        h = hashlib.md5()
+        for st in TS.SETS:
+            ps = TS.pieces(st)
+            f = os.path.join(path, st['key'] + '.png')
+            a = np.asarray(Image.open(f).convert('RGBA'))
+            h.update(a.tobytes())
+            for i, (key, kind, style, name, kit) in enumerate(ps):
+                k = {'wand': 'rod'}.get(kind, kind)
+                if style in ('hat', 'hood', 'robe', 'jerkin', 'skirt', 'leather'):
+                    k = None                       # cloth kit looks are not the plate kinds the forge learns
+                self.items[key] = (a[:, i * 32:(i + 1) * 32].copy(), k)
+        self.md5 = h.hexdigest()
+
+    def image(self, key):
+        return self.items[key][0]
+
+    def parts_ok(self, key):
+        return key in self.items
+
+
 def md5_file(p):
     h = hashlib.md5()
     with open(p, 'rb') as f:
@@ -162,6 +192,8 @@ def md5_file(p):
 
 def open_sources(args):
     out = []
+    if getattr(args, 'own', None):
+        out.append(OwnSource(args.own))
     for p in args.pair or []:
         out.append(Source('live', p, True))
     for p in args.library or []:
@@ -209,6 +241,11 @@ def collect(sources):
     """(source, id, image, kind, how, parts_ok) for every usable carried 1x1 item with art"""
     lab, unl = [], []
     for src in sources:
+        if getattr(src, 'own', False):
+            for key, (img, k) in src.items.items():
+                if k in KINDS:
+                    lab.append([src, key, img, k, 'own', True])
+            continue
         for t in src.dat.items:
             if not candidate(src, t) or not src.usable(t.id):
                 continue
@@ -570,14 +607,13 @@ def build_parts(sources, style):
         src = by.get(row['source'])
         if src is None:
             sys.exit(f"part {row['part']}: source {row['source']} not given")
-        iid = int(row['id'])
+        iid = row['id'] if getattr(src, 'own', False) else int(row['id'])
         if not src.parts_ok(iid):
             sys.exit(f"part {row['part']}: {row['source']} {iid} is library only or excluded")
         img = src.image(iid)
         if img is None:
             sys.exit(f"part {row['part']}: {row['source']} {iid} has no 1x1 art")
-        t = src.item(iid)
-        kind, _ = label_of(src, t)
+        kind = row['kind'] if getattr(src, 'own', False) else label_of(src, src.item(iid))[0]
         grid = cut_part(img, row, style, kind or row['kind'])
         out['parts'][row['part']] = {'kind': row['kind'], 'source': row['source'], 'id': iid,
                                      'anchor': row['anchor'], 'grid': grid}
@@ -610,6 +646,7 @@ def main():
     ap.add_argument('--pair', action='append')
     ap.add_argument('--library', action='append')
     ap.add_argument('--vfx')
+    ap.add_argument('--own')
     ap.add_argument('--check', action='store_true')
     ap.add_argument('--out')
     a = ap.parse_args()
@@ -626,7 +663,7 @@ def main():
         return
     srcs = open_sources(a)
     if not srcs:
-        sys.exit('give --pair and/or --library')
+        sys.exit('give --pair, --library and/or --own')
     if a.cmd == 'sheet':
         sheets(srcs, a.out)
         return

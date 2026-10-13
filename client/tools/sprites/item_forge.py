@@ -392,7 +392,17 @@ def forge(theme, kind):
         ornament(cv, 'sunhead', 16, 6)
     else:
         raise KeyError(kind)
-    return render(cv, roles)
+    return keep_margin(render(cv, roles))
+
+
+MARGIN = 1
+
+
+def keep_margin(img, margin=MARGIN):
+    """the icon inside a `margin` px frame of the 32x32 cell: shrunk (nearest) only when larger, then centred
+    (item_post.py does the same for painted picks)"""
+    import item_post as IP
+    return IP.centre(IP.fit(IP.crop(img), margin))
 
 
 # ------------------------------------------------------------------------------------------------ variants
@@ -401,9 +411,13 @@ TIERS = {
                'glint': 0},
     'rare': {'M': 'gold:2', 'S': 'steel:2', 'C': 'blue:2', 'L': 'leather:2', 'G': 'sapphire:3', 'add_gem': 'sapphire:3',
              'glint': 0},
-    'epic': {'M': 'gold:3', 'S': 'mix:steel:3+purple:3@0.18', 'C': 'purple:2', 'L': 'leather:2', 'G': 'amethyst:3',
-             'add_gem': 'amethyst:3', 'glint': 2},
+    'epic': {'M': 'gold:3', 'S': 'mix:steel:2+purple:3@0.2', 'C': 'purple:2', 'L': 'leather:2', 'G': 'amethyst:3',
+             'add_gem': 'amethyst:3', 'glint': 3},
 }
+# void: the effect set's void ramp ends in pale pink-violet (pastel on metal); a deep ramp of our own for metal and
+# cloth, the effect ramp's saturated top kept for gems and veins
+VOID_DEEP = '#0e0614,#1a0a28,#2e1044,#4a1a68,#6c2694,#9a3cc4'
+VOID_GEM = '#2e0f4b,#4e1a7a,#7a24a8,#a336c8,#c656e6,#e88cff'
 ELEMENTS = {
     'fire': {'M': 'mix:gold:1+el:fire@0.25', 'S': 'mix:steel:1+el:fire@0.22', 'C': 'el:fire', 'L': 'leather:1',
              'G': 'el:fire', 'vein': 'el:fire', 'add_gem': 'el:fire'},
@@ -411,8 +425,8 @@ ELEMENTS = {
             'G': 'el:ice', 'vein': 'el:ice', 'add_gem': 'el:ice'},
     'poison': {'M': 'mix:gold:1+el:poison@0.3', 'S': 'mix:steel:1+el:poison@0.2', 'C': 'el:poison',
                'L': 'leather:1', 'G': 'el:poison', 'vein': 'el:poison', 'add_gem': 'el:poison'},
-    'void': {'M': 'mix:darkiron:2+el:void@0.35', 'S': 'mix:darkiron:2+el:void@0.25', 'C': 'el:void',
-             'L': 'darkiron:1', 'G': 'el:void', 'vein': 'el:void', 'add_gem': 'el:void'},
+    'void': {'M': 'mix:darkiron:2+%s@0.7' % VOID_DEEP, 'S': 'mix:darkiron:2+%s@0.6' % VOID_DEEP, 'C': VOID_DEEP,
+             'L': 'darkiron:1', 'G': VOID_GEM, 'vein': VOID_GEM, 'add_gem': VOID_GEM},
 }
 ROLE_OF = {'gold': 'M', 'steel': 'S', 'darkiron': 'S', 'bone': 'S', 'wood': 'L', 'leather': 'L', 'red': 'C',
            'blue': 'C', 'green': 'C', 'purple': 'C', 'crystal': 'C', 'ruby': 'G', 'sapphire': 'G', 'emerald': 'G',
@@ -446,6 +460,10 @@ def analyse(img):
     return role, lev, ink, mats
 
 
+GLINT_ARM, GLINT_TIP, GLINT_DIAG = 255, 110, 50   # an epic glint: a white cross of 5 px, brightened tips, a halo
+GLINT_MAX_LUMA = 200          # a glint only where the metal is darker than this (on pale metal it would vanish)
+
+
 def variant(img, spec, base_roles=None):
     """recolour one item by roles; adds a gem where the tier or element asks for one and the item has none, glints
     for epic, glowing veins on inner lines for elements. Alpha (the silhouette) never changes."""
@@ -465,7 +483,7 @@ def variant(img, spec, base_roles=None):
         m = role == mr
         best = None
         ys, xs = np.nonzero(m)
-        cy, cx = ys.mean(), xs.mean()
+        cy, cx = (ys.mean(), xs.mean()) if len(ys) else (N / 2, N / 2)     # no metal: no spot is found below
         for y in range(2, N - 2):
             for x in range(2, N - 2):
                 if m[y - 2:y + 3, x - 2:x + 3].all():
@@ -505,23 +523,28 @@ def variant(img, spec, base_roles=None):
         for i, (y, x) in enumerate(zip(*np.nonzero(crease))):
             out[y, x, :3] = V[3 if (y + x) % 3 else 4].round()
     for _ in range(roles.get('glint', 0)):
-        metal = np.isin(role, ['M', 'S']) & (lev >= 4)
+        metal = np.isin(role, ['M', 'S']) & (lev >= 2)
         ys, xs = np.nonzero(metal)
         if not len(ys):
             break
-        score = -(xs * LIGHT[0] + ys * LIGHT[1]) * -1
+        score = xs * LIGHT[0] + ys * LIGHT[1]
         order = np.lexsort((xs, ys, -score))
         for i in order:
             y, x = ys[i], xs[i]
-            if (out[max(0, y - 2):y + 3, max(0, x - 2):x + 3, 0] == 255).all() is False or True:
-                if (out[y, x, :3] == 255).all():
-                    continue
-                out[y, x, :3] = 255
-                for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
-                    if 0 <= yy < N and 0 <= xx < N and body[yy, xx]:
-                        out[yy, xx, :3] = np.minimum(255, out[yy, xx, :3].astype(int) + 70)
-                lev[max(0, y - 3):y + 4, max(0, x - 3):x + 4] = 0
-                break
+            arms = [(y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]
+            if not all(0 <= yy < N and 0 <= xx < N and body[yy, xx] for yy, xx in arms):
+                continue                    # the cross must lie on the item, not on its outline
+            if lum(out[y, x, :3].astype(np.float64)) > GLINT_MAX_LUMA:
+                continue
+            out[y, x, :3] = 255
+            for (yy, xx), k in ([(a, GLINT_ARM) for a in arms] +
+                                [((y - 2, x), GLINT_TIP), ((y + 2, x), GLINT_TIP), ((y, x - 2), GLINT_TIP),
+                                 ((y, x + 2), GLINT_TIP)] +
+                                [((y + dy, x + dx), GLINT_DIAG) for dy in (-1, 1) for dx in (-1, 1)]):
+                if 0 <= yy < N and 0 <= xx < N and body[yy, xx]:
+                    out[yy, xx, :3] = np.minimum(255, out[yy, xx, :3].astype(int) + k)
+            lev[max(0, y - 4):y + 5, max(0, x - 4):x + 5] = 0
+            break
     assert ((out[..., 3] > 0) == (img[..., 3] > 0)).all()
     return out
 

@@ -3,7 +3,7 @@
 sprites. No painting happens here: the same raw PNGs and picks give byte-identical sprites.
 
     python3 -I item_post.py --picks PICKS.csv --raw RAW_DIR --out OUT_DIR [--colours 24] [--margin 1]
-    python3 -I item_post.py --check OUT_DIR [--colours 24] [--margin 1]
+    python3 -I item_post.py --check OUT_DIR [--colours 24] [--margin 1]   # 32x32 PNGs or strips of 32x32 cells
 
 PICKS.csv columns: variant,piece,tag,cand,slot[,roll][,box]
   tag    a folder of RAW_DIR holding the job's candidates (cand_<NN>.png)
@@ -18,7 +18,8 @@ Output: OUT_DIR/<variant>/<piece>.png (32x32 RGBA) and OUT_DIR/<variant>/strip.p
 Steps, per item:
   1. alpha cut to 0 / 255 at 128; the item is the biggest blob (8-connected) whose centre is in the slot, plus the
      blobs of at least `speck` pixels lying inside its box (+2 px); everything else is dropped;
-  2. the item is cropped; if it is larger than 32 - 2 * margin it is shrunk with nearest sampling (aspect kept);
+  2. the item is cropped; if it is larger than 32 - 2 * margin it is shrunk, aspect kept: nearest sampling down to
+     0.85 of its size, area averaging for stronger shrinks (a painting that spilled over its cell);
   3. outline: every opaque pixel on the silhouette edge (a 4-neighbour is transparent or off the canvas) whose luma
      is above `rim` is darkened to `dark` x its colour, so every item keeps a 1 px dark rim on any background;
   4. palette clamp: median cut over the item's opaque pixels to at most `colours` colours, every pixel snapped to
@@ -103,13 +104,17 @@ def crop(a):
     return a[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
 
 
+BOX_BELOW = 0.85      # shrinks stronger than this use area averaging (nearest drops whole rows of outline)
+
+
 def fit(a, margin):
     lim = CELL - 2 * margin
     h, w = a.shape[:2]
     if h > lim or w > lim:
         k = lim / max(h, w)
         nw, nh = max(1, int(round(w * k))), max(1, int(round(h * k)))
-        a = cut_alpha(np.asarray(Image.fromarray(a, 'RGBA').resize((nw, nh), Image.NEAREST)))
+        how = Image.NEAREST if k >= BOX_BELOW else Image.BOX      # a big shrink averages, then steps 3-4 redraw
+        a = cut_alpha(np.asarray(Image.fromarray(a, 'RGBA').resize((nw, nh), how)))
         a = crop(a)
     return a
 
@@ -196,10 +201,13 @@ def main():
         for root, _, files in sorted(os.walk(o.check)):
             for f in sorted(files):
                 if f.endswith('.png') and f != 'strip.png':
-                    p = check(np.asarray(Image.open(os.path.join(root, f)).convert('RGBA')), o.colours, o.margin)
-                    if p:
-                        bad += 1
-                        print(os.path.join(root, f), ', '.join(p))
+                    a = np.asarray(Image.open(os.path.join(root, f)).convert('RGBA'))
+                    n = a.shape[1] // CELL if a.shape[0] == CELL and a.shape[1] % CELL == 0 else 1
+                    for i in range(n):     # a strip (one row of 32x32 cells) is checked cell by cell
+                        p = check(a[:, i * CELL:(i + 1) * CELL] if n > 1 else a, o.colours, o.margin)
+                        if p:
+                            bad += 1
+                            print(os.path.join(root, f), 'cell %d:' % i if n > 1 else '', ', '.join(p))
         print('item check:', 'OK' if not bad else '%d bad' % bad)
         return 1 if bad else 0
     if not (o.picks and o.raw and o.out):

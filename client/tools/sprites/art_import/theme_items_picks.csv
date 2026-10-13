@@ -1,0 +1,193 @@
+key,tag,cand,slot,roll,box,by
+cryptbone_sword,cryptbone_sword,1,full,,,eye: rank 1
+cryptbone_axe,cryptbone_axe,2,full,,,eye: rank 2
+cryptbone_club,cryptbone_club,23,full,,,eye: rank 3
+cryptbone_bow,cryptbone_bow,14,full,,,rule
+cryptbone_crossbow,cryptbone_crossbow,49,full,,,eye: rank 1
+cryptbone_wand,cryptbone_wand,0,full,,,eye: rank 1
+cryptbone_rod,P__cryptbone_rod__cryptbone_shield,10,left,-2 0,,eye: rank 1
+cryptbone_shield,P__cryptbone_rod__cryptbone_shield,10,right,-2 0,,rule
+cryptbone_helmet,P__cryptbone_helmet__cryptbone_armor,4,right,-20 0,,eye: rank 9
+cryptbone_armor,P__cryptbone_helmet__cryptbone_armor,1,left,-19 0,,eye: rank 8
+cryptbone_legs,P__cryptbone_legs__cryptbone_boots,5,left,,,eye: rank 6
+cryptbone_boots,P__cryptbone_legs__cryptbone_boots,6,right,,,eye: rank 2
+cryptbone_amulet,P__cryptbone_amulet__cryptbone_ring,8,left,-9 0,,eye: rank 6
+cryptbone_ring,P__cryptbone_amulet__cryptbone_ring,14,right,-9 0,,rule
+cryptbone_backpack,P__cryptbone_backpack__cryptbone_spellbook,6,left,-2 0,,rule
+cryptbone_spellbook,P__cryptbone_backpack__cryptbone_spellbook,11,right,-7 0,,eye: rank 1
+cryptbone_arrow,cryptbone_arrow,24,full,,,rule
+cryptbone_bolt,cryptbone_bolt,1,full,,,rule
+voidmourn_sword,P__voidmourn_sword__voidmourn_axe,13,left,-1 0,,eye: rank 1
+voidmourn_axe,P__voidmourn_sword__voidmourn_axe,15,right,-9 0,,eye: rank 6
+voidmourn_club,P__voidmourn_club__voidmourn_wand,5,left,-16 0,,eye: rank 4
+voidmourn_bow,P__voidmourn_bow__voidmourn_crossbow,11,left,-8 0,,eye: rank 4
+voidmourn_crossbow,P__voidmourn_bow__voidmourn_crossbow,9,right,-4 0,,rule
+voidmourn_wand,P__voidmourn_club__voidmourn_wand,10,right,-15 0,,eye: rank 5
+voidmourn_rod,P__voidmourn_rod__voidmourn_shield,13,left,,,eye: rank 3
+voidmourn_shield,P__voidmourn_rod__voidmourn_shield,11,right,-6 0,,eye: rank 3
+voidmourn_helmet,P__voidmourn_helmet__voidmourn_armor,7,left,-1 0,,eye: rank 1
+voidmourn_armor,P__voidmourn_helmet__voidmourn_armor,6,right,,,eye: rank 5
+voidmourn_legs,P__voidmourn_legs__voidmourn_boots,8,left,,,eye: rank 6
+voidmourn_boots,P__voidmourn_legs__voidmourn_boots,0,right,,,eye: rank 4
+voidmourn_amulet,P__voidmourn_amulet__voidmourn_ring,5,left,,,eye: rank 4
+voidmourn_ring,P__voidmourn_amulet__voidmourn_ring,10,right,,,eye: rank 1
+voidmourn_backpack,P__voidmourn_backpack__voidmourn_spellbook,12,left,-14 0,,eye: rank 2
+voidmourn_spellbook,P__voidmourn_backpack__voidmourn_spellbook,1,right,-14 0,,rule
+voidmourn_arrow,P__voidmourn_arrow__voidmourn_bolt,14,left,-4 0,,eye: rank 5
+voidmourn_bolt,P__voidmourn_arrow__voidmourn_bolt,11,right,,,eye: rank 5
+wildroot_sword,P__wildroot_sword__wildroot_axe,9,left,,,rule
+wildroot_axe,P__wildroot_sword__wildroot_axe,10,right,-3 0,,eye: rank 2
+wildroot_club,P__wildroot_club__wildroot_wand,0,left,-14 0,,rule
+wildroot_bow,P__wildroot_bow__wildroot_crossbow,11,left,-10 0,,rule
+wildroot_crossbow,P__wildroot_bow__wildroot_crossbow,5,right,-2 0,,rule
+wildroot_wand,P__wildroot_club__wildroot_wand,1,right,-14 0,,rule
+wildroot_rod,P__wildroot_rod__wildroot_shield,10,left,-2 0,,rule
+wildroot_shield,P__wildroot_rod__wildroot_shield,8,left,-26 0,,eye: rank 4 of rod list (sides swapped)
+wildroot_helmet,P__wildroot_helmet__wildroot_armor,6,left,,,eye: rank 4
+wildroot_armor,P__wildroot_helmet__wildroot_armor,1,left,-30 0,,eye: rank 0 of helmet list (sides swapped)
+wildroot_legs,P__wildroot_legs__wildroot_boots,10,left,,,eye: rank 2
+wildroot_boots,P__wildroot_legs__wildroot_boots,7,right,-1 0,,eye: rank 3
+wildroot_amulet,P__wildroot_amulet__wildroot_ring,8,left,-9 0,,rule
+wildroot_ring,P__wildroot_amulet__wildroot_ring,0,right,-8 0,,rule
+wildroot_backpack,P__wildroot_backpack__wildroot_spellbook,5,left,-14 0,,eye: rank 2
+wildroot_spellbook,P__wildroot_backpack__wildroot_spellbook,5,right,-14 0,,rule
+wildroot_arrow,P__wildroot_arrow__wildroot_bolt,6,left,,,eye: rank 5
+wildroot_bolt,P__wildroot_arrow__wildroot_bolt,0,right,-20 0,,rule
+moonsilver_sword,P__moonsilver_sword__moonsilver_axe,0,left,-6 0,,rule
+moonsilver_axe,P__moonsilver_sword__moonsilver_axe,0,right,-6 0,,rule
+moonsilver_club,P__moonsilver_club__moonsilver_wand,7,left,-15 0,,eye: rank 4
+moonsilver_bow,P__moonsilver_bow__moonsilver_crossbow,12,left,-4 0,,eye: rank 1
+moonsilver_crossbow,P__moonsilver_bow__moonsilver_crossbow,9,right,-9 0,,eye: rank 3
+moonsilver_wand,P__moonsilver_club__moonsilver_wand,7,right,-15 0,,eye: rank 3
+moonsilver_rod,P__moonsilver_rod__moonsilver_shield,8,right,-27 0,,eye: rank 8
+moonsilver_shield,P__moonsilver_rod__moonsilver_shield,6,right,-2 0,,eye: rank 1
+moonsilver_helmet,P__moonsilver_helmet__moonsilver_armor,6,right,-30 0,,eye: rank 4 of armor list (sides swapped)
+moonsilver_armor,P__moonsilver_helmet__moonsilver_armor,1,left,-27 0,,eye: rank 1 of helmet list (sides swapped)
+moonsilver_legs,P__moonsilver_legs__moonsilver_boots,6,left,,,eye: rank 2
+moonsilver_boots,P__moonsilver_legs__moonsilver_boots,7,right,,,eye: rank 2
+moonsilver_amulet,P__moonsilver_amulet__moonsilver_ring,6,left,,,eye: rank 1
+moonsilver_ring,P__moonsilver_amulet__moonsilver_ring,11,right,-2 0,,eye: rank 1
+moonsilver_backpack,P__moonsilver_backpack__moonsilver_spellbook,4,left,-2 0,,eye: rank 2
+moonsilver_spellbook,P__moonsilver_backpack__moonsilver_spellbook,4,right,-2 0,,rule
+moonsilver_arrow,P__moonsilver_arrow__moonsilver_bolt,9,full,-22 0,24 0 48 24,eye: rank 8
+moonsilver_bolt,P__moonsilver_arrow__moonsilver_bolt,6,full,-22 0,24 0 48 24,eye: rank 4
+sunsworn_sword,sunsworn_sword,23,full,,,eye (round 1 sample)
+sunsworn_axe,sunsworn_axe,9,full,,,eye (round 1 sample)
+sunsworn_club,P__sunsworn_club__sunsworn_wand,0,left,-17 0,,eye: rank 3
+sunsworn_bow,P__sunsworn_bow__sunsworn_crossbow,3,left,-3 0,,rule
+sunsworn_crossbow,P__sunsworn_bow__sunsworn_crossbow,2,right,-3 0,,rule
+sunsworn_wand,P__sunsworn_club__sunsworn_wand,5,right,-15 0,,eye: rank 1
+sunsworn_rod,A_pair_shield_rod,5,right,-8 0,,eye (round 1 sample)
+sunsworn_shield,A_pair_shield_rod,5,left,-8 0,,eye (round 1 sample)
+sunsworn_helmet,sunsworn_helmet,17,full,,,eye (round 1 sample)
+sunsworn_armor,sunsworn_armor,14,full,,,eye (round 1 sample)
+sunsworn_legs,A_pair_legs_boots,9,left,,,eye (round 1 sample)
+sunsworn_boots,A_pair_legs_boots,9,right,,,eye (round 1 sample)
+sunsworn_amulet,P__sunsworn_amulet__sunsworn_ring,7,left,-4 0,,eye: rank 3
+sunsworn_ring,P__sunsworn_amulet__sunsworn_ring,6,right,,,rule
+sunsworn_backpack,P__sunsworn_backpack__sunsworn_spellbook,1,left,,,eye: rank 1
+sunsworn_spellbook,P__sunsworn_backpack__sunsworn_spellbook,1,right,,,eye: rank 1
+sunsworn_arrow,P__sunsworn_arrow__sunsworn_bolt,5,left,-4 0,,eye: rank 1
+sunsworn_bolt,P__sunsworn_arrow__sunsworn_bolt,8,right,-1 0,,eye: rank 1
+oathsteel_sword,P__oathsteel_sword__oathsteel_axe,0,left,-6 0,,rule
+oathsteel_axe,P__oathsteel_sword__oathsteel_axe,7,right,-7 0,,rule
+oathsteel_club,P__oathsteel_club__oathsteel_wand,7,left,-15 0,,rule
+oathsteel_bow,P__oathsteel_bow__oathsteel_crossbow,3,full,-5 0,0 0 32 32,eye: rank 6
+oathsteel_crossbow,P__oathsteel_bow__oathsteel_crossbow,13,right,-6 0,,eye: rank 6
+oathsteel_wand,P__oathsteel_club__oathsteel_wand,10,right,-16 0,,rule
+oathsteel_rod,P__oathsteel_rod__oathsteel_shield,10,left,-5 0,,eye: rank 1
+oathsteel_shield,P__oathsteel_rod__oathsteel_shield,11,right,-10 0,,eye: rank 1
+oathsteel_helmet,P__oathsteel_helmet__oathsteel_armor,4,right,-25 0,,eye: rank 0 of armor list (sides swapped)
+oathsteel_armor,P__oathsteel_helmet__oathsteel_armor,4,left,-25 0,,eye: rank 3 of helmet list (sides swapped)
+oathsteel_legs,P__oathsteel_legs__oathsteel_boots,2,full,,0 0 32 32,eye: rank 5
+oathsteel_boots,P__oathsteel_legs__oathsteel_boots,10,full,,32 0 64 32,eye: rank 4
+oathsteel_amulet,P__oathsteel_amulet__oathsteel_ring,2,left,,,eye: rank 6
+oathsteel_ring,P__oathsteel_amulet__oathsteel_ring,9,right,,,eye: rank 4
+oathsteel_backpack,P__oathsteel_backpack__oathsteel_spellbook,1,left,,,eye: rank 5
+oathsteel_spellbook,P__oathsteel_backpack__oathsteel_spellbook,9,right,,,rule
+oathsteel_arrow,P__oathsteel_arrow__oathsteel_bolt,8,left,,,eye: rank 2
+oathsteel_bolt,P__oathsteel_arrow__oathsteel_bolt,5,right,,,eye: rank 3
+rimeglass_melee_helmet,P__rimeglass_melee_helmet__rimeglass_melee_armor,3,left,,,rule
+rimeglass_melee_armor,P__rimeglass_melee_helmet__rimeglass_melee_armor,9,left,-26 0,,eye: rank 2 of melee_helmet list (sides swapped)
+rimeglass_melee_legs,P__rimeglass_melee_legs__rimeglass_melee_boots,8,left,,,eye: rank 1
+rimeglass_melee_boots,P__rimeglass_melee_legs__rimeglass_melee_boots,5,full,,32 0 64 32,rule
+rimeglass_melee_sword,P__rimeglass_melee_sword__rimeglass_melee_shield,9,left,-1 0,,rule
+rimeglass_melee_shield,P__rimeglass_melee_sword__rimeglass_melee_shield,6,right,-3 0,,eye: rank 2
+rimeglass_caster_helmet,P__rimeglass_caster_helmet__rimeglass_caster_armor,6,left,-1 0,,eye: rank 1
+rimeglass_caster_armor,P__rimeglass_caster_helmet__rimeglass_caster_armor,6,right,-1 0,,eye: rank 6
+rimeglass_caster_legs,P__rimeglass_caster_legs__rimeglass_caster_boots,0,left,,,rule
+rimeglass_caster_boots,P__rimeglass_caster_legs__rimeglass_caster_boots,0,right,,,rule
+rimeglass_caster_rod,P__rimeglass_caster_rod__rimeglass_caster_spellbook,7,left,-6 0,,eye: rank 6
+rimeglass_caster_spellbook,P__rimeglass_caster_rod__rimeglass_caster_spellbook,8,right,,,eye: rank 4
+rimeglass_ranged_helmet,P__rimeglass_ranged_helmet__rimeglass_ranged_armor,10,right,-26 0,,eye: rank 1 of ranged_armor list (sides swapped)
+rimeglass_ranged_armor,P__rimeglass_ranged_helmet__rimeglass_ranged_armor,9,left,-23 0,,eye: rank 0 of ranged_helmet list (sides swapped)
+rimeglass_ranged_legs,P__rimeglass_ranged_legs__rimeglass_ranged_boots,0,left,-11 0,,rule
+rimeglass_ranged_boots,P__rimeglass_ranged_legs__rimeglass_ranged_boots,1,right,-11 0,,rule
+rimeglass_ranged_bow,P__rimeglass_ranged_bow__rimeglass_ranged_crossbow,10,left,,,eye: rank 4
+rimeglass_ranged_crossbow,P__rimeglass_ranged_bow__rimeglass_ranged_crossbow,6,right,-2 0,,rule
+rimeglass_amulet,P__rimeglass_amulet__rimeglass_ring,3,left,,,eye: rank 1
+rimeglass_ring,P__rimeglass_amulet__rimeglass_ring,3,right,,,rule
+rimeglass_backpack,rimeglass_backpack,8,full,,,rule
+emeraldine_melee_helmet,P__emeraldine_melee_helmet__emeraldine_melee_armor,7,left,-2 0,,rule
+emeraldine_melee_armor,P__emeraldine_melee_helmet__emeraldine_melee_armor,5,left,-30 0,,eye: rank 7 of melee_helmet list (sides swapped)
+emeraldine_melee_legs,P__emeraldine_melee_legs__emeraldine_melee_boots,8,left,,,rule
+emeraldine_melee_boots,P__emeraldine_melee_legs__emeraldine_melee_boots,0,right,,,rule
+emeraldine_melee_sword,P__emeraldine_melee_sword__emeraldine_melee_shield,0,left,-16 0,,rule
+emeraldine_melee_shield,P__emeraldine_melee_sword__emeraldine_melee_shield,5,right,-16 0,,rule
+emeraldine_caster_helmet,P__emeraldine_caster_helmet__emeraldine_caster_armor,2,left,,,rule
+emeraldine_caster_armor,P__emeraldine_caster_helmet__emeraldine_caster_armor,3,right,-5 0,,eye: rank 7
+emeraldine_caster_legs,P__emeraldine_caster_legs__emeraldine_caster_boots,7,left,-3 0,,eye: rank 6
+emeraldine_caster_boots,P__emeraldine_caster_legs__emeraldine_caster_boots,2,right,-2 0,,rule
+emeraldine_caster_rod,P__emeraldine_caster_rod__emeraldine_caster_spellbook,10,left,-3 0,,eye: rank 3
+emeraldine_caster_spellbook,P__emeraldine_caster_rod__emeraldine_caster_spellbook,6,right,-4 0,,eye: rank 1
+emeraldine_ranged_helmet,P__emeraldine_ranged_helmet__emeraldine_ranged_armor,12,right,-21 0,,eye: rank 0 of ranged_armor list (sides swapped)
+emeraldine_ranged_armor,P__emeraldine_ranged_helmet__emeraldine_ranged_armor,3,left,-20 0,,eye: rank 1 of ranged_helmet list (sides swapped)
+emeraldine_ranged_legs,P__emeraldine_ranged_legs__emeraldine_ranged_boots,4,left,,,rule
+emeraldine_ranged_boots,P__emeraldine_ranged_legs__emeraldine_ranged_boots,1,right,,,rule
+emeraldine_ranged_bow,P__emeraldine_ranged_bow__emeraldine_ranged_crossbow,7,left,-15 0,,rule
+emeraldine_ranged_crossbow,P__emeraldine_ranged_bow__emeraldine_ranged_crossbow,9,right,-10 0,,rule
+emeraldine_amulet,P__emeraldine_amulet__emeraldine_ring,0,left,,,eye: rank 3
+emeraldine_ring,P__emeraldine_amulet__emeraldine_ring,1,right,,,eye: rank 2
+emeraldine_backpack,emeraldine_backpack,2,full,,,eye: rank 2
+starwing_melee_helmet,P__starwing_melee_helmet__starwing_melee_armor,1,left,-1 0,,rule
+starwing_melee_armor,P__starwing_melee_helmet__starwing_melee_armor,14,right,-3 0,,eye: rank 2
+starwing_melee_legs,P__starwing_melee_legs__starwing_melee_boots,10,left,,,eye: rank 5
+starwing_melee_boots,P__starwing_melee_legs__starwing_melee_boots,9,right,,,eye: rank 1
+starwing_melee_sword,P__starwing_melee_sword__starwing_melee_shield,9,left,-1 0,,rule
+starwing_melee_shield,P__starwing_melee_sword__starwing_melee_shield,9,right,-1 0,,eye: rank 1
+starwing_caster_helmet,P__starwing_caster_helmet__starwing_caster_armor,0,left,-7 0,,eye: rank 1
+starwing_caster_armor,P__starwing_caster_helmet__starwing_caster_armor,11,right,-10 0,,eye: rank 2
+starwing_caster_legs,P__starwing_caster_legs__starwing_caster_boots,1,left,-14 0,,rule
+starwing_caster_boots,P__starwing_caster_legs__starwing_caster_boots,3,right,-13 0,,eye: rank 1
+starwing_caster_rod,P__starwing_caster_rod__starwing_caster_spellbook,9,left,,,eye: rank 2
+starwing_caster_spellbook,P__starwing_caster_rod__starwing_caster_spellbook,9,right,,,eye: rank 4
+starwing_ranged_helmet,P__starwing_ranged_helmet__starwing_ranged_armor,4,right,-27 0,,eye: rank 4 of ranged_armor list (sides swapped)
+starwing_ranged_armor,P__starwing_ranged_helmet__starwing_ranged_armor,11,left,-25 0,,eye: rank 0 of ranged_helmet list (sides swapped)
+starwing_ranged_legs,P__starwing_ranged_legs__starwing_ranged_boots,0,left,,,rule
+starwing_ranged_boots,P__starwing_ranged_legs__starwing_ranged_boots,0,right,,,rule
+starwing_ranged_bow,P__starwing_ranged_bow__starwing_ranged_crossbow,14,left,-5 0,,eye: rank 2
+starwing_ranged_crossbow,P__starwing_ranged_bow__starwing_ranged_crossbow,3,full,-5 0,32 0 64 32,eye: rank 1
+starwing_amulet,P__starwing_amulet__starwing_ring,1,left,-5 0,,eye: rank 2
+starwing_ring,P__starwing_amulet__starwing_ring,5,right,-5 0,,eye: rank 1
+starwing_backpack,starwing_backpack,8,full,,,rule
+thornwild_melee_helmet,P__thornwild_melee_helmet__thornwild_melee_armor,3,left,-1 0,,eye: rank 2
+thornwild_melee_armor,P__thornwild_melee_helmet__thornwild_melee_armor,3,right,-1 0,,eye: rank 1
+thornwild_melee_legs,P__thornwild_melee_legs__thornwild_melee_boots,12,full,-30 0,0 0 32 32,eye: rank 3
+thornwild_melee_boots,P__thornwild_melee_legs__thornwild_melee_boots,5,full,,32 0 64 32,rule
+thornwild_melee_sword,P__thornwild_melee_sword__thornwild_melee_shield,10,left,-2 0,,eye: rank 1
+thornwild_melee_shield,P__thornwild_melee_sword__thornwild_melee_shield,11,right,-5 0,,eye: rank 3
+thornwild_caster_helmet,P__thornwild_caster_helmet__thornwild_caster_armor,7,left,-5 0,,eye: rank 3
+thornwild_caster_armor,P__thornwild_caster_helmet__thornwild_caster_armor,6,right,-1 0,,eye: rank 6
+thornwild_caster_legs,P__thornwild_caster_legs__thornwild_caster_boots,1,left,-16 0,,rule
+thornwild_caster_boots,P__thornwild_caster_legs__thornwild_caster_boots,1,right,-16 0,,rule
+thornwild_caster_rod,P__thornwild_caster_rod__thornwild_caster_spellbook,11,left,-10 0,,eye: rank 3
+thornwild_caster_spellbook,P__thornwild_caster_rod__thornwild_caster_spellbook,6,right,-1 0,,eye: rank 1
+thornwild_ranged_helmet,P__thornwild_ranged_helmet__thornwild_ranged_armor,7,left,-5 0,,rule
+thornwild_ranged_armor,P__thornwild_ranged_helmet__thornwild_ranged_armor,11,right,-3 0,,eye: rank 4
+thornwild_ranged_legs,P__thornwild_ranged_legs__thornwild_ranged_boots,0,left,-11 0,,rule
+thornwild_ranged_boots,P__thornwild_ranged_legs__thornwild_ranged_boots,9,right,-11 0,,rule
+thornwild_ranged_bow,P__thornwild_ranged_bow__thornwild_ranged_crossbow,10,full,-6 0,0 0 32 32,eye: rank 3
+thornwild_ranged_crossbow,P__thornwild_ranged_bow__thornwild_ranged_crossbow,9,right,-1 0,,eye: rank 3
+thornwild_amulet,P__thornwild_amulet__thornwild_ring,6,left,,,eye: rank 3
+thornwild_ring,P__thornwild_amulet__thornwild_ring,9,right,,,rule
+thornwild_backpack,thornwild_backpack,1,full,,,eye: rank 1
