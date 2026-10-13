@@ -33,6 +33,9 @@ local cfg = {
 	maxPartySize = 4,
 	partyRange = 12, -- members farther than this from the leader stay out
 	floorTimeLimit = 300, -- seconds per floor
+	-- a boss floor gets floorTimeLimit x this (600 s): the floor 90 boss needs 5:18 alone at level 1000 (server/README.md
+	-- "Solo kill times")
+	bossFloorTimeMult = 2,
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a whole run lasts at most runTimeLimit
 	-- seconds (0 = no limit); then it ends like a lost floor: everyone back where they entered, the floors cleared so far
 	-- are recorded (gold was paid per floor). 60 minutes: about 30 floors at two minutes a floor, three bosses deep; the
@@ -92,6 +95,12 @@ function ChaosTowerFloorPlan(floor, players, rng)
 		plan.spawns[#plan.spawns + 1] = {name = pool[rng(#pool)], tier = tier}
 	end
 	return plan
+end
+
+-- seconds the group has for `floor` (a boss floor: bossFloorTimeMult times floorTimeLimit)
+function ChaosTowerFloorLimit(floor)
+	local boss = (floor or 0) > 0 and floor % cfg.bossEvery == 0
+	return cfg.floorTimeLimit * (boss and (cfg.bossFloorTimeMult or 1) or 1)
 end
 
 function ChaosTowerFloorPoints(floor)
@@ -309,6 +318,7 @@ startFloor = function(run)
 	local plan = ChaosTowerFloorPlan(run.floor, count)
 	run.remaining = spawnPlan(run, plan, math.random)
 	run.floorStart = os.time()
+	run.floorLimit = ChaosTowerFloorLimit(run.floor)
 	run.floorWarn = {} -- the floor's own warnings (instance limits)
 	say(run, plan.boss and string.format("Floor %d: BOSS!", run.floor) or string.format("Floor %d", run.floor))
 	if run.remaining == 0 then
@@ -320,7 +330,7 @@ startFloor = function(run)
 		if r and not r.ended and r.floor == floor and r.remaining > 0 then
 			endRun(r, "Time is up!")
 		end
-	end, cfg.floorTimeLimit * 1000, run.slot, run.floor)
+	end, run.floorLimit * 1000, run.slot, run.floor)
 end
 
 -- ------------------------------------------------------------------ the run's clock (instance limits)
@@ -351,7 +361,7 @@ local function clockTick(slot, startTime)
 			IL.warn(run, left, players, "Infinity Tower", cfg.limits)
 		end
 		if run.floorWarn and run.remaining > 0 and run.floorStart then
-			IL.warn(run.floorWarn, run.floorStart + cfg.floorTimeLimit - now, players, "Floor " .. run.floor,
+			IL.warn(run.floorWarn, run.floorStart + (run.floorLimit or cfg.floorTimeLimit) - now, players, "Floor " .. run.floor,
 				{warnAt = cfg.limits.floorWarnAt})
 		end
 	end

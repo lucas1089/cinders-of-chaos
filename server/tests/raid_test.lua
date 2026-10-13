@@ -216,6 +216,13 @@ for _, b in ipairs(cfg.bosses) do
 		local t = K.killTime(cfg, hp, players)
 		check(t > 240 and t < b.enrageAt, string.format("%s at %d: %.0f s, before the enrage (%d)", b.name, players, t, b.enrageAt))
 	end
+	-- the measured median (2,600 a character, data/spells/README.md): 5 raiders finish about 20% before the enrage
+	local ref = cfg.model.refDps
+	cfg.model.refDps = 2600
+	local t5 = K.killTime(cfg, hp, 5)
+	cfg.model.refDps = ref
+	check(t5 * 1.15 <= b.enrageAt and t5 * 1.25 >= b.enrageAt,
+		string.format("%s: 5 at 2,600 take %.0f s, about 20%% before the enrage (%d)", b.name, t5, b.enrageAt))
 	check(s and s:find('isboss="1"', 1, true) ~= nil, b.name .. " is a boss")
 end
 local looks = {}

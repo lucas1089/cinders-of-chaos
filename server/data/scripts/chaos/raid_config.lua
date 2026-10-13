@@ -50,7 +50,7 @@ return {
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): one opening of a raid lasts at most
 	-- sessionMinutes; then everyone goes back where they came from and the slot closes. Nothing is lost: the kills and
 	-- cleared corridors are saved for the week and the raid can be continued (a fight still going at that moment ends as
-	-- a wipe). 150 minutes: five enrage timers (8 + 8 + 8 + 8.5 + 13 minutes) and the trash take about 60-90 minutes with
+	-- a wipe). 150 minutes: five enrage timers (9 + 10 + 11 + 11 + 16 minutes since 2026-10-13) and the trash take about 60-90 minutes with
 	-- a few wipes. Warnings at warnAt seconds left; at most maxRuns raids at once (the 2 x 2 grid); a party that finds
 	-- every wing taken waits in line and is told when one frees up.
 	sessionMinutes = 150,
@@ -114,10 +114,10 @@ return {
 
 	-- ------------------------------------------------------------------ the bosses (in order)
 	-- health/look: the XML (data/monster/monsters/chaos/raid/); phases: at = health fraction where the phase starts (the
-	-- first at 1), mech = the mechanics of the phase (keys above). enrageAt: seconds after the pull. adds / totem: the
+	-- first at 1), mech = the mechanics of the phase (keys above). enrageAt: seconds after the pull (5 raiders at the measured median 2,600 finish about 20% before it; server/README.md "Solo kill times"). adds / totem: the
 	-- monster names. roles: the composition hint of the journal. gear: the base items of the boss's gear rolls.
 	bosses = {
-		{key = "ulthar", name = "Gravewarden Ulthar", enrageAt = 480, add = nil,
+		{key = "ulthar", name = "Gravewarden Ulthar", enrageAt = 540, add = nil,
 			intro = "The warden of the first gate still keeps his watch. His flail has broken every shield brought here.",
 			roles = "2 tanks (swap at 4 stacks), healers 1 per 5, the rest damage behind him.",
 			phases = {
@@ -125,7 +125,7 @@ return {
 				{at = 0.4, name = "Last Watch", mech = {"sunder", "cleave", "marks"}, yell = "I HAVE BURIED BETTER THAN YOU!"}
 			},
 			gear = {29878, 29879, 29880, 29882, 29884, 29886}},
-		{key = "morwen", name = "Morwen the Ash-Sister", enrageAt = 480, add = "Cinder Acolyte",
+		{key = "morwen", name = "Morwen the Ash-Sister", enrageAt = 600, add = "Cinder Acolyte",
 			intro = "She sang the dead to sleep, until the sleep turned to ash. Her acolytes still answer her.",
 			roles = "1 tank, 2 soak groups of 3 or more, ranged on the acolytes first.",
 			phases = {
@@ -133,7 +133,7 @@ return {
 				{at = 0.5, name = "Requiem", mech = {"soak", "adds", "marks"}, yell = "THE LAST VERSE IS YOURS!"}
 			},
 			gear = {29861, 29862, 29863, 29864, 29866, 29867}},
-		{key = "colossus", name = "The Marrow Colossus", enrageAt = 480, add = nil,
+		{key = "colossus", name = "The Marrow Colossus", enrageAt = 660, add = nil,
 			intro = "A thousand graves were emptied to build it. It does not know which way it faces.",
 			roles = "1 tank in front, nobody behind it, everyone spread for the bone blooms.",
 			phases = {
@@ -141,7 +141,7 @@ return {
 				{at = 0.5, name = "Shattering", mech = {"sweep", "marks", "cleave"}, yell = "BREAK! BREAK! BREAK!"}
 			},
 			gear = {29869, 29870, 29871, 29872, 29875, 29876}},
-		{key = "hexmaw", name = "Vhoss the Hexmaw", enrageAt = 510, add = nil, totem = "Hex Effigy",
+		{key = "hexmaw", name = "Vhoss the Hexmaw", enrageAt = 660, add = nil, totem = "Hex Effigy",
 			intro = "Its effigies watch from every wall. Each one it raises is a curse waiting to be spoken.",
 			roles = "1 tank, a kill team for the effigies, healers or a Templar ready to lift the hex (or the Font of Ash).",
 			phases = {
@@ -149,7 +149,7 @@ return {
 				{at = 0.45, name = "Hexfall", mech = {"totem", "hex", "cleave"}, yell = "SPEAK THE CURSE WITH ME!"}
 			},
 			gear = {29865, 29868, 29873, 29877, 29881, 29889}},
-		{key = "sovereign", name = "Varkhul the Ashen Sovereign", final = true, enrageAt = 780, add = "Cinder Acolyte",
+		{key = "sovereign", name = "Varkhul the Ashen Sovereign", final = true, enrageAt = 960, add = "Cinder Acolyte",
 			totem = "Hex Effigy",
 			intro = "The Sepulchre was built to keep him in. He has been waiting for someone to open the last door.",
 			roles = "2 tanks, 2 soak groups, an effigy team, a dispeller; everything you learned on the way down.",

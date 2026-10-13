@@ -27024,11 +27024,11 @@
 							"cols": ["Boss", "Enrage after", ""],
 							"w": [55, 25, 20],
 							"rows": [
-								["Gravewarden Ulthar", "8 min", ""],
-								["Morwen the Ash-Sister", "8 min", ""],
-								["The Marrow Colossus", "8 min", ""],
-								["Vhoss the Hexmaw", "510 s", ""],
-								["Varkhul the Ashen Sovereign", "13 min", "final boss"]
+								["Gravewarden Ulthar", "9 min", ""],
+								["Morwen the Ash-Sister", "10 min", ""],
+								["The Marrow Colossus", "11 min", ""],
+								["Vhoss the Hexmaw", "11 min", ""],
+								["Varkhul the Ashen Sovereign", "16 min", "final boss"]
 							],
 							"links": [
 								"boss:raid:ulthar",
@@ -27062,7 +27062,7 @@
 					"sections": [
 						{
 							"h": "Phases",
-							"p": ["Enrages after 8 min."],
+							"p": ["Enrages after 9 min."],
 							"cols": ["From health", "Phase", "Mechanics"],
 							"w": [18, 30, 52],
 							"rows": [
@@ -27083,7 +27083,7 @@
 					"sections": [
 						{
 							"h": "Phases",
-							"p": ["Enrages after 8 min."],
+							"p": ["Enrages after 10 min."],
 							"cols": ["From health", "Phase", "Mechanics"],
 							"w": [18, 30, 52],
 							"rows": [
@@ -27104,7 +27104,7 @@
 					"sections": [
 						{
 							"h": "Phases",
-							"p": ["Enrages after 8 min."],
+							"p": ["Enrages after 11 min."],
 							"cols": ["From health", "Phase", "Mechanics"],
 							"w": [18, 30, 52],
 							"rows": [
@@ -27125,7 +27125,7 @@
 					"sections": [
 						{
 							"h": "Phases",
-							"p": ["Enrages after 510 s."],
+							"p": ["Enrages after 11 min."],
 							"cols": ["From health", "Phase", "Mechanics"],
 							"w": [18, 30, 52],
 							"rows": [
@@ -27146,7 +27146,7 @@
 					"sections": [
 						{
 							"h": "Phases",
-							"p": ["Enrages after 13 min."],
+							"p": ["Enrages after 16 min."],
 							"cols": ["From health", "Phase", "Mechanics"],
 							"w": [18, 30, 52],
 							"rows": [

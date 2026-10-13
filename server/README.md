@@ -2093,7 +2093,7 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
   machine's memory limit during that run) and the Paragon reset dialog (character below level 1000).
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
-The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
+The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers (twice the floor time since 2026-10-13: 10 minutes). Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
 - Not done: a visible ladder of floors in the client window, and per-floor loot beyond what the monsters drop. Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
@@ -4651,7 +4651,7 @@ so are the monster tiers, the trash before a boss and moving out of telegraphs e
 | Ascension Trial (level 100-130) | 6,000-7,800 | health / dps | 3:00 | ~0:20 | ok |
 | Vocation Trials boss | 9k / 40k / 130k at the tier's level, x(level / min)^1.5 | health / dps | 8:00 / 9:00 / 10:00 the run | Merciless at 1000: 514k, 3:18 | ok, waves on top |
 | World bosses (group only) | 15-24M, heals 1,200-3,200/s | health / dps | 45:00 | solo 3-4 h or never (Vharok heals more than one player deals); 10 players 10:06-17:33; 20 players 4:56-8:12 | group content, as designed |
-| Raid bosses (5+) | 4.0-7.2M, +18% per raider over 5 | raid_core.lua K.killTime | enrage 8:00-13:00, session 150 min | 5 at 3,000: 6:26-11:36; 5 at 2,600: 7:26-13:23 | at the median 2,600 every boss meets its enrage (it hits harder; not a wipe) |
+| Raid bosses (5+) | 4.0-7.2M, +18% per raider over 5 | raid_core.lua K.killTime | enrage 9 / 10 / 11 / 11 / 16 min (was 8 / 8 / 8 / 8:30 / 13), session 150 min | 5 at 3,000: 6:26-11:36; 5 at 2,600: 7:26-13:23; 5 at 1,950: 9:55-17:51 | 5 at 2,600 finish 18-23% before the enrage; at 1,950 they meet it, and the five fights take about 63 of the session's 150 minutes |
 | Donor bosses (dormant) | 18-22M after, see "Monster lint" | health / dps | none | solo 3.6-4.4 h; 20 players 5:54-7:13 | before: never (heals above any damage) |
 | Legendary Warrior (dormant) | 1.0M (was 7.0M) | health / dps | none | 7:45 (was 54:16) | a solo boss now |
 
@@ -4665,7 +4665,7 @@ test server.
 
 **Base server bosses** (read from the base copy of windows-assets 407ad9b6; names after the renames). Limit: a lever
 room's own kick time capped at 30 minutes (instance_limits_config.lua), a dungeon's `DungeonTime`, a tower boss floor's
-`floorTimeLimit`. "Entry" is the room's required level (100 when it has none; tower bosses: level 1000 only); x2 = two
+`floorTimeLimit` x `bossFloorTimeMult` (10:00 since 2026-10-13; 5:00 before). "Entry" is the room's required level (100 when it has none; tower bosses: level 1000 only); x2 = two
 rooms with the same boss.
 
 | Place | Boss | Entry level | Health | Armor | Heal/s | Damage at entry | Time at entry | Time at 1000 | Limit | Result |
@@ -4725,25 +4725,25 @@ rooms with the same boss.
 | dungeon 2 | Master of the Elements | 200 | 300,000 | 95 | 0 | 609 | 8:13 | 1:55 | 60:00 | ok |
 | dungeon 3 | Forbidden Chevalier | 500 | 550,000 | 90 | 300 | 1395 | 8:22 | 3:59 | 60:00 | ok |
 | dungeon 4 | the Rootmaw | 600 | 685,000 | 145 | 0 | 1636 | 6:59 | 4:23 | 30:00 | ok |
-| tower boss floor | the Grey Widow (floor 10) | - | 3,200 | 45 | 42 | - | - | 0:01 | 5:00 | ok |
-| tower boss floor | the Ashen Count (floor 20) | - | 50,000 | 75 | 0 | - | - | 0:19 | 5:00 | ok |
-| tower boss floor | Zeburoth (floor 30) | - | 110,000 | 160 | 1750 | - | - | 2:09 | 5:00 | ok |
-| tower boss floor | Pestrogh (floor 40) | - | 80,000 | 188 | 300 | - | - | 0:35 | 5:00 | ok |
-| tower boss floor | Morgashal (floor 50) | - | 22,500 | 90 | 316 | - | - | 0:10 | 5:00 | ok |
-| tower boss floor | Moloveth (floor 60) | - | 60,000 | 55 | 64 | - | - | 0:24 | 5:00 | ok |
-| tower boss floor | Vharagoth (floor 70) | - | 55,000 | 55 | 64 | - | - | 0:22 | 5:00 | ok |
-| tower boss floor | Ssylvath the Corruptor (floor 80) | - | 28,000 | 96 | 250 | - | - | 0:12 | 5:00 | ok |
-| tower boss floor | Ashvoran (floor 90) | - | 270,000 | 165 | 1750 | - | - | 5:18 | 5:00 | **over at 1000** |
-| tower boss floor | Massacre (floor 100) | - | 32,000 | 15 | 0 | - | - | 0:12 | 5:00 | ok |
-| tower boss floor | Jungle's Revenge (floor 110) | - | 1,800 | 30 | 204 | - | - | 0:01 | 5:00 | ok |
-| tower boss floor | Vhalkareth (floor 120) | - | 50,000 | 100 | 60 | - | - | 0:20 | 5:00 | ok |
+| tower boss floor | the Grey Widow (floor 10) | - | 3,200 | 45 | 42 | - | - | 0:01 | 10:00 | ok |
+| tower boss floor | the Ashen Count (floor 20) | - | 50,000 | 75 | 0 | - | - | 0:19 | 10:00 | ok |
+| tower boss floor | Zeburoth (floor 30) | - | 110,000 | 160 | 1750 | - | - | 2:09 | 10:00 | ok |
+| tower boss floor | Pestrogh (floor 40) | - | 80,000 | 188 | 300 | - | - | 0:35 | 10:00 | ok |
+| tower boss floor | Morgashal (floor 50) | - | 22,500 | 90 | 316 | - | - | 0:10 | 10:00 | ok |
+| tower boss floor | Moloveth (floor 60) | - | 60,000 | 55 | 64 | - | - | 0:24 | 10:00 | ok |
+| tower boss floor | Vharagoth (floor 70) | - | 55,000 | 55 | 64 | - | - | 0:22 | 10:00 | ok |
+| tower boss floor | Ssylvath the Corruptor (floor 80) | - | 28,000 | 96 | 250 | - | - | 0:12 | 10:00 | ok |
+| tower boss floor | Ashvoran (floor 90) | - | 270,000 | 165 | 1750 | - | - | 5:18 | 10:00 (was 5:00) | ok (was over) |
+| tower boss floor | Massacre (floor 100) | - | 32,000 | 15 | 0 | - | - | 0:12 | 10:00 | ok |
+| tower boss floor | Jungle's Revenge (floor 110) | - | 1,800 | 30 | 204 | - | - | 0:01 | 10:00 | ok |
+| tower boss floor | Vhalkareth (floor 120) | - | 50,000 | 100 | 60 | - | - | 0:20 | 10:00 | ok |
 
 Flags: every room and dungeon is in time at level 1000 and from level 300 on. At their entry level (100-200, a rough
 damage guess) 12 lever rooms built for 4-10 players take longer than their kick time alone (Gorevast 71 min of 20,
 the four 350k brothers 22 of 20, the five court rooms of 10 minutes 11-23, King Morthal 162 of 30, the Bleached Wyrm
-18 of 15): group rooms, so no change proposed. The tower's floor 90 boss (Ashvoran, 270k, heals 1,750/s) takes 5:18 of
-its 5:00 floor alone at level 1000; proposal (ours, `infinitytower_run.lua`, not done): boss floors get twice
-`floorTimeLimit`.
+18 of 15): group rooms, so no change proposed. The tower's floor 90 boss (Ashvoran, 270k, heals 1,750/s) took 5:18 of
+its 5:00 floor alone at level 1000; since 2026-10-13 (owner approval) a boss floor has twice `floorTimeLimit`
+(`bossFloorTimeMult` 2: 10:00, `ChaosTowerFloorLimit`), so it fits with 4:42 to spare.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
@@ -11790,11 +11790,11 @@ pull): boss and add hits x1.75, mechanics 40% more often, 10% of max health on e
 
 | Boss | Look | Phases (health) | Mechanics | Enrage |
 |---|---|---|---|---|
-| Gravewarden Ulthar | 2127 (hooded black plate warden, red ember glow) | The Watch 100%, Last Watch 40% | sunder, cleave; + Bone Bloom | 8:00 |
-| Morwen the Ash-Sister | 2128 (hooded violet-robed sister in ember soul fire) | The Ash Choir 100%, Requiem 50% | soak, Cinder Acolytes; + Bone Bloom | 8:00 |
-| The Marrow Colossus | 2129 (many-legged pale bone colossus) | Grinding Bones 100%, Shattering 50% | sweep, Bone Bloom; + cleave | 8:00 |
-| Vhoss the Hexmaw | 2130 (coiled violet maw with a blue hex glow) | The Effigies 100%, Hexfall 45% | Hex Effigies, Withering Hex; + cleave | 8:30 |
-| Varkhul the Ashen Sovereign (final) | 2131 (ash-grey winged sovereign, 4x4) | The Throne 100% (sunder, cleave), Court of Ash 70% (sunder, soak, acolytes), The Last Sovereign 40% (sunder, effigies, hex, sweep) | seven | 13:00 |
+| Gravewarden Ulthar | 2127 (hooded black plate warden, red ember glow) | The Watch 100%, Last Watch 40% | sunder, cleave; + Bone Bloom | 9:00 (was 8:00) |
+| Morwen the Ash-Sister | 2128 (hooded violet-robed sister in ember soul fire) | The Ash Choir 100%, Requiem 50% | soak, Cinder Acolytes; + Bone Bloom | 10:00 (was 8:00) |
+| The Marrow Colossus | 2129 (many-legged pale bone colossus) | Grinding Bones 100%, Shattering 50% | sweep, Bone Bloom; + cleave | 11:00 (was 8:00) |
+| Vhoss the Hexmaw | 2130 (coiled violet maw with a blue hex glow) | The Effigies 100%, Hexfall 45% | Hex Effigies, Withering Hex; + cleave | 11:00 (was 8:30) |
+| Varkhul the Ashen Sovereign (final) | 2131 (ash-grey winged sovereign, 4x4) | The Throne 100% (sunder, cleave), Court of Ash 70% (sunder, soak, acolytes), The Last Sovereign 40% (sunder, effigies, hex, sweep) | seven | 16:00 (was 13:00) |
 
 The looks are their own donor-library creatures (client pair things_custom14, client/MANIFEST.md "Raid boss and faction
 looks"; picks.csv rows `raid_*`, written into the XMLs by `tools/apply_monster_looks.py`, family `raid`). Until
@@ -11808,6 +11808,11 @@ looks"; picks.csv rows `raid_*`, written into the XMLs by `tools/apply_monster_l
 | The Marrow Colossus | 4.80M, 7:43 | 9.12M, 7:20 | 13.44M, 7:12 |
 | Vhoss the Hexmaw | 5.00M, 8:03 | 9.50M, 7:38 | 14.00M, 7:30 |
 | Varkhul the Ashen Sovereign | 7.20M, 11:35 | 13.68M, 11:00 | 20.16M, 10:49 |
+
+At the measured median 2,600 (data/spells/README.md) 5 raiders take 7:26 / 8:11 / 8:55 / 9:17 / 13:23, so since
+2026-10-13 the enrage is at 9 / 10 / 11 / 11 / 16 minutes (was 8 / 8 / 8 / 8:30 / 13): 18-23% to spare
+(tests/raid_test.lua keeps 15-25%). At the weakest class's 1,950 they take 9:55 / 10:55 / 11:53 / 12:23 / 17:51 and
+meet the enrage; the five fights then take about 63 minutes of the 150-minute session (unchanged).
 
 Not measured: a real raid's kill times and the boss melee against a full set of tanks (the XML hits are first estimates
 near the Ascended Omens').
