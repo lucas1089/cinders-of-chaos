@@ -213,4 +213,26 @@ function P.reversalRemaining(credited, amountCents, refundedCents, already, enab
 	return math.max(0, share - math.max(0, math.floor(tonumber(already) or 0)))
 end
 
+-- ------------------------------------------------------------------ creator codes (the client's donate tab)
+-- the code as the website stores it (creator_lib.php chaos_creator_normalize): upper case, no spaces or dashes,
+-- 3-16 letters and digits; nil when it is not a code
+function P.creatorCode(text)
+	local c = tostring(text or ""):upper():gsub("[%s%-]+", "")
+	if #c >= 3 and #c <= 16 and not c:find("[^A-Z0-9]") then
+		return c
+	end
+	return nil
+end
+
+-- why a donor cannot pick this code row ({id, account_id, active, display_name, code}), or nil (the website's rules)
+function P.creatorRefusal(row, accountId)
+	if not row or tonumber(row.active) ~= 1 then
+		return "That is not an active creator code."
+	end
+	if tonumber(row.account_id) == tonumber(accountId) then
+		return "You cannot support your own creator code."
+	end
+	return nil
+end
+
 return P

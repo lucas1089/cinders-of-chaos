@@ -19,8 +19,58 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   placeholder in `server/data/scripts/chaos/class_unlocks_core.lua` and in the store offers of `shop_config.lua`
   (category "Classes"; change both). Decide the price, or another way to unlock them (the unlock method is
   pluggable: ROADMAP C8).
+- [ ] **Store prices of 2026-10-13 (placeholders; owner approval "Pode fazer todas as mudanças recomendadas").**
+  - Coin packs (`server/data/scripts/chaos/shop_coins_config.lua`): Handful of Coins 80 for US$ 1.99 (R$ 9,95 by Pix),
+    Pouch 250 / 4.99, Sack 750 +10% / 14.99, Chest 1500 +15% / 29.99, Hoard 4000 +25% / 74.99, Vault of Coins 10000
+    +30% / 179.99 (the anchor), Starter 250 + 250 / 2.99. The first donation is double (+100%) on any pack: on the Vault
+    that is +10,000 coins; say if it should have a cap. Update the Donation Terms tables' R$ / US$ placeholders.
+  - Chaos outfit shaders (`cosmetics_config.lua` `outfitShaders`, on): 250 (Ember Glow, Frost Rime, Void Flicker,
+    Heartblood), 300 (Holy Radiance, Spectral Ghost).
+  - Themed appearance sets of pair 24 (`server/data/lib/chaos_theme_art.lua` `M.sets`): 350 a full set (Cryptbone,
+    Wildroot, Moonsilver), 250 a class kit (Rimeglass, Emeraldine, Thornwild), sold only in the weekly "This week"
+    rotation (5 offers, 10% off). Prestige, never sold: Voidmourn, Sunsworn, Oathsteel and the three Starwing kits
+    (achievements in server/README.md "Weekly rotation, bundles, coin packs"). Change the split there if wanted.
+  - Regalia bundles (outfit + mount + wings + aura) at 25% off; the three older bundles stay at 20%.
+  - Everfull Ration, the infinite food (`shop_config.lua`, Convenience): 150 coins.
+  - Rune packs (`shop_config.lua` `RUNE_GOLD_PER_COIN = 1000`, `RUNE_DISCOUNT` 5% / 10%): 100 Searing Orb 9, 500 Reaper's
+    99, 100 Grand Mending 24, 100 Shackle 89 (all from the vendor prices of `data/lib/chaos_rune_supply.lua`).
+  - VIP (the Chaos Pact, 300 coins / 30 days): now also +1 loadout slot, the Auto Seller and Rarity Autoloot while
+    active, a chat colour and a monthly cosmetic (six months planned, `pact_config.lua` `perks.monthly`). Note: the
+    loadout slot was "never sold" by design (a slot saves respec gold); the VIP slot is a paid slot in effect. "Loot bag"
+    was read as Rarity Autoloot (the loot pouch is a permanent item); say if you meant the Loot Pouch. No priority login:
+    there is no login queue.
+- [ ] **Season pass price.** The premium track of the Ashen Pass costs 1000 Chaos Coins, a placeholder
+  (`premium.price` in `server/data/scripts/chaos/seasonpass_config.lua`; the store offer reads it). The track is
+  cosmetics and 320 coins back only (approved 2026-10-13). Decide the price; the packs (600 / 1800 / 3200) too.
+- [ ] **Creator codes.** Decided 2026-10-13: the creator is paid in Chaos Coins in game. Left: the share, 5% of the
+  donation's coins, a placeholder (`sharePct` in `server/data/scripts/chaos/creator_codes_config.lua`), the hold (14
+  days) and the caps (500 per donation, 5000 a month). Codes are created on the website (The World > Creator Codes,
+  an admin panel account with a group 5 character).
+- [ ] **Referral rewards.** The main reward comes at level 150 of the friend's first character, a placeholder
+  (`milestones` and `qualify` in `server/data/scripts/chaos/referral_config.lua`; the friend's account must be 7 days
+  old). Tier titles at 3, 5 and 10 friends. Set `shareUrl` to `https://<site>/register.php?ref=` so the client shows
+  the link too (the website shows it already).
+- [ ] **Character Bazaar fee.** 8% of the final price, a placeholder in the approved 5-10% range (`feePct` in
+  `server/data/scripts/chaos/bazaar_config.lua`). Also check the minimum level 50 and the minimum price 100 coins.
+  Add the cron line of `website/README.md` "Character Bazaar" on the live site.
+- [ ] **A lawyer must review the new clauses.** Donation Terms section 7 (Season Pass, creator codes, Character
+  Bazaar) is a draft with placeholders (`[PREÇO DO PASSE PREMIUM]`, `[PERCENTUAL DO CRIADOR]`, `[TAXA DO BAZAR]`, ...;
+  docs/legal/README.md "Placeholders" and "Check" item 17). It must be reviewed before the Bazaar and creator codes
+  are switched on for players.
 - [x] **Staff rules.** Decided 2026-10-12: the recommended rules of [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (see
   "Decided" below).
+- [x] **Rune prices** (2026-10-13; rune conjuring is gone, runes come from NPCs and crafting). Decided 2026-10-13: the
+  prices stay as below; Conjure Rations, Hallow Spear and Charge Staff go too ("Pode tirar, já que as ammos são
+  infinitas"). Every NPC now sells each
+  rune at one price, about its conjure cost in mana-potion gold: about twice the old NPC price for most runes (Searing
+  Orb 45 -> 84, Reaper's Rune 50-108 -> 220, Grand Mending 175 -> 240, Shackle 700 -> 890; the unscribed rune stays 10).
+  Crafting makes them for 55% of that gold (about 46% with the crafting bonus) plus herbs and ore pieces. Full table and
+  the gold-per-hour share by level band: server/README.md "Rune supply"; numbers in
+  `server/data/lib/chaos_rune_supply.lua` (`price`, `goldShare`). Decide:
+  - the prices (300 attack runes an hour cost 14-17% of hunting gold at levels 8-20, 40% at 30, 62% at 45 with Reaper's
+    Runes, 18% at 100, 7% at 300, about 1% past 500: flat prices are no sink in the late game);
+  - whether Conjure Rations (food), Hallow Spear and Charge Staff, the last conjure spells that make no rune, go too
+    (decided: they go).
 
 ## Accounts and services
 
@@ -88,8 +138,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - Sprite pair 24 (themed sets, rift rank variants, pack and large effects, bigger guardians): approved and pushed to
   `windows-assets` (407ad9b6, 2026-10-13). Its switches are on since 2026-10-13 (pair 24 at 407ad9b6; owner: "pode
   ligar todos os switches"): `ChaosThemeArt.PAIR24`, `ChaosPackFx.PACK_FX`, `ChaosBigFx.BIG_FX`, rift
-  `looks.variantsOn` and `looks.bigGuardiansOn`. Still open: the sources of the 18 themed transmog sets (now
-  `exclusive`, staff / events only).
+  `looks.variantsOn` and `looks.bigGuardiansOn`. The 18 themed transmog sets: 12 in the store's weekly rotation, 6
+  prestige achievement rewards (2026-10-13, prices above).
 - Rift atlas: the orb nodes stay cut about 3x (a full Hall atlas with Lone Ember lands at about 10.6x hunting orbs).
 - Lone Ember and Fleeting Sanctum raise gold and item rolls, not orbs: kept.
 - Guild boss orbs (3 Upheaval + 1 Fate per participant): kept.

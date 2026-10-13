@@ -35,6 +35,10 @@ final class FakeZnoteDb {
 		$sql = str_replace('`', '', $sql);
 		return $GLOBALS['TEST_DB']->rows($sql, $p);
 	}
+	public function execute(string $sql, array $p = array()) {
+		$GLOBALS['TEST_DB']->exec(str_replace('`', '', $sql), $p);
+		return true;
+	}
 }
 function db() { static $d; return $d ?? ($d = new FakeZnoteDb()); }
 
@@ -69,7 +73,20 @@ check(strpos($html, 'chaos-donation-receipt-terms') === false, 'no receipt note 
 $SESSION_USER = 77;
 $html = render();
 check($notices($html), 'notice when logged in');
-check(substr_count($html, '>Donate R$ ') === 5 && substr_count($html, '>Donate US$ ') === 5, 'a Donate button per pack and method');
+check(strpos($html, 'double Chaos Coins (+100%)') !== false, 'the first donation bonus: double');
+check(substr_count($html, '>Donate R$ ') === 7 && substr_count($html, '>Donate US$ ') === 7, 'a Donate button per pack and method');
+// creator codes (creator_lib.php): the field, a pick before the donation, a bad code stops the donation
+$db->exec("INSERT INTO chaos_creator_codes (code, account_id, display_name, active) VALUES ('STREAMER', 900, 'Streamer', 1)", array());
+check(strpos($html, 'id="chaos-creator-pick"') !== false && strpos($html, 'name="chaos_creator_code"') !== false, 'creator code field');
+check(strpos($html, 'your pack and the first donation bonus stay the same') !== false, 'the code never lowers the donor\'s coins');
+$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_creator_pick' => '1', 'chaos_creator_code' => 'streamer'));
+$sup = $db->rows('SELECT code_id FROM chaos_creator_support WHERE account_id = 77', array());
+check(count($sup) === 1, 'a code picked on the donate page (chaos_creator_set_support)');
+check(strpos($html, 'You now support Streamer') !== false, 'the pick is confirmed');
+$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix',
+	'chaos_creator_code' => 'NOPE1'));
+check(strpos($html, 'That is not an active creator code.') !== false, 'a bad code sent with a Donate button: refused');
+check(count($db->rows('SELECT id FROM chaos_coin_orders', array())) === 0, 'and no order is made');
 // a Pix donation from the page
 $html = render(array(), array('chaos_pay_csrf' => 'wrong', 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix'));
 check(strpos($html, 'The form expired') !== false, 'CSRF token checked');
@@ -92,8 +109,8 @@ $html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], '
 check(order_status($db, 1) === 'cancelled' && strpos($html, 'This donation was cancelled') !== false, 'cancel POST with the token cancels');
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = 1");
 $html = render(array('order' => '1'));
-check(strpos($html, chaos_h('Thank you for your voluntary donation! You received 975 Chaos Coins as a thank-you.')) !== false, 'thanks after the donation (EN)');
-check(strpos($html, chaos_h('Obrigado pela sua doação voluntária! Você recebeu 975 Chaos Coins como agradecimento.')) !== false, 'thanks after the donation (PT)');
+check(strpos($html, chaos_h('Thank you for your voluntary donation! You received 1575 Chaos Coins as a thank-you.')) !== false, 'thanks after the donation (EN)');
+check(strpos($html, chaos_h('Obrigado pela sua doação voluntária! Você recebeu 1575 Chaos Coins como agradecimento.')) !== false, 'thanks after the donation (PT)');
 check(strpos($html, chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN)) !== false && strpos($html, chaos_h(CHAOS_LEGAL_DONATION_AFTER_PT)) !== false, 'after payment: a voluntary donation, not a purchase (EN + PT)');
 $db->exec("UPDATE chaos_coin_orders SET status = 'paid' WHERE id = 1");
 check(strpos(render(array('order' => '1')), chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN)) !== false, 'also while the coins are on their way');

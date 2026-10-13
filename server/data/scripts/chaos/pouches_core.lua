@@ -198,7 +198,7 @@ function P.moveRefusal(m)
 		return nil
 	end
 	if m.toGround then
-		return "Store pouches stay with you: they cannot be dropped, mailed or thrown away."
+		return "Store items stay with you: they cannot be dropped, mailed or thrown away."
 	end
 	for _, c in ipairs(m.chain or {}) do
 		if c == "pouch" then
@@ -209,7 +209,7 @@ function P.moveRefusal(m)
 			break
 		end
 	end
-	return "Store pouches stay with you: keep them in your backpack or your depot."
+	return "Store items stay with you: keep them in your backpack or your depot."
 end
 
 -- taken = {[kind] = n}, backpack = n (wanted by a pouch, went to the backpack), left = n (no room anywhere),

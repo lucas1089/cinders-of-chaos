@@ -117,6 +117,16 @@ local function supports()
 	return ChaosSupports
 end
 
+-- the loadout slots the Chaos Pact (VIP) adds while active (pact_perks.lua; 0 without it)
+local function pactSlots(player)
+	local PP = ChaosPactPerks
+	if not (PP and PP.loadoutBonus) then
+		return 0
+	end
+	local ok, n = pcall(PP.loadoutBonus, player)
+	return ok and tonumber(n) or 0
+end
+
 local function maxSpellId()
 	local S = supports()
 	return S and S.config and S.config.maxSpellId or 499
@@ -564,7 +574,7 @@ local function armOf(player, rows)
 	end
 	local active = activeSlot(player)
 	local live = {nodes = #liveTree(player), paragon = Core.paragonSpent(liveParagon(player)), runes = Core.runeCount(liveLayout(player))}
-	return {active = active, limit = Core.slotLimit(player:getLevel()), slots = slots, live = live}
+	return {active = active, limit = Core.slotLimit(player:getLevel(), nil, pactSlots(player)), slots = slots, live = live}
 end
 
 -- one slot for the window
@@ -625,7 +635,7 @@ function L.state(player)
 	local level = player:getLevel()
 	local pz = inPz(player)
 	local ctx = {
-		limit = Core.slotLimit(level), active = activeSlot(player), tree = treeData(), classKey = classKey(player),
+		limit = Core.slotLimit(level, nil, pactSlots(player)), active = activeSlot(player), tree = treeData(), classKey = classKey(player),
 		variantKey = ChaosPassiveTree and ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
 		points = totalPoints(player), voc = vocationId(player), liveNodes = liveTree(player), liveParagon = liveParagon(player),
 		liveRunes = liveLayout(player), equipped = equippedItems(player), pool = poolItems(player, pz or not cfg.inboxOnlyInPz)

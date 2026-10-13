@@ -46,6 +46,10 @@ $pdo->exec("CREATE TABLE players (id INTEGER PRIMARY KEY, name TEXT NOT NULL, ac
 	vocation INT NOT NULL DEFAULT 0, level INT NOT NULL DEFAULT 1, experience INT NOT NULL DEFAULT 0, deletion INT NOT NULL DEFAULT 0)");
 $pdo->exec("CREATE TABLE chaos_leaderboard (board TEXT NOT NULL, week INT NOT NULL, player_id INT NOT NULL, value INT NOT NULL DEFAULT 0,
 	count INT NOT NULL DEFAULT 0, updated_at INT NOT NULL DEFAULT 0, PRIMARY KEY (board, week, player_id))");
+// the records tables (records.lua), empty until the server publishes its boards
+$pdo->exec("CREATE TABLE chaos_records_boards (key TEXT PRIMARY KEY, cat TEXT, name TEXT, mode TEXT, format TEXT, label TEXT, variants TEXT, sizes TEXT, ord INT)");
+$pdo->exec("CREATE TABLE chaos_records (slot TEXT, period TEXT, player_id INT, value INT, at INT, voc INT, party INT, members TEXT, count INT, PRIMARY KEY (slot, period, player_id))");
+$pdo->exec("CREATE TABLE chaos_records_firsts (season TEXT, target TEXT, board TEXT, name TEXT, members TEXT, guids TEXT, value INT, at INT, PRIMARY KEY (season, target))");
 $pdo->exec("INSERT INTO players (id, name, group_id, vocation, level) VALUES (1, 'Quick Blade', 1, 4, 300), (2, 'Slow Hammer', 1, 8, 310),
 	(3, 'Mid Arrow', 1, 3, 290), (4, 'Staff Ember', 6, 4, 500)");
 
@@ -148,6 +152,54 @@ check(array_column($rowsOf($renderClass('cinder_solo', '4 OR 1=1')), 1)[0] === '
 $html = $renderClass('worldboss', '4');
 check(strpos($html, 'aria-label="Classes"') === false, 'worldboss: no class tabs');
 check(count($rowsOf($html)) === 3 && strpos($html, 'Mid Arrow') !== false, 'worldboss: the class value is ignored');
+
+
+// ---- records (records.lua): the boards the server published, the filters, ties to the earlier time, staff left out
+check(strpos($renderClass('worldboss', null), 'No records yet') !== false, 'records: nothing before the server published boards');
+$pdo->exec("INSERT INTO chaos_records_boards VALUES ('omen', 'bosses', 'Omen Guardians', 'min', 'time', 'Fastest', 'bloodmoon=Sangrith;storm=Thalcyra', 'solo=Solo;small=2-3;party=4-5', 1),
+	('tower_floor', 'tower', 'Highest Floor', 'max', '', 'Floor', '', '', 2)");
+$ri = $pdo->prepare('INSERT INTO chaos_records VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
+foreach (array(array(1, 300, 50, 4), array(2, 280, 90, 8), array(3, 300, 40, 3), array(4, 100, 10, 4), array(7, 3700, 5, 8)) as $r) {
+	$ri->execute(array('omen|storm|small', 'all', $r[0], $r[1], $r[2], $r[3], 2, 'A, B'));
+}
+$ri->execute(array('omen|bloodmoon|solo', 'all', 1, 500, 1, 4, 1, 'Quick Blade'));
+$ri->execute(array('tower_floor|-|-', 'all', 1, 90, 1, 4, 1, ''));
+$ri->execute(array('tower_floor|-|-', 'all', 2, 120, 1, 8, 1, ''));
+$ri->execute(array('tower_floor|-|-', 'w' . $week, 1, 60, 1, 4, 1, ''));
+$season = chaos_records_season_key(time());
+$pdo->prepare("INSERT INTO chaos_records_firsts VALUES (?, 'ascended:cinder', 'ascended', 'Cinderheart', 'Quick Blade, Mid Arrow', '1,3', 900, 100)")->execute(array($season));
+$renderRec = static function (array $get): string {
+	global $config;
+	$_GET = $get;
+	ob_start();
+	include __DIR__ . '/../overlay/plugins/chaos/pages/leaderboards.php';
+	return (string)ob_get_clean();
+};
+$recRows = static function (string $html): array {
+	$html = substr($html, (int)strpos($html, 'chaos-records'));
+	preg_match_all('#<tr class="[^"]*">\s*<td>(\d+)</td>\s*<td><a [^>]*>([^<]+)</a></td>\s*<td>[^<]*</td>\s*<td class="num">([^<]+)</td>#', $html, $m, PREG_SET_ORDER);
+	return array_map(static function ($x) { return array($x[2], $x[3]); }, $m);
+};
+$html = $renderRec(array('rb' => 'omen', 'rv' => 'storm', 'rs' => 'small', 'rp' => 'all'));
+check(strpos($html, 'aria-label="Record boards"') !== false && strpos($html, 'aria-label="Party size"') !== false, 'records: board and size tabs');
+check(array_column($recRows($html), 0) === array('Slow Hammer', 'Mid Arrow', 'Quick Blade', 'Iron Juggernaut'), 'records: fastest first, tie to the earlier time, staff left out');
+check(array_column($recRows($html), 1) === array('4:40', '5:00', '5:00', '1:01:40'), 'records: m:ss and h:mm:ss');
+check(strpos($html, 'title="A, B"') !== false, 'records: the party in the tooltip');
+$html = $renderRec(array('rb' => 'omen', 'rv' => 'storm', 'rs' => 'small', 'rp' => 'all', 'rc' => '4'));
+check(array_column($recRows($html), 0) === array('Slow Hammer', 'Quick Blade', 'Iron Juggernaut'), 'records: Warrior class tab (4, 8, 14)');
+$html = $renderRec(array('rb' => 'omen', 'rv' => 'nope', 'rs' => 'zzz', 'rp' => 'all'));
+check(array_column($recRows($html), 0) === array('Quick Blade'), 'records: bad filters fall back to the first variant and size');
+$html = $renderRec(array('rb' => 'tower_floor', 'rp' => 'all'));
+check(array_column($recRows($html), 0) === array('Slow Hammer', 'Quick Blade'), 'records: max board highest first');
+check(strpos($html, 'aria-label="Party size"') === false, 'records: no size tabs on a board without sizes');
+$html = $renderRec(array('rb' => 'tower_floor', 'rp' => 'week'));
+check(array_column($recRows($html), 1) === array('60'), 'records: this week only');
+$html = $renderRec(array('rb' => 'tower_floor', 'rp' => 'season'));
+check(strpos($html, 'No result on this board in this view yet') !== false, 'records: empty season view');
+check(strpos($html, 'Quick Blade, Mid Arrow') !== false && strpos($html, 'Cinderheart') !== false, 'records: realm firsts of the season');
+check(chaos_records_value('pct', 4512) === '45.12%' && chaos_records_value('', 1500) === '1,500', 'records: value formats');
+check(preg_match('/^(s\d+|q\d{5})$/', $season) === 1, 'records: season key');
+check(count(chaos_records_categories()) === 6, 'records: categories read from records_config.lua');
 
 echo $failed === 0 ? "chaos_leaderboards_page_test: OK\n" : "chaos_leaderboards_page_test: $failed failed\n";
 exit($failed === 0 ? 0 : 1);

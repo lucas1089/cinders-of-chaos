@@ -92,7 +92,7 @@ check($r['ok'] && !$r['reused'], 'order created');
 $id = $r['order_id'];
 $o = order_row($db, $id);
 check($o['status'] === 'pending' && (int)$o['amount_cents'] === 7495 && $o['currency'] === 'BRL', 'pending row with the server price');
-check((int)$o['coins'] + (int)$o['bonus'] + (int)$o['first_bonus'] === 975, 'credit preview with the first donation bonus');
+check((int)$o['coins'] + (int)$o['bonus'] + (int)$o['first_bonus'] === 1575, 'credit preview with the first donation bonus (double)');
 check($svc->createOrder(77, 'coins750', 'pix')['order_id'] === $id && $svc->createOrder(77, 'coins750', 'pix')['reused'], 'same pack: the open order');
 $x = $svc->createOrder(77, 'coins4000', 'pix');
 check(!$x['ok'] && $x['order_id'] === $id, 'one open order at a time');
@@ -156,11 +156,22 @@ check(order_row($db, $id)['status'] === 'open', 'not a Pix payment: not paid');
 $mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('pending'));
 $svc->webhook('mercadopago', $sign('123456789', 'r6', '1800000000'), '{}', $q);
 check(order_row($db, $id)['status'] === 'open', 'pending stays open');
-$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved'), true);
+$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 74.95, 'BRL', null,
+	array('payer' => array('id' => '555', 'email' => 'Payer@Example.com', 'identification' => array('type' => 'CPF', 'number' => '123.456.789-09')))), true);
 $res = $svc->webhook('mercadopago', $sign('123456789', 'r7', '1800000000'), '{}', $q);
 check($res[0] === 200 && $res[1] === 'paid' && order_row($db, $id)['status'] === 'paid', 'approved: paid');
+// the payer of a confirmed donation as a SHA-256 (creator codes and referrals: same payer checks)
+$payers = $db->rows('SELECT order_id, account_id, payer_hash FROM chaos_pay_payers', array());
+check(count($payers) === 1 && (int)$payers[0]['order_id'] === $id && (int)$payers[0]['account_id'] === (int)order_row($db, $id)['account_id'], 'payer recorded for the order and account');
+check($payers[0]['payer_hash'] === ChaosPayService::payerHash('mercadopago', 'doc:cpf:12345678909'), 'hash of the payer document (Pix: CPF)');
+check(strlen($payers[0]['payer_hash']) === 64 && strpos($payers[0]['payer_hash'], '12345678909') === false, 'never the raw document');
+check(ChaosPayService::payerHash('mercadopago', 'doc:cpf:1', 'salt') !== ChaosPayService::payerHash('mercadopago', 'doc:cpf:1'), 'the salt changes the hash');
 $res = $svc->webhook('mercadopago', $sign('123456789', 'r8', '1800000001'), '{}', $q);
 check($res[1] === 'already' && order_row($db, $id)['status'] === 'paid', 'repeated webhook changes nothing');
+check(count($db->rows('SELECT order_id FROM chaos_pay_payers', array())) === 1, 'one payer row per order');
+check(ChaosPayMercadoPago::payerOf(array('payer' => array('id' => 9))) === 'id:9' && ChaosPayMercadoPago::payerOf(array()) === '', 'MP payer id fallback');
+$ppState = ChaosPayPayPal::normalize(array('status' => 'COMPLETED', 'payer' => array('payer_id' => 'PAYERX', 'email_address' => 'a@b.c')));
+check($ppState['payer'] === 'id:PAYERX', 'PayPal payer id');
 // the signature manifest without x-request-id, and an alphanumeric id in lower case
 check(ChaosPayMercadoPago::manifest('ABC12', '', '9') === 'id:abc12;ts:9;', 'manifest rules');
 check(ChaosPayMercadoPago::queryValue('a=1&data.id=55&type=payment', 'data.id') === '55', 'data.id from the raw query');

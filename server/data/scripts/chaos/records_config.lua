@@ -92,12 +92,12 @@ return {
 			maxGroup = 1, hook = "ChaosLeaderboard.record battleground"}
 	},
 
-	-- rift tier bands of "rift_band" (the clear time of a sealed rift of that tier band); "rift_t15" is its own band
+	-- rift tier bands of "rift_band" (the clear time of a sealed rift of that tier band); tier 15 is a band of its own
 	bands = {{key = "b1", name = "Tiers 1-5", min = 1, max = 5}, {key = "b2", name = "Tiers 6-10", min = 6, max = 10},
 		{key = "b3", name = "Tiers 11-14", min = 11, max = 14}, {key = "t15", name = "Tier 15", min = 15, max = 15}},
 	towerFloors = {50, 100, 120}, -- "tower_time": seconds from the start of the run to the clear of this floor
 	difficulties = 6, -- dungeons and the Hollow Vault (dungeons_difficulty.lua: six)
-	difficultyNames = {"Normal", "Hard", "Expert", "Master", "Torment", "Abyss"},
+	difficultyName = "Difficulty %d", -- the dungeon window numbers its six difficulties
 	arena = {{key = "1v1", name = "1v1"}, {key = "2v2", name = "2v2"}, {key = "3v3", name = "3v3"}},
 	hollowVaultName = "Hollow Vault" -- the base dungeon of this title feeds "hollowvault" instead of "dungeon"
 }

@@ -1194,7 +1194,7 @@ function W.offerType(o)
 		local s = o.service
 		if s == "stamina" or s == "blessings" or s == "worldBuff" then
 			return "boost"
-		elseif s == "pouch" or s == "templeScroll" then
+		elseif s == "pouch" or s == "templeScroll" or s == "storeFood" then
 			return "convenience"
 		end
 		return "service"

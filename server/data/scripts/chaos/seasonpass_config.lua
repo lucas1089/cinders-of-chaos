@@ -50,6 +50,17 @@ end
 local function everblight(addons, name)
 	return {kind = "outfit", male = 974, female = 973, addons = addons, name = name}
 end
+local function title(text, color)
+	return {kind = "title", title = text, color = color, name = "Title: " .. text}
+end
+-- the season's own outfit shaders (shaders.xml ids 25 and 26: server/tools/install_outfits.py reads them from here;
+-- client game_chaosshaders draws them) and name plate frame (client game_nameplate plate_cinderwrought.png,
+-- nameplate_core.lua N.FRAMES): sold nowhere, given only by the premium track
+local ASH_DRIFT = {kind = "shader", id = 25, shader = "chaos_ash_drift",
+	name = "Ash Drift"}
+local CINDER_CROWN = {kind = "shader", id = 26, shader = "chaos_cinder_crown",
+	name = "Cinder Crown"}
+local CINDERWROUGHT = {kind = "frame", frame = "cinderwrought", name = "Cinderwrought plate frame"}
 
 return {
 	-- DB tables (server/sql/chaos_seasonpass.sql; seasonpass.lua also creates them at startup)
@@ -147,61 +158,64 @@ return {
 	passes = {
 		[1] = {
 			name = "Ashen Pass",
+			-- price: a placeholder for the owner (docs/OWNER_TODO.md "Season pass price")
 			premium = {price = 1000, unlock = "seasonPassPremium", icon = 26031,
-				description = "Premium track of the Ashen Pass for your whole account: cosmetics, potions, 300 coins back."},
-			-- tier = {free reward, premium reward}
+				description = "Premium track of the Ashen Pass for your whole account: cosmetics only (titles, shaders, a frame, Everblight), 320 coins back."},
+			-- tier = {free reward, premium reward}. The free track (gold and potions) is earned by play; the premium track
+			-- is cosmetics and Chaos Coins back only (validated: seasonpass_core.lua P.PREMIUM_KINDS): no gold, no potions,
+			-- no experience, no gear. 8 titles, 2 outfit shaders, a name plate frame, the Everblight outfit and its addons, a
+			-- portal style, a mount and 10 coins on each of the other 32 tiers (320 back).
 			tiers = {
-				{gold(20), {kind = "title", title = "Kindled", color = "#ff9a3c", name = "Title: Kindled"}},
-				{potions(GMP, 25), potions(GSP, 25)},
-				{gold(20), potions(UHP, 25)},
-				{potions(GSP, 25), gold(40)},
-				{crystal(1), potions(GMP, 50)},
-				{potions(UHP, 25), potions(GSP, 50)},
-				{gold(30), potions(UHP, 50)},
-				{potions(GMP, 25), crystal(1)},
-				{potions(GSP, 25), potions(GMP, 50)},
-				{crystal(1), coins(50)}, -- 10
-				{gold(30), potions(GSP, 50)},
-				{potions(UHP, 25), potions(UHP, 50)},
-				{potions(GMP, 25), crystal(1)},
-				{gold(30), potions(SHP, 25)},
-				{{kind = "title", title = "Ashwalker", color = "#c9b8a0", name = "Title: Ashwalker"}, everblight(0, "Everblight outfit")},
-				{potions(GSP, 25), potions(GMP, 50)},
-				{potions(UHP, 25), potions(GSP, 50)},
-				{gold(40), crystal(1)},
-				{potions(GMP, 25), potions(UHP, 50)},
-				{crystal(2), coins(50)}, -- 20
-				{potions(GSP, 25), potions(SHP, 25)},
-				{potions(UHP, 25), crystal(1)},
-				{gold(40), potions(GMP, 75)},
-				{potions(GMP, 25), potions(GSP, 75)},
+				{gold(20), title("Kindled", "#ff9a3c")},
+				{potions(GMP, 25), coins(10)},
+				{gold(20), coins(10)},
+				{potions(GSP, 25), coins(10)},
+				{crystal(1), title("Ash-Touched", "#b8a898")},
+				{potions(UHP, 25), coins(10)},
+				{gold(30), coins(10)},
+				{potions(GMP, 25), coins(10)},
+				{potions(GSP, 25), coins(10)},
+				{crystal(1), ASH_DRIFT}, -- 10
+				{gold(30), coins(10)},
+				{potions(UHP, 25), coins(10)},
+				{potions(GMP, 25), coins(10)},
+				{gold(30), coins(10)},
+				{title("Ashwalker", "#c9b8a0"), everblight(0, "Everblight outfit")},
+				{potions(GSP, 25), coins(10)},
+				{potions(UHP, 25), coins(10)},
+				{gold(40), title("Emberwake", "#ff8a4a")},
+				{potions(GMP, 25), coins(10)},
+				{crystal(2), title("Smoulderkin", "#d9783a")}, -- 20
+				{potions(GSP, 25), coins(10)},
+				{potions(UHP, 25), title("Pyrewarden", "#ff7a30")},
+				{gold(40), coins(10)},
+				{potions(GMP, 25), coins(10)},
 				{crystal(2), {kind = "portal", key = "cinderfall", name = "Portal style: Cinderfall Gate"}},
-				{potions(GSP, 25), potions(UHP, 75)},
-				{potions(UHP, 25), crystal(2)},
-				{gold(50), potions(SHP, 50)},
-				{potions(GMP, 50), potions(GMP, 75)},
-				{crystal(2), coins(50)}, -- 30
-				{potions(GSP, 50), potions(GSP, 75)},
+				{potions(GSP, 25), coins(10)},
+				{potions(UHP, 25), coins(10)},
+				{gold(50), title("Ashen Herald", "#cdbb9a")},
+				{potions(GMP, 50), coins(10)},
+				{crystal(2), CINDER_CROWN}, -- 30
+				{potions(GSP, 50), coins(10)},
 				{potions(UHP, 50), everblight(1, "Everblight first addon")},
-				{gold(50), crystal(2)},
-				{potions(GMP, 50), potions(UHP, 75)},
-				{crystal(3), {kind = "title", title = "Cinderborn", color = "#ff6a2c", name = "Title: Cinderborn"}},
-				{potions(GSP, 50), potions(SHP, 50)},
-				{potions(UHP, 50), crystal(2)},
-				{gold(60), potions(SHP, 50)},
-				{potions(GMP, 50), potions(GMP, 100)},
-				{crystal(3), coins(50)}, -- 40
-				{potions(GSP, 50), potions(GSP, 100)},
-				{potions(UHP, 50), crystal(3)},
-				{gold(60), potions(UHP, 100)},
-				{potions(GMP, 50), potions(SHP, 75)},
+				{gold(50), coins(10)},
+				{potions(GMP, 50), coins(10)},
+				{crystal(3), title("Cinderborn", "#ff6a2c")},
+				{potions(GSP, 50), coins(10)},
+				{potions(UHP, 50), coins(10)},
+				{gold(60), title("Flamebound", "#ff5a24")},
+				{potions(GMP, 50), coins(10)},
+				{crystal(3), CINDERWROUGHT}, -- 40
+				{potions(GSP, 50), coins(10)},
+				{potions(UHP, 50), title("Cinderlord", "#e8642a")},
+				{gold(60), coins(10)},
+				{potions(GMP, 50), coins(10)},
 				{crystal(3), everblight(2, "Everblight second addon")},
-				{potions(GSP, 50), crystal(3)},
-				{potions(UHP, 50), potions(GMP, 100)},
-				{gold(80), potions(GSP, 100)},
-				{potions(GMP, 50), coins(100)},
-				{{kind = "title", title = "Ashbound", color = "#d8c8a8", name = "Title: Ashbound"},
-					{kind = "mount", id = 106, clientid = 930, name = "Magma Skull mount"}} -- 50
+				{potions(GSP, 50), coins(10)},
+				{potions(UHP, 50), coins(10)},
+				{gold(80), title("Ashen Sovereign", "#f0d8a8")},
+				{potions(GMP, 50), coins(10)},
+				{title("Ashbound", "#d8c8a8"), {kind = "mount", id = 106, clientid = 930, name = "Magma Skull mount"}} -- 50
 			},
 			-- Season packs: bought once per account (store or the pass window), only while the season runs. A pack holds
 			-- the cosmetics of every lower pack too; buying a higher pack after a lower one costs the difference (and the
@@ -240,8 +254,8 @@ return {
 	-- entry carries the reward as `reward` (the shape achievements_data.lua and season_config.lua use), so the store's
 	-- exclusion walk (shop_core.lua ChaosShopCore.exclusions) can read this file as it reads those.
 	-- seasonpass_test.lua checks that each reward above is listed here and that no other system gives one of them.
-	-- Not used: wings and auras (every one in wings.xml / auras.xml is sold in the store), outfit shaders and name plate
-	-- frames (all sold in the store too); the kinds stay supported for a later season with new art.
+	-- Not used: wings and auras (every one in wings.xml / auras.xml is sold in the store). The outfit shaders and the
+	-- name plate frame are new art of this season (sold nowhere).
 	cosmetics = {
 		{season = 1, source = "pass premium 15 / 32 / 45", reward = {kind = "outfit", male = 974, female = 973, name = "Everblight"}},
 		{season = 1, source = "Ember Pack", reward = {kind = "outfit", male = 278, female = 279, name = "Brotherhood"}},
@@ -254,6 +268,17 @@ return {
 		{season = 1, source = "pass premium 25", reward = {kind = "portal", key = "cinderfall", name = "Cinderfall Gate"}},
 		{season = 1, source = "Blaze Pack", reward = {kind = "portal", key = "pyre", name = "Pyre Gate"}},
 		{season = 1, source = "pass premium 1", reward = {kind = "title", title = "Kindled"}},
+		{season = 1, source = "pass premium 5", reward = {kind = "title", title = "Ash-Touched"}},
+		{season = 1, source = "pass premium 18", reward = {kind = "title", title = "Emberwake"}},
+		{season = 1, source = "pass premium 20", reward = {kind = "title", title = "Smoulderkin"}},
+		{season = 1, source = "pass premium 22", reward = {kind = "title", title = "Pyrewarden"}},
+		{season = 1, source = "pass premium 28", reward = {kind = "title", title = "Ashen Herald"}},
+		{season = 1, source = "pass premium 38", reward = {kind = "title", title = "Flamebound"}},
+		{season = 1, source = "pass premium 42", reward = {kind = "title", title = "Cinderlord"}},
+		{season = 1, source = "pass premium 48", reward = {kind = "title", title = "Ashen Sovereign"}},
+		{season = 1, source = "pass premium 10", reward = {kind = "shader", id = 25, name = "Ash Drift"}},
+		{season = 1, source = "pass premium 30", reward = {kind = "shader", id = 26, name = "Cinder Crown"}},
+		{season = 1, source = "pass premium 40", reward = {kind = "frame", frame = "cinderwrought", name = "Cinderwrought"}},
 		{season = 1, source = "pass free 15", reward = {kind = "title", title = "Ashwalker"}},
 		{season = 1, source = "pass premium 35", reward = {kind = "title", title = "Cinderborn"}},
 		{season = 1, source = "pass free 50", reward = {kind = "title", title = "Ashbound"}},

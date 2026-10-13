@@ -199,6 +199,12 @@ $out .= "menu: The World > Guild Wars\n";
 // the mentors who opted in to be shown (plugins/chaos/pages/mentors.php, read from the game's chaos_mentor* tables)
 $menu('Mentors', 'page.php?plugin=chaos&p=mentors', 'fa-users', 8, $world);
 $out .= "menu: The World > Mentors\n";
+// player-to-player character auctions for Chaos Coins (plugins/chaos/pages/bazaar.php, bazaar_lib.php)
+$menu('Character Bazaar', 'page.php?plugin=chaos&p=bazaar', 'fa-gavel', 9, $world);
+$out .= "menu: The World > Character Bazaar\n";
+// creator codes and the account's referral link (plugins/chaos/pages/creator.php, creator_lib.php)
+$menu('Creator Codes', 'page.php?plugin=chaos&p=creator', 'fa-star', 10, $world);
+$out .= "menu: The World > Creator Codes\n";
 // the donation page (plugins/chaos/pages/coins.php): Chaos Coins are a thank-you for a voluntary donation
 $menu('Donate', 'page.php?plugin=chaos&p=coins', 'fa-heart', 16);
 $out .= "menu: Donate\n";

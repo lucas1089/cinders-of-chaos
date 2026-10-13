@@ -15,6 +15,43 @@ The store has {{store.offers}} offers in {{store.categories}} categories. Most o
 
 The full list, with the type of every offer, is in the [store reference](wiki:store:about).
 
+## This week, bundles and the first donation
+
+- **This week:** five cosmetic offers at 10% off, a new choice every Monday at 06:00 (the store counts down to it). Twelve themed appearance sets are sold only in that rotation; six more are prestige rewards of hard achievements and are never sold.
+- **Bundles:** pieces you already own are left out of a bundle and of its price; a bundle you own completely is not shown.
+- **First donation:** the first donation of an account brings **double Chaos Coins**, once per account (not on the Starter Coins).
+- **Everfull Ration:** food that never runs out (Convenience), as good as the best food; it stays with you.
+- **Rune packs:** 100, 250 or 500 runes of the main attack and healing runes (fewer of Shackle), at about the rune sellers' price; what does not fit in your backpack goes to the store inbox.
+- **Chaos Pact (VIP):** besides more storage and daily coins, while it lasts: one more loadout slot, the Auto Seller and Rarity Autoloot, a chat colour and a cosmetic every month. Never experience or combat power.
+
+## Season Pass
+
+- Every season has a pass of 50 tiers. Pass XP comes only from play: experience, bosses, bounty contracts, rifts, treasure goblins, invasions and the daily and weekly challenges.
+- The **free track** gives gold, potions and titles. The **premium track** costs Chaos Coins and gives **cosmetics only**: titles, two outfit shaders, a name plate frame, an outfit with its addons, a portal style, a mount and some Chaos Coins back. Never gold, experience or gear.
+- Buy it late and lose nothing: every premium reward of the tiers you already reached is yours at once.
+
+## Creator codes
+
+- On the [Creator Codes](page:creator) page (or in the creator code field of the [Donate](page:coins) page and of the game's donation tab) you can pick the code of a streamer or content creator. For a while, a small part of the Chaos Coins of each of your donations goes to them in game, as a thank-you from the server.
+- It costs you nothing: your donation and your coins stay the same. You cannot use your own code, and a refunded or disputed donation gives the creator nothing.
+
+## Referrals
+
+- Your referral link is on the [Creator Codes](page:creator) page (and your code in game, Character > Referral) once a character of your account reaches level 20.
+- When the first character of a friend you invited reaches the milestone levels, and the friend's account is at least 7 days old, you get titles and a few Chaos Coins; more titles at 3, 5 and 10 friends.
+- Accounts of the same person, connection or payment do not count.
+
+## Character Bazaar
+
+On the [Character Bazaar](page:bazaar) players sell characters to players for Chaos Coins.
+
+- **Selling:** list a character with a minimum bid, an optional buyout price and a duration of 1 to 7 days. The character must be logged out and cannot log in while it is listed. You can cancel only before the first bid.
+- **Cannot be listed:** season characters, Hardcore and Self-Found characters, guild leaders and vice-leaders, staff characters, characters with an open player report, and characters of a banned account or of an account with a donation chargeback.
+- **Bidding:** your bid is taken from your Chaos Coins at once and held. If someone outbids you, the coins come back at once. A bid in the last minutes moves the end a little. A bid at the buyout price ends the auction at once. You need a free character slot.
+- **The end:** the character moves to the winner's account (it leaves its guild), and the seller gets the price less the house fee shown on the Bazaar page. With no bid, the character simply comes back.
+- The account e-mail is told when a character is listed, sold or cancelled. Staff can cancel an auction (every bid goes back), for example after a report of a real-money trade, which stays forbidden.
+- Selling or buying characters for real money outside the Bazaar is against the [rules](/page.php?p=rules).
+
 ## Good to know
 
 - Staff never ask for your password and never give items, gold or coins.

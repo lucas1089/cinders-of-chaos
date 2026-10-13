@@ -28,6 +28,10 @@ Economy > Orb Exchange is an order book for orbs: orb for gold or orb for orb. F
 - Salvage breaks items down into useful shards.
 - The daily reward follows a week of {{daily.days}} days.
 
+## Runes
+
+No spell makes runes. Buy them from the rune sellers (Raloth in Mirewake and Isora in Cinderhold sell every rune, other magic shops sell some), or craft them at the general crafting tables: unscribed runes from the sellers, herbs and ore pieces you gather, and some gold. A crafted rune costs about half the shop price.
+
 ## Take care
 
 Trading for real money outside the official store is not allowed. See the [rules](wiki:guide:rules).

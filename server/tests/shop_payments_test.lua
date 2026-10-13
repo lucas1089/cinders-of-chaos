@@ -255,21 +255,54 @@ eq(ask("buy", {}), nil, "the store's own actions are not answered here")
 local r = ask("pay_packs")
 eq(r.action, "pay_packs", "packs answer"); eq(r.data.notice, P.NOTICE_EN, "notice sent"); eq(r.data.noticePt, P.NOTICE_PT, "notice pt sent")
 eq(r.data.terms, (P.terms()), "refund sentence sent"); eq(r.data.termsPt, select(2, P.terms()), "refund sentence pt sent")
-eq(#r.data.packs, 5, "five packs"); eq(r.data.packs[2].prices.pix.text, "R$ 74,95", "Pix price text")
-eq(r.data.packs[2].prices.paypal.cents, 1499, "PayPal price"); eq(r.data.packs[2].total, 975, "first donation bonus in the preview")
-eq(r.data.packs[2].prices.card, nil, "no third method"); ok(r.status, "balance sent")
+eq(#r.data.packs, 7, "seven packs"); eq(r.data.packs[1].prices.pix.text, "R$ 9,95", "entry pack: about R$ 10 by Pix"); eq(r.data.packs[3].prices.pix.text, "R$ 74,95", "Pix price text")
+eq(r.data.packs[3].prices.paypal.cents, 1499, "PayPal price"); eq(r.data.packs[3].total, 1575, "first donation bonus (double) in the preview")
+eq(r.data.packs[3].prices.card, nil, "no third method"); ok(r.status, "balance sent")
 
 r = ask("pay_create", {pack = "coins750", method = "pix"})
 eq(r.action, "pay_order", "order answer"); eq(r.data.status, "pending", "pending"); eq(r.data.price, "R$ 74,95", "order price")
 eq(DB.orders[1].status, "pending", "row written"); eq(DB.orders[1].provider, "pix", "provider = method")
 eq(DB.pay[1].amount_cents, 7495, "amount from the server config"); eq(DB.pay[1].currency, "BRL", "currency")
-eq(DB.orders[1].coins + DB.orders[1].bonus + DB.orders[1].first_bonus, 975, "credit preview on the row")
+eq(DB.orders[1].coins + DB.orders[1].bonus + DB.orders[1].first_bonus, 1575, "credit preview on the row (first donation: double)")
 -- the client sends no price: a forged amount field changes nothing
 ChaosRateLimit = nil
 r = ask("pay_create", {pack = "coins750", method = "pix", amount = 1})
 eq(r.data.id, 1, "same pack again: the open order"); eq(#DB.orders, 1, "no second row")
 r = ask("pay_create", {pack = "coins4000", method = "paypal"})
 eq(r.action, "pay_error", "second open order refused"); eq(r.data.order.id, 1, "refusal shows the open order")
+-- a creator code sent with the donation (the website's pick, chaos_creator_support): refused codes stop the donation
+do
+	local realSelect, realQuery, creatorQ = Chaos.select, db.query, {}
+	Chaos.select = function(q, cols)
+		if q:find("FROM `chaos_creator_codes`", 1, true) then
+			local code = q:match("`code` = '([^']*)'")
+			if code == "STREAMER" then return {{id = 4, account_id = 900, active = 1, code = "STREAMER", display_name = "Streamer"}} end
+			if code == "OFFCODE" then return {{id = 5, account_id = 900, active = 0, code = "OFFCODE", display_name = ""}} end
+			if code == "MINE" then return {{id = 6, account_id = 77, active = 1, code = "MINE", display_name = ""}} end
+			return {}
+		end
+		return realSelect(q, cols)
+	end
+	db.query = function(q)
+		if q:find("chaos_creator_", 1, true) then creatorQ[#creatorQ + 1] = q return true end
+		return realQuery(q)
+	end
+	eq(P.creatorCode(" stream-er "), "STREAMER", "code normalised like the website") eq(P.creatorCode("ab"), nil, "too short")
+	local rows = #DB.orders
+	r = ask("pay_create", {pack = "coins250", method = "pix", creator = "nope99"})
+	eq(r.action .. ":" .. tostring(r.data.msg), "pay_error:That is not an active creator code.", "unknown code refused")
+	r = ask("pay_create", {pack = "coins250", method = "pix", creator = "offcode"})
+	eq(r.data.msg, "That is not an active creator code.", "switched off code refused")
+	r = ask("pay_create", {pack = "coins250", method = "pix", creator = "MINE"})
+	eq(r.data.msg, "You cannot support your own creator code.", "self-use refused")
+	eq(#DB.orders, rows, "no order for a refused code")
+	eq(#creatorQ, 0, "nothing written for a refused code")
+	r = ask("pay_create", {pack = "coins750", method = "pix", creator = "streamer"})
+	eq(r.data.id, 1, "a good code: the donation goes on (here: the open order)")
+	ok(creatorQ[2] and creatorQ[2]:find("INSERT INTO `chaos_creator_support`", 1, true) and creatorQ[2]:find("(77, 4,", 1, true), "the pick saved")
+	ok(creatorQ[3] and creatorQ[3]:find("'pick'", 1, true), "the pick logged")
+	Chaos.select, db.query = realSelect, realQuery
+end
 -- the worker made the charge
 DB.orders[1].status = "open"; DB.pay[1].qr_code = "00020126580014"; DB.pay[1].expires = now + 1800
 r = ask("pay_status", {id = 1})

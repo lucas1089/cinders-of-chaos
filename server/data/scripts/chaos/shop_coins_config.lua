@@ -13,19 +13,25 @@
 -- Every other price is derived from it in code (ChaosPayCore.priceCents, lib.php chaos_pay_price_cents), so the two
 -- can never drift: PayPal charges usdCents in USD, Pix charges usdCents * brlPerUsd in BRL.
 -- bonusPct: extra coins of the pack in %. once = true: one per account (the starter pack).
--- firstPurchase.bonusPct: once per account, on top of the first pack credited (not the starter pack).
+-- firstPurchase.bonusPct: once per account, on top of the first pack credited (not the starter pack). 100 = double
+-- coins (owner approval 2026-10-13). "First" = the account has no credited pack yet (status 'credited' stays after a
+-- refund or chargeback after crediting, so a reversal never makes the next pack "first" again).
+-- Pack ladder (PLACEHOLDERS, docs/OWNER_TODO.md): an entry pack for about R$ 10 by Pix (199 x brlPerUsd 5 = R$ 9,95),
+-- the four packs, and the Vault as the anchor (+30%). Coins per US$ (with the pack bonus): 40, 50, 55, 58, 67, 72.
 return {
 	currency = "USD",
 	pollSeconds = 30,
 	packs = {
+		{key = "coins80", name = "Handful of Coins", coins = 80, bonusPct = 0, usdCents = 199},
 		{key = "coins250", name = "Pouch of Coins", coins = 250, bonusPct = 0, usdCents = 499},
 		{key = "coins750", name = "Sack of Coins", coins = 750, bonusPct = 10, usdCents = 1499},
 		{key = "coins1500", name = "Chest of Coins", coins = 1500, bonusPct = 15, usdCents = 2999},
 		{key = "coins4000", name = "Hoard of Coins", coins = 4000, bonusPct = 25, usdCents = 7499},
+		{key = "coins10000", name = "Vault of Coins", coins = 10000, bonusPct = 30, usdCents = 17999},
 		-- one-time starter pack: 250 coins and 250 more for the price of a small pack
 		{key = "starter", name = "Starter Coins", coins = 250, bonusCoins = 250, usdCents = 299, once = true, starter = true}
 	},
-	firstPurchase = {bonusPct = 20},
+	firstPurchase = {bonusPct = 100},
 
 	-- Donations from the client store and the website (shop_payments.lua, website/README.md "Donations").
 	-- methods: pix = Pix through Mercado Pago (BRL), paypal = PayPal Orders v2 with the donation category (USD). The

@@ -59,6 +59,7 @@ access flag (gamemaster or higher).
 | `/faction`, `/professions`, `/pet`, `/gamble`, `/mentor`, `/referral`, `/hideout`, `/achievements`, `/atlas` | 4+ | per-system inspection and test tools (`/pet give`, `/achievements grant\|add`, `/atlas grant`: 5+) |
 | `/newplayerkit <name>[, welcome\|milestone <n>\|reset\|tutorial]`, `/towerrun <floors>,<seconds>` | 4+ (the kit, `milestone`, `reset`: **5+**) | new-player kit and tutorial; a fake tower run on yourself |
 | `/market sweep\|info <id>\|orders`, `/orbx sweep\|info <id>\|escrow` | 4+ | market and Orb Exchange checks |
+| `/creatorcodes [run]` | **5+** | creator codes: the settings and each code's paid shares; `run` matches and pays now. Codes are made and switched off on the website (The World > Creator Codes, admin panel account with a group 5 character); the Character Bazaar's staff cancel is on the website too (The World > Character Bazaar > Administration) |
 | `/treestats [<class> [band] [n]]`, `/treestats export` | 4+ | passive tree picks per class line and level band (counts only); the CSV goes to the server's `data/` folder (server/README.md "Passive tree pick statistics") |
 | `/daily`, `/leaderboard`, `/season status`, `/spells reload`, `/supports reload` | 4+ (`/daily shift\|set`, `/leaderboard shift`: **5+**) | state and test clocks (`shift`: test servers only) |
 | `/testkit` | 4+ (admin panel access) | gear kits for balance tests; **removed from the live server** (docs/LAUNCH.md section 11) |

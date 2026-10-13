@@ -61,6 +61,9 @@ local SCHEMA = {
 	`state` varchar(8) NOT NULL DEFAULT 'due', `paid_at` bigint(20) NOT NULL DEFAULT 0, `coins` int(11) NOT NULL DEFAULT 0,
 	`notified` tinyint(1) NOT NULL DEFAULT 0, PRIMARY KEY (`referred_account_id`, `milestone`), KEY `referrer_account_id` (`referrer_account_id`))
 	ENGINE=InnoDB DEFAULT CHARSET=utf8]],
+	[[CREATE TABLE IF NOT EXISTS `chaos_referral_tiers` (`referrer_account_id` int(11) NOT NULL, `tier` varchar(16) NOT NULL,
+	`qualified` int(11) NOT NULL DEFAULT 0, `coins` int(11) NOT NULL DEFAULT 0, `paid_at` bigint(20) NOT NULL DEFAULT 0,
+	PRIMARY KEY (`referrer_account_id`, `tier`)) ENGINE=InnoDB DEFAULT CHARSET=utf8]],
 	[[CREATE TABLE IF NOT EXISTS `chaos_referral_log` (`id` int(11) NOT NULL AUTO_INCREMENT, `at` bigint(20) NOT NULL,
 	`account_id` int(11) NOT NULL DEFAULT 0, `other_account_id` int(11) NOT NULL DEFAULT 0, `player_id` int(11) NOT NULL DEFAULT 0,
 	`action` varchar(16) NOT NULL, `detail` varchar(128) NOT NULL DEFAULT '', PRIMARY KEY (`id`), KEY `account_id` (`account_id`))
@@ -73,6 +76,7 @@ local function log(accountId, otherId, playerId, action, detail)
 	print(string.format("[Chaos referral] %s: account %d, other %d, player %d %s", action, accountId or 0, otherId or 0, playerId or 0, tostring(detail or "")))
 end
 
+local payersOf, qualifiedOf -- defined with the rewards below
 -- ------------------------------------------------------------------ account facts
 local znoteChecked, hasZnote = false, false
 local function znote()
@@ -252,6 +256,11 @@ function Ref.load(accountId)
 			T.rewards, accountId), {{"milestone", "s"}, {"paid_at", "n"}})) do
 		st.paid[r.milestone] = st.paid[r.milestone] or r.paid_at
 	end
+	st.tiers = {}
+	for _, r in ipairs(Chaos.select(string.format("SELECT `tier`, `paid_at` FROM `%s` WHERE `referrer_account_id` = %d", T.tiers, accountId),
+			{{"tier", "s"}, {"paid_at", "n"}})) do
+		st.tiers[r.tier] = r.paid_at
+	end
 	Ref.accounts[accountId] = st
 	return st
 end
@@ -324,6 +333,8 @@ local function sendStatus(player, open)
 	local coins = Chaos.select(string.format("SELECT SUM(`coins`) AS `c` FROM `%s` WHERE `referrer_account_id` = %d AND `state` = 'paid'",
 		T.rewards, accountId), {{"c", "n"}})[1]
 	state.coinsEarned = coins and coins.c or 0
+	state.qualified = qualifiedOf(accountId)
+	state.tiers = (Ref.accounts[accountId] or Ref.load(accountId)).tiers
 	if link then
 		state.link = {status = link.status, referrerName = accountName(link.referrer_account_id), gift = link.gift_at > 0,
 			reason = link.status == "rejected" and say(link.reason, cfg.entryDays) or ""}
@@ -477,6 +488,63 @@ local function notify(referrerId)
 	end
 end
 
+-- the payer hashes of the account's donations (chaos_pay_payers, written by the donation service; empty without it)
+local payersChecked, hasPayers = false, false
+payersOf = function(accountId)
+	if not payersChecked then
+		payersChecked = true
+		hasPayers = #Chaos.select("SELECT `table_name` AS `t` FROM `information_schema`.`tables` WHERE `table_schema` = DATABASE() " ..
+			"AND `table_name` = " .. q(AB.payersTable or "chaos_pay_payers"), {{"t", "s"}}) > 0
+	end
+	local out = {}
+	if hasPayers then
+		for _, r in ipairs(Chaos.select(string.format("SELECT DISTINCT `payer_hash` FROM `%s` WHERE `account_id` = %d",
+				AB.payersTable or "chaos_pay_payers", accountId), {{"payer_hash", "s"}})) do
+			out[#out + 1] = r.payer_hash
+		end
+	end
+	return out
+end
+
+-- referred accounts of the referrer whose qualifying milestone (cfg.qualify) was paid
+qualifiedOf = function(referrerId)
+	local r = Chaos.select(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `referrer_account_id` = %d AND `milestone` = %s AND `state` = 'paid'",
+		T.rewards, referrerId, q(cfg.qualify or "")), {{"n", "n"}})[1]
+	return r and r.n or 0
+end
+
+-- the tier rewards (3, 5, 10 qualified friends): a title and a few coins, once each; returns how many were given
+function Ref.checkTiers(referrerId)
+	if not cfg.tiers or #cfg.tiers == 0 then
+		return 0
+	end
+	local qualified = qualifiedOf(referrerId)
+	local reached = {}
+	for _, r in ipairs(Chaos.select(string.format("SELECT `tier` FROM `%s` WHERE `referrer_account_id` = %d", T.tiers, referrerId),
+			{{"tier", "s"}})) do
+		reached[r.tier] = true
+	end
+	local given = 0
+	local qm = Core.milestone(cfg, cfg.qualify or "")
+	for _, t in ipairs(Core.tiersDue(qualified, reached, cfg)) do
+		local coins = tonumber(t.coins) or 0
+		db.query(string.format("INSERT IGNORE INTO `%s` (`referrer_account_id`, `tier`, `qualified`, `coins`, `paid_at`) VALUES (%d, %s, %d, %d, %d)",
+			T.tiers, referrerId, q(t.key), qualified, coins, os.time()))
+		local row = Chaos.select(string.format("SELECT `qualified` FROM `%s` WHERE `referrer_account_id` = %d AND `tier` = %s AND `paid_at` > 0",
+			T.tiers, referrerId, q(t.key)), {{"qualified", "n"}})[1]
+		if row and coins > 0 then
+			db.query(string.format("INSERT INTO `%s` (`account_id`, `coins`) VALUES (%d, %d) ON DUPLICATE KEY UPDATE `coins` = `coins` + %d",
+				Chaos.tables.shopCoins, referrerId, coins, coins))
+		end
+		log(referrerId, 0, 0, "tier", t.key .. " " .. Core.rewardText(t))
+		for _, p in ipairs(onlineOf(referrerId)) do
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("tier", t.count, qm and qm.level or 0, Core.rewardText(t)))
+		end
+		given = given + 1
+	end
+	return given
+end
+
 -- pays (or voids) the due rewards of a referrer; returns how many were paid
 function Ref.processRewards(referrerId)
 	local now = os.time()
@@ -486,11 +554,19 @@ function Ref.processRewards(referrerId)
 		return 0
 	end
 	local referrerBanned = isBanned(referrerId)
+	local referrerRow = accountRow(referrerId) or {ips = {}}
+	local referrerIps = ipsOf(referrerId, referrerRow, linkOf(referrerId))
+	local referrerPayers = payersOf(referrerId)
 	local paid, waiting = 0, {}
 	for _, r in ipairs(due) do
 		local m = Core.milestone(cfg, r.milestone)
+		local friend = accountRow(r.referred_account_id) or {ips = {}}
+		local created = tonumber(friend.creation) or 0
 		local decision = m and Core.decide({referredBanned = isBanned(r.referred_account_id), referrerBanned = referrerBanned,
-			paidThisMonth = paidThisMonth(referrerId, now)}, cfg) or "void"
+			paidThisMonth = paidThisMonth(referrerId, now),
+			referredAgeDays = created > 0 and (now - created) / 86400 or nil,
+			sameIp = Core.shareIp(ipsOf(r.referred_account_id, friend, linkOf(r.referred_account_id)), referrerIps),
+			samePayer = Core.sharePayer(payersOf(r.referred_account_id), referrerPayers)}, cfg) or "void"
 		if decision == "pay" then
 			local coins = tonumber(m.coins) or 0
 			db.query(string.format("UPDATE `%s` SET `state` = 'paid', `paid_at` = %d, `coins` = %d WHERE `referred_account_id` = %d AND `milestone` = %s AND `state` = 'due'",
@@ -510,6 +586,7 @@ function Ref.processRewards(referrerId)
 		end
 	end
 	if paid > 0 then
+		Ref.checkTiers(referrerId)
 		refreshAccount(referrerId)
 	end
 	notify(referrerId)

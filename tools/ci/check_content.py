@@ -2,6 +2,9 @@
 """Server content consistency (no game data needed):
  - XML files parse (fragments such as spells_chaos.xml are checked wrapped in a root element)
  - spells: unique spellid, words and name; every script file exists under data/spells/chaos
+ - removed spells (spell_names.csv "removed", the conjure spells of data/lib/chaos_rune_supply.lua: the runes and
+   R.otherConjures): one csv row per removed script; no class kit names one (spells_chaos.xml, add_vocations.py LINE_STOCK_SPELLS, the tutorial's class
+   spells in newplayer_config.lua)
  - items: unique ids in chaos_items.xml
  - monsters (monsters/chaos and its subfolders, e.g. world_bosses/): unique names; a lookType above MAX_OUTFIT must be
    listed in needs_sprites.txt; no loot id lists ("a;b"), monster spells, flags and element keys must be known to the
@@ -85,6 +88,46 @@ if os.path.exists(sp):
         if not os.path.exists(os.path.join('server/data/spells', script)):
             fail(f'{sp}: script {script} not found')
 
+# rune supply (server/README.md "Rune supply"): the rune conjure spells are gone; no class kit may name one
+def check_removed_spells():
+    import csv
+    names_csv, words_csv = 'server/data/spells/spell_names.csv', 'server/data/spells/spell_words.csv'
+    cfg_path = 'server/data/lib/chaos_rune_supply.lua'
+    if not (os.path.exists(names_csv) and os.path.exists(cfg_path)):
+        return
+    parts = {r['old']: r['new'] for r in csv.DictReader(open(words_csv, encoding='utf-8'))}
+    rows = [r for r in csv.DictReader(open(names_csv, encoding='utf-8')) if r.get('removed')]
+    cfg_text = open(cfg_path, encoding='utf-8').read()
+    # script paths under data/spells/scripts: the runes' conjuring/<name>, and R.otherConjures as written
+    paths = {'conjuring/' + s for s in re.findall(r'script = "([\w.]+\.lua)"', cfg_text)}
+    paths |= set(re.findall(r'\{script = "([\w./]+\.lua)", name = ', cfg_text))
+    if len(rows) != len(paths):
+        fail(f'{names_csv}: {len(rows)} rows marked removed, {cfg_path} lists {len(paths)} removed conjure scripts')
+    words, names = set(), set()
+    for r in rows:
+        words.add(r['words'])
+        words.add(' '.join(parts.get(t, t) for t in r['words'].split()))
+        names |= {r['old_name'].lower(), r['new_name'].lower()}
+    # the Chaos spells (spells_chaos.xml): no conjure script, no words of a removed spell
+    for m in re.finditer(r'<instant\b([^>]*)>', open(sp, encoding='utf-8').read() if os.path.exists(sp) else ''):
+        a = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
+        if a.get('script', '') in paths or a.get('script', '').startswith('conjuring/'):
+            fail(f'{sp}: {a.get("name")} uses the removed conjure script {a.get("script")}')
+        if a.get('words') in words:
+            fail(f'{sp}: {a.get("name")} has the words of a removed conjure spell ({a.get("words")})')
+    # the stock spells each class line gets (add_vocations.py LINE_STOCK_SPELLS)
+    import add_vocations
+    for script, stock_words, _lines in add_vocations.LINE_STOCK_SPELLS:
+        if script in paths or script.startswith('conjuring/') or stock_words in words:
+            fail(f'server/tools/add_vocations.py: LINE_STOCK_SPELLS names the removed conjure spell {script}')
+    # the new-player kits and the tutorial's class spells (newplayer_config.lua)
+    npc_cfg = 'server/data/scripts/chaos/newplayer_config.lua'
+    if os.path.exists(npc_cfg):
+        t = open(npc_cfg, encoding='utf-8').read()
+        for n, w in re.findall(r'\{name = "([^"]+)", words = "([^"]+)"', t):
+            if w in words or n.lower() in names:
+                fail(f'{npc_cfg}: the class spell {n!r} ({w}) is a removed conjure spell')
+
 # items
 ip = 'server/data/items/chaos_items.xml'
 if os.path.exists(ip):
@@ -106,6 +149,7 @@ sys.dont_write_bytecode = True
 import fix_monster_xml as fmx
 import tune_monsters as tune
 KNOWN_SPELLS, KNOWN_FLAGS, KNOWN_ELEMENTS = fmx.known_spells(), fmx.known_flags(), set(fmx.ELEMENTS)
+check_removed_spells()
 
 def check_monster_body(f, t):
     """what the base server cannot load: loot id lists, unknown spells/flags/element keys, stray text in

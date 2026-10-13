@@ -250,6 +250,9 @@ local startFloor
 local function floorCleared(run)
 	run.cleared = run.floor
 	run.floorEvent = nil
+	if ChaosRecords and ChaosRecords.towerFloor then -- records.lua: the fastest climb to floors 50 / 100 / 120
+		pcall(ChaosRecords.towerFloor, run.players, run.floor, os.time() - run.startTime)
+	end
 	for _, p in pairs(run.players) do
 		local player = Player(p.id)
 		if player then

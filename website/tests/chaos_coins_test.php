@@ -20,13 +20,14 @@ foreach (chaos_coin_packs() as $p) {
 }
 $s = chaos_coin_settings();
 check(count($packs) >= 5, 'five packs');
-check($s['first_bonus_pct'] === 20 && $s['currency'] === 'USD', 'settings');
+check($s['first_bonus_pct'] === 100 && $s['currency'] === 'USD', 'settings');
 check($packs['coins750']['usd_cents'] === 1499 && $packs['starter']['usd_cents'] === 299, 'USD prices in integer cents');
 check($packs['coins250']['total'] === 250, '250');
 check($packs['coins750']['total'] === 825, '750 +10%');
 check($packs['coins1500']['total'] === 1725, '1500 +15%');
 check($packs['coins4000']['total'] === 5000, '4000 +25%');
-check(chaos_coin_pack_total($packs['coins750'], true, $s['first_bonus_pct']) === 975, 'first purchase bonus');
+check(chaos_coin_pack_total($packs['coins750'], true, $s['first_bonus_pct']) === 1575, 'first purchase bonus: double');
+check($packs['coins80']['total'] === 80 && $packs['coins10000']['total'] === 13000, 'entry pack and the Vault anchor (+30%)');
 check($packs['starter']['once'] && $packs['starter']['starter'] && $packs['starter']['total'] === 500, 'starter pack');
 check(chaos_coin_pack_total($packs['starter'], true, $s['first_bonus_pct']) === 500, 'no first bonus on the starter');
 check(!$packs['coins250']['once'], 'packs are not once');

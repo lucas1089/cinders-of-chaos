@@ -32,6 +32,8 @@ the script). Base looks of the client pair that no XML line had (exclusives_conf
 The Chaos outfit shaders of data/scripts/chaos/cosmetics_config.lua (outfitShaders.list: shaderId and shader name,
 ids 19-24; client game_chaosshaders draws them) join the same shaders.xml block whether their switch is on or off: a
 shader in shaders.xml is still locked for everyone until Player:addShader (cosmetics.lua, only while the switch is on).
+The season pass's own shaders (data/scripts/chaos/seasonpass_config.lua rewards of kind "shader", ids 25-26) join the
+same block; they stay locked until the premium track's claim adds them (seasonpass.lua).
 
 The look types exist only in the client pair that has them (client/tools/sprites/import_outfits.py, outfits 1505-1510;
 import_donor_things.py, the donor B first set, outfits 1551-1561; the faction mounts 2132-2135, things_custom14; the
@@ -65,6 +67,7 @@ WEND = '\t<!-- end of the Chaos wings -->\n'
 SBEGIN = '\t<!-- Chaos shaders (server/tools/install_outfits.py, do not edit by hand) -->\n'
 SEND = '\t<!-- end of the Chaos shaders -->\n'
 COSMETICS = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'cosmetics_config.lua')
+SEASONPASS = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'seasonpass_config.lua')
 
 
 def cosmetic_shaders(path=COSMETICS):
@@ -77,6 +80,15 @@ def cosmetic_shaders(path=COSMETICS):
         return []
     block = text[at:text.find('\n\t},', at)]
     return [(int(i), n) for i, n in re.findall(r'shaderId = (\d+), shader = "([\w]+)"', block)]
+
+
+def seasonpass_shaders(path=SEASONPASS):
+    """[(id, shader name)] of the season pass rewards of kind "shader" (seasonpass_config.lua: the premium track's own
+    shaders, ids 25-26; client game_chaosshaders draws them). Locked until the pass claim adds them."""
+    if not os.path.isfile(path):
+        return []
+    text = open(path, encoding='utf-8').read()
+    return [(int(i), n) for i, n in re.findall(r'kind = "shader", id = (\d+), shader = "([\w]+)"', text)]
 
 
 def exclusives(path=EXCLUSIVES):
@@ -307,7 +319,7 @@ def main(argv):
         open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
     code = install_mounts(args[0], dry)
     code = install_wings(args[0], dry, ex) or code
-    ex['shader'] = ex['shader'] + cosmetic_shaders()
+    ex['shader'] = ex['shader'] + cosmetic_shaders() + seasonpass_shaders()
     return install_shaders(args[0], dry, ex) or code
 
 

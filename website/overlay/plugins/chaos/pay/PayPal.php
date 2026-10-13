@@ -204,6 +204,9 @@ final class ChaosPayPayPal implements ChaosPayProvider {
 			'currency' => strtoupper((string)($amount['currency_code'] ?? '')),
 			'reference' => (string)($capture['custom_id'] ?? ($pu['custom_id'] ?? '')),
 			'refunded_cents' => $refunded,
+			// who paid (hashed by the service into chaos_pay_payers): PayPal's payer id, else the e-mail
+			'payer' => ($o['payer']['payer_id'] ?? '') !== '' ? 'id:' . (string)$o['payer']['payer_id']
+				: ((($o['payer']['email_address'] ?? '') !== '') ? 'mail:' . strtolower(trim((string)$o['payer']['email_address'])) : ''),
 		);
 	}
 

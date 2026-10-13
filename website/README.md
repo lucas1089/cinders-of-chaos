@@ -14,7 +14,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `setup/rules.bbcode` | the first version of the Rules page (then edited in the admin panel) |
 | `setup/router.php` | router for PHP's built-in server (local tests only) |
 | `overlay/layouts/chaos/` | our layout: a child of ZnoteX's purple layout "Void", re-coloured to the client |
-| `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, the referral code field (`referral.php`), Leaderboards / Patch Notes / Seasons pages |
+| `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, the referral code field (`referral.php`), Leaderboards / Patch Notes / Seasons pages, Creator Codes and the Character Bazaar |
 | `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
 | `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
 | `patches/znotex-chaos-escape-output.patch` | guild names, ranks, MOTD and member names (`guilds.php` and its views, `topguilds`) and the character comment (`characterprofile.php`) escaped on output (see "Web server") |
@@ -38,6 +38,10 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/chaos_pay_webhook.php` | the Mercado Pago / PayPal webhook of the donations |
 | `payments.env.example` | the donation settings (the credentials stay outside the repository) |
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
+| `overlay/plugins/chaos/creator_lib.php`, `pages/creator.php` | creator codes: a donor's pick, the creator's totals, the administrators' codes, the account's referral link (see "Creator codes") |
+| `tests/chaos_creator_test.php` | `php website/tests/chaos_creator_test.php`: settings from `creator_codes_config.lua`, picks (unknown, off, own code), totals, the admin check and actions, the referral link (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/bazaar_lib.php`, `pages/bazaar.php`, `bazaar_worker.php` | the Character Bazaar: character auctions for Chaos Coins with escrow, fee and transfer (see "Character Bazaar") |
+| `tests/chaos_bazaar_test.php` | `php website/tests/chaos_bazaar_test.php`: every blocked listing, bids and escrow, the fee and the transfer, expiry, buyout, cancel, a failed transfer, coins kept whole (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
 | `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss, the class tabs of the byClass boards (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/notused.php` | the short note shown instead of the stock pages this server does not use (see "Not used on this server") |
@@ -101,7 +105,8 @@ What it does, in order:
 5. **The database**, with `setup/chaos_setup.php`: ZnoteX's `znote_*` tables (`CREATE TABLE IF NOT EXISTS`, seed rows
    only into empty tables), every pending ZnoteX migration (recorded with its checksum), our plugin installed and
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
-   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars) and "Donate" (the donation page
+   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars, Mentors, Character
+   Bazaar, Creator Codes) and "Donate" (the donation page
    `page.php?plugin=chaos&p=coins`), "Player Reports" (staff only, under ZnoteX's Admin Panel entry) and the Rules page
    added once. ZnoteX's own entries of the pages we do not use (Shop, Buy points, Library > Creatures / Spells,
    Community > Forum, and Library, then empty) are switched off once, on a fresh install and at the next run on an
@@ -705,6 +710,14 @@ The account creation form has an optional **Referral code** field (the game serv
 
 ## Donations (Chaos Coins)
 
+**Packs and the first donation (2026-10-13).** The packs and prices come from the game server's `shop_coins_config.lua`
+(placeholders, docs/OWNER_TODO.md): an entry pack (Handful of Coins, 80 coins, US$ 1.99 / R$ 9,95 by Pix), Pouch, Sack,
+Chest, Hoard and the Vault of Coins (10,000 +30%, the anchor), Starter Coins once. The first donation of an account brings
+**double coins** (`firstPurchase.bonusPct = 100`), once per account (not on the Starter Coins; a refund or chargeback
+after crediting keeps the order counted, so it never repeats). The Donate page shows it; the voluntary donation wording
+before and after payment is unchanged. Tests: `chaos_coins_test.php`, `chaos_pay_test.php` (also the payer hash),
+`chaos_donation_page_test.php` (also the creator code field).
+
 **Chaos Coins are a thank-you for a voluntary donation. Nobody is required to donate; the game is fully playable for
 free.** Every payment surface says so before a pack is picked, in English and Portuguese ("Voluntary donation: it helps
 keep the server running. Nobody is required to donate; the game is fully playable for free." / "Doação voluntária:
@@ -817,6 +830,77 @@ loader); `php website/tests/chaos_donation_page_test.php` (the page: the notice 
 QA: a Mercado Pago partial refund before and after crediting, a second larger refund, the daily re-check of credited
 orders, the PayPal webhook pre-checks and token cache, the site address, the session guard, the terms gate's
 background endpoints, the login guard's IPv6 /64).
+
+## Creator codes
+
+A streamer or content creator gets a code from an administrator; a donor picks it; while the pick lasts, the game server
+gives the creator a share of the Chaos Coins of the donor's donations, in game (server/README.md "Creator codes": the
+matching, the hold, the caps and every anti-abuse rule live there). The donor's donation and coins never change; the
+page says so, and that donations are voluntary.
+
+- `page.php?plugin=chaos&p=creator` (menu The World > Creator Codes, added by `setup/chaos_setup.php`):
+  - logged in: pick a code (or stop), the current pick and until when (`supportDays`); the own code is refused
+    (self-use, logged); a switched-off or unknown code is refused;
+  - the account's **referral link** (`register.php?ref=CODE`, from `chaos_referral_codes`; the account gets its code in
+    game at level 20);
+  - a creator (an account that owns a code): its %, supporters, earned and waiting coins, the last 50 donations with the
+    code (date, coins, share, state; never a name);
+  - administrators (`chaos_creator_is_admin`: an admin panel account, `CHAOS_ADMIN_ACCOUNTS`, **and** a character of
+    group `adminGroup`, 5): create a code for a character's account (with a shown name, its own %, a note), switch it
+    off / on, set its %, read the log. Every write is a POST with the page's CSRF token; every value is escaped.
+- Settings: `server/data/scripts/chaos/creator_codes_config.lua` (`sharePct` 5 is a placeholder, docs/OWNER_TODO.md).
+- Tables: `chaos_creator_codes`, `chaos_creator_support`, `chaos_creator_uses`, `chaos_creator_log`, `chaos_pay_payers`
+  (`install.sql`, `server/sql/chaos_creator_codes.sql`; the game server creates them too).
+- **Hooks (done, 2026-10-13):**
+  1. the donate page (`pages/coins.php`) has an optional "Creator code" field (form `chaos-creator-pick`, Save) that calls
+     `chaos_creator_set_support($accountId, $code, REMOTE_ADDR)`; a Donate button may also carry `chaos_creator_code`,
+     picked before `createOrder` (a refused code stops the donation with its message, no order is made). The page says
+     the donor's pack and the first donation bonus stay the same. The client's Store > Donate tab has the same field
+     (`game_shop` pay.otui `creatorCode`), sent with `pay_create {creator}`; `shop_payments.lua` checks it with the
+     website's rules (`ChaosPayCore.creatorCode` / `creatorRefusal`: normalised, active, not the donor's own) and writes
+     the same `chaos_creator_support` row and a `pick` log line.
+  2. `pay/Service.php` writes `chaos_pay_payers` (order id, account, `ChaosPayService::payerHash(psp, payer, salt)` =
+     SHA-256 of `CHAOS_PAY_PAYER_SALT|psp|payer`) when a payment is confirmed (`approved` -> paid). The payer: Mercado
+     Pago's payer document (Pix: the CPF), else its payer id, else the e-mail; PayPal's payer id, else the e-mail; else
+     the e-mail the charge was made with. The raw value is never stored; set `CHAOS_PAY_PAYER_SALT` once and keep it (a
+     new salt makes old and new hashes differ). Skipped (logged) when the table is missing.
+- Test: `php website/tests/chaos_creator_test.php`.
+
+## Character Bazaar
+
+Players sell characters to players for Chaos Coins on `page.php?plugin=chaos&p=bazaar` (menu The World > Character
+Bazaar). The rules (`bazaar_lib.php`, class `ChaosBazaar`; numbers from the game server's `bazaar_config.lua`):
+
+- **Listing:** a character of the logged-in account with a minimum bid (`minPrice` 100 or more), an optional buyout
+  (above the minimum) and 1-7 days; at most `maxActivePerAccount` (2) auctions at once. Refused: a character online
+  (`players_online`), below `minLevel` (50), a guild leader (`guilds.ownerid`) or vice-leader (rank level 2+), a season
+  character whose season runs (`chaos_season_players.migrated_at = 0`), a Hardcore or Self-Found character
+  (`chaos_season_modes`, not reset), a staff character (group > 1), one with an open player report (`chaos_reports`, bug
+  reports aside), an account with an active ban (`account_bans`) or a chargeback or dispute in `chargebackDays` (180),
+  a character already listed. The "Sell a character" tab lists every character with the reasons it cannot be listed.
+  While listed the character cannot log in (the game server's lock, server/README.md "Character Bazaar").
+- **Bids:** the amount is taken from the bidder's `chaos_shop_coins` at once and held on the bid row (`escrow`); an
+  outbid bidder gets it back at once. The next bid beats the current one by `minStepPct` (5) % and at least `minStep`
+  (10). A bid in the last `snipeMinutes` (5) moves the end. A bid at or over the buyout buys at the buyout price and ends
+  the auction at once. Refused: the seller's own account, a banned account, one with a chargeback, one without a free
+  character slot (the same limit as character creation), more than `maxBidsPerAccountHour` (20) bids. Each bid row keeps
+  the bidder's address for staff.
+- **End** (the page and the cron worker, `bazaar_worker.php`): no bid: `expired`. Otherwise the listing becomes
+  `settling`, the checks run again (offline, still the seller's, not a leader, the winner has a slot and is not banned),
+  then in one transaction: the winning bid's escrow is spent, `players.account_id` moves to the winner, the character
+  leaves its guild, the seller gets the price less the fee (`feePct`, 8, a placeholder in the 5-10 range; the fee leaves
+  the economy), the listing is `sold`. If a check fails the listing is `failed` and the escrow goes back.
+- **Cancel:** the seller before the first bid; an administrator (admin panel account with a group 5+ character) at any
+  time with a reason (Administration tab). Every escrow goes back.
+- **Mail:** the seller's account e-mail (its security e-mail) is told when its character is listed, sold, expired,
+  failed or cancelled; the winner when it wins; an outbid bidder when outbid (mail_lib.php, off without SMTP).
+- **Safety:** every coin move is a conditional UPDATE in a transaction (`ChaosPayDb` of `pay/Db.php`, mysqli with the
+  site's credentials): a balance drops only when it holds the amount, a listing takes a bid only if its leading bid is
+  still the one the bidder saw. Writes are POSTs with the page's CSRF token; output is escaped; prepared statements only.
+- **Cron:** `* * * * * www-data php <site>/plugins/chaos/bazaar_worker.php --site <site>` ends auctions on time when
+  nobody opens the page.
+- Tables: `chaos_bazaar_listings`, `chaos_bazaar_bids`, `chaos_bazaar_log` (`install.sql`, `server/sql/chaos_bazaar.sql`).
+- Test: `php website/tests/chaos_bazaar_test.php`. Not run against a live site.
 
 ## Client updates
 

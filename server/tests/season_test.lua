@@ -296,8 +296,11 @@ local CATEGORY = {
 	["Footprints"] = true, ["Outlines"] = true, -- cosmetics.lua: looks only
 	["Hideout Decorations"] = true, -- hideout_store.lua: looks only
 	["Depot Tabs"] = true, -- depot_config.lua: account room (service pactExtra, as Storage & Slots)
+	["Chaos Shaders"] = true, -- cosmetics_store.lua("outfitshader"): looks only
+	["Themed Sets"] = true, -- chaos_theme_art.lua appearance sets (weekly rotation only): looks only
 	["Starter"] = false, ["Crafting"] = false, ["Supplies"] = false, ["Boosts"] = false, ["World Buffs"] = false,
-	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed"
+	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed",
+	["Runes"] = false -- the rune packs: items
 }
 local SERVICES = {["service:nameToken"] = true, ["service:sexChange"] = true, ["service:vocationToken"] = false,
 	["service:skullRemover"] = false, ["service:passiveReset"] = false}

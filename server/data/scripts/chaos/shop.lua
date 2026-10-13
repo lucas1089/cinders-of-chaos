@@ -133,7 +133,8 @@ Shop.exclusions = exclusions()
 -- ------------------------------------------------------------------ catalog (static part)
 local byKey, CATS = {}, {}
 for _, category in ipairs(cfg.categories) do
-	local cat = {name = category.name, icon = category.icon, starter = category.starter, offers = {}}
+	local cat = {name = category.name, icon = category.icon, starter = category.starter, rotationOnly = category.rotationOnly,
+		offers = {}}
 	for _, offer in ipairs(category.offers) do
 		offer.key = K.offerKey(offer)
 		local why = K.excluded(offer, Shop.exclusions)
@@ -280,7 +281,8 @@ function Shop.context(t)
 	for _, k in ipairs(keys) do
 		featured[k] = f.pct or 0
 	end
-	return {now = t, sales = SF.sales, new = SF.new, featured = featured, featuredKeys = keys}
+	return {now = t, sales = SF.sales, new = SF.new, featured = featured, featuredKeys = keys,
+		rotationEndsIn = K.weekEnds(t, SF.weekHour or 6) - t}
 end
 
 local function entry(offer, ctx)
@@ -291,6 +293,38 @@ local function entry(offer, ctx)
 			math.floor((offer.listSum - cost) * 100 / offer.listSum + 0.5) .. "%")
 	end
 	return {offer = offer, cost = cost, oldCost = oldCost, tags = tags}
+end
+
+-- a discount bundle (pct) for this player: the parts the player owns already are left out and lower the price; nil when
+-- every part is owned (the bundle is hidden). Bundles with a fixed cost (the starter packs) stay as they are.
+function Shop.personalBundle(player, o)
+	if o.kind ~= "bundle" or not o.pct or not o.resolved then
+		return o
+	end
+	local parts, sum, owned = {}, 0, 0
+	for _, p in ipairs(o.resolved) do
+		local ok, has = pcall(Shop.owns, player, p)
+		if ok and has then
+			owned = owned + 1
+		else
+			parts[#parts + 1] = p
+			sum = sum + (p.cost or 0)
+		end
+	end
+	if owned == 0 then
+		return o
+	end
+	if #parts == 0 then
+		return nil
+	end
+	local c = {}
+	for k, v in pairs(o) do
+		c[k] = v
+	end
+	c.resolved, c.listSum, c.ownedParts = parts, sum, owned
+	c.cost = K.bundleCost({pct = o.pct}, sum)
+	c.description = (o.description or "") .. string.format(" You own %d of its parts: they are left out of the price.", owned)
+	return c
 end
 
 -- the categories this player sees now: {{name, icon, offers = {entry, ...}}}
@@ -309,9 +343,10 @@ function Shop.view(player, t)
 	end
 	for _, cat in ipairs(CATS) do
 		local offers = {}
-		for _, o in ipairs(cat.offers) do
-			if visible(o) then
-				offers[#offers + 1] = entry(o, ctx)
+		for _, o in ipairs(cat.rotationOnly and {} or cat.offers) do -- rotationOnly: sold only through "This week"
+			local mine = visible(o) and Shop.personalBundle(player, o) or nil
+			if mine then
+				offers[#offers + 1] = entry(mine, ctx)
 			end
 		end
 		add(cat, offers)
@@ -327,7 +362,8 @@ function Shop.view(player, t)
 	if #featured > 0 then
 		-- right after the Starter packs, or first when none is for sale to this player
 		local at = (list[1] and CATS[1].starter and list[1].name == CATS[1].name) and 2 or 1
-		table.insert(list, at, {name = "Featured", icon = Shop.iconOf(featured[1].offer), offers = featured})
+		table.insert(list, at, {name = (SF.featured or {}).name or "Featured", icon = Shop.iconOf(featured[1].offer),
+			offers = featured, endsIn = ctx.rotationEndsIn})
 	end
 	return list
 end
@@ -437,7 +473,8 @@ end
 local function categoriesView(player, list)
 	local out = {}
 	for c, category in ipairs(list or Shop.view(player)) do
-		local entry = {name = category.name, pages = math.max(1, math.ceil(#category.offers / cfg.perPage))}
+		local entry = {name = category.name, pages = math.max(1, math.ceil(#category.offers / cfg.perPage)),
+			endsIn = category.endsIn} -- the weekly rotation: seconds until it changes (the client counts down)
 		if category.icon.item then
 			entry.type, entry.item, entry.count = "item", ItemType(category.icon.item):getClientId(), category.icon.count or 1
 		else
@@ -573,7 +610,34 @@ end
 -- ------------------------------------------------------------------ delivery
 -- gives one offer (not a bundle); returns true or an error text
 local function deliverOne(player, offer)
-	if offer.kind == "item" then
+	if offer.kind == "item" and offer.overflowInbox then
+		-- the rune packs: stacks of at most 100 into the backpack while they fit, the rest into the store inbox
+		local left, toInbox, carried = offer.count or 1, 0, 0
+		local inbox = player:getInbox()
+		while left > 0 do
+			local n = math.min(100, left)
+			local got = Chaos.giveItem(player, offer.id, n)
+			carried = carried + got
+			if got < n then
+				if got > 0 then
+					player:removeItem(offer.id, got) -- a split stack: the whole stack goes to the inbox instead
+					carried = carried - got
+				end
+				if not inbox or not inbox:addItem(offer.id, n, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) then
+					if carried > 0 then
+						player:removeItem(offer.id, carried) -- nothing given: the coins are refunded
+					end
+					return player:getName() .. " does not have enough room in the backpack or the store inbox."
+				end
+				toInbox = toInbox + n
+			end
+			left = left - n
+		end
+		if toInbox > 0 then
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%d of them went to your store inbox (no room or capacity).", toInbox))
+		end
+		return true
+	elseif offer.kind == "item" then
 		local count = offer.count or 1
 		local given = Chaos.giveItem(player, offer.id, count)
 		if given < count then

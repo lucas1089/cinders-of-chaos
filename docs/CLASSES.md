@@ -84,6 +84,16 @@ melee hit adds a holy strike). Radiant Smite, Consecration, Vow of Mending.
   (stacking damage while hitting).
 - **Sentinel**: a stronger aura with regeneration, Rebuke (taunt), Aegis of Faith (-40% damage taken with a shield), Lay on Hands.
 
+**Runes (2026-10-13, owner: "Tire as spells de fazer runa. Deixa as runas serem de vendedores e craft.")**: no class
+conjures runes any more. The stock kits of the Mystic, Elementalist, Illusionist and Ranger lose the 36 rune conjure
+spells and the blank rune spell (they came from the Sorcerer, Druid, Illusionist and Paladin lists of spells.xml, which
+`add_vocations.py` converts); every class still uses runes at their own level and magic level. Runes come from NPC
+vendors (Raloth in Mirewake, Isora in Cinderhold, and every base rune seller) and the general crafting tables
+(server/README.md "Rune supply"). No Chaos class spell, `LINE_STOCK_SPELLS` entry or tutorial class spell was a conjure
+spell; `tools/ci/check_content.py` keeps it so. The other conjure spells went too (owner: "Pode tirar, já que as ammos
+são infinitas"): Conjure Rations (the casters' food spell; food stays on sale at the food vendors) and the Ranger's Hallow
+Spear and Charge Staff. No class conjures anything now.
+
 ## How existing characters move over
 
 | Today | Becomes |

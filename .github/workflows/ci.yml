@@ -130,6 +130,9 @@ jobs:
       - name: Outfit shaders can be owned (server src-patch 0036)
         run: python3 -I server/tools/outfit_shader_patch_test.py
 
+      - name: Everfull Ration install (items.otb / items.xml, synthetic)
+        run: python3 -I server/tools/install_store_food_test.py
+
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py
 

@@ -148,8 +148,44 @@ local function packsView(player)
 		firstBonusPct = (coinsCfg.firstPurchase or {}).bonusPct or 0, firstOpen = first, open = open}
 end
 
+-- a creator code sent with the donation (the client's donate tab): the same pick as the website's Donate page
+-- (creator_lib.php chaos_creator_set_support): chaos_creator_support for supportDays. Returns an error text or nil.
+local function pickCreator(player, text)
+	local cc = Chaos.creatorCodesConfig
+	if not cc then
+		local ok, c = pcall(dofile, "data/scripts/chaos/creator_codes_config.lua")
+		cc = ok and type(c) == "table" and c or nil
+	end
+	if not cc or cc.enabled == false then
+		return "Creator codes are not available right now."
+	end
+	local code = P.creatorCode(text)
+	local T = cc.tables
+	local row = code and Chaos.select(string.format("SELECT `id`, `account_id`, `active`, `code`, `display_name` FROM `%s` WHERE `code` = %s",
+		T.codes, db.escapeString(code)), {{"id", "n"}, {"account_id", "n"}, {"active", "n"}, {"code", "s"}, {"display_name", "s"}})[1]
+	local acc = player:getAccountId()
+	local why = P.creatorRefusal(row, acc)
+	if why then
+		return why
+	end
+	db.query(string.format("DELETE FROM `%s` WHERE `account_id` = %d", T.support, acc))
+	db.query(string.format("INSERT INTO `%s` (`account_id`, `code_id`, `set_at`, `expires_at`, `ip`) VALUES (%d, %d, %d, %d, %s)",
+		T.support, acc, row.id, now(), now() + (cc.supportDays or 30) * 86400, db.escapeString(Game.convertIpToString and
+		Game.convertIpToString(player:getIp()) or "")))
+	db.query(string.format("INSERT INTO `%s` (`at`, `code_id`, `account_id`, `order_id`, `action`, `detail`) VALUES (%d, %d, %d, 0, 'pick', %s)",
+		T.log, now(), row.id, acc, db.escapeString(row.code .. " (client)")))
+	return nil
+end
+
 local function create(player, data)
 	local acc = player:getAccountId()
+	if type(data.creator) == "string" and data.creator ~= "" then
+		local why = pickCreator(player, data.creator:sub(1, 32))
+		if why then
+			send(player, "pay_error", {msg = why})
+			return
+		end
+	end
 	local pack = PACKS[tostring(data.pack or "")]
 	local method = tostring(data.method or "")
 	local d = P.decide({coinsCfg = coinsCfg, pack = pack, method = method, now = now(), orders = recentOrders(acc),

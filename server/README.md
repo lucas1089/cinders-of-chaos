@@ -526,7 +526,7 @@ collision check") and be added here.
 | 226 | `pouches` | `pouches.lua` | `game_pouches` | |
 | 227 | `seasonPass` | `seasonpass.lua` | `game_battlepass` | |
 | 228 | `rift` | `rift.lua` | `game_rift` | server -> client |
-| 229 | `leaderboard` | `leaderboard.lua` (the season ladder and mode tabs: `season.lua`, `season_modes.lua`) | `game_leaderboard` | |
+| 229 | `leaderboard` | `leaderboard.lua` (the season ladder and mode tabs: `season.lua`, `season_modes.lua`; the Records view, actions `rmeta` / `rget` / `rfirsts`: `records.lua`) | `game_leaderboard` | |
 | 230 | `groundLoot` | `groundloot.lua` | `game_groundlabels` | a base client `ExtendedIds` value no base module registers |
 | 231 | `castbar` | `casting.lua`, `data/lib/chaos_casting.lua` | `game_castbar` | both ways |
 | 232 | `crafting` | `crafting.lua`, `salvage.lua` | `game_crafting` | |
@@ -2167,8 +2167,8 @@ Chaos Coins); a gamemaster is refused, and every use is in the admin audit log.
 Rules without engine calls are in `shop_core.lua` (tested by `tests/shop_test.lua`); offers in `shop_config.lua`; the
 services, unlocks and boosts in `shop_services.lua` (next section).
 
-**Categories (per player, in this order).** Starter (only while one of its packs is for sale to the player), Featured
-(this week's), Bundles, Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders, Name Plates, Portal Styles, Spell
+**Categories (per player, in this order).** Starter (only while one of its packs is for sale to the player), This week
+(the weekly rotation, below), Bundles, Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders, Name Plates, Portal Styles, Spell
 Effects, Kill Effects, Loot Labels, Chat Colours ("Cosmetics" below), Appearances (the transmog store sets), Pets,
 Crafting, Supplies, Boosts, World Buffs, Services, Convenience, Classes, Training, then the categories other systems
 insert in their own marked hunks of `shop_config.lua` (Chaos Pact, Storage & Slots, Season pass), Premium Time. Empty
@@ -2323,6 +2323,62 @@ while a part was owned, then bought), weekly limit, gift to an offline character
 refused, a paid coin order credited (750 + 75 + 150 first purchase), the admin Sales dashboard. Screenshots outside the
 repository.
 
+### Weekly rotation, bundles, coin packs (owner approval 2026-10-13)
+
+The owner approved the monetization recommendations ("Pode fazer todas as mudanças recomendadas"): cosmetics and
+convenience only, never power. Prices marked PLACEHOLDER are listed in `docs/OWNER_TODO.md`.
+
+- **This week** (`storefront.featured` in `shop_config.lua`: `name`, `count = 5`, `pct = 10`, `pool`). Five offers of the
+  pool, 10% off, a new choice every Monday at 06:00 (`ChaosShopCore.featured`: a seeded shuffle of the pool by the week
+  number, the same for everyone all week). The category carries `endsIn` (seconds to the next Monday, `ChaosShopCore.weekEnds`)
+  and the client counts it down on the category label ("This week (3d 04h)", `game_shop/rotation.lua`). The pool: wings,
+  auras, mounts, outfits, a stock shader, a plate frame, the six Chaos outfit shaders and the 12 themed appearance sets.
+  A category with `rotationOnly = true` ("Themed Sets") is never shown on its own: its offers are sold only the weeks they
+  rotate in (`Shop.view` skips it; a purchase is always taken from the view).
+- **Themed sets of pair 24** (`data/lib/chaos_theme_art.lua` `M.sets`, 18 transmog sets). Split: 12 sold in the rotation
+  (Cryptbone, Wildroot, Moonsilver 350 each; the Rimeglass, Emeraldine and Thornwild kits 250 each), 6 prestige
+  achievement rewards, never sold: Voidmourn (`cinder_1`, the Cinderheart), Sunsworn (`level_1000`), Oathsteel
+  (`ascended_all`), Starwing Warplate (`raid_first`), Starwing Vestments (`trial_merciless`), Starwing Hunter's Garb
+  (`rift_t15`). The three boss exclusives of pair 24 (Blood Vortex, Rune Seal auras, Runic Wings) stay boss drops and
+  never enter the pool (`theme_art_test.lua` checks it).
+- **Chaos outfit shaders** (`cosmetics_config.lua` `outfitShaders`): switched on, 250 coins (Ember Glow, Frost Rime, Void
+  Flicker, Heartblood) and 300 (Holy Radiance, Spectral Ghost), a "Chaos Shaders" category (`cosmetics_store.lua`
+  "outfitshader"); account-wide, not giftable. The stock shaders cost 120-180.
+- **Bundles.** The discount bundles (`pct`) are priced per player (`Shop.personalBundle`): the parts the player owns
+  already are left out of the bundle and of its price, the description says how many; a bundle whose parts are all
+  owned is not shown. Fixed-price bundles (the starter packs) keep their old rule (refused when a part is owned). New:
+  three regalia at 25% off, an outfit with both addons + a mount + wings + an aura (Glacial: Astral Ice, Glacier Wyrm,
+  Nimbus Wings, Frost Bastion; Pyre: Astral Fire, Crimson Fang, Vorondor Flames, Ember Crown; Stormcaller: Astral
+  Electric, Stormkeep, wings 13, the storm mantle). The three older sets stay at 20%.
+- **Coin packs** (`shop_coins_config.lua`, PLACEHOLDER prices): Handful of Coins 80 coins for US$ 1.99 (R$ 9,95 by Pix at
+  `brlPerUsd` 5, the entry pack), Pouch 250 / 4.99, Sack 750 +10% / 14.99, Chest 1500 +15% / 29.99, Hoard 4000 +25% /
+  74.99, Vault of Coins 10000 +30% / 179.99 (the anchor), Starter Coins 250 + 250 / 2.99 once. Coins per US$ with the
+  pack bonus: 40, 50, 55, 58, 67, 72, so every bigger pack is a better thank-you.
+- **First donation: double coins** (`firstPurchase.bonusPct = 100`, was 20): once per account, on the first pack credited
+  that is not the Starter Coins (`ChaosShopCore.packCredit`). "First" = the account has no credited order: a refund or a
+  chargeback after crediting leaves the order `credited` (the reversal is flagged in `chaos_coin_payments`, and the
+  coins taken back up to the balance, "Donations"), so a reversed donation never makes the next one "first" again; a
+  refund before crediting gives no bonus at all. Shown on the Donate page and in the client's donation tab ("double
+  Chaos Coins (+100%)"); the voluntary donation wording before and after payment is unchanged.
+- **Runes** (owner approval 2026-10-13: "Pode colocar packs de runas na loja"; rune conjuring is gone, "Rune supply"). A
+  "Runes" category built in `shop_config.lua` from `RUNE_PACKS` and the vendor price per rune of
+  `data/lib/chaos_rune_supply.lua`: 100 / 250 / 500 of Searing Orb, Rockfall, Stormcall, Frostfall, Reaper's Rune,
+  Greater Hexdart, Mending and Grand Mending, 25 / 50 / 100 Shackle, 100 / 250 Dispel. Coins = vendor gold x count /
+  `RUNE_GOLD_PER_COIN` (1000, about the rate the potion packs imply: 800-1,550 gold a coin), 5% off the 250 (and 50) pack,
+  10% off the 500 pack, rounded up (100 Searing Orb 9, 500 Reaper's 99, 100 Shackle 89). PLACEHOLDERS. The Reaper's,
+  Searing Orb and Grand Mending 100s of Supplies moved here with their keys. Delivery (`overflowInbox`): stacks of 100
+  into the backpack while they fit, the rest into the store inbox, a message says how many; no room and no inbox =
+  nothing given, coins refunded. Not for season characters (items). Tests: `tests/shop_test.lua` (prices against the
+  supply list, sizes, the Supplies move, delivery with and without room, refund).
+- **Convenience.** The Everfull Ration (infinite food, "Store pouches and the Everfull Ration"). Depot tabs, stash tabs,
+  build and character slots were already sold ("Chaos Pact and account storage", "Depot tabs"). Loadout slots are per
+  character and earned by level ("Loadouts"): not sold; the VIP gets one more while it lasts ("Chaos Pact", VIP perks).
+- **Tests:** `tests/shop_test.lua` (This week first, its countdown, rotationOnly hidden, personal bundle price, regalia,
+  the double first donation, the new packs), `tests/theme_art_test.lua` (12 / 6 split, rotation pool, no boss
+  exclusive), `tests/transmog_test.lua`, `tests/cosmetics_test.lua` (shaders on and priced), `tests/season_test.lua`
+  (the new categories for season characters), `tests/shop_payments_test.lua`, client `game_shop/rotation_test.lua`,
+  website `chaos_coins_test.php`, `chaos_pay_test.php`, `chaos_donation_page_test.php`, `chaos_legal_pages_test.php`.
+
 ## Store services (`shop_services.lua`, `autosell.lua`, `sell_prices.lua`)
 
 Five store categories sell services, unlocks and boosts besides the cosmetics. `shop_config.lua` has two new offer kinds,
@@ -2416,7 +2472,8 @@ was not extended; the list has its own page in the Info & Services window.
 
 **Storage keys** (all in `chaos_constants.lua`): 7100100 reserved (the retired Bottomless Loot Pouch), 7100101 Auto Seller,
 7100102 auto seller paused, 7100103 rarity opt-in, 7100104 name change tokens, 7100105 vocation change tokens, 7100106 Rarity
-Autoloot, 7100107-7100109 store pouches, 7100111-7100150 auto-sell list; global
+Autoloot, 7100107-7100109 store pouches, 7100111-7100150 auto-sell list, 7100151 Everfull Ration owed back after a death
+(`store_food_config.lua`; not in `chaos_constants.lua` yet, as the pouches' keys live in `pouches_config.lua`); global
 7100921-7100923 world buffs. Settings: `Chaos.shopServices`.
 
 **Tests.** `server/tests/shop_services_test.lua` (LuaJIT and Lua 5.3): name rules, buff stacking and the cap, buff
@@ -2860,7 +2917,7 @@ autoloot list is needed.
   no NPC lists the new ids anyway). `Player:onMoveItem` (a hook `install_pouches.py` writes at its top, because only the last
   `onMoveItem` callback's value counts) keeps a pouch, or any container holding one, in the character's own inventory or depot
   (lockers, depot chest, depot boxes): the ground, a mailbox, trash, a house or corpse container and another player's container are
-  refused ("Store pouches stay with you ..."); a pouch never goes into another pouch. The trade window refuses it
+  refused ("Store items stay with you ..."); a pouch never goes into another pouch. The trade window refuses it
   (`onTradeRequest` / `onTradeAccept` callbacks; `patch_season_events.py` enables those events). Player market: it asks
   `ChaosPouches.isPouch(item)` / the attribute `chaos_storebound`.
 - **Death.** The engine decides what drops (blessings, the amulet of loss, skulls as usual). When the backpack falls into the
@@ -2894,6 +2951,32 @@ autoloot list is needed.
   with overflow off the next orb went to the backpack; click-to-loot (`ChaosPouches.stow`) refused the Loot Pouch with overflow off
   and used it with overflow on; the overflow checkbox saved on the server both ways.
 
+## Store pouches and the Everfull Ration (`store_food.lua`, `store_food_core.lua`, `store_food_config.lua`, `tools/install_store_food.py`)
+
+The store's infinite food (Convenience, "Everfull Ration", 150 coins, a PLACEHOLDER price in `docs/OWNER_TODO.md`).
+
+- **Item.** Server id 32084 (after the pouches), a new items.otb node copied from the stock dragon ham (2672: flags and
+  attributes) and made not stackable, with an items.xml entry (name, description, weight 3 oz). Installed by
+  `tools/install_store_food.py` (step `storefood` of `install_all.py`, after `pouches`; idempotent; `items.otb.bak` keeps
+  the original; `tools/install_store_food_test.py` on a synthetic items.otb). Look: the dragon ham's until the client pair
+  has our art; then `ownLook = true` in `store_food_config.lua` gives it client id 33904: a glazed bowl with a roast haunch
+  and gold sparks, drawn by `client/tools/sprites/gen_store_food_art.py` (the store pouches' helpers; 32 px,
+  deterministic) into `art_import/store_food.png`, appended with `art_import/store_food.csv` by `import_art_things.py`
+  (client MANIFEST.md "Everfull Ration look"). The store icon is the item, so it follows the look.
+- **Eating.** Use it like food: one bite is the best stock food (60 x 12 s = 720 s of regeneration, the dragon ham, marlin
+  and roasted meat of the base `food.lua`), "You are full." at the cap every food has (1200 s of regeneration), so it is
+  eaten exactly as often as normal food; one bite a second at most (`exhaustMs`). Never used up. Only its owner can eat
+  from it ("This ration belongs to someone else.").
+- **Store-bound** like the pouches (the store's convention for a permanent item): one per character (the store refuses a
+  second while one is in the inventory, the inbox or a depot), the custom attributes `chaos_food_owner`, `chaos_storebound`
+  and `chaos_locked`. The pouches' move hook, trade callbacks and the player market refuse any `chaos_storebound` item, so
+  it cannot be dropped, mailed, traded or sold (the refusal text now says "Store items ..."). A service offer, so never
+  giftable. Not for season characters (the Convenience category is refused there).
+- **Death.** A ration dropped with the backpack leaves the corpse and comes back at the next login (storage 7100151, written
+  to the database); the store refuses a second one meanwhile.
+- **Tests:** `tests/store_food_test.lua` (the bite, the cap, the exhaust, owner only, never used up, the store check, the
+  offer, delivery to the backpack or the inbox, death and the login), `tools/install_store_food_test.py`.
+
 ## Chaos Pact and account storage (`pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql`, client `game_pact`)
 
 Two things sold for Chaos Coins, both account-wide and comfort only: nothing here adds damage, defence or loot. Every
@@ -2907,6 +2990,17 @@ server day (`Chaos.dayKey`), for the whole account, while the Pact runs; no back
 150 coins back, so a player who logs in daily pays 150 net for the month: cheaper than the 250 of 30 premium days alone, and
 never more coins than the Pact cost. Store bundles that contain Pact days (`shop_config.lua` `pact = {api = "ChaosPact",
 fn = "grantDays"}`) go through `ChaosPact.grantDays(player, days, source)`.
+
+**VIP perks** (owner approval 2026-10-13; `pact_config.lua` `perks`, `pact_perks.lua`, `pact_perks_core.lua`,
+`tests/pact_perks_test.lua`). The Pact is the server's VIP; on top of the limits below, while it is active:
+one more loadout slot (`loadouts_config.lua` `pactSlots`, "Loadouts"); the Auto Seller and Rarity Autoloot work for
+every character of the account (their storages set to 2; a bought unlock is 1 and is never touched, and the store still
+sells them, since only 1 counts as owned there); the chat colour **Pactbound Name** (cosmetic `chat_pactbound`, source
+"pact", taken back when the Pact ends) and the **cosmetic of the month** (`perks.monthly`: YYYYMM -> a pact cosmetic,
+November 2026 to April 2027 planned: kill effects and loot label accents), granted to accounts with an active Pact that
+month and kept for good. Applied at login, at once after a purchase (`ChaosPact.grantDays` is wrapped, no edit of
+`pact.lua`) and once a minute for the characters online. No experience bonus (`premiumDays = 0`). No priority login:
+the engine has no login queue. Depot tabs: the Pact's +1 was already in `limits.depotTabs`.
 
 **Premium.** The Pact gives no premium days (`pact.premiumDays = 0`, the owner's decision: the stamina bonus below is
 power, not comfort). A value above 0 would add that many premium days per purchase. With `freePremium = false`,
@@ -3128,7 +3222,8 @@ the new account's first character levels. Approved by the owner. Nothing in it g
 - **Anti-abuse** (`antiAbuse`, each refusal logged): not the own code; no staff on either side (account type >= 2 or a
   character of group >= 2); referrer not banned; no referring back; no shared IP (`sameIp`: login IPs of every character of
   both accounts, online characters and the website registration IP); no shared e-mail domain unless it is a public one
-  (`sameEmailDomain`, `publicDomains`); at most `monthlyLinks` (10) new friends per referrer and calendar month.
+  (`sameEmailDomain`, `publicDomains`); at most `monthlyLinks` (10) new friends per referrer and calendar month. An IPv6
+  address counts by its /64 network (`ChaosReferralCore.netKey`), as the website's login and register guards do.
 - **The friend's gift** (`starterGift`): 50 health and 50 mana potions (backpack, the rest into the depot inbox) and the
   account-wide title Kindled, once, to the character that logs in after the link is accepted.
 - **The referrer's rewards** (`milestones`): when the referred account's first character (the lowest character id, fixed when
@@ -3137,20 +3232,77 @@ the new account's first character levels. Approved by the owner. Nothing in it g
   account is banned; `due` (waiting) when the referrer is banned or already had `monthlyRewards` (10) rewards this month.
   Waiting rewards are tried again at every login of the referrer, at startup and every `retryMinutes` (30). Coins go to
   `chaos_shop_coins`; titles come from the paid rows (`ChaosTitles` source `referral`). The referrer is told at once or at
-  the next login.
+  the next login. Level 150 is the main reward and a placeholder (owner decision 2026-10-13: "level X, placeholder 150").
+- **Checked again when a reward is due** (owner rules 2026-10-13; one person never sits on both sides, as the
+  multi-client rule and docs/GM_HANDBOOK.md section 4 say): the referred account must be `minReferredAccountDays` (7) days
+  old (else the reward waits and is paid by the retry); a shared connection by then (`sameIpAtPayout`: every login IP of
+  both accounts, the online characters and the website IPs, IPv6 by /64) or a shared payer (`samePayer`: a payer hash of
+  `chaos_pay_payers` on a donation of each account; the table is empty until the donation service writes it, see
+  website/README.md "Creator codes") makes it `void`.
+- **Tier rewards** (`tiers`, `qualify` = `l150`): once 3, 5 and 10 referred accounts reached the qualifying milestone
+  (paid, not void), the referrer gets the titles Flamecaller (+50 coins), Hearthwarden (+100) and Lord of the Pyre
+  (+200), once each (`chaos_referral_tiers`, `Ref.checkTiers` after a payment; titles from the rows). The client lists
+  them under the milestones ("And with friends at level 150 (n so far): ..."). The referral link is shown on the
+  website too (The World > Creator Codes, `register.php?ref=CODE`).
 - **Client** (`game_referral`, opcode 220 `ChaosOpcodes.referral`; `open` / `sync` / `enter {code}` out, `status` /
   `message` back): the code with Copy code, what both sides get, the code box while the account may enter one (or who
   referred it), the referred friends with level and each milestone (rewarded / waiting / no reward), this month's counts.
 - **Staff:** `/referral <player>` (code, link, counts), `/referral <player>, unlink` (removes the link and the unpaid rows).
   Every link, refusal, gift and payment is in `chaos_referral_log`.
-- **Tests:** `tests/referral_test.lua` (config sanity, codes, IP byte orders, e-mail domains, every refusal, milestones, the
-  reward decision, titles, the client view), the client's `referralview_test.lua`, `website/tests/chaos_referral_test.php`.
+- **Tests:** `tests/referral_test.lua` (config sanity, codes, IP byte orders, IPv6 /64, payers, e-mail domains, every refusal,
+  milestones, the reward decision with the account age, connection and payer, the tiers, titles, the client view), the client's `referralview_test.lua`, `website/tests/chaos_referral_test.php`.
 - **Tested in game** (test server, cropped map, own DB copy): codes for a level 60 account; a code entered in game by a one-day
   old account refused for the shared IP, then (IP check off for the test) accepted with the gift and the Kindled title; level
   50 paid 25 coins and Torchbearer; level 150 with the monthly cap set to 1 waited, then was paid at the next start (Ember
   Herald, 75 coins); an account made on the website with a wrong code was refused on the form, with the right one it got a
   pending row, accepted at its first login with the gift; its level 50 waited for the cap, the account was banned, and the
   reward became void; the referrer's window showed both friends. Screenshots are not in the repository.
+
+## Creator codes (`creator_codes.lua`, `creator_codes_core.lua`, `creator_codes_config.lua`, `sql/chaos_creator_codes.sql`; website `creator_lib.php`, `pages/creator.php`)
+
+A streamer or content creator gets a code; a donor picks it on the website; for `supportDays` (30) every donation of that
+account gives the creator `sharePct` (5, a placeholder) % of the donation's coins (the pack's coins, not its bonus), as
+Chaos Coins in game. The donor's pack is never reduced. Owner decision 2026-10-13: paid in coins in game, not money.
+
+- **Codes** are made on the website by an administrator (an admin panel account with a character of group `adminGroup`,
+  5): code, the creator's character (its account is paid), a shown name, its own % (0 = the default), on / off. Donors
+  pick a code on `page.php?plugin=chaos&p=creator` (the donate page's code field is a hook left to the store helper, see
+  website/README.md "Creator codes"). The donor's own code is refused at once (self-use).
+- **The game server's round** (every `pollSeconds`, 300, and at startup; `ChaosCreatorCodes.round`): (1) every credited
+  donation (`chaos_coin_orders` status `credited`) of an account whose pick covers the donation's creation time gets one
+  `chaos_creator_uses` row (the order id is the key: once per donation) with its share (`C.share`, at most `orderCap` 500);
+  (2) every pending / waiting share is decided by `ChaosCreatorCore.decide`: **void** for the creator's own account, a
+  shared connection (login IPs of every character, online IPs, the pick's IP; IPv6 by /64), a shared payer
+  (`chaos_pay_payers`), a refund or chargeback (`chaos_coin_payments.reversal`, or the order ended without coins), a code
+  switched off or deleted; **wait** within `holdDays` (14) of crediting (chargebacks come first), while the creator is
+  banned, or when the creator's month (`monthlyCap` 5000) has no room (a share is never cut); else **paid** into the
+  creator's `chaos_shop_coins` (the store's balance table; no store file is edited) and the creator is told in game.
+  Every step is in `chaos_creator_log`.
+- **Staff:** `/creatorcodes` (group 5: the settings and each code's paid shares), `/creatorcodes run` (a round now).
+- **Install:** `install_all.py` (`files` and `sql` steps; the website's `install.sql` creates the same tables).
+- **Tests:** `tests/creator_codes_test.lua` (codes, shares and caps, the pick window, IPv4 / IPv6 /64, every decision,
+  the tables of the engine and SQL files), `website/tests/chaos_creator_test.php`. Not run on a live server.
+
+## Character Bazaar (`bazaar.lua`, `bazaar_core.lua`, `bazaar_config.lua`, `sql/chaos_bazaar.sql`; website `bazaar_lib.php`, `pages/bazaar.php`)
+
+Player-to-player character auctions for Chaos Coins on the website (website/README.md "Character Bazaar": listing rules,
+escrow, fee, transfer). The game server's part is the lock: a character whose listing is `active` or `settling` cannot
+log in.
+
+- `bazaar.lua` onLogin: a locked character is refused (`return false`; the engine kicks it in `Player::onPlacedCreature`
+  before it can act), logged as `login_refused` in `chaos_bazaar_log`. Staff characters (group >= `adminGroup`, 5) are
+  never locked. Missing tables (a server without the site) lock nothing.
+- A sweep every `sweepSeconds` (60) saves and removes a listed character that is online (a login that raced the
+  listing; the website also refuses to list a character in `players_online`).
+- The transfer itself is the website's: `players.account_id` changes while the character is offline and locked; the
+  character leaves its guild; everything it carries goes with it (items, depot, houses it owns). A referral link does
+  not follow it (the referral program tracks a character by the referred account).
+- Numbers (`feePct` 8, a placeholder in the 5-10 range; 1-7 days; `minPrice` 100; `minLevel` 50; the bid step; the snipe
+  minutes; `chargebackDays` 180) are in `bazaar_config.lua`, which the website reads. `ChaosBazaarCore.validate` refuses
+  a fee outside 5-10 % or other days (startup and test).
+- **Tests:** `tests/bazaar_test.lua` (config, fee, step, the lock against a mocked engine: active / settling locked,
+  sold / cancelled / expired free, staff, off, missing tables, the sweep; the tables of the SQL, engine and website
+  install files), `website/tests/chaos_bazaar_test.php`. Not run on a live server.
 
 ## Mentors (`mentor.lua`, `mentor_core.lua`, `mentor_config.lua`, `sql/chaos_mentor.sql`, client `game_mentor`)
 
@@ -5498,6 +5650,62 @@ from the DB, the reward of an unrewarded row delivered at login. Tabs, class tab
 verified: the look text from another player's view ("He"/"She"; unit-tested), the real Monday 06:00 change (a
 once-a-minute check of the week key), the rift source (the rift scripts do not call it yet).
 
+## Competitive records (`records.lua`, `records_core.lua`, `records_config.lua`, `sql/chaos_records.sql`)
+
+Fastest kills and best results of every competitive system, beside the weekly boards (owner request: "Faça uma
+leaderboard de bosses, tower e essas coisas, pra gerar uma competição entre os players"). Client: the **Records** button of
+the Leaderboards window (`game_leaderboard`, `recordsview.lua`); website: the Records box of the Leaderboards page.
+
+- **Boards** (`records_config.lua` `boards`, built by `ChaosRecordsCore.catalogue` from the content configs, so a new
+  boss of those lists gets its boards by itself). Bosses: World Boss Kill (fastest, per boss) and World Boss Damage (the
+  best damage share of a kill, per boss), Omen Guardians, Ascended (the three Omens and the Cinderheart), the Guild Boss,
+  the Sepulchre Clear, the Hollow Vault and every base dungeon (per difficulty). Infinity Tower: Highest Floor, Fastest
+  Climb to floors 50 / 100 / 120. Rifts: Highest Tier, Fastest Seal per tier band (1-5, 6-10, 11-14, 15), Atlas
+  Completion. Ember Descent: Deepest Room (the weekly seeded run). Vocation Trials: Trial Clear per difficulty. Arena:
+  rating per bracket, Battleground wins. Filters: the variant (boss, difficulty, band, floor, bracket), the party size
+  (Solo, 2-3, 4-5 where the content allows groups), the class (the class at the run), and the view.
+- **Views.** This week (resets Monday 06:00 with the leaderboards), the season (the running server season of
+  `season.lua`, else the calendar quarter) and all time. One row per character, slot ("board|variant|size") and period
+  in `chaos_records`; a better result replaces it, a tie keeps the older one.
+- **Ranking and ties.** Fastest first on the time boards, highest first on the others; a tie goes to the earlier time,
+  then the lower character id (ranks are never shared). The "your rank" row counts the characters ahead of you in the
+  same view and filters.
+- **Anti-abuse** (`ChaosRecordsCore.validate`; a run that fails any rule is not recorded, the reason goes to the console):
+  no staff character in the group (one gamemaster voids the run for everyone), no multi-client character, no debug run
+  (a run flagged by its script, or the records clock shifted with `/records shift`), the party size inside the board's
+  brackets (and at most `maxGroup`), the same difficulty from start to end (dungeons), a variant the board knows, a time
+  of at least `minSeconds` (10). Staff and accounts held by the anti-bot review are left out of every view too.
+- **Rewards.** The weekly top 3 of every slot hold the category title for the next week (Bossrunner, Spire Climber, Rift
+  Sprinter, Depth Seeker, Trial Breaker, Warlord; `ChaosTitles` source `records`) and the **laurel** name plate frame as
+  a badge (`ChaosTitles.registerFrame`); awarded at the Monday reset into `chaos_records_awards`, broadcast. A beaten
+  all-time record is broadcast ("New record! ... (was ...)"). **Realm firsts:** the first player or party to defeat each
+  boss in the season ("Realm first of Season of Ash! ...", `chaos_records_firsts`) holds the title "First: <boss>" for
+  that season; the client and the site list them.
+- **Sources.** No content script was edited for the bosses: `records.lua` wraps functions they already call, at load, at
+  startup and again every minute (a `/reload` of the wrapped script replaces the function): `ChaosWorldBoss.computeRewards`
+  (kill time from `W.state.fightStart`, the damage shares), `ChaosRiftCore.atlasSealed` (sealed rifts and Omen guardians:
+  tier, omen, seconds, the finishers), `ChaosExclusives.bossKill` (the Ascended and the Cinderheart through the
+  `ChaosAscended` run, the guild boss through the `ChaosGuildBoss` run), `ChaosLeaderboard.record` (`raid_clear`,
+  `descent`, `arena*`, `battleground`), `ChaosTower.recordRun` (highest floor), `ChaosAchievements.set` ("trial_tier_<n>":
+  the `ChaosTrials` run). One guarded line in `infinitytower_run.lua` (floor cleared -> `ChaosRecords.towerFloor`).
+  **Not wired yet (the boss mechanics files were being edited):** the dungeons and the Hollow Vault need one line in
+  `dungeons.lua` endRun, after `storeRun(...)`:
+  `if ChaosRecords and ChaosRecords.dungeonClear then pcall(ChaosRecords.dungeonClear, {dungeonId = run.dungeonId, title =
+  titleOf(run.dungeonId, dg), difficulty = run.difficulty, difficultyStart = run.difficultyStart or run.difficulty, ms =
+  elapsed, members = memberInfo}) end` (and `run.difficultyStart = run.difficulty` where the run is made). Until then those
+  boards stay empty. The world boss, the Ascended and the guild boss use the kill time as the scripts compute it; a
+  boss-only time for the rift bands would need a hook in `rift.lua` (the band boards use the whole seal time).
+- **Protocol** (opcode 229 `ChaosOpcodes.leaderboard`, a second extended-opcode event; `leaderboard.lua` ignores these
+  actions): client `rmeta` | `rget {board, variant, size, period, group}` | `rfirsts`; server `rcat {cat, boards}` (the
+  meta in parts of at most 6 boards, the window has no chunk joiner), `rmeta`, `rboard {rows, own, total, record,
+  resetIn, seasonName}`, `rfirsts`. The server writes the catalogue to `chaos_records_boards` at startup for the website.
+- **Staff:** `/records` (state), `/records reset` (award the last week again; INSERT IGNORE keeps it once), `/records shift
+  <days>` (test clock: every run is a debug run meanwhile), `/records rebuild`.
+- **Tests:** `tests/records_test.lua` (catalogue, periods and resets, brackets, validation, merge, ranking and ties, awards,
+  titles, badge, realm firsts, texts; and `records.lua` on a mocked engine: every hook, the SQL order of the upsert, the
+  broadcasts, the views and the meta parts), client `game_leaderboard/recordsview_test.lua`, website
+  `chaos_leaderboards_page_test.php`. Not run on a live server.
+
 ## Crafting (`crafting.lua`, `data/lib/chaos_crafting.lua`, `tools/install_crafting.py`)
 
 Install: `python3 -I server/tools/install_crafting.py <server>/data` (idempotent, `--dry-run`), then
@@ -5796,6 +6004,133 @@ Linux client): a herbalist table used from the client opens the window with 34 r
 another tab, Craft x2 (two items, 2,000 gold and two sets of materials taken, the skill rose, the counts refreshed),
 the server's refusal for materials that were gone (stale counts), the walked-away state and the server's table refusal
 for a request sent from 3 tiles away, the menu entry.
+
+## Rune supply (`data/lib/chaos_rune_supply.lua`, `tools/install_rune_supply.py`, `sql/chaos_rune_supply.sql`, `tests/rune_supply_test.lua`)
+
+Owner: "Tire as spells de fazer runa. Deixa as runas serem de vendedores e craft." No spell conjures a rune; every rune a
+stock spell conjured (36, and the unscribed rune) comes from NPC vendors or the base crafting tables. Every number is in
+`data/lib/chaos_rune_supply.lua`; the install tool, the crafting loader, the test and `check_content.py` all read it.
+
+**What `install_rune_supply.py DATA_DIR [--dry-run]` does** (install step `runes`, after `npcnames`; idempotent):
+- spells.xml: the 40 conjure entries (by script path: `conjuring/<rune>.lua`, `conjuring/blank_rune.lua` and
+  `R.otherConjures`, whatever rename_spells.py called them) become comments marked `Chaos: no conjuring`. The `<rune>`
+  entries stay. The server spellbook, the support runes and the combat log strip comments, so they no longer list them.
+- Other conjure spells (owner, 2026-10-13: "Pode tirar, já que as ammos são infinitas"): Conjure Rations
+  (`support/food.lua`), Hallow Spear (`conjuring/enchant_spear.lua`) and Charge Staff (`conjuring/enchant_staff.lua`) go
+  the same way. The foods Conjure Rations made stay on sale, no shop change needed: meat, ham, bread and cheese at
+  Yornath and Beline in Mirewake (meat and ham at 32 base NPCs), grapes and apples at Kestbert in Mirewake, cheese also
+  in Cinderhold, rolls at 4 NPCs elsewhere. The enchanted spear and staff were only ever conjured.
+- NPC shops: every NPC that sells one of these runes (XML `shop_buyable`, Lua `addBuyableItem`, `{id, buy}` tables; 27
+  NPC files and one NPC script of the base) sells it at the config's price; nobody undercuts the table. Runes stack in this protocol, so the
+  price is per rune (the subtype an NPC writes stays and changes nothing).
+- Vendors: Raloth (Mirewake, town 1: the main hub and the default home town, `CHAOS_START_TOWNS=1`) and Isora
+  (Cinderhold, town 2) sell all 36 runes and the unscribed rune (10 gold). Found by their Chaos name, or before the
+  npcnames step by the hash in `data/npc/base_npc_names.csv`. A vendor that is missing, or has no XML shop list, stops
+  the tool with exit 1 and nothing written. Raloth sold 25 of the 36 runes and Isora 20; the rest are added.
+- Crafting: `data/scripts/customs/crafting/generalcrafting.lua` gets a loader block at its end (CRLF kept) that calls
+  `ChaosRuneSupply.addRecipes(Crafting.generalcrafting)`: 36 recipes after the stock ones (their indexes stay), once per
+  load. No crafting file: skipped.
+- Learned spells: the stock entries had `needlearn="0"`, so nobody learned one; `sql/chaos_rune_supply.sql` deletes any
+  `player_spells` row with a stock or Chaos name of the 40 removed spells (the engine keeps learned names as text and never checks them,
+  so a login never fails either way). A hotkey with the old words only says them now.
+
+**Prices** (gold a rune, at every NPC): conjure value = (mana x 0.5 + soul x 10 + blank rune 10) / runes conjured, the
+mana at what mana potions cost; x1.0 for rune levels 1-24, x1.1 for 25-34, x1.2 for 35+; never below the lowest price a
+base NPC asked; at least 2 for the 10-a-blank runes. Flagged for the owner (docs/OWNER_TODO.md).
+
+| Rune (stock) | Level | Old NPC price | New price | Recipe (skill, gold, makes) | Crafted, gold a rune |
+|---|---|---|---|---|---|
+| Faint Dart Rune | 1 | none | **2** | 10, 5 gold, 50 | 1.1 |
+| Faint Hexdart Rune | 1 | none | **2** | 10, 5 gold, 50 | 1.1 |
+| Pebblestorm Rune | 1 | none | **11** | 10, 71 gold, 20 | 6.0 |
+| Blightpatch Rune | 14 | 21 | **40** | 10, 280 gold, 15 | 22.0 |
+| Cinderpatch Rune | 15 | 28 | **47** | 12, 340 gold, 15 | 26.0 |
+| Hexdart Rune | 15 | 4 | **8** | 12, 170 gold, 50 | 4.4 |
+| Mending Rune | 15 | 95 | **95** | 12, 210 gold, 5 | 52.0 |
+| Purge Rune | 15 | 65 | **120** | 12, 280 gold, 5 | 66.0 |
+| Beastbond Rune | 16 | 80 | **140** | 12, 335 gold, 5 | 77.0 |
+| Dispel Rune | 17 | 15 | **30** | 12, 200 gold, 15 | 16.7 |
+| Sparkmire Rune | 18 | 38 | **63** | 12, 470 gold, 15 | 34.7 |
+| Unmaking Rune | 21 | 26 | **47** | 12, 340 gold, 15 | 26.0 |
+| Grand Mending Rune | 24 | 175 | **240** | 12, 610 gold, 5 | 132.0 |
+| Stonefang Rune | 24 | 12 | **20** | 12, 500 gold, 50 | 11.0 |
+| Blight Seed Rune | 25 | 85 | **160** | 18, 830 gold, 10 | 88.0 |
+| Greater Hexdart Rune | 25 | 12 | **23** | 18, 585 gold, 50 | 12.7 |
+| Cinder Orb Rune | 27 | 30 | **59** | 18, 760 gold, 25 | 32.4 |
+| Dawnshard Rune | 27 | 16 | **42** | 18, 530 gold, 25 | 23.2 |
+| Ember Seed Rune | 27 | 117 | **195** | 18, 1020 gold, 10 | 107.0 |
+| Gravecall Rune | 27 | 375 | **395** | 18, 1040 gold, 5 | 218.0 |
+| Mimic Rune | 27 | 210 | **365** | 18, 955 gold, 5 | 201.0 |
+| Soulpyre Rune | 27 | 46 | **92** | 18, 710 gold, 15 | 50.7 |
+| Thicket Rune | 27 | 160 | **200** | 18, 1050 gold, 10 | 110.0 |
+| Rimespike Rune | 28 | 30 | **59** | 18, 760 gold, 25 | 32.4 |
+| Rockfall Rune | 28 | 37 | **70** | 18, 720 gold, 20 | 38.5 |
+| Stormcall Rune | 28 | 37 | **70** | 18, 720 gold, 20 | 38.5 |
+| Blightwall Rune | 29 | 52 | **99** | 18, 1040 gold, 20 | 54.5 |
+| Frostfall Rune | 30 | 45 | **84** | 18, 875 gold, 20 | 46.3 |
+| Searing Orb Rune | 30 | 45 | **84** | 18, 875 gold, 20 | 46.3 |
+| Concussion Rune | 31 | 31 | **61** | 18, 955 gold, 30 | 33.5 |
+| Bastion Rune | 32 | 116 | **160** | 18, 1270 gold, 15 | 88.0 |
+| Pyrewall Rune | 33 | 61 | **120** | 18, 1270 gold, 20 | 66.0 |
+| Storm Seed Rune | 37 | 162 | **300** | 25, 1600 gold, 10 | 165.0 |
+| Stormwall Rune | 41 | 85 | **170** | 25, 1820 gold, 20 | 93.5 |
+| Reaper's Rune | 45 | 50 (108 most NPCs) | **220** | 25, 1770 gold, 15 | 121.3 |
+| Shackle Rune | 54 | 700 | **890** | 25, 2400 gold, 5 | 490.0 |
+
+**Gold sink by level band** (hunting gold per hour from "Respec" / `gamble_config.lua` `balance.hunting`, linear in
+between; a caster firing 300 attack runes and 30 support runes an hour, all bought):
+
+| Level | Hunting gold / h | 300 attack runes | 30 support runes |
+|---|---|---|---|
+| 8 | 19,000 | Pebblestorm 3,300 (17%) | Blightpatch 1,200 (6%) |
+| 20 | 43,000 | Stonefang 6,000 (14%) | Grand Mending 7,200 (17%) |
+| 30 | 63,000 | Searing Orb 25,200 (40%) | Bastion 4,800 (8%) |
+| 45 | 106,000 | Reaper's 66,000 (62%) | Shackle 26,700 (25%) |
+| 100 | 358,839 | Reaper's 66,000 (18%) | Shackle 26,700 (7%) |
+| 300 | 881,866 | Reaper's 66,000 (7%) | Shackle 26,700 (3%) |
+| 500+ | 5,548,330+ | Reaper's 66,000 (1%) | Shackle 26,700 (under 1%) |
+
+A flat NPC price cannot follow the income curve: runes are a real sink from level 8 to about 300 (heaviest at 30-60,
+where the strong runes unlock) and a token one past 500. The prices are per item in the base NPC shop module, so a
+level-scaled price would need a scripted shop. Open for the owner.
+
+**Crafting** (general crafting tables, skill 7, action id 38823; the crafting hall, z 4). A recipe turns 5 unscribed
+runes into 5 x the rune's conjure count, with 2 herbs and 1 ore piece of the rune's level band (the base server's own
+herbalist and mining gathering; the Chaos professions feed no crafting, their owner rule):
+
+| Rune level | Skill | Herb x2 | Ore piece x1 | Gathered with |
+|---|---|---|---|---|
+| 1-14 | 10 | delphinium (26729) | piece of bronze (26398) | the first scissor and pickaxe |
+| 15-24 | 12 | bluebell (26732) | piece of silver (26399) | the apprentice's tools |
+| 25-34 | 18 | scarlet flower (26726) | piece of sapphire (26404) | the third tier of tools |
+| 35+ | 25 | red lilly (26727) | piece of gold (26401) | the expert's tools |
+
+Recipe gold + the 5 blank runes = 55% of the vendor price of what it makes (`goldShare`); the materials have no NPC
+price, they cost gathering time, and the table takes 860 ms a craft and 1 s between crafts. "Crafting bonus" applies
+(runes: +50% or x2 extra pieces by mastery: about +2.5% runes at mastery 0, +20% at 100), so the gold a rune falls from
+55% to about 46% of the vendor price.
+
+**Hunt tracker.** `hunt_supplies.lua` holds the new prices (the generator's output on a base with this step run: only
+the rune lines and three runes that no NPC sold before change).
+
+**Tests.** `tests/rune_supply_test.lua`: the config's own check; the names against `spell_names.csv`; one csv row
+marked `removed` per removed script (40, the three other conjures by name and path); the SQL names exactly those; every rune has a vendor in the hub and in every start
+town; every rune has a recipe (band herb and ore, skill, blank runes) that costs less gold a rune than the vendor and at
+least 40% of it; `addRecipes` once; the tool on a written data folder (rune, blank rune, food, spear and staff conjure
+entries commented, the rune entry, another spell, another script of the same file name and an entry an earlier version
+commented kept, every NPC repriced in XML and Lua, both vendors stocked without duplicates, the crafting loader on
+a CRLF file, loading it gives every recipe once, a second run and a dry run change nothing, a missing vendor writes
+nothing). `tools/ci/check_content.py`: no class kit (spells_chaos.xml, `add_vocations.py` LINE_STOCK_SPELLS, the
+tutorial's class spells) names a removed spell. Run on the base server's data (copy): 40 entries commented, 27 NPC files
+and one NPC script repriced, Raloth and Isora complete, the 36 recipes loaded with LuaJIT and Lua 5.3; a second run did
+nothing. Not run in game.
+
+**Client.** `gen_spell_data.py` writes `ChaosRemovedSpells` (old words -> Chaos words) into `spelldata.lua`: the 40
+removed spells and the client's stale "Conjure Wand of Darkness" (`exevo gran mort`, id 92, no server spell). The client's
+stock conjure entries stay in `SpellInfo`, renamed by `ChaosSpellNames`: a rune's cooldown icon is found by the rune's
+spell id, which only the conjure entry of the rune carries (`Spells.getSpellByIcon`), and Chaos words the server list
+knows keep `spellfix.lua` from moving those ids by +1000. Taking them out of the spell list (`chaosspells.lua`, by words,
+any type: Conjure Rations is an "Instant" entry) is pending; the spell icon sheets keep their cells for the same reason.
 
 ## Crafting orbs v2 (`data/lib/chaos_orbs.lua`, `chaos_orbs_config.lua`, `tools/install_orbs.py`, `item_powers.lua`)
 
@@ -7275,11 +7610,24 @@ every source every day takes about 3 weeks. Staff (group >= `staffGroup` 4, as o
 Nothing bought gives pass XP except the 10 tier skips of the top pack (asked for by the owner; they move the cosmetic
 track only).
 
-**Rewards.** Free track: gold, potions, the titles Ashwalker (15) and Ashbound (50). Premium track: potions, crystal coins,
-300 Chaos Coins back (50 at tiers 10 / 20 / 30 / 40, 100 at 49), the titles Kindled (1) and Cinderborn (35), the
-Everblight outfit (15) and its addons (32, 45), the Cinderfall Gate portal style (25) and the Magma Skull mount (50). The
-validator (`ChaosSeasonPassCore.validate`, run at startup and by the test) refuses any item but gold and potions (no
-orbs, gems, keys, experience potions, stamina or gear) and pack-only kinds on the tracks. Items go to the character
+**Rewards.** Free track (earned by play): gold, potions, the titles Ashwalker (15) and Ashbound (50). Premium track
+(bought with Chaos Coins; owner rule 2026-10-13: cosmetics and convenience only, never power): **cosmetics and Chaos
+Coins back only**: the titles Kindled (1), Ash-Touched (5), Emberwake (18), Smoulderkin (20), Pyrewarden (22), Ashen
+Herald (28), Cinderborn (35), Flamebound (38), Cinderlord (42) and Ashen Sovereign (48), the outfit shaders Ash Drift
+(10, shaders.xml id 25) and Cinder Crown (30, id 26), the Cinderwrought name plate frame (40), the Everblight outfit (15)
+and its addons (32, 45), the Cinderfall Gate portal style (25), the Magma Skull mount (50) and 10 Chaos Coins on each of
+the other 32 tiers (320 back, less than the 1000 the pass costs). No gold, potions, experience or gear on the premium
+track: the validator (`ChaosSeasonPassCore.validate`, run at startup and by the test) refuses any premium reward whose
+kind is not in `P.PREMIUM_KINDS` (coins and the cosmetic kinds), any item but gold and potions on the free track (no
+orbs, gems, keys, experience potions, stamina or gear) and pack-only kinds on the tracks. The two shaders and the frame
+are new art of this season, sold nowhere: the shaders are `chaos_ash_drift` / `chaos_cinder_crown` (client
+`data/shaders/chaos_outfit_ash_drift.frag`, `chaos_outfit_cinder_crown.frag`, registered by `game_chaosshaders`; the
+`install_outfits.py` shaders.xml block reads them from `seasonpass_config.lua`; a claim leaves the store's shader mark,
+`shopShaderBase` + id, like the store's shaders), the frame is `cinderwrought` (`nameplate_core.lua` `N.FRAMES`, client
+`game_nameplate/images/plate_cinderwrought.png` from `client/tools/gen_nameplate_art.py`; shown through the pass's own
+frame switch). **Late buyers** lose nothing: buying the premium track (or a pack that holds it) claims every premium
+reward of the tiers already reached at once (`P.premiumBacklog`, `SP.claimPremiumBacklog`; an account that got it as a
+gift while offline gets them at its next login). The price, 1000 Chaos Coins, is a placeholder (docs/OWNER_TODO.md). Items go to the character
 that claims (refused without room: the claim is undone and stays claimable); coins to the account; outfits, mounts,
 titles and portal styles to every character of the account at once and to the others at login, kept after the
 season. Claim all claims everything it can and leaves items without room for later.
@@ -12201,7 +12549,9 @@ Every number is in `loadouts_config.lua`; the rules are in `loadouts_core.lua` (
 Not part of a loadout: the Vocation Trial node picks (`trials.lua`; changing a held node costs a Trial Token and gold, which a free
 switch would dodge) and the trial nodes themselves (they are kept through every tree change anyway).
 
-**Slots.** 3 for everyone, a 4th at level 200 and a 5th at level 500 (`baseSlots`, `earned`, `maxSlots`). They are earned in game,
+**Slots.** 3 for everyone, a 4th at level 200 and a 5th at level 500 (`baseSlots`, `earned`, `maxSlots`), and one more while the
+Chaos Pact (the VIP) is active (`pactSlots`, owner approval 2026-10-13; `ChaosPactPerks.loadoutBonus`; a slot over the limit
+keeps its loadout, as below). They are earned in game,
 never sold: the store's rule is cosmetics and convenience without power ("Store", Fairness), and a loadout slot is worth respec gold
 (each one keeps a tree that would otherwise cost a full reset), so a paid slot would sell gold. A character whose level drops below
 an unlock keeps the loadout in that slot (it can be deleted, not saved or loaded, until the level is back). The Chaos Pact's saved

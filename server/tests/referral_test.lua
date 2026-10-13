@@ -89,6 +89,13 @@ do
 	ok(R.shareIp({"1.2.3.4", "5.6.7.8"}, {"9.9.9.9", "5.6.7.8"}), "shared IP")
 	ok(not R.shareIp({"1.2.3.4"}, {"4.3.2.1"}), "different IPs")
 	ok(not R.shareIp({"0.0.0.0"}, {"0.0.0.0"}), "no address never matches")
+	-- IPv6 counts by its /64 (one home connection), IPv4 exactly
+	eq(R.netKey("2001:DB8:aa:1::5"), "2001:db8:aa:1", "IPv6 /64")
+	eq(R.netKey("::ffff:10.1.2.3"), "10.1.2.3", "IPv4-mapped")
+	ok(R.shareIp({"2001:db8:aa:1::5"}, {"2001:db8:aa:1:9:9:9:9"}), "same /64 shared")
+	ok(not R.shareIp({"2001:db8:aa:1::5"}, {"2001:db8:aa:2::5"}), "another /64")
+	ok(R.sharePayer({"h1", "h2"}, {"h3", "h2"}), "shared payer")
+	ok(not R.sharePayer({"h1"}, {""}), "empty payer never matches")
 end
 
 -- ------------------------------------------------------------------ entry window and code holders
@@ -177,6 +184,29 @@ do
 	eq(R.decide({referrerBanned = true}, cfg), "wait", "banned referrer: wait")
 	eq(R.decide({paidThisMonth = cfg.antiAbuse.monthlyRewards}, cfg), "wait", "monthly reward cap: wait")
 	eq(R.decide({paidThisMonth = cfg.antiAbuse.monthlyRewards - 1}, cfg), "pay", "under the cap")
+	-- owner rules 2026-10-13: the friend's account at least 7 days old (waits), one person on both sides (void)
+	eq(cfg.antiAbuse.minReferredAccountDays, 7, "7 days")
+	eq(R.decide({referredAgeDays = 3}, cfg), "wait", "young account: wait")
+	eq(R.decide({referredAgeDays = 7}, cfg), "pay", "7 days old: pay")
+	eq(R.decide({referredAgeDays = nil}, cfg), "pay", "unknown age is not checked here (linkCheck needs a creation date)")
+	eq(R.decide({sameIp = true}, cfg), "void", "shared connection by payout: void")
+	eq(R.decide({samePayer = true}, cfg), "void", "shared payer: void")
+	eq(R.decide({samePayer = true, referrerBanned = true}, cfg), "void", "void before wait")
+	-- the main reward at level 150 (placeholder) is a cosmetic (a title) and the tiers at 3, 5, 10 friends
+	ok(R.milestone(cfg, cfg.qualify).title ~= nil, "the qualifying milestone gives a title")
+	eq(#cfg.tiers, 3, "three tiers")
+	eq(cfg.tiers[1].count .. "," .. cfg.tiers[2].count .. "," .. cfg.tiers[3].count, "3,5,10", "at 3, 5 and 10 friends")
+	for _, t in ipairs(cfg.tiers) do
+		ok(t.title and t.title.text ~= "", "tier " .. t.key .. " gives a title")
+		ok((t.coins or 0) <= 200, "a few coins only (" .. t.key .. ")")
+		for k in pairs(t) do
+			ok(k == "key" or k == "count" or k == "coins" or k == "title", "tier gives no power (" .. tostring(k) .. ")")
+		end
+	end
+	eq(#R.tiersDue(2, {}, cfg), 0, "two friends: no tier")
+	eq(#R.tiersDue(5, {}, cfg), 2, "five friends: 3 and 5")
+	eq(#R.tiersDue(11, {t3 = true, t5 = true}, cfg), 1, "the 10 tier left")
+	eq(R.tier(cfg, "t10").count, 10, "tier lookup")
 	eq(R.rewardText({title = {text = "Torchbearer"}, coins = 25}), "the title Torchbearer and 25 Chaos Coins", "reward text")
 	eq(R.rewardText({coins = 5}), "5 Chaos Coins", "coins only")
 	eq(R.giftText(cfg), "50 health potions, 50 mana potions", "gift text")
@@ -189,6 +219,8 @@ do
 	eq(#t, 2, "gift and one milestone")
 	eq(t[1].text, cfg.starterGift.title.text, "gift title") eq(t[1].at, 5, "gift time")
 	eq(t[2].text, cfg.milestones[1].title.text, "milestone title") eq(t[2].at, 7, "paid time")
+	t = R.titles({gift = false, paid = {}, tiers = {t3 = 9}}, cfg)
+	eq(#t, 1, "a tier title") eq(t[1].text, cfg.tiers[1].title.text, "tier 3 title") eq(t[1].at, 9, "tier time")
 end
 
 -- ------------------------------------------------------------------ the client view
@@ -199,6 +231,7 @@ do
 	eq(v.canEnter, true, "new account may enter a code") ok(v.enterLeft > 0, "time left")
 	eq(#v.friends, 1, "one friend") eq(v.friends[1].steps[1].state, "paid", "50 paid") eq(v.friends[1].steps[2].state, "open", "150 open")
 	eq(#v.milestones, 2, "milestones listed") eq(v.linksThisMonth, 2, "links") eq(v.coinsEarned, 25, "coins")
+	eq(#v.tiers, 3, "tiers listed") eq(v.tiers[1].reached, false, "tier 3 not reached") eq(v.qualifyLevel, 150, "qualify level")
 	v = R.view({holderReason = "noCodeYet", created = NOW - 30 * 86400}, cfg, NOW)
 	eq(v.code, "", "no code yet") ok(v.codeNote:find(tostring(cfg.minReferrerLevel), 1, true) ~= nil, "says the level")
 	eq(v.canEnter, false, "old account") ok(v.enterNote:find("7", 1, true) ~= nil, "says the window")

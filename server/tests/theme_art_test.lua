@@ -141,6 +141,36 @@ for _, s in ipairs(themed) do
 	end
 end
 eq(#themed[1].looks, 13, "a full set has 13 transmog looks")
+-- the sources (owner approval 2026-10-13): 12 sold in the weekly rotation only, 6 prestige achievement sets
+local nStore, nPrestige = 0, 0
+for _, s in ipairs(themed) do
+	if s.source == "store" then
+		nStore = nStore + 1
+		eq(s.price == 350 or s.price == 250, true, s.key .. ": placeholder price")
+	elseif s.source == "achievement" then
+		nPrestige = nPrestige + 1
+		eq(type(s.how) == "string" and s.how:find("^Prestige") ~= nil, true, s.key .. ": a prestige line")
+	end
+end
+eq(nStore, 12, "12 themed sets sold") eq(nPrestige, 6, "6 prestige sets")
+eq(#M.storeOffers(), 12, "a store offer per sold set")
+local pool = {}
+for _, k in ipairs(shop.storefront.featured.pool) do
+	pool[k] = true
+end
+for _, o in ipairs(M.storeOffers()) do
+	eq(pool["unlock:" .. o.unlock], true, o.unlock .. " rotates in the weekly store")
+end
+for _, e in ipairs(M.exclusives) do
+	eq(pool[e.kind .. ":" .. e.id], nil, e.key .. ": a boss exclusive never rotates into the store")
+end
+local hidden
+for _, c in ipairs(shop.categories) do
+	if c.name == "Themed Sets" then
+		hidden = c
+	end
+end
+eq(hidden and hidden.rotationOnly, true, "the themed sets' category is rotation only")
 
 M.addExclusives(excl)
 local cosmetics = dofile("data/scripts/chaos/cosmetics_config.lua")

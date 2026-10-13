@@ -107,7 +107,8 @@ function renderPacks()
     payMethod = first.key
   end
   if payData.firstOpen and (payData.firstBonusPct or 0) > 0 then
-    page.firstBonus:setText(string.format('Your first donation brings +%d%% Chaos Coins as an extra thank-you.', payData.firstBonusPct))
+    page.firstBonus:setText(payData.firstBonusPct == 100 and 'Your first donation brings double Chaos Coins (+100%) as an extra thank-you.'
+      or string.format('Your first donation brings +%d%% Chaos Coins as an extra thank-you.', payData.firstBonusPct))
   else
     page.firstBonus:setText('')
   end
@@ -123,7 +124,8 @@ function renderPacks()
       local key = p.key
       row.donate.onClick = function()
         row.donate:setEnabled(false)
-        sendPay('pay_create', { pack = key, method = payMethod })
+        local code = page.creatorCode and page.creatorCode:getText() or ''
+        sendPay('pay_create', { pack = key, method = payMethod, creator = code ~= '' and code or nil })
       end
     end
   end

@@ -1,9 +1,9 @@
 Module
   name: game_leaderboard
-  description: Leaderboards (weekly world boss / bounty / rift boards with titles, class ladder; extended opcode 229)
+  description: Leaderboards (weekly boards with titles, class ladder, records and realm firsts; extended opcode 229)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ tabrows, leaderboard ]
+  scripts: [ tabrows, recordsview, leaderboard ]
   dependencies:
     - client_chaos_theme
     - game_interface

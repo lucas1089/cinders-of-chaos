@@ -11,7 +11,8 @@ L.MAX = 255        -- the packet's count is one byte
 L.MAX_NAME = 64
 
 -- the names players see: the store's names (server shop_config.lua, by shaders.xml id), the exclusives
--- (exclusives_config.lua) and the Chaos outfit shaders (cosmetics_config.lua outfitShaders). The test checks
+-- (exclusives_config.lua), the Chaos outfit shaders (cosmetics_config.lua outfitShaders) and the season pass's
+-- (seasonpass_config.lua). The test checks
 -- every one against those files.
 L.LABELS = {
   blue_loohs = { id = 1, label = "Frost Haze" },
@@ -38,6 +39,9 @@ L.LABELS = {
   chaos_holy_radiance = { id = 22, label = "Holy Radiance" },
   chaos_blood_pulse = { id = 23, label = "Heartblood" },
   chaos_spectral_ghost = { id = 24, label = "Spectral Ghost" },
+  -- the season pass premium track (server seasonpass_config.lua)
+  chaos_ash_drift = { id = 25, label = "Ash Drift" },
+  chaos_cinder_crown = { id = 26, label = "Cinder Crown" },
 }
 
 -- a readable name for a shader the table does not know: "blue_pixent" -> "Blue Pixent"

@@ -27,6 +27,13 @@ local r = V.rewardsText(s)
 eq(r:find('Kindled', 1, true) ~= nil, true, 'gift title')
 eq(r:find('level 50: the title Torchbearer', 1, true) ~= nil, true, 'milestone 50')
 eq(r:find('level 150: 50 Chaos Coins', 1, true) ~= nil, true, 'milestone 150')
+eq(r:find('friends at level', 1, true), nil, 'no tiers sent: no tier line')
+s.tiers = { { count = 3, reward = 'the title Flamecaller and 50 Chaos Coins', reached = true }, { count = 5, reward = 'the title Hearthwarden' } }
+s.qualifyLevel, s.qualified = 150, 3
+r = V.rewardsText(s)
+eq(r:find('friends at level 150 (3 so far)', 1, true) ~= nil, true, 'tier line')
+eq(r:find('3 friends: the title Flamecaller and 50 Chaos Coins (yours)', 1, true) ~= nil, true, 'tier 3 reached')
+eq(r:find('5 friends: the title Hearthwarden;', 1, true) ~= nil or r:find('5 friends: the title Hearthwarden.', 1, true) ~= nil, true, 'tier 5 open')
 
 local text, box = V.entry({ canEnter = true, enterLeft = 3 * 86400 })
 eq(box, true, 'code box') eq(text:find('3 days left', 1, true) ~= nil, true, 'time left')

@@ -29,6 +29,28 @@ return {
 		title = {key = "pact", text = "Pactbound", color = "#c4553a"} -- name plate title while active (titles.lua)
 	},
 
+	-- ------------------------------------------------------------------ VIP perks (pact_perks.lua, pact_perks_core.lua)
+	-- The Pact is the server's VIP. Owner approval 2026-10-13 ("Pode fazer todas as mudanças recomendadas"): comfort
+	-- and cosmetics only, no experience bonus. While the Pact is active:
+	--   loadoutSlots  +N loadout slots (loadouts_config.lua pactSlots; per character, read through ChaosPact.active)
+	--   (depot tabs: limits.depotTabs.pact below; stash tabs, listings, builds and loot rules likewise)
+	--   unlocks       the store unlocks that work for the character while it lasts (shop_services.lua S.unlocks keys):
+	--                 the storage is set to 2 (a bought unlock is 1 and stays); back to unset when the Pact ends
+	--   chatColor     a cosmetic (cosmetics_config.lua, source "pact") granted while active, taken back when it ends
+	--   monthly       one exclusive cosmetic per month (YYYYMM -> cosmetic key, source "pact"), granted to the accounts
+	--                 with an active Pact during that month and kept for good
+	-- No login queue exists on this server (the engine has none), so there is no priority login perk.
+	perks = {
+		loadoutSlots = 1,
+		unlocks = {"autoSeller", "rarityAutoloot"},
+		pactStorageValue = 2,
+		chatColor = "chat_pactbound",
+		monthly = {
+			[202611] = "kill_pact_ember", [202612] = "loot_pact_frost", [202701] = "kill_pact_venom",
+			[202702] = "loot_pact_rose", [202703] = "kill_pact_frost", [202704] = "loot_pact_gold"
+		}
+	},
+
 	-- ------------------------------------------------------------------ limits
 	-- key = {label, free, pact (bonus while active), maxExtra (one-time extras that can be bought), unit}
 	limits = {
@@ -91,7 +113,7 @@ return {
 			name = "Chaos Pact", icon = {item = 16101},
 			offers = {
 				{kind = "service", service = "pact", key = "service:pact:30", icon = 16101, cost = 300, name = "Chaos Pact (30 days)",
-					description = "30 days, stacks: more tabs, listings, builds, rules, daily coins, a title."}
+					description = "30 days, stacks: tabs, +1 loadout, Auto Seller, coins, a monthly cosmetic. No XP."}
 			}
 		},
 		storage = {

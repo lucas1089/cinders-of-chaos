@@ -475,7 +475,7 @@ end
 local trade = EventCallback
 trade.onTradeRequest = function(player, target, item)
 	if PO.holdsPouch(item) then
-		player:sendCancelMessage("Store pouches cannot be traded.")
+		player:sendCancelMessage("Store items cannot be traded.")
 		return false
 	end
 	return true
@@ -485,7 +485,7 @@ trade:register(1)
 local accept = EventCallback
 accept.onTradeAccept = function(player, target, item, targetItem)
 	if PO.holdsPouch(item) or PO.holdsPouch(targetItem) then
-		player:sendCancelMessage("Store pouches cannot be traded.")
+		player:sendCancelMessage("Store items cannot be traded.")
 		return false
 	end
 	return true

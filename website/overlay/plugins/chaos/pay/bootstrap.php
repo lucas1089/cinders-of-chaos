@@ -17,7 +17,7 @@ require_once __DIR__ . '/Mock.php';
 
 const CHAOS_PAY_KEYS = array(
 	'CHAOS_PAY_PIX_PROVIDER', 'CHAOS_PAY_PAYPAL_PROVIDER', 'CHAOS_PAY_SITE_URL', 'CHAOS_PAY_PAYER_EMAIL',
-	'CHAOS_PAY_RECONCILE_SECONDS', 'CHAOS_PAY_LOG',
+	'CHAOS_PAY_RECONCILE_SECONDS', 'CHAOS_PAY_LOG', 'CHAOS_PAY_PAYER_SALT',
 	'CHAOS_MP_ACCESS_TOKEN', 'CHAOS_MP_WEBHOOK_SECRET', 'CHAOS_MP_NOTIFICATION_URL', 'CHAOS_MP_SIGNATURE_TOLERANCE',
 	'CHAOS_PAYPAL_CLIENT_ID', 'CHAOS_PAYPAL_CLIENT_SECRET', 'CHAOS_PAYPAL_WEBHOOK_ID', 'CHAOS_PAYPAL_ENV',
 	'CHAOS_PAYPAL_CATEGORY', 'CHAOS_PAYPAL_BRAND',
@@ -140,6 +140,7 @@ function chaos_pay_service(array $config, ?array $settings = null, ?ChaosPayDb $
 	$site = chaos_pay_site_url($s, $config);
 	return new ChaosPayService($db ?? ChaosPayMysqli::fromConfig($config), chaos_pay_providers($s, null, null, $site), chaos_pay_packs(), chaos_pay_config(),
 		array('site_url' => $site, 'payer_email' => $s['CHAOS_PAY_PAYER_EMAIL'],
-			'reconcile_seconds' => $s['CHAOS_PAY_RECONCILE_SECONDS'] !== '' ? (int)$s['CHAOS_PAY_RECONCILE_SECONDS'] : 60),
+			'reconcile_seconds' => $s['CHAOS_PAY_RECONCILE_SECONDS'] !== '' ? (int)$s['CHAOS_PAY_RECONCILE_SECONDS'] : 60,
+			'payer_salt' => (string)($s['CHAOS_PAY_PAYER_SALT'] ?? '')),
 		null, chaos_pay_logger($s));
 }

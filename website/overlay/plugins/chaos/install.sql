@@ -159,3 +159,125 @@ CREATE TABLE IF NOT EXISTS `chaos_season_requests` (
   PRIMARY KEY (`player_id`),
   CONSTRAINT `chaos_season_requests_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Creator codes (server/sql/chaos_creator_codes.sql; the game server also creates them at startup): the codes (an
+-- administrator creates them on page.php?plugin=chaos&p=creator), the donor's pick, the donations that carried a code
+-- and their share, the log, and the payer hash of a donation. creator_lib.php, README "Creator codes".
+CREATE TABLE IF NOT EXISTS `chaos_creator_codes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(16) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `display_name` varchar(64) NOT NULL DEFAULT '',
+  `pct` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `note` varchar(255) NOT NULL DEFAULT '',
+  `created_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `created_by` varchar(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `chaos_creator_codes_code` (`code`),
+  KEY `chaos_creator_codes_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_creator_support` (
+  `account_id` int(11) NOT NULL,
+  `code_id` int(11) NOT NULL,
+  `set_at` int(10) unsigned NOT NULL,
+  `expires_at` int(10) unsigned NOT NULL,
+  `ip` varchar(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (`account_id`),
+  KEY `chaos_creator_support_code` (`code_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_creator_uses` (
+  `order_id` int(11) NOT NULL,
+  `code_id` int(11) NOT NULL,
+  `creator_account_id` int(11) NOT NULL,
+  `buyer_account_id` int(11) NOT NULL,
+  `coins_base` int(11) NOT NULL DEFAULT 0,
+  `share` int(11) NOT NULL DEFAULT 0,
+  `state` varchar(8) NOT NULL DEFAULT 'pending',
+  `reason` varchar(16) NOT NULL DEFAULT '',
+  `created_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `credited_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `settled_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`order_id`),
+  KEY `chaos_creator_uses_code` (`code_id`, `state`),
+  KEY `chaos_creator_uses_creator` (`creator_account_id`, `state`, `settled_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_creator_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `at` int(10) unsigned NOT NULL,
+  `code_id` int(11) NOT NULL DEFAULT 0,
+  `account_id` int(11) NOT NULL DEFAULT 0,
+  `order_id` int(11) NOT NULL DEFAULT 0,
+  `action` varchar(16) NOT NULL,
+  `detail` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `chaos_creator_log_code` (`code_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_pay_payers` (
+  `order_id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `payer_hash` char(64) NOT NULL,
+  `created_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`order_id`),
+  KEY `chaos_pay_payers_account` (`account_id`),
+  KEY `chaos_pay_payers_hash` (`payer_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Character Bazaar (server/sql/chaos_bazaar.sql; the game server also creates them at startup): listings, bids with
+-- their escrow, the log. bazaar_lib.php, README "Character Bazaar".
+CREATE TABLE IF NOT EXISTS `chaos_bazaar_listings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `player_id` int(11) NOT NULL,
+  `seller_account_id` int(11) NOT NULL,
+  `min_price` int(11) NOT NULL,
+  `buyout` int(11) NOT NULL DEFAULT 0,
+  `current_bid` int(11) NOT NULL DEFAULT 0,
+  `current_bid_id` int(11) NOT NULL DEFAULT 0,
+  `bidder_account_id` int(11) NOT NULL DEFAULT 0,
+  `bids` int(11) NOT NULL DEFAULT 0,
+  `fee_pct` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `fee` int(11) NOT NULL DEFAULT 0,
+  `status` varchar(10) NOT NULL DEFAULT 'active',
+  `reason` varchar(64) NOT NULL DEFAULT '',
+  `created_at` int(10) unsigned NOT NULL,
+  `ends_at` int(10) unsigned NOT NULL,
+  `settled_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `player_name` varchar(255) NOT NULL DEFAULT '',
+  `level` int(11) NOT NULL DEFAULT 0,
+  `vocation` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `chaos_bazaar_listings_player` (`player_id`, `status`),
+  KEY `chaos_bazaar_listings_status` (`status`, `ends_at`),
+  KEY `chaos_bazaar_listings_seller` (`seller_account_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_bazaar_bids` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `listing_id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `amount` int(11) NOT NULL,
+  `escrow` int(11) NOT NULL DEFAULT 0,
+  `buyout` tinyint(1) NOT NULL DEFAULT 0,
+  `state` varchar(10) NOT NULL DEFAULT 'leading',
+  `created_at` int(10) unsigned NOT NULL,
+  `ip` varchar(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `chaos_bazaar_bids_listing` (`listing_id`, `state`),
+  KEY `chaos_bazaar_bids_account` (`account_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_bazaar_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `at` int(10) unsigned NOT NULL,
+  `listing_id` int(11) NOT NULL DEFAULT 0,
+  `account_id` int(11) NOT NULL DEFAULT 0,
+  `player_id` int(11) NOT NULL DEFAULT 0,
+  `action` varchar(16) NOT NULL,
+  `detail` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `chaos_bazaar_log_listing` (`listing_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

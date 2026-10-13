@@ -34,6 +34,10 @@ local SHADERS = {
   { "chaos_holy_radiance", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_holy_radiance" },
   { "chaos_blood_pulse", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_blood_pulse" },
   { "chaos_spectral_ghost", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_spectral_ghost" },
+  -- the season pass premium track's shaders (server seasonpass_config.lua, shaders.xml ids 25-26 via
+  -- server/tools/install_outfits.py); never sold
+  { "chaos_ash_drift", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_ash_drift" },
+  { "chaos_cinder_crown", "/shaders/chaos_outfit_vertex", "/shaders/chaos_outfit_cinder_crown" },
 }
 
 function init()

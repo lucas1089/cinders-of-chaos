@@ -28,13 +28,15 @@ escrever para [E-MAIL DE CONTATO] com o número da doação.
 
 | Pacote | Chaos Coins de agradecimento | Pix | PayPal |
 |---|---|---|---|
+| Handful of Coins | 80 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Pouch of Coins | 250 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Sack of Coins | 825 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Chest of Coins | 1725 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Hoard of Coins | 5000 | [PREÇO EM R$] | [PREÇO EM US$] |
+| Vault of Coins | 13000 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Starter Coins, uma vez por conta | 500 | [PREÇO EM R$] | [PREÇO EM US$] |
 
-- A primeira doação de cada conta traz 20% a mais de Chaos Coins, exceto no pacote Starter Coins.
+- A primeira doação de cada conta traz 100% a mais de Chaos Coins (o dobro), exceto no pacote Starter Coins.
 - O pagamento é feito pelo Mercado Pago ou pelo PayPal, conforme os termos deles. Nós não recebemos nem guardamos dados
   de cartão, de conta bancária ou o seu login do PayPal.
 
@@ -71,7 +73,29 @@ escrever para [E-MAIL DE CONTATO] com o número da doação.
 - Uma contestação feita de boa-fé não é fraude, por exemplo Chaos Coins que nunca chegaram ou um pagamento cobrado duas
   vezes. Escreva antes para [E-MAIL DE CONTATO]; respondemos antes que você precise do banco.
 
-## 7. Banimentos, wipes, temporadas e mudanças
+## 7. Season Pass, códigos de criador e o Bazar de Personagens
+
+- **Season Pass.** A trilha premium de um passe de temporada é liberada com Chaos Coins ([PREÇO DO PASSE PREMIUM]
+  Chaos Coins). Ela dá apenas itens cosméticos e algumas Chaos Coins de volta, nunca ouro, experiência ou poder de
+  jogo. As recompensas são as da temporada a que o passe pertence e podem ser resgatadas até [PRAZO DE RESGATE DO PASSE]
+  dias depois do fim dessa temporada. Quem compra tarde recebe na hora as recompensas dos níveis já alcançados.
+- **Códigos de criador.** Um código de criador escolhido no site não muda a sua doação nem as Chaos Coins que você
+  recebe. Como agradecimento do servidor, o criador recebe [PERCENTUAL DO CRIADOR] % das Chaos Coins das suas doações
+  feitas enquanto o código está escolhido, no jogo, depois de [PRAZO DE CARÊNCIA DO CRIADOR] dias. Nada disso é pago em
+  dinheiro. Um código de criador não pode ser usado pela própria conta, nem por contas da mesma pessoa, conexão ou
+  pagador. Uma doação reembolsada ou contestada não dá nada ao criador. O criador aceita estas regras e informa ao seu
+  público que o código o apoia ([REGRAS DE DIVULGAÇÃO DO CRIADOR]). Podemos desligar um código a qualquer momento.
+- **Bazar de Personagens.** Jogadores podem vender um personagem a outro jogador no site, somente por Chaos Coins. O
+  servidor fica com uma taxa de [TAXA DO BAZAR] % do preço final. O lance fica retido das Chaos Coins de quem deu o
+  lance até o fim do leilão e volta na hora se o lance for coberto ou o leilão for cancelado. No fim, o personagem
+  passa para a conta do vencedor com o que carrega, e o vendedor recebe o preço menos a taxa. Personagens de temporada,
+  Hardcore e Self-Found, líderes de guilda, personagens com denúncia aberta e personagens de conta banida ou com doação
+  contestada não podem ser vendidos. A equipe pode cancelar um leilão a qualquer momento, por exemplo diante de uma
+  denúncia de fraude; todos os lances voltam. Um personagem comprado no Bazar não é uma compra feita de nós e não tem
+  valor no mundo real; as Chaos Coins pagas não são devolvidas em dinheiro. Vender ou comprar personagens, itens ou
+  Chaos Coins por dinheiro ou qualquer coisa fora do jogo continua proibido (página de Regras, seção 7).
+
+## 8. Banimentos, wipes, temporadas e mudanças
 
 - Uma conta banida por violar as regras não tem direito a reembolso das doações. Num banimento temporário, as Chaos
   Coins continuam na conta para quando ele acabar.
@@ -82,7 +106,7 @@ escrever para [E-MAIL DE CONTATO] com o número da doação.
 - Se o jogo for encerrado de vez, avisaremos antes, como dizem os Termos de Uso. As doações não são devolvidas, exceto
   quando a lei exigir.
 
-## 8. Lei aplicável
+## 9. Lei aplicável
 
 Estes termos seguem as leis do Brasil, incluindo o Código de Defesa do Consumidor quando aplicável. Contato:
 [E-MAIL DE CONTATO].

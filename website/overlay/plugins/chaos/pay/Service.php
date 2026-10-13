@@ -40,7 +40,8 @@ final class ChaosPayService {
 	/**
 	 * $packs: key => pack (key, name, coins, bonus_pct, bonus_coins, usd_cents, once, starter) from shop_coins_config.lua
 	 * $pay: the `payments` block (brl_per_usd, expire_minutes, max_open, max_per_hour, methods => [key => enabled, currency, label])
-	 * $opt: site_url, payer_email (pattern with {account}), reconcile_seconds
+	 * $opt: site_url, payer_email (pattern with {account}), reconcile_seconds, payer_salt (CHAOS_PAY_PAYER_SALT: mixed
+	 *       into the payer hashes of chaos_pay_payers)
 	 */
 	public function __construct(ChaosPayDb $db, array $providers, array $packs, array $pay, array $opt = array(),
 			?callable $now = null, ?callable $log = null) {
@@ -48,7 +49,7 @@ final class ChaosPayService {
 		$this->providers = $providers;
 		$this->packs = $packs;
 		$this->pay = $pay;
-		$this->opt = $opt + array('site_url' => '', 'payer_email' => '', 'reconcile_seconds' => 60);
+		$this->opt = $opt + array('site_url' => '', 'payer_email' => '', 'reconcile_seconds' => 60, 'payer_salt' => '');
 		$this->now = $now ?? 'time';
 		$this->log = $log ?? static function (string $line): void { error_log('[chaos pay] ' . $line); };
 	}
@@ -364,6 +365,7 @@ final class ChaosPayService {
 				$n = $this->db->exec("UPDATE chaos_coin_orders SET status = 'paid', note = 'donation' WHERE id = ? AND status IN ('pending', 'open', 'expired', 'cancelled', 'failed')", array($id));
 				if ($n > 0) {
 					$this->db->exec('UPDATE chaos_coin_payments SET paid_at = ? WHERE order_id = ?', array($now, $id));
+					$this->recordPayer($r, $s);
 					$this->log(sprintf('order %d: paid (%s %s)', $id, self::money((int)$r['amount_cents'], $r['currency']), $r['psp']));
 					return 'paid';
 				}
@@ -409,6 +411,36 @@ final class ChaosPayService {
 				return $n > 0 ? $status : 'already';
 			default:
 				return 'waiting';
+		}
+	}
+
+	/**
+	 * The payer of a confirmed donation as a SHA-256 in chaos_pay_payers (order, account, hash): the creator codes and the
+	 * referral program void a share or a reward when the same payer stands behind both accounts. The provider's payer
+	 * (document, payer id or e-mail; MercadoPago/PayPal normalize 'payer'), else the e-mail the charge was made with.
+	 * The raw value is never stored. Skipped when the table is missing (creator codes not installed).
+	 */
+	public static function payerHash(string $psp, string $identity, string $salt = ''): string {
+		return hash('sha256', $salt . '|' . strtolower($psp) . '|' . strtolower(trim($identity)));
+	}
+
+	private function recordPayer(array $r, array $s): void {
+		$who = trim((string)($s['payer'] ?? ''));
+		if ($who === '') {
+			$email = $this->payerEmail((int)$r['account_id']);
+			$who = $email !== '' ? 'mail:' . strtolower($email) : '';
+		}
+		if ($who === '') {
+			return;
+		}
+		$hash = self::payerHash((string)$r['psp'], $who, (string)$this->opt['payer_salt']);
+		try {
+			if (!$this->db->rows('SELECT order_id FROM chaos_pay_payers WHERE order_id = ?', array((int)$r['id']))) {
+				$this->db->exec('INSERT INTO chaos_pay_payers (order_id, account_id, payer_hash, created_at) VALUES (?, ?, ?, ?)',
+					array((int)$r['id'], (int)$r['account_id'], $hash, $this->now()));
+			}
+		} catch (Throwable $e) {
+			$this->log('order ' . (int)$r['id'] . ': payer not recorded (' . substr($e->getMessage(), 0, 120) . ')');
 		}
 	}
 

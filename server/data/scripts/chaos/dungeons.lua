@@ -651,6 +651,12 @@ local function endRun(run, success, reason)
 	end
 	if #memberInfo > 0 then
 		storeRun(run.dungeonId, run.difficulty, elapsed, memberInfo)
+		if ChaosRecords and ChaosRecords.dungeonClear then
+			pcall(ChaosRecords.dungeonClear, {dungeonId = run.dungeonId,
+				title = dg and titleOf(run.dungeonId, dg) or ("Dungeon " .. tostring(run.dungeonId)),
+				difficulty = run.difficulty, difficultyStart = run.difficultyStart or run.difficulty,
+				ms = elapsed, members = memberInfo})
+		end
 	end
 
 	for _, p in ipairs(memberPlayers(run)) do
@@ -712,6 +718,7 @@ local function startRun(dungeonId, difficulty, players)
 		id = nextRunId,
 		dungeonId = dungeonId,
 		difficulty = difficulty,
+		difficultyStart = difficulty, -- competitive records: a run whose difficulty changed is not valid
 		members = {}, -- [guid] = origin Position
 		startedAt = nowMs(),
 		deaths = 0,

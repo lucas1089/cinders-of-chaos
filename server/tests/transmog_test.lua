@@ -112,9 +112,10 @@ for _, s in ipairs(cfg.sets) do
 		eq(FIXTURE[id] ~= nil, true, "fixture knows look " .. id)
 	end
 end
-eq(sources.store, 9, "nine store sets") eq(sources.achievement, 4, "four achievement sets")
--- exclusive: one of the base sets and the 18 themed sets of things_custom24 (source exclusive until the owner picks)
-eq(sources.season, 1, "one season set") eq(sources.exclusive, 1 + 18, "one exclusive set and the 18 themed sets")
+eq(sources.store, 9 + 12, "nine store sets and the 12 themed sets of the weekly rotation")
+eq(sources.achievement, 4 + 6, "four achievement sets and the 6 prestige themed sets")
+-- the 18 themed sets of things_custom24: 12 store (weekly rotation only), 6 prestige (chaos_theme_art.lua M.sets)
+eq(sources.season, 1, "one season set") eq(sources.exclusive, 1, "one exclusive set")
 eq(sources.boss, 4, "four boss sets (exclusives_config.lua drops)")
 eq(K.setHow(K.setByKey(cfg, "deathlord")), "Boss: Varkhul the Ashen Sovereign (rare drop)", "a boss set's line")
 eq(K.setHow(K.setByKey(cfg, "haloed")):find("Achievement: Lifeline", 1, true) ~= nil, true, "an achievement set's own line")
@@ -148,7 +149,7 @@ do
 	eq(t2:find("store price 1") ~= nil, true, "price mismatch")
 	eq(t2:find("spiritthorn is sold") ~= nil, true, "achievement set sold")
 	eq(t2:find("transmog_nothing names no") ~= nil, true, "offer without set")
-	eq(#w2, 8, "the other store sets' offers missing: warnings only")
+	eq(#w2, 8 + 12, "the other store sets' offers missing (and the 12 themed sets): warnings only")
 end
 
 -- ---------------------------------------------------------------- kinds
@@ -220,10 +221,17 @@ local syncs = K.setSyncs(cfg, {
 }, {})
 table.sort(syncs)
 eq(#syncs, 2, "two sets to sync") eq(syncs[1], "arboreal", "season set") eq(syncs[2], "spiritthorn", "achievement set")
-eq(#K.setSyncs(cfg, {hasAchievement = function() return true end}, {spiritthorn = true, rimebound = true,
-	thornmoth = true, haloed = true}), 0, "already owned sets are not synced again")
-eq(#K.setSyncs(cfg, {hasAchievement = function() return true end, seasonOwned = function() return true end}, {}), 5,
-	"the four achievement sets and the season set; boss sets only through exclusives.lua")
+local ownedAll = {spiritthorn = true, rimebound = true, thornmoth = true, haloed = true}
+for _, s in ipairs(cfg.sets) do
+	if s.source == "achievement" then
+		ownedAll[s.key] = true -- the six prestige themed sets too
+	end
+end
+eq(#K.setSyncs(cfg, {hasAchievement = function() return true end}, ownedAll), 0, "already owned sets are not synced again")
+eq(#K.setSyncs(cfg, {hasAchievement = function() return true end, seasonOwned = function() return true end}, {}), 5 + 6,
+	"the four achievement sets, the six prestige themed sets and the season set; boss sets only through exclusives.lua")
+local prestige = K.setSyncs(cfg, {hasAchievement = function(id) return id == "cinder_1" end}, {})
+eq(#prestige == 1 and prestige[1], "theme_voidmourn", "a prestige set follows its achievement (Voidmourn: the Cinderheart)")
 eq(#K.setSyncs(cfg, {}, {}), 0, "no facts: nothing")
 
 -- ---------------------------------------------------------------- fee, apply and remove

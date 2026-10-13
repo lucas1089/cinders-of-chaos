@@ -49,6 +49,10 @@ Same names in both languages. The page highlights any placeholder still there.
 | `[PROVEDOR DE HOSPEDAGEM]`, `[PAÍS DA HOSPEDAGEM]` | the host of the game, the site and the database, and its country | privacy |
 | `[PROVEDOR ANTI-DDOS]` | the provider of the gateway VPS (docs/LAUNCH.md "Gateways and DDoS") | privacy |
 | `[PROVEDOR DE BACKUP]` | the off-site backup target (`CHAOS_BACKUP_REMOTE` / `CHAOS_BACKUP_RSYNC`) | privacy |
+| `[PREÇO DO PASSE PREMIUM]`, `[PRAZO DE RESGATE DO PASSE]` | the premium Season Pass price in Chaos Coins (`seasonpass_config.lua` `premium.price`, 1000 now) and the claim days after a season (`claimGraceDays`, 14 now) | donations |
+| `[PERCENTUAL DO CRIADOR]`, `[PRAZO DE CARÊNCIA DO CRIADOR]` | the creator's share in % (`creator_codes_config.lua` `sharePct`, 5 now) and the hold in days (`holdDays`, 14 now) | donations |
+| `[REGRAS DE DIVULGAÇÃO DO CRIADOR]` | what a creator must tell its audience (for example "the code supports me; using it costs you nothing"); a link to the creator rules if there are any | donations |
+| `[TAXA DO BAZAR]` | the Character Bazaar fee in % (`bazaar_config.lua` `feePct`, 5 to 10, 8 now) | donations |
 | `[PREÇO EM R$]`, `[PREÇO EM US$]` | the pack prices: USD = `usdCents` in `shop_coins_config.lua`, BRL = USD x `brlPerUsd`. Or drop the price columns and keep "the amount shown before payment counts" | donations |
 
 The coin numbers in the donation table come from `shop_coins_config.lua` (the test checks them). Change both together.
@@ -107,3 +111,8 @@ What the code does was read for these texts. These points are not settled by the
     page `page.php?plugin=chaos&p=legal&doc=donations`. Check that this is enough in the client.
 16. **Discord webhooks.** The reports webhook sends character names to Discord (`CHAOS_REPORTS_WEBHOOK`); the health
     alerts may carry log lines. The policy mentions the reports notices.
+17. **Season Pass, creator codes, Character Bazaar (drafted 2026-10-13, Donation Terms section 7).** Check with the
+    lawyer: that a Chaos Coin share to a creator, in game and never in money, needs no contract or tax treatment beyond
+    these terms (and whether creators must disclose the code as advertising, CONAR / CDC art. 36); that a fee kept on a
+    player-to-player sale of a character for Chaos Coins does not make the operator a seller or intermediary of goods;
+    the wording of "no real-world value" next to a market in characters; and the minors point (item 8) for the Bazaar.

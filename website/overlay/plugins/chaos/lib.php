@@ -521,6 +521,99 @@ function chaos_leaderboard_titles(): array {
 		ORDER BY `t`.`board`, `t`.`rank`;', [$week]));
 }
 
+// ---------------------------------------------------------------------------
+// Competitive records (records.lua, records_config.lua, tables chaos_records*)
+// ---------------------------------------------------------------------------
+
+/** The record categories of records_config.lua: key => {name, title, info}. */
+function chaos_records_categories(): array {
+	$cats = array();
+	$body = chaos_lua_block(chaos_read_server_file('scripts/chaos/records_config.lua'), 'categories');
+	foreach (chaos_lua_entries($body) as $entry) {
+		$key = chaos_lua_field($entry, 'key');
+		if (is_string($key) && preg_match('/^[a-z0-9_]{1,16}$/', $key)) {
+			$cats[$key] = array('name' => (string)(chaos_lua_field($entry, 'name') ?? $key),
+				'title' => (string)(chaos_lua_field($entry, 'title') ?? ''), 'info' => (string)(chaos_lua_field($entry, 'info') ?? ''));
+		}
+	}
+	return $cats;
+}
+
+/** "k=name;k=name" (chaos_records_boards variants / sizes) -> key => name. */
+function chaos_records_pairs(string $text): array {
+	$out = array();
+	foreach (explode(';', $text) as $part) {
+		$kv = explode('=', $part, 2);
+		if (count($kv) === 2 && preg_match('/^[a-z0-9_]{1,24}$/', $kv[0])) {
+			$out[$kv[0]] = $kv[1];
+		}
+	}
+	return $out;
+}
+
+/** The boards the server published at startup (chaos_records_boards), in its order: key => {cat, name, mode, format,
+ * label, variants, sizes}. */
+function chaos_records_boards(): array {
+	if (!chaos_table_exists('chaos_records_boards')) {
+		return array();
+	}
+	$boards = array();
+	foreach (chaos_rows('SELECT `key`, `cat`, `name`, `mode`, `format`, `label`, `variants`, `sizes` FROM `chaos_records_boards` ORDER BY `ord`;') as $r) {
+		$boards[(string)$r['key']] = array('cat' => (string)$r['cat'], 'name' => (string)$r['name'], 'mode' => (string)$r['mode'],
+			'format' => (string)$r['format'], 'label' => (string)$r['label'], 'variants' => chaos_records_pairs((string)$r['variants']),
+			'sizes' => chaos_records_pairs((string)$r['sizes']));
+	}
+	return $boards;
+}
+
+/** The season key of the records (ChaosRecordsCore.seasonKey): the running season "s<id>", else the quarter "q<YYYY><q>". */
+function chaos_records_season_key(int $time): string {
+	foreach (chaos_seasons() as $s) {
+		if ($s['start'] > 0 && $time >= $s['start'] && ($s['finish'] <= 0 || $time < $s['finish'])) {
+			return 's' . $s['id'];
+		}
+	}
+	return 'q' . date('Y', $time) . (intdiv((int)date('n', $time) - 1, 3) + 1);
+}
+
+/** A record value as shown (ChaosRecordsCore.valueText): time m:ss (h:mm:ss), pct (1/100 %), else a number. */
+function chaos_records_value(string $format, $value): string {
+	$v = (int)$value;
+	if ($format === 'time') {
+		$v = max(0, $v);
+		return $v >= 3600 ? sprintf('%d:%02d:%02d', intdiv($v, 3600), intdiv($v % 3600, 60), $v % 60) : sprintf('%d:%02d', intdiv($v, 60), $v % 60);
+	}
+	if ($format === 'pct') {
+		return sprintf('%.2f%%', $v / 100);
+	}
+	return number_format((float)$v);
+}
+
+/** The rows of one record slot and period: the best first (mode "min": the lowest), a tie to the earlier time, staff and
+ * held characters left out, $vocations = a class tab (empty = every class). */
+function chaos_records_rows(string $slot, string $period, string $mode, int $limit = 20, array $vocations = array()): array {
+	if (!chaos_table_exists('chaos_records')) {
+		return array();
+	}
+	$vocations = array_values(array_map('intval', $vocations));
+	$class = $vocations ? ' AND `r`.`voc` IN (' . implode(',', array_fill(0, count($vocations), '?')) . ')' : '';
+	return chaos_rows('
+		SELECT `p`.`name`, `p`.`vocation`, `r`.`value`, `r`.`at`, `r`.`party`, `r`.`members`
+		FROM `chaos_records` `r`
+		JOIN `players` `p` ON `p`.`id` = `r`.`player_id`
+		WHERE `r`.`slot` = ? AND `r`.`period` = ? AND `r`.`value` > 0 AND `p`.`group_id` < ?' . $class . chaos_antibot_hold_sql() . '
+		ORDER BY `r`.`value` ' . ($mode === 'min' ? 'ASC' : 'DESC') . ', `r`.`at` ASC, `r`.`player_id` ASC
+		LIMIT ?;', array_merge([$slot, $period, (int)chaos_cfg('staff_group', 4)], $vocations, [$limit]));
+}
+
+/** The realm firsts of a season, oldest first. */
+function chaos_records_firsts(string $season): array {
+	if (!chaos_table_exists('chaos_records_firsts')) {
+		return array();
+	}
+	return chaos_rows('SELECT `target`, `board`, `name`, `members`, `value`, `at` FROM `chaos_records_firsts` WHERE `season` = ? ORDER BY `at` ASC LIMIT 100;', [$season]);
+}
+
 /** Class Ladder: the highest characters of one class line. With a season: only its characters; $mode is a season
  * mode tab (chaos_season_mode_tabs, season_modes.lua): 'all' and the mode tabs list living (unmigrated) characters,
  * 'fallen' the fallen Hardcore ones by the level they fell at. Rows carry fallen_level / fallen_cause when known. */

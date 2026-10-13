@@ -1,0 +1,2 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+store_food,item,look,everfull ration,store_food,0,0,1,1,1,1,copy:3583,replace,32084,

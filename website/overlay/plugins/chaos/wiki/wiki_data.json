@@ -337,10 +337,10 @@
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 88,
-		"store.categories": 32,
-		"store.cosmetic": 326,
-		"store.offers": 408,
-		"store.service": 19,
+		"store.categories": 35,
+		"store.cosmetic": 344,
+		"store.offers": 456,
+		"store.service": 20,
 		"store.unlockCost": 750,
 		"support.count": 20,
 		"support.sockets": 3,
@@ -29612,7 +29612,7 @@
 							"w": [22, 12, 16, 50],
 							"rows": [
 								["Starter", "3", "250-750", "Bundle"],
-								["Bundles", "3", "-", "Bundle"],
+								["Bundles", "6", "-", "Bundle"],
 								["Outfits", "56", "300-750", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
 								["Mounts", "125", "350-690", "Cosmetic"],
@@ -29620,6 +29620,7 @@
 								["Auras", "24", "150-300", "Cosmetic"],
 								["Outfit Shaders", "16", "120-180", "Cosmetic"],
 								["Name Plates", "13", "300", "Cosmetic"],
+								["Themed Sets", "12", "250-350", "Cosmetic"],
 								["Portal Styles", "6", "250-300", "Cosmetic"],
 								["Spell Effects", "12", "250", "Cosmetic"],
 								["Kill Effects", "5", "200", "Cosmetic"],
@@ -29627,15 +29628,17 @@
 								["Chat Colours", "5", "200", "Cosmetic"],
 								["Footprints", "9", "200", "Cosmetic"],
 								["Outlines", "9", "250", "Cosmetic"],
+								["Chaos Shaders", "6", "250-300", "Cosmetic"],
 								["Hideout Decorations", "9", "80-300", "Cosmetic"],
 								["Appearances", "9", "300-400", "Cosmetic"],
 								["Pets", "7", "400", "Pet (small abilities)"],
 								["Crafting", "3", "20-30", "Crafting item"],
-								["Supplies", "8", "15-50", "Consumable item, Convenience"],
+								["Supplies", "5", "15-50", "Consumable item, Convenience"],
+								["Runes", "29", "3-108", "Consumable item"],
 								["Boosts", "5", "8-225", "Boost"],
 								["World Buffs", "3", "250-300", "Boost"],
 								["Services", "5", "60-400", "Service"],
-								["Convenience", "5", "250-500", "Convenience"],
+								["Convenience", "6", "150-500", "Convenience"],
 								["Classes", "3", "750", "Class unlock"],
 								["Training", "21", "25-450", "Consumable item"],
 								["Chaos Pact", "1", "300", "Chaos Pact"],
@@ -29676,7 +29679,10 @@
 								"store:29",
 								"store:30",
 								"store:31",
-								"store:32"
+								"store:32",
+								"store:33",
+								"store:34",
+								"store:35"
 							]
 						},
 						{
@@ -29684,19 +29690,19 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "326"],
+								["Cosmetic", "344"],
 								["Pet (small abilities)", "7"],
-								["Convenience", "6"],
+								["Convenience", "7"],
 								["Service", "5"],
 								["Account storage", "8"],
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
 								["Boost", "8"],
-								["Consumable item", "28"],
+								["Consumable item", "54"],
 								["Crafting item", "3"],
 								["Class unlock", "3"],
 								["Premium time", "3"],
-								["Bundle", "6"]
+								["Bundle", "9"]
 							]
 						}
 					],
@@ -29742,11 +29748,11 @@
 				{
 					"id": "store:2",
 					"name": "Bundles",
-					"sub": "3 offers, - coins. Bundle.",
+					"sub": "6 offers, - coins. Bundle.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["3 offers, - Chaos Coins. Bundle."]},
+						{"h": "Category", "p": ["6 offers, - Chaos Coins. Bundle."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -29769,9 +29775,34 @@
 									"-20% of the parts",
 									"Bundle",
 									"Dreadbone Spectra, the Umbral Smoke aura, the Spectral Pulse shader and the Bone Steed mount."
+								],
+								[
+									"Glacial Regalia",
+									"-25% of the parts",
+									"Bundle",
+									"The Astral Ice outfit with both addons, the Glacier Wyrm mount, Nimbus Wings and the Frost Bastion aura."
+								],
+								[
+									"Pyre Regalia",
+									"-25% of the parts",
+									"Bundle",
+									"The Astral Fire outfit with both addons, the Crimson Fang mount, Vorondor Flames and the Ember Crown aura."
+								],
+								[
+									"Stormcaller Regalia",
+									"-25% of the parts",
+									"Bundle",
+									"The Astral Electric outfit with both addons, the Stormkeep mount, wings and the storm mantle aura."
 								]
 							],
-							"sprites": [{"item": 7290}, {"item": 2187}, {"item": 2436}]
+							"sprites": [
+								{"item": 7290},
+								{"item": 2187},
+								{"item": 2436},
+								{"item": 7290},
+								{"item": 2187},
+								{"item": 2150}
+							]
 						}
 					],
 					"icon": "wiki/i/top-stash.png"
@@ -30983,6 +31014,110 @@
 				},
 				{
 					"id": "store:10",
+					"name": "Themed Sets",
+					"sub": "12 offers, 250-350 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["12 offers, 250-350 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Cryptbone",
+									"350",
+									"Cosmetic",
+									"Bone and grave iron lit by green soul fire. Appearance set (13 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Wildroot",
+									"350",
+									"Cosmetic",
+									"Living wood, bark and leaf of the old groves, bound in bronze. Appearance set (13 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Moonsilver",
+									"350",
+									"Cosmetic",
+									"Pale silver and night-blue cloth under a crescent moon. Appearance set (13 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Rimeglass Warplate",
+									"250",
+									"Cosmetic",
+									"Blue glacier crystal that never melts. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Rimeglass Vestments",
+									"250",
+									"Cosmetic",
+									"Blue glacier crystal that never melts. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Rimeglass Hunter's Garb",
+									"250",
+									"Cosmetic",
+									"Blue glacier crystal that never melts. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Emeraldine Warplate",
+									"250",
+									"Cosmetic",
+									"Royal gold set with cut emeralds. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Emeraldine Vestments",
+									"250",
+									"Cosmetic",
+									"Royal gold set with cut emeralds. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Emeraldine Hunter's Garb",
+									"250",
+									"Cosmetic",
+									"Royal gold set with cut emeralds. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Thornwild Warplate",
+									"250",
+									"Cosmetic",
+									"Green leaf armour on orange heartwood. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Thornwild Vestments",
+									"250",
+									"Cosmetic",
+									"Green leaf armour on orange heartwood. Appearance set (6 looks), account-wide. Character > Transmog."
+								],
+								[
+									"Thornwild Hunter's Garb",
+									"250",
+									"Cosmetic",
+									"Green leaf armour on orange heartwood. Appearance set (6 looks), account-wide. Character > Transmog."
+								]
+							],
+							"sprites": [
+								{"item": 36660},
+								{"item": 36696},
+								{"item": 36714},
+								{"item": 36768},
+								{"item": 36774},
+								{"item": 36780},
+								{"item": 36789},
+								{"item": 36795},
+								{"item": 36801},
+								{"item": 36831},
+								{"item": 36837},
+								{"item": 36843}
+							]
+						}
+					],
+					"icon": "wiki/i/top-vip.png"
+				},
+				{
+					"id": "store:11",
 					"name": "Portal Styles",
 					"sub": "6 offers, 250-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31044,7 +31179,7 @@
 					"icon": "wiki/i/k-arcane-gate.png"
 				},
 				{
-					"id": "store:11",
+					"id": "store:12",
 					"name": "Spell Effects",
 					"sub": "12 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31148,7 +31283,7 @@
 					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
-					"id": "store:12",
+					"id": "store:13",
 					"name": "Kill Effects",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31197,7 +31332,7 @@
 					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
-					"id": "store:13",
+					"id": "store:14",
 					"name": "Loot Labels",
 					"sub": "4 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31240,7 +31375,7 @@
 					"icon": "wiki/i/k-light-eye.png"
 				},
 				{
-					"id": "store:14",
+					"id": "store:15",
 					"name": "Chat Colours",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31289,7 +31424,7 @@
 					"icon": "wiki/i/top-console.png"
 				},
 				{
-					"id": "store:15",
+					"id": "store:16",
 					"name": "Footprints",
 					"sub": "9 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31372,7 +31507,7 @@
 					"icon": "wiki/i/k-ember-kick.png"
 				},
 				{
-					"id": "store:16",
+					"id": "store:17",
 					"name": "Outlines",
 					"sub": "9 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31455,7 +31590,69 @@
 					"icon": "wiki/i/k-light-shield.png"
 				},
 				{
-					"id": "store:17",
+					"id": "store:18",
+					"name": "Chaos Shaders",
+					"sub": "6 offers, 250-300 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["6 offers, 250-300 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Ember Glow",
+									"250",
+									"Cosmetic",
+									"Your outfit smoulders: a flickering ember edge and sparks drifting up. Outfit window."
+								],
+								[
+									"Frost Rime",
+									"250",
+									"Cosmetic",
+									"Your outfit turns to ice, rimed at the edges, with crystals that glint. Outfit window."
+								],
+								[
+									"Void Flicker",
+									"250",
+									"Cosmetic",
+									"Your outfit sinks into violet dark; its edge flickers and slips away. Outfit window."
+								],
+								[
+									"Holy Radiance",
+									"300",
+									"Cosmetic",
+									"A golden light breathes through your outfit, rays crossing it slowly. Outfit window."
+								],
+								[
+									"Heartblood",
+									"250",
+									"Cosmetic",
+									"A heartbeat floods your outfit red and lights the veins beneath. Outfit window."
+								],
+								[
+									"Spectral Ghost",
+									"300",
+									"Cosmetic",
+									"Your outfit fades to a pale, see-through ghost with a cold glow. Outfit window."
+								]
+							],
+							"sprites": [
+								{"item": 2187},
+								{"item": 2146},
+								{"item": 2153},
+								{"item": 2145},
+								{"item": 9020},
+								{"item": 2150}
+							]
+						}
+					],
+					"icon": "wiki/i/top-vip.png"
+				},
+				{
+					"id": "store:19",
 					"name": "Hideout Decorations",
 					"sub": "9 offers, 80-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31538,7 +31735,7 @@
 					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
-					"id": "store:18",
+					"id": "store:20",
 					"name": "Appearances",
 					"sub": "9 offers, 300-400 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -31621,7 +31818,7 @@
 					"icon": "wiki/i/k-arcane-twin.png"
 				},
 				{
-					"id": "store:19",
+					"id": "store:21",
 					"name": "Pets",
 					"sub": "7 offers, 400 coins. Pet (small abilities).",
 					"color": "#ff70c0",
@@ -31690,7 +31887,7 @@
 					"icon": "wiki/i/k-nature-fang.png"
 				},
 				{
-					"id": "store:20",
+					"id": "store:22",
 					"name": "Crafting",
 					"sub": "3 offers, 20-30 coins. Crafting item.",
 					"color": "#ff70c0",
@@ -31727,13 +31924,13 @@
 					"icon": "wiki/i/k-steel-hammer.png"
 				},
 				{
-					"id": "store:21",
+					"id": "store:23",
 					"name": "Supplies",
-					"sub": "8 offers, 15-50 coins. Consumable item, Convenience.",
+					"sub": "5 offers, 15-50 coins. Consumable item, Convenience.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["8 offers, 15-50 Chaos Coins. Consumable item, Convenience."]},
+						{"h": "Category", "p": ["5 offers, 15-50 Chaos Coins. Consumable item, Convenience."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -31758,14 +31955,6 @@
 									"Consumable item",
 									"Restores a huge amount of health."
 								],
-								["100 Reaper's Runes", "20", "Consumable item", "Death damage to a single target."],
-								["100 Searing Orb Runes", "15", "Consumable item", "Fire damage in an area."],
-								[
-									"100 Grand Mending Runes",
-									"15",
-									"Consumable item",
-									"Heals a large amount of health."
-								],
 								[
 									"Backpack of Holding",
 									"50",
@@ -31773,22 +31962,186 @@
 									"A backpack with more room than any other."
 								]
 							],
-							"sprites": [
-								{"item": 7590},
-								{"item": 8472},
-								{"item": 8473},
-								{"item": 26031},
-								{"item": 2268},
-								{"item": 2304},
-								{"item": 2273},
-								{"item": 2365}
-							]
+							"sprites": [{"item": 7590}, {"item": 8472}, {"item": 8473}, {"item": 26031}, {"item": 2365}]
 						}
 					],
 					"icon": "wiki/i/k-blood-drop.png"
 				},
 				{
-					"id": "store:22",
+					"id": "store:24",
+					"name": "Runes",
+					"sub": "29 offers, 3-108 coins. Consumable item.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["29 offers, 3-108 Chaos Coins. Consumable item."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								["100 Searing Orb Runes", "9", "Consumable item", "Fire damage in an area."],
+								[
+									"250 Searing Orb Runes",
+									"20",
+									"Consumable item",
+									"Fire damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Searing Orb Runes",
+									"38",
+									"Consumable item",
+									"Fire damage in an area. 10% off the 100 pack."
+								],
+								["100 Rockfall Runes", "7", "Consumable item", "Earth damage in an area."],
+								[
+									"250 Rockfall Runes",
+									"17",
+									"Consumable item",
+									"Earth damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Rockfall Runes",
+									"32",
+									"Consumable item",
+									"Earth damage in an area. 10% off the 100 pack."
+								],
+								["100 Stormcall Runes", "7", "Consumable item", "Energy damage in an area."],
+								[
+									"250 Stormcall Runes",
+									"17",
+									"Consumable item",
+									"Energy damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Stormcall Runes",
+									"32",
+									"Consumable item",
+									"Energy damage in an area. 10% off the 100 pack."
+								],
+								["100 Frostfall Runes", "9", "Consumable item", "Ice damage in an area."],
+								[
+									"250 Frostfall Runes",
+									"20",
+									"Consumable item",
+									"Ice damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Frostfall Runes",
+									"38",
+									"Consumable item",
+									"Ice damage in an area. 10% off the 100 pack."
+								],
+								["100 Reaper's Runes", "22", "Consumable item", "Death damage to a single target."],
+								[
+									"250 Reaper's Runes",
+									"53",
+									"Consumable item",
+									"Death damage to a single target. 5% off the 100 pack."
+								],
+								[
+									"500 Reaper's Runes",
+									"99",
+									"Consumable item",
+									"Death damage to a single target. 10% off the 100 pack."
+								],
+								[
+									"100 Greater Hexdart Runes",
+									"3",
+									"Consumable item",
+									"Energy damage to a single target."
+								],
+								[
+									"250 Greater Hexdart Runes",
+									"6",
+									"Consumable item",
+									"Energy damage to a single target. 5% off the 100 pack."
+								],
+								[
+									"500 Greater Hexdart Runes",
+									"11",
+									"Consumable item",
+									"Energy damage to a single target. 10% off the 100 pack."
+								],
+								["100 Mending Runes", "10", "Consumable item", "Heals health."],
+								["250 Mending Runes", "23", "Consumable item", "Heals health. 5% off the 100 pack."],
+								[
+									"500 Mending Runes",
+									"43",
+									"Consumable item",
+									"Heals health. 10% off the 100 pack."
+								],
+								[
+									"100 Grand Mending Runes",
+									"24",
+									"Consumable item",
+									"Heals a large amount of health."
+								],
+								[
+									"250 Grand Mending Runes",
+									"57",
+									"Consumable item",
+									"Heals a large amount of health. 5% off the 100 pack."
+								],
+								[
+									"500 Grand Mending Runes",
+									"108",
+									"Consumable item",
+									"Heals a large amount of health. 10% off the 100 pack."
+								],
+								["25 Shackle Runes", "23", "Consumable item", "Slows a target down a lot."],
+								[
+									"50 Shackle Runes",
+									"43",
+									"Consumable item",
+									"Slows a target down a lot. 5% off the 100 pack."
+								],
+								["100 Shackle Runes", "89", "Consumable item", "Slows a target down a lot."],
+								["100 Dispel Runes", "3", "Consumable item", "Removes a magic field."],
+								[
+									"250 Dispel Runes",
+									"8",
+									"Consumable item",
+									"Removes a magic field. 5% off the 100 pack."
+								]
+							],
+							"sprites": [
+								{"item": 2304},
+								{"item": 2304},
+								{"item": 2304},
+								{"item": 2288},
+								{"item": 2288},
+								{"item": 2288},
+								{"item": 2315},
+								{"item": 2315},
+								{"item": 2315},
+								{"item": 2274},
+								{"item": 2274},
+								{"item": 2274},
+								{"item": 2268},
+								{"item": 2268},
+								{"item": 2268},
+								{"item": 2311},
+								{"item": 2311},
+								{"item": 2311},
+								{"item": 2265},
+								{"item": 2265},
+								{"item": 2265},
+								{"item": 2273},
+								{"item": 2273},
+								{"item": 2273},
+								{"item": 2278},
+								{"item": 2278},
+								{"item": 2278},
+								{"item": 2261},
+								{"item": 2261}
+							]
+						}
+					],
+					"icon": "wiki/i/top-vip.png"
+				},
+				{
+					"id": "store:25",
 					"name": "Boosts",
 					"sub": "5 offers, 8-225 coins. Boost.",
 					"color": "#ff70c0",
@@ -31837,7 +32190,7 @@
 					"icon": "wiki/i/k-light-arrowup.png"
 				},
 				{
-					"id": "store:23",
+					"id": "store:26",
 					"name": "World Buffs",
 					"sub": "3 offers, 250-300 coins. Boost.",
 					"color": "#ff70c0",
@@ -31874,7 +32227,7 @@
 					"icon": "wiki/i/k-holy-burst.png"
 				},
 				{
-					"id": "store:24",
+					"id": "store:27",
 					"name": "Services",
 					"sub": "5 offers, 60-400 coins. Service.",
 					"color": "#ff70c0",
@@ -31923,13 +32276,13 @@
 					"icon": "wiki/i/top-options.png"
 				},
 				{
-					"id": "store:25",
+					"id": "store:28",
 					"name": "Convenience",
-					"sub": "5 offers, 250-500 coins. Convenience.",
+					"sub": "6 offers, 150-500 coins. Convenience.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["5 offers, 250-500 Chaos Coins. Convenience."]},
+						{"h": "Category", "p": ["6 offers, 150-500 Chaos Coins. Convenience."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -31954,6 +32307,12 @@
 									"30 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."
 								],
 								[
+									"Everfull Ration",
+									"150",
+									"Convenience",
+									"Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."
+								],
+								[
 									"Auto Seller",
 									"500",
 									"Convenience",
@@ -31966,13 +32325,20 @@
 									"Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."
 								]
 							],
-							"sprites": [{"item": 32081}, {"item": 32082}, {"item": 32083}, {"item": 2160}, {"item": 2472}]
+							"sprites": [
+								{"item": 32081},
+								{"item": 32082},
+								{"item": 32083},
+								{"item": 32084},
+								{"item": 2160},
+								{"item": 2472}
+							]
 						}
 					],
 					"icon": "wiki/i/top-autoloot.png"
 				},
 				{
-					"id": "store:26",
+					"id": "store:29",
 					"name": "Classes",
 					"sub": "3 offers, 750 coins. Class unlock.",
 					"color": "#ff70c0",
@@ -32009,7 +32375,7 @@
 					"icon": "wiki/i/k-holy-sword.png"
 				},
 				{
-					"id": "store:27",
+					"id": "store:30",
 					"name": "Training",
 					"sub": "21 offers, 25-450 coins. Consumable item.",
 					"color": "#ff70c0",
@@ -32176,7 +32542,7 @@
 					"icon": "wiki/i/k-steel-sword.png"
 				},
 				{
-					"id": "store:28",
+					"id": "store:31",
 					"name": "Chaos Pact",
 					"sub": "1 offers, 300 coins. Chaos Pact.",
 					"color": "#ff70c0",
@@ -32192,7 +32558,7 @@
 									"Chaos Pact (30 days)",
 									"300",
 									"Chaos Pact",
-									"30 days, stacks: more tabs, listings, builds, rules, daily coins, a title."
+									"30 days, stacks: tabs, +1 loadout, Auto Seller, coins, a monthly cosmetic. No XP."
 								]
 							],
 							"sprites": [{"item": 16101}]
@@ -32201,7 +32567,7 @@
 					"icon": "wiki/i/top-battlepass.png"
 				},
 				{
-					"id": "store:29",
+					"id": "store:32",
 					"name": "Storage & Slots",
 					"sub": "6 offers, 100-250 coins. Account storage.",
 					"color": "#ff70c0",
@@ -32263,7 +32629,7 @@
 					"icon": "wiki/i/top-stash.png"
 				},
 				{
-					"id": "store:30",
+					"id": "store:33",
 					"name": "Depot Tabs",
 					"sub": "2 offers, 150-500 coins. Account storage.",
 					"color": "#ff70c0",
@@ -32294,7 +32660,7 @@
 					"icon": "wiki/i/top-stash.png"
 				},
 				{
-					"id": "store:31",
+					"id": "store:34",
 					"name": "Season Pass",
 					"sub": "4 offers, 600-3200 coins. Season pass.",
 					"color": "#ff70c0",
@@ -32310,7 +32676,7 @@
 									"Premium Ashen Pass",
 									"1000",
 									"Season pass",
-									"Premium track of the Ashen Pass for your whole account: cosmetics, potions, 300 coins back."
+									"Premium track of the Ashen Pass for your whole account: cosmetics only (titles, shaders, a frame, Everblight), 320 coins back."
 								],
 								[
 									"Ember Pack",
@@ -32337,7 +32703,7 @@
 					"icon": "wiki/i/top-battlepass.png"
 				},
 				{
-					"id": "store:32",
+					"id": "store:35",
 					"name": "Premium Time",
 					"sub": "3 offers, 250-1200 coins. Premium time.",
 					"color": "#ff70c0",

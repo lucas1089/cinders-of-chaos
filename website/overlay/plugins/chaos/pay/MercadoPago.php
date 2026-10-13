@@ -122,7 +122,22 @@ final class ChaosPayMercadoPago implements ChaosPayProvider {
 			'reference' => (string)($p['external_reference'] ?? ''),
 			'refunded_cents' => $refunded,
 			'method' => (string)($p['payment_method_id'] ?? ''),
+			// who paid (hashed by the service into chaos_pay_payers, never stored as is): the payer's document, else
+			// Mercado Pago's payer id, else the e-mail
+			'payer' => self::payerOf($p),
 		);
+	}
+
+	public static function payerOf(array $p): string {
+		$payer = (array)($p['payer'] ?? array());
+		$doc = (array)($payer['identification'] ?? array());
+		if (($doc['number'] ?? '') !== '') {
+			return 'doc:' . strtolower((string)($doc['type'] ?? '')) . ':' . preg_replace('/\D+/', '', (string)$doc['number']);
+		}
+		if (($payer['id'] ?? '') !== '') {
+			return 'id:' . (string)$payer['id'];
+		}
+		return ($payer['email'] ?? '') !== '' ? 'mail:' . strtolower(trim((string)$payer['email'])) : '';
 	}
 
 	public function fetch(array $row, array $hint = array()): array {

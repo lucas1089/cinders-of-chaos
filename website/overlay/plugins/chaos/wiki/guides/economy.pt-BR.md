@@ -28,6 +28,10 @@ Economy > Orb Exchange é um livro de ofertas para orbes: orbe por ouro ou orbe 
 - Salvage desmonta itens em fragmentos úteis.
 - A recompensa diária segue uma semana de {{daily.days}} dias.
 
+## Runas
+
+Nenhuma magia faz runas. Compre dos vendedores de runas (Raloth em Mirewake e Isora em Cinderhold vendem todas, outras lojas de magia vendem algumas) ou faça nas mesas de crafting geral: runas em branco dos vendedores, ervas e pedaços de minério que você coleta e um pouco de ouro. Uma runa feita custa cerca de metade do preço da loja.
+
 ## Cuidados
 
 Trocas por dinheiro real fora da loja oficial são proibidas. Veja as [regras](wiki:guide:rules).

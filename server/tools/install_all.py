@@ -62,6 +62,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (README "Factions")
   pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
                (README "Store pouches")
+  storefood    tools/install_store_food.py       the Everfull Ration (the store's infinite food) in items.otb / items.xml
+               (README "Store pouches and the Everfull Ration")
   depot        tools/patch_base_depot.py         depot tabs: the depot boxes pickupable in items.otb and named "depot tab n" with
                100 slots in items.xml, the locker hook and the move hook in Player:onMoveItem (README "Depot tabs")
   charms       tools/install_charms.py           the charms and the charm shard in items.otb / items.xml (README "Charms")
@@ -98,6 +100,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   npcnames     tools/patch_base_npc_names.py     Chaos names of the base NPCs (data/npc/base_npc_names.csv, keyed by the
                sha256 of the old name): the NPC files and their shown names, the NPC spawn entries, Game.createNpc
                names (README "Base NPC names"; after towns, monsternames and itemnames)
+  runes        tools/install_rune_supply.py      no conjuring: the conjure spells of spells.xml commented out (runes, blank
+               rune, food, enchanted spear and staff), every NPC sells each rune at the price of
+               data/lib/chaos_rune_supply.lua, the vendors (Raloth, Isora) sell every rune, the rune recipe loader in the
+               general crafting file (README "Rune supply"; after npcnames)
   worldtexts   tools/patch_base_texts.py         the old world's names in NPC dialogue and keywords, travel, the quest log,
                raids, achievements, item descriptions, script messages and the map's signs and books
                (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
@@ -168,7 +174,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'uniqueequip', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'storefood', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'uniqueequip', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -431,6 +437,10 @@ def step_pouches(server, data, ctx):
     return tool_result(run_tool([tool('install_pouches.py'), data], 'install_pouches.py'))
 
 
+def step_storefood(server, data, ctx):
+    return tool_result(run_tool([tool('install_store_food.py'), data], 'install_store_food.py'))
+
+
 def step_depot(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_depot.py'), data], 'patch_base_depot.py'))
 
@@ -515,6 +525,13 @@ def step_towns(server, data, ctx):
 
 def step_npcnames(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_npc_names.py'), data], 'patch_base_npc_names.py'))
+
+
+def step_runes(server, data, ctx):
+    return tool_result(run_tool([tool('install_rune_supply.py'), data], 'install_rune_supply.py'))
+
+
+STEPS.insert(STEPS.index('npcnames') + 1, 'runes')  # after npcnames: the vendors by their Chaos names (hash before it)
 
 
 def step_worldtexts(server, data, ctx):

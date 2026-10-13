@@ -28,13 +28,15 @@ guardian, using a payment method they allowed. If a minor donated without permis
 
 | Pack | Chaos Coins as a thank-you | Pix | PayPal |
 |---|---|---|---|
+| Handful of Coins | 80 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Pouch of Coins | 250 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Sack of Coins | 825 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Chest of Coins | 1725 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Hoard of Coins | 5000 | [PREÇO EM R$] | [PREÇO EM US$] |
+| Vault of Coins | 13000 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Starter Coins, once per account | 500 | [PREÇO EM R$] | [PREÇO EM US$] |
 
-- Each account's first donation brings 20% more Chaos Coins, except for the Starter Coins pack.
+- Each account's first donation brings 100% more Chaos Coins (double), except for the Starter Coins pack.
 - Payment is handled by Mercado Pago or PayPal, under their terms. We do not receive or store card numbers, bank account
   details or your PayPal login.
 
@@ -70,7 +72,29 @@ guardian, using a payment method they allowed. If a minor donated without permis
 - A dispute made in good faith is not fraud, for example Chaos Coins that never arrived or a payment charged twice.
   Please write to [E-MAIL DE CONTATO] first; we answer before you need the bank.
 
-## 7. Bans, wipes, seasons and changes
+## 7. Season Pass, creator codes and the Character Bazaar
+
+- **Season Pass.** The premium track of a season pass is unlocked with Chaos Coins ([PREÇO DO PASSE PREMIUM] Chaos
+  Coins). It gives cosmetic items and some Chaos Coins back only, never gold, experience or game power. Its rewards
+  are those of the season it belongs to, and can be claimed until [PRAZO DE RESGATE DO PASSE] days after that season
+  ends. Buying it late gives the rewards of the tiers already reached at once.
+- **Creator codes.** A creator code chosen on the website does not change your donation or the Chaos Coins you get. As
+  a thank-you from the server, the creator receives [PERCENTUAL DO CRIADOR] % of the Chaos Coins of your donations made
+  while the code is chosen, in the game, after [PRAZO DE CARÊNCIA DO CRIADOR] days. Nothing of this is paid in money.
+  A creator code cannot be used by its own account, nor by accounts of the same person, connection or payer. A refunded
+  or disputed donation gives the creator nothing. The creator agrees to these rules and to tell its audience that the
+  code supports it ([REGRAS DE DIVULGAÇÃO DO CRIADOR]). We may switch a code off at any time.
+- **Character Bazaar.** Players may sell a character to another player on the website for Chaos Coins only. The
+  server keeps a fee of [TAXA DO BAZAR] % of the final price. The bid is held from the bidder's Chaos Coins until the
+  auction ends and given back at once if the bidder is outbid or the auction is cancelled. At the end, the character
+  moves to the winner's account with what it carries, and the seller receives the price less the fee. Season,
+  Hardcore and Self-Found characters, guild leaders, characters with an open report and characters of an account that
+  is banned or has a disputed donation cannot be sold. Staff may cancel an auction at any time, for example on a report
+  of fraud; every bid then goes back. A character bought on the Bazaar is not a purchase from us and has no
+  real-world value; the Chaos Coins paid are not returned in money. Selling or buying characters, items or Chaos
+  Coins for money or anything outside the game remains forbidden (Rules page, section 7).
+
+## 8. Bans, wipes, seasons and changes
 
 - An account banned for breaking the rules has no right to a refund of its donations. During a temporary ban, the
   Chaos Coins stay on the account for when it ends.
@@ -81,7 +105,7 @@ guardian, using a payment method they allowed. If a minor donated without permis
 - If the game closes for good, we will give notice first, as the Terms of Use say. Donations are not returned, except
   where the law requires.
 
-## 8. Governing law
+## 9. Governing law
 
 These terms are governed by the laws of Brazil, including the Consumer Protection Code where applicable. Contact:
 [E-MAIL DE CONTATO].

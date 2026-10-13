@@ -34,6 +34,8 @@
 --              soft glow picture instead); pulse = true: it breathes in and out; color = the window's swatch
 -- Sources also: "boss" (boss = the boss's name for the window): a rare personal drop of that boss, granted by
 -- exclusives.lua (exclusives_config.lua `bosses`), never sold.
+-- And "pact" (pact = the window's line): the Chaos Pact's perks (pact_config.lua perks, pact_perks.lua): the chat
+-- colour while the Pact is active, the monthly cosmetic kept for good; never sold.
 
 return {
 	opcode = 225, -- ChaosOpcodes.cosmetics (client game_cosmetics)
@@ -66,7 +68,7 @@ return {
 	glows = {"gold", "crimson", "void", "frost", "ember", "verdant", "radiant", "abyssal", "storm",
 		"absolute", "chronicle", "corona", "cinder"},
 
-	-- ------------------------------------------------------------------ Chaos outfit shaders (store-ready, OFF)
+	-- ------------------------------------------------------------------ Chaos outfit shaders (on sale)
 	-- Six outfit shaders written for this server (client data/shaders/chaos_outfit_*.frag, registered by client
 	-- game_chaosshaders under `shader`; shaders.xml ids `shaderId` 19-24 by server/tools/install_outfits.py). Kept out
 	-- of `cosmetics` and `kinds` on purpose: they are engine outfit shaders, chosen in the Outfit window like the store's
@@ -78,20 +80,23 @@ return {
 	-- Cosmetics hunk of shop_config.lua; cosmetics_test.lua checks the offers against these prices.
 	-- Entry: {key, shaderId, shader, icon, color (the window's swatch), name, desc[, price]}; key is the unlock
 	-- "cosmetic_<key>" and must not clash with a key of `cosmetics`.
+	-- Switched on with prices on 2026-10-13 (owner: "Pode fazer todas as mudanças recomendadas"). PLACEHOLDER PRICES
+	-- (docs/OWNER_TODO.md): 250 coins (US$ 4.99 in the 250 pack) for the four, 300 for Holy Radiance and Spectral
+	-- Ghost (the two with the most motion); the stock shaders cost 120-150, auras 150-300, wings 200-350.
 	outfitShaders = {
-		enabled = false,
+		enabled = true,
 		list = {
-			{key = "shader_ember_glow", shaderId = 19, shader = "chaos_ember_glow", icon = 2187, color = "#ff7a2a",
+			{key = "shader_ember_glow", shaderId = 19, shader = "chaos_ember_glow", icon = 2187, color = "#ff7a2a", price = 250,
 				name = "Ember Glow", desc = "Your outfit smoulders: a flickering ember edge and sparks drifting up."},
-			{key = "shader_frost_rime", shaderId = 20, shader = "chaos_frost_rime", icon = 2146, color = "#bfe6ff",
+			{key = "shader_frost_rime", shaderId = 20, shader = "chaos_frost_rime", icon = 2146, color = "#bfe6ff", price = 250,
 				name = "Frost Rime", desc = "Your outfit turns to ice, rimed at the edges, with crystals that glint."},
-			{key = "shader_void_flicker", shaderId = 21, shader = "chaos_void_flicker", icon = 2153, color = "#9a4ce0",
+			{key = "shader_void_flicker", shaderId = 21, shader = "chaos_void_flicker", icon = 2153, color = "#9a4ce0", price = 250,
 				name = "Void Flicker", desc = "Your outfit sinks into violet dark; its edge flickers and slips away."},
-			{key = "shader_holy_radiance", shaderId = 22, shader = "chaos_holy_radiance", icon = 2145, color = "#ffe08a",
+			{key = "shader_holy_radiance", shaderId = 22, shader = "chaos_holy_radiance", icon = 2145, color = "#ffe08a", price = 300,
 				name = "Holy Radiance", desc = "A golden light breathes through your outfit, rays crossing it slowly."},
-			{key = "shader_blood_pulse", shaderId = 23, shader = "chaos_blood_pulse", icon = 9020, color = "#c81e24",
+			{key = "shader_blood_pulse", shaderId = 23, shader = "chaos_blood_pulse", icon = 9020, color = "#c81e24", price = 250,
 				name = "Heartblood", desc = "A heartbeat floods your outfit red and lights the veins beneath."},
-			{key = "shader_spectral_ghost", shaderId = 24, shader = "chaos_spectral_ghost", icon = 2150, color = "#a8f0f0",
+			{key = "shader_spectral_ghost", shaderId = 24, shader = "chaos_spectral_ghost", icon = 2150, color = "#a8f0f0", price = 300,
 				name = "Spectral Ghost", desc = "Your outfit fades to a pale, see-through ghost with a cold glow."}
 		}
 	},
@@ -357,6 +362,21 @@ return {
 		{id = 553, key = "glow_corona", kind = "outline", icon = 2153, source = "boss", boss = "Nyxareth the Void Archon",
 			art = "corona", pulse = true, color = "#5a2a90", name = "Void Corona", desc = "A dark outline burning to violet, torn from the Void Archon."},
 		{id = 554, key = "glow_cinder", kind = "outline", icon = 2353, source = "boss", boss = "Ysgrath the Cinderheart",
-			art = "cinder", pulse = true, color = "#ff5a1a", name = "Cinderheart Blaze", desc = "The Cinderheart's own fire, flaring along your outline."}
+			art = "cinder", pulse = true, color = "#ff5a1a", name = "Cinderheart Blaze", desc = "The Cinderheart's own fire, flaring along your outline."},
+		-- the Chaos Pact (VIP) perks (pact_config.lua perks): the chat colour while active, one cosmetic a month
+		{id = 315, key = "chat_pactbound", kind = "chatcolor", icon = 16101, source = "pact", pact = "While the Chaos Pact is active",
+			color = "#e0664a", name = "Pactbound Name", desc = "Your name in chat burns Pact red for everyone while your Chaos Pact lasts."},
+		{id = 130, key = "kill_pact_ember", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, November 2026",
+			vfx = "px448_crimson", name = "Pact Ember", desc = "A crimson seal flares where your killing blow lands."},
+		{id = 220, key = "loot_pact_frost", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, December 2026",
+			accent = "#0a2028f0", name = "Pact Frost Labels", desc = "Your highlighted loot labels sit on frozen teal. Rarity colours stay."},
+		{id = 131, key = "kill_pact_venom", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, January 2027",
+			vfx = "px633_green", name = "Pact Venom", desc = "A green skull rises from the monster you finish."},
+		{id = 221, key = "loot_pact_rose", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, February 2027",
+			accent = "#4a1230f0", name = "Pact Rose Labels", desc = "Your highlighted loot labels sit on deep rose. Rarity colours stay."},
+		{id = 132, key = "kill_pact_frost", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, March 2027",
+			vfx = "px195_ice", name = "Pact Frost", desc = "An icy rune bursts where your killing blow lands."},
+		{id = 222, key = "loot_pact_gold", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, April 2027",
+			accent = "#2a2006f0", name = "Pact Gold Labels", desc = "Your highlighted loot labels sit on old gold. Rarity colours stay."}
 	}
 }

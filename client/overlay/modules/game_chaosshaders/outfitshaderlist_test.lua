@@ -83,6 +83,10 @@ local function checkNamed(text, what)
 end
 eq(checkNamed(read('server/data/scripts/chaos/exclusives_config.lua'), 'exclusive'), 2, 'exclusive shaders read')
 eq(checkNamed(read('server/data/scripts/chaos/cosmetics_config.lua'), 'chaos shader'), 6, 'chaos shaders read')
+eq(checkNamed(read('server/data/scripts/chaos/seasonpass_config.lua'), 'season pass shader'), 2, 'season pass shaders read')
+for id, shader in read('server/data/scripts/chaos/seasonpass_config.lua'):gmatch('kind = "shader", id = (%d+), shader = "([%w_]+)"') do
+  eq(L.LABELS[shader].id, tonumber(id), 'season pass shader id ' .. shader)
+end
 local ids = read('server/data/scripts/chaos/cosmetics_config.lua')
 for id, shader in ids:gmatch('shaderId = (%d+), shader = "([%w_]+)"') do
   eq(L.LABELS[shader].id, tonumber(id), 'chaos shader id ' .. shader)

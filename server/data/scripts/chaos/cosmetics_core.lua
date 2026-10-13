@@ -8,7 +8,7 @@ local C = ChaosCosmeticsCore
 
 C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true, footprint = true, outline = true}
 -- pvp: battleground.lua / arena_season.lua grant it; boss: a rare personal drop of a boss (exclusives.lua grants it)
-C.SOURCES = {store = true, achievement = true, pvp = true, boss = true}
+C.SOURCES = {store = true, achievement = true, pvp = true, boss = true, pact = true}
 -- the kinds every viewer's client draws itself (client game_cosmeticfx): the art key names the client's picture
 C.DRAWN = {footprint = "prints", outline = "glows"}
 C.SWAP_TYPES = {"fx", "missile", "vfx", "vmissile"}
@@ -302,6 +302,8 @@ function C.how(c, achievementName, categoryName)
 		return "PvP: " .. tostring(c.pvp or "battleground")
 	elseif c.source == "boss" then
 		return "Boss: " .. tostring(c.boss or "a boss")
+	elseif c.source == "pact" then
+		return "Chaos Pact: " .. tostring(c.pact or "while subscribed")
 	elseif c.points then
 		return "Achievements: " .. tostring(c.points) .. " account points"
 	elseif c.category then
@@ -610,6 +612,11 @@ function C.validate(cfg, opts)
 			end
 			if c.price ~= nil then
 				bad("%s: an achievement cosmetic has no price (never sold)", w)
+			end
+		elseif c.source == "pact" then
+			-- the Chaos Pact's perks (pact_perks.lua): granted, never sold
+			if c.price ~= nil then
+				bad("%s: a pact cosmetic has no price (never sold)", w)
 			end
 		elseif c.source == "boss" then
 			-- a rare personal drop (exclusives_config.lua names it in one boss group; exclusives_test.lua checks that)

@@ -231,6 +231,33 @@ the druid's Verdant Sanctuary. `rename_spells.py` translates the stock spells' w
 the Chaos spells' words, and the client changes its own entries at runtime. Parameters work as before
 (`saen kin "Name"`, `sekh "Name"`, `ash ul "up"`, `vael kal "creature"`).
 
+## No rune conjuring (2026-10-13)
+
+Owner: "Tire as spells de fazer runa. Deixa as runas serem de vendedores e craft." No spell conjures a rune any more: the
+36 stock rune conjure spells and the unscribed (blank) rune spell (`rhun`, `rhuv`, `rhua`, `rhus`, `rhud`, `rhuk` and
+`rhun nul` words) are commented out of the installed spells.xml by `server/tools/install_rune_supply.py`. Using a rune
+is unchanged: the `<rune>` entries, their levels, magic levels and damage stay. The rows of these spells in
+`spell_names.csv` carry `removed = conjure` (the rune items keep their Chaos names from the same rows); `spell_words.csv`
+marks the six rune parts and `nul` as left from rune conjuring. Runes are bought from NPCs or crafted at the general
+crafting tables; prices, recipes and the band table are in `server/README.md` "Rune supply" and
+`data/lib/chaos_rune_supply.lua`.
+
+Measured cost of a rune before and after (gold a rune; conjured = mana x 0.5 gold, the mana potion price of a mana point,
++ 10 a soul point + the blank rune, per rune made):
+
+| Rune | Mana, soul / runes conjured | Conjured (gold value) | Old NPC price | Now: vendor | Now: crafted |
+|---|---|---|---|---|---|
+| Searing Orb Rune | 530, 3 / 4 | 76 | 45 | 84 | 46.3 |
+| Reaper's Rune | 985, 5 / 3 | 184 | 50-108 | 220 | 121.3 |
+| Grand Mending Rune | 400, 3 / 1 | 240 | 175 | 240 | 132.0 |
+| Greater Hexdart Rune | 350, 2 / 10 | 20.5 | 12 | 23 | 12.7 |
+| Shackle Rune | 1400, 3 / 1 | 740 | 700 | 890 | 490.0 |
+
+The other conjure spells went the same way the same day (owner: "Pode tirar, já que as ammos são infinitas"): Conjure
+Rations (`drai bren`; its foods stay on sale at the food vendors), Hallow Spear (`vok sag`) and Charge Staff (`vok zhul`),
+also marked `removed = conjure` (`pan` in `spell_words.csv` too). The ammunition conjure spells were removed earlier
+("Infinite arrows and quivers"). No conjure spell is left.
+
 ## Roles and balance
 
 Roles as measured before the class rework (the old vocations; the classes that took the kits over are in docs/CLASSES.md):

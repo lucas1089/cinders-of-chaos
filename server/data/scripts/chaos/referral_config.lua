@@ -13,7 +13,8 @@ return {
 		codes = "chaos_referral_codes", -- one row per account that has a code: account_id -> code
 		links = "chaos_referrals", -- one row per referred account: who referred it, status, the tracked character
 		rewards = "chaos_referral_rewards", -- one row per referred account and milestone: reached, paid / due / void
-		log = "chaos_referral_log" -- every link, refusal, gift and payment
+		log = "chaos_referral_log", -- every link, refusal, gift and payment
+		tiers = "chaos_referral_tiers" -- one row per referrer and tier reward reached (3, 5, 10 friends)
 	},
 
 	-- the code an account shares: `length` characters of `alphabet` (no 0/O, 1/I/L), shown as XXXX-XXXX
@@ -28,7 +29,7 @@ return {
 
 	antiAbuse = {
 		sameIp = true, -- refused when the new account and the referrer share an IP (login IPs of every character,
-		--                the website registration IP of both)
+		--                the website registration IP of both; an IPv6 address counts by its /64 network)
 		sameEmailDomain = true, -- refused when both e-mails have the same domain, unless it is a public one below
 		publicDomains = {"gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "msn.com", "yahoo.com",
 			"yahoo.com.br", "icloud.com", "me.com", "proton.me", "protonmail.com", "gmx.com", "gmx.de", "web.de", "mail.ru",
@@ -36,7 +37,13 @@ return {
 		staffAccountType = 2, -- accounts of this type or higher (tutor and up) neither refer nor are referred
 		staffGroup = 2, -- nor accounts with a character of this group or higher
 		monthlyLinks = 10, -- new friends one referrer can sign up per calendar month (server time)
-		monthlyRewards = 10 -- referrer rewards paid per calendar month; more wait for the next month
+		monthlyRewards = 10, -- referrer rewards paid per calendar month; more wait for the next month
+		-- checked again when a reward is due (owner rules 2026-10-13, docs/GM_HANDBOOK.md section 4 and the multi-client
+		-- rule of Chaos.multiClient: one person, one side of a referral):
+		minReferredAccountDays = 7, -- the referred account is at least this old (else the reward waits)
+		sameIpAtPayout = true, -- void when the two accounts share a connection by then (an IPv6 address by its /64)
+		samePayer = true, -- void when a donation of each account had the same payer (payersTable)
+		payersTable = "chaos_pay_payers" -- the payer hash of each donation (server/sql/chaos_creator_codes.sql; may be empty)
 	},
 	retryMinutes = 30, -- how often waiting rewards are tried again (also at every login of the referrer and at startup)
 
@@ -52,9 +59,20 @@ return {
 
 	-- the referrer's rewards, when the referred account's first character (the lowest character id of that account,
 	-- fixed when the link is accepted) reaches the level. coins: Chaos Coins to the referrer's account; title: account-wide.
+	-- l150: the main reward (owner decision 2026-10-13: a cosmetic when the friend's character reaches level X, X a
+	-- PLACEHOLDER of 150, docs/OWNER_TODO.md "Referral rewards"; the referred account must be minReferredAccountDays old).
 	milestones = {
 		{key = "l50", level = 50, coins = 25, title = {key = "referral:torchbearer", text = "Torchbearer", color = "#e0a040"}},
 		{key = "l150", level = 150, coins = 50, title = {key = "referral:emberherald", text = "Ember Herald", color = "#e06030"}}
+	},
+
+	-- tier rewards of the referrer: once `count` referred accounts reached the milestone `qualify` (paid, not void), a
+	-- title for the whole account and a few coins, once each. Cosmetics only.
+	qualify = "l150",
+	tiers = {
+		{key = "t3", count = 3, coins = 50, title = {key = "referral:flamecaller", text = "Flamecaller", color = "#f08a3a"}},
+		{key = "t5", count = 5, coins = 100, title = {key = "referral:hearthwarden", text = "Hearthwarden", color = "#f0a050"}},
+		{key = "t10", count = 10, coins = 200, title = {key = "referral:pyrelord", text = "Lord of the Pyre", color = "#ff5a2a"}}
 	},
 
 	messages = {
@@ -80,6 +98,7 @@ return {
 		giftInbox = "Part of your welcome gift did not fit: it waits in your depot inbox.",
 		paid = "Your friend %s reached level %d: you received %s.",
 		waitingCap = "Your friend %s reached level %d. Monthly reward limit reached: the reward waits for next month.",
-		void = "Your friend %s reached level %d, but the account is banned: no reward."
+		void = "Your friend %s reached level %d, but the referral rules refused the reward (a banned account, a shared connection or a shared payer).",
+		tier = "%d of your friends reached level %d: you received %s."
 	}
 }

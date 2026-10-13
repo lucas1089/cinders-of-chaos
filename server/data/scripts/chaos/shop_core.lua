@@ -10,6 +10,7 @@
 --   C.parseTime(v)                        "YYYY-MM-DD HH:MM" (server time) or a number -> unix time; nil when invalid
 --   C.weekKey(t, hour)                    week number; weeks start on Monday at `hour` (server time)
 --   C.featured(pool, week, count)         `count` keys of `pool`, a different choice every week (deterministic)
+--   C.weekEnds(t, hour)                   when the week of t ends (the weekly rotation's countdown)
 --   C.price(offer, categoryName, ctx)     cost, oldCost (nil when not reduced), tags {"Sale", "New", "Featured"}
 --   C.bundleCost(bundle, listSum)         a bundle's price: its own cost, or listSum minus its pct
 --   C.giftProblem(t)                      why a gift to this target is refused, or nil
@@ -225,6 +226,12 @@ end
 function C.weekKey(t, hour)
 	local monday = os.time({year = 1970, month = 1, day = 5, hour = hour or 0, min = 0, sec = 0})
 	return math.floor((t - monday) / 604800)
+end
+
+-- unix time the week of t ends (the next Monday at `hour`): the weekly rotation changes then
+function C.weekEnds(t, hour)
+	local monday = os.time({year = 1970, month = 1, day = 5, hour = hour or 0, min = 0, sec = 0})
+	return monday + (C.weekKey(t, hour) + 1) * 604800
 end
 
 -- `count` distinct entries of `pool`, the same all week, another set next week

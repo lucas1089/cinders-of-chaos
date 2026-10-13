@@ -13,12 +13,12 @@ utana,fen,invisibility
 exeta,vok,challenge
 exani,ash,move
 exiva,sekh,seek
-adori,rhun,rune: missile
-adevo,rhuv,"rune: field, wall, bomb"
-adana,rhua,rune: support
-adura,rhus,rune: heal
-adito,rhud,rune: unmaking
-adeta,rhuk,rune: bonding
+adori,rhun,rune: missile (rune conjuring removed)
+adevo,rhuv,"rune: field, wall, bomb (rune conjuring removed)"
+adana,rhua,rune: support (rune conjuring removed)
+adura,rhus,rune: heal (rune conjuring removed)
+adito,rhud,rune: unmaking (rune conjuring removed)
+adeta,rhuk,rune: bonding (rune conjuring removed)
 adento,rhut,rune: snare
 gran,gal,greater
 mas,vas,"mass, area"
@@ -38,12 +38,12 @@ vid,ves,unseen
 amp,rek,throw
 moe,gro,weakness
 ulus,orr,burst
-pan,bren,food
+pan,bren,food (conjuring removed)
 splash,lav,taint
 arcane,aeth,arcane
 ar,ath,arcane strike
 ani,shak,shackle
-blank,nul,blank
+blank,nul,blank (rune conjuring removed)
 evasion,ylth,fading
 cruz,xir,crossfire
 witched,glam,glamour
