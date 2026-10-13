@@ -587,7 +587,8 @@ USD x `brlPerUsd` (5), so the two prices never drift. The game server credits ev
    the player: `cancelled` (a Mercado Pago charge is cancelled; a PayPal order is simply never captured). The page's
    "Cancel this donation" link and PayPal's cancel link (`&order=N&cancel=1`) only open a confirmation; the order is
    cancelled by its POST form with the page's CSRF token, so a link alone cannot cancel a donation. A refund or
-   chargeback before crediting: `refunded`. After crediting: flagged on the row; the game server takes back the coins
+   chargeback before crediting: `refunded` (also a partial refund: Mercado Pago keeps such a payment "approved" with
+   an amount refunded, which counts as a refund). After crediting: flagged on the row; the game server takes back the coins
    still unspent (`removeCoinsOnReversal`) and staff see it in the admin panel (Store > Donations: refunds and
    chargebacks). No charge after 10 minutes (worker down): `failed`.
 
@@ -640,7 +641,8 @@ rules, the charge requests, signatures good / bad / missing, unknown ids, amount
 idempotency, expiry, cancel, refunds and chargebacks before and after crediting, PayPal capture, the mock, the settings
 loader); `php website/tests/chaos_donation_page_test.php` (the page: the notice in both languages before the packs,
 "Donate" and never "Buy", a Pix donation, the thank-you, the history labelled "Donation", CSRF);
-`php website/tests/chaos_coins_test.php`.
+`php website/tests/chaos_coins_test.php`; `php website/tests/chaos_qa_security_test.php` (regressions of the security
+QA: a Mercado Pago partial refund before and after crediting).
 
 ## Client updates
 
