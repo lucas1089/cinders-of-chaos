@@ -252,6 +252,13 @@ function Pay.onCredited(orderId, accountId, credit, pack)
 end
 
 -- ------------------------------------------------------------------ refunds and chargebacks after crediting
+-- the reversal of an order, locked for this round (inside the transaction): a larger refund the website records meanwhile
+-- waits for the COMMIT and is handled by the next round. Nil when the row was handled already.
+function Pay.lockReversal(orderId)
+	return Chaos.select("SELECT `reversal_cents`, `reversal_coins` FROM `" .. T_PAY .. "` WHERE `order_id` = " .. orderId ..
+		" AND `reversal_done` = 0 FOR UPDATE", {{"reversal_cents", "n"}, {"reversal_coins", "n"}})[1]
+end
+
 function Pay.processReversals()
 	local rows = Chaos.select("SELECT p.`order_id`, p.`reversal`, p.`reversal_cents`, p.`amount_cents`, p.`currency`, p.`method`, " ..
 		"o.`account_id`, o.`pack_key`, o.`coins`, o.`bonus`, o.`first_bonus` FROM `" .. T_PAY .. "` p JOIN `" .. T_ORDERS ..
@@ -261,49 +268,56 @@ function Pay.processReversals()
 	for _, r in ipairs(rows) do
 		local credited = r.coins + r.bonus + r.first_bonus
 		db.query("START TRANSACTION")
-		local bal = Chaos.select("SELECT `coins` FROM `" .. T_COINS .. "` WHERE `account_id` = " .. r.account_id .. " FOR UPDATE", {{"coins", "n"}})[1]
-		local take = P.reversalCoins(credited, r.amount_cents, r.reversal_cents, bal and bal.coins or 0, PC.removeCoinsOnReversal)
-		if take > 0 then
-			db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. take .. " WHERE `account_id` = " .. r.account_id ..
-				" AND `coins` >= " .. take)
-		end
-		-- what the donor's balance could not cover was gifted on: taken back from the receivers (newest gift first)
-		local share = P.reversalCoins(credited, r.amount_cents, r.reversal_cents, 2 ^ 31, PC.removeCoinsOnReversal)
-		local clawed, unpaid, receivers = 0, 0, {}
-		if share > take then
-			local gifts = Chaos.select("SELECT g.`id`, g.`to_account`, g.`amount`, g.`clawed`, COALESCE(c.`coins`, 0) AS `balance` FROM `" ..
-				T_COIN_GIFTS .. "` g LEFT JOIN `" .. T_COINS .. "` c ON c.`account_id` = g.`to_account` WHERE g.`from_account` = " ..
-				r.account_id .. " AND g.`order_id` >= " .. r.order_id .. " AND g.`clawed` < g.`amount` ORDER BY g.`id` DESC FOR UPDATE",
-				{{"id", "n"}, {"to_account", "n"}, {"amount", "n"}, {"clawed", "n"}, {"balance", "n"}})
-			local plan
-			plan, unpaid = K.clawbackPlan(share - take, gifts)
-			for _, c in ipairs(plan) do
-				db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. c.take .. " WHERE `account_id` = " .. c.account ..
-					" AND `coins` >= " .. c.take)
-				db.query("UPDATE `" .. T_COIN_GIFTS .. "` SET `clawed` = `clawed` + " .. c.take .. " WHERE `id` = " .. c.id)
-				clawed = clawed + c.take
-				receivers[c.account] = (receivers[c.account] or 0) + c.take
+		local cur = Pay.lockReversal(r.order_id)
+		if not cur then
+			db.query("COMMIT") -- handled meanwhile
+		else
+			r.reversal_cents = cur.reversal_cents
+			local bal = Chaos.select("SELECT `coins` FROM `" .. T_COINS .. "` WHERE `account_id` = " .. r.account_id .. " FOR UPDATE", {{"coins", "n"}})[1]
+			-- a second, larger refund: only what the earlier round did not take back (reversal_coins)
+			local share = P.reversalRemaining(credited, r.amount_cents, r.reversal_cents, cur.reversal_coins, PC.removeCoinsOnReversal)
+			local take = math.min(share, math.max(0, bal and bal.coins or 0))
+			if take > 0 then
+				db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. take .. " WHERE `account_id` = " .. r.account_id ..
+					" AND `coins` >= " .. take)
 			end
-		end
-		db.query("UPDATE `" .. T_PAY .. "` SET `reversal_done` = 1, `reversal_coins` = " .. take .. ", `updated` = " .. now() ..
-			" WHERE `order_id` = " .. r.order_id .. " AND `reversal_done` = 0")
-		db.query("COMMIT")
-		log(string.format("order %d (%s, %s): %s of %s, %d of %d coins taken back (account %d)", r.order_id, r.pack_key, r.method,
-			r.reversal, P.money(r.reversal_cents > 0 and r.reversal_cents or r.amount_cents, r.currency), take, credited, r.account_id))
-		if clawed > 0 or unpaid > 0 then
-			log(string.format("order %d: %d coins taken back from gift receivers, %d gifted coins could not be recovered (staff: see %s)",
-				r.order_id, clawed, unpaid, T_COIN_GIFTS))
-		end
-		for _, p in ipairs(Game.getPlayers()) do
-			local got = receivers[p:getAccountId()]
-			if got then
-				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%d gifted Chaos Coins were taken back: the donation that paid for them was refunded or charged back.", got))
+			-- what the donor's balance could not cover was gifted on: taken back from the receivers (newest gift first)
+			local clawed, unpaid, receivers = 0, 0, {}
+			if share > take then
+				local gifts = Chaos.select("SELECT g.`id`, g.`to_account`, g.`amount`, g.`clawed`, COALESCE(c.`coins`, 0) AS `balance` FROM `" ..
+					T_COIN_GIFTS .. "` g LEFT JOIN `" .. T_COINS .. "` c ON c.`account_id` = g.`to_account` WHERE g.`from_account` = " ..
+					r.account_id .. " AND g.`order_id` >= " .. r.order_id .. " AND g.`clawed` < g.`amount` ORDER BY g.`id` DESC FOR UPDATE",
+					{{"id", "n"}, {"to_account", "n"}, {"amount", "n"}, {"clawed", "n"}, {"balance", "n"}})
+				local plan
+				plan, unpaid = K.clawbackPlan(share - take, gifts)
+				for _, c in ipairs(plan) do
+					db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. c.take .. " WHERE `account_id` = " .. c.account ..
+						" AND `coins` >= " .. c.take)
+					db.query("UPDATE `" .. T_COIN_GIFTS .. "` SET `clawed` = `clawed` + " .. c.take .. " WHERE `id` = " .. c.id)
+					clawed = clawed + c.take
+					receivers[c.account] = (receivers[c.account] or 0) + c.take
+				end
 			end
-		end
-		for _, p in ipairs(Game.getPlayers()) do
-			if p:getAccountId() == r.account_id then
-				send(p, "pay_reversal", {id = r.order_id, coins = take,
-					text = string.format("Donation #%d was refunded or charged back: %d Chaos Coins were taken back.", r.order_id, take)}, true)
+			db.query("UPDATE `" .. T_PAY .. "` SET `reversal_done` = 1, `reversal_coins` = " .. (cur.reversal_coins + take + clawed) .. ", `updated` = " .. now() ..
+				" WHERE `order_id` = " .. r.order_id .. " AND `reversal_done` = 0")
+			db.query("COMMIT")
+			log(string.format("order %d (%s, %s): %s of %s, %d of %d coins taken back (account %d)", r.order_id, r.pack_key, r.method,
+				r.reversal, P.money(r.reversal_cents > 0 and r.reversal_cents or r.amount_cents, r.currency), take, credited, r.account_id))
+			if clawed > 0 or unpaid > 0 then
+				log(string.format("order %d: %d coins taken back from gift receivers, %d gifted coins could not be recovered (staff: see %s)",
+					r.order_id, clawed, unpaid, T_COIN_GIFTS))
+			end
+			for _, p in ipairs(Game.getPlayers()) do
+				local got = receivers[p:getAccountId()]
+				if got then
+					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%d gifted Chaos Coins were taken back: the donation that paid for them was refunded or charged back.", got))
+				end
+			end
+			for _, p in ipairs(Game.getPlayers()) do
+				if p:getAccountId() == r.account_id then
+					send(p, "pay_reversal", {id = r.order_id, coins = take,
+						text = string.format("Donation #%d was refunded or charged back: %d Chaos Coins were taken back.", r.order_id, take)}, true)
+				end
 			end
 		end
 	end

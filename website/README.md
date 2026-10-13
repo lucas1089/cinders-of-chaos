@@ -18,6 +18,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
 | `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
 | `patches/znotex-chaos-escape-output.patch` | guild names, ranks, MOTD and member names (`guilds.php` and its views, `topguilds`) and the character comment (`characterprofile.php`) escaped on output (see "Web server") |
+| `patches/znotex-chaos-ratelimit-ipv6.patch` | the login guard counts an IPv6 address by its /64 network (see "Passwords") |
+| `overlay/plugins/chaos/session_guard.php` | a logged-in session ends when the account's password changes (see "Passwords") |
 | `patches/znotex-chaos-unused-callbacks.patch` | `pagseguro_retorno.php` and `payment_webhook.php` answer 404 (see "Not used on this server") |
 | `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
 | `overlay/plugins/chaos/register_guard.php` | the per-IP limit of account creation (see "Account creation") |
@@ -289,8 +291,9 @@ owner fills in the placeholders (docs/legal/README.md lists both).
   `page.php?plugin=chaos&p=accept&next=<page>` before any other page (303). The page has the same checkbox and links as
   account creation, a CSRF token, and writes the same row (account, version, time; no IP); then back to the page the
   player wanted (a page of this site only, else `myaccount.php`), or "log out" without accepting. Not gated: the accept
-  page, the legal texts, `login.php`, `logout.php`, `register.php`, `recovery.php`, `chaos_pay_webhook.php` and
-  XMLHttpRequest calls. `setup/chaos_setup.php` writes the version to the game's `server_config`
+  page, the legal texts, `login.php`, `logout.php`, `register.php`, `recovery.php`, `chaos_pay_webhook.php` and the
+  background endpoints listed by path in `chaos_legal_xhr_endpoints()` (the admin panel's updater). An
+  `X-Requested-With` header alone passes nothing: any client can send it. `setup/chaos_setup.php` writes the version to the game's `server_config`
   (`chaos_legal_version`); the game server shows an account without it a notice with the link at login
   (server/README.md "Terms acceptance notice"), since the game login cannot be held for a web form.
 - Test: `php website/tests/chaos_legal_pages_test.php`, `php website/tests/chaos_legal_accept_test.php`.
@@ -464,13 +467,22 @@ Accounts use the game server's salted password format (engine patch 0014, `serve
   patch adds a lock per account name after 10 failures from any address in 15 minutes (website login only; the game is
   not locked). Settings in `config.local.php` (`login_guard`, written by `setup/write_config.php`); the setup adds an
   index on the account name. The IP is `REMOTE_ADDR`: behind a reverse proxy every visitor has the proxy's address, so
-  pass the client address through to PHP there.
+  pass the client address through to PHP there. An IPv6 address counts by its /64 network
+  (`patches/znotex-chaos-ratelimit-ipv6.patch`, as the account creation limit), so one machine cannot walk through its
+  addresses.
 - **Accepted trade-off: the account lock can be triggered by others.** Anyone who knows an account name can lock its
   *website* login for 15 minutes with 10 wrong passwords from 2 or more addresses (one address alone is stopped by the
   IP lock after 5). The owner then waits 15 minutes or logs in to the game, which is never locked. This is kept on
   purpose: it stops password guessing spread over many addresses, and the cost to the victim is small (the website
   only; the lock ends by itself). Staff can end it early by deleting that name's failed rows in `znote_login_attempts`
   (the admin panel's Login attempts page unlocks per IP only).
+- **Sessions end on a password change** (`overlay/plugins/chaos/session_guard.php`). ZnoteX ends other sessions only
+  through its 2FA v2 "log out all devices", which is off here. Each logged-in session keeps a mark of the stored
+  password hash and is logged out when it no longer matches: after a reset by recovery link, a change on another device
+  or in the game. A rehash at login (SHA-1 to PBKDF2, a new iteration count) logs other sessions out once.
+- **Not used: website 2FA.** ZnoteX's 2FA v2 is off (`twoFactorV2.enabled` false) and so is the legacy TFS token.
+  If it is ever switched on: its code step has no limit on wrong codes within the 5 minutes of a pending login; add
+  one before turning it on.
 - `CHAOS_PASSWORD_ITERATIONS` (default 120000) is the cost of new hashes; keep it equal to `passwordHashIterations` in
   the server's config.lua. `setup/chaos_setup.php` widens `accounts.password` to VARCHAR(255) if the server's
   `server/sql/chaos_passwords.sql` was not imported yet.
@@ -625,12 +637,21 @@ a donation by hand with the admin panel (Store > Record a donation).
    endpoint tells the provider by its headers.
 4. The worker: `server/deploy/chaos-payworker.service` (`worker.php --site /var/www/chaos --loop`, a round every 2 s).
    Cron works too (`* * * * * www-data php /var/www/chaos/plugins/chaos/pay/worker.php --site /var/www/chaos --once`),
-   but then the QR code can take up to a minute to appear. `--status` prints the methods that are on.
+   but then the QR code can take up to a minute to appear. `--status` prints the methods that are on. Credited
+   orders are asked again once a day for 180 days after payment (`ChaosPayService::RECHECK_DAYS`), so a refund or
+   chargeback whose webhook was lost is still taken back. A second, larger refund of an order refunded in part, or a
+   chargeback after it, flags the order again; the game server takes back only the difference
+   (`ChaosPayCore.reversalRemaining`, `chaos_coin_payments.reversal_coins` = all coins taken back so far).
+   PayPal webhooks: a call whose `PAYPAL-CERT-URL` is not https on paypal.com, or whose transmission time is more than
+   6 hours from the clock, is refused before any PayPal call; the access token is kept between requests in a mode-600
+   file in the system temp folder (`ChaosPayPayPal::tokenCachePath`).
 5. Tables: `chaos_coin_orders` and `chaos_coin_payments` (`install.sql`, `server/sql/chaos.sql`; the game server also
    creates them at startup).
 
 **Mock mode** (`CHAOS_PAY_*_PROVIDER=mock`): no network, no money. It only runs when the site address
-(`CHAOS_PAY_SITE_URL`, else `CHAOS_SITE_URL`) is `localhost`, `127.0.0.1` or `::1`, or with `CHAOS_PAY_ALLOW_MOCK=1`;
+(`CHAOS_PAY_SITE_URL`, else `CHAOS_SITE_URL`) is `localhost`, `127.0.0.1` or `::1`, or with `CHAOS_PAY_ALLOW_MOCK=1`.
+A missing address never counts as local: `install_site.sh` refuses to run without `CHAOS_SITE_URL` and
+`setup/write_config.php` no longer falls back to `http://localhost`;
 otherwise the method stays off and the refusal is logged (a mock charge would credit real Chaos Coins). A charge approves itself after
 `CHAOS_PAY_MOCK_APPROVE_AFTER` seconds (Pix: a well-formed EMV code with its CRC; PayPal: a fake link, then captured).
 `worker.php --mock-refund <order id>` / `--mock-dispute <order id>` simulate a refund or chargeback after crediting.
@@ -642,7 +663,9 @@ idempotency, expiry, cancel, refunds and chargebacks before and after crediting,
 loader); `php website/tests/chaos_donation_page_test.php` (the page: the notice in both languages before the packs,
 "Donate" and never "Buy", a Pix donation, the thank-you, the history labelled "Donation", CSRF);
 `php website/tests/chaos_coins_test.php`; `php website/tests/chaos_qa_security_test.php` (regressions of the security
-QA: a Mercado Pago partial refund before and after crediting).
+QA: a Mercado Pago partial refund before and after crediting, a second larger refund, the daily re-check of credited
+orders, the PayPal webhook pre-checks and token cache, the site address, the session guard, the terms gate's
+background endpoints, the login guard's IPv6 /64).
 
 ## Client updates
 
@@ -692,6 +715,10 @@ there are, how many apprentices learn now and how many graduated. The page only 
 (`chaos_mentor_rules()`) are checked against `server/data/scripts/chaos/mentor_config.lua` by the test.
 
 ## Not done / for later
+
+- Known small points from the security QA, left as they are: `pay/Service.php` apply() records the provider's status
+  and `psp_ref` before it checks the provider id and our reference (harmless: the charge is always fetched by our own
+  id); the stock `guildwar.php` prints guild names without escaping (guild names are letters only, created on this site).
 
 - The outfit images of ZnoteX (an external image service) are off; turn them on in `config.local.php` if wanted.
 - Achievements (`chaos_achievements`) and name plate titles have no page yet.

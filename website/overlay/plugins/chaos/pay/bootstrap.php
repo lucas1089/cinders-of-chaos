@@ -102,7 +102,8 @@ function chaos_pay_providers(array $s, ?callable $http = null, ?callable $now = 
 		case 'paypal':
 			$out['paypal'] = new ChaosPayPayPal($s['CHAOS_PAYPAL_CLIENT_ID'], $s['CHAOS_PAYPAL_CLIENT_SECRET'], $s['CHAOS_PAYPAL_WEBHOOK_ID'],
 				$s['CHAOS_PAYPAL_ENV'] === 'live' ? 'live' : 'sandbox', $s['CHAOS_PAYPAL_CATEGORY'] !== '' ? $s['CHAOS_PAYPAL_CATEGORY'] : 'DONATION',
-				$s['CHAOS_PAYPAL_BRAND'], $http, $now);
+				$s['CHAOS_PAYPAL_BRAND'], $http, $now, ChaosPayPayPal::tokenCachePath($s['CHAOS_PAYPAL_CLIENT_ID'], $s['CHAOS_PAYPAL_CLIENT_SECRET'],
+					$s['CHAOS_PAYPAL_ENV']));
 			break;
 		case 'mock':
 			$out['paypal'] = new ChaosPayMock('paypal', $mockAfter, $mockState, $s['CHAOS_PAY_MOCK_SECRET'], $mockUrl, $now);

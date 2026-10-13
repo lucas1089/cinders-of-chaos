@@ -34,6 +34,7 @@ SITE="${CHAOS_SITE_DIR:-}"
 [ -n "$SITE" ] || { echo "Set CHAOS_SITE_DIR to the folder the website is installed in (outside the repository)." >&2; exit 1; }
 : "${CHAOS_DB_USER:?Set CHAOS_DB_USER}"
 : "${CHAOS_DB_NAME:?Set CHAOS_DB_NAME}"
+: "${CHAOS_SITE_URL:?Set CHAOS_SITE_URL to the public address of the site, https://...}"
 export CHAOS_DB_HOST="${CHAOS_DB_HOST:-127.0.0.1}"
 export CHAOS_DB_PASSWORD="${CHAOS_DB_PASSWORD:-${CHAOS_DB_PASS:-}}"   # CHAOS_DB_PASS: the name in /etc/chaos/chaos.env
 export CHAOS_SERVER_DATA="${CHAOS_SERVER_DATA:-$REPO/server/data}"

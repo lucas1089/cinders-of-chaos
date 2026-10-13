@@ -2174,7 +2174,8 @@ provider's webhook marks the order `paid` after fetching the payment again. A po
 starts the crediting step as soon as a `paid` row exists (so the client gets its confirmation in seconds, without a
 relog), handles refunds and chargebacks after crediting (`chaos_coin_payments.reversal`, set by the website: the
 refunded share of the credited coins is taken back, at most the balance, when `removeCoinsOnReversal` is on; logged and
-listed in the admin panel) and fails orders that got no charge in 10 minutes (worker not running).
+listed in the admin panel; a second, larger refund flags the row again and only the difference is taken back,
+`reversal_coins` counting every coin taken back so far, gift clawbacks included) and fails orders that got no charge in 10 minutes (worker not running).
 Table `chaos_coin_payments` (`sql/chaos.sql`, also created at startup): one row per donation order (method, token,
 amount in cents, currency, provider ids, Pix code / link, expiry, reversal). **Tests:** `tests/shop_payments_test.lua`
 (prices derived from the USD table, money texts, the notice and thank-you texts, the refund sentences equal to

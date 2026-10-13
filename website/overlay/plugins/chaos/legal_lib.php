@@ -230,10 +230,26 @@ function chaos_legal_has_accepted(int $accountId): bool {
 }
 
 /**
+ * Background endpoints that answer JSON to a script and so cannot follow the redirect, by path: [script path ending,
+ * query key, value, method]. A request header alone (X-Requested-With) is never enough, any client can send it. ZnoteX's
+ * admin panel updater posts to itself with fetch() (admin/modules/update.php).
+ */
+function chaos_legal_xhr_endpoints(): array {
+	return array(array('/admin/index.php', 'p', 'update', 'POST'));
+}
+
+/**
  * Requests that pass without the acceptance: the accept page itself, the legal texts, logging in and out, account
- * creation and recovery, the donation webhook, and background (XMLHttpRequest) calls.
+ * creation and recovery, the donation webhook, and the background endpoints of chaos_legal_xhr_endpoints().
  */
 function chaos_legal_gate_exempt(string $script, array $get, array $server = array()): bool {
+	$path = strtolower(str_replace('\\', '/', $script));
+	foreach (chaos_legal_xhr_endpoints() as [$end, $key, $value, $method]) {
+		if (substr($path, -strlen($end)) === $end && (string)($get[$key] ?? '') === $value
+				&& strtoupper((string)($server['REQUEST_METHOD'] ?? 'GET')) === $method) {
+			return true;
+		}
+	}
 	$script = strtolower(basename($script));
 	if (in_array($script, array('login.php', 'logout.php', 'register.php', 'recovery.php', 'chaos_pay_webhook.php'), true)) {
 		return true;
@@ -241,7 +257,7 @@ function chaos_legal_gate_exempt(string $script, array $get, array $server = arr
 	if ($script === 'page.php' && (string)($get['plugin'] ?? '') === 'chaos' && in_array((string)($get['p'] ?? ''), array('accept', 'legal'), true)) {
 		return true;
 	}
-	return strtolower((string)($server['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+	return false;
 }
 
 /** Where to go after accepting: a page of this site only ("x.php" or "x.php?..."), else the account page. */

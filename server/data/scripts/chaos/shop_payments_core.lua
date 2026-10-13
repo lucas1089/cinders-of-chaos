@@ -11,6 +11,7 @@
 --   P.token(accountId, now, rnd)             the order's reference sent to the payment provider
 --   P.view(order, pack, now, coinsCfg)       what the client shows for an order
 --   P.reversalCoins(credited, amount, refunded, balance, enabled)  coins to take back after a refund / chargeback
+--   P.reversalRemaining(credited, amount, refunded, already, enabled)  what is left to take back after an earlier round
 -- Lua 5.1 / LuaJIT / Lua 5.3 compatible. Money is integer cents everywhere.
 
 ChaosPayCore = ChaosPayCore or {}
@@ -203,6 +204,13 @@ function P.reversalCoins(credited, amountCents, refundedCents, balance, enabled)
 		share = math.floor(credited * refundedCents / amountCents)
 	end
 	return math.min(share, balance)
+end
+
+-- coins still to take back for a reversal, when `already` were taken back by an earlier round of the same order (a
+-- second, larger refund raises the refunded amount): the share of the new amount minus what was handled, never below 0
+function P.reversalRemaining(credited, amountCents, refundedCents, already, enabled)
+	local share = P.reversalCoins(credited, amountCents, refundedCents, 2 ^ 31, enabled)
+	return math.max(0, share - math.max(0, math.floor(tonumber(already) or 0)))
 end
 
 return P

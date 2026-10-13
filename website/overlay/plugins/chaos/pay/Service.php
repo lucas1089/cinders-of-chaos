@@ -23,6 +23,8 @@ final class ChaosPayService {
 	public const NOTICE_PT = 'Doação voluntária: ajuda a manter o servidor. Ninguém é obrigado a doar; o jogo é totalmente jogável de graça.';
 	public const OPEN = array('pending', 'open');
 	public const METHODS = array('pix', 'paypal');
+	/** Days after payment during which a credited order is checked again once a day (refunds, chargebacks). */
+	public const RECHECK_DAYS = 180;
 
 	private ChaosPayDb $db;
 	/** @var array<string, ChaosPayProvider> method => provider */
@@ -384,6 +386,19 @@ final class ChaosPayService {
 						$this->log("order $id: $status after crediting, flagged for the game server and staff");
 						return 'reversal';
 					}
+					// a second, larger refund of an order refunded in part: the game server takes back the difference
+					if ($refunded > 0 && $this->db->exec("UPDATE chaos_coin_payments SET reversal_cents = ?, reversal_done = 0, reversal_at = ? " .
+							"WHERE order_id = ? AND reversal = 'refunded' AND reversal_cents > 0 AND reversal_cents < ?",
+							array($refunded, $now, $id, $refunded)) > 0) {
+						$this->log("order $id: refunded further after crediting ($refunded cents in all), flagged again");
+						return 'reversal';
+					}
+					// a chargeback or dispute after a partial refund: the whole donation is reversed now
+					if ($status !== 'refunded' && $this->db->exec("UPDATE chaos_coin_payments SET reversal = ?, reversal_cents = 0, reversal_done = 0, " .
+							"reversal_at = ? WHERE order_id = ? AND reversal = 'refunded' AND reversal_cents > 0", array($status, $now, $id)) > 0) {
+						$this->log("order $id: $status after a partial refund, flagged again");
+						return 'reversal';
+					}
 				}
 				return 'already';
 			case 'expired':
@@ -425,7 +440,7 @@ final class ChaosPayService {
 	// ------------------------------------------------------------------ the worker's round
 	public function runOnce(): array {
 		$now = $this->now();
-		$stats = array('charged' => 0, 'synced' => 0, 'expired' => 0, 'cancelled' => 0);
+		$stats = array('charged' => 0, 'synced' => 0, 'expired' => 0, 'cancelled' => 0, 'rechecked' => 0);
 		foreach ($this->db->rows("SELECT o.id FROM chaos_coin_orders o JOIN chaos_coin_payments p ON p.order_id = o.id WHERE o.status = 'pending' AND p.psp_id = '' ORDER BY o.id LIMIT 20") as $o) {
 			$stats['charged'] += $this->makeCharge((int)$o['id']) ? 1 : 0;
 		}
@@ -454,6 +469,14 @@ final class ChaosPayService {
 			$this->db->exec('UPDATE chaos_coin_payments SET cancel_sent = 1 WHERE order_id = ?', array((int)$o['id']));
 			$this->sync((int)$o['id']);
 			$stats['cancelled']++;
+		}
+		// credited orders: asked again once a day for RECHECK_DAYS after payment, so a refund or chargeback whose webhook
+		// was lost (or refused after a secret change) is still flagged for the game server
+		foreach ($this->db->rows("SELECT o.id FROM chaos_coin_orders o JOIN chaos_coin_payments p ON p.order_id = o.id WHERE o.status = 'credited' " .
+				"AND p.psp_id <> '' AND p.paid_at > ? AND p.checked < ? AND p.reversal IN ('', 'refunded') ORDER BY p.checked LIMIT 20",
+				array($now - 86400 * self::RECHECK_DAYS, $now - 86400)) as $o) {
+			$this->sync((int)$o['id']);
+			$stats['rechecked']++;
 		}
 		return $stats;
 	}

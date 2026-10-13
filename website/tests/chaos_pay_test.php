@@ -269,7 +269,7 @@ $ppOrder = static function (string $status, string $capStatus = '', string $valu
 	return $o;
 };
 $ppHeaders = array('paypal-auth-algo' => 'SHA256withRSA', 'paypal-cert-url' => 'https://api.paypal.com/cert.pem', 'paypal-transmission-id' => 'T1',
-	'paypal-transmission-sig' => 'SIG', 'paypal-transmission-time' => '2027-01-01T00:00:00Z');
+	'paypal-transmission-sig' => 'SIG', 'paypal-transmission-time' => gmdate('Y-m-d\TH:i:s\Z', $now));
 $event = '{"id":"WH-EV-1","event_type":"CHECKOUT.ORDER.APPROVED","resource":{"id":"5O190127TN364715T"}}';
 $res = $svc3->webhook('paypal', array(), $event, 'psp=paypal');
 check($res[0] === 401, 'PayPal call without transmission headers refused');

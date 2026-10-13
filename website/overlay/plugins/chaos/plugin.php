@@ -40,6 +40,8 @@ require_once __DIR__ . '/legal_lib.php';
 // site mail (SMTP from config.local.php, off without it) and recovery by a one-time link (recovery.php, README "Mail")
 require_once __DIR__ . '/mail_lib.php';
 require_once __DIR__ . '/recovery_lib.php';
+// a logged-in session ends when the account's password changes (recovery link, another device, the game)
+require_once __DIR__ . '/session_guard.php';
 // the community goal and the week's world modifiers (read only: the front page block and pages/community.php)
 require_once __DIR__ . '/community_lib.php';
 

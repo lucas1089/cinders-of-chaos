@@ -78,7 +78,9 @@ foreach (array('/login.php', '/logout.php', '/register.php', '/recovery.php', '/
 check(chaos_legal_gate_target(7, '/page.php', array('plugin' => 'chaos', 'p' => 'accept'), $srv) === null, 'the accept page itself passes');
 check(chaos_legal_gate_target(7, '/page.php', array('plugin' => 'chaos', 'p' => 'legal', 'doc' => 'terms'), $srv) === null, 'the legal texts pass (to read them)');
 check(chaos_legal_gate_target(7, '/page.php', array('plugin' => 'other', 'p' => 'accept'), $srv) !== null, 'another plugin named accept: gated');
-check(chaos_legal_gate_target(7, '/myaccount.php', array(), $srv + array('HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest')) === null, 'background calls pass');
+check(chaos_legal_gate_target(7, '/myaccount.php', array(), $srv + array('HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest')) !== null, 'an X-Requested-With header alone does not pass');
+check(chaos_legal_gate_target(7, '/admin/index.php', array('p' => 'update'), $srv + array('REQUEST_METHOD' => 'POST')) === null, 'the admin updater background call passes');
+check(chaos_legal_gate_target(7, '/admin/index.php', array('p' => 'update'), $srv + array('REQUEST_METHOD' => 'GET')) !== null, 'the admin updater page itself is gated');
 
 // ---------------------------------------------------------------- the way back: this site only
 check(chaos_legal_safe_next('page.php?plugin=chaos&p=coins') === 'page.php?plugin=chaos&p=coins', 'a page of the site');

@@ -109,7 +109,12 @@ foreach ($classes as $id => $name) {
 $iterations = max(1000, min(10000000, (int)env('CHAOS_PASSWORD_ITERATIONS', '120000')));
 $admins = array_values(array_filter(array_map('trim', explode(',', env('CHAOS_ADMIN_ACCOUNTS')))));
 $serverData = env('CHAOS_SERVER_DATA');
-$siteUrl = env('CHAOS_SITE_URL', 'http://localhost');
+// no default: a missing address must not turn into "http://localhost" (recovery and PayPal links to localhost, and
+// the donation mock's local-site gate open on a live server); install_site.sh refuses to run without it
+$siteUrl = env('CHAOS_SITE_URL');
+if ($siteUrl === '') {
+	fwrite(STDERR, "note: CHAOS_SITE_URL is empty: links in mails and from PayPal will not work.\n");
+}
 $https = stripos($siteUrl, 'https://') === 0;
 $captchaSite = env('CHAOS_RECAPTCHA_SITE_KEY');
 $captchaSecret = env('CHAOS_RECAPTCHA_SECRET');

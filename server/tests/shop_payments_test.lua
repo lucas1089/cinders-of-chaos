@@ -111,6 +111,10 @@ eq(P.reversalCoins(975, 7495, 7495, 300, true), 300, "only what is left")
 eq(P.reversalCoins(1000, 10000, 2500, 5000, true), 250, "partial refund, its share")
 eq(P.reversalCoins(975, 7495, 7495, 5000, false), 0, "switched off")
 eq(P.reversalCoins(975, 7495, 7495, -3, true), 0, "never below zero")
+eq(P.reversalRemaining(1000, 10000, 10000, 250, true), 750, "a second, full refund: the rest")
+eq(P.reversalRemaining(1000, 10000, 2500, 250, true), 0, "nothing more for the same amount")
+eq(P.reversalRemaining(1000, 10000, 5000, 600, true), 0, "never below zero")
+eq(P.reversalRemaining(1000, 10000, 10000, 0, false), 0, "switched off")
 
 -- ------------------------------------------------------------------ shop_payments.lua against a mocked engine
 local n = 0
@@ -218,6 +222,9 @@ Chaos.select = function(q, cols)
 			if p and p.reversal_done == 0 and p.reversal ~= "" and o.status == "credited" then out[#out + 1] = joined(o) end
 		end
 		return out
+	elseif q:find("SELECT `reversal_cents`, `reversal_coins` FROM `chaos_coin_payments`", 1, true) then
+		local p = DB.pay[tonumber(q:match("`order_id` = (%d+)"))]
+		return (p and p.reversal_done == 0) and {{reversal_cents = p.reversal_cents, reversal_coins = p.reversal_coins or 0}} or {}
 	elseif q:find("SELECT `coins` FROM `chaos_shop_coins`", 1, true) then
 		local acc = tonumber(q:match("`account_id` = (%d+)"))
 		return DB.coins[acc] and {{coins = DB.coins[acc]}} or {}
@@ -337,5 +344,18 @@ eq(DB.gifts[1].clawed, 250, "the ledger records the clawback")
 ChaosShopPay.poll()
 eq(DB.coins[88], 750, "only once")
 Chaos.select, db.query = baseSelect, baseQuery
+
+-- a partial refund after crediting, then a second, larger one (the website raises reversal_cents and resets
+-- reversal_done): the second round takes back only the difference
+DB.orders[#DB.orders + 1] = {id = 6, account_id = 77, pack_key = "coins250", provider = "pix", provider_ref = "w", status = "credited",
+	coins = 1000, bonus = 0, first_bonus = 0, created = now}
+DB.pay[6] = {order_id = 6, method = "pix", amount_cents = 10000, currency = "BRL", reversal = "refunded", reversal_cents = 2500, reversal_done = 0}
+DB.coins[77] = 5000
+ChaosShopPay.poll()
+eq(DB.coins[77], 4750, "a quarter refunded: 250 taken back"); eq(DB.pay[6].reversal_coins, 250, "250 handled")
+DB.pay[6].reversal_cents, DB.pay[6].reversal_done = 10000, 0
+ChaosShopPay.poll()
+eq(DB.coins[77], 4000, "then all of it: the other 750"); eq(DB.pay[6].reversal_coins, 1000, "1000 handled in all")
+ChaosShopPay.poll(); eq(DB.coins[77], 4000, "only once")
 
 print("shop_payments_test: ok")
