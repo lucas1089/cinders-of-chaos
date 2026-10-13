@@ -6,8 +6,9 @@ Output: client/overlay/data/images/chaos/charselect/
   class_<line>.png   40x40 class badges, the same badges as the website's class cards (website/tools/gen_site_art.py
                      `badge`, built on this folder's gen_theme_art.py glyphs), one per class line
   class_none.png     the empty badge plate (a class id the client does not know)
-  platform.png       256x96 the dark stone dais the big character stands on (three designs below; `platforms DIR`
-                     writes all three for a comparison, outside the repository)
+  platform.png       52x52 sprite pixels, the stone slab the big character stands on, in the sprites' own
+                     projection (three designs below; `platforms DIR` writes all three for a comparison, outside the
+                     repository)
   shade.png          64x256 dark vertical fade behind the character cards (stretched to the column)
 Needs Pillow + numpy. Deterministic.
 """
@@ -42,89 +43,196 @@ def gen_icons():
 
 
 # ---------------------------------------------------------------- the platform the big character stands on
-# 256x96, the ellipse of a round platform seen from above at the client's angle; its centre is where the feet go.
-# Low contrast and cool grey, so it never tints or outshines the character (owner, 2026-10-13: the orange ember glow
-# made the characters look strange). Three designs were drawn and compared under the live select
-# (scratchpad sheet, client/MANIFEST.md "Character select"); `platform` is the one shipped, the others are written
-# only by `python3 -I client/tools/gen_charselect_art.py platforms DIR` for a comparison.
-PW, PH = 256, 96
+# Drawn in sprite pixels and in the sprites' own projection (owner, 2026-10-13: on the first dais, a flat ellipse
+# seen from a low camera, the characters stood at the wrong angle). The game looks straight down on the ground and
+# draws height up and to the left: a stock block's top face is a plain square, its walls go down and right at 45
+# degrees, the light comes from the upper left (lit top and left edges, darker lower and right ones) and a dithered
+# shadow lines its lower right base. So the platform's top face is a true circle or octagon seen from above, its
+# thickness is the same face copied one pixel down and right per pixel of height, and its shadow is a checker of
+# dark pixels along that lower right base. Our own art, no stock pixels.
+# The client draws it at T / 32 (2x, 3x, 4x) without smoothing, so its pixels match the character's.
+# Size and feet point: CharSelectCore.PLATFORM (charselect_core.lua); `check_core` keeps the two the same.
+# Three designs were compared under the live select (client/MANIFEST.md "Character select"); `PLATFORM` is the one
+# shipped, `python3 -I client/tools/gen_charselect_art.py platforms DIR` writes all three outside the repository.
+PS = 46              # canvas, sprite pixels
+PF = 20              # the feet: the centre of the top face, (PF, PF)
+PR = 19              # radius of the top face (38 px across: a little over a tile)
+STONE = {'face': (60, 61, 68), 'lit': (90, 91, 100), 'lip': (74, 75, 83), 'wall_r': (44, 45, 51),
+         'wall_d': (34, 35, 40), 'base': (25, 25, 29), 'groove': (40, 41, 47)}
 
 
-def _ellipse(cx, cy, rx, ry):
-    yy, xx = np.mgrid[0:PH, 0:PW].astype(np.float32)
-    return np.sqrt(((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2)
+def _grid():
+    yy, xx = np.mgrid[0:PS, 0:PS].astype(np.float32)
+    return xx + 0.5, yy + 0.5
 
 
-def _rgba(rgb, alpha):
-    img = np.zeros((PH, PW, 4), np.float32)
-    img[..., :3] = rgb
-    img[..., 3] = np.clip(alpha, 0, 1) * 255
-    return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), 'RGBA')
+def _circle(cx, cy, r):
+    xx, yy = _grid()
+    return (xx - cx) ** 2 + (yy - cy) ** 2 <= r * r
 
 
-def _shadow(alpha=0.55):
-    """the soft contact shadow under the feet"""
-    d = _ellipse(PW / 2, PH / 2 + 4, PW * 0.36, PH * 0.30)
-    return np.clip(1 - d, 0, 1) ** 1.3 * alpha
+def _octagon(cx, cy, r):
+    xx, yy = _grid()
+    dx, dy = np.abs(xx - cx), np.abs(yy - cy)
+    return (dx <= r) & (dy <= r) & (dx + dy <= r * 1.414)
 
 
-def platform_dais():
-    """a low dark carved stone dais: top face, a lit far rim, a darker front side, a shadow"""
-    top = _ellipse(PW / 2, PH * 0.44, PW * 0.42, PH * 0.34)
-    side = _ellipse(PW / 2, PH * 0.44 + 9, PW * 0.42, PH * 0.34)
-    yy, xx = np.mgrid[0:PH, 0:PW].astype(np.float32)
-    noise = gta.fbm(PH, PW, 18, 4, 31) - 0.5
-    face = np.array(gta.hexc('#2b2a2f'), np.float32)
-    rgb = np.zeros((PH, PW, 3), np.float32) + face
-    rgb += noise[..., None] * 22
-    # carved concentric groove and a lighter rim towards the back (the light from above)
-    groove = np.exp(-((top - 0.70) / 0.035) ** 2)
-    rgb -= groove[..., None] * 18
-    rim = np.exp(-((top - 0.97) / 0.03) ** 2) * np.clip((PH * 0.44 - yy) / (PH * 0.34), 0, 1)
-    rgb += rim[..., None] * np.array(gta.hexc('#6d7079'), np.float32) * 0.55
-    # the front side: the band between the top face and the lowered copy, darker
-    side_band = (side <= 1.0) & (top > 1.0)
-    rgb[side_band] = np.array(gta.hexc('#17161a'), np.float32) + noise[side_band][:, None] * 12
-    alpha = np.where((top <= 1.0) | side_band, 0.92, 0.0)
-    # contact shadow on the face where the feet stand, and a soft drop shadow outside
-    contact = np.clip(1 - _ellipse(PW / 2, PH * 0.47, PW * 0.17, PH * 0.12), 0, 1) ** 1.2
-    rgb *= (1 - contact * 0.45)[..., None]
-    drop = np.clip(1 - _ellipse(PW / 2, PH * 0.52, PW * 0.49, PH * 0.47), 0, 1) ** 1.5 * 0.5
-    a = np.maximum(alpha, drop)
-    rgb = np.where(alpha[..., None] > 0, rgb, 0)
-    return _rgba(rgb, a)
+def _shift(m, k):
+    """m moved k pixels down and right"""
+    out = np.zeros_like(m)
+    if k == 0:
+        return m.copy()
+    out[k:, k:] = m[:-k, :-k]
+    return out
+
+
+def _noise(seed):
+    """per-pixel stone mottling: fine grain plus a softer patch noise, -1..1"""
+    rs = np.random.RandomState(seed)
+    fine = rs.uniform(-1, 1, (PS, PS))
+    coarse = rs.uniform(-1, 1, (PS // 4 + 2, PS // 4 + 2))
+    coarse = np.kron(coarse, np.ones((4, 4)))[:PS, :PS]
+    k = np.array([1, 2, 1], np.float32) / 4
+    for ax in (0, 1):
+        coarse = np.apply_along_axis(lambda v: np.convolve(v, k, 'same'), ax, coarse)
+    return (fine * 0.45 + coarse * 0.8).astype(np.float32)
+
+
+class Slab:
+    def __init__(self, seed):
+        self.rgb = np.zeros((PS, PS, 3), np.float32)
+        self.alpha = np.zeros((PS, PS), np.float32)
+        self.solid = np.zeros((PS, PS), bool)
+        self.noise = _noise(seed)
+
+    def paint(self, mask, rgb, grain=6.0):
+        self.rgb[mask] = np.array(rgb, np.float32) + self.noise[mask][:, None] * grain
+        self.alpha[mask] = 1.0
+        self.solid |= mask
+
+    def block(self, top, height, centre):
+        """a slab whose top face is `top`, `height` pixels thick: walls down and right, lit from the upper left;
+        returns the top face"""
+        body = top.copy()
+        for k in range(1, height + 1):
+            body |= _shift(top, k)
+        wall = body & ~top
+        if wall.any():
+            xx, yy = _grid()
+            cx, cy = centre
+            # the wall facing right is lit a little more than the one facing down (the light: upper left, above)
+            ang = np.arctan2(yy - cy - height / 2, xx - cx - height / 2)
+            facing_right = np.cos(ang) > np.sin(ang)
+            self.paint(wall & facing_right, STONE['wall_r'], 5)
+            self.paint(wall & ~facing_right, STONE['wall_d'], 5)
+            base = body & ~np.roll(np.roll(body, -1, 0), -1, 1)   # no body pixel down and right of it
+            self.paint(base & wall, STONE['base'], 3)
+        self.paint(top, STONE['face'])
+        # edges of the top face: lit along the top and left, a lighter lip where it meets the walls
+        up = np.roll(top, 1, 0)
+        left = np.roll(top, 1, 1)
+        down = np.roll(top, -1, 0)
+        right = np.roll(top, -1, 1)
+        self.paint(top & (~up | ~left), STONE['lit'], 4)
+        self.paint(top & (~down | ~right) & up & left, STONE['lip'], 4)
+        return top
+
+    def groove(self, mask):
+        """a carved line: dark, its lower right edge catching the light (the light falls in from the upper left)"""
+        face = self.solid.copy()
+        self.paint(mask & face, STONE['groove'], 3)
+        light = _shift(mask, 1) & ~mask & face
+        self.paint(light, STONE['lip'], 3)
+
+    def shadow(self, footprint, reach=2):
+        """the game's dithered shadow along the lower right base, and a few checker pixels under the feet"""
+        shade = np.zeros_like(footprint)
+        for k in range(1, reach + 1):
+            shade |= _shift(footprint, k)
+        shade &= ~self.solid
+        xx, yy = _grid()
+        checker = ((xx - 0.5 + yy - 0.5) % 2) == 0
+        self.alpha[shade] = np.where(checker[shade], 0.62, 0.30)
+        self.rgb[shade] = 0
+        xx, yy = _grid()
+        feet = (((xx - PF - 1) / 7.5) ** 2 + ((yy - PF - 0.5) / 3.2) ** 2 <= 1) & self.solid & checker
+        self.rgb[feet] *= 0.8
+
+    def image(self):
+        img = np.zeros((PS, PS, 4), np.float32)
+        img[..., :3] = self.rgb
+        img[..., 3] = self.alpha * 255
+        return Image.fromarray(np.clip(img + 0.5, 0, 255).astype(np.uint8), 'RGBA')
+
+
+def _ring(cx, cy, r, w=1.0):
+    xx, yy = _grid()
+    d = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
+    return np.abs(d - r) <= w / 2
+
+
+def platform_slab():
+    """a round stone slab three pixels thick with one carved ring"""
+    s = Slab(7)
+    top = _circle(PF, PF, PR)
+    s.block(top, 3, (PF, PF))
+    s.groove(_ring(PF, PF, PR - 5))
+    s.shadow(_shift(top, 3))
+    return s.image()
+
+
+GLYPHS = [  # 3x4 rune marks, our own
+    ['x.x', '.x.', 'x.x', '.x.'], ['xx.', 'x..', 'xx.', 'x..'], ['.x.', 'xxx', '.x.', '.x.'],
+    ['x..', 'xx.', 'x.x', 'x..'], ['xxx', '..x', '.x.', 'x..'], ['x.x', 'xxx', 'x.x', '...']]
 
 
 def platform_runes():
-    """an engraved rune circle on the ground: two thin cool grey rings, rune ticks between them, a soft shadow"""
-    d = _ellipse(PW / 2, PH / 2, PW * 0.44, PH * 0.38)
-    yy, xx = np.mgrid[0:PH, 0:PW].astype(np.float32)
-    ang = np.arctan2((yy - PH / 2) / (PH * 0.38), (xx - PW / 2) / (PW * 0.44))
-    ring = np.exp(-((d - 0.97) / 0.022) ** 2) + np.exp(-((d - 0.78) / 0.018) ** 2) * 0.8
-    k = 24
-    tick = (np.abs(((ang / (2 * np.pi)) * k) % 1 - 0.5) < 0.08) & (d > 0.81) & (d < 0.94)
-    mark = np.clip(ring + tick * 0.7, 0, 1)
-    shadow = _shadow(0.5)
-    a = np.maximum(shadow, mark * 0.42)
-    grey = np.array(gta.hexc('#8d919b'), np.float32)
-    rgb = np.where(mark[..., None] > 0.05, grey, 0)
-    return _rgba(rgb, a)
+    """a flat round rune slab one pixel thick: two carved rings and a ring of carved runes between them"""
+    s = Slab(11)
+    top = _circle(PF, PF, PR)
+    s.block(top, 1, (PF, PF))
+    marks = _ring(PF, PF, PR - 3) | _ring(PF, PF, PR - 10)
+    n = 10
+    for i in range(n):
+        a = 2 * np.pi * i / n - np.pi / 2
+        gx = int(round(PF + np.cos(a) * (PR - 6.5) - 1.5))
+        gy = int(round(PF + np.sin(a) * (PR - 6.5) - 2))
+        for yy, row in enumerate(GLYPHS[i % len(GLYPHS)]):
+            for xx, ch in enumerate(row):
+                if ch == 'x':
+                    marks[gy + yy, gx + xx] = True
+    s.groove(marks)
+    s.shadow(_shift(top, 1))
+    return s.image()
 
 
-def platform_shadow():
-    """only a soft neutral shadow with a faint cool rim"""
-    d = _ellipse(PW / 2, PH / 2, PW * 0.40, PH * 0.34)
-    rim = np.exp(-((d - 0.95) / 0.05) ** 2) * 0.18
-    a = np.maximum(_shadow(0.6), rim)
-    rgb = np.where(rim[..., None] > 0.02, np.array(gta.hexc('#7c808a'), np.float32), 0)
-    return _rgba(rgb, a)
+def platform_octagon():
+    """a two-step octagonal dais: a wide low step and a smaller top, each two pixels thick"""
+    s = Slab(5)
+    low = _octagon(PF + 2, PF + 2, PR)
+    s.block(low, 2, (PF + 2, PF + 2))
+    s.groove(_octagon(PF + 2, PF + 2, PR - 2) & ~_octagon(PF + 2, PF + 2, PR - 3))
+    top = _octagon(PF, PF, PR - 6)
+    s.block(top, 2, (PF, PF))
+    s.shadow(_shift(low, 2))
+    return s.image()
 
 
-PLATFORMS = {'dais': platform_dais, 'runes': platform_runes, 'shadow': platform_shadow}
-PLATFORM = 'dais'   # the one shipped as platform.png
+PLATFORMS = {'slab': platform_slab, 'runes': platform_runes, 'octagon': platform_octagon}
+PLATFORM = 'octagon'   # the one shipped as platform.png
+
+
+def check_core():
+    """CharSelectCore.PLATFORM must name this canvas and feet point"""
+    core = open(os.path.join(REPO, 'client', 'overlay', 'modules', 'client_chaos_charselect',
+                             'charselect_core.lua')).read()
+    want = 'C.PLATFORM = { size = %d, feet = %d }' % (PS, PF)
+    if want not in core:
+        sys.exit('charselect_core.lua must say: ' + want)
 
 
 def gen_platform():
+    check_core()
     save(PLATFORMS[PLATFORM](), 'platform.png')
 
 

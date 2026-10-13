@@ -189,12 +189,15 @@ T, sc = C.fitPreview(plain, { above = 1000, half = (plain.right - plain.fx) * 4 
 check(sc == 3, 'too wide for 4x: 3x')
 T, sc = C.fitPreview(plain, { above = 1000, half = 10, below = 0 }, { 3, 2 })
 check(sc == 2 and T == 64, 'other scales (the create window falls back to 2x)')
+check(C.fitsAt(plain, { above = 1000, half = 1000 }, 4) and not C.fitsAt(plain, { above = 1000, half = 10 }, 3), 'fitsAt')
 
--- the platform: 2.2 tiles wide in the image's proportions, the feet on its top face's centre
+-- the platform: drawn at the character's own scale (whole sprite pixels), the feet on its top face's centre
 for _, T in ipairs({ 64, 96, 128 }) do
+  local s = T / 32
   local px, py, pw, ph = C.platformRect(T, 500, 400)
-  check(math.abs(pw - 2.2 * T) <= 0.5 and math.abs(ph - pw * 96 / 256) <= 0.5, 'platform size at ' .. T)
-  check(math.abs(px + pw / 2 - 500) <= 0.5 and math.abs(py + ph * C.PLATFORM_FEET - 400) <= 0.5, 'platform under the feet at ' .. T)
+  check(pw == C.PLATFORM.size * s and ph == pw, 'platform at the sprites\' scale at ' .. T)
+  check(px + C.PLATFORM.feet * s == 500 and py + C.PLATFORM.feet * s == 400, 'platform under the feet at ' .. T)
+  check(C.platformBelow(T) == ph - C.PLATFORM.feet * s, 'what the platform covers below the feet at ' .. T)
 end
 
 -- auras: a small ring at the feet is drawn, a tall one (the "red crystal" behind the Juggernaut: 1512) is not;

@@ -108,7 +108,7 @@ local function wingLift()
 end
 
 local TOP_ROOM = 56        -- px kept free at the top of the stage (the top menu's System button)
-local BELOW_ROOM = 150     -- px under the feet for the name, class and info lines and the hint
+local BELOW_TEXT = 92      -- px under the platform for the name, class and info lines and the hint
 local heroFigure           -- CharSelectCore.figure of the shown outfit
 
 -- the feet of the shown character on the platform's centre: the look's own feet (outfit_anchors.lua), 4x when the
@@ -118,10 +118,12 @@ local function relayout()
   local W, H = stage:getWidth(), stage:getHeight()
   if W < 50 or H < 50 then return end
   local cx = math.floor(W / 2)
-  local feet = math.floor(math.min(H * 0.64, H - BELOW_ROOM))
+  -- the platform is seen from above, so it reaches as far below the feet as above them: room for it at 4x
+  local belowRoom = BELOW_TEXT + Core.platformBelow(128)
+  local feet = math.floor(math.min(H * 0.64, H - belowRoom))
   local fig = heroFigure or Core.figure(CharSelectAnchors, { type = 128 })
   local T, _, drop = Core.fitPreview(fig, { above = feet - TOP_ROOM, half = cx - 8,
-    below = math.max(0, H - BELOW_ROOM - feet) })
+    below = math.max(0, H - belowRoom - feet) })
   feet = feet + drop
   local x, y, size = Core.placeRect(fig, T, cx, feet)
   place(preview, x, y, size, size)
@@ -130,7 +132,7 @@ local function relayout()
   name:breakAnchors()
   name:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
   name:addAnchor(AnchorTop, 'parent', AnchorTop)
-  name:setMarginTop(math.floor(feet + 0.45 * T))
+  name:setMarginTop(feet + Core.platformBelow(T) + 2)
 end
 
 local function showHero(m, animate)

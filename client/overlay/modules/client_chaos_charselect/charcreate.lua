@@ -39,6 +39,8 @@ local function chosenSeason()
   return seasons[form.seasonIndex or 1] or seasons[1]
 end
 
+local CREATE_TEXT_ROOM = 26   -- px under the platform for the class name
+
 local function updatePreview()
   if not alive(win) then return end
   local c = chosenClass()
@@ -47,21 +49,27 @@ local function updatePreview()
   if look and look > 0 then
     p:setVisible(true)
     p:setOutfit({ type = look, head = STARTER.head, body = STARTER.body, legs = STARTER.legs, feet = STARTER.feet, addons = 3 })
-    -- the feet on the platform's centre (CharSelectCore.placeRect; outfit_anchors.lua): 3x, 2x for a very tall look
+    -- the feet on the platform's centre (CharSelectCore.placeRect; outfit_anchors.lua): 3x, 2x for a very tall
+    -- look; the platform reaches below the feet (top-down view), the class name under it
     local panel = win.previewPanel
-    local ped = panel.pedestal
     local cx = math.floor(panel:getWidth() / 2)
-    -- the style's numbers: the platform's top face centre (CharSelectCore.PLATFORM_FEET of its height)
-    local feet = panel:getHeight() - ped:getMarginBottom() - ped:getHeight() + math.floor(ped:getHeight() * Core.PLATFORM_FEET)
     local fig = Core.figure(CharSelectAnchors, { type = look })
-    local T = Core.fitPreview(fig, { above = feet - 6, half = cx - 2, below = 0 }, { 3, 2 })
+    local T, feet
+    for _, sc in ipairs({ 3, 2 }) do
+      T, feet = sc * 32, panel:getHeight() - CREATE_TEXT_ROOM - Core.platformBelow(sc * 32)
+      if Core.fitsAt(fig, { above = feet - 6, half = cx - 2 }, sc) then break end
+    end
     local x, y, size = Core.placeRect(fig, T, cx, feet)
-    p:breakAnchors()
-    p:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-    p:addAnchor(AnchorTop, 'parent', AnchorTop)
-    p:setMarginLeft(x)
-    p:setMarginTop(y)
-    p:setSize({ width = size, height = size })
+    local function place(w, px, py, pw, ph)
+      w:breakAnchors()
+      w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+      w:addAnchor(AnchorTop, 'parent', AnchorTop)
+      w:setMarginLeft(px)
+      w:setMarginTop(py)
+      w:setSize({ width = pw, height = ph })
+    end
+    place(panel.pedestal, Core.platformRect(T, cx, feet))
+    place(p, x, y, size, size)
     p:setDirection(2)
     p:setIdleAnimate(false)
     p:setAnimate(true)

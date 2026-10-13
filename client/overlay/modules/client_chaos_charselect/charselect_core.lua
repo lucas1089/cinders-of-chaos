@@ -229,28 +229,35 @@ end
 -- the scale and how far the feet move down: 4x when the whole picture fits (above the feet: room.above px; on each
 -- side of the feet: room.half px), else the next of `scales` (default 4, 3); when even the last one is too tall, the
 -- feet move down by what is missing, at most room.below px. Returns tile size T (px), scale, drop (px).
+-- does the whole picture fit at scale sc: room.above px over the feet, room.half px on each side
+function C.fitsAt(fig, room, sc)
+  return (fig.fy - fig.top) * sc <= room.above and (fig.fx - fig.left) * sc <= room.half
+    and (fig.right - fig.fx) * sc <= room.half
+end
+
 function C.fitPreview(fig, room, scales)
   scales = scales or { 4, 3 }
-  local function fits(sc)
-    return (fig.fy - fig.top) * sc <= room.above and (fig.fx - fig.left) * sc <= room.half
-      and (fig.right - fig.fx) * sc <= room.half
-  end
   for _, sc in ipairs(scales) do
-    if fits(sc) then return sc * 32, sc, 0 end
+    if C.fitsAt(fig, room, sc) then return sc * 32, sc, 0 end
   end
   local sc = scales[#scales]
   local drop = math.max(0, math.min(tonumber(room.below) or 0, (fig.fy - fig.top) * sc - room.above))
   return sc * 32, sc, drop
 end
 
--- The platform under the feet (data/images/chaos/charselect/platform.png, client/tools/gen_charselect_art.py): 256x96,
--- the feet go on the middle of its top face, PLATFORM_FEET of its height from its top. Its rect (x, y, w, h) for a
--- tile size T: 2.2 tiles wide, the image's own proportions.
-C.PLATFORM_W, C.PLATFORM_H, C.PLATFORM_FEET = 256, 96, 0.44
+-- The platform under the feet (data/images/chaos/charselect/platform.png, client/tools/gen_charselect_art.py): drawn
+-- in sprite pixels in the sprites' own projection, `size` pixels square, the feet on the centre of its top face at
+-- (feet, feet). The client draws it at the character's scale, T / 32, unsmoothed, so its pixels match the sprites.
+C.PLATFORM = { size = 46, feet = 20 }
+-- its rect (x, y, w, h) for tile size T with the feet at (cx, feetY)
 function C.platformRect(T, cx, feetY)
-  local w = math.floor(2.2 * T + 0.5)
-  local h = math.floor(w * C.PLATFORM_H / C.PLATFORM_W + 0.5)
-  return math.floor(cx - w / 2 + 0.5), math.floor(feetY - h * C.PLATFORM_FEET + 0.5), w, h
+  local s = T / 32
+  local size = math.floor(C.PLATFORM.size * s + 0.5)
+  return math.floor(cx - C.PLATFORM.feet * s + 0.5), math.floor(feetY - C.PLATFORM.feet * s + 0.5), size, size
+end
+-- how far the platform reaches below the feet at tile size T (the text under it starts lower)
+function C.platformBelow(T)
+  return math.ceil((C.PLATFORM.size - C.PLATFORM.feet) * T / 32)
 end
 
 -- An aura is drawn in the preview only when it is small and sits at the feet (a ring on the ground: at most one tile

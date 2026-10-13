@@ -237,16 +237,28 @@ select over the login scene; the stock module stays loaded and keeps every funct
   ascension ("Juggernaut (Warrior)"), level, world, last login ("Last played 2 hours ago", from the website), season
   tag. Mouse: click chooses, double-click plays, the wheel scrolls. Keys: Up / Down / Left / Right, Home / End,
   Page Up / Page Down choose, Enter plays, Escape goes back.
-- **The chosen character** stands large on a dark stone platform, its feet on the platform's centre, walks in place
-  for a moment when chosen, then idles; a click on it turns it. Name, class and level, world, season and last login
-  under it.
-- **Platform (2026-10-13, owner: the orange pedestal made the character look odd).** `platform.png` (256x96) is a
-  low dark grey stone dais with a carved groove, a faint cool rim and a soft shadow under the feet;
-  `gen_charselect_art.py` draws it, our own art. The feet point is 44% down the image
-  (`CharSelectCore.PLATFORM_FEET`); `platformRect` sizes it to 2.2 tiles of the drawn scale. Three designs were
-  compared on five characters (dais, rune circle, plain shadow); the rune circle and the shadow almost vanish on the
-  dark floor. `python3 -I client/tools/gen_charselect_art.py platforms DIR` writes all three outside the repo. The
-  Create character window uses the same platform.
+- **The chosen character** stands large on a stone dais, its feet on the centre of the dais's top face, walks in
+  place for a moment when chosen, then idles; a click on it turns it. Name, class and level, world, season and last
+  login under the dais.
+- **Platform (2026-10-13, owner: first the orange pedestal made the character look odd, then the character stood at
+  the wrong angle on the grey dais that replaced it).** That dais was a flat ellipse with a front wall, seen from a low
+  camera; the sprites use the game's own projection, so the figure looked pasted on at the dais's back edge. Now
+  `platform.png` (46x46 sprite pixels, `gen_charselect_art.py`, our own art) is drawn in that projection, as the
+  pair's stock blocks and stairs are: the ground seen straight from above, so the top face is a true octagon (not a
+  squashed one); height drawn down and right at 45 degrees, one pixel per pixel of height; the light from the upper
+  left (lit top and left edges, a lighter lip, the wall facing right lighter than the one facing down); the game's
+  dithered checker shadow along the lower right base and a few checker pixels under the feet. It is a two-step
+  octagonal dais, each step 2 pixels thick, dark cool grey. The feet go on the centre of its top face
+  (`CharSelectCore.PLATFORM = { size = 46, feet = 20 }`; the generator refuses to write art that does not match).
+  The client draws it at the character's own scale (T / 32: 2x, 3x, 4x) with `image-smooth: false`, so its pixels
+  are the sprites' pixels (`platformRect`). Seen from above it reaches as far below the feet as above them, so the
+  name lines start under it (`platformBelow`) and the Create character preview panel is 240x300. Three designs in
+  this projection were compared on five characters (a round slab, a flat rune slab one pixel thick, the octagonal
+  dais); `python3 -I client/tools/gen_charselect_art.py platforms DIR` writes all three outside the repo. The
+  octagon's 45 degree sides run along its 45 degree walls, as the stock blocks do. Measured in the client at
+  1280x720 and 1920x1080: the lowest row of every look's body on the feet point exactly, the feet column within one
+  sprite pixel; the Create character window within 1.5 sprite pixels. A winged character bobs 0 to 4 sprite pixels
+  above it while it animates (the engine's `GameWingOffset` float, as in the game).
 - **No tall auras in the preview (owner: the red crystal behind Varek).** The tall red spike was the character's aura
   from the website (1512, Crimson Blaze). `CharSelectCore.previewOutfit` keeps an aura only when it is small and sits
   at the feet (`smallAura`: at most 32 sprite pixels above its feet point, feet at least 8 pixels down): 932, 934 and
@@ -307,7 +319,7 @@ select over the login scene; the stock module stays loaded and keeps every funct
   problem). The four styles (`ChaosComboBoxPopupMenu`, `...PopupMenuButton`, `...PopupScrollMenu`,
   `...PopupScrollMenuButton`) are now in the theme.
 - **Tests.** `charselect_core_test.lua` (LuaJIT and Lua 5.3, CI): classes against `chaos_constants.lua`, icons, card
-  text, last login, world names, outfit merge, navigation, the platform rect, the aura filter, the slots text, the wing
+  text, last login, world names, outfit merge, navigation, the platform rect and its reach below the feet, `fitsAt`, the aura filter, the slots text, the wing
   lift, the feet maths (every thing of the anchor table at 3x and
   4x, 1x1 and 2x2 looks, wings and auras, the scale choice, the fallback, every class look present), name hints,
   requests, error texts, URLs.
