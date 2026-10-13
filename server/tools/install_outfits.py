@@ -53,6 +53,8 @@ MOUNTS = [(141, 1561, 'Bone Steed', 30),
           (142, 2132, 'Pyrewarden Charger', 30), (143, 2133, 'Forgeborn Emberwolf', 30),
           (144, 2134, 'Veilrunner', 30), (145, 2135, 'Thornbound Stag', 30)]
 EXCLUSIVES = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'exclusives_config.lua')
+# the wings of client pair things_custom24, in exclusives_config.lua's line format; read only while its switch is on
+THEME_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_theme_art.lua')
 XBEGIN = '\t<!-- Chaos exclusive outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 XEND = '\t<!-- end of the Chaos exclusive outfits -->\n'
 WBEGIN = '\t<!-- Chaos wings (server/tools/install_outfits.py, do not edit by hand) -->\n'
@@ -68,6 +70,11 @@ def exclusives(path=EXCLUSIVES):
     if not os.path.isfile(path):
         return out
     text = open(path, encoding='utf-8').read()
+    if path == EXCLUSIVES and os.path.isfile(THEME_ART):
+        sys.path.insert(0, HERE)
+        from install_theme_items import pair24_on
+        if pair24_on(THEME_ART):
+            text += open(THEME_ART, encoding='utf-8').read()
     for m in re.finditer(r'\{key = "[\w]+", kind = "(outfit|mount|wings|shader)", ([^\n]*)\n[^\n]*?name = "([^"]+)"', text):
         kind, fields, name = m.group(1), m.group(2), m.group(3)
         f = dict(re.findall(r'(\w+) = (\d+)', fields))

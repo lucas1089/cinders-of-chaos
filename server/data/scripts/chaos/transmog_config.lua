@@ -11,7 +11,7 @@
 -- Looks are unlocked into an account-wide wardrobe (table chaos_transmog) by carrying or equipping an item once, or,
 -- for the appearance sets below, by the set's own source.
 
-return {
+local cfg = {
 	opcode = 212, -- ChaosOpcodes.transmog (client game_transmog)
 	tables = {
 		looks = "chaos_transmog", -- one row per account and unlocked look (server item id)
@@ -153,3 +153,12 @@ return {
 	staffGroup = 4, -- characters of this group and up may use /transmog (grant / revoke / unlock-all on a character)
 	maxLooksSent = 4000 -- the window's wardrobe list is cut at this many looks (it is sent in chunks)
 }
+
+-- the themed sets of client pair things_custom24 (data/lib/chaos_theme_art.lua, switch ChaosThemeArt.PAIR24): the
+-- appearance sets when the switch is on, else their item ids out of the catalogue (nothing changes for players)
+local okTheme, theme = pcall(dofile, "data/lib/chaos_theme_art.lua")
+if okTheme and type(theme) == "table" then
+	theme.addTransmog(cfg)
+end
+
+return cfg

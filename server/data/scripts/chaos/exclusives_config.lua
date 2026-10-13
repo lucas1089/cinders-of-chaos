@@ -30,7 +30,7 @@
 --   cosmetic cosmetic            a footprint / outline (any cosmetic) of cosmetics_config.lua with source "boss"
 -- Where it is chosen, for the window: `use` of the kind in KINDS below.
 
-return {
+local cfg = {
 	table = "chaos_exclusives", -- one row per account and exclusive (server/sql/chaos_exclusives.sql)
 	staffGroup = 4, -- /exclusive <character>, <key | all>[, revoke] and /exclusive <character>, roll <kill key>
 
@@ -168,3 +168,12 @@ return {
 			name = "Cinderheart Blaze", desc = "Outline: the Cinderheart's own fire flares round you."}
 	}
 }
+
+-- the auras and wings of client pair things_custom24 (data/lib/chaos_theme_art.lua, switch ChaosThemeArt.PAIR24):
+-- appended with their boss groups only when the switch is on
+local okTheme, theme = pcall(dofile, "data/lib/chaos_theme_art.lua")
+if okTheme and type(theme) == "table" then
+	theme.addExclusives(cfg)
+end
+
+return cfg

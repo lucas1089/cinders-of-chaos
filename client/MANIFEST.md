@@ -1149,6 +1149,73 @@ changed, 36,523 byte-identical. Built twice with identical md5s; a run on its ow
   932, by the client's draw rule. The "before" column matches the in-game screenshots direction by direction. The
   fixed pair was not run in a live client.
 
+## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
+**Built, not on windows-assets.** Our own art for the themes of five reference sheets and four set showcases the owner
+showed: ten equipment sets, two auras, a pair of wings, four grounds with borders, six monster recolours. The sheets
+were looked at for themes, palettes and silhouettes only. No pixel of them was copied, traced, cropped, recoloured or
+resampled, and no image code read them. Every item, aura, wing and ground is drawn in Python: shape masks and
+material ramps lit from the upper left, a 1 px outline tinted to the item's own darkest colour, 128 px downsampled
+4:1 for items and grounds (the pouch look method, `darklib.py`), the class effect canvas for auras and wings
+(`gen_class_fx.Canvas`). No painting service was called (no PixelLab token is configured).
+- Modules: `theme_items.py` (the 18 kind drawers and 10 motifs), `theme_sets.py` (set names, materials, shapes, the
+  class kits), `theme_grounds.py` (textures, rims, the dark set's border geometry, `pieces_for`, preview scenes),
+  `theme_cosmetics.py` (auras, wings, placement), `theme_recolour.py` (variants of our own monster looks).
+- Items (client 33660-33851, 192): six full sets of 18 pieces (sword, axe, club, bow, crossbow, wand, rod, shield,
+  helmet, armor, legs, boots, amulet, ring, backpack, spellbook, arrow, bolt): Cryptbone (bone and grave iron, green
+  soul fire), Voidmourn (black rift steel, blue glow), Wildroot (wood, leaf, bronze), Moonsilver (silver, night blue,
+  crescent), Sunsworn (gold, crimson, ruby), Oathsteel (steel, red cross). Four kit sets of 21 pieces: a melee kit
+  (warhelm, plate, greaves, sabatons, blade, bulwark), a caster kit (hat, robe, kilt, slippers, staff, grimoire), a
+  ranged kit (hood, jerkin, leggings, striders, longbow, arbalest) and a shared amulet, ring and backpack: Rimeglass
+  (blue ice crystal), Emeraldine (gold, emeralds), Starwing (winged gold, teal stones), Thornwild (green leaf, orange
+  wood, green glow). Dat flags copied from a stock item of each kind (`copy:`), so slots, stackable and container
+  stay stock. Arrows and bolts have the 8 stack patterns (1, 2, 3, 4, 5, 10, 25, 50 pieces, fanned).
+- Grounds (client 33852-33903, 52): swamp (walkable, speed 170), acid pool, lava, deep water (blocking, 8 phases of
+  160 / 180 / 200 ms, synchronised; lava and acid give light), each a 4x4 pattern ground and 12 border pieces with
+  the same phases. A piece lies on the lower tile next to the family, carries its texture at that tile's world
+  position and a rim: stone lip (acid), basalt crust (lava), mud bank (water), dark fringe (swamp). The edges are
+  periodic in the world coordinate (`gen_dark_tiles.border_mask`), so pieces meet. Checked by the build: grounds
+  opaque, every piece continuous along the edges it continues.
+- Outfits 2185-2187: Blood Vortex aura (three blood streams spiral round the feet), Rune Seal aura (two rings, turning
+  runes, a six-point star, motes), Runic Wings (pale feathers, blue runes, a slow beat). 3x3, 4 directions, one frame
+  group of 8 phases, `animateAlways`. Auras: 2 layers (back, front: the art north of the centre line goes behind),
+  displacement 17,17: the scan (`fix_pair_warnings.py --scan-aura-displacement`) puts them at -3.2,-5.0 and
+  -3.4,-3.9 px, inside the stock ground auras' range. Wings: no displacement, art centre -14.5,-21.3 px, inside the
+  stock wings' range.
+- Outfits 2188-2193: frost, venom and void recolours of our rift looks 2108 (skeleton) and 2104 (hound): hue of the
+  saturated pixels moved to the variant's, values kept, the rest lightly tinted; same frame groups and timing.
+  `gen_theme_art.py recolour` reads them from the pair, so it is a second spec and step.
+- Deterministic for Pillow 12.3.0 and numpy 2.5.3 (CI pins them, like gen_class_fx.py). CI: `build --check` in the
+  checks job, `recolour --check` on the live pair in the live-pair job.
+
+```
+python3 -I client/tools/sprites/gen_theme_art.py build
+python3 -I client/tools/sprites/gen_theme_art.py recolour --dat things_custom23/Tibia.dat --spr things_custom23/Tibia.spr
+python3 -I client/tools/sprites/import_art_things.py --ours-dat things_custom23/Tibia.dat --ours-spr things_custom23/Tibia.spr \
+    --out-dir STAGE --things client/tools/sprites/art_import/theme_things.csv --first-item 33660 --first-outfit 2185 \
+    --expect-items 33659 --manifest-out server/data/items/theme_items.csv
+python3 -I client/tools/sprites/import_art_things.py --ours-dat STAGE/Tibia.dat --ours-spr STAGE/Tibia.spr \
+    --out-dir things_custom24 --things client/tools/sprites/art_import/theme_recolour.csv --first-outfit 2188 --expect-items 33903
+python3 -I client/tools/sprites/check_pair.py things_custom24/Tibia.dat things_custom24/Tibia.spr \
+    --old things_custom23/Tibia.dat things_custom23/Tibia.spr --new-only
+python3 -I client/tools/sprites/gen_theme_art.py preview --out PREVIEWS --dat things_custom24/Tibia.dat --spr things_custom24/Tibia.spr
+```
+`import_art_things.py` knows the otb group and flags of the 18 kinds now (OTB table; old rows unchanged).
+Input things_custom23 (the windows-assets archive, sha256 a866a48e... checked against SHA256SUMS.parts; dat
+8ca5332525db229ca0472fe292653986, spr 09f3a073b0a071d54b9604a422a9dffd). STAGE: dat 36bcd1deef1985264bed2af652ce0ce5,
+spr 26b05503c6ecc7bc317f3284d3dc1ab0. Output **things_custom24**: dat 92d495e7bc00d7006f3fb7c86511e23c (4,968,339
+bytes), spr 29f07b49755792430f8c9aafda88b07d (609,880,527 bytes, 752,358 sprites, 6,705 appended), 33,903 items,
+2,193 outfits, 627 effects, 153 missiles. Built twice with identical md5s; the importer verified every new sprite slot
+pixel-identical to the atlases and every old thing byte-identical. `check_pair.py`: append-only 0 errors (36,524 old
+things and 745,653 old sprites compared; new: 244 items, 9 outfits, 6,705 sprites); full check 0 errors, 121
+warnings, line for line those of things_custom23.
+- `things-1098.tar.xz` like things_custom23's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
+  mtime 2026-10-13 07:00: sha256 399b8df9d00e404eef3b3648c93e0a786cff0daf9c6b4da25d945f67c9b08258 (68,367,580 bytes).
+  It unpacks to the md5s above. A rebuild gives the same sha256. Not pushed: it waits for the owner's approval.
+- Server side: server/README.md "Themed sets, auras and grounds" (switch `ChaosThemeArt.PAIR24`, off). A client on
+  things_custom23 draws nothing for the new ids, so the switch goes on only after the pair is on windows-assets.
+- Checked offline only (contact sheets, an inventory panel, the auras and wings on looks 128 and 2073 in four
+  directions by the client's draw rule, ground patches, everything read back from the pair). Not run in a client.
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder

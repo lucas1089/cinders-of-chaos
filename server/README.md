@@ -5462,6 +5462,45 @@ blood crystals, bones, rubble).
   Checked in game on the test server: a tier 1 rift (Ashen Crypt), `/worldboss arena` (lobby, corners, pillars) and the
   trial room, with the set on and off, at normal size and with the client's HD upscaling (x2).
 
+## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
+
+Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,
+two auras, a pair of wings, four grounds with borders, six monster recolours. **Behind the switch
+`ChaosThemeArt.PAIR24` (off)**: a client on things_custom23 draws nothing for client items 33660-33903 and outfits
+2185-2193, so the switch goes on only after the pair is on windows-assets and the owner says so.
+
+- **Items** (server ids 36660-36903 = client id + 3000, `data/items/theme_items.csv`, written by the importer):
+  - 192 set pieces: appearance items. `items.xml` gives each the weapon type or slot of its kind and nothing else: no
+    attack, armour or other stat, no shop, no loot, no equip rule. Balance does not change.
+  - 52 grounds and border pieces: swamp (walkable, speed 170), acid pool, lava, deep water (blocking grounds; lava and
+    acid give light).
+  - Install: step `themeitems` of `install_all.py`, after `fistweapons` (`python3 -I server/tools/install_theme_items.py
+    DATA_DIR [--dry-run]`): items.otb nodes (group and flags of the stock item of each kind) and an items.xml block,
+    idempotent, refused when a server id belongs to another item. `--lua` rewrites `data/lib/chaos_theme_items.lua`
+    from the manifest; `--lua --check` (CI) says when it is stale.
+- **Switch off** (now): nothing names the items. `transmog_config.lua` and `exclusives_config.lua` call
+  `ChaosThemeArt.addTransmog` / `addExclusives` at their end: off, the transmog catalogue gets the excludeRange
+  36660-36903 (installed items unlock nothing and do not count in the collection) and no exclusive is added.
+  `ChaosThemeArt.ground(family, piece, fallback)` returns the fallback. `install_auras.py` reads
+  `data/XML/chaos_auras_theme.csv` and `install_outfits.py` the wings line of `chaos_theme_art.lua` only when on.
+- **Switch on** (after the pair push): proposed mapping, to be confirmed by the owner:
+  - Transmog appearance sets, 18 of them: one per full set (13 looks each: the weapons, shield, spellbook and four
+    armour pieces; amulets, rings, backpacks and ammunition have no transmog kind) and one per class kit of the four
+    kit sets (Rimeglass Warplate, Vestments, Hunter's Garb, and so on). Source `exclusive` for now; proposal: the six
+    full sets as store sets at 300-400 coins like the other appearance sets, the twelve kit sets as season or
+    achievement sets. Amulets, rings and backpacks: kept as items for a later store container or set bases (no stats).
+    Arrows and bolts: kept for a later quiver look; transmog has no ammunition kind.
+  - Exclusives (boss drops): Blood Vortex aura (id 31, look 2185) from Vharok the Blood Colossus, Rune Seal aura (32,
+    2186) from Skaldra the Rime Queen, Runic Wings (wings 20, 2187) from Kaelgor. They join those groups' rewards.
+  - Grounds: `ChaosThemeArt.ground("lava" | "acid" | "water" | "swamp", piece, fallback)` for rift themes and generated
+    areas (`areagen_config.lua` families); not wired into a theme yet. The pieces follow the area generator's
+    naming (n / e / s / w, outer_*, inner_*), placed on the lower tile like the dark set.
+  - Recolours (`ChaosThemeArt.looks`): frost, venom and void variants of the Ashen Crypt skeleton (2108) and the
+    Obsidian Hall hound (2104) for rift elemental packs; no monster file uses them yet.
+- Tests: `tests/theme_art_test.lua` (the ids against the manifest; switch off: no set, no exclusive, the catalogue
+  range, grounds fall back; switch on: the transmog sets and the exclusives validate with the real configs and cores,
+  the ground helper). Not run in game.
+
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `chaos_crafting.lua`, `item_mods.lua`)
 
 Every item with a rarity is rolled by `ChaosCrafting.forge` (drops, rift chests, world boss, goblin, tutorial, and the new

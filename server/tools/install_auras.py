@@ -17,6 +17,8 @@ of family "faction", kind "aura"), not by import_vfx.py, so re-running import_vf
 A third manifest, data/XML/chaos_auras_exclusive.csv (same columns), is read last when no --manifest is given: base
 looks of the client pair that no auras.xml line had, the never-sold auras of exclusives_config.lua (an achievement and a
 boss drop).
+A fourth, data/XML/chaos_auras_theme.csv, is read last only while the pair 24 switch is on (ChaosThemeArt.PAIR24 in
+data/lib/chaos_theme_art.lua): the Blood Vortex and Rune Seal auras of things_custom24 (looks 2185, 2186).
 """
 import csv, os, re, sys
 
@@ -24,6 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras.csv')
 DONOR_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_donor.csv')
 EXCLUSIVE_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_exclusive.csv')
+THEME_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_theme.csv')
 BEGIN = '\t<!-- Chaos auras (server/tools/install_auras.py, do not edit by hand) -->\n'
 END = '\t<!-- end of the Chaos auras -->\n'
 
@@ -44,6 +47,10 @@ def main(argv):
     args = [a for a in argv if not a.startswith('--')]
     dry = '--dry-run' in argv
     manifests = [DEFAULT_MANIFEST] + [m for m in (DONOR_MANIFEST, EXCLUSIVE_MANIFEST) if os.path.isfile(m)]
+    sys.path.insert(0, HERE)
+    from install_theme_items import pair24_on
+    if os.path.isfile(THEME_MANIFEST) and pair24_on():
+        manifests.append(THEME_MANIFEST)
     if '--manifest' in argv:
         i = argv.index('--manifest')
         manifests = [argv[i + 1]]
