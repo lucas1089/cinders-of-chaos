@@ -43,6 +43,8 @@ python3 client/tools/gen_spell_data.py                       # -> game_chaosspel
 cd server && python3 -I tools/gen_unique_specs.py            # -> data/lib/chaos_unique_specs.lua
 cd server && luajit tools/gen_codex_data.lua                 # -> client game_codex/codex_data.lua
 cd server && lua5.3 tools/gen_codex_data.lua --check
+cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json
+cd server && lua5.3 tools/gen_wiki_data.lua --check
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

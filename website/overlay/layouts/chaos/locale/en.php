@@ -6,9 +6,10 @@ return array(
 	'void.rank.players' => 'Mightiest',
 	'void.rank.guilds' => 'Guilds',
 	'void.user.panel' => 'Account',
-	// the copyright line of every page's footer also links the legal texts (plugins/chaos/pages/legal.php), so the
-	// links stay when the owner edits the theme's footer text
+	// the copyright line of every page's footer also links the player wiki (plugins/chaos/pages/wiki.php) and the legal
+	// texts (plugins/chaos/pages/legal.php), so the links stay when the owner edits the theme's footer text
 	'void.footer.copyright' => '&copy; {year} {site} &middot; <span class="chaos-legal-links">'
+		. '<a href="page.php?plugin=chaos&amp;p=wiki">Wiki</a> &middot; '
 		. '<a href="page.php?plugin=chaos&amp;p=legal&amp;doc=terms">Termos de Uso / Terms of Use</a> &middot; '
 		. '<a href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy">Privacidade / Privacy</a> &middot; '
 		. '<a href="page.php?plugin=chaos&amp;p=legal&amp;doc=donations">Doações / Donations</a></span>',

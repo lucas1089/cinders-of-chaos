@@ -180,6 +180,9 @@ $menu = static function (string $label, string $url, string $icon, int $sort, in
 	$row = $find();
 	return is_array($row) ? (int)$row['id'] : 0;
 };
+// the player wiki (plugins/chaos/pages/wiki.php): guides and the reference generated from the game data
+$menu('Wiki', 'page.php?plugin=chaos&p=wiki', 'fa-book', 14);
+$out .= "menu: Wiki\n";
 $world = $menu('The World', 'serverinfo.php?world', 'fa-fire', 15);
 $menu('Server Info', 'serverinfo.php', 'fa-book', 1, $world);
 $menu('Patch Notes', 'page.php?plugin=chaos&p=patchnotes', 'fa-file-text-o', 2, $world);

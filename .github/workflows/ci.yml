@@ -210,6 +210,12 @@ jobs:
           lua5.3 tools/gen_codex_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_codex/codex_data.lua
 
+      - name: Website wiki data is up to date with the server data files (gen_wiki_data.lua)
+        run: |
+          cd server
+          luajit tools/gen_wiki_data.lua --check
+          lua5.3 tools/gen_wiki_data.lua --check  # Lua 5.3 must give the same bytes
+
       - name: Passive tree data is up to date with the client tree (Lua 5.3 and LuaJIT write the same file)
         run: |
           cd client/overlay/modules/game_passivetree/treedata

@@ -52,6 +52,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_legal_pages_test.php` | `php website/tests/chaos_legal_pages_test.php`: the pages, the renderer's escaping, the footer links, the Terms checkbox and its refusal, the acceptance row, the donation notes before and after payment (php-cli only, a fake database) |
 | `tests/chaos_legal_accept_test.php` | `php website/tests/chaos_legal_accept_test.php`: existing accounts accept the current texts: the gate (which requests pass), the way back (this site only), the form (token, checkbox), the row (no IP), a new version asking again, the setup writing the version for the game (php-cli only, SQLite in memory) |
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/wiki_lib.php`, `pages/wiki.php`, `wiki/` | the player wiki: guides in Portuguese and English, the reference generated from the server data by `server/tools/gen_wiki_data.lua`, the search (see "Wiki") |
+| `tests/chaos_wiki_page_test.php` | `php website/tests/chaos_wiki_page_test.php`: every wiki page in both languages, the guides, search, escaping and 404s (php-cli only) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
@@ -297,6 +299,40 @@ owner fills in the placeholders (docs/legal/README.md lists both).
   (`chaos_legal_version`); the game server shows an account without it a notice with the link at login
   (server/README.md "Terms acceptance notice"), since the game login cannot be held for a web form.
 - Test: `php website/tests/chaos_legal_pages_test.php`, `php website/tests/chaos_legal_accept_test.php`.
+
+## Wiki
+
+A player wiki: short guides and a reference of everything the game has, generated from the server data.
+
+- **Page**: `page.php?plugin=chaos&p=wiki`, Portuguese by default, `&l=en` for English (as the legal pages). `&t=` picks a
+  topic: `guide:<slug>`, `tab:<tab id>` or an entry id (`class:warrior`, `spell:254`, `tree:96`, `rift:atlas`, ...). The
+  index lists the guides and the reference tabs; every page has breadcrumbs and a link to the other language. An
+  unknown topic answers 404. `pages/wiki.php` draws it, `wiki_lib.php` does the rest.
+- **Search**: `&q=`, on the server, over the guides of the page's language and every reference entry. Case and accents
+  do not matter (`ascensao` finds "ascensão"); the query is cut to 60 characters, at most 40 results, each with a short
+  snippet. The query and every snippet are escaped; the match is put in `<mark>` after escaping.
+- **Reference data**: `plugins/chaos/wiki/wiki_data.json`, written by `server/tools/gen_wiki_data.lua` from the server's
+  data files. It loads the Codex generator (`gen_codex_data.lua`) as a library for the item tabs (modifiers, powers,
+  uniques, sets, orbs, gems, supports, rift modifiers and tiers, materials, basics) and adds the classes, ascensions
+  and spells (the vocation XML, `spells_chaos.xml` and each spell script's first comment), the passive tree (the client
+  tree: keystones, notables, masteries, Paragon), the Rift Atlas, dungeons, the Infinity Tower and the Ember Descent,
+  world bosses, the raid, the Ascended Omens, the guild boss, events, the Chaos monsters that spawn somewhere, and the
+  store's offers by type (cosmetic, service, convenience, boost, ...). Entries of a system behind an off switch carry
+  `soon` and show "Em breve / Coming soon". The names and tables are the game's own (English) in both languages.
+  Regenerate after changing server data: `cd server && luajit tools/gen_wiki_data.lua`; CI runs it with `--check`
+  under LuaJIT and Lua 5.3 (the same bytes), so a stale file fails the build.
+- **Guides**: `plugins/chaos/wiki/guides/<slug>.<pt-BR|en>.md`, the list and titles in `chaos_wiki_guides()`. A small
+  Markdown subset: `#` title, `##` headings, paragraphs, `-` lists, `**bold**`, `_italic_`, links to `wiki:<topic>`,
+  `legal:<doc>`, `page:<plugin page>`, a site path or `https://` (anything else stays plain text). `{{key}}` is a number
+  of the generated `facts` (so a guide never quotes a stale number), and a block between `::: if key` and `::: end`
+  shows only while that fact is true; otherwise it reads "em breve / coming soon". The `.md` deny rule keeps them from
+  being served raw.
+- **Links**: a top-level menu entry "Wiki" (`setup/chaos_setup.php`, added once), the footer's copyright line
+  (`locale/en.php`) and the home page's "Read the guide" button.
+- **Layout**: the `.chaos-wiki*` rules of `layouts/chaos/assets/css/chaos.css`; on a phone the cards stack, the search
+  field and button stack, and wide tables scroll inside their frame.
+- Test: `php website/tests/chaos_wiki_page_test.php` (every guide in both languages, their facts and links, every
+  guide, tab and entry page in both languages, breadcrumbs, search, escaping, 404s, no PHP notices).
 
 ## Mail
 
