@@ -207,6 +207,20 @@ local function haste(player)
 	powerLabel(player, "Hunter's Rush", TEXT.rush)
 end
 
+-- the blink is a step, not a teleport: clear sight and a walking path of a few steps (a path that errors counts as none)
+local function reachable(player, from, to, range)
+	if from.isSightClear and not from:isSightClear(to, true) then
+		return false
+	end
+	if player.getPathTo then
+		local ok, path = pcall(player.getPathTo, player, to, 0, 0, true, true, range * 2)
+		if not ok or not path then
+			return false
+		end
+	end
+	return true
+end
+
 -- a free tile within `range` of the character (not its own), nil when none
 local function freeTile(player, range)
 	local pos = player:getPosition()
@@ -225,8 +239,9 @@ local function freeTile(player, range)
 	for _, d in ipairs(tries) do
 		local to = Position(pos.x + d[1], pos.y + d[2], pos.z)
 		local tile = Tile(to)
+		-- never through a wall, door or bars: the tile must be in clear sight and walkable from here
 		if tile and tile:getGround() and tile:getCreatureCount() == 0 and tile:queryAdd(player) == RETURNVALUE_NOERROR
-				and not tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+				and not tile:hasFlag(TILESTATE_PROTECTIONZONE) and reachable(player, pos, to, range) then
 			return to
 		end
 	end

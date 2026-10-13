@@ -2461,6 +2461,10 @@ local function onCommand(player, param)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "[raid] " .. text)
 	end
 	local cmd = args[1] or "status"
+	-- marks buy raid shop items: an administrator only, logged (docs/GM_HANDBOOK.md section 2)
+	if cmd == "marks" and not Chaos.staffCommand(player, "/raid", param, true) then
+		return false
+	end
 	local run = X.runOf[player:getId()]
 	if cmd == "status" then
 		local n = 0

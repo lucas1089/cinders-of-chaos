@@ -5461,7 +5461,7 @@ and the damage of a power never starts another power (a guard), only monsters th
 | Shatter Splash | prefix (weapon) | the killing blow bursts onto up to 6 monsters within 2 sqm for N% of it | 10-15% .. 60-75% | 100% | 1 s |
 | Crimson Burst | suffix (weapon, jewel, helmet) | a hit heals 4% of your maximum health | 2-3% .. 12-16% | 25% | 2.5 s |
 | Last Breath | suffix (armour, helmet, shield, jewel, legs) | a lethal hit leaves you at N% health instead (the time of the last one is a player storage, 7101800: once per 5 minutes, also across logins) | 10-15% .. 45-50% | 50% | 5 min |
-| Ember Step | suffix (boots, legs, armour, jewel) | a single hit of 20% of your health or more blinks you up to 3 sqm away (a free tile) and burns where you stood | 4-6% .. 22-28% | 30% | 15 s |
+| Ember Step | suffix (boots, legs, armour, jewel) | a single hit of 20% of your health or more blinks you up to 3 sqm away (a free tile in clear sight with a walking path: never through a wall, door or bars) and burns where you stood | 4-6% .. 22-28% | 30% | 15 s |
 | Hunter's Rush | suffix (boots, jewel, helmet, other) | on kill: haste +40 for 4 s | 4-6% .. 22-28% | 30% | 8 s |
 | Smoldering Aura | suffix (armour, helmet, jewel, legs, other) | every 3 s N x 3 fire damage to up to 6 monsters within 2 sqm | 5-10 .. 250-400 per s | 600 | tick |
 

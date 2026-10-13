@@ -591,6 +591,12 @@ function talk.onSay(player, words, param)
 	if not player:getGroup():getAccess() then
 		return false -- players open it from the menu
 	end
+	-- the test clock: every shift past a week end awards that week's titles and orbs again: an administrator only, logged
+	local cmd = tostring(param or ""):lower():match("^%s*(%S*)")
+	local value = cmd == "shift"
+	if not Chaos.staffCommand(player, words, param, value) then
+		return false
+	end
 	return onCommand(player, words, param)
 end
 talk:separator(" ")

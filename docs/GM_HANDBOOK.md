@@ -60,7 +60,7 @@ access flag (gamemaster or higher).
 | `/newplayerkit <name>[, welcome\|milestone <n>\|reset\|tutorial]`, `/towerrun <floors>,<seconds>` | 4+ (the kit, `milestone`, `reset`: **5+**) | new-player kit and tutorial; a fake tower run on yourself |
 | `/market sweep\|info <id>\|orders`, `/orbx sweep\|info <id>\|escrow` | 4+ | market and Orb Exchange checks |
 | `/treestats [<class> [band] [n]]`, `/treestats export` | 4+ | passive tree picks per class line and level band (counts only); the CSV goes to the server's `data/` folder (server/README.md "Passive tree pick statistics") |
-| `/daily`, `/leaderboard`, `/season status`, `/spells reload`, `/supports reload` | 4+ | state and test clocks (`shift`: test servers only) |
+| `/daily`, `/leaderboard`, `/season status`, `/spells reload`, `/supports reload` | 4+ (`/daily shift\|set`, `/leaderboard shift`: **5+**) | state and test clocks (`shift`: test servers only) |
 | `/testkit` | 4+ (admin panel access) | gear kits for balance tests; **removed from the live server** (docs/LAUNCH.md section 11) |
 | `/coins <character>, <amount>`, `/charm give ...`, `/pact <player>, days\|end\|extra\|claimreset` | **5+** | economy value |
 | `/goblin`, `/blessing`, `/season start\|end`, `/seasonpass`, `/journey` | **god account** | test and season tools |
@@ -68,7 +68,8 @@ access flag (gamemaster or higher).
 
 The commands that hand out value (`/rift key|omen|fragments`, `/ascended sigil|shards|relic`, `/newplayerkit` kit,
 milestone and reset, `/guild xp|bank` and `rent <guild>, paid`, `/classunlock`, `/cosmetic`, `/exclusive` and `/transmog`
-grants, `/pet give`) need group 5, like `/coins`, `/charm give` and `/pact`.
+grants, `/pet give`, the test clocks `/daily shift|set` and `/leaderboard shift`) need group 5, like `/coins`, `/charm give`
+and `/pact`.
 **Rule (decided):** staff never give anything to a player character with any command; these tools are for staff test
 characters only. A refund after a confirmed bug goes through an administrator (group 5) with a written reason
 (section 6). Why: every gift to a player is economy value nobody earned. Done (2026-10-12): those commands sit behind

@@ -118,6 +118,11 @@ local valueGuards = {
 	["exclusives.lua"] = 'Chaos.staffCommand(player, words, param, mode ~= "revoke")',
 	["transmog.lua"] = 'local value = not (mode == "revoke" and what ~= "all" and not tonumber(what))\n\tif not Chaos.staffCommand(player, words, param, value) then',
 	["pets.lua"] = 'Chaos.staffCommand(player, words, param, cmd == "give")',
+	["daily.lua"] = 'local value = cmd == "shift" or cmd == "set"\n\tif not Chaos.staffCommand(player, words, param, value) then',
+	["leaderboard.lua"] = 'local value = cmd == "shift"\n\tif not Chaos.staffCommand(player, words, param, value) then',
+	["descent.lua"] = 'if cmd == "sigil" and not Chaos.staffCommand(player, words, param, true) then',
+	["raid.lua"] = 'if cmd == "marks" and not Chaos.staffCommand(player, "/raid", param, true) then',
+	["pvpzone.lua"] = 'if cmd == "embers" and not Chaos.staffCommand(player, words, param, true) then',
 }
 for f, guard in pairs(valueGuards) do
 	eq(src(f):find(guard, 1, true) ~= nil, true, f .. ": the value it hands out needs an administrator")
@@ -159,6 +164,12 @@ local checksOf = {
 		{{what = "falconer", mode = ""}, true}, {{what = "falconer", mode = "revoke"}, false}}},
 	{cond("pets.lua", "Chaos%.staffCommand%(player, words, param, (.-)%) then"),
 		{{{cmd = "give"}, true}, {{cmd = "xp"}, false}, {{cmd = "species"}, false}}},
+	-- /daily shift moves the day of every account (all claim again), /daily set writes a streak (milestone rewards)
+	{cond("daily.lua", "local value = (.-)\n"),
+		{{{cmd = "shift"}, true}, {{cmd = "set"}, true}, {{cmd = ""}, false}, {{cmd = "status"}, false}}},
+	-- /leaderboard shift: each shift past a week end awards that week's titles and orbs
+	{cond("leaderboard.lua", "local value = (.-)\n"),
+		{{{cmd = "shift"}, true}, {{cmd = "reset"}, false}, {{cmd = ""}, false}}},
 }
 for i, c in ipairs(checksOf) do
 	for _, case in ipairs(c[2]) do

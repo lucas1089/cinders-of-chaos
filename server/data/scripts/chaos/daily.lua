@@ -446,6 +446,12 @@ function talk.onSay(player, words, param)
 	if not player:getGroup():getAccess() then
 		return false -- players open it from the menu
 	end
+	-- the test clock (every account claims again) and the streak setter hand out rewards: an administrator only, logged
+	local cmd = tostring(param or ""):lower():match("^%s*(%S*)")
+	local value = cmd == "shift" or cmd == "set"
+	if not Chaos.staffCommand(player, words, param, value) then
+		return false
+	end
 	return onSay(player, words, param)
 end
 talk:separator(" ")
