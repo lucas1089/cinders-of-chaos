@@ -9605,9 +9605,9 @@ art); looks per effect: `data/spells/README_FX.md` "Class signature effects".
   spot, unless a skin is chosen. The test checks that every swapped name is also asked during the cast.
 - Checked in a live client, 2026-10-13, pair things_custom23: every class's signature spells were cast; the server
   sent each class effect at its offset. Berserker and Ranger were cast again after the fix. Skyfall Cleave sends 598 at the target + 1,1. Hail of Dawn sends 600 on all
-  12 hits. A cosmetic skin still wins: Red Frenzy with Voidborn War Cries sends 526, without it 597. Note: Hail of
-  Dawn's cast effect at the caster uses the same name, so the Ranger also gets the arrowfall on its own tile while it
-  casts.
+  12 hits. A cosmetic skin still wins: Red Frenzy with Voidborn War Cries sends 526, without it 597. Hail of Dawn's
+  cast effect at the caster uses the same name, so the Ranger also gets the arrowfall on its own tile while it casts:
+  kept on purpose (owner, 2026-10-13).
 
 ## Pack effects for procs and bosses (`data/lib/chaos_pack_fx.lua`, switch `ChaosPackFx.PACK_FX`, off)
 Item powers, snares, rift modifiers, world bosses and the reflect sent stock effects. With the switch on they send
