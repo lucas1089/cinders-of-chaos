@@ -4951,7 +4951,7 @@ so are the monster tiers, the trash before a boss and moving out of telegraphs e
 | Ascended Omen (5) | 6.00M | the same, one healer | the same | 3,000: 8:56; 2,600: 10:05; 1,950: 12:45 | ok |
 | Cinderheart (solo) | 1.65M | the same | enrage 15:00, close 20:00 (was 18:00) | 3,000: 12:13; 2,600: 14:06; 1,950: 18:48 | ok |
 | Cinderheart (5) | 8.25M | the same | the same | 3,000: 12:17; 2,600: 13:52; 1,950: 17:32 | ok |
-| Hollow Vault boss (solo, level 825: 2,180) | 1.13M x difficulty curve | health / dps | 30:00 the whole run | difficulty 1-6: 8:40 / 10:51 / 13:01 / 15:11 / 17:21 / 19:31 | was 10:25 / 20:50 / 33:20 / 52:03 / 83:15 / 135:20 |
+| Hollow Vault boss (solo, level 825: 2,180) | 1.13M x difficulty curve | health / dps | 40:00 the whole run (30:00 before the area doubled, 2026-10-14) | difficulty 1-6: 8:40 / 10:51 / 13:01 / 15:11 / 17:21 / 19:31 | was 10:25 / 20:50 / 33:20 / 52:03 / 83:15 / 135:20 |
 | Ascension Trial (level 100-130) | 6,000-7,800 | health / dps | 3:00 | ~0:20 | ok |
 | Vocation Trials boss | 9k / 40k / 130k at the tier's level, x(level / min)^1.5 | health / dps | 8:00 / 9:00 / 10:00 the run | Merciless at 1000: 514k, 3:18 | ok, waves on top |
 | World bosses (group only) | 15-24M, heals 1,200-3,200/s | health / dps | 45:00 | solo 3-4 h or never (Vharok heals more than one player deals); 10 players 10:06-17:33; 20 players 4:56-8:12 | group content, as designed |
@@ -11104,6 +11104,7 @@ the monster of an existing entry.
 | Blocking tiles | 99 moved | to the nearest free walkable tile within 3 sqm (no protection zone, house, floor change or teleport) |
 | Thin 300-600 areas | 93 added in 12 areas (`H4-01`..`H4-12`) | raised to 3.0 monsters per 100 walkable tiles, at most +50% |
 | Thin level 900+ areas | 91 added in 9 areas (`H5-01`..`H5-09`) | outdoors at 0.8-1.1 per 100; raised to 1.5, at most +60% |
+| Fill (2026-10-14) | 10,922 added in 570 hunts (`F0001`..`F0570`, `tools/spawn_density.json`) | every hunt under 3.25 per 100 raised to 3.4, at most x2 its entries and +400 (see "Fill") |
 
 New spawns hold one monster each and sit on free walkable tiles of their area, at least 3 sqm from any spawn and
 connected to it. Each copies the nearest ordinary entry: no boss, no rare spawn, a monster with 10+ entries on the map.
@@ -11111,6 +11112,90 @@ connected to it. Each copies the nearest ordinary entry: no boss, no rare spawn,
 
 `prod_config.py` sets `rateSpawn = 3`: most packs come back in one or two spawntimes instead of one monster per
 spawntime. That is the biggest change below level 300 (+20-55% respawn there).
+
+### Fill: every hunt full (`tools/gen_spawn_density.py`, `tools/spawn_density.json`, 2026-10-14)
+
+Owner request (2026-10-14): every hunt big and full of monsters. The map's geometry is not changed; the thin hunts get
+more spawns. `spawn_tuning.json` names the file (`"fill": "spawn_density.json"`) and the spawns step adds its rows like
+the `add` rows (marker `chaosadd="F...."`; `--remove` takes them out with the rest).
+
+`python3 -I server/tools/gen_spawn_density.py SCRATCH/data [ITEMS_OTB] [--map PATH] [--check] [--stats PATH]` writes the
+file from a scratch install (docs/CONTENT.md: steps files, lib, monsternames, lategame, monsters, spawns), the map
+(tools/map/otbm.py, numpy; about 2 minutes and 3.5 GB of memory) and items.otb / items.xml. It ignores its own earlier
+spawns, so a second run gives the same file byte for byte (`--check`). Rules:
+- Hunts as in `tools/content_audit.py`: entries of monsters that give experience on one floor, at most 12 tiles apart,
+  10 or more.
+- Region of a hunt: walkable tiles within 6 sqm of an entry and connected to one, without protection zone, house, floor
+  change, teleport or door tiles and without town tiles (8 sqm around a house tile, 5 around a protection zone tile).
+- Skipped: closed pockets (the walkable set around the hunt ends under 400 tiles with no floor change or teleport: quest
+  rooms behind a lever or a scripted teleport; 79 hunts), regions under 60 tiles (4), no monster to copy (1).
+- Density = entries per 100 region tiles. Under 3.25 it is raised to 3.4, at most x2 the hunt's entries and 400 spawns.
+- A new spawn holds one monster on a free walkable tile (no NPC within 3 sqm, no floor change next to it), 3+ sqm from
+  every entry of the floor and every new spawn: always the tile farthest from all of them. It copies the nearest ordinary
+  entry of the hunt (no boss, a monster with 10+ entries on the map, spawntime up to 300 s, not moved or added by this
+  tool), with that entry's final spawntime (so the 90 s of the 300-600 band and every respawn timer stay as they were).
+
+Measured 2026-10-14 on the base map after the spawns step (region density; hunt bands by the content audit's level):
+
+| Band | Hunts | Entries before / after | Region tiles | Density before / after | Median hunt density before / after | Hunts still under 3.0 |
+|---|---|---|---|---|---|---|
+| 1-20 | 502 | 19,315 / 22,595 | 554,122 | 3.49 / 4.08 | 3.96 / 3.95 | 1 |
+| 20-50 | 358 | 13,808 / 16,908 | 454,288 | 3.04 / 3.72 | 3.30 / 3.53 | 1 |
+| 50-100 | 195 | 10,873 / 12,907 | 349,427 | 3.11 / 3.69 | 3.18 / 3.51 | 1 |
+| 100-200 | 129 | 6,413 / 7,386 | 185,340 | 3.46 / 3.99 | 3.70 / 3.70 | 0 |
+| 200-300 | 26 | 1,082 / 1,264 | 34,687 | 3.12 / 3.64 | 3.02 / 3.46 | 0 |
+| 300-500 | 104 | 4,043 / 5,349 | 130,387 | 3.10 / 4.10 | 3.44 / 3.55 | 1 |
+| 500-700 | 5 | 144 / 191 | 5,427 | 2.65 / 3.52 | 3.08 / 3.44 | 0 |
+| 700-1000 | 3 | 105 / 105 | 2,302 | 4.56 / 4.56 | 5.35 / 5.35 | 0 |
+
+The four hunts still under 3.0 hit the x2 or +400 cap (the biggest: 786 entries on 54,000 tiles of open land, 1.45 ->
+1.91). `tools/content_audit.py` after the fill (adds join some neighbouring hunts, so there are fewer and bigger ones):
+
+| Band | World hunts | Spawn entries | Parties at once | Median entries per hunt |
+|---|---|---|---|---|
+| 1-20 | 526 -> 502 | 18,486 -> 22,102 | 727 -> 797 | 19 -> 24 |
+| 20-50 | 403 -> 392 | 12,801 -> 16,237 | 508 -> 583 | 19 -> 26 |
+| 50-100 | 218 -> 208 | 10,005 -> 11,724 | 360 -> 395 | 27 -> 38 |
+| 100-200 | 156 -> 157 | 5,569 -> 6,696 | 204 -> 228 | 29 -> 35 |
+| 200-300 | 32 -> 37 | 805 -> 1,020 | 35 -> 43 | 27 -> 36 |
+| 300-500 | 105 -> 100 | 3,537 -> 4,780 | 138 -> 169 | 24 -> 34 |
+| 500-700 | 14 -> 16 | 280 -> 688 | 14 -> 23 | 24 -> 49 |
+| 700-1000 | 10 -> 10 | 212 -> 212 | 10 -> 10 | 27 -> 27 |
+
+The capacity model (`--report`, every entry of the file, rateSpawn 3), before / after the fill:
+
+| Band | Monsters | Respawn kills/h | Hunters it holds |
+|---|---|---|---|
+| 1-50 | 32,909 / 37,326 | 1,366,557 / 1,577,925 | 1,541 / 1,776 (+15%) |
+| 50-150 | 19,239 / 22,417 | 846,742 / 997,630 | 968 / 1,141 (+18%) |
+| 150-300 | 10,458 / 12,131 | 415,774 / 486,286 | 923 / 1,070 (+16%) |
+| 300-600 | 3,178 / 3,430 | 105,593 / 114,089 | 396 / 428 (+8%) |
+| 600-1000 | 5,133 / 6,190 | 123,354 / 148,962 | 812 / 958 (+18%) |
+| 1000+ | 569 / 914 | 13,635 / 21,915 | 135 / 213 (+58%) |
+
+**Experience per hour.** In the model one hunter's kills per hour come from its damage, not from the monsters around,
+so a denser hunt holds more hunters at the same rate and does not raise a solo hunter's rate, except where the
+respawn was the limit. In the filled hunts the respawn feeds x1.45 (level 1-50), x1.40 (50-150), x1.21 (150-300) and
+x1.87 (300-600) the kills; a solo hunter was respawn-bound in 175 of 353 filled hunts of level 1-50 and 36 of 140 of
+50-150, which gives +16% and +5% experience per hour there and nothing above level 150. Less walking between packs
+adds an estimated +5-10% in the hunts that were under 2.0 per 100 (146 hunts). So: about +5-25% for a solo hunter in
+thin low-level hunts, about +5-10% in thin hunts above level 150, 0 in the hunts that were full; crowded hunts lose
+less to sharing. Measure it with the hunt tracker in the betas.
+
+**Small hunts that need a map extension.** After the fill these hunts still have under 20 monsters, because their
+walkable area is small, not because they were thin (most are dense rooms already). Bigger hunts there need map work:
+
+| Band | Hunts under 20 monsters | The smallest (entries, position, nearest town, monsters) |
+|---|---|---|
+| 1-20 | 199 of 490 | 10: 32860,31144,4 Hollowspire (Dark Apprentice, Dark Magician); 10: 32463,31957,4 Isle of Hush (Minotaur Archer, Guard, Mage) |
+| 20-50 | 108 of 332 | 10: 33098,32530,1 Scorchveil (Blue Djinn, Marid); 10: 33036,32627,1 Scorchveil (Green Djinn, Efreet) |
+| 50-100 | 47 of 185 | 10: 33548,31930,3 Brassgate (Rustheap / Sludgebrass Golem, Devourer); 10: 33702,31968,4 Brassgate (Minotaur Hunter, Hornbrute) |
+| 100-200 | 31 of 132 | 10: 31707,32037,8 Isle of Oaths (Butcher Ogre, Colossal Ice Monkey); 10: 33487,32079,8 Brassgate (Demon) |
+| 200-300 | 7 of 26 | 11: 32843,31435,7 Hollowspire (Blackblade, Malevolent); 12: 31946,32025,4 Isle of Oaths (Emerald Mage, Sapphire Warrior) |
+| 300-500 | 29 of 90 | 10: 30789,31297,6 Rimeholt (Frost Hydra, Frost Larva); 10: 31217,32576,9 Kindle Isle (grothar, krag'lok) |
+| 500-700, 700-1000 | 0 | (only 6 and 3 hunts: the planned areas of docs/CONTENT.md) |
+
+The full list: `gen_spawn_density.py --stats` and `content_audit.py --json` on a scratch install.
 
 ### Dynamic respawn (`respawn.lua`, `respawn_core.lua`, `respawn_config.lua`, `src-patches/0022-dynamic-respawn.patch`)
 
@@ -11130,7 +11215,11 @@ stalls").
 
 ### Checked
 
-- `tests/base_spawns_patch_test.lua`: the tool on a fixture with placeholder monsters (every rule, markers, a second run,
+- `tools/gen_spawn_density_test.py`: the fill's rules on synthetic grids and a synthetic map (pockets, region, town and
+  NPC margins, spacing, the farthest tile first, the caps, the same file twice). The real map: the second run gave the
+  same file; the spawns step wrote 10,922 spawns, a second run changed nothing, `--remove` and a new run gave the same
+  bytes.
+- `tests/base_spawns_patch_test.lua`: the tool on a fixture with placeholder monsters (every rule, the fill, markers, a second run,
   `--remove` byte for byte, CRLF files, bad positions). `tests/respawn_test.lua`: the percent, the counts, the zones,
   the plan and the glue against a mocked engine.
 - The real base data: the first run wrote the changes above, the second changed nothing, `--remove` restored both files
@@ -11256,17 +11345,23 @@ writer stays so the owner can open, review or hand-place an area in the map edit
 
 | Area | Kind | Floors | Size | Walkable | Levels | Monsters (density) | Boss | Entrance |
 |---|---|---|---|---|---|---|---|---|
-| Emberdeep Hollows | cave: dirt walls, mud and lava cracks, lava pools | 2 (z 9-10), 2 holes | 66 x 52 | 3,307 | 1000-1100 | 65 (2.4 / 100): Tundra Troll, Loricate Orger, Lady bug, Lacewing Moth, Grindmaw | The Emberdeep Maw | 33221,33135,8: a lava-cracked dirt cave beside the Aegis Sentinel / Gloomstinger hunt |
-| Sunken Ossuary | ruins: rooms of slate, marble, flagstone, tiles in stone walls | 2 (z 9-10), 1 hole | 90 x 70 | 2,797 | 1100-1200 | 68 (2.8 / 100; rooms 3.5): Royal Man, Golden Lord, Dawn Strayer, Frost Maiden, Dreamgorger | The Ossuary Warden | 34295,31100,13: the stone halls of Nightglass Core (the 860-1000 late-game area) |
-| Cinderfall Wastes | open waste of grey rock, basalt fields, lava, mountain cliffs, dead trees | 1 (z 7, under the sky) | 100 x 80 | 4,993 | 1200-1300 | 72 (1.6 / 100): Azure Dragon, Jungle Beasts, Blazebringer, Swamp Snapper, Garack | Cinderwing | 31667,31269,7: the volcanic rock slopes of the Pyrrhaxis / Brinebrute hunt |
-| The Hollow Vault | dungeon of the dungeon system (base dungeon 5, level 800, 30 minutes) | 1 (z 9) | 76 x 64 | 1,062 | 800-850 | 24 (rooms 3.9) + Vault Keeper Ossrim (1.13M, its own difficulty curve: "Solo kill times") | yes | the Dungeons window |
+| Emberdeep Hollows | cave: dirt walls, mud and lava cracks, lava pools | 2 (z 9-10), 2 holes | 96 x 76 (was 66 x 52) | 7,348 (was 3,307) | 1000-1100 | 220 (3.24 / 100; was 65): Tundra Troll, Loricate Orger, Lady bug, Lacewing Moth, Grindmaw | The Emberdeep Maw | 33221,33135,8: a lava-cracked dirt cave beside the Aegis Sentinel / Gloomstinger hunt |
+| Sunken Ossuary | ruins: 20-26 rooms of slate, marble, flagstone, tiles in stone walls | 2 (z 9-10), 1 hole | 130 x 102 (was 90 x 70) | 5,678 (was 2,797) | 1100-1200 | 172 (3.24 / 100; was 68): Royal Man, Golden Lord, Dawn Strayer, Frost Maiden, Dreamgorger | The Ossuary Warden | 34295,31100,13: the stone halls of Nightglass Core (the 860-1000 late-game area) |
+| Cinderfall Wastes | open waste of grey rock, basalt fields, lava, mountain cliffs, dead trees | 1 (z 7, under the sky) | 145 x 116 (was 100 x 80) | 11,156 (was 4,993) | 1200-1300 | 346 (3.25 / 100; was 72): Azure Dragon, Jungle Beasts, Blazebringer, Swamp Snapper, Garack | Cinderwing | 31667,31269,7: the volcanic rock slopes of the Pyrrhaxis / Brinebrute hunt |
+| The Hollow Vault | dungeon of the dungeon system (base dungeon 5, level 800, 40 minutes; was 30) | 1 (z 9) | 116 x 96 (was 76 x 64) | 2,169 (was 1,062) | 800-850 | 64 (3.26 / 100; was 24) + Vault Keeper Ossrim (1.13M, its own difficulty curve: "Solo kill times") | yes | the Dungeons window |
 
 - Entrance spots were chosen with the live map data. Each is a free walkable tile with a wall or rock behind it, a free
   tile south of it, 5+ tiles from any spawn, inside a 700-1,500 tile region, next to a level 900-1300 hunt of
   matching ground (`docs/map_guide/generated/entrances.jpg`).
-- Density against item 89: normal hunts 2.7-4.4, caves 2.7-3.2, dungeons 3.3-3.6, open land 1.2-2.0. The bulky scaled
+- Grown on 2026-10-14 (owner request "every hunt big and full"): walkable tiles x2.0-2.2, density 3.25 per 100 in all
+  four (tests: 3.0-3.5), like the filled base-map hunts ("Fill"). The boxes stay apart in the free region: Emberdeep
+  x 14400-14495 y 14400-14475, Ossuary x 14560-14689 y 14400-14501, Cinderfall x 14400-14544 y 14560-14675, Vault
+  x 14560-14675 y 14560-14655. The Vault's run went from 30 to 40 minutes (speed challenge 12 -> 16) for the 64
+  monsters on the way to its boss (difficulty 6 boss alone: 19:31).
+- Density before the growth, against item 89: normal hunts 2.7-4.4, caves 2.7-3.2, dungeons 3.3-3.6, open land 1.2-2.0. The bulky scaled
   monsters are pulled 3 at a time, so the areas sit a little lower.
-- Capacity: 205 monsters + 3 bosses at 120 s. That is +130% over the 158 monsters of the 1000+ band, so about 40 more
+- Capacity (2026-10-14): 738 monsters + 3 bosses at 120 s (was 205), about 145 hunters at the 158 : 31 ratio below.
+- Capacity before the growth: 205 monsters + 3 bosses at 120 s. That is +130% over the 158 monsters of the 1000+ band, so about 40 more
   hunters (same ratio as 158 monsters for 31 hunters).
 - Map guide scorer (`tools/map/score_area.py` on the exported OTBMs): every value in band for the caves and the ruins.
   The waste has 1.6 lights per 100 tiles against the lava band's 5+; it is under the sky, and the lava pools glow

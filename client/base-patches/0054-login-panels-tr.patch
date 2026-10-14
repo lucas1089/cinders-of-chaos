@@ -1,0 +1,49 @@
+# Login panels through tr() (client/MANIFEST.md "Localization"): the Event Schedule panel's column heads "Active" and "Upcoming" were baked into /images/ui/schedule (the overlay's copy has them erased, tools/gen_ui_reskin.py TEXT_FREE) and are now two labels with tr(); the Casts panel's counts (casts.lua setCounts) go through tr('%d Players Casting', n) and tr('%d Viewers', n). The pt-BR texts are in client_chaos_locale/pt_br.lua. OTUI and Lua only; applies after 0014 (casts.lua).
+--- a/modules/client_background/background.otui
++++ b/modules/client_background/background.otui
+@@ -151,11 +151,32 @@
+         anchors.left: parent.left
+       // MiniWindowContents
+       FlatPanel
++        id: scheduleHeader
+         image-source: /images/ui/schedule
+         anchors.top: parent.top
+         anchors.left: parent.left
+         margin-top: 23
+         margin-left: 10
++      Label
++        !text: tr('Active')
++        size: 110 14
++        text-align: center
++        font: $var-cip-font
++        color: #8d5a3a
++        anchors.top: scheduleHeader.top
++        anchors.left: scheduleHeader.left
++        margin-top: 1
++        margin-left: 1
++      Label
++        !text: tr('Upcoming')
++        size: 112 14
++        text-align: center
++        font: $var-cip-font
++        color: #8d5a3a
++        anchors.top: scheduleHeader.top
++        anchors.left: scheduleHeader.left
++        margin-top: 1
++        margin-left: 113
+       Panel
+         id: panel1
+         height: 68
+--- a/modules/client_background/casts.lua
++++ b/modules/client_background/casts.lua
+@@ -39,8 +39,8 @@
+ local function setCounts(casters, viewers)
+   local box = castBox()
+   if not box then return end
+-  box.castCount:setText(string.format('%d %s', casters, casters == 1 and 'Player Casting' or 'Players Casting'))
+-  box.viewerCount:setText(string.format('%d %s', viewers, viewers == 1 and 'Viewer' or 'Viewers'))
++  box.castCount:setText(tr(casters == 1 and '%d Player Casting' or '%d Players Casting', casters))
++  box.viewerCount:setText(tr(viewers == 1 and '%d Viewer' or '%d Viewers', viewers))
+ end
+ 
+ local function cancelCastRequest()

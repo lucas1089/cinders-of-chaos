@@ -39,6 +39,32 @@ ASM="$SRC/AlegreyaSans/AlegreyaSans-Medium.ttf"
 # which keeps the sheet in a 256 slot (the whole range needs a 512 the font atlas does not have)
 "${MK[@]}" "$CINZEL" --weight 700 --name chaos-display --sizes 16 --last 126 --border 1.0 --shadow 1,1 \
   --space-width 5 --out "$OUT"
+# ui: replacements of the small stock UI fonts whose sheets lack the pt-BR letters (verdana-9px, -9px-bold and
+# -9px-rounded hold cp1250: "ê" drew "ę", "ã" "ă"; verdana-11px-rounded squashes the accented capitals to lower case
+# height; verdana-8px-rounded has its own order past "~"). PT Sans Regular, hinted monochrome pixels (--mono) like the
+# stock sheets, the accents as pixel marks (--pixel-accents), a pixel bold (--embolden 1) and the stock "rounded" dark
+# rim (--outline 1 --cross-outline). Each keeps the stock font's name and geometry (glyph cell, baseline row, height,
+# y-offset, line advance, space): its .otfont replaces the stock file of that name in data/fonts/ (the stock sheet
+# is then never loaded) and the sheet keeps the stock sheet's 256 atlas slot. The digit-only verdana-cap-bold (item
+# counts) stays stock.
+PTS="$SRC/PTSans/PT_Sans-Web-Regular.ttf"
+UI=("${MK[@]}" "$PTS" --mono --pixel-accents --out "$OUT" --otfont-out "$OUT/..")
+RIM=(--outline 1 --cross-outline --outline-color 0,0,0,255 --embolden 1)
+NOTE='Cinders of Chaos: replaces the stock font of this name (its sheet lacks the pt-BR letters) with a sheet made\nfrom PT Sans (SIL OFL 1.1, data/fonts/chaos/OFL-PTSans.txt) by tools/make_ofl_fonts.sh, same name and geometry.'
+"${UI[@]}" --name chaos-ui --sizes 10 --font-name verdana-9px --cell 13,13 --baseline 9 --height 13 --line 9 \
+  --space-width 3 --comment "$NOTE"
+"${UI[@]}" --name chaos-ui-bold --sizes 9 --embolden 1 --font-name verdana-9px-bold --cell 13,13 --baseline 9 \
+  --height 12 --line 12 --space-width 4 --comment "$NOTE"
+"${UI[@]}" --name chaos-ui-rounded --sizes 10 "${RIM[@]}" --font-name verdana-9px-rounded --cell 13,13 --baseline 9 \
+  --height 12 --line 12 --space-width 3 --comment "$NOTE"
+"${UI[@]}" --name chaos-ui-rounded --sizes 11 "${RIM[@]}" --font-name verdana-11px-rounded --cell 16,16 --baseline 11 \
+  --height 16 --y-offset -2 --line 13 --space-width 3 --comment "$NOTE"
+# the "lowspace" stock font is the 11 px one 1 px tighter: the same sheet, its .otfont spacing one less
+"${UI[@]}" --name chaos-ui-rounded --sizes 11 "${RIM[@]}" --letter-spacing -1 --font-name verdana-11px-rounded-lowspace \
+  --cell 16,16 --baseline 11 --height 16 --y-offset -2 --line 13 --space-width 3 --comment "$NOTE"
+# the stock 8 px sheet has no space-width, so the client gives its space the cell width (12): kept
+"${UI[@]}" --name chaos-ui-rounded --sizes 8 "${RIM[@]}" --font-name verdana-8px-rounded --cell 12,12 --baseline 8 \
+  --height 12 --line 12 --space-width 11 --comment "$NOTE"
 # chaos-outline-12px is gone (its atlas room went to the splash): an install updated over an older one keeps the old
 # chaos-outline-12px.png, and that sheet loaded as well would fill the font atlas (fatal at start). This stub carries
 # the name of a font loaded before it, so the client skips it (FontManager::importFont), like the replaced stock fonts.
@@ -55,4 +81,4 @@ Font
 OTF
 rm -f "$OUT/chaos-outline-12px.png"
 # the OFL wants its text (with the copyright line) in every copy that ships the fonts
-for f in Cinzel AlegreyaSC IMFellEnglish AlegreyaSans; do cp "$SRC/$f/OFL.txt" "$OUT/OFL-$f.txt"; done
+for f in Cinzel AlegreyaSC IMFellEnglish AlegreyaSans PTSans; do cp "$SRC/$f/OFL.txt" "$OUT/OFL-$f.txt"; done

@@ -366,16 +366,18 @@ return {
 	-- areas use 2000-13824, server/README.md "Rifts"); floors go down (z + 1 each). entrance: the portal on the live map
 	-- (chosen with the map data, docs/MAP_GUIDE.md "Generated areas"), back: where the exit portal puts players.
 	-- spawns.density: monsters per 100 walkable tiles outside the arrival's safe radius (item 89: 2.7-4.4 in normal
-	-- hunts; cave 2.7-3.2, dungeon 3.3-3.6, open land 1.2-2.0; the bulky level-scaled monsters are pulled three at a
-	-- time, so a little lower), band = the bounds the tests hold it to. level: the level the monsters are scaled to
+	-- hunts; 2026-10-14 every hunt "big and full": 3.25 in all four, the base-map hunts are filled to 3.25-3.4 by
+	-- tools/gen_spawn_density.py), band = the bounds the tests hold it to. Sizes were doubled on 2026-10-14 (walkable
+	-- tiles x2.0-2.2); the boxes stay apart: emberdeep x 14400-14495 y 14400-14475, ossuary x 14560-14689 y 14400-14501,
+	-- cinderfall x 14400-14544 y 14560-14675, vault x 14560-14675 y 14560-14655. level: the level the monsters are scaled to
 	-- (areagen_core.lua A.levelScale); spawntime in seconds (120 like the 600-1000 band).
 	areas = {
 		{
 			id = "emberdeep", name = "Emberdeep Hollows", kind = "cave", theme = "emberdeep", enabled = true, seed = 1001,
-			origin = {x = 14400, y = 14400, z = 9}, size = {66, 52}, floors = 2, linksPerFloor = 2,
+			origin = {x = 14400, y = 14400, z = 9}, size = {96, 76}, floors = 2, linksPerFloor = 2,
 			layout = {fill = 0.47, steps = 5, spread = 2, minRegion = 40, tunnelRadius = 1},
 			arrival = {8, 8}, exit = {0, -1}, minLevel = 1000,
-			spawns = {density = 2.4, band = {2.0, 3.0}, minDistance = 4, packChance = 15, packMax = 2, safeRadius = 10,
+			spawns = {density = 3.25, band = {2.9, 3.6}, minDistance = 4, packChance = 15, packMax = 2, safeRadius = 10,
 				spawntime = 120, level = {1000, 1100},
 				monsters = {{"Tundra Troll", 3}, {"Loricate Orger", 3}, {"Lady bug", 2}, {"Lacewing Moth", 2},
 					{"Grindmaw the Mauler", 2}}},
@@ -385,10 +387,10 @@ return {
 		},
 		{
 			id = "ossuary", name = "Sunken Ossuary", kind = "dungeon", theme = "ossuary", enabled = true, seed = 2002,
-			origin = {x = 14560, y = 14400, z = 9}, size = {90, 70}, floors = 2, linksPerFloor = 1,
-			layout = {rooms = {10, 13}, room = {7, 12}, gap = 3, corridor = 3, loops = {2, 4}, bossRoom = 13},
+			origin = {x = 14560, y = 14400, z = 9}, size = {130, 102}, floors = 2, linksPerFloor = 1,
+			layout = {rooms = {20, 26}, room = {7, 12}, gap = 3, corridor = 3, loops = {2, 4}, bossRoom = 13},
 			arrival = {9, 9}, exit = {0, -1}, minLevel = 1100,
-			spawns = {density = 2.8, band = {2.3, 3.5}, minDistance = 4, packChance = 20, packMax = 2, safeRadius = 9, roomCap = 5,
+			spawns = {density = 3.25, band = {2.9, 3.6}, minDistance = 4, packChance = 20, packMax = 2, safeRadius = 9, roomCap = 5,
 				spawntime = 120, level = {1100, 1200},
 				monsters = {{"Royal Man", 3}, {"Golden Lord", 3}, {"Dawn Strayer", 2}, {"Frost Maiden", 2},
 					{"Dreamgorger", 2}}},
@@ -398,10 +400,10 @@ return {
 		},
 		{
 			id = "cinderfall", name = "Cinderfall Wastes", kind = "waste", theme = "cinderfall", enabled = true, seed = 3003,
-			origin = {x = 14400, y = 14560, z = 7}, size = {100, 80}, floors = 1,
+			origin = {x = 14400, y = 14560, z = 7}, size = {145, 116}, floors = 1,
 			layout = {fill = 0.36, steps = 4, spread = 1, minRegion = 60, tunnelRadius = 2},
 			arrival = {9, 9}, exit = {0, -1}, minLevel = 1200,
-			spawns = {density = 1.6, band = {1.3, 2.0}, minDistance = 5, packChance = 25, packMax = 3, safeRadius = 12,
+			spawns = {density = 3.25, band = {2.9, 3.6}, minDistance = 5, packChance = 25, packMax = 3, safeRadius = 12,
 				spawntime = 120, level = {1200, 1300},
 				monsters = {{"Azure Dragon", 3}, {"Jungle Beasts", 3}, {"Blazebringer", 2}, {"Swamp Snapper", 2},
 					{"Garack", 1}}},
@@ -413,23 +415,24 @@ return {
 			-- a run of the dungeon system (dungeons.lua): registered as base dungeon `dungeon.id` at startup, monsters
 			-- spawned at the start of each run (no respawn), the boss in the boss room
 			id = "vault", name = "The Hollow Vault", kind = "dungeon", theme = "vault", enabled = true, seed = 4004,
-			origin = {x = 14560, y = 14560, z = 9}, size = {76, 64}, floors = 1,
-			layout = {rooms = {9, 11}, room = {6, 9}, gap = 3, corridor = 3, loops = {2, 3}, bossRoom = 11},
+			origin = {x = 14560, y = 14560, z = 9}, size = {116, 96}, floors = 1,
+			layout = {rooms = {24, 28}, room = {6, 9}, gap = 3, corridor = 3, loops = {2, 3}, bossRoom = 11},
 			arrival = {8, 8}, exit = {0, -1},
-			spawns = {density = 2.8, minDistance = 4, packChance = 30, packMax = 3, safeRadius = 8, roomCap = 5.5, spawntime = 0,
+			spawns = {density = 3.25, minDistance = 4, packChance = 30, packMax = 3, safeRadius = 8, roomCap = 5.5, spawntime = 0,
 				level = {800, 850},
 				monsters = {{"Orclops Ravager", 3}, {"Shaper Matriarch", 3}, {"Grove Keeper", 2}, {"Blazebringer", 2},
 					{"Garack", 2}}},
-			-- the boss: Garack's 14,800 x the engine level bonus (1 + 0.0074 x 900) x healthMult 10 = 1.13M; difficulty
-			-- multiplies it by bossHealth, not by the dungeon table's 100-1300%, so a solo run stays inside 30 minutes
+			-- 2026-10-14: twice the area and 64 monsters instead of 24, so the run has 40 minutes (was 30) and the speed
+			-- challenge 16 (was 12). the boss: Garack's 14,800 x the engine level bonus (1 + 0.0074 x 900) x healthMult 10 = 1.13M; difficulty
+			-- multiplies it by bossHealth, not by the dungeon table's 100-1300%, so a solo run stays inside the time
 			-- (server/README.md "Generated areas", The Hollow Vault)
 			boss = {monster = "Garack", name = "Vault Keeper Ossrim", level = 900, healthMult = 10, damageMult = 1.4},
-			dungeon = {id = 5, level = 800, party = 1, time = 1800, title = "The Hollow Vault",
+			dungeon = {id = 5, level = 800, party = 1, time = 2400, title = "The Hollow Vault",
 				bossHealth = {100, 125, 150, 175, 200, 225},
 				loot = {{id = 2160, count = 12}},
 				challenges = {
-					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 12 minutes.",
-						maxMs = 12 * 60 * 1000},
+					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 16 minutes.",
+						maxMs = 16 * 60 * 1000},
 					{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 				}}
 		}

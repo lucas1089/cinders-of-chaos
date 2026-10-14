@@ -24,6 +24,10 @@ What spawn_tuning.json asks for, in this order (server/README.md "Spawn density 
   add              {"area": id, "at": [x, y, z], "like": [x, y, z]}: a new one-monster spawn at `at` with the monster
                    and the final spawntime of the existing entry at `like`; `at` must lie in the area's box. The
                    positions were checked against the map (walkable, no protection zone, no house, no floor change)
+  fill             the name of a JSON file next to this one (tools/spawn_density.json, written by
+                   tools/gen_spawn_density.py from the map): per hunt {"id", "z", "likes": [[x, y], ...], "add":
+                   [[x, y, index in likes], ...]}; each add is a new one-monster spawn on floor z like an `add` above
+                   (marked chaosadd="<id>"), so every base-map hunt reaches the density of server/README.md "Fill"
 Monster names are never written in the JSON: an entry is named by its position, a new one copies an existing one.
 
 Every change carries a marker, so a run first undoes the previous run and then applies the JSON again: a second run
@@ -215,7 +219,7 @@ def apply(text, tuning, monsters):
     """returns (new text, counts, problems); text must be a restored file"""
     blocks = parse(text)
     times, counts = plan_spawntimes(blocks, tuning, monsters)
-    counts.update({'moved': 0, 'removed': 0, 'added': 0})
+    counts.update({'moved': 0, 'removed': 0, 'added': 0, 'filled': 0})
     problems = []
     by_pos = {}
     for b, center, tags in blocks:
@@ -292,6 +296,24 @@ def apply(text, tuning, monsters):
                      '\t\t<monster name="%s" x="0" y="0" z="%d" spawntime="%d" />%s\t</spawn>%s'
                      % (at[0], at[1], at[2], num(ad.get('radius'), 2), area['id'], eol, name, at[2], st, eol, eol))
         counts['added'] += 1
+    for area in tuning.get('_fill') or []:
+        z = area['z']
+        likes = []
+        for lx, ly in area['likes']:
+            hits = [h for h in by_pos.get((lx, ly, z), []) if h not in removes]
+            if not hits:
+                problems.append('fill %s: no entry at like %s' % (area['id'], [lx, ly, z]))
+            likes.append(hits[0] if hits else None)
+        for x, y, li in area['add']:
+            hit = likes[li] if 0 <= li < len(likes) else None
+            if hit is None:
+                continue
+            b, j = hit
+            name = attr(blocks[b][2][j], 'name')
+            added.append('\t<spawn centerx="%d" centery="%d" centerz="%d" radius="2" chaosadd="%s">%s'
+                         '\t\t<monster name="%s" x="0" y="0" z="%d" spawntime="%d" />%s\t</spawn>%s'
+                         % (x, y, z, area['id'], eol, name, z, final.get((b, j), 60), eol, eol))
+            counts['filled'] += 1
     if added:
         k = out.rfind('</spawns>')
         if k < 0:
@@ -389,7 +411,10 @@ def main(argv):
             print('%s: mapName not found, pass --spawn' % cfg_path)
             return 1
         spawn_path = os.path.join(data, 'world', name + '-spawn.xml')
-    tuning = json.loads(read(opts.get('--tuning', DEFAULT_TUNING)))
+    tuning_path = opts.get('--tuning', DEFAULT_TUNING)
+    tuning = json.loads(read(tuning_path))
+    if tuning.get('fill'):
+        tuning['_fill'] = json.loads(read(os.path.join(os.path.dirname(os.path.abspath(tuning_path)), tuning['fill'])))['areas']
     dry = opts.get('--dry-run')
     reg_path = os.path.join(data, 'monster', 'monsters.xml')
     if os.path.isfile(reg_path):

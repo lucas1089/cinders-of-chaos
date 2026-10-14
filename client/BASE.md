@@ -310,6 +310,15 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     do not touch it; without the module the button hides itself. OTUI only; its context is 0041's field timers panel
     (checked with `patch --dry-run` on that context, not on the assembled tree). Not run in a client yet.
 
+32. `0054` (OTUI `client_background/background.otui`, Lua `client_background/casts.lua`): the login screen's panels
+    through `tr()`. The Event Schedule panel's column heads "Active" and "Upcoming" were baked into
+    `/images/ui/schedule`; the overlay's recoloured copy has them erased (`tools/gen_ui_reskin.py` `TEXT_FREE`) and
+    the patch draws them as two labels (`$var-cip-font`, the old bronze `#8d5a3a`) over the head band. The Casts
+    panel's counts (`setCounts`) are `tr('%d Players Casting', n)` / `tr('%d Viewers', n)` (and the singulars). The
+    pt-BR texts, with the panel's other `tr()` labels (Boosted, Creature, Casts, Watch), are in
+    `client_chaos_locale/pt_br.lua`. Applies after 0014 (casts.lua; checked with `patch --dry-run` on the assembled
+    tree's files). Run in the Linux client (pt-BR and English login screens, 2026-10-14).
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

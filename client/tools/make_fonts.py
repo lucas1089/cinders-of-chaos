@@ -6,7 +6,8 @@ usage:
           [--outline 1] [--outline-color 0,0,0,200] [--shadow 1,1] [--shadow-color 0,0,0,160]
           [--first 32] [--last 255] [--encoding cp1252] [--tracking 0] [--weight 600]
           [--space-width 4] [--tight] [--border 1.2] [--border-color 0,0,0,230] [--max-cell-width 14]
-          [--max-overhang 1]
+          [--max-overhang 1] [--mono] [--pixel-accents] [--embolden 1] [--cross-outline] [--letter-spacing -1]
+          [--font-name verdana-9px --otfont-out DIR --cell 13,13 --baseline 9 --height 13 --y-offset 0 --line 9]
   python3 -I client/tools/make_fonts.py --atlas-check CLIENT_DATA_FONTS_DIR [EXTRA_DIR ...]
 
 Glyphs are white (the client tints a font with the widget's colour), with an optional dark outline and a baked drop
@@ -29,6 +30,16 @@ lower), empty rows above are cut and given back by the .otfont y-offset (the tex
 the empty rows below (a smaller sheet, a one-line text box that much shorter). --weight picks the weight of a variable font (its
 `wght` axis, e.g. Cinzel[wght].ttf 400..900); --space-width sets the space of a font whose own is very narrow.
 Names: <name>-<size>px, files <name>-<size>px.png/.otfont.
+
+--mono draws the glyphs aliased with the font's hinting (FreeType monochrome: crisp one-colour pixels like the stock
+small Verdana sheets), --pixel-accents draws an accented letter as its plain letter with a pixel-art mark one row above
+it (grave, acute, circumflex, tilde, diaeresis: hinted 7 px capitals make them all the same dash), --embolden N smears
+the glyphs N px to the right (a pixel bold: hinted bold at 9 px still has 1 px stems), --cross-outline grows the --outline by the four side neighbours only (the stock "rounded"
+fonts: a dark rim without corner pixels). A replacement of a stock font keeps that font's name and geometry, so every
+style that names it and every text box stays as it was: --font-name (the .otfont name), --otfont-out (where the
+.otfont goes, e.g. data/fonts/ over the stock file of that name; its texture then points into --out), --cell W,H
+(the stock glyph-size), --baseline B (the cell row the letters stand on: the bottom row of an "H"), --height and --y-offset (the stock values)
+and --line (the line advance, height + spacing height). Ink outside the fixed cell is cut and counted.
 
 The font atlas: the client copies every bitmap font into ONE 2048x2048 texture when it loads it (Atlas::cacheFont,
 built without BIG_FONTS). Each sheet takes a power-of-two square slot of max(width, height) (32 .. 2048, a buddy
@@ -82,8 +93,9 @@ def glyph_chars(first, last, encoding='cp1252'):
     return out
 
 
-def otfont_text(name, texture, height, cell_w, cell_h, space_width, first=32, y_offset=0, spacing=(0, 0)):
-    return ('Font\n'
+def otfont_text(name, texture, height, cell_w, cell_h, space_width, first=32, y_offset=0, spacing=(0, 0), comment=''):
+    return ''.join('// %s\n' % line for line in comment.splitlines()) + (
+            'Font\n'
             '  name: %s\n'
             '  texture: %s\n'
             '  height: %d\n'
@@ -206,6 +218,39 @@ def clip_width(ink_w, shift, adv, max_overhang=1):
     return min(ink_w, shift + adv + max(0, int(max_overhang)))
 
 
+# --pixel-accents: the accent marks of the pt-BR (and other Latin-1) letters drawn as pixel art over the plain letter;
+# hinted monochrome glyphs of 7-8 px capitals turn a grave, an acute and a tilde into the same dot or dash
+MARKS = {
+    '\u0300': ('#.', '.#'),        # grave
+    '\u0301': ('.#', '#.'),        # acute
+    '\u0302': ('.#.', '#.#'),      # circumflex
+    '\u0303': ('.#.#', '#.#.'),    # tilde
+    '\u0308': ('#.#',),            # diaeresis
+}
+
+
+def composed(ch):
+    """(plain letter, mark rows) of a letter drawn as its plain letter with a pixel mark over it (--pixel-accents),
+    e.g. 'á' -> ('a', acute); i and j lose their dot; None for anything else (ç, å, ø keep the font's own glyph)"""
+    import unicodedata
+    if not ch or len(ch) != 1:
+        return None
+    d = unicodedata.normalize('NFD', ch)
+    if len(d) != 2 or d[1] not in MARKS or not d[0].isalpha():
+        return None
+    return {'i': '\u0131', 'j': '\u0237'}.get(d[0], d[0]), MARKS[d[1]]
+
+
+def place_mark(rows, ink_left, ink_right, ink_top):
+    """the pixels (x, y) of a mark centred over the ink columns ink_left..ink_right, its last row one empty row above
+    ink_top (the top row of the letter)"""
+    w, h = len(rows[0]), len(rows)
+    x0 = int(math.floor((ink_left + ink_right) / 2.0 - (w - 1) / 2.0 + 0.5))
+    x0 = max(0, x0)
+    y0 = ink_top - 1 - h
+    return [(x0 + x, y0 + y) for y, r in enumerate(rows) for x, c in enumerate(r) if c == '#']
+
+
 def glyph_text(ch):
     """what is drawn for a character: None for a cell left empty (control, undefined), '' for an invisible glyph that
     only advances (the no-break space), the soft hyphen as a hyphen (as Windows fonts show it)"""
@@ -259,8 +304,19 @@ def vertical_fit(rows_used, line_height, tight=False):
 def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252', outline=0,
            outline_color=(0, 0, 0, 200), shadow=(0, 0), shadow_color=(0, 0, 0, 160), tracking=0, weight=None,
            space_width=None, tight=False, border=0.0, border_color=(0, 0, 0, 230), max_cell_width=None,
-           max_overhang=1):
+           max_overhang=1, mono=False, cross_outline=False, font_name=None, otfont_out=None, cell=None, baseline=None,
+           height=None, y_offset=None, line=None, comment='', pixel_accents=False, embolden=0,
+           letter_spacing=0):
+    """one sheet and its .otfont. With `cell` (w, h) and `baseline` the geometry is fixed (a stock font's
+    replacement): glyphs wider than the cell are squeezed into it, ink above or below it is cut, and the .otfont takes
+    `height`, `y_offset` and `line` (the line advance) as given"""
     from PIL import Image, ImageDraw, ImageFont
+
+    def draw(img):
+        d = ImageDraw.Draw(img)
+        if mono:
+            d.fontmode = '1'  # aliased, hinted for monochrome (FreeType)
+        return d
     font = ImageFont.truetype(font_file, size)
     if weight:
         font.set_variation_by_axes(axis_values(font.get_variation_axes(), {'wght': weight}))
@@ -276,7 +332,9 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
     right = ring + max(0, shadow[0])
     space = (space_width if space_width else int(round(font.getlength(' '))) + tracking)
     chars = glyph_chars(first, last, encoding)
-    metrics, squeezed, clipped = {}, {}, {}
+    metrics, squeezed, clipped, marked = {}, {}, {}, {}
+    if cell:
+        max_cell_width = min(max_cell_width or cell[0], cell[0])
     cell_w = 1
     for b, ch in chars:
         text = glyph_text(ch)
@@ -285,10 +343,14 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
         if text == '':  # no-break space: only the advance of the space
             metrics[b] = (text, 0, pad_l + max(1, space) + right, 0)
             continue
-        l, t, r, bt = font.getbbox(text)
-        adv = int(round(font.getlength(text))) + tracking
+        comp = composed(text) if pixel_accents else None
+        if comp:  # drawn and measured as its plain letter, the mark added as pixels
+            marked[b] = comp
+        shape = comp[0] if comp else text
+        l, t, r, bt = font.getbbox(shape)
+        adv = int(round(font.getlength(shape))) + tracking + embolden
         shift = max(0, -l)  # a glyph that starts left of its origin is moved right by that much
-        ink_w = max(r + shift, adv + shift)
+        ink_w = max(r + embolden + shift, adv + shift)
         cut_w = clip_width(ink_w, shift, adv, max_overhang)
         if cut_w < ink_w:  # a tail past the advance: cut (the client would space the next glyph after it)
             clipped[b] = ink_w - cut_w
@@ -300,24 +362,38 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
             ink_w = fit_w
         metrics[b] = (text, shift, pad_l + shift + adv + right, ink_w)  # spacing -right in the .otfont
         cell_w = max(cell_w, pad_l + ink_w + pad_r)
+    if cell:
+        cell_w = cell[0]
     line_h = ascent + descent + pad_t + pad_b
     # each glyph is drawn into a tall canvas first: the rows all glyphs use decide the cell height (vertical_fit)
     margin = size + outline + abs(shadow[1]) + 2
     canvas_h = line_h + 2 * margin
-    glyphs, top, bottom = {}, None, None
+    glyphs, top, bottom, boxes = {}, None, None, {}
     for b, (text, shift, adv, _) in metrics.items():
         glyph = Image.new('RGBA', (cell_w, canvas_h), (0, 0, 0, 0))
         if text:
             if b in squeezed:  # drawn at its own width, then scaled to fit the cell
                 full_w, fit_w = squeezed[b]
                 wide = Image.new('L', (pad_l + full_w + pad_r + shift, canvas_h), 0)
-                ImageDraw.Draw(wide).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
+                draw(wide).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
                 ink = wide.crop((pad_l, 0, pad_l + full_w, canvas_h)).resize((fit_w, canvas_h), Image.LANCZOS)
+                if mono:
+                    ink = ink.point(lambda v: 255 if v >= 128 else 0)
                 mask = Image.new('L', (cell_w, canvas_h), 0)
                 mask.paste(ink, (pad_l, 0))
             else:
                 mask = Image.new('L', (cell_w, canvas_h), 0)
-                ImageDraw.Draw(mask).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
+                draw(mask).text((pad_l + shift, margin + pad_t), marked[b][0] if b in marked else text, font=font,
+                                fill=255)
+                if embolden:
+                    mask = _embolden(mask, embolden)
+                if b in marked:
+                    box = mask.getbbox()
+                    if box:
+                        px = mask.load()
+                        for x, y in place_mark(marked[b][1], box[0], box[2] - 1, box[1]):
+                            if 0 <= x < cell_w and 0 <= y < canvas_h:
+                                px[x, y] = 255
                 if b in clipped:  # nothing past the kept ink width (the ring then closes the cut edge)
                     ImageDraw.Draw(mask).rectangle((pad_l + metrics[b][3], 0, cell_w, canvas_h), fill=0)
             if shadow != (0, 0):
@@ -326,22 +402,32 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
                 if border:
                     sh = _soft_dilate(sh, border)
                 elif outline:
-                    sh = _dilate(sh, outline)
+                    sh = _dilate(sh, outline, cross_outline)
                 glyph.paste(Image.new('RGBA', (cell_w, canvas_h), shadow_color), (0, 0),
                             sh.point(lambda v: v * shadow_color[3] // 255))
             if border:
                 glyph = Image.alpha_composite(glyph, _colored(_soft_dilate(mask, border), border_color))
             elif outline:
-                glyph = Image.alpha_composite(glyph, _colored(_dilate(mask, outline), outline_color))
+                glyph = Image.alpha_composite(glyph, _colored(_dilate(mask, outline, cross_outline), outline_color))
             glyph = Image.alpha_composite(glyph, _colored(mask, (255, 255, 255, 255)))
             box = glyph.getchannel('A').getbbox()
             if box:
+                boxes[b] = box
                 top = box[1] if top is None else min(top, box[1])
                 bottom = box[3] if bottom is None else max(bottom, box[3])
         glyphs[b] = glyph
     if top is None:
         top, bottom = margin, margin + line_h
-    first_row, cell_h, y_offset, spacing_h = vertical_fit((top - margin, bottom - margin), line_h, tight)
+    cut_rows, cut_glyphs = 0, ''
+    if cell:  # fixed: the baseline on cell row `baseline` (the text is drawn with its ascent line at pad_t)
+        first_row, cell_h = pad_t + ascent - 1 - baseline, cell[1]
+        y_offset = y_offset or 0
+        spacing_h = (line if line is not None else cell_h) - (height or cell_h)
+        cut_rows = max(0, first_row - (top - margin)) + max(0, (bottom - margin) - (first_row + cell_h))
+        cut_glyphs = ''.join(metrics[b][0] for b in sorted(boxes) if boxes[b][1] - margin < first_row or
+                             boxes[b][3] - margin > first_row + cell_h)
+    else:
+        first_row, cell_h, y_offset, spacing_h = vertical_fit((top - margin, bottom - margin), line_h, tight)
     cols, rows, w, h, slot = layout(len(chars), cell_w, cell_h)
     sheet = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     for i, (b, ch) in enumerate(chars):
@@ -358,21 +444,51 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
     base = '%s-%dpx' % (name, size)
     os.makedirs(out_dir, exist_ok=True)
     sheet.save(os.path.join(out_dir, base + '.png'), optimize=True)
-    with open(os.path.join(out_dir, base + '.otfont'), 'w', encoding='utf-8') as f:
-        f.write(otfont_text(base, base, cell_h, cell_w, cell_h, max(1, space + right), first=first,
-                            y_offset=y_offset, spacing=(-right, spacing_h)))
-    return {'name': base, 'size': (w, h), 'cell': (cell_w, cell_h), 'slot': slot,
+    def_dir = otfont_out or out_dir
+    texture = os.path.relpath(os.path.join(out_dir, base), def_dir).replace(os.sep, '/')
+    with open(os.path.join(def_dir, (font_name or base) + '.otfont'), 'w', encoding='utf-8') as f:
+        f.write(otfont_text(font_name or base, texture, height or cell_h, cell_w, cell_h, max(1, space + right),
+                            first=first, y_offset=y_offset, spacing=(-right + letter_spacing, spacing_h),
+                            comment=comment))
+    return {'name': font_name or base, 'cut_rows': cut_rows, 'cut_glyphs': cut_glyphs, 'size': (w, h), 'cell': (cell_w, cell_h), 'slot': slot,
             'glyphs': sum(1 for b in metrics if metrics[b][0]), 'range': (first, last), 'y_offset': y_offset,
             'squeezed': ''.join(metrics[b][0] for b in sorted(squeezed)),
             'clipped': ''.join(metrics[b][0] for b in sorted(clipped)),
-            'line': cell_h + spacing_h, 'old_line': line_h}
+            'line': (height or cell_h if cell else cell_h) + spacing_h, 'old_line': line_h}
 
 
-def _dilate(mask, radius):
-    from PIL import ImageFilter
+def _dilate(mask, radius, cross=False):
+    """grow a mask by `radius` whole pixels: a 3x3 square per step, or (cross) the four side neighbours only"""
+    from PIL import ImageChops, ImageFilter
     out = mask
     for _ in range(radius):
-        out = out.filter(ImageFilter.MaxFilter(3))
+        if cross:
+            grown = out
+            for dx, dy in CROSS:
+                grown = ImageChops.lighter(grown, _shift(out, dx, dy))
+            out = grown
+        else:
+            out = out.filter(ImageFilter.MaxFilter(3))
+    return out
+
+
+CROSS = ((1, 0), (-1, 0), (0, 1), (0, -1))
+
+
+def _embolden(mask, px):
+    """a pixel-font bold: the mask smeared `px` pixels to the right (a 1 px stem becomes 2 px)"""
+    from PIL import ImageChops
+    out = mask
+    for dx in range(1, px + 1):
+        out = ImageChops.lighter(out, _shift(mask, dx, 0))
+    return out
+
+
+def _shift(mask, dx, dy):
+    """the mask moved by (dx, dy), what comes in empty (no wrap-around)"""
+    from PIL import Image
+    out = Image.new(mask.mode, mask.size, 0)
+    out.paste(mask, (dx, dy))
     return out
 
 
@@ -456,6 +572,22 @@ def main(argv):
     ap.add_argument('--max-cell-width', type=int, help='squeeze glyphs wider than this cell (px, rings included)')
     ap.add_argument('--max-overhang', type=int, default=1,
                     help='px of ink kept past a glyph\'s advance; more (a "Q" tail) is cut (default 1)')
+    ap.add_argument('--mono', action='store_true', help='aliased, hinted glyphs (crisp one-colour pixels)')
+    ap.add_argument('--pixel-accents', action='store_true',
+                    help='accented letters: the plain letter with a pixel-art mark (for --mono small sizes)')
+    ap.add_argument('--embolden', type=int, default=0,
+                    help='pixel bold: smear the glyphs this many px to the right (the advance grows with it)')
+    ap.add_argument('--letter-spacing', type=int, default=0,
+                    help='px added to the .otfont spacing between letters (the sheet is unchanged)')
+    ap.add_argument('--cross-outline', action='store_true', help='the outline grows by the side neighbours only')
+    ap.add_argument('--font-name', help='the .otfont name (a stock font this one replaces; default <name>-<size>px)')
+    ap.add_argument('--otfont-out', help='folder of the .otfont (default --out; its texture points into --out)')
+    ap.add_argument('--cell', help='fixed glyph cell W,H (a stock font\'s glyph-size)')
+    ap.add_argument('--baseline', type=int, help='with --cell: the cell row the letters stand on (the bottom row of an H)')
+    ap.add_argument('--height', type=int, help='with --cell: the .otfont height (default the cell height)')
+    ap.add_argument('--y-offset', type=int, help='with --cell: the .otfont y-offset (default 0)')
+    ap.add_argument('--line', type=int, help='with --cell: the line advance (height + spacing height)')
+    ap.add_argument('--comment', default='', help='comment lines at the top of the .otfont')
     ap.add_argument('--atlas-check', nargs='+', metavar='DIR')
     a = ap.parse_args(argv)
     if a.atlas_check:
@@ -463,15 +595,21 @@ def main(argv):
     if not a.font or not a.name:
         ap.error('FONT and --name are needed (or --atlas-check DIR)')
     shadow = tuple(int(x) for x in a.shadow.split(','))
+    cell = tuple(int(x) for x in a.cell.split(',')) if a.cell else None
+    if cell and a.baseline is None:
+        ap.error('--cell needs --baseline')
     for size in [int(s) for s in a.sizes.split(',') if s.strip()]:
         r = render(a.font, size, a.name, a.out, a.first, a.last, a.encoding, a.outline, parse_rgba(a.outline_color),
                    shadow, parse_rgba(a.shadow_color), a.tracking, a.weight, a.space_width, a.tight,
-                   a.border, parse_rgba(a.border_color), a.max_cell_width, a.max_overhang)
+                   a.border, parse_rgba(a.border_color), a.max_cell_width, a.max_overhang, a.mono, a.cross_outline,
+                   a.font_name, a.otfont_out, cell, a.baseline, a.height, a.y_offset, a.line,
+                   a.comment.replace('\\n', '\n'), a.pixel_accents, a.embolden, a.letter_spacing)
         print('%s: %dx%d sheet, cell %dx%d, glyphs %d..%d (%d drawn), y-offset %d, line %d, atlas slot %d%s%s' % (
               r['name'], r['size'][0], r['size'][1], r['cell'][0], r['cell'][1], r['range'][0], r['range'][1],
               r['glyphs'], r['y_offset'], r['line'], r['slot'],
               ', %d squeezed' % len(r['squeezed']) if r['squeezed'] else '',
-              ', cut past the advance: %s' % r['clipped'] if r['clipped'] else ''))
+              ', cut past the advance: %s' % r['clipped'] if r['clipped'] else '') +
+              (', ink outside the cell (%d rows): %s' % (r['cut_rows'], r['cut_glyphs']) if r['cut_rows'] else ''))
     return 0
 
 

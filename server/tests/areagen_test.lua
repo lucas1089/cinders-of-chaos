@@ -175,7 +175,7 @@ eq(hunting, 3, "three hunting areas")
 
 -- ====================================================================== the configured areas
 -- Fixed checksums: change them together with the config (python3 -I server/tools/areagen_export.py summary prints them).
-local SUMS = {emberdeep = 877547416, ossuary = 1345173580, cinderfall = 283090213, vault = 1403621262}
+local SUMS = {emberdeep = 1094799804, ossuary = 1009320019, cinderfall = 708720936, vault = 1911546530}
 
 -- ground id -> family (stock and dark)
 local famOf = {}
@@ -307,16 +307,16 @@ for _, def in ipairs(cfg.areas) do
 	end
 end
 
--- density of the three hunting areas against item 89 (normal hunts 2.7-4.4 per 100 tiles; 1000+ band 2.7)
+-- density of the three hunting areas: "big and full" (2026-10-14), 3.0-3.5 per 100 tiles like the filled base hunts
 local total = 0
 for _, def in ipairs(cfg.areas) do
 	if not def.dungeon then
 		local m = A.generate(cfg, def, {})
 		total = total + m.stats.monsters
-		ok(m.stats.density >= 1.3 and m.stats.density <= 3.5, def.id .. ": density in the item 89 range")
+		ok(m.stats.density >= 3.0 and m.stats.density <= 3.5, def.id .. ": density 3.0-3.5 per 100 tiles")
 	end
 end
-ok(total >= 150 and total <= 240, "the three areas hold about 150-200 monsters (" .. total .. ")")
+ok(total >= 650 and total <= 820, "the three areas hold about 740 monsters (" .. total .. ")")
 
 -- ====================================================================== many seeds, small areas
 local base = {}

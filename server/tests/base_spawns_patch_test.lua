@@ -4,7 +4,8 @@
 -- rare ones, bosses or other bands), entries move, are removed and added by position (the added monster and spawntime
 -- copied from the entry at `like`), late_game.py's markers stay; a second run changes nothing, --remove gives the
 -- stock file back byte for byte (also with CRLF line ends), bad positions are reported with exit status 1, --report
--- prints the band table.
+-- prints the band table. The fill file (tools/spawn_density.json, by gen_spawn_density.py) adds spawns per hunt
+-- with the monster and final spawntime of a like entry.
 local fails, checks = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -126,6 +127,7 @@ local tuning = [[
   "areas": [{"id": "T-01", "box": [1990, 1990, 8, 2010, 2010, 8], "band": "300-600", "note": "test"}],
   "move": [{"at": [2002, 2001, 8], "to": [2003, 2003]}, {"at": [3010, 3000, 9], "to": [3011, 3001]}],
   "remove": [{"at": [1002, 1000, 7]}],
+  "fill": "fill.json",
   "add": [
     {"area": "T-01", "at": [2005, 2005, 8], "like": [2000, 2000, 8]},
     {"area": "T-01", "at": [2006, 2004, 8], "like": [1998, 2001, 8], "radius": 1}
@@ -134,6 +136,12 @@ local tuning = [[
 ]]
 local tuningPath = root .. "/tuning.json"
 writeFile(tuningPath, tuning)
+writeFile(root .. "/fill.json", [==[
+{"areas": [
+  {"id": "F0001", "z": 7, "likes": [[1000, 1000], [999, 1002]], "add": [[1004, 1004, 0], [996, 1006, 1]]},
+  {"id": "F0002", "z": 8, "likes": [[2000, 2000]], "add": [[1995, 1996, 0]]}
+]}
+]==])
 
 local tool = "tools/patch_base_spawns.py"
 local function run(args)
@@ -152,6 +160,7 @@ ok(out:find("1 glitch", 1, true) ~= nil, "one glitched spawntime fixed (the rare
 ok(out:find("2 band", 1, true) ~= nil, "two band respawns")
 ok(out:find("2 moved", 1, true) ~= nil and out:find("1 removed", 1, true) ~= nil and out:find("2 added", 1, true) ~= nil,
 	"moves, removal, adds counted")
+ok(out:find("3 filled", 1, true) ~= nil, "fill spawns counted")
 local reg1 = readFile(regPath)
 ok(out:find("1 dead first line(s) commented out: Test Dead", 1, true) ~= nil, "dead registration reported")
 ok(reg1:find('<!-- chaosdeadreg: <monster name="Test Dead" file="monsters/Test_Dead.xml" /> -->', 1, true) ~= nil,
@@ -187,7 +196,15 @@ ok(text:find('<spawn centerx="2006" centery="2004" centerz="8" radius="1" chaosa
 	'\t\t<monster name="Test Mid" x="0" y="0" z="8" spawntime="60" />', 1, true) ~= nil, "second add, own radius")
 ok(text:find('<npc name="Test Merchant"', 1, true) ~= nil, "NPCs untouched")
 ok(text:find("</spawn>\n</spawns>\n$") ~= nil, "added before </spawns>")
-eq(count(text, "<spawn "), 6, "four stock spawns and two added")
+ok(text:find('<spawn centerx="1004" centery="1004" centerz="7" radius="2" chaosadd="F0001">\n' ..
+	'\t\t<monster name="Test Low" x="0" y="0" z="7" spawntime="60" />', 1, true) ~= nil, "fill: copies the like entry")
+ok(text:find('<spawn centerx="996" centery="1006" centerz="7" radius="2" chaosadd="F0001">\n' ..
+	'\t\t<monster name="Test Low" x="0" y="0" z="7" spawntime="60" />', 1, true) ~= nil,
+	"fill: the final spawntime of a glitched like entry (31488 -> 60)")
+ok(text:find('<spawn centerx="1995" centery="1996" centerz="8" radius="2" chaosadd="F0002">\n' ..
+	'\t\t<monster name="Test Mid" x="0" y="0" z="8" spawntime="90" />', 1, true) ~= nil,
+	"fill: the band respawn of the like entry")
+eq(count(text, "<spawn "), 9, "four stock spawns, two added, three filled")
 
 -- ------------------------------------------------------------------ idempotent, report, remove
 local first = text
@@ -197,7 +214,7 @@ ok(out:find("unchanged", 1, true) ~= nil, "second run: unchanged")
 eq(readFile(spawnPath), first, "second run: same bytes")
 eq(readFile(regPath), reg1, "second run: monsters.xml the same")
 ok(out:find("| Band | Spawn blocks | Monsters |", 1, true) ~= nil, "report table")
-ok(out:find("| 300-600 | 3 | 6 |", 1, true) ~= nil, "report: the mid band (the stock block and two added ones; four plus two monsters)")
+ok(out:find("| 300-600 | 4 | 7 |", 1, true) ~= nil, "report: the mid band (the stock block, two added, one filled)")
 out, rc = run("--dry-run --remove")
 eq(readFile(spawnPath), first, "dry run writes nothing")
 out, rc = run("--remove")
@@ -227,6 +244,7 @@ writeFile(tuningPath, [[
   "areas": [{"id": "T-01", "box": [1990, 1990, 8, 2010, 2010, 8]}],
   "move": [{"at": [5000, 5000, 7], "to": [5001, 5000]}],
   "remove": [{"at": [5000, 5001, 7]}],
+  "fill": "fill.json",
   "add": [
     {"area": "T-01", "at": [2500, 2500, 8], "like": [2000, 2000, 8]},
     {"area": "T-02", "at": [2000, 2001, 8], "like": [2000, 2000, 8]},
@@ -234,8 +252,10 @@ writeFile(tuningPath, [[
   ]
 }
 ]])
+writeFile(root .. "/fill.json", '{"areas": [{"id": "F0009", "z": 7, "likes": [[1500, 1500]], "add": [[1501, 1501, 0]]}]}')
 out, rc = run("")
 eq(rc, 1, "bad positions: exit 1")
+ok(out:find("fill F0009: no entry at like [1500, 1500, 7]", 1, true) ~= nil, "fill copying nothing")
 ok(out:find("move [5000, 5000, 7]: 0 entries there", 1, true) ~= nil, "move without an entry")
 ok(out:find("remove [5000, 5001, 7]: no entry there", 1, true) ~= nil, "remove without an entry")
 ok(out:find("outside the box of area T-01", 1, true) ~= nil, "add outside its area")

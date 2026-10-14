@@ -20,15 +20,19 @@ The generated areas and the planned areas are listed apart: they are instanced o
 
 | Band | World hunts | Spawn entries | Parties at once | Other areas | Our quests with a story | Gap | Severity |
 |---|---|---|---|---|---|---|---|
-| 1-20 | 526 | 18,486 | 727 | - | tutorial island, base quest lines | first hour: no hint where to hunt or shop | high, fixed |
-| 20-50 | 403 | 12,801 | 508 | - | base quest lines | none | - |
-| 50-100 | 218 | 10,005 | 360 | - | base quest lines | none | - |
-| 100-200 | 156 | 5,569 | 204 | - | Ascension quest, Vocation Trials | none | - |
-| 200-300 | 32 | 805 | 35 | 2 planned | none before; now The Bone Choir | half the entries are one library isle | medium, plans written |
-| 300-500 | 105 | 3,537 | 138 | - | world boss and faction lines only | no story quest | low |
-| 500-700 | 14 | 280 | 14 | 3 planned | none before; now The Wyrm Tithe | 14 parties for the whole band | critical, plans written |
+| 1-20 | 502 | 22,102 | 797 | - | tutorial island, base quest lines | first hour: no hint where to hunt or shop | high, fixed |
+| 20-50 | 392 | 16,237 | 583 | - | base quest lines | none | - |
+| 50-100 | 208 | 11,724 | 395 | - | base quest lines | none | - |
+| 100-200 | 157 | 6,696 | 228 | - | Ascension quest, Vocation Trials | none | - |
+| 200-300 | 37 | 1,020 | 43 | 2 planned | none before; now The Bone Choir | half the entries are one library isle | medium, plans written |
+| 300-500 | 100 | 4,780 | 169 | - | world boss and faction lines only | no story quest | low |
+| 500-700 | 16 | 688 | 23 | 3 planned | none before; now The Wyrm Tithe | 14 parties for the whole band | critical, plans written |
 | 700-1000 | 10 | 212 | 10 | Hollow Vault, 3 planned | Sepulchre intros; now Requiem for the Ash-Sister | late game rows only, one town | critical, plans written |
 | 1000+ | 0 | 0 | 0 | 3 generated, 2 planned | none before; now The Last Ember | no world hunt at all | critical, plans written |
+
+Numbers after the fill of 2026-10-14 (every hunt under 3.25 monsters per 100 walkable tiles raised to 3.4 by
+`tools/gen_spawn_density.py`, server/README.md "Spawn density and respawn", Fill); the hunt lists below are from before.
+The generated areas were doubled the same day (738 monsters instead of 205; README "Generated areas").
 
 Planned areas count once they are placed on the map. Until then 500-1000+ still rely on the late game rows, the
 generated areas and the instanced content below.

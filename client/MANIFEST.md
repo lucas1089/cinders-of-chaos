@@ -1686,6 +1686,8 @@ holds the font file used, its `OFL.txt` and a README (source URL, version, upstr
 | Alegreya Sans | AlegreyaSans-Medium.ttf (2.004) | `chaos-body-13px`, `chaos-body-12px` | `body` (off) | trial body font: Codex paragraphs, only when switched on |
 | | | `chaos-outline-11px` (antialiased border) | `outline`, `outlineSmall` | text straight over the game picture: the login scene's monster names (the 12 px size, unused, was dropped 2026-10-14 for the splash's room) |
 
+| PT Sans | PT_Sans-Web-Regular.ttf (2.003) | `chaos-ui-10px`, `chaos-ui-bold-9px`, `chaos-ui-rounded-8px` / `-10px` / `-11px` (hinted monochrome, pixel accents) | none: they replace stock fonts by name | `verdana-9px`, `verdana-9px-bold`, `verdana-9px-rounded`, `verdana-11px-rounded` (the main button and panel font), `verdana-11px-rounded-lowspace`, `verdana-8px-rounded` |
+
 Everything else keeps the stock Verdana. `client_chaos_theme`: `ChaosTheme.font(role[, fallback])` gives the role's
 font name when that font is loaded, `ChaosTheme.applyFont(widget, role)` sets it (nothing changes without the font).
 The `body` role is off unless the setting `chaosBodyFont` (g_settings) names one of its fonts:
@@ -1719,9 +1721,33 @@ further past the advance (`clip_width`); the cut glyphs are printed per sheet (Q
 on the assembled client: everything fits, no slot left. `make_fonts_test.py` checks every shipped sheet: each pt-BR
 letter (á à â ã é ê í ó ô õ ú ü ç and capitals) drawn and advancing like its plain letter, Q about as wide as O.
 
+**Stock UI fonts for pt-BR** (2026-10-14): six small stock fonts the base client and our UI draw with do not hold
+the pt-BR letters: `verdana-9px`, `verdana-9px-bold` and `verdana-9px-rounded` are cp1250 sheets ("Português" drew
+"Portugueş", "ã" "ă", "à" "ŕ", "õ" "ő": the login's top-right lines), `verdana-11px-rounded` (the buttons, 300+ uses)
+and its `-lowspace` twin squash the accented capitals to lower-case height ("CRéDITOS", "OPçõES"), and
+`verdana-8px-rounded` (action bar keys, notification timers) has its own glyph order past "~". The atlas has no room
+for more fonts (`--atlas-check`: 100% used), so `make_ofl_fonts.sh` replaces them in place: an `.otfont` of the stock
+file's name in `overlay/data/fonts/` (copied over the stock one, so the stock sheet is never loaded) with the stock
+name, glyph cell, baseline row, height, y-offset, line advance and space width, and its own sheet
+`chaos/chaos-ui-*.png` made from PT Sans Regular (OFL, google/fonts, `fonts-src/PTSans/`) in the same 256 slot. No
+style, layout or text box changes; text is a few percent narrower or wider than before. `make_fonts.py` options for
+it: `--mono` (hinted monochrome: crisp pixels like the stock sheets), `--pixel-accents` (grave, acute, circumflex,
+tilde and diaeresis drawn as 2-row pixel marks one empty row above the plain letter; hinted 7 px capitals turn them
+all into the same dash; ç keeps the font's cedilla), `--embolden 1` (a pixel bold: hinted bold at 9 px keeps 1 px
+stems), `--cross-outline` (the stock "rounded" rim: side neighbours only), `--font-name`, `--otfont-out`, `--cell`,
+`--baseline`, `--height`, `--y-offset`, `--line` (a stock font's geometry; ink outside the cell is cut and listed:
+only the top row of the dark rim over the marks of the accented capitals of the 8/10 px rounded sheets) and
+`--letter-spacing` (the lowspace font: the 11 px sheet with 1 px less spacing). The digit-only `verdana-cap-bold`
+(item counts) stays stock; so does `Verdana Bold-11px-wheel`, which puts wheel icons on a few Latin-1 bytes (ú, Ü)
+on purpose. `--atlas-check` on the assembled client: 34 fonts, everything fits, no slot left (as before). Tests
+(`make_fonts_test.py`): `StockReplacements` (stock geometry, 256 slot, each pt-BR letter drawn and advancing like
+its plain letter), `PixelAccents`. Run in the Linux client: the pt-BR login screen draws "Versão", "Idioma:
+Português (Brasil)", "OPÇÕES", "CRÉDITOS" right; the English one keeps its layout. The login panels' English words
+are base patch 0054 (`BASE.md`).
+
 **Licence.** The OFL allows bundling the fonts and fonts made from them with the game (free or sold) if every copy
 carries the copyright notice and the licence, the fonts are never sold by themselves and stay under the OFL. So
-`data/fonts/chaos/OFL-<Family>.txt` ships with the client, the login screen's Credits box and the README name the
+`data/fonts/chaos/OFL-<Family>.txt` (PT Sans included) ships with the client, the login screen's Credits box and the README name the
 fonts and their authors.
 
 **Regenerate:** `bash client/tools/make_ofl_fonts.sh` (sizes, weights, outline/shadow and space widths are in it; it

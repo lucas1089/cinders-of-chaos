@@ -1,0 +1,11 @@
+// Cinders of Chaos: replaces the stock font of this name (its sheet lacks the pt-BR letters) with a sheet made
+// from PT Sans (SIL OFL 1.1, data/fonts/chaos/OFL-PTSans.txt) by tools/make_ofl_fonts.sh, same name and geometry.
+Font
+  name: verdana-9px
+  texture: chaos/chaos-ui-10px
+  height: 13
+  glyph-size: 13 13
+  first-glyph: 32
+  y-offset: 0
+  spacing: 0 -4
+  space-width: 3
