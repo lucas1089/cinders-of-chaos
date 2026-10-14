@@ -3,9 +3,10 @@
 -- README "Store pouches and the Everfull Ration". Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 ChaosStoreFoodConfig = {
 	-- the item: a new items.otb node (install_store_food.py), a copy of the stock dragon ham node `sourceId` (flags,
-	-- attributes) made not stackable, with the server id `id`. Its look: the dragon ham's client id until the client
-	-- pair has our art; then ownLook = true gives it `clientId` (client/tools/sprites/gen_store_food_art.py, appended
-	-- by import_art_things.py with art_import/store_food.csv; client MANIFEST.md "Everfull Ration look").
+	-- attributes, stackable like it: the client reads a count for a stackable look), with the server id `id`. Its look:
+	-- the dragon ham's client id until the client pair has our art; then ownLook = true gives it `clientId`
+	-- (client/tools/sprites/gen_store_food_art.py, appended by import_art_things.py with art_import/store_food.csv;
+	-- client MANIFEST.md "Everfull Ration look").
 	item = {id = 32084, sourceId = 2672, clientId = 33904, ownLook = false, weight = 300, article = "an",
 		name = "everfull ration", plural = "everfull rations",
 		description = "Store item: never runs out, cannot be traded, sold or dropped. Eat from it like the best food: " ..

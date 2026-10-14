@@ -84,3 +84,19 @@ function L.greyAction(locked, greyedByUs)
   if not locked and greyedByUs then return 'clear' end
   return nil
 end
+
+-- an item slot: grey it, or take our grey back. The mark is set BEFORE setItemShader: the engine calls the slot's
+-- onItemChange from setItemShader, game_itemrarity answers with onSlotItem and so this again; with the mark set after
+-- the call every re-entry greyed once more, without end ("stack overflow" at each container with a locked item, such
+-- as the store's Loot Bag or Everfull Ration: live test 2026-10-14). Returns the action taken.
+function L.applyItemGrey(widget, on)
+  local action = L.greyAction(on, widget.sfxGrey == true)
+  if action == 'grey' then
+    widget.sfxGrey = true
+    widget:setItemShader('chaos_ui_grey')
+  elseif action == 'clear' then
+    widget.sfxGrey = nil
+    widget:setItemShader('')
+  end
+  return action
+end

@@ -105,7 +105,8 @@ do
 		end
 		return {getId = function() return names[id or 0] and id or 0 end, getName = function() return names[id] or "?" end}
 	end
-	local function item(id, opts)
+	local item
+	function item(id, opts)
 		opts = opts or {}
 		local it = {id = id, count = opts.count or 1, items = opts.items, attrs = opts.attrs or {}, removed = false}
 		function it:getId() return self.id end
@@ -113,7 +114,16 @@ do
 		function it:isContainer() return self.items ~= nil end
 		function it:getItems() return self.items or {} end
 		function it:getCustomAttribute(k) return self.attrs[k] end
-		function it:hasAttribute() return false end
+		function it:hasAttribute(k)
+			if k == 2147483648 then return next(self.attrs) ~= nil end -- ITEM_ATTRIBUTE_CUSTOM: any custom attribute
+			return false
+		end
+		function it:removeCustomAttribute(k) self.attrs[k] = nil return true end
+		function it:clone()
+			local a = {}
+			for k, v in pairs(self.attrs) do a[k] = v end
+			return item(self.id, {count = self.count, attrs = a})
+		end
 		function it:remove() self.removed = true return true end
 		return it
 	end
@@ -134,6 +144,15 @@ do
 	dofile("data/scripts/chaos/autosell.lua")
 	local A = ChaosAutoSell
 	local P = A.prices
+	-- the loot layer's own custom attributes (item level, rarity) do not make a drop "named"; any other one does
+	-- (live test 2026-10-14: plain gear with an item level was kept as named and never sold)
+	eq(A.itemInfo(item(2400, {attrs = {chaos_ilvl = 5}})).attributes, false, "a plain drop with an item level is sold")
+	eq(A.itemInfo(item(2400, {attrs = {chaos_ilvl = 5, rarity = 0}})).attributes, false, "item level and rarity 0: sold")
+	eq(A.itemInfo(item(2400)).attributes, false, "no attributes: sold")
+	eq(A.itemInfo(item(2400, {attrs = {chaos_ilvl = 5, combatPowerLevel = 3}})).attributes, true,
+		"an upgraded item (base upgrade attribute) is kept")
+	eq(A.itemInfo(item(2400, {attrs = {chaos_ilvl = 5, chaos_gem2 = 7}})).attributes, true, "a gem set in a socket: kept")
+	eq(A.itemInfo(item(2400, {attrs = {chaos_tmog = 2463}})).attributes, true, "a transmog: kept")
 	local plan2, why = A.sellBag(pl)
 	eq(plan2, nil, "no Auto Seller: refused")
 	check(why:find("Auto Seller from the store", 1, true) ~= nil, "the reason names the store and the Pact")

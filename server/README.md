@@ -2523,7 +2523,10 @@ next login its former owners get a Loot Bag item for free, once ("Store pouches"
 list are taken out of corpses you own and sold at the NPC price; the gold goes into your bank balance and one loot
 message per corpse lists what was sold. The list is separate from the autoloot list (no autoloot slot needed), up to 40
 items. Items with a rarity are sold only for the rarities the player ticks (below); uniques (`chaos_unique`) and items
-with a custom name / description / text and no rarity are never sold. Containers are not sold. What the store pouches
+with a custom name / description / text and no rarity are never sold, nor items the player worked on (a custom
+attribute of `ChaosAutoSell.OWN_CUSTOM`: the base upgrade level, the Chaos quality, transmog, set, a gem in a socket).
+The item level every gear drop gets does not count (until 2026-10-14 any custom attribute did, so plain gear drops were
+kept as "named" and never sold; found in a live test). Containers are not sold. What the store pouches
 collect (orbs, whetstones, rune shards, gems, Rift Keys, omen items: `ChaosPouches.neverSell`) is never sold, even when it
 is on the list.
 
@@ -3043,8 +3046,14 @@ autoloot list is needed.
   rule still to the Orbs Pouch, capacity, owner only, carried only), the defaults (all the loot: plain gear, supplies,
   creature products), the weightless registration (installed kinds only, once), the window protocol, click-to-loot (same priority), never
   auto-sold, the store (one per character, inbox fallback, attributes), move / trade refusals, death and the login grants. Client: `game_pouches/pouchesview_test.lua`, `game_itemtooltip/tooltiplogic_test.lua`.
-- Not run live yet for the 2026-10-13 changes (255 slots, weightless, all-loot defaults, Sell all): engine 0038 was built
-  against the chain 0001-0037; the Lua side is unit tested.
+- Live test 2026-10-14 (engine 0001-0038): five kills filled the Loot Bag with all their loot and the free capacity did
+  not change (weightless); Sell all sold to the bank, kept a unique, a named item and an Epic copy (Epic unticked), the
+  30 s cooldown on the button and on the server. Found there: plain gear drops were kept as "named" (any custom
+  attribute counted, and every gear drop has an item level: `ChaosAutoSell.OWN_CUSTOM` now); the Loot Bag and the
+  Everfull Ration in a backpack overflowed the client's Lua stack (game_shaderfx); the Everfull Ration broke every packet
+  that showed it (not stackable on the server, stackable look in the client). Death: a death on land gave both back at
+  the next login; after a death on a shallow water tile no corpse was found there and the pouch and the ration did not come back
+  (an open question, not investigated further).
 - Verified in game (test server copy, screenshots in the session scratchpad `pouches/shots`): the three offers with icons; buying
   all three (into the backpack) and the refusal of a second Loot Bag; a kill whose corpse held orbs, a whetstone, a gem, rune
   shards, a Rift Key, omen fragments, gold and autoloot-list gear filled the right pouches (the key kept its tier and modifiers,
@@ -3408,7 +3417,7 @@ Chaos Coins in game. The donor's pack is never reduced. Owner decision 2026-10-1
 - **Staff:** `/creatorcodes` (group 5: the settings and each code's paid shares), `/creatorcodes run` (a round now).
 - **Install:** `install_all.py` (`files` and `sql` steps; the website's `install.sql` creates the same tables).
 - **Tests:** `tests/creator_codes_test.lua` (codes, shares and caps, the pick window, IPv4 / IPv6 /64, every decision,
-  the tables of the engine and SQL files), `website/tests/chaos_creator_test.php`. Not run on a live server.
+  the tables of the engine and SQL files), `website/tests/chaos_creator_test.php`. Live test 2026-10-14 (local site, mock provider): a code made on the website, picked on the donate page, the first donation (Vault: 10,000 + 3,000 + the capped 1,000 first bonus) credited in game, the round matched it (share 500) and voided it as the same connection as the creator (one machine).
 
 ## Character Bazaar (`bazaar.lua`, `bazaar_core.lua`, `bazaar_config.lua`, `sql/chaos_bazaar.sql`; website `bazaar_lib.php`, `pages/bazaar.php`)
 
@@ -3429,7 +3438,7 @@ log in.
   a fee outside 5-10 % or other days (startup and test).
 - **Tests:** `tests/bazaar_test.lua` (config, fee, step, the lock against a mocked engine: active / settling locked,
   sold / cancelled / expired free, staff, off, missing tables, the sweep; the tables of the SQL, engine and website
-  install files), `website/tests/chaos_bazaar_test.php`. Not run on a live server.
+  install files), `website/tests/chaos_bazaar_test.php`. Live test 2026-10-14 (local site): a level 300 character listed, its login refused (`login_refused` in the log; the client shows only the lost connection, not the reason), a buyout bid, the worker's transfer to the buyer's account (fee 8%, the seller paid 276 of 300) and the bought character's login on the new account.
 
 ## Mentors (`mentor.lua`, `mentor_core.lua`, `mentor_config.lua`, `sql/chaos_mentor.sql`, client `game_mentor`)
 
@@ -5093,6 +5102,14 @@ the mechanics below on top, and while one of those runs (`ChaosBossMech.busy`) t
   cadence is never shorter than the warning + 1.5 s, so the shared engine never overlaps two by itself.
 - Shapes grow with the boss: size 4 (the Omen guardians, the Ascended, the Cinderheart, the 4 x 4 rift guardians) adds
   1 sqm to radii and lengths and measures from the whole 4 x 4 body.
+- A big boss's target can stand on the boss's body tiles (the engine blocks only the anchor tile: a melee target north or
+  west of it is inside the 4 x 4 footprint). Cones and lines aimed at such a target go from the body's centre and start
+  at the target's row (`G.aimFrom`); before, they started past the whole body and missed the target (live test
+  2026-10-14: Sangrith's Red Crescent marked 1 tile, the tank unmarked).
+- Live test 2026-10-14 (two clients, levels 1000 and 300): Kaelgor and the Sangrith Omen guardian; the cast bar, the
+  warning marks and big circles, hits only on players whose tile was marked (logged per hit), the Infernal Wardstones at
+  55% (immune until the three died, then hurt again), no Lua error. The cast bar was off screen with no monster targeted
+  (client fix, client/MANIFEST.md game_monsterbar). Not seen live: totems (channels), soaks, line of sight.
 - Solo content (`ref.solo`) has no mechanic that needs two players: soaks count one soaker, a lone soaker takes at most
   60%; one player kills a totem in 60% of the channel; the adds of a solo phase die within 45 s.
 - The test's grid simulation: four arenas (open 19 x 19, the world boss room with pillars, a round rift chamber, a
@@ -5838,7 +5855,7 @@ the Leaderboards window (`game_leaderboard`, `recordsview.lua`); website: the Re
 - **Tests:** `tests/records_test.lua` (catalogue, periods and resets, brackets, validation, merge, ranking and ties, awards,
   titles, badge, realm firsts, texts; and `records.lua` on a mocked engine: every hook, the SQL order of the upsert, the
   broadcasts, the views and the meta parts), client `game_leaderboard/recordsview_test.lua`, website
-  `chaos_leaderboards_page_test.php`. Not run on a live server.
+  `chaos_leaderboards_page_test.php`. Live test 2026-10-14 (test server, two clients): a solo world boss kill (time and damage boards), an Omen guardian kill and Infinity Tower floors were recorded in all three views, the Records window showed them, the realm first was broadcast and listed; a kill with a second client of the same connection online was not recorded (the multi-client rule).
 
 ## Crafting (`crafting.lua`, `data/lib/chaos_crafting.lua`, `tools/install_crafting.py`)
 
@@ -8062,8 +8079,7 @@ Gambler's expected sale under his price for every base and level (with his real 
 lootable or craftable item priced or unsellable, no sell price above a cap or a Chaos NPC's price, the product / fist
 csv prices, the Auto Seller's table.
 
-**Not verified in game** (no test server run): the Loot Buyer's trade window with the per-player list, a sale paying a
-rolled copy, "appraise", the placement next to the temples.
+Live test 2026-10-14: the Loot Buyer stood next to 18 of the 20 temples (none free at Nightwrack); its trade window listed the carried items, four plate armours of different rarities and item levels sold at base x rarity x level (120 to 2,520 each), a unique was refused; no XML shop sells below the table's price. Not verified in game: "appraise".
 
 ## Market (`market.lua`, `market_core.lua`, `market_config.lua`, `sql/chaos_market.sql`, `tools/patch_market.py`, engine patch 0017, client `game_market`)
 

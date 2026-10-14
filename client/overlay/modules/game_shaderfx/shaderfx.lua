@@ -36,14 +36,7 @@ end
 function setGreyed(widget, on)
   if not widget or widget:isDestroyed() then return end
   if widget.setItemShader then
-    local action = L.greyAction(on, widget.sfxGrey == true)
-    if action == 'grey' then
-      widget:setItemShader('chaos_ui_grey')
-      widget.sfxGrey = true
-    elseif action == 'clear' then
-      widget:setItemShader('')
-      widget.sfxGrey = nil
-    end
+    L.applyItemGrey(widget, on) -- marks the slot before the shader call, which re-enters here (shaderfxlogic.lua)
   elseif hasUiShaders(widget) then
     if on then
       widget:setUiShader('chaos_ui_grey')

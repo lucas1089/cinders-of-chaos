@@ -17,6 +17,23 @@ V.TIERS = {
   { key = 'legendary', name = 'Legendary+', color = '#ffd040' },
 }
 V.DEFAULT_ON = { common = true, uncommon = true }
+
+-- a rarity checkbox as wide as its text: the box and the text offset (ChaosCheckBox text-offset 22) + 2 px. The
+-- fixed 72 px clipped "Common", "Uncommon" and "Legendary+" (live test 2026-10-14).
+V.CHECK_TEXT_OFFSET = 22
+V.ROW_SPACING = 6 -- autoseller.otui rarityRow spacing
+function V.checkWidth(textWidth)
+  return (tonumber(textWidth) or 0) + V.CHECK_TEXT_OFFSET + 2
+end
+
+-- the widths of a row of checkboxes with their spacing fit in rowWidth
+function V.rowFits(textWidths, rowWidth)
+  local total = 0
+  for i, w in ipairs(textWidths) do
+    total = total + V.checkWidth(w) + (i > 1 and V.ROW_SPACING or 0)
+  end
+  return total <= rowWidth, total
+end
 V.NEEDS = 'Needs the Auto Seller (Store > Convenience) or an active Chaos Pact.'
 
 -- the state from the server with every field safe to use; missing tiers take the defaults

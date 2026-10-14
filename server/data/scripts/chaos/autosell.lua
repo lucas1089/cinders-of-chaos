@@ -36,7 +36,6 @@ local AK = ChaosAutoSellCore
 local S = ChaosShopServices -- pure helpers (shop_services.lua); looked up again at run time if nil at load
 local SLOTS = Chaos.shopServices.autosellSlots
 local PRICES = dofile("data/scripts/chaos/sell_prices.lua")
-local CUSTOM = 2147483648 -- ITEM_ATTRIBUTE_CUSTOM (1 << 31): not exported to Lua by the engine
 
 local function services()
 	S = S or ChaosShopServices
@@ -79,13 +78,35 @@ local function customAttr(item, key)
 	return ok and v or nil
 end
 
+-- "Named" (never sold) by a custom attribute only for the player's own work on the item, listed here: any custom
+-- attribute counted before, and the Chaos loot layer gives every gear drop its item level (chaos_ilvl), so each plain
+-- gear drop was kept as "named" and never sold (live test 2026-10-14: a minotaur's mace and chain armor, "named 3").
+-- The engine cannot list an item's custom attributes or clear the flag, hence the list: the base upgrade system's
+-- level, the Chaos quality, transmog, set and the gems set into sockets (chaos_gem<n>).
+A.OWN_CUSTOM = {"combatPowerLevel", "chaos_quality", "chaos_tmog", "chaos_set"}
+A.GEM_SLOTS = 6
+
+local function ownCustom(item)
+	for _, key in ipairs(A.OWN_CUSTOM) do
+		if customAttr(item, key) ~= nil then
+			return true
+		end
+	end
+	for i = 1, A.GEM_SLOTS do
+		if customAttr(item, "chaos_gem" .. i) ~= nil then
+			return true
+		end
+	end
+	return false
+end
+
 local function itemInfo(item)
 	return {
 		unique = customAttr(item, "chaos_unique") ~= nil,
 		rarity = tonumber(customAttr(item, "rarity")) or 0,
 		locked = (tonumber(customAttr(item, "chaos_locked")) or 0) ~= 0, -- the item lock (salvage.lua): never sold
 		attributes = item:hasAttribute(ITEM_ATTRIBUTE_NAME) or item:hasAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
-			or item:hasAttribute(ITEM_ATTRIBUTE_TEXT) or item:hasAttribute(CUSTOM)
+			or item:hasAttribute(ITEM_ATTRIBUTE_TEXT) or ownCustom(item)
 	}
 end
 A.itemInfo = itemInfo

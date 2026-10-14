@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Client .otui layout check: no fit-children box layout on an anchor-sized widget.
+"""Client .otui layout checks: no fit-children box layout on an anchor-sized widget, no anchor cycle.
 
 A widget whose box layout has `fit-children: true` resizes itself to its
 children. If the same widget also has its size fixed by anchors on that axis
@@ -7,6 +7,11 @@ children. If the same widget also has its size fixed by anchors on that axis
 the layout and the anchors fight: each resize schedules another relayout and
 the client logs "ATTENTION the event list is not getting empty" forever
 (setRect / internalUpdate / updateLater), even while the window is hidden.
+
+Anchor cycles: two sibling widgets anchored to each other, on any axis (a.right: b.left and b.verticalCenter:
+a.verticalCenter), make the client log "anchor dependency cycle detected ... layout update aborted" each layout pass and
+leave the widgets where they were (the Auto Seller window's item row, live test 2026-10-14). The anchors of the widgets
+declared side by side under one parent are followed (anchors.fill / centerIn included; parent, prev and next are not).
 
 Only the widget's own lines are checked (not inherited styles).
 Run from the repo root: python3 -I tools/ci/check_layouts.py
@@ -69,13 +74,71 @@ def check_widget(path, node, errors):
     else:
         fixed = 'fill' in anchors
     if fixed:
-        rel = path.relative_to(ROOT)
+        rel = shown(path)
         errors.append('%s:%d: %s has %s fit-children and anchors %s fixing that size '
                       '(relayout loop: drop fit-children or an anchor)'
                       % (rel, node[2], node[1], layout_type, ', '.join(sorted(anchors))))
 
 
+def shown(path):
+    try:
+        return path.relative_to(ROOT)
+    except ValueError:
+        return path
+
+
+def anchor_targets(node):
+    """the sibling ids a widget node's own anchors point at"""
+    out = set()
+    for child in node[3]:
+        key, value = prop(child[1])
+        if key and key.startswith('anchors.') and value:
+            target = value.split('.')[0].strip()
+            if target and target not in ('parent', 'prev', 'next', 'none'):
+                out.add(target)
+    return out
+
+
+def check_cycles(path, node, errors):
+    """anchor cycles among the widgets declared under `node`"""
+    graph, lines = {}, {}
+    for child in node[3]:
+        key, _ = prop(child[1])
+        if key is not None:
+            continue
+        wid = None
+        for sub in child[3]:
+            k, v = prop(sub[1])
+            if k == 'id':
+                wid = v
+        if wid:
+            graph[wid] = anchor_targets(child)
+            lines[wid] = child[2]
+    state = {}
+
+    def visit(n, stack):
+        state[n] = 1
+        stack.append(n)
+        for t in sorted(graph.get(n, ())):
+            if t not in graph:
+                continue
+            if state.get(t) == 1:
+                cycle = stack[stack.index(t):] + [t]
+                rel = shown(path)
+                errors.append('%s:%d: anchor cycle %s (the client aborts the layout: anchor one of them elsewhere)'
+                              % (rel, lines[t], ' -> '.join(cycle)))
+            elif t not in state:
+                visit(t, stack)
+        stack.pop()
+        state[n] = 2
+
+    for n in sorted(graph):
+        if n not in state:
+            visit(n, [])
+
+
 def walk(path, node, errors):
+    check_cycles(path, node, errors)
     for child in node[3]:
         key, _ = prop(child[1])
         if key is None:  # a widget or style declaration
