@@ -173,6 +173,34 @@ if ($tableExists('chaos_bazaar_listings')) {
 		}
 		$out .= "chaos_bazaar_listings: one open listing per character (unique key)\n";
 	}
+	// at most maxActivePerAccount open listings per seller, held by the database too (two characters of one account
+	// listed at once both passed the count): `seller_slot`, the generated `active_seller_id` and their unique key. Open
+	// listings made before get a slot first (bazaar_lib.php assignSellerSlots), then the key is added.
+	// (keyed on the index, so a run stopped between the steps finishes them the next time)
+	$r = $link->query("SHOW INDEX FROM `chaos_bazaar_listings` WHERE `Key_name` = 'chaos_bazaar_listings_seller_slot'");
+	if ($r && $r->num_rows === 0) {
+		require_once $Z . '/plugins/chaos/bazaar_lib.php';
+		try {
+			$c = $link->query("SHOW COLUMNS FROM `chaos_bazaar_listings` LIKE 'active_seller_id'");
+			$ok = $c && $c->num_rows > 0 ? true : $link->query('ALTER TABLE `chaos_bazaar_listings` ADD COLUMN `seller_slot` tinyint(3) unsigned DEFAULT NULL, '
+				. "ADD COLUMN `active_seller_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `seller_account_id` ELSE NULL END) STORED");
+			if ($ok) {
+				$slotted = chaos_bazaar($config)->assignSellerSlots();
+				if ($slotted) {
+					$out .= "chaos_bazaar_listings: seller slots given to $slotted open listings\n";
+				}
+				$ok = $link->query('ALTER TABLE `chaos_bazaar_listings` ADD UNIQUE KEY `chaos_bazaar_listings_seller_slot` (`active_seller_id`, `seller_slot`)');
+			}
+			$error = $link->error;
+		} catch (mysqli_sql_exception $e) {
+			$ok = false;
+			$error = $e->getMessage();
+		}
+		if (!$ok) {
+			finish($out . 'chaos_bazaar_listings.active_seller_id: ' . $error . "\n", 1);
+		}
+		$out .= "chaos_bazaar_listings: auction limit per seller (unique key)\n";
+	}
 }
 // the version of the legal texts for the game server: server_config chaos_legal_version. The game's legal_notice.lua
 // tells an account without an acceptance of this version, at login, to accept on the website (legal_lib.php).

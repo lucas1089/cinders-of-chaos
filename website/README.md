@@ -913,6 +913,11 @@ Bazaar). The rules (`bazaar_lib.php`, class `ChaosBazaar`; numbers from the game
   "already listed". Cancel, sale, expiry and failure set NULL, so the character can be listed again. On an existing
   table `setup/chaos_setup.php` adds the column once (MySQL 5.7+ / MariaDB 10.2+); a character listed twice before
   keeps its oldest listing and the others are cancelled by the staff path (escrow refunded).
+- **At most `maxActivePerAccount` open listings per seller**, held by the database too: each listing takes a
+  `seller_slot` (1..max) and the generated `active_seller_id` (`seller_account_id` while open, else NULL) has a unique
+  key with it, so two characters of one account listed at once cannot both take the last slot; the loser reads the
+  slots again and gets "You can run 2 auctions at once". `setup/chaos_setup.php` adds both columns and the key to an
+  existing table once, giving open listings made before a slot first (`assignSellerSlots`).
 - Tables: `chaos_bazaar_listings`, `chaos_bazaar_bids`, `chaos_bazaar_log` (`install.sql`, `server/sql/chaos_bazaar.sql`).
 - Test: `php website/tests/chaos_bazaar_test.php`. Not run against a live site.
 

@@ -189,20 +189,23 @@ status update afterwards.
 
 ## 8. Known issues to tell players
 
-From ROADMAP.md and server/README.md; put the short list in the patch note or on Discord.
-- The rest of the base world still has old names in places: NPC names and dialogue, quests, houses, raid texts
-  (ROADMAP "Open decisions": the rename is in progress).
-- The three achievement wings (looks 2140-2142) draw nothing until sprite pair things_custom17 is on `windows-assets`
-  (docs/OWNER_TODO.md).
-- The outfit window lists no shaders (store ones neither); shaders still work from the store and the wardrobe.
-- The Necromancer line has no spell effect skins yet.
-- Rift monsters keep the corpse of their pool type.
-- Dungeon difficulty changes nothing in the dungeon. (The Infinity Tower season-end top 3 chests are paid since
-  12 Oct: server/README.md "Infinity Tower season rewards".)
-- Occupied towns do not raise NPC prices yet (invasions).
-- Rift Keys cannot be stashed (they do not stack).
-- The weapon (auto-attack) numbers are being re-measured; class balance may move between the weekends.
+From ROADMAP.md and server/README.md; put the short list in the patch note or on Discord. Checked against the code
+on 2026-10-14.
+- The Necromancer line has no spell effect skins yet (BETA_READINESS.md L8).
+- Rift monsters keep the corpse of their pool type (ROADMAP #8, open).
+- Occupied towns do not raise NPC prices yet (invasions, ROADMAP #29 "Not done").
+- Rift Keys cannot be stashed (they do not stack, ROADMAP #43). The store's Rift Key Pouch holds them.
+- Class balance may move between the weekends: the owner keeps the strong area classes as they are through the beta
+  and decides from its data (BETA_READINESS.md L7).
 - The Discord link in the client is empty until the server is created (`ChaosTopBar.COMMUNITY_URL`).
+
+Fixed since the first draft of this list (no longer to tell players):
+- Base world old names: NPCs, dialogue, quests, houses and raid texts renamed (`4c440803`).
+- Achievement wings (looks 2140-2142): pair things_custom17 is live on `windows-assets` (`2c9407d1`).
+- The outfit window lists and wears owned shaders (`067590f0`).
+- Dungeon difficulty scales monster health, damage, experience, gold and loot (`3b5a68af`; Hollow Vault and the
+  generated dungeons have their own curves). The Infinity Tower season-end top 3 chests are paid since 12 Oct.
+- The weapon (auto-attack) numbers were re-measured in game (`4a21429b`).
 
 ## 9. Wipe procedure
 

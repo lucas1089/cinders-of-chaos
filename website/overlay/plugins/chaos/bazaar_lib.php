@@ -256,6 +256,56 @@ final class ChaosBazaar {
 	}
 
 	/**
+	 * The lowest seller slot (1..maxActivePerAccount) no open listing of the seller holds, 0 when the seller already
+	 * runs maxActivePerAccount auctions. Open rows without a slot (made before `seller_slot`) count against the limit.
+	 */
+	private function freeSellerSlot(int $sellerAccount): int {
+		$max = (int)$this->cfg['maxActivePerAccount'];
+		$rows = $this->db->rows("SELECT `seller_slot` FROM `chaos_bazaar_listings` WHERE `seller_account_id` = ? AND `status` IN ('active', 'settling');", [$sellerAccount]);
+		if (count($rows) >= $max) {
+			return 0;
+		}
+		$used = array();
+		foreach ($rows as $r) {
+			$used[(int)$r['seller_slot']] = true;
+		}
+		for ($slot = 1; $slot <= $max; $slot++) {
+			if (!isset($used[$slot])) {
+				return $slot;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Install step before the unique key on (`active_seller_id`, `seller_slot`) is added to an existing table
+	 * (setup/chaos_setup.php): every open listing without a slot gets the lowest slot its seller has free (past
+	 * maxActivePerAccount for a seller over the limit from the old race: the key still holds, no new listing fits).
+	 * Returns the number of rows given a slot. Safe to run twice.
+	 */
+	public function assignSellerSlots(): int {
+		$n = 0;
+		$rows = $this->db->rows("SELECT `id`, `seller_account_id`, `seller_slot` FROM `chaos_bazaar_listings` WHERE `status` IN ('active', 'settling') ORDER BY `seller_account_id`, `id`;");
+		$used = array();
+		foreach ($rows as $r) {
+			if ($r['seller_slot'] !== null) {
+				$used[(int)$r['seller_account_id']][(int)$r['seller_slot']] = true;
+			}
+		}
+		foreach ($rows as $r) {
+			if ($r['seller_slot'] !== null) {
+				continue;
+			}
+			$seller = (int)$r['seller_account_id'];
+			for ($slot = 1; isset($used[$seller][$slot]); $slot++) {
+			}
+			$used[$seller][$slot] = true;
+			$n += $this->db->exec('UPDATE `chaos_bazaar_listings` SET `seller_slot` = ? WHERE `id` = ? AND `seller_slot` IS NULL;', [$slot, (int)$r['id']]);
+		}
+		return $n;
+	}
+
+	/**
 	 * Install step before the unique key on `active_player_id` is added to an existing table (setup/chaos_setup.php):
 	 * a character with more than one open listing (the old list race) keeps its oldest; the others are cancelled by
 	 * the staff path, which refunds every escrow. Returns the ids cancelled.
@@ -294,9 +344,10 @@ final class ChaosBazaar {
 		if ($buyout !== 0 && ($buyout <= $minPrice || $buyout > (int)$c['maxPrice'])) {
 			return array(false, 'The buyout must be above the minimum bid (or 0 for none).', 0);
 		}
-		$active = $this->one("SELECT COUNT(*) AS `n` FROM `chaos_bazaar_listings` WHERE `seller_account_id` = ? AND `status` IN ('active', 'settling');", [$sellerAccount]);
-		if ((int)($active['n'] ?? 0) >= (int)$c['maxActivePerAccount']) {
-			return array(false, sprintf('You can run %d auctions at once.', (int)$c['maxActivePerAccount']), 0);
+		$max = (int)$c['maxActivePerAccount'];
+		$tooMany = sprintf('You can run %d auctions at once.', $max);
+		if ($this->freeSellerSlot($sellerAccount) === 0) {
+			return array(false, $tooMany, 0);
 		}
 		$why = $this->blockers($playerId, $sellerAccount);
 		if ($why) {
@@ -305,18 +356,31 @@ final class ChaosBazaar {
 		}
 		$p = $this->one('SELECT `name`, `level`, `vocation` FROM `players` WHERE `id` = ?;', [$playerId]);
 		$now = $this->now();
-		// the check above and this INSERT are not atomic: two list requests at once both pass it. The unique key on
-		// `active_player_id` (generated: player_id while active or settling, NULL after) lets only one row in.
-		try {
-			$this->db->exec('INSERT INTO `chaos_bazaar_listings` (`player_id`, `seller_account_id`, `min_price`, `buyout`, `fee_pct`, `status`, `created_at`, `ends_at`,
-				`player_name`, `level`, `vocation`) VALUES (?, ?, ?, ?, ?, \'active\', ?, ?, ?, ?, ?);',
-				[$playerId, $sellerAccount, $minPrice, $buyout, (int)$c['feePct'], $now, $now + $days * 86400, (string)$p['name'], (int)$p['level'], (int)$p['vocation']]);
-		} catch (Throwable $e) {
-			if (!$this->listedNow($playerId)) {
-				throw $e;
+		// the checks above and this INSERT are not atomic: two list requests at once both pass them. The database holds
+		// both limits: the unique key on `active_player_id` (generated: player_id while active or settling, NULL after)
+		// lets one open row per character in, and the unique key on (`active_seller_id`, `seller_slot`) one open row per
+		// seller slot 1..maxActivePerAccount. A request that lost its slot to another character of the seller reads the
+		// free slots again: none left is the per-seller refusal.
+		for ($try = 0; ; $try++) {
+			$slot = $this->freeSellerSlot($sellerAccount);
+			if ($slot === 0) {
+				$this->log(0, $sellerAccount, $playerId, 'list_refused', 'auction limit (concurrent request)');
+				return array(false, $tooMany, 0);
 			}
-			$this->log(0, $sellerAccount, $playerId, 'list_refused', 'already listed (concurrent request)');
-			return array(false, 'The character is already listed.', 0);
+			try {
+				$this->db->exec('INSERT INTO `chaos_bazaar_listings` (`player_id`, `seller_account_id`, `seller_slot`, `min_price`, `buyout`, `fee_pct`, `status`, `created_at`, `ends_at`,
+					`player_name`, `level`, `vocation`) VALUES (?, ?, ?, ?, ?, ?, \'active\', ?, ?, ?, ?, ?);',
+					[$playerId, $sellerAccount, $slot, $minPrice, $buyout, (int)$c['feePct'], $now, $now + $days * 86400, (string)$p['name'], (int)$p['level'], (int)$p['vocation']]);
+				break;
+			} catch (Throwable $e) {
+				if ($this->listedNow($playerId)) {
+					$this->log(0, $sellerAccount, $playerId, 'list_refused', 'already listed (concurrent request)');
+					return array(false, 'The character is already listed.', 0);
+				}
+				if ($try >= $max) {
+					throw $e;
+				}
+			}
 		}
 		$row = $this->one("SELECT `id` FROM `chaos_bazaar_listings` WHERE `player_id` = ? AND `status` = 'active' ORDER BY `id` DESC LIMIT 1;", [$playerId]);
 		$id = (int)($row['id'] ?? 0);

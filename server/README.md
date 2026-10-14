@@ -4,12 +4,14 @@ Server side for the client modules in `client/overlay/modules/`. One revscript p
 each registering a `login` CreatureEvent plus an `extendedopcode` CreatureEvent (same pattern as
 `scripts/customs/stats_inspect/inspect.lua` in base server).
 
-**Nothing here has been run on a TFS server.** There was no TFS, no MySQL and no OTClient in the
-build environment. What was done: every file passes `luac5.3 -p`, and the Lua logic of all modules
-was exercised against a hand-written mock of the TFS API (fake `Player`, `db`, `Game`, the
-reference server's own `json.lua`) in a scratch directory that is not part of this tree. That
-checks protocol shapes and branching, not engine behaviour. `sql/chaos.sql` was not run against a
-database. Treat every engine-API call (listed under "Assumed API") as unverified.
+**What has run on a server (2026-10-14).** Most systems were tested in game on a local test server: the TFS 1.4.2
+fork with the engine patches, MySQL with the `sql/` tables, the Linux client. ROADMAP.md says per item whether it was
+"tested in game". An integrated live test (server, two clients, website) passed on 2026-10-14; its fixes are in
+`0ff264b2` and `6f4c0435`. Nothing has run on a production host or with the Windows client. What never ran live
+(pack combat, the four deep dungeons, many systems checked only against the mocked engine, the hosting tools) is listed
+in docs/BETA_READINESS.md "Never run on a real server or real client"; treat their engine calls as unverified.
+Every `.lua` parses in Lua 5.3 and LuaJIT, and the `*_core.lua` logic is unit tested against a mocked engine API
+(`tests/`).
 
 ## Layout
 

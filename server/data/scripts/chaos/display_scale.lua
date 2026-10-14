@@ -63,7 +63,8 @@ function opcode.onExtendedOpcode(player, code, buffer)
 		return
 	end
 	local msg = Chaos.decode(buffer)
-	if msg and msg.action == "hello" then
+	-- a hello is cheap but answered every time: per player rate limited like the other handlers (ratelimit.lua)
+	if msg and msg.action == "hello" and not (Chaos.limited and Chaos.limited(player, "displayscale.hello", 300)) then
 		DS.send(player)
 	end
 end
