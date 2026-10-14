@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Boss of The Iron Crucible (generated dungeon 7, level 1300): an iron warden forged around a furnace heart, still guarding a forge no one works. Spawned by areagen.lua at the start of each run in the boss room,
+     health x its healthMult (about 2.9) and damage x1.4 there, its own difficulty curve; mechanics in boss_mechanics_config.lua. Numbers: server/README.md
+     "Generated areas" and "Solo kill times". -->
+<monster name="Forgewarden Kharzun" nameDescription="Forgewarden Kharzun" race="fire" experience="95000" speed="40" manacost="0">
+	<health now="15500" max="15500"/>
+	<look type="1281" corpse="6068"/>
+	<level min="1380" max="1420"/>
+	<targetchange interval="5000" chance="10"/>
+	<flags>
+		<flag isboss="1"/>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="1"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1000" max="-1500"/>
+		<attack name="fire" interval="2000" chance="25" length="8" spread="3" min="-950" max="-1400">
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="25" radius="4" target="0" min="-900" max="-1350">
+			<attribute key="areaEffect" value="explosionarea"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="20" range="7" radius="3" target="1" min="-850" max="-1300">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="fireattack"/>
+		</attack>
+	</attacks>
+	<defenses armor="120" defense="120"/>
+	<elements>
+		<element physicalPercent="40"/>
+		<element firePercent="70"/>
+		<element energyPercent="-10"/>
+		<element earthPercent="40"/>
+		<element icePercent="-10"/>
+		<element deathPercent="30"/>
+		<element holyPercent="25"/>
+	</elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="THE CRUCIBLE DOES NOT COOL."/>
+		<voice sentence="Iron remembers every hammer."/>
+		<voice sentence="Into the fire, ore."/>
+	</voices>
+	<loot>
+		<item id="2160" countmax="10" chance="100000"/><!-- crystal coin -->
+		<item id="2152" countmax="75" chance="100000"/><!-- platinum coin -->
+		<item id="25380" chance="2500"/><!-- token -->
+		<item id="2522" chance="6000"/><!-- great shield: Kharzun's own drop -->
+		<item id="3983" chance="4440"/>
+		<item id="2495" chance="4440"/>
+		<item id="2469" chance="4440"/>
+		<item id="7894" chance="4440"/>
+		<item id="8888" chance="4440"/>
+		<item id="2500" chance="4440"/>
+		<item id="2472" chance="4440"/>
+		<item id="8885" chance="4440"/>
+		<item id="8884" chance="4440"/>
+		<item id="5462" chance="4290"/>
+		<item id="2644" chance="4290"/>
+		<item id="11118" chance="4290"/>
+		<item id="11240" chance="4290"/>
+		<item id="2537" chance="4290"/>
+		<item id="2514" chance="4290"/>
+		<item id="2499" chance="4290"/>
+	</loot>
+</monster>

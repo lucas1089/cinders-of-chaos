@@ -7,8 +7,8 @@
 --                     dungeon {id,title,difficulty,req,loot,queue={players,estimated},challenges}
 --                     solo / group {id,diff,top=[{name,time,self?}]}      (time in ms)
 --                     queue {id,joined}   stopQueue   queueUpdate {id,queue,estimated}
---                     prepare            start {boss,left,duration,objectives}
---                     killed {percent,left} | {boss=true}    objective {id,finished}
+--                     prepare            start {boss,left,duration,objectives,need}
+--                     killed {percent,left} | {unlocked=true,percent,left} | {boss=true}    objective {id,finished}
 --                     challenge "<title>"   difficulty {id,difficulty}   finish
 --                     open               (the base dungeon entry tile was stepped on: show the window)
 --
@@ -560,6 +560,9 @@ local function scaleMonster(run, monster)
 	local hp
 	if ex.bossHealth and ex.bossName and monster:getName():lower() == ex.bossName:lower() then
 		hp = DIFF.bossHealth(monster:getMaxHealth(), run.difficulty, ex.bossHealth)
+	elseif ex.trashHealth then
+		-- a generated dungeon's own trash curve (areagen_config.lua trashHealth: a run of about 10-15 minutes)
+		hp = DIFF.bossHealth(monster:getMaxHealth(), run.difficulty, ex.trashHealth)
 	else
 		hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
 	end
@@ -693,6 +696,10 @@ local function endRun(run, success, reason)
 		if ChaosItemSets and ChaosItemSets.grantChase then
 			ChaosItemSets.grantChase(p, "dungeon", nil, {difficulty = run.difficulty})
 		end
+		-- a generated dungeon's boss chest and achievement counters (areagen.lua registerDungeon)
+		if extra.onClear then
+			pcall(extra.onClear, p, {difficulty = run.difficulty, ms = elapsed, deaths = run.deaths})
+		end
 	end
 
 	addEvent(function(runId)
@@ -772,6 +779,7 @@ local function startRun(dungeonId, difficulty, players)
 			boss = bossName and extra.bossName or "the boss",
 			left = monsters,
 			duration = durationMs,
+			need = cfg.progressNeeded,
 			objectives = #objectives > 0 and objectives or nil
 		})
 	end
@@ -784,6 +792,23 @@ local function startRun(dungeonId, difficulty, players)
 	end, durationMs, run.id)
 
 	broadcastQueue(dungeonId)
+end
+
+-- the run reached Chaos.dungeons.progressNeeded (85% of its monsters dead): the boss is unlocked. Every member gets
+-- the line and the kill counter's "Boss unlocked!"; a generated dungeon (areagen.lua) opens its boss room gate and
+-- spawns its boss now. Once unlocked, a run is won when the boss dies (adds of the boss fight do not lock it again).
+local function unlockBoss(run, extra, percent, left)
+	run.unlocked = true
+	local boss = tostring(extra.bossName or "the boss"):gsub("(%a)([%w'%-]*)", function(a, b) return a:upper() .. b end)
+	for _, p in ipairs(memberPlayers(run)) do
+		send(p, "killed", {unlocked = true, percent = percent, left = left})
+		local t = Chaos.t or function(_, text) return text end
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(t(p, "Boss unlocked! %d%% of the monsters are dead: %s awaits you."),
+			percent, boss))
+	end
+	if extra.unlock then
+		pcall(extra.unlock, run.dungeonId)
+	end
 end
 
 local function tryMatch(id)
@@ -902,14 +927,19 @@ tick = function()
 					percent = math.min(100, math.floor((run.total - monsters) * 100 / run.total))
 					percent = math.max(percent, 0)
 				end
+				-- the counter never goes back (the boss fight's adds and totems are monsters of the box too)
+				percent = math.max(percent, run.lastPercent)
 				if percent ~= run.lastPercent then
 					run.lastPercent = percent
 					for _, p in ipairs(memberPlayers(run)) do
 						send(p, "killed", {percent = percent, left = monsters})
 					end
 				end
+				if not run.unlocked and percent >= cfg.progressNeeded then
+					unlockBoss(run, extra, percent, monsters)
+				end
 				-- boss seen earlier and gone now (killed by someone onKill did not credit)
-				if run.bossSeen and bosses == 0 and percent >= cfg.progressNeeded then
+				if run.bossSeen and bosses == 0 and run.unlocked then
 					endRun(run, true)
 				end
 				-- warnings before the time runs out (instance limits; the client counts the clock down itself)
@@ -939,7 +969,7 @@ function KillEvent.onKill(creature, target)
 	end
 	local bossName = extraOf(run.dungeonId).bossName
 	if bossName and target:getName():lower() == bossName:lower() then
-		if run.lastPercent >= cfg.progressNeeded or run.total == 0 then
+		if run.unlocked or run.lastPercent >= cfg.progressNeeded or run.total == 0 then
 			endRun(run, true)
 		end
 	end

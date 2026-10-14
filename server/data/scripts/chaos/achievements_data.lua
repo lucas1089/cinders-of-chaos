@@ -47,6 +47,8 @@
 --   faction_exalted_<vigil|compact|choir|circle>, faction_exalted   factions (factions.lua: 1 once Exalted; how many are)
 --   raid_kills, raid_<boss key>, raid_clears, raid_flawless, raid_speed   the Ashen Sepulchre (raid.lua: every raider present
 --                                                                    at a kill, looted or not)
+--   dungeon_<marrow|crucible|sanctum|throne>, dungeon_<...>_top, dungeon_<...>_d6   the generated dungeons 6-9 (areagen.lua at
+--                                                                    a won run: clears, best difficulty, 1 once won on 6)
 --   points                                                           the character's own achievement points
 --   season_hc_level, season_ssf_level, season_hc_survived, season_ssf_finished   season modes (season_modes.lua)
 --   mentor_graduates, mentor_fledged                                 mentors (mentor.lua, at a graduation)
@@ -290,6 +292,20 @@ return {
 			points = 50, stat = "raid_speed", hidden = true},
 		{id = "raid_clears_10", cat = "raids", name = "Keeper of the Sepulchre", desc = "Slay Varkhul 10 times.", points = 50,
 			stat = "raid_clears", target = 10, title = "Sepulchre Keeper"},
+
+		-- ------------------------------------------------------------------ the generated dungeons 6-9 (areagen.lua)
+		{id = "dungeon_marrow", cat = "raids", name = "Bones in the Dark", desc = "Clear The Marrow Crypts.", points = 10,
+			stat = "dungeon_marrow"},
+		{id = "dungeon_crucible", cat = "raids", name = "Out of the Crucible", desc = "Clear The Iron Crucible.", points = 10,
+			stat = "dungeon_crucible"},
+		{id = "dungeon_sanctum", cat = "raids", name = "The Light Fell Twice", desc = "Clear The Fallen Sanctum.", points = 15,
+			stat = "dungeon_sanctum"},
+		{id = "dungeon_throne", cat = "raids", name = "Breaker of Chains", desc = "Clear The Pyre Throne.", points = 25,
+			stat = "dungeon_throne", title = "Chainbreaker"},
+		{id = "dungeon_deep_d6", cat = "raids", name = "Into the Last Fire",
+			desc = "Clear the four deep dungeons (Marrow Crypts, Iron Crucible, Fallen Sanctum, Pyre Throne) on difficulty 6.",
+			points = 50, all = {"dungeon_marrow_d6", "dungeon_crucible_d6", "dungeon_sanctum_d6", "dungeon_throne_d6"},
+			hidden = true, title = "the Unchained"},
 
 		-- ------------------------------------------------------------------ Bounties
 		{id = "bounty_1", cat = "bounties", name = "Contract Signed", desc = "Complete a bounty contract.", points = 5,

@@ -18,13 +18,13 @@ Rules for this list:
 | Vocations in all | 21 | server/README.md "Vocation Trials" |
 | Chaos spells | 88 | `game_chaosspells/spelldata.lua`, `data/spells/chaos/` |
 | Spell supports | 20 | Codex "Supports" |
-| Custom monster types (XML) | 182 | `data/monster/monsters/chaos/` |
+| Custom monster types (XML) | 186 | `data/monster/monsters/chaos/` |
 | of these: pets | 15 | `monsters/chaos/pets/` |
 | Custom monsters (Lua) | 4 | `data/monster/lua/chaos/` (plus one example file) |
 | World bosses | 5 | `monsters/chaos/world_bosses/` |
-| Our own boss types | 20 | world 5, Omens 3, Ascended 4, Sepulchre 5, guild 1, ascension 1, trials 1 |
+| Our own boss types | 24 | world 5, Omens 3, Ascended 4, Sepulchre 5, guild 1, ascension 1, trials 1, deep dungeons 4 |
 | Bosses tracked in the Boss Spawns window (fixed list) | 66 | `bossspawns_config.lua` |
-| Dungeons (queue) | 5 | 4 base dungeons + The Hollow Vault |
+| Dungeons (queue) | 9 | 4 base dungeons + The Hollow Vault (800) + the deep dungeons: The Marrow Crypts (1000), The Iron Crucible (1300), The Fallen Sanctum (1600), The Pyre Throne (2000) |
 | Generated hunting areas | 3 | `areagen_config.lua` |
 | Rift themes | 4 | `rift_config.lua` |
 | Rift modifiers | 36 | `rift_config.lua` `mods` |
@@ -138,7 +138,7 @@ From docs/CONTENT.md (measured with `tools/content_audit.py` on the loaded map).
 | 300-500 | 105 | 3,537 | 138 | - | world boss and faction lines |
 | 500-700 | 14 | 280 | 14 | 3 planned | The Wyrm Tithe |
 | 700-1000 | 10 | 212 | 10 | Hollow Vault, 3 planned | Requiem for the Ash-Sister |
-| 1000+ | 0 | 0 | 0 | 3 generated, 6 planned | The Last Ember |
+| 1000+ | 0 | 0 | 0 | 3 generated, 6 planned; 4 queue dungeons (1000, 1300, 1600, 2000) | The Last Ember |
 
 The whole loaded map: 5.36 million walkable tiles, 74,071 spawn entries, 1,195 hunting areas (ROADMAP #89).
 
@@ -201,7 +201,7 @@ Other bosses in the game:
 | Rift Guardian | 1 per rift | any Rift Key; 4 big guardian looks (#115) |
 | Twin and Dread guardians | rift modifiers | Twin Guardians, Dread Guardian, Wrathful Guardian |
 | Ember Descent boss | 1 per run | last room of the Descent |
-| Generated area bosses | 4 | Emberdeep Maw, Ossuary Warden, Cinderwing, Vault Keeper Ossrim |
+| Generated area bosses | 8 | Emberdeep Maw, Ossuary Warden, Cinderwing, Vault Keeper Ossrim; deep dungeons: Ossivane the Gravecage, Forgewarden Kharzun, Vaelith the Fallen Seraph, Azhkarrath the Chained Wyrm |
 | Base dungeon bosses | 4 | Prince Skeletal, Master of the Elements, Forbidden Chevalier, The Rootmaw |
 | Infinity Tower bosses | 12 | every 10th floor |
 | Invasion bosses | 8 | one or two per faction, by area level |
@@ -222,8 +222,9 @@ Boss systems:
 
 | Instance | What it is | Status |
 |---|---|---|
-| Dungeons (5) | Queue alone or in a party; 6 difficulties; speed and flawless challenges | done |
+| Dungeons (9) | Queue alone or in a party; 6 difficulties; speed and flawless challenges; the boss unlocked at 85% of the monsters. Monsters per run: Bones Dungeon 178, Master of the Elements 256, Forbidden Chevalier 140, Rootmaw 272 (base spawn file), The Hollow Vault 18, The Marrow Crypts 11, The Iron Crucible 10, The Fallen Sanctum 8, The Pyre Throne 8 | done |
 | The Hollow Vault | Generated dungeon 5, level 800, boss Vault Keeper Ossrim | done |
+| The deep dungeons | Generated dungeons 6-9, levels 1000 / 1300 / 1600 / 2000: The Marrow Crypts, The Iron Crucible, The Fallen Sanctum, The Pyre Throne; a boss with mechanics each, runs of 10-15 minutes (limit 15, the Vault too), the boss unlocked at 85% of the monsters behind a gate, a boss chest by difficulty (#150) | done, not run live |
 | Rifts | Rift Keys open a timed generated map; 4 themes, 10 tiers and beyond, 1-3 of 36 modifiers (#8) | done |
 | Rift Atlas | Completion grid and an 81-node map (#54) | done, not run live |
 | Omen arenas | Three Omen guardians from Omen Keys | done |

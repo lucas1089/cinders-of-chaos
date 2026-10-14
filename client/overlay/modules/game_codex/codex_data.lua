@@ -13634,6 +13634,24 @@ CodexData = {
 					}
 				},
 				{
+					id = "lore:deep_dungeons",
+					name = "The Four Deeper Doors",
+					color = "#c9a27a",
+					sub = "The deep places",
+					group = "deep",
+					f = {group = "deep"},
+					sections = {
+						{
+							h = "Lore",
+							p = {"Below the Vault the fire kept digging. The Marrow Crypts, where Ossivane the Gravecage walks on the ribs of a dead giant. The Iron Crucible, whose Forgewarden Kharzun still guards a forge no hand works. The Fallen Sanctum, where Vaelith sings what is left of a hymn. And last the Pyre Throne, where Azhkarrath, mother of the pyrewings, lies chained to the seat she burned. Each door opens to one at a time."}
+						},
+						{
+							h = "Em português",
+							p = {"Abaixo do Vault o fogo continuou cavando. The Marrow Crypts, onde Ossivane the Gravecage anda sobre as costelas de um gigante morto. The Iron Crucible, cujo Forgewarden Kharzun ainda guarda uma forja que nenhuma mão trabalha. The Fallen Sanctum, onde Vaelith canta o que restou de um hino. E por último The Pyre Throne, onde Azhkarrath, mãe dos pyrewings, jaz acorrentada ao trono que queimou. Cada porta se abre para um de cada vez."}
+						}
+					}
+				},
+				{
 					id = "lore:chronicle_s1",
 					name = "The Ashen Chronicle: Season of Ash",
 					color = "#c9a27a",

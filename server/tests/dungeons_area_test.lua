@@ -264,6 +264,56 @@ d.getLastLogout = function() return 0 end
 login.onLogin(d)
 eq(d.pos.x, temple.x, "dungeon 1: a login in the boss room after a restart goes to the temple")
 
+-- ------------------------------------------------------------------ the boss unlock at progressNeeded (85%)
+eq(Chaos.dungeons.progressNeeded, 85, "the boss unlocks at 85% of the run's monsters")
+do
+	ItemType = function(id) return {getId = function() return id end, getClientId = function() return id end} end
+	local x2 = Chaos.dungeons.extra[2]
+	local unlocked = 0
+	x2.unlock = function() unlocked = unlocked + 1 end
+	local e = newCreature(5, "Hal", P(32369, 32241, 7), true)
+	local f = newCreature(6, "Ivo", P(32368, 32241, 7), true)
+	local mons = {}
+	for i = 1, 20 do
+		mons[i] = newCreature(200 + i, "tornado", P(31700 + i, 32400, 8), false)
+	end
+	local boss = newCreature(250, "master of the elements", P(31800, 32500, 8), false)
+	sent = {}
+	ext.onExtendedOpcode(e, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	ext.onExtendedOpcode(f, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	local st
+	for _, s in ipairs(sent) do
+		if s.action == "start" and s.p == e then st = s.data end
+	end
+	eq(st and st.need, 85, "dungeon 2: start tells the client the threshold")
+	local kill = events["ChaosDungeonKill:creature"]
+	for i = 1, 16 do
+		mons[i]:remove()
+	end
+	advance(3000)
+	eq(unlocked, 0, "80%: still locked")
+	local function unlockedSent(p)
+		for _, s in ipairs(sent) do
+			if s.p == p and s.action == "killed" and s.data.unlocked then return true end
+		end
+		return false
+	end
+	ok(not unlockedSent(e), "80%: no unlock sent")
+	mons[17]:remove()
+	advance(3000)
+	eq(unlocked, 1, "85%: the dungeon's unlock hook (gate, boss)")
+	ok(unlockedSent(e) and unlockedSent(f), "85%: every member gets the unlock")
+	ok(e.msgs[#e.msgs]:find("Boss unlocked!", 1, true) ~= nil, "85%: the console line")
+	advance(3000)
+	eq(unlocked, 1, "unlocked once")
+	ok(ChaosDungeonIsInside(e), "the run goes on until the boss dies")
+	boss:remove()
+	kill.onKill(e, boss)
+	advance(15000)
+	ok(not ChaosDungeonIsInside(e) and not ChaosDungeonIsInside(f), "the boss after the unlock: the run is won")
+	x2.unlock = nil
+end
+
 print(string.format("dungeons_area_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

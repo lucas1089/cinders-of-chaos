@@ -849,7 +849,11 @@ dungeons
 - Bosses are assumed to exist inside the dungeon box (map spawns or `SpawnMonsters`). Boss names per
   dungeon id are in `Chaos.dungeons.extra` (guessed from the base server boss scripts) and must match the monster
   names on your server. Progress % = monsters that disappeared from the box / monsters at start (summons
-  ignored); the boss counts as dead when `onKill` credits it, or when it was seen and is gone.
+  ignored; it never goes back down). At `Chaos.dungeons.progressNeeded` (85%, owner 2026-10-14; was 100) the boss is
+  unlocked (`dungeons.lua` `unlockBoss`): every member gets "Boss unlocked!" (console line through `Chaos.t`, pt-BR in
+  `i18n_strings.lua`; the kill counter of `game_dungeons` shows it, pt-BR "Boss liberado!"), and a generated dungeon opens
+  its boss room gate and spawns its boss (`extra.unlock`). A run is won when the boss dies after the unlock (`onKill`, or
+  seen and gone); a base dungeon's boss killed before 85% wins the run once the 85% are reached.
 - One run per dungeon at a time (they share a single map area). All monsters in the box are removed when a
   run ends.
 - Difficulty (1..6) is stored and unlocked (finish on your top difficulty to unlock the next) but changes nothing in-game.
@@ -864,8 +868,8 @@ dungeons
   east of its box. Dungeon 3's box is floor 7 only; its spawns, lever and boss room reach floors 8-10 (area 31950-32078,
   33098-33245, z 0-10). Dungeon 4's box is its entry hall only: `DungeonPos` is 3 tiles south of it, so a queue run
   ended on its first tick, and every spawn, the lever and the boss room lie outside (area 31452-31736, 31495-31644,
-  z 8-12). No other spawn lies in the added boxes. The generated dungeon 5 (The Hollow Vault, `areagen.lua`) gets the
-  whole generated grid as its box: entry, exit, boss and spawns inside. Tests: `tests/dungeons_area_test.lua`,
+  z 8-12). No other spawn lies in the added boxes. The generated dungeons 5-9 (The Hollow Vault and the deep dungeons
+  6-9, `areagen.lua`) get the whole generated grid of every floor as their box: entry, exit, boss and spawns inside. Tests: `tests/dungeons_area_test.lua`,
   `tests/areagen_test.lua`.
 - Cooldown (`DUNGEON_SYSTEM.CooldownTime`, 1 h) is also applied after a win (`cooldownOnSuccess`) and when a
   member leaves/dies, and when a member who logged out inside logs in again while the server runs (sent to the temple).
@@ -4966,7 +4970,8 @@ so are the monster tiers, the trash before a boss and moving out of telegraphs e
 | Ascended Omen (5) | 6.00M | the same, one healer | the same | 3,000: 8:56; 2,600: 10:05; 1,950: 12:45 | ok |
 | Cinderheart (solo) | 1.65M | the same | enrage 15:00, close 20:00 (was 18:00) | 3,000: 12:13; 2,600: 14:06; 1,950: 18:48 | ok |
 | Cinderheart (5) | 8.25M | the same | the same | 3,000: 12:17; 2,600: 13:52; 1,950: 17:32 | ok |
-| Hollow Vault boss (solo, level 825: 2,180) | 1.13M x difficulty curve | health / dps | 40:00 the whole run (30:00 before the area doubled, 2026-10-14) | difficulty 1-6: 8:40 / 10:51 / 13:01 / 15:11 / 17:21 / 19:31 | was 10:25 / 20:50 / 33:20 / 52:03 / 83:15 / 135:20 |
+| Deep dungeon bosses 6-9 (solo, level +25: 2,660 / 3,383 / 4,106 / 5,070) | 399k / 507k / 615k / 760k x the curve 100-225% | `D.runSeconds` (below) | 15:00 the whole run | boss 2:30 / 5:37 at difficulty 1 / 6; run 9:05 / 9:12 / 8:55 / 8:55 at 1, 13:29 / 13:38 / 13:17 / 13:17 at 6 | ok (2026-10-14: 10-15 minute runs) |
+| Hollow Vault boss (solo, level 825: 2,180) | 327k x the curve 100-225% | `D.runSeconds` (below) | 15:00 the whole run (40:00 before 2026-10-14) | boss 2:30 / 5:37 at difficulty 1 / 6; run 8:53 at 1, 13:13 at 6 | ok (was 8:40 / 19:31 the boss alone) |
 | Ascension Trial (level 100-130) | 6,000-7,800 | health / dps | 3:00 | ~0:20 | ok |
 | Vocation Trials boss | 9k / 40k / 130k at the tier's level, x(level / min)^1.5 | health / dps | 8:00 / 9:00 / 10:00 the run | Merciless at 1000: 514k, 3:18 | ok, waves on top |
 | World bosses (group only) | 15-24M, heals 1,200-3,200/s | health / dps | 45:00 | solo 3-4 h or never (Vharok heals more than one player deals); 10 players 10:06-17:33; 20 players 4:56-8:12 | group content, as designed |
@@ -4974,13 +4979,41 @@ so are the monster tiers, the trash before a boss and moving out of telegraphs e
 | Donor bosses (dormant) | 18-22M after, see "Monster lint" | health / dps | none | solo 3.6-4.4 h; 20 players 5:54-7:13 | before: never (heals above any damage) |
 | Legendary Warrior (dormant) | 1.0M (was 7.0M) | health / dps | none | 7:45 (was 54:16) | a solo boss now |
 
-**Hollow Vault.** The engine already adds the level bonus: the boss is Garack (14,800) at level 900, x(1 + 0.0074 x
-900) = 7.66 from the engine (src monster.cpp, `monsterBonusHealth`; areagen.lua scales from the native level to 900,
-the same here), x `healthMult`. Before: x12 = 1.36M, and the dungeon's difficulty multiplied it by 100-1300% like every
-monster. Now x10 = 1.13M and the boss has its own curve `bossHealth` 100 / 125 / 150 / 175 / 200 / 225% (dungeons.lua,
-`ChaosDungeonDifficulty.bossHealth`; the trash keeps the table). An area boss also gets no natural monster tier any more
-(magic x2 to legendary x6 health, 7.75% of spawns: a legendary Ossrim was 8.2M at difficulty 1). Not measured on a
-test server.
+**The generated dungeons (the Hollow Vault and the deep dungeons 6-9): runs of 10-15 minutes** (owner, 2026-10-14). The
+model is `dungeons_difficulty.lua` `D.runSeconds`, from config numbers only (the monster files, the generated spawns,
+the curves), so it can be recomputed after any change of monsters, counts or damage (`tests/areagen_test.lua` checks
+every dungeon against it):
+- damage `D.dps(L)`: 913 at level 300, 2,600 at 1000, the same slope (2.41 a level) above; L = the dungeon's level + 25;
+- a monster's health at level L: its file's health x (1 + 0.0074 L) (the engine's level bonus);
+- trash(d) = the monsters to the boss gate (85%) x health / dps x `trashHealth[d]` / 2.3 (packs: several at once);
+- boss(d) = the boss's health (file x (1 + 0.0074 boss level) x `healthMult`) x `bossHealth[d]` / dps; the mechanics
+  keep this time (boss_mechanics G.balance, "Boss mechanics");
+- run(d) = trash(d) + boss(d) + 90 s of walking.
+Curves: `bossHealth` 100 / 125 / 150 / 175 / 200 / 225%, `trashHealth` 100 / 105 / 110 / 115 / 120 / 125% (the
+difficulty table's 100-1300% would make difficulty 6 hours long; the difficulty's damage, experience, gold and loot stay
+the table's). Sizing: `healthMult` = 150 s x dps / (file health x (1 + 0.0074 boss level)): 2.88 / 2.91 / 2.88 / 2.83 /
+2.87; the trash: small dungeons of 6-8 rooms with packs of 2-3 (packChance 100):
+
+| Dungeon | Level | Monsters (alone each) | Trash at 1 / 6 | Boss (health) at 1 / 6 | Run at 1 / 6 | Limit, speed |
+|---|---|---|---|---|---|---|
+| The Hollow Vault | 800 | 18 (44 s) | 4:53 / 6:06 | 327k: 2:29 / 5:37 | 8:53 / 13:13 | 15:00, 6:00 |
+| The Marrow Crypts | 1000 | 11 (75 s) | 5:05 / 6:22 | 399k: 2:29 / 5:37 | 9:05 / 13:29 | 15:00, 6:00 |
+| The Iron Crucible | 1300 | 10 (86 s) | 5:12 / 6:30 | 507k: 2:29 / 5:37 | 9:12 / 13:38 | 15:00, 6:00 |
+| The Fallen Sanctum | 1600 | 8 (101 s) | 4:56 / 6:10 | 615k: 2:29 / 5:36 | 8:55 / 13:17 | 15:00, 6:00 |
+| The Pyre Throne | 2000 | 8 (101 s) | 4:55 / 6:09 | 760k: 2:29 / 5:37 | 8:55 / 13:17 | 15:00, 6:00 |
+
+Before (the same day): the Vault 64 monsters and a 1.13M boss in 40 minutes, the deep dungeons 27-43 monsters and
+1.37-2.65M bosses in 40-43 minutes. The coming combat rebalance (monsters with less health in bigger packs) changes the
+inputs only: rerun the model (the test prints the failing dungeon and its seconds) and adjust the counts or curves.
+An area boss gets no natural monster tier (magic x2 to legendary x6 health). Not measured on a test server.
+
+**Base dungeons 1-4 against 15 minutes** (2026-10-14, the same model at the entry level + 25, the table's difficulty
+curve; spawn entries inside each dungeon's area counted in the base spawn file of windows-assets, read in a scratch
+folder): Bones Dungeon 178 monsters (5.0-7.3k health), run at difficulty 1 19:36; Master of the Elements 256
+(5.0-13.0k), 29:12; Forbidden Chevalier 140 (55-69k), 44:00; Rootmaw 272 (27.5-47k), 47:24. None fits 15 minutes, so
+`maxTimeSeconds` stays 45 minutes. To fit at difficulty 1 they would need about 109 / 77 / 27 / 46 monsters (61 / 30 /
+19 / 17% of today's, a step of `tools/patch_base_spawns.py` thinning the spawns in their areas) or their own trash
+curve; at difficulty 6 the table's 1300% makes every base dungeon hours long.
 
 **Base server bosses** (read from the base copy of windows-assets 407ad9b6; names after the renames). Limit: a lever
 room's own kick time capped at 30 minutes (instance_limits_config.lua), a dungeon's `DungeonTime`, a tower boss floor's
@@ -5078,7 +5111,7 @@ own: the cast bar rides on the monster bar's opcode 125 (`ChaosOpcodes.monsterba
 31 x 31 floor, its four pillars count as cover), `uber.lua` and `guildboss.lua` (the arena floor; the hits go through
 their own `shareHit`, so the lethal-hit catch still works), `rift.lua` (the Omen guardians by name, every other guardian
 the light profile `rift_guardian` with the key's tier; the chamber of radius 9 round the boss spawn). Every other monster
-whose shown name has a profile (Vault Keeper Ossrim, the Emberdeep Maw, the Ossuary Warden, Cinderwing, the dormant
+whose shown name has a profile (Vault Keeper Ossrim, the bosses of the deep dungeons 6-9, the Emberdeep Maw, the Ossuary Warden, Cinderwing, the dormant
 donor bosses) is attached at its first think after the spawn (an `onSpawn` EventCallback registers a think event, as
 monster_tiers.lua does), with a box of radius 8 round it as the arena (walkable tiles only). The Ascended bosses, the
 Cinderheart and the guild boss keep their own telegraphs, hazards, adds and enrage (`ownTelegraphs`); the profile adds
@@ -5184,6 +5217,22 @@ the mechanics below on top, and while one of those runs (`ChaosBossMech.busy`) t
 |  | Ember Rain (puddles) | 2.8 s | Step off the circles. |
 | The Ossuary Warden | Bone Ring (ring) | 2.8 s | Hug it or run out past the ring. |
 |  | Bone Requiem (channel + totem) | 9.0 s | Kill the Bone Totem in time. |
+| Ossivane the Gravecage | Grave Slam (circle) | 2.8 s | Everything within 3 sqm: back off. |
+|  | Rib Cage (ring) | 2.8 s | A ring of ribs: hug him or run out past it. |
+|  | Marrow Reliquary (adds: immune) | 50% health | At 50% he takes no damage until the 2 Marrow Reliquaries die (about 15 s each alone). |
+|  | Grave Dust (stacks) | on its hits | His hits stack Grave Dust (+3% damage taken each): step away now and then. |
+| Forgewarden Kharzun | Molten Cleave (cone) | 2.7 s | A cone towards you: step to his side. |
+|  | Slag Rain (puddles) | 2.7 s | Molten slag lands on you and around: step off. |
+|  | Furnace Heart (channel + totem) | 9.0 s | Kill the Bellows Totem (about 5 s alone) before the cast ends. |
+| Vaelith the Fallen Seraph | Fallen Cross (cross) | 2.7 s | Beams of light through her: stand on a diagonal. |
+|  | Judgement (follow) | 2.7 s + 1.5 s follow | It follows you, then stops: walk out. |
+|  | Last Hymn (soak) | 2.7 s | Stand in the circle: alone you take 60% of your health; nobody in it: 45% to all. |
+|  | Gilded Ward (adds: shield) | 50% health | At 50% she takes 70% less damage until the 2 Gilded Wards die. |
+| Azhkarrath the Chained Wyrm | Pyre Breath (line) | 2.6 s | A three-wide beam towards you: sidestep. |
+|  | Chain Lash (ring) | 2.6 s | Her chains sweep a ring: hug her or run out. |
+|  | Ashfall (puddles) | 2.6 s | Burning ash on you and around: step off. |
+|  | Throne Inferno (line of sight) | 3.5 s | Pillars rise round the throne: put one between you and her. |
+|  | Pyre Chain (adds: immune) | 40% health | At 40% she takes no damage until the 3 Pyre Chains die (about 8 s each alone). |
 | Cinderwing | Cinder Breath (line) | 2.8 s | A beam towards you: sidestep. |
 |  | Falling Ash (follow) | 2.8 s + 1.5 s follow | It follows you, then stops: walk out. |
 | Mirecoil Wyrm (hunting monster) | Mire Spit (line) | 2.9 s | A three-wide line of venom towards you: sidestep. |
@@ -5236,10 +5285,14 @@ boss). The tests keep every final time within 5% above the old one and inside th
 | Ascended Thalcyra | 1.20M, 3000, 75% | 14:00 | 8:53 | 10:08 | 0.878 | 8:53 |
 | Ysgrath the Cinderheart | 1.65M, 3000, 75% | 20:00 | 12:13 | 15:08 | 0.742 | 11:24 |
 | Rift guardian (tier 1-15) | 300k, 2180, 80% | none | 2:52 | 3:33 | 0.795 | 2:52 |
-| Vault Keeper Ossrim | 1.13M, 2180, 100% | 30:00 | 8:38 | 10:09 | 0.846 | 8:38 |
+| Vault Keeper Ossrim | 327k, 2180, 100% | 15:00 | 2:30 | 3:09 | 0.769 | 2:30 |
 | The Emberdeep Maw | 1.64M, 2600, 100% | none | 10:31 | 12:01 | 0.875 | 10:31 |
 | The Ossuary Warden | 1.73M, 2600, 100% | none | 11:05 | 14:30 | 0.765 | 11:05 |
 | Cinderwing | 1.70M, 2600, 100% | none | 10:54 | 12:27 | 0.875 | 10:54 |
+| Ossivane the Gravecage | 399k, 2660, 100% | 15:00 | 2:30 | 3:21 | 0.700 | 2:30 |
+| Forgewarden Kharzun | 507k, 3383, 100% | 15:00 | 2:30 | 3:17 | 0.760 | 2:30 |
+| Vaelith the Fallen Seraph | 615k, 4106, 100% | 15:00 | 2:30 | 3:14 | 0.752 | 2:30 |
+| Azhkarrath the Chained Wyrm | 760k, 5070, 100% | 15:00 | 2:30 | 3:31 | 0.673 | 2:30 |
 | Gorvath the Banner-Eater | 2.21M, 5 x 1400, 75% | 13:00 | 7:01 | 9:20 | 0.751 | 7:01 |
 | Ormathulak | 22.00M, 20 x 2600, 100% | none | 7:13 | 9:03 | 0.779 | 7:13 |
 | Talath | 21.00M, 20 x 2600, 100% | none | 6:53 | 8:31 | 0.808 | 6:53 |
@@ -5248,8 +5301,8 @@ boss). The tests keep every final time within 5% above the old one and inside th
 | Legendary Warrior | 1.00M, 2600, 100% | none | 7:45 | 8:51 | 0.875 | 7:45 |
 
 The weakest class (1,950) alone: Omen guardians 7:31 (Morvane 7:43) of 12:00, the Ascended 13:41 of 14:00, the
-Cinderheart 18:48 of 20:00: the same as before the mechanics. The Hollow Vault at difficulty 6 (x2.25 health, 2,180):
-19:03 of the run's 30:00 (19:26 before). The Ascended Morvane and the Cinderheart get a little faster for a strong build
+Cinderheart 18:48 of 20:00: the same as before the mechanics. The Hollow Vault boss at difficulty 6 (x2.25 health, 2,180):
+5:37 of the run's 15:00 (2026-10-14; was 19:03 of 30:00). The Ascended Morvane and the Cinderheart get a little faster for a strong build
 (8:12 and 11:24 at 3,000) because the weak build sets their factor. The rift guardian's factor is taken at tier 15 (its
 puddles and shield phase); lower tiers have fewer mechanics and a factor nearer 1 (attach passes the tier).
 
@@ -5829,7 +5882,7 @@ the Leaderboards window (`game_leaderboard`, `recordsview.lua`); website: the Re
 - **Boards** (`records_config.lua` `boards`, built by `ChaosRecordsCore.catalogue` from the content configs, so a new
   boss of those lists gets its boards by itself). Bosses: World Boss Kill (fastest, per boss) and World Boss Damage (the
   best damage share of a kill, per boss), Omen Guardians, Ascended (the three Omens and the Cinderheart), the Guild Boss,
-  the Sepulchre Clear, the Hollow Vault and every base dungeon (per difficulty). Infinity Tower: Highest Floor, Fastest
+  the Sepulchre Clear, the Hollow Vault and every other dungeon, the deep dungeons 6-9 included (per difficulty). Infinity Tower: Highest Floor, Fastest
   Climb to floors 50 / 100 / 120. Rifts: Highest Tier, Fastest Seal per tier band (1-5, 6-10, 11-14, 15), Atlas
   Completion. Ember Descent: Deepest Room (the weekly seeded run). Vocation Trials: Trial Clear per difficulty. Arena:
   rating per bracket, Battleground wins. Filters: the variant (boss, difficulty, band, floor, bracket), the party size
@@ -10813,9 +10866,11 @@ account storage, which is only saved at server save).
 
 ## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
 
-Long-term goals across every system: 173 achievements in 10 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
-Raids, Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 4170 points in all (counted from
-`achievements_data.lua` on 2026-10-11). Client `game_achievements` (Chaos ->
+Long-term goals across every system: 178 achievements in 10 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
+Raids, Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 4280 points in all (counted from
+`achievements_data.lua` on 2026-10-14; the five deep dungeon ones, in Raids: a clear of each of the four, 10 / 10 / 15 /
+25 points, and the hidden "Into the Last Fire", all four on difficulty 6, 50 points, title "the Unchained"; their
+counters `dungeon_<area id>`, `_top`, `_d6` come from `areagen.lua` at a won run). Client `game_achievements` (Chaos ->
 Achievements in the top menu, or Character > Achievements), extended opcode 250 (`ChaosOpcodes.achievements`), tables
 `chaos_achievements` and `chaos_achievement_stats` (`sql/chaos_achievements.sql`; also created at startup).
 
@@ -11447,14 +11502,19 @@ writer stays so the owner can open, review or hand-place an area in the map edit
   entrance: the temple). Runtime tiles cannot be protection zones, so the arrival is a safe radius with no spawns.
 - An entrance tile that is not free and walkable is skipped with a log line; `/areagen goto <id>` still works.
 
-**The areas** (`areagen_config.lua`; free map region x/y 14336-15359, the other runtime areas use 2000-13824):
+**The areas** (`areagen_config.lua`; free map region x/y 14336-15359, the deep dungeons 6-9 in their own block x/y
+24576-25599, the other runtime areas use 2000-13824 and the rift slots 20480-21503):
 
 | Area | Kind | Floors | Size | Walkable | Levels | Monsters (density) | Boss | Entrance |
 |---|---|---|---|---|---|---|---|---|
 | Emberdeep Hollows | cave: dirt walls, mud and lava cracks, lava pools | 2 (z 9-10), 2 holes | 96 x 76 (was 66 x 52) | 7,348 (was 3,307) | 1000-1100 | 220 (3.24 / 100; was 65): Tundra Troll, Loricate Orger, Lady bug, Lacewing Moth, Grindmaw | The Emberdeep Maw | 33221,33135,8: a lava-cracked dirt cave beside the Aegis Sentinel / Gloomstinger hunt |
 | Sunken Ossuary | ruins: 20-26 rooms of slate, marble, flagstone, tiles in stone walls | 2 (z 9-10), 1 hole | 130 x 102 (was 90 x 70) | 5,678 (was 2,797) | 1100-1200 | 172 (3.24 / 100; was 68): Royal Man, Golden Lord, Dawn Strayer, Frost Maiden, Dreamgorger | The Ossuary Warden | 34295,31100,13: the stone halls of Nightglass Core (the 860-1000 late-game area) |
 | Cinderfall Wastes | open waste of grey rock, basalt fields, lava, mountain cliffs, dead trees | 1 (z 7, under the sky) | 145 x 116 (was 100 x 80) | 11,156 (was 4,993) | 1200-1300 | 346 (3.25 / 100; was 72): Azure Dragon, Jungle Beasts, Blazebringer, Swamp Snapper, Garack | Cinderwing | 31667,31269,7: the volcanic rock slopes of the Pyrrhaxis / Brinebrute hunt |
-| The Hollow Vault | dungeon of the dungeon system (base dungeon 5, level 800, 40 minutes; was 30) | 1 (z 9) | 116 x 96 (was 76 x 64) | 2,169 (was 1,062) | 800-850 | 64 (3.26 / 100; was 24) + Vault Keeper Ossrim (1.13M, its own difficulty curve: "Solo kill times") | yes | the Dungeons window |
+| The Hollow Vault | dungeon of the dungeon system (base dungeon 5, level 800, 15 minutes; was 40, before that 30) | 1 (z 9) | 60 x 48 (was 116 x 96) | 656 (was 2,169) | 800-850 | 18 in packs (was 64) + Vault Keeper Ossrim (327k, its own difficulty curve: "Solo kill times") | yes | the Dungeons window |
+| The Marrow Crypts | dungeon 6 (level 1000, 15 minutes): catacombs of dark sand, slate and bones, dark stone walls | 1 (z 9) | 52 x 42 | 583 | 1000-1050 | 11 in packs: Scaleborn, Ice Lich, Spirit of Purity, Twisted Shaper, Celestial Wyrm + Ossivane the Gravecage (399k) | yes | the Dungeons window |
+| The Iron Crucible | dungeon 7 (level 1300, 15 minutes): a forge in the rock, lava cracks and pools, iron halls | 1 (z 9) | 52 x 42 | 524 | 1300-1350 | 10 in packs: Facetis, Thal, Silicron, Winterstride, Gloamfang Ravager + Forgewarden Kharzun (507k) | yes | the Dungeons window |
+| The Fallen Sanctum | dungeon 8 (level 1600, 15 minutes): a drowned shrine, wet cave and mud passages, gilded and marble chapels | 1 (z 9) | 52 x 42 | 558 | 1600-1650 | 8 in packs: Bloodantler Fiend, Cinderskull Reaver, Rimeshroud Revenant, Cinderhorn Juggernaut, Wraithbone Stalker + Vaelith the Fallen Seraph (615k) | yes | the Dungeons window |
+| The Pyre Throne | dungeon 9 (level 2000, 15 minutes): the burnt court of the wyrms, basalt, lava, marble and gilded halls | 1 (z 9) | 52 x 42 | 522 | 2000-2050 | 8 in packs: Pyrewing Tyrant, Mirecoil Wyrm, Wraithbone Stalker, Cinderhorn Juggernaut, Bloodantler Fiend + Azhkarrath the Chained Wyrm (760k, chained: speed 0) | yes | the Dungeons window |
 
 - Entrance spots were chosen with the live map data. Each is a free walkable tile with a wall or rock behind it, a free
   tile south of it, 5+ tiles from any spawn, inside a 700-1,500 tile region, next to a level 900-1300 hunt of
@@ -11462,8 +11522,8 @@ writer stays so the owner can open, review or hand-place an area in the map edit
 - Grown on 2026-10-14 (owner request "every hunt big and full"): walkable tiles x2.0-2.2, density 3.25 per 100 in all
   four (tests: 3.0-3.5), like the filled base-map hunts ("Fill"). The boxes stay apart in the free region: Emberdeep
   x 14400-14495 y 14400-14475, Ossuary x 14560-14689 y 14400-14501, Cinderfall x 14400-14544 y 14560-14675, Vault
-  x 14560-14675 y 14560-14655. The Vault's run went from 30 to 40 minutes (speed challenge 12 -> 16) for the 64
-  monsters on the way to its boss (difficulty 6 boss alone: 19:31).
+  x 14560-14675 y 14560-14655 (since the 15 minute runs, 2026-10-14: x 14560-14619 y 14560-14607). The Vault's run went
+  from 30 to 40 minutes for 64 monsters, then (owner: "dungeons of 10-15 minutes") to 15 minutes for 18 ("Solo kill times").
 - Density before the growth, against item 89: normal hunts 2.7-4.4, caves 2.7-3.2, dungeons 3.3-3.6, open land 1.2-2.0. The bulky scaled
   monsters are pulled 3 at a time, so the areas sit a little lower.
 - Capacity (2026-10-14): 738 monsters + 3 bosses at 120 s (was 205), about 145 hunters at the 158 : 31 ratio below.
@@ -11475,9 +11535,42 @@ writer stays so the owner can open, review or hand-place an area in the map edit
 
 **The generated dungeon.**
 - `dungeon = {...}` registers the area in `DUNGEON_SYSTEM.Dungeons` and `Chaos.dungeons.extra` at startup.
-- `extra.populate` fills every point and the boss at each run start. That is the hook in `dungeons.lua` `startRun`;
-  the run's teardown removes the monsters. `extra.bossType` gives the client list the boss look.
+- `extra.populate` fills every point at each run start and closes the boss room gate (`AG.gateTiles`: every walkable
+  tile of the ring just outside the boss room, the doorways, gets a wall piece of the theme's wall brush; the test walks
+  from the boss and never leaves the room). That is the hook in `dungeons.lua` `startRun`; the run's teardown removes
+  the monsters. At 85% (`progressNeeded`) `extra.unlock` opens the gate and spawns the boss at its spot, so it cannot
+  be seen, pulled or hit before. `extra.bossType` gives the client list the boss look.
 - The base entry window (modal) path does not call the hook yet.
+
+**The deep dungeons 6-9** (2026-10-14, owner request: four more queue dungeons for the levels after the Vault, 1000 /
+1300 / 1600 / 2000, built like it).
+- Where: a block of their own outside the world, x/y 24576-25599 (the 14336-15359 block is full of planned hunts). The
+  full map read with `tools/map/otbm.py` (18,388,336 tiles) has no tile and no spawn there; the nearest tile is 5,315
+  sqm away; the rift slots use 20480-21503. Cells of 256 sqm: Marrow Crypts 24576, 24576; Iron Crucible 24832, 24576;
+  Fallen Sanctum 24576, 24832; Pyre Throne 24832, 24832 (z 9; 52 x 42 each since the 15 minute runs). docs/MAP_GUIDE.md
+  "Content plans".
+- Each has its theme (`marrow`, `crucible`, `sanctum`, `throne`: only ids of the checked palettes, so nothing new for
+  `areagen_export.py check`), trash of its band scaled to the dungeon's level (the 1600 and 2000 dungeons use the
+  1300-2000 hunting monsters, "Late game"), and a boss of its own monster file (its own look, its loot table, `isboss`):
+  Ossivane the Gravecage (look 863), Forgewarden Kharzun (1281), Vaelith the Fallen Seraph (1148), Azhkarrath the
+  Chained Wyrm (1535: a one-facing look, so the boss is chained, speed 0). All four looks are unused outfits of the
+  current pair: no pair change. Mechanics: "Boss mechanics".
+- Solo (party 1) like the Vault, six difficulties, the boss on the Vault's curve 100-225%, speed and flawless
+  challenges, records boards (`dungeon_<id>`, per difficulty, by themselves from the dungeon list).
+- Run length: 15 minutes, speed 6 (owner: "dungeons of 10-15 minutes"): 8-11 monsters in packs (their trash takes
+  75-101 s alone each, the Vault's 44 s), bosses of 2:30 alone, own trash and boss curves ("Solo kill times").
+- Boss chest (`dungeon.chest`, `AG.giveChest`, numbers `dungeons_difficulty.lua` `D.chest`): at the end of a won run
+  every finisher gets, straight into the backpack (the inbox when full; the run sends everyone out 10 s after the kill):
+  the dungeon's gold x (1 + the difficulty's gold bonus) to the bank (150,000 / 200,000 / 250,000 / 300,000 at
+  difficulty 1, x5 at 6); 1 / 1 / 2 / 2 / 3 / 3 pieces of the boss's own gear at the boss level's item level (tier boss)
+  + 0..5, rarity at least Rare / Epic / Legendary / Exotic / Mythic / Chaos (the loot layer's bonus steps of tier rare /
+  rare / legendary / legendary / boss / boss on top, item find counts); 1 / 1 / 1 / 2 / 2 / 3 currency rolls of that tier.
+  The Vault keeps no chest (unchanged). One hook in `dungeons.lua` `endRun` calls `extra.onClear` per finisher.
+- Achievements: the counters `dungeon_<area id>`, `_top`, `_d6` ("Achievements").
+- Codex / wiki: the lore entry "The Four Deeper Doors" (`lore_data.lua`); the wiki's Dungeons tab lists every generated
+  dungeon with its level, theme, size, monsters, run, boss mechanics, chest and challenges (`tools/gen_wiki_data.lua`).
+- The client's queue window needs nothing: the list, the boss look (`extra.bossType`), the loot panel and the
+  challenges come from the server. The banner falls back to the stock "Underworld" art (as for the Vault).
 
 **Install / enable.** Nothing to install. The areas are built when `enabled = true` (globally and per area); a
 refused area logs why. Disabling an area at a restart drops its tiles; a character saved inside goes to its temple.

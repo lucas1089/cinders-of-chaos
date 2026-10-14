@@ -424,8 +424,10 @@ Chaos.dungeons = {
 	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the base server modal only did on failure)
 	queueTickMs = 3000,
 	maxDifficulty = 6, -- client has 6 difficulty buttons
-	-- percentage of area monsters that must die before the "boss can be killed" notice
-	progressNeeded = 100,
+	-- percentage of the run's monsters that must die to unlock the boss (owner, 2026-10-14: 85, was 100): the members
+	-- get "Boss unlocked!", a generated dungeon (areagen.lua) opens its boss room gate and spawns its boss; a run is won
+	-- when the boss dies after that (dungeons.lua unlockBoss)
+	progressNeeded = 85,
 	-- area = {{from, to}, ...}: boxes that belong to the dungeon next to the base FromPos/ToPos box (dungeons.lua areaOf),
 	-- for the parts that box misses: measured on the base map and its boss scripts (server/README.md "dungeons")
 	extra = {

@@ -303,7 +303,94 @@ return {
 					healthPerExtra = 0, text = "%s seals the vault: break the 2 Vault Wardens!", doneText = "The seal breaks!",
 					tip = "At 50% he takes 75% less damage until the 2 Vault Wardens die."}
 			},
-			ref = {health = 1130000, dps = 2180, uptime = 1, players = 1, limit = 1800, solo = true}
+			ref = {health = 326500, dps = 2180, uptime = 1, players = 1, limit = 900, solo = true}
+		},
+
+		-- ================================================================ the generated dungeons 6-9 (solo, 15 minutes)
+		-- ref: the boss's health from areagen_config.lua (difficulty 1) and the band's one-target damage at the dungeon's
+		-- level + 25 (server/README.md "Solo kill times": 2,600 at 1000, the same slope above)
+		["ossivane the gravecage"] = {
+			label = "Ossivane", size = 2, element = "death", difficulty = 0.15, every = 10000,
+			fair = {refLevel = 1000},
+			telegraphs = {
+				{key = "grave_slam", label = "Grave Slam", kind = "circle", radius = 3, share = 0.4, hit = "shadow_eruption",
+					fallback = "CONST_ME_MORTAREA", tip = "Everything within 3 sqm: back off."},
+				{key = "rib_cage", label = "Rib Cage", kind = "ring", inner = 2, outer = 6, share = 0.35, hit = "shadow_hit",
+					fallback = "CONST_ME_MORTAREA", tip = "A ring of ribs: hug him or run out past it."}
+			},
+			adds = {
+				{at = 0.5, mode = "immune", type = WARD, name = "Marrow Reliquary", count = 2, health = 40000,
+					healthPerExtra = 0, text = "%s hides in its ribs: break the 2 Marrow Reliquaries!",
+					doneText = "The reliquaries crack: %s can be hurt again!",
+					tip = "At 50% he takes no damage until the 2 Marrow Reliquaries die (about 15 s each alone)."}
+			},
+			debuff = {key = "grave_dust", label = "Grave Dust", perStack = 0.03, max = 8, everyMs = 2500, decayMs = 6000,
+				tip = "His hits stack Grave Dust (+3% damage taken each): step away now and then."},
+			ref = {health = 399000, dps = 2660, uptime = 1, players = 1, limit = 900, solo = true}
+		},
+		["forgewarden kharzun"] = {
+			label = "Kharzun", size = 2, element = "fire", difficulty = 0.2, every = 9500,
+			fair = {refLevel = 1300},
+			telegraphs = {
+				{key = "molten_cleave", label = "Molten Cleave", kind = "cone", length = 6, spread = 3, share = 0.4,
+					hit = "fire_explosion", fallback = "CONST_ME_FIREAREA", tip = "A cone towards you: step to his side."},
+				{key = "slag_rain", label = "Slag Rain", kind = "puddles", count = 4, onPlayers = 4, radius = 1, share = 0.3,
+					hit = "meteor_strike", fallback = "CONST_ME_FIREAREA", tip = "Molten slag lands on you and around: step off."}
+			},
+			timed = {
+				{key = "furnace_heart", label = "Furnace Heart", kind = "channel", channelMs = 9000, every = 60000, below = 0.7,
+					totemType = WARD, totemName = "Bellows Totem", totemHealth = 15000, totemPerExtra = 1.0, share = 0.5,
+					hit = "big_nova_fire_9", fallback = "CONST_ME_FIREAREA",
+					text = "%s stokes the Furnace Heart! Destroy the Bellows Totem!",
+					tip = "A Bellows Totem rises while he stokes the furnace: kill it (about 5 s alone) before the cast ends."}
+			},
+			ref = {health = 507000, dps = 3383, uptime = 1, players = 1, limit = 900, solo = true}
+		},
+		["vaelith the fallen seraph"] = {
+			label = "Vaelith", size = 2, element = "holy", difficulty = 0.2, every = 9500,
+			fair = {refLevel = 1600},
+			telegraphs = {
+				{key = "fallen_cross", label = "Fallen Cross", kind = "cross", halfWidth = 1, share = 0.4, hit = "holy_hit",
+					fallback = "CONST_ME_HOLYAREA", tip = "Beams of light through her: stand on a diagonal."},
+				{key = "judgement", label = "Judgement", kind = "follow", radius = 2, followMs = 1500, share = 0.35,
+					hit = "big_lightning_burst_7", fallback = "CONST_ME_HOLYAREA", tip = "It follows you, then stops: walk out."}
+			},
+			adds = {
+				{at = 0.5, mode = "shield", reduce = 0.7, type = WARD, name = "Gilded Ward", count = 2, health = 60000,
+					healthPerExtra = 0, text = "%s raises 2 Gilded Wards!", doneText = "The wards fall!",
+					tip = "At 50% she takes 70% less damage until the 2 Gilded Wards die."}
+			},
+			timed = {
+				{key = "last_hymn", label = "Last Hymn", kind = "soak", radius = 2, total = 0.6, min = 1, missShare = 0.45,
+					every = 45000, below = 0.8, hit = "holy_hit", fallback = "CONST_ME_HOLYAREA",
+					text = "%s sings the Last Hymn! Stand in the circle!",
+					tip = "Stand in the circle: alone you take 60% of your health; nobody in it: 45% to all."}
+			},
+			ref = {health = 615000, dps = 4106, uptime = 1, players = 1, limit = 900, solo = true}
+		},
+		["azhkarrath the chained wyrm"] = {
+			label = "Azhkarrath", size = 4, element = "fire", difficulty = 0.25, every = 9000,
+			fair = {refLevel = 2000},
+			telegraphs = {
+				{key = "pyre_breath", label = "Pyre Breath", kind = "line", halfWidth = 1, length = 12, share = 0.45,
+					hit = "fire_explosion", fallback = "CONST_ME_FIREAREA", tip = "A three-wide beam towards you: sidestep."},
+				{key = "chain_lash", label = "Chain Lash", kind = "ring", inner = 2, outer = 6, share = 0.4,
+					hit = "big_shock_blood_9", fallback = "CONST_ME_GROUNDSHAKER", tip = "Her chains sweep a ring: hug her or run out."},
+				{key = "ashfall", label = "Ashfall", kind = "puddles", count = 4, onPlayers = 4, radius = 1, share = 0.3,
+					hit = "meteor_strike", fallback = "CONST_ME_FIREAREA", tip = "Burning ash on you and around: step off."}
+			},
+			adds = {
+				{at = 0.4, mode = "immune", type = WARD, name = "Pyre Chain", count = 3, health = 40000, healthPerExtra = 0,
+					text = "%s pulls on her chains: break the 3 Pyre Chains!", doneText = "The chains snap: %s can be hurt again!",
+					tip = "At 40% she takes no damage until the 3 Pyre Chains die (about 8 s each alone)."}
+			},
+			timed = {
+				{key = "throne_inferno", label = "Throne Inferno", kind = "los", hideMs = 3500, every = 60000, below = 0.7,
+					share = 0.6, pillars = {{-5, 0}, {5, 0}, {0, 6}}, hit = "big_nova_fire_9", fallback = "CONST_ME_FIREAREA",
+					text = "%s fills the hall with fire! Hide behind a pillar!",
+					tip = "Pillars rise round the throne: put one between you and her before the fire."}
+			},
+			ref = {health = 760000, dps = 5070, uptime = 1, players = 1, limit = 900, solo = true}
 		},
 
 		-- ================================================================ generated areas' bosses (open world)

@@ -75,6 +75,24 @@ eq(D.bossHealth(1000000, 6, vault), 2250000, "boss curve difficulty 6")
 eq(D.bossHealth(1000000, 9, vault), 2250000, "boss curve clamped")
 eq(D.bossHealth(1000000, 6, nil), 13000000, "no curve: the table's 1300%")
 
+-- the boss chest of the generated dungeons: more and better every step, gold by the difficulty's gold bonus
+local spec = {gold = 100000}
+local prev
+for d = 1, 6 do
+	local c = D.chest(spec, d)
+	eq(c.gold, math.floor(100000 * (1 + D.levels[d].gold / 100)), "chest gold at " .. d)
+	if prev then
+		eq(c.pieces >= prev.pieces and c.rarity > prev.rarity and c.itemLevel > prev.itemLevel and c.gold > prev.gold, true,
+			"chest " .. d .. " is better than " .. (d - 1))
+	end
+	prev = c
+end
+eq(D.chest(spec, 1).rarity, 3, "difficulty 1: Rare")
+eq(D.chest(spec, 6).rarity, 8, "difficulty 6: Chaos")
+eq(D.chest(spec, 6).pieces, 3, "difficulty 6: three pieces")
+eq(D.chest(spec, 9).pieces, 3, "clamped to 6")
+eq(D.chest(nil, 1).gold, 0, "no chest spec: no gold")
+
 print(string.format("dungeons difficulty tests: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

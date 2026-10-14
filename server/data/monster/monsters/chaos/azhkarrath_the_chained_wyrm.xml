@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Boss of The Pyre Throne (generated dungeon 9, level 2000): the mother of the pyrewings, chained to the throne she burned; she never leaves it. Spawned by areagen.lua at the start of each run in the boss room,
+     health x its healthMult (about 2.9) and damage x1.4 there, its own difficulty curve; mechanics in boss_mechanics_config.lua. Numbers: server/README.md
+     "Generated areas" and "Solo kill times". -->
+<monster name="Azhkarrath the Chained Wyrm" nameDescription="Azhkarrath the Chained Wyrm" race="blood" experience="160000" speed="0" manacost="0">
+	<health now="16000" max="16000"/>
+	<look type="1535" corpse="6068"/>
+	<level min="2080" max="2120"/>
+	<targetchange interval="5000" chance="10"/>
+	<flags>
+		<flag isboss="1"/>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="1"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1100" max="-1600"/>
+		<attack name="fire" interval="2000" chance="30" length="9" spread="3" min="-1100" max="-1600">
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="25" range="8" radius="3" target="1" min="-1000" max="-1500">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="fireattack"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="20" range="8" radius="2" target="1" min="-950" max="-1400">
+			<attribute key="shootEffect" value="largerock"/>
+			<attribute key="areaEffect" value="explosionarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="110" defense="110"/>
+	<elements>
+		<element physicalPercent="35"/>
+		<element firePercent="75"/>
+		<element energyPercent="40"/>
+		<element earthPercent="35"/>
+		<element deathPercent="35"/>
+		<element holyPercent="35"/>
+		<element icePercent="-10"/>
+	</elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="THE CHAIN HOLDS ME. NOTHING HOLDS THE FIRE."/>
+		<voice sentence="Come closer, ember-flea."/>
+		<voice sentence="My children burned the sky. I burned the throne."/>
+	</voices>
+	<loot>
+		<item id="2160" countmax="15" chance="100000"/><!-- crystal coin -->
+		<item id="2152" countmax="100" chance="100000"/><!-- platinum coin -->
+		<item id="25380" chance="2500"/><!-- token -->
+		<item id="12607" chance="6000"/><!-- elite draken mail: Azhkarrath's own drop -->
+		<item id="3983" chance="4440"/>
+		<item id="2495" chance="4440"/>
+		<item id="2469" chance="4440"/>
+		<item id="7894" chance="4440"/>
+		<item id="8888" chance="4440"/>
+		<item id="2500" chance="4440"/>
+		<item id="2472" chance="4440"/>
+		<item id="8885" chance="4440"/>
+		<item id="8884" chance="4440"/>
+		<item id="5462" chance="4290"/>
+		<item id="2644" chance="4290"/>
+		<item id="11118" chance="4290"/>
+		<item id="11240" chance="4290"/>
+		<item id="2537" chance="4290"/>
+		<item id="2514" chance="4290"/>
+		<item id="2499" chance="4290"/>
+	</loot>
+</monster>

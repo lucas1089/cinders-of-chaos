@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Boss of The Marrow Crypts (generated dungeon 6, level 1000): a ribcage of a dead giant that still walks, full of grave dust and old prayers. Spawned by areagen.lua at the start of each run in the boss room,
+     health x its healthMult (about 2.9) and damage x1.4 there, its own difficulty curve; mechanics in boss_mechanics_config.lua. Numbers: server/README.md
+     "Generated areas" and "Solo kill times". -->
+<monster name="Ossivane the Gravecage" nameDescription="Ossivane the Gravecage" race="undead" experience="70000" speed="45" manacost="0">
+	<health now="15000" max="15000"/>
+	<look type="863" corpse="6068"/>
+	<level min="1080" max="1120"/>
+	<targetchange interval="5000" chance="10"/>
+	<flags>
+		<flag isboss="1"/>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="1"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-900" max="-1350"/>
+		<attack name="death" interval="2000" chance="25" radius="4" target="0" min="-850" max="-1250">
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="death" interval="2000" chance="25" range="7" radius="2" target="1" min="-800" max="-1200">
+			<attribute key="shootEffect" value="suddendeath"/>
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="20" length="7" spread="3" min="-750" max="-1150">
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+	</attacks>
+	<defenses armor="95" defense="95"/>
+	<elements>
+		<element physicalPercent="25"/>
+		<element deathPercent="60"/>
+		<element earthPercent="40"/>
+		<element icePercent="20"/>
+		<element firePercent="10"/>
+		<element energyPercent="20"/>
+		<element holyPercent="-15"/>
+	</elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The dead keep me. I keep the dead."/>
+		<voice sentence="Rattle, little bones. RATTLE!"/>
+		<voice sentence="Every rib a tomb."/>
+	</voices>
+	<loot>
+		<item id="2160" countmax="8" chance="100000"/><!-- crystal coin -->
+		<item id="2152" countmax="60" chance="100000"/><!-- platinum coin -->
+		<item id="25380" chance="2500"/><!-- token -->
+		<item id="2520" chance="6000"/><!-- demon shield: Ossivane's own drop -->
+		<item id="3983" chance="4440"/>
+		<item id="2495" chance="4440"/>
+		<item id="2469" chance="4440"/>
+		<item id="7894" chance="4440"/>
+		<item id="8888" chance="4440"/>
+		<item id="2500" chance="4440"/>
+		<item id="2472" chance="4440"/>
+		<item id="8885" chance="4440"/>
+		<item id="8884" chance="4440"/>
+		<item id="5462" chance="4290"/>
+		<item id="2644" chance="4290"/>
+		<item id="11118" chance="4290"/>
+		<item id="11240" chance="4290"/>
+		<item id="2537" chance="4290"/>
+		<item id="2514" chance="4290"/>
+		<item id="2499" chance="4290"/>
+	</loot>
+</monster>

@@ -22,6 +22,31 @@ D.levels = {
 }
 D.coins = {[2148] = true, [2152] = true, [2160] = true} -- gold, platinum, crystal coins
 
+-- The boss chest of a generated dungeon (areagen_config.lua `dungeon.chest`, areagen.lua AG.giveChest): every finisher
+-- gets it at the end of a won run. Per difficulty: gear pieces from the boss's own loot table, their rarity floor
+-- (loot_config.lua gear.names: 3 Rare, 4 Epic, 5 Legendary, 6 Exotic, 7 Mythic, 8 Chaos) and the loot layer's bonus
+-- steps of `tier`, item levels above the boss drop (chaos_item_mods.lua M.sourceLevel of the boss level, tier boss;
+-- capped at its max), the dungeon's gold x (1 + the difficulty's gold bonus) to the bank, currency rolls at `tier`.
+-- The steps follow the Vault's boss curve (100-225%: a quarter more work per difficulty, so a little more each step).
+D.chestLevels = {
+	{pieces = 1, rarity = 3, itemLevel = 0, tier = "rare", currency = 1},
+	{pieces = 1, rarity = 4, itemLevel = 1, tier = "rare", currency = 1},
+	{pieces = 2, rarity = 5, itemLevel = 2, tier = "legendary", currency = 1},
+	{pieces = 2, rarity = 6, itemLevel = 3, tier = "legendary", currency = 2},
+	{pieces = 3, rarity = 7, itemLevel = 4, tier = "boss", currency = 2},
+	{pieces = 3, rarity = 8, itemLevel = 5, tier = "boss", currency = 3}
+}
+
+-- what one finisher's chest holds at this difficulty: {pieces, rarity, itemLevel (bonus), tier, currency, gold}
+-- spec = the dungeon's chest table ({gold = n})
+function D.chest(spec, difficulty)
+	local _, d = D.of(difficulty)
+	local c = D.chestLevels[d]
+	local gold = math.floor((spec and spec.gold or 0) * (1 + D.levels[d].gold / 100))
+	return {pieces = c.pieces, rarity = c.rarity, itemLevel = c.itemLevel, tier = c.tier, currency = c.currency,
+		gold = gold}
+end
+
 local floor = math.floor
 
 function D.of(difficulty)
@@ -48,6 +73,51 @@ function D.bossHealth(maxHealth, difficulty, curve)
 	end
 	local _, d = D.of(difficulty)
 	return math.max(1, floor((maxHealth or 0) * (curve[math.min(d, #curve)] or 100) / 100))
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- The run model of a generated dungeon (server/README.md "Solo kill times", the dungeons): how long a capable player
+-- at the dungeon's level needs, from config numbers only, so it can be recomputed after any change of monsters, counts
+-- or the damage model.
+--   dps(L)           the measured one-target damage of the classes: 913 at level 300, 2,600 at 1000, the same slope
+--                    (2.41 a level) above, scaled by the level below 300
+--   health(hp, L)    a monster file's health at level L: hp x (1 + 0.0074 L) (the engine's level bonus)
+--   trash(d)         the run's monsters to the gate (progressNeeded, 85%) x their kill time alone x trashHealth[d]
+--                    / aoe (pulls of several at once: 2.3)
+--   boss(d)          the boss's health x bossHealth[d] / dps (the mechanics keep this time: boss_mechanics G.balance)
+--   run(d)           trash(d) + boss(d) + walk (the walk between packs and to the boss: 90 s)
+-- Targets (owner, 2026-10-14): run(1) about 10 minutes, run(6) about 15, boss(1) 2-3 minutes, boss(6) 5-6; the time
+-- limit 15 minutes and the speed challenge 40% of it.
+D.model = {aoe = 2.3, walk = 90, dpsAt300 = 913, dpsAt1000 = 2600}
+
+function D.dps(level)
+	local m, L = D.model, tonumber(level) or 1
+	if L <= 300 then
+		return m.dpsAt300 * math.max(L, 1) / 300
+	end
+	return m.dpsAt300 + (L - 300) * (m.dpsAt1000 - m.dpsAt300) / 700
+end
+
+function D.levelHealth(hp, level)
+	return (hp or 0) * (1 + 0.0074 * (level or 0))
+end
+
+-- spec = {level = the player's level (the dungeon's + 25), monsters = {{hp, level, count}}, boss = boss health at
+-- difficulty 1 (after its healthMult), need = share 0..1 of the monsters to kill, bossCurve, trashCurve}
+-- -> {trash, boss, walk, total} in seconds at this difficulty
+function D.runSeconds(spec, difficulty)
+	local _, d = D.of(difficulty)
+	local dps = D.dps(spec.level)
+	local single, n = 0, 0
+	for _, m in ipairs(spec.monsters or {}) do
+		single = single + D.levelHealth(m.hp, m.level) * (m.count or 1) / dps
+		n = n + (m.count or 1)
+	end
+	local tc = spec.trashCurve and spec.trashCurve[math.min(d, #spec.trashCurve)] or D.levels[d].health
+	local bc = spec.bossCurve and spec.bossCurve[math.min(d, #spec.bossCurve)] or D.levels[d].health
+	local trash = single * (spec.need or 1) * tc / 100 / D.model.aoe
+	local boss = (spec.boss or 0) * bc / 100 / dps
+	return {trash = trash, boss = boss, walk = D.model.walk, total = trash + boss + D.model.walk, monsters = n}
 end
 
 -- damage dealt by a monster (negative or positive, the sign is kept)

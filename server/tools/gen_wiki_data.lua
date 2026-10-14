@@ -273,6 +273,7 @@ function W.load()
 	D.coins = cfg("shop_coins_config")
 	D.respec = cfg("respec_config")
 	D.difficulty = cfg("dungeons_difficulty")
+	D.areagen = cfg("areagen_config")
 	D.antibot = cfg("antibot_config")
 	D.scale = cfg("display_scale_config")
 	dofile("data/scripts/chaos/class_unlocks_core.lua")
@@ -907,7 +908,8 @@ function W.bossEntries(D)
 	local others = {
 		{"Omen guardians", {"sangrith the bloodmoon herald", "morvane the hollow crown", "thalcyra the stormbound seer"}},
 		{"Rift guardians (every tier; more from tier 8 and 12)", {"rift_guardian"}},
-		{"Dungeons and hunting grounds", {"vault keeper ossrim", "the emberdeep maw", "the ossuary warden", "cinderwing"}},
+		{"Dungeons and hunting grounds", {"vault keeper ossrim", "ossivane the gravecage", "forgewarden kharzun",
+			"vaelith the fallen seraph", "azhkarrath the chained wyrm", "the emberdeep maw", "the ossuary warden", "cinderwing"}},
 		{"Dormant bosses (not spawned yet)", {"ormathulak", "talath", "gloomfire", "saga", "legendary warrior"}}}
 	local mSections = {{h = "How to read a mechanic", p = {
 		"A red mark pulses on every tile the hit will land on, from 1.5 to 3 seconds before it (harder content warns later). The hit lands only on the tiles still marked: walk out. There is always a safe tile you can reach in time at normal speed.",
@@ -928,6 +930,31 @@ function W.bossEntries(D)
 	return out
 end
 
+-- the generated dungeons of areagen_config.lua, in config order: {def, d, monsters} (monsters: the count the generator
+-- places, from the same seed)
+function W.generatedDungeons(D)
+	local out = {}
+	local A = ChaosAreaGenCore
+	if not A then
+		dofile("data/scripts/chaos/areagen_core.lua")
+		A = ChaosAreaGenCore
+	end
+	for _, def in ipairs(D.areagen.areas) do
+		if def.dungeon and def.enabled ~= false then
+			local m = A.generate(D.areagen, def, {})
+			out[#out + 1] = {def = def, d = def.dungeon, monsters = m.stats.monsters}
+		end
+	end
+	return out
+end
+
+local DUNGEON_THEME = {vault = "Dark stone halls", marrow = "Catacombs of dark sand, slate and bones",
+	crucible = "A forge cut into the rock, split by lava cracks and pools", sanctum = "A drowned shrine of wet caves and gilded chapels",
+	throne = "The burnt court of the wyrms: basalt, lava, marble and gilded halls"}
+function W.dungeonTheme(def)
+	return DUNGEON_THEME[def.theme] or "Generated halls"
+end
+
 function W.dungeonEntries(D)
 	local out = {}
 	local dc = D.C0.dungeons
@@ -941,13 +968,20 @@ function W.dungeonEntries(D)
 		listRows[#listRows + 1] = {x.title, titleCase(x.bossName)}
 		listLinks[#listLinks + 1] = "dungeon:" .. id
 	end
+	-- the generated dungeons (areagen_config.lua areas with `dungeon`: the Hollow Vault and the deep dungeons 6-9),
+	-- registered at startup by areagen.lua
+	local gen = W.generatedDungeons(D)
+	for _, g in ipairs(gen) do
+		listRows[#listRows + 1] = {g.d.title, g.def.boss.name}
+		listLinks[#listLinks + 1] = "dungeon:" .. g.d.id
+	end
 	out[#out + 1] = {id = "dungeon:about", name = "Dungeons", color = COLORS.dungeon, group = "dungeon",
 		sub = string.format("Queue, %d difficulties, speed and flawless challenges.", dc.maxDifficulty),
 		sections = {
 			{h = "How they work", p = {
 				"Step on a dungeon's entry or open Adventure > Dungeons: pick a difficulty and join the queue; the group goes in together.",
-				string.format("Kill the dungeon's monsters, then its boss. A run lasts at most %s. Each finished difficulty unlocks the next one.",
-					seconds(dc.maxTimeSeconds)),
+				string.format("Kill %d%% of the dungeon's monsters to unlock its boss, then kill the boss. A run lasts at most %s. Each finished difficulty unlocks the next one.",
+					dc.progressNeeded, seconds(dc.maxTimeSeconds)),
 				"Speed and flawless challenges give points; solo and group rankings keep the best times."}},
 			{h = "Dungeons", cols = {"Dungeon", "Boss"}, w = {50, 50}, rows = listRows, links = listLinks},
 			{h = "Difficulty", p = {"What each difficulty does to the dungeon's monsters (health, damage) and to your rewards (experience, gold, an extra loot roll)."},
@@ -963,6 +997,47 @@ function W.dungeonEntries(D)
 				{h = "Overview", p = {"Boss: " .. titleCase(x.bossName) .. ". The level and group size come from the dungeon's entry."}},
 				{h = "Challenges", cols = {"Challenge", "Goal", "Points"}, w = {30, 55, 15}, rows = ch},
 				{h = "More", p = {"Queue and difficulty: Dungeons."}, links = {"dungeon:about"}}}}
+	end
+	local DD = D.difficulty
+	for _, g in ipairs(gen) do
+		local def, d = g.def, g.d
+		local ch = {}
+		for _, c in ipairs(d.challenges or {}) do
+			ch[#ch + 1] = {c.title, c.desc, num(c.points)}
+		end
+		local mons = {}
+		for _, row in ipairs(def.spawns.monsters) do
+			mons[#mons + 1] = row[1]
+		end
+		local sections = {
+			{h = "Overview", p = {
+				string.format("%s, level %s and up, alone (the queue sends one player in). A run lasts %s; the speed challenge asks for %s.",
+					W.dungeonTheme(def), num(d.level), seconds(d.time), seconds(math.floor((d.challenges[1].maxMs or 0) / 1000))),
+				string.format("%d %s of %s x %s, %d monsters of level %s-%s in packs: %s. The boss room stays shut behind a gate until %d%% of them are dead; then it opens and the boss appears%s.",
+					def.floors or 1, (def.floors or 1) == 1 and "floor" or "floors (a hole leads down)", num(def.size[1]),
+					num(def.size[2]), g.monsters, num(def.spawns.level[1]), num(def.spawns.level[2]), table.concat(mons, ", "),
+					D.C0.dungeons.progressNeeded, (def.floors or 1) > 1 and " on the lowest floor" or ""),
+				string.format("Boss: %s (level %s). Its health grows by its own curve, %s%% to %s%% from difficulty 1 to 6%s; damage, experience, gold and loot follow the difficulty table.",
+					def.boss.name, num(def.boss.level), num(d.bossHealth[1]), num(d.bossHealth[#d.bossHealth]),
+					d.trashHealth and string.format(", the other monsters' %s%% to %s%%", num(d.trashHealth[1]),
+						num(d.trashHealth[#d.trashHealth])) or "")}}}
+		sections[#sections + 1] = mechSection(D, def.boss.name:lower(), "The boss fight:")
+		if d.chest then
+			local rows = {}
+			local names = D.loot and D.loot.gear and D.loot.gear.names or {}
+			for i = 1, #DD.levels do
+				local c = DD.chest(d.chest, i)
+				rows[#rows + 1] = {num(i), money(c.gold), num(c.pieces), names[c.rarity] or num(c.rarity), "+" .. num(c.itemLevel),
+					num(c.currency)}
+			end
+			sections[#sections + 1] = {h = "Boss chest", p = {
+				"Every finisher gets the boss chest at the end of a won run, straight into the backpack (the inbox when it is full): gold to the bank, pieces of the boss's own gear with at least the rarity below (item find can raise it), at the boss's item level plus the bonus, and orb rolls."},
+				cols = {"Difficulty", "Gold", "Gear", "Rarity", "Item level", "Orb rolls"}, w = {14, 18, 12, 20, 18, 18}, rows = rows}
+		end
+		sections[#sections + 1] = {h = "Challenges", cols = {"Challenge", "Goal", "Points"}, w = {30, 55, 15}, rows = ch}
+		sections[#sections + 1] = {h = "More", p = {"Queue and difficulty: Dungeons."}, links = {"dungeon:about"}}
+		out[#out + 1] = {id = "dungeon:" .. d.id, name = d.title, color = COLORS.dungeon, group = "dungeon",
+			sub = string.format("Dungeon, level %s. Boss: %s.", num(d.level), def.boss.name), sections = sections}
 	end
 	-- the Infinity Tower
 	local tw = D.C0.tower
@@ -1482,6 +1557,12 @@ function W.facts(D, vocs, spells, T, typeCount)
 	for _ in pairs(C0.dungeons.extra) do
 		f["dungeon.count"] = f["dungeon.count"] + 1
 	end
+	-- and the generated ones (the Hollow Vault, the deep dungeons 6-9), registered by areagen.lua at startup
+	for _, def in ipairs(D.areagen.areas) do
+		if def.dungeon and def.enabled ~= false then
+			f["dungeon.count"] = f["dungeon.count"] + 1
+		end
+	end
 	f["dungeon.difficulties"] = C0.dungeons.maxDifficulty
 	f["tower.seasonDays"] = C0.tower.seasonLengthDays
 	f["invasion.on"] = D.invasion.enabled == true
@@ -1702,7 +1783,9 @@ local RIFT_KEY_ICON = rift("rk", "9")
 local RIFT_ENTRY = {keys = RIFT_KEY_ICON, tiers = rift("rx", "portal"), omens = rift("rx", "omenkey"),
 	atlas = rift("rx", "atlas"), themes = rift("rt", "abyss")}
 local DUNGEON_WORDS = {{"bone", kit("bone", "skull")}, {"element", kit("arcane", "swirl")},
-	{"chevalier", kit("steel", "sword")}, {"root", kit("nature", "thorns")}}
+	{"chevalier", kit("steel", "sword")}, {"root", kit("nature", "thorns")}, {"vault", kit("arcane", "gate")},
+	{"marrow", kit("bone", "skull")}, {"crucible", kit("steel", "hammer")}, {"sanctum", kit("holy", "burst")},
+	{"throne", kit("fire", "burst")}}
 local BOSS_ELEMENT_GLYPH = {fire = "meteor", ice = "crystal", earth = "thorns", death = "skull", physical = "greataxe"}
 local RAID_BOSS = {ulthar = {"bone", "skull"}, morwen = {"fire", "ghost"}, colossus = {"bone", "golem"},
 	hexmaw = {"shadow", "eye"}, sovereign = {"ember", "banner"}}

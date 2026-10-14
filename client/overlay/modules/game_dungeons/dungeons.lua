@@ -13,6 +13,8 @@ local queueTime = 0
 local timerEvent = nil
 local timeLeft = 0
 local timeLeftEvent = nil
+local bossUnlocked = false
+local bossNeed = 85 -- percent of the run's monsters that unlock the boss (the server's `need` in "start")
 
 local pendingDifficulty = nil
 local difficultyUpdateTimer = nil
@@ -801,7 +803,9 @@ function onDungeonStart(data)
 
   killCounter:getChildById("label"):setText("0%")
   local mainObjective = killCounter:getChildById("mainObjective")
-  mainObjective:setText(tr('Kill monsters to spawn %s', (data.boss or "")))
+  bossNeed = tonumber(data.need) or 85
+  bossUnlocked = false
+  mainObjective:setText(tr('Kill %d%% of the monsters to unlock %s', bossNeed, (data.boss or "")))
   mainObjective:setChecked(false)
   local bossObjective = killCounter:getChildById("bossObjective")
   bossObjective:setText(tr('Kill %s', (data.boss or "")))
@@ -847,12 +851,16 @@ function onDungeonKilled(data)
         local newHeight = maxHeight
         bar:setWidth(newWidth)
         bar:setHeight(newHeight)
-    killCounter:getChildById("label"):setText(math.min(100, data.percent) .. "%")
-    if data.percent >= 100 then
+    if not bossUnlocked then
+      killCounter:getChildById("label"):setText(math.min(100, data.percent) .. "%")
+    end
+    if data.unlocked and not bossUnlocked then
+      bossUnlocked = true
       killCounter:getChildById("mainObjective"):setChecked(true)
+      killCounter:getChildById("label"):setText(tr("Boss unlocked!"))
       bossObjective:setEnabled(true)
 	  local textWidget = challengeNotifi:getChildById("text")
-  textWidget:setText(tr("You can kill the boss now!"))
+  textWidget:setText(tr("Boss unlocked!"))
   challengeNotifi:setWidth(math.max(263, 96 + textWidget:getTextSize().width))
   g_effects.fadeIn(challengeNotifi, 250)
   scheduleEvent(

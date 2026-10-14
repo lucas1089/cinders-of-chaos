@@ -83,6 +83,24 @@ return {
 		["The wards are broken: %s can be hurt again!"] = "As proteções caíram: %s pode ser ferido de novo!",
 		["The wards fall!"] = "As proteções caem!",
 		["The wardstones crack: %s bleeds again!"] = "As wardstones racham: %s sangra de novo!",
+		-- the generated dungeons 6-9
+		["%s hides in its ribs: break the 2 Marrow Reliquaries!"] =
+			"%s se esconde nas costelas: quebrem os 2 Marrow Reliquaries!",
+		["The reliquaries crack: %s can be hurt again!"] = "Os relicários racham: %s pode ser ferido de novo!",
+		["%s stokes the Furnace Heart! Destroy the Bellows Totem!"] =
+			"%s atiça o Furnace Heart! Destruam o Bellows Totem!",
+		["%s raises 2 Gilded Wards!"] = "%s ergue 2 Gilded Wards!",
+		["%s sings the Last Hymn! Stand in the circle!"] = "%s canta o Last Hymn! Fiquem no círculo!",
+		["%s pulls on her chains: break the 3 Pyre Chains!"] = "%s puxa suas correntes: quebrem as 3 Pyre Chains!",
+		["The chains snap: %s can be hurt again!"] = "As correntes se partem: %s pode ser ferida de novo!",
+		["%s fills the hall with fire! Hide behind a pillar!"] =
+			"%s enche o salão de fogo! Escondam-se atrás de um pilar!",
+		-- the queue dungeons (dungeons.lua unlockBoss)
+		["Boss unlocked! %d%% of the monsters are dead: %s awaits you."] =
+			"Boss liberado! %d%% dos monstros estão mortos: %s espera por você.",
+		-- the boss chest of a generated dungeon (areagen.lua AG.giveChest)
+		["Boss chest of %s: %d gold to your bank%s%s.%s"] = "Baú do chefe de %s: %d de ouro no seu banco%s%s.%s",
+		[" Your backpack was full: the rest is in your inbox."] = " Sua mochila estava cheia: o resto está na sua caixa de entrada.",
 
 		-- the Ashen Sepulchre raid (raid.lua, raid_core.lua K.ANNOUNCE)
 		["TANK SWAP: %s is at %d stacks!"] = "TROCA DE TANK: %s está com %d acúmulos!",

@@ -311,7 +311,8 @@ The same model can be written as an OTBM piece for the map editor.
 ### Make or change an area
 1. Add or edit an entry in `areas` of `server/data/scripts/chaos/areagen_config.lua`:
    - `kind`: `cave`, `dungeon` or `waste`; `theme`; `seed`;
-   - `origin`: top-left of the first floor, inside x/y 14336-15359, not overlapping another area;
+   - `origin`: top-left of the first floor, inside x/y 14336-15359 (a queue dungeon also 24576-25599, below), not
+     overlapping another area;
    - `size`, `floors`, `linksPerFloor`, `layout` (below), `spawns`, `boss`;
    - `entrance` and `back` on the world map, and `minLevel`.
 2. Look at it before it goes live:
@@ -505,6 +506,22 @@ the schema's 14336-15359; the area runs to x 15497, where the map has no tiles (
 tools/map/otbm.py: no tile in x 15295-15510, y 14330-14545 nor in x 14330-14545, y 15130-15355). The block is now full:
 a next plan goes further along that column (x 15305, rows 14540, 14700, 14940) after the same check.
 Teleports: 16 plans in the room's 20 slots (4 spare).
+
+**The dungeon block x/y 24576-25599** (2026-10-14, owner approval: the queue dungeons 6-9 of `areagen_config.lua`,
+server/README.md "Generated areas"). The 14336-15359 block is full, so the four deep dungeons got a block of their
+own outside the world (world x 30700-34600, y 30900-33850). Checked with `tools/map/otbm.py` on the full map
+(18,388,336 tiles): no tile and no spawn in x/y 24576-25599, the nearest tile is 5,315 sqm away (30851, 30914, 9);
+the rift slots use 20480-21503 and every other runtime area 2000-15359. Cells of 256 sqm, z 9 (z 10 free too):
+
+| Dungeon | Cell origin x, y, z | Size, floors |
+|---|---|---|
+| The Marrow Crypts (6, level 1000) | 24576, 24576, 9 | 52 x 42, 1 |
+| The Iron Crucible (7, level 1300) | 24832, 24576, 9 | 52 x 42, 1 |
+| The Fallen Sanctum (8, level 1600) | 24576, 24832, 9 | 52 x 42, 1 |
+| The Pyre Throne (9, level 2000) | 24832, 24832, 9 | 52 x 42, 1 |
+
+The block has room for twelve more cells (x 25088 and 25344, every row; rows y 25088 and 25344). `tests/areagen_test.lua`
+holds every area to one of the two blocks and apart from the others.
 
 **The way in: the teleport room.** `install_all.py` step `contentareas` (`server/tools/install_content_areas.py`)
 places every plan at its own origin, with its spawns and chest script, and grows the teleport room of Cinderhold
