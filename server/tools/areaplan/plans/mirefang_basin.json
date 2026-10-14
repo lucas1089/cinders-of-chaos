@@ -1,0 +1,146 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "mirefang_basin",
+  "name": "Mirefang Basin",
+  "biome": "swamp",
+  "size": [
+    88,
+    70
+  ],
+  "floors": 1,
+  "level": [
+    880,
+    999
+  ],
+  "seed": 25303,
+  "origin": {
+    "x": 14900,
+    "y": 14500,
+    "z": 8
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "heron_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "northwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "visco_flats",
+      "floor": 1,
+      "size": "large",
+      "place": "north"
+    },
+    {
+      "id": "hydra_sink",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "serpent_channel",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "shaper_mire",
+      "floor": 1,
+      "size": "large",
+      "place": "southwest"
+    },
+    {
+      "id": "weaver_nest",
+      "floor": 1,
+      "size": "medium",
+      "place": "southeast"
+    }
+  ],
+  "paths": [
+    {
+      "from": "heron_camp",
+      "to": "visco_flats",
+      "width": 3
+    },
+    {
+      "from": "visco_flats",
+      "to": "hydra_sink",
+      "width": 4
+    },
+    {
+      "from": "hydra_sink",
+      "to": "serpent_channel",
+      "width": 3
+    },
+    {
+      "from": "hydra_sink",
+      "to": "shaper_mire",
+      "width": 3
+    },
+    {
+      "from": "shaper_mire",
+      "to": "heron_camp",
+      "width": 3
+    },
+    {
+      "from": "serpent_channel",
+      "to": "weaver_nest",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "heron_camp"
+  },
+  "exit": {
+    "zone": "heron_camp"
+  },
+  "spawns": [
+    {
+      "zone": "visco_flats",
+      "monster": "Mutated Visco",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "hydra_sink",
+      "monster": "Acid Hydra",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "hydra_sink",
+      "monster": "Mutated Visco",
+      "count": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "serpent_channel",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "shaper_mire",
+      "monster": "Elite Twisted Shaper",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "shaper_mire",
+      "monster": "Acid Hydra",
+      "count": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "weaver_nest",
+      "monster": "Nexweaver",
+      "count": 3,
+      "respawn": 150
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): an acid basin for levels 880-999, the top of the late game before the generated areas. Three parties."
+}

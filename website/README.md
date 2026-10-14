@@ -42,6 +42,10 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_creator_test.php` | `php website/tests/chaos_creator_test.php`: settings from `creator_codes_config.lua`, picks (unknown, off, own code), totals, the admin check and actions, the referral link (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/bazaar_lib.php`, `pages/bazaar.php`, `bazaar_worker.php` | the Character Bazaar: character auctions for Chaos Coins with escrow, fee and transfer (see "Character Bazaar") |
 | `tests/chaos_bazaar_test.php` | `php website/tests/chaos_bazaar_test.php`: every blocked listing, bids and escrow, the fee and the transfer, expiry, buyout, cancel, a failed transfer, coins kept whole (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/discord_lib.php`, `discord_worker.php` | Discord announcements: posts the game's queued events and the bazaar's new auctions and sales to channel webhooks from the environment (see "Discord announcements") |
+| `tests/chaos_discord_worker_test.php` | `php website/tests/chaos_discord_worker_test.php`: the worker against a mock webhook endpoint (a local `php -S`): embeds, no pings, 429 and rate limit headers, retries, switches, the bazaar scan, cleanup; the downloads page's Discord step (php-cli with pdo_sqlite, nothing leaves the machine) |
+| `overlay/plugins/chaos/telemetry_lib.php`, `pages/telemetry.php` | staff only (admin accounts with a group 5+ character): balance telemetry charts, server-drawn SVG (see "Balance telemetry") |
+| `tests/chaos_telemetry_page_test.php` | `php website/tests/chaos_telemetry_page_test.php`: access, filters, rates and the small-group rule, every section, the SVG charts (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
 | `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss, the class tabs of the byClass boards (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/notused.php` | the short note shown instead of the stock pages this server does not use (see "Not used on this server") |
@@ -1018,6 +1022,45 @@ class, the language / region and hours text, the note, graduates and free places
 there are, how many apprentices learn now and how many graduated. The page only reads `chaos_mentors` and
 `chaos_mentor_links`; without them it says that no mentor is listed yet. The numbers in the page's text
 (`chaos_mentor_rules()`) are checked against `server/data/scripts/chaos/mentor_config.lua` by the test.
+
+## Discord announcements
+
+The game server queues events in `chaos_discord_queue` (server/README.md "Discord announcements"; the plugin's
+`install.sql` creates the table too). `plugins/chaos/discord_worker.php` posts them to Discord channel **webhooks**
+as embeds in the site's colours (`discord_lib.php`), and adds the Character Bazaar's new auctions and sales from
+`chaos_bazaar_log` (its first run only notes where the log is). No bot and no token: a webhook URL per channel, from
+the environment only.
+
+- **Run it** every minute as the web server's user: `server/deploy/chaos-discord.service` + `.timer`
+  (`EnvironmentFile=/etc/chaos/discord.env`, log `/var/log/chaos/discord.log`), or cron:
+  `* * * * * www-data set -a; . /etc/chaos/discord.env; php <site>/plugins/chaos/discord_worker.php --site <site>`.
+  `--loop [--interval 20]` keeps it running instead. Without any webhook it exits at once; the rows wait.
+- **Environment** (`/etc/chaos/discord.env`, mode 600, owned by www-data; never in the repository):
+  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts), `_BOSSES` (world boss spawn and kill, Ascended,
+  Cinderheart), `_PLAYERS` (levels 500 and 1000), `_ANNOUNCE` (season start and end), `_STATUS` (server up, daily
+  restart, down), `_BAZAAR` (auctions and sales), `_DEFAULT` (every channel without its own); `CHAOS_DISCORD_OFF`
+  (kinds not to post, comma separated: `record`, `first`, `worldboss_spawn`, `worldboss_kill`, `ascended_kill`,
+  `cinderheart_kill`, `level`, `season_start`, `season_end`, `status_up`, `status_down`, `status_restart`,
+  `bazaar_list`, `bazaar_sale`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
+  `https://discord.com/api/webhooks/<id>/<token>` URLs are taken.
+- **Rate limits:** at most 20 posts a run, 0.6 s apart per webhook; Discord's 429 `retry_after` and
+  `X-RateLimit-Remaining: 0` hold that webhook's rows back. A failed post is tried again after 1, 2, 4, 8 minutes and
+  then marked `failed`. Posts never ping (`allowed_mentions` empty). Rows: `new`, `sent`, `failed`, `nohook` (no webhook
+  for the channel), `off`; sent rows are deleted after 14 days, failed ones after 28.
+- **Invite:** `CHAOS_DISCORD_URL` (site.env) shows the Discord button of the layout and, as an https link, a last step
+  "Join the community on Discord" on the downloads page.
+
+## Balance telemetry
+
+`page.php?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry, added by `setup/chaos_setup.php`): admin accounts
+(`CHAOS_ADMIN_ACCOUNTS`) with a character of group 5 or higher; anyone else gets "not found". Read only. Filters: level
+band, class (a line or one class), a UTC date range (14 days by default, at most 400). Sections: online (average and
+peak per day), hunting (experience and gold per hour per day, per class, per band), bosses (kills, average, best and
+slowest time per party size), deaths per area and killer, spell casts, gold faucets and sinks, Chaos Coins per store
+category (`chaos_shop_purchases`, by the buyer's level). Charts are SVG drawn by the server (`telemetry_lib.php`): no
+script and no external file; a point's or bar's tooltip is its `<title>`, and each chart has a table. A rate is only
+shown where at least 3 characters are behind it. Data: the game's `chaos_telemetry_*` tables (server/README.md
+"Balance telemetry"); without them the page says there is no telemetry yet.
 
 ## Not done / for later
 

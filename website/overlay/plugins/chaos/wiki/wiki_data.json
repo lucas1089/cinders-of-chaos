@@ -27732,6 +27732,52 @@
 						}
 					],
 					"icon": "wiki/i/k-light-paw.png"
+				},
+				{
+					"id": "event:nemesis",
+					"name": "Nemesis",
+					"sub": "A monster that kills you may come back for you, by name.",
+					"color": "#ffb050",
+					"group": "nemesis",
+					"sections": [
+						{
+							"h": "Birth",
+							"p": [
+								"When a regular monster kills a character of level 50 or more, there is a 25% chance it becomes that character's Nemesis. Bosses, summons, treasure goblins and the monsters of events and instances never do, and neither does a death with a player involved.",
+								"One Nemesis per character. After one ends, no new one for 6 h. Above 200 active Nemeses on the server the chance falls, down to none at 300."
+							]
+						},
+						{
+							"h": "The Nemesis",
+							"p": [
+								"It gets a name and an epithet that names you (\"Varkh, Bane of Varek\" for a character called Varek), a level 10-20% above the monster that killed you, a black skull, a blood-red glow and one trait.",
+								"While you hunt its kind, or monsters near its level, each kill has a 4% chance to call it: \"You feel a familiar hatred watching you...\" It appears a few tiles away, at most every 15 min, and fades after 5 minutes if you do not finish it.",
+								"It only appears for you, only hurts you and your party, and only you and your party can hurt it.",
+								"If it kills you again it grows: +10% level, a second trait and a new epithet (Twice-Slayer of Varek, Thrice-Slayer of Varek, Doom of Varek), up to 4 kills. A Nemesis you have not met for 14 days loses your trail."
+							]
+						},
+						{
+							"h": "Traits",
+							"cols": ["Trait", "Effect"],
+							"w": [30, 70],
+							"rows": [
+								["Vengeful", "Hits 50% harder below half health."],
+								["Swift", "Much faster."],
+								["Thorned", "Reflects 15% of the damage it takes."],
+								["Regenerating", "Heals 2% of its health every few seconds."],
+								["Stalker", "Steps out of the shadows next to its victim."]
+							]
+						},
+						{
+							"h": "Rewards",
+							"p": [
+								"Slay it yourself: a trophy with its name engraved (once per Nemesis, cannot be sold or traded), the title Avenger of Self and a loot bonus in its corpse (at most once every 20 h).",
+								"A party member slays it: the Nemesis Hunter bounty of 10,000 gold plus 200 per level to their bank (at most once every 6 h, never for your own account or connection, never for a Nemesis younger than 10 minutes). After 3 of them, the title Nemesis Hunter.",
+								"Hardcore characters can have a Nemesis too; their reward is the trophy."
+							]
+						}
+					],
+					"icon": "wiki/i/top-events.png"
 				}
 			],
 			"banner": "wiki/hero/tab-events.webp",
@@ -29595,6 +29641,501 @@
 			"banner": "wiki/hero/tab-materials.webp",
 			"icon": "wiki/i/k-nature-leaf.png",
 			"tone": "#7ec46a"
+		},
+		{
+			"id": "lore",
+			"name": "Lore",
+			"entries": [
+				{
+					"id": "lore:cinders",
+					"name": "The Fall of the Cinders",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"No one agrees on the night it happened. The sky split, and burning stones fell like slow rain for a season. Where they struck, the ground remembered fire: forests turned to ash, the dead stirred in their graves, and the first rifts opened like wounds that would not close.",
+								"The Cinders still lie where they fell. Some are cold. Some still beat."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Ninguém concorda sobre a noite em que aconteceu. O céu se partiu e pedras em chamas caíram como uma chuva lenta por uma estação inteira. Onde tocaram, a terra lembrou o fogo: florestas viraram cinza, os mortos se agitaram nos túmulos e as primeiras fendas se abriram como feridas que não fecham.",
+								"As Brasas ainda estão onde caíram. Algumas esfriaram. Outras ainda pulsam."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:first_blood",
+					"name": "The Isle of First Blood",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Every newcomer wakes on the same small island, among statues no one remembers carving. The Vigil says the island was the first place a Cinder did not burn. Whatever the truth, nothing there can kill you, and nothing there will follow you out."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Todo recém-chegado acorda na mesma pequena ilha, entre estátuas que ninguém lembra de ter esculpido. A Vigília diz que a ilha foi o primeiro lugar onde uma Brasa não queimou. Seja qual for a verdade, nada ali pode matar você, e nada dali o seguirá."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:archive",
+					"name": "The Archivist's Ledger",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Archivist Maelis keeps a ledger of every name the fire gave back: bosses, rifts, Omens, the things in the deep. She pays for true accounts and burns the false ones. Her ink is mixed with ash, so that what is written cannot be unwritten."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"A Arquivista Maelis mantém um registro de cada nome que o fogo devolveu: chefes, fendas, Presságios, as coisas das profundezas. Ela paga por relatos verdadeiros e queima os falsos. Sua tinta é misturada com cinza, para que o que foi escrito não possa ser apagado."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:rifts",
+					"name": "The Rifts",
+					"sub": "Rifts",
+					"color": "#c9a27a",
+					"group": "rift",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"A rift is a place that fell with a Cinder and never finished landing. Step through with a key and you walk a piece of somewhere else, for as long as it holds. Each one has a guardian. Seal it, and the rift closes. Leave it open, and it remembers your face."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Uma fenda é um lugar que caiu com uma Brasa e nunca terminou de pousar. Atravesse com uma chave e você caminha por um pedaço de outro lugar, enquanto ele durar. Cada uma tem um guardião. Sele-a e a fenda se fecha. Deixe-a aberta e ela lembrará do seu rosto."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-portal.png"
+				},
+				{
+					"id": "lore:rift_abyssal",
+					"name": "Abyssal Rift",
+					"sub": "Rifts",
+					"color": "#c9a27a",
+					"group": "rift",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Floors of black glass over nothing at all. The Veiled Choir hears singing down there and answers it. What lives in the Abyssal Rift has too many eyes, and it has learned to close the ones you are looking at."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Pisos de vidro negro sobre o nada. O Coro Velado ouve um canto lá embaixo e responde. O que vive na Fenda Abissal tem olhos demais, e aprendeu a fechar aqueles para os quais você olha."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-portal.png"
+				},
+				{
+					"id": "lore:rift_obsidian",
+					"name": "Obsidian Hall",
+					"sub": "Rifts",
+					"color": "#c9a27a",
+					"group": "rift",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"A hall of black marble that was never built by hands. Magma runs in its seams like veins. The Cinderforge Compact mines its walls between waves of the things that guard it, and calls the losses the price of good steel."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Um salão de mármore negro que nunca foi construído por mãos. O magma corre em suas juntas como veias. O Pacto da Forja de Brasa minera suas paredes entre as ondas de guardiões, e chama as perdas de preço do bom aço."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-portal.png"
+				},
+				{
+					"id": "lore:rift_ashen",
+					"name": "Ashen Crypt",
+					"sub": "Rifts",
+					"color": "#c9a27a",
+					"group": "rift",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Graves that burned without being opened. The dead inside woke warm and angry. The Ashen Vigil rings its bells at every crypt that stirs, and sends wardens with oil and torches to finish what the fire started."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Túmulos que queimaram sem serem abertos. Os mortos lá dentro acordaram quentes e furiosos. A Vigília Cinzenta toca seus sinos em cada cripta que se agita e envia guardiões com óleo e tochas para terminar o que o fogo começou."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-portal.png"
+				},
+				{
+					"id": "lore:rift_sanctum",
+					"name": "Forsaken Sanctum",
+					"sub": "Rifts",
+					"color": "#c9a27a",
+					"group": "rift",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"A gilded temple swallowed by fungus. Its priests prayed for the fire to pass them by, and something answered with rot instead. The Thornbound Circle cuts the blight back every season. Every season it grows faster."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Um templo dourado engolido por fungos. Seus sacerdotes rezaram para que o fogo passasse longe, e algo respondeu com podridão. O Círculo dos Espinhos corta a praga a cada estação. A cada estação ela cresce mais rápido."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-portal.png"
+				},
+				{
+					"id": "lore:omens",
+					"name": "The Omens",
+					"sub": "Omens",
+					"color": "#c9a27a",
+					"group": "omen",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Some rifts do not hold a guardian. They hold a herald. The fragments they leave can be pressed into a key, and the key opens a door to the Omen itself: Sangrith of the Bloodmoon, Morvane the Hollow Crown, Thalcyra the Stormbound Seer. Each one foretells the same thing in a different voice."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Algumas fendas não guardam um guardião. Guardam um arauto. Os fragmentos que deixam podem ser prensados em uma chave, e a chave abre a porta para o próprio Presságio: Sangrith da Lua de Sangue, Morvane a Coroa Oca, Thalcyra a Vidente da Tempestade. Cada um prevê a mesma coisa com uma voz diferente."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-ascended.png"
+				},
+				{
+					"id": "lore:omen_bloodmoon",
+					"name": "Sangrith the Bloodmoon Herald",
+					"sub": "Omens",
+					"color": "#c9a27a",
+					"group": "omen",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Sangrith walked out of the red night that followed the first fall, carrying a sickle of moonlight. He harvests what the fire missed. Those who fight him say the floor fills with blood before anyone is cut."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Sangrith saiu da noite vermelha que seguiu a primeira queda, carregando uma foice de luar. Ele colhe o que o fogo deixou para trás. Quem o enfrenta diz que o chão se enche de sangue antes que alguém seja ferido."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-ascended.png"
+				},
+				{
+					"id": "lore:omen_hollow",
+					"name": "Morvane the Hollow Crown",
+					"sub": "Omens",
+					"color": "#c9a27a",
+					"group": "omen",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Morvane was a queen once, of a kingdom that burned in one night. She kept the crown and lost the head beneath it. Her court of wraiths still bows to the empty throne, and they expect you to bow as well."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Morvane foi rainha um dia, de um reino que queimou em uma única noite. Ela ficou com a coroa e perdeu a cabeça que a usava. Sua corte de espectros ainda se curva ao trono vazio, e espera que você se curve também."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-ascended.png"
+				},
+				{
+					"id": "lore:omen_storm",
+					"name": "Thalcyra the Stormbound Seer",
+					"sub": "Omens",
+					"color": "#c9a27a",
+					"group": "omen",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Thalcyra looked into the falling sky to read what came after, and the sky looked back. Now she is the storm she saw. Lightning finds the ground she marks a breath before it falls. Read the marks, or join her vision."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Thalcyra olhou para o céu em queda para ler o que viria depois, e o céu olhou de volta. Agora ela é a tempestade que viu. O raio encontra o chão que ela marca um instante antes de cair. Leia as marcas, ou entre em sua visão."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-ascended.png"
+				},
+				{
+					"id": "lore:omen_ascended",
+					"name": "The Ascended Omens and the Ember Gate",
+					"sub": "Omens",
+					"color": "#c9a27a",
+					"group": "omen",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"An Omen that is slain does not stay slain. Bind three shards of its herald into a sigil and it returns, Ascended, behind the Ember Gate. The fallen wait in the antechamber for the Gate to let them back. It always does, until it does not."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Um Presságio abatido não continua abatido. Una três fragmentos do seu arauto em um sigilo e ele retorna, Ascendido, atrás do Portão de Brasa. Os caídos esperam na antecâmara até que o Portão os deixe voltar. Ele sempre deixa, até o dia em que não deixa."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-ascended.png"
+				},
+				{
+					"id": "lore:cinderheart",
+					"name": "Ysgrath the Cinderheart",
+					"sub": "Omens",
+					"color": "#c9a27a",
+					"group": "omen",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Every Omen sings of one thing: the first Cinder, the one that never cooled. It has a name now, Ysgrath, and a heartbeat you can feel through the soles of your boots. It remembers the red night, the hollow court and the storm, because it made them. Only those who have ended all three may stand before it."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Todo Presságio canta sobre uma só coisa: a primeira Brasa, a que nunca esfriou. Agora ela tem um nome, Ysgrath, e um batimento que se sente pela sola das botas. Ela lembra a noite vermelha, a corte oca e a tempestade, porque foi ela que os criou. Só quem encerrou os três pode ficar diante dela."
+							]
+						}
+					],
+					"icon": "wiki/i/rx-ascended.png"
+				},
+				{
+					"id": "lore:sepulchre",
+					"name": "The Ashen Sepulchre",
+					"sub": "The Ashen Sepulchre",
+					"color": "#c9a27a",
+					"group": "raid",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"The Sepulchre was not built to honour a king. It was built to hold one. Varkhul, the Ashen Sovereign, ruled until the fire made him something that would not die, and his own wardens walled him in with everything that served him. Gravewarden Ulthar still keeps the first gate. Morwen the Ash-Sister still sings. The last door opens from the inside."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"O Sepulcro não foi construído para honrar um rei. Foi construído para prendê-lo. Varkhul, o Soberano Cinzento, reinou até que o fogo o transformou em algo que não morre, e seus próprios guardiões o emparedaram com tudo o que o servia. O Guardião de Túmulos Ulthar ainda vigia o primeiro portão. Morwen, a Irmã das Cinzas, ainda canta. A última porta se abre por dentro."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-gate.png"
+				},
+				{
+					"id": "lore:wb_kaelgor",
+					"name": "Kaelgor the Infernal Warlord",
+					"sub": "World bosses",
+					"color": "#c9a27a",
+					"group": "worldboss",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Kaelgor led the first army through a burning rift and found nothing on the other side worth conquering, so he conquers ours, again and again. His banner is a sheet of flame. His soldiers are whoever he killed last time."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Kaelgor liderou o primeiro exército através de uma fenda em chamas e não encontrou do outro lado nada que valesse conquistar; então conquista o nosso, de novo e de novo. Seu estandarte é uma cortina de fogo. Seus soldados são quem ele matou da última vez."
+							]
+						}
+					],
+					"icon": "wiki/i/k-blood-skull.png"
+				},
+				{
+					"id": "lore:wb_skaldra",
+					"name": "Skaldra the Rime Queen",
+					"sub": "World bosses",
+					"color": "#c9a27a",
+					"group": "worldboss",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Where a Cinder fell into the northern ice, the ice did not melt. It woke. Skaldra wears the cold like a gown and freezes the sky wherever she descends. She hates the fire more than any of us. That does not make her a friend."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Onde uma Brasa caiu no gelo do norte, o gelo não derreteu. Ele despertou. Skaldra veste o frio como um vestido e congela o céu onde quer que desça. Ela odeia o fogo mais do que qualquer um de nós. Isso não a torna uma aliada."
+							]
+						}
+					],
+					"icon": "wiki/i/k-blood-skull.png"
+				},
+				{
+					"id": "lore:wb_rotmother",
+					"name": "The Rotmother",
+					"sub": "World bosses",
+					"color": "#c9a27a",
+					"group": "worldboss",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"The plague pits were dug for the dead of the first fall. Something kept feeding on them after the digging stopped, and grew, and gave birth. The Thornbound Circle burns its brood on sight and still cannot find the pit it crawls out of."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"As covas da peste foram cavadas para os mortos da primeira queda. Algo continuou se alimentando deles depois que pararam de cavar, e cresceu, e deu à luz. O Círculo dos Espinhos queima sua ninhada assim que a vê e ainda não encontrou a cova de onde ela rasteja."
+							]
+						}
+					],
+					"icon": "wiki/i/k-blood-skull.png"
+				},
+				{
+					"id": "lore:wb_nyxareth",
+					"name": "Nyxareth the Void Archon",
+					"sub": "World bosses",
+					"color": "#c9a27a",
+					"group": "worldboss",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"The Veiled Choir sang to the void for a hundred nights. On the hundred and first, the void sang back, and Nyxareth stepped out of the tear. The Choir calls it a misunderstanding. The Vigil calls it a debt."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"O Coro Velado cantou para o vazio por cem noites. Na centésima primeira, o vazio cantou de volta, e Nyxareth saiu do rasgo. O Coro chama isso de mal-entendido. A Vigília chama de dívida."
+							]
+						}
+					],
+					"icon": "wiki/i/k-blood-skull.png"
+				},
+				{
+					"id": "lore:wb_vharok",
+					"name": "Vharok the Blood Colossus",
+					"sub": "World bosses",
+					"color": "#c9a27a",
+					"group": "worldboss",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Vharok is what a battlefield becomes when no one buries the fallen. Every war since the first fall added to him. When the earth trembles, he is counting the new dead."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Vharok é o que um campo de batalha se torna quando ninguém enterra os caídos. Cada guerra desde a primeira queda aumentou seu corpo. Quando a terra treme, ele está contando os novos mortos."
+							]
+						}
+					],
+					"icon": "wiki/i/k-blood-skull.png"
+				},
+				{
+					"id": "lore:descent",
+					"name": "The Ember Descent",
+					"sub": "The deep places",
+					"color": "#c9a27a",
+					"group": "deep",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Under every town there is a stair that was not there before the fall. It goes down further each time someone walks it. The rooms change. The heat does not. No one has found the bottom, and those who claim to have found it do not go back."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Sob cada cidade há uma escada que não existia antes da queda. Ela desce mais a cada vez que alguém a percorre. As salas mudam. O calor não. Ninguém encontrou o fundo, e quem diz ter encontrado não volta lá."
+							]
+						}
+					],
+					"icon": "wiki/i/k-shadow-gate.png"
+				},
+				{
+					"id": "lore:deep_wardens",
+					"name": "The Wardens of the Deep",
+					"sub": "The deep places",
+					"color": "#c9a27a",
+					"group": "deep",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Past the reach of any map lie places the fire hollowed out on its own: the Emberdeep Hollows, the Sunken Ossuary, the Cinderfall Wastes, the Hollow Vault. Each has a keeper grown fat on Cinder heat: the Emberdeep Maw, the Ossuary Warden, Cinderwing, and Vault Keeper Ossrim, who still counts coins no one will spend."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Além do alcance de qualquer mapa ficam lugares que o fogo escavou sozinho: Emberdeep Hollows, Sunken Ossuary, Cinderfall Wastes e The Hollow Vault. Cada um tem um guardião engordado pelo calor das Brasas: The Emberdeep Maw, The Ossuary Warden, Cinderwing e Vault Keeper Ossrim, que ainda conta moedas que ninguém vai gastar."
+							]
+						}
+					],
+					"icon": "wiki/i/k-shadow-gate.png"
+				}
+			],
+			"banner": "wiki/hero/tab-lore.webp",
+			"icon": "wiki/i/k-ember-eye.png",
+			"tone": "#c9a27a"
 		},
 		{
 			"id": "store",

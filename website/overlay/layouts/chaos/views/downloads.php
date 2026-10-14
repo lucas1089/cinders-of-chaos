@@ -8,6 +8,9 @@ $h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOT
 $entries = function_exists('znote_download_entries') ? znote_download_entries() : array();
 $host = function_exists('chaos_cfg') ? (string)chaos_cfg('game_host', '') : '';
 $port = function_exists('chaos_cfg') ? (int)chaos_cfg('game_port', 7171) : 7171;
+// the Discord invite (CHAOS_DISCORD_URL, $config['chaos']['discord_url']): a last step when it is an https link
+$discord = function_exists('chaos_cfg') ? (string)chaos_cfg('discord_url', '') : '';
+$discord = preg_match('~^https://~i', $discord) ? $discord : '';
 $icons = array('windows_client' => 'fa-windows', 'linux_client' => 'fa-linux', 'macos_client' => 'fa-apple');
 // ZnoteX replaces the label and description of its two built-in keys; ours are written here
 $about = array(
@@ -44,6 +47,9 @@ $about = array(
 		<li>Download the client for your system and unpack it into a folder of your choice.</li>
 		<li>Start the client and log in with your account<?php if ($host !== ''): ?> (server <code><?= $h($host) ?></code>, port <code><?= (int)$port ?></code>; already set in the client)<?php endif; ?>.</li>
 		<li>Your character wakes up on the tutorial island. Five stations teach you to fight, cast, spend a passive point and craft. Character > Services > Leave Tutorial leaves at any time.</li>
+		<?php if ($discord !== ''): ?>
+		<li>Join the community on <a href="<?= $h($discord) ?>" rel="noopener">Discord</a>: news, records, world bosses and help.</li>
+		<?php endif; ?>
 	</ol>
 </div>
 </div>

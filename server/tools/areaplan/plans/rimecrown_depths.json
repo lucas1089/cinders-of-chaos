@@ -1,0 +1,180 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "rimecrown_depths",
+  "name": "Rimecrown Depths",
+  "biome": "ice",
+  "size": [
+    90,
+    70
+  ],
+  "floors": 1,
+  "level": [
+    1000,
+    1120
+  ],
+  "seed": 25401,
+  "origin": {
+    "x": 15000,
+    "y": 14500,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "frost_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "lich_gallery",
+      "floor": 1,
+      "size": "large",
+      "place": "northwest"
+    },
+    {
+      "id": "glacier_heart",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "wyrm_shelf",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "purity_well",
+      "floor": 1,
+      "size": "large",
+      "place": "southwest"
+    },
+    {
+      "id": "shaper_crevasse",
+      "floor": 1,
+      "size": "medium",
+      "place": "south"
+    },
+    {
+      "id": "crown_vault",
+      "floor": 1,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "frost_camp",
+      "to": "lich_gallery",
+      "width": 3
+    },
+    {
+      "from": "lich_gallery",
+      "to": "glacier_heart",
+      "width": 4
+    },
+    {
+      "from": "glacier_heart",
+      "to": "wyrm_shelf",
+      "width": 3
+    },
+    {
+      "from": "glacier_heart",
+      "to": "purity_well",
+      "width": 3
+    },
+    {
+      "from": "purity_well",
+      "to": "shaper_crevasse",
+      "width": 3
+    },
+    {
+      "from": "shaper_crevasse",
+      "to": "crown_vault",
+      "width": 2
+    },
+    {
+      "from": "wyrm_shelf",
+      "to": "frost_camp",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "frost_camp"
+  },
+  "exit": {
+    "zone": "frost_camp"
+  },
+  "spawns": [
+    {
+      "zone": "lich_gallery",
+      "monster": "Ice Lich",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "glacier_heart",
+      "monster": "Scaleborn",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "glacier_heart",
+      "monster": "Celestial Wyrm",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "wyrm_shelf",
+      "monster": "Celestial Wyrm",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "purity_well",
+      "monster": "Spirit of Purity",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "shaper_crevasse",
+      "monster": "Twisted Shaper",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "shaper_crevasse",
+      "monster": "Vorkhaz",
+      "count": 1,
+      "respawn": 180
+    },
+    {
+      "zone": "crown_vault",
+      "monster": "Vorkhaz",
+      "count": 1,
+      "respawn": 180
+    }
+  ],
+  "chests": [
+    {
+      "zone": "crown_vault",
+      "quest": "rimecrown_tribute",
+      "reward": {
+        "gold": 1000000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 4
+          }
+        ],
+        "message": "Tribute to a crown no one wears."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a frozen deep for levels 1000-1120, the first world hunt past 1000. Three parties."
+}

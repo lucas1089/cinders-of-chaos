@@ -1,5 +1,5 @@
--- Codex: an in-client encyclopedia of the item system. Tabs (Modifiers, Powers, Orbs, Gems, Uniques, Sets, Rift, Supports,
--- Basics), a search box (every word must be in the name or the page), the tab's filters (side, item kind, item level,
+-- Codex: an in-client encyclopedia of the item system. Tabs (Modifiers, Powers, Orbs, Gems, Uniques, Sets, Rift, Supports, Materials,
+-- Basics, Lore), a search box (every word must be in the name or the page), the tab's filters (side, item kind, item level,
 -- level, group...), the list on the left and the page of the chosen entry on the right.
 -- No server round trip: everything comes from codex_data.lua, generated from the server's data files by
 -- server/tools/gen_codex_data.lua (CI fails when it is stale). The logic without client API is codexview.lua.
@@ -378,6 +378,8 @@ function init()
   end
   for i, tab in ipairs(data.tabs) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabBar)
+    -- eleven tabs (Lore last) share the bar: no wider than the theme's 96, all of them inside the window
+    b:setWidth(math.min(96, math.floor((window:getWidth() - 40 - 4 * (#data.tabs - 1)) / #data.tabs)))
     b:setText(tab.name)
     b:setTooltip(tipText(tr('%d entries', #tab.entries)))
     b.onClick = function() history = {}; showTab(i) end

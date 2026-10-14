@@ -281,3 +281,8 @@ CREATE TABLE IF NOT EXISTS `chaos_bazaar_log` (
   PRIMARY KEY (`id`),
   KEY `chaos_bazaar_log_listing` (`listing_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Discord announcements (discord_lib.php, discord_worker.php; the game server's server/sql/chaos_discord.sql creates the
+-- same tables): the queue the game writes and the worker's cursors. Here too, so the worker runs before the server.
+CREATE TABLE IF NOT EXISTS `chaos_discord_queue` (`id` int unsigned NOT NULL AUTO_INCREMENT, `created_at` int unsigned NOT NULL, `kind` varchar(32) NOT NULL, `channel` varchar(32) NOT NULL DEFAULT 'default', `title` varchar(256) NOT NULL DEFAULT '', `body` text NOT NULL, `fields` text NOT NULL, `status` varchar(8) NOT NULL DEFAULT 'new', `attempts` int unsigned NOT NULL DEFAULT 0, `next_at` int unsigned NOT NULL DEFAULT 0, `sent_at` int unsigned NOT NULL DEFAULT 0, `error` varchar(255) NOT NULL DEFAULT '', PRIMARY KEY (`id`), KEY `status` (`status`, `next_at`, `id`), KEY `created` (`created_at`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS `chaos_discord_state` (`k` varchar(32) NOT NULL, `v` bigint NOT NULL DEFAULT 0, PRIMARY KEY (`k`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

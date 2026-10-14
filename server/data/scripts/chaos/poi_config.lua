@@ -23,7 +23,8 @@ return {
 		["forgemaster brannoc"] = "Forgemaster Brannoc (faction quartermaster)",
 		["cantor velith"] = "Cantor Velith (faction quartermaster)",
 		["elder bramwyn"] = "Elder Bramwyn (faction quartermaster)",
-		["wandering merchant"] = "Wandering Merchant"
+		["wandering merchant"] = "Wandering Merchant",
+		["archivist maelis"] = "Archivist Maelis (tales and lore)"
 	},
 
 	-- the portals the systems put next to the temples, found by their action id, read from the owning system's config

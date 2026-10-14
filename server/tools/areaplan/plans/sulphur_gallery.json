@@ -1,0 +1,153 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "sulphur_gallery",
+  "name": "Sulphur Gallery",
+  "biome": "lava",
+  "size": [
+    82,
+    62
+  ],
+  "floors": 1,
+  "level": [
+    215,
+    299
+  ],
+  "seed": 25102,
+  "origin": {
+    "x": 14800,
+    "y": 14400,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "ashgate",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "brimstone_run",
+      "floor": 1,
+      "size": "large",
+      "place": "northwest"
+    },
+    {
+      "id": "slag_pit",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "chained_hall",
+      "floor": 1,
+      "size": "medium",
+      "place": "northeast"
+    },
+    {
+      "id": "forge_niche",
+      "floor": 1,
+      "size": "medium",
+      "place": "southeast"
+    },
+    {
+      "id": "cinder_steps",
+      "floor": 1,
+      "size": "medium",
+      "place": "southwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "ashgate",
+      "to": "brimstone_run",
+      "width": 3
+    },
+    {
+      "from": "brimstone_run",
+      "to": "slag_pit",
+      "width": 4
+    },
+    {
+      "from": "slag_pit",
+      "to": "chained_hall",
+      "width": 3
+    },
+    {
+      "from": "slag_pit",
+      "to": "forge_niche",
+      "width": 3
+    },
+    {
+      "from": "forge_niche",
+      "to": "cinder_steps",
+      "width": 3
+    },
+    {
+      "from": "cinder_steps",
+      "to": "ashgate",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "ashgate"
+  },
+  "exit": {
+    "zone": "ashgate"
+  },
+  "spawns": [
+    {
+      "zone": "brimstone_run",
+      "monster": "Hellflayer",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_pit",
+      "monster": "Demon of the Depths",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_pit",
+      "monster": "Alpha Demon",
+      "count": 4,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_pit",
+      "monster": "Hellflayer",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "chained_hall",
+      "monster": "Skullcrusher Demon",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "forge_niche",
+      "monster": "Juggernaut",
+      "count": 2,
+      "respawn": 180
+    },
+    {
+      "zone": "cinder_steps",
+      "monster": "Skullcrusher Demon",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "cinder_steps",
+      "monster": "Alpha Demon",
+      "count": 2,
+      "respawn": 120
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a lava gallery for levels 215-299, demons in a loop around a slag pit. Two to three parties: the run, the pit and the steps."
+}

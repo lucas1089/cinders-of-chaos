@@ -22,7 +22,8 @@ Gen.SOURCES = {
 	"data/scripts/chaos/salvage_config.lua", "data/scripts/chaos/shop_config.lua", "data/scripts/chaos/bounty_config.lua",
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
 	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua",
-	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua"
+	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua",
+	"data/scripts/chaos/lore_data.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -274,6 +275,7 @@ function Gen.load()
 	D.rift = dofile("data/scripts/chaos/rift_config.lua")
 	D.uber = dofile("data/scripts/chaos/uber_config.lua") -- the Ascended Omens and the Cinderheart (uber.lua)
 	D.prof = dofile("data/scripts/chaos/professions_config.lua") -- the professions' materials (professions.lua)
+	D.lore = dofile("data/scripts/chaos/lore_data.lua") -- the lore entries (docs/CONTENT.md "Lore")
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
@@ -297,7 +299,7 @@ local TIER_ORDER = {"normal", "magic", "rare", "legendary", "boss"}
 local TIER_NAME = {normal = "Normal", magic = "Magic", rare = "Rare", legendary = "Legendary", boss = "Boss"}
 
 local COLORS = {absorb = "#7fa8ff", skill = "#9fdc7f", special = "#f6cf72", element = "#ff8a5a", chaos = "#ff70c0",
-	power = "#ff9a3c", orb = "#e8b84a", currency = "#c0a0ff", rift = "#c0a0ff", unique = "#ff9c3a", basics = "#d6c9ae"}
+	power = "#ff9a3c", orb = "#e8b84a", currency = "#c0a0ff", rift = "#c0a0ff", unique = "#ff9c3a", basics = "#d6c9ae", lore = "#c9a27a"}
 
 local function kindsOf(kinds)
 	local out = {}
@@ -1698,6 +1700,33 @@ function Gen.materialEntries(D)
 	return out
 end
 
+function Gen.loreOptions(D)
+	local out = {{"", "Everything"}}
+	for _, k in ipairs(D.lore and D.lore.kinds or {}) do
+		out[#out + 1] = {k.key, k.en}
+	end
+	return out
+end
+
+-- the lore of the world (data/scripts/chaos/lore_data.lua): one entry each, English, then Brazilian Portuguese
+function Gen.loreEntries(D)
+	local L = D.lore
+	if not L then
+		return {}
+	end
+	local kinds = {}
+	for _, k in ipairs(L.kinds) do
+		kinds[k.key] = k
+	end
+	local out = {}
+	for _, e in ipairs(L.entries) do
+		local k = kinds[e.kind] or {en = e.kind}
+		out[#out + 1] = {id = "lore:" .. e.id, name = e.name, color = COLORS.lore, sub = k.en, group = e.kind, f = {group = e.kind},
+			sections = {{h = "Lore", p = e.en}, {h = "Em portugu\195\170s", p = e.pt}}}
+	end
+	return out
+end
+
 function Gen.build(D)
 	local M, C = D.M, D.C
 	D.shared = {}
@@ -1771,7 +1800,9 @@ function Gen.build(D)
 		{id = "materials", name = "Materials", entries = Gen.materialEntries(D), filters = {
 			{key = "group", label = "Profession", match = "eq", options = {{"", "Every profession"}, {"about", "About"},
 				{"delving", "Delving"}, {"wortcunning", "Wortcunning"}, {"flaying", "Flaying"}, {"angling", "Angling"}}}}},
-		{id = "basics", name = "Basics", entries = Gen.basicsEntries(D), filters = {}}
+		{id = "basics", name = "Basics", entries = Gen.basicsEntries(D), filters = {}},
+		{id = "lore", name = "Lore", entries = Gen.loreEntries(D), filters = {
+			{key = "group", label = "Group", match = "eq", options = Gen.loreOptions(D)}}}
 	}
 	for _, tab in ipairs(tabs) do
 		Gen.pruneOptions(tab)

@@ -1,0 +1,169 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "corsairs_reach",
+  "name": "Corsairs' Reach",
+  "biome": "cave",
+  "size": [
+    86,
+    66
+  ],
+  "floors": 1,
+  "level": [
+    780,
+    900
+  ],
+  "seed": 25301,
+  "origin": {
+    "x": 14700,
+    "y": 14500,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "wreck_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "tide_cave",
+      "floor": 1,
+      "size": "large",
+      "place": "northwest"
+    },
+    {
+      "id": "smugglers_hold",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "gun_deck",
+      "floor": 1,
+      "size": "large",
+      "place": "northeast"
+    },
+    {
+      "id": "brine_grotto",
+      "floor": 1,
+      "size": "large",
+      "place": "southeast"
+    },
+    {
+      "id": "captains_cache",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "wreck_camp",
+      "to": "tide_cave",
+      "width": 3
+    },
+    {
+      "from": "tide_cave",
+      "to": "smugglers_hold",
+      "width": 4
+    },
+    {
+      "from": "smugglers_hold",
+      "to": "gun_deck",
+      "width": 3
+    },
+    {
+      "from": "smugglers_hold",
+      "to": "brine_grotto",
+      "width": 3
+    },
+    {
+      "from": "brine_grotto",
+      "to": "captains_cache",
+      "width": 2
+    },
+    {
+      "from": "brine_grotto",
+      "to": "wreck_camp",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "wreck_camp"
+  },
+  "exit": {
+    "zone": "wreck_camp"
+  },
+  "spawns": [
+    {
+      "zone": "tide_cave",
+      "monster": "Ironhook Corsair",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "smugglers_hold",
+      "monster": "Scourgejaw",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "smugglers_hold",
+      "monster": "Captain Bloodbeard",
+      "count": 2,
+      "respawn": 150
+    },
+    {
+      "zone": "smugglers_hold",
+      "monster": "Ironhook Corsair",
+      "count": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "gun_deck",
+      "monster": "Stormy Seadevil",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "gun_deck",
+      "monster": "Scourgejaw",
+      "count": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "brine_grotto",
+      "monster": "Stormy Seadevil",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "brine_grotto",
+      "monster": "Ironhook Corsair",
+      "count": 2,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "captains_cache",
+      "quest": "corsairs_cache",
+      "reward": {
+        "gold": 500000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "The captain kept his share dry."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a smugglers cave for levels 780-900, the four corsairs that spawned nowhere. Three parties: the tide cave, the hold, the deck and grotto loop."
+}

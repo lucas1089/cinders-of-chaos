@@ -99,6 +99,12 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   `website/install_site.sh` again. Steps: website/README.md "Mail".
 - [ ] **reCAPTCHA keys:** `CHAOS_RECAPTCHA_SITE_KEY` and `CHAOS_RECAPTCHA_SECRET` in `site.env`.
 - [ ] **Discord invite link** for the website and the client.
+- [ ] **Discord webhooks** for the game's announcements (no bot, no token): in Discord, Server Settings > Integrations >
+  Webhooks, create one per channel: records and realm firsts, bosses (world boss, Ascended, Cinderheart), players (levels
+  500 and 1000), announcements (season start and end), server status (up, daily restart, down), Character Bazaar. Put
+  the URLs in `/etc/chaos/discord.env` on the server (`CHAOS_DISCORD_WEBHOOK_RECORDS`, `_BOSSES`, `_PLAYERS`,
+  `_ANNOUNCE`, `_STATUS`, `_BAZAAR`; never in the repository) and enable `chaos-discord.timer`. Steps: docs/LAUNCH.md
+  "Discord announcements". The invite link above (`CHAOS_DISCORD_URL`) also shows on the downloads page.
 - [ ] **Payment accounts:** Mercado Pago (Pix) and PayPal, with live credentials in `payments.env`.
 
 ## Keys

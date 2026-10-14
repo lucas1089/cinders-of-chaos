@@ -1,0 +1,147 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "hexwood_thicket",
+  "name": "Hexwood Thicket",
+  "biome": "forest",
+  "size": [
+    92,
+    72
+  ],
+  "floors": 1,
+  "level": [
+    720,
+    840
+  ],
+  "seed": 25302,
+  "origin": {
+    "x": 14800,
+    "y": 14500,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "woodcutters_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "stag_glade",
+      "floor": 1,
+      "size": "large",
+      "place": "southwest"
+    },
+    {
+      "id": "weeping_grove",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "ape_hollow",
+      "floor": 1,
+      "size": "large",
+      "place": "west"
+    },
+    {
+      "id": "crawler_roots",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "sorcerers_ring",
+      "floor": 1,
+      "size": "medium",
+      "place": "north"
+    }
+  ],
+  "paths": [
+    {
+      "from": "woodcutters_camp",
+      "to": "stag_glade",
+      "width": 3
+    },
+    {
+      "from": "stag_glade",
+      "to": "weeping_grove",
+      "width": 4
+    },
+    {
+      "from": "weeping_grove",
+      "to": "ape_hollow",
+      "width": 3
+    },
+    {
+      "from": "weeping_grove",
+      "to": "crawler_roots",
+      "width": 3
+    },
+    {
+      "from": "crawler_roots",
+      "to": "woodcutters_camp",
+      "width": 3
+    },
+    {
+      "from": "weeping_grove",
+      "to": "sorcerers_ring",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "woodcutters_camp"
+  },
+  "exit": {
+    "zone": "woodcutters_camp"
+  },
+  "spawns": [
+    {
+      "zone": "stag_glade",
+      "monster": "Black Stag",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "weeping_grove",
+      "monster": "Elite Spider",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "weeping_grove",
+      "monster": "Cursed Ape",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "ape_hollow",
+      "monster": "Cursed Ape",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "crawler_roots",
+      "monster": "Webbound Crawler",
+      "count": 5,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "sorcerers_ring",
+      "monster": "Dark Sorcerer",
+      "count": 3,
+      "respawn": 150
+    },
+    {
+      "zone": "sorcerers_ring",
+      "monster": "Black Stag",
+      "count": 1,
+      "respawn": 120
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a cursed wood for levels 720-840 above ground, the stags, apes and crawlers that spawned nowhere. Three parties."
+}

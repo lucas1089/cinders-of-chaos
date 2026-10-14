@@ -47,6 +47,9 @@ you use your rights. It follows the Brazilian General Data Protection Law (LGPD,
 - Staff log: every admin action, with who did it, when and on which character.
 - Game statistics: aggregate counts, such as how many characters picked each talent. These counts carry no name, account
   or identifier.
+- Balance statistics: hourly totals per level range and class, such as experience and gold per hour, boss kill times,
+  deaths per area, spell casts and how many players are online. They are counted in the server's memory and stored
+  without any name, account or identifier.
 
 **Donations**
 
@@ -85,6 +88,7 @@ only shows on the website if you choose "Show on website".
 | Remembered device in two-step verification | 30 days |
 | Technical logs: server console, client checks, gateway servers | 14 days |
 | Death recap | the last 5 deaths of each character |
+| Balance statistics (totals, no identifier) | 90 days per hour, then 2 years per day |
 | Player reports, bug reports, anti-cheat and staff logs | up to [PRAZO DOS REGISTROS DE MODERAÇÃO], deleted automatically every day; longer only while a report is still open or a ban or an appeal needs them |
 | Bans | while the ban lasts and afterwards, as long as needed for appeals and repeat offences |
 | Donation records | as long as tax and accounting laws require, at least 5 years |
@@ -107,6 +111,9 @@ We do not sell personal data. We only share what is needed with:
 - **Off-site backup:** [PROVEDOR DE BACKUP] stores the backups, always encrypted.
 - **Discord:** our community is on Discord. The staff get notices of new player reports there, with the report number,
   the reason and the two character names, never the text. Your use of Discord follows Discord's own rules.
+- **Discord announcements:** our public Discord channels show game news with character names: records, first kills,
+  boss kills, levels 500 and 1000, and Character Bazaar auctions (name, level, class and price). This is information
+  the website already shows publicly.
 - **Authorities:** when the law or a court order requires it.
 
 ## 6. International transfers

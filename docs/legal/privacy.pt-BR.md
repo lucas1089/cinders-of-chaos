@@ -47,6 +47,9 @@ como você exerce os seus direitos. Ela segue a Lei Geral de Proteção de Dados
 - Registro da equipe: toda ação de administração, com quem fez, quando e em qual personagem.
 - Estatísticas do jogo: contagens agregadas, como quantos personagens escolheram cada talento. Essas contagens não têm
   nome, conta nem identificação.
+- Estatísticas de balanceamento: totais por hora, por faixa de nível e classe, como experiência e ouro por hora, tempo
+  de morte de chefes, mortes por área, magias usadas e quantos jogadores estão online. São contadas na memória do
+  servidor e guardadas sem nome, conta nem identificação.
 
 **Doações**
 
@@ -84,6 +87,7 @@ cartão de mentor só aparece no site se você escolher "Mostrar no site".
 | Dispositivo lembrado na verificação em duas etapas | 30 dias |
 | Registros técnicos: console do servidor, verificações do cliente, servidores de entrada | 14 dias |
 | Resumo de morte | as últimas 5 mortes de cada personagem |
+| Estatísticas de balanceamento (totais, sem identificação) | 90 dias por hora, depois 2 anos por dia |
 | Denúncias, relatos de bugs, registros do antitrapaça e da equipe | até [PRAZO DOS REGISTROS DE MODERAÇÃO], apagados automaticamente todo dia; mais tempo só enquanto uma denúncia estiver aberta ou um banimento ou recurso precisar deles |
 | Banimentos | enquanto o banimento valer e depois, pelo prazo necessário para tratar recursos e reincidência |
 | Registros de doação | pelo prazo exigido pelas leis fiscais e contábeis, de pelo menos 5 anos |
@@ -107,6 +111,9 @@ Não vendemos dados pessoais. Compartilhamos apenas o necessário com:
 - **Cópia de segurança externa:** [PROVEDOR DE BACKUP] guarda as cópias, sempre criptografadas.
 - **Discord:** a nossa comunidade fica no Discord. A equipe recebe ali avisos de novas denúncias com o número da
   denúncia, o motivo e os nomes dos dois personagens, nunca o texto. O uso do Discord segue as regras do próprio Discord.
+- **Anúncios no Discord:** os canais públicos do nosso Discord mostram notícias do jogo com nomes de personagens:
+  recordes, primeiras vitórias, mortes de chefes, níveis 500 e 1000 e leilões do Bazar de Personagens (nome, nível,
+  classe e preço). São informações que o site já mostra publicamente.
 - **Autoridades:** quando a lei ou uma ordem judicial exigir.
 
 ## 6. Transferência internacional

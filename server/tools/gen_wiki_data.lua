@@ -1064,6 +1064,7 @@ function W.eventEntries(D)
 		sub = "Rare monsters that run away with loot.",
 		sections = {{h = "Goblins", p = {"Any monster may turn into a treasure goblin when it spawns. Catch it before it escapes: goblins drop extra loot and count on the Goblin Slayer board.",
 			"Kinds: " .. sentence(kinds) .. "."}}}}
+	out[#out + 1] = dofile("tools/wiki_nemesis.lua")(cfg("nemesis_config"), COLORS.event)
 	return out
 end
 
@@ -1644,12 +1645,12 @@ local TAB_ICON = {classes = top("skills"), spells = top("spells"), tree = top("p
 	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gem("#ff5a4a"),
 	supports = ICON .. "sup-emberbrand.png", rift = ICON .. "rx-portal.png", dungeons = top("dungeons"),
 	bosses = kit("blood", "skull"), events = top("events"), monsters = kit("shadow", "ghost"),
-	materials = kit("nature", "leaf"), store = top("vip")}
+	materials = kit("nature", "leaf"), lore = kit("ember", "eye"), store = top("vip")}
 -- the banner's tint
 local TAB_TONE = {classes = "#f6cf72", spells = "#9fdc7f", tree = "#e8b84a", basics = "#d6c9ae", modifiers = "#7d96ff",
 	powers = "#ff9a3c", uniques = "#ff9c3a", sets = "#58c878", orbs = "#e8b84a", gems = "#ff5a4a", supports = "#ff8228",
 	rift = "#a064e6", dungeons = "#c0a0ff", bosses = "#ff7050", events = "#ffb050", monsters = "#d6c9ae",
-	materials = "#7ec46a", store = "#ff70c0"}
+	materials = "#7ec46a", lore = "#c9a27a", store = "#ff70c0"}
 
 local BASICS = {["basics:items"] = top("inventory"), ["basics:rarity"] = kit("light", "crystal"),
 	["basics:tiers"] = kit("steel", "arrowup"), ["basics:itemlevel"] = kit("ember", "arrowup"),
@@ -1905,6 +1906,12 @@ function W.entryIcon(tab, e, src)
 		return kit(MAT_THEME[tier] or "steel", MAT_GLYPH[prof] or "dots")
 	elseif tab == "store" then
 		return id == "store:about" and top("vip") or STORE[e.name] or top("vip")
+	elseif tab == "lore" then
+		-- the lore of the world (lore_data.lua): by the kind of the entry (the Codex's filter group)
+		local g = e.group or ""
+		local LORE = {world = kit("ember", "flame"), rift = rift("rx", "portal"), omen = rift("rx", "ascended"),
+			raid = kit("ember", "gate"), worldboss = kit("blood", "skull"), deep = kit("shadow", "gate")}
+		return LORE[g] or kit("ember", "eye")
 	end
 	return nil
 end
@@ -2075,7 +2082,7 @@ function W.markSoon(D, lists)
 end
 
 local CODEX_TABS = {modifiers = true, powers = true, orbs = true, gems = true, uniques = true, sets = true, rift = true,
-	supports = true, materials = true, basics = true}
+	supports = true, materials = true, basics = true, lore = true}
 
 function W.build(D)
 	local vocs = W.vocations()
@@ -2119,6 +2126,7 @@ function W.build(D)
 		{id = "events", name = "Events", entries = events},
 		{id = "monsters", name = "Monsters", entries = W.monsterEntries(D)},
 		codex.materials,
+		codex.lore,
 		{id = "store", name = "Store", entries = store}
 	}
 	local src = W.loadArtSources(D)

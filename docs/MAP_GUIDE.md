@@ -466,3 +466,40 @@ open tile, lights per 100 tiles and the spam share.
 ### What it does not do
 - No towns, houses or house roofs (only a flat roof over a dungeon above ground).
 - The chest script gives items, gold and experience; quest logic beyond that is hand-written.
+
+### Content plans
+`server/tools/areaplan/plans/`: ten production plans for the thin level bands (docs/CONTENT.md). CI validates and
+compiles them with the examples. Each has its own `origin`, one 100 x 100 cell in the empty block east of the
+generated areas, so they never overlap each other, the generated areas or the planned plaza at 14800, 14800:
+
+| Plan | Band | Origin x, y, z | Arrival |
+|---|---|---|---|
+| bonechoir_catacomb | 200-290 | 14700, 14400, 10 | 14736, 14411, 10 |
+| sulphur_gallery | 215-299 | 14800, 14400, 10 | 14815, 14430, 10 |
+| wyrmspine_hollows | 500-640 | 14900, 14400, 9 | 14916, 14412, 9 |
+| pyrarch_crucible | 520-690 | 15000, 14400, 10 | 15016, 14455, 10 |
+| widowmere | 480-640 | 15100, 14400, 8 | 15141, 14412, 8 |
+| corsairs_reach | 780-900 | 14700, 14500, 9 | 14716, 14532, 9 |
+| hexwood_thicket | 720-840 | 14800, 14500, 7 | 14845, 14556, 7 |
+| mirefang_basin | 880-999 | 14900, 14500, 8 | 14916, 14513, 8 |
+| rimecrown_depths | 1000-1120 | 15000, 14500, 7 | 15044, 14513, 7 |
+| cinderglass_sanctum | 1120-1300 | 15100, 14500, 9 | 15147, 14559, 9 |
+
+Placing one:
+```
+python3 -I server/tools/area_planner.py compile server/tools/areaplan/plans/widowmere.json OUT
+python3 -I server/tools/area_planner.py render server/tools/areaplan/plans/widowmere.json OUT items.otb items.xml Tibia.dat Tibia.spr
+python3 -I server/tools/area_planner.py place OUT/widowmere.otbm world.otbm copy.otbm --at 15100 14400 8 \
+    --spawn world-spawn.xml copy-spawn.xml
+python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest script, when the plan has chests
+```
+- Keep the origin of the table in `--at`: the chest script keys its chests by the origin, and `place` rewrites it
+  when the area moves.
+- Every area exits through its portal at the camp (action id 47951), which sends a player to its temple. Give the
+  plan's `exit` a `to` to send players back beside your entrance instead. The way in is up to you: a teleport on the
+  live map to the arrival tile above. Put it near a town whose band is thin: today the 500-700 hunts sit near Dunescar and the
+  700-1000 hunts near Wyrmscar, so an entrance near another temple spreads the players.
+- The monsters of the 650-1300 plans spawned nowhere before. Check their art in the client first
+  (server/data/monster/CUSTOM_MONSTERS.md).
+- After placing, rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`, so the bounty board, the
+  bestiary and the map markers know the new spawns, and `content_audit.py` to see the bands again.

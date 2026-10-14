@@ -1,0 +1,170 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "widowmere",
+  "name": "Widowmere",
+  "biome": "swamp",
+  "size": [
+    84,
+    66
+  ],
+  "floors": 1,
+  "level": [
+    480,
+    640
+  ],
+  "seed": 25203,
+  "origin": {
+    "x": 15100,
+    "y": 14400,
+    "z": 8
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "stilt_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "silk_reeds",
+      "floor": 1,
+      "size": "large",
+      "place": "northwest"
+    },
+    {
+      "id": "drowned_web",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "hexer_isle",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "gloom_fen",
+      "floor": 1,
+      "size": "large",
+      "place": "southwest"
+    },
+    {
+      "id": "egg_pool",
+      "floor": 1,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "stilt_camp",
+      "to": "silk_reeds",
+      "width": 3
+    },
+    {
+      "from": "silk_reeds",
+      "to": "drowned_web",
+      "width": 4
+    },
+    {
+      "from": "drowned_web",
+      "to": "hexer_isle",
+      "width": 3
+    },
+    {
+      "from": "drowned_web",
+      "to": "gloom_fen",
+      "width": 3
+    },
+    {
+      "from": "gloom_fen",
+      "to": "silk_reeds",
+      "width": 3
+    },
+    {
+      "from": "hexer_isle",
+      "to": "egg_pool",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "stilt_camp"
+  },
+  "exit": {
+    "zone": "stilt_camp"
+  },
+  "spawns": [
+    {
+      "zone": "silk_reeds",
+      "monster": "Nightfang Widow",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_web",
+      "monster": "Shadowcrystal Widow",
+      "count": 5,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_web",
+      "monster": "Nightfang Widow",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "hexer_isle",
+      "monster": "Mirethorn Hexer",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "hexer_isle",
+      "monster": "Plague Warbringer",
+      "count": 2,
+      "respawn": 150
+    },
+    {
+      "zone": "gloom_fen",
+      "monster": "Gloomstinger",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "gloom_fen",
+      "monster": "Mirethorn Hexer",
+      "count": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "egg_pool",
+      "monster": "Shadowcrystal Widow",
+      "count": 2,
+      "respawn": 180
+    }
+  ],
+  "chests": [
+    {
+      "zone": "egg_pool",
+      "quest": "widowmere_silk",
+      "reward": {
+        "gold": 250000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "Silk-wrapped coin from a drowned hexer."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a spider fen for levels 480-640 with the hexers who feed them. Three parties: the reeds, the drowned web, the fen."
+}

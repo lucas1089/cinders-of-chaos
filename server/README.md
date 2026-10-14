@@ -19,6 +19,7 @@ server/
   sql/chaos.sql                       CREATE TABLE IF NOT EXISTS for 13 tables
   tools/gen_passivetree_data.lua      regenerates passivetree_data.lua from the client tree
   tools/gen_codex_data.lua            regenerates the client Codex data (client game_codex/codex_data.lua), see "Codex data"
+  tools/content_audit.py              hunts, spawns and story per level band (docs/CONTENT.md, "Tales")
   tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
   tools/patch_base_spawns.py, spawn_tuning.json   spawn density and respawn (see "Spawn density and respawn")
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
@@ -604,6 +605,8 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
 | 7101400 - 7101419 | boss points (`bosspoints_config.lua`) |
+| 7101500 - 7101549 | tales (`tales_config.lua` `storage`): +0 language (1 en, 2 pt), +1 + slot quest state, +21 + slot kill count |
+| 7101550 - 7101559 | first hour (`firsthour_config.lua` `storage`): +0 hints given (bits), +1 hunt reveals given (bits) |
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
 | 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
@@ -6866,6 +6869,9 @@ and percent texts, the Lua writer, modifier value texts) and the build on the re
 currency item, gem, unique, rift modifier and support present, unique ids, every link and shared section resolvable, eight
 tiers per modifier, no old orb names in the player texts).
 
+Lore tab: `data/scripts/chaos/lore_data.lua` (22 entries, English and Brazilian Portuguese: the world, rifts, Omens, the
+Sepulchre, the world bosses, the Descent, the deep wardens) is the eleventh tab; the wiki's Lore tab comes from the same file.
+
 ## Item finder (`itemfinder.lua`, `itemfinder_core.lua`, `itemfinder_sources.lua`, `itemfinder_config.lua`, client `game_itemfinder`)
 
 "Where does this drop": search any item by name, or right-click one, and see every source and every use. Extended
@@ -11283,6 +11289,8 @@ A semantic plan (JSON, `tools/areaplan/schema.json`, version `chaos-area-plan/1`
 editor through the area generator above (owner approval, 2026-10-13). The plan names a biome, zones, paths,
 connections, spawns, boss, NPCs, chests, entry, exit, PZ zones, decoration and light; it never holds an item id.
 Details and rules: docs/MAP_GUIDE.md "Area planner".
+Production plans for the thin level bands live in `tools/areaplan/plans/` (ten, 200-1300; origins and placing:
+docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the examples; none is placed on the world map yet.
 
 - **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-spawn.xml`, `<id>.json` manifest, `data/...` stubs;
   `--no-dress` without decoration), `render` (floor PNGs and a marked minimap; needs items.otb/xml and the pair),
@@ -13671,3 +13679,21 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
   run the kill event (a table lookup and one roll). Per hit on a player: one table lookup. Login: one SELECT by
   `player_id` (indexed).
 - Not run on a live server yet.
+
+## Tales (`tales.lua`, `tales_core.lua`, `tales_config.lua`, `lore_data.lua`, npc `Archivist Maelis`)
+
+Story quests for the bands with none (docs/CONTENT.md): The Bone Choir (200), The Wyrm Tithe (500), Requiem for the
+Ash-Sister (800) and The Last Ember (1000). The giver is Archivist Maelis (`data/npc/Archivist Maelis.xml`,
+`npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup; `install_class_ascension.py` copies the
+NPC folder. Steps: kill (party members within 30 squares share the kill), deliver, report. Rewards: experience, bank gold,
+orbs, faction reputation and a lore book. Every text is English and Brazilian Portuguese: a player says "portugues" or
+"english" to the Archivist, or `Chaos.t`'s language decides. The Archivist also answers lore questions from
+`lore_data.lua`. Modal windows 7170-7171. Storages 7101500 - 7101549 (a slot per tale; never reuse one). No spoken
+`!command`. Pure logic: `tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.
+
+## First hour (`firsthour.lua`, `firsthour_core.lua`, `firsthour_config.lua`)
+
+Hints for a new character, English and Brazilian Portuguese, at levels 1, 4, 8, 12, 20, 30, 50 and 100: hunting marks,
+the next gear, the bounty board at 8, the unlocks at 30, 50 and 100. At levels 1, 8, 20, 35, 50 and 80 it marks the 3
+nearest hunts of the character's level on its map (`data/chaos_poi.lua`). Characters above level 20 when the module
+first sees them get every hint marked as given, silently. Storages 7101550 - 7101559. Tests: `tests/firsthour_test.lua`.

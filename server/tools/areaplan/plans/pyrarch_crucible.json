@@ -1,0 +1,154 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "pyrarch_crucible",
+  "name": "Pyrarch Crucible",
+  "biome": "lava",
+  "size": [
+    86,
+    70
+  ],
+  "floors": 1,
+  "level": [
+    520,
+    690
+  ],
+  "seed": 25202,
+  "origin": {
+    "x": 15000,
+    "y": 14400,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "quench_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "southwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "bellows",
+      "floor": 1,
+      "size": "large",
+      "place": "west"
+    },
+    {
+      "id": "crucible",
+      "floor": 1,
+      "shape": "arena",
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "mould_hall",
+      "floor": 1,
+      "size": "large",
+      "place": "north"
+    },
+    {
+      "id": "ember_forge",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "slag_vent",
+      "floor": 1,
+      "size": "medium",
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "quench_camp",
+      "to": "bellows",
+      "width": 3
+    },
+    {
+      "from": "bellows",
+      "to": "crucible",
+      "width": 4
+    },
+    {
+      "from": "crucible",
+      "to": "mould_hall",
+      "width": 3
+    },
+    {
+      "from": "crucible",
+      "to": "ember_forge",
+      "width": 3
+    },
+    {
+      "from": "ember_forge",
+      "to": "slag_vent",
+      "width": 3
+    },
+    {
+      "from": "slag_vent",
+      "to": "quench_camp",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "quench_camp"
+  },
+  "exit": {
+    "zone": "quench_camp"
+  },
+  "spawns": [
+    {
+      "zone": "bellows",
+      "monster": "Hellhunter Pyrarch",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "bellows",
+      "monster": "Spellreaper Pyrarch",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "crucible",
+      "monster": "Embermaw Archon",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "crucible",
+      "monster": "Pitlord Incarnate",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "mould_hall",
+      "monster": "Hellmaw Brute",
+      "count": 5,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "ember_forge",
+      "monster": "Inferno Juggernaut",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "ember_forge",
+      "monster": "Nightflare Dreadknight",
+      "count": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_vent",
+      "monster": "Sineater Pyrarch",
+      "count": 3,
+      "respawn": 120
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): the pyrarchs' forge for levels 520-690, a round crucible with a loop of forges. Three parties."
+}

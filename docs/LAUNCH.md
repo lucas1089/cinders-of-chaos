@@ -823,6 +823,47 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
    of each kind, refunded afterwards.
 8. Watch `/var/log/chaos/payworker.log` and `CHAOS_PAY_LOG` the first days (order ids and amounts only, no personal data).
 
+## Discord announcements
+
+The game posts records, realm firsts, world boss spawns and kills, Ascended and Cinderheart kills, levels 500 and
+1000, season start and end, server up / daily restart / down, and the Character Bazaar's new auctions and sales to
+Discord channel **webhooks**. No bot, no token in the repository, no account linking. The game only writes rows to
+`chaos_discord_queue`; the website's worker posts them. How it works: server/README.md "Discord announcements",
+website/README.md "Discord announcements".
+
+1. In Discord, Server Settings > Integrations > Webhooks: one webhook per channel you want, e.g. `#records`,
+   `#bosses`, `#players`, `#announcements`, `#server-status`, `#bazaar` (one webhook for all also works). Copy each URL.
+   A webhook URL is a password: anyone with it can post as it.
+2. `sudo install -m 600 -o www-data -g www-data /dev/null /etc/chaos/discord.env` and fill it in:
+   ```
+   CHAOS_DISCORD_WEBHOOK_RECORDS=https://discord.com/api/webhooks/...
+   CHAOS_DISCORD_WEBHOOK_BOSSES=...
+   CHAOS_DISCORD_WEBHOOK_PLAYERS=...
+   CHAOS_DISCORD_WEBHOOK_ANNOUNCE=...
+   CHAOS_DISCORD_WEBHOOK_STATUS=...
+   CHAOS_DISCORD_WEBHOOK_BAZAAR=...
+   # CHAOS_DISCORD_WEBHOOK_DEFAULT=...     every channel without its own
+   # CHAOS_DISCORD_OFF=level,bazaar_list   event kinds not to post
+   CHAOS_SITE_URL=https://<site>
+   ```
+3. `sudo cp server/deploy/chaos-discord.service server/deploy/chaos-discord.timer /etc/systemd/system/ &&
+   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-discord.timer` (and copy `server/deploy/chaos.logrotate`
+   again: it now rotates `/var/log/chaos/discord.log`).
+4. Test: restart the game server (a "Server online" post in the status channel within a minute), then
+   `sudo -u www-data sh -c 'set -a; . /etc/chaos/discord.env; php /var/www/chaos/plugins/chaos/discord_worker.php --site /var/www/chaos'`
+   by hand and check `SELECT kind, status, error FROM chaos_discord_queue ORDER BY id DESC LIMIT 10;`.
+5. Switch event types on or off in `server/data/scripts/chaos/discord_config.lua` `events` (a `/reload` or restart),
+   or without a restart with `CHAOS_DISCORD_OFF` in `discord.env`.
+
+## Balance telemetry
+
+Staff charts of experience and gold per hour, boss kills and times, deaths, spell casts, gold faucets and sinks, store
+coins and online counts: `page.php?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry; admin accounts with a
+character of group 5 or higher). Nothing to set up: the game server creates the `chaos_telemetry_*` tables at its start
+(or the install step `sql`) and writes one row per bucket every hour. Hourly rows are kept 90 days, then daily rows
+730 days. Aggregates only, no names or ids (privacy policy section 2, "Game statistics"). Details: server/README.md
+"Balance telemetry". `/telemetry` in game shows the hour in memory.
+
 ## Client updates (signed updater)
 
 The client checks the website for a signed manifest before login and downloads changed modules, images, fonts and
