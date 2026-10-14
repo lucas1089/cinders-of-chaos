@@ -777,6 +777,13 @@ From domain first. Check: ask for a recovery link for your own account; it arriv
 password form once, and the headers show `spf=pass dkim=pass dmarc=pass`. Without `CHAOS_SMTP_HOST` the site runs
 without mail and the recovery page says recovery by e-mail is not available.
 
+**Pre-deploy check** (before every website or beta deploy; `website/README.md` "Smoke test"): run
+`website/tests/e2e/run.sh` on the commit to deploy (a throwaway local site, about 30 s), then
+`E2E_BASE_URL=https://<staging site>/ website/tests/e2e/run.sh` against staging. Both must end with `# fail 0`. They
+cover the home page, account creation, login, character creation and page, the Donate page (voluntary donation label,
+Pix and PayPal buttons), the wiki with the pt-BR / en switch and the Character Bazaar. Never run it against the live
+site: it creates an account and a character.
+
 ## Donations (Pix / PayPal)
 
 Chaos Coins are a thank-you for a **voluntary donation**: nobody is required to donate and the game is fully playable for

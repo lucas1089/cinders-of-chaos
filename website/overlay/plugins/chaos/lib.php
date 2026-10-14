@@ -1091,10 +1091,11 @@ function chaos_coin_first_bonus(int $coins, int $pct, int $max = 0): int {
 
 /** The first donation line of the Donate page and the guides: "double Chaos Coins (+100%, up to 1000 extra)". */
 function chaos_coin_first_text(int $pct, int $max): string {
-	$base = $pct === 100 ? 'double Chaos Coins' : '+' . $pct . '% extra Chaos Coins';
+	$t = function_exists('chaos_t') ? 'chaos_t' : 'sprintf';   // the page's language (i18n_lib.php), else English
+	$base = $pct === 100 ? $t('double Chaos Coins') : $t('+%d%% extra Chaos Coins', $pct);
 	$notes = $pct === 100 ? array('+100%') : array();
 	if ($max > 0) {
-		$notes[] = 'up to ' . $max . ' extra';
+		$notes[] = $t('up to %d extra', $max);
 	}
 	return $notes ? $base . ' (' . implode(', ', $notes) . ')' : $base;
 }

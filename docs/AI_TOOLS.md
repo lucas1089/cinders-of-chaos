@@ -39,7 +39,19 @@ Most of the list is 3D, world models, engine bridges for other engines, and talk
   feed it.
 - Licence: MIT. No output restrictions.
 - Maturity: 3.3k stars, last push 2026-07-16.
-- Action: **adopt now**, after the load test ends.
+- Action: ~~adopt now~~ **watch** (measured 2026-10-14, below).
+- Measured 2026-10-14: v1.0.0 (commit ae20461), built with cargo outside the repo. Inputs: 8 PixelLab item picks
+  (`sets_v2`, variant A, 32x32), 6 frames of the rift variant `abyss_brute_v1` (64x64), and 4 of the items blown up
+  x3.7 with blur and noise to stand in for a general image model.
+  - Grid: auto-detect fails on our native-res art. It read 5 to 10 px "pixels" and shrank 32x32 items to 5x5 to 10x10
+    and 64x64 monsters to 13x14. With `--pixel-size 1` it still trims and drops rows (sword 31x31, shield 25x22).
+  - Palette: with `--pixel-size 1` its colours match the raw art as well as ours. `--palette` works. It keeps alpha
+    as is, so it adds no 0/255 cut, speck drop, dark rim, margin or centring. `item_post.py` does all of those.
+  - Off-grid input (x3.7): auto read too coarse (22 to 28 px wide). With `--pixel-size 4`, then `item_post.py`, it is a
+    little crisper than `item_post.py` alone, but jagged. Not a clear win.
+  - Speed: under 1 ms per sprite. Ours: 3 to 15 ms. Both negligible.
+  - Verdict: no pipeline step. PixelLab already returns clean 1 px grids. Revisit only if we switch to a general image
+    model (Qwen-Image) whose output is off-grid. Then run it with a known `--pixel-size` before `item_post.py`.
 
 ### Aseprite (`aseprite/aseprite`)
 
@@ -237,7 +249,7 @@ spells and UI clicks. ACE-Step can cover ambience beds.
 
 ## Top 5: do next
 
-1. **Pixel Snapper on the monster art backlog.** After the load test, install the CLI. Run it on one folder of raw
+1. **Done 2026-10-14: no adoption** (see Pixel Snapper above). **Pixel Snapper on the monster art backlog.** After the load test, install the CLI. Run it on one folder of raw
    AI pixel-art output with `--palette` set to our palette. Compare with `item_post.py` output side by side. If it
    wins, add it as an optional step in the sprite import tools for the 8 new monsters and 4 dungeon bosses.
 2. **ACE-Step 1.5 music spike.** First read the weights licence on its model card. Then make three loops: login
@@ -248,12 +260,14 @@ spells and UI clicks. ACE-Step can cover ambience beds.
    in the Remotion project.
 4. **One pixel editor for hand fixes.** Pixelorama if cost matters, Aseprite if an artist prefers it. Use it to fix
    bad frames and facings in 4-direction outfits before they enter the dat/spr pair.
-5. **Playwright smoke test for the website.** Script five flows on staging: sign up, log in, create a character,
-   open downloads, open the wiki. Run it before each beta deploy.
+5. **Done 2026-10-14.** **Playwright smoke test for the website.** Script five flows on staging: sign up, log in, create a character,
+   open downloads, open the wiki. Run it before each beta deploy. Now `website/tests/e2e/run.sh` (website/README.md
+   "Smoke test", docs/LAUNCH.md "Website").
 
 ## Not verified
 
-- No tool was installed or run. All quality, VRAM and CPU claims are from the projects.
+- No tool was installed or run, except Pixel Snapper and Playwright on 2026-10-14. All other quality, VRAM and CPU
+  claims are from the projects.
 - Weights licences for ACE-Step 1.5, Qwen-Image and Qwen3-TTS were not on the repo pages. Model cards not read.
 - Aseprite price and the exact EULA terms for source builds were not read.
 - Upscayl's licence and the Hunyuan licence terms are from memory, not re-checked.

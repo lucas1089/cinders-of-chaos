@@ -1,0 +1,44 @@
+name: Website smoke test
+
+# Manual only: the browser smoke test of the website on a throwaway local site (website/README.md "Smoke test").
+# No secrets. Playwright and its Chromium are installed on the runner, never into the repository.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP, MariaDB
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq php-cli php-mysql php-curl php-mbstring mariadb-server
+          sudo systemctl stop mariadb || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Playwright (outside the repository)
+        run: |
+          npm install -g playwright@1.56.1
+          npx -y playwright@1.56.1 install --with-deps chromium
+
+      - name: Smoke test
+        env:
+          E2E_SHOTS: ${{ runner.temp }}/e2e-shots
+        run: website/tests/e2e/run.sh
+
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-e2e-shots
+          path: ${{ runner.temp }}/e2e-shots
+          if-no-files-found: ignore

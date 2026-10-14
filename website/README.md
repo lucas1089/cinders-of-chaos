@@ -24,6 +24,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
 | `overlay/plugins/chaos/register_guard.php` | the per-IP limit of account creation (see "Account creation") |
 | `overlay/plugins/chaos/mail_lib.php`, `recovery_lib.php`, `recovery_page.php` | the site's one mail sender (SMTP, off without settings) and account recovery by a one-time link (see "Mail") |
+| `patches/znotex-chaos-clock.patch` | ZnoteX's `getClock()` drops its fixed +1 hour, so the dates it prints (character created, last login, news, admin panel) are in PHP's time zone, as the rest of the site (found by the smoke test, 2026-10-14) |
+| `tests/e2e/run.sh`, `tests/e2e/smoke.test.js` | the browser smoke test of the key flows (see "Smoke test") |
 | `patches/znotex-chaos-recovery-mail.patch` | `recovery.php` hands over to our recovery page; ZnoteX's `Mail` class sends through our sender (see "Mail") |
 | `tests/chaos_mail_test.php`, `tests/chaos_recovery_test.php` | `php website/tests/chaos_mail_test.php` / `chaos_recovery_test.php`: the SMTP settings from the environment, mail off, the sender with a fake transport; the recovery answers, limits, link, token and notice (php-cli with pdo_sqlite, no network) |
 | `tests/chaos_escape_patch_test.php` | `php website/tests/chaos_escape_patch_test.php`: every line of the escape patch rendered with malicious guild / rank / MOTD / comment values (php-cli only) |
@@ -1078,6 +1080,42 @@ category (`chaos_shop_purchases`, by the buyer's level). Charts are SVG drawn by
 script and no external file; a point's or bar's tooltip is its `<title>`, and each chart has a table. A rate is only
 shown where at least 3 characters are behind it. Data: the game's `chaos_telemetry_*` tables (server/README.md
 "Balance telemetry"); without them the page says there is no telemetry yet.
+
+## Smoke test
+
+A browser test of the key flows, in headless Chromium with [Playwright](https://playwright.dev) (Apache 2.0). It is
+the pre-deploy check of docs/LAUNCH.md "Website". One command:
+
+```
+website/tests/e2e/run.sh                                        # a throwaway local site, about 30 s
+E2E_BASE_URL=https://staging.example.org/ website/tests/e2e/run.sh   # an installed site (staging)
+```
+
+Flows, in order (`tests/e2e/smoke.test.js`, Node's own test runner): 1. home page (title, menu, login box);
+2. account creation (a new account per run, the Terms box); 3. login (lands on My Account); 4. character creation, the
+character list and the character page; 5. the Donate page in English and Portuguese: the voluntary donation label in
+both languages, a Pix and a PayPal button per pack and the first donation bonus in Portuguese; with mock providers a Pix
+donation is started (the order page shows the copy-and-paste code) and cancelled; 6. the wiki: Portuguese index, the
+switch to English and back on a guide, search; 7. the Character Bazaar list in both languages. Every page is checked
+for PHP errors and notices and for script errors. Requests to any other host are blocked, so nothing reaches Google,
+Mercado Pago or PayPal.
+
+- **Local site** (no `E2E_BASE_URL`): a MariaDB data folder in a new temporary folder, the game schema
+  (`CHAOS_E2E_SCHEMA` = the base server's `schema.sql`, else the upstream TFS 1.4.2 `schema.sql`, fetched at its tag
+  and checked by SHA-256), `server/sql/*.sql`, one town, `install_site.sh` with mock donation providers, and
+  `php -S` with `setup/router.php`. Everything is deleted at the end; a failed run keeps the folder and its logs.
+  Ports: `E2E_HTTP_PORT` (8099), `E2E_DB_PORT` (33099). It needs network access for ZnoteX, the layout and PHPMailer
+  (as the installer always does).
+- **Staging**: `E2E_BASE_URL` alone. It creates one account and one character per run (names `smoke...` /
+  `Smoke ...`; delete them in the admin panel afterwards) and counts against the per-address account limit (3 per
+  hour). It starts no donation unless `E2E_PAY_MOCK=1`. Never point it at the live site.
+- **Screenshots** of each flow: `E2E_SHOTS` (default `$TMPDIR/chaos-e2e-shots`).
+- **Needs**: php 8.1+ with mysqli, mariadb-server, git, curl, python3, Node 18+ and the npm package `playwright` with
+  its Chromium, installed outside the repository (no `package.json`, no lockfile here):
+  `npm install -g playwright@1.56.1 && npx playwright@1.56.1 install chromium` (skip the second command where
+  `PLAYWRIGHT_BROWSERS_PATH` already has Chromium). `run.sh` finds a global install through `npm root -g`.
+- CI: the manual workflow `website-e2e.yml` (Actions > Website smoke test > Run workflow) runs the local site on a
+  GitHub runner. It needs no secrets. It is not part of `ci.yml`.
 
 ## Not done / for later
 
