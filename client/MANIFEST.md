@@ -628,7 +628,8 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
   (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
   (699,748 sprites), twice identical.
 - **Windows package pair:** the package takes the merged pair from the private branch `windows-assets`
-  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README). Since 2026-10-11 that archive holds things_custom15
+  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README; since 2026-10-14 things_custom25 at ebe1b2b2,
+  "Status words" below). Since 2026-10-11 that archive held things_custom15
   (windows-assets c1441a8: the pouches, fist weapons, class looks, monster looks, the bone effects, the Cinderheart look,
   the raid boss and faction looks and the mount rider seats for client patch 0034), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
   clients still on an older pair: a pair without 33651-33653 shows nothing for a pouch.
@@ -1544,18 +1545,18 @@ changed, 36,523 byte-identical. Built twice with identical md5s; a run on its ow
   932, by the client's draw rule. The "before" column matches the in-game screenshots direction by direction. The
   fixed pair was not run in a live client.
 
-## Everfull Ration look (new, `tools/sprites/gen_store_food_art.py`, `tools/sprites/art_import/store_food.csv`)
+## Everfull Ration look (things_custom25, item 33904, `tools/sprites/gen_store_food_art.py`, `tools/sprites/art_import/store_food.csv`; on windows-assets ebe1b2b2, switch on since 2026-10-14)
 Our own art for the store's infinite food (server id 32084, `server/data/scripts/chaos/store_food_config.lua`): a glazed
 earthen bowl with a gold rim, a roast haunch with its bone and four gold sparks. Drawn in code with the store pouches'
 helpers (`gen_pouch_art.py`: 128 px shape fields, rim light, outline, 4:1 downsample), deterministic, written to
-`art_import/store_food.png` (32 x 32). **Not in a pair yet:** client id 33904 (after the pair 24 items, 33903) is reserved;
-append it to the next pair with
+`art_import/store_food.png` (32 x 32). In things_custom25 (windows-assets ebe1b2b2) as client id 33904 (after the pair 24
+items, 33903), appended with
 `python3 -I client/tools/sprites/import_art_things.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir OUT
 --things client/tools/sprites/art_import/store_food.csv --first-item 33904 --expect-items 33903` (flags copied from the
-dragon ham, client 3583; mode replace keeps server id 32084), then set `ownLook = true` in `store_food_config.lua` and run
-`install_store_food.py` again. Until then the item shows the dragon ham's look.
+dragon ham, client 3583; mode replace keeps server id 32084). `ownLook = true` in `store_food_config.lua` since
+2026-10-14; run `install_store_food.py` again. A client on an older pair draws nothing for 33904.
 
-## Gem looks (new, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems.csv`; not in a pair yet)
+## Gem looks (things_custom25, items 33905-33939, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems.csv`; on windows-assets ebe1b2b2, switch on since 2026-10-14)
 **Source and licence.** The owner's gem set (Google Drive folder "ots", `gems.zip`, 609 KB, 2026-10-14; the owner:
 "Pode usar eles abertamente onde forem cabiveis", use them openly where they fit). Five gem families (bloomjade,
 jadecomb, sunshard, tidegem, voidorb) in ten tiers each; per tier a 32 x 288 PNG (nine 32 px frames, alpha 0 / 255,
@@ -1571,16 +1572,16 @@ metadata, no name of any other game or server. Only the 32 px strips are read.
   (five tiers, phase 0, 2x). `build --check` (CI, Pillow 12.3.0 / numpy 2.5.3) rebuilds from the committed atlas.
   `preview --out DIR --before-dat D --before-spr S`: sheet, GIF and a before / after against the stock sprites.
 - Used by: the Codex gem pages (`game_codex`: `CodexArt`, the entry's `art` from `gen_codex_data.lua`), the website
-  wiki's gem icons (`gm-<key>-<tier>`, `website/tools/gen_wiki_art.py`), and the items once a pair has them:
-  `chaos_gems_config.lua` `ownLook = true` and `install_gems.py` again (server/README.md "Gems and sockets").
+  wiki's gem icons (`gm-<key>-<tier>`, `website/tools/gen_wiki_art.py`), and the items: `chaos_gems_config.lua`
+  `ownLook = true` (on since 2026-10-14, pair 25) and `install_gems.py` again (server/README.md "Gems and sockets").
 - Append after the Everfull Ration (client 33904) and before the status words:
   ```
   python3 -I client/tools/sprites/import_art_things.py --ours-dat S1/Tibia.dat --ours-spr S1/Tibia.spr --out-dir S2 \
       --things client/tools/sprites/art_import/gems.csv --first-item 33905 --expect-items 33904
   ```
-- Trial (scratch only, 2026-10-14, not pushed): things_custom24 + Everfull Ration + gems + status words, below.
+- Built into things_custom25 with the Everfull Ration and the status words, below.
 
-## Status words (new, effects 656-673, `tools/sprites/gen_status_fx.py`, `art_import/status_fx.csv`; not in a pair yet)
+## Status words (things_custom25, effects 656-673, `tools/sprites/gen_status_fx.py`, `art_import/status_fx.csv`; on windows-assets ebe1b2b2, switch on since 2026-10-14)
 **Source and licence.** The owner's text effect set (Google Drive folder "ots", `text_effects.zip`, 2.6 MB,
 2026-10-14; the same grant as the gems). 15 word effects plus second / third takes of revived and rooted: per effect
 a vertical strip of square frames (96 px = 3 x 3 tiles, the first revived take 64 px), 8-16 frames, soft alpha, and
@@ -1600,12 +1601,23 @@ CURSED!, CHILLED FOOT!, FREEZE!, POISONED!) for comparison; they are not read or
       --lua-out server/data/lib/chaos_status_fx_ids.lua --catalog-out server/data/spells/status_fx_catalog.csv
   python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old things_custom24/Tibia.dat things_custom24/Tibia.spr
   ```
-- Trial pair (scratch, 2026-10-14; things_custom24 -> Everfull Ration 33904 -> gems 33905-33939 -> words 656-673):
-  dat dc1613e4479df53cf2e98efa9a7a5e5b (5,051,529 bytes), spr d970b1cbc61476ae47fbf8b5bbbff0e8 (635,988,303 bytes,
-  764,346 sprites: 1 + 292 + 1,093 appended, +1.57 MB), 33,939 items, 2,212 outfits, 673 effects. Built twice with
-  identical md5s; the importers verified 315 gem slots and 203 word frames pixel-identical; `check_pair.py --old`:
-  append-only, 0 errors, 124 warnings (the same as things_custom24). **Not pushed**: a new pair on windows-assets needs
-  the owner's approval. Server side: server/README.md "Status words" (switch `ChaosStatusFx.STATUS_FX`, off).
+- Output **things_custom25** (2026-10-14; things_custom24 -> Everfull Ration 33904 -> gems 33905-33939 -> words
+  656-673; input the windows-assets archive at 407ad9b6, dat 734dda1f..., spr fb385bf2...): dat
+  dc1613e4479df53cf2e98efa9a7a5e5b (5,051,529 bytes), spr d970b1cbc61476ae47fbf8b5bbbff0e8 (635,988,303 bytes,
+  764,346 sprites: 1 + 292 + 1,093 appended, +1.57 MB), 33,939 items, 2,212 outfits, 673 effects, 153 missiles. Built
+  twice (trial and rebuild) with identical md5s and ids files; the importers verified 1 ration slot, 315 gem slots and
+  203 word frames pixel-identical, and a separate read-back of the pair (datspr.py) matched all 316 item frames and
+  203 effect frames to the art. `check_pair.py --old`: append-only (36,824 old things and 762,960 old sprites
+  compared), 0 errors, 124 warnings, line for line those of things_custom24 (INFO `sprite-zero-slots` 4,046 -> 4,064).
+- `things-1098.tar.xz` like things_custom24's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
+  mtime 2026-10-14 14:00: sha256 d748be06d8bcce20318edc212a566866a5d660f3bf2daf9aa5d1df59bf9b0090 (72,959,236 bytes),
+  packed twice with the same sha256; the same command on things_custom24 gives its published sha256 (b1dbdf8d...). It
+  unpacks to the md5s above. Pushed to windows-assets at ebe1b2b2 (owner approved 2026-10-14). The client has no switch of its
+  own: it draws whatever the pair holds. `outfit_anchors.lua` regenerated from this pair (only its dat md5 changed).
+- Server side (switches on since 2026-10-14): server/README.md "Status words" (`ChaosStatusFx.STATUS_FX`), "Gems and
+  sockets" (`chaos_gems_config.lua` ownLook), "Store pouches and the Everfull Ration" (`store_food_config.lua` ownLook).
+  `tools/ci/check_content.py --pair` now names things_custom25 (2,212 outfits, padding 2194-2199 blank).
+- Checked offline only (importer checks, the read-back, check_pair). Not run in a live client.
 
 ## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
 **On windows-assets (407ad9b6, owner approved 2026-10-13); switches on since 2026-10-13 (pair 24 at 407ad9b6).** Our own art for the themes of five reference sheets and four set showcases the owner

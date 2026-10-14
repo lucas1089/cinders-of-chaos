@@ -4,10 +4,10 @@
 ChaosStoreFoodConfig = {
 	-- the item: a new items.otb node (install_store_food.py), a copy of the stock dragon ham node `sourceId` (flags,
 	-- attributes, stackable like it: the client reads a count for a stackable look), with the server id `id`. Its look:
-	-- the dragon ham's client id until the client pair has our art; then ownLook = true gives it `clientId`
-	-- (client/tools/sprites/gen_store_food_art.py, appended by import_art_things.py with art_import/store_food.csv;
-	-- client MANIFEST.md "Everfull Ration look").
-	item = {id = 32084, sourceId = 2672, clientId = 33904, ownLook = false, weight = 300, article = "an",
+	-- ownLook = true (on since 2026-10-14: things_custom25 with our art is on windows-assets at ebe1b2b2) gives it
+	-- `clientId` (client/tools/sprites/gen_store_food_art.py, appended by import_art_things.py with
+	-- art_import/store_food.csv; client MANIFEST.md "Everfull Ration look"); ownLook = false gives the dragon ham's.
+	item = {id = 32084, sourceId = 2672, clientId = 33904, ownLook = true, weight = 300, article = "an",
 		name = "everfull ration", plural = "everfull rations",
 		description = "Store item: never runs out, cannot be traded, sold or dropped. Eat from it like the best food: " ..
 			"12 minutes of regeneration a bite, until you are full."},

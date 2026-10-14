@@ -30,8 +30,9 @@ def otb(nodes):
     return b'\x00\x00\x00\x00' + root + b''.join(nodes) + bytes([END])
 
 
-cfg = T.read_config()
-check(cfg['ownLook'] is False, 'config: stock sprites until a pair with our gem looks is published')
+shipped = T.read_config()
+check(shipped['ownLook'] is True, 'config: our gem looks, on since 2026-10-14 (things_custom25 on windows-assets)')
+cfg = dict(shipped, ownLook=False)   # the stock sprites first, then ownLook
 check(cfg['lookFirst'] == 33905, 'config: our looks after the Everfull Ration (33904)')
 n = len(cfg['tiers']) * len(cfg['types'])
 check(n == 35, 'seven gems in five tiers')

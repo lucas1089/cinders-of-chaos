@@ -3090,8 +3090,9 @@ The store's infinite food (Convenience, "Everfull Ration", 150 coins, a PLACEHOL
   message exception ... opcode 0x6e" when a backpack holding it opened; live test 2026-10-14). One ration a character,
   count 1; `install_store_food.py` updates an older node in place. Installed by
   `tools/install_store_food.py` (step `storefood` of `install_all.py`, after `pouches`; idempotent; `items.otb.bak` keeps
-  the original; `tools/install_store_food_test.py` on a synthetic items.otb). Look: the dragon ham's until the client pair
-  has our art; then `ownLook = true` in `store_food_config.lua` gives it client id 33904: a glazed bowl with a roast haunch
+  the original; `tools/install_store_food_test.py` on a synthetic items.otb). Look: `ownLook = true` in
+  `store_food_config.lua` (on since 2026-10-14: things_custom25 is on windows-assets at ebe1b2b2; run
+  `install_store_food.py` again; false gives back the dragon ham's look) gives it client id 33904: a glazed bowl with a roast haunch
   and gold sparks, drawn by `client/tools/sprites/gen_store_food_art.py` (the store pouches' helpers; 32 px,
   deterministic) into `art_import/store_food.png`, appended with `art_import/store_food.csv` by `import_art_things.py`
   (client MANIFEST.md "Everfull Ration look"). The store icon is the item, so it follows the look.
@@ -6997,9 +6998,9 @@ onyx chip 22193); Flawless and Perfect ruby, sapphire, emerald and amethyst use 
 tile set uses 30484..30557 (client id + 3000), so the two id ranges stay apart. The Orb of Sockets is the unused
 stackable use-with rune stone 24692 (named by the installer, like the crafting orbs).
 
-**Own looks** (`ownLook`, off): animated looks of our own for every gem and tier, client 33905-33939 = `lookFirst` +
-(type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py, from the owner's gem set; client/MANIFEST.md "Gem
-looks"). They are not in a published pair yet. Flip step once a pair with them is on windows-assets:
+**Own looks** (`ownLook`, on since 2026-10-14): animated looks of our own for every gem and tier, client 33905-33939 =
+`lookFirst` + (type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py, from the owner's gem set; client/MANIFEST.md
+"Gem looks"). In things_custom25, on windows-assets at ebe1b2b2. Install step with the switch on:
 `ownLook = true` in `chaos_gems_config.lua`, `python3 -I server/tools/install_gems.py <server>/data` (rewrites the 35
 nodes with the new client ids, the rest of each node stays the stock gem's), restart. `ChaosGems.clientIdOf` follows
 the switch. Rollback: false and the installer again (byte-identical to before). Test: `tools/install_gems_test.py`.
@@ -10766,9 +10767,9 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites).
   Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; `ChaosBigFx.live()` true, big_rift_void_7 = 654, a 7x7 telegraph sent. Not seen in a client.
 
-## Status words (`data/lib/chaos_status_fx.lua`, `data/lib/chaos_status_fx_ids.lua`, switch `ChaosStatusFx.STATUS_FX`, off)
+## Status words (`data/lib/chaos_status_fx.lua`, `data/lib/chaos_status_fx_ids.lua`, switch `ChaosStatusFx.STATUS_FX`, on)
 Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, from the owner's text effect set
-(client/MANIFEST.md "Status words", effects 656-673 of the next pair). Effects only: nothing else changes.
+(client/MANIFEST.md "Status words", effects 656-673 of things_custom25). Effects only: nothing else changes.
 - Spell hits: `combat_fx.lua`'s damage event calls `ChaosStatusFx.onSpellHit`; it reads the attacker's cast context
   (storage 7109990, written by `data/spells/chaos/_supports.lua` while a spell's own hits run; damage over time
   excluded) and sends the spell's word (`C.spells`): Frozen Crypt frozen, Briar Prison rooted_vines, Primordial Squall
@@ -10781,9 +10782,9 @@ Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, fro
   (`boss_mechanics.lua`): Nyxareth's Oblivion oblivion over the boss. charmed, shackled, revived, revived_small and
   rooted are in the pair for later.
 - Throttle: one word per creature in 2 s, three creatures per cast (an area spell on a pack shows three words).
-- Off (shipped): every call site sends exactly what it sent before. Flip step once the pair with effects 656-673 is
-  on windows-assets: `C.STATUS_FX = true` (and the check in `tests/status_fx_test.lua`), `install_all.py SERVER_DIR
-  --only files`, restart. A client on an older pair draws nothing for 656-673.
+- On since 2026-10-14 (things_custom25 with effects 656-673 is on windows-assets at ebe1b2b2): `C.STATUS_FX = true`
+  (the check in `tests/status_fx_test.lua`), `install_all.py SERVER_DIR --only files`, restart. A client on an older
+  pair draws nothing for 656-673. Off, every call site sends exactly what it sent before.
 - Tests: `tests/status_fx_test.lua` (switch line; spec, ids file and catalog agree in order from 656; every spell id
   exists under its name; every use has its call site; off: the stock effect; on: the word at +1,+1, the throttles,
   no word for damage over time, monsters or a cast without a word). Not run on a server or in a client yet.

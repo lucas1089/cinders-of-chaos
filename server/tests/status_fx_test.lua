@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/status_fx_test.lua (no engine needed; CI runs it with luajit and lua5.3)
--- Status words (data/lib/chaos_status_fx.lua): the switch is one plain line, off until a pair with effects 656-673 is
--- published; every word the server sends is in the client spec (art_import/status_fx.csv) and in the generated ids
+-- Status words (data/lib/chaos_status_fx.lua): the switch is one plain line, on since 2026-10-14 (the pair with effects
+-- 656-673 is published); every word the server sends is in the client spec (art_import/status_fx.csv) and in the generated ids
 -- (chaos_status_fx_ids.lua, status_fx_catalog.csv) at the same id; every spell of the map exists in spells_chaos.xml
 -- under that name; every use is sent by a call site; off, a call sends exactly the stock effect (or nothing); on, the
 -- word at its offset tile, one per creature in targetMs and perCast creatures per cast.
@@ -39,9 +39,9 @@ os.mtime = function() return clock end
 dofile("data/lib/chaos_status_fx.lua")
 local C = ChaosStatusFx
 
--- the switch: one plain line, off
+-- the switch: one plain line, on since 2026-10-14 (things_custom25 with effects 656-673 is on windows-assets at ebe1b2b2)
 local src = readFile("data/lib/chaos_status_fx.lua") or ""
-eq(src:match("\nC%.STATUS_FX = (%a+)\n"), "false", "the switch is one plain line, off until the pair is published")
+eq(src:match("\nC%.STATUS_FX = (%a+)\n"), "true", "the switch is one plain line, on: the pair with the words is published")
 
 -- the client spec and the generated ids agree, in spec order from 656
 local spec, order = {}, {}

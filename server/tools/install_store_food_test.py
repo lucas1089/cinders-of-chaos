@@ -30,9 +30,10 @@ def otb(nodes):
     return b'\x00\x00\x00\x00' + root + b''.join(nodes) + bytes([END])
 
 
-cfg = T.read_config()
+shipped = T.read_config()
+check(shipped['ownLook'] is True, 'config: our look, on since 2026-10-14 (things_custom25 on windows-assets)')
+cfg = dict(shipped, ownLook=False)   # the stock look first, then ownLook
 check(cfg['id'] == 32084 and cfg['sourceId'] == 2672, 'config: ids')
-check(cfg['ownLook'] is False, 'config: the stock look until the client pair has the art')
 check(cfg['clientId'] == 33904, 'config: our look after the pair 24 items (33903)')
 check('never runs out' in cfg['description'], 'config: description read (joined strings)')
 

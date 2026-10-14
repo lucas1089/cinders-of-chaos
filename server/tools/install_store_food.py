@@ -13,9 +13,8 @@ weight, article, name, plural, description), the file the Lua side (store_food.l
    client reading past the message, "ProtocolGame parse message exception ... opcode 0x6e" at every container that
    showed the ration, found in a live test 2026-10-14; one ration a character, count 1, never used up). Its client
    id: the dragon ham's while
-   `ownLook = false` (the client pair has no ration art yet), `clientId` (our art, client id 33904:
-   client/tools/sprites/gen_store_food_art.py, appended by import_art_things.py with art_import/store_food.csv) once
-   the pair has it and the config says ownLook = true. A node already there with the same bytes is left alone, one
+   `ownLook = false`, `clientId` (our art, client id 33904: client/tools/sprites/gen_store_food_art.py, appended by
+   import_art_things.py with art_import/store_food.csv; in things_custom25) while ownLook = true (on since 2026-10-14). A node already there with the same bytes is left alone, one
    with other bytes (a changed config or look) is replaced; a server id that belongs to any other client id stops the
    script (nothing is written). items.otb.bak keeps the original the first time; the written file is parsed again and
    the node checked. Range: 32084 (after the store pouches 32081..32083).

@@ -3,8 +3,8 @@
 -- Art: client/tools/sprites/gen_status_fx.py (the owner's text effect set, art_import/status_fx.csv), appended after
 -- the large spell effects by import_fx_art.py, which writes the ids to data/lib/chaos_status_fx_ids.lua (656-673).
 --
--- Switch (C.STATUS_FX): off until a pair with effects 656-673 is on windows-assets (client/MANIFEST.md "Status
--- words"). Off, nothing changes: every call site sends exactly what it sent before (or nothing). On, a word is sent at
+-- Switch (C.STATUS_FX): on since 2026-10-14 (things_custom25 with effects 656-673 is on windows-assets at ebe1b2b2;
+-- client/MANIFEST.md "Status words"). Off, nothing changes: every call site sends exactly what it sent before (or nothing). On, a word is sent at
 -- its offset tile (Vfx), at most one per creature in `targetMs` and at most `perCast` creatures per cast.
 -- Two ways in:
 --   * spell hits: ChaosStatusFx.onSpellHit(creature, attacker, origin) from combat_fx.lua's damage event reads the
@@ -16,7 +16,7 @@
 ChaosStatusFx = ChaosStatusFx or {}
 local C = ChaosStatusFx
 
-C.STATUS_FX = false
+C.STATUS_FX = true
 
 -- spell id (spells_chaos.xml) -> word, sent on the creatures the spell's own hits land on (not its damage over time)
 C.spells = {
