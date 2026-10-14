@@ -347,4 +347,31 @@ eq(lookTip.look.cid, 3206, "look client id") eq(lookTip.look.name, "strange ring
 eq(lookTip.id, 4975, "the item stays its own")
 eq(T.build(newItem(3975)).look, nil, "no look without a transmog")
 
+-- ---------------------------------------------------------------- the display scale (display_scale_core.lua DS.itemTip)
+-- a built tooltip as sent: the factor of the item's level requirement, the flat health / mana / damage / heal rows only
+dofile("data/scripts/chaos/display_scale_core.lua")
+local DS = ChaosDisplayScale
+local flatItem = newItem(2400) -- magic sword, level 80
+ChaosItemMods.set(flatItem, "lifeonhit", 20, 4)
+ChaosItemMods.set(flatItem, "attackspeed", 5, 4)
+local raw = T.build(flatItem)
+local function rowOf(list, key) for _, r in ipairs(list or {}) do if r.k == key then return r end end end
+local rawHit = rowOf(raw.mods, "chaos_mod_lifeonhit")
+eq(rawHit ~= nil and rawHit.v, 20, "the built tooltip has the flat modifier")
+eq(DS.itemTip(raw).ds, 1, "a level-80 item: x1")
+eq(rowOf(DS.itemTip(raw).mods, "chaos_mod_lifeonhit").v, 20, "x1: as built")
+TYPES[2400].level = 1000
+local high = T.build(flatItem)
+eq(high.req.level, 1000, "now a level-1000 item")
+local shown = DS.itemTip(high)
+eq(shown.ds, 1000, "its factor")
+eq(rowOf(shown.mods, "chaos_mod_lifeonhit").v, 20000, "flat health on hit x1000")
+eq(rowOf(shown.mods, "chaos_mod_lifeonhit").t, ChaosItemMods.text("lifeonhit", 20000), "its text")
+eq(rowOf(shown.mods, "chaos_mod_attackspeed").v, 5, "a percent modifier stays")
+eq(rowOf(shown.stats, "chaos_mod_lifeonhit").v, 20000, "compare stats x1000")
+eq(rowOf(shown.stats, "chaos_mod_lifeonhit").sc, 1, "marked for the compare view")
+eq(rowOf(shown.base, "attack").v, rowOf(high.base, "attack").v, "attack stays")
+eq(rowOf(high.mods, "chaos_mod_lifeonhit").v, 20, "the built tooltip itself stays raw")
+TYPES[2400].level = 80
+
 print(string.format("item_tooltip_test: %d checks OK", checks))

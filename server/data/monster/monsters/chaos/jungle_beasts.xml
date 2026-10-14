@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Jungle Beasts" nameDescription="a Jungle Beasts" race="undead" experience="13300" evented = "5" skulled="1" looting="1" speed="49">
+<monster name="Jungle Beasts" nameDescription="a Jungle Beasts" race="undead" experience="13300" speed="49">
 	<health now="21400" max="21400"/>
 	<level min="920" max="960"/>
 	<look type="1484" corpse="6068"/>
 	<targetchange interval="4000" chance="10"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>

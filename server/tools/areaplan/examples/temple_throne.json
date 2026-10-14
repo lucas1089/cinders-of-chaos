@@ -1,0 +1,52 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "sunfallen_temple",
+  "name": "Sunfallen Temple",
+  "biome": "hall",
+  "size": [84, 72],
+  "floors": 1,
+  "level": [520, 760],
+  "seed": 24404,
+  "decoration": "dense",
+  "light": "bright",
+  "zones": [
+    {"id": "narthex", "floor": 1, "shape": "room", "size": "medium", "place": "south", "role": "camp", "pz": true},
+    {"id": "nave", "floor": 1, "shape": "room", "size": [22, 14], "place": "center"},
+    {"id": "west_chapel", "floor": 1, "shape": "room", "size": "medium", "place": "west"},
+    {"id": "east_chapel", "floor": 1, "shape": "room", "size": "medium", "place": "east"},
+    {"id": "gallery", "floor": 1, "shape": "room", "size": [9, 13], "place": "northwest"},
+    {"id": "reliquary", "floor": 1, "shape": "room", "size": "small", "place": "northeast", "role": "treasure"},
+    {"id": "antechamber", "floor": 1, "shape": "room", "size": [13, 7]},
+    {"id": "throne", "floor": 1, "shape": "room", "size": [19, 13], "place": "north", "role": "boss"}
+  ],
+  "paths": [
+    {"from": "narthex", "to": "nave", "width": 4},
+    {"from": "nave", "to": "west_chapel", "width": 3},
+    {"from": "nave", "to": "east_chapel", "width": 3},
+    {"from": "west_chapel", "to": "gallery", "width": 3},
+    {"from": "gallery", "to": "antechamber", "width": 3},
+    {"from": "east_chapel", "to": "reliquary", "width": 2},
+    {"from": "nave", "to": "antechamber", "width": 4},
+    {"from": "antechamber", "to": "throne", "width": 3}
+  ],
+  "connections": [
+    {"type": "teleport", "from": "throne", "to": "narthex", "two_way": false}
+  ],
+  "entry": {"zone": "narthex"},
+  "exit": {"zone": "narthex"},
+  "spawns": [
+    {"zone": "nave", "monster": "Aegis Sentinel", "count": 5, "respawn": 120},
+    {"zone": "nave", "monster": "Umbral Arcanist", "count": 4, "respawn": 120},
+    {"zone": "west_chapel", "monster": "Embermaw Archon", "count": 3, "respawn": 120},
+    {"zone": "east_chapel", "monster": "Nightflare Dreadknight", "count": 3, "respawn": 120},
+    {"zone": "gallery", "monster": "Bloodshade Reaper", "count": 3, "respawn": 120},
+    {"zone": "antechamber", "monster": "Plague Warbringer", "count": 3, "pack": 3, "respawn": 150},
+    {"zone": "reliquary", "monster": "Aegis Sentinel", "count": 1, "respawn": 180}
+  ],
+  "boss": {"zone": "throne", "monster": "Vhalkareth Mortal Shell", "respawn": 14400, "title": "The Sunfallen King"},
+  "npcs": [{"zone": "narthex", "name": "Brother Aldwen", "new": true,
+            "lines": ["Peace, |PLAYERNAME|. The king beyond the nave no longer sleeps.", "king: He sits on his throne at the north end. One door leads in.", "temple: Our order kept this hall until the sun fell."]}],
+  "chests": [{"zone": "reliquary", "quest": "sunfallen_relic",
+              "reward": {"gold": 250000, "items": [{"name": "Orb of Upheaval", "count": 2}, {"name": "Orb of Tempering", "count": 1}], "message": "You take the relic offerings."}}],
+  "notes": "Example plan: a dense one-floor temple for levels 520-760, a nave hall with pillar rows, two chapels, a gallery loop and a boss throne room with one door."
+}

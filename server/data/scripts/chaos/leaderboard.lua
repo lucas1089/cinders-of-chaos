@@ -468,6 +468,9 @@ function LB.sendBoard(player, key, groupKey, season, mode)
 	end
 	data.week = LB.current and LB.current.week or weekNow()
 	data.resetIn = math.max(0, LB.nextReset(now, cfg.resetHour) - now)
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the damage / healing boards
+		data = ChaosDisplayScale.apply("leaderboard", player, data)
+	end
 	Chaos.send(player, OPCODE, "board", data)
 end
 
@@ -590,6 +593,12 @@ local talk = TalkAction("/leaderboard")
 function talk.onSay(player, words, param)
 	if not player:getGroup():getAccess() then
 		return false -- players open it from the menu
+	end
+	-- the test clock: every shift past a week end awards that week's titles and orbs again: an administrator only, logged
+	local cmd = tostring(param or ""):lower():match("^%s*(%S*)")
+	local value = cmd == "shift"
+	if not Chaos.staffCommand(player, words, param, value) then
+		return false
 	end
 	return onCommand(player, words, param)
 end

@@ -1,10 +1,9 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<monster name="Frost Maiden" nameDescription="a frost maiden" race="blood" experience="8450" skulled="1" evented = "4" looting="1" speed="50" manacost="0">
+<monster name="Frost Maiden" nameDescription="a frost maiden" race="blood" experience="8450" speed="50" manacost="0">
     <health now="16300" max="16300"/>
      <level min="800" max="840"/>
     <look type="149" head="0" body="47" legs="105" feet="105" addons="0" corpse="6068"/>
     <targetchange interval="2000" chance="5"/>
-    <strategy attack="100" defense="0"/>
     <flags>
         <flag summonable="0"/>
         <flag attackable="1"/>
@@ -69,7 +68,7 @@
         <item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
         <item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
         <item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
-        <item id="2152" countmax="4" chance="3500"/><!-- Platinum Coin -->
+        <item id="2152" countmax="25" chance="65000"/><!-- platinum coin -->
         <item id="11302" countmax="1" chance="375" /><!-- jadefen helmet -->
         <item id="11301" countmax="1" chance="375" />
         <item id="11304" countmax="1" chance="375" />

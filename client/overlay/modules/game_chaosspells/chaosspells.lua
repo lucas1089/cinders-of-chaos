@@ -126,6 +126,27 @@ local HELPER_VOCATION = { [1] = 3, [3] = 2, [4] = 1, [5] = 3, [7] = 2, [8] = 1, 
   [11] = 6, [12] = 6, [13] = 6, [14] = 1, [15] = 2, [17] = 8, [18] = 8, [19] = 8, [20] = 7, [21] = 7, [22] = 7,
   [23] = 9, [24] = 9, [25] = 9 }
 local helperExtended = false
+local fixUndo, fixIdMap, fixRemovedIds = {}, {}, {} -- ChaosSpellFix.apply (spellfix.lua): undo list, stock id ->
+-- server id, ids of the spells the server removed (ChaosRemovedSpells)
+
+-- the spells the server removed (ChaosRemovedSpells, the conjure spells) leave the spell list; their SpellInfo entries
+-- stay (the rune cooldown icons need their ids)
+local hiddenOrder = {}
+local function hideRemovedSpells(order)
+  if not order or type(ChaosRemovedSpells) ~= 'table' then return end
+  local gone = {}
+  for old, new in pairs(ChaosRemovedSpells) do gone[old] = true; gone[new] = true end
+  for i = #order, 1, -1 do
+    local spell = SpellInfo.Default[order[i]]
+    if spell and spell.words and gone[spell.words:lower()] then
+      table.insert(hiddenOrder, 1, { i, order[i] }); table.remove(order, i)
+    end
+  end
+end
+local function showRemovedSpells(order)
+  if order then for _, h in ipairs(hiddenOrder) do table.insert(order, math.min(h[1], #order + 1), h[2]) end end
+  hiddenOrder = {}
+end
 
 local function addOnce(list, value)
   if not table.contains(list, value) then
@@ -141,10 +162,15 @@ local function extendHelper()
   if not data or not data.isLoaded or not data.isLoaded() then
     return false
   end
+  -- the helper's lists are keyed by the stock ids: move them to the server's ids first (spellfix.lua)
+  ChaosSpellFix.remapHelper(data, fixIdMap, fixRemovedIds)
   local byVocation = data.getSpellFilterByVocation()
   local healing = data.getHealingSpellFilter()
   local support, supportSet = data.getSupportSpellsWhitelist(), data.getSupportSpellsWhitelistSet()
   for _, s in ipairs(ChaosSpellData) do
+    if ChaosSpellFix.HELPER_EXCLUDE[s.id] then
+      goto nextSpell
+    end
     local vocs = {}
     for _, v in ipairs(s.vocations) do
       local h = HELPER_VOCATION[v]
@@ -166,6 +192,7 @@ local function extendHelper()
         supportSet[v][s.id] = true
       end
     end
+    ::nextSpell::
   end
   helperExtended = true
   return true
@@ -200,7 +227,11 @@ function init()
   end
   local order = SpelllistSettings and SpelllistSettings.Default and SpelllistSettings.Default.spellOrder
   renameStockSpells(order)
+  hideRemovedSpells(order)
   remapStockVocations()
+  -- ids, numbers and groups of the stock entries as the server has them (spellfix.lua), before the Chaos entries come in
+  fixUndo, fixIdMap, fixRemovedIds = ChaosSpellFix.apply(SpellInfo.Default, SpellIcons, SpellRunesData,
+    ChaosSpellFix.serverWords(ChaosSpellData, ChaosSpellNames), ChaosSpellFix.removedWords(ChaosRemovedSpells))
   connect(g_game, { onGameStart = onGameStartExtend })
   connect(g_game, { onGameStart = onGameStartMana })
   connect(LocalPlayer, { onManaChange = updatePercentMana })
@@ -241,6 +272,9 @@ function terminate()
     end
   end
   added = {}
+  ChaosSpellFix.restore(fixUndo)
+  fixUndo = {}
+  showRemovedSpells(order)
   restoreStockSpells(order)
   restoreStockVocations()
   disconnect(g_game, { onGameStart = onGameStartExtend })

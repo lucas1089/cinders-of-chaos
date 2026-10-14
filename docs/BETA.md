@@ -36,7 +36,9 @@ Notes:
 
 **Owner decides.** Recommendation: an **open beta**. Anyone makes an account on the website and plays with the official
 client (the client guard is on, `clientGuardMode = "enforce"`, docs/LAUNCH.md section 3).
-- `maxPlayers` from the load test (docs/LAUNCH.md section 9); 300 until it is measured on the full map.
+- `maxPlayers` 300: run `prod_config.py` with `--max-players 300` on the beta server (decided 2026-10-12; docs/LAUNCH.md
+  section 3). The full-map load test (docs/LAUNCH.md section 9, server/README.md "Load test on the full map") filled the
+  game loop at 500-600 bots; the beta keeps it under half busy. Launch: 400 (the `prod_config.py` default).
 - The normal rules apply: two characters per IP (`multiclient.lua`), the Rules page, reports and bans (docs/GM_HANDBOOK.md).
 - The website's register guard, reCAPTCHA keys and SMTP must be live (docs/OWNER_TODO.md "Accounts and services").
 - Alternative: a closed beta with invitations. Nothing in the code issues invitations, so it would be a manual list of
@@ -157,12 +159,12 @@ Weekend 1 (31 Oct to 1 Nov): fresh characters, the real start, and load.
 
 | What | How | ROADMAP |
 |---|---|---|
-| Load and spawn density | many real players at once on the full map; watch the game loop lag, CPU, RAM and the 300-600 hunting areas | #27 (load test open), #89 |
+| Load and spawn density | many real players at once on the full map; watch the game loop lag, CPU, RAM and the 300-600 hunting areas | #27 (bots: the game loop fills at 500-600; compare real players with it), #89 |
 | New player flow | tutorial island, class kits, gifts at 20 / 50, website sign-up, the official client, the updater | #21, #22, #82 |
 | Bounty and bestiary party credit | two or more players in a party on one contract / kill task; kills shared within 30 tiles | #10, #35 |
 | Rifts with a real party | low tiers with 2-5 players: party scaling (+100% health and +10% damage per extra player), chest bonus per finisher, shared lives, logout and death in a party | #8 |
 | The Ember Descent with friends | parties of 2-4, boons and curses per player, the merchant | #59 |
-| Keystones | Overgrowth, arrow Ricochet; both Illusionist keystones in a party; the Bulwark / Thorns / Deadeye visuals | "Open decisions": keystones |
+| Keystones | Overgrowth (an Iron Sage healing an ally), Thorns (a Sentinel holding a pack), arrow Ricochet; both Illusionist keystones in a party; the Bulwark / Thorns / Deadeye visuals | "Open decisions": keystones |
 | Invasions and world events | the Sunday 17:30 invasion on the real map areas (proposed from the map file, never walked) | #29 |
 | Guild siege | Saturday 20:00 with real guilds | #15 |
 | Reports and the anti-bot | real false-positive rates in `chaos_antibot_log` | #56 |

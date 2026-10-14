@@ -116,6 +116,45 @@ ChaosUniqueItems = {
 	{ name = "Veil of the Wraith", id = 29868, minTier = "boss", chance = 20, level = 120, slot = "ring",
 	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
+	-- the build archetype uniques (docs/BUILDS.md): each strengthens one archetype keystone (archetypes.lua reads the
+	-- spec's `archetype` on the worn copy); Knuckles of the Unbound and Stormcaller Recurve also work without it
+	{ name = "Pyreheart Mantle", id = 8881, minTier = "legendary", chance = 7, level = 150, slot = "body",
+	  bossOnly = false, monsters = {"Hellfire Fighter", "Fire Devil", "Massive Fire Elemental", "Hellhound", "Dragon Lord", "Blazebringer", "Demon", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer"} },
+	{ name = "Vein of the Unsated", id = 27652, minTier = "rare", chance = 5, level = 180, slot = "necklace",
+	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer"} },
+	{ name = "Spitethorn Bulwark", id = 15413, minTier = "legendary", chance = 7, level = 130, slot = "shield",
+	  bossOnly = false, monsters = {"Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Dragon Lord", "Hand of Cursed Fate", "Demon", "Hellhound", "Fire Devil", "Hellfire Fighter"} },
+	{ name = "Knuckles of the Unbound", id = 28023, minTier = "legendary", chance = 7, level = 400, slot = "ring",
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
+	{ name = "Rotbloom Phial", id = 21691, minTier = "rare", chance = 5, level = 150, slot = "necklace",
+	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Bonelord", "Elder Bonelord", "Crypt Shambler"} },
+	{ name = "Splintered Instant", id = 28049, minTier = "legendary", chance = 7, level = 400, slot = "ring",
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
+	{ name = "Stormcaller Recurve", id = 8858, minTier = "rare", chance = 5, level = 70, slot = "distance",
+	  bossOnly = false, monsters = {"Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Dragon Lord", "Hand of Cursed Fate", "Demon", "Hellhound", "Fire Devil", "Hellfire Fighter"} },
+	{ name = "Shard of the Long Winter", id = 26756, minTier = "rare", chance = 5, level = 100, slot = "wand",
+	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Phantom Shade", "Shadowgeist", "Nightdweller"} },
+	{ name = "Effigy Carver's Idol", id = 22423, minTier = "rare", chance = 5, level = 120, slot = "shield",
+	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Phantom Shade", "Shadowgeist", "Nightdweller"} },
+	{ name = "Brand of the Ashen Choir", id = 18403, minTier = "rare", chance = 5, level = 150, slot = "head",
+	  bossOnly = false, monsters = {"Hellfire Fighter", "Fire Devil", "Massive Fire Elemental", "Hellhound", "Dragon Lord", "Blazebringer", "Demon", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer"} },
+	{ name = "Aetherbound Plate", id = 2466, minTier = "rare", chance = 5, level = 120, slot = "body",
+	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Bonelord", "Elder Bonelord", "Crypt Shambler"} },
+	{ name = "Reliquary Censer", id = 27251, minTier = "legendary", chance = 7, level = 220, slot = "necklace",
+	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer"} },
+	-- the second round (2026-10-12): snares, vigils, Hollow Vessel; the snare and diadem uniques work without a keystone
+	{ name = "Snarewalker Greaves", id = 28115, minTier = "rare", chance = 5, level = 120, slot = "feet",
+	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Bonelord", "Elder Bonelord", "Crypt Shambler"} },
+	{ name = "Fusewright's Charm", id = 7890, minTier = "rare", chance = 5, level = 150, slot = "necklace",
+	  bossOnly = false, monsters = {"Hellfire Fighter", "Fire Devil", "Massive Fire Elemental", "Hellhound", "Dragon Lord", "Blazebringer", "Demon", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer"} },
+	{ name = "Choirmaster's Circlet", id = 27667, minTier = "legendary", chance = 7, level = 200, slot = "head",
+	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Phantom Shade", "Shadowgeist", "Nightdweller"} },
+	{ name = "Oathkeeper's Standard", id = 15453, minTier = "legendary", chance = 7, level = 180, slot = "shield",
+	  bossOnly = false, monsters = {"Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Dragon Lord", "Hand of Cursed Fate", "Demon", "Hellhound", "Fire Devil", "Hellfire Fighter"} },
+	{ name = "Hollowglass Diadem", id = 27668, minTier = "legendary", chance = 7, level = 250, slot = "head",
+	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer"} },
+	{ name = "Stillheart Robe", id = 27390, minTier = "legendary", chance = 7, level = 300, slot = "body",
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
 	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",
@@ -166,6 +205,12 @@ function ChaosMakeUnique(item)
 		item:setCustomAttribute("chaos_set", spec.set) -- a set piece (chaos_item_sets.lua)
 	end
 	return true
+end
+
+-- The uniques with an equip rule of their own (spec `equip`): data/lib/chaos_unique_equip.lua, called from the movement
+-- script tools/install_unique_equip.py writes (server/README.md "Unique equip rules").
+if not ChaosUniqueEquip then
+	dofile('data/lib/chaos_unique_equip.lua')
 end
 
 -- Give one unique to a player (admin/quest/reward helper). Accepts the name (case-insensitive) or the server id.

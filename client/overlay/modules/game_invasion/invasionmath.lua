@@ -58,6 +58,7 @@ end
 function InvasionMath.topLines(top)
   local out = {}
   for i, t in ipairs(type(top) == 'table' and top or {}) do
+    if type(t) ~= 'table' then t = {} end
     out[#out + 1] = string.format('%d. %s  %d%%', i, tostring(t.name), tonumber(t.share) or 0)
   end
   return out

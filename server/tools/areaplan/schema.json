@@ -1,0 +1,521 @@
+{
+  "$id": "chaos-area-plan/1",
+  "title": "Cinders of Chaos area plan, version 1",
+  "description": "A semantic plan of one generated area (docs/MAP_GUIDE.md \"Area planner\"). It names a biome, zones, paths, connections, spawns and the rest; it never holds an item id. server/tools/area_planner.py validates it, compiles it with our area generator into an OTBM piece and a spawn file, and renders it. Local coordinates are tiles from the area's top-left corner (0-based); floor 1 is the top floor, each next floor one level deeper.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "name",
+    "biome",
+    "size",
+    "floors",
+    "level",
+    "zones",
+    "entry"
+  ],
+  "properties": {
+    "schema": {
+      "const": "chaos-area-plan/1",
+      "description": "the schema version"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,39}$",
+      "description": "file and area id, lower case"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 60
+    },
+    "biome": {
+      "type": "string",
+      "description": "one of the biomes of `area_planner.py catalogue` (swamp, crypt, lava, forest, ice, cave, waste, vault, catacomb, hall, abyss, sanctum; forest_pack and ice_pack need the pack items)"
+    },
+    "size": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 24,
+        "maximum": 160
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "width and height in tiles"
+    },
+    "floors": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "level": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2500
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "the hunting level band, lowest and highest"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2000000000,
+      "description": "the same seed gives the same tiles (default: from the id)"
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "description": "where the top-left tile of floor 1 goes on the map (default 14800, 14800 and the biome's depth)",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 14336,
+          "maximum": 15359
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 14336,
+          "maximum": 15359
+        },
+        "z": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        }
+      }
+    },
+    "decoration": {
+      "enum": [
+        "sparse",
+        "normal",
+        "dense"
+      ],
+      "description": "decoration density: the biome kit's rates x0.55, x1, x1.5 (docs/MAP_GUIDE.md \"Area planner\")"
+    },
+    "light": {
+      "enum": [
+        "dark",
+        "dim",
+        "normal",
+        "bright"
+      ],
+      "description": "light sources (x0.5, x0.75, x1, x1.5 of the biome's)"
+    },
+    "zones": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "floor"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "floor": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "shape": {
+            "enum": [
+              "room",
+              "cave",
+              "arena"
+            ],
+            "description": "room: a rectangle; cave: an irregular blob; arena: a round open room (default: room in a dungeon biome, cave elsewhere)"
+          },
+          "size": {
+            "description": "small (7x7), medium (11x9), large (15x12), huge (20x16), or [w, h] in tiles (5-40)",
+            "oneOf": [
+              {
+                "enum": [
+                  "small",
+                  "medium",
+                  "large",
+                  "huge"
+                ]
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 40
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            ]
+          },
+          "at": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 160
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "top-left tile, local; leave out to let the planner place it"
+          },
+          "place": {
+            "enum": [
+              "north",
+              "south",
+              "east",
+              "west",
+              "center",
+              "northwest",
+              "northeast",
+              "southwest",
+              "southeast"
+            ],
+            "description": "rough position on its floor when `at` is not given"
+          },
+          "role": {
+            "enum": [
+              "hunt",
+              "camp",
+              "boss",
+              "treasure",
+              "passage"
+            ],
+            "description": "boss = the boss room (one entrance); camp = a resting place, usually pz"
+          },
+          "pz": {
+            "type": "boolean",
+            "description": "a protection zone (no spawn may stand in it)"
+          }
+        }
+      }
+    },
+    "paths": {
+      "type": "array",
+      "maxItems": 120,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "tiles (default 3)"
+          },
+          "style": {
+            "enum": [
+              "corridor",
+              "tunnel"
+            ],
+            "description": "corridor: straight runs; tunnel: winding (default by biome)"
+          }
+        }
+      }
+    },
+    "connections": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "stairs",
+              "ladder",
+              "hole",
+              "teleport"
+            ],
+            "description": "stairs: our stair brush (stairs ground above, stone stairs below; a hole and ladder when there is no room); ladder: a hole down and a ladder up; hole: one way down; teleport: any two zones"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "two_way": {
+            "type": "boolean",
+            "description": "teleport only: a return teleport too (default true)"
+          }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "zone"
+      ],
+      "properties": {
+        "zone": {
+          "type": "string",
+          "description": "where players arrive (floor 1)"
+        },
+        "from_world": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "description": "the world map tile of the portal that leads in (recorded only; the world map is not edited)",
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "integer"
+            },
+            "z": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15
+            }
+          }
+        }
+      }
+    },
+    "exit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "zone"
+      ],
+      "properties": {
+        "zone": {
+          "type": "string"
+        },
+        "to": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "description": "where the exit portal sends players (else the area exit action id)",
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "integer"
+            },
+            "z": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15
+            }
+          }
+        }
+      }
+    },
+    "spawns": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "zone",
+          "monster",
+          "count"
+        ],
+        "properties": {
+          "zone": {
+            "type": "string"
+          },
+          "monster": {
+            "type": "string",
+            "description": "a monster name of our list (`area_planner.py catalogue --monsters`)"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "respawn": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600,
+            "description": "seconds (default 90)"
+          },
+          "pack": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "monsters per spawn point (default 1)"
+          }
+        }
+      }
+    },
+    "boss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "zone",
+        "monster"
+      ],
+      "properties": {
+        "zone": {
+          "type": "string"
+        },
+        "monster": {
+          "type": "string"
+        },
+        "respawn": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "seconds (default 3600)"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "a display name for the review sheets"
+        }
+      }
+    },
+    "npcs": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "zone",
+          "name"
+        ],
+        "properties": {
+          "zone": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "an NPC of our list"
+          },
+          "new": {
+            "type": "boolean",
+            "description": "an NPC not in our list yet: the compile writes its XML and script stub"
+          },
+          "lines": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "a new NPC's greeting (first line) and answers"
+          }
+        }
+      }
+    },
+    "chests": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "zone",
+          "quest"
+        ],
+        "properties": {
+          "zone": {
+            "type": "string"
+          },
+          "quest": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,39}$",
+            "description": "a quest key; the compile lists the chest's tile under it for the quest script"
+          },
+          "reward": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "what the chest gives once per character: item names from our item tables (never ids), gold and experience",
+            "properties": {
+              "gold": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000
+              },
+              "experience": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "items": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "chest_action": {
+      "type": "integer",
+      "minimum": 47960,
+      "maximum": 47999,
+      "description": "the action id of this area's quest chests (block 47960-47999; default: one from the block by the id)"
+    }
+  }
+}

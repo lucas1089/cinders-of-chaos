@@ -287,6 +287,12 @@ function admin.onSay(player, words, param)
 		player:sendCancelMessage("Player " .. name .. " is not online.")
 		return false
 	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): the kit, a milestone and a reset (the kit and the
+	-- milestones can be claimed again) need an administrator
+	local value = what == "" or what == "kit" or what:match("^milestone") ~= nil or what == "reset"
+	if not Chaos.staffCommand(player, words, param, value) then
+		return false
+	end
 	local reply
 	if what == "" or what == "kit" then
 		local ok, res = NP.giveKit(target)

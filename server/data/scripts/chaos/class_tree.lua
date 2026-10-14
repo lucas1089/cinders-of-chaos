@@ -3,7 +3,8 @@
 -- The tree (passivetree_data.lua, generated from the client's treedata/nodes.lua) has, next to the shared nodes:
 --   * per-class keystone variants on nodes 621 (Wrath) and 624 (Resolve) for the Warrior, Ranger and Mystic lines
 --     (ChaosClasses.keystoneKey: the base classes keep the old vocation's pair, the Juggernaut, Berserker, Deadeye and
---     Beastmaster swap one keystone for one of their own);
+--     Beastmaster swap one keystone for one of their own), and since 2026-10-12 the Iron Sage's Overgrowth on 621 and
+--     the Sentinel's Thorns on 624 (the old druid pair; keyed by the class key);
 --   * a class section for the Thief, Necromancer, Monk and Templar lines (nodes 625-664): a start node of the line,
 --     three line nodes and two ascended paths of three nodes, each ending in the ascended class's keystone. The start
 --     node is not a node of the server's data: its edges are the root's (node 1), so the section grows from the start
@@ -94,11 +95,15 @@ M.fx = {
 	ctSanctuary = {regen = 0.001},
 	-- The line keystones (one per line, for the base class and both ascended classes; each has a price):
 	-- Thief line (383): every weapon hit poisons as Poison Blades does (buff or not), the poison x (1 + poisonBonus);
-	-- evasion x evasionScale
-	ksBlackbloodCreed = {poisonBonus = 0.60, evasionScale = 0.5},
+	-- evasion x evasionScale. poisonBonus was 0.60 until 2026-10-12: measured, the gain at level 1000 was twice the
+	-- computed one and put the Ninja level with the Deadeye (server/data/spells/README.md "Line keystones, masteries
+	-- and weapons measured in game")
+	ksBlackbloodCreed = {poisonBonus = 0.30, evasionScale = 0.5},
 	-- Necromancer line (369): minion hits x (1 + minionHit), minion health x (1 + minionHealth); the own spells
-	-- x (1 - ownSpell) (necro_lib.lua ChaosNecro.values; the wand's auto attack and the heals are not spells of the line)
-	ksGraveCovenant = {minionHit = 0.50, minionHealth = 0.50, ownSpell = 0.25},
+	-- x (1 - ownSpell) (necro_lib.lua ChaosNecro.values; the wand's auto attack and the heals are not spells of the line).
+	-- classMinionHit: minionHit of a class instead of the line's (the Bone Lord's damage is 60-65% minions: +50% put it
+	-- ahead of the Deadeye on one target, measured 2026-10-12)
+	ksGraveCovenant = {minionHit = 0.50, minionHealth = 0.50, ownSpell = 0.25, classMinionHit = {bonelord = 0.20}},
 	-- Monk line (390): no evasion; a hit taken from a creature gives `chi` (at most one every icdMs); while holding
 	-- minChi or more, damage taken x (1 - reduction)
 	ksScarredDiscipline = {chi = 1, icdMs = 2000, minChi = 3, reduction = 0.10},
@@ -116,9 +121,12 @@ M.classDamage = {
 	thief = {{300, 0.48}, {1000, 0.53}},
 	ninja = {{300, 0.45}, {1000, 0.57}},
 	samurai = {{300, 0.30}, {1000, 0.37}}, -- the duelist off-tank: damage at the Juggernaut's
-	necromancer = {{300, 1.0}, {1000, 0.64}},
+	-- the Necromancer and the Bone Lord at level 300: 1.0 / 0.75 until 2026-10-12; a build that takes the path to Covenant
+	-- of the Grave (physical nodes the C4 build skipped) put both level with or ahead of the Deadeye (README "Line keystones,
+	-- masteries and weapons measured in game")
+	necromancer = {{300, 0.93}, {1000, 0.64}},
 	lich = {{300, 0.50}, {1000, 0.57}},
-	bonelord = {{300, 0.75}, {1000, 0.61}},
+	bonelord = {{300, 0.63}, {1000, 0.61}},
 	monk = {{300, 0.63}, {1000, 0.75}},
 	shadowfist = {{300, 0.49}, {1000, 0.69}},
 	ironsage = {{300, 0.61}, {1000, 0.75}}, -- the second healer: damage below the Warrior's

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Ancient Fungus" nameDescription="a ancient fungus" race="blood" experience="700000" evented = "25" skulled="2" looting="1" speed="450">
+<monster name="Ancient Fungus" nameDescription="an ancient fungus" race="blood" experience="700000" speed="450">
 	<health now="5000000" max="5000000" />
 	<look type="488" corpse="6068" />
 	<targetchange interval="4000" chance="15" />
@@ -16,11 +16,6 @@
 		<flag staticattack="80" />
 		<flag runonhealth="0" />
 	</flags>
-	<script>
-        <event name="RewardChestDeath"/>
-        <event name="first_boss_kill_talent"/>
-        <event name="spawn_for_time"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="1000" min="-7000" max="-9000"/>
 		<attack name="earth" interval="2000" chance="20" range="7" min="-7500" max="-15350">

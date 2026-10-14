@@ -1,0 +1,239 @@
+# Outfit window Shader row (client/MANIFEST.md "Outfit shaders in the Outfit window", BASE.md 26). The 10.98 outfit window packet already lists the shaders the character owns (the server sends them, protocolgameparse reads them with GameOutfitShaders, game_outfit got them as shaderList) but this window never showed them: it had no Shader row, so no shader could be picked. Lua and OTUI only (no C++): data/styles/40-outfitwindow.otui gets a Shader row in the Familiar row's place (10.98 has no familiars; the window shows one of the two); modules/game_outfit/outfit.lua lists "None" and the owned shaders (each button previews the current outfit with that shader; the search box filters them), keeps the pick in the preview and the set-outfit packet, keeps it across presets (presets store no shader) and sends only a shader of the list (else ""), since the server refuses the whole outfit change for a shader the character does not own. The logic is OutfitShaderList of the overlay module game_chaosshaders (outfitshaderlist.lua, tested by outfitshaderlist_test.lua); without that module the row stays hidden. updateAppearanceText also ignores a key with no row (a worn wings id). Applies after 0001-0044.
+diff --git a/data/styles/40-outfitwindow.otui b/data/styles/40-outfitwindow.otui
+--- a/data/styles/40-outfitwindow.otui
++++ b/data/styles/40-outfitwindow.otui
+@@ -959,6 +959,41 @@ OutfitWindow < MainWindow
+       $disabled:
+         color: #707070
+ 
++    // Chaos (base patch 0045): the Shader row, in the Familiar row's place (game_outfit shows one of the two)
++    FlatPanel
++      id: shader
++      size: 230 20
++      image-source: /game_cyclopedia/images/ui/panel-background
++      padding: 1 1 1 1
++      anchors.top: parent.top
++      anchors.left: parent.left
++      margin-top: 88
++      margin-left: 90
++      font: $var-cip-font
++      color: $var-text-cip-color
++      visible: false
++
++    CheckBoxCircle
++      id: shaderCheck
++      size: 12 12
++      font: Verdana Bold-11px
++      text: Shader:
++      text-offset: 16 -3
++      text-auto-resize: true
++      color: #c0c0c0
++      image-source: /images/ui/checkboxcircle
++      image-clip: 0 0 12 12
++      anchors.top: parent.top
++      anchors.left: parent.left
++      margin-top: 92
++      margin-left: 7
++      change-cursor-image: false
++      visible: false
++      $hover !disabled:
++        color: $var-text-cip-color
++      $disabled:
++        color: #707070
++
+     FlatPanel
+       id: preset
+       size: 230 20
+diff --git a/modules/game_outfit/outfit.lua b/modules/game_outfit/outfit.lua
+--- a/modules/game_outfit/outfit.lua
++++ b/modules/game_outfit/outfit.lua
+@@ -54,9 +54,21 @@ local AppearanceData = {
+   "outfit",
+   "mount",
+   "familiar",
+-  "aura"
++  "aura",
++  "shader"
+ }
+ 
++-- Chaos (base patch 0045): the owned outfit shaders of the server's list, worn through the Shader row. The logic is
++-- OutfitShaderList of the overlay module game_chaosshaders (tested there); without it the row stays hidden.
++local function shaderLogic()
++  local m = modules.game_chaosshaders
++  return m and m.OutfitShaderList or nil
++end
++
++local function useShaderRow()
++  return shaderLogic() ~= nil and g_game.getFeature(GameOutfitShaders) and not g_game.getFeature(GamePlayerFamiliars)
++end
++
+ local function normalizeStoreTryOn(data)
+   if type(data) ~= "table" then
+     return nil
+@@ -278,6 +290,12 @@ function create(currentOutfit, outfitList, mountList, familiarList, wingList, au
+     end
+   end
+ 
++  local OSL = shaderLogic()
++  if OSL then
++    shaderList = OSL.entries(shaderList)
++    currentOutfit.shader = type(currentOutfit.shader) == "string" and currentOutfit.shader or ""
++  end
++
+   ServerData = {
+     currentOutfit = currentOutfit,
+     outfits = outfitList,
+@@ -377,6 +395,16 @@ function create(currentOutfit, outfitList, mountList, familiarList, wingList, au
+     window.appearance.auraCheck:setEnabled(true)
+   end
+ 
++  -- the Shader row takes the Familiar row's place (10.98 has no familiars)
++  if useShaderRow() then
++    window.appearance.familiar:setVisible(false)
++    window.appearance.familiarCheck:setVisible(false)
++    window.appearance.shader:setVisible(true)
++    window.appearance.shaderCheck:setVisible(true)
++    window.appearance.shaderCheck:setEnabled(not table.empty(ServerData.shaders))
++    updateAppearanceText("shader", OSL.text(ServerData.shaders, currentOutfit.shader))
++  end
++
+   showOutfitCheck:setChecked(true)
+   showMountCheck:setChecked(currentOutfit.mount > 0)
+   showFamiliarCheck:setChecked(false)
+@@ -412,6 +440,7 @@ function create(currentOutfit, outfitList, mountList, familiarList, wingList, au
+   appearanceGroup:addWidget(window.appearance.mountCheck)
+   appearanceGroup:addWidget(window.appearance.familiarCheck)
+   appearanceGroup:addWidget(window.appearance.auraCheck)
++  appearanceGroup:addWidget(window.appearance.shaderCheck)
+ 
+   appearanceGroup.onSelectionChange = onAppearanceChange
+ 
+@@ -592,6 +621,8 @@ function onAppearanceChange(widget, selectedWidget)
+     showFamiliars()
+   elseif id == "auraCheck" then
+     showAuras()
++  elseif id == "shaderCheck" then
++    showShaders()
+   end
+ end
+ 
+@@ -926,6 +957,54 @@ function showAuras()
+   end)
+ end
+ 
++-- the owned shaders, "None" first; each button shows the current outfit with that shader
++function showShaders(searchText)
++  local OSL = shaderLogic()
++  if not OSL then
++    return
++  end
++  onHidePresetWindow()
++  cancelPopulate()
++  window.ScrollBar.selectionList.onChildFocusChange = nil
++  window.ScrollBar.selectionList:destroyChildren()
++  window.filter_outfits.onlyCheck:setEnabled(false)
++
++  window.appearance.grayHover:setVisible(true)
++  window.ScrollBar.selectionList.onChildFocusChange = onShaderSelect
++  window.ScrollBar.selectionList:show()
++
++  local focusName = OSL.outgoing(ServerData.shaders, tempOutfit.shader)
++  local focusedWidget = nil
++  batchPopulate(OSL.rows(ServerData.shaders, searchText), function(row)
++    local button = g_ui.createWidget("SelectionButton", window.ScrollBar.selectionList)
++    button:setId("shader" .. row.id)
++    button.shaderName = row.name
++    local outfit = table.copy(previewCreature:getOutfit())
++    outfit.mount = 0
++    outfit.shader = row.name
++    button.outfit:setOutfit(outfit)
++    button.outfit:setAnimate(true)
++    button.name:setText(row.label)
++    if row.name == focusName then
++      focusedWidget = button
++    end
++  end, function()
++    if focusedWidget then
++      focusedWidget:focus()
++      window.ScrollBar.selectionList:ensureChildVisible(focusedWidget, {x = 0, y = 196})
++    end
++  end)
++end
++
++function onShaderSelect(list, focusedChild, unfocusedChild, reason)
++  local OSL = shaderLogic()
++  if focusedChild and OSL then
++    tempOutfit.shader = OSL.outgoing(ServerData.shaders, focusedChild.shaderName)
++    updatePreview()
++    updateAppearanceText("shader", OSL.text(ServerData.shaders, tempOutfit.shader))
++  end
++end
++
+ function onPresetSelect(widget)
+   if not widget then
+     return true
+@@ -944,7 +1023,9 @@ function onPresetSelect(widget)
+   lastFocusPreset:setBorderColor("white")
+   lastFocusPreset:setBorderWidth("1")
+ 
++  local keptShader = tempOutfit.shader
+   tempOutfit = table.copy(widget.outfit:getOutfit())
++  tempOutfit.shader = keptShader -- presets store no shader (Chaos, base patch 0045)
+ 
+   if tempOutfit.mount > 0 then
+     showMountCheck:setChecked(true)
+@@ -1101,9 +1182,13 @@ function updateAppearanceText(widget, text)
+     text = "No Preset"
+   end
+ 
+-  local wText = window.appearance:recursiveGetChildById(widget).name
++  local row = window.appearance:recursiveGetChildById(widget)
++  if not row then
++    return -- no row for it in this window (wings; Chaos, base patch 0045)
++  end
++  local wText = row.name
+   if not wText then
+-    wText = window.appearance:recursiveGetChildById(widget)
++    wText = row
+   end
+ 
+   wText:setText(text)
+@@ -1121,7 +1206,7 @@ function updateAppearanceTexts(outfit)
+       appKey = key
+     end
+ 
+-    local dataTable = ServerData[newKey]
++    local dataTable = key ~= "shader" and ServerData[newKey] or nil -- the Shader row has its own text
+     if dataTable then
+       for _, data in ipairs(dataTable) do
+         if outfit[key] == data[1] or outfit[key] == data[2] then
+@@ -1319,6 +1404,8 @@ function onFilterSearch(widget)
+     showOutfits(widget:getText())
+   elseif window.appearance.mountCheck:isChecked() then
+     showMounts(widget:getText())
++  elseif window.appearance.shaderCheck:isChecked() then
++    showShaders(widget:getText())
+   end
+ end
+ 
+@@ -1328,6 +1415,8 @@ function onClearFilterSearch(widget)
+     showOutfits()
+   elseif window.appearance.mountCheck:isChecked() then
+     showMounts()
++  elseif window.appearance.shaderCheck:isChecked() then
++    showShaders()
+   end
+ end
+ 
+@@ -1444,6 +1533,11 @@ function accept()
+     end
+   end
+ 
++  local OSL = shaderLogic()
++  if OSL then
++    tempOutfit.shader = OSL.outgoing(ServerData.shaders, tempOutfit.shader)
++  end
++
+   g_game.changeOutfit(tempOutfit, globalRandomMount)
+   g_client.setInputLockWidget()
+   destroy()

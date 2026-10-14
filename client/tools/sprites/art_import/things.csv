@@ -77,8 +77,8 @@ outfit_goblin_warlock,outfit,creature,Goblin Warlock,creatures/goblin_warlock,0,
 outfit_goblin_chieftain,outfit,creature,Goblin Chieftain,creatures/goblin_chieftain,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=56|body=95|legs=95|feet=19
 outfit_wolf,outfit,creature,Forest Wolf,creatures/wolf,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=39|legs=22|feet=2
 outfit_shroomling,outfit,creature,Shroomling,creatures/shroomling,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=58|body=2|legs=1|feet=41
-outfit_boar,outfit,creature,Wild Boar,creatures/boar,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=39|legs=39|feet=95
-outfit_giant_hornet,outfit,creature,Giant Hornet,creatures/giant_hornet,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=78|body=79|legs=116|feet=19
+outfit_boar,outfit,creature,Gloomtusk Boar,creatures/boar,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=39|legs=39|feet=95
+outfit_giant_hornet,outfit,creature,Blightwing Hornet,creatures/giant_hornet,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=78|body=79|legs=116|feet=19
 outfit_morel_imp,outfit,creature,Morel Imp,creatures/morel_imp,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=22|body=2|legs=1|feet=95
 outfit_moss_slime,outfit,creature,Moss Slime,creatures/moss_slime,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=61|body=44|legs=44|feet=56
 outfit_pixie,outfit,creature,Forest Pixie,creatures/pixie,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=1|body=43|legs=10|feet=18
@@ -116,8 +116,8 @@ corpse_goblin_warlock,item,corpse,dead goblin warlock,creatures/goblin_warlock,0
 corpse_goblin_chieftain,item,corpse,dead goblin chieftain,creatures/goblin_chieftain,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
 corpse_wolf,item,corpse,dead forest wolf,creatures/wolf,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
 corpse_shroomling,item,corpse,dead shroomling,creatures/shroomling,0,416,1,1,1,1,container forceuse notmoveable usable,new,,race=venom
-corpse_boar,item,corpse,dead wild boar,creatures/boar,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
-corpse_giant_hornet,item,corpse,dead giant hornet,creatures/giant_hornet,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_boar,item,corpse,dead gloomtusk boar,creatures/boar,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_giant_hornet,item,corpse,dead blightwing hornet,creatures/giant_hornet,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
 corpse_morel_imp,item,corpse,dead morel imp,creatures/morel_imp,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
 corpse_moss_slime,item,corpse,dead moss slime,creatures/moss_slime,0,416,1,1,1,1,container forceuse notmoveable usable,new,,race=venom
 corpse_pixie,item,corpse,dead forest pixie,creatures/pixie,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood

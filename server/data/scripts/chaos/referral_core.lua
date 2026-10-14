@@ -6,7 +6,9 @@
 --   rules      entryLeft(created, now, cfg) -> seconds left to enter a code (nil = never had a creation date, <= 0 =
 --              too late); codeHolder(info, cfg) -> true or nil, reason; linkCheck(info, cfg) -> true or nil, reason
 --              (a reason is a key of cfg.messages; see linkCheck for `info`)
---   milestones due(level, reached, cfg) -> milestones of cfg.milestones reached at `level` and not yet in `reached`
+--   milestones due(level, reached, cfg) -> milestones of cfg.milestones reached at `level` and not yet in `reached`;
+--              tiersDue(qualified, reached, cfg) -> tiers of cfg.tiers reached with `qualified` friends; tier(cfg, key)
+--   networks   netKey(ip) -> "a.b.c.d" or an IPv6 /64; shareIp(a, b); sharePayer(a, b)
 --   rewards    decide(reward, facts, cfg) -> "pay" | "wait" | "void"; rewardText(milestone) -> "the title X and 25
 --              Chaos Coins"; giftText(cfg) -> "50 health potions, 50 mana potions"
 --   titles     titles(state, cfg) -> name plate titles of an account (the gift's, the paid milestones')
@@ -132,21 +134,91 @@ local function lookup(list)
 	return set
 end
 
+-- the key two addresses share when they count as one connection: an IPv4 address as it is, an IPv6 address by its
+-- /64 (its first four groups, what one home connection gets); nil for an empty or unknown address
+function R.netKey(ip)
+	if type(ip) ~= "string" or ip == "" or ip == "0.0.0.0" then
+		return nil
+	end
+	ip = ip:lower()
+	if not ip:find(":", 1, true) then
+		return ip:match("^%d+%.%d+%.%d+%.%d+$")
+	end
+	local v4 = ip:match("^::ffff:(%d+%.%d+%.%d+%.%d+)$")
+	if v4 then
+		return v4
+	end
+	local groups = {}
+	local head, tail = ip:match("^(.-)::(.*)$")
+	if head then
+		local h, t = {}, {}
+		for g in head:gmatch("[^:]+") do
+			h[#h + 1] = g
+		end
+		for g in tail:gmatch("[^:]+") do
+			t[#t + 1] = g
+		end
+		for _, g in ipairs(h) do
+			groups[#groups + 1] = g
+		end
+		for _ = 1, 8 - #h - #t do
+			groups[#groups + 1] = "0"
+		end
+		for _, g in ipairs(t) do
+			groups[#groups + 1] = g
+		end
+	else
+		for g in ip:gmatch("[^:]+") do
+			groups[#groups + 1] = g
+		end
+	end
+	if #groups ~= 8 then
+		return nil
+	end
+	local out = {}
+	for i = 1, 4 do
+		local v = tonumber(groups[i], 16)
+		if not v then
+			return nil
+		end
+		out[i] = string.format("%x", v)
+	end
+	return table.concat(out, ":")
+end
+
 local function shareIp(a, b)
 	local set = {}
 	for _, ip in ipairs(a or {}) do
-		if ip and ip ~= "" and ip ~= "0.0.0.0" then
-			set[ip] = true
+		local k = R.netKey(ip)
+		if k then
+			set[k] = true
 		end
 	end
 	for _, ip in ipairs(b or {}) do
-		if ip and set[ip] then
+		local k = R.netKey(ip)
+		if k and set[k] then
 			return true
 		end
 	end
 	return false
 end
 R.shareIp = shareIp
+
+-- true when the two lists of payer hashes (chaos_pay_payers) share one
+function R.sharePayer(a, b)
+	local set = {}
+	for _, p in ipairs(a or {}) do
+		if type(p) == "string" and p ~= "" then
+			set[p] = true
+		end
+	end
+	for _, p in ipairs(b or {}) do
+		if type(p) == "string" and p ~= "" and set[p] then
+			return true
+		end
+	end
+	return false
+end
 
 -- can `info.referee` take `info.referrer`'s code? info = {
 --   now,
@@ -226,12 +298,24 @@ function R.milestone(cfg, key)
 	return nil
 end
 
--- facts = {referredBanned, referrerBanned, paidThisMonth}
+-- facts = {referredBanned, referrerBanned, paidThisMonth, referredAgeDays (nil = unknown, not checked), sameIp,
+--          samePayer}. Void: a banned friend, a shared connection or payer by now (one person on both sides). Wait: a
+-- banned referrer, a friend's account younger than minReferredAccountDays, the monthly cap.
 function R.decide(facts, cfg)
+	local ab = cfg.antiAbuse or {}
 	if facts.referredBanned then
 		return "void"
 	end
+	if ab.sameIpAtPayout and facts.sameIp then
+		return "void"
+	end
+	if ab.samePayer and facts.samePayer then
+		return "void"
+	end
 	if facts.referrerBanned then
+		return "wait"
+	end
+	if ab.minReferredAccountDays and facts.referredAgeDays ~= nil and facts.referredAgeDays < ab.minReferredAccountDays then
 		return "wait"
 	end
 	local cap = cfg.antiAbuse and cfg.antiAbuse.monthlyRewards
@@ -255,6 +339,28 @@ function R.rewardText(m)
 	return table.concat(parts, " and ")
 end
 
+-- the tiers newly reached with `qualified` friends (referred accounts whose cfg.qualify milestone was paid);
+-- reached = {[tier key] = true}
+function R.tiersDue(qualified, reached, cfg)
+	local out = {}
+	reached = reached or {}
+	for _, t in ipairs(cfg.tiers or {}) do
+		if (tonumber(qualified) or 0) >= t.count and not reached[t.key] then
+			out[#out + 1] = t
+		end
+	end
+	return out
+end
+
+function R.tier(cfg, key)
+	for _, t in ipairs(cfg.tiers or {}) do
+		if t.key == key then
+			return t
+		end
+	end
+	return nil
+end
+
 function R.giftText(cfg)
 	local parts = {}
 	for _, it in ipairs(cfg.starterGift.items or {}) do
@@ -264,7 +370,8 @@ function R.giftText(cfg)
 end
 
 -- ---------------------------------------------------------------- titles
--- state = {gift = bool (this account got the friend's gift), paid = {[milestone key] = os.time}, giftAt}
+-- state = {gift = bool (this account got the friend's gift), paid = {[milestone key] = os.time}, giftAt,
+--          tiers = {[tier key] = os.time}}
 function R.titles(state, cfg)
 	local out = {}
 	if state.gift and cfg.starterGift.title then
@@ -275,6 +382,12 @@ function R.titles(state, cfg)
 		local at = state.paid and state.paid[m.key]
 		if at and m.title then
 			out[#out + 1] = {key = m.title.key, text = m.title.text, color = m.title.color, at = at}
+		end
+	end
+	for _, t in ipairs(cfg.tiers or {}) do
+		local at = state.tiers and state.tiers[t.key]
+		if at and t.title then
+			out[#out + 1] = {key = t.title.key, text = t.title.text, color = t.title.color, at = at}
 		end
 	end
 	return out
@@ -302,8 +415,16 @@ function R.view(state, cfg, now)
 		gift = R.giftText(cfg),
 		giftTitle = cfg.starterGift.title and cfg.starterGift.title.text or "",
 		milestones = {},
+		tiers = {},
+		qualified = state.qualified or 0,
 		friends = {}
 	}
+	local qm = R.milestone(cfg, cfg.qualify or "")
+	v.qualifyLevel = qm and qm.level or 0
+	for _, t in ipairs(cfg.tiers or {}) do
+		v.tiers[#v.tiers + 1] = {key = t.key, count = t.count, reward = R.rewardText(t),
+			reached = (state.tiers and state.tiers[t.key]) ~= nil}
+	end
 	if not state.code then
 		local reason = state.holderReason or "noCodeYet"
 		v.codeNote = string.format(msg[reason] or reason, cfg.minReferrerLevel or 0)

@@ -131,6 +131,17 @@ local function say(run, text, kind)
 	end
 end
 
+-- large effects (data/lib/chaos_big_fx.lua, switch ChaosBigFx.BIG_FX, on since 2026-10-13; off: nothing more is sent): the big warning
+-- circle over a round telegraph, the big hit of the boss's element
+if not ChaosBigFx then
+	pcall(dofile, "data/lib/chaos_big_fx.lua")
+end
+local function bigFx(fn, ...)
+	if ChaosBigFx and ChaosBigFx[fn] then
+		pcall(ChaosBigFx[fn], ...)
+	end
+end
+
 local function fx(pos, name, fallback)
 	if Vfx and ChaosVfx and ChaosVfx[name] then
 		Vfx(pos, name)
@@ -812,10 +823,11 @@ local function setHealth(monster, hp)
 	end
 end
 
--- a share of max health as one scripted hit of the boss (not scaled again by the enrage)
+-- a share of max health as one scripted hit of the boss (not scaled again by the enrage); a Hollow Vessel counts health +
+-- maximum energy shield (Chaos.percentBase)
 local function shareHit(run, player, share, effect)
 	local boss = bossOf(run)
-	local dmg = U.shareDamage(player:getMaxHealth(), share)
+	local dmg = U.shareDamage(Chaos.percentBase(player), share)
 	run.scripted = true
 	if hitFn then
 		pcall(hitFn, boss and boss:getId() or 0, player, combatOf(run.def), -dmg, -dmg, effect or CONST_ME_NONE, ORIGIN_SPELL)
@@ -876,16 +888,34 @@ local function telegraph(run, name)
 		local pp = p:getPosition()
 		ppos[#ppos + 1] = {x = pp.x, y = pp.y, z = pp.z}
 	end
+	if ChaosBossMech and ChaosBossMech.busy and ChaosBossMech.busy(boss) then
+		return -- a blast, soak or channel of the shared mechanics is running (boss_mechanics.lua)
+	end
 	local bp = boss:getPosition()
 	local target = boss:getTarget()
 	local tp = target and target:getPosition() or (ppos[1] and P(ppos[1])) or nil
 	local tiles, info = U.pattern(name, cfg, {L = run.L, boss = {x = bp.x, y = bp.y, z = bp.z},
-		target = tp and {x = tp.x, y = tp.y, z = tp.z} or nil, players = ppos, rand = rand})
+		target = tp and {x = tp.x, y = tp.y, z = tp.z} or nil, players = ppos, rand = rand,
+		size = ChaosBossMech and ChaosBossMech.sizeOf and ChaosBossMech.sizeOf(run.def.boss) or 1})
 	if #tiles == 0 then
 		return
 	end
-	local set = U.tileSet(tiles)
 	local timing = U.telegraphTiming(cfg, run.enraged)
+	-- fairness (boss_mechanics_core.lua): every player keeps a safe tile in walking reach of the warning
+	local G = ChaosBossMechCore
+	if G and #ppos > 0 then
+		run.mechGrid = run.mechGrid or G.grid(run.L.floorList)
+		local fair = ChaosBossMech and ChaosBossMech.fairOf and ChaosBossMech.fairOf(run.def.boss) or {refLevel = 300}
+		local straight, diag = G.stepCosts(fair)
+		tiles = G.makeFair(run.mechGrid, tiles, ppos, G.budget(timing.hitMs, fair), straight, diag, {x = bp.x, y = bp.y})
+		if #tiles == 0 then
+			return
+		end
+	end
+	local set = U.tileSet(tiles)
+	if ChaosBossMech and ChaosBossMech.cast then
+		pcall(ChaosBossMech.cast, boss, name, timing.hitMs)
+	end
 	local rid, slot = run.id, run.slot
 	local function live()
 		local r = A.runs[slot]
@@ -893,16 +923,20 @@ local function telegraph(run, name)
 	end
 	local plan = U.markPlan(tiles)
 	for i, ms in ipairs(timing.marks) do
-		local effect = i == 1 and cfg.telegraph.warnEffect or cfg.telegraph.fillEffect
+		local filling = timing.kinds and timing.kinds[i] == "fill"
+		local effect = filling and cfg.telegraph.fillEffect or cfg.telegraph.warnEffect
 		addEvent(function()
 			if not live() then
 				return
+			end
+			if i == 1 then
+				bigFx("telegraph", tiles)
 			end
 			for _, t in ipairs(plan.big) do
 				fx(P(t), effect, CONST_ME_MAGIC_RED)
 			end
 			for _, t in ipairs(plan.small) do
-				P(t):sendMagicEffect(i == 1 and CONST_ME_MAGIC_RED or CONST_ME_DRAWBLOOD)
+				P(t):sendMagicEffect(filling and CONST_ME_DRAWBLOOD or CONST_ME_MAGIC_RED)
 			end
 			if info.safe then
 				P(info.safe):sendMagicEffect(CONST_ME_MAGIC_GREEN)
@@ -919,6 +953,7 @@ local function telegraph(run, name)
 				fx(P(t), r.def.hitEffect, CONST_ME_EXPLOSIONAREA)
 			end
 		end
+		bigFx("bossHit", tiles, r.def.element)
 		local now = os.time()
 		for _, p in ipairs(arenaPlayers(r)) do
 			local pp = p:getPosition()
@@ -1027,6 +1062,22 @@ local function spawnBoss(run)
 	m:registerEvent("ChaosAscendedBossDeath")
 	A.monsterRun[m:getId()] = run
 	run.bossId = m:getId()
+	-- boss mechanics (boss_mechanics.lua): wardstones, channels, blasts behind pillars, debuffs on top of the phases;
+	-- their hits go through shareHit (the lethal-hit catch)
+	if ChaosBossMech and ChaosBossMech.attach then
+		local rid, slot = run.id, run.slot
+		pcall(ChaosBossMech.attach, m, def.boss, {tiles = L.floorList, solo = run.size == 1,
+			players = function()
+				local r = A.runs[slot]
+				return (r and r.id == rid) and arenaPlayers(r) or {}
+			end,
+			hit = function(p, share)
+				local r = A.runs[slot]
+				if r and r.id == rid then
+					shareHit(r, p, share, CONST_ME_NONE)
+				end
+			end})
+	end
 	run.boss = "alive"
 	run.bossAt = mnow()
 	run.phase = 0
@@ -1708,6 +1759,11 @@ function talk.onSay(player, words, param)
 	local g = player:getGroup()
 	if not g or g:getId() < C().staffGroup then
 		return true
+	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): sigils, relics and shards need an administrator
+	local cmd = ((param or ""):match("^%s*([^,%s]+)") or ""):lower()
+	if not Chaos.staffCommand(player, words, param, cmd == "sigil" or cmd == "relic" or cmd == "shards") then
+		return false
 	end
 	onCommand(player, param)
 	return false

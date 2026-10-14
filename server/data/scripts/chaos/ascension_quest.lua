@@ -552,14 +552,16 @@ local function spawnGuardian(pid)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("The %s awakens. %s", tr.guardian.name, tr.guardian.hint or ""))
 end
 
+-- a share of the maximum health; a Hollow Vessel counts health + maximum energy shield (Chaos.percentBase)
 local function hurt(tr, player, share, effect)
 	local g = tr.guardianId and Monster(tr.guardianId)
-	local dmg = math.max(1, math.floor(player:getMaxHealth() * share))
+	local dmg = math.max(1, math.floor(Chaos.percentBase(player) * share))
 	-- a share of the max health already: not scaled again by the health event (doTargetCombat runs it at once)
 	tr.raw = true
 	pcall(doTargetCombat, g or 0, player, COMBAT_PHYSICALDAMAGE, -dmg, -dmg, effect or CONST_ME_GROUNDSHAKER, ORIGIN_SPELL)
 	tr.raw = false
 end
+S.hurt = hurt -- tests
 
 local function spawnAdds(tr, player)
 	local t = C().trial

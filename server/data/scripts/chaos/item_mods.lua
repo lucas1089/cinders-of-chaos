@@ -44,6 +44,19 @@ if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua
 end
 
+-- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX, on since 2026-10-13; off: exactly the stock effect as before)
+if not ChaosPackFx then
+	pcall(dofile, "data/lib/chaos_pack_fx.lua")
+end
+local function packFx(pos, use, stock)
+	if ChaosPackFx then
+		return ChaosPackFx.send(pos, use, stock)
+	end
+	if stock then
+		pos:sendMagicEffect(stock)
+	end
+	return false
+end
 local M = ChaosItemMods
 ChaosItemModsCache = ChaosItemModsCache or {} -- player id -> totals {key -> value}
 local cache = ChaosItemModsCache
@@ -318,7 +331,7 @@ local function shock(creature)
 			end
 		end
 	end
-	creature:getPosition():sendMagicEffect(CONST_ME_ENERGYHIT or CONST_ME_ENERGYAREA or 12)
+	packFx(creature:getPosition(), "item_shock", CONST_ME_ENERGYHIT or CONST_ME_ENERGYAREA or 12)
 end
 M.shocked = shocked
 
@@ -332,9 +345,9 @@ local function isShocked(creature)
 end
 
 local DOTS = {
-	bleedchance = {cond = "CONDITION_BLEEDING", effect = "CONST_ME_DRAWBLOOD"},
-	ignitechance = {cond = "CONDITION_FIRE", effect = "CONST_ME_HITBYFIRE"},
-	poisonchance = {cond = "CONDITION_POISON", effect = "CONST_ME_HITBYPOISON"}
+	bleedchance = {cond = "CONDITION_BLEEDING", effect = "CONST_ME_DRAWBLOOD", use = "item_bleed"},
+	ignitechance = {cond = "CONDITION_FIRE", effect = "CONST_ME_HITBYFIRE", use = "item_ignite"},
+	poisonchance = {cond = "CONDITION_POISON", effect = "CONST_ME_HITBYPOISON", use = "item_poison"}
 }
 
 local function addDot(target, player, key, hit)
@@ -349,9 +362,7 @@ local function addDot(target, player, key, hit)
 	c:setParameter(CONDITION_PARAM_DELAYED, true)
 	c:addDamage(a.rounds, a.interval, -M.ailmentTick(hit))
 	target:addCondition(c)
-	if _G[d.effect] then
-		target:getPosition():sendMagicEffect(_G[d.effect])
-	end
+	packFx(target:getPosition(), d.use, _G[d.effect])
 end
 
 local function chill(target)
@@ -363,7 +374,7 @@ local function chill(target)
 	c:setParameter(CONDITION_PARAM_TICKS, a.chillMs)
 	c:setFormula(-a.chillSlow / 100, 0, -a.chillSlow / 100, 0)
 	target:addCondition(c)
-	target:getPosition():sendMagicEffect(CONST_ME_ICEATTACK or CONST_ME_ICEAREA or 43)
+	packFx(target:getPosition(), "item_chill", CONST_ME_ICEATTACK or CONST_ME_ICEAREA or 43)
 end
 
 local function roll(pct)
@@ -447,7 +458,7 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		if (totals.execute or 0) > 0 and M.executes(creature:getHealth(), creature:getMaxHealth(), hit, totals.execute)
 				and not executeProof(creature) then
 			primaryDamage = creature:getHealth()
-			creature:getPosition():sendMagicEffect(CONST_ME_MORTAREA or 18)
+			packFx(creature:getPosition(), "item_execute", CONST_ME_MORTAREA or 18)
 		end
 		if hit > 0 and origin ~= ORIGIN_CONDITION and p == attacker then
 			onHit(creature, p, totals, hit)

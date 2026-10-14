@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Dreamgorger" nameDescription="a dreamgorger" race="blood" experience="8200" speed="54" evented = "4" skulled="1" looting="1" manacost="0">
+<monster name="Dreamgorger" nameDescription="a dreamgorger" race="blood" experience="8200" speed="54" manacost="0">
 	<health now="16200" max="16200"/>
 	<level min="760" max="800"/>
 	<look type="1479" corpse="6068" corpseActionId = "41021" />
@@ -9,7 +9,7 @@
 		<flag attackable="1" />
 		<flag hostile="1" />
 		<flag illusionable="0" />
-		<flag convinceable="1" />
+		<flag convinceable="0" />
 		<flag pushable="0" />
 		<flag canpushitems="0" />
 		<flag canpushcreatures="0" />

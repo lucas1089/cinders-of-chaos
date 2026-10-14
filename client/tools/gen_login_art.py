@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Art of the login screen (module client_chaos_login), made from the login artwork in client/tools/art_src/.
 
-  python3 -I client/tools/gen_login_art.py [bg] [ui] [logo] [brand]      (no argument = all)
+  python3 -I client/tools/gen_login_art.py [bg] [ui] [logo] [brand] [scene]      (no argument = all)
 
 Needs Pillow, numpy, scipy and OpenCV with the contrib modules (pip install opencv-contrib-python-headless) for
 bg / logo / brand; ui needs Pillow + numpy and a serif TrueType font (Liberation Serif, searched in $CHAOS_ART_FONTS
@@ -25,6 +25,11 @@ logo  data/images/chaos/logo.png         the logo cut out of the artwork (1168x7
 ui    data/images/chaos/login/*.png      panel frame, rune medallions, buttons, fields, crest, press-key bar and
                                          its serif lettering, spinner, ember, spark and ash sprites
 brand docs/brand/cinders_logo*.png       the logo for general use: transparent, on black, square icon
+scene data/images/chaos/login/scene_*.png the living scene's light and shade (login scene, loginscene.lua): warm fire
+                                         light, violet and teal glowcap light, magma light (soft radial pools the
+                                         scene puts over braziers, torches, glowcaps and magma and lets flicker),
+                                         the vignette that darkens the window's edges and the dark pool behind the
+                                         logo; drawn in code (Pillow + numpy), no source picture
 
 Deterministic for given library and font versions.
 """
@@ -852,7 +857,38 @@ def gen_bg():
     save(glow, os.path.join(UI_OUT, 'glow.png'))
 
 
+def _radial(n, rgb, power, alpha, squash=1.0):
+    yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
+    c = (n - 1) / 2.0
+    r = np.sqrt((xx - c) ** 2 + ((yy - c) / squash) ** 2) / c
+    a = np.clip(1 - r, 0, 1) ** power
+    arr = np.zeros((n, n, 4), np.uint8)
+    arr[..., 0], arr[..., 1], arr[..., 2] = rgb
+    arr[..., 3] = np.clip(a * alpha * 255, 0, 255).astype(np.uint8)
+    return Image.fromarray(arr, 'RGBA')
+
+
+def gen_scene():
+    """light pools and shade of the login scene (all radial falloffs, no source picture)"""
+    save(_radial(128, (255, 150, 60), 1.8, 0.55), os.path.join(UI_OUT, 'scene_light_fire.png'))
+    save(_radial(128, (255, 96, 40), 2.2, 0.42), os.path.join(UI_OUT, 'scene_light_magma.png'))
+    save(_radial(96, (170, 90, 255), 2.0, 0.45), os.path.join(UI_OUT, 'scene_light_violet.png'))
+    save(_radial(96, (70, 220, 210), 2.0, 0.4), os.path.join(UI_OUT, 'scene_light_teal.png'))
+    # the vignette: clear in the middle, dark at the edges and corners (stretched to the window, smooth)
+    n = 128
+    yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
+    u, v = (xx - (n - 1) / 2) / ((n - 1) / 2), (yy - (n - 1) / 2) / ((n - 1) / 2)
+    d = np.sqrt((u * 0.92) ** 2 + (v * 1.0) ** 2)
+    a = np.clip((d - 0.45) / 0.75, 0, 1) ** 1.6 * 0.82
+    arr = np.zeros((n, n, 4), np.uint8)
+    arr[..., 0], arr[..., 1], arr[..., 2] = 6, 3, 4
+    arr[..., 3] = (a * 255).astype(np.uint8)
+    save(Image.fromarray(arr, 'RGBA'), os.path.join(UI_OUT, 'scene_vignette.png'))
+    # the dark pool behind the logo, so its flames read over the tiles (wide ellipse)
+    save(_radial(256, (8, 4, 4), 1.1, 0.78, squash=0.62), os.path.join(UI_OUT, 'scene_logo_shade.png'))
+
+
 if __name__ == '__main__':
-    tasks = sys.argv[1:] or ['bg', 'ui', 'logo', 'brand']
+    tasks = sys.argv[1:] or ['bg', 'ui', 'logo', 'brand', 'scene']
     for t in tasks:
-        {'bg': gen_bg, 'ui': gen_ui, 'logo': gen_logo, 'brand': gen_brand}[t]()
+        {'bg': gen_bg, 'ui': gen_ui, 'logo': gen_logo, 'brand': gen_brand, 'scene': gen_scene}[t]()

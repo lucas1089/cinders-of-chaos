@@ -86,7 +86,13 @@ local function newPlayer(guid, name)
 	function p:getItemCount(id) return self.items[id] or 0 end
 	function p:removeItem(id, c) if (self.items[id] or 0) < c then return false end self.items[id] = self.items[id] - c return true end
 	function p:addItem(id, c) self.items[id] = (self.items[id] or 0) + c return true end
-	function p:save() self.saves = self.saves + 1 return self.saveOk end
+	function p:save()
+		self.saves = self.saves + 1
+		if self.saveOk then
+			self.savedBank = self.bank -- what a crash right now would keep
+		end
+		return self.saveOk
+	end
 	function p:sendTextMessage(_, t) self.msgs[#self.msgs + 1] = t end
 	function p:sendCancelMessage(t) self.msgs[#self.msgs + 1] = t end
 	function p:getGroup() return {getAccess = function() return false end, getId = function() return 1 end} end
@@ -127,6 +133,28 @@ ana.saveOk = true
 bankEvent.onExtendedOpcode(ana, OP, {action = "transfer", data = {"gold", "Offline", 300}})
 eq(wrote("UPDATE `players` SET `balance` = `balance` %+ 300 WHERE `id` = 77"), true, "offline receiver credited after the save")
 eq(ana.bank, 700, "taken from the sender")
+-- an online receiver: credited in memory only after the sender's save (the receiver may be saved first at its logout)
+local cara = newPlayer(78, "Cara")
+Chaos.findPlayer = function(name) if name == "Cara" then return 78, "Cara", cara end return nil end
+ana.saveOk = false
+bankEvent.onExtendedOpcode(ana, OP, {action = "transfer", data = {"gold", "Cara", 200}})
+eq(cara.bank, 0, "no online credit when the sender's save fails")
+eq(ana.bank, 700, "the gold is back")
+ana.saveOk = true
+local savesBefore = ana.saves
+bankEvent.onExtendedOpcode(ana, OP, {action = "transfer", data = {"gold", "Cara", 200}})
+eq(cara.bank, 200, "online receiver credited after the save")
+eq(ana.bank, 500, "taken from the sender")
+eq(ana.saves, savesBefore + 1, "the sender was saved")
+-- a crash right after the transfer keeps what was saved: the gold of the two together is the same as before it
+-- (700 before: the sender saved at 500 and the receiver saved at 200)
+eq(cara.saves, 1, "the online receiver is saved after the credit")
+eq((ana.savedBank or 0) + (cara.savedBank or 0), 700, "a crash after an online transfer keeps the gold sum")
+cara.saveOk = false
+bankEvent.onExtendedOpcode(ana, OP, {action = "transfer", data = {"gold", "Cara", 50}})
+eq(cara.bank, 250, "a failed receiver save keeps the credit in memory (written at its next save)")
+eq(ana.bank, 450, "and the sender pays")
+cara.saveOk = true
 
 -- ---------------------------------------------------------------- guild.lua: the guild bank deposit
 dofile("data/scripts/chaos/guild.lua")
@@ -147,6 +175,15 @@ ok = G.deposit(bo, 20000)
 eq(ok, true, "deposit after the save")
 eq(wrote("SET `bank` = `bank` %+ 20000"), true, "credited")
 eq(bo.money + bo.bank, 30000, "taken")
+-- the withdrawal: the guild row is debited first, so the character is saved with the gold at once (a crash before
+-- its next save would lose it)
+local boSaves, bankBefore = bo.saves, bo.bank
+ok = G.withdraw(bo, 5000)
+eq(ok, true, "the leader withdraws")
+eq(wrote("SET `bank` = `bank` %- 5000"), true, "the guild row is debited")
+eq(bo.bank, bankBefore + 5000, "credited to the bank balance")
+eq(bo.saves, boSaves + 1, "saved after the credit")
+eq(bo.savedBank, bo.bank, "a crash now keeps the withdrawn gold")
 
 -- ---------------------------------------------------------------- guild_hall.lua: the guild depot
 function Position(x, y, z) return {x = x, y = y, z = z} end

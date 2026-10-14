@@ -413,7 +413,7 @@ local function mkPlayer(name, guid, group, pos)
 	function p:isPlayer() return true end
 	function p:isMonster() return false end
 	function p:getMaster() return nil end
-	function p:getGroup() local g = self.group return {getId = function() return g end} end
+	function p:getGroup() local g = self.group return {getId = function() return g end, getAccess = function() return g >= 4 end} end
 	function p:getPosition() return self.pos end
 	function p:getMoney() return self.money end
 	function p:getBankBalance() return self.bank end
@@ -590,6 +590,12 @@ eq(X.week.source, "seed", "back to the seed")
 eq(ChaosEvents.bonus("goblin"), 1, "Gilded Week gone")
 talks["/community"].onSay(hero, "/community", "add 999999")
 eq(K.stageAt(cfg, X.goals[0].progress), 1, "players cannot use the staff command")
+-- adding points unlocks stages for the whole realm: a gamemaster (group 4) is refused, only an administrator may
+local before = X.goals[0].progress
+local gm4 = mkPlayer("Gamemaster4", 901, 4)
+function gm4:sendCancelMessage(text) self.cancel = text end
+talks["/community"].onSay(gm4, "/community", "add 999999")
+eq(X.goals[0].progress, before, "a gamemaster cannot add community points")
 -- flush, logout
 queries = {}
 registry.ChaosCommunityKill.onKill(hero, mkMonster("Skeleton Warrior"))

@@ -1,6 +1,6 @@
 -- Store pouches: pure rules (no engine calls), shared by pouches.lua and server/tests/pouches_test.lua.
 --   ChaosPouchesCore.kindOfId(cfg, id)              "loot" | "orbs" | "keys" for a pouch item id, else nil
---   ChaosPouchesCore.defaults(cfg)                  the Loot Pouch rules of a character that never set them
+--   ChaosPouchesCore.defaults(cfg)                  the Loot Bag rules of a character that never set them
 --   ChaosPouchesCore.packRules(r) / unpackRules(cfg, v)   rules <-> one int32 storage value (unset = defaults)
 --   ChaosPouchesCore.sanitizeRules(cfg, t)          rules from client input (booleans, minRarity 1..15)
 --   ChaosPouchesCore.sets(cfg, extraOrbIds)         {orbs = set, omens = set, coins = set} of item ids
@@ -135,13 +135,13 @@ function P.wants(kind, info, rules, sets, cfg)
 		end
 		local cat = info.category
 		if cat == "equipment" then
-			return rules.gear and (tonumber(info.rarity) or 0) >= rules.minRarity
+			-- minRarity 1 (the lowest) = every piece of gear, plain ones too (the Loot Bag takes all the loot)
+			return rules.gear and (rules.minRarity <= 1 or (tonumber(info.rarity) or 0) >= rules.minRarity)
 		elseif cat == "supplies" then
 			return rules.supplies
-		elseif cat == "other" then
-			return rules.other
 		end
-		return false
+		-- "other" and anything the loot filter has no category for: the Loot Bag takes everything else too
+		return rules.other
 	end
 	return false
 end
@@ -157,12 +157,12 @@ function P.specialistOf(info, sets, cfg)
 end
 
 -- carried = {[kind] = truthy} for the pouches the character carries. Returns the kinds to try, in order, and the
--- specialist kind when the Loot Pouch is in the list only as its overflow (else nil).
+-- specialist kind when the Loot Bag is in the list only as its overflow (else nil).
 --   1. An item of a specialist kind (orbs, rune shards, gems / Rift Keys, omen items) goes to that pouch first, always,
---      whatever the Loot Pouch rules say (its "gems" rule, the autoloot list).
---   2. That pouch full: the Loot Pouch takes it only with its "overflow" rule (default on); else the caller passes it
+--      whatever the Loot Bag rules say (its "gems" rule, the autoloot list).
+--   2. That pouch full: the Loot Bag takes it only with its "overflow" rule (default on); else the caller passes it
 --      to the backpack, then leaves it in the corpse.
---   3. No specialist pouch carried for it: the Loot Pouch rules decide as for any item (gems rule, autoloot list).
+--   3. No specialist pouch carried for it: the Loot Bag rules decide as for any item (gems rule, autoloot list).
 function P.plan(info, rules, sets, cfg, carried)
 	carried = carried or {}
 	rules = rules or P.defaults(cfg)
@@ -198,7 +198,7 @@ function P.moveRefusal(m)
 		return nil
 	end
 	if m.toGround then
-		return "Store pouches stay with you: they cannot be dropped, mailed or thrown away."
+		return "Store items stay with you: they cannot be dropped, mailed or thrown away."
 	end
 	for _, c in ipairs(m.chain or {}) do
 		if c == "pouch" then
@@ -209,11 +209,11 @@ function P.moveRefusal(m)
 			break
 		end
 	end
-	return "Store pouches stay with you: keep them in your backpack or your depot."
+	return "Store items stay with you: keep them in your backpack or your depot."
 end
 
 -- taken = {[kind] = n}, backpack = n (wanted by a pouch, went to the backpack), left = n (no room anywhere),
--- full = {[kind] = true} (say the pouch is full), overflow = n (of the Loot Pouch's count: items a full specialist
+-- full = {[kind] = true} (say the pouch is full), overflow = n (of the Loot Bag's count: items a full specialist
 -- pouch passed to it)
 function P.summary(cfg, taken, backpack, left, full, overflow)
 	local parts = {}

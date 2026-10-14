@@ -4,6 +4,8 @@ This is the order to follow on launch day, and the list of what must be checked 
 here was run on the test server, except where a step says otherwise (the systemd units and the Windows client
 workflow could not be run in the build environment).
 
+After launch, every update goes through "Updating the live server" at the end.
+
 What you need:
 - the base server download (TFS 1.4 based, protocol 10.98): its `config.lua`, `data/`, `key.pem`, `SQL_Server/` and
   the engine sources;
@@ -55,6 +57,16 @@ base server into the server folder that all three servers share. `tools/linux/pa
 2. Load the base schema: `SQL_Server/schema.sql` and the other `SQL_Server/schema_*.sql` / `sql_*.sql` files of the
    download. Do not load `SQL_ONLY_for_existing_server-*.sql` into a fresh database.
 3. The Chaos tables come with step 4 (`install_all.py`, step `sql`).
+4. **Hosting requirement: the database files on a local NVMe or SSD** (owner decision 2026-10-12). Not a network
+   volume, not a disk shared with other busy machines. Keep MariaDB's default `innodb_flush_log_at_trx_commit = 1`
+   (every COMMIT is on disk; do not set 2). Why: the engine saves on the game loop. Each autosave step and each
+   logout ends with a COMMIT, and the COMMIT waits for the disk's flush (fsync) before the game goes on. On a slow
+   shared disk the full-map load test measured autosave ticks of 0.3-0.8 s (the whole game frozen that long); on a
+   calm disk the same COMMITs took 12-55 ms (server/README.md "Load test on the full map"). Check the disk before
+   launch, in a folder on the database's disk:
+   `fio --name=fsync --rw=write --bs=4k --size=64m --fsync=1 --filename=/var/lib/mysql-fio.tmp; rm /var/lib/mysql-fio.tmp`.
+   The fsync latencies it prints should be a few ms or less; tens of ms means a shared or network disk. After launch
+   `chaos_health.py` warns when COMMITs get slow (section 9; needs the slow task log).
 
 At the first start on a fresh database the engine prints a few `Duplicate column name` errors (its own migrations add
 columns the schema already has) and errors about the website's `znote_*` tables. They are harmless for the game; the
@@ -67,11 +79,14 @@ sudo install -d -m 0755 /etc/chaos
 sudo cp server/deploy/chaos.env.example /etc/chaos/chaos.env      # fill in CHAOS_DB_* and CHAOS_CLIENT_KEY (never commit it)
 sudo chmod 600 /etc/chaos/chaos.env
 python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.example.org --name "Cinders of Chaos" \
-    --motd "Welcome to Cinders of Chaos." --max-players 300 --pvp pvp --save-time 06:00 --owner "..." --url "https://..." \
+    --motd "Welcome to Cinders of Chaos." --max-players 400 --pvp pvp --save-time 06:00 --owner "..." --url "https://..." \
     [--client-url https://.../download] [--client-builds 4,5] [--client-manifest /path/updates/live/manifest.json] \
     [--proxy-trusted GW1,GW2,GW3 --proxy-required yes]
 ```
 (`--ip` is the old name of `--public-host` and still works.)
+
+For the beta run the same command with `--max-players 300` (owner decision 2026-10-12: 300 for the beta, 400 at launch;
+docs/BETA.md section 2). Run it again with `--max-players 400` (or without the option) before the launch.
 
 `server/tools/prod_config.py` (idempotent; its docstring explains every value) sets:
 
@@ -80,7 +95,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.exam
 | `ip` | the public DNS name (`--public-host`) | the login server hands it to the client as text and the client resolves it, so a DNS change needs no restart. Behind gateways it is the gateways' name, never the real server's IP (section "Gateways and DDoS"); 127.0.0.1 only works on the machine itself |
 | `loginProtocolPort` / `gameProtocolPort` / `statusProtocolPort` | 7171 / 7172 / 7171 | the stock ports (the test servers use 74xx) |
 | `serverName`, `motd`, `ownerName`, `ownerEmail`, `url`, `location` | ours | the download ships its own name and someone else's contact data |
-| `maxPlayers` | e.g. 300 | 0 means unlimited; pick a number from the load test (section 9) |
+| `maxPlayers` | 400 at launch (the default), 300 for the beta (`--max-players 300`; owner decision 2026-10-12) | from the full-map load test (section 9): the game loop's one thread fills up at 500-600 bots on the 4-core test machine, and real players cost more than bots. Raise to 500 after a launch week whose peak kept the lag low; 0 means unlimited |
 | `worldType` | `pvp` (or `no-pvp`, `pvp-enforced`) | the arena and the guild siege never use real deaths, so they work in every type |
 | `allowClones`, `onePlayerOnlinePerAccount` | false, false | the multi-client rules live in `multiclient.lua` (2 characters per IP; the second cannot attack players or enter dungeons) |
 | `serverSaveShutdown` | **true** (kept) | the daily save shuts the engine down; systemd starts it again (section 5), so each day starts with a fresh process |
@@ -93,7 +108,8 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.exam
 | `clientGuardMode`, `clientGuardKey`, `clientGuardAllowDevKey`, `clientGuardTimeout`, `clientGuardDownloadUrl`, `clientGuardBuilds`, `clientGuardManifest`, `clientGuardStaffIps` | `"enforce"`, `os.getenv("CHAOS_CLIENT_KEY") or ""`, false, 10, the options | only the official client plays (engine patch 0021, `server/README.md` "Client guard"): the key is the GitHub secret `CHAOS_CLIENT_KEY` the Windows client is built with, in `/etc/chaos/chaos.env`; without it every player is kicked (the console says so at start). `clientGuardMode = "log"` for a log-only first week or an emergency |
 | `minPlayerSpeed`, `maxPlayerSpeed`, `playerSpeedBonus`, `playerSpeedPerTenLevels`, `playerSpeedSoftLevel`, `playerSpeedPerTenLevelsAbove` | 120, 2600, 50, 25, 300, 10 | movement speed (engine patch 0018, `server/README.md` "Movement speed"): walk speed held between about 1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level up to 300, 1 per level after. The client needs base patch 0029 (same step times) |
 | `proxyProtocolTrusted`, `proxyProtocolRequired` | the gateways' IPs, true (or `""`, false without gateways) | the gateways in front of the server (engine patch 0025, section "Gateways and DDoS"): a connection from a listed gateway must start with a PROXY header and the engine takes the player's real IP from it; `true` refuses every other address except 127.0.0.0/8. Not given: the value already in `config.lua` stays |
-| `slowTaskLogMs` | 0 (not set: off), or e.g. 100 while hunting lag | the slow task log (engine patch 0027, `server/README.md` "Slow task log"): every game loop task that took this many ms or more is one console line with the Lua script and line, the database queries and the collector's sweep that took the time. On, it costs about 1 us per Lua call (well under 1% of the game loop at 200 online) |
+| `slowTaskLogMs` | 0 (not set: off), or e.g. 100 while hunting lag; 200 or less for the slow COMMIT warning of section 9 | the slow task log (engine patch 0027, `server/README.md` "Slow task log"): every game loop task that took this many ms or more is one console line with the Lua script and line, the database queries and the collector's sweep that took the time. On, it costs about 1 us per Lua call (well under 1% of the game loop at 200 online) |
+| `loginPrefetch` | true (not set: true) | the login scripts' reads run on the login worker's own connection before the login (engine patch 0031, `server/README.md` "Login reads off the game loop"); answered from those rows only when the text is the same and no write reached a table they read since. `false` reads everything on the game loop as before. Read at startup |
 | `rateSpawn` | 3 | how many monsters one spawn brings back per check (stock 1: a pack of five took five spawntimes to refill). The timers themselves are in the spawn file (install step `spawns`); engine patch 0022 lets `respawn.lua` shorten them where several players hunt together (`server/README.md` "Spawn density and respawn"). Without patch 0022 the console prints one `[ChaosRespawn]` line and the stock timers apply |
 
 The tool refuses to run while `mapName` is a cropped test map (`zcrop_*`): set the real map name first.
@@ -173,7 +189,8 @@ sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer
   `systemctl list-timers chaos-watchdog.timer`, `journalctl -u chaos-watchdog`.
 - `chaos-clientservices.service`: the login-screen endpoint (`server/tools/clientservices.py`, port 8090) that serves
   `data/chaos_clientservices.json`, which the game server rewrites every 5 minutes.
-- `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open).
+- `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open). Also the client guard's
+  `data/logs/clientguard.log` (IPs, accounts), as the privacy policy says (docs/legal/).
 - `chaos-health.timer`: every 5 minutes `server/tools/chaos_health.py` checks the services, ports, status protocol,
   database, disk, backups and new log errors, and posts to `CHAOS_ALERT_WEBHOOK` when something fails or recovers,
   plus a daily summary at 09:00 (section 9).
@@ -215,11 +232,13 @@ Behind gateways (section "Gateways and DDoS") 7171, 7172 and 8090 are open to th
   needs group 4+, some categories and actions 5 or 6. Staff characters are left out of every leaderboard
   (`staffGroup = 4`). Use a separate staff account. Commands that create economy value need group 5 or higher
   (`Chaos.economyMinGroup` in `chaos_constants.lua`, checked by `Chaos.staffCommand`): `/coins`, `/charm give` and
-  `/pact` (all but `info`); so do the admin panel's Economy and Store categories and its Give item / Create item.
-  `/classunlock`, `/worldboss`, `/siege`, `/newplayerkit` and `/towerrun` are open to every group with access (4+);
+  `/pact` (all but `info`); so do the admin panel's Economy and Store categories and its Give item / Create item, and
+  every command that hands out value (`/rift key`, `/ascended sigil`, `/classunlock`, `/cosmetic`, `/pet give`, the
+  `/newplayerkit` kit and the others in docs/GM_HANDBOOK.md section 2). `/worldboss`, `/siege`, `/towerrun` and the
+  looking and testing parts of the others are open to every group with access (4+);
   `/goblin`, `/blessing`, `/season start|end`, `/seasonpass` and `/journey` need a god account (type 5). Every staff
   use of a guarded command goes to the admin audit log. Who may do what, and the rules for staff:
-  [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (draft).
+  [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12).
 - Start from a **fresh database**, or from the beta database after its wipe (docs/BETA.md "Wipe procedure"); never from
   a test database: those have accounts with known passwords (`test`, `test2`, ...).
 
@@ -316,6 +335,11 @@ Write down the date and how long it took; that time is the rollback time.
 - Ship the client with the merged 10.98 `Tibia.dat` / `Tibia.spr` in `data/things/1098/`.
 - Client updates after launch: the signed updater (section "Client updates" below). Turn it on in the package
   (`windows-package.yml` inputs `update_manifest` and `update_public_key`) before the first public download.
+- Character select and Create character (client/MANIFEST.md "Character select"): set the website's account API URL
+  in the client's `init.lua` (`Services.account`, base patch 0050) before packing:
+  `python3 -I client/tools/set_account_api.py <client> https://<site>/chaos_client_api.php`. Empty (the default) keeps
+  the character select working with the login server's looks only (no wings, aura or shader) and the Create character
+  button off; characters are then made on the website. The site must serve it over HTTPS (section "Website").
 
 ## 9. Monitoring
 
@@ -335,6 +359,7 @@ webhook, or anything that takes `{"content": "..."}`) in `/etc/chaos/chaos.env`,
 | `disk /`, `disk /var/backups/chaos` | less than 10 % or 5 GB free (`CHAOS_HEALTH_MIN_FREE_PCT`, `_GB`) | runbook "Disk full" |
 | `local backup` | the newest dump is older than 26 h, or there is none | `/var/log/chaos/backup.log` |
 | `off-site backup` | `.offsite_last` older than 26 h (only when a target is set) | the `offsite:` lines in `backup.log` |
+| `WARN slow database COMMITs` | 3 or more COMMITs of 200 ms or more within an hour in the slow task log (`slowTaskLogMs` 200 or less in `config.lua`; `CHAOS_HEALTH_SLOW_COMMIT_MS`); a warning, at most once per 6 h, and a count in the daily summary | the database disk (section 2 step 4): `iostat -x 5`, other jobs writing to it, the host's disk type |
 
 The game checks (chaos-server, both ports, status) alert after 2 failed runs in a row and are skipped in the first
 5 minutes after a start, so the daily restart is silent. Crashes alert on their own (`chaos_crashlog.sh`).
@@ -367,8 +392,17 @@ Other manual checks:
   Measured on the test server (cropped map, so no monsters; the real map adds spawn and monster AI work): 30 bots walking
   every second and talking every 20 s took 4.5 % of one core (p95 7.9 %), the engine stayed at 192 MB RSS, and the
   game loop lag stayed at the idle level (about 53 ms on a 50 ms timer; max 122 ms); 30 bots walking 4 steps per
-  second and talking every 3 s: 7.0 % (max 11 %). Logins took 0.5 s (p95 1.2 s). Run it again on the full map with
-  50-100 bots before setting `maxPlayers`.
+  second and talking every 3 s: 7.0 % (max 11 %). Logins took 0.5 s (p95 1.2 s).
+  **On the full map** (server/README.md "Load test on the full map"; engine 0001-0032, every install step, a fresh
+  database, 4 vCPU Xeon 2.1 GHz shared with other jobs): bots spread over the towns and hunting areas, walking, talking
+  and fighting (`setup --spread`, `run --hunt` with the TEST ONLY `server/tools/loadtest_hunt.lua`). The game loop was
+  busy 11% at 100, 19% at 200, 39-79% at 300 (6 runs), 83% at 400-499 and 96-99% from 500 up; the timer lag stayed
+  51-75 ms on average up to 499 and went to 150-200 ms (maxima 0.6-1.5 s) above 500. RSS 4.6-4.7 GB (the map is
+  4.55 GB), 0.6-1.3 KB/s per player to the clients, the database at 5 connections and 5-40 queries a second. A rush of
+  300 first logins 0.2 s apart into the fresh database: login p50 0.33 s, p90 0.58 s, 300 of 300. The limit is the
+  game loop's one thread; slow COMMITs (an autosave tick of 0.3-0.8 s) came from a shared disk. Engine patch 0032 came
+  out of it (a quarter of the game loop was spent clearing 90 KB network buffers). `maxPlayers`: 300 for the beta, 400
+  at launch (section 3), on a VPS with a fast core (3 GHz or more), 16 GB RAM and a local NVMe disk for MariaDB.
 
 ## 10. Security review (launch)
 
@@ -391,7 +425,7 @@ loot), autoloot, crafting, store, auto seller, store pouches, daily reward, towe
 | Daily, tower milestones, bounty | server-side state decides; rewards all or nothing | safe |
 | Party invites (151) | accept only with a pending invitation | safe |
 | Leaderboard (229) | the class ladder counts the players ahead on every request | safe; rate limited: one `get` every 150 ms (`leaderboard.lua`) |
-| Staff talkactions | every `/` command checks the group's access flag (`/goblin`: gods, admin panel and `/testkit`: group 4+); `/coins`, `/charm give` and `/pact` (all but `info`) need group 5 (`Chaos.staffCommand`, `Chaos.economyMinGroup`), every use in the admin audit log | safe (`tests/staff_permissions_test.lua`) |
+| Staff talkactions | every `/` command checks the group's access flag (`/goblin`: gods, admin panel and `/testkit`: group 4+); `/coins`, `/charm give`, `/pact` (all but `info`) and every command that hands out value need group 5 (`Chaos.staffCommand`, `Chaos.economyMinGroup`), every use in the admin audit log | safe (`tests/staff_permissions_test.lua`) |
 | `clientservices.py` | no socket timeout (an idle connection held a thread); a negative `Content-Length` blocked a thread | **fixed** |
 | Test servers' `zz_test_lua.lua` | `/lua` runs any Lua for any player | never ship (section 11) |
 
@@ -417,7 +451,8 @@ Settled since the review:
 Check the server folder before the first start (`ls data/scripts data/scripts/talkactions data/monster/monsters`):
 - `ztest/` in the server root and every `data/scripts/zz_*` / `data/scripts/talkactions/zz_*` file of the test servers,
   above all **`zz_test_lua.lua`: `/lua <code>` runs any Lua for any player, no access check at all**;
-  `zz_balance_harness.lua`, `zz_ztest_arena_startup.lua`, a copy of `server/tools/loadtest_probe.lua`;
+  `zz_balance_harness.lua`, `zz_ztest_arena_startup.lua`, a copy of `server/tools/loadtest_probe.lua` or
+  `server/tools/loadtest_hunt.lua`;
 - `data/monster/monsters/ztest_chaos_dummy.xml` (and its line in `monsters.xml`);
 - the cropped test map: `mapName = "zcrop_..."` (`prod_config.py` refuses it) and its `.otbm`;
 - test switches, all off by default; never set them on the live server: the global storage
@@ -438,15 +473,20 @@ Still open:
   (draft, every decision marked "Owner decides"). Most of the open items below are on its test list.
 - Not run with a real group yet: rifts, Omens and the Ascended bosses with a full party, the Ashen Sepulchre raid, the
   Ember Descent with 2-4 players, the battleground at 5v5 and up, party credit for bounties and the bestiary.
-- Keystones not verified in game: Overgrowth, both Illusionist keystones (need a party), arrow Ricochet, and the
-  visuals of Bulwark / Thorns / Deadeye. The weapon (auto-attack) numbers in `server/data/spells/README.md` need a
-  re-measure (ROADMAP "Open decisions").
-- The load test on the full map with 50-100 bots, then `maxPlayers` (section 9).
+- Keystones: verified in game 2026-10-12 (Ricochet, Deadeye, Bulwark, both Illusionist keystones in a party; Overgrowth
+  and Thorns belonged to no class then, now the Iron Sage's and the Sentinel's, computed, not measured). Weapon numbers re-measured. The Bone Lord with Covenant of the Grave and the Ninja
+  with Blackblood Creed broke the Deadeye's single-target lead: fixed 2026-10-12, computed (ROADMAP "Open
+  decisions"). Open: measure the fix on the dummies.
 - The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class
   unlock; their price (750 Chaos Coins) is a placeholder (docs/OWNER_TODO.md). C2 / C3 polish and the C4 outfits and
   effects are still in progress (ROADMAP).
 - The community (Discord) link is empty (`ChaosTopBar.COMMUNITY_URL`, the website's Discord invite).
-- Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (draft, decisions for the owner).
+- Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12; the ladder is on the Rules page).
+- Legal texts: [docs/legal/](legal/README.md) (drafts: placeholders to fill, a lawyer's review, then the installer again).
+  Built 2026-10-12: the daily purge of moderation records (`moderation_purge_config.lua` `days` must equal the Privacy
+  Policy's `[PRAZO DOS REGISTROS DE MODERAÇÃO]`), the acceptance of the current texts by existing accounts (website
+  accept page at the next login, an in-game notice with the link), chargeback fraud in the penalty ladder (Rules 7.9).
+  Run `website/install_site.sh` after the texts change: it writes the texts' version for the in-game notice.
 
 Done or decided since the first version of this list (ROADMAP "Open decisions and loose ends"):
 - The base client's healing helper no longer replays missed cycles or floods casts (client base patch 0026).
@@ -470,8 +510,9 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
    the live credentials.
 9. Backups: run `chaos-backup.service` once, check the off-site copy, do the restore drill (section 7).
    Alerts: `chaos_health.py --test-alert`, then `--dry-run` shows every check `ok` (section 9).
-10. Load test on the full map, then set `maxPlayers` (section 9).
+10. `maxPlayers` 400 (section 3; load test on the full map in section 9); `loadtest.py cleanup` if bots were run.
 11. Open the firewall ports, announce.
+12. From then on, every update: "Updating the live server" below (`server/deploy/chaos_update.sh`).
 
 ## Incident runbook
 
@@ -491,8 +532,9 @@ with the settings loaded: `sudo -i`, then `set -a; . /etc/chaos/chaos.env; set +
 **Crash loop** (several crash alerts in a few minutes):
 1. `ls -t /var/log/chaos/crashes/ | head` and read the newest `crash-*.log`: the last lines before the stop show the
    script or the action. `coredumpctl list tfs` when core dumps are kept (`LimitCORE=infinity`).
-2. It started after an update: roll the update back (`git -C /opt/chaos/repo checkout <last good commit>`, run
-   `install_all.py` again, or restore the data archive of section 7), then `systemctl restart chaos-server`.
+2. It started after an update: roll the update back with `chaos_update.sh --rollback --now` ("Updating the live
+   server", "Rollback"). By hand: `git -C /opt/chaos/repo checkout <last good commit>`, run `install_all.py` again, or
+   restore the data archive of section 7, then `systemctl restart chaos-server`.
 3. It started with no update: a player action or a bad row. Close the server to players while you look:
    `ufw insert 1 deny 7172/tcp` (the login still answers), fix, `ufw delete deny 7172/tcp`.
 4. To stop the loop while you work: `systemctl stop chaos-server` (it stays down until you start it).
@@ -720,6 +762,14 @@ It covers section 6's rules: the four base classes only, the Monk / Necromancer 
 `CHAOS_SERVER_DATA` to `/opt/chaos/server/data` (patch notes, seasons), the site and game addresses, the client
 download links and the Discord invite, and `CHAOS_ADMIN_ACCOUNTS`; then edit the Rules page in the admin panel.
 
+**Client API** (`chaos_client_api.php`, `website/README.md` "Client API"): on by default (`CHAOS_CLIENT_API=0` in
+`site.env` turns it off). It is what the client's `Services.account` points at (section 8). Check after the install:
+`curl -s -X POST https://<site>/chaos_client_api.php -d '{"action":"state","token":"x"}'` answers
+`{"ok":false,"error":"token",...}` (401). With nginx add its `location` block with `limit_req` (website/README.md
+"Web server"). New characters, from the site or the client, wear their class look from creation and a season chosen
+in the client is joined at the first login (needs the server's `sql/chaos_season.sql` table `chaos_season_requests`;
+the server and the site's plugin both create it).
+
 **Mail** (account recovery links, website 2FA codes; `website/README.md` "Mail"): fill `CHAOS_SMTP_HOST`,
 `CHAOS_SMTP_PORT` (587), `CHAOS_SMTP_TLS` (`starttls`), `CHAOS_SMTP_USER`, `CHAOS_SMTP_PASSWORD` and `CHAOS_MAIL_FROM`
 (e.g. `no-reply@<your domain>`) in `site.env` and run the installer again. Add the SPF, DKIM and DMARC records of the
@@ -742,9 +792,10 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
   Mercado Pago account; abroad: whatever the operator's country requires).
 - PayPal's donation category (`CHAOS_PAYPAL_CATEGORY=DONATION`) may require a registered charity or nonprofit in some
   countries; if PayPal refuses it, set `DIGITAL_GOODS`: the item stays labelled "voluntary donation".
-- Publish a refund policy (Rules page): a refund or chargeback after the coins were credited takes back the coins still
+- The refund policy is in the Donation Terms (docs/legal/donations.*.md, linked from the donation page): a refund or chargeback after the coins were credited takes back the coins still
   unspent (`removeCoinsOnReversal` in `shop_coins_config.lua`) and staff see it in the admin panel (Store > Donations:
-  refunds and chargebacks).
+  refunds and chargebacks). Chargeback fraud: the account is locked until the dispute is settled, fraud again is a
+  permanent ban by an administrator (docs/GM_HANDBOOK.md section 4, Rules 7.9, Donation Terms section 6).
 - Set the real prices (`usdCents` of each pack) before launch: the ones in the repository are placeholders.
 
 **Go-live steps.**
@@ -815,6 +866,138 @@ that number so older clients send their players to the download page (`Services.
 old and new build in `clientGuardBuilds` for the switch, or point `clientGuardManifest` at the published manifest so its
 `min_package` refuses the old exe on the server as well.
 
+**Sprites in shards** (client/MANIFEST.md "Sharded sprites", client/BASE.md 0048). Whole files are compared by
+SHA-256, so a change to the single 600 MB `Tibia.spr` makes every player download all of it again. Split it instead:
+assemble with the pair as third argument (`client/tools/assemble_client.sh <base> <client> <things-dir>`, which writes
+`data/things/1098/Tibia.sprshards` and `Tibia.000.spr` .. `Tibia.045.spr` and checks them against the spr), or run
+`python3 -I client/tools/sprites/spr_shards.py split Tibia.spr <client>/data/things/1098` and `verify` and remove
+`Tibia.spr` there. Each shard (16384 sprite ids, 10-30 MB) is its own manifest file: a new pair that appends sprites
+re-sends the index, the dat and the last shard or two, not 600 MB. Rules the build step enforces:
+- The first update with shards needs `--min-package N`, N the first package whose exe has base patch 0048: an older
+  exe ignores the shards and would draw the new dat with its old spr. Players on that package download all shards
+  once (about 572 MB); their package's own `Tibia.spr` stays on disk unused.
+- Never publish the shards and `Tibia.spr` together (refused: both would be downloaded); `--with-single-spr` does it
+  on purpose while packages without 0048 must still be served.
+- Once players have shards, keep publishing shards: a client with an index loads its shards before any `Tibia.spr`
+  (the build warns when it publishes a single spr with no shard set).
+- The Windows package keeps the single `Tibia.spr` for now (owner decision, 2026-10-13; its map editor reads it from
+  `client\data\things\1098`), so shards reach players only through updates.
+
 **Production is HTTPS.** The updater warns in the client log when the manifest URL is plain HTTP;
 `client/tools/serve_updates.py` (HTTP, local) is only for tests.
 
+
+## Updating the live server
+
+Every update after launch follows this routine. `server/deploy/chaos_update.sh` runs it on the game server, as root.
+Its test drives stubs, not a real systemd (`server/deploy/chaos_update_test.py`): watch the first live run closely.
+
+### Kinds of update
+
+| Kind | Changed in the release | What it needs |
+|---|---|---|
+| Lua and data | `server/data/`, `server/tools/` | `install_all.py`, then a restart. A small Lua fix can go out with `/reload` instead (below). |
+| Read only at start | `config.lua` values, `items.otb`, the map, its spawn and house files, vocations | `install_all.py` writes them; the engine reads them at the next start. |
+| Engine | `server/src-patches/` | A rebuild of the engine from the release (section 1), into a new file such as `/opt/chaos/build/tfs`, never over the running `/opt/chaos/server/tfs`. The script takes it with `--engine` and swaps it in while the server is down. |
+| Database | `server/sql/` | The `sql` step applies it: `CREATE TABLE IF NOT EXISTS` and plain updates, safe to repeat. A rollback does not undo it. |
+| Client files | `client/overlay/` | A signed client update, published from the owner's machine ("Client updates (signed updater)"). |
+| Client exe | `client/base-patches/` | A new package from `windows-package.yml` with a higher `Services.update.package`, then a signed update with `--min-package` set to it. List the new `client_build` in `clientGuardBuilds` first. |
+| systemd units, logrotate | `server/deploy/*.service`, `*.timer`, `chaos.logrotate` | Copy them again and `systemctl daemon-reload` (section 5). |
+| Website | `website/` | Its own install ("Website"). |
+
+The script lists the kinds found in the release before it asks to go on.
+
+### When
+
+**Default: at the daily save** (06:00, section 3). The engine saves, kicks everyone and stops then anyway, after the
+save warnings. `chaos_update.sh --at-save` waits for that stop, holds off systemd's restart meanwhile, installs and
+starts the server. Nobody loses progress.
+
+**Sooner:** start the in-game warning yourself: admin panel (opcode 120) > Server > Restart (countdown), a few minutes,
+reason "update". It warns at 60, 30, 10, 5, 2 and 1 minutes, at 30 and 10 seconds and the last five, then saves and
+stops. `--at-save` catches that stop the same way. "Cancel countdown" leaves the script waiting; Ctrl-C ends it and puts
+everything back.
+
+**`--now`** stops at once with `systemctl stop`. The engine saves every player first. Only for an empty or closed
+server, or an urgent fix after a Broadcast in the admin panel.
+
+**Hotfix without a restart: `/reload`.** It covers Lua the engine loads again: the revscripts of `data/scripts`
+(`/reload scripts`), creaturescripts, actions, movements, talkactions, globalevents, spells, monsters, NPCs and the
+`config.lua` keys read on `/reload config`. Engine patch 0012 makes `/reload scripts`, `creaturescripts` and
+`all` safe with players online (server/README.md "Engine: reloads and oversize messages"). It does not cover the engine,
+the items (`items.otb`, `items.xml`), the map, spawns, houses, vocations, any `install_all.py` step but `files`, or the database. A reload runs
+every script file again, so state a system keeps only in memory can reset: read its section in server/README.md first.
+The steps, as root:
+```
+git -C /opt/chaos/repo fetch --tags && git -C /opt/chaos/repo checkout --detach <tag>
+python3 -I /opt/chaos/repo/server/tools/install_all.py /opt/chaos/server --only files --dry-run
+python3 -I /opt/chaos/repo/server/tools/install_all.py /opt/chaos/server --only files
+chown -R chaos:chaos /opt/chaos/server/data
+```
+Then `/reload scripts` with a god character, or admin panel > Server > Reload system, and read the log for
+`Lua Script Error`. Run `chaos_update.sh --ref <tag> --at-save` for the same tag afterwards: it runs every step at the
+next save and records the release.
+
+### The routine
+
+On the owner's machine:
+1. **The patch note.** One player-facing file per update in `server/data/patchnotes/<date>.md` (format:
+   server/README.md "Patch notes"). Only what is live after this update: nothing still in testing, nothing turned
+   off. Drafts start with `_` and are skipped. It goes out with the release's data, so a rollback takes it back too.
+2. **The release.** CI green on `main`, then a tag on that commit: `git tag -a live-2026-11-05 -m "..."` and
+   `git push origin live-2026-11-05`. The server only installs tags.
+3. **The engine**, only when `server/src-patches/` changed: build it from the tag (section 1) and copy the binary to the
+   server, for example `/opt/chaos/build/tfs`.
+
+On the game server, as root, inside `tmux` (an `--at-save` run waits for hours):
+```
+/opt/chaos/repo/server/deploy/chaos_update.sh --ref live-2026-11-05 --check-only    # any time: what changes, the dry run
+/opt/chaos/repo/server/deploy/chaos_update.sh --ref live-2026-11-05 --at-save       # [--engine /opt/chaos/build/tfs]
+```
+The script, in order:
+1. Refuses a checkout with uncommitted or untracked files. The server runs a release exactly as it is in git.
+2. Records the deployed commit (`/var/lib/chaos/deploy/state`) and fetches the tag. Refuses a branch or a commit
+   without a tag, and engine patches without `--engine`.
+3. Backup first: `server/tools/backup.sh` with the SIGUSR1 save and the data archive (section 7). Stops if it fails.
+4. Checks out the tag and shows `install_all.py --dry-run`. A failed dry run puts the checkout back.
+5. Asks (`--yes` skips the question).
+6. Waits for the stop (`--at-save`) or stops (`--now`), holds the health, watchdog and backup timers, and dumps the
+   stopped database (`backup.sh --no-data`): the exact state before the install.
+7. Swaps in the new engine (the old one stays in `/var/lib/chaos/deploy/`), runs `install_all.py`, gives the server
+   folder back to the unit's user, starts the server and the timers.
+8. The checks of section 9 "After every restart and update": waits for the status protocol (the map load), counts new
+   `Lua Script Error` lines since the start, and prints `chaos_health.py --dry-run`. Exit status 2 when one fails.
+
+Until step 7 any failure leaves the old release running. Each run is logged in `/var/lib/chaos/deploy/update-*.log`
+and `history.log`. A second run for the same tag does nothing.
+
+After it:
+- Log in with a staff character and try what the update changed. Watch the health alerts for the next hour: a burst of
+  error lines right after an update is a bug in that update (section 9).
+- **Client files changed:** publish the signed update from the owner's machine with the offline key ("Client updates
+  (signed updater)": assemble from the same tag, dry run, publish, verify). Never on the game or web server.
+- **A new exe:** the package first, then the update with `--min-package`.
+- Delete old engines from `/var/lib/chaos/deploy/` now and then; keep the newest.
+
+### Rollback
+
+```
+/opt/chaos/repo/server/deploy/chaos_update.sh --rollback --now       # or --at-save
+```
+It backs up the broken state first (`--no-backup` skips that in an emergency), stops the server, checks out the
+recorded previous commit, puts back the old engine when the update replaced it, and restores `config.lua` and `data/`
+from the pre-update data archive. The maps, logs and reports are carried over; the replaced folder stays as
+`data.before-rollback-<time>`. Then it starts the server and runs the checks.
+
+The database is never restored by the script. Restore it only when the update damaged data: bad saves, or a
+`server/sql/` change the old release cannot read. That loses everything played since the dump. The script prints the
+dump of the stopped server taken right before the install; use it with "Incident runbook", "Rollback to the last
+backup".
+
+The towns and worldtexts steps change the map `.otbm` itself, and the rollback keeps the map as it is. When their lines
+in the dry run report a change, copy the map aside before the update (`cp -p`).
+
+**If the script died** while waiting with `--at-save` (a lost SSH session outside tmux), remove its drop-in, or the
+server stays down after the next daily save:
+`rm /run/systemd/system/chaos-server.service.d/50-chaos-update.conf && systemctl daemon-reload`, then put the checkout back
+(`git -C /opt/chaos/repo checkout --detach <the deployed commit in /var/lib/chaos/deploy/state>`).

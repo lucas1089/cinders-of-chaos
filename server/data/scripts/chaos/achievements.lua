@@ -1004,6 +1004,10 @@ function gm.onSay(player, words, param)
 	end
 	local guid = player:getGuid()
 	local cmd, a, b = param:match("^%s*(%w+)%s*([%w_]*)%s*(%-?%d*)")
+	-- unlocks and progress pay achievement rewards: an administrator only, logged (docs/GM_HANDBOOK.md section 2)
+	if not Chaos.staffCommand(player, words, param, cmd == "grant" or cmd == "add") then
+		return false
+	end
 	if cmd == "grant" and index.byId[a] then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, A.grant(player, a) and ("Granted " .. a .. ".") or "Already unlocked.")
 	elseif (cmd == "stat" or cmd == "add") and K.validKey(a) and tonumber(b) then

@@ -1,0 +1,24 @@
+# Outfit shaders can be owned. Player::addShader keeps a character's shaders as bits in the reserved storage keys
+# PSTRG_SHADERS_RANGE (10002034-10002044), but Player::addStorageValue accepted only the mount, wing and aura ranges of
+# the reserved block: a shader key printed "Warning: unknown reserved key" and was dropped, at Player:addShader and
+# when the stored keys were read at login. So Player::hasShader was false for every shader (the store's, the
+# exclusives' and the Chaos ones), the outfit window packet listed none, and a set-outfit request with a shader was
+# refused (Game::playerChangeOutfit returns when hasShader is false). The range is now accepted like the others;
+# ownership is still checked by Game::playerChangeOutfit (hasShader) on every set-outfit request. Found in a live test
+# (server/README.md "Chaos outfit shaders"; ROADMAP 86). Guard: tools/outfit_shader_patch_test.py (CI).
+# Applies after 0001-0035.
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -765,8 +765,11 @@ void Player::addStorageValue(const uint32_t key, const int32_t value, const bool
+ 				value & 0xFF
+ 			);
+ 			return;
+-		} else if (IS_IN_KEYRANGE(key, MOUNTS_RANGE) || IS_IN_KEYRANGE(key, WINGS_RANGE) || IS_IN_KEYRANGE(key, AURAS_RANGE)) {
++		} else if (IS_IN_KEYRANGE(key, MOUNTS_RANGE) || IS_IN_KEYRANGE(key, WINGS_RANGE) || IS_IN_KEYRANGE(key, AURAS_RANGE) ||
++				IS_IN_KEYRANGE(key, SHADERS_RANGE)) {
+ 			// do nothing
++			// Chaos (patch 0036): the outfit shaders' keys too. Left out, Player::addShader stored nothing ("unknown
++			// reserved key"), so hasShader was false for every shader and the outfit window listed none
+ 		} else {
+ 			std::cout << "Warning: unknown reserved key: " << key << " player: " << getName() << std::endl;
+ 			return;

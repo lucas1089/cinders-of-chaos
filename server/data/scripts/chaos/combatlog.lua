@@ -16,7 +16,8 @@
 --   summon  the attacker is a summon of the character: the summon's name
 --   cast    the spell running now: the spell supports' cast context (data/spells/chaos/_supports.lua, ChaosSupportsSpell
 --           .cast(): every wrapped spell, also in the addEvent callbacks it starts), else the spell / rune between
---           the engine's Player:onSpellPreCast and onSpellCast (engine patch 0008; every instant spell and rune)
+--           the engine's Player:onSpellPreCast and onSpellCast (engine patch 0008; every instant spell and rune);
+--           a spell's own delayed hits named with CL.asSpell (the snares' scheduler) come first
 --   origin  ORIGIN_CONDITION: damage over time by element (Bleeding, Burning, Poison, ...: the condition owner is the
 --           attacker); ORIGIN_MELEE: the weapon in hand (sword, axe, club, fist); ORIGIN_RANGED: distance;
 --           ORIGIN_WAND (5): wand; anything else: "Other"
@@ -171,7 +172,29 @@ if ChaosSpellEvents and ChaosSpellEvents.set then
 	end)
 end
 
+-- a spell's own delayed hits outside every cast context (the snares' scheduler, data/spells/chaos/_snares.lua):
+-- CL.asSpell(pid, spellId, fn, ...) runs fn(...) (no results) with the hits of character pid named by spellId
+-- (spells.xml), the same source a cast of that spell gets. Nothing else changes: no supports, no cast. Nested runs
+-- restore the outer one.
+local named = {} -- player id -> spell id
+function CL.asSpell(pid, spellId, fn, ...)
+	local outer = named[pid]
+	named[pid] = spellId
+	local ok, err = pcall(fn, ...)
+	named[pid] = outer
+	if not ok then
+		error(err, 0)
+	end
+end
+
 local function castOf(pid)
+	local id = named[pid]
+	if id then
+		local s = castSrcById(id)
+		if s then
+			return s
+		end
+	end
 	local W = ChaosSupportsSpell
 	if W and W.cast then
 		local cpid, spellId = W.cast()
@@ -419,8 +442,12 @@ local function measured(attacker, victim, ctype, before)
 	end
 end
 
+-- the optional arguments (origin, blockArmor, ...) are passed on exactly as given: the engine reads an explicit nil
+-- origin as 0 (ORIGIN_NONE, no health events: no tree bonus, class factor, keystones or healing rules) where a missing
+-- one is ORIGIN_SPELL, so a wrapper that names the parameter must not pass it when the caller left it out
 local function wrapTarget(raw)
-	return function(cid, target, ctype, mn, mx, effect, origin, ...)
+	return function(cid, target, ctype, mn, mx, effect, ...)
+		local origin = ...
 		local label = callerLabel()
 		local attacker = creatureArg(cid)
 		local owner = attacker and ownerOf(attacker)
@@ -435,7 +462,7 @@ local function wrapTarget(raw)
 			victim = creatureArg(target)
 			before = victim and victim:getHealth()
 		end
-		local ok, res = pcall(raw, cid, target, ctype, mn, mx, effect, origin, ...)
+		local ok, res = pcall(raw, cid, target, ctype, mn, mx, effect, ...)
 		if ok and before then
 			pcall(measured, attacker, victim, ctype, before)
 		end
@@ -568,6 +595,9 @@ end
 
 local function signature(player, w, a)
 	local sig = tostring(a.ver) .. ":" .. tostring(w.seg) .. ":" .. (a.share and 1 or 0)
+	if ChaosDisplayScale and ChaosDisplayScale.forPlayer then -- a new display scale (a level up) is a new state
+		sig = sig .. ":x" .. ChaosDisplayScale.forPlayer(player)
+	end
 	if w.party then
 		local party = player:getParty()
 		if party then
@@ -591,6 +621,11 @@ local function send(player, w)
 	end
 	w.seg = st.sel
 	w.sig = signature(player, w, a)
+	-- the viewer's display scale (display_scale_core.lua): totals, rows, elements and the party's totals
+	local DS = ChaosDisplayScale
+	if DS and DS.apply then
+		st = DS.apply("combatLogState", player, st)
+	end
 	Chaos.sendChunked(player, OPCODE, json.encode({action = "state", data = st}))
 end
 CL.send = send

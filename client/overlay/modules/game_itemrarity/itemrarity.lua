@@ -418,6 +418,96 @@ function debugGroundRarity()
 end
 
 -- ===========================================================================
+-- Soft rarity outline (client base patch 0044: Item.setRarityOutline*)
+-- ---------------------------------------------------------------------------
+-- The engine draws a soft glow in the rarity colour around dropped items on the
+-- map and around items in inventory and container slots; this module hands it
+-- the colours (the RARITY table above, uniques in UNIQUE_COLOR) and the two
+-- Graphics options (rarityOutlineMap, rarityOutlineSlots). Common items get no
+-- outline (minRarity); Mythic and up breathe (pulseFrom). A client without the
+-- patch has no Item.setRarityOutlineColor: nothing happens.
+-- ===========================================================================
+
+local OUTLINE = { width = 3, minRarity = 2, pulseFrom = 7, pulseMs = 2200, alpha = 225, uniqueSlot = 16 }
+local outlineMap, outlineSlots = true, true
+
+-- "#rrggbb" -> r, g, b (nil for anything else)
+function rarityHexToRgb(hex)
+	if type(hex) ~= "string" then
+		return nil
+	end
+	local r, g, b = hex:match("^#(%x%x)(%x%x)(%x%x)$")
+	if not r then
+		return nil
+	end
+	return tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
+end
+
+-- what the engine is told: {colors = {{slot, r, g, b, a}, ...} (rarity ids 1..15, then 16 = unique), width,
+-- minRarity, pulseFrom, pulseMs}
+function getRarityOutlinePlan()
+	local plan = { colors = {}, width = OUTLINE.width, minRarity = OUTLINE.minRarity, pulseFrom = OUTLINE.pulseFrom,
+		pulseMs = OUTLINE.pulseMs }
+	for id = 1, 15 do
+		local r, g, b = rarityHexToRgb(RARITY[id] and RARITY[id].color)
+		if r then
+			plan.colors[#plan.colors + 1] = { id, r, g, b, OUTLINE.alpha }
+		end
+	end
+	local r, g, b = rarityHexToRgb(UNIQUE_COLOR)
+	plan.colors[#plan.colors + 1] = { OUTLINE.uniqueSlot, r, g, b, OUTLINE.alpha }
+	return plan
+end
+
+-- hand the plan and the two options to the engine (api = the client's Item class); false without patch 0044
+function applyRarityOutline(api, onMap, inSlots)
+	if type(api) ~= "table" and type(api) ~= "userdata" then
+		return false
+	end
+	if not api.setRarityOutlineColor or not api.setRarityOutlineStyle or not api.setRarityOutlineEnabled then
+		return false
+	end
+	local plan = getRarityOutlinePlan()
+	for _, c in ipairs(plan.colors) do
+		api.setRarityOutlineColor(c[1], c[2], c[3], c[4], c[5])
+	end
+	api.setRarityOutlineStyle(plan.width, plan.minRarity, plan.pulseFrom, plan.pulseMs)
+	api.setRarityOutlineEnabled(onMap and true or false, inSlots and true or false)
+	return true
+end
+
+local function engineItem()
+	return rawget(_G, "Item")
+end
+
+-- Graphics options (client_settings dataset.lua, base patch 0044): which = "map" | "slots"
+function onOutlineOption(which, value)
+	if which == "map" then
+		outlineMap = value ~= false
+	elseif which == "slots" then
+		outlineSlots = value ~= false
+	end
+	local api = engineItem()
+	if api and api.setRarityOutlineEnabled then
+		api.setRarityOutlineEnabled(outlineMap, outlineSlots)
+	end
+end
+
+function getRarityOutlineOptions()
+	return outlineMap, outlineSlots
+end
+
+local function readOutlineOptions()
+	local settings = modules and modules.client_settings
+	if settings and settings.getOption then
+		local ok, v = pcall(settings.getOption, "rarityOutlineMap")
+		if ok and v ~= nil then outlineMap = v ~= false end
+		ok, v = pcall(settings.getOption, "rarityOutlineSlots")
+		if ok and v ~= nil then outlineSlots = v ~= false end
+	end
+end
+
+-- ===========================================================================
 -- Rarity frames on item slots (from the item custom attributes)
 -- ===========================================================================
 
@@ -452,11 +542,20 @@ function updateRarityFrame(widget)
 	if not widget or widget:isDestroyed() then
 		return
 	end
-	local color = getItemFrameColor(widget:getItem())
+	local item = widget:getItem()
+	local color = getItemFrameColor(item)
 	local frame = widget:getChildById("irFrame")
+	-- the UI shaders (game_shaderfx, base patch 0044): greyscale for a locked item, the shine on legendary frames
+	local fx = modules and modules.game_shaderfx
+	if fx and fx.onSlotItem then
+		pcall(fx.onSlotItem, widget, item)
+	end
 	if not color then
 		if frame then
 			frame:hide()
+			if fx and fx.onRarityFrame then
+				pcall(fx.onRarityFrame, frame, 0, false)
+			end
 		end
 		widget.irColor = nil
 		return
@@ -471,6 +570,9 @@ function updateRarityFrame(widget)
 	end
 	frame:setImageColor(color)
 	frame:show()
+	if fx and fx.onRarityFrame then
+		pcall(fx.onRarityFrame, frame, getItemRarityId(item), isUniqueItem(item))
+	end
 	widget.irColor = color
 	local lf = widget:getChildById("lfFrame") -- one frame per slot: the loot filter's goes
 	if lf then
@@ -534,6 +636,8 @@ local function onGameEnd()
 end
 
 function init()
+	readOutlineOptions()
+	applyRarityOutline(engineItem(), outlineMap, outlineSlots)
 	connect(UIItem, { onItemChange = onItemChange })
 	connect(g_game, { onGameEnd = onGameEnd })
 	connect(LocalPlayer, { onInventoryChange = onInventoryChange })

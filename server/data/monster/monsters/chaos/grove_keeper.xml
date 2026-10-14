@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Grove Keeper" nameDescription="a grove keeper" race="blood" experience="4850" evented = "4" speed="59" skulled="1" looting="1" manacost="0">
+<monster name="Grove Keeper" nameDescription="a grove keeper" race="blood" experience="4850" speed="59" manacost="0">
 	<health now="13800" max="13800"/>
 	<level min="680" max="720"/>
 	<look type="1466" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068" />

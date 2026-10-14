@@ -1,0 +1,12 @@
+Module
+  name: game_effectopacity
+  description: One spell effect opacity (25-100%, Options > Effects, base patch 0049): moves old per-source values over once
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ effectopacitylogic, effectopacity ]
+  dependencies:
+    - client_settings
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

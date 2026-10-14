@@ -163,7 +163,7 @@ function S.describe(node)
 	end
 	local parts = {}
 	for k, v in pairs(node.s or {}) do
-		if k:sub(1, 2) == "ks" or k:sub(1, 2) == "ct" then
+		if k:sub(1, 2) == "ks" or k:sub(1, 2) == "ct" or k:sub(1, 2) == "ar" then -- keystones, class notables, archetypes
 			parts[#parts + 1] = k
 		else
 			parts[#parts + 1] = k .. "+" .. tostring(v)

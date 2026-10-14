@@ -161,9 +161,10 @@ for _, kind in ipairs({"outfit", "addons", "mount", "wings", "aura", "shader", "
 	eq((ach[kind] or 0) > 0, true, kind .. ": an achievement exclusive")
 	eq((boss[kind] or 0) > 0, true, kind .. ": a boss exclusive")
 end
--- wings: one look in the pair that no XML line had (1486), a boss drop; three achievement wings of things_custom17
--- (donor-library looks 2140..2142, picks.csv family "exclusive"), ids after the store's 1..15
-eq(boss.wings, 1, "wings: a boss exclusive") eq(ach.wings, 3, "wings: three achievement exclusives")
+-- wings: one look in the pair that no XML line had (1486), a boss drop, and the Runic Wings of things_custom24 (look 2187,
+-- a boss drop added by ChaosThemeArt.addExclusives, switch on since 2026-10-13); three achievement wings of
+-- things_custom17 (donor-library looks 2140..2142, picks.csv family "exclusive"), ids after the store's 1..15
+eq(boss.wings, 2, "wings: two boss exclusives") eq(ach.wings, 3, "wings: three achievement exclusives")
 local picks = readFile("../client/tools/sprites/monster_looks/picks.csv")
 for _, e in ipairs(cfg.exclusives) do
 	if e.kind == "wings" then
@@ -188,11 +189,12 @@ for _, e in ipairs(cfg.exclusives) do
 	end
 end
 -- the faction auras (25..28) and the store auras (1..24) stay theirs; the exclusive auras' manifest matches
-local csv = readFile("data/XML/chaos_auras_exclusive.csv")
+-- (the auras of things_custom24, ChaosThemeArt.PAIR24 on since 2026-10-13, are in chaos_auras_theme.csv)
+local csv = readFile("data/XML/chaos_auras_exclusive.csv") .. (readFile("data/XML/chaos_auras_theme.csv") or "")
 for _, e in ipairs(cfg.exclusives) do
 	if e.kind == "aura" then
 		eq(e.id > 28, true, e.key .. ": not a store or faction aura")
-		eq(csv:find("\n" .. e.id .. "," .. e.look .. "," .. e.name .. "\n", 1, true) ~= nil, true, e.key .. " in chaos_auras_exclusive.csv")
+		eq(csv:find("\n" .. e.id .. "," .. e.look .. "," .. e.name .. "\n", 1, true) ~= nil, true, e.key .. " in chaos_auras_exclusive.csv or chaos_auras_theme.csv")
 	end
 end
 -- the store sees them as exclusives (shop.lua refuses to sell them)
@@ -348,7 +350,8 @@ local function newPlayer(id, name, account, sex, group)
 	function p:getName() return self.name end
 	function p:getAccountId() return self.account end
 	function p:getSex() return sex or PLAYERSEX_MALE end
-	function p:getGroup() return {getId = function() return group or 1 end} end
+	function p:getGroup() return {getId = function() return group or 1 end, getAccess = function() return (group or 1) >= 4 end} end
+	function p:sendCancelMessage(text) self.cancel = text end
 	function p:hasOutfit(look, addons) return self.outfits[look] == 3 end
 	function p:addOutfitAddon(look, addons) self.outfits[look] = addons end
 	function p:hasMount(id) return self.mounts[id] == true end
@@ -460,7 +463,7 @@ eq(granted.pets["Bob:rotling"], "boss", "the pet through ChaosPets.grant")
 M.rng = seq(0.01, 0)
 eq(M.worldBossKill(bob, "Skaldra the Rime Queen"), "mount_rimebone", "a mount")
 eq(bob.mounts[148], true, "mount 148 added")
-M.rng = seq(0.01, 0.4)
+M.rng = seq(0.01, 0.2) -- three left: foot_rime, portal_drowned and the Rune Seal aura of pair 24 (on since 2026-10-13)
 eq(M.worldBossKill(bob, "Skaldra the Rime Queen"), "foot_rime", "a footprint")
 eq(granted.cosmetics["20:foot_rime"], "boss", "through ChaosCosmetics.grant")
 M.rng = seq(0.01, 0.99)
@@ -496,15 +499,22 @@ end
 eq(w.wings_cinderplumes.owned, true, "the window shows it owned") eq(w.mount_bloodwing.owned, nil, "not this one")
 eq(w.outfit_wingbound.look, 1456, "Ann sees the female look")
 
--- staff
+-- staff: a grant or a roll needs an administrator (group 5; docs/GM_HANDBOOK.md: staff never give value), a revoke not
 local gm = newPlayer(9, "Gm", 99, PLAYERSEX_MALE, 4)
+local admin = newPlayer(8, "Admin", 98, PLAYERSEX_MALE, 5)
 registered["/exclusive"].onSay(gm, "/exclusive", "Bob, mount_duskcrest")
-eq(bob.mounts[147], true, "a staff grant reaches the character")
+eq(bob.mounts[147], nil, "a gamemaster cannot grant")
+eq(gm.cancel ~= nil, true, "the gamemaster is told why")
+registered["/exclusive"].onSay(admin, "/exclusive", "Bob, mount_duskcrest")
+eq(bob.mounts[147], true, "an administrator's grant reaches the character")
 registered["/exclusive"].onSay(gm, "/exclusive", "Bob, mount_duskcrest, revoke")
-eq(M.owns(20, "mount_duskcrest"), false, "revoked")
+eq(M.owns(20, "mount_duskcrest"), false, "a gamemaster may revoke")
 M.rng = seq(0.01, 0)
+local beforeRoll = #sent
 registered["/exclusive"].onSay(gm, "/exclusive", "Bob, roll, raid_sovereign")
-eq(sent[#sent].text, "Rolled outfit_ashseraph.", "a staff roll for tests")
+eq(#sent, beforeRoll, "a gamemaster cannot roll")
+registered["/exclusive"].onSay(admin, "/exclusive", "Bob, roll, raid_sovereign")
+eq(sent[#sent].text, "Rolled outfit_ashseraph.", "an administrator's roll for tests")
 local before = #sent
 registered["/exclusive"].onSay(bob, "/exclusive", "Bob, all")
 eq(#sent, before, "players cannot use it")

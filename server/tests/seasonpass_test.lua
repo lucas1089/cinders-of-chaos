@@ -48,7 +48,36 @@ for tier, row in ipairs(pass.tiers) do
 		end
 	end
 end
-eq(coinsBack, 300, "300 Chaos Coins back on the premium track")
+eq(coinsBack, 320, "320 Chaos Coins back on the premium track")
+-- the paid track: cosmetics and coins only (owner rule: never gold, potions, experience or gear power)
+for tier, row in ipairs(pass.tiers) do
+	eq(P.PREMIUM_KINDS[row[2].kind], true, "premium tier " .. tier .. " is a cosmetic or coins, not " .. tostring(row[2].kind))
+end
+do -- the validator refuses gold and a potion on the premium track (they stay fine on the free track)
+	for _, bad in ipairs({{kind = "item", id = 2152, count = 20}, {kind = "item", id = 7590, count = 25}}) do
+		local copy = {}
+		for k, v in pairs(cfg) do
+			copy[k] = v
+		end
+		local tiers = {}
+		for i, row in ipairs(pass.tiers) do
+			tiers[i] = row
+		end
+		tiers[3] = {pass.tiers[3][1], bad}
+		copy.passes = {[1] = {name = pass.name, premium = pass.premium, packs = pass.packs, tiers = tiers}}
+		eq(#P.validate(copy) > 0, true, "premium item " .. bad.id .. " refused")
+		tiers[3] = {bad, pass.tiers[3][2]}
+		eq(#P.validate(copy), 0, "free item " .. bad.id .. " allowed")
+	end
+end
+-- the season's own shaders and frame are on the premium track and in the cosmetics list
+local seen = {}
+for _, row in ipairs(pass.tiers) do
+	seen[row[2].kind] = (seen[row[2].kind] or 0) + 1
+end
+eq(seen.shader, 2, "two outfit shaders on the premium track")
+eq(seen.frame, 1, "one name plate frame on the premium track")
+eq(seen.title >= 8, true, "titles on the premium track")
 eq(coinsBack < pass.premium.price, true, "the coins back pay part of the next pass, not all of it")
 -- the validator refuses power: an orb, an experience potion, a stamina item, an unknown kind
 for _, bad in ipairs({
@@ -286,6 +315,22 @@ eq(P.claimCheck(pass, view(5, true), 51, P.FREE), nil, "tier 51")
 eq(P.claimCheck(pass, view(5, true), 1, 2), nil, "unknown track")
 eq(#P.claimable(pass, view(5, false)), 5, "five free")
 eq(#P.claimable(pass, view(5, true)), 10, "five free and five premium")
+-- a late buyer: tier 12 reached with the free rewards claimed, then the premium track bought -> all 12 premium at once
+do
+	local free = {}
+	for i = 1, 12 do
+		free[i] = true
+	end
+	eq(#P.premiumBacklog(pass, view(12, false, {[0] = free, [1] = {}})), 0, "no premium, no backlog")
+	local back = P.premiumBacklog(pass, view(12, true, {[0] = free, [1] = {[3] = true}}))
+	eq(#back, 11, "eleven premium rewards waiting (tier 3 claimed)")
+	eq(back[1].tier, 1, "from tier 1")
+	eq(back[#back].tier, 12, "to the tier reached")
+	for _, c in ipairs(back) do
+		eq(c.track, P.PREMIUM, "backlog is premium only")
+	end
+	eq(#P.premiumBacklog(pass, view(12, true, {[0] = free, [1] = {}}, false)), 0, "closed pass: nothing")
+end
 eq(#P.claimable(pass, view(5, true, {[0] = {[1] = true, [2] = true}, [1] = {[1] = true}})), 7, "minus the claimed")
 eq(P.claimedString({[1] = true, [3] = true}, 4), "1010", "claimed string")
 

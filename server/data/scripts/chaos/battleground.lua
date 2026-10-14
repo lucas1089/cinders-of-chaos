@@ -67,6 +67,11 @@ local function msg(player, text)
 end
 
 local function send(player, action, data)
+	-- the viewer's display scale (display_scale_core.lua): the scoreboard's damage and healing (a copy: one board
+	-- table goes to every player of the match)
+	if ChaosDisplayScale and ChaosDisplayScale.apply then
+		data = ChaosDisplayScale.apply("battleground", player, data)
+	end
 	return Chaos.sendChunked(player, OPCODE, json.encode({action = action, data = data or {}}))
 end
 

@@ -582,7 +582,9 @@ local function runAbilities(player, live, pet, rule, pvp, ms)
 		if healed > 0 then
 			live.nextMend = ms + cfg.abilities.mend.cooldown * 1000
 			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
-			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, string.format("Your pet mends you (+%d).", healed))
+			-- the shown amount in the player's display scale (display_scale_core.lua)
+			local shown = ChaosDisplayScale and ChaosDisplayScale.scale(healed, ChaosDisplayScale.forPlayer(player)) or healed
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, string.format("Your pet mends you (+%.0f).", shown))
 		end
 	end
 	if abilityOn(live, "ward", rule, pvp) and ms >= live.nextWard and pct < cfg.abilities.ward.below and hp > 0 then
@@ -1011,6 +1013,10 @@ function gm.onSay(player, words, param)
 	end
 	local cmd, rest = (param or ""):match("^%s*(%a+)%s*(.-)%s*$")
 	cmd = (cmd or ""):lower()
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): /pet give needs an administrator
+	if not Chaos.staffCommand(player, words, param, cmd == "give") then
+		return false
+	end
 	local live = P.live[player:getId()]
 	if cmd == "give" then
 		local key, who = rest:match("^([%w_]+)%s*,?%s*(.-)$")

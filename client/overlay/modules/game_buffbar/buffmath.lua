@@ -217,6 +217,21 @@ function BuffMath.ownPath(name)
   return '/images/game/buffs/' .. name
 end
 
+-- painted icons (client/tools/gen_painted_icons.py), client setting "Painted icons" (g_settings key below, off by
+-- default): the same name in /images/game/buffs_painted, same 26 px size. `exists(file)` (g_resources.fileExists) says
+-- whether that name has a painted icon; a name without one keeps its normal icon.
+BuffMath.PAINTED_SETTING = 'chaosPaintedIcons'
+
+function BuffMath.iconPath(name, painted, exists)
+  local own = BuffMath.ownPath(name)
+  if not own then return nil end
+  if painted then
+    local p = '/images/game/buffs_painted/' .. name
+    if not exists or exists(p .. '.png') then return p end
+  end
+  return own
+end
+
 -- the own icon a spec draws: "buff:<name>" is that name; anything else (an older server's "cond:<NN>" or
 -- "spell:<words>", an unknown spec) draws the key's own icon; 'spellbuff' when neither is a valid name. Neither the
 -- stock condition art nor the spell sheet is used: every icon on the bar is one of ours, in the same frame.

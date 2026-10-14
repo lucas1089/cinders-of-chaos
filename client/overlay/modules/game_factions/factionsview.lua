@@ -22,6 +22,14 @@ V.COLORS = {
 
 local function num(v) return tonumber(v) or 0 end
 local function list(v) return type(v) == 'table' and v or {} end
+-- the rows of a server list; an entry that is no table is left out (game_chaosguard/opcode_fuzz_test.lua)
+local function rows(v)
+  local out = {}
+  for _, r in ipairs(list(v)) do
+    if type(r) == 'table' then out[#out + 1] = r end
+  end
+  return out
+end
 
 -- 1234567 -> "1,234,567"; -2500 -> "-2,500"
 function V.fmt(n)
@@ -47,7 +55,7 @@ function V.cardName(f)
 end
 
 function V.faction(data, key)
-  for _, f in ipairs(list(data and data.factions)) do
+  for _, f in ipairs(rows(data and data.factions)) do
     if f.k == key then return f end
   end
   return nil
@@ -57,7 +65,7 @@ end
 function V.select(data, current)
   if data and data.sel and V.faction(data, data.sel) then return data.sel end
   if current and V.faction(data, current) then return current end
-  local first = list(data and data.factions)[1]
+  local first = rows(data and data.factions)[1]
   return first and first.k or nil
 end
 
@@ -124,7 +132,7 @@ end
 -- contracts of one faction: daily first, open ones first, then by key
 function V.contractsFor(data, key)
   local out = {}
-  for _, c in ipairs(list(data and data.contracts)) do
+  for _, c in ipairs(rows(data and data.contracts)) do
     if c.f == key then out[#out + 1] = c end
   end
   table.sort(out, function(a, b)
@@ -170,7 +178,7 @@ end
 -- quartermaster offers of one faction, by rank then price
 function V.offersFor(data, key)
   local out = {}
-  for _, o in ipairs(list(data and data.offers)) do
+  for _, o in ipairs(rows(data and data.offers)) do
     if o.f == key then out[#out + 1] = o end
   end
   table.sort(out, function(a, b)
@@ -242,7 +250,7 @@ end
 -- the rank ladder of a faction: {name, min, colour, reached}
 function V.ladder(data, f)
   local out = {}
-  for i, r in ipairs(list(data and data.ranks)) do
+  for i, r in ipairs(rows(data and data.ranks)) do
     out[#out + 1] = { name = r.n, min = r.min, color = r.c, reached = f ~= nil and num(f.rank) >= i }
   end
   return out

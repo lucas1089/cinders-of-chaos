@@ -1162,6 +1162,14 @@ function Gen.uniqueEntries(D)
 			rules[#rules + 1] = "Part of the set " .. setOf[u.id] .. ": its bonuses are on the Sets tab."
 		end
 		local kind = SLOT_KIND[u.slot] or "other"
+		local itemRows = {{"Slot", SLOT_NAME[u.slot] or u.slot}, {"Required level", Gen.num(u.level)}}
+		if spec and spec.equip and spec.equip.lines and #spec.equip.lines > 0 then
+			-- a unique with an equip rule of its own (chaos_unique_equip.lua): the class lines that may wear it
+			local lines = spec.equip.lines
+			local text = #lines == 1 and lines[1] or (table.concat(lines, ", ", 1, #lines - 1) .. " and " .. lines[#lines])
+			itemRows[#itemRows + 1] = {"Worn by", text .. " lines"}
+		end
+		itemRows[#itemRows + 1] = {"Drops from", TIER_NAME[u.minTier] .. (u.bossOnly and " (bosses only)" or " monsters and stronger")}
 		local p = {}
 		if spec then
 			p[#p + 1] = spec.description
@@ -1174,8 +1182,7 @@ function Gen.uniqueEntries(D)
 			sections = {
 				{h = "Description", p = p},
 				{h = "Stats", p = statLines},
-				{h = "Item", cols = {"", ""}, w = {35, 65}, rows = {{"Slot", SLOT_NAME[u.slot] or u.slot}, {"Required level", Gen.num(u.level)},
-					{"Drops from", TIER_NAME[u.minTier] .. (u.bossOnly and " (bosses only)" or " monsters and stronger")}}},
+				{h = "Item", cols = {"", ""}, w = {35, 65}, rows = itemRows},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = sources},
 				{h = "Rules", p = rules}
 			}}
@@ -1313,6 +1320,23 @@ function Gen.riftEntries(D)
 		local p = {example .. ".", "Reward bonus: " .. rewardText(m.reward) .. "."}
 		if m.boon then
 			p[#p + 1] = "A boon: a pure reward without a reward bonus of its own."
+		elseif m.side == "prefix" then
+			p[#p + 1] = "Prefix: the monsters or the guardian get stronger."
+		elseif m.side == "suffix" then
+			p[#p + 1] = "Suffix: the players or the area get worse."
+		end
+		if m.note then
+			p[#p + 1] = m.note
+		end
+		-- the modifiers it never shares a key with (same group, or excluded)
+		local never = {}
+		for _, o in ipairs(cfg.mods) do
+			if R.modConflict and R.modConflict(m, o) then
+				never[#never + 1] = o.name
+			end
+		end
+		if #never > 0 then
+			p[#p + 1] = "Never on a key with " .. table.concat(never, ", ") .. "."
 		end
 		p[#p + 1] = string.format("Roll weight %d; on keys of tier %d or higher.", R.modWeight(m), m.minTier or 1)
 		local sections = {{h = "Effect", p = p}}
@@ -1380,8 +1404,22 @@ function Gen.riftEntries(D)
 			{h = "Tiers", p = {string.format("Tiers above %d reuse the last window: +%d levels to enter and +%d%% health, damage and +%d%% rewards per tier.",
 				#cfg.tiers, cfg.beyond.minLevelStep, floor(cfg.beyond.health * 100 + 0.5), floor(cfg.beyond.reward * 100 + 0.5))},
 				cols = {"Tier", "Level to enter", "Monster levels"}, w = {20, 40, 40}, rows = tierRows},
-			{h = "The run", p = {string.format("%d minutes; the guardian comes after %d%% of the monsters; %d shared lives + %d per extra player; up to %d players.",
-				floor(cfg.timeLimit / 60), cfg.bossAt, cfg.lives.base, cfg.lives.perExtraPlayer, cfg.maxPlayers),
+			{h = "The run", p = {cfg.layout and cfg.layout.enabled and string.format("Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: %s.",
+					(function()
+						local parts, from = {}, 1
+						for _, row in ipairs(cfg.layout.sizes) do
+							parts[#parts + 1] = string.format("tiers %d-%d %d x %d tiles, %d minutes", from, math.min(row[1], cfg.maxTier),
+								row[2], row[2], floor(row[3] / 60))
+							from = row[1] + 1
+						end
+						return table.concat(parts, "; ")
+					end)()) or "",
+				string.format("The guardian comes after %d%% of the monsters; %d shared lives + %d per extra player; up to %d players.",
+				cfg.bossAt, cfg.lives.base, cfg.lives.perExtraPlayer, cfg.maxPlayers),
+				R.densityOn and R.densityOn(cfg) and string.format("About %d monsters solo at tier 1 up to %d at tier %d on a map of typical size (+%d%% per extra player; a bigger map holds more), in packs of %d-%d over the whole map; about %d-%d alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.",
+					floor(R.density(cfg, 1, 1).count), floor(R.density(cfg, cfg.maxTier, 1).count), cfg.maxTier,
+					floor(cfg.density.count.perExtraPlayer * 100 + 0.5), cfg.density.size[1], cfg.density.size[2],
+					R.liveCap(cfg, 1, nil, 1), R.liveCap(cfg, 1, nil, cfg.maxTier)) or "",
 				cfg.party and string.format("Each extra player: +%d%% monster health in total (more packs, tougher monsters), +%d%% guardian health, +%d%% damage taken; every finisher's chest +%s%% (at most +%d%%) and +%s%% kill loot (at most +%d%%).",
 					floor(cfg.party.healthPerExtraPlayer * 100 + 0.5), floor(cfg.boss.perExtraPlayer * 100 + 0.5),
 					floor(cfg.party.damagePerExtraPlayer * 100 + 0.5), Gen.num(cfg.party.rewardPerExtraPlayer), cfg.party.rewardCap,

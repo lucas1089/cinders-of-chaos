@@ -53,6 +53,14 @@ ChaosPanelDark
     text-align: center
     margin-top: 2
 
+  RiftHudLabel
+    id: swift
+    color: #7fb8e8
+    text-align: center
+    margin-top: 2
+    visible: false
+    !tooltip: tr('Rift Atlas: seal the rift within this time for the tier\'s Swift cell. It grows with the tier and the size of the rift.')
+
   ChaosProgressBar
     id: progress
     margin-top: 4

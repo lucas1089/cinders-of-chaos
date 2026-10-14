@@ -41,6 +41,40 @@ eq(getItemRarityId(item({}, '[DIVINE] [X] ring')), 10, 'older tag name')
 eq(getItemRarityId(item({}, '[FOO] ring')), 0, 'other tags ignored')
 eq(getItemRarityId(nil), 0, 'nil item')
 
+-- the soft rarity outline (base patch 0044): the colours handed to the engine
+eq(select(1, rarityHexToRgb('#4a90ff')), 74, 'hex red') eq(select(3, rarityHexToRgb('#4a90ff')), 255, 'hex blue')
+eq(rarityHexToRgb('blue'), nil, 'not a colour') eq(rarityHexToRgb(nil), nil, 'nil colour')
+local plan = getRarityOutlinePlan()
+eq(#plan.colors, 16, '15 rarities and the unique colour')
+eq(plan.colors[3][1], 3, 'rare slot') eq(plan.colors[3][2], 74, 'rare red') eq(plan.colors[3][4], 255, 'rare blue')
+eq(plan.colors[16][1], 16, 'unique slot (the engine reads 16 as unique)')
+eq(string.format('#%02x%02x%02x', plan.colors[16][2], plan.colors[16][3], plan.colors[16][4]), getUniqueColor(), 'unique colour')
+eq(plan.minRarity, 2, 'common items get no outline') eq(plan.pulseFrom, 7, 'mythic and up breathe')
+eq(plan.width >= 1 and plan.width <= 4, true, 'reach the engine accepts')
+for _, c in ipairs(plan.colors) do
+  eq(c[5] > 0 and c[5] <= 255, true, 'alpha of slot ' .. c[1])
+end
+-- the engine side, mocked (a client without patch 0044 has no setRarityOutlineColor)
+local calls = { colors = {} }
+local api = {
+  setRarityOutlineColor = function(slot, r, g, b, a) calls.colors[slot] = { r, g, b, a } end,
+  setRarityOutlineStyle = function(w, minR, pulse, ms) calls.style = { w, minR, pulse, ms } end,
+  setRarityOutlineEnabled = function(map, slots) calls.enabled = { map, slots } end,
+}
+eq(applyRarityOutline(api, true, false), true, 'applied')
+eq(calls.colors[5][1], 255, 'legendary colour sent') eq(calls.colors[16] ~= nil, true, 'unique colour sent')
+eq(calls.style[2], 2, 'style sent') eq(calls.enabled[1], true, 'map on') eq(calls.enabled[2], false, 'slots off')
+eq(applyRarityOutline({}, true, true), false, 'an engine without the patch: nothing')
+eq(applyRarityOutline(nil, true, true), false, 'no engine')
+Item = api
+onOutlineOption('slots', false)
+eq(calls.enabled[2], false, 'option: slots off')
+onOutlineOption('map', false)
+eq(calls.enabled[1], false, 'option: map off')
+onOutlineOption('map', true) onOutlineOption('slots', true)
+eq(calls.enabled[1] and calls.enabled[2], true, 'options back on')
+Item = nil
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

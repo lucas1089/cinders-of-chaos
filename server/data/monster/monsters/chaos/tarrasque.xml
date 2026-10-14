@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Tarrasque" nameDescription="a tarrasque" race="blood" experience="155000" skulled="2" looting="1" speed="650">
+<monster name="Tarrasque" nameDescription="a tarrasque" race="blood" experience="155000" speed="650">
 	<health now="2000000" max="2000000" />
 	<look type="2124" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
@@ -12,7 +12,7 @@
 		<flag pushable="0" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="1" />
-		<flag targetdistance="0" />
+		<flag targetdistance="1" />
 		<flag staticattack="70" />
 		<flag runonhealth="0" />
 		<flag canwalkonenergy="0" />

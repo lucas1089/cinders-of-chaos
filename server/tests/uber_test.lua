@@ -194,12 +194,13 @@ check(en and te == 0 and tl > 0, "enraged at enrageAt")
 en, te, tl = U.clock(sang, sang.limit + 5)
 check(en and tl == 0, "time is up")
 local tm = U.telegraphTiming(cfg, false)
-eq(#tm.marks, 2, "two warning turns")
+check(#tm.marks >= 2, "the danger mark pulses until the hit")
 eq(tm.marks[1], 0, "marked at once")
+eq(tm.kinds[#tm.kinds], "fill", "the last pulse shows the filling mark")
 eq(tm.hitMs, cfg.telegraph.warnMs, "the hit two turns later")
 eq(tm.share, cfg.telegraph.share, "share")
 local tme = U.telegraphTiming(cfg, true)
-eq(#tme.marks, 1, "enraged: one warning turn")
+check(tme.hitMs >= 1500, "enraged: never under 1.5 s (boss_mechanics_core.lua)")
 check(tme.hitMs < tm.hitMs and tme.share > tm.share, "enraged: sooner and harder")
 check(U.patternEvery(cfg, sang.phases[1], true) < U.patternEvery(cfg, sang.phases[1], false), "enraged: faster telegraphs")
 eq(U.shareDamage(10000, 0.55), 5500, "share of max health")
@@ -851,12 +852,17 @@ local function patternIs(name)
 	end
 	return function() math.random = saved end
 end
+-- the hero is a Hollow Vessel (archetypes.lua percentBase via Chaos.percentBase): health + maximum energy shield count
+ChaosArchetypes = {percentBase = function(p) return p.maxhp + (p.vessel or 0) end}
+hero.vessel = 2000
 local restore = patternIs("cone")
 runTo(T + 300)
 restore()
 local hpBefore, fBefore = hero.hp, friend.hp
 runTo(T + cfg.telegraph.warnMs + 100)
-eq(hpBefore - hero.hp, U.shareDamage(hero.maxhp, cfg.telegraph.share), "the hero in the cone takes the share")
+eq(hpBefore - hero.hp, U.shareDamage(hero.maxhp + 2000, cfg.telegraph.share),
+	"the hero in the cone takes the share, of health + shield for a Hollow Vessel")
+ChaosArchetypes, hero.vessel = nil, nil
 eq(friend.hp, fBefore, "the friend behind the boss is safe")
 local warned = 0
 for _, e in ipairs(effects) do

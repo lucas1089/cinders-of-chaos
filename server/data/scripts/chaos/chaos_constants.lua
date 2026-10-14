@@ -9,6 +9,11 @@
 -- Lua dialect: TFS 1.4.2 / LuaJIT (Lua 5.1 semantics). Do not use 5.3-only syntax here.
 
 if Chaos then
+	-- the first load can come from a spell (classes.lua), outside the Scripts interface: the opcode dispatch's engine
+	-- events are made on the load that can make them (Chaos.opcodeDispatch.install)
+	if Chaos.opcodeDispatch and Chaos.opcodeDispatch.install then
+		Chaos.opcodeDispatch.install()
+	end
 	return
 end
 
@@ -79,6 +84,8 @@ ChaosOpcodes = {
 ChaosOpcodes.riftAtlas = 210
 -- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
 ChaosOpcodes.combatLog = 204
+-- Display scale: the viewer's level and factor, server -> client (client game_chaosscale; display_scale*.lua)
+ChaosOpcodes.displayScale = 157
 -- Client guard (engine src-patch 0021, client base patch 0035, clientguard*.lua; server/README.md "Client guard"): 189 is
 -- the engine's HMAC handshake, both ways, handled in C++ on both sides (it never reaches Lua; listed so that no module
 -- takes it); 190 is the module hello of client game_chaosguard, client -> server
@@ -120,6 +127,10 @@ Chaos.storage = {
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
 	passiveRework = 7100023, -- the last reworked-nodes version refunded (passivetree_config.lua reworked)
+	archetypeFlags = 7100024, -- the build archetype keystones held, a bit each (archetypes_config.lua storage)
+	vigils = 7100025, -- the vigils switched on, a bit each (vigils_config.lua storage)
+	snareElement = 7100026, -- the element the snares carry, chosen last (snares_config.lua storage.element)
+	snareHit = 7100027, -- 1 while a snare's hits are dealt (snares_config.lua storage.hit; read by archetypes.lua)
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
 	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
@@ -151,8 +162,8 @@ Chaos.storage = {
 	shopLootPouch = 7100100, -- RESERVED: the retired Bottomless Loot Pouch unlock (1 = owned; pouches.lua gives those owners a
 	-- free Loot Pouch once). Never reuse the key.
 	shopAutoSeller = 7100101, -- 1 = Auto Seller unlocked (per character)
-	autosellPaused = 7100102, -- 1 = auto seller switched off with !autosell off
-	autosellRarity = 7100103, -- 1 = opt-in: the auto seller may sell items with a rarity / modifiers
+	autosellPaused = 7100102, -- 1 = the auto seller's corpse selling switched off (Auto Seller window)
+	autosellRarity = 7100103, -- the rarities the auto seller sells, packed (autosell_core.lua packTiers; 1 = old opt-in: all)
 	nameChangeTokens = 7100104, -- unused name changes bought in the store
 	vocationChangeTokens = 7100105, -- unused vocation changes bought in the store
 	shopRarityAutoloot = 7100106, -- 1 = Rarity Autoloot unlocked (lootfilter.lua: autoloot by rarity)
@@ -411,10 +422,14 @@ Chaos.dungeons = {
 	maxDifficulty = 6, -- client has 6 difficulty buttons
 	-- percentage of area monsters that must die before the "boss can be killed" notice
 	progressNeeded = 100,
+	-- area = {{from, to}, ...}: boxes that belong to the dungeon next to the base FromPos/ToPos box (dungeons.lua areaOf),
+	-- for the parts that box misses: measured on the base map and its boss scripts (server/README.md "dungeons")
 	extra = {
 		[1] = {
 			title = "Bones Dungeon",
 			bossName = "prince skeletal",
+			-- the lever boss room east of the box (the boss script's bossArea; boss, entrance and exit teleport in it)
+			area = {{{x = 31856, y = 32197, z = 8}, {x = 31908, y = 32236, z = 8}}},
 			loot = {{id = 2160, count = 3}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 15 minutes.", maxMs = 15 * 60 * 1000},
@@ -433,6 +448,9 @@ Chaos.dungeons = {
 		[3] = {
 			title = "Forbidden Chevalier",
 			bossName = "forbidden chevalier",
+			-- the base box is floor 7 only (widened to the entry on floor 0): the tower's floors 0-10 with every spawn,
+			-- the lever and the boss room on floor 10 (the map's tiles of the dungeon)
+			area = {{{x = 31950, y = 33098, z = 0}, {x = 32078, y = 33245, z = 10}}},
 			loot = {{id = 2160, count = 8}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 20 minutes.", maxMs = 20 * 60 * 1000},
@@ -442,6 +460,9 @@ Chaos.dungeons = {
 		[4] = {
 			title = "Rootmaw",
 			bossName = "the rootmaw",
+			-- the base box is only the entry hall (and DungeonPos is 3 tiles south of it): floors 8-12 with every spawn,
+			-- the lever on floor 11 and the boss room on floor 12 (the map's tiles of the dungeon)
+			area = {{{x = 31452, y = 31495, z = 8}, {x = 31736, y = 31644, z = 12}}},
 			loot = {{id = 2160, count = 10}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 10 minutes.", maxMs = 10 * 60 * 1000},
@@ -1049,10 +1070,11 @@ function Chaos.sendChunked(player, opcode, buffer)
 	return true
 end
 
--- Positive integer from client input, or nil.
+-- Positive integer from client input, or nil. Beyond +-2^53 a number is no exact integer (1e308 stays a float, which
+-- string.format("%d") refuses in Lua 5.3 and LuaJIT turns into -2^63): nil too (tests/opcode_fuzz_test.lua).
 function Chaos.toInt(value, minimum, maximum)
 	local n = tonumber(value)
-	if not n or n ~= n or n == math.huge or n == -math.huge then
+	if not n or n ~= n or n > 9007199254740992 or n < -9007199254740992 then
 		return nil
 	end
 	n = math.floor(n)
@@ -1148,6 +1170,20 @@ function Chaos.heal(creature, amount)
 		creature:addHealth(amount)
 	end
 	return creature:getHealth() - before
+end
+
+-- The base of a "share of the maximum health" hit on a player (rift ground and storms, raid and Ascended / guild boss
+-- telegraphs): the maximum health, or for a Hollow Vessel health + maximum energy shield (archetypes.lua percentBase),
+-- so its fixed 100 health is no way around them. Without the archetypes module: the maximum health.
+function Chaos.percentBase(player)
+	local A = ChaosArchetypes
+	if A and A.percentBase then
+		local ok, base = pcall(A.percentBase, player)
+		if ok and type(base) == "number" then
+			return base
+		end
+	end
+	return player:getMaxHealth()
 end
 
 -- ---------------------------------------------------------------------------
@@ -1352,4 +1388,188 @@ end
 -- handlers whose actions read or write the database or walk large tables
 function Chaos.limited(player, key, ms)
 	return ChaosRateLimit ~= nil and ChaosRateLimit.allow ~= nil and not ChaosRateLimit.allow(player, key, ms or 300)
+end
+
+-- ---------------------------------------------------------------------------
+-- Extended opcode dispatch (server/README.md "Stress test", "Extended opcode dispatch"). The engine runs every
+-- extendedopcode creature event a player registered for every extended opcode the client sends: about 80 Chaos handlers,
+-- each returning at once unless the opcode is its own (about 0.2 ms of game loop per request). Here each handler a
+-- module defines (`function ev.onExtendedOpcode`) is kept in Chaos.opcodeDispatch instead of the engine, under the
+-- opcode of its guard (its upvalue OPCODE: every Chaos handler starts with `if opcode ~= OPCODE then return end`;
+-- tests/opcode_dispatch_test.lua checks the sources) or, without one, for every opcode (notifications, admin). A
+-- player's registerEvent of such a name registers the one engine event ChaosOpcodeDispatch, which calls the handlers of
+-- the opcode the player registered, in the order they were defined. A request over Chaos.opcodeRequestMax bytes is
+-- dropped before any handler decodes it (one console line per player a minute). Handlers defined with the table
+-- constructor and the base server's own events stay with the engine. Without the engine API (the unit tests' mocks)
+-- nothing changes.
+-- ---------------------------------------------------------------------------
+Chaos.opcodeRequestMax = 16384 -- bytes; the client's requests are far under 8 KB (the largest, a passive tree plan, ~3 KB)
+
+local D = {byName = {}, byOpcode = {}, any = {}, players = {}, seq = 0, warned = {}}
+Chaos.opcodeDispatch = D
+
+-- the opcode of a handler's guard (an upvalue named OPCODE holding a number), else nil
+function D.opcodeOf(fn)
+	if type(fn) ~= "function" or not debug or not debug.getupvalue then
+		return nil
+	end
+	for i = 1, 255 do
+		local name, value = debug.getupvalue(fn, i)
+		if name == nil then
+			return nil
+		end
+		if name == "OPCODE" and type(value) == "number" then
+			return value
+		end
+	end
+	return nil
+end
+
+function D.add(name, fn)
+	D.seq = D.seq + 1
+	local entry = {name = name, fn = fn, order = D.seq, opcode = D.opcodeOf(fn)}
+	D.byName[name] = entry
+	if entry.opcode then
+		local list = D.byOpcode[entry.opcode] or {}
+		D.byOpcode[entry.opcode] = list
+		list[#list + 1] = entry
+	else
+		D.any[#D.any + 1] = entry
+	end
+	return entry
+end
+
+-- the handlers for an opcode, in the order they were defined (own opcode and the ones for every opcode)
+function D.handlersFor(opcode)
+	local own, any = D.byOpcode[opcode] or {}, D.any
+	if #any == 0 then
+		return own
+	end
+	local out, i, j = {}, 1, 1
+	while i <= #own or j <= #any do
+		if j > #any or (i <= #own and own[i].order < any[j].order) then
+			out[#out + 1] = own[i]
+			i = i + 1
+		else
+			out[#out + 1] = any[j]
+			j = j + 1
+		end
+	end
+	return out
+end
+
+local function nowMs()
+	return os.mtime and os.mtime() or os.time() * 1000
+end
+
+function D.dispatch(player, opcode, buffer)
+	local pid = player:getId()
+	if type(buffer) == "string" and #buffer > Chaos.opcodeRequestMax then
+		local t = nowMs()
+		if not D.warned[pid] or t - D.warned[pid] >= 60000 then
+			D.warned[pid] = t
+			print(string.format("[Warning - Chaos] extended opcode %d from %s: %d bytes is over %d, dropped", opcode,
+				player:getName(), #buffer, Chaos.opcodeRequestMax))
+		end
+		return
+	end
+	-- no record of the player's registrations (a reload of the scripts while online): every handler, as all register
+	local mine = D.players[pid]
+	for _, e in ipairs(D.handlersFor(opcode)) do
+		if not mine or mine[e.name] then
+			-- an error in one handler is reported and the next ones still run, as with one engine event each
+			local ok, err = xpcall(function() return e.fn(player, opcode, buffer) end, debug and debug.traceback or tostring)
+			if not ok then
+				print(string.format("[Error - Chaos opcode dispatch] %s (opcode %d): %s", e.name, opcode, tostring(err)))
+			end
+		end
+	end
+end
+
+function D.forget(pid)
+	D.players[pid] = nil
+	D.warned[pid] = nil
+end
+
+if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and getmetatable(CreatureEvent)
+		and type(rawget(CreatureEvent, "onExtendedOpcode")) == "function" and type(Player) == "table"
+		and type(Player.registerEvent) == "function" then
+	local names = setmetatable({}, {__mode = "k"}) -- event object -> its name
+	local MT = getmetatable(CreatureEvent)
+	local construct = MT.__call
+	MT.__call = function(self, def, ...)
+		local obj = construct(self, def, ...)
+		if obj and type(def) == "string" then
+			names[obj] = def
+		end
+		return obj
+	end
+	local engineOn = CreatureEvent.onExtendedOpcode
+	CreatureEvent.onExtendedOpcode = function(self, fn)
+		local name = names[self]
+		if not name or type(fn) ~= "function" or D.byName[name] then
+			return engineOn(self, fn)
+		end
+		D.add(name, fn) -- not given to the engine: ev:register() then registers nothing
+		return true
+	end
+
+	-- the engine events and the registerEvent hook, once. CreatureEvent() gives nil outside the Scripts interface (a
+	-- spell's dofile of classes.lua loads this file first, in the spells' interface): then nothing is installed here and
+	-- the Scripts interface's own load of this file installs it (the guard at the top). Without that every Chaos
+	-- handler stayed in D and no client request reached one (found in a live client, 2026-10-13).
+	function D.install()
+		if D.installed then
+			return true
+		end
+		local dispatcher = CreatureEvent("ChaosOpcodeDispatch")
+		if not dispatcher then
+			return false
+		end
+		dispatcher:type("extendedopcode")
+		engineOn(dispatcher, D.dispatch)
+		dispatcher:register()
+		local logout = CreatureEvent("ChaosOpcodeDispatchLogout")
+		if logout then
+			function logout.onLogout(player)
+				D.forget(player:getId())
+				return true
+			end
+			logout:register()
+		end
+		D.installed = true
+		D.hookRegister()
+		return true
+	end
+
+	-- Player:registerEvent of a dispatched name registers the one engine event (D.install, once)
+	function D.hookRegister()
+		local engineRegister, engineUnregister = Player.registerEvent, Player.unregisterEvent
+		function Player.registerEvent(self, name)
+			if not D.byName[name] then
+				return engineRegister(self, name)
+			end
+			local pid = self:getId()
+			local mine = D.players[pid]
+			if not mine then
+				mine = {}
+				D.players[pid] = mine
+				engineRegister(self, "ChaosOpcodeDispatch")
+				engineRegister(self, "ChaosOpcodeDispatchLogout")
+			end
+			mine[name] = true
+			return true
+		end
+		function Player.unregisterEvent(self, name)
+			if not D.byName[name] then
+				return engineUnregister(self, name)
+			end
+			local mine = D.players[self:getId()]
+			if mine then
+				mine[name] = nil
+			end
+			return true
+		end
+	end
+	D.install()
 end

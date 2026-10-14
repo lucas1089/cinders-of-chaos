@@ -433,6 +433,9 @@ local function sendEntry(player, id)
 	if can then
 		data.task.reward = C.taskReward(task, player:getLevel(), cfg, bountyCfg)
 	end
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the monster's health
+		data = ChaosDisplayScale.apply("bestiaryEntry", player, data)
+	end
 	Chaos.send(player, OPCODE, "entry", data)
 end
 
@@ -804,6 +807,10 @@ local function playerOf(creature)
 end
 
 function X.onKill(creature, killer, mostDamageKiller)
+	-- a husk of a dense rift gives no kill credit (rift.lua, server/README.md "Rifts", Density)
+	if ChaosRift and ChaosRift.isHusk and ChaosRift.isHusk(creature) then
+		return
+	end
 	local e = X.cat().byKey[typeNameOf(creature):lower()]
 	if not e then
 		return

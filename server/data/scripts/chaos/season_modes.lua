@@ -770,6 +770,9 @@ function S.modesSendBoard(player, key, groupKey, mode)
 	local tab = M.byKey(mc, mode)
 	data.season = {id = season.id, name = season.name, tag = season.tag, mode = mode,
 		modeName = mode == "fallen" and "Fallen" or (tab and tab.name or mode)}
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the damage / healing boards
+		data = ChaosDisplayScale.apply("leaderboard", player, data)
+	end
 	Chaos.send(player, ChaosOpcodes.leaderboard or 229, "board", data)
 	return true
 end

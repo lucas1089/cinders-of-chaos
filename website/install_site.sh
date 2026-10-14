@@ -34,6 +34,7 @@ SITE="${CHAOS_SITE_DIR:-}"
 [ -n "$SITE" ] || { echo "Set CHAOS_SITE_DIR to the folder the website is installed in (outside the repository)." >&2; exit 1; }
 : "${CHAOS_DB_USER:?Set CHAOS_DB_USER}"
 : "${CHAOS_DB_NAME:?Set CHAOS_DB_NAME}"
+: "${CHAOS_SITE_URL:?Set CHAOS_SITE_URL to the public address of the site, https://...}"
 export CHAOS_DB_HOST="${CHAOS_DB_HOST:-127.0.0.1}"
 export CHAOS_DB_PASSWORD="${CHAOS_DB_PASSWORD:-${CHAOS_DB_PASS:-}}"   # CHAOS_DB_PASS: the name in /etc/chaos/chaos.env
 export CHAOS_SERVER_DATA="${CHAOS_SERVER_DATA:-$REPO/server/data}"
@@ -114,6 +115,16 @@ fi
 rm -rf "$SITE/layouts/chaos" "$SITE/plugins/chaos"
 cp -R "$HERE/overlay/." "$SITE/"
 python3 -I "$HERE/tools/recolor_layout.py" "$SITE/layouts/void" "$SITE/layouts/chaos"
+# the legal texts (docs/legal/, README "Legal pages"): the plugin's legal page reads them; .md is denied by the web server
+mkdir -p "$SITE/plugins/chaos/legal"
+for doc in terms privacy donations; do
+  for lang in pt-BR en; do
+    cp "$REPO/docs/legal/$doc.$lang.md" "$SITE/plugins/chaos/legal/"
+  done
+done
+LEGAL_TODO="$("$PHP" -r 'require $argv[1]; $n = 0; foreach (glob($argv[2] . "/*.md") as $f) { $n += count(chaos_legal_placeholders((string)file_get_contents($f))); } echo $n;' \
+  "$SITE/plugins/chaos/legal_lib.php" "$SITE/plugins/chaos/legal")"
+[ "$LEGAL_TODO" = "0" ] || echo "WARNING: the legal texts still have $LEGAL_TODO placeholder(s) like [NOME DO RESPONSÁVEL]: fill them in docs/legal/ before launch (docs/legal/README.md)."
 
 # ---------------------------------------------------------------- 3b. salted passwords (patches/, README "Passwords")
 # ZnoteX files changed in place by patches/*.patch (the pinned checkout, so they always apply); a patch that is
@@ -159,6 +170,37 @@ if [ "$(cat "$PM/.chaos-pin" 2>/dev/null || true)" != "$PHPMAILER_COMMIT" ]; the
 else
   echo "PHPMailer already installed"
 fi
+
+# ---------------------------------------------------------------- 3d. sprite images (README "Sprite images")
+# Item and outfit images drawn from our client pair by tools/gen_sprite_images.py into chaos-sprites/ (only the tiers
+# of CHAOS_SPRITE_PUBLISH; everything else a placeholder). Rebuilt only when the pair, the items.otb, the setting or
+# the tool changed; built in a new folder and swapped in, so the site never serves a half-written set. Without
+# CHAOS_SPRITE_PAIR an existing set stays and nothing is built (no pair on the site: images off).
+SPRITES="$SITE/chaos-sprites"
+if [ -n "${CHAOS_SPRITE_PAIR:-}" ]; then
+  SP_DAT="$CHAOS_SPRITE_PAIR/Tibia.dat"; SP_SPR="$CHAOS_SPRITE_PAIR/Tibia.spr"
+  [ -f "$SP_DAT" ] && [ -f "$SP_SPR" ] || { echo "CHAOS_SPRITE_PAIR: no Tibia.dat / Tibia.spr in $CHAOS_SPRITE_PAIR" >&2; exit 1; }
+  SP_OTB="${CHAOS_SPRITE_OTB:-$CHAOS_SERVER_DATA/items/items.otb}"
+  SP_OTB_ARG=()
+  if [ -f "$SP_OTB" ]; then SP_OTB_ARG=(--otb "$SP_OTB"); else
+    echo "note: no items.otb at $SP_OTB: only our own items get images (set CHAOS_SPRITE_OTB)."; SP_OTB=""; fi
+  SP_KEY="$( { sha256 "$SP_DAT"; sha256 "$SP_SPR"; [ -z "$SP_OTB" ] || sha256 "$SP_OTB"; echo "${CHAOS_SPRITE_PUBLISH:-own,donor}";
+              sha256 "$HERE/tools/gen_sprite_images.py"; sha256 "$HERE/tools/sprite_owners.csv"; } \
+            | { if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi; } | cut -d' ' -f1)"
+  if [ "$(cat "$SPRITES/.chaos-key" 2>/dev/null || true)" != "$SP_KEY" ]; then
+    echo "Drawing the sprite images (publish ${CHAOS_SPRITE_PUBLISH:-own,donor}) ..."
+    rm -rf "$SPRITES.new" "$SPRITES.old"
+    python3 -I "$HERE/tools/gen_sprite_images.py" --dat "$SP_DAT" --spr "$SP_SPR" ${SP_OTB_ARG[@]+"${SP_OTB_ARG[@]}"} \
+      --publish "${CHAOS_SPRITE_PUBLISH:-own,donor}" --out-dir "$SPRITES.new"
+    echo "$SP_KEY" > "$SPRITES.new/.chaos-key"
+    [ ! -d "$SPRITES" ] || mv "$SPRITES" "$SPRITES.old"
+    mv "$SPRITES.new" "$SPRITES"
+    rm -rf "$SPRITES.old" "$SITE/engine/cache/chaos-outfits"
+  else
+    echo "Sprite images already up to date"
+  fi
+fi
+if [ -f "$SPRITES/index.json" ]; then export CHAOS_SPRITES=1; else export CHAOS_SPRITES=0; fi
 
 # ---------------------------------------------------------------- 4. config.local.php (secrets stay on this machine)
 umask 077

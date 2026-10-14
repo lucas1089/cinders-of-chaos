@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Nightdweller" nameDescription="a nightdweller" race="blood" experience="2000000" speed="780" skulled="2" looting="1" manacost="0">
+<monster name="Nightdweller" nameDescription="a nightdweller" race="blood" experience="2000000" speed="780" manacost="0">
 	<health now="18000000" max="18000000" />
 	<look type="849" corpse="6068" />
 	<targetchange interval="2000" chance="3"/>

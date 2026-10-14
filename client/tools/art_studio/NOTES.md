@@ -89,3 +89,19 @@ creature (client/MANIFEST.md "Monster looks pair"), so none of these four was im
   cell), so pieces are given to the cell holding most of their pixels.
 - The 96 frame animation of the hound did not finish in 10 minutes (ray marching at 4x supersampling over 16 frames x 4
   views); use ss 2 for big frames.
+
+## Class outfits, phase 2: new class looks without donor art (2026-10-12)
+
+Request: new art for the Lich and Inquisitor women, a matched Necromancer pair, and alternative Thief, Ninja and
+Templar looks, each with 2 addons that carry the class. Code: `client/tools/outfit_art/class_art_line.py` (designs on
+the Warrior-line rig) and `class_art.py` (sheets in the `import_art_things.py` layout, previews). No PixelLab token, so
+no repaint: the shape is the art, as in phase 1.
+- The client cuts anything past a 2x2 outfit's right or bottom edge. In the east view the figure's right side faces
+  the bottom edge, in the north view the right edge: a weapon held low on the right (a hanging mace, a sword pointing
+  forward, a staff to the ground) crossed it by up to 49 px. Weapons are now held up, staffs held mid-shaft, and the
+  walk stride is 7 degrees (24 crossed by 11 px). `class_art.py edges` checks all poses before a build.
+- Dark tinted cloth under a dark default colour reads as one black blob; the previews use per-class colours
+  (`class_art_line.COLOURS`) and the client's default colours side by side.
+- A hood hides the hair, so a hooded woman reads as a man: the Necromancer woman gets ash-grey locks outside the hood.
+- An addon in the player's head colour on a head-coloured cowl disappears (the Ninja's headband): identity pieces that
+  must always show (headband, scarf) are untinted crimson.

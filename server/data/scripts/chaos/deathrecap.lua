@@ -124,6 +124,11 @@ ChaosCombatLog.takenHook = R.onTaken
 
 -- ---------------------------------------------------------------- store and send
 local function send(player, action, data)
+	-- the display scale (display_scale_core.lua): each recap at the level the character had at that death
+	local DS = ChaosDisplayScale
+	if DS and DS.deathRecapData then
+		data = DS.deathRecapData(data, DS.forPlayer(player))
+	end
 	Chaos.sendChunked(player, OPCODE, json.encode({action = action, data = data}))
 end
 

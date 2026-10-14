@@ -183,6 +183,56 @@ class Build(unittest.TestCase):
         code, out, err = run(['verify', self.out, '--public', pub])
         self.assertIn('not signed', err)
 
+    def test_sprite_shards(self):
+        sys.path.insert(0, os.path.join(HERE, 'sprites'))
+        import spr_shards
+        things = os.path.join(self.client, 'data', 'things', '1098')
+        # a small valid .spr (20 sprites, every third one empty) split into shards of 8
+        count, table, body = 20, [], b''
+        for i in range(count):
+            if i % 3 == 2:
+                table.append(0)
+                continue
+            rec = b'\xff\x00\xff' + bytes([4, 0]) + bytes([i, 1, 2, 3])
+            table.append(8 + 4 * count + len(body))
+            body += rec
+        spr = os.path.join(things, 'Tibia.spr')
+        with open(spr, 'wb') as f:
+            f.write(bytes.fromhex('03d6bb57') + count.to_bytes(4, 'little'))
+            f.write(b''.join(a.to_bytes(4, 'little') for a in table) + body)
+        spr_shards.split(spr, things, per_shard=8, quiet=True)
+        code, out, err = run(['build', self.client, '--dry-run', '--min-package', '3'])
+        self.assertNotEqual(code, 0)
+        self.assertIn('both here', err)
+        code, out, err = run(['build', self.client, '--dry-run', '--with-single-spr'])
+        self.assertEqual(code, 0, err)
+        self.assertIn('11 files', out)  # 7 + the index + 3 shards
+        os.remove(spr)
+        code, out, err = run(['build', self.client, '--dry-run'])
+        self.assertNotEqual(code, 0)
+        self.assertIn('needs --min-package', err)
+        code, out, err = run(['build', self.client, '--dry-run', '--min-package', '3'])
+        self.assertEqual(code, 0, err)
+        self.assertIn('10 files', out)
+        self.assertNotIn('without a shard set', err)
+        # a shard changed after the split (same size): its hash no longer matches the index
+        with open(os.path.join(things, 'Tibia.001.spr'), 'r+b') as f:
+            f.seek(-1, 2)
+            f.write(b'\x00')
+        code, out, err = run(['build', self.client, '--dry-run', '--min-package', '3'])
+        self.assertNotEqual(code, 0)
+        self.assertIn('Tibia.001.spr: SHA-256 differs', err)
+        # a missing shard
+        os.remove(os.path.join(things, 'Tibia.002.spr'))
+        code, out, err = run(['build', self.client, '--dry-run', '--min-package', '3'])
+        self.assertNotEqual(code, 0)
+        self.assertIn('missing shard', err)
+
+    def test_single_spr_warning(self):
+        code, out, err = run(['build', self.client, '--dry-run'])
+        self.assertEqual(code, 0, err)
+        self.assertIn('Tibia.spr without a shard set', err)
+
     def test_refuses_bad_files(self):
         for rel in ('modules/game_a/evil.dll', 'data/a\\b.png', 'modules/game_a/A.LUA'):
             path = os.path.join(self.client, rel)

@@ -4,16 +4,22 @@
  * nobody is required to donate and the game is fully playable for free. The packs, prices (one USD table, Pix =
  * USD x 5) and bonuses come from the game server's shop_coins_config.lua; the game server credits every paid order.
  *
- *  - GET: the notice, the packs with a Donate button per method (Pix in BRL, PayPal in USD) for a logged-in account,
+ *  - GET: the notice (voluntary; no refund except where the law requires; not a purchase; the Donation Terms of
+ *    legal_lib.php), the packs with a Donate button per method (Pix in BRL, PayPal in USD) for a logged-in account,
  *    the account's last donations.
  *  - POST pack + method (+ CSRF token): writes the order and makes the charge (pay/Service.php); PayPal goes to its
  *    approval page, Pix shows the QR code and the copy-and-paste code.
- *  - GET order=<id>: the order of this account (refreshes itself until it is paid and credited); &cancel=1 (the
+ *  - GET order=<id>: the order of this account (refreshes itself until it is paid and credited; once paid it says
+ *    again that it was a voluntary donation, not a purchase); &cancel=1 (the
  *    page's link and PayPal's cancel_url) only asks "Cancel this donation?"; the POST of that form (chaos_pay_cancel
  *    + CSRF token) cancels it, so a link alone can never cancel a donation.
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once __DIR__ . '/../pay/bootstrap.php';
+require_once __DIR__ . '/../legal_lib.php';
+if (is_file(__DIR__ . '/../creator_lib.php')) {
+	require_once __DIR__ . '/../creator_lib.php'; // creator codes (the donor's pick, website/README.md "Creator codes")
+}
 $GLOBALS['page_title'] = 'Donate - Chaos Coins';
 
 $packs = chaos_coin_packs();
@@ -39,14 +45,36 @@ if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['chaos_pay_csrf']
 $csrf = (string)($_SESSION['chaos_pay_csrf'] ?? '');
 
 $error = '';
+$notice = '';
 $order = null;
+// a creator code: picked before the donation (also sent with a Donate button as chaos_creator_code); the donor's pack is
+// never reduced, the creator's share is paid in game by creator_codes.lua
+$creatorOn = function_exists('chaos_creator_set_support') && function_exists('chaos_creator_tables_ok') && chaos_creator_tables_ok();
+$creatorPick = static function (string $code) use ($accountId, &$error, &$notice): bool {
+	[$ok, $msg] = chaos_creator_set_support($accountId, $code, (string)($_SERVER['REMOTE_ADDR'] ?? ''));
+	if ($ok) {
+		$notice = $msg;
+	} else {
+		$error = $msg;
+	}
+	return $ok;
+};
+if ($accountId > 0 && $creatorOn && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['chaos_creator_pick'])) {
+	if ($csrf === '' || !hash_equals($csrf, (string)($_POST['chaos_pay_csrf'] ?? ''))) {
+		$error = 'The form expired. Please try again.';
+	} else {
+		$creatorPick(substr((string)($_POST['chaos_creator_code'] ?? ''), 0, 32));
+	}
+}
 $confirmCancel = false;
 $redirect = '';
 if ($accountId > 0 && $service && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['chaos_pay_pack'])) {
 	if ($csrf === '' || !hash_equals($csrf, (string)($_POST['chaos_pay_csrf'] ?? ''))) {
 		$error = 'The form expired. Please try again.';
 	} else {
-		$res = $service->createOrder($accountId, (string)$_POST['chaos_pay_pack'], (string)($_POST['chaos_pay_method'] ?? ''), 'site');
+		$code = trim(substr((string)($_POST['chaos_creator_code'] ?? ''), 0, 32));
+		$res = ($code !== '' && $creatorOn && !$creatorPick($code)) ? array('ok' => false, 'error' => $error)
+			: $service->createOrder($accountId, (string)$_POST['chaos_pay_pack'], (string)($_POST['chaos_pay_method'] ?? ''), 'site');
 		if (!$res['ok']) {
 			$error = $res['error'];
 		}
@@ -101,6 +129,10 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 		<div class="chaos-notice" id="chaos-donation-notice" style="border:1px solid #c89a3c;padding:10px 14px;margin:0 0 14px 0;">
 			<p class="chaos-gold" style="margin:0 0 4px 0;"><strong><?= chaos_h(ChaosPayService::NOTICE_EN) ?></strong></p>
 			<p style="margin:0;" lang="pt-BR"><?= chaos_h(ChaosPayService::NOTICE_PT) ?></p>
+			<p class="chaos-terms-note" id="chaos-donation-terms"><?= chaos_h(CHAOS_LEGAL_DONATION_BEFORE_EN) ?>
+				<a href="<?= chaos_h(chaos_legal_url('donations', 'en')) ?>">Donation Terms</a></p>
+			<p class="chaos-terms-note" lang="pt-BR"><?= chaos_h(CHAOS_LEGAL_DONATION_BEFORE_PT) ?>
+				<a href="<?= chaos_h(chaos_legal_url('donations')) ?>">Termos de Doação</a></p>
 		</div>
 		<p class="chaos-lead">Chaos Coins are our thank-you for your donation. They buy cosmetics, convenience and services in the in-game Store (Economy &gt; Store) and belong to your account, so every character can spend them.</p>
 
@@ -125,6 +157,12 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 					<p lang="pt-BR"><?= chaos_h($thanksPt) ?></p>
 				<?php else: ?>
 					<p><?= chaos_h($statusText[$order['status']] ?? $order['status']) ?></p>
+				<?php endif; ?>
+				<?php if (in_array($order['status'], array('paid', 'credited'), true)): ?>
+					<p class="chaos-terms-note" id="chaos-donation-receipt-terms"><?= chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN) ?>
+						<a href="<?= chaos_h(chaos_legal_url('donations', 'en')) ?>">Donation Terms</a></p>
+					<p class="chaos-terms-note" lang="pt-BR"><?= chaos_h(CHAOS_LEGAL_DONATION_AFTER_PT) ?>
+						<a href="<?= chaos_h(chaos_legal_url('donations')) ?>">Termos de Doação</a></p>
 				<?php endif; ?>
 				<?php if ($order['status'] === 'open' && $order['method'] === 'pix'): ?>
 					<?php if (!empty($order['qr_image'])): ?>
@@ -156,7 +194,16 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 		<?php endif; ?>
 
 		<?php if ($settings['first_bonus_pct'] > 0): ?>
-			<p>Your first donation brings <span class="chaos-gold">+<?= (int)$settings['first_bonus_pct'] ?>% extra Chaos Coins</span> as an extra thank-you<?php if ($accountId > 0 && !$state['first']): ?> <span class="chaos-muted">(already used on your account)</span><?php endif; ?>.</p>
+			<p>Your first donation brings <span class="chaos-gold"><?= chaos_h(chaos_coin_first_text((int)$settings['first_bonus_pct'], (int)($settings['first_bonus_max'] ?? 0))) ?></span> as an extra thank-you, once per account (not on the Starter Coins)<?php if ($accountId > 0 && !$state['first']): ?> <span class="chaos-muted">(already used on your account)</span><?php endif; ?>.</p>
+		<?php endif; ?>
+		<?php if ($accountId > 0 && $creatorOn): $support = chaos_creator_support_of($accountId); ?>
+			<form method="post" action="<?= chaos_h($self) ?>" class="chaos-creator-pick" id="chaos-creator-pick">
+				<input type="hidden" name="chaos_pay_csrf" value="<?= chaos_h($csrf) ?>">
+				<label>Creator code (optional): <input type="text" name="chaos_creator_code" maxlength="16" value="<?= chaos_h($support['code'] ?? '') ?>"></label>
+				<button type="submit" name="chaos_creator_pick" value="1" class="chaos-button">Save</button>
+				<span class="chaos-muted"><?= $support ? chaos_h('You support ' . (($support['display_name'] ?? '') !== '' ? $support['display_name'] : $support['code']) . ' until ' . date('Y-m-d', (int)$support['expires_at']) . '.') : 'A creator you support gets a share of the Chaos Coins of your donations, at no cost to you: your pack and the first donation bonus stay the same.' ?></span>
+			</form>
+			<?php if ($notice !== ''): ?><p class="chaos-gold"><?= chaos_h($notice) ?></p><?php endif; ?>
 		<?php endif; ?>
 		<?php if (!$packs): ?>
 			<p class="chaos-empty">No coin packs are set up yet.</p>

@@ -28,5 +28,15 @@ ASC="$SRC/AlegreyaSC/AlegreyaSC-Bold.ttf"
 "${MK[@]}" "$SRC/IMFellEnglish/IMFeENrm28P.ttf" --name chaos-dialogue --sizes 15 --space-width 4 --out "$OUT"
 # body: a trial body font, off by default (Alegreya Sans Medium)
 "${MK[@]}" "$SRC/AlegreyaSans/AlegreyaSans-Medium.ttf" --name chaos-body --sizes 12,13 --space-width 3 --out "$OUT"
+# outline: small text drawn straight over the game picture (the login scene's labels and name plates): Alegreya Sans
+# Medium with an antialiased round 1 px border (--border), so it reads on light and dark ground alike. The per mille
+# sign and the em dash are squeezed (--max-cell-width) so each size keeps a 256 slot of the font atlas.
+ASM="$SRC/AlegreyaSans/AlegreyaSans-Medium.ttf"
+"${MK[@]}" "$ASM" --name chaos-outline --sizes 11 --border 1.0 --space-width 3 --max-cell-width 14 --out "$OUT"
+"${MK[@]}" "$ASM" --name chaos-outline --sizes 12 --border 1.0 --space-width 3 --max-cell-width 13 --out "$OUT"
+# display: big captions over the game picture (the login scene's place name): Cinzel Bold 16 with the border and a
+# shadow; glyphs space..~ only (ASCII), like the splash, which keeps the sheet in a 256 slot
+"${MK[@]}" "$CINZEL" --weight 700 --name chaos-display --sizes 16 --last 126 --border 1.0 --shadow 1,1 \
+  --space-width 5 --out "$OUT"
 # the OFL wants its text (with the copyright line) in every copy that ships the fonts
 for f in Cinzel AlegreyaSC IMFellEnglish AlegreyaSans; do cp "$SRC/$f/OFL.txt" "$OUT/OFL-$f.txt"; done

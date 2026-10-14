@@ -76,6 +76,9 @@ local function send(player, open)
 	if open then
 		st.open = 1
 	end
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: damage, DPS, healing
+		st = ChaosDisplayScale.apply("huntState", player, st)
+	end
 	Chaos.send(player, OPCODE, "state", st)
 end
 H.send = send

@@ -131,6 +131,177 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     had `Tile:setTimer` (one timer per tile, at most 60 s, tenths of seconds, no unknown state), which did not fit the
     fields (fire lasts up to 6 minutes). Applies after 0001-0040 (checked with `patch --dry-run` on the base tree with
     0001-0040 applied).
+22. `0042` (C++ `src/client/mapview.cpp`): creature names and their small health bars are drawn over the light.
+    `MapView::drawMapForeground` queued the light view after the creature information, so the ambient light darkened
+    names like the ground: in an unlit arena a world boss's name came out at about 40% of its colour (the README shot
+    `endgame_worldboss`: `#e03a1e` read as `#59150c` on the boss's red body). The light is now queued just before the
+    creature information; static and animated texts were already after it. No Lua change. No other patch touches
+    `mapview.cpp`, so it applies after 0001-0041 (`patch --dry-run` on the base file); not built yet (no room on the
+    build machine).
+23. `0043` (Lua `modules/gamelib/protocolgame.lua`): extended opcode handlers and stray parts. `ProtocolGame:onExtendedOpcode`
+    calls every module's handler (plain and JSON) through `pcall`: an error is logged as `Extended [JSON ]opcode <n>: ...`
+    and stops nothing else (the JSON handler of the same opcode, the next message). It joins the parts of
+    `Chaos.sendChunked` ("S", "P", "E"); a "P" or "E" with no "S" before it concatenated nil and raised from the
+    dispatcher, now it is dropped with a warning. The decode-error message concatenated the pcall status (a boolean),
+    which raised a second error in place of the message; it now names the opcode and uses `tostring`. The hunk carries
+    the whole function and the tables before it as context: the client protocol fuzz test
+    (`game_chaosguard/opcode_fuzz_test.lua`) loads the function from the patch and sends every message through it. No
+    other patch touches `protocolgame.lua`; the whole chain 0001-0043 applies (`patch --dry-run`, then applied, on the
+    base tree of the `windows-assets` branch); no C++ change, not built yet.
+
+24. `0044` (C++ `src/client/item.h/.cpp`, `uiitem.h/.cpp`, `luafunctions_client.cpp`; framework
+    `graphics/drawqueue.h/.cpp`, `graphics/paintershaderprogram.h/.cpp`, `ui/uiwidget.h`, `ui/uiwidgetimage.cpp`,
+    `luafunctions.cpp`; Lua / OTUI `client_settings/classes/dataset.lua`, `client_settings/options/graphics.otui`):
+    the soft rarity outline of items and UI widget shaders (`MANIFEST.md` "game_itemrarity", "game_shaderfx").
+    Items: `Item::draw` (the map) and `Item::draw(Rect, animate, outline)` (a slot) queue one
+    `DrawQueueItemItemOutline` before the sprite and point it at the sprite's own queue item (the plain one or the item
+    shader's, `DrawQueue::last()`); at draw time it draws that sprite once more, grown by the reach, through its own
+    program: the alpha of the sprite in 8 directions on rings of half and whole steps (clamped to the sprite's frame
+    rect), the nearest opaque ring weighted most (a smooth falloff), painted only where the sprite is transparent. The
+    sprite draws over it. Same approach as the creature outline of `0038` (one extra quad per item, no framebuffer),
+    with a soft edge instead of a line. The colour comes from the item's custom attributes (4 unique, else 1 rarity)
+    and a style Lua sets: `Item.setRarityOutlineColor(rarity 1-15 | 16 unique, r, g, b, a)`,
+    `Item.setRarityOutlineStyle(width 1-4, minRarity, pulseFromRarity, pulseMs)`,
+    `Item.setRarityOutlineEnabled(onMap, inSlots)`, `isRarityOutlineOnMap()` / `isRarityOutlineInSlots()`,
+    `item:getRarityOutlineColor()`. No colour set: nothing drawn (a client without `game_itemrarity` draws as before).
+    Slots: `UIItem` draws it in inventory slot styles and container `itemN` widgets only (the same test as the expiry
+    timers), not in the store, market, tooltips or the action bar; `UIItem:setRarityOutlineMode(-1 by slot, 0 never,
+    1 always)`. The reach is in sprite pixels times `g_sprites.getOffsetFactor()` (HD upscaling keeps the look); the
+    queue's opacity and a pulse (50%-100% alpha) apply. UI: the base parsed `image-shader` in OTUI and drew it through
+    `DrawQueueItemImageWithShader`, but bound no Lua setter (corelib's `globals.lua` keeps `setImageShader` as a Lua
+    field, so the base modules' calls never reached C++; they still do not). New Lua: `UIWidget:setUiShader(name)`,
+    `getUiShader()`, `setUiShaderParams(a, b, c, d)`, `getUiShaderParam(i)`; the four values reach the shader as
+    `uniform vec4 u_Params` (`PainterShaderProgram` `PARAMS_UNIFORM` 17, set right before each widget draws, so widgets
+    sharing a program keep their own values). An image shader that is not registered now draws the plain image (it drew
+    nothing). Options: a new panel at the bottom of Options > Graphics with `rarityOutlineMap` ("Rarity outline on
+    dropped items"), `rarityOutlineSlots` ("Rarity outline in bags and inventory"), `rarityFrameShine` ("Shine on
+    legendary and unique frames"), all on, and `liquidOrbs` ("Liquid health and mana orbs", off); each `apply` hands
+    the value to `game_itemrarity` / `game_shaderfx`. Checked: the chain 0001-0044 applies to the `windows-assets` base
+    client with no fuzz and 0048 applies after it (`patch --dry-run`); every changed C++ file compiles
+    (`g++ -std=c++20 -fsyntax-only`); the two GLSL programs in the patch compile as desktop GLSL 1.10 and GLSL ES 1.00
+    (`tools/check_shaders.py` with glslangValidator). Not built into a client or run (no room on the build machine):
+    previews were rendered offline from the shader math with numpy, outside the repository.
+25. `0049` (Lua / OTUI `client_settings/classes/dataset.lua`, `client_settings/options/effects.otui`,
+    `modules/game_healthcircle/option_healthcircle.otui`): one spell effect opacity control. The base had six: Options >
+    Effects "Opacity Effects" (`opacityEffects`) and "Own Spells / Other Player Spells / Creature Spells / Boss Area
+    Creature Effect", plus the same four per-source sliders in the HP/MP circle options (`spellOpacityOwn` ...). On
+    10.98 the server sends no effect source (`GameEffectSource` off), so `Effect::draw` uses the "own" alpha for every
+    magic effect: "Opacity Effects", "Own Spells" and the circle's "Own Spells" all set that one value (the last one
+    applied won) and the other three did nothing. Now `opacityEffects` is the only control, labelled "Spell effects
+    opacity", 25-100% in steps of 5 (boss warning circles never vanish); its `apply` clamps to 25..100 and sets the
+    alpha of all four sources. The four per-source sliders are removed from both windows (the Effects panel shrinks
+    from 205 to 137 px; the HP/MP circle window keeps its size, with room left at the bottom; its Lua skips sliders it
+    does not find). The g_settings key `opacityEffects` is kept; the overlay module `game_effectopacity` moves an old
+    lower "Own Spells" value into it once and clamps an old stored 0-24 (`MANIFEST.md`). Missiles keep their own
+    slider; the loot highlight, drawn with the own alpha, follows it as before. No C++ change. The chain 0001-0044,
+    0048, 0049 applies to the `windows-assets` base tree with no fuzz (`patch`), and the patched `dataset.lua` parses in
+    LuaJIT and Lua 5.3. Not run in a client.
+
+26. `0048` (C++ `src/client/spritemanager.h/.cpp`): the sprite file split into shards, read on several threads
+    (`MANIFEST.md` "Sharded sprites"). `SpriteManager::loadSpr` looks for `<name>.sprshards` before `<name>.spr`. The
+    index (text, written by `tools/sprites/spr_shards.py`) lists the shard files `<name>.NNN.spr`; each is a normal
+    `.spr` with a u32 count (signature, count, address table, records) holding one range of sprite ids (16384 by
+    default: 46 shards for the 745,653 sprites of things_custom23). `loadSpr` reads the index and checks on the main
+    thread that every shard is there with the size the index gives (`PHYSFS_stat`); a bad line, a gap in the ranges,
+    a missing or short shard drops the whole set and the single `.spr` loads as before. Then it returns: up to 8
+    background threads (`hardware_concurrency`, at most 8; none in the browser build) open the shards and read their
+    address tables into one table (each thread its own range, a lock and a ready flag per shard). A sprite needed
+    before its shard is read reads that shard on the spot. A shard whose header (signature, count) or an address turns
+    out wrong draws nothing and is logged once. Sprite reads then go to the shard's own file. The workers only call
+    PhysFS with paths resolved on the main thread and never log; `unload`, a new `loadSpr` and the destructor join
+    them. The log says `Sprites: N in 46 shard files, loaded in X ms` (or `in one file`) and, at the first sprite drawn
+    after the background reads end, how long they took. No Lua binding changes.
+    Measured on the things_custom23 pair (599,654,574 bytes, 46 shards; Linux build of 0001-0043 + 0048, Mesa
+    software GL; 9 loads each through `g_sprites.loadSpr`, page cache dropped with `posix_fadvise` before each cold
+    load; a virtual disk, so "cold" still came from the host's cache): one file cold median 6.4 ms (3.5-12.3), warm
+    1.3 ms; sharded cold median 1.6 ms (1.3-8.0), warm 1.7 ms (1.3-15.6: the long ones waited for the previous load's
+    threads). The engine never read sprite data at load (it streams records), so the load was already only the 3 MB
+    address table: sharding makes it shorter, but the gain is milliseconds. A loader harness (the same PhysFS calls,
+    31 runs): the blocking part 0.3 ms sharded against 1.8 ms single (cold), 0.2 against 0.6 ms (warm); the 46 tables
+    in the background in 5.3 ms on 8 threads, 5.9 ms on 4 and 14.5 ms on 1 (cold), 1.0-3.9 ms warm (on a warm cache
+    the threads cost more than they save, off the main thread). The real gain is in updates: a sprite change downloads
+    only its shards (`docs/LAUNCH.md` "Client updates"), and no file reaches the 512 MB limit of
+    `ResourceManager::readFileContents` (the single spr is 600 MB). No other patch touches `spritemanager.*`; the
+    whole chain 0001-0049 applies to the `windows-assets` base client (`patch --dry-run`, then applied, no fuzz).
+    Built (0001-0043 + 0048) and tested in the Linux client: the login screen draws from the shards, and the single
+    file loads when the index is renamed.
+
+27. `0045` (Lua / OTUI `modules/game_outfit/outfit.lua`, `data/styles/40-outfitwindow.otui`): a Shader row in the
+    Outfit window (ROADMAP 86). The 10.98 outfit window packet lists the shaders the character owns and the engine
+    reads them (`GameOutfitShaders`, `parseOpenOutfitWindow` -> `shaderList`), but this window had no row for them, so
+    no shader could be picked. The Shader row takes the Familiar row's place (10.98 has no familiars; with
+    `GamePlayerFamiliars` on the Familiar row stays). It lists "None" and the owned shaders by name ("Ember Glow",
+    "Blood Pulse"), each button previewing the current outfit with that shader; the search box filters them. The pick
+    shows in the preview, survives a preset pick (presets store no shader) and goes out in the set-outfit packet; only
+    a shader of the list is sent (else none), since the server refuses the whole change for a shader the character
+    does not own. `updateAppearanceText` ignores a key with no row (worn wings). Logic: `OutfitShaderList` of the
+    overlay module `game_chaosshaders` (`MANIFEST.md` "Outfit shaders in the Outfit window"); without it the row stays
+    hidden. The other half is server src-patch 0036 (the engine kept no shader ownership). The chain 0001-0045,
+    0048, 0049 applies to the `windows-assets` base client with no fuzz. Run in the Linux client against a live
+    server with 0036 (server/README.md "Chaos outfit shaders").
+
+28. `0050` (`init.lua`): `Services.account`, the HTTPS URL of the website's account API (`chaos_client_api.php`,
+    website/README.md "Client API"), empty by default. The overlay module `client_chaos_charselect` (`MANIFEST.md`
+    "Character select") reads it: the character select asks the site for each character's wings, aura and shader, and
+    "Create character" creates characters there; empty turns both off. `client/tools/set_account_api.py <client> URL`
+    writes it (https only; `--allow-http` takes 127.0.0.1 for a local test site). Lua only. The chain 0001-0045, 0048,
+    0049, 0050 applies to the `windows-assets` base client with no fuzz (`patch --dry-run`, then applied).
+
+29. `0051` (C++ `src/client/creaturehit.h` (new), `thingtype.h/.cpp`, `outfit.h/.cpp`, `creature.cpp`, `mapview.h/.cpp`,
+    `uimap.h/.cpp`, `luafunctions_client.cpp`, `CMakeLists.txt`; Lua / OTUI `game_interface/widgets/uigamemap.lua`,
+    `game_interface/gameinterface.lua`, `game_hotkeys/hotkeys_manager.lua`, `game_actionbar/actionbar.lua`,
+    `client_settings/classes/dataset.lua`, `client_settings/options/interface.otui`): big creature click. A creature
+    drawn over more than its own tile (the 4x4 guardians 2208-2212, world bosses, 2x2 bosses, class looks and mounts
+    wider than a tile, a draw scale above 1 from `0020`) takes a click on any visible pixel; before, only its own
+    bottom-right tile did. Covered: left and right-click attack, the right-click menu, look, the use-with crosshair,
+    Alt-click attack and Shift-right-click follow, the hotkey crosshair and the action bar's smart cast. How:
+    `ThingType::getTexture` keeps a one-bit alpha mask of each creature texture it builds (1/32 of the texture).
+    `Outfit::draw` records the parts it queues (mount, body, addons: the parts the outline of `0038` collects; wings and
+    auras do not count), and `Creature::draw` gives the map view one record per drawn creature: the stock one-tile click
+    box, the parts (rect, texture rect, mask), the draw scale and the floor. `MapView::getCreatureAt` maps the mouse
+    into the map framebuffer like `getPositionOffset` (zoom, walking camera), undoes the draw scale and tests the masks
+    of the last frame's records. Only creatures on the clicked tile's floor or above count (a creature under an upper
+    floor is not taken). The topmost one drawn wins; the own character is left out of that pass and keeps every click
+    that only a big creature's overhang would take. Pure maths in `creaturehit.h`, tested by
+    `tools/creaturehit_test.cpp` (CI step "Big creature click maths"). Lua: `UIMap:getCreatureAt(mousePos)`, nil when
+    the point is on no creature, then the tile's own lookups apply as before. `uigamemap.lua` takes it for look,
+    creature and attack; the tile's use thing stays the tile's own, so a use never goes to the creature. The use-with
+    crosshair and the hotkey crosshair prefer it unless the tile's target is a force-use item. The battle list is
+    unchanged. Hover: a big creature under the mouse gets the soft outline of `0044` (`DrawQueueItemItemOutline`, warm
+    white, 2 px) under its largest part; option `bigCreatureHover` ("Outline big creatures under the mouse", on) in a
+    new panel after "Right-click equips items" in Options > Interface, `UIMap.setBigCreatureHover(bool)`. The chain
+    0001-0045, 0048-0051 applies to the `windows-assets` base client with no fuzz. Built and run in the Linux client
+    (things_custom24 pair) against a local server (base, src-patches 0001-0036, `install_all.py`): on a 2x2 look (35)
+    its top-left tile was attacked, looked at ("You see a rat") and hit with a Hexdart rune through the crosshair; the
+    4x4 guardian (2208) attacked and looked at two tiles up and left of its own; the own character kept clicks under the
+    guardian; a rat under the guardian was taken only where the guardian is transparent; hits matched the sprites at
+    two zoom levels and with the guardian's own tile under the console; the option turned the outline off and on;
+    Smart control's click and Regular control's Alt-click attacked the guardian by its overhang. Not run: a creature
+    on a floor above (no upper floor near the test spot).
+30. `0052` (Lua `mods/game_helper/helper.lua`, `classes/magic_shooter.lua`, `tools_panel.lua`): the helper's rotation
+    against our server. Every cast of the magic shooter (spells, runes) and of the healing waits for the server's answer:
+    the cooldown packets (`onSpellCooldown` / `onSpellGroupCooldown` signals) confirm it, no answer within 1.2 s (3 round
+    trips on a slow line) means refused and that spell backs off 2, 4, 8, 16 s while the rest of the rotation goes on
+    (overlay `game_helperrotation`, `ChaosHelperRotation`). Before, a spell the server refused (level, target, room, a
+    corpse) went out every 200 ms for ever and the spells below it in its group never did; with a round trip over 200 ms
+    the next spell of a group went into the group cooldown. The helper's own 200 ms pre-cooldowns no longer pass for
+    server packets; the shooter's casts go through the `0026` rate guard too. The shooter checks the level and skips
+    spells the server does not have (`notOnServer`, `game_chaosspells/spellfix.lua`); healing checks class, level and
+    mana, so a refused heal no longer ends the priority loop above the next heal. A class casts a spell when its server
+    vocation id is in the entry (the old map let a Mystic try Elementalist-only spells and kept the Illusionist,
+    Berserker and Beastmaster from their own Chaos spells). A self-centred Chaos attack spell (no area table) needs a
+    monster within 3 sqm instead of always counting one. A spell that needs a target is targetable even with an area
+    (Radiant Shard). While a cast-time spell charges (`ChaosHelperRotation.CAST_MS`, or `game_castbar.isCasting()`)
+    the shooter casts nothing and a heal waits unless health is below 50%: any other spell interrupted it and the
+    server refunded its cooldown, so Colossus Fall took every attack turn and never landed. Magic shield: the server has
+    no spell that ends it, so the "exana" option does nothing (before, the helper shouted "exana vita" every 50 ms, or
+    Bushido Focus, which has id 245, and held the shooter's support spells back while the shield was up). Lua only;
+    applies after 0001-0051 (checked against the assembled tree). Tested in the Linux client (0001-0052, things_custom24
+    pair) against a local server (base, src-patches 0001-0036, `install_all.py`), 90-150 s per class against bears:
+    Berserker 157 casts sent, 157 accepted; Elementalist 82/82; Deadeye 48/48; Lich and Illusionist only their refused
+    spells failed (Corpse Explosion with no corpse, Umbral Stride with no room: 7-12 tries in 2 minutes, the rest of
+    the rotation unaffected); no "You are exhausted"; every accepted spell at least its cooldown apart, the attack group
+    at least 2 s; a 2.5 s client stall was followed by 1-4 casts in the next 6 s, no burst. Not run on Windows.
 
 ### Client guard: the build secret
 

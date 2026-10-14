@@ -1,0 +1,270 @@
+# Chaos: the helper's rotation against our server (Lua only; applies after 0001-0051).
+# - Every cast of the magic shooter (spells and runes) and of the healing waits for the server's answer before the
+#   spell goes out again: overlay module game_helperrotation (ChaosHelperRotation). The server's cooldown packets
+#   (onSpellCooldown / onSpellGroupCooldown, g_game signals) confirm a cast; no answer within 1.2 s (3 round trips on a
+#   slow line) means refused and that spell backs off 2-16 s while the rest of the rotation goes on. The shooter held
+#   a spell the server refused (level, target, a missing corpse or chi) on a 200 ms loop for ever and the spells below it
+#   in its group never went out; with a round trip over 200 ms the next spell of a group went into the group cooldown.
+#   The helper's own 200 ms pre-cooldowns no longer pass for server packets.
+# - The shooter's casts go through the 0026 rate guard (helperCastAllowed) too.
+# - The shooter checks the level (and skips spells the server does not have, notOnServer); healing checks class, level
+#   and mana, so a heal the server refuses no longer ends the priority loop before the heal below it.
+# - A spell entry's vocations are the server's ids (game_chaosspells): a class casts a spell when its own id is listed.
+# - A self-centred Chaos attack spell (no area table) needs a monster within 3 sqm instead of always counting one.
+# - A spell that needs a target is targetable even with an area (Radiant Shard).
+# - While a cast-time spell charges (ChaosHelperRotation.CAST_MS, or game_castbar says so) the shooter casts nothing
+#   and a heal waits unless health is below 50%: any other spell interrupted it and the server refunded its cooldown.
+# - Magic shield: the server has no spell that ends it; the "exana" option does nothing instead of shouting the words
+#   (or Bushido Focus, which took id 245) and no longer holds the shooter's support spells back.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -2442,8 +2442,16 @@
+   return getHarmonyCountSafe(p)
+ end
+ 
++-- Chaos (base-patch 0052): a spell entry lists the server's vocation ids (game_chaosspells: the Chaos spells as the
++-- server has them, the stock entries remapped and corrected in spellfix.lua), so a class casts it when its own id is
++-- listed. The old map (the base class plus its promotion) let a Mystic try Elementalist-only spells and kept the
++-- Illusionist, Berserker and Beastmaster from their own Chaos spells. Runes keep the map (their lists are stock ids).
++local function canCastByServerVoc(spellVocations, serverVocId)
++  return serverVocId ~= nil and type(spellVocations) == "table" and table.contains(spellVocations, serverVocId)
++end
++
+ _Helper.canUseByServerVoc = function(spellVocations, serverVocId)
+-  return canUseByServerVoc(spellVocations, serverVocId)
++  return canCastByServerVoc(spellVocations, serverVocId)
+ end
+ 
+ _Helper.playerHasSpell = function(player, spellId)
+@@ -2483,12 +2491,31 @@
+   _Helper.Shortcut.onButtonChange(button)
+ end
+ 
++-- Chaos (base-patch 0052): these two are the server's cooldown packets (g_game signals). A packet also confirms the
++-- helper's cast of that spell / group (ChaosHelperRotation, overlay game_helperrotation); the helper's own 200 ms
++-- pre-cooldowns go through _Helper.onSpellCooldown / onSpellGroupCooldown, which only set the time.
++local helperRotation = nil
++function _Helper.getRotation()
++  if not helperRotation and ChaosHelperRotation and ChaosHelperRotation.new then
++    helperRotation = ChaosHelperRotation.new()
++  end
++  return helperRotation
++end
++
+ function onSpellCooldown(spellId, delay)
+   spellsCooldown[spellId] = g_clock.millis() + delay
++  local rotation = _Helper.getRotation()
++  if rotation then
++    ChaosHelperRotation.confirmSpell(rotation, spellId, g_clock.millis())
++  end
+ end
+ 
+ function onSpellGroupCooldown(groupId, delay)
+   groupsCooldown[groupId] = g_clock.millis() + delay
++  local rotation = _Helper.getRotation()
++  if rotation then
++    ChaosHelperRotation.confirmGroup(rotation, groupId, g_clock.millis())
++  end
+ end
+ 
+ function onMultiUseCooldown(time)
+@@ -3983,6 +4010,28 @@
+     return false
+   end
+ 
++  -- Chaos (base-patch 0052): a heal the server refuses (another class, too low a level, a spell the server does not
++  -- have) used to count as cast and broke out of the priority loop, so the heal below it never went out
++  if spell.vocations and not _Helper.canUseByServerVoc(spell.vocations, currentPlayer:getVocation()) then
++    return false
++  end
++  if ChaosHelperRotation and not ChaosHelperRotation.castable(spell, currentPlayer:getLevel(), currentPlayer:getMana()) then
++    return false
++  end
++  local rotation = _Helper.getRotation()
++  local castAt = g_clock.millis()
++  if rotation and ChaosHelperRotation.blocked(rotation, spell.id, spell.group, castAt, false) then
++    return false
++  end
++  -- a cast-time spell is charging: a heal would interrupt it; it waits unless health is low
++  local charging = (rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
++      (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting())
++  if charging and currentPlayer:getMaxHealth() > 0 and
++      currentPlayer:getHealth() * 100 / currentPlayer:getMaxHealth() >=
++      (ChaosHelperRotation and ChaosHelperRotation.defaults.channelHealBelow or 50) then
++    return false
++  end
++
+   -- Check if player has enough mana for the spell
+   if spell.mana and spell.mana > 0 then
+     local playerMana = currentPlayer:getMana()
+@@ -4010,6 +4059,9 @@
+   safeDoThing(false)
+   g_game.talk(spell.words, true)
+   safeDoThing(true)
++  if rotation then
++    ChaosHelperRotation.cast(rotation, spell.id, spell.group, castAt)
++  end
+ 
+   -- Track buff expiration for spells with buff duration
+   if buffDuration > 0 then
+@@ -5042,11 +5094,11 @@
+ end
+ 
+ _Helper.onSpellCooldown = function(spellId, delay)
+-  onSpellCooldown(spellId, delay)
++  spellsCooldown[spellId] = g_clock.millis() + delay
+ end
+ 
+ _Helper.onSpellGroupCooldown = function(groupId, delay)
+-  onSpellGroupCooldown(groupId, delay)
++  groupsCooldown[groupId] = g_clock.millis() + delay
+ end
+ 
+ -- HELPER MAGIC SHOOTER: Object use exhaustion (shared between potions and runes)
+--- a/mods/game_helper/classes/magic_shooter.lua
++++ b/mods/game_helper/classes/magic_shooter.lua
+@@ -466,7 +466,9 @@
+       local spellArea = (config.extendedArea2 and spell.extendedArea2) or (config.extendedArea and spell.extendedArea) or
+       spell.area
+       -- Spell é targetable se tem range > 0 E não é spell de área, OU se está na lista de bothCastTypeSpells
+-      local targetable = ((spell.range and spell.range > 0) and not spell.area) or
++      -- Chaos (base-patch 0052): a spell that needs a target is targetable even with an area (Radiant Shard explodes
++      -- around its target; the server refuses it without one)
++      local targetable = ((spell.range and spell.range > 0) and (not spell.area or spell.needTarget)) or
+           table.contains(bothCastTypeSpells, spell.id)
+ 
+       -- Verificar se é spell de suporte (deve respeitar quantidade mínima de monstros)
+@@ -491,6 +493,9 @@
+         goto continue
+       elseif _Helper.playerHasSpell and not _Helper.playerHasSpell(myCharacter, spell.id) then
+         goto continue
++      elseif ChaosHelperRotation and not ChaosHelperRotation.castable(spell, myCharacter:getLevel(), myCharacter:getMana()) then
++        -- Chaos (base-patch 0052): below the spell's level, or a spell the server does not have
++        goto continue
+       end
+ 
+       -- Check health percent requirement (only if configured > 0)
+@@ -773,6 +778,11 @@
+         -- Para outros spells sem área e não-targetable, usar 1
+         if isSupportSpell then
+           reachableCreatures = activeCreaturesAround
++        elseif ChaosHelperRotation and ChaosHelperRotation.isSelfArea(spell) then
++          -- Chaos (base-patch 0052): an attack spell around the caster with no area table (the Chaos spells) needs
++          -- monsters close by, not just "1"
++          reachableCreatures = ChaosHelperRotation.countNear(activeCreatureList, position,
++            ChaosHelperRotation.defaults.selfAreaRadius)
+         else
+           reachableCreatures = 1
+         end
+@@ -807,6 +817,22 @@
+           goto continue
+         end
+ 
++        -- Chaos (base-patch 0052): wait for the server's answer to this spell's last cast (or its group's), back off
++        -- a spell it refuses, and keep under the rate guard of base-patch 0026
++        local rotation = _Helper.getRotation and _Helper.getRotation()
++        local castAt = g_clock.millis()
++        if rotation and ChaosHelperRotation.blocked(rotation, spell.id, spell.group, castAt) then
++          goto continue
++        end
++        -- a cast-time spell is charging: any other spell would interrupt it (and the server refunds its cooldown)
++        if (rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
++            (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting()) then
++          goto continue
++        end
++        if helperCastAllowed and not helperCastAllowed(spell.words) then
++          goto continue
++        end
++
+         if _Helper.safeDoThing then _Helper.safeDoThing(false) end
+         -- Virar o personagem na direcao com mais criaturas para spells com aimAtTarget = true
+         local shouldTurn = spell.aimAtTarget and config.bestDirection and config.bestDirection ~= direction
+@@ -821,6 +847,9 @@
+         end
+         g_game.talk(spell.words)
+         if _Helper.safeDoThing then _Helper.safeDoThing(true) end
++        if rotation then
++          ChaosHelperRotation.cast(rotation, spell.id, spell.group, castAt)
++        end
+ 
+         -- Track buff expiration for spells with buff duration
+         if buffDuration > 0 then
+@@ -939,9 +968,21 @@
+             runeWaitingForObjectUse = true
+             goto continue
+           end
++          local rotation = _Helper.getRotation and _Helper.getRotation()
++          local castAt = g_clock.millis()
++          if rotation and ChaosHelperRotation.blocked(rotation, runeSpell.id, runeSpell.group, castAt) then
++            goto continue
++          end
++          if (rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
++              (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting()) then
++            goto continue
++          end
+           if _Helper.safeDoThing then _Helper.safeDoThing(false) end
+           g_game.useInventoryItemWith(config.id, bestTarget, 0, true)
+           if _Helper.safeDoThing then _Helper.safeDoThing(true) end
++          if rotation then
++            ChaosHelperRotation.cast(rotation, runeSpell.id, runeSpell.group, castAt)
++          end
+ 
+           -- Set shared object use cooldown so potions know a rune was just used
+           if _Helper.setObjectUseCooldown then _Helper.setObjectUseCooldown() end
+--- a/mods/game_helper/tools_panel.lua
++++ b/mods/game_helper/tools_panel.lua
+@@ -1063,6 +1063,17 @@
+   return spell and spell.words or fallback
+ end
+ 
++-- Chaos (base-patch 0052): the server has no spell that ends the magic shield. The entry of the stock one is marked
++-- notOnServer (game_chaosspells/spellfix.lua) and its id 245 is Bushido Focus now: without this the helper shouted
++-- "exana vita" every 50 ms and held every support spell of the shooter back while the shield was up.
++local function cancelShieldWords()
++  local spell = SpellInfo and SpellInfo.Default and SpellInfo.Default["Cancel Magic Shield"]
++  if spell and not spell.notOnServer then
++    return spell.words
++  end
++  return nil
++end
++
+ -- Toggle utamo vita auto-cast
+ function tools.toggleUtamoVita(checked)
+   local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+@@ -1192,10 +1203,11 @@
+ 
+   -- Check if we should cast exana vita (cancel magic shield)
+   -- HP is ABOVE threshold AND has magic shield active
+-  if exanaEnabled and healthPercent > exanaHpPercent and hasMShield then
+-    if not isGroupOnCooldown(SUPPORT_GROUP_ID) then
++  local cancelWords = cancelShieldWords()
++  if exanaEnabled and cancelWords and healthPercent > exanaHpPercent and hasMShield then
++    if not isGroupOnCooldown(SUPPORT_GROUP_ID) and (not helperCastAllowed or helperCastAllowed(cancelWords)) then
+       safeDoThing(false)
+-      g_game.talk(spellWords(CANCEL_MAGIC_SHIELD_SPELL_ID, "exana vita"))
++      g_game.talk(cancelWords)
+       safeDoThing(true)
+       return
+     end
+@@ -1206,9 +1218,10 @@
+   -- The inclusive boundary is important for 100%: otherwise that setting cannot
+   -- cast until the player has already lost health.
+   if utamoEnabled and healthPercent <= utamoHpPercent and not hasMShield then
+-    if not isGroupOnCooldown(SUPPORT_GROUP_ID) then
++    local shieldWords = spellWords(MAGIC_SHIELD_SPELL_ID, "utamo vita")
++    if not isGroupOnCooldown(SUPPORT_GROUP_ID) and (not helperCastAllowed or helperCastAllowed(shieldWords)) then
+       safeDoThing(false)
+-      g_game.talk(spellWords(MAGIC_SHIELD_SPELL_ID, "utamo vita"))
++      g_game.talk(shieldWords)
+       safeDoThing(true)
+       return
+     end
+@@ -1232,7 +1245,7 @@
+   local hasMShield = hasMagicShield()
+   local cfg = helperConfig.magicShield
+ 
+-  if cfg.exanaEnabled and healthPercent > (cfg.exanaHpPercent or 90) and hasMShield then
++  if cfg.exanaEnabled and cancelShieldWords() and healthPercent > (cfg.exanaHpPercent or 90) and hasMShield then
+     return true
+   end
+ 

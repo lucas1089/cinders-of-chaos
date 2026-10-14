@@ -139,6 +139,55 @@ function chaos_line_ids(int $base): array {
 	return array_merge(array($base), array_keys($lines[$base]['asc']));
 }
 
+/**
+ * The class look a character of this class and sex wears (class_looks_core.lua: L.looks with the pair switches
+ * L.PAIR19_LOOKS / L.PAIR20_LOOKS and their lists), or null (no server data, unknown class). Sex 0 = female.
+ * New characters get it at creation (plugin.php), so the character list shows the class's look before the first
+ * login; the game server puts the same look on at that login (class_looks.lua).
+ */
+function chaos_class_look(int $vocation, int $sex): ?int {
+	$text = chaos_read_server_file('scripts/chaos/class_looks_core.lua');
+	if ($text === '') {
+		return null;
+	}
+	$table = static function (string $name) use ($text): array {
+		$out = array();
+		if (preg_match_all('/\[(\d+)\]\s*=\s*\{([^{}]*)\}/', chaos_lua_block($text, $name), $m, PREG_SET_ORDER)) {
+			foreach ($m as $e) {
+				$out[(int)$e[1]] = array('male' => (int)(chaos_lua_field($e[2], 'male') ?? 0), 'female' => (int)(chaos_lua_field($e[2], 'female') ?? 0));
+			}
+		}
+		return $out;
+	};
+	$pick = $table('looks')[$vocation] ?? null;
+	foreach (array(19, 20) as $pair) {
+		$swap = $table('pair' . $pair . 'Looks')[$vocation] ?? null;
+		if ($swap !== null && preg_match('/^L\.PAIR' . $pair . '_LOOKS\s*=\s*true\b/m', $text)) {
+			$pick = $swap;
+			break;
+		}
+	}
+	if ($pick === null) {
+		return null;
+	}
+	$look = $sex === 0 ? $pick['female'] : $pick['male'];
+	return $look > 0 ? $look : null;
+}
+
+/** Puts the class look on a new character (by name): look type of its class and sex, both addons (ChaosClassLooks.ADDONS). */
+function chaos_apply_class_look(string $name): bool {
+	$row = $name === '' ? false : db()->fetchOne('SELECT `id`, `vocation`, `sex` FROM `players` WHERE `name` = ? LIMIT 1;', [$name]);
+	if (!is_array($row)) {
+		return false;
+	}
+	$look = chaos_class_look((int)$row['vocation'], (int)$row['sex']);
+	if ($look === null) {
+		return false;
+	}
+	db()->execute('UPDATE `players` SET `looktype` = ?, `lookaddons` = 3 WHERE `id` = ?;', [$look, (int)$row['id']]);
+	return true;
+}
+
 // ---------------------------------------------------------------------------
 // Database
 // ---------------------------------------------------------------------------
@@ -470,6 +519,99 @@ function chaos_leaderboard_titles(): array {
 		JOIN `players` `p` ON `p`.`id` = `t`.`player_id`
 		WHERE `t`.`week` = ?
 		ORDER BY `t`.`board`, `t`.`rank`;', [$week]));
+}
+
+// ---------------------------------------------------------------------------
+// Competitive records (records.lua, records_config.lua, tables chaos_records*)
+// ---------------------------------------------------------------------------
+
+/** The record categories of records_config.lua: key => {name, title, info}. */
+function chaos_records_categories(): array {
+	$cats = array();
+	$body = chaos_lua_block(chaos_read_server_file('scripts/chaos/records_config.lua'), 'categories');
+	foreach (chaos_lua_entries($body) as $entry) {
+		$key = chaos_lua_field($entry, 'key');
+		if (is_string($key) && preg_match('/^[a-z0-9_]{1,16}$/', $key)) {
+			$cats[$key] = array('name' => (string)(chaos_lua_field($entry, 'name') ?? $key),
+				'title' => (string)(chaos_lua_field($entry, 'title') ?? ''), 'info' => (string)(chaos_lua_field($entry, 'info') ?? ''));
+		}
+	}
+	return $cats;
+}
+
+/** "k=name;k=name" (chaos_records_boards variants / sizes) -> key => name. */
+function chaos_records_pairs(string $text): array {
+	$out = array();
+	foreach (explode(';', $text) as $part) {
+		$kv = explode('=', $part, 2);
+		if (count($kv) === 2 && preg_match('/^[a-z0-9_]{1,24}$/', $kv[0])) {
+			$out[$kv[0]] = $kv[1];
+		}
+	}
+	return $out;
+}
+
+/** The boards the server published at startup (chaos_records_boards), in its order: key => {cat, name, mode, format,
+ * label, variants, sizes}. */
+function chaos_records_boards(): array {
+	if (!chaos_table_exists('chaos_records_boards')) {
+		return array();
+	}
+	$boards = array();
+	foreach (chaos_rows('SELECT `key`, `cat`, `name`, `mode`, `format`, `label`, `variants`, `sizes` FROM `chaos_records_boards` ORDER BY `ord`;') as $r) {
+		$boards[(string)$r['key']] = array('cat' => (string)$r['cat'], 'name' => (string)$r['name'], 'mode' => (string)$r['mode'],
+			'format' => (string)$r['format'], 'label' => (string)$r['label'], 'variants' => chaos_records_pairs((string)$r['variants']),
+			'sizes' => chaos_records_pairs((string)$r['sizes']));
+	}
+	return $boards;
+}
+
+/** The season key of the records (ChaosRecordsCore.seasonKey): the running season "s<id>", else the quarter "q<YYYY><q>". */
+function chaos_records_season_key(int $time): string {
+	foreach (chaos_seasons() as $s) {
+		if ($s['start'] > 0 && $time >= $s['start'] && ($s['finish'] <= 0 || $time < $s['finish'])) {
+			return 's' . $s['id'];
+		}
+	}
+	return 'q' . date('Y', $time) . (intdiv((int)date('n', $time) - 1, 3) + 1);
+}
+
+/** A record value as shown (ChaosRecordsCore.valueText): time m:ss (h:mm:ss), pct (1/100 %), else a number. */
+function chaos_records_value(string $format, $value): string {
+	$v = (int)$value;
+	if ($format === 'time') {
+		$v = max(0, $v);
+		return $v >= 3600 ? sprintf('%d:%02d:%02d', intdiv($v, 3600), intdiv($v % 3600, 60), $v % 60) : sprintf('%d:%02d', intdiv($v, 60), $v % 60);
+	}
+	if ($format === 'pct') {
+		return sprintf('%.2f%%', $v / 100);
+	}
+	return number_format((float)$v);
+}
+
+/** The rows of one record slot and period: the best first (mode "min": the lowest), a tie to the earlier time, staff and
+ * held characters left out, $vocations = a class tab (empty = every class). */
+function chaos_records_rows(string $slot, string $period, string $mode, int $limit = 20, array $vocations = array()): array {
+	if (!chaos_table_exists('chaos_records')) {
+		return array();
+	}
+	$vocations = array_values(array_map('intval', $vocations));
+	$class = $vocations ? ' AND `r`.`voc` IN (' . implode(',', array_fill(0, count($vocations), '?')) . ')' : '';
+	return chaos_rows('
+		SELECT `p`.`name`, `p`.`vocation`, `r`.`value`, `r`.`at`, `r`.`party`, `r`.`members`
+		FROM `chaos_records` `r`
+		JOIN `players` `p` ON `p`.`id` = `r`.`player_id`
+		WHERE `r`.`slot` = ? AND `r`.`period` = ? AND `r`.`value` > 0 AND `p`.`group_id` < ?' . $class . chaos_antibot_hold_sql() . '
+		ORDER BY `r`.`value` ' . ($mode === 'min' ? 'ASC' : 'DESC') . ', `r`.`at` ASC, `r`.`player_id` ASC
+		LIMIT ?;', array_merge([$slot, $period, (int)chaos_cfg('staff_group', 4)], $vocations, [$limit]));
+}
+
+/** The realm firsts of a season, oldest first. */
+function chaos_records_firsts(string $season): array {
+	if (!chaos_table_exists('chaos_records_firsts')) {
+		return array();
+	}
+	return chaos_rows('SELECT `target`, `board`, `name`, `members`, `value`, `at` FROM `chaos_records_firsts` WHERE `season` = ? ORDER BY `at` ASC LIMIT 100;', [$season]);
 }
 
 /** Class Ladder: the highest characters of one class line. With a season: only its characters; $mode is a season
@@ -866,6 +1008,8 @@ function chaos_coin_settings(): array {
 	$text = chaos_read_server_file('scripts/chaos/shop_coins_config.lua');
 	return array(
 		'first_bonus_pct' => (int)(chaos_lua_field(chaos_lua_block($text, 'firstPurchase'), 'bonusPct') ?? 0),
+		// the cap of the first-purchase bonus in coins (0 = none): "Limite a 1000"
+		'first_bonus_max' => (int)(chaos_lua_field(chaos_lua_block($text, 'firstPurchase'), 'maxBonus') ?? 0),
 		'currency'        => (string)(preg_match('/\bcurrency\s*=\s*"([^"]*)"/', $text, $m) ? $m[1] : ''),
 	);
 }
@@ -898,18 +1042,35 @@ function chaos_pay_config(): array {
 		'max_open'        => $int('maxOpenPerAccount', 1),
 		'max_per_hour'    => $int('maxPerHour', 6),
 		'first_bonus_pct' => chaos_coin_settings()['first_bonus_pct'],
+		'first_bonus_max' => chaos_coin_settings()['first_bonus_max'],
 		'methods'         => $methods,
 	);
 }
 
 /** Coins a pack credits (same rule as ChaosShopCore.packCredit in shop_core.lua). */
-function chaos_coin_pack_total(array $pack, bool $first, int $firstPct): int {
+function chaos_coin_pack_total(array $pack, bool $first, int $firstPct, int $firstMax = 0): int {
 	$coins = (int)$pack['coins'];
 	$total = $coins + intdiv($coins * (int)$pack['bonus_pct'], 100) + (int)$pack['bonus_coins'];
 	if ($first && empty($pack['starter'])) {
-		$total += intdiv($coins * $firstPct, 100);
+		$total += chaos_coin_first_bonus($coins, $firstPct, $firstMax);
 	}
 	return $total;
+}
+
+/** The first-purchase bonus of a pack of $coins: $pct % of it, at most $max coins (0 = no cap; ChaosShopCore.packCredit). */
+function chaos_coin_first_bonus(int $coins, int $pct, int $max = 0): int {
+	$bonus = intdiv($coins * $pct, 100);
+	return $max > 0 ? min($bonus, $max) : $bonus;
+}
+
+/** The first donation line of the Donate page and the guides: "double Chaos Coins (+100%, up to 1000 extra)". */
+function chaos_coin_first_text(int $pct, int $max): string {
+	$base = $pct === 100 ? 'double Chaos Coins' : '+' . $pct . '% extra Chaos Coins';
+	$notes = $pct === 100 ? array('+100%') : array();
+	if ($max > 0) {
+		$notes[] = 'up to ' . $max . ' extra';
+	}
+	return $notes ? $base . ' (' . implode(', ', $notes) . ')' : $base;
 }
 
 /** What an account can still get: ['first' => first-purchase bonus open, 'starter' => starter pack open]. */

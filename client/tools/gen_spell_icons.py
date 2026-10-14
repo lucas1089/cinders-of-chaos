@@ -315,7 +315,11 @@ ICONS = [  # (spell name, theme, glyph)
     # Town Portal, every class (cell 280)
     ('Town Portal', 'arcane', 'gate'),
     # the Thief line's self heal (cell 281)
-    ('Shadow Mend', 'shadow', 'drop')]
+    ('Shadow Mend', 'shadow', 'drop'),
+    # build archetypes, second round (2026-10-12): the snares and the vigils
+    ('Snare Trap', 'steel', 'fang'), ('Seeker Mine', 'ember', 'meteor'), ('Detonate Mines', 'fire', 'burst'),
+    ('Vigil of Wrath', 'blood', 'banner'), ('Vigil of Iron', 'steel', 'shield'), ('Vigil of Haste', 'nature', 'dash'),
+    ('Vigil of Clarity', 'water', 'ring')]
 
 def render(theme, glyph):
     c = COL[theme]

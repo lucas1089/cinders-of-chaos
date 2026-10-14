@@ -359,6 +359,9 @@ function W.sendState(player, open, tab)
 	local data = W.state(player, tab)
 	data.open = open and true or false
 	W.viewers[player:getId()] = tab
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the guild boss damage board
+		data = ChaosDisplayScale.apply("guildState", player, data)
+	end
 	Chaos.sendChunked(player, OPCODE, json.encode({action = "state", data = data}))
 end
 
@@ -775,7 +778,12 @@ local function handle(player, action, data)
 		return
 	elseif action:sub(1, 4) == "boss" then
 		if ChaosGuildBoss and ChaosGuildBoss.handle then
-			ok, text = ChaosGuildBoss.handle(player, action, data)
+			local refused
+			ok, text, refused = ChaosGuildBoss.handle(player, action, data)
+			if refused then
+				W.message(player, false, text)
+				return
+			end
 		else
 			return
 		end

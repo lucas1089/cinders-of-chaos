@@ -4,7 +4,9 @@
 --                                     state, bossName, mods = [{name, text, boon}], bonus = {quantity, rarity, experience},
 --                                     notes = [text] (live lines: sealed coffer, goblin, twin guardians, fallen players),
 --                                     lives, livesMax (shared lives), mods[].tier (modifier tier 1-5 or none),
---                                     omen (kind name) and title (an Omen Key arena)}
+--                                     omen (kind name) and title (an Omen Key arena),
+--                                     mods[].side ("prefix" | "suffix", none for a boon),
+--                                     swift (the Rift Atlas's Swift time of the tier in seconds; none in an Omen arena)}
 --                     end {result = success|failed, text, exitIn}
 --   client -> server  query (after a module reload: the server answers with start when the player is in a rift)
 -- The Rift Keys page of the Info & Services window (game_chaosinfo) shows the keys the player carries and the run status.
@@ -36,10 +38,17 @@ end
 local function updateClock()
   if not hud or not data then return end
   local clock = child('clock')
+  -- the Rift Atlas's Swift time of the tier, only while the rift runs
+  local swift = child('swift')
+  swift:setVisible(false)
   if data.state == 'running' then
     local left = RiftMath.left(data.left, receivedAt, now())
     clock:setText(RiftMath.clock(left))
     clock:setColor(RiftMath.clockColor(left))
+    local text, color = RiftMath.swiftLine(data.swift, data.limit, left)
+    swift:setText(text)
+    if color then swift:setColor(color) end
+    swift:setVisible(text ~= '')
   elseif data.state == 'success' then
     clock:setText(tr('Sealed'))
     clock:setColor('#7fd07f')
@@ -88,7 +97,9 @@ local function render()
   for _, m in ipairs(list) do
     local label = g_ui.createWidget('RiftModLabel', mods)
     label:setText('- ' .. RiftMath.modLine(m))
-    if m.boon then label:setColor('#e8c060') end -- a pure reward modifier (coffer, goblin, echoing spoils)
+    -- gold: a boon (a pure reward); violet: a suffix (the players or the area get worse); prefixes keep the label colour
+    local color = RiftMath.modColor(m)
+    if color then label:setColor(color) end
   end
   local notes = child('notes')
   notes:destroyChildren()

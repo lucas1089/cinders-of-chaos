@@ -16,9 +16,10 @@
 -- Protocol (JSON {action, data}):
 --   client -> server  watch {on = true|false}   (the overlay is open / closed)
 --   server -> client  marks {marks = [{k, x, y, z, n?}]}                 every cfg.thinkMs while watching
---                     rift  {id, x1, y1, x2, y2, z}                      once per run, to everyone in it: the client
---                                                                         forgets its old map of that square (the
---                                                                         rift rooms are rebuilt for every run)
+--                     rift  {id, x1, y1, x2, y2, z}                      once per run and floor of the slot, to
+--                                                                         everyone in it: the client forgets its old
+--                                                                         map of that square (every run of a slot
+--                                                                         gets a new generated layout)
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -204,8 +205,12 @@ local function sendRiftArea(player)
 	local grid = ChaosRiftConfig and ChaosRiftConfig.grid
 	local area = M.riftArea(grid, run.slot)
 	if area then
-		area.id = run.mapToken
-		Chaos.send(player, OPCODE, "rift", area)
+		-- one square per floor of the slot (a rift layout may have two)
+		for k = 1, (grid.floors or 1) do
+			local a = {x1 = area.x1, y1 = area.y1, x2 = area.x2, y2 = area.y2, z = area.z + k - 1,
+				id = k == 1 and run.mapToken or (run.mapToken .. "/" .. k)}
+			Chaos.send(player, OPCODE, "rift", a)
+		end
 		MM.riftSent[player:getId()] = run.mapToken
 	end
 end

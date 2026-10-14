@@ -16,5 +16,18 @@ function chaos_pay_test_db(): ChaosPayPdo {
 		reversal TEXT NOT NULL DEFAULT '', reversal_cents INT NOT NULL DEFAULT 0, reversal_done INT NOT NULL DEFAULT 0,
 		reversal_coins INT NOT NULL DEFAULT 0, reversal_at INT NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', updated INT NOT NULL DEFAULT 0)");
 	$pdo->exec("INSERT INTO accounts (id, email) VALUES (77, 'player@example.invalid'), (78, '')");
+	// creator codes (creator_lib.php) and the payer hashes of confirmed donations (Service.php recordPayer)
+	$pdo->exec("CREATE TABLE chaos_creator_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, account_id INT NOT NULL,
+		display_name TEXT NOT NULL DEFAULT '', pct INT NOT NULL DEFAULT 0, active INT NOT NULL DEFAULT 1, note TEXT NOT NULL DEFAULT '',
+		created_at INT NOT NULL DEFAULT 0, created_by TEXT NOT NULL DEFAULT '')");
+	$pdo->exec("CREATE TABLE chaos_creator_support (account_id INT PRIMARY KEY, code_id INT NOT NULL, set_at INT NOT NULL, expires_at INT NOT NULL,
+		ip TEXT NOT NULL DEFAULT '')");
+	$pdo->exec("CREATE TABLE chaos_creator_uses (order_id INT PRIMARY KEY, code_id INT NOT NULL, creator_account_id INT NOT NULL,
+		buyer_account_id INT NOT NULL, coins_base INT NOT NULL DEFAULT 0, share INT NOT NULL DEFAULT 0, state TEXT NOT NULL DEFAULT 'pending',
+		reason TEXT NOT NULL DEFAULT '', created_at INT NOT NULL DEFAULT 0, credited_at INT NOT NULL DEFAULT 0, settled_at INT NOT NULL DEFAULT 0)");
+	$pdo->exec("CREATE TABLE chaos_creator_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INT NOT NULL, code_id INT NOT NULL DEFAULT 0,
+		account_id INT NOT NULL DEFAULT 0, order_id INT NOT NULL DEFAULT 0, action TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '')");
+	$pdo->exec("CREATE TABLE chaos_pay_payers (order_id INT PRIMARY KEY, account_id INT NOT NULL, payer_hash TEXT NOT NULL,
+		created_at INT NOT NULL DEFAULT 0)");
 	return $db;
 }

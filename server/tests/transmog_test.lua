@@ -73,6 +73,17 @@ local FIXTURE = {
 	[27662] = {name = "gilded eldritch bow", kind = "distance"},
 	[27672] = {name = "gilded eldritch rod", kind = "wand"}
 }
+-- the themed set pieces of things_custom24 (ChaosThemeArt.PAIR24, on since 2026-10-13), as install_theme_items.py
+-- writes them to items.xml: the name and the weapon type or slot of their kind
+local THEME_KIND = {sword = "sword", axe = "axe", club = "club", bow = "distance", crossbow = "distance", wand = "wand",
+	rod = "wand", shield = "shield", spellbook = "shield", helmet = "helmet", armor = "armor", legs = "legs",
+	boots = "boots"}
+local themeArt = dofile("data/lib/chaos_theme_art.lua")
+for _, p in ipairs(themeArt.items.pieces) do
+	if THEME_KIND[p.kind] then
+		FIXTURE[p.id] = {name = p.name, kind = THEME_KIND[p.kind]}
+	end
+end
 local function describe(id)
 	return FIXTURE[id]
 end
@@ -101,7 +112,9 @@ for _, s in ipairs(cfg.sets) do
 		eq(FIXTURE[id] ~= nil, true, "fixture knows look " .. id)
 	end
 end
-eq(sources.store, 9, "nine store sets") eq(sources.achievement, 4, "four achievement sets")
+eq(sources.store, 9 + 12, "nine store sets and the 12 themed sets of the weekly rotation")
+eq(sources.achievement, 4 + 6, "four achievement sets and the 6 prestige themed sets")
+-- the 18 themed sets of things_custom24: 12 store (weekly rotation only), 6 prestige (chaos_theme_art.lua M.sets)
 eq(sources.season, 1, "one season set") eq(sources.exclusive, 1, "one exclusive set")
 eq(sources.boss, 4, "four boss sets (exclusives_config.lua drops)")
 eq(K.setHow(K.setByKey(cfg, "deathlord")), "Boss: Varkhul the Ashen Sovereign (rare drop)", "a boss set's line")
@@ -136,7 +149,7 @@ do
 	eq(t2:find("store price 1") ~= nil, true, "price mismatch")
 	eq(t2:find("spiritthorn is sold") ~= nil, true, "achievement set sold")
 	eq(t2:find("transmog_nothing names no") ~= nil, true, "offer without set")
-	eq(#w2, 8, "the other store sets' offers missing: warnings only")
+	eq(#w2, 8 + 12, "the other store sets' offers missing (and the 12 themed sets): warnings only")
 end
 
 -- ---------------------------------------------------------------- kinds
@@ -208,10 +221,17 @@ local syncs = K.setSyncs(cfg, {
 }, {})
 table.sort(syncs)
 eq(#syncs, 2, "two sets to sync") eq(syncs[1], "arboreal", "season set") eq(syncs[2], "spiritthorn", "achievement set")
-eq(#K.setSyncs(cfg, {hasAchievement = function() return true end}, {spiritthorn = true, rimebound = true,
-	thornmoth = true, haloed = true}), 0, "already owned sets are not synced again")
-eq(#K.setSyncs(cfg, {hasAchievement = function() return true end, seasonOwned = function() return true end}, {}), 5,
-	"the four achievement sets and the season set; boss sets only through exclusives.lua")
+local ownedAll = {spiritthorn = true, rimebound = true, thornmoth = true, haloed = true}
+for _, s in ipairs(cfg.sets) do
+	if s.source == "achievement" then
+		ownedAll[s.key] = true -- the six prestige themed sets too
+	end
+end
+eq(#K.setSyncs(cfg, {hasAchievement = function() return true end}, ownedAll), 0, "already owned sets are not synced again")
+eq(#K.setSyncs(cfg, {hasAchievement = function() return true end, seasonOwned = function() return true end}, {}), 5 + 6,
+	"the four achievement sets, the six prestige themed sets and the season set; boss sets only through exclusives.lua")
+local prestige = K.setSyncs(cfg, {hasAchievement = function(id) return id == "cinder_1" end}, {})
+eq(#prestige == 1 and prestige[1], "theme_voidmourn", "a prestige set follows its achievement (Voidmourn: the Cinderheart)")
 eq(#K.setSyncs(cfg, {}, {}), 0, "no facts: nothing")
 
 -- ---------------------------------------------------------------- fee, apply and remove
@@ -307,6 +327,8 @@ local function scan(path)
 	-- the store offers of the store sets (shop_config.lua) and the season pass reward of the season set
 	-- (seasonpass_config.lua kind "transmog") show a set look as their icon: the set's own source, a picture
 	text = text:gsub("[^\n]*unlock = \"transmog_[%w_]+\"[^\n]*", ""):gsub("[^\n]*kind = \"transmog\"[^\n]*", "")
+	-- negative numbers are damage values (a monster's max="-36800"), not item ids
+	text = text:gsub("%-%d+", "")
 	for num in text:gmatch("%f[%d](%d%d%d%d%d)%f[%D]") do
 		if setLooks[tonumber(num)] then
 			error(path .. " names the set look " .. num .. " (set " .. setLooks[tonumber(num)] .. ")")
@@ -317,7 +339,10 @@ local ok, pipe = pcall(io.popen, "find data/monster data/npc data/scripts data/l
 local scanned = 0
 if ok and pipe then
 	for path in pipe:lines() do
-		if not path:find("transmog", 1, true) then
+		-- the theme art libs define the themed set pieces (pair 24): the sets' own source; the item price table
+		-- (chaos_item_prices_data.lua, sell_prices.lua) prices every item a monster drops or a recipe makes and gives nothing
+		if not path:find("transmog", 1, true) and not path:find("chaos_theme_", 1, true)
+				and not path:find("item_prices_data", 1, true) and not path:find("sell_prices", 1, true) then
 			scan(path)
 			scanned = scanned + 1
 		end

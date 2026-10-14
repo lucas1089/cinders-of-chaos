@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Tests for chaos_health.py: state changes (alert on FAIL and on recovery only), the error-line scan and its rate
-limit, backup ages, disk thresholds, the daily summary and the outbox, against fake services, a temporary log and fake
+limit, the slow COMMIT warning (slow task log), backup ages, disk thresholds, the daily summary and the outbox, against fake services, a temporary log and fake
 backup files. Run: python3 -I server/tools/chaos_health_test.py"""
 import contextlib
 import io
@@ -208,6 +208,29 @@ try:
     out = go(T0 + 9000)
     ok(len(out) == 1 and 'Segmentation fault' in out[0], 'a truncated log is read again from the top')
 
+    # --- slow COMMITs in the slow task log: a warning at 3 of 200 ms+ within an hour, then not again for 6 h
+    def slow(ms, query='COMMIT', lua=''):
+        return ('[slow task] %d ms%s | db %d ms in 12 queries (waiting for the connection 0 ms), longest %d ms: %s | '
+                'task std::_Bind<void (Game::*(Game*))()>\n' % (ms + 10, lua, ms, ms, query))
+    sc, m = H.commits_step({}, [], 1000)
+    ok(m is None and sc['seen'] == [], 'no slow COMMIT: nothing')
+    with open(log, 'a') as f:
+        f.write(slow(610) + slow(450) + slow(199) + slow(300, 'INSERT INTO `player_items` ...') +
+                slow(5, lua=' | lua 265 ms in 1 call(s), longest 265 ms data/scripts/chaos/item_mods.lua:203'))
+    ok(go(T0 + 9100) == [], '2 slow COMMITs (199 ms, an INSERT and a Lua task do not count): no warning')
+    ok([ms for _, ms in state()['slow_commits']['seen']] == [610, 450], 'the slow COMMITs are counted: '
+       + repr(state()['slow_commits']))
+    with open(log, 'a') as f:
+        f.write(slow(300))
+    out = go(T0 + 9200)
+    ok(len(out) == 1 and 'WARN slow database COMMITs: 3 of 200 ms or more' in out[0] and 'longest 610 ms' in out[0]
+       and 'NVMe' in out[0], 'the third within an hour warns: ' + repr(out))
+    with open(log, 'a') as f:
+        f.write(slow(700) + slow(800) + slow(900))
+    ok(go(T0 + 9250) == [], 'more inside 6 h: no second warning')
+    ok(H.parse_args(['--slow-commit-ms', '500'], {}).slow_commit_ms == 500 and
+       H.parse_args([], {'CHAOS_HEALTH_SLOW_COMMIT_MS': '300'}).slow_commit_ms == 300, 'the threshold is configurable')
+
     # --- the backup gets old, then a new one comes
     for f in os.listdir(os.path.join(backup, 'db')):
         os.remove(os.path.join(backup, 'db', f))
@@ -260,6 +283,8 @@ try:
     out = go(T1, env=env, summaries=True)
     summ = [p for p in out if 'Daily summary' in p]
     ok(len(summ) == 1, 'the next day has its own summary')
+    ok('slow COMMITs (200 ms+, slow task log): 6 (longest 900 ms)' in summ[0], 'the summary counts slow COMMITs: '
+       + summ[0])
     ok('online peak 42' in summ[0] and 'crashes: 1, watchdog restarts: 1' in summ[0] and 'off-site' in summ[0] and 'disk:' in summ[0],
        'the summary has the peak, crashes, backups and disk: ' + summ[0])
     ok(go(T1 + 300, env=env, summaries=True) == [], 'no second summary the same day')

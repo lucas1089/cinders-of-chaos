@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Celestial Wyrm" nameDescription="a celestial wyrm" race="blood" experience="700000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
-	<health now="500000" max="500000"/>
+<monster name="Celestial Wyrm" nameDescription="a celestial wyrm" race="blood" experience="18400" speed="44" manacost="0">
+	<health now="24100" max="24100"/>
 	<look type="1500"  corpse="6068"/>
-	<level min="2800" max="3000"/>
+	<level min="1060" max="1100"/>
 	<targetchange interval="3000" chance="50"/>
-	<strategy attack="130" defense="0"/>
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -19,30 +17,25 @@
 		<flag staticattack="95"/>
 		<flag runonhealth="0"/>
 	</flags>
-	 <script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>  
 	<attacks>
-	<attack name="melee" interval="2000" min="-7500" max="-11600" energy="600" />
-		<attack name="energy" interval="2000" chance="30" range="7" target="1" min="-8000" max="-10000" >
+	<attack name="melee" interval="2000" min="-710" max="-1100" energy="600" />
+		<attack name="energy" interval="2000" chance="30" range="7" target="1" min="-760" max="-950" >
 			<attribute key="areaEffect" value="energyarea"/>
 			<attribute key="shootEffect" value="energy"/>
 		</attack>
-		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-7000" max="-9500">
+		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-660" max="-900">
 			<attribute key="areaEffect" value="energyarea"/>		
 			<attribute key="shootEffect" value="energyball"/>
 		</attack>
-		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-9000" max="-12000">
+		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-860" max="-1140">
 			<attribute key="areaEffect" value="energyarea"/>
 		</attack>
-		<attack name="energy" interval="2000" chance="50" length="4" spread="3" min="-7500" max="-10000">
+		<attack name="energy" interval="2000" chance="50" length="4" spread="3" min="-710" max="-950">
 			<attribute key="areaEffect" value="greenbubble"/>
 		</attack>
 	</attacks>
 	<defenses armor="85" defense="85">
-		<defense name="healing" interval="1000" chance="15" min="1520" max="2300">
+		<defense name="healing" interval="1000" chance="15" min="1590" max="2410">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

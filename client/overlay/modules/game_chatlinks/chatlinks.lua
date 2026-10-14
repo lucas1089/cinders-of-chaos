@@ -302,7 +302,7 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   if msg.action == 'registered' then
     requests[tonumber(d.n) or 0] = nil
     for _, k in ipairs(type(d.links) == 'table' and d.links or {}) do
-      if type(k.token) == 'string' and type(k.name) == 'string' then insertChip(k.name, k.token) end
+      if type(k) == 'table' and type(k.token) == 'string' and type(k.name) == 'string' then insertChip(k.name, k.token) end
     end
   elseif msg.action == 'refused' then
     requests[tonumber(d.n) or 0] = nil

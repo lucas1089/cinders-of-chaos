@@ -99,7 +99,8 @@ function M.owns(accountId, key)
 end
 
 function M.grant(accountId, key, source)
-	local c = K.byKey(cfg, key)
+	-- a Chaos outfit shader (cfg.outfitShaders, only while its switch is on) is unlocked the same way
+	local c = K.byKey(cfg, key) or K.outfitShaderByKey(cfg, key)
 	if not c then
 		return false, "Unknown cosmetic " .. tostring(key) .. "."
 	end
@@ -123,6 +124,21 @@ function M.revoke(accountId, key)
 	ownedOf(accountId)[c.key] = nil
 	return true
 end
+
+-- the Chaos outfit shaders the account owns, on this character (Player:addShader; the engine keeps them per character
+-- in storages, adding one twice changes nothing). Nothing while cfg.outfitShaders.enabled is false.
+local function addOwnedShaders(player)
+	if not player.addShader then
+		return 0
+	end
+	local n = 0
+	for _, id in ipairs(K.outfitShaderIds(cfg, ownedOf(player:getAccountId()))) do
+		player:addShader(id)
+		n = n + 1
+	end
+	return n
+end
+M.addOwnedShaders = addOwnedShaders
 
 -- ---------------------------------------------------------------- what a character shows
 local function chosenOf(player)
@@ -325,6 +341,12 @@ function M.sendState(player, open)
 		local ok, res = pcall(ChaosExclusives.rows, player)
 		collection = ok and res or nil
 	end
+	-- the Chaos outfit shaders (while their switch is on) join the Collection tab
+	for _, r in ipairs(K.outfitShaderRows(cfg, ownedOf(player:getAccountId()))) do
+		collection = collection or {}
+		r.item, r.icon = clientId(r.icon), nil
+		collection[#collection + 1] = r
+	end
 	send(player, "state", {open = open or nil, line = line, lineName = l and l.name, rows = rows, collection = collection})
 end
 
@@ -409,6 +431,26 @@ end
 -- ---------------------------------------------------------------- the store (shop_services.lua, shop.lua)
 function M.storeUnlock(unlockName)
 	local c = K.ofUnlock(cfg, unlockName)
+	local shader = not c and K.outfitShaderOfUnlock(cfg, unlockName)
+	if shader then
+		-- a priced Chaos outfit shader while the switch is on: unlocked for the account, added to the buyer now and to
+		-- the account's other characters at their next login
+		return {
+			name = shader.name,
+			done = "Choose it in the Outfit window (account-wide, cosmetic only).",
+			owned = function(player)
+				return M.owns(player:getAccountId(), shader.key)
+			end,
+			grant = function(player)
+				local ok, err = M.grant(player:getAccountId(), shader.key, "store")
+				if ok then
+					addOwnedShaders(player)
+					M.sendState(player, false)
+				end
+				return ok, err
+			end
+		}
+	end
 	if not c then
 		return nil
 	end
@@ -481,6 +523,7 @@ function login.onLogin(player)
 	player:registerEvent("ChaosCosmeticsLogout")
 	local ok, err = pcall(function()
 		sync(player)
+		addOwnedShaders(player)
 		refresh(player, false)
 		send(player, "colors", {names = M.colors, full = true})
 		local color = M.colors[player:getName()]
@@ -557,6 +600,10 @@ function gm.onSay(player, words, param)
 	end
 	if not accountId then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
+		return false
+	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): a grant needs an administrator; sync and revoke do not
+	if not Chaos.staffCommand(player, words, param, what ~= "sync" and mode ~= "revoke") then
 		return false
 	end
 	if what == "sync" then

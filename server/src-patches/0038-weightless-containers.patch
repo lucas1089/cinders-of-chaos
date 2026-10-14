@@ -1,0 +1,160 @@
+# Weightless containers: the store's Loot Bag (data/scripts/chaos/pouches.lua, pouches_config.lua `weightless`) carries
+# all the loot it collects without weight (owner: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe
+# automaticamente"). A container type registered with Game.setWeightlessContainer(itemId) at startup: its own weight is
+# the item's (Container::getWeight), the weight of what lies in it never reaches the containers it lies in or the
+# player's inventory weight (Container::updateItemWeight stops there), and an item put into it (or into a bag inside it)
+# skips the holder's capacity check (Container::queryAdd asks the top parent with FLAG_NOLIMIT). The slot limit stays the
+# container's size (items.xml containerSize, at most 255 in this protocol). No save format change: the type set is
+# filled from Lua each start. Built against the chain 0001-0037 (server/README.md "Store pouches", Loot Bag).
+# Guard: tools/weightless_patch_test.py (CI). Applies after 0001-0037.
+diff --git a/src/container.cpp b/src/container.cpp
+index b42d7be..2f0ff98 100644
+--- a/src/container.cpp
++++ b/src/container.cpp
+@@ -4,6 +4,8 @@
+ #include "otpch.h"
+ 
+ #include "container.h"
++
++#include <unordered_set>
+ #include "iomap.h"
+ #include "game.h"
+ 
+@@ -133,6 +135,10 @@ bool Container::unserializeItemNode(OTB::Loader& loader, const OTB::Node& node,
+ void Container::updateItemWeight(int32_t diff)
+ {
+ 	totalWeight += diff;
++	// Chaos (src-patch 0038): the contents of a weightless container stop here
++	if (isWeightless()) {
++		return;
++	}
+ 	if (Container* parentContainer = getParentContainer()) {
+ 		parentContainer->updateItemWeight(diff);
+ 	}
+@@ -140,9 +146,44 @@ void Container::updateItemWeight(int32_t diff)
+ 
+ uint32_t Container::getWeight() const
+ {
++	if (isWeightless()) {
++		return Item::getWeight(); // Chaos (src-patch 0038)
++	}
+ 	return Item::getWeight() + totalWeight;
+ }
+ 
++// Chaos (src-patch 0038): weightless container types
++static std::unordered_set<uint16_t>& chaosWeightlessTypes()
++{
++	static std::unordered_set<uint16_t> types;
++	return types;
++}
++
++void Container::setWeightlessType(uint16_t itemId, bool on)
++{
++	if (on) {
++		chaosWeightlessTypes().insert(itemId);
++	} else {
++		chaosWeightlessTypes().erase(itemId);
++	}
++}
++
++bool Container::isWeightlessType(uint16_t itemId)
++{
++	const auto& types = chaosWeightlessTypes();
++	return !types.empty() && types.find(itemId) != types.end();
++}
++
++bool Container::insideWeightless() const
++{
++	for (Container* c = const_cast<Container*>(this); c; c = c->getParentContainer()) {
++		if (c->isWeightless()) {
++			return true;
++		}
++	}
++	return false;
++}
++
+ std::string Container::getContentDescription() const
+ {
+ 	std::ostringstream os;
+@@ -402,7 +443,12 @@ ReturnValue Container::queryAdd(int32_t index, const Thing& thing, uint32_t coun
+ 	}
+ 
+ 	if (topParent != this) {
+-		return topParent->queryAdd(INDEX_WHEREEVER, *item, count, flags | FLAG_CHILDISOWNER, actor);
++		// Chaos (src-patch 0038): an item put into a weightless container never counts against the holder's capacity
++		uint32_t ownerFlags = flags | FLAG_CHILDISOWNER;
++		if (insideWeightless()) {
++			ownerFlags |= FLAG_NOLIMIT;
++		}
++		return topParent->queryAdd(INDEX_WHEREEVER, *item, count, ownerFlags, actor);
+ 	} else {
+ 		return RETURNVALUE_NOERROR;
+ 	}
+diff --git a/src/container.h b/src/container.h
+index 86c456f..03b2112 100644
+--- a/src/container.h
++++ b/src/container.h
+@@ -104,6 +104,17 @@ class Container : public Item, public Cylinder
+ 		uint32_t getItemHoldingCount() const;
+ 		uint32_t getWeight() const override final;
+ 
++		// Chaos (src-patch 0038, server/README.md "Loot Bag"): a weightless container type (the store's Loot Bag) carries
++		// its contents without weight: its own weight is the item's, the contents never reach the holder's capacity.
++		// Registered from Lua at startup (Game.setWeightlessContainer(itemId)); a set of item ids, no save format change.
++		static void setWeightlessType(uint16_t itemId, bool on);
++		static bool isWeightlessType(uint16_t itemId);
++		bool isWeightless() const {
++			return isWeightlessType(getID());
++		}
++		// this container or one it lies in is weightless
++		bool insideWeightless() const;
++
+ 		bool isUnlocked() const {
+ 			return unlocked;
+ 		}
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+index 3f64a86..83e58ec 100644
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2168,6 +2168,7 @@ void LuaScriptInterface::registerFunctions()
+ 
+ 	registerMethod("Game", "getItemAttributeByName", LuaScriptInterface::luaGameGetItemAttributeByName);
+ 	registerMethod("Game", "getReturnMessage", LuaScriptInterface::luaGameGetReturnMessage);
++	registerMethod("Game", "setWeightlessContainer", LuaScriptInterface::luaGameSetWeightlessContainer);
+ 
+ 	registerMethod("Game", "createItem", LuaScriptInterface::luaGameCreateItem);
+ 	registerMethod("Game", "createContainer", LuaScriptInterface::luaGameCreateContainer);
+@@ -4570,6 +4571,21 @@ int LuaScriptInterface::luaGameGetReturnMessage(lua_State* L)
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaGameSetWeightlessContainer(lua_State* L)
++{
++	// Game.setWeightlessContainer(itemId[, on = true])   Chaos (src-patch 0038): a container type whose contents weigh
++	// nothing for its holder (the store's Loot Bag, data/scripts/chaos/pouches.lua)
++	uint16_t itemId = getNumber<uint16_t>(L, 1);
++	const ItemType& it = Item::items[itemId];
++	if (it.id == 0 || !it.isContainer()) {
++		lua_pushboolean(L, false);
++		return 1;
++	}
++	Container::setWeightlessType(itemId, getBoolean(L, 2, true));
++	lua_pushboolean(L, true);
++	return 1;
++}
++
+ int LuaScriptInterface::luaGameGetItemAttributeByName(lua_State* L)
+ {
+ 	// Game.getItemAttributeByName(name)
+diff --git a/src/luascript.h b/src/luascript.h
+index 6abb2ce..703d6ee 100644
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -568,6 +568,7 @@ class LuaScriptInterface
+ 
+ 		static int luaGameGetItemAttributeByName(lua_State* L);
+ 		static int luaGameGetReturnMessage(lua_State* L);
++		static int luaGameSetWeightlessContainer(lua_State* L);
+ 
+ 		static int luaGameCreateItem(lua_State* L);
+ 		static int luaGameCreateItemWithRarity(lua_State* L);

@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Shaper Matriarch" nameDescription="a shaper matriarch" race="blood" experience="4300" evented = "4" skulled="1" looting="1" speed="57" manacost="0">
+<monster name="Shaper Matriarch" nameDescription="a shaper matriarch" race="blood" experience="4300" speed="57" manacost="0">
 	<health now="12600" max="12600"/>
 	<level min="650" max="690"/>
 	<look type="1469" corpse="6068" />
 	<targetchange interval="5000" chance="8"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
-		<flag summonable="1" />
+		<flag summonable="0" />
 		<flag attackable="1" />
 		<flag hostile="1" />
 		<flag illusionable="1" />
-		<flag convinceable="1" />
+		<flag convinceable="0" />
 		<flag pushable="0" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="0" />

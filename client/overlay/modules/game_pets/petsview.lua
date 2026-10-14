@@ -13,20 +13,28 @@ local function list(v)
   if type(v) == 'table' then for _, x in ipairs(v) do out[#out + 1] = x end end
   return out
 end
+-- the rows of a server list: tables with a key (an entry that is anything else is left out; opcode_fuzz_test.lua)
+local function rows(v, key)
+  local out = {}
+  for _, x in ipairs(list(v)) do
+    if type(x) == 'table' and x[key] ~= nil then out[#out + 1] = x end
+  end
+  return out
+end
 
 -- one entry per species: owned pets first (the server's order: highest level first), then the others in catalog order
 -- entry = {key, owned, pet (or nil), name, speciesName, look, how, level, abilities (names, for locked ones)}
 function V.entries(state)
   local out, seen = {}, {}
   local catalog = {}
-  for _, c in ipairs(list(state and state.catalog)) do catalog[c.key] = c end
-  for _, p in ipairs(list(state and state.pets)) do
+  for _, c in ipairs(rows(state and state.catalog, 'key')) do catalog[c.key] = c end
+  for _, p in ipairs(rows(state and state.pets, 'species')) do
     local c = catalog[p.species] or {}
     out[#out + 1] = { key = p.species, owned = true, pet = p, name = p.name or p.speciesName, speciesName = p.speciesName,
       look = num(p.look), how = c.how or '', level = num(p.level) }
     seen[p.species] = true
   end
-  for _, c in ipairs(list(state and state.catalog)) do
+  for _, c in ipairs(rows(state and state.catalog, 'key')) do
     if not seen[c.key] then
       out[#out + 1] = { key = c.key, owned = false, name = c.name, speciesName = c.name, look = num(c.look),
         how = c.how or '', level = 0, abilities = list(c.abilities) }
@@ -101,13 +109,13 @@ end
 function V.statusText(state)
   if not state then return '' end
   local parts = {}
-  local cd = state.cooldowns or {}
+  local cd = type(state.cooldowns) == 'table' and state.cooldowns or {}
   if num(cd.death) > 0 then
     parts[#parts + 1] = string.format('Your pet is recovering from your death: %d s.', num(cd.death))
   end
   if state.active then
     if state.rest then
-      parts[#parts + 1] = state.rest
+      parts[#parts + 1] = tostring(state.rest)
     elseif state.out then
       parts[#parts + 1] = 'Your pet is with you.'
     end
@@ -142,7 +150,7 @@ end
 
 -- an "xp" message from the server applied to the state (no new state is sent for every kill)
 function V.applyXp(state, data)
-  for _, p in ipairs(list(state and state.pets)) do
+  for _, p in ipairs(rows(state and state.pets, 'species')) do
     if p.species == data.species then
       p.level, p.xp, p.into, p.need, p.pct = data.level, data.xp, data.into, data.need, data.pct
       return true

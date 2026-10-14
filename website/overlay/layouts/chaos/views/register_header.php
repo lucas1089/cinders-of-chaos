@@ -10,5 +10,9 @@ if (function_exists('chaos_referral_add_error')) {
 if (function_exists('chaos_register_add_error')) {
 	chaos_register_add_error();
 }
+// the Terms of Use and the Privacy Policy were not accepted (plugins/chaos/legal_lib.php)
+if (function_exists('chaos_legal_add_error')) {
+	chaos_legal_add_error();
+}
 ?>
 <h1><?= t('reg.heading') ?></h1>

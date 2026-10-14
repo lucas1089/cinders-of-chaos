@@ -324,9 +324,19 @@ check(#view.nodes == 4 and view.masteries[1].choice == 4 and view.cls == "ninja"
 local RW = ChaosPassiveTreeConfig.reworked
 check(RW[1].version == 1 and table.concat(RW[1].ids, ",") == "369,376,383,390", "version 1 of the reworked list")
 local set, newest, any = C.reworkedSince(RW, -1)
-check(set[383] and set[369] and set[376] and set[390] and newest == 1 and any, "a character that saw none")
+check(set[383] and set[369] and set[376] and set[390] and set[108] and set[105] and newest == 3 and any,
+	"a character that saw none")
+-- version 2 (the build archetype keystones, 2026-10): twelve small leaves
+check(RW[2].version == 2 and table.concat(RW[2].ids, ",") == "77,78,81,82,106,107,108,109,253,262,355,362",
+	"version 2 of the reworked list")
 set, newest, any = C.reworkedSince(RW, 1)
-check(next(set) == nil and newest == 1 and not any, "a character that saw version 1")
+check(set[77] and set[362] and set[96] and not set[383] and newest == 3 and any, "a character that saw version 1")
+-- version 3 (the second round, 2026-10-12): the four other elemental cluster ends
+check(RW[3].version == 3 and table.concat(RW[3].ids, ",") == "96,99,102,105", "version 3 of the reworked list")
+set, newest, any = C.reworkedSince(RW, 2)
+check(set[96] and set[99] and set[102] and set[105] and not set[77] and newest == 3 and any, "a character that saw version 2")
+set, newest, any = C.reworkedSince(RW, 3)
+check(next(set) == nil and newest == 3 and not any, "a character that saw version 3")
 set, newest = C.reworkedSince({{version = 1, ids = {5}}, {version = 2, ids = {7}}}, 1)
 check(set[7] and not set[5] and newest == 2, "only what came after")
 local kept, removed = C.dropNodes(tree, {3, 8, 10, 12, 61}, {[61] = true})
@@ -336,11 +346,11 @@ check(table.concat(kept, ",") == "3" and #removed == 4 and removed[2].why == "di
 kept, removed = C.dropNodes(tree, {3, 8}, {})
 check(#kept == 2 and #removed == 0, "nothing to drop")
 -- at login (passivetree.lua refundReworked): once, presets and loadouts, with a message
-rows = {{preset = 1, name = "Preset 1", nodes = "2,9,11,101,100,102"}}
+rows = {{preset = 1, name = "Preset 1", nodes = "2,9,11,101,100"}}
 local msgs = {}
 function p:sendTextMessage(_, text) msgs[#msgs + 1] = text end
 p.storage[Chaos.storage.passiveRework] = nil
-check(ChaosPassiveTree.refundReworked(p) == 0 and p.storage[Chaos.storage.passiveRework] == 1 and #msgs == 0,
+check(ChaosPassiveTree.refundReworked(p) == 0 and p.storage[Chaos.storage.passiveRework] == 3 and #msgs == 0,
 	"nothing reworked held: the version is recorded, no message")
 check(ChaosPassiveTree.refundReworked(p) == 0, "and not looked at again")
 -- a Thief line tree up to 383 (Blackblood Creed; it was the mythic leaf "wisdom 10")
@@ -368,7 +378,7 @@ check(#inserts == 1 and not ("," .. inserts[1].nodes .. ","):find(",383,", 1, tr
 check(#C.parseAlloc(inserts[1].nodes) == #path383 - 1, "every other node kept")
 check(loadoutDrop and loadoutDrop[383] and loadoutDrop[390], "the loadouts are told the same ids")
 check(msgs[1] and msgs[1]:find("1 node", 1, true) and msgs[1]:find("loadouts lost 2", 1, true), "one message: " .. tostring(msgs[1]))
-check(p.storage[Chaos.storage.passiveRework] == 1, "version recorded")
+check(p.storage[Chaos.storage.passiveRework] == 3, "version recorded")
 inserts = {}
 check(ChaosPassiveTree.refundReworked(p) == 0 and #inserts == 0, "only once")
 ChaosLoadouts = nil

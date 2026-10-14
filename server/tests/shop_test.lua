@@ -195,7 +195,15 @@ eq(K.packCredit(packs.coins250, false, coins).total, 250, "250")
 eq(K.packCredit(packs.coins750, false, coins).total, 825, "750 +10%")
 eq(K.packCredit(packs.coins1500, false, coins).total, 1725, "1500 +15%")
 eq(K.packCredit(packs.coins4000, false, coins).total, 5000, "4000 +25%")
-eq(K.packCredit(packs.coins750, true, coins).total, 975, "first purchase +20%")
+eq(K.packCredit(packs.coins750, true, coins).total, 1575, "first purchase: double coins (+100% of the pack)")
+eq(K.packCredit(packs.coins80, false, coins).total, 80, "entry pack 80")
+eq(K.packCredit(packs.coins10000, false, coins).total, 13000, "Vault: 10000 +30%")
+eq(coins.firstPurchase.bonusPct, 100, "first purchase doubles")
+eq(coins.firstPurchase.maxBonus, 1000, "at most 1000 extra (owner: Limite a 1000)")
+eq(K.packCredit(packs.coins1500, true, coins).firstBonus, 1000, "1500 pack: +1000 flat")
+eq(K.packCredit(packs.coins10000, true, coins).total, 13000 + 1000, "Vault: +1000 flat")
+eq(K.packCredit(packs.coins750, true, coins).firstBonus, 750, "750 pack: doubled")
+eq(K.packCredit({coins = 1000}, true, coins).firstBonus, 1000, "1000: doubled, the cap")
 eq(K.packCredit(packs.starter, true, coins).total, 500, "starter: no first purchase bonus")
 
 -- ------------------------------------------------------------------ shop.lua with a mocked engine and database
@@ -431,10 +439,15 @@ end
 
 local A = newPlayer("Alice", {sex = PLAYERSEX_FEMALE, level = 20})
 DB.coins[A.account] = 20000
--- the view: Starter first for a young character, then Featured
+-- the view: Starter first for a young character, then the weekly rotation ("This week")
 local v = Shop.view(A)
-eq(v[1].name, "Starter", "starter packs first"); eq(v[2].name, "Featured", "then featured")
-eq(#v[2].offers, cfg.storefront.featured.count, "featured count")
+eq(v[1].name, "Starter", "starter packs first"); eq(v[2].name, "This week", "then the weekly rotation")
+eq(#v[2].offers, cfg.storefront.featured.count, "rotation count")
+ok(cfg.storefront.featured.count >= 4 and cfg.storefront.featured.count <= 6, "4-6 offers a week")
+ok(v[2].endsIn > 0 and v[2].endsIn <= 7 * 86400, "the rotation's countdown")
+for _, c in ipairs(v) do
+	ok(c.name ~= "Themed Sets", "a rotationOnly category is never shown on its own")
+end
 
 -- an outfit: both looks, both addons
 local title, msg, view = buy(A, "outfit:1237")
@@ -490,7 +503,27 @@ eq(e.cost, math.floor(e.offer.listSum * 0.8), "bundle price"); eq(e.oldCost, e.o
 eq(buy(B, "bundle:frostborn"), "Purchase complete", "bundle")
 eq(DB.coins[B.account], before2 - e.cost, "bundle cost")
 ok(B.wings[10] and B.auras[16] and B.shaders[10] and B.mounts[119], "every part delivered")
-eq(buy(B, "bundle:frostborn"), "Not possible", "bundle with owned parts refused")
+ok(not find(B, "bundle:frostborn"), "every part owned: the bundle is hidden")
+-- a part owned already: left out of the bundle and its price
+local B3 = newPlayer("Bram", {level = 50})
+DB.coins[B3.account] = 20000
+eq(buy(B3, "wings:10"), "Purchase complete", "Nimbus Wings alone")
+local _, _, _, e3 = find(B3, "bundle:frostborn")
+local full = Shop.byKey["bundle:frostborn"]
+eq(e3.offer.ownedParts, 1, "one part owned")
+eq(#e3.offer.resolved, #full.resolved - 1, "the owned part left out")
+eq(e3.offer.listSum, full.listSum - Shop.byKey["wings:10"].cost, "list price without it")
+eq(e3.cost, math.floor(e3.offer.listSum * 0.8), "20% off the rest")
+ok(e3.cost < full.cost, "cheaper than the full bundle")
+local beforeB3 = DB.coins[B3.account]
+eq(buy(B3, "bundle:frostborn"), "Purchase complete", "the rest of the bundle")
+eq(DB.coins[B3.account], beforeB3 - e3.cost, "charged the lower price")
+ok(B3.auras[16] and B3.shaders[10] and B3.mounts[119], "the other parts delivered")
+-- the themed regalia: outfit + mount + wings + aura at 25%
+local _, _, _, eg = find(B3, "bundle:pyre")
+local pyre = Shop.byKey["bundle:pyre"]
+eq(#pyre.resolved, 4, "regalia: four parts"); eq(pyre.cost, math.floor(pyre.listSum * 0.75), "regalia: 25% off")
+ok(eg ~= nil, "regalia in view")
 
 -- starter packs: once per account, level gate, hidden afterwards, pact days when the Pact exists
 eq(buy(A, "starter:novice"), "Purchase complete", "novice pack")
@@ -500,13 +533,67 @@ local A2 = newPlayer("Alicealt", {account = A.account, level = 10})
 ok(not find(A2, "starter:novice"), "hidden for the whole account")
 local Old = newPlayer("Veteran", {level = 400})
 ok(not find(Old, "starter:champion"), "level gate hides it")
-eq(Shop.view(Old)[1].name, "Featured", "featured first without starter packs")
+eq(Shop.view(Old)[1].name, "This week", "the weekly rotation first without starter packs")
 -- a failing item part takes nothing and refunds
 local Full = newPlayer("Fullbag", {level = 30})
 Full.full = true
 DB.coins[Full.account] = 1000
 eq(buy(Full, "starter:adventurer"), "Error", "no room")
 eq(DB.coins[Full.account], 1000, "refunded"); ok(not Full.mounts[23], "nothing given")
+
+-- rune packs (owner approval 2026-10-13): the Runes category, priced from chaos_rune_supply.lua's vendor gold
+local runeLib = dofile("data/lib/chaos_rune_supply.lua")
+local runeCat
+for _, c in ipairs(cfg.categories) do
+	if c.name == "Runes" then runeCat = c end
+	if c.name == "Supplies" then
+		for _, o in ipairs(c.offers) do ok(o.id ~= 2304 and o.id ~= 2268 and o.id ~= 2273, "Supplies holds no rune any more: " .. o.name) end
+	end
+end
+ok(runeCat and #runeCat.offers >= 25, "a Runes category with the packs")
+local priceOf = {}
+for _, r in ipairs(runeLib.runes) do priceOf[r.id] = r.price end
+local sizes = {}
+for _, o in ipairs(runeCat.offers) do
+	ok(priceOf[o.id] ~= nil, o.name .. ": a rune of the supply list")
+	local gold = priceOf[o.id] * o.count
+	ok(o.cost >= math.ceil(gold * 0.9 / 1000) and o.cost <= math.ceil(gold / 1000), o.name .. ": about 1000 vendor gold a coin (" .. o.cost .. ")")
+	ok(o.overflowInbox, o.name .. ": backpack, then the store inbox")
+	sizes[o.id] = (sizes[o.id] or 0) + 1
+end
+for _, id in ipairs({2304, 2288, 2315, 2274, 2268, 2311, 2265, 2273}) do eq(sizes[id], 3, "100 / 250 / 500 of rune " .. id) end
+ok(sizes[2278] and sizes[2261], "Shackle and Dispel packs")
+eq(Shop.byKey["item:2304x100"].cost, math.ceil(84 * 100 / 1000), "100 Searing Orb Runes: 9 coins (the old Supplies offer, same key)")
+ok(Shop.byKey["item:2304x500"].cost < 5 * Shop.byKey["item:2304x100"].cost, "the big pack is cheaper per rune")
+-- delivery: stacks of 100 into the backpack, the rest into the store inbox
+local Rune = newPlayer("Runa", {level = 60})
+Rune.inbox = {}
+function Rune:getInbox() local me = self return {addItem = function(_, id, n) me.inbox[#me.inbox + 1] = {id, n} return true end} end
+DB.coins[Rune.account] = 1000
+eq(buy(Rune, "item:2304x500"), "Purchase complete", "500 Searing Orb Runes")
+eq(Rune.items[2304], 500, "all in the backpack when there is room")
+local roomLeft = 200
+local realGive = Chaos.giveItem
+Chaos.giveItem = function(p, id, count)
+	if p == Rune then
+		local n = math.min(count, roomLeft)
+		roomLeft = roomLeft - n
+		p.items[id] = (p.items[id] or 0) + n
+		return n
+	end
+	return realGive(p, id, count)
+end
+eq(buy(Rune, "item:2268x500"), "Purchase complete", "500 Reaper's Runes with room for 200")
+eq(Rune.items[2268], 200, "two stacks carried")
+eq(#Rune.inbox, 3, "three stacks to the store inbox")
+eq(Rune.inbox[1][2], 100, "stacks of 100")
+Rune.getInbox = function() return nil end
+local coinsR = DB.coins[Rune.account]
+roomLeft = 150
+eq(buy(Rune, "item:2265x250"), "Error", "no inbox and no room: refused")
+eq(DB.coins[Rune.account], coinsR, "refunded")
+eq(Rune.items[2265] or 0, 0, "nothing kept")
+Chaos.giveItem = realGive
 
 -- gifts: online, offline (delivered at login), refused targets
 local Cara = newPlayer("Cara", {})
@@ -576,11 +663,11 @@ eq(DB.coins[A.account], beforeTurn + DB.gifts[gifts0 + 1].price, "coins back"); 
 DB.orders = {{account = 77, pack = "coins750", status = "paid"}, {account = 77, pack = "coins750", status = "paid"},
 	{account = 77, pack = "starter", status = "paid"}, {account = 77, pack = "starter", status = "paid"}, {account = 77, pack = "nope", status = "paid"}}
 Shop.processOrders()
-eq(DB.orders[1].total, 975, "first pack with the first purchase bonus"); eq(DB.orders[2].total, 825, "second pack without")
+eq(DB.orders[1].total, 1575, "first pack with the first purchase bonus (double)"); eq(DB.orders[2].total, 825, "second pack without")
 eq(DB.orders[3].total, 500, "starter"); eq(DB.orders[4].status, "rejected", "second starter rejected")
-eq(DB.orders[5].status, "rejected", "unknown pack"); eq(DB.coins[77], 975 + 825 + 500, "coins credited")
+eq(DB.orders[5].status, "rejected", "unknown pack"); eq(DB.coins[77], 1575 + 825 + 500, "coins credited")
 Shop.processOrders()
-eq(DB.coins[77], 2300, "credited once")
+eq(DB.coins[77], 2900, "credited once")
 -- refunded on the website between the crediting step's SELECT and its locked re-read: nothing credited
 DB.orders[#DB.orders + 1] = {account = 77, pack = "coins250", status = "paid"}
 local realSelect = Chaos.select
@@ -590,7 +677,7 @@ Chaos.select = function(q, cols)
 end
 Shop.processOrders()
 Chaos.select = realSelect
-eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2300, "no coins for a refunded order")
+eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2900, "no coins for a refunded order")
 
 -- Chaos Coin gifts through shop.lua: hold, cap, ban, ledger
 do
@@ -653,6 +740,32 @@ do
 	eq(talks["/coins"].onSay(R1, "/coins", "Receiver, 500"), true, "a player: said as chat, nothing else")
 	eq(#logged, 2, "players are not logged")
 	ChaosAdmin = nil
+end
+
+-- outfit shaders: a mark without the engine's ownership (bought before server src-patch 0036) gets it at login
+do
+	local K = ChaosShopCore
+	local marks = {[3] = 1, [10] = 1, [12] = 0, [59] = 1, [60] = 1}
+	local ids = K.markedShaders(function(id) return marks[id] or -1 end)
+	eq(table.concat(ids, ","), "3,10,59", "marked shader ids (0 and past the block are not marks)")
+	local P = newPlayer("Shadered", {})
+	P.storage[Chaos.storage.shopShaderBase + 11] = 1
+	P.storage[Chaos.storage.shopShaderBase + 24] = 1
+	registry.ChaosShopLogin.onLogin(P)
+	ok(P.shaders[11] and P.shaders[24], "login adds the engine's ownership of the marked shaders")
+	eq(P.shaders[10], nil, "an unmarked shader is not added")
+	eq(Shop.syncShaders(P), 2, "a second sync adds the same two again (idempotent in the engine)")
+	local noApi = newPlayer("NoShaderApi", {})
+	noApi.addShader = nil
+	noApi.storage[Chaos.storage.shopShaderBase + 11] = 1
+	eq(Shop.syncShaders(noApi), 0, "an engine without Player:addShader: nothing to do")
+	-- buying one sets the mark and the ownership; the next login keeps both
+	local C1 = newPlayer("Shaderbuyer", {})
+	ok(Shop.deliver(C1, {kind = "shader", id = 11}) == true, "a store shader delivered")
+	ok(C1.shaders[11] and C1.storage[Chaos.storage.shopShaderBase + 11] == 1, "mark and ownership")
+	C1.shaders = {}
+	registry.ChaosShopLogin.onLogin(C1)
+	ok(C1.shaders[11], "ownership back at login")
 end
 
 -- a reload builds the same store and keeps what was bought

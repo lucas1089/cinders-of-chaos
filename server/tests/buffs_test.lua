@@ -2,7 +2,7 @@
 -- Covers the buff bar's rules (data/lib/chaos_buffs.lua) against a mocked player: the registry (unique keys, kinds, icon
 -- forms, every entry has a source), conditions found by type / id / sub id with their time left, the engine ones (haste,
 -- poison, in fight ...), the Chaos class buffs by sub id, skull timers, the sources (world buffs, Victory, world events,
--- double experience, trial stacks, chi, Rage, Reprisal), sorting and the cap, the wire entries, and the diff (add,
+-- double experience, trial stacks, chi, Rage, Reprisal, the vigils), sorting and the cap, the wire entries, and the diff (add,
 -- update on stacks or a recast, remove, nothing when quiet, the tolerance), the party brief; and that the sub ids of the
 -- registry are the ones the class spells use and the opcode is free.
 dofile("data/scripts/chaos/chaos_constants.lua")
@@ -360,6 +360,36 @@ ChaosTemplar.auraState = {}
 ad = B.diff(sentA, B.collect(member, now + 2000), now + 2000)
 ok(ad and ad.del and ad.del[1] == "templar_aura", "leaving the aura removes it")
 Player = nil
+-- the vigils (vigils.lua): a row per vigil that covers the player, Iron Tithe's health row; the texts are the core's
+for _, key in ipairs({"wrath", "iron", "haste", "clarity", "tithe"}) do
+	local def = B.byKey["vigil_" .. key]
+	ok(def and def.source == "vigils" and def.vigil == key and def.kind == "buff", "registry has vigil_" .. key)
+end
+dofile("data/scripts/chaos/vigils_core.lua")
+local VC = ChaosVigilsCore
+local vigilCover, vigilMask, vigilMods = {}, {}, {}
+ChaosVigils = {buffItem = function(p, key, t)
+	return VC.buffItem(key, vigilCover[p:getId()], vigilMask[p:getId()], vigilMods[p:getId()], false)
+end}
+local vh, vm = mockPlayer(40), mockPlayer(41)
+vigilCover[40], vigilMask[40], vigilMods[40] = {wrath = 0.05, iron = 0.06}, VC.with(VC.with(0, "wrath", true), "iron", true), {}
+vigilCover[41] = {wrath = 0.05, iron = 0.06}
+local vrow = byKey(B.collect(vh, now), "vigil_wrath")
+ok(vrow and vrow.leftMs == nil and vrow.stacks == 5 and vrow.name == "Vigil of Wrath", "the holder's wrath: no timer, 5 stacks")
+ok(vrow.desc:find("reserves 35% of your maximum mana", 1, true) ~= nil, "the holder's text")
+ok(byKey(B.collect(vm, now), "vigil_iron").desc:find("party member", 1, true) ~= nil, "a party member's iron")
+eq(byKey(B.collect(vm, now), "vigil_haste"), nil, "no haste vigil, no row")
+eq(byKey(B.collect(vh, now), "vigil_tithe"), nil, "no Iron Tithe row without the keystone")
+vigilMods[40] = {tithe = true}
+vigilCover[40] = {wrath = 0.075, iron = 0.09}
+eq(byKey(B.collect(vh, now), "vigil_tithe").stacks, 42, "Iron Tithe: the health reserved as stacks")
+local vsent = {}
+B.full(vsent, B.collect(vm, now), now)
+vigilCover[41] = {wrath = 0.05}
+local vd = B.diff(vsent, B.collect(vm, now + 1000), now + 1000)
+ok(vd and vd.del and vd.del[1] == "vigil_iron" and not vd.add, "out of the iron holder's range: the row goes")
+ChaosVigils = nil
+eq(byKey(B.collect(vh, now), "vigil_wrath"), nil, "no vigils module: no rows")
 
 -- ------------------------------------------------------------------ order and cap
 local many = mockPlayer(17)

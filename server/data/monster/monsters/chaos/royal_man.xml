@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Royal Man" nameDescription="a royal man" race="blood" experience="9300" evented = "5" skulled="1" looting="1" speed="53">
+<monster name="Royal Man" nameDescription="a royal man" race="blood" experience="9300" speed="53">
 	<health now="17500" max="17500"/>
 	<level min="810" max="850"/>
 	<look type="1498" head="133" body="133" legs="133" feet="133" addons ="3" corpse="6068" />
 	<targetchange interval="5000" chance="25"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
-		<flag summonable="1" />
+		<flag summonable="0" />
 		<flag attackable="1" />
 		<flag hostile="1" />
 		<flag illusionable="1" />
-		<flag convinceable="1" />
+		<flag convinceable="0" />
 		<flag pushable="0" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="0" />

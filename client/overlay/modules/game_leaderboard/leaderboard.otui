@@ -84,6 +84,14 @@ LeaderboardModeTab < ChaosTabButton
   width: 92
   height: 20
 
+// the filter rows of the Records view (period, boss / difficulty / floor, party size, class)
+LeaderboardFilterBox < UIWidget
+  phantom: true
+  height: 20
+  layout:
+    type: verticalBox
+    spacing: 3
+
 LeaderboardTabRow < UIWidget
   phantom: true
   layout:
@@ -104,9 +112,21 @@ ChaosMainWindow
     id: infoLabel
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.right: seasonToggle.left
+    anchors.right: recordsToggle.left
     margin-right: 8
     text-align: left
+
+  // Records view (records.lua): fastest kills and best results, this week / season / all time
+  ChaosTabButton
+    id: recordsToggle
+    anchors.right: seasonToggle.left
+    anchors.verticalCenter: timerLabel.verticalCenter
+    margin-right: 6
+    width: 80
+    height: 20
+    !text: tr('Records')
+    !tooltip: tr('Fastest kills, highest floors and tiers, realm firsts: this week, the season and all time.')
+    @onClick: modules.game_leaderboard.toggleRecords()
 
   ChaosTabButton
     id: seasonToggle
@@ -149,10 +169,24 @@ ChaosMainWindow
       type: verticalBox
       spacing: 3
 
+  // the filters of the Records view: one row of tabs per filter (leaderboard.lua buildRecordFilters)
+  UIWidget
+    id: recordFilters
+    anchors.top: groupTabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 0
+    height: 0
+    visible: false
+    phantom: true
+    layout:
+      type: verticalBox
+      spacing: 3
+
   // the mode tabs of the Season view (season_modes.lua): All / Standard / Self-Found / Hardcore / HC Self-Found / Fallen
   UIWidget
     id: modeTabs
-    anchors.top: groupTabs.bottom
+    anchors.top: recordFilters.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 0

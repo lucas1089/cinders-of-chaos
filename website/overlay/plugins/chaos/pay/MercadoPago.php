@@ -99,8 +99,11 @@ final class ChaosPayMercadoPago implements ChaosPayProvider {
 	public static function normalize(array $p): array {
 		$raw = (string)($p['status'] ?? '');
 		$detail = (string)($p['status_detail'] ?? '');
+		$refunded = max(0, ChaosPayUtil::cents($p['transaction_amount_refunded'] ?? 0));
 		switch ($raw) {
-			case 'approved': $status = 'approved'; break;
+			// a partial refund leaves the payment "approved" (status_detail partially_refunded): treated as a refund of
+			// that share, so the game server takes those coins back (or nothing is credited before crediting)
+			case 'approved': $status = $refunded > 0 ? 'refunded' : 'approved'; break;
 			case 'pending': case 'in_process': case 'authorized': $status = 'pending'; break;
 			case 'rejected': $status = 'failed'; break;
 			case 'cancelled': $status = $detail === 'expired' ? 'expired' : 'cancelled'; break;
@@ -117,9 +120,24 @@ final class ChaosPayMercadoPago implements ChaosPayProvider {
 			'amount_cents' => ChaosPayUtil::cents($p['transaction_amount'] ?? -1),
 			'currency' => strtoupper((string)($p['currency_id'] ?? '')),
 			'reference' => (string)($p['external_reference'] ?? ''),
-			'refunded_cents' => max(0, ChaosPayUtil::cents($p['transaction_amount_refunded'] ?? 0)),
+			'refunded_cents' => $refunded,
 			'method' => (string)($p['payment_method_id'] ?? ''),
+			// who paid (hashed by the service into chaos_pay_payers, never stored as is): the payer's document, else
+			// Mercado Pago's payer id, else the e-mail
+			'payer' => self::payerOf($p),
 		);
+	}
+
+	public static function payerOf(array $p): string {
+		$payer = (array)($p['payer'] ?? array());
+		$doc = (array)($payer['identification'] ?? array());
+		if (($doc['number'] ?? '') !== '') {
+			return 'doc:' . strtolower((string)($doc['type'] ?? '')) . ':' . preg_replace('/\D+/', '', (string)$doc['number']);
+		}
+		if (($payer['id'] ?? '') !== '') {
+			return 'id:' . (string)$payer['id'];
+		}
+		return ($payer['email'] ?? '') !== '' ? 'mail:' . strtolower(trim((string)$payer['email'])) : '';
 	}
 
 	public function fetch(array $row, array $hint = array()): array {

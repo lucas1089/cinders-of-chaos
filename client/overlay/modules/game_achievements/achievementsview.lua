@@ -17,7 +17,9 @@ function V.isHiddenLocked(row) return num(row.h) == 1 and not V.isUnlocked(row) 
 function V.filter(rows, cat, unlockedFirst)
   local out = {}
   for i, r in ipairs(rows or {}) do
-    if cat == V.ALL or cat == nil or r.c == cat or (cat == V.RECENT and V.isUnlocked(r)) then
+    if type(r) ~= 'table' then
+      -- not a row: left out
+    elseif cat == V.ALL or cat == nil or r.c == cat or (cat == V.RECENT and V.isUnlocked(r)) then
       out[#out + 1] = { row = r, pos = i }
     end
   end
@@ -89,7 +91,13 @@ local KIND_NAMES = { killfx = 'Kill effect', lootbeam = 'Loot label accent', cha
   spellskin = 'Spell effect skin' }
 function V.kindName(kind) return KIND_NAMES[kind or ''] or 'Cosmetic' end
 
-local function steps(track) return type(track) == 'table' and type(track.steps) == 'table' and track.steps or {} end
+local function steps(track)
+  local out = {}
+  for _, s in ipairs(type(track) == 'table' and type(track.steps) == 'table' and track.steps or {}) do
+    if type(s) == 'table' then out[#out + 1] = s end -- a step that is no table is left out
+  end
+  return out
+end
 
 -- the next milestone (not reached yet) and the points of the one before it (0 at the start); nil when all are reached
 function V.trackNext(track)

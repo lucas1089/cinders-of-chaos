@@ -1,0 +1,27 @@
+# Creature names and health bars over the light (client/BASE.md 0042). The map view added the light view to the draw queue after the creature information, so the ambient light darkened every name and small health bar like the ground under it: in an unlit arena a world boss's name in the boss colour (#e03a1e) came out about 40% bright, a dim red smudge on the dark red boss. The light is now queued before the creature information; the static and animated texts already came after it. Touches src/client/mapview.cpp only.
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -299,6 +299,12 @@
+     float horizontalStretchFactor = rect.width() / (float)srcRect.width();
+     float verticalStretchFactor = rect.height() / (float)srcRect.height();
+ 
++    // the light goes over the map first: the names and bars below are drawn on top of it, so a dark place does not
++    // darken them (a boss name in the boss colour read as a dim red smudge in an unlit arena)
++    if (m_lightView) {
++        g_drawQueue->add(std::move(m_lightView));
++    }
++
+     // creatures
+     std::vector<std::pair<CreaturePtr, Point>> creatures;
+     for (const CreaturePtr& creature : g_map.getSpectatorsInRangeEx(cameraPosition, false, m_visibleDimension.width() / 2, m_visibleDimension.width() / 2 + 1, m_visibleDimension.height() / 2, m_visibleDimension.height() / 2 + 1)) {
+@@ -329,10 +335,6 @@
+         c.first->drawInformation(c.second, g_map.isCovered(c.first->getPrewalkingPosition(), m_cachedFirstVisibleFloor), rect, flags);
+     }
+ 
+-    if (m_lightView) {
+-        g_drawQueue->add(std::move(m_lightView));
+-    }
+-
+     // texts
+     int limit = g_adaptiveRenderer.textsLimit();
+     for (int i = 0; i < 2; ++i) {

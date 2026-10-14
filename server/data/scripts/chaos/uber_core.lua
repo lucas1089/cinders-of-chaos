@@ -12,6 +12,13 @@
 ChaosUberCore = ChaosUberCore or {}
 local U = ChaosUberCore
 
+-- the telegraph shapes, the mark plan and the warning pulses are the shared boss mechanics core's
+-- (boss_mechanics_core.lua, server/README.md "Boss mechanics")
+if not ChaosBossMechCore then
+	dofile("data/scripts/chaos/boss_mechanics_core.lua")
+end
+local G = ChaosBossMechCore
+
 local floor, abs, sqrt = math.floor, math.abs, math.sqrt
 
 local function key(x, y)
@@ -263,15 +270,17 @@ function U.patternEvery(cfg, phase, enraged)
 	return math.max(1500, every)
 end
 
--- the telegraph timing: marks at 0 and turnMs (when before the hit), the hit at warnMs; share of max health
+-- the telegraph timing: the danger mark pulses from 0 until the hit (boss_mechanics_core.lua G.pulses; kinds[i] =
+-- "zone" or "fill", the filling mark in the last turn), the hit at warnMs (never under 1.5 s); share of max health
 function U.telegraphTiming(cfg, enraged)
 	local t = cfg.telegraph
-	local warn = enraged and t.enragedWarnMs or t.warnMs
-	local marks = {0}
-	if t.turnMs and t.turnMs < warn then
-		marks[#marks + 1] = t.turnMs
+	local warn = math.max(G.MIN_WARN, enraged and t.enragedWarnMs or t.warnMs)
+	local marks, kinds = {}, {}
+	for _, p in ipairs(G.pulses(warn, t.pulseMs or t.turnMs, t.fillMs)) do
+		marks[#marks + 1] = p.at
+		kinds[#kinds + 1] = p.kind
 	end
-	return {marks = marks, hitMs = warn, share = enraged and t.enragedShare or t.share}
+	return {marks = marks, kinds = kinds, hitMs = warn, share = enraged and t.enragedShare or t.share}
 end
 
 -- damage of a share of max health (at least 1)
@@ -446,95 +455,21 @@ local function collect(L, want)
 end
 
 -- the main direction from a to b: dx, dy in {-1, 0, 1}, one of them 0 (south when equal)
-function U.direction(a, b)
-	local dx, dy = b.x - a.x, b.y - a.y
-	if dx == 0 and dy == 0 then
-		return 0, 1
-	end
-	if abs(dx) > abs(dy) then
-		return dx > 0 and 1 or -1, 0
-	end
-	return 0, dy > 0 and 1 or -1
-end
+U.direction = G.direction
 
--- a telegraph shape. ctx = {L, boss = pos, target = pos, players = {pos, ...}, rand}. Returns the tiles (arena only)
--- and info ({side = "n" | ..., safe = pos, lines = {...}}).
+-- a telegraph shape (boss_mechanics_core.lua G.shape over the arena floor). ctx = {L, boss = pos, target = pos,
+-- players = {pos, ...}, rand, size}. Returns the tiles (arena only) and info ({side = "n" | ..., safe = pos,
+-- lines = {...}}). size (the boss's footprint, 1 by default) widens the shape (G.scaleShape).
 function U.pattern(name, cfg, ctx)
-	local P = cfg.patterns[name] or {}
-	local L, b, rand = ctx.L, ctx.boss or ctx.L.center, ctx.rand
-	local info = {}
-	if name == "cone" then
-		local dx, dy = U.direction(b, ctx.target or {x = b.x, y = b.y + 1})
-		return collect(L, function(x, y)
-			local along = (x - b.x) * dx + (y - b.y) * dy
-			local side = abs((x - b.x) * dy) + abs((y - b.y) * dx)
-			if along < 1 or along > P.length then
-				return false
-			end
-			return side <= math.max(1, floor(P.spread * along / P.length + 0.5))
-		end), info
-	elseif name == "ring" then
-		return collect(L, function(x, y)
-			local d = dist({x = x, y = y}, b)
-			return d >= P.inner and d <= P.outer
-		end), info
-	elseif name == "circle" then
-		return collect(L, function(x, y)
-			return dist({x = x, y = y}, b) <= P.radius
-		end), info
-	elseif name == "marks" then
-		local players = ctx.players or {}
-		return collect(L, function(x, y)
-			for _, p in ipairs(players) do
-				if dist({x = x, y = y}, p) <= P.radius then
-					return true
-				end
-			end
-			return false
-		end), info
-	elseif name == "cross" then
-		return collect(L, function(x, y)
-			return abs(x - b.x) <= P.halfWidth or abs(y - b.y) <= P.halfWidth
-		end), info
-	elseif name == "half" then
-		local sides = {"n", "e", "s", "w"}
-		info.side = sides[rand(1, 4)]
-		return collect(L, function(x, y)
-			if info.side == "n" then
-				return y < b.y
-			elseif info.side == "s" then
-				return y > b.y
-			elseif info.side == "e" then
-				return x > b.x
-			end
-			return x < b.x
-		end), info
-	elseif name == "lines" then
-		local rows, cols = {}, {}
-		info.lines = {}
-		for _ = 1, P.count or 3 do
-			if rand(1, 2) == 1 then
-				local y = rand(L.rect.y1, L.rect.y2)
-				rows[y] = true
-				info.lines[#info.lines + 1] = "row " .. y
-			else
-				local x = rand(L.rect.x1, L.rect.x2)
-				cols[x] = true
-				info.lines[#info.lines + 1] = "col " .. x
-			end
-		end
-		return collect(L, function(x, y)
-			return rows[y] or cols[x]
-		end), info
-	elseif name == "eye" then
-		local m = (P.safe or 2) + 1
-		local safe = {x = rand(L.rect.x1 + m, L.rect.x2 - m), y = rand(L.rect.y1 + m, L.rect.y2 - m), z = L.z}
-		info.safe = safe
-		return collect(L, function(x, y)
-			return dist({x = x, y = y}, safe) > P.safe
-		end), info
+	local spec = {kind = name}
+	for k, v in pairs(cfg.patterns[name] or {}) do
+		spec[k] = v
 	end
-	return {}, info
+	if (ctx.size or 1) > 1 then
+		spec = G.scaleShape(spec, ctx.size)
+	end
+	return G.shape(spec, {list = ctx.L.floorList, rect = ctx.L.rect, z = ctx.L.z, boss = ctx.boss or ctx.L.center,
+		target = ctx.target, players = ctx.players, rand = ctx.rand, size = ctx.size})
 end
 
 -- hazard tiles of a phase. h = the phase's hazard; ctx as U.pattern plus depth (edge). pools: count + perPlayer x
@@ -565,47 +500,11 @@ function U.hazardTiles(h, ctx)
 end
 
 -- the set (key -> true) of a tile list
-function U.tileSet(list)
-	local s = {}
-	for _, t in ipairs(list) do
-		s[key(t.x, t.y)] = true
-	end
-	return s
-end
+U.tileSet = G.tileSet
 
--- how to show a telegraph's tiles: the warning effects are 3x3 pictures centred on their tile, so they go only on
--- tiles whose 8 neighbours are marked too (every second row and column), and every marked tile they do not cover gets
--- a small one-tile effect: the picture never spills onto a safe tile. Returns {big = tiles, small = tiles}.
-function U.markPlan(tiles)
-	local set = U.tileSet(tiles)
-	local big, covered, small = {}, {}, {}
-	for _, t in ipairs(tiles) do
-		if t.x % 2 == 0 and t.y % 2 == 0 then
-			local inside = true
-			for ox = -1, 1 do
-				for oy = -1, 1 do
-					if not set[key(t.x + ox, t.y + oy)] then
-						inside = false
-					end
-				end
-			end
-			if inside then
-				big[#big + 1] = t
-				for ox = -1, 1 do
-					for oy = -1, 1 do
-						covered[key(t.x + ox, t.y + oy)] = true
-					end
-				end
-			end
-		end
-	end
-	for _, t in ipairs(tiles) do
-		if not covered[key(t.x, t.y)] then
-			small[#small + 1] = t
-		end
-	end
-	return {big = big, small = small}
-end
+-- how to show a telegraph's tiles (boss_mechanics_core.lua G.markPlan): 3x3 warning pictures only where they cannot
+-- spill onto a safe tile, a one-tile effect on the rest. Returns {big = tiles, small = tiles}.
+U.markPlan = G.markPlan
 
 -- ===================================================================== rewards
 -- one finisher's spoils: {gold, chaos, divine, exalted, uniqueRolls, uniqueFind, gearRolls, relic = kind or nil,

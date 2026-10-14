@@ -65,6 +65,40 @@ eq(S.fillWidth(100, 344), 344, 'full')
 eq(S.fillWidth(0, 344), 0, 'empty')
 eq(S.fillWidth(0.1, 344), 1, 'a sliver stays')
 
+-- the name plate: tag dropped, then the name cut, never wider than the plate (8 px per character here)
+local w8 = function(text) return #text * 8 end
+eq(S.fitTitle('omen', nil, 'Morvane', w8, 272), 'Omen Guardian Morvane', 'a title that fits')
+eq(S.fitTitle('omen', nil, 'Sangrith the Bloodmoon Herald', w8, 272), 'Sangrith the Bloodmoon Herald',
+  'the longest boss title drops its tag')
+eq(S.fitTitle('boss', nil, 'Kaelgor the Infernal Warlord', w8, 272), 'Kaelgor the Infernal Warlord', 'a boss name')
+local cut = S.fitTitle('boss', nil, 'Kaelgor the Infernal Warlord', w8, 120)
+eq(cut, 'Kaelgor the...', 'a name too long is cut at a word end with dots')
+eq(w8(cut) <= 120, true, 'the cut fits')
+eq(S.fitTitle('boss', nil, 'Kaelgor', w8, 8), '...', 'no room at all')
+eq(S.fitTitle('normal', nil, nil, w8, 100), '', 'no name')
+-- every cut fits, for any width
+local okFit = true
+for maxW = 24, 300, 7 do
+  if w8(S.fitTitle('guardian', 'Legendary', 'Thalcyra the Stormbound Seer', w8, maxW)) > maxW then okFit = false end
+end
+eq(okFit, true, 'every width: the text fits')
+
+-- colours: the in-world names sit on dark ground and on the boss's own red body
+eq(string.format('%.2f', S.contrast('#ffffff', '#000000')), '21.00', 'contrast white on black')
+eq(string.format('%.2f', S.contrast('#000000', '#000000')), '1.00', 'contrast equal colours')
+for key, st in pairs(S.STYLES) do
+  for _, field in ipairs({ 'name', 'world' }) do
+    if st[field] then
+      eq(S.contrast(st[field], S.GROUND) >= S.MIN_CONTRAST, true, key .. ' ' .. field .. ' readable on dark ground')
+    end
+  end
+end
+eq(S.contrast(S.STYLES.boss.world, '#7a1810') >= 3, true, 'boss name readable on a red boss body')
+eq(S.contrast('#e03a1e', '#7a1810') < 3, true, 'the old boss red was not')
+eq(S.STYLES.boss.world ~= S.STYLES.legendary.world, true, 'boss and legendary differ')
+eq(S.STYLES.guardian.world, S.STYLES.boss.world, 'a rift guardian is named like a boss')
+eq(S.STYLES.normal.world, nil, 'normal monsters keep the engine colour')
+
 -- modifiers
 local img, tip = S.mod('Blazing')
 eq(img, '/images/chaos/monsterbar/mods/blazing', 'chip image')

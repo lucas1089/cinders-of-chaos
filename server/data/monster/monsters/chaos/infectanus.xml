@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Infectanus" nameDescription="the Infectanus" race="blood" experience="85000" speed="500" evented = "25" skulled="2" looting="1" manacost="0">
+<monster name="Infectanus" nameDescription="the Infectanus" race="blood" experience="85000" speed="500" manacost="0">
 	<health now="150000" max="150000"/>
 	<look type="356" corpse="6068"/>
 	<targetchange interval="5000" chance="8"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -17,17 +16,12 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="30000"/>
 	</flags>
-	<script>
-        <event name="RewardChestDeath"/>
-        <event name="first_boss_kill_talent"/>
-        <event name="spawn_for_time"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="1500" min="-1200" max="-2500"/>
 		<attack name="earth" interval="2000" chance="40" length="8" spread="3" min="-1300" max="-2500">
 			<attribute key="areaEffect" value="carniphila"/>
 		</attack>
-		<attack name="lifedrain" interval="2000" range="7" min="-900" max="-1300"> 
+		<attack name="lifedrain" interval="2000" chance="100" range="7" min="-900" max="-1300"> 
 			<attribute key="shootEffect" value="earth"/>
 			<attribute key="areaeffect" value="carniphila"/>
 		</attack>

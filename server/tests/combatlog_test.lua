@@ -3,8 +3,8 @@
 -- spells.xml index, the hit buffer, fight segmentation and labels, bounded rows, the session (hunt pause and reset),
 -- the views sent to the client, the party brief, the sweep. Part 2, the engine glue (combatlog.lua) against a mocked
 -- engine: weapon attacks, damage over time, summons, spells through the supports' cast context and the engine's
--- precast event, runes, procs labelled by the calling file (doTargetCombat wrapper, helper libraries, ORIGIN_NONE hits
--- measured), thorns, damage taken by monster and element, mana shield, healing done / received / overhealing, bosses,
+-- precast event, delayed spell hits named by CL.asSpell (the snares), runes, procs labelled by the calling file
+-- (doTargetCombat wrapper, helper libraries, ORIGIN_NONE hits measured), thorns, damage taken by monster and element, mana shield, healing done / received / overhealing, bosses,
 -- the party view with realms and sharing, the opcode actions and the hunt reset. Part 3, a synthetic benchmark
 -- (20 characters x 10 hits/s): printed, with a generous upper bound so a slow CI machine does not fail it.
 
@@ -379,9 +379,16 @@ local function engineHit(attacker, target, ctype, value, origin, crit)
 	return true
 end
 
--- the raw engine functions, before combatlog.lua wraps them
-function doTargetCombat(cid, target, ctype, mn, mx, effect, origin)
-	return engineHit(Creature(cid), Creature(target), ctype, math.abs(mn), origin or ORIGIN_SPELL)
+-- the raw engine functions, before combatlog.lua wraps them. Like the engine (getNumber(L, 7, ORIGIN_SPELL)): a
+-- missing origin is ORIGIN_SPELL, an explicit nil reads as 0 (ORIGIN_NONE)
+local rawArgCount
+function doTargetCombat(...)
+	rawArgCount = select("#", ...)
+	local cid, target, ctype, mn, mx, effect, origin = ...
+	if origin == nil then
+		origin = rawArgCount >= 7 and ORIGIN_NONE or ORIGIN_SPELL
+	end
+	return engineHit(Creature(cid), Creature(target), ctype, math.abs(mn), origin)
 end
 local areaTargets = {}
 function doAreaCombat(cid, ctype, pos, area, mn, mx, effect, origin)
@@ -531,10 +538,15 @@ itemModsFile(hero, dragon)
 local before = dragon.hp
 rarityFile(hero, dragon)
 eq(before - dragon.hp, 70, "the ORIGIN_NONE hit happened")
+eq(rawArgCount, 7, "an explicit origin is passed on")
 necroFile(hero, dragon)
 supportsCtx = {hero.id, 201}
 necroFile(hero, dragon) -- the library called by a spell: the spell
 spellFile(hero, dragon) -- a spell script: the cast
+-- no origin given (ChaosSpell.damageTarget / healTarget): the engine must get no origin argument at all, so it uses its
+-- default ORIGIN_SPELL and the health events (tree bonus, class factor, keystones, healing rules) run; an explicit nil
+-- was ORIGIN_NONE
+eq(rawArgCount, 6, "a call without an origin reaches the engine without one")
 supportsFile(hero, dragon) -- a support proc inside a cast: the support
 supportsCtx = nil
 questFile(hero, dragon)
@@ -549,6 +561,21 @@ eq(r["Minions"].total, 15, "the helper library outside a cast")
 eq(r["Witchfire Bolt"].total, 411 + 15 + 20, "the helper library and the spell file inside the cast")
 eq(r["Other"].total, 13, "an unlisted file: other")
 eq(r["Arrow splash"].total, 12, "doAreaCombat labelled")
+-- a spell's own delayed hits outside every cast context (the snares' scheduler, data/spells/chaos/_snares.lua): named
+-- by CL.asSpell; another character's name is not ours; nothing is left behind, also after an error
+local snareFile = chunk("data/spells/chaos/_snares.lua",
+	"local a, t, v = ... local r = doTargetCombat(a, t, COMBAT_FIREDAMAGE, -v, -v, 0, ORIGIN_SPELL) return r")
+CL.asSpell(hero.id, 201, snareFile, hero, dragon, 50)
+CL.asSpell(mage.id, 201, snareFile, hero, dragon, 2)
+CL.asSpell(hero.id, 201, function()
+	CL.asSpell(hero.id, 999, snareFile, hero, dragon, 4) -- an unknown spell id: the outer name is not lost
+	snareFile(hero, dragon, 6)
+end)
+ok(not pcall(CL.asSpell, hero.id, 201, error, "boom"), "an error is passed on")
+snareFile(hero, dragon, 3)
+r = heroRows(DMG)
+eq(r["Witchfire Bolt"].total, 411 + 15 + 20 + 50 + 6, "delayed spell hits named by CL.asSpell")
+eq(r["Other"].total, 13 + 2 + 4 + 3, "another character's name, an unknown id and after it: other")
 -- the wrapper passes errors and results through and leaves no label behind
 local okCall, err = pcall(doTargetCombat, hero, dragon, COMBAT_FIREDAMAGE)
 ok(okCall or err, "wrapper call")
@@ -665,6 +692,53 @@ clock = clock + 2000
 globals.ChaosCombatLogThink.onThink(1000)
 ok(#sent > before3, "a new hit: pushed")
 ok(pushed >= 0, "first tick")
+-- the display scale (display_scale_core.lua, server/README.md "Display scale"): the state a viewer gets is x the factor
+-- of its own level (totals, rows, elements, the party's totals); hits, crits and durations stay; the meter's own
+-- numbers stay raw; a new factor (a level up) is a new state for the push
+dofile("data/scripts/chaos/display_scale_core.lua")
+ChaosDisplayScale.configure(dofile("data/scripts/chaos/display_scale_config.lua"))
+function C:getLevel() return self.level or 1 end
+local plainState = msg(hero, "seg", {id = "s"}).data
+hero.level = 1000
+local scaledState = msg(hero, "seg", {id = "s"}).data
+local pt, st = plainState.v.t[DMG], scaledState.v.t[DMG]
+ok(pt.tot > 0, "the session has damage")
+eq(st.tot, pt.tot * 1000, "scaled: damage total")
+eq(scaledState.v.t[HEAL].tot, plainState.v.t[HEAL].tot * 1000, "scaled: healing total")
+eq(st.r[1][5], pt.r[1][5] * 1000, "scaled: a row's total")
+eq(st.r[1][8], pt.r[1][8] * 1000, "scaled: a row's max hit")
+eq(st.r[1][6], pt.r[1][6], "hits stay")
+eq(st.r[1][7], pt.r[1][7], "crits stay")
+local elSum, rowSum = 0, 0
+for _, a in pairs(st.el) do elSum = elSum + a end
+for _, r in ipairs(st.r) do rowSum = rowSum + r[5] end
+local plainElSum = 0
+for _, a in pairs(pt.el) do plainElSum = plainElSum + a end
+eq(elSum, plainElSum * 1000, "elements x1000")
+ok(rowSum <= st.tot, "the shown rows add up within the shown total")
+eq(scaledState.segs[1][4], plainState.segs[1][4] * 1000, "segment list: damage")
+eq(scaledState.segs[1][3], plainState.segs[1][3], "segment list: duration stays")
+eq(scaledState.v.dur, plainState.v.dur, "duration stays")
+local function byName(list) local o = {} for _, m in ipairs(list or {}) do o[m.n] = m end return o end
+local pp, sp = byName(plainState.party), byName(scaledState.party)
+eq(sp.Mage.sh, pp.Mage.sh * 1000, "a party member's totals in the viewer's scale")
+eq(sp.Mage.sdur, pp.Mage.sdur, "a party member's duration stays")
+eq(CL.actors[hero.guid].session.tabs[DMG].total, pt.tot, "the meter's own numbers stay raw")
+mage.level = 300
+local mageView = msg(mage, "open", {seg = "s", party = true, share = true}).data
+eq(byName(mageView.party).Hero.sd, pp.Hero.sd * 5, "another viewer: its own scale (level 300: x5)")
+msg(mage, "close", {})
+-- the factor is part of the push signature: a level change alone pushes the state again
+clock = clock + 2000
+globals.ChaosCombatLogThink.onThink(1000)
+local beforeLevel = #sent
+hero.level = 700
+clock = clock + 2000
+globals.ChaosCombatLogThink.onThink(1000)
+ok(#sent > beforeLevel, "a new factor: pushed")
+eq(sent[#sent].data.v.t[DMG].tot, pt.tot * 100, "level 700: x100")
+hero.level, mage.level = nil, nil
+C.getLevel = nil
 -- hunt: paused hunt keeps the session still, a hunt reset starts it over
 ChaosHunt.sessions[hero.guid] = {paused = true}
 local sBefore = CL.actors[hero.guid].session.tabs[DMG].total

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Garack" nameDescription="a garack" race="fire" experience="5400" skulled="2" looting="1" speed="67">
+<monster name="Garack" nameDescription="a garack" race="fire" experience="5400" speed="67">
 	<health now="14800" max="14800"/>
 	<look type="1474" corpse="6068" />
 	<level min="710" max="750"/>
@@ -46,6 +46,23 @@
 	<loot>
 		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
-		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- platinum coin -->
+		<item id="11302" chance="375"/><!-- equipment pool of the tier 1 late-game monsters -->
+		<item id="11301" chance="375"/>
+		<item id="11304" chance="375"/>
+		<item id="11303" chance="375"/>
+		<item id="8891" chance="375"/>
+		<item id="9931" chance="375"/>
+		<item id="11356" chance="375"/>
+		<item id="2645" chance="375"/>
+		<item id="8889" chance="562"/>
+		<item id="8887" chance="562"/>
+		<item id="12607" chance="562"/>
+		<item id="8880" chance="562"/>
+		<item id="2522" chance="562"/>
+		<item id="2520" chance="562"/>
+		<item id="11117" chance="562"/>
+		<item id="5741" chance="562"/>
 	</loot>
 </monster>

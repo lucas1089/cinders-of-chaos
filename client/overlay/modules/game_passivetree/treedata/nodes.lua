@@ -1442,41 +1442,60 @@ function getTreeNodes()
 			}
 		},
 		--- 77 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
+			name = "Thornbound Oath",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 20,
-			icon = "manaLeechChance",
+			icon = "arThornbound",
 			customStats = {
-				manaLeechChance = 1,
-				manaLeechAmount = 2
+				arThornbound = 1
+			},
+			stats = {
+				"A hit taken from a creature reflects 20% of what",
+				"landed (and your Reflect Damage once more) as",
+				"physical damage, at most 50% of your maximum",
+				"health a hit. Players take a third (at most 5%",
+				"of their health a hit), bosses half (at most",
+				"2 x your level a second). Your damage is 10% less."
 			},
 			inputs = {
 				75
 			},
 			out = {
-				
 			}
 		},
 		--- 78 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
+			name = "Cascade Edge",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 21,
-			icon = "criticalHitChance",
+			icon = "arCascade",
 			customStats = {
-				criticalHitChance = 1,
-				criticalHitAmount = 1
+				arCascade = 1
+			},
+			stats = {
+				"A critical hit releases a burst on the other",
+				"enemies within 1 sqm of its target for 60% of the",
+				"hit, of your strongest tree element (energy if",
+				"none), at most once every 0.8 s.",
+				"Your non-critical hits deal 5% less."
 			},
 			inputs = {
 				71
 			},
 			out = {
-				
 			}
 		},
 		--- 79 ---
@@ -1516,41 +1535,58 @@ function getTreeNodes()
 			}
 		},
 		--- 81 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
+			name = "Sanguine Covenant",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 24,
-			icon = "lifeLeechChance",
+			icon = "arSanguine",
 			customStats = {
-				lifeLeechChance = 1,
-				lifeLeechAmount = 2,
+				arSanguine = 1
+			},
+			stats = {
+				"Every hit you deal leeches 5% of its damage as",
+				"health, at most 6% of your maximum health in",
+				"any second.",
+				"Healing you receive is 30% less."
 			},
 			inputs = {
 				76
 			},
 			out = {
-				
 			}
 		},
 		--- 82 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
+			name = "Stormstring",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 25,
-			icon = "criticalHitChance",
+			icon = "arStormstring",
 			customStats = {
-				criticalHitChance = 1,
-				criticalHitAmount = 1
+				arStormstring = 1
 			},
+			stats = {
+				"Ranger line: bow and crossbow hits arc to 3",
+				"other enemies within 3 sqm for 40% of the hit",
+				"as energy damage.",
+				"The hit on its own target deals 10% less."
+			},
+			classes = {"ranger", "deadeye", "beastmaster"},
 			inputs = {
 				74
 			},
 			out = {
-				
 			}
 		},
 		--- 83 ---
@@ -1799,24 +1835,33 @@ function getTreeNodes()
 			}
 		},
 		--- 96 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Cold Nature",
+			name = "Hollow Vessel",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 330,
-			isUncommon = true,
 			group = 28,
-			icon = "coldNature",
+			icon = "arHollowVessel",
 			customStats = {
-				wisdom = 3,
-				incrementIce = 3,
-				absorbIce = 2
+				arHollowVessel = 1
 			},
+			stats = {
+				"Mystic, Necromancer, Monk and Templar lines: your",
+				"maximum health is 100. Your energy shield: the",
+				"items' +50%, plus 50% of the health given up. It",
+				"recharges 15% of its maximum a second faster and",
+				"starts 1 s after a hit. No poison, no life drain",
+				"can hurt you. Heals and leech fill only the 100."
+			},
+			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				94
 			},
 			out = {
-				
 			}
 		},
 		--- 97 ---
@@ -1856,24 +1901,31 @@ function getTreeNodes()
 			}
 		},
 		--- 99 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Tides of Changes",
-			isUncommon = true,
+			name = "Covenant of Vigils",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 30,
 			group = 29,
-			icon = "tidesOfChange",
+			icon = "arVigils",
 			customStats = {
-				spirit = 3,
-				incrementDeath = 3,
-				absorbDeath = 2
+				arVigils = 1
 			},
+			stats = {
+				"Mystic, Necromancer and Templar lines: your vigils",
+				"reserve 30% less, reach 3 sqm farther and give",
+				"your party members 20% more of every effect.",
+				"Your own damage is 10% less."
+			},
+			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				97
 			},
 			out = {
-				
 			}
 		},
 		--- 100 ---
@@ -1913,24 +1965,31 @@ function getTreeNodes()
 			}
 		},
 		--- 102 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Hulking Smash",
-			isUncommon = true,
+			name = "Iron Tithe",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 230,
 			group = 30,
-			icon = "hulkingSmash",
+			icon = "arIronTithe",
 			customStats = {
-				strength = 3,
-				incrementPhysical = 3,
-				absorbPhysical = 2
+				arIronTithe = 1
 			},
+			stats = {
+				"Warrior, Monk and Templar lines: your vigils",
+				"reserve maximum health instead of mana, at 60% of",
+				"their share. They work on you alone, 50% stronger.",
+				"No effect next to Hollow Vessel."
+			},
+			classes = {"warrior", "juggernaut", "berserker", "monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				100
 			},
 			out = {
-				
 			}
 		},
 		--- 103 ---
@@ -1970,110 +2029,150 @@ function getTreeNodes()
 			}
 		},
 		--- 105 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Anticipation",
-			isUncommon = true,
+			name = "Snarewright's Creed",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 130,
 			group = 31,
-			icon = "anticipation",
+			icon = "arSnarewright",
 			customStats = {
-				dexterity = 3,
-				incrementDrown = 3,
-				absorbDrown = 2
+				arSnarewright = 1
 			},
+			stats = {
+				"Ranger and Thief lines: 2 more traps and 3 more",
+				"mines may be out at once; they arm in 50% of the",
+				"time and hit 25% harder. Your other hits (weapon,",
+				"spells; not damage over time) are 15% less."
+			},
+			classes = {"ranger", "deadeye", "beastmaster", "thief", "ninja", "samurai"},
 			inputs = {
 				103
 			},
 			out = {
-				
 			}
 		},
 		--- 106 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 2,
 			orbitDist = 120,
-			name = "Total Incineration",
+			name = "Sigil of Cinders",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 35,
-			isUncommon = true,
 			group = 23,
-			icon = "totalIncineration",
+			icon = "arCinderSigil",
 			customStats = {
-				intelligence = 3,
-				absorbFire = 2,
-				incrementFire = 3
+				arCinderSigil = 1
 			},
+			stats = {
+				"Mystic and Templar lines: fire and holy spell hits",
+				"ignite (15% of the hit over 4 s). A spell that hits",
+				"one enemy brands it for 8 s: every second the sigil",
+				"burns enemies within 1 sqm for 5% of that hit and",
+				"jumps on when its bearer dies; ignited monsters",
+				"spread the burn to 2 more when they die.",
+				"Damage that is not fire or holy is 20% less."
+			},
+			classes = {"mystic", "elementalist", "illusionist", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				80
 			},
 			out = {
-				
 			}
 		},
 		--- 107 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 2,
 			orbitDist = 120,
-			name = "Wildwood Fury",
-			isUncommon = true,
+			name = "Contagion Rite",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 135,
 			group = 23,
-			icon = "wrathOfNature",
+			icon = "arContagion",
 			customStats = {
-				dexterity = 3,
-				incrementEarth = 3,
-				absorbEarth = 2
+				arContagion = 1
 			},
+			stats = {
+				"Thief line: a monster that dies with your poison",
+				"on it spreads it to 3 monsters within 2 sqm",
+				"(5 ticks of its last tick). Spread poison spreads",
+				"again, up to 4 deep.",
+				"Your weapon hits deal 10% less."
+			},
+			classes = {"thief", "ninja", "samurai"},
 			inputs = {
 				80
 			},
 			out = {
-				
 			}
 		},
 		--- 108 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 2,
 			orbitDist = 120,
-			name = "Fleshcrafting",
+			name = "Pyre Oath",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 325,
-			isUncommon = true,
 			group = 22,
-			icon = "fleshcrafting",
+			icon = "arPyreOath",
 			customStats = {
-				vitality = 3,
-				incrementArcane = 3,
-				absorbArcane = 2
+				arPyreOath = 1
 			},
+			stats = {
+				"Warrior and Templar lines. Out of a protection",
+				"zone and in a fight, enemies within 2 sqm take",
+				"4% of your maximum health as fire damage every",
+				"second. You burn for 2.5% of your maximum health",
+				"a second (never lethal; your fire absorbs count)",
+				"and regenerate 2% of it a second.",
+				"Your other damage is 25% less."
+			},
+			classes = {"warrior", "juggernaut", "berserker", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				79
 			},
 			out = {
-				
 			}
 		},
 		--- 109 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 2,
 			orbitDist = 120,
-			name = "Carving Structure",
-			isUncommon = true,
+			name = "Open Hand Creed",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 220,
 			group = 22,
-			icon = "carvingStructure",
+			icon = "arOpenHand",
 			customStats = {
-				strength = 3,
-				incrementLifeDrain = 3,
-				incrementManaDrain = 3,
-				absorbLife = 2,
-				absorbMana = 2
+				arOpenHand = 1
 			},
+			stats = {
+				"Every line but the Monk's. With no weapon in your",
+				"hands (a shield is fine) your fists hit with the",
+				"Monk's fist attack (40 + level / 40, at most 60)",
+				"and your best melee skill, +10% damage."
+			},
+			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "thief", "ninja", "samurai", "necromancer", "lich", "bonelord", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				79
 			},
 			out = {
-				
 			}
 		},
 		--- 110 ---
@@ -4734,23 +4833,33 @@ function getTreeNodes()
 			}
 		},
 		--- 253 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Heart of Darkness",
+			name = "Reliquary Vow",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 62,
-			isMythic = true,
-			icon = "heartOfDarkness",
+			icon = "arReliquary",
 			customStats = {
-				absorbAllElements = 1,
-				experience = 10
+				arReliquary = 1
 			},
+			stats = {
+				"Templar line: a Reliquary Warden follows you.",
+				"Every 2 s it heals you and your party within",
+				"3 sqm (0.6% of maximum health + 2 x your magic",
+				"level), the others deal +5% damage for 3 s, and",
+				"enemies within 2 sqm take 0.6 x level + 3 x magic",
+				"level as holy damage. Your damage is 10% less."
+			},
+			classes = {"templar", "inquisitor", "sentinel"},
 			inputs = {
-			    245
+				245
 			},
 			out = {
-				
 			}
 		},
 		--- 254 ---
@@ -4901,27 +5010,32 @@ function getTreeNodes()
 			}
 		},
 		--- 262 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Discipline of the Forbidden",
+			name = "Effigy Covenant",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
-			isMythic = true,
 			group = 63,
-			icon = "disciplineForbidden",
+			icon = "arEffigy",
 			customStats = {
-				incrementHealth = 3,
-				incrementLifeDrain = 3,
-				incrementManaDrain = 3,
-				incrementPhysical = 3,
-				loot = 10,
-
+				arEffigy = 1
 			},
+			stats = {
+				"Mystic and Necromancer lines: an attack spell",
+				"hitting 2 or more enemies raises a Cinder Effigy",
+				"on your tile (at most 2, for 12 s). Every 2 s it",
+				"repeats the cast within 3 sqm of it for 22% of",
+				"the cast's average hit. Your spells deal 35% less."
+			},
+			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord"},
 			inputs = {
-			    261
+				261
 			},
 			out = {
-				
 			}
 		},
 		--- 263 ---
@@ -6690,23 +6804,32 @@ function getTreeNodes()
 			}
 		},
 		--- 355 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
-			isMythic = true,
+			name = "Winter's Lattice",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 84,
-			icon = "criticalHitChance",
+			icon = "arWinterLattice",
 			customStats = {
-				criticalHitChance = 3,
-				criticalHitAmount = 5
+				arWinterLattice = 1
 			},
+			stats = {
+				"Mystic and Necromancer lines: a monster that dies",
+				"within 2 s of your ice hit shatters: enemies within",
+				"2 sqm take 6% of its maximum health as ice damage",
+				"(at most 12 x your level). Kills shatter again.",
+				"Your fire and energy damage is 30% less."
+			},
+			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord"},
 			inputs = {
 				353
 			},
 			out = {
-				
 			}
 		},
 		--- 356 ---
@@ -6820,22 +6943,31 @@ function getTreeNodes()
 			}
 		},
 		--- 362 ---
+		-- build archetype keystone (2026-10; was a small leaf: passivetree_config.lua reworked version 2;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
-			isMythic = true,
+			name = "Aether Edge",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 85,
-			icon = "life",
+			icon = "arAetherEdge",
 			customStats = {
-				vitality = 10,
+				arAetherEdge = 1
 			},
+			stats = {
+				"Monk and Templar lines: your weapon and fist hits",
+				"add 6% of your current energy shield as energy",
+				"damage.",
+				"Your maximum health is 20% less."
+			},
+			classes = {"monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				356
 			},
 			out = {
-				
 			}
 		},
 		--- 363 ---
@@ -6961,7 +7093,7 @@ function getTreeNodes()
 			},
 			stats = {
 				"Necromancer line: your minions deal +50% damage",
-				"and have +50% health.",
+				"(Bone Lord: +20% damage) and have +50% health.",
 				"Your own spells deal 25% less damage."
 			},
 			classes = {"necromancer", "lich", "bonelord"},
@@ -7234,7 +7366,7 @@ function getTreeNodes()
 			stats = {
 				"Thief line: every weapon hit poisons the target",
 				"as Poison Blades does, with or without the buff,",
-				"and your poison deals +60% damage.",
+				"and your poison deals +30% damage.",
 				"Your evasion is halved."
 			},
 			classes = {"thief", "ninja", "samurai"},
@@ -11856,8 +11988,8 @@ function getTreeNodes()
 			}
 		},
 		--- 621 ---
-		-- keystone: every class of the Warrior, Ranger and Mystic lines sees (and gets) its own keystone here (the
-		-- variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
+		-- keystone: every class of the Warrior, Ranger and Mystic lines, and the Iron Sage, sees (and gets) its own keystone
+		-- here (the variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
 		{
 			orbit = 0,
 			orbitDist = 0,
@@ -11869,8 +12001,8 @@ function getTreeNodes()
 			icon = "ksWrath",
 			stats = {
 				"Holds the keystone of your class (Warrior,",
-				"Ranger and Mystic lines; the other lines have",
-				"theirs in their class section)."
+				"Ranger and Mystic lines, the Iron Sage; other",
+				"classes have theirs in their class section)."
 			},
 			knight = {
 				icon = "ksCleavingArc",
@@ -11908,7 +12040,7 @@ function getTreeNodes()
 					"their damage. Cooldown 3 s."
 				}
 			},
-			druid = {
+			ironsage = {
 				icon = "ksOvergrowth",
 				name = "Overgrowth",
 				customStats = {
@@ -11916,8 +12048,8 @@ function getTreeNodes()
 				},
 				stats = {
 					"Heals you cast on others also plant regrowth:",
-					"30% of the heal again over 6 s (3 pulses).",
-					"A new heal refreshes it."
+					"10% of the heal again over 6 s (3 pulses).",
+					"A new heal adds its share to what is left."
 				}
 			},
 			illusionist = {
@@ -11979,7 +12111,7 @@ function getTreeNodes()
 					"Never the same target twice."
 				}
 			},
-			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist"},
+			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "ironsage"},
 			inputs = {
 				620
 			},
@@ -12027,8 +12159,8 @@ function getTreeNodes()
 			}
 		},
 		--- 624 ---
-		-- keystone: every class of the Warrior, Ranger and Mystic lines sees (and gets) its own keystone here (the
-		-- variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
+		-- keystone: every class of the Warrior, Ranger and Mystic lines, and the Sentinel, sees (and gets) its own keystone
+		-- here (the variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
 		{
 			orbit = 0,
 			orbitDist = 0,
@@ -12040,8 +12172,8 @@ function getTreeNodes()
 			icon = "ksResolve",
 			stats = {
 				"Holds the keystone of your class (Warrior,",
-				"Ranger and Mystic lines; the other lines have",
-				"theirs in their class section)."
+				"Ranger and Mystic lines, the Sentinel; other",
+				"classes have theirs in their class section)."
 			},
 			knight = {
 				icon = "ksBulwark",
@@ -12078,7 +12210,7 @@ function getTreeNodes()
 					"+20% damage."
 				}
 			},
-			druid = {
+			sentinel = {
 				icon = "ksThorns",
 				name = "Thorns",
 				customStats = {
@@ -12145,7 +12277,7 @@ function getTreeNodes()
 					"+35% damage, and companions take 20% less."
 				}
 			},
-			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist"},
+			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "sentinel"},
 			inputs = {
 				623
 			},

@@ -32,9 +32,14 @@ final class ChaosPayPayPal implements ChaosPayProvider {
 	private $now;
 	private string $access = '';
 	private int $accessUntil = 0;
+	/** File that keeps the access token between requests ('' = this object only). */
+	private string $tokenCache;
+
+	/** A webhook whose PAYPAL-TRANSMISSION-TIME is further than this from our clock is refused before any call. */
+	public const TIME_TOLERANCE = 21600;
 
 	public function __construct(string $clientId, string $secret, string $webhookId, string $env = 'sandbox',
-			string $category = 'DONATION', string $brand = '', ?callable $http = null, ?callable $now = null) {
+			string $category = 'DONATION', string $brand = '', ?callable $http = null, ?callable $now = null, string $tokenCache = '') {
 		$this->base = $env === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 		$this->clientId = $clientId;
 		$this->secret = $secret;
@@ -43,12 +48,49 @@ final class ChaosPayPayPal implements ChaosPayProvider {
 		$this->brand = $brand;
 		$this->http = $http ?? array(ChaosPayHttp::class, 'request');
 		$this->now = $now ?? 'time';
+		$this->tokenCache = $tokenCache;
 	}
 
 	public function name(): string { return 'paypal'; }
+
+	/** The token file of these credentials (bootstrap.php): mode 600, outside the web root, keyed by a hash of them. */
+	public static function tokenCachePath(string $clientId, string $secret, string $env, string $dir = ''): string {
+		$dir = $dir !== '' ? $dir : sys_get_temp_dir();
+		return rtrim($dir, '/') . '/chaos_paypal_token_' . substr(hash('sha256', $env . "\n" . $clientId . "\n" . $secret), 0, 20) . '.json';
+	}
+
+	private function cachedToken(): void {
+		if ($this->tokenCache === '' || !is_file($this->tokenCache)) {
+			return;
+		}
+		$d = json_decode((string)@file_get_contents($this->tokenCache), true);
+		if (is_array($d) && is_string($d['token'] ?? null) && (int)($d['until'] ?? 0) > ($this->now)()) {
+			$this->access = $d['token'];
+			$this->accessUntil = (int)$d['until'];
+		}
+	}
+
+	private function storeToken(): void {
+		if ($this->tokenCache === '') {
+			return;
+		}
+		$tmp = $this->tokenCache . '.' . bin2hex(random_bytes(4));
+		$old = umask(0077);
+		$ok = @file_put_contents($tmp, json_encode(array('token' => $this->access, 'until' => $this->accessUntil))) !== false;
+		umask($old);
+		if ($ok) {
+			@chmod($tmp, 0600);
+			@rename($tmp, $this->tokenCache);
+		} else {
+			@unlink($tmp);
+		}
+	}
 	public function method(): string { return 'paypal'; }
 
 	private function accessToken(): string {
+		if ($this->access === '') {
+			$this->cachedToken();
+		}
 		if ($this->access !== '' && ($this->now)() < $this->accessUntil) {
 			return $this->access;
 		}
@@ -64,6 +106,7 @@ final class ChaosPayPayPal implements ChaosPayProvider {
 		}
 		$this->access = (string)$d['access_token'];
 		$this->accessUntil = ($this->now)() + max(60, (int)($d['expires_in'] ?? 300) - 60);
+		$this->storeToken();
 		return $this->access;
 	}
 
@@ -161,6 +204,9 @@ final class ChaosPayPayPal implements ChaosPayProvider {
 			'currency' => strtoupper((string)($amount['currency_code'] ?? '')),
 			'reference' => (string)($capture['custom_id'] ?? ($pu['custom_id'] ?? '')),
 			'refunded_cents' => $refunded,
+			// who paid (hashed by the service into chaos_pay_payers): PayPal's payer id, else the e-mail
+			'payer' => ($o['payer']['payer_id'] ?? '') !== '' ? 'id:' . (string)$o['payer']['payer_id']
+				: ((($o['payer']['email_address'] ?? '') !== '') ? 'mail:' . strtolower(trim((string)$o['payer']['email_address'])) : ''),
 		);
 	}
 
@@ -207,6 +253,14 @@ final class ChaosPayPayPal implements ChaosPayProvider {
 				return array('ok' => false, 'code' => 401, 'hints' => array());
 			}
 		}
+		// cheap checks first, so a forged call costs no PayPal API call: PayPal's certificate host, a recent transmission
+		if (!self::certUrlOk(ChaosPayUtil::header($headers, 'paypal-cert-url'))) {
+			return array('ok' => false, 'code' => 401, 'hints' => array());
+		}
+		$sent = strtotime(ChaosPayUtil::header($headers, 'paypal-transmission-time'));
+		if ($sent === false || abs(($this->now)() - $sent) > self::TIME_TOLERANCE) {
+			return array('ok' => false, 'code' => 401, 'hints' => array());
+		}
 		$event = ChaosPayUtil::json($body);
 		if (!$event) {
 			return array('ok' => false, 'code' => 400, 'hints' => array());
@@ -226,6 +280,16 @@ final class ChaosPayPayPal implements ChaosPayProvider {
 			return array('ok' => false, 'code' => 401, 'hints' => array());
 		}
 		return array('ok' => true, 'hints' => self::hints($event));
+	}
+
+	/** The certificate of a webhook is PayPal's: https on paypal.com or one of its subdomains. */
+	public static function certUrlOk(string $url): bool {
+		$u = parse_url($url);
+		if (!is_array($u) || strtolower((string)($u['scheme'] ?? '')) !== 'https' || isset($u['user']) || isset($u['port'])) {
+			return false;
+		}
+		$host = strtolower((string)($u['host'] ?? ''));
+		return $host === 'paypal.com' || substr($host, -11) === '.paypal.com';
 	}
 
 	/** Which of our charges an event is about. */

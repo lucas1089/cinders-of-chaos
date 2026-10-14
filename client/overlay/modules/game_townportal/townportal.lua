@@ -198,6 +198,15 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   if not ok or type(msg) ~= 'table' then return end
   local data = type(msg.data) == 'table' and msg.data or {}
   if msg.action == 'state' then
+    -- the styles: tables with a name; anything else is left out (game_chaosguard/opcode_fuzz_test.lua)
+    local styles = {}
+    for _, s in ipairs(type(data.styles) == 'table' and data.styles or {}) do
+      if type(s) == 'table' and s.id ~= nil then
+        s.name = tostring(s.name or '?')
+        styles[#styles + 1] = s
+      end
+    end
+    data.styles = styles
     state = data
     showList()
     if data.open then show() end

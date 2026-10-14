@@ -80,7 +80,7 @@ PayToast < UIWidget
 MainWindow
   id: payWindow
   !text: tr('Donate - Chaos Coins')
-  size: 580 500
+  size: 580 560
   @onEscape: modules.game_shop.hidePay()
 
   Label
@@ -115,9 +115,31 @@ MainWindow
     color: #b0b0b0
     font: verdana-11px-rounded
 
+  Label
+    id: termsNote
+    anchors.top: thanksNote.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-wrap: true
+    text-auto-resize: true
+    color: #b0b0b0
+    font: verdana-11px-rounded
+
+  Label
+    id: termsNotePt
+    anchors.top: termsNote.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-wrap: true
+    text-auto-resize: true
+    color: #b0b0b0
+    font: verdana-11px-rounded
+
   HorizontalSeparator
     id: sep
-    anchors.top: thanksNote.bottom
+    anchors.top: termsNotePt.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 6
@@ -169,9 +191,27 @@ MainWindow
       text-auto-resize: true
       color: #9ad06a
 
+    // an optional creator code (server shop_payments.lua: the website's chaos_creator_support pick)
+    Label
+      id: creatorLabel
+      anchors.top: firstBonus.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      text-auto-resize: true
+      !text: tr('Creator code (optional):')
+
+    TextEdit
+      id: creatorCode
+      anchors.left: creatorLabel.right
+      anchors.verticalCenter: creatorLabel.verticalCenter
+      margin-left: 6
+      width: 120
+      max-length: 16
+      !tooltip: tr('A creator you support gets a share of the coins of your donations, at no cost to you.')
+
     Panel
       id: packList
-      anchors.top: firstBonus.bottom
+      anchors.top: creatorCode.bottom
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.bottom: parent.bottom

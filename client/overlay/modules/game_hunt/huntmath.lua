@@ -28,12 +28,13 @@ function HuntMath.duration(seconds)
   return string.format('%ds', s)
 end
 
--- 1234 -> "1.2k", 2500000 -> "2.5kk", 3200000000 -> "3.2kkk"; keeps the sign
+-- 1234 -> "1.2k", 2500000 -> "2.5M", 3200000000 -> "3.2B"; keeps the sign (the units of client_chaos_numbers;
+-- with the display scale a level-1000 session is in the billions)
 function HuntMath.short(n)
   n = tonumber(n) or 0
   local sign = n < 0 and '-' or ''
   n = math.abs(n)
-  local units = { { 1e9, 'kkk' }, { 1e6, 'kk' }, { 1e3, 'k' } }
+  local units = { { 1e12, 'T' }, { 1e9, 'B' }, { 1e6, 'M' }, { 1e3, 'k' } }
   for _, u in ipairs(units) do
     if n >= u[1] then
       local v = math.floor(n / u[1] * 10) / 10

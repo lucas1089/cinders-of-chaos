@@ -79,12 +79,12 @@ class Shipped(unittest.TestCase):
     """the bitmap fonts in overlay/data/fonts/chaos/ (make_ofl_fonts.sh): their sheets hold every glyph from
     first-glyph to the end of the range (else the client draws nothing for the bytes past the sheet)"""
     DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'overlay', 'data', 'fonts', 'chaos')
-    RANGE = {'chaos-splash-20px': 90}  # upper case only: a 256 slot (MANIFEST "OFL fonts")
+    RANGE = {'chaos-splash-20px': 90, 'chaos-display-16px': 126}  # ASCII only: a 256 slot (MANIFEST "OFL fonts")
 
     def test_ranges(self):
         import re
         names = [n[:-7] for n in sorted(os.listdir(self.DIR)) if n.endswith('.otfont')]
-        self.assertEqual(len(names), 7)
+        self.assertEqual(len(names), 10)
         for n in names:
             text = open(os.path.join(self.DIR, n + '.otfont'), encoding='utf-8').read()
             gw, gh = [int(x) for x in re.search(r'glyph-size: (\d+) (\d+)', text).group(1, 2)]
@@ -103,10 +103,34 @@ class Shipped(unittest.TestCase):
         fonts = os.path.join(self.DIR, '..')
         for n in ('Verdana-Strikethrough-11px', 'Verdana-11px-italic', 'Verdana Bold-10px', 'Verdana Bold-11px-low-space',
                   'Verdana-8px-antialiased-espaco', 'Verdana-8px', 'var-cip-font', 'verdana-9px-italic',
-                  'terminus-10px'):
+                  'terminus-10px', 'var-cip-font-wheel'):
             info = M.parse_otfont(open(os.path.join(fonts, n + '.otfont'), encoding='utf-8').read())
             self.assertEqual(info['name'], 'Icon-VBold-11px', n)
             self.assertLess('Icon-VBold-11px.otfont', n + '.otfont')  # loads first (sorted)
+
+
+class Border(unittest.TestCase):
+    def test_disc_offsets(self):
+        self.assertEqual(M.disc_offsets(0), [(0, 0)])
+        self.assertEqual(len(M.disc_offsets(1)), 5)       # the origin and its 4 neighbours
+        self.assertEqual(len(M.disc_offsets(1.5)), 9)     # + the diagonals (1.41)
+        self.assertEqual(len(M.disc_offsets(4)), 49)
+        self.assertNotIn((4, 1), M.disc_offsets(4))       # outside the circle
+        self.assertIn((-4, 0), M.disc_offsets(4))
+
+    def test_ring_pad(self):
+        self.assertEqual(M.ring_pad(), 0)
+        self.assertEqual(M.ring_pad(outline=1), 1)
+        self.assertEqual(M.ring_pad(border=1.0), 1)
+        self.assertEqual(M.ring_pad(border=1.2), 2)
+        self.assertEqual(M.ring_pad(outline=2, border=1.0), 2)
+
+    def test_squeeze(self):
+        self.assertEqual(M.squeeze(15, 1, 1, None), 15)
+        self.assertEqual(M.squeeze(15, 1, 1, 13), 11)
+        self.assertEqual(M.squeeze(9, 1, 1, 13), 9)
+        with self.assertRaises(ValueError):
+            M.squeeze(9, 3, 3, 6)
 
 
 class RenderTest(unittest.TestCase):
@@ -144,6 +168,43 @@ class RenderTest(unittest.TestCase):
             # Á reaches above the font's line box: the cell and the line get that room (y-offset 0, nothing cut)
             self.assertGreater(r['line'], r['old_line'])
             self.assertEqual(r['y_offset'], 0)
+        finally:
+            shutil.rmtree(d)
+
+    def test_border(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest('no Pillow')
+        import re, shutil, tempfile
+        font = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'fonts-src', 'AlegreyaSans',
+                            'AlegreyaSans-Medium.ttf')
+        d = tempfile.mkdtemp()
+        try:
+            r = M.render(font, 12, 'b', d, space_width=3, border=1.0, border_color=(0, 0, 0, 230), max_cell_width=13)
+            self.assertEqual(r['cell'][0], 13)
+            self.assertEqual(sorted(r['squeezed']), sorted('\u2030\u2014'))  # per mille and em dash
+            self.assertEqual(r['slot'], 256)
+            text = open(os.path.join(d, 'b-12px.otfont')).read()
+            gw, gh = [int(x) for x in re.search(r'glyph-size: (\d+) (\d+)', text).group(1, 2)]
+            self.assertEqual(int(re.search(r'spacing: (-?\d+)', text).group(1)), -1)  # the border is taken back
+            img = Image.open(os.path.join(d, 'b-12px.png')).convert('RGBA')
+            cols = img.size[0] // gw
+            px = img.load()
+
+            def cell(byte):
+                i = byte - 32
+                x0, y0 = (i % cols) * gw, (i // cols) * gh
+                return [[px[x0 + x, y0 + y] for x in range(gw)] for y in range(gh)]
+            c = cell(ord('l'))
+            # white ink, dark ring, soft (partial alpha) ring pixels, nothing wraps into the far right column
+            self.assertTrue(any(p[:3] == (255, 255, 255) and p[3] > 200 for row in c for p in row))
+            ring = [p for row in c for p in row if p[3] and p[:3] == (0, 0, 0)]
+            self.assertTrue(ring)
+            self.assertTrue(any(0 < p[3] < 200 for p in ring))
+            self.assertTrue(all(row[gw - 1][3] == 0 for row in c[1:]))
+            # the first column holds the ring left of the ink, the ink itself starts one pixel in
+            self.assertTrue(any(row[0][3] for row in c))
         finally:
             shutil.rmtree(d)
 

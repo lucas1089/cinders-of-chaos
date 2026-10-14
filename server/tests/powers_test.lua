@@ -143,10 +143,13 @@ function Creature_:getStorageValue(k) return self.storage[k] or -1 end
 function Creature_:setStorageValue(k, v) self.storage[k] = v end
 function Creature_:addCondition(c) self.conditions[#self.conditions + 1] = c end
 function Creature_:teleportTo(p) self.pos = {x = p.x, y = p.y, z = p.z} self.teleported = p end
+local sightBlocked, pathBlocked = false, false -- Ember Step: a wall (no clear sight) or a closed door / bars (no path)
 function Creature_:getPosition()
 	local pos = self.pos
-	return setmetatable({sendMagicEffect = function(_, e) effects[#effects + 1] = e end}, {__index = pos})
+	return setmetatable({sendMagicEffect = function(_, e) effects[#effects + 1] = e end,
+		isSightClear = function() return not sightBlocked end}, {__index = pos})
 end
+function Creature_:getPathTo() if pathBlocked then return false end return {1} end
 function Creature_:getType() return {isBoss = function() return false end} end
 function ChaosTierOf() return "normal" end
 Position = function(x, y, z) return {x = x, y = y, z = z, sendMagicEffect = function() end} end
@@ -474,6 +477,18 @@ stepper.teleported = nil
 events.ChaosPowersTaken.onHealthChange(stepper, foe, 300, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
 runTimers()
 eq(stepper.teleported, nil, "cooldown 15 s")
+-- never through walls, doors or bars: every tile around out of sight, then without a walking path
+for _, block in ipairs({"sight", "path"}) do
+	reset()
+	stepper.teleported = nil
+	stepper.health = 1000
+	sightBlocked, pathBlocked = block == "sight", block == "path"
+	clock = clock + CFG.emberstep.cooldownMs + 1
+	events.ChaosPowersTaken.onHealthChange(stepper, foe, 300, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+	runTimers()
+	eq(stepper.teleported, nil, "no blink to a tile without " .. block)
+end
+sightBlocked, pathBlocked = false, false
 -- a hit that kills is Last Breath's business, not a blink
 reset()
 stepper.teleported = nil

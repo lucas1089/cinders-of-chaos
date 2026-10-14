@@ -14,10 +14,12 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `setup/rules.bbcode` | the first version of the Rules page (then edited in the admin panel) |
 | `setup/router.php` | router for PHP's built-in server (local tests only) |
 | `overlay/layouts/chaos/` | our layout: a child of ZnoteX's purple layout "Void", re-coloured to the client |
-| `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, the referral code field (`referral.php`), Leaderboards / Patch Notes / Seasons pages |
+| `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, the referral code field (`referral.php`), Leaderboards / Patch Notes / Seasons pages, Creator Codes and the Character Bazaar |
 | `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
 | `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
 | `patches/znotex-chaos-escape-output.patch` | guild names, ranks, MOTD and member names (`guilds.php` and its views, `topguilds`) and the character comment (`characterprofile.php`) escaped on output (see "Web server") |
+| `patches/znotex-chaos-ratelimit-ipv6.patch` | the login guard counts an IPv6 address by its /64 network (see "Passwords") |
+| `overlay/plugins/chaos/session_guard.php` | a logged-in session ends when the account's password changes (see "Passwords") |
 | `patches/znotex-chaos-unused-callbacks.patch` | `pagseguro_retorno.php` and `payment_webhook.php` answer 404 (see "Not used on this server") |
 | `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
 | `overlay/plugins/chaos/register_guard.php` | the per-IP limit of account creation (see "Account creation") |
@@ -36,6 +38,10 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/chaos_pay_webhook.php` | the Mercado Pago / PayPal webhook of the donations |
 | `payments.env.example` | the donation settings (the credentials stay outside the repository) |
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
+| `overlay/plugins/chaos/creator_lib.php`, `pages/creator.php` | creator codes: a donor's pick, the creator's totals, the administrators' codes, the account's referral link (see "Creator codes") |
+| `tests/chaos_creator_test.php` | `php website/tests/chaos_creator_test.php`: settings from `creator_codes_config.lua`, picks (unknown, off, own code), totals, the admin check and actions, the referral link (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/bazaar_lib.php`, `pages/bazaar.php`, `bazaar_worker.php` | the Character Bazaar: character auctions for Chaos Coins with escrow, fee and transfer (see "Character Bazaar") |
+| `tests/chaos_bazaar_test.php` | `php website/tests/chaos_bazaar_test.php`: every blocked listing, bids and escrow, the fee and the transfer, expiry, buyout, cancel, a failed transfer, coins kept whole (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
 | `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss, the class tabs of the byClass boards (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/notused.php` | the short note shown instead of the stock pages this server does not use (see "Not used on this server") |
@@ -46,9 +52,20 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/guildwar_lib.php`, `pages/guildwars.php` | the guild wars declared in game (read only, from the game's `chaos_guildwar` / `chaos_guildwar_kills`): `page.php?plugin=chaos&p=guildwars` (menu The World > Guild Wars): the running wars (score, terms, time left) and the latest ended ones (winner, gold won, end reason, kills the anti-farming rules did not count); see server/README.md "Guild wars in game" |
 | `tests/chaos_guildwars_page_test.php` | `php website/tests/chaos_guildwars_page_test.php`: the wars page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/mentor_lib.php`, `pages/mentors.php` | the mentors who opted in (card, class, graduates, free places) and the totals, read only from the game's `chaos_mentor*` tables: `page.php?plugin=chaos&p=mentors` (menu The World > Mentors; see "Mentors") |
+| `overlay/plugins/chaos/legal_lib.php`, `pages/legal.php` | the legal pages: Terms of Use, Privacy Policy, Donation Terms in Portuguese and English, from `docs/legal/` (see "Legal pages") |
+| `tests/chaos_legal_pages_test.php` | `php website/tests/chaos_legal_pages_test.php`: the pages, the renderer's escaping, the footer links, the Terms checkbox and its refusal, the acceptance row, the donation notes before and after payment (php-cli only, a fake database) |
+| `tests/chaos_legal_accept_test.php` | `php website/tests/chaos_legal_accept_test.php`: existing accounts accept the current texts: the gate (which requests pass), the way back (this site only), the form (token, checkbox), the row (no IP), a new version asking again, the setup writing the version for the game (php-cli only, SQLite in memory) |
+| `overlay/chaos_client_api.php`, `overlay/plugins/chaos/client_api_lib.php` | the game client's account API: character looks for the character select, character creation in the client (see "Client API") |
+| `overlay/engine/function/chaos_character.php`, `patches/znotex-chaos-character-create.patch` | the character creation checks and insert of ZnoteX's `createcharacter.php`, moved unchanged into two functions that the form and the client API both call (see "Client API") |
+| `tests/chaos_client_api_test.php` | `php website/tests/chaos_client_api_test.php`: the API's login, state and creation with every refusal (bad and taken names, locked class, slots, bad token, Terms, season mode, replays, the login guard, the hourly and per-minute limits, a password change), the patch moving the form's lines unchanged, and the class look table against `class_looks_core.lua` (php-cli with pdo_sqlite) |
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/wiki_lib.php`, `pages/wiki.php`, `wiki/` | the player wiki: guides in Portuguese and English, the reference generated from the server data by `server/tools/gen_wiki_data.lua`, the search (see "Wiki") |
+| `tests/chaos_wiki_page_test.php` | `php website/tests/chaos_wiki_page_test.php`: every wiki page in both languages, the guides, search, escaping and 404s (php-cli only) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
+| `tools/gen_sprite_images.py`, `tools/sprite_owners.csv` | item and outfit images drawn from our client pair at install time, only our art (see "Sprite images") |
+| `overlay/chaos_outfit.php`, `overlay/plugins/chaos/sprite_lib.php` | outfit images with the player's colours, addons and mount; item image URLs; the wiki's real sprites (see "Sprite images") |
+| `tests/chaos_sprites_test.php`, `tools/gen_sprite_images_test.py` | `php website/tests/chaos_sprites_test.php` (php-cli, zlib only): URLs, placeholder fallback, request values, colours, drawing, cache, wiki; `python3 -I website/tools/gen_sprite_images_test.py`: the colour maths on hand-made masks and a synthetic pair |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
 
 ## Install
@@ -88,7 +105,8 @@ What it does, in order:
 5. **The database**, with `setup/chaos_setup.php`: ZnoteX's `znote_*` tables (`CREATE TABLE IF NOT EXISTS`, seed rows
    only into empty tables), every pending ZnoteX migration (recorded with its checksum), our plugin installed and
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
-   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars) and "Donate" (the donation page
+   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars, Mentors, Character
+   Bazaar, Creator Codes) and "Donate" (the donation page
    `page.php?plugin=chaos&p=coins`), "Player Reports" (staff only, under ZnoteX's Admin Panel entry) and the Rules page
    added once. ZnoteX's own entries of the pages we do not use (Shop, Buy points, Library > Creatures / Spells,
    Community > Forum, and Library, then empty) are switched off once, on a fresh install and at the next run on an
@@ -200,6 +218,12 @@ server {
         limit_req_status 429;
         include snippets/chaos-php.conf;
     }
+    # the client's account API (README "Client API"; it also limits itself per address, account and minute)
+    location = /chaos_client_api.php {
+        limit_req zone=chaos_forms burst=10 nodelay;
+        limit_req_status 429;
+        include snippets/chaos-php.conf;
+    }
     # account creation and login (the site also limits these itself; this keeps floods off PHP)
     location ~ ^/(register|login|recovery)\.php$ {
         limit_req zone=chaos_forms burst=10 nodelay;
@@ -256,6 +280,178 @@ to the server block, so `REMOTE_ADDR` is the visitor's address.
 - **E-mail**: a taken and a malformed e-mail address get the same answer, "Please use another e-mail address."
   (`locale/en.php`), never "already in use". A taken address still cannot be used twice, so someone who tries many
   addresses can still tell; the limit per address and reCAPTCHA make that slow.
+
+## Legal pages
+
+The Terms of Use, the Privacy Policy and the Donation Terms. Drafts: a lawyer reviews them before launch, and the
+owner fills in the placeholders (docs/legal/README.md lists both).
+
+- **Source**: `docs/legal/<doc>.<lang>.md`, doc `terms`, `privacy` or `donations`, lang `pt-BR` (prevails) or `en`.
+  `install_site.sh` copies them to `plugins/chaos/legal/` after the overlay (the `.md` deny rule keeps them from being
+  served raw) and warns while placeholders such as `[NOME DO RESPONSÁVEL]` are left.
+- **Page**: `page.php?plugin=chaos&p=legal&doc=terms|privacy|donations`, Portuguese by default, `&l=en` for English
+  (not `lang`, which is ZnoteX's own switch). Tabs for the three texts and the other language. `legal_lib.php` renders
+  the Markdown subset the texts use (headings, paragraphs, lists, tables, bold, links); every value is escaped, a link
+  goes only to another legal text, a site path (`/...`) or an `https://` address, and a placeholder left in is marked.
+- **Links**: the copyright line of every page's footer (`locale/en.php` `void.footer.copyright`, so an edited theme
+  footer text keeps them), the account creation form, the donation page and the Rules page (section 8).
+- **Account creation**: `register_form.php` has the checkbox "I accept the Terms of Use and the Privacy Policy" (with
+  the Portuguese text and the note for under-18s). A post without it gets an error through our `register_header`
+  view (as the referral code and the per-IP limit), so register.php creates nothing. With it, the
+  `account.registered` hook writes `chaos_legal_acceptance` (`install.sql`: account, version = the first 16 hex digits
+  of the SHA-256 of the three Portuguese texts, time; no IP). With `CHAOS_LAYOUT=void` the checkbox and the check are
+  not there (the views are ours).
+- **Donations**: before payment the donation page adds to the voluntary notice, in English and Portuguese: no right to
+  a refund except where the law requires one, not the purchase of a product, Chaos Coins have no real-world value, and
+  a link to the Donation Terms. A paid or credited order repeats that it was a voluntary donation and not a purchase. The
+  site sends no mail after a donation.
+- **Existing accounts**: an account logged in without a `chaos_legal_acceptance` row for the current version (the beta
+  accounts made before the checkbox; everyone after the texts change, Terms section 10) is sent by `plugin.php` to
+  `page.php?plugin=chaos&p=accept&next=<page>` before any other page (303). The page has the same checkbox and links as
+  account creation, a CSRF token, and writes the same row (account, version, time; no IP); then back to the page the
+  player wanted (a page of this site only, else `myaccount.php`), or "log out" without accepting. Not gated: the accept
+  page, the legal texts, `login.php`, `logout.php`, `register.php`, `recovery.php`, `chaos_pay_webhook.php` and the
+  background endpoints listed by path in `chaos_legal_xhr_endpoints()` (the admin panel's updater). An
+  `X-Requested-With` header alone passes nothing: any client can send it. `setup/chaos_setup.php` writes the version to the game's `server_config`
+  (`chaos_legal_version`); the game server shows an account without it a notice with the link at login
+  (server/README.md "Terms acceptance notice"), since the game login cannot be held for a web form.
+- Test: `php website/tests/chaos_legal_pages_test.php`, `php website/tests/chaos_legal_accept_test.php`.
+
+## Wiki
+
+A player wiki: short guides and a reference of everything the game has, generated from the server data.
+
+- **Page**: `page.php?plugin=chaos&p=wiki`, Portuguese by default, `&l=en` for English (as the legal pages). `&t=` picks a
+  topic: `guide:<slug>`, `tab:<tab id>` or an entry id (`class:warrior`, `spell:254`, `tree:96`, `rift:atlas`, ...). The
+  index lists the guides and the reference tabs; every page has breadcrumbs and a link to the other language. An
+  unknown topic answers 404. `pages/wiki.php` draws it, `wiki_lib.php` does the rest.
+- **Search**: `&q=`, on the server, over the guides of the page's language and every reference entry. Case and accents
+  do not matter (`ascensao` finds "ascensão"); the query is cut to 60 characters, at most 40 results, each with a short
+  snippet. The query and every snippet are escaped; the match is put in `<mark>` after escaping.
+- **Reference data**: `plugins/chaos/wiki/wiki_data.json`, written by `server/tools/gen_wiki_data.lua` from the server's
+  data files. It loads the Codex generator (`gen_codex_data.lua`) as a library for the item tabs (modifiers, powers,
+  uniques, sets, orbs, gems, supports, rift modifiers and tiers, materials, basics) and adds the classes, ascensions
+  and spells (the vocation XML, `spells_chaos.xml` and each spell script's first comment), the passive tree (the client
+  tree: keystones, notables, masteries, Paragon), the Rift Atlas, dungeons, the Infinity Tower and the Ember Descent,
+  world bosses, the raid, the Ascended Omens, the guild boss, events, the Chaos monsters that spawn somewhere, and the
+  store's offers by type (cosmetic, service, convenience, boost, ...). Entries of a system behind an off switch carry
+  `soon` and show "Em breve / Coming soon". The names and tables are the game's own (English) in both languages.
+  Regenerate after changing server data: `cd server && luajit tools/gen_wiki_data.lua`; CI runs it with `--check`
+  under LuaJIT and Lua 5.3 (the same bytes), so a stale file fails the build.
+- **Guides**: `plugins/chaos/wiki/guides/<slug>.<pt-BR|en>.md`, the list and titles in `chaos_wiki_guides()`. A small
+  Markdown subset: `#` title, `##` headings, paragraphs, `-` lists, `**bold**`, `_italic_`, links to `wiki:<topic>`,
+  `legal:<doc>`, `page:<plugin page>`, a site path or `https://` (anything else stays plain text). `{{key}}` is a number
+  of the generated `facts` (so a guide never quotes a stale number), and a block between `::: if key` and `::: end`
+  shows only while that fact is true; otherwise it reads "em breve / coming soon". The `.md` deny rule keeps them from
+  being served raw.
+- **Links**: a top-level menu entry "Wiki" (`setup/chaos_setup.php`, added once), the footer's copyright line
+  (`locale/en.php`) and the home page's "Read the guide" button.
+- **Layout**: the `.chaos-wiki*` rules of `layouts/chaos/assets/css/chaos.css`; on a phone the cards stack, the search
+  field and button stack, and wide tables scroll inside their frame.
+- Test: `php website/tests/chaos_wiki_page_test.php` (every guide in both languages, their facts and links, every
+  guide, tab and entry page in both languages, breadcrumbs, search, escaping, 404s, no PHP notices).
+
+### Wiki art
+
+Icons, hero images and banners make the wiki easier to scan. `server/tools/gen_wiki_data.lua` decides what shows what
+(the single source); `website/tools/gen_wiki_art.py` draws it.
+
+- **Data**: every tab and entry of `wiki_data.json` has an `icon` (a path under `plugins/chaos/assets/`), every tab a
+  `banner` and a `tone`, and `art.guides` gives each guide a hero image, an emblem, the icons around it and a tone.
+  `art.steps` names the icons the guides may use in steps (`@key`, `@bench`, ...) and the callout icons.
+- **Images**: `python3 -I website/tools/gen_wiki_art.py` writes `assets/wiki/i/*.png` (48 px icons, 64 px for the pixel
+  art items) and `assets/wiki/hero/*.webp` (guide heroes 960x300, tab banners 960x180) and removes images nothing names
+  any more; `--check` fails on a stale or extra file (CI, with the pinned Pillow and numpy of the other art checks);
+  `--sheet OUT.png` writes a contact sheet of every icon. Run it after `gen_wiki_data.lua` when an icon changes.
+- **Sources**, all our own committed art: the Chaos spell icon kit (`client/tools/gen_spell_icons.py`), the painted spell
+  icons and painted keystones and masteries (`gen_painted_icons.py`), the support runes (`gen_support_icons.py`), the
+  themed set item pieces (`client/tools/sprites/art_import/theme/items_<set>.png`), the client's top menu buttons, the
+  site's class badges and backdrop (`gen_site_art.py`); orbs and gems are drawn by the script. A unique's icon is a themed
+  piece of its slot, an illustration and not the item's own sprite. No screenshots: the client's screens show base
+  sprites, the base game's art, which is never published (donor art is shown only as sprites, see "Sprite images"). No text in the images, so both languages use the same files.
+- **Rift art** (`website/tools/wiki_rift_art.py`, imported by `gen_wiki_art.py`): every rift icon is painted for what it
+  is, not taken from the spell icon kit. Shapes are masks shaded by a height field lit from the upper left, on one
+  framed plate: a modifier's motif says what it does (read from its key; `rm-<side>-<key>`), the frame says who it hits
+  (prefix crimson: the monsters, suffix violet: the players or the ground, boon gold: a reward); Rift Keys per tier
+  (`rk-<tier>`: the tier band's gem and metal, pips for the tier inside the band); the torn rift, the rift chest
+  spilling orbs, the Atlas star map, the shared lives, the Omen Key and fragment, each Omen's emblem and its Ascended
+  form; a vignette per rift theme (`rt-*`); Rift Atlas nodes as star map medallions in the branch's colour with the
+  node's glyph (`an-*`). Guardian portraits (`rg-*`) and the pack of `rx-clear` are crops of our own rift looks, kept
+  as a snapshot in `website/tools/wiki_art_src/rift_creatures.png` (`gen_wiki_art.py import-creatures` refreshes it from
+  `client/tools/sprites/art_import/big_bosses/` and `rift_variants/`), so a repaint there never makes `--check` fail.
+  The real sprite of a unique, a set or a store offer is drawn only from our own art (see "Sprite images").
+  The data adds `icons` to a table section (one per row, shown in its first cell): the key of each rift tier, the Atlas
+  nodes, the omens, and the new entry `rift:themes` (themes and guardians).
+- **Guides**: a callout box is `> [tip] text`, `> [warn] text` or `> [note] text` (more `> ` lines continue it); a step
+  diagram is a run of lines `=> icon | title | text`, the icon `@name` (`art.steps`), an entry id or `tab:<id>`. Steps
+  show as a row of numbered cards on a computer and a vertical list on a phone.
+- **Page**: guide heroes on top of each guide and as thumbnails on the index cards, tab banners on the tab pages, icons in
+  the tab lists, the index, search results, the entry heading and the first cell of every table row that links an entry.
+  Every image has alt text, a width and height and `loading="lazy"` (the hero at the top of a page loads at once).
+
+## Sprite images
+
+Item and outfit images for the character page, the online list, the highscores, the wiki (uniques, sets, store offers)
+and ZnoteX's item slots, drawn from our own client pair. ZnoteX's own outfit and item image services stay unused.
+
+- **Build** (static, at install time): `tools/gen_sprite_images.py --dat --spr [--otb] --publish --out-dir` reads the
+  pair with `client/tools/sprites/datspr.py` and writes `<site>/chaos-sprites/`: `items/<server id>.png` (the item as the
+  client draws it alone: all layers, phase 0, count 1; stackables also `-c2` ... `-c50` for the client's stack patterns,
+  fluid containers `-f1` ... `-f8` for the client fluid colours), `outfits/<look>.png` (a layer sheet: idle group,
+  phase 0, facing south, one column per addon and mount pattern, the art row and the colour template row),
+  `outfits/<look>.raw` (the same sheet for PHP: zlib of u16 width, u16 height, RGBA rows), two placeholders and `index.json` (what is ours, each look's
+  size, displacement, patterns and rider seat). The server's `items.otb` maps server ids to client ids; without it only
+  the items of our manifests (`server/data/items/*.csv`) are known. `--preview DIR` writes contact sheets.
+- **Install**: `install_site.sh` step 3d, only when `CHAOS_SPRITE_PAIR` (a folder with `Tibia.dat` and `Tibia.spr`) is
+  set; `CHAOS_SPRITE_OTB` defaults to `$CHAOS_SERVER_DATA/items/items.otb`. Rebuilt only when the pair, the otb, the
+  setting, the tool or the owners table changed (key in `chaos-sprites/.chaos-key`), into a new folder that is then
+  swapped in. Needs python3-numpy and python3-pil on the machine that runs it (about 10 s, under 10 MB). Without a pair
+  nothing is built and the outfit images stay off, as before.
+- **Why static plus a small renderer**: the pair (600 MB) never goes to the web server and PHP never parses it; the
+  build reads it once with the tools the client pipeline already trusts. Items are plain files. Outfits cannot all be
+  pre-drawn (133^4 colour choices), so `chaos_outfit.php` colours the pre-cut sheets of one look per request: clamped
+  integer parameters only, no database, no ZnoteX bootstrap, PNG out. A render takes a few milliseconds and is cached
+  in `engine/cache/chaos-outfits/` (denied by the web server rules; at most 20,000 files, then rendered without
+  caching; cleared when the set is rebuilt). PHP needs only zlib: it reads the `.raw` sheets and writes the PNG itself
+  (no gd, whose 7-bit alpha would change semi-transparent pixels).
+- **Colours**: as the client draws a creature: the template layer's exact yellow / red / green / blue pixels select
+  head / body / legs / feet, and the art under them is multiplied by that outfit colour (`(v * c + 127) / 255`); the
+  colour table is the client's 19 hues x 7 shades (`outfit_colour`, the same as `client/tools/sprites/compose_outfit.py`);
+  addon patterns 1 and 2 are drawn over pattern 0 when worn; a mount is drawn under its rider in the rider's mounted
+  pattern, placed as `Outfit::draw` with client base patch 0034 does (rider seat of negative-displacement mounts). The
+  idea comes from open-tibia-library (Gesior, MIT); this follows its documented method (four-colour template mask,
+  colour table, addon layers). No code of it was read for this or copied. PHP and Python give the same pixels (418 renders
+  of every published look, 225 of them mounted, byte for byte).
+- **Mounts, checked in our client** (2026-10-13; base patches 0001-0050, pair things_custom23, Xvfb, a 9x9 map at 2x,
+  the local player's outfit set by Lua, facing south): each part of our render was found in the screenshot by pixel
+  match. Frame top-left relative to the tile, rider / mount: rider 2073 on stock 368: -32,-32 / -32,-32; on 1561:
+  -26,-44 / -32,-64; on 2132: -26,-48 / -32,-64; on 2133: -26,-42 / -32,-64; on 2134: -26,-50 / -64,-64; on 2135:
+  -26,-48 / -32,-96 (the same for rider 2161; 2173, with no displacement, 8 px right and down). All 18 rider and mount pairs are where
+  the renderer puts them. A look without a mounted pattern rides nothing, in the client too. On the donor mounts the
+  rider sits high on the back seen from the front: that is the seat of things_custom16 (client/MANIFEST.md "Rider
+  seat on donor mounts"), the same in game.
+- **Only our art** (`tools/sprite_owners.csv`, client id ranges from client/MANIFEST.md, theme_things.csv, the class looks
+  and the monster look sources): `own` (drawn for the project or licensed to it: the dark tiles, the October art sets,
+  pouches, fist weapons, themed sets, auras and wings), `donor` (donor-library art the project picked and ships in the
+  client: class looks, monster, boss, faction and wings looks, donor B items) and `stock` (the base pair: the commercial
+  game's art and the base client's additions, also our recolours or templated copies of it). A later row of the table
+  wins, so exceptions follow their range. `CHAOS_SPRITE_PUBLISH` picks the tiers drawn: `own,donor` (default), `own` or
+  `all`. Anything not drawn is a neutral placeholder of our own (a dim slot, a grey hooded figure): stock art never
+  leaves the pair. **Decision** (owner, 2026-10-13: own,donor): donor art is shown on the website as it is in the public
+  client; stock art never (`all` is not used).
+- **Where**: `setup/write_config.php` points ZnoteX's `show_outfits` (character page, online list, highscores) at
+  `/chaos_outfit.php` and the item images (character equipment, shop) at `/chaos-sprites/items/<id>.png` when the set is
+  installed; our highscores view has an outfit column. The wiki: `gen_wiki_data.lua` adds `sprite` ({item: server id})
+  to every unique and set and `sprites` to the store's offer tables (items, outfits with addons, mounts, bundle and
+  plate icons); `wiki_lib.php` shows the real sprite when it is ours and keeps the themed icon otherwise (today most
+  uniques are stock items, so they keep their themed icon; Grasp of the Pyre Saint shows its own).
+- **Not done**: walking animations (one standing frame only), other directions, the item's own count or fluid on
+  ZnoteX pages (they ask for `<id>.png`).
+- nginx: `chaos_outfit.php` is an ordinary PHP script (the `\.php$` block); to keep floods off PHP add
+  `limit_req_zone $binary_remote_addr zone=chaos_img:10m rate=30r/s;` and
+  `location = /chaos_outfit.php { limit_req zone=chaos_img burst=100 nodelay; include snippets/chaos-php.conf; }`.
+- Test: `php website/tests/chaos_sprites_test.php`, `python3 -I website/tools/gen_sprite_images_test.py` (CI); the
+  `live-pair` CI job builds the set from the live pair.
 
 ## Mail
 
@@ -340,6 +536,7 @@ Check: request a recovery link for your own account on the live site; the mail's
   `class_unlocks_core.lua`; staff accounts of type 5+ always). It does so by narrowing `$config['available_vocations']`
   on every request before `createcharacter.php` validates the form, so a forged form for a locked class is refused by
   the server ("wrong vocation"), not only hidden. The game server checks the lock again at login.
+  The client creates characters through the same checks (see "Client API").
 - **New characters** are level 1 with `lastlogin = 0` and no items, at position 0,0,0 of the chosen home town: the
   server's tutorial island (`newplayer_tutorial.lua`) takes them at the first login and gives the class kit, and the
   island's exit leads to that town's temple. Home towns: `CHAOS_START_TOWNS`, checked against the `towns` table (the
@@ -426,13 +623,22 @@ Accounts use the game server's salted password format (engine patch 0014, `serve
   patch adds a lock per account name after 10 failures from any address in 15 minutes (website login only; the game is
   not locked). Settings in `config.local.php` (`login_guard`, written by `setup/write_config.php`); the setup adds an
   index on the account name. The IP is `REMOTE_ADDR`: behind a reverse proxy every visitor has the proxy's address, so
-  pass the client address through to PHP there.
+  pass the client address through to PHP there. An IPv6 address counts by its /64 network
+  (`patches/znotex-chaos-ratelimit-ipv6.patch`, as the account creation limit), so one machine cannot walk through its
+  addresses.
 - **Accepted trade-off: the account lock can be triggered by others.** Anyone who knows an account name can lock its
   *website* login for 15 minutes with 10 wrong passwords from 2 or more addresses (one address alone is stopped by the
   IP lock after 5). The owner then waits 15 minutes or logs in to the game, which is never locked. This is kept on
   purpose: it stops password guessing spread over many addresses, and the cost to the victim is small (the website
   only; the lock ends by itself). Staff can end it early by deleting that name's failed rows in `znote_login_attempts`
   (the admin panel's Login attempts page unlocks per IP only).
+- **Sessions end on a password change** (`overlay/plugins/chaos/session_guard.php`). ZnoteX ends other sessions only
+  through its 2FA v2 "log out all devices", which is off here. Each logged-in session keeps a mark of the stored
+  password hash and is logged out when it no longer matches: after a reset by recovery link, a change on another device
+  or in the game. A rehash at login (SHA-1 to PBKDF2, a new iteration count) logs other sessions out once.
+- **Not used: website 2FA.** ZnoteX's 2FA v2 is off (`twoFactorV2.enabled` false) and so is the legacy TFS token.
+  If it is ever switched on: its code step has no limit on wrong codes within the 5 minutes of a pending login; add
+  one before turning it on.
 - `CHAOS_PASSWORD_ITERATIONS` (default 120000) is the cost of new hashes; keep it equal to `passwordHashIterations` in
   the server's config.lua. `setup/chaos_setup.php` widens `accounts.password` to VARCHAR(255) if the server's
   `server/sql/chaos_passwords.sql` was not imported yet.
@@ -504,6 +710,15 @@ The account creation form has an optional **Referral code** field (the game serv
 
 ## Donations (Chaos Coins)
 
+**Packs and the first donation (2026-10-13).** The packs and prices come from the game server's `shop_coins_config.lua`
+(placeholders, docs/OWNER_TODO.md): an entry pack (Handful of Coins, 80 coins, US$ 1.99 / R$ 9,95 by Pix), Pouch, Sack,
+Chest, Hoard and the Vault of Coins (10,000 +30%, the anchor), Starter Coins once. The first donation of an account brings
+**double coins** (`firstPurchase.bonusPct = 100`) up to +1000 extra (`firstPurchase.maxBonus`, the plugin setting
+`first_bonus_max`, owner 2026-10-13: "Limite a 1000"; a pack above 1000 coins gets +1000 flat), once per account (not on the Starter Coins; a refund or chargeback
+after crediting keeps the order counted, so it never repeats). The Donate page shows it; the voluntary donation wording
+before and after payment is unchanged. Tests: `chaos_coins_test.php`, `chaos_pay_test.php` (also the payer hash),
+`chaos_donation_page_test.php` (also the creator code field).
+
 **Chaos Coins are a thank-you for a voluntary donation. Nobody is required to donate; the game is fully playable for
 free.** Every payment surface says so before a pack is picked, in English and Portuguese ("Voluntary donation: it helps
 keep the server running. Nobody is required to donate; the game is fully playable for free." / "Doação voluntária:
@@ -549,7 +764,8 @@ USD x `brlPerUsd` (5), so the two prices never drift. The game server credits ev
    the player: `cancelled` (a Mercado Pago charge is cancelled; a PayPal order is simply never captured). The page's
    "Cancel this donation" link and PayPal's cancel link (`&order=N&cancel=1`) only open a confirmation; the order is
    cancelled by its POST form with the page's CSRF token, so a link alone cannot cancel a donation. A refund or
-   chargeback before crediting: `refunded`. After crediting: flagged on the row; the game server takes back the coins
+   chargeback before crediting: `refunded` (also a partial refund: Mercado Pago keeps such a payment "approved" with
+   an amount refunded, which counts as a refund). After crediting: flagged on the row; the game server takes back the coins
    still unspent (`removeCoinsOnReversal`) and staff see it in the admin panel (Store > Donations: refunds and
    chargebacks). No charge after 10 minutes (worker down): `failed`.
 
@@ -586,12 +802,21 @@ a donation by hand with the admin panel (Store > Record a donation).
    endpoint tells the provider by its headers.
 4. The worker: `server/deploy/chaos-payworker.service` (`worker.php --site /var/www/chaos --loop`, a round every 2 s).
    Cron works too (`* * * * * www-data php /var/www/chaos/plugins/chaos/pay/worker.php --site /var/www/chaos --once`),
-   but then the QR code can take up to a minute to appear. `--status` prints the methods that are on.
+   but then the QR code can take up to a minute to appear. `--status` prints the methods that are on. Credited
+   orders are asked again once a day for 180 days after payment (`ChaosPayService::RECHECK_DAYS`), so a refund or
+   chargeback whose webhook was lost is still taken back. A second, larger refund of an order refunded in part, or a
+   chargeback after it, flags the order again; the game server takes back only the difference
+   (`ChaosPayCore.reversalRemaining`, `chaos_coin_payments.reversal_coins` = all coins taken back so far).
+   PayPal webhooks: a call whose `PAYPAL-CERT-URL` is not https on paypal.com, or whose transmission time is more than
+   6 hours from the clock, is refused before any PayPal call; the access token is kept between requests in a mode-600
+   file in the system temp folder (`ChaosPayPayPal::tokenCachePath`).
 5. Tables: `chaos_coin_orders` and `chaos_coin_payments` (`install.sql`, `server/sql/chaos.sql`; the game server also
    creates them at startup).
 
 **Mock mode** (`CHAOS_PAY_*_PROVIDER=mock`): no network, no money. It only runs when the site address
-(`CHAOS_PAY_SITE_URL`, else `CHAOS_SITE_URL`) is `localhost`, `127.0.0.1` or `::1`, or with `CHAOS_PAY_ALLOW_MOCK=1`;
+(`CHAOS_PAY_SITE_URL`, else `CHAOS_SITE_URL`) is `localhost`, `127.0.0.1` or `::1`, or with `CHAOS_PAY_ALLOW_MOCK=1`.
+A missing address never counts as local: `install_site.sh` refuses to run without `CHAOS_SITE_URL` and
+`setup/write_config.php` no longer falls back to `http://localhost`;
 otherwise the method stays off and the refusal is logged (a mock charge would credit real Chaos Coins). A charge approves itself after
 `CHAOS_PAY_MOCK_APPROVE_AFTER` seconds (Pix: a well-formed EMV code with its CRC; PayPal: a fake link, then captured).
 `worker.php --mock-refund <order id>` / `--mock-dispute <order id>` simulate a refund or chargeback after crediting.
@@ -602,7 +827,81 @@ rules, the charge requests, signatures good / bad / missing, unknown ids, amount
 idempotency, expiry, cancel, refunds and chargebacks before and after crediting, PayPal capture, the mock, the settings
 loader); `php website/tests/chaos_donation_page_test.php` (the page: the notice in both languages before the packs,
 "Donate" and never "Buy", a Pix donation, the thank-you, the history labelled "Donation", CSRF);
-`php website/tests/chaos_coins_test.php`.
+`php website/tests/chaos_coins_test.php`; `php website/tests/chaos_qa_security_test.php` (regressions of the security
+QA: a Mercado Pago partial refund before and after crediting, a second larger refund, the daily re-check of credited
+orders, the PayPal webhook pre-checks and token cache, the site address, the session guard, the terms gate's
+background endpoints, the login guard's IPv6 /64).
+
+## Creator codes
+
+A streamer or content creator gets a code from an administrator; a donor picks it; while the pick lasts, the game server
+gives the creator a share of the Chaos Coins of the donor's donations, in game (server/README.md "Creator codes": the
+matching, the hold, the caps and every anti-abuse rule live there). The donor's donation and coins never change; the
+page says so, and that donations are voluntary.
+
+- `page.php?plugin=chaos&p=creator` (menu The World > Creator Codes, added by `setup/chaos_setup.php`):
+  - logged in: pick a code (or stop), the current pick and until when (`supportDays`); the own code is refused
+    (self-use, logged); a switched-off or unknown code is refused;
+  - the account's **referral link** (`register.php?ref=CODE`, from `chaos_referral_codes`; the account gets its code in
+    game at level 20);
+  - a creator (an account that owns a code): its %, supporters, earned and waiting coins, the last 50 donations with the
+    code (date, coins, share, state; never a name);
+  - administrators (`chaos_creator_is_admin`: an admin panel account, `CHAOS_ADMIN_ACCOUNTS`, **and** a character of
+    group `adminGroup`, 5): create a code for a character's account (with a shown name, its own %, a note), switch it
+    off / on, set its %, read the log. Every write is a POST with the page's CSRF token; every value is escaped.
+- Settings: `server/data/scripts/chaos/creator_codes_config.lua` (`sharePct` 5 is a placeholder, docs/OWNER_TODO.md).
+- Tables: `chaos_creator_codes`, `chaos_creator_support`, `chaos_creator_uses`, `chaos_creator_log`, `chaos_pay_payers`
+  (`install.sql`, `server/sql/chaos_creator_codes.sql`; the game server creates them too).
+- **Hooks (done, 2026-10-13):**
+  1. the donate page (`pages/coins.php`) has an optional "Creator code" field (form `chaos-creator-pick`, Save) that calls
+     `chaos_creator_set_support($accountId, $code, REMOTE_ADDR)`; a Donate button may also carry `chaos_creator_code`,
+     picked before `createOrder` (a refused code stops the donation with its message, no order is made). The page says
+     the donor's pack and the first donation bonus stay the same. The client's Store > Donate tab has the same field
+     (`game_shop` pay.otui `creatorCode`), sent with `pay_create {creator}`; `shop_payments.lua` checks it with the
+     website's rules (`ChaosPayCore.creatorCode` / `creatorRefusal`: normalised, active, not the donor's own) and writes
+     the same `chaos_creator_support` row and a `pick` log line.
+  2. `pay/Service.php` writes `chaos_pay_payers` (order id, account, `ChaosPayService::payerHash(psp, payer, salt)` =
+     SHA-256 of `CHAOS_PAY_PAYER_SALT|psp|payer`) when a payment is confirmed (`approved` -> paid). The payer: Mercado
+     Pago's payer document (Pix: the CPF), else its payer id, else the e-mail; PayPal's payer id, else the e-mail; else
+     the e-mail the charge was made with. The raw value is never stored; set `CHAOS_PAY_PAYER_SALT` once and keep it (a
+     new salt makes old and new hashes differ). Skipped (logged) when the table is missing.
+- Test: `php website/tests/chaos_creator_test.php`.
+
+## Character Bazaar
+
+Players sell characters to players for Chaos Coins on `page.php?plugin=chaos&p=bazaar` (menu The World > Character
+Bazaar). The rules (`bazaar_lib.php`, class `ChaosBazaar`; numbers from the game server's `bazaar_config.lua`):
+
+- **Listing:** a character of the logged-in account with a minimum bid (`minPrice` 100 or more), an optional buyout
+  (above the minimum) and 1-7 days; at most `maxActivePerAccount` (2) auctions at once. Refused: a character online
+  (`players_online`), below `minLevel` (50), a guild leader (`guilds.ownerid`) or vice-leader (rank level 2+), a season
+  character whose season runs (`chaos_season_players.migrated_at = 0`), a Hardcore or Self-Found character
+  (`chaos_season_modes`, not reset), a staff character (group > 1), one with an open player report (`chaos_reports`, bug
+  reports aside), an account with an active ban (`account_bans`) or a chargeback or dispute in `chargebackDays` (180),
+  a character already listed. The "Sell a character" tab lists every character with the reasons it cannot be listed.
+  While listed the character cannot log in (the game server's lock, server/README.md "Character Bazaar").
+- **Bids:** the amount is taken from the bidder's `chaos_shop_coins` at once and held on the bid row (`escrow`); an
+  outbid bidder gets it back at once. The next bid beats the current one by `minStepPct` (5) % and at least `minStep`
+  (10). A bid in the last `snipeMinutes` (5) moves the end. A bid at or over the buyout buys at the buyout price and ends
+  the auction at once. Refused: the seller's own account, a banned account, one with a chargeback, one without a free
+  character slot (the same limit as character creation), more than `maxBidsPerAccountHour` (20) bids. Each bid row keeps
+  the bidder's address for staff.
+- **End** (the page and the cron worker, `bazaar_worker.php`): no bid: `expired`. Otherwise the listing becomes
+  `settling`, the checks run again (offline, still the seller's, not a leader, the winner has a slot and is not banned),
+  then in one transaction: the winning bid's escrow is spent, `players.account_id` moves to the winner, the character
+  leaves its guild, the seller gets the price less the fee (`feePct`, 8, a placeholder in the 5-10 range; the fee leaves
+  the economy), the listing is `sold`. If a check fails the listing is `failed` and the escrow goes back.
+- **Cancel:** the seller before the first bid; an administrator (admin panel account with a group 5+ character) at any
+  time with a reason (Administration tab). Every escrow goes back.
+- **Mail:** the seller's account e-mail (its security e-mail) is told when its character is listed, sold, expired,
+  failed or cancelled; the winner when it wins; an outbid bidder when outbid (mail_lib.php, off without SMTP).
+- **Safety:** every coin move is a conditional UPDATE in a transaction (`ChaosPayDb` of `pay/Db.php`, mysqli with the
+  site's credentials): a balance drops only when it holds the amount, a listing takes a bid only if its leading bid is
+  still the one the bidder saw. Writes are POSTs with the page's CSRF token; output is escaped; prepared statements only.
+- **Cron:** `* * * * * www-data php <site>/plugins/chaos/bazaar_worker.php --site <site>` ends auctions on time when
+  nobody opens the page.
+- Tables: `chaos_bazaar_listings`, `chaos_bazaar_bids`, `chaos_bazaar_log` (`install.sql`, `server/sql/chaos_bazaar.sql`).
+- Test: `php website/tests/chaos_bazaar_test.php`. Not run against a live site.
 
 ## Client updates
 
@@ -641,6 +940,75 @@ location ^~ /updates/ {
 
 `install_site.sh` copies `overlay/updates/.htaccess` and never touches `updates/live/`.
 
+## Client API
+
+The game client's character select talks to the site through one endpoint, `chaos_client_api.php` (site root, POST,
+JSON in and out, `Cache-Control: no-store`, a body of at most 8 KB). The client's URL setting is `Services.account` in
+its `init.lua` (client base patch 0050, `client/tools/set_account_api.py`, docs/LAUNCH.md); empty turns it off and
+characters are then created here only. The logic is `plugins/chaos/client_api_lib.php`; the endpoint loads ZnoteX as
+a page does (database, settings, the plugin's hooks). `CHAOS_CLIENT_API=0` in `site.env` switches it off (answer 503).
+
+| Action | Body | Answer |
+|---|---|---|
+| `login` | `account`, `password`, `nonce` | a session `token` (`expiresIn` 1800 s) and the state |
+| `state` | `token` | the state: the account's character `looks` (look type, colours, addons, wings, aura, shader name, level, class, last login, season tag) and `account` (Terms accepted, the accept page, slots used and allowed, the seven class lines with `locked` and each line's class look for both sexes, towns, the name rules, the running season with its modes) |
+| `create` | `token`, `nonce`, `name`, `vocation`, `sex`, optional `town`, `season`, `mode`, `hardcore` | `name` (as stored) and its `look`, or `errors` |
+| `logout` | `token` | the token ends |
+
+**Why the website, not a game packet.** The 10.98 login server has no creation, and every creation rule already lives
+here: ZnoteX's name rules and limits, the class lock and the character slots of our plugin, the Terms. A login server
+packet would have meant a second copy of all of it in C++. The looks come from here too: the login server's 10.98
+character list carries the look type, colours and addons (base patch 0025 reads them), but not the wings, aura and
+shader, which the base server keeps in `players.wings_id`, `aura_id` and `shader_id` (its login / logout scripts); a
+change of the list's packet would break every client of the old format at once, an HTTPS call breaks nothing.
+
+**The same checks as the form.** `patches/znotex-chaos-character-create.patch` moves the lines of `createcharacter.php`
+that check and create a character, unchanged, into `engine/function/chaos_character.php`
+(`chaos_character_form_errors`, `chaos_character_create`); the page calls them, the API calls them. So both refuse
+the same names (letters and spaces, `minL`-`maxL` letters, at most `maxW` words, no one-letter word, the restricted
+words and creature names, a taken name), a class outside `available_vocations` (the API narrows it to the account's
+class lock, as `plugin.php` does for a logged-in page; a locked line gets a clear "locked for your account" message),
+a town or sex that does not exist, one character more than `max_characters` (the account's slots) and a bad IP. Only
+the form's CSRF token is the page's own. The `character.created` hook runs for both (class look, depot boxes).
+On top, the API refuses an account without the acceptance of the current Terms (403 with the accept page's URL: the
+player accepts once on the site) and checks the season choice: only the season running now, a mode of
+`season_config.lua` `modes.list`, Hardcore modes only with `hardcore: true` (the client's "I understand").
+
+**Season at creation.** A season choice writes `chaos_season_requests` (player, season, mode). The game server
+carries it out at the character's first login with its own join (`season.lua` `S.applyRequest`: `S.joinCheck`, the
+join, the mode; server/README.md "Seasons"), so its caches and rules stay the only ones; the row is deleted either
+way and a request the server can no longer honour (the season ended, `CHAOS_DEPOT_BOXES=1` left items in the depot)
+is explained to the player.
+
+**New characters wear their class look.** ZnoteX writes its starter outfit (look type 128 / 136) into every new
+character; the game server put the class look on only at the first login, so the client's character list (and the
+site) showed the same plain citizen for every character not yet played. The plugin's `character.created` hook
+(`chaos_apply_class_look`, `lib.php` `chaos_class_look`: `class_looks_core.lua` with its pair switches, read through
+`CHAOS_SERVER_DATA`) now sets the class's look with both addons at creation, on the form and through the API. The game
+server puts the same look on at the first login, so nothing changes there.
+
+**Security.**
+- HTTPS only (the web server; the client refuses an `http://` URL except 127.0.0.1 / localhost for a local test site).
+- The password is checked exactly as the website login checks it: ZnoteX's login guard (5 failures per address,
+  10 per account name in 15 minutes lock that address or name, shared with the website login and counted in
+  `znote_login_attempts`), the dummy hash for an unknown account (same answer, about the same time), the server
+  adapter's login (salted PBKDF2, an old SHA-1 still accepted), the e-mail activation when it is on.
+- The client sends the password once per character select, in the login request; it is never stored by the site.
+  The token is 32 random bytes; only its SHA-256 is kept (`chaos_client_tokens`) with the mark of the account's
+  password hash (the session guard's): a password change, logout or 30 minutes end it.
+- Replays: every login and create carries a fresh nonce (16-64 hex digits), kept two hours (`chaos_client_nonces`,
+  longer than a token lives); a nonce seen twice is refused (409), so a repeated create never makes two characters.
+- Floods: 30 requests per address per minute (all actions; an IPv6 address counts by its /64, as the register
+  guard), 3 new characters per account and 5 per address per hour (`chaos_client_api_log`, rows older than a day
+  are deleted); the nginx block above adds `limit_req`. Settings: `$config['chaos_client_api']` (`write_config.php`).
+- CSRF does not apply: the API reads no cookie (ZnoteX's session cookie is ignored), the token travels in the body.
+- Every query is a prepared statement; the answers are JSON (`json_encode`), nothing is printed into HTML.
+
+Test: `php website/tests/chaos_client_api_test.php` (php-cli with pdo_sqlite: ZnoteX's functions are small stand-ins
+with its behaviour). Also run against the real pinned ZnoteX with every patch applied, a local MariaDB copy of the test
+server's database and the PHP built-in server (`setup/router.php`), with the Linux client (client/MANIFEST.md
+"Character select").
+
 ## Mentors
 
 `page.php?plugin=chaos&p=mentors` (menu The World > Mentors, added by `setup/chaos_setup.php`) lists the mentor
@@ -652,6 +1020,10 @@ there are, how many apprentices learn now and how many graduated. The page only 
 (`chaos_mentor_rules()`) are checked against `server/data/scripts/chaos/mentor_config.lua` by the test.
 
 ## Not done / for later
+
+- Known small points from the security QA, left as they are: `pay/Service.php` apply() records the provider's status
+  and `psp_ref` before it checks the provider id and our reference (harmless: the charge is always fetched by our own
+  id); the stock `guildwar.php` prints guild names without escaping (guild names are letters only, created on this site).
 
 - The outfit images of ZnoteX (an external image service) are off; turn them on in `config.local.php` if wanted.
 - Achievements (`chaos_achievements`) and name plate titles have no page yet.

@@ -797,6 +797,9 @@ function Book.sendTo(player)
 	lastOpen[pid] = now
 
 	local list = clean(Book.get())
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: flat mana costs
+		list = ChaosDisplayScale.apply("spellList", player, list)
+	end
 	local chunks = Book.chunk(list, Book.chunkBytes, json.encode)
 	local vocation = player:getVocation()
 	Chaos.send(player, OPCODE, "open", {

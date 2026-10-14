@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Orclops Ravager" nameDescription="a Orclops Ravager" race="blood" experience="4550" evented = "4" speed="60" skulled="1" looting="1" manacost="0">
+<monster name="Orclops Ravager" nameDescription="an Orclops Ravager" race="blood" experience="4550" speed="60" manacost="0">
 	<health now="13400" max="13400"/>
 	<level min="650" max="690"/>
 	<look type="1470" head="133" body="133" legs="133" feet="133" corpse="6068"/>
 	<targetchange interval="2000" chance="5"/>
-	<strategy attack="70" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
 		<flag hostile="1"/>
 		<flag illusionable="0"/>
-		<flag convinceable="1"/>
+		<flag convinceable="0"/>
 		<flag pushable="0"/>
 		<flag canpushitems="1"/>
 		<flag canpushcreatures="1"/>

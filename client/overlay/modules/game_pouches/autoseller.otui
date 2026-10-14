@@ -1,0 +1,155 @@
+// Auto Seller window (game_pouches, Economy > Auto Seller in the top menu). Styles from client_chaos_theme.
+// The rarity checkboxes are created by autoseller.lua (one per rarity, in its colour) inside rarityRow.
+
+AutoSellerRarityCheck < ChaosCheckBox
+  width: 72
+  height: 20
+
+AutoSellerWindow < ChaosMainWindow
+  id: autoSellerWindow
+  size: 440 392
+  !text: tr('Auto Seller')
+  @onEscape: modules.game_pouches.hideAutoSeller()
+
+  ChaosLabelDim
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 30
+    text-wrap: true
+    text-align: topLeft
+    !text: tr('Sells your loot at NPC prices, gold to your bank. Uniques, locked items, orbs, gems and keys are never sold.')
+
+  ChaosLabel
+    id: bagTitle
+    anchors.top: intro.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    color: #e8b84a
+    !text: tr('Loot Bag')
+
+  ChaosButton
+    id: sellButton
+    anchors.top: bagTitle.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    size: 120 24
+    !text: tr('Sell all')
+    !tooltip: tr('Sells everything in your Loot Bag (bags inside it too). Once every 30 seconds.')
+    @onClick: modules.game_pouches.sellAll()
+
+  ChaosLabel
+    id: lastSale
+    anchors.verticalCenter: sellButton.verticalCenter
+    anchors.left: sellButton.right
+    anchors.right: parent.right
+    margin-left: 10
+    text-align: left
+    !text: tr('Last sale: none yet.')
+
+  ChaosLabel
+    id: rarityTitle
+    anchors.top: sellButton.bottom
+    anchors.left: parent.left
+    margin-top: 12
+    color: #e8b84a
+    !text: tr('Sell items of these rarities')
+
+  Panel
+    id: rarityRow
+    anchors.top: rarityTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 22
+    layout:
+      type: horizontalBox
+      spacing: 10
+
+  ChaosSeparator
+    id: sep
+    anchors.top: rarityRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+
+  ChaosCheckBox
+    id: corpseCheck
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    !text: tr('Also sell the items of my list as they drop from my kills')
+
+  ChaosTextEdit
+    id: itemEdit
+    anchors.top: corpseCheck.bottom
+    anchors.left: parent.left
+    anchors.right: addButton.left
+    margin-top: 8
+    margin-right: 6
+    height: 22
+    max-length: 80
+    placeholder: Item name
+
+  ChaosButton
+    id: addButton
+    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.right: removeButton.left
+    margin-right: 4
+    size: 60 22
+    !text: tr('Add')
+    @onClick: modules.game_pouches.autoSellerList('add')
+
+  ChaosButton
+    id: removeButton
+    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.right: clearButton.left
+    margin-right: 4
+    size: 64 22
+    !text: tr('Remove')
+    @onClick: modules.game_pouches.autoSellerList('remove')
+
+  ChaosButton
+    id: clearButton
+    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.right: parent.right
+    size: 52 22
+    !text: tr('Clear')
+    @onClick: modules.game_pouches.autoSellerList('clear')
+
+  ChaosPanelDark
+    id: listPanel
+    anchors.top: itemEdit.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: notice.top
+    margin-top: 6
+    margin-bottom: 6
+    padding: 4
+
+    ChaosLabel
+      id: listText
+      anchors.fill: parent
+      text-wrap: true
+      text-align: topLeft
+
+  ChaosLabel
+    id: notice
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 6
+    height: 30
+    text-wrap: true
+    text-align: topLeft
+    color: #e8b84a
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_pouches.hideAutoSeller()

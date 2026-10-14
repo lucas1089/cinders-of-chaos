@@ -1,0 +1,25 @@
+{
+  "key": "classlook_inquisitor_female",
+  "name": "Inquisitor class look (female)",
+  "note": "Inquisitor class look (female): donor D 420 (witch-hunter: feathered hat on addon 2, rapier on addon 1) with the burning holy sceptre of donor D 828's addon 1 added to addon 2. Donor pixels unchanged; the D 828 body is not used.",
+  "colours": {
+    "head": 78,
+    "body": 69,
+    "legs": 58,
+    "feet": 76
+  },
+  "layers": [
+    {
+      "src": "lib:D:outfit:420",
+      "base": true
+    },
+    {
+      "src": "lib:D:outfit:828",
+      "addons": {
+        "2": 1
+      },
+      "mask": "own",
+      "note": "only this addon part of the donor is used, not its body"
+    }
+  ]
+}

@@ -3,15 +3,17 @@
 --
 -- Flow
 --   use a Rift Key (item 10155 "shadow orb" + action id 47401, attributes rift_tier / rift_mods) in a protection zone, out of combat,
---   not multi-clienting -> the party within partyRange (up to 4) comes along -> a free slot of the rift grid is built
---   with Game.createTile (the footprint must be empty on first use, as worldboss.lua checks) or reused, themed, 2-4 of
---   its side rooms opened -> packs from the bounty pool's level window of the tier (elites through monster_tiers.lua)
+--   not multi-clienting -> the party within partyRange (up to 5) comes along -> a ready slot of the rift grid is taken:
+--   each slot holds a generated layout (rift_layout_core.lua: a cave system, waste, ruined complex or cave with
+--   chambers, one or two floors, sized by the tier), built in short steps by the slot pool below and built anew after
+--   every run -> packs from the bounty pool's level window of the tier (elites through monster_tiers.lua) spread over the
+--   map, the rest coming in ahead of the party
 --   -> after bossAt % of the kills the boss appears -> boss dead in time: reward chest (each finisher once), maybe a
 --   new key, Omen Fragments from tier 6; time up: everyone out, key lost. Shared lives (3, +1 per extra player): a
 --   death inside is the normal death and costs one; the next login puts the character back at the rift's entrance;
 --   the last life lost collapses the rift. Logout inside: removed from the run.
 --   Omens: 60 Omen Fragments bind an Omen Key (item 32072, attribute omen_kind) that opens a guardian arena in the
---   same slot grid (every side room shut, one guardian, the same lives, timer and chest flow).
+--   same slot grid (the guardian's arena of a ready layout, the party at its mouth; the same lives, timer and chest).
 --   The key is consumed at the start; a "run in progress" marker (storages Chaos.storage.riftRun ..+4) refunds it at
 --   the next login when the server crashed during the run. A clean shutdown or a closed server (the daily restart)
 --   ends every run first (RF.interrupt): everyone to the temple, the key back while the guardian lives.
@@ -32,49 +34,32 @@ if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
 dofile("data/scripts/chaos/rift_core.lua")
+dofile("data/scripts/chaos/rift_layout_core.lua")
 ChaosRiftConfig = dofile("data/scripts/chaos/rift_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosRift = ChaosRift or {}
+-- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX, on since 2026-10-13; off: exactly the stock effect as before)
+if not ChaosPackFx then
+	pcall(dofile, "data/lib/chaos_pack_fx.lua")
+end
+local function packFx(pos, use, stock)
+	if ChaosPackFx then
+		return ChaosPackFx.send(pos, use, stock)
+	end
+	if stock then
+		pos:sendMagicEffect(stock)
+	end
+	return false
+end
 local RF = ChaosRift
 local R = ChaosRiftCore
+local RL = ChaosRiftLayout
 local OPCODE = ChaosOpcodes.rift
 local ST = Chaos.storage.riftRun -- +0 tier, +1..+3 packed modifiers, +4 start time
 
--- the dark tile set (rift_config.lua `dark`): when it is installed, the walls and hub lights switch to it and every
--- theme with a `darkStyle` is painted by ChaosDarkPaint (main ground, patches with borders, decoration); otherwise
--- the stock ids of the config are used unchanged
-local function resolveDark(cfg)
-	cfg.darkActive = false
-	local d = cfg.dark
-	if not (d and d.enabled and ChaosDarkPaint and ChaosDarkTiles) then
-		return
-	end
-	local wall, basin = ChaosDarkTiles.id(d.wall), ChaosDarkTiles.id(d.basin)
-	if not wall or not basin then
-		return
-	end
-	local any = false
-	for _, th in ipairs(cfg.themes) do
-		if th.darkStyle and ChaosDarkPaint.ready(th.darkStyle) then
-			th.stockGrounds = th.stockGrounds or th.grounds
-			th.grounds = ChaosDarkPaint.groundIds(th.darkStyle)
-			th.dark = true
-			any = true
-		end
-	end
-	if any then
-		cfg.stockWallId, cfg.stockBasinId = cfg.wallId, cfg.basinId
-		cfg.wallId, cfg.basinId, cfg.darkActive = wall, basin, true
-	end
-end
-
 local function C()
-	local c = ChaosRiftConfig
-	if c.darkActive == nil then
-		resolveDark(c)
-	end
-	return c
+	return ChaosRiftConfig
 end
 
 local function rand(a, b)
@@ -84,8 +69,7 @@ end
 RF.runs = RF.runs or {} -- slot -> run
 RF.runOf = RF.runOf or {} -- player id -> run
 RF.monsterRun = RF.monsterRun or {} -- monster id -> run
-RF.built = RF.built or {} -- slot -> true once its tiles exist (they stay for the server's lifetime and are reused)
-RF.bad = RF.bad or {} -- slot -> reason (footprint not empty)
+RF.bad = RF.bad or {} -- slot -> reason (footprint not empty; RF.slots below has every slot's state)
 RF.pending = RF.pending or {} -- guid -> list of {run data} rewards for finishers who were offline at the exit
 RF.nextId = RF.nextId or 0
 RF.echo = RF.echo or {} -- monster id -> true: Echoing Spoils copies its loot (set at death, used by onDropLoot)
@@ -95,8 +79,16 @@ RF.revive = RF.revive or {} -- guid -> run: died inside with lives left; the nex
 -- ======================================================================== pool
 local rawPool = dofile("data/scripts/chaos/bounty_pool.lua")
 RF.poolLevel = {}
+RF.poolHealth = {} -- the XML health (density: a kind's health relative to the run's other kinds)
 for _, e in ipairs(rawPool.hunt or {}) do
 	RF.poolLevel[e.name:lower()] = e.level
+	RF.poolHealth[e.name:lower()] = e.health
+end
+RF.husk = RF.husk or {} -- monster id -> true: a density husk (no loot, no kill credit; bounty.lua, bestiary.lua ask)
+
+-- a husk of a dense rift: experience only (bounty.lua and bestiary.lua give it no kill credit)
+function RF.isHusk(creature)
+	return creature ~= nil and RF.husk[creature:getId()] == true
 end
 
 local knownCache = {}
@@ -337,157 +329,351 @@ local function refundMarker(player, why)
 end
 RF.refundMarker = refundMarker
 
--- ======================================================================== instance
-local allGrounds
-local function groundSet()
-	if not allGrounds then
-		allGrounds = {}
-		for _, t in ipairs(C().themes) do
-			for _, id in ipairs(t.grounds) do
-				allGrounds[id] = true
+-- ======================================================================== instance: the slot pool
+-- Every run gets a generated layout (rift_layout_core.lua). A slot holds one built layout at a time:
+--   empty     never built since the start
+--   building  a job is clearing the old layout and building a new one (RF.job)
+--   ready     built, nobody inside: the next key of its theme and band takes it at once
+--   busy      a run
+--   dirty     a run ended there; the builder clears it and builds a new layout next
+--   bad       its footprint holds a tile of the real map (never used)
+-- One job at a time: the generator runs in a coroutine that yields every build.sliceMs of game loop, the clean-up
+-- and the tiles go the same way, one step every build.everyMs (server/README.md "Rifts", Layouts and the slot pool).
+RF.slots = RF.slots or {} -- slot -> {state, L, theme, band, why, verified}
+RF.demand = RF.demand or {} -- "theme|band" -> decayed count of the keys that asked for it
+RF.builds = RF.builds or 0
+
+local function nowMs()
+	return os.mtime and os.mtime() or math.floor(os.clock() * 1000)
+end
+
+local function agConfig()
+	if not ChaosAreaGenConfig then
+		ChaosAreaGenConfig = dofile("data/scripts/chaos/areagen_config.lua")
+	end
+	return ChaosAreaGenConfig
+end
+
+-- the dark tile set is used when every dark item is installed (as areagen.lua decides)
+local darkCache
+local function darkOpts()
+	if darkCache == nil then
+		darkCache = false
+		if C().dark and C().dark.enabled ~= false and ChaosDarkTiles and ChaosDarkTiles.ids then
+			darkCache = true
+			for name in pairs(ChaosDarkTiles.ids) do
+				if not ChaosDarkTiles.installed(name) then
+					darkCache = false
+					break
+				end
 			end
 		end
 	end
-	return allGrounds
+	return darkCache and {dark = true, darkIds = ChaosDarkTiles.ids} or {}
 end
 
-local function keepIds()
-	return {[C().wallId] = true, [C().basinId] = true}
+function RF.slotOrigin(slot)
+	local g = C().grid
+	return {x = g.origin.x + (slot % g.cols) * g.spacing, y = g.origin.y + math.floor(slot / g.cols) * g.spacing,
+		z = g.origin.z}
 end
 
-local function placeItem(pos, id)
-	local tile = Tile(pos)
-	if tile and not tile:getItemById(id) then
-		return Game.createItem(id, 1, pos)
+local function slotState(slot)
+	RF.slots[slot] = RF.slots[slot] or {state = "empty"}
+	return RF.slots[slot]
+end
+
+local function themeNames()
+	local out = {}
+	for _, th in ipairs(C().themes) do
+		out[#out + 1] = th.name
 	end
-	return tile and tile:getItemById(id)
+	return out
 end
 
--- builds the slot on first use (refused when a tile of the footprint exists and is not ours); returns L or nil, reason
-local function buildSlot(slot)
+local function themeByName(name)
+	for _, th in ipairs(C().themes) do
+		if th.name == name then
+			return th
+		end
+	end
+	return C().themes[1]
+end
+
+RF.KIND_NAMES = {cave = "a cave system", waste = "an open waste", dungeon = "a ruined complex",
+	mixed = "a cave with ruined chambers"}
+function RF.kindName(kind)
+	return RF.KIND_NAMES[kind] or tostring(kind)
+end
+
+-- the theme and band the next layout should have: the one the keys ask for most against what is ready or building
+-- (ties: the next in turn)
+function RF.neededCombo()
 	local cfg = C()
-	local L = R.layout(cfg, slot)
-	if RF.built[slot] then
-		return L
-	end
-	local ours = groundSet()
-	for _, list in ipairs({L.floorList, L.wallList}) do
-		for _, t in ipairs(list) do
-			local tile = Tile(P(t))
-			if tile and (not ours[groundId(tile) or 0] or (tile.getHouse and tile:getHouse())) then
-				return nil, string.format("tile %d,%d,%d already exists in the map", t.x, t.y, t.z)
-			end
+	local have = {}
+	for _, st in pairs(RF.slots) do
+		if (st.state == "ready" or st.state == "building") and st.theme then
+			local k = st.theme .. "|" .. st.band
+			have[k] = (have[k] or 0) + 1
 		end
 	end
-	local base = cfg.themes[1].grounds[1]
-	for _, list in ipairs({L.floorList, L.wallList}) do
-		for _, t in ipairs(list) do
-			local pos = P(t)
-			local tile = Game.createTile(pos, true)
-			if tile and not tile:getGround() then
-				Game.createItem(base, 1, pos)
-			end
+	local combos = {}
+	for b = 1, #cfg.layout.sizes do
+		for _, name in ipairs(themeNames()) do
+			combos[#combos + 1] = {theme = name, band = b}
 		end
 	end
-	for _, t in ipairs(L.wallList) do
-		placeItem(P(t), cfg.wallId)
+	RF.turn = (RF.turn or 0) % #combos + 1
+	local best, bs
+	for i = 0, #combos - 1 do
+		local c = combos[(RF.turn + i - 1) % #combos + 1]
+		local k = c.theme .. "|" .. c.band
+		local score = (1 + (RF.demand[k] or 0)) / (1 + (have[k] or 0))
+		if not bs or score > bs then
+			best, bs = c, score
+		end
 	end
-	for _, t in ipairs(L.basins) do
-		placeItem(P(t), cfg.basinId)
+	return best
+end
+
+local function noteDemand(theme, band)
+	for k, v in pairs(RF.demand) do
+		RF.demand[k] = v * 0.98
 	end
-	RF.built[slot] = true
+	local k = theme .. "|" .. band
+	RF.demand[k] = (RF.demand[k] or 0) + 1
+end
+
+-- removes everything of one tile (players inside an idle slot go to their temple)
+local function clearTile(k)
+	local x, y, z = RL.unkey(k)
+	local tile = Tile(Position(x, y, z))
+	if not tile then
+		return
+	end
+	for _, c in ipairs(tile:getCreatures() or {}) do
+		if c:isPlayer() then
+			c:teleportTo(c:getTown():getTemplePosition())
+		else
+			c:remove()
+		end
+	end
+	local items = tile:getItems() or {}
+	for i = #items, 1, -1 do
+		items[i]:remove()
+	end
+	local g = tile:getGround()
+	if g and type(g) ~= "number" then
+		g:remove()
+	end
+end
+
+-- the job of one slot (run inside a coroutine): the footprint check on its first build, the old layout cleared, a
+-- new one generated and built. Returns L.
+local function jobBody(slot, st, theme, band, seed, yieldTick)
+	local cfg = C()
+	local o = RF.slotOrigin(slot)
+	if not st.verified then
+		-- the first build since the start: nothing of the real map may stand in the slot's square on its floors
+		local g = cfg.grid
+		for z = o.z, o.z + (g.floors or 1) - 1 do
+			for y = o.y, o.y + g.spacing - 1 do
+				yieldTick()
+				for x = o.x, o.x + g.spacing - 1 do
+					local t = Tile(Position(x, y, z))
+					if t and t:getGround() then
+						error(string.format("tile %d,%d,%d already exists in the map", x, y, z), 0)
+					end
+				end
+			end
+		end
+		st.verified = true
+	end
+	local old = st.L
+	st.L = nil
+	for i, k in ipairs(old and old.tileKeys or {}) do
+		clearTile(k)
+		if i % 4 == 0 then
+			yieldTick()
+		end
+	end
+	local opts = darkOpts()
+	local gen = {dark = opts.dark, darkIds = opts.darkIds, tick = yieldTick, noChecksum = true}
+	local L = RL.generate(cfg, agConfig(), {theme = theme, band = band, seed = seed, origin = o}, gen)
+	if #L.problems > 0 then
+		print(string.format("[ChaosRift] slot %d: layout %s seed %d: %s", slot, theme, seed, L.problems[1]))
+	end
+	for i, t in ipairs(L.tiles) do
+		local pos = Position(t.x, t.y, t.z)
+		if Tile(pos) or Game.createTile(pos, true) then
+			Game.createItem(t.ground, 1, pos)
+			for _, id in ipairs(t.items) do
+				Game.createItem(id, 1, pos)
+			end
+		end
+		if i % 4 == 0 then
+			yieldTick()
+		end
+	end
+	L.tiles = nil -- built: only the keys stay (the next clean-up)
 	return L
 end
 
--- monsters and loose items (corpses, drops, fields, the chest) on every floor tile of the slot
-local function cleanSlot(L)
-	local keep = keepIds()
-	for _, t in ipairs(L.floorList) do
-		local tile = Tile(P(t))
-		if tile then
-			for _, c in ipairs(tile:getCreatures() or {}) do
-				if c:isMonster() then
-					RF.monsterRun[c:getId()] = nil
-					c:remove()
-				end
-			end
-			for _, item in ipairs(tile:getItems() or {}) do
-				if not keep[item:getId()] then
-					item:remove()
-				end
-			end
+local keeper
+
+local function finishJob(slot, ok, result)
+	local st = slotState(slot)
+	local job = RF.job
+	RF.job = nil
+	if ok and result then
+		st.state, st.L = "ready", result
+		st.builtMs = job and (nowMs() - job.started) or 0
+		st.workMs = job and job.work or 0
+		print(string.format("[ChaosRift] slot %d ready: %s, %s %dx%d, %d floor(s), %d tiles, %d walkable, route %d, " ..
+			"%d ms of game loop in %d steps over %.1f s", slot, result.theme, result.kind, result.side, result.side,
+			#result.floors, result.stats.tiles, result.walkable, result.route, math.floor(st.workMs), job and job.steps or 0,
+			st.builtMs / 1000))
+		if ChaosInstanceLimits and ChaosInstanceLimits.freed then
+			ChaosInstanceLimits.freed("rift", "the rifts")
 		end
+	else
+		st.state, st.why = "bad", tostring(result)
+		RF.bad[slot] = st.why
+		print(string.format("[ChaosRift] slot %d not usable: %s", slot, st.why))
 	end
 end
 
-local function theme(L, th, open)
+-- one step of the running job: resumes the coroutine for at most sliceMs
+local function jobStep()
+	local job = RF.job
+	if not job then
+		return
+	end
+	local b = C().build
+	local t0 = nowMs()
+	job.deadline = t0 + b.sliceMs
+	local ok, result = coroutine.resume(job.co)
+	job.work, job.steps = job.work + (nowMs() - t0), job.steps + 1
+	if not ok then
+		finishJob(job.slot, false, result)
+		keeper()
+	elseif coroutine.status(job.co) == "dead" then
+		finishJob(job.slot, true, result)
+		keeper()
+	else
+		addEvent(jobStep, b.everyMs)
+	end
+end
+
+local function startJob(slot, theme, band)
+	local st = slotState(slot)
+	RF.builds = RF.builds + 1
+	local seed = (os.time() * 7 + slot * 7919 + RF.builds * 104729) % 2147483000 + 1
+	st.state, st.theme, st.band, st.seed = "building", theme, band, seed
+	local job = {slot = slot, started = nowMs(), work = 0, steps = 0}
+	local n = 0
+	local function yieldTick()
+		n = n + 1
+		if nowMs() >= (job.deadline or 0) then
+			coroutine.yield()
+		end
+	end
+	job.co = coroutine.create(function()
+		return jobBody(slot, st, theme, band, seed, yieldTick)
+	end)
+	RF.job = job
+	addEvent(jobStep, 0)
+end
+
+-- what to build next: a slot a run left (dirty), else an empty one while fewer than poolReady are ready
+keeper = function()
 	local cfg = C()
-	local doorTiles = {}
-	for _, d in ipairs(R.DIRS) do
-		for _, t in ipairs(L.doors[d.name]) do
-			doorTiles[t.x .. "," .. t.y] = true
+	if RF.job or not (cfg.layout and cfg.layout.enabled) then
+		return
+	end
+	local ready, dirty, empty = 0, nil, nil
+	for slot = 0, R.slotCount(cfg) - 1 do
+		local st = slotState(slot)
+		if st.state == "ready" then
+			ready = ready + 1
+		elseif st.state == "dirty" and not dirty then
+			dirty = slot
+		elseif st.state == "empty" and not empty then
+			empty = slot
 		end
 	end
-	if th.dark then
-		local reserved = {L.start, L.bossSpawn}
-		for _, b in ipairs(L.basins) do
-			reserved[#reserved + 1] = b
-		end
-		for _, d in ipairs(R.DIRS) do
-			for _, t in ipairs(L.doors[d.name]) do
-				reserved[#reserved + 1] = t
+	local slot = dirty or (ready < cfg.build.poolReady and empty) or nil
+	if slot then
+		local c = RF.neededCombo()
+		startJob(slot, c.theme, c.band)
+	end
+end
+RF.keeper = keeper
+
+-- a run ended: its slot is built anew (the corpses and items go with the clean-up)
+function RF.releaseSlot(run)
+	local st = RF.slots[run.slot]
+	if st and st.state == "busy" then
+		st.state = "dirty"
+	end
+	addEvent(keeper, 1000)
+end
+
+-- a ready slot for a key: the asked theme and band, else the band with another theme, else the theme in another
+-- band, else any; nil, seconds to wait when none is ready
+function RF.findReady(theme, band)
+	local best, rank
+	for slot = 0, R.slotCount(C()) - 1 do
+		local st = RF.slots[slot]
+		if st and st.state == "ready" and st.L then
+			local r = (st.theme == theme and st.band == band) and 1 or (st.band == band and 2)
+				or (st.theme == theme and 3) or 4
+			if band == nil then
+				r = st.theme == theme and 1 or 2
+			end
+			if not rank or r < rank then
+				best, rank = slot, r
 			end
 		end
-		ChaosDarkPaint.apply(ChaosDarkPaint.plan(L.floorList, th.darkStyle, rand, {walls = L.walls, reserved = reserved}),
-			L.center.z)
 	end
-	for _, t in ipairs(th.dark and {} or L.floorList) do
-		local tile = Tile(P(t))
-		if tile then
-			local want = th.grounds[rand(1, #th.grounds)]
-			local g = tile:getGround()
-			if g and type(g) ~= "number" then
-				if g:getId() ~= want then
-					g:transform(want)
-				end
-			elseif not g then
-				Game.createItem(want, 1, P(t))
-			end
+	if best then
+		return best
+	end
+	local eta
+	for _, st in pairs(RF.slots) do
+		if st.state == "building" or st.state == "dirty" or st.state == "empty" then
+			eta = 15
 		end
 	end
-	local isOpen = {}
-	for _, name in ipairs(open) do
-		isOpen[name] = true
-	end
-	for _, d in ipairs(R.DIRS) do
-		for _, t in ipairs(L.doors[d.name]) do
-			local tile = Tile(P(t))
-			local wall = tile and tile:getItemById(cfg.wallId)
-			if isOpen[d.name] then
-				if wall then
-					wall:remove()
-				end
-			elseif tile and not wall then
-				Game.createItem(cfg.wallId, 1, P(t))
-			end
-		end
-	end
+	return nil, eta
 end
 
 -- ======================================================================== HUD
+-- the Rift Atlas's Swift time of the run's tier (atlas_core.lua A.swiftSeconds): the HUD shows it; nil for an Omen
+-- arena, a tier off the grid or without the atlas
+local function swiftSeconds(run)
+	local A, acfg = ChaosAtlasCore, ChaosAtlasConfig
+	local tier = run.key and run.key.tier
+	if run.omen or not (A and A.swiftSeconds and acfg and tier) or tier < 1 or tier > (acfg.tiers or 0) then
+		return nil
+	end
+	run.swift = run.swift or A.swiftSeconds(acfg, C(), tier)
+	return run.swift
+end
+
 local function hudData(run)
 	local mods = {}
 	for _, m in ipairs(run.key.mods) do
 		local def = R.modDef(C(), m.key)
 		mods[#mods + 1] = {name = def and def.name or m.key, text = R.modText(C(), m), boon = def and def.boon or nil,
-			tier = def and R.modTier(def, m.value) or nil}
+			tier = def and R.modTier(def, m.value) or nil, side = def and def.side or nil}
 	end
 	-- live lines of the map modifiers (coffer, goblin, twin guardians)
 	local notes = {}
 	local cf = run.coffer
 	if cf then
 		if cf.state == "closed" then
-			notes[#notes + 1] = string.format("A sealed coffer waits in the %s room.", cf.room == "hub" and "central" or cf.room)
+			notes[#notes + 1] = string.format("A sealed coffer waits to the %s.", cf.dir or "far side")
 		elseif cf.state == "guarded" then
 			notes[#notes + 1] = string.format("Coffer guards: %d left.", cf.waveLeft)
 		elseif cf.state == "open" then
@@ -510,6 +696,9 @@ local function hudData(run)
 	if waiting > 0 and run.state == "running" then
 		notes[#notes + 1] = string.format("%d fallen player%s may still return.", waiting, waiting == 1 and "" or "s")
 	end
+	if run.queue and #run.queue > 0 and run.boss == "waiting" and run.state == "running" then
+		notes[#notes + 1] = string.format("%d more pack%s gather.", #run.queue, #run.queue == 1 and "" or "s")
+	end
 	if run.atlasNote then
 		notes[#notes + 1] = run.atlasNote -- Rift Atlas
 	end
@@ -518,7 +707,7 @@ local function hudData(run)
 		bossName = R.nameOf(run.looks, run.plan.boss, true) or run.plan.boss, -- the name the guardian shows
 		mods = mods, bonus = run.bonus, notes = notes, lives = run.lives,
 		livesMax = run.livesMax, omen = run.omen and R.omenKind(C(), run.omen).name or nil,
-		title = run.omen and ("Omen - " .. R.omenKind(C(), run.omen).name) or nil}
+		title = run.omen and ("Omen - " .. R.omenKind(C(), run.omen).name) or nil, swift = swiftSeconds(run)}
 end
 
 local function sendHud(run, action, player)
@@ -536,7 +725,8 @@ local function sendHud(run, action, player)
 end
 
 -- ======================================================================== withering (no health regeneration)
-local function wither(player, entry)
+-- fx.noRegen (Withering): no health; fx.noMana (Parched Veins): no mana; the other one stays the vocation's
+local function wither(player, entry, fx)
 	local cond = player:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
 	if not cond then
 		entry.withered = false -- ours ran out; food eaten later creates a normal one, converted on the next tick
@@ -548,12 +738,14 @@ local function wither(player, entry)
 	local ticks = cond:getTicks()
 	player:removeCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
 	local voc = player:getVocation()
+	local noHealth = not fx or fx.noRegen
+	local noMana = fx and fx.noMana
 	local c = Condition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
 	c:setTicks(ticks)
-	c:setParameter(CONDITION_PARAM_HEALTHGAIN, 0)
-	c:setParameter(CONDITION_PARAM_HEALTHTICKS, 60000)
-	c:setParameter(CONDITION_PARAM_MANAGAIN, voc:getManaGainAmount())
-	c:setParameter(CONDITION_PARAM_MANATICKS, voc:getManaGainTicks() * 1000)
+	c:setParameter(CONDITION_PARAM_HEALTHGAIN, noHealth and 0 or voc:getHealthGainAmount())
+	c:setParameter(CONDITION_PARAM_HEALTHTICKS, noHealth and 60000 or voc:getHealthGainTicks() * 1000)
+	c:setParameter(CONDITION_PARAM_MANAGAIN, noMana and 0 or voc:getManaGainAmount())
+	c:setParameter(CONDITION_PARAM_MANATICKS, noMana and 60000 or voc:getManaGainTicks() * 1000)
 	player:addCondition(c)
 	entry.withered = true
 end
@@ -589,6 +781,7 @@ local function removePlayer(run, id, mode)
 		player:unregisterEvent("ChaosRiftPlayerDeath")
 		player:unregisterEvent("ChaosRiftPlayerHit")
 		player:unregisterEvent("ChaosRiftPlayerMana")
+		player:unregisterEvent("ChaosRiftPlayerKill")
 		if run.restart and mode ~= "dead" then
 			-- a clean shutdown (RF.interrupt): out to the temple, where the character is saved
 			player:teleportTo(player:getTown():getTemplePosition())
@@ -660,13 +853,19 @@ finishExit = function(run)
 	for id in pairs(run.players) do
 		removePlayer(run, id, "out")
 	end
+	-- the run's monsters go now (the corpses and items with the slot's next build)
 	for mid, r in pairs(RF.monsterRun) do
 		if r == run then
 			RF.monsterRun[mid] = nil
+			RF.husk[mid] = nil
+			local m = Monster(mid)
+			if m and m.remove then
+				m:remove()
+			end
 		end
 	end
-	cleanSlot(run.L)
 	if RF.runs[run.slot] == run then
+		RF.releaseSlot(run)
 		RF.runs[run.slot] = nil
 		if ChaosInstanceLimits and not run.restart then
 			ChaosInstanceLimits.freed("rift", "the rifts")
@@ -943,7 +1142,7 @@ local function success(run, pos)
 			pcall(ChaosCharms.onSource, Player(id), "rift", {tier = run.key.tier})
 		end
 	end
-	-- the chest (on the boss's tile, or the hub centre)
+	-- the chest (on the boss's tile, or the guardian's spawn)
 	local chestPos = pos or P(run.L.bossSpawn)
 	run.chestPos = chestPos
 	local chest = Game.createItem(cfg.chest.itemId, 1, chestPos)
@@ -1010,14 +1209,14 @@ local function success(run, pos)
 end
 
 -- ======================================================================== spawning
-local function randomIn(rect, margin)
-	margin = margin or 1
-	return {x = rand(rect.x1 + margin, rect.x2 - margin), y = rand(rect.y1 + margin, rect.y2 - margin), z = rect.z}
-end
 
-local function spawnOne(run, name, pos, tier, boss)
-	-- the rift-exclusive name (rift_config.lua looks.names), set before the placement; credit stays with the type
-	local shown = R.nameOf(run.looks, name, boss)
+-- opts (optional): {laden = false: a density husk (no loot, no kill credit); extra = true: does not count towards the
+-- guardian (Veilbreach, thralls)}
+local function spawnOne(run, name, pos, tier, boss, opts)
+	-- the rift-exclusive name (rift_config.lua looks.names), set before the placement; credit stays with the type.
+	-- A rank variant (looks.variants, with looks.variantsOn) brings its own look and name.
+	local variant = R.pickVariant(run.looks, name, boss, math.random())
+	local shown = variant and variant.name or R.nameOf(run.looks, name, boss)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 	local m = create(name, P(pos), true, false, shown) or create(name, P(pos), true, true, shown)
 	if not m then
@@ -1025,18 +1224,34 @@ local function spawnOne(run, name, pos, tier, boss)
 	end
 	local base = m:getMaxHealth()
 	-- the rift-exclusive look (rift_config.lua looks), before the tier so its shader goes on that look
-	local look = R.lookOf(run.looks, name, boss)
+	local look = variant and variant.look or R.lookOf(run.looks, name, boss)
+	if not look and boss and run.omen then
+		-- an Omen guardian keeps its own look (its XML), or its big one (looks.bigGuardians, with looks.bigGuardiansOn)
+		local own = m:getOutfit().lookType
+		local big = R.bigLook(C().looks, own)
+		if big ~= own then
+			look = big
+		end
+	end
 	if look then
 		m:setOutfit({lookType = look})
 	end
 	if tier and ChaosApplyTier then
 		ChaosApplyTier(m, tier)
 	end
+	local dense = run.density ~= nil
 	local hp
 	if boss and run.omen then
 		hp = math.floor(base * R.omenHealthMult(C(), run.size))
 	elseif boss then
-		hp = math.floor(base * R.guardianHealthMult(C(), run.fx, run.size)) -- + Dread Guardian, Twin Guardians share
+		-- density: the guardian's base is the budget (rift_core.lua R.guardianBase), not the kind's own health
+		local gb = dense and R.guardianBase(C(), run.key.tier) or base
+		hp = math.floor(gb * R.guardianHealthMult(C(), run.fx, run.size)) -- + Dread Guardian, Twin Guardians share
+	elseif dense then
+		-- the budget health x the kind's share x its magic / rare / legendary tier (and random modifiers)
+		local tierMult = base > 0 and m:getMaxHealth() / base or 1
+		hp = math.floor(run.density.packHealth * (run.healthRatio and run.healthRatio[name:lower()] or 1) * tierMult
+			* run.fx.health * (run.fx.partyHealth or 1))
 	else
 		hp = math.floor(m:getMaxHealth() * run.fx.health * (run.fx.partyHealth or 1)) -- + the party's share (R.applyParty)
 	end
@@ -1049,29 +1264,158 @@ local function spawnOne(run, name, pos, tier, boss)
 	end
 	m:registerEvent("ChaosRiftMonsterDeath")
 	m:registerEvent("ChaosRiftMonsterHealth")
-	RF.monsterRun[m:getId()] = run
+	local id = m:getId()
+	RF.monsterRun[id] = run
+	if not boss then
+		run.alive = (run.alive or 0) + 1
+		run.aliveIds = run.aliveIds or {}
+		run.aliveIds[id] = true
+	end
+	if opts and opts.laden == false then
+		RF.husk[id] = true
+		if m.setDropLoot then
+			m:setDropLoot(false)
+		end
+	end
+	if opts and opts.extra then
+		run.extra = run.extra or {}
+		run.extra[id] = true
+	end
 	return m
 end
 
-local function spawnPacks(run)
-	local spawned = 0
-	local hubNorth = {x1 = run.L.hub.x1, y1 = run.L.hub.y1, x2 = run.L.hub.x2, y2 = run.L.center.y - 2, z = run.L.center.z}
-	for _, pack in ipairs(run.plan.packs) do
-		local rect = pack.room == "hub" and hubNorth or run.L.rooms[pack.room].rect
-		rect = {x1 = rect.x1, y1 = rect.y1, x2 = rect.x2, y2 = rect.y2, z = run.L.center.z}
-		local center = randomIn(rect, 2)
-		local spread = C().packs.spread
-		for k = 1, pack.count do
-			local pos = {x = center.x + rand(-spread, spread), y = center.y + rand(-spread, spread), z = center.z}
-			if spawnOne(run, pack.name, pos, pack.elites[k] or nil, false) then
-				spawned = spawned + 1
-			end
+-- the section a pack stands in (a name of L.sections; an unknown one: the first section)
+local function sectionOf(run, room)
+	local L = run.L
+	return L.byName and (L.byName[room] or L.sections[1]) or nil
+end
+
+-- one pack of the plan into a section (around a random cell of it; atCentre: around its centre, the reinforcements,
+-- which must stay out of sight); returns how many came
+local function spawnPack(run, pack, room, atCentre)
+	local cfg = C()
+	local L = run.L
+	local s = sectionOf(run, room)
+	local center = s and (atCentre and {x = s.x, y = s.y, z = s.z} or RL.cellIn(L, s, rand)) or L.bossSpawn
+	local spread = run.density and cfg.density.spread or cfg.packs.spread
+	local n = 0
+	for k = 1, pack.count do
+		local pos = L.walkKeys and RL.near(L, center, spread, rand) or center
+		local husk = pack.laden ~= nil and pack.laden[k] == false
+		if spawnOne(run, pack.name, pos, pack.elites[k] or nil, false, husk and {laden = false} or nil) then
+			n = n + 1
 		end
+	end
+	return n
+end
+
+-- monsters that could not be created leave the plan (the guardian threshold follows)
+local function dropMissing(run, pack, n)
+	if n < pack.count then
+		run.total = math.max(0, run.total - (pack.count - n))
+		run.bossAt = math.max(1, math.ceil(run.total * C().bossAt / 100))
+	end
+end
+
+-- the first packs, spread over the map: density.populate.perStep monsters a step (one game loop task each), so
+-- 100-250 monsters are not all made in the task that uses the key
+local function populateStep(slot, rid)
+	local run = RF.runs[slot]
+	if not run or run.id ~= rid or run.ended or run.state ~= "running" then
+		return
+	end
+	local p = C().density.populate
+	local made = 0
+	while #run.populate > 0 and made < p.perStep do
+		local pack = table.remove(run.populate, 1)
+		local n = spawnPack(run, pack, pack.room)
+		made = made + pack.count
+		dropMissing(run, pack, n)
+	end
+	if #run.populate > 0 then
+		addEvent(populateStep, p.stepMs, slot, rid)
+	end
+end
+
+-- the run's packs: all of them (density off), or as many as the live cap allows; the rest wait in run.queue. The
+-- first packs come in populate steps (all at once with `now`, the tests)
+local function spawnPacks(run, now)
+	local spawned, planned = 0, 0
+	run.queue, run.populate = {}, {}
+	for i, pack in ipairs(run.plan.packs) do
+		if run.density and i > 1 and planned + pack.count > run.density.live then
+			run.queue[#run.queue + 1] = pack
+		else
+			planned = planned + pack.count
+			run.populate[#run.populate + 1] = pack
+		end
+	end
+	local p = C().density.populate
+	local first = (now or not run.density or not p) and math.huge or p.perStep
+	local made = 0
+	while #run.populate > 0 and made < first do
+		local pack = table.remove(run.populate, 1)
+		local n = spawnPack(run, pack, pack.room)
+		spawned, made = spawned + n, made + pack.count
+		run.planMissing = (run.planMissing or 0) + (pack.count - n)
+	end
+	if #run.populate > 0 then
+		addEvent(populateStep, p.stepMs, run.slot, run.id)
 	end
 	return spawned
 end
 
-local function spawnBoss(run)
+local spawnBoss
+
+local function playerPositions(run)
+	local pos = {}
+	for id in pairs(run.players) do
+		local p = Player(id)
+		if p then
+			pos[#pos + 1] = p:getPosition()
+		end
+	end
+	return pos
+end
+
+-- density: queued packs come in when there is room, in the section farthest from the players among the unvisited
+-- ones just ahead of the party (RL.reinforceSection), a few a second, until the guardian appears
+local function reinforce(run)
+	local cfg = C()
+	if not run.density or not run.queue or #run.queue == 0 or run.boss ~= "waiting" or run.state ~= "running" then
+		return
+	end
+	local rc = cfg.density.reinforce
+	local pos = playerPositions(run)
+	run.visited = run.visited or {}
+	RL.visit(run.L, pos, run.visited, rc.visit)
+	local came = 0
+	for _ = 1, rc.perTick do
+		local pack = run.queue[1]
+		if not pack or (run.alive or 0) + pack.count > run.density.live then
+			break
+		end
+		local s = RL.reinforceSection(run.L, pos, run.visited, rc.minDistance, rc.window)
+		if not s then
+			break
+		end
+		table.remove(run.queue, 1)
+		local n = spawnPack(run, pack, s.name, true)
+		came = came + n
+		dropMissing(run, pack, n)
+	end
+	if came > 0 then
+		run.reinforced = (run.reinforced or 0) + came
+	end
+	if run.boss == "waiting" and run.killed >= run.bossAt and run.total > 0 then
+		run.boss = "alive"
+		spawnBoss(run)
+	end
+end
+RF._reinforce = reinforce
+RF._spawnPacks, RF._spawnOne = spawnPacks, spawnOne
+
+function spawnBoss(run) -- the forward-declared local (reinforce)
 	local cfg = C()
 	run.bossIds = run.bossIds or {}
 	local first
@@ -1084,8 +1428,16 @@ local function spawnBoss(run)
 		if m then
 			run.bossIds[m:getId()] = true
 			run.bossId = run.bossId or m:getId()
+			-- boss mechanics (boss_mechanics.lua): the Omen guardians by name, every other guardian the light profile
+			-- by the rift's tier; the arena is the chamber round the boss spawn
+			if ChaosBossMech and ChaosBossMech.attach then
+				local key = run.omen and m:getName() or "rift_guardian"
+				local radius = cfg.layout and cfg.layout.arena and cfg.layout.arena.radius or 9
+				pcall(ChaosBossMech.attach, m, key, {center = run.L.bossSpawn, radius = radius, tier = run.key and run.key.tier or nil,
+					solo = (run.size or 1) == 1})
+			end
 			first = first or m
-			P(at):sendMagicEffect(CONST_ME_MORTAREA)
+			packFx(P(at), "rift_boss_arrives", CONST_ME_MORTAREA)
 		end
 	end
 	if not first and run.omen then
@@ -1124,42 +1476,48 @@ local function spawnBoss(run)
 end
 
 -- ======================================================================== map modifiers
--- a free floor tile in a room rect (nil after a few tries)
-local function freeTileIn(rect, z, margin)
+-- a free walkable tile of a section: no creature, nothing on it (nil after a few tries)
+local function freeCellIn(run, s)
+	if not s then
+		return nil
+	end
 	for _ = 1, 20 do
-		local p = randomIn({x1 = rect.x1, y1 = rect.y1, x2 = rect.x2, y2 = rect.y2, z = z}, margin or 1)
+		local p = RL.cellIn(run.L, s, rand)
 		local tile = Tile(P(p))
-		if tile and tile:getGround() and tile:getCreatureCount() == 0 and not tile:getItemById(C().wallId)
-				and not tile:getItemById(C().basinId) and tile:getTopDownItem() == nil then
+		if tile and tile:getGround() and tile:getCreatureCount() == 0 and tile:getTopDownItem() == nil
+				and not tile:hasProperty(CONST_PROP_BLOCKSOLID) then
 			return p
 		end
 	end
 	return nil
 end
 
-local function roomRect(run, room)
-	if room == "hub" or not run.L.rooms[room] then
-		return run.L.hub
+-- where something is from the rift's entrance, as a compass word ("north-east")
+local function compass(from, to)
+	local dx, dy = to.x - from.x, to.y - from.y
+	local ns = dy < -math.abs(dx) / 2 and "north" or (dy > math.abs(dx) / 2 and "south" or "")
+	local ew = dx > math.abs(dy) / 2 and "east" or (dx < -math.abs(dy) / 2 and "west" or "")
+	if ns ~= "" and ew ~= "" then
+		return ns .. "-" .. ew
 	end
-	return run.L.rooms[room].rect
+	return ns ~= "" and ns or (ew ~= "" and ew or "centre")
 end
+RF.compass = compass
 
--- Gilded Trail: a Treasure Goblin (treasure_goblin.lua) in a random open room
+-- Gilded Trail: a Treasure Goblin in a section 12+ sqm from a player of the run (close enough to chase)
 local function spawnGoblin(run)
 	run.goblin = "tried"
 	if not (ChaosTreasureGoblin and ChaosTreasureGoblin.spawn) then
 		return
 	end
-	local rooms = {"hub"}
-	for _, r in ipairs(run.rooms) do
-		rooms[#rooms + 1] = r
-	end
-	local pos = freeTileIn(roomRect(run, rooms[rand(1, #rooms)]), run.L.center.z, 2)
-	if not pos then
+	local pos = playerPositions(run)
+	local s = pos[1] and RL.sectionNear(run.L, pos[1], 12) or run.L.sections[rand(1, math.max(1, #run.L.sections))]
+	local at = freeCellIn(run, s)
+	if not at then
 		return
 	end
 	local level = RF.poolLevel[run.plan.boss:lower()] or R.tierInfo(C(), run.key.tier).pick[2]
-	local ok, m = pcall(ChaosTreasureGoblin.spawn, P(pos), {level = level, name = run.plan.boss})
+	local ok, m = pcall(ChaosTreasureGoblin.spawn, P(at), {level = level, name = run.plan.boss})
 	if ok and m then
 		run.goblin = "out"
 		run.goblinId = m:getId()
@@ -1167,11 +1525,11 @@ local function spawnGoblin(run)
 	end
 end
 
--- Sealed Coffer: placed at the start of the run
+-- Sealed Coffer: placed at the start of the run in the section the plan picked
 local function placeCoffer(run)
 	local cfg = C()
 	local room = run.plan.coffer
-	local pos = room and freeTileIn(roomRect(run, room), run.L.center.z, 2)
+	local pos = room and freeCellIn(run, sectionOf(run, room))
 	if not pos then
 		return
 	end
@@ -1180,7 +1538,7 @@ local function placeCoffer(run)
 		item:setActionId(cfg.coffer.actionId)
 		item:setAttribute(ITEM_ATTRIBUTE_NAME, "sealed coffer")
 		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "A coffer sealed by the rift. Breaking the seal wakes its guards.")
-		run.coffer = {state = "closed", room = room, pos = pos, waveLeft = 0, wave = {}}
+		run.coffer = {state = "closed", room = room, pos = pos, waveLeft = 0, wave = {}, dir = compass(run.L.start, pos)}
 	end
 end
 
@@ -1330,7 +1688,7 @@ local function cinderBurst(run, pos, maxHealth)
 	if dmg <= 0 then
 		return
 	end
-	pos:sendMagicEffect(CONST_ME_HITBYFIRE)
+	packFx(pos, "rift_cinder_mark", CONST_ME_HITBYFIRE)
 	local rid, slot = run.id, run.slot
 	addEvent(function(p, amount)
 		local r = RF.runs[slot]
@@ -1338,7 +1696,7 @@ local function cinderBurst(run, pos, maxHealth)
 			return
 		end
 		local at = Position(p.x, p.y, p.z)
-		at:sendMagicEffect(CONST_ME_FIREAREA)
+		packFx(at, "rift_cinder_burst", CONST_ME_FIREAREA)
 		local rad = cfg.cinder.radius
 		for _, pl in ipairs(Game.getSpectators(at, false, true, rad, rad, rad, rad)) do
 			if r.players[pl:getId()] then
@@ -1348,7 +1706,202 @@ local function cinderBurst(run, pos, maxHealth)
 	end, cfg.cinder.delayMs, {x = pos.x, y = pos.y, z = pos.z}, dmg)
 end
 
+-- ======================================================================== hazards (third set of modifiers)
+local function combatOf(element)
+	return ({fire = COMBAT_FIREDAMAGE, ice = COMBAT_ICEDAMAGE, energy = COMBAT_ENERGYDAMAGE, earth = COMBAT_EARTHDAMAGE,
+		death = COMBAT_DEATHDAMAGE, physical = COMBAT_PHYSICALDAMAGE})[element]
+end
+RF.combatOf = combatOf
+
+-- the engine's combat types for rift_core.lua R.monsterHit / R.monsterTaken
+local typesCache
+local function hitTypes()
+	if not typesCache then
+		typesCache = {physical = COMBAT_PHYSICALDAMAGE, none = COMBAT_NONE,
+			brand = {fire = COMBAT_FIREDAMAGE, ice = COMBAT_ICEDAMAGE, energy = COMBAT_ENERGYDAMAGE}}
+	end
+	return typesCache
+end
+
+local function effectOf(element)
+	return ({fire = CONST_ME_FIREAREA, ice = CONST_ME_ICEAREA, energy = CONST_ME_ENERGYAREA,
+		death = CONST_ME_MORTAREA})[element] or CONST_ME_POFF
+end
+
+-- the run's players as {player, entry} (shielded ones, back from a lost life, left out)
+local function targets(run, now)
+	local out = {}
+	for id, entry in pairs(run.players) do
+		local p = Player(id)
+		if p and (entry.shieldUntil or 0) <= now then
+			out[#out + 1] = p
+		end
+	end
+	return out
+end
+
+-- value share of each listed player's max health as damage of the element (no attacker: nothing scales it again).
+-- A Hollow Vessel counts health + maximum energy shield, its health being fixed and low (Chaos.percentBase).
+local function percentHit(p, share, element)
+	local amount = R.percentHit(Chaos.percentBase(p), share)
+	doTargetCombatHealth(0, p, combatOf(element), -amount, -amount, effectOf(element))
+end
+
+-- Scorched Earth / Rimefloor: patches near the players; standing in one hurts every second
+local function groundTick(run, now)
+	local cfg = C()
+	local g = run.fx.ground
+	run.hazards = run.hazards or {}
+	if now >= (run.groundAt or 0) then
+		run.groundAt = now + cfg.ground.every
+		for _, p in ipairs(targets(run, now)) do
+			for _, t in ipairs(R.plus(R.nearTile(p:getPosition(), cfg.ground.near, rand))) do
+				local k = t.x .. "," .. t.y .. "," .. t.z
+				if RL.isFloor(run.L, t.x, t.y, t.z) then
+					run.hazards[k] = {x = t.x, y = t.y, z = t.z, untilAt = now + cfg.ground.lastSeconds}
+				end
+			end
+		end
+	end
+	local eff = effectOf(g.element)
+	for k, h in pairs(run.hazards) do
+		if h.untilAt <= now then
+			run.hazards[k] = nil
+		else
+			P(h):sendMagicEffect(eff)
+		end
+	end
+	for _, p in ipairs(targets(run, now)) do
+		local at = p:getPosition()
+		if run.hazards[at.x .. "," .. at.y .. "," .. at.z] then
+			percentHit(p, g.percent / 100, g.element)
+			if g.kind == "rimefloor" and CONDITION_PARALYZE and Condition then
+				local c = Condition(CONDITION_PARALYZE)
+				c:setParameter(CONDITION_PARAM_TICKS, cfg.ground.slowMs)
+				c:setFormula(-cfg.ground.slowPercent / 100, 0, -cfg.ground.slowPercent / 100, 0)
+				p:addCondition(c)
+			end
+		end
+	end
+end
+
+-- a marked strike: the mark now, the hit warnMs later on every run player within radius of it
+local function markedStrike(run, at, radius, warnMs, share, element, markEffect)
+	local rid, slot = run.id, run.slot
+	for dx = -radius, radius do
+		for dy = -radius, radius do
+			if math.max(math.abs(dx), math.abs(dy)) == radius or radius <= 1 then
+				Position(at.x + dx, at.y + dy, at.z):sendMagicEffect(markEffect or CONST_ME_MAGIC_RED or CONST_ME_POFF)
+			end
+		end
+	end
+	addEvent(function(p0)
+		local r = RF.runs[slot]
+		if not r or r.id ~= rid or r.ended or r.state ~= "running" then
+			return
+		end
+		local now = os.time()
+		packFx(Position(p0.x, p0.y, p0.z), "rift_strike_" .. tostring(element), effectOf(element))
+		for _, p in ipairs(targets(r, now)) do
+			local q = p:getPosition()
+			if q.z == p0.z and math.max(math.abs(q.x - p0.x), math.abs(q.y - p0.y)) <= radius then
+				percentHit(p, share, element)
+			end
+		end
+	end, warnMs, {x = at.x, y = at.y, z = at.z})
+end
+
+-- Veilstorm: a marked strike near every player
+local function stormTick(run, now)
+	local s = C().veilstorm
+	if now < (run.stormAt or 0) then
+		return
+	end
+	run.stormAt = now + s.every
+	for _, p in ipairs(targets(run, now)) do
+		markedStrike(run, R.nearTile(p:getPosition(), s.near, rand), s.radius, s.warnMs, run.fx.storm, "energy",
+			CONST_ME_PURPLEENERGY)
+	end
+end
+
+-- Wrathful Guardian: the nova around each guardian, and thralls (husks of the weakest kind) now and then
+local function wrathTick(run, now)
+	local w = C().wrath
+	if run.boss ~= "alive" or not run.bossIds then
+		return
+	end
+	local nova = now >= (run.novaAt or 0)
+	local thrall = now >= (run.thrallAt or 0)
+	if run.novaAt == nil then -- first nova one period after the guardian came
+		run.novaAt, run.thrallAt = now + w.novaEvery, now + w.thrallEvery
+		return
+	end
+	for id in pairs(run.bossIds) do
+		local g = Monster(id)
+		if g then
+			local at = g:getPosition()
+			if nova then
+				markedStrike(run, at, w.radius, w.warnMs, run.fx.wrath, "death", CONST_ME_MAGIC_RED)
+			end
+			if thrall then
+				run.thrallIds = run.thrallIds or {}
+				local up = 0
+				for tid in pairs(run.thrallIds) do
+					if Monster(tid) then
+						up = up + 1
+					else
+						run.thrallIds[tid] = nil
+					end
+				end
+				for _ = 1, math.min(w.thralls, w.maxThralls - up) do
+					local m = spawnOne(run, run.typeNames[1], R.nearTile(at, 2, rand), nil, false, {laden = false, extra = true})
+					if m then
+						run.thrallIds[m:getId()] = true
+					end
+				end
+			end
+		end
+	end
+	if nova then
+		run.novaAt = now + w.novaEvery
+	end
+	if thrall then
+		run.thrallAt = now + w.thrallEvery
+	end
+end
+
+-- Veilbreach: a slain pack monster may tear open a breach of more monsters (extra: not towards the guardian)
+local function breach(run, pos)
+	local cfg = C()
+	local b = cfg.breach
+	local cap = (run.density and run.density.live or 100) + (cfg.density and cfg.density.extraSlack or 12)
+	if (run.alive or 0) >= cap then
+		return
+	end
+	local rid, slot = run.id, run.slot
+	Position(pos.x, pos.y, pos.z):sendMagicEffect(CONST_ME_PURPLEENERGY or CONST_ME_TELEPORT)
+	addEvent(function(p0)
+		local r = RF.runs[slot]
+		if not r or r.id ~= rid or r.ended or r.state ~= "running" then
+			return
+		end
+		for _ = 1, b.count do
+			local tierName = R.eliteTier(C(), r.fx, r.key.tier, rand, r.density and r.density.share)
+			local laden = true
+			if r.density and not tierName then
+				laden = R.chance(r.density.normalShare * 100, rand)
+			end
+			spawnOne(r, r.typeNames[rand(1, #r.typeNames)], R.nearTile(p0, b.spread, rand), tierName, false,
+				{laden = laden, extra = true})
+		end
+	end, b.delayMs, {x = pos.x, y = pos.y, z = pos.z})
+end
+
+RF._groundTick, RF._stormTick, RF._wrathTick, RF._breach, RF._wither = groundTick, stormTick, wrathTick, breach, wither
+
 -- ======================================================================== tick
+local riftDeath -- below (the monsters' deaths)
+
 local function tick(slot, rid)
 	local run = RF.runs[slot]
 	if not run or run.id ~= rid or run.ended then
@@ -1384,11 +1937,39 @@ local function tick(slot, rid)
 			removePlayer(run, id, "none")
 		elseif R.slotOfPos(C(), p:getPosition()) ~= run.slot then
 			removePlayer(run, id, "none")
-		elseif run.fx.noRegen and run.state == "running" then
-			wither(p, entry)
+		elseif (run.fx.noRegen or run.fx.noMana) and run.state == "running" then
+			wither(p, entry, run.fx)
 		end
 		if run.ended then
 			return
+		end
+	end
+	-- monsters gone without a death this script saw (a husk nobody of the run killed): counted as dead
+	local gone = {}
+	for mid in pairs(run.aliveIds or {}) do
+		if not Monster(mid) then
+			gone[#gone + 1] = mid
+		end
+	end
+	for _, mid in ipairs(gone) do
+		riftDeath(mid, nil, nil)
+		if run.ended then
+			return
+		end
+	end
+	if run.state == "running" then
+		reinforce(run) -- density: queued packs
+		if run.ended then
+			return
+		end
+		if run.fx.ground then
+			groundTick(run, now)
+		end
+		if (run.fx.storm or 0) > 0 then
+			stormTick(run, now)
+		end
+		if (run.fx.wrath or 0) > 0 then
+			wrathTick(run, now)
 		end
 	end
 	if run.state == "running" and now >= (run.hudAt or 0) then
@@ -1512,29 +2093,44 @@ local function slotLefts()
 end
 RF.slotLefts = slotLefts
 
-local function takeSlot(player)
+-- a ready slot for the asked theme and band (RF.findReady), marked busy; nil when none (message sent: the wait,
+-- and a place in line, told when a slot is ready again)
+local function takeSlot(player, theme, band)
 	local cfg = C()
 	local IL = ChaosInstanceLimits
 	local running = 0
 	for _ in pairs(RF.runs) do
 		running = running + 1
 	end
-	while true do
-		local slot = not (IL and IL.capped("rift", running, cfg.limits)) and R.allocSlot(cfg, RF.runs, RF.bad) or nil
-		if not slot then
-			player:sendCancelMessage(IL and IL.busy(player, "rift", "rifts", slotLefts(), cfg.limits)
-				or "Every rift is open right now. Try again in a moment.")
-			return nil
-		end
-		local L, why = buildSlot(slot)
-		if L then
-			return slot, L
-		end
-		RF.bad[slot] = why
-		print(string.format("[ChaosRift] slot %d not usable: %s", slot, why))
+	if band then
+		noteDemand(theme, band)
 	end
+	local slot, eta
+	if not (IL and IL.capped("rift", running, cfg.limits)) then
+		slot, eta = RF.findReady(theme, band)
+	end
+	if not slot then
+		local lefts = slotLefts()
+		if eta then
+			lefts[#lefts + 1] = eta
+		end
+		player:sendCancelMessage(IL and IL.busy(player, "rift", "rifts", lefts, cfg.limits)
+			or (eta and "The rifts are still forming. Try again in a few seconds."
+			or "Every rift is open right now. Try again in a moment."))
+		addEvent(keeper, 0)
+		return nil
+	end
+	local st = RF.slots[slot]
+	st.state = "busy"
+	addEvent(keeper, 1000) -- keep the pool filled
+	return slot, st.L
 end
 RF._takeSlot = takeSlot
+
+-- where the players of a run arrive (and come back after a lost life): the layout's arrival, an omen arena's mouth
+function RF.entryOf(run)
+	return run.omen and run.L.arenaStart or run.L.start
+end
 
 -- teleports the group in and registers the run's events
 local function enter(run, group)
@@ -1546,9 +2142,14 @@ local function enter(run, group)
 		m:registerEvent("ChaosRiftPlayerDeath")
 		m:registerEvent("ChaosRiftPlayerHit")
 		m:registerEvent("ChaosRiftPlayerMana")
+		m:registerEvent("ChaosRiftPlayerKill")
 		entryPos:sendMagicEffect(CONST_ME_TELEPORT)
 		local off = ({{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}})[i] or {0, 0}
-		m:teleportTo(Position(L.start.x + off[1], L.start.y + off[2], L.start.z))
+		local at = RF.entryOf(run)
+		if L.walkKeys and not RL.isFloor(L, at.x + off[1], at.y + off[2], at.z) then
+			off = {0, 0}
+		end
+		m:teleportTo(Position(at.x + off[1], at.y + off[2], at.z))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	end
 end
@@ -1570,19 +2171,22 @@ function RF.open(player, item)
 		player:sendCancelMessage("No monsters answer this rift. Tell a gamemaster.")
 		return false
 	end
-	local slot, L = takeSlot(player)
+	-- Rift Atlas (atlas.lua): the key user's attunements weigh the theme; the layout's size follows the tier. A ready
+	-- slot of that theme and size band is taken (another theme or band when none is ready: the slot's layout decides)
+	local atlasPick = R.atlasMods(player, {tier = key.tier})
+	local want = R.pickTheme(cfg, rand, atlasPick and atlasPick.themeWeights)
+	local slot, L = takeSlot(player, want.name, R.band(cfg, key.tier))
 	if not slot then
 		return false
 	end
-	cleanSlot(L)
-	-- Rift Atlas (atlas.lua): the key user's attunements weigh the theme
-	local atlasPick = R.atlasMods(player, {tier = key.tier})
-	local th = R.pickTheme(cfg, rand, atlasPick and atlasPick.themeWeights)
-	local rooms = R.pickRooms(cfg, rand)
-	theme(L, th, rooms)
+	local th = themeByName(L.theme)
+	-- the sections in the order the packs fill them: the nearest to the arrival first, then spread over the map
+	local rooms = RL.sectionOrder(L, rand)
+	local first = table.remove(rooms, 1)
 
 	-- the key is spent now; the marker refunds it after a crash or a restart during the run
 	if not item:remove(1) then
+		RF.slots[slot].state = "ready"
 		player:sendCancelMessage("The key could not be used.")
 		return false
 	end
@@ -1597,8 +2201,9 @@ function RF.open(player, item)
 	local am = R.atlasMods(player, {theme = th.name, tier = key.tier})
 	R.applyAtlasFx(fx, am)
 	R.applyParty(cfg, fx, #group, key.tier) -- party scaling: monster health share, damage, rewards
-	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand)
-	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx)
+	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand, {first = first, area = L.walkable})
+	local baseLimit = cfg.layout.sizes[L.band] and cfg.layout.sizes[L.band][3] or cfg.timeLimit
+	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx, baseLimit)
 	-- the Rift Time of the opener's placed charms (charms.lua)
 	local charmSec = ChaosCharms and ChaosCharms.riftSeconds and ChaosCharms.riftSeconds(player) or 0
 	if charmSec > 0 then
@@ -1616,33 +2221,58 @@ function RF.open(player, item)
 	for _, e in ipairs(types) do
 		run.typeNames[#run.typeNames + 1] = e.name
 	end
+	-- density (rift_config.lua density): the budget health of a pack monster and each kind's share of it (its XML
+	-- health against the run's mean, 0.5-2)
+	if plan.density then
+		run.density = plan.density
+		run.density.packHealth = R.packHealth(cfg, key.tier, L.walkable)
+		local sum, n = 0, 0
+		for _, e in ipairs(types) do
+			local h = RF.poolHealth[e.name:lower()] or e.health
+			if h and h > 0 then
+				sum, n = sum + h, n + 1
+			end
+		end
+		run.healthRatio = {}
+		for _, e in ipairs(types) do
+			local h = RF.poolHealth[e.name:lower()] or e.health
+			run.healthRatio[e.name:lower()] = (n > 0 and h and h > 0) and math.max(0.5, math.min(2, h * n / sum)) or 1
+		end
+	end
+	run.alive, run.aliveIds, run.extra, run.visited = 0, {}, {}, {}
+	run.baseLimit = baseLimit
 	RF.runs[slot] = run
 
 	enter(run, group)
 	local spawned = spawnPacks(run)
-	run.total = spawned
-	run.bossAt = math.max(1, math.ceil(spawned * cfg.bossAt / 100))
+	-- density: the whole plan counts (the queue comes later); monsters that could not be created leave it
+	run.total = run.density and math.max(0, plan.total - (run.planMissing or 0)) or spawned
+	run.bossAt = math.max(1, math.ceil(run.total * cfg.bossAt / 100))
 	if plan.gildedAt then
-		plan.gildedAt = math.min(plan.gildedAt, math.max(1, spawned))
+		plan.gildedAt = math.min(plan.gildedAt, math.max(1, run.total))
 	end
 	placeCoffer(run)
 	local names = {}
 	for _, m in ipairs(key.mods) do
 		names[#names + 1] = R.modLabel(cfg, m) .. ": " .. R.modText(cfg, m)
 	end
-	say(run, string.format("Rift tier %d (%s): %d monsters, the guardian appears after %d kills. %d minutes, %d shared lives. Modifiers: %s.",
-		key.tier, th.name, run.total, run.bossAt, math.floor(run.limit / 60), run.lives,
+	say(run, string.format("Rift tier %d (%s, %s of %d x %d%s): %d monsters, the guardian waits in the %s after %d kills. %d minutes, %d shared lives. Modifiers: %s.",
+		key.tier, th.name, RF.kindName(L.kind), L.side, L.side, #L.floors > 1 and ", two floors" or "", run.total,
+		compass(L.start, L.bossSpawn), run.bossAt, math.floor(run.limit / 60), run.lives,
 		#names > 0 and table.concat(names, "; ") or "none"))
 	local partyNote = R.partyNote(fx.party, fx.party.health)
 	if partyNote then
 		say(run, partyNote)
 	end
+	if run.queue and #run.queue > 0 then
+		say(run, string.format("%d more packs gather ahead of you as you advance.", #run.queue))
+	end
 	sendHud(run, "start")
 	run.hudAt = os.time() + cfg.hudEvery
 	addEvent(tick, 1000, slot, run.id)
-	print(string.format("[ChaosRift] %s opened run %d: slot %d, tier %d, %s, %d player(s), %d monsters (%s), rooms %s",
+	print(string.format("[ChaosRift] %s opened run %d: slot %d, tier %d, %s, %d player(s), %d monsters (%s), layout %s %s %dx%d seed %d",
 		player:getName(), run.id, slot, key.tier, R.encodeMods(key.mods), #group, run.total,
-		table.concat(run.typeNames, "/"), table.concat(rooms, "/")))
+		table.concat(run.typeNames, "/"), th.name, L.kind, L.side, L.side, L.seed))
 	if run.total == 0 then
 		run.killed, run.bossAt = 0, 0
 		run.boss = "alive"
@@ -1651,7 +2281,7 @@ function RF.open(player, item)
 	return true
 end
 
--- an Omen Key: the guardian arena (the hub of a slot, every side room shut)
+-- an Omen Key: the guardian arena (the arena of a ready layout; the party arrives at its mouth)
 function RF.openOmen(player, item)
 	local cfg = C()
 	local o = cfg.omen
@@ -1670,14 +2300,14 @@ function RF.openOmen(player, item)
 		return false
 	end
 	local group = gather(player, t)
-	local slot, L = takeSlot(player)
+	-- the guardian's arena of a ready layout (its theme's when one is ready, any size): the party arrives at its mouth
+	local slot, L = takeSlot(player, (cfg.themes[def.theme] or cfg.themes[1]).name, nil)
 	if not slot then
 		return false
 	end
-	cleanSlot(L)
-	local th = cfg.themes[def.theme] or cfg.themes[1]
-	theme(L, th, {})
+	local th = themeByName(L.theme)
 	if not item:remove(1) then
+		RF.slots[slot].state = "ready"
 		player:sendCancelMessage("The key could not be used.")
 		return false
 	end
@@ -1886,13 +2516,34 @@ end
 chestAction:aid(C().chest.actionId)
 chestAction:register()
 
-local monsterDeath = CreatureEvent("ChaosRiftMonsterDeath")
-function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
-	local mid = creature:getId()
+-- one rift monster died: the run's bookkeeping and the per-kill effects. creature may be nil (the sweep below:
+-- a monster that vanished), pos and maxHealth are then nil and the effects that need them are skipped.
+-- A husk has no loot (Creature:setDropLoot(false)), and the engine then runs no death event for it (Creature::
+-- dropCorpse only calls them for a monster that drops loot or has a master), so its death comes here from the
+-- killer's kill event (ChaosRiftPlayerKill, the player or the master of the summon that killed it) or, for a kill
+-- nobody of the run made, from the tick's sweep. Each monster is counted once (RF.dead).
+RF.dead = RF.dead or {}
+riftDeath = function(mid, creature, corpse)
+	if RF.dead[mid] then
+		return
+	end
 	local run = RF.monsterRun[mid]
+	if not run then
+		return
+	end
+	RF.dead[mid] = true
+	addEvent(function(id) RF.dead[id] = nil end, 5000, mid)
 	RF.monsterRun[mid] = nil
-	if not run or run.ended or run.state ~= "running" then
-		return true
+	if RF.husk[mid] then
+		-- the other death events (bounty, bestiary) still ask RF.isHusk in this same death; gone a moment later
+		addEvent(function(id) RF.husk[id] = nil end, 1000, mid)
+	end
+	if run.aliveIds and run.aliveIds[mid] then
+		run.aliveIds[mid] = nil
+		run.alive = math.max(0, (run.alive or 1) - 1)
+	end
+	if run.ended or run.state ~= "running" then
+		return
 	end
 	-- Echoing Spoils: the loot is copied in the onDropLoot callback below (the engine drops loot after this event)
 	if run.fx.echo > 0 and R.chance(run.fx.echo, rand) then
@@ -1902,17 +2553,31 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 		run.bossIds[mid] = nil
 		local res = R.onBossKilled(run, os.time())
 		if res == "success" then
-			success(run, creature:getPosition())
+			success(run, creature and creature:getPosition() or nil)
 		elseif res == "twin" then
 			say(run, "One guardian falls. Its twin still stands!")
 			sendHud(run, "update")
 		else
 			fail(run, "Time is up!")
 		end
-		return true
+		return
 	end
-	if run.fx.cinder > 0 then
+	if run.fx.cinder > 0 and creature then
 		cinderBurst(run, creature:getPosition(), creature:getMaxHealth())
+	end
+	-- Veilbreach and the Wrathful Guardian's thralls: extra monsters do not count towards the guardian (and never
+	-- open a breach themselves)
+	if run.extra and run.extra[mid] then
+		run.extra[mid] = nil
+		if run.thrallIds then
+			run.thrallIds[mid] = nil
+		end
+		sendHud(run, "update")
+		return
+	end
+	local cfMid = run.coffer and run.coffer.wave and run.coffer.wave[mid]
+	if (run.fx.breach or 0) > 0 and creature and not cfMid and R.chance(run.fx.breach, rand) then
+		breach(run, creature:getPosition())
 	end
 	-- Sealed Coffer guards do not count towards the guardian
 	local cf = run.coffer
@@ -1923,11 +2588,11 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 			openCoffer(run)
 		end
 		sendHud(run, "update")
-		return true
+		return
 	end
 	-- rare / legendary monsters may carry a key of the rift's tier
 	local dead = ChaosTierDead and ChaosTierDead[mid]
-	local tierName = dead and dead.tier or (ChaosTierOf and ChaosTierOf(creature)) or "normal"
+	local tierName = dead and dead.tier or (creature and ChaosTierOf and ChaosTierOf(creature)) or "normal"
 	local p = C().eliteKeyChance[tierName]
 	if p and corpse and corpse.addItem and R.chance(p, rand) then
 		local key = R.rollKey(C(), run.key.tier, rand)
@@ -1952,9 +2617,26 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 	else
 		sendHud(run, "update")
 	end
+	return
+end
+RF._riftDeath = riftDeath
+
+local monsterDeath = CreatureEvent("ChaosRiftMonsterDeath")
+function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
+	riftDeath(creature:getId(), creature, corpse)
 	return true
 end
 monsterDeath:register()
+
+-- a husk's death: the kill event of the player who killed it (or whose summon did; registered on the run's players)
+local playerKill = CreatureEvent("ChaosRiftPlayerKill")
+function playerKill.onKill(player, target)
+	if target and target:isMonster() and RF.husk[target:getId()] then
+		riftDeath(target:getId(), target, nil)
+	end
+	return true
+end
+playerKill:register()
 
 -- the Sealed Coffer
 local cofferAction = Action()
@@ -2004,22 +2686,20 @@ function monsterHealth.onHealthChange(creature, attacker, primaryDamage, primary
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local fx = run.fx
-	if fx.resist > 0 then
-		if primaryType ~= COMBAT_PHYSICALDAMAGE then
-			primaryDamage = math.floor(primaryDamage * (1 - fx.resist))
-		end
-		if secondaryType ~= COMBAT_PHYSICALDAMAGE and secondaryType ~= COMBAT_NONE then
-			secondaryDamage = math.floor(secondaryDamage * (1 - fx.resist))
-		end
-	end
 	local p = playerOf(attacker)
-	if fx.reflect > 0 and p and not reflecting then
-		-- of the damage that lands (overkill is not reflected)
-		local landed = math.min(math.abs(primaryDamage) + math.abs(secondaryDamage), creature:getHealth())
-		local amount = math.floor(landed * fx.reflect)
+	-- Warding, Ironhide, Sapping Hex (rift_core.lua R.monsterTaken)
+	local elemental
+	primaryDamage, secondaryDamage, elemental = R.monsterTaken(fx, {primary = primaryDamage, ptype = primaryType,
+		secondary = secondaryDamage, stype = secondaryType, fromPlayer = p ~= nil}, hitTypes())
+	if p and not reflecting then
+		-- of the damage that lands (overkill is not reflected): Reflection all of it, Spiteglass the elemental part
+		local health = creature:getHealth()
+		local landed = math.min(math.abs(primaryDamage) + math.abs(secondaryDamage), health)
+		local amount = math.floor(landed * (fx.reflect or 0) + math.min(elemental, health) * (fx.spite or 0))
 		if amount > 0 then
 			reflecting = true
-			doTargetCombatHealth(creature:getId(), p, COMBAT_PHYSICALDAMAGE, -amount, -amount, CONST_ME_NONE)
+			doTargetCombatHealth(creature:getId(), p, (fx.spite or 0) > 0 and COMBAT_ENERGYDAMAGE or COMBAT_PHYSICALDAMAGE,
+				-amount, -amount, CONST_ME_NONE)
 			reflecting = false
 		end
 	end
@@ -2036,13 +2716,22 @@ local function scaleHit(creature, attacker, primaryDamage, primaryType, secondar
 		if entry and (entry.shieldUntil or 0) > os.time() then
 			return 0, primaryType, 0, secondaryType
 		end
-		local mult = run.fx.damage
-		if run.bossIds and run.bossIds[attacker:getId()] then
-			mult = mult * run.fx.boss -- Dread Guardian
+		-- Brutality, tiers, party, Dread Guardian, density, Keen Fangs, brands, hexes (rift_core.lua R.monsterHit)
+		local info
+		primaryDamage, primaryType, secondaryDamage, secondaryType, info = R.monsterHit(C(), run.fx,
+			{primary = primaryDamage, ptype = primaryType, secondary = secondaryDamage, stype = secondaryType,
+				boss = run.bossIds and run.bossIds[attacker:getId()] or false}, hitTypes(), rand)
+		if info.crit then
+			packFx(creature:getPosition(), "rift_crit_wound", CONST_ME_DRAWBLOOD or CONST_ME_HITAREA)
 		end
-		if mult ~= 1 then
-			primaryDamage = math.floor(primaryDamage * mult)
-			secondaryDamage = math.floor(secondaryDamage * mult)
+		if info.fester and CONDITION_POISON and Condition then
+			-- Festering Wounds: no owner, so the ticks are not scaled again here
+			local f = C().festering
+			local c = Condition(CONDITION_POISON)
+			c:setParameter(CONDITION_PARAM_DELAYED, true)
+			c:addDamage(f.rounds, f.intervalMs, -math.max(1, math.floor(info.fester / f.rounds)))
+			creature:addCondition(c)
+			packFx(creature:getPosition(), "rift_fester", CONST_ME_HITBYPOISON or CONST_ME_POFF)
 		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
@@ -2125,13 +2814,14 @@ local function revive(player)
 	player:registerEvent("ChaosRiftPlayerDeath")
 	player:registerEvent("ChaosRiftPlayerHit")
 	player:registerEvent("ChaosRiftPlayerMana")
+	player:registerEvent("ChaosRiftPlayerKill")
 	if guid == run.openerGuid then
 		-- the key's owner is back in the run: a shutdown or a crash from here on returns the key again (the death
 		-- cleared the marker, so a run that ends while the owner is away returns nothing)
 		setMarker(player, run.key)
 	end
-	local L = run.L
-	player:teleportTo(Position(L.start.x, L.start.y, L.start.z))
+	local at = RF.entryOf(run)
+	player:teleportTo(Position(at.x, at.y, at.z))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	say(run, string.format("%s returns to the rift (%d shared %s left).", player:getName(), run.lives,
 		run.lives == 1 and "life" or "lives"))
@@ -2168,6 +2858,14 @@ function shutdown.onShutdown()
 	return true
 end
 shutdown:register()
+
+-- the slot pool: the first layouts are built shortly after the start (build.startDelayMs), then kept up by the keeper
+local poolStart = GlobalEvent("ChaosRiftPool")
+function poolStart.onStartup()
+	addEvent(keeper, C().build.startDelayMs)
+	return true
+end
+poolStart:register()
 
 local login = CreatureEvent("ChaosRiftLogin")
 function login.onLogin(player)
@@ -2302,6 +3000,11 @@ local function onRift(player, words, param)
 		args[#args + 1] = w:lower()
 	end
 	local gm = player:getGroup():getAccess()
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): keys, omen keys and fragments need an administrator
+	if gm and (args[1] == "key" or args[1] == "omen" or args[1] == "fragments")
+			and not Chaos.staffCommand(player, words, param, true) then
+		return false
+	end
 	if gm and args[1] == "key" then
 		local tier = R.clampTier(cfg, tonumber(args[2]) or 1)
 		local key
@@ -2329,9 +3032,25 @@ local function onRift(player, words, param)
 		for slot, why in pairs(RF.bad) do
 			bad[#bad + 1] = slot .. " (" .. why .. ")"
 		end
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%d rift(s) running, %d slot(s) built, unusable: %s", n,
-			(function() local c = 0; for _ in pairs(RF.built) do c = c + 1 end; return c end)(),
-			#bad > 0 and table.concat(bad, ", ") or "none"))
+		local states, lines = {}, {}
+		for slot = 0, R.slotCount(cfg) - 1 do
+			local st = RF.slots[slot] or {state = "empty"}
+			states[st.state] = (states[st.state] or 0) + 1
+			if st.L and st.state ~= "busy" then
+				lines[#lines + 1] = string.format("%d %s %s %s %dx%d", slot, st.state, st.L.theme, st.L.kind, st.L.side, st.L.side)
+			end
+		end
+		local parts = {}
+		for k, v in pairs(states) do
+			parts[#parts + 1] = v .. " " .. k
+		end
+		table.sort(parts)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%d rift(s) running; slots: %s; unusable: %s%s", n,
+			table.concat(parts, ", "), #bad > 0 and table.concat(bad, ", ") or "none",
+			RF.job and string.format("; building slot %d (%d steps so far)", RF.job.slot, RF.job.steps) or ""))
+		if #lines > 0 then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, "idle: " .. table.concat(lines, "; "))
+		end
 		return false
 	elseif gm and args[1] == "fail" then
 		local run = RF.runOf[player:getId()]

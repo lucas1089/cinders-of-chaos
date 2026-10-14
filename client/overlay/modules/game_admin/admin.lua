@@ -169,9 +169,31 @@ function onExtendedOpcode(protocol, code, msg)
   end
 end
 
+-- the catalog as the window reads it: categories and actions that are tables with an id (anything else is left out,
+-- so a bad entry cannot stop the list half built; game_chaosguard/opcode_fuzz_test.lua)
+local function cleanCatalog(data)
+  local categories = {}
+  for _, c in ipairs(data.categories) do
+    if type(c) == "table" and c.id ~= nil then
+      local actions = {}
+      for _, a in ipairs(type(c.actions) == "table" and c.actions or {}) do
+        if type(a) == "table" and a.id ~= nil then
+          a.id, a.name = tostring(a.id), tostring(a.name or a.id)
+          if a.description ~= nil then a.description = tostring(a.description) end
+          actions[#actions + 1] = a
+        end
+      end
+      c.actions = actions
+      categories[#categories + 1] = c
+    end
+  end
+  data.categories = categories
+  return data
+end
+
 function onCatalog(data)
   if type(data) ~= "table" or type(data.categories) ~= "table" then return end
-  catalog = data
+  catalog = cleanCatalog(data)
   if not create() then return end
 
   -- keep selection if it still exists

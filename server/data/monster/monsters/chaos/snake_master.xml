@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Snake Master" nameDescription="an snake master" race="venom" experience="60000" speed="750" skulled="2" looting="1" manacost="0">
+<monster name="Snake Master" nameDescription="a snake master" race="venom" experience="60000" speed="750" manacost="0">
 	<health now="400000" max="400000"/>
 	<look type="1085" corpse="6068" />
 	<targetchange interval="3000" chance="20"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>

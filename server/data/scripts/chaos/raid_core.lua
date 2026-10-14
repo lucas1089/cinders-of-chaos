@@ -137,7 +137,8 @@ end
 
 function K.telegraphTiming(cfg, enraged)
 	local t = cfg.telegraph
-	local warn = enraged and floor(t.warnMs * 0.6) or t.warnMs
+	-- never under 1.5 s (server/README.md "Boss mechanics", the fairness rules): enraged 60% of warnMs, at least 1500
+	local warn = enraged and math.max(1500, floor(t.warnMs * 0.6)) or t.warnMs
 	local marks = {0}
 	if t.turnMs and t.turnMs < warn then
 		marks[#marks + 1] = t.turnMs

@@ -23,6 +23,8 @@ final class ChaosPayService {
 	public const NOTICE_PT = 'Doação voluntária: ajuda a manter o servidor. Ninguém é obrigado a doar; o jogo é totalmente jogável de graça.';
 	public const OPEN = array('pending', 'open');
 	public const METHODS = array('pix', 'paypal');
+	/** Days after payment during which a credited order is checked again once a day (refunds, chargebacks). */
+	public const RECHECK_DAYS = 180;
 
 	private ChaosPayDb $db;
 	/** @var array<string, ChaosPayProvider> method => provider */
@@ -38,7 +40,8 @@ final class ChaosPayService {
 	/**
 	 * $packs: key => pack (key, name, coins, bonus_pct, bonus_coins, usd_cents, once, starter) from shop_coins_config.lua
 	 * $pay: the `payments` block (brl_per_usd, expire_minutes, max_open, max_per_hour, methods => [key => enabled, currency, label])
-	 * $opt: site_url, payer_email (pattern with {account}), reconcile_seconds
+	 * $opt: site_url, payer_email (pattern with {account}), reconcile_seconds, payer_salt (CHAOS_PAY_PAYER_SALT: mixed
+	 *       into the payer hashes of chaos_pay_payers)
 	 */
 	public function __construct(ChaosPayDb $db, array $providers, array $packs, array $pay, array $opt = array(),
 			?callable $now = null, ?callable $log = null) {
@@ -46,7 +49,7 @@ final class ChaosPayService {
 		$this->providers = $providers;
 		$this->packs = $packs;
 		$this->pay = $pay;
-		$this->opt = $opt + array('site_url' => '', 'payer_email' => '', 'reconcile_seconds' => 60);
+		$this->opt = $opt + array('site_url' => '', 'payer_email' => '', 'reconcile_seconds' => 60, 'payer_salt' => '');
 		$this->now = $now ?? 'time';
 		$this->log = $log ?? static function (string $line): void { error_log('[chaos pay] ' . $line); };
 	}
@@ -190,6 +193,9 @@ final class ChaosPayService {
 		$coins = (int)$pack['coins'];
 		$bonus = intdiv($coins * (int)$pack['bonus_pct'], 100) + (int)$pack['bonus_coins'];
 		$first = (empty($pack['starter']) && $this->credited($accountId, false) === 0) ? intdiv($coins * (int)($this->pay['first_bonus_pct'] ?? 0), 100) : 0;
+		if ((int)($this->pay['first_bonus_max'] ?? 0) > 0) {
+			$first = min($first, (int)$this->pay['first_bonus_max']); // "Limite a 1000" (ChaosShopCore.packCredit)
+		}
 		$token = sprintf('coc-%d-%d-%s', $accountId, $now, bin2hex(random_bytes(6)));
 		$currency = (string)$this->pay['methods'][$method]['currency'];
 		$this->db->begin();
@@ -362,6 +368,7 @@ final class ChaosPayService {
 				$n = $this->db->exec("UPDATE chaos_coin_orders SET status = 'paid', note = 'donation' WHERE id = ? AND status IN ('pending', 'open', 'expired', 'cancelled', 'failed')", array($id));
 				if ($n > 0) {
 					$this->db->exec('UPDATE chaos_coin_payments SET paid_at = ? WHERE order_id = ?', array($now, $id));
+					$this->recordPayer($r, $s);
 					$this->log(sprintf('order %d: paid (%s %s)', $id, self::money((int)$r['amount_cents'], $r['currency']), $r['psp']));
 					return 'paid';
 				}
@@ -384,6 +391,19 @@ final class ChaosPayService {
 						$this->log("order $id: $status after crediting, flagged for the game server and staff");
 						return 'reversal';
 					}
+					// a second, larger refund of an order refunded in part: the game server takes back the difference
+					if ($refunded > 0 && $this->db->exec("UPDATE chaos_coin_payments SET reversal_cents = ?, reversal_done = 0, reversal_at = ? " .
+							"WHERE order_id = ? AND reversal = 'refunded' AND reversal_cents > 0 AND reversal_cents < ?",
+							array($refunded, $now, $id, $refunded)) > 0) {
+						$this->log("order $id: refunded further after crediting ($refunded cents in all), flagged again");
+						return 'reversal';
+					}
+					// a chargeback or dispute after a partial refund: the whole donation is reversed now
+					if ($status !== 'refunded' && $this->db->exec("UPDATE chaos_coin_payments SET reversal = ?, reversal_cents = 0, reversal_done = 0, " .
+							"reversal_at = ? WHERE order_id = ? AND reversal = 'refunded' AND reversal_cents > 0", array($status, $now, $id)) > 0) {
+						$this->log("order $id: $status after a partial refund, flagged again");
+						return 'reversal';
+					}
 				}
 				return 'already';
 			case 'expired':
@@ -394,6 +414,36 @@ final class ChaosPayService {
 				return $n > 0 ? $status : 'already';
 			default:
 				return 'waiting';
+		}
+	}
+
+	/**
+	 * The payer of a confirmed donation as a SHA-256 in chaos_pay_payers (order, account, hash): the creator codes and the
+	 * referral program void a share or a reward when the same payer stands behind both accounts. The provider's payer
+	 * (document, payer id or e-mail; MercadoPago/PayPal normalize 'payer'), else the e-mail the charge was made with.
+	 * The raw value is never stored. Skipped when the table is missing (creator codes not installed).
+	 */
+	public static function payerHash(string $psp, string $identity, string $salt = ''): string {
+		return hash('sha256', $salt . '|' . strtolower($psp) . '|' . strtolower(trim($identity)));
+	}
+
+	private function recordPayer(array $r, array $s): void {
+		$who = trim((string)($s['payer'] ?? ''));
+		if ($who === '') {
+			$email = $this->payerEmail((int)$r['account_id']);
+			$who = $email !== '' ? 'mail:' . strtolower($email) : '';
+		}
+		if ($who === '') {
+			return;
+		}
+		$hash = self::payerHash((string)$r['psp'], $who, (string)$this->opt['payer_salt']);
+		try {
+			if (!$this->db->rows('SELECT order_id FROM chaos_pay_payers WHERE order_id = ?', array((int)$r['id']))) {
+				$this->db->exec('INSERT INTO chaos_pay_payers (order_id, account_id, payer_hash, created_at) VALUES (?, ?, ?, ?)',
+					array((int)$r['id'], (int)$r['account_id'], $hash, $this->now()));
+			}
+		} catch (Throwable $e) {
+			$this->log('order ' . (int)$r['id'] . ': payer not recorded (' . substr($e->getMessage(), 0, 120) . ')');
 		}
 	}
 
@@ -425,7 +475,7 @@ final class ChaosPayService {
 	// ------------------------------------------------------------------ the worker's round
 	public function runOnce(): array {
 		$now = $this->now();
-		$stats = array('charged' => 0, 'synced' => 0, 'expired' => 0, 'cancelled' => 0);
+		$stats = array('charged' => 0, 'synced' => 0, 'expired' => 0, 'cancelled' => 0, 'rechecked' => 0);
 		foreach ($this->db->rows("SELECT o.id FROM chaos_coin_orders o JOIN chaos_coin_payments p ON p.order_id = o.id WHERE o.status = 'pending' AND p.psp_id = '' ORDER BY o.id LIMIT 20") as $o) {
 			$stats['charged'] += $this->makeCharge((int)$o['id']) ? 1 : 0;
 		}
@@ -454,6 +504,14 @@ final class ChaosPayService {
 			$this->db->exec('UPDATE chaos_coin_payments SET cancel_sent = 1 WHERE order_id = ?', array((int)$o['id']));
 			$this->sync((int)$o['id']);
 			$stats['cancelled']++;
+		}
+		// credited orders: asked again once a day for RECHECK_DAYS after payment, so a refund or chargeback whose webhook
+		// was lost (or refused after a secret change) is still flagged for the game server
+		foreach ($this->db->rows("SELECT o.id FROM chaos_coin_orders o JOIN chaos_coin_payments p ON p.order_id = o.id WHERE o.status = 'credited' " .
+				"AND p.psp_id <> '' AND p.paid_at > ? AND p.checked < ? AND p.reversal IN ('', 'refunded') ORDER BY p.checked LIMIT 20",
+				array($now - 86400 * self::RECHECK_DAYS, $now - 86400)) as $o) {
+			$this->sync((int)$o['id']);
+			$stats['rechecked']++;
 		}
 		return $stats;
 	}

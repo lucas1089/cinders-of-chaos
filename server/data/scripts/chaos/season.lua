@@ -832,6 +832,36 @@ function S.join(player, confirm, modeKey)
 	return false
 end
 
+-- the season join chosen when the character was created (the client's character creation, website/README.md "Client
+-- API"; table chaos_season_requests): the in-game join at the first login after it, with the mode chosen then. The
+-- row is deleted either way; a season that ended or a character that may no longer join is told why.
+function S.applyRequest(player)
+	local guid = player:getGuid()
+	local rows = Chaos.select(string.format("SELECT `season`, `mode` FROM `%s` WHERE `player_id` = %d", T.requests, guid),
+		{{"season", "n"}, {"mode", "s"}})
+	local request = rows and rows[1]
+	if not request then
+		return false
+	end
+	db.query(string.format("DELETE FROM `%s` WHERE `player_id` = %d", T.requests, guid))
+	local season, reason = S.joinCheck(S.joinInfo(player), cfg, now(), S.ov)
+	local outcome, text = S.requestOutcome(request, season, reason)
+	if outcome ~= "join" then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+		logEvent(request.season, guid, "request", "dropped: " .. tostring(text))
+		return false
+	end
+	local mode
+	if S.modesPick then
+		mode = S.modesPick(request.mode) or S.modesPick(nil)
+	end
+	doJoin(player, season)
+	if mode and S.modesJoined then
+		S.modesJoined(player, season, mode)
+	end
+	return true
+end
+
 -- ---------------------------------------------------------------- window state
 local function seasonInfo(season)
 	if not season then
@@ -1090,6 +1120,9 @@ function S.sendBoard(player, key, groupKey, mode)
 	data.week = LB.current and LB.current.week or nil
 	data.resetIn = math.max(0, LB.nextReset(t, lc.resetHour) - t)
 	data.season = {id = season.id, name = season.name, tag = season.tag}
+	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the damage / healing boards
+		data = ChaosDisplayScale.apply("leaderboard", player, data)
+	end
 	Chaos.send(player, ChaosOpcodes.leaderboard or 229, "board", data)
 	return true
 end
@@ -1123,6 +1156,10 @@ end
 
 local startup = GlobalEvent("ChaosSeasonStartup")
 function startup.onStartup()
+	db.query("CREATE TABLE IF NOT EXISTS `" .. T.requests .. "` (`player_id` int(11) NOT NULL, `season` smallint(5) unsigned " ..
+		"NOT NULL, `mode` varchar(16) NOT NULL DEFAULT 'standard', `requested_at` int(10) unsigned NOT NULL, PRIMARY KEY " ..
+		"(`player_id`), CONSTRAINT `chaos_season_requests_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE " ..
+		"CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8")
 	S.loadOverrides()
 	checkSeasons(true)
 	local season = S.current()
@@ -1186,6 +1223,7 @@ function login.onLogin(player)
 		end
 		S.deliverRewards(p)
 		S.checkMilestones(p)
+		S.applyRequest(p) -- a season join chosen at character creation (website), at the first login
 		local s = S.current()
 		if s then
 			if S.realmOf(p) == s.id then

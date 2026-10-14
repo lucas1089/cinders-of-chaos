@@ -712,6 +712,46 @@ def m_professions(c):
     c.px(['h'], 13, 16, {'h': CH})
 
 
+# the vigils (server vigils.lua): a banner on a pole (ramp A the cloth, B the pole) with the vigil's emblem (ramp C)
+def vigil_banner(c):
+    c.line([(5.5, 4), (5.5, 24)], B, 1.6)                                          # the pole and its finial
+    c.ell(3.5, 2, 7.5, 6, BH)
+    c.poly([(7, 4), (22, 4), (22, 17), (14.5, 22), (7, 17)], A)                   # the cloth, a point at the bottom
+    c.px(['hhhhhhhhhhhhh'], 8, 5, {'h': AH})
+
+
+def m_vigil_wrath(c):
+    vigil_banner(c)
+    c.poly([(14.5, 6.5), (18.5, 12), (17.5, 17), (11.5, 17), (10.5, 12)], C)      # a flame
+    c.poly([(14.5, 11), (16, 14), (14.5, 17), (13, 14)], CH)
+
+
+def m_vigil_iron(c):
+    vigil_banner(c)
+    shield(c, 10, 7, 19, 19, C)                                                    # a shield
+    c.line([(14.5, 8.5), (14.5, 17)], CD, 0.8)
+
+
+def m_vigil_haste(c):
+    vigil_banner(c)
+    for x in (9, 14):                                                              # two chevrons, onwards
+        c.poly([(x, 6.5), (x + 3.5, 6.5), (x + 7, 12), (x + 3.5, 17.5), (x, 17.5), (x + 3.5, 12)], C)
+
+
+def m_vigil_clarity(c):
+    vigil_banner(c)
+    drop(c, 14.5, 6.5, 0.9, C)                                                     # a drop of mana
+    c.px(['W'], 13, 12, {'W': W})
+
+
+# Iron Tithe: the vigils paid in health: the banner with a heart
+def m_vigil_tithe(c):
+    vigil_banner(c)
+    c.ell(9.5, 7.5, 15, 13, C); c.ell(14, 7.5, 19.5, 13, C)                       # a heart
+    c.poly([(10, 11), (19, 11), (14.5, 18)], C)
+    c.px(['h'], 11, 9, {'h': CH})
+
+
 MOTIFS = {  # name: (function, ramps A, B, C)
     'world_xp': (m_world_xp, 'gold', 'water'), 'world_loot': (m_world_loot, 'gold', 'wood'),
     'world_skill': (m_world_skill, 'steel', 'arcane'), 'victory': (m_victory, 'nature', 'steel', 'gold'),
@@ -740,6 +780,9 @@ MOTIFS = {  # name: (function, ramps A, B, C)
     'blessing_crit': (m_blessing_crit, 'holy', 'steel', 'ember'), 'blessing_loot': (m_blessing_loot, 'gold', 'wood', 'ember'),
     'blessing_rarity': (m_blessing_rarity, 'arcane', 'arcane', 'ember'), 'blessing_orb': (m_blessing_orb, 'energy', 'coal', 'ember'),
     'professions': (m_professions, 'steel', 'wood', 'gold'),
+    'vigil_wrath': (m_vigil_wrath, 'blood', 'wood', 'ember'), 'vigil_iron': (m_vigil_iron, 'steel', 'wood', 'gold'),
+    'vigil_haste': (m_vigil_haste, 'nature', 'wood', 'wind'), 'vigil_clarity': (m_vigil_clarity, 'arcane', 'wood', 'water'),
+    'vigil_tithe': (m_vigil_tithe, 'obsidian', 'wood', 'blood'),
 }
 
 # the class buffs that come from a Chaos spell show that spell's icon (key -> the spell's words)

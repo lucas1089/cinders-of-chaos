@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Blazebringer" nameDescription="a blazebringer" race="blood" experience="4700" speed="60" skulled="1" evented = "3" looting="1" manacost="0">
+<monster name="Blazebringer" nameDescription="a blazebringer" race="blood" experience="4700" speed="60" manacost="0">
 	<health now="13400" max="13400"/>
 	<level min="700" max="740"/>
 	<look type="376" corpse="6068" />
@@ -9,7 +9,7 @@
 		<flag attackable="1" />
 		<flag hostile="1" />
 		<flag illusionable="0" />
-		<flag convinceable="1" />
+		<flag convinceable="0" />
 		<flag pushable="0" />
 		<flag canpushitems="0" />
 		<flag canpushcreatures="0" />
@@ -64,8 +64,10 @@
 		<voice sentence="Vihil Ealuel!" />
 	</voices>
 	<loot>
-		<item id="2148" countmax="80" chance="46000"/><!-- gold coin -->
-		<item id="2148" countmax="70" chance="46000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- platinum coin -->
 		<item id="18425" countmax="1" chance="400"/><!-- blazing bone -->
 		<item id="2498" countmax="1" chance="375"/><!-- royal helmet dragon shield golden armor golden legs-->
 		<item id="2516" countmax="1" chance="375"/>

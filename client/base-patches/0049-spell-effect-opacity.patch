@@ -1,0 +1,359 @@
+# One spell effect opacity slider (client/BASE.md 0049, MANIFEST.md "game_effectopacity"): Options > Effects keeps the base's opacityEffects slider as the only one, labelled "Spell effects opacity", 25-100% (boss warning circles never vanish); its apply clamps and sets the alpha of every effect source. The four per-source sliders (Options > Effects own / other players / creatures / boss area, and the same four in the HP/MP circle options) are removed: on 10.98 every effect is drawn with the own alpha, so they fought over it. Lua and OTUI only. The overlay module game_effectopacity migrates old saved values once.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1194,77 +1194,27 @@ return {
+         end,
+ 	},
+ 
++	-- Chaos (base patch 0049): the ONE spell effect opacity, 25-100% (boss warning circles never vanish). On 10.98 the
++	-- server sends no effect source, so every magic effect is drawn with the "own" alpha; it is set for every source
++	-- anyway. The per-source sliders (own, other players, creatures, boss area) are gone; game_effectopacity (overlay)
++	-- moves an old lower value of theirs here once and clamps an old saved value to 25..100.
+ 	opacityEffects = {
+ 		value = 100,
+         apply = function(value)
+-            g_client.setEffectAlpha(value/100)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Opacity Effect: %s%%', value))
+-            return true
+-        end,
+-        tempApply = function(value)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Opacity Effect: %s%%', value))
+-            return true
+-        end,
+-	},
+-
+-	ownSpellOpacity = {
+-		value = 100,
+-        apply = function(value)
+-            g_client.setOwnSpellEffectAlpha(value / 100.0)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('ownSpellEffectLabel'):setText(tr('Own Spells Effect: %s%%', value))
+-            return true
+-        end,
+-        tempApply = function(value)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('ownSpellEffectLabel'):setText(tr('Own Spells Effect: %s%%', value))
+-            return true
+-        end,
+-	},
+-
+-	otherSpellOpacity = {
+-		value = 60,
+-        apply = function(value)
+-            g_client.setOtherPlayerSpellEffectAlpha(value / 100.0)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('otherSpellEffectLabel'):setText(tr('Other Player Spells Effect: %s%%', value))
+-            return true
+-        end,
+-        tempApply = function(value)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('otherSpellEffectLabel'):setText(tr('Other Player Spells Effect: %s%%', value))
+-            return true
+-        end,
+-	},
+-
+-	creatureSpellOpacity = {
+-		value = 80,
+-        apply = function(value)
+-            g_client.setCreatureSpellEffectAlpha(value / 100.0)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('creatureSpellEffectLabel'):setText(tr('Creature Spells Effect: %s%%', value))
+-            return true
+-        end,
+-        tempApply = function(value)
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('creatureSpellEffectLabel'):setText(tr('Creature Spells Effect: %s%%', value))
+-            return true
+-        end,
+-	},
+-
+-	bossSpellOpacity = {
+-		value = 100,
+-        apply = function(value)
+-            g_client.setBossAreaCreatureEffectAlpha(value / 100.0)
++            local v = math.max(25, math.min(100, math.floor((tonumber(value) or 100) / 5 + 0.5) * 5))
++            g_client.setEffectAlpha(v / 100)
++            for _, set in ipairs({g_client.setOtherPlayerSpellEffectAlpha, g_client.setCreatureSpellEffectAlpha,
++                                  g_client.setBossAreaCreatureEffectAlpha}) do
++                if set then set(v / 100) end
++            end
+             local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('bossSpellEffectLabel'):setText(tr('Boss Area Creature Effect: %s%%', value))
++            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Spell effects opacity: %s%%', v))
+             return true
+         end,
+         tempApply = function(value)
++            local v = math.max(25, math.min(100, tonumber(value) or 100))
+             local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('bossSpellEffectLabel'):setText(tr('Boss Area Creature Effect: %s%%', value))
++            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Spell effects opacity: %s%%', v))
+             return true
+         end,
+ 	},
+--- a/mods/client_settings/options/effects.otui
++++ b/mods/client_settings/options/effects.otui
+@@ -121,7 +121,7 @@ EffectsWindow < Panel
+       !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Cinders of Chaos to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
+ 
+   FlatPanel
+-    size: 505 205
++    size: 505 137
+     anchors.top: prev.bottom
+     anchors.left: parent.left
+     margin-top: 5
+@@ -227,8 +227,9 @@ EffectsWindow < Panel
+       anchors.top: prev.bottom
+       margin-top: 5
+       margin-left: 30
++      !tooltip: tr('How strongly spell and area effects are drawn, boss warning circles included (not missiles).\n25%% is the faintest, so warnings never vanish.')
+       @onSetup: |
+-        self:setText(tr('Opacity Effects: 100%%'))
++        self:setText(tr('Spell effects opacity: 100%%'))
+ 
+     HorizontalScrollBar
+       id: opacityEffects
+@@ -240,7 +241,7 @@ EffectsWindow < Panel
+       margin-top: 1
+       pixels-scroll: true
+       @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+-      minimum: 0
++      minimum: 25
+       maximum: 100
+       default-scroll: true
+       $!on:
+@@ -274,118 +275,6 @@ EffectsWindow < Panel
+       $!on:
+         width: 0
+ 
+-    Label
+-      id: ownSpellEffectLabel
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 5
+-      margin-left: 28
+-      @onSetup: |
+-        self:setText(tr('Own Spells Effect: 100%%'))
+-
+-    HorizontalScrollBar
+-      id: ownSpellOpacity
+-      width: 175
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      step: 5
+-      margin-right: 20
+-      margin-top: 1
+-      pixels-scroll: true
+-      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+-      minimum: 0
+-      maximum: 100
+-      default-scroll: true
+-      $!on:
+-        width: 0
+-
+-    Label
+-      id: otherSpellEffectLabel
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 5
+-      margin-left: 28
+-      @onSetup: |
+-        self:setText(tr('Other Player Spells Effect: 100%%'))
+-
+-    HorizontalScrollBar
+-      id: otherSpellOpacity
+-      width: 175
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      step: 5
+-      margin-right: 20
+-      margin-top: 1
+-      pixels-scroll: true
+-      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+-      minimum: 0
+-      maximum: 100
+-      default-scroll: true
+-      $!on:
+-        width: 0
+-
+-    Label
+-      id: creatureSpellEffectLabel
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 5
+-      margin-left: 28
+-      @onSetup: |
+-        self:setText(tr('Creature Spells Effect: 100%%'))
+-
+-    HorizontalScrollBar
+-      id: creatureSpellOpacity
+-      width: 175
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      step: 5
+-      margin-right: 20
+-      margin-top: 1
+-      pixels-scroll: true
+-      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+-      minimum: 0
+-      maximum: 100
+-      default-scroll: true
+-      $!on:
+-        width: 0
+-
+-    Label
+-      id: bossSpellEffectLabel
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 5
+-      margin-left: 28
+-      @onSetup: |
+-        self:setText(tr('Boss Area Creature Effect: 100%%'))
+-
+-    HorizontalScrollBar
+-      id: bossSpellOpacity
+-      width: 175
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      step: 5
+-      margin-right: 20
+-      margin-top: 1
+-      pixels-scroll: true
+-      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+-      minimum: 0
+-      maximum: 100
+-      default-scroll: true
+-      $!on:
+-        width: 0
+-
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
+--- a/modules/game_healthcircle/option_healthcircle.otui
++++ b/modules/game_healthcircle/option_healthcircle.otui
+@@ -141,112 +141,3 @@ Window
+       minimum: 0
+       maximum: 100
+ 
+-  Panel
+-    anchors.left: parent.left
+-    anchors.right: parent.right
+-    anchors.top: prev.bottom
+-    margin-top: 15
+-    height: 22
+-
+-    Label
+-      text: Spell Effect Opacity
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: parent.left
+-      margin-left: 10
+-      color: #FFE1B5
+-
+-  Panel
+-    anchors.left: parent.left
+-    anchors.right: parent.right
+-    anchors.top: prev.bottom
+-    margin-top: 5
+-    height: 28
+-
+-    Label
+-      id: ownSpellLabel
+-      text: 'Own Spells: 100%'
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: parent.left
+-      margin-left: 10
+-      width: 105
+-    HorizontalScrollBar
+-      id: ownSpellScrollbar
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: prev.right
+-      anchors.right: parent.right
+-      margin-left: 5
+-      margin-right: 10
+-      minimum: 10
+-      maximum: 100
+-
+-  Panel
+-    anchors.left: parent.left
+-    anchors.right: parent.right
+-    anchors.top: prev.bottom
+-    margin-top: 2
+-    height: 28
+-
+-    Label
+-      id: otherSpellLabel
+-      text: 'Other Players: 100%'
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: parent.left
+-      margin-left: 10
+-      width: 105
+-    HorizontalScrollBar
+-      id: otherSpellScrollbar
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: prev.right
+-      anchors.right: parent.right
+-      margin-left: 5
+-      margin-right: 10
+-      minimum: 10
+-      maximum: 100
+-
+-  Panel
+-    anchors.left: parent.left
+-    anchors.right: parent.right
+-    anchors.top: prev.bottom
+-    margin-top: 2
+-    height: 28
+-
+-    Label
+-      id: creatureSpellLabel
+-      text: 'Creatures: 100%'
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: parent.left
+-      margin-left: 10
+-      width: 105
+-    HorizontalScrollBar
+-      id: creatureSpellScrollbar
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: prev.right
+-      anchors.right: parent.right
+-      margin-left: 5
+-      margin-right: 10
+-      minimum: 10
+-      maximum: 100
+-
+-  Panel
+-    anchors.left: parent.left
+-    anchors.right: parent.right
+-    anchors.top: prev.bottom
+-    margin-top: 2
+-    height: 28
+-
+-    Label
+-      id: bossSpellLabel
+-      text: 'Boss Area: 100%'
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: parent.left
+-      margin-left: 10
+-      width: 105
+-    HorizontalScrollBar
+-      id: bossSpellScrollbar
+-      anchors.verticalCenter: parent.verticalCenter
+-      anchors.left: prev.right
+-      anchors.right: parent.right
+-      margin-left: 5
+-      margin-right: 10
+-      minimum: 10
+-      maximum: 100

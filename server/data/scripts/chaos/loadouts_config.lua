@@ -1,12 +1,16 @@
 -- Loadouts / Armory (loadouts.lua, loadouts_core.lua). Every number of the system is here. server/README.md "Loadouts".
 ChaosLoadoutsConfig = {
-	-- slots: baseSlots for everyone; one more at each `earned` level (in game, never sold: README "Loadouts", Slots)
+	-- slots: baseSlots for everyone; one more at each `earned` level (in game; README "Loadouts", Slots);
+	-- pactSlots more while the Chaos Pact (VIP) is active (pact_config.lua perks.loadoutSlots, pact_perks.lua; a paid
+	-- slot in effect, kept by the owner on 2026-10-13: "Pode manter"). A slot
+	-- over the limit keeps its saved loadout; it only cannot be loaded or saved until the limit allows it again.
 	baseSlots = 3,
 	earned = {
 		{level = 200},
 		{level = 500}
 	},
-	maxSlots = 5, -- baseSlots + #earned; the rune mirror below reserves room for up to runeMirrorSlots
+	pactSlots = 1,
+	maxSlots = 6, -- baseSlots + #earned + pactSlots; the rune mirror below reserves room for up to runeMirrorSlots
 	minLevel = 8, -- below this the window only explains (a level 1-7 character has no tree points)
 
 	-- switching (load): out of combat, never inside an instance (arena, rift, trial, raid, ...); in a protection zone at

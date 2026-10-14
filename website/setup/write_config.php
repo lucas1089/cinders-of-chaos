@@ -109,7 +109,14 @@ foreach ($classes as $id => $name) {
 $iterations = max(1000, min(10000000, (int)env('CHAOS_PASSWORD_ITERATIONS', '120000')));
 $admins = array_values(array_filter(array_map('trim', explode(',', env('CHAOS_ADMIN_ACCOUNTS')))));
 $serverData = env('CHAOS_SERVER_DATA');
-$siteUrl = env('CHAOS_SITE_URL', 'http://localhost');
+// no default: a missing address must not turn into "http://localhost" (recovery and PayPal links to localhost, and
+// the donation mock's local-site gate open on a live server); install_site.sh refuses to run without it
+$siteUrl = env('CHAOS_SITE_URL');
+if ($siteUrl === '') {
+	fwrite(STDERR, "note: CHAOS_SITE_URL is empty: links in mails and from PayPal will not work.\n");
+}
+// Sprite images (README "Sprite images"): install_site.sh sets CHAOS_SPRITES=1 when chaos-sprites/index.json is there.
+$sprites = env('CHAOS_SPRITES') === '1';
 $https = stripos($siteUrl, 'https://') === 0;
 $captchaSite = env('CHAOS_RECAPTCHA_SITE_KEY');
 $captchaSecret = env('CHAOS_RECAPTCHA_SECRET');
@@ -214,8 +221,13 @@ $out = "<?php\n"
 		array('key' => 'windows_client', 'label' => 'Windows client', 'section' => 'client', 'enabled' => true, 'url' => $winUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for Windows 10 and 11 (64-bit).'),
 		array('key' => 'linux_client', 'label' => 'Linux client', 'section' => 'client', 'enabled' => true, 'url' => $linuxUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for 64-bit Linux.'),
 	)) . ";\n\n"
-	. "// Outfit images are drawn by an external service; off until the owner picks one he trusts.\n"
-	. "\$config['show_outfits'] = array('shop' => false, 'highscores' => false, 'characterprofile' => false, 'onlinelist' => false, 'imageServer' => '');\n\n"
+	. ($sprites
+		? "// Outfit and item images drawn from our own client pair (README \"Sprite images\"): chaos_outfit.php and chaos-sprites/\n"
+			. "\$config['show_outfits'] = array('shop' => true, 'highscores' => true, 'characterprofile' => true, 'onlinelist' => true, 'imageServer' => '/chaos_outfit.php');\n"
+			. "\$config['shop']['imageServer'] = '/chaos-sprites/items';\n"
+			. "\$config['shop']['imageType'] = 'png';\n\n"
+		: "// No sprite images on this site (CHAOS_SPRITE_PAIR not set, README \"Sprite images\"): outfit images off.\n"
+			. "\$config['show_outfits'] = array('shop' => false, 'highscores' => false, 'characterprofile' => false, 'onlinelist' => false, 'imageServer' => '');\n\n")
 	. "// Not used on this server (README \"Not used on this server\"): the store is in the game and donations are the Donate\n"
 	. "// page, so no website shop, points or house purchase with points; no forum. Their pages lead to plugins/chaos/pages/notused.php.\n"
 	. "\$config['shop']['enabled'] = false;\n"
@@ -263,6 +275,9 @@ $out = "<?php\n"
 	. "\$config['twoFactorV2']['email_otp_enabled'] = " . export($mailOn) . ";\n\n"
 	. "// Account creation: at most this many accounts per IP address per hour (plugins/chaos/register_guard.php)\n"
 	. "\$config['chaos_register_limit'] = " . export(array('per_ip' => max(0, (int)env('CHAOS_REGISTER_PER_IP_HOUR', '3')), 'window_seconds' => 3600)) . ";\n\n"
+	. "// The client's account API (chaos_client_api.php, plugins/chaos/client_api_lib.php): character looks and creation\n"
+	. "\$config['chaos_client_api'] = " . export(array('enabled' => env('CHAOS_CLIENT_API', '1') !== '0', 'token_seconds' => 1800,
+		'per_ip_minute' => 30, 'create_per_account_hour' => 3, 'create_per_ip_hour' => 5)) . ";\n\n"
 	. "// Cinders of Chaos (plugins/chaos)\n"
 	. "\$config['chaos'] = " . export(array(
 		'server_data' => $serverData,

@@ -2,7 +2,7 @@
 // php website/tests/chaos_donation_page_test.php : the website's donation page (plugins/chaos/pages/coins.php) rendered
 // with php-cli: the voluntary donation notice (English and Portuguese) before the packs, "Donate" on every button and
 // no "Buy", a Pix donation from the page (mock provider, in-memory database), the thank-you after crediting, the
-// history labelled "Donation". No ZnoteX, no network. Exit status 0 when every check passes.
+// history labelled "Donation"; the Donation Terms notes before and after payment (legal_lib.php). No ZnoteX, no network. Exit status 0 when every check passes.
 $config = array('chaos' => array('server_data' => __DIR__ . '/../../server/data'), 'site_url' => 'https://site.example.invalid');
 $GLOBALS['config'] = $config;
 require __DIR__ . '/../overlay/plugins/chaos/lib.php';
@@ -35,6 +35,10 @@ final class FakeZnoteDb {
 		$sql = str_replace('`', '', $sql);
 		return $GLOBALS['TEST_DB']->rows($sql, $p);
 	}
+	public function execute(string $sql, array $p = array()) {
+		$GLOBALS['TEST_DB']->exec(str_replace('`', '', $sql), $p);
+		return true;
+	}
 }
 function db() { static $d; return $d ?? ($d = new FakeZnoteDb()); }
 
@@ -59,18 +63,37 @@ check(strpos($html, 'R$ 74,95') !== false && strpos($html, 'US$ 14.99') !== fals
 check(strpos($html, '<form') === false && strpos($html, 'Log in to donate') !== false, 'no form when logged out');
 check(stripos(strip_tags($html), 'buy chaos coins') === false && stripos($html, '>Buy') === false, 'no "Buy" wording');
 check(strpos($html, 'thank-you for your donation') !== false, 'coins described as a thank-you');
+// before payment: no refund except where the law requires, not a purchase, no real-world value, the Donation Terms
+check(strpos($html, chaos_h(CHAOS_LEGAL_DONATION_BEFORE_EN)) !== false && strpos($html, chaos_h(CHAOS_LEGAL_DONATION_BEFORE_PT)) !== false, 'refund / not a purchase note (EN + PT)');
+check(strpos($html, 'id="chaos-donation-terms"') < strpos($html, 'chaos-donation-packs'), 'the note before the packs');
+check(strpos($html, chaos_h(chaos_legal_url('donations'))) !== false && strpos($html, chaos_h(chaos_legal_url('donations', 'en'))) !== false, 'links to the Donation Terms');
+check(strpos($html, 'chaos-donation-receipt-terms') === false, 'no receipt note without an order');
 
 // logged in: Donate buttons
 $SESSION_USER = 77;
 $html = render();
 check($notices($html), 'notice when logged in');
-check(substr_count($html, '>Donate R$ ') === 5 && substr_count($html, '>Donate US$ ') === 5, 'a Donate button per pack and method');
+check(strpos($html, 'double Chaos Coins (+100%, up to 1000 extra)') !== false, 'the first donation bonus: double, at most 1000');
+check(substr_count($html, '>Donate R$ ') === 7 && substr_count($html, '>Donate US$ ') === 7, 'a Donate button per pack and method');
+// creator codes (creator_lib.php): the field, a pick before the donation, a bad code stops the donation
+$db->exec("INSERT INTO chaos_creator_codes (code, account_id, display_name, active) VALUES ('STREAMER', 900, 'Streamer', 1)", array());
+check(strpos($html, 'id="chaos-creator-pick"') !== false && strpos($html, 'name="chaos_creator_code"') !== false, 'creator code field');
+check(strpos($html, 'your pack and the first donation bonus stay the same') !== false, 'the code never lowers the donor\'s coins');
+$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_creator_pick' => '1', 'chaos_creator_code' => 'streamer'));
+$sup = $db->rows('SELECT code_id FROM chaos_creator_support WHERE account_id = 77', array());
+check(count($sup) === 1, 'a code picked on the donate page (chaos_creator_set_support)');
+check(strpos($html, 'You now support Streamer') !== false, 'the pick is confirmed');
+$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix',
+	'chaos_creator_code' => 'NOPE1'));
+check(strpos($html, 'That is not an active creator code.') !== false, 'a bad code sent with a Donate button: refused');
+check(count($db->rows('SELECT id FROM chaos_coin_orders', array())) === 0, 'and no order is made');
 // a Pix donation from the page
 $html = render(array(), array('chaos_pay_csrf' => 'wrong', 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix'));
 check(strpos($html, 'The form expired') !== false, 'CSRF token checked');
 $html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix'));
 check(strpos($html, 'Your donation: Sack of Coins') !== false && strpos($html, '0014br.gov.bcb.pix') !== false, 'Pix code shown');
 check(strpos($html, 'Cancel this donation') !== false, 'cancel link');
+check(strpos($html, 'chaos-donation-receipt-terms') === false, 'no receipt note before payment');
 // cancelling: a GET (the page's link, PayPal's cancel_url) only asks; the POST with the CSRF token cancels
 $html = render(array('order' => '1', 'cancel' => '1'));
 check(strpos($html, 'Cancel this donation?') !== false && strpos($html, 'name="chaos_pay_cancel" value="1"') !== false, 'GET cancel shows the confirmation form');
@@ -86,8 +109,12 @@ $html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], '
 check(order_status($db, 1) === 'cancelled' && strpos($html, 'This donation was cancelled') !== false, 'cancel POST with the token cancels');
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = 1");
 $html = render(array('order' => '1'));
-check(strpos($html, chaos_h('Thank you for your voluntary donation! You received 975 Chaos Coins as a thank-you.')) !== false, 'thanks after the donation (EN)');
-check(strpos($html, chaos_h('Obrigado pela sua doação voluntária! Você recebeu 975 Chaos Coins como agradecimento.')) !== false, 'thanks after the donation (PT)');
+check(strpos($html, chaos_h('Thank you for your voluntary donation! You received 1575 Chaos Coins as a thank-you.')) !== false, 'thanks after the donation (EN)');
+check(strpos($html, chaos_h('Obrigado pela sua doação voluntária! Você recebeu 1575 Chaos Coins como agradecimento.')) !== false, 'thanks after the donation (PT)');
+check(strpos($html, chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN)) !== false && strpos($html, chaos_h(CHAOS_LEGAL_DONATION_AFTER_PT)) !== false, 'after payment: a voluntary donation, not a purchase (EN + PT)');
+$db->exec("UPDATE chaos_coin_orders SET status = 'paid' WHERE id = 1");
+check(strpos(render(array('order' => '1')), chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN)) !== false, 'also while the coins are on their way');
+$db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = 1");
 check(strpos($html, 'Donation #1') !== false && strpos($html, 'Your donations') !== false, 'history labelled Donation');
 // another account cannot see the order
 $SESSION_USER = 78;

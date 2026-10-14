@@ -202,7 +202,8 @@ do
 	check(queries[#queries]:find(", 1000, 1000, 7, 1, 0, ", 1, true), "technical report: character position")
 	-- per day
 	local realTime = os.time
-	local t = realTime()
+	-- one hour into a day, so the reports never cross midnight (the cap counts per day)
+	local t = math.floor(realTime() / 86400) * 86400 + 3600
 	os.time = function() return t end
 	local okCount = 0
 	for i = 1, B.perDay + 2 do

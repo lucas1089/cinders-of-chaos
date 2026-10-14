@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Evil Man" nameDescription="a evil man" race="undead" experience="250000" evented = "25" skulled="1" looting="1" speed="450">
+<monster name="Evil Man" nameDescription="an evil man" race="undead" experience="250000" speed="450">
 	<health now="1000000" max="1000000" />
-	<levelconfig experience="250" health="100" damage="50" speed="50" />
 	<look type="1550" corpse="6068" />
 	<targetchange interval="5000" chance="20" />
 	<flags>
@@ -19,10 +18,6 @@
 		<flag canwalkonenergy="0" />
 		<flag canwalkonfire="0" />
 	</flags>
-	<script>
-        <event name="boss_tp_death"/>
-        <event name="first_boss_kill_talent"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-4000" max="-8500" />
 		<attack name="physical" interval="2000" chance="20" range="7" min="-3200" max="-6800">

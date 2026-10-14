@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Azure Dragon" nameDescription="an azure dragon" race="undead" experience="12250" evented = "4" skulled="1" looting="1" speed="52">
+<monster name="Azure Dragon" nameDescription="an azure dragon" race="undead" experience="12250" speed="52">
 	<health now="20000" max="20000"/>
 	<level min="860" max="900"/>
 	<look type="248" corpse="6068"/>
 	<targetchange speed="4000" chance="20"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -35,6 +34,15 @@
 			<attribute key="areaEffect" value="redshimmer"/>
 		</defense>
 	</defenses>	
+	<elements>
+		<element physicalPercent="-15"/>
+		<element holyPercent="-15"/>
+		<element firePercent="20"/>
+		<element energyPercent="20"/>
+		<element icePercent="20"/>
+		<element earthPercent="20"/>
+		<element deathPercent="10"/>
+	</elements>
 	<voices interval="2000" chance="10">
 		<voice sentence="Screeech!"/>
 	</voices>
@@ -42,7 +50,7 @@
 		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
-		<item id="2152" countmax="4" chance="3500"/><!-- Platinum Coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- platinum coin -->
 		<item id="5741" chance="1200" /><!-- skull helmet -->
 		<item id="2645" chance="1325" /><!-- steel boots -->
 		<item id="11302" chance="600" /><!-- jadefen helmet -->

@@ -84,7 +84,18 @@ eq(#effects, 1, "one per tile")
 reset()
 local mon = creature(7, 50, 50, false)
 assert(fx.dodge(mon)); eq(effects[1].id, ChaosFx.dodge_whoosh); eq(packets[1].text, "DODGE")
-assert(fx.reflect(mon)); eq(effects[2].id, ChaosFx.reflect_aegis); eq(#packets, 1, "reflect label off by default")
+-- the reflect goes through ChaosPackFx (switch on since 2026-10-13, pair 24): the reflect_bubble cut at its offset tile
+Position = function(x, y) return pos(x, y) end
+assert(fx.reflect(mon)); eq(#packets, 1, "reflect label off by default")
+eq(ChaosPackFx and ChaosPackFx.PACK_FX, true, "the pack switch is on")
+eq(effects[2] and effects[2].id, ChaosVfx.reflect_bubble.id, "pack on: the reflect bubble")
+eq(effects[2] and effects[2].x, 50 + ChaosVfx.reflect_bubble.dx, "pack on: at its offset tile")
+-- forced off: the stock reflect effect, as before
+reset()
+ChaosPackFx.PACK_FX = false
+assert(fx.reflect(creature(8, 60, 60, false))); eq(effects[1] and effects[1].id, ChaosFx.reflect_aegis, "pack off: stock")
+ChaosPackFx.PACK_FX = true
+Position = nil
 reset()
 fx.config.dodge = false
 assert(not fx.dodge(mon)); eq(#effects, 0, "dodge off")

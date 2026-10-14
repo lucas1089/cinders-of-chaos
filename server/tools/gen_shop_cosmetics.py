@@ -72,6 +72,12 @@ def exclusions():
     block = re.search(r'L\.looks = \{(.*?)\n\}', text, re.S).group(1)
     for m, f in re.findall(r'male\s*=\s*(\d+)\s*,\s*female\s*=\s*(\d+)', block):
         looks.setdefault(int(m), 'class look'); looks.setdefault(int(f), 'class look')
+    # the things_custom19 / 20 class looks (L.pair19Looks, L.pair20Looks): class looks once their pair switch is on,
+    # never sold either way
+    for n in (19, 20):
+        block = re.search(r'L\.pair%dLooks = \{(.*?)\n\}' % n, text, re.S)
+        for m, f in re.findall(r'male\s*=\s*(\d+)\s*,\s*female\s*=\s*(\d+)', block.group(1) if block else ''):
+            looks.setdefault(int(m), 'class look'); looks.setdefault(int(f), 'class look')
     retired = re.search(r'L\.retired = \{(.*?)\n\}', text, re.S)
     for m, f in re.findall(r'male\s*=\s*(\d+)\s*,\s*female\s*=\s*(\d+)', retired.group(1) if retired else ''):
         looks.setdefault(int(m), 'former class look'); looks.setdefault(int(f), 'former class look')

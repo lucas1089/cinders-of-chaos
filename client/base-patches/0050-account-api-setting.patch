@@ -1,0 +1,15 @@
+# Client setting of the account API (client/BASE.md 0050, MANIFEST.md "Character select"): init.lua gets Services.account, the HTTPS URL of the website's chaos_client_api.php (website/README.md "Client API"). The overlay module client_chaos_charselect reads it: the character select asks the site for each character's wings, aura and shader, and its "Create character" window creates characters there. Empty (the default) turns both off. Lua only. Applies after 0001-0049.
+--- a/init.lua
++++ b/init.lua
+@@ -20,6 +20,11 @@
+   -- Direct HTTPS URL to a compatible OTMM file. The minimap download button
+   -- stays hidden while this value is empty.
+   minimap = "",
++  -- Cinders of Chaos account API on the website (modules/client_chaos_charselect, website/README.md "Client API"):
++  -- HTTPS URL of the site's chaos_client_api.php, e.g. "https://www.example.org/chaos_client_api.php". The character
++  -- select reads each character's wings, aura and shader there, and "Create character" creates characters through it.
++  -- "" turns both off (characters are then created on the website). Plain http only to 127.0.0.1 (a local test site).
++  account = "",
+   -- Cinders of Chaos signed updater (modules/client_chaos_updater, client/MANIFEST.md "Signed updater").
+   -- manifest: HTTPS URL of the signed manifest on the website ("" turns the updater off);
+   -- publicKey: the operator's Ed25519 public key, 64 hex digits (client/tools/make_update_manifest.py keygen);

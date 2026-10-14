@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Tests of loadtest.py: why a bot did not enter the game, the grouped report lines, the bots' password hashes.
+"""Tests of loadtest.py: why a bot did not enter the game, the grouped report lines, the bots' password hashes, the
+spread over temples and hunting areas.
 
 Run: python3 -I server/tools/loadtest_test.py (standard library only; a fake login server on 127.0.0.1)."""
 import asyncio
@@ -57,6 +58,75 @@ eq(lt.password_hash('loadbot', 0), hashlib.sha1(b'loadbot').hexdigest(), '0 iter
 a = lt.parse(['setup'])
 eq(a.hash_iterations, 120000, 'default iterations = the server default')
 eq(lt.parse(['run', '--login-timeout', '30']).login_timeout, 30.0, '--login-timeout')
+
+# ---------------------------------------------------------------- --spread: temples and hunting areas of chaos_poi.lua
+POI = """return {
+	marks = {
+		{k = "temple", x = 100, y = 200, z = 7, n = "Temple of A", r = 0},
+		{k = "depot", x = 1, y = 2, z = 7, n = "Depot", r = 0},
+		{k = "temple", x = 300, y = 400, z = 6, n = "Temple of B", r = 0},
+		{k = "hunt", x = 1000, y = 2000, z = 8, n = "Hunting: Rat (level 1-10)", r = 1},
+		{k = "hunt", x = 3000, y = 4000, z = 9, n = "Hunting: Wolf (level 10-20)", r = 1},
+		{k = "hunt", x = 5000, y = 6000, z = 10, n = "Hunting: Bear (level 20-30)", r = 1},
+	},
+}"""
+marks = lt.poi_marks(POI)
+eq(len(marks), 5, 'temples and hunts only')
+eq(marks[0], ('temple', 100, 200, 7), 'first mark')
+eq([m[1] for m in lt.poi_marks(POI, 15) if m[0] == 'hunt'], [1000, 3000], 'areas above the level left out')
+eq(len(lt.poi_marks(POI, 0)), 5, '0: every area')
+pos = lt.spread_positions(marks, 9, 1 / 3.0)
+eq(len(pos), 9, 'one position per bot')
+eq(pos, lt.spread_positions(marks, 9, 1 / 3.0), 'deterministic')
+for i, (x, y, z) in enumerate(pos[:3]):
+    t = [(100, 200, 7), (300, 400, 6)][i % 2]
+    eq(z == t[2] and abs(x - t[0]) <= 5 and abs(y - t[1]) <= 5, True, 'bot %d round its temple' % i)
+for i, (x, y, z) in enumerate(pos[3:]):
+    h = [(1000, 2000, 8), (3000, 4000, 9), (5000, 6000, 10)][i % 3]
+    eq(z == h[2] and abs(x - h[0]) <= 3 and abs(y - h[1]) <= 3, True, 'bot %d in its hunting area' % (i + 3))
+eq(all(p[2] in (8, 9, 10) for p in lt.spread_positions(marks, 4, 0)), True, 'town share 0: all hunting')
+try:
+    lt.spread_positions([('temple', 1, 1, 7)], 3, 0.5)
+    eq('no error', 'ValueError', 'no hunting marks')
+except ValueError:
+    eq(True, True, 'no hunting marks')
+eq(lt.parse(['setup', '--health', '60000']).health, 60000, '--health')
+eq(lt.parse(['run', '--hunt']).hunt, True, '--hunt')
+eq(lt.parse(['run']).hunt, False, 'no --hunt')
+
+# ---------------------------------------------------------------- storms and spam (server/README.md "Stress test")
+a = lt.parse(['run', '--reconnect', '5,25', '--drop', '0.3', '--abort', '0.15', '--pm', '4', '--party', '9'])
+eq(a.reconnect, (5.0, 25.0), '--reconnect MIN,MAX')
+eq((a.drop, a.abort, a.pm, a.party), (0.3, 0.15, 4.0, 9.0), 'chances and intervals')
+eq(lt.parse(['run']).reconnect, '', 'one session by default')
+for bad in (['--reconnect', '9,2'], ['--reconnect', 'x'], ['--drop', '2'], ['--abort', '-1']):
+    try:
+        lt.parse(['run'] + bad)
+        eq('accepted', 'refused', 'bad option %r' % (bad,))
+    except SystemExit:
+        eq(True, True, 'bad option %r refused' % (bad,))
+import json as _json
+import tempfile as _tempfile
+with _tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as f:
+    _json.dump([[60, {'action': 'transfer', 'data': ['gold', '{other}', 7]}], [109, '{"action":"fetch"}']], f)
+ops = lt.load_opcodes(f.name)
+eq(ops[0], (60, '{"action":"transfer","data":["gold","{other}",7]}'), 'an object payload is sent as compact JSON')
+eq(ops[1], (109, '{"action":"fetch"}'), 'a string payload as it is')
+a = lt.parse(['run', '--count', '3', '--opcodes', f.name, '--opcode-every', '0.5'])
+eq((len(a.opcode_list), a.opcode_every), (2, 0.5), '--opcodes and --opcode-every')
+bot = lt.Bot(1, a, lt.OT_RSA_N, {})
+for _ in range(20):
+    eq(bot.fill('{other}') in (lt.bot_name(0), lt.bot_name(2)), True, '{other}: another bot of the run, never itself')
+eq(bot.fill('{name}'), lt.bot_name(1), '{name}: the bot itself')
+eq(bot.fill('{online}'), lt.bot_name(1), '{online} with nobody else in game: the bot itself')
+with open(f.name, 'w') as g:
+    _json.dump([[300, 'x']], g)
+try:
+    lt.load_opcodes(f.name)
+    eq('accepted', 'refused', 'opcode over 255')
+except SystemExit:
+    eq(True, True, 'opcode over 255 refused')
+os.unlink(f.name)
 
 # ---------------------------------------------------------------- a fake login server: the refusal text reaches the report
 KEY = [1, 2, 3, 4]

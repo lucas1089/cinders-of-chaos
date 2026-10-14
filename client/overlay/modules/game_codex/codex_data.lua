@@ -5961,6 +5961,46 @@ CodexData = {
 			name = "Uniques",
 			entries = {
 				{
+					id = "unique:2466",
+					name = "Aetherbound Plate",
+					color = "#ff9c3a",
+					sub = "Body armour, level 120. Armor 16, Energy Absorb +8%, Magic Level +2",
+					f = {kind = {"armor"}, level = 120, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The gold is only paint; the plate is lightning held still. Aether Edge: your hits add 4% more of your energy shield. (Requires level 120.)"}
+						},
+						{h = "Stats", p = {"Armor 16", "Energy Absorb +8%", "Magic Level +2"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Body armour"},
+								{"Required level", "120"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {2466}
+				},
+				{
 					id = "unique:11395",
 					name = "Bloodmoon Edge",
 					color = "#ff9c3a",
@@ -6311,6 +6351,46 @@ CodexData = {
 					items = {3972}
 				},
 				{
+					id = "unique:18403",
+					name = "Brand of the Ashen Choir",
+					color = "#ff9c3a",
+					sub = "Helmet, level 150. Armor 10, Fire Absorb +6%, Holy Absorb +4%, Magic Level +2",
+					f = {kind = {"helmet"}, level = 150, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"A choir sang under it until the fire took the last voice. Sigil of Cinders: the sigil burns 25% harder. (Requires level 150.)"}
+						},
+						{h = "Stats", p = {"Armor 10", "Fire Absorb +6%", "Holy Absorb +4%", "Magic Level +2"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Helmet"},
+								{"Required level", "150"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {18403}
+				},
+				{
 					id = "unique:11374",
 					name = "Carrion Scarab Amulet",
 					color = "#ff9c3a",
@@ -6349,6 +6429,47 @@ CodexData = {
 						}
 					},
 					items = {11374}
+				},
+				{
+					id = "unique:27667",
+					name = "Choirmaster's Circlet",
+					color = "#ff9c3a",
+					sub = "Helmet, level 200. Armor 7, Holy Absorb +5%, Magic Level +3",
+					f = {kind = {"helmet"}, level = 200, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The choir sings so that you need not. Vigils: each reserves 15% less. (Requires level 200. Warrior, Mystic, Necromancer, Monk and Templar lines.)"}
+						},
+						{h = "Stats", p = {"Armor 7", "Holy Absorb +5%", "Magic Level +3"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Helmet"},
+								{"Required level", "200"},
+								{"Worn by", "Warrior, Mystic, Necromancer, Monk and Templar lines"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27667}
 				},
 				{
 					id = "unique:8925",
@@ -7076,6 +7197,46 @@ CodexData = {
 					items = {29866}
 				},
 				{
+					id = "unique:22423",
+					name = "Effigy Carver's Idol",
+					color = "#ff9c3a",
+					sub = "Shield, level 120. Defense 20, Death Absorb +5%, Magic Level +4",
+					f = {kind = {"shield"}, level = 120, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Its pages are carved, not written. Effigy Covenant: one more effigy may stand. (Requires level 120.)"}
+						},
+						{h = "Stats", p = {"Defense 20", "Death Absorb +5%", "Magic Level +4"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Shield"},
+								{"Required level", "120"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {22423}
+				},
+				{
 					id = "unique:27692",
 					name = "Emberveil Greaves",
 					color = "#ff9c3a",
@@ -7272,6 +7433,47 @@ CodexData = {
 						}
 					},
 					items = {24790}
+				},
+				{
+					id = "unique:7890",
+					name = "Fusewright's Charm",
+					color = "#ff9c3a",
+					sub = "Amulet, level 150. Critical Hit: chance +2%, damage +8%, Fire Absorb +6%",
+					f = {kind = {"jewel"}, level = 150, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"It ticks when no one is listening. Snares: two more mines may be out, they hit 10% harder and their fuse burns 4 s longer. (Requires level 150. Ranger and Thief lines.)"}
+						},
+						{h = "Stats", p = {"Critical Hit: chance +2%, damage +8%", "Fire Absorb +6%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "150"},
+								{"Worn by", "Ranger and Thief lines"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {7890}
 				},
 				{
 					id = "unique:27474",
@@ -7832,6 +8034,47 @@ CodexData = {
 					items = {2493}
 				},
 				{
+					id = "unique:27668",
+					name = "Hollowglass Diadem",
+					color = "#ff9c3a",
+					sub = "Helmet, level 250. Armor 6, Energy Absorb +5%, Magic Level +2",
+					f = {kind = {"helmet"}, level = 250, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Light passes through it and comes out colder. Energy shield: recharges 10% of its maximum a second faster and starts 1 s after a hit, with or without Hollow Vessel. (Requires level 250. Mystic, Necromancer, Monk and Templar lines.)"}
+						},
+						{h = "Stats", p = {"Armor 6", "Energy Absorb +5%", "Magic Level +2"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Helmet"},
+								{"Required level", "250"},
+								{"Worn by", "Mystic, Necromancer, Monk and Templar lines"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27668}
+				},
+				{
 					id = "unique:26808",
 					name = "Hollowpack Bond",
 					color = "#ff9c3a",
@@ -8055,6 +8298,46 @@ CodexData = {
 						}
 					},
 					items = {2496}
+				},
+				{
+					id = "unique:28023",
+					name = "Knuckles of the Unbound",
+					color = "#ff9c3a",
+					sub = "Ring, level 400. Critical Hit: chance +3%, damage +10%, Fist +6",
+					f = {kind = {"jewel"}, level = 400, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Worn on the hand that never held a blade. Your bare fists hit as with the Open Hand Creed at 80% without the keystone; with it, 10% harder. (Requires level 400.)"}
+						},
+						{h = "Stats", p = {"Critical Hit: chance +3%, damage +10%", "Fist +6"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Ring"},
+								{"Required level", "400"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {28023}
 				},
 				{
 					id = "unique:3961",
@@ -8554,6 +8837,47 @@ CodexData = {
 					items = {27693}
 				},
 				{
+					id = "unique:15453",
+					name = "Oathkeeper's Standard",
+					color = "#ff9c3a",
+					sub = "Shield, level 180. Defense 36, Physical Absorb +3%, Shielding +2",
+					f = {kind = {"shield"}, level = 180, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Those who stand under it keep their oaths. Vigils: each reserves 10% less and reaches 2 sqm farther. (Requires level 180. Warrior, Mystic, Necromancer, Monk and Templar lines.)"}
+						},
+						{h = "Stats", p = {"Defense 36", "Physical Absorb +3%", "Shielding +2"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Shield"},
+								{"Required level", "180"},
+								{"Worn by", "Warrior, Mystic, Necromancer, Monk and Templar lines"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {15453}
+				},
+				{
 					id = "unique:10318",
 					name = "Obsidian Aegis",
 					color = "#ff9c3a",
@@ -8634,6 +8958,86 @@ CodexData = {
 					items = {10296}
 				},
 				{
+					id = "unique:8881",
+					name = "Pyreheart Mantle",
+					color = "#ff9c3a",
+					sub = "Body armour, level 150. Armor 15, Fire Absorb +10%, Physical Absorb +3%",
+					f = {kind = {"armor"}, level = 150, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Cut from a giant that walked into its own pyre and did not stop. Pyre Oath: your burning aura deals 20% more. (Requires level 150.)"}
+						},
+						{h = "Stats", p = {"Armor 15", "Fire Absorb +10%", "Physical Absorb +3%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Body armour"},
+								{"Required level", "150"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {8881}
+				},
+				{
+					id = "unique:27251",
+					name = "Reliquary Censer",
+					color = "#ff9c3a",
+					sub = "Amulet, level 220. Holy Absorb +8%, Magic Level +2, Physical Absorb +3%",
+					f = {kind = {"jewel"}, level = 220, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Its smoke kneels before it rises. Reliquary Vow: your Reliquary Warden pulses 25% stronger. (Requires level 220.)"}
+						},
+						{h = "Stats", p = {"Holy Absorb +8%", "Magic Level +2", "Physical Absorb +3%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "220"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27251}
+				},
+				{
 					id = "unique:13760",
 					name = "Riftcaller",
 					color = "#ff9c3a",
@@ -8711,6 +9115,46 @@ CodexData = {
 					items = {2206}
 				},
 				{
+					id = "unique:21691",
+					name = "Rotbloom Phial",
+					color = "#ff9c3a",
+					sub = "Amulet, level 150. Critical Hit: chance +2%, damage 0%, Earth Absorb +8%",
+					f = {kind = {"jewel"}, level = 150, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The flower inside has never stopped growing. Contagion Rite: your poison spreads to one more monster and one step deeper. (Requires level 150.)"}
+						},
+						{h = "Stats", p = {"Critical Hit: chance +2%, damage 0%", "Earth Absorb +8%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "150"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {21691}
+				},
+				{
 					id = "unique:2408",
 					name = "Sanguine Crescent",
 					color = "#ff9c3a",
@@ -8747,6 +9191,49 @@ CodexData = {
 						}
 					},
 					items = {2408}
+				},
+				{
+					id = "unique:26756",
+					name = "Shard of the Long Winter",
+					color = "#ff9c3a",
+					sub = "Wand / rod, level 100. Range 3, Ice Absorb +6%, Magic Level +4, Mana Leech: chance +4%, amount +4%",
+					f = {kind = {"weapon"}, level = 100, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Cold enough to crack what it touches, and what that touches. Winter's Lattice: shatters deal 2% more of the maximum health and reach 1 sqm further. (Requires level 100.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Range 3", "Ice Absorb +6%", "Magic Level +4", "Mana Leech: chance +4%, amount +4%"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Wand / rod"},
+								{"Required level", "100"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {26756}
 				},
 				{
 					id = "unique:27228",
@@ -8787,6 +9274,47 @@ CodexData = {
 						}
 					},
 					items = {27228}
+				},
+				{
+					id = "unique:28115",
+					name = "Snarewalker Greaves",
+					color = "#ff9c3a",
+					sub = "Boots, level 120. Armor 3, Distance +2, Earth Absorb +4%",
+					f = {kind = {"boots"}, level = 120, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. (Requires level 120. Ranger and Thief lines.)"}
+						},
+						{h = "Stats", p = {"Armor 3", "Distance +2", "Earth Absorb +4%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Boots"},
+								{"Required level", "120"},
+								{"Worn by", "Ranger and Thief lines"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {28115}
 				},
 				{
 					id = "unique:8209",
@@ -8873,6 +9401,167 @@ CodexData = {
 						}
 					},
 					items = {29571}
+				},
+				{
+					id = "unique:15413",
+					name = "Spitethorn Bulwark",
+					color = "#ff9c3a",
+					sub = "Shield, level 130. Defense 36, Physical Absorb +4%, Shielding +3",
+					f = {kind = {"shield"}, level = 130, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Every dent in it was paid back. Thornbound Oath: you reflect 10% more. (Requires level 130.)"}
+						},
+						{h = "Stats", p = {"Defense 36", "Physical Absorb +4%", "Shielding +3"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Shield"},
+								{"Required level", "130"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {15413}
+				},
+				{
+					id = "unique:28049",
+					name = "Splintered Instant",
+					color = "#ff9c3a",
+					sub = "Ring, level 400. Critical Hit: chance +6%, damage +20%",
+					f = {kind = {"jewel"}, level = 400, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"A moment cracked in two; one half keeps happening. Cascade Edge: the burst deals 25% more of the critical hit and comes 0.2 s sooner. (Requires level 400.)"}
+						},
+						{h = "Stats", p = {"Critical Hit: chance +6%, damage +20%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Ring"},
+								{"Required level", "400"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {28049}
+				},
+				{
+					id = "unique:27390",
+					name = "Stillheart Robe",
+					color = "#ff9c3a",
+					sub = "Body armour, level 300. Armor 14, Death Absorb +6%, Magic Level +3",
+					f = {kind = {"armor"}, level = 300, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Woven for a body that no longer bleeds. Hollow Vessel: the items' energy shield counts 40% more. (Requires level 300. Mystic, Necromancer, Monk and Templar lines.)"}
+						},
+						{h = "Stats", p = {"Armor 14", "Death Absorb +6%", "Magic Level +3"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Body armour"},
+								{"Required level", "300"},
+								{"Worn by", "Mystic, Necromancer, Monk and Templar lines"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27390}
+				},
+				{
+					id = "unique:8858",
+					name = "Stormcaller Recurve",
+					color = "#ff9c3a",
+					sub = "Distance weapon, level 70. Hit Chance 5, Distance +4, Energy Absorb +4%",
+					f = {kind = {"weapon"}, level = 70, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The string hums before the storm does. Your bow hits arc to one more enemy for 25% as energy (with Stormstring: one more arc). (Requires level 70.)"}
+						},
+						{h = "Stats", p = {"Hit Chance 5", "Distance +4", "Energy Absorb +4%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Distance weapon"},
+								{"Required level", "70"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {8858}
 				},
 				{
 					id = "unique:24851",
@@ -9147,6 +9836,46 @@ CodexData = {
 						}
 					},
 					items = {29868}
+				},
+				{
+					id = "unique:27652",
+					name = "Vein of the Unsated",
+					color = "#ff9c3a",
+					sub = "Amulet, level 180. Death Absorb +4%, Life Leech: chance +8%, amount +5%",
+					f = {kind = {"jewel"}, level = 180, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"It drinks first and lets you have the rest. Sanguine Covenant: you leech 1% more, and up to 3% more of your maximum health a second. (Requires level 180.)"}
+						},
+						{h = "Stats", p = {"Death Absorb +4%", "Life Leech: chance +8%, amount +5%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "180"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27652}
 				},
 				{
 					id = "unique:27675",
@@ -9975,7 +10704,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Players receive 20-70% less healing.", "Reward bonus: +0.2% quantity, +0.5% rarity, +0.3% experience per point.", "Roll weight 70; on keys of tier 2 or higher."}
+							p = {"Players receive 20-70% less healing.", "Reward bonus: +0.2% quantity, +0.5% rarity, +0.3% experience per point.", "Suffix: the players or the area get worse.", "Roll weight 70; on keys of tier 2 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10001,7 +10730,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters deal +15-60% damage.", "Reward bonus: +0.75% rarity, +0.25% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters deal +15-60% damage.", "Reward bonus: +0.75% rarity, +0.25% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10027,7 +10756,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Slain monsters burst for 5-25% health.", "Reward bonus: +1.2% quantity, +0.8% rarity per point.", "Roll weight 70; on keys of tier 3 or higher."}
+							p = {"Slain monsters burst for 5-25% health.", "Reward bonus: +1.2% quantity, +0.8% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 70; on keys of tier 3 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10053,7 +10782,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Guardian +50-250% health and damage.", "Reward bonus: +0.1% quantity, +0.2% rarity per point.", "Roll weight 60; on keys of tier 4 or higher."}
+							p = {"Guardian +50-250% health and damage.", "Reward bonus: +0.1% quantity, +0.2% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 60; on keys of tier 4 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10105,7 +10834,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"+50-300% magic, rare and legendary monsters.", "Reward bonus: +0.1% quantity, +0.15% rarity per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"+50-300% magic, rare and legendary monsters.", "Reward bonus: +0.1% quantity, +0.15% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10123,6 +10852,84 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:emberbrand",
+					name = "Emberbrand",
+					color = "#c0a0ff",
+					sub = "Monsters deal +10-50% of their damage as extra fire",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters deal +10-50% of their damage as extra fire.", "Reward bonus: +0.5% quantity, +0.3% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Frostbrand, Stormbrand.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35-40", "caps +8/+8/+6"},
+								{"V", "45-50", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:festering",
+					name = "Festering Wounds",
+					color = "#c0a0ff",
+					sub = "Monster hits have a 10-50% chance to fester for 40% more as earth over 6 s",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monster hits have a 10-50% chance to fester for 40% more as earth over 6 s.", "Reward bonus: +0.4% quantity, +0.25% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "20", ""},
+								{"III", "30", ""},
+								{"IV", "40", "caps +8/+8/+6"},
+								{"V", "50", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:flaying",
+					name = "Flaying Hex",
+					color = "#c0a0ff",
+					sub = "Players take 10-40% more physical damage",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players take 10-40% more physical damage.", "Reward bonus: +0.4% quantity, +0.4% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Searing Hex, Sapping Hex.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35", "caps +8/+8/+6"},
+								{"V", "40", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
 					id = "rift:fragile",
 					name = "Fragile",
 					color = "#c0a0ff",
@@ -10131,9 +10938,35 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"1-2 fewer shared lives.", "Reward bonus: +7% quantity, +7% rarity, +5% experience per point.", "Roll weight 50; on keys of tier 4 or higher."}
+							p = {"1-2 fewer shared lives.", "Reward bonus: +7% quantity, +7% rarity, +5% experience per point.", "Suffix: the players or the area get worse.", "Roll weight 50; on keys of tier 4 or higher."}
 						},
 						{h = "Modifier tiers", p = {"No tiers: value 1-2."}}
+					}
+				},
+				{
+					id = "rift:frostbrand",
+					name = "Frostbrand",
+					color = "#c0a0ff",
+					sub = "Monsters deal +10-50% of their damage as extra ice",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters deal +10-50% of their damage as extra ice.", "Reward bonus: +0.5% quantity, +0.3% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Emberbrand, Stormbrand.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35-40", "caps +8/+8/+6"},
+								{"V", "45-50", "caps +16/+16/+12"}
+							}
+						}
 					}
 				},
 				{
@@ -10171,7 +11004,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters move +40-180 faster.", "Reward bonus: +0.15% quantity per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters move +40-180 faster.", "Reward bonus: +0.15% quantity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10189,6 +11022,72 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:ironhide",
+					name = "Ironhide",
+					color = "#c0a0ff",
+					sub = "Monsters take 10-40% less physical damage",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters take 10-40% less physical damage.", "Reward bonus: +0.75% quantity, +0.5% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Hardest on physical builds (melee, arrows and bolts).", "Roll weight 60; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35", "caps +8/+8/+6"},
+								{"V", "40", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:keen",
+					name = "Keen Fangs",
+					color = "#c0a0ff",
+					sub = "Monster hits have a 5-30% chance to deal 50% more",
+					f = {group = "mod", level = 1},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monster hits have a 5-30% chance to deal 50% more.", "Reward bonus: +0.4% quantity, +0.8% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 60; on keys of tier 1 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "5", ""},
+								{"II", "10", ""},
+								{"III", "15", ""},
+								{"IV", "20", "caps +8/+8/+6"},
+								{"V", "25-30", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:parched",
+					name = "Parched Veins",
+					color = "#c0a0ff",
+					sub = "Players do not regenerate mana",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players do not regenerate mana.", "Reward bonus: +15% quantity, +5% rarity, +10% experience (flat).", "Suffix: the players or the area get worse.", "Hardest on casters. Never with Withering.", "Never on a key with Withering.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{h = "Modifier tiers", p = {"No tiers: value 1."}}
+					}
+				},
+				{
 					id = "rift:reflection",
 					name = "Reflection",
 					color = "#c0a0ff",
@@ -10197,7 +11096,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters reflect 5-22% of the damage they take.", "Reward bonus: +1% quantity, +1.5% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters reflect 5-22% of the damage they take.", "Reward bonus: +1% quantity, +1.5% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Spiteglass.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10210,6 +11109,84 @@ CodexData = {
 								{"III", "12-15", ""},
 								{"IV", "16-18", "caps +8/+8/+6"},
 								{"V", "19-22", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:rimefloor",
+					name = "Rimefloor",
+					color = "#c0a0ff",
+					sub = "Freezing ground under the players: 2-6% of max health a second and slowed",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Freezing ground under the players: 2-6% of max health a second and slowed.", "Reward bonus: +4.5% quantity, +3% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Scorched Earth.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "2", ""},
+								{"II", "3", ""},
+								{"III", "4", ""},
+								{"IV", "5", "caps +8/+8/+6"},
+								{"V", "6", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:sapping",
+					name = "Sapping Hex",
+					color = "#c0a0ff",
+					sub = "Players deal 10-30% less damage",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players deal 10-30% less damage.", "Reward bonus: +0.7% quantity, +0.4% rarity, +0.3% experience per point.", "Suffix: the players or the area get worse.", "Never on a key with Searing Hex, Flaying Hex.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "15", ""},
+								{"III", "20", ""},
+								{"IV", "25", "caps +8/+8/+6"},
+								{"V", "30", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:scorched",
+					name = "Scorched Earth",
+					color = "#c0a0ff",
+					sub = "Burning ground under the players: 2-6% of max health a second",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Burning ground under the players: 2-6% of max health a second.", "Reward bonus: +4% quantity, +3% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Rimefloor.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "2", ""},
+								{"II", "3", ""},
+								{"III", "4", ""},
+								{"IV", "5", "caps +8/+8/+6"},
+								{"V", "6", "caps +16/+16/+12"}
 							}
 						}
 					}
@@ -10235,6 +11212,98 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:searing",
+					name = "Searing Hex",
+					color = "#c0a0ff",
+					sub = "Players take 10-40% more elemental damage",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Players take 10-40% more elemental damage.", "Reward bonus: +0.4% quantity, +0.4% rarity per point.", "Suffix: the players or the area get worse.", "Never on a key with Flaying Hex, Sapping Hex.", "Roll weight 50; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35", "caps +8/+8/+6"},
+								{"V", "40", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:brood",
+					name = "Single Brood",
+					color = "#c0a0ff",
+					sub = "Every pack is of the rift's strongest kind",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Every pack is of the rift's strongest kind.", "Reward bonus: +12% quantity, +8% rarity (flat).", "Prefix: the monsters or the guardian get stronger.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{h = "Modifier tiers", p = {"No tiers: value 1."}}
+					}
+				},
+				{
+					id = "rift:spiteglass",
+					name = "Spiteglass",
+					color = "#c0a0ff",
+					sub = "Monsters reflect 5-22% of the elemental damage they take",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters reflect 5-22% of the elemental damage they take.", "Reward bonus: +0.7% quantity, +1% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Hardest on casters and elemental builds. Never with Reflection.", "Never on a key with Reflection.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "5-8", ""},
+								{"II", "9-11", ""},
+								{"III", "12-15", ""},
+								{"IV", "16-18", "caps +8/+8/+6"},
+								{"V", "19-22", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:stormbrand",
+					name = "Stormbrand",
+					color = "#c0a0ff",
+					sub = "Monsters deal +10-50% of their damage as extra energy",
+					f = {group = "mod", level = 2},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Monsters deal +10-50% of their damage as extra energy.", "Reward bonus: +0.5% quantity, +0.3% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Emberbrand, Frostbrand.", "Roll weight 40; on keys of tier 2 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10-15", ""},
+								{"II", "20", ""},
+								{"III", "25-30", ""},
+								{"IV", "35-40", "caps +8/+8/+6"},
+								{"V", "45-50", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
 					id = "rift:swarm",
 					name = "Swarm",
 					color = "#c0a0ff",
@@ -10243,7 +11312,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"+1-5 monsters in every pack.", "Reward bonus: +8% quantity, +5% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"+1-5 monsters in every pack.", "Reward bonus: +8% quantity, +5% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10269,7 +11338,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"+20-70% monster packs.", "Reward bonus: +0.5% quantity, +0.3% experience per point.", "Roll weight 80; on keys of tier 1 or higher."}
+							p = {"+20-70% monster packs.", "Reward bonus: +0.5% quantity, +0.3% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 80; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10295,7 +11364,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Twin guardians, 55-85% health each.", "Reward bonus: +0.2% quantity, +0.25% rarity per point.", "Roll weight 50; on keys of tier 3 or higher."}
+							p = {"Twin guardians, 55-85% health each.", "Reward bonus: +0.2% quantity, +0.25% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Never on a key with Wrathful Guardian.", "Roll weight 50; on keys of tier 3 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10313,6 +11382,58 @@ CodexData = {
 					}
 				},
 				{
+					id = "rift:breach",
+					name = "Veilbreach",
+					color = "#c0a0ff",
+					sub = "5-25% of slain monsters tear open a breach of two more",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"5-25% of slain monsters tear open a breach of two more.", "Reward bonus: +0.8% quantity, +0.5% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "5", ""},
+								{"II", "10", ""},
+								{"III", "15", ""},
+								{"IV", "20", "caps +8/+8/+6"},
+								{"V", "25", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
+					id = "rift:veilstorm",
+					name = "Veilstorm",
+					color = "#c0a0ff",
+					sub = "Marked storm strikes near the players: 10-30% of max health",
+					f = {group = "mod", level = 3},
+					sections = {
+						{
+							h = "Effect",
+							p = {"Marked storm strikes near the players: 10-30% of max health.", "Reward bonus: +0.8% quantity, +0.4% rarity per point.", "Suffix: the players or the area get worse.", "Roll weight 50; on keys of tier 3 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "15", ""},
+								{"III", "20", ""},
+								{"IV", "25", "caps +8/+8/+6"},
+								{"V", "30", "caps +16/+16/+12"}
+							}
+						}
+					}
+				},
+				{
 					id = "rift:vitality",
 					name = "Vitality",
 					color = "#c0a0ff",
@@ -10321,7 +11442,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters have +20-90% health.", "Reward bonus: +0.5% quantity, +0.25% experience per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters have +20-90% health.", "Reward bonus: +0.5% quantity, +0.25% experience per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10347,7 +11468,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"The rift closes 15-40% sooner.", "Reward bonus: +1% quantity, +0.5% experience per point.", "Roll weight 70; on keys of tier 1 or higher."}
+							p = {"The rift closes 15-40% sooner.", "Reward bonus: +1% quantity, +0.5% experience per point.", "Suffix: the players or the area get worse.", "Roll weight 70; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10373,7 +11494,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"10-40% of packs are rare warbands.", "Reward bonus: +0.3% quantity, +1% rarity per point.", "Roll weight 60; on keys of tier 2 or higher."}
+							p = {"10-40% of packs are rare warbands.", "Reward bonus: +0.3% quantity, +1% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 60; on keys of tier 2 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10399,7 +11520,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Monsters resist 10-40% elemental damage.", "Reward bonus: +0.75% quantity, +0.5% rarity per point.", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Monsters resist 10-40% elemental damage.", "Reward bonus: +0.75% quantity, +0.5% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{
 							h = "Modifier tiers",
@@ -10425,9 +11546,35 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"Players do not regenerate health.", "Reward bonus: +15% quantity, +15% experience (flat).", "Roll weight 100; on keys of tier 1 or higher."}
+							p = {"Players do not regenerate health.", "Reward bonus: +15% quantity, +15% experience (flat).", "Suffix: the players or the area get worse.", "Never on a key with Parched Veins.", "Roll weight 100; on keys of tier 1 or higher."}
 						},
 						{h = "Modifier tiers", p = {"No tiers: value 1."}}
+					}
+				},
+				{
+					id = "rift:wrath",
+					name = "Wrathful Guardian",
+					color = "#c0a0ff",
+					sub = "The guardian's nova hits for 10-30% of max health every 8 s; it calls thralls",
+					f = {group = "mod", level = 4},
+					sections = {
+						{
+							h = "Effect",
+							p = {"The guardian's nova hits for 10-30% of max health every 8 s; it calls thralls.", "Reward bonus: +0.4% quantity, +0.6% rarity per point.", "Prefix: the monsters or the guardian get stronger.", "The nova is marked first: step out of it.", "Never on a key with Twin Guardians.", "Roll weight 50; on keys of tier 4 or higher."}
+						},
+						{
+							h = "Modifier tiers",
+							p = {"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."},
+							cols = {"Tier", "Value", "Raises the bonus caps"},
+							w = {16, 34, 50},
+							rows = {
+								{"I", "10", ""},
+								{"II", "15", ""},
+								{"III", "20", ""},
+								{"IV", "25", "caps +8/+8/+6"},
+								{"V", "30", "caps +16/+16/+12"}
+							}
+						}
 					}
 				},
 				{
@@ -10498,7 +11645,7 @@ CodexData = {
 						},
 						{
 							h = "The run",
-							p = {"10 minutes; the guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
+							p = {"Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: tiers 1-5 160 x 160 tiles, 12 minutes; tiers 6-10 200 x 200 tiles, 13 minutes; tiers 11-15 240 x 240 tiles, 15 minutes.", "The guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "About 132 monsters solo at tier 1 up to 402 at tier 15 on a map of typical size (+25% per extra player; a bigger map holds more), in packs of 5-7 over the whole map; about 102-166 alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
 						},
 						{
 							h = "Chest (per player)",
@@ -10515,7 +11662,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Omens",
-							p = {"Rifts of tier 6 or more give omen fragments; 60 fragments bind an Omen Key of a random kind. The key opens that guardian's arena (level 800, 10 minutes, the rift's lives). Omen keys have no modifiers."},
+							p = {"Rifts of tier 6 or more give omen fragments; 60 fragments bind an Omen Key of a random kind. The key opens that guardian's arena (level 800, 12 minutes, the rift's lives). Omen keys have no modifiers."},
 							links = {"cur:omenfragment"}
 						},
 						{

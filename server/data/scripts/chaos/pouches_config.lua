@@ -29,14 +29,19 @@ ChaosPouchesConfig = {
 	-- the items: new items.otb nodes (install_pouches.py), copies of the stock bag `sourceId` (group, flags) with their
 	-- own look `clientId`: our pouch art (client/tools/sprites/gen_pouch_art.py, appended to the client pair by
 	-- import_art_things.py with art_import/pouches.csv). install_pouches.py --stock-looks keeps the stock bag looks.
-	-- capacity = containerSize in items.xml (slots); weight in 1/100 oz (the contents weigh as usual)
+	-- capacity = containerSize in items.xml (slots, at most 255); weight in 1/100 oz (the contents weigh as usual, except
+	-- in a `weightless` one: engine src-patch 0038)
 	kinds = {
+		-- the Loot Bag (owner, 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe
+		-- automaticamente"): every rule on by default (lootDefaults), the most slots a container can have (255: one byte
+		-- in the protocol) and weightless (Game.setWeightlessContainer, pouches.lua at startup), so its contents never
+		-- count against the character's capacity. The Auto Seller sells what is in it (autosell.lua, every 30 s).
 		loot = {id = 32081, sourceId = 11242, clientId = 33653,
-			capacity = 60, weight = 100, title = "Loot Pouch", article = "a",
-			name = "loot pouch", plural = "loot pouches",
-			collects = "the loot its rules pick (Loot Filter > Loot Pouch)",
-			description = "Store item: cannot be traded, sold or dropped. Collects the loot your Loot Pouch rules pick " ..
-				"while you carry it (Loot Filter > Loot Pouch)."},
+			capacity = 255, weight = 100, title = "Loot Bag", article = "a",
+			name = "loot bag", plural = "loot bags", weightless = true,
+			collects = "all the loot of your kills, as its rules pick (Loot Filter > Loot Bag)",
+			description = "Store item: cannot be traded, sold or dropped. A bottomless bag: the loot of your kills goes " ..
+				"into it while you carry it, its contents weigh nothing, and the Auto Seller sells what is in it."},
 		orbs = {id = 32082, sourceId = 9775, clientId = 33651,
 			capacity = 40, weight = 100, title = "Orbs Pouch", article = "an",
 			name = "orbs pouch", plural = "orbs pouches",
@@ -67,10 +72,10 @@ ChaosPouchesConfig = {
 	riftKey = {itemId = 10155, actionId = 47401},
 	omenIds = {32071, 32072},
 
-	-- Loot Pouch rule defaults (a character that never opened the settings)
-	-- overflow: take what a full Orbs / Rift Key Pouch passes on (on by default, so nothing stays in the corpse)
-	lootDefaults = {list = true, gold = true, uniques = true, gear = false, minRarity = 5, supplies = false, gems = false,
-		other = false, overflow = true},
+	-- Loot Bag rule defaults (a character that never opened the settings): everything ("todo o loot", 2026-10-13);
+	-- minRarity 1 = gear of any rarity. overflow: take what a full Orbs / Rift Key Pouch passes on
+	lootDefaults = {list = true, gold = true, uniques = true, gear = true, minRarity = 1, supplies = true, gems = true,
+		other = true, overflow = true},
 	coinIds = {2148, 2152, 2160, 28872, 28873},
 
 	-- where a pouch (or a container holding one) may be moved: the character's own inventory, or these containers

@@ -1,0 +1,25 @@
+{
+  "key": "classlook_inquisitor_male",
+  "name": "Inquisitor class look (male)",
+  "note": "Inquisitor class look (male): donor D 419 (witch-hunter: feathered hat on addon 2, rapier on addon 1) with the golden sun sceptre of donor D 827's addon 1 added to addon 2. Both are donor-library pixels, unchanged; the D 827 body is not used.",
+  "colours": {
+    "head": 78,
+    "body": 69,
+    "legs": 58,
+    "feet": 76
+  },
+  "layers": [
+    {
+      "src": "lib:D:outfit:419",
+      "base": true
+    },
+    {
+      "src": "lib:D:outfit:827",
+      "addons": {
+        "2": 1
+      },
+      "mask": "own",
+      "note": "only this addon part of the donor is used, not its body"
+    }
+  ]
+}

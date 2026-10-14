@@ -6,6 +6,11 @@
 --                     board {key, group, week, resetIn, rows = [{rank, name, value, count, level, vocation, title}],
 --                            own = {rank, value, count} | nil, champions = [{rank, rankName, name, value, title}], total}
 --   client -> server  open | get {board, group}
+-- Records view (server records.lua, the same opcode; recordsview.lua holds the pure parts):
+--   server -> client  rcat {cat, boards} (parts of the meta), rmeta {categories, periods, groups, parts, season, badge},
+--                     rboard {board, variant, size, period, group, rows, own, total, record, resetIn, seasonName},
+--                     rfirsts {season, seasonName, rows = [{target, board, name, members, at, value, format}]}
+--   client -> server  rmeta | rget {board, variant, size, period, group} | rfirsts
 -- The top menu (Social > Leaderboards) calls toggle().
 
 local OPCODE = 229
@@ -24,6 +29,15 @@ local refreshAsked = false
 local seasonView = false -- the Season toggle (server season.lua): only the running season's characters
 local seasonMode = 'all' -- its mode tab (server season_modes.lua): all | standard | ssf | hc | hcssf | fallen
 local modeTabs = {}
+-- Records view
+local recordsMode = false
+local rparts            -- meta parts received (RecordsView.addPart)
+local rmeta             -- the joined meta (RecordsView.finish)
+local rcat              -- category shown
+local rboard            -- board key shown
+local rsel = {}         -- filters: period, variant, size, group
+local rcurrent          -- last rboard / rfirsts received
+local rAt = 0
 
 -- ---------------------------------------------------------------- helpers
 local function send(action, data)
@@ -42,6 +56,17 @@ local function list(value)
   local out = {}
   if type(value) == 'table' then
     for _, v in ipairs(value) do out[#out + 1] = v end
+  end
+  return out
+end
+
+-- the rows of a server list; an entry that is no table is left out (game_chaosguard/opcode_fuzz_test.lua)
+local function rowsOf(value)
+  local out = {}
+  if type(value) == 'table' then
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
   end
   return out
 end
@@ -75,7 +100,7 @@ local function valueText(v, b, exactly)
 end
 
 local function boardMeta(key)
-  for _, b in ipairs(list(meta and meta.boards)) do
+  for _, b in ipairs(rowsOf(meta and meta.boards)) do
     if b.key == key then return b end
   end
   return nil
@@ -89,7 +114,7 @@ local function currentGroup()
 end
 
 local function groupName(key)
-  for _, g in ipairs(list(meta and meta.groups)) do
+  for _, g in ipairs(rowsOf(meta and meta.groups)) do
     if g.key == key then return g.name end
   end
   return '?'
@@ -142,7 +167,13 @@ local function createRow(r, b, ownName)
 end
 
 local function updateTimer()
-  if not window or not current then return end
+  if not window then return end
+  if recordsMode then
+    local left = rcurrent and tonumber(rcurrent.resetIn)
+    window.timerLabel:setText(left and tr('Weekly reset in %s', formatTime(left - (g_clock.seconds() - rAt))) or '')
+    return
+  end
+  if not current then return end
   local left = (tonumber(current.resetIn) or 0) - (g_clock.seconds() - boardAt)
   window.timerLabel:setText(tr('Weekly reset in %s', formatTime(left)))
   window.timerLabel:setTooltip(tr('The weekly boards reset every Monday at 06:00 server time.'))
@@ -165,7 +196,7 @@ local function showBoard()
   window.rowList:destroyChildren()
   local player = g_game.getLocalPlayer()
   local ownName = player and player:getName() or nil
-  local rows = list(current.rows)
+  local rows = rowsOf(current.rows)
   for _, r in ipairs(rows) do createRow(r, b, ownName) end
 
   window.infoLabel:setText(b.info or '')
@@ -174,7 +205,7 @@ local function showBoard()
 
   -- last week's title holders (weekly boards) / the class shown (ladder)
   if b.weekly then
-    local champions = list(current.champions)
+    local champions = rowsOf(current.champions)
     window.championPanel.championTitle:setText(tr('%s: the title holders this week (last week\'s top 3)', b.title or ''))
     if #champions == 0 then
       window.championPanel.championNames:setText(tr('Nobody yet: the top 3 of this week get the title on Monday.'))
@@ -285,7 +316,7 @@ local function buildGroupTabs()
   window.groupTabs:setHeight(visible and 22 or 0)
   window.groupTabs:setMarginTop(visible and 4 or 0)
   if not visible then return end
-  local groups, items = list(meta.groups), {}
+  local groups, items = rowsOf(meta.groups), {}
   if byClass then
     -- a weekly board with class tabs: "All classes" first (key 'all' = no filter)
     table.insert(groups, 1, { key = 'all', name = tr('All classes') })
@@ -344,20 +375,235 @@ end
 
 local function buildTabs()
   tabs = {}
-  local boards, items = list(meta.boards), {}
+  local boards, items = rowsOf(meta.boards), {}
   for i, b in ipairs(boards) do
     local key = b.key
     items[i] = { text = b.name or b.key, checked = key == selected, onClick = function() selectBoard(key) end,
                  tooltip = b.weekly and tr('Weekly: %s', b.info or '') or (b.info or '') }
   end
   for i, tab in pairs(buildTabRows(window.tabs, 'LeaderboardTab', items)) do
-    tabs[boards[i].key] = tab
+    if boards[i] and boards[i].key ~= nil then tabs[boards[i].key] = tab end
+  end
+end
+
+-- ---------------------------------------------------------------- Records view
+local function rBoardMeta()
+  return rmeta and rboard and RecordsView.board(rmeta, rboard) or nil
+end
+
+local function requestRecord()
+  if rcat == 'firsts' then
+    send('rfirsts', {})
+    return
+  end
+  local b = rBoardMeta()
+  if not b then return end
+  rsel = RecordsView.normalize(b, rsel, rmeta.periods)
+  send('rget', RecordsView.request(b, rsel))
+end
+
+local function createRecordRow(rank, name, title, value, extra, tooltip, ownName)
+  local row = g_ui.createWidget('LeaderboardRow', window.rowList)
+  row.rank:setText('#' .. rank)
+  if RANK_COLOR[rank] then row.rank:setColor(RANK_COLOR[rank]) end
+  row.name:setText(name or '?')
+  row.title:setText(title or '')
+  row.fallen:setVisible(false)
+  row.fallen:setWidth(0)
+  row.fallen:setMarginLeft(0)
+  row.value:setText(value or '')
+  row.value:setTooltip('')
+  row.extra:setText(extra or '')
+  if tooltip then row:setTooltip(tooltip) end
+  if ownName and name == ownName then
+    row:setBackgroundColor('#3a2410')
+    row.name:setColor('#f6cf72')
+  elseif rank % 2 == 0 then
+    row:setBackgroundColor('#141014')
+  end
+  return row
+end
+
+-- the filter rows of the board shown: period, then its variants, sizes and the class tabs
+local function buildRecordFilters()
+  window.recordFilters:destroyChildren()
+  local b = rBoardMeta()
+  local visible = recordsMode and b ~= nil and rcat ~= 'firsts'
+  window.recordFilters:setVisible(visible)
+  if not visible then
+    window.recordFilters:setHeight(0)
+    window.recordFilters:setMarginTop(0)
+    return
+  end
+  rsel = RecordsView.normalize(b, rsel, rmeta.periods)
+  local function row(list, field, tip)
+    local box = g_ui.createWidget('LeaderboardFilterBox', window.recordFilters)
+    local items = {}
+    for i, x in ipairs(list) do
+      local key = x.key
+      items[i] = { text = tostring(x.name or key), tooltip = tip, checked = rsel[field] == key, onClick = function()
+        rsel[field] = key
+        buildRecordFilters()
+        requestRecord()
+      end }
+    end
+    buildTabRows(box, 'LeaderboardModeTab', items, 150)
+    return box:getHeight()
+  end
+  local h = row(rmeta.periods, 'period', tr('This week resets on Monday 06:00; the season and all time stay.'))
+  if #(b.variants or {}) > 0 then h = h + 3 + row(b.variants, 'variant') end
+  if #(b.sizes or {}) > 0 then h = h + 3 + row(b.sizes, 'size', tr('Party size of the run.')) end
+  if b.byClass then
+    local groups = { { key = false, name = tr('All classes') } }
+    for _, g in ipairs(rmeta.groups) do groups[#groups + 1] = g end
+    local box = g_ui.createWidget('LeaderboardFilterBox', window.recordFilters)
+    local items = {}
+    for i, g in ipairs(groups) do
+      local key = g.key or nil
+      items[i] = { text = tostring(g.name), checked = rsel.group == key, onClick = function()
+        rsel.group = key
+        buildRecordFilters()
+        requestRecord()
+      end }
+    end
+    buildTabRows(box, 'LeaderboardModeTab', items, 124)
+    h = h + 3 + box:getHeight()
+  end
+  window.recordFilters:setHeight(h)
+  window.recordFilters:setMarginTop(4)
+end
+
+local function selectRecordBoard(key)
+  rboard = key
+  for k, t in pairs(groupTabs) do t:setChecked(k == key) end
+  buildRecordFilters()
+  requestRecord()
+end
+
+local function selectRecordCategory(key)
+  rcat = key
+  for k, t in pairs(tabs) do t:setChecked(k == key) end
+  -- the boards of the category as the second tab row
+  window.groupTabs:destroyChildren()
+  groupTabs = {}
+  local c = RecordsView.category(rmeta, key)
+  local boards = c and c.boards or {}
+  local visible = #boards > 1
+  window.groupTabs:setVisible(visible)
+  window.groupTabs:setHeight(visible and 22 or 0)
+  window.groupTabs:setMarginTop(visible and 4 or 0)
+  if visible then
+    local items = {}
+    for i, b in ipairs(boards) do
+      local bk = b.key
+      items[i] = { text = tostring(b.name or bk), checked = false, onClick = function() selectRecordBoard(bk) end }
+    end
+    for i, tab in pairs(buildTabRows(window.groupTabs, 'LeaderboardGroupTab', items, 160)) do groupTabs[boards[i].key] = tab end
+  end
+  window.infoLabel:setText(c and c.info or '')
+  if boards[1] then
+    local keep = false
+    for _, b in ipairs(boards) do keep = keep or b.key == rboard end
+    selectRecordBoard(keep and rboard or boards[1].key)
+  else
+    rboard = nil
+    buildRecordFilters()
+    requestRecord()
+  end
+end
+
+local function buildRecordTabs()
+  tabs = {}
+  local items = {}
+  for i, c in ipairs(rmeta.categories) do
+    local key = c.key
+    items[i] = { text = c.name, checked = key == rcat, tooltip = c.info, onClick = function() selectRecordCategory(key) end }
+  end
+  for i, tab in pairs(buildTabRows(window.tabs, 'LeaderboardTab', items)) do tabs[rmeta.categories[i].key] = tab end
+  window.modeTabs:setVisible(false)
+  window.modeTabs:setHeight(0)
+  window.seasonToggle:setVisible(false)
+  selectRecordCategory(RecordsView.category(rmeta, rcat or '') and rcat or (rmeta.categories[1] and rmeta.categories[1].key))
+end
+
+local function showRecords(data)
+  if not window or not recordsMode then return end
+  rcurrent = data
+  rAt = g_clock.seconds()
+  window.rowList:destroyChildren()
+  local player = g_game.getLocalPlayer()
+  local ownName = player and player:getName() or nil
+  local rows = rowsOf(data.rows)
+  local c = RecordsView.category(rmeta, rcat)
+  if data.isFirsts then
+    window.header.value:setText(tr('Date'))
+    window.header.extra:setText(tr('Time'))
+    for i, r in ipairs(rows) do
+      createRecordRow(i, tostring(r.members or '?'), tostring(r.name or r.board or ''),
+        RecordsView.dateText(r.at), (tonumber(r.value) and r.format == 'time') and RecordsView.valueText(r.value, 'time') or '',
+        tr('%s: realm first of %s.', tostring(r.board or ''), tostring(data.seasonName or '')))
+    end
+    window.championPanel.championTitle:setText(tr('Realm firsts of %s', tostring(data.seasonName or '')))
+    window.championPanel.championNames:setText(tr('The first player or party to defeat each boss this season holds a title for it.'))
+    window.ownPanel.ownLabel:setText(tr('A realm first title stays for the whole season.'))
+    window.emptyText:setText(tr('No boss has fallen yet this season.'))
+  else
+    local b = rBoardMeta() or { name = '?' }
+    window.header.value:setText(b.value or tr('Best'))
+    window.header.extra:setText(tr('Date'))
+    for _, r in ipairs(rows) do
+      local rank = tonumber(r.rank) or 0
+      local party = tonumber(r.party) or 1
+      createRecordRow(rank, r.name, party > 1 and tr('party of %d', party) or (r.vocation or ''),
+        RecordsView.valueText(r.value, b.format), RecordsView.dateText(r.at),
+        party > 1 and tostring(r.members or '') or nil, ownName)
+    end
+    local period
+    for _, p in ipairs(rmeta.periods) do if p.key == data.period then period = p.name end end
+    if data.period == 'season' then period = tostring(data.seasonName or period) end
+    window.championPanel.championTitle:setText(tr('%s  -  %s', b.name or '', period or ''))
+    window.championPanel.championNames:setText(RecordsView.recordText(b, data))
+    window.ownPanel.ownLabel:setText(RecordsView.ownText(b, data))
+    window.emptyText:setText(tr('No result on this board in this view yet.'))
+  end
+  window.emptyText:setVisible(#rows == 0)
+  window.hintLabel:setText(tr('Weekly top 3 of every board: the %s title and the %s name plate badge for a week. Ties go to the earlier time.',
+    tostring(c and c.title or tr('category')), tostring(rmeta.badge or '')))
+  updateTimer()
+end
+
+function toggleRecords()
+  if not window then return end
+  recordsMode = not recordsMode
+  window.recordsToggle:setChecked(recordsMode)
+  if recordsMode then
+    if rmeta and rmeta.complete then
+      buildRecordTabs()
+    else
+      rparts = nil
+      send('rmeta', {})
+    end
+  else
+    window.recordFilters:setVisible(false)
+    window.recordFilters:setHeight(0)
+    window.recordFilters:setMarginTop(0)
+    if meta then
+      onMetaRebuild()
+      if selected then selectBoard(selected) end
+    end
   end
 end
 
 -- ---------------------------------------------------------------- protocol
 local function onMeta(data)
   meta = data
+  if recordsMode and data.open then
+    -- the window was opened again from the menu: back to the weekly boards
+    recordsMode = false
+    window.recordsToggle:setChecked(false)
+    window.recordFilters:setVisible(false)
+    window.recordFilters:setHeight(0)
+  end
   if data.open then seasonView = false seasonMode = 'all' end
   local season = type(data.season) == 'table' and data.season or nil
   if not season then seasonView = false seasonMode = 'all' end
@@ -371,8 +617,24 @@ local function onMeta(data)
   if data.open then show() end
 end
 
+-- the weekly boards' tabs again (leaving the Records view)
+function onMetaRebuild()
+  local season = meta and type(meta.season) == 'table' and meta.season or nil
+  window.seasonToggle:setVisible(season ~= nil)
+  buildTabs()
+  buildModeTabs()
+end
+
+-- a board or group key as the server sent it: a string or a finite number, else nothing (it is sent back in "get")
+local function boardKey(v)
+  if type(v) == 'string' or (type(v) == 'number' and v == v and v ~= math.huge and v ~= -math.huge) then return v end
+  return nil
+end
+
 local function onBoardData(data)
+  data.key, data.group = boardKey(data.key), boardKey(data.group)
   current = data
+  if recordsMode then return end
   boardAt = g_clock.seconds()
   refreshAsked = false
   if selected ~= data.key then
@@ -402,6 +664,19 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     onMeta(data)
   elseif msg.action == 'board' then
     onBoardData(data)
+  elseif msg.action == 'rcat' then
+    rparts = RecordsView.addPart(rparts, data)
+  elseif msg.action == 'rmeta' then
+    rmeta = RecordsView.finish(rparts, data)
+    rparts = nil
+    if recordsMode then buildRecordTabs() end
+  elseif msg.action == 'rboard' then
+    if data.board == rboard then showRecords(data) end
+  elseif msg.action == 'rfirsts' then
+    if rcat == 'firsts' then
+      data.isFirsts = true
+      showRecords(data)
+    end
   end
 end
 
@@ -440,6 +715,12 @@ end
 
 local function onGameEnd()
   hide()
+  recordsMode, rparts, rmeta, rcat, rboard, rsel, rcurrent = false, nil, nil, nil, nil, {}, nil
+  if window then
+    window.recordsToggle:setChecked(false)
+    window.recordFilters:setVisible(false)
+    window.recordFilters:setHeight(0)
+  end
   meta, current, selected, selectedGroup = nil, nil, nil, nil
   tabs, groupTabs, modeTabs, seasonMode = {}, {}, {}, 'all'
 end

@@ -42,10 +42,24 @@ local function send(action, data)
   end
 end
 
+-- the rows of a server list (an entry that is no table is left out) and the plain values of one (strings and numbers);
+-- a wrong shape cannot stop a window half drawn (game_chaosguard/opcode_fuzz_test.lua)
 local function list(value)
   local out = {}
   if type(value) == 'table' then
-    for _, v in ipairs(value) do out[#out + 1] = v end
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
+  end
+  return out
+end
+
+local function values(value)
+  local out = {}
+  if type(value) == 'table' then
+    for _, v in ipairs(value) do
+      if type(v) == 'string' or type(v) == 'number' then out[#out + 1] = v end
+    end
   end
   return out
 end
@@ -110,7 +124,7 @@ local function buildCategories()
     b:setTooltip(tr('%d discovered, %d completed of %d', num(c.known), num(c.completed), num(c.total)))
     local key = c.key
     b.onClick = function() selectCategory(key) end
-    catButtons[key] = b
+    if key ~= nil then catButtons[key] = b end
   end
   if not catButtons[selectedCat] then selectedCat = V.ALL end
   for k, b in pairs(catButtons) do b:setChecked(k == selectedCat) end
@@ -211,9 +225,9 @@ local function renderDetail()
   d.stage:setText(string.format('%s - %s', V.stageName(stage, stages), V.killText(e.kills, e.next)))
   d.stage:setColor(V.STAGE_COLORS[stage] or '#d6c9ae')
   d.stageBar:setVisible(true)
-  d.stageBar:setPercent(V.stagePercent(e.kills, e.th))
+  d.stageBar:setPercent(V.stagePercent(e.kills, values(e.th)))
   d.stageBar:setBackgroundColor(stage >= 4 and '#2f7a2a' or '#8a1010')
-  local th = list(e.th)
+  local th = values(e.th)
   d.stageBar:setText(e.next and tr('Next: %s at %d', V.stageName(stage + 1, stages), num(e.next)) or tr('Completed'))
   d.stageBar:setTooltip(tr('Stages at %s kills', table.concat(th, ' / ')))
 
@@ -230,7 +244,7 @@ local function renderDetail()
     end
     addLine(tr('Health %s   Experience %s', comma(e.health), comma(e.exp)))
   end
-  local pts = list(e.points)
+  local pts = values(e.points)
   if #pts > 0 then
     addLine(tr('Bestiary points per stage: %s', table.concat(pts, ' / ')), '#8c8070')
   end
@@ -239,7 +253,7 @@ local function renderDetail()
     addHeader(tr('Damage taken'))
     local els = V.elementsText(e.elements)
     addLine(els ~= '' and els or tr('No strength or weakness.'))
-    local imm = list(e.immunities)
+    local imm = values(e.immunities)
     if #imm > 0 then addLine(tr('Immune to %s', table.concat(imm, ', '))) end
     addHeader(tr('Where it lives'))
     local areas = list(e.areas)

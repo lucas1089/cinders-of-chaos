@@ -131,7 +131,9 @@ local runId = 0
 local function openRun(opener, others, key, state)
 	runId = runId + 1
 	local slot = runId
-	local L = R.layout and R.layout(cfg, slot) or {start = {x = 5, y = 5, z = 7}}
+	-- the arrival of the slot's layout (inside the slot's square: the tick keeps players there in the run)
+	local c = R.slotCenter(cfg, slot)
+	local L = {start = {x = c.x, y = c.y, z = c.z}}
 	local run = R.newRun(cfg, os.time(), 10, 8, R.effects(cfg, key.mods, key.tier))
 	run.id, run.slot, run.L, run.key, run.plan = runId, slot, L, key, {boss = "x"}
 	run.fx = run.fx or {}

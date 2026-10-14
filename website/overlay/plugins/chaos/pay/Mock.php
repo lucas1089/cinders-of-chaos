@@ -88,7 +88,7 @@ final class ChaosPayMock implements ChaosPayProvider {
 	private function view(string $id, array $c): array {
 		return array('status' => $c['status'], 'raw' => 'mock ' . $c['status'], 'psp_id' => $id, 'psp_ref' => (string)$c['capture'],
 			'amount_cents' => (int)$c['amount'], 'currency' => (string)$c['currency'], 'reference' => (string)$c['token'],
-			'refunded_cents' => (int)$c['refunded']);
+			'refunded_cents' => (int)$c['refunded'], 'payer' => (string)($c['payer'] ?? ''));
 	}
 
 	public function fetch(array $row, array $hint = array()): array {

@@ -3,8 +3,8 @@
   plate_<id>.png  16x15: 6 px end caps (rim corners and a small ornament), a 4 px middle that is stretched under the name.
   ids: default (blackened iron, ember accent), gold (staff), crimson (siege champions), violet, frost, ember, verdant
   and bone (store frames), ashen, sapphire, rose, jade, copper, obsidian, amber and storm (the second store set),
-  laurel, sepulchre and infernal (never sold: exclusives_config.lua; a crowned ornament). preview_nameplates.png (not
-  shipped) shows them at 4x.
+  laurel, sepulchre and infernal (never sold: exclusives_config.lua; a crowned ornament), cinderwrought (the season
+  pass premium track, crowned too). preview_nameplates.png (not shipped) shows them at 4x.
 python3 -I client/tools/gen_nameplate_art.py   (writes into client/overlay/modules/game_nameplate/images/)"""
 import os
 import sys
@@ -38,8 +38,10 @@ FRAMES = {
     'laurel':    ((88, 150, 60), (226, 210, 120), (24, 38, 14), (8, 13, 5), (200, 176, 70), (255, 240, 160)),
     'sepulchre': ((96, 84, 96), (180, 164, 180), (24, 20, 26), (8, 7, 9), (150, 90, 200), (220, 180, 255)),
     'infernal':  ((150, 40, 16), (255, 150, 60), (40, 10, 4), (14, 3, 1), (255, 96, 24), (255, 220, 120)),
+    # the season pass premium track (server seasonpass_config.lua, Ashen Pass tier 40): ash-grey iron, a cinder core
+    'cinderwrought': ((92, 84, 80), (214, 160, 110), (30, 24, 22), (10, 8, 7), (230, 110, 40), (255, 214, 150)),
 }
-CROWNED = {'laurel', 'sepulchre', 'infernal'}
+CROWNED = {'laurel', 'sepulchre', 'infernal', 'cinderwrought'}
 FILL_ALPHA = 225
 
 

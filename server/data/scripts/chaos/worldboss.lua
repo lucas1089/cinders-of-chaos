@@ -45,6 +45,19 @@ end
 dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosWorldBoss = ChaosWorldBoss or {}
+-- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX, on since 2026-10-13; off: exactly the stock effect as before)
+if not ChaosPackFx then
+	pcall(dofile, "data/lib/chaos_pack_fx.lua")
+end
+local function packFx(pos, use, stock)
+	if ChaosPackFx then
+		return ChaosPackFx.send(pos, use, stock)
+	end
+	if stock then
+		pos:sendMagicEffect(stock)
+	end
+	return false
+end
 local W = ChaosWorldBoss
 
 local function C()
@@ -982,14 +995,14 @@ local function runPhase(token, i)
 					Chaos.heal(m, phase.adds.health)
 				end
 				state.adds[m:getId()] = true
-				m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+				packFx(m:getPosition(), "wb_adds", CONST_ME_TELEPORT)
 			end
 		end
 	end
 	if phase.enrage then
 		state.enraged = true
 		state.nextPulse = os.time() + (b.pulse and b.pulse.every or 8)
-		boss:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
+		packFx(boss:getPosition(), "wb_enrage", CONST_ME_MAGIC_RED)
 	end
 end
 
@@ -1053,6 +1066,26 @@ local function spawnBoss(token)
 		finish(false, "spawn failed")
 		return
 	end
+	-- boss mechanics (boss_mechanics.lua): telegraphs, adds phases, blasts behind the pillars; the health factor that
+	-- keeps the kill time is applied here, before the fight reads the boss's max health
+	if ChaosBossMech and ChaosBossMech.attach then
+		local floor = {}
+		local skip = {}
+		for _, t in ipairs(L.pillars) do
+			skip[t.x .. "," .. t.y] = true
+		end
+		for _, t in ipairs(L.basins) do
+			skip[t.x .. "," .. t.y] = true
+		end
+		for y = L.arena.y1 + 1, L.arena.y2 - 1 do
+			for x = L.arena.x1 + 1, L.arena.x2 - 1 do
+				if not skip[x .. "," .. y] then
+					floor[#floor + 1] = {x = x, y = y, z = L.z}
+				end
+			end
+		end
+		pcall(ChaosBossMech.attach, boss, nil, {tiles = floor, players = playersInside, pillars = L.pillars})
+	end
 	state.bossId = boss:getId()
 	state.maxHealth = boss:getMaxHealth()
 	state.phase = "fight"
@@ -1060,7 +1093,7 @@ local function spawnBoss(token)
 	state.fightEnd = os.time() + C().fightMinutes * 60
 	boss:registerEvent("ChaosWorldBossHealth")
 	boss:registerEvent("ChaosWorldBossDeath")
-	boss:getPosition():sendMagicEffect(CONST_ME_MORTAREA)
+	packFx(boss:getPosition(), "wb_arrives", CONST_ME_MORTAREA)
 	boss:say(b.intro, TALKTYPE_MONSTER_YELL)
 	announce(string.format("%s has appeared in the world boss arena! You have %d minutes to bring it down.", b.name, C().fightMinutes), true)
 	addEvent(function(t)

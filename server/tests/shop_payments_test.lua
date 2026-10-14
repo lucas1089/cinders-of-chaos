@@ -1,6 +1,8 @@
 -- Run from the server/ folder: luajit tests/shop_payments_test.lua (and lua5.3; CI runs both)
 -- Donations (Pix / PayPal): shop_payments_core.lua rules (prices derived from one USD table, money texts, limits,
--- reuse of an open order, starter once, views, the donation notice and thanks, coins taken back after a refund) and
+-- reuse of an open order, starter once, views, the donation notice and thanks, the refund sentences before and after
+-- the donation (the same as the website's legal_lib.php) with where the Donation Terms are, coins taken back after a
+-- refund) and
 -- shop_payments.lua against a mocked engine and database (pay_packs, pay_create, reuse, refusal, cancel, the thank-you
 -- after crediting, a refund after crediting with and without unspent coins).
 local function eq(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
@@ -39,6 +41,23 @@ ok(P.NOTICE_PT:find("Doação voluntária", 1, true) and P.NOTICE_PT:find("Ningu
 local en, pt = P.thanks(975)
 eq(en, "Thank you for your voluntary donation! You received 975 Chaos Coins as a thank-you.", "thanks en")
 eq(pt, "Obrigado pela sua doação voluntária! Você recebeu 975 Chaos Coins como agradecimento.", "thanks pt")
+local f = io.open("../website/overlay/plugins/chaos/legal_lib.php", "rb")
+if f then
+	local php = f:read("*a"); f:close()
+	for key, s in pairs({BEFORE_EN = P.BEFORE_EN, BEFORE_PT = P.BEFORE_PT, AFTER_EN = P.AFTER_EN, AFTER_PT = P.AFTER_PT}) do
+		eq(php:match("define%('CHAOS_LEGAL_DONATION_" .. key .. "', '([^']*)'%)"), s, key .. " = website")
+	end
+else
+	print("note: website folder not found, refund sentences compared to the website skipped")
+end
+en, pt = P.terms()
+eq(en, P.BEFORE_EN .. " Donation Terms on the website: page.php?plugin=chaos&p=legal&doc=donations", "terms before en")
+eq(pt, P.BEFORE_PT .. " Termos de Doação no site: page.php?plugin=chaos&p=legal&doc=donations", "terms before pt")
+eq(P.terms("open"), en, "an open order is before the donation")
+en, pt = P.terms("credited")
+ok(en:find("^This was a voluntary donation, not a purchase%.") and en:find("doc=donations$"), "terms after en")
+ok(pt:find("^Esta foi uma doação voluntária, não uma compra%.") and pt:find("doc=donations$"), "terms after pt")
+eq(P.terms("paid"), en, "paid is after the donation")
 
 -- ------------------------------------------------------------------ decide
 local now = 1800000000
@@ -92,6 +111,10 @@ eq(P.reversalCoins(975, 7495, 7495, 300, true), 300, "only what is left")
 eq(P.reversalCoins(1000, 10000, 2500, 5000, true), 250, "partial refund, its share")
 eq(P.reversalCoins(975, 7495, 7495, 5000, false), 0, "switched off")
 eq(P.reversalCoins(975, 7495, 7495, -3, true), 0, "never below zero")
+eq(P.reversalRemaining(1000, 10000, 10000, 250, true), 750, "a second, full refund: the rest")
+eq(P.reversalRemaining(1000, 10000, 2500, 250, true), 0, "nothing more for the same amount")
+eq(P.reversalRemaining(1000, 10000, 5000, 600, true), 0, "never below zero")
+eq(P.reversalRemaining(1000, 10000, 10000, 0, false), 0, "switched off")
 
 -- ------------------------------------------------------------------ shop_payments.lua against a mocked engine
 local n = 0
@@ -199,6 +222,9 @@ Chaos.select = function(q, cols)
 			if p and p.reversal_done == 0 and p.reversal ~= "" and o.status == "credited" then out[#out + 1] = joined(o) end
 		end
 		return out
+	elseif q:find("SELECT `reversal_cents`, `reversal_coins` FROM `chaos_coin_payments`", 1, true) then
+		local p = DB.pay[tonumber(q:match("`order_id` = (%d+)"))]
+		return (p and p.reversal_done == 0) and {{reversal_cents = p.reversal_cents, reversal_coins = p.reversal_coins or 0}} or {}
 	elseif q:find("SELECT `coins` FROM `chaos_shop_coins`", 1, true) then
 		local acc = tonumber(q:match("`account_id` = (%d+)"))
 		return DB.coins[acc] and {{coins = DB.coins[acc]}} or {}
@@ -228,21 +254,56 @@ eq(ask("buy", {}), nil, "the store's own actions are not answered here")
 
 local r = ask("pay_packs")
 eq(r.action, "pay_packs", "packs answer"); eq(r.data.notice, P.NOTICE_EN, "notice sent"); eq(r.data.noticePt, P.NOTICE_PT, "notice pt sent")
-eq(#r.data.packs, 5, "five packs"); eq(r.data.packs[2].prices.pix.text, "R$ 74,95", "Pix price text")
-eq(r.data.packs[2].prices.paypal.cents, 1499, "PayPal price"); eq(r.data.packs[2].total, 975, "first donation bonus in the preview")
-eq(r.data.packs[2].prices.card, nil, "no third method"); ok(r.status, "balance sent")
+eq(r.data.terms, (P.terms()), "refund sentence sent"); eq(r.data.termsPt, select(2, P.terms()), "refund sentence pt sent")
+eq(#r.data.packs, 7, "seven packs"); eq(r.data.packs[1].prices.pix.text, "R$ 9,95", "entry pack: about R$ 10 by Pix"); eq(r.data.packs[3].prices.pix.text, "R$ 74,95", "Pix price text")
+eq(r.data.packs[3].prices.paypal.cents, 1499, "PayPal price"); eq(r.data.packs[3].total, 1575, "first donation bonus (double) in the preview")
+eq(r.data.packs[3].prices.card, nil, "no third method"); ok(r.status, "balance sent")
+eq(r.data.firstBonusMax, 1000, "the first bonus cap sent to the client"); eq(r.data.packs[7] and r.data.packs[7].key ~= nil, true, "packs listed")
 
 r = ask("pay_create", {pack = "coins750", method = "pix"})
 eq(r.action, "pay_order", "order answer"); eq(r.data.status, "pending", "pending"); eq(r.data.price, "R$ 74,95", "order price")
 eq(DB.orders[1].status, "pending", "row written"); eq(DB.orders[1].provider, "pix", "provider = method")
 eq(DB.pay[1].amount_cents, 7495, "amount from the server config"); eq(DB.pay[1].currency, "BRL", "currency")
-eq(DB.orders[1].coins + DB.orders[1].bonus + DB.orders[1].first_bonus, 975, "credit preview on the row")
+eq(DB.orders[1].coins + DB.orders[1].bonus + DB.orders[1].first_bonus, 1575, "credit preview on the row (first donation: double)")
 -- the client sends no price: a forged amount field changes nothing
 ChaosRateLimit = nil
 r = ask("pay_create", {pack = "coins750", method = "pix", amount = 1})
 eq(r.data.id, 1, "same pack again: the open order"); eq(#DB.orders, 1, "no second row")
 r = ask("pay_create", {pack = "coins4000", method = "paypal"})
 eq(r.action, "pay_error", "second open order refused"); eq(r.data.order.id, 1, "refusal shows the open order")
+-- a creator code sent with the donation (the website's pick, chaos_creator_support): refused codes stop the donation
+do
+	local realSelect, realQuery, creatorQ = Chaos.select, db.query, {}
+	Chaos.select = function(q, cols)
+		if q:find("FROM `chaos_creator_codes`", 1, true) then
+			local code = q:match("`code` = '([^']*)'")
+			if code == "STREAMER" then return {{id = 4, account_id = 900, active = 1, code = "STREAMER", display_name = "Streamer"}} end
+			if code == "OFFCODE" then return {{id = 5, account_id = 900, active = 0, code = "OFFCODE", display_name = ""}} end
+			if code == "MINE" then return {{id = 6, account_id = 77, active = 1, code = "MINE", display_name = ""}} end
+			return {}
+		end
+		return realSelect(q, cols)
+	end
+	db.query = function(q)
+		if q:find("chaos_creator_", 1, true) then creatorQ[#creatorQ + 1] = q return true end
+		return realQuery(q)
+	end
+	eq(P.creatorCode(" stream-er "), "STREAMER", "code normalised like the website") eq(P.creatorCode("ab"), nil, "too short")
+	local rows = #DB.orders
+	r = ask("pay_create", {pack = "coins250", method = "pix", creator = "nope99"})
+	eq(r.action .. ":" .. tostring(r.data.msg), "pay_error:That is not an active creator code.", "unknown code refused")
+	r = ask("pay_create", {pack = "coins250", method = "pix", creator = "offcode"})
+	eq(r.data.msg, "That is not an active creator code.", "switched off code refused")
+	r = ask("pay_create", {pack = "coins250", method = "pix", creator = "MINE"})
+	eq(r.data.msg, "You cannot support your own creator code.", "self-use refused")
+	eq(#DB.orders, rows, "no order for a refused code")
+	eq(#creatorQ, 0, "nothing written for a refused code")
+	r = ask("pay_create", {pack = "coins750", method = "pix", creator = "streamer"})
+	eq(r.data.id, 1, "a good code: the donation goes on (here: the open order)")
+	ok(creatorQ[2] and creatorQ[2]:find("INSERT INTO `chaos_creator_support`", 1, true) and creatorQ[2]:find("(77, 4,", 1, true), "the pick saved")
+	ok(creatorQ[3] and creatorQ[3]:find("'pick'", 1, true), "the pick logged")
+	Chaos.select, db.query = realSelect, realQuery
+end
 -- the worker made the charge
 DB.orders[1].status = "open"; DB.pay[1].qr_code = "00020126580014"; DB.pay[1].expires = now + 1800
 r = ask("pay_status", {id = 1})
@@ -264,6 +325,7 @@ sent = {}
 ChaosShopPay.onCredited(2, 77, {total = 5800}, packs.coins4000)
 eq(sent[1].action, "pay_paid", "thank-you push"); eq(sent[1].data.coins, 5800, "coins in the push")
 eq(sent[1].data.text, "Thank you for your voluntary donation! You received 5800 Chaos Coins as a thank-you.", "push thanks")
+eq(sent[1].data.terms, (P.terms("credited")), "push receipt note"); eq(sent[1].data.termsPt, select(2, P.terms("credited")), "push receipt note pt")
 ok(sent[1].status, "balance with the push")
 DB.orders[#DB.orders + 1] = {id = 3, account_id = 77, pack_key = "coins250", provider = "pix", provider_ref = "x", status = "pending", created = now - 700}
 ChaosShopPay.poll(); eq(DB.orders[3].status, "failed", "stale pending order failed")
@@ -316,5 +378,18 @@ eq(DB.gifts[1].clawed, 250, "the ledger records the clawback")
 ChaosShopPay.poll()
 eq(DB.coins[88], 750, "only once")
 Chaos.select, db.query = baseSelect, baseQuery
+
+-- a partial refund after crediting, then a second, larger one (the website raises reversal_cents and resets
+-- reversal_done): the second round takes back only the difference
+DB.orders[#DB.orders + 1] = {id = 6, account_id = 77, pack_key = "coins250", provider = "pix", provider_ref = "w", status = "credited",
+	coins = 1000, bonus = 0, first_bonus = 0, created = now}
+DB.pay[6] = {order_id = 6, method = "pix", amount_cents = 10000, currency = "BRL", reversal = "refunded", reversal_cents = 2500, reversal_done = 0}
+DB.coins[77] = 5000
+ChaosShopPay.poll()
+eq(DB.coins[77], 4750, "a quarter refunded: 250 taken back"); eq(DB.pay[6].reversal_coins, 250, "250 handled")
+DB.pay[6].reversal_cents, DB.pay[6].reversal_done = 10000, 0
+ChaosShopPay.poll()
+eq(DB.coins[77], 4000, "then all of it: the other 750"); eq(DB.pay[6].reversal_coins, 1000, "1000 handled in all")
+ChaosShopPay.poll(); eq(DB.coins[77], 4000, "only once")
 
 print("shop_payments_test: ok")

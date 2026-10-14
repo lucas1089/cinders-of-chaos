@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Winterstride" nameDescription="an winterstride" race="blood" experience="3300000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
-	<health now="2300000" max="2300000"/>
+<monster name="Winterstride" nameDescription="a winterstride" race="blood" experience="23850" speed="41" manacost="0">
+	<health now="26400" max="26400"/>
 	<look type="1494"  corpse="6068"/>
-	<level min="5000" max="5500"/>
+	<level min="1200" max="1240"/>
 	<targetchange interval="3000" chance="50"/>
-	<strategy attack="130" defense="0"/>
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -19,22 +17,17 @@
 		<flag staticattack="95"/>
 		<flag runonhealth="0"/>
 	</flags>
-	 <script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>  
 	<attacks>
-		<attack name="melee" interval="2000" min="-25000" max="-35000"/>
-		<attack name="fire" interval="2000" chance="35" range="7" min="-28000" max="-38000">
+		<attack name="melee" interval="2000" min="-810" max="-1130"/>
+		<attack name="fire" interval="2000" chance="35" range="7" min="-900" max="-1230">
 			<attribute key="shootEffect" value="fire"/>
 		</attack>
-		<attack name="energy" interval="2000" chance="25" length="8" spread="0" min="-21500" max="-39000">
+		<attack name="energy" interval="2000" chance="25" length="8" spread="0" min="-690" max="-1260">
 			<attribute key="areaEffect" value="energy"/>
 		</attack>
 	</attacks>
 	<defenses armor="85" defense="85">
-		<defense name="healing" interval="1000" chance="15" min="1520" max="2300">
+		<defense name="healing" interval="1000" chance="15" min="1740" max="2640">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

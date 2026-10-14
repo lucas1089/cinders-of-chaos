@@ -10,7 +10,11 @@ ignores them. The corpse and every other attribute stay. The rift family rows (a
 to no monster file (rift.lua puts them on the rift's monsters); --check makes sure no file uses them, and that
 rift_config.lua `looks.families` holds exactly these ids. Rows of family "faction" (mounts and auras) belong to no
 monster file either (mounts.xml / auras.xml, factions_config.lua), nor do rows of family "exclusive" (the achievement
-wings of exclusives_config.lua, wings.xml); --check makes sure no monster file uses them.
+wings of exclusives_config.lua, wings.xml); --check makes sure no monster file uses them. Rows of family "riftvariant"
+(rank variants of the rift looks, client/tools/sprites/monster_looks/rift_variant_picks.csv) belong to no monster file
+either; --check makes sure rift_config.lua `looks.variants` lists each. Rows of family "bigguardian" (the bigger
+guardian looks, client/tools/sprites/monster_looks/big_boss_picks.csv) belong to no monster file either; --check makes
+sure rift_config.lua `looks.bigGuardians` maps a guardian look to each.
 Idempotent: a second run changes nothing. --check changes nothing and exits 1 when a file is not up to date.
 """
 import csv, os, re, sys
@@ -41,7 +45,8 @@ def main():
     mdir = args[0] if args else os.path.join(REPO, 'server', 'data', 'monster')
     rows = list(csv.DictReader(open(picks, newline='')))
     want = {r['monsters']: int(r['look']) for r in rows if r['family'] in ('world', 'omen', 'raid')}
-    rift = {int(r['look']): r['key'] for r in rows if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive')}
+    rift = {int(r['look']): r['key'] for r in rows
+            if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive', 'riftvariant', 'bigguardian')}
     found, changed, problems = set(), 0, []
     for root, _, files in os.walk(mdir):
         for f in sorted(files):
@@ -70,12 +75,29 @@ def main():
         problems.append(f'no monster file for "{name}"')
     # rift_config.lua: the families hold exactly the rift rows of picks.csv
     cfg = open(RIFT_CONFIG, encoding='utf-8').read()
+    # only the looks block: other tables of rift_config.lua are keyed by theme too (layouts, palettes)
+    fam = re.search(r'\blooks\s*=\s*\{.*?\bfamilies\s*=\s*\{', cfg, re.S)
+    cfg = cfg[fam.end():] if fam else cfg
     for r in rows:
         if r['family'] in FAMILY_THEME:
             line = re.search(r'\["%s"\]\s*=\s*\{([^}]*)\}' % re.escape(FAMILY_THEME[r['family']]), cfg)
             v = line and re.search(r'\b%s\s*=\s*(\d+)' % r['rank'], line.group(1))
             if not v or int(v.group(1)) != int(r['look']):
                 problems.append(f"rift_config.lua looks.families[\"{FAMILY_THEME[r['family']]}\"].{r['rank']} is not {r['look']}")
+    # rank variants (family riftvariant, appended from client/tools/sprites/monster_looks/rift_variant_picks.csv with
+    # pair 24): each look is in rift_config.lua looks.variants
+    var = re.search(r'\bvariants\s*=\s*\{', cfg)
+    vcfg = cfg[var.end():] if var else ''
+    for r in rows:
+        if r['family'] == 'riftvariant' and not re.search(r'\blook\s*=\s*%d\b' % int(r['look']), vcfg):
+            problems.append(f"rift_config.lua looks.variants has no look {r['look']} ({r['key']})")
+    # bigger guardians (family bigguardian, appended from monster_looks/big_boss_picks.csv with pair 24): each look is
+    # the big look of its source look (column lib_id) in rift_config.lua looks.bigGuardians
+    big = re.search(r'\bbigGuardians\s*=\s*\{([^}]*)\}', cfg)
+    bmap = {int(k): int(v) for k, v in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', big.group(1))} if big else {}
+    for r in rows:
+        if r['family'] == 'bigguardian' and bmap.get(int(r['lib_id'])) != int(r['look']):
+            problems.append(f"rift_config.lua looks.bigGuardians[{r['lib_id']}] is not {r['look']} ({r['key']})")
     for p in problems:
         print('PROBLEM', p)
     print(f'{len(found)} monster files matched, {changed} {"to update" if check else "updated"}, {len(problems)} problems')

@@ -635,6 +635,9 @@ function G.withdraw(player, amount)
 		return false, string.format("The guild bank holds %s gold.", C.money(G.row(gid).bank))
 	end
 	player:setBankBalance(player:getBankBalance() + amount)
+	-- the guild row is debited already: saved now, else a crash before the next save lost the gold (server/README.md
+	-- "Stress test"); a failed save keeps the credit in memory for the next one
+	Chaos.saveCharacter(player)
 	G.logRow(gid, player, "withdraw", amount)
 	return true, string.format("You withdrew %s gold to your bank balance (guild bank now %s).", C.money(amount), C.money(G.row(gid).bank))
 end
@@ -937,6 +940,11 @@ local function onStaffCommand(player, words, param)
 	end
 	if not gid then
 		say("/guild xp|bank|info|log|rent|hall <guild name>[, value]: guild not found.")
+		return false
+	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): the guild bank, guild XP and a paid rent need an administrator
+	local value = sub == "bank" or sub == "xp" or (sub == "rent" and (arg or ""):lower():match("^%s*paid") ~= nil)
+	if not Chaos.staffCommand(player, words, param, value) then
 		return false
 	end
 	if sub == "xp" then

@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Vyrm" nameDescription="a Vyrm" race="blood" experience="4000000" evented = "8" speed="850" skulled="1" looting="1" manacost="0">
-	<health now="2300000" max="2300000"/>
+<monster name="Vyrm" nameDescription="a Vyrm" race="blood" experience="23050" speed="41" manacost="0">
+	<health now="26100" max="26100"/>
 	<look type="906" corpse="6068" />
-	<level min="5000" max="5500"/>
+	<level min="1180" max="1220"/>
 	<targetchange interval="4000" chance="0" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
-		<flag summonable="1" />
+		<flag summonable="0" />
 		<flag attackable="1" />
 		<flag hostile="1" />
 		<flag illusionable="1" />
-		<flag convinceable="1" />
+		<flag convinceable="0" />
 		<flag pushable="0" />
 		<flag canpushitems="0" />
 		<flag canpushcreatures="0" />
@@ -21,15 +20,10 @@
 		<flag canwalkonfire="0" />
 		<flag canwalkonpoison="0" />
 	</flags>
-	<script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>
 	<attacks>
-		<attack name="melee" interval="1000" min="-25000" max="-35000" />
+		<attack name="melee" interval="1000" min="-860" max="-1210" />
 		<attack name="Frostbite" interval="2000" chance="45" min="-25000" max="-35000"/>
-		<attack name="ice" range="7" target="1" radius="3" interval="2000" chance="40" min="-30000" max="-36000">
+		<attack name="ice" range="7" target="1" radius="3" interval="2000" chance="40" min="-1030" max="-1240">
 			<attribute key="shootEffect" value="ice"/>
 			<attribute key="areaEffect" value="icearea"/>
 		</attack>
@@ -39,7 +33,7 @@
 		</attack>
 	</attacks>
 	<defenses armor="80" defense="87">
-		<defense name="healing" interval="1000" chance="20" min="12000" max="220000">
+		<defense name="healing" interval="1000" chance="20" min="140" max="2610">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
 	</defenses>

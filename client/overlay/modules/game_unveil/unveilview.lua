@@ -44,7 +44,7 @@ end
 function V.headerText(data)
   if type(data) ~= 'table' then return '' end
   local parts = { V.title(data.name or '?') }
-  if data.rarityName then parts[#parts + 1] = data.rarityName end
+  if data.rarityName then parts[#parts + 1] = tostring(data.rarityName) end
   if (tonumber(data.level) or 0) > 0 then parts[#parts + 1] = 'Item Level ' .. data.level end
   return table.concat(parts, '  -  ')
 end

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Abyssal Shadowfiend" nameDescription="a abyssal shadowfiend" race="blood" experience="750000" bosses="2" speed="570" manacost="0">
+<monster name="Abyssal Shadowfiend" nameDescription="an abyssal shadowfiend" race="blood" experience="750000" speed="570" manacost="0">
 	<health now="999999" max="999999"/>
 	<look type="928" corpse="6068"/>
 	<targetchange interval="4000" chance="0"/>
-	<strategy attack="100" defense="0"/>
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>

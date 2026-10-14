@@ -167,13 +167,65 @@ do
 	-- run cells
 	local k = A.runCells(cfg, rcfg, {theme = "Ashen Crypt", tier = 4, deaths = 0, secs = 280})
 	eq(table.concat(k, ","), "c3.4,f4,s4", "a fast flawless Ashen tier 4")
-	k = A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 12, deaths = 2, secs = 301})
+	k = A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 12, deaths = 2, secs = 361})
 	eq(table.concat(k, ","), "c1.12", "deaths and slow: only the cell")
-	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 300})
-	eq(table.concat(k, ","), "c2.15,f15,s15", "exactly half the time is swift")
+	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 465})
+	eq(table.concat(k, ","), "c2.15,f15,s15", "exactly the tier's Swift time is swift")
+	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 466})
+	eq(table.concat(k, ","), "c2.15,f15", "a second over is not")
+	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 420})
+	eq(table.concat(k, ","), "c2.15,f15,s15", "tier 15 in 7:00: swift (was out of reach at 5:00)")
+	k = A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 5, deaths = 0, secs = 330})
+	eq(table.concat(k, ","), "c1.5,f5", "tier 5 in 5:30: not swift (5:15, the time of tier 1)")
 	k = A.runCells(cfg, rcfg, {omen = "storm", tier = 15, deaths = 3, secs = 900})
 	eq(table.concat(k, ","), "ostorm", "omen kill")
 	eq(#A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 16, deaths = 0, secs = 1}), 0, "off the grid")
+	-- the Swift times: the rift model's clear time of the tier on its band's typical map for a player with swiftDps x
+	-- the model's damage, rounded down to swiftRound seconds (atlas_config.lua swiftDps / swiftRound)
+	-- and never less than a lower tier's time (the model's own time falls inside a size band)
+	local want = {315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 330, 360, 390, 435, 465}
+	local swiftT = A.swiftTable(cfg, rcfg)
+	eq(#swiftT, 15, "a Swift time per tier")
+	for tier = 1, 15 do
+		local s = A.swiftSeconds(cfg, rcfg, tier)
+		eq(s, want[tier], "swift seconds tier " .. tier)
+		eq(swiftT[tier], s, "swift table tier " .. tier)
+		eq(s % cfg.swiftRound, 0, "swift tier " .. tier .. " on whole steps")
+		local strong = R.clearSeconds(rcfg, tier, 1, cfg.swiftDps)
+		ok(strong < s + cfg.swiftRound, "swift tier " .. tier .. ": the strong player's model time or more")
+		if tier > 1 then ok(s >= A.swiftSeconds(cfg, rcfg, tier - 1), "swift tier " .. tier .. ": not below tier " .. (tier - 1)) end
+		-- a strong player can make it (well inside the limit), the model's typical player cannot
+		local typical = R.clearSeconds(rcfg, tier, 1, 1)
+		ok(s < typical, "swift tier " .. tier .. ": under the typical clear time")
+		ok(R.clearSeconds(rcfg, tier, 1, 1.5) < s, "swift tier " .. tier .. ": a player with 1.5x the damage makes it")
+		ok(s < 0.6 * R.timeLimit(rcfg, tier), "swift tier " .. tier .. ": well inside the run's limit")
+		ok(s >= 0.3 * R.timeLimit(rcfg, tier), "swift tier " .. tier .. ": not a sprint")
+		-- a party of five (the party model: 4.98 typical players) gets about the same time
+		ok(math.abs(R.clearSeconds(rcfg, tier, 5, 4.98 * cfg.swiftDps) - strong) < 20, "swift tier " .. tier .. ": party")
+	end
+	ok(swiftT[15] > swiftT[11] and swiftT[11] > swiftT[10], "the big maps get more time")
+	-- without the generated layouts, or without rift_core.lua: half of the base timeLimit (5:00), as before
+	local flat = {}
+	for key, v in pairs(rcfg) do flat[key] = v end
+	flat.layout = {enabled = false, sizes = rcfg.layout.sizes}
+	eq(A.swiftSeconds(cfg, flat, 15), 300, "no layouts: 5:00")
+	local keep = R.clearSeconds
+	R.clearSeconds = nil
+	eq(A.swiftSeconds(cfg, rcfg, 15), 300, "no rift model: 5:00")
+	eq(table.concat(A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 301}), ","), "c2.15,f15",
+		"no rift model: 5:01 is not swift")
+	R.clearSeconds = keep
+	-- Swift cells earned under the old 5:00 stay: sanitize and the points do not look at the times
+	local old = A.decodeSet("c1.3,s15,s3")
+	eq(A.earned(cfg, rcfg, old), 3, "earned swift cells count")
+	local first
+	for other in pairs(A.index(cfg).adj[cfg.startId]) do
+		if A.cost(cfg, A.node(cfg, other)) == 1 and (not first or other < first) then first = other end
+	end
+	local kept = A.sanitize(cfg, rcfg, {[first] = true}, old)
+	ok(kept[first], "a node bought with old swift points stays")
+	ok(old.s3 and old.s15, "earned swift cells kept")
+	eq(A.encodeSet(old), "c1.3,s15,s3", "the stored cells unchanged")
 	-- credit only once
 	local done = {}
 	local new, pts = A.credit(cfg, rcfg, done, {"c3.4", "f4", "s4"})
@@ -511,7 +563,9 @@ do
 	eq(#tree.nodes, #cfg.nodes, "every node sent")
 	eq(#tree.grid.themes, 4, "four themes")
 	eq(#tree.grid.omens, 3, "three omens")
-	eq(tree.grid.swift, 300, "swift seconds")
+	eq(tree.grid.swift, 300, "swift seconds of an older client (the base 5:00)")
+	eq(#tree.grid.swiftTiers, 15, "swift seconds per tier")
+	eq(tree.grid.swiftTiers[1], 315, "swift tier 1"); eq(tree.grid.swiftTiers[15], 465, "swift tier 15")
 	eq(tree.max, 96, "max points")
 	local st = {alloc = {[2] = true}, done = {["c1.1"] = true, ["f1"] = true}}
 	local sp = A.statePayload(cfg, rcfg, st, "hi")
@@ -572,7 +626,7 @@ do
 		end
 		function p:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
 		function p:registerEvent() end
-		function p:getGroup() return {getAccess = function() return true end} end
+		function p:getGroup() return {getAccess = function() return true end, getId = function() return self.group or 5 end} end
 		players[cid] = p
 		return p
 	end
@@ -598,6 +652,11 @@ do
 		return ev
 	end
 	_G.Chaos = {
+		-- chaos_constants.lua Chaos.staffCommand: value needs group 5
+		staffCommand = function(player, words, param, economy)
+			local g = player:getGroup()
+			return g.getAccess() and (not economy or g.getId() >= 5), g.getAccess()
+		end,
 		send = function(player, op, action, data)
 			sent[#sent + 1] = {p = player, op = op, action = action, data = data}
 		end,
@@ -681,7 +740,11 @@ do
 	-- omen arenas credit their cell, and nothing else
 	R.hooks.onSealed({omen = "bloodmoon", tier = 15, deaths = 1, secs = 500, guids = {777}})
 	eq(A.earned(cfg, rcfg, S.state[777].done), 5, "omen +2")
-	-- staff grant
+	-- staff grant: an administrator only (a gamemaster, group 4, is refused)
+	q.group = 4
+	events["/atlas"].onSay(q, "/atlas", "grant all")
+	eq(A.earned(cfg, rcfg, S.state[777].done), 5, "a gamemaster cannot grant cells")
+	q.group = 5
 	events["/atlas"].onSay(q, "/atlas", "grant all")
 	eq(A.earned(cfg, rcfg, S.state[777].done), 96, "grant all")
 	R.hooks.atlasMods, R.hooks.onSealed = nil, nil

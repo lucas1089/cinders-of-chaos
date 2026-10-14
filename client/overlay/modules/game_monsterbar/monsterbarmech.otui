@@ -1,0 +1,32 @@
+// The boss cast bar (monsterbarmech.lua): the next mechanic of a boss and its timer, below the monster bar (or in its
+// place when no monster is targeted). Colours by kind are set by monsterbar.lua (MonsterBarMech.COLORS).
+Panel
+  id: monsterBarMech
+  size: 344 18
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  // margin-top and margin-left are set by monsterbar.lua (under the monster bar)
+  margin-top: 134
+  background-color: #0d0b0ee0
+  border-width: 1
+  border-color: #7d7176
+  phantom: true
+  visible: false
+
+  UIWidget
+    id: fill
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin: 1
+    width: 0
+    background-color: #c0392b
+    phantom: true
+
+  Label
+    id: text
+    anchors.centerIn: parent
+    font: verdana-11px-rounded
+    text-auto-resize: true
+    color: #f4ead2
+    phantom: true

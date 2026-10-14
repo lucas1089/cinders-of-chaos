@@ -1,0 +1,9 @@
+Font
+  name: chaos-outline-11px
+  texture: chaos-outline-11px
+  height: 15
+  glyph-size: 14 15
+  first-glyph: 32
+  y-offset: 0
+  spacing: -1 0
+  space-width: 4

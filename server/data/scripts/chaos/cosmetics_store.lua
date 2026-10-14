@@ -3,6 +3,8 @@
 --     dofile("data/scripts/chaos/cosmetics_store.lua")("killfx")
 -- returns one category {name, icon, offers} with an offer {kind = "unlock", unlock = "cosmetic_<key>", icon, cost,
 -- name, description, gift = false} per store cosmetic of that kind (achievement cosmetics are never sold).
+-- ("outfitshader"): the Chaos outfit shaders of cfg.outfitShaders, one offer per priced one while its switch is on
+-- (empty otherwise); not in shop_config.lua yet: the owner adds the line when they are priced.
 -- No engine calls (server/tests/cosmetics_test.lua and shop_test.lua read it with plain Lua).
 
 local cfg = dofile("data/scripts/chaos/cosmetics_config.lua")
@@ -17,7 +19,25 @@ local NOTES = {
 	outline = " Seen by all. Character > Cosmetics."
 }
 
+local function outfitShaders()
+	local category = {name = "Chaos Shaders", icon = {item = 2187}, offers = {}}
+	local block = cfg.outfitShaders
+	if type(block) ~= "table" or block.enabled ~= true then
+		return category
+	end
+	for _, s in ipairs(block.list or {}) do
+		if type(s.price) == "number" and s.price > 0 then
+			category.offers[#category.offers + 1] = {kind = "unlock", unlock = "cosmetic_" .. s.key, icon = s.icon,
+				cost = s.price, name = s.name, description = s.desc .. " Outfit window.", gift = false}
+		end
+	end
+	return category
+end
+
 return function(kind)
+	if kind == "outfitshader" then
+		return outfitShaders()
+	end
 	local category
 	for _, k in ipairs(cfg.kinds) do
 		if k.key == kind then

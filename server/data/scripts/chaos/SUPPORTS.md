@@ -125,6 +125,9 @@ Then the usual files step copies `scripts/chaos/supports.lua`, `lib/chaos_suppor
 - `bounty.lua` (contract reward, next to the gems): `ChaosSupports.rewardRunes("bounty", {type = c.type, band = c.band})`.
 - `chaos_constants.lua`: `ChaosOpcodes.supports = 243`, the storage note.
 - `_common.lua`: loads `_supports.lua`. Client: `game_spellbook` (line and button), `client_chaos_topbar` (menu entry).
+- The snares (`data/spells/chaos/_snares.lua`, server/README.md "Snares"): a brand rune socketed in Snare Trap or Seeker
+  Mine (kind "area" by `kindOverride`) picks the snare's element. A snare's hits come later from a scheduler that uses
+  `ChaosSupportsSpell.rawAddEvent` (no cast context), so the other supports do not act on them.
 
 ## Honest caveats
 

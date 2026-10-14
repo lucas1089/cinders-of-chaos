@@ -1,10 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<monster name="Giant Asura" nameDescription="a giant asura" race="blood" experience="50000" evented = "5" skulled="1" looting="1" speed="430">
+<monster name="Giant Asura" nameDescription="a giant asura" race="blood" experience="50000" speed="430">
 	<health now="185000" max="185000"/>
 	<look type="1482" corpse="6068"/>
 	<targetchange interval="5000" chance="60"/>
-	<strategy attack="100" defense="0"/>
-	<levelconfig chance="100000" experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -18,11 +16,8 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-    <script>
-        <event name="auto_loot"/>
-    </script>
 	<attacks>
-    	<attack name="physical" interval="2000" min="-1500" max="-3000"/>
+    	<attack name="physical" interval="2000" chance="100" min="-1500" max="-3000"/>
 		<attack name="energy" interval="2000" chance="20" range="7" target="0" min="-2000" max="-4500">
 			<attribute key="shootEffect" value="energy"/>
 		</attack>

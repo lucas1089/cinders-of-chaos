@@ -50,6 +50,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                products in Grimgan's shop (README "Pack items and monsters")
   fistweapons  tools/install_fist_weapons.py     the Monk line's fist weapons in items.otb / items.xml, their Monk-only equip
                entries in movements.xml and the weapon dealers' / Grimgan's shops (README "Fist weapons")
+  themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
+               items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
+               ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -59,6 +62,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (README "Factions")
   pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
                (README "Store pouches")
+  storefood    tools/install_store_food.py       the Everfull Ration (the store's infinite food) in items.otb / items.xml
+               (README "Store pouches and the Everfull Ration")
   depot        tools/patch_base_depot.py         depot tabs: the depot boxes pickupable in items.otb and named "depot tab n" with
                100 slots in items.xml, the locker hook and the move hook in Player:onMoveItem (README "Depot tabs")
   charms       tools/install_charms.py           the charms and the charm shard in items.otb / items.xml (README "Charms")
@@ -73,6 +78,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
                respawn"; after monsters, which it reads)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
+               tools/patch_spell_ids.py          base spells with a spellid over 255 (or used twice) get their own id
+                                                 below 256 (README "Spell ids below 256")
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
                the class lines (Necromancer / Monk / Templar) put their own spell or data installers there
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
@@ -83,6 +90,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the base two-handed swap keeps a quiver, arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
                vocations, which still reads the launchers' ammo type, and after spells)
+  uniqueequip  tools/install_unique_equip.py     the uniques with an equip rule of their own (chaos_items.xml equipLevel /
+               equipLines: the second round's archetype uniques) get it: their base items' Equip entries in
+               movements.xml check the looser rule and a movement script holds each copy to its own (unique or
+               stock; README "Unique equip rules"; after vocations and archery)
   itemnames    tools/patch_base_item_names.py    Chaos names of the base items with names of another world, by id
                (data/items/base_item_names.csv): items.xml, the monsters' loot by old name becomes loot by
                id, other mentions in the base data renamed (README "Base item names"; after archery)
@@ -91,6 +102,14 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   npcnames     tools/patch_base_npc_names.py     Chaos names of the base NPCs (data/npc/base_npc_names.csv, keyed by the
                sha256 of the old name): the NPC files and their shown names, the NPC spawn entries, Game.createNpc
                names (README "Base NPC names"; after towns, monsternames and itemnames)
+  runes        tools/install_rune_supply.py      no conjuring: the conjure spells of spells.xml commented out (runes, blank
+               rune, food, enchanted spear and staff), every NPC sells each rune at the price of
+               data/lib/chaos_rune_supply.lua, the vendors (Raloth, Isora) sell every rune, the rune recipe loader in the
+               general crafting file (README "Rune supply"; after npcnames)
+  itemprices   tools/install_item_prices.py      the item price table (data/lib/chaos_item_prices_data.lua): the Loot Buyer NPC
+               in data/npc, every NPC's sell price of a priced item set to the table, NPC buy prices below twice the
+               sell price raised (no arbitrage; README "Item prices"; after packitems, fistweapons and runes, which
+               write shop entries too)
   worldtexts   tools/patch_base_texts.py         the old world's names in NPC dialogue and keywords, travel, the quest log,
                raids, achievements, item descriptions, script messages and the map's signs and books
                (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
@@ -113,8 +132,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   stalls       tools/patch_base_stalls.py        the base expedition scripts announce a new NPC or boss to the players on its
                island from the list of players online instead of a scan of every tile of the island (627,000 tiles,
                0.6-0.9 s of frozen game loop at each spawn time; same players, sounds, marks and broadcasts); the base
-               upgrade-slot check (every 100 ms per player) keeps the slots it parsed per item description (README "Game
-               loop stalls")
+               upgrade-slot check keeps the slots it parsed per item description and runs at login, at once on an
+               equip move and once a second per player in 12 groups instead of every 100 ms, and adds and
+               removes each slot bonus under one condition id, forgetting the bonus of an emptied slot (README
+               "Game loop stalls"); the base extended opcode script reads and pushes the ancestral points at most
+               once every 2 s per player instead of a database read for every request a client sends (README
+               "Stress test")
   bossrooms    tools/patch_base_bossrooms.py     the base lever boss rooms and the step-in miniboss rooms (several in one file):
                the lever (or entry tile) is locked while a group is inside, a time limit (the room's own kick time, at
                most 30 minutes) with warnings and a countdown, everyone out to the room's exit and its monsters removed
@@ -157,7 +180,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'storefood', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'uniqueequip', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -389,6 +412,13 @@ def step_fistweapons(server, data, ctx):
     return tool_result(run_tool([tool('install_fist_weapons.py'), data], 'install_fist_weapons.py'))
 
 
+def step_themeitems(server, data, ctx):
+    return tool_result(run_tool([tool('install_theme_items.py'), data], 'install_theme_items.py'))
+
+
+STEPS.insert(STEPS.index('fistweapons') + 1, 'themeitems')  # after the fist weapons (client ids appended after theirs)
+
+
 def step_gems(server, data, ctx):
     return tool_result(run_tool([tool('install_gems.py'), data], 'install_gems.py'))
 
@@ -411,6 +441,10 @@ def step_factions(server, data, ctx):
 
 def step_pouches(server, data, ctx):
     return tool_result(run_tool([tool('install_pouches.py'), data], 'install_pouches.py'))
+
+
+def step_storefood(server, data, ctx):
+    return tool_result(run_tool([tool('install_store_food.py'), data], 'install_store_food.py'))
 
 
 def step_depot(server, data, ctx):
@@ -460,6 +494,10 @@ def step_spells(server, data, ctx):
     ok, lines = run_tool([tool('register_spells.py'), data], 'register_spells.py')
     if not ok:
         return False, lines, []
+    ok, more = run_tool([tool('patch_spell_ids.py'), data], 'patch_spell_ids.py')
+    lines += more
+    if not ok:
+        return False, lines, []
     # CLASS HOOK (see the docstring): installers of the class lines, run after the Chaos spell block exists
     for hook in class_hooks():
         ok, more = run_tool([hook, data], os.path.basename(hook))
@@ -479,6 +517,10 @@ def step_archery(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
 
 
+def step_uniqueequip(server, data, ctx):
+    return tool_result(run_tool([tool('install_unique_equip.py'), data], 'install_unique_equip.py'))
+
+
 def step_itemnames(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_item_names.py'), data], 'patch_base_item_names.py'))
 
@@ -493,6 +535,20 @@ def step_towns(server, data, ctx):
 
 def step_npcnames(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_npc_names.py'), data], 'patch_base_npc_names.py'))
+
+
+def step_runes(server, data, ctx):
+    return tool_result(run_tool([tool('install_rune_supply.py'), data], 'install_rune_supply.py'))
+
+
+STEPS.insert(STEPS.index('npcnames') + 1, 'runes')  # after npcnames: the vendors by their Chaos names (hash before it)
+
+
+def step_itemprices(server, data, ctx):
+    return tool_result(run_tool([tool('install_item_prices.py'), data], 'install_item_prices.py'))
+
+
+STEPS.insert(STEPS.index('runes') + 1, 'itemprices')  # after runes: every NPC shop entry is written by then
 
 
 def step_worldtexts(server, data, ctx):

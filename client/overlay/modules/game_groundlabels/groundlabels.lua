@@ -408,7 +408,11 @@ end
 local function onTiles(data)
   local t0 = now()
   local changed = false
-  for _, entry in ipairs(type(data.t) == 'table' and data.t or {}) do
+  local entries = {} -- the tile answers; an entry that is no table is left out
+  for _, e in ipairs(type(data.t) == 'table' and data.t or {}) do
+    if type(e) == 'table' then entries[#entries + 1] = e end
+  end
+  for _, entry in ipairs(entries) do
     local p = type(entry.p) == 'table' and entry.p or {}
     local pos = { x = tonumber(p[1]) or -1, y = tonumber(p[2]) or -1, z = tonumber(p[3]) or -1 }
     local t = tiles[GL.posKey(pos)]

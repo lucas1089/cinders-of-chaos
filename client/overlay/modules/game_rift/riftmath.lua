@@ -62,6 +62,14 @@ function RiftMath.modLine(m)
   return name ~= '' and name or text
 end
 
+-- the colour of a modifier line: gold for a boon, violet for a suffix (players and area), nil (the label's) for a prefix
+function RiftMath.modColor(m)
+  if type(m) ~= 'table' then return nil end
+  if m.boon then return '#e8c060' end
+  if m.side == 'suffix' then return '#c9a6ff' end
+  return nil
+end
+
 -- "Lives: 2 / 4" (shared lives of the run; '' when the server sent none)
 function RiftMath.livesLine(lives, max)
   lives, max = tonumber(lives), tonumber(max)
@@ -76,6 +84,20 @@ function RiftMath.livesColor(lives, max)
   if lives <= 1 then return '#ff4030' end
   if max > 0 and lives * 2 < max then return '#ff9a30' end
   return '#9fd89f'
+end
+
+-- the Rift Atlas's Swift line of a running rift: swift = the tier's Swift time (seconds, from the server), limit = the
+-- run's limit, left = seconds left now. Returns the text and its colour: '' when there is no Swift time (an Omen
+-- arena, an older server); blue with the time to spare while it can still be made, grey once it is missed.
+function RiftMath.swiftLine(swift, limit, left)
+  swift, limit, left = tonumber(swift), tonumber(limit), tonumber(left)
+  if not swift or swift <= 0 or not limit then return '', nil end
+  local elapsed = math.max(0, limit - (left or 0))
+  if elapsed <= swift then
+    return string.format('Swift: seal within %s (%s to spare)', RiftMath.clock(swift), RiftMath.clock(swift - elapsed)),
+      '#7fb8e8'
+  end
+  return string.format('Swift: missed (%s)', RiftMath.clock(swift)), '#8c8070'
 end
 
 -- colour of the clock: gold, orange under a minute, red under 20 s

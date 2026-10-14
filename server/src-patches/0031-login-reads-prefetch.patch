@@ -1,0 +1,1627 @@
+# Login reads off the game loop (server/README.md "Login reads off the game loop"). The onLogin scripts of the Chaos
+# systems and of the base read about 70 result sets per login with db.storeQuery on the game loop (14-15 ms of the 37-39 ms
+# login task, p50, with 200 bots on the full map; more when the database is busy). They now run on the login worker.
+#   * After a successful game login check (IOLoginData::gameworldAuthenticationAsync, patch 0014, on the worker's own
+#     connection of 0029) the worker looks up the character id and runs the SELECTs logins ran before for this player
+#     (LoginPrefetch::fetch), copies each result out of the client library (Database::storeRows, struct DBRows) and
+#     hands them to the login task. While the onLogin scripts run (Player::onPlacedCreature), Database::storeQuery on
+#     the main connection answers a statement with exactly the same text from those rows (DBResult over a DBRows),
+#     when no write was committed to a table it reads since the snapshot taken before its read. Everything else (other
+#     text, a stale table, a write, a query outside the onLogin scripts, a batch older than 5 s) goes to the database.
+#   * Which SELECTs: learnt from the logins (src/chaosprefetch.h Templates): each SELECT of an onLogin script with the
+#     player id, the account id and the quoted name taken out (only when the two ids differ). Plain SELECTs of tables of
+#     this database only: no comment, user variable, FOR UPDATE / LOCK IN SHARE MODE, INTO, time / random / connection
+#     functions, other schemas or stored functions of the database. A template no login ran again is dropped after 2
+#     (seen once) or 50 (seen more) prefetches; at most 512 templates, 256 per login.
+#   * Write clock (src/chaosprefetch.h WriteClock): a counter per table, raised after each write is committed, on every
+#     connection (Database::executeQuery / storeQuery / commit / rollback: the main one, the async query thread's, the
+#     login workers'). A write raises its table and the tables its foreign keys (ON DELETE / ON UPDATE CASCADE, SET
+#     NULL, SET DEFAULT) and triggers reach, read from information_schema at startup and again after every CREATE /
+#     ALTER / DROP / RENAME (src/chaosprefetch.h Dependencies). In a transaction (BEGIN / START TRANSACTION, SET
+#     autocommit = 0, DBTransaction) the tables count at its end. A statement that cannot be told apart (multi-table
+#     UPDATE / DELETE, CALL, DDL, a comment, ...) raises every table.
+#   * config.lua loginPrefetch (default true, read at startup); false: everything as before. The slow task log (0027)
+#     shows the answered reads as "db prefetched N". New: src/chaosprefetch.h (pure, tested by
+#     server/tools/chaosprefetch_test.cpp in CI), src/loginprefetch.h/.cpp (added to src/CMakeLists.txt).
+# Untouched: the scripts, the engine's own player load (IOLoginData::preloadPlayer / loadPlayerById), every write.
+# Apply in the server source root after 0001-0030: patch -p1 < 0031-login-reads-prefetch.patch, then rebuild.
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 6137a4c..3b34aeb 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -36,6 +36,7 @@ set(tfs_SRC
+ 	${CMAKE_CURRENT_LIST_DIR}/iomarket.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/item.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/items.cpp
++	${CMAKE_CURRENT_LIST_DIR}/loginprefetch.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/luascript.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/mailbox.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/map.cpp
+diff --git a/src/chaosprefetch.h b/src/chaosprefetch.h
+new file mode 100644
+index 0000000..7a3e170
+--- /dev/null
++++ b/src/chaosprefetch.h
+@@ -0,0 +1,882 @@
++// Chaos (patch 0031): the login reads off the game loop, the pure parts (no engine types), tested by
++// server/tools/chaosprefetch_test.cpp (CI). server/README.md "Login reads off the game loop".
++//   * classify(): what an SQL statement does to the database: a read that may be prefetched (a plain SELECT of tables
++//     of this database, no function whose result depends on when or where it runs), a write and the table it writes,
++//     a transaction boundary, or something that cannot be told apart (any write anywhere).
++//   * makeTemplate() / expand(): the SELECTs one login ran, with the player id, the account id and the quoted
++//     character name taken out, so the login worker can run them for the next player.
++//   * Dependencies: which tables a write to a table changes as well (foreign keys ON DELETE / ON UPDATE CASCADE, SET
++//     NULL, SET DEFAULT; triggers), read from information_schema at startup.
++//   * WriteClock: a counter per table, raised after a write is committed. A prefetched result is only used while every
++//     table it read still has the counter it had before the read.
++//   * Templates: the SELECTs logins run, kept while logins keep running them.
++#ifndef FS_CHAOSPREFETCH_H
++#define FS_CHAOSPREFETCH_H
++
++#include <algorithm>
++#include <cstddef>
++#include <cstdint>
++#include <map>
++#include <mutex>
++#include <set>
++#include <string>
++#include <unordered_map>
++#include <utility>
++#include <vector>
++
++namespace ChaosPrefetch {
++
++struct Token {
++	enum Type { Word, Ident, String, Number, Symbol };
++	Type type;
++	std::string text; // Word: lower case; Ident: without the backticks; others: as written
++	size_t begin, end; // [begin, end) in the statement
++};
++
++// false when the statement cannot be read safely: a comment (MySQL runs /*! ... */), an unterminated quote, a NUL or
++// the template marker byte. With maxTokens it stops after that many tokens (complete is then false).
++inline bool tokenize(const std::string& sql, std::vector<Token>& out, size_t maxTokens = static_cast<size_t>(-1),
++                     bool* complete = nullptr)
++{
++	out.clear();
++	if (complete) {
++		*complete = true;
++	}
++	const size_t n = sql.size();
++	size_t i = 0;
++	auto isWordChar = [](unsigned char c) {
++		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$' || c >= 0x80;
++	};
++	while (i < n) {
++		if (out.size() >= maxTokens) {
++			if (complete) {
++				*complete = false;
++			}
++			return true;
++		}
++		const unsigned char c = static_cast<unsigned char>(sql[i]);
++		if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v') {
++			++i;
++			continue;
++		}
++		if (c == 0 || c == 1) {
++			return false;
++		}
++		if (c == '#' || (c == '-' && i + 1 < n && sql[i + 1] == '-') || (c == '/' && i + 1 < n && sql[i + 1] == '*')) {
++			return false;
++		}
++		const size_t start = i;
++		if (c == '\'' || c == '"') {
++			++i;
++			bool closed = false;
++			while (i < n) {
++				if (sql[i] == '\\') {
++					i += 2;
++					continue;
++				}
++				if (sql[i] == static_cast<char>(c)) {
++					if (i + 1 < n && sql[i + 1] == static_cast<char>(c)) {
++						i += 2;
++						continue;
++					}
++					++i;
++					closed = true;
++					break;
++				}
++				++i;
++			}
++			if (!closed) {
++				return false;
++			}
++			out.push_back({Token::String, sql.substr(start, i - start), start, i});
++			continue;
++		}
++		if (c == '`') {
++			++i;
++			std::string name;
++			bool closed = false;
++			while (i < n) {
++				if (sql[i] == '`') {
++					if (i + 1 < n && sql[i + 1] == '`') {
++						name.push_back('`');
++						i += 2;
++						continue;
++					}
++					++i;
++					closed = true;
++					break;
++				}
++				name.push_back(sql[i++]);
++			}
++			if (!closed) {
++				return false;
++			}
++			out.push_back({Token::Ident, name, start, i});
++			continue;
++		}
++		if (isWordChar(c)) {
++			bool digits = true;
++			while (i < n && isWordChar(static_cast<unsigned char>(sql[i]))) {
++				if (sql[i] < '0' || sql[i] > '9') {
++					digits = false;
++				}
++				++i;
++			}
++			std::string text = sql.substr(start, i - start);
++			if (!digits) {
++				std::transform(text.begin(), text.end(), text.begin(), [](unsigned char ch) {
++					return static_cast<char>(ch >= 'A' && ch <= 'Z' ? ch - 'A' + 'a' : ch);
++				});
++			}
++			out.push_back({digits ? Token::Number : Token::Word, text, start, i});
++			continue;
++		}
++		++i;
++		out.push_back({Token::Symbol, std::string(1, static_cast<char>(c)), start, i});
++	}
++	return true;
++}
++
++// table names are compared in lower case: two names that differ only in case count as one table (more invalidation,
++// never less)
++inline std::string lower(std::string s)
++{
++	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char ch) {
++		return static_cast<char>(ch >= 'A' && ch <= 'Z' ? ch - 'A' + 'a' : ch);
++	});
++	return s;
++}
++
++enum class Event { Insert, Update, Delete };
++
++struct Statement {
++	enum Kind {
++		None,     // changes no table (SHOW, SET NAMES, SAVEPOINT, ...)
++		Read,     // a SELECT
++		Write,    // writes `writes` (each with its event)
++		Begin,
++		Commit,
++		Rollback,
++		Unknown,  // may write anything
++	};
++	Kind kind = Unknown;
++	bool cacheable = false;                           // Read only: may be run early on another connection
++	std::vector<std::string> tables;                  // Read: the tables it reads (cacheable only)
++	std::vector<std::string> calls;                   // Read: the names written as calls, name( (cacheable only)
++	std::vector<std::pair<std::string, Event>> writes; // Write
++};
++
++inline bool isWord(const std::vector<Token>& t, size_t i, const char* w)
++{
++	return i < t.size() && t[i].type == Token::Word && t[i].text == w;
++}
++
++inline bool isSymbol(const std::vector<Token>& t, size_t i, char s)
++{
++	return i < t.size() && t[i].type == Token::Symbol && t[i].text[0] == s;
++}
++
++// words that end a table reference (so they are no alias)
++inline bool isClauseWord(const std::string& w)
++{
++	static const std::set<std::string> words = {
++		"where", "join", "inner", "left", "right", "outer", "cross", "natural", "straight_join", "on", "using",
++		"group", "order", "having", "limit", "union", "window", "procedure", "into", "for", "lock", "use",
++		"ignore", "force", "set", "values", "value", "select", "partition", "except", "intersect", "returning",
++	};
++	return words.count(w) != 0;
++}
++
++// a table name at t[i] (`name` or name; `db`.`name` sets qualified); i moves past it
++inline bool readTableName(const std::vector<Token>& t, size_t& i, std::string& name, bool& qualified)
++{
++	auto isName = [&](size_t k) {
++		return k < t.size() && (t[k].type == Token::Ident || (t[k].type == Token::Word && !isClauseWord(t[k].text)));
++	};
++	if (!isName(i)) {
++		return false;
++	}
++	name = lower(t[i].text);
++	qualified = false;
++	++i;
++	if (isSymbol(t, i, '.') && isName(i + 1)) {
++		name = lower(t[i + 1].text);
++		qualified = true;
++		i += 2;
++	}
++	return true;
++}
++
++// functions and words whose value depends on when, where or by whom the statement runs, or that have side effects
++inline bool isVolatileWord(const std::string& w)
++{
++	static const std::set<std::string> words = {
++		"now", "sysdate", "curdate", "curtime", "current_date", "current_time", "current_timestamp", "localtime",
++		"localtimestamp", "unix_timestamp", "utc_date", "utc_time", "utc_timestamp", "rand", "uuid", "uuid_short",
++		"last_insert_id", "found_rows", "row_count", "connection_id", "sleep", "get_lock", "release_lock",
++		"release_all_locks", "is_free_lock", "is_used_lock", "benchmark", "database", "schema", "user", "current_user",
++		"session_user", "system_user", "current_role", "version", "load_file", "master_pos_wait", "master_gtid_wait",
++		"nextval", "lastval", "setval", "into", "lock", "share", "procedure", "sql_calc_found_rows",
++		"information_schema", "performance_schema", "mysql", "sys",
++	};
++	return words.count(w) != 0;
++}
++
++inline void classifyRead(const std::vector<Token>& t, Statement& st)
++{
++	st.kind = Statement::Read;
++	st.cacheable = false;
++	std::set<std::string> tables;
++	for (size_t i = 0; i < t.size(); ++i) {
++		const Token& tok = t[i];
++		if (tok.type == Token::Symbol && ((tok.text[0] == ';' && i + 1 != t.size()) || tok.text[0] == '@' || tok.text[0] == '?')) {
++			return; // more than one statement, user variables, placeholders
++		}
++		if (tok.type != Token::Word) {
++			continue;
++		}
++		if (isVolatileWord(tok.text)) {
++			return;
++		}
++		if (isSymbol(t, i + 1, '(')) {
++			st.calls.push_back(tok.text); // a stored function of the database may write: Dependencies::callsFunction
++		}
++		if (tok.text == "for" && isWord(t, i + 1, "update")) {
++			return;
++		}
++		if (tok.text != "from" && tok.text != "join") {
++			continue;
++		}
++		// a table reference list: name [AS] [alias] [, name [AS] [alias] ...]; a derived table "(SELECT ...)" is
++		// skipped here (its own FROM is read when the loop gets there)
++		size_t k = i + 1;
++		while (true) {
++			if (isSymbol(t, k, '(')) {
++				break;
++			}
++			std::string name;
++			bool qualified = false;
++			if (!readTableName(t, k, name, qualified) || qualified) {
++				return; // FROM a number (SUBSTRING(x FROM 2)), another database's table: not prefetched
++			}
++			tables.insert(name);
++			if (isWord(t, k, "as")) {
++				++k;
++			}
++			if (k < t.size() && (t[k].type == Token::Ident || (t[k].type == Token::Word && !isClauseWord(t[k].text)))) {
++				++k; // alias
++			}
++			if (tok.text == "from" && isSymbol(t, k, ',')) {
++				++k;
++				continue;
++			}
++			break;
++		}
++	}
++	if (tables.empty()) {
++		return;
++	}
++	st.cacheable = true;
++	st.tables.assign(tables.begin(), tables.end());
++}
++
++// complete: t holds the whole statement (a read is then checked for prefetching); otherwise only its first tokens,
++// which is enough to tell what a write writes
++inline Statement classifyTokens(const std::vector<Token>& t, bool complete)
++{
++	Statement st;
++	size_t i = 0;
++	while (isSymbol(t, i, '(')) {
++		++i; // "(SELECT ...) UNION (SELECT ...)"
++	}
++	if (i >= t.size()) {
++		st.kind = Statement::None;
++		return st;
++	}
++	if (t[i].type != Token::Word) {
++		st.kind = Statement::Unknown;
++		return st;
++	}
++	const std::string& w = t[i].text;
++	auto skipWords = [&](size_t k, std::initializer_list<const char*> words) {
++		bool moved = true;
++		while (moved) {
++			moved = false;
++			for (const char* word : words) {
++				if (isWord(t, k, word)) {
++					++k;
++					moved = true;
++				}
++			}
++		}
++		return k;
++	};
++	if (w == "select") {
++		if (complete) {
++			classifyRead(t, st);
++		} else {
++			st.kind = Statement::Read;
++		}
++		return st;
++	}
++	if (w == "show" || w == "describe" || w == "desc" || w == "explain" || w == "savepoint" || w == "release" ||
++	    w == "help" || w == "do") {
++		st.kind = (w == "do") ? Statement::Unknown : Statement::None;
++		return st;
++	}
++	if (w == "begin" || (w == "start" && isWord(t, i + 1, "transaction"))) {
++		st.kind = Statement::Begin;
++		return st;
++	}
++	if (w == "commit") {
++		st.kind = Statement::Commit;
++		return st;
++	}
++	if (w == "rollback") {
++		// ROLLBACK TO SAVEPOINT keeps the transaction going
++		st.kind = isWord(t, i + 1, "to") ? Statement::None : Statement::Rollback;
++		return st;
++	}
++	if (w == "set") {
++		// SET autocommit = 0 starts a transaction that the next COMMIT ends; SET autocommit = 1 commits
++		for (size_t k = i + 1; k < t.size(); ++k) {
++			if (t[k].type == Token::Word && t[k].text == "autocommit") {
++				size_t v = k + 1;
++				if (isSymbol(t, v, '=')) {
++					++v;
++				}
++				if (v < t.size() && (t[v].text == "0" || t[v].text == "off" || t[v].text == "false")) {
++					st.kind = Statement::Begin;
++				} else {
++					st.kind = Statement::Commit;
++				}
++				return st;
++			}
++		}
++		st.kind = Statement::None;
++		return st;
++	}
++	// the client library sends one statement per call (no CLIENT_MULTI_STATEMENTS), so what follows the head of a
++	// write cannot write another table (triggers and foreign keys: Dependencies)
++	std::string name;
++	bool qualified = false;
++	if (w == "insert" || w == "replace") {
++		size_t k = skipWords(i + 1, {"low_priority", "delayed", "high_priority", "ignore", "into"});
++		if (!readTableName(t, k, name, qualified)) {
++			st.kind = Statement::Unknown;
++			return st;
++		}
++		st.kind = Statement::Write;
++		st.writes.emplace_back(name, Event::Insert);
++		st.writes.emplace_back(name, Event::Update); // ON DUPLICATE KEY UPDATE (the tail is not read)
++		if (w == "replace") {
++			st.writes.emplace_back(name, Event::Delete);
++		}
++		return st;
++	}
++	if (w == "update") {
++		size_t k = skipWords(i + 1, {"low_priority", "ignore"});
++		if (!readTableName(t, k, name, qualified)) {
++			st.kind = Statement::Unknown;
++			return st;
++		}
++		if (isWord(t, k, "as")) {
++			++k;
++		}
++		if (k < t.size() && !isWord(t, k, "set") &&
++		    (t[k].type == Token::Ident || (t[k].type == Token::Word && !isClauseWord(t[k].text)))) {
++			++k; // alias
++		}
++		if (!isWord(t, k, "set")) {
++			st.kind = Statement::Unknown; // UPDATE a JOIN b / UPDATE a, b: more than one table
++			return st;
++		}
++		st.kind = Statement::Write;
++		st.writes.emplace_back(name, Event::Update);
++		return st;
++	}
++	if (w == "delete") {
++		size_t k = skipWords(i + 1, {"low_priority", "quick", "ignore"});
++		if (!isWord(t, k, "from")) {
++			st.kind = Statement::Unknown; // DELETE a FROM a JOIN b
++			return st;
++		}
++		++k;
++		if (!readTableName(t, k, name, qualified)) {
++			st.kind = Statement::Unknown;
++			return st;
++		}
++		if (k >= t.size() ? !complete : !(isWord(t, k, "where") || isWord(t, k, "order") || isWord(t, k, "limit") ||
++		                                  isWord(t, k, "returning") || isSymbol(t, k, ';'))) {
++			st.kind = Statement::Unknown; // DELETE FROM a, b USING ... / an alias with a join
++			return st;
++		}
++		st.kind = Statement::Write;
++		st.writes.emplace_back(name, Event::Delete);
++		return st;
++	}
++	if (w == "truncate") {
++		size_t k = skipWords(i + 1, {"table"});
++		if (!readTableName(t, k, name, qualified)) {
++			st.kind = Statement::Unknown;
++			return st;
++		}
++		st.kind = Statement::Write;
++		st.writes.emplace_back(name, Event::Delete);
++		return st;
++	}
++	st.kind = Statement::Unknown; // CREATE, ALTER, DROP, RENAME, CALL, LOCK TABLES, LOAD DATA, ...
++	return st;
++}
++
++inline Statement classify(const std::string& sql)
++{
++	std::vector<Token> t;
++	if (!tokenize(sql, t)) {
++		return Statement();
++	}
++	return classifyTokens(t, true);
++}
++
++// for the write clock: only the head of the statement is read (a player save's INSERT can be long)
++inline Statement classifyHead(const std::string& sql)
++{
++	std::vector<Token> t;
++	bool complete = true;
++	if (!tokenize(sql, t, 24, &complete)) {
++		return Statement();
++	}
++	return classifyTokens(t, complete);
++}
++
++// --- templates of the login's SELECTs ---
++
++// markers: "\x01G" player id, "\x01A" account id, "\x01N" the quoted character name (tokenize() refuses the byte 1,
++// so a statement never contains one by itself)
++inline bool makeTemplate(const std::string& sql, uint32_t playerId, uint32_t accountId, const std::string& nameLiteral,
++                         std::string& out)
++{
++	if (playerId == 0 || accountId == 0 || playerId == accountId) {
++		return false; // the same number for both: which one a query meant cannot be told
++	}
++	std::vector<Token> t;
++	if (!tokenize(sql, t)) {
++		return false;
++	}
++	const std::string pid = std::to_string(playerId);
++	const std::string aid = std::to_string(accountId);
++	out.clear();
++	size_t copied = 0;
++	for (size_t i = 0; i < t.size(); ++i) {
++		const char* marker = nullptr;
++		if (t[i].type == Token::Number && !isSymbol(t, i + 1, '.') && !(i > 0 && isSymbol(t, i - 1, '.'))) {
++			if (t[i].text == pid) {
++				marker = "\x01" "G";
++			} else if (t[i].text == aid) {
++				marker = "\x01" "A";
++			}
++		} else if (t[i].type == Token::String && !nameLiteral.empty() && t[i].text == nameLiteral) {
++			marker = "\x01" "N";
++		}
++		if (marker) {
++			out.append(sql, copied, t[i].begin - copied);
++			out.append(marker);
++			copied = t[i].end;
++		}
++	}
++	out.append(sql, copied, std::string::npos);
++	return true;
++}
++
++inline std::string expand(const std::string& tmpl, uint32_t playerId, uint32_t accountId, const std::string& nameLiteral)
++{
++	std::string out;
++	out.reserve(tmpl.size() + 16);
++	for (size_t i = 0; i < tmpl.size(); ++i) {
++		if (tmpl[i] == '\x01' && i + 1 < tmpl.size()) {
++			const char m = tmpl[++i];
++			if (m == 'G') {
++				out.append(std::to_string(playerId));
++			} else if (m == 'A') {
++				out.append(std::to_string(accountId));
++			} else if (m == 'N') {
++				out.append(nameLiteral);
++			}
++			continue;
++		}
++		out.push_back(tmpl[i]);
++	}
++	return out;
++}
++
++// --- which tables a write changes ---
++
++class Dependencies
++{
++	public:
++		enum class Rule { None, Cascade, SetNull };
++
++		static Rule rule(std::string r)
++		{
++			r = lower(r);
++			if (r == "cascade") {
++				return Rule::Cascade;
++			}
++			if (r == "set null" || r == "set default") {
++				return Rule::SetNull;
++			}
++			return Rule::None; // RESTRICT, NO ACTION
++		}
++
++		// a foreign key of `child` to `parent`
++		void addForeignKey(const std::string& child, const std::string& parent, const std::string& updateRule,
++		                   const std::string& deleteRule)
++		{
++			ForeignKey fk;
++			fk.child = lower(child);
++			fk.onUpdate = rule(updateRule);
++			fk.onDelete = rule(deleteRule);
++			if (fk.onUpdate != Rule::None || fk.onDelete != Rule::None) {
++				foreignKeys[lower(parent)].push_back(fk);
++			}
++		}
++
++		// a trigger on `table` for INSERT / UPDATE / DELETE; the tables its body writes are read from the body, and
++		// a body that cannot be read counts as a write to every table
++		void addTrigger(const std::string& table, const std::string& event, const std::string& body)
++		{
++			const Event ev = parseEvent(event);
++			std::vector<std::pair<std::string, Event>>& targets = triggers[key(lower(table), ev)];
++			std::vector<Token> t;
++			if (!tokenize(body, t)) {
++				everything.insert(key(lower(table), ev));
++				return;
++			}
++			for (size_t i = 0; i < t.size(); ++i) {
++				if (t[i].type != Token::Word) {
++					continue;
++				}
++				const std::string& w = t[i].text;
++				std::string name;
++				bool qualified = false;
++				size_t k = i + 1;
++				if (w == "insert" || w == "replace") {
++					while (isWord(t, k, "low_priority") || isWord(t, k, "delayed") || isWord(t, k, "high_priority") ||
++					       isWord(t, k, "ignore") || isWord(t, k, "into")) {
++						++k;
++					}
++					if (readTableName(t, k, name, qualified)) {
++						targets.emplace_back(name, Event::Insert);
++						if (w == "replace") {
++							targets.emplace_back(name, Event::Delete);
++						}
++						targets.emplace_back(name, Event::Update); // ON DUPLICATE KEY UPDATE
++					} else {
++						everything.insert(key(lower(table), ev));
++					}
++				} else if (w == "update") {
++					while (isWord(t, k, "low_priority") || isWord(t, k, "ignore")) {
++						++k;
++					}
++					if (readTableName(t, k, name, qualified)) {
++						targets.emplace_back(name, Event::Update);
++						if (!isWord(t, k, "set") && !isWord(t, k + 1, "set") && !isWord(t, k + 2, "set")) {
++							everything.insert(key(lower(table), ev)); // more than one table
++						}
++					} else {
++						everything.insert(key(lower(table), ev));
++					}
++				} else if (w == "delete") {
++					while (isWord(t, k, "low_priority") || isWord(t, k, "quick") || isWord(t, k, "ignore")) {
++						++k;
++					}
++					if (isWord(t, k, "from") && (++k, readTableName(t, k, name, qualified))) {
++						targets.emplace_back(name, Event::Delete);
++					} else {
++						everything.insert(key(lower(table), ev));
++					}
++				} else if (w == "call" || w == "truncate" || w == "drop" || w == "alter" || w == "create" ||
++				           w == "rename" || w == "load" || w == "execute" || w == "prepare") {
++					everything.insert(key(lower(table), ev));
++				}
++			}
++		}
++
++		// a stored function of the database (information_schema.ROUTINES): a SELECT that calls one may write, so it is
++		// never run early
++		void addFunction(const std::string& name)
++		{
++			functions.insert(lower(name));
++		}
++
++		bool callsFunction(const Statement& st) const
++		{
++			for (const std::string& c : st.calls) {
++				if (functions.count(c)) {
++					return true;
++				}
++			}
++			return false;
++		}
++
++		// every table the writes change, `all` when they may change any table
++		void affected(const std::vector<std::pair<std::string, Event>>& writes, std::set<std::string>& tables, bool& all) const
++		{
++			std::set<std::string> seen;
++			std::vector<std::pair<std::string, Event>> work(writes.begin(), writes.end());
++			while (!work.empty()) {
++				const auto item = work.back();
++				work.pop_back();
++				const std::string table = lower(item.first);
++				if (!seen.insert(key(table, item.second)).second) {
++					continue;
++				}
++				tables.insert(table);
++				if (everything.count(key(table, item.second))) {
++					all = true;
++				}
++				auto trig = triggers.find(key(table, item.second));
++				if (trig != triggers.end()) {
++					work.insert(work.end(), trig->second.begin(), trig->second.end());
++				}
++				if (item.second == Event::Insert) {
++					continue;
++				}
++				auto fks = foreignKeys.find(table);
++				if (fks == foreignKeys.end()) {
++					continue;
++				}
++				for (const ForeignKey& fk : fks->second) {
++					const Rule r = (item.second == Event::Delete) ? fk.onDelete : fk.onUpdate;
++					if (r == Rule::Cascade) {
++						work.emplace_back(fk.child, item.second);
++					} else if (r == Rule::SetNull) {
++						work.emplace_back(fk.child, Event::Update);
++					}
++				}
++			}
++		}
++
++	private:
++		struct ForeignKey {
++			std::string child;
++			Rule onUpdate = Rule::None;
++			Rule onDelete = Rule::None;
++		};
++
++		static Event parseEvent(const std::string& e)
++		{
++			const std::string l = lower(e);
++			if (l == "insert") {
++				return Event::Insert;
++			}
++			if (l == "update") {
++				return Event::Update;
++			}
++			return Event::Delete;
++		}
++
++		static std::string key(const std::string& table, Event e)
++		{
++			return table + (e == Event::Insert ? "\x01" "i" : e == Event::Update ? "\x01" "u" : "\x01" "d");
++		}
++
++		std::map<std::string, std::vector<ForeignKey>> foreignKeys; // parent -> its children
++		std::map<std::string, std::vector<std::pair<std::string, Event>>> triggers;
++		std::set<std::string> everything;
++		std::set<std::string> functions;
++};
++
++// --- write clock ---
++
++struct Snapshot {
++	uint64_t epoch = 0;
++	std::vector<uint64_t> counters; // in the order of the tables given to snapshot()
++};
++
++class WriteClock
++{
++	public:
++		// after the write is committed (autocommit: when the statement returned; in a transaction: at the COMMIT)
++		void bump(const std::set<std::string>& tables, bool all)
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			if (all) {
++				++epoch;
++			}
++			for (const std::string& t : tables) {
++				++counters[t];
++			}
++		}
++
++		// before the early read
++		Snapshot snapshot(const std::vector<std::string>& tables) const
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			Snapshot s;
++			s.epoch = epoch;
++			s.counters.reserve(tables.size());
++			for (const std::string& t : tables) {
++				auto it = counters.find(t);
++				s.counters.push_back(it == counters.end() ? 0 : it->second);
++			}
++			return s;
++		}
++
++		// when the result would be used: no write committed to any of the tables since the snapshot
++		bool unchanged(const std::vector<std::string>& tables, const Snapshot& s) const
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			if (epoch != s.epoch || s.counters.size() != tables.size()) {
++				return false;
++			}
++			for (size_t i = 0; i < tables.size(); ++i) {
++				auto it = counters.find(tables[i]);
++				if ((it == counters.end() ? 0 : it->second) != s.counters[i]) {
++					return false;
++				}
++			}
++			return true;
++		}
++
++	private:
++		mutable std::mutex lock;
++		uint64_t epoch = 0;
++		std::unordered_map<std::string, uint64_t> counters;
++};
++
++// per connection: the tables written inside the open transaction, raised at its end
++struct TxnState {
++	bool active = false;
++	bool all = false;
++	std::set<std::string> tables;
++};
++
++// what a statement that has run means for the clock; deps may be null (before startup read them: every write counts
++// as a write to every table)
++inline void statementDone(WriteClock& clock, const Dependencies* deps, TxnState& txn, const std::string& sql)
++{
++	const Statement st = classifyHead(sql);
++	auto flush = [&]() {
++		if (txn.all || !txn.tables.empty()) {
++			clock.bump(txn.tables, txn.all);
++		}
++		txn = TxnState();
++	};
++	switch (st.kind) {
++		case Statement::None:
++		case Statement::Read:
++			return;
++		case Statement::Begin:
++			flush(); // BEGIN commits an open transaction
++			txn.active = true;
++			return;
++		case Statement::Commit:
++		case Statement::Rollback:
++			flush();
++			return;
++		case Statement::Write: {
++			std::set<std::string> tables;
++			bool all = (deps == nullptr);
++			if (deps) {
++				deps->affected(st.writes, tables, all);
++			}
++			if (txn.active) {
++				txn.tables.insert(tables.begin(), tables.end());
++				txn.all = txn.all || all;
++			} else {
++				clock.bump(tables, all);
++			}
++			return;
++		}
++		case Statement::Unknown:
++		default:
++			// DDL commits an open transaction; anything else unknown may write anything
++			if (txn.active) {
++				txn.all = true;
++				flush();
++			}
++			clock.bump({}, true);
++			return;
++	}
++}
++
++// --- the templates logins ran ---
++
++class Templates
++{
++	public:
++		struct Entry {
++			std::string text;
++			std::vector<std::string> tables;
++			uint32_t seen = 0;   // logins that ran it
++			uint32_t unseen = 0; // prefetches since a login last ran it
++		};
++
++		static constexpr size_t MAX_TEMPLATES = 512;
++		static constexpr size_t MAX_PER_LOGIN = 256;
++		// dropped after this many prefetches that no login used: soon when only one login ever ran it (a time or
++		// a day in the text), later when it was run often (a query of one class or of a rare state)
++		static constexpr uint32_t DROP_NEW = 2;
++		static constexpr uint32_t DROP_KNOWN = 50;
++
++		void learn(const std::string& text, const std::vector<std::string>& tables)
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			auto it = entries.find(text);
++			if (it != entries.end()) {
++				++it->second.seen;
++				it->second.unseen = 0;
++				return;
++			}
++			if (entries.size() >= MAX_TEMPLATES) {
++				return;
++			}
++			Entry e;
++			e.text = text;
++			e.tables = tables;
++			e.seen = 1;
++			entries.emplace(text, std::move(e));
++		}
++
++		// the templates to run for one login, the most used first; counts the prefetch and drops the ones no login
++		// ran for too long
++		std::vector<Entry> take(size_t max = MAX_PER_LOGIN)
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			std::vector<Entry> out;
++			for (auto it = entries.begin(); it != entries.end();) {
++				Entry& e = it->second;
++				if (e.unseen >= (e.seen >= 2 ? DROP_KNOWN : DROP_NEW)) {
++					it = entries.erase(it);
++					continue;
++				}
++				out.push_back(e);
++				++it;
++			}
++			std::sort(out.begin(), out.end(), [](const Entry& a, const Entry& b) {
++				return a.seen != b.seen ? a.seen > b.seen : a.text < b.text;
++			});
++			if (out.size() > max) {
++				out.resize(max);
++			}
++			for (const Entry& e : out) {
++				++entries[e.text].unseen;
++			}
++			return out;
++		}
++
++		size_t size() const
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			return entries.size();
++		}
++
++	private:
++		mutable std::mutex lock;
++		std::map<std::string, Entry> entries;
++};
++
++} // namespace ChaosPrefetch
++
++#endif
+diff --git a/src/configmanager.cpp b/src/configmanager.cpp
+index 4d981c8..a146276 100644
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -336,6 +336,7 @@ bool ConfigManager::load()
+ 	// proxyProtocolRequired = true: every other address is refused (127.0.0.0/8 excepted: the watchdog, health checks)
+ 	string[PROXY_PROTOCOL_TRUSTED] = getGlobalString(L, "proxyProtocolTrusted", "");
+ 	boolean[PROXY_PROTOCOL_REQUIRED] = getGlobalBoolean(L, "proxyProtocolRequired", false);
++	boolean[LOGIN_PREFETCH] = getGlobalBoolean(L, "loginPrefetch", true); // Chaos (patch 0031), read at startup
+ 	// Chaos (patch 0027): log every dispatcher task that takes this many ms or more, with its Lua calls and database
+ 	// queries (server/README.md "Slow task log"). 0: off
+ 	integer[SLOW_TASK_LOG_MS] = getGlobalNumber(L, "slowTaskLogMs", 0);
+diff --git a/src/configmanager.h b/src/configmanager.h
+index 546313a..7afa596 100644
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -57,6 +57,7 @@ class ConfigManager
+ 			ARMOR_PERCENT, // Chaos (patch 0016): percent armour for players
+ 			CLIENT_GUARD_ALLOW_DEV_KEY, // Chaos (patch 0021): client guard
+ 			PROXY_PROTOCOL_REQUIRED, // Chaos (patch 0025): PROXY protocol from the gateways
++			LOGIN_PREFETCH, // Chaos (patch 0031): login reads on the login worker
+ 
+ 			LAST_BOOLEAN_CONFIG /* this must be the last one */
+ 		};
+diff --git a/src/database.cpp b/src/database.cpp
+index 2751fa3..8b14f70 100644
+--- a/src/database.cpp
++++ b/src/database.cpp
+@@ -5,6 +5,7 @@
+ 
+ #include "configmanager.h"
+ #include "database.h"
++#include "loginprefetch.h"
+ #include "tasks.h"
+ 
+ #include <mysql/errmsg.h>
+@@ -64,6 +65,7 @@ bool Database::rollback()
+ 		TaskTiming::dbQueryDone("ROLLBACK", std::chrono::duration_cast<std::chrono::microseconds>(
+ 			std::chrono::steady_clock::now() - start).count(), 0);
+ 	}
++	LoginPrefetch::transactionEnd(prefetchTxn); // Chaos (patch 0031)
+ 	if (!ok) {
+ 		std::cout << "[Error - mysql_rollback] Message: " << mysql_error(handle) << std::endl;
+ 		databaseLock.unlock();
+@@ -85,6 +87,8 @@ bool Database::commit()
+ 		TaskTiming::dbQueryDone("COMMIT", std::chrono::duration_cast<std::chrono::microseconds>(
+ 			std::chrono::steady_clock::now() - start).count(), 0);
+ 	}
++	// Chaos (patch 0031): the transaction's writes count from here (a failed COMMIT too: more invalidation, never less)
++	LoginPrefetch::transactionEnd(prefetchTxn);
+ 	if (!ok) {
+ 		std::cout << "[Error - mysql_commit] Message: " << mysql_error(handle) << std::endl;
+ 		databaseLock.unlock();
+@@ -123,6 +127,7 @@ bool Database::executeQuery(const std::string& query)
+ 	}
+ 
+ 	MYSQL_RES* m_res = mysql_store_result(handle);
++	LoginPrefetch::statementDone(*this, prefetchTxn, query); // Chaos (patch 0031): the write clock
+ 	databaseLock.unlock();
+ 
+ 	if (m_res) {
+@@ -139,6 +144,15 @@ bool Database::executeQuery(const std::string& query)
+ 
+ DBResult_ptr Database::storeQuery(const std::string& query)
+ {
++	// Chaos (patch 0031): a login script's SELECT, answered from the rows the login worker read (same text, no write
++	// to its tables since)
++	if (LoginPrefetch::inLogin() && this == &Database::getInstance()) {
++		DBResult_ptr prefetched;
++		if (LoginPrefetch::serve(query, prefetched)) {
++			return prefetched;
++		}
++	}
++
+ 	// Chaos (patch 0027): slow task log, the database part (dispatcher thread only)
+ 	const bool timed = TaskTiming::current != nullptr;
+ 	std::chrono::steady_clock::time_point start, locked;
+@@ -167,11 +181,13 @@ DBResult_ptr Database::storeQuery(const std::string& query)
+ 		std::cout << "[Error - mysql_store_result] Query: " << query << std::endl << "Message: " << mysql_error(handle) << std::endl;
+ 		auto error = mysql_errno(handle);
+ 		if (error != CR_SERVER_LOST && error != CR_SERVER_GONE_ERROR && error != CR_CONN_HOST_ERROR && error != 1053/*ER_SERVER_SHUTDOWN*/ && error != CR_CONNECTION_ERROR) {
++			LoginPrefetch::statementDone(*this, prefetchTxn, query); // Chaos (patch 0031): a write without a result
+ 			databaseLock.unlock();
+ 			return nullptr;
+ 		}
+ 		goto retry;
+ 	}
++	LoginPrefetch::statementDone(*this, prefetchTxn, query); // Chaos (patch 0031): the write clock
+ 	databaseLock.unlock();
+ 
+ 	if (timed) {
+@@ -188,6 +204,60 @@ DBResult_ptr Database::storeQuery(const std::string& query)
+ 	return result;
+ }
+ 
++bool Database::storeRows(const std::string& query, size_t maxBytes, std::shared_ptr<DBRows>& out)
++{
++	out.reset();
++	std::lock_guard<std::recursive_mutex> guard(databaseLock);
++	if (mysql_real_query(handle, query.c_str(), query.length()) != 0) {
++		return false;
++	}
++	MYSQL_RES* res = mysql_store_result(handle);
++	if (!res) {
++		return false;
++	}
++	auto rows = std::make_shared<DBRows>();
++	const unsigned int count = mysql_num_fields(res);
++	MYSQL_FIELD* fields = mysql_fetch_fields(res);
++	for (unsigned int i = 0; i < count; ++i) {
++		rows->names[fields[i].name] = i;
++	}
++	size_t bytes = 0;
++	bool tooLarge = false;
++	while (MYSQL_ROW r = mysql_fetch_row(res)) {
++		const unsigned long* lengths = mysql_fetch_lengths(res);
++		DBRows::Row row;
++		row.values.resize(count);
++		row.lengths.assign(lengths, lengths + count);
++		row.fields.assign(count, nullptr);
++		for (unsigned int i = 0; i < count; ++i) {
++			if (r[i]) {
++				row.values[i].assign(r[i], lengths[i]);
++				row.fields[i] = r[i]; // not NULL; pointed into values below
++				bytes += lengths[i];
++			}
++		}
++		if (bytes > maxBytes) {
++			tooLarge = true;
++			break;
++		}
++		rows->rows.push_back(std::move(row));
++	}
++	mysql_free_result(res);
++	if (tooLarge) {
++		return false;
++	}
++	// the field pointers last: the strings no longer move
++	for (DBRows::Row& row : rows->rows) {
++		for (unsigned int i = 0; i < count; ++i) {
++			if (row.fields[i]) {
++				row.fields[i] = &row.values[i][0];
++			}
++		}
++	}
++	out = std::move(rows);
++	return true;
++}
++
+ std::string Database::escapeString(const std::string& s) const
+ {
+ 	return escapeBlob(s.c_str(), s.length());
+@@ -228,9 +298,19 @@ DBResult::DBResult(MYSQL_RES* res)
+ 	row = mysql_fetch_row(handle);
+ }
+ 
++DBResult::DBResult(std::shared_ptr<const DBRows> rows) : copied(std::move(rows))
++{
++	listNames = copied->names;
++	if (!copied->rows.empty()) {
++		row = const_cast<char**>(copied->rows[0].fields.data());
++	}
++}
++
+ DBResult::~DBResult()
+ {
+-	mysql_free_result(handle);
++	if (handle) {
++		mysql_free_result(handle);
++	}
+ }
+ 
+ std::string DBResult::getString(const std::string& s) const
+@@ -262,7 +342,7 @@ const char* DBResult::getStream(const std::string& s, unsigned long& size) const
+ 		return nullptr;
+ 	}
+ 
+-	size = mysql_fetch_lengths(handle)[it->second];
++	size = copied ? copied->rows[copiedRow].lengths[it->second] : mysql_fetch_lengths(handle)[it->second];
+ 	return row[it->second];
+ }
+ 
+@@ -273,6 +353,14 @@ bool DBResult::hasNext() const
+ 
+ bool DBResult::next()
+ {
++	if (copied) {
++		if (row && ++copiedRow < copied->rows.size()) {
++			row = const_cast<char**>(copied->rows[copiedRow].fields.data());
++		} else {
++			row = nullptr;
++		}
++		return row != nullptr;
++	}
+ 	row = mysql_fetch_row(handle);
+ 	return row != nullptr;
+ }
+diff --git a/src/database.h b/src/database.h
+index fd3737b..83daf3d 100644
+--- a/src/database.h
++++ b/src/database.h
+@@ -8,9 +8,23 @@
+ 
+ #include <mysql/mysql.h>
+ 
++#include "chaosprefetch.h"
++
+ class DBResult;
+ using DBResult_ptr = std::shared_ptr<DBResult>;
+ 
++// Chaos (patch 0031): a result set copied out of the client library (Database::storeRows), so it can be read on
++// another thread than the one that ran the query and after the connection is gone (loginprefetch.h)
++struct DBRows {
++	struct Row {
++		std::vector<std::string> values;
++		std::vector<char*> fields;          // into values, nullptr for NULL (the layout of a MYSQL_ROW)
++		std::vector<unsigned long> lengths;
++	};
++	std::map<std::string, size_t> names;
++	std::vector<Row> rows;
++};
++
+ class Database
+ {
+ 	public:
+@@ -58,6 +72,11 @@ class Database
+ 		 */
+ 		DBResult_ptr storeQuery(const std::string& query);
+ 
++		// Chaos (patch 0031): runs a SELECT and copies its whole result (an empty one too); false on an error or when
++		// the result is larger than maxBytes. No retry on a lost connection (the caller falls back). Not counted by
++		// the write clock: for reads only.
++		bool storeRows(const std::string& query, size_t maxBytes, std::shared_ptr<DBRows>& out);
++
+ 		/**
+ 		 * Escapes string for query.
+ 		 *
+@@ -116,6 +135,7 @@ class Database
+ 		MYSQL* handle = nullptr;
+ 		std::recursive_mutex databaseLock;
+ 		uint64_t maxPacketSize = 1048576;
++		ChaosPrefetch::TxnState prefetchTxn; // Chaos (patch 0031): tables written in the open transaction
+ 
+ 	friend class DBTransaction;
+ };
+@@ -124,6 +144,7 @@ class DBResult
+ {
+ 	public:
+ 		explicit DBResult(MYSQL_RES* res);
++		explicit DBResult(std::shared_ptr<const DBRows> rows); // Chaos (patch 0031): a copied result
+ 		~DBResult();
+ 
+ 		// non-copyable
+@@ -159,8 +180,10 @@ class DBResult
+ 		bool next();
+ 
+ 	private:
+-		MYSQL_RES* handle;
+-		MYSQL_ROW row;
++		MYSQL_RES* handle = nullptr;
++		MYSQL_ROW row = nullptr;
++		std::shared_ptr<const DBRows> copied; // Chaos (patch 0031)
++		size_t copiedRow = 0;
+ 
+ 		std::map<std::string, size_t> listNames;
+ 
+diff --git a/src/iologindata.cpp b/src/iologindata.cpp
+index 55ebb64..3bd7e90 100644
+--- a/src/iologindata.cpp
++++ b/src/iologindata.cpp
+@@ -6,6 +6,7 @@
+ #include "iologindata.h"
+ #include "configmanager.h"
+ #include "game.h"
++#include "loginprefetch.h"
+ #include "passwordhash.h"
+ 
+ #include <fmt/format.h>
+@@ -205,7 +206,15 @@ bool IOLoginData::gameworldAuthenticationAsync(const std::string& accountName, c
+ 		std::string name = characterName;
+ 		std::string tokenCopy = token;
+ 		const uint32_t accountId = gameworldAuthentication(loginDatabase(), accountName, password, name, tokenCopy, tokenTime);
+-		g_dispatcher.addTask(createTask([onDone, accountId, name]() { onDone(accountId, name); }));
++		// Chaos (patch 0031): the login scripts' reads, run here on the worker's connection before the login task
++		std::shared_ptr<LoginPrefetch::Batch> batch;
++		if (accountId != 0) {
++			batch = LoginPrefetch::fetch(loginDatabase(), accountId, name);
++		}
++		g_dispatcher.addTask(createTask([onDone, accountId, name, batch]() {
++			LoginPrefetch::BatchScope prefetchScope(batch);
++			onDone(accountId, name);
++		}));
+ 	});
+ }
+ 
+diff --git a/src/loginprefetch.cpp b/src/loginprefetch.cpp
+new file mode 100644
+index 0000000..c3c082c
+--- /dev/null
++++ b/src/loginprefetch.cpp
+@@ -0,0 +1,258 @@
++// Chaos (patch 0031): the login reads off the game loop. See loginprefetch.h and server/README.md "Login reads off
++// the game loop".
++
++#include "otpch.h"
++
++#include "loginprefetch.h"
++
++#include "configmanager.h"
++#include "database.h"
++#include "tasks.h"
++#include "tools.h"
++
++#include <fmt/format.h>
++
++extern ConfigManager g_config;
++
++namespace LoginPrefetch {
++
++struct Entry {
++	std::vector<std::string> tables;
++	ChaosPrefetch::Snapshot snapshot; // taken before the read
++	std::shared_ptr<const DBRows> rows;
++};
++
++struct Batch {
++	uint32_t playerId = 0;
++	int64_t createdMs = 0;
++	std::unordered_map<std::string, Entry> entries; // by the exact statement text
++};
++
++namespace {
++
++// a batch older than this is not used (the dispatcher was that far behind; the reads are redone on the game loop)
++constexpr int64_t MAX_AGE_MS = 5000;
++// one result set of a login read; a larger one is read on the game loop
++constexpr size_t MAX_ROWS_BYTES = 256 * 1024;
++
++std::atomic<bool> enabled{false};
++ChaosPrefetch::WriteClock writeClock;
++ChaosPrefetch::Templates templates;
++std::shared_ptr<const ChaosPrefetch::Dependencies> dependencies; // std::atomic_load / atomic_store
++
++// thread_local: a login worker that falls back to the shared connection calls storeQuery on it too
++thread_local std::shared_ptr<Batch> currentBatch; // set on the dispatcher
++
++struct LoginContext {
++	bool active = false;
++	uint32_t playerId = 0;
++	uint32_t accountId = 0;
++	std::string nameLiteral;
++	Batch* batch = nullptr;
++};
++thread_local LoginContext login; // set on the dispatcher
++
++const std::string& column(const DBRows& rows, const DBRows::Row& row, const std::string& name)
++{
++	static const std::string none;
++	auto it = rows.names.find(name);
++	return it == rows.names.end() ? none : row.values[it->second];
++}
++
++// the foreign keys and triggers of the game database; nullptr when information_schema cannot be read
++std::shared_ptr<const ChaosPrefetch::Dependencies> readDependencies(Database& db)
++{
++	auto deps = std::make_shared<ChaosPrefetch::Dependencies>();
++	std::shared_ptr<DBRows> rows;
++	if (!db.storeRows("SELECT `TABLE_NAME`, `REFERENCED_TABLE_NAME`, `UPDATE_RULE`, `DELETE_RULE` FROM "
++	                  "`information_schema`.`REFERENTIAL_CONSTRAINTS` WHERE `CONSTRAINT_SCHEMA` = DATABASE()",
++	                  4 * 1024 * 1024, rows)) {
++		return nullptr;
++	}
++	for (const DBRows::Row& row : rows->rows) {
++		deps->addForeignKey(column(*rows, row, "TABLE_NAME"), column(*rows, row, "REFERENCED_TABLE_NAME"),
++		                    column(*rows, row, "UPDATE_RULE"), column(*rows, row, "DELETE_RULE"));
++	}
++	if (!db.storeRows("SELECT `EVENT_OBJECT_TABLE`, `EVENT_MANIPULATION`, `ACTION_STATEMENT` FROM "
++	                  "`information_schema`.`TRIGGERS` WHERE `TRIGGER_SCHEMA` = DATABASE()",
++	                  4 * 1024 * 1024, rows)) {
++		return nullptr;
++	}
++	for (const DBRows::Row& row : rows->rows) {
++		deps->addTrigger(column(*rows, row, "EVENT_OBJECT_TABLE"), column(*rows, row, "EVENT_MANIPULATION"),
++		                 column(*rows, row, "ACTION_STATEMENT"));
++	}
++	if (!db.storeRows("SELECT `ROUTINE_NAME` FROM `information_schema`.`ROUTINES` WHERE `ROUTINE_SCHEMA` = DATABASE() "
++	                  "AND `ROUTINE_TYPE` = 'FUNCTION'", 1024 * 1024, rows)) {
++		return nullptr;
++	}
++	for (const DBRows::Row& row : rows->rows) {
++		deps->addFunction(column(*rows, row, "ROUTINE_NAME"));
++	}
++	return deps;
++}
++
++bool isSchemaChange(const std::string& query)
++{
++	std::vector<ChaosPrefetch::Token> t;
++	if (!ChaosPrefetch::tokenize(query, t, 1) || t.empty() || t[0].type != ChaosPrefetch::Token::Word) {
++		return false;
++	}
++	const std::string& w = t[0].text;
++	return w == "create" || w == "alter" || w == "drop" || w == "rename";
++}
++
++} // namespace
++
++void init(Database& db)
++{
++	if (!g_config.getBoolean(ConfigManager::LOGIN_PREFETCH)) {
++		std::cout << ">> Login reads: on the game loop (loginPrefetch = false)" << std::endl;
++		return;
++	}
++	auto deps = readDependencies(db);
++	if (!deps) {
++		std::cout << "[Warning - LoginPrefetch] cannot read the foreign keys and triggers of the database "
++		             "(information_schema): login reads stay on the game loop" << std::endl;
++		return;
++	}
++	std::atomic_store(&dependencies, deps);
++	enabled = true;
++	std::cout << ">> Login reads: run on the login worker (loginPrefetch)" << std::endl;
++}
++
++void statementDone(Database& self, ChaosPrefetch::TxnState& txn, const std::string& query)
++{
++	if (!enabled) {
++		return;
++	}
++	if (isSchemaChange(query)) {
++		// a table created or altered now may bring a foreign key or a trigger: read them again before the clock moves
++		// (statementDone then raises every table), so no read taken after it misses a cascade
++		if (auto deps = readDependencies(self)) {
++			std::atomic_store(&dependencies, deps);
++		}
++	}
++	auto deps = std::atomic_load(&dependencies);
++	ChaosPrefetch::statementDone(writeClock, deps.get(), txn, query);
++}
++
++void transactionEnd(ChaosPrefetch::TxnState& txn)
++{
++	if (!enabled) {
++		return;
++	}
++	if (txn.all || !txn.tables.empty()) {
++		writeClock.bump(txn.tables, txn.all);
++	}
++	txn = ChaosPrefetch::TxnState();
++}
++
++std::shared_ptr<Batch> fetch(Database& db, uint32_t accountId, const std::string& characterName)
++{
++	if (!enabled || accountId == 0 || &db == &Database::getInstance()) {
++		return nullptr; // off, or the worker has no connection of its own: the game loop's connection stays free
++	}
++	std::vector<ChaosPrefetch::Templates::Entry> list = templates.take();
++	if (list.empty()) {
++		return nullptr;
++	}
++	const std::string nameLiteral = db.escapeString(characterName);
++	std::shared_ptr<DBRows> idRows;
++	if (!db.storeRows(fmt::format("SELECT `id` FROM `players` WHERE `name` = {:s} AND `account_id` = {:d}", nameLiteral,
++	                              accountId), 1024, idRows) || idRows->rows.empty()) {
++		return nullptr;
++	}
++	const uint32_t playerId = static_cast<uint32_t>(std::strtoul(idRows->rows[0].values[0].c_str(), nullptr, 10));
++	if (playerId == 0) {
++		return nullptr;
++	}
++
++	auto batch = std::make_shared<Batch>();
++	batch->playerId = playerId;
++	batch->createdMs = OTSYS_TIME();
++	for (const ChaosPrefetch::Templates::Entry& t : list) {
++		std::string query = ChaosPrefetch::expand(t.text, playerId, accountId, nameLiteral);
++		if (batch->entries.count(query)) {
++			continue;
++		}
++		Entry entry;
++		entry.tables = t.tables;
++		entry.snapshot = writeClock.snapshot(entry.tables); // before the read: a write after it makes the entry stale
++		std::shared_ptr<DBRows> rows;
++		if (!db.storeRows(query, MAX_ROWS_BYTES, rows)) {
++			continue; // an error or too large: read on the game loop as before
++		}
++		entry.rows = std::move(rows);
++		batch->entries.emplace(std::move(query), std::move(entry));
++	}
++	return batch;
++}
++
++BatchScope::BatchScope(std::shared_ptr<Batch> batch)
++{
++	currentBatch = std::move(batch);
++}
++
++BatchScope::~BatchScope()
++{
++	currentBatch.reset();
++}
++
++LoginScope::LoginScope(uint32_t playerId, uint32_t accountId, const std::string& name)
++{
++	if (!enabled) {
++		return;
++	}
++	login.active = true;
++	login.playerId = playerId;
++	login.accountId = accountId;
++	login.nameLiteral = Database::getInstance().escapeString(name);
++	login.batch = nullptr;
++	if (currentBatch && currentBatch->playerId == playerId && OTSYS_TIME() - currentBatch->createdMs <= MAX_AGE_MS) {
++		login.batch = currentBatch.get();
++	}
++}
++
++LoginScope::~LoginScope()
++{
++	login = LoginContext();
++}
++
++bool inLogin()
++{
++	return login.active;
++}
++
++bool serve(const std::string& query, DBResult_ptr& out)
++{
++	if (!login.active) {
++		return false;
++	}
++	const ChaosPrefetch::Statement st = ChaosPrefetch::classify(query);
++	if (!st.cacheable) {
++		return false;
++	}
++	auto deps = std::atomic_load(&dependencies);
++	if (!deps || deps->callsFunction(st)) {
++		return false;
++	}
++	std::string text;
++	if (ChaosPrefetch::makeTemplate(query, login.playerId, login.accountId, login.nameLiteral, text)) {
++		templates.learn(text, st.tables);
++	}
++	if (!login.batch) {
++		return false;
++	}
++	auto it = login.batch->entries.find(query);
++	if (it == login.batch->entries.end() || !writeClock.unchanged(it->second.tables, it->second.snapshot)) {
++		return false;
++	}
++	out = it->second.rows->rows.empty() ? nullptr : std::make_shared<DBResult>(it->second.rows);
++	if (TaskTiming::current) {
++		++TaskTiming::current->dbPrefetched;
++	}
++	return true;
++}
++
++} // namespace LoginPrefetch
+diff --git a/src/loginprefetch.h b/src/loginprefetch.h
+new file mode 100644
+index 0000000..dd6abfa
+--- /dev/null
++++ b/src/loginprefetch.h
+@@ -0,0 +1,62 @@
++// Chaos (patch 0031): the login reads off the game loop. server/README.md "Login reads off the game loop".
++// The login scripts (onLogin of every Chaos system and of the base) read 60-80 rows sets per login with
++// db.storeQuery on the game loop. The login worker (patch 0014, its own connection since 0029) now runs those SELECTs
++// right after the password check, and while the login scripts run, db.storeQuery answers a statement with exactly the
++// same text from those rows, as long as no write was committed to a table it reads since the early read. Anything
++// else (a different text, a table written meanwhile, a write, a query outside the login scripts) goes to the database
++// as before. Which SELECTs to run is learnt from the logins themselves (chaosprefetch.h Templates), so no script
++// changes. config.lua loginPrefetch = true (read at startup).
++#ifndef FS_LOGINPREFETCH_H
++#define FS_LOGINPREFETCH_H
++
++#include "chaosprefetch.h"
++
++class Database;
++class DBResult;
++struct DBRows;
++using DBResult_ptr = std::shared_ptr<DBResult>;
++
++namespace LoginPrefetch {
++
++struct Batch;
++
++// startup, after the database connection: reads loginPrefetch and the foreign keys and triggers of the database
++void init(Database& db);
++
++// every connection, after each statement (called with the connection's lock held)
++void statementDone(Database& self, ChaosPrefetch::TxnState& txn, const std::string& query);
++// the end of a DBTransaction (COMMIT / ROLLBACK through the client library)
++void transactionEnd(ChaosPrefetch::TxnState& txn);
++
++// login worker thread, after a successful game login check: runs the learnt SELECTs for this character on the
++// worker's own connection (nothing when the worker uses the shared connection)
++std::shared_ptr<Batch> fetch(Database& db, uint32_t accountId, const std::string& characterName);
++
++// dispatcher: the rows of the login whose answer task runs now (around the login callback)
++class BatchScope
++{
++	public:
++		explicit BatchScope(std::shared_ptr<Batch> batch);
++		~BatchScope();
++		BatchScope(const BatchScope&) = delete;
++		BatchScope& operator=(const BatchScope&) = delete;
++};
++
++// dispatcher: around the onLogin scripts of one player; learns their SELECTs and answers them from the batch
++class LoginScope
++{
++	public:
++		LoginScope(uint32_t playerId, uint32_t accountId, const std::string& name);
++		~LoginScope();
++		LoginScope(const LoginScope&) = delete;
++		LoginScope& operator=(const LoginScope&) = delete;
++};
++
++bool inLogin();
++// Database::storeQuery on the main connection while inLogin(): true when answered from the batch (out may be
++// nullptr: an empty result, as storeQuery gives it)
++bool serve(const std::string& query, DBResult_ptr& out);
++
++} // namespace LoginPrefetch
++
++#endif
+diff --git a/src/otserv.cpp b/src/otserv.cpp
+index 9ab9185..52c93bc 100644
+--- a/src/otserv.cpp
++++ b/src/otserv.cpp
+@@ -21,6 +21,7 @@
+ #include "scheduler.h"
+ #include "databasetasks.h"
+ #include "script.h"
++#include "loginprefetch.h"
+ #include "passwordhash.h"
+ #include <fstream>
+ #include <fmt/color.h>
+@@ -197,6 +198,7 @@ void mainLoader(int, char*[], ServiceManager* services)
+ 	}
+ 
+ 	std::cout << " MySQL " << Database::getClientVersion() << std::endl;
++	LoginPrefetch::init(Database::getInstance()); // Chaos (patch 0031): login reads on the login worker
+ 
+ 	// run database manager
+ 	std::cout << ">> Running database manager" << std::endl;
+diff --git a/src/player.cpp b/src/player.cpp
+index 91b2b55..1780d53 100644
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -11,6 +11,7 @@
+ #include "events.h"
+ #include "game.h"
+ #include "iologindata.h"
++#include "loginprefetch.h"
+ #include "monster.h"
+ #include "movement.h"
+ #include "scheduler.h"
+@@ -3876,7 +3877,13 @@ void Player::onIdleStatus()
+ void Player::onPlacedCreature()
+ {
+ 	//scripting event - onLogin
+-	if (!g_creatureEvents->playerLogin(this)) {
++	// Chaos (patch 0031): the onLogin scripts' SELECTs are learnt and answered from the login worker's rows
++	bool loggedIn;
++	{
++		LoginPrefetch::LoginScope prefetchScope(getGUID(), getAccount(), getName());
++		loggedIn = g_creatureEvents->playerLogin(this);
++	}
++	if (!loggedIn) {
+ 		kickPlayer(true);
+ 	}
+ }
+diff --git a/src/tasks.cpp b/src/tasks.cpp
+index 15720c5..7380497 100644
+--- a/src/tasks.cpp
++++ b/src/tasks.cpp
+@@ -104,6 +104,9 @@ static void logSlowTask(const Task* task, const Record& r, int64_t us)
+ 		   << " (waiting for the connection " << (r.dbLockUs / 1000) << " ms), longest " << (r.longestDbUs / 1000)
+ 		   << " ms: " << r.longestDb;
+ 	}
++	if (r.dbPrefetched > 0) {
++		ss << " | db prefetched " << r.dbPrefetched; // Chaos (patch 0031): login reads read on the login worker
++	}
+ 	ss << " | task " << taskName(task);
+ 	std::cout << ss.str() << std::endl;
+ }
+diff --git a/src/tasks.h b/src/tasks.h
+index c4eae95..a4551e6 100644
+--- a/src/tasks.h
++++ b/src/tasks.h
+@@ -91,6 +91,7 @@ namespace TaskTiming {
+ 		uint32_t dbQueries = 0;
+ 		int64_t longestDbUs = 0;
+ 		char longestDb[96] = {0};
++		uint32_t dbPrefetched = 0; // Chaos (patch 0031): login reads answered from the login worker's rows
+ 		int luaDepth = 0;
+ 	};
+ 

@@ -889,6 +889,10 @@ function talk.onSay(player, words, param)
 		return true
 	end
 	local cmd, rest = tostring(param or ""):match("^%s*(%S*)%s*(.-)%s*$")
+	-- points unlock goal stages for the whole realm: an administrator only, logged (docs/GM_HANDBOOK.md section 2)
+	if cmd == "add" and not Chaos.staffCommand(player, words, param, true) then
+		return false
+	end
 	local realm = realmOf(player)
 	local reply
 	if cmd == "modifier" then

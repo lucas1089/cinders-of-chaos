@@ -1994,6 +1994,10 @@ local function onCommand(player, words, param)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "[descent] " .. text)
 	end
 	local cmd = args[1] or "status"
+	-- a sigil is a tradable item: an administrator only, logged (docs/GM_HANDBOOK.md section 2)
+	if cmd == "sigil" and not Chaos.staffCommand(player, words, param, true) then
+		return false
+	end
 	if cmd == "status" then
 		local n = 0
 		for slot, run in pairs(X.runs) do

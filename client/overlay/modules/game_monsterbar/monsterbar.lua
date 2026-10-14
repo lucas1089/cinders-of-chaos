@@ -1,4 +1,5 @@
--- game_monsterbar: top-of-map health bar for the creature you are attacking.
+-- game_monsterbar: top-of-map health bar for the creature you are attacking, and the boss cast bar under it (the next
+-- boss mechanic and its timer, action "mech" on the same opcode; monsterbarmech.lua).
 -- The tier comes from the server (monster_tiers.lua, opcode 125); until the answer arrives the
 -- bar looks like a normal monster's. It sits at the top of the part of the game view on screen
 -- (monsterbarmath.lua): in the extended view the map panel starts above the window.
@@ -9,6 +10,9 @@ local FILL_W = 344 -- the socket (monsterbar.otui, gen_monsterbar_art.py)
 local TRAIL_TICK = 30 -- ms
 
 local window, current
+local mechWindow, mechCast, mechEvent -- the boss cast bar (monsterbarmech.lua): its widget, the cast, its redraw
+local MECH_W = 344
+local MECH_TICK = 50 -- ms
 local tierOf, modsOf, roleOf, levelOf, labelOf = {}, {}, {}, {}, {}
 local trail, trailEvent, lastPercent -- the damage trail and the health it last saw
 
@@ -38,8 +42,18 @@ local function textWidth(label)
   return label.getTextSize and label:getTextSize().width or label:getWidth()
 end
 
+local PLATE_PAD = 28 -- the plate's 9-slice borders and a little air around the text
+
+-- the width of `text` in `label`'s font (the label keeps the text it ends with)
+local function measureWith(label)
+  return function(text)
+    label:setText(text)
+    return textWidth(label)
+  end
+end
+
 local function fitPlate(plate, label, minW, maxW)
-  local w = textWidth(label) + 28
+  local w = textWidth(label) + PLATE_PAD
   plate:setWidth(math.max(minW, math.min(maxW, w)))
 end
 
@@ -63,10 +77,8 @@ local function paintInfo(info)
   window:getChildById('frame'):setImageSource(img.frame)
   window:getChildById('fill'):setImageSource(img.fill)
   local name = window:getChildById('name')
-  name:setText(S.title(key, info.label, info.name))
-  if textWidth(name) + 28 > NAME_MAX then
-    name:setText(tostring(info.name or '')) -- a long name: the frame alone tells the tier
-  end
+  -- a long title drops its tag (the frame tells the tier); a name too long for the plate is cut with '...'
+  name:setText(S.fitTitle(key, info.label, info.name, measureWith(name), NAME_MAX - PLATE_PAD))
   name:setColor(st.name)
   local plate = window:getChildById('namePlate')
   plate:setImageSource(img.plaque)
@@ -231,8 +243,62 @@ local function onAttackingCreatureChange(creature)
   end
 end
 
+-- the boss cast bar: under the monster bar while it shows, else in its place
+local function placeMech()
+  if not mechWindow then
+    return
+  end
+  local top = window and window:getMarginTop() or 44
+  local barShown = window and window:isVisible()
+  mechWindow:setMarginTop(barShown and (top + 90) or top)
+  mechWindow:setMarginLeft(window and window:getMarginLeft() or 0)
+end
+
+local function stopMech()
+  if mechEvent then
+    removeEvent(mechEvent)
+    mechEvent = nil
+  end
+end
+
+local function drawMech()
+  if not mechWindow then
+    return
+  end
+  local now = g_clock.millis()
+  local st = MonsterBarMech.state(mechCast, now)
+  if not st.visible then
+    mechWindow:hide()
+    mechCast = nil
+    stopMech()
+    return
+  end
+  local fill = mechWindow:getChildById('fill')
+  fill:setWidth(math.max(0, MonsterBarMech.fillWidth(mechCast, now, MECH_W - 2)))
+  fill:setBackgroundColor(MonsterBarMech.COLORS[mechCast.kind])
+  mechWindow:getChildById('text'):setText(MonsterBarMech.text(mechCast, now))
+  placeMech()
+  mechWindow:show()
+end
+
+local function onMech(data)
+  local cast = MonsterBarMech.start(data, g_clock.millis())
+  if not cast then
+    return
+  end
+  mechCast = MonsterBarMech.pick(mechCast, cast, g_clock.millis())
+  drawMech()
+  if not mechEvent then
+    mechEvent = cycleEvent(drawMech, MECH_TICK)
+  end
+end
+
 local function onExtendedOpcode(protocol, opcode, buffer)
   local ok, msg = pcall(json.decode, buffer)
+  if ok and type(msg) == 'table' and msg.action == 'mech' and type(msg.data) == 'table' then
+    onMech(msg.data)
+    return
+  end
   if not ok or type(msg) ~= 'table' or msg.action ~= 'info' or type(msg.data) ~= 'table' then
     return
   end
@@ -269,6 +335,11 @@ local function onGameEnd()
   tierOf, modsOf, roleOf, levelOf, labelOf = {}, {}, {}, {}, {}
   current = nil
   stopTrail()
+  stopMech()
+  mechCast = nil
+  if mechWindow then
+    mechWindow:hide()
+  end
   if window then
     window:hide()
   end
@@ -276,6 +347,7 @@ end
 
 function init()
   window = g_ui.loadUI('monsterbar', modules.game_interface.getMapPanel())
+  mechWindow = g_ui.loadUI('monsterbarmech', modules.game_interface.getMapPanel())
   themeFont(window:getChildById('name'), 'heading')
   themeFont(window:getChildById('level'), 'heading')
   connect(modules.game_interface.getMapPanel(), { onGeometryChange = schedulePlace })
@@ -289,6 +361,11 @@ function terminate()
   disconnect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   stopTrail()
+  stopMech()
+  if mechWindow then
+    mechWindow:destroy()
+    mechWindow = nil
+  end
   if placeEvent then
     removeEvent(placeEvent)
     placeEvent = nil
@@ -320,4 +397,16 @@ function preview(info)
   drawHealth(info.percent or 100)
   place()
   window:show()
+end
+
+-- the cast bar with made-up data, for screenshots: previewMech({ boss = 'Kaelgor', label = 'Meteor Rain', ms = 2500,
+-- kind = 'telegraph' }); nil hides it
+function previewMech(data)
+  if not data then
+    mechCast = nil
+    if mechWindow then mechWindow:hide() end
+    stopMech()
+    return
+  end
+  onMech(data)
 end

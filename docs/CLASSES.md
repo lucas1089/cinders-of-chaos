@@ -84,6 +84,16 @@ melee hit adds a holy strike). Radiant Smite, Consecration, Vow of Mending.
   (stacking damage while hitting).
 - **Sentinel**: a stronger aura with regeneration, Rebuke (taunt), Aegis of Faith (-40% damage taken with a shield), Lay on Hands.
 
+**Runes (2026-10-13, owner: "Tire as spells de fazer runa. Deixa as runas serem de vendedores e craft.")**: no class
+conjures runes any more. The stock kits of the Mystic, Elementalist, Illusionist and Ranger lose the 36 rune conjure
+spells and the blank rune spell (they came from the Sorcerer, Druid, Illusionist and Paladin lists of spells.xml, which
+`add_vocations.py` converts); every class still uses runes at their own level and magic level. Runes come from NPC
+vendors (Raloth in Mirewake, Isora in Cinderhold, and every base rune seller) and the general crafting tables
+(server/README.md "Rune supply"). No Chaos class spell, `LINE_STOCK_SPELLS` entry or tutorial class spell was a conjure
+spell; `tools/ci/check_content.py` keeps it so. The other conjure spells went too (owner: "Pode tirar, já que as ammos
+são infinitas"): Conjure Rations (the casters' food spell; food stays on sale at the food vendors) and the Ranger's Hallow
+Spear and Charge Staff. No class conjures anything now.
+
 ## How existing characters move over
 
 | Today | Becomes |
@@ -114,10 +124,45 @@ for free, at the migration.
 - **Content per class:**
   - spells (`server/data/spells/chaos/<class>/`)
   - a passive tree (`game_passivetree`, `passivetree_data.lua`)
-  - generated spell icons and effects
+  - generated spell icons and effects (class signature effects: one look per line, server/README.md "Class signature
+    effects"; pair things_custom22, behind `ChaosClassFx.PAIR22_FX`)
   - outfits: a class look per class, male and female (October 2026: donor library art and free looks of the pair, look types
     2039-2081 of things_custom10b, no stock art; list in `class_looks_core.lua`, sources in
-    `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair")
+    `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair"). Worn with both addons
+    (addons 3); the character owns both addons of each class look it is given, and no other outfit's addons. Six looks
+    changed with the pair 19 switch (`ChaosClassLooks.PAIR19_LOOKS`, on since 2026-10-12: things_custom19 is live)
+    and six more with the pair 20 switch (`ChaosClassLooks.PAIR20_LOOKS`, on since 2026-10-12: things_custom20 is live
+    at windows-assets 77b9cc9b; server/README.md "Class looks"). Looks per class (male / female look type; "before" =
+    things_custom18, "pair 19 / 20" = live now):
+
+    | Line | Class (id) | Before | Pair 19 / 20 (live) |
+    |---|---|---|---|
+    | Warrior | Warrior (4) | 2073 / 2074 | kept |
+    | | Juggernaut (8) | 2039 / 2040 | 2161 / 2162: gilded plate, tower shield (donor D 997 / 998) |
+    | | Berserker (14) | 2075 / 2076 | kept |
+    | Ranger | Ranger (3) | 2078 / 2079 | 2163 / 2164: hooded archer (donor H 246 / 247) |
+    | | Deadeye (7) | 2045 / 2046 | kept |
+    | | Beastmaster (15) | 2047 / 2048 | 2165 / 2166: fur cloak (donor D 166 / 167) |
+    | Mystic | Mystic (1) | 2060 / 2061 | kept |
+    | | Elementalist (5) | 2062 / 2063 | kept |
+    | | Illusionist (10) | 2049 / 2050 | kept |
+    | Thief | Thief (11) | 2051 / 2052 | 2175 / 2176: hooded rogue, twin daggers (pair 20, donor D 521 / 522) |
+    | | Ninja (12) | 2069 / 2070 | 2177 / 2178: black shinobi, katana (pair 20, donor D 789 / 790) |
+    | | Samurai (13) | 2071 / 2072 | kept |
+    | Monk | Monk (17) | 2080 / 2081 | kept |
+    | | Shadowfist (18) | 2053 / 2054 | 2169 / 2170: claws, violet glow (donor D 1057 / 1058) |
+    | | Iron Sage (19) | 2055 / 2056 | kept |
+    | Necromancer | Necromancer (20) | 2044 / 2064 | 2183 / 2184: blood hood or witch hat, blood orb, skull (pair 20, D 856 / 857, composed) |
+    | | Lich (21) | 2059 (one look) | 2173 / 2174: skeletal lord, skull cape, bone sceptre (pair 20, donor D 219 / 220) |
+    | | Bone Lord (22) | 2065 / 2066 | 2167 / 2168: bone wings, skull rack (donor D 508 / 509) |
+    | Templar | Templar (23) | 2067 / 2068 | 2179 / 2180: gilded holy knight, kite shield (pair 20, donor D 609 / 610) |
+    | | Inquisitor (24) | 2077 (one look) | 2181 / 2182: witch-hunter hat, rapier, holy sceptre (pair 20, D 419 / 420, composed) |
+    | | Sentinel (25) | 2042 / 2041 | 2171 / 2172: holy orbs, tower shield (donor D 992 / 993) |
+
+    A replaced look stays owned and wearable as "<class> Class (old)". A character wearing one gets the new look at its
+    next login.
+
+    The Lich and the Inquisitor now have a look per sex; a character in the old one look gets the new look of its sex.
   - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
     calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its
     base class, then `default`). See server/README.md "New players".
@@ -219,8 +264,8 @@ Limits of phase 1:
   (`warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai`; the base word asks
   an ascended character to name the ascended class). The passive tree's keystone variant follows the line
   (`ChaosClasses.keystoneKey`): Warrior line knight, Ranger line paladin, Mystic / Elementalist sorcerer, Illusionist illusionist;
-  the druid variants (Overgrowth, Thorns) belong to no class now. Since phase 2b the Juggernaut, Berserker, Deadeye and Beastmaster
-  have their own variants.
+  the druid variants (Overgrowth, Thorns) belonged to no class until 2026-10-12, when they went to the Iron Sage and the Sentinel
+  (Phase 2b below). Since phase 2b the Juggernaut, Berserker, Deadeye and Beastmaster have their own variants.
 - **Migration** (`server/data/scripts/chaos/class_migration.lua`, rules in `classes.lua`, numbers in `Chaos.classes.migration`):
   at startup, once (server_config `chaos_class_migration` = 1), before anyone can log in, it runs `ChaosClasses.migrationSql`:
   1. `player_storage` 7100202 = the old vocation, for every character of vocations 1-10;
@@ -319,7 +364,8 @@ Open for the Monk:
   target (the focus crit, 8% per chi, on the auto attack); with 2.5% per chi it is 1078 against the Ninja's 1001 (+8%, a
   burst class's lead). Level 1000 by formula only (~3060 against the Ninja's 2837), not measured yet.
 - Passive tree: done in phase 2b (keystones Hundred Hands and, after the role rebalance, Flowing Mercy for the Iron Sage
-  healer instead of the proposed Stone Body); the level factor dropped.
+  healer instead of the proposed Stone Body); the level factor dropped. Since 2026-10-12 the Iron Sage may also take
+  Overgrowth on the main tree's Wrath keystone (621; "Phase 2b" below).
 - A stun on players: done (see "Iron Palm on players" above).
 
 ### Templar (C7, phase B: tested in game)
@@ -355,7 +401,8 @@ Files: `templar_aura_core.lua` (every id and number, and the rules: aura, strike
 `server/data/spells/chaos/templar|inquisitor|sentinel` with `_templar.lua`.
 
 Open for the Templar:
-- Passive tree: done in phase 2b (keystones Divine Verdict and Bastion); the level factor dropped.
+- Passive tree: done in phase 2b (keystones Divine Verdict and Bastion); the level factor dropped. Since 2026-10-12 the
+  Sentinel may also take Thorns on the main tree's Resolve keystone (624; "Phase 2b" below).
 - Aura status icon: done. A covered player has the buff **"<Templar>'s Aura"** (own aura: "Your Sentinel Aura") on the buff bar
   and under its party frame: stacks = the damage reduction in percent, the tooltip names the Templar, its class, the
   reduction, the Sentinel's regeneration per second and Bastion; the party frame's tooltip lists it by name. Sent only when it
@@ -455,8 +502,16 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Beastmaster | Ricochet | **Pack Alpha**: companion bites and Feral Command +35%, companions take 20% less |
   | Mystic, Elementalist | Arcane Echo | Elemental Overload |
   | Illusionist | Shared Phantasm | Inspiring Illusion |
+  | Iron Sage (since 2026-10-12) | **Overgrowth**: heals on others heal 10% more over 6 s (3 pulses) | (not its node) |
+  | Sentinel (since 2026-10-12) | (not its node) | **Thorns**: melee and ranged attackers take 30% of their hit + 2 x magic level as earth damage |
 
-  Only these classes may take 621 / 624 (the druid variants stay in the data, used by no class).
+  Only these classes may take 621 / 624. The old druid pair (no class's since the class rework) went to the classes it fits (the owner
+  approved, 2026-10-12): Overgrowth to the Iron Sage, the second healer, and Thorns to the Sentinel, the tank-support, next to
+  the Juggernaut's Bulwark. Each takes only the node of its keystone, in the existing slot: no new node, no tree layout change,
+  so the build code format stays, and no character held them before (nothing to refund). Overgrowth is 10% for the Iron Sage
+  (30% for the old druid): at 30% the Iron Sage would pass the Illusionist in a group at level 1000. Its pulses are plain
+  health, so the healer's bonuses count once (in game they counted again on each pulse: 41% instead of 30%). Computed, not
+  measured: `server/data/spells/README.md` "Overgrowth and Thorns for the Iron Sage and the Sentinel".
 - **Class sections** for the Thief, Necromancer, Monk and Templar lines (nodes 625-664, top left of the tree; the four lines
   share the place, each player sees only its line's section): a start node of the line, three line nodes (for the base class
   and both ascended classes) and two ascended paths, two notables and a keystone each. A base class sees both paths locked
@@ -487,7 +542,11 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Templar | Sacred Oath | Oath of Flame (holy +6, strength +2), Oath of the Wall (shielding +2, physical absorb +2, all elements absorb +1), Oath of Mercy (healing +6, vitality +3) |
 
   The Warrior, Ranger and Mystic lines have no class section and no mastery yet. Rules and saved data: server/README.md
-  "Passive tree planner and mastery nodes".
+  "Passive tree planner and mastery nodes". Measured 2026-10-12 (`server/data/spells/README.md` "Line keystones,
+  masteries and weapons measured in game"): each damage choice adds 2-4% to its own damage type (Venom Glands earth
+  +5.3%, Withering Touch death +3.9%, Iron Knuckles physical +3.9%, Oath of Flame holy +3.8%; the crit choices about +1%),
+  a build 1-3%, below the spread of a rotation run. Light Step's dexterity is over the cap of a typical Thief build at
+  level 300 (only its speed counts there).
 - **Line keystones** (2026-10): the Thief, Necromancer, Monk and Templar lines had one keystone per ascended class (in the
   section) and none for the base class, the other three lines two. Each of these lines now has a second keystone for
   another play style, for the base class and both ascended classes, on a converted mythic leaf of the main tree (18-21
@@ -495,20 +554,55 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
   | Line | Keystone (node) | Play style | Gain | Price |
   |---|---|---|---|---|
-  | Thief | **Blackblood Creed** (383) | poisoner | every weapon hit poisons (Poison Blades without the buff), the poison +60% | evasion halved |
-  | Necromancer | **Covenant of the Grave** (369) | minion master | minions +50% damage and +50% health | the own spells -25% |
+  | Thief | **Blackblood Creed** (383) | poisoner | every weapon hit poisons (Poison Blades without the buff), the poison +30% (+60% until 2026-10-12) | evasion halved |
+  | Necromancer | **Covenant of the Grave** (369) | minion master | minions +50% damage (Bone Lord +20% since 2026-10-12) and +50% health | the own spells -25% |
   | Monk | **Scarred Discipline** (390) | brawler who takes the hits | a hit taken gives a chi (one every 2 s); -10% damage taken at 3+ chi | no evasion at all |
   | Templar | **Penitent's Wrath** (376) | retaliation | a melee / ranged hit taken is answered with a holy strike: 40% of it + 4 x magic level (one every 0.5 s) | the defence aura's reduction halved, for the party too |
 
   The nodes were wisdom +10, spirit +10, healing +5% and life leech 5 / 7; a character that held one gets it refunded once,
-  for free, at the next login. Numbers: `server/data/spells/README.md` "Line keystones and the path notables" (computed,
-  not measured in game). Code: server/README.md "Passive tree: class sections and per-class keystones".
+  for free, at the next login. Numbers: `server/data/spells/README.md` "Line keystones and the path notables" (computed)
+  and "Line keystones, masteries and weapons measured in game" (measured 2026-10-12, level 300 / 1000, on one build with
+  and without the keystone, 1 target):
+
+  | Keystone | Class | Computed | Measured | Note |
+  |---|---|---|---|---|
+  | Blackblood Creed | Thief | +6% / +6% | poison +8.9% / +14.5% (total +3.7% / +7.1%) | level 1000 over the computed value |
+  | | Ninja | +5% / +5% | poison +5.3% / +11.2% (total -0.8% / +11.8%) | level 1000: 4566, level with the Deadeye |
+  | | Samurai | +5% / +5% | poison +7.2% / +11.9% (total +8.5% / +5.2%) | |
+  | Covenant of the Grave | Necromancer | +8% / +11% | +13% / +15% (5 targets +1% / +8%) | level 300: 1246, level with the Deadeye |
+  | | Lich | -10% / -8% | -12% / -10% (5 targets -18% / -20%) | as intended: not a Lich keystone |
+  | | Bone Lord | +2.5% / +8% (5 targets +18%) | **+20% / +23%** (5 targets +17% / +23%) | ahead of the Deadeye (1603 / 5113); area within 6% of the Elementalist |
+  | Scarred Discipline | Monk line | unchanged on dummies | -1% / +8% (spread) | in game: a chi every 2 s of hits, -10% taken at 3+ chi, no dodge |
+  | Penitent's Wrath | Templar line | unchanged on dummies | +5% / +1% (spread) | in game: 600 holy per 922 taken (magic level 30), own aura 4% -> 2% |
+
+  Done 2026-10-12 (owner approved; computed, not measured in game; `server/data/spells/README.md` "Class order fixes"):
+  Covenant minion hits +20% for the Bone Lord (Necromancer and Lich +50%), Blackblood Creed's poison +60% -> +30%, and
+  the level 300 class factor of the Necromancer 1.0 -> 0.93 and the Bone Lord 0.75 -> 0.63. The keystone alone could
+  not fix level 300: the path build to Covenant, without it, was already level with the Deadeye. After (computed,
+  level 300 / 1000, 1 target):
+
+  | Keystone | Class | Before (measured) | After (computed) | Deadeye ahead (after) | After, measured in game 2026-10-13 (two samples where near a limit) |
+  |---|---|---|---|---|---|
+  | Blackblood Creed | Thief | poison +8.9% / +14.5% | poison +5.8% / +8.9% (914 / 2873) | | 891 / 2578 (**flag**: -10.3% at 1000; Deadeye +43% / +81%) |
+  | | Ninja | poison +5.3% / +11.2% (1107 / 4566) | poison +3.4% / +7.1% (1154 / 4374) | +9.0% / +8.2% | 1083, 1123 / 4327, 3948 (Deadeye +15% / +13%) |
+  | | Samurai | poison +7.2% / +11.9% | poison +4.8% / +7.2% (701 / 2601) | | 654 / 2218 (**flag**: -14.7% at 1000; Deadeye +94% / +111%) |
+  | Covenant of the Grave | Necromancer | 1246 / 3105 | 1156 / 3103 | +8.8% / +52% | 1158, 1150 / 2970, 2952 (Deadeye +10% / +58%) |
+  | | Bone Lord | 1603 / 5113 (5 targets 3186 / 10287) | 1147 / 4327 (5 targets 2295 / 8705) | +9.6% / +9.4% (Elementalist +47% / +25%) | 1162, 1177 / 4190, 4227 (5 targets 2318 / 8303, 8159; Deadeye +8.6% / +11%, Elementalist +51% / +34%) |
+
+  Measured in game 2026-10-13 (`server/data/spells/README.md` "Class order fixes", the end of the section): every row
+  within 10% of the computed one but the Thief and the Samurai with the Creed at level 1000, below it; the class order
+  holds. Proposed for the two flags: no number change (far behind the Deadeye); the measured values become their
+  reference. The Mystic at level 1000 with the fixed kit: 2455 / 2605 (C4 table 2439).
+
+  The Mystic at level 1000 (1701-1824 measured against 2439) was the test kit: the character had lost levels and the
+  kit picked the level 300 wand. No game change; the C4 numbers stand.
 - **Path notables** (2026-10): 27 small nodes in runs of three or more along the paths became notables with their own name
   (old stats plus a modest premium, same ids and links): server/README.md "Passive tree notables on the paths".
 - **Points** are unchanged (1 per 4 levels: 73 at level 300, 248 at level 1000); every class can hold more than 600 nodes, so
   the tree still cannot be completed. The Paragon track and the Vocation Trials nodes are separate bonus channels and unchanged.
 - **Save data**: no node id changed (the new nodes are 625-664). At login every preset loses, for free and with a message, the
-  nodes the class may not hold (another line's section, 621 / 624 for the four new lines), unknown ids and the nodes only connected
+  nodes the class may not hold (another line's section, 621 / 624 for the four new lines but the Iron Sage's 621 and the
+  Sentinel's 624), unknown ids and the nodes only connected
   through them (`ChaosClassTree.sanitize`). Build codes refuse nodes of another class. Nodes whose meaning changed (the four
   line keystones of 2026-10) are refunded once for every character (`passivetree_config.lua` `reworked`); build codes made
   before them (versions 1 and 2) leave them out.
@@ -522,6 +616,55 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 - **Role rebalance** (2026-10-10, the owner): the Iron Sage path became a healer path (Healing Hands, Deep Mantra, Flowing Mercy) and
   the Samurai path a duelist off-tank path (Steel Discipline, Iron Parry, Way of the Blade: the stance parries every melee hit).
 
+### Build archetypes (2026-10-12)
+
+The owner asked for the genre's most played build styles, at least two per class line. Twelve keystones on converted
+small leaves of the main tree (refunded once), twelve uniques that push them, two summons. The guide per line is
+docs/BUILDS.md; rules server/README.md "Build archetypes"; computed numbers server/data/spells/README.md "Build
+archetypes" (not measured in game). Each line now has at least two archetypes, each playable with the base class:
+
+| Line | Archetypes (new in bold) |
+|---|---|
+| Warrior | **Pyre Walker** (Pyre Oath, Juggernaut), **Bloodsworn Reaver** (Sanguine Covenant, Berserker), **Iron Bastion** (Thornbound Oath, Juggernaut), two-handed cleaver |
+| Ranger | **Stormquiver** (Stormstring, Deadeye), marked crossbow, pack hunter |
+| Mystic | **Rime Orb** (Winter's Lattice), **Effigy Caller** (Effigy Covenant), **Ember Brand** (Sigil of Cinders; all Elementalist), healer and support |
+| Thief | **Plaguebearer** (Contagion Rite with Blackblood Creed), **Twin-Fang Cascade** (Cascade Edge, Ninja), duelist |
+| Necromancer | bone army, **Grave Effigies** (Effigy Covenant or Winter's Lattice), rot curser |
+| Monk | **Storm Palm** (Aether Edge, Shadowfist), **Hundred-Fist Cascade** (Cascade Edge), chi healer |
+| Templar | **Reliquary Keeper** (Reliquary Vow, Sentinel), **Ember Brand** (Sigil of Cinders, Inquisitor), **Iron Pilgrim** (Open Hand Creed), holy area |
+
+The role order holds: the Deadeye stays the best single target, the Elementalist the best area (its own archetypes
+add at most +10%), the Juggernaut the tankiest.
+
+### Build archetypes, second round (2026-10-12)
+
+The three families left out at first: snares (traps and mines), vigils (auras that reserve mana) and a life on the
+energy shield alone. Four more keystones on the ends of the four other elemental clusters (96, 99, 102, 105; refunded
+once, build code format 5), six uniques, seven spells (Snare Trap, Seeker Mine, Detonate Mines for the Ranger and
+Thief lines; four vigils for every class). Guide docs/BUILDS.md; rules server/README.md "Build archetypes", "Snares",
+"Vigils"; computed numbers server/data/spells/README.md "Snares, vigils and Hollow Vessel", measured in game
+2026-10-13 in "Snares, vigils and Hollow Vessel measured in game".
+
+| Line | New options |
+|---|---|
+| Warrior | **Tithebound** (Iron Tithe: vigils on health, Berserker) |
+| Ranger | **Trapper** and **Mine-layer** (Snarewright's Creed, Deadeye) |
+| Mystic | **Choir Herald** (Covenant of Vigils, Illusionist), **Hollow Caster** (Hollow Vessel, Elementalist) |
+| Thief | **Mine-layer** (Snarewright's Creed, Ninja), Trapper |
+| Necromancer | **Choir Herald** (Bone Lord), **Hollow Caster** (Lich) |
+| Monk | **Hollow Palm** (Hollow Vessel with Aether Edge, Shadowfist), **Tithebound** |
+| Templar | **Choir Herald** (Sentinel), **Tithebound** (Inquisitor), Hollow Vessel |
+
+The role order holds: the Deadeye and the Elementalist stay the leaders, the Illusionist and the Iron Sage stay the
+healers. Measured in game (2026-10-13) the snares passed the Elementalist in area, so the snare hit was halved; the
+snare rows are computed again (the best, a Mine-layer Deadeye, now -43% in area on the computed rows and about -3% /
+-18% at level 300 / 1000 when the halving is applied to the measured snare share; measured again after the halving:
+the Mine-layer Deadeye 3372 in area at level 300, the Mine-layer Ranger 10536 at level 1000, just under the
+Elementalist's 3496 / 10837-11275). **Flag (measured, not applied):** the Hollow Palm with the Aetherbound Plate deals
+5342 on one target at level 1000, 14% over the Deadeye's 4670-4685 (computed 4367); proposed fix: Aether Edge counts
+only the items' part of the shield while Hollow Vessel is held (about 4300 then). The vigils, Iron Tithe and Hollow
+Vessel's shield, recharge and immunities measured as written.
+
 ### Balance with the trees
 
 Every class measured the same way at levels 300 and 1000 with a tree build (`server/data/spells/README.md` "Classes with the
@@ -529,7 +672,8 @@ passive trees"). The level factors that stood in for the tree are dropped; the f
 factor (`ChaosClassTree.classDamage`, level 300 to 1000). The owner's targets (2026-10-11): the Deadeye and the Elementalist at
 least 8-10% ahead of the next class, met by trimming the classes right behind (Ninja 0.45 / 0.57, Shadowfist 0.49 / 0.69, Lich
 0.50 / 0.57, Bone Lord 0.75 / 0.61, Inquisitor 0.65 / 0.58, Berserker 0.78 / 1.0, Ranger and Beastmaster 1.0 / 0.95; level 300 /
-1000), not by raising the leaders. Result (level 300 / 1000): Deadeye the best single target (1312 / 4571; Shadowfist -10% / -19%,
+1000), not by raising the leaders. 2026-10-12, after the keystone check: Necromancer 1.0 -> 0.93 and Bone Lord 0.75 -> 0.63
+at level 300 (Covenant path builds; "Line keystones" above). Result (level 300 / 1000): Deadeye the best single target (1312 / 4571; Shadowfist -10% / -19%,
 Lich -11% / -12%, Bone Lord -12% / -10%, Ninja -15% / -22%); Elementalist the best area (3442 / 11004; Berserker -15% / -25%,
 Beastmaster -44% / -16%); Illusionist the best healer (1985 / 3007 per second on an ally), Iron Sage the second (1765 / 2525,
 +20% / +24% over the Mystic's 1473 / 2039; group +20% / +22%); Samurai a bit under the Juggernaut's damage with off-tank toughness

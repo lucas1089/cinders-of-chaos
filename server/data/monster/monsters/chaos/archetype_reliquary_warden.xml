@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Reliquary Warden: the holy relic of the Reliquary Vow keystone (Templar line; data/scripts/chaos/archetypes.lua, numbers
+     in archetypes_config.lua arReliquary). It follows its owner while the owner holds the keystone and is out of a
+     protection zone (brought back past 7 sqm); every 2 s it heals the owner's party around it, makes the other members
+     hit harder for 3 s and burns enemies next to it with holy damage (dealt as its owner). No attacks of its own; it cannot
+     be attacked, so monsters ignore it. Health is a placeholder below the monster tiers' minimum. Look 1074 (a floating
+     light construct; to be checked in game). -->
+<monster name="Reliquary Warden" nameDescription="a reliquary warden" race="undead" experience="0" speed="220" manacost="0">
+	<health now="10" max="10" />
+	<look type="1074" corpse="0" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="0" />
+		<flag hostile="0" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<defenses armor="0" defense="0" />
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+		<immunity drown="1" />
+	</immunities>
+</monster>

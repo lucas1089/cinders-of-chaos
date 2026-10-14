@@ -10,6 +10,7 @@
 --   C.parseTime(v)                        "YYYY-MM-DD HH:MM" (server time) or a number -> unix time; nil when invalid
 --   C.weekKey(t, hour)                    week number; weeks start on Monday at `hour` (server time)
 --   C.featured(pool, week, count)         `count` keys of `pool`, a different choice every week (deterministic)
+--   C.weekEnds(t, hour)                   when the week of t ends (the weekly rotation's countdown)
 --   C.price(offer, categoryName, ctx)     cost, oldCost (nil when not reduced), tags {"Sale", "New", "Featured"}
 --   C.bundleCost(bundle, listSum)         a bundle's price: its own cost, or listSum minus its pct
 --   C.giftProblem(t)                      why a gift to this target is refused, or nil
@@ -57,6 +58,23 @@ function C.frameStorage(S, i)
 		return nil
 	end
 	return S.shopFrameBase2 + i - 9
+end
+
+-- ------------------------------------------------------------------ outfit shaders
+-- a store or season pass shader leaves a mark in Chaos.storage.shopShaderBase + id (7100701-7100759) and the engine's
+-- ownership (Player:addShader). Before server src-patch 0036 the engine dropped that ownership, so the mark stayed
+-- alone and the Outfit window listed nothing; shop.lua adds the ownership again at login for every marked id.
+C.SHADER_MARKS = 59
+
+-- the shaders.xml ids with a mark: value(id) is the mark's storage value
+function C.markedShaders(value)
+	local ids = {}
+	for id = 1, C.SHADER_MARKS do
+		if (tonumber(value(id)) or 0) > 0 then
+			ids[#ids + 1] = id
+		end
+	end
+	return ids
 end
 
 -- ------------------------------------------------------------------ keys
@@ -208,6 +226,12 @@ end
 function C.weekKey(t, hour)
 	local monday = os.time({year = 1970, month = 1, day = 5, hour = hour or 0, min = 0, sec = 0})
 	return math.floor((t - monday) / 604800)
+end
+
+-- unix time the week of t ends (the next Monday at `hour`): the weekly rotation changes then
+function C.weekEnds(t, hour)
+	local monday = os.time({year = 1970, month = 1, day = 5, hour = hour or 0, min = 0, sec = 0})
+	return monday + (C.weekKey(t, hour) + 1) * 604800
 end
 
 -- `count` distinct entries of `pool`, the same all week, another set next week
@@ -374,6 +398,10 @@ function C.packCredit(pack, first, cfg)
 	local firstBonus = 0
 	if first and not pack.starter and cfg and cfg.firstPurchase then
 		firstBonus = math.floor(coins * (tonumber(cfg.firstPurchase.bonusPct) or 0) / 100)
+		local cap = tonumber(cfg.firstPurchase.maxBonus)
+		if cap and cap > 0 then
+			firstBonus = math.min(firstBonus, math.floor(cap)) -- "Limite a 1000": double up to +1000 extra
+		end
 	end
 	return {coins = coins, bonus = bonus, firstBonus = firstBonus, total = coins + bonus + firstBonus}
 end

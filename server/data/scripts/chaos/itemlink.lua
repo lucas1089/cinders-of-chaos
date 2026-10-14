@@ -103,7 +103,7 @@ local function reply(player, action, data)
 end
 
 local function register(player, data)
-	local n = tonumber(data.n) or 0
+	local n = Chaos.toInt(data.n) or 0 -- echoed: never inf
 	local function refuse(reason)
 		reply(player, "refused", {n = n, reason = reason})
 	end
@@ -172,7 +172,9 @@ local function get(player, data)
 		reply(player, "link", {id = type(id) == "string" and id:sub(1, 12) or "", gone = true})
 		return
 	end
-	reply(player, "link", {id = entry.id, tip = entry.tip, owner = entry.ownerName, left = K.remaining(entry, t)})
+	-- the snapshot stays unscaled; what is sent has the display scale of the item's level requirement (DS.itemTip)
+	local tip = entry.tip
+	reply(player, "link", {id = entry.id, tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip), owner = entry.ownerName, left = K.remaining(entry, t)})
 end
 
 -- Help channel (and any channel script): true when the message must be refused. data/chatchannels/scripts/help.lua

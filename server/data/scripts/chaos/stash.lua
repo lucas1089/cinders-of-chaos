@@ -529,8 +529,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		if item then
 			stashItem(player, item)
 		end
-		if data.UpdateList then
-			sendItems(player) -- always echo, even when rejected (the client relies on this)
+		-- echo the list, even when rejected (the client relies on this), at most every 100 ms: the list is a database
+		-- read, and naming the same unstashable item again and again would otherwise read it on every packet
+		if data.UpdateList and (not ChaosRateLimit or ChaosRateLimit.allow(player, "stash.echo", 100)) then
+			sendItems(player)
 		end
 	elseif data.make == "Redeem" then
 		redeem(player, data)

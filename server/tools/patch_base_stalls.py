@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two base server scripts that held or loaded the game loop (server/README.md "Game loop stalls").
+"""Base server scripts that held or loaded the game loop (server/README.md "Game loop stalls").
 
 usage: python3 -I patch_base_stalls.py DATA_DIR [--dry-run]
 
@@ -22,8 +22,36 @@ usage: python3 -I patch_base_stalls.py DATA_DIR [--dry-run]
    text: the same text gives the same slots, so only a new or changed description is parsed again (the description is
    still read every time). This took most of the script's garbage (a pattern iterator and tables per item, 10 times a
    second per player), which the Lua collector then had to sweep inside other tasks.
+3. The same check, less often. Each player had its own 100 ms timer (addEvent at the end of the check, started at
+   login): about 13% of the game loop at 200 online even with the cache of 2. The check now runs at login (as before),
+   at once when an item is put on or taken off (EventCallback onItemMoved with an inventory slot on either side: drag
+   and drop, the equip hotkey and right-click equips since engine patch 0024), and once a second for every player
+   online in 12 groups (player id modulo 12, one group every 83 ms, like item_mods.lua) for the other ways a worn item
+   changes (decay, a script's moveTo, an upgrade or an orb used on a worn item). A player who left is dropped from the
+   script's cache by the group pass, as the stock timer did. The check itself is unchanged. After a reload of the
+   scripts the new chain takes over the players online and the old one stops.
+4. The same script's condition ids (a base bug, owner decision 2026-10-12). A slot bonus was added with the sub id
+   90 + slot + 10 x index (CONST_SLOT_AMMO) and removed with 90 + slot + 16 x index (CONST_SLOT_GLOVES): an item
+   taken off kept its bonuses until logout, and an emptied slot could take another slot's bonus away (the ids met).
+   The bonus is now added with the id the removals use (16 x index: one id per slot and index for slots 1-16). The
+   first check of a player after the script loaded (a login, or a reload with the player online) removes both ids
+   of every slot once, so a bonus added under the old id is not kept next to the new one.
+5. The same script's cache of the bonuses it added (slotAttribute.cache, per player and sub id). A removal (an emptied
+   slot, or the indexes an item no longer has) took the condition off but kept the cache entry. The stock compare of
+   two bonuses is by table identity (Attr's __eq sits on the metatable of Attr, not of its instances), so every check
+   re-adds every bonus anyway and the stale entry did nothing; with a compare by value (the base's intent) a bonus put
+   back on with the same value would stay off. The removal now drops the entry too.
 
-Every change carries a marker and is made once (a second run changes nothing). A file without the stock code is left
+6. The base extended opcode script (data/creaturescripts/scripts/extendedopcode.lua, the "ExtendedOpcode" event the
+   engine registers for every OTClient player). On every extended opcode a client sends (each module's request, every
+   window, every click of the Chaos modules) it read the player's ancestral points from the database on the game loop
+   and pushed them back on opcode 89: 300 players sending 4 requests a second were 1,200 SELECTs a second and the game
+   loop fell seconds behind (server/README.md "Stress test"). The read and the push now happen at most once every 2 s
+   per player (and always for opcode 1, the client's first message); the rest of the script is unchanged. The points
+   only change through the store and the task scripts, and the next request after 2 s brings them.
+
+Every change carries a marker and is made once (3, 4 and 5 have their own markers, so a base patched by an older
+version of this tool gets them too) (a second run changes nothing). A file without the stock code is left
 alone: exit status 0, an install without these base scripts has nothing to do.
 """
 import os
@@ -81,7 +109,7 @@ UPGRADE_CALL_RE = re.compile(r'^([ \t]*)local slots = slotAttribute\.getItemSlot
                              r'(?=[ \t]*slotAttribute\.onSlotEquip\(player, slots, slot\))', re.M)
 SLOTS_CACHE = (
     '-- %s: the slots parsed from an item description, kept per description text (the\n'
-    '-- same text always gives the same slots). The check below runs every 100 ms per player; it now parses only a new\n'
+    '-- same text always gives the same slots). The check below runs often for every player; it now parses only a new\n'
     '-- or changed description. The cached tables are only read (onSlotEquip copies what it keeps).\n'
     'local chaosSlotsByDescription, chaosSlotsCached = {}, 0\n'
     'local function chaosItemSlots(item)\n'
@@ -98,6 +126,152 @@ SLOTS_CACHE = (
     '\treturn slots\n'
     'end\n'
     '\n') % MARK
+
+
+# ------------------------------------------------------------------------------------------------ 3. check interval
+MARK_INTERVAL = 'Chaos (patch_base_stalls.py, check interval)'
+UPGRADE_TIMER_RE = re.compile(r'^([ \t]*)addEvent\(slotAttribute\.autoDetection, \d+, playerId\)[ \t]*\r?\n', re.M)
+UPGRADE_LOGIN_RE = re.compile(r'^local creatureEvent = CreatureEvent\(\)[ \t]*\r?\n'
+                              r'(?=(?:[ \t]*\r?\n)*function creatureEvent\.onLogin\(player\)[ \t]*\r?\n'
+                              r'[ \t]*slotAttribute\.autoDetection\(player\.uid\))', re.M)
+UPGRADE_TIMER_NEW = ('{i}-- %s: no timer per player any more; chaosUpgradeGroup below checks\n'
+                     '{i}-- every player once a second, onItemMoved at once\n') % MARK_INTERVAL
+UPGRADE_GROUPS = (
+    '-- %s: the check above ran every 100 ms for every player online (a timer per\n'
+    '-- player), about 13%% of the game loop at 200 online. Now it runs at login (onLogin below, as before), at once when\n'
+    '-- an item is put on or taken off (onItemMoved with an inventory slot on either side), and once a second for every\n'
+    '-- player in 12 groups (player id modulo 12, one group every 83 ms) for the other ways a worn item changes (decay, a\n'
+    '-- script, an upgrade or an orb used on a worn item). The check drops a player who left from the cache, as before.\n'
+    'local chaosUpgradeGroups, chaosUpgradeInterval = 12, 1000\n'
+    'ChaosUpgradeSlotsChain = (ChaosUpgradeSlotsChain or 0) + 1\n'
+    'local chaosUpgradeChain, chaosUpgradeSeeded = ChaosUpgradeSlotsChain, false\n'
+    'local function chaosUpgradeGroup(group)\n'
+    '\tif ChaosUpgradeSlotsChain ~= chaosUpgradeChain then\n'
+    '\t\treturn -- a reload of the scripts started a new chain\n'
+    '\tend\n'
+    '\tif not chaosUpgradeSeeded then\n'
+    '\t\tchaosUpgradeSeeded = true -- after a reload: the players already online\n'
+    '\t\tfor _, player in ipairs(Game.getPlayers()) do\n'
+    '\t\t\tlocal playerId = player:getId()\n'
+    '\t\t\tif not slotAttribute.cache[playerId] then\n'
+    '\t\t\t\tslotAttribute.cache[playerId] = {}\n'
+    '\t\t\tend\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\tfor playerId in pairs(slotAttribute.cache) do\n'
+    '\t\tif playerId %% chaosUpgradeGroups == group then\n'
+    '\t\t\tslotAttribute.autoDetection(playerId)\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\taddEvent(chaosUpgradeGroup, math.floor(chaosUpgradeInterval / chaosUpgradeGroups), (group + 1) %% chaosUpgradeGroups)\n'
+    'end\n'
+    'addEvent(chaosUpgradeGroup, math.floor(chaosUpgradeInterval / chaosUpgradeGroups), 0)\n'
+    '\n'
+    'local chaosUpgradeMoved = EventCallback\n'
+    'chaosUpgradeMoved.onItemMoved = function(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)\n'
+    '\tlocal inventory = CONTAINER_POSITION or 0xFFFF\n'
+    '\tif (fromPosition.x == inventory and fromPosition.y < 64) or (toPosition.x == inventory and toPosition.y < 64) then\n'
+    '\t\tslotAttribute.autoDetection(player:getId())\n'
+    '\tend\n'
+    'end\n'
+    'chaosUpgradeMoved:register(13) -- after base_rarity.lua (10), item_mods.lua (11), archery.lua (12)\n'
+    '\n') % MARK_INTERVAL
+
+
+# ------------------------------------------------------------------------------------------------ 4. condition ids
+MARK_IDS = 'Chaos (patch_base_stalls.py, condition ids)'
+UPGRADE_ADD_ID_RE = re.compile(r'^([ \t]*)local subid = slotAttribute\.baseSubids \+ slotIndex \+ '
+                               r'\(CONST_SLOT_AMMO \* index\)[ \t]*(\r?\n)', re.M)
+UPGRADE_ADD_ID_NEW = ('{i}-- %s: the id the removals use (was CONST_SLOT_AMMO)\n'
+                      '{i}local subid = slotAttribute.baseSubids + slotIndex + (CONST_SLOT_GLOVES * index)\n') % MARK_IDS
+UPGRADE_CACHE_INIT_RE = re.compile(r'^([ \t]*)if not slotAttribute\.cache\[playerId\] then[ \t]*\r?\n'
+                                   r'[ \t]*slotAttribute\.cache\[playerId\] = \{\}[ \t]*\r?\n'
+                                   r'[ \t]*end[ \t]*\r?\n', re.M)
+UPGRADE_LEFT_RE = re.compile(r'^([ \t]*)slotAttribute\.cache\[playerId\] = nil[ \t]*\r?\n', re.M)
+UPGRADE_CLEAR = (
+    '-- %s: the slot bonuses were added with the sub id 90 + slot + 10 x index\n'
+    '-- (CONST_SLOT_AMMO) and removed with 90 + slot + 16 x index (CONST_SLOT_GLOVES), so an item taken off kept its\n'
+    '-- bonuses until logout and an emptied slot could remove another slot\'s bonus (the ids met). Both use 16 x index\n'
+    '-- now: one id per slot and index. The first check of a player after this script loaded (a login, or a reload\n'
+    '-- with the player online) removes both ids once, so a bonus added under the old id is not kept twice.\n'
+    'local chaosUpgradeCleared = {}\n'
+    'local function chaosUpgradeClearOnce(player, playerId)\n'
+    '\tif chaosUpgradeCleared[playerId] then\n'
+    '\t\treturn\n'
+    '\tend\n'
+    '\tchaosUpgradeCleared[playerId] = true\n'
+    '\tfor slot = CONST_SLOT_HEAD, CONST_SLOT_GLOVES do\n'
+    '\t\tfor index = 1, slotAttribute.maxSlots do\n'
+    '\t\t\tfor _, step in ipairs({CONST_SLOT_AMMO, CONST_SLOT_GLOVES}) do\n'
+    '\t\t\t\tplayer:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, slotAttribute.baseSubids + slot + step * index, true)\n'
+    '\t\t\tend\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\tslotAttribute.cache[playerId] = {}\n'
+    'end\n'
+    '\n') % MARK_IDS
+
+
+# ------------------------------------------------------------------------------------------------ 5. emptied slots
+MARK_EMPTY = 'Chaos (patch_base_stalls.py, emptied slots)'
+# the removals of autoDetection (an emptied slot, the indexes an item no longer has); "slot +", not onSlotEquip's
+# "slotIndex +"
+UPGRADE_REMOVE_ID_RE = re.compile(r'^([ \t]*)local subid = slotAttribute\.baseSubids \+ slot \+ '
+                                  r'\(CONST_SLOT_GLOVES \* index\)[ \t]*\r?\n', re.M)
+UPGRADE_FORGET = '{i}slotAttribute.cache[playerId][subid] = nil -- %s: the bonus is taken off below\n' % MARK_EMPTY
+
+
+# ------------------------------------------------------------------------------------------------ 6. extended opcode
+MARK_OPCODE = 'Chaos (patch_base_stalls.py, ancestral points)'
+OPCODE_SCRIPT = ('creaturescripts', 'scripts', 'extendedopcode.lua')
+OPCODE_FN_RE = re.compile(r'^function onExtendedOpcode\(player, opcode, buffer\)[ \t]*\r?\n', re.M)
+# the stock read and push, from "local points = 0" to the send of opcode 89
+OPCODE_BLOCK_RE = re.compile(
+    r'^(?P<i>[ \t]*)local points = 0[ \t]*\r?\n'
+    r'[ \t]*local resultId = db\.storeQuery\("SELECT `ancestral_points` FROM `players` WHERE `id` = " \.\. '
+    r'player:getGuid\(\)\)[ \t]*\r?\n'
+    r'(?:(?![ \t]*player:sendExtendedOpcode\(89, points\)).*\r?\n){0,6}'
+    r'[ \t]*player:sendExtendedOpcode\(89, points\)[ \t]*\r?\n', re.M)
+OPCODE_HELPER = (
+    '-- %s: the database read and the push of opcode 89 below ran for\n'
+    '-- every extended opcode a client sends (each module request): at most once every 2 s per player now, and always for\n'
+    '-- opcode 1 (the client\'s first message). The points change only through the store and the task scripts.\n'
+    'local chaosAncestralAt, chaosAncestralCount = {}, 0\n'
+    'local function chaosAncestralDue(player, opcode)\n'
+    '\tlocal now = os.mtime and os.mtime() or os.time() * 1000\n'
+    '\tlocal id = player:getId()\n'
+    '\tlocal last = chaosAncestralAt[id]\n'
+    '\tif last and opcode ~= 1 and now >= last and now - last < 2000 then\n'
+    '\t\treturn false\n'
+    '\tend\n'
+    '\tif not last then\n'
+    '\t\tchaosAncestralCount = chaosAncestralCount + 1\n'
+    '\t\tif chaosAncestralCount > 5000 then -- players who left: forget everyone now and then (one extra read each)\n'
+    '\t\t\tchaosAncestralAt, chaosAncestralCount = {}, 1\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\tchaosAncestralAt[id] = now\n'
+    '\treturn true\n'
+    'end\n'
+    '\n') % MARK_OPCODE
+
+
+def patch_opcode(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_OPCODE in text:
+        return text, 'already'
+    fn = OPCODE_FN_RE.search(text)
+    block = fn and OPCODE_BLOCK_RE.search(text, fn.end())
+    if not block:
+        return text, 'none'
+    i = block.group('i')
+    lines = block.group(0).splitlines(True)
+    inner = ''.join(((i or '\t') + l) if l.strip() else l for l in lines)
+    wrapped = (crlf(text, '%sif chaosAncestralDue(player, opcode) then -- %s\n' % (i, MARK_OPCODE)) + inner
+               + crlf(text, '%send\n' % i))
+    new = (text[:fn.start()] + crlf(text, OPCODE_HELPER) + text[fn.start():block.start()] + wrapped
+           + text[block.end():])
+    return new, 'patched'
 
 
 def crlf(text, new):
@@ -124,7 +298,7 @@ def patch_expedition(text):
     return bom + crlf(text, PLAYER_TILES) + body[len(bom):], 'patched (%d loop%s)' % (n, '' if n == 1 else 's')
 
 
-def patch_upgrade(text):
+def patch_upgrade_cache(text):
     """(new text, status): 'already', 'patched' or 'none'"""
     if MARK in text:
         return text, 'already'
@@ -139,6 +313,83 @@ def patch_upgrade(text):
     return new, 'patched'
 
 
+def patch_upgrade_interval(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_INTERVAL in text:
+        return text, 'already'
+    d = UPGRADE_DEF_RE.search(text)
+    if not d:
+        return text, 'none'
+    tm = UPGRADE_TIMER_RE.search(text, d.end())
+    if not tm:
+        return text, 'none'
+    lg = UPGRADE_LOGIN_RE.search(text, tm.end())
+    if not lg:
+        return text, 'none'
+    new = (text[:tm.start()] + crlf(text, UPGRADE_TIMER_NEW.format(i=tm.group(1))) + text[tm.end():lg.start()]
+           + crlf(text, UPGRADE_GROUPS) + text[lg.start():])
+    return new, 'patched'
+
+
+def patch_upgrade_ids(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_IDS in text:
+        return text, 'already'
+    d = UPGRADE_DEF_RE.search(text)
+    if not d:
+        return text, 'none'
+    adds = list(UPGRADE_ADD_ID_RE.finditer(text, 0, d.start()))
+    ci = UPGRADE_CACHE_INIT_RE.search(text, d.end())
+    left = ci and UPGRADE_LEFT_RE.search(text, ci.end())
+    if not adds or not left:
+        return text, 'none'
+    out, pos = [], 0
+    for m in adds:
+        out += [text[pos:m.start()], crlf(text, UPGRADE_ADD_ID_NEW.format(i=m.group(1)))]
+        pos = m.end()
+    out += [text[pos:d.start()], crlf(text, UPGRADE_CLEAR), text[d.start():ci.end()],
+            crlf(text, '%schaosUpgradeClearOnce(player, playerId) -- %s\n' % (ci.group(1), MARK_IDS)),
+            text[ci.end():left.end()], crlf(text, '%schaosUpgradeCleared[playerId] = nil\n' % left.group(1)),
+            text[left.end():]]
+    return ''.join(out), 'patched'
+
+
+def patch_upgrade_empty(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_EMPTY in text:
+        return text, 'already'
+    d = UPGRADE_DEF_RE.search(text)
+    if not d:
+        return text, 'none'
+    out, pos = [], 0
+    for m in UPGRADE_REMOVE_ID_RE.finditer(text, d.end()):
+        out += [text[pos:m.end()], crlf(text, UPGRADE_FORGET.format(i=m.group(1)))]
+        pos = m.end()
+    if not out:
+        return text, 'none'
+    return ''.join(out) + text[pos:], 'patched'
+
+
+def patch_upgrade(text):
+    """(new text, status) for 2 to 5: 'already', 'patched (...)' or 'none'"""
+    text, cache = patch_upgrade_cache(text)
+    text, interval = patch_upgrade_interval(text)
+    text, ids = patch_upgrade_ids(text)
+    text, empty = patch_upgrade_empty(text)
+    if cache == 'none' and interval == 'none' and ids == 'none' and empty == 'none':
+        return text, 'none'
+    done = [what for what, st in (('slot cache', cache), ('check every 1 s and on equip', interval),
+                                  ('one condition id per bonus', ids), ('emptied slots forgotten', empty))
+            if st == 'patched']
+    if not done:
+        return text, 'already'
+    rest = [what + ' ' + st for what, st in (('slot cache', cache), ('check interval', interval),
+                                             ('condition ids', ids), ('emptied slots', empty))
+            if st != 'patched']
+    rest = [r.replace(' none', ': stock code not found') for r in rest]
+    return text, 'patched (%s%s)' % (', '.join(done), '; ' + ', '.join(rest) if rest else '')
+
+
 def files(data):
     root = os.path.join(data, *EXPEDITIONS)
     if os.path.isdir(root):
@@ -150,6 +401,9 @@ def files(data):
     path = os.path.join(data, *UPGRADE)
     if os.path.isfile(path):
         yield path, patch_upgrade
+    path = os.path.join(data, *OPCODE_SCRIPT)
+    if os.path.isfile(path):
+        yield path, patch_opcode
 
 
 def main(argv):
@@ -173,7 +427,7 @@ def main(argv):
                 f.write(new)
         print('data/%s: %s%s' % (rel, st, ' (dry run, not written)' if dry and st.startswith('patched') else ''))
     if not found:
-        print('no expedition scan loop and no upgrade slot check found (nothing to do)')
+        print('no expedition scan loop, no upgrade slot check and no extended opcode read found (nothing to do)')
     return 0
 
 

@@ -30,6 +30,35 @@ dropped (listed as `skipped` in `chaos_unique_specs.lua`).
 
 ## Items
 
+The build archetype uniques (2026-10-12, both rounds; docs/BUILDS.md, server/README.md "Build archetypes") carry an `archetype`
+attribute: the effect `data/scripts/chaos/archetypes.lua` reads on the worn copy. Their stats are ordinary ones.
+
+| name | slot | id | stock item | level | tier | archetype effect |
+| --- | --- | --- | --- | --- | --- | --- |
+| Pyreheart Mantle | body | 8881 | fireborn giant armor | 150 | legendary | Pyre Oath aura +20% |
+| Vein of the Unsated | necklace | 27652 | exotic amulet | 180 | rare | Sanguine Covenant leech +1%, cap +3% |
+| Spitethorn Bulwark | shield | 15413 | ornate shield | 130 | legendary | Thornbound Oath reflect +10% |
+| Knuckles of the Unbound | ring | 28023 | Astro Ring | 400 | legendary | Open Hand at 80% without the keystone, +10% with it |
+| Rotbloom Phial | necklace | 21691 | shrunken head necklace | 150 | rare | Contagion Rite +1 target, +1 step |
+| Splintered Instant | ring | 28049 | Mercurial Ring | 400 | legendary | Cascade Edge +25%, 0.2 s sooner |
+| Stormcaller Recurve | distance | 8858 | elemental bow | 70 | rare | one arc of 25% alone; Stormstring +1 arc |
+| Shard of the Long Winter | wand | 26756 | frozen wand | 100 | rare | Winter's Lattice +2%, +1 sqm |
+| Effigy Carver's Idol | shield | 22423 | umbral spellbook | 120 | rare | Effigy Covenant: a third effigy |
+| Brand of the Ashen Choir | head | 18403 | prismatic helmet | 150 | rare | Sigil of Cinders pulses +25% |
+| Aetherbound Plate | body | 2466 | golden armor | 120 | rare | Aether Edge 10% of the shield |
+| Reliquary Censer | necklace | 27251 | rainbow necklace | 220 | legendary | Reliquary Warden pulses +25% |
+| Snarewalker Greaves | feet | 28115 | shadewalker boots | 120 | rare | snares: +1 trap, armed 0.3 s sooner, traps +10% (no keystone needed) |
+| Fusewright's Charm | necklace | 7890 | magma amulet | 150 | rare | snares: +2 mines, mines +10%, fuse 4 s longer (no keystone needed) |
+| Choirmaster's Circlet | head | 27667 | eldritch cowl | 200 | legendary | vigils reserve 15% less |
+| Oathkeeper's Standard | shield | 15453 | warrior's shield | 180 | legendary | vigils reserve 10% less, reach 2 sqm farther |
+| Hollowglass Diadem | head | 27668 | eldritch hood | 250 | legendary | energy shield recharge +10% a second, starts 1 s after a hit (no keystone needed) |
+| Stillheart Robe | body | 27390 | soulmantle | 300 | legendary | Hollow Vessel: the items' energy shield +40% more |
+
+The six of the second round carry `equipLevel` and `equipLines` (2026-10-13): their copies are worn by that level and
+those class lines, not by the base item's movements.xml rule, which stays for stock copies
+(`tools/install_unique_equip.py`, `data/lib/chaos_unique_equip.lua`, server/README.md "Unique equip rules").
+
+
 Columns: server id / client id, the stock item that was overridden, required level (see caveats), drop tier (`minTier`), key stats.
 
 | name | slot | id (server/client) | stock item | level | tier | key stats |
@@ -104,7 +133,8 @@ attributes of the stock item (boots of haste style timers, equip transforms) wer
   copy of the stock items.xml (idempotent).
 * **Level requirements are text only.** `items.xml` has no minimum-level attribute in this engine; stock items enforce levels with
   movement/weapon Lua scripts. The level is written into each description ("Requires level N.") and in `ChaosUniqueItems[].level`.
-  Nothing stops a low-level player from equipping them until you add a MoveEvent/`onEquip` check.
+  Nothing stops a low-level player from equipping them until you add a MoveEvent/`onEquip` check. Exception: the
+  uniques with `equipLevel` / `equipLines` (above), held to their own rule by the `uniqueequip` install step.
 * **Client display:** the 10.98 client shows item names and descriptions from the server (look/inspect text), but the item
   *sprite* and the client-side name in some windows (e.g. trade lists, market, container titles built from `.dat` names) can stay those of the
   stock item. Sprites are always those of the original item.

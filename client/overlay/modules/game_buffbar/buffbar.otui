@@ -44,7 +44,7 @@ BuffBar < UIWidget
 BuffBarSettings < ChaosMainWindow
   id: buffBarSettings
   !text: tr('Buff Bar')
-  size: 270 160
+  size: 300 182
 
   ChaosLabel
     id: info
@@ -72,6 +72,14 @@ BuffBarSettings < ChaosMainWindow
     anchors.right: parent.right
     margin-top: 6
     @onCheckChange: modules.game_buffbar.setOption('timers', self:isChecked())
+  ChaosCheckBox
+    id: paintedBox
+    !text: tr('Painted icons (bar, spellbook, passive tree)')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_buffbar.setPainted(self:isChecked())
   ChaosButton
     id: closeButton
     !text: tr('Close')

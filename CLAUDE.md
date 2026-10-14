@@ -36,12 +36,18 @@ python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 python3 client/tools/make_fonts_test.py
+python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
+python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
+for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 
 # generated files must be committed up to date (CI diffs them)
 python3 client/tools/gen_spell_data.py                       # -> game_chaosspells/spelldata.lua
 cd server && python3 -I tools/gen_unique_specs.py            # -> data/lib/chaos_unique_specs.lua
 cd server && luajit tools/gen_codex_data.lua                 # -> client game_codex/codex_data.lua
 cd server && lua5.3 tools/gen_codex_data.lua --check
+cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json
+cd server && lua5.3 tools/gen_wiki_data.lua --check
+python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

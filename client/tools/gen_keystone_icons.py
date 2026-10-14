@@ -8,7 +8,8 @@ Run: python3 -I client/tools/gen_keystone_icons.py client/overlay/data/images/pa
 Every icon here is a cell of data/images/passivetree/skills.png, the atlas the small nodes use. Nothing is drawn and
 nothing comes from outside the repository, so the medium and large nodes have the same painted look, light and palette
 as the small ones.
- * KEYSTONES (keystone frame, nodes 369, 376, 383, 390, 621, 624 with their per-class variants, 631-664): one row of
+ * KEYSTONES (keystone frame, nodes 369, 376, 383, 390, 621, 624 with their per-class variants, 631-664, and the build
+   archetype keystones 77, 78, 81, 82, 96, 99, 102, 105-109, 253, 262, 355, 362): one row of
    64x64 cells in keystones.png, in the order below (treedata/icons.lua: x = index * 64). Each cell is the atlas icon
    scaled up once here (Lanczos, a light unsharp mask), so the client does not stretch a 25 px clip to 60 px.
  * START (class section start nodes 625, 635, 645, 655): classstart_<line>.png, 150x150, written next to the sheet:
@@ -52,8 +53,8 @@ KEYSTONES = [  # (icon key in treedata/icons.lua, atlas cell): the order fixes t
     ('ksDeadeye', 'B17.20'),           # Paladin, Deadeye: a red hunter's eye
     ('ksArcaneEcho', 'A4.19'),         # Sorcerer: an arcane spiral
     ('ksOverload', 'B20.25'),          # Sorcerer, Elemental Overload: three element orbs
-    ('ksOvergrowth', 'B24.13'),        # Druid: a sprouting seedling
-    ('ksThorns', 'B13.21'),            # Druid: a thorned branch
+    ('ksOvergrowth', 'B24.13'),        # Iron Sage (621): a sprouting seedling
+    ('ksThorns', 'B13.21'),            # Sentinel (624): a thorned branch
     ('ksSharedPhantasm', 'B10.30'),    # Illusionist: a marking violet eye
     ('ksInspiringIllusion', 'B19.18'), # Illusionist: a figure in a golden aura
     ('ksImmovable', 'B11.11'),         # Juggernaut: an iron helm
@@ -72,6 +73,24 @@ KEYSTONES = [  # (icon key in treedata/icons.lua, atlas cell): the order fixes t
     ('ksGraveCovenant', 'B23.17'),     # 369 Necromancer line: a host of skulls
     ('ksScarredDiscipline', 'B13.24'), # 390 Monk line: a struck body
     ('ksPenitentWrath', 'A6.14'),      # 376 Templar line: twin holy blades
+    # the build archetype keystones (2026-10, server archetypes_config.lua; docs/BUILDS.md)
+    ('arPyreOath', 'B2.32'),           # 108 a figure wreathed in fire
+    ('arSanguine', 'B4.4'),            # 81 a blood-red seal
+    ('arThornbound', 'B3.34'),         # 77 a struck shield
+    ('arOpenHand', 'B5.18'),           # 109 a clenched red fist
+    ('arContagion', 'B2.34'),          # 107 a green venom drop
+    ('arCascade', 'B2.25'),            # 78 bursting shards
+    ('arStormstring', 'B4.10'),        # 82 a lightning-struck archer
+    ('arWinterLattice', 'B5.8'),       # 355 a frost burst
+    ('arEffigy', 'B3.10'),             # 262 a golden idol
+    ('arCinderSigil', 'B2.35'),        # 106 a burning sigil ring
+    ('arAetherEdge', 'B4.12'),         # 362 a blade of blue energy
+    ('arReliquary', 'B0.24'),          # 253 a sacred relic
+    # the second round (2026-10-12): snares, vigils, Iron Tithe, Hollow Vessel
+    ('arSnarewright', 'B1.22'),        # 105 a bundled charge
+    ('arVigils', 'B1.32'),             # 99 a ring of element sigils
+    ('arIronTithe', 'B3.36'),          # 102 a shield with a heart
+    ('arHollowVessel', 'B5.10'),       # 96 a hollow orb of blue energy
 ]
 
 START = [  # (line, atlas cell): the start node of each class section

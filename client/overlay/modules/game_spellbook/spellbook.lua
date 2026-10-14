@@ -100,10 +100,35 @@ local function canUse(spell)
   return false
 end
 
+-- client setting "Painted icons" (g_settings 'chaosPaintedIcons', the Buff Bar settings; off by default): a Chaos
+-- spell's painted 32 px icon (client/tools/gen_painted_icons.py), found by its words in game_chaosspells' spell data;
+-- nil when the setting is off or the spell has none (then the spell sheet's icon as before)
+local function paintedSpellIcon(words)
+  local ok, on = pcall(g_settings.getBoolean, 'chaosPaintedIcons')
+  if not (ok and on == true) then return nil end
+  local cs = modules.game_chaosspells
+  local data = cs and cs.ChaosSpellData
+  if type(data) ~= 'table' then return nil end
+  for _, s in ipairs(data) do
+    if s.words == words and s.clientId then
+      local file = '/images/game/spells_painted/' .. s.clientId
+      local okf, there = pcall(g_resources.fileExists, file .. '.png')
+      return (okf and there == true) and file or nil
+    end
+  end
+  return nil
+end
+
 local function setIcon(iconWidget, itemWidget, spell)
   iconWidget:setImageSource('')
   iconWidget:setVisible(true)
   itemWidget:setVisible(false)
+  local painted = spell.words and paintedSpellIcon(spell.words)
+  if painted then
+    iconWidget:setImageSource(painted)
+    iconWidget:setImageClip('0 0 32 32')
+    return
+  end
   if spell.words and spell.words ~= '' and Spells and Spells.getSpellIcon then
     local ok, folder, clip = pcall(Spells.getSpellIcon, spell.words)
     if ok and folder then

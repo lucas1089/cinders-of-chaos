@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Golden Dragon" nameDescription="a golden dragon" race="fire" experience="950000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
-	<health now="700000" max="700000" />
+<monster name="Golden Dragon" nameDescription="a golden dragon" race="fire" experience="21500" speed="42" manacost="0">
+	<health now="25500" max="25500" />
 	<look type="1530" corpse="6068" />
-	<level min="3000" max="3500"/>
+	<level min="1140" max="1180"/>
 	<targetchange interval="4000" chance="0" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0"/>
 		<flag attackable="1"/>
@@ -18,30 +17,25 @@
 		<flag staticattack="90"/>
 		<flag runonhealth="0"/>
 	</flags>
-	<script>
-		<event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-	</script>
 	<attacks>
-		<attack name="melee" interval="2000" min="-15000" max="-18000"/>
+		<attack name="melee" interval="2000" min="-820" max="-990"/>
 		<attack name="dread" interval="4000" chance="15" radius="4" target="0" success="35" duration="5000">
 			<attribute key="areaEffect" value="rednote"/>
 		</attack>
-		<attack name="fire" interval="2000" chance="30" range="7" radius="4" target="1" min="-18000" max="-22000">
+		<attack name="fire" interval="2000" chance="30" range="7" radius="4" target="1" min="-990" max="-1210">
 			<attribute key="shootEffect" value="fire"/>
 			<attribute key="areaEffect" value="firearea"/>
 		</attack>
-		<attack name="fire" interval="2000" chance="20" length="8" spread="3" min="-15000" max="-19000">
+		<attack name="fire" interval="2000" chance="20" length="8" spread="3" min="-820" max="-1040">
 			<attribute key="areaEffect" value="firearea"/>
 		</attack>
-		<attack name="lifedrain" interval="2000" chance="25" range="7" target="1" radius="4" min="-15000" max="-22000">
+		<attack name="lifedrain" interval="2000" chance="25" range="7" target="1" radius="4" min="-820" max="-1210">
 			<attribute key="shootEffect" value="fire"/>
 			<attribute key="areaEffect" value="firearea"/>
 		</attack>
 	</attacks>
 	<defenses armor="77" defense="77">
-		<defense name="healing" interval="2000" chance="20" min="3500" max="8500">
+		<defense name="healing" interval="2000" chance="20" min="1050" max="2550">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

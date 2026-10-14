@@ -24,7 +24,7 @@
 		<attack name="melee" interval="2000" min="-550" max="-1100" />
 		<attack name="physical" interval="2000" chance="18" range="5" target="1" min="-450" max="-900">
 			<attribute key="shootEffect" value="spear" />
-			<attribute key="areaEffect" value="hitarea" />
+			<attribute key="areaEffect" value="blackspark" />
 		</attack>
 	</attacks>
 	<defenses armor="65" defense="65" />

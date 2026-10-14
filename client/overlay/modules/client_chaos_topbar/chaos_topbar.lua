@@ -243,7 +243,7 @@ local CATEGORIES = {
     entry('Market',          'market',      { modules = { 'game_market' }, fns = { 'toggle' }, key = 'Alt+E' }), -- our market (gold, Chaos Coins)
     entry('Bank',            'bank',        { modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } }),
     entry('Supply Stash',    'stash',       { modules = { 'game_stash' },     fns = { 'vipToggle', 'Stash.Toggle', 'toggle' } }),
-    entry('Auto Seller',     'autoloot',    info('autoseller')),
+    entry('Auto Seller',     'autoseller',  { modules = { 'game_pouches' }, fns = { 'toggleAutoSeller' } }), -- no chat command (2026-10-13)
     entry('More',            'market',      { sub = {
       entry('House',            'bank',      info('house')),
       entry('Ancestral Store',  'market',    info('ancestral')),

@@ -170,7 +170,10 @@ end
 local function showCalendar(d)
   if not window then return end
   window.list:destroyChildren()
-  local list = type(d.list) == 'table' and d.list or {}
+  local list = {} -- the events; an entry that is no table is left out
+  for _, e in ipairs(type(d.list) == 'table' and d.list or {}) do
+    if type(e) == 'table' then list[#list + 1] = e end
+  end
   if #list == 0 then
     local row = g_ui.createWidget('InvasionEventRow', window.list)
     row.when:setText('-')

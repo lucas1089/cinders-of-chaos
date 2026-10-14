@@ -59,3 +59,15 @@ CREATE TABLE IF NOT EXISTS `chaos_referral_log` (
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- chaos_referral_tiers: the referrer's tier rewards (referral_config.lua `tiers`: 3, 5 and 10 referred accounts whose
+-- `qualify` milestone was paid): one row per referrer and tier, written once; qualified = the count when reached,
+-- coins = the Chaos Coins paid with it. The title is shown from these rows (referral_core.lua R.titles).
+CREATE TABLE IF NOT EXISTS `chaos_referral_tiers` (
+  `referrer_account_id` int(11) NOT NULL,
+  `tier` varchar(16) NOT NULL,
+  `qualified` int(11) NOT NULL DEFAULT 0,
+  `coins` int(11) NOT NULL DEFAULT 0,
+  `paid_at` bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`referrer_account_id`, `tier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

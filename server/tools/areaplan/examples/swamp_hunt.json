@@ -1,0 +1,137 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "mirewater_fen",
+  "name": "Mirewater Fen",
+  "biome": "swamp",
+  "size": [
+    72,
+    58
+  ],
+  "floors": 1,
+  "level": [
+    50,
+    140
+  ],
+  "seed": 24101,
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "shape": "room",
+      "size": "small",
+      "place": "northwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "reeds",
+      "floor": 1,
+      "size": "large",
+      "place": "north"
+    },
+    {
+      "id": "bog",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "hollow",
+      "floor": 1,
+      "size": "medium",
+      "place": "southwest"
+    },
+    {
+      "id": "sinkpool",
+      "floor": 1,
+      "size": "medium",
+      "place": "southeast",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "reeds",
+      "width": 3
+    },
+    {
+      "from": "reeds",
+      "to": "bog",
+      "width": 4
+    },
+    {
+      "from": "bog",
+      "to": "hollow",
+      "width": 3
+    },
+    {
+      "from": "hollow",
+      "to": "camp",
+      "width": 3
+    },
+    {
+      "from": "bog",
+      "to": "sinkpool",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "reeds",
+      "monster": "Bog Raider",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "bog",
+      "monster": "Rot Elemental",
+      "count": 6,
+      "respawn": 90
+    },
+    {
+      "zone": "bog",
+      "monster": "Werecrocodile",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "hollow",
+      "monster": "Hydra",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "sinkpool",
+      "monster": "Feral Werecrocodile",
+      "count": 2,
+      "respawn": 120
+    }
+  ],
+  "npcs": [
+    {
+      "zone": "camp",
+      "name": "Wandering Merchant"
+    }
+  ],
+  "chests": [
+    {
+      "zone": "sinkpool",
+      "quest": "mirewater_cache",
+      "reward": {
+        "gold": 20000,
+        "message": "A smuggler's purse, still dry."
+      }
+    }
+  ],
+  "notes": "Example plan: a one-floor swamp hunt for levels 50-140 with a camp, a loop and a treasure pocket."
+}

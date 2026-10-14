@@ -1,0 +1,47 @@
+ChaosOrb < UIWidget
+  size: 76 76
+  phantom: true
+  focusable: false
+
+  UIWidget
+    id: liquid
+    size: 64 64
+    anchors.centerIn: parent
+    phantom: true
+    image-source: /modules/game_shaderfx/images/orb_mask
+    image-smooth: true
+
+  UIWidget
+    id: ring
+    anchors.fill: parent
+    phantom: true
+    image-source: /modules/game_shaderfx/images/orb_ring
+
+  Label
+    id: value
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #f0e8dc
+    phantom: true
+
+UIWidget
+  id: chaosOrbs
+  anchors.fill: parent
+  phantom: true
+  focusable: false
+
+  ChaosOrb
+    id: healthOrb
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-left: 6
+    margin-bottom: 6
+
+  ChaosOrb
+    id: manaOrb
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    margin-bottom: 6

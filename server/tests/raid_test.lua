@@ -216,6 +216,13 @@ for _, b in ipairs(cfg.bosses) do
 		local t = K.killTime(cfg, hp, players)
 		check(t > 240 and t < b.enrageAt, string.format("%s at %d: %.0f s, before the enrage (%d)", b.name, players, t, b.enrageAt))
 	end
+	-- the measured median (2,600 a character, data/spells/README.md): 5 raiders finish about 20% before the enrage
+	local ref = cfg.model.refDps
+	cfg.model.refDps = 2600
+	local t5 = K.killTime(cfg, hp, 5)
+	cfg.model.refDps = ref
+	check(t5 * 1.15 <= b.enrageAt and t5 * 1.25 >= b.enrageAt,
+		string.format("%s: 5 at 2,600 take %.0f s, about 20%% before the enrage (%d)", b.name, t5, b.enrageAt))
 	check(s and s:find('isboss="1"', 1, true) ~= nil, b.name .. " is a boss")
 end
 local looks = {}
@@ -1007,11 +1014,16 @@ behind.pos = Position(boss.pos.x - 3, boss.pos.y, 7)
 for _, p in ipairs(raiders) do
 	p.hp = p.maxhp
 end
+-- the one in front is a Hollow Vessel (archetypes.lua percentBase via Chaos.percentBase): health + maximum energy shield
+ChaosArchetypes = {percentBase = function(p) return p.vessel and (p.maxhp + p.vessel) or p.maxhp end}
+front_.vessel = 5000
 runTo(T + 300)
 runTo(T + cfg.telegraph.warnMs + 100)
 check(front_.hp < front_.maxhp, "the cleave hits the one in front")
 eq(behind.hp, behind.maxhp, "not the one behind")
 eq(off.hp, off.maxhp, "not the tank")
+eq(front_.lastHit, K.shareDamage(front_.maxhp + 5000, cfg.mechanics.cleave.share), "the cleave on a Hollow Vessel counts its shield")
+ChaosArchetypes, front_.vessel = nil, nil
 
 -- a lethal hit is caught: the hall, healed, out of the fight
 behind.hp = 100

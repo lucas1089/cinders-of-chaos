@@ -4,6 +4,8 @@
 local cfg = dofile("data/scripts/chaos/rift_config.lua")
 dofile("data/scripts/chaos/rift_core.lua")
 local R = ChaosRiftCore
+-- the packs of before (density off): the same config with density.enabled = false
+local legacy = setmetatable({density = {enabled = false}}, {__index = cfg})
 
 local fails, checks = 0, 0
 local function ok(cond, what)
@@ -51,9 +53,21 @@ do
 		eq(key.tier, 4, "tier kept")
 	end
 	-- every modifier a tier-4 key may roll shows up about in proportion to its weight; the gated ones never do
+	local drawn, weights = 0, 0
+	for _, v in pairs(seenMods) do
+		drawn = drawn + v
+	end
 	for _, def in ipairs(cfg.mods) do
 		if (def.minTier or 1) <= 4 then
-			ok((seenMods[def.key] or 0) > 2.5 * R.modWeight(def), "every modifier rolls: " .. def.key .. " " .. tostring(seenMods[def.key]))
+			weights = weights + R.modWeight(def)
+		end
+	end
+	for _, def in ipairs(cfg.mods) do
+		if (def.minTier or 1) <= 4 then
+			-- about its weight's share of every draw (groups and exclusions move it a little)
+			local expect = drawn * R.modWeight(def) / weights
+			ok((seenMods[def.key] or 0) > 0.6 * expect, "every modifier rolls: " .. def.key .. " " .. tostring(seenMods[def.key])
+				.. " (expected ~" .. math.floor(expect) .. ")")
 		else
 			eq(seenMods[def.key], nil, "tier gating: " .. def.key)
 		end
@@ -148,7 +162,7 @@ do
 	local unknownC = R.pickTypes(cfg, pool, 4, rand, function(n) return n ~= "C" end)
 	ok(#unknownC == 3, "window widened when a type is unknown")
 	local fx = R.effects(cfg, {{key = "swarm", value = 2}}, 4)
-	local plan = R.plan(cfg, 4, fx, 2, types, {"east", "north"}, rand)
+	local plan = R.plan(legacy, 4, fx, 2, types, {"east", "north"}, rand)
 	local count, sum = cfg.packs.base + math.floor(4 / cfg.packs.perTiers) + cfg.packs.perExtraPlayer, 0
 	eq(#plan.packs, count, "pack count (tier, extra player)")
 	eq(plan.packs[1].room, "hub", "first pack in the hub")
@@ -275,60 +289,21 @@ do
 		ok(not seen[k], "distinct centres")
 		seen[k] = true
 	end
-	eq(R.slotOfPos(cfg, {x = 8191, y = 8200, z = 7}), nil, "west of the grid")
-	eq(R.slotOfPos(cfg, {x = 8200, y = 8200, z = 6}), nil, "other floor")
-	eq(R.slotOfPos(cfg, {x = 8192 + 64 * 4, y = 8200, z = 7}), nil, "east of the grid")
-	for _, s in ipairs({0, 5, 15}) do
-		local L = R.layout(cfg, s)
-		for _, list in ipairs({L.floorList, L.wallList}) do
-			for _, p in ipairs(list) do
-				if R.slotOfPos(cfg, p) ~= s then
-					ok(false, "layout tile outside its slot " .. s)
-					break
-				end
-			end
-		end
-		for k in pairs(L.walls) do
-			ok(not L.floor[k], "wall and floor never overlap")
-		end
-		ok(L.floor[L.start.x .. "," .. L.start.y] ~= nil, "start on the floor")
-		ok(L.floor[L.bossSpawn.x .. "," .. L.bossSpawn.y] ~= nil, "boss spawn on the floor")
-		-- everything is reachable from the start
-		local reach, queue = {[L.start.x .. "," .. L.start.y] = true}, {L.start}
-		while #queue > 0 do
-			local p = table.remove(queue)
-			for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
-				local k = (p.x + d[1]) .. "," .. (p.y + d[2])
-				if L.floor[k] and not reach[k] then
-					reach[k] = true
-					queue[#queue + 1] = L.floor[k]
-				end
-			end
-		end
-		local n = 0
-		for _ in pairs(reach) do
-			n = n + 1
-		end
-		eq(n, #L.floorList, "all floor connected, slot " .. s)
-		for _, d in ipairs(R.DIRS) do
-			eq(#L.doors[d.name], 3, "doorway width " .. d.name)
-			for _, p in ipairs(L.doors[d.name]) do
-				ok(L.floor[p.x .. "," .. p.y] ~= nil, "doorway is floor")
-			end
-			local rc = L.rooms[d.name].rect
-			eq(rc.x2 - rc.x1 + 1, 2 * cfg.room.sideHalf - 1, "side room width")
-		end
-		eq(L.hub.x2 - L.hub.x1 + 1, 2 * cfg.room.hubHalf - 1, "hub width")
+	local g = cfg.grid
+	eq(g.origin.x, 20480, "grid at x/y 20480 (no map tile there)")
+	eq(R.slotOfPos(cfg, {x = g.origin.x - 1, y = g.origin.y + 10, z = 7}), nil, "west of the grid")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + 10, y = g.origin.y + 10, z = 6}), nil, "the floor above")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + 10, y = g.origin.y + 10, z = 8}), 0, "the second floor belongs to the slot")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + 10, y = g.origin.y + 10, z = 9}), nil, "below the second floor")
+	eq(R.slotOfPos(cfg, {x = g.origin.x + g.spacing * g.cols, y = g.origin.y, z = 7}), nil, "east of the grid")
+	-- every layout band fits its slot with a margin (rift_layout_test.lua checks the generated tiles)
+	for _, row in ipairs(cfg.layout.sizes) do
+		ok(row[2] + 16 <= g.spacing, "band side " .. row[2] .. " fits the slot with 8 cells each side")
 	end
-	local rand = rng(1)
-	for _ = 1, 200 do
-		local open = R.pickRooms(cfg, rand)
-		ok(#open >= 2 and #open <= 4, "2-4 rooms open")
-		local s = {}
-		for _, n in ipairs(open) do
-			ok(not s[n], "rooms unique")
-			s[n] = true
-		end
+	-- clear of every other runtime area (they use x/y 2000-15359)
+	local ag = dofile("data/scripts/chaos/areagen_config.lua")
+	for _, def in ipairs(ag.areas) do
+		ok(def.origin.x + def.size[1] < g.origin.x and def.origin.y + def.size[2] < g.origin.y, "clear of " .. def.id)
 	end
 end
 
@@ -524,8 +499,8 @@ do
 
 	-- plan: Teeming packs, Warbands, the goblin threshold, the coffer room
 	local types = {{name = "A", level = 300}, {name = "B", level = 320}, {name = "C", level = 350}}
-	local base = R.plan(cfg, 4, none, 1, types, {"east"}, rng(8))
-	local more = R.plan(cfg, 4, R.effects(cfg, {{key = "teeming", value = 50}}, 4), 1, types, {"east"}, rng(8))
+	local base = R.plan(legacy, 4, none, 1, types, {"east"}, rng(8))
+	local more = R.plan(legacy, 4, R.effects(cfg, {{key = "teeming", value = 50}}, 4), 1, types, {"east"}, rng(8))
 	eq(#more.packs, math.floor(#base.packs * 1.5 + 0.5), "teeming: +50% packs")
 	eq(base.gildedAt, nil, "no goblin without the modifier")
 	eq(base.coffer, nil, "no coffer without the modifier")
@@ -534,7 +509,7 @@ do
 	local r = rng(9)
 	local fxw = R.effects(cfg, {{key = "warband", value = 30}}, 4)
 	for _ = 1, 300 do
-		for _, p in ipairs(R.plan(cfg, 4, fxw, 1, types, {"east"}, r).packs) do
+		for _, p in ipairs(R.plan(legacy, 4, fxw, 1, types, {"east"}, r).packs) do
 			packs = packs + 1
 			if p.warband then
 				wb = wb + 1
@@ -731,7 +706,7 @@ do
 	eq(run.deaths, 3, "no death counted after the seal")
 	-- the fragile modifier is appended: keys of before still decode, the refund marker index is new
 	local _, idx = R.modDef(cfg, "fragile")
-	eq(idx, #cfg.mods, "fragile is the last modifier")
+	eq(idx, 19, "fragile keeps its index (modifiers are only appended)")
 	local u = R.unpackMod(cfg, R.packMod(cfg, {key = "fragile", value = 2}))
 	eq(u.key .. u.value, "fragile2", "pack / unpack fragile")
 end
@@ -803,6 +778,11 @@ end
 -- ------------------------------------------------------------------ rift-exclusive looks
 do
 	local L = cfg.looks
+	-- the shipped switches are on since 2026-10-13 (things_custom24 with looks 2200-2212 is on windows-assets at
+	-- 407ad9b6); the plain look plan is tested with both off, the on paths below
+	eq(L.variantsOn, true, "rank variants on: looks 2200-2207 are in the live client pair")
+	eq(L.bigGuardiansOn, true, "big guardians on: looks 2208-2212 are in the live client pair")
+	L.variantsOn, L.bigGuardiansOn = false, false
 	ok(L and L.enabled, "rift looks on")
 	local all = {}
 	for _, th in ipairs(cfg.themes) do
@@ -854,6 +834,90 @@ do
 			end
 		end
 	end
+	-- rank variants (looks.variants): on since 2026-10-13 (pair 24), off here until the on part; each a look and a name
+	-- of its own (the name check against the monster files below covers them too); pack ranks only
+	ok(type(L.variantShare) == "number" and L.variantShare > 0 and L.variantShare < 1, "variant share in (0, 1)")
+	local nVar = 0
+	for theme, ranks in pairs(L.variants) do
+		ok(L.families[theme] ~= nil, "variants of a theme with a family: " .. theme)
+		for rank, list in pairs(ranks) do
+			ok(rank == "minion" or rank == "brute" or rank == "elite", theme .. " " .. rank .. ": a pack rank")
+			for _, e in ipairs(list) do
+				nVar = nVar + 1
+				ok(type(e.look) == "number" and e.look >= 2200 and e.look <= 2299, e.name .. ": look in 2200-2299")
+				ok(not all[e.look], e.name .. ": a look of its own")
+				all[e.look] = e.name
+				ok(type(e.name) == "string" and #e.name <= 30 and e.name:match("^[%a ]+$") ~= nil,
+					e.name .. ": a name of letters and spaces")
+				local word = L.names[theme].minion:match("^(%a+)")
+				ok(e.name:sub(1, #word + 1) == word .. " ", e.name .. ": the family word first")
+				ok(not shown[e.name:lower()], e.name .. ": a name of its own")
+				shown[e.name:lower()] = true
+			end
+		end
+	end
+	eq(nVar, 8, "eight rank variants")
+	eq(plan.variants, nil, "variants off: the plan has none")
+	eq(R.pickVariant(plan, "weak one", false, 0), nil, "variants off: the rank's own look")
+	L.variantsOn = true
+	local vp = R.lookPlan(cfg, "Abyssal Rift", types)
+	local mv = L.variants["Abyssal Rift"].minion[1]
+	eq(R.pickVariant(vp, "Weak One", false, 0), mv, "variants on, a low roll: the variant (any case)")
+	eq(R.pickVariant(vp, "weak one", false, L.variantShare - 1e-9), mv, "just under the share: the variant")
+	eq(R.pickVariant(vp, "weak one", false, L.variantShare), nil, "at the share: the rank's own look")
+	eq(R.pickVariant(vp, "Strong", true, 0), nil, "a guardian: no variant")
+	eq(R.pickVariant(vp, "Treasure Goblin", false, 0), nil, "no rift type: no variant")
+	eq(R.pickVariant(nil, "weak one", false, 0), nil, "no plan: no variant")
+	eq(R.lookOf(vp, "weak one", false), fam.minion, "the rank's look is kept for the other rolls")
+	eq(R.nameOf(vp, "weak one", false), names.minion, "and its name")
+	local op = R.lookPlan(cfg, "Obsidian Hall", types)
+	eq(R.pickVariant(op, "weak one", false, 0), nil, "a rank without variants: none")
+	eq((R.pickVariant(op, "strong", false, 0) or {}).look, 2204, "Obsidian Hall elite: the Ashmane")
+	local one2 = R.lookPlan(cfg, "Forsaken Sanctum", {types[2]})
+	eq((R.pickVariant(one2, "middle", false, 0) or {}).look, 2207, "one type is the elite: the elite's variant")
+	-- two variants of a rank share the rolls evenly
+	local list = L.variants["Abyssal Rift"].minion
+	list[2] = {look = 2299, name = "Abyssal Test"}
+	local tp = R.lookPlan(cfg, "Abyssal Rift", types)
+	eq(R.pickVariant(tp, "weak one", false, 0.25 * L.variantShare).look, 2202, "two variants: the first")
+	eq(R.pickVariant(tp, "weak one", false, 0.75 * L.variantShare).look, 2299, "two variants: the second")
+	list[2] = nil
+	-- the share over many spawns
+	local rand, hits = rng(11), 0
+	for _ = 1, 4000 do
+		if R.pickVariant(vp, "weak one", false, (rand(1, 1000000) - 1) / 1000000) then
+			hits = hits + 1
+		end
+	end
+	ok(math.abs(hits / 4000 - L.variantShare) < 0.03, "about variantShare of the spawns wear a variant: " .. hits)
+	L.variantsOn = false
+	-- bigger guardians (looks.bigGuardians): on since 2026-10-13 (pair 24), off here until the on part; on, a listed
+	-- guardian look (rift family or Omen) becomes its big look, everything else stays
+	local nBig, omenLooks = 0, {[2116] = true, [2117] = true, [2118] = true}
+	local guardianLooks = {}
+	for _, f in pairs(L.families) do
+		guardianLooks[f.guardian] = true
+	end
+	for from, to in pairs(L.bigGuardians) do
+		nBig = nBig + 1
+		ok(guardianLooks[from] or omenLooks[from], from .. ": a rift or Omen guardian's look")
+		ok(type(to) == "number" and to >= 2208 and to <= 2299, from .. ": big look in 2208-2299")
+		ok(not all[to], to .. ": a look of its own")
+		all[to] = "big guardian " .. from
+	end
+	eq(nBig, 5, "five big guardians")
+	eq(R.lookPlan(cfg, "Ashen Crypt", types).guardian, 2111, "big guardians off: the family's guardian look")
+	eq(R.bigLook(L, 2118), 2118, "off: an Omen keeps its look")
+	L.bigGuardiansOn = true
+	local bp = R.lookPlan(cfg, "Ashen Crypt", types)
+	eq(R.lookOf(bp, "anything", true), L.bigGuardians[2111], "on: the guardian wears the big look")
+	eq(R.lookOf(bp, "weak one", false), L.families["Ashen Crypt"].minion, "on: packs keep theirs")
+	eq(R.nameOf(bp, "anything", true), L.names["Ashen Crypt"].guardian, "on: the name stays")
+	eq(R.bigLook(L, 2118), 2212, "on: the Omen seer's big look")
+	eq(R.bigLook(L, 2116), 2116, "on: an Omen without a big look keeps its own")
+	eq(R.bigLook(L, nil), nil, "no look: nil")
+	eq(R.bigLook(nil, 2103), 2103, "no looks config: the look")
+	L.bigGuardiansOn = false
 	L.enabled = false
 	eq(R.lookPlan(cfg, "Abyssal Rift", types), nil, "looks off")
 	eq(R.nameOf(R.lookPlan(cfg, "Abyssal Rift", types), "Strong", true), nil, "looks off: own names")
@@ -926,14 +990,18 @@ do
 	for _, tier in ipairs({1, 6, 15}) do
 		eq(R.partyMonsterHealth(cfg, tier, 1), 1, "solo monsters x1, tier " .. tier)
 		for n = 2, 5 do
-			local total = R.partyMonsterHealth(cfg, tier, n) * R.packCount(cfg, tier, n) / R.packCount(cfg, tier, 1)
+			local total = R.partyMonsterHealth(legacy, tier, n) * R.packCount(cfg, tier, n) / R.packCount(cfg, tier, 1)
+			ok(math.abs(total - R.party(cfg, n).health) < 1e-9, string.format("packs of before: tier %d, %d players: total health x%.2f", tier, n, total))
+			total = R.partyMonsterHealth(cfg, tier, n) * R.densityCount(cfg, tier, n) / R.densityCount(cfg, tier, 1)
 			ok(math.abs(total - R.party(cfg, n).health) < 1e-9, string.format("tier %d, %d players: total health x%.2f", tier, n, total))
 			ok(R.partyMonsterHealth(cfg, tier, n) >= 1, "a monster never gets weaker")
 		end
 	end
 	-- R.plan uses the same pack count
-	local plan = R.plan(cfg, 9, R.effects(cfg, {}, 9), 3, {{name = "a", level = 1}}, {"n"}, rng(4))
+	local plan = R.plan(legacy, 9, R.effects(cfg, {}, 9), 3, {{name = "a", level = 1}}, {"n"}, rng(4))
 	eq(#plan.packs, R.packCount(cfg, 9, 3), "plan packs = R.packCount")
+	eq(#R.plan(cfg, 9, R.effects(cfg, {}, 9), 3, {{name = "a", level = 1}}, {"n"}, rng(4)).packs, R.density(cfg, 9, 3).packs,
+		"density: plan packs = R.density")
 	-- R.applyParty: damage into fx, the monster share, Brutality kept
 	local fx = R.applyParty(cfg, R.effects(cfg, {{key = "brutality", value = 20}}, 4), 3, 4)
 	ok(near(fx.damage, 1.2 * (1 + 2 * p.damagePerExtraPlayer)), "damage: Brutality x party")
@@ -997,6 +1065,13 @@ do
 	ok(party.chaos <= 15 * hunt.chaos and party.divine <= 15 * hunt.divine, "a full party's orbs per head: at most 15x hunting")
 	local ratio = party.gold / solo.gold
 	ok(ratio >= 1.3 and ratio <= 1.6, string.format("a full party per head: x%.2f solo", ratio))
+	-- density: a typical player now clears tier 15 in the model's time (R.clearSeconds) instead of far past the limit;
+	-- with 3 minutes around each run (open, chest, town) that is at most ~5.5 runs an hour, and the orbs of those
+	-- chests stay inside the same bound (the kill loot per run is kept by the husks, see "density" above)
+	local perHour = 3600 / (R.clearSeconds(cfg, 15, 1, 1) + 180)
+	ok(perHour >= 4 and perHour <= 5.6, string.format("tier 15: %.1f runs an hour for a typical player", perHour))
+	ok(solo.chaos / 4 * perHour <= 15 * hunt.chaos and solo.divine / 4 * perHour <= 15 * hunt.divine,
+		string.format("orbs at that pace: %.1f Upheaval, %.1f Fate an hour", solo.chaos / 4 * perHour, solo.divine / 4 * perHour))
 	-- the atlas multipliers raise gold, never the orbs
 	local maxed = hour(1, {goldMult = 25}, {rewardMult = 60})
 	ok(math.abs(maxed.gold / solo.gold - 1.25 * 1.6) < 0.01, "goldMult and Lone Ember on the gold")
@@ -1010,6 +1085,276 @@ do
 	eq(R.omenReward(cfg).gold, o.reward.goldPerLevel * o.minLevel, "Omen gold without a level")
 	ok(R.omenReward(cfg, 1000).gold < hunt.gold / 2, "an Omen kill pays less gold than half an hour of hunting")
 	ok(R.omenReward(cfg, 1000).chaos <= 6 and R.omenReward(cfg, 1000).divine <= 3, "Omen orbs cut to a third")
+end
+
+-- ------------------------------------------------------------------ density (cfg.density, server/README.md "Rifts", Density)
+do
+	local near = function(a, b, tol) return math.abs(a - b) <= tol end
+	eq(R.density(legacy, 10, 1), nil, "density off: no density")
+	ok(R.densityOn(cfg), "density on")
+	-- the curve: solo 80 + 8 per tier (rounded to packs), a party of 5 twice that
+	local last = 0
+	for t = 1, cfg.maxTier do
+		local d1, d5 = R.density(cfg, t, 1), R.density(cfg, t, 5)
+		ok(d1.count > last, "more monsters every tier " .. t)
+		last = d1.count
+		ok(near(d1.count, R.densityCount(cfg, t, 1), 4), "solo count near the curve, tier " .. t .. ": " .. d1.count)
+		ok(near(d5.count / d1.count, 2, 0.15), "party of 5: twice the monsters, tier " .. t)
+		ok(d1.count >= 3 * d1.legacy, "at least three times the packs of before, tier " .. t)
+		ok(d1.share > 0 and d1.share <= 1 and d1.normalShare > 0 and d1.normalShare <= 1, "shares in (0, 1], tier " .. t)
+		-- the spoils of a run stay: elites per run and laden normal monsters per run as before
+		local eliteNow = d1.count * R.eliteShare(cfg, t, d1.share)
+		local eliteThen = d1.legacy * R.eliteShare(cfg, t, 1)
+		ok(near(eliteNow, eliteThen, 1e-6), "elites per run as before, tier " .. t)
+		local ladenNow = d1.count * (1 - R.eliteShare(cfg, t, d1.share)) * d1.normalShare
+		ok(near(ladenNow, eliteThen / R.eliteShare(cfg, t, 1) * (1 - R.eliteShare(cfg, t, 1)), 1e-6),
+			"laden normal monsters per run as before, tier " .. t)
+		-- the budget on the big layouts: fighting as before (about 4.7 minutes for tiers 1-10) plus the walk of a typical
+		-- layout of the tier's band, so tiers 1-10 take about 6 minutes, 11-15 up to about 9.5; a party of 5 (4.98x the
+		-- damage, the Ascended model) about the same time
+		local solo, party = R.clearSeconds(cfg, t, 1, 1), R.clearSeconds(cfg, t, 5, 4.98)
+		local limit = R.timeLimit(cfg, t)
+		if t <= 10 then
+			ok(solo >= 300 and solo <= 400, string.format("tier %d solo clear %.0f s: about 6 minutes", t, solo))
+		else
+			ok(solo > R.clearSeconds(cfg, t - 1, 1, 1) and solo <= 600, string.format("tier %d solo clear %.0f s: under 10 minutes", t, solo))
+		end
+		ok(math.abs(party / solo - 1) < 0.1, string.format("tier %d party of 5 %.0f s within 10%% of solo", t, party))
+		ok(solo < limit * 0.7, string.format("inside the band's limit with room, tier %d: %.0f of %d s", t, solo, limit))
+		ok(R.walkSeconds(cfg, t) > 40 and R.walkSeconds(cfg, t) < 120, "walking 40-120 s, tier " .. t)
+		-- a half-strength player still clears tiers 1-12 inside the limit
+		if t <= 12 then
+			ok(R.clearSeconds(cfg, t, 1, 0.5) <= limit, string.format("a weaker player still makes tier %d (%.0f s)", t,
+				R.clearSeconds(cfg, t, 1, 0.5)))
+		end
+	end
+	-- the health of a pack monster grows with the tier up to 10; the guardian's base too
+	for t = 2, 10 do
+		ok(R.packHealth(cfg, t) > R.packHealth(cfg, t - 1), "pack health grows, tier " .. t)
+		ok(R.guardianBase(cfg, t) > R.guardianBase(cfg, t - 1), "guardian grows, tier " .. t)
+	end
+	-- live cap: 60 (+10 per extra player) + 0.5 per 100 walkable tiles; the worst case of all 16 slots (server/README.md
+	-- "Instance limits", Load: the monsters away from every player are idle)
+	eq(R.liveCap(cfg, 1, 0), 60, "60 alive solo without area")
+	eq(R.liveCap(cfg, 5, 0), 100, "100 for 5 without area")
+	eq(R.liveCap(cfg, 1, 20000), 160, "a layout of 20,000 walkable tiles: 160 solo")
+	eq(R.liveCap(cfg, 1), 60 + math.floor(cfg.density.live.per100 * cfg.layout.typical[1].walkable / 100),
+		"no area: the typical layout of tier 1's band")
+	eq(R.liveCap(cfg, 5, 60000), cfg.density.live.max, "capped")
+	ok(R.slotCount(cfg) * (cfg.density.live.max + cfg.density.extraSlack) <= 4500, "every slot full: at most 4,500 monsters")
+	-- the plan grows with the layout's area: (walkable / ref) ^ exp
+	eq(R.areaMult(cfg, cfg.density.area.ref), 1, "the old open floor: x1")
+	ok(math.abs(R.areaMult(cfg, 20000) - (20000 / cfg.density.area.ref) ^ cfg.density.area.exp) < 1e-9, "x (area / ref) ^ exp")
+	eq(R.areaMult(cfg, 1e9), cfg.density.area.maxMult, "at most maxMult")
+	ok(R.densityCount(cfg, 10, 1, 20000) > R.densityCount(cfg, 10, 1, 8000), "a bigger layout plans more monsters")
+	ok(R.packHealth(cfg, 10, 20000) < R.packHealth(cfg, 10, 8000), "and each one is weaker (the same health budget)")
+	local typ15 = R.density(cfg, 15, 1)
+	ok(typ15.count >= 350 and typ15.count <= 450, "tier 15 solo on a typical big layout: 350-450 monsters (" .. typ15.count .. ")")
+	ok(R.density(cfg, 1, 1).count >= 120 and R.density(cfg, 1, 1).count <= 150, "tier 1 solo: 120-150 monsters")
+	-- walking speed (engine patch 0018 table: 3.70 tiles/s at level 100, 5.88 at 300, 7.69 at 1000)
+	ok(math.abs(R.tilesPerSecond(100) - 1000 / 270) < 1e-9, "level 100: 270 ms a step")
+	ok(math.abs(R.tilesPerSecond(300) - 1000 / 170) < 1e-9, "level 300: 170 ms")
+	ok(math.abs(R.tilesPerSecond(1000) - 1000 / 130) < 1e-9, "level 1000: 130 ms")
+	-- the time limit of the band and a run's limit
+	eq(R.timeLimit(cfg, 1), cfg.layout.sizes[1][3], "tier 1: band 1's limit")
+	eq(R.timeLimit(cfg, 15), cfg.layout.sizes[3][3], "tier 15: band 3's limit")
+	eq(R.newRun(cfg, 1000, 10, 8, {}, 900).limit, 900, "a run takes its base limit")
+	eq(R.newRun(cfg, 1000, 10, 8, {timeMult = 0.8}, 900).limit, 720, "Waning Veil on the band's limit")
+	eq(R.packDamage(cfg), cfg.density.damage, "pack damage")
+	eq(R.packDamage(legacy), 1, "pack damage off")
+	eq(R.effects(cfg, {}, 4).packDamage, cfg.density.damage, "effects carry the pack damage")
+	-- the plan: packs, laden flags, elites always laden, Warbands, Single Brood
+	local types = {{name = "A", level = 300}, {name = "B", level = 320}, {name = "C", level = 350}}
+	local r = rng(41)
+	local runs, normals, laden, elites, rares = 400, 0, 0, 0, 0
+	local d = R.density(cfg, 6, 1, R.effects(cfg, {}, 6))
+	for _ = 1, runs do
+		local plan = R.plan(cfg, 6, R.effects(cfg, {}, 6), 1, types, {"east", "west"}, r)
+		eq(#plan.packs, d.packs, "packs of the density")
+		for _, p in ipairs(plan.packs) do
+			ok(p.count >= cfg.density.size[1] and p.count <= cfg.density.size[2], "density pack size")
+			for k = 1, p.count do
+				if p.elites[k] then
+					elites = elites + 1
+					ok(p.laden[k] == true, "an elite always carries loot")
+				else
+					normals = normals + 1
+					laden = laden + (p.laden[k] and 1 or 0)
+				end
+			end
+		end
+	end
+	ok(near(laden / runs, d.legacy * (1 - R.eliteShare(cfg, 6, 1)), 1.0), "laden normals per run ~ before: " .. laden / runs)
+	ok(near(elites / runs, d.legacy * R.eliteShare(cfg, 6, 1), 0.5), "elites per run ~ before: " .. elites / runs)
+	local fxw = R.effects(cfg, {{key = "warband", value = 30}}, 4)
+	local dw = R.density(cfg, 4, 1, fxw)
+	local wbMonsters = 0
+	for _ = 1, runs do
+		for _, p in ipairs(R.plan(cfg, 4, fxw, 1, types, {"east"}, r).packs) do
+			if p.warband then
+				wbMonsters = wbMonsters + p.count
+				for k = 1, p.count do
+					ok(p.laden[k], "warband members carry loot")
+				end
+			end
+		end
+	end
+	ok(near(wbMonsters / runs, 0.30 * dw.legacy, 1.5), "warband monsters per run ~ before: " .. wbMonsters / runs .. " vs " .. 0.3 * dw.legacy)
+	local brood = R.plan(cfg, 6, R.effects(cfg, {{key = "brood", value = 1}}, 6), 1, types, {"east"}, r)
+	for _, p in ipairs(brood.packs) do
+		eq(p.name, "C", "single brood: the strongest kind")
+	end
+	-- Teeming and Swarm grow the density plan too
+	local dt = R.density(cfg, 6, 1, R.effects(cfg, {{key = "teeming", value = 50}, {key = "swarm", value = 2}}, 6))
+	ok(dt.count > d.count * 1.6, "teeming + swarm: more monsters")
+	ok(dt.legacy > d.legacy, "and the share follows the packs of before")
+	-- reinforcements: the farthest open room at least minDistance from every player
+	local centres = {hub = {x = 0, y = -5}, east = {x = 22, y = 0}, west = {x = -22, y = 0}}
+	eq(R.reinforceRoom(centres, {{x = 18, y = 0}}, 9), "west", "away from the player")
+	eq(R.reinforceRoom(centres, {{x = 0, y = 0}}, 30), nil, "every room too close")
+	eq(R.reinforceRoom(centres, {}, 9), "east", "no players: any (by name)")
+	-- the big layouts spread the live cap: about 1 monster a 100 walkable tiles solo, the plan 1.5-2
+	for b, typ in ipairs(cfg.layout.typical) do
+		local tier = cfg.layout.sizes[b][1]
+		local live = R.liveCap(cfg, 1, typ.walkable) / typ.walkable * 100
+		ok(live >= 0.7 and live <= 1.3, string.format("band %d: %.2f alive a 100 tiles solo", b, live))
+		local plan = R.density(cfg, tier, 1, nil, typ.walkable).count / typ.walkable * 100
+		ok(plan >= 1.5 and plan <= 2.4, string.format("band %d: %.2f planned a 100 tiles solo", b, plan))
+	end
+end
+
+-- ------------------------------------------------------------------ third set of modifiers
+do
+	local new = {"emberbrand", "frostbrand", "stormbrand", "keen", "ironhide", "festering", "spiteglass", "brood", "wrath",
+		"breach", "searing", "flaying", "sapping", "parched", "scorched", "rimefloor", "veilstorm"}
+	local first = select(2, R.modDef(cfg, "emberbrand"))
+	eq(first, 20, "the third set comes after fragile")
+	-- reward per point consistent with the old ones: the top of tier III (or the fixed bonus) sums to 15-50%
+	local function sumAt(def)
+		local v = def.tiers and select(2, R.tierBounds(def, 3)) or def.range[2]
+		local b = R.bonuses({mods = cfg.mods, tiers = cfg.tiers, beyond = cfg.beyond, maxTier = cfg.maxTier}, {{key = def.key, value = v}})
+		return b.quantity + b.rarity + b.experience
+	end
+	for i, k in ipairs(new) do
+		local d, idx = R.modDef(cfg, k)
+		ok(d ~= nil, "new modifier " .. k)
+		eq(idx, first + i - 1, "appended in order: " .. k)
+		ok(d.side == "prefix" or d.side == "suffix", "a side: " .. k)
+		ok(d.weight and d.weight > 0, "a weight: " .. k)
+		ok(d.reward ~= nil and not d.boon, "a reward bonus: " .. k)
+		local s = sumAt(d)
+		ok(s >= 15 and s <= 50, string.format("reward of %s at tier III: %d%%", k, s))
+		ok(not R.modText(cfg, {key = k, value = d.range[2]}):find("%%d"), "text formatted " .. k)
+		local u = R.unpackMod(cfg, R.packMod(cfg, {key = k, value = d.range[2]}))
+		eq(u.key .. u.value, k .. d.range[2], "pack / unpack " .. k)
+	end
+	for _, d in ipairs(cfg.mods) do
+		ok(d.boon or d.side == "prefix" or d.side == "suffix", "every modifier has a side or is a boon: " .. d.key)
+	end
+	-- groups and exclusions: never two of a group, never an excluded pair, from drops, orbs or a key's text
+	local function conflictFree(mods, what)
+		for a = 1, #mods do
+			for b = a + 1, #mods do
+				ok(not R.modConflict(R.modDef(cfg, mods[a].key), R.modDef(cfg, mods[b].key)), what .. ": " .. mods[a].key .. " + " .. mods[b].key)
+			end
+		end
+	end
+	ok(R.modConflict(R.modDef(cfg, "withering"), R.modDef(cfg, "parched")), "no two 'no regeneration'")
+	ok(R.modConflict(R.modDef(cfg, "reflection"), R.modDef(cfg, "spiteglass")), "no two reflections")
+	ok(R.modConflict(R.modDef(cfg, "searing"), R.modDef(cfg, "sapping")), "one hex")
+	ok(R.modConflict(R.modDef(cfg, "scorched"), R.modDef(cfg, "rimefloor")), "one ground")
+	ok(R.modConflict(R.modDef(cfg, "emberbrand"), R.modDef(cfg, "stormbrand")), "one brand")
+	ok(R.modConflict(R.modDef(cfg, "twin"), R.modDef(cfg, "wrath")), "wrath excludes twin (both ways)")
+	ok(not R.modConflict(R.modDef(cfg, "vitality"), R.modDef(cfg, "brutality")), "old pairs still meet")
+	local r = rng(55)
+	local pairsSeen = 0
+	for _ = 1, 20000 do
+		local key = R.rollKey(cfg, 15, r, true)
+		conflictFree(key.mods, "drop")
+		if #key.mods == 3 then
+			pairsSeen = pairsSeen + 1
+		end
+	end
+	ok(pairsSeen > 4000, "three-modifier keys still common")
+	for _ = 1, 3000 do
+		local key = {tier = 15, mods = {{key = "withering", value = 1}}}
+		R.addMods(cfg, key, 2, r)
+		conflictFree(key.mods, "orb")
+		for _, m in ipairs(key.mods) do
+			ok(m.key ~= "parched", "an orb never adds parched next to withering")
+		end
+	end
+	local dec = R.decodeMods(cfg, "reflection:10,spiteglass:10,searing:20")
+	eq(#dec, 2, "decode drops the second of a group")
+	eq(dec[1].key .. dec[2].key, "reflectionsearing", "the first one stays")
+	-- tier gating of the new ones: tier 1 rolls only keen
+	for _ = 1, 3000 do
+		for _, m in ipairs(R.rollKey(cfg, 1, r).mods) do
+			local d = R.modDef(cfg, m.key)
+			ok((d.minTier or 1) <= 1, "tier 1: " .. m.key)
+		end
+	end
+
+	-- effects
+	local fx = R.effects(cfg, {{key = "frostbrand", value = 30}, {key = "keen", value = 20}, {key = "ironhide", value = 25},
+		{key = "festering", value = 40}, {key = "spiteglass", value = 10}, {key = "brood", value = 1}, {key = "wrath", value = 20},
+		{key = "breach", value = 15}, {key = "flaying", value = 20}, {key = "parched", value = 1}, {key = "rimefloor", value = 3},
+		{key = "veilstorm", value = 15}}, 8)
+	eq(fx.brand.element, "ice", "frostbrand: ice")
+	ok(math.abs(fx.brand.share - 0.3) < 1e-9 and math.abs(fx.crit - 0.2) < 1e-9 and math.abs(fx.physResist - 0.25) < 1e-9,
+		"brand, crit, ironhide")
+	ok(fx.fester == 40 and math.abs(fx.spite - 0.1) < 1e-9 and fx.brood and math.abs(fx.wrath - 0.2) < 1e-9 and fx.breach == 15,
+		"fester, spite, brood, wrath, breach")
+	ok(math.abs(fx.hexPhys - 0.2) < 1e-9 and fx.noMana and not fx.noRegen, "flaying, parched")
+	ok(fx.ground.kind == "rimefloor" and fx.ground.element == "ice" and fx.ground.percent == 3, "rimefloor")
+	ok(math.abs(fx.storm - 0.15) < 1e-9, "veilstorm")
+	local none = R.effects(cfg, {}, 8)
+	ok(not none.brand and none.crit == 0 and none.fester == 0 and none.sap == 0 and not none.ground and none.storm == 0,
+		"neutral third set")
+
+	-- a monster's hit
+	local T = {physical = 1, none = 0, brand = {fire = 2, ice = 3, energy = 4}}
+	local never = function(a, b) return b end -- chance() never fires (rand returns the top)
+	local always = function(a, b) return a end
+	local plain = R.effects(legacy, {}, 4)
+	local p, pt, s, st = R.monsterHit(legacy, plain, {primary = -100, ptype = 1, secondary = 0, stype = 0}, T, never)
+	eq(p .. "/" .. pt .. "/" .. s .. "/" .. st, "-100/1/0/0", "no modifiers: unchanged")
+	local dens = R.effects(cfg, {}, 4)
+	p = R.monsterHit(cfg, dens, {primary = -100, ptype = 1, secondary = 0, stype = 0}, T, never)
+	eq(p, math.floor(-100 * cfg.density.damage), "density: pack monsters hit softer")
+	p = R.monsterHit(cfg, dens, {primary = -100, ptype = 1, secondary = 0, stype = 0, boss = true}, T, never)
+	eq(p, -100, "the guardian keeps its damage")
+	local fb = R.effects(legacy, {{key = "emberbrand", value = 50}, {key = "searing", value = 20}}, 4)
+	p, pt, s, st = R.monsterHit(legacy, fb, {primary = -100, ptype = 1, secondary = 0, stype = 0}, T, never)
+	eq(p, -100, "brand: the physical part stays")
+	eq(st, 2, "brand: fire in the free slot")
+	eq(s, math.floor(-50 * 1.2), "brand 50% of the hit, then +20% elemental (searing)")
+	p, pt, s, st = R.monsterHit(legacy, fb, {primary = -100, ptype = 3, secondary = -40, stype = 4}, T, never)
+	eq(p, math.floor((-100 - 70) * 1.2), "no free slot: the brand joins the primary, then the hex")
+	local crit = R.effects(legacy, {{key = "keen", value = 30}, {key = "flaying", value = 10}}, 4)
+	local info
+	p, pt, s, st, info = R.monsterHit(legacy, crit, {primary = -100, ptype = 1, secondary = 0, stype = 0}, T, always)
+	eq(p, math.floor(math.floor(-100 * cfg.keen.critMult) * 1.1), "crit x1.5, then flaying +10%")
+	ok(info.crit, "crit flagged")
+	_, _, _, _, info = R.monsterHit(legacy, crit, {primary = -100, ptype = 1, secondary = 0, stype = 0}, T, never)
+	ok(not info.crit, "no crit")
+	local fest = R.effects(legacy, {{key = "festering", value = 50}}, 4)
+	_, _, _, _, info = R.monsterHit(legacy, fest, {primary = -200, ptype = 1, secondary = 0, stype = 0}, T, always)
+	eq(info.fester, 80, "festering: 40% of the hit")
+	-- a player's hit on a rift monster
+	local tk = R.effects(legacy, {{key = "ironhide", value = 40}, {key = "warding", value = 20}, {key = "sapping", value = 25}}, 4)
+	local a, b, el = R.monsterTaken(tk, {primary = -1000, ptype = 1, secondary = -500, stype = 2, fromPlayer = true}, T)
+	eq(a, math.floor(math.floor(-1000 * 0.6) * 0.75), "ironhide, then sapping")
+	eq(b, math.floor(math.floor(-500 * 0.8) * 0.75), "warding, then sapping")
+	eq(el, math.abs(b), "the elemental part for spiteglass")
+	a = R.monsterTaken(tk, {primary = -1000, ptype = 1, secondary = 0, stype = 0, fromPlayer = false}, T)
+	eq(a, -600, "sapping only on players' hits")
+	-- hazards
+	eq(R.percentHit(15000, 0.03), 450, "3% of 15,000")
+	eq(R.percentHit(0, 0.03), 1, "at least 1")
+	eq(#R.plus({x = 5, y = 5, z = 7}), 5, "a plus of five")
+	local t = R.nearTile({x = 10, y = 10, z = 7}, 2, rng(3))
+	ok(math.abs(t.x - 10) <= 2 and math.abs(t.y - 10) <= 2 and t.z == 7, "near tile")
 end
 
 print(string.format("rift tests: %d checks, %d failed", checks, fails))

@@ -608,6 +608,33 @@ function SP.claimAll(player)
 	return got, stop
 end
 
+-- A late buyer gets every premium reward of the tiers already reached at once (P.premiumBacklog: cosmetics and coins
+-- only, so nothing needs room). Needs a character of the account online (the claim row names it); an account that got
+-- the pass as a gift while offline gets them at its next login. Returns how many were claimed.
+function SP.claimPremiumBacklog(account)
+	local player = accountPlayers(account)[1]
+	local acc = SP.acc[account]
+	local p = acc and pass(acc)
+	if not player or not p then
+		return 0
+	end
+	local got, names = 0, {}
+	for _, c in ipairs(P.premiumBacklog(p, viewOf(acc, claimOpen()))) do
+		local ok, r = SP.claim(player, c.tier, c.track, true)
+		if ok then
+			got = got + 1
+			names[#names + 1] = P.rewardText(r)
+		end
+	end
+	if got > 0 then
+		tellAccount(account, string.format("Premium %s: the %d reward%s of the tiers you already reached %s yours: %s.", p.name,
+			got, got == 1 and "" or "s", got == 1 and "is" or "are", table.concat(names, ", ")), nil,
+			string.format("%d premium reward%s unlocked", got, got == 1 and "" or "s"))
+		refreshAccount(account)
+	end
+	return got
+end
+
 -- ---------------------------------------------------------------- premium and packs
 -- An account may have no character online (a gift): its state is loaded for the grant and dropped again afterwards.
 local function releaseIfOffline(account)
@@ -652,6 +679,7 @@ function SP.grantPremium(account, actorGuid, paid, source)
 	tellAccount(acc.id, string.format("The premium %s is unlocked for your whole account. Its rewards wait in Adventure > " ..
 		"Season Pass.", pass(acc).name), CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE, "Premium track unlocked!")
 	refreshAccount(acc.id)
+	SP.claimPremiumBacklog(acc.id)
 	return true
 end
 
@@ -694,6 +722,9 @@ function SP.grantPack(account, actorGuid, id, paid, source)
 	tellAccount(acc.id, string.format("%s is yours: its cosmetics are on every character of your account.", pk.name),
 		CONST_ME_FIREWORK_RED or CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE, pk.name .. " unlocked!")
 	refreshAccount(acc.id)
+	if hasPremium(acc) then
+		SP.claimPremiumBacklog(acc.id)
+	end
 	return true
 end
 
@@ -1188,7 +1219,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		local what = data.what == "premium" and "premium" or Chaos.toInt(data.what, 1, 9)
 		local price, name = SP.giftPrice(player, what or 0, type(data.gift) == "string" and data.gift or "")
 		if price then
-			Chaos.send(player, OPCODE, "giftPrice", {what = data.what, name = name, price = price})
+			Chaos.send(player, OPCODE, "giftPrice", {what = what, name = name, price = price})
 		else
 			notice(player, name)
 		end
@@ -1217,6 +1248,7 @@ function login.onLogin(player)
 		local acc = SP.account(p:getAccountId())
 		local pa = pass(acc)
 		if pa and SP.active() then
+			SP.claimPremiumBacklog(p:getAccountId()) -- a premium pass given while the account was offline
 			local n = #P.claimable(pa, viewOf(acc, true))
 			if n > 0 then
 				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %d reward%s to claim in Adventure > Season Pass.", pa.name,

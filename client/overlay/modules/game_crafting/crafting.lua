@@ -76,6 +76,17 @@ local function list(value)
   return out
 end
 
+-- the rows of a server list; an entry that is no table is left out (game_chaosguard/opcode_fuzz_test.lua)
+local function rows(value)
+  local out = {}
+  if type(value) == 'table' then
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
+  end
+  return out
+end
+
 local function rarityColor(r)
   return RARITY_COLOR[tonumber(r) or 0] or '#d6c9ae'
 end
@@ -457,7 +468,7 @@ end
 -- ---------------------------------------------------------------- gear grid
 local function buildGear()
   window.gearList:destroyChildren()
-  local items = list(state and state.items)
+  local items = rows(state and state.items)
   local current = state and state.item
   for _, it in ipairs(items) do
     local slot = g_ui.createWidget('CraftGearSlot', window.gearList)
@@ -507,14 +518,14 @@ end
 -- ---------------------------------------------------------------- history
 local function buildHistory()
   window.historyList:destroyChildren()
-  local rows = list(state and state.history)
-  if #rows == 0 then
+  local historyRows = rows(state and state.history)
+  if #historyRows == 0 then
     local label = g_ui.createWidget('CraftHistoryLabel', window.historyList)
     label:setText(tr('Nothing crafted yet.'))
     label:setColor('#8c8070')
     return
   end
-  for _, h in ipairs(rows) do
+  for _, h in ipairs(historyRows) do
     local label = g_ui.createWidget('CraftHistoryLabel', window.historyList)
     local when = tonumber(h.time) and os.date('%d.%m %H:%M', tonumber(h.time)) or ''
     label:setText(string.format('%s  %s: %s', when, h.orb or '?', h.text or ''))
@@ -709,6 +720,7 @@ end
 
 -- ---------------------------------------------------------------- protocol
 local function onState(data)
+  if type(data.item) ~= 'table' then data.item = nil end -- the item on the bench, or none
   -- the orbs: what the server told once (info) with the counts of this state
   local orbs = {}
   for _, o in ipairs(list(info and info.orbs)) do

@@ -121,6 +121,14 @@ Players: info, kick, ban (account), unban, mute, set_level, set_skill (raise onl
 give_premium, teleport_to, summon, heal, set_group (dangerous), add_storage (set storage).
 give_item (Players) and create_item (World) create items, so they need group 5 like the Economy actions
 (`minGroup = 5` on the action); the other Players and World actions stay at group 4.
+The `/` commands outside the panel follow the same line (`Chaos.staffCommand(..., true)` in `chaos_constants.lua`,
+docs/GM_HANDBOOK.md section 2: staff never give value): `/coins`, `/charm give`, `/pact`, `/rift key|omen|fragments`,
+`/ascended sigil|shards|relic`, `/newplayerkit` (kit, milestone, reset), `/guild xp|bank` and `rent <guild>, paid`,
+`/classunlock`, `/cosmetic`, `/exclusive` and `/transmog` grants and `/pet give` need group 5; the rest group 4. Every
+staff use is in the admin log.
+The staff ladder (docs/GM_HANDBOOK.md section 4, `ChaosAdminLadder` in `actions_players.lua`): mute takes 1 to 1440
+minutes (24 h, default 60); a ban of 30 days or more (3650 = permanent) is refused below group 5 (administrator), a
+shorter one (default 7 days) works from group 4. `tests/staff_permissions_test.lua` checks both.
 
 Server: broadcast, save, reload (talkactions, scripts, monsters, npcs, config, actions, movements, creaturescripts,
 globalevents, spells, weapons, items, quests, raids, mounts, chat, events, global, all; dangerous), shutdown / restart with

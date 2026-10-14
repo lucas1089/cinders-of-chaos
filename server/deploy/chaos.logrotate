@@ -13,3 +13,19 @@
 	copytruncate
 	dateext
 }
+
+# The client guard's log (engine patch 0021, clientGuardLogFile): one line per refused or kicked login, with the IP,
+# account and character. Kept 14 days like the console (docs/legal/ privacy policy, section 4). The folder belongs to
+# the chaos user, so logrotate works as that user.
+/opt/chaos/server/data/logs/clientguard.log {
+	su chaos chaos
+	daily
+	rotate 14
+	maxsize 50M
+	missingok
+	notifempty
+	compress
+	delaycompress
+	copytruncate
+	dateext
+}

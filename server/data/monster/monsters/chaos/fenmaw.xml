@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Fenmaw" nameDescription="a fenmaw" race="blood" experience="14250" speed="658" evented = "2" skulled="1" looting="1" manacost="390">
+<monster name="Fenmaw" nameDescription="a fenmaw" race="blood" experience="4750" speed="190" manacost="390">
 	<health now="12000" max="12000" />
 	<level min="200" max="250"/>
 	<look type="374" corpse="6068" />
 	<targetchange interval="4000" chance="0" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0" />
 		<flag attackable="1" />
 		<flag hostile="1" />
 		<flag illusionable="0" />
-		<flag convinceable="1" />
+		<flag convinceable="0" />
 		<flag pushable="0" />
 		<flag canpushitems="0" />
 		<flag canpushcreatures="0" />
@@ -21,11 +20,6 @@
 		<flag canwalkonfire="0" />
 		<flag canwalkonpoison="0" />
 	</flags>
-	<script>
-        <event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-    </script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-650" max="-1100"/>
 		<attack name="earth" interval="2000" chance="15" length="9" spread="3" min="-500" max="-1000">
@@ -58,7 +52,7 @@
 		<immunity invisible="1"/>
 		<immunity drown="1"/>
 	</immunities>
-	<voices interval="3000" chance="200">
+	<voices interval="3000" chance="100">
 		<voice sentence="CHHHRRRR"/>
 		<voice sentence="HISSSS"/>
 	</voices>

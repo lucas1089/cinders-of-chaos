@@ -124,41 +124,67 @@ local function send(player, action, data)
 	Chaos.send(player, OPCODE, action, data)
 end
 
--- Box of a dungeon. The base server table is inconsistent for some entries (e.g. Forbidden Chevalier has
--- DungeonPos z=0 but FromPos/ToPos z=7), so the floor range is widened to include DungeonPos.
-local function boundsOf(dg)
-	local f, t, d = dg.FromPos, dg.ToPos, dg.DungeonPos
+-- The area of a dungeon: the boxes of "who is inside" (the run's members, the login and shutdown checks), its monster
+-- count and its clean-up. The base server table is inconsistent for some entries (e.g. Forbidden Chevalier has
+-- DungeonPos z=0 but FromPos/ToPos z=7), so the floor range of the base box is widened to include DungeonPos. Where the
+-- base box misses part of the dungeon (its boss room, its lower floors, even its entry point: Chaos.dungeons.extra[id].area,
+-- server/README.md "dungeons"), the extra boxes are part of the area too.
+local function boxOf(f, t)
 	return {
 		x1 = math.min(f.x, t.x), x2 = math.max(f.x, t.x),
 		y1 = math.min(f.y, t.y), y2 = math.max(f.y, t.y),
-		z1 = math.min(f.z, t.z, d.z), z2 = math.max(f.z, t.z, d.z)
+		z1 = math.min(f.z, t.z), z2 = math.max(f.z, t.z)
 	}
 end
 
-local function inBox(dg, pos)
-	local b = boundsOf(dg)
-	return pos.x >= b.x1 and pos.x <= b.x2 and pos.y >= b.y1 and pos.y <= b.y2 and pos.z >= b.z1 and pos.z <= b.z2
+local function areaOf(id, dg)
+	local f, t, d = dg.FromPos, dg.ToPos, dg.DungeonPos
+	local base = boxOf(f, t)
+	base.z1, base.z2 = math.min(base.z1, d.z), math.max(base.z2, d.z)
+	local boxes = {base}
+	for _, a in ipairs(extraOf(id).area or {}) do
+		boxes[#boxes + 1] = boxOf(a[1], a[2])
+	end
+	return boxes
 end
 
--- monsters / players inside the dungeon box. bossName is lower case.
-local function scanArea(dg, bossName)
-	local b = boundsOf(dg)
-	local rx = math.ceil((b.x2 - b.x1) / 2)
-	local ry = math.ceil((b.y2 - b.y1) / 2)
-	local cx, cy = b.x1 + rx, b.y1 + ry
+local function inAnyBox(boxes, pos, upTo)
+	for i = 1, upTo or #boxes do
+		local b = boxes[i]
+		if pos.x >= b.x1 and pos.x <= b.x2 and pos.y >= b.y1 and pos.y <= b.y2 and pos.z >= b.z1 and pos.z <= b.z2 then
+			return true
+		end
+	end
+	return false
+end
+
+local function inBox(id, dg, pos)
+	return inAnyBox(areaOf(id, dg), pos)
+end
+
+-- monsters / players inside the dungeon area. bossName is lower case.
+local function scanArea(id, dg, bossName)
+	local boxes = areaOf(id, dg)
 	local monsters, bosses, players, monsterList = 0, 0, 0, {}
-	for z = b.z1, b.z2 do
-		local list = Game.getSpectators(Position(cx, cy, z), false, false, rx, rx, ry, ry)
-		for _, creature in ipairs(list) do
-			if inBox(dg, creature:getPosition()) then
-				if creature:isPlayer() then
-					players = players + 1
-				elseif creature:isMonster() and not creature:getMaster() then
-					monsterList[#monsterList + 1] = creature
-					if bossName and creature:getName():lower() == bossName then
-						bosses = bosses + 1
-					else
-						monsters = monsters + 1
+	for i, b in ipairs(boxes) do
+		local rx = math.ceil((b.x2 - b.x1) / 2)
+		local ry = math.ceil((b.y2 - b.y1) / 2)
+		local cx, cy = b.x1 + rx, b.y1 + ry
+		for z = b.z1, b.z2 do
+			local list = Game.getSpectators(Position(cx, cy, z), false, false, rx, rx, ry, ry)
+			for _, creature in ipairs(list) do
+				local pos = creature:getPosition()
+				-- in this box and not in an earlier one (boxes may overlap: every creature counts once)
+				if inAnyBox({b}, pos) and not inAnyBox(boxes, pos, i - 1) then
+					if creature:isPlayer() then
+						players = players + 1
+					elseif creature:isMonster() and not creature:getMaster() then
+						monsterList[#monsterList + 1] = creature
+						if bossName and creature:getName():lower() == bossName then
+							bosses = bosses + 1
+						else
+							monsters = monsters + 1
+						end
 					end
 				end
 			end
@@ -303,7 +329,7 @@ local function bossOutfit(id)
 	local bossName = extraOf(id).bossName
 	local outfit = {lookType = 0}
 	if bossName then
-		local monsterType = MonsterType(bossName)
+		local monsterType = MonsterType(extraOf(id).bossType or bossName) -- bossType: a boss with a shown name (areagen.lua)
 		if monsterType then
 			local o = monsterType:getOutfit()
 			if o then
@@ -438,8 +464,8 @@ function ChaosDungeonIsInside(player)
 end
 
 Chaos.registerInstance("dungeon", {label = "a dungeon", inside = ChaosDungeonIsInside, at = function(pos)
-	for _, dg in pairs(baseDungeons()) do
-		if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(dg, pos) then
+	for did, dg in pairs(baseDungeons()) do
+		if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(did, dg, pos) then
 			return true
 		end
 	end
@@ -471,7 +497,7 @@ local function entryProblem(player, id, dg, difficulty)
 	if runOfPlayer[guid] then
 		return "You are already inside a dungeon."
 	end
-	if inBox(dg, player:getPosition()) then
+	if inBox(id, dg, player:getPosition()) then
 		return "You cannot queue from inside the dungeon."
 	end
 	-- the run teleports from wherever the player stands: without this a fight (or a chase) could be left by queueing.
@@ -530,7 +556,13 @@ local function scaleMonster(run, monster)
 		return
 	end
 	scaledBy[mid] = run
-	local hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
+	local ex = extraOf(run.dungeonId)
+	local hp
+	if ex.bossHealth and ex.bossName and monster:getName():lower() == ex.bossName:lower() then
+		hp = DIFF.bossHealth(monster:getMaxHealth(), run.difficulty, ex.bossHealth)
+	else
+		hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
+	end
 	if hp ~= monster:getMaxHealth() then
 		local share = monster:getHealth() / math.max(1, monster:getMaxHealth())
 		monster:setMaxHealth(hp)
@@ -552,8 +584,8 @@ local function forgetRun(run)
 	end
 end
 
-local function cleanArea(dg, bossName)
-	local _, _, _, monsterList = scanArea(dg, bossName)
+local function cleanArea(id, dg, bossName)
+	local _, _, _, monsterList = scanArea(id, dg, bossName)
 	for _, monster in ipairs(monsterList) do
 		monster:remove()
 	end
@@ -579,7 +611,7 @@ local function endRun(run, success, reason)
 	local function teardown()
 		for _, p in ipairs(memberPlayers(run)) do
 			send(p, "finish")
-			if dg and inBox(dg, p:getPosition()) then
+			if dg and inBox(run.dungeonId, dg, p:getPosition()) then
 				local origin = run.members[p:getGuid()]
 				p:teleportTo(origin or p:getTown():getTemplePosition())
 				p:getPosition():sendMagicEffect(40)
@@ -596,7 +628,7 @@ local function endRun(run, success, reason)
 		end
 		runs[run.id] = nil
 		if dg then
-			cleanArea(dg, extra.bossName and extra.bossName:lower() or nil)
+			cleanArea(run.dungeonId, dg, extra.bossName and extra.bossName:lower() or nil)
 		end
 		forgetRun(run)
 		runOfDungeon[run.dungeonId] = nil
@@ -619,6 +651,12 @@ local function endRun(run, success, reason)
 	end
 	if #memberInfo > 0 then
 		storeRun(run.dungeonId, run.difficulty, elapsed, memberInfo)
+		if ChaosRecords and ChaosRecords.dungeonClear then
+			pcall(ChaosRecords.dungeonClear, {dungeonId = run.dungeonId,
+				title = dg and titleOf(run.dungeonId, dg) or ("Dungeon " .. tostring(run.dungeonId)),
+				difficulty = run.difficulty, difficultyStart = run.difficultyStart or run.difficulty,
+				ms = elapsed, members = memberInfo})
+		end
 	end
 
 	for _, p in ipairs(memberPlayers(run)) do
@@ -665,6 +703,11 @@ end
 
 ChaosDungeons = ChaosDungeons or {}
 ChaosDungeons.endRun = endRun
+-- true when pos lies in the area of base dungeon `id` (the boxes a run uses for "who is inside")
+function ChaosDungeons.inside(id, pos)
+	local dg = baseDungeons()[id]
+	return dg ~= nil and dg.FromPos ~= nil and dg.ToPos ~= nil and dg.DungeonPos ~= nil and inBox(id, dg, pos)
+end
 
 local function startRun(dungeonId, difficulty, players)
 	local dg = baseDungeons()[dungeonId]
@@ -675,6 +718,7 @@ local function startRun(dungeonId, difficulty, players)
 		id = nextRunId,
 		dungeonId = dungeonId,
 		difficulty = difficulty,
+		difficultyStart = difficulty, -- competitive records: a run whose difficulty changed is not valid
 		members = {}, -- [guid] = origin Position
 		startedAt = nowMs(),
 		deaths = 0,
@@ -692,6 +736,10 @@ local function startRun(dungeonId, difficulty, players)
 			Game.createMonster(monsterName, position)
 		end
 	end
+	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run
+	if extra.populate then
+		pcall(extra.populate, dungeonId)
+	end
 
 	for _, p in ipairs(players) do
 		local guid = p:getGuid()
@@ -708,7 +756,7 @@ local function startRun(dungeonId, difficulty, players)
 		p:say(baseMessage("ToEntry", "Welcome to Dungeon"), TALKTYPE_MONSTER_SAY)
 	end
 
-	local monsters, bosses, _, monsterList = scanArea(dg, bossName)
+	local monsters, bosses, _, monsterList = scanArea(dungeonId, dg, bossName)
 	run.total = monsters
 	run.bossSeen = bosses > 0
 	scaleList(run, monsterList)
@@ -778,7 +826,7 @@ local function tryMatch(id)
 	end
 
 	-- the dungeon area must be empty of players (a leftover player means a previous run is not over)
-	local _, _, playersInside = scanArea(dg, nil)
+	local _, _, playersInside = scanArea(id, dg, nil)
 	if playersInside > 0 then
 		return
 	end
@@ -824,7 +872,7 @@ tick = function()
 			local dg = baseDungeons()[run.dungeonId]
 			local extra = extraOf(run.dungeonId)
 			local bossName = extra.bossName and extra.bossName:lower() or nil
-			local monsters, bosses, playersInside, monsterList = scanArea(dg, bossName)
+			local monsters, bosses, playersInside, monsterList = scanArea(run.dungeonId, dg, bossName)
 			scaleList(run, monsterList) -- respawns inside the box get the difficulty too
 
 			if bosses > 0 then
@@ -834,7 +882,7 @@ tick = function()
 			-- members that left the box (died, logged out, walked out) are released
 			for guid in pairs(run.members) do
 				local p = online(guid)
-				if not p or not inBox(dg, p:getPosition()) then
+				if not p or not inBox(run.dungeonId, dg, p:getPosition()) then
 					releasePlayer(run, guid)
 					if p then
 						send(p, "finish") -- hide the kill counter
@@ -846,7 +894,7 @@ tick = function()
 				run.ended = true
 				runs[runId] = nil
 				runOfDungeon[run.dungeonId] = nil
-				cleanArea(dg, bossName)
+				cleanArea(run.dungeonId, dg, bossName)
 				forgetRun(run)
 			else
 				local percent = 100
@@ -1019,8 +1067,8 @@ function LoginEvent.onLogin(player)
 	if not runOfPlayer[player:getGuid()] then
 		local restart = (player:getLastLogout() or 0) < ChaosDungeonsBoot
 		local pos = player:getPosition()
-		for _, dg in pairs(baseDungeons()) do
-			if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(dg, pos) then
+		for did, dg in pairs(baseDungeons()) do
+			if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(did, dg, pos) then
 				player:teleportTo(player:getTown():getTemplePosition())
 				if restart then
 					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your dungeon run was cut short by a server restart.")
@@ -1046,7 +1094,7 @@ function ShutdownEvent.onShutdown()
 				local p = online(guid)
 				if p then
 					send(p, "finish")
-					if dg and inBox(dg, p:getPosition()) then
+					if dg and inBox(run.dungeonId, dg, p:getPosition()) then
 						p:teleportTo(origin or p:getTown():getTemplePosition())
 					end
 				end

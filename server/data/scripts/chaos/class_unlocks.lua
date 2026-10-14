@@ -376,6 +376,10 @@ function gmTalk.onSay(player, words, param)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
 		return false
 	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): an unlock needs an administrator, a revoke does not
+	if not Chaos.staffCommand(player, words, param, mode ~= "revoke") then
+		return false
+	end
 	local ok, err
 	if mode == "revoke" then
 		ok, err = U.revoke(accountId, key)

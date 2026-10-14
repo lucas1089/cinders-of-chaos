@@ -1,7 +1,8 @@
-# Gamemaster handbook (draft)
+# Gamemaster handbook
 
-Status: **draft for the owner.** The rules marked **Owner decides** are recommendations until the owner confirms them.
-The facts about groups and commands come from the code: the admin panel (`server/data/scripts/chaos/admin/`, its
+Status: **decided** (2026-10-12). The owner adopted the recommended staff rules; they are written below as the rules.
+The public part (offences and penalties, appeals) is on the website's Rules page and in the Terms of Use
+(docs/legal/). The facts about groups and commands come from the code: the admin panel (`server/data/scripts/chaos/admin/`, its
 README.md), `Chaos.staffCommand` in `chaos_constants.lua`, and each system's talkaction. When the code changes, this
 file follows.
 
@@ -19,7 +20,7 @@ community ranking (`staffGroup = 4` in the configs) and are never scored by the 
 | 1 | player | nothing extra |
 | 2, 3 | tutor, senior tutor (base server) | base Help channel tools (`!mute` / `!unmute` inside Help); no `/` commands, no admin panel |
 | 4 | **gamemaster** | the admin panel (Admin Panel button in the top bar, or Ctrl+Shift+F12; extended opcode 120): Players (info, kick, ban, unban, mute, set level / skill / vocation, remove item, give premium, teleport, summon, heal, set storage), World (spawn monster / NPC, remove items on a tile, teleport to town, start a raid), Tools (invisible, speed, whitelisted talkactions); most `/` commands (section 2); player reports (`/reports`) |
-| 5 | **administrator** (base name: community manager) | everything of group 4, plus the admin panel's Server (broadcast, save, online, stats), Economy (gold, bank, stash, market views), Events, Content, Accounts & Security (account lookup, ban lists, IP ban, sessions, admin log) and Store (sales, donations, give Chaos Coins) categories, Give item, Create item, God mode; the economy commands `/coins`, `/charm give`, `/pact` (all but `info`) |
+| 5 | **administrator** (base name: community manager) | everything of group 4, plus the admin panel's Server (broadcast, save, online, stats), Economy (gold, bank, stash, market views), Events, Content, Accounts & Security (account lookup, ban lists, IP ban, sessions, admin log) and Store (sales, donations, give Chaos Coins) categories, Give item, Create item, God mode; the economy commands `/coins`, `/charm give`, `/pact` (all but `info`) and every command that hands out value (section 2) |
 | 6 | **god** | everything, plus the admin panel's dangerous actions (reload, shutdown / restart, open / close the server, set group, clean map), Ghost mode, Record a donation |
 | account type 5 | god account | `/goblin`, `/blessing`, `/season start / end`, `/seasonpass`, `/journey`; never locked out of a class |
 
@@ -27,8 +28,8 @@ Rules the code enforces: a target of the same or a higher group cannot be touche
 above your own group; every admin panel request (ok, denied or failed) and every use of a guarded `/` command goes to
 `chaos_admin_log` (Accounts & Security > Admin log viewer).
 
-**Owner decides:** who holds which group. Recommendation: gamemasters at 4 for day-to-day work, one or two trusted
-administrators at 5, the owner and the lead developer at 6 with god accounts.
+**Who holds which group (decided):** gamemasters at 4 for day-to-day work, one or two trusted administrators at 5,
+the owner and the lead developer at 6 with god accounts. Few people with power means few mistakes and a short audit.
 
 ## 2. Commands
 
@@ -41,32 +42,41 @@ access flag (gamemaster or higher).
 | `/reports`, `/reports list closed\|all\|bugs`, `show <id>`, `score <name>`, `log <name>`, `check <name>`, `close <id>, <text>`, `clear <name>` | 4+ | player reports and the anti-bot (section 3) |
 | `/gmnotify <message>` | 4+ | a toast to every online player |
 | `/patchnotes reload\|unseen` | 4+ | read the notes folder now; forget your account's last seen week |
-| `/rift key <tier> [count \| mods]`, `/rift status`, `/rift fail` | 4+ | Rift Keys for tests, the runs and slots, fail your run |
+| `/rift status`, `/rift fail` | 4+ | the runs and slots, fail your run |
+| `/rift key <tier> [count \| mods]`, `/rift omen`, `/rift fragments` | **5+** | Rift Keys, Omen Keys and fragments for staff test characters |
 | `/worldboss start [name\|number\|random]`, `stop`, `arena` | 4+ | the world boss event |
 | `/invasion start <area\|random> [faction]`, `stop`, `status`, `schedule <minutes> ...` | 4+ | invasions |
 | `/siege start\|match\|end\|stop\|portal\|arena [n]\|signup <guild>\|clear` | 4+ | the guild siege |
-| `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ | arena, battleground, Scorched Marches |
-| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ | the instanced content: runs, phases, test items (sigils, shards) |
+| `/arena stop\|slots`, `/bg stop\|slots\|min <n>\|off\|on`, `/marches` | 4+ (`/marches embers`: **5+**) | arena, battleground, Scorched Marches |
+| `/raid`, `/descent`, `/ascended`, `/guildboss`, `/trial` | 4+ (`/raid marks`, `/descent sigil`, `/trial tokens`: **5+**) | the instanced content: runs, phases |
+| `/ascended sigil\|shards\|relic, <kind>` | **5+** | Ascended test items for staff test characters |
 | `/instances`, `/instances <type>`, `/instances close <type> <id>`, `/instances line [type]` | 4+ | every running instance (rift, descent, raid, ascended, guildboss, trials, ascension, tower, dungeon, arena, battleground, worldboss, siege, tutorial, bossroom) with its id, time left, players and idle grace; close one by its system's failure rule (nobody gets a reward, nothing is refunded that a time-out would not refund); who waits in line for a free slot (server/README.md "Instance limits") |
-| `/community status\|modifier <key>\|modifier auto\|add <points>\|stage <n>` | 4+ | the community goal and the weekly modifier |
-| `/guild xp\|bank\|info\|log\|rent\|hall <guild>[, value]`, `/guildwar list\|end, <id>\|expire, <id>` | 4+ | guilds and guild wars |
-| `/classunlock <character>, <class>[, revoke]` | 4+ | a class unlock for the whole account |
-| `/cosmetic`, `/exclusive`, `/transmog <character>, <key>[, revoke]` | 4+ | grant or revoke account cosmetics |
-| `/faction`, `/professions`, `/pet`, `/gamble`, `/mentor`, `/referral`, `/hideout`, `/achievements`, `/atlas` | 4+ | per-system inspection and test tools |
-| `/newplayerkit <name>[, welcome\|milestone <n>\|reset\|tutorial]`, `/towerrun <floors>,<seconds>` | 4+ | new-player kit and tutorial; a fake tower run on yourself |
+| `/community status\|modifier <key>\|modifier auto\|add <points>\|stage <n>` | 4+ (`add`: **5+**) | the community goal and the weekly modifier |
+| `/guild info\|log\|rent\|hall <guild>[, value]`, `/guildwar list\|end, <id>\|expire, <id>` | 4+ | guilds and guild wars (`rent <guild>, paid`: 5+) |
+| `/guild xp\|bank <guild>, <value>` | **5+** | guild XP and the guild bank |
+| `/classunlock <character>, <class>[, revoke]` | **5+** (revoke: 4+) | a class unlock for the whole account |
+| `/cosmetic`, `/exclusive`, `/transmog <character>, <key>[, revoke]` | **5+** (revoke, `/cosmetic ..., sync`: 4+) | grant or revoke account cosmetics; `/exclusive ..., roll` is 5+ too |
+| `/faction`, `/professions`, `/pet`, `/gamble`, `/mentor`, `/referral`, `/hideout`, `/achievements`, `/atlas` | 4+ | per-system inspection and test tools (`/pet give`, `/achievements grant\|add`, `/atlas grant`: 5+) |
+| `/newplayerkit <name>[, welcome\|milestone <n>\|reset\|tutorial]`, `/towerrun <floors>,<seconds>` | 4+ (the kit, `milestone`, `reset`: **5+**) | new-player kit and tutorial; a fake tower run on yourself |
 | `/market sweep\|info <id>\|orders`, `/orbx sweep\|info <id>\|escrow` | 4+ | market and Orb Exchange checks |
+| `/creatorcodes [run]` | **5+** | creator codes: the settings and each code's paid shares; `run` matches and pays now. Codes are made and switched off on the website (The World > Creator Codes, admin panel account with a group 5 character); the Character Bazaar's staff cancel is on the website too (The World > Character Bazaar > Administration) |
 | `/treestats [<class> [band] [n]]`, `/treestats export` | 4+ | passive tree picks per class line and level band (counts only); the CSV goes to the server's `data/` folder (server/README.md "Passive tree pick statistics") |
-| `/daily`, `/leaderboard`, `/season status`, `/spells reload`, `/supports reload` | 4+ | state and test clocks (`shift`: test servers only) |
+| `/daily`, `/leaderboard`, `/season status`, `/spells reload`, `/supports reload` | 4+ (`/daily shift\|set`, `/leaderboard shift`: **5+**) | state and test clocks (`shift`: test servers only) |
 | `/testkit` | 4+ (admin panel access) | gear kits for balance tests; **removed from the live server** (docs/LAUNCH.md section 11) |
 | `/coins <character>, <amount>`, `/charm give ...`, `/pact <player>, days\|end\|extra\|claimreset` | **5+** | economy value |
 | `/goblin`, `/blessing`, `/season start\|end`, `/seasonpass`, `/journey` | **god account** | test and season tools |
 | base server `/` commands (ban, kick, teleport, create item, ...) | per the base server's groups | the admin panel covers the common ones with logging; prefer it |
 
-Many group 4 commands hand out value (`/rift key`, `/ascended sigil`, `/newplayerkit`, `/guild bank`, `/classunlock`,
-`/cosmetic`, `/pet give`). The code only guards `/coins`, `/charm give` and `/pact` at group 5.
-**Owner decides.** Recommendation: staff never give anything to a player character with any command; these tools are
-for staff test characters only. A refund after a confirmed bug goes through an administrator (group 5) with a written
-reason (section 6). Later, move those commands behind `Chaos.staffCommand(..., true)` too.
+The commands that hand out value (`/rift key|omen|fragments`, `/ascended sigil|shards|relic`, `/newplayerkit` kit,
+milestone and reset, `/guild xp|bank` and `rent <guild>, paid`, `/classunlock`, `/cosmetic`, `/exclusive` and `/transmog`
+grants, `/pet give`, the test clocks `/daily shift|set` and `/leaderboard shift`, `/raid marks`, `/descent sigil`,
+`/marches embers`, `/trial tokens`, `/achievements grant|add`, `/atlas grant`, `/community add`) need group 5, like `/coins`, `/charm give`
+and `/pact`.
+**Rule (decided):** staff never give anything to a player character with any command; these tools are for staff test
+characters only. A refund after a confirmed bug goes through an administrator (group 5) with a written reason
+(section 6). Why: every gift to a player is economy value nobody earned. Done (2026-10-12): those commands sit behind
+`Chaos.staffCommand(..., true)`, so the code enforces the rule; a gamemaster is refused with a message and every use,
+refused or not, is in the admin audit log (`tests/staff_permissions_test.lua`).
 
 ## 3. Report handling
 
@@ -91,7 +101,7 @@ From server/README.md "Anti-bot and player reports", Staff guide:
 3. Limits: one report per character every 5 s and per account every 30 s, 10 a day per account. A player who hits
    them gets a message; ask them to put the rest on Discord.
 
-House rules (**Owner decides**; recommendation):
+House rules (decided):
 - Answer every report within the shift; close it with what was found, even "nothing found".
 - Never tell the reporter what happened to the other account; never name the reporter.
 - Harassment, scams and offensive names: read the public chat lines in the report; private messages are never stored.
@@ -100,7 +110,8 @@ House rules (**Owner decides**; recommendation):
 
 ## 4. Mutes and bans
 
-**Owner decides** the ladder and publishes it on the Rules page. Recommendation, per account, counted over 90 days:
+The ladder (decided), per account, counted over 90 days. It is published on the Rules page (section 7 of
+`website/setup/rules.bbcode`); staff apply the same table, so players can predict the result:
 
 | Offence | 1st | 2nd | 3rd | then |
 |---|---|---|---|---|
@@ -112,14 +123,29 @@ House rules (**Owner decides**; recommendation):
 | duplicating items or currency, a third-party client, attacks on the server | permanent, the gain removed | | | |
 | impersonating staff | ban 7 days | permanent | | |
 | real-money trading of characters or items | ban 30 days, the traded goods removed | permanent | | |
+| chargeback fraud: disputing your own donation to keep the coins, or someone else's payment method without permission | the coins taken back (automatic), what they bought removed, the account locked until the dispute is settled | permanent, by an administrator | | |
 
-- Tools: admin panel Players > Mute (online player, 1 to 10,080 minutes; check that it blocks speech on this engine,
-  admin README "Untested"), Players > Ban account (1 to 3,650 days, with a reason; kicks), Unban; Accounts & Security >
-  IP ban (group 5; for ban evasion only, never for a shared IP such as a school or a cafe without an administrator).
+- Tools: admin panel Players > Mute (online player, 1 to 1,440 minutes, default 60; longer than 24 h is a ban; check
+  that it blocks speech on this engine, admin README "Untested"), Players > Ban account (1 to 3,650 days, default 7,
+  with a reason; kicks; **permanent = 3,650 days**), Unban; Accounts & Security > IP ban (group 5; for ban evasion only,
+  never for a shared IP such as a school or a cafe without an administrator).
+- The code enforces the ladder's limits (`ChaosAdminLadder` in `admin/actions_players.lua`, `tests/staff_permissions_test.lua`):
+  a mute is at most 24 h, and a ban of 30 days or more (permanent included) needs an administrator (group 5), as in
+  section 7. A gamemaster who finds a case for a longer ban hands it to an administrator with the evidence.
+- **Chargeback fraud** (decided 2026-10-12; Donation Terms section 6, Rules 7.9): the donation system takes the coins back by itself
+  when the provider reports a refund or a dispute (`removeCoinsOnReversal` in `shop_coins_config.lua`, up to the balance
+  still there). Gamemasters do not act on payments (section 7, level 4): an administrator checks the order
+  (`chaos_coin_orders`, `chaos_coin_payments`), removes what the coins bought, and locks the account with Ban account
+  for 3,650 days, reason "chargeback, locked until settled, order <id>". When the dispute is settled (withdrawn, or the
+  donation paid again) the administrator lifts it with Unban. Fraud again on the same account, or a payment method of
+  someone else: permanent, by an administrator. A dispute in good faith (coins that never arrived, a double charge)
+  is not fraud: settle it, never punish it.
 - A ban always has a reason the player could read, and the evidence (report id, log lines, screenshots) goes in the
   handover note.
-- Appeals: on Discord to an administrator who did not issue the ban. **Owner decides** the appeal channel.
-- Self-reported bugs are never punished; reward them (**Owner decides** how).
+- Appeals (decided): on Discord, in the appeals channel, to an administrator who did not issue the ban. One appeal
+  per penalty; the administrator's answer is final.
+- Self-reported bugs are never punished (decided). A useful report may be rewarded; the owner decides the reward
+  case by case, so nobody is promised anything in advance.
 
 ## 5. Never ship (and never do)
 
@@ -175,7 +201,7 @@ A duplicated item or currency is a server bug first and a ban second. Do not tel
 
 ## 7. Escalation
 
-**Owner decides** the names and contacts. Recommendation:
+The levels (decided). The names and contacts of each level are in the staff contact list, not in this repository:
 
 | Level | Who | When |
 |---|---|---|

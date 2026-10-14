@@ -1,0 +1,158 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "smoldering_deep",
+  "name": "Smoldering Deep",
+  "biome": "lava",
+  "size": [
+    80,
+    64
+  ],
+  "floors": 1,
+  "level": [
+    300,
+    480
+  ],
+  "seed": 24303,
+  "decoration": "normal",
+  "light": "bright",
+  "zones": [
+    {
+      "id": "mouth",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp"
+    },
+    {
+      "id": "flow",
+      "floor": 1,
+      "size": "large",
+      "place": "northwest"
+    },
+    {
+      "id": "crater",
+      "floor": 1,
+      "shape": "arena",
+      "size": "large",
+      "place": "center"
+    },
+    {
+      "id": "vents",
+      "floor": 1,
+      "size": "medium",
+      "place": "northeast"
+    },
+    {
+      "id": "slag",
+      "floor": 1,
+      "size": "large",
+      "place": "southeast"
+    },
+    {
+      "id": "forge",
+      "floor": 1,
+      "size": "medium",
+      "place": "southwest",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "mouth",
+      "to": "flow"
+    },
+    {
+      "from": "flow",
+      "to": "crater",
+      "width": 4
+    },
+    {
+      "from": "crater",
+      "to": "vents"
+    },
+    {
+      "from": "vents",
+      "to": "slag"
+    },
+    {
+      "from": "slag",
+      "to": "crater",
+      "width": 4
+    },
+    {
+      "from": "crater",
+      "to": "forge",
+      "width": 2
+    }
+  ],
+  "connections": [
+    {
+      "type": "teleport",
+      "from": "forge",
+      "to": "mouth",
+      "two_way": false
+    }
+  ],
+  "entry": {
+    "zone": "mouth"
+  },
+  "exit": {
+    "zone": "mouth"
+  },
+  "spawns": [
+    {
+      "zone": "flow",
+      "monster": "Cinderclaw",
+      "count": 5,
+      "respawn": 90
+    },
+    {
+      "zone": "crater",
+      "monster": "Infernal Demon",
+      "count": 4,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "crater",
+      "monster": "Hellhunter Pyrarch",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "vents",
+      "monster": "Blazefang",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "slag",
+      "monster": "Ashfang Wrym",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "forge",
+      "monster": "Cinderclaw",
+      "count": 2,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "forge",
+      "quest": "smoldering_forge",
+      "reward": {
+        "gold": 120000,
+        "items": [
+          {
+            "name": "Whetstone",
+            "count": 3
+          }
+        ],
+        "message": "The forge kept its last pay."
+      }
+    }
+  ],
+  "notes": "Example plan: a one-floor lava cave for levels 300-480 with a circuit through the crater and a one-way teleport shortcut from the forge."
+}

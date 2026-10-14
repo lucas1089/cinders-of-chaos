@@ -110,7 +110,8 @@ local function answer(player, data)
 			end
 			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder, setState = setState})
 			if ok then
-				row.tip = tip
+				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
+				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)
 			else
 				row.gone = true
 				print("[item_tooltip] " .. tostring(tip))

@@ -38,7 +38,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 				<a class="chaos-btn" href="register.php">Create an account</a>
 			<?php endif; ?>
 			<a class="chaos-btn chaos-btn--ghost" href="downloads.php">Download the client</a>
-			<a class="chaos-btn chaos-btn--ghost" href="serverinfo.php">Read the guide</a>
+			<a class="chaos-btn chaos-btn--ghost" href="page.php?plugin=chaos&amp;p=wiki">Read the guide</a>
 		</div>
 	</section>
 

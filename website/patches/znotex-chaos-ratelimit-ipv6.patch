@@ -1,0 +1,31 @@
+diff --git a/engine/function/login_guard.php b/engine/function/login_guard.php
+--- a/engine/function/login_guard.php
++++ b/engine/function/login_guard.php
+@@ -42,7 +42,19 @@
+ 	return substr(trim($ip), 0, 45);
+ }
+ 
++// Cinders of Chaos: the address a login attempt counts under. An IPv6 address counts by its /64 network (one household
++// owns all of it), as the account creation limit does; otherwise one machine walks through its addresses and is never
++// locked out. IPv4 stays as it is.
++function chaos_login_guard_ip_key(string $ip): string {
++	$bin = @inet_pton(trim($ip));
++	if ($bin !== false && strlen($bin) === 16) {
++		return inet_ntop(substr($bin, 0, 8) . str_repeat("\0", 8)) . '/64';
++	}
++	return substr(trim($ip), 0, 45);
++}
++
+ function znote_login_guard_record(string $ip, string $username, bool $success): void {
++	$ip = chaos_login_guard_ip_key($ip);
+ 	if (!function_exists('znote_table_exists') || !znote_table_exists('znote_login_attempts')) {
+ 		return;
+ 	}
+@@ -59,6 +71,7 @@
+ }
+ 
+ function znote_login_guard_lockout_remaining(string $ip): int {
++	$ip = chaos_login_guard_ip_key($ip);
+ 	$cfg = znote_login_guard_config();
+ 	if (!$cfg['enabled'] || !function_exists('znote_table_exists') || !znote_table_exists('znote_login_attempts')) {
+ 		return 0;

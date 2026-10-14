@@ -12,8 +12,14 @@ script (nothing is written). Idempotent: a second run changes nothing.
 
 The class looks (class_looks_core.lua ChaosClassLooks.looks: a name and a male and a female look type per class) get
 a second marked block: type 1 = the male look, type 0 = the female look (both lines when one look serves both sexes),
-locked (unlocked="no": class_looks.lua gives them at login and at a class change). Same rules: rewritten when the list
-changed, refused when a look type has an entry outside the block.
+locked (unlocked="no": class_looks.lua gives them at login and at a class change, each with both addons through
+Player:addOutfitAddon; outfits.xml has no way to grant addons, and unlocked="yes" would give the look to every
+character). Same rules: rewritten when the list changed, refused when a look type has an entry outside the block.
+With the pair 19 switch on (class_looks_core.lua L.PAIR19_LOOKS = true) the six classes of L.pair19Looks get their
+things_custom19 looks (2161-2172) and their replaced looks stay as "<name> (old)" (on since 2026-10-12); with it off
+(the rollback) no line names 2161-2172, so a client on an older pair is never offered them. The pair 20 switch
+(L.PAIR20_LOOKS, L.pair20Looks: things_custom20, 2173-2184; on since 2026-10-12) works the same way for its six
+classes.
 
 Mounts (MOUNTS below) go into mounts.xml the same way: a marked block before </mounts>; a mount id or client id that
 already has an entry outside the block stops the script.
@@ -23,6 +29,11 @@ outfits (kind "outfit": male / female look, a third outfits.xml block "Chaos exc
 (kind "mount": id and look, appended to MOUNTS), the wings (kind "wings": a wings.xml block) and the outfit shaders
 (kind "shader": a shaders.xml block, only for ids the base file does not have; an id there under another name stops
 the script). Base looks of the client pair that no XML line had (exclusives_config.lua lists them).
+The Chaos outfit shaders of data/scripts/chaos/cosmetics_config.lua (outfitShaders.list: shaderId and shader name,
+ids 19-24; client game_chaosshaders draws them) join the same shaders.xml block whether their switch is on or off: a
+shader in shaders.xml is still locked for everyone until Player:addShader (cosmetics.lua, only while the switch is on).
+The season pass's own shaders (data/scripts/chaos/seasonpass_config.lua rewards of kind "shader", ids 25-26) join the
+same block; they stay locked until the premium track's claim adds them (seasonpass.lua).
 
 The look types exist only in the client pair that has them (client/tools/sprites/import_outfits.py, outfits 1505-1510;
 import_donor_things.py, the donor B first set, outfits 1551-1561; the faction mounts 2132-2135, things_custom14; the
@@ -47,12 +58,37 @@ MOUNTS = [(141, 1561, 'Bone Steed', 30),
           (142, 2132, 'Pyrewarden Charger', 30), (143, 2133, 'Forgeborn Emberwolf', 30),
           (144, 2134, 'Veilrunner', 30), (145, 2135, 'Thornbound Stag', 30)]
 EXCLUSIVES = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'exclusives_config.lua')
+# the wings of client pair things_custom24, in exclusives_config.lua's line format; read only while its switch is on
+THEME_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_theme_art.lua')
 XBEGIN = '\t<!-- Chaos exclusive outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 XEND = '\t<!-- end of the Chaos exclusive outfits -->\n'
 WBEGIN = '\t<!-- Chaos wings (server/tools/install_outfits.py, do not edit by hand) -->\n'
 WEND = '\t<!-- end of the Chaos wings -->\n'
 SBEGIN = '\t<!-- Chaos shaders (server/tools/install_outfits.py, do not edit by hand) -->\n'
 SEND = '\t<!-- end of the Chaos shaders -->\n'
+COSMETICS = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'cosmetics_config.lua')
+SEASONPASS = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'seasonpass_config.lua')
+
+
+def cosmetic_shaders(path=COSMETICS):
+    """[(shaderId, shader name)] of cosmetics_config.lua outfitShaders.list (one entry per line pair)"""
+    if not os.path.isfile(path):
+        return []
+    text = open(path, encoding='utf-8').read()
+    at = text.find('outfitShaders = {')
+    if at < 0:
+        return []
+    block = text[at:text.find('\n\t},', at)]
+    return [(int(i), n) for i, n in re.findall(r'shaderId = (\d+), shader = "([\w]+)"', block)]
+
+
+def seasonpass_shaders(path=SEASONPASS):
+    """[(id, shader name)] of the season pass rewards of kind "shader" (seasonpass_config.lua: the premium track's own
+    shaders, ids 25-26; client game_chaosshaders draws them). Locked until the pass claim adds them."""
+    if not os.path.isfile(path):
+        return []
+    text = open(path, encoding='utf-8').read()
+    return [(int(i), n) for i, n in re.findall(r'kind = "shader", id = (\d+), shader = "([\w]+)"', text)]
 
 
 def exclusives(path=EXCLUSIVES):
@@ -62,6 +98,11 @@ def exclusives(path=EXCLUSIVES):
     if not os.path.isfile(path):
         return out
     text = open(path, encoding='utf-8').read()
+    if path == EXCLUSIVES and os.path.isfile(THEME_ART):
+        sys.path.insert(0, HERE)
+        from install_theme_items import pair24_on
+        if pair24_on(THEME_ART):
+            text += open(THEME_ART, encoding='utf-8').read()
     for m in re.finditer(r'\{key = "[\w]+", kind = "(outfit|mount|wings|shader)", ([^\n]*)\n[^\n]*?name = "([^"]+)"', text):
         kind, fields, name = m.group(1), m.group(2), m.group(3)
         f = dict(re.findall(r'(\w+) = (\d+)', fields))
@@ -150,7 +191,10 @@ def class_outfits(path=CONSTANTS):
 
 
 def class_looks(path=LOOKS):
-    """[(name, male look, female look)] in vocation id order"""
+    """[(name, male look, female look)] in vocation id order: L.looks, with the pair switches applied
+    (L.PAIR19_LOOKS / L.PAIR20_LOOKS = true: the L.pair19Looks / L.pair20Looks ids replace their class's look, and the
+    replaced looks follow as "<name> (old)" so the characters that own them can still wear them; class_looks_core.lua
+    L.applyPairs)"""
     text = open(path, encoding='utf-8').read()
     m = re.search(r'L\.looks = \{(.*?)\n\}', text, re.S)
     if not m:
@@ -158,7 +202,27 @@ def class_looks(path=LOOKS):
     rows = re.findall(r'\[(\d+)\] = \{name = "([^"]+)", male = (\d+), female = (\d+)\}', m.group(1))
     if not rows:
         sys.exit('%s: L.looks has no entries' % path)
-    return [(n, int(a), int(b)) for _, n, a, b in sorted(rows, key=lambda r: int(r[0]))]
+    new = {}
+    for n in (19, 20):
+        if re.search(r'^L\.PAIR%d_LOOKS = true$' % n, text, re.M):
+            new.update(pair_looks(text, n))
+    looks, former = [], []
+    for v, n, a, b in sorted(rows, key=lambda r: int(r[0])):
+        if int(v) in new:
+            looks.append((n, new[int(v)][0], new[int(v)][1]))
+            former.append((n + ' (old)', int(a), int(b)))
+        else:
+            looks.append((n, int(a), int(b)))
+    return looks + former
+
+
+def pair_looks(text, n=19):
+    """{vocation id: (male, female)} of the L.pair<n>Looks block (the things_custom<n> class looks)"""
+    m = re.search(r'L\.pair%dLooks = \{(.*?)\n\}' % n, text, re.S)
+    if not m:
+        sys.exit('no L.pair%dLooks block' % n)
+    return {int(v): (int(a), int(b)) for v, a, b in
+            re.findall(r'\[(\d+)\] = \{male = (\d+), female = (\d+)\}', m.group(1))}
 
 
 def install_class_looks(path, rest, original, dry):
@@ -168,7 +232,7 @@ def install_class_looks(path, rest, original, dry):
     clash = sorted({t for _, m, f in looks for t in (m, f) if t in taken})
     if clash:
         print('outfits.xml already has look type(s) %s outside the class looks block; nothing written' % clash)
-        return text, 1
+        return rest, 1
     lines = ''.join('\t<outfit type="%d" looktype="%d" name="%s" premium="no" unlocked="no" enabled="yes" />\n'
                     % (sex, look, name) for sex in (0, 1) for name, m, f in looks for look in [(f if sex == 0 else m)])
     at = rest.rfind('</outfits>')
@@ -255,6 +319,7 @@ def main(argv):
         open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
     code = install_mounts(args[0], dry)
     code = install_wings(args[0], dry, ex) or code
+    ex['shader'] = ex['shader'] + cosmetic_shaders() + seasonpass_shaders()
     return install_shaders(args[0], dry, ex) or code
 
 

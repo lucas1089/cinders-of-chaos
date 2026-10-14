@@ -3,7 +3,7 @@ Module
   description: Cinders of Chaos store (categories, offers, coin gifts and history from the server; voluntary donations for Chaos Coins)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ qrcode, payview, pay, shop ]
+  scripts: [ qrcode, payview, rotation, pay, shop ]
   dependencies: [ client_topmenu ]
   autoload: true
   autoload-priority: 1000

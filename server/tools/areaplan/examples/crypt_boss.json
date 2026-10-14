@@ -1,0 +1,214 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "gravewatch_crypt",
+  "name": "Gravewatch Crypt",
+  "biome": "crypt",
+  "size": [
+    76,
+    62
+  ],
+  "floors": 2,
+  "level": [
+    150,
+    280
+  ],
+  "seed": 24202,
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "vestibule",
+      "floor": 1,
+      "size": "medium",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "hall",
+      "floor": 1,
+      "size": "large",
+      "place": "center"
+    },
+    {
+      "id": "west_ossuary",
+      "floor": 1,
+      "size": "medium",
+      "place": "southwest"
+    },
+    {
+      "id": "east_ossuary",
+      "floor": 1,
+      "size": "medium",
+      "place": "southeast"
+    },
+    {
+      "id": "stairwell",
+      "floor": 1,
+      "size": "medium",
+      "place": "south"
+    },
+    {
+      "id": "landing",
+      "floor": 2,
+      "size": "medium"
+    },
+    {
+      "id": "catacomb",
+      "floor": 2,
+      "size": "large",
+      "place": "center"
+    },
+    {
+      "id": "reliquary",
+      "floor": 2,
+      "size": "small",
+      "place": "northwest",
+      "role": "treasure"
+    },
+    {
+      "id": "antechamber",
+      "floor": 2,
+      "size": "medium",
+      "place": "east"
+    },
+    {
+      "id": "throne",
+      "floor": 2,
+      "size": "large",
+      "place": "northeast",
+      "role": "boss"
+    }
+  ],
+  "paths": [
+    {
+      "from": "vestibule",
+      "to": "hall"
+    },
+    {
+      "from": "hall",
+      "to": "west_ossuary"
+    },
+    {
+      "from": "hall",
+      "to": "east_ossuary"
+    },
+    {
+      "from": "west_ossuary",
+      "to": "stairwell"
+    },
+    {
+      "from": "east_ossuary",
+      "to": "stairwell"
+    },
+    {
+      "from": "landing",
+      "to": "catacomb"
+    },
+    {
+      "from": "catacomb",
+      "to": "reliquary"
+    },
+    {
+      "from": "catacomb",
+      "to": "antechamber"
+    },
+    {
+      "from": "antechamber",
+      "to": "throne"
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "stairwell",
+      "to": "landing"
+    },
+    {
+      "type": "teleport",
+      "from": "throne",
+      "to": "vestibule",
+      "two_way": false
+    }
+  ],
+  "entry": {
+    "zone": "vestibule"
+  },
+  "exit": {
+    "zone": "vestibule"
+  },
+  "spawns": [
+    {
+      "zone": "hall",
+      "monster": "Bone Knight",
+      "count": 5,
+      "respawn": 90
+    },
+    {
+      "zone": "hall",
+      "monster": "Bone Mage",
+      "count": 3,
+      "respawn": 90
+    },
+    {
+      "zone": "west_ossuary",
+      "monster": "Skeleton Elite Warrior",
+      "count": 3,
+      "respawn": 90
+    },
+    {
+      "zone": "east_ossuary",
+      "monster": "Bone Warrior",
+      "count": 3,
+      "respawn": 90
+    },
+    {
+      "zone": "stairwell",
+      "monster": "Crypt Warden",
+      "count": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "catacomb",
+      "monster": "Bonecleaver",
+      "count": 6,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "catacomb",
+      "monster": "Doombone",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "antechamber",
+      "monster": "Crypt Warden",
+      "count": 4,
+      "respawn": 120
+    }
+  ],
+  "boss": {
+    "zone": "throne",
+    "monster": "Morgashal",
+    "respawn": 7200,
+    "title": "The Gravewatch Lord"
+  },
+  "chests": [
+    {
+      "zone": "reliquary",
+      "quest": "gravewatch_relic",
+      "reward": {
+        "gold": 80000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 1
+          }
+        ],
+        "message": "Under the bones lies an old offering."
+      }
+    }
+  ],
+  "notes": "Example plan: a two-floor crypt for levels 150-280, stairs down, a boss room with one door and a one-way teleport back to the vestibule."
+}

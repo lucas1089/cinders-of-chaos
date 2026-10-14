@@ -1,0 +1,245 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+33660,36660,cryptbone_sword,sword,new,cryptbone blade,1x1,0,112,0,0,0,0,set=cryptbone|kind=sword|kit=
+33661,36661,cryptbone_axe,axe,new,cryptbone axe,1x1,0,112,0,0,0,0,set=cryptbone|kind=axe|kit=
+33662,36662,cryptbone_club,club,new,cryptbone mace,1x1,0,112,0,0,0,0,set=cryptbone|kind=club|kit=
+33663,36663,cryptbone_bow,bow,new,cryptbone bow,1x1,0,96,0,0,0,0,set=cryptbone|kind=bow|kit=
+33664,36664,cryptbone_crossbow,crossbow,new,cryptbone crossbow,1x1,0,96,0,0,0,0,set=cryptbone|kind=crossbow|kit=
+33665,36665,cryptbone_wand,wand,new,cryptbone wand,1x1,0,96,0,0,0,0,set=cryptbone|kind=wand|kit=
+33666,36666,cryptbone_rod,rod,new,cryptbone rod,1x1,0,96,0,0,0,0,set=cryptbone|kind=rod|kit=
+33667,36667,cryptbone_shield,shield,new,cryptbone shield,1x1,0,96,0,0,0,0,set=cryptbone|kind=shield|kit=
+33668,36668,cryptbone_helmet,helmet,new,cryptbone helmet,1x1,0,96,0,0,0,0,set=cryptbone|kind=helmet|kit=
+33669,36669,cryptbone_armor,armor,new,cryptbone armor,1x1,0,96,0,0,0,0,set=cryptbone|kind=armor|kit=
+33670,36670,cryptbone_legs,legs,new,cryptbone legs,1x1,0,96,0,0,0,0,set=cryptbone|kind=legs|kit=
+33671,36671,cryptbone_boots,boots,new,cryptbone boots,1x1,0,96,0,0,0,0,set=cryptbone|kind=boots|kit=
+33672,36672,cryptbone_amulet,amulet,new,cryptbone amulet,1x1,0,96,0,0,0,0,set=cryptbone|kind=amulet|kit=
+33673,36673,cryptbone_ring,ring,new,cryptbone ring,1x1,0,96,0,0,0,0,set=cryptbone|kind=ring|kit=
+33674,36674,cryptbone_backpack,backpack,new,cryptbone backpack,1x1,2,96,0,0,0,0,set=cryptbone|kind=backpack|kit=
+33675,36675,cryptbone_spellbook,spellbook,new,cryptbone spellbook,1x1,0,96,0,0,0,0,set=cryptbone|kind=spellbook|kit=
+33676,36676,cryptbone_arrow,arrow,new,cryptbone arrow,1x1,0,224,0,0,0,0,px=4|py=2|set=cryptbone|kind=arrow|kit=
+33677,36677,cryptbone_bolt,bolt,new,cryptbone bolt,1x1,0,224,0,0,0,0,px=4|py=2|set=cryptbone|kind=bolt|kit=
+33678,36678,voidmourn_sword,sword,new,voidmourn blade,1x1,0,112,0,0,0,0,set=voidmourn|kind=sword|kit=
+33679,36679,voidmourn_axe,axe,new,voidmourn axe,1x1,0,112,0,0,0,0,set=voidmourn|kind=axe|kit=
+33680,36680,voidmourn_club,club,new,voidmourn mace,1x1,0,112,0,0,0,0,set=voidmourn|kind=club|kit=
+33681,36681,voidmourn_bow,bow,new,voidmourn bow,1x1,0,96,0,0,0,0,set=voidmourn|kind=bow|kit=
+33682,36682,voidmourn_crossbow,crossbow,new,voidmourn crossbow,1x1,0,96,0,0,0,0,set=voidmourn|kind=crossbow|kit=
+33683,36683,voidmourn_wand,wand,new,voidmourn wand,1x1,0,96,0,0,0,0,set=voidmourn|kind=wand|kit=
+33684,36684,voidmourn_rod,rod,new,voidmourn rod,1x1,0,96,0,0,0,0,set=voidmourn|kind=rod|kit=
+33685,36685,voidmourn_shield,shield,new,voidmourn shield,1x1,0,96,0,0,0,0,set=voidmourn|kind=shield|kit=
+33686,36686,voidmourn_helmet,helmet,new,voidmourn helmet,1x1,0,96,0,0,0,0,set=voidmourn|kind=helmet|kit=
+33687,36687,voidmourn_armor,armor,new,voidmourn armor,1x1,0,96,0,0,0,0,set=voidmourn|kind=armor|kit=
+33688,36688,voidmourn_legs,legs,new,voidmourn legs,1x1,0,96,0,0,0,0,set=voidmourn|kind=legs|kit=
+33689,36689,voidmourn_boots,boots,new,voidmourn boots,1x1,0,96,0,0,0,0,set=voidmourn|kind=boots|kit=
+33690,36690,voidmourn_amulet,amulet,new,voidmourn amulet,1x1,0,96,0,0,0,0,set=voidmourn|kind=amulet|kit=
+33691,36691,voidmourn_ring,ring,new,voidmourn ring,1x1,0,96,0,0,0,0,set=voidmourn|kind=ring|kit=
+33692,36692,voidmourn_backpack,backpack,new,voidmourn backpack,1x1,2,96,0,0,0,0,set=voidmourn|kind=backpack|kit=
+33693,36693,voidmourn_spellbook,spellbook,new,voidmourn spellbook,1x1,0,96,0,0,0,0,set=voidmourn|kind=spellbook|kit=
+33694,36694,voidmourn_arrow,arrow,new,voidmourn arrow,1x1,0,224,0,0,0,0,px=4|py=2|set=voidmourn|kind=arrow|kit=
+33695,36695,voidmourn_bolt,bolt,new,voidmourn bolt,1x1,0,224,0,0,0,0,px=4|py=2|set=voidmourn|kind=bolt|kit=
+33696,36696,wildroot_sword,sword,new,wildroot blade,1x1,0,112,0,0,0,0,set=wildroot|kind=sword|kit=
+33697,36697,wildroot_axe,axe,new,wildroot axe,1x1,0,112,0,0,0,0,set=wildroot|kind=axe|kit=
+33698,36698,wildroot_club,club,new,wildroot mace,1x1,0,112,0,0,0,0,set=wildroot|kind=club|kit=
+33699,36699,wildroot_bow,bow,new,wildroot bow,1x1,0,96,0,0,0,0,set=wildroot|kind=bow|kit=
+33700,36700,wildroot_crossbow,crossbow,new,wildroot crossbow,1x1,0,96,0,0,0,0,set=wildroot|kind=crossbow|kit=
+33701,36701,wildroot_wand,wand,new,wildroot wand,1x1,0,96,0,0,0,0,set=wildroot|kind=wand|kit=
+33702,36702,wildroot_rod,rod,new,wildroot rod,1x1,0,96,0,0,0,0,set=wildroot|kind=rod|kit=
+33703,36703,wildroot_shield,shield,new,wildroot shield,1x1,0,96,0,0,0,0,set=wildroot|kind=shield|kit=
+33704,36704,wildroot_helmet,helmet,new,wildroot helmet,1x1,0,96,0,0,0,0,set=wildroot|kind=helmet|kit=
+33705,36705,wildroot_armor,armor,new,wildroot armor,1x1,0,96,0,0,0,0,set=wildroot|kind=armor|kit=
+33706,36706,wildroot_legs,legs,new,wildroot legs,1x1,0,96,0,0,0,0,set=wildroot|kind=legs|kit=
+33707,36707,wildroot_boots,boots,new,wildroot boots,1x1,0,96,0,0,0,0,set=wildroot|kind=boots|kit=
+33708,36708,wildroot_amulet,amulet,new,wildroot amulet,1x1,0,96,0,0,0,0,set=wildroot|kind=amulet|kit=
+33709,36709,wildroot_ring,ring,new,wildroot ring,1x1,0,96,0,0,0,0,set=wildroot|kind=ring|kit=
+33710,36710,wildroot_backpack,backpack,new,wildroot backpack,1x1,2,96,0,0,0,0,set=wildroot|kind=backpack|kit=
+33711,36711,wildroot_spellbook,spellbook,new,wildroot spellbook,1x1,0,96,0,0,0,0,set=wildroot|kind=spellbook|kit=
+33712,36712,wildroot_arrow,arrow,new,wildroot arrow,1x1,0,224,0,0,0,0,px=4|py=2|set=wildroot|kind=arrow|kit=
+33713,36713,wildroot_bolt,bolt,new,wildroot bolt,1x1,0,224,0,0,0,0,px=4|py=2|set=wildroot|kind=bolt|kit=
+33714,36714,moonsilver_sword,sword,new,moonsilver blade,1x1,0,112,0,0,0,0,set=moonsilver|kind=sword|kit=
+33715,36715,moonsilver_axe,axe,new,moonsilver axe,1x1,0,112,0,0,0,0,set=moonsilver|kind=axe|kit=
+33716,36716,moonsilver_club,club,new,moonsilver mace,1x1,0,112,0,0,0,0,set=moonsilver|kind=club|kit=
+33717,36717,moonsilver_bow,bow,new,moonsilver bow,1x1,0,96,0,0,0,0,set=moonsilver|kind=bow|kit=
+33718,36718,moonsilver_crossbow,crossbow,new,moonsilver crossbow,1x1,0,96,0,0,0,0,set=moonsilver|kind=crossbow|kit=
+33719,36719,moonsilver_wand,wand,new,moonsilver wand,1x1,0,96,0,0,0,0,set=moonsilver|kind=wand|kit=
+33720,36720,moonsilver_rod,rod,new,moonsilver rod,1x1,0,96,0,0,0,0,set=moonsilver|kind=rod|kit=
+33721,36721,moonsilver_shield,shield,new,moonsilver shield,1x1,0,96,0,0,0,0,set=moonsilver|kind=shield|kit=
+33722,36722,moonsilver_helmet,helmet,new,moonsilver helmet,1x1,0,96,0,0,0,0,set=moonsilver|kind=helmet|kit=
+33723,36723,moonsilver_armor,armor,new,moonsilver armor,1x1,0,96,0,0,0,0,set=moonsilver|kind=armor|kit=
+33724,36724,moonsilver_legs,legs,new,moonsilver legs,1x1,0,96,0,0,0,0,set=moonsilver|kind=legs|kit=
+33725,36725,moonsilver_boots,boots,new,moonsilver boots,1x1,0,96,0,0,0,0,set=moonsilver|kind=boots|kit=
+33726,36726,moonsilver_amulet,amulet,new,moonsilver amulet,1x1,0,96,0,0,0,0,set=moonsilver|kind=amulet|kit=
+33727,36727,moonsilver_ring,ring,new,moonsilver ring,1x1,0,96,0,0,0,0,set=moonsilver|kind=ring|kit=
+33728,36728,moonsilver_backpack,backpack,new,moonsilver backpack,1x1,2,96,0,0,0,0,set=moonsilver|kind=backpack|kit=
+33729,36729,moonsilver_spellbook,spellbook,new,moonsilver spellbook,1x1,0,96,0,0,0,0,set=moonsilver|kind=spellbook|kit=
+33730,36730,moonsilver_arrow,arrow,new,moonsilver arrow,1x1,0,224,0,0,0,0,px=4|py=2|set=moonsilver|kind=arrow|kit=
+33731,36731,moonsilver_bolt,bolt,new,moonsilver bolt,1x1,0,224,0,0,0,0,px=4|py=2|set=moonsilver|kind=bolt|kit=
+33732,36732,sunsworn_sword,sword,new,sunsworn blade,1x1,0,112,0,0,0,0,set=sunsworn|kind=sword|kit=
+33733,36733,sunsworn_axe,axe,new,sunsworn axe,1x1,0,112,0,0,0,0,set=sunsworn|kind=axe|kit=
+33734,36734,sunsworn_club,club,new,sunsworn mace,1x1,0,112,0,0,0,0,set=sunsworn|kind=club|kit=
+33735,36735,sunsworn_bow,bow,new,sunsworn bow,1x1,0,96,0,0,0,0,set=sunsworn|kind=bow|kit=
+33736,36736,sunsworn_crossbow,crossbow,new,sunsworn crossbow,1x1,0,96,0,0,0,0,set=sunsworn|kind=crossbow|kit=
+33737,36737,sunsworn_wand,wand,new,sunsworn wand,1x1,0,96,0,0,0,0,set=sunsworn|kind=wand|kit=
+33738,36738,sunsworn_rod,rod,new,sunsworn rod,1x1,0,96,0,0,0,0,set=sunsworn|kind=rod|kit=
+33739,36739,sunsworn_shield,shield,new,sunsworn shield,1x1,0,96,0,0,0,0,set=sunsworn|kind=shield|kit=
+33740,36740,sunsworn_helmet,helmet,new,sunsworn helmet,1x1,0,96,0,0,0,0,set=sunsworn|kind=helmet|kit=
+33741,36741,sunsworn_armor,armor,new,sunsworn armor,1x1,0,96,0,0,0,0,set=sunsworn|kind=armor|kit=
+33742,36742,sunsworn_legs,legs,new,sunsworn legs,1x1,0,96,0,0,0,0,set=sunsworn|kind=legs|kit=
+33743,36743,sunsworn_boots,boots,new,sunsworn boots,1x1,0,96,0,0,0,0,set=sunsworn|kind=boots|kit=
+33744,36744,sunsworn_amulet,amulet,new,sunsworn amulet,1x1,0,96,0,0,0,0,set=sunsworn|kind=amulet|kit=
+33745,36745,sunsworn_ring,ring,new,sunsworn ring,1x1,0,96,0,0,0,0,set=sunsworn|kind=ring|kit=
+33746,36746,sunsworn_backpack,backpack,new,sunsworn backpack,1x1,2,96,0,0,0,0,set=sunsworn|kind=backpack|kit=
+33747,36747,sunsworn_spellbook,spellbook,new,sunsworn spellbook,1x1,0,96,0,0,0,0,set=sunsworn|kind=spellbook|kit=
+33748,36748,sunsworn_arrow,arrow,new,sunsworn arrow,1x1,0,224,0,0,0,0,px=4|py=2|set=sunsworn|kind=arrow|kit=
+33749,36749,sunsworn_bolt,bolt,new,sunsworn bolt,1x1,0,224,0,0,0,0,px=4|py=2|set=sunsworn|kind=bolt|kit=
+33750,36750,oathsteel_sword,sword,new,oathsteel blade,1x1,0,112,0,0,0,0,set=oathsteel|kind=sword|kit=
+33751,36751,oathsteel_axe,axe,new,oathsteel axe,1x1,0,112,0,0,0,0,set=oathsteel|kind=axe|kit=
+33752,36752,oathsteel_club,club,new,oathsteel mace,1x1,0,112,0,0,0,0,set=oathsteel|kind=club|kit=
+33753,36753,oathsteel_bow,bow,new,oathsteel bow,1x1,0,96,0,0,0,0,set=oathsteel|kind=bow|kit=
+33754,36754,oathsteel_crossbow,crossbow,new,oathsteel crossbow,1x1,0,96,0,0,0,0,set=oathsteel|kind=crossbow|kit=
+33755,36755,oathsteel_wand,wand,new,oathsteel wand,1x1,0,96,0,0,0,0,set=oathsteel|kind=wand|kit=
+33756,36756,oathsteel_rod,rod,new,oathsteel rod,1x1,0,96,0,0,0,0,set=oathsteel|kind=rod|kit=
+33757,36757,oathsteel_shield,shield,new,oathsteel shield,1x1,0,96,0,0,0,0,set=oathsteel|kind=shield|kit=
+33758,36758,oathsteel_helmet,helmet,new,oathsteel helmet,1x1,0,96,0,0,0,0,set=oathsteel|kind=helmet|kit=
+33759,36759,oathsteel_armor,armor,new,oathsteel armor,1x1,0,96,0,0,0,0,set=oathsteel|kind=armor|kit=
+33760,36760,oathsteel_legs,legs,new,oathsteel legs,1x1,0,96,0,0,0,0,set=oathsteel|kind=legs|kit=
+33761,36761,oathsteel_boots,boots,new,oathsteel boots,1x1,0,96,0,0,0,0,set=oathsteel|kind=boots|kit=
+33762,36762,oathsteel_amulet,amulet,new,oathsteel amulet,1x1,0,96,0,0,0,0,set=oathsteel|kind=amulet|kit=
+33763,36763,oathsteel_ring,ring,new,oathsteel ring,1x1,0,96,0,0,0,0,set=oathsteel|kind=ring|kit=
+33764,36764,oathsteel_backpack,backpack,new,oathsteel backpack,1x1,2,96,0,0,0,0,set=oathsteel|kind=backpack|kit=
+33765,36765,oathsteel_spellbook,spellbook,new,oathsteel spellbook,1x1,0,96,0,0,0,0,set=oathsteel|kind=spellbook|kit=
+33766,36766,oathsteel_arrow,arrow,new,oathsteel arrow,1x1,0,224,0,0,0,0,px=4|py=2|set=oathsteel|kind=arrow|kit=
+33767,36767,oathsteel_bolt,bolt,new,oathsteel bolt,1x1,0,224,0,0,0,0,px=4|py=2|set=oathsteel|kind=bolt|kit=
+33768,36768,rimeglass_melee_helmet,helmet,new,rimeglass warhelm,1x1,0,96,0,0,0,0,set=rimeglass|kind=helmet|kit=melee
+33769,36769,rimeglass_melee_armor,armor,new,rimeglass plate,1x1,0,96,0,0,0,0,set=rimeglass|kind=armor|kit=melee
+33770,36770,rimeglass_melee_legs,legs,new,rimeglass greaves,1x1,0,96,0,0,0,0,set=rimeglass|kind=legs|kit=melee
+33771,36771,rimeglass_melee_boots,boots,new,rimeglass sabatons,1x1,0,96,0,0,0,0,set=rimeglass|kind=boots|kit=melee
+33772,36772,rimeglass_melee_sword,sword,new,rimeglass blade,1x1,0,112,0,0,0,0,set=rimeglass|kind=sword|kit=melee
+33773,36773,rimeglass_melee_shield,shield,new,rimeglass bulwark,1x1,0,96,0,0,0,0,set=rimeglass|kind=shield|kit=melee
+33774,36774,rimeglass_caster_helmet,helmet,new,rimeglass hat,1x1,0,96,0,0,0,0,set=rimeglass|kind=helmet|kit=caster
+33775,36775,rimeglass_caster_armor,armor,new,rimeglass robe,1x1,0,96,0,0,0,0,set=rimeglass|kind=armor|kit=caster
+33776,36776,rimeglass_caster_legs,legs,new,rimeglass kilt,1x1,0,96,0,0,0,0,set=rimeglass|kind=legs|kit=caster
+33777,36777,rimeglass_caster_boots,boots,new,rimeglass slippers,1x1,0,96,0,0,0,0,set=rimeglass|kind=boots|kit=caster
+33778,36778,rimeglass_caster_rod,rod,new,rimeglass staff,1x1,0,96,0,0,0,0,set=rimeglass|kind=rod|kit=caster
+33779,36779,rimeglass_caster_spellbook,spellbook,new,rimeglass grimoire,1x1,0,96,0,0,0,0,set=rimeglass|kind=spellbook|kit=caster
+33780,36780,rimeglass_ranged_helmet,helmet,new,rimeglass hood,1x1,0,96,0,0,0,0,set=rimeglass|kind=helmet|kit=ranged
+33781,36781,rimeglass_ranged_armor,armor,new,rimeglass jerkin,1x1,0,96,0,0,0,0,set=rimeglass|kind=armor|kit=ranged
+33782,36782,rimeglass_ranged_legs,legs,new,rimeglass leggings,1x1,0,96,0,0,0,0,set=rimeglass|kind=legs|kit=ranged
+33783,36783,rimeglass_ranged_boots,boots,new,rimeglass striders,1x1,0,96,0,0,0,0,set=rimeglass|kind=boots|kit=ranged
+33784,36784,rimeglass_ranged_bow,bow,new,rimeglass longbow,1x1,0,96,0,0,0,0,set=rimeglass|kind=bow|kit=ranged
+33785,36785,rimeglass_ranged_crossbow,crossbow,new,rimeglass arbalest,1x1,0,96,0,0,0,0,set=rimeglass|kind=crossbow|kit=ranged
+33786,36786,rimeglass_amulet,amulet,new,rimeglass amulet,1x1,0,96,0,0,0,0,set=rimeglass|kind=amulet|kit=shared
+33787,36787,rimeglass_ring,ring,new,rimeglass ring,1x1,0,96,0,0,0,0,set=rimeglass|kind=ring|kit=shared
+33788,36788,rimeglass_backpack,backpack,new,rimeglass backpack,1x1,2,96,0,0,0,0,set=rimeglass|kind=backpack|kit=shared
+33789,36789,emeraldine_melee_helmet,helmet,new,emeraldine warhelm,1x1,0,96,0,0,0,0,set=emeraldine|kind=helmet|kit=melee
+33790,36790,emeraldine_melee_armor,armor,new,emeraldine plate,1x1,0,96,0,0,0,0,set=emeraldine|kind=armor|kit=melee
+33791,36791,emeraldine_melee_legs,legs,new,emeraldine greaves,1x1,0,96,0,0,0,0,set=emeraldine|kind=legs|kit=melee
+33792,36792,emeraldine_melee_boots,boots,new,emeraldine sabatons,1x1,0,96,0,0,0,0,set=emeraldine|kind=boots|kit=melee
+33793,36793,emeraldine_melee_sword,sword,new,emeraldine blade,1x1,0,112,0,0,0,0,set=emeraldine|kind=sword|kit=melee
+33794,36794,emeraldine_melee_shield,shield,new,emeraldine bulwark,1x1,0,96,0,0,0,0,set=emeraldine|kind=shield|kit=melee
+33795,36795,emeraldine_caster_helmet,helmet,new,emeraldine hat,1x1,0,96,0,0,0,0,set=emeraldine|kind=helmet|kit=caster
+33796,36796,emeraldine_caster_armor,armor,new,emeraldine robe,1x1,0,96,0,0,0,0,set=emeraldine|kind=armor|kit=caster
+33797,36797,emeraldine_caster_legs,legs,new,emeraldine kilt,1x1,0,96,0,0,0,0,set=emeraldine|kind=legs|kit=caster
+33798,36798,emeraldine_caster_boots,boots,new,emeraldine slippers,1x1,0,96,0,0,0,0,set=emeraldine|kind=boots|kit=caster
+33799,36799,emeraldine_caster_rod,rod,new,emeraldine staff,1x1,0,96,0,0,0,0,set=emeraldine|kind=rod|kit=caster
+33800,36800,emeraldine_caster_spellbook,spellbook,new,emeraldine grimoire,1x1,0,96,0,0,0,0,set=emeraldine|kind=spellbook|kit=caster
+33801,36801,emeraldine_ranged_helmet,helmet,new,emeraldine hood,1x1,0,96,0,0,0,0,set=emeraldine|kind=helmet|kit=ranged
+33802,36802,emeraldine_ranged_armor,armor,new,emeraldine jerkin,1x1,0,96,0,0,0,0,set=emeraldine|kind=armor|kit=ranged
+33803,36803,emeraldine_ranged_legs,legs,new,emeraldine leggings,1x1,0,96,0,0,0,0,set=emeraldine|kind=legs|kit=ranged
+33804,36804,emeraldine_ranged_boots,boots,new,emeraldine striders,1x1,0,96,0,0,0,0,set=emeraldine|kind=boots|kit=ranged
+33805,36805,emeraldine_ranged_bow,bow,new,emeraldine longbow,1x1,0,96,0,0,0,0,set=emeraldine|kind=bow|kit=ranged
+33806,36806,emeraldine_ranged_crossbow,crossbow,new,emeraldine arbalest,1x1,0,96,0,0,0,0,set=emeraldine|kind=crossbow|kit=ranged
+33807,36807,emeraldine_amulet,amulet,new,emeraldine amulet,1x1,0,96,0,0,0,0,set=emeraldine|kind=amulet|kit=shared
+33808,36808,emeraldine_ring,ring,new,emeraldine ring,1x1,0,96,0,0,0,0,set=emeraldine|kind=ring|kit=shared
+33809,36809,emeraldine_backpack,backpack,new,emeraldine backpack,1x1,2,96,0,0,0,0,set=emeraldine|kind=backpack|kit=shared
+33810,36810,starwing_melee_helmet,helmet,new,starwing warhelm,1x1,0,96,0,0,0,0,set=starwing|kind=helmet|kit=melee
+33811,36811,starwing_melee_armor,armor,new,starwing plate,1x1,0,96,0,0,0,0,set=starwing|kind=armor|kit=melee
+33812,36812,starwing_melee_legs,legs,new,starwing greaves,1x1,0,96,0,0,0,0,set=starwing|kind=legs|kit=melee
+33813,36813,starwing_melee_boots,boots,new,starwing sabatons,1x1,0,96,0,0,0,0,set=starwing|kind=boots|kit=melee
+33814,36814,starwing_melee_sword,sword,new,starwing blade,1x1,0,112,0,0,0,0,set=starwing|kind=sword|kit=melee
+33815,36815,starwing_melee_shield,shield,new,starwing bulwark,1x1,0,96,0,0,0,0,set=starwing|kind=shield|kit=melee
+33816,36816,starwing_caster_helmet,helmet,new,starwing hat,1x1,0,96,0,0,0,0,set=starwing|kind=helmet|kit=caster
+33817,36817,starwing_caster_armor,armor,new,starwing robe,1x1,0,96,0,0,0,0,set=starwing|kind=armor|kit=caster
+33818,36818,starwing_caster_legs,legs,new,starwing kilt,1x1,0,96,0,0,0,0,set=starwing|kind=legs|kit=caster
+33819,36819,starwing_caster_boots,boots,new,starwing slippers,1x1,0,96,0,0,0,0,set=starwing|kind=boots|kit=caster
+33820,36820,starwing_caster_rod,rod,new,starwing staff,1x1,0,96,0,0,0,0,set=starwing|kind=rod|kit=caster
+33821,36821,starwing_caster_spellbook,spellbook,new,starwing grimoire,1x1,0,96,0,0,0,0,set=starwing|kind=spellbook|kit=caster
+33822,36822,starwing_ranged_helmet,helmet,new,starwing hood,1x1,0,96,0,0,0,0,set=starwing|kind=helmet|kit=ranged
+33823,36823,starwing_ranged_armor,armor,new,starwing jerkin,1x1,0,96,0,0,0,0,set=starwing|kind=armor|kit=ranged
+33824,36824,starwing_ranged_legs,legs,new,starwing leggings,1x1,0,96,0,0,0,0,set=starwing|kind=legs|kit=ranged
+33825,36825,starwing_ranged_boots,boots,new,starwing striders,1x1,0,96,0,0,0,0,set=starwing|kind=boots|kit=ranged
+33826,36826,starwing_ranged_bow,bow,new,starwing longbow,1x1,0,96,0,0,0,0,set=starwing|kind=bow|kit=ranged
+33827,36827,starwing_ranged_crossbow,crossbow,new,starwing arbalest,1x1,0,96,0,0,0,0,set=starwing|kind=crossbow|kit=ranged
+33828,36828,starwing_amulet,amulet,new,starwing amulet,1x1,0,96,0,0,0,0,set=starwing|kind=amulet|kit=shared
+33829,36829,starwing_ring,ring,new,starwing ring,1x1,0,96,0,0,0,0,set=starwing|kind=ring|kit=shared
+33830,36830,starwing_backpack,backpack,new,starwing backpack,1x1,2,96,0,0,0,0,set=starwing|kind=backpack|kit=shared
+33831,36831,thornwild_melee_helmet,helmet,new,thornwild warhelm,1x1,0,96,0,0,0,0,set=thornwild|kind=helmet|kit=melee
+33832,36832,thornwild_melee_armor,armor,new,thornwild plate,1x1,0,96,0,0,0,0,set=thornwild|kind=armor|kit=melee
+33833,36833,thornwild_melee_legs,legs,new,thornwild greaves,1x1,0,96,0,0,0,0,set=thornwild|kind=legs|kit=melee
+33834,36834,thornwild_melee_boots,boots,new,thornwild sabatons,1x1,0,96,0,0,0,0,set=thornwild|kind=boots|kit=melee
+33835,36835,thornwild_melee_sword,sword,new,thornwild blade,1x1,0,112,0,0,0,0,set=thornwild|kind=sword|kit=melee
+33836,36836,thornwild_melee_shield,shield,new,thornwild bulwark,1x1,0,96,0,0,0,0,set=thornwild|kind=shield|kit=melee
+33837,36837,thornwild_caster_helmet,helmet,new,thornwild hat,1x1,0,96,0,0,0,0,set=thornwild|kind=helmet|kit=caster
+33838,36838,thornwild_caster_armor,armor,new,thornwild robe,1x1,0,96,0,0,0,0,set=thornwild|kind=armor|kit=caster
+33839,36839,thornwild_caster_legs,legs,new,thornwild kilt,1x1,0,96,0,0,0,0,set=thornwild|kind=legs|kit=caster
+33840,36840,thornwild_caster_boots,boots,new,thornwild slippers,1x1,0,96,0,0,0,0,set=thornwild|kind=boots|kit=caster
+33841,36841,thornwild_caster_rod,rod,new,thornwild staff,1x1,0,96,0,0,0,0,set=thornwild|kind=rod|kit=caster
+33842,36842,thornwild_caster_spellbook,spellbook,new,thornwild grimoire,1x1,0,96,0,0,0,0,set=thornwild|kind=spellbook|kit=caster
+33843,36843,thornwild_ranged_helmet,helmet,new,thornwild hood,1x1,0,96,0,0,0,0,set=thornwild|kind=helmet|kit=ranged
+33844,36844,thornwild_ranged_armor,armor,new,thornwild jerkin,1x1,0,96,0,0,0,0,set=thornwild|kind=armor|kit=ranged
+33845,36845,thornwild_ranged_legs,legs,new,thornwild leggings,1x1,0,96,0,0,0,0,set=thornwild|kind=legs|kit=ranged
+33846,36846,thornwild_ranged_boots,boots,new,thornwild striders,1x1,0,96,0,0,0,0,set=thornwild|kind=boots|kit=ranged
+33847,36847,thornwild_ranged_bow,bow,new,thornwild longbow,1x1,0,96,0,0,0,0,set=thornwild|kind=bow|kit=ranged
+33848,36848,thornwild_ranged_crossbow,crossbow,new,thornwild arbalest,1x1,0,96,0,0,0,0,set=thornwild|kind=crossbow|kit=ranged
+33849,36849,thornwild_amulet,amulet,new,thornwild amulet,1x1,0,96,0,0,0,0,set=thornwild|kind=amulet|kit=shared
+33850,36850,thornwild_ring,ring,new,thornwild ring,1x1,0,96,0,0,0,0,set=thornwild|kind=ring|kit=shared
+33851,36851,thornwild_backpack,backpack,new,thornwild backpack,1x1,2,96,0,0,0,0,set=thornwild|kind=backpack|kit=shared
+33852,36852,ground_swamp,ground,new,swamp,1x1,1,0,0,170,0,0,px=4|py=4|family=swamp
+33853,36853,border_swamp_n,border,new,swamp (north edge),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=n
+33854,36854,border_swamp_e,border,new,swamp (east edge),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=e
+33855,36855,border_swamp_s,border,new,swamp (south edge),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=s
+33856,36856,border_swamp_w,border,new,swamp (west edge),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=w
+33857,36857,border_swamp_outer_ne,border,new,swamp (outer corner ne),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=outer_ne
+33858,36858,border_swamp_outer_nw,border,new,swamp (outer corner nw),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=outer_nw
+33859,36859,border_swamp_outer_se,border,new,swamp (outer corner se),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=outer_se
+33860,36860,border_swamp_outer_sw,border,new,swamp (outer corner sw),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=outer_sw
+33861,36861,border_swamp_inner_ne,border,new,swamp (inner corner ne),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=inner_ne
+33862,36862,border_swamp_inner_nw,border,new,swamp (inner corner nw),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=inner_nw
+33863,36863,border_swamp_inner_se,border,new,swamp (inner corner se),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=inner_se
+33864,36864,border_swamp_inner_sw,border,new,swamp (inner corner sw),1x1,0,8192,1,0,0,0,px=4|py=4|family=swamp|piece=inner_sw
+33865,36865,ground_acid,ground,new,acid pool,1x1,1,16777217,0,100,2,102,px=4|py=4|family=acid|ms=160
+33866,36866,border_acid_n,border,new,acid pool (north edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=n|ms=160
+33867,36867,border_acid_e,border,new,acid pool (east edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=e|ms=160
+33868,36868,border_acid_s,border,new,acid pool (south edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=s|ms=160
+33869,36869,border_acid_w,border,new,acid pool (west edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=w|ms=160
+33870,36870,border_acid_outer_ne,border,new,acid pool (outer corner ne),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=outer_ne|ms=160
+33871,36871,border_acid_outer_nw,border,new,acid pool (outer corner nw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=outer_nw|ms=160
+33872,36872,border_acid_outer_se,border,new,acid pool (outer corner se),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=outer_se|ms=160
+33873,36873,border_acid_outer_sw,border,new,acid pool (outer corner sw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=outer_sw|ms=160
+33874,36874,border_acid_inner_ne,border,new,acid pool (inner corner ne),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=inner_ne|ms=160
+33875,36875,border_acid_inner_nw,border,new,acid pool (inner corner nw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=inner_nw|ms=160
+33876,36876,border_acid_inner_se,border,new,acid pool (inner corner se),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=inner_se|ms=160
+33877,36877,border_acid_inner_sw,border,new,acid pool (inner corner sw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=acid|piece=inner_sw|ms=160
+33878,36878,ground_lava,ground,new,lava,1x1,1,16777217,0,100,3,192,px=4|py=4|family=lava|ms=180
+33879,36879,border_lava_n,border,new,lava (north edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=n|ms=180
+33880,36880,border_lava_e,border,new,lava (east edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=e|ms=180
+33881,36881,border_lava_s,border,new,lava (south edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=s|ms=180
+33882,36882,border_lava_w,border,new,lava (west edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=w|ms=180
+33883,36883,border_lava_outer_ne,border,new,lava (outer corner ne),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=outer_ne|ms=180
+33884,36884,border_lava_outer_nw,border,new,lava (outer corner nw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=outer_nw|ms=180
+33885,36885,border_lava_outer_se,border,new,lava (outer corner se),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=outer_se|ms=180
+33886,36886,border_lava_outer_sw,border,new,lava (outer corner sw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=outer_sw|ms=180
+33887,36887,border_lava_inner_ne,border,new,lava (inner corner ne),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=inner_ne|ms=180
+33888,36888,border_lava_inner_nw,border,new,lava (inner corner nw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=inner_nw|ms=180
+33889,36889,border_lava_inner_se,border,new,lava (inner corner se),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=inner_se|ms=180
+33890,36890,border_lava_inner_sw,border,new,lava (inner corner sw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=lava|piece=inner_sw|ms=180
+33891,36891,ground_water,ground,new,deep water,1x1,1,16777217,0,100,0,0,px=4|py=4|family=water|ms=200
+33892,36892,border_water_n,border,new,deep water (north edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=n|ms=200
+33893,36893,border_water_e,border,new,deep water (east edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=e|ms=200
+33894,36894,border_water_s,border,new,deep water (south edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=s|ms=200
+33895,36895,border_water_w,border,new,deep water (west edge),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=w|ms=200
+33896,36896,border_water_outer_ne,border,new,deep water (outer corner ne),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=outer_ne|ms=200
+33897,36897,border_water_outer_nw,border,new,deep water (outer corner nw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=outer_nw|ms=200
+33898,36898,border_water_outer_se,border,new,deep water (outer corner se),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=outer_se|ms=200
+33899,36899,border_water_outer_sw,border,new,deep water (outer corner sw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=outer_sw|ms=200
+33900,36900,border_water_inner_ne,border,new,deep water (inner corner ne),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=inner_ne|ms=200
+33901,36901,border_water_inner_nw,border,new,deep water (inner corner nw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=inner_nw|ms=200
+33902,36902,border_water_inner_se,border,new,deep water (inner corner se),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=inner_se|ms=200
+33903,36903,border_water_inner_sw,border,new,deep water (inner corner sw),1x1,0,16785408,1,0,0,0,px=4|py=4|family=water|piece=inner_sw|ms=200

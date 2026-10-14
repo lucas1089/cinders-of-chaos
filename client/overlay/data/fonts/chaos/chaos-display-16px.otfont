@@ -1,0 +1,9 @@
+Font
+  name: chaos-display-16px
+  texture: chaos-display-16px
+  height: 24
+  glyph-size: 25 24
+  first-glyph: 32
+  y-offset: 1
+  spacing: -2 1
+  space-width: 7

@@ -150,15 +150,19 @@ local function doTransfer(player, currency, targetName, amount)
 			return fail(player, "Your bank balance is too low.")
 		end
 		player:setBankBalance(balance - amount)
+		-- the sender is saved before the receiver is credited (online: the receiver may be saved first at its logout;
+		-- offline: the database row): a crash in between cannot leave the gold on both characters. An online receiver
+		-- is saved right after the credit: else a crash before its next save lost the gold the saved sender gave
+		-- (server/README.md "Stress test": about 10,000 gold per kill -9 under transfer spam)
+		if not Chaos.saveCharacter(player) then
+			player:setBankBalance(balance)
+			return fail(player, "The bank is busy. Try again in a moment.")
+		end
 		if online then
 			online:setBankBalance(online:getBankBalance() + amount)
+			Chaos.saveCharacter(online)
 			online:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s transferred %d gold to your bank account.", player:getName(), amount))
 		else
-			-- an offline receiver is credited in the database: the sender is saved first (no crash window)
-			if not Chaos.saveCharacter(player) then
-				player:setBankBalance(balance)
-				return fail(player, "The bank is busy. Try again in a moment.")
-			end
 			db.query("UPDATE `players` SET `balance` = `balance` + " .. amount .. " WHERE `id` = " .. targetGuid)
 		end
 		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You transferred %d gold to %s.", amount, canonical))

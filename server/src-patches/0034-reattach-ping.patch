@@ -1,0 +1,22 @@
+# A client that reconnects to its character no longer gets thrown out at once. A character whose connection was lost
+# stays in the game until Player::sendPing() removes it: 60 s after the client's last answer to a ping (the no-pong
+# kick; the stock rule). A new login of that character in the meantime takes it over (ProtocolGame::connect), but the
+# last pong was not renewed, so the next check (once a second) saw the old time and logged the new client out before
+# it could send its first ping: kicked within a second or two of entering the game, without a message. Found in the
+# stress test (server/README.md "Stress test"): a login burst, then a client dropped without a logout and logged in
+# again 56 s later, closed by the server 1.5 s after entering. The takeover now counts as an answer
+# (player->receivePing()), as a fresh login does (the Player constructor sets lastPong).
+# Guard: tools/reattach_ping_patch_test.py (CI). Applies after 0001-0033.
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -436,6 +436,10 @@
+ 	player->isConnecting = false;
+ 
+ 	player->client = getThis();
++	// Chaos (patch 0034): the character stayed in the game after its connection was lost, and its last answer to a
++	// ping is that old. Without this the no-pong kick of Player::sendPing() (60 s) logged the new client out at the
++	// next check, before it could answer a ping: a reconnect late in that minute was thrown out at once, no message.
++	player->receivePing();
+ 	sendAddCreature(player, player->getPosition(), 0, false);
+ 	player->lastIP = player->getIP();
+ 	player->lastLoginSaved = std::max<time_t>(time(nullptr), player->lastLoginSaved + 1);

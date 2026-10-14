@@ -1,0 +1,11 @@
+Module
+  name: game_shaderfx
+  description: UI widget shaders: liquid health and mana orbs, the shine on legendary and unique frames, greyscale for locked items (base patch 0044)
+  author: Cinders of Chaos
+  sandboxed: true
+  autoload: true
+  autoload-priority: 950
+  dependencies: [ game_interface ]
+  scripts: [ shaderfxlogic, shaderfx ]
+  @onLoad: init()
+  @onUnload: terminate()

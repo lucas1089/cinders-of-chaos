@@ -58,24 +58,45 @@ local function paintCells(preview)
     for _, c in ipairs(preview.cells) do lit[V.key(c[1], c[2])] = preview.ok and V.COLORS.ok or V.COLORS.no end
   end
   for k, w in pairs(cellWidgets) do
-    w:setBackgroundColor(lit[k] or (w.cellOpen and V.COLORS.open or V.COLORS.locked))
+    w:setImageColor(w.cellOpen and V.COLORS.open or V.COLORS.locked)
+    w.hl:setVisible(lit[k] ~= nil)
+    if lit[k] then w.hl:setBackgroundColor(lit[k] .. '70') end
   end
+end
+
+-- the charm's look on a tile (or the drag ghost): the slot of its shape, its item sprite, the rarity frame and glow.
+-- cw, ch: the cells the tile covers (1 x 1 in the list)
+local function dressTile(w, c, cw, ch)
+  local color = c.color or V.COLORS.gold
+  local r = V.rect(1, 1, cw, ch)
+  w:setSize({ width = r.width, height = r.height })
+  local slot = V.slotImage(cw, ch)
+  if slot then
+    w:setImageSource(slot)
+    w:setImageBorder(0)
+  else -- a shape without its own slot: the sliced item slot
+    w:setImageSource('/images/chaos/itemslot')
+    w:setImageBorder(4)
+  end
+  w.look:setItemId(V.lookOf(c))
+  local side = V.lookSide(cw, ch)
+  w.look:setSize({ width = side, height = side })
+  w.frame:setImageColor(color)
+  w.glow:setImageColor(color)
+  w.glow:setVisible(V.glows(c))
 end
 
 local function makeCharmWidget(parent, c, kind)
   local w = g_ui.createWidget('CharmTile', parent)
-  w.icon:setImageSource(V.iconPath(c.icon))
-  w:setBorderColor(c.color or V.COLORS.gold)
+  if kind == 'placed' then dressTile(w, c, c.w, c.h) else dressTile(w, c, 1, 1) end
   w:setTooltip(V.tooltip(c, kind == 'placed'))
   w.charm, w.kind = c, kind
   w:setDraggable(true)
   w.onDragEnter = function(self, mousePos)
     drag = { kind = kind, id = c.id, ref = c.ref, sid = c.sid, iid = c.iid, w = c.w, h = c.h, x = c.x, y = c.y }
     ghost = g_ui.createWidget('CharmGhost', rootWidget)
+    dressTile(ghost, c, c.w, c.h)
     local r = V.rect(1, 1, c.w, c.h)
-    ghost:setSize({ width = r.width, height = r.height })
-    ghost.icon:setImageSource(V.iconPath(c.icon))
-    ghost:setBorderColor(c.color or V.COLORS.gold)
     ghost:setPosition({ x = mousePos.x - r.width / 2, y = mousePos.y - r.height / 2 })
     g_mouse.pushCursor('target')
     return true
@@ -135,7 +156,7 @@ local function drawGrid()
     w:setMarginTop(r.y)
     w.cellOpen = c.open and true or false
     if not c.open then
-      w.lock:setImageSource(V.iconPath('locked'))
+      w.lock:setImageSource(V.LOCK_IMAGE)
       w.lock:setVisible(true)
       w:setTooltip('Locked: ' .. tostring(c.why or ''))
     end
@@ -149,9 +170,6 @@ local function drawGrid()
     w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     w:setMarginLeft(r.x)
     w:setMarginTop(r.y)
-    w:setSize({ width = r.width, height = r.height })
-    local side = math.min(p.w or 1, p.h or 1) >= 2 and 64 or 32 -- a 2x2 charm shows its icon twice as big
-    w.icon:setSize({ width = side, height = side })
     w:setOpacity(p.active == false and 0.4 or 1)
   end
 end
@@ -160,7 +178,8 @@ local function highlightBag()
   if not window then return end
   for _, w in ipairs(window.bagFrame.bagList:getChildren()) do
     local on = w.charm and w.charm.ref == selectedRef
-    w:setBorderWidth(on and 2 or 1)
+    w:setBorderWidth(on and 1 or 0) -- the selected charm: a thin light outline over its frame
+    w:setBorderColor(V.COLORS.select)
   end
   local b = V.bagEntry(state, selectedRef)
   window.salvageButton:setEnabled(b ~= nil)
@@ -180,7 +199,6 @@ local function drawBag()
   if not V.bagEntry(state, selectedRef) then selectedRef = nil end
   for _, b in ipairs(bag) do
     local w = makeCharmWidget(list, b, 'bag')
-    w:setSize({ width = V.CELL, height = V.CELL })
     w.onClick = function()
       selectedRef = b.ref
       highlightBag()

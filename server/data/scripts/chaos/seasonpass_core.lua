@@ -5,7 +5,8 @@
 --   sources     P.expForLevel(level), P.expUnits(rawExp, stage, level), P.sourceGain(cfg, source, value, usedToday)
 --   periods     P.dayKey(t), P.weekKey(t), P.nextDay(t), P.nextWeek(t)
 --   challenges  P.pick(slots, seed), P.challenges(cfg, seasonId, kind, period), P.statsOf(stat, value)
---   claims      P.claimCheck(pass, view, tier, track), P.claimable(pass, view), P.claimedString(set, n)
+--   claims      P.claimCheck(pass, view, tier, track), P.claimable(pass, view), P.claimedString(set, n),
+--               P.premiumBacklog(pass, view) (a late buyer's reached premium rewards, claimed at once)
 --   packs       P.pack(pass, id), P.ownedPack(packRows), P.hasPremium(pass, premium, packId),
 --               P.packPrice(pass, target, ownedPack, passPaid), P.packGrants(pass, fromId, toId)
 --   cosmetics   P.entitlements(pass, claims, packId) -> list of cosmetic rewards of the account
@@ -19,6 +20,9 @@ P.KINDS = {item = true, coins = true, title = true, outfit = true, mount = true,
 P.TRACK_KINDS = {item = true, coins = true, title = true, outfit = true, mount = true, shader = true, portal = true,
 	frame = true, transmog = true}
 P.COSMETIC = {title = true, outfit = true, mount = true, shader = true, portal = true, frame = true, transmog = true}
+-- what the premium (paid) track may give: cosmetics and Chaos Coins back. Never gold, potions, experience or gear.
+P.PREMIUM_KINDS = {coins = true, title = true, outfit = true, mount = true, shader = true, portal = true, frame = true,
+	transmog = true}
 P.FREE, P.PREMIUM = 0, 1
 
 -- ---------------------------------------------------------------- tiers
@@ -290,6 +294,22 @@ function P.claimable(pass, view)
 	return out
 end
 
+-- the premium rewards a late buyer has already reached and not claimed: {tier, track = P.PREMIUM}, in tier order.
+-- seasonpass.lua claims them at once when the premium track is bought (and at the next login of an account that got it
+-- as a gift while offline), so buying late never means walking back through the tiers.
+function P.premiumBacklog(pass, view)
+	local out = {}
+	if not view.premium then
+		return out
+	end
+	for _, c in ipairs(P.claimable(pass, view)) do
+		if c.track == P.PREMIUM then
+			out[#out + 1] = c
+		end
+	end
+	return out
+end
+
 -- "0110..." of n tiers (1 = claimed)
 function P.claimedString(set, n)
 	local parts = {}
@@ -421,6 +441,9 @@ function P.validate(cfg)
 			else
 				checkReward(row[1], w .. " tier " .. t .. " free", false, seasonId)
 				checkReward(row[2], w .. " tier " .. t .. " premium", false, seasonId)
+				if type(row[2]) == "table" and not P.PREMIUM_KINDS[row[2].kind] then
+					bad(w .. " tier " .. t .. " premium: " .. tostring(row[2].kind) .. " on the paid track (cosmetics and coins only)")
+				end
 			end
 		end
 		local lastPrice, unlocks = 0, {[pass.premium and pass.premium.unlock or "?"] = true}

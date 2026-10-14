@@ -12,6 +12,9 @@ VOC = {'Mystic': 1, 'Ranger': 3, 'Warrior': 4, 'Elementalist': 5, 'Deadeye': 7, 
        'Monk': 17, 'Shadowfist': 18, 'Iron Sage': 19, 'Necromancer': 20, 'Lich': 21, 'Bone Lord': 22,
        'Templar': 23, 'Inquisitor': 24, 'Sentinel': 25}  # server vocation ids (docs/CLASSES.md)
 GROUP = {'attack': 1, 'healing': 2, 'support': 3}
+# stale stock entries of the client that no server spell has: hidden from the spell list with the removed spells
+# (old words, client name). "Conjure Wand of Darkness" carries spell id 92, the server's Enchant Staff id; no rune shares it.
+CLIENT_ONLY_REMOVED = [('exevo gran mort', 'Conjure Wand of Darkness')]
 
 def main():
     xml = open('server/data/spells/chaos/spells_chaos.xml', encoding='utf-8').read()
@@ -40,10 +43,25 @@ def main():
     parts = {r['old']: r['new'] for r in csv.DictReader(open('server/data/spells/spell_words.csv', encoding='utf-8'))}
     out += ['', '-- stock spells: old words -> Chaos name and words (server/data/spells/spell_names.csv, spell_words.csv)',
             'ChaosSpellNames = {']
-    for r in csv.DictReader(open('server/data/spells/spell_names.csv', encoding='utf-8')):
+    rows = list(csv.DictReader(open('server/data/spells/spell_names.csv', encoding='utf-8')))
+    for r in rows:
         if r['words']:
             words = ' '.join(parts[t] for t in r['words'].split())
             out.append('  ["%s"] = { name = "%s", words = "%s" },' % (r['words'], r['new_name'].replace('"', '\\"'), words))
+    out.append('}')
+    # stock spells the server no longer has (spell_names.csv "removed": the conjure spells, server/README.md
+    # "Rune supply"), and CLIENT_ONLY_REMOVED. Their client entries stay renamed in SpellInfo: a rune's cooldown icon is
+    # found by the rune's spell id, which only the conjure entry of that rune carries (game_cooldown
+    # Spells.getSpellByIcon), and keeping the Chaos words keeps their ids where they are (spellfix.lua moves the ids of
+    # words the server does not know). The spell list only should leave them out.
+    out += ['', '-- stock spells the server removed: old words -> Chaos words (server/data/spells/spell_names.csv, "removed")',
+            'ChaosRemovedSpells = {']
+    for r in rows:
+        if r['words'] and r.get('removed'):
+            words = ' '.join(parts[t] for t in r['words'].split())
+            out.append('  ["%s"] = "%s", -- %s (%s)' % (r['words'], words, r['new_name'].replace('"', '\\"'), r['removed']))
+    for old, name in CLIENT_ONLY_REMOVED:
+        out.append('  ["%s"] = "%s", -- %s (client only, no server spell)' % (old, old, name))
     out.append('}')
     # stock utility spells the Thief, Monk and Templar lines get on the server (server/tools/add_vocations.py,
     # LINE_STOCK_SPELLS); chaosspells.lua adds the ids to the client's stock entries, keyed by the Chaos words

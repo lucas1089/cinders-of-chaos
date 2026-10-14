@@ -1,0 +1,371 @@
+# Sharded sprite file read on several threads (client/BASE.md 0048). SpriteManager::loadSpr looks for <name>.sprshards (written by client/tools/sprites/spr_shards.py) before <name>.spr: the index lists shard files <name>.NNN.spr, each a normal .spr (u32 signature, u32 count, address table, records) holding one id range. loadSpr reads the index and checks that every shard is there with the size the index gives (a missing or short shard, a gap in the ranges or a bad line drops the whole set and the single .spr is loaded as before), then returns; up to 8 background threads read the shards' address tables, and a sprite needed before its shard is read reads that shard on the spot. A shard whose header or addresses turn out wrong draws nothing and is logged. Logs how long the load took either way. Touches src/client/spritemanager.h/.cpp only.
+--- a/src/client/spritemanager.h
++++ b/src/client/spritemanager.h
+@@ -26,13 +26,18 @@
+ #include "const.h"
+ #include <framework/core/declarations.h>
+ #include <framework/graphics/declarations.h>
++#include <atomic>
+ #include <list>
++#include <memory>
++#include <mutex>
++#include <thread>
+ 
+ //@bindsingleton g_sprites
+ class SpriteManager
+ {
+ public:
+     SpriteManager();
++    ~SpriteManager();
+ 
+     void terminate();
+ 
+@@ -60,6 +65,10 @@
+         return bytes;
+     }
+ 
++    // Cinders of Chaos (base patch 0048): how the last loadSpr read the sprites. Shards: 0 for one .spr.
++    int getShardCount() const { return static_cast<int>(m_shards.size()); }
++    int getLoadMillis() const { return m_loadMillis; }
++
+     int spriteSize() { return m_spriteSize; }
+     float getOffsetFactor() const { return static_cast<float>(m_spriteSize) / 32.0f; }
+     bool isHdMod() const { return m_isHdMod; }
+@@ -75,6 +84,7 @@
+     };
+ 
+     bool loadCasualSpr(std::string file);
++    bool loadShardedSpr(const std::string& indexFile);
+     bool loadCwmSpr(std::string file);
+ 
+     ImagePtr getSpriteImageCasual(int id);
+@@ -93,6 +103,35 @@
+     int m_scaleFactor = 1;
+     FileStreamPtr m_spritesFile;
+     std::vector<uint32> m_spriteAddresses;
++
++    // a sharded .spr (<name>.sprshards + <name>.NNN.spr, base patch 0048): each shard holds one id range and its own
++    // address table. The tables are read by background threads after loadSpr returns; a sprite whose shard is not
++    // read yet reads it on the spot (ensureShard). Only the thread holding a shard's lock touches its file until the
++    // shard is marked ready; after that only the main thread does.
++    struct SprShard
++    {
++        std::string path;
++        uint32 firstId = 0;
++        uint32 count = 0;
++        uint32 size = 0;
++        FileStreamPtr file;
++        std::string error;
++        bool errorLogged = false;
++        std::unique_ptr<std::mutex> lock;
++        std::unique_ptr<std::atomic<int>> state; // 0 not read, 1 ready, 2 failed
++    };
++    bool ensureShard(SprShard& shard);
++    void shardWorker();
++    void stopShardWorkers();
++    std::vector<SprShard> m_shards;
++    std::vector<std::thread> m_shardWorkers;
++    std::atomic<bool> m_shardStop{ false };
++    std::atomic<size_t> m_shardNext{ 0 };
++    std::atomic<int> m_shardWorkersLeft{ 0 };
++    std::atomic<int> m_shardBackgroundMillis{ -1 };
++    bool m_shardsLogged = false;
++    int64_t m_shardStartMicros = 0;
++    int m_loadMillis = 0;
+     std::vector<std::vector<uint8_t>> m_sprites;
+     std::unordered_map<uint32, std::string> m_cachedData;
+     std::unordered_map<int, ImageCacheEntry> m_imageCache;
+--- a/src/client/spritemanager.cpp
++++ b/src/client/spritemanager.cpp
+@@ -37,7 +37,14 @@
+ #include <framework/util/pngunpacker.h>
+ 
+ #include <algorithm>
++#include <iterator>
+ #include <new>
++#include <sstream>
++
++#ifndef PHYSFS_DEPRECATED
++#define PHYSFS_DEPRECATED
++#endif
++#include <physfs.h>
+ 
+ SpriteManager g_sprites;
+ 
+@@ -56,6 +63,11 @@
+     updateSpriteSize();
+ }
+ 
++SpriteManager::~SpriteManager()
++{
++    stopShardWorkers();
++}
++
+ void SpriteManager::terminate()
+ {
+     unload();
+@@ -72,6 +84,9 @@
+     m_loaded = false;
+     m_isHdMod = false;
+     m_spritesFile = nullptr;
++    stopShardWorkers();
++    m_shards.clear();
++    m_loadMillis = 0;
+     m_spriteAddresses.clear();
+     m_sprites.clear();
+     m_cachedData.clear();
+@@ -85,14 +100,192 @@
+         return loadCwmSpr(cwmFile);
+     }
+ 
++    // Cinders of Chaos (base patch 0048): the .spr split into shard files (client/tools/sprites/spr_shards.py),
++    // listed by <name>.sprshards. Anything wrong with the set at load falls back to <name>.spr.
++    stdext::timer loadTimer;
++    auto shardIndex = g_resources.guessFilePath(file, "sprshards");
++    if (g_resources.fileExists(shardIndex)) {
++        if (loadShardedSpr(shardIndex)) {
++            m_loadMillis = static_cast<int>(loadTimer.elapsed_millis());
++            g_logger.info(stdext::format("Sprites: %d in %d shard files, loaded in %d ms (address tables on %d threads)",
++                                         m_spritesCount, static_cast<int>(m_shards.size()), m_loadMillis,
++                                         static_cast<int>(m_shardWorkers.size())));
++            g_lua.callGlobalField("g_sprites", "onLoadSpr", shardIndex);
++            return true;
++        }
++        g_logger.warning(stdext::format("Sprite shards '%s' not usable, trying the single .spr", shardIndex));
++    }
++
+     auto sprFile = g_resources.guessFilePath(file, "spr");
+     if (g_resources.fileExists(sprFile)) {
+-        return loadCasualSpr(sprFile);
++        loadTimer.restart();
++        const bool ok = loadCasualSpr(sprFile);
++        m_loadMillis = static_cast<int>(loadTimer.elapsed_millis());
++        if (ok)
++            g_logger.info(stdext::format("Sprites: %d in one file, loaded in %d ms", m_spritesCount, m_loadMillis));
++        return ok;
+     }
+ 
+     return false;
+ }
+ 
++bool SpriteManager::loadShardedSpr(const std::string& indexFile)
++{
++    uint32 signature = 0;
++    uint32 total = 0;
++    std::vector<SprShard> shards;
++
++    try {
++        // the index is a small text file (format: spr_shards.py); safe = true: never decrypted or rewritten
++        std::istringstream in(g_resources.readFileContents(indexFile, true));
++        const auto slash = indexFile.find_last_of('/');
++        const std::string dir = slash == std::string::npos ? std::string() : indexFile.substr(0, slash + 1);
++        bool haveFormat = false, haveSignature = false, haveTotal = false;
++        std::string line;
++        while (std::getline(in, line)) {
++            stdext::trim(line);
++            if (line.empty() || line[0] == '#')
++                continue;
++            if (!haveFormat) {
++                if (line != "chaos-spr-shards 1")
++                    stdext::throw_exception("unknown index format");
++                haveFormat = true;
++                continue;
++            }
++            std::istringstream words(line);
++            std::string key;
++            words >> key;
++            if (key == "signature" && (words >> signature)) {
++                haveSignature = true;
++            } else if (key == "sprites" && (words >> total)) {
++                haveTotal = true;
++            } else if (key == "per-shard") {
++                // informative (the ranges below decide)
++            } else if (key == "shard") {
++                SprShard shard;
++                std::string name, sha;
++                if (!(words >> shard.firstId >> shard.count >> name >> shard.size >> sha))
++                    stdext::throw_exception("bad shard line: " + line);
++                if (name.empty() || name[0] == '.' || name.find('/') != std::string::npos ||
++                    name.find('\\') != std::string::npos)
++                    stdext::throw_exception("bad shard file name: " + name);
++                const uint32 expectFirst = shards.empty() ? 1 : shards.back().firstId + shards.back().count;
++                if (shard.firstId != expectFirst)
++                    stdext::throw_exception(stdext::format("shard %s starts at %d, expected %d", name, shard.firstId, expectFirst));
++                if (shard.count > (0xFFFFFFFFu - 8) / 4 || shard.size < 8 + 4 * shard.count)
++                    stdext::throw_exception("shard too small for its sprites: " + name);
++                // resolved here, on the main thread: the workers only call PhysFS with the final path
++                shard.path = g_resources.resolvePath(dir + name);
++                PHYSFS_Stat st;
++                if (!PHYSFS_stat(shard.path.c_str(), &st) || st.filetype != PHYSFS_FILETYPE_REGULAR)
++                    stdext::throw_exception("missing shard " + name);
++                if (st.filesize != static_cast<PHYSFS_sint64>(shard.size))
++                    stdext::throw_exception(stdext::format("shard %s has %d bytes, the index says %d", name,
++                                                           static_cast<int>(st.filesize), static_cast<int>(shard.size)));
++                shard.lock = std::make_unique<std::mutex>();
++                shard.state = std::make_unique<std::atomic<int>>(0);
++                shards.push_back(std::move(shard));
++            } else {
++                stdext::throw_exception("bad index line: " + line);
++            }
++        }
++        if (!haveFormat || !haveSignature || !haveTotal || shards.empty())
++            stdext::throw_exception("incomplete index");
++        if (shards.back().firstId + shards.back().count - 1 != total)
++            stdext::throw_exception("the shards do not hold exactly the sprites the index names");
++    } catch (std::exception& e) {
++        g_logger.error(stdext::format("Sprite shard index '%s': %s", indexFile, e.what()));
++        return false;
++    }
++
++    m_spriteAddresses.assign(total, 0);
++    m_shards = std::move(shards);
++    m_signature = signature;
++    m_spritesCount = static_cast<int>(total);
++    m_spritesOffset = 0;
++    m_spritesFile = nullptr;
++    m_loaded = true;
++
++    // the shards' address tables are read in the background, several at once; a sprite needed before its shard is
++    // read reads that shard on the spot (ensureShard)
++    size_t workers = 0;
++#ifndef __EMSCRIPTEN__
++    const unsigned hardware = std::thread::hardware_concurrency();
++    workers = std::min<size_t>({ m_shards.size(), static_cast<size_t>(hardware ? hardware : 2), static_cast<size_t>(8) });
++#endif
++    m_shardStop = false;
++    m_shardNext = 0;
++    m_shardBackgroundMillis = -1;
++    m_shardsLogged = false;
++    m_shardStartMicros = stdext::micros();
++    m_shardWorkersLeft = static_cast<int>(workers);
++    for (size_t t = 0; t < workers; ++t)
++        m_shardWorkers.emplace_back(&SpriteManager::shardWorker, this);
++    return true;
++}
++
++bool SpriteManager::ensureShard(SprShard& shard)
++{
++    const int known = shard.state->load(std::memory_order_acquire);
++    if (known != 0)
++        return known == 1;
++    std::lock_guard<std::mutex> guard(*shard.lock);
++    if (shard.state->load(std::memory_order_relaxed) != 0)
++        return shard.state->load(std::memory_order_relaxed) == 1;
++
++    bool ok = false;
++    try {
++        PHYSFS_File* handle = PHYSFS_openRead(shard.path.c_str());
++        if (!handle)
++            stdext::throw_exception("cannot open the file");
++        FileStreamPtr f = std::make_shared<FileStream>(shard.path, handle, false);
++        if (f->size() != shard.size)
++            stdext::throw_exception("the file changed size after the index was read");
++        const uint32 sig = f->getU32();
++        const uint32 count = f->getU32();
++        if (sig != m_signature || count != shard.count)
++            stdext::throw_exception("header does not match the index");
++        uint32* addresses = m_spriteAddresses.data() + (shard.firstId - 1);
++        const uint32 tableBytes = shard.count * 4;
++        if (tableBytes > 0 && f->read(addresses, 1, tableBytes) != static_cast<int>(tableBytes))
++            stdext::throw_exception("incomplete address table");
++        for (uint32 k = 0; k < shard.count; ++k) {
++            const uint32 address = stdext::readULE32(reinterpret_cast<const uint8*>(&addresses[k]));
++            if (address != 0 && (address < 8 + tableBytes || address > shard.size - 5))
++                stdext::throw_exception(stdext::format("sprite %d has an address outside the shard", shard.firstId + k));
++            addresses[k] = address;
++        }
++        shard.file = f;
++        ok = true;
++    } catch (std::exception& e) {
++        shard.error = e.what();
++    } catch (...) {
++        shard.error = "unknown error";
++    }
++    if (!ok)
++        std::fill_n(m_spriteAddresses.begin() + (shard.firstId - 1), shard.count, 0u);
++    shard.state->store(ok ? 1 : 2, std::memory_order_release);
++    return ok;
++}
++
++void SpriteManager::shardWorker()
++{
++    for (size_t i = m_shardNext++; i < m_shards.size() && !m_shardStop; i = m_shardNext++)
++        ensureShard(m_shards[i]);
++    if (--m_shardWorkersLeft == 0)
++        m_shardBackgroundMillis = static_cast<int>((stdext::micros() - m_shardStartMicros) / 1000);
++}
++
++void SpriteManager::stopShardWorkers()
++{
++    m_shardStop = true;
++    for (auto& worker : m_shardWorkers) {
++        if (worker.joinable())
++            worker.join();
++    }
++    m_shardWorkers.clear();
++}
++
+ #ifdef WITH_ENCRYPTION
+ 
+ void SpriteManager::saveSpr(std::string fileName)
+@@ -331,6 +524,8 @@
+     m_loaded = false;
+     m_isHdMod = false;
+     m_spritesFile = nullptr;
++    stopShardWorkers();
++    m_shards.clear();
+     m_spriteAddresses.clear();
+     m_sprites.clear();
+     m_cachedData.clear();
+@@ -644,24 +839,47 @@
+             return image;
+         }
+ 
+-        if (id <= 0 || id > m_spritesCount || !m_spritesFile)
++        if (id <= 0 || id > m_spritesCount || (!m_spritesFile && m_shards.empty()))
+             return nullptr;
+ 
++        // sharded (base patch 0048): the shard whose range holds the id; its address table is read by then
++        FileStreamPtr spritesFile = m_spritesFile;
++        if (!m_shards.empty()) {
++            const auto it = std::upper_bound(m_shards.begin(), m_shards.end(), static_cast<uint32>(id),
++                                             [](uint32 value, const SprShard& shard) { return value < shard.firstId; });
++            if (it == m_shards.begin())
++                return nullptr;
++            SprShard& shard = *std::prev(it);
++            if (!ensureShard(shard)) {
++                if (!shard.errorLogged) {
++                    shard.errorLogged = true;
++                    g_logger.error(stdext::format("Sprite shard '%s': %s (its sprites are not drawn)", shard.path, shard.error));
++                }
++                return nullptr;
++            }
++            if (!m_shardsLogged && m_shardBackgroundMillis >= 0) {
++                m_shardsLogged = true;
++                g_logger.info(stdext::format("Sprites: every shard's address table read %d ms after the load",
++                                             static_cast<int>(m_shardBackgroundMillis)));
++            }
++            spritesFile = shard.file;
++        }
++
+         const uint32 spriteAddress = m_spriteAddresses[id - 1];
+ 
+         // no sprite? return an empty texture
+         if (spriteAddress == 0)
+             return nullptr;
+ 
+-        m_spritesFile->seek(spriteAddress);
++        spritesFile->seek(spriteAddress);
+ 
+         // Read the record in bulk instead of doing filesystem I/O per channel.
+         uint8 header[5];
+-        if (m_spritesFile->read(header, 1, sizeof(header)) != sizeof(header))
++        if (spritesFile->read(header, 1, sizeof(header)) != sizeof(header))
+             stdext::throw_exception("Incomplete sprite header");
+         const uint16 pixelDataSize = stdext::readULE16(header + 3);
+         std::vector<uint8> data(pixelDataSize);
+-        if (m_spritesFile->read(data.data(), 1, pixelDataSize) != pixelDataSize)
++        if (spritesFile->read(data.data(), 1, pixelDataSize) != pixelDataSize)
+             stdext::throw_exception("Incomplete sprite pixels");
+ 
+         auto image = std::make_shared<Image>(Size(m_baseSpriteSize, m_baseSpriteSize));

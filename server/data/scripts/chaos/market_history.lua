@@ -302,7 +302,7 @@ function MH.prices(player, d)
 		local o = sql(string.format("SELECT `item_id`, `rarity`, `ilvl` FROM `%s` WHERE `id` = %d", offersTable(), id),
 			{{"item_id", "n"}, {"rarity", "n"}, {"ilvl", "n"}})[1]
 		if not o then
-			send(player, {seq = d.seq, id = id, gone = true})
+			send(player, {seq = Chaos.toInt(d.seq), id = id, gone = true})
 			return false
 		end
 		sid, rarity, ilvl = o.item_id, o.rarity, o.ilvl
@@ -315,7 +315,7 @@ function MH.prices(player, d)
 	local realm, now = realmOf(player), os.time()
 	local band = H.band(ilvl, cfg.bandSize)
 	local all = MH.statsMany(realm, {{cur = "gold", item = sid, rarity = rarity, band = band}, {cur = "coins", item = sid, rarity = rarity, band = band}}, now)
-	send(player, {seq = d.seq, id = id, sid = sid, rarity = rarity, band = band, bandText = H.bandText(band, cfg.bandSize),
+	send(player, {seq = Chaos.toInt(d.seq), id = id, sid = sid, rarity = rarity, band = band, bandText = H.bandText(band, cfg.bandSize),
 		gold = view(all[H.key(realm, "gold", sid, rarity, band)], now), coins = view(all[H.key(realm, "coins", sid, rarity, band)], now),
 		marks = cfg.marks, warn = cfg.warn})
 	return true

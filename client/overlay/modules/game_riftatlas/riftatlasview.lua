@@ -1,7 +1,8 @@
 -- Pure helpers of the Rift Atlas window (no client API), tested by riftatlasview_test.lua.
 -- The tree and the state come from the server (server/data/scripts/chaos/atlas_core.lua A.treePayload / A.statePayload):
 --   tree  {nodes = [{i, n, k = start|small|notable|keystone, b = theme, x, y, c = cost, l = links, t = lines, g = glyph}],
---          branches = [{k, n, th, d, c}], start, keystoneMax, grid = {themes, tiers, omens = [{k, n, b}], points, swift}, max}
+--          branches = [{k, n, th, d, c}], start, keystoneMax, grid = {themes, tiers, omens = [{k, n, b}], points, swift,
+--          swiftTiers = [seconds per tier]}, max}
 --   state {earned, spent, points, max, alloc = [ids], done = [cell keys], refund = {gold, orbs}, reset = {gold, orbs},
 --          orb, totals = [lines], msg}
 -- The allocate / refund rules mirror atlas_core.lua (the server checks again; this only greys the buttons).
@@ -293,6 +294,13 @@ function V.refundLabels(state)
 end
 
 -- ---------------------------------------------------------------- the completion grid
+-- the Swift time of a tier in whole seconds: the server's per-tier time (grid.swiftTiers, it grows with the rift's
+-- map size and tier), else the one time of an older server (grid.swift)
+function V.swiftSeconds(g, tier)
+  local per = type(g) == 'table' and type(g.swiftTiers) == 'table' and tonumber(g.swiftTiers[tier]) or nil
+  return math.max(0, math.floor(per or num(type(g) == 'table' and g.swift or 0)))
+end
+
 -- rows {label, color, kind, cells = {{key, done, tip}}} for the theme x tier rows, flawless, swift; then the omens
 local SHORT = { ['Abyssal Rift'] = 'Abyss', ['Obsidian Hall'] = 'Hall', ['Ashen Crypt'] = 'Crypt', ['Forsaken Sanctum'] = 'Sanctum' }
 function V.gridRows(tree, done)
@@ -317,8 +325,9 @@ function V.gridRows(tree, done)
   for t = 1, tiers do
     flaw.cells[t] = { key = 'f' .. t, done = done['f' .. t] == true,
       tip = string.format('Flawless tier %d (no death): %s (+%d)', t, done['f' .. t] and 'done' or 'not yet', num(P.flawless)) }
+    local secs = V.swiftSeconds(g, t)
     swift.cells[t] = { key = 's' .. t, done = done['s' .. t] == true,
-      tip = string.format('Swift tier %d (sealed within %d:%02d): %s (+%d)', t, math.floor(num(g.swift) / 60), num(g.swift) % 60,
+      tip = string.format('Swift tier %d (sealed within %d:%02d): %s (+%d)', t, math.floor(secs / 60), secs % 60,
         done['s' .. t] and 'done' or 'not yet', num(P.swift)) }
   end
   rows[#rows + 1] = flaw

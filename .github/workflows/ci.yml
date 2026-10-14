@@ -71,11 +71,19 @@ jobs:
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
 
+      - name: Item prices (table up to date, every loot priced or unsellable, no arbitrage, Auto Seller table; installer)
+        run: |
+          python3 -I server/tools/gen_item_prices.py --check
+          python3 -I server/tools/install_item_prices_test.py
+
       - name: Client spell data is up to date with the server spells
         run: |
           pip install --quiet pillow
           python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
+
+      - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
+        run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 
       - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model)
         run: python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
@@ -86,17 +94,66 @@ jobs:
       - name: Client updater tools (manifest builder, signer, path rules)
         run: python3 -I client/tools/make_update_manifest_test.py
 
+      - name: Sprite shard tool (split, verify, join on small synthetic .spr files)
+        run: python3 -I client/tools/sprites/spr_shards_test.py
+
       - name: Server hang watchdog (status probe, restart decision)
         run: python3 -I server/tools/chaos_watchdog_test.py
 
       - name: Server health alerts (state changes, error-line rate limit, daily summary)
         run: python3 -I server/tools/chaos_health_test.py
 
+      - name: Area generator export (the Lua generator's dump, OTBM writer and reader, spawn file)
+        run: python3 -I server/tools/areagen_export_test.py
+
+      - name: Area planner (validator, reachability maths, layout, compiler, decoration, place; the example plans)
+        run: |
+          # system numpy: place reads maps with tools/map/otbm.py (python3 -I does not see pip's user site)
+          sudo apt-get install -y -qq python3-numpy
+          python3 -I server/tools/area_planner_test.py
+          d=$(mktemp -d)
+          for p in server/tools/areaplan/examples/*.json; do
+            python3 -I server/tools/area_planner.py validate "$p"
+            python3 -I server/tools/area_planner.py compile "$p" "$d"
+          done
+
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
 
-      - name: Load test tool (failure reasons, bot password hashes)
+      - name: Load test tool (failure reasons, bot password hashes, spread over towns and hunting areas)
         run: python3 -I server/tools/loadtest_test.py
+
+      - name: Network message buffer stays unzeroed (server src-patch 0032)
+        run: python3 -I server/tools/netmsg_buffer_patch_test.py
+
+      - name: A decay that cannot change the item ends (server src-patch 0033)
+        run: python3 -I server/tools/decay_loop_patch_test.py
+
+      - name: A reconnect to a lingering character is not thrown out nor left in the game (server src-patches 0034, 0035)
+        run: python3 -I server/tools/reattach_ping_patch_test.py
+
+      - name: Outfit shaders can be owned (server src-patch 0036)
+        run: python3 -I server/tools/outfit_shader_patch_test.py
+
+      - name: Everfull Ration install (items.otb / items.xml, synthetic)
+        run: python3 -I server/tools/install_store_food_test.py
+
+      - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
+        run: python3 -I server/tools/weightless_patch_test.py
+
+      - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
+        run: python3 -I server/tools/pact_stamina_patch_test.py
+
+      - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
+        run: python3 -I server/tools/display_scale_patch_test.py
+
+      - name: Display scale, pure parts (C++; header from server src-patch 0037)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosdisplay\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0037-display-scale.patch > "$d/chaosdisplay.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
+          "$d/chaosdisplay_test"
 
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
@@ -114,6 +171,14 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoszones_test.cpp -o "$d/chaoszones_test"
           "$d/chaoszones_test"
 
+      - name: Login reads prefetch (C++; header from server src-patch 0031)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosprefetch\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0031-login-reads-prefetch.patch > "$d/chaosprefetch.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosprefetch_test.cpp -o "$d/chaosprefetch_test"
+          "$d/chaosprefetch_test"
+
       - name: Backup shell scripts parse
         run: |
           bash -n server/tools/backup.sh
@@ -126,6 +191,11 @@ jobs:
           echo '-- CI stand-in for an assembled client' > "$d/init.lua"
           cp -r client/overlay/modules client/overlay/data "$d/"
           python3 -I client/tools/make_update_manifest.py build "$d" --dry-run
+
+      - name: Client shaders compile (glslangValidator; GLSL 1.10 and ES 1.00; files and base patch programs)
+        run: |
+          sudo apt-get install -y -qq glslang-tools
+          python3 -I client/tools/check_shaders.py --require-glslang
 
       - name: Client updater signature vectors (C++, OpenSSL; header from base patch 0031)
         run: |
@@ -145,6 +215,15 @@ jobs:
           g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
           "$d/chaosguard_test"
 
+      - name: Big creature click maths (C++; header from base patch 0051)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/client\/creaturehit\.h/{p=1} p&&/^--- a\//&&!/creaturehit\.h/{p=0} p' \
+            client/base-patches/0051-big-creature-click.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src/client" client/tools/creaturehit_test.cpp -o "$d/creaturehit_test"
+          "$d/creaturehit_test"
+
       - name: PROXY protocol parser (C++; source from server src-patch 0025)
         run: |
           d=$(mktemp -d)
@@ -162,6 +241,11 @@ jobs:
           server/deploy/gateway/setup_gateway.sh 203.0.113.10 --dry-run > /dev/null
           server/deploy/firewall/setup_backend_firewall.sh 203.0.113.10,203.0.113.11 --admin-ips any --dry-run > /dev/null
 
+      - name: Live server update script (chaos_update.sh on a throwaway repo with stubs; update, refusals, rollback)
+        run: |
+          bash -n server/deploy/chaos_update.sh
+          python3 -I server/deploy/chaos_update_test.py
+
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py
@@ -173,6 +257,12 @@ jobs:
           luajit tools/gen_codex_data.lua
           lua5.3 tools/gen_codex_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_codex/codex_data.lua
+
+      - name: Website wiki data is up to date with the server data files (gen_wiki_data.lua)
+        run: |
+          cd server
+          luajit tools/gen_wiki_data.lua --check
+          lua5.3 tools/gen_wiki_data.lua --check  # Lua 5.3 must give the same bytes
 
       - name: Passive tree data is up to date with the client tree (Lua 5.3 and LuaJIT write the same file)
         run: |
@@ -192,11 +282,36 @@ jobs:
       - name: Pair warning fixes (fix_pair_warnings.py on a synthetic pair)
         run: python3 -I client/tools/sprites/fix_pair_warnings_test.py
 
-      - name: Outfit layer composer (compose_outfit.py on synthetic things, import round trip)
+      - name: Outfit layer composer (compose_outfit.py on synthetic things, import round trip), outfit anchors
         run: |
           # system packages: python3 -I does not see pip's user site
           sudo apt-get install -y -qq python3-numpy python3-pil
           python3 -I client/tools/sprites/compose_outfit_test.py
+          # the character select's anchors: centre, ground row, floating looks (synthetic figures)
+          python3 -I client/tools/sprites/gen_outfit_anchors_test.py
+          # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
+          # check runs on the versions the strips were made with (gen_class_fx.py docstring)
+          python3 -m venv /tmp/fxenv
+          /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
+          # themed sets, auras, wings and grounds of things_custom24: atlases and spec match the generator (same pins)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_theme_art.py build --check
+          python3 -I server/tools/install_theme_items.py --lua --check
+          # pack effect cuts: spec and sums match gen_pack_fx.py's table (the art set and the strips are not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
+          # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
+          python3 -I client/tools/sprites/donor_pick_test.py
+
+      - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)
+        # icons, guide heroes and tab banners; the same pinned Pillow and numpy as the art checks above (WebP bytes)
+        run: /tmp/fxenv/bin/python -I website/tools/gen_wiki_art.py --check
+
+      - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
+        run: python3 -I client/tools/outfit_art/class_art_test.py
+
+      - name: Website sprite images (gen_sprite_images_test.py; outfit colours on hand-made masks, a synthetic pair)
+        run: python3 -I website/tools/gen_sprite_images_test.py
 
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |
@@ -253,3 +368,20 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pair"
           tar -xJf assets/things/things-1098.tar.xz -C "$RUNNER_TEMP/pair"
           python3 -I chaos/client/tools/sprites/check_pair.py "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Recolour variants match the generator (gen_theme_art.py recolour reads the pair's own monster looks)
+        run: |
+          python3 -m venv /tmp/fxenv
+          /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_theme_art.py recolour --check \
+              --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Character select feet table matches the pair (gen_outfit_anchors.py --check)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_outfit_anchors.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Website sprite images draw from the live pair (gen_sprite_images.py, our art only, no items.otb)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/website/tools/gen_sprite_images.py \
+              --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr" --out-dir "$RUNNER_TEMP/siteimg"

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Vorathrax" nameDescription="a vorathrax" race="blood" experience="155000" power = "2" skulled="2" looting="1" speed="650">
+<monster name="Vorathrax" nameDescription="a vorathrax" race="blood" experience="155000" speed="650">
 	<health now="3000000" max="3000000" />
 	<look type="1471" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
@@ -12,13 +12,13 @@
 		<flag pushable="0" />
 		<flag canpushitems="1" />
 		<flag canpushcreatures="1" />
-		<flag targetdistance="0" />
+		<flag targetdistance="1" />
 		<flag staticattack="70" />
 		<flag runonhealth="0" />
 		<flag canwalkonenergy="0" />
 	</flags>
 	<attacks>
-		<attack name="fire" interval="1000" min="-28000" max="-33000" />
+		<attack name="fire" interval="1000" chance="100" min="-28000" max="-33000" />
 		<attack name="fire" interval="2000" chance="45" length="4" spread="3" min="-28000" max="-36800">
 			<attribute key="areaEffect" value="explosion" />
 		</attack>
@@ -26,7 +26,7 @@
 			<attribute key="shootEffect" value="fire" />
 			<attribute key="areaEffect" value="firearea" />
 		</attack>
-		<attack name="earth" interval="1000" chance="20" target="1" radius="4" min="-2005500" max="-2005500">
+		<attack name="earth" interval="1000" chance="20" target="1" radius="4" min="-26000" max="-32000">
 			<attribute key="areaEffect" value="poff" />
 		</attack>
 		<attack name="poisoncondition" interval="2000" chance="10" target="1" min="-800" max="-2000">

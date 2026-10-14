@@ -8,7 +8,8 @@ return {
 		players = "chaos_season_players", -- one row per character that joined a season (the season flag)
 		progress = "chaos_season_progress", -- season-long stats per character (bounty contracts, best rift tier, ...)
 		rewards = "chaos_season_rewards", -- reward track milestones reached, per account (kept forever)
-		log = "chaos_season_log" -- join / migrate / milestone / admin events
+		log = "chaos_season_log", -- join / migrate / milestone / admin events
+		requests = "chaos_season_requests" -- a join chosen at character creation (website), done at the first login
 	},
 	-- server_config rows written by /season start|end: chaos_season_<id>_start, chaos_season_<id>_end (unix time).
 	-- They win over the dates below, so a season can be started or ended early without editing this file.

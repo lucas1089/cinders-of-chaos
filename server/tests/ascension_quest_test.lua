@@ -2,7 +2,8 @@
 -- Covers the pure rules of the ascension quest (ascension_quest_core.lua): stages, eligibility, the choices read from
 -- Chaos.classes.ascension at run time (a new line works without code changes), choice validation, the Proof's points
 -- and monster levels, the Trial's entry rule, scaling, mechanics, geometry and the lethal-hit catch, !ascend's gate,
--- /ascendset's parsing, the title and the modal windows.
+-- /ascendset's parsing, the title and the modal windows. The Trial's percent hits (ascension_quest.lua against a
+-- mocked engine) take Chaos.percentBase.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -206,5 +207,39 @@ eq(sent[2].id, cfg.modal.choice); eq(#sent[2].choices, 2); eq(sent[2].choices[1]
 Q.sendConfirmModal({}, 14, "berserker", "Berserker")
 eq(sent[3].id, cfg.modal.confirmBase + 14); assert(sent[3].text:find("final"), sent[3].text)
 assert(cfg.modal.confirmBase > cfg.modal.choice and cfg.modal.confirmBase > cfg.modal.trial, "ids do not overlap")
+
+-- ------------------------------------------------------------------ the Trial's percent hits (ascension_quest.lua)
+-- the chamber's telegraphs take Chaos.percentBase: a Hollow Vessel counts health + maximum energy shield
+do
+	local function eventMock(name)
+		local e = setmetatable({name = name}, {__index = function() return function() end end})
+		e.register = function() end
+		return e
+	end
+	CreatureEvent, GlobalEvent, TalkAction = eventMock, eventMock, eventMock
+	EventCallback = setmetatable({}, {__index = function() return function() end end})
+	Game = Game or {}
+	addEvent = function() return 0 end
+	dofile("data/lib/chaos_spell_events.lua")
+	dofile("data/scripts/chaos/chaos_constants.lua")
+	dofile("data/scripts/chaos/ascension_quest.lua")
+	local AQ = ChaosAscensionQuest
+	ChaosArchetypes = {percentBase = function(pl) return pl:getMaxHealth() + (pl.shield or 0) end}
+	Monster = function() return nil end
+	local hits = {}
+	doTargetCombat = function(_, target, _, mn) hits[#hits + 1] = {id = target:getId(), mn = mn} end
+	local vessel = {getId = function() return 1 end, getMaxHealth = function() return 100 end, shield = 2000}
+	local other = {getId = function() return 2 end, getMaxHealth = function() return 5000 end}
+	local tr = {raw = false}
+	AQ.hurt(tr, vessel, 0.2)
+	AQ.hurt(tr, other, 0.2)
+	eq(hits[1] and hits[1].mn, -420, "ascension trial: 20% of 100 health + 2000 shield")
+	eq(hits[2] and hits[2].mn, -1000, "ascension trial: 20% of 5000 health")
+	eq(tr.raw, false, "raw flag cleared after the hit")
+	ChaosArchetypes = nil
+	hits = {}
+	AQ.hurt(tr, vessel, 0.2)
+	eq(hits[1] and hits[1].mn, -20, "without the archetypes module: the health alone")
+end
 
 print("ascension_quest_test: OK")

@@ -5,11 +5,15 @@ usage:
   python3 -I client/tools/make_fonts.py FONT.ttf --name chaos-title --sizes 14,16,20 --out DIR
           [--outline 1] [--outline-color 0,0,0,200] [--shadow 1,1] [--shadow-color 0,0,0,160]
           [--first 32] [--last 255] [--encoding cp1252] [--tracking 0] [--weight 600]
-          [--space-width 4] [--tight]
+          [--space-width 4] [--tight] [--border 1.2] [--border-color 0,0,0,230] [--max-cell-width 14]
   python3 -I client/tools/make_fonts.py --atlas-check CLIENT_DATA_FONTS_DIR [EXTRA_DIR ...]
 
 Glyphs are white (the client tints a font with the widget's colour), with an optional dark outline and a baked drop
-shadow. The client reads a glyph's width from its sheet (the last column with any pixel, BitmapFont::
+shadow. --outline N grows the glyph by N whole pixels (a square 3x3 step per pixel). --border R draws an antialiased
+round border of R pixels (a fraction is fine, e.g. 1.2): the glyph's own antialiased mask is scaled up 4x, grown by a
+disc of 4R and scaled back down with a box filter, so the ring has soft edges and round corners and stays aligned
+with the hinted glyph. --max-cell-width squeezes the few glyphs wider than the cell (e.g. the per mille sign and the em dash)
+horizontally to fit, so they do not decide the cell size of the whole sheet (and its atlas slot). The client reads a glyph's width from its sheet (the last column with any pixel, BitmapFont::
 calculateGlyphsWidthsAutomatically) and puts the next glyph right after it, so each glyph is drawn at the left of its
 cell and its advance width is marked with one pixel of alpha 1 (invisible) in the top row: the spacing then follows
 the font's own metrics. Glyphs first..last are byte values in `encoding`: the client draws a string byte by byte, each
@@ -203,6 +207,27 @@ def glyph_text(ch):
     return ch if ch.isprintable() else None
 
 
+def disc_offsets(radius):
+    """the (dx, dy) integer offsets within `radius` of the origin (a filled disc, the origin included), sorted"""
+    r = int(math.floor(radius))
+    return sorted((dx, dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1) if dx * dx + dy * dy <= radius * radius)
+
+
+def ring_pad(outline=0, border=0.0):
+    """the pixels a glyph's outline or border reaches past its ink on each side"""
+    return max(int(outline), int(math.ceil(border)) if border > 0 else 0)
+
+
+def squeeze(ink_w, pad_l, pad_r, max_cell_w):
+    """the ink width a glyph is drawn at: its own, or what fits the cell when --max-cell-width is smaller"""
+    if not max_cell_w:
+        return ink_w
+    room = max_cell_w - pad_l - pad_r
+    if room < 1:
+        raise ValueError('--max-cell-width %d leaves no room inside the outline and shadow' % max_cell_w)
+    return min(ink_w, room)
+
+
 def vertical_fit(rows_used, line_height, tight=False):
     """the cell rows of a sheet and the .otfont values that keep every glyph where the font puts it.
     rows_used: (top, bottom) of all painted rows, relative to the top of the font's line box of `line_height` rows
@@ -222,23 +247,24 @@ def vertical_fit(rows_used, line_height, tight=False):
 
 def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252', outline=0,
            outline_color=(0, 0, 0, 200), shadow=(0, 0), shadow_color=(0, 0, 0, 160), tracking=0, weight=None,
-           space_width=None, tight=False):
+           space_width=None, tight=False, border=0.0, border_color=(0, 0, 0, 230), max_cell_width=None):
     from PIL import Image, ImageDraw, ImageFont
     font = ImageFont.truetype(font_file, size)
     if weight:
         font.set_variation_by_axes(axis_values(font.get_variation_axes(), {'wght': weight}))
     ascent, descent = font.getmetrics()
-    pad_l = outline + max(0, -shadow[0])
-    pad_r = outline + max(0, shadow[0])
-    pad_t = outline + max(0, -shadow[1])
-    pad_b = outline + max(0, shadow[1])
+    ring = ring_pad(outline, border)
+    pad_l = ring + max(0, -shadow[0])
+    pad_r = ring + max(0, shadow[0])
+    pad_t = ring + max(0, -shadow[1])
+    pad_b = ring + max(0, shadow[1])
     # the outline ring and a shadow to the right reach past the advance: the advance marker is put that far out and
     # the .otfont spacing takes it back, so every glyph advances by its own width (else the client, which measures a
     # glyph by its last painted column, would space the letters by their shadow)
-    right = outline + max(0, shadow[0])
+    right = ring + max(0, shadow[0])
     space = (space_width if space_width else int(round(font.getlength(' '))) + tracking)
     chars = glyph_chars(first, last, encoding)
-    metrics = {}
+    metrics, squeezed = {}, {}
     cell_w = 1
     for b, ch in chars:
         text = glyph_text(ch)
@@ -251,6 +277,11 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
         adv = int(round(font.getlength(text))) + tracking
         shift = max(0, -l)  # a glyph that starts left of its origin is moved right by that much
         ink_w = max(r + shift, adv + shift)
+        fit_w = squeeze(ink_w, pad_l, pad_r, max_cell_width)
+        if fit_w < ink_w:  # drawn narrower: the advance shrinks with it
+            adv = max(1, int(round(adv * fit_w / float(ink_w))))
+            squeezed[b] = (ink_w, fit_w)
+            ink_w = fit_w
         metrics[b] = (text, shift, pad_l + shift + adv + right, ink_w)  # spacing -right in the .otfont
         cell_w = max(cell_w, pad_l + ink_w + pad_r)
     line_h = ascent + descent + pad_t + pad_b
@@ -261,16 +292,28 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
     for b, (text, shift, adv, _) in metrics.items():
         glyph = Image.new('RGBA', (cell_w, canvas_h), (0, 0, 0, 0))
         if text:
-            mask = Image.new('L', (cell_w, canvas_h), 0)
-            ImageDraw.Draw(mask).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
+            if b in squeezed:  # drawn at its own width, then scaled to fit the cell
+                full_w, fit_w = squeezed[b]
+                wide = Image.new('L', (pad_l + full_w + pad_r + shift, canvas_h), 0)
+                ImageDraw.Draw(wide).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
+                ink = wide.crop((pad_l, 0, pad_l + full_w, canvas_h)).resize((fit_w, canvas_h), Image.LANCZOS)
+                mask = Image.new('L', (cell_w, canvas_h), 0)
+                mask.paste(ink, (pad_l, 0))
+            else:
+                mask = Image.new('L', (cell_w, canvas_h), 0)
+                ImageDraw.Draw(mask).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
             if shadow != (0, 0):
                 sh = Image.new('L', (cell_w, canvas_h), 0)
                 sh.paste(mask, (shadow[0], shadow[1]))
-                if outline:
+                if border:
+                    sh = _soft_dilate(sh, border)
+                elif outline:
                     sh = _dilate(sh, outline)
                 glyph.paste(Image.new('RGBA', (cell_w, canvas_h), shadow_color), (0, 0),
                             sh.point(lambda v: v * shadow_color[3] // 255))
-            if outline:
+            if border:
+                glyph = Image.alpha_composite(glyph, _colored(_soft_dilate(mask, border), border_color))
+            elif outline:
                 glyph = Image.alpha_composite(glyph, _colored(_dilate(mask, outline), outline_color))
             glyph = Image.alpha_composite(glyph, _colored(mask, (255, 255, 255, 255)))
             box = glyph.getchannel('A').getbbox()
@@ -302,6 +345,7 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
                             y_offset=y_offset, spacing=(-right, spacing_h)))
     return {'name': base, 'size': (w, h), 'cell': (cell_w, cell_h), 'slot': slot,
             'glyphs': sum(1 for b in metrics if metrics[b][0]), 'range': (first, last), 'y_offset': y_offset,
+            'squeezed': ''.join(metrics[b][0] for b in sorted(squeezed)),
             'line': cell_h + spacing_h, 'old_line': line_h}
 
 
@@ -311,6 +355,24 @@ def _dilate(mask, radius):
     for _ in range(radius):
         out = out.filter(ImageFilter.MaxFilter(3))
     return out
+
+
+def _soft_dilate(mask, radius, scale=4):
+    """an antialiased round dilation of an 8-bit mask by `radius` pixels (may be fractional): each pixel's coverage
+    is spread over a 4x4 block, the maximum taken over a disc of radius*4 sub-pixels and the blocks averaged back
+    (box), so the ring is never wider than `radius` and its edge and corners come out soft. The mask is padded
+    first, so the wrap-around of ImageChops.offset brings in nothing."""
+    from PIL import Image, ImageChops
+    w, h = mask.size
+    pad = int(math.ceil(radius)) + 1
+    padded = Image.new('L', (w + 2 * pad, h + 2 * pad), 0)
+    padded.paste(mask, (pad, pad))
+    big = padded.resize((padded.width * scale, padded.height * scale), Image.NEAREST)
+    out = big
+    for dx, dy in disc_offsets(radius * scale):
+        if dx or dy:
+            out = ImageChops.lighter(out, ImageChops.offset(big, dx, dy))
+    return out.resize(padded.size, Image.BOX).crop((pad, pad, pad + w, pad + h))
 
 
 def _colored(mask, rgba):
@@ -370,6 +432,9 @@ def main(argv):
     ap.add_argument('--weight', type=int, help='weight of a variable font (wght axis)')
     ap.add_argument('--space-width', type=int, help='width of the space in px (default: the font\'s own)')
     ap.add_argument('--tight', action='store_true', help='cut the empty rows below the glyphs too (a smaller sheet)')
+    ap.add_argument('--border', type=float, default=0.0, help='antialiased round border of this many px (e.g. 1.2)')
+    ap.add_argument('--border-color', default='0,0,0,230')
+    ap.add_argument('--max-cell-width', type=int, help='squeeze glyphs wider than this cell (px, rings included)')
     ap.add_argument('--atlas-check', nargs='+', metavar='DIR')
     a = ap.parse_args(argv)
     if a.atlas_check:
@@ -379,10 +444,12 @@ def main(argv):
     shadow = tuple(int(x) for x in a.shadow.split(','))
     for size in [int(s) for s in a.sizes.split(',') if s.strip()]:
         r = render(a.font, size, a.name, a.out, a.first, a.last, a.encoding, a.outline, parse_rgba(a.outline_color),
-                   shadow, parse_rgba(a.shadow_color), a.tracking, a.weight, a.space_width, a.tight)
-        print('%s: %dx%d sheet, cell %dx%d, glyphs %d..%d (%d drawn), y-offset %d, line %d, atlas slot %d' % (
+                   shadow, parse_rgba(a.shadow_color), a.tracking, a.weight, a.space_width, a.tight,
+                   a.border, parse_rgba(a.border_color), a.max_cell_width)
+        print('%s: %dx%d sheet, cell %dx%d, glyphs %d..%d (%d drawn), y-offset %d, line %d, atlas slot %d%s' % (
               r['name'], r['size'][0], r['size'][1], r['cell'][0], r['cell'][1], r['range'][0], r['range'][1],
-              r['glyphs'], r['y_offset'], r['line'], r['slot']))
+              r['glyphs'], r['y_offset'], r['line'], r['slot'],
+              ', %d squeezed' % len(r['squeezed']) if r['squeezed'] else ''))
     return 0
 
 

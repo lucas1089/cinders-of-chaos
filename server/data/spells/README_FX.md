@@ -149,6 +149,12 @@ new `--expect-first-outfit` and keep the regenerated `chaos_auras.csv` (the aura
 verifies its output like `import_outfits.py` (re-parse, every new frame / pattern / layer pixel-exact, all old entries
 byte-identical, 3000 sampled old sprites) and is deterministic.
 
+**More uses (switch `ChaosPackFx.PACK_FX`, on since 2026-10-13 (pair 24 at 407ad9b6)):** item powers, snares, rift modifiers, world bosses and
+the reflect send these effects and seven short cuts of the status loops (reflect_bubble, tick_*; effects 628-634 of
+things_custom24, built by
+`client/tools/sprites/gen_pack_fx.py`). Which use sends which: server/README.md "Pack effects for procs and bosses";
+the cuts and the set's licence: client/MANIFEST.md "Pack effect cuts".
+
 ## Bone effects (effects 583..585, missile 153; our own art)
 
 The Necromancer line's own effects, appended after everything above by `client/tools/sprites/import_fx_art.py` (spec
@@ -205,3 +211,63 @@ The 2x2 effects have the target as their bottom-right tile (offset 0,0). Art: `c
 `import_fx_art.py --merge` (the Lua names and catalogue rows are added to `chaos_vfx_art.lua` / `vfx_art_catalog.csv`).
 The spells send them through `NecroSpell.fx` (`_necro.lua`): a server without these Lua names sends the older effect or
 the stock one. Build commands and md5s: client/MANIFEST.md "Necromancer line effects". Test: `server/tests/necro_fx_test.lua`.
+
+## Class signature effects (effects 593..627; our own procedural art)
+
+Each class line's signature spells get an effect of their own, so the lines read differently in combat (they shared
+aura_burst_gold, shield_bubble, healing_bloom, dawn_aegis, earth_spikes, whirlwind, shade_vanish, teleport_in, cursed
+and toxic_burst, and the Ranger used the Templar's holy art). A palette and shape per line: Warrior iron, rock and
+ember; Ranger amber, leaf and wind; Mystic prism and rose (the Elementalist three elements); Thief smoke, ink and
+sakura; Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Drawn by
+`client/tools/sprites/gen_class_fx.py` (spec `art_import/class_fx.csv`, strips `art_import/class_fx/`), appended by
+`import_fx_art.py` (ids in `server/data/lib/chaos_class_fx_ids.lua`, catalogue `class_fx_catalog.csv`). Which spell of
+which class sends which, and the pair switch `ChaosClassFx.PAIR22_FX` (on since 2026-10-12, things_custom22 live):
+server/README.md "Class signature effects". Build and md5s: client/MANIFEST.md "Class signature effects".
+
+| id | name | size, offset | frames | look |
+|---|---|---|---|---|
+| 593 | warrior_quake | 3x3, 1,1 | 8 x 85 ms | warrior: the ground splits in ember cracks, slabs of rock thrown up (Earthbreaker, Colossus Fall) |
+| 594 | warrior_gyre | 3x3, 1,1 | 8 x 70 ms | warrior: two steel crescents sweep a full circle at blade height (Reaping Gyre) |
+| 595 | warrior_bellow | 3x3, 1,1 | 8 x 80 ms | warrior: an iron war cry; chevrons and broken rings rush outward (Iron Bellow) |
+| 596 | juggernaut_bulwark | 3x3, 1,1 | 8 x 90 ms | juggernaut: an iron tower shield slams down before the caster and cracks the ground (Iron Bellow) |
+| 597 | berserker_rage | 3x3, 1,1 | 8 x 80 ms | berserker: blood flames tear up around the caster, droplets spray and fall (Red Frenzy, Bloodrage) |
+| 598 | berserker_cleave | 3x3, 1,1 | 7 x 70 ms | berserker: a huge crimson crescent falls overhead and splits the ground (Skyfall Cleave) |
+| 599 | ranger_pierce | 3x3, 1,1 | 7 x 70 ms | ranger: a fletched arrow strikes and splits; feathers and amber splinters burst (Dawnpiercer) |
+| 600 | ranger_arrowfall | 1x1, 0,0 | 6 x 80 ms | ranger: two arrows drop steeply and stick in the ground, a puff of dust (Hail of Dawn, each tile) |
+| 601 | ranger_thornseal | 3x3, 1,1 | 8 x 90 ms | ranger: a ring of thorned vines grows from the earth, amber motes rise (Blessed Earth) |
+| 602 | ranger_canopy | 3x3, 1,1 | 8 x 90 ms | ranger: leaves whirl up into a canopy around the caster, a gust of wind (Lightward) |
+| 603 | deadeye_mark | 3x3, 1,1 | 7 x 70 ms | deadeye: a reticle closes on the target, then a piercing flash and cracks (Final Verdict) |
+| 604 | beast_spirit | 3x3, 1,1 | 8 x 90 ms | beastmaster: claw rakes tear the ground, paw prints and spirit wisps of amber and green (Wild Bond) |
+| 605 | mystic_mend | 3x3, 1,1 | 8 x 90 ms | mystic: prismatic petals spiral up and open, rose and cyan motes (Purifying Wellspring, Mirror Mend) |
+| 606 | elementalist_glyph | 3x3, 1,1 | 8 x 90 ms | elementalist: a rune circle in three arcs of fire, frost and storm turns and flares (Falling Pyre) |
+| 607 | illusion_mirror | 3x3, 1,1 | 8 x 90 ms | illusionist: four mirror panes rise around the target, a glint crosses them, they shatter (Hall of Mirrors) |
+| 608 | illusion_shatter | 3x3, 1,1 | 7 x 70 ms | illusionist: a figure breaks into glass shards of cyan and rose (Umbral Stride) |
+| 609 | thief_vanish | 3x3, 1,1 | 7 x 80 ms | thief: low smoke billows from the feet, two dagger glints spin out (Shadow Veil, Shadow Mend) |
+| 610 | ninja_vanish | 3x3, 1,1 | 7 x 70 ms | ninja: an ink slash crosses the spot, ink drops and leaves whirl (Shadow Step) |
+| 611 | ninja_smoke | 1x1, 0,0 | 6 x 90 ms | ninja: a smoke bomb tile; grey puffs and a red spark (Smoke Bomb, each tile) |
+| 612 | samurai_focus | 3x3, 1,1 | 8 x 90 ms | samurai: a blade gleam rises before the caster, crimson petals circle it (Bushido Focus) |
+| 613 | samurai_parry | 3x3, 1,1 | 7 x 70 ms | samurai: crossed blades flash, sparks and a crescent of steel (Counter Stance) |
+| 614 | necro_curse | 3x3, 1,1 | 8 x 90 ms | necromancer: a violet brand of runes closes on the target, a green skull mark sinks in (Withering Curse) |
+| 615 | lich_rot | 3x3, 1,1 | 8 x 90 ms | lich: rot bubbles swell and burst on the target, green skull wisps rise (Soul Rot) |
+| 616 | monk_heel | 3x3, 1,1 | 7 x 70 ms | monk: a ring of chi sweeps at kick height, ember footfalls flare (Whirling Heel) |
+| 617 | shadowfist_mark | 3x3, 1,1 | 7 x 80 ms | shadowfist: five violet pressure points light up on the target, joined, then pulse (Pressure Points) |
+| 618 | ironsage_ward | 3x3, 1,1 | 8 x 90 ms | iron sage: jade hexagon plates close into a dome over the target and crumble (Chi Ward) |
+| 619 | templar_mend | 3x3, 1,1 | 8 x 90 ms | templar: a cross of gold light descends, feathers drift down (Vow of Mending, Lay on Hands) |
+| 620 | inquisitor_zeal | 3x3, 1,1 | 8 x 80 ms | inquisitor: white-gold holy flames rise in a ring, sparks climb, a brand circle (Zealotry) |
+| 621 | sentinel_aegis | 3x3, 1,1 | 8 x 90 ms | sentinel: three radiant wall panes rise around the caster under a dome of light (Aegis of Faith) |
+| 622 | snare_jaws | 3x3, 1,1 | 6 x 70 ms | snare: iron jaws snap shut on the tile, sparks and dust (Snare Trap, triggered) |
+| 623 | snare_blast | 3x3, 1,1 | 7 x 70 ms | snare: a mine bursts; ember shards, iron fragments and smoke (Seeker Mine, Detonate Mines) |
+| 624 | vigil_wrath | 3x3, 1,1 | 8 x 90 ms | vigil: a red war banner with a sword rises from the ground (Vigil of Wrath) |
+| 625 | vigil_iron | 3x3, 1,1 | 8 x 90 ms | vigil: a steel banner with a shield rises from the ground (Vigil of Iron) |
+| 626 | vigil_haste | 3x3, 1,1 | 8 x 90 ms | vigil: a green banner with a wing rises from the ground (Vigil of Haste) |
+| 627 | vigil_clarity | 3x3, 1,1 | 8 x 90 ms | vigil: a blue banner with an eye rises from the ground (Vigil of Clarity) |
+
+## Large spell effects (things_custom24, effects 635-655; our own procedural art, soft alpha)
+
+21 big glowing effects, 5x5 to 9x9 tiles, 10-13 frames, each sent at its centre tile: boss telegraph circles (5, 7,
+9), shockwave rings (fire, frost, lightning, holy, blood), novas (fire 9x9, frost, poison, holy, void, arcane), pillars
+of light (holy, arcane), a meteor, a lightning burst, a holy sanctum, a void rift and a blood geyser. Drawn by
+`client/tools/sprites/gen_big_fx.py` (spec `art_import/big_fx.csv`; the element ramps of `item_forge_data/style.json`);
+their alpha stays soft, unlike the pixel-art sets above. In things_custom24 (effects 635-655); the ids are in
+`server/data/lib/chaos_big_fx_ids.lua`. Which spell, boss and use sends which, and the switch `ChaosBigFx.BIG_FX`
+(on since 2026-10-13 (pair 24 at 407ad9b6)): server/README.md "Large spell effects". Sizes and build: client/MANIFEST.md "Large spell effects".

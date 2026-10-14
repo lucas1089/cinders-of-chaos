@@ -13,12 +13,19 @@ ChaosPassiveTreeConfig = {
 	masteryChangeUsesNodePrice = true,
 	-- Nodes whose meaning changed a lot (append only; never edit a handed-out entry). At the first login after a version,
 	-- every preset and loadout of the character loses these nodes (and the ones only connected through them), for free,
-	-- with a message; Chaos.storage.passiveRework keeps the last version seen. Build codes made before the change (format
-	-- versions 1 and 2) leave them out on import (buildshare_core.lua REWORKED).
+	-- with a message; Chaos.storage.passiveRework keeps the last version seen. Build codes made before the change (an
+	-- older format version) leave them out on import (buildshare_core.lua REWORKED).
 	-- Version 1 (2026-10): the mythic leaves 369 (spirit), 376 (healing), 383 (wisdom), 390 (life leech) became the
 	-- keystones of the Necromancer, Templar, Thief and Monk lines.
+	-- Version 2 (2026-10, the build archetypes, docs/BUILDS.md): twelve small leaves became the archetype keystones
+	-- (archetypes_config.lua nodes): 77, 78, 81, 82 (leech / crit leaves), 106-109 (elemental cluster ends), 253, 262,
+	-- 355, 362 (mythic leaves).
+	-- Version 3 (2026-10-12, the second round: snares, vigils, Hollow Vessel): the four other elemental cluster ends 96,
+	-- 99, 102, 105 became Hollow Vessel, Covenant of Vigils, Iron Tithe and Snarewright's Creed (build codes format 5).
 	reworked = {
-		{version = 1, ids = {369, 376, 383, 390}}
+		{version = 1, ids = {369, 376, 383, 390}},
+		{version = 2, ids = {77, 78, 81, 82, 106, 107, 108, 109, 253, 262, 355, 362}},
+		{version = 3, ids = {96, 99, 102, 105}}
 	}
 }
 

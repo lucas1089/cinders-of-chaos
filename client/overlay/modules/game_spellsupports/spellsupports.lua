@@ -37,10 +37,13 @@ local function send(action, data)
   end
 end
 
+-- the rows of a server list (spells, runes); an entry that is no table is left out (opcode_fuzz_test.lua)
 local function list(value)
   local out = {}
   if type(value) == 'table' then
-    for _, v in ipairs(value) do out[#out + 1] = v end
+    for _, v in ipairs(value) do
+      if type(v) == 'table' then out[#out + 1] = v end
+    end
   end
   return out
 end
@@ -347,7 +350,7 @@ local function buildRunes()
     local cell = g_ui.createWidget('SupportRuneCell', grid)
     cell.runeId = r.id
     setRuneIcon(cell.icon, r)
-    cell.count:setText(tonumber(r.count) > 1 and tostring(r.count) or '')
+    cell.count:setText((tonumber(r.count) or 0) > 1 and tostring(r.count) or '')
     cell:setBorderColor(r.color or '#e8b84a')
     cell:setTooltip(runeTooltip(r) .. '\n' .. tr('Carried') .. ': ' .. tostring(r.count))
     cell.onFocusChange = function(self, focused)

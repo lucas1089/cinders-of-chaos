@@ -181,6 +181,7 @@ local function newPlayer(o)
 	return p
 end
 function Player_mt:getId() return self.cid end
+function Player_mt:getName() return self.name end
 function Player_mt:getAccountId() return self.account end
 function Player_mt:getAccountType() return self.accountType end
 function Player_mt:getGroup()
@@ -284,10 +285,17 @@ eq(rows[#rows].source, "level", "source recorded")
 cfg.classes.monk.unlock.level = nil
 
 -- ------------------------------------------------------------------ staff command
+-- an unlock is value: an administrator (group 5+, Chaos.staffCommand; docs/GM_HANDBOOK.md: staff never give value);
+-- a gamemaster (group 4) may revoke
+dofile("data/scripts/chaos/chaos_constants.lua")
+local gm4 = newPlayer({name = "Gamemaster Four", account = 12, voc = 4, group = 4})
+talks["/classunlock"].onSay(gm4, "/classunlock", "Bob, necromancer")
+eq(U.isUnlocked(8, "necromancer"), false, "a gamemaster cannot unlock")
+eq(gm4.cancel ~= nil, true, "and is told why")
 talks["/classunlock"].onSay(gm, "/classunlock", "Bob, necromancer")
 eq(U.isUnlocked(8, "necromancer"), true, "gm grant")
-talks["/classunlock"].onSay(gm, "/classunlock", "Bob, necromancer, revoke")
-eq(U.isUnlocked(8, "necromancer"), false, "gm revoke")
+talks["/classunlock"].onSay(gm4, "/classunlock", "Bob, necromancer, revoke")
+eq(U.isUnlocked(8, "necromancer"), false, "gm revoke (a gamemaster may)")
 talks["/classunlock"].onSay(alt, "/classunlock", "Bob, necromancer")
 eq(U.isUnlocked(8, "necromancer"), false, "players cannot use it")
 eq(talks["!classes"], nil, "no spoken player command")

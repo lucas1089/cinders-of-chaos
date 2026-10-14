@@ -196,7 +196,8 @@ local function tip(player, data)
 		dex = CHARSTAT_DEXTERITY and player.getCharacterStat and player:getCharacterStat(CHARSTAT_DEXTERITY) or 0}
 	local ok, built = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder})
 	if ok and type(built) == "table" then
-		reply.tip = built
+		local tip = built -- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
+		reply.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)
 	else
 		reply.gone = 1
 		print("[Chaos groundloot] tooltip: " .. tostring(built))

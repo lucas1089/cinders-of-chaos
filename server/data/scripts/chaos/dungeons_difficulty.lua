@@ -39,6 +39,17 @@ function D.health(maxHealth, difficulty)
 	return math.max(1, floor((maxHealth or 0) * D.of(difficulty).health / 100))
 end
 
+-- new max health of a dungeon's boss: a dungeon may give its boss its own percents per difficulty (`curve`, six
+-- numbers; the solo Hollow Vault, areagen_config.lua bossHealth) so a 30 minute run stays in time; without one the
+-- boss scales like every other monster
+function D.bossHealth(maxHealth, difficulty, curve)
+	if type(curve) ~= "table" or #curve == 0 then
+		return D.health(maxHealth, difficulty)
+	end
+	local _, d = D.of(difficulty)
+	return math.max(1, floor((maxHealth or 0) * (curve[math.min(d, #curve)] or 100) / 100))
+end
+
 -- damage dealt by a monster (negative or positive, the sign is kept)
 function D.damage(value, difficulty)
 	local pct = D.of(difficulty).damage

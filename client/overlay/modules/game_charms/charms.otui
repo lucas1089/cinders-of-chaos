@@ -2,50 +2,63 @@
 // under it; your charms (the ones in the backpack) and the totals on the right; Salvage / Reforge / Close below.
 // Styles from client_chaos_theme.
 
+// a grid cell: the skin's slot (gen_skin.py charmslot_*, one per charm shape at its exact size); a locked one dimmed
+// with our padlock; `hl` lights it green / red while dragging
 CharmCell < UIWidget
   size: 44 44
   anchors.top: parent.top
   anchors.left: parent.left
-  background-color: #2a1f1a
-  border-width: 1
-  border-color: #3a2c22
+  image-source: /images/chaos/charmslot_1x1
   phantom: false
+
+  UIWidget
+    id: hl
+    anchors.fill: parent
+    margin: 3
+    visible: false
+    phantom: true
 
   UIWidget
     id: lock
     anchors.centerIn: parent
-    size: 22 22
-    opacity: 0.55
+    size: 20 24
+    opacity: 0.6
     visible: false
     phantom: true
 
+// a charm: the slot of its shape, a glow (Glowing, Radiant, Unique) and a frame in the rarity colour, the charm's item sprite in the
+// middle (32 px; 64 px on a 2x2 charm)
 CharmTile < UIWidget
   size: 44 44
-  background-color: #1a1214
-  border-width: 1
-  border-color: #e8b84a
+  image-source: /images/chaos/charmslot_1x1
   phantom: false
   focusable: false
 
   UIWidget
-    id: icon
-    anchors.centerIn: parent
-    size: 32 32
+    id: glow
+    anchors.fill: parent
+    image-source: /modules/game_lootfilter/images/lf_glow
+    image-border: 8
+    visible: false
     phantom: true
 
-CharmGhost < UIWidget
-  background-color: #1a121499
-  border-width: 1
-  border-color: #e8b84a
-  opacity: 0.8
-  phantom: true
-  focusable: false
+  UIItem
+    id: look
+    anchors.centerIn: parent
+    size: 32 32
+    virtual: true
+    phantom: true
 
   UIWidget
-    id: icon
-    anchors.centerIn: parent
-    size: 32 32
+    id: frame
+    anchors.fill: parent
+    image-source: /modules/game_lootfilter/images/lf_frame
+    image-border: 4
     phantom: true
+
+CharmGhost < CharmTile
+  opacity: 0.8
+  phantom: true
 
 CharmLine < UILabel
   font: verdana-11px-antialised

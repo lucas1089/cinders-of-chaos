@@ -133,7 +133,18 @@ eq(rows[1].color, '#9a6ae8', 'branch colour')
 eq(#rows[1].cells, 3, 'tiers')
 ok(rows[1].cells[1].done and not rows[1].cells[2].done, 'cell done')
 ok(rows[3].cells[1].done, 'flawless 1 done')
-ok(rows[4].cells[1].tip:find('5:00'), 'swift time in the tip')
+ok(rows[4].cells[1].tip:find('5:00'), 'swift time in the tip (an older server: one time)')
+-- per-tier Swift times (they grow with the rift's map size and tier); a missing tier falls back to grid.swift
+eq(V.swiftSeconds(tree.grid, 2), 300, 'swift seconds: one time')
+tree.grid.swiftTiers = { 315, 285.0 }
+rows = V.gridRows(tree, d)
+ok(rows[4].cells[1].tip:find('sealed within 5:15', 1, true), 'tier 1: its own time')
+ok(rows[4].cells[2].tip:find('sealed within 4:45', 1, true), 'tier 2: its own time')
+ok(rows[4].cells[3].tip:find('sealed within 5:00', 1, true), 'tier 3: no own time, the one time')
+eq(V.swiftSeconds(tree.grid, 2), 285, 'swift seconds: whole seconds')
+eq(V.swiftSeconds(nil, 1), 0, 'swift seconds: no grid')
+tree.grid.swiftTiers = nil
+rows = V.gridRows(tree, d)
 ok(rows[5].cells[1].done and rows[5].cells[1].name == 'Stormcall', 'omen done')
 local dn, tn = V.gridCount(rows)
 eq(dn, 3, 'grid done')
@@ -145,6 +156,7 @@ local ok1, cfgOrErr = pcall(dofile, dir .. '../../../../server/data/scripts/chao
 if ok1 then
   local rcfg = dofile(dir .. '../../../../server/data/scripts/chaos/rift_config.lua')
   dofile(dir .. '../../../../server/data/scripts/chaos/atlas_core.lua')
+  dofile(dir .. '../../../../server/data/scripts/chaos/rift_core.lua') -- the Swift times come from the rift model
   local real = ChaosAtlasCore.treePayload(cfgOrErr, rcfg)
   local rix = V.index(real)
   eq(#rix.list, #cfgOrErr.nodes, 'real tree indexed')
@@ -163,6 +175,15 @@ if ok1 then
   eq(#rr, 4 + 2 + 1, 'real grid rows')
   local _, total = V.gridCount(rr)
   eq(total, 93, 'real grid cells')
+  -- the Swift row shows the server's time of each tier, and it grows from the small maps to the big ones
+  local sw = rr[4 + 2]
+  eq(sw.kind, 'swift', 'real swift row')
+  for t = 1, 15 do
+    local secs = real.grid.swiftTiers[t]
+    ok(sw.cells[t].tip:find(string.format('sealed within %d:%02d', math.floor(secs / 60), secs % 60), 1, true),
+      'real swift tip tier ' .. t)
+  end
+  ok(real.grid.swiftTiers[15] > real.grid.swiftTiers[1], 'tier 15 gets more time than tier 1')
 end
 
 print(string.format('riftatlasview_test: %d checks, %d failed', checks, fails))

@@ -82,6 +82,13 @@ ChaosSpellData = {
   { id = 253, name = "Lay on Hands", words = "saen gal manh", level = 150, mana = 400, group = 2, groupCooldown = 1000, cooldown = 60000, premium = true, needTarget = false, range = 0, vocations = { 25 }, iconKey = "chaos_layonhands", clientId = 277 },
   { id = 96, name = "Mirror Mend", words = "saen spek", level = 60, mana = 180, group = 2, groupCooldown = 1000, cooldown = 2000, premium = true, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_mirrormend", clientId = 278 },
   { id = 97, name = "Lucid Reverie", words = "reth vas spek", level = 120, mana = 300, group = 2, groupCooldown = 1000, cooldown = 20000, premium = true, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_lucidreverie", clientId = 279 },
+  { id = 99, name = "Snare Trap", words = "drai snar", level = 40, mana = 90, group = 1, groupCooldown = 2000, cooldown = 2000, premium = true, needTarget = false, range = 0, vocations = { 3, 7, 15, 11, 12, 13 }, iconKey = "chaos_snaretrap", clientId = 282 },
+  { id = 100, name = "Seeker Mine", words = "kah snar", level = 60, mana = 110, group = 1, groupCooldown = 2000, cooldown = 2000, premium = true, needTarget = false, range = 0, vocations = { 3, 7, 15, 11, 12, 13 }, iconKey = "chaos_seekermine", clientId = 283 },
+  { id = 104, name = "Detonate Mines", words = "vok snar", level = 60, mana = 20, group = 3, groupCooldown = 0, cooldown = 1000, premium = true, needTarget = false, range = 0, vocations = { 3, 7, 15, 11, 12, 13 }, iconKey = "chaos_detonatemines", clientId = 284 },
+  { id = 179, name = "Vigil of Wrath", words = "vigh vyr", level = 60, mana = 0, group = 3, groupCooldown = 0, cooldown = 2000, premium = true, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25 }, iconKey = "chaos_vigilofwrath", clientId = 285 },
+  { id = 255, name = "Vigil of Iron", words = "vigh tor", level = 60, mana = 0, group = 3, groupCooldown = 0, cooldown = 2000, premium = true, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25 }, iconKey = "chaos_vigilofiron", clientId = 286 },
+  { id = 161, name = "Vigil of Haste", words = "vigh ruan", level = 40, mana = 0, group = 3, groupCooldown = 0, cooldown = 2000, premium = true, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25 }, iconKey = "chaos_vigilofhaste", clientId = 287 },
+  { id = 162, name = "Vigil of Clarity", words = "vigh lum", level = 40, mana = 0, group = 3, groupCooldown = 0, cooldown = 2000, premium = true, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25 }, iconKey = "chaos_vigilofclarity", clientId = 288 },
 }
 
 -- stock spells: old words -> Chaos name and words (server/data/spells/spell_names.csv, spell_words.csv)
@@ -238,6 +245,51 @@ ChaosSpellNames = {
   ["adito grav"] = { name = "Dispel Rune", words = "rhud mur" },
   ["adori blank"] = { name = "Unscribed Rune", words = "rhun nul" },
   ["adori dis min vis"] = { name = "Novice's Hexdart Rune", words = "rhun nov ti zhul" },
+}
+
+-- stock spells the server removed: old words -> Chaos words (server/data/spells/spell_names.csv, "removed")
+ChaosRemovedSpells = {
+  ["exevo pan"] = "drai bren", -- Conjure Rations (conjure)
+  ["exeta con"] = "vok sag", -- Hallow Spear (conjure)
+  ["exeta vis"] = "vok zhul", -- Charge Staff (conjure)
+  ["adori mas frigo"] = "rhun vas hyr", -- Frostfall Rune (conjure)
+  ["adevo mas vis"] = "rhuv vas zhul", -- Storm Seed Rune (conjure)
+  ["adevo grav vis"] = "rhuv mur zhul", -- Sparkmire Rune (conjure)
+  ["adevo mas grav vis"] = "rhuv vas mur zhul", -- Stormwall Rune (conjure)
+  ["adevo mas hur"] = "rhuv vas ul", -- Concussion Rune (conjure)
+  ["adevo mas flam"] = "rhuv vas pyr", -- Ember Seed Rune (conjure)
+  ["adevo grav flam"] = "rhuv mur pyr", -- Cinderpatch Rune (conjure)
+  ["adevo mas grav flam"] = "rhuv vas mur pyr", -- Pyrewall Rune (conjure)
+  ["adori flam"] = "rhun pyr", -- Cinder Orb Rune (conjure)
+  ["adori mas flam"] = "rhun vas pyr", -- Searing Orb Rune (conjure)
+  ["adori vis"] = "rhun zhul", -- Greater Hexdart Rune (conjure)
+  ["adori san"] = "rhun sol", -- Dawnshard Rune (conjure)
+  ["adori frigo"] = "rhun hyr", -- Rimespike Rune (conjure)
+  ["adori min vis"] = "rhun ti zhul", -- Hexdart Rune (conjure)
+  ["adori infir mas tera"] = "rhun tin vas gor", -- Pebblestorm Rune (conjure)
+  ["adori infir vis"] = "rhun tin zhul", -- Faint Dart Rune (conjure)
+  ["adevo grav tera"] = "rhuv mur gor", -- Bastion Rune (conjure)
+  ["adevo mas pox"] = "rhuv vas vex", -- Blight Seed Rune (conjure)
+  ["adevo grav pox"] = "rhuv mur vex", -- Blightpatch Rune (conjure)
+  ["adevo mas grav pox"] = "rhuv vas mur vex", -- Blightwall Rune (conjure)
+  ["adevo res flam"] = "rhuv kal pyr", -- Soulpyre Rune (conjure)
+  ["adori tera"] = "rhun gor", -- Stonefang Rune (conjure)
+  ["adori mas tera"] = "rhun vas gor", -- Rockfall Rune (conjure)
+  ["adori gran mort"] = "rhun gal nyx", -- Reaper's Rune (conjure)
+  ["adori mas vis"] = "rhun vas zhul", -- Stormcall Rune (conjure)
+  ["adana ani"] = "rhua shak", -- Shackle Rune (conjure)
+  ["adevo grav vita"] = "rhuv mur ael", -- Thicket Rune (conjure)
+  ["adana pox"] = "rhua vex", -- Purge Rune (conjure)
+  ["adura gran"] = "rhus gal", -- Mending Rune (conjure)
+  ["adura vita"] = "rhus ael", -- Grand Mending Rune (conjure)
+  ["adana mort"] = "rhua nyx", -- Gravecall Rune (conjure)
+  ["adeta sio"] = "rhuk kin", -- Beastbond Rune (conjure)
+  ["adevo ina"] = "rhuv nir", -- Mimic Rune (conjure)
+  ["adito tera"] = "rhud gor", -- Unmaking Rune (conjure)
+  ["adito grav"] = "rhud mur", -- Dispel Rune (conjure)
+  ["adori blank"] = "rhun nul", -- Unscribed Rune (conjure)
+  ["adori dis min vis"] = "rhun nov ti zhul", -- Novice's Hexdart Rune (conjure)
+  ["exevo gran mort"] = "exevo gran mort", -- Conjure Wand of Darkness (client only, no server spell)
 }
 
 -- stock spells the Thief, Monk and Templar lines get: Chaos words -> class ids (server/tools/add_vocations.py, LINE_STOCK_SPELLS)

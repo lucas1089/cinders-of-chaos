@@ -4,12 +4,13 @@
 Standard library only (Python 3.7+). Three commands:
 
   setup    create the bot accounts and characters in the game database (mysql client; CHAOS_DB_* as for backup.sh)
-             python3 -I server/tools/loadtest.py setup --count 30 [--pos 1500,1500,7] [--town 1] [--vocation 4]
-                 [--hash-iterations 120000]
+             python3 -I server/tools/loadtest.py setup --count 30 [--pos 1500,1500,7 | --spread SERVER/data/chaos_poi.lua]
+                 [--town 1] [--vocation 4] [--hash-iterations 120000] [--town-share 0.34] [--area-level 150] [--health 1500]
   run      log the bots in, walk, talk, measure, print a report
              python3 -I server/tools/loadtest.py run --count 30 --host 127.0.0.1 --port 7171 --duration 120
                  [--server-pid PID] [--server-log PATH] [--key key.pem] [--ramp 0.5] [--walk 1.0] [--say 20]
-                 [--dev-key | --client-key HEX] [--client-build N] [--login-timeout 20]
+                 [--dev-key | --client-key HEX] [--client-build N] [--login-timeout 20] [--hunt]
+                 [--reconnect MIN,MAX] [--drop P] [--abort P] [--opcodes FILE] [--opcode-every S] [--pm S] [--party S]
   cleanup  delete the bot characters and accounts again
              python3 -I server/tools/loadtest.py cleanup
 
@@ -17,7 +18,28 @@ Accounts are named loadbot0000..., password "loadbot", stored as the website sto
 which must equal the server's passwordHashIterations, default 120000; one salt for all bots). --hash-iterations 0 writes
 the old unsalted SHA-1, which every first login re-hashes and writes back: only to test that migration, it is not what a
 new player's login costs. One character each ("Loadbot Aaa", "Loadbot Aab", ...), level 100, placed at --pos (spread
-over a square around it) with lastlogin set, so the new-player tutorial and kit do not start.
+over a square around it) with lastlogin set, so the new-player tutorial and kit do not start. --spread reads the
+installed server's map markers (data/chaos_poi.lua, install step poi) and spreads the bots over the towns and the hunting
+areas instead: --town-share of them (default 0.34) round the 20 temples, the rest over the hunting areas whose level
+band starts at --area-level or below (default 150: the bots are level 100; 0 = every area), a few tiles around each
+marker (a blocked tile puts the character on the nearest free one, or at its temple).
+Hunting: --hunt sends the fight modes (offensive, chase on) after entering. The bots cannot pick a monster themselves
+(that needs the creature ids of the map description, which they do not parse), so the TEST ONLY script
+server/tools/loadtest_hunt.lua gives every bot near a monster that monster as its target and keeps the bots alive; with
+it the bots fight the monsters of their hunting area (melee, the monsters' spells, loot, respawn) and never die (a real
+player dies now and then; a level 100 bot in a level 400 area would nearly die every second, and every lethal hit runs
+all prepare-death events, which is not what players cost). --health sets the bots' health.
+Storms and spam (the stress test of server/README.md "Stress test"):
+  --reconnect MIN,MAX  each bot leaves after MIN..MAX s in game and logs in again (a reconnect loop) until the run ends
+  --drop P             a session ends without the logout packet (the socket is closed: a crashed client), chance P
+  --abort P            a login is cut off half way, chance P: after the character list (no game connection), right
+                       after the game login was sent (the answer is never read) or right after the first answer
+  --opcodes FILE       a JSON list of [opcode, payload] (payload a string or a JSON object; "{name}" is replaced with the
+                       bot's name, "{online}" with another bot in game, "{other}" with any other bot of the run, in game
+                       or not); --opcode-every S sends a random one every S s
+  --pm S               a private message to another bot every S s
+  --party S            every S s: invite another bot in game into a party (it joins), or leave the party
+  The report counts the sessions, cut logins, the opcodes, messages and party actions sent, and every kick.
 Never run setup against a live database you cannot clean: cleanup removes exactly the loadbot accounts and their
 characters.
 
@@ -228,6 +250,9 @@ class Bot:
         self.conn = None
         self.alive = False
         self.stage = 'start'
+        self.cid = 0  # the creature id of the character (the first game message, 0x17)
+        self.guard_wait = 0  # while set (a monotonic deadline) the reader looks for a late client guard challenge
+        self.invited_by = []  # creature ids of bots that invited this one into a party
 
     def key(self):
         return [random.getrandbits(32) for _ in range(4)]
@@ -298,6 +323,9 @@ class Bot:
                 + struct.pack('<H', 0) + rsa_block(rsa, self.n))
         c.send_raw(body)
         await c.w.drain()
+        if self.abort_at == 'sent':
+            c.w.close()
+            raise LoginAborted('cut off right after the game login')
         self.stage = 'game server: waiting for the game login answer'
         first = c.decrypt(await asyncio.wait_for(c.read_message(), self.args.login_timeout))
         if first and first[0] in (0x14, 0x0B):
@@ -305,6 +333,11 @@ class Bot:
             raise RuntimeError('game refused: ' + text.replace('\n', ' '))
         if first and first[0] == 0x16:
             raise RuntimeError('waiting list (server full)')
+        if len(first) >= 5 and first[0] == 0x17:
+            self.cid = struct.unpack_from('<I', first, 1)[0]
+        if self.abort_at == 'answer':
+            c.w.close()
+            raise LoginAborted('cut off after the first game answer')
         if self.args.guard_key:
             await self.answer_guard(c, first)
         return c
@@ -323,52 +356,101 @@ class Bot:
                 raise RuntimeError('game refused: ' + text.replace('\n', ' '))
             nonce = find_challenge(msg)
         if nonce is None:
-            self.stats['no_challenge'] += 1  # the server's client guard is off (or log mode with a refused id)
+            # the server's client guard is off (or log mode with a refused id), or the challenge comes later (a busy
+            # server, a reconnect to a character still in the game sends the map first): drain() keeps looking
+            self.guard_wait = time.monotonic() + 15
             return
+        self.send_guard_answer(c, nonce)
+        await c.w.drain()
+
+    def send_guard_answer(self, c, nonce):
+        self.guard_wait = 0
         build = self.args.client_build
         c.send(b'\x32' + bytes([GUARD_OPCODE]) + string(guard_answer(self.args.guard_key, nonce, self.account, self.name, build)))
         hello = json.dumps({'action': 'hello', 'data': {'build': build, 'modules': 99}}, separators=(',', ':'))
         c.send(b'\x32' + bytes([GUARD_HELLO_OPCODE]) + string(hello))
-        await c.w.drain()
 
     async def run(self, clock):
+        """one session, or with --reconnect sessions until the run ends"""
+        a = self.args
+        if not a.reconnect:
+            await self.session(clock, float('inf'))
+            return
+        lo, hi = a.reconnect
+        while time.monotonic() < clock['until'] and not self.stats['stop']:
+            failed = len(self.stats['failed'])
+            await self.session(clock, time.monotonic() + lo + random.random() * (hi - lo))
+            # a refused login is tried again a few seconds later, as a player would (not at once: that only floods
+            # the login worker's queue)
+            await asyncio.sleep(random.random() + (2 + 3 * random.random() if len(self.stats['failed']) > failed else 0))
+
+    async def session(self, clock, leave_at):
         t0 = time.monotonic()
-        self.stats['connecting'] += 1
+        a, st = self.args, self.stats
+        self.abort_at = None
+        if a.abort > 0 and random.random() < a.abort:
+            self.abort_at = random.choice(('charlist', 'sent', 'answer'))
+        st['connecting'] += 1
         try:
             session, world = await self.login_server()
-            self.stats.setdefault('charlist_ms', []).append((time.monotonic() - t0) * 1000)
+            st.setdefault('charlist_ms', []).append((time.monotonic() - t0) * 1000)
+            if self.abort_at == 'charlist':
+                raise LoginAborted('cut off after the character list')
             self.conn = await self.enter_game(session, world)
-        except Exception as e:  # noqa: BLE001 - every failure is a result of the test
-            self.stats['connecting'] -= 1
-            self.stats['failed'].append((self.name, failure_reason(self.stage, e)))
+        except LoginAborted:
+            st['connecting'] -= 1
+            st['aborted'] = st.get('aborted', 0) + 1
             return
-        self.stats['connecting'] -= 1
-        self.stats['login_ms'].append((time.monotonic() - t0) * 1000)
-        self.stats['in_game'] += 1
+        except Exception as e:  # noqa: BLE001 - every failure is a result of the test
+            st['connecting'] -= 1
+            st['failed'].append((self.name, failure_reason(self.stage, e)))
+            return
+        st['connecting'] -= 1
+        st['login_ms'].append((time.monotonic() - t0) * 1000)
+        st['in_game'] += 1
+        st['sessions'] = st.get('sessions', 0) + 1
         self.entered = time.monotonic()
         self.alive = True
+        ONLINE[self.cid] = self
         reader = asyncio.ensure_future(self.drain())
+        if a.hunt:
+            # fight modes as the client sends them: offensive, chase on, secure (no unmarked players), pvp mode
+            self.conn.send(b'\xA0\x01\x01\x00\x00')
+        dropped = False
         try:
-            await self.act(clock)
+            await self.act(clock, leave_at)
         finally:
+            ONLINE.pop(self.cid, None)
             reader.cancel()
             if self.alive:
-                try:
-                    self.conn.send(b'\x14')  # logout
-                    await self.conn.w.drain()
-                except Exception:  # noqa: BLE001
-                    pass
+                dropped = a.drop > 0 and random.random() < a.drop
+                if dropped:
+                    st['dropped'] = st.get('dropped', 0) + 1
+                else:
+                    try:
+                        self.conn.send(b'\x14')  # logout
+                        await self.conn.w.drain()
+                    except Exception:  # noqa: BLE001
+                        pass
             self.conn.w.close()
-            self.stats['bytes'] += self.conn.received
+            st['bytes'] += self.conn.received
             if self.alive:
                 self.alive = False
-                self.stats['in_game'] -= 1
+                st['in_game'] -= 1
 
     async def drain(self):
         last = None
         try:
             while True:
                 last = await self.conn.read_message()
+                if self.guard_wait:
+                    if time.monotonic() > self.guard_wait:
+                        self.guard_wait = 0
+                        self.stats['no_challenge'] += 1
+                    else:
+                        nonce = find_challenge(self.conn.decrypt(last))
+                        if nonce is not None:
+                            self.send_guard_answer(self.conn, nonce)
         except asyncio.CancelledError:
             raise
         except Exception:  # noqa: BLE001 - the server closed the connection
@@ -386,13 +468,30 @@ class Bot:
                     self.stats['kicked'].append((self.name, 'kicked %s after entering%s' % (
                         'within 10 s', ': ' + text if text else ' (no message)')))
 
-    async def act(self, clock):
+    async def act(self, clock, leave_at=float('inf')):
         a = self.args
+        def first(every):
+            return time.monotonic() + random.random() * every if every > 0 else float('inf')
         next_walk = time.monotonic() + random.random() * a.walk
-        next_say = time.monotonic() + random.random() * a.say if a.say > 0 else float('inf')
+        next_say = first(a.say)
+        next_op, next_pm, next_party = first(a.opcode_every), first(a.pm), first(a.party)
         next_ping = time.monotonic() + 2
-        while self.alive and time.monotonic() < clock['until'] and not self.stats['stop']:
+        while self.alive and time.monotonic() < min(clock['until'], leave_at) and not self.stats['stop']:
             now = time.monotonic()
+            if now >= next_op and a.opcode_list:
+                op, payload = random.choice(a.opcode_list)
+                self.conn.send(b'\x32' + bytes([op]) + string(self.fill(payload)))
+                self.count('opcodes')
+                next_op = now + a.opcode_every * (0.75 + random.random() * 0.5)
+            if now >= next_pm:
+                other = self.other()
+                if other:
+                    self.conn.send(b'\x96\x05' + string(other.name) + string(random.choice(WORDS)))
+                    self.count('pms')
+                next_pm = now + a.pm * (0.75 + random.random() * 0.5)
+            if now >= next_party:
+                self.party_step()
+                next_party = now + a.party * (0.75 + random.random() * 0.5)
             if now >= next_walk and a.walk > 0:
                 self.conn.send(bytes([random.choice((0x65, 0x66, 0x67, 0x68))]))
                 self.stats['walks'] += 1
@@ -409,6 +508,55 @@ class Bot:
             except Exception:  # noqa: BLE001
                 break
             await asyncio.sleep(0.1)
+
+
+class LoginAborted(Exception):
+    pass
+
+
+ONLINE = {}  # creature id -> Bot in game (the targets of private messages and party invites)
+
+
+def _bot_fill(self, payload):
+    """{name}: this bot; {online}: another bot in game; {other}: any other bot of the run (in game or not)"""
+    if '{online}' in payload:
+        other = self.other()
+        payload = payload.replace('{online}', other.name if other else self.name)
+    if '{other}' in payload:
+        i = random.randrange(self.args.count - 1) if self.args.count > 1 else 0
+        payload = payload.replace('{other}', bot_name(i + 1 if i >= self.index else i) if self.args.count > 1 else self.name)
+    return payload.replace('{name}', self.name)
+
+
+def _bot_other(self):
+    ids = [cid for cid in ONLINE if cid != self.cid]
+    return ONLINE[random.choice(ids)] if ids else None
+
+
+def _bot_count(self, key):
+    self.stats[key] = self.stats.get(key, 0) + 1
+
+
+def _bot_party_step(self):
+    """join a party this bot was invited to, else leave (now and then) or invite another bot in game"""
+    while self.invited_by:
+        leader = self.invited_by.pop()
+        if leader in ONLINE:
+            self.conn.send(b'\xA4' + struct.pack('<I', leader))
+            self.count('party_joins')
+            return
+    if random.random() < 0.2:
+        self.conn.send(b'\xA7')
+        self.count('party_leaves')
+        return
+    other = self.other()
+    if other:
+        self.conn.send(b'\xA3' + struct.pack('<I', other.cid))
+        other.invited_by.append(self.cid)
+        self.count('party_invites')
+
+
+Bot.fill, Bot.other, Bot.count, Bot.party_step = _bot_fill, _bot_other, _bot_count, _bot_party_step
 
 
 def disconnect_text(plain):
@@ -506,7 +654,7 @@ def probe_lines(path, start, end):
 async def run_test(args):
     n = modulus_from_pem(args.key) if args.key else OT_RSA_N
     stats = {'login_ms': [], 'charlist_ms': [], 'failed': [], 'kicked': [], 'bytes': 0, 'disconnects': 0, 'walks': 0,
-             'says': 0, 'no_challenge': 0, 'in_game': 0, 'connecting': 0, 'stop': False}
+             'says': 0, 'no_challenge': 0, 'in_game': 0, 'connecting': 0, 'stop': False, 'reconnect': bool(args.reconnect)}
     sampler = Sampler(args.server_pid) if args.server_pid else None
     baseline = None
     if sampler:
@@ -547,6 +695,11 @@ async def run_test(args):
 async def report_progress(stats, count, t0):
     while True:
         await asyncio.sleep(10)
+        if stats.get('reconnect'):
+            print('  [%4.0fs] in game %d, logging in %d, failed %d, sessions %d, cut off %d, dropped %d' % (
+                time.monotonic() - t0, stats['in_game'], stats['connecting'], len(stats['failed']),
+                stats.get('sessions', 0), stats.get('aborted', 0), stats.get('dropped', 0)), flush=True)
+            continue
         print('  [%4.0fs] in game %d, logging in %d, failed %d, not started %d' % (
             time.monotonic() - t0, stats['in_game'], stats['connecting'], len(stats['failed']),
             count - len(stats['login_ms']) - len(stats['failed']) - stats['connecting']), flush=True)
@@ -557,8 +710,12 @@ def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
     print()
     print('Load test: %d bots, %ds at full load, walk every %.1fs, say every %ss%s' % (
         args.count, args.duration, args.walk, args.say, ' (stopped early)' if s['stop'] else ''))
-    print('  entered the game %d / %d; failed %d; kicked within 10 s of entering %d' % (
-        ok, args.count, len(s['failed']), len(s['kicked'])))
+    if args.reconnect:
+        print('  %d bots, %d logins entered the game (reconnect loops); failed %d; kicked within 10 s of entering %d' % (
+            args.count, ok, len(s['failed']), len(s['kicked'])))
+    else:
+        print('  entered the game %d / %d; failed %d; kicked within 10 s of entering %d' % (
+            ok, args.count, len(s['failed']), len(s['kicked'])))
     print('  login time %s (connect to in game)' % spread(s['login_ms']))
     if s.get('charlist_ms'):
         print('  character list %s (%d answers; the login server part of the above)' % (
@@ -567,6 +724,10 @@ def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
         print('  %4d x %s (%s%s)' % (count, reason, ', '.join(names), ', ...' if count > len(names) else ''))
     print('  disconnects during the run: %d; steps sent %d, chat lines %d; received %.1f MB' % (
         s['disconnects'], s['walks'], s['says'], s['bytes'] / 1e6))
+    extra = [(k, s.get(k, 0)) for k in ('sessions', 'aborted', 'dropped', 'opcodes', 'pms', 'party_invites',
+                                       'party_joins', 'party_leaves') if s.get(k)]
+    if extra:
+        print('  ' + ', '.join('%s %d' % kv for kv in extra))
     if args.guard_key:
         print('  client guard: build %d, %s key; logins without a challenge (guard off): %d' % (
             args.client_build, 'development' if args.guard_key == GUARD_DEV_KEY else 'given', s['no_challenge']))
@@ -636,20 +797,53 @@ def password_hash(password, iterations):
     return 'pbkdf2-sha256$%d$%s$%s' % (iterations, base64.b64encode(salt).decode(), base64.b64encode(key).decode())
 
 
+def poi_marks(text, max_area_level=0):
+    """[(kind, x, y, z)] of the temple and hunt marks of a data/chaos_poi.lua (gen_poi.py's format); with
+    max_area_level only the hunting areas whose level band starts at or below it ("... (level 70-90)")"""
+    out = []
+    for m in re.finditer(r'\{k = "(temple|hunt)", x = (\d+), y = (\d+), z = (\d+), n = "([^"]*)"', text):
+        band = re.search(r'\(level (\d+)-\d+\)', m.group(5))
+        if m.group(1) == 'hunt' and max_area_level and band and int(band.group(1)) > max_area_level:
+            continue
+        out.append((m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4))))
+    return out
+
+
+def spread_positions(marks, count, town_share):
+    """count positions: the first round(count * town_share) round robin over the temples (up to 5 tiles off), the
+    others over the hunting areas (up to 3 tiles off); the same marks and count give the same positions"""
+    temples = [m[1:] for m in marks if m[0] == 'temple']
+    hunts = [m[1:] for m in marks if m[0] == 'hunt']
+    if not temples or not hunts:
+        raise ValueError('no temple or no hunting marks (is it data/chaos_poi.lua of an installed server?)')
+    towns = int(round(count * town_share))
+    out = []
+    for i in range(count):
+        rnd = random.Random(i)
+        (x, y, z), off = (temples[i % len(temples)], 5) if i < towns else (hunts[(i - towns) % len(hunts)], 3)
+        out.append((x + rnd.randint(-off, off), y + rnd.randint(-off, off), z))
+    return out
+
+
 def setup(args):
-    x, y, z = (int(v) for v in args.pos.split(','))
-    side = max(1, int(args.count ** 0.5 + 0.999))
+    if args.spread:
+        with open(args.spread, errors='replace') as f:
+            positions = spread_positions(poi_marks(f.read(), args.area_level), args.count, args.town_share)
+    else:
+        x, y, z = (int(v) for v in args.pos.split(','))
+        side = max(1, int(args.count ** 0.5 + 0.999))
+        positions = [(x - side // 2 + i % side, y - side // 2 + i // side, z) for i in range(args.count)]
     pw = password_hash(PREFIX, args.hash_iterations)
     st = []
     for i in range(args.count):
         acc = '%s%04d' % (PREFIX, i)
         st.append("INSERT IGNORE INTO `accounts` (`name`, `password`, `email`) VALUES ('%s', '%s', '');" % (acc, pw))
-        px, py = x - side // 2 + i % side, y - side // 2 + i // side
+        px, py, z = positions[i]
         st.append("INSERT IGNORE INTO `players` (`name`, `account_id`, `group_id`, `vocation`, `level`, `health`, "
                   "`healthmax`, `experience`, `mana`, `manamax`, `cap`, `town_id`, `posx`, `posy`, `posz`, `lastlogin`, "
-                  "`looktype`) SELECT '%s', `id`, 1, %d, 100, 1500, 1500, 15694800, 500, 500, 1500, %d, %d, %d, %d, "
+                  "`looktype`) SELECT '%s', `id`, 1, %d, 100, %d, %d, 15694800, 500, 500, 1500, %d, %d, %d, %d, "
                   "UNIX_TIMESTAMP() - 86400, 128 FROM `accounts` WHERE `name` = '%s';"
-                  % (bot_name(i), args.vocation, args.town, px, py, z, acc))
+                  % (bot_name(i), args.vocation, args.health, args.health, args.town, px, py, z, acc))
     sql(args, st)
     out = sql(args, ["SELECT COUNT(*) FROM `players` p JOIN `accounts` a ON a.`id` = p.`account_id` "
                      "WHERE a.`name` LIKE '%s%%';" % PREFIX])
@@ -660,6 +854,21 @@ def cleanup(args):
     sql(args, ["DELETE p FROM `players` p JOIN `accounts` a ON a.`id` = p.`account_id` WHERE a.`name` LIKE '%s____';"
                % PREFIX, "DELETE FROM `accounts` WHERE `name` LIKE '%s____';" % PREFIX])
     print('loadbot accounts and characters deleted')
+
+
+def load_opcodes(path):
+    """[(opcode, payload text)] of a --opcodes file: a JSON list of [opcode, payload]"""
+    with open(path) as f:
+        rows = json.load(f)
+    out = []
+    for row in rows:
+        if not (isinstance(row, list) and len(row) == 2 and isinstance(row[0], int) and 0 < row[0] < 256):
+            sys.exit('--opcodes: every entry is [opcode 1..255, payload]: %r' % (row,))
+        payload = row[1] if isinstance(row[1], str) else json.dumps(row[1], separators=(',', ':'))
+        out.append((row[0], payload))
+    if not out:
+        sys.exit('--opcodes: the file lists no opcode')
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ main
@@ -676,9 +885,11 @@ def parse(argv):
     defaults = {'--count': 30, '--host': '127.0.0.1', '--port': 7171, '--game-port': 0, '--duration': 120,
                 '--server-pid': 0, '--server-log': '', '--key': '', '--ramp': 0.5, '--walk': 1.0, '--say': 20.0,
                 '--pos': '1500,1500,7', '--town': 1, '--vocation': 4, '--db': '', '--client-key': '',
-                '--client-build': 1, '--login-timeout': 20.0, '--hash-iterations': 120000}
+                '--client-build': 1, '--login-timeout': 20.0, '--hash-iterations': 120000, '--spread': '',
+                '--town-share': 0.34, '--health': 1500, '--area-level': 150, '--reconnect': '', '--drop': 0.0,
+                '--abort': 0.0, '--opcodes': '', '--opcode-every': 0.0, '--pm': 0.0, '--party': 0.0}
     vals = dict(defaults)
-    flags = {'--no-source-ips': False, '--dev-key': False}
+    flags = {'--no-source-ips': False, '--dev-key': False, '--hunt': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -693,10 +904,20 @@ def parse(argv):
         i += 1
     for k, v in list(vals.items()) + list(flags.items()):
         setattr(a, k.lstrip('-').replace('-', '_'), v)
+    if not 0 <= a.town_share <= 1:
+        sys.exit('--town-share 0..1')
     if a.count < 1 or a.count > 9999:
         sys.exit('--count 1..9999')
     if not 1 <= a.client_build <= 0xFFFF:
         sys.exit('--client-build 1..65535')
+    if a.reconnect:
+        m = re.match(r'^(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)$', a.reconnect)
+        if not m or float(m.group(1)) > float(m.group(2)):
+            sys.exit('--reconnect MIN,MAX (seconds, MIN <= MAX)')
+        a.reconnect = (float(m.group(1)), float(m.group(2)))
+    if not (0 <= a.drop <= 1 and 0 <= a.abort <= 1):
+        sys.exit('--drop and --abort are chances 0..1')
+    a.opcode_list = load_opcodes(a.opcodes) if a.opcodes else []
     key = a.client_key or os.environ.get('CHAOS_CLIENT_KEY', '')
     if a.dev_key:
         a.guard_key = GUARD_DEV_KEY

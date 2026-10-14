@@ -52,7 +52,9 @@ T.attr = ATTR
 local typeInfo = {} -- [id] = {cid, name, kind} (false = no such item)
 
 local function describe(id)
-	id = tonumber(id) or 0
+	-- an item id from the client: an integer in the item range, so that no NaN or float key reaches typeInfo and the
+	-- cache cannot grow with made-up ids
+	id = Chaos.toInt(id, 0, 65535) or 0
 	local info = typeInfo[id]
 	if info ~= nil then
 		return info or nil
@@ -543,6 +545,11 @@ function gm.onSay(player, words, param)
 	local name, what, mode = param:match("^%s*([^,]+)%s*,%s*([%w_]+)%s*,?%s*(%w*)%s*$")
 	if not name then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /transmog <character>, <set key | all | look id>[, revoke]")
+		return false
+	end
+	-- staff never give value (docs/GM_HANDBOOK.md section 2): an unlock needs an administrator, revoking a set does not
+	local value = not (mode == "revoke" and what ~= "all" and not tonumber(what))
+	if not Chaos.staffCommand(player, words, param, value) then
 		return false
 	end
 	local accountId

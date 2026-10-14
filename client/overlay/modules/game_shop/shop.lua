@@ -401,6 +401,28 @@ function addCategory(data)
   end
   category:setId("category_" .. shop.categories:getChildCount())
   category.name:setText(data["name"])
+  -- the weekly rotation ("This week"): a countdown to the Monday change (rotation.lua)
+  if tonumber(data["endsIn"]) then
+    category.rotationName = data["name"]
+    category.rotationEndsAt = g_clock.seconds() + tonumber(data["endsIn"])
+    category:setTooltip(tr('A new choice of offers every Monday at 06:00 server time.'))
+    updateRotationLabels()
+  end
+end
+
+-- the countdown on the rotation's category, refreshed every 30 s while the store is open
+local rotationEvent
+function updateRotationLabels()
+  if rotationEvent then removeEvent(rotationEvent) rotationEvent = nil end
+  if not shop or (shop.isDestroyed and shop:isDestroyed()) or not shop.categories then return end
+  local any = false
+  for _, child in ipairs(shop.categories:getChildren()) do
+    if child.rotationEndsAt then
+      any = true
+      child.name:setText(RotationView.label(child.rotationName, child.rotationEndsAt, g_clock.seconds()))
+    end
+  end
+  if any then rotationEvent = scheduleEvent(updateRotationLabels, 30000) end
 end
 
 function showHistory(force)

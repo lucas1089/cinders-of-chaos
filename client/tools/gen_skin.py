@@ -708,19 +708,24 @@ def panel(W, H, b, kind='inset', center='abyss', seed=21, rim=None, outline=0.9,
     return out
 
 
-def slot(n=34, seed=31, rim=GOLD, inner=None):
-    """Item slot: dark recessed well, bronze bevel, gold hairline, small corner studs."""
-    x, y, dl, dr, dt, db = edge_maps(n, n)
+def slot(n=34, seed=31, rim=GOLD, inner=None, w=None):
+    """Item slot: dark recessed well, bronze bevel, gold hairline, small corner studs. n high, w (default n) wide."""
+    H, W = n, (w or n)
+    x, y, dl, dr, dt, db = edge_maps(H, W)
     d = np.minimum(np.minimum(dl, dr), np.minimum(dt, db))
-    face = mat_stone(n, n, seed, tint=hexc('#120e12') if inner is None else inner)
-    # radial darkening towards the middle (a well)
-    c = (n - 1) / 2
-    rr = np.sqrt((x - c) ** 2 + (y - c) ** 2) / c
+    face = mat_stone(H, W, seed, tint=hexc('#120e12') if inner is None else inner)
+    # radial darkening towards the middle (a well; an oval one on a wide or tall slot)
+    if W == H:
+        c = (n - 1) / 2
+        rr = np.sqrt((x - c) ** 2 + (y - c) ** 2) / c
+    else:
+        cx, cy = (W - 1) / 2, (H - 1) / 2
+        rr = np.sqrt(((x - cx) / cx) ** 2 + ((y - cy) / cy) ** 2)
     face = face * (0.75 + 0.35 * np.clip(rr, 0, 1))[..., None]
     rgb = face
     tl = np.minimum(dt, dl) < np.minimum(db, dr)
     band = d < 3
-    metal = mat_iron(n, n, seed + 1, tone=1.2)
+    metal = mat_iron(H, W, seed + 1, tone=1.2)
     rgb[band] = metal[band]
     hg = np.where(band, np.sin(np.clip(d / 3, 0, 1) * math.pi), 0)
     rgb = shade(hg * 1.2, rgb, amb=0.4, diff=0.8, spec=0.4)
@@ -728,7 +733,7 @@ def slot(n=34, seed=31, rim=GOLD, inner=None):
     blend_rgb(out, rim, ((d >= 3) & (d < 4)).astype(np.float32) * 0.8)
     blend_rgb(out, BLACK, ((d >= 4) & (d < 5) & tl).astype(np.float32) * 0.6)
     blend_rgb(out, BLACK, (d < 1).astype(np.float32) * 0.95)
-    for cx, cy in ((1, 1), (n - 4, 1), (1, n - 4), (n - 4, n - 4)):
+    for cx, cy in ((1, 1), (W - 4, 1), (1, H - 4), (W - 4, H - 4)):
         over(out, corner_stud(), cx, cy)
     return out
 
@@ -826,6 +831,10 @@ def gen_controls():
     save(text_field(32, 22, 4, seed=42), 'chaos/textedit')
     save(text_field(32, 22, 4, seed=42, focus=True), 'chaos/textedit_focus')
     save(slot(34, seed=32), 'chaos/itemslot')
+    # the charm grid (game_charms): one slot per charm shape at its exact size (cells of 44 px, gap 2), drawn
+    # unsliced: a sliced slot tiles its well and shows seams
+    for cw, ch in ((1, 1), (2, 1), (1, 2), (2, 2)):
+        save(slot(ch * 46 - 2, seed=32, w=cw * 46 - 2), 'chaos/charmslot_%dx%d' % (cw, ch))
     save(title_plate(64, 24), 'chaos/title_plate')
     save(separator(64, 8), 'chaos/separator')
     save(progress_frame(32, 16), 'chaos/progress_frame')

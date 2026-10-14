@@ -32,10 +32,16 @@ end
 C.msg = msg
 
 -- ------------------------------------------------------------------------------------------------ slots
--- usable slots at this level: baseSlots + one per reached `earned` level, at most maxSlots
-function C.slotLimit(level, cfg)
+-- usable slots at this level: baseSlots + one per reached `earned` level (+ pactSlots while the Chaos Pact is active:
+-- pact = true or a number of slots), at most maxSlots
+function C.slotLimit(level, cfg, pact)
 	cfg = cfgOf(cfg)
 	local n = cfg.baseSlots
+	if pact == true then
+		n = n + (cfg.pactSlots or 0)
+	elseif tonumber(pact) then
+		n = n + math.max(0, math.floor(tonumber(pact)))
+	end
 	for _, e in ipairs(cfg.earned or {}) do
 		if (tonumber(level) or 0) >= e.level then
 			n = n + 1

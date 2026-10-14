@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Procedural art generator for the Cinders of Chaos dark-fantasy OTClient theme.
 
-Run:  python3 -I client/tools/gen_theme_art.py [icons] [background]
+Run:  python3 -I client/tools/gen_theme_art.py [icons | icons=NAME,...] [background]
 (no argument = both; the logo is drawn by gen_login_art.py logo).  The frame and control images of chaos/
 (window, buttons, panels, tabs, scroll bars, ...) are drawn by gen_skin.py now; the old "frames" task here would overwrite them with the
 previous flat look, so it only runs when asked for by name.  Needs Pillow + numpy.  Output goes to
@@ -616,6 +616,20 @@ def glyph_autoloot(g):
     g.poly([(42, 34), (58, 34), (50, 42)])
 
 
+def glyph_autoseller(g):
+    # the Auto Seller: a loot sack on the left, an arrow to a stack of coins on the right
+    g.poly([(25, 46), (41, 46), (46, 55), (20, 55)])
+    g.ell(33, 66, 19, 14)
+    g.rrect(23, 42, 43, 49, 2.5)
+    g.line([(22, 52), (44, 52)], 2, 0, caps=False)
+    g.line([(45, 30), (60, 30)], 4.2)
+    g.poly([(58, 22), (70, 30), (58, 38)])
+    for y in (76, 67, 58):
+        g.ell(66, y, 13, 5.5)
+        g.ell(66, y - 1.5, 10, 3.2, 0)
+        g.ell(66, y - 1.5, 7, 2, 255)
+
+
 def glyph_daily(g):
     g.rrect(24, 26, 76, 78, 5)
     g.rect(24, 26, 76, 40, 255)
@@ -781,6 +795,7 @@ ICONS = [
     ("spells", glyph_spells, "Spells"), ("quests", glyph_quests, "Quests"),
     ("market", glyph_market, "Market / Store"), ("bank", glyph_bank, "Bank"),
     ("stash", glyph_stash, "Stash"), ("autoloot", glyph_autoloot, "Auto Loot"),
+    ("autoseller", glyph_autoseller, "Auto Seller"),
     ("daily", glyph_daily, "Daily Reward"), ("battlepass", glyph_battlepass, "Battle Pass"),
     ("passivetree", glyph_passivetree, "Passive Tree"), ("dungeons", glyph_dungeons, "Dungeons"),
     ("events", glyph_events, "Events"), ("infinitytower", glyph_infinitytower, "Infinity Tower"),
@@ -902,8 +917,10 @@ def render_icon(glyph_fn, hover):
     return img
 
 
-def gen_icons():
+def gen_icons(only=None):
     for name, fn, _label in ICONS:
+        if only and name not in only:
+            continue
         for hover in (False, True):
             big = render_icon(fn, hover)
             suf = "_hover" if hover else ""
@@ -1456,6 +1473,9 @@ def gen_logo():
 def main(argv):
     tasks = argv[1:] or ["icons", "background"]
     for t in tasks:
+        if t.startswith("icons="):  # icons=autoseller,bank: only these icons (the others stay as committed)
+            gen_icons(set(t[6:].split(",")))
+            continue
         {"frames": gen_frames, "icons": gen_icons, "logo": gen_logo, "background": gen_background}[t]()
 
 

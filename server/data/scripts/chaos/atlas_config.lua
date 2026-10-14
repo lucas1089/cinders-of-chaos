@@ -57,12 +57,22 @@ local cfg = {
 	-- Points come only from FIRST completions, so the grid is finite and visible:
 	--   theme x tier  sealing a rift of that theme and tier (every finisher)               4 x 15 cells, `cell` each
 	--   flawless      sealing a rift of that tier (any theme) without a death               15 cells, `flawless` each
-	--   swift         sealing a rift of that tier within swiftShare of the base time limit 15 cells, `swift` each
+	--   swift         sealing a rift of that tier within its Swift time (below)              15 cells, `swift` each
 	--   omen          killing that Omen guardian                                            3 cells, `omen` each
 	-- The themes and the omen kinds are those of rift_config.lua (themes, omen.kinds), in that order.
 	-- Total: 60 + 15 + 15 + 3 x 2 = 96 points.
 	points = {cell = 1, flawless = 1, swift = 1, omen = 2},
-	swiftShare = 0.5, -- of rift_config.lua timeLimit (600 s: sealed in 5:00 or less; the run's own limit does not matter)
+	-- the Swift time of a tier (atlas_core.lua A.swiftSeconds; server/README.md "Rift Atlas"): the rift model's clear
+	-- time of the tier on its size band's typical map (rift_core.lua R.clearSeconds: packs, guardian, walk) for a solo
+	-- player with swiftDps x the model player's damage, rounded down to swiftRound seconds, and never less than a lower
+	-- tier's time. Tiers 1-10 (160 and 200 tiles, 12:00 and 13:00 limits) 5:15, tiers 11-15 (240 tiles, 15:00)
+	-- 5:30-7:45; the model player takes about 5:40-6:15, 5:40-5:50 and 6:40-9:30. Earned Swift cells stay whatever the
+	-- times were.
+	swiftDps = 1.25,
+	swiftRound = 15,
+	-- without the generated layouts (or the density): swiftShare of rift_config.lua timeLimit (600 s: 5:00). The run's
+	-- own limit (Waning Veil, atlas time) never matters.
+	swiftShare = 0.5,
 	tiers = 15, -- columns of the grid (rift_config.lua maxTier)
 
 	-- ------------------------------------------------------------------ the tree

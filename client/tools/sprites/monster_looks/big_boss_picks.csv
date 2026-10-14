@@ -1,0 +1,6 @@
+key,look,lib,lib_id,recolour,family,rank,monsters,description,edit
+abyss_guardian_big,2208,own,2103,,bigguardian,guardian,rift guardian (Abyssal Rift),"void spectre lord in violet lightning, 8-frame walk and 4-frame idle on its own 4x4 frames",pixellab-animate
+obsidian_guardian_big,2209,own,2107,,bigguardian,guardian,rift guardian (Obsidian Hall),"magma golem with glowing cracks, 8-frame walk and 4-frame idle on its own 4x4 frames",pixellab-animate
+crypt_guardian_big,2210,own,2111,,bigguardian,guardian,rift guardian (Ashen Crypt),"black plate dread knight repainted from 3x3 to 4x4, violet visor, long sword; 8-frame walk, 4-frame idle",pixellab-animate
+sanctum_guardian_big,2211,own,2115,,bigguardian,guardian,rift guardian (Forsaken Sanctum),"moss stone golem with a teal core, 8-frame walk and 4-frame idle on its own 4x4 frames",pixellab-animate
+omen_seer_big,2212,own,2118,,bigguardian,guardian,Omen guardian (Thalcyra),"white storm seer repainted from 3x3 to 4x4, cyan halo and lightning staff; 8-frame walk, 4-frame idle",pixellab-animate

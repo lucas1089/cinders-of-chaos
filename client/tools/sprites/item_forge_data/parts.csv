@@ -1,0 +1,21 @@
+part,kind,source,id,rect,keep,erase,mirror,slots,anchor
+# rect = x0 y0 x1 y1 in the source cell; keep = mats:a+b keeps those materials (outline pixels always kept); slots map the source material to a role (M main metal, S second metal or blade, T trim, F field, C cloth, L wood or leather, G gem); the part keeps its source position (anchor = x0 y0) unless a recipe moves it
+sword_blade_broad,sword,live,7386,0 0 23 23,mats:steel+darkiron+bone,,,steel=S darkiron=S bone=S *=S,0 0
+sword_hilt_winged,sword,live,7391,12 11 31 31,mats:gold+wood+leather+emerald+green+crystal,,,gold=M wood=L leather=L emerald=G green=G crystal=G *=M,12 11
+axe_head_bearded,axe,live,3319,0 0 31 31,mats:steel+darkiron+bone,,,steel=S darkiron=S bone=S *=S,0 0
+axe_haft,axe,live,3319,8 10 31 31,mats:wood+leather+gold,,,wood=L leather=L gold=M *=L,8 10
+helm_shell_great,helmet,live,3391,0 0 31 31,,,,steel=S darkiron=S bone=S gold=T *=S,0 0
+helm_crest_plume,helmet,live,3392,0 0 31 9,mats:red+ruby+purple,,,red=C ruby=C purple=C *=C,0 0
+armor_cuirass_plate,armor,donorG,976,0 0 31 31,,,,gold=M steel=F bone=F darkiron=F leather=M wood=M *=M,0 0
+armor_skirt_cloth,armor,live,3379,0 20 31 31,mats:red+ruby+purple+gold,,,red=C ruby=C purple=C gold=T *=C,0 20
+legs_plate_greaves,legs,live,3398,0 0 31 31,,,,steel=S darkiron=S bone=S gold=T *=S,0 0
+legs_belt,legs,live,3382,0 0 31 5,,,,gold=T red=C ruby=C leather=C wood=C *=C,0 0
+boots_plate,boots,live,3554,0 0 31 31,,,,steel=S darkiron=S green=S bone=S *=S,0 0
+boots_cuff,boots,live,3555,19 7 30 12,,,,gold=T bone=T leather=T wood=T *=T,19 7
+shield_heater,shield,live,3415,0 0 31 31,,,,steel=T bone=T darkiron=T gold=F blue=F *=F,0 0
+shield_boss_round,shield,live,3424,12 12 20 20,,,,gold=M ruby=G red=G leather=M wood=M *=M,12 12
+rod_sceptre_ring,rod,live,3068,0 0 31 31,,,,gold=M bone=M wood=L leather=L crystal=G blue=G steel=M *=M,0 0
+# pixellab-own: our own PixelLab picks (art_import/theme_items, item_forge_learn.py --own); id = the piece key of theme_sets.py
+helm_winged_own,helmet,pixellab-own,starwing_melee_helmet,0 0 31 31,,,,gold=M steel=S bone=F crystal=G emerald=G blue=G green=G *=M,0 0
+shield_round_crescent_own,shield,pixellab-own,moonsilver_shield,0 0 31 31,,,,steel=T bone=T blue=F purple=F crystal=G sapphire=G *=F,0 0
+club_skull_own,club,pixellab-own,cryptbone_club,0 0 31 31,,,,bone=S darkiron=M steel=M green=G emerald=G crystal=G *=S,0 0

@@ -11,7 +11,8 @@
  *      ZnoteX's own installer, step 4)
  *   3. migrations: every pending one is run (tolerating "already exists" answers, since a fresh schema holds part
  *      of them) and recorded
- *   4. the Cinders of Chaos plugin (plugins/chaos): install.sql, enabled
+ *   4. the Cinders of Chaos plugin (plugins/chaos): install.sql, enabled; the legal texts' version into the game's
+ *      server_config (chaos_legal_version, for the in-game notice of legal_notice.lua)
  *   5. the layout: CHAOS_LAYOUT (default "chaos", our child of the purple "void" layout)
  *   6. the menu entries and the editable Rules page, once each (never overwritten); ZnoteX's entries of the pages
  *      this server does not use (shop, points, creatures, spells, forum) switched off once
@@ -146,6 +147,16 @@ if ($err !== '') {
 }
 znote_plugin_set_enabled('chaos', true);
 $out .= "plugin chaos: installed and enabled\n";
+// the version of the legal texts for the game server: server_config chaos_legal_version. The game's legal_notice.lua
+// tells an account without an acceptance of this version, at login, to accept on the website (legal_lib.php).
+require_once $Z . '/plugins/chaos/legal_lib.php';
+if ($tableExists('server_config') && chaos_legal_dir() !== '') {
+	$v = $link->real_escape_string(chaos_legal_version());
+	if (!$link->query("INSERT INTO `server_config` (`config`, `value`) VALUES ('chaos_legal_version', '$v') ON DUPLICATE KEY UPDATE `value` = '$v'")) {
+		finish($out . 'server_config chaos_legal_version: ' . $link->error . "\n", 1);
+	}
+	$out .= "legal texts: version $v\n";
+}
 
 // 5. layout
 $layout = theme_sanitize((string)(getenv('CHAOS_LAYOUT') ?: 'chaos'));
@@ -169,6 +180,9 @@ $menu = static function (string $label, string $url, string $icon, int $sort, in
 	$row = $find();
 	return is_array($row) ? (int)$row['id'] : 0;
 };
+// the player wiki (plugins/chaos/pages/wiki.php): guides and the reference generated from the game data
+$menu('Wiki', 'page.php?plugin=chaos&p=wiki', 'fa-book', 14);
+$out .= "menu: Wiki\n";
 $world = $menu('The World', 'serverinfo.php?world', 'fa-fire', 15);
 $menu('Server Info', 'serverinfo.php', 'fa-book', 1, $world);
 $menu('Patch Notes', 'page.php?plugin=chaos&p=patchnotes', 'fa-file-text-o', 2, $world);
@@ -185,6 +199,12 @@ $out .= "menu: The World > Guild Wars\n";
 // the mentors who opted in to be shown (plugins/chaos/pages/mentors.php, read from the game's chaos_mentor* tables)
 $menu('Mentors', 'page.php?plugin=chaos&p=mentors', 'fa-users', 8, $world);
 $out .= "menu: The World > Mentors\n";
+// player-to-player character auctions for Chaos Coins (plugins/chaos/pages/bazaar.php, bazaar_lib.php)
+$menu('Character Bazaar', 'page.php?plugin=chaos&p=bazaar', 'fa-gavel', 9, $world);
+$out .= "menu: The World > Character Bazaar\n";
+// creator codes and the account's referral link (plugins/chaos/pages/creator.php, creator_lib.php)
+$menu('Creator Codes', 'page.php?plugin=chaos&p=creator', 'fa-star', 10, $world);
+$out .= "menu: The World > Creator Codes\n";
 // the donation page (plugins/chaos/pages/coins.php): Chaos Coins are a thank-you for a voluntary donation
 $menu('Donate', 'page.php?plugin=chaos&p=coins', 'fa-heart', 16);
 $out .= "menu: Donate\n";

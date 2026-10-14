@@ -182,7 +182,8 @@ end
 
 -- key of the per-class node variants (keystones 621 / 624): ChaosClasses.keystoneKey (classes.lua): Warrior "knight",
 -- Juggernaut "juggernaut", Berserker "berserker", Ranger "paladin", Deadeye "deadeye", Beastmaster "beastmaster",
--- Mystic / Elementalist "sorcerer", Illusionist "illusionist"; the other lines their class key (no variant there).
+-- Mystic / Elementalist "sorcerer", Illusionist "illusionist"; the other lines their class key (a variant only for the
+-- Iron Sage, "ironsage" Overgrowth on 621, and the Sentinel, "sentinel" Thorns on 624).
 -- The class sections and the restricted nodes use the class key (class_tree.lua).
 if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")
@@ -568,7 +569,17 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	end
 
 	local action = msg.action
-	local extra = type(action) == "string" and ChaosPassiveTree.extraActions[action]
+	if type(action) ~= "string" then
+		return
+	end
+	-- nearly every request loads the presets from the database, the extra actions too (respec.lua resetPreset and
+	-- refundNode, buildshare.lua buildExport), which run before the limits below: per action (ratelimit.lua), so
+	-- opening the window (requestPoints + requestNodesUnlocked) passes; planApply keeps its own "Too fast" answer
+	if action ~= "planApply" and ChaosRateLimit
+		and not ChaosRateLimit.allow(player, "passivetree.req." .. action, action == "resetPreset" and 1000 or 200) then
+		return
+	end
+	local extra = ChaosPassiveTree.extraActions[action]
 	if extra and extra(player, msg.data) then
 		return
 	end

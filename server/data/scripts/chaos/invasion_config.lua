@@ -133,8 +133,8 @@ return {
 			{name = "Goblin Chieftain", level = 80}
 		}},
 		wildwood = {name = "Wildwood Uprising", color = "#5fa860", monsters = {
-			{name = "Forest Wolf", level = 10}, {name = "Shroomling", level = 12}, {name = "Wild Boar", level = 18},
-			{name = "Giant Hornet", level = 20}, {name = "Morel Imp", level = 22}, {name = "Moss Slime", level = 22},
+			{name = "Forest Wolf", level = 10}, {name = "Shroomling", level = 12}, {name = "Gloomtusk Boar", level = 18},
+			{name = "Blightwing Hornet", level = 20}, {name = "Morel Imp", level = 22}, {name = "Moss Slime", level = 22},
 			{name = "Forest Pixie", level = 25}, {name = "Glowcap Cluster", level = 28}, {name = "Treant Sapling", level = 30},
 			{name = "Inkcap Creeper", level = 32}, {name = "Myconid Shaman", level = 38}, {name = "Grove Dryad", level = 40},
 			{name = "Dire Bear", level = 60}, {name = "Giant Thornback Toad", level = 65}, {name = "Owlbear", level = 70},
@@ -194,7 +194,7 @@ return {
 				{id = 29856, price = 40000, name = "orb of upheaval"},
 				{id = 29857, price = 120000, name = "orb of fate"},
 				{id = 29855, price = 200000, name = "orb of grafting"},
-				{id = 24691, price = 60000, name = "orb of gilding"},
+				{id = 24691, price = 250000, name = "orb of gilding"}, -- owner 2026-10-14: above what gilding adds to a plain item's NPC price
 				{id = 24697, price = 80000, name = "orb of unmaking"},
 				{id = 28095, price = 350000, name = "double experience potion", seasonBlocked = true},
 				{id = 26031, price = 900, name = "supreme health potion"}

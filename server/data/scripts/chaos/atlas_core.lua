@@ -161,6 +161,39 @@ function A.spent(cfg, alloc)
 	return n
 end
 
+-- the Swift time of a tier in seconds: a run of that tier sealed within it earns the tier's Swift cell. With the
+-- generated layouts (rift_config.lua layout) and the density on, it is the rift model's clear time of the tier on its
+-- size band's typical layout (ChaosRiftCore.clearSeconds: packs, guardian and the walk) for a solo player with
+-- cfg.swiftDps times the model player's damage, rounded down to cfg.swiftRound seconds; so it grows with the map size
+-- and the tier, and a strong player can earn it at every tier. A tier never gets less time than a lower tier: the
+-- model's time falls inside a size band (the walk gets faster with the level), so each tier takes the most of its own
+-- and every lower tier's time. Without them (or without rift_core.lua loaded):
+-- cfg.swiftShare of rift_config.lua timeLimit (5:00). The run's own limit (Waning Veil, atlas time) does not matter.
+function A.swiftSeconds(cfg, rcfg, tier)
+	local R = ChaosRiftCore
+	tier = floor(tonumber(tier) or 1)
+	if cfg.swiftDps and R and R.clearSeconds and R.band and R.densityOn and R.band(rcfg, tier) and R.densityOn(rcfg) then
+		local step = cfg.swiftRound or 1
+		local best = 0
+		for t = 1, tier do
+			if R.band(rcfg, t) then
+				best = math.max(best, floor(R.clearSeconds(rcfg, t, 1, cfg.swiftDps) / step) * step)
+			end
+		end
+		return best
+	end
+	return floor(rcfg.timeLimit * cfg.swiftShare)
+end
+
+-- the Swift time of every tier of the grid: {[tier] = seconds}
+function A.swiftTable(cfg, rcfg)
+	local t = {}
+	for tier = 1, cfg.tiers do
+		t[tier] = A.swiftSeconds(cfg, rcfg, tier)
+	end
+	return t
+end
+
 -- the cells a sealed run earns. info = {theme = name, tier, omen = kind key or nil, deaths, secs}
 function A.runCells(cfg, rcfg, info)
 	local out = {}
@@ -179,7 +212,7 @@ function A.runCells(cfg, rcfg, info)
 	if (tonumber(info.deaths) or 0) == 0 then
 		out[#out + 1] = "f" .. tier
 	end
-	if info.secs and info.secs <= rcfg.timeLimit * cfg.swiftShare then
+	if info.secs and info.secs <= A.swiftSeconds(cfg, rcfg, tier) then
 		out[#out + 1] = "s" .. tier
 	end
 	return out
@@ -556,7 +589,8 @@ function A.treePayload(cfg, rcfg)
 	end
 	return {nodes = nodes, branches = branches, start = cfg.startId, keystoneMax = cfg.keystoneMax,
 		grid = {themes = themes, tiers = cfg.tiers, omens = omens, points = cfg.points,
-			swift = floor(rcfg.timeLimit * cfg.swiftShare)}, max = A.maxPoints(cfg, rcfg)}
+			swift = floor(rcfg.timeLimit * cfg.swiftShare), swiftTiers = A.swiftTable(cfg, rcfg)},
+		max = A.maxPoints(cfg, rcfg)}
 end
 
 -- the state of one character

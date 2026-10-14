@@ -1,0 +1,12 @@
+Module
+  name: game_chaosscale
+  description: Display scale (extended opcode 157, server display_scale.lua): the factor of the own level for numbers the client works out itself
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ scalelogic, chaosscale ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

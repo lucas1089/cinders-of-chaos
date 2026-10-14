@@ -43,6 +43,14 @@ function V.rewardsText(s)
   if #parts > 0 then
     lines[#lines + 1] = "You get, when your friend's first character reaches " .. table.concat(parts, '; ') .. '.'
   end
+  local tiers = {}
+  for _, t in ipairs(s.tiers or {}) do
+    tiers[#tiers + 1] = string.format('%d friends: %s%s', num(t.count), t.reward or '', t.reached and ' (yours)' or '')
+  end
+  if #tiers > 0 then
+    lines[#lines + 1] = string.format('And with friends at level %d (%d so far): %s.', num(s.qualifyLevel), num(s.qualified),
+      table.concat(tiers, '; '))
+  end
   return table.concat(lines, '\n')
 end
 
