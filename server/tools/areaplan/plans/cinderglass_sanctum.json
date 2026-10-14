@@ -4,8 +4,8 @@
   "name": "Cinderglass Sanctum",
   "biome": "sanctum",
   "size": [
-    96,
-    76
+    192,
+    152
   ],
   "floors": 2,
   "level": [
@@ -14,8 +14,8 @@
   ],
   "seed": 25402,
   "origin": {
-    "x": 15100,
-    "y": 14500,
+    "x": 14700,
+    "y": 15140,
     "z": 9
   },
   "decoration": "dense",
@@ -32,55 +32,111 @@
     {
       "id": "vixen_cloister",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "southwest"
     },
     {
       "id": "glass_nave",
       "floor": 1,
-      "size": "huge",
+      "size": [
+        28,
+        22
+      ],
       "place": "center"
     },
     {
       "id": "dragon_apse",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "north"
     },
     {
       "id": "thorn_garden",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "east"
     },
     {
       "id": "stairwell",
       "floor": 1,
-      "size": "medium",
+      "size": "large",
       "place": "northwest"
     },
     {
       "id": "deep_landing",
       "floor": 2,
-      "size": "medium"
+      "size": "large"
     },
     {
       "id": "vyrm_hall",
       "floor": 2,
-      "size": "huge",
+      "size": [
+        28,
+        22
+      ],
       "place": "center"
     },
     {
       "id": "facet_chapel",
       "floor": 2,
-      "size": "large",
+      "size": "huge",
       "place": "east"
     },
     {
       "id": "silicate_crypt",
       "floor": 2,
-      "size": "large",
+      "size": "huge",
       "place": "west"
+    },
+    {
+      "id": "ember_choir",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "prism_walk",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "west"
+    },
+    {
+      "id": "soot_cloister",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "obsidian_porch",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "mirror_vestry",
+      "floor": 2,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "ash_reliquary",
+      "floor": 2,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "glassfall_cavern",
+      "floor": 2,
+      "size": "huge",
+      "place": "southwest"
     }
   ],
   "paths": [
@@ -128,6 +184,66 @@
       "from": "vyrm_hall",
       "to": "silicate_crypt",
       "width": 3
+    },
+    {
+      "from": "dragon_apse",
+      "to": "ember_choir",
+      "width": 3
+    },
+    {
+      "from": "ember_choir",
+      "to": "thorn_garden",
+      "width": 3
+    },
+    {
+      "from": "vixen_cloister",
+      "to": "prism_walk",
+      "width": 3
+    },
+    {
+      "from": "prism_walk",
+      "to": "stairwell",
+      "width": 3
+    },
+    {
+      "from": "thorn_garden",
+      "to": "soot_cloister",
+      "width": 3
+    },
+    {
+      "from": "soot_cloister",
+      "to": "ash_narthex",
+      "width": 3
+    },
+    {
+      "from": "glass_nave",
+      "to": "obsidian_porch",
+      "width": 3
+    },
+    {
+      "from": "vyrm_hall",
+      "to": "mirror_vestry",
+      "width": 3
+    },
+    {
+      "from": "mirror_vestry",
+      "to": "facet_chapel",
+      "width": 3
+    },
+    {
+      "from": "vyrm_hall",
+      "to": "ash_reliquary",
+      "width": 3
+    },
+    {
+      "from": "silicate_crypt",
+      "to": "glassfall_cavern",
+      "width": 3
+    },
+    {
+      "from": "glassfall_cavern",
+      "to": "ash_reliquary",
+      "width": 3
     }
   ],
   "connections": [
@@ -147,69 +263,147 @@
     {
       "zone": "vixen_cloister",
       "monster": "Black Vixen",
-      "count": 4,
+      "count": 11,
       "respawn": 120
     },
     {
       "zone": "vixen_cloister",
       "monster": "Jungle Warrior",
-      "count": 2,
+      "count": 6,
       "respawn": 120
     },
     {
       "zone": "glass_nave",
       "monster": "Jungle Warrior",
-      "count": 4,
+      "count": 12,
       "respawn": 120
     },
     {
       "zone": "glass_nave",
       "monster": "Golden Dragon",
-      "count": 2,
+      "count": 6,
       "respawn": 120
     },
     {
       "zone": "dragon_apse",
       "monster": "Golden Dragon",
-      "count": 3,
+      "count": 9,
       "respawn": 120
     },
     {
       "zone": "thorn_garden",
       "monster": "Spiky Carnivor",
-      "count": 4,
+      "count": 12,
       "respawn": 120
     },
     {
       "zone": "vyrm_hall",
       "monster": "Vyrm",
-      "count": 4,
+      "count": 12,
       "respawn": 120
     },
     {
       "zone": "vyrm_hall",
       "monster": "Winterstride",
-      "count": 3,
+      "count": 9,
       "respawn": 120
     },
     {
       "zone": "facet_chapel",
       "monster": "Facetis",
-      "count": 2,
+      "count": 6,
       "respawn": 150
     },
     {
       "zone": "facet_chapel",
       "monster": "Thal",
-      "count": 2,
+      "count": 6,
       "respawn": 150
     },
     {
       "zone": "silicate_crypt",
       "monster": "Silicron",
-      "count": 4,
+      "count": 12,
+      "respawn": 120
+    },
+    {
+      "zone": "ember_choir",
+      "monster": "Golden Dragon",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "ember_choir",
+      "monster": "Jungle Warrior",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "prism_walk",
+      "monster": "Black Vixen",
+      "count": 12,
+      "respawn": 120
+    },
+    {
+      "zone": "obsidian_porch",
+      "monster": "Golden Dragon",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "obsidian_porch",
+      "monster": "Spiky Carnivor",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "soot_cloister",
+      "monster": "Spiky Carnivor",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "soot_cloister",
+      "monster": "Black Vixen",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "mirror_vestry",
+      "monster": "Facetis",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "mirror_vestry",
+      "monster": "Thal",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "ash_reliquary",
+      "monster": "Winterstride",
+      "count": 12,
+      "respawn": 120
+    },
+    {
+      "zone": "ash_reliquary",
+      "monster": "Vyrm",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "glassfall_cavern",
+      "monster": "Silicron",
+      "count": 11,
+      "respawn": 120
+    },
+    {
+      "zone": "glassfall_cavern",
+      "monster": "Vyrm",
+      "count": 6,
       "respawn": 120
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): a two-floor sanctum for levels 1120-1300, the dormant imports of the top band in one place. Four parties: two per floor."
+  "notes": "Content plan (docs/CONTENT.md): a two-floor sanctum for levels 1120-1300, the dormant imports of the top band in one place. Four times the first draft (owner, 2026-10-14): 16 hunting zones in loops, room for sixteen parties."
 }

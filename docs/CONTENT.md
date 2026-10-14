@@ -67,19 +67,20 @@ compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content pla
 
 | Plan | Band | Biome | Monsters | Parties | Chest |
 |---|---|---|---|---|---|
-| bonechoir_catacomb | 200-290 | catacomb | Deathrattle, Skullshade, Bonecleaver, Doombone, Blackblade | 2 | bonechoir_tithe |
-| sulphur_gallery | 215-299 | lava | Hellflayer, Demon of the Depths, Alpha Demon, Skullcrusher Demon, Juggernaut | 2-3 | - |
-| wyrmspine_hollows | 500-640 | cave | Ashfang, Shadowvein, Stormvein, Viridscale Wrym, Flarevein Wyrm | 3 | wyrmspine_clutch |
-| pyrarch_crucible | 520-690 | lava | four Pyrarchs, Embermaw Archon, Pitlord Incarnate, Hellmaw Brute, Inferno Juggernaut, Nightflare Dreadknight | 3 | - |
-| widowmere | 480-640 | swamp | Nightfang and Shadowcrystal Widow, Mirethorn Hexer, Gloomstinger, Plague Warbringer | 3 | widowmere_silk |
-| corsairs_reach | 780-900 | cave | Captain Bloodbeard, Ironhook Corsair, Scourgejaw, Stormy Seadevil | 3 | corsairs_cache |
-| hexwood_thicket | 720-840 | forest | Elite Spider, Cursed Ape, Webbound Crawler, Black Stag, Dark Sorcerer | 3 | - |
-| mirefang_basin | 880-999 | swamp | Nexweaver, Acid Hydra, Mutated Visco, Elite Tidecrest Serpent, Elite Twisted Shaper | 3 | - |
-| rimecrown_depths | 1000-1120 | ice | Ice Lich, Scaleborn, Spirit of Purity, Twisted Shaper, Celestial Wyrm, Vorkhaz | 3 | rimecrown_tribute |
-| cinderglass_sanctum | 1120-1300 | sanctum, 2 floors | Jungle Warrior, Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Facetis, Thal, Silicron | 4 | - |
+| bonechoir_catacomb | 200-290 | catacomb | Deathrattle, Skullshade, Bonecleaver, Doombone, Blackblade | 8 | bonechoir_tithe |
+| sulphur_gallery | 215-299 | lava | Hellflayer, Demon of the Depths, Alpha Demon, Skullcrusher Demon, Juggernaut | 8-12 | - |
+| wyrmspine_hollows | 500-640 | cave | Ashfang, Shadowvein, Stormvein, Viridscale Wrym, Flarevein Wyrm | 12 | wyrmspine_clutch |
+| pyrarch_crucible | 520-690 | lava | four Pyrarchs, Embermaw Archon, Pitlord Incarnate, Hellmaw Brute, Inferno Juggernaut, Nightflare Dreadknight | 12 | - |
+| widowmere | 480-640 | swamp | Nightfang and Shadowcrystal Widow, Mirethorn Hexer, Gloomstinger, Plague Warbringer | 12 | widowmere_silk |
+| corsairs_reach | 780-900 | cave | Captain Bloodbeard, Ironhook Corsair, Scourgejaw, Stormy Seadevil | 12 | corsairs_cache |
+| hexwood_thicket | 720-840 | forest | Elite Spider, Cursed Ape, Webbound Crawler, Black Stag, Dark Sorcerer | 12 | - |
+| mirefang_basin | 880-999 | swamp | Nexweaver, Acid Hydra, Mutated Visco, Elite Tidecrest Serpent, Elite Twisted Shaper | 12 | - |
+| rimecrown_depths | 1000-1120 | ice | Ice Lich, Scaleborn, Spirit of Purity, Twisted Shaper, Celestial Wyrm, Vorkhaz | 12 | rimecrown_tribute |
+| cinderglass_sanctum | 1120-1300 | sanctum, 2 floors | Jungle Warrior, Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Facetis, Thal, Silicron | 16 | - |
 
-Density is 2.0-3.4 monsters per 100 walkable tiles. Placed, they take 500-700 from 14 to about 23 parties, 700-1000
-from 10 to about 19 and 1000+ from none to 7.
+Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
+monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.
+Placed, they take 500-700 from 14 to about 50 parties, 700-1000 from 10 to about 46 and 1000+ from none to 28.
 
 ## Quests per band
 

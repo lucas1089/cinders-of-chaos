@@ -4,8 +4,8 @@
   "name": "Sulphur Gallery",
   "biome": "lava",
   "size": [
-    82,
-    62
+    164,
+    124
   ],
   "floors": 1,
   "level": [
@@ -14,8 +14,8 @@
   ],
   "seed": 25102,
   "origin": {
-    "x": 14800,
-    "y": 14400,
+    "x": 14900,
+    "y": 14340,
     "z": 10
   },
   "decoration": "dense",
@@ -32,32 +32,74 @@
     {
       "id": "brimstone_run",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "northwest"
     },
     {
       "id": "slag_pit",
       "floor": 1,
-      "size": "huge",
+      "size": [
+        28,
+        22
+      ],
       "place": "center"
     },
     {
       "id": "chained_hall",
       "floor": 1,
-      "size": "medium",
+      "size": "large",
       "place": "northeast"
     },
     {
       "id": "forge_niche",
       "floor": 1,
-      "size": "medium",
+      "size": "large",
       "place": "southeast"
     },
     {
       "id": "cinder_steps",
       "floor": 1,
-      "size": "medium",
+      "size": "large",
       "place": "southwest"
+    },
+    {
+      "id": "sulphur_vents",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "ashen_terrace",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "brand_cells",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "east"
+    },
+    {
+      "id": "molten_stair",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "pyre_hollow",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ]
+    },
+    {
+      "id": "smelter_gut",
+      "floor": 1,
+      "size": "large"
     }
   ],
   "paths": [
@@ -90,6 +132,56 @@
       "from": "cinder_steps",
       "to": "ashgate",
       "width": 3
+    },
+    {
+      "from": "brimstone_run",
+      "to": "sulphur_vents",
+      "width": 3
+    },
+    {
+      "from": "sulphur_vents",
+      "to": "chained_hall",
+      "width": 3
+    },
+    {
+      "from": "chained_hall",
+      "to": "brand_cells",
+      "width": 3
+    },
+    {
+      "from": "brand_cells",
+      "to": "forge_niche",
+      "width": 3
+    },
+    {
+      "from": "cinder_steps",
+      "to": "ashen_terrace",
+      "width": 3
+    },
+    {
+      "from": "ashen_terrace",
+      "to": "forge_niche",
+      "width": 3
+    },
+    {
+      "from": "slag_pit",
+      "to": "molten_stair",
+      "width": 3
+    },
+    {
+      "from": "molten_stair",
+      "to": "pyre_hollow",
+      "width": 3
+    },
+    {
+      "from": "ashgate",
+      "to": "smelter_gut",
+      "width": 3
+    },
+    {
+      "from": "brand_cells",
+      "to": "pyre_hollow",
+      "width": 3
     }
   ],
   "entry": {
@@ -102,52 +194,120 @@
     {
       "zone": "brimstone_run",
       "monster": "Hellflayer",
-      "count": 5,
+      "count": 11,
       "respawn": 120
     },
     {
       "zone": "slag_pit",
       "monster": "Demon of the Depths",
-      "count": 4,
+      "count": 9,
       "respawn": 120
     },
     {
       "zone": "slag_pit",
       "monster": "Alpha Demon",
-      "count": 4,
+      "count": 9,
       "pack": 2,
       "respawn": 120
     },
     {
       "zone": "slag_pit",
       "monster": "Hellflayer",
-      "count": 3,
+      "count": 7,
       "respawn": 120
     },
     {
       "zone": "chained_hall",
       "monster": "Skullcrusher Demon",
-      "count": 3,
+      "count": 7,
       "respawn": 120
     },
     {
       "zone": "forge_niche",
       "monster": "Juggernaut",
-      "count": 2,
+      "count": 4,
       "respawn": 180
     },
     {
       "zone": "cinder_steps",
       "monster": "Skullcrusher Demon",
-      "count": 3,
+      "count": 6,
       "respawn": 120
     },
     {
       "zone": "cinder_steps",
       "monster": "Alpha Demon",
-      "count": 2,
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "sulphur_vents",
+      "monster": "Hellflayer",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "sulphur_vents",
+      "monster": "Alpha Demon",
+      "count": 9,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "ashen_terrace",
+      "monster": "Skullcrusher Demon",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "ashen_terrace",
+      "monster": "Demon of the Depths",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "brand_cells",
+      "monster": "Skullcrusher Demon",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "brand_cells",
+      "monster": "Juggernaut",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "molten_stair",
+      "monster": "Demon of the Depths",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "molten_stair",
+      "monster": "Hellflayer",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "pyre_hollow",
+      "monster": "Alpha Demon",
+      "count": 9,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "pyre_hollow",
+      "monster": "Juggernaut",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "smelter_gut",
+      "monster": "Hellflayer",
+      "count": 9,
       "respawn": 120
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): a lava gallery for levels 215-299, demons in a loop around a slag pit. Two to three parties: the run, the pit and the steps."
+  "notes": "Content plan (docs/CONTENT.md): a lava gallery for levels 215-299, demons in a loop around a slag pit. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for eight to twelve parties."
 }

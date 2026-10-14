@@ -4,8 +4,8 @@
   "name": "Widowmere",
   "biome": "swamp",
   "size": [
-    84,
-    66
+    168,
+    132
   ],
   "floors": 1,
   "level": [
@@ -14,8 +14,8 @@
   ],
   "seed": 25203,
   "origin": {
-    "x": 15100,
-    "y": 14400,
+    "x": 14900,
+    "y": 14540,
     "z": 8
   },
   "decoration": "dense",
@@ -32,25 +32,28 @@
     {
       "id": "silk_reeds",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "northwest"
     },
     {
       "id": "drowned_web",
       "floor": 1,
-      "size": "huge",
+      "size": [
+        28,
+        22
+      ],
       "place": "center"
     },
     {
       "id": "hexer_isle",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "east"
     },
     {
       "id": "gloom_fen",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "southwest"
     },
     {
@@ -59,6 +62,45 @@
       "size": "small",
       "place": "southeast",
       "role": "treasure"
+    },
+    {
+      "id": "cocoon_marsh",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "rot_shallows",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "witchlight_bog",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "spinner_hollow",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "sunken_chapel",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "bleak_reeds",
+      "floor": 1,
+      "size": "large"
     }
   ],
   "paths": [
@@ -91,6 +133,56 @@
       "from": "hexer_isle",
       "to": "egg_pool",
       "width": 2
+    },
+    {
+      "from": "stilt_camp",
+      "to": "cocoon_marsh",
+      "width": 3
+    },
+    {
+      "from": "cocoon_marsh",
+      "to": "hexer_isle",
+      "width": 3
+    },
+    {
+      "from": "silk_reeds",
+      "to": "rot_shallows",
+      "width": 3
+    },
+    {
+      "from": "rot_shallows",
+      "to": "gloom_fen",
+      "width": 3
+    },
+    {
+      "from": "gloom_fen",
+      "to": "witchlight_bog",
+      "width": 3
+    },
+    {
+      "from": "witchlight_bog",
+      "to": "hexer_isle",
+      "width": 3
+    },
+    {
+      "from": "drowned_web",
+      "to": "spinner_hollow",
+      "width": 3
+    },
+    {
+      "from": "spinner_hollow",
+      "to": "sunken_chapel",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "bleak_reeds",
+      "width": 3
+    },
+    {
+      "from": "drowned_web",
+      "to": "witchlight_bog",
+      "width": 3
     }
   ],
   "entry": {
@@ -103,44 +195,44 @@
     {
       "zone": "silk_reeds",
       "monster": "Nightfang Widow",
-      "count": 5,
+      "count": 10,
       "respawn": 120
     },
     {
       "zone": "drowned_web",
       "monster": "Shadowcrystal Widow",
-      "count": 5,
+      "count": 10,
       "pack": 2,
       "respawn": 120
     },
     {
       "zone": "drowned_web",
       "monster": "Nightfang Widow",
-      "count": 3,
+      "count": 6,
       "respawn": 120
     },
     {
       "zone": "hexer_isle",
       "monster": "Mirethorn Hexer",
-      "count": 5,
+      "count": 10,
       "respawn": 120
     },
     {
       "zone": "hexer_isle",
       "monster": "Plague Warbringer",
-      "count": 2,
+      "count": 4,
       "respawn": 150
     },
     {
       "zone": "gloom_fen",
       "monster": "Gloomstinger",
-      "count": 4,
+      "count": 8,
       "respawn": 120
     },
     {
       "zone": "gloom_fen",
       "monster": "Mirethorn Hexer",
-      "count": 2,
+      "count": 4,
       "respawn": 120
     },
     {
@@ -148,6 +240,74 @@
       "monster": "Shadowcrystal Widow",
       "count": 2,
       "respawn": 180
+    },
+    {
+      "zone": "cocoon_marsh",
+      "monster": "Nightfang Widow",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "cocoon_marsh",
+      "monster": "Shadowcrystal Widow",
+      "count": 8,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "rot_shallows",
+      "monster": "Gloomstinger",
+      "count": 10,
+      "respawn": 120
+    },
+    {
+      "zone": "rot_shallows",
+      "monster": "Plague Warbringer",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "witchlight_bog",
+      "monster": "Mirethorn Hexer",
+      "count": 10,
+      "respawn": 120
+    },
+    {
+      "zone": "witchlight_bog",
+      "monster": "Gloomstinger",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "spinner_hollow",
+      "monster": "Shadowcrystal Widow",
+      "count": 8,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "spinner_hollow",
+      "monster": "Nightfang Widow",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "sunken_chapel",
+      "monster": "Mirethorn Hexer",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "sunken_chapel",
+      "monster": "Plague Warbringer",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "bleak_reeds",
+      "monster": "Nightfang Widow",
+      "count": 8,
+      "respawn": 120
     }
   ],
   "chests": [
@@ -166,5 +326,5 @@
       }
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): a spider fen for levels 480-640 with the hexers who feed them. Three parties: the reeds, the drowned web, the fen."
+  "notes": "Content plan (docs/CONTENT.md): a spider fen for levels 480-640 with the hexers who feed them. Four times the first draft (owner, 2026-10-14): 10 hunting zones in loops, room for twelve parties."
 }

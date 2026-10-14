@@ -73,7 +73,7 @@ r, m = has(p, 'unknown key "item"')
 ok(r, 'schema: an item id key is refused: %s' % m)
 p = copy.deepcopy(base)
 p['size'] = [300, 20]
-r, m = has(p, 'above the maximum 160')
+r, m = has(p, 'above the maximum 200')
 ok(r and any('below the minimum 24' in x for x in m), 'schema: the size limits: %s' % m)
 p = copy.deepcopy(base)
 p['decoration'] = 'lots'

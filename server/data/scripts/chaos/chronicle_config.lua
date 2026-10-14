@@ -85,9 +85,9 @@ return {
 	-- it). Until `at` and `gate` are set the area opens in the story only (the window says so) and the console says why.
 	areas = {
 		{key = "cinderscar_breach", name = "The Cinderscar Breach", plan = "chronicle_cinderscar_breach",
-			arrival = {31, 40, 0}, minLevel = 400, at = nil, gate = nil},
+			arrival = {63, 82, 0}, minLevel = 400, at = nil, gate = nil},
 		{key = "ossuary_stair", name = "The Ossuary Stair", plan = "chronicle_ossuary_stair",
-			arrival = {29, 40, 0}, minLevel = 380, at = nil, gate = nil}
+			arrival = {59, 82, 0}, minLevel = 380, at = nil, gate = nil}
 	},
 
 	-- the town changes: decoration placed at runtime around the anchor (the capital's temple, or `anchor`) and taken

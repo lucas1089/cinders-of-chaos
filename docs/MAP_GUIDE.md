@@ -372,7 +372,7 @@ temple with a nave, chapels and a boss throne room).
 
 | key | what |
 |---|---|
-| `id`, `name`, `biome`, `size` [w, h] (24-160), `floors` (1-4), `level` [lo, hi] | the area |
+| `id`, `name`, `biome`, `size` [w, h] (24-200), `floors` (1-4), `level` [lo, hi] | the area |
 | `seed`, `origin`, `decoration` (sparse, normal, dense), `light` (dark, dim, normal, bright) | optional |
 | `zones` | `id`, `floor`, `shape` (room, cave, arena), `size` (small, medium, large, huge or [w, h]), `at` or `place` (compass), `role` (hunt, camp, boss, treasure, passage), `pz` |
 | `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor or tunnel |
@@ -469,27 +469,30 @@ open tile, lights per 100 tiles and the spam share.
 
 ### Content plans
 `server/tools/areaplan/plans/`: ten production plans for the thin level bands (docs/CONTENT.md). CI validates and
-compiles them with the examples. Each has its own `origin`, one 100 x 100 cell in the empty block east of the
-generated areas, so they never overlap each other, the generated areas or the planned plaza at 14800, 14800:
+compiles them with the examples. Each has its own `origin`, one 200 x 200 cell in the empty block east and south of
+the generated areas (rows y 14340, 14540, 14940 and 15140; the plaza at 14800, 14800 sits in the free band between),
+so they never overlap each other, the generated areas or the plaza. Since 2026-10-14 each is four times the first
+draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de monstros"): twice the side, 12-17 zones in
+loops, 3.2-3.5 monsters per 100 walkable tiles:
 
-| Plan | Band | Origin x, y, z | Arrival |
-|---|---|---|---|
-| bonechoir_catacomb | 200-290 | 14700, 14400, 10 | 14736, 14411, 10 |
-| sulphur_gallery | 215-299 | 14800, 14400, 10 | 14815, 14430, 10 |
-| wyrmspine_hollows | 500-640 | 14900, 14400, 9 | 14916, 14412, 9 |
-| pyrarch_crucible | 520-690 | 15000, 14400, 10 | 15016, 14455, 10 |
-| widowmere | 480-640 | 15100, 14400, 8 | 15141, 14412, 8 |
-| corsairs_reach | 780-900 | 14700, 14500, 9 | 14716, 14532, 9 |
-| hexwood_thicket | 720-840 | 14800, 14500, 7 | 14845, 14556, 7 |
-| mirefang_basin | 880-999 | 14900, 14500, 8 | 14916, 14513, 8 |
-| rimecrown_depths | 1000-1120 | 15000, 14500, 7 | 15044, 14513, 7 |
-| cinderglass_sanctum | 1120-1300 | 15100, 14500, 9 | 15147, 14559, 9 |
+| Plan | Band | Size | Origin x, y, z | Arrival |
+|---|---|---|---|---|
+| bonechoir_catacomb | 200-290 | 148 x 120 | 14700, 14340, 10 | 14773, 14363, 10 |
+| sulphur_gallery | 215-299 | 164 x 124 | 14900, 14340, 10 | 14931, 14401, 10 |
+| wyrmspine_hollows | 500-640 | 176 x 136 | 15100, 14340, 9 | 15134, 14366, 9 |
+| pyrarch_crucible | 520-690 | 172 x 140 | 14700, 14540, 10 | 14733, 14651, 10 |
+| widowmere | 480-640 | 168 x 132 | 14900, 14540, 8 | 14983, 14565, 8 |
+| corsairs_reach | 780-900 | 172 x 132 | 15100, 14540, 9 | 15133, 14605, 9 |
+| hexwood_thicket | 720-840 | 184 x 144 | 14700, 14940, 7 | 14791, 15054, 7 |
+| mirefang_basin | 880-999 | 176 x 140 | 14900, 14940, 8 | 14934, 14967, 8 |
+| rimecrown_depths | 1000-1120 | 180 x 140 | 15100, 14940, 7 | 15189, 14967, 7 |
+| cinderglass_sanctum | 1120-1300 | 192 x 152, 2 floors | 14700, 15140, 9 | 14795, 15260, 9 |
 
 Placing one:
 ```
 python3 -I server/tools/area_planner.py compile server/tools/areaplan/plans/widowmere.json OUT
 python3 -I server/tools/area_planner.py render server/tools/areaplan/plans/widowmere.json OUT items.otb items.xml Tibia.dat Tibia.spr
-python3 -I server/tools/area_planner.py place OUT/widowmere.otbm world.otbm copy.otbm --at 15100 14400 8 \
+python3 -I server/tools/area_planner.py place OUT/widowmere.otbm world.otbm copy.otbm --at 14900 14540 8 \
     --spawn world-spawn.xml copy-spawn.xml
 python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest script, when the plan has chests
 ```

@@ -12855,8 +12855,8 @@ player's language (`Chaos.broadcast` of i18n.lua when loaded, else English) and 
 kind `chronicle`, when discord.lua is loaded and its config switches the kind on) go out. After a season ends its world
 stays until the next season starts, which starts from nothing.
 
-**The areas.** `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (waste, 64x52, levels 440-560) and
-`chronicle_ossuary_stair.json` (crypt, 60x52, levels 400-520), planned with the area planner; the owner places them
+**The areas.** `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (waste, 128x104, levels 440-560) and
+`chronicle_ossuary_stair.json` (crypt, 120x104, levels 400-520), planned with the area planner; the owner places them
 (docs/OWNER_TODO.md) and sets `areas[i].at` (the `place --at`) and `gate` (the world tile of the portal). Until then
 the chapter opens them in the story only: the window says so and the console names the missing setting. Their exit
 portal (47951) leads to the temple. `tools/chronicle_areas_test.py` checks the plans (validate, compile, QA) and the

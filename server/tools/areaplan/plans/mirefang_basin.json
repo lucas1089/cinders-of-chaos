@@ -4,8 +4,8 @@
   "name": "Mirefang Basin",
   "biome": "swamp",
   "size": [
-    88,
-    70
+    176,
+    140
   ],
   "floors": 1,
   "level": [
@@ -15,7 +15,7 @@
   "seed": 25303,
   "origin": {
     "x": 14900,
-    "y": 14500,
+    "y": 14940,
     "z": 8
   },
   "decoration": "dense",
@@ -32,32 +32,74 @@
     {
       "id": "visco_flats",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "north"
     },
     {
       "id": "hydra_sink",
       "floor": 1,
-      "size": "huge",
+      "size": [
+        28,
+        22
+      ],
       "place": "center"
     },
     {
       "id": "serpent_channel",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "east"
     },
     {
       "id": "shaper_mire",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "southwest"
     },
     {
       "id": "weaver_nest",
       "floor": 1,
-      "size": "medium",
+      "size": "large",
       "place": "southeast"
+    },
+    {
+      "id": "ooze_terrace",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "reedfang_marsh",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "rotting_delta",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "acid_lagoon",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "drowned_altar",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "sludge_runnel",
+      "floor": 1,
+      "size": "large"
     }
   ],
   "paths": [
@@ -90,6 +132,56 @@
       "from": "serpent_channel",
       "to": "weaver_nest",
       "width": 3
+    },
+    {
+      "from": "visco_flats",
+      "to": "ooze_terrace",
+      "width": 3
+    },
+    {
+      "from": "ooze_terrace",
+      "to": "serpent_channel",
+      "width": 3
+    },
+    {
+      "from": "heron_camp",
+      "to": "reedfang_marsh",
+      "width": 3
+    },
+    {
+      "from": "reedfang_marsh",
+      "to": "shaper_mire",
+      "width": 3
+    },
+    {
+      "from": "shaper_mire",
+      "to": "rotting_delta",
+      "width": 3
+    },
+    {
+      "from": "rotting_delta",
+      "to": "weaver_nest",
+      "width": 3
+    },
+    {
+      "from": "hydra_sink",
+      "to": "acid_lagoon",
+      "width": 3
+    },
+    {
+      "from": "acid_lagoon",
+      "to": "drowned_altar",
+      "width": 3
+    },
+    {
+      "from": "serpent_channel",
+      "to": "sludge_runnel",
+      "width": 3
+    },
+    {
+      "from": "hydra_sink",
+      "to": "rotting_delta",
+      "width": 3
     }
   ],
   "entry": {
@@ -102,45 +194,111 @@
     {
       "zone": "visco_flats",
       "monster": "Mutated Visco",
-      "count": 5,
+      "count": 11,
       "respawn": 120
     },
     {
       "zone": "hydra_sink",
       "monster": "Acid Hydra",
-      "count": 4,
+      "count": 9,
       "respawn": 120
     },
     {
       "zone": "hydra_sink",
       "monster": "Mutated Visco",
-      "count": 2,
+      "count": 4,
       "respawn": 120
     },
     {
       "zone": "serpent_channel",
       "monster": "Elite Tidecrest Serpent",
-      "count": 5,
+      "count": 11,
       "respawn": 120
     },
     {
       "zone": "shaper_mire",
       "monster": "Elite Twisted Shaper",
-      "count": 3,
+      "count": 7,
       "respawn": 120
     },
     {
       "zone": "shaper_mire",
       "monster": "Acid Hydra",
-      "count": 2,
+      "count": 4,
       "respawn": 120
     },
     {
       "zone": "weaver_nest",
       "monster": "Nexweaver",
-      "count": 3,
+      "count": 7,
       "respawn": 150
+    },
+    {
+      "zone": "ooze_terrace",
+      "monster": "Mutated Visco",
+      "count": 10,
+      "respawn": 120
+    },
+    {
+      "zone": "ooze_terrace",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "reedfang_marsh",
+      "monster": "Elite Twisted Shaper",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "reedfang_marsh",
+      "monster": "Mutated Visco",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "rotting_delta",
+      "monster": "Acid Hydra",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "rotting_delta",
+      "monster": "Nexweaver",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "acid_lagoon",
+      "monster": "Acid Hydra",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "acid_lagoon",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_altar",
+      "monster": "Nexweaver",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_altar",
+      "monster": "Elite Twisted Shaper",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "sludge_runnel",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 9,
+      "respawn": 120
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): an acid basin for levels 880-999, the top of the late game before the generated areas. Three parties."
+  "notes": "Content plan (docs/CONTENT.md): an acid basin for levels 880-999, the top of the late game before the generated areas. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for twelve parties."
 }

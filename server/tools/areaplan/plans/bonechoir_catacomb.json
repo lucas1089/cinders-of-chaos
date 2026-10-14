@@ -4,8 +4,8 @@
   "name": "Bonechoir Catacomb",
   "biome": "catacomb",
   "size": [
-    74,
-    60
+    148,
+    120
   ],
   "floors": 1,
   "level": [
@@ -15,7 +15,7 @@
   "seed": 25101,
   "origin": {
     "x": 14700,
-    "y": 14400,
+    "y": 14340,
     "z": 10
   },
   "decoration": "dense",
@@ -32,25 +32,25 @@
     {
       "id": "choir",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "center"
     },
     {
       "id": "west_charnel",
       "floor": 1,
-      "size": "medium",
+      "size": "large",
       "place": "west"
     },
     {
       "id": "east_charnel",
       "floor": 1,
-      "size": "medium",
+      "size": "large",
       "place": "east"
     },
     {
       "id": "bell_vault",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "south"
     },
     {
@@ -59,6 +59,45 @@
       "size": "small",
       "place": "southeast",
       "role": "treasure"
+    },
+    {
+      "id": "cantor_crypts",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "dirge_cloister",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "ossuary_aisle",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "sexton_galleries",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "requiem_hall",
+      "floor": 1,
+      "size": [
+        26,
+        18
+      ]
+    },
+    {
+      "id": "hymnal_vault",
+      "floor": 1,
+      "size": "large"
     }
   ],
   "paths": [
@@ -91,6 +130,56 @@
       "from": "bell_vault",
       "to": "reliquary",
       "width": 2
+    },
+    {
+      "from": "narthex",
+      "to": "cantor_crypts",
+      "width": 3
+    },
+    {
+      "from": "narthex",
+      "to": "dirge_cloister",
+      "width": 3
+    },
+    {
+      "from": "cantor_crypts",
+      "to": "west_charnel",
+      "width": 3
+    },
+    {
+      "from": "dirge_cloister",
+      "to": "east_charnel",
+      "width": 3
+    },
+    {
+      "from": "west_charnel",
+      "to": "ossuary_aisle",
+      "width": 3
+    },
+    {
+      "from": "ossuary_aisle",
+      "to": "bell_vault",
+      "width": 3
+    },
+    {
+      "from": "east_charnel",
+      "to": "sexton_galleries",
+      "width": 3
+    },
+    {
+      "from": "sexton_galleries",
+      "to": "requiem_hall",
+      "width": 3
+    },
+    {
+      "from": "requiem_hall",
+      "to": "bell_vault",
+      "width": 3
+    },
+    {
+      "from": "choir",
+      "to": "hymnal_vault",
+      "width": 3
     }
   ],
   "entry": {
@@ -103,51 +192,125 @@
     {
       "zone": "choir",
       "monster": "Deathrattle",
-      "count": 6,
+      "count": 11,
       "pack": 2,
       "respawn": 100
     },
     {
       "zone": "choir",
       "monster": "Skullshade",
-      "count": 3,
+      "count": 5,
       "respawn": 120
     },
     {
       "zone": "west_charnel",
       "monster": "Bonecleaver",
-      "count": 4,
+      "count": 7,
       "respawn": 120
     },
     {
       "zone": "east_charnel",
       "monster": "Doombone",
-      "count": 3,
+      "count": 5,
       "respawn": 120
     },
     {
       "zone": "east_charnel",
       "monster": "Blackblade",
-      "count": 2,
+      "count": 4,
       "respawn": 120
     },
     {
       "zone": "bell_vault",
       "monster": "Bonecleaver",
-      "count": 3,
+      "count": 5,
       "respawn": 120
     },
     {
       "zone": "bell_vault",
       "monster": "Deathrattle",
-      "count": 3,
+      "count": 5,
       "respawn": 120
     },
     {
       "zone": "reliquary",
       "monster": "Doombone",
-      "count": 1,
+      "count": 2,
       "respawn": 180
+    },
+    {
+      "zone": "cantor_crypts",
+      "monster": "Skullshade",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "cantor_crypts",
+      "monster": "Deathrattle",
+      "count": 7,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "dirge_cloister",
+      "monster": "Doombone",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "dirge_cloister",
+      "monster": "Bonecleaver",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "ossuary_aisle",
+      "monster": "Bonecleaver",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "ossuary_aisle",
+      "monster": "Blackblade",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "sexton_galleries",
+      "monster": "Deathrattle",
+      "count": 7,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "sexton_galleries",
+      "monster": "Blackblade",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "requiem_hall",
+      "monster": "Doombone",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "requiem_hall",
+      "monster": "Skullshade",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "hymnal_vault",
+      "monster": "Skullshade",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "hymnal_vault",
+      "monster": "Deathrattle",
+      "count": 5,
+      "respawn": 120
     }
   ],
   "chests": [
@@ -166,5 +329,5 @@
       }
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): a one-floor catacomb for levels 200-290, the undead the 200-300 band lacks beside the library isle. Two parties: the choir loop and the bell vault."
+  "notes": "Content plan (docs/CONTENT.md): a one-floor catacomb for levels 200-290, the undead the 200-300 band lacks beside the library isle. Four times the first draft (owner, 2026-10-14): 10 hunting zones in loops, room for eight parties."
 }

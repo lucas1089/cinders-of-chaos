@@ -535,7 +535,7 @@ check(low.pos.y == 501 and low.cancel:find("level 400"), "too low: pushed back")
 moves[1].onStepIn(hero, gateItem, Position(500, 500, 7), Position(500, 501, 7))
 hero.level = 450
 moves[1].onStepIn(hero, gateItem, Position(500, 500, 7), Position(500, 501, 7))
-check(hero.pos.x == 2031 and hero.pos.y == 2040, "the arrival of the Breach")
+check(hero.pos.x == 2063 and hero.pos.y == 2082, "the arrival of the Breach")
 -- chapter 3: the Omens; the raid comes through its clear, once per run
 ChaosRecords.submit({board = "raid", value = 900, members = {hero}})
 eq(X.state.progress[3][1], 0, "the records' raid board does not count (the clear does)")

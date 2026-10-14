@@ -4,8 +4,8 @@
   "name": "Corsairs' Reach",
   "biome": "cave",
   "size": [
-    86,
-    66
+    172,
+    132
   ],
   "floors": 1,
   "level": [
@@ -14,8 +14,8 @@
   ],
   "seed": 25301,
   "origin": {
-    "x": 14700,
-    "y": 14500,
+    "x": 15100,
+    "y": 14540,
     "z": 9
   },
   "decoration": "dense",
@@ -32,25 +32,28 @@
     {
       "id": "tide_cave",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "northwest"
     },
     {
       "id": "smugglers_hold",
       "floor": 1,
-      "size": "huge",
+      "size": [
+        28,
+        22
+      ],
       "place": "center"
     },
     {
       "id": "gun_deck",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "northeast"
     },
     {
       "id": "brine_grotto",
       "floor": 1,
-      "size": "large",
+      "size": "huge",
       "place": "southeast"
     },
     {
@@ -59,6 +62,60 @@
       "size": "small",
       "place": "south",
       "role": "treasure"
+    },
+    {
+      "id": "rum_cellars",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "powder_store",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "east"
+    },
+    {
+      "id": "kelp_caverns",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "mutineers_den",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "sunken_berth",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ]
+    },
+    {
+      "id": "chain_locker",
+      "floor": 1,
+      "size": "large",
+      "place": "northwest"
+    },
+    {
+      "id": "bilge_tunnels",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "drowned_galley",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
     }
   ],
   "paths": [
@@ -91,6 +148,66 @@
       "from": "brine_grotto",
       "to": "wreck_camp",
       "width": 3
+    },
+    {
+      "from": "tide_cave",
+      "to": "rum_cellars",
+      "width": 3
+    },
+    {
+      "from": "rum_cellars",
+      "to": "gun_deck",
+      "width": 3
+    },
+    {
+      "from": "gun_deck",
+      "to": "powder_store",
+      "width": 3
+    },
+    {
+      "from": "powder_store",
+      "to": "brine_grotto",
+      "width": 3
+    },
+    {
+      "from": "wreck_camp",
+      "to": "kelp_caverns",
+      "width": 3
+    },
+    {
+      "from": "kelp_caverns",
+      "to": "captains_cache",
+      "width": 2
+    },
+    {
+      "from": "smugglers_hold",
+      "to": "mutineers_den",
+      "width": 3
+    },
+    {
+      "from": "mutineers_den",
+      "to": "sunken_berth",
+      "width": 3
+    },
+    {
+      "from": "tide_cave",
+      "to": "chain_locker",
+      "width": 3
+    },
+    {
+      "from": "kelp_caverns",
+      "to": "sunken_berth",
+      "width": 3
+    },
+    {
+      "from": "brine_grotto",
+      "to": "bilge_tunnels",
+      "width": 3
+    },
+    {
+      "from": "bilge_tunnels",
+      "to": "drowned_galley",
+      "width": 3
     }
   ],
   "entry": {
@@ -103,49 +220,139 @@
     {
       "zone": "tide_cave",
       "monster": "Ironhook Corsair",
-      "count": 5,
+      "count": 10,
       "respawn": 120
     },
     {
       "zone": "smugglers_hold",
       "monster": "Scourgejaw",
-      "count": 4,
+      "count": 8,
       "respawn": 120
     },
     {
       "zone": "smugglers_hold",
       "monster": "Captain Bloodbeard",
-      "count": 2,
+      "count": 4,
       "respawn": 150
     },
     {
       "zone": "smugglers_hold",
       "monster": "Ironhook Corsair",
-      "count": 2,
-      "respawn": 120
-    },
-    {
-      "zone": "gun_deck",
-      "monster": "Stormy Seadevil",
       "count": 4,
       "respawn": 120
     },
     {
       "zone": "gun_deck",
+      "monster": "Stormy Seadevil",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "gun_deck",
       "monster": "Scourgejaw",
-      "count": 2,
+      "count": 4,
       "respawn": 120
     },
     {
       "zone": "brine_grotto",
       "monster": "Stormy Seadevil",
-      "count": 3,
+      "count": 6,
       "respawn": 120
     },
     {
       "zone": "brine_grotto",
       "monster": "Ironhook Corsair",
-      "count": 2,
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "rum_cellars",
+      "monster": "Ironhook Corsair",
+      "count": 10,
+      "respawn": 120
+    },
+    {
+      "zone": "rum_cellars",
+      "monster": "Captain Bloodbeard",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "powder_store",
+      "monster": "Stormy Seadevil",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "powder_store",
+      "monster": "Scourgejaw",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "kelp_caverns",
+      "monster": "Stormy Seadevil",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "kelp_caverns",
+      "monster": "Ironhook Corsair",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "mutineers_den",
+      "monster": "Scourgejaw",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "mutineers_den",
+      "monster": "Captain Bloodbeard",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "sunken_berth",
+      "monster": "Stormy Seadevil",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "sunken_berth",
+      "monster": "Scourgejaw",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "chain_locker",
+      "monster": "Ironhook Corsair",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "bilge_tunnels",
+      "monster": "Stormy Seadevil",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "bilge_tunnels",
+      "monster": "Ironhook Corsair",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_galley",
+      "monster": "Captain Bloodbeard",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_galley",
+      "monster": "Scourgejaw",
+      "count": 6,
       "respawn": 120
     }
   ],
@@ -165,5 +372,5 @@
       }
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): a smugglers cave for levels 780-900, the four corsairs that spawned nowhere. Three parties: the tide cave, the hold, the deck and grotto loop."
+  "notes": "Content plan (docs/CONTENT.md): a smugglers cave for levels 780-900, the four corsairs that spawned nowhere. Four times the first draft (owner, 2026-10-14): 12 hunting zones in loops, room for twelve parties."
 }

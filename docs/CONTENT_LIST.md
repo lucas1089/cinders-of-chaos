@@ -470,12 +470,13 @@ Planned hunting areas (10, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
 | rimecrown_depths | 1000-1120 | ice |
 | cinderglass_sanctum | 1120-1300 | sanctum, 2 floors |
 
-Placed, they lift 500-700 from 14 to about 23 parties at once, 700-1000 from 10 to about 19, 1000+ from 0 to 7.
+Each is four times the first draft (2026-10-14). Placed, they lift 500-700 from 14 to about 50 parties at once,
+700-1000 from 10 to about 46, 1000+ from 0 to 28.
 
 Chronicle and memorial areas (in `server/tools/areaplan/chronicle/`):
 
-- **Cinderscar Breach.** Waste, 64x52, levels 440-560. Chronicle area.
-- **Ossuary Stair.** Crypt, 60x52, levels 400-520. Chronicle area.
+- **Cinderscar Breach.** Waste, 128x104, levels 440-560. Chronicle area.
+- **Ossuary Stair.** Crypt, 120x104, levels 400-520. Chronicle area.
 - **Capital Memorial plaza.** Hall, 48x40, in the capital. Statues and stones placed by script.
 
 Other open placement work (docs/CONTENT.md "For the owner"):

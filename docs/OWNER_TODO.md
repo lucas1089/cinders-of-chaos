@@ -94,8 +94,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   characters to level 600 and 10 invasions). Tune them to the expected population. The lore writers' Archivist Maelis
   keeps "The Cinder Chronicle" in `lore_data.lua`: decide whether she is the Chronicler (one name) or a second keeper.
 - [ ] **Place the Chronicle's areas** (closed until their chapter is written): compile
-  `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (64x52, z 7, outdoor, beside the capital's walls)
-  and `chronicle_ossuary_stair.json` (60x52, z 9, under the capital), place each with
+  `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (128x104, z 7, outdoor, beside the capital's walls)
+  and `chronicle_ossuary_stair.json` (120x104, z 9, under the capital), place each with
   `python3 -I server/tools/area_planner.py place OUT/<id>.otbm WORLD.otbm COPY.otbm --at X Y Z --spawn ...` on an empty
   spot you choose, then set in `server/data/scripts/chaos/chronicle_config.lua` `areas`: `at = {x = X, y = Y, z = Z}` and
   `gate = {x =, y =, z =}` (the world tile where the portal appears, e.g. by the capital's gate for the Breach, a cellar
