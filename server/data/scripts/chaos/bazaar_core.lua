@@ -2,7 +2,8 @@
 -- server/tests/bazaar_test.lua. The auction itself (bids, escrow, fee, transfer) is the website's
 -- (website/overlay/plugins/chaos/bazaar_lib.php); its numbers mirror bazaar_config.lua and are tested there.
 --   B.locks(rows, cfg)            the listing that locks the character (a row whose status is in cfg.lockStatuses), or nil
---   B.lockMessage(row, cfg)       the text a locked character's owner reads
+--   B.lockMessage(row, cfg, tr)   the text a locked character's owner reads (tr: a translation, default English)
+--   B.refusalText(row, cfg, lang, text)   the login refusal box: the player's language, or English and pt-BR
 --   B.fee(price, cfg)             the house fee of a final price (floor, at least 1 coin on a sale above 0)
 --   B.minNextBid(current, minPrice, cfg)   the lowest bid allowed next
 --   B.validate(cfg)               list of problems in the config (fee 5-10 %, days 1-7, prices, statuses)
@@ -24,9 +25,24 @@ function B.locks(rows, cfg)
 	return best
 end
 
-function B.lockMessage(row, cfg)
+-- tr(pattern, ...) translates (Chaos.t of the player); default: English
+function B.lockMessage(row, cfg, tr)
 	local ends = tonumber(row and row.ends_at) or 0
-	return string.format(cfg.messages.locked, ends > 0 and os.date("%Y-%m-%d %H:%M", ends) or "the auction ends")
+	tr = tr or string.format
+	return tr(cfg.messages.locked, ends > 0 and os.date("%Y-%m-%d %H:%M", ends) or "the auction ends")
+end
+
+-- the text of the login refusal box (bazaar.lua, engine patch 0039 player:refuseLogin). lang = the player's language
+-- ("en" | "pt-BR"), or nil when the character never told it (a first login): then English and pt-BR together.
+-- text(lang, pattern, ...) translates (ChaosI18n.text).
+function B.refusalText(row, cfg, lang, text)
+	local function tr(l)
+		return B.lockMessage(row, cfg, function(p, ...) return text(l, p, ...) end)
+	end
+	if lang then
+		return tr(lang)
+	end
+	return tr("en") .. "\n\n" .. tr("pt-BR")
 end
 
 function B.fee(price, cfg)

@@ -225,7 +225,10 @@ dofile("data/scripts/chaos/tales.lua")
 local T = ChaosTales
 assert(events.ChaosTalesKill and events.ChaosTalesModal and events.ChaosTalesLogin and events.ChaosTalesStartup)
 eq(next(talks), nil, "no spoken command")
+eq(T.placeNpcs(), 1, "the Archivist already near the temple is kept (npc_place.lua)")
+npcHere = false
 eq(T.placeNpcs(), 0, "no free tile next to the mocked temple")
+npcHere = true
 
 local hero = mkPlayer(1, 230)
 local friend = mkPlayer(2, 210, pos(60, 55, 7))

@@ -754,7 +754,9 @@ function R.sendFirsts(player)
 	local rows = {}
 	for _, e in pairs(R.firsts.byTarget) do
 		local b = R.byKey[e.board]
-		rows[#rows + 1] = {target = e.target, board = b and b.name or e.board, name = e.short, members = e.members, at = e.at,
+		-- the boss's full name (K.firstDisplay); e.short is the title's short name
+		rows[#rows + 1] = {target = e.target, board = b and b.name or e.board,
+			name = K.firstDisplay(R.byKey, e.target, e.short) or e.short, members = e.members, at = e.at,
 			value = e.value, format = b and b.format or nil}
 	end
 	table.sort(rows, function(a, b) return a.at < b.at end)

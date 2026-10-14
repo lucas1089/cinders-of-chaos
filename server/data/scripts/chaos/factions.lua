@@ -32,6 +32,9 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 dofile("data/scripts/chaos/factions_core.lua")
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
+end
 
 Chaos.factionsConfig = dofile("data/scripts/chaos/factions_config.lua")
 local cfg = Chaos.factionsConfig
@@ -1011,40 +1014,21 @@ function F.craft(player, key, n)
 end
 
 -- ---------------------------------------------------------------- NPC placement
-local function placeNpc(name, pos)
-	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do
-		if c:isNpc() and c:getName():lower() == name:lower() then
-			return c
-		end
-	end
-	return Game.createNpc(name, pos)
-end
-
-local function freeTileNear(temple)
-	for _, o in ipairs(cfg.npcOffsets) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
-end
-
 function F.placeNpcs()
 	local placed = 0
 	for _, f in ipairs(idx.list) do
 		local n = f.npc
-		local pos
+		local done
 		if n.pos then
-			pos = Position(n.pos.x, n.pos.y, n.pos.z)
+			-- a fixed spot: that tile (an NPC of that name already near it is kept)
+			done = try("place " .. n.name, ChaosNpcPlace.place, n.name, Position(n.pos.x, n.pos.y, n.pos.z), {{0, 0}},
+				{radius = 8, spacing = 0, minFromTemple = 0})
 		else
 			local town = (n.town and Town(n.town)) or (n.townId and Town(n.townId))
 			local temple = town and town:getTemplePosition()
-			pos = temple and freeTileNear(temple)
+			done = temple and try("place " .. n.name, ChaosNpcPlace.place, n.name, temple, cfg.npcOffsets, cfg.npcPlace)
 		end
-		if pos and try("place " .. n.name, placeNpc, n.name, pos) then
+		if done then
 			placed = placed + 1
 		else
 			log("could not place " .. n.name .. " (no town, no free tile next to the temple, or data/npc/" .. n.name ..

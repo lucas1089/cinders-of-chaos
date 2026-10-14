@@ -21,8 +21,9 @@
 -- refuses it, the stock market does not list it). The trade window refuses it (onTradeRequest / onTradeAccept), and
 -- Player:onMoveItem (hook written by install_pouches.py) keeps it, and any container holding it, in the character's
 -- inventory or depot: no ground, no mailbox, no house, no other player's container. Player market: ChaosPouches.isPouch.
--- Death: the engine may drop the backpack into the corpse; the pouch is then taken out of the corpse (its contents stay
--- in the corpse, like the rest of the backpack) and given back, empty, at the next login.
+-- Death: death_keep.lua (hook in the base droploot.lua) takes the pouch out of a dropping backpack before it drops (its
+-- contents drop with the backpack) and parks it in the inbox, back in the backpack at the next login; this works with
+-- no corpse too (a death on water). The corpse search below is the fallback for a server without that hook.
 -- The retired Bottomless Loot Pouch unlock (storage 7100100): its owners get a Loot Bag for free once, at login.
 
 if not Chaos then

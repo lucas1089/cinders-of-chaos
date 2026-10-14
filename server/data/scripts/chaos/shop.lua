@@ -407,6 +407,12 @@ local function giftable(offer)
 	return true
 end
 
+-- a stackable item type (drawn by its count: shop_core.lua C.iconCount)
+local function stackable(it)
+	local ok, v = pcall(function() return it:isStackable() end)
+	return ok and v and true or false
+end
+
 local function clientOffer(e, player)
 	local offer = e.offer
 	local view = {cost = e.cost, oldCost = e.oldCost, title = offer.name, description = offer.description or ""}
@@ -447,7 +453,8 @@ local function clientOffer(e, player)
 		view.type, view.outfit = "outfit", {type = offer.look, rotating = true}
 	else
 		-- services, unlocks, frames, bundles: the icon is any item picture
-		view.type, view.item, view.count = "item", ItemType(offer.icon or 1949):getClientId(), offer.iconCount or 1
+		local it = ItemType(offer.icon or 1949)
+		view.type, view.item, view.count = "item", it:getClientId(), K.iconCount(offer, stackable(it))
 	end
 	if offer.kind == "bundle" and pactGrant() then
 		for _, p in ipairs(offer.resolved or {}) do
@@ -476,7 +483,8 @@ local function categoriesView(player, list)
 		local entry = {name = category.name, pages = math.max(1, math.ceil(#category.offers / cfg.perPage)),
 			endsIn = category.endsIn} -- the weekly rotation: seconds until it changes (the client counts down)
 		if category.icon.item then
-			entry.type, entry.item, entry.count = "item", ItemType(category.icon.item):getClientId(), category.icon.count or 1
+			local it = ItemType(category.icon.item)
+			entry.type, entry.item, entry.count = "item", it:getClientId(), K.iconCount(category.icon, stackable(it))
 		else
 			entry.type, entry.outfit = "outfit", category.icon.outfit
 		end

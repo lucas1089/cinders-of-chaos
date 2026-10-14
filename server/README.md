@@ -156,6 +156,8 @@ server/
                                       Game.setWeightlessContainer(itemId) weighs only itself and its contents skip the
                                       holder's capacity check: the store's Loot Bag (see "Store pouches", Loot Bag;
                                       tools/weightless_patch_test.py)
+  src-patches/0039-login-refusal-message.patch   engine: player:refuseLogin(message) sends the client's login error
+                                      box at once, before onLogin returns false (see "Character Bazaar")
     display_scale.lua  display_scale_core.lua  display_scale_config.lua (every combat number shown x the factor of the
                                       viewer's level, opcode 157, see "Display scale")
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
@@ -3031,11 +3033,17 @@ autoloot list is needed.
   refused ("Store items stay with you ..."); a pouch never goes into another pouch. The trade window refuses it
   (`onTradeRequest` / `onTradeAccept` callbacks; `patch_season_events.py` enables those events). Player market: it asks
   `ChaosPouches.isPouch(item)` / the attribute `chaos_storebound`.
-- **Death.** The engine decides what drops (blessings, the amulet of loss, skulls as usual). When the backpack falls into the
-  corpse, the pouch leaves the corpse a moment later (`onDeath` + `addEvent`), its contents stay in the corpse like the rest of the
-  backpack, and the character gets the pouch back, empty, at the next login (storage 7100109, written to the database because the
-  character is offline by then): "Back after your death, empty: your Orbs Pouch, Rift Key Pouch, Loot Bag (backpack)." So a pouch
-  is never lost and never looted by a killer, and it does not protect its contents.
+- **Death** (`death_keep.lua`, `death_keep_core.lua`; `tests/death_keep_test.lua`, `tools/death_keep_patch_test.py`). The
+  engine decides what drops (blessings, the amulet of loss, skulls as usual). Live test 2026-10-14: a death on shallow water
+  lost the Loot Bag and the Everfull Ration. The stock `droploot.lua` moves each dropped slot item into the corpse and removes
+  it when that fails, and a tile that cannot hold a corpse (water) has none. `patch_base_events.py` step 15 makes it ask
+  `ChaosDeathKeep.beforeDrop(player, item, corpse)` first: every store-bound item (attribute `chaos_storebound`: the pouches,
+  the Everfull Ration, the nemesis trophy; any copy of a pouch or ration item) leaves the dropping container for the
+  character's inbox (attribute `chaos_death_kept`), its own contents stay in the drop; a store-bound item worn in a slot stays
+  there (its contents drop). At the next login a marked item moves to the backpack when it fits, else it stays in the inbox:
+  "Kept through your death: your Loot bag, Everfull ration (backpack)." (pt-BR too). So a store item is never lost and never
+  looted by a killer, with or without a corpse, and it does not protect its contents. Fallback without the hook: the pouch
+  leaves the corpse a moment later (`onDeath` + `addEvent`) and comes back, empty, at the next login (storage 7100109).
 - **Former Bottomless Loot Pouch owners** (storage 7100100 = 1) get a Loot Bag for free at their next login, once (storage
   7100108), backpack or inbox, with a short message.
 - **Tooltip.** The rich item tooltip shows "Store item: cannot be traded" and what the pouch collects (`item_tooltip_core.lua` asks
@@ -3096,7 +3104,8 @@ The store's infinite food (Convenience, "Everfull Ration", 150 coins, a PLACEHOL
   and `chaos_locked`. The pouches' move hook, trade callbacks and the player market refuse any `chaos_storebound` item, so
   it cannot be dropped, mailed, traded or sold (the refusal text now says "Store items ..."). A service offer, so never
   giftable. Not for season characters (the Convenience category is refused there).
-- **Death.** A ration dropped with the backpack leaves the corpse and comes back at the next login (storage 7100151, written
+- **Death.** Kept out of the drop like the pouches (`death_keep.lua`, see "Store pouches", Death). Fallback without that
+  hook: a ration dropped with the backpack leaves the corpse and comes back at the next login (storage 7100151, written
   to the database); the store refuses a second one meanwhile.
 - **Tests:** `tests/store_food_test.lua` (the bite, the cap, the exhaust, owner only, never used up, the store check, the
   offer, delivery to the backpack or the inbox, death and the login), `tools/install_store_food_test.py`.
@@ -3428,6 +3437,11 @@ log in.
 - `bazaar.lua` onLogin: a locked character is refused (`return false`; the engine kicks it in `Player::onPlacedCreature`
   before it can act), logged as `login_refused` in `chaos_bazaar_log`. Staff characters (group >= `adminGroup`, 5) are
   never locked. Missing tables (a server without the site) lock nothing.
+- The player reads why (live test 2026-10-14: the client only said "connection lost"): engine patch 0039
+  `player:refuseLogin(text)` sends the client's login error box at once (anything sent the normal way is dropped with the
+  kick). The text (`messages.locked`, the auction's end) is in the character's language (`Chaos.lang`, stored by the
+  client's hello); a character that never told its language gets English and pt-BR together. Without the patch the text
+  goes as a normal message (lost, as before). Tests: `tests/bazaar_test.lua`.
 - A sweep every `sweepSeconds` (60) saves and removes a listed character that is online (a login that raced the
   listing; the website also refuses to list a character in `players_online`).
 - The transfer itself is the website's: `players.account_id` changes while the character is offline and locked; the
@@ -8049,7 +8063,18 @@ the model (no NPC bought them before either). The respec prices and the other go
 their numbers.
 
 **The Loot Buyer** (`data/npc/Loot Buyer.xml`, `data/npc/scripts/loot_buyer.lua`; placed next to every temple at
-startup by `item_prices.lua`, offsets in `item_prices_config.lua`). "trade": the window lists only what the player
+startup by `item_prices.lua`, offsets in `item_prices_config.lua`).
+
+**Startup NPC placement** (`npc_place.lua`, `npc_place_core.lua`, `data/lib/chaos_npc_focus.lua`; `tests/npc_place_test.lua`).
+Live test 2026-10-14: no Loot Buyer at Nightwrack and Scorchveil (every fixed offset a wall or taken) and the Loot Buyer
+next to the Gambler (one "hi" / "trade" opened both windows). The Loot Buyer, the Gambler, the Ascendant Oracle,
+Archivist Maelis, the Material Brokers and the faction NPCs now place through `ChaosNpcPlace.place`: the configured
+offsets first, then every tile a player can walk to from the temple (closed doors count as walkable, never as a spot),
+nearest walking distance first, up to 14 tiles; never on or next to the temple tile, not in a one-tile corridor unless
+nothing else is left, and at least 4 tiles (Chebyshev) from every other NPC: beyond the talk radius (3). The order is
+fixed, so a restart gives the same spots. On top of that our NPC scripts answer a player only when he talks to them
+already or no other NPC within the talk radius stands nearer (a tie: the lower creature id), so one greeting never opens
+two windows. "trade": the window lists only what the player
 carries (backpack and its containers, not the equipped items) at the plain price; a sale pays every copy at its own
 price, takes no locked item (the item lock), no unique and no container with items. "appraise": the most valuable
 copies carried and what the bags are worth. Asked about uniques he sends the player to salvage or the market.

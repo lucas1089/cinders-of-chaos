@@ -220,7 +220,7 @@ return {
 				{kind = "bundle", key = "bundle:pyre", pct = 25, name = "Pyre Regalia", icon = 2187,
 					description = "The Astral Fire outfit with both addons, the Crimson Fang mount, Vorondor Flames and the Ember Crown aura.",
 					parts = {"outfit:1213", "mount:121", "wings:7", "aura:15"}},
-				{kind = "bundle", key = "bundle:storm", pct = 25, name = "Stormcaller Regalia", icon = 2150,
+				{kind = "bundle", key = "bundle:storm", pct = 25, name = "Stormcaller Regalia", icon = 2189,
 					description = "The Astral Electric outfit with both addons, the Stormkeep mount, wings and the storm mantle aura.",
 					parts = {"outfit:1217", "mount:140", "wings:13", "aura:22"}}
 			}

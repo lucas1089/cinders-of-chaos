@@ -9,7 +9,13 @@ NpcSystem.parseParameters(npcHandler)
 
 function onCreatureAppear(cid)			npcHandler:onCreatureAppear(cid)			end
 function onCreatureDisappear(cid)		npcHandler:onCreatureDisappear(cid)			end
-function onCreatureSay(cid, type, msg)		npcHandler:onCreatureSay(cid, type, msg)		end
+-- only the nearest NPC answers a greeting (data/lib/chaos_npc_focus.lua)
+if not ChaosNpcFocus then pcall(dofile, "data/lib/chaos_npc_focus.lua") end
+function onCreatureSay(cid, type, msg)
+	if not ChaosNpcFocus or ChaosNpcFocus.hears(cid, npcHandler) then
+		npcHandler:onCreatureSay(cid, type, msg)
+	end
+end
 function onThink()				npcHandler:onThink()					end
 
 local cfg = dofile("data/scripts/chaos/factions_config.lua")

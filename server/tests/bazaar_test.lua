@@ -101,6 +101,35 @@ eq(login(newPlayer(1)), true, "a character never listed logs in")
 listings[2] = {{id = 7, status = "active", ends_at = os.time() + 3600}}
 eq(login(newPlayer(2)), false, "an active listing refuses the login")
 eq(logged[#logged]:find("login_refused", 1, true) ~= nil, true, "the refusal is logged")
+-- the player reads why (live test 2026-10-14: the client only said "connection lost"): the login error box of engine
+-- patch 0039 (player:refuseLogin), in the character's language; never told: English and pt-BR together
+dofile("data/scripts/chaos/i18n_core.lua")
+local boxIds = 900
+local function withBox(p, lang)
+	boxIds = boxIds + 1
+	local id = boxIds
+	p.boxes = {}
+	function p:refuseLogin(text) self.boxes[#self.boxes + 1] = text return true end
+	function p:getStorageValue(k) return k == ChaosI18n.STORAGE and (lang or -1) or -1 end
+	function p:getId() return id end
+	return p
+end
+local en = withBox(newPlayer(2), 0)
+eq(login(en), false, "refused with a box")
+eq(#en.boxes, 1, "one login error box")
+eq(en.boxes[1]:find("listed on the Character Bazaar", 1, true) ~= nil, true, "English box: " .. tostring(en.boxes[1]))
+eq(en.boxes[1]:find("anunciado", 1, true), nil, "English only for an English character")
+local pt = withBox(newPlayer(2), 1)
+login(pt)
+eq(pt.boxes[1]:find("anunciado no Character Bazaar", 1, true) ~= nil, true, "pt-BR box: " .. tostring(pt.boxes[1]))
+eq(pt.boxes[1]:find(os.date("%Y-%m-%d", listings[2][1].ends_at), 1, true) ~= nil, true, "the end date is in the box")
+local fresh = withBox(newPlayer(2), nil)
+login(fresh)
+eq(fresh.boxes[1]:find("listed on the Character Bazaar", 1, true) ~= nil
+	and fresh.boxes[1]:find("anunciado no Character Bazaar", 1, true) ~= nil, true, "language never told: both")
+local old = newPlayer(2) -- an engine without patch 0039: the normal text message (no crash)
+eq(login(old), false, "still refused without the patch")
+eq(#old.texts, 1, "the text goes the normal way")
 listings[3] = {{id = 8, status = "settling", ends_at = os.time() - 5}}
 eq(login(newPlayer(3)), false, "a listing being settled refuses the login")
 listings[4] = {{id = 9, status = "sold", ends_at = os.time() - 5}, {id = 10, status = "cancelled", ends_at = os.time() - 99}}

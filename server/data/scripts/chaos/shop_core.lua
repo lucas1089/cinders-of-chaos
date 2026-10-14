@@ -18,6 +18,7 @@
 --   C.clawbackPlan(shortfall, gifts)      what to take back from the receivers of a charged-back donor's coin gifts
 --   C.packCredit(pack, first, cfg)        {coins, bonus, firstBonus, total} for a paid Chaos Coin pack
 --   C.validate(cfg, cosmetics, ex)        list of problems in shop_config.lua (keys, prices, sales, bundles, exclusives)
+--   C.iconCount(icon, stackable)          the count an item picture is drawn with (a pile for a stackable item)
 --   C.FRAMES / C.frameIndex(frame) / C.frameStorage(S, i)   name plate frames: the order is the ownership storage slot
 --                                         (shop.lua kind "frame", exclusives.lua kind "frame")
 -- Lua 5.1 / LuaJIT / Lua 5.3 compatible.
@@ -28,6 +29,21 @@ local C = ChaosShopCore
 -- offer kinds that can be bought for another character (services and unlocks run per character, right away)
 C.GIFTABLE = {item = true, wings = true, aura = true, shader = true, outfit = true, addons = true, mount = true,
 	premium = true, frame = true, bundle = true}
+
+-- ------------------------------------------------------------------ item pictures (offer and category icons)
+-- A stackable item is drawn by its count: one small gem or coin is a few pixels in the 32 px cell (live test
+-- 2026-10-14: the Stormcaller Regalia, a small amethyst, showed as a dot). Without its own iconCount (offers) or count
+-- (category icons) a stackable picture is drawn as a pile; anything else as one item.
+C.ICON_PILE = 100
+
+-- icon = an offer ({iconCount}) or a category icon ({count}); stackable = the engine's ItemType:isStackable()
+function C.iconCount(icon, stackable)
+	local n = icon and (icon.iconCount or icon.count)
+	if n then
+		return n
+	end
+	return stackable and C.ICON_PILE or 1
+end
 
 -- ------------------------------------------------------------------ name plate frames
 -- index = the frame's slot: never reorder, only append. 1-5 the first store frames, 6-13 the second set of store frames,

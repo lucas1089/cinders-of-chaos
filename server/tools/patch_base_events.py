@@ -83,6 +83,13 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    120 s; while the Pact is active every ChaosPactPerks.staminaRestMs(player, 120000) ms instead (80 s at x1.5). Without
    that script the 120 s stay.
 
+15. data/creaturescripts/scripts/droploot.lua: store-bound items never drop (live test 2026-10-14: a death on shallow
+   water lost the Loot Bag and the Everfull Ration). The stock script moves each dropped slot item into the corpse and
+   removes it when that fails, and a tile that cannot hold a corpse (water) has none. Before a slot item drops it now
+   asks ChaosDeathKeep.beforeDrop(player, item, corpse) (data/scripts/chaos/death_keep.lua): the store-bound items in it
+   go to the character's inbox first (back in the backpack at the next login), and a store-bound item worn in a slot
+   stays there (true: not dropped). Without that script the stock rule runs unchanged.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -477,6 +484,25 @@ def patch_trainer_stamina(text):
     return text[:m.start()] + block + text[m.end():], 'patched'
 
 
+DEATHKEEP_MARKER = '-- Chaos: store-bound items never drop (patch_base_events.py)'
+DEATHKEEP_RE = re.compile(r'^([ \t]*)if \(isRedOrBlack or lossPercent ~= 0\) and not item:moveTo\(corpse\) then[ \t]*(\r?\n)',
+                          re.M)
+
+
+def patch_death_keep(text):
+    if DEATHKEEP_MARKER in text:
+        return text, 'already'
+    m = DEATHKEEP_RE.search(text)
+    if not m:
+        return text, ('unexpected droploot.lua ("if (isRedOrBlack or lossPercent ~= 0) and not item:moveTo(corpse) then" '
+                      'not found)')
+    ind, nl = m.group(1), m.group(2)
+    block = (ind + DEATHKEEP_MARKER + nl
+             + ind + 'if (isRedOrBlack or lossPercent ~= 0) and not (ChaosDeathKeep and ChaosDeathKeep.beforeDrop'
+             + ' and ChaosDeathKeep.beforeDrop(player, item, corpse)) and not item:moveTo(corpse) then' + nl)
+    return text[:m.start()] + block + text[m.end():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -514,6 +540,7 @@ def main():
                patch_offline_stamina, dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'customs', 'actions', 'trainer_tile_stamina.lua'),
                patch_trainer_stamina, dry) and ok
+    ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'droploot.lua'), patch_death_keep, dry) and ok
     return 0 if ok else 1
 
 

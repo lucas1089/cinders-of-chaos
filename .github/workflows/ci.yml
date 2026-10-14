@@ -157,6 +157,9 @@ jobs:
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py
 
+      - name: Store items kept on death (patch_base_events.py step 15, stock copy)
+        run: python3 -I server/tools/death_keep_patch_test.py
+
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py
 

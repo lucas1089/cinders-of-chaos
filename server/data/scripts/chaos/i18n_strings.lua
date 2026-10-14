@@ -236,5 +236,13 @@ return {
 			"%s acabou. Os personagens dela agora são personagens padrão.",
 		["%s has fallen in Hardcore at level %d (%s)."] = "%s caiu no Hardcore no nível %d (%s).",
 		["%s has ended."] = "%s acabou.",
+		-- store-bound items kept through a death (death_keep.lua)
+		["Kept through your death: your %s (%s)."] = "Guardado na sua morte: seu %s (%s).",
+		["backpack"] = "mochila",
+		["inbox"] = "caixa de entrada",
+		["backpack and inbox"] = "mochila e caixa de entrada",
+		-- Character Bazaar: a listed character's login is refused (bazaar.lua, bazaar_config.lua messages.locked)
+		["This character is listed on the Character Bazaar until %s (server time). It cannot log in until the auction ends or the seller cancels it on the website."] =
+			"Este personagem está anunciado no Character Bazaar até %s (horário do servidor). Ele não pode entrar até o leilão terminar ou o vendedor cancelar o anúncio no site.",
 	},
 }

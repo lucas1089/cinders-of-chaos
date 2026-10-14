@@ -505,3 +505,29 @@ function K.firstTarget(board, variant, run)
 	end
 	return board.key, K.shortName(board.name), board.name
 end
+
+-- the name a realm first is listed by (the client's Realm Firsts, records.lua rfirsts), from its stored target: the
+-- third value of K.firstTarget. A first keeps only its target and the short title name ("Skaldra"); the list showed
+-- that short name (live test 2026-10-14) instead of "Skaldra the Rime Queen". byKey = the catalogue's boards by key;
+-- short = the stored name (used when the target names no board or variant any more).
+function K.firstDisplay(byKey, target, short)
+	target = tostring(target or "")
+	local bkey, rest = target:match("^([^:]+):(.+)$")
+	local board = byKey and byKey[bkey or target]
+	if not board then
+		return short
+	end
+	if not rest then
+		return board.name
+	end
+	local vk = board.variantByKey or {}
+	if vk[rest] then
+		return vk[rest].name
+	end
+	-- run.first override ("<family>.<variant>": the trials): the stored name and the variant, as K.firstTarget
+	local v = vk[rest:match("%.([^.]+)$") or ""]
+	if v and short then
+		return short .. " (" .. v.name .. ")"
+	end
+	return short or board.name
+end

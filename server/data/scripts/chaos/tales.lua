@@ -14,6 +14,9 @@ end
 if not ChaosTalesCore or not ChaosTalesCore.taleView then
 	dofile("data/scripts/chaos/tales_core.lua")
 end
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
+end
 
 local M = ChaosTalesCore
 ChaosTales = ChaosTales or {}
@@ -114,18 +117,6 @@ local function npcNear(player)
 	return false
 end
 
-local function freeTileNear(temple, offsets)
-	for _, o in ipairs(offsets) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
-end
-
 local function placeNpc(pos)
 	local name = C().npc.name
 	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do
@@ -148,12 +139,13 @@ function T.placeNpcs()
 		for _, townId in ipairs(n.townIds or {}) do
 			local town = Town(townId)
 			local temple = town and town:getTemplePosition()
-			local pos = temple and freeTileNear(temple, n.offsets)
-			if pos and placeNpc(pos) then
+			-- npc_place.lua: the offsets first, then any reachable free tile, away from the other NPCs
+			local okp, npc = pcall(function() return temple and ChaosNpcPlace.place(n.name, temple, n.offsets, n.place) end)
+			if okp and npc then
 				placed = placed + 1
 			else
 				log("could not place " .. n.name .. " in town " .. tostring(townId)
-					.. " (no free tile next to the temple, or data/npc/" .. n.name .. ".xml is missing)")
+					.. " (no free tile near the temple, or data/npc/" .. n.name .. ".xml is missing)")
 			end
 		end
 	end

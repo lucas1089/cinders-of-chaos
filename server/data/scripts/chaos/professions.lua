@@ -38,6 +38,9 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 dofile("data/scripts/chaos/professions_core.lua")
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
+end
 
 Chaos.professionsConfig = dofile("data/scripts/chaos/professions_config.lua")
 local cfg = Chaos.professionsConfig
@@ -787,27 +790,6 @@ function P.sellAll(player)
 end
 
 -- ---------------------------------------------------------------- broker placement
-local function placeNpc(name, pos)
-	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do
-		if c:isNpc() and c:getName():lower() == name:lower() then
-			return c
-		end
-	end
-	return Game.createNpc(name, pos)
-end
-
-local function freeTileNear(temple)
-	for _, o in ipairs(cfg.broker.offsets) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
-end
-
 function P.placeBrokers()
 	local towns = {}
 	if cfg.broker.towns == "all" then
@@ -820,15 +802,14 @@ function P.placeBrokers()
 	local placed, missed = 0, {}
 	for _, town in ipairs(towns) do
 		local temple = town and town:getTemplePosition()
-		local pos = temple and freeTileNear(temple)
-		if pos and try("place broker", placeNpc, cfg.broker.npc, pos) then
+		if temple and try("place broker", ChaosNpcPlace.place, cfg.broker.npc, temple, cfg.broker.offsets, cfg.broker.place) then
 			placed = placed + 1
 		else
 			missed[#missed + 1] = town and town:getName() or "?"
 		end
 	end
 	if #missed > 0 then
-		log("no Material Broker at " .. table.concat(missed, ", ") .. " (no free tile next to the temple, or data/npc/" ..
+		log("no Material Broker at " .. table.concat(missed, ", ") .. " (no free tile near the temple, or data/npc/" ..
 			cfg.broker.npc .. ".xml is missing: tools/install_professions.py)")
 	end
 	return placed

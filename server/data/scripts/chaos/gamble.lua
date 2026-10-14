@@ -23,6 +23,9 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 dofile("data/scripts/chaos/gamble_core.lua")
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
+end
 
 Chaos.gambleConfig = dofile("data/scripts/chaos/gamble_config.lua")
 local cfg = Chaos.gambleConfig
@@ -489,41 +492,19 @@ function P.reroll(player, d)
 end
 
 -- ---------------------------------------------------------------- the NPC
-local function placeNpc(name, pos)
-	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do
-		if c:isNpc() and c:getName():lower() == name:lower() then
-			return c
-		end
-	end
-	return Game.createNpc(name, pos)
-end
-
-local function freeTileNear(temple)
-	for _, o in ipairs(cfg.npc.offsets) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
-end
-
 function P.placeNpcs()
 	local placed, missed = 0, {}
 	for _, id in ipairs(cfg.npc.towns) do
 		local town = Town(id)
 		local temple = town and town:getTemplePosition()
-		local pos = temple and freeTileNear(temple)
-		if pos and try("place npc", placeNpc, cfg.npc.name, pos) then
+		if temple and try("place npc", ChaosNpcPlace.place, cfg.npc.name, temple, cfg.npc.offsets, cfg.npc.place) then
 			placed = placed + 1
 		else
 			missed[#missed + 1] = tostring(id)
 		end
 	end
 	if #missed > 0 then
-		log("no " .. cfg.npc.name .. " in town " .. table.concat(missed, ", ") .. " (no free tile next to the temple, or data/npc/" ..
+		log("no " .. cfg.npc.name .. " in town " .. table.concat(missed, ", ") .. " (no free tile near the temple, or data/npc/" ..
 			cfg.npc.name .. ".xml is missing: tools/install_gamble.py)")
 	end
 	return placed

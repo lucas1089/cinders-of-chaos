@@ -172,7 +172,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 				<thead><tr><th><?= chaos_h(chaos_t('Boss')) ?></th><th><?= chaos_h(chaos_t('First')) ?></th><th><?= chaos_h(chaos_t('Date')) ?></th></tr></thead>
 				<tbody>
 				<?php foreach ($rFirsts as $f): ?>
-					<tr><td><?= chaos_h($f['name']) ?></td><td class="chaos-gold"><?= chaos_h($f['members']) ?></td><td><?= chaos_h(date('Y-m-d', (int)$f['at'])) ?></td></tr>
+					<tr><td><?= chaos_h(chaos_records_first_name($f, $rBoards)) ?></td><td class="chaos-gold"><?= chaos_h($f['members']) ?></td><td><?= chaos_h(date('Y-m-d', (int)$f['at'])) ?></td></tr>
 				<?php endforeach; ?>
 				</tbody>
 			</table>
