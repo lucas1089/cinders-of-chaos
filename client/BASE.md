@@ -52,7 +52,8 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     moved by the mount's Bones pair for its direction (signed pixels, set by `tools/sprites/set_rider_seat.py`).
     Everything else draws as before (a stock mount was pixel-identical in the test); a client without the patch ignores
     a mount-only Bones attribute. Built and checked in the Linux client. Since things_custom16 each direction has its
-    own seat (data only, same patch).
+    own seat (data only, same patch). Checked live on 2026-10-12 with 0001-0041 and things_custom17: mounts 141-145
+    seated in all four directions, standing and walking; stock mount 368 unchanged (`MANIFEST.md` "things_custom16").
 
 15. `0035` (C++, CMake, `modules/gamelib/protocollogin.lua`): the client guard, the client half of server src-patch 0021
     (server/README.md "Client guard"; overlay module `game_chaosguard` sends the Lua hello). Both login packets carry
