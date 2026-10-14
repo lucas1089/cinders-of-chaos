@@ -1398,6 +1398,20 @@ end
 login:register()
 
 -- no PvP in arena and lobby, no combat at all against players in the lobby
+-- the guard runs for every attack on a player (every monster hit): the layout is built once per arena config, not per call
+local guardL, guardA, guardSig
+local function guardLayout()
+	local a = C().arena
+	local o = a.origin
+	local sig = guardSig
+	if not guardL or guardA ~= a or sig[1] ~= o.x or sig[2] ~= o.y or sig[3] ~= o.z or sig[4] ~= a.inner
+			or sig[5] ~= a.lobbyGap or sig[6] ~= a.lobbyInnerW or sig[7] ~= a.lobbyInnerH then
+		guardL, guardA = W.layout(a), a
+		guardSig = {o.x, o.y, o.z, a.inner, a.lobbyGap, a.lobbyInnerW, a.lobbyInnerH}
+	end
+	return guardL
+end
+
 local guard = EventCallback
 guard.onTargetCombat = function(creature, target)
 	if not creature or not target then
@@ -1410,7 +1424,7 @@ guard.onTargetCombat = function(creature, target)
 		end
 		return RETURNVALUE_NOERROR
 	end
-	local L = W.layout()
+	local L = guardLayout()
 	local tpos = target:getPosition()
 	if not W.inside(tpos, L) then
 		return RETURNVALUE_NOERROR

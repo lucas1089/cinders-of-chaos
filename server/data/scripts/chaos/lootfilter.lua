@@ -393,6 +393,16 @@ local function refresh(kill)
 		end
 		return nil
 	end
+	-- nothing taken or changed since the last check: skip the itemInfo of every item (F.fingerprint)
+	local list = {}
+	for i, item in ipairs(corpse:getItems()) do
+		list[i] = {item:getId(), item:getCount()}
+	end
+	local fp = F.fingerprint(list)
+	if fp == kill.fp then
+		return corpse
+	end
+	kill.fp = fp
 	local left = F.reconcile(kill.entries, presentOf(corpse))
 	if not sameList(left, kill.left) then
 		kill.left = left
@@ -482,7 +492,7 @@ sweep = function()
 	state.event = nil
 	state.tick = state.tick + 1
 	local now = os.time()
-	local decayTick = state.tick % math.max(1, cfg().decayCheckEvery) == 0
+	local every = cfg().decayCheckEvery
 	local ids = {}
 	for id in pairs(state.kills) do
 		ids[#ids + 1] = id
@@ -495,7 +505,7 @@ sweep = function()
 				stopTracking(kill)
 			else
 				local rays = kill.rayUntil and now <= kill.rayUntil
-				if rays or decayTick then
+				if F.decayDue(id, state.tick, every, rays) then
 					local ok, err = pcall(refresh, kill)
 					if not ok then
 						print("[Chaos lootfilter] refresh failed: " .. tostring(err))

@@ -188,15 +188,20 @@ end
 ext:type("extendedopcode")
 ext:register()
 
--- rebuild every online player's plate; send the ones that changed
+-- rebuild every online player's plate; send the ones that changed. Each player is checked once per CHECK_SECONDS, spread
+-- over that many one-second slices by creature id (400 players: 80 per tick instead of 400 in one 50-100 ms tick)
+local slice = 0
 local think = GlobalEvent("ChaosNameplateThink")
 function think.onThink(interval)
+	slice = (slice + 1) % CHECK_SECONDS
 	for _, player in ipairs(Game.getPlayers()) do
-		N.refresh(player)
+		if player:getId() % CHECK_SECONDS == slice then
+			N.refresh(player)
+		end
 	end
 	return true
 end
-think:interval(CHECK_SECONDS * 1000)
+think:interval(1000)
 think:register()
 
 local startup = GlobalEvent("ChaosNameplateStartup")

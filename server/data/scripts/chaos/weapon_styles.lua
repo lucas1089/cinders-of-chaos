@@ -194,10 +194,23 @@ end
 hit:register()
 
 -- the event has to sit on whatever a player attacks (same approach as the passive tree / equipment scripts)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local target = EventCallback
 target.onTargetCombat = function(creature, victim)
 	if creature and victim and creature:isPlayer() then
-		victim:registerEvent("ChaosWeaponStyle")
+		registerOnce(victim, "ChaosWeaponStyle")
 	end
 	return RETURNVALUE_NOERROR
 end

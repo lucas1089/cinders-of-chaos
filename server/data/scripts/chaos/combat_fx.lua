@@ -328,10 +328,23 @@ hit:register()
 
 -- register on whatever a player attacks; a late index so the event is added after the rarity and passive-tree
 -- damage events (it only reads the damage)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if creature and target and creature:isPlayer() then
-		target:registerEvent("ChaosCombatFx")
+		registerOnce(target, "ChaosCombatFx")
 	end
 	return RETURNVALUE_NOERROR
 end

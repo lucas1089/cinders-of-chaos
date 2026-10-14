@@ -575,10 +575,23 @@ end
 event:register()
 
 -- the event sits on whatever a player with runes attacks (and on every player: heals, Reprisal)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if creature and target and creature ~= target and creature:isPlayer() and active[creature:getId()] then
-		target:registerEvent("ChaosSupportsHit")
+		registerOnce(target, "ChaosSupportsHit")
 	end
 	return RETURNVALUE_NOERROR
 end

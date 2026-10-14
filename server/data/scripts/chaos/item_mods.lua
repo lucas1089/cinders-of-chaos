@@ -468,12 +468,25 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and target:isMonster() then
+	if creature and target and target:isMonster() and not eventKnown(target, "ChaosItemModsDealt") then
 		local p = playerOf(creature)
 		if p and offensive(cache[p:getId()]) then
-			target:registerEvent("ChaosItemModsDealt")
+			registerOnce(target, "ChaosItemModsDealt")
 		end
 	end
 	return RETURNVALUE_NOERROR

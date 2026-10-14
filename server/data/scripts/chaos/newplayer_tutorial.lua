@@ -656,12 +656,27 @@ hookSpellbook()
 
 -- no PvP on the island
 local guard = EventCallback
+-- runs for every attack on a player (every monster hit): the attacker first (a monster's own attack never needs the
+-- island), the layout built once per tutorial config
+local islandL, islandT, islandSig
+local function islandLayout()
+	local t = NP.cfg().tutorial
+	local o = t.origin
+	local sig = islandSig
+	if not islandL or islandT ~= t or sig[1] ~= o.x or sig[2] ~= o.y or sig[3] ~= o.z or sig[4] ~= t.rooms
+			or sig[5] ~= t.roomW or sig[6] ~= t.roomH or sig[7] ~= t.waterRing then
+		islandL, islandT = NP.layout(t), t
+		islandSig = {o.x, o.y, o.z, t.rooms, t.roomW, t.roomH, t.waterRing}
+	end
+	return islandL
+end
+
 guard.onTargetCombat = function(creature, target)
-	if not creature or not target or not target:isPlayer() or not NP.onIsland(target:getPosition()) then
+	if not creature or not target or not target:isPlayer() then
 		return RETURNVALUE_NOERROR
 	end
 	local attacker = creature:isPlayer() and creature or (creature:getMaster() and creature:getMaster():getPlayer())
-	if attacker and attacker ~= target then
+	if attacker and attacker ~= target and NP.onIsland(target:getPosition(), islandLayout()) then
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	return RETURNVALUE_NOERROR

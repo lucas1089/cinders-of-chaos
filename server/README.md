@@ -4537,6 +4537,111 @@ counted as 1.5-2 bots. The knee here is 450-500 bots (dispatcher 83-96%); on the
 - **Launch: 400** (the `prod_config.py` default). Raise to 500 after a week whose peak hour kept the timer lag under
   70 ms on average and the slow task log (`slowTaskLogMs = 100`) under a few tasks a minute; lower to 300 if it did not.
 
+## Load test with area classes (`tools/loadtest.py --classes`, 2026-10-14)
+
+docs/BETA_READINESS.md B6: does the full map hold 300 players with pack combat (pace) on when they play area classes?
+The melee-only test of "Pack combat (pace)" could not answer it.
+
+**Setup.** The same as "Load test on the full map". The base server from `windows-assets` with every `install_all.py`
+step (contentareas and spawns included), engine 0001-0039, `prod_config.py` (client guard enforce, the development key
+allowed, a test server only), `slowTaskLogMs = 50`, and a private MariaDB. The machine has 4 vCPU at 2.1 GHz and also
+runs the bots. The map holds about 98,500 monsters alive.
+
+The bots (`loadtest.py setup/run --classes ... --levels 100,300,600,1000 --power 1.6 --pull 8,6 --hunt --dev-key`):
+- Class weights: Elementalist 5, Berserker 4, Mystic 3, Beastmaster 3, Inquisitor 2, Bone Lord 2, and 1 each of Lich,
+  Illusionist, Warrior, Deadeye, Thief, Monk and Samurai. That is 73% area classes.
+- Each class gets every level band in turn.
+- 10% stand in the towns. The others hunt their band, in map hunts (`chaos_poi.lua`) and in the planned hunts behind
+  the hunt teleports (`chaos_hunt_places.lua`).
+- They cast their real rotation by the say packet: 79 attack and 19 support casts a second at 300 bots. They lure 8
+  steps, then fight 6 s, and never loot.
+
+The TEST ONLY hunt script is a scratch copy of `loadtest_hunt.lua`. It picks targets within 8 sqm (else 14), faces the
+bot to its target, keeps mana up and gives a class weapon. It also gives the bots x3 health and heals them below 75%
+every 250 ms. Without that, 300 bare bots "died" about 90 times a second, and each near-death runs every prepare-death
+event; that was half the slow tasks. The probe also prints its p95.
+
+Each run holds 10 minutes after the ramp. The numbers cover the steady state, from ramp end + 60 s on (about 530 s).
+- **Lag**: the probe's timer lag. Its floor is about 50 ms.
+- **p95**: the p95 of each 5 s window, given as median / p90 / worst.
+- **Stalls**: 5 s windows with a lag of 500 ms or more.
+- **Thread**: the game loop thread in % of one core, average (p95).
+
+| Run | Bots | Pace | Loot filter | Lag avg | p95 per 5 s | Max | Stalls | Thread | Kills/s | Bots fighting |
+|---|---|---|---|---|---|---|---|---|---|---|
+| a | 300 | on | stock | 58.9 ms | 102 / 138 / 230 | 506 | 1 | 73.5% (93.9%) | 5.9 | 97 |
+| b | 300 | off | stock | 88.6 ms | 190 / 264 / 454 | 668 | 6 | 94.5% (98.9%) | 3.5 | 162 |
+| a+fix | 300 | on | fix | 59.2 ms | 103 / 153 / 191 | 364 | 0 | 77.0% (94.9%) | 5.7 | 98 |
+| c+fix | 400 | on | fix | 69.7 ms | 161 / 232 / 312 | 580 | 2 | 87.3% (97.9%) | 6.6 | 115 |
+| d | 300 | on, +31 kills/s | stock | 74.8 ms | 124 / 217 / 303 | 1,042 | 18 | 66.8% (93.8%) | 31.0 | 4 |
+| d+fix | 300 | on, +35 kills/s | fix | 67.9 ms | 114 / 197 / 248 | 395 | 0 | 66.9% (90.9%) | 35.0 | 5 |
+| c+fix+perf | 400 | on | fix | 73.3 ms | 171 / 257 / 351 | 669 | 5 | 89.0% (98.8%) | 6.5 | 116 |
+| a+fix+perf | 300 | on | fix | 60.5 ms | 107 / 169 / 252 | 327 | 0 | 79.2% (96.8%) | 5.9 | 99 |
+
+Notes on the runs:
+- An earlier pair with bare-health bots gave the same order: on 63.1 ms, 3 stalls, thread 79.8%; off 97.2 ms,
+  14 stalls, thread 93.7%.
+- Other numbers at 300 with pace on: RSS 4.82 GB (4.65 GB idle). To the bots 0.9-1.0 KB/s per player (2.0 with pace
+  off). The database ran 85 queries, 0.9 commits and 15 fsyncs a second. The autosave pass (SIGUSR1) took 41 ticks,
+  longest 62 ms, 3.4 s in all (8.6 s with pace off).
+- At 400: 107 queries a second, autosave 52 ticks, longest 37 ms, 5.9 s.
+- "perf" is four Lua optimisations added the same day: monster events registered once in `onTargetCombat`, nameplate
+  and buff bar passes in shares, the hunt supply check in shares, a shorter pace experience lookup.
+- "+N kills/s": the hunt script added kills on top of the bots' own. Each one is a bot's lethal hit on its target with
+  real loot, experience, pace and loot filter. Idle bots were moved to a monster within 40 sqm. The bots then barely
+  fought themselves, so these rows measure the cost per kill, not the cost of fighting.
+
+**Findings.**
+- **Pace lowers the load.** With the layer off, monsters keep their full health, so fights last longer. Twice as
+  many bots are in combat, they take hits longer (near-deaths 16 a second against 4.5) and the bots receive twice the
+  data. Turning pace off (`enabled = false`) is no fallback for load.
+- **The pace hooks cost almost nothing.** LuaJIT's sampling profiler (`jit.profile`, TEST ONLY) puts `pace.lua`
+  (first think, cleave, experience) under 1% of the Lua samples, and 1.3% at 35 kills a second. Lua is about two
+  thirds of the game loop. Most of it is per-hit and per-attack callbacks that every attack pays (C functions called
+  from Lua 50-60%, the collector 9-13%):
+  - `events/scripts/creature.lua` `onTargetCombat`,
+  - `player.lua:640`, `base_rarity.lua`, `combatlog.lua`,
+  - `_supports.lua` (the spell wrapper; the spells themselves are about 3.5% of the time),
+  - `monster_tiers.lua`, `passivetree_effects.lua`, the base attack sounds.
+  `perf` on the game loop thread: luajit 37-43%, the engine 27-30% (spectators, pathfinding, walking, events), the
+  kernel 17-21%.
+- **The loot filter sweep was the stall.** `lootfilter.lua` tracks the last 50 kills of every player whose corpse
+  still holds something. The bots never loot, which is the worst case; a player who leaves items in corpses comes
+  close. Every 5th sweep (5 s) it re-read every tracked corpse with the full `itemInfo` of every item, in one task:
+  - 200-380 ms (45-125 MB of garbage) at about 6 kills a second;
+  - 730-890 ms at 31 kills a second, the 18 stalls of run d (max 1,042 ms) while the game loop thread was only 67% busy.
+  Fixed (`lootfilter_core.lua` `F.decayDue`, `F.fingerprint`): each sweep checks a fifth of the tracked kills (kill id
+  modulo `decayCheckEvery`), so every corpse is still checked every 5 s. A corpse with an active ray is still checked
+  every sweep. A corpse whose item ids and counts did not change since the last check skips the reconcile.
+  Results: no loot filter task over 50 ms at 6 kills a second, 54-221 ms at 35 kills a second, no stall of 500 ms.
+  Tests: `tests/lootfilter_test.lua`.
+- **Kill rate.** The bots kill 6-7 a second at 300-400, against the model's 134 at the launch peak. They clear their
+  spot and wander, and only a third of them fight at any time. With injected kills, 31-35 a second cost about the same
+  game loop as the bots' own fighting. 134 a second was not reached on this machine. `pace.lua` stayed under 1.5% of
+  Lua at that rate; the loot filter (fixed) and `achievements.lua` `onKill` grow with kills.
+- Other recurring slow tasks, not pace:
+  - `nameplate.lua` (50-105 ms; 50-100 ms per 1 s share after the perf change);
+  - `achievements.lua:856` and `tasks.lua:800` at logins;
+  - `deathrecap.lua` at near-deaths (fewer with tough bots);
+  - `onTargetCombat`.
+
+**Verdict for B6 (this 2.1 GHz machine, the bots on it too).**
+- 300 bots with pace on: borderline pass. Lag 59 ms, p95 about 100 ms, the game loop thread 74-77% (p95 94-95%).
+- With the loot filter fix: no stall of 500 ms; without it, one stall at bot kill rates and many at higher ones.
+- Keep pace on.
+- Ship the loot filter fix before the beta.
+- 400 bots fail on this machine: lag 70-73 ms, p95 about 165 ms, 2-5 stalls, the thread 87-89%. The game loop is
+  saturated.
+- The perf change did not move the averages; they stayed within run-to-run noise (300: 60.5 ms and 79% against 59.2 ms
+  and 77%; 400: 73.3 ms and 89% against 69.7 ms and 87%). It cut the slow tasks: at 300, 44 tasks of 100 ms or more
+  against 68, and 58 `onTargetCombat` tasks against 163.
+
+The production VPS of "Load test on the full map" is assumed 1.3-1.6 times faster per core. Real area-class players kill
+more and fight more of the time than these bots. So keep the beta at 300 and watch the probe lag and the slow task log
+at the beta peak. Decide 400 for the launch from that, not from this test.
+
+Scratch scripts and logs of the runs: `scratchpad/aoelt/` of the session (not in the repo).
+
 ## Stress test (`tools/loadtest.py` storms and spam, `src-patches/0033`-`0035`, `tools/patch_base_stalls.py` step 6)
 
 A QA pass for bugs under load (2026-10-13). Setup as "Load test on the full map": the engine with 0001-0032 (then the
@@ -11392,7 +11497,8 @@ taken per minute fell to 0.40-0.61: packs die before they hit much. Screenshots 
 the same scratch install, `loadtest_hunt.lua` and `loadtest_probe.lua` copied in and deleted after): layer on: engine CPU
 63.5% of one core (p95 85.8%), game loop lag avg 51.9 ms, max 164 ms, 76-78 bots fighting; layer off: 71.1% (p95 91.0%),
 52.6 ms, max 170 ms, 74-80 fighting. No cost measurable at this load (the bots fight with melee only; with area classes
-a server kills more per second: watch it in the beta).
+a server kills more per second: watch it in the beta). The area-class load test (300 and 400 bots, 73% area classes, levels
+100-1000) is in "Load test with area classes": pace on is lighter than off, and the stalls came from the loot filter.
 
 **Checked**: `tests/pace_test.lua` (curves, levels, entries, goals, rounding, thinning, chances, multikill chain with
 tiers, kill credit, cleave targets; `pace.lua` against a mocked engine: first think, bosses, summons, script-made and

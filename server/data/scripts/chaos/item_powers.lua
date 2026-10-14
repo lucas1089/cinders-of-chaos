@@ -313,14 +313,27 @@ dealt:register()
 
 -- the hit event goes on the monsters you attack, as item_mods.lua does
 local POWERS_ON_HIT = {"echoshot", "critecho", "arclightning", "crimsonburst", "bloodrush", "shattersplash"}
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and target:isMonster() and creature:isPlayer() then
+	if creature and target and target:isMonster() and creature:isPlayer() and not eventKnown(target, "ChaosPowersDealt") then
 		local pw = powersOf(creature)
 		if pw then
 			for _, key in ipairs(POWERS_ON_HIT) do
 				if pw[key] then
-					target:registerEvent("ChaosPowersDealt")
+					registerOnce(target, "ChaosPowersDealt")
 					break
 				end
 			end

@@ -46,6 +46,7 @@ local function typeName(m)
 	return Chaos and Chaos.monsterTypeName and Chaos.monsterTypeName(m) or m:getName()
 end
 
+local BOSS_FNS = {"isBoss", "isRewardBoss"}
 local function isBoss(m)
 	local tc = ChaosTierConfig
 	if tc and tc.bosses and tc.bosses[tostring(typeName(m)):lower()] then
@@ -55,10 +56,13 @@ local function isBoss(m)
 	if not mt then
 		return false
 	end
-	for _, fn in ipairs({"isBoss", "isRewardBoss"}) do
-		local ok, res = pcall(function() return mt[fn] and mt[fn](mt) end)
-		if ok and res then
-			return true
+	for _, fn in ipairs(BOSS_FNS) do
+		local f = mt[fn]
+		if f then
+			local ok, res = pcall(f, mt)
+			if ok and res then
+				return true
+			end
 		end
 	end
 	return false
@@ -312,8 +316,11 @@ xpCb.onGainExperience = function(player, source, exp, rawExp)
 		st = {}
 		chains[pid] = st
 	end
+	-- the tier's experience multiplier (monster_tiers.lua): a paced monster is never a boss, so its tier state is all
+	-- ChaosTierOf would read (no type-name and boss lookups per kill and player)
 	local tierXp = 1
-	local tier = ChaosTierOf and ChaosTierOf(source)
+	local ts = ChaosTierState and ChaosTierState[source:getId()]
+	local tier = ts and ts.tier
 	if tier and ChaosTiers and ChaosTiers[tier] then
 		tierXp = ChaosTiers[tier].xp or 1
 	end

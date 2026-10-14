@@ -959,12 +959,28 @@ end
 death:register()
 
 -- ------------------------------------------------------------------------------------------------ registration
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and creature:isPlayer() and (M.flags[creature:getId()] or M.uniques[creature:getId()]) then
-		target:registerEvent("ChaosArchetypesHit")
-		if target:isMonster() then
-			target:registerEvent("ChaosArchetypesDeath")
+	if creature and target and creature:isPlayer() and not eventKnown(target, "ChaosArchetypesDeath") then
+		local cid = creature:getId()
+		if M.flags[cid] or M.uniques[cid] then
+			registerOnce(target, "ChaosArchetypesHit")
+			if target:isMonster() then
+				registerOnce(target, "ChaosArchetypesDeath")
+			end
 		end
 	end
 	return RETURNVALUE_NOERROR

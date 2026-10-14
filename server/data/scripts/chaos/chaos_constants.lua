@@ -1067,6 +1067,41 @@ function Chaos.send(player, opcode, action, data)
 	return true
 end
 
+-- Creature events that an onTargetCombat callback puts on a monster stay on it until it dies, but the callbacks run for
+-- every target of every hit (area spells: every monster in the area), and Creature:registerEvent looks the event up by
+-- name each time. Chaos.registerOnce(creature, name) calls it once per monster and event: monster ids are never reused
+-- while the server runs. A player is registered at every call (a player keeps its id across logins, its events do not).
+-- Chaos.eventKnown(creature, name): true when registerOnce already put that event on this monster (callbacks check it
+-- before a costly condition). The memo starts over past Chaos.registerMemoMax monsters (they get registered once more).
+Chaos.registerMemoMax = 50000
+local registerMemo, registerMemoSize = {}, 0
+
+function Chaos.eventKnown(creature, name)
+	local set = registerMemo[name]
+	return set ~= nil and set[creature:getId()] == true
+end
+
+function Chaos.registerOnce(creature, name)
+	local id = creature:getId()
+	local set = registerMemo[name]
+	if set and set[id] then
+		return true
+	end
+	creature:registerEvent(name)
+	if creature:isMonster() then
+		if registerMemoSize >= Chaos.registerMemoMax then
+			registerMemo, registerMemoSize, set = {}, 0, nil
+		end
+		if not set then
+			set = {}
+			registerMemo[name] = set
+		end
+		set[id] = true
+		registerMemoSize = registerMemoSize + 1
+	end
+	return true
+end
+
 -- An extended opcode message (0x32, u8 opcode, u16 length, bytes) carries its payload as one string, and the engine's
 -- NetworkMessage::addString silently refuses strings over 8192 bytes. The base Player.sendExtendedOpcode writes 0x32 and
 -- the opcode before the string, so a longer payload left those two bytes alone in the packet: the client read the next

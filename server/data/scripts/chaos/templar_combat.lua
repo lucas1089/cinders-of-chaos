@@ -264,10 +264,24 @@ end
 event:register()
 
 -- whatever a Templar-line player attacks gets the event (its weapon hits are seen on the victim)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and creature:isPlayer() and T.isTemplarLine(creature:getVocation():getId()) then
-		target:registerEvent("ChaosTemplarCombat")
+	if creature and target and creature:isPlayer() and not eventKnown(target, "ChaosTemplarCombat")
+			and T.isTemplarLine(creature:getVocation():getId()) then
+		registerOnce(target, "ChaosTemplarCombat")
 	end
 	return RETURNVALUE_NOERROR
 end

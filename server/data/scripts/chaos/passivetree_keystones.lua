@@ -750,10 +750,23 @@ event:register()
 -- the event sits on whatever a player attacks (keystones, and the party bonus of an illusionist in the party),
 -- and on every player (hits taken, heals received);
 -- index 1: after the index 0 callbacks that register the passive tree and weapon style events (see the top)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if creature and target and creature:isPlayer() then
-		target:registerEvent("ChaosKeystones")
+		registerOnce(target, "ChaosKeystones")
 	end
 	return RETURNVALUE_NOERROR
 end

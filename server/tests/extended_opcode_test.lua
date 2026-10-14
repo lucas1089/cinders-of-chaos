@@ -139,5 +139,38 @@ eq(all[4].op, 89, "the reply is not lost")
 eq(join({all[1].buffer, all[2].buffer, all[3].buffer}), big, "catalog joined")
 eq(Chaos.sendChunked(nil, 120, big), false, "no player")
 
+-- ---------------------------------------------------------------- Chaos.registerOnce / Chaos.eventKnown
+-- (onTargetCombat callbacks: an event goes on a monster once, a player is registered at every call)
+local function mockCreature(id, monster)
+	local c = {calls = 0}
+	function c:getId() return id end
+	function c:isMonster() return monster end
+	function c:registerEvent(name) self.calls = self.calls + 1; return true end
+	return c
+end
+local mon, ply = mockCreature(0x40000001, true), mockCreature(0x10000001, false)
+eq(Chaos.eventKnown(mon, "ChaosTestHit"), false, "unknown before")
+for _ = 1, 5 do
+	eq(Chaos.registerOnce(mon, "ChaosTestHit"), true, "registered")
+	eq(Chaos.registerOnce(ply, "ChaosTestHit"), true, "player registered")
+end
+eq(mon.calls, 1, "a monster: once")
+eq(ply.calls, 5, "a player: every call (its events go at logout, its id stays)")
+eq(Chaos.eventKnown(mon, "ChaosTestHit"), true, "known after")
+eq(Chaos.eventKnown(mon, "ChaosTestOther"), false, "per event")
+eq(Chaos.eventKnown(ply, "ChaosTestHit"), false, "players never known")
+local maxMemo = Chaos.registerMemoMax
+Chaos.registerMemoMax = 3
+local mons = {}
+for i = 1, 4 do
+	mons[i] = mockCreature(0x40000100 + i, true)
+	Chaos.registerOnce(mons[i], "ChaosTestHit")
+end
+eq(Chaos.eventKnown(mons[4], "ChaosTestHit"), true, "the newest is known after the memo started over")
+eq(Chaos.eventKnown(mons[1], "ChaosTestHit"), false, "the memo started over")
+Chaos.registerOnce(mons[1], "ChaosTestHit")
+eq(mons[1].calls, 2, "registered once more after the reset")
+Chaos.registerMemoMax = maxMemo
+
 print = realPrint
 print(string.format("extended_opcode_test: %d checks passed", checks))

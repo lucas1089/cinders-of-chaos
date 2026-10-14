@@ -235,4 +235,31 @@ eq(F.look(nil, nil, {lookType = 0}), nil, "no look anywhere")
 eq(F.look({lookType = 99999, lookHead = -4}), nil, "out of range")
 eq(F.look({lookType = 40, lookHead = 400}).head, 0, "colour out of range")
 
+-- the sweep's decay check in shares and the corpse fingerprint (load test with area classes, server/README.md)
+local due = {}
+for tick = 0, 4 do
+	for id = 1, 20 do
+		if F.decayDue(id, tick, 5, false) then
+			due[id] = (due[id] or 0) + 1
+		end
+	end
+end
+local once = true
+for id = 1, 20 do
+	once = once and due[id] == 1
+end
+eq(once, true, "every tracked kill is due exactly once in decayCheckEvery sweeps")
+local n = 0
+for id = 1, 20 do
+	if F.decayDue(id, 7, 5, false) then n = n + 1 end
+end
+eq(n, 4, "a sweep takes a fifth of them")
+eq(F.decayDue(3, 1, 5, true), true, "a kill with a ray is due every sweep")
+eq(F.decayDue(3, 1, 0, false), true, "every = 0: every sweep")
+eq(F.decayDue(4, 4, 1, nil), true, "every = 1: every sweep")
+eq(F.fingerprint({{2148, 30}, {2666, 1}}), "2148:30,2666:1", "fingerprint: ids and counts in order")
+eq(F.fingerprint({}), "", "empty corpse")
+eq(F.fingerprint(nil), "", "no list")
+eq(F.fingerprint({{2148, 30}}) ~= F.fingerprint({{2148, 29}}), true, "a count taken changes it")
+
 print("lootfilter tests OK")
