@@ -16,7 +16,7 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   - The Season 1 start (now 1 Nov) moves to the launch date.
 - [ ] **The beta plan.** Who joins, the wipe before launch, coins and donations in the beta, the Season 1 start and
   the staff schedule: every decision is in [docs/BETA.md](BETA.md) (draft), each marked "Owner decides" with a
-  recommendation.
+  recommendation. The go / no-go list for the beta, with owner and dev items: [docs/BETA_READINESS.md](BETA_READINESS.md).
 - [ ] **Donation prices.** Every coin pack's price is a placeholder in USD (`usdCents` in
   `server/data/scripts/chaos/shop_coins_config.lua`). Pix is not priced on its own: it charges the USD price x 5 in
   BRL (`brlPerUsd = 5`). Set the USD prices, and check that `brlPerUsd` gives the BRL prices you want.
