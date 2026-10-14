@@ -71,6 +71,11 @@ jobs:
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
 
+      - name: Item prices (table up to date, every loot priced or unsellable, no arbitrage, Auto Seller table; installer)
+        run: |
+          python3 -I server/tools/gen_item_prices.py --check
+          python3 -I server/tools/install_item_prices_test.py
+
       - name: Client spell data is up to date with the server spells
         run: |
           pip install --quiet pillow
@@ -132,6 +137,12 @@ jobs:
 
       - name: Everfull Ration install (items.otb / items.xml, synthetic)
         run: python3 -I server/tools/install_store_food_test.py
+
+      - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
+        run: python3 -I server/tools/weightless_patch_test.py
+
+      - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
+        run: python3 -I server/tools/pact_stamina_patch_test.py
 
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py

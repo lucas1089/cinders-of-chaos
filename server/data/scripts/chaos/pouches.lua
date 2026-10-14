@@ -1,6 +1,6 @@
 -- Store pouches (README "Store pouches"): three containers sold in the store, each collecting its own kind of loot from
 -- the corpses the character owns while the character carries it (in the backpack or a bag inside it).
---   Loot Pouch      the loot its rules pick (default: the items on the autoloot list, gold, uniques); settings window
+--   Loot Bag      the loot its rules pick (default: the items on the autoloot list, gold, uniques); settings window
 --                   (client game_pouches, extended opcode ChaosOpcodes.pouches)
 --   Orbs Pouch      orbs, whetstones, rune shards and gems
 --   Rift Key Pouch  Rift Keys (with their tier and modifiers), Omen Keys and omen fragments
@@ -10,8 +10,8 @@
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 1.5 Echoing Spoils, 2 auto seller + rift key drop
 -- + paragon gold, 2.4 hunt / achievements read, 2.45 pet fetch, 2.5 loot filter snapshot, 2.7 POUCHES, 3 base autoloot,
 -- 3.5 Rarity Autoloot pickup, 4.5 loot filter finish. Priority (pouches_core.lua plan): orbs, rune shards and gems go
--- to the Orbs Pouch, Rift Keys and omen items to the Rift Key Pouch, always before the Loot Pouch. A full (or too
--- heavy) specialist pouch passes the item to the Loot Pouch only with its "overflow" rule (default on), then to the
+-- to the Orbs Pouch, Rift Keys and omen items to the Rift Key Pouch, always before the Loot Bag. A full (or too
+-- heavy) specialist pouch passes the item to the Loot Bag only with its "overflow" rule (default on), then to the
 -- backpack, else it stays in the corpse. The same order holds for click-to-loot in the loot channel (PO.stow). Orbs
 -- and keys are never auto-sold (autosell.lua asks ChaosPouches.neverSell).
 --
@@ -23,7 +23,7 @@
 -- inventory or depot: no ground, no mailbox, no house, no other player's container. Player market: ChaosPouches.isPouch.
 -- Death: the engine may drop the backpack into the corpse; the pouch is then taken out of the corpse (its contents stay
 -- in the corpse, like the rest of the backpack) and given back, empty, at the next login.
--- The retired Bottomless Loot Pouch unlock (storage 7100100): its owners get a Loot Pouch for free once, at login.
+-- The retired Bottomless Loot Pouch unlock (storage 7100100): its owners get a Loot Bag for free once, at login.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -98,6 +98,25 @@ function PO.installed(kind)
 	local it = k and ItemType(k.id)
 	return it ~= nil and it:getId() ~= 0 and it:isContainer()
 end
+
+-- the weightless pouches (the Loot Bag, pouches_config.lua `weightless`): engine src-patch 0038 keeps their contents
+-- out of the holder's weight and capacity. Registered at load and again at a login (idempotent); an engine without the
+-- patch has no Game.setWeightlessContainer and the bag weighs as before.
+PO.weightless = PO.weightless or {}
+function PO.registerWeightless()
+	if not (Game and Game.setWeightlessContainer) then
+		return 0
+	end
+	local n = 0
+	for kind, k in pairs(cfg().kinds) do
+		if k.weightless and not PO.weightless[k.id] and PO.installed(kind) and Game.setWeightlessContainer(k.id) then
+			PO.weightless[k.id] = true
+			n = n + 1
+		end
+	end
+	return n
+end
+pcall(PO.registerWeightless)
 
 function PO.create(player, kind)
 	local c = cfg()
@@ -605,6 +624,9 @@ local function sendSettings(player, open)
 end
 PO.sendSettings = sendSettings
 
+-- actions of the Auto Seller window, handled by autosell.lua (ChaosAutoSell.handleAction)
+PO.AUTOSELL_ACTIONS = {as_open = true, as_sync = true, sell = true, asrar = true, aslist = true, aspause = true}
+
 local ext = CreatureEvent("ChaosPouchesExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then
@@ -626,6 +648,16 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		local rules = P.sanitizeRules(cfg(), d.rules)
 		player:setStorageValue(cfg().storage.lootRules, P.packRules(rules))
 		sendSettings(player, false)
+	elseif PO.AUTOSELL_ACTIONS[msg.action] then
+		-- the Auto Seller window (client game_pouches autoseller.lua; Economy > Auto Seller): autosell.lua validates and
+		-- answers with the window state; selling the Loot Bag has its own 30 s cooldown there
+		if ChaosAutoSell and ChaosAutoSell.handleAction
+				and (not ChaosRateLimit or ChaosRateLimit.allow(player, "pouches.autosell", 250)) then
+			local state = ChaosAutoSell.handleAction(player, msg.action, msg.data)
+			if state then
+				Chaos.send(player, OPCODE, "autoseller", state)
+			end
+		end
 	end
 end
 ext:register()
@@ -638,15 +670,16 @@ end
 local login = CreatureEvent("ChaosPouchesLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosPouchDeath")
+	pcall(PO.registerWeightless)
 	player:registerEvent("ChaosPouchesExtended")
 	local c = cfg()
 	local ok, err = pcall(function()
-		-- former owners of the retired Bottomless Loot Pouch unlock: a Loot Pouch, once
+		-- former owners of the retired Bottomless Loot Pouch unlock: a Loot Bag, once
 		if player:getStorageValue(c.legacyUnlock) > 0 and player:getStorageValue(c.storage.legacyGrant) < 1
 				and PO.installed("loot") then
 			if PO.owned(player).loot then
 				player:setStorageValue(c.storage.legacyGrant, 1)
-			elseif PO.storeGive(player, "loot", "The Bottomless Loot Pouch is retired, a free Loot Pouch replaces it")
+			elseif PO.storeGive(player, "loot", "The Bottomless Loot Pouch is retired, a free Loot Bag replaces it")
 					== true then
 				player:setStorageValue(c.storage.legacyGrant, 1)
 			end

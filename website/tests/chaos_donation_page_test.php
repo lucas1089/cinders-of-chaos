@@ -73,7 +73,7 @@ check(strpos($html, 'chaos-donation-receipt-terms') === false, 'no receipt note 
 $SESSION_USER = 77;
 $html = render();
 check($notices($html), 'notice when logged in');
-check(strpos($html, 'double Chaos Coins (+100%)') !== false, 'the first donation bonus: double');
+check(strpos($html, 'double Chaos Coins (+100%, up to 1000 extra)') !== false, 'the first donation bonus: double, at most 1000');
 check(substr_count($html, '>Donate R$ ') === 7 && substr_count($html, '>Donate US$ ') === 7, 'a Donate button per pack and method');
 // creator codes (creator_lib.php): the field, a pick before the donation, a bad code stops the donation
 $db->exec("INSERT INTO chaos_creator_codes (code, account_id, display_name, active) VALUES ('STREAMER', 900, 'Streamer', 1)", array());

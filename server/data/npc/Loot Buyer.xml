@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Loot Buyer: buys every item that has a price in the item price table (data/lib/chaos_item_prices.lua; server/README.md
+     "Item prices"), a copy with a rarity or item level at its own price, never a unique. Placed next to every temple at startup
+     (data/scripts/chaos/item_prices.lua); installed by server/tools/install_item_prices.py. -->
+<npc name="Loot Buyer" script="loot_buyer.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="128" head="95" body="116" legs="121" feet="115" addons="2" />
+	<parameters>
+		<parameter key="message_greet" value="Back from the hunt, |PLAYERNAME|? I buy what you carry: ask for a {trade}. Gear with a rarity or a high item level pays more. I can {appraise} your bags. Uniques I leave to you." />
+		<parameter key="message_farewell" value="Bring me more, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="Your loss." />
+		<parameter key="message_sendtrade" value="Only what you carry is listed. A rare copy pays its own price, whatever the list says." />
+	</parameters>
+</npc>

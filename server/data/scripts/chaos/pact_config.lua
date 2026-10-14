@@ -31,18 +31,33 @@ return {
 
 	-- ------------------------------------------------------------------ VIP perks (pact_perks.lua, pact_perks_core.lua)
 	-- The Pact is the server's VIP. Owner approval 2026-10-13 ("Pode fazer todas as mudanças recomendadas"): comfort
-	-- and cosmetics only, no experience bonus. While the Pact is active:
-	--   loadoutSlots  +N loadout slots (loadouts_config.lua pactSlots; per character, read through ChaosPact.active)
+	-- and cosmetics; owner 2026-10-13: "Vip ganha +10% de exp e restaura stamina mais rápido. Retire o loot bag e
+	-- autoloot." While the Pact is active:
+	--   expBonus      +10% experience from monsters (an onGainExperience callback in pact_perks.lua, index `expIndex`,
+	--                 multiplied like every Chaos bonus and counted against the experience cap at index 85, xpcap.lua);
+	--                 not for season characters (no account-wide boost reaches them, as World Experience)
+	--   staminaRegen  stamina comes back this many times faster: offline (the base login script regeneratestamina.lua)
+	--                 and on the stamina trainer tile (trainer_tile_stamina.lua); both patched by
+	--                 tools/patch_base_events.py to ask ChaosPactPerks
+	--   loadoutSlots  +N loadout slots (loadouts_config.lua pactSlots; per character, read through ChaosPact.active;
+	--                 owner 2026-10-13: "Pode manter")
 	--   (depot tabs: limits.depotTabs.pact below; stash tabs, listings, builds and loot rules likewise)
 	--   unlocks       the store unlocks that work for the character while it lasts (shop_services.lua S.unlocks keys):
 	--                 the storage is set to 2 (a bought unlock is 1 and stays); back to unset when the Pact ends
+	--   retired       unlocks the Pact lent before and no longer does: a lent one (2) is taken back at the next apply,
+	--                 a bought one (1) stays. Rarity Autoloot left the Pact on 2026-10-13 (still sold in the store)
 	--   chatColor     a cosmetic (cosmetics_config.lua, source "pact") granted while active, taken back when it ends
 	--   monthly       one exclusive cosmetic per month (YYYYMM -> cosmetic key, source "pact"), granted to the accounts
 	--                 with an active Pact during that month and kept for good
+	-- The Loot Bag is a store item of its own (pouches_config.lua), never a Pact perk.
 	-- No login queue exists on this server (the engine has none), so there is no priority login perk.
 	perks = {
+		expBonus = 0.10,
+		expIndex = 7, -- after the store's World Experience (5) and the blessing (6), before the cap (85)
+		staminaRegen = 1.5,
 		loadoutSlots = 1,
-		unlocks = {"autoSeller", "rarityAutoloot"},
+		unlocks = {"autoSeller"},
+		retired = {"rarityAutoloot"},
 		pactStorageValue = 2,
 		chatColor = "chat_pactbound",
 		monthly = {
@@ -113,7 +128,7 @@ return {
 			name = "Chaos Pact", icon = {item = 16101},
 			offers = {
 				{kind = "service", service = "pact", key = "service:pact:30", icon = 16101, cost = 300, name = "Chaos Pact (30 days)",
-					description = "30 days, stacks: tabs, +1 loadout, Auto Seller, coins, a monthly cosmetic. No XP."}
+					description = "30 days, stacks: +10% XP, stamina x1.5, +1 loadout, Auto Seller, monthly cosmetic."}
 			}
 		},
 		storage = {

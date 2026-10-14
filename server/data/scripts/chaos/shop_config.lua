@@ -189,7 +189,7 @@ return {
 						{kind = "pact", days = 3, cost = 60, name = "3 days of the Chaos Pact"}}},
 				{kind = "bundle", key = "starter:adventurer", oncePerAccount = true, maxLevel = 150, gift = false, cost = 450,
 					name = "Adventurer Pack", icon = 1988,
-					description = "Once per account, up to level 150: Loot Pouch, Armoured War Horse, 100 Ultimate Health and 100 Great Mana Potions.",
+					description = "Once per account, up to level 150: Loot Bag, Armoured War Horse, 100 Ultimate Health and 100 Great Mana Potions.",
 					parts = {"service:pouch:loot", "mount:23", "item:8473x100", "item:7590x100",
 						{kind = "pact", days = 7, cost = 120, name = "7 days of the Chaos Pact"}}},
 				{kind = "bundle", key = "starter:champion", oncePerAccount = true, maxLevel = 300, gift = false, cost = 750,
@@ -508,8 +508,8 @@ return {
 				-- the Temple Teleport Scroll is no longer sold: every character has the free Town Portal (townportal.lua);
 				-- scrolls bought earlier keep working (shop_services.lua)
 				-- store pouches (pouches.lua, pouches_config.lua): items, one of each per character, store-bound
-				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 350, name = "Loot Pouch",
-					description = "60 slots, store-bound. Collects loot by its own rules while carried (Loot Filter > Loot Pouch)."},
+				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 350, name = "Loot Bag",
+					description = "Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."},
 				{kind = "service", service = "pouch", pouch = "orbs", icon = 32082, cost = 300, name = "Orbs Pouch",
 					description = "40 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried."},
 				{kind = "service", service = "pouch", pouch = "keys", icon = 32083, cost = 250, name = "Rift Key Pouch",

@@ -713,7 +713,8 @@ The account creation form has an optional **Referral code** field (the game serv
 **Packs and the first donation (2026-10-13).** The packs and prices come from the game server's `shop_coins_config.lua`
 (placeholders, docs/OWNER_TODO.md): an entry pack (Handful of Coins, 80 coins, US$ 1.99 / R$ 9,95 by Pix), Pouch, Sack,
 Chest, Hoard and the Vault of Coins (10,000 +30%, the anchor), Starter Coins once. The first donation of an account brings
-**double coins** (`firstPurchase.bonusPct = 100`), once per account (not on the Starter Coins; a refund or chargeback
+**double coins** (`firstPurchase.bonusPct = 100`) up to +1000 extra (`firstPurchase.maxBonus`, the plugin setting
+`first_bonus_max`, owner 2026-10-13: "Limite a 1000"; a pack above 1000 coins gets +1000 flat), once per account (not on the Starter Coins; a refund or chargeback
 after crediting keeps the order counted, so it never repeats). The Donate page shows it; the voluntary donation wording
 before and after payment is unchanged. Tests: `chaos_coins_test.php`, `chaos_pay_test.php` (also the payer hash),
 `chaos_donation_page_test.php` (also the creator code field).

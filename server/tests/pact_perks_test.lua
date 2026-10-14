@@ -1,7 +1,8 @@
 -- Run from the server/ folder: luajit tests/pact_perks_test.lua (and lua5.3; CI runs both)
 -- Chaos Pact (VIP) perks (pact_perks_core.lua with the real pact_config.lua, pact_perks.lua on a mocked engine): the
 -- plan (chat colour while active, the monthly cosmetic kept, the lent unlocks set to 2 and taken back, a bought unlock
--- never touched), the loadout bonus, the store's owned check (only a bought unlock), the purchase hook.
+-- never touched, the retired Rarity Autoloot taken back), the loadout bonus, +10% experience (monsters, not season
+-- characters), stamina x1.5 (offline multiplier, trainer tile interval), the store's owned check, the purchase hook.
 local count, failures = 0, 0
 local function check(cond, label)
 	count = count + 1
@@ -19,21 +20,36 @@ local K = ChaosPactPerksCore
 local cfg = dofile("data/scripts/chaos/pact_config.lua")
 local pk = cfg.perks
 
--- ---------------------------------------------------------------- config: comfort and cosmetics only
-eq(cfg.pact.premiumDays, 0, "no premium days: no experience bonus")
+-- ---------------------------------------------------------------- config (owner 2026-10-13: +10% XP, faster stamina,
+-- no loot bag or Rarity Autoloot; the +1 loadout stays)
+eq(cfg.pact.premiumDays, 0, "no premium days")
+eq(pk.expBonus, 0.10, "+10% experience")
+check(pk.expIndex > 6 and pk.expIndex < 85, "after World Experience (5) and the blessing (6), before the cap (85)")
+eq(pk.staminaRegen, 1.5, "stamina x1.5")
+eq(#pk.unlocks, 1, "one lent unlock") eq(pk.unlocks[1], "autoSeller", "the Auto Seller stays a Pact perk")
+eq(pk.retired[1], "rarityAutoloot", "Rarity Autoloot retired from the Pact")
+for _, u in ipairs(pk.unlocks) do
+	check(u ~= "rarityAutoloot" and u ~= "lootPouch" and u ~= "lootBag", "no autoloot or loot bag perk: " .. u)
+end
 eq(pk.loadoutSlots, 1, "+1 loadout slot")
 eq(cfg.limits.depotTabs.pact, 1, "+1 depot tab while active")
 eq(pk.chatColor, "chat_pactbound", "the Pact chat colour")
 local loadouts = dofile("data/scripts/chaos/loadouts_config.lua") or ChaosLoadoutsConfig
 eq((loadouts or ChaosLoadoutsConfig).pactSlots, pk.loadoutSlots, "loadouts_config.lua pactSlots matches")
 for k in pairs(pk) do
-	check(k ~= "expBonus" and k ~= "damage" and k ~= "lootBonus", "no power perk: " .. k)
+	check(k ~= "damage" and k ~= "lootBonus", "no combat or loot power perk: " .. k)
 end
+check(cfg.store.pact.offers[1].description:find("+10% XP", 1, true) ~= nil, "the store text says +10% XP")
 
 -- ---------------------------------------------------------------- month and loadouts
 eq(K.month(os.time({year = 2026, month = 11, day = 20, hour = 12})), 202611, "month key")
 eq(K.loadoutBonus(pk, true), 1, "bonus while active")
 eq(K.loadoutBonus(pk, false), 0, "none without")
+eq(K.expMult(pk, true), 1.10, "x1.10 experience while active") eq(K.expMult(pk, false), 1, "x1 without")
+eq(K.staminaMult(pk, true), 1.5, "stamina x1.5 while active") eq(K.staminaMult(pk, false), 1, "x1 without")
+eq(K.restMs(pk, true, 120000), 80000, "trainer tile: a stamina minute every 80 s")
+eq(K.restMs(pk, false, 120000), 120000, "every 120 s without")
+eq(K.expMult(nil, true), 1, "no perks table: x1")
 
 -- ---------------------------------------------------------------- the plan
 local function has(list, x)
@@ -49,8 +65,12 @@ check(has(p.grant, "chat_pactbound"), "active: the chat colour")
 check(has(p.grant, "kill_pact_ember"), "active in November 2026: its cosmetic")
 check(has(p.setStorage, {"autoSeller", 2}), "the Auto Seller lent (2)")
 eq(#p.setStorage, 1, "a bought Rarity Autoloot (1) is not touched")
+p = K.plan(pk, {active = true, month = 202611, storages = {autoSeller = 2, rarityAutoloot = 2}})
+check(has(p.setStorage, {"rarityAutoloot", -1}), "active: the Rarity Autoloot the Pact lent before is taken back")
+p = K.plan(pk, {active = true, month = 202611, storages = {autoSeller = 2, rarityAutoloot = -1}})
+eq(#p.setStorage, 0, "active: Rarity Autoloot is never lent again")
 p = K.plan(pk, {active = true, month = 202611, chatOwned = true, monthlyOwned = {kill_pact_ember = true},
-	storages = {autoSeller = 2, rarityAutoloot = 2}})
+	storages = {autoSeller = 2, rarityAutoloot = 1}})
 eq(#p.grant + #p.revoke + #p.setStorage, 0, "nothing to do twice")
 p = K.plan(pk, {active = false, month = 202612, chatOwned = true, monthlyOwned = {kill_pact_ember = true},
 	storages = {autoSeller = 2, rarityAutoloot = 1}})
@@ -77,6 +97,17 @@ do
 		end
 	end
 	CreatureEvent, GlobalEvent = event(), event()
+	local xpCbs = {}
+	EventCallback = setmetatable({}, {
+		__newindex = function(t, k, v) rawset(t, "_pending", v) end,
+		__index = function(t, k)
+			if k == "register" then
+				return function(self, index)
+					xpCbs[#xpCbs + 1] = {fn = rawget(self, "_pending"), index = index}
+				end
+			end
+		end
+	})
 	addEvent = function(fn, _, ...) fn(...) end
 	local owned, granted = {}, {}
 	ChaosCosmetics = {owns = function(acc, key) return owned[key] == true end,
@@ -95,16 +126,33 @@ do
 	function pl:sendTextMessage(_, t) self.msgs[#self.msgs + 1] = t end
 	Player = function() return pl end
 	Game = {getPlayers = function() return {pl} end}
+	local realm = 0
+	ChaosSeason = {realmOf = function() return realm end}
 	dofile("data/scripts/chaos/pact_perks.lua")
 	local PP = ChaosPactPerks
+	eq(#xpCbs, 1, "one experience callback") eq(xpCbs[1].index, pk.expIndex, "at perks.expIndex")
+	local gain = xpCbs[1].fn
+	local monster = {isMonster = function() return true end}
+	local playerSrc = {isMonster = function() return false end}
 	eq(PP.loadoutBonus(pl), 0, "no Pact: no bonus")
+	eq(gain(pl, monster, 1000, 100), 1000, "no Pact: x1 experience")
+	eq(PP.staminaMult(pl), 1, "no Pact: stamina x1") eq(PP.staminaRestMs(pl, 120000), 120000, "no Pact: 120 s")
+	pl.st[7100106] = 2 -- a Rarity Autoloot the Pact lent before 2026-10-13
 	eq(ChaosShopServices.unlocks.autoSeller.owned(pl), false, "store: not owned")
 	-- a Pact purchase applies the perks at once (grantDays wrapped)
 	eq(ChaosPact.grantDays(pl, 30, "store"), true, "the wrapped grantDays returns its value")
 	eq(purchases, 1, "the original ran")
 	eq(PP.loadoutBonus(pl), 1, "Pact: +1 loadout")
 	eq(pl.st[7100101], 2, "Auto Seller lent")
-	eq(pl.st[7100106], 2, "Rarity Autoloot lent")
+	eq(pl.st[7100106], -1, "the old lent Rarity Autoloot taken back, never lent again")
+	eq(ChaosShopServices.unlocks.rarityAutoloot.owned(pl), false, "store: Rarity Autoloot to buy")
+	eq(gain(pl, monster, 1000, 100), 1100, "Pact: +10% monster experience")
+	eq(gain(pl, playerSrc, 1000, 100), 1000, "Pact: player kills unchanged")
+	eq(gain(pl, nil, 1000, 100), 1000, "Pact: no source, unchanged")
+	realm = 3
+	eq(gain(pl, monster, 1000, 100), 1000, "Pact: a season character gets no bonus")
+	realm = 0
+	eq(PP.staminaMult(pl), 1.5, "Pact: offline stamina x1.5") eq(PP.staminaRestMs(pl, 120000), 80000, "Pact: 80 s")
 	eq(ChaosShopServices.unlocks.autoSeller.owned(pl), false, "a lent unlock can still be bought")
 	check(owned.chat_pactbound, "the chat colour granted")
 	-- buying the Auto Seller for good while the Pact runs (storage 1)
@@ -114,12 +162,16 @@ do
 	activeUntil = 0
 	registered.ChaosPactPerksThink.onThink(60000)
 	eq(pl.st[7100101], 1, "the bought Auto Seller stays")
-	eq(pl.st[7100106], -1, "the lent Rarity Autoloot is taken back")
+	eq(pl.st[7100106], -1, "Rarity Autoloot stays unset")
+	eq(PP.staminaMult(pl), 1, "ended: stamina x1")
 	eq(owned.chat_pactbound, nil, "the chat colour is taken back")
 	-- login with an active Pact again
 	activeUntil = os.time() + 3600
 	registered.ChaosPactPerksLogin.onLogin(pl)
-	eq(pl.st[7100106], 2, "lent again at login")
+	eq(pl.st[7100106], -1, "Rarity Autoloot not lent at login")
+	pl.st[7100106] = 1
+	registered.ChaosPactPerksThink.onThink(60000)
+	eq(pl.st[7100106], 1, "a bought Rarity Autoloot stays")
 	check(owned.chat_pactbound, "chat colour again")
 end
 

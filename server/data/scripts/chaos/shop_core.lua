@@ -398,6 +398,10 @@ function C.packCredit(pack, first, cfg)
 	local firstBonus = 0
 	if first and not pack.starter and cfg and cfg.firstPurchase then
 		firstBonus = math.floor(coins * (tonumber(cfg.firstPurchase.bonusPct) or 0) / 100)
+		local cap = tonumber(cfg.firstPurchase.maxBonus)
+		if cap and cap > 0 then
+			firstBonus = math.min(firstBonus, math.floor(cap)) -- "Limite a 1000": double up to +1000 extra
+		end
 	end
 	return {coins = coins, bonus = bonus, firstBonus = firstBonus, total = coins + bonus + firstBonus}
 end

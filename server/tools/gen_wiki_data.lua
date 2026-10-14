@@ -1518,6 +1518,15 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["orbx.goldFee"] = num(D.orbx.fees.goldBps / 100)
 	f["orbx.durations"] = list(D.orbx.durations, "/")
 	f["daily.days"] = #C0.daily.rewards
+	-- item prices (data/lib/chaos_item_prices_data.lua, server/README.md "Item prices")
+	local IP = dofile("data/lib/chaos_item_prices_data.lua")
+	f["prices.uncommon"] = num(IP.rarityMult[2])
+	f["prices.rare"] = num(IP.rarityMult[3])
+	f["prices.epic"] = num(IP.rarityMult[4])
+	f["prices.legendary"] = num(IP.rarityMult[5])
+	f["prices.top"] = num(IP.rarityMult[#IP.rarityMult])
+	f["prices.perLevel"] = num(100 / IP.ilvlDiv)
+	f["prices.maxLevel"] = num(1 + 150 / IP.ilvlDiv)
 	-- social
 	f["mentor.on"] = D.mentor.enabled == true
 	f["mentor.exp"] = num(D.mentor.bonus.exp * 100)

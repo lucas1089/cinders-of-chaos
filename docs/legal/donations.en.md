@@ -36,7 +36,7 @@ guardian, using a payment method they allowed. If a minor donated without permis
 | Vault of Coins | 13000 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Starter Coins, once per account | 500 | [PREÇO EM R$] | [PREÇO EM US$] |
 
-- Each account's first donation brings 100% more Chaos Coins (double), except for the Starter Coins pack.
+- Each account's first donation brings 100% more Chaos Coins (double), up to 1000 extra Chaos Coins (a pack of more than 1000 coins gets 1000 extra), except for the Starter Coins pack.
 - Payment is handled by Mercado Pago or PayPal, under their terms. We do not receive or store card numbers, bank account
   details or your PayPal login.
 

@@ -1,7 +1,8 @@
 -- Loadouts / Armory (loadouts.lua, loadouts_core.lua). Every number of the system is here. server/README.md "Loadouts".
 ChaosLoadoutsConfig = {
-	-- slots: baseSlots for everyone; one more at each `earned` level (in game, never sold: README "Loadouts", Slots);
-	-- pactSlots more while the Chaos Pact (VIP) is active (pact_config.lua perks.loadoutSlots, pact_perks.lua). A slot
+	-- slots: baseSlots for everyone; one more at each `earned` level (in game; README "Loadouts", Slots);
+	-- pactSlots more while the Chaos Pact (VIP) is active (pact_config.lua perks.loadoutSlots, pact_perks.lua; a paid
+	-- slot in effect, kept by the owner on 2026-10-13: "Pode manter"). A slot
 	-- over the limit keeps its saved loadout; it only cannot be loaded or saved until the limit allows it again.
 	baseSlots = 3,
 	earned = {

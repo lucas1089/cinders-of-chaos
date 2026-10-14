@@ -199,6 +199,11 @@ eq(K.packCredit(packs.coins750, true, coins).total, 1575, "first purchase: doubl
 eq(K.packCredit(packs.coins80, false, coins).total, 80, "entry pack 80")
 eq(K.packCredit(packs.coins10000, false, coins).total, 13000, "Vault: 10000 +30%")
 eq(coins.firstPurchase.bonusPct, 100, "first purchase doubles")
+eq(coins.firstPurchase.maxBonus, 1000, "at most 1000 extra (owner: Limite a 1000)")
+eq(K.packCredit(packs.coins1500, true, coins).firstBonus, 1000, "1500 pack: +1000 flat")
+eq(K.packCredit(packs.coins10000, true, coins).total, 13000 + 1000, "Vault: +1000 flat")
+eq(K.packCredit(packs.coins750, true, coins).firstBonus, 750, "750 pack: doubled")
+eq(K.packCredit({coins = 1000}, true, coins).firstBonus, 1000, "1000: doubled, the cap")
 eq(K.packCredit(packs.starter, true, coins).total, 500, "starter: no first purchase bonus")
 
 -- ------------------------------------------------------------------ shop.lua with a mocked engine and database

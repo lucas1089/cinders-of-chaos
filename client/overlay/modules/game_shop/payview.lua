@@ -51,6 +51,16 @@ V.STATUS_TEXT = {
 -- statuses the window keeps asking the server about
 V.WAITING = { pending = true, open = true, paid = true }
 
+-- the first donation line: "double Chaos Coins (+100%, up to 1000 extra)" (shop_coins_config.lua firstPurchase)
+function V.firstBonusText(pct, cap)
+  pct, cap = tonumber(pct) or 0, tonumber(cap) or 0
+  local base, notes = string.format('+%d%% Chaos Coins', pct), {}
+  if pct == 100 then base, notes = 'double Chaos Coins', { '+100%' } end
+  if cap > 0 then notes[#notes + 1] = string.format('up to %d extra', cap) end
+  if #notes > 0 then base = base .. ' (' .. table.concat(notes, ', ') .. ')' end
+  return 'Your first donation brings ' .. base .. ' as an extra thank-you.'
+end
+
 function V.donateLabel(priceText)
   return "Donate " .. tostring(priceText or "")
 end

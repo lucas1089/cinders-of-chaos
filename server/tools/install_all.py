@@ -106,6 +106,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                rune, food, enchanted spear and staff), every NPC sells each rune at the price of
                data/lib/chaos_rune_supply.lua, the vendors (Raloth, Isora) sell every rune, the rune recipe loader in the
                general crafting file (README "Rune supply"; after npcnames)
+  itemprices   tools/install_item_prices.py      the item price table (data/lib/chaos_item_prices_data.lua): the Loot Buyer NPC
+               in data/npc, every NPC's sell price of a priced item set to the table, NPC buy prices below twice the
+               sell price raised (no arbitrage; README "Item prices"; after packitems, fistweapons and runes, which
+               write shop entries too)
   worldtexts   tools/patch_base_texts.py         the old world's names in NPC dialogue and keywords, travel, the quest log,
                raids, achievements, item descriptions, script messages and the map's signs and books
                (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
@@ -538,6 +542,13 @@ def step_runes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('npcnames') + 1, 'runes')  # after npcnames: the vendors by their Chaos names (hash before it)
+
+
+def step_itemprices(server, data, ctx):
+    return tool_result(run_tool([tool('install_item_prices.py'), data], 'install_item_prices.py'))
+
+
+STEPS.insert(STEPS.index('runes') + 1, 'itemprices')  # after runes: every NPC shop entry is written by then
 
 
 def step_worldtexts(server, data, ctx):

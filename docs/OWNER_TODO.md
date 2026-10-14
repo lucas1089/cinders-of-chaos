@@ -22,8 +22,10 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - [ ] **Store prices of 2026-10-13 (placeholders; owner approval "Pode fazer todas as mudanças recomendadas").**
   - Coin packs (`server/data/scripts/chaos/shop_coins_config.lua`): Handful of Coins 80 for US$ 1.99 (R$ 9,95 by Pix),
     Pouch 250 / 4.99, Sack 750 +10% / 14.99, Chest 1500 +15% / 29.99, Hoard 4000 +25% / 74.99, Vault of Coins 10000
-    +30% / 179.99 (the anchor), Starter 250 + 250 / 2.99. The first donation is double (+100%) on any pack: on the Vault
-    that is +10,000 coins; say if it should have a cap. Update the Donation Terms tables' R$ / US$ placeholders.
+    +30% / 179.99 (the anchor), Starter 250 + 250 / 2.99. Update the Donation Terms tables' R$ / US$ placeholders.
+    Decided 2026-10-13 ("Limite a 1000"): the first donation is double up to +1000 extra coins; a pack above 1000 coins
+    gets +1000 flat (the Vault: 10,000 + 1,000), `shop_coins_config.lua` `firstPurchase.maxBonus`, the website setting
+    `first_bonus_max`. Donate page, client, Donation Terms (EN, PT) and tests say so.
   - Chaos outfit shaders (`cosmetics_config.lua` `outfitShaders`, on): 250 (Ember Glow, Frost Rime, Void Flicker,
     Heartblood), 300 (Holy Radiance, Spectral Ghost).
   - Themed appearance sets of pair 24 (`server/data/lib/chaos_theme_art.lua` `M.sets`): 350 a full set (Cryptbone,
@@ -34,11 +36,19 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   - Everfull Ration, the infinite food (`shop_config.lua`, Convenience): 150 coins.
   - Rune packs (`shop_config.lua` `RUNE_GOLD_PER_COIN = 1000`, `RUNE_DISCOUNT` 5% / 10%): 100 Searing Orb 9, 500 Reaper's
     99, 100 Grand Mending 24, 100 Shackle 89 (all from the vendor prices of `data/lib/chaos_rune_supply.lua`).
-  - VIP (the Chaos Pact, 300 coins / 30 days): now also +1 loadout slot, the Auto Seller and Rarity Autoloot while
-    active, a chat colour and a monthly cosmetic (six months planned, `pact_config.lua` `perks.monthly`). Note: the
-    loadout slot was "never sold" by design (a slot saves respec gold); the VIP slot is a paid slot in effect. "Loot bag"
-    was read as Rarity Autoloot (the loot pouch is a permanent item); say if you meant the Loot Pouch. No priority login:
-    there is no login queue.
+  - VIP (the Chaos Pact, 300 coins / 30 days). Decided 2026-10-13 ("Vip ganha +10% de exp e restaura stamina mais
+    rápido. Retire o loot bag e autoloot."; "Pode manter" for the loadout slot): while active +10% monster experience
+    (inside the experience cap; not for season characters), stamina back x1.5 faster (offline and on the trainer tile),
+    +1 loadout slot, the Auto Seller, a chat colour and a monthly cosmetic (six months planned, `pact_config.lua`
+    `perks.monthly`). Rarity Autoloot is no longer lent by the Pact (still sold); the Loot Bag is a store item, never a
+    Pact perk. The old rule "loadout slots are never sold" is replaced: the Pact's slot stays, the earned slots are not
+    sold on their own. No priority login: there is no login queue. Season characters get no Pact experience
+    (decided, see "Decided").
+  - Loot Bag and Auto Seller, defined 2026-10-13. Loot Bag (350 coins, was "Loot Pouch"): bottomless, 255 slots (the
+    most a container can have in this protocol), its contents weigh nothing (engine src-patch 0038), takes all the loot
+    of your kills by default, kept at relog, back (empty) after a death. Auto Seller (500 coins, or the Pact): sells
+    what is in the Loot Bag at NPC prices, once per 30 s, gold to the bank. Never sold: locked items, uniques, orbs,
+    gems, keys, items no NPC buys. Rarities and the commands: decided, see "Decided".
 - [ ] **Season pass price.** The premium track of the Ashen Pass costs 1000 Chaos Coins, a placeholder
   (`premium.price` in `server/data/scripts/chaos/seasonpass_config.lua`; the store offer reads it). The track is
   cosmetics and 320 coins back only (approved 2026-10-13). Decide the price; the packs (600 / 1800 / 3200) too.
@@ -120,6 +130,19 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 ## Decided
 
+- Item prices (owner, 2026-10-14; server/README.md "Item prices"):
+  - Kept as built: plain equipment at 31% of its old NPC price (the gear scale), rolled copies x1.5 to x32 by rarity and
+    up to x1.75 by item level; the rarities above Legendary +2 a tier; currency, keys, 25 base quest items
+    (`server/data/items/item_price_rules.csv`), store items and the profession materials not sold to NPCs.
+  - Wandering Merchant's Orb of Gilding: 250,000 (was 60,000; "Ok"). Every plain equipment price is capped at 30,252
+    so neither Gilding nor his Orb of Fate on a plain copy pays off at item level 150 (tested).
+  - Uniques are not sold to NPCs ("faça o que você recomendar"): reason "unique: salvage or market". The Auto Seller
+    never sold them.
+  - Crafted equipment: floor 20% of its materials (was 40%), at most an hour of hunting gold at its level band; the
+    inferniarch weapons (14.9M before) are at the 30,252 cap now. Non-equipment crafts stay worth at least their
+    materials.
+  - The unspawned base staff NPC that sold gear for 1-720 gold has its buy prices raised to twice the sell price.
+
 - Staff rules (2026-10-12): the recommendations of docs/GM_HANDBOOK.md, now its rules. Groups: gamemasters 4, one or
   two administrators 5, owner and lead developer 6. Staff give nothing to players; refunds through an administrator.
   The ladder (over 90 days) is on the Rules page; mutes at most 24 h, bans of 30 days or more and permanent bans by an
@@ -130,6 +153,14 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - Existing accounts and the terms (2026-10-12): the website asks every account without an acceptance of the current
   texts at its next login (the same checkbox and row as sign-up, no IP); the game shows such an account a notice with
   the link at login (the client login is not held).
+- Pact experience and season characters (owner, 2026-10-13: "Ok"): season characters get no Pact experience, as
+  with World Experience (`pact_perks.lua`).
+- Auto Seller rarities (owner, 2026-10-13: "Deixe o jogador configurar o autosell por raridade"): each character ticks
+  the rarities the Auto Seller sells: Common, Uncommon (the game's name for the "Magic" tier, rarity 2), Rare, Epic,
+  Legendary+ (Legendary and every rarity above it). Default Common and Uncommon on, the rest off. Uniques never.
+- Auto Seller commands (owner, 2026-10-13: "Tire os comandos do autosell e coloque no topmenu"): no `!autosell` and no
+  Info & Services page; the Auto Seller window is in the top menu (Economy > Auto Seller): Sell all with its 30 s
+  countdown, the last sale, the rarity checkboxes, the corpse list.
 - Chargeback fraud (2026-10-12): coins taken back, what they bought removed, the account locked until the dispute is
   settled; fraud again: permanent, by an administrator (GM handbook ladder, Rules 7.9, Donation Terms section 6).
 

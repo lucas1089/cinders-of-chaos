@@ -21,9 +21,9 @@ function V.normalize(r)
   return out
 end
 
--- the line under the title: whether this character has the Loot Pouch
+-- the line under the title: whether this character has the Loot Bag
 function V.statusText(owned, title)
-  title = title or 'Loot Pouch'
+  title = title or 'Loot Bag'
   if type(owned) ~= 'table' then return '' end
   if owned.loot then
     return 'You have a ' .. title .. '. It collects while you carry it (backpack or a bag inside it).'
@@ -31,7 +31,7 @@ function V.statusText(owned, title)
   return 'You have no ' .. title .. ' yet: Store > Convenience. These rules are kept for when you do.'
 end
 
--- the right-click hook: the item looks like the Loot Pouch (client id from the server) and carries the item lock
+-- the right-click hook: the item looks like the Loot Bag (client id from the server) and carries the item lock
 -- flag the server sets on every store pouch (custom attribute key 3), so a stock bag of the same look does not match
 function V.isLootPouch(clientId, lockFlag, ids)
   if type(ids) ~= 'table' or not ids.loot or ids.loot == 0 then return false end

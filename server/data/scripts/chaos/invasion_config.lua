@@ -194,7 +194,7 @@ return {
 				{id = 29856, price = 40000, name = "orb of upheaval"},
 				{id = 29857, price = 120000, name = "orb of fate"},
 				{id = 29855, price = 200000, name = "orb of grafting"},
-				{id = 24691, price = 60000, name = "orb of gilding"},
+				{id = 24691, price = 250000, name = "orb of gilding"}, -- owner 2026-10-14: above what gilding adds to a plain item's NPC price
 				{id = 24697, price = 80000, name = "orb of unmaking"},
 				{id = 28095, price = 350000, name = "double experience potion", seasonBlocked = true},
 				{id = 26031, price = 900, name = "supreme health potion"}

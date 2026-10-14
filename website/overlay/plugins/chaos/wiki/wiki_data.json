@@ -296,6 +296,13 @@
 		"orbx.goldFee": "2",
 		"orbx.minLevel": 8,
 		"paragon.startLevel": 1000,
+		"prices.epic": "6",
+		"prices.legendary": "12",
+		"prices.maxLevel": "1.75",
+		"prices.perLevel": "0.5",
+		"prices.rare": "3",
+		"prices.top": "32",
+		"prices.uncommon": "1.5",
 		"pvpzone.minLevel": 150,
 		"pvpzone.name": "The Scorched Marches",
 		"pvpzone.on": true,
@@ -29731,7 +29738,7 @@
 									"Adventurer Pack",
 									"450",
 									"Bundle",
-									"Once per account, up to level 150: Loot Pouch, Armoured War Horse, 100 Ultimate Health and 100 Great Mana Potions. (once per account, up to level 150)"
+									"Once per account, up to level 150: Loot Bag, Armoured War Horse, 100 Ultimate Health and 100 Great Mana Potions. (once per account, up to level 150)"
 								],
 								[
 									"Champion Pack",
@@ -32289,10 +32296,10 @@
 							"w": [24, 10, 16, 50],
 							"rows": [
 								[
-									"Loot Pouch",
+									"Loot Bag",
 									"350",
 									"Convenience",
-									"60 slots, store-bound. Collects loot by its own rules while carried (Loot Filter > Loot Pouch)."
+									"Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."
 								],
 								[
 									"Orbs Pouch",
@@ -32558,7 +32565,7 @@
 									"Chaos Pact (30 days)",
 									"300",
 									"Chaos Pact",
-									"30 days, stacks: tabs, +1 loadout, Auto Seller, coins, a monthly cosmetic. No XP."
+									"30 days, stacks: +10% XP, stamina x1.5, +1 loadout, Auto Seller, monthly cosmetic."
 								]
 							],
 							"sprites": [{"item": 16101}]

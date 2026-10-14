@@ -85,7 +85,7 @@ local function unit(id)
 	return H.unitValue(id, prices, cfg.coins, cfg.extraValues)
 end
 eq(unit(2152), 100, "platinum coin")
-eq(unit(7618), 0, "health potion: no NPC buys it")
+eq(unit(29856), 0, "an orb: no NPC buys it")
 eq(H.unitValue(5, {[5] = 7}, cfg.coins, {[5] = 9}), 9, "extra value before the NPC price")
 eq(H.itemKey(2160, 0, false), "2160:0:0", "key")
 eq(H.itemKey(2160, 5, true), "2160:5:1", "key with rarity / unique")

@@ -19,10 +19,12 @@ A lista completa, com o tipo de cada oferta, está na [referência da loja](wiki
 
 - **Esta semana (This week):** cinco ofertas cosméticas com 10% de desconto, uma escolha nova toda segunda às 06:00 (a loja mostra a contagem). Doze conjuntos de aparência temáticos só são vendidos nessa rotação; outros seis são recompensas de prestígio de conquistas difíceis e nunca são vendidos.
 - **Pacotes (bundles):** as peças que você já tem saem do pacote e do preço; um pacote que você já tem inteiro não aparece.
-- **Primeira doação:** a primeira doação de cada conta traz **o dobro de Chaos Coins**, uma vez por conta (não no Starter Coins).
+- **Primeira doação:** a primeira doação de cada conta traz **o dobro de Chaos Coins**, até 1000 coins extras (um pacote acima de 1000 coins ganha +1000), uma vez por conta (não no Starter Coins).
 - **Everfull Ration:** uma comida que nunca acaba (Convenience), tão boa quanto a melhor comida; ela fica sempre com você.
 - **Pacotes de runas:** 100, 250 ou 500 runas das principais runas de ataque e de cura (menos de Shackle), por mais ou menos o preço dos vendedores de runas; o que não couber na mochila vai para a caixa de entrada da loja.
-- **Chaos Pact (VIP):** além de mais espaço e coins diárias, enquanto durar: um slot de loadout a mais, o Auto Seller e o Rarity Autoloot, uma cor de nome no chat e um cosmético por mês. Nunca experiência ou poder de combate.
+- **Loot Bag:** uma bolsa sem fundo (Convenience). Enquanto você a carrega, todo o loot das suas mortes vai para ela: 255 espaços, e o que está nela não pesa nada. Ela é sua: fica com você ao deslogar e volta, vazia, depois de uma morte.
+- **Auto Seller:** no menu do topo, Economy > Auto Seller. "Sell all" vende o que está na sua Loot Bag pelo preço dos NPCs, uma vez a cada 30 segundos; o ouro vai para o banco. Marque as raridades que ele pode vender (Common e Uncommon por padrão; Rare, Epic e Legendary+ quando você marcar). Itens travados, únicos, orbes, gemas e chaves nunca são vendidos. A mesma janela guarda uma lista de itens que ele vende direto das suas mortes.
+- **Chaos Pact (VIP):** além de mais espaço e coins diárias, enquanto durar: +10% de experiência de monstros, stamina volta 1,5 vez mais rápido (offline e no treinador de stamina), um slot de loadout a mais, o Auto Seller, uma cor de nome no chat e um cosmético por mês.
 
 ## Season Pass
 

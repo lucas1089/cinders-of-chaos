@@ -14,7 +14,8 @@
 -- can never drift: PayPal charges usdCents in USD, Pix charges usdCents * brlPerUsd in BRL.
 -- bonusPct: extra coins of the pack in %. once = true: one per account (the starter pack).
 -- firstPurchase.bonusPct: once per account, on top of the first pack credited (not the starter pack). 100 = double
--- coins (owner approval 2026-10-13). "First" = the account has no credited pack yet (status 'credited' stays after a
+-- coins (owner approval 2026-10-13); maxBonus caps it ("Limite a 1000", 2026-10-13): double up to +1000 extra, a pack of
+-- more than 1000 coins gets +1000 flat. "First" = the account has no credited pack yet (status 'credited' stays after a
 -- refund or chargeback after crediting, so a reversal never makes the next pack "first" again).
 -- Pack ladder (PLACEHOLDERS, docs/OWNER_TODO.md): an entry pack for about R$ 10 by Pix (199 x brlPerUsd 5 = R$ 9,95),
 -- the four packs, and the Vault as the anchor (+30%). Coins per US$ (with the pack bonus): 40, 50, 55, 58, 67, 72.
@@ -31,7 +32,7 @@ return {
 		-- one-time starter pack: 250 coins and 250 more for the price of a small pack
 		{key = "starter", name = "Starter Coins", coins = 250, bonusCoins = 250, usdCents = 299, once = true, starter = true}
 	},
-	firstPurchase = {bonusPct = 100},
+	firstPurchase = {bonusPct = 100, maxBonus = 1000},
 
 	-- Donations from the client store and the website (shop_payments.lua, website/README.md "Donations").
 	-- methods: pix = Pix through Mercado Pago (BRL), paypal = PayPal Orders v2 with the donation category (USD). The

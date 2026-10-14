@@ -107,8 +107,8 @@ function renderPacks()
     payMethod = first.key
   end
   if payData.firstOpen and (payData.firstBonusPct or 0) > 0 then
-    page.firstBonus:setText(payData.firstBonusPct == 100 and 'Your first donation brings double Chaos Coins (+100%) as an extra thank-you.'
-      or string.format('Your first donation brings +%d%% Chaos Coins as an extra thank-you.', payData.firstBonusPct))
+    local cap = tonumber(payData.firstBonusMax) or 0
+    page.firstBonus:setText(PayView.firstBonusText(payData.firstBonusPct, cap))
   else
     page.firstBonus:setText('')
   end

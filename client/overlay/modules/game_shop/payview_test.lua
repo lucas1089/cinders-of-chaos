@@ -89,5 +89,9 @@ local px, off = V.qrLayout(57, 220)
 eq(px, 3, 'module size'); eq(off, 24, 'centred')
 px = V.qrLayout(177, 100); eq(px, 1, 'at least one pixel')
 
+eq(V.firstBonusText(100, 1000), 'Your first donation brings double Chaos Coins (+100%, up to 1000 extra) as an extra thank-you.', 'first bonus: capped double')
+eq(V.firstBonusText(100, 0), 'Your first donation brings double Chaos Coins (+100%) as an extra thank-you.', 'first bonus: double')
+eq(V.firstBonusText(20, 500), 'Your first donation brings +20% Chaos Coins (up to 500 extra) as an extra thank-you.', 'first bonus: percent capped')
+eq(V.firstBonusText(20, 0), 'Your first donation brings +20% Chaos Coins as an extra thank-you.', 'first bonus: percent')
 if fails > 0 then print(fails .. ' failure(s)'); os.exit(1) end
 print('payview_test: ok')

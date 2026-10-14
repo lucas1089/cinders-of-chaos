@@ -19,10 +19,12 @@ The full list, with the type of every offer, is in the [store reference](wiki:st
 
 - **This week:** five cosmetic offers at 10% off, a new choice every Monday at 06:00 (the store counts down to it). Twelve themed appearance sets are sold only in that rotation; six more are prestige rewards of hard achievements and are never sold.
 - **Bundles:** pieces you already own are left out of a bundle and of its price; a bundle you own completely is not shown.
-- **First donation:** the first donation of an account brings **double Chaos Coins**, once per account (not on the Starter Coins).
+- **First donation:** the first donation of an account brings **double Chaos Coins**, up to 1000 extra coins (a pack above 1000 coins gets +1000), once per account (not on the Starter Coins).
 - **Everfull Ration:** food that never runs out (Convenience), as good as the best food; it stays with you.
 - **Rune packs:** 100, 250 or 500 runes of the main attack and healing runes (fewer of Shackle), at about the rune sellers' price; what does not fit in your backpack goes to the store inbox.
-- **Chaos Pact (VIP):** besides more storage and daily coins, while it lasts: one more loadout slot, the Auto Seller and Rarity Autoloot, a chat colour and a cosmetic every month. Never experience or combat power.
+- **Loot Bag:** a bottomless bag (Convenience). While you carry it, all the loot of your kills goes into it: 255 slots, and what is in it weighs nothing. It stays yours: you keep it when you log out and get it back, empty, after a death.
+- **Auto Seller:** in the top menu, Economy > Auto Seller. "Sell all" sells what is in your Loot Bag at the NPC price, once every 30 seconds; the gold goes to your bank. Tick the rarities it may sell (Common and Uncommon by default; Rare, Epic and Legendary+ when you tick them). Locked items, uniques, orbs, gems and keys are never sold. The same window keeps a list of items it sells straight from your kills.
+- **Chaos Pact (VIP):** besides more storage and daily coins, while it lasts: +10% experience from monsters, stamina back 1.5 times faster (offline and on the stamina trainer), one more loadout slot, the Auto Seller, a chat colour and a cosmetic every month.
 
 ## Season Pass
 

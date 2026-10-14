@@ -10,7 +10,8 @@
 -- panel (Store > Donations: refunds).
 --
 -- client -> server, extended opcode ChaosOpcodes.shop (218, shared with shop.lua; each script ignores the other's actions)
---   pay_packs                      -> "pay_packs" {notice, noticePt, thanks, terms, termsPt, methods, packs, firstBonusPct, open?}
+--   pay_packs                      -> "pay_packs" {notice, noticePt, thanks, terms, termsPt, methods, packs, firstBonusPct,
+--                                     firstBonusMax, open?}
 --   pay_create {pack, method}      -> "pay_order" (the order view) or "pay_error" {msg, order?}
 --   pay_status {id}                -> "pay_order"
 --   pay_cancel {id}                -> "pay_order"
@@ -145,7 +146,8 @@ local function packsView(player)
 	end
 	local terms, termsPt = P.terms()
 	return {notice = P.NOTICE_EN, noticePt = P.NOTICE_PT, thanks = P.THANKS, terms = terms, termsPt = termsPt, methods = P.methods(coinsCfg), packs = packs,
-		firstBonusPct = (coinsCfg.firstPurchase or {}).bonusPct or 0, firstOpen = first, open = open}
+		firstBonusPct = (coinsCfg.firstPurchase or {}).bonusPct or 0, firstBonusMax = (coinsCfg.firstPurchase or {}).maxBonus,
+		firstOpen = first, open = open}
 end
 
 -- a creator code sent with the donation (the client's donate tab): the same pick as the website's Donate page

@@ -162,8 +162,8 @@ Chaos.storage = {
 	shopLootPouch = 7100100, -- RESERVED: the retired Bottomless Loot Pouch unlock (1 = owned; pouches.lua gives those owners a
 	-- free Loot Pouch once). Never reuse the key.
 	shopAutoSeller = 7100101, -- 1 = Auto Seller unlocked (per character)
-	autosellPaused = 7100102, -- 1 = auto seller switched off with !autosell off
-	autosellRarity = 7100103, -- 1 = opt-in: the auto seller may sell items with a rarity / modifiers
+	autosellPaused = 7100102, -- 1 = the auto seller's corpse selling switched off (Auto Seller window)
+	autosellRarity = 7100103, -- the rarities the auto seller sells, packed (autosell_core.lua packTiers; 1 = old opt-in: all)
 	nameChangeTokens = 7100104, -- unused name changes bought in the store
 	vocationChangeTokens = 7100105, -- unused vocation changes bought in the store
 	shopRarityAutoloot = 7100106, -- 1 = Rarity Autoloot unlocked (lootfilter.lua: autoloot by rarity)

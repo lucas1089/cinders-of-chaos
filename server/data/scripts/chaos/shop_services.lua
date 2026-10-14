@@ -153,18 +153,28 @@ end
 
 -- Why the auto seller must keep an item, or nil when it may sell it.
 -- info = {unique = bool, rarity = number, attributes = bool (custom name/description/text/modifiers)}
--- allowRarity = the player opted in with "!autosell rarity on" (uniques are never sold).
-function S.sellBlocked(info, allowRarity)
+-- allow = the player's rarity choice: a table {common, uncommon, rare, epic, legendary = bool} (autosell_core.lua
+-- tiers, the Auto Seller window), or a boolean (true = every rarity). Uniques are never sold; an item with a custom
+-- name, description or text and no rarity is kept ("custom") unless allow is true.
+function S.sellBlocked(info, allow)
 	if info.locked then
-		return "locked" -- the item lock (salvage.lua), whatever the opt-in
+		return "locked" -- the item lock (salvage.lua), whatever the choice
 	end
 	if info.unique then
 		return "unique"
 	end
-	if (info.rarity or 0) > 0 or info.attributes then
-		if not allowRarity then
-			return "rarity"
+	local rarity = tonumber(info.rarity) or 0
+	if rarity > 0 then
+		if allow == true then
+			return nil
 		end
+		if type(allow) == "table" and ChaosAutoSellCore and ChaosAutoSellCore.sells(allow, rarity) then
+			return nil
+		end
+		return "rarity"
+	end
+	if info.attributes and allow ~= true then
+		return type(allow) == "table" and "custom" or "rarity"
 	end
 	return nil
 end
@@ -330,7 +340,7 @@ end
 
 S.unlocks = {
 	-- (lootPouch, the Bottomless Loot Pouch, is retired: storage 7100100 stays reserved, pouches.lua gives its owners a
-	-- Loot Pouch item; the store pouches are the "pouch" service below)
+	-- Loot Bag item; the store pouches are the "pouch" service below)
 	autoSeller = {storage = ST.shopAutoSeller, name = "the Auto Seller",
 		done = "Mark the items to sell in Economy > Auto Seller."},
 	rarityAutoloot = {storage = ST.shopRarityAutoloot, name = "Rarity Autoloot",

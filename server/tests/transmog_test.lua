@@ -339,8 +339,10 @@ local ok, pipe = pcall(io.popen, "find data/monster data/npc data/scripts data/l
 local scanned = 0
 if ok and pipe then
 	for path in pipe:lines() do
-		-- the theme art libs define the themed set pieces (pair 24): the sets' own source
-		if not path:find("transmog", 1, true) and not path:find("chaos_theme_", 1, true) then
+		-- the theme art libs define the themed set pieces (pair 24): the sets' own source; the item price table
+		-- (chaos_item_prices_data.lua, sell_prices.lua) prices every item a monster drops or a recipe makes and gives nothing
+		if not path:find("transmog", 1, true) and not path:find("chaos_theme_", 1, true)
+				and not path:find("item_prices_data", 1, true) and not path:find("sell_prices", 1, true) then
 			scan(path)
 			scanned = scanned + 1
 		end

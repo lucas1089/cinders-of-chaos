@@ -9,7 +9,7 @@ eq(r.list, true, 'list on') eq(r.gold, false, 'only true counts') eq(r.minRarity
 eq(V.normalize(nil).minRarity, 5, 'default rarity')
 eq(V.normalize(nil).overflow, true, 'overflow on when not sent') eq(V.normalize({ overflow = false }).overflow, false, 'overflow off kept')
 eq(r.overflow, true, 'overflow default with other rules') eq(V.normalize({ minRarity = 0 }).minRarity, 1, 'at least 1')
-eq(V.statusText({ loot = true }):find('You have a Loot Pouch') ~= nil, true, 'owned text')
+eq(V.statusText({ loot = true }):find('You have a Loot Bag') ~= nil, true, 'owned text')
 eq(V.statusText({}):find('Store') ~= nil, true, 'not owned: points to the store')
 eq(V.statusText(nil), '', 'no data yet')
 local ids = { loot = 3925, orbs = 3926 }

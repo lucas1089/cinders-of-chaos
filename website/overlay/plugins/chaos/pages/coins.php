@@ -194,7 +194,7 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 		<?php endif; ?>
 
 		<?php if ($settings['first_bonus_pct'] > 0): ?>
-			<p>Your first donation brings <span class="chaos-gold"><?= (int)$settings['first_bonus_pct'] === 100 ? 'double Chaos Coins (+100%)' : '+' . (int)$settings['first_bonus_pct'] . '% extra Chaos Coins' ?></span> as an extra thank-you, once per account (not on the Starter Coins)<?php if ($accountId > 0 && !$state['first']): ?> <span class="chaos-muted">(already used on your account)</span><?php endif; ?>.</p>
+			<p>Your first donation brings <span class="chaos-gold"><?= chaos_h(chaos_coin_first_text((int)$settings['first_bonus_pct'], (int)($settings['first_bonus_max'] ?? 0))) ?></span> as an extra thank-you, once per account (not on the Starter Coins)<?php if ($accountId > 0 && !$state['first']): ?> <span class="chaos-muted">(already used on your account)</span><?php endif; ?>.</p>
 		<?php endif; ?>
 		<?php if ($accountId > 0 && $creatorOn): $support = chaos_creator_support_of($accountId); ?>
 			<form method="post" action="<?= chaos_h($self) ?>" class="chaos-creator-pick" id="chaos-creator-pick">

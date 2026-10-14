@@ -28,6 +28,15 @@ Economy > Orb Exchange is an order book for orbs: orb for gold or orb for orb. F
 - Salvage breaks items down into useful shards.
 - The daily reward follows a week of {{daily.days}} days.
 
+## Selling loot
+
+- A Loot Buyer stands next to every temple. He buys what monsters drop and what crafting makes. He does not buy coins, orbs, tokens, shards, keys, quest items or store items. Ores, herbs, hides and fish go to the Material Broker.
+- His trade window lists only what you carry. Gear with a rarity pays more than the list: Uncommon x{{prices.uncommon}}, Rare x{{prices.rare}}, Epic x{{prices.epic}}, Legendary x{{prices.legendary}}, up to x{{prices.top}} for Transcendent.
+- Every item level adds {{prices.perLevel}}% to gear, up to x{{prices.maxLevel}} at item level 150.
+- Say "appraise" to see what your bags are worth here. Locked items are never sold.
+- No NPC buys uniques. Salvage them or sell them on the market.
+- Every NPC pays the same price for the same item. No NPC sells an item for less than another one pays. The Auto Seller uses the same prices.
+
 ## Runes
 
 No spell makes runes. Buy them from the rune sellers (Raloth in Mirewake and Isora in Cinderhold sell every rune, other magic shops sell some), or craft them at the general crafting tables: unscribed runes from the sellers, herbs and ore pieces you gather, and some gold. A crafted rune costs about half the shop price.

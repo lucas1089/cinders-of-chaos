@@ -1008,6 +1008,8 @@ function chaos_coin_settings(): array {
 	$text = chaos_read_server_file('scripts/chaos/shop_coins_config.lua');
 	return array(
 		'first_bonus_pct' => (int)(chaos_lua_field(chaos_lua_block($text, 'firstPurchase'), 'bonusPct') ?? 0),
+		// the cap of the first-purchase bonus in coins (0 = none): "Limite a 1000"
+		'first_bonus_max' => (int)(chaos_lua_field(chaos_lua_block($text, 'firstPurchase'), 'maxBonus') ?? 0),
 		'currency'        => (string)(preg_match('/\bcurrency\s*=\s*"([^"]*)"/', $text, $m) ? $m[1] : ''),
 	);
 }
@@ -1040,18 +1042,35 @@ function chaos_pay_config(): array {
 		'max_open'        => $int('maxOpenPerAccount', 1),
 		'max_per_hour'    => $int('maxPerHour', 6),
 		'first_bonus_pct' => chaos_coin_settings()['first_bonus_pct'],
+		'first_bonus_max' => chaos_coin_settings()['first_bonus_max'],
 		'methods'         => $methods,
 	);
 }
 
 /** Coins a pack credits (same rule as ChaosShopCore.packCredit in shop_core.lua). */
-function chaos_coin_pack_total(array $pack, bool $first, int $firstPct): int {
+function chaos_coin_pack_total(array $pack, bool $first, int $firstPct, int $firstMax = 0): int {
 	$coins = (int)$pack['coins'];
 	$total = $coins + intdiv($coins * (int)$pack['bonus_pct'], 100) + (int)$pack['bonus_coins'];
 	if ($first && empty($pack['starter'])) {
-		$total += intdiv($coins * $firstPct, 100);
+		$total += chaos_coin_first_bonus($coins, $firstPct, $firstMax);
 	}
 	return $total;
+}
+
+/** The first-purchase bonus of a pack of $coins: $pct % of it, at most $max coins (0 = no cap; ChaosShopCore.packCredit). */
+function chaos_coin_first_bonus(int $coins, int $pct, int $max = 0): int {
+	$bonus = intdiv($coins * $pct, 100);
+	return $max > 0 ? min($bonus, $max) : $bonus;
+}
+
+/** The first donation line of the Donate page and the guides: "double Chaos Coins (+100%, up to 1000 extra)". */
+function chaos_coin_first_text(int $pct, int $max): string {
+	$base = $pct === 100 ? 'double Chaos Coins' : '+' . $pct . '% extra Chaos Coins';
+	$notes = $pct === 100 ? array('+100%') : array();
+	if ($max > 0) {
+		$notes[] = 'up to ' . $max . ' extra';
+	}
+	return $notes ? $base . ' (' . implode(', ', $notes) . ')' : $base;
 }
 
 /** What an account can still get: ['first' => first-purchase bonus open, 'starter' => starter pack open]. */

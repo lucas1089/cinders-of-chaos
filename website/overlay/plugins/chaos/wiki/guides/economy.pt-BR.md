@@ -28,6 +28,15 @@ Economy > Orb Exchange é um livro de ofertas para orbes: orbe por ouro ou orbe 
 - Salvage desmonta itens em fragmentos úteis.
 - A recompensa diária segue uma semana de {{daily.days}} dias.
 
+## Vender o loot
+
+- Um Loot Buyer fica ao lado de cada templo. Ele compra o que os monstros derrubam e o que o crafting faz. Ele não compra moedas, orbes, tokens, fragmentos, chaves, itens de quest nem itens da loja. Minérios, ervas, couros e peixes vão para o Material Broker.
+- A janela de troca dele mostra só o que você carrega. Equipamento com raridade paga mais que a lista: Uncommon x{{prices.uncommon}}, Rare x{{prices.rare}}, Epic x{{prices.epic}}, Legendary x{{prices.legendary}}, até x{{prices.top}} no Transcendent.
+- Cada nível de item soma {{prices.perLevel}}% no equipamento, até x{{prices.maxLevel}} no nível de item 150.
+- Diga "appraise" para ver quanto suas bolsas valem com ele. Itens travados nunca são vendidos.
+- Nenhum NPC compra únicos. Faça salvage deles ou venda no mercado.
+- Todo NPC paga o mesmo preço pelo mesmo item. Nenhum NPC vende um item por menos do que outro paga. O Auto Seller usa os mesmos preços.
+
 ## Runas
 
 Nenhuma magia faz runas. Compre dos vendedores de runas (Raloth em Mirewake e Isora em Cinderhold vendem todas, outras lojas de magia vendem algumas) ou faça nas mesas de crafting geral: runas em branco dos vendedores, ervas e pedaços de minério que você coleta e um pouco de ouro. Uma runa feita custa cerca de metade do preço da loja.

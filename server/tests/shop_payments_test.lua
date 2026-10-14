@@ -258,6 +258,7 @@ eq(r.data.terms, (P.terms()), "refund sentence sent"); eq(r.data.termsPt, select
 eq(#r.data.packs, 7, "seven packs"); eq(r.data.packs[1].prices.pix.text, "R$ 9,95", "entry pack: about R$ 10 by Pix"); eq(r.data.packs[3].prices.pix.text, "R$ 74,95", "Pix price text")
 eq(r.data.packs[3].prices.paypal.cents, 1499, "PayPal price"); eq(r.data.packs[3].total, 1575, "first donation bonus (double) in the preview")
 eq(r.data.packs[3].prices.card, nil, "no third method"); ok(r.status, "balance sent")
+eq(r.data.firstBonusMax, 1000, "the first bonus cap sent to the client"); eq(r.data.packs[7] and r.data.packs[7].key ~= nil, true, "packs listed")
 
 r = ask("pay_create", {pack = "coins750", method = "pix"})
 eq(r.action, "pay_order", "order answer"); eq(r.data.status, "pending", "pending"); eq(r.data.price, "R$ 74,95", "order price")

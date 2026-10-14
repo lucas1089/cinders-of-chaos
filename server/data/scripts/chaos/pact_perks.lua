@@ -1,11 +1,16 @@
 -- Chaos Pact (VIP) perks (pact_config.lua perks; rules pact_perks_core.lua; tests server/tests/pact_perks_test.lua).
 -- The Pact is the server's VIP subscription (pact.lua: days on the account, sold in the store). While it is active:
+--   * +10% experience from monsters (perks.expBonus; EventCallback onGainExperience at perks.expIndex, multiplied like
+--     every Chaos bonus and capped by xpcap.lua at index 85; not for season characters)
+--   * stamina back x1.5 faster (perks.staminaRegen): offline (base regeneratestamina.lua) and on the stamina trainer
+--     tile (base trainer_tile_stamina.lua); tools/patch_base_events.py makes both ask PP.staminaMult / PP.staminaRestMs
 --   * one more loadout slot (loadouts.lua asks ChaosPactPerks.loadoutBonus) and the limits of pact_config.lua (one more
 --     depot tab, two stash tabs, listings, builds, loot rules)
---   * the Auto Seller and Rarity Autoloot work for every character of the account (their storages set to 2; a bought
---     unlock is 1 and is never touched; the store still sells them: S.unlocks owned = storage 1)
+--   * the Auto Seller works for every character of the account (its storage set to 2; a bought unlock is 1 and is
+--     never touched; the store still sells it: S.unlocks owned = storage 1). Rarity Autoloot is no longer lent
+--     (perks.retired, owner 2026-10-13): a lent one (2) is taken back, a bought one stays
 --   * the Pactbound chat colour (taken back when the Pact ends) and the cosmetic of the month (kept for good)
--- No experience bonus. No priority login queue: the engine has no login queue.
+-- No priority login queue: the engine has no login queue.
 -- Applied at login, right after a Pact purchase (ChaosPact.grantDays is wrapped, no edit there) and once a minute for
 -- the characters online (a Pact that ran out). Lua 5.1 / LuaJIT compatible.
 
@@ -40,6 +45,34 @@ function PP.loadoutBonus(player)
 	return K.loadoutBonus(perks(), PP.active(player))
 end
 
+-- a season character (season.lua realm > 0) gets no account-wide boost, as the store's World Experience
+local function seasonal(player)
+	local S = ChaosSeason
+	if not (S and S.realmOf) then
+		return false
+	end
+	local ok, realm = pcall(S.realmOf, player)
+	return ok and (tonumber(realm) or 0) > 0
+end
+
+function PP.expMult(player)
+	if seasonal(player) then
+		return 1
+	end
+	return K.expMult(perks(), PP.active(player))
+end
+
+-- read by the base regeneratestamina.lua (offline time x this) and trainer_tile_stamina.lua (patch_base_events.py)
+function PP.staminaMult(player)
+	local ok, active = pcall(PP.active, player)
+	return K.staminaMult(perks(), ok and active)
+end
+
+function PP.staminaRestMs(player, ms)
+	local ok, active = pcall(PP.active, player)
+	return K.restMs(perks(), ok and active, ms)
+end
+
 local function storageOf(name)
 	local S = ChaosShopServices
 	local u = S and S.unlocks and S.unlocks[name]
@@ -54,10 +87,12 @@ function PP.apply(player)
 	local C = ChaosCosmetics
 	local acc = player:getAccountId()
 	local storages = {}
-	for _, name in ipairs(pk.unlocks or {}) do
-		local st = storageOf(name)
-		if st then
-			storages[name] = player:getStorageValue(st)
+	for _, list in ipairs({pk.unlocks or {}, pk.retired or {}}) do
+		for _, name in ipairs(list) do
+			local st = storageOf(name)
+			if st then
+				storages[name] = player:getStorageValue(st)
+			end
 		end
 	end
 	local monthlyOwned = {}
@@ -86,10 +121,18 @@ function PP.apply(player)
 	return plan
 end
 
--- the store sells an unlock the Pact lends (storage 2) as not owned yet: only a bought one (1) counts
+-- the store sells an unlock the Pact lends (storage 2) as not owned yet: only a bought one (1) counts (also for the
+-- retired ones, until the next apply takes a lent one back)
 function PP.installHooks()
 	local S = ChaosShopServices
-	for _, name in ipairs((perks() or {}).unlocks or {}) do
+	local pk = perks() or {}
+	local names = {}
+	for _, list in ipairs({pk.unlocks or {}, pk.retired or {}}) do
+		for _, name in ipairs(list) do
+			names[#names + 1] = name
+		end
+	end
+	for _, name in ipairs(names) do
 		local u = S and S.unlocks and S.unlocks[name]
 		if u and not u.owned then
 			local st = u.storage
@@ -115,6 +158,21 @@ function PP.installHooks()
 	end
 end
 PP.installHooks()
+
+-- +10% monster experience while active (index perks.expIndex: after World Experience 5 and the blessing 6, before the
+-- experience cap 85)
+local xpCb = EventCallback
+xpCb.onGainExperience = function(self, source, exp, rawExp)
+	if (exp or 0) <= 0 or not source or not source.isMonster or not source:isMonster() then
+		return exp
+	end
+	local ok, mult = pcall(PP.expMult, self)
+	if ok and mult and mult ~= 1 then
+		return math.floor(exp * mult)
+	end
+	return exp
+end
+xpCb:register((perks() or {}).expIndex or 7)
 
 local login = CreatureEvent("ChaosPactPerksLogin")
 function login.onLogin(player)

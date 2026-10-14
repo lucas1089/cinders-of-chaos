@@ -32,17 +32,6 @@ V.PAGES = {
                                                            { text = 'My Frames', id = 'plateframe', param = 'list' },
                                                            { text = 'Title Frame', id = 'plateframe', param = 'off' } } },
     } },
-  { id = 'autoseller', title = 'Auto Seller',
-    text = 'Loot on this list is sold at NPC prices as it drops; the gold goes to your bank. Uniques are never sold.',
-    auto = { 'autosell' },
-    rows = {
-      { label = 'Item name', edit = 'item', buttons = { { text = 'Add', id = 'autosell', param = 'add $' },
-                                                       { text = 'Remove', id = 'autosell', param = 'remove $' } } },
-      { label = 'Selling', buttons = { { text = 'On', id = 'autosell', param = 'on' }, { text = 'Off', id = 'autosell', param = 'off' },
-                                       { text = 'Clear List', id = 'autosell', param = 'clear' } } },
-      { label = 'Rarity items', buttons = { { text = 'Sell Them', id = 'autosell', param = 'rarity on' },
-                                            { text = 'Keep Them', id = 'autosell', param = 'rarity off' } } },
-    } },
   { id = 'house', title = 'House',
     text = 'Stand in front of a house door to buy it. Selling hands your house to another player.',
     rows = {

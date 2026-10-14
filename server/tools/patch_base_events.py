@@ -74,6 +74,15 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    (`getAccountType() == ACCOUNT_TYPE_NORMAL` -> return false, no message) and wrote text files under data/reports/bugs/
    that nobody reads; it still runs when reports.lua is missing.
 
+13. data/creaturescripts/scripts/regeneratestamina.lua: offline stamina regeneration (one minute per 3 minutes offline,
+   one per 10 above 40 hours) goes x1.5 faster while the Chaos Pact is active (owner 2026-10-13, "restaura stamina mais
+   rapido"): the offline time past the 10 minute grace is multiplied by ChaosPactPerks.staminaMult(player)
+   (data/scripts/chaos/pact_perks.lua, pact_config.lua perks.staminaRegen). Without that script the time is unchanged.
+
+14. data/scripts/customs/actions/trainer_tile_stamina.lua: the stamina trainer tile gives one stamina minute every
+   120 s; while the Pact is active every ChaosPactPerks.staminaRestMs(player, 120000) ms instead (80 s at x1.5). Without
+   that script the 120 s stay.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -430,6 +439,44 @@ def patch_report_bug(text):
     return text[:m.end()] + block + text[m.end():], 'patched'
 
 
+STAMINA_MARKER = '-- Chaos: the Chaos Pact regenerates stamina faster (patch_base_events.py)'
+STAMINA_RE = re.compile(r'^([ \t]*)offlineTime = offlineTime - 600[ \t]*(\r?\n)', re.M)
+
+
+def patch_offline_stamina(text):
+    if STAMINA_MARKER in text:
+        return text, 'already'
+    m = STAMINA_RE.search(text)
+    if not m:
+        return text, 'unexpected regeneratestamina.lua ("offlineTime = offlineTime - 600" not found)'
+    ind, nl = m.group(1), m.group(2)
+    block = (ind + STAMINA_MARKER + nl
+             + ind + 'if offlineTime > 0 and ChaosPactPerks and ChaosPactPerks.staminaMult then' + nl
+             + ind + '\tofflineTime = offlineTime * ChaosPactPerks.staminaMult(player)' + nl
+             + ind + 'end' + nl)
+    return text[:m.end()] + block + text[m.end():], 'patched'
+
+
+TRAINER_MARKER = '-- Chaos: the Chaos Pact rests stamina faster on the trainer tile (patch_base_events.py)'
+TRAINER_RE = re.compile(r'^([ \t]*)addEvent\(Stamina, 120000, playerId, seconds - 1\)[ \t]*(\r?\n)', re.M)
+
+
+def patch_trainer_stamina(text):
+    if TRAINER_MARKER in text:
+        return text, 'already'
+    m = TRAINER_RE.search(text)
+    if not m:
+        return text, 'unexpected trainer_tile_stamina.lua ("addEvent(Stamina, 120000, playerId, seconds - 1)" not found)'
+    ind, nl = m.group(1), m.group(2)
+    block = (ind + TRAINER_MARKER + nl
+             + ind + 'local restMs = 120000' + nl
+             + ind + 'if ChaosPactPerks and ChaosPactPerks.staminaRestMs then' + nl
+             + ind + '    restMs = ChaosPactPerks.staminaRestMs(player, 120000)' + nl
+             + ind + 'end' + nl
+             + ind + 'addEvent(Stamina, restMs, playerId, seconds - 1)' + nl)
+    return text[:m.start()] + block + text[m.end():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -463,6 +510,10 @@ def main():
     ok = apply(os.path.join(args[0], 'scripts', 'customs', 'rarity', 'rarity_onCombat_elementdamage.lua'),
                patch_rarity_elements, dry) and ok
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch_report_bug, dry) and ok
+    ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'regeneratestamina.lua'),
+               patch_offline_stamina, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'customs', 'actions', 'trainer_tile_stamina.lua'),
+               patch_trainer_stamina, dry) and ok
     return 0 if ok else 1
 
 

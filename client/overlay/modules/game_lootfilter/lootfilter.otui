@@ -495,8 +495,8 @@ ChaosMainWindow
     anchors.bottom: parent.bottom
     margin-right: 8
     size: 96 24
-    !text: tr('Loot Pouch')
-    !tooltip: tr('What your Loot Pouch (a store item) collects from your kills')
+    !text: tr('Loot Bag')
+    !tooltip: tr('What your Loot Bag (a store item) collects from your kills')
     @onClick: if modules.game_pouches then modules.game_pouches.toggleSettings() end
 
   ChaosLabelDim

@@ -1,0 +1,35 @@
+# Overrides of the item price table (server/tools/gen_item_prices.py, server/README.md "Item prices").
+# category: currency | key | quest | store | bound | broker (never sold to an NPC) or equip | material | supply | food
+# (sellable; empty = keep the category the table found). price: a fixed gold price for a plain copy (empty = the rules).
+# Quest items: base server items a quest needs, dropped by its boss (by id: the base names are not ours).
+id,category,price,note
+2320,quest,,quest item (base quest boss drop)
+2348,quest,,quest item (base quest boss drop)
+2349,quest,,quest item (base quest boss drop)
+2350,quest,,quest item (base quest boss drop)
+2351,quest,,quest item (base quest boss drop)
+2352,quest,,quest item (base quest boss drop)
+2353,quest,,quest item (base quest boss drop)
+2354,quest,,quest item (base quest boss drop)
+2597,quest,,quest letter
+5091,quest,,treasure map (quest)
+6099,quest,,quest item (base quest boss drop)
+6100,quest,,quest item (base quest boss drop)
+6102,quest,,quest item (base quest boss drop)
+7290,quest,,quest item (base quest boss drop)
+7699,quest,,quest item (base quest boss drop)
+8710,quest,,quest item (base quest boss drop)
+9735,quest,,quest item (base quest boss drop)
+14903,quest,,quest item (base quest boss drop)
+22396,quest,,quest item (base quest boss drop)
+22397,quest,,quest item (base quest boss drop)
+22598,quest,,quest item (base quest boss drop)
+25427,quest,,quest scroll
+25521,quest,,quest scroll
+26165,quest,,quest item (base quest boss drop)
+27188,quest,,quest ticket
+29619,currency,,base upgrade rune (upgrade system currency)
+29620,currency,,base upgrade rune (upgrade system currency)
+29621,currency,,base upgrade rune (upgrade system currency)
+29622,currency,,base upgrade rune (upgrade system currency)
+29623,currency,,base upgrade and rarity remover (upgrade system currency)

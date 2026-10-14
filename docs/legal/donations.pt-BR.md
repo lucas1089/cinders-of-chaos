@@ -36,7 +36,7 @@ escrever para [E-MAIL DE CONTATO] com o número da doação.
 | Vault of Coins | 13000 | [PREÇO EM R$] | [PREÇO EM US$] |
 | Starter Coins, uma vez por conta | 500 | [PREÇO EM R$] | [PREÇO EM US$] |
 
-- A primeira doação de cada conta traz 100% a mais de Chaos Coins (o dobro), exceto no pacote Starter Coins.
+- A primeira doação de cada conta traz 100% a mais de Chaos Coins (o dobro), até 1000 Chaos Coins a mais (um pacote de mais de 1000 coins recebe 1000 a mais), exceto no pacote Starter Coins.
 - O pagamento é feito pelo Mercado Pago ou pelo PayPal, conforme os termos deles. Nós não recebemos nem guardamos dados
   de cartão, de conta bancária ou o seu login do PayPal.
 

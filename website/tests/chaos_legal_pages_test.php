@@ -114,6 +114,7 @@ foreach (chaos_coin_packs() as $p) {
 }
 $coinCfg = chaos_coin_settings();
 check(strpos($donPt, $coinCfg['first_bonus_pct'] . '% a mais') !== false && strpos($donEn, $coinCfg['first_bonus_pct'] . '% more') !== false, 'first donation bonus from the config');
+check(strpos($donPt, 'até ' . $coinCfg['first_bonus_max'] . ' Chaos Coins a mais') !== false && strpos($donEn, 'up to ' . $coinCfg['first_bonus_max'] . ' extra Chaos Coins') !== false, 'the cap of the first donation bonus from the config');
 $pay = chaos_pay_config();
 check(strpos($donPt, $pay['expire_minutes'] . ' minutos') !== false && strpos($donPt, 'até ' . $pay['max_per_hour'] . ' por hora') !== false, 'expiry and hourly limit from the config');
 

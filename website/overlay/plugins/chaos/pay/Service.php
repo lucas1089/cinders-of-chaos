@@ -193,6 +193,9 @@ final class ChaosPayService {
 		$coins = (int)$pack['coins'];
 		$bonus = intdiv($coins * (int)$pack['bonus_pct'], 100) + (int)$pack['bonus_coins'];
 		$first = (empty($pack['starter']) && $this->credited($accountId, false) === 0) ? intdiv($coins * (int)($this->pay['first_bonus_pct'] ?? 0), 100) : 0;
+		if ((int)($this->pay['first_bonus_max'] ?? 0) > 0) {
+			$first = min($first, (int)$this->pay['first_bonus_max']); // "Limite a 1000" (ChaosShopCore.packCredit)
+		}
 		$token = sprintf('coc-%d-%d-%s', $accountId, $now, bin2hex(random_bytes(6)));
 		$currency = (string)$this->pay['methods'][$method]['currency'];
 		$this->db->begin();

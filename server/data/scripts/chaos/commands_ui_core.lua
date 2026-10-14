@@ -48,7 +48,7 @@ K.BASE = {
 }
 
 -- Commands whose param is free text typed in the window (the others take none or a fixed choice).
-K.PARAM = {changename = 64, changevocation = 32, ascend = 32, autosell = 80, sellhouse = 40, ancestralstore = 12,
+K.PARAM = {changename = 64, changevocation = 32, ascend = 32, sellhouse = 40, ancestralstore = 12,
 	deathlist = 30, plateframe = 16} -- plateframe: a frame name (shop.lua; without it the frame buttons did nothing)
 -- Commands that take a character name and mean the player's own when none is given.
 K.SELF = {deathlist = true}
