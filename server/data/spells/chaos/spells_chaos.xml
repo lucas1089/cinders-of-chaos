@@ -384,7 +384,7 @@
 		<vocation name="Iron Sage" />
 	</instant>
 	<!-- templar (Templar, and its ascended classes Inquisitor and Sentinel) -->
-	<instant group="attack" spellid="189" name="Radiant Smite" words="kah sol dyr" level="20" mana="60" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="4000" groupcooldown="2000" needlearn="0" script="chaos/templar/radiant_smite.lua">
+	<instant group="attack" spellid="189" name="Radiant Smite" words="kah sol dyr" level="20" mana="60" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="2000" groupcooldown="2000" needlearn="0" script="chaos/templar/radiant_smite.lua">
 		<vocation name="Templar" />
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />

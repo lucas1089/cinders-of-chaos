@@ -69,7 +69,7 @@ eq(info['Shadow Veil'].id, 238, 'Shadow Veil keeps 238')
 eq(info['Bog Splatter'].id, 172, 'swap 174 -> 172')
 eq(info['Arcane Stitch'].id, 174, 'swap 172 -> 174')
 eq(info['Sunder Guard'].id, 171, 'Sunder Guard 171')
-eq(info['Sunder Guard'].group[1], 12000, 'Sunder Guard in the attack group')
+eq(info['Sunder Guard'].group[1], 2000, 'Sunder Guard in the attack group, 2 s (rotation pass)')
 eq(info['Sunder Guard'].group[3], nil, 'not in the support group')
 eq(info['Radiant Shard'].id, 34, 'Radiant Shard 34 (server patch_spell_ids.py)')
 eq(info['Radiant Shard'].level, 300, 'Radiant Shard level 300')
@@ -161,6 +161,36 @@ F.remapHelper(rd, rmap, rids)
 eq(table.concat(rd.getSpellFilterByVocation()[1], ','), '61', 'removed spell out of the helper list')
 F.restore(rundo)
 eq(rinfo['Hexdart Rune'].notOnServer, nil, 'restore removed flag')
+
+-- the base spells the client had no entry for (F.EXTRA) carry the installed server's numbers
+-- (server/data/spells/stock_spells.csv, written from an installed server by server/tools/rotation_sim.py)
+local VOC = { Mystic = 1, Elementalist = 5, Illusionist = 10 }
+local csvPath = dir .. '../../../../server/data/spells/stock_spells.csv'
+local fh = io.open(csvPath, 'r')
+eq(fh ~= nil, true, 'stock_spells.csv found')
+if fh then
+  local rows = {}
+  for line in fh:lines() do
+    local f = {}
+    for v in (line .. ','):gmatch('([^,]*),') do f[#f + 1] = v end
+    rows[tonumber(f[1]) or -1] = f
+  end
+  fh:close()
+  for _, e in ipairs(F.EXTRA) do
+    local r = rows[e.id]
+    eq(r ~= nil, true, e.name .. ' is a server spell')
+    if r then
+      eq(r[2], e.name, e.name .. ' name'); eq(r[3], e.words, e.name .. ' words')
+      eq(tonumber(r[5]), e.level, e.name .. ' level'); eq(tonumber(r[6]), e.mana, e.name .. ' mana')
+      eq(tonumber(r[7]), e.cooldown, e.name .. ' cooldown'); eq(tonumber(r[8]), e.groupCooldown, e.name .. ' group cooldown')
+      local v = {}
+      for name in r[12]:gmatch('[^;]+') do v[#v + 1] = VOC[name] or -1 end
+      eq(table.concat(v, ','), table.concat(e.vocations, ','), e.name .. ' vocations')
+    end
+    eq(chaosIds[e.id], nil, e.name .. ': not a Chaos spell id')
+    eq(seen[e.id], nil, e.name .. ': id not used by a fixed stock entry')
+  end
+end
 
 if fails > 0 then os.exit(1) end
 print('spell fix tests OK')

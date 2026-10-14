@@ -1,8 +1,10 @@
 Module
   name: game_helperrotation
-  description: The helper's cast bookkeeping (ChaosHelperRotation; used by mods/game_helper through base patch 0052)
+  description: The helper's cast bookkeeping (ChaosHelperRotation; used by mods/game_helper through base patch 0052) and its Auto rotation button (ChaosAutoRotation)
   author: Cinders of Chaos
   sandboxed: false
   autoload: true
   autoload-priority: 100
-  scripts: [ rotation ]
+  scripts: [ rotation, autorotation_data, autorotation, autorotation_ui ]
+  @onLoad: ChaosAutoRotationUI.init()
+  @onUnload: ChaosAutoRotationUI.terminate()

@@ -186,11 +186,36 @@ function R.confirmGroup(st, group, now)
   end
 end
 
--- a spell the client can tell it cannot cast: level and mana (the server's numbers, game_chaosspells/spellfix.lua) and
--- the entries of spells the server does not have
-function R.castable(spell, level, mana)
+-- the Monk line's finishers spend all chi and the server refuses them without any (game_monkchi tells the chi): the
+-- attack finishers wait for 4 (the measured rotation, server/tools/rotation_sim.py), Kindled Breath and Chi Ward for 1.
+-- A refused finisher cost the next spell a confirm window (about 0.3 s over the 2 s rhythm, rotation live check).
+R.FINISHER_CHI = { [64] = 4, [65] = 4, [69] = 4, [71] = 4, [66] = 1, [70] = 1 }
+
+function R.currentChi()
+  local m = modules and modules.game_monkchi
+  if m and m.currentChi then
+    local ok, chi = pcall(m.currentChi)
+    if ok then
+      return chi
+    end
+  end
+  return nil
+end
+
+-- a spell the client can tell it cannot cast: level and mana (the server's numbers, game_chaosspells/spellfix.lua), the
+-- entries of spells the server does not have and a Monk finisher without its chi (chi: the known chi, nil = unknown)
+function R.castable(spell, level, mana, chi)
   if not spell or spell.notOnServer then
     return false
+  end
+  local chiNeed = spell.id and R.FINISHER_CHI[spell.id]
+  if chiNeed then
+    if chi == nil then
+      chi = R.currentChi()
+    end
+    if chi ~= nil and chi < chiNeed then
+      return false
+    end
   end
   local need = tonumber(spell.level) or 0
   if need > 0 and level and level > 0 and level < need then

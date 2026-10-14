@@ -63,6 +63,12 @@ M.cfg = {
 	-- never triggers itself.
 	radiant = {share = {[23] = 0.15, [24] = 0.25, [25] = 0.10}, delayMs = 120},
 
+	-- Radiant Smite (spell): its damage x scale by vocation. The rotation pass (2026-10-14, server/data/spells/README.md
+	-- "Rotations") took its cooldown from 4 s to 2 s so the line always has an attack spell ready; the scale keeps
+	-- each class's spell damage where it was (computed with server/tools/rotation_sim.py). early: below that level the
+	-- Inquisitor has no Purging Nova yet, so Radiant Smite takes more of its turns.
+	radiantSmite = {scale = {[23] = 0.56, [24] = 0.69, [25] = 0.56}, early = {[24] = {below = 120, scale = 0.55}}},
+
 	-- ------------------------------------------------------------------ Inquisitor
 	-- Judgement (spell): the target takes `bonus` more holy damage from every source (the party's too) for durationMs
 	judgement = {durationMs = 8000, bonus = 0.20},
@@ -245,6 +251,16 @@ function M.regenAmount(health, maxHealth, aura)
 	end
 	local amount = math.max(1, math.floor(maxHealth * aura.regenPct + 0.5))
 	return math.min(amount, maxHealth - health)
+end
+
+-- Radiant Smite's damage scale for a vocation at a level (cfg.radiantSmite; 1 for a vocation it does not list)
+function M.smiteScale(vocId, level)
+	local c = cfg().radiantSmite
+	local early = c.early and c.early[vocId]
+	if early and level and level < early.below then
+		return early.scale
+	end
+	return c.scale[vocId] or 1
 end
 
 -- ------------------------------------------------------------------------------------------------ weapon hits

@@ -26,7 +26,8 @@ F.STOCK = {
   ["saen gal kin"] = { id = 101, level = 300 },                     -- Heartwood Embrace (client 242)
   ["saen ama brak"] = { id = 102 },                                 -- Iron Salve (239)
   ["saen zar ael"] = { id = 103 },                                  -- Rebirth of Flesh (241)
-  ["kah gro"] = { id = 171, group = { [1] = 12000 }, vocations = { 1, 5 } }, -- Sunder Guard (243; server 106 -> 171)
+  ["kah gro"] = { id = 171, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Sunder Guard (243; server 106 -> 171;
+                                                                    -- attack group 2 s, server patch_spell_timings.py)
   ["drai gal pyr ul"] = { id = 163 },                               -- Pyre Torrent (240)
   ["kah tin gor"] = { id = 172 },                                   -- Bog Splatter (174)
   ["saen tin"] = { id = 174 },                                      -- Arcane Stitch (172)
@@ -60,6 +61,26 @@ F.STOCK = {
   ["drai hyr ul"] = { exhaustion = 4000 },                          -- Glacier Fan
   ["drai nov pyr ul"] = { exhaustion = 4000 },                      -- Novice's Cinders
   ["drai tin pyr ul"] = { exhaustion = 4000 },                      -- Searing Gust
+}
+
+-- base server spells the client's table has no entry for (the base server's own Illusionist spells, scripts
+-- custom/illusionist_class/): without one the helper and the action bar cannot cast them. game_chaosspells adds them like
+-- the Chaos spells; the numbers are the installed server's (server/data/spells/stock_spells.csv, checked by
+-- spellfix_test.lua), the icon a stock spell's cell (icon = client icon cell). Found by the rotation live check
+-- (2026-10-14): the Auto rotation of a Mystic picked Bewitching Hex and Arcane Ripple and the helper had no entry.
+F.EXTRA = {
+  { id = 168, name = "Riftbolt", words = "kah ath", level = 12, mana = 20, cooldown = 2000, groupCooldown = 2000,
+    needTarget = false, range = 3, vocations = { 1, 5, 10 }, icon = 29 },
+  { id = 52, name = "Crossfire Hex", words = "drai xir", level = 38, mana = 140, cooldown = 4000, groupCooldown = 2000,
+    needTarget = false, range = 0, vocations = { 1, 10 }, icon = 54 },
+  { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 40, mana = 175, cooldown = 4000, groupCooldown = 2000,
+    needTarget = true, range = 4, vocations = { 1, 10 }, icon = 43 },
+  { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 75, cooldown = 4000, groupCooldown = 2000,
+    needTarget = true, range = 4, vocations = { 1, 10 }, icon = 56 },
+  { id = 47, name = "Fading Step", words = "drai gal vas ylth", level = 100, mana = 1350, cooldown = 40000,
+    groupCooldown = 4000, needTarget = false, range = 0, vocations = { 1, 10 }, icon = 50 },
+  { id = 165, name = "Gravity Snare", words = "rhut mur", level = 150, mana = 370, cooldown = 8000, groupCooldown = 2000,
+    needTarget = false, range = 0, vocations = { 1, 10 }, icon = 41 },
 }
 
 -- rune item (client id) -> the server's group (1 attack, 2 healing, 3 support)

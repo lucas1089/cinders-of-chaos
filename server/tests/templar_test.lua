@@ -100,6 +100,11 @@ eq(T.regenAmount(100, 200, {reduction = 0.06, regenPct = 0}), 0, "the Templar's 
 eq(T.radiantDamage(TEMPLAR, 1000, false), 150); eq(T.radiantDamage(INQ, -1000, false), 250)
 eq(T.radiantDamage(SENT, 1000, true), 200, "against players from the unhalved hit")
 eq(T.radiantDamage(4, 1000, false), 0); eq(T.radiantDamage(TEMPLAR, 0, false), 0)
+-- Radiant Smite: cooldown 2 s since the rotation pass, damage x the class scale (tools/rotation_sim.py keeps each
+-- class's spell damage where it was with 4 s)
+eq(T.smiteScale(TEMPLAR, 300), 0.56); eq(T.smiteScale(INQ, 300), 0.69); eq(T.smiteScale(SENT, 300), 0.56)
+eq(T.smiteScale(4, 300), 1); eq(T.smiteScale(INQ, 119), 0.55, "no Purging Nova yet"); eq(T.smiteScale(INQ, 120), 0.69)
+eq(T.smiteScale(TEMPLAR, 50), 0.56)
 near(T.judgementFactor(true, true), 1.2); near(T.judgementFactor(false, true), 1); near(T.judgementFactor(true, false), 1)
 
 T.zeal = {}

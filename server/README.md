@@ -362,7 +362,8 @@ server/
    names. See "Base NPC names", "Base world texts" and "Base houses".
 5l3. The base server's own name: `python3 -I server/tools/patch_base_server_name.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `servername`, after `worldtexts`): the welcome text over the first temple and a
-   console banner. The status protocol's name is engine patch 0030. See "Server name".
+   console banner, and `serverName` in `config.lua` while it is still the base value. The status protocol's name is
+   engine patch 0030. See "Server name".
 5m. Spawns: `python3 -I server/tools/patch_base_spawns.py <server>/data [--dry-run] [--remove] [--report]` (idempotent;
    `install_all.py` step `spawns`, after `monsters`) fixes the dead monster registrations, the glitched spawntimes and the
    spawns on blocking tiles, shortens the 300-600 band's respawn and adds spawns in thin areas, all from
@@ -1179,8 +1180,22 @@ Sunder Guard 171 (Earthrend keeps 106). Three base scripts also start their own 
 id (`divine_grenade.lua`, `executioners_throw.lua`, `divine_empowerment.lua`); that number changes with it. Idempotent;
 refuses when a new id is taken. The client's spell table uses the same ids (`client/overlay/modules/game_chaosspells/
 spellfix.lua`). Run on the test server: 16 ids and 3 sub ids changed, a second run changed nothing, Radiant Shard came
-back as spell 34 with its 26 s cooldown in the client. Not changed (balance, owner's call): Sunder Guard's attack group
-cooldown is 12 s (base data), so a Mystic who casts it has no attack spell for 12 s.
+back as spell 34 with its 26 s cooldown in the client. Sunder Guard's attack group cooldown was 12 s (base data), so a
+Mystic who cast it had no attack spell for 12 s; 2 s since the rotation pass ("Spell timings" below).
+
+## Spell timings (`tools/patch_spell_timings.py`, install step `spells`)
+
+The rotation pass (2026-10-14, owner: "Faça todas as classes terem até 5 magias na rotação e nunca ficarem 2s sem uma";
+`data/spells/README.md` "Rotations"). `patch_spell_timings.py DATA_DIR [--dry-run]` (run by the `spells` step after
+`rename_spells.py`) sets the cooldown, group cooldown and secondary group of base spells from
+`data/spells/spell_timings.csv`; each row names its spell by script, an empty cell leaves the attribute alone, the Chaos
+block is never touched. Idempotent; refuses when a script of the csv is missing. One row today: Sunder Guard's attack
+group cooldown 12 s -> 2 s (the 12 s above is gone). The client knows it (`game_chaosspells/spellfix.lua`).
+`tools/rotation_sim.py` reads the installed stock numbers from `data/spells/stock_spells.csv` (`rotation_sim.py
+--export-stock SERVER_DIR` after an install) and checks in CI that every class and ascension has a rotation of at most 5
+attack spells with no window over 2 s at levels 100 / 300 / 600 / 1000 (`tools/rotation_sim_test.py`). Assumption: the
+4 s attack group cooldowns of the supreme strikes and the big stock area spells stay (balance); the rotations leave
+those spells out.
 
 ## Engine: decay manager, hardening, spell events (`src-patches/0006`, `0007`, `0008`)
 
@@ -4773,8 +4788,15 @@ The base server still told players and server lists the name of the server it ca
   the order of the steps does not matter and a tree installed before this change gets the same text. A second run
   changes nothing ("already done"); a file with neither the old string nor the new text is reported (exit 1).
   `tests/base_server_name_patch_test.lua` runs it on made-up strings.
-- **config.lua**: `serverName` (the character list, the status `servername`, `znote_global_storage`), `motd`, `url`,
-  `location` and the owner come from `tools/prod_config.py`; the base values stay on a server it was not run on.
+- **config.lua `serverName`** (the world name of the character list, so the client's corner label, highscores and
+  console tabs; the status `servername`; `znote_global_storage`): the same step sets it to "Cinders of Chaos" while it
+  still holds the base server's value, so a test server installed with `install_all.py` alone shows our world name.
+  The rows with file `config.lua` hash the base values (no old text in the repository); only the value of the
+  `serverName = "..."` line is checked, nothing else in `config.lua`. Any other value (an owner's own name, the line
+  `tools/prod_config.py --name` wrote) stays ("left as it is", exit 0); a second run says "already done"; `--dry-run`
+  writes nothing; a `config.lua` without the line is reported (exit 1).
+- **config.lua, the rest**: `motd`, `url`, `location` and the owner come from `tools/prod_config.py`; the base values
+  stay on a server it was not run on.
 
 Checked on a fresh base tree with every install step: no other old server name in the data, the scripts or the SQL
 files. Left as they are (not shown to players): the Windows build files of the base (`vc17/`, the `.bat` restarters

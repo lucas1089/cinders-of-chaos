@@ -82,6 +82,11 @@ jobs:
           python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
 
+      - name: Rotations of at most 5 spells, never 2 s without one (rotation_sim.py; the helper's auto rotation data)
+        run: |
+          python3 -I server/tools/rotation_sim_test.py
+          python3 -I server/tools/rotation_sim.py --check
+
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 

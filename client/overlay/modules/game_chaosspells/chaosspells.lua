@@ -248,6 +248,22 @@ function init()
     end
     added[#added + 1] = s.name
   end
+  -- base server spells the client has no entry for (spellfix.lua F.EXTRA)
+  for _, s in ipairs(ChaosSpellFix.EXTRA) do
+    if not SpellInfo.Default[s.name] then
+      local key = 'chaos_base_' .. s.id
+      SpellInfo.Default[s.name] = {
+        id = s.id, name = s.name, words = s.words, type = 'Instant', level = s.level, mana = s.mana, soul = 0,
+        icon = key, group = { [1] = s.groupCooldown }, needTarget = s.needTarget, parameter = false, range = s.range,
+        exhaustion = s.cooldown, premium = true, vocations = s.vocations
+      }
+      SpellIcons[key] = { s.icon, s.id }
+      if order then
+        table.insert(order, s.name)
+      end
+      added[#added + 1] = s.name
+    end
+  end
   if g_game.isOnline() then
     onGameStartMana()
   end

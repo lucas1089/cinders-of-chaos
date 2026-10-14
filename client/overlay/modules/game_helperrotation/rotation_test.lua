@@ -58,6 +58,13 @@ eq(R.blocked(slow, 6, { [1] = 2000 }, 1200), nil, 'hold ends at 1.2 s')
 -- castable: level, mana, spells the server does not have
 ok(R.castable({ level = 300, mana = 160 }, 300, 160), 'level and mana met')
 eq(R.castable({ level = 300, mana = 160 }, 299, 5000), false, 'level too low')
+-- a Monk finisher waits for its chi (game_monkchi); unknown chi (no HUD state) does not block
+eq(R.castable({ id = 64, level = 30, mana = 80 }, 300, 5000, 3), false, 'Sundering Palm at 3 chi waits')
+eq(R.castable({ id = 64, level = 30, mana = 80 }, 300, 5000, 4), true, 'Sundering Palm at 4 chi')
+eq(R.castable({ id = 66, level = 40, mana = 100 }, 300, 5000, 1), true, 'Kindled Breath at 1 chi')
+eq(R.castable({ id = 66, level = 40, mana = 100 }, 300, 5000, 0), false, 'Kindled Breath without chi')
+eq(R.castable({ id = 64, level = 30, mana = 80 }, 300, 5000), true, 'chi unknown: the server decides')
+eq(R.castable({ id = 63, level = 15, mana = 30 }, 300, 5000, 0), true, 'Ashen Fist needs no chi')
 eq(R.castable({ level = 30, mana = 160 }, 400, 159), false, 'mana too low')
 eq(R.castable({ level = 1, mana = 0, notOnServer = true }, 400, 100), false, 'not on the server')
 ok(R.castable({ level = 30, mana = 10 }, 0, 100), 'level unknown')
