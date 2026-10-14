@@ -359,7 +359,9 @@ local function monsterLevel(monster)
 			end
 		end
 	end
-	local lvl = poolLevels[monster:getName():lower()]
+	-- by type: a renamed monster (rift name, invader, named boss) keeps its type's level
+	local typeName = Chaos.monsterTypeName and Chaos.monsterTypeName(monster) or monster:getName()
+	local lvl = poolLevels[tostring(typeName):lower()]
 	if lvl then
 		return lvl
 	end

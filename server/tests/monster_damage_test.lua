@@ -319,6 +319,56 @@ for _, n in ipairs(names) do
 	end
 end
 
+-- ---------------------------------------------------------------- level cache (pace: ~100k monsters alive)
+do
+	-- 12000 monsters that keep hitting: every level is looked up once, the second round comes from the cache
+	local calls = 0
+	local realLevel = ChaosLoot.monsterLevel
+	ChaosLoot.monsterLevel = function(m) calls = calls + 1 return realLevel(m) end
+	local herd = {}
+	for i = 1, 12000 do
+		herd[i] = monster(200 + i % 400)
+	end
+	for _, m in ipairs(herd) do
+		MD.levelOf(m)
+	end
+	eq(calls, 12000, "first round: each level computed once")
+	calls = 0
+	local wrong = 0
+	for _, m in ipairs(herd) do
+		if MD.levelOf(m) ~= m.mlevel then
+			wrong = wrong + 1
+		end
+	end
+	eq(wrong, 0, "cached levels")
+	eq(calls, 0, "second round: no recompute (the cache does not clear under 12000 live monsters)")
+	ChaosLoot.monsterLevel = realLevel
+	ok((cfg.levelCacheSize or 0) >= 20000, "level cache holds 20000+ monsters per generation")
+
+	-- the core cache: bounded, and an entry in use survives the turnover
+	local cache = C.newCache(100)
+	for i = 1, 100 do
+		cache.put(i, i)
+	end
+	cache.put(101, 101) -- turnover: 1..100 become the old generation
+	eq(cache.get(5), 5, "old generation still found")
+	for i = 102, 300 do
+		cache.put(i, i)
+	end
+	eq(cache.get(1), nil, "two turnovers later: dropped")
+	ok(cache.size() <= 200, "at most 2 x cap entries: " .. cache.size())
+	local hot, lost = C.newCache(50), 0
+	hot.put(7, 7)
+	for i = 1, 10000 do
+		hot.put(1000000 + i, i) -- a stream of new monsters
+		if hot.get(7) ~= 7 then
+			lost = lost + 1
+		end
+	end
+	eq(lost, 0, "a monster that keeps fighting stays cached")
+	ok(hot.size() <= 100, "bounded under a stream of new monsters")
+end
+
 print(string.format("monster_damage_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

@@ -19,8 +19,11 @@ end
 -- ---------------------------------------------------------------- engine mock
 Chaos = {}
 MAX_LOOTCHANCE = 100000
-local registered
-EventCallback = setmetatable({register = function(self, index) registered = index end}, {__newindex = rawset})
+local registered, dropSteps = nil, {}
+EventCallback = setmetatable({register = function(self, index)
+	registered = registered or index
+	dropSteps[#dropSteps + 1] = {index = index, fn = self.onDropLoot}
+end}, {__newindex = rawset})
 function ItemType(id)
 	return {isStackable = function() return id ~= 2400 end, getName = function() return "item " .. id end}
 end
@@ -177,6 +180,47 @@ do
 	ok(L.thinCorpse(corpse, 1) == 0, "pace: factor 1 changes nothing")
 	L.isStackableId = savedS
 	L.setRandom(nil)
+end
+
+-- ---------------------------------------------------------------- pace: a corpse the autoloot empties decays fast too
+do
+	ITEM_ATTRIBUTE_DURATION = ITEM_ATTRIBUTE_DURATION or 9
+	ChaosPaceConfig = {enabled = true, emptyCorpseSeconds = 30}
+	local pacedMonster = {getId = function() return 5 end}
+	local stockMonster = {getId = function() return 6 end}
+	ChaosPace = {isPaced = function(m) return m == pacedMonster end}
+	local function corpseOf(n)
+		local c = {items = n, duration = nil, decays = 0}
+		function c:getSize() return self.items end
+		function c:setAttribute(k, v) if k == ITEM_ATTRIBUTE_DURATION then self.duration = v end end
+		function c:decay() self.decays = self.decays + 1 end
+		return c
+	end
+	-- the steps after the loot layer (index > priority) that run after every autoloot (3.5) and the filter finish (4.5)
+	local late
+	for _, s in ipairs(dropSteps) do
+		if s.fn and s.index > 4.5 then
+			late = s.fn
+		end
+	end
+	ok(late ~= nil, "an empty corpse check runs after the autoloot steps")
+	if late then
+		-- the autoloot (Loot Bag, base autoloot) took the last item: empty at the end of the drop
+		local looted = corpseOf(0)
+		late(pacedMonster, looted)
+		ok(looted.duration == 30000 and looted.decays == 1, "emptied by autoloot: short decay")
+		local left = corpseOf(2)
+		late(pacedMonster, left)
+		ok(left.duration == nil and left.decays == 0, "items left in it: stock decay")
+		local stock = corpseOf(0)
+		late(stockMonster, stock)
+		ok(stock.duration == nil, "not paced: stock decay")
+		ChaosPaceConfig.emptyCorpseSeconds = 0
+		local off = corpseOf(0)
+		late(pacedMonster, off)
+		ok(off.duration == nil, "emptyCorpseSeconds 0: stock decay")
+	end
+	ChaosPace, ChaosPaceConfig = nil, nil
 end
 
 print(string.format("loot_caps_test: %d checks, %d failures", checks, fails))

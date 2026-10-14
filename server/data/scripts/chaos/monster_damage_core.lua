@@ -95,4 +95,43 @@ function C.scalePace(k, mult, primary, primaryType, secondary, secondaryType)
 	return scaled(primary, primaryType), scaled(secondary, secondaryType)
 end
 
+-- a bounded key -> value cache in two generations: lookups hit the new one, then the old one (and move the entry up);
+-- when the new one holds `cap` entries it becomes the old one and the previous old one is dropped. Memory stays below
+-- 2 x cap entries, and an entry still in use survives the turnover (no full clear that drops every live monster at
+-- once, which thrashed with pack combat's ~100k monsters alive).
+function C.newCache(cap)
+	cap = math.max(1, math.floor(tonumber(cap) or 32768))
+	local cur, old, size = {}, {}, 0
+	local cache = {}
+	function cache.get(key)
+		local v = cur[key]
+		if v ~= nil then
+			return v
+		end
+		v = old[key]
+		if v ~= nil then
+			old[key] = nil
+			cache.put(key, v)
+		end
+		return v
+	end
+	function cache.put(key, value)
+		if cur[key] == nil then
+			if size >= cap then
+				old, cur, size = cur, {}, 0
+			end
+			size = size + 1
+		end
+		cur[key] = value
+	end
+	function cache.size()
+		local n = size
+		for _ in pairs(old) do
+			n = n + 1
+		end
+		return n
+	end
+	return cache
+end
+
 return C

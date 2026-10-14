@@ -936,7 +936,8 @@ xpCb.onGainExperience = function(self, source, exp, rawExp)
 	if not st then
 		return exp
 	end
-	local b = st.completed and st.completed[source:getName():lower()]
+	-- the type, not the shown name: a rift name, a named monster or a level tag keeps the completed bonus
+	local b = bonusAgainst(self, typeNameOf(source))
 	local pct = (b and b.exp or 0) + C.rankOf((st.points or 0) + taskPoints(self), cfg).exp
 	if pct > 0 then
 		return math.floor(exp * (100 + pct) / 100 + 1e-9)

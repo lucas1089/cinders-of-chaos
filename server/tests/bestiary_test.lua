@@ -445,4 +445,44 @@ for key, e in pairs(spawns) do
 end
 assert(n > 500, "the full map's monsters")
 
+-- ---------------------------------------------------------------- engine file: experience bonus by type name
+-- bestiary.lua against a mocked engine: a renamed monster (rift name, Chaos.createMonsterNamed, a level tag) still
+-- gets the completed entry's experience bonus, keyed by its type name, not its shown name.
+do
+	local n = 0
+	setmetatable(_G, {__index = function(t, k)
+		if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
+	end})
+	loadstring = loadstring or load
+	local function obj()
+		return setmetatable({}, {__index = function() return function() return true end end})
+	end
+	local cbs = {}
+	EventCallback = setmetatable({}, {__newindex = function(t, k, v) cbs[k] = v end,
+		__index = function(t, k) if k == "register" then return function() end end end})
+	CreatureEvent, GlobalEvent, TalkAction = obj, obj, obj
+	db = {query = function() return true end, storeQuery = function() return false end,
+		escapeString = function(v) return "'" .. v .. "'" end}
+	addEvent = function() return 1 end
+	Game = {getMonsterTypes = function() return {} end}
+	dofile("data/scripts/chaos/bestiary.lua")
+	local X = ChaosBestiary
+	local onExp = assert(cbs.onGainExperience, "experience callback")
+	local function monster(typeName, shown)
+		local mt = {name = function() return typeName end}
+		return {isMonster = function() return true end, getType = function() return mt end,
+			getName = function() return shown or typeName end}
+	end
+	local player = {getGuid = function() return 77 end, getStorageValue = function() return -1 end}
+	X.players[77] = {points = 0, completed = {dragon = {exp = 10, damage = 2}}}
+	local base = onExp(player, monster("Rat"), 1000, 1000)
+	eq(onExp(player, monster("Dragon"), 1000, 1000), math.floor(base * 1.1 + 1e-9), "plain dragon: +10%")
+	eq(onExp(player, monster("Dragon", "Abyssal Wyrm"), 1000, 1000), math.floor(base * 1.1 + 1e-9),
+		"renamed dragon: still +10%")
+	eq(onExp(player, monster("Dragon", "Dragon [Lv 120]"), 1000, 1000), math.floor(base * 1.1 + 1e-9),
+		"level-tagged dragon: still +10%")
+	X.players[77] = nil
+	setmetatable(_G, nil)
+end
+
 print("bestiary_test: ok")

@@ -451,6 +451,45 @@ do
 	eq(warm.next, 30, "first wave countdown")
 end
 
+-- ------------------------------------------------------------------ engine: the boss unique by the boss's type
+-- invasion.lua against a mocked engine: a renamed boss ("Warchief Grashnak", an Orc Warlord) rolls the unique drop
+-- lists by its type name, which is what chaos_unique_items.lua lists, not by the name it is shown under.
+do
+	local n = 0
+	setmetatable(_G, {__index = function(t, k)
+		if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
+	end})
+	loadstring = loadstring or load
+	local function obj()
+		return setmetatable({}, {__index = function() return function() return true end end})
+	end
+	EventCallback = setmetatable({}, {__newindex = function() end,
+		__index = function(t, k) if k == "register" then return function() end end end})
+	CreatureEvent, GlobalEvent, TalkAction = obj, obj, obj
+	db = {query = function() return true end, storeQuery = function() return false end,
+		escapeString = function(v) return "'" .. v .. "'" end}
+	addEvent = function() return 1 end
+	Game = {getStorageValue = function() return -1 end, getPlayers = function() return {} end}
+	json = json or {encode = function() return "{}" end}
+	dofile("data/scripts/chaos/invasion.lua")
+	local asked = {}
+	ChaosLoot = {rollUniques = function(tier, name) asked[#asked + 1] = name return {} end,
+		uniqueList = function() return {} end}
+	local pos = {sendMagicEffect = function() end}
+	local player = {getBankBalance = function() return 0 end, setBankBalance = function() end,
+		sendTextMessage = function() end, sendExtendedOpcode = function() end, getPosition = function() return pos end,
+		getName = function() return "Ash" end, getGuid = function() return 1 end, getLanguage = function() return "en" end}
+	ChaosInvasion.deliver(player, {items = {}, unique = true, rank = 1, share = 0.5, bank = 0, areaLevel = 41,
+		areaName = "Cinderhold", bossName = "Warchief Grashnak", bossType = "Orc Warlord"})
+	eq(asked[1], "Orc Warlord", "a renamed invasion boss: uniques by its type")
+	asked = {}
+	ChaosInvasion.deliver(player, {items = {}, unique = true, rank = 1, share = 0.5, bank = 0, areaLevel = 41,
+		areaName = "Cinderhold", bossName = "Orc Leader"})
+	eq(asked[1], "Orc Leader", "no type recorded (an older reward): the boss name")
+	ChaosLoot = nil
+	setmetatable(_G, nil)
+end
+
 print(string.format("invasion tests: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

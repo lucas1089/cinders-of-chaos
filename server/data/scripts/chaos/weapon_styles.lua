@@ -63,7 +63,15 @@ local function resistance(creature, ctype)
 	if not creature:isMonster() then
 		return 0
 	end
-	local name = creature:getName():lower()
+	-- the type name: monsters of other types shown under one name (rift names, invaders) have their own resistances
+	local name
+	if Chaos and Chaos.monsterTypeName then
+		name = Chaos.monsterTypeName(creature)
+	else
+		local ok, n = pcall(function() return creature:getType():name() end)
+		name = ok and type(n) == "string" and n ~= "" and n or creature:getName()
+	end
+	name = tostring(name):lower()
 	local r = resCache[name]
 	if r == nil then
 		local ok, list = pcall(function() return creature:getType():getElementList() end)

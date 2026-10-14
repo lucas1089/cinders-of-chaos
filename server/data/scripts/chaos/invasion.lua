@@ -421,6 +421,8 @@ local function spawnWave(i)
 				monster:setHealth(boss.health)
 				state.bossId = monster:getId()
 				state.bossName = monster:getName()
+				-- its type ("Orc Warlord" behind "Warchief Grashnak"): the unique drop lists name types
+				state.bossType = Chaos.monsterTypeName and Chaos.monsterTypeName(monster) or boss.name
 				state.bossAlive = true
 				state.bossHp = 100
 				state.planned = state.planned + 1
@@ -855,8 +857,9 @@ local function pickUnique(player, r)
 	end
 	local level = r.areaLevel or 1
 	local itemFind = L.itemFindMult and L.itemFindMult(player) or 1
-	if L.rollUniques and r.bossName then
-		local hits = L.rollUniques("boss", r.bossName, level, itemFind * 20, nil, player)
+	local bossType = r.bossType or r.bossName
+	if L.rollUniques and bossType then
+		local hits = L.rollUniques("boss", bossType, level, itemFind * 20, nil, player)
 		if hits[1] then
 			return hits[1]
 		end
@@ -921,6 +924,7 @@ giveRewards = function(mult, contrib, liberation)
 		r.areaLevel = state.area.level
 		r.areaName = state.areaName
 		r.bossName = state.bossName
+		r.bossType = state.bossType
 		r.liberation = liberation
 		local who = {guid = r.guid, name = r.name}
 		if not liberation and ChaosLeaderboard and ChaosLeaderboard.record then -- weekly Defender board

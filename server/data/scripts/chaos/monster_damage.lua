@@ -49,8 +49,10 @@ local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
 
--- monster id -> level (a monster's level does not change); emptied when it grows large
-local levelCache, cacheSize = {}, 0
+-- monster id -> level (a monster's level does not change); two generations of cfg.levelCacheSize entries each
+-- (monster_damage_core.lua C.newCache): bounded memory, and live monsters stay cached with ~100k alive under pace
+local levelCache = C.newCache(Chaos.monsterDamage and Chaos.monsterDamage.levelCacheSize or 32768)
+MD.levelCache = levelCache
 
 local function ownLevel(monster)
 	if ChaosLoot and ChaosLoot.monsterLevel then
@@ -74,7 +76,7 @@ end
 
 function MD.levelOf(monster)
 	local id = monster:getId()
-	local lvl = levelCache[id]
+	local lvl = levelCache.get(id)
 	if lvl then
 		return lvl
 	end
@@ -83,11 +85,7 @@ function MD.levelOf(monster)
 	if inv and tonumber(inv.areaLevel) then
 		lvl = math.max(lvl, tonumber(inv.areaLevel))
 	end
-	if cacheSize >= 5000 then
-		levelCache, cacheSize = {}, 0
-	end
-	levelCache[id] = lvl
-	cacheSize = cacheSize + 1
+	levelCache.put(id, lvl)
 	return lvl
 end
 

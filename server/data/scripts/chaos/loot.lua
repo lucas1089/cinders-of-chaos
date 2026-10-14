@@ -1011,7 +1011,8 @@ function L.thinCorpse(corpse, f)
 	return changed
 end
 
--- pack combat: an empty corpse decays after ChaosPaceConfig.emptyCorpseSeconds (more kills leave more corpses)
+-- pack combat: an empty corpse decays after ChaosPaceConfig.emptyCorpseSeconds (more kills leave more corpses). A corpse
+-- with anything left in it (loot the autoloot did not take) keeps the stock decay.
 local function shortenEmptyCorpse(corpse)
 	local secs = ChaosPaceConfig and ChaosPaceConfig.enabled ~= false and tonumber(ChaosPaceConfig.emptyCorpseSeconds) or 0
 	if secs <= 0 or not corpse or corpse:getSize() > 0 or not ITEM_ATTRIBUTE_DURATION then
@@ -1030,8 +1031,15 @@ ec.onDropLoot = function(self, corpse)
 	if not ok then
 		print("[Chaos loot] onDropLoot failed: " .. tostring(err))
 	end
+end
+ec:register(cfg().priority or 1)
+
+-- the empty corpse check at the end of the drop: the Loot Bag (pouches.lua), the base autoloot and the Rarity Autoloot
+-- (lootfilter.lua) take items out after the loot layer, so a corpse they empty is only empty here
+local emptyCb = EventCallback
+emptyCb.onDropLoot = function(self, corpse)
 	if ChaosPace and ChaosPace.isPaced and ChaosPace.isPaced(self) then
 		shortenEmptyCorpse(corpse)
 	end
 end
-ec:register(cfg().priority or 1)
+emptyCb:register(cfg().emptyCorpseIndex or 99)

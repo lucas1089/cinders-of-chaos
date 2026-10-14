@@ -968,6 +968,15 @@ eq(#dealt, 1, "one extra projectile")
 eq(dealt[1].target, mob2, "at the other monster")
 eq(dealt[1].amount, -math.floor((240 + 24) * A_CFG.effects.multishotShare / 100), "60% of the hit")
 eq(#area, 1, "and the bow's splash")
+-- another type shown under the same name (a rift name): its own resistance, not the cached one of the first "Mob"
+local wisp = mkCreature(4, "monster", 140)
+function wisp:getType()
+	return {name = function() return "Ember Wisp" end, getElementList = function() return {[COMBAT_FIREDAMAGE] = 0} end}
+end
+local _, _, wsd = hitEv.onHealthChange(wisp, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
+eq(wsd, -48, "same shown name, other type: 20% of 240 against 0% fire resistance")
+creatures[4] = nil
+timers, area, dealt = {}, {}, {}
 -- melee and spells are not touched by the quiver
 cache = {bowcrit = 100}
 eq((hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)), -100, "spells untouched")

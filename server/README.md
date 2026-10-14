@@ -1475,6 +1475,9 @@ back. Monsters deal more **physical** damage to players by their level, linear b
   tiered monsters. A monster's summon counts at least at its master's level, an invader at least at its invasion area's
   level (`invasion.lua` stores it on the invader). The other multipliers (tiers and modifiers, rift tiers and Brutality,
   invasion scaling, dungeon difficulty) apply on top, unchanged.
+  The level of each monster is cached by id in two generations of `levelCacheSize` (32768) entries
+  (`monster_damage_core.lua` `C.newCache`): at most 65,536 entries, and a monster still fighting survives the turnover.
+  The old cache cleared itself at 5000 entries and recomputed every level with pace's ~100k monsters alive.
 - **Which hits**: a monster's melee and ranged physical attacks (origin melee / ranged: the hits armour reduces) on a
   player. Elemental damage is unchanged (`elemental = false`): the engine sets blockArmor only on melee and "physical"
   monster attacks, so armour never reduced a monster's elemental spell and the percent armour did not change them. Not
@@ -11317,7 +11320,9 @@ ambush and goblin chances, kill goals, multikill, cleave); the spawn side (fill,
 - **Loot** (`loot.lua`): the stock corpse is thinned by the loot curve (a stack keeps count x factor rounded at random,
   gold included; any other item stays with that chance: `L.thinCorpse`), and the Chaos extra rolls, currency, gems,
   supports and uniques roll x the factor, outside the `maxRate` / `maxScale` caps. An empty paced corpse decays after
-  30 s (`emptyCorpseSeconds`). The ambush chance (`monster_tiers.lua`), the treasure goblin roll of a respawn
+  30 s (`emptyCorpseSeconds`). The check runs at the end of the drop (`loot_config.lua` `emptyCorpseIndex` 99), after
+  the Loot Bag, the base autoloot and the Rarity Autoloot, so a corpse the autoloot emptied decays fast too. A corpse
+  with anything left in it keeps the stock decay. The ambush chance (`monster_tiers.lua`), the treasure goblin roll of a respawn
   (`treasure_goblin.lua`) and the faction token chance (`factions.lua`) are x the loot factor too.
 - **Damage to players** (`monster_damage.lua`): a paced monster's hits, and its summons', x the `damage` curve: every
   element, conditions, mana shield hits and mana drain (healing never). The late-game physical boost stays on top.
