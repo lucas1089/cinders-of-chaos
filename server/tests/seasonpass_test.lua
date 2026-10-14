@@ -406,6 +406,10 @@ do
 	local text = f:read("*a")
 	f:close()
 	eq(text:find("function SP.ownsTransmog(player, key)", 1, true) ~= nil, true, "transmog.lua's season hook exists")
+	-- coins can leave the balance from the website meanwhile: the spend must read ROW_COUNT, not trust db.query
+	local spend = text:match("local function spendCoins%(account, amount%)(.-)\nend\n")
+	eq((spend and spend:find("Shop.spend(account, amount)", 1, true) and spend:find("ROW_COUNT()", 1, true)) and true or false, true,
+		"spendCoins counts only an UPDATE that changed the row")
 end
 
 print(string.format("seasonpass_test: OK (%d tiers, %d packs, %d cosmetics, %d XP to the top)", #pass.tiers, #pass.packs,

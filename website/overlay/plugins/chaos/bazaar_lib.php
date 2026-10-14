@@ -443,7 +443,12 @@ final class ChaosBazaar {
 				$this->db->exec('DELETE FROM `guild_membership` WHERE `player_id` = ?;', [$playerId]);
 			}
 			$this->give($seller, $price - $fee);
-			$this->db->exec("UPDATE `chaos_bazaar_listings` SET `status` = 'sold', `fee` = ?, `settled_at` = ? WHERE `id` = ? AND `status` = 'settling';", [$fee, $now, $listingId]);
+			// still settling: a cancel or a failure by another request meanwhile undoes all of it
+			if ($this->db->exec("UPDATE `chaos_bazaar_listings` SET `status` = 'sold', `fee` = ?, `settled_at` = ? WHERE `id` = ? AND `status` = 'settling';", [$fee, $now, $listingId]) !== 1) {
+				$this->db->rollback();
+				$this->log($listingId, $buyer, $playerId, 'transfer_error', 'the listing changed meanwhile');
+				return false;
+			}
 			$this->db->commit();
 		} catch (Throwable $e) {
 			$this->db->rollback();
@@ -458,8 +463,12 @@ final class ChaosBazaar {
 
 	/** The listing fails: escrow back to the leader, the character unlocked. */
 	private function fail(array $l, string $reason): void {
+		// only an open listing fails: another request may have sold or cancelled it since $l was read
+		if ($this->db->exec("UPDATE `chaos_bazaar_listings` SET `status` = 'failed', `reason` = ?, `settled_at` = ? WHERE `id` = ? AND `status` IN ('active', 'settling');",
+				[substr($reason, 0, 64), $this->now(), (int)$l['id']]) !== 1) {
+			return;
+		}
 		$this->refundAll((int)$l['id']);
-		$this->db->exec("UPDATE `chaos_bazaar_listings` SET `status` = 'failed', `reason` = ?, `settled_at` = ? WHERE `id` = ?;", [substr($reason, 0, 64), $this->now(), (int)$l['id']]);
 		$this->log((int)$l['id'], (int)$l['seller_account_id'], (int)$l['player_id'], 'failed', $reason);
 		$this->notify((int)$l['seller_account_id'], 'auction failed', sprintf('The sale of %s could not be completed: %s The character stays yours and can log in again.', $l['player_name'], $reason));
 		if ((int)$l['bidder_account_id'] > 0) {
@@ -489,7 +498,9 @@ final class ChaosBazaar {
 		if (!$admin && ((int)$l['seller_account_id'] !== $byAccount || (int)$l['current_bid_id'] !== 0 || $l['status'] !== 'active')) {
 			return array(false, 'Only an auction without bids can be cancelled by its seller.');
 		}
-		if ($this->db->exec("UPDATE `chaos_bazaar_listings` SET `status` = 'cancelled', `reason` = ?, `settled_at` = ? WHERE `id` = ? AND `status` = ?;",
+		// the seller's cancel holds only while there is still no bid (one may land between the read above and this)
+		if ($this->db->exec("UPDATE `chaos_bazaar_listings` SET `status` = 'cancelled', `reason` = ?, `settled_at` = ? WHERE `id` = ? AND `status` = ?" .
+				($admin ? '' : ' AND `current_bid_id` = 0') . ';',
 				[substr($admin ? 'staff: ' . $reason : 'seller', 0, 64), $this->now(), $listingId, $l['status']]) !== 1) {
 			return array(false, 'This auction changed meanwhile: reload the page.');
 		}

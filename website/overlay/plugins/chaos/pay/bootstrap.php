@@ -138,6 +138,10 @@ function chaos_pay_service(array $config, ?array $settings = null, ?ChaosPayDb $
 	$GLOBALS['config'] = $GLOBALS['config'] ?? $config;
 	$s = $settings ?? chaos_pay_settings();
 	$site = chaos_pay_site_url($s, $config);
+	if ((string)($s['CHAOS_PAY_PAYER_SALT'] ?? '') === '') {
+		// without a salt a leaked database lets the payer hashes (CPF) be brute-forced: set it in payments.env
+		error_log('chaos pay: CHAOS_PAY_PAYER_SALT is empty; set a long random value in payments.env');
+	}
 	return new ChaosPayService($db ?? ChaosPayMysqli::fromConfig($config), chaos_pay_providers($s, null, null, $site), chaos_pay_packs(), chaos_pay_config(),
 		array('site_url' => $site, 'payer_email' => $s['CHAOS_PAY_PAYER_EMAIL'],
 			'reconcile_seconds' => $s['CHAOS_PAY_RECONCILE_SECONDS'] !== '' ? (int)$s['CHAOS_PAY_RECONCILE_SECONDS'] : 60,

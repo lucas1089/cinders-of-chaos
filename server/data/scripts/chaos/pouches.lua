@@ -69,21 +69,27 @@ function PO.isPouch(item)
 	return customAttr(item, cfg().attr.storebound) ~= nil
 end
 
--- the item is a pouch or a container with a pouch somewhere inside
-function PO.holdsPouch(item, depth)
+-- the item is a pouch or a container with a pouch somewhere inside. Every nesting level is walked (a depth limit let a
+-- pouch 9+ bags deep be traded or dropped); past HOLDS_BUDGET items the answer is true, so a huge pile is refused too.
+local HOLDS_BUDGET = 4000
+function PO.holdsPouch(item)
 	if not item then
 		return false
 	end
-	if PO.isPouch(item) then
-		return true
-	end
-	depth = depth or 0
-	if depth > 8 or not item.isContainer or not item:isContainer() then
-		return false
-	end
-	for _, inner in ipairs(item:getItems() or {}) do
-		if PO.holdsPouch(inner, depth + 1) then
+	local queue, i = {item}, 1
+	while queue[i] do
+		if i > HOLDS_BUDGET then
 			return true
+		end
+		local it = queue[i]
+		i = i + 1
+		if PO.isPouch(it) then
+			return true
+		end
+		if it.isContainer and it:isContainer() then
+			for _, inner in ipairs(it:getItems() or {}) do
+				queue[#queue + 1] = inner
+			end
 		end
 	end
 	return false

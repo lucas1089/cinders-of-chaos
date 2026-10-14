@@ -221,7 +221,37 @@ $pdo->exec("INSERT INTO players (id, name, account_id, level) VALUES (26, 'Slot 
 [$ok, $msg] = $full->bid(3, $l7, 600, '3.3.3.3');
 check(!$ok && strpos($msg, 'slot') !== false, 'no free character slot: no bid');
 
-check($total() === $start - $bz->fee(1000) - $bz->fee(1500), 'coins whole after everything (only the fees left)');
+// ---------------------------------------------------------------- races (another request between a read and a write)
+// the seller's cancel read the listing without a bid; a bid lands before the cancel's UPDATE: the cancel must fail
+$pdo->exec("INSERT INTO players (id, name, account_id, level) VALUES (27, 'Race Ria', 1, 120), (28, 'Twice Tor', 1, 120)");
+$hook = null;
+$raceClock = function () use (&$now, &$hook) { if ($hook) { $h = $hook; $hook = null; $h(); } return $now; };
+$race = new ChaosBazaar($db, $cfg, $raceClock, function () { return true; });
+[$ok, , $l8] = $race->listCharacter(1, 27, 500, 0, 2);
+$hook = function () use ($bz, $l8) { $bz->bid(2, $l8, 600, '2.2.2.2'); };
+[$ok, $msg] = $race->cancel($l8, 1, false);
+check(!$ok && $race->listing($l8)['status'] === 'active', 'a bid that lands during the seller cancel keeps the auction: ' . $msg);
+check((int)$race->listing($l8)['current_bid'] === 600, 'the bid stands');
+[$ok] = $bz->cancel($l8, 99, true, 'test cleanup');
+// two settles of one listing (the page and the worker): the second sees a blocker only after the first sold it; the
+// sold listing must stay sold (it was turned into "failed" with mails saying the sale did not happen)
+$inner = false;
+$slotHook = null;
+$twice = new ChaosBazaar($db, $cfg, function () use (&$now) { return $now; }, function () { return true; },
+	function (int $a) use (&$slotHook) { if ($slotHook) { $h = $slotHook; $slotHook = null; $h(); return false; } return true; });
+[$ok, , $l9] = $twice->listCharacter(1, 28, 500, 0, 1);
+$twice->bid(2, $l9, 800, '2.2.2.2');
+$now += 86400 + 10;
+$pdo->exec("UPDATE chaos_bazaar_listings SET status = 'settling' WHERE id = $l9");
+$sellerBefore = $coins(1);
+$bidderBefore = $coins(2);
+$slotHook = function () use ($bz, $l9) { $bz->settle($l9); }; // the other request completes the sale meanwhile
+$twice->settle($l9);
+check($twice->listing($l9)['status'] === 'sold', 'a sold listing stays sold after a late second settle: ' . $twice->listing($l9)['status']);
+check((int)$pdo->query('SELECT account_id FROM players WHERE id = 28')->fetchColumn() === 2, 'the character went to the winner once');
+check($coins(1) === $sellerBefore + 800 - $bz->fee(800) && $coins(2) === $bidderBefore, 'paid once, nothing refunded twice');
+
+check($total() === $start - $bz->fee(1000) - $bz->fee(1500) - $bz->fee(800), 'coins whole after everything (only the fees left)');
 check((int)$pdo->query("SELECT COUNT(*) FROM chaos_bazaar_log WHERE action = 'list_refused'")->fetchColumn() > 0, 'refusals logged');
 
 // ---------------------------------------------------------------- the files

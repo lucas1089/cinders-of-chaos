@@ -751,10 +751,19 @@ local function spendCoins(account, amount)
 	if not Shop or not Shop.getCoins or Shop.getCoins(account) < amount then
 		return false
 	end
-	-- game scripts run on one thread and db.query is synchronous: the check above and this update cannot interleave
-	return db.query(string.format("UPDATE `%s` SET `coins` = `coins` - %d WHERE `account_id` = %d AND `coins` >= %d",
-		Chaos.tables.shopCoins, amount, account, amount)) and true or false
+	if Shop.spend then
+		return Shop.spend(account, amount) -- shop.lua: counts only when the UPDATE changed the row
+	end
+	-- the website (Character Bazaar) changes the balance from another process: db.query is true even when the WHERE
+	-- matched nothing, so the change is read back (ROW_COUNT)
+	if not db.query(string.format("UPDATE `%s` SET `coins` = `coins` - %d WHERE `account_id` = %d AND `coins` >= %d",
+			Chaos.tables.shopCoins, amount, account, amount)) then
+		return false
+	end
+	local r = Chaos.select("SELECT ROW_COUNT() AS `n`", {{"n", "n"}})[1]
+	return r ~= nil and r.n == 1
 end
+SP.spendCoins = spendCoins
 
 local function shopHistory(player, title, cost)
 	db.asyncQuery(string.format("INSERT INTO `%s` (`account_id`, `player_id`, `title`, `cost`, `created`) VALUES (%d, %d, %s, %d, %d)",

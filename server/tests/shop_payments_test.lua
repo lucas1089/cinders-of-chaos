@@ -392,4 +392,37 @@ ChaosShopPay.poll()
 eq(DB.coins[77], 4000, "then all of it: the other 750"); eq(DB.pay[6].reversal_coins, 1000, "1000 handled in all")
 ChaosShopPay.poll(); eq(DB.coins[77], 4000, "only once")
 
+-- a chargeback after the creator share was paid (creator_codes.lua pays after its 14-day hold; a chargeback can come
+-- months later): the share is taken back from the creator once, as far as the creator's balance holds it
+do
+	local uses = {[7] = {creator = 900, share = 120, state = "paid"}}
+	local realSelect, realQuery = Chaos.select, db.query
+	Chaos.select = function(q, cols)
+		if q:find("FROM `chaos_creator_uses`", 1, true) then
+			local u = uses[tonumber(q:match("`order_id` = (%d+)"))]
+			return (u and u.state == "paid") and {{creator_account_id = u.creator, share = u.share}} or {}
+		end
+		return realSelect(q, cols)
+	end
+	db.query = function(q)
+		if q:find("^UPDATE `chaos_creator_uses` SET `state` = 'reversed'") then
+			local u = uses[tonumber(q:match("`order_id` = (%d+)"))]
+			if u and u.state == "paid" then u.state = "reversed" end
+			return true
+		end
+		return realQuery(q)
+	end
+	DB.orders[#DB.orders + 1] = {id = 7, account_id = 77, pack_key = "coins250", provider = "paypal", provider_ref = "cc", status = "credited",
+		coins = 2400, bonus = 0, first_bonus = 0, created = now}
+	DB.pay[7] = {order_id = 7, method = "paypal", amount_cents = 1999, currency = "USD", reversal = "charged_back", reversal_cents = 0, reversal_done = 0}
+	DB.coins[77], DB.coins[900] = 5000, 1000
+	ChaosShopPay.poll()
+	eq(DB.coins[900], 880, "the creator's 120 coins of that donation taken back")
+	eq(uses[7].state, "reversed", "the share is marked reversed")
+	DB.pay[7].reversal_done = 0
+	ChaosShopPay.poll()
+	eq(DB.coins[900], 880, "only once")
+	Chaos.select, db.query = realSelect, realQuery
+end
+
 print("shop_payments_test: ok")

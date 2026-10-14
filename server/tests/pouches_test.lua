@@ -541,6 +541,16 @@ eq(tradeReq(hero, other2, orbsPouch), false, "trade window refuses a pouch")
 eq(tradeReq(hero, other2, bp), false, "trade window refuses a backpack holding a pouch")
 eq(tradeReq(hero, other2, item(2400)), true, "other trades go on")
 eq(callback("onTradeAccept", 1)(hero, other2, item(2400), bp2), false, "accept refused when the other side holds one")
+-- a store-bound item nested deeper than the old 8-level walk: still found (it could be traded or dropped before)
+local deepOuter = item(1987)
+local deepCur = deepOuter
+for _ = 1, 12 do
+	local inner = item(1987); inner.parent = deepCur; deepCur.items[#deepCur.items + 1] = inner; deepCur = inner
+end
+local deepBound = item(2400, {custom = {chaos_storebound = 1}}); deepBound.parent = deepCur; deepCur.items[1] = deepBound
+eq(PO.holdsPouch(deepOuter), true, "a pouch 13 bags deep is still found")
+eq(tradeReq(hero, other2, deepOuter), false, "trade window refuses a pouch nested 13 bags deep")
+eq(move(deepOuter, {x = 100, y = 100, z = 7}), RETURNVALUE_NOTPOSSIBLE, "a pouch nested 13 bags deep cannot be dropped")
 
 -- ------------------------------------------------------------------ death
 -- the engine dropped the backpack into the corpse: the pouch leaves the corpse, contents stay, back at next login

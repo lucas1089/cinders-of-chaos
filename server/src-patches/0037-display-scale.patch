@@ -173,7 +173,7 @@ diff --git a/src/luascript.cpp b/src/luascript.cpp
 +	std::vector<uint32_t> factors;
 +	lua_pushnil(L);
 +	while (lua_next(L, 1) != 0) {
-+		if (lua_isnumber(L, -2) && lua_isnumber(L, -1)) {
++		if (lua_type(L, -2) == LUA_TNUMBER && lua_isnumber(L, -1)) {
 +			const double key = lua_tonumber(L, -2);
 +			const double value = lua_tonumber(L, -1);
 +			if (key >= 1 && key <= 100000) {

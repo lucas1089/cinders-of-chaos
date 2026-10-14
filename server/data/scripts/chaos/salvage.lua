@@ -531,6 +531,10 @@ function S.onAction(player, action, data)
 	if not bench() then
 		return
 	end
+	-- each action reads the crafting log for the answer (opcode fuzz test): one per 150 ms; the scope has its own limit
+	if action ~= "salvageScope" and ChaosRateLimit and not ChaosRateLimit.allow(player, "salvage.action", 150) then
+		return
+	end
 	if action == "salvage" then
 		salvageOne(player, data)
 	elseif action == "salvageBatch" then

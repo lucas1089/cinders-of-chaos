@@ -508,15 +508,21 @@ function Shop.addCoins(accountId, amount)
 		") ON DUPLICATE KEY UPDATE `coins` = GREATEST(0, `coins` + " .. amount .. ")")
 end
 
--- takes the coins if the account has them; true on success. Game scripts run on one thread and
--- db.query is synchronous, so the check and the update cannot interleave with another purchase.
+-- takes the coins if the account has them; true on success. Another process changes the balance too (the website's
+-- Character Bazaar takes bids from it): the UPDATE counts only when it changed the row (ROW_COUNT), since db.query is
+-- true for an UPDATE whose WHERE matched nothing.
 local function spend(accountId, amount)
 	if Shop.getCoins(accountId) < amount then
 		return false
 	end
-	return db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. amount ..
-		" WHERE `account_id` = " .. accountId .. " AND `coins` >= " .. amount) and true or false
+	if not db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. amount ..
+			" WHERE `account_id` = " .. accountId .. " AND `coins` >= " .. amount) then
+		return false
+	end
+	local r = Chaos.select("SELECT ROW_COUNT() AS `n`", {{"n", "n"}})[1]
+	return r ~= nil and r.n == 1
 end
+Shop.spend = spend
 
 local function logHistory(player, title, cost)
 	db.asyncQuery("INSERT INTO `" .. T_HISTORY .. "` (`account_id`, `player_id`, `title`, `cost`, `created`) VALUES (" ..

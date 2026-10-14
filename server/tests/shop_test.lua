@@ -236,8 +236,9 @@ db = {
 		local amount, acc = q:match("UPDATE `chaos_shop_coins` SET `coins` = `coins` %- (%d+) WHERE `account_id` = (%d+)")
 		if amount then
 			acc, amount = tonumber(acc), tonumber(amount)
-			if (DB.coins[acc] or 0) < amount then return false end
-			DB.coins[acc] = DB.coins[acc] - amount; return true
+			-- as the engine: the query succeeds even when the WHERE matched no row; ROW_COUNT() tells
+			if (DB.coins[acc] or 0) < amount then DB.rowCount = 0; return true end
+			DB.coins[acc] = DB.coins[acc] - amount; DB.rowCount = 1; return true
 		end
 		local vals = q:match("INSERT INTO `chaos_shop_purchases` .- VALUES %((.*)%)$")
 		if vals then
@@ -285,8 +286,12 @@ local function inList(q, key)
 end
 Chaos.select = function(q, cols)
 	local acc = tonumber(q:match("`account_id` = (%d+)"))
-	if q:find("SELECT `coins` FROM `chaos_shop_coins`", 1, true) then
-		return DB.coins[acc] and {{coins = DB.coins[acc]}} or {}
+	if q:find("ROW_COUNT()", 1, true) then
+		return {{n = DB.rowCount or 0}}
+	elseif q:find("SELECT `coins` FROM `chaos_shop_coins`", 1, true) then
+		local have = DB.coins[acc]
+		if DB.afterCoinRead then DB.afterCoinRead(acc) end -- another process (the website) moves coins right after the read
+		return have and {{coins = have}} or {}
 	elseif q:find("SELECT COUNT(*) AS `n` FROM `chaos_shop_purchases`", 1, true) then
 		local key, since = q:match("`offer_key` = '([^']*)'"), tonumber(q:match("`created` >= (%d+)")) or 0
 		local count = 0
@@ -740,6 +745,41 @@ do
 	eq(talks["/coins"].onSay(R1, "/coins", "Receiver, 500"), true, "a player: said as chat, nothing else")
 	eq(#logged, 2, "players are not logged")
 	ChaosAdmin = nil
+end
+
+-- the website's bazaar takes coins from another process: between the balance read and the UPDATE the coins can go;
+-- the UPDATE then changes no row and the purchase must not go through (it used to deliver for free)
+do
+	local Racer = newPlayer("Racer", {account = 777})
+	DB.coins[777] = 20
+	local e = Shop.byKey["item:2304x100"]
+	ok(e and e.cost <= 20, "a cheap offer for the race")
+	DB.afterCoinRead = function(acc) if acc == 777 then DB.coins[777] = 0 end end
+	local had = Racer.items[2304] or 0
+	local recv = DB.coins[502]
+	request(Racer, "gift_coins", {name = "Receiver", amount = 10})
+	eq(DB.coins[777], 0, "coin gift: the sender has nothing")
+	eq(DB.coins[502], recv, "coin gift: the receiver got nothing (no coins created)")
+	DB.coins[777] = 20
+	-- buy() reads the balance twice (its own check, then spend): the coins go right after the second read
+	local reads = 0
+	DB.afterCoinRead = function(acc)
+		if acc == 777 then
+			reads = reads + 1
+			if reads == 2 then DB.coins[777] = 0 end
+		end
+	end
+	local _, gp = find(Racer, "item:2304x100")
+	request(Racer, "get_page", {category = (find(Racer, "item:2304x100")), page = gp})
+	reads = 0
+	local c, pg, o = find(Racer, "item:2304x100")
+	local view = last("category_page").data.offers[o]
+	request(Racer, "buy", {category = c, page = pg, offer = o, title = view.title, cost = view.cost})
+	local title = last("message") and last("message").data.title
+	DB.afterCoinRead = nil
+	ok(title ~= "Purchase complete", "store purchase refused: " .. tostring(title))
+	eq(Racer.items[2304] or 0, had, "store purchase: nothing delivered when the coins went meanwhile")
+	eq(DB.coins[777], 0, "and no coins created")
 end
 
 -- outfit shaders: a mark without the engine's ownership (bought before server src-patch 0036) gets it at login
