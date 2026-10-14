@@ -40,6 +40,7 @@ access flag (gamemaster or higher).
 | Command | Who | What |
 |---|---|---|
 | `/reports`, `/reports list closed\|all\|bugs`, `show <id>`, `score <name>`, `log <name>`, `check <name>`, `close <id>, <text>`, `clear <name>` | 4+ | player reports and the anti-bot (section 3) |
+| `/botreview`, `/botreview <name>`, `/botreview mark <name>, reviewed\|false_positive\|escalate\|note[, note]` | 4+ (changing an escalated day: **5+**) | the bot review list, one character's score and signals, a mark (section 3a) |
 | `/gmnotify <message>` | 4+ | a toast to every online player |
 | `/patchnotes reload\|unseen` | 4+ | read the notes folder now; forget your account's last seen week |
 | `/rift status`, `/rift fail` | 4+ | the runs and slots, fail your run |
@@ -107,6 +108,54 @@ House rules (decided):
 - Harassment, scams and offensive names: read the public chat lines in the report; private messages are never stored.
 - Offensive name: ask the player to change it (Character > Services > name change); if refused, an administrator
   locks the name (base `player_namelocks`) or bans per the ladder.
+
+## 3a. Bot review
+
+The server keeps a daily suspicion score per character for signs of unattended play (server/README.md "Bot
+detection").
+**It never punishes, kicks or moves anyone.** A day with a score of 50 or more lands on the review list; staff decide.
+
+**Official stance** (from the Rules page, section 2.2 and 7.4 / 7.6, and the Terms of Use):
+- **Allowed:** the official client and its tools, the helper included (healing rules, spell rules, the auto rotation the
+  owner asked for, targeting), the game's own tools named in Rules 2.2 (hunt tracker, loot filter, autoloot, auto
+  seller) and the Loot Bag. A helper user is a player, not a botter. Rules 2.2 does not name the helper yet; the
+  owner's decision on one line for it is pending (docs/OWNER_TODO.md).
+- **Not allowed:** bot programs, macros and modified or third-party clients that play for you (Rules 2.2). Confirmed
+  botting follows ladder line 7.4; a third-party client line 7.6 (section 4).
+- **Not decided yet:** the helper left running while nobody is at the keyboard for hours. The Rules do not name it
+  (the owner's decision is pending in docs/OWNER_TODO.md). Until then a gamemaster escalates such a case and gives no
+  penalty on their own.
+
+**Where:** the website (`page.php?plugin=chaos&p=botreview`, admin panel accounts with a group 4+ character), in
+game `/botreview` (4+), and the admin panel's Accounts & Security > Bot review (5+). Online staff see
+`[Bot review] Name is on the review list (day score 63). /botreview Name` when a day is flagged.
+
+**Reading a day.** Two families of signals, each 0 (like a person) to 1 (like a program):
+- *Automation:* action rhythm, instant heals after hits, heals at one HP threshold, next target right after a kill,
+  looting pace. **The helper does all of these.** Automation alone never makes a high score.
+- *Unattended:* hours without a break, no chat / looks / turns / item moves / short pauses, the same route hour after
+  hour, a presence check missed while still fighting, actions in step with another character of the same connection
+  or party. The score needs at least two of these.
+The page shows each signal, the explanations in plain words, the score by hour, the last 30 days and the presence checks.
+
+**Steps:**
+1. Read the signals. Automation with no unattended sign is a helper user: mark **false positive** with a note.
+2. Watch the character for a few minutes, talk to it, and press **Request presence check** (website) or
+   `/reports check <name>`. The check is a small picture question; a failure is only one more signal.
+3. Someone answered, moves and talks normally: mark **reviewed** (or **false positive**) with what you saw.
+4. Nobody answers and it keeps fighting the same route, or you find a bot program or a modified client: follow
+   section 3 (report procedure) and section 4 (ladder 7.4 or 7.6). A ban of 30 days or more, a permanent ban, or an
+   unattended helper case: **escalate** (only an administrator may change an escalated day; section 7).
+5. Every mark, note and check request is logged with your name (`chaos_bot_actions`). Write what you saw.
+
+**Known false positives** (why one look is never enough): very long sessions of a quiet helper user (12 to 15 hours with
+breaks under 20 minutes and almost no chat); one person on two clients (the multi-client rules allow two), whose
+helpers act at nearly the same moments; a player who walks the same circle in a spawn for hours; a player who stepped
+away while the helper kept fighting (that is the undecided case above). A player who passes a presence check halves
+the unattended part of the score for 24 hours.
+
+**Retention:** a day row is kept 30 days, an escalated day 90 days, the staff actions 90 days; then deleted
+automatically. Only days with a score of 25 or more are stored at all.
 
 ## 4. Mutes and bans
 

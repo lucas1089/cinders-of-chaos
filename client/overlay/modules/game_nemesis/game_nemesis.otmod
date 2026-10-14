@@ -1,0 +1,13 @@
+Module
+  name: game_nemesis
+  description: Nemesis - the monster that hunts your character: name, type, traits, last seen (server nemesis.lua, extended opcode 163); a tab in the Bestiary window and Hunt > Nemesis
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ nemesisview, nemesis ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1003
+  @onLoad: init()
+  @onUnload: terminate()

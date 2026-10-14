@@ -501,6 +501,7 @@ collision check") and be added here.
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
 | 157 | `displayScale` | `display_scale.lua` | `game_chaosscale` | server -> client `scale {level, f}`, client -> server `hello` (see "Display scale") |
+| 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
@@ -610,6 +611,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
+| 7102300 - 7102309 | Nemesis (`Chaos.storage.nemesis`, `nemesis_config.lua` `storage`): +0 nemeses avenged, +1 nemeses of others slain, +2 last hunter bounty, +3 last avenge loot bonus, +4 the character's last nemesis ended (birth cooldown), +5 trophies; +6..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -13616,3 +13618,56 @@ health as 15.9M / 15.9M and mana 5.36M, and the DPS meter at 66M in 18 s (3.5M D
 300 its health read 21.9k / 27.3k (x5) and at level 700 1.14M (x100). A level lost (removed experience) and a reattach
 after the client was killed brought the right factor to the client. Not checked live: two players at once (PvP, a
 party), the item tooltips and the energy shield in a client, the Windows build.
+
+## Nemesis (`nemesis.lua`, `nemesis_core.lua`, `nemesis_config.lua`, `sql/chaos_nemesis.sql`, client `game_nemesis`)
+
+A regular monster that kills a character may become that character's personal Nemesis. Client `game_nemesis`, extended
+opcode 163 (`ChaosOpcodes.nemesis`; free in the reference server, the base client and every Chaos module), a
+"Nemesis" tab put into the Bestiary window's tab row at runtime (`game_bestiary` is not edited) and Hunt > Nemesis.
+Settings: `nemesis_config.lua` (`ChaosNemesisConfig`). Table `chaos_nemesis` (`Chaos.tables.nemesis`), created at
+startup when missing and in `sql/chaos_nemesis.sql`. Storages 7102300 - 7102309. Pure logic: `nemesis_core.lua`,
+tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engine) and the client's
+`game_nemesis/nemesisview_test.lua`.
+
+- **Birth.** The victim's death event. The killer must be a regular monster: no boss (isboss, `ChaosTierConfig.bosses`,
+  tier boss), summon, treasure goblin, renamed monster (rift, invader: an event or instance monster) or nemesis, no
+  player in the kill (PvP), the victim outside every `Chaos.registerInstance` instance and of level 50 or more. Then
+  25% (`birth.chance`). One active nemesis per character; none for 6 h after the last one ended. Server-wide the chance
+  falls linearly above 200 active nemeses (`softCap`) to none at 300 (`serverCap`); the count is read at startup and
+  every hour.
+- **The nemesis.** A generated name (syllables, `names`) with an epithet from the kills and the victim's name: "Varkh,
+  Bane of Varek", then "Twice-Slayer of", "Thrice-Slayer of", "Doom of" (pt-BR: "Flagelo de", "Duas Vezes Algoz de",
+  ...; the shown monster name is one string for every viewer, `nameLang` = English). Level = the killer's
+  (`ChaosLoot.monsterLevel`, else max health / 20) + 10-20%; health x3 x (level / base level), damage x1.3 and
+  experience x4 through its own monster_tiers.lua tier `nemesis` (label "Nemesis" in the monster bar). Look: the
+  Heartblood outfit shader (23), a black skull, a death effect when it appears. No new sprite.
+- **Traits.** One at birth, a second at the second kill: Vengeful (the berserker modifier), Swift, Thorned
+  (reflective), Regenerating, Stalker (steps next to its victim when more than 7 tiles away, every 8 s). `nemesis.lua`
+  sets `ChaosTiers.nemesis` and the `ChaosTierState` entry, so monster_tiers.lua's damage, reflect and experience
+  handlers do the work (wrapped, not edited); its tick runs the regeneration. Depth = `maxChain`: never an ambush copy.
+- **Appearing.** The kill event is registered only on characters with a nemesis. A kill of the same type, or of a
+  monster within 25% of its base level, rolls 4%: "You feel a familiar hatred watching you...", then 3 s later the
+  nemesis 3-6 tiles away (no protection zone, house or instance). At most every 15 min. It fades after 5 min, when its
+  victim logs out, dies, changes floor or runs 30 tiles off. Never for anybody else.
+- **No griefing.** Health- and mana-change events on every player cancel its damage to anybody but the victim and
+  the victim's party; one on the nemesis cancels damage from anybody else (and their summons). It retargets its victim.
+- **Growth.** It kills its victim again: one more kill (up to 4), +10% of the base level, the second trait, the next
+  epithet. A nemesis not seen for 14 days is gone (login check, startup and hourly `DELETE`).
+- **Rewards** (`K.reward`). The victim slays it: a trophy (`rewards.trophy.id` 7393, a stock hunting trophy; named
+  "nemesis trophy", the engraved name in the description and the custom attribute `chaos_nemesis_name`, owner
+  `chaos_nemesis_owner`, `chaos_storebound` and `chaos_locked`: the market and NPCs refuse it, a house takes it), the
+  title Avenger of Self (`ChaosTitles` source `nemesis`) and gold in its corpse (5000 + 150 per level, once per 20 h).
+  A party member slays it: the Nemesis Hunter bounty to the bank (10000 + 200 per level, once per 6 h per hunter, never
+  for the victim's account or connection, never for a nemesis younger than 10 min), the title Nemesis Hunter after 3,
+  and a notice to the victim. Killed by the world (no player credit): no reward, it comes back. The row is deleted
+  before anything is paid, so a second death event pays nothing. Hardcore: a Hardcore character can have one; a
+  Hardcore slayer gets the trophy only.
+- **Optional hooks, all guarded:** `Chaos.t` / `Chaos.lang` (texts: the English texts of `nemesis_config.lua` are the
+  keys; until `i18n_strings.lua` has them a pt-BR player reads the config's `texts.pt`), `ChaosAchievements.progress`
+  (stats `nemesis_marked`, `nemesis_avenged`, `nemesis_hunted`; the achievements themselves are not written yet),
+  `ChaosLeaderboard.record` (board `nemesis` once `leaderboard_config.lua` lists it), `ChaosNameplate.refresh`,
+  `ChaosSeason.modesOf`.
+- **Performance.** Per death: a few table checks and, on a birth, one INSERT. Per kill: only characters with a nemesis
+  run the kill event (a table lookup and one roll). Per hit on a player: one table lookup. Login: one SELECT by
+  `player_id` (indexed).
+- Not run on a live server yet.

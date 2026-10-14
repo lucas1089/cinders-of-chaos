@@ -812,6 +812,13 @@ ChaosOpcodes.levelWings = 191
 ChaosOpcodes.deathRecap = 154
 Chaos.tables.deathRecaps = "chaos_death_recaps"
 
+-- Nemesis: a monster that kills a character may become its personal nemesis (client game_nemesis; nemesis.lua,
+-- nemesis_core.lua, nemesis_config.lua, sql/chaos_nemesis.sql). 163 is free in the reference server, the base client
+-- and every Chaos module. Storages 7102300 - 7102309 reserved (nemesis_config.lua storage)
+ChaosOpcodes.nemesis = 163
+Chaos.tables.nemesis = "chaos_nemesis"
+Chaos.storage.nemesis = 7102300
+
 -- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
 -- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,
 -- Bloodrage) and beastmaster.lua (the companion), the spells in data/spells/chaos/<class>/.
