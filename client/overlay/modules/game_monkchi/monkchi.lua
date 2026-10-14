@@ -70,6 +70,15 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   render()
 end
 
+-- the chi the server last sent (0 once it decayed), nil before any (not a Monk): the helper's rotation reads it
+-- (game_helperrotation ChaosHelperRotation.castable) so a finisher waits for its chi instead of being refused
+function currentChi()
+  if not state or state.max <= 0 then
+    return nil
+  end
+  return ChiMath.shown(state, receivedAt, now())
+end
+
 function init()
   hud = g_ui.loadUI('monkchi', modules.game_interface.getMapPanel())
   hud:hide()

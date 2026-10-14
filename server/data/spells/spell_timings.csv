@@ -1,0 +1,2 @@
+script,name,cooldown,groupcooldown,secondarygroup,secondarygroupcooldown,reason
+attack/expose_weakness.lua,Sunder Guard,,2000,,,"locked the attack group for 12 s (the owner saw it on the Mystic): 2 s like every attack spell"

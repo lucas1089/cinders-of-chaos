@@ -1,0 +1,85 @@
+id,name,words,group,level,mana,cooldown,groupcooldown,secondarygroup,secondarygroupcooldown,params,vocations
+173,Rime Breath,drai tin hyr ul,attack,1,8,4000,2000,,0,,Mystic;Illusionist
+178,Searing Gust,drai tin pyr ul,attack,1,8,4000,2000,,0,,Mystic;Elementalist
+172,Bog Splatter,kah tin gor,attack,1,6,2000,2000,,0,,Mystic;Illusionist
+177,Static Sting,kah tin zhul,attack,1,6,2000,2000,,0,,Mystic;Elementalist;Illusionist
+169,Kindling Spark,kah ti pyr,attack,8,6,2000,2000,,0,,Mystic;Elementalist;Illusionist
+168,Riftbolt,kah ath,attack,12,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
+88,Arc Bolt,kah zhul,attack,12,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
+113,Thornlash,kah gor,attack,13,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
+89,Ember Lash,kah pyr,attack,14,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
+112,Frostbite,kah hyr,attack,15,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
+61,Bonebreaker,kah brak,attack,16,30,6000,2000,,0,,Warrior;Juggernaut;Berserker
+148,Hammerfall Palm,kah gro brak,attack,16,20,2000,2000,,0,,Mystic;Illusionist
+87,Gravetouch,kah nyx,attack,16,20,2000,2000,,0,,Mystic;Elementalist
+121,Glacier Fan,drai hyr ul,attack,18,25,4000,2000,,0,,Mystic;Illusionist
+19,Cinder Fan,drai pyr ul,attack,18,25,4000,2000,,0,,Mystic;Elementalist
+22,Stormlance,drai zhul lyss,attack,23,40,4000,2000,,0,,Mystic;Elementalist
+111,Phantom Javelin,kah sag,attack,23,25,2000,2000,,0,,Ranger;Deadeye;Beastmaster
+138,Smoulder Brand,hesh pyr,attack,26,30,30000,2000,,0,,Mystic;Elementalist
+107,Cyclone Hurl,kah ul,attack,28,40,6000,2000,,0,,Warrior;Juggernaut;Berserker
+23,Thunder Lance,drai gal zhul lyss,attack,29,110,6000,2000,,0,,Mystic;Elementalist
+106,Earthrend,kah vas,attack,33,160,8000,2000,,0,,Warrior;Juggernaut;Berserker
+140,Galvanic Mark,hesh zhul,attack,34,30,30000,2000,,0,,Mystic;Elementalist
+80,Reaver's Spin,kah,attack,35,115,4000,2000,,0,,Warrior;Juggernaut;Berserker
+163,Pyre Torrent,drai gal pyr ul,attack,38,120,4000,2000,,0,,Mystic;Elementalist
+120,Bramble Fan,drai gor ul,attack,38,210,4000,2000,,0,,Mystic;Illusionist
+52,Crossfire Hex,drai xir,attack,38,140,4000,2000,,0,,Mystic;Illusionist
+13,Tempest Fan,drai zhul ul,attack,38,170,8000,2000,,0,,Mystic;Elementalist
+43,Greater Glacier Fan,drai gal hyr ul,attack,40,170,8000,2000,,0,,Mystic;Illusionist
+85,Arcane Ripple,drai ondr,attack,40,175,4000,2000,,0,,Mystic;Illusionist
+141,Rending Mark,hesh sang,attack,40,30,30000,2000,,0,,Warrior;Juggernaut;Berserker
+122,Dawnbolt,kah sol,attack,40,20,2000,2000,,0,,Ranger;Deadeye;Beastmaster
+124,Sanctum Burst,drai vas sol,attack,50,160,4000,2000,,0,,Ranger;Deadeye;Beastmaster
+142,Blackroot Venom,hesh vex,attack,50,30,40000,2000,,0,,Mystic;Illusionist
+56,Wildwood Ruin,drai gal vas gor,attack,55,700,40000,4000,,0,,Mystic;Illusionist
+119,Storm Crown's Wrath,drai gal vas zhul,attack,55,600,40000,4000,,0,,Mystic;Elementalist
+149,Skyfang,kah rek zhul,attack,55,60,8000,2000,special,8000,,Mystic;Elementalist
+118,Endless Rime,drai gal vas hyr,attack,60,1050,40000,4000,,0,,Mystic;Illusionist
+24,Infernal Heart,drai gal vas pyr,attack,60,1100,40000,4000,,0,,Mystic;Elementalist
+53,Bewitching Hex,drai glam,attack,60,75,4000,2000,,0,,Mystic;Illusionist
+143,Glare of Dawn,hesh sol,attack,70,30,40000,2000,,0,,Ranger;Deadeye;Beastmaster
+153,Greater Thornlash,kah gal gor,attack,70,60,8000,2000,special,8000,,Mystic;Illusionist
+150,Greater Ember Lash,kah gal pyr,attack,70,60,8000,2000,special,8000,,Mystic;Elementalist
+59,Scything Arc,kah ti,attack,70,200,6000,2000,,0,,Warrior;Juggernaut;Berserker
+139,Hex of Withering,hesh nyx,attack,75,30,40000,2000,,0,,Mystic;Elementalist
+152,Greater Frostbite,kah gal hyr,attack,80,60,8000,2000,special,8000,,Mystic;Illusionist
+151,Greater Arc Bolt,kah gal zhul,attack,80,60,8000,2000,special,8000,,Mystic;Elementalist
+105,Butcher's Gyre,kah gal,attack,90,340,6000,2000,,0,,Warrior;Juggernaut;Berserker
+57,Greater Phantom Javelin,kah gal sag,attack,90,55,8000,2000,,0,,Ranger;Deadeye;Beastmaster
+157,Supreme Thornlash,kah zar gor,attack,90,100,30000,4000,,0,,Mystic;Illusionist
+154,Supreme Ember Lash,kah zar pyr,attack,90,100,30000,4000,,0,,Mystic;Elementalist
+47,Fading Step,drai gal vas ylth,attack,100,1350,40000,4000,,0,,Mystic;Illusionist
+156,Supreme Frostbite,kah zar hyr,attack,100,100,30000,4000,,0,,Mystic;Illusionist
+155,Supreme Arc Bolt,kah zar zhul,attack,100,100,30000,4000,,0,,Mystic;Elementalist
+62,Ruinous Cleave,kah gal brak,attack,110,300,30000,4000,,0,,Warrior;Juggernaut;Berserker
+165,Gravity Snare,rhut mur,attack,150,370,8000,2000,,0,,Mystic;Illusionist
+171,Sunder Guard,kah gro,attack,275,400,12000,2000,,0,,Mystic;Elementalist
+34,Radiant Shard,drai ira vas sol,attack,300,160,26000,2000,,0,,Ranger;Deadeye;Beastmaster
+41,Quakeburst,drai orr gor,attack,300,230,22000,2000,,0,,Mystic;Illusionist
+40,Shatterfrost,drai orr hyr,attack,300,230,22000,2000,,0,,Mystic;Illusionist
+35,Lance of the Grave,drai zar nyx,attack,300,140,10000,2000,,0,,Mystic;Elementalist
+37,Headsman's Hurl,kah rek sang,attack,300,225,18000,2000,,0,,Warrior;Juggernaut;Berserker
+174,Arcane Stitch,saen tin,healing,1,6,1000,1000,,0,,Ranger;Deadeye;Beastmaster;Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord
+175,Salve of Scars,saen tin brak,healing,1,10,1000,1000,,0,,Warrior;Juggernaut;Berserker
+1,Minor Mending,saen,healing,8,20,1000,1000,,0,,Warrior;Juggernaut;Berserker;Ranger;Deadeye;Beastmaster;Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord
+123,Battle Salve,saen brak,healing,8,40,1000,1000,,0,,Warrior;Juggernaut;Berserker
+29,Purge Venom,puir vex,healing,10,30,6000,1000,,0,,Warrior;Juggernaut;Berserker;Ranger;Deadeye;Beastmaster;Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord;Thief;Ninja;Samurai;Monk;Shadowfist;Iron Sage;Templar;Inquisitor;Sentinel
+84,Kindred Mend,saen kin,healing,18,140,1000,1000,,0,1,Mystic;Illusionist;Necromancer;Lich;Bone Lord
+2,Deep Mending,saen gal,healing,20,70,1000,1000,,0,,Ranger;Deadeye;Beastmaster;Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord
+146,Ground Static,puir zhul,healing,22,30,6000,1000,,0,,Mystic;Illusionist;Necromancer;Lich;Bone Lord
+145,Douse Embers,puir pyr,healing,30,30,6000,1000,,0,,Mystic;Illusionist;Necromancer;Lich;Bone Lord
+3,Grand Mending,saen ael,healing,30,160,1000,1000,,0,,Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord
+125,Dawn's Mending,saen sol,healing,35,160,1000,1000,,0,,Ranger;Deadeye;Beastmaster
+82,Circle of Mending,saen gal vas kal,healing,36,150,2000,1000,,0,,Mystic;Illusionist;Necromancer;Lich;Bone Lord
+144,Staunch Blood,puir sang,healing,45,30,6000,1000,,0,,Warrior;Juggernaut;Berserker;Mystic;Illusionist;Necromancer;Lich;Bone Lord;Monk;Shadowfist;Iron Sage;Templar;Inquisitor;Sentinel
+159,Second Wind,reth,healing,50,75,60000,1000,,0,,Warrior;Juggernaut;Berserker;Ranger;Deadeye;Beastmaster
+36,Lightbearer's Grace,saen gal sol,healing,60,210,1000,1000,,0,,Ranger;Deadeye;Beastmaster
+164,Break Glamour,puir aeth,healing,80,40,6000,1000,,0,,Warrior;Juggernaut;Berserker;Ranger;Deadeye;Beastmaster;Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord;Thief;Ninja;Samurai;Monk;Shadowfist;Iron Sage;Templar;Inquisitor;Sentinel
+58,Wash Taint,puir lav,healing,80,40,6000,1000,,0,,Warrior;Juggernaut;Berserker;Ranger;Deadeye;Beastmaster;Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord;Thief;Ninja;Samurai;Monk;Shadowfist;Iron Sage;Templar;Inquisitor;Sentinel
+147,Lift Hex,puir nyx,healing,80,40,6000,1000,,0,,Ranger;Deadeye;Beastmaster;Templar;Inquisitor;Sentinel
+158,Warlord's Resolve,saen gal brak,healing,80,200,600000,1000,,0,,Warrior;Juggernaut;Berserker
+160,Greater Second Wind,reth gal,healing,100,165,60000,1000,,0,,Warrior;Juggernaut;Berserker;Ranger;Deadeye;Beastmaster
+102,Iron Salve,saen ama brak,healing,300,90,1000,1000,,0,,Warrior;Juggernaut;Berserker
+101,Heartwood Embrace,saen gal kin,healing,300,400,60000,1000,,0,1,Mystic;Illusionist;Necromancer;Lich;Bone Lord
+103,Rebirth of Flesh,saen zar ael,healing,300,260,6000,1000,,0,,Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord

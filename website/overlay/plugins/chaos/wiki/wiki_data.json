@@ -1239,7 +1239,7 @@
 							"w": [22, 22, 9, 12, 12, 23],
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
-								["Radiant Smite", "kah sol dyr", "20", "60", "4 s", "whole line"],
+								["Radiant Smite", "kah sol dyr", "20", "60", "2 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
 								["Vow of Mending", "saen tor fidh", "30", "150", "8 s", "whole line"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
@@ -1456,13 +1456,13 @@
 				{
 					"id": "spell:189",
 					"name": "Radiant Smite",
-					"sub": "\"kah sol dyr\", level 20, 60 mana, cooldown 4 s",
+					"sub": "\"kah sol dyr\", level 20, 60 mana, cooldown 2 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"A hammer-blow of light on one target within 3 sqm. The Templar line's holy filler. Holy damage from the melee weapon (best of sword, club and axe skill x the main-hand attack) and a little magic level (the line's level factor was dropped with the class trees). A judged target takes more of it."
+								"A hammer-blow of light on one target within 3 sqm. The Templar line's holy filler (cooldown 2 s). Holy damage from the melee weapon (best of sword, club and axe skill x the main-hand attack) and a little magic level (the line's level factor was dropped with the class trees). A judged target takes more of it."
 							]
 						},
 						{
@@ -1473,7 +1473,7 @@
 								["Words", "kah sol dyr"],
 								["Level", "20"],
 								["Mana", "60"],
-								["Cooldown", "4 s"],
+								["Cooldown", "2 s"],
 								["Kind", "Attack"],
 								["Classes", "Templar, Inquisitor, Sentinel"]
 							]

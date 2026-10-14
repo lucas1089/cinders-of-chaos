@@ -135,7 +135,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 8s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. A player (when the hit lands): 0.5 s + 0.1 s per chi (no moving, attacks or attack spells), then 6 s immune, half as long within 15 s (server/README.md "Iron Palm stun on players"). |
 | 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage, and every 2 s each is healed for level + fist x 26. |
 | **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; rotations measured there) | | | | | | | |
-| 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 20 | 60 | 4s | Holy strike on one target within 3 sqm: P x 0.10-0.16 + ml x 1-1.5 + 30-60. The filler. |
+| 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 20 | 60 | 2s | Holy strike on one target within 3 sqm: (P x 0.10-0.16 + ml x 1-1.5 + 30-60) x the class scale (Templar 0.56, Inquisitor 0.69, below level 120 0.55, Sentinel 0.56). The filler. Cooldown 4 s and no scale until the rotation pass ("Rotations"). |
 | 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 200 | 20s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
 | 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 30 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
 | 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 12s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
@@ -1489,6 +1489,181 @@ Purifying Wellspring at 80% health, and the shooter casts Rime Bloom / Blightswa
 Since client base patch 0052 (client/BASE.md) the helper waits for the server's answer to each cast, backs off a spell the server
 refuses, does not cut a cast-time spell off and knows each class's spells by the server's vocation ids; tested with five classes
 (client/MANIFEST.md "Helper rotation").
+
+### Rotations (2026-10-14; computed, the live check at the end of this section is measured)
+
+Owner: "Faça todas as classes terem até 5 magias na rotação e nunca ficarem 2s sem uma." Every class and ascension has an
+attack rotation of at most 5 spells that, cast as a priority list, never leaves a window over 2 s with nothing ready.
+
+**The simulator** (`server/tools/rotation_sim.py`, test `rotation_sim_test.py`, both in CI; everything it reads is in the
+repo): the Chaos spells from `chaos/spells_chaos.xml` (cast times from the `ChaosCasting.spell` scripts), the stock attack
+and healing spells from `stock_spells.csv` (as the installed spells.xml has them, written by `rotation_sim.py --export-stock
+SERVER_DIR`), and `rotation_model.csv`: the average damage of one cast on the main target as the script's formula at the
+class's stats (the C4 stats: magic level 60 / 100 / 120 / 140 for casters, 10 / 25 / 32 / 40 for the others, weapon skill
+80 / 110 / 125 / 140 at levels 100 / 300 / 600 / 1000; weapon attack 45-65, crossbow 45-77), the 5-dummy targets it hits
+and flags (keep: a debuff the set always keeps up, Withering Curse, Judgement, Pressure Points; chi: a Monk finisher;
+skip: no direct damage or a condition the dummies never meet, Sunder Guard and Corpse Explosion). A priority rotation
+casts the first ready spell of its list whenever the attack group is free: the spell's cooldown, the cast spell's group
+cooldown on the attack group, its secondary group, a cast time holding the next cast, the Monk line's chi (one per auto
+attack hit, the auto attack never faster than `minPlayerAttackInterval`; finishers at 4 chi). The gap is the longest time
+between two casts over 120 s from a fresh start. The best set: every set of up to 5 among the class's strongest spells;
+gap <= 2.0 s first, then one that keeps 95% of the measured kit's damage on one target and on five when one can (a
+second pass over more spells when none does, then the closest), then one target + 0.25 x the 5-target total. Damage
+is relative (no tree, no class factor, no auto attack, no minions): a class's spell damage change bounds its total
+change.
+
+**What failed**: the Templar, the Inquisitor and the Sentinel at every band (gap 4.0 s: Radiant Smite every 4 s was the
+line's only short attack spell; the Templar and the Sentinel have two attack spells). A Mystic or Elementalist whose
+rotation held Sunder Guard (stock, no damage, +5% damage taken for 16 s) had no attack spell for 12 s after each cast
+(its attack group cooldown; the owner saw it). Every other class already had a set of at most 5 with a 2.0 s gap.
+
+**Changed**:
+- Radiant Smite (189): cooldown 4 s -> 2 s, damage x a class scale (`ChaosTemplar.cfg.radiantSmite`): Templar and
+  Sentinel 0.56 (5 casts per 20 s became 9), Inquisitor 0.69 (0.55 below level 120, before Purging Nova). Spell damage
+  of the line +0.2% to +0.6% (computed), the class factors unchanged.
+- Sunder Guard (stock, `server/tools/patch_spell_timings.py` from `spell_timings.csv`, install step `spells`): attack
+  group cooldown 12 s -> 2 s. No damage change (the debuff is the same; it is in no preset).
+- Kept on purpose: the 4 s attack group cooldown of the supreme strikes, Ruinous Cleave and the big stock area spells
+  (Infernal Heart, Endless Rime, Storm Crown's Wrath, Wildwood Ruin, Fading Step). At 2 s a Mystic casting every spell
+  deals about 30% more (computed); the best sets of at most 5 leave those spells out, so the "every spell" column below
+  keeps its 4 s for the casters and the Warrior line.
+
+**Rotations** (computed; the best set after the change in priority order, the gap of that best set before / after and of
+a rotation of every attack spell the class has before / after, the best set's damage per second before -> after and the
+change of the every-spell rotation, 1 target / 5 targets). The helper's Auto rotation button uses these sets
+(client/MANIFEST.md "Helper auto rotation").
+
+| Class | Level | Best set after, priority order | Gap: best set before / after; every spell before / after | Best set before -> after: 1 / 5 targets | Every spell: 1 / 5 targets change |
+|---|---|---|---|---|---|
+| Warrior | 100 | Butcher's Gyre > Scything Arc > Earthbreaker > Reaver's Spin | 2.0 / 2.0; 2.0 / 2.0 s | 132 / 476 -> 132 / 476 | +0.0% / +0.0% |
+| Warrior | 300 | Headsman's Hurl > Colossus Fall > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 4.0 / 4.0 s | 310 / 862 -> 310 / 862 | +0.0% / +0.0% |
+| Warrior | 600 | Headsman's Hurl > Colossus Fall > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 4.0 / 4.0 s | 411 / 1154 -> 411 / 1154 | +0.0% / +0.0% |
+| Warrior | 1000 | Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 4.0 / 4.0 s | 532 / 1505 -> 532 / 1505 | +0.0% / +0.0% |
+| Juggernaut | 100 | Butcher's Gyre > Scything Arc > Earthbreaker > Reaver's Spin | 2.0 / 2.0; 2.0 / 2.0 s | 132 / 476 -> 132 / 476 | +0.0% / +0.0% |
+| Juggernaut | 300 | Headsman's Hurl > Colossus Fall > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 4.0 / 4.0 s | 310 / 862 -> 310 / 862 | +0.0% / +0.0% |
+| Juggernaut | 600 | Headsman's Hurl > Colossus Fall > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 4.0 / 4.0 s | 411 / 1154 -> 411 / 1154 | +0.0% / +0.0% |
+| Juggernaut | 1000 | Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 4.0 / 4.0 s | 532 / 1505 -> 532 / 1505 | +0.0% / +0.0% |
+| Berserker | 100 | Butcher's Gyre > Skyfall Cleave > Scything Arc > Earthbreaker | 2.0 / 2.0; 2.0 / 2.0 s | 138 / 534 -> 138 / 534 | +0.0% / +0.0% |
+| Berserker | 300 | Headsman's Hurl > Butcher's Gyre > Skyfall Cleave > Scything Arc > Earthbreaker | 2.0 / 2.0; 4.0 / 4.0 s | 303 / 906 -> 303 / 906 | +0.0% / +0.0% |
+| Berserker | 600 | Headsman's Hurl > Colossus Fall > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 4.0 / 4.0 s | 411 / 1154 -> 411 / 1154 | +0.0% / +0.0% |
+| Berserker | 1000 | Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything Arc > Reaping Gyre | 2.0 / 2.0; 2.0 / 2.0 s | 532 / 1505 -> 532 / 1505 | +0.0% / +0.0% |
+| Ranger | 100 | Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 138 / 691 -> 138 / 691 | +0.0% / +0.0% |
+| Ranger | 300 | Hail of Dawn > Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 528 / 1495 -> 528 / 1495 | +0.0% / +0.0% |
+| Ranger | 600 | Hail of Dawn > Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 833 / 2219 -> 833 / 2219 | +0.0% / +0.0% |
+| Ranger | 1000 | Hail of Dawn > Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 1203 / 3054 -> 1203 / 3054 | +0.0% / +0.0% |
+| Deadeye | 100 | Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 138 / 691 -> 138 / 691 | +0.0% / +0.0% |
+| Deadeye | 300 | Hail of Dawn > Final Verdict > Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 619 / 1432 -> 619 / 1432 | +0.0% / +0.0% |
+| Deadeye | 600 | Hail of Dawn > Final Verdict > Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 963 / 2134 -> 963 / 2134 | +0.0% / +0.0% |
+| Deadeye | 1000 | Hail of Dawn > Final Verdict > Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 1377 / 2945 -> 1377 / 2945 | +0.0% / +0.0% |
+| Beastmaster | 100 | Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 138 / 691 -> 138 / 691 | +0.0% / +0.0% |
+| Beastmaster | 300 | Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 263 / 1316 -> 263 / 1316 | +0.0% / +0.0% |
+| Beastmaster | 600 | Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 377 / 1883 -> 377 / 1883 | +0.0% / +0.0% |
+| Beastmaster | 1000 | Blessed Earth > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 502 / 2511 -> 502 / 2511 | +0.0% / +0.0% |
+| Mystic | 100 | Bewitching Hex > Arcane Ripple | 2.0 / 2.0; 4.0 / 4.0 s | 427 / 750 -> 427 / 750 | +0.0% / +0.0% |
+| Mystic | 300 | Falling Pyre > Shattered Psyche > Bewitching Hex > Arcane Ripple | 2.0 / 2.0; 4.0 / 4.0 s | 586 / 1194 -> 586 / 1194 | +0.0% / +0.0% |
+| Mystic | 600 | Falling Pyre > Shattered Psyche > Tempest Fan > Arcane Ripple > Bewitching Hex | 2.0 / 2.0; 4.0 / 4.0 s | 637 / 1648 -> 637 / 1648 | +0.0% / +0.0% |
+| Mystic | 1000 | Falling Pyre > Shattered Psyche > Arcane Ripple > Bramble Fan | 2.0 / 2.0; 4.0 / 4.0 s | 722 / 2034 -> 722 / 2034 | +0.0% / +0.0% |
+| Elementalist | 100 | Tempest Fan > Forked Storm > Pyre Torrent > Witchfire Bolt | 2.0 / 2.0; 4.0 / 4.0 s | 177 / 554 -> 177 / 554 | +0.0% / +0.0% |
+| Elementalist | 300 | Doomtide > Frozen Crypt > Falling Pyre > Pyre Torrent > Witchfire Bolt | 2.0 / 2.0; 4.0 / 4.0 s | 431 / 1719 -> 431 / 1719 | +0.0% / +0.0% |
+| Elementalist | 600 | Doomtide > Frozen Crypt > Falling Pyre > Pyre Torrent > Witchfire Bolt | 2.0 / 2.0; 4.0 / 4.0 s | 548 / 2184 -> 548 / 2184 | +0.0% / +0.0% |
+| Elementalist | 1000 | Doomtide > Frozen Crypt > Falling Pyre > Pyre Torrent > Witchfire Bolt | 2.0 / 2.0; 4.0 / 4.0 s | 681 / 2716 -> 681 / 2716 | +0.0% / +0.0% |
+| Illusionist | 100 | Bewitching Hex > Arcane Ripple | 2.0 / 2.0; 4.0 / 4.0 s | 427 / 750 -> 427 / 750 | +0.0% / +0.0% |
+| Illusionist | 300 | Tear in the Weave > Nightburst > Primordial Squall > Bewitching Hex > Arcane Ripple | 2.0 / 2.0; 4.0 / 4.0 s | 552 / 1520 -> 552 / 1520 | +0.0% / +0.0% |
+| Illusionist | 600 | Nightburst > Primordial Squall > Shattered Psyche > Arcane Ripple > Bramble Fan | 2.0 / 2.0; 4.0 / 4.0 s | 624 / 1780 -> 624 / 1780 | +0.0% / +0.0% |
+| Illusionist | 1000 | Nightburst > Primordial Squall > Shattered Psyche > Arcane Ripple > Bramble Fan | 2.0 / 2.0; 4.0 / 4.0 s | 758 / 2176 -> 758 / 2176 | +0.0% / +0.0% |
+| Thief | 100 | Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 210 / 483 -> 210 / 483 | +0.0% / +0.0% |
+| Thief | 300 | Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 361 / 839 -> 361 / 839 | +0.0% / +0.0% |
+| Thief | 600 | Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 479 / 1119 -> 479 / 1119 | +0.0% / +0.0% |
+| Thief | 1000 | Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 620 / 1456 -> 620 / 1456 | +0.0% / +0.0% |
+| Ninja | 100 | Shadow Step > Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 254 / 391 -> 254 / 391 | +0.0% / +0.0% |
+| Ninja | 300 | Shadow Step > Shuriken Toss > Shuriken Barrage > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 432 / 672 -> 432 / 672 | +0.0% / +0.0% |
+| Ninja | 600 | Shadow Step > Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 567 / 887 -> 567 / 887 | +0.0% / +0.0% |
+| Ninja | 1000 | Shadow Step > Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 728 / 1145 -> 728 / 1145 | +0.0% / +0.0% |
+| Samurai | 100 | Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 210 / 483 -> 210 / 483 | +0.0% / +0.0% |
+| Samurai | 300 | Iaijutsu > Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 455 / 837 -> 455 / 837 | +0.0% / +0.0% |
+| Samurai | 600 | Iaijutsu > Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 592 / 1104 -> 592 / 1104 | +0.0% / +0.0% |
+| Samurai | 1000 | Iaijutsu > Shuriken Toss > Seeker Mine | 2.0 / 2.0; 2.0 / 2.0 s | 752 / 1421 -> 752 / 1421 | +0.0% / +0.0% |
+| Necromancer | 100 | Withering Curse > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 123 / 156 -> 123 / 156 | +0.0% / +0.0% |
+| Necromancer | 300 | Withering Curse > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 234 / 291 -> 234 / 291 | +0.0% / +0.0% |
+| Necromancer | 600 | Withering Curse > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 355 / 430 -> 355 / 430 | +0.0% / +0.0% |
+| Necromancer | 1000 | Withering Curse > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 508 / 607 -> 508 / 607 | +0.0% / +0.0% |
+| Lich | 100 | Withering Curse > Soul Rot > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 262 / 342 -> 262 / 342 | +0.0% / +0.0% |
+| Lich | 300 | Withering Curse > Soul Rot > Life Siphon > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 552 / 670 -> 552 / 670 | +0.0% / +0.0% |
+| Lich | 600 | Withering Curse > Soul Rot > Life Siphon > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 827 / 989 -> 827 / 989 | +0.0% / +0.0% |
+| Lich | 1000 | Withering Curse > Soul Rot > Life Siphon > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 1175 / 1391 -> 1175 / 1391 | +0.0% / +0.0% |
+| Bone Lord | 100 | Withering Curse > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 123 / 156 -> 123 / 156 | +0.0% / +0.0% |
+| Bone Lord | 300 | Withering Curse > Bone Offering > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 323 / 820 -> 323 / 820 | +0.0% / +0.0% |
+| Bone Lord | 600 | Withering Curse > Bone Offering > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 491 / 1229 -> 491 / 1229 | +0.0% / +0.0% |
+| Bone Lord | 1000 | Withering Curse > Bone Offering > Bone Spear | 2.0 / 2.0; 2.0 / 2.0 s | 706 / 1748 -> 706 / 1748 | +0.0% / +0.0% |
+| Monk | 100 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 218 / 323 -> 218 / 323 | +0.0% / +0.0% |
+| Monk | 300 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 336 / 496 -> 336 / 496 | +0.0% / +0.0% |
+| Monk | 600 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 454 / 669 -> 454 / 669 | +0.0% / +0.0% |
+| Monk | 1000 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 574 / 845 -> 574 / 845 | +0.0% / +0.0% |
+| Shadowfist | 100 | Pressure Points > Sundering Palm > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 217 / 217 -> 217 / 217 | +0.0% / +0.0% |
+| Shadowfist | 300 | Pressure Points > Shadowfist Flurry > Sundering Palm > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 384 / 384 -> 384 / 384 | +0.0% / +0.0% |
+| Shadowfist | 600 | Pressure Points > Shadowfist Flurry > Sundering Palm > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 535 / 535 -> 535 / 535 | +0.0% / +0.0% |
+| Shadowfist | 1000 | Pressure Points > Shadowfist Flurry > Sundering Palm > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 697 / 697 -> 697 / 697 | +0.0% / +0.0% |
+| Iron Sage | 100 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 218 / 323 -> 218 / 323 | +0.0% / +0.0% |
+| Iron Sage | 300 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 336 / 496 -> 336 / 496 | +0.0% / +0.0% |
+| Iron Sage | 600 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 454 / 669 -> 454 / 669 | +0.0% / +0.0% |
+| Iron Sage | 1000 | Sundering Palm > Whirling Heel > Ashen Fist | 2.0 / 2.0; 2.0 / 2.0 s | 574 / 845 -> 574 / 845 | +0.0% / +0.0% |
+| Templar | 100 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 183 / 372 -> 185 / 373 | +0.6% / +0.3% |
+| Templar | 300 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 316 / 657 -> 318 / 659 | +0.6% / +0.3% |
+| Templar | 600 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 413 / 887 -> 416 / 889 | +0.6% / +0.3% |
+| Templar | 1000 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 529 / 1166 -> 532 / 1169 | +0.6% / +0.3% |
+| Inquisitor | 100 | Judgement > Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 191 / 380 -> 192 / 381 | +0.5% / +0.2% |
+| Inquisitor | 300 | Judgement > Consecration > Purging Nova > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 391 / 1034 -> 391 / 1035 | +0.2% / +0.1% |
+| Inquisitor | 600 | Judgement > Consecration > Purging Nova > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 511 / 1376 -> 512 / 1376 | +0.2% / +0.1% |
+| Inquisitor | 1000 | Judgement > Consecration > Purging Nova > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 653 / 1784 -> 654 / 1785 | +0.2% / +0.1% |
+| Sentinel | 100 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 183 / 372 -> 185 / 373 | +0.6% / +0.3% |
+| Sentinel | 300 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 316 / 657 -> 318 / 659 | +0.6% / +0.3% |
+| Sentinel | 600 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 413 / 887 -> 416 / 889 | +0.6% / +0.3% |
+| Sentinel | 1000 | Consecration > Radiant Smite | 4.0 / 2.0; 4.0 / 2.0 s | 529 / 1166 -> 532 / 1169 | +0.6% / +0.3% |
+
+Against the measured C4 kit (the harness cast the class's Chaos attack spells, without the stock spells and the snares):
+the best set keeps at least 95% of the kit's spell damage on one target and on five at every band of every class but
+the three flagged below; the Necromancer, Monk and Templar lines and the Elementalist from level 300 are within 2%
+of it. It is higher for the classes whose best set takes stock spells or snares the harness did not cast (the Warrior
+line +73% to +185%, the Thief line, the Ranger line, the Mystic at levels 100-300, the Elementalist and the Illusionist at level 100):
+these spells were always castable, no number changed, but a helper that casts them deals more than the C4
+tables say. **Flag**: with Seeker Mine every 2 s the Ranger line's 5-target spell damage is above the Elementalist's
+(computed: Ranger 3054 against 2716 at level 1000, no tree), the order the snares were halved for on 2026-10-13. Not
+changed (an owner's call): a `skip` flag on the snares in `rotation_model.csv` keeps them out of the presets; or measure
+the presets the C4 way. **Flag**, below the kit: the Illusionist at level 600 (-6% on one target, -2% on five) and 1000 (-7% / -4%), the
+Mystic at level 1000 (-5% on one target). Their kits hold 7 strong spells, and a set of 5 with a cast every 2 s needs
+a filler; the search's second pass over more spells found nothing closer. A shorter cooldown at lower damage does not
+close it (computed for the Illusionist: Nightburst 12.5 s x0.5, Tear in the Weave 20 s x0.5, Blightswarm 4 s x0.5 all
+leave the best 5 further from the kit); a buff to the Illusionist's spells would raise its 7-spell rotation as much.
+Left for the owner.
+Below level 100 a few low levels still have a longer gap (the Warrior line at levels 16-29: 6 s and 4 s, before Reaping
+Gyre).
+The client had no entry for six base server spells the Mystic and the Illusionist have (Riftbolt, Crossfire Hex, Arcane
+Ripple, Bewitching Hex, Fading Step, Gravity Snare), so the helper could not cast them; `game_chaosspells/spellfix.lua`
+`F.EXTRA` adds them (the server's numbers, checked against `stock_spells.csv` by `spellfix_test.lua`).
+
+**Live check (measured, 2026-10-14)**: a test server (base server, src-patches 0001-0038, every `install_all.py` step)
+and the Linux client (base patches and overlay of this change), level 300 / 600 characters among 4 Bears with 3,000,000
+health, the helper's Auto rotation clicked, its shooter on for 120 s; the casts the server accepted logged
+(`ChaosSpellEvents` "cast"), the time between two attack casts measured on the server. 2.02-2.06 s is the 2 s group
+cooldown plus the round trip.
+
+| Class | Rotation (the button's) | Casts | Time between attack casts | Over 2.2 s |
+|---|---|---|---|---|
+| Templar 300, Radiant Smite 2 s | Consecration > Radiant Smite | 60 in 121 s | 2.02-2.06 s | 0 of 59 |
+| Templar 300, the server set back to 4 s (before) | the same | 17 in 62 s | median 4.03 s, max 4.05 s | 13 of 16 |
+| Mystic 600 | Falling Pyre > Shattered Psyche > Tempest Fan > Arcane Ripple > Bewitching Hex | 60 in 122 s | 2.03-2.06 s | 0 of 59 |
+| Mystic 600, Sunder Guard put first (the owner's case) | Sunder Guard + the above | 31 in 62 s (Sunder Guard 6) | 2.02-2.06 s | 0 of 30 |
+| Monk 300, first run | Sundering Palm > Whirling Heel > Ashen Fist | 59 in 121 s | max 2.31 s | 5 of 58 |
+| Monk 300, finishers wait for chi | the same | 60 in 122 s | 2.01-2.06 s | 0 of 59 |
+| Deadeye 300 | Hail of Dawn > Final Verdict > Blessed Earth > Seeker Mine | 60 in 122 s | 2.01-2.21 s | 1 of 59 (2.21 s) |
+
+The Monk's first run: the helper sent a finisher with no chi ("You have no chi", 14 times) and the refusal held the next
+cast about 0.3 s. Since then the helper's `ChaosHelperRotation.castable` reads the chi of the HUD (`game_monkchi`
+`currentChi`): an attack finisher waits for 4 chi (the simulated and measured rotation), Kindled Breath and Chi Ward for
+1; 0 refusals in the second run. Seen too: the button at the top right of the Targeting & Spell Rules panel, the rules and
+an empty healing tab filled (Templar: Vow of Mending at 45%), a question before replacing a changed rotation and before
+replacing a filled healing tab, the box "Rotation set: Consecration > Radiant Smite (max gap 2.0 s)", and a level-up
+(the Deadeye from 279 to 300) that changed the set without a click (Hail of Dawn added).
 
 ## Honest notes / limitations
 

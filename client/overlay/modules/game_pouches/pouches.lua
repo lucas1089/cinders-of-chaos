@@ -97,7 +97,7 @@ local function refreshAutoSeller()
     end
   end
   asWindow.corpseCheck:setChecked(not s.paused)
-  asWindow.listText:setText(AV.listText(s.list, s.slots))
+  asWindow.listPanel.listText:setText(AV.listText(s.list, s.slots)) -- listText sits inside listPanel
   for _, id in ipairs({ 'corpseCheck', 'itemEdit', 'addButton', 'removeButton', 'clearButton', 'sellButton' }) do
     local w = asWindow[id]
     if not s.unlocked then

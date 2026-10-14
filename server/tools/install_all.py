@@ -83,6 +83,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
                the class lines (Necromancer / Monk / Templar) put their own spell or data installers there
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
+               tools/patch_spell_timings.py      cooldowns and group cooldowns of base attack spells from
+                                                 data/spells/spell_timings.csv (no attack group lock over 2 s; spells
+                                                 README "Rotations")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
                0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
@@ -509,6 +512,9 @@ def step_spells(server, data, ctx):
     lines += more
     if ok and os.path.isfile(sql_out):
         ctx['rename_sql'] = sql_out
+    if ok:
+        ok, more = run_tool([tool('patch_spell_timings.py'), data], 'patch_spell_timings.py')
+        lines += more
     warn = unregistered_spell_fragments(data)
     return ok, lines, warn
 
