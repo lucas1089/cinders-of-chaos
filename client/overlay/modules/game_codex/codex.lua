@@ -7,7 +7,8 @@
 -- codex_data.lua: CodexData = {rarities, tierLevels, tierWeights, tierWindow, shared = {ref -> section},
 --   tabs = [{id, name, filters = [{key, label, match = "eq"|"has"|"max"|"ilvl", options = [{value, text}]}],
 --            entries = [{id, name, color, sub, f = {filter key -> value}, tiers, tv, sections,
---                       items = [server item ids: "Where to find" opens game_itemfinder]}]}]}
+--                       items = [server item ids: "Where to find" opens game_itemfinder],
+--                       art = an image path shown at the top of the page (a gem's five tiers, gen_gem_art.py)}]}]}
 --   section = {h, p = [paragraphs], cols = [names], w = [relative widths], rows = [[cells]], links = [entry id | ""],
 --              tiers = true (rows are T1..T8: the item level filter marks the ones that roll)} | {ref = shared key}
 -- Opened from the top menu (Economy > Codex, Alt+K) and from the crafting bench (right-click a modifier: open(id)).
@@ -151,6 +152,10 @@ local function showEntry(entry)
   if entry.color then window.pageTitle:setColor(entry.color) else window.pageTitle:setColor('#f6cf72') end
   window.pageSub:setText(CodexView.subline(entry, level, data))
   local page = window.page
+  if type(entry.art) == 'string' and entry.art ~= '' then
+    local art = g_ui.createWidget('CodexArt', page)
+    art.strip:setImageSource(entry.art)
+  end
   -- an item of the game (orb, currency, gem, unique, material): where to find it (game_itemfinder, server opcode 155)
   local finder = modules.game_itemfinder
   if type(entry.items) == 'table' and #entry.items > 0 and finder and finder.open then

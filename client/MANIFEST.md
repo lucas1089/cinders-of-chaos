@@ -1555,6 +1555,58 @@ append it to the next pair with
 dragon ham, client 3583; mode replace keeps server id 32084), then set `ownLook = true` in `store_food_config.lua` and run
 `install_store_food.py` again. Until then the item shows the dragon ham's look.
 
+## Gem looks (new, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems.csv`; not in a pair yet)
+**Source and licence.** The owner's gem set (Google Drive folder "ots", `gems.zip`, 609 KB, 2026-10-14; the owner:
+"Pode usar eles abertamente onde forem cabiveis", use them openly where they fit). Five gem families (bloomjade,
+jadecomb, sunshard, tidegem, voidorb) in ten tiers each; per tier a 32 x 288 PNG (nine 32 px frames, alpha 0 / 255,
+8-15 colours), a 192 px preview GIF (110 ms frames) and a 2304 x 256 preview sheet. No licence or readme file, no
+metadata, no name of any other game or server. Only the 32 px strips are read.
+- Our seven gems x five tiers from the source tiers 2, 4, 6, 8, 10: emerald = jadecomb, sapphire = tidegem,
+  amethyst = voidorb, topaz = sunshard (warmed to gold); recoloured per pixel (hue / saturation / value, alpha and
+  shading kept): ruby = bloomjade turned crimson, diamond = tidegem drained to ice white, onyx = voidorb drained to a
+  warm black-grey. Nine phases at 110 ms (synchronised), so the gems sparkle in the inventory.
+- `python3 -I gen_gem_art.py build --src DIR` writes `art_import/gems.png` (288 x 1120), `art_import/gems.csv`
+  (client 33905-33939 after the Everfull Ration 33904; flags `copy:` the stock gem each item used, so stackable and
+  multi-use stay; mode replace with server ids 32001-32035) and the Codex strips `overlay/data/images/game/gems/<key>.png`
+  (five tiers, phase 0, 2x). `build --check` (CI, Pillow 12.3.0 / numpy 2.5.3) rebuilds from the committed atlas.
+  `preview --out DIR --before-dat D --before-spr S`: sheet, GIF and a before / after against the stock sprites.
+- Used by: the Codex gem pages (`game_codex`: `CodexArt`, the entry's `art` from `gen_codex_data.lua`), the website
+  wiki's gem icons (`gm-<key>-<tier>`, `website/tools/gen_wiki_art.py`), and the items once a pair has them:
+  `chaos_gems_config.lua` `ownLook = true` and `install_gems.py` again (server/README.md "Gems and sockets").
+- Append after the Everfull Ration (client 33904) and before the status words:
+  ```
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat S1/Tibia.dat --ours-spr S1/Tibia.spr --out-dir S2 \
+      --things client/tools/sprites/art_import/gems.csv --first-item 33905 --expect-items 33904
+  ```
+- Trial (scratch only, 2026-10-14, not pushed): things_custom24 + Everfull Ration + gems + status words, below.
+
+## Status words (new, effects 656-673, `tools/sprites/gen_status_fx.py`, `art_import/status_fx.csv`; not in a pair yet)
+**Source and licence.** The owner's text effect set (Google Drive folder "ots", `text_effects.zip`, 2.6 MB,
+2026-10-14; the same grant as the gems). 15 word effects plus second / third takes of revived and rooted: per effect
+a vertical strip of square frames (96 px = 3 x 3 tiles, the first revived take 64 px), 8-16 frames, soft alpha, and
+preview GIFs and sheets. No licence or readme file, no metadata, no name of any other game or server. The folder
+"cataclysm" holds the OBLIVION! word. The `_frames` preview sheets also show older plain word effects (TOXIC!,
+CURSED!, CHILLED FOOT!, FREEZE!, POISONED!) for comparison; they are not read or used.
+- 18 effects `word_*` (blessed, oblivion, charmed, cursed, drenched, feared, frozen, impaled, reaped, revived,
+  revived_rise, revived_small, rooted, rooted_vines, shackled, shocked, smite, stunned): frames turned into a row, the
+  64 px take centred in 96 px, an empty frame dropped, alpha under 12 cleared; 3 x 3 sent at the target + (1, 1),
+  110 ms, alpha soft (`import_fx_art.py` keeps it, like the large effects).
+- `python3 -I gen_status_fx.py build --src DIR` writes `art_import/status_fx/<name>.png` (committed, 420 KB) and the
+  spec; `build --check` (CI) checks the spec against the strips and the PICKS table; `preview --out DIR`.
+- Append after the gems (effects after things_custom24's 655):
+  ```
+  python3 -I client/tools/sprites/import_fx_art.py --ours-dat S2/Tibia.dat --ours-spr S2/Tibia.spr --out-dir OUT \
+      --spec client/tools/sprites/art_import/status_fx.csv --expect-first-effect 656 \
+      --lua-out server/data/lib/chaos_status_fx_ids.lua --catalog-out server/data/spells/status_fx_catalog.csv
+  python3 -I client/tools/sprites/check_pair.py OUT/Tibia.dat OUT/Tibia.spr --old things_custom24/Tibia.dat things_custom24/Tibia.spr
+  ```
+- Trial pair (scratch, 2026-10-14; things_custom24 -> Everfull Ration 33904 -> gems 33905-33939 -> words 656-673):
+  dat dc1613e4479df53cf2e98efa9a7a5e5b (5,051,529 bytes), spr d970b1cbc61476ae47fbf8b5bbbff0e8 (635,988,303 bytes,
+  764,346 sprites: 1 + 292 + 1,093 appended, +1.57 MB), 33,939 items, 2,212 outfits, 673 effects. Built twice with
+  identical md5s; the importers verified 315 gem slots and 203 word frames pixel-identical; `check_pair.py --old`:
+  append-only, 0 errors, 124 warnings (the same as things_custom24). **Not pushed**: a new pair on windows-assets needs
+  the owner's approval. Server side: server/README.md "Status words" (switch `ChaosStatusFx.STATUS_FX`, off).
+
 ## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
 **On windows-assets (407ad9b6, owner approved 2026-10-13); switches on since 2026-10-13 (pair 24 at 407ad9b6).** Our own art for the themes of five reference sheets and four set showcases the owner
 showed: ten equipment sets, two auras, a pair of wings, four grounds with borders, six monster recolours. The sheets

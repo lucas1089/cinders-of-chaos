@@ -23433,7 +23433,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/gem-ff5a4a.png"
+					"icon": "wiki/i/gm-ruby-5.png"
 				},
 				{
 					"id": "gem:sapphire",
@@ -23484,7 +23484,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/gem-5a8cff.png"
+					"icon": "wiki/i/gm-sapphire-5.png"
 				},
 				{
 					"id": "gem:emerald",
@@ -23563,7 +23563,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/gem-4fd06a.png"
+					"icon": "wiki/i/gm-emerald-5.png"
 				},
 				{
 					"id": "gem:amethyst",
@@ -23648,7 +23648,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/gem-b070ff.png"
+					"icon": "wiki/i/gm-amethyst-5.png"
 				},
 				{
 					"id": "gem:topaz",
@@ -23727,7 +23727,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/gem-f6cf4a.png"
+					"icon": "wiki/i/gm-topaz-5.png"
 				},
 				{
 					"id": "gem:diamond",
@@ -23812,7 +23812,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/gem-e8f4ff.png"
+					"icon": "wiki/i/gm-diamond-5.png"
 				},
 				{
 					"id": "gem:onyx",
@@ -23897,7 +23897,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/gem-9a8c8c.png"
+					"icon": "wiki/i/gm-onyx-5.png"
 				},
 				{
 					"id": "gem:sockets",
@@ -23963,7 +23963,7 @@
 				}
 			],
 			"banner": "wiki/hero/tab-gems.webp",
-			"icon": "wiki/i/gem-ff5a4a.png",
+			"icon": "wiki/i/gm-ruby-5.png",
 			"tone": "#ff5a4a"
 		},
 		{

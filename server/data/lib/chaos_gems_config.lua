@@ -11,6 +11,12 @@
 return {
 	firstId = 32001,
 	highFrom = 4, -- tiers from here on use clientIdHigh when the type has one
+	-- our own gem looks (client/tools/sprites/gen_gem_art.py, art_import/gems.csv): client ids lookFirst.. =
+	-- lookFirst + (type - 1) * 5 + tier - 1 (33905..33939, after the Everfull Ration 33904), one animated look per gem
+	-- and tier. Not in a published pair yet: ownLook = false keeps the stock sprites above. Once a pair with them is on
+	-- windows-assets: ownLook = true, then install_gems.py again (server/README.md "Gems and sockets").
+	ownLook = false,
+	lookFirst = 33905,
 
 	-- the Orb of Sockets: an unused stackable use-with rune stone (no items.xml entry; install_gems.py names it)
 	socketOrb = {id = 24692, name = "Orb of Sockets",

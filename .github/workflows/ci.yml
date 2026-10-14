@@ -151,6 +151,9 @@ jobs:
       - name: Everfull Ration install (items.otb / items.xml, synthetic)
         run: python3 -I server/tools/install_store_food_test.py
 
+      - name: Gem install with our own looks (items.otb ownLook, synthetic)
+        run: python3 -I server/tools/install_gems_test.py
+
       - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
         run: python3 -I server/tools/weightless_patch_test.py
 
@@ -317,6 +320,10 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
+          # gem looks (the owner's gem set): atlas, things spec and the Codex strips match the generator (same pins)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gem_art.py build --check
+          # status words (the owner's text effect set): the spec matches the strips and the PICKS table
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_fx.py build --check
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)

@@ -2834,7 +2834,15 @@ local function revive(player)
 	end
 	local at = RF.entryOf(run)
 	player:teleportTo(Position(at.x, at.y, at.z))
-	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+	-- status words (data/lib/chaos_status_fx.lua): "REVIVED!" with its switch on, else the stock teleport effect
+	if not ChaosStatusFx then
+		pcall(dofile, "data/lib/chaos_status_fx.lua")
+	end
+	if ChaosStatusFx then
+		ChaosStatusFx.send(player:getPosition(), "rift_revive", CONST_ME_TELEPORT, id)
+	else
+		player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+	end
 	say(run, ChaosI18n.msg(run.lives == 1 and "%s returns to the rift (%d shared life left)." or
 		"%s returns to the rift (%d shared lives left).", player:getName(), run.lives))
 	-- the client asks for the HUD at game start too; this one covers a client that is already loaded

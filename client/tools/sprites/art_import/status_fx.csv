@@ -1,0 +1,19 @@
+kind,name,file,w,h,phases,ms,dx,dy,alpha,note
+effect,word_blessed,status_fx/word_blessed.png,3,3,11,110,1,1,soft,"BLESSED!: a golden ankh disc, light wings and sparkles (holy heals)"
+effect,word_oblivion,status_fx/word_oblivion.png,3,3,11,110,1,1,soft,OBLIVION!: red streaks crash down into a grey debris cloud (a boss channel)
+effect,word_charmed,status_fx/word_charmed.png,3,3,11,110,1,1,soft,CHARMED!: red hearts over a pink ring (charms)
+effect,word_cursed,status_fx/word_cursed.png,3,3,12,110,1,1,soft,"CURSED!: a dark orb with a skull, violet haze, dripping shadow (curses)"
+effect,word_drenched,status_fx/word_drenched.png,3,3,12,110,1,1,soft,DRENCHED!: a water serpent rises and splashes (water)
+effect,word_feared,status_fx/word_feared.png,3,3,11,110,1,1,soft,FEARED!: a violet orb turns into a grinning skull (fear and terror)
+effect,word_frozen,status_fx/word_frozen.png,3,3,12,110,1,1,soft,FROZEN!: an ice crystal grows over the word and shatters (freezing)
+effect,word_impaled,status_fx/word_impaled.png,3,3,11,110,1,1,soft,"IMPALED!: a dark spiked beast looms, blood drips (spears and spikes)"
+effect,word_reaped,status_fx/word_reaped.png,3,3,11,110,1,1,soft,REAPED!: a hooded shade rises with a violet glow (reaping strikes)
+effect,word_revived,status_fx/word_revived.png,3,3,11,110,1,1,soft,REVIVED!: a fire bird rises from flames (a return from death)
+effect,word_revived_rise,status_fx/word_revived_rise.png,3,3,16,110,1,1,soft,"REVIVED!: a sunburst, flames, a great fire bird with a ring (big returns)"
+effect,word_revived_small,status_fx/word_revived_small.png,3,3,12,110,1,1,soft,REVIVED!: a small fire bird over the word (centred from 2 x 2)
+effect,word_rooted,status_fx/word_rooted.png,3,3,9,110,1,1,soft,ROOTED!: roots and sprouts close over the word (roots and snares)
+effect,word_rooted_vines,status_fx/word_rooted_vines.png,3,3,12,110,1,1,soft,ROOTED!: green vines and thorns grow into a cage (vine prisons)
+effect,word_shackled,status_fx/word_shackled.png,3,3,11,110,1,1,soft,SHACKLED!: chains and a padlock close round the word (bindings)
+effect,word_shocked,status_fx/word_shocked.png,3,3,12,110,1,1,soft,SHOCKED!: pink and blue sparks arc over the word (lightning)
+effect,word_smite,status_fx/word_smite.png,3,3,10,110,1,1,soft,SMITE!: a holy starburst and a golden sword of light (holy strikes)
+effect,word_stunned,status_fx/word_stunned.png,3,3,8,110,1,1,soft,STUNNED!: a ring of stars circles over the word (stuns)

@@ -5640,6 +5640,7 @@ CodexData = {
 							}
 						}
 					},
+					art = "/images/game/gems/ruby",
 					items = {32001, 32002, 32003, 32004, 32005}
 				},
 				{
@@ -5682,6 +5683,7 @@ CodexData = {
 							}
 						}
 					},
+					art = "/images/game/gems/sapphire",
 					items = {32006, 32007, 32008, 32009, 32010}
 				},
 				{
@@ -5724,6 +5726,7 @@ CodexData = {
 							}
 						}
 					},
+					art = "/images/game/gems/emerald",
 					items = {32011, 32012, 32013, 32014, 32015}
 				},
 				{
@@ -5766,6 +5769,7 @@ CodexData = {
 							}
 						}
 					},
+					art = "/images/game/gems/amethyst",
 					items = {32016, 32017, 32018, 32019, 32020}
 				},
 				{
@@ -5808,6 +5812,7 @@ CodexData = {
 							}
 						}
 					},
+					art = "/images/game/gems/topaz",
 					items = {32021, 32022, 32023, 32024, 32025}
 				},
 				{
@@ -5850,6 +5855,7 @@ CodexData = {
 							}
 						}
 					},
+					art = "/images/game/gems/diamond",
 					items = {32026, 32027, 32028, 32029, 32030}
 				},
 				{
@@ -5892,6 +5898,7 @@ CodexData = {
 							}
 						}
 					},
+					art = "/images/game/gems/onyx",
 					items = {32031, 32032, 32033, 32034, 32035}
 				},
 				{

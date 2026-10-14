@@ -29,6 +29,11 @@ end
 if not ChaosPackFx then
 	pcall(dofile, "data/lib/chaos_pack_fx.lua")
 end
+-- status words (data/lib/chaos_status_fx.lua, switch ChaosStatusFx.STATUS_FX, off: nothing sent): the word of the
+-- spell a hit came from ("FROZEN!", "SMITE!" ...) over the creature hit
+if not ChaosStatusFx then
+	pcall(dofile, "data/lib/chaos_status_fx.lua")
+end
 
 ChaosCombatFx = ChaosCombatFx or {}
 local M = ChaosCombatFx
@@ -293,6 +298,9 @@ function M.onHit(creature, attacker, primaryDamage, primaryType, secondaryDamage
 	end
 	local pos = creature:getPosition()
 	local src = attacker:getId()
+	if ChaosStatusFx and ChaosStatusFx.STATUS_FX then
+		ChaosStatusFx.onSpellHit(creature, attacker, origin)
+	end
 	if critical == true then
 		M.crit(pos, src)
 	end

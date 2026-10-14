@@ -46,6 +46,20 @@ CodexHeading < CodexText
 CodexParagraph < CodexText
   margin-top: 3
 
+// a picture at the top of a page (entry.art: the five tiers of a gem); the strip keeps its own size
+CodexArt < UIWidget
+  height: 70
+  phantom: true
+  focusable: false
+
+  UIWidget
+    id: strip
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 4
+    size: 368 64
+    phantom: true
+
 // a link to another page of the Codex
 CodexLink < CodexText
   margin-top: 3

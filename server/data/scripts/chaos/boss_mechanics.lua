@@ -392,6 +392,13 @@ local function channelStep(f, now)
 	local boss = Monster(f.id)
 	if boss then
 		fx(boss:getPosition(), ch.spec.hit, ch.spec.fallback)
+		-- status words (data/lib/chaos_status_fx.lua, switch off: nothing more): "OBLIVION!" over the boss
+		if not ChaosStatusFx then
+			pcall(dofile, "data/lib/chaos_status_fx.lua")
+		end
+		if ChaosStatusFx then
+			ChaosStatusFx.send(boss:getPosition(), "channel_" .. tostring(ch.spec.key), nil, boss:getId())
+		end
 	end
 	for _, p in ipairs(fightPlayers(f)) do
 		hit(f, p, ch.spec.share)

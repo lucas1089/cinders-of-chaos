@@ -1596,6 +1596,7 @@ end
 --   tr-<iconKey>         a painted keystone or mastery (images/passivetree/painted_nodes.png, treedata/painted.lua)
 --   sup-<key>            a support rune (images/game/supports/, gen_support_icons.py)
 --   it-<set>-<kind>      an item of a themed set (client/tools/sprites/art_import/theme/items_<set>.png)
+--   gm-<key>-<tier>      a socket gem's look (client/tools/sprites/art_import/gems.png, gen_gem_art.py)
 --   top-<name>           a top menu button (client images/chaos/topbutton_<name>.png, gen_theme_art.py)
 --   img/class-<key>.png  the website's class badges (website/tools/gen_site_art.py)
 -- The art of an icon only illustrates the entry: a unique shows a themed piece of its slot, not its own sprite.
@@ -1620,10 +1621,14 @@ end
 local function gem(hex)
 	return ICON .. "gem-" .. tostring(hex):gsub("^#", ""):lower() .. ".png"
 end
+-- a socket gem's own look (its Perfect tier unless named)
+local function gemLook(key, tier)
+	return ICON .. "gm-" .. key .. "-" .. tostring(tier or 5) .. ".png"
+end
 local function classBadge(key)
 	return "img/class-" .. key .. ".png"
 end
-W.icon = {kit = kit, orb = orb, top = top, item = item, gem = gem, class = classBadge}
+W.icon = {kit = kit, orb = orb, top = top, item = item, gem = gem, gemLook = gemLook, class = classBadge}
 
 -- element words of the data -> kit theme
 local ELEMENT_THEME = {fire = "fire", ice = "frost", energy = "light", earth = "poison", death = "shadow", holy = "holy",
@@ -1642,7 +1647,7 @@ end
 -- the reference tabs
 local TAB_ICON = {classes = top("skills"), spells = top("spells"), tree = top("passivetree"), basics = top("help"),
 	modifiers = kit("arcane", "nodes"), powers = kit("fire", "flame"), uniques = item("sunsworn", "sword"),
-	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gem("#ff5a4a"),
+	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gemLook("ruby"),
 	supports = ICON .. "sup-emberbrand.png", rift = ICON .. "rx-portal.png", dungeons = top("dungeons"),
 	bosses = kit("blood", "skull"), events = top("events"), monsters = kit("shadow", "ghost"),
 	materials = kit("nature", "leaf"), lore = kit("ember", "eye"), store = top("vip")}
@@ -1843,7 +1848,7 @@ function W.entryIcon(tab, e, src)
 		end
 		return orb("arcane", "swirl")
 	elseif tab == "gems" then
-		return rest == "sockets" and kit("steel", "ring") or gem(e.color or "#d6c9ae")
+		return rest == "sockets" and kit("steel", "ring") or gemLook(rest)
 	elseif tab == "supports" then
 		return ICON .. "sup-" .. rest .. ".png"
 	elseif tab == "rift" then
@@ -2021,7 +2026,7 @@ function W.sectionIcons(e, src)
 	end
 end
 
--- icons, banners and the art table; the entries' iconKey (a helper) is dropped
+-- icons, banners and the art table; the entries' iconKey (a helper) and art (a client image) are dropped
 -- the real sprite of an entry (website/README.md "Sprite images"): {item = <server id>} for a unique, the first piece
 -- of a set; the website shows it only when the item's art is ours and published, else the themed icon above
 function W.entrySprite(tab, e)
@@ -2050,6 +2055,7 @@ function W.decorate(tabs, src)
 			e.icon = W.entryIcon(t.id, e, src)
 			e.sprite = W.entrySprite(t.id, e)
 			e.iconKey = nil
+			e.art = nil -- a client image path (the Codex's gem strip); the wiki shows its icon instead
 			W.sectionIcons(e, src)
 		end
 	end

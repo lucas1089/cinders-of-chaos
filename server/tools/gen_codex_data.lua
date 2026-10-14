@@ -982,6 +982,8 @@ function Gen.gemEntries(D)
 			sub = string.format("Weapon: %s; armour: %s; jewellery: %s", cfg.effects[t.weapon.effect].label,
 				cfg.effects[t.armour.effect].label, cfg.effects[t.jewel.effect].label),
 			f = {group = "gem"}, items = gemIds,
+			-- the five tiers of its look (client images/game/gems/<key>.png, client/tools/sprites/gen_gem_art.py)
+			art = "/images/game/gems/" .. t.key,
 			sections = {
 				{h = "Effects by tier", p = {"A gem gives one effect, chosen by the item it sits in: weapons, armour (every other gear) or jewellery (amulets and rings). Remove = gold to take it out intact (Shatter is free and destroys it)."},
 					cols = {"Tier", "Weapon", "Armour", "Jewellery", "Remove"}, w = {14, 24, 24, 24, 14}, rows = rows},

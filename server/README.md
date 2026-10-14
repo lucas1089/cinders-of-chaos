@@ -6993,6 +6993,14 @@ onyx chip 22193); Flawless and Perfect ruby, sapphire, emerald and amethyst use 
 tile set uses 30484..30557 (client id + 3000), so the two id ranges stay apart. The Orb of Sockets is the unused
 stackable use-with rune stone 24692 (named by the installer, like the crafting orbs).
 
+**Own looks** (`ownLook`, off): animated looks of our own for every gem and tier, client 33905-33939 = `lookFirst` +
+(type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py, from the owner's gem set; client/MANIFEST.md "Gem
+looks"). They are not in a published pair yet. Flip step once a pair with them is on windows-assets:
+`ownLook = true` in `chaos_gems_config.lua`, `python3 -I server/tools/install_gems.py <server>/data` (rewrites the 35
+nodes with the new client ids, the rest of each node stays the stock gem's), restart. `ChaosGems.clientIdOf` follows
+the switch. Rollback: false and the installer again (byte-identical to before). Test: `tools/install_gems_test.py`.
+The Codex gem pages and the wiki icons show the new art already (images, not sprites).
+
 **Sockets on an item**: custom attributes `chaos_sockets` (count) and `chaos_gem1..3` (the gem's server id). The most
 sockets is the lower of two limits. By kind: one-handed weapon 2, two-handed weapon 3, armour 3, shield, helmet and
 legs 2, boots, amulets, rings and other gear 1. By rarity: none, Common-Rare 1; Epic-Exotic, Mythic-Eternal 2;
@@ -10753,6 +10761,28 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   whose script sends that name, every use is a pack use; the round telegraph test; off: nothing big and the pack lib
   sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites).
   Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; `ChaosBigFx.live()` true, big_rift_void_7 = 654, a 7x7 telegraph sent. Not seen in a client.
+
+## Status words (`data/lib/chaos_status_fx.lua`, `data/lib/chaos_status_fx_ids.lua`, switch `ChaosStatusFx.STATUS_FX`, off)
+Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, from the owner's text effect set
+(client/MANIFEST.md "Status words", effects 656-673 of the next pair). Effects only: nothing else changes.
+- Spell hits: `combat_fx.lua`'s damage event calls `ChaosStatusFx.onSpellHit`; it reads the attacker's cast context
+  (storage 7109990, written by `data/spells/chaos/_supports.lua` while a spell's own hits run; damage over time
+  excluded) and sends the spell's word (`C.spells`): Frozen Crypt frozen, Briar Prison rooted_vines, Primordial Squall
+  drenched, Skewering Line and Bone Spear impaled, Reaping Gyre reaped, Radiant Smite and Judgement smite, Withering
+  Curse cursed, Shattered Psyche feared, Forked Storm shocked. Only creatures the combat event is registered on (what
+  players attack), like the crit bursts.
+- Uses (`C.uses`, `ChaosStatusFx.send(pos, use, stockEffect, key)`): Iron Palm's real stun stunned
+  (`iron_palm.lua`), Lay on Hands blessed on the healed member (`lay_on_hands.lua`), the rift return after a death
+  revived_rise (`rift.lua`, else the stock teleport effect), a boss channel nobody stopped `channel_<key>`
+  (`boss_mechanics.lua`): Nyxareth's Oblivion oblivion over the boss. charmed, shackled, revived, revived_small and
+  rooted are in the pair for later.
+- Throttle: one word per creature in 2 s, three creatures per cast (an area spell on a pack shows three words).
+- Off (shipped): every call site sends exactly what it sent before. Flip step once the pair with effects 656-673 is
+  on windows-assets: `C.STATUS_FX = true` (and the check in `tests/status_fx_test.lua`), `install_all.py SERVER_DIR
+  --only files`, restart. A client on an older pair draws nothing for 656-673.
+- Tests: `tests/status_fx_test.lua` (switch line; spec, ids file and catalog agree in order from 656; every spell id
+  exists under its name; every use has its call site; off: the stock effect; on: the word at +1,+1, the throttles,
+  no word for damage over time, monsters or a cast without a word). Not run on a server or in a client yet.
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 

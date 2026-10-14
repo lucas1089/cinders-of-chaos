@@ -154,6 +154,13 @@ eq(G.itemName(4, 2, true), "flawed amethysts", "items.xml plural")
 eq(G.clientIdOf(1, 3), 3030, "small ruby sprite up to Polished")
 eq(G.clientIdOf(1, 4), 676, "enchanted ruby sprite from Flawless")
 eq(G.clientIdOf(5, 5), 9057, "topaz has no high sprite")
+-- our own gem looks (client/tools/sprites/art_import/gems.csv) once a pair has them: config ownLook
+eq(G.config.ownLook, false, "stock sprites until a pair with our gem looks is published")
+G.config.ownLook = true
+eq(G.clientIdOf(1, 1), 33905, "own look: chipped ruby first")
+eq(G.clientIdOf(1, 4), 33908, "own look: flawless ruby")
+eq(G.clientIdOf(7, 5), 33939, "own look: perfect onyx last")
+G.config.ownLook = false
 
 -- ---------------------------------------------------------------- effects
 local e = G.effectOf(32004, "weapon")
