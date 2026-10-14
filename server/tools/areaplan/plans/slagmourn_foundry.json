@@ -1,0 +1,430 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "slagmourn_foundry",
+  "name": "Slagmourn Foundry",
+  "biome": "lava",
+  "size": [
+    188,
+    168
+  ],
+  "floors": 1,
+  "level": [
+    1000,
+    1150
+  ],
+  "seed": 25403,
+  "origin": {
+    "x": 14340,
+    "y": 14700,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "quench_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "bellows_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "slag_heart",
+      "floor": 1,
+      "size": [
+        30,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "anvil_terraces",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "crucible_rim",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "cinder_sluice",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "molten_drift",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "ashfall_pit",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "clinker_warrens",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "founders_hoard",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    },
+    {
+      "id": "tapping_hall",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ]
+    },
+    {
+      "id": "bloomery_vault",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "smelters_rest",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ]
+    },
+    {
+      "id": "scoria_run",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "ingot_cells",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "flux_basin",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "quench_camp",
+      "to": "bellows_gallery",
+      "width": 3
+    },
+    {
+      "from": "bellows_gallery",
+      "to": "anvil_terraces",
+      "width": 3
+    },
+    {
+      "from": "anvil_terraces",
+      "to": "crucible_rim",
+      "width": 3
+    },
+    {
+      "from": "crucible_rim",
+      "to": "cinder_sluice",
+      "width": 3
+    },
+    {
+      "from": "cinder_sluice",
+      "to": "molten_drift",
+      "width": 3
+    },
+    {
+      "from": "molten_drift",
+      "to": "ashfall_pit",
+      "width": 3
+    },
+    {
+      "from": "ashfall_pit",
+      "to": "clinker_warrens",
+      "width": 3
+    },
+    {
+      "from": "clinker_warrens",
+      "to": "quench_camp",
+      "width": 3
+    },
+    {
+      "from": "quench_camp",
+      "to": "slag_heart",
+      "width": 4
+    },
+    {
+      "from": "slag_heart",
+      "to": "anvil_terraces",
+      "width": 3
+    },
+    {
+      "from": "slag_heart",
+      "to": "cinder_sluice",
+      "width": 3
+    },
+    {
+      "from": "slag_heart",
+      "to": "ashfall_pit",
+      "width": 3
+    },
+    {
+      "from": "bellows_gallery",
+      "to": "tapping_hall",
+      "width": 3
+    },
+    {
+      "from": "tapping_hall",
+      "to": "slag_heart",
+      "width": 3
+    },
+    {
+      "from": "crucible_rim",
+      "to": "bloomery_vault",
+      "width": 3
+    },
+    {
+      "from": "molten_drift",
+      "to": "scoria_run",
+      "width": 3
+    },
+    {
+      "from": "scoria_run",
+      "to": "founders_hoard",
+      "width": 2
+    },
+    {
+      "from": "clinker_warrens",
+      "to": "smelters_rest",
+      "width": 3
+    },
+    {
+      "from": "smelters_rest",
+      "to": "ingot_cells",
+      "width": 3
+    },
+    {
+      "from": "cinder_sluice",
+      "to": "flux_basin",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "quench_camp"
+  },
+  "exit": {
+    "zone": "quench_camp"
+  },
+  "spawns": [
+    {
+      "zone": "bellows_gallery",
+      "monster": "Dawn Strayer",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "bellows_gallery",
+      "monster": "Scaleborn",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_heart",
+      "monster": "Celestial Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_heart",
+      "monster": "Twisted Shaper",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "anvil_terraces",
+      "monster": "Scaleborn",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "anvil_terraces",
+      "monster": "Vorkhaz",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "crucible_rim",
+      "monster": "Celestial Wyrm",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "crucible_rim",
+      "monster": "Jungle Warrior",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "cinder_sluice",
+      "monster": "Twisted Shaper",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "cinder_sluice",
+      "monster": "Vorkhaz",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "molten_drift",
+      "monster": "Jungle Warrior",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "molten_drift",
+      "monster": "Celestial Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "ashfall_pit",
+      "monster": "Dawn Strayer",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "ashfall_pit",
+      "monster": "Twisted Shaper",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "clinker_warrens",
+      "monster": "Scaleborn",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "clinker_warrens",
+      "monster": "Dawn Strayer",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "founders_hoard",
+      "monster": "Vorkhaz",
+      "count": 2,
+      "respawn": 180
+    },
+    {
+      "zone": "tapping_hall",
+      "monster": "Jungle Warrior",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "tapping_hall",
+      "monster": "Scaleborn",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "bloomery_vault",
+      "monster": "Vorkhaz",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "bloomery_vault",
+      "monster": "Celestial Wyrm",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "smelters_rest",
+      "monster": "Dawn Strayer",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "smelters_rest",
+      "monster": "Twisted Shaper",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "scoria_run",
+      "monster": "Jungle Warrior",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "scoria_run",
+      "monster": "Vorkhaz",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "ingot_cells",
+      "monster": "Scaleborn",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "ingot_cells",
+      "monster": "Jungle Warrior",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "flux_basin",
+      "monster": "Celestial Wyrm",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "flux_basin",
+      "monster": "Twisted Shaper",
+      "count": 5,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "founders_hoard",
+      "quest": "slagmourn_ingot",
+      "reward": {
+        "gold": 1200000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 4
+          }
+        ],
+        "message": "Ingots cast for a forge that went cold."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a buried slag foundry for levels 1000-1150, the first lava hunt past 1000. 14 hunting zones in two rings around the slag heart, a treasure room off the scoria run."
+}

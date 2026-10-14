@@ -468,7 +468,7 @@ open tile, lights per 100 tiles and the spam share.
 - The chest script gives items, gold and experience; quest logic beyond that is hand-written.
 
 ### Content plans
-`server/tools/areaplan/plans/`: ten production plans for the thin level bands (docs/CONTENT.md). CI validates and
+`server/tools/areaplan/plans/`: fourteen production plans for the thin level bands (docs/CONTENT.md). CI validates and
 compiles them with the examples. Each has its own `origin`, one 200 x 200 cell in the empty block east and south of
 the generated areas (rows y 14340, 14540, 14940 and 15140; the plaza at 14800, 14800 sits in the free band between),
 so they never overlap each other, the generated areas or the plaza. Since 2026-10-14 each is four times the first
@@ -487,8 +487,30 @@ loops, 3.2-3.5 monsters per 100 walkable tiles:
 | mirefang_basin | 880-999 | 176 x 140 | 14900, 14940, 8 | 14934, 14967, 8 |
 | rimecrown_depths | 1000-1120 | 180 x 140 | 15100, 14940, 7 | 15189, 14967, 7 |
 | cinderglass_sanctum | 1120-1300 | 192 x 152, 2 floors | 14700, 15140, 9 | 14795, 15260, 9 |
+| slagmourn_foundry | 1000-1150 | 188 x 168 | 14340, 14700, 10 | 14376, 14783, 10 |
+| hollowmass_reliquary | 1150-1300 | 184 x 156, 2 floors | 14340, 14920, 9 | 14431, 15043, 9 |
+| gallowfen_mire | 1300-1450 | 184 x 176 | 14900, 14700, 8 | 14991, 14734, 8 |
+| voidscar_chasm | 1400-1500 | 192 x 176, 2 floors | 15100, 14700, 11 | 15252, 14787, 11 |
 
-Placing one:
+The last four sit west of the generated areas' column (x 14340, below y 14686) and in the band between rows 14540
+and 14940 east of the plaza (x 14900 and 15100, y 14700), at least 10 tiles from every other plan, the generated
+areas, the plaza and the two chronicle cells (14900, 15140 and 15100, 15140). Still free: 14340, 15140.
+
+**The way in: the teleport room.** `install_all.py` step `contentareas` (`server/tools/install_content_areas.py`)
+places every plan at its own origin, with its spawns and chest script, and grows the teleport room of Cinderhold
+(the hub the "Teleports" portals beside Cinderhold's temple lead to; floor 6, "More Teleports", of the
+three-floor hall at 31627-31669, 32251-32261) by five alcove modules on each side:
+20 new teleports, one per plan in the order of `hunt_teleports_config.lua` (a plan missing there comes after, by band),
+room for 14 plans and 6 spare. Each teleport has the plan's name and band on its sign and floating over it, and two
+monsters of the plan in the cells beside it, like the room's own. Below the band's floor
+it refuses (in the player's language); the camp portal of a placed plan leads back to the middle of the room. Safe to
+re-run; it reads the plans at run time (a moved or resized plan that was placed already is refused: restore
+`<map>.otbm.bak` and install again). Details: server/README.md "Hunt teleports".
+```
+python3 -I server/tools/install_content_areas.py SERVER_DIR/data --dry-run      # what it would do
+python3 -I server/tools/install_all.py SERVER_DIR --only contentareas            # do it
+```
+Placing one by hand (a copy of the map, for the map editor):
 ```
 python3 -I server/tools/area_planner.py compile server/tools/areaplan/plans/widowmere.json OUT
 python3 -I server/tools/area_planner.py render server/tools/areaplan/plans/widowmere.json OUT items.otb items.xml Tibia.dat Tibia.spr
@@ -498,10 +520,8 @@ python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest 
 ```
 - Keep the origin of the table in `--at`: the chest script keys its chests by the origin, and `place` rewrites it
   when the area moves.
-- Every area exits through its portal at the camp (action id 47951), which sends a player to its temple. Give the
-  plan's `exit` a `to` to send players back beside your entrance instead. The way in is up to you: a teleport on the
-  live map to the arrival tile above. Put it near a town whose band is thin: today the 500-700 hunts sit near Dunescar and the
-  700-1000 hunts near Wyrmscar, so an entrance near another temple spreads the players.
+- A new plan gets its teleport at the next install; a line in `hunt_teleports_config.lua` `plans` (id and display
+  monster) chooses its place and monster. More plans than slots: raise `modules` of a side there.
 - The monsters of the 650-1300 plans spawned nowhere before. Check their art in the client first
   (server/data/monster/CUSTOM_MONSTERS.md).
 - After placing, rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`, so the bounty board, the

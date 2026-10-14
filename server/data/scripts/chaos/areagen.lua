@@ -487,7 +487,9 @@ function step.onStepIn(creature, item, position, fromPosition)
 	-- the exit: back beside the entrance, or to the temple for an area without one
 	local entry = areaOfExit(position)
 	local back = entry and (entry.def.back or entry.def.entrance)
-	player:teleportTo(back and P(back) or player:getTown():getTemplePosition())
+	-- a planned content hunt's exit: back to the teleport room (hunt_teleports.lua)
+	local room = not back and ChaosHuntTeleports and ChaosHuntTeleports.backFor and ChaosHuntTeleports.backFor(position)
+	player:teleportTo(back and P(back) or room or player:getTown():getTemplePosition())
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	return true
 end

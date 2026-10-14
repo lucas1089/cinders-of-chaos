@@ -11456,6 +11456,58 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   install on synthetic maps, pair 24 switch, knowledge base, AI fix loop on a fake endpoint). Previews of the examples
   were rendered with things_custom23 for review only.
 
+## Hunt teleports (`hunt_teleports.lua`, `hunt_teleports_core.lua`, `hunt_teleports_config.lua`, `tools/install_content_areas.py`)
+The way into the ten planned content hunts (`tools/areaplan/plans/`, docs/MAP_GUIDE.md "Content plans"): new teleports
+in the base server's teleport room. Owner: "Coloque um teleporte pra elas na sala de teleports"; "Aumente a sala de
+teleports mantendo o mesmo design dela. O teleport na frente de um monstro dela".
+
+**The room.** The hub the "Teleports" portals beside Cinderhold's temple (town 2, temple 32369, 32241, 7) lead to: a
+hall on three floors (z 5, 6, 7) at x 31627-31669, y 32251-32261, the stairs in the middle (31648, 32257). Each floor
+has 16 teleports in alcoves of 4 columns along a carpet corridor (north row y 32254, south row y 32258), a counter with
+a sign behind each teleport, two closed one-tile cells beside the counter with a monster of the hunt in each (spawn file,
+radius 1; the cells are not PZ, the corridor is) and a teleport to the temple at each end. Every slot was taken. The
+hunts take floor 6 ("More Teleports"), which has no tile around it.
+
+**Install** (`install_all.py` step `contentareas`, after houses and before poi; on its own
+`python3 -I server/tools/install_content_areas.py <server>/data [--dry-run] [--only ID,...] [--no-room]`):
+- Compiles every plan (`area_planner.py compile`, read at run time: size, origin and arrival are never copied) and
+  pastes it into the map at its own origin; refused when a tile lands on a map tile.
+- Grows floor 6 by `modules` (5) alcove modules on each side: the columns of `room.east.module` / `room.west.module`
+  are copied one after another past the old end, and the end (`cap`, with its temple teleport and destination) moves
+  out by 20. Only the old end's 34 tiles are replaced (cut from the map file); the 420 other new tiles land where the map
+  has none, else nothing is written. The copies have no teleport and blank signs: 20 new slots (x 31610-31626 and
+  31670-31686, both rows; room for the 14 plans of 2026-10-14 and 6 spare); floor 6 spans x 31606-31690 instead of
+  31626-31670.
+- Spawn file: the plans' spawn blocks (marked `chaoscontent="ID"`) and two display monsters per used slot in the cells
+  beside its counter (`chaoshunt="ID"`, spawntime `displaySpawntime`), the same way the room shows its own hunts. A
+  display monster is a frequent monster of the plan whose look renders in the client pair (checked:
+  Deathrattle 1150, Hellflayer 856, Nightfang Widow 1404, Ashfang Wrym 1418, Hellmaw Brute 1409, Black Stag 686,
+  Ironhook Corsair 1492, Elite Tidecrest Serpent 675, Celestial Wyrm 1500, Black Vixen 1475). Display blocks of a
+  slot no longer used are removed.
+- Chest scripts (`area_planner.py install`) and `data/lib/chaos_hunt_places.lua`: per plan its teleport, sign,
+  arrival, exit and band.
+- Idempotent: a placed plan (same tiles) and a grown room are left alone; a plan changed after it was placed is
+  refused (restore `<map>.otbm.bak`, written before the first change when missing, and run the install again). The
+  map goes through `<map>.otbm.tmp` and its tile count is checked before it replaces the old one. The action id must not
+  be on the map (checked). Measured on a copy of the live map: 127,827 tiles added, 34 replaced, 1,417 spawn blocks +
+  20 display spawns, 87 s; a second run changes nothing.
+
+**In game.** At startup `hunt_teleports.lua` puts a magic forcefield (1387) with action id **47930** (block
+**47930-47939**, the rest free) on each slot of a placed plan, gives it a description and writes the sign behind it
+("Widowmere, levels 480-640" and the pt-BR line). Every `floatText.interval` ms the label floats over each teleport for
+the players near it, each in their own language (the base room labels its teleports the same way). Stepping in below
+the floor of the band (`minLevel` overrides it): back where the player came from, a poff and "Widowmere is for level
+480 and above." (pt-BR: "Widowmere é para nível 480 ou mais."); else the teleport effect, the arrival tile and the band.
+The camp portal of a placed plan (action id 47951, `areagen.lua`) sends players back to the corridor (31648, 32256, 6)
+through `ChaosHuntTeleports.backFor`; other areas keep their exits. Slot order: the config's `plans`, east side from the
+stairs outward, then west, north before south in each column; `slot` pins one. A plan missing from `plans` still
+gets a teleport after the listed ones (by band) with its most frequent monster on display (the install log names it:
+check its look, then list the plan to choose).
+Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock), `tools/install_content_areas_test.py`
+(synthetic map: dry run, grow, place, spawns, places file, second run, refusals, reorder, --only).
+- **Assumption:** the base room lives on floors 5-7 above the open ground of z 7, so the new wings of floor 6 hang over
+  grass seen from z 7 outside the hall like the rest of the hall's upper floors.
+
 ## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
 
 Over every player the client draws three lines, like a name plate: the **active title** (coloured by where it comes from),

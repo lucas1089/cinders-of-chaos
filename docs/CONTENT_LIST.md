@@ -138,7 +138,7 @@ From docs/CONTENT.md (measured with `tools/content_audit.py` on the loaded map).
 | 300-500 | 105 | 3,537 | 138 | - | world boss and faction lines |
 | 500-700 | 14 | 280 | 14 | 3 planned | The Wyrm Tithe |
 | 700-1000 | 10 | 212 | 10 | Hollow Vault, 3 planned | Requiem for the Ash-Sister |
-| 1000+ | 0 | 0 | 0 | 3 generated, 2 planned | The Last Ember |
+| 1000+ | 0 | 0 | 0 | 3 generated, 6 planned | The Last Ember |
 
 The whole loaded map: 5.36 million walkable tiles, 74,071 spawn entries, 1,195 hunting areas (ROADMAP #89).
 
@@ -455,7 +455,7 @@ pvp, social, economy, store, rules, faq.
 
 These are finished as plans or code. The owner still has to place them in the map editor.
 
-Planned hunting areas (10, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
+Planned hunting areas (14, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
 
 | Plan | Levels | Biome |
 |---|---|---|
@@ -469,9 +469,13 @@ Planned hunting areas (10, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
 | mirefang_basin | 880-999 | swamp |
 | rimecrown_depths | 1000-1120 | ice |
 | cinderglass_sanctum | 1120-1300 | sanctum, 2 floors |
+| slagmourn_foundry | 1000-1150 | lava |
+| hollowmass_reliquary | 1150-1300 | crypt, 2 floors |
+| gallowfen_mire | 1300-1450 | swamp |
+| voidscar_chasm | 1400-1500 | abyss, 2 floors |
 
-Each is four times the first draft (2026-10-14). Placed, they lift 500-700 from 14 to about 50 parties at once,
-700-1000 from 10 to about 46, 1000+ from 0 to 28.
+Each is four times the first draft (2026-10-14); the last four were added the same day. Placed, they lift 500-700
+from 14 to about 50 parties at once, 700-1000 from 10 to about 46, 1000+ from 0 to about 81.
 
 Chronicle and memorial areas (in `server/tools/areaplan/chronicle/`):
 

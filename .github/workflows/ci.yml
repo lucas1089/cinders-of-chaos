@@ -127,6 +127,9 @@ jobs:
             python3 -I server/tools/area_planner.py compile "$p" "$d"
           done
 
+      - name: Content areas install and the teleport room (install_content_areas.py on a synthetic map)
+        run: python3 -I server/tools/install_content_areas_test.py
+
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
 

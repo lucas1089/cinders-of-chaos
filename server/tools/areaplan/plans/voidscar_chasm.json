@@ -1,0 +1,485 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "voidscar_chasm",
+  "name": "Voidscar Chasm",
+  "biome": "abyss",
+  "size": [
+    192,
+    176
+  ],
+  "floors": 2,
+  "level": [
+    1400,
+    1500
+  ],
+  "seed": 25406,
+  "origin": {
+    "x": 15100,
+    "y": 14700,
+    "z": 11
+  },
+  "decoration": "dense",
+  "light": "dark",
+  "zones": [
+    {
+      "id": "rimward_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "shattered_lip",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "maw_of_glass",
+      "floor": 1,
+      "size": [
+        30,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "starless_shelf",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "hollow_spire",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "unlit_terrace",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "riftbone_field",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "weeping_scarp",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "eclipse_ledge",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "descent_well",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "abyssal_landing",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "nether_basin",
+      "floor": 2,
+      "size": [
+        30,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "silent_throat",
+      "floor": 2,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "gloam_hollows",
+      "floor": 2,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "veil_rupture",
+      "floor": 2,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "scar_reliquary",
+      "floor": 2,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    },
+    {
+      "id": "marrow_drift",
+      "floor": 2,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "lightless_cells",
+      "floor": 2,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "rimward_camp",
+      "to": "shattered_lip",
+      "width": 3
+    },
+    {
+      "from": "shattered_lip",
+      "to": "starless_shelf",
+      "width": 3
+    },
+    {
+      "from": "starless_shelf",
+      "to": "hollow_spire",
+      "width": 3
+    },
+    {
+      "from": "hollow_spire",
+      "to": "unlit_terrace",
+      "width": 3
+    },
+    {
+      "from": "unlit_terrace",
+      "to": "riftbone_field",
+      "width": 3
+    },
+    {
+      "from": "riftbone_field",
+      "to": "weeping_scarp",
+      "width": 3
+    },
+    {
+      "from": "weeping_scarp",
+      "to": "eclipse_ledge",
+      "width": 3
+    },
+    {
+      "from": "eclipse_ledge",
+      "to": "rimward_camp",
+      "width": 3
+    },
+    {
+      "from": "rimward_camp",
+      "to": "maw_of_glass",
+      "width": 4
+    },
+    {
+      "from": "maw_of_glass",
+      "to": "starless_shelf",
+      "width": 3
+    },
+    {
+      "from": "maw_of_glass",
+      "to": "unlit_terrace",
+      "width": 3
+    },
+    {
+      "from": "maw_of_glass",
+      "to": "weeping_scarp",
+      "width": 3
+    },
+    {
+      "from": "hollow_spire",
+      "to": "descent_well",
+      "width": 3
+    },
+    {
+      "from": "abyssal_landing",
+      "to": "gloam_hollows",
+      "width": 3
+    },
+    {
+      "from": "abyssal_landing",
+      "to": "silent_throat",
+      "width": 3
+    },
+    {
+      "from": "gloam_hollows",
+      "to": "nether_basin",
+      "width": 3
+    },
+    {
+      "from": "nether_basin",
+      "to": "veil_rupture",
+      "width": 3
+    },
+    {
+      "from": "silent_throat",
+      "to": "veil_rupture",
+      "width": 3
+    },
+    {
+      "from": "veil_rupture",
+      "to": "scar_reliquary",
+      "width": 2
+    },
+    {
+      "from": "gloam_hollows",
+      "to": "marrow_drift",
+      "width": 3
+    },
+    {
+      "from": "marrow_drift",
+      "to": "lightless_cells",
+      "width": 3
+    },
+    {
+      "from": "lightless_cells",
+      "to": "nether_basin",
+      "width": 3
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "descent_well",
+      "to": "abyssal_landing"
+    }
+  ],
+  "entry": {
+    "zone": "rimward_camp"
+  },
+  "exit": {
+    "zone": "rimward_camp"
+  },
+  "spawns": [
+    {
+      "zone": "shattered_lip",
+      "monster": "Facetis",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "shattered_lip",
+      "monster": "Silicron",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "maw_of_glass",
+      "monster": "Thal",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "maw_of_glass",
+      "monster": "Winterstride",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "starless_shelf",
+      "monster": "Vyrm",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "starless_shelf",
+      "monster": "Facetis",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "hollow_spire",
+      "monster": "Thal",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "hollow_spire",
+      "monster": "Silicron",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "unlit_terrace",
+      "monster": "Winterstride",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "unlit_terrace",
+      "monster": "Thal",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "riftbone_field",
+      "monster": "Facetis",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "riftbone_field",
+      "monster": "Vyrm",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "weeping_scarp",
+      "monster": "Silicron",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "weeping_scarp",
+      "monster": "Winterstride",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "eclipse_ledge",
+      "monster": "Thal",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "eclipse_ledge",
+      "monster": "Facetis",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "descent_well",
+      "monster": "Vyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "descent_well",
+      "monster": "Silicron",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "abyssal_landing",
+      "monster": "Winterstride",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "abyssal_landing",
+      "monster": "Thal",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "nether_basin",
+      "monster": "Facetis",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "nether_basin",
+      "monster": "Thal",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "silent_throat",
+      "monster": "Silicron",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "silent_throat",
+      "monster": "Facetis",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "gloam_hollows",
+      "monster": "Thal",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "gloam_hollows",
+      "monster": "Vyrm",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "veil_rupture",
+      "monster": "Facetis",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "veil_rupture",
+      "monster": "Winterstride",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "scar_reliquary",
+      "monster": "Facetis",
+      "count": 2,
+      "respawn": 180
+    },
+    {
+      "zone": "marrow_drift",
+      "monster": "Silicron",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "marrow_drift",
+      "monster": "Thal",
+      "count": 9,
+      "respawn": 120
+    },
+    {
+      "zone": "lightless_cells",
+      "monster": "Facetis",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "lightless_cells",
+      "monster": "Vyrm",
+      "count": 4,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "scar_reliquary",
+      "quest": "voidscar_relic",
+      "reward": {
+        "gold": 2500000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 8
+          }
+        ],
+        "message": "A shard of the dark the stars fell into."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a two-floor rift chasm for levels 1400-1500, the deepest planned hunt. No hunting monster of ours sits above 1300, so it runs on the 1200-1280 set, dense and in two rings."
+}

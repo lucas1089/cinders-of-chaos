@@ -28,7 +28,7 @@ The generated areas and the planned areas are listed apart: they are instanced o
 | 300-500 | 100 | 4,780 | 169 | - | world boss and faction lines only | no story quest | low |
 | 500-700 | 16 | 688 | 23 | 3 planned | none before; now The Wyrm Tithe | 14 parties for the whole band | critical, plans written |
 | 700-1000 | 10 | 212 | 10 | Hollow Vault, 3 planned | Sepulchre intros; now Requiem for the Ash-Sister | late game rows only, one town | critical, plans written |
-| 1000+ | 0 | 0 | 0 | 3 generated, 2 planned | none before; now The Last Ember | no world hunt at all | critical, plans written |
+| 1000+ | 0 | 0 | 0 | 3 generated, 6 planned | none before; now The Last Ember | no world hunt at all | critical, plans written |
 
 Numbers after the fill of 2026-10-14 (every hunt under 3.25 monsters per 100 walkable tiles raised to 3.4 by
 `tools/gen_spawn_density.py`, server/README.md "Spawn density and respawn", Fill); the hunt lists below are from before.
@@ -65,7 +65,7 @@ placing an area.
 
 ## Planned hunting areas
 
-Ten area-planner plans in `server/tools/areaplan/plans/`, schema `chaos-area-plan/1`. Each validates with no warning,
+Fourteen area-planner plans in `server/tools/areaplan/plans/`, schema `chaos-area-plan/1`. Each validates with no warning,
 compiles with no QA error, has a camp with a protection zone, a loop and decoration at `dense`. CI validates and
 compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content plans".
 
@@ -81,10 +81,19 @@ compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content pla
 | mirefang_basin | 880-999 | swamp | Nexweaver, Acid Hydra, Mutated Visco, Elite Tidecrest Serpent, Elite Twisted Shaper | 12 | - |
 | rimecrown_depths | 1000-1120 | ice | Ice Lich, Scaleborn, Spirit of Purity, Twisted Shaper, Celestial Wyrm, Vorkhaz | 12 | rimecrown_tribute |
 | cinderglass_sanctum | 1120-1300 | sanctum, 2 floors | Jungle Warrior, Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Facetis, Thal, Silicron | 16 | - |
+| slagmourn_foundry | 1000-1150 | lava | Dawn Strayer, Scaleborn, Twisted Shaper, Celestial Wyrm, Vorkhaz, Jungle Warrior | 12 | slagmourn_ingot |
+| hollowmass_reliquary | 1150-1300 | crypt, 2 floors | Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Silicron, Thal, Facetis | 14 | hollowmass_tithe |
+| gallowfen_mire | 1300-1450 | swamp | Black Vixen, Spiky Carnivor, Vyrm, Winterstride, Silicron, Thal, Facetis | 13 | gallowfen_noose |
+| voidscar_chasm | 1400-1500 | abyss, 2 floors | Vyrm, Winterstride, Silicron, Thal, Facetis | 14 | voidscar_relic |
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.
 Placed, they take 500-700 from 14 to about 50 parties, 700-1000 from 10 to about 46 and 1000+ from none to 28.
+
+The last four (owner, 2026-10-14: four more hunts for 1000+) follow the same standard: 184-192 x 156-176 tiles,
+5,200-7,150 walkable tiles, 176-236 monsters, 3.3-3.4 per 100. No hunting monster of ours sits above 1280, so
+1300-1500 run on the 1140-1280 set in larger numbers; a monster made for 1300+ would fit them better. With them
+1000+ goes from none to about 81 parties.
 
 ## Quests per band
 

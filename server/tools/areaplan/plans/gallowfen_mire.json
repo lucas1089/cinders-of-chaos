@@ -1,0 +1,455 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "gallowfen_mire",
+  "name": "Gallowfen Mire",
+  "biome": "swamp",
+  "size": [
+    184,
+    176
+  ],
+  "floors": 1,
+  "level": [
+    1300,
+    1450
+  ],
+  "seed": 25405,
+  "origin": {
+    "x": 14900,
+    "y": 14700,
+    "z": 8
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "gibbet_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "hangmans_reeds",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "drowned_gallows",
+      "floor": 1,
+      "size": [
+        30,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "rotwater_flats",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "leech_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "fenlight_marsh",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "bogbone_sink",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "mirewitch_grove",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "sunken_causeway",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "noose_cache",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    },
+    {
+      "id": "carrion_pools",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ]
+    },
+    {
+      "id": "sedge_maze",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "blackwater_pens",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ]
+    },
+    {
+      "id": "gallow_roots",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "peat_cells",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "willowrot_bend",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "crowfeast_shoal",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "gibbet_camp",
+      "to": "hangmans_reeds",
+      "width": 3
+    },
+    {
+      "from": "hangmans_reeds",
+      "to": "sunken_causeway",
+      "width": 3
+    },
+    {
+      "from": "sunken_causeway",
+      "to": "mirewitch_grove",
+      "width": 3
+    },
+    {
+      "from": "mirewitch_grove",
+      "to": "bogbone_sink",
+      "width": 3
+    },
+    {
+      "from": "bogbone_sink",
+      "to": "fenlight_marsh",
+      "width": 3
+    },
+    {
+      "from": "fenlight_marsh",
+      "to": "leech_hollow",
+      "width": 3
+    },
+    {
+      "from": "leech_hollow",
+      "to": "rotwater_flats",
+      "width": 3
+    },
+    {
+      "from": "rotwater_flats",
+      "to": "gibbet_camp",
+      "width": 3
+    },
+    {
+      "from": "gibbet_camp",
+      "to": "drowned_gallows",
+      "width": 4
+    },
+    {
+      "from": "drowned_gallows",
+      "to": "sunken_causeway",
+      "width": 3
+    },
+    {
+      "from": "drowned_gallows",
+      "to": "leech_hollow",
+      "width": 3
+    },
+    {
+      "from": "drowned_gallows",
+      "to": "bogbone_sink",
+      "width": 3
+    },
+    {
+      "from": "hangmans_reeds",
+      "to": "carrion_pools",
+      "width": 3
+    },
+    {
+      "from": "carrion_pools",
+      "to": "drowned_gallows",
+      "width": 3
+    },
+    {
+      "from": "rotwater_flats",
+      "to": "sedge_maze",
+      "width": 3
+    },
+    {
+      "from": "fenlight_marsh",
+      "to": "gallow_roots",
+      "width": 3
+    },
+    {
+      "from": "gallow_roots",
+      "to": "noose_cache",
+      "width": 2
+    },
+    {
+      "from": "mirewitch_grove",
+      "to": "blackwater_pens",
+      "width": 3
+    },
+    {
+      "from": "blackwater_pens",
+      "to": "peat_cells",
+      "width": 3
+    },
+    {
+      "from": "leech_hollow",
+      "to": "willowrot_bend",
+      "width": 3
+    },
+    {
+      "from": "sunken_causeway",
+      "to": "crowfeast_shoal",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "gibbet_camp"
+  },
+  "exit": {
+    "zone": "gibbet_camp"
+  },
+  "spawns": [
+    {
+      "zone": "hangmans_reeds",
+      "monster": "Thal",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "hangmans_reeds",
+      "monster": "Spiky Carnivor",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_gallows",
+      "monster": "Facetis",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned_gallows",
+      "monster": "Silicron",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "rotwater_flats",
+      "monster": "Winterstride",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "rotwater_flats",
+      "monster": "Vyrm",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "leech_hollow",
+      "monster": "Silicron",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "leech_hollow",
+      "monster": "Black Vixen",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "fenlight_marsh",
+      "monster": "Facetis",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "fenlight_marsh",
+      "monster": "Thal",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "bogbone_sink",
+      "monster": "Vyrm",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "bogbone_sink",
+      "monster": "Winterstride",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "mirewitch_grove",
+      "monster": "Black Vixen",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "mirewitch_grove",
+      "monster": "Facetis",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "sunken_causeway",
+      "monster": "Spiky Carnivor",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "sunken_causeway",
+      "monster": "Silicron",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "noose_cache",
+      "monster": "Facetis",
+      "count": 2,
+      "respawn": 180
+    },
+    {
+      "zone": "carrion_pools",
+      "monster": "Thal",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "carrion_pools",
+      "monster": "Vyrm",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "sedge_maze",
+      "monster": "Winterstride",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "sedge_maze",
+      "monster": "Silicron",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "blackwater_pens",
+      "monster": "Spiky Carnivor",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "blackwater_pens",
+      "monster": "Thal",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "gallow_roots",
+      "monster": "Facetis",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "gallow_roots",
+      "monster": "Winterstride",
+      "count": 7,
+      "respawn": 120
+    },
+    {
+      "zone": "peat_cells",
+      "monster": "Silicron",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "peat_cells",
+      "monster": "Thal",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "willowrot_bend",
+      "monster": "Vyrm",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "willowrot_bend",
+      "monster": "Facetis",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "crowfeast_shoal",
+      "monster": "Thal",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "crowfeast_shoal",
+      "monster": "Black Vixen",
+      "count": 4,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "noose_cache",
+      "quest": "gallowfen_noose",
+      "reward": {
+        "gold": 2000000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 6
+          }
+        ],
+        "message": "Coin cut from the hanged, still wet."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a hanging fen for levels 1300-1450. Our strongest hunting monsters top out near 1280, so the fen runs on the 1140-1280 set in large numbers. 15 hunting zones in two loops."
+}
