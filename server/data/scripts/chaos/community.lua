@@ -109,13 +109,14 @@ local function realmOf(player)
 	return K.realmOf(cfg, r)
 end
 
+-- the realm's name: a deferred text (ChaosI18n.msg) or a season's name, nil for the one standard realm
 local function realmName(realm)
 	if realm == 0 then
-		return cfg.goal.realms == "separate" and "Standard realm" or nil
+		return cfg.goal.realms == "separate" and ChaosI18n.msg("Standard realm") or nil
 	end
 	local S = ChaosSeason
 	local season = S and S.current and select(2, pcall(S.current))
-	return type(season) == "table" and season.name or ("Season " .. realm)
+	return type(season) == "table" and season.name or ChaosI18n.msg("Season %d", realm)
 end
 
 local function broadcast(text)
@@ -208,9 +209,9 @@ function X.finishPeriod(period, realm)
 	for i = 1, math.min(3, #ranked) do
 		names[#names + 1] = ranked[i].name
 	end
-	local text = string.format("The community goal ended at %d%%.%s", pct,
-		#names > 0 and (" Top contributors: " .. table.concat(names, ", ") .. ".") or "")
-	history(period, realm, "end", text)
+	local text = ChaosI18n.msg("The community goal ended at %d%%.%s", pct,
+		#names > 0 and ChaosI18n.msg(" Top contributors: %s.", table.concat(names, ", ")) or "")
+	history(period, realm, "end", tostring(text))
 	return text, ranked
 end
 
@@ -226,7 +227,7 @@ function X.goal(realm)
 		X.flush()
 		local text = try("finish period", X.finishPeriod, g.period, realm)
 		if text then
-			broadcast(text .. " A new community goal begins: " .. cfg.goal.name .. ".")
+			broadcast(ChaosI18n.msg("%s A new community goal begins: %s.", text, cfg.goal.name))
 		end
 	end
 	local row = Chaos.select(string.format("SELECT `progress` FROM `%s` WHERE `period` = %d AND `realm` = %d", T.goal, period, realm),
@@ -280,10 +281,10 @@ function X.unlockStage(realm, i, period)
 		"(%d, %d, %d, %s, %s, %d, %d) ON DUPLICATE KEY UPDATE `started_at` = VALUES(`started_at`), `ends_at` = VALUES(`ends_at`)",
 		T.buffs, period, realm, i, q(s.name), q(s.text), w.startedAt, w.endsAt))
 	local who = realmName(realm)
-	local text = string.format("Community goal %d%% reached%s! %s: %s for %d hours.", s.pct, who and (" (" .. who .. ")") or "",
-		s.name, s.text, s.hours)
+	local text = ChaosI18n.msg("Community goal %d%% reached%s! %s: %s for %d hours.", s.pct,
+		who and ChaosI18n.msg(" (%s)", who) or "", s.name, ChaosI18n.msg(s.text), s.hours)
 	broadcast(text)
-	history(period, realm, "stage", text)
+	history(period, realm, "stage", tostring(text))
 	writeGoal(realm, X.goals[realm])
 	pushAll()
 end
@@ -334,7 +335,7 @@ function X.contribute(player, key, units, opts)
 	g.dirty = true
 	for _, p in ipairs(K.steps(cfg, before, g.progress)) do
 		if p < 100 and not K.crossed(cfg, before, g.progress)[1] then
-			broadcast(string.format("The Great Brazier burns at %d%%: keep feeding it!", p))
+			broadcast(ChaosI18n.msg("The Great Brazier burns at %d%%: keep feeding it!", p))
 		end
 	end
 	for _, i in ipairs(K.crossed(cfg, before, g.progress)) do
@@ -390,7 +391,7 @@ function X.currentWeek(force)
 		"`texts` = VALUES(`texts`), `source` = VALUES(`source`), `finish` = VALUES(`finish`), `updated_at` = VALUES(`updated_at`)",
 		T.week, key, q(table.concat(keys, ",")), q(table.concat(names, "|")), q(table.concat(texts, "|")), q(source), w.finish, now()))
 	if fresh and X.started then
-		broadcast("A new week: the world changes. " .. table.concat(names, ", ") .. " (Adventure > Community).")
+		broadcast(ChaosI18n.msg("A new week: the world changes. %s (Adventure > Community).", table.concat(names, ", ")))
 	end
 	return w
 end
@@ -451,7 +452,7 @@ function X.onOrbUsed(player, orbKey)
 	try("orb", X.contribute, player, "orb", 1)
 	local keep = cfg.enabled and K.orbKeep(mods()) or 0
 	if keep > 0 and math.random(1, 100) <= keep then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, "Forgefire: the orb was not used up.")
+		player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.t(player, "Forgefire: the orb was not used up."))
 		return true
 	end
 	return false
@@ -569,14 +570,14 @@ function X.deliverRewards(player)
 		local parts = {}
 		if row.token == 1 and r.token then
 			giveItems(player, r.token.items)
-			parts[#parts + 1] = r.token.text
+			parts[#parts + 1] = Chaos.t(player, r.token.text)
 		end
 		if row.place > 0 and r.title then
-			parts[#parts + 1] = string.format("the title %s for %d days (place %d)", r.title, r.titleDays or 7, row.place)
+			parts[#parts + 1] = Chaos.t(player, "the title %s for %d days (place %d)", r.title, r.titleDays or 7, row.place)
 		end
 		if #parts > 0 then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Community goal reward (%d points): %s.", row.points,
-				table.concat(parts, " and ")))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Community goal reward (%d points): %s.", row.points,
+				table.concat(parts, Chaos.t(player, " and "))))
 		end
 	end
 	local best = Chaos.select(string.format("SELECT `period`, `place` FROM `%s` WHERE `player_id` = %d AND `place` > 0 " ..
@@ -636,7 +637,7 @@ function X.payload(player)
 	return K.payload(cfg, {now = now(), period = g.period, finish = g.finish, progress = g.progress, buffs = buffsOf(realm),
 		mods = w.mods, modSource = w.source, weekEnd = w.finish, entry = e, day = today(), rank = rank, top = top,
 		near = nearBrazier(player), gold = player:getMoney() + (player.getBankBalance and player:getBankBalance() or 0),
-		realm = realm, realmName = realmName(realm)})
+		realm = realm, realmName = realmName(realm) and Chaos.t(player, realmName(realm)) or nil})
 end
 
 function X.send(player)
@@ -649,31 +650,31 @@ end
 
 function X.donate(player, gold)
 	if not cfg.enabled then
-		return msg(player, "The Brazier is cold.")
+		return msg(player, Chaos.t(player, "The Brazier is cold."))
 	end
 	if isStaff(player) then
-		return msg(player, "Staff donations do not count.")
+		return msg(player, Chaos.t(player, "Staff donations do not count."))
 	end
 	if not nearBrazier(player) then
-		return msg(player, "Stand next to the Great Brazier in the temple to give gold.")
+		return msg(player, Chaos.t(player, "Stand next to the Great Brazier in the temple to give gold."))
 	end
 	local realm = realmOf(player)
 	local e = entryOf(player, realm)
 	local carried = player:getMoney() + (player.getBankBalance and player:getBankBalance() or 0)
-	local take, why = K.donation(cfg, e, gold, today(), carried)
+	local take, why = K.donation(cfg, e, gold, today(), carried, Chaos.lang(player))
 	if take <= 0 then
 		return msg(player, why)
 	end
 	local paid = player.removeTotalMoney and player:removeTotalMoney(take) or player:removeMoney(take)
 	if not paid then
-		return msg(player, "You do not have that much gold (backpack and bank).")
+		return msg(player, Chaos.t(player, "You do not have that much gold (backpack and bank)."))
 	end
 	local pts = X.contribute(player, "brazier", take)
 	if X.brazierPos then
 		Position(X.brazierPos.x, X.brazierPos.y, X.brazierPos.z):sendMagicEffect(CONST_ME_FIREAREA or 7)
 	end
 	log(string.format("%s gave %d gold to the Brazier (%d points)", player:getName(), take, pts))
-	msg(player, string.format("The Brazier flares: %d gold given, +%d points.", take, pts), true)
+	msg(player, Chaos.t(player, "The Brazier flares: %d gold given, +%d points.", take, pts), true)
 	X.send(player)
 end
 
@@ -782,7 +783,7 @@ function login.onLogin(player)
 	local realm = realmOf(player)
 	local g = X.goal(realm)
 	local w = X.currentWeek()
-	local lines = K.loginLines(cfg, g.progress, buffsOf(realm), w.mods, now(), g.finish)
+	local lines = K.loginLines(cfg, g.progress, buffsOf(realm), w.mods, now(), g.finish, Chaos.lang(player))
 	-- the week's modifiers are runtime events: the event calendar's login lines name them already
 	local count = (cfg.week.announceOnLogin and not (ChaosEvents and Chaos.events and Chaos.events.announceOnLogin)) and #lines or 1
 	for i = 1, count do

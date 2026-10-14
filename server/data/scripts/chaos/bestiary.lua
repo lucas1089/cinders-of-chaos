@@ -38,6 +38,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -437,9 +440,9 @@ local function sendEntry(player, id)
 		end
 		data.uniques = uniques
 	end
-	local can, task = C.canTakeHunt(e, player:getLevel(), kills, cfg)
+	local can, task = C.canTakeHunt(e, player:getLevel(), kills, cfg, Chaos.lang(player))
 	if can then
-		local ok, why = C.canAccept(task, st, cfg)
+		local ok, why = C.canAccept(task, st, cfg, Chaos.lang(player))
 		if not ok then
 			can, task = false, why
 		end
@@ -598,7 +601,7 @@ local function sendBoard(player)
 end
 
 local function startTask(player, st, task)
-	local ok, err = C.canAccept(task, st, cfg)
+	local ok, err = C.canAccept(task, st, cfg, Chaos.lang(player))
 	if not ok then
 		player:sendCancelMessage(err)
 		return false
@@ -613,12 +616,12 @@ local function startTask(player, st, task)
 		"`hi`, `level`, `progress`, `required`, `status`, `mc`) VALUES (%d, %s, %d, %s, %s, %s, %d, %d, %d, 0, %d, 0, %d)",
 		cfg.tableTasks, st.guid, db.escapeString(t.key), at, db.escapeString(t.kind), db.escapeString(t.target),
 		db.escapeString(t.label), t.lo, t.hi, t.level, t.required, mc))
-	local what = t.kind == "family" and string.format("%d %s of level %d-%d", t.required, t.label, t.lo, t.hi)
+	local what = t.kind == "family" and Chaos.t(player, "%d %s of level %d-%d", t.required, t.label, t.lo, t.hi)
 		or string.format("%d x %s", t.required, t.label)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Kill task accepted: " .. what .. ".")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Kill task accepted: %s.", what))
 	if mc == 1 and not cfg.mcReward then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"Another character from your connection is online: you may hunt, but this task will pay no reward.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+			"Another character from your connection is online: you may hunt, but this task will pay no reward."))
 	end
 	queueTracker(player)
 	return true
@@ -643,7 +646,7 @@ end
 local function take(player, id)
 	local e = X.cat().byId[id]
 	local st = stateOf(player)
-	local ok, task = C.canTakeHunt(e, player:getLevel(), e and st.kills[e.key] or 0, cfg)
+	local ok, task = C.canTakeHunt(e, player:getLevel(), e and st.kills[e.key] or 0, cfg, Chaos.lang(player))
 	if not ok then
 		player:sendCancelMessage(task)
 	else
@@ -664,7 +667,7 @@ local function abandon(player, key)
 	st.tasks[key] = nil
 	db.asyncQuery(string.format("DELETE FROM `%s` WHERE `player_id` = %d AND `task` = %s AND `accepted_at` = %d",
 		cfg.tableTasks, st.guid, db.escapeString(key), t.at))
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Kill task abandoned: " .. t.label .. ".")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Kill task abandoned: %s.", t.label))
 	sendBoard(player)
 	queueTracker(player)
 end
@@ -700,7 +703,7 @@ local function payTask(player, st, t)
 		t.mc, st.day, st.week, st.guid, db.escapeString(t.key), t.at))
 	local e = t.kind == "hunt" and X.cat().byKey[t.target]
 	if t.mc == 1 and not cfg.mcReward then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Kill task completed: %s. Another character from your connection was online during the hunt: no reward.", t.label))
 		return
 	end
@@ -716,7 +719,7 @@ local function payTask(player, st, t)
 	player:setStorageValue(cfg.taskPointsStorage, taskPoints(player) + r.points)
 	local parts = {}
 	if r.gold > 0 then
-		parts[#parts + 1] = r.gold .. " gold (bank)"
+		parts[#parts + 1] = Chaos.t(player, "%s gold (bank)", r.gold)
 	end
 	if r.chaos > 0 then
 		parts[#parts + 1] = r.chaos .. plural(r.chaos, " Orb of Upheaval")
@@ -725,12 +728,12 @@ local function payTask(player, st, t)
 		parts[#parts + 1] = r.divine .. plural(r.divine, " Orb of Fate")
 	end
 	if r.exp > 0 then
-		parts[#parts + 1] = r.exp .. " experience"
+		parts[#parts + 1] = Chaos.t(player, "%s experience", r.exp)
 	end
-	parts[#parts + 1] = r.points .. " bestiary points"
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Kill task completed: %s. Reward: %s.%s", t.label,
-		table.concat(parts, ", "), inbox and " Your backpack was full: the orbs are in your inbox." or ""))
-	notify(player, string.format("Kill task completed: %d %s.", t.required, t.label), e and lookOf(e) or nil)
+	parts[#parts + 1] = Chaos.t(player, "%s bestiary points", r.points)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Kill task completed: %s. Reward: %s.%s", t.label,
+		table.concat(parts, ", "), inbox and Chaos.t(player, " Your backpack was full: the orbs are in your inbox.") or ""))
+	notify(player, Chaos.t(player, "Kill task completed: %d %s.", t.required, t.label), e and lookOf(e) or nil)
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	if ChaosAchievements then
 		pcall(ChaosAchievements.progress, player, "bestiary_tasks", 1)
@@ -754,15 +757,15 @@ local function creditKill(player, e)
 		local text
 		if after == 1 then
 			st.known = (st.known or 0) + 1
-			text = string.format("Bestiary: %s discovered (+%d points).", e.name, gained)
+			text = Chaos.t(player, "Bestiary: %s discovered (+%d points).", e.name, gained)
 		elseif after >= 4 then
 			st.completedCount = (st.completedCount or 0) + 1
 			st.completed[e.key] = C.bonusOf(e, cfg)
 			local b = st.completed[e.key]
-			text = string.format("Bestiary: %s completed (+%d points). You deal %d%% more damage to it and gain %d%% more " ..
-				"experience from it.", e.name, gained, b.damage, b.exp)
+			text = Chaos.t(player, "Bestiary: %s completed (+%d points). You deal %d%% more damage to it and gain %d%% more experience from it.",
+				e.name, gained, b.damage, b.exp)
 		else
-			text = string.format("Bestiary: %s %s (+%d points).", e.name, stageName:lower(), gained)
+			text = Chaos.t(player, "Bestiary: %s %s (+%d points).", e.name, Chaos.t(player, stageName:lower()), gained)
 		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 		if after >= 2 then
@@ -792,7 +795,7 @@ local function creditKill(player, e)
 				payTask(player, st, t)
 			else
 				for _, pct in ipairs(crossed or {}) do
-					player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Kill task %s: %d%% done (%d/%d).", t.label, pct,
+					player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Kill task %s: %d%% done (%d/%d).", t.label, pct,
 						t.progress, t.required))
 				end
 				-- progress is written every 10 kills and at the milestones (the row is rewritten at completion)

@@ -36,6 +36,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 local OPCODE = ChaosOpcodes.dungeons
 local cfg = Chaos.dungeons
@@ -500,31 +503,31 @@ end})
 local function entryProblem(player, id, dg, difficulty)
 	local guid = player:getGuid()
 	if runOfPlayer[guid] then
-		return "You are already inside a dungeon."
+		return Chaos.t(player, "You are already inside a dungeon.")
 	end
 	if inBox(id, dg, player:getPosition()) then
-		return "You cannot queue from inside the dungeon."
+		return Chaos.t(player, "You cannot queue from inside the dungeon.")
 	end
 	-- the run teleports from wherever the player stands: without this a fight (or a chase) could be left by queueing.
 	-- Checked again on every queue tick (tryMatch), so fighting while queued drops the player from the queue
 	if player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT) then
-		return "You cannot enter a dungeon while you are in a fight."
+		return Chaos.t(player, "You cannot enter a dungeon while you are in a fight.")
 	end
 	if Chaos.isMultiClient(player) then
-		return Chaos.multiClient.msgDungeon
+		return Chaos.t(player, Chaos.multiClient.msgDungeon)
 	end
 	if player:getLevel() < levelOf(dg) then
-		return string.format(baseMessage("MsgNeedLevel", "You need level %s."), levelOf(dg))
+		return Chaos.t(player, baseMessage("MsgNeedLevel", "You need level %s."), levelOf(dg))
 	end
 	local storage = cooldownStorage()
 	if storage then
 		local remaining = player:getStorageValue(storage) - os.time()
 		if remaining > 0 then
-			return string.format("You are in cooldown for dungeons. Wait %d minute(s).", math.ceil(remaining / 60))
+			return Chaos.t(player, "You are in cooldown for dungeons. Wait %d minute(s).", math.ceil(remaining / 60))
 		end
 	end
 	if difficulty > loadProgress(guid, id).difficulty then
-		return "That difficulty is still locked."
+		return Chaos.t(player, "That difficulty is still locked.")
 	end
 	return nil
 end
@@ -624,7 +627,7 @@ local function endRun(run, success, reason)
 				p:teleportTo(origin or p:getTown():getTemplePosition())
 				p:getPosition():sendMagicEffect(40)
 				if not success then
-					p:popupFYI(reason or baseMessage("ToFail", "You were unable to complete the dungeon in time."))
+					p:popupFYI(Chaos.t(p, reason or baseMessage("ToFail", "You were unable to complete the dungeon in time.")))
 				end
 			end
 			if not success or cfg.cooldownOnSuccess then
@@ -811,8 +814,7 @@ local function unlockBoss(run, extra, percent, left)
 	local boss = tostring(extra.bossName or "the boss"):gsub("(%a)([%w'%-]*)", function(a, b) return a:upper() .. b end)
 	for _, p in ipairs(memberPlayers(run)) do
 		send(p, "killed", {unlocked = true, percent = percent, left = left})
-		local t = Chaos.t or function(_, text) return text end
-		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(t(p, "Boss unlocked! %d%% of the monsters are dead: %s awaits you."),
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Boss unlocked! %d%% of the monsters are dead: %s awaits you.",
 			percent, boss))
 	end
 	if extra.unlock then
@@ -1110,10 +1112,10 @@ function LoginEvent.onLogin(player)
 			if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(did, dg, pos) then
 				player:teleportTo(player:getTown():getTemplePosition())
 				if restart then
-					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your dungeon run was cut short by a server restart.")
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your dungeon run was cut short by a server restart."))
 				else
 					setCooldown(player)
-					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You logged out inside the dungeon: your run is over.")
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You logged out inside the dungeon: your run is over."))
 				end
 				break
 			end

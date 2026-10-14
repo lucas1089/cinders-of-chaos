@@ -1546,19 +1546,19 @@ end})
 local function memberProblem(m)
 	local cfg = C()
 	if X.runOf[m:getId()] then
-		return "is already in the raid"
+		return ChaosI18n.msg("is already in the raid")
 	end
 	if m:getLevel() < cfg.minLevel then
-		return string.format("needs level %d", cfg.minLevel)
+		return ChaosI18n.msg("needs level %d", cfg.minLevel)
 	end
 	if Chaos.isMultiClient and Chaos.isMultiClient(m) then
-		return "has another character from the same connection online"
+		return ChaosI18n.msg("has another character from the same connection online")
 	end
 	if inCombat(m) then
-		return "is in a fight"
+		return ChaosI18n.msg("is in a fight")
 	end
 	if insideOther(m) then
-		return "is inside another instance"
+		return ChaosI18n.msg("is inside another instance")
 	end
 	return nil
 end
@@ -1609,7 +1609,7 @@ function X.open(player, id, force)
 	end
 	local why = memberProblem(player)
 	if why then
-		return false, "You " .. why:gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have ") .. "."
+		return false, ChaosI18n.msg("You %s.", ChaosI18n.you(why))
 	end
 	local w = week()
 	local inst
@@ -1629,7 +1629,7 @@ function X.open(player, id, force)
 		if k > 1 then
 			local mwhy = memberProblem(m)
 			if mwhy then
-				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s stays behind: %s.", m:getName(), mwhy))
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s stays behind: %s.", m:getName(), mwhy))
 			else
 				group[#group + 1] = m
 			end
@@ -1717,7 +1717,7 @@ function X.join(player, id)
 	end
 	local why = memberProblem(player)
 	if why then
-		return false, "You " .. why:gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have ") .. "."
+		return false, ChaosI18n.msg("You %s.", ChaosI18n.you(why))
 	end
 	enter(run, player)
 	say(run, ChaosI18n.msg("%s joins the raid.", player:getName()))
@@ -2327,8 +2327,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 				ok, why = X.open(player, a == "continue" and id or nil)
 			end
 			if not ok then
-				send(player, "msg", {text = why or "You cannot enter now."})
-				player:sendCancelMessage(why or "You cannot enter now.")
+				local text = Chaos.t(player, why or "You cannot enter now.")
+				send(player, "msg", {text = text})
+				player:sendCancelMessage(text)
 			end
 		end
 	elseif a == "buy" then

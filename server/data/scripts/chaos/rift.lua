@@ -672,39 +672,43 @@ local function hudData(run)
 		mods[#mods + 1] = {name = def and def.name or m.key, text = R.modText(C(), m), boon = def and def.boon or nil,
 			tier = def and R.modTier(def, m.value) or nil, side = def and def.side or nil}
 	end
-	-- live lines of the map modifiers (coffer, goblin, twin guardians)
+	-- live lines of the map modifiers (coffer, goblin, twin guardians): deferred texts (ChaosI18n.msg) or a
+	-- function(lang), each player reads them in their own language (sendHud)
 	local notes = {}
 	local cf = run.coffer
 	if cf then
 		if cf.state == "closed" then
-			notes[#notes + 1] = string.format("A sealed coffer waits to the %s.", cf.dir or "far side")
+			notes[#notes + 1] = ChaosI18n.msg("A sealed coffer waits to the %s.", ChaosI18n.msg(cf.dir or "far side"))
 		elseif cf.state == "guarded" then
-			notes[#notes + 1] = string.format("Coffer guards: %d left.", cf.waveLeft)
+			notes[#notes + 1] = ChaosI18n.msg("Coffer guards: %d left.", cf.waveLeft)
 		elseif cf.state == "open" then
-			notes[#notes + 1] = "The coffer is open."
+			notes[#notes + 1] = ChaosI18n.msg("The coffer is open.")
 		end
 	end
 	if run.goblin == "out" and not Monster(run.goblinId) then
 		run.goblin = "gone" -- slain or escaped
 	end
 	if run.goblin == "out" then
-		notes[#notes + 1] = "A Treasure Goblin is loose!"
+		notes[#notes + 1] = ChaosI18n.msg("A Treasure Goblin is loose!")
 	end
 	if (run.guardians or 1) > 1 and run.boss == "alive" then
-		notes[#notes + 1] = string.format("Guardians left: %d.", run.guardians - (run.guardiansKilled or 0))
+		notes[#notes + 1] = ChaosI18n.msg("Guardians left: %d.", run.guardians - (run.guardiansKilled or 0))
 	end
 	local waiting = 0
 	for _ in pairs(run.revive or {}) do
 		waiting = waiting + 1
 	end
 	if waiting > 0 and run.state == "running" then
-		notes[#notes + 1] = string.format("%d fallen player%s may still return.", waiting, waiting == 1 and "" or "s")
+		notes[#notes + 1] = waiting == 1 and ChaosI18n.msg("%d fallen player may still return.", waiting)
+			or ChaosI18n.msg("%d fallen players may still return.", waiting)
 	end
 	if run.queue and #run.queue > 0 and run.boss == "waiting" and run.state == "running" then
-		notes[#notes + 1] = string.format("%d more pack%s gather.", #run.queue, #run.queue == 1 and "" or "s")
+		notes[#notes + 1] = #run.queue == 1 and ChaosI18n.msg("%d more pack gather.", #run.queue)
+			or ChaosI18n.msg("%d more packs gather.", #run.queue)
 	end
 	if run.atlasNote then
-		notes[#notes + 1] = run.atlasNote -- Rift Atlas
+		local am = run.atlasRun
+		notes[#notes + 1] = am and function(lang) return R.atlasNote(am, lang) end or run.atlasNote -- Rift Atlas
 	end
 	return {tier = run.key.tier, theme = run.themeName, left = R.timeLeft(run, os.time()), limit = run.limit or C().timeLimit,
 		total = run.total, killed = run.killed, bossAt = run.bossAt, boss = run.boss, state = run.state,
@@ -714,16 +718,30 @@ local function hudData(run)
 		title = run.omen and ("Omen - " .. R.omenKind(C(), run.omen).name) or nil, swift = swiftSeconds(run)}
 end
 
+-- the HUD data with its notes in the player's language
+local function hudFor(data, player)
+	local out, notes = {}, {}
+	for k, v in pairs(data) do
+		out[k] = v
+	end
+	local lang = Chaos.lang(player)
+	for i, n in ipairs(data.notes or {}) do
+		notes[i] = type(n) == "function" and n(lang) or Chaos.t(player, n)
+	end
+	out.notes = notes
+	return out
+end
+
 local function sendHud(run, action, player)
 	local data = hudData(run)
 	if player then
-		Chaos.send(player, OPCODE, action, data)
+		Chaos.send(player, OPCODE, action, hudFor(data, player))
 		return
 	end
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p then
-			Chaos.send(p, OPCODE, action, data)
+			Chaos.send(p, OPCODE, action, hudFor(data, p))
 		end
 	end
 end
@@ -2002,20 +2020,20 @@ end
 
 local function memberProblem(m, t)
 	if RF.runOf[m:getId()] or RF.revive[m:getGuid()] then
-		return "is already inside a rift"
+		return ChaosI18n.msg("is already inside a rift")
 	end
 	if m:getLevel() < t.minLevel then
-		return t.omen and string.format("needs level %d for an omen arena", t.minLevel)
-			or string.format("needs level %d for a tier %d rift", t.minLevel, t.tier)
+		return t.omen and ChaosI18n.msg("needs level %d for an omen arena", t.minLevel)
+			or ChaosI18n.msg("needs level %d for a tier %d rift", t.minLevel, t.tier)
 	end
 	if Chaos.isMultiClient(m) then
-		return "has another character from the same connection online"
+		return ChaosI18n.msg("has another character from the same connection online")
 	end
 	if inCombat(m) then
-		return "is in a fight"
+		return ChaosI18n.msg("is in a fight")
 	end
 	if insideOther(m) then
-		return "is inside a dungeon, the tower or the world boss arena"
+		return ChaosI18n.msg("is inside a dungeon, the tower or the world boss arena")
 	end
 	return nil
 end
@@ -2082,9 +2100,9 @@ local function gather(player, t)
 		if i > 1 then
 			local why = memberProblem(m, t)
 			if why then
-				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s stays behind: %s.", m:getName(), why))
-				m:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You stay behind from %s's rift: you %s.", player:getName(),
-					why:gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have ")))
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s stays behind: %s.", m:getName(), why))
+				m:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(m, "You stay behind from %s's rift: you %s.", player:getName(),
+					ChaosI18n.you(why)))
 			else
 				group[#group + 1] = m
 			end

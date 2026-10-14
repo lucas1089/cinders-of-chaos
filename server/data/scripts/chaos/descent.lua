@@ -1241,19 +1241,19 @@ end
 local function memberProblem(m)
 	local cfg = C()
 	if X.runOf[m:getId()] then
-		return "is already in the Descent"
+		return ChaosI18n.msg("is already in the Descent")
 	end
 	if m:getLevel() < cfg.minLevel then
-		return string.format("needs level %d", cfg.minLevel)
+		return ChaosI18n.msg("needs level %d", cfg.minLevel)
 	end
 	if Chaos.isMultiClient(m) then
-		return "has another character from the same connection online"
+		return ChaosI18n.msg("has another character from the same connection online")
 	end
 	if inCombat(m) then
-		return "is in a fight"
+		return ChaosI18n.msg("is in a fight")
 	end
 	if insideOther(m) then
-		return "is inside another instance"
+		return ChaosI18n.msg("is inside another instance")
 	end
 	return nil
 end
@@ -1300,7 +1300,7 @@ function X.start(player, weekly)
 	end
 	local why = memberProblem(player)
 	if why then
-		return false, "You " .. why:gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have ") .. "."
+		return false, ChaosI18n.msg("You %s.", ChaosI18n.you(why))
 	end
 	local pay, payWhy = paymentOf(player, weekly)
 	if not pay then
@@ -1312,13 +1312,13 @@ function X.start(player, weekly)
 			local mwhy = memberProblem(m)
 			local mpay = paymentOf(m, weekly)
 			if not mwhy and not mpay then
-				mwhy = weekly and "has used the free weekly descent and carries no Ember Sigil"
-					or "has used today's free descent and carries no Ember Sigil"
+				mwhy = ChaosI18n.msg(weekly and "has used the free weekly descent and carries no Ember Sigil"
+					or "has used today's free descent and carries no Ember Sigil")
 			end
 			if mwhy then
-				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s stays behind: %s.", m:getName(), mwhy))
-				m:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You stay behind from %s's descent: %s.", player:getName(),
-					(mwhy:gsub("^is ", "you are "):gsub("^needs ", "you need "):gsub("^has ", "you have "):gsub(" carries ", " carry "))))
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s stays behind: %s.", m:getName(), mwhy))
+				m:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(m, "You stay behind from %s's descent: you %s.", player:getName(),
+					ChaosI18n.you(mwhy)))
 			else
 				group[#group + 1] = m
 				pays[#pays + 1] = mpay
@@ -1359,7 +1359,7 @@ function X.start(player, weekly)
 		else
 			local s = X.sigils(m)[1]
 			if not s or not s:remove(1) then
-				return false, m:getName() .. "'s sigil could not be used."
+				return false, ChaosI18n.msg("%s's sigil could not be used.", m:getName())
 			end
 		end
 	end
@@ -1771,8 +1771,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if rate(player, "start", 2000) then
 			local ok, why = X.start(player, d.weekly == true)
 			if not ok then
-				send(player, "msg", {text = why or "You cannot enter now."})
-				player:sendCancelMessage(why or "You cannot enter now.")
+				local text = Chaos.t(player, why or "You cannot enter now.")
+				send(player, "msg", {text = text})
+				player:sendCancelMessage(text)
 			else
 				send(player, "closeInfo", {})
 			end

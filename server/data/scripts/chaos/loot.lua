@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -765,21 +768,22 @@ function L.dropLevel(monster, owner, tier)
 	return M.sourceLevel(src)
 end
 
+-- text, nearMessage: deferred texts (ChaosI18n.msg), each player reads them in their own language
 local function announce(owner, corpsePos, text, nearMessage)
 	local u = cfg().unique
 	local msgType = globalByName(u.messageType, MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR)
 	local near, seen = spectatorsOf(corpsePos, false, u.viewRangeX, u.viewRangeY), {}
 	for _, p in ipairs(near) do
 		seen[p:getId()] = true
-		p:sendTextMessage(msgType, nearMessage or text)
+		p:sendTextMessage(msgType, Chaos.t(p, nearMessage or text))
 	end
 	if owner and not seen[owner:getId()] then
-		owner:sendTextMessage(msgType, nearMessage or text)
+		owner:sendTextMessage(msgType, Chaos.t(owner, nearMessage or text))
 		seen[owner:getId()] = true
 	end
 	for _, p in ipairs(spectatorsOf(corpsePos, true, u.broadcastRangeX, u.broadcastRangeY)) do
 		if not seen[p:getId()] then
-			p:sendTextMessage(msgType, text)
+			p:sendTextMessage(msgType, Chaos.t(p, text))
 		end
 	end
 end
@@ -959,18 +963,18 @@ local function processKill(monster, corpse)
 			local effect = globalByName(u.effect, u.fallbackEffect)
 			corpsePos:sendMagicEffect(effect)
 			announce(owner, corpsePos,
-				string.format(u.broadcastText, owner:getName(), e.name),
-				string.format(u.message, Chaos.monsterNameDescription(monster), e.name))
+				ChaosI18n.msg(u.broadcastText, owner:getName(), e.name),
+				ChaosI18n.msg(u.message, Chaos.monsterNameDescription(monster), e.name))
 		end
 	end
 
 	if #bonus > 0 then
-		local text = ("Chaos bonus loot of %s: %s"):format(Chaos.monsterNameDescription(monster), table.concat(bonus, ", "))
+		local text = ChaosI18n.msg("Chaos bonus loot of %s: %s", Chaos.monsterNameDescription(monster), table.concat(bonus, ", "))
 		local party = owner:getParty()
 		if party then
-			party:broadcastPartyLoot(text)
+			party:broadcastPartyLoot(tostring(text)) -- one line for the whole party: English
 		else
-			owner:sendTextMessage(MESSAGE_LOOT, text)
+			owner:sendTextMessage(MESSAGE_LOOT, Chaos.t(owner, text))
 		end
 	end
 end

@@ -5,8 +5,8 @@
 -- i18n.lua takes the client's language from its hello (opcode 157, {action = "hello", lang = "pt-BR" | "en"}).
 --
 -- A key is the English text itself, a string.format pattern ("Auto Seller: sold %d item%s ..."): English needs no
--- table, and a site that is not in the table yet still shows its English. i18n_strings.lua (and the files of I.MORE,
--- merged in) holds one table per language other than English: {["pt-BR"] = {[english] = translation}}. A translation
+-- table, and a site that is not in the table yet still shows its English. i18n_strings.lua holds one table per
+-- language other than English: {["pt-BR"] = {[english] = translation}}. A translation
 -- keeps the % conversions of its key in the same order (string.format has no positional arguments); the test checks it.
 -- Text sent to the client is UTF-8: the client turns it into cp1252 (client base patch 0028).
 -- Lua 5.1 / LuaJIT compatible.
@@ -18,22 +18,8 @@ local I = ChaosI18n
 I.DEFAULT = "en"
 I.LANGS = {en = true, ["pt-BR"] = true}
 
--- More tables of the same shape, merged in after it (a key already in i18n_strings.lua keeps that text)
-I.MORE = {"i18n_strings_more.lua"}
-
 if not I.strings then
 	I.strings = dofile("data/scripts/chaos/i18n_strings.lua")
-	for _, f in ipairs(I.MORE) do
-		for lang, t in pairs(dofile("data/scripts/chaos/" .. f)) do
-			I.strings[lang] = I.strings[lang] or {}
-			local into = I.strings[lang]
-			for k, v in pairs(t) do
-				if into[k] == nil then
-					into[k] = v
-				end
-			end
-		end
-	end
 end
 I.strings.en = I.strings.en or {}
 
@@ -107,6 +93,19 @@ function I.resolve(x, lang)
 		args[i] = I.isMsg(v) and I.resolve(v, lang) or v
 	end
 	return I.text(lang, x.key, unpack(args, 1, x.n))
+end
+
+-- A party member's reason in the third person ("is in a fight", "needs level %d": a key or a deferred text) -> the
+-- same reason in the second person ("are in a fight", "need level %d"), a deferred text: the "stays behind" lines of
+-- rifts, Ascended arenas, the Descent and the raid ("%s stays behind: %s." to the opener, "... you %s." to the member).
+-- Both forms are keys of i18n_strings.lua.
+function I.you(why)
+	local key, args, n = why, {}, 0
+	if I.isMsg(why) then
+		key, args, n = why.key, why.args, why.n
+	end
+	key = tostring(key):gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have "):gsub(" carries ", " carry ")
+	return I.msg(key, unpack(args, 1, n))
 end
 
 -- the % conversions of a pattern, in order ("%d of %s, 5%%" -> {"d", "s"})

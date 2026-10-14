@@ -27,7 +27,7 @@
 ChaosShopCore = ChaosShopCore or {}
 local C = ChaosShopCore
 
--- a text in `lang` (Chaos.t keys, i18n_strings_more.lua); English without ChaosI18n
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
 local function T(lang, key, ...)
 	if ChaosI18n and ChaosI18n.text then
 		return ChaosI18n.text(lang, key, ...)

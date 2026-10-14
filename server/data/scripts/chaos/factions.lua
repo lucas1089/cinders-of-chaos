@@ -31,6 +31,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/factions_core.lua")
 if not ChaosNpcPlace then
 	dofile("data/scripts/chaos/npc_place.lua")
@@ -325,7 +328,7 @@ function F.payload(player, sel)
 		tokens[f.key] = player:getItemCount(cfg.tokens[f.key].id)
 	end
 	local data = K.payload(cfg, idx, P.st, {now = now(), day = day(), week = week(), contracts = contracts, owned = P.owned,
-		weekly = weeklyView(P), near = nearFaction(player), tokens = tokens, itemName = itemName, itemMods = ChaosItemMods,
+		lang = Chaos.lang(player), weekly = weeklyView(P), near = nearFaction(player), tokens = tokens, itemName = itemName, itemMods = ChaosItemMods,
 		offerItemId = function(o)
 			return cfg.tokens[o.faction] and cfg.tokens[o.faction].id or 0
 		end,
@@ -419,14 +422,14 @@ function F.gain(player, key, amount, source, quiet)
 	end
 	if not quiet and res.gained > 0 then
 		local rv = res.rival and idx.byKey[res.rival]
-		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_STATUS_SMALL, string.format("+%d reputation with %s%s.",
+		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_STATUS_SMALL, Chaos.t(player, "+%d reputation with %s%s.",
 			res.gained, f.name, (res.rivalLoss or 0) > 0 and string.format(" (%s -%d)", rv.name, res.rivalLoss) or ""))
 	elseif not quiet and res.capped then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("You have reached this week's reputation cap with %s.", f.name))
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "You have reached this week's reputation cap with %s.", f.name))
 	end
 	if res.rankAfter and res.rankBefore and res.rankAfter > res.rankBefore then
 		local r = cfg.ranks[res.rankAfter]
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s now counts you as %s.", f.name, r.name))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s now counts you as %s.", f.name, r.name))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 		flush(P)
 		if ChaosNameplate and ChaosNameplate.refresh then
@@ -449,7 +452,7 @@ local function completeContract(player, P, c)
 	end
 	saveContract(P, c)
 	local f = idx.byKey[c.faction]
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s contract done: %s.", f.name, c.label))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s contract done: %s.", f.name, K.label(c, Chaos.lang(player))))
 	F.gain(player, c.faction, c.rep, "contract")
 end
 
@@ -493,7 +496,7 @@ local function giveTokens(player, key, n)
 		return
 	end
 	giveStack(player, tok.id, n)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You received %d %s.", n, n == 1 and tok.name or tok.plural))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You received %d %s.", n, n == 1 and tok.name or tok.plural))
 end
 
 -- ---------------------------------------------------------------- kills
@@ -785,7 +788,7 @@ local function needNpc(player, fkey)
 	local near = nearFaction(player)
 	if near ~= fkey then
 		local f = idx.byKey[fkey]
-		msg(player, string.format("Speak with %s (%s) for that.", f.npc.name, f.name))
+		msg(player, Chaos.t(player, "Speak with %s (%s) for that.", f.npc.name, f.name))
 		return false
 	end
 	return true
@@ -814,21 +817,21 @@ function F.turnIn(player, fkey, n)
 	local e = K.roll(P.st[fkey] or K.newEntry(cfg), day(), week())
 	P.st[fkey] = e
 	if e.weekGain >= cfg.weeklyCap or e.rep >= cfg.rep.max then
-		return msg(player, string.format("%s cannot reward you more this week. Keep your tokens.", f.name))
+		return msg(player, Chaos.t(player, "%s cannot reward you more this week. Keep your tokens.", f.name))
 	end
 	local tok = cfg.tokens[fkey]
 	local have = player:getItemCount(tok.id)
 	n = math.min(have, Chaos.toInt(n, 1, 100000) or have)
 	if n <= 0 then
-		return msg(player, string.format("You carry no %s.", tok.plural))
+		return msg(player, Chaos.t(player, "You carry no %s.", tok.plural))
 	end
 	if not player:removeItem(tok.id, n) then
-		return msg(player, "The tokens could not be taken.")
+		return msg(player, Chaos.t(player, "The tokens could not be taken."))
 	end
 	local res = F.gain(player, fkey, n * cfg.sources.token, "token", true)
 	flush(P)
-	msg(player, string.format("%s takes %d %s: +%d reputation%s.", f.npc.name, n, n == 1 and tok.name or tok.plural,
-		res.gained, res.capped and " (weekly cap reached)" or ""), true)
+	msg(player, Chaos.t(player, "%s takes %d %s: +%d reputation%s.", f.npc.name, n, n == 1 and tok.name or tok.plural,
+		res.gained, res.capped and Chaos.t(player, " (weekly cap reached)") or ""), true)
 end
 
 function F.deliver(player, key)
@@ -839,33 +842,33 @@ function F.deliver(player, key)
 		end
 	end
 	if not c or c.kind ~= "deliver" or c.done then
-		return msg(player, "That delivery is not open.")
+		return msg(player, Chaos.t(player, "That delivery is not open."))
 	end
 	if not needNpc(player, c.faction) then
 		return
 	end
 	for _, it in ipairs(c.items or {}) do
 		if player:getItemCount(it.id) < it.count then
-			return msg(player, string.format("You need %d %s.", it.count, itemName(it.id, it.count)))
+			return msg(player, Chaos.t(player, "You need %d %s.", it.count, itemName(it.id, it.count)))
 		end
 	end
 	if money(player) < (c.gold or 0) then
-		return msg(player, string.format("You need %s gold (carried or in the bank).", K.thousands(c.gold)))
+		return msg(player, Chaos.t(player, "You need %s gold (carried or in the bank).", K.thousands(c.gold)))
 	end
 	for _, it in ipairs(c.items or {}) do
 		if not player:removeItem(it.id, it.count) then
-			return msg(player, "The materials could not be taken.")
+			return msg(player, Chaos.t(player, "The materials could not be taken."))
 		end
 	end
 	if not pay(player, c.gold or 0) then
 		for _, it in ipairs(c.items or {}) do
 			giveStack(player, it.id, it.count)
 		end
-		return msg(player, "The gold could not be taken.")
+		return msg(player, Chaos.t(player, "The gold could not be taken."))
 	end
 	c.progress = c.count
 	completeContract(player, stateOf(player), c)
-	msg(player, "Delivered: " .. c.label .. ".", true)
+	msg(player, Chaos.t(player, "Delivered: %s.", K.label(c, Chaos.lang(player))), true)
 end
 
 local function bump(P, offer)
@@ -929,16 +932,17 @@ function F.buy(player, key)
 	for _, f in ipairs(idx.list) do
 		ranks[f.key] = K.rankAt(cfg, (P.st[f.key] or K.newEntry(cfg)).rep)
 	end
-	local state, why = K.offerState(cfg, idx, o, {ranks = ranks, owned = P.owned, weekly = weeklyView(P)})
+	local state, why = K.offerState(cfg, idx, o, {ranks = ranks, owned = P.owned, weekly = weeklyView(P),
+		lang = Chaos.lang(player)})
 	if state ~= "ok" then
-		return msg(player, why or "Not available.")
+		return msg(player, why or Chaos.t(player, "Not available."))
 	end
 	local tok = cfg.tokens[o.faction]
 	if (o.tokens or 0) > 0 and player:getItemCount(tok.id) < o.tokens then
-		return msg(player, string.format("You need %d %s.", o.tokens, tok.plural))
+		return msg(player, Chaos.t(player, "You need %d %s.", o.tokens, tok.plural))
 	end
 	if money(player) < o.price then
-		return msg(player, string.format("You need %s gold (carried or in the bank).", K.thousands(o.price)))
+		return msg(player, Chaos.t(player, "You need %s gold (carried or in the bank).", K.thousands(o.price)))
 	end
 	-- make the goods first, then take the payment
 	local item
@@ -946,17 +950,17 @@ function F.buy(player, key)
 		local err
 		item, err = F.makeGear(o)
 		if not item then
-			return msg(player, err)
+			return msg(player, Chaos.t(player, err))
 		end
 	end
 	if (o.tokens or 0) > 0 and not player:removeItem(tok.id, o.tokens) then
 		if item then item:remove() end
-		return msg(player, "The tokens could not be taken.")
+		return msg(player, Chaos.t(player, "The tokens could not be taken."))
 	end
 	if not pay(player, o.price) then
 		if (o.tokens or 0) > 0 then giveStack(player, tok.id, o.tokens) end
 		if item then item:remove() end
-		return msg(player, "The gold could not be taken.")
+		return msg(player, Chaos.t(player, "The gold could not be taken."))
 	end
 	local note = ""
 	if o.kind == "gear" then
@@ -964,7 +968,7 @@ function F.buy(player, key)
 			local inbox = player:getInbox()
 			if inbox then
 				inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
-				note = " Your backpack was full: it is in your inbox."
+				note = Chaos.t(player, " Your backpack was full: it is in your inbox.")
 			end
 		end
 	elseif o.kind == "orbs" then
@@ -978,7 +982,7 @@ function F.buy(player, key)
 	end
 	bump(P, o)
 	log(string.format("%s bought %s for %d gold and %d tokens", player:getName(), o.key, o.price, o.tokens or 0))
-	msg(player, string.format("Bought: %s.%s", o.name, note), true)
+	msg(player, Chaos.t(player, "Bought: %s.%s", o.name, note), true)
 end
 
 function F.craft(player, key, n)
@@ -988,7 +992,7 @@ function F.craft(player, key, n)
 	end
 	local P = stateOf(player)
 	if not P.owned[o.key] then
-		return msg(player, "You do not know that recipe.")
+		return msg(player, Chaos.t(player, "You do not know that recipe."))
 	end
 	if not needNpc(player, o.faction) then
 		return
@@ -998,14 +1002,14 @@ function F.craft(player, key, n)
 	local tok = cfg.tokens[o.faction]
 	for _, it in ipairs(cr.inputs or {}) do
 		if player:getItemCount(it.id) < it.count * n then
-			return msg(player, string.format("You need %d %s.", it.count * n, itemName(it.id, it.count * n)))
+			return msg(player, Chaos.t(player, "You need %d %s.", it.count * n, itemName(it.id, it.count * n)))
 		end
 	end
 	if (cr.tokens or 0) > 0 and player:getItemCount(tok.id) < cr.tokens * n then
-		return msg(player, string.format("You need %d %s.", cr.tokens * n, tok.plural))
+		return msg(player, Chaos.t(player, "You need %d %s.", cr.tokens * n, tok.plural))
 	end
 	if money(player) < (cr.gold or 0) * n then
-		return msg(player, string.format("You need %s gold.", K.thousands((cr.gold or 0) * n)))
+		return msg(player, Chaos.t(player, "You need %s gold.", K.thousands((cr.gold or 0) * n)))
 	end
 	for _, it in ipairs(cr.inputs or {}) do
 		player:removeItem(it.id, it.count * n)
@@ -1017,7 +1021,7 @@ function F.craft(player, key, n)
 	for _, it in ipairs(cr.output) do
 		giveStack(player, it.id, it.count * n)
 	end
-	msg(player, string.format("%s: made %dx.", o.name:gsub("^Recipe: ", ""), n), true)
+	msg(player, Chaos.t(player, "%s: made %dx.", o.name:gsub("^Recipe: ", ""), n), true)
 end
 
 -- ---------------------------------------------------------------- NPC placement

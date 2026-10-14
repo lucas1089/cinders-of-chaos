@@ -2,7 +2,7 @@
 -- Server texts in the player's language (server/README.md "Server texts in pt-BR (Chaos.t)"): i18n_core.lua (lookup,
 -- formats, fallbacks, deferred texts, the language of a player, broadcasts) on a mocked engine, i18n.lua (the hello
 -- on opcode 157 sets the language), the NPC helpers (langOf, npcText, npcMessages), and the strings table
--- (i18n_strings.lua with i18n_strings_more.lua merged in): every pt-BR entry keeps the % conversions of its key in order, and every key the
+-- (i18n_strings.lua, one table, no key twice): every pt-BR entry keeps the % conversions of its key in order, and every key the
 -- converted sites use (Chaos.t, ChaosI18n.msg, Chaos.broadcast, ChaosI18n.text, a core's T(lang, ...), an NPC's
 -- t(cid, ...), the helpers listed per file, the boss warnings of boss_mechanics_config.lua, the raid call-outs K.ANNOUNCE,
 -- the config texts the converted sites read, the NPC XML lines) has a pt-BR entry. English is the key itself.
@@ -142,6 +142,19 @@ for key, text in pairs(pt) do
 	check(select(2, key:gsub("{spell}", "")) == select(2, text:gsub("{spell}", "")), "{spell} kept: " .. key)
 end
 check(n >= 150, "the pt-BR table has its entries (" .. n .. ")")
+-- one table: no key written twice in i18n_strings.lua (a Lua table constructor would keep the last one silently)
+do
+	local fh = io.open("data/scripts/chaos/i18n_strings.lua", "r")
+	local src = fh:read("*a")
+	fh:close()
+	local seen, entries = {}, 0
+	for key in src:gmatch('\n\t\t%[("[^\n]-")%] =') do
+		entries = entries + 1
+		check(not seen[key], "i18n_strings.lua: key written twice: " .. key)
+		seen[key] = true
+	end
+	eq(entries, n, "every entry of i18n_strings.lua is one key of the table")
+end
 
 -- every key a converted site uses has a pt-BR entry. The first argument of Chaos.t / ChaosI18n.msg /
 -- Chaos.broadcast / ChaosI18n.text and of a core's T(...) helper: its literals (a `cond and "a" or "b"` gives both).
@@ -185,7 +198,7 @@ local SITES = {
 	["worldevents.lua"] = {}, ["rift.lua"] = RUN, ["raid.lua"] = RUN, ["season.lua"] = {}, ["arena_season.lua"] = {},
 	["daily.lua"] = {}, ["descent.lua"] = {}, ["itemsets.lua"] = {}, ["guildwar.lua"] = {}, ["uber.lua"] = {},
 	["ascension.lua"] = {}, ["season_modes.lua"] = {}, ["shop_services.lua"] = {},
-	-- i18n_strings_more.lua: the store, quests, achievements, new players, instances and the systems' chat lines
+	-- the store, quests, achievements, new players, instances and the systems' chat lines
 	["shop.lua"] = {"message%(player,%s*"}, ["shop_core.lua"] = CORE_T, ["ascension_quest.lua"] = {},
 	["ascension_quest_core.lua"] = CORE_T, ["trials.lua"] = {"say%(tr,%s*", "box%(player,%s*"}, ["trials_core.lua"] = CORE_T,
 	["achievements_core.lua"] = CORE_T, ["daily_core.lua"] = CORE_T, ["newplayer.lua"] = {}, ["newplayer_core.lua"] = CORE_T,
@@ -203,7 +216,12 @@ local SITES = {
 	["leaderboard.lua"] = {},
 	["market.lua"] = {}, ["hideout.lua"] = {}, ["gamble.lua"] = {}, ["cosmetics.lua"] = {}, ["transmog.lua"] = {},
 	["trials_effects.lua"] = {}, ["paragon.lua"] = {}, ["passivetree.lua"] = {}, ["bosspoints.lua"] = {}, ["gems.lua"] = {},
-	["salvage.lua"] = {}, ["archery.lua"] = {}, ["blessings.lua"] = {}
+	["salvage.lua"] = {}, ["archery.lua"] = {}, ["blessings.lua"] = {},
+	-- factions, bestiary, season pass, community goal, dungeons, goblins and Chaos loot; reasons returned to the window
+	["factions.lua"] = {"return nil,%s*"}, ["factions_core.lua"] = CORE_T, ["bestiary.lua"] = {},
+	["bestiary_core.lua"] = CORE_T, ["seasonpass.lua"] = {"notice%(player,%s*"}, ["seasonpass_core.lua"] = CORE_T,
+	["community.lua"] = {}, ["community_core.lua"] = CORE_T, ["dungeons.lua"] = {},
+	["treasure_goblin.lua"] = {}, ["loot.lua"] = {}, ["rift_core.lua"] = CORE_T, ["infinitytower_run.lua"] = {}
 }
 local used = 0
 for f, extra in pairs(SITES) do
@@ -256,6 +274,31 @@ end
 local aq = dofile("data/scripts/chaos/ascension_quest_config.lua")
 check(pt[aq.broadcast] ~= nil, "the ascension broadcast has pt-BR")
 
+-- the "stays behind" reasons (rift, Ascended arena, Descent, raid): the third person and, through ChaosI18n.you,
+-- the second
+local nReasons = 0
+for _, f in ipairs({"rift.lua", "uber.lua", "descent.lua", "raid.lua"}) do
+	local fh = io.open("data/scripts/chaos/" .. f, "r")
+	local src = fh:read("*a")
+	fh:close()
+	for seg in src:gmatch('ChaosI18n%.msg%(([^\n]*\n?[^\n]*)') do
+		for _, lit in ipairs(literals(seg)) do
+			if lit:find("^is ") or lit:find("^needs ") or lit:find("^has ") then
+				nReasons = nReasons + 1
+				check(pt[lit] ~= nil, f .. ": reason without pt-BR: " .. lit)
+				local you = I.you(lit)
+				check(pt[you.key] ~= nil, f .. ": second person without pt-BR: " .. you.key)
+			end
+		end
+	end
+end
+check(nReasons >= 20, "the stays-behind reasons are found (" .. nReasons .. ")")
+eq(tostring(I.you(I.msg("needs level %d for a tier %d rift", 80, 5))), "need level 80 for a tier 5 rift", "you: the arguments kept")
+eq(tostring(I.you("has used today's free descent and carries no Ember Sigil")),
+	"have used today's free descent and carry no Ember Sigil", "you: carries -> carry")
+eq(I.resolve(I.msg("You stay behind from %s's rift: you %s.", "Ana", I.you(I.msg("is in a fight"))), "pt-BR"),
+	"Você fica fora da rift de Ana: você está em luta.", "a stays-behind line in pt-BR")
+
 -- texts that come from configs: the Oracle's paths and the guardians' hints, the Trials' stories, the tutorial, the
 -- welcome, the achievements' categories and descriptions, the factions' lore, the world buffs
 for _, p in pairs(aq.paths) do check(pt[p] ~= nil, "ascension path without pt-BR: " .. p) end
@@ -271,6 +314,33 @@ for _, l in ipairs(npcfg.tutorial.lessons) do
 	for _, k in ipairs({l.title, l.text, l.toast, l.craftHint}) do
 		check(pt[k] ~= nil, "tutorial lesson text without pt-BR: " .. k)
 	end
+end
+-- the season pass challenges, the community goal's stages, token reward and week modifiers, the unique drop and
+-- goblin lines, the bestiary's stage names, the rift coffer's directions
+for _, kind in pairs(dofile("data/scripts/chaos/seasonpass_config.lua").challenges) do
+	if type(kind) == "table" then
+		for _, pool in pairs(kind) do
+			for _, c in pairs(type(pool) == "table" and pool or {}) do
+				if type(c) == "table" and c.text then
+					check(pt[c.text] ~= nil, "season pass challenge without pt-BR: " .. c.text)
+				end
+			end
+		end
+	end
+end
+local cc = dofile("data/scripts/chaos/community_config.lua")
+for _, st in ipairs(cc.goal.stages) do check(pt[st.text] ~= nil, "community stage without pt-BR: " .. st.text) end
+check(pt[cc.goal.rewards.token.text] ~= nil, "community token reward without pt-BR")
+for _, m in ipairs(cc.week.pool) do check(pt[m.text] ~= nil, "week modifier without pt-BR: " .. m.text) end
+local lc = dofile("data/scripts/chaos/loot_config.lua")
+check(pt[lc.unique.message] ~= nil and pt[lc.unique.broadcastText] ~= nil, "the unique drop lines have pt-BR")
+local gc = dofile("data/scripts/chaos/treasure_goblin_config.lua")
+for _, k in ipairs({gc.appearText, gc.escapeText, gc.killText}) do check(pt[k] ~= nil, "goblin line without pt-BR: " .. k) end
+local bc = dofile("data/scripts/chaos/bestiary_config.lua")
+for i = 2, 3 do check(pt[bc.stageNames[i]:lower()] ~= nil, "bestiary stage without pt-BR: " .. bc.stageNames[i]) end
+for _, d in ipairs({"north", "south", "east", "west", "north-east", "north-west", "south-east", "south-west", "centre",
+		"far side"}) do
+	check(pt[d] ~= nil, "rift coffer direction without pt-BR: " .. d)
 end
 local ach = dofile("data/scripts/chaos/achievements_data.lua")
 for _, c in ipairs(ach.categories) do check(pt[c.name] ~= nil, "achievement category without pt-BR: " .. tostring(c.name)) end
@@ -361,6 +431,18 @@ eq(ChaosInstanceLimitsCore.busyText("rifts", 240, 2, "pt-BR"),
 dofile("data/scripts/chaos/shop_core.lua")
 eq(ChaosShopCore.coinGiftProblem({perDay = 100}, {now = 0, amount = 101}, "pt-BR"),
 	"Você pode presentear no máximo 100 Chaos Coins por dia (restam 100 hoje).", "a store refusal in pt-BR")
+
+dofile("data/scripts/chaos/factions_core.lua")
+local FK = ChaosFactionsCore
+local lab = {lab = {"Deliver %s", {"3 Ember Shards"}, "5,000"}}
+lab.label = FK.label(lab)
+eq(lab.label, "Deliver 3 Ember Shards and 5,000 gold", "a delivery contract in English")
+eq(FK.label(lab, "pt-BR"), "Entregue 3 Ember Shards e 5,000 de ouro", "and in pt-BR")
+dofile("data/scripts/chaos/bestiary_core.lua")
+eq(select(2, ChaosBestiaryCore.canAccept(nil, {}, {}, "pt-BR")), "Essa task não está no seu quadro.", "a kill task refusal in pt-BR")
+dofile("data/scripts/chaos/rift_core.lua")
+eq(ChaosRiftCore.atlasNote({density = 12, lives = 1}, "pt-BR"), "Atlas: +12% packs, +1 vida", "the atlas HUD note in pt-BR")
+eq(ChaosRiftCore.atlasNote({density = 12, lives = 2}), "Atlas: +12% packs, +2 lives", "and in English")
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))
 if failures > 0 then

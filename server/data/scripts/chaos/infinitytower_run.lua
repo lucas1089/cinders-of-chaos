@@ -429,7 +429,7 @@ function ChaosTowerRun.start(player)
 			return false
 		end
 		if m:getCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT) then
-			player:sendCancelMessage(m:getName() .. " is in a fight.")
+			player:sendCancelMessage(Chaos.t(player, "%s is in a fight.", m:getName()))
 			return false
 		end
 	end

@@ -1212,19 +1212,19 @@ end
 
 local function memberProblem(m, def)
 	if A.runOf[m:getId()] then
-		return "is already inside an Ascended arena"
+		return ChaosI18n.msg("is already inside an Ascended arena")
 	end
 	if m:getLevel() < def.minLevel then
-		return string.format("needs level %d", def.minLevel)
+		return ChaosI18n.msg("needs level %d", def.minLevel)
 	end
 	if Chaos.isMultiClient and Chaos.isMultiClient(m) then
-		return "has another character from the same connection online"
+		return ChaosI18n.msg("has another character from the same connection online")
 	end
 	if inCombat(m) then
-		return "is in a fight"
+		return ChaosI18n.msg("is in a fight")
 	end
 	if insideOther(m) then
-		return "is inside a rift, a dungeon, the tower or the world boss arena"
+		return ChaosI18n.msg("is inside a rift, a dungeon, the tower or the world boss arena")
 	end
 	return nil
 end
@@ -1297,9 +1297,9 @@ local function gather(player, def)
 		if i > 1 then
 			local why = memberProblem(m, def)
 			if why then
-				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s stays behind: %s.", m:getName(), why))
-				m:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You stay behind from %s's arena: you %s.",
-					player:getName(), why:gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have ")))
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s stays behind: %s.", m:getName(), why))
+				m:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(m, "You stay behind from %s's arena: you %s.",
+					player:getName(), ChaosI18n.you(why)))
 			else
 				group[#group + 1] = m
 			end

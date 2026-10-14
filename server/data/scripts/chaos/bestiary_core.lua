@@ -13,7 +13,8 @@
 --   .huntTask(entry, level, cfg) / .canTakeHunt      a hunt task for an entry and whether a character may take it
 --   .offers(day, guid, level, catalogue, cfg)        the board of a character for a task day (seeded)
 --   .matches(task, entry)                            whether a kill of `entry` counts for `task`
---   .canAccept(task, st, cfg)                        the accept rules (active, daily and weekly limits, repeats)
+--   .canAccept(task, st, cfg, lang?)                 the accept rules (active, daily and weekly limits, repeats); the
+--                                                    reasons (also canTakeHunt's, lang last) in `lang`, English without
 --   .taskReward(task, playerLevel, cfg, bountyCfg)   {gold, chaos, divine, exp, points}
 --   .elements(list) / .immunities(mask) / .depthText(z) / .nearestTown(pos, towns) / .loot(...)  views for the window
 --   .chunk(list, budget, encode)                     splits a list into packets under `budget` bytes
@@ -27,6 +28,17 @@ end
 
 ChaosBestiaryCore = ChaosBestiaryCore or {}
 local C = ChaosBestiaryCore
+
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
 local B = ChaosBounty
 
 C.credit = B.credit -- (killers, membersOf, posOf, range, idOf): killers and their party members in range, each once
@@ -330,22 +342,22 @@ function C.huntTask(entry)
 end
 
 -- whether a character of `level` with `kills` of the entry may take a hunt task for it (not the limits: canAccept)
-function C.canTakeHunt(entry, level, kills, cfg)
+function C.canTakeHunt(entry, level, kills, cfg, lang)
 	if not entry then
-		return false, "That monster is not in the bestiary."
+		return false, T(lang, "That monster is not in the bestiary.")
 	end
 	if entry.boss then
-		return false, "Bosses cannot be taken as kill tasks."
+		return false, T(lang, "Bosses cannot be taken as kill tasks.")
 	end
 	if (entry.spawns or 0) <= 0 then
-		return false, "That monster does not live anywhere you can hunt it."
+		return false, T(lang, "That monster does not live anywhere you can hunt it.")
 	end
 	if (kills or 0) < 1 then
-		return false, "Kill one first: its bestiary entry must be discovered."
+		return false, T(lang, "Kill one first: its bestiary entry must be discovered.")
 	end
 	local win = C.window(level, cfg.takeWindow)
 	if not inWindow(entry, win) then
-		return false, string.format("That monster is not for your level (hunting level %d, yours: %d-%d).", entry.level,
+		return false, T(lang, "That monster is not for your level (hunting level %d, yours: %d-%d).", entry.level,
 			win.lo, win.hi)
 	end
 	local task = C.huntTask(entry)
@@ -437,26 +449,26 @@ function C.activeCount(st)
 	return n
 end
 
-function C.canAccept(task, st, cfg)
+function C.canAccept(task, st, cfg, lang)
 	if not task then
-		return false, "That task is not on your board."
+		return false, T(lang, "That task is not on your board.")
 	end
 	local cur = st.tasks[task.key]
 	if cur and cur.status == 0 then
-		return false, "You already hold that task."
+		return false, T(lang, "You already hold that task.")
 	end
 	if st.doneKeys[task.key] then
-		return false, "You already completed that task today."
+		return false, T(lang, "You already completed that task today.")
 	end
 	local active = C.activeCount(st)
 	if active >= cfg.maxActive then
-		return false, string.format("You can hold at most %d kill tasks at once.", cfg.maxActive)
+		return false, T(lang, "You can hold at most %d kill tasks at once.", cfg.maxActive)
 	end
 	if st.doneDay + active >= cfg.dailyLimit then
-		return false, string.format("You can complete at most %d kill tasks a day.", cfg.dailyLimit)
+		return false, T(lang, "You can complete at most %d kill tasks a day.", cfg.dailyLimit)
 	end
 	if st.doneWeek + active >= cfg.weeklyLimit then
-		return false, string.format("You can complete at most %d kill tasks a week.", cfg.weeklyLimit)
+		return false, T(lang, "You can complete at most %d kill tasks a week.", cfg.weeklyLimit)
 	end
 	return true
 end

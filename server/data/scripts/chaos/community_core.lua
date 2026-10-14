@@ -14,6 +14,17 @@
 ChaosCommunityCore = ChaosCommunityCore or {}
 local C = ChaosCommunityCore
 
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local floor, max, min = math.floor, math.max, math.min
 local MOD = 2147483647
 
@@ -176,14 +187,14 @@ function C.roomToday(cfg, e, key, day)
 end
 
 -- the gold a Brazier donation may take: whole perGold units, within the donation limits and today's room
-function C.donation(cfg, e, gold, day, carried)
+function C.donation(cfg, e, gold, day, carried, lang)
 	local b, s = cfg.brazier, C.source(cfg, "brazier")
 	gold = floor(num(gold))
 	if not s then
-		return 0, "The Brazier is cold."
+		return 0, T(lang, "The Brazier is cold.")
 	end
 	if gold < b.minGold then
-		return 0, string.format("Give at least %d gold.", b.minGold)
+		return 0, T(lang, "Give at least %d gold.", b.minGold)
 	end
 	gold = min(gold, b.maxGold)
 	local per = max(1, num(s.perGold, 1))
@@ -194,10 +205,10 @@ function C.donation(cfg, e, gold, day, carried)
 	gold = min(gold, room)
 	gold = floor(gold / per) * per
 	if gold <= 0 then
-		return 0, "The Brazier has taken all it will from you today."
+		return 0, T(lang, "The Brazier has taken all it will from you today.")
 	end
 	if carried and carried < gold then
-		return 0, "You do not have that much gold (backpack and bank)."
+		return 0, T(lang, "You do not have that much gold (backpack and bank).")
 	end
 	return gold
 end
@@ -668,20 +679,20 @@ function C.buffItems(cfg, buffs, mods, now, weekEnd, kind)
 end
 
 -- the login lines: the goal and the week
-function C.loginLines(cfg, progress, buffs, mods, now, finish)
+function C.loginLines(cfg, progress, buffs, mods, now, finish, lang)
 	local lines = {}
 	local active = {}
 	for _, a in ipairs(C.activeStages(cfg, buffs, now)) do
-		active[#active + 1] = string.format("%s (%s left)", a.stage.name, clock(a.left))
+		active[#active + 1] = T(lang, "%s (%s left)", a.stage.name, clock(a.left))
 	end
-	lines[#lines + 1] = string.format("Community goal \"%s\": %d%% (%s left this period)%s.", cfg.goal.name,
-		floor(C.pct(cfg, progress)), clock(finish - now), #active > 0 and ("; active: " .. table.concat(active, ", ")) or "")
+	lines[#lines + 1] = T(lang, "Community goal \"%s\": %d%% (%s left this period)%s.", cfg.goal.name,
+		floor(C.pct(cfg, progress)), clock(finish - now), #active > 0 and T(lang, "; active: %s", table.concat(active, ", ")) or "")
 	if #(mods or {}) > 0 then
 		local parts = {}
 		for _, m in ipairs(mods) do
-			parts[#parts + 1] = m.name .. ": " .. m.text
+			parts[#parts + 1] = m.name .. ": " .. T(lang, m.text)
 		end
-		lines[#lines + 1] = "World modifiers this week - " .. table.concat(parts, " ")
+		lines[#lines + 1] = T(lang, "World modifiers this week - %s", table.concat(parts, " "))
 	end
 	return lines
 end

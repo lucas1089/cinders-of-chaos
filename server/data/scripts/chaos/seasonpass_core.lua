@@ -10,10 +10,21 @@
 --   packs       P.pack(pass, id), P.ownedPack(packRows), P.hasPremium(pass, premium, packId),
 --               P.packPrice(pass, target, ownedPack, passPaid), P.packGrants(pass, fromId, toId)
 --   cosmetics   P.entitlements(pass, claims, packId) -> list of cosmetic rewards of the account
---   checks      P.validate(cfg), P.rewardText(r)
+--   checks      P.validate(cfg), P.rewardText(r, lang?) (in `lang` through ChaosI18n when loaded; English otherwise)
 
 ChaosSeasonPassCore = ChaosSeasonPassCore or {}
 local P = ChaosSeasonPassCore
+
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
 
 P.KINDS = {item = true, coins = true, title = true, outfit = true, mount = true, shader = true, portal = true,
 	frame = true, transmog = true, tierskips = true, premium = true}
@@ -343,7 +354,7 @@ function P.entitlements(pass, claims, packId)
 	return out
 end
 
-function P.rewardText(r)
+function P.rewardText(r, lang)
 	if not r then
 		return ""
 	end
@@ -351,13 +362,13 @@ function P.rewardText(r)
 		return r.name
 	end
 	if r.kind == "title" then
-		return "Title: " .. tostring(r.title)
+		return T(lang, "Title: %s", tostring(r.title))
 	elseif r.kind == "coins" then
-		return tostring(r.amount) .. " Chaos Coins"
+		return T(lang, "%s Chaos Coins", tostring(r.amount))
 	elseif r.kind == "tierskips" then
-		return tostring(r.count) .. " tier skips"
+		return T(lang, "%s tier skips", tostring(r.count))
 	elseif r.kind == "premium" then
-		return "Premium pass"
+		return T(lang, "Premium pass")
 	end
 	return r.kind
 end

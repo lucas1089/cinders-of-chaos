@@ -14,7 +14,8 @@
 --   K.hash(...) / K.rng(seed)             deterministic seed and generator (same numbers in every interpreter)
 --   K.makeContract(...) / K.contracts(...) contracts of a period, deterministic by (character, period, faction, slot)
 --   K.matchKill / K.matchRift / K.matchEvent, K.advance
---   K.offerState(cfg, idx, offer, ctx)    "locked" | "owned" | "soldout" | "ok" (+ reason)
+--   K.offerState(cfg, idx, offer, ctx)    "locked" | "owned" | "soldout" | "ok" (+ reason, in ctx.lang)
+--   K.label(c, lang?)                     a contract's text in `lang` (c.label is the English one)
 --   K.gearMods(offer, itemMods)           the fixed modifiers of a gear offer: {key, tier, value, lo, hi, side, label}
 --   K.tokenChance(cfg, tier)              token drop chance per 10000 of a kill
 --   K.titlesOf(cfg, idx, st)              titles a character holds (rank titles; the Exalted one with the frame)
@@ -22,8 +23,20 @@
 
 ChaosFactionsCore = ChaosFactionsCore or {}
 local K = ChaosFactionsCore
+local unpack = unpack or table.unpack
 
 local floor, max, min = math.floor, math.max, math.min
+
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
 
 local function round(v)
 	return floor(v + 0.5)
@@ -490,8 +503,8 @@ function K.makeContract(cfg, f, kind, period, guid, slot, ctx, used)
 				local n = rand(cc.kill.count[1], cc.kill.count[2])
 				c.count = max(cc.kill.step, floor(n / cc.kill.step) * cc.kill.step)
 				c.minLevel = minLevel
-				c.label = string.format("Slay %d %s of level %d+", c.count,
-					ctx.catName and ctx.catName(c.cat) or c.cat, minLevel)
+				c.lab = {"Slay %d %s of level %d+", c.count, ctx.catName and ctx.catName(c.cat) or c.cat, minLevel}
+				c.label = K.label(c)
 				used[pick] = true
 				return c
 			end
@@ -503,8 +516,9 @@ function K.makeContract(cfg, f, kind, period, guid, slot, ctx, used)
 				c.theme = f.theme
 				c.tier = max(1, top - spec.tierBelow)
 				c.count = spec.count
-				c.label = c.count == 1 and string.format("Seal a tier %d+ rift of the %s", c.tier, f.theme)
-					or string.format("Seal %d tier %d+ rifts of the %s", c.count, c.tier, f.theme)
+				c.lab = c.count == 1 and {"Seal a tier %d+ rift of the %s", c.tier, f.theme}
+					or {"Seal %d tier %d+ rifts of the %s", c.count, c.tier, f.theme}
+				c.label = K.label(c)
 				used[pick] = true
 				return c
 			end
@@ -520,24 +534,44 @@ function K.makeContract(cfg, f, kind, period, guid, slot, ctx, used)
 			end
 			local g = spec.gold
 			c.gold = floor(max(g.min, min(g.max, level * g.perLevel)) / 1000) * 1000
-			parts[#parts + 1] = thousands(c.gold) .. " gold"
 			c.count = 1
-			c.label = "Deliver " .. table.concat(parts, " and ")
+			c.lab = {"Deliver %s", parts, thousands(c.gold)}
+			c.label = K.label(c)
 			used[pick] = true
 			return c
 		elseif pick == "worldboss" then
 			c.count = cc.worldboss.count
-			c.label = "Take part in the fall of a world boss"
+			c.lab = {"Take part in the fall of a world boss"}
+			c.label = K.label(c)
 			used[pick] = true
 			return c
 		elseif pick == "invasion" then
 			c.count = cc.invasion.count
-			c.label = "Stand against an invasion"
+			c.lab = {"Stand against an invasion"}
+			c.label = K.label(c)
 			used[pick] = true
 			return c
 		end
 	end
 	return nil
+end
+
+-- a contract's text in `lang` (English without one): c.lab = {key, args...}; a list argument is the items of a
+-- delivery, then its gold ("Deliver 3 x and 5,000 gold")
+function K.label(c, lang)
+	local lab = c.lab
+	if not lab then
+		return c.label
+	end
+	if type(lab[2]) == "table" then
+		local parts = {}
+		for i, x in ipairs(lab[2]) do
+			parts[i] = x
+		end
+		parts[#parts + 1] = T(lang, "%s gold", lab[3])
+		return T(lang, lab[1], table.concat(parts, T(lang, " and ")))
+	end
+	return T(lang, lab[1], unpack(lab, 2))
 end
 
 -- every contract of a period for every faction: list in faction order, then slot order
@@ -583,18 +617,18 @@ function K.advance(c, progress, n)
 end
 
 -- ---------------------------------------------------------------- the quartermaster
--- ctx = {ranks = {[faction] = rank index}, owned = {[offer] = true}, weekly = {[offer] = bought this week}}
+-- ctx = {ranks = {[faction] = rank index}, owned = {[offer] = true}, weekly = {[offer] = bought this week}, lang?}
 function K.offerState(cfg, idx, offer, ctx)
 	local need = idx.rankIndex[offer.rank] or 1
 	local have = (ctx.ranks or {})[offer.faction] or 1
 	if (offer.kind == "recipe" or offer.kind == "aura" or offer.kind == "mount") and (ctx.owned or {})[offer.key] then
-		return "owned", "You have it."
+		return "owned", T(ctx.lang, "You have it.")
 	end
 	if have < need then
-		return "locked", string.format("Needs %s with %s.", cfg.ranks[need].name, idx.byKey[offer.faction].name)
+		return "locked", T(ctx.lang, "Needs %s with %s.", cfg.ranks[need].name, idx.byKey[offer.faction].name)
 	end
 	if offer.weekly and ((ctx.weekly or {})[offer.key] or 0) >= offer.weekly then
-		return "soldout", string.format("Bought %d of %d this week.", offer.weekly, offer.weekly)
+		return "soldout", T(ctx.lang, "Bought %d of %d this week.", offer.weekly, offer.weekly)
 	end
 	return "ok", nil
 end
@@ -654,7 +688,7 @@ end
 -- ---------------------------------------------------------------- the window
 -- ctx = {now, day, week, contracts = list (c.progress, c.done), owned, weekly, near = faction key or nil,
 --        tokens = {[faction] = carried count}, itemName = fn(id, n), itemMods, offerItemId = fn(offer),
---        clientId = fn(server id) -> client id (the window draws items by client id)}
+--        clientId = fn(server id) -> client id (the window draws items by client id), lang = the texts' language}
 function K.payload(cfg, idx, st, ctx)
 	local function cid(id)
 		return (ctx.clientId and id and id > 0) and ctx.clientId(id) or id
@@ -679,10 +713,10 @@ function K.payload(cfg, idx, st, ctx)
 	end
 	for _, c in ipairs(ctx.contracts or {}) do
 		out.contracts[#out.contracts + 1] = {key = c.key, f = c.faction, per = c.period == "daily" and "d" or "w",
-			kind = c.kind, label = c.label, p = c.progress or 0, n = c.count, rep = c.rep, done = c.done and true or nil,
+			kind = c.kind, label = K.label(c, ctx.lang), p = c.progress or 0, n = c.count, rep = c.rep, done = c.done and true or nil,
 			give = c.kind == "deliver" and not c.done or nil}
 	end
-	local sctx = {ranks = ranks, owned = ctx.owned, weekly = ctx.weekly}
+	local sctx = {ranks = ranks, owned = ctx.owned, weekly = ctx.weekly, lang = ctx.lang}
 	for _, o in ipairs(idx.offerList) do
 		local state, why = K.offerState(cfg, idx, o, sctx)
 		local row = {key = o.key, f = o.faction, kind = o.kind, n = o.name, rank = idx.rankIndex[o.rank],

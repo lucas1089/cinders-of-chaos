@@ -14429,12 +14429,16 @@ deferred text, or a function(lang)): each player reads it in their own language;
 the one `Game.broadcastMessage` of before. `ChaosI18n.msg(key, ...)` is a deferred text (tostring = English) for
 helpers that send one text to many players (rift and raid `say` / `alert`, world boss, invasion and world event
 announcements, mentor and referral `say`) or that return a reason the caller shows (store refusals). The key is the
-English pattern itself; `i18n_strings.lua` has the pt-BR table and `i18n_strings_more.lua` (`ChaosI18n.MORE`, merged in;
-a key of the first file keeps its text) the second batch (same % conversions in the same order). The client says its
+English pattern itself; `i18n_strings.lua` has the pt-BR table (one table, no key twice; the translation keeps the %
+conversions of its key in the same order). The client says its
 language in the display scale hello on opcode 157 (`i18n.lua`; a hello without `lang` changes nothing); it is kept in
 storage 7101830 for the next login. A file that calls the helpers starts with
 `if not Chaos.t then dofile("data/scripts/chaos/i18n_core.lua") end`. Pure cores take an optional last `lang` argument
 (`T(lang, key, ...)`: through ChaosI18n when it is loaded, English otherwise), so their tests stay English.
+A reason a party member "stays behind" with (rift, Ascended arena, Descent, raid) is a deferred text in the third
+person ("is in a fight", "needs level %d"); `ChaosI18n.you(why)` gives the second person ("are in a fight") for the
+member's own line and the "You %s." refusal. The rift HUD notes are deferred texts too, resolved per player when the
+HUD is sent.
 
 NPC scripts run in their own Lua state, which never sees the hello: `ChaosI18n.langOf(player | cid)` reads the stored
 language, `ChaosI18n.npcText(cid, key, ...)` translates a line, and `ChaosI18n.npcMessages(npcHandler)` (called after
@@ -14442,7 +14446,7 @@ the script's own `setCallback` lines) gives the XML's `message_greet` / `farewel
 language of the player the NPC answers (the XML texts are the keys). `{keywords}` stay English in the translations: the
 client sends them as typed. Archivist Maelis keeps her own bilingual lines.
 
-Converted (about 1,290 keys in all, 1,095 of them in `i18n_strings_more.lua`): the boss mechanic warnings (the boss's
+Converted (about 1,550 keys in all): the boss mechanic warnings (the boss's
 yell stays English), the raid call-outs and messages, Auto Seller, records and leaderboard broadcasts, rift and Omen
 messages, world boss, invasion and world event announcements, the broadcasts of seasons, PvP seasons, ascension, login
 streaks, Descent and raid uniques, set pieces, guild wars, the Cinderheart, Hardcore falls and world buffs; the store
@@ -14456,18 +14460,25 @@ level gifts, the five tutorial stations); instance limits (time warnings, busy i
 mentors and referrals (every config message); and the chat lines of stash, bank, town portal, pouches, Everfull Ration,
 Chaos Pact and builds, hideout, autoloot, party invites, class unlocks, professions, charms, pets, guild hall, Infinity
 Tower, arena, battleground, PvP zone, siege, uber arenas, Descent, raid, seasons and season modes, journey, titles,
-cosmetics, appearances, gems, salvage, Paragon, the passive tree refunds, boss points, archery and Ember Blessings.
-Measured with `sendTextMessage` / `sendCancelMessage` / `popupFYI` / `npcHandler:say` sites: 385 of 785 go through the
-helpers (8 before this batch; 395 with the two patches below; broadcasts not counted).
+cosmetics, appearances, gems, salvage, Paragon, the passive tree refunds, boss points, archery and Ember Blessings;
+achievements and the bounty board; factions (reputation, contracts and their labels, the quartermasters, offer
+states), the bestiary (kill tasks, stages, refusals), the season pass (tiers, claims, challenges, premium and packs,
+reward names, the window's notices, store refusals), the community goal (the Brazier, stages, the week's modifiers,
+login lines), dungeons (entry refusals, boss unlock, ends), treasure goblins and Chaos loot (unique drops, bonus loot),
+the "stays behind" lines of rifts, Ascended arenas, the Descent and the raid, and the rift HUD notes (coffer, goblin,
+guardians, fallen players, packs, the atlas line). Measured with `sendTextMessage` / `sendCancelMessage` / `popupFYI`
+/ `npcHandler:say` sites: 430 of 785 go through the helpers (8 before the first batch, 395 before this one; broadcasts
+not counted).
 
-Left: files other work held when this was done (`achievements.lua` and `bounty.lua`: their conversions wait as patches
-with their keys already in the table; `factions.lua`, `bestiary.lua`, `seasonpass.lua`, `community.lua`, `dungeons.lua`,
-`treasure_goblin.lua`, `loot.lua`), item descriptions and mail texts built in cores (one text for every viewer), texts
-built from English parts (reasons like "is in a fight" in the rift / Descent / arena "stays behind" lines, contract and
-reward texts of `*_core.lua`, rift HUD notes), the donation window texts of `shop_payments*.lua` (bilingual on their
-own), staff and gamemaster commands (English on purpose), and about 390 other sites, mostly helpers that send a text
+Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
+(`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text
+(the season pass's "no room" claim refusal, the raid's party size refusal: English), the season pass window's reward
+names and the factions window's gear lines, the donation window texts of `shop_payments*.lua` (bilingual on their
+own), staff and gamemaster commands (English on purpose), and about 355 other sites, mostly helpers that send a text
 built elsewhere. `tests/i18n_test.lua`: lookup, fallbacks, deferred texts, storage, the hello, broadcasts, NPC
-language and messages, every key of the converted sites (Chaos.t, msg, broadcast, core `T(lang, ...)`, NPC `t(cid,
-...)`, helper calls) and of the configs the converted sites read (boss warnings, raid call-outs, ascension paths and
-hints, trial stories, tutorial and welcome, achievement categories and descriptions, faction lore, world buffs,
-mentor and referral messages, the NPC XML lines), plus a few pt-BR texts end to end.
+language and messages, one table without a key twice, every key of the converted sites (Chaos.t, msg, broadcast, core
+`T(lang, ...)`, NPC `t(cid, ...)`, helper calls) and of the configs the converted sites read (boss warnings, raid
+call-outs, ascension paths and hints, trial stories, tutorial and welcome, achievement categories and descriptions,
+faction lore, world buffs, mentor and referral messages, the NPC XML lines, season pass challenges, community stages
+and modifiers, the unique drop and goblin lines, bestiary stages, coffer directions), both persons of every "stays
+behind" reason, plus a few pt-BR texts end to end.
