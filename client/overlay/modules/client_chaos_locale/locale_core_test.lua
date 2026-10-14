@@ -40,6 +40,10 @@ eq(L.toCp1252('\231a'), '\231a', 'not UTF-8: as it is')
 eq(L.toCp1252('\228\184\173'), '?', 'outside cp1252: ?')
 
 -- the lookup
+eq(L.upper(L.toCp1252('Aperte qualquer tecla para come\195\167ar')), 'APERTE QUALQUER TECLA PARA COME\199AR', 'upper: c cedilla')
+eq(L.upper('\225\224\226\227\233\234\237\243\244\245\250\252\231'), '\193\192\194\195\201\202\205\211\212\213\218\220\199', 'upper: pt-BR accents')
+eq(L.upper('\247\215 1-2 \154\156\158\255 \223'), '\247\215 1-2 \138\140\142\159 \223', 'upper: division sign, carons, sharp s')
+eq(L.upper(nil), nil, 'upper: not a string')
 local t = L.prepare({ ['Close'] = 'Fechar', ['Level %d'] = 'N\195\173vel %d', ['%s of %s'] = '%s de %s' })
 eq(L.translate(t, nil, 'Close'), 'Fechar', 'found')
 eq(L.translate(t, nil, 'Level %d', 5), 'N\237vel 5', 'found, formatted, cp1252')

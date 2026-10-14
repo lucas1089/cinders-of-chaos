@@ -151,16 +151,16 @@ local TITLE_COLOR = '#e8c477'
 -- The Chaos bitmap fonts, made from SIL Open Font License fonts (client/fonts-src/, tools/make_ofl_fonts.sh; see
 -- client/MANIFEST.md "OFL fonts"). They ship in data/fonts/chaos/. A role gives its font only when the client has it
 -- loaded (a client assembled without them keeps its Verdana everywhere). They hold the glyphs 32..255 (cp1252: the
--- accented letters, the euro sign, dashes, curly quotes; the client draws text byte by byte), the splash only space..Z.
+-- accented letters, the euro sign, dashes, curly quotes; the client draws text byte by byte), the display only space..~.
 --   title     Cinzel Bold 15      every Chaos-skinned window title
---   splash    Cinzel Bold 20      the login "PRESS ANY KEY TO START" (glyphs space..Z only: upper case text)
+--   splash    Cinzel Bold 20      the login "PRESS ANY KEY TO START" (upper case, ChaosLocaleCore.upper)
 --   subtitle  Alegreya SC Bold 16 the Codex page title, the item on the crafting bench
 --   heading   Alegreya SC Bold 14 Codex section headings, the NPC's name in the dialogue bubble
 --   dialogue  IM Fell English 15  what NPCs say (game_npctalk)
 --   body      Alegreya Sans Medium 13 (or 12): a trial body font for the Codex text, OFF unless the setting
 --             'chaosBodyFont' names it (ChaosTheme.setBodyFont(true | 'chaos-body-12px' | false))
---   outline   Alegreya Sans Medium 12 with an antialiased 1 px dark border: text over the game picture
---   outlineSmall  the same at 11 px (the login scene's name plates)
+--   outline   Alegreya Sans Medium 11 with an antialiased 1 px dark border: text over the game picture
+--   outlineSmall  the same font (the login scene's name plates; the 12 px size gave its atlas room to the splash)
 --   display   Cinzel Bold 16 with the border and a shadow, glyphs space..~ only (ASCII captions: the login scene)
 ChaosTheme.fonts = {
   title = { name = 'chaos-title-15px', titleDy = -3 }, -- titleDy: moves the title text (the font is taller)
@@ -169,7 +169,7 @@ ChaosTheme.fonts = {
   heading = { name = 'chaos-heading-14px' },
   dialogue = { name = 'chaos-dialogue-15px' },
   body = { name = 'chaos-body-13px', setting = 'chaosBodyFont', choices = { 'chaos-body-13px', 'chaos-body-12px' } },
-  outline = { name = 'chaos-outline-12px' },
+  outline = { name = 'chaos-outline-11px' },
   outlineSmall = { name = 'chaos-outline-11px' },
   display = { name = 'chaos-display-16px' },
 }

@@ -266,6 +266,8 @@ local function updateFooter()
   footer.accountIcon:setImageSource(free and '/images/game/entergame/nopremium' or '/images/game/entergame/premium')
   footer.recordBox:setChecked(g_settings.getBoolean('recordSession', false))
   footer.autoReconnect:setText(tr('Auto reconnect') .. ': ' .. (g_settings.getBoolean('autoReconnect', false) and tr('On') or tr('Off')))
+  -- as wide as its text needs ("Reconex\227o autom\225tica: Desligado" is longer than the English)
+  footer.autoReconnect:setWidth(math.max(150, footer.autoReconnect:getTextSize().width + 24))
   if footer.languageButton then
     footer.languageButton:setVisible(ChaosLocale ~= nil)
     if ChaosLocale then footer.languageButton:setText(ChaosLocale.buttonText()) end

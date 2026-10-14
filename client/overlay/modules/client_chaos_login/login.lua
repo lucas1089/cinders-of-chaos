@@ -62,6 +62,13 @@ local function try(fn, ...)
 end
 
 -- ---------------------------------------------------------------- layout helpers
+-- upper case of a translated (cp1252) text: string.upper leaves "\231" (c cedilla) and the other accents alone
+local function upperText(s)
+  local core = rawget(_G, 'ChaosLocaleCore')
+  if core and core.upper then return core.upper(s) end
+  return s:upper()
+end
+
 local function place(w, x, y, wd, ht)
   if not alive(w) then return end
   w:breakAnchors()
@@ -329,6 +336,11 @@ local function layoutPanel()
   local auto = eg:getChildById('autoLoginBox')
   local lab = rem:getChildren()[1]
   if lab then lab:setText(tr('Remember account')) end
+  -- the stock texts of the other two boxes stay English without this (base enterGame has no pt-BR)
+  local labP = remP and (remP:getChildren()[1] or remP)
+  if labP then labP:setText(tr('Remember password')) end
+  local labA = auto and (auto:getChildren()[1] or auto)
+  if labA then labA:setText(tr('Auto login')) end
   for _, box in ipairs({ rem, remP, auto }) do
     local l = box:getChildren()[1] or box
     l:setFont('verdana-11px-antialised')
@@ -336,7 +348,7 @@ local function layoutPanel()
   end
   place(rem, X0, rowChecks, 150, 16)
   place(remP, X0 + 160, rowChecks, 150, 16)
-  place(auto, X0 + 330, rowChecks, 120, 16)
+  place(auto, X0 + 330, rowChecks, 150, 16)  -- "Login autom\225tico" is wider than "Auto Login"
   for _, id in ipairs({ 'buttonInformation', 'passwordInformation' }) do
     local b = eg:getChildById(id)
     if b then b:setOpacity(0) b:setPhantom(true) place(b, 0, 0, 1, 1) end
@@ -401,7 +413,9 @@ local function layoutCorners()
     sel:breakAnchors()
     sel:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     sel:addAnchor(AnchorTop, 'parent', AnchorTop)
-    sel:setMarginLeft(62)
+    -- right of the caption, whatever its length ("Servidor" is wider than "Server")
+    local capW = serverCaption:getTextSize().width
+    sel:setMarginLeft(math.max(62, 14 + capW + 8))
     sel:setMarginTop(10)
     sel:setWidth(150)
     sel:setHeight(22)
@@ -411,7 +425,7 @@ local function layoutCorners()
     cam:breakAnchors()
     cam:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     cam:addAnchor(AnchorTop, 'parent', AnchorTop)
-    cam:setMarginLeft(220)
+    cam:setMarginLeft((sel and sel:getMarginLeft() or 62) + 158)
     cam:setMarginTop(11)
   end
   verLabel = newWidget('ChaosLoginCorner', bg, 'chaosVersion')
@@ -436,7 +450,7 @@ placeStatus = function()
   if not alive(statusLabel) or not alive(bg) then return end
   statusLabel:breakAnchors()
   if state.splash then
-    statusLabel:setText(statusLabel.chaosText and statusLabel.chaosText:upper() or '')
+    statusLabel:setText(statusLabel.chaosText and upperText(statusLabel.chaosText) or '')
     statusLabel:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
     statusLabel:addAnchor(AnchorTop, 'parent', AnchorTop)
     statusLabel:setMarginLeft(artX(688) - math.floor(bg:getWidth() / 2))
@@ -598,7 +612,7 @@ local function createBackgroundLayers()
   if pressText ~= 'Press any key to start' or splashFont then
     pressW:getChildById('words'):setVisible(false)
     if splashFont then pressW:getChildById('text'):setFont(splashFont) end
-    pressW:getChildById('text'):setText(pressText:upper())
+    pressW:getChildById('text'):setText(upperText(pressText))
     pressW:getChildById('text'):setVisible(true)
   end
   pressW:setVisible(false)

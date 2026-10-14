@@ -79,12 +79,78 @@ class Shipped(unittest.TestCase):
     """the bitmap fonts in overlay/data/fonts/chaos/ (make_ofl_fonts.sh): their sheets hold every glyph from
     first-glyph to the end of the range (else the client draws nothing for the bytes past the sheet)"""
     DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'overlay', 'data', 'fonts', 'chaos')
-    RANGE = {'chaos-splash-20px': 90, 'chaos-display-16px': 126}  # ASCII only: a 256 slot (MANIFEST "OFL fonts")
+    RANGE = {'chaos-display-16px': 126}  # ASCII only (names): a 256 slot (MANIFEST "OFL fonts")
+    # the letters Brazilian Portuguese needs (pt_br.lua turned into cp1252 by locale_core.lua)
+    PT_BR = '\xe1\xe0\xe2\xe3\xe9\xea\xed\xf3\xf4\xf5\xfa\xfc\xe7\xc1\xc0\xc2\xc3\xc9\xca\xcd\xd3\xd4\xd5\xda\xdc\xc7'
+
+    def sheet(self, n):
+        """width(byte) of a shipped font as the client measures it (the last column with any alpha; 0: no glyph),
+        and the .otfont spacing"""
+        import re
+        text = open(os.path.join(self.DIR, n + '.otfont'), encoding='utf-8').read()
+        gw, gh = [int(x) for x in re.search(r'glyph-size: (\d+) (\d+)', text).group(1, 2)]
+        first = int(re.search(r'first-glyph: (\d+)', text).group(1))
+        from PIL import Image
+        img = Image.open(os.path.join(self.DIR, n + '.png'))
+        cols, rows = img.size[0] // gw, img.size[1] // gh
+        alpha = img.convert('RGBA').getchannel('A').load()
+
+        def width(byte):
+            i = byte - first
+            if i < 0 or i >= cols * rows:
+                return 0
+            x0, y0 = (i % cols) * gw, (i // cols) * gh
+            used = [x for x in range(gw) if any(alpha[x0 + x, y0 + y] for y in range(gh))]
+            return used[-1] + 1 if used else 0
+        return width
+
+    STUBS = ('chaos-outline-12px',)  # dropped fonts: a stub with a loaded font's name (no atlas slot)
+
+    def names(self):
+        return [n[:-7] for n in sorted(os.listdir(self.DIR)) if n.endswith('.otfont') and n[:-7] not in self.STUBS]
+
+    def test_stubs(self):
+        for n in self.STUBS:
+            info = M.parse_otfont(open(os.path.join(self.DIR, n + '.otfont'), encoding='utf-8').read())
+            self.assertEqual(info['name'], 'Icon-VBold-11px', n)
+            self.assertFalse(os.path.exists(os.path.join(self.DIR, n + '.png')), n)
+
+    def test_pt_br_glyphs(self):
+        # every font but the ASCII display font draws each pt-BR letter, and its accented forms advance like the
+        # plain letter (the splash: "APERTE QUALQUER TECLA PARA COME\xc7AR")
+        try:
+            import PIL  # noqa: F401
+        except ImportError:
+            self.skipTest('no Pillow')
+        for n in self.names():
+            width = self.sheet(n)
+            if self.RANGE.get(n, 255) < 192:
+                self.assertEqual(width(0xc7), 0, n)
+                continue
+            for ch in self.PT_BR:
+                b = ch.encode('cp1252')[0]
+                self.assertGreater(width(b), 0, '%s lacks %r' % (n, ch))
+            for plain, accented in (('A', '\xc1\xc0\xc2\xc3'), ('E', '\xc9\xca'), ('O', '\xd3\xd4\xd5'), ('U', '\xda'),
+                                    ('a', '\xe1\xe0\xe2\xe3'), ('e', '\xe9\xea'), ('o', '\xf3\xf4\xf5'), ('u', '\xfa')):
+                for ch in accented:
+                    self.assertLessEqual(abs(width(ch.encode('cp1252')[0]) - width(ord(plain))), 1, '%s %r' % (n, ch))
+
+    def test_q_advance(self):
+        # the client spaces the next glyph after a glyph's last painted column: a Q tail must not make a gap
+        # ("Q UALQ UER"); Q advances about like O
+        try:
+            import PIL  # noqa: F401
+        except ImportError:
+            self.skipTest('no Pillow')
+        for n in self.names():
+            width = self.sheet(n)
+            self.assertLessEqual(width(ord('Q')), width(ord('O')) + 2, n)
+            self.assertLessEqual(width(ord('q')), max(width(ord('o')), width(ord('p'))) + 2, n)
 
     def test_ranges(self):
         import re
-        names = [n[:-7] for n in sorted(os.listdir(self.DIR)) if n.endswith('.otfont')]
-        self.assertEqual(len(names), 10)
+        names = self.names()
+        self.assertEqual(len(names), 9)
         for n in names:
             text = open(os.path.join(self.DIR, n + '.otfont'), encoding='utf-8').read()
             gw, gh = [int(x) for x in re.search(r'glyph-size: (\d+) (\d+)', text).group(1, 2)]
@@ -124,6 +190,13 @@ class Border(unittest.TestCase):
         self.assertEqual(M.ring_pad(border=1.0), 1)
         self.assertEqual(M.ring_pad(border=1.2), 2)
         self.assertEqual(M.ring_pad(outline=2, border=1.0), 2)
+
+    def test_clip_width(self):
+        self.assertEqual(M.clip_width(12, 0, 11), 12)        # 1 px of antialiased edge past the advance stays
+        self.assertEqual(M.clip_width(20, 0, 11), 12)        # a long tail is cut 1 px past the advance
+        self.assertEqual(M.clip_width(20, 2, 11, 0), 13)     # the left shift counts, no overhang at all
+        self.assertEqual(M.clip_width(20, 0, 11, None), 20)  # no limit
+        self.assertEqual(M.clip_width(9, 0, 11), 9)
 
     def test_squeeze(self):
         self.assertEqual(M.squeeze(15, 1, 1, None), 15)

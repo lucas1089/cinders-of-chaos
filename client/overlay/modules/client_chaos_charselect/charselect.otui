@@ -115,7 +115,7 @@ ChaosCharSelectScreen < UIWidget
       anchors.bottom: parent.bottom
       margin-left: 22
       margin-bottom: 12
-      width: 200
+      width: 222
       !text: tr('Show hidden characters')
       checked: true
       enabled: false
@@ -484,7 +484,7 @@ ChaosCreateWindow < ChaosStaticMainWindow
     anchors.top: seasonWarning.bottom
     anchors.left: nameLabel.left
     margin-top: 2
-    width: 300
+    width: 340
     !text: tr('I understand: this character has one life')
     visible: false
 

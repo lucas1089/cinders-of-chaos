@@ -6,6 +6,7 @@ usage:
           [--outline 1] [--outline-color 0,0,0,200] [--shadow 1,1] [--shadow-color 0,0,0,160]
           [--first 32] [--last 255] [--encoding cp1252] [--tracking 0] [--weight 600]
           [--space-width 4] [--tight] [--border 1.2] [--border-color 0,0,0,230] [--max-cell-width 14]
+          [--max-overhang 1]
   python3 -I client/tools/make_fonts.py --atlas-check CLIENT_DATA_FONTS_DIR [EXTRA_DIR ...]
 
 Glyphs are white (the client tints a font with the widget's colour), with an optional dark outline and a baked drop
@@ -16,7 +17,9 @@ with the hinted glyph. --max-cell-width squeezes the few glyphs wider than the c
 horizontally to fit, so they do not decide the cell size of the whole sheet (and its atlas slot). The client reads a glyph's width from its sheet (the last column with any pixel, BitmapFont::
 calculateGlyphsWidthsAutomatically) and puts the next glyph right after it, so each glyph is drawn at the left of its
 cell and its advance width is marked with one pixel of alpha 1 (invisible) in the top row: the spacing then follows
-the font's own metrics. Glyphs first..last are byte values in `encoding`: the client draws a string byte by byte, each
+the font's own metrics. The client also draws nothing right of that width, so a glyph cannot overhang the next one:
+ink more than --max-overhang pixels (default 1, the antialiased edge) past the advance is cut (clip_width), else the
+long tail of a Cinzel or IM Fell "Q" would become the glyph's width and leave a gap after it ("Q UALQ UER"). Glyphs first..last are byte values in `encoding`: the client draws a string byte by byte, each
 byte the glyph of that number (BitmapFont, glyphs first-glyph..255, laid out row by row from the sheet's top left like
 the stock 16x14-cell cp1252 Verdana sheets), so the default is the whole printable cp1252 range 32..255 (accents,
 "€ – — ‘ ’ “ ” …"; the no-break space advances like a space, the soft hyphen is a hyphen, 127 and the 5 bytes cp1252
@@ -195,6 +198,14 @@ def parse_rgba(text):
     return tuple(parts[:4])
 
 
+def clip_width(ink_w, shift, adv, max_overhang=1):
+    """the ink width a glyph keeps: the client measures a glyph by its last painted column and draws nothing past
+    it, so ink reaching more than `max_overhang` pixels past the advance (a "Q" tail) is cut there; None: no limit"""
+    if max_overhang is None:
+        return ink_w
+    return min(ink_w, shift + adv + max(0, int(max_overhang)))
+
+
 def glyph_text(ch):
     """what is drawn for a character: None for a cell left empty (control, undefined), '' for an invisible glyph that
     only advances (the no-break space), the soft hyphen as a hyphen (as Windows fonts show it)"""
@@ -247,7 +258,8 @@ def vertical_fit(rows_used, line_height, tight=False):
 
 def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252', outline=0,
            outline_color=(0, 0, 0, 200), shadow=(0, 0), shadow_color=(0, 0, 0, 160), tracking=0, weight=None,
-           space_width=None, tight=False, border=0.0, border_color=(0, 0, 0, 230), max_cell_width=None):
+           space_width=None, tight=False, border=0.0, border_color=(0, 0, 0, 230), max_cell_width=None,
+           max_overhang=1):
     from PIL import Image, ImageDraw, ImageFont
     font = ImageFont.truetype(font_file, size)
     if weight:
@@ -264,7 +276,7 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
     right = ring + max(0, shadow[0])
     space = (space_width if space_width else int(round(font.getlength(' '))) + tracking)
     chars = glyph_chars(first, last, encoding)
-    metrics, squeezed = {}, {}
+    metrics, squeezed, clipped = {}, {}, {}
     cell_w = 1
     for b, ch in chars:
         text = glyph_text(ch)
@@ -277,6 +289,10 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
         adv = int(round(font.getlength(text))) + tracking
         shift = max(0, -l)  # a glyph that starts left of its origin is moved right by that much
         ink_w = max(r + shift, adv + shift)
+        cut_w = clip_width(ink_w, shift, adv, max_overhang)
+        if cut_w < ink_w:  # a tail past the advance: cut (the client would space the next glyph after it)
+            clipped[b] = ink_w - cut_w
+            ink_w = cut_w
         fit_w = squeeze(ink_w, pad_l, pad_r, max_cell_width)
         if fit_w < ink_w:  # drawn narrower: the advance shrinks with it
             adv = max(1, int(round(adv * fit_w / float(ink_w))))
@@ -302,6 +318,8 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
             else:
                 mask = Image.new('L', (cell_w, canvas_h), 0)
                 ImageDraw.Draw(mask).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
+                if b in clipped:  # nothing past the kept ink width (the ring then closes the cut edge)
+                    ImageDraw.Draw(mask).rectangle((pad_l + metrics[b][3], 0, cell_w, canvas_h), fill=0)
             if shadow != (0, 0):
                 sh = Image.new('L', (cell_w, canvas_h), 0)
                 sh.paste(mask, (shadow[0], shadow[1]))
@@ -346,6 +364,7 @@ def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252'
     return {'name': base, 'size': (w, h), 'cell': (cell_w, cell_h), 'slot': slot,
             'glyphs': sum(1 for b in metrics if metrics[b][0]), 'range': (first, last), 'y_offset': y_offset,
             'squeezed': ''.join(metrics[b][0] for b in sorted(squeezed)),
+            'clipped': ''.join(metrics[b][0] for b in sorted(clipped)),
             'line': cell_h + spacing_h, 'old_line': line_h}
 
 
@@ -435,6 +454,8 @@ def main(argv):
     ap.add_argument('--border', type=float, default=0.0, help='antialiased round border of this many px (e.g. 1.2)')
     ap.add_argument('--border-color', default='0,0,0,230')
     ap.add_argument('--max-cell-width', type=int, help='squeeze glyphs wider than this cell (px, rings included)')
+    ap.add_argument('--max-overhang', type=int, default=1,
+                    help='px of ink kept past a glyph\'s advance; more (a "Q" tail) is cut (default 1)')
     ap.add_argument('--atlas-check', nargs='+', metavar='DIR')
     a = ap.parse_args(argv)
     if a.atlas_check:
@@ -445,11 +466,12 @@ def main(argv):
     for size in [int(s) for s in a.sizes.split(',') if s.strip()]:
         r = render(a.font, size, a.name, a.out, a.first, a.last, a.encoding, a.outline, parse_rgba(a.outline_color),
                    shadow, parse_rgba(a.shadow_color), a.tracking, a.weight, a.space_width, a.tight,
-                   a.border, parse_rgba(a.border_color), a.max_cell_width)
-        print('%s: %dx%d sheet, cell %dx%d, glyphs %d..%d (%d drawn), y-offset %d, line %d, atlas slot %d%s' % (
+                   a.border, parse_rgba(a.border_color), a.max_cell_width, a.max_overhang)
+        print('%s: %dx%d sheet, cell %dx%d, glyphs %d..%d (%d drawn), y-offset %d, line %d, atlas slot %d%s%s' % (
               r['name'], r['size'][0], r['size'][1], r['cell'][0], r['cell'][1], r['range'][0], r['range'][1],
               r['glyphs'], r['y_offset'], r['line'], r['slot'],
-              ', %d squeezed' % len(r['squeezed']) if r['squeezed'] else ''))
+              ', %d squeezed' % len(r['squeezed']) if r['squeezed'] else '',
+              ', cut past the advance: %s' % r['clipped'] if r['clipped'] else ''))
     return 0
 
 

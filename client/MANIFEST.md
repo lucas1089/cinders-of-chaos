@@ -1678,13 +1678,13 @@ holds the font file used, its `OFL.txt` and a README (source URL, version, upstr
 | Family | File (version) | Bitmap fonts | Role (`ChaosTheme.fonts`) | Used for |
 |---|---|---|---|---|
 | Cinzel | Cinzel-VariableFont_wght.ttf (2.000), weight 700 | `chaos-title-15px` (shadow) | `title` | every Chaos-skinned window title |
-| | | `chaos-splash-20px` (outline + shadow, glyphs space..Z) | `splash` | the login "PRESS ANY KEY TO START" |
+| | | `chaos-splash-20px` (outline + shadow, glyphs 32..255) | `splash` | the login "PRESS ANY KEY TO START" |
 | | | `chaos-display-16px` (antialiased border + shadow, glyphs space..~) | `display` | the login scene's place name |
 | Alegreya SC | AlegreyaSC-Bold.ttf (2.003) | `chaos-subtitle-16px` (shadow) | `subtitle` | Codex page title, the item on the crafting bench |
 | | | `chaos-heading-14px` (shadow) | `heading` | Codex section headings, the NPC's name in the dialogue bubble |
 | IM Fell English | IMFeENrm28P.ttf (3.00) | `chaos-dialogue-15px` | `dialogue` | what NPCs say in the dialogue bubble (`game_npctalk`) |
 | Alegreya Sans | AlegreyaSans-Medium.ttf (2.004) | `chaos-body-13px`, `chaos-body-12px` | `body` (off) | trial body font: Codex paragraphs, only when switched on |
-| | | `chaos-outline-12px`, `chaos-outline-11px` (antialiased border) | `outline`, `outlineSmall` | text straight over the game picture: the login scene's monster names (11); 12 for later uses |
+| | | `chaos-outline-11px` (antialiased border) | `outline`, `outlineSmall` | text straight over the game picture: the login scene's monster names (the 12 px size, unused, was dropped 2026-10-14 for the splash's room) |
 
 Everything else keeps the stock Verdana. `client_chaos_theme`: `ChaosTheme.font(role[, fallback])` gives the role's
 font name when that font is loaded, `ChaosTheme.applyFont(widget, role)` sets it (nothing changes without the font).
@@ -1709,6 +1709,16 @@ used, 2 slots of 256 free; the Linux client agrees (`g_atlas.getStats()` font pa
 loaded). So the "one 256x256 slot free" below is two now. Tests: `make_fonts_test.py` (disc, ring pad, squeeze, a bordered render: white ink, dark
 soft ring, nothing wraps round the cell).
 
+**pt-BR splash and glyph tails** (2026-10-14): the pt-BR login showed "APERTE Q UALQ UER TECLA PARA COMEAR". Two
+causes. (1) The splash held glyphs space..Z only, so "Ç" was not drawn; it now holds 32..255 (a 512 slot; the room is
+that of `chaos-outline-12px`, which nothing used: the `outline` role now names the 11 px font). `login.lua` upper-cases
+with `ChaosLocaleCore.upper` (cp1252: "ç" -> "Ç"; Lua's `string.upper` leaves bytes over 127 alone). (2) The client
+measures a glyph by its last painted column and draws nothing past it, so a Cinzel "Q" tail (8-9 px past its advance,
+IM Fell's 11 px) became a gap after the Q. `make_fonts.py --max-overhang N` (default 1, the antialiased edge) cuts ink
+further past the advance (`clip_width`); the cut glyphs are printed per sheet (Q q & and a few more). `--atlas-check`
+on the assembled client: everything fits, no slot left. `make_fonts_test.py` checks every shipped sheet: each pt-BR
+letter (á à â ã é ê í ó ô õ ú ü ç and capitals) drawn and advancing like its plain letter, Q about as wide as O.
+
 **Licence.** The OFL allows bundling the fonts and fonts made from them with the game (free or sold) if every copy
 carries the copyright notice and the licence, the fonts are never sold by themselves and stay under the OFL. So
 `data/fonts/chaos/OFL-<Family>.txt` ships with the client, the login screen's Credits box and the README name the
@@ -1729,7 +1739,7 @@ and a byte past the sheet has no glyph and is not drawn. There is no UTF-8 in th
 Latin-1, servers send Latin-1. So every Chaos font holds the printable cp1252 range 32..255 (á é í ó ú â ê ô ã õ ç à ü
 ñ and the capitals, º ª « » ¿ ¡ ° ± × ÷ © ®, and cp1252's € ‚ „ … ‘ ’ “ ” – — ™ • Œ œ in 128..159; the no-break space
 advances like a space, the soft hyphen is a hyphen, 127 and the five bytes cp1252 leaves undefined stay empty), except
-the splash (space..Z: with the accented capitals it would need a 512 slot). Accented capitals reaching above a font's
+the display font (space..~: place and character names, ASCII; the whole range would need a 512 slot). Accented capitals reaching above a font's
 line box get room: the dialogue text sits 1 px lower (line 20 -> 21 px), the trial body font 1 / 2 px lower (13 px:
 line 14 -> 16, 12 px: 13 -> 16), title, splash, subtitle and heading draw ASCII exactly as before (same pixels in the
 client; the heading's one-line text box is 1 px shorter, `--tight`). Server scripts saved as UTF-8 (many base NPC

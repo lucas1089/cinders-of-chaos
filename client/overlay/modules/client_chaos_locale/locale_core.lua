@@ -74,6 +74,20 @@ function L.toCp1252(s)
   return table.concat(out)
 end
 
+-- upper case of a cp1252 string (string.upper only knows ASCII in the C locale: "come\231ar" kept its "\231"):
+-- a-z, the accented 224..254 but the division sign 247, and \154 \156 \158 \255 (s/oe/z caron, y diaeresis)
+local UPPER_HIGH = { [154] = 138, [156] = 140, [158] = 142, [255] = 159 }
+function L.upper(s)
+  if type(s) ~= 'string' then return s end
+  return (s:gsub('[a-z\128-\255]', function(c)
+    local b = c:byte()
+    if b < 128 then return string.char(b - 32) end
+    if b >= 224 and b <= 254 and b ~= 247 then return string.char(b - 32) end
+    local u = UPPER_HIGH[b]
+    return u and string.char(u) or c
+  end))
+end
+
 -- a table {english = utf8} -> {english = cp1252}
 function L.prepare(t)
   local out = {}
