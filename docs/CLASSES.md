@@ -726,6 +726,16 @@ Beastmaster -44% / -16%); Illusionist the best healer (1985 / 3007 per second on
 (about 15.4 effective health per level, Sentinel 17.3, Juggernaut 19.6). Table: `server/data/spells/README.md` "Classes with the
 passive trees"; the harness spread is about +-5% per run, so the leads are on means of several runs.
 
+### Pack cleave (2026-10-14, pack combat)
+
+Owner request: players kill packs, not one monster at a time, and the classes stay within reason. The classes with
+little area damage (C4 area share under ~30%) get a PvE cleave (`pace_config.lua` `cleave`; server/README.md "Pack combat
+(pace)"): a direct hit on a hunting monster also hits the nearest monsters within 1 sqm of it for a share. Thief, Samurai,
+Necromancer 25% to 3 monsters; Monk, Iron Sage 20% to 3; Deadeye, Shadowfist 20% to 2; Ninja 15% to 2. Never bosses,
+players or summons, no cleave from a cleave, not in the instanced modes (rifts, tower, Descent, arena). Experience per
+hour against the median class (pack model, 300 / 800 / 1000): the slowest classes now 0.78-0.90 (were 0.36-0.50); the
+strongest area classes (Elementalist, Mystic, Berserker, Beastmaster) stay at 1.3-1.6 (open: owner decision).
+
 ### Phase 2b (open)
 
 - Healing for the Thief line (a spell; the potions are done: the Royal Paladin's), starting gear for every class,

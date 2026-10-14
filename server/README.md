@@ -493,7 +493,7 @@ collision check") and be added here.
 | 65 | `passivetree` | `passivetree.lua`, `paragon.lua`, `buildshare.lua`, `respec.lua`, `trials.lua` | `game_passivetree` | |
 | 79 | `notifications` | `notifications.lua` (`ChaosNotify`) and many senders | `game_chaosnotify` | toasts, server -> client |
 | 91 | none (base server) | the base crafting script (`tools/patch_base_crafting_ui.py`) | `game_craftingtable` | the base server's own crafting opcode; listed so no module takes it |
-| 109 | `dungeons` | `dungeons.lua` | `game_dungeons` | |
+| 109 | `dungeons` | `dungeons.lua` | `game_dungeons` | `dungeon` may carry `health = {monsters = {6 %}, boss = {6 %}}` (a dungeon with its own health curves, `dungeons_difficulty.lua` `D.healthCurves`); without it the client shows the table |
 | 110 | `stash` | `stash.lua` | `game_stash` | |
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
@@ -783,8 +783,9 @@ channel words `!mute` / `!unmute` stay: they are tutor tools inside that channel
    and drop/replace `modules.game_extramenu`, `Keybind`, `modules.game_windowfocus` if absent.
    The envelope is an **assumption** about what client_manager does; only the client's outbound
    JSON proves it for the client-to-server direction.
-3. `game_dungeons` loads banners from `/images/dungeons/<title>`; no such images are in the
-   overlay (titles: Bones Dungeon, Master of the Elements, Forbidden Chevalier, Rootmaw).
+3. (fixed) `game_dungeons` loads banners from `/images/dungeons/<name>.png` (`dungeonsview.lua` `V.BANNERS`, title to
+   name): the base dungeons' images, and for the Vault and dungeons 6-9 renders of their own maps
+   (`client/tools/gen_dungeon_banners.py`).
 4. `game_passivetree` sends via `protocolGame.sendExtendedJSONOpcode`, an OTClient call. Stock OTClient
    10.98 may lack it.
 5. (fixed) the JSON error branches of the bank, autoloot and daily client modules used an undefined variable.
@@ -857,6 +858,13 @@ dungeons
 - One run per dungeon at a time (they share a single map area). All monsters in the box are removed when a
   run ends.
 - Difficulty (1..6) is stored and unlocked (finish on your top difficulty to unlock the next) but changes nothing in-game.
+- The difficulty panel of a dungeon with its own health curves (the Vault and the generated dungeons 6-9,
+  `areagen_config.lua` `bossHealth` / `trashHealth`) shows those: `dungeonPayload` sends
+  `health = D.healthCurves(bossHealth, trashHealth)` (`dungeons_difficulty.lua`; a side without a curve keeps the table's
+  percent, as `scaleMonster` does), the client shows "Monster Health" / "Boss Health" from it, damage, experience, gold
+  and loot from the table. No field (base dungeons, an older server): the table's texts. Tested in
+  `tests/dungeons_difficulty_test.lua` (every curve of areagen_config.lua against `D.bossHealth`, the client's copy of
+  the table) and the client's `game_dungeons/dungeonsview_test.lua`.
 - Loot panel and challenge list are configured in `Chaos.dungeons.extra`; real loot comes from the boss XML.
 - The base server `DUNGEON_SYSTEM` is used for level, group size, positions, time and cooldown. Its modal script reads
   `Storages.TimerCooldown` while the table defines `timerCooldown` (existing bug); this module accepts both.
@@ -938,7 +946,8 @@ tier (magic 2, rare 4, legendary 10: the monster, not a bonus). The potion and t
 any bonus; a season character's potion is still halved back first (`shop_services.lua`, index 5). The dungeon difficulty
 (90, it goes with the monster's 1.3-13x health), the rift cap (100) and the hunt tracker (1000) run after the cap. When
 the engine passes no rawExp, a recorder at index -1000 keeps the experience as it entered the chain and that x tier stands
-in for the base. Player kills are not capped. `tests/xpcap_test.lua` runs a mocked chain.
+in for the base. Player kills are not capped. `tests/xpcap_test.lua` runs a mocked chain. Pack combat ("Pack combat
+(pace)"): a paced monster's base is also x its experience curve, so the cap is 4 x the paced kill.
 
 ## Custom spells and spell effects
 36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 52 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, build commands in `data/spells/README_FX.md`). All spell effects are our own procedurally drawn art (`client/tools/sprites/gen_effects.py`): it appends the 52 + 10 and also redraws, at the same ids, the 83 stock effects and 25 stock missiles that spells and spell hits use, so stock spell scripts need no change. The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the generated dat/spr is in use; the custom art shows only with that pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
@@ -4979,7 +4988,8 @@ so are the monster tiers, the trash before a boss and moving out of telegraphs e
 | Donor bosses (dormant) | 18-22M after, see "Monster lint" | health / dps | none | solo 3.6-4.4 h; 20 players 5:54-7:13 | before: never (heals above any damage) |
 | Legendary Warrior (dormant) | 1.0M (was 7.0M) | health / dps | none | 7:45 (was 54:16) | a solo boss now |
 
-**The generated dungeons (the Hollow Vault and the deep dungeons 6-9): runs of 10-15 minutes** (owner, 2026-10-14). The
+**The generated dungeons (the Hollow Vault and the deep dungeons 6-9): runs of 10-15 minutes** (owner, 2026-10-14; since
+pack combat 102-104 monsters each in packs of 6-7 and the model with pace health and pack kills, "Pack combat (pace)"). The
 model is `dungeons_difficulty.lua` `D.runSeconds`, from config numbers only (the monster files, the generated spawns,
 the curves), so it can be recomputed after any change of monsters, counts or damage (`tests/areagen_test.lua` checks
 every dungeon against it):
@@ -5007,7 +5017,8 @@ Before (the same day): the Vault 64 monsters and a 1.13M boss in 40 minutes, the
 inputs only: rerun the model (the test prints the failing dungeon and its seconds) and adjust the counts or curves.
 An area boss gets no natural monster tier (magic x2 to legendary x6 health). Not measured on a test server.
 
-**Base dungeons 1-4 against 15 minutes** (2026-10-14, the same model at the entry level + 25, the table's difficulty
+**Base dungeons 1-4 against 15 minutes** (since pack combat: thinned to 100-119 monsters with their own curves, 15
+minutes, "Pack combat (pace)"; the measurement before: 2026-10-14, the same model at the entry level + 25, the table's difficulty
 curve; spawn entries inside each dungeon's area counted in the base spawn file of windows-assets, read in a scratch
 folder): Bones Dungeon 178 monsters (5.0-7.3k health), run at difficulty 1 19:36; Master of the Elements 256
 (5.0-13.0k), 29:12; Forbidden Chevalier 140 (55-69k), 44:00; Rootmaw 272 (27.5-47k), 47:24. None fits 15 minutes, so
@@ -11164,6 +11175,231 @@ Experience buff that was active), i.e. exactly 1.875 x the model for all 17. Not
 efficiency and the 3-target assumption), the one-handed knight (~14% less damage than two-handed), druids and
 illusionists (earth/ice/death are resisted too).
 
+## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
+
+Owner request (pt-BR, paraphrased): players must feel strong and kill several monsters at once, not one by one, with
+some danger left; more monsters, experience compensated; dungeons at most 10-15 minutes. Design and model:
+`scratchpad/rebal/DESIGN.md` of the session (not in the repo); this section is what was built.
+
+**One runtime layer.** Base monsters are about 95% of the spawns and their XML is not ours, so nothing is edited per
+monster: `pace.lua` scales health, experience, loot and damage by the monster's hunting level at runtime, for base and
+Chaos monsters alike. `pace_config.lua` `enabled = false` switches every part off (health, experience, loot, damage,
+ambush and goblin chances, kill goals, multikill, cleave); the spawn side (fill, respawn) is install data and stays.
+`scale` (`{xp = 1.0, loot = 1.0}`) multiplies the experience and loot curves for calibration (see the live check).
+
+- **Hunting level** (`pace_core.lua` `P.levelOf`): `Monster:getMonsterLevel()` for a level-scaled monster; the spawn
+  point's level for a generated area or dungeon monster (`ChaosAreaGen.pointOf`); else `baseLevelMult` (2) x
+  `ChaosLoot.monsterLevel` (the bounty pool's fair-hunt estimate; "Level bands and capacity": the hunting level is twice
+  it). A monster with a level of its own uses the `scaled` curves.
+- **Which monsters**: natural map spawns (`onSpawn` with `artificial = false`), generated areas and dungeons (their
+  boss never), base dungeon monsters (`dungeons.lua` marks them) and ambush copies of a paced monster
+  (`monster_tiers.lua`). Never: bosses (isboss, rewardboss, the tier list), summons, and every script-made monster of the
+  instanced modes (rifts, the Ember Descent, the tower, invasions, arena, battleground, raid, world and guild bosses,
+  Ascended Omens): they are created with `Game.createMonster` and not marked. PvP is not touched.
+- **Health**: at the monster's first think (`ChaosPaceInit`; script-made monsters get `ChaosPaceProbe`, which paces
+  only a generated area's point), max health x the curve, full health. The tier (also at the first think) multiplies in
+  either order.
+- **Experience**: `onGainExperience` at index -10 (after the xpcap recorder, before every bonus): x the curve with
+  random rounding (a kill worth 1+ gives at least 1). `xpcap.lua` multiplies its base by the same curve, so the 4.0 cap
+  is 4 x the paced base.
+- **Multikill** (`pace_config.lua` `multikill`): kills of one player, each within 3 s of the one before, form a chain;
+  the whole chain's experience gets +10% at 4 kills, +20% at 6, +30% at 8, +40% at 9 (the kill that reaches a step also
+  pays the step on the chain's earlier kills, divided by its own tier multiplier). From 6 kills a status line
+  "Multikill x6: +20% experience on the chain." (pt-BR in `i18n_strings.lua`). It counts against the cap. The experience
+  curve is already divided by 1.30, the median pack's bonus.
+- **Loot** (`loot.lua`): the stock corpse is thinned by the loot curve (a stack keeps count x factor rounded at random,
+  gold included; any other item stays with that chance: `L.thinCorpse`), and the Chaos extra rolls, currency, gems,
+  supports and uniques roll x the factor, outside the `maxRate` / `maxScale` caps. An empty paced corpse decays after
+  30 s (`emptyCorpseSeconds`). The ambush chance (`monster_tiers.lua`), the treasure goblin roll of a respawn
+  (`treasure_goblin.lua`) and the faction token chance (`factions.lua`) are x the loot factor too.
+- **Damage to players** (`monster_damage.lua`): a paced monster's hits, and its summons', x the `damage` curve: every
+  element, conditions, mana shield hits and mana drain (healing never). The late-game physical boost stays on top.
+- **Kill goals**: bounty hunt and elite counts (`bounty.lua` `cfg.goalMult`), bestiary stages after Discovered and kill
+  tasks (`bestiary.lua` `cfg.goalOf`, family tasks `cfg.familyGoalOf`) x the monster's goal factor; the generic counters
+  (achievements: tiered, party and witching kills; the season pass "kill"; community contributions; faction contracts
+  and kill reputation) count a paced kill as 1 / goal, summed per player (`ChaosPace.killCredit`). Ambush and goblin
+  counters stay (their chances were cut already).
+- **Pack cleave** (`pace_config.lua` `cleave`, PvE only): the classes with little area damage hit packs too. A direct
+  hit (melee, ranged, spell; not damage over time) of such a character on a paced monster also deals a share of it to
+  the nearest monsters within 1 sqm of that monster (never a boss, a player or a player's summon; no cleave from a
+  cleave): Thief, Samurai, Necromancer 25% to 3; Monk, Iron Sage 20% to 3; Deadeye, Shadowfist 20% to 2; Ninja 15% to 2.
+  It is class-wide (every spell and the auto attack), so `rotation_model.csv` and the helper's auto rotation are
+  unchanged (`rotation_sim.py --write` / `--check`: up to date).
+
+Curves (`pace_config.lua`, linear between the points, flat beyond the ends; the Codex and the wiki show them on the
+Basics page "Pack combat"):
+
+| Hunting level | 20 | 35 | 60 | 100 | 175 | 250 | 450 | 600 | 800 | 1000+ |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Health x | 1.00 | 0.60 | 0.50 | 0.36 | 0.26 | 0.21 | 0.21 | 0.21 | 0.21 | 0.21 |
+| Experience per kill x | 1.00 | 0.50 | 0.46 | 0.32 | 0.22 | 0.17 | 0.17 | 0.16 | 0.16 | 0.17 |
+| Loot per kill x | 1.00 | 0.59 | 0.54 | 0.37 | 0.27 | 0.20 | 0.20 | 0.19 | 0.19 | 0.20 |
+| Kill goals x | 1.0 | 1.7 | 1.8 | 2.7 | 3.8 | 5 | 5 | 5 | 5 | 5 |
+
+| Own level (scaled) | 650 | 800 | 1000 | 1300 | 1600 | 2000 |
+|---|---|---|---|---|---|---|
+| Health x | 0.095 | 0.080 | 0.066 | 0.062 | 0.059 | 0.056 |
+| Experience per kill x | 0.042 | 0.036 | 0.030 | 0.026 | 0.024 | 0.023 |
+| Loot per kill x | 0.050 | 0.042 | 0.035 | 0.031 | 0.029 | 0.027 |
+| Kill goals x | 20 | 24 | 28 | 32 | 35 | 37 |
+
+| Hunting level | 20 | 50 | 150 | 300 | 600 | 800 | 1000+ |
+|---|---|---|---|---|---|---|---|
+| Monster damage x | 1.00 | 0.85 | 0.75 | 0.65 | 0.55 | 0.45 | 0.40 |
+
+**More monsters, faster respawn** (the spawn side):
+- Base map fill (`tools/gen_spawn_density.py`, `tools/spawn_density.json`, regenerated on a scratch install of the base
+  server): from hunting level 30 (the audit's level 15) every hunt under 4.3 per 100 region tiles is raised to 4.5, at
+  most x2.5 its entries and +600 monsters, in spawn blocks of 3 (radius 2) whose centres are 5+ sqm apart (falling back
+  to 3 when the region is full). Hunts under level 30 keep the earlier fill (3.25 -> 3.4, one-monster spawns). The
+  planned areas (`chaoscontent` / `chaoshunt` blocks of install step contentareas) and the entries the spawns step took
+  out are left out of the count. 765 hunts filled with 21,469 monsters in 8,982 blocks (the earlier fill: 570 hunts,
+  10,922 one-monster spawns). The spawns step (`patch_base_spawns.py`) writes a row `[x, y, like, dx, dy, ...]` as one
+  spawn block with a monster at the centre and at each offset.
+- Respawn (`tools/spawn_tuning.json` `bandRespawn`): hunting level 300-599 45 s (was 90), 600+ 75 s (was 120; the
+  late-game rows of `late_game.py` included, marked `chaosst` like any other). Below 300 unchanged (60 s).
+- Dynamic respawn (`respawn_config.lua`): a hunter alone 80% (`soloPercent`, new), 2 hunters 70%, 3 60%, 4 50%, 5 or
+  more 45% (was 100 / 85 / 70 / 55 / 50). With `soloPercent` a single hunter makes a zone too.
+- Generated areas (`areagen_config.lua`: Emberdeep, Ossuary, Cinderfall): density 4.5 (band 4.0-5.0), 60% of the
+  points packs of up to 4, points 6+ sqm apart, 75 s respawn: 1,023 monsters (was 740).
+- Planned areas (`tools/areaplan/plans/*.json`): counts raised to 4.1-4.6 per 100 walkable tiles (was 3.2-3.5), packs
+  of 3, respawn 45 s (300-599) / 75 s (600+); no zone above the validator's 8 per 100 (0 errors, 0 warnings). A server
+  that installed the earlier plans restores its map from `<map>.otbm.bak` before install step contentareas (the step
+  refuses a changed plan on a placed area).
+
+**Capacity** (`patch_base_spawns.py --report` on the base map with the new files, rateSpawn 3, without the dynamic
+respawn; one hunter's kills per hour from the pack-cycle model, `spawn_tuning.json` `model.paceKillsPerHour`):
+
+| Band | Monsters before / after | Respawn kills/h before / after | Hunters it holds before / after | Load at the README peak (hunters) |
+|---|---|---|---|---|
+| 1-50 | 37,326 / 39,866 | 1,577,925 / 1,699,921 | 1,776 / 1,471 | 3% (51) |
+| 50-150 | 22,417 / 26,615 | 997,630 / 1,198,380 | 1,141 / 767 | 13% (102) |
+| 150-300 | 12,131 / 14,411 | 486,286 / 586,898 | 1,070 / 426 | 32% (136) |
+| 300-600 | 3,778 / 4,265 | 125,225 / 266,349 | 472 / 216 | 63% (136, week 1); ~50% with the solo respawn |
+| 600-1000 | 7,151 / 8,016 | 192,354 / 314,615 | 1,827 / 268 | 49% (131, weeks 3-4) |
+| 1000+ | 3,344 / 3,579 | 117,602 / 140,061 | 4,331 / 145 | 17% (24) |
+
+The "before" column is the earlier files' report on the same scratch install. A hunter now kills 2-30x as many
+monsters, so the same map holds fewer hunters at once although it feeds 1.2-2.1x the kills. The 300-600 band in the
+first week is the one to watch (rule of thumb: above 60-80% players fight over spots).
+
+**The model** (computed, not measured; `scratchpad/rebal/final_model.py`). Kill cycle: kills/h = 3600 P / (clear + W),
+P = the pack (band pack - 2 to + 2 by the class's area share, at most 8: what a lure gathers at 4.5 per 100 tiles),
+W = walk and lure per pack (7-13 s by band), clear = P x health / (one-target + (P - 1) x the area share per target);
+today's model: 3600 x 0.47 x the 5-target damage / health (late sets x0.75). Median class, base monsters (late sets:
+the level-scaled monsters at their level):
+
+| Band (reference level) | Kills/h before / after | XP/h after / before | Gold/h after / before | Monster alone: TTK before / after |
+|---|---|---|---|---|
+| 20-50 (35) | 900 / 1,899 | 1.42 | 1.40 | 2.5 s / 1.5 s |
+| 50-150 (100) | 588 / 1,927 | 1.24 | 1.10 | 4.6 s / 1.6 s |
+| 150-300 (225) | 285 / 1,616 | 1.17 | 1.14 | 9.4 s / 2.1 s |
+| 300-600 (450) | 244 / 1,419 | 1.16 | 1.10 | 11.7 s / 2.5 s |
+| 600-1000 base (800) | 228 / 1,343 | 1.27 | 1.16 | 14.5 s / 3.0 s |
+| late set 650-1000 (1000) | 32 / 1,039 | 1.28 | 1.15 | 80 s / 5.3 s |
+| 1000-2000 base (1250) | 232 / 1,276 | 1.20 | 1.10 | 13.9 s / 2.9 s |
+| 1300-2000 set (1300) | 24 / 926 | 1.23 | 1.16 | 98 s / 6.0 s |
+
+The 20-50 row is the 900 kills/h cap of the old model (the walk dominated there already). Hours to level 1000 (the model
+of "The leveling model and the hours", base, no boosts): sorcerer (Elementalist) 96 -> 123 h, knight (Warrior)
+154 -> 134 h, paladin (Deadeye) 140 -> 124 h, paladin (Ranger) 140 -> 143 h: the spread narrows, all inside the owner's
+100-150 h.
+
+Class spread (experience per hour of each class against the median class at the same level, after; the cleave included):
+
+| Class | 300 | 800 | 1000 (late set) | Class | 300 | 800 | 1000 (late set) |
+|---|---|---|---|---|---|---|---|
+| Warrior | 1.36 | 1.18 | 1.21 | Ninja | 0.88 | 1.11 | 1.13 |
+| Juggernaut | 1.00 | 0.98 | 0.94 | Samurai | 0.90 | 0.88 | 0.82 |
+| Berserker | 1.51 | 1.31 | 1.37 | Necromancer | 1.03 | 1.00 | 0.96 |
+| Ranger | 0.80 | 0.84 | 0.85 | Lich | 1.07 | 1.22 | 1.28 |
+| Deadeye | 0.92 | 0.96 | 1.00 | Bone Lord | 1.13 | 1.24 | 1.29 |
+| Beastmaster | 1.31 | 1.32 | 1.43 | Monk | 1.00 | 0.96 | 0.92 |
+| Mystic | 1.49 | 1.31 | 1.39 | Shadowfist | 0.88 | 0.86 | 0.86 |
+| Elementalist | 1.59 | 1.42 | 1.54 | Iron Sage | 0.89 | 0.88 | 0.84 |
+| Illusionist | 1.26 | 1.10 | 1.10 | Templar | 0.81 | 0.85 | 0.78 |
+| Thief | 0.96 | 0.94 | 0.90 | Inquisitor | 1.08 | 1.13 | 1.14 |
+| | | | | Sentinel | 0.89 | 0.86 | 0.81 |
+
+Today the same numbers spread 0.40-2.21 (the 5-target damage alone). With the cleave the slow end is at 0.78-0.90; the
+four strongest area classes (Elementalist, Mystic, Berserker, Beastmaster) stay at 1.3-1.6: bringing them to 1.2 needs a
+cut of their area damage (PvP too) or an experience factor per class, neither of which was approved.
+
+**Dungeons** (owner, 2026-10-14: at least 100 monsters in every queue dungeon, runs of 10-15 minutes, the 85% gate kept).
+`D.runSeconds` (`dungeons_difficulty.lua`) now takes each monster's pace health factor, and with the run's packs given a
+pack of P dies in P / (1 + (P - 1) x 0.254) kill times alone (`D.model.aoeShare`: the median class adds a quarter of
+its one-target damage on each further target; packs of 4 -> 1.76, 6 -> 2.27, 7 -> 2.52) plus 12 s of walking and
+pulling per pack to the gate (`walkPerPack`). Without packs (an older caller) the fixed 2.3 stays.
+
+| Dungeon | Monsters (packs) | Trash curve d1-d6 | Run d1 / d6 | Before (2026-10-14 morning) |
+|---|---|---|---|---|
+| The Hollow Vault (5) | 103 (21 of 6-7) | 76-118% | 9:29 / 13:40 | 18 monsters, 8:53 / 13:13 |
+| The Marrow Crypts (6) | 102 (16) | 94-129% | 9:30 / 13:40 | 11, 9:05 / 13:29 |
+| The Iron Crucible (7) | 104 (20) | 55-83% | 9:29 / 13:41 | 10, 9:12 / 13:38 |
+| The Fallen Sanctum (8) | 103 (21) | 46-71% | 9:30 / 13:40 | 8, 8:55 / 13:17 |
+| The Pyre Throne (9) | 102 (17) | 72-101% | 9:29 / 13:39 | 8, 8:55 / 13:17 |
+
+The generated dungeons have 14-16 rooms (104 x 84, was 52 x 42 / 60 x 48) and packs of 6-7 (`packMin`, new in
+`areagen_core.lua`; the open areas keep 2-4). Bosses unchanged (2:30 at difficulty 1, x the 100-225% curve). The trash
+curve is a share of the paced health (`trashHealth`), solved so difficulty 1 lands at 9.5 minutes and 6 at 13.7.
+
+Base dungeons 1-4: the time limit is 15 minutes for every queue dungeon (`Chaos.dungeons.maxTimeSeconds` 900, was 2700)
+and the speed challenge 6 minutes. Without a change they would not fit: the run model with pace (packs of about 5 pulled
+together: 2.4 s of walking per monster) gave 40-62 minutes with every spawn. Install step spawns now thins each base
+dungeon (`spawn_tuning.json` `dungeons`: its boxes and `keep`, the boxes of `Chaos.dungeons.extra`; hunting monsters
+only, spread evenly by floor, y and x, kept as `chaosremoved` comments, `--remove` restores them; no fill spawn inside),
+and each gets its own boss and trash curves in `Chaos.dungeons.extra` (the boss 2:30 at difficulty 1 like the generated
+ones):
+
+| Dungeon | Monsters before / kept | Boss curve | Trash curve | Run d1 / d6 |
+|---|---|---|---|---|
+| Bones Dungeon (1) | 178 / 119 | 40-90% | 75-129% | 9:30 / 13:39 |
+| Master of the Elements (2) | 198 / 110 | 34-77% | 74-118% | 9:30 / 13:40 |
+| Forbidden Chevalier (3) | 140 / 100 | 40-90% | 34-51% | 9:31 / 13:41 |
+| Rootmaw (4) | 272 / 100 | 37-83% | 61-91% | 9:30 / 13:40 |
+
+(Monsters counted on the base map in the boxes of `Chaos.dungeons.extra`, before the fill.)
+
+**Risks and what to watch** (beta): the server does 2-30x the kills (CPU: run `tools/loadtest.py` with
+`loadtest_hunt.lua` against the numbers of "Load test on the full map"); gold per hour of the strong area classes
+1.1-1.4x the median (market prices, the bank sum); the 300-600 band's spots in week 1; on-kill procs fire 5-30x as
+often (Life and Mana on Kill: about 100 health a second at 1,200 kills/h; Shatter Splash keeps its 1 s cooldown); the
+model's walk times (a 2 s error moves kills/h about 15%: calibrate `pace_config.lua` on the hunt tracker).
+
+**Live check** (2026-10-14, scratch install of the base server with every step, engine with src-patches 0001-0039;
+TEST ONLY scripts, deleted after). Three characters (bots of `tools/loadtest.py` kept online) with a scripted hunter: every
+0.5 s the class's C4 damage (one target, plus the area share to up to 4 monsters within 2 sqm of it), pulling until
+4-5 monsters stand within 3 sqm or 6 s pass, then the next point of a route through the hunt; immortal. The same driver
+10-11 minutes with the layer off (the hunt's monsters set back to full health) and on:
+
+| Character, hunt | Kills/min off -> on | Monsters dying together (chains of kills 3 s apart) avg / max, on (off) | XP/h on / off | Gold/h on / off | Damage taken/min on / off |
+|---|---|---|---|---|---|
+| Elementalist 300, a filled base hunt (floor 11, undead dragons, hellflayers) | 5.3 -> 20.6 | 4.5 / 14 (1.6 / 5) | 0.61 | 0.49 | 0.40 |
+| Thief 300 with the cleave, a base hunt (floor 11, lava golems) | 0.9 -> 5.7 | 1.2 / 3 (1.0 / 1) | 0.85 | 1.22 | 0.61 |
+| Elementalist 1000, the planned hunt Rimecrown Depths | 0.9 -> 15.3 | 2.9 / 7 (1.0 / 1) | 0.65 | 0.61 | 0.45 |
+
+Packs die together now (chains of 4-14 for an area class), and the kill rate rose 4-17x, but less than the model's 6-30x:
+the scripted hunter pulls smaller packs than the model's 7-9 and walks more, so experience per hour came out at
+0.61-0.85 of the unpaced hunt and gold per hour at 0.49-1.22 (one sample each; the Thief's gold is a few lucky stacks).
+A player who lures bigger packs gets more; the hunt tracker in the beta decides. The knob: `pace_config.lua` `scale`
+(experience and loot curves x it, at most 1 per kill; shipped 1.0; 1.3 would put these three at about 0.8-1.1). Damage
+taken per minute fell to 0.40-0.61: packs die before they hit much. Screenshots of the pulls (the hunt with a pack of
+6-7 around the character) were taken and are not in the repo.
+
+**Load test** (`tools/loadtest.py`, 200 level-100 bots with `--hunt` spread over the hunts of level 150 and below, 300 s,
+the same scratch install, `loadtest_hunt.lua` and `loadtest_probe.lua` copied in and deleted after): layer on: engine CPU
+63.5% of one core (p95 85.8%), game loop lag avg 51.9 ms, max 164 ms, 76-78 bots fighting; layer off: 71.1% (p95 91.0%),
+52.6 ms, max 170 ms, 74-80 fighting. No cost measurable at this load (the bots fight with melee only; with area classes
+a server kills more per second: watch it in the beta).
+
+**Checked**: `tests/pace_test.lua` (curves, levels, entries, goals, rounding, thinning, chances, multikill chain with
+tiers, kill credit, cleave targets; `pace.lua` against a mocked engine: first think, bosses, summons, script-made and
+marked monsters, generated points, the switch, experience with the chain, cleave without recursion, cleanup), and the
+pace cases added to `monster_tiers_test`, `xpcap_test`, `loot_caps_test`, `monster_damage_test`, `respawn_test`,
+`bounty_test`, `bestiary_test`, `base_spawns_patch_test` (blocks of 3, the 600+ band, base dungeon thinning and the
+100-monster floor), `areagen_test` (densities, packs, the run model with pace, 100+ monsters per dungeon),
+`gen_spawn_density_test.py` (blocks, spacing, the low-level rule), `instance_limits_systems_test` (15 minutes).
+
 ## Spawn density and respawn (`tools/patch_base_spawns.py`, `tools/spawn_tuning.json`, `respawn.lua`, `respawn_core.lua`, `respawn_config.lua`, engine patch 0022)
 
 Measured on 2026-10-11 on the loaded map and its spawn file after `late_game.py`, with a one-off script that read the
@@ -11261,7 +11497,7 @@ the monster of an existing entry.
 |---|---|---|
 | Dead registrations | 10 lines (913 entries) | the dead first line of a monster in `monsters.xml` is commented out when another line of the name has a file |
 | Glitched spawntimes | 111 | an entry with 30,000 s or more gets the median spawntime of the same monster elsewhere (10+ other entries) |
-| Band respawn | 2,539 | entries of a monster with a hunting level of 300-599 and a spawntime of 91-300 s respawn after 90 s (was 120) |
+| Band respawn | 2,539 (9,051 since pack combat) | entries of a monster with a hunting level of 300-599 and a spawntime of 91-300 s respawn after 90 s (was 120); since pack combat 300-599 after 45 s and 600+ after 75 s |
 | Blocking tiles | 99 moved | to the nearest free walkable tile within 3 sqm (no protection zone, house, floor change or teleport) |
 | Thin 300-600 areas | 93 added in 12 areas (`H4-01`..`H4-12`) | raised to 3.0 monsters per 100 walkable tiles, at most +50% |
 | Thin level 900+ areas | 91 added in 9 areas (`H5-01`..`H5-09`) | outdoors at 0.8-1.1 per 100; raised to 1.5, at most +60% |
@@ -11367,7 +11603,8 @@ per spawn; when it drops, a pending check runs after 1 s. The view rule and rate
 
 Every 20 s `respawn.lua` counts the hunters: online, not staff, not in a protection zone, in fight. Characters behind
 one IP count once. Where 2 or more hunt within 10 sqm on one floor, the spawns in that 16 x 16 sqm cell (plus 8 sqm
-around it) respawn faster: 2 hunters 85%, 3 70%, 4 55%, 5 or more 50%. When they leave, the cell goes back to 100%.
+around it) respawn faster: 2 hunters 85%, 3 70%, 4 55%, 5 or more 50%. Since pack combat (`soloPercent`, "Pack combat (pace)") one
+hunter alone 80%, 2 70%, 3 60%, 4 50%, 5 or more 45%. When they leave, the cell goes back to 100%.
 The tick makes no engine call while nothing changes. Without patch 0022 it logs one line and does nothing. Every
 number is in `respawn_config.lua`; `globalPercent` (100) changes the whole map, for an event. With engine patch 0027
 the tick hands its zones to `Game.setSpawnIntervalZones` in one call, which touches only the spawns of the old and new
@@ -14189,15 +14426,46 @@ the player's language; `Chaos.lang(player)` / `Chaos.setLang(player, lang)`; `Ch
 deferred text, or a function(lang)): each player reads it in their own language; while nobody online reads pt-BR it is
 the one `Game.broadcastMessage` of before. `ChaosI18n.msg(key, ...)` is a deferred text (tostring = English) for
 helpers that send one text to many players (rift and raid `say` / `alert`, world boss, invasion and world event
-announcements). The key is the English pattern itself; `i18n_strings.lua` has the pt-BR table (same % conversions in
-the same order). The client says its language in the display scale hello on opcode 157 (`i18n.lua`; a hello without
-`lang` changes nothing); it is kept in storage 7101830 for the next login. A file that calls the helpers starts with
-`if not Chaos.t then dofile("data/scripts/chaos/i18n_core.lua") end`. Converted: the boss mechanic warnings (each
-fighter's orange line; the boss's yell stays English), the raid call-outs and messages, Auto Seller results and list
-answers, records and leaderboard broadcasts, rift and Omen start / end / fall messages, world boss, invasion and world
-event announcements, and the broadcasts of seasons, PvP seasons, ascension, login streaks, Descent and raid uniques,
-set pieces, guild wars, the Cinderheart, Hardcore falls and ended world buffs (about 190 keys). Left: the store's
-messages (`shop.lua`, modified elsewhere when this was done), item / mail texts built in cores, NPC dialogue, quest and
-achievement texts, rift HUD text built from English parts (modifier names, direction), the remaining
-`sendTextMessage` lines (about 550 sites). `tests/i18n_test.lua` (lookup, fallbacks, deferred texts, storage, the
-hello, broadcasts, every key of the converted sites and of the boss and raid configs in the table).
+announcements, mentor and referral `say`) or that return a reason the caller shows (store refusals). The key is the
+English pattern itself; `i18n_strings.lua` has the pt-BR table and `i18n_strings_more.lua` (`ChaosI18n.MORE`, merged in;
+a key of the first file keeps its text) the second batch (same % conversions in the same order). The client says its
+language in the display scale hello on opcode 157 (`i18n.lua`; a hello without `lang` changes nothing); it is kept in
+storage 7101830 for the next login. A file that calls the helpers starts with
+`if not Chaos.t then dofile("data/scripts/chaos/i18n_core.lua") end`. Pure cores take an optional last `lang` argument
+(`T(lang, key, ...)`: through ChaosI18n when it is loaded, English otherwise), so their tests stay English.
+
+NPC scripts run in their own Lua state, which never sees the hello: `ChaosI18n.langOf(player | cid)` reads the stored
+language, `ChaosI18n.npcText(cid, key, ...)` translates a line, and `ChaosI18n.npcMessages(npcHandler)` (called after
+the script's own `setCallback` lines) gives the XML's `message_greet` / `farewell` / `walkaway` / `sendtrade` in the
+language of the player the NPC answers (the XML texts are the keys). `{keywords}` stay English in the translations: the
+client sends them as typed. Archivist Maelis keeps her own bilingual lines.
+
+Converted (about 1,290 keys in all, 1,095 of them in `i18n_strings_more.lua`): the boss mechanic warnings (the boss's
+yell stays English), the raid call-outs and messages, Auto Seller, records and leaderboard broadcasts, rift and Omen
+messages, world boss, invasion and world event announcements, the broadcasts of seasons, PvP seasons, ascension, login
+streaks, Descent and raid uniques, set pieces, guild wars, the Cinderheart, Hardcore falls and world buffs; the store
+(titles and texts of its message window, refusals, gifts, coin gifts, history, donations' thank-you, plate frames) and
+its services (tokens, world buffs, the Temple Teleport Scroll, name and vocation change); the NPCs (Loot Buyer, Material
+Broker, Mordecai Ashwager, the four faction NPCs and their lore, Keeper of Trials and its window, Wandering Merchant,
+the Ascendant Oracle); the ascension quest (Calling, Proof, Trial, Choice, windows, guardian hints, paths); the Vocation
+Trials (stories, waves, rewards, node choices); achievements (category names, all descriptions, the window's hidden
+text, rewards and toasts; names and titles stay English); the daily reward; new players (welcome window, starter kit,
+level gifts, the five tutorial stations); instance limits (time warnings, busy instances, the waiting line, boss rooms);
+mentors and referrals (every config message); and the chat lines of stash, bank, town portal, pouches, Everfull Ration,
+Chaos Pact and builds, hideout, autoloot, party invites, class unlocks, professions, charms, pets, guild hall, Infinity
+Tower, arena, battleground, PvP zone, siege, uber arenas, Descent, raid, seasons and season modes, journey, titles,
+cosmetics, appearances, gems, salvage, Paragon, the passive tree refunds, boss points, archery and Ember Blessings.
+Measured with `sendTextMessage` / `sendCancelMessage` / `popupFYI` / `npcHandler:say` sites: 385 of 785 go through the
+helpers (8 before this batch; 395 with the two patches below; broadcasts not counted).
+
+Left: files other work held when this was done (`achievements.lua` and `bounty.lua`: their conversions wait as patches
+with their keys already in the table; `factions.lua`, `bestiary.lua`, `seasonpass.lua`, `community.lua`, `dungeons.lua`,
+`treasure_goblin.lua`, `loot.lua`), item descriptions and mail texts built in cores (one text for every viewer), texts
+built from English parts (reasons like "is in a fight" in the rift / Descent / arena "stays behind" lines, contract and
+reward texts of `*_core.lua`, rift HUD notes), the donation window texts of `shop_payments*.lua` (bilingual on their
+own), staff and gamemaster commands (English on purpose), and about 390 other sites, mostly helpers that send a text
+built elsewhere. `tests/i18n_test.lua`: lookup, fallbacks, deferred texts, storage, the hello, broadcasts, NPC
+language and messages, every key of the converted sites (Chaos.t, msg, broadcast, core `T(lang, ...)`, NPC `t(cid,
+...)`, helper calls) and of the configs the converted sites read (boss warnings, raid call-outs, ascension paths and
+hints, trial stories, tutorial and welcome, achievement categories and descriptions, faction lore, world buffs,
+mentor and referral messages, the NPC XML lines), plus a few pt-BR texts end to end.

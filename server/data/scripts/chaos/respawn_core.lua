@@ -15,10 +15,14 @@ local function clamp(v, lo, hi)
 end
 
 -- the respawn interval in percent of the spawntime for n hunters close together
+-- (cfg.soloPercent: one hunter alone already gets it, and the steps start from it)
 function R.percentFor(n, cfg)
 	local global = cfg.globalPercent or 100
 	local p = 100
-	if n >= (cfg.minHunters or 2) then
+	local solo = tonumber(cfg.soloPercent)
+	if solo and n >= 1 then
+		p = math.max(cfg.minPercent or 50, solo - (cfg.perExtraHunter or 15) * (n - 1))
+	elseif n >= (cfg.minHunters or 2) then
 		p = math.max(cfg.minPercent or 50, 100 - (cfg.perExtraHunter or 15) * (n - 1))
 	end
 	return clamp(math.floor(p * global / 100 + 0.5), 10, 1000)
@@ -70,7 +74,7 @@ function R.zones(hunters, cfg)
 	local byKey = {}
 	for i, h in ipairs(hunters) do
 		local n = counts[i]
-		if n >= (cfg.minHunters or 2) then
+		if n >= (tonumber(cfg.soloPercent) and 1 or (cfg.minHunters or 2)) then
 			local cx, cy = math.floor(h.x / size), math.floor(h.y / size)
 			local key = cx .. ":" .. cy .. ":" .. h.z
 			local z = byKey[key]

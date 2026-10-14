@@ -122,6 +122,48 @@ again, _s = G.plan(mp, code, hunts, [(140, 120, 7)], [(e[1], e[2], e[3]) for e i
 ok(G.render(again, _s, dict(min=3.25, target=3.4, cap=2.0, max_add=400)) ==
    G.render(areas, skipped, dict(min=3.25, target=3.4, cap=2.0, max_add=400)), 'plan: the same JSON twice')
 
+# pack combat: blocks of 3, centres 5+ apart, the low-level hunts keep the earlier fill
+ok(G.blocks_of(7, 3) == [3, 3, 1] and G.blocks_of(6, 3) == [3, 3] and G.blocks_of(0, 3) == [] and
+   G.blocks_of(4, 1) == [1, 1, 1, 1], 'blocks_of')
+cset = set((x, y) for x in range(10) for y in range(10))
+ex = G.extras((5, 5), cset, {(4, 5)}, 2)
+ok(ex == [(4, 4), (4, 6)], 'extras: nearest free tiles, ties by x then y: %s' % (ex,))
+ok(all(max(abs(x - 5), abs(y - 5)) <= G.BLOCK_RADIUS for x, y in G.extras((5, 5), cset, set(), 30)),
+   'extras: within the block radius')
+ok(len(G.extras((5, 5), cset, set(), 30)) == 24, 'extras: at most the 5 x 5 square minus the centre')
+ok(G.extras((5, 5), {(5, 5)}, set(), 2) == [], 'extras: no candidate around, none')
+low = [15, 3.25, 3.4, 2.0, 400]
+hunts_hi = [(150, sorted(cave))]
+areas3, sk3 = G.plan(mp, code, hunts_hi, [(140, 120, 7)], [(e[1], e[2], e[3]) for e in cave], 4.3, 4.5, 2.5, 600,
+                     block=3, spacing=5, low=low)
+ok(len(areas3) == 1, 'blocks: one hunt planned')
+a3 = areas3[0]
+ok(a3['monsters'] == sum(1 + (len(r) - 3) // 2 for r in a3['add']), 'blocks: monsters counted')
+ok(all(len(r) in (3, 5, 7) for r in a3['add']) and any(len(r) == 7 for r in a3['add']), 'blocks: rows of up to 3')
+ok(3.9 <= a3['after'] <= 4.7, 'blocks: filled to about 4.5 (%s -> %s)' % (a3['before'], a3['after']))
+cent = [(r[0], r[1]) for r in a3['add']]
+close5 = sum(1 for i, p in enumerate(cent) for q in cent[i + 1:] if max(abs(p[0] - q[0]), abs(p[1] - q[1])) < G.SPACING)
+ok(close5 == 0, 'blocks: centres at least SPACING apart')
+mons = [(e[1], e[2]) for e in cave]
+for r in a3['add']:
+    mons.append((r[0], r[1]))
+    for k in range(3, len(r) - 1, 2):
+        ok(max(abs(r[k]), abs(r[k + 1])) <= G.BLOCK_RADIUS, 'blocks: offsets within the radius')
+        mons.append((r[0] + r[k], r[1] + r[k + 1]))
+ok(len(mons) == len(set(mons)), 'blocks: no two monsters on one tile')
+ok(all(x < 185 - G.HOUSE_MARGIN for x, _y in mons), 'blocks: nothing in the town margin')
+areas_low, _sl = G.plan(mp, code, [(10, sorted(cave))], [(140, 120, 7)], [(e[1], e[2], e[3]) for e in cave],
+                        4.3, 4.5, 2.5, 600, block=3, spacing=5, low=low)
+al = areas_low[0]
+ok(all(len(r) == 3 for r in al['add']) and al['after'] <= 3.6, 'low level: one-monster spawns to 3.4 (%s)' % al['after'])
+r1 = G.render(areas3, sk3, dict(min=4.3, target=4.5, cap=2.5, max_add=600, block=3, spacing=5, low=low))
+again3, _a = G.plan(mp, code, hunts_hi, [(140, 120, 7)], [(e[1], e[2], e[3]) for e in cave], 4.3, 4.5, 2.5, 600,
+                    block=3, spacing=5, low=low)
+ok(r1 == G.render(again3, _a, dict(min=4.3, target=4.5, cap=2.5, max_add=600, block=3, spacing=5, low=low)),
+   'blocks: the same JSON twice')
+ok('"block": 3' in r1 and '"low": [15, 3.25, 3.4, 2.0, 400]' in r1, 'render: block and low written')
+ok(G.DEFAULTS['target'] == 4.5 and G.DEFAULTS['block'] == 3 and G.DEFAULTS['low'][0] == 15, 'defaults: the pack fill')
+
 if fails:
     print('gen_spawn_density: %d of %d checks failed' % (fails, checks))
     sys.exit(1)

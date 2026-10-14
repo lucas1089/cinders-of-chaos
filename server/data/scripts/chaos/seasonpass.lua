@@ -1050,7 +1050,13 @@ xp:register()
 local kill = CreatureEvent("ChaosSeasonPassKill")
 function kill.onKill(creature, target)
 	if creature and creature:isPlayer() and target and target:isMonster() and not target:getMaster() then
-		local ok, err = pcall(SP.progress, creature, "kill", 1)
+		-- pack combat (pace.lua): a paced monster counts 1 / its kill-goal factor (summed), so the kill tasks take as
+		-- long as before
+		local n = ChaosPace and ChaosPace.killCredit and ChaosPace.killCredit(creature, target, "pass") or 1
+		local ok, err = true, nil
+		if n > 0 then
+			ok, err = pcall(SP.progress, creature, "kill", n)
+		end
 		if not ok then
 			log("kill: " .. tostring(err))
 		end

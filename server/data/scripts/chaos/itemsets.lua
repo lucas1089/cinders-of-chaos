@@ -528,8 +528,8 @@ function S.grantChase(player, source, key, ctx, rand)
 		ChaosMakeUnique(item)
 	end
 	local inbox = give(player, item)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You found %s, a piece of %s.%s", hit.piece.name,
-		hit.set.name, inbox and " Your backpack was full: it is in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You found %s, a piece of %s.%s", hit.piece.name,
+		hit.set.name, inbox and Chaos.t(player, " Your backpack was full: it is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 	if Game.broadcastMessage then
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s (%s)!", player:getName(), hit.piece.name, hit.set.name)

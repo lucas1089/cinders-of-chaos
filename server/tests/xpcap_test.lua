@@ -136,6 +136,19 @@ eq(gain(m, 19999, 1000), 19999, "just below the cap: unchanged")
 eq(gain(m, 5000, nil), 5000, "no rawExp, no bonus: unchanged")
 chain = saved
 eq(gain(m, 5000, nil), 20000, "no rawExp: 4 x the entering experience")
+-- pack combat (pace.lua): a paced monster's base is x its experience curve (a pace callback at -10 cut the kill to x0.17)
+do
+	local paceCb = {fn = function(p, s, exp) return s.paced and math.floor(exp * 0.17) or exp end, index = -10, order = 0}
+	table.insert(chain, 2, paceCb)
+	ChaosPace = {xpMultOf = function(s) return s.paced and 0.17 or 1 end}
+	local pm = monster(0)
+	pm.paced = true
+	eq(gain(pm, 10000, 1000), 3400, "paced: capped at 4 x the paced base 850")
+	pm.paced = false
+	eq(gain(pm, 10000, 1000), 20000, "unpaced: the full base")
+	ChaosPace = nil
+	table.remove(chain, 2)
+end
 -- a player source (PvP) is not touched
 local pvp = {isMonster = function() return false end}
 ok(gain(pvp, 5000, 1000) > 20000, "not a monster: no cap")

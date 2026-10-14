@@ -758,7 +758,11 @@ function kill.onKill(player, target)
 		if entry and (entry.level or 0) < player:getLevel() * (src.minLevelShare or 0) then
 			return -- far below the character: nothing
 		end
-		X.contribute(player, "kill", 1, {tier = ChaosTierOf and ChaosTierOf(target) or "normal"})
+		-- pack combat (pace.lua): a paced monster counts 1 / its kill-goal factor (summed per player)
+		local n = ChaosPace and ChaosPace.killCredit and ChaosPace.killCredit(player, target, "community") or 1
+		if n > 0 then
+			X.contribute(player, "kill", n, {tier = ChaosTierOf and ChaosTierOf(target) or "normal"})
+		end
 	end)
 	return true
 end

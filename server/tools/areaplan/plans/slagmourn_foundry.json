@@ -239,175 +239,204 @@
       "zone": "bellows_gallery",
       "monster": "Dawn Strayer",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bellows_gallery",
       "monster": "Scaleborn",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "slag_heart",
       "monster": "Celestial Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "slag_heart",
       "monster": "Twisted Shaper",
-      "count": 6,
-      "respawn": 120
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "anvil_terraces",
       "monster": "Scaleborn",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "anvil_terraces",
       "monster": "Vorkhaz",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "crucible_rim",
       "monster": "Celestial Wyrm",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "crucible_rim",
       "monster": "Jungle Warrior",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "cinder_sluice",
       "monster": "Twisted Shaper",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "cinder_sluice",
       "monster": "Vorkhaz",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "molten_drift",
       "monster": "Jungle Warrior",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "molten_drift",
       "monster": "Celestial Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ashfall_pit",
       "monster": "Dawn Strayer",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ashfall_pit",
       "monster": "Twisted Shaper",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "clinker_warrens",
       "monster": "Scaleborn",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "clinker_warrens",
       "monster": "Dawn Strayer",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "founders_hoard",
       "monster": "Vorkhaz",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "tapping_hall",
       "monster": "Jungle Warrior",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "tapping_hall",
       "monster": "Scaleborn",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bloomery_vault",
       "monster": "Vorkhaz",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bloomery_vault",
       "monster": "Celestial Wyrm",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "smelters_rest",
       "monster": "Dawn Strayer",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "smelters_rest",
       "monster": "Twisted Shaper",
-      "count": 4,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "scoria_run",
       "monster": "Jungle Warrior",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "scoria_run",
       "monster": "Vorkhaz",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ingot_cells",
       "monster": "Scaleborn",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ingot_cells",
       "monster": "Jungle Warrior",
-      "count": 4,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "flux_basin",
       "monster": "Celestial Wyrm",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "flux_basin",
       "monster": "Twisted Shaper",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

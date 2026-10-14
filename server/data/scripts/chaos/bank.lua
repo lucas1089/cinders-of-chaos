@@ -15,6 +15,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 local OPCODE = ChaosOpcodes.bank
 local cfg = Chaos.bank
@@ -67,7 +70,7 @@ local function doDeposit(player, currency, amount)
 			return fail(player, "Could not take the gold from you.")
 		end
 		player:setBankBalance(player:getBankBalance() + amount)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You deposited %d gold. Bank balance: %d gold.", amount, player:getBankBalance()))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You deposited %d gold. Bank balance: %d gold.", amount, player:getBankBalance()))
 	elseif currency == "star" then
 		if not starsEnabled() then
 			return fail(player, "Stars are not available.")
@@ -84,7 +87,7 @@ local function doDeposit(player, currency, amount)
 			return fail(player, "The bank is busy. Try again in a moment.")
 		end
 		addStarBank(player:getGuid(), amount)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You deposited %d stars.", amount))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You deposited %d stars.", amount))
 	else
 		return
 	end
@@ -101,7 +104,7 @@ local function doWithdraw(player, currency, amount)
 			return fail(player, "You do not have room for that much gold.")
 		end
 		player:setBankBalance(balance - amount)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You withdrew %d gold. Bank balance: %d gold.", amount, balance - amount))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You withdrew %d gold. Bank balance: %d gold.", amount, balance - amount))
 	elseif currency == "star" then
 		if not starsEnabled() then
 			return fail(player, "Stars are not available.")
@@ -119,7 +122,7 @@ local function doWithdraw(player, currency, amount)
 			return fail(player, "You do not have room or capacity for the stars.")
 		end
 		addStarBank(guid, -given) -- only charge for what was really handed over
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You withdrew %d stars.", given))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You withdrew %d stars.", given))
 	else
 		return
 	end
@@ -161,11 +164,11 @@ local function doTransfer(player, currency, targetName, amount)
 		if online then
 			online:setBankBalance(online:getBankBalance() + amount)
 			Chaos.saveCharacter(online)
-			online:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s transferred %d gold to your bank account.", player:getName(), amount))
+			online:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(online, "%s transferred %d gold to your bank account.", player:getName(), amount))
 		else
 			db.query("UPDATE `players` SET `balance` = `balance` + " .. amount .. " WHERE `id` = " .. targetGuid)
 		end
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You transferred %d gold to %s.", amount, canonical))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You transferred %d gold to %s.", amount, canonical))
 	else
 		if not starsEnabled() then
 			return fail(player, "Stars are not available.")
@@ -177,9 +180,9 @@ local function doTransfer(player, currency, targetName, amount)
 		addStarBank(guid, -amount)
 		addStarBank(targetGuid, amount)
 		if online then
-			online:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s transferred %d stars to your bank account.", player:getName(), amount))
+			online:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(online, "%s transferred %d stars to your bank account.", player:getName(), amount))
 		end
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You transferred %d stars to %s.", amount, canonical))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You transferred %d stars to %s.", amount, canonical))
 	end
 	sendBankState(player)
 end

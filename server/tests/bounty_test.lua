@@ -123,6 +123,32 @@ for _, c in ipairs(c1) do
 		assert(c.name ~= "Wolf", "elite needs eliteMinSpawns")
 	end
 end
+
+-- pack combat (pace): cfg.goalMult multiplies the kill counts (the same roll, x the monster's factor)
+do
+	cfg.goalMult = function(mon) return mon.name == "Troll" and 5 or 1 end
+	local pb = B.roll(day, cfg, small)
+	cfg.goalMult = nil
+	for i, c in ipairs(pb.bands[1].contracts) do
+		local plain = c1[i]
+		eq(c.name, plain.name, "pace: the same monsters")
+		if c.name == "Troll" and c.type == "hunt" then
+			eq(c.count % 10, 0, "pace: hunt kills a multiple of 10")
+			assert(math.abs(c.count - plain.count * 5) <= 25, "pace: hunt kills x5 (" .. c.count .. ")")
+		elseif c.name == "Troll" then
+			eq(c.count, plain.count * 5, "pace: elite kills x5")
+		else
+			eq(c.count, plain.count, "pace: factor 1 unchanged")
+		end
+	end
+	-- the real curves: a level 15 pool monster (hunting level 30) and a level 980 level-scaled one
+	dofile("data/scripts/chaos/pace_core.lua")
+	local pc = dofile("data/scripts/chaos/pace_config.lua")
+	local g1 = ChaosPaceCore.goalOfEntry(pc, {level = 6, exp = 12, health = 30})
+	eq(g1, 1, "pace: a level 12 hunt keeps its goals")
+	local g2 = ChaosPaceCore.goalOfEntry(pc, {level = 980, exp = 13900, health = 22000})
+	assert(g2 > 20, "pace: a level-scaled late-game monster needs 20x+ the kills")
+end
 eq(#sb.bands[2].contracts, 0, "nothing fits band 2")
 
 -- ---------------------------------------------------------------- kills

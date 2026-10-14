@@ -28,6 +28,10 @@ No primeiro login você chega a uma pequena ilha. Cada estação ensina uma cois
 - Reclame a recompensa diária. A sequência de dias rende mais.
 - Nos níveis 20, 50, 100 e 200 você ganha presentes: poções, orbes e mais.
 
+## Caçando em grupos
+
+Os monstros vêm em grupos e morrem rápido. Puxe um grupo e mate todos juntos com suas magias de área: várias mortes com até 3 segundos entre uma e outra formam uma sequência, e uma sequência de 4 ou mais dá até 40% a mais de experiência. Cada morte dá menos experiência e loot do que um monstro grande daria, então um grupo cheio é o jeito rápido de subir. Os chefes continuam com toda a força. Veja [Pack combat](wiki:basics:pace).
+
 ## O menu do topo
 
 Quase tudo fica no menu do topo do cliente: Character, Adventure, Economy, Social e System. Não é preciso decorar comandos.

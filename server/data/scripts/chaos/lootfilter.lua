@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/lootfilter_core.lua")
 dofile("data/scripts/chaos/lootfilter_config.lua")
 if not ChaosFx then
@@ -599,7 +602,7 @@ local function pickup(monster, corpse)
 		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: " .. table.concat(taken, ", ") .. ".")
 	end
 	if failed > 0 then
-		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: no room or capacity, left in the corpse.")
+		owner:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(owner, "Rarity autoloot: no room or capacity, left in the corpse."))
 	end
 end
 

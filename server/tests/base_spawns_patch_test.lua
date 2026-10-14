@@ -139,7 +139,8 @@ writeFile(tuningPath, tuning)
 writeFile(root .. "/fill.json", [==[
 {"areas": [
   {"id": "F0001", "z": 7, "likes": [[1000, 1000], [999, 1002]], "add": [[1004, 1004, 0], [996, 1006, 1]]},
-  {"id": "F0002", "z": 8, "likes": [[2000, 2000]], "add": [[1995, 1996, 0]]}
+  {"id": "F0002", "z": 8, "likes": [[2000, 2000]], "add": [[1995, 1996, 0]]},
+  {"id": "F0003", "z": 8, "likes": [[2000, 2000]], "add": [[1990, 1990, 0, 1, 0, 0, 1]]}
 ]}
 ]==])
 
@@ -160,7 +161,7 @@ ok(out:find("1 glitch", 1, true) ~= nil, "one glitched spawntime fixed (the rare
 ok(out:find("2 band", 1, true) ~= nil, "two band respawns")
 ok(out:find("2 moved", 1, true) ~= nil and out:find("1 removed", 1, true) ~= nil and out:find("2 added", 1, true) ~= nil,
 	"moves, removal, adds counted")
-ok(out:find("3 filled", 1, true) ~= nil, "fill spawns counted")
+ok(out:find("6 filled", 1, true) ~= nil, "fill monsters counted (a block of 3 counts 3)")
 local reg1 = readFile(regPath)
 ok(out:find("1 dead first line(s) commented out: Test Dead", 1, true) ~= nil, "dead registration reported")
 ok(reg1:find('<!-- chaosdeadreg: <monster name="Test Dead" file="monsters/Test_Dead.xml" /> -->', 1, true) ~= nil,
@@ -204,7 +205,12 @@ ok(text:find('<spawn centerx="996" centery="1006" centerz="7" radius="2" chaosad
 ok(text:find('<spawn centerx="1995" centery="1996" centerz="8" radius="2" chaosadd="F0002">\n' ..
 	'\t\t<monster name="Test Mid" x="0" y="0" z="8" spawntime="90" />', 1, true) ~= nil,
 	"fill: the band respawn of the like entry")
-eq(count(text, "<spawn "), 9, "four stock spawns, two added, three filled")
+eq(count(text, "<spawn "), 10, "four stock spawns, two added, four filled")
+ok(text:find('<spawn centerx="1990" centery="1990" centerz="8" radius="2" chaosadd="F0003">\n' ..
+	'\t\t<monster name="Test Mid" x="0" y="0" z="8" spawntime="90" />\n' ..
+	'\t\t<monster name="Test Mid" x="1" y="0" z="8" spawntime="90" />\n' ..
+	'\t\t<monster name="Test Mid" x="0" y="1" z="8" spawntime="90" />\n\t</spawn>', 1, true) ~= nil,
+	"fill: a block of 3 (the pack fill)")
 
 -- ------------------------------------------------------------------ idempotent, report, remove
 local first = text
@@ -214,7 +220,7 @@ ok(out:find("unchanged", 1, true) ~= nil, "second run: unchanged")
 eq(readFile(spawnPath), first, "second run: same bytes")
 eq(readFile(regPath), reg1, "second run: monsters.xml the same")
 ok(out:find("| Band | Spawn blocks | Monsters |", 1, true) ~= nil, "report table")
-ok(out:find("| 300-600 | 4 | 7 |", 1, true) ~= nil, "report: the mid band (the stock block, two added, one filled)")
+ok(out:find("| 300-600 | 5 | 10 |", 1, true) ~= nil, "report: the mid band (the stock block, two added, one filled, a block of 3)")
 out, rc = run("--dry-run --remove")
 eq(readFile(spawnPath), first, "dry run writes nothing")
 out, rc = run("--remove")
@@ -236,6 +242,63 @@ out, rc = run("")
 ok(out:find("unchanged", 1, true) ~= nil, "CRLF: second run unchanged")
 run("--remove")
 eq(readFile(spawnPath), crlf, "CRLF: remove gives the stock file back")
+
+-- ------------------------------------------------------------------ pack combat: a 600+ band (late_game.py's entries too)
+do
+	writeFile(spawnPath, stock)
+	local t2 = tuning:gsub('"bandRespawn": %[[^%]]*%]',
+		'"bandRespawn": [{"from": 300, "to": 600, "spawntime": 45, "onlyUpTo": 300}, ' ..
+		'{"from": 600, "to": 100000, "spawntime": 75, "onlyUpTo": 300}]')
+	writeFile(tuningPath, t2)
+	out, rc = run("")
+	eq(rc, 0, "600+ band run ok: " .. out)
+	text = readFile(spawnPath)
+	ok(text:find('<monster chaosst="120" name="Test High" x="0" y="0" z="9" spawntime="75" lategame="Test Low" />', 1,
+		true) ~= nil, "600+ band: a late_game.py entry 120 -> 75, its marker kept")
+	ok(text:find('<monster chaosst="120" name="Test Mid" x="0" y="0" z="8" spawntime="45" />', 1, true) ~= nil,
+		"300-600 band: 120 -> 45")
+	ok(text:find('<monster chaosst="60" name="Test Mid" x="-2" y="1" z="8" spawntime="45" />', 1, true) ~= nil,
+		"300-600 band: 60 -> 45")
+	out, rc = run("")
+	ok(out:find("unchanged", 1, true) ~= nil, "600+ band: second run unchanged")
+	run("--remove")
+	eq(readFile(spawnPath), stock, "600+ band: remove gives the stock file back")
+	writeFile(tuningPath, tuning)
+end
+
+-- ------------------------------------------------------------------ pack combat: a base dungeon keeps `keep` monsters
+do
+	writeFile(spawnPath, stock)
+	local t3 = tuning:gsub('"remove": ', '"dungeons": [{"id": 9, "boxes": [[1994, 1994, 8, 2004, 2004, 8]], "keep": 1}],\n  "remove": ')
+	writeFile(tuningPath, t3)
+	out, rc = run("")
+	eq(rc, 0, "dungeon run ok: " .. out)
+	ok(out:find("3 dungeon", 1, true) ~= nil, "dungeon: 4 hunting monsters inside, 1 kept: " .. out)
+	text = readFile(spawnPath)
+	eq(count(text, "chaosremoved"), 4, "dungeon: three taken out as comments (and the listed removal)")
+	ok(text:find('<monster name="Test Boss" x="0" y="2" z="8" spawntime="120" />', 1, true) ~= nil,
+		"dungeon: the boss stays")
+	ok(text:find('chaosadd="F0002"', 1, true) == nil, "dungeon: no fill spawn inside the box")
+	ok(text:find('chaosadd="F0003"', 1, true) ~= nil, "dungeon: fill spawns outside the box stay")
+	ok(text:find('<spawn centerx="2005" centery="2005" centerz="8" radius="2" chaosadd="T-01">', 1, true) ~= nil,
+		"dungeon: an add outside whose like was taken out still copies it")
+	out, rc = run("")
+	ok(out:find("unchanged", 1, true) ~= nil, "dungeon: second run unchanged")
+	run("--remove")
+	eq(readFile(spawnPath), stock, "dungeon: remove gives the stock file back")
+	writeFile(tuningPath, tuning)
+end
+
+-- the shipped tuning: every base dungeon keeps at least 100 monsters (owner rule, 2026-10-14)
+do
+	local p = io.popen("python3 -I -c \"import json; d = json.load(open('tools/spawn_tuning.json')); " ..
+		"print(min(x['keep'] for x in d['dungeons']), len(d['dungeons']))\"")
+	local res = p:read("*a")
+	p:close()
+	local least, n = res:match("(%d+) (%d+)")
+	eq(tonumber(n), 4, "the four base dungeons are listed")
+	ok(tonumber(least) and tonumber(least) >= 100, "every base dungeon keeps at least 100 monsters: " .. tostring(least))
+end
 
 -- ------------------------------------------------------------------ problems
 writeFile(spawnPath, stock)

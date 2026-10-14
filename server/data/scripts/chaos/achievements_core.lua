@@ -23,9 +23,21 @@
 --   K.has(account, query)                 account = {ids = set, points = n}; query = id or "points:N"
 --   K.validKey(s), K.sql*                 storage helpers (statements only, the caller runs them)
 --   K.completedCategories / categoryTitles / categoryTrack   category completion of the reward track (see below)
+-- The texts a player reads (categorySummary, view, rewardText, toast, summaryToast) take an optional last `lang`
+-- ("pt-BR" | "en"): through ChaosI18n (i18n_core.lua) when it is loaded, else English. Names and titles stay as they are.
 
 ChaosAchievementsCore = ChaosAchievementsCore or {}
 local K = ChaosAchievementsCore
+
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
 
 local function validKey(s)
 	return type(s) == "string" and #s > 0 and #s <= 48 and s:match("^[%w_]+$") ~= nil
@@ -199,10 +211,10 @@ function K.evaluate(index, stats, unlocked)
 end
 
 -- ------------------------------------------------------------------------------------------------ the window
-function K.categorySummary(index, unlocked)
+function K.categorySummary(index, unlocked, lang)
 	local out, byKey = {}, {}
 	for _, c in ipairs(index.categories) do
-		local e = {key = c.key, name = c.name, done = 0, total = 0, points = 0, max = 0}
+		local e = {key = c.key, name = c.name and T(lang, c.name), done = 0, total = 0, points = 0, max = 0}
 		out[#out + 1] = e
 		byKey[c.key] = e
 	end
@@ -223,7 +235,7 @@ end
 -- rows for the client. Short keys keep the packet small:
 --   i id, n name, d description, c category, p points, h hidden (1), u unlock time (0 = locked), v value, t target,
 --   ti title, r reward text
-function K.view(index, stats, unlocked, nameOf)
+function K.view(index, stats, unlocked, nameOf, lang)
 	unlocked = unlocked or {}
 	local points = K.points(index, unlocked)
 	local rows = {}
@@ -233,18 +245,18 @@ function K.view(index, stats, unlocked, nameOf)
 		if def.hidden and not at then
 			row.h = 1
 			row.n = "???"
-			row.d = "A hidden achievement. Keep playing to find it."
+			row.d = T(lang, "A hidden achievement. Keep playing to find it.")
 			row.v, row.t = 0, 0
 		else
 			row.n = def.name
-			row.d = def.desc or ""
+			row.d = def.desc and T(lang, def.desc) or ""
 			row.v, row.t = K.progressOf(def, stats or {}, points)
 			if def.hidden then
 				row.h = 1
 			end
 			row.ti = def.title
 			if def.reward then
-				row.r = K.rewardText(def.reward, nameOf)
+				row.r = K.rewardText(def.reward, nameOf, lang)
 			end
 		end
 		rows[#rows + 1] = row
@@ -290,27 +302,27 @@ function K.titlesOf(index, unlocked)
 	return out
 end
 
-function K.rewardText(reward, nameOf)
+function K.rewardText(reward, nameOf, lang)
 	if type(reward) ~= "table" then
 		return ""
 	end
 	local parts = {}
 	if (reward.gold or 0) > 0 then
-		parts[#parts + 1] = tostring(reward.gold) .. " gold"
+		parts[#parts + 1] = T(lang, "%s gold", tostring(reward.gold))
 	end
 	for _, it in ipairs(reward.items or {}) do
 		local name = nameOf and nameOf(it.id) or ("item " .. tostring(it.id))
 		parts[#parts + 1] = tostring(it.count or 1) .. " " .. tostring(name)
 	end
 	if reward.outfit then
-		parts[#parts + 1] = "outfit " .. tostring(reward.outfit.name or "?") ..
-			((reward.outfit.addons or 0) > 0 and " with addons" or "")
+		parts[#parts + 1] = T(lang, (reward.outfit.addons or 0) > 0 and "outfit %s with addons" or "outfit %s",
+			tostring(reward.outfit.name or "?"))
 	end
 	if reward.mount then
-		parts[#parts + 1] = "mount " .. tostring(reward.mount.name or "?")
+		parts[#parts + 1] = T(lang, "mount %s", tostring(reward.mount.name or "?"))
 	end
 	if reward.portal then
-		parts[#parts + 1] = "portal style " .. tostring(reward.portal.name or "?")
+		parts[#parts + 1] = T(lang, "portal style %s", tostring(reward.portal.name or "?"))
 	end
 	-- visual exclusives of exclusives_config.lua (unlocked for the account by exclusives.lua)
 	for _, e in ipairs(reward.exclusives or {}) do
@@ -322,25 +334,25 @@ end
 -- ------------------------------------------------------------------------------------------------ toasts
 -- the toast of one unlock (notifications.lua ChaosNotify.send, kind "achievement" = the ACHIEVEMENT UNLOCKED header):
 -- title = the name, text = "+15 points. Title: the Unbroken. Reward: mount Doombringer."
-function K.toast(def, rewardText)
-	local parts = {string.format("+%d point%s.", def.points or 0, (def.points or 0) == 1 and "" or "s")}
+function K.toast(def, rewardText, lang)
+	local parts = {T(lang, (def.points or 0) == 1 and "+%d point." or "+%d points.", def.points or 0)}
 	if def.title then
-		parts[#parts + 1] = "Title: " .. def.title .. "."
+		parts[#parts + 1] = T(lang, "Title: %s.", def.title)
 	end
 	if rewardText and rewardText ~= "" then
-		parts[#parts + 1] = "Reward: " .. rewardText .. "."
+		parts[#parts + 1] = T(lang, "Reward: %s.", rewardText)
 	end
 	return tostring(def.name or def.id or "Achievement"), table.concat(parts, " ")
 end
 
 -- several unlocks at once (the quiet login check): one toast. rewards = {[id] = reward text}
-function K.summaryToast(list, rewards)
+function K.summaryToast(list, rewards, lang)
 	if type(list) ~= "table" or #list == 0 then
 		return nil
 	end
 	rewards = rewards or {}
 	if #list == 1 then
-		return K.toast(list[1], rewards[list[1].id])
+		return K.toast(list[1], rewards[list[1].id], lang)
 	end
 	local points, names, got = 0, {}, {}
 	for _, def in ipairs(list) do
@@ -353,11 +365,11 @@ function K.summaryToast(list, rewards)
 			got[#got + 1] = r
 		end
 	end
-	local text = string.format("+%d points: %s%s.", points, table.concat(names, ", "), #list > 3 and (" and " .. (#list - 3) .. " more") or "")
+	local text = T(lang, "+%d points: %s%s.", points, table.concat(names, ", "), #list > 3 and T(lang, " and %s more", #list - 3) or "")
 	if #got > 0 then
-		text = text .. " Rewards: " .. table.concat(got, ", ", 1, math.min(#got, 2)) .. (#got > 2 and (" and " .. (#got - 2) .. " more") or "") .. "."
+		text = text .. T(lang, " Rewards: %s%s.", table.concat(got, ", ", 1, math.min(#got, 2)), #got > 2 and T(lang, " and %s more", #got - 2) or "")
 	end
-	return #list .. " achievements unlocked", text
+	return T(lang, "%s achievements unlocked", #list), text
 end
 
 -- ------------------------------------------------------------------------------------------------ retroactive

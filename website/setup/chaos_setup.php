@@ -147,6 +147,33 @@ if ($err !== '') {
 }
 znote_plugin_set_enabled('chaos', true);
 $out .= "plugin chaos: installed and enabled\n";
+// Character Bazaar: one open listing per character, held by the database (two list requests at once both passed the
+// "already listed" check). A table made before this (the game server's bazaar.lua, an older install.sql) gets the
+// generated `active_player_id` and its unique key; a character listed twice keeps its oldest listing, the others are
+// cancelled by the staff path (every escrow refunded) first.
+if ($tableExists('chaos_bazaar_listings')) {
+	$r = $link->query("SHOW COLUMNS FROM `chaos_bazaar_listings` LIKE 'active_player_id'");
+	if ($r && $r->num_rows === 0) {
+		require_once $Z . '/plugins/chaos/bazaar_lib.php';
+		$dups = chaos_bazaar($config)->cancelDuplicateListings();
+		if ($dups) {
+			$out .= 'chaos_bazaar_listings: duplicate listings cancelled and refunded: ' . implode(', ', $dups) . "\n";
+		}
+		try {
+			$ok = $link->query("ALTER TABLE `chaos_bazaar_listings` ADD COLUMN `active_player_id` int(11) GENERATED ALWAYS AS "
+				. "(CASE WHEN `status` IN ('active', 'settling') THEN `player_id` ELSE NULL END) STORED, "
+				. 'ADD UNIQUE KEY `chaos_bazaar_listings_active` (`active_player_id`)');
+			$error = $link->error;
+		} catch (mysqli_sql_exception $e) {
+			$ok = false;
+			$error = $e->getMessage();
+		}
+		if (!$ok) {
+			finish($out . 'chaos_bazaar_listings.active_player_id: ' . $error . "\n", 1);
+		}
+		$out .= "chaos_bazaar_listings: one open listing per character (unique key)\n";
+	}
+}
 // the version of the legal texts for the game server: server_config chaos_legal_version. The game's legal_notice.lua
 // tells an account without an acceptance of this version, at login, to accept on the website (legal_lib.php).
 require_once $Z . '/plugins/chaos/legal_lib.php';

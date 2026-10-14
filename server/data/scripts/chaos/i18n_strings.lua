@@ -6,6 +6,8 @@
 
 return {
 	["pt-BR"] = {
+		-- Pack combat (pace.lua)
+		["Multikill x%d: +%d%% experience on the chain."] = "Multikill x%d: +%d%% de experiência na sequência.",
 		-- Auto Seller (autosell.lua, autosell_core.lua)
 		["Auto seller: sold %s for %d gold (to your bank)."] = "Auto Seller: vendeu %s por %d de ouro (no seu banco).",
 		["Auto seller: kept an item of a rarity you keep, a unique or a named item (Economy > Auto Seller)."] =

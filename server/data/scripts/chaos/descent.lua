@@ -846,7 +846,7 @@ local function roomCleared(run)
 			pe.st.embers = pe.st.embers + e
 			if p then
 				p:setBankBalance(p:getBankBalance() + g)
-				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("The chest spills %d embers and %d gold (to your bank).", e, g))
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "The chest spills %d embers and %d gold (to your bank).", e, g))
 			end
 		end
 	end
@@ -987,15 +987,15 @@ function X.buy(player, d)
 	end
 	local price = DC.price(C(), w, run.idx)
 	if pe.st.embers < price then
-		player:sendCancelMessage("You do not have enough embers.")
+		player:sendCancelMessage(Chaos.t(player, "You do not have enough embers."))
 		return
 	end
 	if w.key == "cleanse" and #pe.st.curses == 0 then
-		player:sendCancelMessage("You carry no curse.")
+		player:sendCancelMessage(Chaos.t(player, "You carry no curse."))
 		return
 	end
 	if w.key == "boon" and pe.offer then
-		player:sendCancelMessage("Choose your boon first.")
+		player:sendCancelMessage(Chaos.t(player, "Choose your boon first."))
 		return
 	end
 	pe.st.embers = pe.st.embers - price
@@ -1009,7 +1009,7 @@ function X.buy(player, d)
 		local key = DC.cleanse(C(), pe.st)
 		refreshFx(player, pe)
 		local c = DC.curseDef(C(), key)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s is lifted.", c and c.name or key))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s is lifted.", c and c.name or key))
 	elseif w.key == "ward" then
 		pe.shell = (pe.shell or 0) + math.floor(player:getMaxHealth() * (w.value or 25) / 100)
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
@@ -1025,7 +1025,7 @@ function X.useShrine(player)
 		return false
 	end
 	if run.used[player:getId()] then
-		player:sendCancelMessage("The altar has taken its due from you.")
+		player:sendCancelMessage(Chaos.t(player, "The altar has taken its due from you."))
 		return true
 	end
 	run.used[player:getId()] = true
@@ -1123,7 +1123,7 @@ local function rewardPlayer(run, pe, cleared, player)
 	if #after > #before then
 		newTitle = after[#after].text
 		if player then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You earned the title \"%s\".", newTitle))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You earned the title \"%s\".", newTitle))
 			if ChaosNameplate and ChaosNameplate.refresh then
 				pcall(ChaosNameplate.refresh, player)
 			end
@@ -1179,8 +1179,8 @@ removePlayer = function(run, pid, result)
 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		end
 		local text = RESULT_TEXT[result] or ""
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s Depth %d of %d. Rewards: %s.", text, rw.depth,
-			run.plan.count, #rw.lines > 0 and table.concat(rw.lines, ", ") or "none"))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s Depth %d of %d. Rewards: %s.", Chaos.t(player, text), rw.depth,
+			run.plan.count, #rw.lines > 0 and table.concat(rw.lines, ", ") or Chaos.t(player, "none")))
 		send(player, "end", {result = result, depth = rw.depth, rooms = run.plan.count, gold = rw.gold, items = rw.items,
 			title = rw.title, text = text, weekly = run.weekly})
 		mirrorFree(player)
@@ -1642,7 +1642,7 @@ function phit.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 			local keep = math.max(1, math.floor(creature:getMaxHealth() * fx.phoenix / 100))
 			local cut = math.max(0, creature:getHealth() - keep)
 			creature:getPosition():sendMagicEffect(CONST_ME_FIREAREA)
-			creature:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The Phoenix Ember flares: you rise again.")
+			creature:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(creature, "The Phoenix Ember flares: you rise again."))
 			addEvent(function(cid, want)
 				local pl = Player(cid)
 				if pl and pl:getHealth() < want then
@@ -1692,7 +1692,7 @@ function obj.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local aid = item:getActionId()
 	if aid == cfg.aid.shrine then
 		if not X.useShrine(player) then
-			player:sendCancelMessage("The altar is cold.")
+			player:sendCancelMessage(Chaos.t(player, "The altar is cold."))
 		end
 	elseif aid == cfg.aid.merchant then
 		local run = X.runOf[player:getId()]
@@ -1700,7 +1700,7 @@ function obj.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 			X.sendShop(player, run)
 		end
 	elseif aid == cfg.aid.chest then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "The chest is empty: its embers and gold are yours already.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "The chest is empty: its embers and gold are yours already."))
 	end
 	return true
 end
@@ -1936,7 +1936,7 @@ function login.onLogin(player)
 		if R.slotOfPos(C(), pos) or not Tile(pos) then
 			player:teleportTo(player:getTown():getTemplePosition())
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your last descent was interrupted by a server restart.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your last descent was interrupted by a server restart."))
 	elseif R.slotOfPos(C(), player:getPosition()) then
 		player:teleportTo(player:getTown():getTemplePosition())
 	end
@@ -1951,7 +1951,7 @@ function logout.onLogout(player)
 	local run = X.runOf[player:getId()]
 	if run then
 		if inCombat(player) and run.state == "fight" then
-			player:sendCancelMessage("You cannot leave the Descent while you are in a fight.")
+			player:sendCancelMessage(Chaos.t(player, "You cannot leave the Descent while you are in a fight."))
 			return false
 		end
 		removePlayer(run, player:getId(), "logout")

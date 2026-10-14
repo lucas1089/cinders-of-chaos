@@ -1775,7 +1775,7 @@ local function spawns(cfg, def, r, F, safe, model, floorNo)
 			local k = key(x, y)
 			grid[k] = grid[k] or {}
 			grid[k][#grid[k] + 1] = {x, y}
-			local count = r:chance(sp.packChance or 0) and r:int(2, sp.packMax or 2) or 1
+			local count = r:chance(sp.packChance or 0) and r:int(sp.packMin or 2, sp.packMax or 2) or 1
 			count = min(count, target - monsters)
 			if room and roomCap[room] then
 				count = max(1, min(count, roomCap[room] - (roomHas[room] or 0)))

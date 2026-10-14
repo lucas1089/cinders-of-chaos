@@ -196,125 +196,142 @@
     {
       "zone": "bellows",
       "monster": "Hellhunter Pyrarch",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bellows",
       "monster": "Spellreaper Pyrarch",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "crucible",
       "monster": "Embermaw Archon",
-      "count": 8,
-      "respawn": 120
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "crucible",
       "monster": "Pitlord Incarnate",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mould_hall",
       "monster": "Hellmaw Brute",
-      "count": 10,
-      "pack": 2,
-      "respawn": 120
+      "count": 15,
+      "pack": 3,
+      "respawn": 75
     },
     {
       "zone": "ember_forge",
       "monster": "Inferno Juggernaut",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ember_forge",
       "monster": "Nightflare Dreadknight",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "slag_vent",
       "monster": "Sineater Pyrarch",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "anvil_gallery",
       "monster": "Hellhunter Pyrarch",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "anvil_gallery",
       "monster": "Spellreaper Pyrarch",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "cinder_chapel",
       "monster": "Sineater Pyrarch",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "cinder_chapel",
       "monster": "Nightflare Dreadknight",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pour_channels",
       "monster": "Inferno Juggernaut",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pour_channels",
       "monster": "Hellmaw Brute",
-      "count": 8,
-      "pack": 2,
-      "respawn": 120
+      "count": 11,
+      "pack": 3,
+      "respawn": 75
     },
     {
       "zone": "furnace_maw",
       "monster": "Embermaw Archon",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "furnace_maw",
       "monster": "Pitlord Incarnate",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ingot_vault",
       "monster": "Hellmaw Brute",
-      "count": 8,
-      "pack": 2,
-      "respawn": 120
+      "count": 12,
+      "pack": 3,
+      "respawn": 75
     },
     {
       "zone": "ingot_vault",
       "monster": "Spellreaper Pyrarch",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "flux_pits",
       "monster": "Sineater Pyrarch",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "flux_pits",
       "monster": "Hellhunter Pyrarch",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "notes": "Content plan (docs/CONTENT.md): the pyrarchs' forge for levels 520-690, a round crucible with a loop of forges. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for twelve parties."

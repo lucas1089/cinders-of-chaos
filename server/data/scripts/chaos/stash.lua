@@ -33,6 +33,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 local OPCODE = ChaosOpcodes.stash
 local cfg = Chaos.stash
@@ -79,9 +82,9 @@ local function depositTab(player, itemId, lim, entries)
 	end
 	local M = Chaos.pactConfig.messages
 	if why == "locked" then
-		return nil, string.format(M.tabLocked, lim.stashTabs)
+		return nil, ChaosI18n.msg(M.tabLocked, lim.stashTabs) -- a deferred text: Chaos.t gives it in the player's language
 	end
-	return nil, string.format(M.tabFull, #entries)
+	return nil, ChaosI18n.msg(M.tabFull, #entries)
 end
 
 -- keeps the in-memory entry list of a Stash All run up to date
@@ -338,38 +341,38 @@ end
 local function stashItem(player, item)
 	local guid = player:getGuid()
 	if not stashable(item) then
-		player:sendCancelMessage("You cannot put that item into the stash.")
+		player:sendCancelMessage(Chaos.t(player, "You cannot put that item into the stash."))
 		return false
 	end
 	local itemId = item:getId()
 	if isBlocked(guid, itemId) then
-		player:sendCancelMessage("That item is on your stash block list.")
+		player:sendCancelMessage(Chaos.t(player, "That item is on your stash block list."))
 		return false
 	end
 	local count = item:getCount()
 	if stashCount(guid, itemId) + count > cfg.maxStackPerEntry then
-		player:sendCancelMessage("Your stash cannot hold that many of this item.")
+		player:sendCancelMessage(Chaos.t(player, "Your stash cannot hold that many of this item."))
 		return false
 	end
 	local tab, refusal = depositTab(player, itemId)
 	if not tab then
-		player:sendCancelMessage(refusal)
+		player:sendCancelMessage(Chaos.t(player, refusal))
 		return false
 	end
 	local name = item:getType():getName()
 	if not item:remove(count) then
-		player:sendCancelMessage("Could not take the item.")
+		player:sendCancelMessage(Chaos.t(player, "Could not take the item."))
 		return false
 	end
 	-- the character is written before the row is credited: a crash in between cannot hand the item back while the
 	-- stash keeps it too (chaos_constants.lua Chaos.saveCharacter). Stashable items are plain stacks: addItem restores.
 	if not Chaos.saveCharacter(player) then
 		player:addItem(itemId, count)
-		player:sendCancelMessage("The stash is busy. Try again in a moment.")
+		player:sendCancelMessage(Chaos.t(player, "The stash is busy. Try again in a moment."))
 		return false
 	end
 	stashAdd(guid, itemId, count, tab)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Stashed %dx %s.", count, name))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Stashed %dx %s.", count, name))
 	return true
 end
 
@@ -422,9 +425,9 @@ local function stashAll(player)
 		moved = moved + 1
 	end
 	send(player, {make = "StashAll", status = false})
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Stashed %d item stack(s).", moved))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Stashed %d item stack(s).", moved))
 	if full then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, full)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, full))
 	end
 end
 
@@ -442,7 +445,7 @@ local function redeem(player, data)
 	local have = stashCount(guid, itemId)
 	local amount = math.min(have, want)
 	if amount <= 0 then
-		player:sendCancelMessage("You do not have that item in the stash.")
+		player:sendCancelMessage(Chaos.t(player, "You do not have that item in the stash."))
 		sendItems(player)
 		return
 	end
@@ -453,17 +456,17 @@ local function redeem(player, data)
 		amount = math.min(amount, math.floor(player:getFreeCapacity() / unitWeight))
 	end
 	if amount <= 0 then
-		player:sendCancelMessage("You do not have enough capacity.")
+		player:sendCancelMessage(Chaos.t(player, "You do not have enough capacity."))
 		sendItems(player)
 		return
 	end
 
 	local given = Chaos.giveItem(player, itemId, amount)
 	if given <= 0 then
-		player:sendCancelMessage("You do not have enough room.")
+		player:sendCancelMessage(Chaos.t(player, "You do not have enough room."))
 	else
 		stashAdd(guid, itemId, -given)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Retrieved %dx %s from your stash.", given, itemType:getName()))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Retrieved %dx %s from your stash.", given, itemType:getName()))
 	end
 	sendItems(player)
 end

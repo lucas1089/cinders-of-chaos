@@ -47,6 +47,22 @@ dofile("data/scripts/chaos/bestiary_core.lua")
 
 Chaos.bestiaryConfig = dofile("data/scripts/chaos/bestiary_config.lua")
 local cfg = Chaos.bestiaryConfig
+-- pack combat (pace.lua): kill stages and kill tasks x the monster's kill-goal factor (pace_config.lua goal curves)
+if not ChaosPaceCore then
+	dofile("data/scripts/chaos/pace_core.lua")
+end
+local function paceCfg()
+	return ChaosPaceConfig or dofile("data/scripts/chaos/pace_config.lua")
+end
+cfg.goalOf = function(info, level)
+	return ChaosPaceCore.goalOfEntry(paceCfg(), {minLevel = info.minLevel, maxLevel = info.maxLevel, exp = info.exp,
+		health = info.health, level = level})
+end
+-- a family task: a base monster at the window's middle (the bestiary's level, x2 for the hunting level)
+cfg.familyGoalOf = function(level)
+	local pc = paceCfg()
+	return ChaosPaceCore.factors(pc, (tonumber(level) or 0) * (pc.baseLevelMult or 2), false).goal
+end
 local bountyCfg = Chaos.bountyConfig or dofile("data/scripts/chaos/bounty_config.lua")
 local C = ChaosBestiaryCore
 local OPCODE = ChaosOpcodes.bestiary or 253

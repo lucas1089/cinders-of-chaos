@@ -925,6 +925,13 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Monster Health 800%\nMonster Damage 400%\nBonus XP +300%\nGold Drop +300%\nLoot Chance +45%"] = "Vida dos monstros 800%\nDano dos monstros 400%\nXP bônus +300%\nDrop de ouro +300%\nChance de loot +45%",
   ["Hell"] = "Hell",
   ["Monster Health 1300%\nMonster Damage 600%\nBonus XP +400%\nGold Drop +400%\nLoot Chance +60%"] = "Vida dos monstros 1300%\nDano dos monstros 600%\nXP bônus +400%\nDrop de ouro +400%\nChance de loot +60%",
+  -- game_dungeons/dungeonsview.lua (a dungeon with its own health curves: the Vault, dungeons 6-9)
+  ["Monster Health %d%%"] = "Vida dos monstros %d%%",
+  ["Boss Health %d%%"] = "Vida do chefe %d%%",
+  ["Monster Damage %d%%"] = "Dano dos monstros %d%%",
+  ["Bonus XP +%d%%"] = "XP bônus +%d%%",
+  ["Gold Drop +%d%%"] = "Drop de ouro +%d%%",
+  ["Loot Chance +%d%%"] = "Chance de loot +%d%%",
   ["Requirements"] = "Requisitos",
   ["Level:"] = "Nível:",
   ["Party:"] = "Grupo:",

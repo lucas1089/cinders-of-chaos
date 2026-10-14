@@ -30,6 +30,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua")
 end
@@ -294,7 +297,7 @@ local function craft(player, orbKey, item, orbItem, opts)
 	local pos = player:getPosition()
 	local red = orbKey == "annulment" or orbKey == "scouring" or orbKey == "excision" or res.outcome == "ruin"
 	pos:sendMagicEffect(red and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %s", orb.name, res.text))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %s", orb.name, res.text))
 	return true, res.text, res.item
 end
 
@@ -467,9 +470,8 @@ logout:register()
 -- customs/rarity/reroll_rarity_stats.lua; install_crafting.py makes that script skip its own registration).
 -- Using an orb without a target (a plain "use", e.g. from a hotkey) only explains how to use it.
 local function useHint(player, orb, prefix)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
-		"%sUse the %s on an item: choose \"Use with\" on the orb, then click an item or a Rift Key in your backpack. "
-		.. "The crafting bench (Economy > Crafting Bench) shows a preview first.", prefix or "", orb.name))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+		"%sUse the %s on an item: choose \"Use with\" on the orb, then click an item or a Rift Key in your backpack. The crafting bench (Economy > Crafting Bench) shows a preview first.", prefix and Chaos.t(player, prefix) or "", orb.name))
 end
 
 function ChaosCraftingUseOrb(player, orbItem, target, orbKey)

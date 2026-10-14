@@ -10,6 +10,17 @@
 ChaosNewPlayer = ChaosNewPlayer or {}
 local NP = ChaosNewPlayer
 
+-- a text in `lang` through ChaosI18n (i18n_core.lua) when it is loaded, else English (giftLine)
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local floor = math.floor
 
 -- the config table: newplayer_config.lua, loaded once (tests may set NP.config themselves)
@@ -204,7 +215,7 @@ end
 
 -- the welcome's gift line, from the milestone levels still ahead of `level` (a character created at a high level
 -- is not promised gifts it can no longer reach): "Gifts wait for you at levels 20, 50, 100 and 200." or ""
-function NP.giftLine(level, c)
+function NP.giftLine(level, c, lang)
 	c = c or NP.cfg()
 	local ahead = {}
 	for _, m in ipairs(c.milestones) do
@@ -216,10 +227,10 @@ function NP.giftLine(level, c)
 		return ""
 	end
 	if #ahead == 1 then
-		return "A gift waits for you at level " .. ahead[1] .. "."
+		return T(lang, "A gift waits for you at level %s.", ahead[1])
 	end
 	local last = table.remove(ahead)
-	return "Gifts wait for you at levels " .. table.concat(ahead, ", ") .. " and " .. last .. "."
+	return T(lang, "Gifts wait for you at levels %s and %s.", table.concat(ahead, ", "), last)
 end
 
 -- the items of one milestone for a kit role: list of {id, count} (potions of the role, orbs, extra items)

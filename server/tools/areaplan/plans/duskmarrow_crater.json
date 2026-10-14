@@ -269,200 +269,233 @@
     {
       "zone": "scorched_rim",
       "monster": "Wraithbone Stalker",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "scorched_rim",
       "monster": "Cinderhorn Juggernaut",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pyre_basin",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pyre_basin",
       "monster": "Mirecoil Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ashfall_steppe",
       "monster": "Mirecoil Wyrm",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ashfall_steppe",
       "monster": "Wraithbone Stalker",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "wyrmcoil_mire",
       "monster": "Mirecoil Wyrm",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "wyrmcoil_mire",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "tyrants_perch",
       "monster": "Pyrewing Tyrant",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "tyrants_perch",
       "monster": "Wraithbone Stalker",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "slag_terraces",
       "monster": "Cinderhorn Juggernaut",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "slag_terraces",
       "monster": "Mirecoil Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bonewind_flats",
       "monster": "Wraithbone Stalker",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bonewind_flats",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "marrow_vents",
       "monster": "Wraithbone Stalker",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "marrow_vents",
       "monster": "Cinderhorn Juggernaut",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "caldera_throat",
       "monster": "Mirecoil Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "caldera_throat",
       "monster": "Wraithbone Stalker",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "molten_landing",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "molten_landing",
       "monster": "Mirecoil Wyrm",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "heart_of_cinders",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "heart_of_cinders",
       "monster": "Mirecoil Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "brood_hollows",
       "monster": "Mirecoil Wyrm",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "brood_hollows",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "wraith_galleries",
       "monster": "Wraithbone Stalker",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "wraith_galleries",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "scorch_cisterns",
       "monster": "Pyrewing Tyrant",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "scorch_cisterns",
       "monster": "Mirecoil Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ember_hoard",
       "monster": "Pyrewing Tyrant",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "ashen_nests",
       "monster": "Pyrewing Tyrant",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ashen_nests",
       "monster": "Wraithbone Stalker",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "furnace_cells",
       "monster": "Mirecoil Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "furnace_cells",
       "monster": "Pyrewing Tyrant",
-      "count": 4,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

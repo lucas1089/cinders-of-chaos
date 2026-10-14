@@ -151,4 +151,12 @@ end
 
 npcHandler:setCallback(CALLBACK_GREET, greetCallback)
 npcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)
+-- the XML's farewell and walk away lines in the stored language (i18n_core.lua "NPC scripts"); her greeting stays
+-- greetCallback's own (it runs after and sets it again)
+if not ChaosI18n or not ChaosI18n.npcMessages then
+	pcall(dofile, "data/scripts/chaos/i18n_core.lua")
+end
+if ChaosI18n and ChaosI18n.npcMessages then
+	ChaosI18n.npcMessages(npcHandler)
+end
 npcHandler:addModule(FocusModule:new())

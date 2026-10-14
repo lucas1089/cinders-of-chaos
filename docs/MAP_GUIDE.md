@@ -175,7 +175,7 @@ Measured around every spawn (13 tiles around each monster) on the live map, with
 | dead ends | 17-25 per 1 000 hunt tiles (short side pockets; good safe spots) |
 | monsters per spawn | mean 1.1-1.5 (most spawns hold 1 monster with radius 1; groups of 3-8 for packs) |
 | distance between spawn points | median 4-7 tiles (p25 3-4, p75 4-8) |
-| density | 2.7-4.4 monsters per 100 walkable hunt tiles. By area: forest/grass 1.2-1.7, desert/ice 1.7-2.0, dirt 2.2, swamp 2.5, cave 2.7-3.2, dungeon 3.3-3.6, lava 1.3-3.9 |
+| density | 4.0-5.0 monsters per 100 walkable hunt tiles since pack combat (server/README.md "Pack combat (pace)": monsters die 2-30x faster, packs of 3-7; before 2.7-4.4). By area: forest/grass 1.2-1.7, desert/ice 1.7-2.0, dirt 2.2, swamp 2.5, cave 2.7-3.2, dungeon 3.3-3.6, lava 1.3-3.9 |
 | depth | 64 % of live-map spawns are on floors 7-11 and 21 % on floors 12-15. Above ground (0-6) holds 14 % |
 | floor changes | caves have 4 per 1 000 open tiles, dungeons 3.4. On the live map 98 % of ladders have a tile above, 79 % of stairs and 70 % of holes have a tile directly below |
 
@@ -335,8 +335,9 @@ The same model can be written as an OTBM piece for the map editor.
 | `layout.minRegion` | pockets smaller than this are filled; bigger ones are joined by a tunnel | 40-60 |
 | `layout.tunnelRadius` | 1 = 3-wide tunnels, 2 = 5-wide | 1-2 |
 | `layout.rooms`, `room`, `corridor`, `loops`, `bossRoom` (dungeon) | room count and size, corridor width, extra circuits | 9-13 rooms of 7-12, corridor 3, loops 2-4 |
-| `spawns.density` | monsters per 100 walkable tiles outside the safe radius | cave 2.4, dungeon 2.8, waste 1.6 (item 89: 2.7-4.4 normal hunts) |
-| `spawns.roomCap` (dungeon) | most monsters per 100 tiles of one room | 5-5.5 |
+| `spawns.density` | monsters per 100 walkable tiles outside the safe radius | hunts 4.5 (band 4.0-5.0, pack combat), queue dungeons 8-8.75 in packs of 6-7 (at least 100 monsters a run) |
+| `spawns.roomCap` (dungeon) | most monsters per 100 tiles of one room | 5-5.5 (queue dungeons 16) |
+| `spawns.packChance`, `packMin`, `packMax` | the share of points that are packs and their size | hunts 60, 2-4; queue dungeons 100, 6-7 |
 | `spawns.minDistance`, `packChance`, `packMax` | spacing of spawn points, packs | 4-5, 15-30 %, 2-3 |
 | `spawns.level` | the level the monsters are scaled to | the area's band |
 | `theme.decor.share`, `clusters` | single pieces per walkable tile, clusters per 1000 tiles | cave 0.10, dungeon 0.12, waste 0.08 |
@@ -474,7 +475,8 @@ compiles them with the examples. Each has its own `origin`, one 200 x 200 cell i
 the generated areas (rows y 14340, 14540, 14940 and 15140; the plaza at 14800, 14800 sits in the free band between),
 so they never overlap each other, the generated areas or the plaza. Since 2026-10-14 each is four times the first
 draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de monstros"): twice the side, 12-17 zones in
-loops, 3.2-3.5 monsters per 100 walkable tiles:
+loops, 3.2-3.5 monsters per 100 walkable tiles; since pack combat (the same day, server/README.md "Pack combat (pace)")
+4.1-4.6 in packs of 3 (respawn 45 s for 300-599, 75 s for 600+), no zone above the validator's 8 per 100:
 
 | Plan | Band | Size | Origin x, y, z | Arrival |
 |---|---|---|---|---|

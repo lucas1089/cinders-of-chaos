@@ -220,140 +220,163 @@
     {
       "zone": "tide_cave",
       "monster": "Ironhook Corsair",
-      "count": 10,
-      "respawn": 120
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "smugglers_hold",
       "monster": "Scourgejaw",
-      "count": 8,
-      "respawn": 120
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "smugglers_hold",
       "monster": "Captain Bloodbeard",
-      "count": 4,
-      "respawn": 150
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "smugglers_hold",
       "monster": "Ironhook Corsair",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gun_deck",
       "monster": "Stormy Seadevil",
-      "count": 8,
-      "respawn": 120
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gun_deck",
       "monster": "Scourgejaw",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "brine_grotto",
       "monster": "Stormy Seadevil",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "brine_grotto",
       "monster": "Ironhook Corsair",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "rum_cellars",
       "monster": "Ironhook Corsair",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rum_cellars",
+      "monster": "Captain Bloodbeard",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "powder_store",
+      "monster": "Stormy Seadevil",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "powder_store",
+      "monster": "Scourgejaw",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "kelp_caverns",
+      "monster": "Stormy Seadevil",
       "count": 10,
-      "respawn": 120
-    },
-    {
-      "zone": "rum_cellars",
-      "monster": "Captain Bloodbeard",
-      "count": 4,
-      "respawn": 120
-    },
-    {
-      "zone": "powder_store",
-      "monster": "Stormy Seadevil",
-      "count": 8,
-      "respawn": 120
-    },
-    {
-      "zone": "powder_store",
-      "monster": "Scourgejaw",
-      "count": 6,
-      "respawn": 120
-    },
-    {
-      "zone": "kelp_caverns",
-      "monster": "Stormy Seadevil",
-      "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "kelp_caverns",
       "monster": "Ironhook Corsair",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mutineers_den",
       "monster": "Scourgejaw",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mutineers_den",
       "monster": "Captain Bloodbeard",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sunken_berth",
       "monster": "Stormy Seadevil",
-      "count": 8,
-      "respawn": 120
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sunken_berth",
       "monster": "Scourgejaw",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "chain_locker",
       "monster": "Ironhook Corsair",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bilge_tunnels",
       "monster": "Stormy Seadevil",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bilge_tunnels",
       "monster": "Ironhook Corsair",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "drowned_galley",
       "monster": "Captain Bloodbeard",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "drowned_galley",
       "monster": "Scourgejaw",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

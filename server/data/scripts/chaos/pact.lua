@@ -30,6 +30,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/pact_core.lua")
 Chaos.pactConfig = dofile("data/scripts/chaos/pact_config.lua")
 
@@ -150,7 +153,9 @@ local function send(player, action, data)
 	Chaos.send(player, OPCODE, action, data)
 end
 
+-- text: a key (Chaos.t) or a deferred text (ChaosI18n.msg): in the player's language
 local function message(player, text, isError)
+	text = Chaos.t(player, text)
 	send(player, "message", {text = text, error = isError == true})
 	if isError then
 		player:sendCancelMessage(text)
@@ -238,7 +243,7 @@ function Pact.grantDays(player, days, source)
 	if not ends then
 		return false
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%d days of the Chaos Pact added: it runs until %s.", days,
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%d days of the Chaos Pact added: it runs until %s.", days,
 		os.date("%Y-%m-%d %H:%M", ends)))
 	pcall(function()
 		if ChaosNameplate and ChaosNameplate.refresh then
@@ -265,7 +270,7 @@ local pactService = {
 		if not ends then
 			return "Something went wrong. Your coins were refunded."
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact.",
 			os.date("%Y-%m-%d %H:%M", ends), cfg.pact.dailyCoins))
 		refreshPlayer(player)
 		return true
@@ -296,7 +301,7 @@ local extraService = {
 		Pact.load(accountId)
 		log(accountId, player:getGuid(), "extra", offer.extra, amount)
 		local x = cfg.extras[offer.extra]
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s added to your account (%d of %d).",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s added to your account (%d of %d).",
 			amount > 1 and (amount .. " x " .. x.name) or x.name, Pact.state(accountId).extras[offer.extra] or amount,
 			Core.extraMax(cfg, offer.extra)))
 		refreshPlayer(player)
@@ -349,7 +354,7 @@ local function claim(player)
 		ChaosShop.addCoins(accountId, amount)
 	end
 	log(accountId, player:getGuid(), "claim", tostring(day), amount)
-	message(player, string.format(MSG.claimed, amount))
+	message(player, ChaosI18n.msg(MSG.claimed, amount))
 	sendStatus(player, false)
 end
 
@@ -374,12 +379,12 @@ local function buildSave(player, data)
 	local slot = Chaos.toInt(data.slot, 1, 250)
 	if slot then
 		if not Core.buildEditable(lim, slot) then
-			return message(player, string.format(MSG.buildLocked, lim.buildSlots), true)
+			return message(player, ChaosI18n.msg(MSG.buildLocked, lim.buildSlots), true)
 		end
 	else
 		slot = Core.freeBuildSlot(lim, rows)
 		if not slot then
-			return message(player, string.format(MSG.buildFull, lim.buildSlots), true)
+			return message(player, ChaosI18n.msg(MSG.buildFull, lim.buildSlots), true)
 		end
 	end
 	local code, build = B.exportCode(player)
@@ -390,7 +395,7 @@ local function buildSave(player, data)
 	db.query(string.format("REPLACE INTO `%s` (`account_id`, `slot`, `name`, `code`, `class_line`, `nodes`, `saved_by`, `updated`) " ..
 		"VALUES (%d, %d, %s, %s, %d, %d, %s, %d)", T.builds, accountId, slot, q(name), q(code), build.classId or 0, #(build.nodes or {}),
 		q(player:getName()), os.time()))
-	message(player, string.format("Build saved in slot %d: %s (%d nodes).", slot, name, #(build.nodes or {})))
+	message(player, ChaosI18n.msg("Build saved in slot %d: %s (%d nodes).", slot, name, #(build.nodes or {})))
 	sendStatus(player, false)
 end
 
@@ -398,7 +403,7 @@ local function buildRename(player, data)
 	local slot = Chaos.toInt(data.slot, 1, 250)
 	local lim = Pact.limits(player)
 	if not slot or not Core.buildEditable(lim, slot) then
-		return message(player, string.format(MSG.buildLocked, lim.buildSlots), true)
+		return message(player, ChaosI18n.msg(MSG.buildLocked, lim.buildSlots), true)
 	end
 	db.query(string.format("UPDATE `%s` SET `name` = %s WHERE `account_id` = %d AND `slot` = %d", T.builds, q(cleanName(data.name, slot)),
 		player:getAccountId(), slot))
@@ -411,7 +416,7 @@ local function buildDelete(player, data)
 		return
 	end
 	db.query(string.format("DELETE FROM `%s` WHERE `account_id` = %d AND `slot` = %d", T.builds, player:getAccountId(), slot))
-	message(player, string.format("Build slot %d is empty now.", slot))
+	message(player, ChaosI18n.msg("Build slot %d is empty now.", slot))
 	sendStatus(player, false)
 end
 

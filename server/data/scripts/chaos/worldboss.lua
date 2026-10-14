@@ -875,13 +875,13 @@ function W.deliver(player, r)
 		roles[#roles + 1] = string.format("%s in %s", W.placeName(t.place), (t.name or t.key):lower())
 		W.grantTitle(player, t)
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"World boss reward (%.1f%% of the contribution: %s damage, %s healing, %s tanking%s): %d gold to your bank, %s.%s",
 		(r.share or 0) * 100, W.short(r.damage), W.short(r.healing), W.short(r.tanking),
 		#roles > 0 and ("; " .. table.concat(roles, ", ")) or "", r.bank or 0, table.concat(parts, ", "),
-		inboxUsed and " Your backpack was full: the rest is in your inbox." or ""))
+		inboxUsed and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
 	for _, t in ipairs(r.titles or {}) do
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You earned the title %s (%s %s) for %d days.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You earned the title %s (%s %s) for %d days.",
 			t.text, W.placeName(t.place), (t.name or t.key):lower(), C().roles.titleDays or 7))
 	end
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
@@ -940,8 +940,8 @@ local function distribute()
 		local player = Player(e.name)
 		if player and player:getGuid() == guid and not got[guid] then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, excluded[guid]
-				and "No world boss reward: another character from your connection was online during the fight."
-				or string.format("No world boss reward: you need a contribution (damage, healing and tanking) of at least %.2f%% of the boss health.", minPercent))
+				and Chaos.t(player, "No world boss reward: another character from your connection was online during the fight.")
+				or Chaos.t(player, "No world boss reward: you need a contribution (damage, healing and tanking) of at least %.2f%% of the boss health.", minPercent))
 		end
 	end
 	return shares, total, podium
@@ -1427,7 +1427,7 @@ guard:register()
 
 -- forcefields
 local function pushBack(player, fromPosition, text)
-	player:sendCancelMessage(text)
+	player:sendCancelMessage(Chaos.t(player, text))
 	player:teleportTo(fromPosition, true)
 end
 
@@ -1447,7 +1447,7 @@ function enter.onStepIn(creature, item, position, fromPosition)
 		return true
 	end
 	if player:getLevel() < c.minLevel then
-		pushBack(player, fromPosition, string.format("You need level %d to face the world boss.", c.minLevel))
+		pushBack(player, fromPosition, ChaosI18n.msg("You need level %d to face the world boss.", c.minLevel))
 		return true
 	end
 	if c.maxPlayers > 0 and #playersInside() >= c.maxPlayers then
@@ -1458,12 +1458,12 @@ function enter.onStepIn(creature, item, position, fromPosition)
 		state.mc[player:getGuid()] = true
 		if not c.mcReward then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-				"Another character from your connection is online: you may fight, but you will get no world boss reward.")
+				Chaos.t(player, "Another character from your connection is online: you may fight, but you will get no world boss reward."))
 		end
 	end
 	player:teleportTo(P(W.layout().lobbyArrival))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "World boss lobby: the forcefield to the north leads to the arena, the ones on the sides take you home. " .. W.status())
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "World boss lobby: the forcefield to the north leads to the arena, the ones on the sides take you home. %s", W.status()))
 	return true
 end
 enter:type("stepin")

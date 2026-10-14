@@ -6465,6 +6465,63 @@
 					"icon": "wiki/i/k-steel-hammer.png"
 				},
 				{
+					"id": "basics:pace",
+					"name": "Pack combat",
+					"sub": "Monsters come in packs and die fast: kill groups, not one at a time.",
+					"color": "#d6c9ae",
+					"sections": [
+						{
+							"h": "In short",
+							"p": [
+								"Hunting monsters have much less health and come in bigger packs. Pull a group and kill it together: area spells and cleaves matter.",
+								"Experience and loot per kill are lower by the same share, so experience and gold per hour stay where they were. Kill counts (bounties, bestiary, tasks, achievements) need more kills by the same share.",
+								"Multikill: kills each within 3 s of the one before form a chain; the whole chain's experience gets 4 kills +10%, 6 kills +20%, 8 kills +30%, 9 kills +40%.",
+								"Bosses, rifts, the Ember Descent, the tower, invasions, arena, battleground and PvP are not changed."
+							]
+						},
+						{
+							"h": "By hunting level",
+							"p": [
+								"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."
+							],
+							"cols": ["Level", "Health", "Experience", "Loot", "Damage"],
+							"w": [28, 18, 18, 18, 18],
+							"rows": [
+								["20", "100%", "100%", "100%", "100%"],
+								["50", "54%", "62%", "67%", "85%"],
+								["100", "36%", "42%", "44%", "80%"],
+								["200", "24%", "26%", "30%", "72%"],
+								["300", "21%", "22%", "24%", "65%"],
+								["600", "21%", "21%", "23%", "55%"],
+								["1000", "21%", "22%", "24%", "40%"],
+								["650 (own level)", "10%", "5%", "6%", "53%"],
+								["1000 (own level)", "7%", "4%", "4%", "40%"],
+								["1300 (own level)", "6%", "3%", "4%", "40%"],
+								["2000 (own level)", "6%", "3%", "3%", "40%"]
+							]
+						},
+						{
+							"h": "Pack cleave",
+							"p": [
+								"Classes with little area damage hit packs too: a direct hit on a hunting monster also deals a share of it to monsters within 1 sqm of it (never bosses, players or their summons)."
+							],
+							"cols": ["Class", "Share", "Monsters"],
+							"w": [50, 25, 25],
+							"rows": [
+								["Thief", "25%", "3"],
+								["Samurai", "25%", "3"],
+								["Necromancer", "25%", "3"],
+								["Monk", "20%", "3"],
+								["Iron Sage", "20%", "3"],
+								["Deadeye", "20%", "2"],
+								["Shadowfist", "20%", "2"],
+								["Ninja", "15%", "2"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-blood-burst.png"
+				},
+				{
 					"id": "basics:basebonus",
 					"name": "Base stat bonus",
 					"sub": "Attack, defence, armour and hit chance from the rarity.",
@@ -26638,7 +26695,7 @@
 							"h": "How they work",
 							"p": [
 								"Step on a dungeon's entry or open Adventure > Dungeons: pick a difficulty and join the queue; the group goes in together.",
-								"Kill 85% of the dungeon's monsters to unlock its boss, then kill the boss. A run lasts at most 45 min. Each finished difficulty unlocks the next one.",
+								"Kill 85% of the dungeon's monsters to unlock its boss, then kill the boss. A run lasts at most 15 min. Each finished difficulty unlocks the next one.",
 								"Speed and flawless challenges give points; solo and group rankings keep the best times."
 							]
 						},
@@ -26704,7 +26761,7 @@
 							"cols": ["Challenge", "Goal", "Points"],
 							"w": [30, 55, 15],
 							"rows": [
-								["Speed Runner", "Finish in under 15 minutes.", "5"],
+								["Speed Runner", "Finish in under 6 minutes.", "5"],
 								["Flawless", "Finish without anyone dying.", "10"]
 							]
 						},
@@ -26730,7 +26787,7 @@
 							"cols": ["Challenge", "Goal", "Points"],
 							"w": [30, 55, 15],
 							"rows": [
-								["Speed Runner", "Finish in under 20 minutes.", "5"],
+								["Speed Runner", "Finish in under 6 minutes.", "5"],
 								["Flawless", "Finish without anyone dying.", "10"]
 							]
 						},
@@ -26754,7 +26811,7 @@
 							"cols": ["Challenge", "Goal", "Points"],
 							"w": [30, 55, 15],
 							"rows": [
-								["Speed Runner", "Finish in under 20 minutes.", "5"],
+								["Speed Runner", "Finish in under 6 minutes.", "5"],
 								["Flawless", "Finish without anyone dying.", "10"]
 							]
 						},
@@ -26778,7 +26835,7 @@
 							"cols": ["Challenge", "Goal", "Points"],
 							"w": [30, 55, 15],
 							"rows": [
-								["Speed Runner", "Finish in under 10 minutes.", "5"],
+								["Speed Runner", "Finish in under 6 minutes.", "5"],
 								["Flawless", "Finish without dying.", "10"]
 							]
 						},
@@ -26797,8 +26854,8 @@
 							"h": "Overview",
 							"p": [
 								"Dark stone halls, level 800 and up, alone (the queue sends one player in). A run lasts 15 min; the speed challenge asks for 6 min.",
-								"1 floor of 60 x 48, 18 monsters of level 800-850 in packs: Orclops Ravager, Shaper Matriarch, Grove Keeper, Blazebringer, Garack. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
-								"Boss: Vault Keeper Ossrim (level 900). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 100% to 125%; damage, experience, gold and loot follow the difficulty table."
+								"1 floor of 104 x 84, 103 monsters of level 800-850 in packs: Orclops Ravager, Shaper Matriarch, Grove Keeper, Blazebringer, Garack. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
+								"Boss: Vault Keeper Ossrim (level 900). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 76% to 118%; damage, experience, gold and loot follow the difficulty table."
 							]
 						},
 						{
@@ -26840,8 +26897,8 @@
 							"h": "Overview",
 							"p": [
 								"Catacombs of dark sand, slate and bones, level 1000 and up, alone (the queue sends one player in). A run lasts 15 min; the speed challenge asks for 6 min.",
-								"1 floor of 52 x 42, 11 monsters of level 1000-1050 in packs: Scaleborn, Ice Lich, Spirit of Purity, Twisted Shaper, Celestial Wyrm. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
-								"Boss: Ossivane the Gravecage (level 1100). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 100% to 125%; damage, experience, gold and loot follow the difficulty table."
+								"1 floor of 104 x 84, 102 monsters of level 1000-1050 in packs: Scaleborn, Ice Lich, Spirit of Purity, Twisted Shaper, Celestial Wyrm. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
+								"Boss: Ossivane the Gravecage (level 1100). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 94% to 129%; damage, experience, gold and loot follow the difficulty table."
 							]
 						},
 						{
@@ -26904,8 +26961,8 @@
 							"h": "Overview",
 							"p": [
 								"A forge cut into the rock, split by lava cracks and pools, level 1300 and up, alone (the queue sends one player in). A run lasts 15 min; the speed challenge asks for 6 min.",
-								"1 floor of 52 x 42, 10 monsters of level 1300-1350 in packs: Facetis, Thal, Silicron, Winterstride, Gloamfang Ravager. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
-								"Boss: Forgewarden Kharzun (level 1400). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 100% to 125%; damage, experience, gold and loot follow the difficulty table."
+								"1 floor of 104 x 84, 104 monsters of level 1300-1350 in packs: Facetis, Thal, Silicron, Winterstride, Gloamfang Ravager. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
+								"Boss: Forgewarden Kharzun (level 1400). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 55% to 83%; damage, experience, gold and loot follow the difficulty table."
 							]
 						},
 						{
@@ -26963,8 +27020,8 @@
 							"h": "Overview",
 							"p": [
 								"A drowned shrine of wet caves and gilded chapels, level 1600 and up, alone (the queue sends one player in). A run lasts 15 min; the speed challenge asks for 6 min.",
-								"1 floor of 52 x 42, 8 monsters of level 1600-1650 in packs: Bloodantler Fiend, Cinderskull Reaver, Rimeshroud Revenant, Cinderhorn Juggernaut, Wraithbone Stalker. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
-								"Boss: Vaelith the Fallen Seraph (level 1700). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 100% to 125%; damage, experience, gold and loot follow the difficulty table."
+								"1 floor of 104 x 84, 103 monsters of level 1600-1650 in packs: Bloodantler Fiend, Cinderskull Reaver, Rimeshroud Revenant, Cinderhorn Juggernaut, Wraithbone Stalker. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
+								"Boss: Vaelith the Fallen Seraph (level 1700). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 46% to 71%; damage, experience, gold and loot follow the difficulty table."
 							]
 						},
 						{
@@ -27031,8 +27088,8 @@
 							"h": "Overview",
 							"p": [
 								"The burnt court of the wyrms: basalt, lava, marble and gilded halls, level 2000 and up, alone (the queue sends one player in). A run lasts 15 min; the speed challenge asks for 6 min.",
-								"1 floor of 52 x 42, 8 monsters of level 2000-2050 in packs: Pyrewing Tyrant, Mirecoil Wyrm, Wraithbone Stalker, Cinderhorn Juggernaut, Bloodantler Fiend. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
-								"Boss: Azhkarrath the Chained Wyrm (level 2100). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 100% to 125%; damage, experience, gold and loot follow the difficulty table."
+								"1 floor of 104 x 84, 102 monsters of level 2000-2050 in packs: Pyrewing Tyrant, Mirecoil Wyrm, Wraithbone Stalker, Cinderhorn Juggernaut, Bloodantler Fiend. The boss room stays shut behind a gate until 85% of them are dead; then it opens and the boss appears.",
+								"Boss: Azhkarrath the Chained Wyrm (level 2100). Its health grows by its own curve, 100% to 225% from difficulty 1 to 6, the other monsters' 72% to 101%; damage, experience, gold and loot follow the difficulty table."
 							]
 						},
 						{
@@ -28272,7 +28329,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "20,000"], ["Experience", "12,250"], ["Level", "860-900"]]
+							"rows": [
+								["Health", "20,000"],
+								["Experience", "12,250"],
+								["Level", "860-900"],
+								[
+									"In hunts (pack combat)",
+									"health x0.074, experience and loot per kill x0.044 / x0.047, damage x0.43 at level 880 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
 					],
@@ -28288,7 +28353,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "13,400"], ["Experience", "4,700"], ["Level", "700-740"]]
+							"rows": [
+								["Health", "13,400"],
+								["Experience", "4,700"],
+								["Level", "700-740"],
+								[
+									"In hunts (pack combat)",
+									"health x0.088, experience and loot per kill x0.051 / x0.056, damage x0.49 at level 720 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
 					],
@@ -28336,7 +28409,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "22,000"], ["Experience", "13,900"], ["Level", "960-1000"]]
+							"rows": [
+								["Health", "22,000"],
+								["Experience", "13,900"],
+								["Level", "960-1000"],
+								[
+									"In hunts (pack combat)",
+									"health x0.067, experience and loot per kill x0.040 / x0.043, damage x0.41 at level 980 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
 					],
@@ -28368,7 +28449,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "16,200"], ["Experience", "8,200"], ["Level", "760-800"]]
+							"rows": [
+								["Health", "16,200"],
+								["Experience", "8,200"],
+								["Level", "760-800"],
+								[
+									"In hunts (pack combat)",
+									"health x0.082, experience and loot per kill x0.048 / x0.052, damage x0.46 at level 780 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
 					],
@@ -28432,7 +28521,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "16,300"], ["Experience", "8,450"], ["Level", "800-840"]]
+							"rows": [
+								["Health", "16,300"],
+								["Experience", "8,450"],
+								["Level", "800-840"],
+								[
+									"In hunts (pack combat)",
+									"health x0.079, experience and loot per kill x0.046 / x0.050, damage x0.45 at level 820 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
 					],
@@ -28448,7 +28545,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "14,800"], ["Experience", "5,400"], ["Level", "710-750"]]
+							"rows": [
+								["Health", "14,800"],
+								["Experience", "5,400"],
+								["Level", "710-750"],
+								[
+									"In hunts (pack combat)",
+									"health x0.087, experience and loot per kill x0.050 / x0.055, damage x0.49 at level 730 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
 					],
@@ -28768,7 +28873,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "20,900"], ["Experience", "12,750"], ["Level", "880-920"]]
+							"rows": [
+								["Health", "20,900"],
+								["Experience", "12,750"],
+								["Level", "880-920"],
+								[
+									"In hunts (pack combat)",
+									"health x0.073, experience and loot per kill x0.043 / x0.046, damage x0.43 at level 900 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
 					],
@@ -28816,7 +28929,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "22,400"], ["Experience", "14,150"], ["Level", "960-1000"]]
+							"rows": [
+								["Health", "22,400"],
+								["Experience", "14,150"],
+								["Level", "960-1000"],
+								[
+									"In hunts (pack combat)",
+									"health x0.067, experience and loot per kill x0.040 / x0.043, damage x0.41 at level 980 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
 					],
@@ -28848,7 +28969,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "13,800"], ["Experience", "4,850"], ["Level", "680-720"]]
+							"rows": [
+								["Health", "13,800"],
+								["Experience", "4,850"],
+								["Level", "680-720"],
+								[
+									"In hunts (pack combat)",
+									"health x0.090, experience and loot per kill x0.052 / x0.057, damage x0.50 at level 700 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
 					],
@@ -28896,7 +29025,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "21,400"], ["Experience", "13,300"], ["Level", "920-960"]]
+							"rows": [
+								["Health", "21,400"],
+								["Experience", "13,300"],
+								["Level", "920-960"],
+								[
+									"In hunts (pack combat)",
+									"health x0.070, experience and loot per kill x0.041 / x0.045, damage x0.42 at level 940 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
 					],
@@ -28928,7 +29065,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "19,900"], ["Experience", "12,400"], ["Level", "900-940"]]
+							"rows": [
+								["Health", "19,900"],
+								["Experience", "12,400"],
+								["Level", "900-940"],
+								[
+									"In hunts (pack combat)",
+									"health x0.072, experience and loot per kill x0.042 / x0.045, damage x0.42 at level 920 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
 					],
@@ -28944,7 +29089,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "20,400"], ["Experience", "12,900"], ["Level", "940-980"]]
+							"rows": [
+								["Health", "20,400"],
+								["Experience", "12,900"],
+								["Level", "940-980"],
+								[
+									"In hunts (pack combat)",
+									"health x0.069, experience and loot per kill x0.041 / x0.044, damage x0.41 at level 960 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Nightglass Core"]}
 					],
@@ -28960,7 +29113,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "17,200"], ["Experience", "8,900"], ["Level", "790-830"]]
+							"rows": [
+								["Health", "17,200"],
+								["Experience", "8,900"],
+								["Level", "790-830"],
+								[
+									"In hunts (pack combat)",
+									"health x0.079, experience and loot per kill x0.046 / x0.050, damage x0.45 at level 810 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
 					],
@@ -29104,7 +29265,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "13,400"], ["Experience", "4,550"], ["Level", "650-690"]]
+							"rows": [
+								["Health", "13,400"],
+								["Experience", "4,550"],
+								["Level", "650-690"],
+								[
+									"In hunts (pack combat)",
+									"health x0.093, experience and loot per kill x0.054 / x0.059, damage x0.52 at level 670 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
 					],
@@ -29152,7 +29321,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "17,500"], ["Experience", "9,300"], ["Level", "810-850"]]
+							"rows": [
+								["Health", "17,500"],
+								["Experience", "9,300"],
+								["Level", "810-850"],
+								[
+									"In hunts (pack combat)",
+									"health x0.078, experience and loot per kill x0.046 / x0.049, damage x0.44 at level 830 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
 					],
@@ -29184,7 +29361,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "12,600"], ["Experience", "4,300"], ["Level", "650-690"]]
+							"rows": [
+								["Health", "12,600"],
+								["Experience", "4,300"],
+								["Level", "650-690"],
+								[
+									"In hunts (pack combat)",
+									"health x0.093, experience and loot per kill x0.054 / x0.059, damage x0.52 at level 670 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Gloom Pillars", "Late game area: Putrefactory"]}
 					],
@@ -29248,7 +29433,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "16,200"], ["Experience", "8,200"], ["Level", "760-800"]]
+							"rows": [
+								["Health", "16,200"],
+								["Experience", "8,200"],
+								["Level", "760-800"],
+								[
+									"In hunts (pack combat)",
+									"health x0.082, experience and loot per kill x0.048 / x0.052, damage x0.46 at level 780 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
 					],
@@ -29328,7 +29521,15 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "18,200"], ["Experience", "9,650"], ["Level", "810-850"]]
+							"rows": [
+								["Health", "18,200"],
+								["Experience", "9,650"],
+								["Level", "810-850"],
+								[
+									"In hunts (pack combat)",
+									"health x0.078, experience and loot per kill x0.046 / x0.049, damage x0.44 at level 830 (Basics: Pack combat)"
+								]
+							]
 						},
 						{"h": "Where", "p": ["Late game area: Jaded Roots"]}
 					],

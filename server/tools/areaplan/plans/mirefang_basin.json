@@ -194,110 +194,128 @@
     {
       "zone": "visco_flats",
       "monster": "Mutated Visco",
-      "count": 11,
-      "respawn": 120
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hydra_sink",
       "monster": "Acid Hydra",
-      "count": 9,
-      "respawn": 120
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hydra_sink",
       "monster": "Mutated Visco",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "serpent_channel",
       "monster": "Elite Tidecrest Serpent",
-      "count": 11,
-      "respawn": 120
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shaper_mire",
       "monster": "Elite Twisted Shaper",
-      "count": 7,
-      "respawn": 120
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shaper_mire",
       "monster": "Acid Hydra",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "weaver_nest",
       "monster": "Nexweaver",
-      "count": 7,
-      "respawn": 150
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ooze_terrace",
       "monster": "Mutated Visco",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ooze_terrace",
       "monster": "Elite Tidecrest Serpent",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "reedfang_marsh",
       "monster": "Elite Twisted Shaper",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "reedfang_marsh",
       "monster": "Mutated Visco",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "rotting_delta",
       "monster": "Acid Hydra",
-      "count": 9,
-      "respawn": 120
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "rotting_delta",
       "monster": "Nexweaver",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "acid_lagoon",
       "monster": "Acid Hydra",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "acid_lagoon",
       "monster": "Elite Tidecrest Serpent",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "drowned_altar",
       "monster": "Nexweaver",
-      "count": 7,
-      "respawn": 120
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "drowned_altar",
       "monster": "Elite Twisted Shaper",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sludge_runnel",
       "monster": "Elite Tidecrest Serpent",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "notes": "Content plan (docs/CONTENT.md): an acid basin for levels 880-999, the top of the late game before the generated areas. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for twelve parties."

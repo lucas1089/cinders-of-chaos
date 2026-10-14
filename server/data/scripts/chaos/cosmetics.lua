@@ -37,6 +37,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCosmeticsCore then
 	dofile("data/scripts/chaos/cosmetics_core.lua")
 end
@@ -288,8 +291,8 @@ local function syncAccount(accountId, player)
 		end
 	end
 	if #names > 0 and player then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Cosmetic unlocked: " .. table.concat(names, ", ") ..
-			". Choose it in Character > Cosmetics.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Cosmetic unlocked: %s. Choose it in Character > Cosmetics.",
+			table.concat(names, ", ")))
 		-- the achievement reward track: a toast too (only names granted now: M.grant is false for an owned one)
 		if ChaosNotify and ChaosNotify.send then
 			pcall(ChaosNotify.send, player, "Reward track", table.concat(names, ", ") .. " unlocked. Choose it in Character > Cosmetics.",

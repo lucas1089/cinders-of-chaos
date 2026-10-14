@@ -30,6 +30,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 Chaos.pvpZoneConfig = dofile("data/scripts/chaos/pvpzone_config.lua")
 dofile("data/scripts/chaos/pvpzone_core.lua")
 
@@ -1338,7 +1341,7 @@ function Z.targetCombat(creature, target)
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	if isProtected(target, tst) then
-		a:sendCancelMessage("That player is protected for a moment.")
+		a:sendCancelMessage(Chaos.t(a, "That player is protected for a moment."))
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	if ast.moveAt then
@@ -1349,7 +1352,7 @@ function Z.targetCombat(creature, target)
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	if Chaos.isMultiClient and Chaos.isMultiClient(a) then
-		a:sendCancelMessage(Chaos.multiClient and Chaos.multiClient.msgPvp or "You cannot attack players now.")
+		a:sendCancelMessage(Chaos.t(a, Chaos.multiClient and Chaos.multiClient.msgPvp or "You cannot attack players now."))
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	if K.protected(protectedUntil(a), now()) then

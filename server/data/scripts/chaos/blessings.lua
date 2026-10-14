@@ -20,6 +20,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 ChaosBlessingsConfig = dofile("data/scripts/chaos/blessings_config.lua")
 dofile("data/scripts/chaos/blessings_core.lua")
 
@@ -400,7 +403,7 @@ local function tick()
 				if place then
 					X.clear(player)
 					player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR,
-						"Your Ember Blessings fade: no blessings in the " .. place .. ".")
+						Chaos.t(player, "Your Ember Blessings fade: no blessings in the %s.", place))
 				end
 			end
 		end

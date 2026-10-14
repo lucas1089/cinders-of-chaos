@@ -9,6 +9,7 @@ Conteúdo em instância para jogar sozinho ou em grupo.
 - Mate a maior parte dos monstros (85%) para liberar o chefe e depois mate o chefe. Cada dificuldade vencida abre a próxima.
 - Dificuldades maiores dão mais experiência, ouro e loot.
 - Desafios de velocidade e sem mortes dão pontos e entram nos rankings.
+- Toda corrida de masmorra dura no máximo 15 minutos e tem pelo menos 100 monstros em grupos: puxe um grupo e mate todos juntos.
 - As masmorras geradas são corridas solo para o fim de jogo: [The Hollow Vault](wiki:dungeon:5) a partir do nível 800, depois as quatro masmorras profundas, [The Marrow Crypts](wiki:dungeon:6) (1000), [The Iron Crucible](wiki:dungeon:7) (1300), [The Fallen Sanctum](wiki:dungeon:8) (1600) e [The Pyre Throne](wiki:dungeon:9) (2000). Cada uma é uma corrida curta de uns 10-15 minutos com grupos de monstros; a sala do chefe abre quando 85% deles estão mortos. Cada chefe tem suas [mecânicas](wiki:boss:mechanics), e as masmorras profundas dão a cada um que termina um baú do chefe: ouro, equipamento do chefe com raridade e nível de item maiores a cada dificuldade, e orbes.
 
 ## A Infinity Tower

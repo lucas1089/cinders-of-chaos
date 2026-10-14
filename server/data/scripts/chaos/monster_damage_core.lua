@@ -80,4 +80,19 @@ function C.scaleHit(cfg, k, mult, primary, primaryType, secondary, secondaryType
 	return primary, secondary
 end
 
+-- pack combat (pace.lua, pace_config.lua damage): a paced monster's whole hit x mult, every combat type but healing and
+-- none (elements, conditions, mana drain included). Returns primary, secondary.
+function C.scalePace(k, mult, primary, primaryType, secondary, secondaryType)
+	if not mult or mult == 1 then
+		return primary, secondary
+	end
+	local function scaled(v, t)
+		if t == nil or t == k.healing or t == k.none then
+			return v
+		end
+		return C.scale(v, mult)
+	end
+	return scaled(primary, primaryType), scaled(secondary, secondaryType)
+end
+
 return C

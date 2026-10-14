@@ -621,6 +621,8 @@ function TG.rollAt(info, rand_)
 		return why, 0, 0
 	end
 	local mult = tonumber(ChaosEvents and ChaosEvents.bonus and call(ChaosEvents.bonus, "goblin") or 1) or 1
+	-- pack combat (pace.lua): a hunt gives more respawns per hour, so each rolls x the monster's loot factor
+	mult = mult * (tonumber(info.paceMult) or 1)
 	local hit, oneIn, pct = G.rollWithSpoor(c, rand_ or rand, mult, function()
 		local m, p = TG.spoorAt(info.pos)
 		return m, p
@@ -661,7 +663,8 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	local mt = self:getType()
 	local info = {
 		name = self:getName(), pos = position, natural = not artificial, startup = startup,
-		summon = self:getMaster() ~= nil, boss = isBoss(self), hostile = isHostile(self), maxHealth = self:getMaxHealth()
+		summon = self:getMaster() ~= nil, boss = isBoss(self), hostile = isHostile(self), maxHealth = self:getMaxHealth(),
+		paceMult = ChaosPace and ChaosPace.spawnLootMult and ChaosPace.spawnLootMult(self) or 1
 	}
 	local outcome, _, spoorPct = TG.rollAt(info)
 	if outcome ~= "goblin" then

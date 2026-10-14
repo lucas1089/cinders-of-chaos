@@ -229,140 +229,163 @@
     {
       "zone": "lich_gallery",
       "monster": "Ice Lich",
-      "count": 11,
-      "respawn": 120
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "glacier_heart",
       "monster": "Scaleborn",
-      "count": 8,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "glacier_heart",
       "monster": "Celestial Wyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "wyrm_shelf",
       "monster": "Celestial Wyrm",
-      "count": 8,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "purity_well",
       "monster": "Spirit of Purity",
-      "count": 11,
-      "respawn": 120
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shaper_crevasse",
       "monster": "Twisted Shaper",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shaper_crevasse",
       "monster": "Vorkhaz",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "crown_vault",
       "monster": "Vorkhaz",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "hoarfrost_hall",
       "monster": "Celestial Wyrm",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hoarfrost_hall",
       "monster": "Ice Lich",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "rime_terraces",
       "monster": "Spirit of Purity",
-      "count": 8,
-      "respawn": 120
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "rime_terraces",
       "monster": "Ice Lich",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "frozen_nave",
       "monster": "Scaleborn",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "frozen_nave",
       "monster": "Twisted Shaper",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "icefall_chasm",
       "monster": "Celestial Wyrm",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "icefall_chasm",
       "monster": "Scaleborn",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pale_crypt",
       "monster": "Spirit of Purity",
-      "count": 8,
-      "respawn": 120
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pale_crypt",
       "monster": "Vorkhaz",
-      "count": 2,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shiver_vault",
       "monster": "Ice Lich",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "snowblind_grotto",
       "monster": "Celestial Wyrm",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "snowblind_grotto",
       "monster": "Twisted Shaper",
-      "count": 6,
-      "respawn": 120
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "frostbite_cells",
       "monster": "Spirit of Purity",
-      "count": 8,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "frostbite_cells",
       "monster": "Scaleborn",
-      "count": 6,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

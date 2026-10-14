@@ -684,6 +684,14 @@ the Elementalist at least 8-10% ahead, the classes right behind trimmed rather t
 of the Necromancer and the Bone Lord are 0.93 and 0.63 ("Class order fixes" below); their level 300 rows here are from
 before (computed with the new factors: Necromancer 938 / 994, Bone Lord 973 / 1954).
 
+**Pack cleave (2026-10-14, pack combat; server/README.md "Pack combat (pace)")**: PvE only and not in the table above (the
+dummies are not paced monsters). A direct hit of these classes on a hunting monster also deals a share of it to the
+nearest monsters within 1 sqm of it (`pace_config.lua` `cleave`): Thief, Samurai, Necromancer 25% to 3; Monk, Iron Sage
+20% to 3; Deadeye, Shadowfist 20% to 2; Ninja 15% to 2. In the pack model it adds that share x the targets of the
+one-target damage to the 5-target number: level 1000 Thief 2297 -> 4090, Samurai 2018 -> 3537, Necromancer
+2622 -> 4570, Monk 2794 -> 4190, Iron Sage 2399 -> 3594, Deadeye 5385 -> 7213, Shadowfist 3948 -> 5421, Ninja
+5101 -> 6170. Experience per hour against the median class after it: 0.78-1.59 (was 0.40-2.21), table in server/README.md.
+
 Every number in this file is internal (health lost per second); a player sees it x the display scale of its level
 (x5 at level 300, x1000 at level 1000: server/README.md "Display scale"), so the level 1000 median of about 2600 shows as
 about 2.6M. The balance is measured and tuned on the internal numbers only.

@@ -247,7 +247,7 @@ local function sendWindow(player, login)
 		GraceUse = v.graceUse,
 		Broken = v.broken and 1 or 0,
 		Title = title,
-		Next = nextM and {Days = nextM.days, In = nextM.days - v.achieved, Reward = DC.milestoneText(nextM, itemName),
+		Next = nextM and {Days = nextM.days, In = nextM.days - v.achieved, Reward = DC.milestoneText(nextM, itemName, Chaos.lang(player)),
 			Title = nextM.title} or nil,
 		Login = login and 1 or nil
 	})
@@ -263,7 +263,7 @@ local function claim(player, value)
 	local state, rec = getState(player)
 
 	if state.taken then
-		player:sendCancelMessage("Your account already collected today's daily reward.")
+		player:sendCancelMessage(Chaos.t(player, "Your account already collected today's daily reward."))
 		sendWindow(player)
 		return
 	end
@@ -303,7 +303,7 @@ local function claim(player, value)
 				player:removeItem(g.itemId, g.given)
 			end
 		end
-		player:sendCancelMessage("You do not have enough room or capacity for the reward.")
+		player:sendCancelMessage(Chaos.t(player, "You do not have enough room or capacity for the reward."))
 		sendWindow(player)
 		return
 	end
@@ -315,23 +315,23 @@ local function claim(player, value)
 	player:setStorageValue(S.dailyStreakDay, res.slot)
 	player:setStorageValue(S.dailyLastClaim, today)
 
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Daily reward (day %d, streak %d): %dx %s.", res.slot,
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Daily reward (day %d, streak %d): %dx %s.", res.slot,
 		res.streak, reward.count, itemName(reward.itemId)))
 	if res.week and #(cfg.weekBonus or {}) > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Week completed! Bonus reward collected.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Week completed! Bonus reward collected."))
 	end
 	if res.graceUsed > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("A grace charge kept your streak alive (%d left).",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "A grace charge kept your streak alive (%d left).",
 			newRec.grace))
 	end
 	if res.graceGained > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You earned a grace charge (%d of %d): a missed day " ..
-			"will not break your streak.", newRec.grace, SC.graceMax))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You earned a grace charge (%d of %d): a missed day will not break your streak.",
+			newRec.grace, SC.graceMax))
 	end
 	local m = res.milestone
 	if m then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Login streak of %d days! Milestone reward: %s.", m.days,
-			DC.milestoneText(m, itemName)))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Login streak of %d days! Milestone reward: %s.", m.days,
+			DC.milestoneText(m, itemName, Chaos.lang(player))))
 		if m.title and (rec.best or 0) < m.days then
 			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s reached a login streak of %d days and earned the title %s!",
 				player:getName(), m.days, m.title)

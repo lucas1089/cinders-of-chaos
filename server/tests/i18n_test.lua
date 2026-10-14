@@ -1,9 +1,11 @@
 -- Run from the server/ folder: luajit tests/i18n_test.lua (and lua5.3; CI runs both)
 -- Server texts in the player's language (server/README.md "Server texts in pt-BR (Chaos.t)"): i18n_core.lua (lookup,
 -- formats, fallbacks, deferred texts, the language of a player, broadcasts) on a mocked engine, i18n.lua (the hello
--- on opcode 157 sets the language), and the strings table: every pt-BR entry keeps the % conversions of its key in
--- order, and every key the converted sites use (Chaos.t, ChaosI18n.msg, Chaos.broadcast, ChaosI18n.text, the boss
--- warnings of boss_mechanics_config.lua, the raid call-outs K.ANNOUNCE) has a pt-BR entry. English is the key itself.
+-- on opcode 157 sets the language), the NPC helpers (langOf, npcText, npcMessages), and the strings table
+-- (i18n_strings.lua with i18n_strings_more.lua merged in): every pt-BR entry keeps the % conversions of its key in order, and every key the
+-- converted sites use (Chaos.t, ChaosI18n.msg, Chaos.broadcast, ChaosI18n.text, a core's T(lang, ...), an NPC's
+-- t(cid, ...), the helpers listed per file, the boss warnings of boss_mechanics_config.lua, the raid call-outs K.ANNOUNCE,
+-- the config texts the converted sites read, the NPC XML lines) has a pt-BR entry. English is the key itself.
 
 local checks, failures = 0, 0
 local function check(cond, label)
@@ -178,10 +180,30 @@ local RUN = {"fail%(run,%s*", "say%(run,%s*", "alert%(run,%s*"}
 local CORE_T = {"[^%w_.]T%(%s*lang,%s*", "[^%w_.:]T%(%s*"}
 local SITES = {
 	["autosell.lua"] = {}, ["autosell_core.lua"] = CORE_T, ["boss_mechanics.lua"] = {}, ["records.lua"] = {},
-	["records_core.lua"] = CORE_T, ["leaderboard_core.lua"] = CORE_T, ["worldboss.lua"] = {}, ["invasion.lua"] = {},
+	["records_core.lua"] = CORE_T, ["leaderboard_core.lua"] = CORE_T, ["worldboss.lua"] = {"pushBack%(player, fromPosition,%s*"},
+	["invasion.lua"] = {},
 	["worldevents.lua"] = {}, ["rift.lua"] = RUN, ["raid.lua"] = RUN, ["season.lua"] = {}, ["arena_season.lua"] = {},
 	["daily.lua"] = {}, ["descent.lua"] = {}, ["itemsets.lua"] = {}, ["guildwar.lua"] = {}, ["uber.lua"] = {},
-	["ascension.lua"] = {}, ["season_modes.lua"] = {}, ["shop_services.lua"] = {}
+	["ascension.lua"] = {}, ["season_modes.lua"] = {}, ["shop_services.lua"] = {},
+	-- i18n_strings_more.lua: the store, quests, achievements, new players, instances and the systems' chat lines
+	["shop.lua"] = {"message%(player,%s*"}, ["shop_core.lua"] = CORE_T, ["ascension_quest.lua"] = {},
+	["ascension_quest_core.lua"] = CORE_T, ["trials.lua"] = {"say%(tr,%s*", "box%(player,%s*"}, ["trials_core.lua"] = CORE_T,
+	["achievements_core.lua"] = CORE_T, ["daily_core.lua"] = CORE_T, ["newplayer.lua"] = {}, ["newplayer_core.lua"] = CORE_T,
+	["newplayer_tutorial.lua"] = {}, ["instance_limits.lua"] = {}, ["instance_limits_core.lua"] = CORE_T, ["stash.lua"] = {},
+	["bank.lua"] = {}, ["townportal.lua"] = {}, ["pouches.lua"] = {}, ["store_food.lua"] = {},
+	["pact.lua"] = {"message%(player,%s*"},
+	["pact_perks.lua"] = {}, ["hideout.lua"] = {}, ["autoloot.lua"] = {}, ["lootfilter.lua"] = {}, ["notifications.lua"] = {},
+	["class_unlocks.lua"] = {}, ["professions.lua"] = {"msg%(player,%s*"}, ["charms.lua"] = {}, ["pets.lua"] = {}, ["necro_minions.lua"] = {},
+	["pack_items.lua"] = {}, ["nameplate.lua"] = {}, ["guild.lua"] = {}, ["guild_hall.lua"] = {}, ["season_journey.lua"] = {},
+	["infinitytower.lua"] = {}, ["infinitytower_run.lua"] = {}, ["arena.lua"] = {"msg%(%w+,%s*"},
+	["battleground.lua"] = {"msg%(%w+,%s*"}, ["mentor.lua"] = {}, ["referral.lua"] = {},
+	["pvpzone.lua"] = {}, ["multiclient.lua"] = {}, ["antibot.lua"] = {}, ["events_schedule.lua"] = {},
+	["commands_ui.lua"] = {}, ["spellbook.lua"] = {}, ["supports.lua"] = {}, ["loadouts.lua"] = {}, ["crafting.lua"] = {},
+	["chronicle.lua"] = {}, ["atlas.lua"] = {}, ["siege.lua"] = {"pushBack%(player, fromPosition,%s*"}, ["guildboss.lua"] = {},
+	["leaderboard.lua"] = {},
+	["market.lua"] = {}, ["hideout.lua"] = {}, ["gamble.lua"] = {}, ["cosmetics.lua"] = {}, ["transmog.lua"] = {},
+	["trials_effects.lua"] = {}, ["paragon.lua"] = {}, ["passivetree.lua"] = {}, ["bosspoints.lua"] = {}, ["gems.lua"] = {},
+	["salvage.lua"] = {}, ["archery.lua"] = {}, ["blessings.lua"] = {}
 }
 local used = 0
 for f, extra in pairs(SITES) do
@@ -233,6 +255,112 @@ for lit in (announce or ""):gmatch('"([^"]+)"') do
 end
 local aq = dofile("data/scripts/chaos/ascension_quest_config.lua")
 check(pt[aq.broadcast] ~= nil, "the ascension broadcast has pt-BR")
+
+-- texts that come from configs: the Oracle's paths and the guardians' hints, the Trials' stories, the tutorial, the
+-- welcome, the achievements' categories and descriptions, the factions' lore, the world buffs
+for _, p in pairs(aq.paths) do check(pt[p] ~= nil, "ascension path without pt-BR: " .. p) end
+for _, g in pairs(aq.guardians) do check(pt[g.hint] ~= nil, "guardian hint without pt-BR: " .. g.hint) end
+for _, fam in pairs(dofile("data/scripts/chaos/trials_config.lua").families or {}) do
+	check(pt[fam.story] ~= nil, "trial story without pt-BR: " .. tostring(fam.story))
+end
+local npcfg = dofile("data/scripts/chaos/newplayer_config.lua")
+for _, k in ipairs({npcfg.welcome.title, npcfg.welcome.text, npcfg.welcome.toast}) do
+	check(pt[k] ~= nil, "welcome text without pt-BR: " .. k)
+end
+for _, l in ipairs(npcfg.tutorial.lessons) do
+	for _, k in ipairs({l.title, l.text, l.toast, l.craftHint}) do
+		check(pt[k] ~= nil, "tutorial lesson text without pt-BR: " .. k)
+	end
+end
+local ach = dofile("data/scripts/chaos/achievements_data.lua")
+for _, c in ipairs(ach.categories) do check(pt[c.name] ~= nil, "achievement category without pt-BR: " .. tostring(c.name)) end
+for _, a in ipairs(ach.list) do check(pt[a.desc] ~= nil, "achievement description without pt-BR: " .. tostring(a.desc)) end
+for _, f in ipairs(dofile("data/scripts/chaos/factions_config.lua").factions) do
+	check(pt[f.lore] ~= nil, "faction lore without pt-BR: " .. f.name)
+end
+for _, b in ipairs(Chaos.shopServices.worldBuffs) do check(pt[b.text] ~= nil, "world buff text without pt-BR: " .. b.id) end
+-- mentor.lua and referral.lua send their config's messages as deferred texts (say)
+for _, cfgFile in ipairs({"mentor_config.lua", "referral_config.lua"}) do
+	for k, v in pairs(dofile("data/scripts/chaos/" .. cfgFile).messages) do
+		check(pt[v] ~= nil, cfgFile .. " message " .. k .. " without pt-BR")
+	end
+end
+
+-- the NPCs: their XML greet / farewell / walk away / trade lines (ChaosI18n.npcMessages) and their scripts' lines
+local NPC_XML = {"Ascendant Oracle", "Loot Buyer", "Material Broker", "Mordecai Ashwager", "Keeper of Trials",
+	"Wandering Merchant", "Warden Ysolde", "Forgemaster Brannoc", "Cantor Velith", "Elder Bramwyn"}
+for _, name in ipairs(NPC_XML) do
+	local fh = io.open("data/npc/" .. name .. ".xml", "r")
+	check(fh ~= nil, "npc xml " .. name)
+	if fh then
+		local xml = fh:read("*a")
+		fh:close()
+		for key, value in xml:gmatch('<parameter key="message_(%w+)" value="([^"]*)"') do
+			check(pt[value] ~= nil, name .. ".xml message_" .. key .. " without pt-BR: " .. value)
+		end
+	end
+end
+for _, f in ipairs({"loot_buyer.lua", "ascendant_oracle.lua", "material_broker.lua", "mordecai_ashwager.lua",
+		"chaos_faction_npc.lua", "keeper_of_trials.lua", "wandering_merchant.lua"}) do
+	local fh = io.open("data/npc/scripts/" .. f, "r")
+	check(fh ~= nil, "npc script " .. f)
+	if fh then
+		local src = fh:read("*a")
+		fh:close()
+		check(src:find("ChaosI18n.npcMessages(npcHandler)", 1, true) ~= nil, f .. ": the XML lines in the player's language")
+		for _, pre in ipairs({"[^%w_.:]t%(%s*cid,%s*", "[^%w_.:]t%(%s*player,%s*", "ChaosI18n%.text%(%s*lang,%s*"}) do
+			for seg in src:gmatch(pre .. "([^\n]*\n?[^\n]*)") do
+				for _, lit in ipairs(literals(seg)) do
+					if lit:find("%a%a") then
+						check(pt[lit] ~= nil, f .. ": no pt-BR for \"" .. lit .. "\"")
+					end
+				end
+			end
+		end
+	end
+end
+
+-- ---------------------------------------------------------------- NPC scripts (their own Lua state: the stored language)
+local npcP = newPlayer(9)
+eq(I.langOf(npcP), "en", "an NPC reads English by default")
+storages["9:" .. I.STORAGE] = 1
+eq(I.langOf(npcP), "pt-BR", "and the stored language")
+eq(I.npcText(npcP, "Your loss."), "Azar o seu.", "npcText")
+Player = function(cid) return cid == 9 and npcP or nil end
+eq(I.langOf(9), "pt-BR", "langOf a creature id")
+local handler = {messages = {}, callbacks = {}}
+function handler:getMessage(t) return self.messages[t] end
+function handler:setMessage(t, v) self.messages[t] = v end
+function handler:getCallback(t) return self.callbacks[t] end
+function handler:setCallback(t, f) self.callbacks[t] = f end
+MESSAGE_GREET, MESSAGE_FAREWELL, MESSAGE_WALKAWAY, MESSAGE_SENDTRADE = 1, 2, 3, 4
+CALLBACK_GREET, CALLBACK_FAREWELL, CALLBACK_CREATURE_DISAPPEAR, CALLBACK_ONTRADEREQUEST = 11, 12, 13, 14
+handler.messages[MESSAGE_GREET] = "Bring me more, |PLAYERNAME|."
+handler.messages[MESSAGE_WALKAWAY] = "Your loss."
+local oldGreet = 0
+handler.callbacks[CALLBACK_GREET] = function(cid) oldGreet = oldGreet + 1 return false end
+I.npcMessages(handler)
+eq(handler.callbacks[CALLBACK_GREET](9), false, "the script's own greet callback still decides")
+eq(oldGreet, 1, "and runs")
+eq(handler.messages[MESSAGE_GREET], "Traga mais, |PLAYERNAME|.", "greet in pt-BR")
+eq(handler.messages[MESSAGE_WALKAWAY], "Azar o seu.", "walk away in pt-BR")
+eq(handler.callbacks[CALLBACK_FAREWELL](8), true, "no callback before: true")
+eq(handler.messages[MESSAGE_GREET], "Bring me more, |PLAYERNAME|.", "another (unknown) player: English again")
+Player = nil
+
+-- a few converted texts end to end in pt-BR
+dofile("data/scripts/chaos/ascension_quest_core.lua")
+local Q = ChaosAscensionQuestCore
+eq(Q.formatWait(600, "pt-BR"), "10 minutos", "ascension wait in pt-BR")
+eq(Q.formatWait(600), "10 minutes", "and English by default")
+check(Q.proofText(3, "pt-BR"):find("Você tem 3 de", 1, true) ~= nil, "the Proof text in pt-BR")
+dofile("data/scripts/chaos/instance_limits_core.lua")
+eq(ChaosInstanceLimitsCore.busyText("rifts", 240, 2, "pt-BR"),
+	"Sem vaga livre em rifts. Tente de novo em ~4 min. Você é o 2º da fila: vai ser avisado quando uma vaga ficar livre.",
+	"busy text in pt-BR")
+dofile("data/scripts/chaos/shop_core.lua")
+eq(ChaosShopCore.coinGiftProblem({perDay = 100}, {now = 0, amount = 101}, "pt-BR"),
+	"Você pode presentear no máximo 100 Chaos Coins por dia (restam 100 hoje).", "a store refusal in pt-BR")
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))
 if failures > 0 then

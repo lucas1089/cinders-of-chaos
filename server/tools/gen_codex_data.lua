@@ -277,6 +277,7 @@ function Gen.load()
 	D.uber = dofile("data/scripts/chaos/uber_config.lua") -- the Ascended Omens and the Cinderheart (uber.lua)
 	D.prof = dofile("data/scripts/chaos/professions_config.lua") -- the professions' materials (professions.lua)
 	D.lore = dofile("data/scripts/chaos/lore_data.lua") -- the lore entries (docs/CONTENT.md "Lore")
+	D.pace = dofile("data/scripts/chaos/pace_config.lua") -- pack combat (pace.lua): the curves of the Pack combat page
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
@@ -1571,6 +1572,62 @@ function Gen.basicsEntries(D)
 	for r = 1, #C.config.baseBonus do
 		local b = C.config.baseBonus[r]
 		bb[r] = {C.rarityName(r), Gen.range(b[1], b[2])}
+	end
+	-- pack combat (pace_config.lua, server/README.md "Pack combat (pace)")
+	local pc = D.pace
+	if pc and pc.enabled ~= false then
+		local function lin(points, x)
+			if x <= points[1][1] then
+				return points[1][2]
+			end
+			for i = 2, #points do
+				local a, b = points[i - 1], points[i]
+				if x <= b[1] then
+					return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1])
+				end
+			end
+			return points[#points][2]
+		end
+		local function pct(v)
+			return Gen.num(floor(v * 100 + 0.5)) .. "%"
+		end
+		local sx, sl = pc.scale and pc.scale.xp or 1, pc.scale and pc.scale.loot or 1
+		local prow = {}
+		for _, L in ipairs({20, 50, 100, 200, 300, 600, 1000}) do
+			prow[#prow + 1] = {Gen.num(L), pct(lin(pc.base.health, L)), pct(math.min(1, lin(pc.base.xp, L) * sx)),
+				pct(math.min(1, lin(pc.base.loot, L) * sl)),
+				pct(lin(pc.damage, L))}
+		end
+		for _, L in ipairs({650, 1000, 1300, 2000}) do
+			prow[#prow + 1] = {Gen.num(L) .. " (own level)", pct(lin(pc.scaled.health, L)),
+				pct(math.min(1, lin(pc.scaled.xp, L) * sx)), pct(math.min(1, lin(pc.scaled.loot, L) * sl)), pct(lin(pc.damage, L))}
+		end
+		local steps = {}
+		for _, st in ipairs(pc.multikill.steps) do
+			steps[#steps + 1] = string.format("%d kills +%d%%", st.kills, st.percent)
+		end
+		add("pace", "Pack combat", "Monsters come in packs and die fast: kill groups, not one at a time.", {
+			{h = "In short", p = {
+				"Hunting monsters have much less health and come in bigger packs. Pull a group and kill it together: area spells and cleaves matter.",
+				"Experience and loot per kill are lower by the same share, so experience and gold per hour stay where they were. Kill counts (bounties, bestiary, tasks, achievements) need more kills by the same share.",
+				string.format("Multikill: kills each within %s of the one before form a chain; the whole chain's experience gets %s.",
+					Gen.seconds(pc.multikill.windowMs), table.concat(steps, ", ")),
+				"Bosses, rifts, the Ember Descent, the tower, invasions, arena, battleground and PvP are not changed."}},
+			{h = "By hunting level", p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."},
+				cols = {"Level", "Health", "Experience", "Loot", "Damage"}, w = {28, 18, 18, 18, 18}, rows = prow}})
+		local crow = {}
+		local names = {[7] = "Deadeye", [18] = "Shadowfist", [11] = "Thief", [13] = "Samurai", [20] = "Necromancer",
+			[17] = "Monk", [19] = "Iron Sage", [12] = "Ninja"}
+		for _, voc in ipairs({11, 13, 20, 17, 19, 7, 18, 12}) do
+			local e = pc.cleave and pc.cleave.byVocation[voc]
+			if e and names[voc] then
+				crow[#crow + 1] = {names[voc], e.percent .. "%", Gen.num(e.targets)}
+			end
+		end
+		if #crow > 0 then
+			table.insert(out[#out].sections, {h = "Pack cleave", p = {string.format("Classes with little area damage hit packs too: a direct hit on a hunting monster also deals a share of it to monsters within %d sqm of it (never bosses, players or their summons).",
+				pc.cleave.radius or 1)}, cols = {"Class", "Share", "Monsters"}, w = {50, 25, 25}, rows = crow})
+		end
 	end
 	add("basebonus", "Base stat bonus", "Attack, defence, armour and hit chance from the rarity.", {
 		{h = "Base stats", p = {"An item with a rarity also gets a small bonus to its attack, defence, armour and hit chance, once: min + item level x (max - min + 1) / 100."},

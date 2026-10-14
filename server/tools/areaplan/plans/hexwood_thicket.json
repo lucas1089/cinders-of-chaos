@@ -194,113 +194,128 @@
     {
       "zone": "stag_glade",
       "monster": "Black Stag",
-      "count": 9,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "weeping_grove",
       "monster": "Elite Spider",
-      "count": 9,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "weeping_grove",
       "monster": "Cursed Ape",
-      "count": 9,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ape_hollow",
       "monster": "Cursed Ape",
-      "count": 9,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "crawler_roots",
       "monster": "Webbound Crawler",
-      "count": 11,
-      "pack": 2,
-      "respawn": 120
+      "count": 17,
+      "pack": 3,
+      "respawn": 75
     },
     {
       "zone": "sorcerers_ring",
       "monster": "Dark Sorcerer",
-      "count": 6,
-      "respawn": 150
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sorcerers_ring",
       "monster": "Black Stag",
       "count": 2,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "raven_copse",
       "monster": "Cursed Ape",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "raven_copse",
       "monster": "Elite Spider",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "briar_maze",
       "monster": "Webbound Crawler",
       "count": 11,
-      "pack": 2,
-      "respawn": 120
+      "pack": 3,
+      "respawn": 75
     },
     {
       "zone": "briar_maze",
       "monster": "Elite Spider",
       "count": 6,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_oaks",
       "monster": "Black Stag",
-      "count": 9,
-      "respawn": 120
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_oaks",
       "monster": "Webbound Crawler",
-      "count": 9,
-      "pack": 2,
-      "respawn": 120
+      "count": 11,
+      "pack": 3,
+      "respawn": 75
     },
     {
       "zone": "blight_meadow",
       "monster": "Black Stag",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "blight_meadow",
       "monster": "Cursed Ape",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "witch_clearing",
       "monster": "Dark Sorcerer",
-      "count": 9,
-      "respawn": 120
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "witch_clearing",
       "monster": "Elite Spider",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "thornback_ridge",
       "monster": "Black Stag",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "notes": "Content plan (docs/CONTENT.md): a cursed wood for levels 720-840 above ground, the stags, apes and crawlers that spawned nowhere. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for twelve parties."

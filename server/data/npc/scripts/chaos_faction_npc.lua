@@ -18,6 +18,14 @@ function onCreatureSay(cid, type, msg)
 end
 function onThink()				npcHandler:onThink()					end
 
+-- the player's language (the stored one: this state never sees the client's hello; i18n_core.lua "NPC scripts")
+if not ChaosI18n or not ChaosI18n.npcText then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
+local function t(cid, key, ...)
+	return ChaosI18n.npcText(cid, key, ...)
+end
+
 local cfg = dofile("data/scripts/chaos/factions_config.lua")
 local key = FACTION_KEY
 local faction, rival
@@ -61,19 +69,20 @@ local function creatureSayCallback(cid, type, msg)
 	if has(text, "contract", "work", "task", "quartermaster", "trade", "offer", "buy", "reputation", "standing",
 			"token", "deliver", "recipe", "window") then
 		openWindow(player)
-		npcHandler:say("Here is what " .. faction.name .. " asks, and what it gives. Your contracts, your standing and my "
-			.. "stores are in the ledger (Adventure > Factions). Bring " .. token.plural .. " and deliveries to me.", cid)
+		npcHandler:say(t(cid, "Here is what %s asks, and what it gives. Your contracts, your standing and my stores are in the ledger (Adventure > Factions). Bring %s and deliveries to me.",
+			faction.name, token.plural), cid)
 		return true
 	elseif has(text, "lore", "who", "faction", "about") then
-		npcHandler:say(faction.lore, cid)
+		npcHandler:say(t(cid, faction.lore), cid)
 		return true
 	elseif rival and has(text, rival.short:lower(), "rival", "enemy") then
-		npcHandler:say("Every favour you do " .. rival.name .. " is a favour we remember, and the same is true the other way. "
-			.. "Choose, or work twice as hard.", cid)
+		npcHandler:say(t(cid, "Every favour you do %s is a favour we remember, and the same is true the other way. Choose, or work twice as hard.",
+			rival.name), cid)
 		return true
 	end
 	return false
 end
 
 npcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)
+ChaosI18n.npcMessages(npcHandler) -- the XML's greet / farewell / walk away / trade lines in the player's language
 npcHandler:addModule(FocusModule:new())

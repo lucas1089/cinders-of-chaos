@@ -29,6 +29,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosUberCore then
 	dofile("data/scripts/chaos/uber_core.lua")
 end
@@ -887,7 +890,7 @@ local function success(run)
 				if ChaosExclusives and ChaosExclusives.bossKill then pcall(ChaosExclusives.bossKill, p, "guild_" .. cfg.boss.key) end
 			end
 		elseif p then
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You did too little of the damage for a share of the spoils.")
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "You did too little of the damage for a share of the spoils."))
 		end
 	end
 	for _, m in ipairs(G().onlineMembers(run.gid)) do
@@ -1437,7 +1440,7 @@ function GB.gate(player)
 		return true
 	end
 	if t < (entry.reenterAt or 0) then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("The Ember Gate opens for you in %d seconds.", entry.reenterAt - t))
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "The Ember Gate opens for you in %d seconds.", entry.reenterAt - t))
 		player:teleportTo(P(run.L.anteStart))
 		return false
 	end

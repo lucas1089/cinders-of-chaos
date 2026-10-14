@@ -24,6 +24,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 ChaosParagon = ChaosParagon or {}
 local P = ChaosParagon
@@ -332,7 +335,7 @@ function login.onLogin(player)
 		P.save(player:getGuid(), {})
 		P.cache[player:getId()] = {}
 		reapply(player)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Your Paragon points were refunded for free: you had spent more than your %d points.", total))
 	end
 	return true
@@ -350,7 +353,7 @@ function advance.onAdvance(player, skill, oldLevel, newLevel)
 	end
 	if newLevel > oldLevel and newLevel > cfg.startLevel then
 		local free = P.totalPoints(newLevel) - P.spent(P.allocation(player))
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"You have %d unspent Paragon point%s. Open the passive tree and press Paragon.", free, free == 1 and "" or "s"))
 	end
 	return true

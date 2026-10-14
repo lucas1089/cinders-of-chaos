@@ -30,6 +30,12 @@
 --     store works in that state, so it can buy the unlock at once; the restriction ends the moment it is bought);
 --     mode "kick" shows the same window and logs it out. Staff (group 4+ or account type 5+) is never locked.
 -- Commands: !classes (what the account has unlocked); staff: /classunlock <character>, <class>[, revoke].
+if not Chaos then
+	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -152,7 +158,7 @@ function U.grant(accountId, classKey, source)
 	local name = cfg().classes[classKey].name
 	for _, p in ipairs(onlineOfAccount(accountId)) do
 		if K.classOfVocation(p:getVocation():getId()) == classKey then
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("The %s is unlocked: you can play this character fully now.", name))
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "The %s is unlocked: you can play this character fully now.", name))
 		end
 	end
 	return true
@@ -212,7 +218,7 @@ local function checkAutomatic(player)
 			}
 			local kind = K.autoUnlock(key, facts)
 			if kind and U.grant(player:getAccountId(), key, kind) then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 					"Class unlocked for your account: %s.", cfg().classes[key].name))
 			end
 		end
@@ -346,7 +352,7 @@ local classesTalk = {} -- reached from the menu: Info & Services window (command
 function classesTalk.onSay(player, words, param)
 	local lines = statusLines(player)
 	if #lines == 0 then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Every class is open to every account.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Every class is open to every account."))
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Classes of your account:\n" .. table.concat(lines, "\n"))
 	end

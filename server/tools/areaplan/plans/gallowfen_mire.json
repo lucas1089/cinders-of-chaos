@@ -251,188 +251,219 @@
     {
       "zone": "hangmans_reeds",
       "monster": "Thal",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hangmans_reeds",
       "monster": "Gloamfang Ravager",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "drowned_gallows",
       "monster": "Facetis",
-      "count": 7,
-      "respawn": 120
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "drowned_gallows",
       "monster": "Silicron",
-      "count": 7,
-      "respawn": 120
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "rotwater_flats",
       "monster": "Winterstride",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "rotwater_flats",
       "monster": "Vyrm",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "leech_hollow",
       "monster": "Silicron",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "leech_hollow",
       "monster": "Gloamfang Ravager",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "fenlight_marsh",
       "monster": "Facetis",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "fenlight_marsh",
       "monster": "Thal",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bogbone_sink",
       "monster": "Vyrm",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bogbone_sink",
       "monster": "Winterstride",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mirewitch_grove",
       "monster": "Rimeshroud Revenant",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mirewitch_grove",
       "monster": "Facetis",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sunken_causeway",
       "monster": "Gloamfang Ravager",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sunken_causeway",
       "monster": "Silicron",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "noose_cache",
       "monster": "Facetis",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "carrion_pools",
       "monster": "Thal",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "carrion_pools",
       "monster": "Vyrm",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sedge_maze",
       "monster": "Winterstride",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sedge_maze",
       "monster": "Silicron",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "blackwater_pens",
       "monster": "Rimeshroud Revenant",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "blackwater_pens",
       "monster": "Thal",
-      "count": 4,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gallow_roots",
       "monster": "Facetis",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gallow_roots",
       "monster": "Winterstride",
-      "count": 7,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "peat_cells",
       "monster": "Silicron",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "peat_cells",
       "monster": "Thal",
-      "count": 4,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "willowrot_bend",
       "monster": "Vyrm",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "willowrot_bend",
       "monster": "Facetis",
-      "count": 5,
-      "respawn": 120
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "crowfeast_shoal",
       "monster": "Thal",
-      "count": 5,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "crowfeast_shoal",
       "monster": "Gloamfang Ravager",
-      "count": 4,
-      "respawn": 120
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

@@ -36,6 +36,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosPassiveTreeConfig then
 	dofile("data/scripts/chaos/passivetree_config.lua")
 end
@@ -476,7 +479,7 @@ local function refundOverBudget(player)
 		end
 	end
 	if refunded > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again.", total))
 	end
 end
@@ -496,9 +499,9 @@ local function refundForeignNodes(player)
 		end
 	end
 	if total > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
-			"Your passive tree: %d node%s your class cannot hold (or that left the tree) %s refunded for free.",
-			total, total == 1 and "" or "s", total == 1 and "was" or "were"))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, total == 1 and
+			"Your passive tree: %d node your class cannot hold (or that left the tree) was refunded for free." or
+			"Your passive tree: %d nodes your class cannot hold (or that left the tree) were refunded for free.", total))
 	end
 	return total
 end
@@ -539,10 +542,10 @@ local function refundReworked(player)
 	end
 	player:setStorageValue(key, newest)
 	if total + inLoadouts > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
-			"Your passive tree: %d node%s whose effect changed (now class keystones) %s refunded for free%s.",
-			total, total == 1 and "" or "s", total == 1 and "was" or "were",
-			inLoadouts > 0 and string.format("; your saved loadouts lost %d", inLoadouts) or ""))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, total == 1 and
+			"Your passive tree: %d node whose effect changed (now class keystones) was refunded for free%s." or
+			"Your passive tree: %d nodes whose effect changed (now class keystones) were refunded for free%s.", total,
+			inLoadouts > 0 and Chaos.t(player, "; your saved loadouts lost %d", inLoadouts) or ""))
 	end
 	return total
 end

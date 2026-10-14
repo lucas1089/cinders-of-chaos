@@ -23,6 +23,14 @@ if not ok or type(cfg) ~= "table" then
 	cfg = {opcode = 195, broker = {tools = {}}}
 end
 
+-- the player's language (the stored one: this state never sees the client's hello; i18n_core.lua "NPC scripts")
+if not ChaosI18n or not ChaosI18n.npcText then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
+local function t(cid, key, ...)
+	return ChaosI18n.npcText(cid, key, ...)
+end
+
 local shopModule = ShopModule:new()
 npcHandler:addModule(shopModule)
 for _, t in ipairs(cfg.broker.tools or {}) do
@@ -59,16 +67,15 @@ local function creatureSayCallback(cid, type, msg)
 	local text = msg:lower()
 	if has(text, "sell", "material", "demand", "price", "ore", "herb", "hide", "fish", "profession") then
 		openWindow(player)
-		npcHandler:say("Show me what you have. My prices change every week, and I only take so much of one thing a day: " ..
-			"see the ledger (Economy > Professions).", cid)
+		npcHandler:say(t(cid, "Show me what you have. My prices change every week, and I only take so much of one thing a day: see the ledger (Economy > Professions)."), cid)
 		return true
 	elseif has(text, "tool", "pick", "sickle", "knife", "rod") then
-		npcHandler:say("A pick for the veins, a sickle for the herbs, an obsidian knife for hides and a rod for the water. " ..
-			"Ask me to {trade}.", cid)
+		npcHandler:say(t(cid, "A pick for the veins, a sickle for the herbs, an obsidian knife for hides and a rod for the water. Ask me to {trade}."), cid)
 		return true
 	end
 	return false
 end
 
 npcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)
+ChaosI18n.npcMessages(npcHandler) -- the XML's greet / farewell / walk away / trade lines in the player's language
 npcHandler:addModule(FocusModule:new())

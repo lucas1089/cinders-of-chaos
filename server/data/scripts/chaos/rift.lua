@@ -223,7 +223,7 @@ function RF.giveKey(player, key, why)
 		return false
 	end
 	local inbox = giveEx(player, item)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %s (%s).%s", why or "You received a key",
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: %s (%s).%s", why or "You received a key",
 		R.keyName(C(), key.tier), #key.mods > 0 and R.encodeMods(key.mods):gsub(",", ", ") or "no modifiers",
 		inbox and " It is in your inbox." or ""))
 	return inbox
@@ -262,7 +262,7 @@ end
 function RF.giveOmenKey(player, kind, why)
 	local cfg = C()
 	if not omenItemReady(cfg.omen.key.id) then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, "Omen Keys are not installed on this server (tools/install_omens.py).")
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Omen Keys are not installed on this server (tools/install_omens.py)."))
 		return nil
 	end
 	kind = kind or cfg.omen.kinds[rand(1, #cfg.omen.kinds)].key
@@ -272,7 +272,7 @@ function RF.giveOmenKey(player, kind, why)
 	end
 	RF.applyOmenKey(item, kind)
 	local inbox = giveEx(player, item)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %s.%s", why or "You received an Omen Key",
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: %s.%s", why or "You received an Omen Key",
 		R.omenKeyName(cfg, kind), inbox and " It is in your inbox." or ""))
 	return kind
 end
@@ -307,7 +307,7 @@ local function refundMarker(player, why)
 	if not why and (RF.noRefund[player:getGuid()] or RF.runOf[player:getId()] or RF.revive[player:getGuid()]) then
 		RF.noRefund[player:getGuid()] = nil
 		clearMarker(player)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You left your rift: its key is spent.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You left your rift: its key is spent."))
 		return false
 	end
 	local mods = {}
@@ -1106,11 +1106,12 @@ function RF.deliver(player, run, auto)
 		found[#found + 1] = (n > 1 and (n .. "x ") or "") .. itemName(id)
 	end
 	local list = table.concat(found, ", ", 1, math.min(#found, 25)) .. (#found > 25 and (" and " .. (#found - 25) .. " more") or "")
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %d gold to your bank, %d Orb%s of Upheaval, %d Orb%s of Fate%s%s.%s",
-		auto and ((data.omen and "Guardian's reward" or "Rift reward") .. " (the chest was not opened, it was sent to you)")
-			or (data.omen and "Guardian's chest" or "Rift chest"),
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: %d gold to your bank, %d Orb%s of Upheaval, %d Orb%s of Fate%s%s.%s",
+		auto and Chaos.t(player, data.omen and "Guardian's reward (the chest was not opened, it was sent to you)" or
+			"Rift reward (the chest was not opened, it was sent to you)")
+			or Chaos.t(player, data.omen and "Guardian's chest" or "Rift chest"),
 		r.gold, r.chaos, r.chaos == 1 and "" or "s", r.divine, r.divine == 1 and "" or "s",
-		#found > 0 and ", " or "", list, inbox and " Your backpack was full: the rest is in your inbox." or ""))
+		#found > 0 and ", " or "", list, inbox and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	return r, found
 end
@@ -1673,18 +1674,18 @@ function RF.useCoffer(player, item)
 	local run = slot and RF.runs[slot]
 	local cf = run and run.coffer
 	if not cf or run.ended or not run.players[player:getId()] then
-		player:sendCancelMessage("The coffer does not answer you.")
+		player:sendCancelMessage(Chaos.t(player, "The coffer does not answer you."))
 		return true
 	end
 	if cf.state == "closed" then
 		if run.state ~= "running" then
-			player:sendCancelMessage("The coffer's seal has gone cold.")
+			player:sendCancelMessage(Chaos.t(player, "The coffer's seal has gone cold."))
 			return true
 		end
 		wakeCoffer(run, player)
 		return true
 	elseif cf.state == "guarded" then
-		player:sendCancelMessage(string.format("The coffer is still sealed: %d guard%s left.", cf.waveLeft,
+		player:sendCancelMessage(Chaos.t(player, "The coffer is still sealed: %d guard%s left.", cf.waveLeft,
 			cf.waveLeft == 1 and "" or "s"))
 		return true
 	end
@@ -2046,29 +2047,29 @@ end
 local function openerOk(player, t)
 	local cfg = C()
 	if RF.runOf[player:getId()] or RF.revive[player:getGuid()] then
-		player:sendCancelMessage("You are already inside a rift.")
+		player:sendCancelMessage(Chaos.t(player, "You are already inside a rift."))
 		return false
 	end
 	if cfg.needProtectionZone and not inProtectionZone(player) then
-		player:sendCancelMessage(t.omen and "You must stand in a protection zone to open an omen arena."
-			or "You must stand in a protection zone to open a rift.")
+		player:sendCancelMessage(Chaos.t(player, t.omen and "You must stand in a protection zone to open an omen arena."
+			or "You must stand in a protection zone to open a rift."))
 		return false
 	end
 	if inCombat(player) then
-		player:sendCancelMessage("You cannot open a rift while you are in a fight.")
+		player:sendCancelMessage(Chaos.t(player, "You cannot open a rift while you are in a fight."))
 		return false
 	end
 	if Chaos.isMultiClient(player) then
-		player:sendCancelMessage(Chaos.multiClient.msgDungeon)
+		player:sendCancelMessage(Chaos.t(player, Chaos.multiClient.msgDungeon))
 		return false
 	end
 	if insideOther(player) then
-		player:sendCancelMessage("You cannot open a rift from here.")
+		player:sendCancelMessage(Chaos.t(player, "You cannot open a rift from here."))
 		return false
 	end
 	if player:getLevel() < t.minLevel then
-		player:sendCancelMessage(t.omen and string.format("You need level %d to open an omen arena.", t.minLevel)
-			or string.format("You need level %d to open a tier %d rift.", t.minLevel, t.tier))
+		player:sendCancelMessage(t.omen and Chaos.t(player, "You need level %d to open an omen arena.", t.minLevel)
+			or Chaos.t(player, "You need level %d to open a tier %d rift.", t.minLevel, t.tier))
 		return false
 	end
 	return true
@@ -2125,7 +2126,7 @@ local function takeSlot(player, theme, band)
 			lefts[#lefts + 1] = eta
 		end
 		player:sendCancelMessage(IL and IL.busy(player, "rift", "rifts", lefts, cfg.limits)
-			or (eta and "The rifts are still forming. Try again in a few seconds."
+			or Chaos.t(player, eta and "The rifts are still forming. Try again in a few seconds."
 			or "Every rift is open right now. Try again in a moment."))
 		addEvent(keeper, 0)
 		return nil
@@ -2168,7 +2169,7 @@ function RF.open(player, item)
 	local cfg = C()
 	local key = RF.readKey(item)
 	if not key then
-		player:sendCancelMessage("This rift key is broken.")
+		player:sendCancelMessage(Chaos.t(player, "This rift key is broken."))
 		return false
 	end
 	local t = R.tierInfo(cfg, key.tier)
@@ -2178,7 +2179,7 @@ function RF.open(player, item)
 	local group = gather(player, t)
 	local types = R.pickTypes(cfg, rawPool.hunt, key.tier, rand, known)
 	if #types == 0 then
-		player:sendCancelMessage("No monsters answer this rift. Tell a gamemaster.")
+		player:sendCancelMessage(Chaos.t(player, "No monsters answer this rift. Tell a gamemaster."))
 		return false
 	end
 	-- Rift Atlas (atlas.lua): the key user's attunements weigh the theme; the layout's size follows the tier. A ready
@@ -2197,7 +2198,7 @@ function RF.open(player, item)
 	-- the key is spent now; the marker refunds it after a crash or a restart during the run
 	if not item:remove(1) then
 		RF.slots[slot].state = "ready"
-		player:sendCancelMessage("The key could not be used.")
+		player:sendCancelMessage(Chaos.t(player, "The key could not be used."))
 		return false
 	end
 	setMarker(player, key)
@@ -2298,7 +2299,7 @@ function RF.openOmen(player, item)
 	local kind = RF.readOmenKey(item)
 	local def = kind and R.omenKind(cfg, kind)
 	if not def then
-		player:sendCancelMessage("This omen key is silent.")
+		player:sendCancelMessage(Chaos.t(player, "This omen key is silent."))
 		return false
 	end
 	local t = {minLevel = o.minLevel, omen = true}
@@ -2306,7 +2307,7 @@ function RF.openOmen(player, item)
 		return false
 	end
 	if not MonsterType(def.boss) then
-		player:sendCancelMessage("The guardian does not answer. Tell a gamemaster.")
+		player:sendCancelMessage(Chaos.t(player, "The guardian does not answer. Tell a gamemaster."))
 		return false
 	end
 	local group = gather(player, t)
@@ -2318,7 +2319,7 @@ function RF.openOmen(player, item)
 	local th = themeByName(L.theme)
 	if not item:remove(1) then
 		RF.slots[slot].state = "ready"
-		player:sendCancelMessage("The key could not be used.")
+		player:sendCancelMessage(Chaos.t(player, "The key could not be used."))
 		return false
 	end
 	local key = {tier = cfg.maxTier, mods = {}, omen = def.key}
@@ -2427,7 +2428,7 @@ local keyAction = Action()
 function keyAction.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local now = os.time()
 	if (exhaust[player:getId()] or 0) > now then
-		player:sendCancelMessage("You are exhausted.")
+		player:sendCancelMessage(Chaos.t(player, "You are exhausted."))
 		return true
 	end
 	exhaust[player:getId()] = now + C().useCooldown
@@ -2444,15 +2445,15 @@ function RF.useFragments(player)
 	local o = C().omen
 	local have = player:getItemCount(o.fragment.id)
 	if have < o.keyCost then
-		player:sendCancelMessage(string.format("You need %d omen fragments to bind an Omen Key (you carry %d).", o.keyCost, have))
+		player:sendCancelMessage(Chaos.t(player, "You need %d omen fragments to bind an Omen Key (you carry %d).", o.keyCost, have))
 		return false
 	end
 	if not omenItemReady(o.key.id) then
-		player:sendCancelMessage("Omen Keys are not installed on this server.")
+		player:sendCancelMessage(Chaos.t(player, "Omen Keys are not installed on this server."))
 		return false
 	end
 	if not player:removeItem(o.fragment.id, o.keyCost) then
-		player:sendCancelMessage("The fragments could not be bound.")
+		player:sendCancelMessage(Chaos.t(player, "The fragments could not be bound."))
 		return false
 	end
 	local kind = RF.giveOmenKey(player, nil, string.format("%d omen fragments bind together", o.keyCost))
@@ -2465,7 +2466,7 @@ if omenItemReady(C().omen.fragment.id) then
 	function fragmentAction.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		local now = os.time()
 		if (exhaust[player:getId()] or 0) > now then
-			player:sendCancelMessage("You are exhausted.")
+			player:sendCancelMessage(Chaos.t(player, "You are exhausted."))
 			return true
 		end
 		exhaust[player:getId()] = now + 1
@@ -2481,7 +2482,7 @@ if omenItemReady(C().omen.key.id) then
 	function omenAction.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		local now = os.time()
 		if (exhaust[player:getId()] or 0) > now then
-			player:sendCancelMessage("You are exhausted.")
+			player:sendCancelMessage(Chaos.t(player, "You are exhausted."))
 			return true
 		end
 		exhaust[player:getId()] = now + C().useCooldown
@@ -2502,16 +2503,16 @@ function RF.useChest(player, item)
 	local slot = R.slotOfPos(C(), item:getPosition())
 	local run = slot and RF.runs[slot]
 	if not run or run.state ~= "success" or run.ended then
-		player:sendCancelMessage("The chest is empty.")
+		player:sendCancelMessage(Chaos.t(player, "The chest is empty."))
 		return true
 	end
 	local guid = player:getGuid()
 	if not run.finishers[guid] then
-		player:sendCancelMessage("This chest is not yours.")
+		player:sendCancelMessage(Chaos.t(player, "This chest is not yours."))
 		return true
 	end
 	if run.claimed[guid] then
-		player:sendCancelMessage("You already took your share.")
+		player:sendCancelMessage(Chaos.t(player, "You already took your share."))
 		return true
 	end
 	run.claimed[guid] = true
@@ -2951,7 +2952,7 @@ xp.onGainExperience = function(player, source, exp, rawExp)
 	local factor = R.capFactor(C(), entry.xp, player:getLevel(), base, (os.time() - run.startTime) / 60)
 	if factor < 1 and not entry.capNotice then
 		entry.capNotice = true
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, "The rift's experience is spent for now: kills give less until more time passes.")
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "The rift's experience is spent for now: kills give less until more time passes."))
 	end
 	return math.floor(exp * factor * (1 + (run.bonus.experience or 0) / 100))
 end
@@ -2977,7 +2978,7 @@ drop.onDropLoot = function(monster, corpse)
 			local item = corpse:addItem(C().key.itemId, 1)
 			if item then
 				RF.applyKey(item, key)
-				owner:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("A %s drops from %s!", R.keyName(C(), 1),
+				owner:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(owner, "A %s drops from %s!", R.keyName(C(), 1),
 					monster:getType():getNameDescription()))
 			end
 		end

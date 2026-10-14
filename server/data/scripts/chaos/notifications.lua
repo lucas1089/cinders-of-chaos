@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 local OPCODE = ChaosOpcodes.notifications
 
@@ -107,7 +110,7 @@ end
 
 -- Overridable hooks (no catacomb system exists in the reference server).
 function ChaosNotify.onStartCatacomb(player, mode, level, element)
-	player:sendCancelMessage("Catacombs are not available on this server.")
+	player:sendCancelMessage(Chaos.t(player, "Catacombs are not available on this server."))
 end
 
 function ChaosNotify.onLeaveQueue(player)
@@ -116,12 +119,12 @@ end
 local function handleInvite(player, accept, inviterName)
 	local inviter = Player(inviterName)
 	if not inviter then
-		player:sendCancelMessage("The inviting player is no longer online.")
+		player:sendCancelMessage(Chaos.t(player, "The inviting player is no longer online."))
 		return
 	end
 	local party = inviter:getParty()
 	if not party then
-		player:sendCancelMessage("That party no longer exists.")
+		player:sendCancelMessage(Chaos.t(player, "That party no longer exists."))
 		return
 	end
 	local invited = false
@@ -138,11 +141,11 @@ local function handleInvite(player, accept, inviterName)
 
 	if accept then
 		if player:getParty() then
-			player:sendCancelMessage("You are already in a party.")
+			player:sendCancelMessage(Chaos.t(player, "You are already in a party."))
 			return
 		end
 		if not party:addMember(player) then
-			player:sendCancelMessage("You could not join the party.")
+			player:sendCancelMessage(Chaos.t(player, "You could not join the party."))
 		end
 	else
 		party:removeInvite(player)

@@ -164,7 +164,7 @@ function talk.onSay(player, words, param)
 	end
 	local newVoc = Vocation(newId)
 	if not newVoc then
-		player:sendCancelMessage("That vocation does not exist on this server.")
+		player:sendCancelMessage(Chaos.t(player, "That vocation does not exist on this server."))
 		return false
 	end
 	-- the class lock (class_unlocks.lua): the Monk, the Necromancer and the Templar need the account's unlock
@@ -187,12 +187,12 @@ function talk.onSay(player, words, param)
 	pos:sendMagicEffect(CONST_ME_HOLYAREA)
 	pos:sendMagicEffect(EFFECT[newId] or CONST_ME_GROUNDSHAKER)
 	if how == true then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"You switched for free: you are now %s. This was your only free switch; from now on only the store's Vocation Change changes it.",
 			newVoc:getDescription()))
 		return false
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"You have ascended: you are now %s. The choice is final; only the store's Vocation Change can undo it.",
 		newVoc:getDescription()))
 	Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s has ascended to %s.", player:getName(), newVoc:getName())

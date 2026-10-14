@@ -835,8 +835,7 @@ function login.onLogin(player)
 	if gid and rank >= cfg().rank then
 		for _, w in pairs(wars()) do
 			if w.status == "pending" and w.guild2 == gid then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s declared war on your guild (%s). Answer it in " ..
-					"Social > Guild Wars before it expires in %s.", w.name1, C.termsText(w), C.durationText(w.expiresAt - now())))
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s declared war on your guild (%s). Answer it in Social > Guild Wars before it expires in %s.", w.name1, C.termsText(w), C.durationText(w.expiresAt - now())))
 			end
 		end
 	end

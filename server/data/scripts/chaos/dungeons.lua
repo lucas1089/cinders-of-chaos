@@ -4,7 +4,10 @@
 --   client -> server  fetch                                  -> list + dungeon* + solo/group*
 --                     queue {id, difficulty}                 -> join; sending it again leaves
 --   server -> client  list [{id,title,level,boss=outfit,queue=N}]
---                     dungeon {id,title,difficulty,req,loot,queue={players,estimated},challenges}
+--                     dungeon {id,title,difficulty,req,loot,queue={players,estimated},challenges,health?}
+--                       health = {monsters = {six %}, boss = {six %}}: only a dungeon with its own health curves (the
+--                       Vault, the generated dungeons 6-9; dungeons_difficulty.lua D.healthCurves); without it the
+--                       client's panel shows the table's 100-1300%
 --                     solo / group {id,diff,top=[{name,time,self?}]}      (time in ms)
 --                     queue {id,joined}   stopQueue   queueUpdate {id,queue,estimated}
 --                     prepare            start {boss,left,duration,objectives,need}
@@ -375,7 +378,9 @@ local function dungeonPayload(player, id, dg)
 		req = req,
 		loot = loot,
 		queue = queueInfo(id, dg),
-		challenges = challenges
+		challenges = challenges,
+		-- the dungeon's own health curves for the difficulty panel (nil: the table's, old clients ignore it)
+		health = DIFF.healthCurves(extra.bossName and extra.bossHealth or nil, extra.trashHealth)
 	}
 end
 
@@ -740,7 +745,11 @@ local function startRun(dungeonId, difficulty, players)
 
 	if dg.SpawnMonsters and dg.Monsters then
 		for monsterName, position in pairs(dg.Monsters) do
-			Game.createMonster(monsterName, position)
+			local m = Game.createMonster(monsterName, position)
+			-- pack combat (pace.lua): a base dungeon's monsters are paced like the map's (bosses never)
+			if m and ChaosPace and ChaosPace.mark then
+				ChaosPace.mark(m)
+			end
 		end
 	end
 	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run

@@ -17,6 +17,14 @@ function onCreatureSay(cid, type, msg)
 end
 function onThink()				npcHandler:onThink()					end
 
+-- the player's language (the stored one: this state never sees the client's hello; i18n_core.lua "NPC scripts")
+if not ChaosI18n or not ChaosI18n.npcText then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
+local function t(cid, key, ...)
+	return ChaosI18n.npcText(cid, key, ...)
+end
+
 local shopModule = ShopModule:new()
 npcHandler:addModule(shopModule)
 
@@ -78,8 +86,8 @@ local function refused(cid, itemId)
 	if not okRealm or (tonumber(realm) or 0) <= 0 then
 		return false
 	end
-	npcHandler:say(string.format(refuseText, name), cid)
-	player:sendCancelMessage("Season characters cannot buy a " .. name .. ".")
+	npcHandler:say(t(cid, refuseText, name), cid)
+	player:sendCancelMessage(t(player, "Season characters cannot buy a %s.", name))
 	return true
 end
 
@@ -104,4 +112,5 @@ for _, it in ipairs(items) do
 	shopModule:addBuyableItem({it.name}, it.id, it.price, 1, it.name)
 end
 
+ChaosI18n.npcMessages(npcHandler) -- the XML's greet / farewell / walk away / trade lines in the player's language
 npcHandler:addModule(FocusModule:new())

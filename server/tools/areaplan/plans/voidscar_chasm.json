@@ -269,200 +269,233 @@
     {
       "zone": "shattered_lip",
       "monster": "Facetis",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shattered_lip",
       "monster": "Silicron",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "maw_of_glass",
       "monster": "Thal",
-      "count": 7,
-      "respawn": 120
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "maw_of_glass",
       "monster": "Cinderskull Reaver",
-      "count": 7,
-      "respawn": 120
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "starless_shelf",
       "monster": "Rimeshroud Revenant",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "starless_shelf",
       "monster": "Facetis",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_spire",
       "monster": "Thal",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_spire",
       "monster": "Silicron",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "unlit_terrace",
       "monster": "Rimeshroud Revenant",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "unlit_terrace",
       "monster": "Thal",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "riftbone_field",
       "monster": "Facetis",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "riftbone_field",
       "monster": "Cinderskull Reaver",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "weeping_scarp",
       "monster": "Silicron",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "weeping_scarp",
       "monster": "Cinderskull Reaver",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "eclipse_ledge",
       "monster": "Thal",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "eclipse_ledge",
       "monster": "Facetis",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "descent_well",
       "monster": "Rimeshroud Revenant",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "descent_well",
       "monster": "Silicron",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "abyssal_landing",
       "monster": "Winterstride",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "abyssal_landing",
       "monster": "Thal",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "nether_basin",
       "monster": "Facetis",
-      "count": 7,
-      "respawn": 120
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "nether_basin",
       "monster": "Thal",
-      "count": 7,
-      "respawn": 120
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "silent_throat",
       "monster": "Silicron",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "silent_throat",
       "monster": "Facetis",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gloam_hollows",
       "monster": "Thal",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gloam_hollows",
       "monster": "Vyrm",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "veil_rupture",
       "monster": "Facetis",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "veil_rupture",
       "monster": "Winterstride",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "scar_reliquary",
       "monster": "Facetis",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "marrow_drift",
       "monster": "Silicron",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "marrow_drift",
       "monster": "Thal",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "lightless_cells",
       "monster": "Facetis",
-      "count": 6,
-      "respawn": 120
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "lightless_cells",
       "monster": "Vyrm",
-      "count": 4,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

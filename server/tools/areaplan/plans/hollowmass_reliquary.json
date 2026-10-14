@@ -269,200 +269,233 @@
     {
       "zone": "shroud_nave",
       "monster": "Golden Dragon",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shroud_nave",
       "monster": "Black Vixen",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "censer_choir",
       "monster": "Spiky Carnivor",
-      "count": 7,
-      "respawn": 120
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "censer_choir",
       "monster": "Vyrm",
-      "count": 7,
-      "respawn": 120
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bone_transept",
       "monster": "Winterstride",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bone_transept",
       "monster": "Golden Dragon",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "vigil_cloister",
       "monster": "Silicron",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "vigil_cloister",
       "monster": "Spiky Carnivor",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mourners_apse",
       "monster": "Thal",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mourners_apse",
       "monster": "Vyrm",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "candle_ambulatory",
       "monster": "Black Vixen",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "candle_ambulatory",
       "monster": "Winterstride",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "weeping_chapter",
       "monster": "Golden Dragon",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "weeping_chapter",
       "monster": "Silicron",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pallbearers_walk",
       "monster": "Spiky Carnivor",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "pallbearers_walk",
       "monster": "Black Vixen",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sexton_stair",
       "monster": "Vyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sexton_stair",
       "monster": "Golden Dragon",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "grave_landing",
       "monster": "Winterstride",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "grave_landing",
       "monster": "Spiky Carnivor",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "reliquary_heart",
       "monster": "Thal",
-      "count": 7,
-      "respawn": 120
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "reliquary_heart",
       "monster": "Facetis",
-      "count": 6,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "saints_charnel",
       "monster": "Silicron",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "saints_charnel",
       "monster": "Vyrm",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_mass",
       "monster": "Thal",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_mass",
       "monster": "Winterstride",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ossuary_cellar",
       "monster": "Facetis",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ossuary_cellar",
       "monster": "Silicron",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "tithe_crypt",
       "monster": "Facetis",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "martyr_cells",
       "monster": "Golden Dragon",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "martyr_cells",
       "monster": "Thal",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "dirge_gallery",
       "monster": "Vyrm",
-      "count": 6,
-      "respawn": 120
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "dirge_gallery",
       "monster": "Facetis",
-      "count": 4,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

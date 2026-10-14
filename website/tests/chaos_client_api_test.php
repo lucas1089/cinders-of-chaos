@@ -4,7 +4,7 @@
 // (engine/function/chaos_character.php, patches/znotex-chaos-character-create.patch). Login (wrong password, unknown
 // account, the login guard's lock, replays), the state (looks, class lock, slots, season, terms), creation and its
 // refusals (bad name, taken name, locked class, too many characters, bad token, Terms, season mode, the hourly limits,
-// the per-minute flood limit, a password change ending the token) and the class look of new characters.
+// the per-minute flood limit, a password change ending the token, a banned account) and the class look of new characters.
 // php-cli with pdo_sqlite; ZnoteX's functions are small stand-ins with ZnoteX's behaviour (no ZnoteX checkout).
 $repo = realpath(__DIR__ . '/../..');
 $data = sys_get_temp_dir() . '/chaos_client_api_test_' . getmypid();
@@ -69,6 +69,7 @@ foreach (array(
 	'CREATE TABLE chaos_client_tokens (token_hash TEXT PRIMARY KEY, account_id INT NOT NULL, pass_mark TEXT NOT NULL, ip TEXT NOT NULL, created INT NOT NULL, expires INT NOT NULL)',
 	'CREATE TABLE chaos_client_api_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, account_id INT NOT NULL DEFAULT 0, action TEXT NOT NULL, ok INT NOT NULL DEFAULT 0, created INT NOT NULL)',
 	'CREATE TABLE chaos_client_nonces (nonce TEXT PRIMARY KEY, created INT NOT NULL)',
+	'CREATE TABLE account_bans (account_id INT PRIMARY KEY, reason TEXT NOT NULL DEFAULT \'\', banned_at INT NOT NULL DEFAULT 0, expires_at INT NOT NULL DEFAULT 0, banned_by INT NOT NULL DEFAULT 0)',
 	'CREATE TABLE znote_login_attempts (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, username TEXT NOT NULL, success INT NOT NULL, created_at INT NOT NULL)',
 ) as $sql) {
 	$pdo->exec($sql);
@@ -305,6 +306,31 @@ check($code === 200 && $code2 === 401, 'logout ends the token');
 $pdo->exec("UPDATE chaos_client_tokens SET expires = 0");
 [$code] = api(array('action' => 'state', 'token' => $token));
 check($code === 401, 'an expired token');
+
+// ---------------------------------------------------------------- a banned account: no login, no creation
+$pdo->exec("INSERT INTO accounts (id, name, password) VALUES (9, 'exiled', '" . chaos_password_hash('pw exiled', 1000) . "')");
+chaos_legal_insert(9, $now);
+[$code, $b] = api(array('action' => 'login', 'account' => 'exiled', 'password' => 'pw exiled', 'nonce' => nonce()));
+$t9 = $b['token'] ?? '';
+check($code === 200 && $t9 !== '', 'not banned yet: login');
+$pdo->exec("INSERT INTO account_bans (account_id, reason, banned_at, expires_at, banned_by) VALUES (9, 'botting', $now, " . ($now + 86400) . ", 1)");
+[$code, $b] = create(array('name' => 'Exile Alt'), $t9);
+check($code === 403 && $b['error'] === 'banned' && strpos($b['message'], 'banned until') !== false && strpos($b['message'], 'botting') !== false, 'banned: create refused with the ban: ' . ($b['message'] ?? ''));
+check((int)$pdo->query("SELECT COUNT(*) FROM players WHERE name = 'Exile Alt'")->fetchColumn() === 0, 'banned: no character created');
+[$code] = api(array('action' => 'state', 'token' => $t9));
+check($code === 401, 'banned: the tokens issued before the ban ended');
+[$code, $b] = api(array('action' => 'login', 'account' => 'exiled', 'password' => 'pw exiled', 'nonce' => nonce()));
+check($code === 403 && $b['error'] === 'banned' && !isset($b['token']) && $b['until'] === $now + 86400, 'banned: login refused, no token');
+[$code, $b] = api(array('action' => 'login', 'account' => 'exiled', 'password' => 'wrong', 'nonce' => nonce()));
+check($code === 401 && $b['error'] === 'auth', 'banned, wrong password: the usual answer (the ban is not told)');
+$pdo->exec("UPDATE account_bans SET expires_at = 0, reason = '' WHERE account_id = 9");
+[$code, $b] = api(array('action' => 'login', 'account' => 'exiled', 'password' => 'pw exiled', 'nonce' => nonce()));
+check($code === 403 && $b['message'] === 'Your account is banned permanently.', 'a permanent ban (expires_at 0)');
+$pdo->exec("UPDATE account_bans SET expires_at = " . ($now - 60) . " WHERE account_id = 9");
+[$code, $b] = api(array('action' => 'login', 'account' => 'exiled', 'password' => 'pw exiled', 'nonce' => nonce()));
+check($code === 200 && isset($b['token']), 'an expired ban: login again');
+[$code] = create(array('name' => 'Exile Back'), $b['token']);
+check($code === 200, 'an expired ban: create again');
 
 // ---------------------------------------------------------------- brute force and floods
 $pdo->exec('DELETE FROM znote_login_attempts');

@@ -238,10 +238,10 @@ function LB.deliverPending(player)
 			end
 		end
 		local b = boardByKey[r.board]
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Leaderboard: %s place on the %s board last week. You hold the title %s this week.%s",
 			cfg.rankNames[r.rank] or ("#" .. r.rank), b and b.name or r.board, r.title,
-			#parts > 0 and (" Reward in your inbox: " .. table.concat(parts, ", ") .. ".") or ""))
+			#parts > 0 and Chaos.t(player, " Reward in your inbox: %s.", table.concat(parts, ", ")) or ""))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	end
 end

@@ -40,6 +40,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCharmsCore then
 	dofile("data/scripts/chaos/charms_core.lua")
 end
@@ -740,8 +743,8 @@ function CH.onSource(player, source, ctx)
 		return nil
 	end
 	local name = Core.nameOf(cfg, charm)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You found a charm: %s%s.", name,
-		where == "inbox" and " (in your inbox)" or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You found a charm: %s%s.", name,
+		where == "inbox" and Chaos.t(player, " (in your inbox)") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or 13)
 	log(string.format("%s: %s from %s", player:getName(), name, source))
 	return charm
@@ -861,7 +864,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			local sign = primaryDamage < 0 and -1 or 1
 			primaryDamage, secondaryDamage = sign * cap, 0
 			creature:getPosition():sendMagicEffect(CONST_ME_FIREAREA or 7)
-			creature:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Last Ember: the Gravewarden's Seal kept you alive.")
+			creature:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(creature, "Last Ember: the Gravewarden's Seal kept you alive."))
 		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType

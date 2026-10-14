@@ -330,6 +330,10 @@ jobs:
         # icons, guide heroes and tab banners; the same pinned Pillow and numpy as the art checks above (WebP bytes)
         run: /tmp/fxenv/bin/python -I website/tools/gen_wiki_art.py --check
 
+      - name: Dungeon banners match their plan and the dungeon maps (gen_dungeon_banners.py, no pair)
+        # the plan's tiles, boss and monsters against a fresh areagen dump (LuaJIT), the banners' pixels against the plan
+        run: /tmp/fxenv/bin/python -I client/tools/gen_dungeon_banners.py --check
+
       - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
         run: python3 -I client/tools/outfit_art/class_art_test.py
 
@@ -403,6 +407,12 @@ jobs:
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_outfit_anchors.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq luajit
+          /tmp/fxenv/bin/python -I chaos/client/tools/gen_dungeon_banners.py --check \
+              --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Website sprite images draw from the live pair (gen_sprite_images.py, our art only, no items.otb)
         run: |

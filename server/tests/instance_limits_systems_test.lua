@@ -154,7 +154,7 @@ do
 	local login, logout = events["ChaosDungeonsLogin:creature"], events["ChaosDungeonsLogout:creature"]
 	ok(ext and login and logout, "dungeons: events")
 	local cfg = Chaos.dungeons
-	eq(cfg.maxTimeSeconds, 2700, "dungeons: 45 minutes at most")
+	eq(cfg.maxTimeSeconds, 900, "dungeons: 15 minutes at most (pack combat)")
 	local a = newPlayer(1, "Dara", P(100, 100, 7))
 	local b = newPlayer(2, "Elm", P(101, 100, 7))
 	login.onLogin(a)
@@ -164,7 +164,7 @@ do
 	for _, s in ipairs(sent) do
 		if s.action == "start" and s.p == a then start = s.data end
 	end
-	eq(start and start.duration, 2700 * 1000, "dungeons: the client's clock is the capped time (60 -> 45 minutes)")
+	eq(start and start.duration, 900 * 1000, "dungeons: the client's clock is the capped time (60 -> 15 minutes)")
 	-- a second player queues: the wait is the run inside (the window's dungeon page)
 	ItemType = function(id) return {getId = function() return id end, getClientId = function() return id end} end
 	MonsterType = function() return nil end
@@ -176,15 +176,15 @@ do
 	for _, s in ipairs(sent) do
 		if s.action == "dungeon" and s.data.queue then wait = s.data.queue.estimated end
 	end
-	ok(wait and wait >= 2690 * 1000, "dungeons: the queue shows the wait of the run inside: " .. tostring(wait))
+	ok(wait and wait >= 890 * 1000, "dungeons: the queue shows the wait of the run inside: " .. tostring(wait))
 	-- staff list
 	local found
 	for _, r in ipairs(IL.runs()) do
 		if r.key == "dungeon" then found = r end
 	end
-	ok(found and found.players == 1 and found.left == 2700 and found.note == "1 queued", "dungeons: listed")
+	ok(found and found.players == 1 and found.left == 900 and found.note == "1 queued", "dungeons: listed")
 	-- warnings, then time up
-	advance((2700 - 300 + 3) * 1000)
+	advance((900 - 300 + 3) * 1000)
 	ok(said(a, "Bones Dungeon: 5 minutes left"), "dungeons: the 5 minute warning: " .. table.concat(a.msgs, " | "))
 	advance(240 * 1000)
 	ok(said(a, "Bones Dungeon: 1 minute left"), "dungeons: the 1 minute warning")

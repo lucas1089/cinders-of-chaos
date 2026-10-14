@@ -14,6 +14,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/store_food_core.lua")
 dofile("data/scripts/chaos/store_food_config.lua")
 
@@ -161,8 +164,7 @@ function F.storeGive(player)
 	if not where then
 		return "Your backpack and inbox are full. Your coins were refunded."
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("The Everfull Ration is in your %s. Use it like food: it " ..
-		"never runs out.", where))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The Everfull Ration is in your %s. Use it like food: it never runs out.", Chaos.t(player, where)))
 	return true
 end
 
@@ -221,7 +223,7 @@ function login.onLogin(player)
 	player:registerEvent("ChaosStoreFoodDeath")
 	if owed(player) and F.installed() and F.give(player) then
 		player:setStorageValue(cfg().storage.regrant, 0)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Back after your death: your Everfull Ration.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Back after your death: your Everfull Ration."))
 	end
 	return true
 end

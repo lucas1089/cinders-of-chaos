@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/guild_core.lua")
 
 Chaos.guildConfig = dofile("data/scripts/chaos/guild_config.lua")
@@ -481,7 +484,7 @@ function G.applyAura(player)
 	if want and not has then
 		player:addAura(id)
 		player:setStorageValue(cfg.storage.auraOn, 1)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your guild's aura is yours to wear while you are in the guild (outfit window).")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your guild's aura is yours to wear while you are in the guild (outfit window)."))
 	elseif not want and has then
 		local bought = Chaos.storage.shopAuraBase and player:getStorageValue(Chaos.storage.shopAuraBase + id) == 1
 		if not bought and player.removeAura then

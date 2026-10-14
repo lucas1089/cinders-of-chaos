@@ -263,6 +263,29 @@ p = hit(pl, monster(1000), 800, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
 eq(p, math.floor(800 * (1 + pct1000 / 100) + 0.5), "elemental = true: fire spell boosted")
 cfg.elemental = false
 
+-- ---------------------------------------------------------------- pack combat (pace.lua): the damage curve on top
+do
+	local pm = monster(300)
+	local pacedSet = {[pm] = 0.65}
+	ChaosPace = {damageMultOf = function(a) return pacedSet[a] or 1 end}
+	local pct300 = C.percentFor(cfg, 300)
+	p = hit(pl, pm, 1000, COMBAT_PHYSICALDAMAGE)
+	eq(p, math.floor(math.floor(1000 * (1 + pct300 / 100) + 0.5) * 0.65 + 0.5), "pace: physical boost, then x0.65")
+	p, s = hit(pl, pm, 800, COMBAT_FIREDAMAGE, 200, COMBAT_EARTHDAMAGE, ORIGIN_SPELL)
+	eq(p, 520, "pace: a fire spell x0.65")
+	eq(s, 130, "pace: the earth part x0.65")
+	p = hit(pl, pm, 300, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION or 0)
+	eq(p, 195, "pace: a burning tick x0.65")
+	p = hit(pl, pm, 500, COMBAT_HEALING)
+	eq(p, 500, "pace: healing untouched")
+	local unp = monster(300)
+	p = hit(pl, unp, 800, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	eq(p, 800, "pace: an unpaced monster's spell untouched")
+	p = manaHit(pl, pm, 1000, COMBAT_ICEDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	eq(p, 650, "pace: a mana shield hit x0.65")
+	ChaosPace = nil
+end
+
 -- ---------------------------------------------------------------- registration and order
 ok(events.Chaos0MonsterDamageLogin ~= nil, "login event")
 local lp = player()

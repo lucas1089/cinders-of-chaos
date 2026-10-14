@@ -228,7 +228,8 @@ CREATE TABLE IF NOT EXISTS `chaos_pay_payers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Character Bazaar (server/sql/chaos_bazaar.sql; the game server also creates them at startup): listings, bids with
--- their escrow, the log. bazaar_lib.php, README "Character Bazaar".
+-- their escrow, the log. bazaar_lib.php, README "Character Bazaar". `active_player_id` (generated, unique): one open
+-- listing per character; setup/chaos_setup.php adds it to a table created before it existed.
 CREATE TABLE IF NOT EXISTS `chaos_bazaar_listings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `player_id` int(11) NOT NULL,
@@ -249,7 +250,9 @@ CREATE TABLE IF NOT EXISTS `chaos_bazaar_listings` (
   `player_name` varchar(255) NOT NULL DEFAULT '',
   `level` int(11) NOT NULL DEFAULT 0,
   `vocation` int(11) NOT NULL DEFAULT 0,
+  `active_player_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `player_id` ELSE NULL END) STORED,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `chaos_bazaar_listings_active` (`active_player_id`),
   KEY `chaos_bazaar_listings_player` (`player_id`, `status`),
   KEY `chaos_bazaar_listings_status` (`status`, `ends_at`),
   KEY `chaos_bazaar_listings_seller` (`seller_account_id`, `status`)

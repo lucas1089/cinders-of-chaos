@@ -27,6 +27,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosReferralCore then
 	dofile("data/scripts/chaos/referral_core.lua")
 end
@@ -60,12 +63,9 @@ local function log(playerId, otherId, action, detail)
 		T.log, os.time(), playerId or 0, otherId or 0, q(action), q(tostring(detail or ""):sub(1, 128))))
 end
 
+-- a deferred text (ChaosI18n.msg; tostring = English): message / tell / Chaos.t give it in each reader's language
 local function say(key, ...)
-	local text = cfg.messages[key] or key
-	if select("#", ...) > 0 then
-		return string.format(text, ...)
-	end
-	return text
+	return ChaosI18n.msg(cfg.messages[key] or key, ...)
 end
 
 -- ------------------------------------------------------------------ tables
@@ -312,6 +312,7 @@ local function send(player, action, data)
 end
 
 local function message(player, text, isError)
+	text = Chaos.t(player, text)
 	send(player, "message", {text = text, error = isError == true})
 	if isError then
 		player:sendCancelMessage(text)
@@ -321,13 +322,13 @@ local function message(player, text, isError)
 end
 
 local function refuse(player, reason, extra)
-	message(player, K.say(cfg, reason, extra), true)
+	message(player, K.say(cfg, reason, extra, Chaos.lang(player)), true)
 end
 
 local function tell(guid, text, kind)
 	local p = playerOf(guid)
 	if p then
-		p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, text)
+		p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, Chaos.t(p, text))
 	end
 	return p
 end
@@ -558,11 +559,11 @@ function M.graduate(player, link)
 			pcall(ChaosAchievements.set, player, "mentor_fledged", 1)
 		end
 		giveItems(player, cfg.graduation.items)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("graduatedApprentice", mentorName, K.graduationText(cfg)))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("graduatedApprentice", mentorName, K.graduationText(cfg))))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN or 13)
 		tell(link.mentor_id, say("graduatedMentor", player:getName(), marks))
 	else
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("graduatedUnearned", player:getName(), cfg.graduationLevel))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("graduatedUnearned", player:getName(), cfg.graduationLevel)))
 		tell(link.mentor_id, say("graduatedUnearned", player:getName(), cfg.graduationLevel))
 	end
 	log(player:getGuid(), link.mentor_id, "graduated", (earned and "earned " or "unearned ") .. marks)
@@ -614,10 +615,10 @@ local function notifyOffline(mentorGuid, player)
 		local m = K.milestone(cfg, r.m)
 		local name = m and m.name or ("Level " .. cfg.graduationLevel .. ": graduation")
 		if r.m == "graduation" then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, r.s == "paid" and say("graduatedMentor", r.n, r.k) or
-				say("graduatedUnearned", r.n, cfg.graduationLevel))
+			local text = r.s == "paid" and say("graduatedMentor", r.n, r.k) or say("graduatedUnearned", r.n, cfg.graduationLevel)
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, text))
 		elseif r.s == "paid" then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("milestone", r.n, name, r.k))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("milestone", r.n, name, r.k)))
 		end
 	end
 	if #rows > 0 then
@@ -673,10 +674,10 @@ function M.link(player, mentorGuid, source)
 	registerEvents(player)
 	local mentorName = (character(mentorGuid) or {}).name or "?"
 	if source == "referral" then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("autoLinked", mentorName))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("autoLinked", mentorName)))
 	else
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("linked", mentorName, math.floor(cfg.bonus.exp * 100 + 0.5),
-			math.floor(cfg.bonus.damageTaken * 100 + 0.5)))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("linked", mentorName, math.floor(cfg.bonus.exp * 100 + 0.5),
+			math.floor(cfg.bonus.damageTaken * 100 + 0.5))))
 	end
 	local mp = tell(mentorGuid, say("linkedMentor", player:getName()))
 	if mp then
@@ -781,7 +782,7 @@ local function invite(player, data)
 	M.invites[target:getGuid()] = M.invites[target:getGuid()] or {}
 	M.invites[target:getGuid()][guid] = {at = os.time(), name = player:getName(), level = player:getLevel(),
 		voc = vocName(player:getVocation():getId()), lang = row.lang}
-	target:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("invited", player:getName()))
+	target:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(target, say("invited", player:getName())))
 	sendStatus(target, false)
 	message(player, say("inviteSent", target:getName()))
 end

@@ -455,12 +455,17 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		return true
 	end
 	local ambushMult = ChaosEvents and ChaosEvents.bonus("ambush") or 1
+	-- pack combat (pace.lua): kills come faster, so the per-kill chance is x the monster's loot factor
+	local paced = ChaosPace and ChaosPace.isPaced and ChaosPace.isPaced(creature)
+	if paced then
+		ambushMult = ambushMult * ChaosPace.lootMultOf(creature)
+	end
 	if math.random(10000) > (cfg.ambush[tier] or 0) * ambushMult then
 		return true
 	end
 	local newTier = pickWeighted(cfg.ambushTier)
 	local pos = creature:getPosition()
-	addEvent(function(typeName, shown, position, nt, d, look)
+	addEvent(function(typeName, shown, position, nt, d, look, wasPaced)
 		pendingTier = nt
 		local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 		local copy = create(typeName, position, true, false, shown) -- a rift name carries over
@@ -468,12 +473,16 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		if copy and eligible(copy) then
 			applyTier(copy, nt, d)
 		end
+		-- the copy of a paced monster is paced as well (at its first think)
+		if copy and wasPaced and ChaosPace and ChaosPace.mark then
+			ChaosPace.mark(copy)
+		end
 		-- the copy wears what the original wore (a rift look), with its own tier's shader
 		if copy and look and copy:getOutfit().lookType ~= look.lookType then
 			look.lookShader = copy:getOutfit().lookShader
 			copy:setOutfit(look)
 		end
-	end, 600, typeNameOf(creature), creature:getName(), pos, newTier, depth + 1, creature:getOutfit())
+	end, 600, typeNameOf(creature), creature:getName(), pos, newTier, depth + 1, creature:getOutfit(), paced or false)
 	pos:sendMagicEffect(CONST_ME_TELEPORT)
 	return true
 end

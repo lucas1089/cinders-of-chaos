@@ -16,6 +16,8 @@
  *           rules, taken name, class lock, character slots, town, sex, IP), plus the Terms (accepted on the site),
  *           a creation limit per account and per address, and the season join (a request the game server carries
  *           out at the character's first login, season.lua).
+ *   A banned account (account_bans, active) is refused at login (after the right password: 403 "banned", until
+ *   and reason) and at create (its tokens end).
  *   logout  {token}                      -> ends the token.
  *
  * Security: HTTPS only in production (the web server; the client refuses a non-HTTPS URL except 127.0.0.1). The
@@ -121,6 +123,25 @@ function chaos_client_api_token_account($token, int $now): int {
 		return 0;
 	}
 	return $accountId;
+}
+
+/**
+ * The refusal for an account with an active ban (the game server's `account_bans`: expires_at 0 = permanent, else
+ * until expires_at; the game's own login and the bazaar read it the same way), or null when not banned.
+ */
+function chaos_client_api_ban(int $accountId, int $now): ?array {
+	if (!chaos_table_exists('account_bans')) {
+		return null;
+	}
+	$ban = db()->fetchOne('SELECT `reason`, `expires_at` FROM `account_bans` WHERE `account_id` = ? AND (`expires_at` <= 0 OR `expires_at` > ?) LIMIT 1;', [$accountId, $now]);
+	if (!is_array($ban)) {
+		return null;
+	}
+	$expires = (int)$ban['expires_at'];
+	$reason = trim((string)($ban['reason'] ?? ''));
+	$message = ($expires > 0 ? 'Your account is banned until ' . gmdate('Y-m-d H:i', $expires) . ' UTC.' : 'Your account is banned permanently.')
+		. ($reason !== '' ? ' Reason: ' . substr($reason, 0, 255) : '');
+	return chaos_client_api_fail(403, 'banned', $message, array('until' => $expires));
 }
 
 // ---------------------------------------------------------------- the account's state
@@ -296,6 +317,11 @@ function chaos_client_api_login(array $req, string $ip, string $ipKey, int $now)
 			return chaos_client_api_fail(403, 'inactive', 'Activate your account first (the e-mail of the website).');
 		}
 	}
+	// a banned account gets no token (no state, no character creation); told only after the right password
+	$ban = chaos_client_api_ban($accountId, $now);
+	if ($ban !== null) {
+		return $ban;
+	}
 	[$token, $expires] = chaos_client_api_issue_token($accountId, $ipKey, $now);
 	return array(200, array('ok' => true, 'version' => CHAOS_CLIENT_API_VERSION, 'token' => $token, 'expires' => $expires,
 		'expiresIn' => $expires - $now)
@@ -317,6 +343,13 @@ function chaos_client_api_class_problem(int $vocation, int $accountId): ?string 
 function chaos_client_api_create(array $req, int $accountId, string $ipKey, int $now): array {
 	global $config;
 	$state = chaos_client_api_settings();
+	// a token issued before the ban: refused, and the account's tokens end
+	$ban = chaos_client_api_ban($accountId, $now);
+	if ($ban !== null) {
+		db()->execute('DELETE FROM `chaos_client_tokens` WHERE `account_id` = ?;', [$accountId]);
+		chaos_client_api_log($ipKey, $accountId, 'create', false, $now);
+		return $ban;
+	}
 	if (function_exists('chaos_legal_has_accepted') && !chaos_legal_has_accepted($accountId)) {
 		$site = rtrim((string)($config['site_url'] ?? ''), '/');
 		return chaos_client_api_fail(403, 'terms', 'Accept the current Terms of Use on the website first (log in there once).',

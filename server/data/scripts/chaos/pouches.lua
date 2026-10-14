@@ -29,6 +29,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/pouches_core.lua")
 dofile("data/scripts/chaos/pouches_config.lua")
 
@@ -501,7 +504,7 @@ end
 local trade = EventCallback
 trade.onTradeRequest = function(player, target, item)
 	if PO.holdsPouch(item) then
-		player:sendCancelMessage("Store items cannot be traded.")
+		player:sendCancelMessage(Chaos.t(player, "Store items cannot be traded."))
 		return false
 	end
 	return true
@@ -511,7 +514,7 @@ trade:register(1)
 local accept = EventCallback
 accept.onTradeAccept = function(player, target, item, targetItem)
 	if PO.holdsPouch(item) or PO.holdsPouch(targetItem) then
-		player:sendCancelMessage("Store items cannot be traded.")
+		player:sendCancelMessage(Chaos.t(player, "Store items cannot be traded."))
 		return false
 	end
 	return true
@@ -598,8 +601,8 @@ function PO.storeGive(player, kind, why)
 	if not where then
 		return "Something went wrong. Your coins were refunded."
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: your %s is in your %s. It collects %s while you " ..
-		"carry it.", why or "Store", k.title, where, k.collects))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: your %s is in your %s. It collects %s while you carry it.",
+		Chaos.t(player, why or "Store"), k.title, Chaos.t(player, where), Chaos.t(player, k.collects)))
 	return true
 end
 
@@ -710,8 +713,8 @@ function login.onLogin(player)
 			end
 			setBits(player, c.storage.regrant, bits)
 			if #back > 0 then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Back after your death, empty: your %s (%s).",
-					table.concat(back, ", "), where))
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Back after your death, empty: your %s (%s).",
+					table.concat(back, ", "), Chaos.t(player, where)))
 			end
 		end
 	end)

@@ -205,6 +205,9 @@ eq(#dungeons, 5, "five generated dungeons")
 -- inside the 15 minute limit at 6; the boss alone 2-3 minutes at 1 and 5-6 at 6
 do
 	local DD = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+	-- pack combat (pace.lua): the trash at the pace curve's health, the walk per pack
+	dofile("data/scripts/chaos/pace_core.lua")
+	local pc = dofile("data/scripts/chaos/pace_config.lua")
 	local function fileHp(name)
 		local f = io.open("data/monster/monsters/chaos/" .. name:lower():gsub(" ", "_") .. ".xml", "r")
 		local text = f and f:read("*a") or ""
@@ -217,13 +220,17 @@ do
 		local m = A.generate(cfg, def, {})
 		local mons = {}
 		for _, s in ipairs(m.spawns) do
-			mons[#mons + 1] = {hp = fileHp(s.monster), level = s.level, count = s.count}
+			mons[#mons + 1] = {hp = fileHp(s.monster), level = s.level, count = s.count,
+				pace = ChaosPaceCore.factors(pc, s.level, true).health}
 		end
 		local b = def.boss
-		local spec = {level = def.dungeon.level + 25, monsters = mons, need = 0.85,
+		local spec = {level = def.dungeon.level + 25, monsters = mons, need = 0.85, packs = #m.spawns,
 			boss = DD.levelHealth(fileHp(b.monster), b.level) * b.healthMult, bossCurve = def.dungeon.bossHealth,
 			trashCurve = def.dungeon.trashHealth}
 		local r1, r6 = DD.runSeconds(spec, 1), DD.runSeconds(spec, 6)
+		-- the owner's rule (2026-10-14): at least 100 monsters in every queue dungeon, in packs (pace)
+		ok(r1.monsters >= 100, def.id .. string.format(": at least 100 monsters (%d)", r1.monsters))
+		ok(r1.monsters / #m.spawns >= 4, def.id .. string.format(": in packs (%.1f a pack)", r1.monsters / #m.spawns))
 		ok(r1.total >= 480 and r1.total <= 660, def.id .. string.format(": about 10 minutes at difficulty 1 (%d s)", math.floor(r1.total)))
 		ok(r6.total <= 0.92 * def.dungeon.time, def.id .. string.format(": difficulty 6 inside the limit (%d s)", math.floor(r6.total)))
 		ok(r1.boss >= 120 and r1.boss <= 180, def.id .. string.format(": the boss 2-3 minutes at 1 (%d s)", math.floor(r1.boss)))
@@ -239,8 +246,8 @@ eq(table.concat(levels, ","), "800,1000,1300,1600,2000", "the dungeons follow th
 
 -- ====================================================================== the configured areas
 -- Fixed checksums: change them together with the config (python3 -I server/tools/areagen_export.py summary prints them).
-local SUMS = {emberdeep = 1094799804, ossuary = 1009320019, cinderfall = 708720936, vault = 625376734,
-	marrow = 1540033997, crucible = 1350679582, sanctum = 1291071603, throne = 874625822}
+local SUMS = {emberdeep = 283372836, ossuary = 1221939955, cinderfall = 766991134, vault = 2125522065,
+	marrow = 1923860382, crucible = 26295666, sanctum = 1321453866, throne = 1082124787}
 
 -- ground id -> family (stock and dark)
 local famOf = {}
@@ -372,16 +379,25 @@ for _, def in ipairs(cfg.areas) do
 	end
 end
 
--- density of the three hunting areas: "big and full" (2026-10-14), 3.0-3.5 per 100 tiles like the filled base hunts
+-- density of the three hunting areas: "big and full" (2026-10-14), since pack combat (pace) 4.5 per 100 tiles like the
+-- filled base hunts, most points packs of 2-4
 local total = 0
 for _, def in ipairs(cfg.areas) do
 	if not def.dungeon then
 		local m = A.generate(cfg, def, {})
 		total = total + m.stats.monsters
-		ok(m.stats.density >= 3.0 and m.stats.density <= 3.5, def.id .. ": density 3.0-3.5 per 100 tiles")
+		ok(m.stats.density >= 4.0 and m.stats.density <= 5.0, def.id .. ": density 4.0-5.0 per 100 tiles")
+		local packs, points = 0, 0
+		for _, sp in ipairs(m.spawns) do
+			points = points + 1
+			if (sp.count or 1) >= 2 then
+				packs = packs + 1
+			end
+		end
+		ok(packs >= points * 0.5, def.id .. ": at least half the points are packs (" .. packs .. "/" .. points .. ")")
 	end
 end
-ok(total >= 650 and total <= 820, "the three areas hold about 740 monsters (" .. total .. ")")
+ok(total >= 920 and total <= 1120, "the three areas hold about 1,020 monsters (" .. total .. ")")
 
 -- ====================================================================== many seeds, small areas
 local base = {}
@@ -727,6 +743,9 @@ do
 	-- level's item level + the difficulty's, the rarity floor of the difficulty; the achievement counters
 	do
 		local DD = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+	-- pack combat (pace.lua): the trash at the pace curve's health, the walk per pack
+	dofile("data/scripts/chaos/pace_core.lua")
+	local pc = dofile("data/scripts/chaos/pace_config.lua")
 		local gear = {[3983] = true, [2495] = true}
 		ChaosLoot = {isGearId = function(id) return gear[id] == true end, itemFindMult = function() return 1 end,
 			upgradeRarity = function(tier, current) return current end,

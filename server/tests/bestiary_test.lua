@@ -72,6 +72,21 @@ eq(table.concat(none, ","), "1,25,250,1000", "no spawns at all keeps the normal 
 local tiny = C.thresholds({kills = {1, 2, 3, 5}, points = {1, 1, 1, 1}}, 1, cfg)
 eq(table.concat(tiny, ","), "1,2,3,4", "at least the stage number and strictly increasing")
 eq(table.concat(C.thresholds(cfg.boss, 1, cfg), ","), "1,2,3,5", "bosses keep their numbers")
+-- pack combat (pace): the kill-goal factor on every stage after the first
+eq(table.concat(C.thresholds(medium, 200, cfg, 5), ","), "1,125,1250,5000", "pace x5: Discovered at 1 kill still")
+eq(table.concat(C.thresholds(medium, 3, cfg, 5), ","), "1,25,250,1000", "pace x5 and few spawns")
+eq(table.concat(C.thresholds(medium, 200, cfg, 1), ","), "1,25,250,1000", "pace x1 unchanged")
+eq(table.concat(C.thresholds(cfg.boss, 1, cfg, 5), ","), "1,2,3,5", "pace: bosses keep theirs")
+do
+	local saved = cfg.goalOf
+	cfg.goalOf = function(info, level) return info.name == "Paced" and 2.7 or 1 end
+	local e1 = C.buildEntry({name = "Paced", exp = 100, health = 100}, {spawns = 50}, cfg)
+	eq(e1.goal, 2.7, "pace: the entry keeps its goal")
+	eq(e1.th[4], math.floor(C.difficultyOf(e1.level, false, cfg).kills[4] * 2.7 + 0.5), "pace: the entry's thresholds")
+	local e2 = C.buildEntry({name = "Paced", exp = 100, health = 100, boss = true}, {spawns = 50}, cfg)
+	eq(e2.goal, 1, "pace: a boss entry has no goal factor")
+	cfg.goalOf = saved
+end
 eq(C.stageOf(0, th), 0)
 eq(C.stageOf(1, th), 1)
 eq(C.stageOf(24, th), 1)
@@ -200,6 +215,8 @@ ok = C.canTakeHunt(nil, 30, 5, cfg)
 assert(not ok)
 local fewEntry = {key = "x", diff = "medium", spawns = 3}
 eq(C.huntCount(fewEntry, cfg), 75, "few spawns: half, rounded to 5")
+eq(C.huntCount({key = "x", diff = "medium", spawns = 300, goal = 2.7}, cfg), 410, "pace: 150 x 2.7 = 405 -> 410")
+eq(C.huntCount({key = "x", diff = "medium", spawns = 3, goal = 2.7}, cfg), 205, "pace and few spawns: 202.5 -> 205")
 
 -- ---------------------------------------------------------------- the board (real-size catalogue from the spawn data)
 local big = {}

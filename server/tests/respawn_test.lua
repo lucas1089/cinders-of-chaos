@@ -7,6 +7,13 @@ dofile("data/scripts/chaos/chaos_constants.lua")
 dofile("data/scripts/chaos/respawn_core.lua")
 local R = ChaosRespawn
 local cfg = dofile("data/scripts/chaos/respawn_config.lua")
+-- the shipped steps (pack combat, 2026-10-14: a solo percent) are checked at the end; the checks before use the earlier
+-- steps without a solo percent (100 / 85 / 70 / 55 / 50), which also covers a config without soloPercent
+local shipped = dofile("data/scripts/chaos/respawn_config.lua")
+local function legacy(c)
+	c.soloPercent, c.perExtraHunter, c.minPercent = nil, 15, 50
+end
+legacy(cfg)
 
 local fails, checks = 0, 0
 local function ok(cond, what)
@@ -165,6 +172,7 @@ local realPrint = print
 print = function(s) printed[#printed + 1] = s end
 ChaosRespawn.state = nil
 dofile("data/scripts/chaos/respawn.lua")
+legacy(ChaosRespawnConfig)
 print = realPrint
 eq(#printed, 0, "loads quietly")
 local tick = globals.ChaosRespawnTick
@@ -252,4 +260,20 @@ if fails > 0 then
 	print(string.format("respawn: %d of %d checks failed", fails, checks))
 	os.exit(1)
 end
+-- ------------------------------------------------------------------ the shipped steps (pack combat)
+eq(shipped.soloPercent, 80, "shipped: one hunter alone 80%")
+local want = {[0] = 100, 80, 70, 60, 50, 45, 45, 45}
+for n = 0, 7 do
+	eq(R.percentFor(n, shipped), want[n], "shipped: " .. n .. " hunters")
+end
+do
+	local z = R.zones({{x = 100, y = 100, z = 7, ip = 1}}, shipped)
+	eq(#z, 1, "shipped: a solo hunter gets a zone")
+	eq(z[1] and z[1].percent, 80, "shipped: the solo zone at 80%")
+	z = R.zones({}, shipped)
+	eq(#z, 0, "shipped: nobody, no zone")
+	local g = copy(shipped, {globalPercent = 50})
+	eq(R.percentFor(1, g), 40, "shipped: global 50% x solo 80%")
+end
+
 print(string.format("respawn: all %d checks passed", checks))

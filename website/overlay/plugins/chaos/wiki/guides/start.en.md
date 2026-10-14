@@ -28,6 +28,10 @@ At your first login you arrive on a small island. Each station teaches one thing
 - Claim the daily reward. A streak of days pays more.
 - At levels 20, 50, 100 and 200 you get gifts: potions, orbs and more.
 
+## Hunting in packs
+
+Monsters come in packs and die fast. Pull a group and kill it together with your area spells: several kills within 3 seconds of each other form a chain, and a chain of 4 or more gives up to 40% more experience. Each kill gives less experience and loot than one big monster would, so a full pack is the fast way up. Bosses keep their full strength. See [Pack combat](wiki:basics:pace).
+
 ## The top menu
 
 Almost everything is in the client's top menu: Character, Adventure, Economy, Social and System. You do not need to learn commands.

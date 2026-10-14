@@ -196,110 +196,128 @@
     {
       "zone": "scale_gallery",
       "monster": "Ashfang Wrym",
-      "count": 10,
-      "respawn": 120
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "scale_gallery",
       "monster": "Shadowvein Wrym",
       "count": 6,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "molt_chamber",
       "monster": "Viridscale Wrym",
-      "count": 10,
-      "respawn": 120
+      "count": 19,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "molt_chamber",
       "monster": "Ashfang Wrym",
-      "count": 6,
-      "respawn": 120
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "stormvent",
       "monster": "Stormvein Wrym",
-      "count": 10,
-      "respawn": 120
+      "count": 17,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "venom_hollow",
       "monster": "Viridscale Wrym",
-      "count": 6,
-      "respawn": 120
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "venom_hollow",
       "monster": "Shadowvein Wrym",
-      "count": 6,
-      "respawn": 120
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "brood_shelf",
       "monster": "Flarevein Wyrm",
-      "count": 4,
-      "respawn": 180
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "shedskin_vault",
       "monster": "Shadowvein Wrym",
       "count": 8,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "shedskin_vault",
       "monster": "Viridscale Wrym",
       "count": 8,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "fang_gallery",
       "monster": "Ashfang Wrym",
-      "count": 10,
-      "respawn": 120
+      "count": 19,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "spine_ridge",
       "monster": "Viridscale Wrym",
       "count": 8,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "spine_ridge",
       "monster": "Ashfang Wrym",
       "count": 8,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "ashen_nest",
       "monster": "Ashfang Wrym",
       "count": 8,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "ashen_nest",
       "monster": "Shadowvein Wrym",
       "count": 8,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "thunder_hollow",
       "monster": "Stormvein Wrym",
-      "count": 10,
-      "respawn": 120
+      "count": 19,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "coil_cavern",
       "monster": "Viridscale Wrym",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "coil_cavern",
       "monster": "Stormvein Wrym",
       "count": 4,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     }
   ],
   "chests": [

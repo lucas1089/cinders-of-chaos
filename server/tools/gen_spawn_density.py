@@ -2,7 +2,7 @@
 """Fill every thin base-map hunt to the target density: writes tools/spawn_density.json for patch_base_spawns.py.
 
 usage: python3 -I gen_spawn_density.py DATA_DIR ITEMS_OTB [--map PATH.otbm|.npz] [--out PATH] [--target D] [--min D]
-                                       [--cap F] [--max-add N] [--stats PATH] [--check]
+                                       [--cap F] [--max-add N] [--block N] [--spacing N] [--stats PATH] [--check]
 
 DATA_DIR is a scratch install of the base server (install_all.py steps files, lib, monsternames, lategame, monsters,
 spawns; docs/CONTENT.md). Needs numpy and the map reader of tools/map/ (otbm.py, itemdb.py); ITEMS_OTB defaults to
@@ -19,12 +19,15 @@ tiles apart, at least 10 of them). For each hunt (server/README.md "Spawn densit
   skipped   a closed pocket (the walkable set around the hunt ends under 400 tiles and has no floor change or
             teleport: quest rooms reached by a lever or a scripted teleport), a region under 60 tiles, no monster
             that can be copied
-  density   the hunt's entries per 100 region tiles. Under `min` (3.25) it is raised to `target` (3.4), at most
-            `cap` x its entries more (2.0) and `max-add` (400) spawns
-  a spawn   one monster on a free walkable tile of the region (no NPC within 3 sqm, no floor change next to it), at
-            least 3 sqm from every other entry: the tile farthest from all entries, ties by x then y. It copies the
-            nearest ordinary entry of the hunt (no boss, a monster with 10+ entries on the map, spawntime up to 300 s,
-            not one that tools/patch_base_spawns.py moved or added), and so its spawntime
+  density   the hunt's entries per 100 region tiles. Under `min` (4.3) it is raised to `target` (4.5), at most
+            `cap` x its entries more (2.5) and `max-add` (600) monsters. Hunts under hunting level 30 (the audit's
+            level 15) keep the earlier fill: under 3.25 raised to 3.4, x2.0, +400, one-monster spawns (`low`)
+  a spawn   a block of up to `block` (3) monsters: its centre on a free walkable tile of the region (no NPC within
+            3 sqm, no floor change next to it), at least `spacing` (5) sqm from every other entry and block (down to
+            3 when the region is full): the tile farthest from all of them, ties by x then y; the other monsters on
+            the nearest free candidate tiles within 2 sqm. It copies the nearest ordinary entry of the hunt (no boss, a
+            monster with 10+ entries on the map, spawntime up to 300 s, not one that tools/patch_base_spawns.py moved
+            or added), and so its spawntime
 """
 import collections, json, os, re, sys
 
@@ -44,6 +47,7 @@ POCKET = 400       # a closed set under this many walkable tiles with no exit is
 MIN_REGION = 60
 MAX_SPAWNTIME = 300
 MIN_COPIES = 10
+BLOCK_RADIUS = 2   # a spawn block of the pack fill: its monsters within this many sqm of its centre
 
 WALK, CAND, EXIT, PZ, HOUSE = 1, 2, 4, 8, 16
 
@@ -224,9 +228,11 @@ def hunts_of(data_dir, spawn_text):
         head = blk.group(1)
         if (pbs.attr(head, 'chaosadd') or '').startswith('F'):
             continue
+        if pbs.attr(head, 'chaoscontent') is not None or pbs.attr(head, 'chaoshunt') is not None:
+            continue  # a planned area (install step contentareas, after spawns): sized by its own plan
         added = pbs.attr(head, 'chaosadd') is not None
         c = (pbs.num(pbs.attr(head, 'centerx')), pbs.num(pbs.attr(head, 'centery')), pbs.num(pbs.attr(head, 'centerz')))
-        for tag in pbs.MON_RE.findall(blk.group(2)):
+        for tag in pbs.MON_RE.findall(pbs.COMMENT_RE.sub('', blk.group(2))):  # not the entries the spawns step took out
             name = pbs.attr(tag, 'name') or ''
             x, y, z = pbs.entry_pos(c, tag)
             total[name.lower()] += 1
@@ -251,8 +257,36 @@ def hunts_of(data_dir, spawn_text):
     return out, npcs, [(r[1], r[2], r[3]) for r in rows]
 
 
-def plan(m, code, hunts, npcs, others, lo, target, cap, max_add, log=None):
-    """others: every monster entry of the file [(x, y, z)] (spacing counts all of them and the spawns placed here)"""
+def blocks_of(n, block):
+    """sizes of the spawn blocks for n new monsters in blocks of up to `block` (the last one smaller)"""
+    if n <= 0:
+        return []
+    block = max(1, block)
+    full, rest = divmod(n, block)
+    return [block] * full + ([rest] if rest else [])
+
+
+def extras(center, cand, taken, k, radius=BLOCK_RADIUS):
+    """up to k more tiles for a spawn block at center: candidates within `radius` (Chebyshev), not taken, nearest
+    first, ties by x then y. Deterministic."""
+    if k <= 0:
+        return []
+    cx, cy = center
+    near = []
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            p = (cx + dx, cy + dy)
+            if (dx or dy) and p in cand and p not in taken:
+                near.append((max(abs(dx), abs(dy)), p[0], p[1]))
+    near.sort()
+    return [(x, y) for _d, x, y in near[:k]]
+
+
+def plan(m, code, hunts, npcs, others, lo, target, cap, max_add, log=None, block=1, spacing=SPACING, low=None):
+    """others: every monster entry of the file [(x, y, z)] (spacing counts all of them and the spawns placed here).
+    block > 1: the new monsters come in spawn blocks of up to `block` (radius BLOCK_RADIUS) whose centres are at least
+    `spacing` apart (falling back one sqm at a time down to SPACING when the region is full). low = (level, lo, target,
+    cap, max_add): hunts under that level use those numbers with one-monster spawns (new players)."""
     npc_at = collections.defaultdict(list)
     for x, y, z in npcs:
         npc_at[z].append((x, y))
@@ -282,7 +316,11 @@ def plan(m, code, hunts, npcs, others, lo, target, cap, max_add, log=None):
         if len(region) < MIN_REGION:
             skipped['region under %d tiles' % MIN_REGION] += 1
             continue
-        n = wanted(len(rows), len(region), lo, target, cap, max_add)
+        h_lo, h_target, h_cap, h_max, h_block, h_spacing = lo, target, cap, max_add, block, spacing
+        if low and level < low[0]:
+            h_lo, h_target, h_cap, h_max = low[1:5]
+            h_block, h_spacing = 1, SPACING
+        n = wanted(len(rows), len(region), h_lo, h_target, h_cap, h_max)
         sources = [(r[1] - x0, r[2] - y0) for r in rows if r[6]]
         if n and not sources:
             skipped['no monster to copy'] += 1
@@ -303,19 +341,45 @@ def plan(m, code, hunts, npcs, others, lo, target, cap, max_add, log=None):
                     for ox, oy in bucket.get((bx, by, z), ()):
                         if x0 <= ox <= x1 and y0 <= oy <= y1:
                             near.add((ox - x0, oy - y0))
-            pts = place(region, cand, sorted(near), n)
+            if h_block <= 1:
+                pts = [(p, []) for p in place(region, cand, sorted(near), n)]
+            else:
+                sizes = blocks_of(n, h_block)
+                taken = set(near)
+                centres = []
+                sp = h_spacing
+                while len(centres) < len(sizes) and sp >= SPACING:
+                    got = place(region, cand, sorted(taken), len(sizes) - len(centres), sp)
+                    for c in got:
+                        taken.add(c)
+                    centres += got
+                    sp -= 1
+                pts = []
+                for c, size in zip(centres, sizes):
+                    more = extras(c, cand, taken, size - 1)
+                    for e in more:
+                        taken.add(e)
+                    pts.append((c, more))
         likes, adds = [], []
-        for p in pts:
+        monsters = 0
+        for p, more in pts:
             s = nearest(p, sources)
             like = [s[0] + x0, s[1] + y0]
             if like not in likes:
                 likes.append(like)
-            adds.append([p[0] + x0, p[1] + y0, likes.index(like)])
+            row = [p[0] + x0, p[1] + y0, likes.index(like)]
+            for e in more:
+                row += [e[0] - p[0], e[1] - p[1]]
+            adds.append(row)
+            monsters += 1 + len(more)
             bucket[((p[0] + x0) // B, (p[1] + y0) // B, z)].append((p[0] + x0, p[1] + y0))
+            for e in more:
+                bucket[((e[0] + x0) // B, (e[1] + y0) // B, z)].append((e[0] + x0, e[1] + y0))
         ax, ay = xs + [a[0] for a in adds], ys + [a[1] for a in adds]
         areas.append(dict(level=level, z=z, box=[min(ax), min(ay), max(ax), max(ay)], entries=len(rows),
                           tiles=len(region), before=round(len(rows) * 100.0 / len(region), 2),
-                          after=round((len(rows) + len(adds)) * 100.0 / len(region), 2), likes=likes, add=adds))
+                          after=round((len(rows) + monsters) * 100.0 / len(region), 2), likes=likes, add=adds,
+                          monsters=monsters))
     return areas, skipped
 
 
@@ -323,9 +387,13 @@ def render(areas, skipped, args):
     out = ['{',
            '  "_doc": "Written by tools/gen_spawn_density.py, read by tools/patch_base_spawns.py (install step spawns). '
            'One row per base-map hunt: id, floor, box [x0, y0, x1, y1], hunt level, entries, region tiles, density per '
-           '100 tiles before / after, likes (the entries copied, [x, y] on the floor) and add ([x, y, index in likes]). '
-           'server/README.md Spawn density and respawn, Fill.",',
-           '  "min": %s, "target": %s, "cap": %s, "maxAdd": %d,' % (args['min'], args['target'], args['cap'], args['max_add']),
+           '100 tiles before / after, likes (the entries copied, [x, y] on the floor) and add ([x, y, index in likes, '
+           'then dx, dy of each further monster of the spawn block]). server/README.md Spawn density and respawn, Fill '
+           'and Pack combat (pace).",',
+           '  "min": %s, "target": %s, "cap": %s, "maxAdd": %d, "block": %d, "spacing": %d,' % (
+               args['min'], args['target'], args['cap'], args['max_add'], args.get('block', 1),
+               args.get('spacing', SPACING)),
+           '  "low": %s,' % json.dumps(args.get('low')),
            '  "skipped": %s,' % json.dumps(dict(sorted(skipped.items())), sort_keys=True),
            '  "areas": [']
     rows = []
@@ -340,18 +408,26 @@ def render(areas, skipped, args):
     return '\n'.join(out)
 
 
+# Pack combat (pace, 2026-10-14): from hunting level 30 (the audit's fair-hunt level 15, x2) every hunt under 4.3 per
+# 100 region tiles is raised to 4.5, at most x2.5 its entries and +600 monsters, in spawn blocks of 3 whose centres are
+# 5+ sqm apart. Hunts under it keep the earlier fill (3.25 -> 3.4, one-monster spawns): new players.
+DEFAULTS = dict(min=4.3, target=4.5, cap=2.5, max_add=600, block=3, spacing=5, low=[15, 3.25, 3.4, 2.0, 400])
+
+
 def main(argv):
-    opts = dict(min=3.25, target=3.4, cap=2.0, max_add=400)
+    opts = dict(DEFAULTS)
     args, i, check, paths = [], 0, False, {}
     while i < len(argv):
         a = argv[i]
-        if a in ('--map', '--out', '--stats', '--target', '--min', '--cap', '--max-add'):
+        if a in ('--map', '--out', '--stats', '--target', '--min', '--cap', '--max-add', '--block', '--spacing'):
             v = argv[i + 1]
             i += 1
             if a in ('--map', '--out', '--stats'):
                 paths[a] = v
             elif a == '--max-add':
                 opts['max_add'] = int(v)
+            elif a in ('--block', '--spacing'):
+                opts[a[2:]] = int(v)
             else:
                 opts[a[2:]] = float(v)
         elif a == '--check':
@@ -375,15 +451,17 @@ def main(argv):
     db = ItemDB(otb, os.path.join(data, 'items', 'items.xml'))
     m = otbm.load_map(paths.get('--map') or os.path.join(data, 'world', name + '.otbm'))
     code = tile_codes(m, db)
-    areas, skipped = plan(m, code, hunts, npcs, others, opts['min'], opts['target'], opts['cap'], opts['max_add'], log=print)
+    areas, skipped = plan(m, code, hunts, npcs, others, opts['min'], opts['target'], opts['cap'], opts['max_add'], log=print,
+                          block=opts['block'], spacing=opts['spacing'], low=opts['low'])
     if paths.get('--stats'):
         with open(paths['--stats'], 'w', encoding='utf-8') as f:
-            json.dump([dict([(k, v) for k, v in a.items() if k not in ('likes', 'add')], adds=len(a['add']))
+            json.dump([dict([(k, v) for k, v in a.items() if k not in ('likes', 'add')], adds=a['monsters'])
                        for a in areas], f)
     areas = [a for a in areas if a['add']]
     text = render(areas, skipped, opts)
     out = paths.get('--out', DEFAULT_OUT)
-    print('%d hunts filled, %d spawns; skipped %s' % (len(areas), sum(len(a['add']) for a in areas), dict(skipped)))
+    print('%d hunts filled, %d spawn blocks, %d monsters; skipped %s' % (
+        len(areas), sum(len(a['add']) for a in areas), sum(a['monsters'] for a in areas), dict(skipped)))
     if check:
         same = os.path.isfile(out) and pbs.read(out) == text
         print('%s: %s' % (out, 'up to date' if same else 'differs'))

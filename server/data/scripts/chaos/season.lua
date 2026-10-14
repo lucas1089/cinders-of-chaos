@@ -607,7 +607,7 @@ function S.checkMilestones(player)
 			"`reached_at`) VALUES (%d, %d, %s, %d, %s, %d)", T.rewards, account, season.id, db.escapeString(m.key), guid,
 			db.escapeString(player:getName()), now()))
 		logEvent(season.id, guid, "milestone", m.key)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s milestone: %s. Unlocked for your whole account: %s.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s milestone: %s. Unlocked for your whole account: %s.",
 			season.name, m.name, S.rewardText(m.reward)))
 	end
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE)
@@ -680,8 +680,7 @@ local function migrateRow(guid, seasonId, why)
 		S.sendState(p, false)
 	elseif p then
 		local season = S.byId(seasons(), seasonId)
-		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s has ended. This character is now a standard character: " ..
-			"it keeps its level, skills, items and passive tree and can trade with everyone.", season and season.name or "The season"))
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "%s has ended. This character is now a standard character: it keeps its level, skills, items and passive tree and can trade with everyone.", season and season.name or Chaos.t(p, "The season")))
 		S.rowOf(guid)
 		S.sendState(p, false)
 	end
@@ -783,8 +782,7 @@ local function doJoin(player, season)
 	if jc.regiveKit and NP and NP.giveKit and NP.getS and (tonumber(NP.getS(player, "kit")) or 0) > 0 then
 		pcall(NP.giveKit, player)
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to %s! %s is now a season character %s. " ..
-		"The season ends in %s. Adventure > Season shows your milestones.", season.name, player:getName(), season.tag or "",
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Welcome to %s! %s is now a season character %s. The season ends in %s. Adventure > Season shows your milestones.", season.name, player:getName(), season.tag or "",
 		S.formatDuration(select(2, S.times(season, S.ov)) - now())))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED or CONST_ME_MAGIC_BLUE)
 	pcall(function() player:save() end)
@@ -1221,11 +1219,10 @@ function login.onLogin(player)
 		local s = S.current()
 		if s then
 			if S.realmOf(p) == s.id then
-				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s %s: %s left. Adventure > Season shows your milestones.",
+				p:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(p, "%s %s: %s left. Adventure > Season shows your milestones.",
 					s.name, s.tag or "", S.formatDuration(select(2, S.times(s, S.ov)) - now())))
 			elseif not S.rowOf(p:getGuid()) and p:getLevel() <= cfg.join.maxLevel then
-				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s is running. This character can still join it: " ..
-					"Adventure > Season in the menu.", s.name))
+				p:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(p, "%s is running. This character can still join it: Adventure > Season in the menu.", s.name))
 			end
 		end
 		S.sendState(p, false)

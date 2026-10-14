@@ -452,7 +452,7 @@ local hooks = {
 	{"itemlink.lua", "ChaosDisplayScale.itemTip(tip)", 'reply(player, "link", {id = entry.id, tip = '},
 	{"groundloot.lua", "ChaosDisplayScale.itemTip(tip)", 'Chaos.send(player, OPCODE, "tip", reply)'},
 	{"market.lua", "ChaosDisplayScale.itemTip(tip)", 'send(player, "tip", {id = id, tip = tip, seller = r.seller_name})'},
-	{"pets.lua", "ChaosDisplayScale.scale(healed, ChaosDisplayScale.forPlayer(player))", 'string.format("Your pet mends you (+%.0f).", shown)'},
+	{"pets.lua", "ChaosDisplayScale.scale(healed, ChaosDisplayScale.forPlayer(player))", 'Chaos.t(player, "Your pet mends you (+%.0f).", shown)'},
 }
 for _, h in ipairs(hooks) do
 	local s = source("data/scripts/chaos/" .. h[1])

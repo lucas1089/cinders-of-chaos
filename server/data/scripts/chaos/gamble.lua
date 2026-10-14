@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/gamble_core.lua")
 if not ChaosNpcPlace then
 	dofile("data/scripts/chaos/npc_place.lua")
@@ -447,7 +450,7 @@ local function buyNow(player, d)
 		for _, p in ipairs(around) do
 			if p ~= player then
 				p:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR,
-					string.format("%s opened a [%s] %s at the Gambler!", player:getName(), rarityName(rarity), name))
+					Chaos.t(p, "%s opened a [%s] %s at the Gambler!", player:getName(), rarityName(rarity), name))
 			end
 		end
 	end

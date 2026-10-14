@@ -908,6 +908,11 @@ Bazaar). The rules (`bazaar_lib.php`, class `ChaosBazaar`; numbers from the game
   still the one the bidder saw. Writes are POSTs with the page's CSRF token; output is escaped; prepared statements only.
 - **Cron:** `* * * * * www-data php <site>/plugins/chaos/bazaar_worker.php --site <site>` ends auctions on time when
   nobody opens the page.
+- **One open listing per character**, held by the database: `active_player_id` is generated (`player_id` while
+  `active` or `settling`, else NULL) with a unique key, so two list requests at once cannot both insert; the second gets
+  "already listed". Cancel, sale, expiry and failure set NULL, so the character can be listed again. On an existing
+  table `setup/chaos_setup.php` adds the column once (MySQL 5.7+ / MariaDB 10.2+); a character listed twice before
+  keeps its oldest listing and the others are cancelled by the staff path (escrow refunded).
 - Tables: `chaos_bazaar_listings`, `chaos_bazaar_bids`, `chaos_bazaar_log` (`install.sql`, `server/sql/chaos_bazaar.sql`).
 - Test: `php website/tests/chaos_bazaar_test.php`. Not run against a live site.
 
@@ -981,6 +986,9 @@ the form's CSRF token is the page's own. The `character.created` hook runs for b
 On top, the API refuses an account without the acceptance of the current Terms (403 with the accept page's URL: the
 player accepts once on the site) and checks the season choice: only the season running now, a mode of
 `season_config.lua` `modes.list`, Hardcore modes only with `hardcore: true` (the client's "I understand").
+A banned account (an active `account_bans` row: `expires_at` 0 is permanent, else until `expires_at`, as the game
+server reads it) gets no token: `login` answers 403 `banned` with the end (`until`) and the reason, told only after the
+right password. `create` with a token issued before the ban answers the same and ends the account's tokens.
 
 **Season at creation.** A season choice writes `chaos_season_requests` (player, season, mode). The game server
 carries it out at the character's first login with its own join (`season.lua` `S.applyRequest`: `S.joinCheck`, the

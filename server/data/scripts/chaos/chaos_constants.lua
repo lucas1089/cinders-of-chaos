@@ -416,10 +416,13 @@ Chaos.dungeons = {
 	-- Everything the base server table does not have is declared here, per base server dungeon id.
 	exitDelayMs = 10000, -- delay between finishing and teleporting the group out
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a queue run lasts the base server's
-	-- DungeonTime (60 / 30 minutes) but at most maxTimeSeconds (45 minutes: two to three times the speed challenge of
-	-- 15-20 minutes); warnings at warnAt seconds left. One run per dungeon at a time (the base dungeon is one map area):
-	-- the queue is the waiting line and shows the wait of the run inside.
-	maxTimeSeconds = 2700,
+	-- DungeonTime (60 / 30 minutes) but at most maxTimeSeconds; warnings at warnAt seconds left. One run per dungeon at
+	-- a time (the base dungeon is one map area): the queue is the waiting line and shows the wait of the run inside.
+	-- Pack combat (pace.lua, 2026-10-14; owner: dungeons of at most 10-15 minutes, at least 100 monsters each): 15
+	-- minutes (was 45). The base dungeons keep 100-119 of their monsters (tools/spawn_tuning.json "dungeons") and their
+	-- own health curves below: the run model gives 9.5 minutes at difficulty 1 and 13.7 at 6 (server/README.md
+	-- "Pack combat (pace)").
+	maxTimeSeconds = 900,
 	limits = {warnAt = {300, 60, 10}},
 	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the base server modal only did on failure)
 	queueTickMs = 3000,
@@ -437,8 +440,13 @@ Chaos.dungeons = {
 			-- the lever boss room east of the box (the boss script's bossArea; boss, entrance and exit teleport in it)
 			area = {{{x = 31856, y = 32197, z = 8}, {x = 31908, y = 32236, z = 8}}},
 			loot = {{id = 2160, count = 3}},
+			-- pack combat: the boss Prince Skeletal 200,000 at level 175 (533/s): 6:15 alone, x40% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {40, 50, 60, 70, 80, 90},
+			trashHealth = {75, 86, 97, 108, 119, 129},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 15 minutes.", maxMs = 15 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 			}
 		},
@@ -446,8 +454,13 @@ Chaos.dungeons = {
 			title = "Master of the Elements",
 			bossName = "master of the elements",
 			loot = {{id = 2160, count = 5}},
+			-- pack combat: the boss 300,000 at level 225 (685/s): 7:18 alone, x34% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {34, 43, 51, 60, 68, 77},
+			trashHealth = {74, 83, 92, 101, 109, 118},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 20 minutes.", maxMs = 20 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 			}
 		},
@@ -458,8 +471,13 @@ Chaos.dungeons = {
 			-- the lever and the boss room on floor 10 (the map's tiles of the dungeon)
 			area = {{{x = 31950, y = 33098, z = 0}, {x = 32078, y = 33245, z = 10}}},
 			loot = {{id = 2160, count = 8}},
+			-- pack combat: the boss 550,000 at level 525 (1,455/s): 6:18 alone, x40% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {40, 50, 60, 70, 80, 90},
+			trashHealth = {34, 37, 41, 44, 47, 51},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 20 minutes.", maxMs = 20 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 			}
 		},
@@ -470,8 +488,13 @@ Chaos.dungeons = {
 			-- the lever on floor 11 and the boss room on floor 12 (the map's tiles of the dungeon)
 			area = {{{x = 31452, y = 31495, z = 8}, {x = 31736, y = 31644, z = 12}}},
 			loot = {{id = 2160, count = 10}},
+			-- pack combat: the boss 685,000 at level 625 (1,696/s): 6:44 alone, x37% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {37, 46, 56, 65, 74, 83},
+			trashHealth = {61, 67, 73, 79, 85, 91},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 10 minutes.", maxMs = 10 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without dying."}
 			}
 		}

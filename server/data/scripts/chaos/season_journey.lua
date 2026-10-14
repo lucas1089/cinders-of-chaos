@@ -33,6 +33,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not (ChaosSeason and ChaosSeason.realmOf and Chaos.seasonConfig) then
 	dofile("data/scripts/chaos/season.lua")
 end
@@ -399,7 +402,7 @@ function J.check(player)
 	end
 	for _, e in ipairs(objs) do
 		writeEntry(st.season, guid, K.entryKey("objective", e.obj.key), ctx.now)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Journey objective done: %s (%s).", e.obj.text,
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Journey objective done: %s (%s).", e.obj.text,
 			e.chapter.name))
 		toast(player, "Objective done: " .. e.obj.text)
 		Chaos.send(player, OPCODE, "journeyDone", {text = e.obj.text})
@@ -417,8 +420,8 @@ function J.check(player)
 				log(string.format("reward of %s for %s failed: %s", ch.key, player:getName(), tostring(text)))
 			end
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: chapter %d, %s, complete! Rewards: %s.",
-			journey.name, c.index, ch.name, #got > 0 and table.concat(got, ", ") or "none"))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: chapter %d, %s, complete! Rewards: %s.",
+			journey.name, c.index, ch.name, #got > 0 and table.concat(got, ", ") or Chaos.t(player, "none")))
 		toast(player, string.format("Chapter complete: %s", ch.name))
 		Chaos.send(player, OPCODE, "journeyDone", {text = ch.name, chapter = c.index})
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE)

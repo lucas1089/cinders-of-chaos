@@ -103,7 +103,81 @@ ok(#cur == 1 and cur[1].id == 1, "the scale is exactly the cap (3.0)")
 C.currency.maxScale = nil
 cur = L.rollCurrency("normal", {itemFind = 4, orbFind = 2})
 ok(#cur == 2, "without the cap both hit")
+-- pack combat (pace.lua): ctx.pace scales the currency chance after the cap (3400 x 3 = 10200 hits; x0.5 = 5100 not)
+C.currency.maxScale = 3.0
+cur = L.rollCurrency("normal", {itemFind = 4, orbFind = 2, pace = 0.5})
+ok(#cur == 0, "pace: the currency chance x the loot factor, outside the cap")
 L.setRandom(nil)
+
+-- pace: extra rolls x the loot factor (a 5% entry at x2 rate x0.2 pace = 2%: a 3% roll misses, a 1% roll hits)
+do
+	local saved = C.rateMult
+	C.rateMult = 2
+	local roll
+	L.setRandom(function(a, b)
+		if a == 0 and b == 100000 then
+			return roll
+		end
+		return a
+	end)
+	local tbl = {{itemId = 2148, chance = 5000, minCount = 1, maxCount = 1}}
+	local function rolls(pace)
+		local out = L.rollExtraLoot(tbl, "magic", {level = 0, pace = pace})
+		return #out
+	end
+	roll = 3000
+	local base = rolls(nil)
+	local paced = rolls(0.2)
+	roll = 1000
+	local paced2 = rolls(0.2)
+	ok(base > 0 and paced == 0 and paced2 > 0, "pace: extra roll chance x the loot factor ("
+		.. base .. "/" .. paced .. "/" .. paced2 .. ")")
+	C.rateMult = saved
+	L.setRandom(nil)
+end
+
+-- pace: thinning a corpse
+do
+	ChaosPaceCore = nil
+	dofile("data/scripts/chaos/pace_core.lua")
+	local removed = {}
+	local function item(id, count)
+		local it = {id = id, count = count}
+		function it:getId() return self.id end
+		function it:getCount() return self.count end
+		function it:remove(n)
+			if n then
+				self.count = self.count - n
+			else
+				removed[#removed + 1] = self.id
+				self.count = 0
+			end
+			return true
+		end
+		return it
+	end
+	local coins, sword = item(2148, 100), item(2400, 1)
+	local corpse = {items = {coins, sword}}
+	function corpse:getSize() return #self.items end
+	function corpse:getItem(i) return self.items[i + 1] end
+	local stackable = {[2148] = true}
+	local savedS = L.isStackableId
+	L.isStackableId = function(id) return stackable[id] == true end
+	L.setRandom(function(a, b) return math.floor((a + b) / 2) end) -- 0.5 for the thinning
+	L.thinCorpse(corpse, 0.2)
+	ok(coins.count == 20, "pace: 100 coins x0.2 = 20 (" .. coins.count .. ")")
+	ok(removed[1] == 2400, "pace: a sword at 0.5 >= 0.2 removed")
+	coins.count = 100
+	removed = {}
+	L.setRandom(function(a, b) return a end) -- 0.0
+	local sword2 = item(2400, 1)
+	corpse.items = {coins, sword2}
+	L.thinCorpse(corpse, 0.3)
+	ok(#removed == 0 and sword2.count == 1, "pace: a sword at 0.0 < 0.3 kept")
+	ok(L.thinCorpse(corpse, 1) == 0, "pace: factor 1 changes nothing")
+	L.isStackableId = savedS
+	L.setRandom(nil)
+end
 
 print(string.format("loot_caps_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

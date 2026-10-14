@@ -562,7 +562,7 @@ local function respawn(guid, token)
 	end
 	restore(player)
 	toBase(player, p)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You wake up in your guild's base. The gate leads back into the fight.")
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You wake up in your guild's base. The gate leads back into the fight."))
 end
 
 -- a lethal hit inside: no death, the player is downed and wakes up in the base
@@ -581,18 +581,18 @@ local function downed(player, p, killer)
 		kt.kills = kt.kills + 1
 		kp.kills = kp.kills + 1
 		kp.points = kp.points + cfg.points.kill
-		k:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You struck down %s: +%d points for %s.", player:getName(), cfg.points.kill, kt.name))
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s struck you down. You wake up in your base in %d seconds.", k:getName(), cfg.downedSeconds or 3))
+		k:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(k, "You struck down %s: +%d points for %s.", player:getName(), cfg.points.kill, kt.name))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s struck you down. You wake up in your base in %d seconds.", k:getName(), cfg.downedSeconds or 3))
 		for _, q in pairs(state.players) do
 			if q.bracket == p.bracket and q.inside and q.guid ~= kp.guid and q.guid ~= p.guid then
 				local other = Player(q.name)
 				if other then
-					other:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("%s (%s) struck down %s.", k:getName(), kt.name, player:getName()))
+					other:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(other, "%s (%s) struck down %s.", k:getName(), kt.name, player:getName()))
 				end
 			end
 		end
 	else
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You were struck down. You wake up in your base in %d seconds.", cfg.downedSeconds or 3))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You were struck down. You wake up in your base in %d seconds.", cfg.downedSeconds or 3))
 	end
 	addEvent(respawn, (cfg.downedSeconds or 3) * 1000, p.guid, state.token)
 end
@@ -690,9 +690,9 @@ function S.deliver(player, r)
 		inboxUsed = giveStack(player, it.id, it.count) or inboxUsed
 		parts[#parts + 1] = it.count .. "x " .. itemName(it.id)
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Guild siege reward (%s): %d gold to your bank%s%s.%s",
-		r.kind == "winner" and "winner" or "participant", r.bankGold or 0, #parts > 0 and ", " or "", table.concat(parts, ", "),
-		inboxUsed and " Your backpack was full: the rest is in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Guild siege reward (%s): %d gold to your bank%s%s.%s",
+		Chaos.t(player, r.kind == "winner" and "winner" or "participant"), r.bankGold or 0, #parts > 0 and ", " or "",
+		table.concat(parts, ", "), inboxUsed and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(r.kind == "winner" and CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 end
 
@@ -883,7 +883,7 @@ finish = function(reason)
 			else
 				local player = Player(p.name)
 				if player then
-					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 						"No guild siege reward: you need %d seconds in the siege while the match runs (you had %d).",
 						cfg.minPresenceSeconds or 0, p.presence))
 				end
@@ -1183,7 +1183,7 @@ xp:register()
 
 -- ======================================================================== forcefields
 local function pushBack(player, fromPosition, text)
-	player:sendCancelMessage(text)
+	player:sendCancelMessage(Chaos.t(player, text))
 	player:teleportTo(fromPosition, true)
 end
 
@@ -1200,22 +1200,22 @@ function enter.onStepIn(creature, item, position, fromPosition)
 	local guildId, guildName = guildOf(player)
 	local b = guildId and state.guildBracket[guildId]
 	if not b then
-		pushBack(player, fromPosition, guildId and (guildName .. " is not signed up for this siege.") or "Only members of a signed-up guild can enter the siege.")
+		pushBack(player, fromPosition, guildId and ChaosI18n.msg("%s is not signed up for this siege.", guildName) or "Only members of a signed-up guild can enter the siege.")
 		return true
 	end
 	if player:getLevel() < cfg.minLevel then
-		pushBack(player, fromPosition, string.format("You need level %d to join the siege.", cfg.minLevel))
+		pushBack(player, fromPosition, ChaosI18n.msg("You need level %d to join the siege.", cfg.minLevel))
 		return true
 	end
 	if Chaos.isMultiClient(player) then
 		pushBack(player, fromPosition, "Multi-client: another character from your connection is online. Log it out to join the siege.")
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You cannot join the guild siege while another character from your connection is online (multi-client). Log the other character out first.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You cannot join the guild siege while another character from your connection is online (multi-client). Log the other character out first."))
 		return true
 	end
 	local br = state.brackets[b]
 	local slot = br.byGuild[guildId]
 	if (cfg.maxPerGuild or 0) > 0 and insideCount(b, guildId) >= cfg.maxPerGuild then
-		pushBack(player, fromPosition, string.format("%s already has %d members inside.", guildName, cfg.maxPerGuild))
+		pushBack(player, fromPosition, ChaosI18n.msg("%s already has %d members inside.", guildName, cfg.maxPerGuild))
 		return true
 	end
 	local guid = player:getGuid()
@@ -1234,10 +1234,11 @@ function enter.onStepIn(creature, item, position, fromPosition)
 	player:registerEvent("ChaosSiegeDeath")
 	player:registerEvent("ChaosSiegeHealth")
 	toBase(player, p)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"Guild siege: this is the %s base of %s. %s Turn your secure mode off to attack. The forcefield at the back of the room leads home.",
-		cfg.sides[slot]:lower(), guildName, state.phase == "gather" and string.format("The gate opens in %d seconds.", math.max(0, state.matchAt - os.time()))
-			or "The gate leads into the arena."))
+		Chaos.t(player, cfg.sides[slot]:lower()), guildName, state.phase == "gather" and
+			Chaos.t(player, "The gate opens in %d seconds.", math.max(0, state.matchAt - os.time()))
+			or Chaos.t(player, "The gate leads into the arena.")))
 	sendHud(player, p)
 	return true
 end

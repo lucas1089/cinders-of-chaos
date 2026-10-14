@@ -25,6 +25,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua")
 end
@@ -398,7 +401,8 @@ local function salvageOne(player, data)
 	local text = rowText(info, roll)
 	logRows(player, {{item = name, text = text}})
 	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT or 9)
-	local msg = string.format("Salvaged %s: %s.%s", name, text, inbox > 0 and " Your backpack is full: some went to your inbox." or "")
+	local msg = Chaos.t(player, "Salvaged %s: %s.%s", name, text,
+		inbox > 0 and Chaos.t(player, " Your backpack is full: some went to your inbox.") or "")
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
@@ -452,9 +456,9 @@ local function salvageBatch(player, data)
 		orbText[#orbText + 1] = string.format("%dx %s", n, orbName(key))
 	end
 	table.sort(orbText)
-	local msg = string.format("Salvaged %d items: %d %s%s.%s", #rows, shards, cfg.shard.plural,
-		gotOrbs > 0 and (" and " .. table.concat(orbText, ", ")) or "",
-		inbox > 0 and " Your backpack is full: some went to your inbox." or "")
+	local msg = Chaos.t(player, "Salvaged %d items: %d %s%s.%s", #rows, shards, cfg.shard.plural,
+		gotOrbs > 0 and (Chaos.t(player, " and ") .. table.concat(orbText, ", ")) or "",
+		inbox > 0 and Chaos.t(player, " Your backpack is full: some went to your inbox.") or "")
 	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT or 9)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
@@ -502,7 +506,7 @@ local function combine(player, data)
 	local text = string.format("%d %s -> %dx %s", cost, cfg.shard.plural, count, orb.name)
 	logRows(player, {{orb = "Shards", item = orb.name, text = text}})
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or 13)
-	local msg = text .. "." .. ((inbox or 0) > 0 and " Your backpack is full: it went to your inbox." or "")
+	local msg = text .. "." .. ((inbox or 0) > 0 and Chaos.t(player, " Your backpack is full: it went to your inbox.") or "")
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)

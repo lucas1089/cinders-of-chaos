@@ -163,9 +163,9 @@ local function claim(player, index)
 	local milestone = cfg.milestones[index]
 
 	if hasBit(row.claimed_mask, index) then
-		player:sendCancelMessage("You already claimed this reward.")
+		player:sendCancelMessage(Chaos.t(player, "You already claimed this reward."))
 	elseif row.points < milestone.points then
-		player:sendCancelMessage("You do not have enough Tower Points yet.")
+		player:sendCancelMessage(Chaos.t(player, "You do not have enough Tower Points yet."))
 	else
 		-- all-or-nothing: roll back anything already handed over if one item does not fit
 		local granted = {}
@@ -186,12 +186,12 @@ local function claim(player, index)
 				"UPDATE `" .. T .. "` SET `claimed_mask` = " .. string.format("%d", mask) ..
 					" WHERE `player_id` = " .. guid .. " AND `season` = " .. season
 			)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You claimed the %d point Infinity Tower reward.", milestone.points))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You claimed the %d point Infinity Tower reward.", milestone.points))
 		else
 			for _, g in ipairs(granted) do
 				player:removeItem(g.id, g.count)
 			end
-			player:sendCancelMessage("You do not have enough room or capacity for the reward.")
+			player:sendCancelMessage(Chaos.t(player, "You do not have enough room or capacity for the reward."))
 		end
 	end
 	sendTower(player, "update")
@@ -436,8 +436,8 @@ function seasonTalk.onSay(player, words, param)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and (n .. " ended season(s) paid out.") or "No ended season to pay out.")
 	else
 		local season, finish = currentSeason()
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Tower Season %d ends %s. Last season paid out: %s.",
-			season, os.date("%Y-%m-%d %H:%M", finish), tostring(getConfig(cfg.seasonEnd.configKey) or "none")))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Tower Season %d ends %s. Last season paid out: %s.",
+			season, os.date("%Y-%m-%d %H:%M", finish), tostring(getConfig(cfg.seasonEnd.configKey) or Chaos.t(player, "none"))))
 	end
 	return false
 end

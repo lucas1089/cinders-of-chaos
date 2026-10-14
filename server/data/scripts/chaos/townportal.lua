@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/townportal_core.lua")
 if not ChaosVfx then
 	pcall(dofile, "data/lib/chaos_vfx.lua")
@@ -304,7 +307,7 @@ local function openPair(player)
 	T.pairs[pair.owner] = pair
 	player:setStorageValue(ST.cooldown, os.time() + cfg.cooldownSeconds)
 	spellCooldown(player, cfg.cooldownSeconds)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"A portal to your temple opened beside you. Its return portal waits beside the temple for %d minutes.",
 		cfg.portalMinutes))
 	return true
@@ -371,7 +374,7 @@ function T.cast(player, source)
 	T.casts[player:getId()] = cast
 	fx(player:getPosition(), cfg.castEffect)
 	Chaos.send(player, OPCODE, "cast", {ms = cfg.castMs})
-	player:sendTextMessage(MESSAGE_STATUS_SMALL, "Opening a town portal... stand still.")
+	player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Opening a town portal... stand still."))
 	addEvent(poll, cfg.pollMs, player:getId(), token)
 	return true
 end
@@ -418,7 +421,7 @@ local function use(creature, item, position, fromPosition, kind)
 		end
 		player:teleportTo(P(pair.temple))
 		fx(pair.temple, pair.style.travel or pair.style.open)
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, "The return portal beside the temple takes you back.")
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "The return portal beside the temple takes you back."))
 	else
 		-- the exact spot of the cast; a creature standing there moves the arrival next to it
 		local dest = pair.returnTo
@@ -516,7 +519,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			player:setStorageValue(ST.style, s.id)
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, "Portal style: " .. s.name .. ".")
 		else
-			player:sendCancelMessage("You do not own that portal style.")
+			player:sendCancelMessage(Chaos.t(player, "You do not own that portal style."))
 		end
 		sendState(player, false)
 	elseif msg.action == "cast" then

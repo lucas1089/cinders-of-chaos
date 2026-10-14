@@ -267,6 +267,68 @@ eq(stateCount(), before + 1, "ambush: one new tier state")
 think(copy)
 eq(state[copy:getId()], cs, "ambush: no natural roll on top of the copy's tier")
 
+-- pack combat (pace.lua): the ambush chance of a paced monster x its loot factor, and its copy is marked for the layer
+do
+	local marked = {}
+	ChaosPace = {
+		isPaced = function(m) return m == normal end,
+		lootMultOf = function() return 0.2 end,
+		mark = function(m) marked[#marked + 1] = m return m end
+	}
+	cfg.ambush.normal = 2000 -- 20% x 0.2 = 4%
+	local realRandom = math.random
+	local rolls = {}
+	math.random = function(a, b)
+		if a == 10000 and not b then
+			rolls[#rolls + 1] = true
+			return 500 -- 5%: under 20%, over 4%
+		end
+		if b then
+			return realRandom(a, b)
+		end
+		return a and realRandom(a) or realRandom()
+	end
+	events = {}
+	local n0 = nextId
+	creatureEvents.ChaosTierDeath.onDeath(normal, nil, player, player)
+	runEvents()
+	eq(nextId, n0, "pace: a 5% roll misses the paced 4% ambush")
+	math.random = function(a, b)
+		if a == 10000 and not b then
+			return 300 -- 3%: under 4%
+		end
+		if b then
+			return realRandom(a, b)
+		end
+		return a and realRandom(a) or realRandom()
+	end
+	events = {}
+	creatureEvents.ChaosTierDeath.onDeath(normal, nil, player, player)
+	runEvents()
+	check(nextId == n0 + 1, "pace: a 3% roll hits")
+	eq(marked[1], byId[nextId], "pace: the copy of a paced monster is marked")
+	-- an unpaced monster keeps the full chance and its copy is not marked
+	marked = {}
+	ChaosPace.isPaced = function() return false end
+	math.random = function(a, b)
+		if a == 10000 and not b then
+			return 500
+		end
+		if b then
+			return realRandom(a, b)
+		end
+		return a and realRandom(a) or realRandom()
+	end
+	events = {}
+	creatureEvents.ChaosTierDeath.onDeath(normal, nil, player, player)
+	runEvents()
+	eq(nextId, n0 + 2, "pace: unpaced monster, 5% under 20% hits")
+	eq(#marked, 0, "pace: unpaced copy not marked")
+	math.random = realRandom
+	ChaosPace = nil
+	cfg.ambush.normal = 10000
+end
+
 -- ---------------------------------------------------------------- forced tier wins over the natural roll
 setChance(10000, 0, 0)
 local forced = Game.createMonster("Dragon", position(103, 100, 7), true, false)
@@ -333,7 +395,10 @@ local function rollAt(v)
 		elseif b == nil then
 			return realRandom(a)
 		end
-		return realRandom(a, b)
+		if b then
+			return realRandom(a, b)
+		end
+		return a and realRandom(a) or realRandom()
 	end
 end
 rollAt(1801)

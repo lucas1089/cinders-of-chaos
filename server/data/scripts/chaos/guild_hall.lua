@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/guild_core.lua")
 if not Chaos.guildConfig then
 	Chaos.guildConfig = dofile("data/scripts/chaos/guild_config.lua")
@@ -360,7 +363,7 @@ function G.enterHall(player, quiet, staffGid)
 		return false
 	end
 	if not ensureFurnished(gid) then
-		player:sendCancelMessage("The guild hall cannot be built right now. Tell a gamemaster.")
+		player:sendCancelMessage(Chaos.t(player, "The guild hall cannot be built right now. Tell a gamemaster."))
 		return false
 	end
 	local L = C.layout(h.slot, cfg)
@@ -368,9 +371,9 @@ function G.enterHall(player, quiet, staffGid)
 	player:teleportTo(P(L.arrival))
 	P(L.arrival):sendMagicEffect(CONST_ME_TELEPORT)
 	local state = G.rentStateOf(gid)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to the hall of %s.%s", G.nameOf(gid),
-		state == "locked" and " The rent is unpaid: the upgrades are locked." or
-		(state == "grace" and " The rent is due: pay it before the upgrades lock." or "")))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Welcome to the hall of %s.%s", G.nameOf(gid),
+		state == "locked" and Chaos.t(player, " The rent is unpaid: the upgrades are locked.") or
+		(state == "grace" and Chaos.t(player, " The rent is due: pay it before the upgrades lock.") or "")))
 	return true
 end
 
@@ -764,7 +767,7 @@ function G.checkInside(player)
 		local temple = templeOf(player)
 		player:teleportTo(temple)
 		temple:sendMagicEffect(CONST_ME_TELEPORT)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You are not a member of this hall's guild.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You are not a member of this hall's guild."))
 	end
 end
 
@@ -787,7 +790,7 @@ local bench = Action()
 function bench.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local slot, gid = G.inHall(item:getPosition())
 	if not slot or not G.activeOf(gid).crafting then
-		player:sendCancelMessage("The crafting bench is locked.")
+		player:sendCancelMessage(Chaos.t(player, "The crafting bench is locked."))
 		return true
 	end
 	Chaos.send(player, OPCODE, "openModule", {name = "game_crafting"})

@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -1010,8 +1013,7 @@ local function onUseRune(player, item, fromPosition, target, toPosition, isHotke
 			player:sendCancelMessage(text)
 		end
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s - %s. Fits %s spells. Socket it in the spell "
-			.. "supports window (Character > Spell Supports).", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type)))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type)))
 	end
 	sendState(player)
 	sendBar(player)

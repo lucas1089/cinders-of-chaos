@@ -347,6 +347,9 @@ function onDungeonData(data)
   end
 
   Dungeons[data.id] = data
+  if selectedDungeonId == data.id and dungeonInfo then
+    applyDifficultyTexts(data)
+  end
 
   if pendingInitialDungeonId == data.id then
     selectDungeon(data.id)
@@ -495,24 +498,22 @@ function onDungeonSelected(parent, child, reason)
   doSelection(dungeonId)
 end
 
--- banner art lives in /images/dungeons/<short name>.png; the server sends the full title
-local BANNERS = {
-  ["Bones Dungeon"] = "Bones",
-  ["Master of the Elements"] = "MasterElement",
-  ["Forbidden Chevalier"] = "Forbidden",
-  ["Rootmaw"] = "Rootmaw",
-  ["Underworld"] = "Underworld"
-}
-
+-- banner art: DungeonsView.bannerFor (dungeonsview.lua)
 function bannerFor(title)
-  title = tostring(title or "")
-  local candidates = { BANNERS[title], title, title:match("^(%S+)") }
-  for _, name in ipairs(candidates) do
-    if name and g_resources.fileExists("/images/dungeons/" .. name .. ".png") then
-      return "/images/dungeons/" .. name
+  return DungeonsView.bannerFor(title, function(path) return g_resources.fileExists(path) end)
+end
+
+-- the six panel texts: the dungeon's own health curves when the server sent them, else the table's
+function applyDifficultyTexts(dungeon)
+  local panel = currentUI.difficultiesPanel
+  if not panel then return end
+  for i = 1, 6 do
+    local button = panel:getChildByIndex(i)
+    local info = button and button:getChildById("info")
+    if info then
+      info:setText(DungeonsView.panelText(i, dungeon and dungeon.health))
     end
   end
-  return "/images/dungeons/Underworld"
 end
 
 function selectDungeon(dungeonId)
@@ -533,6 +534,7 @@ function selectDungeon(dungeonId)
   currentUI.groupTable = window and window:recursiveGetChildById("groupTable") or nil
 
   dungeonInfo:getChildById("banner"):setImageSource(bannerFor(dungeon.title))
+  applyDifficultyTexts(dungeon)
 
   if currentUI.difficultiesPanel then
     if currentUI.difficultiesPanel:getChildCount() >= 1 then

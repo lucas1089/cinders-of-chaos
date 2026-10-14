@@ -343,7 +343,8 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	end
 	local rm = rateMult(ctx)
 	local find = ctx.itemFind or 1
-	local chanceMult = tierValue(c.extraChanceMult, tier, 1) * rm * find
+	-- pack combat (pace.lua): x the monster's loot factor, outside the maxRate cap
+	local chanceMult = tierValue(c.extraChanceMult, tier, 1) * rm * find * (tonumber(ctx.pace) or 1)
 	-- the rate scales how often an extra roll hits, not its stack size (rate x count would square the bonus)
 	local countMult = tierValue(c.extraCountMult, tier, 1) * levelCountMult(ctx.level or 0)
 	for _ = 1, rolls do
@@ -386,6 +387,8 @@ function L.rollCurrency(tier, ctx)
 	if maxScale and scale > maxScale then
 		scale = maxScale
 	end
+	-- pack combat (pace.lua): x the monster's loot factor, outside the cap
+	scale = scale * (tonumber(ctx.pace) or 1)
 	local cm = tierValue(cur.countMult, tier, 1)
 	local merged, order = {}, {}
 	local function add(e)
@@ -801,7 +804,10 @@ local function processKill(monster, corpse)
 	if okLevel and tonumber(lvl) then
 		level = tonumber(lvl)
 	end
-	local ctx = {tier = tier, monster = monster, player = owner, level = level, itemFind = L.itemFindMult(owner)}
+	-- pack combat (pace.lua): loot per kill x the monster's loot factor (1 when it is not paced)
+	local pace = ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(monster) or 1
+	local ctx = {tier = tier, monster = monster, player = owner, level = level, itemFind = L.itemFindMult(owner),
+		pace = pace}
 	-- the Orb Find of the placed charms (charms.lua): the currency chances only
 	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
@@ -825,6 +831,12 @@ local function processKill(monster, corpse)
 				item:remove()
 			end
 		end
+	end
+
+	-- 0b. pack combat (pace.lua): the stock loot thinned by the loot factor. A stack keeps count x factor rounded at
+	-- random (gold included); any other item stays with chance = factor. The expected value per hour stays.
+	if pace < 1 then
+		L.thinCorpse(corpse, pace)
 	end
 
 	-- 1. extra rolls
@@ -920,7 +932,7 @@ local function processKill(monster, corpse)
 	-- by the monster's level (the killer's when the monster has none)
 	if ChaosGems then
 		local gemLevel = level > 0 and level or owner:getLevel()
-		for _, id in ipairs(ChaosGems.rollDrop(tier, gemLevel, rateMult(ctx) * ctx.itemFind, rnd)) do
+		for _, id in ipairs(ChaosGems.rollDrop(tier, gemLevel, rateMult(ctx) * ctx.itemFind * pace, rnd)) do
 			local item = corpse:addItem(id, 1)
 			if item then
 				bonus[#bonus + 1] = ChaosGems.gemName(id)
@@ -930,14 +942,14 @@ local function processKill(monster, corpse)
 	-- 3c. spell support runes (data/lib/chaos_supports_config.lua drop; supports.lua): like the gems
 	if ChaosSupports and ChaosSupports.lootDrop then
 		for _, name in ipairs(ChaosSupports.lootDrop(corpse, tier, level > 0 and level or owner:getLevel(),
-				rateMult(ctx) * ctx.itemFind, rnd)) do
+				rateMult(ctx) * ctx.itemFind * pace, rnd)) do
 			bonus[#bonus + 1] = name
 		end
 	end
 
 	-- 4. uniques
 	local u = c.unique
-	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), level, ctx.itemFind, nil, owner)) do
+	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), level, ctx.itemFind * pace, nil, owner)) do
 		local item = corpse:addItem(e.id, 1)
 		if item then
 			if ChaosMakeUnique then
@@ -965,11 +977,57 @@ end
 
 L.processKill = processKill
 
+-- pack combat (pace.lua): thin the top-level items of a corpse by factor f (pace_core.lua P.thinPlan); returns the
+-- number of items removed or reduced
+function L.thinCorpse(corpse, f)
+	local P = ChaosPaceCore
+	if not P or not corpse or f >= 1 then
+		return 0
+	end
+	local items, list = {}, {}
+	for slot = 0, corpse:getSize() - 1 do
+		local item = corpse:getItem(slot)
+		if item then
+			list[#list + 1] = item
+			items[#items + 1] = {count = item:getCount(), stackable = L.isStackableId(item:getId())}
+		end
+	end
+	local plan = P.thinPlan(items, f, function() return rnd(0, 999999) / 1000000 end)
+	local changed = 0
+	for i, item in ipairs(list) do
+		local keep = plan[i]
+		if keep <= 0 then
+			item:remove()
+			changed = changed + 1
+		elseif keep < items[i].count then
+			item:remove(items[i].count - keep)
+			changed = changed + 1
+		end
+	end
+	return changed
+end
+
+-- pack combat: an empty corpse decays after ChaosPaceConfig.emptyCorpseSeconds (more kills leave more corpses)
+local function shortenEmptyCorpse(corpse)
+	local secs = ChaosPaceConfig and ChaosPaceConfig.enabled ~= false and tonumber(ChaosPaceConfig.emptyCorpseSeconds) or 0
+	if secs <= 0 or not corpse or corpse:getSize() > 0 or not ITEM_ATTRIBUTE_DURATION then
+		return
+	end
+	pcall(function()
+		corpse:setAttribute(ITEM_ATTRIBUTE_DURATION, secs * 1000)
+		corpse:decay()
+	end)
+end
+L.shortenEmptyCorpse = shortenEmptyCorpse
+
 local ec = EventCallback
 ec.onDropLoot = function(self, corpse)
 	local ok, err = pcall(processKill, self, corpse)
 	if not ok then
 		print("[Chaos loot] onDropLoot failed: " .. tostring(err))
+	end
+	if ChaosPace and ChaosPace.isPaced and ChaosPace.isPaced(self) then
+		shortenEmptyCorpse(corpse)
 	end
 end
 ec:register(cfg().priority or 1)

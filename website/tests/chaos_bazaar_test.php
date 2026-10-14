@@ -4,7 +4,8 @@
 // season, Hardcore, Self-Found, open report, ban, chargeback, staff, level, already listed), bids with the escrow
 // (balance held, outbid refunds, the step, the snipe extension, own / banned / poor bidders), the fee and the transfer
 // at the end (account moved, seller paid less the fee, guild left, mails), expiry, buyout, cancel (seller, staff),
-// a failed transfer, and the coins kept whole. No ZnoteX, no network. Exit status 0 when every check passes.
+// a failed transfer, two list requests at once (the unique open-listing key), the install step for duplicates, and
+// the coins kept whole. No ZnoteX, no network. Exit status 0 when every check passes.
 $config = array('chaos' => array('server_data' => __DIR__ . '/../../server/data'));
 $GLOBALS['config'] = $config;
 require __DIR__ . '/../overlay/plugins/chaos/lib.php';
@@ -37,7 +38,9 @@ $schema = array(
 	"CREATE TABLE chaos_bazaar_listings (id INTEGER PRIMARY KEY AUTOINCREMENT, player_id INT, seller_account_id INT, min_price INT, buyout INT DEFAULT 0,
 		current_bid INT DEFAULT 0, current_bid_id INT DEFAULT 0, bidder_account_id INT DEFAULT 0, bids INT DEFAULT 0, fee_pct INT DEFAULT 0, fee INT DEFAULT 0,
 		status TEXT DEFAULT 'active', reason TEXT DEFAULT '', created_at INT, ends_at INT, settled_at INT DEFAULT 0, player_name TEXT DEFAULT '',
-		level INT DEFAULT 0, vocation INT DEFAULT 0)",
+		level INT DEFAULT 0, vocation INT DEFAULT 0,
+		active_player_id INT GENERATED ALWAYS AS (CASE WHEN status IN ('active', 'settling') THEN player_id ELSE NULL END) STORED)",
+	"CREATE UNIQUE INDEX chaos_bazaar_listings_active ON chaos_bazaar_listings (active_player_id)",
 	"CREATE TABLE chaos_bazaar_bids (id INTEGER PRIMARY KEY AUTOINCREMENT, listing_id INT, account_id INT, amount INT, escrow INT DEFAULT 0,
 		buyout INT DEFAULT 0, state TEXT DEFAULT 'leading', created_at INT, ip TEXT DEFAULT '')",
 	"CREATE TABLE chaos_bazaar_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INT, listing_id INT, account_id INT, player_id INT, action TEXT, detail TEXT)",
@@ -251,7 +254,84 @@ check($twice->listing($l9)['status'] === 'sold', 'a sold listing stays sold afte
 check((int)$pdo->query('SELECT account_id FROM players WHERE id = 28')->fetchColumn() === 2, 'the character went to the winner once');
 check($coins(1) === $sellerBefore + 800 - $bz->fee(800) && $coins(2) === $bidderBefore, 'paid once, nothing refunded twice');
 
-check($total() === $start - $bz->fee(1000) - $bz->fee(1500) - $bz->fee(800), 'coins whole after everything (only the fees left)');
+// two list requests for one character at once: both pass the "already listed" check before either INSERT. The
+// database's unique key (active_player_id) lets one in; the other gets a clear refusal, no second listing.
+final class RaceDb implements ChaosPayDb {
+	public $hook = null;
+	public function __construct(private ChaosPayDb $db) {}
+	public function rows(string $sql, array $p = array()): array { return $this->db->rows($sql, $p); }
+	public function exec(string $sql, array $p = array()): int {
+		if ($this->hook && stripos($sql, 'INSERT INTO `chaos_bazaar_listings`') === 0) { $h = $this->hook; $this->hook = null; $h(); }
+		return $this->db->exec($sql, $p);
+	}
+	public function begin(): void { $this->db->begin(); }
+	public function commit(): void { $this->db->commit(); }
+	public function rollback(): void { $this->db->rollback(); }
+}
+$pdo->exec("INSERT INTO players (id, name, account_id, level) VALUES (29, 'Double Dax', 1, 120)");
+$rdb = new RaceDb($db);
+$raceList = new ChaosBazaar($rdb, $cfg, function () use (&$now) { return $now; }, function () { return true; });
+$other = null;
+$rdb->hook = function () use ($bz, &$other) { $other = $bz->listCharacter(1, 29, 500, 0, 2); };
+$mine = $raceList->listCharacter(1, 29, 600, 0, 2);
+check(is_array($other) && $other[0] === true, 'the other request listed the character first');
+check($mine[0] === false && strpos($mine[1], 'already listed') !== false && $mine[2] === 0, 'the concurrent list is refused: ' . $mine[1]);
+check((int)$pdo->query("SELECT COUNT(*) FROM chaos_bazaar_listings WHERE player_id = 29 AND status IN ('active', 'settling')")->fetchColumn() === 1, 'one open listing for the character');
+$threw = false;
+try {
+	$pdo->exec("INSERT INTO chaos_bazaar_listings (player_id, seller_account_id, min_price, status, created_at, ends_at) VALUES (29, 1, 500, 'settling', 1, 2)");
+} catch (PDOException $e) {
+	$threw = true;
+}
+check($threw, 'the database itself refuses a second open listing (unique key)');
+// the flows still free the key: cancel, then relist; sold, expired and failed rows do not block a new listing
+[$ok] = $bz->cancel((int)$other[2], 1, false);
+check($ok, 'the seller cancels the race winner');
+[$ok, $msg, $l10] = $bz->listCharacter(1, 29, 500, 0, 1);
+check($ok, 'relisted after the cancel: ' . $msg);
+$bz->bid(2, $l10, 700, '2.2.2.2');
+$pdo->exec('INSERT INTO players_online VALUES (29)');
+$now += 86400 + 10;
+$bz->settleDue();
+check($bz->listing($l10)['status'] === 'failed', 'the relisted auction failed (online at the end)');
+$pdo->exec('DELETE FROM players_online WHERE player_id = 29');
+[$ok, $msg, $l11] = $bz->listCharacter(1, 29, 500, 0, 1);
+check($ok, 'relisted after a failed transfer: ' . $msg);
+$now += 86400 + 10;
+$bz->settleDue();
+check($bz->listing($l11)['status'] === 'expired', 'expired');
+[$ok, $msg, $l12] = $bz->listCharacter(1, 29, 500, 0, 1);
+check($ok, 'relisted after expiry: ' . $msg);
+$bz->bid(3, $l12, 600, '3.3.3.3');
+$now += 86400 + 10;
+$bz->settleDue();
+check($bz->listing($l12)['status'] === 'sold', 'the relisted character sold');
+// the install step for a table made before the key: duplicates from the old race keep the oldest, the rest are
+// cancelled with their escrow refunded
+$pdo->exec("INSERT INTO players (id, name, account_id, level) VALUES (31, 'Legacy Lou', 1, 120)");
+$pdo->exec('DROP INDEX chaos_bazaar_listings_active');
+$pdo->exec("INSERT INTO chaos_bazaar_listings (player_id, seller_account_id, min_price, status, created_at, ends_at, player_name) VALUES
+	(31, 1, 500, 'active', $now, " . ($now + 86400) . ", 'Legacy Lou'), (31, 1, 500, 'active', $now, " . ($now + 86400) . ", 'Legacy Lou')");
+$dupIds = array_map('intval', $pdo->query('SELECT id FROM chaos_bazaar_listings WHERE player_id = 31 ORDER BY id')->fetchAll(PDO::FETCH_COLUMN));
+$before = $coins(2);
+$bz->bid(2, $dupIds[1], 650, '2.2.2.2');
+$cancelled = $bz->cancelDuplicateListings();
+check($cancelled === array($dupIds[1]), 'the install step cancels the newer duplicate only');
+check($bz->listing($dupIds[0])['status'] === 'active' && $bz->listing($dupIds[1])['status'] === 'cancelled', 'the oldest listing stays open');
+check($coins(2) === $before, 'the duplicate\'s escrow was refunded');
+check($bz->cancelDuplicateListings() === array(), 'the install step runs twice harmlessly');
+$pdo->exec('CREATE UNIQUE INDEX chaos_bazaar_listings_active ON chaos_bazaar_listings (active_player_id)');
+[$ok] = $bz->cancel($dupIds[0], 99, true, 'test cleanup');
+foreach (array(__DIR__ . '/../overlay/plugins/chaos/install.sql', __DIR__ . '/../../server/sql/chaos_bazaar.sql') as $f) {
+	$sql = (string)file_get_contents($f);
+	check(strpos($sql, "`active_player_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `player_id` ELSE NULL END) STORED") !== false
+		&& strpos($sql, 'UNIQUE KEY `chaos_bazaar_listings_active` (`active_player_id`)') !== false, basename($f) . ': the unique open-listing key');
+}
+$setup = (string)file_get_contents(__DIR__ . '/../setup/chaos_setup.php');
+check(strpos($setup, "SHOW COLUMNS FROM `chaos_bazaar_listings` LIKE 'active_player_id'") !== false && strpos($setup, 'cancelDuplicateListings()') !== false
+	&& strpos($setup, 'ADD UNIQUE KEY `chaos_bazaar_listings_active`') !== false, 'setup adds the key to an existing table once');
+
+check($total() === $start - $bz->fee(1000) - $bz->fee(1500) - $bz->fee(800) - $bz->fee(600), 'coins whole after everything (only the fees left)');
 check((int)$pdo->query("SELECT COUNT(*) FROM chaos_bazaar_log WHERE action = 'list_refused'")->fetchColumn() > 0, 'refusals logged');
 
 // ---------------------------------------------------------------- the files

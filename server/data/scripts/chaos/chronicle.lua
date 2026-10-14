@@ -33,6 +33,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/chronicle_core.lua")
 dofile("data/scripts/chaos/chronicle_text.lua")
 ChaosChronicleCore.ensureWrapChain()
@@ -518,17 +521,17 @@ function step.onStepIn(creature, item, position, fromPosition)
 	local area = cfg.areas[index]
 	if not area or not X.world.open[area.key] or not K.arrivalOf(area) then
 		player:teleportTo(fromPosition, true)
-		player:sendCancelMessage("The way is sealed.")
+		player:sendCancelMessage(Chaos.t(player, "The way is sealed."))
 		return true
 	end
 	if player:getLevel() < (area.minLevel or 1) then
 		player:teleportTo(fromPosition, true)
-		player:sendCancelMessage(string.format("%s is for level %d and above.", area.name, area.minLevel))
+		player:sendCancelMessage(Chaos.t(player, "%s is for level %d and above.", area.name, area.minLevel))
 		return true
 	end
 	player:teleportTo(P(K.arrivalOf(area)))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s. The portal beside you leads back to the temple.", area.name))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s. The portal beside you leads back to the temple.", area.name))
 	return true
 end
 do

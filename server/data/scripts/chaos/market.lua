@@ -48,6 +48,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosMarketCore then
 	dofile("data/scripts/chaos/market_core.lua")
 end
@@ -1986,7 +1989,7 @@ function staffCmd.onSay(player, words, param)
 		if name then
 			local r = sql(string.format("SELECT `id` FROM `players` WHERE `name` = %s", esc(name)), {{"id", "n"}})[1]
 			if not r then
-				player:sendTextMessage(MESSAGE_INFO_DESCR, "No such character.")
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No such character."))
 				return false
 			end
 			guid = r.id

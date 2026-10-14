@@ -5,9 +5,9 @@
 -- i18n.lua takes the client's language from its hello (opcode 157, {action = "hello", lang = "pt-BR" | "en"}).
 --
 -- A key is the English text itself, a string.format pattern ("Auto Seller: sold %d item%s ..."): English needs no
--- table, and a site that is not in the table yet still shows its English. i18n_strings.lua holds one table per
--- language other than English: {["pt-BR"] = {[english] = translation}}. A translation keeps the % conversions of its
--- key in the same order (string.format has no positional arguments); the test checks it.
+-- table, and a site that is not in the table yet still shows its English. i18n_strings.lua (and the files of I.MORE,
+-- merged in) holds one table per language other than English: {["pt-BR"] = {[english] = translation}}. A translation
+-- keeps the % conversions of its key in the same order (string.format has no positional arguments); the test checks it.
 -- Text sent to the client is UTF-8: the client turns it into cp1252 (client base patch 0028).
 -- Lua 5.1 / LuaJIT compatible.
 
@@ -18,8 +18,22 @@ local I = ChaosI18n
 I.DEFAULT = "en"
 I.LANGS = {en = true, ["pt-BR"] = true}
 
+-- More tables of the same shape, merged in after it (a key already in i18n_strings.lua keeps that text)
+I.MORE = {"i18n_strings_more.lua"}
+
 if not I.strings then
 	I.strings = dofile("data/scripts/chaos/i18n_strings.lua")
+	for _, f in ipairs(I.MORE) do
+		for lang, t in pairs(dofile("data/scripts/chaos/" .. f)) do
+			I.strings[lang] = I.strings[lang] or {}
+			local into = I.strings[lang]
+			for k, v in pairs(t) do
+				if into[k] == nil then
+					into[k] = v
+				end
+			end
+		end
+	end
 end
 I.strings.en = I.strings.en or {}
 
@@ -111,6 +125,56 @@ end
 
 function I.fromStorage(value)
 	return tonumber(value) == 1 and "pt-BR" or "en"
+end
+
+-- ------------------------------------------------------------------ NPC scripts
+-- An NPC script runs in its own Lua state, which never sees the client's hello (i18n.lua): there the language is the
+-- stored one (Chaos.setLang keeps it in storage I.STORAGE), read again for every line.
+--   ChaosI18n.langOf(player | cid)              "pt-BR" or "en"
+--   ChaosI18n.npcText(player | cid, key, ...)    the text in that language
+--   ChaosI18n.npcMessages(npcHandler)           the NPC's greet / farewell / walk away / trade lines (its XML
+--                                               message_* parameters are the keys) in the language of the player it
+--                                               answers; call it after the script's own setCallback lines
+function I.langOf(player)
+	if type(player) == "number" and Player then
+		player = Player(player)
+	end
+	if (type(player) ~= "userdata" and type(player) ~= "table") or not player.getStorageValue then
+		return I.DEFAULT
+	end
+	return I.fromStorage(player:getStorageValue(I.STORAGE))
+end
+
+function I.npcText(player, key, ...)
+	return I.text(I.langOf(player), key, ...)
+end
+
+function I.npcMessages(npcHandler)
+	local types = {MESSAGE_GREET, MESSAGE_FAREWELL, MESSAGE_WALKAWAY, MESSAGE_SENDTRADE}
+	local keys = {}
+	for _, mt in pairs(types) do
+		local text = npcHandler:getMessage(mt)
+		if type(text) == "string" and text ~= "" then
+			keys[mt] = text
+		end
+	end
+	local function apply(cid)
+		local lang = I.langOf(cid)
+		for mt, key in pairs(keys) do
+			npcHandler:setMessage(mt, I.text(lang, key))
+		end
+	end
+	for _, cb in pairs({CALLBACK_GREET, CALLBACK_FAREWELL, CALLBACK_CREATURE_DISAPPEAR, CALLBACK_ONTRADEREQUEST}) do
+		local old = npcHandler:getCallback(cb)
+		npcHandler:setCallback(cb, function(cid, ...)
+			apply(cid)
+			if old then
+				return old(cid, ...)
+			end
+			return true
+		end)
+	end
+	return keys
 end
 
 -- ------------------------------------------------------------------ the helpers on Chaos

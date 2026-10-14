@@ -29,6 +29,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/antibot_core.lua")
 
 Chaos.antibotConfig = Chaos.antibotConfig or dofile("data/scripts/chaos/antibot_config.lua")
@@ -303,10 +306,10 @@ local function failAction(player)
 			player:teleportTo(pos)
 			pos:sendMagicEffect(CONST_ME_TELEPORT)
 		end
-		player:sendTextMessage(MESSAGE_STATUS_WARNING, "Presence check failed. You were taken to the temple.")
+		player:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(player, "Presence check failed. You were taken to the temple."))
 		return "temple"
 	end
-	player:sendTextMessage(MESSAGE_STATUS_WARNING, "Presence check failed.")
+	player:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(player, "Presence check failed."))
 	return "log"
 end
 

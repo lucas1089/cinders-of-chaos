@@ -194,119 +194,135 @@
     {
       "zone": "brimstone_run",
       "monster": "Hellflayer",
-      "count": 11,
-      "respawn": 120
+      "count": 17,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "slag_pit",
       "monster": "Demon of the Depths",
-      "count": 9,
-      "respawn": 120
+      "count": 12,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "slag_pit",
       "monster": "Alpha Demon",
-      "count": 9,
-      "pack": 2,
+      "count": 12,
+      "pack": 3,
       "respawn": 120
     },
     {
       "zone": "slag_pit",
       "monster": "Hellflayer",
-      "count": 7,
-      "respawn": 120
+      "count": 9,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "chained_hall",
       "monster": "Skullcrusher Demon",
-      "count": 7,
-      "respawn": 120
+      "count": 9,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "forge_niche",
       "monster": "Juggernaut",
-      "count": 4,
-      "respawn": 180
+      "count": 9,
+      "respawn": 180,
+      "pack": 3
     },
     {
       "zone": "cinder_steps",
       "monster": "Skullcrusher Demon",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "cinder_steps",
       "monster": "Alpha Demon",
       "count": 4,
-      "respawn": 120
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "sulphur_vents",
       "monster": "Hellflayer",
       "count": 8,
-      "respawn": 120
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "sulphur_vents",
       "monster": "Alpha Demon",
       "count": 9,
-      "pack": 2,
+      "pack": 3,
       "respawn": 120
     },
     {
       "zone": "ashen_terrace",
       "monster": "Skullcrusher Demon",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "ashen_terrace",
       "monster": "Demon of the Depths",
       "count": 7,
-      "respawn": 120
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "brand_cells",
       "monster": "Skullcrusher Demon",
-      "count": 9,
-      "respawn": 120
+      "count": 14,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "brand_cells",
       "monster": "Juggernaut",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "molten_stair",
       "monster": "Demon of the Depths",
-      "count": 9,
-      "respawn": 120
+      "count": 10,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "molten_stair",
       "monster": "Hellflayer",
       "count": 7,
-      "respawn": 120
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "pyre_hollow",
       "monster": "Alpha Demon",
-      "count": 9,
-      "pack": 2,
+      "count": 15,
+      "pack": 3,
       "respawn": 120
     },
     {
       "zone": "pyre_hollow",
       "monster": "Juggernaut",
-      "count": 4,
-      "respawn": 120
+      "count": 7,
+      "respawn": 120,
+      "pack": 3
     },
     {
       "zone": "smelter_gut",
       "monster": "Hellflayer",
       "count": 9,
-      "respawn": 120
+      "respawn": 120,
+      "pack": 3
     }
   ],
   "notes": "Content plan (docs/CONTENT.md): a lava gallery for levels 215-299, demons in a loop around a slag pit. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for eight to twelve parties."

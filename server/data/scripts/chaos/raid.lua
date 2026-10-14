@@ -1293,8 +1293,8 @@ function X.deliver(player, b, idx)
 	local row = X.row(player:getGuid())
 	row.marks = row.marks + sp.marks
 	lines[#lines + 1] = string.format("%d Sepulchre Marks", sp.marks)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Spoils of %s: %s.%s", b.name, table.concat(lines, ", "),
-		inbox and " Your backpack was full: the rest is in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Spoils of %s: %s.%s", b.name, table.concat(lines, ", "),
+		inbox and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_GIFT_WRAPS)
 	return lines
 end
@@ -1367,8 +1367,7 @@ local function bossKilled(run, i)
 		if ChaosExclusives and ChaosExclusives.bossKill then pcall(ChaosExclusives.bossKill, p, "raid_" .. b.key) end
 	end
 	for _, p in ipairs(helpers) do
-		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You helped slay %s. You looted it already this week: no spoils " ..
-			"until the reset.", b.name))
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "You helped slay %s. You looted it already this week: no spoils until the reset.", b.name))
 		send(p, "loot", {boss = b.name, eligible = false, lines = {}})
 	end
 	-- achievements and the records count for everyone present
@@ -2055,7 +2054,7 @@ function X.fall(pid)
 		e.fallen = run.fight.id
 		run.fight.deaths = run.fight.deaths + 1
 		alert(run, ChaosI18n.msg("%s has fallen.", p:getName()), "fall")
-		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You fell. The fight goes on without you; the doors open when it ends.")
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "You fell. The fight goes on without you; the doors open when it ends."))
 	end
 	sendHud(run)
 end
@@ -2109,15 +2108,15 @@ function font.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		return true
 	end
 	if player:getPosition():getDistance(item:getPosition()) > 1 then
-		player:sendCancelMessage("Stand next to the Font of Ash.")
+		player:sendCancelMessage(Chaos.t(player, "Stand next to the Font of Ash."))
 		return true
 	end
 	if hexed(player) then
 		X.cleanse(player)
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The Font of Ash washes the hex away.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The Font of Ash washes the hex away."))
 	else
-		player:sendCancelMessage("You carry no hex.")
+		player:sendCancelMessage(Chaos.t(player, "You carry no hex."))
 	end
 	return true
 end
@@ -2451,7 +2450,7 @@ function login.onLogin(player)
 		if ChaosRiftCore.slotOfPos(C(), pos) or not Tile(pos) then
 			player:teleportTo(player:getTown():getTemplePosition())
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your raid was interrupted. Its progress is saved: continue it from the raid window.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your raid was interrupted. Its progress is saved: continue it from the raid window."))
 	elseif ChaosRiftCore.slotOfPos(C(), player:getPosition()) then
 		player:teleportTo(player:getTown():getTemplePosition())
 	end
@@ -2466,7 +2465,7 @@ function logout.onLogout(player)
 	local run = X.runOf[player:getId()]
 	if run then
 		if run.fight and inCombat(player) and K.inRoom(run.L, run.fight.idx, player:getPosition()) then
-			player:sendCancelMessage("You cannot leave in the middle of a boss fight.")
+			player:sendCancelMessage(Chaos.t(player, "You cannot leave in the middle of a boss fight."))
 			return false
 		end
 		removePlayer(run, player:getId(), "logout")

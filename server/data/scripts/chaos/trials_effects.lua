@@ -15,6 +15,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosTrialsCore then
 	dofile("data/scripts/chaos/trials_core.lua")
 end
@@ -205,7 +208,7 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 			pd, sd = M.scaleDamage(pd, keep), M.scaleDamage(sd, keep)
 			player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
 			player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR,
-				"Your last stand holds: the lethal blow leaves you standing.")
+				Chaos.t(player, "Your last stand holds: the lethal blow leaves you standing."))
 		end
 	end
 	return pd, sd

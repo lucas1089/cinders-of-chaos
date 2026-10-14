@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/pact_perks_core.lua")
 
 ChaosPactPerks = ChaosPactPerks or {}
@@ -104,7 +107,7 @@ function PP.apply(player)
 	for _, key in ipairs(plan.grant) do
 		if C and C.grant then
 			C.grant(acc, key, "pact")
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Chaos Pact: a cosmetic for you, see Character > Cosmetics.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Chaos Pact: a cosmetic for you, see Character > Cosmetics."))
 		end
 	end
 	for _, key in ipairs(plan.revoke) do

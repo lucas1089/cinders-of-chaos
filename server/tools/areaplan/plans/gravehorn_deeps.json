@@ -270,199 +270,232 @@
       "zone": "bonefire_nave",
       "monster": "Cinderskull Reaver",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "bonefire_nave",
       "monster": "Rimeshroud Revenant",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "antler_choir",
       "monster": "Bloodantler Fiend",
-      "count": 7,
-      "respawn": 120
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "antler_choir",
       "monster": "Cinderskull Reaver",
-      "count": 7,
-      "respawn": 120
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "reaver_gallery",
       "monster": "Cinderskull Reaver",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "reaver_gallery",
       "monster": "Bloodantler Fiend",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "smouldering_cloister",
       "monster": "Cinderhorn Juggernaut",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "smouldering_cloister",
       "monster": "Cinderskull Reaver",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ashen_apse",
       "monster": "Bloodantler Fiend",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ashen_apse",
       "monster": "Rimeshroud Revenant",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "cinderbone_vault",
       "monster": "Cinderskull Reaver",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "cinderbone_vault",
       "monster": "Cinderhorn Juggernaut",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_belfry",
       "monster": "Bloodantler Fiend",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "hollow_belfry",
       "monster": "Cinderskull Reaver",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sigil_walk",
       "monster": "Rimeshroud Revenant",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "sigil_walk",
       "monster": "Bloodantler Fiend",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gravehorn_stair",
       "monster": "Cinderskull Reaver",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "gravehorn_stair",
       "monster": "Bloodantler Fiend",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "deepbone_landing",
       "monster": "Cinderhorn Juggernaut",
-      "count": 6,
-      "respawn": 120
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "deepbone_landing",
       "monster": "Bloodantler Fiend",
       "count": 4,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "fiends_heart",
       "monster": "Bloodantler Fiend",
-      "count": 7,
-      "respawn": 120
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "fiends_heart",
       "monster": "Wraithbone Stalker",
-      "count": 6,
-      "respawn": 120
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "marrow_forge",
       "monster": "Cinderhorn Juggernaut",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "marrow_forge",
       "monster": "Cinderskull Reaver",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "horned_ossuary",
       "monster": "Bloodantler Fiend",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "horned_ossuary",
       "monster": "Cinderhorn Juggernaut",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shroud_cells",
       "monster": "Wraithbone Stalker",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "shroud_cells",
       "monster": "Bloodantler Fiend",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "antler_reliquary",
       "monster": "Cinderhorn Juggernaut",
       "count": 2,
-      "respawn": 180
+      "respawn": 75,
+      "pack": 2
     },
     {
       "zone": "juggernaut_pits",
       "monster": "Cinderhorn Juggernaut",
       "count": 10,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "juggernaut_pits",
       "monster": "Cinderskull Reaver",
       "count": 7,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ember_crypts",
       "monster": "Wraithbone Stalker",
-      "count": 6,
-      "respawn": 120
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ember_crypts",
       "monster": "Cinderhorn Juggernaut",
-      "count": 4,
-      "respawn": 120
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "chests": [

@@ -149,6 +149,9 @@ World content:
 - **First hour hints.** Nearest hunts marked on the map at set levels. Done.
 - **Late game spawns.** 17 imported monsters in four level 500+ areas (#4). Done.
 - **Spawn density and respawn** tuned for launch (#89). Done.
+- **Pack combat** (#151): hunting monsters with less health in packs (base map 4.5 per 100 tiles from level 30 in
+  blocks of 3, generated and planned hunts 4.5 in packs), experience and loot per kill cut by the kill ratio, a
+  multikill bonus up to +40%, respawn 45 s (300-599) / 75 s (600+), a PvE pack cleave for eight low-area classes. Done.
 - **Generated areas** for 1000-1300 (#109). Done, entrances on the full map not run:
   - Emberdeep Hollows (cave), boss The Emberdeep Maw, level 1100.
   - Sunken Ossuary (dungeon), boss The Ossuary Warden, level 1200.
@@ -222,7 +225,7 @@ Boss systems:
 
 | Instance | What it is | Status |
 |---|---|---|
-| Dungeons (9) | Queue alone or in a party; 6 difficulties; speed and flawless challenges; the boss unlocked at 85% of the monsters. Monsters per run: Bones Dungeon 178, Master of the Elements 256, Forbidden Chevalier 140, Rootmaw 272 (base spawn file), The Hollow Vault 18, The Marrow Crypts 11, The Iron Crucible 10, The Fallen Sanctum 8, The Pyre Throne 8 | done |
+| Dungeons (9) | Queue alone or in a party; 6 difficulties; speed and flawless challenges; the boss unlocked at 85% of the monsters. Monsters per run (pack combat, #151: at least 100 each, runs of about 9.5 minutes at difficulty 1 and 13.7 at 6, limit 15): Bones Dungeon 119, Master of the Elements 110, Forbidden Chevalier 100, Rootmaw 100 (base spawn file, thinned by install step spawns), The Hollow Vault 103, The Marrow Crypts 102, The Iron Crucible 104, The Fallen Sanctum 103, The Pyre Throne 102 (packs of 6-7) | done |
 | The Hollow Vault | Generated dungeon 5, level 800, boss Vault Keeper Ossrim | done |
 | The deep dungeons | Generated dungeons 6-9, levels 1000 / 1300 / 1600 / 2000: The Marrow Crypts, The Iron Crucible, The Fallen Sanctum, The Pyre Throne; a boss with mechanics each, runs of 10-15 minutes (limit 15, the Vault too), the boss unlocked at 85% of the monsters behind a gate, a boss chest by difficulty (#150) | done, not run live |
 | Rifts | Rift Keys open a timed generated map; 4 themes, 10 tiers and beyond, 1-3 of 36 modifiers (#8) | done |

@@ -292,9 +292,9 @@ function P.processSeason(seasonId)
 					if ChaosNameplate and ChaosNameplate.refresh then
 						pcall(ChaosNameplate.refresh, p)
 					end
-					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("PvP Season %d has ended: you finished %s (%s, rating %d).%s",
+					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "PvP Season %d has ended: you finished %s (%s, rating %d).%s",
 						seasonId, rw.tier.name, cfg.season.bracketNames[bracket] or bracket, rating,
-						rw.title and (" Title: " .. rw.title .. ".") or ""))
+						rw.title and Chaos.t(p, " Title: %s.", rw.title) or ""))
 				end
 			end
 		end

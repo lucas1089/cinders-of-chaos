@@ -35,6 +35,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -387,7 +390,7 @@ function P.grant(player, key, source, quiet)
 	if K.grantKind(rows, key) == "xp" then
 		P.addXp(player, key, cfg.duplicateXp, quiet)
 		if not quiet then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Another %s! Yours gains %d pet experience.",
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Another %s! Yours gains %d pet experience.",
 				species.name, cfg.duplicateXp))
 		end
 		return true, "xp"
@@ -406,7 +409,7 @@ function P.grant(player, key, source, quiet)
 	rows[key] = {id = got.id, species = key, name = got.name, xp = K.capXp(got.xp, cfg), active = got.active,
 		source = source or "", obtained = t}
 	if not quiet then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("New pet: %s! Open Character > Pets to call it.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "New pet: %s! Open Character > Pets to call it.",
 			species.name))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_BLUE or CONST_ME_MAGIC_BLUE)
 	end
@@ -584,7 +587,7 @@ local function runAbilities(player, live, pet, rule, pvp, ms)
 			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
 			-- the shown amount in the player's display scale (display_scale_core.lua)
 			local shown = ChaosDisplayScale and ChaosDisplayScale.scale(healed, ChaosDisplayScale.forPlayer(player)) or healed
-			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, string.format("Your pet mends you (+%.0f).", shown))
+			player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.t(player, "Your pet mends you (+%.0f).", shown))
 		end
 	end
 	if abilityOn(live, "ward", rule, pvp) and ms >= live.nextWard and pct < cfg.abilities.ward.below and hp > 0 then
@@ -593,7 +596,7 @@ local function runAbilities(player, live, pet, rule, pvp, ms)
 		live.wardPct = K.abilityValue("ward", level, player:getLevel(), cfg)
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 		player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR,
-			string.format("Your pet wards you: %s%% less damage from monsters.", K.number(live.wardPct)))
+			Chaos.t(player, "Your pet wards you: %s%% less damage from monsters.", K.number(live.wardPct)))
 	end
 	if pet and abilityOn(live, "aura", rule, pvp) and ms >= live.nextAura then
 		local a = cfg.abilities.aura
@@ -762,7 +765,7 @@ fetchCb.onDropLoot = function(monster, corpse)
 			pet:getPosition():sendDistanceEffect(corpse:getPosition(), CONST_ANI_SMALLHOLY or 0)
 		end
 		owner:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR,
-			string.format("Your pet fetched %d gold to your bank.", value))
+			Chaos.t(owner, "Your pet fetched %d gold to your bank.", value))
 	end)
 	if not ok then
 		log("fetch: " .. tostring(err))

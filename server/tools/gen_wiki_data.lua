@@ -273,6 +273,7 @@ function W.load()
 	D.coins = cfg("shop_coins_config")
 	D.respec = cfg("respec_config")
 	D.difficulty = cfg("dungeons_difficulty")
+	D.pace = cfg("pace_config")
 	D.areagen = cfg("areagen_config")
 	D.antibot = cfg("antibot_config")
 	D.scale = cfg("display_scale_config")
@@ -1227,6 +1228,32 @@ function W.monsterEntries(D)
 			if m.level then
 				rows[#rows + 1] = {"Level", m.level}
 			end
+			-- pack combat (pace_config.lua): a late game hunt's monster spawns on the map, so it is paced
+			local pc = D.pace
+			local lateGame = false
+			for _, t in ipairs(where[k]) do
+				lateGame = lateGame or t:find("^Late game area") ~= nil
+			end
+			if lateGame and pc and pc.enabled ~= false and m.level then
+				local lo, hi = tostring(m.level):match("^(%d+)%-?(%d*)$")
+				local L = math.floor(((tonumber(lo) or 0) + (tonumber(hi) or tonumber(lo) or 0)) / 2)
+				local function lin(points, x)
+					if x <= points[1][1] then
+						return points[1][2]
+					end
+					for i = 2, #points do
+						local a, b = points[i - 1], points[i]
+						if x <= b[1] then
+							return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1])
+						end
+					end
+					return points[#points][2]
+				end
+				rows[#rows + 1] = {"In hunts (pack combat)", string.format(
+					"health x%.3f, experience and loot per kill x%.3f / x%.3f, damage x%.2f at level %d (Basics: Pack combat)",
+					lin(pc.scaled.health, L), math.min(1, lin(pc.scaled.xp, L) * (pc.scale and pc.scale.xp or 1)),
+					math.min(1, lin(pc.scaled.loot, L) * (pc.scale and pc.scale.loot or 1)), lin(pc.damage, L), L)}
+			end
 			out[#out + 1] = {id = "monster:" .. k:gsub("[^%w]+", "-"), name = m.name, color = COLORS.monster,
 				sub = table.concat(where[k], "; ") .. ".",
 				sections = {{h = "Monster", cols = {"", ""}, w = {35, 65}, rows = rows},
@@ -1741,7 +1768,7 @@ local TAB_TONE = {classes = "#f6cf72", spells = "#9fdc7f", tree = "#e8b84a", bas
 local BASICS = {["basics:items"] = top("inventory"), ["basics:rarity"] = kit("light", "crystal"),
 	["basics:tiers"] = kit("steel", "arrowup"), ["basics:itemlevel"] = kit("ember", "arrowup"),
 	["basics:sides"] = kit("steel", "twin"), ["basics:quality"] = kit("steel", "hammer"),
-	["basics:basebonus"] = kit("steel", "shield")}
+	["basics:basebonus"] = kit("steel", "shield"), ["basics:pace"] = kit("blood", "burst")}
 local MOD_GLYPH = {chaos = "rift", skill = "sword", absorb = "shield", element = "burst", special = "eye"}
 local MOD_THEME = {chaos = "arcane", skill = "steel", absorb = "water", element = "fire", special = "holy"}
 local POWERS = {arclightning = {"light", "bolt"}, bloodrush = {"blood", "drop"}, crimsonburst = {"blood", "burst"},

@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua and chaos_gems.lua
 end
@@ -296,10 +299,9 @@ end
 
 -- ---------------------------------------------------------------- use-with on every gem
 local function hint(player, id, prefix)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
-		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind "
-		.. "to combine three into one of the next quality.", prefix or "", G.gemName(id), G.gemSummary(id),
-		G.gemOf(id).tier < G.TIERS and "a gem" or "nothing (Perfect is the best quality)"))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind to combine three into one of the next quality.", prefix and Chaos.t(player, prefix) or "", G.gemName(id), G.gemSummary(id),
+		Chaos.t(player, G.gemOf(id).tier < G.TIERS and "a gem" or "nothing (Perfect is the best quality)")))
 end
 
 local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey)

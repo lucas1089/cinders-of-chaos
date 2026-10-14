@@ -264,145 +264,169 @@
       "zone": "vixen_cloister",
       "monster": "Black Vixen",
       "count": 11,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "vixen_cloister",
       "monster": "Jungle Warrior",
       "count": 6,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "glass_nave",
       "monster": "Jungle Warrior",
-      "count": 12,
-      "respawn": 120
+      "count": 21,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "glass_nave",
       "monster": "Golden Dragon",
-      "count": 6,
-      "respawn": 120
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "dragon_apse",
       "monster": "Golden Dragon",
-      "count": 9,
-      "respawn": 120
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "thorn_garden",
       "monster": "Spiky Carnivor",
-      "count": 12,
-      "respawn": 120
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "vyrm_hall",
       "monster": "Vyrm",
-      "count": 12,
-      "respawn": 120
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "vyrm_hall",
       "monster": "Winterstride",
-      "count": 9,
-      "respawn": 120
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "facet_chapel",
       "monster": "Facetis",
-      "count": 6,
-      "respawn": 150
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "facet_chapel",
       "monster": "Thal",
-      "count": 6,
-      "respawn": 150
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "silicate_crypt",
       "monster": "Silicron",
-      "count": 12,
-      "respawn": 120
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ember_choir",
       "monster": "Golden Dragon",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ember_choir",
       "monster": "Jungle Warrior",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "prism_walk",
       "monster": "Black Vixen",
-      "count": 12,
-      "respawn": 120
+      "count": 20,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "obsidian_porch",
       "monster": "Golden Dragon",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "obsidian_porch",
       "monster": "Spiky Carnivor",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "soot_cloister",
       "monster": "Spiky Carnivor",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "soot_cloister",
       "monster": "Black Vixen",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mirror_vestry",
       "monster": "Facetis",
       "count": 8,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "mirror_vestry",
       "monster": "Thal",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ash_reliquary",
       "monster": "Winterstride",
-      "count": 12,
-      "respawn": 120
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "ash_reliquary",
       "monster": "Vyrm",
       "count": 9,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "glassfall_cavern",
       "monster": "Silicron",
       "count": 11,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     },
     {
       "zone": "glassfall_cavern",
       "monster": "Vyrm",
       "count": 6,
-      "respawn": 120
+      "respawn": 75,
+      "pack": 3
     }
   ],
   "notes": "Content plan (docs/CONTENT.md): a two-floor sanctum for levels 1120-1300, the dormant imports of the top band in one place. Four times the first draft (owner, 2026-10-14): 16 hunting zones in loops, room for sixteen parties."

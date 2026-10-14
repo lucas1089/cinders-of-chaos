@@ -13200,6 +13200,53 @@ CodexData = {
 					}
 				},
 				{
+					id = "basics:pace",
+					name = "Pack combat",
+					color = "#d6c9ae",
+					sub = "Monsters come in packs and die fast: kill groups, not one at a time.",
+					sections = {
+						{
+							h = "In short",
+							p = {"Hunting monsters have much less health and come in bigger packs. Pull a group and kill it together: area spells and cleaves matter.", "Experience and loot per kill are lower by the same share, so experience and gold per hour stay where they were. Kill counts (bounties, bestiary, tasks, achievements) need more kills by the same share.", "Multikill: kills each within 3 s of the one before form a chain; the whole chain's experience gets 4 kills +10%, 6 kills +20%, 8 kills +30%, 9 kills +40%.", "Bosses, rifts, the Ember Descent, the tower, invasions, arena, battleground and PvP are not changed."}
+						},
+						{
+							h = "By hunting level",
+							p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."},
+							cols = {"Level", "Health", "Experience", "Loot", "Damage"},
+							w = {28, 18, 18, 18, 18},
+							rows = {
+								{"20", "100%", "100%", "100%", "100%"},
+								{"50", "54%", "62%", "67%", "85%"},
+								{"100", "36%", "42%", "44%", "80%"},
+								{"200", "24%", "26%", "30%", "72%"},
+								{"300", "21%", "22%", "24%", "65%"},
+								{"600", "21%", "21%", "23%", "55%"},
+								{"1000", "21%", "22%", "24%", "40%"},
+								{"650 (own level)", "10%", "5%", "6%", "53%"},
+								{"1000 (own level)", "7%", "4%", "4%", "40%"},
+								{"1300 (own level)", "6%", "3%", "4%", "40%"},
+								{"2000 (own level)", "6%", "3%", "3%", "40%"}
+							}
+						},
+						{
+							h = "Pack cleave",
+							p = {"Classes with little area damage hit packs too: a direct hit on a hunting monster also deals a share of it to monsters within 1 sqm of it (never bosses, players or their summons)."},
+							cols = {"Class", "Share", "Monsters"},
+							w = {50, 25, 25},
+							rows = {
+								{"Thief", "25%", "3"},
+								{"Samurai", "25%", "3"},
+								{"Necromancer", "25%", "3"},
+								{"Monk", "20%", "3"},
+								{"Iron Sage", "20%", "3"},
+								{"Deadeye", "20%", "2"},
+								{"Shadowfist", "20%", "2"},
+								{"Ninja", "15%", "2"}
+							}
+						}
+					}
+				},
+				{
 					id = "basics:basebonus",
 					name = "Base stat bonus",
 					color = "#d6c9ae",

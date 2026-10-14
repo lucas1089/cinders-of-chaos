@@ -244,10 +244,38 @@ final class ChaosBazaar {
 		if ($this->accountChargeback($sellerAccount)) {
 			$why[] = 'Your account has a donation chargeback: the bazaar is closed to it.';
 		}
-		if (!$forTransfer && $this->db->rows("SELECT `id` FROM `chaos_bazaar_listings` WHERE `player_id` = ? AND `status` IN ('active', 'settling');", [$playerId])) {
+		if (!$forTransfer && $this->listedNow($playerId)) {
 			$why[] = 'The character is already listed.';
 		}
 		return $why;
+	}
+
+	/** An active or settling listing of the character exists. */
+	private function listedNow(int $playerId): bool {
+		return (bool)$this->db->rows("SELECT `id` FROM `chaos_bazaar_listings` WHERE `player_id` = ? AND `status` IN ('active', 'settling');", [$playerId]);
+	}
+
+	/**
+	 * Install step before the unique key on `active_player_id` is added to an existing table (setup/chaos_setup.php):
+	 * a character with more than one open listing (the old list race) keeps its oldest; the others are cancelled by
+	 * the staff path, which refunds every escrow. Returns the ids cancelled.
+	 */
+	public function cancelDuplicateListings(): array {
+		$out = array();
+		$rows = $this->db->rows("SELECT `id`, `player_id` FROM `chaos_bazaar_listings` WHERE `status` IN ('active', 'settling') ORDER BY `player_id`, `id`;");
+		$seen = array();
+		foreach ($rows as $r) {
+			$pid = (int)$r['player_id'];
+			if (!isset($seen[$pid])) {
+				$seen[$pid] = true;
+				continue;
+			}
+			[$ok] = $this->cancel((int)$r['id'], 0, true, 'duplicate listing');
+			if ($ok) {
+				$out[] = (int)$r['id'];
+			}
+		}
+		return $out;
 	}
 
 	// ------------------------------------------------------------------ list
@@ -277,9 +305,19 @@ final class ChaosBazaar {
 		}
 		$p = $this->one('SELECT `name`, `level`, `vocation` FROM `players` WHERE `id` = ?;', [$playerId]);
 		$now = $this->now();
-		$this->db->exec('INSERT INTO `chaos_bazaar_listings` (`player_id`, `seller_account_id`, `min_price`, `buyout`, `fee_pct`, `status`, `created_at`, `ends_at`,
-			`player_name`, `level`, `vocation`) VALUES (?, ?, ?, ?, ?, \'active\', ?, ?, ?, ?, ?);',
-			[$playerId, $sellerAccount, $minPrice, $buyout, (int)$c['feePct'], $now, $now + $days * 86400, (string)$p['name'], (int)$p['level'], (int)$p['vocation']]);
+		// the check above and this INSERT are not atomic: two list requests at once both pass it. The unique key on
+		// `active_player_id` (generated: player_id while active or settling, NULL after) lets only one row in.
+		try {
+			$this->db->exec('INSERT INTO `chaos_bazaar_listings` (`player_id`, `seller_account_id`, `min_price`, `buyout`, `fee_pct`, `status`, `created_at`, `ends_at`,
+				`player_name`, `level`, `vocation`) VALUES (?, ?, ?, ?, ?, \'active\', ?, ?, ?, ?, ?);',
+				[$playerId, $sellerAccount, $minPrice, $buyout, (int)$c['feePct'], $now, $now + $days * 86400, (string)$p['name'], (int)$p['level'], (int)$p['vocation']]);
+		} catch (Throwable $e) {
+			if (!$this->listedNow($playerId)) {
+				throw $e;
+			}
+			$this->log(0, $sellerAccount, $playerId, 'list_refused', 'already listed (concurrent request)');
+			return array(false, 'The character is already listed.', 0);
+		}
 		$row = $this->one("SELECT `id` FROM `chaos_bazaar_listings` WHERE `player_id` = ? AND `status` = 'active' ORDER BY `id` DESC LIMIT 1;", [$playerId]);
 		$id = (int)($row['id'] ?? 0);
 		$this->log($id, $sellerAccount, $playerId, 'list', sprintf('min %d, buyout %d, %d days', $minPrice, $buyout, $days));

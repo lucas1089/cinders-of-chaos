@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not (ChaosInstanceLimitsCore and ChaosInstanceLimitsCore.warning) then
 	dofile("data/scripts/chaos/instance_limits_core.lua")
 end
@@ -63,12 +66,14 @@ function IL.warn(run, left, players, label, limits)
 	if not mark then
 		return nil
 	end
-	local leftText = K.leftText(mark)
-	local text = string.format("%s: %s. Everyone inside is sent out when the time runs out.", label or "Instance", leftText)
+	-- each player's language: the label is a key too ("Arena", "Infinity Tower", a boss room's name stays as it is)
 	for _, p in ipairs(players or {}) do
-		p:sendTextMessage(msgWarn(), text)
+		local lang = Chaos.lang(p)
+		local name = Chaos.t(p, label or "Instance")
+		local leftText = K.leftText(mark, lang)
+		p:sendTextMessage(msgWarn(), Chaos.t(p, "%s: %s. Everyone inside is sent out when the time runs out.", name, leftText))
 		if mark >= 60 and ChaosNotify and ChaosNotify.send then
-			ChaosNotify.send(p, label or "Instance", leftText)
+			ChaosNotify.send(p, name, leftText)
 		end
 	end
 	return mark
@@ -104,7 +109,7 @@ function IL.busy(player, key, what, lefts, limits)
 	if l.waitlist and player then
 		pos = K.waitAdd(IL.line(key), player:getGuid(), os.time(), (l.waitMinutes or 15) * 60, player:getName(), l.waitMax)
 	end
-	return K.busyText(what, K.eta(lefts, pos or 1), pos)
+	return K.busyText(what, K.eta(lefts, pos or 1), pos, player and Chaos.lang(player) or nil)
 end
 
 function IL.leaveLine(key, player)
@@ -129,10 +134,10 @@ function IL.freed(key, what)
 		end
 		local p = e.name and Player(e.name)
 		if p and p:getGuid() == e.id and not (Chaos.inAnyInstance and Chaos.inAnyInstance(p)) then
-			local text = string.format("A place in %s is free now. Go ahead before someone else takes it.", what or "the instance")
+			local text = Chaos.t(p, "A place in %s is free now. Go ahead before someone else takes it.", Chaos.t(p, what or "the instance"))
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 			if ChaosNotify and ChaosNotify.send then
-				ChaosNotify.send(p, "Your turn", text)
+				ChaosNotify.send(p, Chaos.t(p, "Your turn"), text)
 			end
 			return p
 		end
@@ -392,10 +397,11 @@ function BR.leverUse(player, key, config)
 	end
 	if s.guids[player:getGuid()] then
 		-- the group's own run (a lever inside the room, as in the tower defence)
-		player:sendCancelMessage(string.format("Your run is still going: %s left.", (K.about(left):gsub("^~", ""))))
+		player:sendCancelMessage(Chaos.t(player, "Your run is still going: %s left.", (K.about(left, Chaos.lang(player)):gsub("^~", ""))))
 		return false
 	end
-	player:sendCancelMessage(string.format("A group is fighting in there. The room frees up in %s at the latest.", K.about(left)))
+	player:sendCancelMessage(Chaos.t(player, "A group is fighting in there. The room frees up in %s at the latest.",
+		K.about(left, Chaos.lang(player))))
 	return false
 end
 
@@ -433,8 +439,8 @@ function BR.started(key, config, participants)
 	BR.sessions[key] = s
 	setBars(key, config, s)
 	for _, p in pairs(participants or {}) do
-		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: you have %s. Then everyone in the room is sent out.",
-			nameOf(config), (K.about(limit):gsub("^~", ""))))
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "%s: you have %s. Then everyone in the room is sent out.",
+			nameOf(config), (K.about(limit, Chaos.lang(p)):gsub("^~", ""))))
 	end
 	addEvent(tick, 1000, key, s.id)
 	return s
@@ -486,7 +492,7 @@ function BR.close(key, why)
 			if exit.sendMagicEffect then
 				exit:sendMagicEffect(CONST_ME_TELEPORT)
 			end
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, OUT_TEXT[why] or OUT_TEXT.time)
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, OUT_TEXT[why] or OUT_TEXT.time))
 		end
 	end
 	for _, m in ipairs(monsters) do
@@ -557,7 +563,7 @@ function BR.onLogin(player)
 	local exit = config.bossArea.exitPosition
 	if exit then
 		player:teleportTo(exit)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The boss room you were in has closed: you are at its exit.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The boss room you were in has closed: you are at its exit."))
 	end
 end
 

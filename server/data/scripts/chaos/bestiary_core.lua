@@ -86,11 +86,17 @@ function C.difficultyByKey(key, cfg)
 end
 
 -- ---------------------------------------------------------------- stages
-function C.thresholds(diff, spawns, cfg)
+-- goal: the monster's kill-goal factor (pack combat, pace_config.lua; 1 or nil = none): every stage after the first
+-- (Discovered stays at its kill) needs that many times the kills
+function C.thresholds(diff, spawns, cfg, goal)
 	local th = {}
 	spawns = tonumber(spawns) or 0
+	goal = tonumber(goal) or 1
 	local few = diff ~= cfg.boss and spawns > 0 and spawns < cfg.fewSpawns
 	for i, k in ipairs(diff.kills) do
+		if goal > 1 and i > 1 and diff ~= cfg.boss then
+			k = math.floor(k * goal + 0.5)
+		end
 		if few then
 			k = math.max(i, math.floor(k * cfg.fewSpawnsMult + 0.5))
 		end
@@ -216,7 +222,10 @@ function C.buildEntry(info, spawnInfo, cfg)
 	local spawns = spawnInfo and spawnInfo.spawns or 0
 	local level = C.estimateLevel(info, cfg)
 	local diff = C.difficultyOf(level, info.boss, cfg)
+	-- pack combat (pace): cfg.goalOf(info, level) is set by bestiary.lua (pace_core.lua goalOfEntry); bosses keep theirs
+	local goal = (not info.boss and cfg.goalOf) and cfg.goalOf(info, level) or 1
 	return {
+		goal = goal,
 		name = info.name,
 		key = info.name:lower(),
 		level = level,
@@ -230,7 +239,7 @@ function C.buildEntry(info, spawnInfo, cfg)
 		diff = diff.key,
 		spawns = spawns,
 		areas = spawnInfo and spawnInfo.areas or nil,
-		th = C.thresholds(diff, spawns, cfg),
+		th = C.thresholds(diff, spawns, cfg, goal),
 		outfit = info.outfit
 	}
 end
@@ -308,7 +317,7 @@ local function roundTo(n, step)
 end
 
 function C.huntCount(entry, cfg)
-	local n = cfg.huntKills[entry.diff] or 100
+	local n = (cfg.huntKills[entry.diff] or 100) * (tonumber(entry.goal) or 1)
 	if (entry.spawns or 0) < cfg.fewSpawnsTask then
 		return roundTo(n * cfg.fewSpawnsTaskMult, 5)
 	end
@@ -398,7 +407,8 @@ function C.offers(day, guid, level, catalogue, cfg)
 		offers[#offers + 1] = {
 			key = string.format("f:%s:%d-%d", key, win.lo, win.hi),
 			kind = "family", target = key, label = names[key] or key, lo = win.lo, hi = win.hi, level = mid,
-			required = roundTo((cfg.huntKills[diff.key] or 100) * cfg.familyKillsMult, 10),
+			required = roundTo((cfg.huntKills[diff.key] or 100) * cfg.familyKillsMult
+				* (cfg.familyGoalOf and cfg.familyGoalOf(mid) or 1), 10),
 			monsters = #byCat[key]
 		}
 	end

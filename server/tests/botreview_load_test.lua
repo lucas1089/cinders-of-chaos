@@ -195,9 +195,15 @@ for i = 1, 200 do
 	BV.evaluate(list[1], st, clockS)
 end
 local perEvalMs = (os.clock() - e0) / 200 * 1000
-local c0 = os.clock()
-local pairsN = BV.clusterPass(list)
-local clusterMs = (os.clock() - c0) * 1000
+-- best of three, each after a full collection: a garbage-collector step from the large tables loaded earlier (the
+-- i18n strings) must not land inside a single timed pass on a busy CI machine
+local clusterMs, pairsN = math.huge, 0
+for _ = 1, 3 do
+	collectgarbage("collect")
+	local c0 = os.clock()
+	pairsN = BV.clusterPass(list)
+	clusterMs = math.min(clusterMs, (os.clock() - c0) * 1000)
+end
 
 print = quiet
 local function line(fmt, ...) if verbose then print(string.format(fmt, ...)) end end

@@ -541,10 +541,16 @@ local function creditList(killer, mostDamage)
 	return killers
 end
 
-local function onKillFor(player, e, fkey, tier)
+-- monster: the creature (pack combat, pace.lua: a paced monster counts 1 / its kill-goal factor for the contracts and the
+-- reputation points, summed per player)
+local function onKillFor(player, e, fkey, tier, monster)
 	local share = cfg.sources.kill.minLevelShare
 	local info = {cat = e.cat, level = e.level or 0}
-	progress(player, function(c) return K.matchKill(c, info) end, 1)
+	local goal = monster and ChaosPace and ChaosPace.goalMultOf and ChaosPace.goalMultOf(monster) or 1
+	local n = (goal > 1 and ChaosPace.killCredit) and ChaosPace.killCredit(player, monster, "faction") or 1
+	if n > 0 then
+		progress(player, function(c) return K.matchKill(c, info) end, n)
+	end
 	if info.level < math.floor(player:getLevel() * share) then
 		return
 	end
@@ -552,7 +558,7 @@ local function onKillFor(player, e, fkey, tier)
 		return
 	end
 	local P = stateOf(player)
-	local pts = (P.killPts[fkey] or 0) + (cfg.sources.kill.points[tier] or 1)
+	local pts = (P.killPts[fkey] or 0) + (cfg.sources.kill.points[tier] or 1) / (goal > 1 and goal or 1)
 	local per = cfg.sources.kill.pointsPerRep
 	local rep = math.floor(pts / per)
 	P.killPts[fkey] = pts - rep * per
@@ -576,13 +582,14 @@ function F.onKill(creature, corpse, killer, mostDamage)
 		tier = "legendary"
 	end
 	for _, p in ipairs(creditList(killer, mostDamage)) do
-		onKillFor(p, e, fkey, tier)
+		onKillFor(p, e, fkey, tier, creature)
 	end
 	-- the token: one roll per kill, into the corpse (the loot owner's)
 	local owner = playerOf(mostDamage) or playerOf(killer)
 	local td = cfg.tokenDrop
 	if owner and (e.level or 0) >= td.minMonsterLevel and (e.level or 0) >= math.floor(owner:getLevel() * cfg.sources.kill.minLevelShare)
-			and math.random(1, 10000) <= K.tokenChance(cfg, tier) then
+			and math.random(1, 10000) <= K.tokenChance(cfg, tier)
+				* (ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(creature) or 1) then
 		local tok = cfg.tokens[fkey]
 		local placed = false
 		if corpse and corpse.isContainer and corpse:isContainer() then

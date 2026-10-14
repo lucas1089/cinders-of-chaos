@@ -195,119 +195,135 @@
     {
       "zone": "silk_reeds",
       "monster": "Nightfang Widow",
-      "count": 10,
-      "respawn": 120
+      "count": 15,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "drowned_web",
       "monster": "Shadowcrystal Widow",
-      "count": 10,
-      "pack": 2,
-      "respawn": 120
+      "count": 15,
+      "pack": 3,
+      "respawn": 45
     },
     {
       "zone": "drowned_web",
       "monster": "Nightfang Widow",
-      "count": 6,
-      "respawn": 120
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "hexer_isle",
       "monster": "Mirethorn Hexer",
-      "count": 10,
-      "respawn": 120
+      "count": 12,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "hexer_isle",
       "monster": "Plague Warbringer",
-      "count": 4,
-      "respawn": 150
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "gloom_fen",
       "monster": "Gloomstinger",
-      "count": 8,
-      "respawn": 120
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "gloom_fen",
       "monster": "Mirethorn Hexer",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "egg_pool",
       "monster": "Shadowcrystal Widow",
       "count": 2,
-      "respawn": 180
+      "respawn": 45,
+      "pack": 2
     },
     {
       "zone": "cocoon_marsh",
       "monster": "Nightfang Widow",
       "count": 9,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "cocoon_marsh",
       "monster": "Shadowcrystal Widow",
       "count": 8,
-      "pack": 2,
-      "respawn": 120
+      "pack": 3,
+      "respawn": 45
     },
     {
       "zone": "rot_shallows",
       "monster": "Gloomstinger",
-      "count": 10,
-      "respawn": 120
+      "count": 12,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "rot_shallows",
       "monster": "Plague Warbringer",
-      "count": 4,
-      "respawn": 120
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "witchlight_bog",
       "monster": "Mirethorn Hexer",
-      "count": 10,
-      "respawn": 120
+      "count": 14,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "witchlight_bog",
       "monster": "Gloomstinger",
-      "count": 6,
-      "respawn": 120
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "spinner_hollow",
       "monster": "Shadowcrystal Widow",
       "count": 8,
-      "pack": 2,
-      "respawn": 120
+      "pack": 3,
+      "respawn": 45
     },
     {
       "zone": "spinner_hollow",
       "monster": "Nightfang Widow",
       "count": 8,
-      "respawn": 120
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "sunken_chapel",
       "monster": "Mirethorn Hexer",
-      "count": 8,
-      "respawn": 120
+      "count": 12,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "sunken_chapel",
       "monster": "Plague Warbringer",
-      "count": 4,
-      "respawn": 120
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
     },
     {
       "zone": "bleak_reeds",
       "monster": "Nightfang Widow",
-      "count": 8,
-      "respawn": 120
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
     }
   ],
   "chests": [

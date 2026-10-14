@@ -78,6 +78,7 @@ DifficultyIcon < Panel
     opacity: 0.8
 
 DifficultyInfo < Label
+  id: info
   anchors.top: prev.bottom
   anchors.left: parent.left
   anchors.right: parent.right
@@ -195,7 +196,7 @@ MainWindow
       anchors.top: parent.top
       anchors.left: parent.left
       anchors.right: parent.right
-      height: 155
+      height: 179
       margin-top: 100
       !text: tr('Difficulty')
       layout:
@@ -330,7 +331,7 @@ MainWindow
       id: requirements
       anchors.top: prev.bottom
       anchors.left: parent.left
-      size: 221 192
+      size: 221 168
       image-source: /images/ui/minipanel
       image-border: 10
       image-border-top: 30

@@ -159,6 +159,11 @@ function B.rollBand(day, bandIndex, cfg, pool)
 				c = contractOf(bandIndex, slot, "elite", mon)
 				c.tier = e.tier
 				c.count = rand(e.count[1], e.count[2])
+				-- pack combat (pace): the monster's kill-goal factor (cfg.goalMult, set by bounty.lua; 1 without it)
+				local g = cfg.goalMult and cfg.goalMult(mon) or 1
+				if g > 1 then
+					c.count = math.max(c.count, math.floor(c.count * g + 0.5))
+				end
 			else
 				kind = "hunt"
 			end
@@ -169,6 +174,11 @@ function B.rollBand(day, bandIndex, cfg, pool)
 				local mon = list[rand(1, #list)]
 				c = contractOf(bandIndex, slot, "hunt", mon)
 				local n = rand(band.kills[1], band.kills[2])
+				-- pack combat (pace): x the monster's kill-goal factor (cfg.goalMult, set by bounty.lua; 1 without it)
+				local g = cfg.goalMult and cfg.goalMult(mon) or 1
+				if g > 1 then
+					n = n * g
+				end
 				if (mon.spawns or 0) < cfg.fewSpawns then
 					c.count = roundTo(n * cfg.fewSpawnsMult, 5)
 				else

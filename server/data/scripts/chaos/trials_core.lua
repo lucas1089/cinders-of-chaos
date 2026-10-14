@@ -16,6 +16,17 @@ end
 
 ChaosTrialsCore = ChaosTrialsCore or {}
 local M = ChaosTrialsCore
+
+-- a text in `lang` through ChaosI18n (i18n_core.lua) when it is loaded, else English (planPick, enterProblem)
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
 local floor, max, min = math.floor, math.max, math.min
 
 function M.cfg()
@@ -347,18 +358,18 @@ end
 -- ------------------------------------------------------------------------------------------------ choosing and switching
 -- Can the character put pair `pair` on `side` (1 or 2) now? Returns a plan {free, gold, tokens, change} or nil, reason.
 --   state = {tier = highest tier cleared, picks = {p1,p2,p3}, tokens = n, level = n}
-function M.planPick(state, pair, side)
+function M.planPick(state, pair, side, lang)
 	pair, side = floor(tonumber(pair) or 0), floor(tonumber(side) or 0)
 	if pair ~= pair or pair < 1 or pair > 3 or (side ~= 0 and side ~= 1 and side ~= 2) then
-		return nil, "That is not a choice of your trial nodes."
+		return nil, T(lang, "That is not a choice of your trial nodes.")
 	end
 	if pair > (state.tier or 0) then
 		local t = M.cfg().tiers[pair]
-		return nil, string.format("Locked: clear your trial on %s first.", t and t.name or "a higher difficulty")
+		return nil, T(lang, "Locked: clear your trial on %s first.", t and t.name or T(lang, "a higher difficulty"))
 	end
 	local current = (state.picks and state.picks[pair]) or 0
 	if side == current then
-		return nil, side == 0 and "Nothing is chosen there." or "You already hold that node."
+		return nil, T(lang, side == 0 and "Nothing is chosen there." or "You already hold that node.")
 	end
 	local plan = {pair = pair, side = side, from = current}
 	if current == 0 then
@@ -370,7 +381,7 @@ function M.planPick(state, pair, side)
 	plan.gold = max(0, floor(tonumber(state.level) or 0)) * sw.goldPerLevel
 	plan.tokens = 1
 	if (state.tokens or 0) < plan.tokens then
-		return nil, "Changing a held node costs a Trial Token. Clear a trial you have already cleared to earn one.", plan
+		return nil, T(lang, "Changing a held node costs a Trial Token. Clear a trial you have already cleared to earn one."), plan
 	end
 	return plan
 end
@@ -380,20 +391,20 @@ function M.tier(i)
 	return M.cfg().tiers[i]
 end
 
--- level / previous tier / protection: why a character may not enter tier i (nil = may)
-function M.enterProblem(tierIdx, level, tierCleared, now, cooldownUntil)
+-- level / previous tier / protection: why a character may not enter tier i (nil = may), in `lang` (English by default)
+function M.enterProblem(tierIdx, level, tierCleared, now, cooldownUntil, lang)
 	local t = M.tier(tierIdx)
 	if not t then
-		return "That difficulty does not exist."
+		return T(lang, "That difficulty does not exist.")
 	end
 	if tierIdx > (tierCleared or 0) + 1 then
-		return string.format("Clear the trial on %s first.", M.tier(tierIdx - 1).name)
+		return T(lang, "Clear the trial on %s first.", M.tier(tierIdx - 1).name)
 	end
 	if (level or 0) < t.minLevel then
-		return string.format("%s needs level %d.", t.name, t.minLevel)
+		return T(lang, "%s needs level %d.", t.name, t.minLevel)
 	end
 	if (cooldownUntil or 0) > (now or 0) then
-		return string.format("The trial is still closed to you for %d seconds.", (cooldownUntil or 0) - (now or 0))
+		return T(lang, "The trial is still closed to you for %d seconds.", (cooldownUntil or 0) - (now or 0))
 	end
 	return nil
 end
