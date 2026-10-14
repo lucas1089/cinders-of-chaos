@@ -1,0 +1,485 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "duskmarrow_crater",
+  "name": "Duskmarrow Crater",
+  "biome": "lava",
+  "size": [
+    192,
+    176
+  ],
+  "floors": 2,
+  "level": [
+    1750,
+    2000
+  ],
+  "seed": 25408,
+  "origin": {
+    "x": 15305,
+    "y": 14340,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "cinderwatch_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "scorched_rim",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "pyre_basin",
+      "floor": 1,
+      "size": [
+        30,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "ashfall_steppe",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "wyrmcoil_mire",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "tyrants_perch",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "slag_terraces",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "bonewind_flats",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "marrow_vents",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "caldera_throat",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "molten_landing",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "heart_of_cinders",
+      "floor": 2,
+      "size": [
+        30,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "brood_hollows",
+      "floor": 2,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "wraith_galleries",
+      "floor": 2,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "scorch_cisterns",
+      "floor": 2,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "ember_hoard",
+      "floor": 2,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    },
+    {
+      "id": "ashen_nests",
+      "floor": 2,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "furnace_cells",
+      "floor": 2,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "cinderwatch_camp",
+      "to": "scorched_rim",
+      "width": 3
+    },
+    {
+      "from": "scorched_rim",
+      "to": "ashfall_steppe",
+      "width": 3
+    },
+    {
+      "from": "ashfall_steppe",
+      "to": "wyrmcoil_mire",
+      "width": 3
+    },
+    {
+      "from": "wyrmcoil_mire",
+      "to": "tyrants_perch",
+      "width": 3
+    },
+    {
+      "from": "tyrants_perch",
+      "to": "slag_terraces",
+      "width": 3
+    },
+    {
+      "from": "slag_terraces",
+      "to": "bonewind_flats",
+      "width": 3
+    },
+    {
+      "from": "bonewind_flats",
+      "to": "marrow_vents",
+      "width": 3
+    },
+    {
+      "from": "marrow_vents",
+      "to": "cinderwatch_camp",
+      "width": 3
+    },
+    {
+      "from": "cinderwatch_camp",
+      "to": "pyre_basin",
+      "width": 4
+    },
+    {
+      "from": "pyre_basin",
+      "to": "ashfall_steppe",
+      "width": 3
+    },
+    {
+      "from": "pyre_basin",
+      "to": "tyrants_perch",
+      "width": 3
+    },
+    {
+      "from": "pyre_basin",
+      "to": "bonewind_flats",
+      "width": 3
+    },
+    {
+      "from": "wyrmcoil_mire",
+      "to": "caldera_throat",
+      "width": 3
+    },
+    {
+      "from": "molten_landing",
+      "to": "brood_hollows",
+      "width": 3
+    },
+    {
+      "from": "molten_landing",
+      "to": "scorch_cisterns",
+      "width": 3
+    },
+    {
+      "from": "brood_hollows",
+      "to": "heart_of_cinders",
+      "width": 3
+    },
+    {
+      "from": "heart_of_cinders",
+      "to": "wraith_galleries",
+      "width": 3
+    },
+    {
+      "from": "scorch_cisterns",
+      "to": "ember_hoard",
+      "width": 2
+    },
+    {
+      "from": "scorch_cisterns",
+      "to": "heart_of_cinders",
+      "width": 3
+    },
+    {
+      "from": "wraith_galleries",
+      "to": "ashen_nests",
+      "width": 3
+    },
+    {
+      "from": "ashen_nests",
+      "to": "furnace_cells",
+      "width": 3
+    },
+    {
+      "from": "furnace_cells",
+      "to": "heart_of_cinders",
+      "width": 3
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "caldera_throat",
+      "to": "molten_landing"
+    }
+  ],
+  "entry": {
+    "zone": "cinderwatch_camp"
+  },
+  "exit": {
+    "zone": "cinderwatch_camp"
+  },
+  "spawns": [
+    {
+      "zone": "scorched_rim",
+      "monster": "Wraithbone Stalker",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "scorched_rim",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "pyre_basin",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "pyre_basin",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "ashfall_steppe",
+      "monster": "Mirecoil Wyrm",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "ashfall_steppe",
+      "monster": "Wraithbone Stalker",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "wyrmcoil_mire",
+      "monster": "Mirecoil Wyrm",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "wyrmcoil_mire",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "tyrants_perch",
+      "monster": "Pyrewing Tyrant",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "tyrants_perch",
+      "monster": "Wraithbone Stalker",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_terraces",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "slag_terraces",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "bonewind_flats",
+      "monster": "Wraithbone Stalker",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "bonewind_flats",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "marrow_vents",
+      "monster": "Wraithbone Stalker",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "marrow_vents",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "caldera_throat",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "caldera_throat",
+      "monster": "Wraithbone Stalker",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "molten_landing",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "molten_landing",
+      "monster": "Mirecoil Wyrm",
+      "count": 4,
+      "respawn": 120
+    },
+    {
+      "zone": "heart_of_cinders",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "heart_of_cinders",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "brood_hollows",
+      "monster": "Mirecoil Wyrm",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "brood_hollows",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "wraith_galleries",
+      "monster": "Wraithbone Stalker",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "wraith_galleries",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "scorch_cisterns",
+      "monster": "Pyrewing Tyrant",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "scorch_cisterns",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "ember_hoard",
+      "monster": "Pyrewing Tyrant",
+      "count": 2,
+      "respawn": 180
+    },
+    {
+      "zone": "ashen_nests",
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "ashen_nests",
+      "monster": "Wraithbone Stalker",
+      "count": 8,
+      "respawn": 120
+    },
+    {
+      "zone": "furnace_cells",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 120
+    },
+    {
+      "zone": "furnace_cells",
+      "monster": "Pyrewing Tyrant",
+      "count": 4,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "ember_hoard",
+      "quest": "duskmarrow_ember",
+      "reward": {
+        "gold": 3500000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 10
+          }
+        ],
+        "message": "A clutch of ember scales, shed by something that never stops burning."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a two-floor volcanic crater for levels 1750-2000, the top of the 1300-2000 hunting set (Wraithbone Stalker, Mirecoil Wyrm, Pyrewing Tyrant; Cinderhorn Juggernaut on the rim). A ring of ash fields round the pyre basin, the caldera throat down to the brood hollows and the ember hoard."
+}

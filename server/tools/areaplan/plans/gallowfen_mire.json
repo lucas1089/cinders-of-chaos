@@ -256,7 +256,7 @@
     },
     {
       "zone": "hangmans_reeds",
-      "monster": "Spiky Carnivor",
+      "monster": "Gloamfang Ravager",
       "count": 7,
       "respawn": 120
     },
@@ -292,7 +292,7 @@
     },
     {
       "zone": "leech_hollow",
-      "monster": "Black Vixen",
+      "monster": "Gloamfang Ravager",
       "count": 7,
       "respawn": 120
     },
@@ -322,7 +322,7 @@
     },
     {
       "zone": "mirewitch_grove",
-      "monster": "Black Vixen",
+      "monster": "Rimeshroud Revenant",
       "count": 7,
       "respawn": 120
     },
@@ -334,7 +334,7 @@
     },
     {
       "zone": "sunken_causeway",
-      "monster": "Spiky Carnivor",
+      "monster": "Gloamfang Ravager",
       "count": 8,
       "respawn": 120
     },
@@ -376,7 +376,7 @@
     },
     {
       "zone": "blackwater_pens",
-      "monster": "Spiky Carnivor",
+      "monster": "Rimeshroud Revenant",
       "count": 5,
       "respawn": 120
     },
@@ -430,7 +430,7 @@
     },
     {
       "zone": "crowfeast_shoal",
-      "monster": "Black Vixen",
+      "monster": "Gloamfang Ravager",
       "count": 4,
       "respawn": 120
     }
@@ -451,5 +451,5 @@
       }
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): a hanging fen for levels 1300-1450. Our strongest hunting monsters top out near 1280, so the fen runs on the 1140-1280 set in large numbers. 15 hunting zones in two loops."
+  "notes": "Content plan (docs/CONTENT.md): a hanging fen for levels 1300-1450. It runs on the 1140-1280 set and, since 2026-10-14, the first of the 1300-2000 set (Gloamfang Ravager, Rimeshroud Revenant). 15 hunting zones in two loops."
 }

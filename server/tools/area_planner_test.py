@@ -128,6 +128,11 @@ ok(r and any('pick from:' in x for x in m), 'tier: a monster too weak for the ba
 p = copy.deepcopy(base)
 p['level'] = [40, 400]
 ok(has(p, 'spans 4 level tiers')[0], 'tier: a band over four tiers')
+# the open top tier (800+): the bounty window ends at 1500, a band above it takes monsters up to its top + 100
+ok(C.tier_window(900, 1100)[2] == 1500, 'tier: the top tier keeps the bounty window up to 1500')
+ok(C.tier_window(1300, 1450)[2] == 1550, 'tier: a 1300-1450 band takes monsters up to 1550')
+ok(C.tier_window(1750, 2000)[1:] == (640, 2100), 'tier: a 1750-2000 band takes monsters up to 2100')
+ok(C.tier_window(150, 280)[2] == 299, 'tier: a closed tier keeps its window')
 p = copy.deepcopy(base)
 p['zones'][5]['floor'] = 1
 p['paths'].append({'from': 'landing', 'to': 'hall'})

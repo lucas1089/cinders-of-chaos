@@ -178,6 +178,18 @@ for _i, _f in enumerate(DORMANT):
     _row.update(late_targets(_L))
     _row['level'] = (_L - 20, _L + 20)
 
+# our own hunting monsters of levels 1300-2000 (2026-10-14, owner approved): the same late-game curves carried on
+# from Facetis (1280) to 2000, one every 100 levels (server/README.md "Late game", The 1300-2000 set). The speed of
+# each is the curve's plus its own step (a fast hunter, a slow juggernaut); attacks and elements are in the files.
+HIGH_BAND = [('gloamfang_ravager', 1300, 4), ('rimeshroud_revenant', 1400, 0), ('cinderskull_reaver', 1500, 1),
+             ('bloodantler_fiend', 1600, 0), ('cinderhorn_juggernaut', 1700, -4), ('wraithbone_stalker', 1800, 3),
+             ('mirecoil_wyrm', 1900, 0), ('pyrewing_tyrant', 2000, 0)]
+for _f, _L, _dspeed in HIGH_BAND:
+    _row = TUNING.setdefault(_f + '.xml', {})
+    _row.update(late_targets(_L))
+    _row['speed'] += _dspeed
+    _row['level'] = (_L - 20, _L + 20)
+
 
 # ------------------------------------------------------------------------------------------------ text operations
 def _root(t, key, value):

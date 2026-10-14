@@ -345,6 +345,31 @@ return {
 			ref = {health = 1700000, dps = 2600, uptime = 1, players = 1, solo = true}
 		},
 
+		-- ================================================================ hunting monsters (open world, level 1900-2000)
+		-- the two top monsters of the 1300-2000 set (server/README.md "Late game"): two light telegraphs each, rare
+		-- (one every 16 s) and small (a fifth of max health), so a pack of three stays a hunt, not a boss fight. No `ref`: they
+		-- keep their health (no compensation), and the wiki's boss page does not list them.
+		["mirecoil wyrm"] = {
+			label = "Mirecoil Wyrm", size = 2, element = "earth", difficulty = 0.1, every = 16000,
+			fair = {refLevel = 1900},
+			telegraphs = {
+				{key = "mire_spit", label = "Mire Spit", kind = "line", halfWidth = 1, length = 8, share = 0.2,
+					hit = "toxic_burst", fallback = "CONST_ME_GREEN_RINGS", tip = "A three-wide line of venom towards you: sidestep."},
+				{key = "coil_crush", label = "Coil Crush", kind = "circle", radius = 2, share = 0.2,
+					hit = "earth_spikes", fallback = "CONST_ME_STONES", tip = "Everything within 2 sqm of it: back off."}
+			}
+		},
+		["pyrewing tyrant"] = {
+			label = "Pyrewing Tyrant", size = 2, element = "fire", difficulty = 0.1, every = 16000,
+			fair = {refLevel = 2000},
+			telegraphs = {
+				{key = "pyrefall", label = "Pyrefall", kind = "follow", radius = 2, followMs = 1500, share = 0.2,
+					hit = "big_meteor_fire_7", fallback = "CONST_ME_FIREAREA", tip = "It follows you, then stops: walk out."},
+				{key = "searing_breath", label = "Searing Breath", kind = "cone", length = 5, spread = 2, share = 0.2,
+					hit = "fire_explosion", fallback = "CONST_ME_FIREAREA", tip = "A cone towards its target: step to its side."}
+			}
+		},
+
 		-- ================================================================ the weekly guild boss (guildboss.lua, 2-20)
 		["gorvath the banner-eater"] = {
 			label = "Gorvath", size = 2, element = "death", difficulty = 0.3, ownTelegraphs = true,

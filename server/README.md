@@ -5185,6 +5185,10 @@ the mechanics below on top, and while one of those runs (`ChaosBossMech.busy`) t
 |  | Bone Requiem (channel + totem) | 9.0 s | Kill the Bone Totem in time. |
 | Cinderwing | Cinder Breath (line) | 2.8 s | A beam towards you: sidestep. |
 |  | Falling Ash (follow) | 2.8 s + 1.5 s follow | It follows you, then stops: walk out. |
+| Mirecoil Wyrm (hunting monster) | Mire Spit (line) | 2.9 s | A three-wide line of venom towards you: sidestep. |
+|  | Coil Crush (circle) | 2.9 s | Everything within 2 sqm of it: back off. |
+| Pyrewing Tyrant (hunting monster) | Pyrefall (follow) | 2.9 s + 1.5 s follow | It follows you, then stops: walk out. |
+|  | Searing Breath (cone) | 2.9 s | A cone towards its target: step to its side. |
 | Gorvath the Banner-Eater | Devour the Standard (channel + totem) | 9.0 s | Kill the Gnawed Standard before the cast ends. |
 |  | Shared Oath (soak) | 2.6 s | Two or more stand in the circle to split the hit. |
 |  | Gnawed (stacks) | on its hits | His bites stack Gnawed (+3% damage taken): swap tanks. |
@@ -11005,6 +11009,52 @@ Tier averages of experience per health point: 1.19 (levels 650-750), 1.80 (760-8
 spawned monsters give 1.0-1.45 (Soul War 1.02, Helm Hunter 1.43, Aegis Sentinel 1.45), so the first tier is no faster than
 the existing 650-700 hunts. The Chaos monster tiers (magic/rare/legendary) still apply on top, as everywhere.
 
+### The 1300-2000 set (2026-10-14, owner approved; `tools/tune_monsters.py` `HIGH_BAND`)
+
+Facetis (1260-1300) was the strongest hunting monster, so the 1300-1500 plans ran on more of the 1140-1280 set and
+nothing existed above. Eight monsters of our own, one every 100 levels, continue the curves of the 1000-1280 set
+(`late_targets` of `tune_monsters.py`, fitted at 670-980 and extended: health at the level 75,000 + 345 (L - 670),
+experience per health 1.15 + 0.0039 (L - 670), speed at the level 380 + (L - 650) / 6.5, the strongest hit 800 + 0.8
+(L - 650) before the level bonus, heals 10% of the base health). `tune_monsters.py --check` (and check_content.py) keep the
+files on the curve; each has its own speed step. Elements: two of its own at 55%, one weakness at 0, the rest 35% (on
+average 36%, like the 35% of the 1000-1280 imports), so a hunter of the right element kills faster.
+
+| Monster | Level | Look | XML health / exp / speed | Health at L | Exp at L | Hit at L | Damage/s at L | Strong / weak | Kit |
+|---|---|---|---|---|---|---|---|---|---|
+| Gloamfang Ravager | 1280-1320 | 1547 | 27,500 / 27,000 / 44 | 292k | 1.05M | 3,890 | 2,700 | physical, death / holy | melee 1.5 s, leap (radius 1 at range 5), howl burst (radius 3), bleed, haste |
+| Rimeshroud Revenant | 1380-1420 | 1544 | 28,800 / 31,150 / 38 | 327k | 1.31M | 4,340 | 3,160 | ice, death / fire | caster at distance 4: ice bolt every turn, frost wave, ice storm (radius 3), freezing slow |
+| Cinderskull Reaver | 1480-1520 | 1543 | 29,900 / 35,250 / 38 | 362k | 1.59M | 4,810 | 3,500 | fire, death / ice | melee 1.5 s, fire cleave (cone 3), life drain, fire bomb (radius 2), burning |
+| Bloodantler Fiend | 1580-1620 | 1369 | 30,800 / 39,350 / 36 | 395k | 1.89M | 5,300 | 3,580 | death, fire / holy | melee 1.5 s, death beam (7), life drain burst (radius 4), mana drain, curse |
+| Cinderhorn Juggernaut | 1680-1720 | 1546 | 31,700 / 43,600 / 31 | 430k | 2.22M | 5,820 | 3,460 | physical, fire / energy | armor 110, slow; heavy melee, ground slam (radius 3), burning rock (radius 2), stun slow |
+| Wraithbone Stalker | 1780-1820 | 1449 | 32,500 / 47,900 / 37 | 465k | 2.59M | 6,360 | 4,160 | energy, death / physical | fast: energy burst (radius 2), death bolt, energy ring (radius 3), mana drain, haste |
+| Mirecoil Wyrm | 1880-1920 | 1462 | 33,200 / 52,150 / 33 | 500k | 2.97M | 6,930 | 3,700 | earth, ice / fire | venom breath (wave 8), ice spit (radius 2), poison, coil slow; telegraphs Mire Spit, Coil Crush |
+| Pyrewing Tyrant | 1980-2020 | 1532 | 33,800 / 56,400 / 33 | 534k | 3.38M | 7,520 | 5,210 | fire, energy / ice | fire breath (wave 8), fireball (radius 3), storm bolt (radius 2), wing buffet (radius 2); telegraphs Pyrefall, Searing Breath |
+| *Facetis, for comparison* | 1260-1300 | 1467 | 27,300 / 26,250 / 40 | 286k | 1.01M | 3,800 | 3,320 | 35% to all | |
+
+Computed, not measured in game. Damage/s at L: the sum of chance x average / interval of the damage attacks, x the
+engine's 1 + 0.0015 L, without conditions and before armour and resistances; physical hits on players get the late-game
+boost (+30%, "Late-game damage boost") on top. Per second they take 13-17% of a knight's health at their level (15 x L +
+185), Facetis 17%. Solo kill time (health / 0.64 / the one-target damage 2,600 + 2.41 (L - 1000), "Solo kill times";
+heals and armour left out): 137 s at 1300 to 166 s at 2000, on the line of the 1000-1280 set (112 s at 1000, 134 s
+Facetis at 1280). The strongest hit is 20% of that knight's health at 1300 and 25% at 2000 (Facetis 20%).
+
+- **Looks** (no new art, no pair push): outfits of the live pair (things_custom24) that no monster, mount, wing or aura
+  used: donor B 1532, 1543, 1544, 1546, 1547 (`client/tools/sprites/donor_b_selection.csv`: red dragon, skeleton
+  warrior, frost skeleton, minotaur warlord, werewolf) and stock 1369, 1449, 1462. Checked against every monster file,
+  every Lua look in `data/`, the picks csvs and the base server's monsters and XML lists; rendered from the pair.
+  Without colour layers, so the files carry no colours.
+- **Loot**: the 1000-1280 set's coin lines (platinum 55-90 by level) and equipment pool, a titanium token 50-85 in 100,000,
+  and one equipment item of the tier 1 pool at 600 as the monster's own drop (Ravager skullcracker armor, Revenant frozen
+  plate, Reaver skull helmet, Fiend demon shield, Juggernaut great shield, Stalker crystal boots, Wyrm swamplair armor,
+  Tyrant elite draken mail; every id priced already). Item level and rarity follow the level (`loot.lua`
+  `L.monsterLevel`).
+- **Telegraphs**: Mirecoil Wyrm and Pyrewing Tyrant have a light `boss_mechanics_config.lua` profile (two small shapes, a
+  fifth of max health, one every 16 s, 2.9 s warning; no `ref`, so no health change); "Boss mechanics" auto-attaches it
+  by name. The other six have none.
+- **Where**: the plans gravehorn_deeps (1500-1750) and duskmarrow_crater (1750-2000), docs/MAP_GUIDE.md "Content
+  plans"; the bounty board and bestiary know them once a plan is placed and `gen_bounty_pool.py` /
+  `gen_bestiary_spawns.py` run again.
+
 ### Spawns (the loaded map's `<mapName>-spawn.xml`)
 
 277 entries of four level 500+ areas (the Gorevast monster set, Darklights task, level 500) are renamed to the new
@@ -11478,7 +11528,8 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   `--pair24 on`), `data/items/art_items.csv` (pack grounds, borders, trees) and `rift_config.lua` (chest); stock
   snow, ice and grass grounds with their border sets for `ice` and `forest` (no install step needed; `forest_pack`
   and `ice_pack` need the packitems step). Monsters and levels: `bounty_pool.lua` and `monster/monsters/chaos`;
-  tiers: `bounty_config.lua` bands; NPCs: `data/npc`; reward items: `data/items/base_item_names.csv`,
+  tiers: `bounty_config.lua` bands (the open top band 800+ also takes monsters up to the plan's own top + 100, past the
+  bounty window's 1500, for the 1300-2000 set); NPCs: `data/npc`; reward items: `data/items/base_item_names.csv`,
   `chaos_items.xml`, `data/lib/chaos_orbs_config.lua`, `art_items.csv`.
 - **Decoration** (`tools/area_plan_decor.py`, kits `tools/areaplan/decor_kits.json`): 107 groups (267 stock 10.98
   ids, each checked on the pair for sprite, blocking and light by `check-kits`), one kit per biome. Placed by rules:

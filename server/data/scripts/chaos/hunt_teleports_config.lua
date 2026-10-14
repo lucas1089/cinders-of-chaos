@@ -46,7 +46,7 @@ return {
 	-- the display monsters stand in the two cells beside each teleport, like the room's own (spawn file, radius 1)
 	displaySpawntime = 120,
 
-	-- 5 modules a side: 20 new teleports (the 14 plans of 2026-10-14 and 6 spare).
+	-- 5 modules a side: 20 new teleports (16 plans, 4 spare).
 	-- The plans, in slot order. A plan of tools/areaplan/plans/ missing here still gets a teleport: after these, in
 	-- the order of its band, with its most frequent monster on display (check its look; list it here to choose). Slots: the new teleport columns of the east side from the stairs outward, then those
 	-- of the west side from the stairs outward; in each column the north teleport, then the south one (slot 1 is the
@@ -63,7 +63,13 @@ return {
 		{id = "corsairs_reach", monster = "Ironhook Corsair"},
 		{id = "mirefang_basin", monster = "Elite Tidecrest Serpent"},
 		{id = "rimecrown_depths", monster = "Celestial Wyrm"},
-		{id = "cinderglass_sanctum", monster = "Black Vixen"}
+		{id = "cinderglass_sanctum", monster = "Black Vixen"},
+		{id = "slagmourn_foundry", monster = "Scaleborn"},
+		{id = "hollowmass_reliquary", monster = "Silicron"},
+		{id = "gallowfen_mire", monster = "Thal"},
+		{id = "voidscar_chasm", monster = "Facetis"},
+		{id = "gravehorn_deeps", monster = "Cinderskull Reaver"},
+		{id = "duskmarrow_crater", monster = "Mirecoil Wyrm"} -- not the 5x5 Pyrewing Tyrant in a one-tile cell
 	},
 
 	-- texts: the English one is the key; pt-BR beside it

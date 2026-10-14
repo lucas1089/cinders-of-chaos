@@ -65,7 +65,7 @@ placing an area.
 
 ## Planned hunting areas
 
-Fourteen area-planner plans in `server/tools/areaplan/plans/`, schema `chaos-area-plan/1`. Each validates with no warning,
+Sixteen area-planner plans in `server/tools/areaplan/plans/`, schema `chaos-area-plan/1`. Each validates with no warning,
 compiles with no QA error, has a camp with a protection zone, a loop and decoration at `dense`. CI validates and
 compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content plans".
 
@@ -83,17 +83,28 @@ compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content pla
 | cinderglass_sanctum | 1120-1300 | sanctum, 2 floors | Jungle Warrior, Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Facetis, Thal, Silicron | 16 | - |
 | slagmourn_foundry | 1000-1150 | lava | Dawn Strayer, Scaleborn, Twisted Shaper, Celestial Wyrm, Vorkhaz, Jungle Warrior | 12 | slagmourn_ingot |
 | hollowmass_reliquary | 1150-1300 | crypt, 2 floors | Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Silicron, Thal, Facetis | 14 | hollowmass_tithe |
-| gallowfen_mire | 1300-1450 | swamp | Black Vixen, Spiky Carnivor, Vyrm, Winterstride, Silicron, Thal, Facetis | 13 | gallowfen_noose |
-| voidscar_chasm | 1400-1500 | abyss, 2 floors | Vyrm, Winterstride, Silicron, Thal, Facetis | 14 | voidscar_relic |
+| gallowfen_mire | 1300-1450 | swamp | Vyrm, Winterstride, Silicron, Thal, Facetis, Gloamfang Ravager, Rimeshroud Revenant | 13 | gallowfen_noose |
+| voidscar_chasm | 1400-1500 | abyss, 2 floors | Vyrm, Winterstride, Silicron, Thal, Facetis, Rimeshroud Revenant, Cinderskull Reaver | 14 | voidscar_relic |
+| gravehorn_deeps | 1500-1750 | crypt, 2 floors | Cinderskull Reaver, Bloodantler Fiend, Cinderhorn Juggernaut, Rimeshroud Revenant, Wraithbone Stalker | 16 | gravehorn_antler |
+| duskmarrow_crater | 1750-2000 | lava, 2 floors | Wraithbone Stalker, Mirecoil Wyrm, Pyrewing Tyrant, Cinderhorn Juggernaut | 16 | duskmarrow_ember |
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.
 Placed, they take 500-700 from 14 to about 50 parties, 700-1000 from 10 to about 46 and 1000+ from none to 28.
 
 The last four (owner, 2026-10-14: four more hunts for 1000+) follow the same standard: 184-192 x 156-176 tiles,
-5,200-7,150 walkable tiles, 176-236 monsters, 3.3-3.4 per 100. No hunting monster of ours sits above 1280, so
-1300-1500 run on the 1140-1280 set in larger numbers; a monster made for 1300+ would fit them better. With them
-1000+ goes from none to about 81 parties.
+5,200-7,150 walkable tiles, 176-236 monsters, 3.3-3.4 per 100. When they were made no hunting monster of ours sat above
+1280, so 1300-1500 run on the 1140-1280 set in larger numbers. With them 1000+ goes from none to about 81 parties.
+
+**1300-2000 (2026-10-14, owner approved).** Eight hunting monsters of our own, one every 100 levels from 1300 to 2000,
+on the late-game curves carried on from Facetis (server/README.md "Late game", The 1300-2000 set): Gloamfang Ravager
+1300, Rimeshroud Revenant 1400, Cinderskull Reaver 1500, Bloodantler Fiend 1600, Cinderhorn Juggernaut 1700,
+Wraithbone Stalker 1800, Mirecoil Wyrm 1900, Pyrewing Tyrant 2000. Two plans use them: gravehorn_deeps (1500-1750,
+188 x 172, 2 floors, 7,320 walkable tiles, 246 monsters, 3.38 per 100) and duskmarrow_crater (1750-2000, 192 x 176,
+2 floors, 6,423 walkable tiles, 210 monsters, 3.29 per 100). Placed, 1000+ goes to about 96 parties, and 1500-2000 gets
+hunts made for it instead of more of the 1280 set. gallowfen_mire and voidscar_chasm took the 1300-1500 ones in place of
+some of their weakest spawns (same counts and density: Gloamfang Ravager and Rimeshroud Revenant for the fen's Black Vixen and Spiky Carnivor, Rimeshroud
+Revenant and Cinderskull Reaver in the chasm).
 
 ## Quests per band
 

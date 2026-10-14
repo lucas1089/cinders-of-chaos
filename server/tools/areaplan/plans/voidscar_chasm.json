@@ -286,13 +286,13 @@
     },
     {
       "zone": "maw_of_glass",
-      "monster": "Winterstride",
+      "monster": "Cinderskull Reaver",
       "count": 7,
       "respawn": 120
     },
     {
       "zone": "starless_shelf",
-      "monster": "Vyrm",
+      "monster": "Rimeshroud Revenant",
       "count": 9,
       "respawn": 120
     },
@@ -316,7 +316,7 @@
     },
     {
       "zone": "unlit_terrace",
-      "monster": "Winterstride",
+      "monster": "Rimeshroud Revenant",
       "count": 9,
       "respawn": 120
     },
@@ -334,7 +334,7 @@
     },
     {
       "zone": "riftbone_field",
-      "monster": "Vyrm",
+      "monster": "Cinderskull Reaver",
       "count": 7,
       "respawn": 120
     },
@@ -346,7 +346,7 @@
     },
     {
       "zone": "weeping_scarp",
-      "monster": "Winterstride",
+      "monster": "Cinderskull Reaver",
       "count": 7,
       "respawn": 120
     },
@@ -364,7 +364,7 @@
     },
     {
       "zone": "descent_well",
-      "monster": "Vyrm",
+      "monster": "Rimeshroud Revenant",
       "count": 6,
       "respawn": 120
     },
@@ -481,5 +481,5 @@
       }
     }
   ],
-  "notes": "Content plan (docs/CONTENT.md): a two-floor rift chasm for levels 1400-1500, the deepest planned hunt. No hunting monster of ours sits above 1300, so it runs on the 1200-1280 set, dense and in two rings."
+  "notes": "Content plan (docs/CONTENT.md): a two-floor rift chasm for levels 1400-1500, the deepest planned hunt. It runs on the 1200-1280 set and, since 2026-10-14, the 1400 and 1500 monsters of the 1300-2000 set (Rimeshroud Revenant, Cinderskull Reaver), dense and in two rings."
 }

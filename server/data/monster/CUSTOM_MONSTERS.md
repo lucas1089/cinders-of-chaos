@@ -120,3 +120,11 @@ looks are their own donor-library creatures 2127..2131 (things_custom14; picks.c
 monsters (Sepulchre Ghoul 18, Bone Lancer 298, Hex Cultist 9, Cinder Hound 240, Marrow Knight 37, Ashen Reaper 300) use
 stock looks; the script sets their tier and scales their health. The bosses' corpses hold only coins: the loot is personal
 and scripted (lockout). Numbers: server/README.md "The Ashen Sepulchre, the weekly raid".
+
+**The 1300-2000 hunting set (2026-10-14).** Gloamfang Ravager, Rimeshroud Revenant, Cinderskull Reaver, Bloodantler
+Fiend, Cinderhorn Juggernaut, Wraithbone Stalker, Mirecoil Wyrm and Pyrewing Tyrant (`gloamfang_ravager.xml` ...
+`pyrewing_tyrant.xml`, levels 1280-1320 to 1980-2020): our own files, the late-game curves carried on from Facetis,
+kept on them by the `HIGH_BAND` rows of `tools/tune_monsters.py`. Looks are unused outfits of the live pair, no new
+art: 1547, 1544, 1543, 1546, 1532 (donor B, `client/tools/sprites/donor_b_selection.csv`) and stock 1369, 1449, 1462
+(no colour layers). Corpse 6068. The two top ones carry a light boss mechanics profile. Numbers: server/README.md "Late
+game", The 1300-2000 set; where they spawn: the plans gravehorn_deeps and duskmarrow_crater.

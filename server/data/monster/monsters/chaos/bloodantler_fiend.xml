@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Bloodantler Fiend" nameDescription="a bloodantler fiend" race="blood" experience="39350" speed="36" manacost="0">
+	<health now="30800" max="30800"/>
+	<look type="1369" corpse="6068"/>
+	<level min="1580" max="1620"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="0"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1500" min="-780" max="-1170"/>
+		<attack name="death" interval="2000" chance="30" length="7" spread="0" min="-1090" max="-1560">
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="20" radius="4" target="0" min="-860" max="-1250">
+			<attribute key="areaEffect" value="redsmoke"/>
+		</attack>
+		<attack name="manadrain" interval="2000" chance="25" range="7" target="1" min="-620" max="-940">
+			<attribute key="shootEffect" value="death"/>
+			<attribute key="areaEffect" value="purplesmoke"/>
+		</attack>
+		<attack name="cursecondition" interval="2000" chance="15" range="7" target="1" min="-390" max="-470" tick="3000">
+			<attribute key="shootEffect" value="suddendeath"/>
+			<attribute key="areaEffect" value="smallclouds"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="healing" interval="1000" chance="20" min="180" max="3080">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="35"/>
+		<element firePercent="55"/>
+		<element energyPercent="35"/>
+		<element icePercent="35"/>
+		<element earthPercent="35"/>
+		<element deathPercent="55"/>
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Your soul has a lovely rot to it."/>
+		<voice sentence="The antlers drink first."/>
+		<voice sentence="HRRAAAAH!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="70" chance="65000"/><!-- platinum coin -->
+		<item id="25380" chance="65"/><!-- titanium token -->
+		<item id="2520" chance="562"/><!-- demon shield: the Bloodantler Fiend's own drop -->
+		<item id="3983" chance="444"/>
+		<item id="2495" chance="444"/>
+		<item id="2469" chance="444"/>
+		<item id="7894" chance="444"/>
+		<item id="8888" chance="444"/>
+		<item id="2500" chance="444"/>
+		<item id="2472" chance="444"/>
+		<item id="8885" chance="444"/>
+		<item id="8884" chance="444"/>
+		<item id="5462" chance="429"/>
+		<item id="2644" chance="429"/>
+		<item id="11118" chance="429"/>
+		<item id="11240" chance="429"/>
+		<item id="2537" chance="429"/>
+		<item id="2514" chance="429"/>
+		<item id="2499" chance="429"/>
+	</loot>
+</monster>

@@ -473,9 +473,16 @@ Planned hunting areas (14, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
 | hollowmass_reliquary | 1150-1300 | crypt, 2 floors |
 | gallowfen_mire | 1300-1450 | swamp |
 | voidscar_chasm | 1400-1500 | abyss, 2 floors |
+| gravehorn_deeps | 1500-1750 | crypt, 2 floors |
+| duskmarrow_crater | 1750-2000 | lava, 2 floors |
 
-Each is four times the first draft (2026-10-14); the last four were added the same day. Placed, they lift 500-700
-from 14 to about 50 parties at once, 700-1000 from 10 to about 46, 1000+ from 0 to about 81.
+Each is four times the first draft (2026-10-14); the four 1000-1500 plans and the two 1500-2000 plans were added the
+same day. Placed, they lift 500-700 from 14 to about 50 parties at once, 700-1000 from 10 to about 46, 1000+ from 0 to
+about 96.
+
+Hunting monsters of 1300-2000 (2026-10-14), one every 100 levels, our own on unused looks of the live pair:
+Gloamfang Ravager, Rimeshroud Revenant, Cinderskull Reaver, Bloodantler Fiend, Cinderhorn Juggernaut, Wraithbone
+Stalker, Mirecoil Wyrm, Pyrewing Tyrant (server/README.md "Late game").
 
 Chronicle and memorial areas (in `server/tools/areaplan/chronicle/`):
 

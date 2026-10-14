@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Rimeshroud Revenant" nameDescription="a rimeshroud revenant" race="undead" experience="31150" speed="38" manacost="0">
+	<health now="28800" max="28800"/>
+	<look type="1544" corpse="6068"/>
+	<level min="1380" max="1420"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="4"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="0"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-420" max="-630"/>
+		<attack name="ice" interval="2000" chance="100" range="7" target="1" min="-770" max="-1120">
+			<attribute key="shootEffect" value="smallice"/>
+			<attribute key="areaEffect" value="iceattack"/>
+		</attack>
+		<attack name="ice" interval="2000" chance="30" length="6" spread="2" min="-980" max="-1400">
+			<attribute key="areaEffect" value="icearea"/>
+		</attack>
+		<attack name="ice" interval="2000" chance="20" radius="3" target="0" min="-840" max="-1260">
+			<attribute key="areaEffect" value="icetornado"/>
+		</attack>
+		<attack name="speed" interval="2000" chance="15" range="7" target="1" speedchange="-700" duration="4000">
+			<attribute key="shootEffect" value="snowball"/>
+			<attribute key="areaEffect" value="giantice"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="healing" interval="1000" chance="20" min="170" max="2880">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="35"/>
+		<element energyPercent="35"/>
+		<element icePercent="55"/>
+		<element earthPercent="35"/>
+		<element deathPercent="55"/>
+		<element holyPercent="35"/>
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="The cold keeps what the grave forgot."/>
+		<voice sentence="Kneel in the frost."/>
+		<voice sentence="Your breath is already mine."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="60" chance="65000"/><!-- platinum coin -->
+		<item id="25380" chance="55"/><!-- titanium token -->
+		<item id="8887" chance="562"/><!-- frozen plate: the Rimeshroud Revenant's own drop -->
+		<item id="3983" chance="444"/>
+		<item id="2495" chance="444"/>
+		<item id="2469" chance="444"/>
+		<item id="7894" chance="444"/>
+		<item id="8888" chance="444"/>
+		<item id="2500" chance="444"/>
+		<item id="2472" chance="444"/>
+		<item id="8885" chance="444"/>
+		<item id="8884" chance="444"/>
+		<item id="5462" chance="429"/>
+		<item id="2644" chance="429"/>
+		<item id="11118" chance="429"/>
+		<item id="11240" chance="429"/>
+		<item id="2537" chance="429"/>
+		<item id="2514" chance="429"/>
+		<item id="2499" chance="429"/>
+	</loot>
+</monster>

@@ -468,7 +468,7 @@ open tile, lights per 100 tiles and the spam share.
 - The chest script gives items, gold and experience; quest logic beyond that is hand-written.
 
 ### Content plans
-`server/tools/areaplan/plans/`: fourteen production plans for the thin level bands (docs/CONTENT.md). CI validates and
+`server/tools/areaplan/plans/`: sixteen production plans for the thin level bands (docs/CONTENT.md). CI validates and
 compiles them with the examples. Each has its own `origin`, one 200 x 200 cell in the empty block east and south of
 the generated areas (rows y 14340, 14540, 14940 and 15140; the plaza at 14800, 14800 sits in the free band between),
 so they never overlap each other, the generated areas or the plaza. Since 2026-10-14 each is four times the first
@@ -491,10 +491,20 @@ loops, 3.2-3.5 monsters per 100 walkable tiles:
 | hollowmass_reliquary | 1150-1300 | 184 x 156, 2 floors | 14340, 14920, 9 | 14431, 15043, 9 |
 | gallowfen_mire | 1300-1450 | 184 x 176 | 14900, 14700, 8 | 14991, 14734, 8 |
 | voidscar_chasm | 1400-1500 | 192 x 176, 2 floors | 15100, 14700, 11 | 15252, 14787, 11 |
+| gravehorn_deeps | 1500-1750 | 188 x 172, 2 floors | 14340, 15140, 10 | 14433, 15173, 10 |
+| duskmarrow_crater | 1750-2000 | 192 x 176, 2 floors | 15305, 14340, 9 | 15342, 14427, 9 |
 
 The last four sit west of the generated areas' column (x 14340, below y 14686) and in the band between rows 14540
 and 14940 east of the plaza (x 14900 and 15100, y 14700), at least 10 tiles from every other plan, the generated
-areas, the plaza and the two chronicle cells (14900, 15140 and 15100, 15140). Still free: 14340, 15140.
+areas, the plaza and the two chronicle cells (14900, 15140 and 15100, 15140).
+
+The two 1500-2000 plans (2026-10-14, on the 1300-2000 hunting monsters, server/README.md "Late game") take the
+last free cell, 14340, 15140 (gravehorn_deeps, 64 tiles below hollowmass_reliquary), and a new column at x 15305
+(duskmarrow_crater, 13 tiles east of voidscar_chasm's 15292 and 29 east of wyrmspine_hollows). Its origin stays inside
+the schema's 14336-15359; the area runs to x 15497, where the map has no tiles (the full map read with
+tools/map/otbm.py: no tile in x 15295-15510, y 14330-14545 nor in x 14330-14545, y 15130-15355). The block is now full:
+a next plan goes further along that column (x 15305, rows 14540, 14700, 14940) after the same check.
+Teleports: 16 plans in the room's 20 slots (4 spare).
 
 **The way in: the teleport room.** `install_all.py` step `contentareas` (`server/tools/install_content_areas.py`)
 places every plan at its own origin, with its spawns and chest script, and grows the teleport room of Cinderhold
