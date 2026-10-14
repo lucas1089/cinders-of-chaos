@@ -1,2 +1,3 @@
 script,name,cooldown,groupcooldown,secondarygroup,secondarygroupcooldown,reason
 attack/expose_weakness.lua,Sunder Guard,,2000,,,"locked the attack group for 12 s (the owner saw it on the Mystic): 2 s like every attack spell"
+attack/brutal_strike.lua,Bonebreaker,2000,,,,"the Warrior line's only attack spell at levels 16-27 (6 s, a 6 s gap; 4 s at 28-29): 2 s like the other fillers. Damage unchanged (no Chaos script): at levels 16-29 a Warrior's spell damage goes from ~4 to ~11 per second, still below a Mystic's; from level 30 its presets keep their damage"

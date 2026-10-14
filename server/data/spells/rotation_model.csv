@@ -63,7 +63,7 @@ kah rek sang,Headsman's Hurl,"avg((P*0.17+17+l)*1.28,(P*0.20+40+l)*1.28)",1,,att
 kah oss lanc,Bone Spear,"avg(l+ML*1.6+20,l+ML*2.6+40)",1.5,,necro_config boneSpear (pierce 50%)
 kah dhun,Ashen Fist,"avg(l+P*0.04+20,l+P*0.07+40)",1,chi2,ChaosMonk.formula.ashenFist (+2 chi)
 drai hyr rhim,Rime Bloom,"avg(l+ML*2.5+23,l+ML*4.15+40)*1.2",5,,chaos/sorcerer/frost_nova.lua
-kah shur,Shuriken Toss,"avg(l+P*0.05+20,l+P*0.08+40)*2.0",1,,chaos/thief/shuriken_toss.lua
+kah shur,Shuriken Toss,"avg(l+P*0.05+20,l+P*0.08+40)*TOSS",1,,chaos/thief/shuriken_toss.lua (TOSS: the class scale in the script)
 kah sol dyr,Radiant Smite,"avg(l+P*0.10+ML*1.0+30,l+P*0.16+ML*1.5+60)*SMITE",1,,chaos/templar/radiant_smite.lua (SMITE: ChaosTemplar.cfg.radiantSmite.scale)
 drai vex kriv,Blightswarm,"avg(l+ML*2.4+18,l+ML*4.1+36)*0.85+8*(ML*0.25+3)",5,,chaos/druid/venom_swarm.lua (+ poison)
 kah pyr vesh,Witchfire Bolt,"avg(l+ML*3+15,l+ML*5+30)*1.2+4*(ML*0.15+3)",1,,chaos/sorcerer/hexfire_bolt.lua (+ burn)
@@ -72,12 +72,12 @@ kah spir,Reaping Gyre,"3*avg(l+P*0.010+4,l+P*0.019+7)*0.7",3,,chaos/knight/whirl
 kah gal dhun,Sundering Palm,"avg(l+P*0.20+60,l+P*0.30+120)",1,chi,ChaosMonk.formula.sunderingPalm (finisher)
 kah nyx maled,Withering Curse,"10*avg(l+ML*0.25+5,l+ML*0.35+10)*(1.8 if cls=='Lich' else 1)",1,keep,necro_config witheringCurse (rot; +15% / +25% taken)
 drai sol haln,Consecration,"6*avg(l+P*0.025+ML*0.4+10,l+P*0.04+ML*0.6+20)",5,,chaos/templar/consecration.lua (6 pulses)
-drai snar,Snare Trap,"avg(L*0.2+P*0.045+10,L*0.2+P*0.0675+20)",5,,snares_config damage
+drai snar,Snare Trap,"avg(L*0.2+P*0.045+10,L*0.2+P*0.0675+20)",5,utility,snares_config damage (a snare: cast by hand, never in a preset)
 kah zhul zarn,Forked Storm,"avg(l+ML*2.85+28,l+ML*4.85+55)*1.2",3.1,,chaos/sorcerer/chain_lightning.lua (3 jumps x0.7)
 drai spir dhun,Whirling Heel,"avg(l+P*0.10+40,l+P*0.16+80)",3,chi,ChaosMonk.formula.whirlingHeel (finisher)
 kah sag lanc,Skewering Line,"avg(l+P*0.0195+20,l+P*0.0325+40)",2,,chaos/paladin/piercing_volley.lua (line 7)
 kah grund krak,Earthbreaker,"avg(l+P*0.05+16,l+P*0.10+32)*0.7",5,,chaos/knight/ground_slam.lua
-kah snar,Seeker Mine,"avg(L*0.2+P*0.045+10,L*0.2+P*0.0675+20)*1.15",5,,snares_config damage x mine.damageFactor
+kah snar,Seeker Mine,"avg(L*0.2+P*0.045+10,L*0.2+P*0.0675+20)*1.15",5,utility,snares_config damage x mine.damageFactor (a snare: cast by hand, never in a preset)
 drai thral brin,Briar Prison,"3*avg(l+ML*1.1+14,l+ML*1.95+25)*0.85",5,,chaos/druid/thorn_cage.lua (3 pulses)
 ruan nyx umh,Umbral Stride,"avg(l+ML*4.7+54,l+ML*7.9+99)*1.4",1,,chaos/illusionist/shadow_step.lua
 drai vas sol hal,Blessed Earth,"6*avg(l+P*0.00325+ML*0.4+8,l+P*0.0052+ML*0.6+15)",5,,chaos/paladin/consecration.lua (6 pulses)

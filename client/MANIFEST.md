@@ -176,7 +176,7 @@ gets the class's heals (up to 3, the strongest at 45%, then 65%, 85%); a filled 
 custom rotation (rules the button did not write) too. The message: "Rotation set: A > B > C (max gap 2.0 s)". A
 level-up refreshes a rotation the button set (and the player left alone). `autorotation.lua` (`ChaosAutoRotation`) is
 the choice, pure Lua, tested by `autorotation_test.lua` (every class has presets, at most 5 spells, the gap at the level
-bands, the Lua gap check against the generator, replacement, custom detection, heals, the message).
+bands 30-1000 and at every preset from level 15, no snare in a preset, the Lua gap check against the generator, replacement, custom detection, heals, the message).
 With it (found by the live check, server/data/spells/README.md "Rotations"): `game_chaosspells/spellfix.lua` `F.EXTRA`
 adds the six base server spells the client had no entry for (Riftbolt, Crossfire Hex, Arcane Ripple, Bewitching Hex,
 Fading Step, Gravity Snare; the server's numbers, checked by `spellfix_test.lua` against `stock_spells.csv`), so the

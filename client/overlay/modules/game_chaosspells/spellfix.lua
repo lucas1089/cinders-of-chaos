@@ -55,6 +55,7 @@ F.STOCK = {
   ["reth vas kin"] = { mana = 0 },
   ["hesh vas kin"] = { mana = 0 },
   ["kah rek zhul"] = { range = 5, exhaustion = 8000 },              -- Skyfang
+  ["kah brak"] = { exhaustion = 2000 },                             -- Bonebreaker: 2 s (server patch_spell_timings.py)
   ["hesh sol"] = { exhaustion = 40000 },                            -- Glare of Dawn
   ["tor ael"] = { exhaustion = 2000 },                              -- Ward of the Mind
   ["drai pyr ul"] = { exhaustion = 4000 },                          -- Cinder Fan

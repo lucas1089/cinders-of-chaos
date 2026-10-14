@@ -1189,11 +1189,15 @@ The rotation pass (2026-10-14, owner: "Faça todas as classes terem até 5 magia
 `data/spells/README.md` "Rotations"). `patch_spell_timings.py DATA_DIR [--dry-run]` (run by the `spells` step after
 `rename_spells.py`) sets the cooldown, group cooldown and secondary group of base spells from
 `data/spells/spell_timings.csv`; each row names its spell by script, an empty cell leaves the attribute alone, the Chaos
-block is never touched. Idempotent; refuses when a script of the csv is missing. One row today: Sunder Guard's attack
-group cooldown 12 s -> 2 s (the 12 s above is gone). The client knows it (`game_chaosspells/spellfix.lua`).
+block is never touched. Idempotent; refuses when a script of the csv is missing. Two rows today: Sunder Guard's attack
+group cooldown 12 s -> 2 s (the 12 s above is gone) and Bonebreaker's cooldown 6 s -> 2 s (second pass: the Warrior
+line's only attack spell at levels 16-27). The client knows both (`game_chaosspells/spellfix.lua`). Assumption: the
+base spells.xml has one `<instant>` with `attack/brutal_strike.lua` (Bonebreaker).
 `tools/rotation_sim.py` reads the installed stock numbers from `data/spells/stock_spells.csv` (`rotation_sim.py
 --export-stock SERVER_DIR` after an install) and checks in CI that every class and ascension has a rotation of at most 5
-attack spells with no window over 2 s at levels 100 / 300 / 600 / 1000 (`tools/rotation_sim_test.py`). Assumption: the
+attack spells with no window over 2 s at levels 15 / 30 / 60 / 100 / 300 / 600 / 1000 and at every level where a
+preset changes, from level 15 up (`tools/rotation_sim_test.py`; below 15 exempt). The snares are flagged `utility` in
+`rotation_model.csv`: no preset takes them. Assumption: the
 4 s attack group cooldowns of the supreme strikes and the big stock area spells stay (balance); the rotations leave
 those spells out.
 

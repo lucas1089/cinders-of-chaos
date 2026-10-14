@@ -6,7 +6,8 @@ usage: python3 -I patch_spell_timings.py DATA_DIR [--dry-run]
 The rotation pass (2026-10-14, owner: "Faça todas as classes terem até 5 magias na rotação e nunca ficarem 2s sem uma";
 server/data/spells/README.md "Rotations"): a base spell whose group cooldown locked the whole attack group for longer
 than the 2 s every other attack spell uses left a window with nothing to cast (Sunder Guard: 12 s, the owner saw it on
-the Mystic). The 4 s locks of the supreme strikes and the big area spells stay: they hold back strong spells (without
+the Mystic). Bonebreaker's 6 s cooldown (2026-10-14, second pass) left the Warrior line at levels 16-29 with one
+spell and a 6 s gap. The 4 s locks of the supreme strikes and the big area spells stay: they hold back strong spells (without
 them a Mystic casting everything deals ~30% more), and the rotations of at most 5 spells leave those spells out.
 Each row of the csv names a base spell by its script
 (rename_spells.py changes names and words, never scripts) and the values it gets in data/spells/spells.xml: an empty

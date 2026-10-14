@@ -10,8 +10,8 @@ local function eq(a, b, what)
 end
 local function ok(c, what) eq(not not c, true, what) end
 
--- every class of docs/CLASSES.md has presets; at the level bands every preset has at most 5 spells and never 2 s
--- without one (the generator's own check, tools/rotation_sim_test.py, runs the full simulation)
+-- every class of docs/CLASSES.md has presets; at the level bands every preset has at most 5 spells and from level 15
+-- up never 2 s without one (the generator's own check, tools/rotation_sim_test.py, runs the full simulation)
 local classes = 0
 for vocId, c in pairs(D.classes) do
   classes = classes + 1
@@ -31,8 +31,12 @@ for vocId, c in pairs(D.classes) do
       -- the Lua gap check agrees with the generator's simulation
       eq(A.gap(p.spells), p.gap, c.name .. ' ' .. p.level .. ': Lua gap = generated gap')
     end
+    -- from level 15 up never 2 s without a cast (below 15 exempt)
+    if p.level >= 15 then
+      ok(p.gap <= A.GAP_LIMIT, c.name .. ' ' .. p.level .. ': gap ' .. p.gap .. ' <= 2.0 s')
+    end
   end
-  for _, band in ipairs({ 100, 300, 600, 1000 }) do
+  for _, band in ipairs({ 30, 60, 100, 300, 600, 1000 }) do
     local p = A.presetFor(vocId, band)
     ok(p, c.name .. ' has a preset at ' .. band)
     if p then
@@ -42,6 +46,8 @@ for vocId, c in pairs(D.classes) do
   end
 end
 eq(classes, 21, 'the 21 classes')
+-- the snares (Snare Trap 99, Seeker Mine 100) are cast by hand, never by a preset
+ok(not D.spells[99] and not D.spells[100], 'no snare in a preset')
 
 -- the gap check: one 2 s filler is enough; a 4 s spell alone leaves 4 s; a 4 s group cooldown leaves 4 s
 local S = {

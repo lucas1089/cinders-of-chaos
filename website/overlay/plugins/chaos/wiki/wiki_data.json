@@ -869,7 +869,7 @@
 							"w": [22, 22, 9, 12, 12, 23],
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
-								["Shuriken Toss", "kah shur", "20", "50", "3 s", "whole line"],
+								["Shuriken Toss", "kah shur", "20", "50", "2 s", "whole line"],
 								["Shadow Mend", "saen umh", "25", "2% max mana", "2 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
@@ -1507,7 +1507,7 @@
 				{
 					"id": "spell:236",
 					"name": "Shuriken Toss",
-					"sub": "\"kah shur\", level 20, 50 mana, cooldown 3 s",
+					"sub": "\"kah shur\", level 20, 50 mana, cooldown 2 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -1524,7 +1524,7 @@
 								["Words", "kah shur"],
 								["Level", "20"],
 								["Mana", "50"],
-								["Cooldown", "3 s"],
+								["Cooldown", "2 s"],
 								["Kind", "Attack"],
 								["Classes", "Thief, Ninja, Samurai"]
 							]

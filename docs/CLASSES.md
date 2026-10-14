@@ -98,8 +98,13 @@ Spear and Charge Staff. No class conjures anything now.
 every class has an attack rotation of at most 5 spells, cast as a priority list (first ready spell first), that never
 leaves a window over 2 s with nothing ready (`server/tools/rotation_sim.py`; numbers in `server/data/spells/README.md`
 "Rotations"). The Templar line's Radiant Smite went from 4 s to 2 s (its damage scaled down per class) and Sunder Guard's
-12 s attack group lock to 2 s. The helper's Auto rotation button sets these (client/MANIFEST.md "Helper auto rotation");
-a band left out has the set of the band before. At levels 100 / 300 / 1000:
+12 s attack group lock to 2 s. Second pass: the rule holds from level 15 up (below it exempt; a class with no attack
+spell yet has no rotation). The snares (Snare Trap, Seeker Mine) are in no preset: players cast them by hand.
+Bonebreaker went from 6 s to 2 s (the Warrior line's only attack spell at levels 16-27, a 6 s gap), Shuriken Toss from
+3 s to 2 s (damage scaled per class: Thief 1.33, Ninja 1.33 / 1.62 from level 180, Samurai 1.33 / 1.5 from level 120).
+The helper's Auto rotation button sets these (client/MANIFEST.md "Helper auto rotation"); a band left out has the set
+of the band before. Early: Warrior line 16: Bonebreaker, 30: Reaping Gyre > Bonebreaker; Thief line 20: Shuriken Toss;
+Ranger line 23: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 100 / 300 / 1000:
 - **Warrior**: 100: Butcher's Gyre > Scything Arc > Earthbreaker > Reaver's Spin; 300: Headsman's Hurl > Colossus Fall >
   Butcher's Gyre > Scything Arc > Reaping Gyre; 1000: Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything Arc >
   Reaping Gyre.
@@ -109,19 +114,20 @@ a band left out has the set of the band before. At levels 100 / 300 / 1000:
 - **Berserker**: 100: Butcher's Gyre > Skyfall Cleave > Scything Arc > Earthbreaker; 300: Headsman's Hurl > Butcher's
   Gyre > Skyfall Cleave > Scything Arc > Earthbreaker; 1000: Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything
   Arc > Reaping Gyre.
-- **Ranger**: 100: Blessed Earth > Seeker Mine; 300: Hail of Dawn > Blessed Earth > Seeker Mine.
-- **Deadeye**: 100: Blessed Earth > Seeker Mine; 300: Hail of Dawn > Final Verdict > Blessed Earth > Seeker Mine.
-- **Beastmaster**: 100: Blessed Earth > Seeker Mine.
+- **Ranger**: 100: Blessed Earth > Dawnpiercer > Sanctum Burst; 300: Hail of Dawn > Blessed Earth > Dawnpiercer >
+  Sanctum Burst.
+- **Deadeye**: 100: Blessed Earth > Dawnpiercer > Sanctum Burst; 300: Hail of Dawn > Final Verdict > Blessed Earth >
+  Dawnpiercer > Sanctum Burst.
+- **Beastmaster**: 100: Blessed Earth > Dawnpiercer > Sanctum Burst.
 - **Mystic**: 100: Bewitching Hex > Arcane Ripple; 300: Falling Pyre > Shattered Psyche > Bewitching Hex > Arcane
   Ripple; 1000: Falling Pyre > Shattered Psyche > Arcane Ripple > Bramble Fan.
 - **Elementalist**: 100: Tempest Fan > Forked Storm > Pyre Torrent > Witchfire Bolt; 300: Doomtide > Frozen Crypt >
   Falling Pyre > Pyre Torrent > Witchfire Bolt.
 - **Illusionist**: 100: Bewitching Hex > Arcane Ripple; 300: Tear in the Weave > Nightburst > Primordial Squall >
   Bewitching Hex > Arcane Ripple; 1000: Nightburst > Primordial Squall > Shattered Psyche > Arcane Ripple > Bramble Fan.
-- **Thief**: 100: Shuriken Toss > Seeker Mine.
-- **Ninja**: 100: Shadow Step > Shuriken Toss > Seeker Mine; 300: Shadow Step > Shuriken Toss > Shuriken Barrage >
-  Seeker Mine; 1000: Shadow Step > Shuriken Toss > Seeker Mine.
-- **Samurai**: 100: Shuriken Toss > Seeker Mine; 300: Iaijutsu > Shuriken Toss > Seeker Mine.
+- **Thief**: 100: Shuriken Toss.
+- **Ninja**: 100: Shadow Step > Shuriken Toss; 300: Shadow Step > Shuriken Barrage > Shuriken Toss.
+- **Samurai**: 100: Shuriken Toss; 300: Iaijutsu > Shuriken Toss.
 - **Necromancer**: 100: Withering Curse > Bone Spear.
 - **Lich**: 100: Withering Curse > Soul Rot > Bone Spear; 300: Withering Curse > Soul Rot > Life Siphon > Bone Spear.
 - **Bone Lord**: 100: Withering Curse > Bone Spear; 300: Withering Curse > Bone Offering > Bone Spear.

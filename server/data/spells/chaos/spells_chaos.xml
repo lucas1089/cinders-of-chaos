@@ -252,7 +252,7 @@
 		<vocation name="Sentinel" />
 	</instant>
 	<!-- thief (Thief, and its ascended classes Ninja and Samurai) -->
-	<instant group="attack" spellid="236" name="Shuriken Toss" words="kah shur" level="20" mana="50" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="3000" groupcooldown="2000" needlearn="0" script="chaos/thief/shuriken_toss.lua">
+	<instant group="attack" spellid="236" name="Shuriken Toss" words="kah shur" level="20" mana="50" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="2000" groupcooldown="2000" needlearn="0" script="chaos/thief/shuriken_toss.lua">
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
