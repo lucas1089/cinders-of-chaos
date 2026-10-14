@@ -468,15 +468,24 @@ local function names(list)
 end
 K.names = names
 
-function K.recordText(board, variant, size, value, members, prev)
-	return string.format("New record! %s: %s by %s%s.", label(board, variant, size), K.valueText(value, board.format),
-		names(members), prev and (" (was " .. K.valueText(prev, board.format) .. ")") or "")
+-- a text in `lang` (server/README.md "Server texts in pt-BR (Chaos.t)"); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	return string.format(key, ...)
+end
+
+function K.recordText(board, variant, size, value, members, prev, lang)
+	return T(lang, "New record! %s: %s by %s%s.", label(board, variant, size), K.valueText(value, board.format),
+		names(members), prev and T(lang, " (was %s)", K.valueText(prev, board.format)) or "")
 end
 
 -- display = the third value of K.firstTarget (the boss's full name, or the board's)
-function K.firstText(display, members, seasonName)
-	return string.format("Realm first of %s! %s %s the first to defeat %s.", seasonName or "the season", names(members),
-		#members == 1 and "is" or "are", tostring(display))
+function K.firstText(display, members, seasonName, lang)
+	return T(lang, #members == 1 and "Realm first of %s! %s is the first to defeat %s." or
+		"Realm first of %s! %s are the first to defeat %s.", seasonName or T(lang, "the season"), names(members),
+		tostring(display))
 end
 
 -- the realm first target of a run: key, short name, display name (nil: the board has no realm firsts). run.first = {key, short}

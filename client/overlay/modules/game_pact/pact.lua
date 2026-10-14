@@ -46,7 +46,7 @@ end
 
 local function walletText()
   if not status then return '' end
-  return string.format('Chaos Coins: %d   Premium days: %d   Coins claimed from the Pact so far: %d',
+  return tr('Chaos Coins: %d   Premium days: %d   Coins claimed from the Pact so far: %d',
     tonumber(status.coins) or 0, tonumber(status.premiumDays) or 0, tonumber(status.claimedTotal) or 0)
 end
 
@@ -153,7 +153,7 @@ local function loadBuild(data)
   local edit = tree and tree:recursiveGetChildById('codeEdit')
   if edit then edit:setText(data.code) end
   if pt.sendAction then pt.sendAction('buildPreview', { code = data.code }) end
-  note(string.format('Build %d loaded into the passive tree: check the preview, then Apply Build.', tonumber(data.slot) or 0), '#80c070')
+  note(tr('Build %d loaded into the passive tree: check the preview, then Apply Build.', tonumber(data.slot) or 0), '#80c070')
 end
 
 local function onExtendedOpcode(protocol, opcode, buffer)

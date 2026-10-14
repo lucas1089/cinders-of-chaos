@@ -466,6 +466,7 @@ working directory, as with the rest of the base server libs).
 | game_descent | `descent.lua`, `descent_core.lua`, `descent_config.lua`, `sql/chaos_descent.sql` (buff source in `data/lib/chaos_buffs.lua`) | **205**, Adventure > Ember Descent, the portal next to the temple | The Ember Descent: a roguelike trial of 8-12 seeded rooms (combat, elite, treasure, shrine, merchant, boss) in a runtime-built hall; three boon cards after a room, curses for more rewards, run HUD with the boons and curses, merchant window, entry window with the free runs and the Ember Sigil forge; a weekly seeded run with its leaderboard (see "The Ember Descent"). Unit tests; full runs on a live test server. |
 | game_raid | `raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql` (buff source in `data/lib/chaos_buffs.lua`), monsters `monsters/chaos/raid/` | **213**, Adventure > Raid: Ashen Sepulchre, the portal next to the temple | The Ashen Sepulchre: a weekly raid for 5-15 players, five bosses with coordinated mechanics (tank swap, cleaves, soak circles, adds, spread, effigies, a hex to cleanse) behind trash in a runtime-built zone; personal loot once a week per boss and character, saved raids continued later the same week, Sepulchre Marks for a seeded weekly vendor, raid uniques, a guild trophy, a weekly fastest-clear board; window (lockouts, journal, vendor), HUD and call-outs (see "The Ashen Sepulchre, the weekly raid"). Unit and mocked-engine tests; tested alone on a live test server. |
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
+| game_chronicle | `chronicle.lua`, `chronicle_core.lua`, `chronicle_config.lua`, `chronicle_text.lua`, `memorial.lua`, `memorial_core.lua`, `memorial_config.lua`, `sql/chaos_chronicle.sql`, `sql/chaos_memorial.sql` (hooks by wrapping: `ChaosRecords.submit`, `ChaosAchievements.progress`, `ChaosInvasion.deliver`, `ChaosSeason.modesFall`) | **171**, Adventure > Chronicle, the Memorial plaza in the capital, `/chronicle`, `/memorial` | The Ashen Chronicle: a server-wide story per season, chapters with realm goals that change the world when written (areas open, the capital scarred and rebuilt, NPC flags, broadcast, Discord), the record of the top contributors; the Capital Memorial: realm firsts, records and Hardcore falls on statues and stones, by consent, with a website archive (see "The Ashen Chronicle", "The Capital Memorial"). Unit and mocked-engine tests; not run on a live server. |
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
 | game_chaosscale | `display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037` (hooks in the combat log, death recap, party frames, hunt, leaderboard, season boards, battleground, guild war, bestiary, spellbook, item tooltip, inspect, item link, ground loot, market and pets scripts) | **157** (server -> client `scale`, client -> server `hello`) | Display scale: every combat number a player sees x the factor of its level (x1 to level 100, x1000 at 1000, x10000 cap from 1500); internal numbers unchanged (see "Display scale"). Unit, mocked-engine, C++ header and patch guard tests; checked live at levels 100, 300, 700 and 1000. |
 | game_deathrecap | `deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql` (one hook in `combatlog.lua`) | **154**, Hunt > Death Recap | Death recap: after a death (or a mode defeat) every attacker of the last 20 s with its look, damage, share, health / mana part and element split, the killing blow, the last hits, the experience and levels lost; the last 5 deaths per character; ghost staff hidden (see "Death recap"). Unit and mocked-engine tests; tested on a live test server with two clients. |
@@ -501,7 +502,8 @@ collision check") and be added here.
 | 155 | `itemFinder` | `itemfinder.lua` | `game_itemfinder` | answers through `Chaos.sendChunked` |
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
-| 157 | `displayScale` | `display_scale.lua` | `game_chaosscale` | server -> client `scale {level, f}`, client -> server `hello` (see "Display scale") |
+| 157 | `displayScale` | `display_scale.lua`, `i18n.lua` | `game_chaosscale`, `client_chaos_locale` | server -> client `scale {level, f}`, client -> server `hello` (with `lang` from `client_chaos_locale`: the language of the server texts; see "Display scale" and "Server texts in pt-BR (Chaos.t)") |
+| 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
 | 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
@@ -612,7 +614,9 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
 | 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
+| 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
 | 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7102300 - 7102309 | Nemesis (`Chaos.storage.nemesis`, `nemesis_config.lua` `storage`): +0 nemeses avenged, +1 nemeses of others slain, +2 last hunter bounty, +3 last avenge loot bonus, +4 the character's last nemesis ended (birth cooldown), +5 trophies; +6..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
@@ -3063,7 +3067,11 @@ autoloot list is needed.
 The store's infinite food (Convenience, "Everfull Ration", 150 coins, a PLACEHOLDER price in `docs/OWNER_TODO.md`).
 
 - **Item.** Server id 32084 (after the pouches), a new items.otb node copied from the stock dragon ham (2672: flags and
-  attributes) and made not stackable, with an items.xml entry (name, description, weight 3 oz). Installed by
+  attributes), stackable like it, with an items.xml entry (name, description, weight 3 oz). Stackable because its look
+  is a stackable client thing (the dragon ham, and our art made with its flags): the 10.98 protocol writes a count byte
+  for such an item, and the first version (not stackable, no count) broke every packet that showed the ration ("parse
+  message exception ... opcode 0x6e" when a backpack holding it opened; live test 2026-10-14). One ration a character,
+  count 1; `install_store_food.py` updates an older node in place. Installed by
   `tools/install_store_food.py` (step `storefood` of `install_all.py`, after `pouches`; idempotent; `items.otb.bak` keeps
   the original; `tools/install_store_food_test.py` on a synthetic items.otb). Look: the dragon ham's until the client pair
   has our art; then `ownLook = true` in `store_food_config.lua` gives it client id 33904: a glazed bowl with a roast haunch
@@ -12065,7 +12073,7 @@ weapons, potions; two of one group, like Bag and Backpack, never together), posi
 ids and random keys only; which key is right stays on the server, and the client has no item names. 75 s
 (`timeLimitSeconds`), the bar counts down. **Accessibility:** one retry: a wrong click shows a new picture (at least 45 s
 more), or "Another picture" before choosing. A pass multiplies the score by 0.4 and starts an 8 h grace; a failure (wrong
-twice or no answer) adds 40 and runs `failAction`: `"temple"` (default: teleported to the temple), `"kick"` or `"log"`,
+twice or no answer) adds 40 and runs `failAction`: `"log"` (default) or `"temple"`; never a kick (see "Bot detection"),
 always with a `check_fail` log entry. **Never during PvP or boss fights:** a hit from or on a player in the last 60 s
 (also summons, also a PZ lock or a player as target), a hit from or on a boss in the last 45 s (the boss points list,
 the world bosses, `MonsterType:isBoss()`), or a rift run in progress defer it; a check deferred 30 minutes is dropped.
@@ -12800,6 +12808,120 @@ dialog).
 Assumptions (not run on a live server): the base server's `kill` CreatureEvent fires for the killer; `Player:removeTotalMoney`
 takes from the backpack and the bank; town 1's temple has a free tile at one of the offsets (else set `brazier.pos`).
 
+## The Ashen Chronicle (`chronicle.lua`, `chronicle_core.lua`, `chronicle_config.lua`, `chronicle_text.lua`, `sql/chaos_chronicle.sql`, client `game_chronicle`)
+
+Owner-approved design (2026-10-14): a server-wide story per season that advances with what the whole realm does. The
+pure logic is `chronicle_core.lua` (`tests/chronicle_test.lua`, LuaJIT and Lua 5.3, also `chronicle.lua` against a
+mocked engine); every number is in `chronicle_config.lua`; the story is `chronicle_text.lua` (English and Brazilian
+Portuguese, one file of our own so the lore writers' `lore_data.lua` stays theirs). Extended opcode 171 (shared with
+"The Capital Memorial"). Tables `chaos_chronicle_state`, `_chapters`, `_progress`, `_contrib`, `_record`, `_levels`,
+also created at startup. No player storages; global storages 7102100-7102119; action ids 47920-47929.
+
+**Chapters.** A season with an arc (`arcs`, season id -> arc key; Season 1 tells `s1`) has 4-6 chapters. One is open at
+a time; it is written when every goal is met. Only the open chapter counts; a met goal takes no more and gives no more
+points. Season 1:
+
+| Chapter | Goals (`chapters.s1`) | When it is written |
+|---|---|---|
+| I. The Ash Thickens | 150 characters reach level 100; 1,500 rifts sealed in tiers 1-5 | ash drifts and cracks around the capital's temple |
+| II. The Wound Beside the Walls | 30 world bosses; 800 rifts in tiers 6-10 | the Cinderscar Breach opens (levels 440-560); rubble near the temple |
+| III. Omens in the Ashfall | 120 Omen guardians; 300 rifts in tiers 11-14 | ward-fires (candles) around the temple |
+| IV. The Sepulchre Stirs | 40 Ashen Sepulchre clears; 25 Ascended Omens | the Ossuary Stair opens (levels 400-520) |
+| V. Embers Rekindled | 5 Cinderheart kills; 100 characters reach level 600; 10 invasions repelled | ash and rubble cleared, flowers: the capital rebuilt |
+
+**Sources** (no content script was edited; each hook is wrapped once through `ChaosWrapChain`, `wrapchain_core.lua`,
+with the same contract built in when that file is absent):
+
+| Event | Hook |
+|---|---|
+| world boss kill, sealed rift (tier -> band), Omen guardian, Ascended Omen, the Cinderheart | `ChaosRecords.submit(run)` when it returns true (the records' anti-abuse: staff, multi-client and debug runs never count) |
+| Ashen Sepulchre clear | `ChaosAchievements.progress(p, "raid_clears")` (raid.lua, every player present), once per raid run (`ChaosRaid.runOf`); wrapped once at load, under season_journey.lua's wrapper |
+| invasion repelled | `ChaosInvasion.deliver(player, r)` (not a liberation), once per invasion and 30 minutes |
+| character reaching a goal's level | an advance event; once per character, level and season (`chaos_chronicle_levels`); staff never |
+| any other world event | `ChaosChronicle.event(key, players)` (dedupe is the caller's) |
+
+Points per contribution (`points`): world boss 10, rift 1 / 2 / 4 / 6 by band, Omen 8, Ascended 15, Cinderheart 40,
+raid 6, level 5, event 4. The other members of a run counted once get the points in the chapter that run counted for.
+
+**The world.** The world of a season is replayed from its written chapters (`ChaosChronicleCore.worldOf`), so a start,
+a restart, a written chapter and a new season are the same diff (`worldDiff`): a written chapter's `open` areas get
+their gate portal (item 1387 with action id 47920 + the area's index; a step-in moves the player to the area's arrival
+from `minLevel` up), its `town` sets of non-blocking stock decoration are placed on the first free tile of each piece's
+offsets around the capital's temple (action id 47929, found again after a `/reload`) or taken away, optional ground
+swaps (`swaps`, `from` -> `to` and back) turn, and the global storages say how many chapters are written (7102110),
+which (7102100 + n) and for which season (7102111). An NPC script reads them and answers with
+`ChaosChronicleText.npcLine(arc, done, lang)` (dofile `chronicle_text.lua` in the NPC's state). A broadcast in each
+player's language (`Chaos.broadcast` of i18n.lua when loaded, else English) and a Discord row (`ChaosDiscord.queue`,
+kind `chronicle`, when discord.lua is loaded and its config switches the kind on) go out. After a season ends its world
+stays until the next season starts, which starts from nothing.
+
+**The areas.** `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (waste, 64x52, levels 440-560) and
+`chronicle_ossuary_stair.json` (crypt, 60x52, levels 400-520), planned with the area planner; the owner places them
+(docs/OWNER_TODO.md) and sets `areas[i].at` (the `place --at`) and `gate` (the world tile of the portal). Until then
+the chapter opens them in the story only: the window says so and the console names the missing setting. Their exit
+portal (47951) leads to the temple. `tools/chronicle_areas_test.py` checks the plans (validate, compile, QA) and the
+arrival offsets of the config.
+
+**The record.** At the season's end the top `topRecorded` (10) of every chapter go to `chaos_chronicle_record`
+(aggregated: a total per chapter and character, no event log). The client's Record tab and the website's Chronicle
+page show them; a name follows the character's Memorial choice ("records"): "A hero who keeps their name" otherwise.
+
+**Protocol** (opcode 171, JSON): client `open` | `close`; server `state` (`ChaosChronicleCore.payload`: chapters with
+both languages, goal bars, own points, top contributors, past seasons), through `Chaos.sendChunked`. The login line,
+the Memorial's question and its answers follow the player's language (`Chaos.lang`, i18n.lua). The client also
+reads the chapter pages in the Codex's Lore tab (`tools/chronicle_pages.lua`).
+
+**Staff:** `/chronicle` (status, areas placed or not), `/chronicle world` (apply again), `/chronicle complete` (write the
+open chapter) and `/chronicle reset` (this season's Chronicle from the start, the world reset): group 5, logged.
+
+**Not verified:** not run on a live server; the gate portal and the town decoration only in the mocked engine (the
+decoration ids are the area planner's kit ids, checked on the pair by `check-kits`). Hooks wanted: see the list at
+the end of "The Capital Memorial".
+
+## The Capital Memorial (`memorial.lua`, `memorial_core.lua`, `memorial_config.lua`, `sql/chaos_memorial.sql`, client `game_chronicle` Memorial tab)
+
+Owner-approved design (2026-10-14): a plaza in the capital with statues and memorial stones for the season's realm
+firsts, its top records and the fallen Hardcore characters, each only with the player's consent, refreshed each season
+and archived on the website (page.php?plugin=chaos&p=memorial). Pure logic `memorial_core.lua`
+(`tests/memorial_test.lua`, also `memorial.lua` on a mocked engine); numbers `memorial_config.lua`. Tables
+`chaos_memorial_optin`, `chaos_memorial_entries`. Action ids 47930-47939, modal window 7480.
+
+**Entries** (every `refreshSeconds`, 600, for the season key: "s<id>", else the quarter, as the records): realm firsts
+from `chaos_records_firsts` (one row per member), the season's best of each board of `boards` from `chaos_records`
+(any party size; ties to the earlier, then the lower id), the season's Hardcore falls from `chaos_season_modes`
+(name, level, class, cause, date). Staff are never on it. Rows of past seasons stay: the website's archive.
+
+**Consent.** `chaos_memorial_optin` per character: records and realm firsts are shown unless turned off; a Hardcore fall
+only after a yes. `ChaosSeason.modesFall` is wrapped: the fall asks at the next login (a modal window; the client's
+Memorial tab shows the question too). The choice is in Adventure > Chronicle > Memorial, any time; a change updates
+the `shown` column of every season's rows at once, the plaza's statues too. A first counts its hidden members without
+naming them; a record whose holder hides stays, without the name; a hidden fall is not there.
+
+**The plaza.** `server/tools/areaplan/chronicle/capital_memorial.json` (hall, 48x40, z 7 with a flat roof, every zone
+protected, no monsters): the hall of firsts (west), the hall of records (east), the garden of the fallen (north), the
+plaza with the Memorial stone, the approach with the exit portal. The owner places it in the capital and sets
+`plaza.at`. `memorial.lua` places 8 guardian statues (8836, 8837), 8 statues (1443, 1448, 1450), 12 grave stones
+(1407, 1408) and the stone circle (1421) on the plan's `slots`, each with its entry as the look text (item
+description, at most 255 characters); an empty slot holds nothing. More entries than statues: the pages turn every
+`rotateSeconds` (600); the stone says the page. `tools/chronicle_areas_test.py` checks that every slot is free floor
+in its hall and that no walkable tile is cut off with every statue placed.
+
+**Protocol** (opcode 171, JSON, beside the Chronicle's actions): client `mem` | `memset {records, fallen}` (booleans
+only; staff refused; 1 s rate limit); server `mem` (`ChaosMemorialCore.payload`). **Staff:** `/memorial`, `/memorial
+refresh`.
+
+**Hooks wanted (one line each, owners of those files):**
+- server/README.md (this file): the opcode row 171, the storage rows, the module status row (blocked: the file was being
+  edited); `opcode_fuzz_test.lua` (server and client) fails without the opcode row.
+- `chaos_constants.lua`: `ChaosOpcodes.chronicle = 171` (both scripts set it at load until then).
+- `discord_config.lua`: `events.chronicle = true`, `channels.chronicle = "announce"` (the Chronicle queues its start,
+  each written chapter and its end with `ChaosDiscord.queue({kind = "chronicle", channel, title, text, fields})`;
+  discord.lua drops a kind its config does not switch on).
+- The Archivist's NPC script (lore): a keyword "chronicle" answering `ChaosChronicleText.npcLine(arc, done, lang)` with
+  `Game.getStorageValue(7102110)` and the arc of season `Game.getStorageValue(7102111)`.
+- `tools/gen_codex_data.lua`: the Lore tab appends `tools/chronicle_pages.lua` entries (kind "chronicle").
+- `records.lua` (bug found in passing): `onRecord` calls `ChaosRaid.runOf(who)`, which is a table in raid.lua (player id
+  -> run): the pcall fails, so the Sepulchre Clear board never gets a run.
 ## Loadouts (Armory) (`loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql`, client `game_loadouts`)
 
 Save a whole build and switch between builds without paying the respec again. Client `game_loadouts` (Character > Loadouts,
@@ -13697,3 +13819,22 @@ Hints for a new character, English and Brazilian Portuguese, at levels 1, 4, 8, 
 the next gear, the bounty board at 8, the unlocks at 30, 50 and 100. At levels 1, 8, 20, 35, 50 and 80 it marks the 3
 nearest hunts of the character's level on its map (`data/chaos_poi.lua`). Characters above level 20 when the module
 first sees them get every hint marked as given, silently. Storages 7101550 - 7101559. Tests: `tests/firsthour_test.lua`.
+
+## Server texts in pt-BR (Chaos.t)
+`i18n_core.lua` (ChaosI18n, pure) puts the helpers on `Chaos`: `Chaos.t(player, "English %s pattern", ...)`, the text in
+the player's language; `Chaos.lang(player)` / `Chaos.setLang(player, lang)`; `Chaos.broadcast(type, key, ...)` (or a
+deferred text, or a function(lang)): each player reads it in their own language; while nobody online reads pt-BR it is
+the one `Game.broadcastMessage` of before. `ChaosI18n.msg(key, ...)` is a deferred text (tostring = English) for
+helpers that send one text to many players (rift and raid `say` / `alert`, world boss, invasion and world event
+announcements). The key is the English pattern itself; `i18n_strings.lua` has the pt-BR table (same % conversions in
+the same order). The client says its language in the display scale hello on opcode 157 (`i18n.lua`; a hello without
+`lang` changes nothing); it is kept in storage 7101830 for the next login. A file that calls the helpers starts with
+`if not Chaos.t then dofile("data/scripts/chaos/i18n_core.lua") end`. Converted: the boss mechanic warnings (each
+fighter's orange line; the boss's yell stays English), the raid call-outs and messages, Auto Seller results and list
+answers, records and leaderboard broadcasts, rift and Omen start / end / fall messages, world boss, invasion and world
+event announcements, and the broadcasts of seasons, PvP seasons, ascension, login streaks, Descent and raid uniques,
+set pieces, guild wars, the Cinderheart, Hardcore falls and ended world buffs (about 190 keys). Left: the store's
+messages (`shop.lua`, modified elsewhere when this was done), item / mail texts built in cores, NPC dialogue, quest and
+achievement texts, rift HUD text built from English parts (modifier names, direction), the remaining
+`sendTextMessage` lines (about 550 sites). `tests/i18n_test.lua` (lookup, fallbacks, deferred texts, storage, the
+hello, broadcasts, every key of the converted sites and of the boss and raid configs in the table).

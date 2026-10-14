@@ -209,8 +209,8 @@ function onDungeonsList(data)
     local queue = dungeonMenu:getChildById("queue")
     boss:setOutfit(dungeon.boss)
     title:setText(dungeon.title)
-    level:setText(formatShortNumber(dungeon.level) .. "+ Level")
-    queue:setText("Queue: " .. (dungeon.queue == 0 and "Open" or dungeon.queue .. " Players"))
+    level:setText(tr('%s+ Level', formatShortNumber(dungeon.level)))
+    queue:setText(tr('Queue: %s', (dungeon.queue == 0 and tr("Open") or tr('%s Players', dungeon.queue))))
     if dungeon.queue >= 6 then
       queue:setColor("red")
     elseif dungeon.queue >= 3 then
@@ -387,7 +387,7 @@ function refreshMenuQueueColor(menuDungeon)
     queuePlayers = dungeon.queue or 0
   end
 
-  queueLabel:setText("Queue: " .. (queuePlayers == 0 and "Open" or queuePlayers .. " Players"))
+  queueLabel:setText(tr('Queue: %s', (queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))))
   if queuePlayers >= 6 then
     queueLabel:setColor("red")
   elseif queuePlayers >= 3 then
@@ -569,7 +569,7 @@ function selectDungeon(dungeonId)
 
   if currentUI.queueStatus then
     local queuePlayers = dungeon.queue.players
-    currentUI.queueStatus:setText(queuePlayers == 0 and "Open" or queuePlayers .. " Players")
+    currentUI.queueStatus:setText(queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))
     if queuePlayers >= 6 then
       currentUI.queueStatus:setColor("red")
     elseif queuePlayers >= 3 then
@@ -590,7 +590,7 @@ function selectDungeon(dungeonId)
     for i = 1, #dungeon.challenges do
       local challenge = dungeon.challenges[i]
       local widget = g_ui.createWidget("ChallengePanel", currentUI.challengesPanel)
-      widget:setText(challenge.title .. " (" .. formatShortNumber(challenge.points) .. " Points)")
+      widget:setText(tr('%s (%s Points)', challenge.title, formatShortNumber(challenge.points)))
       widget:getChildById("checkbox"):setChecked(challenge.completed)
       widget:getChildById("description"):setText(challenge.desc)
     end
@@ -706,7 +706,7 @@ function onDungeonQueue(data)
   if not queueDungeon or not queueButton then return end
 
   if data.joined then
-    queueButton:setText("Leave")
+    queueButton:setText(tr("Leave"))
     local dungeon = Dungeons[data.id]
     if dungeon then
       queueDungeon:setText(dungeon.title)
@@ -714,7 +714,7 @@ function onDungeonQueue(data)
     if timerEvent then removeEvent(timerEvent) end
     timerEvent = scheduleEvent(queueTimer, 1000)
   else
-    queueButton:setText("Join")
+    queueButton:setText(tr("Join"))
     queueDungeon:setText("------")
     if timerEvent then
       removeEvent(timerEvent)
@@ -731,7 +731,7 @@ function onStopQueue()
 
   local queueDungeon = safeRecursiveGet(dungeonInfo, "queueDungeon")
   local queueButton = safeRecursiveGet(dungeonInfo, "queueButton")
-  if queueButton then queueButton:setText("Join") end
+  if queueButton then queueButton:setText(tr("Join")) end
   if queueDungeon then queueDungeon:setText("------") end
   if timerEvent then
     removeEvent(timerEvent)
@@ -765,7 +765,7 @@ function onDungeonStart(data)
 
   local queueDungeon = safeRecursiveGet(dungeonInfo, "queueDungeon")
   local queueButton = safeRecursiveGet(dungeonInfo, "queueButton")
-  if queueButton then queueButton:setText("Join") end
+  if queueButton then queueButton:setText(tr("Join")) end
   if queueDungeon then queueDungeon:setText("------") end
   if timerEvent then
     removeEvent(timerEvent)
@@ -801,14 +801,14 @@ function onDungeonStart(data)
 
   killCounter:getChildById("label"):setText("0%")
   local mainObjective = killCounter:getChildById("mainObjective")
-  mainObjective:setText("Kill monsters to spawn " .. (data.boss or ""))
+  mainObjective:setText(tr('Kill monsters to spawn %s', (data.boss or "")))
   mainObjective:setChecked(false)
   local bossObjective = killCounter:getChildById("bossObjective")
-  bossObjective:setText("Kill " .. (data.boss or ""))
+  bossObjective:setText(tr('Kill %s', (data.boss or "")))
   bossObjective:setEnabled(false)
   bossObjective:setChecked(false)
-  killCounter:getChildById("monstersLeft"):setText("Monsters remaining " .. (data.left or 0))
-  killCounter:getChildById("timeLeft"):setText("Time left " .. MsToShortTime(data.duration or 0))
+  killCounter:getChildById("monstersLeft"):setText(tr('Monsters remaining %s', (data.left or 0)))
+  killCounter:getChildById("timeLeft"):setText(tr('Time left %s', MsToShortTime(data.duration or 0)))
 
   timeLeft = data.duration or 0
   if timeLeftEvent then removeEvent(timeLeftEvent) end
@@ -817,7 +817,7 @@ end
 
 function doTimeLeft()
   timeLeft = timeLeft - 100
-  killCounter:getChildById("timeLeft"):setText("Time left " .. MsToShortTime(timeLeft))
+  killCounter:getChildById("timeLeft"):setText(tr('Time left %s', MsToShortTime(timeLeft)))
   if timeLeft > 0 then
     timeLeftEvent = scheduleEvent(doTimeLeft, 100)
   end
@@ -852,7 +852,7 @@ function onDungeonKilled(data)
       killCounter:getChildById("mainObjective"):setChecked(true)
       bossObjective:setEnabled(true)
 	  local textWidget = challengeNotifi:getChildById("text")
-  textWidget:setText("You can kill the boss now!")
+  textWidget:setText(tr("You can kill the boss now!"))
   challengeNotifi:setWidth(math.max(263, 96 + textWidget:getTextSize().width))
   g_effects.fadeIn(challengeNotifi, 250)
   scheduleEvent(
@@ -867,7 +867,7 @@ function onDungeonKilled(data)
   elseif data.boss then
     bossObjective:setChecked(true)
 	local textWidget = challengeNotifi:getChildById("text")
-  textWidget:setText("You completed the dungeon!")
+  textWidget:setText(tr("You completed the dungeon!"))
   challengeNotifi:setWidth(math.max(263, 96 + textWidget:getTextSize().width))
   g_effects.fadeIn(challengeNotifi, 250)
   scheduleEvent(
@@ -880,7 +880,7 @@ function onDungeonKilled(data)
   )
   end
   if data.left then
-    killCounter:getChildById("monstersLeft"):setText("Monsters Alive: " .. data.left)
+    killCounter:getChildById("monstersLeft"):setText(tr('Monsters Alive: %s', data.left))
   end
 end
 
@@ -917,7 +917,7 @@ function onDungeonQueueUpdate(data)
   local menuDungeon = dungeonsMenus:getChildById("dungeon" .. data.id)
   local queue = menuDungeon:getChildById("queue")
   local queuePlayers = data.queue
-  queue:setText("Queue: " .. (queuePlayers == 0 and "Open" or queuePlayers .. " Players"))
+  queue:setText(tr('Queue: %s', (queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))))
   if queuePlayers >= 6 then
     queue:setColor("red")
   elseif queuePlayers >= 3 then
@@ -928,7 +928,7 @@ function onDungeonQueueUpdate(data)
   if selectedDungeonId == data.id then
     if currentUI.queueStatus then
       local queuePlayers = data.queue
-      currentUI.queueStatus:setText(queuePlayers == 0 and "Open" or queuePlayers .. " Players")
+      currentUI.queueStatus:setText(queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))
       if queuePlayers >= 6 then
         currentUI.queueStatus:setColor("red")
       elseif queuePlayers >= 3 then
@@ -945,7 +945,7 @@ end
 
 function onChallengeCompleted(data)
   local textWidget = challengeNotifi:getChildById("text")
-  textWidget:setText(data .. " challenge completed!")
+  textWidget:setText(tr('%s challenge completed!', data))
   challengeNotifi:setWidth(math.max(263, 96 + textWidget:getTextSize().width))
   g_effects.fadeIn(challengeNotifi, 250)
   scheduleEvent(

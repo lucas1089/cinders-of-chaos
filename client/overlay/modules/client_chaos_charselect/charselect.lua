@@ -266,6 +266,10 @@ local function updateFooter()
   footer.accountIcon:setImageSource(free and '/images/game/entergame/nopremium' or '/images/game/entergame/premium')
   footer.recordBox:setChecked(g_settings.getBoolean('recordSession', false))
   footer.autoReconnect:setText(tr('Auto reconnect') .. ': ' .. (g_settings.getBoolean('autoReconnect', false) and tr('On') or tr('Off')))
+  if footer.languageButton then
+    footer.languageButton:setVisible(ChaosLocale ~= nil)
+    if ChaosLocale then footer.languageButton:setText(ChaosLocale.buttonText()) end
+  end
   local create = footer.createButton
   if Api.enabled() then
     create:setEnabled(true)
@@ -320,6 +324,9 @@ local function ensureScreen()
     updateFooter()
   end
   footer.recordBox.onCheckChange = function(_, checked) g_settings.set('recordSession', checked) end
+  if footer.languageButton then
+    footer.languageButton.onClick = function(w) if ChaosLocale then ChaosLocale.showMenu(w) end end
+  end
   for _, key in ipairs({ 'Up', 'Down', 'Left', 'Right', 'Home', 'End', 'PageUp', 'PageDown' }) do
     g_keyboard.bindKeyPress(key, function()
       if CharCreate.isOpen() then return end

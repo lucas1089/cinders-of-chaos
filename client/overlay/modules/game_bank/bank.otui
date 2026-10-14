@@ -12,7 +12,7 @@ BankingAcceptWindow < MainWindow
     anchors.left: parent.left
     margin-top: 3
     height: 16
-    text: Your Balance Is:
+    !text: tr('Your Balance Is:')
     color: yellow
 
   Label
@@ -23,7 +23,7 @@ BankingAcceptWindow < MainWindow
     anchors.left: parent.left
     margin-top: 5
     height: 16
-    text: The Amount:
+    !text: tr('The Amount:')
 
   OptionScrollbar
     id: value
@@ -76,7 +76,7 @@ AcceptWindowTransfer < MainWindow
     anchors.left: parent.left
     margin-top: 3
     height: 16
-    text: Your Balance Is:
+    !text: tr('Your Balance Is:')
     color: yellow
 
   Label
@@ -87,7 +87,7 @@ AcceptWindowTransfer < MainWindow
     anchors.left: parent.left
     margin-top: 5
     height: 16
-    text: Recipient:
+    !text: tr('Recipient:')
 
   TextEdit
     id: senderName
@@ -105,7 +105,7 @@ AcceptWindowTransfer < MainWindow
     anchors.left: parent.left
     margin-top: 5
     height: 16
-    text: The Amount:
+    !text: tr('The Amount:')
 
   OptionScrollbar
     id: value
@@ -155,7 +155,7 @@ MainWindow
     size: 145 25
     anchors.top: parent.top
     anchors.left: parent.left
-    text: Gold Coins
+    !text: tr('Gold Coins')
     text-offset: 0 -1
 
   CustomTabButton
@@ -164,7 +164,7 @@ MainWindow
     anchors.top: parent.top
     anchors.left: prev.right
     margin-left: 10
-    text: Star Coins
+    !text: tr('Star Coins')
     text-offset: 0 -1
 
   HorizontalSeparator
@@ -197,7 +197,7 @@ MainWindow
     margin-top: 8
     focusable: false
     virtual: true
-    tooltip: Gold Coin
+    !tooltip: tr('Gold Coin')
 
   Panel
     id: textEdit2
@@ -241,7 +241,7 @@ MainWindow
     margin-left: 15
     focusable: false
     virtual: true
-    tooltip: Gold Coin
+    !tooltip: tr('Gold Coin')
 
   Panel
     id: textEdit3

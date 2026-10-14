@@ -3,6 +3,7 @@
 --   {active, ends, daysLeft, dailyCoins, canClaim, claimedTotal, premiumDays, coins, title, titleText,
 --    limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special = [{name, owned}],
 --    buildLimit, builds = [{slot, name, nodes, cls, editable, updated}]}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PactView = {}
 local V = PactView
@@ -19,24 +20,24 @@ end
 function V.status(s)
   if type(s) ~= 'table' then return 'Loading...', '' end
   if s.active then
-    return 'Chaos Pact active', string.format('Until %s (%s left). Title: %s.', s.ends or '?', plural(n(s.daysLeft), 'day'),
+    return tr('Chaos Pact active'), string.format('Until %s (%s left). Title: %s.', s.ends or '?', plural(n(s.daysLeft), 'day'),
       s.title ~= '' and s.title or (s.titleText or ''))
   end
   if n(s.endsAt) > 0 then
-    return 'Chaos Pact ended', 'Ended ' .. (s.ends or '') .. '. Nothing is lost: extra tabs are withdraw-only, extra builds read-only.'
+    return tr('Chaos Pact ended'), tr('Ended %s. Nothing is lost: extra tabs are withdraw-only, extra builds read-only.', (s.ends or ''))
   end
-  return 'No Chaos Pact', 'Perks for 30 days: +10% XP, stamina x1.5, room, slots, ' .. n(s.dailyCoins) .. ' coins a day and a title.'
+  return tr('No Chaos Pact'), tr('Perks for 30 days: +10%% XP, stamina x1.5, room, slots, %s coins a day and a title.', n(s.dailyCoins))
 end
 
 -- the claim button: text and whether it is enabled
 function V.claim(s)
   if type(s) ~= 'table' or not s.active then
-    return 'Daily coins', false
+    return tr('Daily coins'), false
   end
   if s.canClaim then
     return 'Claim ' .. n(s.dailyCoins) .. ' coins', true
   end
-  return 'Claimed today', false
+  return tr('Claimed today'), false
 end
 
 -- one row of the limits table: {label, free, pact, bought, total} as texts
@@ -71,7 +72,7 @@ function V.specialText(s)
     parts[#parts + 1] = t.name .. (t.owned and ' (owned)' or ' (store)')
   end
   if #parts == 0 then return '' end
-  return 'Special stash tabs: ' .. table.concat(parts, ', ') .. '. General tabs hold ' .. n(s.tabSize) .. ' item types each.'
+  return tr('Special stash tabs: %s. General tabs hold %s item types each.', table.concat(parts, ', '), n(s.tabSize))
 end
 
 -- saved builds: one row per slot from 1 to max(limit, highest saved slot); empty editable slots included
@@ -91,7 +92,7 @@ function V.buildRows(s)
       if not editable then sub = sub .. ' - read-only' end
       rows[#rows + 1] = { slot = slot, name = b.name or ('Build ' .. slot), sub = sub, saved = true, editable = editable }
     else
-      rows[#rows + 1] = { slot = slot, name = 'Empty slot', sub = editable and 'Save your current tree here' or '', saved = false,
+      rows[#rows + 1] = { slot = slot, name = 'Empty slot', sub = editable and tr('Save your current tree here') or '', saved = false,
         editable = editable }
     end
   end
@@ -101,5 +102,5 @@ end
 function V.buildHeader(s)
   if type(s) ~= 'table' then return '' end
   local used = #(s.builds or {})
-  return string.format('Saved builds: %d of %d slots (account-wide)', used, n(s.buildLimit))
+  return tr('Saved builds: %d of %d slots (account-wide)', used, n(s.buildLimit))
 end

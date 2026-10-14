@@ -6,6 +6,7 @@
 --   state {earned, spent, points, max, alloc = [ids], done = [cell keys], refund = {gold, orbs}, reset = {gold, orbs},
 --          orb, totals = [lines], msg}
 -- The allocate / refund rules mirror atlas_core.lua (the server checks again; this only greys the buttons).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 RiftAtlasView = {}
 local V = RiftAtlasView
 
@@ -247,7 +248,7 @@ function V.reasonText(why) return REASON[why] or tostring(why or '') end
 
 function V.kindLine(node)
   if not node then return '' end
-  if node.k == 'start' then return 'Start of the atlas' end
+  if node.k == 'start' then return tr('Start of the atlas') end
   local c = num(node.c)
   return string.format('%s, %d point%s', KIND[node.k] or 'Node', c, c == 1 and '' or 's')
 end
@@ -316,7 +317,7 @@ function V.gridRows(tree, done)
     for t = 1, tiers do
       local key = 'c' .. ti .. '.' .. t
       row.cells[t] = { key = key, done = done[key] == true,
-        tip = string.format('%s tier %d: %s (+%d)', name, t, done[key] and 'sealed' or 'not yet', num(P.cell)) }
+        tip = string.format('%s tier %d: %s (+%d)', name, t, done[key] and 'sealed' or tr('not yet'), num(P.cell)) }
     end
     rows[#rows + 1] = row
   end
@@ -324,11 +325,11 @@ function V.gridRows(tree, done)
   local swift = { label = 'Swift', color = '#7fb8e8', kind = 'swift', cells = {} }
   for t = 1, tiers do
     flaw.cells[t] = { key = 'f' .. t, done = done['f' .. t] == true,
-      tip = string.format('Flawless tier %d (no death): %s (+%d)', t, done['f' .. t] and 'done' or 'not yet', num(P.flawless)) }
+      tip = tr('Flawless tier %d (no death): %s (+%d)', t, done['f' .. t] and 'done' or tr('not yet'), num(P.flawless)) }
     local secs = V.swiftSeconds(g, t)
     swift.cells[t] = { key = 's' .. t, done = done['s' .. t] == true,
-      tip = string.format('Swift tier %d (sealed within %d:%02d): %s (+%d)', t, math.floor(secs / 60), secs % 60,
-        done['s' .. t] and 'done' or 'not yet', num(P.swift)) }
+      tip = tr('Swift tier %d (sealed within %d:%02d): %s (+%d)', t, math.floor(secs / 60), secs % 60,
+        done['s' .. t] and 'done' or tr('not yet'), num(P.swift)) }
   end
   rows[#rows + 1] = flaw
   rows[#rows + 1] = swift

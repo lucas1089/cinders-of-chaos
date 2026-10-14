@@ -167,21 +167,21 @@ local function renderDetail()
   local cat = V.category(r.category)
   d.resultSlot:setItemId(r.clientId)
   d.resultName:setText(r.name)
-  d.resultSub:setText(string.format('%s%s recipe %d', r.count > 1 and string.format('x%d  -  ', r.count) or '',
+  d.resultSub:setText(tr('%s%s recipe %d', r.count > 1 and string.format('x%d  -  ', r.count) or '',
     cat and cat.name or '', r.index))
   local skillName = V.SKILL_NAMES[cat and cat.skill or 7]
   if ctx.skill then
-    d.skillLine:setText(string.format('%s skill: %d needed, yours %d', skillName, r.level, ctx.skill))
+    d.skillLine:setText(tr('%s skill: %d needed, yours %d', skillName, r.level, ctx.skill))
     d.skillLine:setColor(ctx.skill >= r.level and V.COLORS.good or V.COLORS.bad)
   else
-    d.skillLine:setText(string.format('%s skill: %d needed', skillName, r.level))
+    d.skillLine:setText(tr('%s skill: %d needed', skillName, r.level))
     d.skillLine:setColor(V.COLORS.text)
   end
   if state.money then
-    d.goldLine:setText(string.format('Gold: %s (you carry %s)', V.goldText(r.cost), V.goldText(state.money)))
+    d.goldLine:setText(tr('Gold: %s (you carry %s)', V.goldText(r.cost), V.goldText(state.money)))
     d.goldLine:setColor(state.money >= r.cost and V.COLORS.good or V.COLORS.bad)
   else
-    d.goldLine:setText(string.format('Gold: %s', V.goldText(r.cost)))
+    d.goldLine:setText(tr('Gold: %s', V.goldText(r.cost)))
     d.goldLine:setColor(V.COLORS.text)
   end
   if r.locked then

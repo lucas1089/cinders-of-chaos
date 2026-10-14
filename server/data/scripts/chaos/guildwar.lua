@@ -31,6 +31,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/guildwar_core.lua")
 Chaos.guildWarConfig = dofile("data/scripts/chaos/guildwar_config.lua")
 
@@ -535,7 +538,7 @@ function W.accept(player, id)
 		C.durationText(war.hours * 3600))
 	tellBoth(war, text .. (live and "" or " The war emblems show after your next login."))
 	if c.broadcast then
-		Game.broadcastMessage(string.format("%s and %s are now at war (%s).", war.name1, war.name2, C.termsText(war)), MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s and %s are now at war (%s).", war.name1, war.name2, C.termsText(war))
 	end
 	log(string.format("war %d accepted by %s: base war %d", war.id, player:getName(), baseId))
 	W.push(nil)
@@ -624,7 +627,7 @@ function W.finish(war, reason, loserSide, byName)
 	end
 	tellBoth(war, result)
 	if c.broadcast then
-		Game.broadcastMessage(result, MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, result)
 	end
 	log(string.format("war %d ended: %s", war.id, result))
 	W.push(nil)

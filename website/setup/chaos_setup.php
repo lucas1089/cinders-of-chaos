@@ -193,6 +193,10 @@ $out .= "menu: The World (Server Info, Patch Notes, Leaderboards, Seasons, Rules
 // the community goal and the week's world modifiers (plugins/chaos/pages/community.php, read from the game's tables)
 $menu('Community', 'page.php?plugin=chaos&p=community', 'fa-fire', 6, $world);
 $out .= "menu: The World > Community\n";
+// the Ashen Chronicle and the Capital Memorial (plugins/chaos/pages/chronicle.php, memorial.php; read from the game's tables)
+$menu('Chronicle', 'page.php?plugin=chaos&p=chronicle', 'fa-book', 6, $world);
+$menu('Memorial', 'page.php?plugin=chaos&p=memorial', 'fa-university', 6, $world);
+$out .= "menu: The World > Chronicle, Memorial\n";
 // the guild wars declared in game: current wars and the history (plugins/chaos/pages/guildwars.php)
 $menu('Guild Wars', 'page.php?plugin=chaos&p=guildwars', 'fa-shield', 7, $world);
 $out .= "menu: The World > Guild Wars\n";

@@ -3,6 +3,7 @@
 -- authority for autoloot and click-to-loot; the client uses these rules only to draw.
 -- info = {r = rarity 0..15, u = unique (0/1 or bool), o = orb (0/1 or bool), g = category, nm = name, c = count,
 --         t = the best modifier tier on it (1..8, nil = none), il = item level}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 LootFilterLogic = {}
 local L = LootFilterLogic
@@ -107,8 +108,8 @@ function L.tooltip(info)
   if left and left <= 0 then
     lines[#lines + 1] = 'Looted (or gone)'
   else
-    if left and left < count then lines[#lines + 1] = left .. ' left in the corpse' end
-    lines[#lines + 1] = count > 1 and 'Click: loot all   Shift+click: loot one' or 'Click: loot'
+    if left and left < count then lines[#lines + 1] = tr('%s left in the corpse', left) end
+    lines[#lines + 1] = count > 1 and tr('Click: loot all   Shift+click: loot one') or tr('Click: loot')
   end
   return table.concat(lines, '\n')
 end
@@ -155,7 +156,7 @@ end
 
 -- tooltip of the monster icon: its name and the kill time
 function L.killTip(name, t, empty)
-  local lines = { (type(name) == 'string' and name ~= '') and name or 'Unknown creature', 'Killed at ' .. L.clock(t) }
+  local lines = { (type(name) == 'string' and name ~= '') and name or tr('Unknown creature'), tr('Killed at %s', L.clock(t)) }
   if empty then lines[#lines + 1] = 'Nothing to loot' end
   return table.concat(lines, '\n')
 end

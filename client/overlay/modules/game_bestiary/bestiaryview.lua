@@ -2,6 +2,7 @@
 -- Tested by bestiaryview_test.lua (luajit / lua5.3). List rows come from the server (bestiary.lua "list"):
 --   [1] id, [2] name, [3] category key, [4] difficulty key, [5] hunting level, [6] kills, [7] stage 0-4,
 --   [8] lookType (0 below stage 1)
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 BestiaryView = {}
 local V = BestiaryView
 
@@ -110,8 +111,8 @@ function V.rewardText(r)
   r = type(r) == 'table' and r or {}
   local parts = {}
   if num(r.gold) > 0 then parts[#parts + 1] = short(r.gold) .. ' gold' end
-  if num(r.chaos) > 0 then parts[#parts + 1] = num(r.chaos) .. (num(r.chaos) > 1 and ' Orbs of Upheaval' or ' Orb of Upheaval') end
-  if num(r.divine) > 0 then parts[#parts + 1] = num(r.divine) .. (num(r.divine) > 1 and ' Orbs of Fate' or ' Orb of Fate') end
+  if num(r.chaos) > 0 then parts[#parts + 1] = num(r.chaos) .. (num(r.chaos) > 1 and tr(' Orbs of Upheaval') or tr(' Orb of Upheaval')) end
+  if num(r.divine) > 0 then parts[#parts + 1] = num(r.divine) .. (num(r.divine) > 1 and tr(' Orbs of Fate') or tr(' Orb of Fate')) end
   if num(r.exp) > 0 then parts[#parts + 1] = short(r.exp) .. ' exp' end
   if num(r.points) > 0 then parts[#parts + 1] = num(r.points) .. ' points' end
   return table.concat(parts, ', ')
@@ -133,7 +134,7 @@ end
 function V.taskText(t)
   local n = num(t.required)
   if t.kind == 'family' then
-    return string.format('Kill %d %s of level %d-%d.', n, tostring(t.label), num(t.lo), num(t.hi))
+    return tr('Kill %d %s of level %d-%d.', n, tostring(t.label), num(t.lo), num(t.hi))
   end
   return string.format('Kill %d %s.', n, V.plural(tostring(t.label), n))
 end
@@ -157,7 +158,7 @@ end
 -- the limits line of the tasks tab
 function V.limitsText(t)
   t = type(t) == 'table' and t or {}
-  return string.format('Active %d / %d   Today %d / %d   This week %d / %d', num(t.active), num(t.maxActive),
+  return tr('Active %d / %d   Today %d / %d   This week %d / %d', num(t.active), num(t.maxActive),
     num(t.doneDay), num(t.dailyLimit), num(t.doneWeek), num(t.weeklyLimit))
 end
 
@@ -166,11 +167,11 @@ function V.acceptBlock(t)
   t = type(t) == 'table' and t or {}
   local active = num(t.active)
   if active >= num(t.maxActive) then
-    return string.format('You hold %d kill tasks: the most at once.', active)
+    return tr('You hold %d kill tasks: the most at once.', active)
   elseif num(t.doneDay) + active >= num(t.dailyLimit) then
-    return string.format('At most %d kill tasks a day (completed and held).', num(t.dailyLimit))
+    return tr('At most %d kill tasks a day (completed and held).', num(t.dailyLimit))
   elseif num(t.doneWeek) + active >= num(t.weeklyLimit) then
-    return string.format('At most %d kill tasks a week (completed and held).', num(t.weeklyLimit))
+    return tr('At most %d kill tasks a week (completed and held).', num(t.weeklyLimit))
   end
   return nil
 end

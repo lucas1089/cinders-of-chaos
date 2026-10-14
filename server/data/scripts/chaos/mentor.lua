@@ -1087,28 +1087,13 @@ function M.onRecord(board, who)
 end
 
 -- wrap ChaosLeaderboard.record (again after a /reload of leaderboard.lua), as guild.lua and season.lua do
+if not (ChaosWrapChain and ChaosWrapChain.wrap) then
+	dofile("data/scripts/chaos/wrapchain_core.lua")
+end
 function M.wrapLeaderboard()
-	local LB = ChaosLeaderboard
-	if not LB or not LB.record or LB.record == M.wrappedRecord then
-		return
-	end
-	local original = LB.record
-	local wrapper = function(board, who, value, mode)
-		local entry = original(board, who, value, mode)
-		local ok, err = pcall(M.onRecord, board, who)
-		if not ok then
-			print("[Chaos mentor] record " .. tostring(board) .. ": " .. tostring(err))
-		end
-		return entry
-	end
-	M.wrappedRecord = wrapper
-	LB.record = wrapper
-	if ChaosGuild and ChaosGuild.wrappedRecord == original then
-		ChaosGuild.wrappedRecord = wrapper
-	end
-	if ChaosSeason and ChaosSeason.wrappedRecord == original then
-		ChaosSeason.wrappedRecord = wrapper
-	end
+	ChaosWrapChain.wrap(ChaosLeaderboard, "record", "mentor", function(res, board, who)
+		M.onRecord(board, who)
+	end, function(e) print("[Chaos mentor] record: " .. e) end)
 end
 
 function M.ensureHooks()

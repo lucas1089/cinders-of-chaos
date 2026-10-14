@@ -27,6 +27,9 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/autosell_core.lua")
 local ST = Chaos.storage
 local AK = ChaosAutoSellCore
@@ -127,15 +130,16 @@ local function autoSell(monster, corpse)
 	end
 	if total > 0 then
 		owner:setBankBalance(owner:getBankBalance() + total)
-		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, string.format("Auto seller: sold %s for %d gold (to your bank).",
+		if ChaosTelemetry and ChaosTelemetry.economy then pcall(ChaosTelemetry.economy, owner, "faucet", "autoseller", total) end
+		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, Chaos.t(owner, "Auto seller: sold %s for %d gold (to your bank).",
 			table.concat(sold, ", "), total))
 	end
 	if kept > 0 then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
-			"Auto seller: kept an item of a rarity you keep, a unique or a named item (Economy > Auto Seller).")
+			Chaos.t(owner, "Auto seller: kept an item of a rarity you keep, a unique or a named item (Economy > Auto Seller)."))
 	end
 	if keptLocked > 0 then
-		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, "Auto seller: kept a locked item.")
+		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, Chaos.t(owner, "Auto seller: kept a locked item."))
 	end
 end
 
@@ -235,7 +239,7 @@ function A.state(player, notice)
 	end
 	return {
 		unlocked = player:getStorageValue(ST.shopAutoSeller) >= 1,
-		needs = NEEDS,
+		needs = Chaos.t(player, NEEDS),
 		paused = player:getStorageValue(ST.autosellPaused) == 1,
 		tiers = AK.tierList(AK.unpackTiers(player:getStorageValue(ST.autosellRarity))),
 		list = list, slots = SLOTS,
@@ -250,15 +254,15 @@ local function listChange(player, d)
 	local list = readList(player)
 	if op == "clear" then
 		writeList(player, {})
-		return "List cleared."
+		return Chaos.t(player, "List cleared.")
 	end
 	if op ~= "add" and op ~= "remove" then
-		return "Unknown list change."
+		return Chaos.t(player, "Unknown list change.")
 	end
 	local text = type(d.item) == "string" and d.item:sub(1, 80) or (tonumber(d.item) and tostring(math.floor(d.item))) or ""
 	local it = text ~= "" and lookup(text) or nil
 	if not it then
-		return "There is no item called " .. text .. "."
+		return Chaos.t(player, "There is no item called %s.", text)
 	end
 	local id, index = it:getId(), nil
 	for i, v in ipairs(list) do
@@ -268,24 +272,24 @@ local function listChange(player, d)
 	end
 	if op == "add" then
 		if index then
-			return it:getName() .. " is already on your list."
+			return Chaos.t(player, "%s is already on your list.", it:getName())
 		elseif ChaosPouches and ChaosPouches.neverSell and ChaosPouches.neverSell(id) then
-			return it:getName() .. " is never auto-sold (orbs, gems and keys are kept)."
+			return Chaos.t(player, "%s is never auto-sold (orbs, gems and keys are kept).", it:getName())
 		elseif (PRICES[id] or 0) <= 0 then
-			return "No NPC buys " .. it:getName() .. ", so it cannot be auto-sold."
+			return Chaos.t(player, "No NPC buys %s, so it cannot be auto-sold.", it:getName())
 		elseif #list >= SLOTS then
-			return "Your list is full (" .. SLOTS .. " items)."
+			return Chaos.t(player, "Your list is full (%d items).", SLOTS)
 		end
 		list[#list + 1] = id
 		writeList(player, list)
-		return string.format("%s will be sold for %d gold each.", it:getName(), PRICES[id])
+		return Chaos.t(player, "%s will be sold for %d gold each.", it:getName(), PRICES[id])
 	end
 	if not index then
-		return it:getName() .. " is not on your list."
+		return Chaos.t(player, "%s is not on your list.", it:getName())
 	end
 	table.remove(list, index)
 	writeList(player, list)
-	return "Removed " .. it:getName() .. "."
+	return Chaos.t(player, "Removed %s.", it:getName())
 end
 
 -- one window action; returns the state to send back (nil: not an Auto Seller action)
@@ -300,19 +304,20 @@ function A.handleAction(player, action, data)
 		return nil
 	end
 	if player:getStorageValue(ST.shopAutoSeller) < 1 then
-		return A.state(player, NEEDS)
+		return A.state(player, Chaos.t(player, NEEDS))
 	end
 	if action == "sell" then
 		local plan, why = A.sellBag(player)
 		if plan then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, AK.saleText(plan))
-			return A.state(player, AK.saleText(plan))
+			local text = AK.saleText(plan, Chaos.lang(player))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+			return A.state(player, text)
 		end
-		return A.state(player, why)
+		return A.state(player, why and Chaos.t(player, why))
 	elseif action == "asrar" then
 		local tiers, why = AK.rarityChange(AK.unpackTiers(player:getStorageValue(ST.autosellRarity)), d)
 		if not tiers then
-			return A.state(player, "Rarities: " .. why .. ".")
+			return A.state(player, Chaos.t(player, "Rarities: %s.", Chaos.t(player, why)))
 		end
 		player:setStorageValue(ST.autosellRarity, AK.packTiers(tiers))
 		return A.state(player)
@@ -321,7 +326,7 @@ function A.handleAction(player, action, data)
 	end
 	-- aspause {on = true}: corpse selling on; false: off
 	if type(d.on) ~= "boolean" then
-		return A.state(player, "Bad request.")
+		return A.state(player, Chaos.t(player, "Bad request."))
 	end
 	player:setStorageValue(ST.autosellPaused, d.on and 0 or 1)
 	return A.state(player)

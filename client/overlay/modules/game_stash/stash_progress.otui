@@ -13,7 +13,7 @@ UIWindow
   Label
     id: text
     anchors.centerIn: parent
-    text: Stashing all items
+    !text: tr('Stashing all items')
     text-auto-resize: true
 
   Label

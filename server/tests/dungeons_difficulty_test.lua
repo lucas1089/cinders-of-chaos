@@ -18,7 +18,7 @@ if f then
 	local text = f:read("*a")
 	f:close()
 	local panels = {}
-	for t in text:gmatch("DifficultyInfo%s+!text:%s*'([^']*)'") do
+	for t in text:gmatch("DifficultyInfo%s+!text:%s*tr%('([^']*)'%)") do -- the panel texts go through tr() (pt-BR)
 		panels[#panels + 1] = t:gsub("\\n", "\n")
 	end
 	eq(#panels, #D.levels, "six panels in the client")

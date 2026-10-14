@@ -482,12 +482,13 @@ function J.emit(who, stat, value, mode)
 end
 
 -- ---------------------------------------------------------------- hooks into other systems
-local function wrap(tbl, name, marker, make)
-	if type(tbl) ~= "table" or type(tbl[name]) ~= "function" or tbl[name] == J.wrapped[marker] then
-		return
-	end
-	J.wrapped[marker] = make(tbl[name])
-	tbl[name] = J.wrapped[marker]
+-- hooks through ChaosWrapChain (wrapchain_core.lua): records.lua and chronicle.lua hook ChaosAchievements too, and a
+-- marker that only compared with tbl[name] wrapped again every minute under them (the hooks ran several times a call)
+if not (ChaosWrapChain and ChaosWrapChain.wrap) then
+	dofile("data/scripts/chaos/wrapchain_core.lua")
+end
+local function wrap(tbl, name, marker, after)
+	ChaosWrapChain.wrap(tbl, name, "journey_" .. marker, after, function(e) log("hook: " .. e) end)
 end
 
 local function safe(fn, ...)
@@ -498,63 +499,41 @@ local function safe(fn, ...)
 end
 
 function J.installHooks()
-	wrap(ChaosAchievements, "progress", "achProgress", function(orig)
-		return function(who, key, amount)
-			local r = orig(who, key, amount)
-			if cfg.stats[key] then
-				safe(J.record, who, key, amount == nil and 1 or amount)
-			end
-			return r
+	wrap(ChaosAchievements, "progress", "achProgress", function(res, who, key, amount)
+		if cfg.stats[key] then
+			J.record(who, key, amount == nil and 1 or amount)
 		end
 	end)
-	wrap(ChaosAchievements, "set", "achSet", function(orig)
-		return function(who, key, value)
-			local r = orig(who, key, value)
-			if cfg.stats[key] then
-				safe(J.record, who, key, value, "max")
-			end
-			return r
+	wrap(ChaosAchievements, "set", "achSet", function(res, who, key, value)
+		if cfg.stats[key] then
+			J.record(who, key, value, "max")
 		end
 	end)
-	wrap(ChaosFactions, "gain", "factionGain", function(orig)
-		return function(player, key, amount, source, quiet)
-			local res = orig(player, key, amount, source, quiet)
-			if type(res) == "table" and player then
-				if (tonumber(res.gained) or 0) > 0 then
-					safe(J.record, player, "faction_rep", res.gained)
-				end
-				if tonumber(res.rankAfter) then
-					safe(J.record, player, "faction_rank", res.rankAfter, "max")
-				end
+	wrap(ChaosFactions, "gain", "factionGain", function(res, player)
+		local r = res[1]
+		if type(r) == "table" and player then
+			if (tonumber(r.gained) or 0) > 0 then
+				safe(J.record, player, "faction_rep", r.gained)
 			end
-			return res
+			if tonumber(r.rankAfter) then
+				safe(J.record, player, "faction_rank", r.rankAfter, "max")
+			end
 		end
 	end)
-	wrap(ChaosCommunity, "contribute", "communityContribute", function(orig)
-		return function(player, key, units, opts)
-			local gained = orig(player, key, units, opts)
-			if player and (tonumber(gained) or 0) > 0 then
-				safe(J.record, player, "community_points", gained)
-			end
-			return gained
+	wrap(ChaosCommunity, "contribute", "communityContribute", function(res, player)
+		local gained = res[1]
+		if player and (tonumber(gained) or 0) > 0 then
+			J.record(player, "community_points", gained)
 		end
 	end)
-	wrap(ChaosOrbExchange, "place", "orbxPlace", function(orig)
-		return function(player, d)
-			local ok = orig(player, d)
-			if ok == true and player then
-				safe(J.record, player, "orbx_orders", 1)
-			end
-			return ok
+	wrap(ChaosOrbExchange, "place", "orbxPlace", function(res, player)
+		if res[1] == true and player then
+			J.record(player, "orbx_orders", 1)
 		end
 	end)
-	wrap(ChaosTower, "recordRun", "towerRun", function(orig)
-		return function(player, floorsCleared, seconds)
-			local r = orig(player, floorsCleared, seconds)
-			if player then
-				safe(J.record, player, "tower_floor", tonumber(floorsCleared) or 0, "max")
-			end
-			return r
+	wrap(ChaosTower, "recordRun", "towerRun", function(res, player, floorsCleared)
+		if player then
+			J.record(player, "tower_floor", tonumber(floorsCleared) or 0, "max")
 		end
 	end)
 end

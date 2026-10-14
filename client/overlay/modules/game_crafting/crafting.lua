@@ -165,7 +165,7 @@ local function fitResult()
     label:setText(full)
     return
   end
-  label:setText('Ag')
+  label:setText(tr('Ag'))
   local maxHeight = label:getTextSize().height * RESULT_LINES
   local text, cut = full, false
   if Text then

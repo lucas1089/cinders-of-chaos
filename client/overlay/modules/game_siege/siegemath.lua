@@ -1,4 +1,5 @@
 -- Pure helpers of the guild siege HUD and window (no client API; tested by siegemath_test.lua).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 SiegeMath = {}
 
 -- 725 -> "12:05"
@@ -36,25 +37,25 @@ end
 -- the obelisk line and its colour
 function SiegeMath.holder(data)
   data = type(data) == 'table' and data or {}
-  if data.phase == 'gather' then return 'Gates open in ' .. SiegeMath.clock(data.left), '#d6c9ae' end
-  if data.phase == 'ending' then return 'The siege is over', '#8c8070' end
+  if data.phase == 'gather' then return tr('Gates open in %s', SiegeMath.clock(data.left)), '#d6c9ae' end
+  if data.phase == 'ending' then return tr('The siege is over'), '#8c8070' end
   if data.holder and data.holder ~= '' then
     return 'Obelisk: ' .. tostring(data.holder), type(data.holderColor) == 'string' and data.holderColor ~= '' and data.holderColor or '#f6cf72'
   end
-  if data.contested then return 'Obelisk: contested', '#e8582a' end
-  return 'Obelisk: neutral', '#8c8070'
+  if data.contested then return tr('Obelisk: contested'), '#e8582a' end
+  return tr('Obelisk: neutral'), '#8c8070'
 end
 
 function SiegeMath.title(data)
   data = type(data) == 'table' and data or {}
-  if data.phase == 'gather' then return 'Guild Siege - gathering' end
+  if data.phase == 'gather' then return tr('Guild Siege - gathering') end
   if data.phase == 'ending' then
     local r = type(data.result) == 'table' and data.result or {}
     if r.winner and r.winner ~= '' then return r.winner .. ' wins!' end
-    return 'Siege over'
+    return tr('Siege over')
   end
-  if (tonumber(data.brackets) or 1) > 1 then return 'Guild Siege - arena ' .. tostring(data.bracket) end
-  return 'Guild Siege'
+  if (tonumber(data.brackets) or 1) > 1 then return tr('Guild Siege - arena %s', tostring(data.bracket)) end
+  return tr('Guild Siege')
 end
 
 function SiegeMath.youText(you)

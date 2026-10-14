@@ -2,6 +2,7 @@
 -- Lua 5.3). The classes and their icons, the card text, the outfit drawn (the login server's list plus the website's
 -- looks) and where it stands (its feet on the pedestal), the world name shown, keyboard navigation, the name pre-check of the create window and the account API's
 -- requests and answers (website/README.md "Client API").
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CharSelectCore = CharSelectCore or {}
 local C = CharSelectCore
@@ -56,12 +57,12 @@ function C.lastLoginText(ts, now)
   local d = now - ts
   if d < 0 then d = 0 end
   if d < 120 then return 'Last played just now' end
-  if d < 3600 then return string.format('Last played %d minutes ago', math.floor(d / 60)) end
+  if d < 3600 then return tr('Last played %d minutes ago', math.floor(d / 60)) end
   if d < 7200 then return 'Last played an hour ago' end
-  if d < 86400 then return string.format('Last played %d hours ago', math.floor(d / 3600)) end
+  if d < 86400 then return tr('Last played %d hours ago', math.floor(d / 3600)) end
   if d < 172800 then return 'Last played yesterday' end
-  if d < 30 * 86400 then return string.format('Last played %d days ago', math.floor(d / 86400)) end
-  return 'Last played on ' .. os.date('!%Y-%m-%d', ts)
+  if d < 30 * 86400 then return tr('Last played %d days ago', math.floor(d / 86400)) end
+  return tr('Last played on %s', os.date('!%Y-%m-%d', ts))
 end
 
 -- the same, short, for a card: "2 hours ago", "yesterday", "never played", "2026-09-03"
@@ -340,8 +341,8 @@ function C.slotsText(count, slots)
   local limit = type(slots) == 'table' and tonumber(slots.limit)
   if not limit then return text end
   local used = math.max(count, tonumber(slots.used) or count)
-  if used >= limit then return text .. ', no free slot' end
-  return text .. string.format(', %d of %d slots used', used, limit)
+  if used >= limit then return tr('%s, no free slot', text) end
+  return text .. tr(', %d of %d slots used', used, limit)
 end
 
 function C.slotsLine(slots)
@@ -349,9 +350,9 @@ function C.slotsLine(slots)
   if not limit then return '', false end
   local used = tonumber(slots.used) or 0
   if used >= limit then
-    return 'No free character slot: more are sold in the game store (Storage & Slots > Character Slot).', true
+    return tr('No free character slot: more are sold in the game store (Storage & Slots > Character Slot).'), true
   end
-  return string.format('Character slots: %d of %d used.', used, limit), false
+  return tr('Character slots: %d of %d used.', used, limit), false
 end
 
 -- ---------------------------------------------------------------- the create window
@@ -368,8 +369,8 @@ function C.checkName(name, rules)
     words = words + 1
     if #w == 1 then return 'Every word needs at least two letters.' end
   end
-  if words > maxW then return string.format('Use at most %d words.', maxW) end
-  if #name < minL or #name > maxL then return string.format('The name needs %d to %d letters.', minL, maxL) end
+  if words > maxW then return tr('Use at most %d words.', maxW) end
+  if #name < minL or #name > maxL then return tr('The name needs %d to %d letters.', minL, maxL) end
   return nil
 end
 
@@ -440,7 +441,7 @@ function C.errorText(body, err)
     if type(body.message) == 'string' and body.message ~= '' then return body.message end
   end
   if err and tostring(err) ~= '' then
-    return 'The website could not be reached (' .. tostring(err) .. ').'
+    return tr('The website could not be reached (%s).', tostring(err))
   end
   return 'The website gave no answer.'
 end

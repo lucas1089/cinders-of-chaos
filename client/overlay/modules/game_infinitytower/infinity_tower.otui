@@ -308,7 +308,7 @@ InfinityTowerWindow < NewHeadlessWindow
       anchors.verticalCenter: parent.verticalCenter
       margin-left: 10
       margin-top: 30
-      tooltip: Silver Tower Chest
+      !tooltip: tr('Silver Tower Chest')
 
       UIItem
         id: podiumItem2
@@ -326,7 +326,7 @@ InfinityTowerWindow < NewHeadlessWindow
       anchors.verticalCenter: parent.verticalCenter
       margin-left: 4
       margin-top: -40
-      tooltip: Gold Tower Chest
+      !tooltip: tr('Gold Tower Chest')
 
       UIItem
         id: podiumItem1
@@ -344,7 +344,7 @@ InfinityTowerWindow < NewHeadlessWindow
       anchors.verticalCenter: parent.verticalCenter
       margin-left: 4
       margin-top: 30
-      tooltip: Copper Tower Chest
+      !tooltip: tr('Copper Tower Chest')
 
       UIItem
         id: podiumItem3

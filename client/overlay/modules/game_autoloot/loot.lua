@@ -96,7 +96,7 @@ function refreshAutolootWindow(data)
 		end
 	end
 
-	windowAutoLoot.slots:setText("Current Slots: " .. data.currentSlot .. "/" .. data.maxSlot)
+	windowAutoLoot.slots:setText(tr('Current Slots: %s/%s', data.currentSlot, data.maxSlot))
 end
 
 function autolootWindowHide()

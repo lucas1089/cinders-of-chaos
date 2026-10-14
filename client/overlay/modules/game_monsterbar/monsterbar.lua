@@ -248,10 +248,13 @@ local function placeMech()
   if not mechWindow then
     return
   end
-  local top = window and window:getMarginTop() or 44
-  local barShown = window and window:isVisible()
-  mechWindow:setMarginTop(barShown and (top + 90) or top)
-  mechWindow:setMarginLeft(window and window:getMarginLeft() or 0)
+  if window then
+    place() -- the monster bar's margins for the current view, also while it is hidden (no target yet)
+  end
+  local top, left = MonsterBarMech.margins(window and window:isVisible(), window and window:getMarginTop() or 44,
+    window and window:getMarginLeft() or 0)
+  mechWindow:setMarginTop(top)
+  mechWindow:setMarginLeft(left)
 end
 
 local function stopMech()

@@ -7,6 +7,7 @@
 -- Tab n is the box with client id ids[n]; tabs above `tabs` are locked (withdraw-only).
 -- The depot window (depottabs.lua, depottabs.otui): the tab buttons, the 10x10 grid of the active tab, the footer, the
 -- rename / colour dialog, and which opened container plays which part (locker, chest, tab).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 DepotTabsView = {}
 local V = DepotTabsView
@@ -136,13 +137,13 @@ end
 -- it (the server checks again: depot_core.lua cleanName)
 function V.cleanName(state, raw)
   if raw == nil then return '' end
-  if type(raw) ~= 'string' then return nil, 'Not a name.' end
+  if type(raw) ~= 'string' then return nil, tr('Not a name.') end
   local s = raw:gsub('%s+', ' '):gsub('^ ', ''):gsub(' $', '')
   if s:find('[%c\127-\159]') then
-    return nil, 'A tab name may only use letters, digits, spaces and punctuation.'
+    return nil, tr('A tab name may only use letters, digits, spaces and punctuation.')
   end
   if #s > state.nameMax then
-    return nil, string.format('A tab name has at most %d characters.', state.nameMax)
+    return nil, tr('A tab name has at most %d characters.', state.nameMax)
   end
   return s
 end
@@ -187,14 +188,14 @@ function V.tooltip(state, tab)
   local name = V.customName(state, tab)
   local head = name and string.format('Tab %d: %s\n', int(tab), name) or ''
   if V.isLocked(state, tab) then
-    local inside = (used and used > 0) and string.format('%d items inside: you can take them out.\n', used) or ''
-    return string.format('%sTab %d is locked (your account has %d of %d tabs).\n%s%s', head, int(tab), state.tabs,
-      state.max, inside, state.hint ~= '' and state.hint or 'Buy more tabs in the Store.')
+    local inside = (used and used > 0) and tr('%d items inside: you can take them out.\n', used) or ''
+    return tr('%sTab %d is locked (your account has %d of %d tabs).\n%s%s', head, int(tab), state.tabs,
+      state.max, inside, state.hint ~= '' and state.hint or tr('Buy more tabs in the Store.'))
   end
   if used == nil then
-    return string.format('%sTab %d: up to %d items (a bag counts with its contents).', head, int(tab), state.size)
+    return tr('%sTab %d: up to %d items (a bag counts with its contents).', head, int(tab), state.size)
   end
-  return string.format('%sTab %d: %d of %d items (a bag counts with its contents).', head, int(tab), used, state.size)
+  return tr('%sTab %d: %d of %d items (a bag counts with its contents).', head, int(tab), used, state.size)
 end
 
 -- the title colour of a full or locked tab (nil: leave the default)
@@ -212,10 +213,10 @@ end
 
 -- the line above the grid: "Tab 3: Potions" / "Tab 3", and the lock note
 function V.header(state, tab)
-  if not tab then return 'Opening the depot...' end
+  if not tab then return tr('Opening the depot...') end
   local name = V.customName(state, tab)
   local text = name and string.format('Tab %d: %s', int(tab), name) or string.format('Tab %d', int(tab))
-  if V.isLocked(state, tab) then text = text .. '  (locked: withdraw only)' end
+  if V.isLocked(state, tab) then text = tr('%s  (locked: withdraw only)', text) end
   return text
 end
 

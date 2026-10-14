@@ -116,3 +116,12 @@ What the code does was read for these texts. These points are not settled by the
     these terms (and whether creators must disclose the code as advertising, CONAR / CDC art. 36); that a fee kept on a
     player-to-player sale of a character for Chaos Coins does not make the operator a seller or intermediary of goods;
     the wording of "no real-world value" next to a market in characters; and the minors point (item 8) for the Bazaar.
+18. **The Capital Memorial and the Ashen Chronicle (drafted 2026-10-14).** The Memorial (in the capital and on the
+    website's Memorial page, with an archive of past seasons) and the Chronicle's contributor lists show character names.
+    Records and realm firsts are shown unless the player turns "Show my records and realm firsts" off (they are on the
+    public leaderboards already); a Hardcore fall (name, level, class, cause, date) only after the player's yes, asked at
+    the next login after the fall. A change hides every season's rows at once (`chaos_memorial_entries.shown`). The
+    privacy texts need one sentence each (EN "Public information" and the consent basis; PT the same; the lines are in
+    the Chronicle work's notes, server/README.md "The Capital Memorial"). Check that the default for records (shown
+    until turned off) is acceptable next to the opt-in for falls. A deleted character leaves every season of the archive
+    with it (`ON DELETE CASCADE`).

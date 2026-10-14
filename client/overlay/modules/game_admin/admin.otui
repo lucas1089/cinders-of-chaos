@@ -129,7 +129,7 @@ ChaosWindow
       anchors.right: parent.right
       height: 18
       color: #ff5040
-      text: Select an action
+      !text: tr('Select an action')
 
     ChaosLabel
       id: actionDesc
@@ -168,7 +168,7 @@ ChaosWindow
       anchors.right: parent.right
       width: 150
       height: 24
-      text: Run
+      !text: tr('Run')
       enabled: false
 
   ChaosPanel

@@ -169,14 +169,14 @@ end
 local function changeSaved(node, choice)
   closeConfirm()
   local info = getRespecInfo and getRespecInfo()
-  local price = info and ((info.node or 0) > 0 and (formatGold(info.node) .. ' gold coins') or 'free') or 'the single-node refund price'
+  local price = info and ((info.node or 0) > 0 and (tr('%s gold coins', formatGold(info.node))) or 'free') or tr('the single-node refund price')
   local effect = node.masteries[choice]
   local function ok()
     sendAction('masteryChoose', {id = node.id, choice = choice})
     closeMasteryChoice()
   end
-  confirmBox = displayGeneralBox('Change mastery effect', string.format('Change %s to %s?\nPrice: %s (like refunding one node).',
-    node.name or 'this mastery', effect.name or ('effect ' .. choice), price), {
+  confirmBox = displayGeneralBox(tr('Change mastery effect'), tr('Change %s to %s?\nPrice: %s (like refunding one node).',
+    node.name or tr('this mastery'), effect.name or (tr('effect %s', choice)), price), {
     {text = tr('Change'), callback = ok},
     {text = tr('Cancel'), callback = closeConfirm},
     anchor = AnchorHorizontalCenter
@@ -191,10 +191,10 @@ function openMasteryChoice(node, saved)
     return
   end
   choiceWindow = g_ui.loadUI('mastery', tree)
-  choiceWindow:setText(node.name or 'Mastery')
+  choiceWindow:setText(node.name or tr('Mastery'))
   local current = saved and getSavedMastery(node.id) or plan.masteries[node.id]
-  choiceWindow.hint:setText(saved and 'Pick another effect. A change costs the single-node refund price.' or
-    'Pick one effect. You can change it for free until you apply the plan.')
+  choiceWindow.hint:setText(saved and tr('Pick another effect. A change costs the single-node refund price.') or
+    tr('Pick one effect. You can change it for free until you apply the plan.'))
   local list = choiceWindow.effects
   for i, effect in ipairs(node.masteries or {}) do
     local button = g_ui.createWidget('MasteryEffectButton', list)
@@ -236,7 +236,7 @@ function plannerClick(node)
     return false
   end
   if isTreePreviewShown() then
-    sendMessageBox('Planner', 'A build code preview is shown. Cancel the preview (Build Code) to plan again.')
+    sendMessageBox('Planner', tr('A build code preview is shown. Cancel the preview (Build Code) to plan again.'))
     return false
   end
   if node.alloc then
@@ -256,12 +256,12 @@ function plannerClick(node)
     return true
   end
   if node.locked then
-    sendMessageBox('Planner', 'This node belongs to another class.')
+    sendMessageBox('Planner', tr('This node belongs to another class.'))
     return false
   end
   local path = TreePlan.findPath(graph(), ownedSet(), node.id, passable)
   if not path then
-    sendMessageBox('Planner', 'No path leads there over nodes your class can take.')
+    sendMessageBox('Planner', tr('No path leads there over nodes your class can take.'))
     return false
   end
   TreePlan.addPath(plan, path)
@@ -275,7 +275,7 @@ end
 
 function plannerApply()
   if TreePlan.isEmpty(plan) then
-    sendMessageBox('Apply plan', 'Nothing is planned. Click a node to plan the path to it.')
+    sendMessageBox(tr('Apply plan'), tr('Nothing is planned. Click a node to plan the path to it.'))
     return
   end
   local missing = TreePlan.missingMasteries(plan, isMasteryId)
@@ -285,14 +285,14 @@ function plannerApply()
   end
   local cost, free = TreePlan.cost(plan), getTreeFreePoints()
   if cost > free then
-    sendMessageBox('Apply plan', string.format('The plan needs %d points; you have %d free. Undo or take nodes out first.', cost, free))
+    sendMessageBox(tr('Apply plan'), tr('The plan needs %d points; you have %d free. Undo or take nodes out first.', cost, free))
     return
   end
   sendAction('planApply', TreePlan.request(plan))
   lastMessage, lastColor = nil, nil
   local label = child('planCost')
   if label then
-    label:setText('Applying...')
+    label:setText(tr('Applying...'))
   end
 end
 
@@ -302,13 +302,13 @@ ChaosTreeHandlers.planResult = function(data)
   end
   if data.ok then
     TreePlan.reset(plan) -- sendNodes came first: the plan's ids are allocated now
-    lastMessage, lastColor = tostring(data.message or 'Applied.'), '#80c070'
+    lastMessage, lastColor = tostring(data.message or tr('Applied.')), '#80c070'
     plannerRefresh()
     calculateStats()
   else
     lastMessage, lastColor = nil, nil
     plannerUpdateBar()
-    sendMessageBox('Passive tree', tostring(data.message or 'The plan was not applied.'))
+    sendMessageBox(tr('Passive tree'), tostring(data.message or tr('The plan was not applied.')))
   end
 end
 

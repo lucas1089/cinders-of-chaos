@@ -67,7 +67,7 @@ TrialCard < ChaosPanelDark
     anchors.bottom: parent.bottom
     anchors.right: parent.right
     size: 104 22
-    text: Choose
+    !text: tr('Choose')
 
 TrialPairRow < UIWidget
   height: 136
@@ -149,21 +149,21 @@ ChaosWindow
         anchors.top: parent.top
         anchors.left: parent.left
         size: 238 26
-        text: Enter Normal
+        !text: tr('Enter Normal')
 
       ChaosButton
         id: tier2
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         size: 238 26
-        text: Enter Cruel
+        !text: tr('Enter Cruel')
 
       ChaosButton
         id: tier3
         anchors.top: parent.top
         anchors.right: parent.right
         size: 238 26
-        text: Enter Merciless
+        !text: tr('Enter Merciless')
 
     ChaosLabel
       id: tokens
@@ -201,7 +201,7 @@ ChaosWindow
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     width: 150
-    text: Leave the trial
+    !text: tr('Leave the trial')
     visible: false
     @onClick: modules.game_passivetree.leaveTrial()
 
@@ -210,5 +210,5 @@ ChaosWindow
     anchors.bottom: parent.bottom
     anchors.right: parent.right
     width: 130
-    text: Close
+    !text: tr('Close')
     @onClick: modules.game_passivetree.closeTrials()

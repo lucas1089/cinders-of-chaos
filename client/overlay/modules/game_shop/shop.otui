@@ -117,7 +117,7 @@ ShopOffer < Panel
 
   Button
     id: buyButton
-    text: BUY
+    !text: tr('BUY')
     width: 40
     height: 25
     anchors.verticalCenter: parent.verticalCenter
@@ -128,7 +128,7 @@ ShopOffer < Panel
   // buy it for another character (shown when the server says the offer can be gifted)
   Button
     id: giftButton
-    text: GIFT
+    !text: tr('GIFT')
     width: 40
     height: 25
     anchors.verticalCenter: parent.verticalCenter
@@ -141,7 +141,7 @@ ShopOffer < Panel
   // so it takes the gift button's place
   Button
     id: previewButton
-    text: SHOW
+    !text: tr('SHOW')
     width: 40
     height: 25
     anchors.verticalCenter: parent.verticalCenter

@@ -19,6 +19,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos.battlegroundConfig then
 	Chaos.battlegroundConfig = dofile("data/scripts/chaos/battleground_config.lua")
 end
@@ -316,8 +319,8 @@ function P.check(startup)
 		end
 		setConfig(cfg.season.configKey, s)
 		if not startup then
-			Game.broadcastMessage(string.format("PvP Season %d has ended. Season %d begins: ratings were softly reset; the season rewards are handed out.",
-				s, s + 1), MESSAGE_STATUS_WARNING)
+			Chaos.broadcast(MESSAGE_STATUS_WARNING, "PvP Season %d has ended. Season %d begins: ratings were softly reset; the season rewards are handed out.",
+				s, s + 1)
 		end
 	end
 	-- a season changed while characters were online: their cached rows are of the old season

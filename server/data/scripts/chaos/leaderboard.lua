@@ -32,6 +32,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/leaderboard_core.lua")
 
 Chaos.leaderboardConfig = dofile("data/scripts/chaos/leaderboard_config.lua")
@@ -271,8 +274,7 @@ function LB.checkReset(force)
 	loadHeld(prev)
 	ensureWeek()
 	if #awards > 0 then
-		local text = LB.broadcastText(cfg.boards, awards)
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+		local text = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, function(lang) return LB.broadcastText(cfg.boards, awards, lang) end)
 		if ChaosNotify and ChaosNotify.gmBroadcast then
 			ChaosNotify.gmBroadcast(nil, text)
 		end

@@ -36,6 +36,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/community_core.lua")
 
 Chaos.communityConfig = dofile("data/scripts/chaos/community_config.lua")
@@ -117,7 +120,7 @@ end
 
 local function broadcast(text)
 	if Game and Game.broadcastMessage then
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 	end
 end
 

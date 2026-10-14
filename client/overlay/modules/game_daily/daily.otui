@@ -46,7 +46,7 @@ GetItems < MiniPanel
     // ember instead of the stock green, to match the Chaos palette
     image-color: #d8762a
     color: #fff1d6
-    text: Claim
+    !text: tr('Claim')
     size: 64 18
 
 MainWindow
@@ -70,7 +70,7 @@ MainWindow
       size: 120 140
       anchors.top: parent.top
       anchors.left: parent.left
-      text: Day 1
+      !text: tr('Day 1')
 
     GetItems
       id: daily2
@@ -78,7 +78,7 @@ MainWindow
       anchors.top: parent.top
       anchors.left: daily1.right
       margin-left: 8
-      text: Day 2
+      !text: tr('Day 2')
 
     GetItems
       id: daily3
@@ -86,7 +86,7 @@ MainWindow
       anchors.top: parent.top
       anchors.left: daily2.right
       margin-left: 8
-      text: Day 3
+      !text: tr('Day 3')
 
     GetItems
       id: daily4
@@ -94,7 +94,7 @@ MainWindow
       anchors.top: daily1.bottom
       anchors.left: parent.left
       margin-top: 8
-      text: Day 4
+      !text: tr('Day 4')
 
     GetItems
       id: daily5
@@ -103,7 +103,7 @@ MainWindow
       anchors.left: daily4.right
       margin-left: 8
       margin-top: 8
-      text: Day 5
+      !text: tr('Day 5')
 
     GetItems
       id: daily6
@@ -112,7 +112,7 @@ MainWindow
       anchors.left: daily5.right
       margin-left: 8
       margin-top: 8
-      text: Day 6
+      !text: tr('Day 6')
 
     GetItems
       id: daily7
@@ -121,7 +121,7 @@ MainWindow
       anchors.right: parent.right
       anchors.bottom: daily6.bottom
       margin-left: 8
-      text: Day 7
+      !text: tr('Day 7')
 
   // login streak (server daily.lua: Streak, Best, Grace, Next, Title); hidden when the server sends none
   Panel

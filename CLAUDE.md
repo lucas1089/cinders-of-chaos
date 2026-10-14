@@ -35,6 +35,7 @@ for t in client/overlay/modules/*/*_test.lua; do luajit "$t" && lua5.3 "$t"; don
 python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
+python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
 python3 client/tools/make_fonts_test.py
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair

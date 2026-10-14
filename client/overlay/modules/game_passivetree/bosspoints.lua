@@ -23,7 +23,7 @@ local function refreshBossPoints()
     return
   end
   local got, total = tonumber(bossPointsState.got) or 0, tonumber(bossPointsState.total) or 0
-  label:setText(bossPointsState.label or string.format('Boss points %d/%d', got, total))
+  label:setText(bossPointsState.label or tr('Boss points %d/%d', got, total))
   label:setColor(got >= total and total > 0 and '#7fd06a' or '#d8a03a')
   label:setTooltip(tooltipOf(bossPointsState))
   label:setVisible(total > 0)

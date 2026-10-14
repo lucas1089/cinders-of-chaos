@@ -33,6 +33,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/records_core.lua")
 
 Chaos.recordsConfig = dofile("data/scripts/chaos/records_config.lua")
@@ -214,8 +217,10 @@ local function bestOf(slot, mode)
 	return R.best[slot] or nil
 end
 
-local function broadcast(text)
-	Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+-- build(lang) -> the text: each player reads it in their language (Chaos.broadcast); the log and the notification
+-- are English
+local function broadcast(build)
+	local text = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, build)
 	if ChaosNotify and ChaosNotify.gmBroadcast then
 		pcall(ChaosNotify.gmBroadcast, nil, text)
 	end
@@ -260,7 +265,8 @@ local function realmFirst(board, run, members, value)
 		"VALUES (%s, %s, %s, %s, %s, %s, %d, %d)", T.firsts, esc(k.season), esc(target), esc(board.key), esc(short),
 		esc(entry.members:sub(1, 160)), esc(table.concat(guids, ","):sub(1, 120)), value, entry.at))
 	if cfg.announceFirst then
-		broadcast(K.firstText(display, members, K.seasonName(k.season, season())))
+		local seasonName = K.seasonName(k.season, season())
+		broadcast(function(lang) return K.firstText(display, members, seasonName, lang) end)
 	end
 	for _, m in ipairs(members) do
 		local p = Player(m.name)
@@ -309,7 +315,7 @@ function R.submit(run)
 	if board.mode ~= "add" and K.better(board.mode, value, prev or 0) then
 		R.best[slot] = value
 		if cfg.announceRecord and K.isRecord(prev, value, board.mode) then
-			broadcast(K.recordText(board, run.variant, size, value, members, prev))
+			broadcast(function(lang) return K.recordText(board, run.variant, size, value, members, prev, lang) end)
 		end
 	end
 	realmFirst(board, run, members, value)
@@ -381,8 +387,10 @@ function R.checkReset(force)
 	loadHeld(prev)
 	log(string.format("weekly awards: week %d, %d placings", prev, #awards))
 	if #awards > 0 then
-		broadcast(string.format("Records: %d weekly top 3 placings of last week hold their titles and the %s badge this week.",
-			#awards, cfg.badgeFrame))
+		broadcast(function(lang)
+			return ChaosI18n.text(lang, "Records: %d weekly top 3 placings of last week hold their titles and the %s badge this week.",
+				#awards, cfg.badgeFrame)
+		end)
 	end
 	for _, p in ipairs(Game.getPlayers()) do
 		if ChaosNameplate and ChaosNameplate.refresh then
@@ -408,23 +416,14 @@ local function pack(...)
 	return {n = select("#", ...), ...}
 end
 
--- tbl[name] runs as before; after(results, ...) runs behind it, guarded. Wrapped once (tbl[flag] is our wrapper).
+-- tbl[name] runs as before; after(results, ...) runs behind it, guarded. Hooked once through ChaosWrapChain
+-- (wrapchain_core.lua): season, guild, mentor and others hook the same functions, and a flag that only compared
+-- with tbl[name] wrapped again every minute under them, so the hooks ran several times per call.
+if not (ChaosWrapChain and ChaosWrapChain.wrap) then
+	dofile("data/scripts/chaos/wrapchain_core.lua")
+end
 function R.wrap(tbl, name, flag, after)
-	if type(tbl) ~= "table" or type(tbl[name]) ~= "function" or tbl[flag] == tbl[name] then
-		return false
-	end
-	local original = tbl[name]
-	local wrapped = function(...)
-		local res = pack(original(...))
-		local ok, err = pcall(after, res, ...)
-		if not ok then
-			log(name .. " hook: " .. tostring(err))
-		end
-		return unpack(res, 1, res.n)
-	end
-	tbl[name] = wrapped
-	tbl[flag] = wrapped
-	return true
+	return ChaosWrapChain.wrap(tbl, name, flag, after, log)
 end
 local wrap = R.wrap
 
@@ -554,7 +553,9 @@ local function onRecord(res, board, who, value)
 		return -- the leaderboard did not take it (unknown board or player)
 	end
 	if board == "raid_clear" then
-		local run = isPlayer(who) and ChaosRaid and ChaosRaid.runOf and ChaosRaid.runOf(who) or nil
+		-- ChaosRaid.runOf is a table (player id -> run), not a function
+		local runs = ChaosRaid and ChaosRaid.runOf
+		local run = isPlayer(who) and type(runs) == "table" and runs[who:getId()] or nil
 		R.submit({board = "raid", value = value, members = {who}, size = 1, debug = run and run.staff or nil})
 	elseif board == "descent" then
 		R.submit({board = "descent", value = value, members = {who}, size = 1})

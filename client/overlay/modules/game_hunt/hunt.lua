@@ -80,7 +80,7 @@ local function showStats()
   window.sessionPanel.pauseButton:setTooltip(paused and tr('Count again from here.') or tr('Stop the clock and the counters.'))
 
   setStat('xp', HuntMath.short(st.xp), HuntMath.exact(st.xp) .. ' experience')
-  setStat('xph', HuntMath.short(st.xph), HuntMath.exact(st.xph) .. ' experience per hour')
+  setStat('xph', HuntMath.short(st.xph), tr('%s experience per hour', HuntMath.exact(st.xph)))
   setStat('next', HuntMath.nextLevel(st.ttl),
     tr('Level %d: %s experience to level %d at the current rate', tonumber(st.lvl) or 0, HuntMath.exact(st.left),
       (tonumber(st.lvl) or 0) + 1))
@@ -91,9 +91,9 @@ local function showStats()
   goldStat('svh', st.svh)
   goldStat('pf', st.pf, HuntMath.profitColor(st.pf))
   goldStat('pfh', st.pfh, HuntMath.profitColor(st.pfh))
-  setStat('dmg', HuntMath.short(st.dmg), HuntMath.exact(st.dmg) .. ' damage dealt')
+  setStat('dmg', HuntMath.short(st.dmg), tr('%s damage dealt', HuntMath.exact(st.dmg)))
   setStat('dps', HuntMath.exact(st.dps), tr('Average over the session'))
-  setStat('heal', HuntMath.short(st.heal), HuntMath.exact(st.heal) .. ' health healed')
+  setStat('heal', HuntMath.short(st.heal), tr('%s health healed', HuntMath.exact(st.heal)))
   setStat('hps', HuntMath.exact(st.hps), tr('Average over the session'))
 end
 

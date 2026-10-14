@@ -23,7 +23,8 @@ Gen.SOURCES = {
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
 	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua",
 	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua",
-	"data/scripts/chaos/lore_data.lua"
+	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
+	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -1705,6 +1706,7 @@ function Gen.loreOptions(D)
 	for _, k in ipairs(D.lore and D.lore.kinds or {}) do
 		out[#out + 1] = {k.key, k.en}
 	end
+	out[#out + 1] = {"chronicle", "The Ashen Chronicle"} -- tools/chronicle_pages.lua
 	return out
 end
 
@@ -1723,6 +1725,10 @@ function Gen.loreEntries(D)
 		local k = kinds[e.kind] or {en = e.kind}
 		out[#out + 1] = {id = "lore:" .. e.id, name = e.name, color = COLORS.lore, sub = k.en, group = e.kind, f = {group = e.kind},
 			sections = {{h = "Lore", p = e.en}, {h = "Em portugu\195\170s", p = e.pt}}}
+	end
+	-- the Ashen Chronicle's chapters and the Capital Memorial (chronicle_text.lua, chronicle_config.lua, memorial_config.lua)
+	for _, e in ipairs(dofile("tools/chronicle_pages.lua").entries(COLORS.lore)) do
+		out[#out + 1] = e
 	end
 	return out
 end

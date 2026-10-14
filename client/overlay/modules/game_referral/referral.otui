@@ -117,7 +117,7 @@ ReferralWindow < ChaosMainWindow
 
     ChaosTitle
       anchors.fill: parent
-      text: Code from a friend
+      !text: tr('Code from a friend')
 
   ChaosLabel
     id: entryText
@@ -136,7 +136,7 @@ ReferralWindow < ChaosMainWindow
     margin-top: 2
     size: 180 24
     max-length: 12
-    placeholder: XXXX-XXXX
+    !placeholder: tr('XXXX-XXXX')
 
   ChaosButton
     id: enterButton

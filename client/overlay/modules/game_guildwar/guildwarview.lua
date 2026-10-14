@@ -1,4 +1,5 @@
 -- Pure text helpers of the Guild Wars window (game_guildwar; tested by guildwarview_test.lua, no client calls).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 GuildWarView = {}
 local V = GuildWarView
 
@@ -52,31 +53,31 @@ end
 
 function V.stakeText(stake, fee)
   stake = tonumber(stake) or 0
-  if stake <= 0 then return 'no stake' end
-  return string.format('%s gold per side (the winner gets %s)', V.money(stake), V.money(V.winnings(stake, fee)))
+  if stake <= 0 then return tr('no stake') end
+  return tr('%s gold per side (the winner gets %s)', V.money(stake), V.money(V.winnings(stake, fee)))
 end
 
 -- form = {target, fragLimit, hours, stake (text)}; options from the server. Returns the request data or nil, why.
 function V.declareRequest(form, options)
   options = options or {}
   local target = tostring(form.target or ''):gsub('^%s+', ''):gsub('%s+$', '')
-  if target == '' then return nil, 'Type the name of the guild.' end
+  if target == '' then return nil, tr('Type the name of the guild.') end
   local stake = V.parseAmount(form.stake)
-  if not stake then return nil, 'The stake is a number of gold (500k, 2m, ...).' end
+  if not stake then return nil, tr('The stake is a number of gold (500k, 2m, ...).') end
   if stake > 0 and stake < (tonumber(options.stakeMin) or 0) then
-    return nil, string.format('A stake is at least %s gold (or none).', V.money(options.stakeMin))
+    return nil, tr('A stake is at least %s gold (or none).', V.money(options.stakeMin))
   end
   if options.stakeMax and stake > options.stakeMax then
-    return nil, string.format('A stake is at most %s gold.', V.money(options.stakeMax))
+    return nil, tr('A stake is at most %s gold.', V.money(options.stakeMax))
   end
   local frag, hours = tonumber(form.fragLimit), tonumber(form.hours)
-  if not frag or not hours then return nil, 'Pick a frag limit and a duration.' end
+  if not frag or not hours then return nil, tr('Pick a frag limit and a duration.') end
   return { target = target, fragLimit = frag, hours = hours, stake = stake }
 end
 
 function V.declareSummary(req, options)
   if not req then return '' end
-  return string.format('War on %s: first to %d counted kills within %d hours, %s.', req.target, req.fragLimit, req.hours,
+  return tr('War on %s: first to %d counted kills within %d hours, %s.', req.target, req.fragLimit, req.hours,
     V.stakeText(req.stake, options and options.fee))
 end
 
@@ -94,10 +95,10 @@ end
 function V.status(w)
   w = w or {}
   if w.status == 'pending' then
-    if w.incoming then return string.format('Declared on you: answer within %s', V.duration(w.left)) end
-    return string.format('Offer sent: waiting %s for the answer', V.duration(w.left))
+    if w.incoming then return tr('Declared on you: answer within %s', V.duration(w.left)) end
+    return tr('Offer sent: waiting %s for the answer', V.duration(w.left))
   elseif w.status == 'active' then
-    return string.format('%s (first to %d), ends in %s', V.score(w), tonumber(w.fragLimit) or 0, V.duration(w.left))
+    return tr('%s (first to %d), ends in %s', V.score(w), tonumber(w.fragLimit) or 0, V.duration(w.left))
   end
   local r = w.result or w.status or ''
   local word = ({ won = 'Won', lost = 'Lost', draw = 'Draw', declined = 'Declined', cancelled = 'Taken back',
@@ -123,7 +124,7 @@ function V.boardLine(w)
   local s = string.format('%s %d : %d %s', tostring(w.own or '?'), tonumber(w.ownKills) or 0, tonumber(w.enemyKills) or 0,
     tostring(w.enemy or '?'))
   if w.status == 'active' then
-    return s .. string.format(' (first to %d, %s left)', tonumber(w.fragLimit) or 0, V.duration(w.left))
+    return s .. tr(' (first to %d, %s left)', tonumber(w.fragLimit) or 0, V.duration(w.left))
   end
   return s .. ' - ' .. tostring(w.reason or '')
 end
@@ -132,7 +133,7 @@ end
 function V.killLine(k)
   k = k or {}
   return string.format('%s %s killed %s (level %d)%s', tostring(k.at or ''), tostring(k.killer or '?'), tostring(k.victim or '?'),
-    tonumber(k.level) or 0, k.counted and '' or (' - not counted: ' .. tostring(k.reason or '')))
+    tonumber(k.level) or 0, k.counted and '' or (tr(' - not counted: %s', tostring(k.reason or ''))))
 end
 
 -- ---------------------------------------------------------------- the guild boss
@@ -145,34 +146,34 @@ end
 
 function V.fuelText(b)
   b = b or {}
-  return string.format('%s / %s embers (%d%%)', V.money(b.fuel), V.money(b.need), V.fuelPercent(b))
+  return tr('%s / %s embers (%d%%)', V.money(b.fuel), V.money(b.need), V.fuelPercent(b))
 end
 
 function V.bossState(b)
   b = b or {}
-  if not b.guild then return 'Join a guild to fight the guild boss.', '#8c8070' end
+  if not b.guild then return tr('Join a guild to fight the guild boss.'), '#8c8070' end
   if b.killed then
-    return string.format('Slain this week in %s. The stone rests until the reset (%s).', V.clock(b.bestSeconds),
+    return tr('Slain this week in %s. The stone rests until the reset (%s).', V.clock(b.bestSeconds),
       V.duration(b.resetIn)), '#9fd68a'
   end
-  if b.running then return 'Your guild is fighting the guild boss now.', '#f6cf72' end
-  if b.canSummon then return 'The stone is full: summon the guild boss.', '#f6cf72' end
+  if b.running then return tr('Your guild is fighting the guild boss now.'), '#f6cf72' end
+  if b.canSummon then return tr('The stone is full: summon the guild boss.'), '#f6cf72' end
   return tostring(b.reason or ''), '#8c8070'
 end
 
 function V.attemptsText(b)
   b = b or {}
-  return string.format('Summons this week: %d of %d', tonumber(b.attempts) or 0, tonumber(b.maxAttempts) or 0)
+  return tr('Summons this week: %d of %d', tonumber(b.attempts) or 0, tonumber(b.maxAttempts) or 0)
 end
 
 function V.bannerText(bn)
   bn = bn or {}
   if (tonumber(bn.tier) or 0) <= 0 then
-    return string.format('No guild banner yet: the first kill raises the Ember Banner.')
+    return tr('No guild banner yet: the first kill raises the Ember Banner.')
   end
   local k = tonumber(bn.kills) or 0
   local s = string.format('%s (%d kill%s)', tostring(bn.name or ''), k, k == 1 and '' or 's')
-  if (tonumber(bn.next) or 0) > 0 then s = s .. string.format(', next tier at %d', bn.next) end
+  if (tonumber(bn.next) or 0) > 0 then s = s .. tr(', next tier at %d', bn.next) end
   return s
 end
 
@@ -186,7 +187,7 @@ end
 function V.bossBoardLine(r)
   r = r or {}
   if r.killed then
-    return string.format('%d. %s - slain in %s by %d', tonumber(r.rank) or 0, tostring(r.name or '?'), V.clock(r.seconds),
+    return tr('%d. %s - slain in %s by %d', tonumber(r.rank) or 0, tostring(r.name or '?'), V.clock(r.seconds),
       tonumber(r.players) or 0)
   end
   return string.format('%d. %s - %s damage', tonumber(r.rank) or 0, tostring(r.name or '?'), V.money(r.damage))
@@ -203,5 +204,5 @@ function V.spoilsLine(sp, pool)
   sp = sp or {}
   local gold, total = tonumber(sp.gold) or 0, tonumber(pool) or 0
   local pct = total > 0 and math.floor(gold * 100 / total + 0.5) or 0
-  return string.format('%s: %s gold (%d%%)', tostring(sp.name or '?'), V.money(gold), pct)
+  return tr('%s: %s gold (%d%%)', tostring(sp.name or '?'), V.money(gold), pct)
 end

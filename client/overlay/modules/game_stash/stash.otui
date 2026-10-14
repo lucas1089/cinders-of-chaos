@@ -69,7 +69,7 @@ StashTabButton < ChaosTabButton
 
 ChaosMainWindow
   size: 690 470
-  text: Supply Stash
+  !text: tr('Supply Stash')
   @onEscape: modules.game_stash.toggle()
 
   InnerPanel
@@ -133,7 +133,7 @@ ChaosMainWindow
 
     UILabel
       anchors.centerIn: parent
-      text: Drag and drop here
+      !text: tr('Drag and drop here')
       text-align: center
       font: verdana-11px-rounded
       color: #ffcc33
@@ -173,7 +173,7 @@ ChaosMainWindow
     margin-bottom: 3
     width: 200
     height: 22
-    placeholder: Search item...
+    !placeholder: tr('Search item...')
     placeholder-color: #808080
 
   UILabel
@@ -249,7 +249,7 @@ ChaosMainWindow
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         margin-bottom: 20
-        text: Close
+        !text: tr('Close')
           
       ScrollablePanel
         id: BlockList

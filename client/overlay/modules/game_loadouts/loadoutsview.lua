@@ -1,5 +1,6 @@
 -- Loadouts window texts and rules (pure, no UI calls): shared by loadouts.lua and loadoutsview_test.lua.
 -- `s` is the server's state (server data/scripts/chaos/loadouts.lua L.state), `slot` one of s.slots.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 LoadoutsView = LoadoutsView or {}
 local V = LoadoutsView
@@ -38,13 +39,13 @@ function V.slotRow(s, slot)
   if slot.locked and slot.empty then
     local lvl = V.unlockLevel(s, slot.slot)
     row.title = 'Locked slot'
-    row.sub = lvl and string.format('Opens at level %d', lvl) or 'Locked'
+    row.sub = lvl and tr('Opens at level %d', lvl) or 'Locked'
     row.dim = true
     row.icon = V.iconPath('options')
     return row
   end
   if slot.empty then
-    row.title, row.sub = 'Empty slot', 'Save your current build here'
+    row.title, row.sub = 'Empty slot', tr('Save your current build here')
     row.dim = true
     row.icon = V.iconPath('inventory')
     return row
@@ -73,9 +74,9 @@ end
 function V.gearLine(g)
   g = g or {}
   local total, ready = num(g.total), num(g.ready)
-  if total == 0 then return 'Gear set: none (save while wearing it)', V.COLORS.dim end
-  if ready >= total then return string.format('Gear set: complete (%d/%d)', ready, total), V.COLORS.good end
-  return string.format('Gear set: %d/%d ready', ready, total), V.COLORS.warn
+  if total == 0 then return tr('Gear set: none (save while wearing it)'), V.COLORS.dim end
+  if ready >= total then return tr('Gear set: complete (%d/%d)', ready, total), V.COLORS.good end
+  return tr('Gear set: %d/%d ready', ready, total), V.COLORS.warn
 end
 
 -- the summary of a slot: {{text, color}, ...}; profile = the action bar profile remembered for it (client-side)
@@ -86,11 +87,11 @@ function V.summary(s, slot, profile)
   if slot.empty then
     if slot.locked then
       local lvl = V.unlockLevel(s, slot.slot)
-      add(lvl and string.format('This slot opens at level %d. Extra slots are earned by levelling, never sold.', lvl)
-        or 'This slot is locked.', V.COLORS.dim)
+      add(lvl and tr('This slot opens at level %d. Extra slots are earned by levelling, never sold.', lvl)
+        or tr('This slot is locked.'), V.COLORS.dim)
     else
-      add('Empty. Save copies your current build here: passive tree, Paragon points, the equipped gear set.', V.COLORS.dim)
-      add('Support runes stay with the loadout they are socketed in.', V.COLORS.dim)
+      add(tr('Empty. Save copies your current build here: passive tree, Paragon points, the equipped gear set.'), V.COLORS.dim)
+      add(tr('Support runes stay with the loadout they are socketed in.'), V.COLORS.dim)
     end
     return out
   end
@@ -100,13 +101,13 @@ function V.summary(s, slot, profile)
   else
     add('Class: ' .. (slot.voc ~= '' and slot.voc or cls))
   end
-  add(string.format('Passive points: %d / %d', num(slot.points), num(slot.pointsTotal)))
+  add(tr('Passive points: %d / %d', num(slot.points), num(slot.pointsTotal)))
   if #(slot.keystones or {}) > 0 then
     add('Keystones: ' .. table.concat(slot.keystones, ', '), V.COLORS.gold)
   else
-    add('Keystones: none', V.COLORS.dim)
+    add(tr('Keystones: none'), V.COLORS.dim)
   end
-  if num(slot.paragon) > 0 then add(string.format('Paragon points: %d', num(slot.paragon))) end
+  if num(slot.paragon) > 0 then add(tr('Paragon points: %d', num(slot.paragon))) end
   local sup = slot.supports or {}
   if num(sup.count) > 0 then
     add(string.format('Supports: %d rune%s', num(sup.count), num(sup.count) == 1 and '' or 's'))
@@ -114,17 +115,17 @@ function V.summary(s, slot, profile)
       add('  ' .. tostring(sp.name) .. ': ' .. table.concat(sp.runes or {}, ', '), V.COLORS.dim)
     end
   else
-    add('Supports: none', V.COLORS.dim)
+    add(tr('Supports: none'), V.COLORS.dim)
   end
   local gtext, gcolor = V.gearLine(slot.gear)
   add(gtext, gcolor)
   for _, m in ipairs((slot.gear or {}).missing or {}) do
-    local where = m.where == 'missing' and 'not found' or tostring(m.where or 'not found')
+    local where = m.where == 'missing' and tr('not found') or tostring(m.where or tr('not found'))
     add('  Missing: ' .. tostring(m.name) .. ' (' .. where .. ')', V.COLORS.bad)
   end
-  if profile and profile ~= '' then add('Action bar: ' .. profile, V.COLORS.dim) end
+  if profile and profile ~= '' then add(tr('Action bar: %s', profile), V.COLORS.dim) end
   for _, w in ipairs(slot.warnings or {}) do add(w, V.COLORS.warn) end
-  if slot.active then add('Active: this is your current build. Edit it in the passive tree window.', V.COLORS.active) end
+  if slot.active then add(tr('Active: this is your current build. Edit it in the passive tree window.'), V.COLORS.active) end
   return out
 end
 
@@ -137,13 +138,13 @@ end
 -- the status line under the buttons: how a switch would go now
 function V.switchHint(s, elapsed)
   if not s then return '', V.COLORS.dim end
-  if num(s.level) < num(s.minLevel) then return string.format('Loadouts open at level %d.', num(s.minLevel)), V.COLORS.dim end
-  if s.casting then return 'Switching... stand still.', V.COLORS.active end
-  if s.busy then return 'No switching inside ' .. s.busy .. '.', V.COLORS.bad end
+  if num(s.level) < num(s.minLevel) then return tr('Loadouts open at level %d.', num(s.minLevel)), V.COLORS.dim end
+  if s.casting then return tr('Switching... stand still.'), V.COLORS.active end
+  if s.busy then return tr('No switching inside %s.', s.busy), V.COLORS.bad end
   local left = V.cooldownLeft(s, elapsed)
-  if left > 0 then return string.format('Next switch in %d s.', left), V.COLORS.warn end
-  if s.inPz then return 'Protection zone: switching is instant and free.', V.COLORS.good end
-  return string.format('Switching takes %.1f s here (stand still). Free.', num(s.castMs) / 1000), V.COLORS.text
+  if left > 0 then return tr('Next switch in %d s.', left), V.COLORS.warn end
+  if s.inPz then return tr('Protection zone: switching is instant and free.'), V.COLORS.good end
+  return tr('Switching takes %.1f s here (stand still). Free.', num(s.castMs) / 1000), V.COLORS.text
 end
 
 -- which buttons work for the selected slot
@@ -155,7 +156,7 @@ function V.buttons(s, slot, elapsed)
   b.rename = not slot.empty
   b.delete = not slot.empty
   b.load = usable and not slot.empty and not slot.active and not s.casting and not s.busy and V.cooldownLeft(s, elapsed) == 0
-  b.saveText = slot.empty and 'Save here' or (slot.active and 'Save' or 'Overwrite')
+  b.saveText = slot.empty and tr('Save here') or (slot.active and 'Save' or 'Overwrite')
   return b
 end
 

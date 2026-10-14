@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -197,7 +200,7 @@ function ChaosAscension.ascend(player, word, opts)
 		newVoc:getDescription()))
 	toast(player, string.format("You have ascended: %s.", newVoc:getName()))
 	if not opts.quiet then
-		Game.broadcastMessage(string.format(C().broadcast, player:getName(), newVoc:getName()), MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, C().broadcast, player:getName(), newVoc:getName())
 	end
 	if ChaosNameplate and ChaosNameplate.refresh then
 		pcall(ChaosNameplate.refresh, player)

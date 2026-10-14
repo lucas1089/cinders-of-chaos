@@ -1,6 +1,7 @@
 -- Item finder: the logic without client API (tested by itemfinderlogic_test.lua; itemfinder.lua draws).
 -- The server (data/scripts/chaos/itemfinder.lua, extended opcode 155) sends ready texts; this file checks the answers,
 -- names the sections, lays out a row's texts, keeps the history and the search timing, and links the Codex.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ItemFinderLogic = {}
 local L = ItemFinderLogic
 
@@ -73,7 +74,7 @@ end
 -- "1 source or use", "12 sources and uses"
 function L.totalText(n)
   n = tonumber(n) or 0
-  return n == 1 and '1 source or use' or string.format('%d sources and uses', n)
+  return n == 1 and tr('1 source or use') or tr('%d sources and uses', n)
 end
 
 -- the head line of a section: "Monsters and bosses (12)"

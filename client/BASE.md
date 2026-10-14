@@ -303,6 +303,13 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     the rotation unaffected); no "You are exhausted"; every accepted spell at least its cooldown apart, the attack group
     at least 2 s; a 2.5 s client stall was followed by 1-4 casts in the next 6 s, no burst. Not run on Windows.
 
+31. `0053` (OTUI `client_settings/options/interface.otui`): Language. Options > Interface gets a "Language" row after
+    "Field timers over magic walls and fields" (0041): a label and a button with the current language that opens the
+    choice of the overlay module `client_chaos_locale` (`ChaosLocale.showMenu`, `MANIFEST.md` "Localization"). The
+    choice is the module's own setting (`chaos-language`), not a `client_settings` option, so the window's Ok / Apply
+    do not touch it; without the module the button hides itself. OTUI only; its context is 0041's field timers panel
+    (checked with `patch --dry-run` on that context, not on the assembled tree). Not run in a client yet.
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

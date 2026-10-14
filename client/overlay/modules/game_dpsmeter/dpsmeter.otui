@@ -140,7 +140,7 @@ DpsMeterPanel < UIWidget
 
     UILabel
       id: title
-      text: DPS Meter
+      !text: tr('DPS Meter')
       font: Verdana-9px-antialiased
       color: #e8b84a
       anchors.left: parent.left

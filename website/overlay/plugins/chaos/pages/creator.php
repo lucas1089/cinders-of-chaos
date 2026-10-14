@@ -12,7 +12,8 @@
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once __DIR__ . '/../creator_lib.php';
-$GLOBALS['page_title'] = 'Creator Codes';
+require_once __DIR__ . '/../i18n_lib.php';
+$GLOBALS['page_title'] = chaos_t('Creator Codes');
 
 $self = 'page.php?plugin=chaos&p=creator';
 $cfg = chaos_creator_config();
@@ -27,7 +28,7 @@ $message = '';
 $messageOk = true;
 if ($accountId > 0 && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
 	if ($csrf === '' || !hash_equals($csrf, (string)($_POST['csrf'] ?? ''))) {
-		[$messageOk, $message] = array(false, 'The form expired. Please try again.');
+		[$messageOk, $message] = array(false, chaos_t('The form expired. Please try again.'));
 	} elseif ($_POST['do'] === 'support') {
 		[$messageOk, $message] = chaos_creator_set_support($accountId, (string)($_POST['code'] ?? ''), (string)($_SERVER['REMOTE_ADDR'] ?? ''));
 	} elseif ($_POST['do'] === 'clear') {
@@ -49,49 +50,50 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d', $t) :
 ?>
 <div class="chaos-page" id="chaos-creator">
 	<div class="chaos-box">
-		<h1 class="chaos-heading">Creator Codes</h1>
-		<p class="chaos-lead">Support a streamer or content creator of Cinders of Chaos: pick their code and, for <?= (int)$cfg['supportDays'] ?> days, <?= (int)$cfg['sharePct'] ?>% of the Chaos Coins of each of your donations goes to them in game, as a thank-you from the server. It costs you nothing: your donation and your coins stay exactly the same. Donations are always voluntary.</p>
+		<h1 class="chaos-heading"><?= chaos_h(chaos_t('Creator Codes')) ?></h1>
+		<p class="chaos-muted chaos-lang-row"><?= chaos_lang_link($self) ?></p>
+		<p class="chaos-lead"><?= chaos_h(chaos_t('Support a streamer or content creator of Cinders of Chaos: pick their code and, for %d days, %d%% of the Chaos Coins of each of your donations goes to them in game, as a thank-you from the server. It costs you nothing: your donation and your coins stay exactly the same. Donations are always voluntary.', (int)$cfg['supportDays'], (int)$cfg['sharePct'])) ?></p>
 		<?php if ($message !== ''): ?>
-			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-creator-message"><?= chaos_h($message) ?></p>
+			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-creator-message"><?= chaos_h(chaos_t($message)) ?></p>
 		<?php endif; ?>
 		<?php if (!$cfg['enabled']): ?>
-			<p class="chaos-muted">Creator codes are switched off.</p>
+			<p class="chaos-muted"><?= chaos_h(chaos_t('Creator codes are switched off.')) ?></p>
 		<?php elseif ($accountId <= 0): ?>
-			<p class="chaos-muted">Log in to pick a creator.</p>
+			<p class="chaos-muted"><?= chaos_h(chaos_t('Log in to pick a creator.')) ?></p>
 		<?php else: ?>
-			<h2>Support a creator</h2>
+			<h2><?= chaos_h(chaos_t('Support a creator')) ?></h2>
 			<?php if ($pick): ?>
-				<p id="chaos-creator-pick">You support <strong><?= chaos_h($pick['display_name'] !== '' ? $pick['display_name'] : $pick['code']) ?></strong> (code <?= chaos_h($pick['code']) ?>) until <?= chaos_h($time((int)$pick['expires_at'])) ?> (UTC).</p>
+				<p id="chaos-creator-pick"><?= chaos_h(chaos_t('You support')) ?> <strong><?= chaos_h($pick['display_name'] !== '' ? $pick['display_name'] : $pick['code']) ?></strong> <?= chaos_h(chaos_t('(code %s) until %s (UTC).', $pick['code'], $time((int)$pick['expires_at']))) ?></p>
 			<?php else: ?>
-				<p class="chaos-muted">You support no creator right now.</p>
+				<p class="chaos-muted"><?= chaos_h(chaos_t('You support no creator right now.')) ?></p>
 			<?php endif; ?>
 			<form method="post" action="<?= chaos_h($self) ?>">
 				<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>">
-				<label>Creator code <input type="text" name="code" maxlength="20" placeholder="CODE"></label>
-				<button type="submit" name="do" value="support" class="chaos-button">Support</button>
-				<?php if ($pick): ?><button type="submit" name="do" value="clear" class="chaos-button">Stop supporting</button><?php endif; ?>
+				<label><?= chaos_h(chaos_t('Creator code')) ?> <input type="text" name="code" maxlength="20" placeholder="<?= chaos_h(chaos_t('CODE')) ?>"></label>
+				<button type="submit" name="do" value="support" class="chaos-button"><?= chaos_h(chaos_t('Support')) ?></button>
+				<?php if ($pick): ?><button type="submit" name="do" value="clear" class="chaos-button"><?= chaos_h(chaos_t('Stop supporting')) ?></button><?php endif; ?>
 			</form>
-			<p class="chaos-muted" style="font-size:12px;">You cannot use your own code. A donation that is refunded or charged back gives the creator nothing.</p>
+			<p class="chaos-muted" style="font-size:12px;"><?= chaos_h(chaos_t('You cannot use your own code. A donation that is refunded or charged back gives the creator nothing.')) ?></p>
 
-			<h2>Invite friends</h2>
+			<h2><?= chaos_h(chaos_t('Invite friends')) ?></h2>
 			<?php if ($refLink !== ''): ?>
-				<p>Your referral link: <code id="chaos-referral-link"><?= chaos_h($refLink) ?></code></p>
+				<p><?= chaos_h(chaos_t('Your referral link:')) ?> <code id="chaos-referral-link"><?= chaos_h($refLink) ?></code></p>
 			<?php else: ?>
-				<p class="chaos-muted">Reach level 20 with any character to get your referral link (Character &gt; Referral in game).</p>
+				<p class="chaos-muted"><?= chaos_h(chaos_t('Reach level 20 with any character to get your referral link (Character > Referral in game).')) ?></p>
 			<?php endif; ?>
-			<p class="chaos-muted" style="font-size:12px;">You earn titles when friends you invited reach level milestones, and more at 3, 5 and 10 friends. Accounts of the same person, connection or payment do not count.</p>
+			<p class="chaos-muted" style="font-size:12px;"><?= chaos_h(chaos_t('You earn titles when friends you invited reach level milestones, and more at 3, 5 and 10 friends. Accounts of the same person, connection or payment do not count.')) ?></p>
 		<?php endif; ?>
 
 		<?php foreach ($mine as $c): ?>
-			<h2>Your code <?= chaos_h($c['code']) ?><?= (int)$c['active'] === 1 ? '' : ' (off)' ?></h2>
-			<p>Share: <?= (int)$c['pct'] > 0 ? (int)$c['pct'] : (int)$cfg['sharePct'] ?>% of the coins of each supporter's donation, paid in game <?= (int)$cfg['holdDays'] ?> days after it (at most <?= (int)$cfg['orderCap'] ?> per donation and <?= (int)$cfg['monthlyCap'] ?> a month). Supporters now: <?= (int)$c['supporters'] ?>. Earned: <strong><?= (int)$c['earned'] ?></strong> Chaos Coins; waiting: <?= (int)$c['waiting'] ?>.</p>
+			<h2><?= chaos_h(chaos_t('Your code %s', $c['code'])) ?><?= (int)$c['active'] === 1 ? '' : chaos_h(chaos_t(' (off)')) ?></h2>
+			<p><?= chaos_h(chaos_t("Share: %d%% of the coins of each supporter's donation, paid in game %d days after it (at most %d per donation and %d a month). Supporters now: %d.", (int)$c['pct'] > 0 ? (int)$c['pct'] : (int)$cfg['sharePct'], (int)$cfg['holdDays'], (int)$cfg['orderCap'], (int)$cfg['monthlyCap'], (int)$c['supporters'])) ?> <?= chaos_h(chaos_t('Earned:')) ?> <strong><?= (int)$c['earned'] ?></strong> <?= chaos_h(chaos_t('Chaos Coins; waiting: %d.', (int)$c['waiting'])) ?></p>
 			<table class="chaos-table chaos-creator-uses">
-				<thead><tr><th>Date</th><th class="num">Coins</th><th class="num">Share</th><th>State</th></tr></thead>
+				<thead><tr><th><?= chaos_h(chaos_t('Date')) ?></th><th class="num"><?= chaos_h(chaos_t('Coins')) ?></th><th class="num"><?= chaos_h(chaos_t('Share')) ?></th><th><?= chaos_h(chaos_t('State')) ?></th></tr></thead>
 				<tbody>
-				<?php if (!$c['uses']): ?><tr><td colspan="4" class="chaos-muted">No donations with your code yet.</td></tr><?php endif; ?>
+				<?php if (!$c['uses']): ?><tr><td colspan="4" class="chaos-muted"><?= chaos_h(chaos_t('No donations with your code yet.')) ?></td></tr><?php endif; ?>
 				<?php foreach ($c['uses'] as $u): ?>
 					<tr><td><?= chaos_h($time((int)$u['created_at'])) ?></td><td class="num"><?= (int)$u['coins_base'] ?></td><td class="num"><?= (int)$u['share'] ?></td>
-						<td><?= chaos_h($u['state'] . ($u['reason'] !== '' ? ' (' . $u['reason'] . ')' : '')) ?></td></tr>
+						<td><?= chaos_h(chaos_t($u['state']) . ($u['reason'] !== '' ? ' (' . chaos_t($u['reason']) . ')' : '')) ?></td></tr>
 				<?php endforeach; ?>
 				</tbody>
 			</table>

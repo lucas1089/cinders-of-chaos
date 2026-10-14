@@ -5,6 +5,7 @@
 --
 --   ChaosQR.encode(text) -> {size = n, modules = {[y][x] = true for dark}} or nil, reason   (x, y from 1)
 --   ChaosQR.runs(qr)     -> {{y, x, len}} the dark runs of each row (one widget per run when drawing)
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ChaosQR = {}
 local Q = ChaosQR
@@ -316,7 +317,7 @@ function Q.encode(text, forcedMask)
     local bits = 4 + (v <= 9 and 8 or 16) + 8 * n
     if bits <= Q.dataCodewords(v) * 8 then version = v; break end
   end
-  if not version then return nil, "too long" end
+  if not version then return nil, tr("too long") end
   local cap = Q.dataCodewords(version)
   -- bit stream
   local bits = {}

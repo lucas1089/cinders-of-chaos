@@ -1,0 +1,37 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "chronicle_cinderscar_breach",
+  "name": "The Cinderscar Breach",
+  "biome": "waste",
+  "size": [64, 52],
+  "floors": 1,
+  "level": [440, 560],
+  "seed": 51202,
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {"id": "breach_camp", "floor": 1, "shape": "cave", "size": "small", "place": "south", "role": "camp", "pz": true},
+    {"id": "ash_flats", "floor": 1, "shape": "cave", "size": "large", "place": "center"},
+    {"id": "slag_run", "floor": 1, "shape": "cave", "size": "medium", "place": "west"},
+    {"id": "ember_scar", "floor": 1, "shape": "cave", "size": "medium", "place": "east"},
+    {"id": "wound_edge", "floor": 1, "shape": "cave", "size": "large", "place": "north"}
+  ],
+  "paths": [
+    {"from": "breach_camp", "to": "ash_flats", "width": 4},
+    {"from": "ash_flats", "to": "slag_run", "width": 3},
+    {"from": "ash_flats", "to": "ember_scar", "width": 3},
+    {"from": "slag_run", "to": "wound_edge", "width": 3},
+    {"from": "ember_scar", "to": "wound_edge", "width": 3}
+  ],
+  "entry": {"zone": "breach_camp"},
+  "exit": {"zone": "breach_camp"},
+  "spawns": [
+    {"zone": "ash_flats", "monster": "Blazefang", "count": 5, "respawn": 90},
+    {"zone": "ash_flats", "monster": "Bloodspark Adept", "count": 3, "respawn": 90},
+    {"zone": "slag_run", "monster": "Pitlord Incarnate", "count": 3, "respawn": 100},
+    {"zone": "ember_scar", "monster": "Ashfang Wrym", "count": 3, "respawn": 100},
+    {"zone": "wound_edge", "monster": "Hellmaw Brute", "count": 4, "respawn": 110},
+    {"zone": "wound_edge", "monster": "Ashfang Wrym", "count": 2, "respawn": 110}
+  ],
+  "notes": "The Ashen Chronicle, Season 1, chapter 2 (server/README.md \"The Ashen Chronicle\"): the ground the first wound tore open beside the capital, for levels 440-560. Closed until the chapter is complete: chronicle.lua puts the gate portal at the owner's chosen spot (chronicle_config.lua areas.cinderscar_breach) and takes it away again at the next season start. The exit portal leads to the temple."
+}

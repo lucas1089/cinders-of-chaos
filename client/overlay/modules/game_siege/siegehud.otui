@@ -68,7 +68,7 @@ ChaosPanelDark
 
   ChaosTitle
     id: title
-    text: Guild Siege
+    !text: tr('Guild Siege')
     phantom: true
 
   UILabel

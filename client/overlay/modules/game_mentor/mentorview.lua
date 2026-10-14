@@ -1,5 +1,6 @@
 -- Mentor window texts and rows (pure, no UI calls): shared by mentor.lua and mentorview_test.lua.
 -- `s` is the server's status (server data/scripts/chaos/mentor_core.lua ChaosMentorCore.view), `rows` its mentor list.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 MentorView = MentorView or {}
 local V = MentorView
@@ -27,7 +28,7 @@ function V.leftText(seconds)
   seconds = math.floor(num(seconds))
   if seconds <= 0 then return 'expired' end
   if seconds < 60 then return seconds .. 's left' end
-  return math.ceil(seconds / 60) .. ' min left'
+  return tr('%s min left', math.ceil(seconds / 60))
 end
 
 -- class options of the browse filter: {{key, text}}, "any" first
@@ -50,13 +51,13 @@ end
 -- the top of the Find page: the rules for apprentices, or why this character may not pick
 function V.pickText(s)
   if not s then return 'Loading...' end
-  if not s.enabled then return 'The mentor system is off.' end
+  if not s.enabled then return tr('The mentor system is off.') end
   local r = s.rules or {}
   if s.apprentice then
-    return 'You have a mentor: see My mentor.'
+    return tr('You have a mentor: see My mentor.')
   end
   if not s.canPick then return s.pickNote or '' end
-  return string.format('New characters (up to level %d, account up to %d days old) can pick a mentor. Hunting together in a ' ..
+  return tr('New characters (up to level %d, account up to %d days old) can pick a mentor. Hunting together in a ' ..
     'party gives you +%d%% experience and %d%% less damage from monsters while your mentor is not far above the monsters. ' ..
     'You graduate at level %d.', num(r.maxLevel), num(r.accountDays), num(r.exp), num(r.dmg), num(r.gradLevel))
 end
@@ -88,8 +89,8 @@ function V.mentorRows(rows, s)
 end
 
 function V.emptyList(rows)
-  if rows == nil then return 'Press Search to see the mentors.' end
-  if #rows == 0 then return 'No mentor matches these filters.' end
+  if rows == nil then return tr('Press Search to see the mentors.') end
+  if #rows == 0 then return tr('No mentor matches these filters.') end
   return ''
 end
 
@@ -99,11 +100,11 @@ function V.inviteRows(s)
   if not s then return out end
   if s.referrer and s.canPick then
     out[#out + 1] = { guid = s.referrer.guid, kind = 'referrer',
-      text = string.format('Your referrer mentors as %s.', tostring(s.referrer.name or '?')) }
+      text = tr('Your referrer mentors as %s.', tostring(s.referrer.name or '?')) }
   end
   for _, i in ipairs(s.invites or {}) do
     out[#out + 1] = { guid = i.guid, kind = 'invite',
-      text = string.format('%s (Lv %d %s) invites you - %s', tostring(i.name or '?'), num(i.level), tostring(i.voc or ''),
+      text = tr('%s (Lv %d %s) invites you - %s', tostring(i.name or '?'), num(i.level), tostring(i.voc or ''),
         V.leftText(i.left)) }
   end
   return out
@@ -127,14 +128,14 @@ function V.mineHeader(s)
   if not s then return '', '' end
   local a = s.apprentice
   if not a then
-    if s.graduated then return 'You graduated.', 'Thank your mentor: you can become one yourself one day.' end
-    return 'You have no mentor.', 'Pick one in Find a mentor, or accept an invitation.'
+    if s.graduated then return tr('You graduated.'), tr('Thank your mentor: you can become one yourself one day.') end
+    return tr('You have no mentor.'), tr('Pick one in Find a mentor, or accept an invitation.')
   end
   local title = string.format('%s  -  Lv %d %s  (%s)', tostring(a.name or '?'), num(a.level), tostring(a.voc or ''),
     a.online and 'online' or 'offline')
   local since = num(a.linkedAt) > 0 and os.date('%Y-%m-%d', num(a.linkedAt)) or '?'
   local how = ({ list = 'chosen from the list', invite = 'by invitation', referral = 'your referrer' })[a.source] or a.source
-  local sub = string.format('Mentor since %s (%s). Hunted together: %s.', since, tostring(how), V.minutesText(a.shared))
+  local sub = tr('Mentor since %s (%s). Hunted together: %s.', since, tostring(how), V.minutesText(a.shared))
   return title, sub
 end
 
@@ -148,13 +149,13 @@ end
 function V.requirementsText(s)
   if not s then return '' end
   local r = s.rules or {}
-  local base = string.format('Mentors: an account with a level %d character, %d hours of play and %d days of age. ' ..
+  local base = tr('Mentors: an account with a level %d character, %d hours of play and %d days of age. ' ..
     'Up to %d apprentices. You earn Mentor Marks from their milestones (after %d minutes hunting together) and 1 mark per ' ..
     '%d minutes of hunting together (%d a day, %d a month in all). Marks buy titles, cosmetics and supplies, never power.',
     num(r.mentorLevel), num(r.mentorHours), num(r.mentorDays), num(r.maxApprentices), num(r.minShared), num(r.huntMinutes),
     num(r.dailyHuntMarks), num(r.monthlyCap))
   if s.mentor then return base end
-  if s.canMentor then return base .. ' You can register this character.' end
+  if s.canMentor then return tr('%s You can register this character.', base) end
   return base .. ' ' .. (s.mentorNote or '')
 end
 
@@ -192,7 +193,7 @@ end
 function V.apprenticesHeader(s)
   local m = s and s.mentor
   if not m then return 'Apprentices' end
-  return string.format('Apprentices (%d / %d)', #(m.apprentices or {}), num(s.rules and s.rules.maxApprentices))
+  return tr('Apprentices (%d / %d)', #(m.apprentices or {}), num(s.rules and s.rules.maxApprentices))
 end
 
 -- shop rows: {key, name, color, desc, price, buyable, button}
@@ -202,12 +203,12 @@ function V.shopRows(s)
   local isMentor = s and s.mentor ~= nil
   for _, o in ipairs(s and s.shop or {}) do
     local button, buyable = 'Buy', true
-    if not isMentor then buyable, button = false, 'Mentors only'
+    if not isMentor then buyable, button = false, tr('Mentors only')
     elseif o.owned then buyable, button = false, 'Owned'
-    elseif o.weeklyLeft ~= nil and num(o.weeklyLeft) <= 0 then buyable, button = false, 'Next week'
+    elseif o.weeklyLeft ~= nil and num(o.weeklyLeft) <= 0 then buyable, button = false, tr('Next week')
     elseif marks < num(o.cost) then buyable = false end
     local desc = o.desc or ''
-    if o.weeklyLeft ~= nil then desc = desc .. string.format(' (%d left this week)', num(o.weeklyLeft)) end
+    if o.weeklyLeft ~= nil then desc = desc .. tr(' (%d left this week)', num(o.weeklyLeft)) end
     local kind = ({ title = 'Title', cosmetic = 'Cosmetic', item = 'Supplies' })[o.kind] or ''
     out[#out + 1] = { key = o.key, name = (kind ~= '' and (kind .. ': ') or '') .. tostring(o.name or o.key),
       color = o.kind == 'title' and (o.color or V.COLORS.gold) or V.COLORS.text, desc = desc,
@@ -217,8 +218,8 @@ function V.shopRows(s)
 end
 
 function V.shopHeader(s)
-  if not s or not s.mentor then return 'Mentor Marks are earned by mentoring. Register in Mentoring.' end
-  return string.format('Your Mentor Marks: %d', num(s.mentor.marks))
+  if not s or not s.mentor then return tr('Mentor Marks are earned by mentoring. Register in Mentoring.') end
+  return tr('Your Mentor Marks: %d', num(s.mentor.marks))
 end
 
 function V.topRows(s)

@@ -33,8 +33,8 @@ Stash.Init = function()
 	Stash.Progress:hide()
 
 	if Keybind then
-		Keybind.new("Windows", "Toggle Stash", "", "")
-		Keybind.bind("Windows", "Toggle Stash", {
+		Keybind.new("Windows", tr("Toggle Stash"), "", "")
+		Keybind.bind("Windows", tr("Toggle Stash"), {
 			{
 			  type = KEY_DOWN,
 			  callback = Stash.Toggle,
@@ -96,7 +96,7 @@ Stash.Terminate = function()
 	end
 
 	if Keybind then
-		Keybind.delete("Windows", "Toggle Stash")
+		Keybind.delete("Windows", tr("Toggle Stash"))
 	end
 
 	disconnect(g_game, {
@@ -468,10 +468,10 @@ end
 
 -- ---------------------------------------------------------------- tabs
 local function tabTooltip(t, pact)
-	local text = string.format("%s: %d of %d item types", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0, t.size or 0)
+	local text = tr("%s: %d of %d item types", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0, t.size or 0)
 	if t.locked then
 		text = text .. (t.special and "\nWithdraw-only." or
-			(pact and "\nWithdraw-only: beyond your tabs." or "\nWithdraw-only while your Chaos Pact is inactive. Nothing is lost."))
+			(pact and tr("\nWithdraw-only: beyond your tabs.") or tr("\nWithdraw-only while your Chaos Pact is inactive. Nothing is lost.")))
 	end
 	return text
 end
@@ -484,8 +484,8 @@ Stash.TabInfoText = function()
 	if Stash.SelectedTab ~= 0 then
 		for _, t in ipairs(d.tabs) do
 			if t.id == Stash.SelectedTab then
-				return string.format("%s: %d / %d item types%s", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0,
-					t.size or 0, t.locked and (d.pact and ", withdraw-only" or ", withdraw-only (no Chaos Pact)") or "")
+				return tr("%s: %d / %d item types%s", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0,
+					t.size or 0, t.locked and (d.pact and ", withdraw-only" or tr(", withdraw-only (no Chaos Pact)")) or "")
 			end
 		end
 	end
@@ -495,8 +495,8 @@ Stash.TabInfoText = function()
 		if not t.locked and not t.special then size = size + (t.size or 0) end
 		if t.locked then locked = locked + 1 end
 	end
-	local text = string.format("%d item types. General tabs: %d (%d types each)%s", used, d.limit or 0, d.tabSize or 0,
-		d.pact and ", Chaos Pact active" or "")
+	local text = tr("%d item types. General tabs: %d (%d types each)%s", used, d.limit or 0, d.tabSize or 0,
+		d.pact and tr(", Chaos Pact active") or "")
 	if locked > 0 then
 		text = text .. string.format(". %d tab%s withdraw-only", locked, locked == 1 and "" or "s")
 	end
@@ -544,7 +544,7 @@ Stash.FillTabs = function()
 		b.onClick = function() Stash.SelectTab(id) end
 		known = known or id == Stash.SelectedTab
 	end
-	add(0, "All", "Every tab", false)
+	add(0, "All", tr("Every tab"), false)
 	for _, t in ipairs(d.tabs) do
 		add(t.id, t.name, tabTooltip(t, d.pact), t.locked, t.special and 50 or nil)
 	end

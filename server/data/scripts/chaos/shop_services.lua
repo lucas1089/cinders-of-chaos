@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -443,7 +446,7 @@ S.services = {
 				text = string.format("%s activated the %s for everyone: %s for %d minutes! Thank you!",
 					player:getName(), b.def.name, b.def.text, b.def.minutes)
 			end
-			Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 			for _, p in ipairs(Game.getPlayers()) do
 				p:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 			end
@@ -686,7 +689,7 @@ function think.onThink(interval)
 	for _, def in ipairs(C().worldBuffs) do
 		local active = S.buffLeft(def.id) > 0
 		if running[def.id] and not active then
-			Game.broadcastMessage(def.name .. " has ended.", MESSAGE_STATUS_WARNING)
+			Chaos.broadcast(MESSAGE_STATUS_WARNING, "%s has ended.", def.name)
 		end
 		running[def.id] = active
 	end

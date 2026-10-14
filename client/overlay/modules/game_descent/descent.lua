@@ -74,7 +74,7 @@ local function updateClock()
   clock:setColor(left <= 60 and '#ff4030' or (left <= 300 and '#ff9a30' or '#f4d27a'))
   if offerWindow and offerWindow:isVisible() and offer then
     local l = M.left(offer.timeout, offerAt, now())
-    child(offerWindow, 'subtitle'):setText(string.format('Room %d / %d   -   %s left to choose',
+    child(offerWindow, 'subtitle'):setText(tr('Room %d / %d   -   %s left to choose',
       tonumber(offer.room) or 0, tonumber(offer.rooms) or 0, M.clock(l)))
   end
 end
@@ -111,7 +111,7 @@ local function render()
   room:setColor(M.roomColor(data.type))
   local bar = child(hud, 'progress')
   bar:setPercent(M.progress(data))
-  bar:setText(string.format('Depth %d / %d', tonumber(data.depth) or 0, tonumber(data.rooms) or 0))
+  bar:setText(tr('Depth %d / %d', tonumber(data.depth) or 0, tonumber(data.rooms) or 0))
   bar:setBackgroundColor('#8a3a10')
   child(hud, 'state'):setText(M.stateLine(data))
   child(hud, 'embers'):setText(M.embersLine(data))
@@ -225,7 +225,7 @@ end
 
 local function onShop(d)
   if not shopWindow then return end
-  child(shopWindow, 'embers'):setText(string.format('Your embers: %s', M.number(d.embers)))
+  child(shopWindow, 'embers'):setText(tr('Your embers: %s', M.number(d.embers)))
   local wares = child(shopWindow, 'wares')
   wares:destroyChildren()
   for _, w in ipairs(type(d.wares) == 'table' and d.wares or {}) do

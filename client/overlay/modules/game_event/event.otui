@@ -389,7 +389,7 @@ ChaosMainWindow
       anchors.left: eventIcon.right
       text-auto-resize: true
       margin-left: 6
-      text: Event
+      !text: tr('Event')
 
     UIWidget
       id: ProgressBack

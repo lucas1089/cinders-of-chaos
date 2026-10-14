@@ -3,6 +3,7 @@
 -- `autoseller`: {unlocked, needs, paused, tiers = {{key, name, on}}, list = {{id, name, price}}, slots, cooldown,
 -- cooldownMax, last = {gold, count, at}, notice, open}. The client never decides a sale: it only shows the state and
 -- sends the player's choices (sell, asrar, aslist, aspause) for the server to check.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 AutoSellerView = {}
 local V = AutoSellerView
@@ -56,8 +57,8 @@ end
 -- the Sell all button: its text counts the cooldown down
 function V.sellText(left)
   left = math.floor(tonumber(left) or 0)
-  if left > 0 then return 'Sell all (' .. left .. ' s)' end
-  return 'Sell all'
+  if left > 0 then return tr('Sell all (%s s)', left) end
+  return tr('Sell all')
 end
 
 function V.sellEnabled(state, left)
@@ -70,8 +71,8 @@ function V.cooldownLeft(sent, elapsed)
 end
 
 function V.lastSaleText(last)
-  if type(last) ~= 'table' then return 'Last sale: none yet.' end
-  return string.format('Last sale: %s gold (%d item%s).', V.gold(last.gold), last.count, last.count == 1 and '' or 's')
+  if type(last) ~= 'table' then return tr('Last sale: none yet.') end
+  return tr('Last sale: %s gold (%d item%s).', V.gold(last.gold), last.count, last.count == 1 and '' or 's')
 end
 
 function V.gold(n)
@@ -85,7 +86,7 @@ function V.listText(list, slots)
   local parts = {}
   for _, e in ipairs(list or {}) do parts[#parts + 1] = string.format('%s (%s)', e.name, V.gold(e.price)) end
   local head = string.format('%d/%d items', #parts, slots or 40)
-  if #parts == 0 then return head .. ': none. Add items an NPC buys.' end
+  if #parts == 0 then return tr('%s: none. Add items an NPC buys.', head) end
   return head .. ': ' .. table.concat(parts, ', ')
 end
 

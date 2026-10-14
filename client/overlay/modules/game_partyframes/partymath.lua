@@ -6,6 +6,7 @@
 -- entry {i id, n name, lv level, vc vocation id, h health, H max health, m mana, M max mana, p health percent,
 --   dz floors (down is +), d squares (in range only), far 1 (out of range: only p, dz), f flags, o outfit {t,h,b,l,f,a},
 --   b [{i icon, t 0 buff / 1 debuff, l ms left}]}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PartyMath = {}
 
@@ -286,13 +287,13 @@ function PartyMath.tooltip(m, now)
   local voc = PartyMath.vocation(m.voc)
   local lines = { m.name .. '  Lv ' .. m.level .. '  ' .. voc }
   if m.far then
-    lines[#lines + 1] = 'Far away: about ' .. m.pct .. '% health'
+    lines[#lines + 1] = tr('Far away: about %s%% health', m.pct)
   else
     lines[#lines + 1] = 'Health ' .. math.floor(m.hp) .. ' / ' .. math.floor(m.hpMax)
     lines[#lines + 1] = 'Mana ' .. math.floor(m.mp) .. ' / ' .. math.floor(m.mpMax)
   end
   local dir, n = PartyMath.floorMark(m.dz)
-  if dir then lines[#lines + 1] = n .. (n == 1 and ' floor ' or ' floors ') .. (dir == 'up' and 'above you' or 'below you') end
+  if dir then lines[#lines + 1] = n .. (n == 1 and ' floor ' or ' floors ') .. (dir == 'up' and tr('above you') or tr('below you')) end
   if PartyMath.flag(m, 'leader') then lines[#lines + 1] = 'Party leader' end
   if PartyMath.flag(m, 'fight') then lines[#lines + 1] = 'In a fight' end
   if PartyMath.flag(m, 'dead') then lines[#lines + 1] = 'Dead' end

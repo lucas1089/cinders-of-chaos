@@ -30,6 +30,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/season_core.lua")
 
 Chaos.seasonConfig = dofile("data/scripts/chaos/season_config.lua")
@@ -652,21 +655,13 @@ function S.onRecord(board, who, value)
 end
 
 -- wrap ChaosLeaderboard.record (again after a /reload of leaderboard.lua)
+if not (ChaosWrapChain and ChaosWrapChain.wrap) then
+	dofile("data/scripts/chaos/wrapchain_core.lua")
+end
 function S.wrapLeaderboard()
-	local LB = ChaosLeaderboard
-	if not LB or not LB.record or LB.record == S.wrappedRecord then
-		return
-	end
-	local original = LB.record
-	S.wrappedRecord = function(board, who, value, mode)
-		local entry = original(board, who, value, mode)
-		local ok, err = pcall(S.onRecord, board, who, value)
-		if not ok then
-			log("season stat failed: " .. tostring(err))
-		end
-		return entry
-	end
-	LB.record = S.wrappedRecord
+	ChaosWrapChain.wrap(ChaosLeaderboard, "record", "season", function(res, board, who, value)
+		S.onRecord(board, who, value)
+	end, function(e) log("season stat failed: " .. e) end)
 end
 
 -- ---------------------------------------------------------------- migration (end of season)
@@ -1137,14 +1132,13 @@ local function checkSeasons(startup)
 	local id = season and season.id or 0
 	if not startup and lastActive ~= nil and id ~= lastActive then
 		if season then
-			Game.broadcastMessage(string.format("%s %s has begun! New characters can join in Adventure > Season.", season.name,
-				season.tag or ""), MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s %s has begun! New characters can join in Adventure > Season.", season.name,
+				season.tag or "")
 			logEvent(season.id, 0, "start", "season started")
 		end
 		local old = S.byId(seasons(), lastActive)
 		if old then
-			Game.broadcastMessage(string.format("%s has ended. Its characters are now standard characters.", old.name),
-				MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s has ended. Its characters are now standard characters.", old.name)
 			logEvent(old.id, 0, "end", "season ended")
 		end
 		S.ladderCache = {}

@@ -40,7 +40,7 @@ local SPLASH = true                    -- "Press any key to start" before the pa
 local root, bg, enterGame
 local logo, logoHot, glowW, emberLayer, sparkLayer, pressW, splashW, spinner
 local medL, medR, crestT, crestB
-local verLabel, statusLabel, statusDot, serverCaption, sceneLink
+local verLabel, statusLabel, statusDot, serverCaption, sceneLink, langLink
 local view = { cx = 0, cy = 0, sx = 1, sy = 1 }   -- crop of title.png and its scale on screen
 local mark = { x0 = -1, y0 = -1, x1 = -1, y1 = -1 } -- the sparkle mark on screen (relative to bg)
 local statusChecking = true
@@ -190,6 +190,21 @@ local function createSceneLink()
     applySceneMode()
   end
   updateSceneLink()
+end
+
+-- the language (client_chaos_locale): under the background link; a choice reloads the modules, this screen too
+local function createLangLink()
+  if not ChaosLocale or not ChaosLocale.showMenu then return end
+  langLink = newWidget('ChaosLoginLink', bg, 'chaosLangLink')
+  langLink:setPhantom(false)
+  langLink:setTextAutoResize(true)
+  langLink:addAnchor(AnchorRight, 'parent', AnchorRight)
+  langLink:addAnchor(AnchorTop, 'parent', AnchorTop)
+  langLink:setMarginRight(14)
+  langLink:setMarginTop(50)
+  langLink:setText(ChaosLocale.buttonText())
+  langLink:setTooltip(tr('The language of the client and of the server messages'))
+  langLink.onClick = function() ChaosLocale.showMenu(langLink) end
 end
 
 -- ---------------------------------------------------------------- panel
@@ -405,7 +420,7 @@ local function layoutCorners()
   verLabel:setMarginRight(14)
   verLabel:setMarginTop(10)
   local ver = tostring(g_app.getVersion() or '')
-  verLabel:setText(tr('Version') .. ' ' .. (GameInfo and GameInfo.strVersion or '') .. (ver ~= '' and ('  -  client ' .. ver) or ''))
+  verLabel:setText(tr('Version') .. ' ' .. (GameInfo and GameInfo.strVersion or '') .. (ver ~= '' and (tr('  -  client %s', ver)) or ''))
 
   -- server status: the artwork's "CONNECTING..." line under the splash bar, under the server box once the panel shows
   statusLabel = newWidget('ChaosLoginStatus', bg, 'chaosStatus')
@@ -874,6 +889,7 @@ function init()
   createDecor()
   relayout()
   try(createSceneLink)
+  try(createLangLink)
   try(applySceneMode)
   updateStatus()
   try(hookSchedule)
@@ -919,7 +935,7 @@ function terminate()
   end
   if LoginScene then try(LoginScene.destroy) end
   for _, w in ipairs({ medL, medR, crestT, crestB, logo, glowW, emberLayer, sparkLayer, pressW, spinner, splashW,
-                       verLabel, statusLabel, statusDot, serverCaption, sceneLink }) do
+                       verLabel, statusLabel, statusDot, serverCaption, sceneLink, langLink }) do
     if alive(w) then w:destroy() end
   end
   ChaosLogin = nil

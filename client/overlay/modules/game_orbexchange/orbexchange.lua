@@ -94,19 +94,19 @@ end
 -- ---------------------------------------------------------------- wallet and the form
 local function updateWallet()
   if not window or not meta then return end
-  window.walletLabel:setText(string.format('%s exchange   Bank: %s gold', meta.realmName or 'Standard', V.money(meta.gold or 0)))
+  window.walletLabel:setText(tr('%s exchange   Bank: %s gold', meta.realmName or tr('Standard'), V.money(meta.gold or 0)))
   for _, w in ipairs(orbWidgets) do
     local n = meta.have and meta.have[w.key] or 0
-    w:setTooltip(string.format('%s\nYou carry %s.', V.assetName(meta, w.key), V.money(n)))
+    w:setTooltip(tr('%s\nYou carry %s.', V.assetName(meta, w.key), V.money(n)))
   end
   if base then
     local f = window.bookPanel.formFrame
     if side == 'sell' then
-      f.haveLabel:setText(string.format('You carry %s %s', V.money(meta.have and meta.have[base] or 0), V.shortName(meta, base)))
+      f.haveLabel:setText(tr('You carry %s %s', V.money(meta.have and meta.have[base] or 0), V.shortName(meta, base)))
     elseif quote == V.GOLD then
-      f.haveLabel:setText(string.format('Bank: %s gold', V.money(meta.gold or 0)))
+      f.haveLabel:setText(tr('Bank: %s gold', V.money(meta.gold or 0)))
     else
-      f.haveLabel:setText(string.format('You carry %s %s', V.money(meta.have and meta.have[quote] or 0), V.shortName(meta, quote)))
+      f.haveLabel:setText(tr('You carry %s %s', V.money(meta.have and meta.have[quote] or 0), V.shortName(meta, quote)))
     end
   end
 end

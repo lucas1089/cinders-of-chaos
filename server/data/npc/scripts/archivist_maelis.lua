@@ -118,6 +118,18 @@ local function creatureSayCallback(cid, type, msg)
 		npcHandler:say(LINES.hunt[lang], cid)
 		return true
 	end
+	if has(msg, "chronicle", "cronica") then
+		-- the Ashen Chronicle (chronicle_text.lua): NPCs run in their own Lua state, so read the data files and the
+		-- global storages the server sets
+		local okT, T = pcall(dofile, "data/scripts/chaos/chronicle_text.lua")
+		local okC, C = pcall(dofile, "data/scripts/chaos/chronicle_config.lua")
+		if okT and okC and type(T) == "table" and type(C) == "table" then
+			local g = C.globalStorage
+			local arc = C.arcs[Game.getStorageValue(g.season)]
+			npcHandler:say(T.npcLine(arc, Game.getStorageValue(g.done), lang), cid)
+			return true
+		end
+	end
 	local e = M.loreFor(msg)
 	if e then
 		npcHandler:say(M.loreText(e, lang), cid)

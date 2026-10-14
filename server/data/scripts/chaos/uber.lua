@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/uber_core.lua")
 ChaosUberConfig = dofile("data/scripts/chaos/uber_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
@@ -784,8 +787,8 @@ local function success(run)
 			names[#names + 1] = e.name
 		end
 		table.sort(names)
-		Game.broadcastMessage(string.format("%s %s extinguished the Cinderheart in %s!", table.concat(names, ", "),
-			#names == 1 and "has" or "have", U.clockText(secs)), MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, #names == 1 and "%s has extinguished the Cinderheart in %s!" or
+			"%s have extinguished the Cinderheart in %s!", table.concat(names, ", "), U.clockText(secs))
 	end
 	sendHud(run, "update")
 	for id in pairs(run.players) do

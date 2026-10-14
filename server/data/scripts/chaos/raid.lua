@@ -31,6 +31,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosRiftCore then
 	dofile("data/scripts/chaos/rift_core.lua")
 end
@@ -207,9 +210,10 @@ local function each(run, fn)
 	end
 end
 
+-- text: a string or a deferred text (ChaosI18n.msg), written in each player's language (Chaos.t)
 local function say(run, text, kind)
 	each(run, function(p)
-		p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, text)
+		p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, Chaos.t(p, text))
 	end)
 end
 
@@ -663,15 +667,20 @@ local function bossOf(run, i)
 end
 
 -- ======================================================================== HUD and alerts
+-- text: a string or a deferred text (ChaosI18n.msg): each player reads it in their language; the HUD's list of the
+-- last alerts keeps the English
 local function alert(run, text, kind)
+	local deferred = text
+	text = tostring(text)
 	run.alerts[#run.alerts + 1] = {text = text, at = os.time()}
 	while #run.alerts > 4 do
 		table.remove(run.alerts, 1)
 	end
 	each(run, function(p)
-		send(p, "alert", {text = text, kind = kind or "mech"})
+		local own = Chaos.t(p, deferred)
+		send(p, "alert", {text = own, kind = kind or "mech"})
 		if kind and kind ~= "mech" then
-			p:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, text)
+			p:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, own)
 		end
 	end)
 end
@@ -922,7 +931,7 @@ function M.soak(run)
 			all[#all + 1] = t
 		end
 	end
-	alert(run, string.format(K.ANNOUNCE.soak, need))
+	alert(run, ChaosI18n.msg(K.ANNOUNCE.soak, need))
 	telegraph(run, all, function(r)
 		local room = roomPlayers(r, f.idx)
 		for ci, set in ipairs(circles) do
@@ -977,7 +986,7 @@ function M.adds(run)
 		end
 	end
 	if made > 0 then
-		alert(run, string.format(K.ANNOUNCE.adds, made == 1 and b.add or (made .. " " .. b.add .. "s")))
+		alert(run, ChaosI18n.msg(K.ANNOUNCE.adds, made == 1 and b.add or (made .. " " .. b.add .. "s")))
 	end
 end
 
@@ -996,7 +1005,7 @@ function M.totem(run)
 		end
 	end
 	if made > 0 then
-		alert(run, string.format(K.ANNOUNCE.totem, b.totem))
+		alert(run, ChaosI18n.msg(K.ANNOUNCE.totem, b.totem))
 	end
 end
 
@@ -1040,7 +1049,7 @@ function M.hex(run)
 		end
 	end
 	if #names > 0 then
-		alert(run, string.format(K.ANNOUNCE.hex, table.concat(names, ", ")))
+		alert(run, ChaosI18n.msg(K.ANNOUNCE.hex, table.concat(names, ", ")))
 	end
 end
 
@@ -1062,7 +1071,7 @@ local function hexDue(run, pid)
 	local hit = K.hexResolve(cfg, clean, posOf(p), others)
 	if #hit > 0 then
 		fxAt(p:getPosition(), "shadow_eruption", CONST_ME_MORTAREA)
-		alert(run, string.format("The hex on %s bursts!", p:getName()), "fail")
+		alert(run, ChaosI18n.msg("The hex on %s bursts!", p:getName()), "fail")
 		for _, id in ipairs(hit) do
 			local q = Player(id)
 			if q then
@@ -1094,7 +1103,7 @@ local function sunderAfterHit(run, target)
 		local to = Player(d.to)
 		if to and boss.selectTarget then
 			boss:selectTarget(to)
-			alert(run, string.format("%s turns to %s.", cfg.bosses[f.idx].name, to:getName()), "swap")
+			alert(run, ChaosI18n.msg("%s turns to %s.", cfg.bosses[f.idx].name, to:getName()), "swap")
 		end
 		return
 	end
@@ -1102,7 +1111,7 @@ local function sunderAfterHit(run, target)
 	local stacks = K.sunderStacks(f.sunder, target:getId())
 	local tid = target:getId()
 	f.verdictAt = mnow()
-	alert(run, string.format(K.ANNOUNCE.sunder, target:getName(), stacks), "tank")
+	alert(run, ChaosI18n.msg(K.ANNOUNCE.sunder, target:getName(), stacks), "tank")
 	local tp = posOf(target)
 	telegraph(run, K.circles(run.L, f.idx, {tp}, 1), function(r)
 		r.fight.verdictAt = nil
@@ -1130,7 +1139,7 @@ local function phaseStart(run, idx)
 		boss:say(ph.yell, TALKTYPE_MONSTER_YELL)
 	end
 	if idx > 1 then
-		alert(run, string.format("%s: phase %d of %d, %s.", b.name, idx, #b.phases, ph.name), "phase")
+		alert(run, ChaosI18n.msg("%s: phase %d of %d, %s.", b.name, idx, #b.phases, ph.name), "phase")
 		if boss then
 			fxAt(boss:getPosition(), "dome_blast_fire", CONST_ME_FIREAREA)
 		end
@@ -1173,7 +1182,7 @@ local function pull(run, i)
 	end
 	X.syncDoors(run)
 	local b = cfg.bosses[i]
-	alert(run, string.format("%s awakens! The doors seal. Enrage in %s.", b.name, K.clockText(b.enrageAt)), "pull")
+	alert(run, ChaosI18n.msg("%s awakens! The doors seal. Enrage in %s.", b.name, K.clockText(b.enrageAt)), "pull")
 	K.advancePhase(run.fight, b, 1)
 	phaseStart(run, 1)
 	log(string.format("raid %d: %s pulled with %d player(s)", run.inst.id, b.name, n))
@@ -1219,7 +1228,7 @@ local function wipe(run)
 		Chaos.heal(boss, boss:getMaxHealth())
 		boss:teleportTo(P(run.L.rooms[i].bossSpawn))
 	end
-	alert(run, string.format("The raid falls before %s. The doors open again.", b.name), "wipe")
+	alert(run, ChaosI18n.msg("The raid falls before %s. The doors open again.", b.name), "wipe")
 	for _, e in pairs(run.players) do
 		e.fallen = nil
 	end
@@ -1271,7 +1280,7 @@ function X.deliver(player, b, idx)
 			end
 			inbox = giveEx(player, item) or inbox
 			lines[#lines + 1] = "{" .. u.name .. "}"
-			Game.broadcastMessage(string.format("%s found %s in %s!", player:getName(), u.name, cfg.name), MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s in %s!", player:getName(), u.name, cfg.name)
 		end
 	end
 	-- item sets (itemsets.lua): the raid set's chase roll of this boss
@@ -1399,10 +1408,14 @@ local function bossKilled(run, i)
 			names[#names + 1] = p:getName()
 		end
 		table.sort(names)
-		Game.broadcastMessage(string.format("%s fell to %s%s!", b.name, #names > 0 and table.concat(names, ", ") or "a raid",
-			secs and (" in " .. K.clockText(secs)) or ""), MESSAGE_EVENT_ADVANCE)
+		local who = #names > 0 and table.concat(names, ", ") or ChaosI18n.msg("a raid")
+		if secs then
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s fell to %s in %s!", b.name, who, K.clockText(secs))
+		else
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s fell to %s!", b.name, who)
+		end
 	end
-	alert(run, string.format("%s is slain! %d looted, %d helped.%s", b.name, #eligible, #helpers,
+	alert(run, ChaosI18n.msg("%s is slain! %d looted, %d helped.%s", b.name, #eligible, #helpers,
 		b.final and " The Sepulchre is cleared." or " The way on opens."), "kill")
 	-- the next corridor: its trash wakes up
 	if cfg.bosses[i + 1] then
@@ -1674,8 +1687,8 @@ function X.open(player, id, force)
 	end
 	X.syncDoors(run)
 	local nb = K.nextBoss(cfg, inst)
-	say(run, string.format("%s, raid #%d: %d of %d bosses slain this week. %s", cfg.name, inst.id,
-		K.bitCount(inst.killed, #cfg.bosses), #cfg.bosses, nb and ("Next: " .. cfg.bosses[nb].name .. ".") or ""))
+	say(run, ChaosI18n.msg("%s, raid #%d: %d of %d bosses slain this week. %s", cfg.name, inst.id,
+		K.bitCount(inst.killed, #cfg.bosses), #cfg.bosses, nb and ChaosI18n.msg("Next: %s.", cfg.bosses[nb].name) or ""))
 	sendHud(run)
 	log(string.format("%s opened raid %d (slot %d, %d player(s), killed %d)", player:getName(), inst.id, slot, #group,
 		inst.killed))
@@ -1708,7 +1721,7 @@ function X.join(player, id)
 		return false, "You " .. why:gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have ") .. "."
 	end
 	enter(run, player)
-	say(run, string.format("%s joins the raid.", player:getName()))
+	say(run, ChaosI18n.msg("%s joins the raid.", player:getName()))
 	sendHud(run)
 	return true
 end
@@ -1747,7 +1760,7 @@ local function fightTick(run, now)
 	local enraged = K.clock(b, (now - f.start) / 1000)
 	if enraged and not f.enraged then
 		f.enraged = true
-		alert(run, string.format("%s is ENRAGED!", b.name), "fail")
+		alert(run, ChaosI18n.msg("%s is ENRAGED!", b.name), "fail")
 	end
 	if f.enraged and now >= f.nextPulse then
 		f.nextPulse = now + cfg.enrage.pulseMs
@@ -1780,7 +1793,7 @@ local function fightTick(run, now)
 				run.mons[mid] = nil
 			elseif K.totemExpired(cfg, e.born, now) then
 				fxAt(m:getPosition(), "dome_blast_violet", CONST_ME_MORTAREA)
-				alert(run, string.format("A %s detonates!", b.totem or "totem"), "fail")
+				alert(run, ChaosI18n.msg("A %s detonates!", b.totem or "totem"), "fail")
 				for _, p in ipairs(roomPlayers(run, f.idx)) do
 					shareHit(run, p, cfg.mechanics.totem.detonateShare, COMBAT_DEATHDAMAGE)
 				end
@@ -1860,7 +1873,7 @@ function X.tick(slot, id)
 	if run.endsAt then
 		local left = run.endsAt - os.time()
 		if left <= 0 then
-			say(run, string.format("Time is up: %s closes. Your progress is saved for the week; continue it from the raid window.",
+			say(run, ChaosI18n.msg("Time is up: %s closes. Your progress is saved for the week; continue it from the raid window.",
 				cfg.name))
 			closeRun(run, "exit")
 			return
@@ -1876,7 +1889,7 @@ function X.tick(slot, id)
 			run.inst.trash = K.setBit(run.inst.trash, i)
 			S().saveInstance(run.inst)
 			X.syncDoors(run)
-			alert(run, string.format("The corridor is clear: the door to %s opens.", cfg.bosses[i].name), "door")
+			alert(run, ChaosI18n.msg("The corridor is clear: the door to %s opens.", cfg.bosses[i].name), "door")
 		end
 	end
 	-- bosses outside a fight stay in their room; a raider close to one pulls it
@@ -2041,7 +2054,7 @@ function X.fall(pid)
 	if run.fight then
 		e.fallen = run.fight.id
 		run.fight.deaths = run.fight.deaths + 1
-		alert(run, string.format("%s has fallen.", p:getName()), "fall")
+		alert(run, ChaosI18n.msg("%s has fallen.", p:getName()), "fall")
 		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You fell. The fight goes on without you; the doors open when it ends.")
 	end
 	sendHud(run)

@@ -67,7 +67,7 @@ local function drawProfessions()
     w.tier:setColor(r.tierColor)
     w.bar:setPercent(r.pct)
     w.bar:setText(r.xpText)
-    w:setTooltip(string.format('%s\nTool: %s\n%s gathered in total', r.desc, r.tool, V.fmtNum(r.gathered)))
+    w:setTooltip(tr('%s\nTool: %s\n%s gathered in total', r.desc, r.tool, V.fmtNum(r.gathered)))
   end
 end
 
@@ -91,7 +91,7 @@ local function drawBoard()
     if r.clientId > 0 then w.item:setItemId(r.clientId) end
     w.name:setText((r.name:gsub('^%l', string.upper)))
     w.name:setColor(r.tierColor or V.COLORS.text)
-    w.info:setText(string.format('%s tier %d, %s', V.profName(state, r.prof), r.tier, r.haveText))
+    w.info:setText(tr('%s tier %d, %s', V.profName(state, r.prof), r.tier, r.haveText))
     w.price:setText(r.priceText)
     w.mult:setText(r.multText)
     w.mult:setColor(r.multColor)

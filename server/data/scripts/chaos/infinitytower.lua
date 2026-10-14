@@ -23,6 +23,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 dofile("data/scripts/chaos/infinitytower_core.lua")
 
@@ -341,7 +344,7 @@ function ChaosTower.checkSeasons(startup, now)
 			#names > 0 and (" Top Rank Rewards: " .. table.concat(names, ", ") .. ".") or "", s + 1)
 		log(text)
 		if not startup then
-			Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 		end
 	end
 	if paid > 0 then

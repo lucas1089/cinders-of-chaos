@@ -34,6 +34,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/siege_core.lua")
 
 Chaos.siegeConfig = dofile("data/scripts/chaos/siege_config.lua")
@@ -83,7 +86,7 @@ end
 
 local function announce(text, toast)
 	if Game.broadcastMessage then
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 	else
 		for _, p in ipairs(Game.getPlayers()) do
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)

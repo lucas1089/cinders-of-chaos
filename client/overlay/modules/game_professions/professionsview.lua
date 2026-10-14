@@ -8,6 +8,7 @@
 --   areas  = {{n, t, f, m, near, x, y, z, nodes = {{k, r, t}}}}     where to gather: ready / total nodes for you
 --   broker, full, capDay, late, nextDay, nextWeek, respawn          at a broker; the daily rule; seconds to the next day / week
 -- The sale rule here mirrors the server's (professions_core.lua K.quote) for the estimates; the server decides.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ProfessionsView = ProfessionsView or {}
 local V = ProfessionsView
@@ -54,7 +55,7 @@ end
 
 function V.bonusText(s)
   if not s then return '' end
-  return string.format('Experience bonus: +%s%% from monsters (every profession level above 1 adds %s%%, at most +%s%%)',
+  return tr('Experience bonus: +%s%% from monsters (every profession level above 1 adds %s%%, at most +%s%%)',
     V.fmtPct(s.bonus), V.fmtPct(s.per), V.fmtPct(s.cap))
 end
 
@@ -160,8 +161,8 @@ function V.areaLines(s)
     local where = a.near and ('near ' .. a.near) or ''
     out[#out + 1] = {
       title = string.format('%s (%s)', a.n, t.n), color = t.col or V.COLORS.text,
-      text = (#parts > 0 and table.concat(parts, ', ') or 'no nodes') .. (where ~= '' and ('; ' .. where) or ''),
-      tip = string.format('%s%s\nPosition %d, %d, %d', a.n, a.m and (': hunting ground of ' .. a.m) or '', num(a.x),
+      text = (#parts > 0 and table.concat(parts, ', ') or tr('no nodes')) .. (where ~= '' and ('; ' .. where) or ''),
+      tip = string.format('%s%s\nPosition %d, %d, %d', a.n, a.m and (tr(': hunting ground of %s', a.m)) or '', num(a.x),
         num(a.y), num(a.z)),
       monsters = a.m
     }
@@ -171,9 +172,9 @@ end
 
 function V.footer(s)
   if not s then return '' end
-  local rule = string.format('Full price for %d a day per material, then %s%% up to %d.', num(s.full),
+  local rule = tr('Full price for %d a day per material, then %s%% up to %d.', num(s.full),
     V.fmtPct(num(s.late) * 100), num(s.capDay))
-  return rule .. string.format(' New day in %s, new demand in %s.', V.timeText(s.nextDay), V.timeText(s.nextWeek))
+  return rule .. tr(' New day in %s, new demand in %s.', V.timeText(s.nextDay), V.timeText(s.nextWeek))
 end
 
 return V

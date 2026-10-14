@@ -45,7 +45,7 @@ local function setCard(card, state, entry, side)
   card.action:setEnabled(info.enabled)
   local tip = info.tooltip
   if node.needsSpellEvents and not entry.locked then
-    tip = tip .. '\nPart of this node needs the server\'s spell events.'
+    tip = tr('%s\nPart of this node needs the server\'s spell events.', tip)
   end
   card:setTooltip(tip)
   card.action:setTooltip(tip)
@@ -59,7 +59,7 @@ local function refreshTrials()
   end
   local s = trialsState
   if not s.supported then
-    trialsWindow.trialName:setText('No trial for this vocation')
+    trialsWindow.trialName:setText(tr('No trial for this vocation'))
     trialsWindow.story:setText('')
     trialsWindow.content:setVisible(false)
     return
@@ -79,7 +79,7 @@ local function refreshTrials()
   for p = 1, 3 do
     local entry = s.pairs[p]
     local row = trialsWindow.content.pairsPanel['row' .. p]
-    row.rowTitle:setText(string.format('Pair %d\n%s%s', p, entry.tier, entry.locked and '\n(locked)' or ''))
+    row.rowTitle:setText(tr('Pair %d\n%s%s', p, entry.tier, entry.locked and tr('\n(locked)') or ''))
     row.rowTitle:setColor(entry.locked and '#8c8070' or COLOR_TITLE)
     setCard(row.cardA, s, entry, 1)
     setCard(row.cardB, s, entry, 2)
@@ -106,7 +106,7 @@ function chooseTrialNode(pair, side)
     sendAction('trialChoose', {pair = pair, side = side})
     closeConfirm()
   end
-  confirmBox = displayGeneralBox(entry.held == 0 and 'Choose a node' or 'Switch node', TrialsMath.confirmText(s, entry, side), {
+  confirmBox = displayGeneralBox(entry.held == 0 and tr('Choose a node') or tr('Switch node'), TrialsMath.confirmText(s, entry, side), {
     {text = tr('Ok'), callback = ok},
     {text = tr('Cancel'), callback = closeConfirm},
     anchor = AnchorHorizontalCenter

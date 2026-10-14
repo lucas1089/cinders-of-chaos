@@ -2,6 +2,7 @@
 -- Tested by achievementsview_test.lua (luajit / lua5.3). Rows come from the server (achievements_core.lua K.view):
 --   i id, n name, d description, c category, p points, h hidden (1), u unlock time (0 = locked), v value, t target,
 --   ti title, r reward text
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 AchievementsView = {}
 local V = AchievementsView
 
@@ -131,9 +132,9 @@ function V.trackText(track)
   local nxt = V.trackNext(track)
   local ap = num(track and track.ap)
   if not nxt then
-    return string.format('%s account points  -  every reward unlocked (%d)', group(ap), #steps(track))
+    return tr('%s account points  -  every reward unlocked (%d)', group(ap), #steps(track))
   end
-  return string.format('%s / %s account points  -  next: %s (%s)', group(ap), group(num(nxt.p)), nxt.n or '?',
+  return tr('%s / %s account points  -  next: %s (%s)', group(ap), group(num(nxt.p)), nxt.n or '?',
     V.kindName(nxt.k))
 end
 
@@ -142,16 +143,16 @@ function V.rewardTooltip(r, ap)
   local lines = { string.format('%s  -  %s', r.n or '?', V.kindName(r.k)) }
   if r.d and r.d ~= '' then lines[#lines + 1] = r.d end
   if r.c then lines[#lines + 1] = 'Colour: ' .. r.c end
-  if r.a then lines[#lines + 1] = 'Label background: ' .. r.a:sub(1, 7) end
+  if r.a then lines[#lines + 1] = tr('Label background: %s', r.a:sub(1, 7)) end
   if r.p then
     if num(ap) >= num(r.p) then
-      lines[#lines + 1] = string.format('Reached at %s account points.', group(num(r.p)))
+      lines[#lines + 1] = tr('Reached at %s account points.', group(num(r.p)))
     else
-      lines[#lines + 1] = string.format('Unlocks at %s account points (%s to go).', group(num(r.p)), group(num(r.p) - num(ap)))
+      lines[#lines + 1] = tr('Unlocks at %s account points (%s to go).', group(num(r.p)), group(num(r.p) - num(ap)))
     end
   end
   if r.ti then lines[#lines + 1] = 'Title: ' .. r.ti end
-  lines[#lines + 1] = r.o and 'Owned: choose it in Character > Cosmetics.' or 'Earned by playing, never sold.'
+  lines[#lines + 1] = r.o and tr('Owned: choose it in Character > Cosmetics.') or tr('Earned by playing, never sold.')
   return table.concat(lines, '\n')
 end
 
@@ -159,7 +160,7 @@ end
 function V.categoryReward(track, key)
   for _, c in ipairs(type(track) == 'table' and type(track.cats) == 'table' and track.cats or {}) do
     if c.key == key then
-      return string.format('Complete all %d: title %s + %s (%s)%s', num(c.t), c.ti or '?', c.n or '?', V.kindName(c.k),
+      return tr('Complete all %d: title %s + %s (%s)%s', num(c.t), c.ti or '?', c.n or '?', V.kindName(c.k),
         num(c.x) == 1 and '  -  done' or '')
     end
   end
@@ -185,7 +186,7 @@ function V.trackRows(track)
     out[#out + 1] = { name = s.n or '?', right = group(num(s.p)) .. ' pts', desc = V.shortDesc(s.d),
       extra = V.kindName(s.k) .. (s.o and '  -  owned' or ''), done = done, color = s.c, accent = s.a,
       percent = done and 100 or math.floor(math.min(ap, num(s.p)) * 100 / math.max(1, num(s.p))),
-      progress = done and 'Unlocked' or (group(ap) .. ' / ' .. group(num(s.p)) .. ' account points'),
+      progress = done and 'Unlocked' or (tr('%s / %s account points', group(ap), group(num(s.p)))),
       tip = V.rewardTooltip(s, ap) }
   end
   for _, c in ipairs(type(track) == 'table' and type(track.cats) == 'table' and track.cats or {}) do

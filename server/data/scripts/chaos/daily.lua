@@ -31,6 +31,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/daily_core.lua")
 
 Chaos.dailyStreak = dofile("data/scripts/chaos/daily_config.lua")
@@ -330,8 +333,8 @@ local function claim(player, value)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Login streak of %d days! Milestone reward: %s.", m.days,
 			DC.milestoneText(m, itemName)))
 		if m.title and (rec.best or 0) < m.days then
-			Game.broadcastMessage(string.format("%s reached a login streak of %d days and earned the title %s!",
-				player:getName(), m.days, m.title), MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s reached a login streak of %d days and earned the title %s!",
+				player:getName(), m.days, m.title)
 		end
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_RED)
 	end

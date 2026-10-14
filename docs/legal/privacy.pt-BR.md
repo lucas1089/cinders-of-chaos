@@ -40,6 +40,8 @@ como você exerce os seus direitos. Ela segue a Lei Geral de Proteção de Dados
 - Antitrapaça: o servidor mede padrões de jogo dos personagens online, como o ritmo de ações, o tempo de reação, rotas
   repetidas e horas seguidas de jogo. Gera uma pontuação, pode enviar uma verificação de presença e registra resultados
   para a equipe. **Nada disso pune sozinho:** uma pessoa da equipe sempre analisa antes de decidir.
+  Uma pontuação diária de suspeita por personagem, com os sinais que a explicam, fica guardada 30 dias (90 dias quando
+  a equipe escalou o caso); só dias com pontuação relevante são guardados.
 - Denúncias de jogadores: quem denunciou, quem foi denunciado, motivo, observação, posição, data e as últimas 10 linhas
   do denunciado nos canais públicos do jogo. **Mensagens privadas nunca são guardadas nem lidas.**
 - Relatos de bugs: o texto que você escreve, a posição, o nível e a classe do personagem.
@@ -65,7 +67,10 @@ Algumas informações aparecem para todos no site e no jogo: nome, nível, class
 bandeira do país da conta, a data do último login, as mortes, a guilda, os rankings e o comentário do perfil, se você
 escrever um. Os demais personagens da conta aparecem no perfil, a menos que você os oculte. No jogo, outros jogadores
 podem ver o equipamento e a árvore de talentos do seu personagem, se "Allow others to inspect me" estiver ligado (padrão). No programa de mentores, o
-cartão de mentor só aparece no site se você escolher "Mostrar no site".
+cartão de mentor só aparece no site se você escolher "Mostrar no site". O Memorial da capital e a página dele no site
+mostram o nome do personagem com as primeiras vitórias do reino e os recordes, a menos que você desligue "Show my records
+and realm firsts", e com uma queda no Hardcore (nível, classe, causa, data) só se você escolher mostrar; você pode mudar as
+duas coisas quando quiser, para todas as temporadas de uma vez. As listas de contribuintes da Crônica seguem a mesma escolha.
 
 ## 3. Bases legais (LGPD, art. 7º)
 
@@ -74,7 +79,7 @@ cartão de mentor só aparece no site se você escolher "Mostrar no site".
   agregadas. Usamos só o necessário e você pode se opor (seção 8).
 - **Cumprimento de obrigação legal:** registros de pagamento e outros registros que a lei manda guardar.
 - **Exercício regular de direitos:** registros de banimentos, denúncias e estornos, para nos defender em uma disputa.
-- **Consentimento:** quando você escolhe algo opcional, como mostrar o cartão de mentor no site ou lembrar um
+- **Consentimento:** quando você escolhe algo opcional, como mostrar o cartão de mentor no site, mostrar uma queda no Hardcore no Memorial ou lembrar um
   dispositivo. Você pode retirar o consentimento quando quiser.
 
 ## 4. Por quanto tempo guardamos

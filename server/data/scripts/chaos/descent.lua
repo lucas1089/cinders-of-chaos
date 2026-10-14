@@ -30,6 +30,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosRiftCore then
 	dofile("data/scripts/chaos/rift_core.lua")
 end
@@ -1076,8 +1079,7 @@ local function rewardPlayer(run, pe, cleared, player)
 				uniqueId = u.id
 				lines[#lines + 1] = u.name
 				items[#items + 1] = {name = u.name, count = 1, unique = true}
-				Game.broadcastMessage(string.format("%s carried %s out of the Ember Descent!", player:getName(), u.name),
-					MESSAGE_EVENT_ADVANCE)
+				Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s carried %s out of the Ember Descent!", player:getName(), u.name)
 			end
 		end
 		-- item sets (itemsets.lua): the Descent set's chase roll by the depth reached

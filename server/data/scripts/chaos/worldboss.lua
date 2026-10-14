@@ -39,6 +39,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -486,14 +489,10 @@ local function combatOf(name)
 	return _G["COMBAT_" .. tostring(name):upper() .. "DAMAGE"] or COMBAT_PHYSICALDAMAGE
 end
 
+-- text: a string or a deferred text (ChaosI18n.msg): each player reads it in their language; the toast and the log
+-- are English
 local function announce(text, toast)
-	if Game.broadcastMessage then
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
-	else
-		for _, p in ipairs(Game.getPlayers()) do
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
-		end
-	end
+	text = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 	if toast and ChaosNotify and ChaosNotify.gmBroadcast then
 		ChaosNotify.gmBroadcast(nil, text)
 	end
@@ -868,7 +867,7 @@ function W.deliver(player, r)
 			inboxUsed = giveEx(player, item) or inboxUsed
 			local e = ChaosUniqueById and ChaosUniqueById[r.unique]
 			parts[#parts + 1] = "the unique " .. (e and e.name or itemName(r.unique))
-			announce(player:getName() .. " received the unique " .. (e and e.name or itemName(r.unique)) .. " from the world boss!", false)
+			announce(ChaosI18n.msg("%s received the unique %s from the world boss!", player:getName(), e and e.name or itemName(r.unique)), false)
 		end
 	end
 	local roles = {}
@@ -1095,7 +1094,7 @@ local function spawnBoss(token)
 	boss:registerEvent("ChaosWorldBossDeath")
 	packFx(boss:getPosition(), "wb_arrives", CONST_ME_MORTAREA)
 	boss:say(b.intro, TALKTYPE_MONSTER_YELL)
-	announce(string.format("%s has appeared in the world boss arena! You have %d minutes to bring it down.", b.name, C().fightMinutes), true)
+	announce(ChaosI18n.msg("%s has appeared in the world boss arena! You have %d minutes to bring it down.", b.name, C().fightMinutes), true)
 	addEvent(function(t)
 		if state.token == t and state.phase == "fight" then
 			finish(false, "time")
@@ -1139,7 +1138,7 @@ finish = function(victory, reason)
 		local shares, _, podium = distribute()
 		local secs = os.time() - (state.fightStart or os.time())
 		state.result = podium
-		announce(string.format("%s has been slain by %d champion(s) in %dm %02ds! %s Everyone inside returns home in %d seconds.",
+		announce(ChaosI18n.msg("%s has been slain by %d champion(s) in %dm %02ds! %s Everyone inside returns home in %d seconds.",
 			b.name, #shares, math.floor(secs / 60), secs % 60, W.podiumText(podium, C().reward.podium), delay), false)
 		-- the client toast has room for about two lines: one toast per category (it shows three at once)
 		if ChaosNotify and ChaosNotify.gmBroadcast then
@@ -1158,7 +1157,7 @@ finish = function(victory, reason)
 			delay = math.min(delay, 10)
 			announce("The world boss event was stopped by the staff.", true)
 		elseif reason == "time" then
-			announce(string.format("%s was not defeated in time and withdraws. The world boss event is over.", b.name), true)
+			announce(ChaosI18n.msg("%s was not defeated in time and withdraws. The world boss event is over.", b.name), true)
 		end
 	end
 	addEvent(closeOut, delay * 1000, token)
@@ -1192,8 +1191,8 @@ function W.start(index)
 		startedAt = os.time(), spawnAt = os.time() + c.gatherSeconds, portalsUntil = os.time() + c.portalMinutes * 60}
 	state = W.state
 	local n = openPortals()
-	announce(string.format("WORLD BOSS: %s Portals are open next to the temples for %d minutes (level %d+). The boss appears in %d seconds.",
-		b.intro, c.portalMinutes, c.minLevel, c.gatherSeconds), true)
+	announce(ChaosI18n.msg("WORLD BOSS: %s Portals are open next to the temples for %d minutes (level %d+). The boss appears in %d seconds.",
+		ChaosI18n.msg(b.intro), c.portalMinutes, c.minLevel, c.gatherSeconds), true)
 	if n == 0 then
 		print("[Chaos world boss] no portal spot found (Game.getTowns / portalPositions)")
 	end
@@ -1536,7 +1535,7 @@ function schedule.onThink(interval)
 		if not warned[key] and now >= W.nextAt - m * 60 and now < W.nextAt then
 			warned[key] = true
 			local b = c.bosses[W.pickBoss(#c.bosses, c.mode, Game.getStorageValue(c.rotationStorage))]
-			announce(string.format("A world boss awakens in %d minute(s)%s! Portals will open next to the temples.", m,
+			announce(ChaosI18n.msg("A world boss awakens in %d minute(s)%s! Portals will open next to the temples.", m,
 				c.mode == "rotation" and (": " .. b.name) or ""), m == (c.warnMinutes or {})[1])
 		end
 	end

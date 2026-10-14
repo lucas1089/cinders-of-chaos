@@ -30131,6 +30131,290 @@
 						}
 					],
 					"icon": "wiki/i/k-shadow-gate.png"
+				},
+				{
+					"id": "lore:chronicle_s1",
+					"name": "The Ashen Chronicle: Season of Ash",
+					"sub": "The Ashen Chronicle",
+					"color": "#c9a27a",
+					"group": "chronicle",
+					"sections": [
+						{
+							"h": "The Ashen Chronicle",
+							"p": [
+								"The ash has always fallen on the broken world. This season it falls heavier and warmer, and the Chronicler has opened a new book. What the whole realm does, together, is written in it, and the world answers.",
+								"One chapter is open at a time. The whole realm writes it: every world boss slain, rift sealed, Omen and Ascended Omen defeated, Ashen Sepulchre cleared, character reaching a level and world event won counts for the chapter whose goal it is. When every goal is met the chapter is written and the world changes. Adventure > Chronicle shows the bars, your part and the top contributors."
+							]
+						},
+						{
+							"h": "Chapters",
+							"cols": ["Chapter", "Goals"],
+							"w": [70, 30],
+							"rows": [
+								["I. The Ash Thickens", "2 goals"],
+								["II. The Wound Beside the Walls", "2 goals"],
+								["III. Omens in the Ashfall", "2 goals"],
+								["IV. The Sepulchre Stirs", "2 goals"],
+								["V. Embers Rekindled", "3 goals"]
+							]
+						},
+						{
+							"h": "At the season's end",
+							"p": [
+								"The Chronicler records the top contributors of every chapter: the client's Record tab and the website's Chronicle page keep them. The next season starts a new book, and the world changes of this one are taken back."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"A Crônica das Cinzas: Temporada das Cinzas",
+								"As cinzas sempre caíram sobre o mundo partido. Nesta temporada elas caem mais grossas e mais quentes, e o Cronista abriu um livro novo. O que o reino inteiro faz, junto, fica escrito nele, e o mundo responde."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:chronicle_s1_1",
+					"name": "I. The Ash Thickens",
+					"sub": "The Ashen Chronicle: Season of Ash",
+					"color": "#c9a27a",
+					"group": "chronicle",
+					"sections": [
+						{
+							"h": "The story",
+							"p": [
+								"The ash falls warm to the touch now, and in the capital's streets it no longer melts. Beyond the walls the small rifts open faster than the wardens can count them.",
+								"The Chronicler has written one line on the first page: \"The world remembers what it does.\" Turn the keys. Seal the small wounds before they learn to grow, and let new hunters find their strength."
+							]
+						},
+						{
+							"h": "Goals of the realm",
+							"cols": ["Goal", "Target"],
+							"w": [75, 25],
+							"rows": [["Characters reaching level 100", "150"], ["Rifts sealed, tiers 1-5", "1,500"]]
+						},
+						{
+							"h": "When it is written",
+							"p": ["Ash drifts and scorched cracks now mark the streets around the capital's temple."]
+						},
+						{
+							"h": "What changes",
+							"p": [
+								"The capital changes around its temple.",
+								"The Chronicler's words move on, the realm hears a broadcast, and the top contributors are recorded at the season's end."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"I. As Cinzas se Adensam",
+								"As cinzas agora caem mornas, e nas ruas da capital elas já não derretem. Além das muralhas, as fendas pequenas se abrem mais rápido do que os guardas conseguem contar.",
+								"O Cronista escreveu uma linha na primeira página: \"O mundo se lembra do que faz.\" Girem as chaves. Selem as feridas pequenas antes que aprendam a crescer, e deixem os novos caçadores encontrarem a sua força.",
+								"Montes de cinza e rachaduras queimadas agora marcam as ruas em volta do templo da capital."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:chronicle_s1_2",
+					"name": "II. The Wound Beside the Walls",
+					"sub": "The Ashen Chronicle: Season of Ash",
+					"color": "#c9a27a",
+					"group": "chronicle",
+					"sections": [
+						{
+							"h": "The story",
+							"p": [
+								"Where the Five last fell, the ground did not close. A seam of cinders runs beside the capital's walls, and Kaelgor, Skaldra, the Rotmother, Nyxareth and Vharok come back through the temple portals angrier each time.",
+								"Break them, again and again. Seal the deeper rifts that feed the seam. When it is quiet enough to walk into, the wardens will open the way."
+							]
+						},
+						{
+							"h": "Goals of the realm",
+							"cols": ["Goal", "Target"],
+							"w": [75, 25],
+							"rows": [["World bosses slain", "30"], ["Rifts sealed, tiers 6-10", "800"]]
+						},
+						{
+							"h": "When it is written",
+							"p": [
+								"The Cinderscar Breach is open. Rubble from the colossi's last assault lies near the temple."
+							]
+						},
+						{
+							"h": "What changes",
+							"p": [
+								"The Cinderscar Breach opens (level 400 and above): its gate appears in the world.",
+								"The capital changes around its temple.",
+								"The Chronicler's words move on, the realm hears a broadcast, and the top contributors are recorded at the season's end."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"II. A Ferida ao Lado das Muralhas",
+								"Onde os Cinco caíram pela última vez, o chão não se fechou. Uma costura de brasas corre ao lado das muralhas da capital, e Kaelgor, Skaldra, a Mãe Podre, Nyxareth e Vharok voltam pelos portais dos templos mais furiosos a cada vez.",
+								"Derrubem-nos, de novo e de novo. Selem as fendas mais fundas que alimentam a costura. Quando ela estiver quieta o bastante para se entrar, os guardas vão abrir o caminho.",
+								"A Cinderscar Breach está aberta. Escombros do último ataque dos colossos estão perto do templo."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:chronicle_s1_3",
+					"name": "III. Omens in the Ashfall",
+					"sub": "The Ashen Chronicle: Season of Ash",
+					"color": "#c9a27a",
+					"group": "chronicle",
+					"sections": [
+						{
+							"h": "The story",
+							"p": [
+								"Sangrith's blood moon has been seen over the rifts, Morvane's hollow crown in the ash clouds, Thalcyra's storm in the deepest tiers. The Omens are no longer waiting behind their keys.",
+								"Bind the fragments, walk into their arenas and put them down before their signs become their arrival. Light the ward-fires when they fall."
+							]
+						},
+						{
+							"h": "Goals of the realm",
+							"cols": ["Goal", "Target"],
+							"w": [75, 25],
+							"rows": [["Omen guardians slain", "120"], ["Rifts sealed, tiers 11-14", "300"]]
+						},
+						{"h": "When it is written", "p": ["Ward-fires burn around the capital's temple."]},
+						{
+							"h": "What changes",
+							"p": [
+								"The capital changes around its temple.",
+								"The Chronicler's words move on, the realm hears a broadcast, and the top contributors are recorded at the season's end."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"III. Presságios na Chuva de Cinzas",
+								"A lua de sangue de Sangrith foi vista sobre as fendas, a coroa oca de Morvane nas nuvens de cinza, a tempestade de Thalcyra nos níveis mais fundos. Os Presságios já não esperam atrás das suas chaves.",
+								"Juntem os fragmentos, entrem nas arenas deles e derrubem-nos antes que os sinais virem chegada. Acendam as fogueiras de guarda quando eles caírem.",
+								"Fogueiras de guarda queimam em volta do templo da capital."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:chronicle_s1_4",
+					"name": "IV. The Sepulchre Stirs",
+					"sub": "The Ashen Chronicle: Season of Ash",
+					"color": "#c9a27a",
+					"group": "chronicle",
+					"sections": [
+						{
+							"h": "The story",
+							"p": [
+								"Beneath the capital, the Ashen Sepulchre breathes. Varkhul's wardens no longer wait for the weekly raid; their bones knock against the walled stair under the city at night.",
+								"Clear the Sepulchre, face the Ascended forms of the Omens, and the stair the keepers sealed long ago will be ours to walk."
+							]
+						},
+						{
+							"h": "Goals of the realm",
+							"cols": ["Goal", "Target"],
+							"w": [75, 25],
+							"rows": [["Ashen Sepulchre clears", "40"], ["Ascended Omens slain", "25"]]
+						},
+						{"h": "When it is written", "p": ["The Ossuary Stair below the capital is open."]},
+						{
+							"h": "What changes",
+							"p": [
+								"The Ossuary Stair opens (level 380 and above): its gate appears in the world.",
+								"The Chronicler's words move on, the realm hears a broadcast, and the top contributors are recorded at the season's end."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"IV. O Sepulcro Desperta",
+								"Embaixo da capital, o Sepulcro Cinzento respira. Os guardiões de Varkhul já não esperam a raid da semana; de noite, os ossos deles batem contra a escada murada sob a cidade.",
+								"Limpem o Sepulcro, enfrentem as formas Ascendidas dos Presságios, e a escada que os guardiões selaram há muito tempo será nossa para descer.",
+								"A Ossuary Stair, embaixo da capital, está aberta."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:chronicle_s1_5",
+					"name": "V. Embers Rekindled",
+					"sub": "The Ashen Chronicle: Season of Ash",
+					"color": "#c9a27a",
+					"group": "chronicle",
+					"sections": [
+						{
+							"h": "The story",
+							"p": [
+								"Ysgrath the Cinderheart is the first Cinder, the one that never cooled, and while it beats the ash will never stop. Forge its sigil, gather the strong, and hold the capital when the invaders come.",
+								"When the Cinderheart falls, carry what is left of its flame back to the Great Brazier. Let the capital remember that it was rebuilt, not spared."
+							]
+						},
+						{
+							"h": "Goals of the realm",
+							"cols": ["Goal", "Target"],
+							"w": [75, 25],
+							"rows": [
+								["The Cinderheart slain", "5"],
+								["Characters reaching level 600", "100"],
+								["Invasions repelled", "10"]
+							]
+						},
+						{
+							"h": "When it is written",
+							"p": [
+								"The capital is rebuilt: the ash and rubble are cleared and flowers grow where the cracks were."
+							]
+						},
+						{
+							"h": "What changes",
+							"p": [
+								"The capital changes around its temple.",
+								"Earlier scars of the capital are cleared away.",
+								"The Chronicler's words move on, the realm hears a broadcast, and the top contributors are recorded at the season's end."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"V. Brasas Reacesas",
+								"Ysgrath, o Coração de Brasa, é a primeira Brasa, a que nunca esfriou, e enquanto ela queimar as cinzas nunca vão parar. Forjem o seu sigilo, reúnam os fortes e defendam a capital quando os invasores vierem.",
+								"Quando o Coração de Brasa cair, levem o que restar da sua chama de volta ao Grande Braseiro. Que a capital se lembre de que foi reconstruída, e não poupada.",
+								"A capital foi reconstruída: as cinzas e os escombros foram limpos e há flores onde ficavam as rachaduras."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:memorial",
+					"name": "The Ember Memorial",
+					"sub": "The Capital Memorial",
+					"color": "#c9a27a",
+					"group": "chronicle",
+					"sections": [
+						{
+							"h": "The Memorial",
+							"p": [
+								"A plaza in the capital keeps the season: guardian statues for its realm firsts, statues for its records and memorial stones for the heroes who fell in Hardcore. Look at one to read it. A stone in the middle says what is remembered; when there are more names than statues, they turn every 10 minutes.",
+								"Every name is there by its player's choice (Adventure > Chronicle > Memorial): records and realm firsts are shown unless you turn them off, a Hardcore fall only after your yes, asked at the next login after the fall. You can change it any time. Each season starts a new Memorial; the website keeps the past ones."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Uma praça na capital guarda a temporada: estátuas de guardião para as primeiras vitórias do reino, estátuas para os recordes e pedras memoriais para os heróis que caíram no Hardcore. Cada nome está lá por escolha do jogador: recordes e primeiras vitórias aparecem, a menos que você desligue; uma queda no Hardcore só depois do seu sim. Você pode mudar quando quiser."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
 				}
 			],
 			"banner": "wiki/hero/tab-lore.webp",

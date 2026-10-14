@@ -6,6 +6,7 @@
 --                   rewards = [{kind, text, piece, clientId, count, look}]}
 --   journeyDone {text, chapter?}
 -- The window code (journey.lua) keeps one JourneyView state and draws from it.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 JourneyView = {}
 local V = JourneyView
@@ -125,7 +126,7 @@ end
 
 -- the line above the tabs' content
 function V.title(h)
-  if not h or h.none then return 'No journey this season' end
+  if not h or h.none then return tr('No journey this season') end
   local t = tostring(h.name or 'Journey')
   if h.mode then t = t .. '  -  ' .. tostring(h.mode) end
   return t
@@ -148,8 +149,8 @@ end
 -- the banner of the open tab when something completes
 function V.doneText(d)
   if type(d) ~= 'table' then return '' end
-  if d.chapter then return string.format('Chapter complete: %s!', tostring(d.text or '')) end
-  return string.format('Objective done: %s', tostring(d.text or ''))
+  if d.chapter then return tr('Chapter complete: %s!', tostring(d.text or '')) end
+  return tr('Objective done: %s', tostring(d.text or ''))
 end
 
 return V

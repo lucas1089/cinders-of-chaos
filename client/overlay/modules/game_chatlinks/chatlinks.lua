@@ -100,7 +100,7 @@ local function linkItem(item, pos)
   if not edit or not edit:isEnabled() then return false end
   local ctx, why = currentContext()
   if not ctx then
-    say(why or 'Items cannot be linked here.')
+    say(why or tr('Items cannot be linked here.'))
     return true
   end
   local text = edit:getText()
@@ -306,7 +306,7 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     end
   elseif msg.action == 'refused' then
     requests[tonumber(d.n) or 0] = nil
-    say(tostring(d.reason or 'That item cannot be linked.'))
+    say(tostring(d.reason or tr('That item cannot be linked.')))
   elseif msg.action == 'link' then
     if not L.validId(d.id) then return end
     if d.gone or type(d.tip) ~= 'table' then

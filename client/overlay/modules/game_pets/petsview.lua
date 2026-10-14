@@ -4,6 +4,7 @@
 --            abilities = [{key, name, kind, value, desc, unlockAt, unlocked, cooldown}]}]
 --   catalog = [{key, name, look, how, owned, abilities = [name]}], active, out, rest, zone,
 --   cooldowns = {summon, death, rename}, maxLevel, secondAt
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 PetsView = {}
 local V = PetsView
 
@@ -69,7 +70,7 @@ function V.titleText(e)
 end
 
 function V.rowSub(e, state)
-  if not e.owned then return 'Not owned' end
+  if not e.owned then return tr('Not owned') end
   local s = string.format('Level %d', e.level)
   if state and state.active == e.key then
     s = s .. (state.out and ', out' or ', resting')
@@ -80,25 +81,25 @@ end
 function V.xpText(p)
   if not p then return '' end
   if num(p.need) <= 0 then return string.format('Level %d (max)', num(p.level)) end
-  return string.format('Level %d  -  %d / %d XP (%d%%)', num(p.level), num(p.into), num(p.need), num(p.pct))
+  return tr('Level %d  -  %d / %d XP (%d%%)', num(p.level), num(p.into), num(p.need), num(p.pct))
 end
 
 function V.abilityLines(e, secondAt)
   local out = {}
   if e.owned and e.pet then
     for _, a in ipairs(list(e.pet.abilities)) do
-      local cd = num(a.cooldown) > 0 and string.format(' (every %d s at most)', num(a.cooldown)) or ''
+      local cd = num(a.cooldown) > 0 and tr(' (every %d s at most)', num(a.cooldown)) or ''
       local kind = a.kind == 'combat' and 'combat' or 'utility'
       out[#out + 1] = {
         title = string.format('%s  [%s]', a.name or '?', kind),
         text = (a.desc or '') .. cd,
         locked = not a.unlocked,
-        lockText = not a.unlocked and string.format('Unlocks at pet level %d.', num(a.unlockAt)) or nil
+        lockText = not a.unlocked and tr('Unlocks at pet level %d.', num(a.unlockAt)) or nil
       }
     end
   else
     for i, name in ipairs(list(e.abilities)) do
-      out[#out + 1] = { title = name, text = i == 1 and 'From level 1.' or string.format('From level %d.', num(secondAt)),
+      out[#out + 1] = { title = name, text = i == 1 and tr('From level 1.') or tr('From level %d.', num(secondAt)),
         locked = true }
     end
   end
@@ -111,7 +112,7 @@ function V.statusText(state)
   local parts = {}
   local cd = type(state.cooldowns) == 'table' and state.cooldowns or {}
   if num(cd.death) > 0 then
-    parts[#parts + 1] = string.format('Your pet is recovering from your death: %d s.', num(cd.death))
+    parts[#parts + 1] = tr('Your pet is recovering from your death: %d s.', num(cd.death))
   end
   if state.active then
     if state.rest then
@@ -123,10 +124,10 @@ function V.statusText(state)
     parts[#parts + 1] = 'No pet is out.'
   end
   if state.zone then
-    parts[#parts + 1] = 'Here: ' .. (tostring(state.zone):gsub('^utility', 'utility abilities only'):gsub('^banned', 'no pets'))
+    parts[#parts + 1] = tr('Here: %s', (tostring(state.zone):gsub('^utility', 'utility abilities only'):gsub('^banned', 'no pets')))
   end
   if num(cd.summon) > 0 then
-    parts[#parts + 1] = string.format('Call again in %d s.', num(cd.summon))
+    parts[#parts + 1] = tr('Call again in %d s.', num(cd.summon))
   end
   return table.concat(parts, '  ')
 end

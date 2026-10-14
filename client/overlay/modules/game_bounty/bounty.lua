@@ -73,15 +73,15 @@ local function rewardText(r)
   local parts, exact = {}, {}
   if (tonumber(r.gold) or 0) > 0 then
     parts[#parts + 1] = short(r.gold) .. ' gold'
-    exact[#exact + 1] = (comma_value and comma_value(r.gold) or tostring(r.gold)) .. ' gold to your bank'
+    exact[#exact + 1] = tr('%s gold to your bank', (comma_value and comma_value(r.gold) or tostring(r.gold)))
   end
   if (tonumber(r.chaos) or 0) > 0 then
-    local t = r.chaos .. (r.chaos > 1 and ' Orbs of Upheaval' or ' Orb of Upheaval')
+    local t = r.chaos .. (r.chaos > 1 and tr(' Orbs of Upheaval') or tr(' Orb of Upheaval'))
     parts[#parts + 1] = t
     exact[#exact + 1] = t
   end
   if (tonumber(r.divine) or 0) > 0 then
-    local t = r.divine .. (r.divine > 1 and ' Orbs of Fate' or ' Orb of Fate')
+    local t = r.divine .. (r.divine > 1 and tr(' Orbs of Fate') or tr(' Orb of Fate'))
     parts[#parts + 1] = t
     exact[#exact + 1] = t
   end
@@ -213,7 +213,7 @@ local function buildTabs()
   local keep
   for _, band in ipairs(list(board.bands)) do
     local tab = g_ui.createWidget('BountyTab', window.tabs)
-    tab:setText(band.label or ('Band ' .. tostring(band.index)))
+    tab:setText(band.label or (tr('Band %s', tostring(band.index))))
     if band.own then tab:setTooltip(tr('Your level')) end
     local index = band.index
     tab.onClick = function() showBand(index) end

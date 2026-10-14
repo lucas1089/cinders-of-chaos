@@ -31,10 +31,10 @@ local function paint(index)
   value:setText(formatShortNumber(v.level)) -- short (15.3k); the row tooltip has the exact level
   if v.level > v.base then
     value:setColor('#44ad25')
-    row:setTooltip(string.format('%s: %d (base %d)\n%d%% to the next level', NAMES[index + 1], v.level, v.base, v.percent))
+    row:setTooltip(tr('%s: %d (base %d)\n%d%% to the next level', NAMES[index + 1], v.level, v.base, v.percent))
   else
     value:setColor('#c0c0c0')
-    row:setTooltip(string.format('%s: %d\n%d%% to the next level', NAMES[index + 1], v.level, v.percent))
+    row:setTooltip(tr('%s: %d\n%d%% to the next level', NAMES[index + 1], v.level, v.percent))
   end
   row:getChildById('percent'):setPercent(v.percent)
 end

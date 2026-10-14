@@ -1854,8 +1854,9 @@ for _, f in ipairs(handlerFiles) do
 		end
 	end
 end
--- handlers on one opcode: an action reaches one of them (the map markers' hello is answered by both on purpose)
-local sharedOk = {[ChaosOpcodes.mapMarkers] = {hello = true}}
+-- handlers on one opcode: an action reaches one of them (the map markers' hello is answered by both on purpose; the
+-- display scale hello carries the client's language too, which i18n.lua keeps)
+local sharedOk = {[ChaosOpcodes.mapMarkers] = {hello = true}, [ChaosOpcodes.displayScale] = {hello = true}}
 for op, names in pairs(opcodeOwners) do
 	if #names > 1 then
 		local group = {}

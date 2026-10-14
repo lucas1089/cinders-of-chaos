@@ -90,7 +90,7 @@ function create()
   if okB then
     windowButton = btn
     windowButton:setOn(false)
-    pcall(function() windowButton:setText("ADM") end)
+    pcall(function() windowButton:setText(tr("ADM")) end)
   end
 
   if not hotkeyBound and modules.game_interface and modules.game_interface.getRootPanel then
@@ -339,7 +339,7 @@ function showAction(action)
     return
   end
 
-  title:setText(action.name .. (action.dangerous and "  (dangerous)" or ""))
+  title:setText(action.name .. (action.dangerous and tr("  (dangerous)") or ""))
   desc:setText(action.description or "")
   for _, spec in ipairs(action.params or {}) do
     addParamWidget(container, spec)

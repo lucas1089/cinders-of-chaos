@@ -206,12 +206,12 @@ function onExtendedOpcode(protocol, opcode, buffer)
             refreshShaderList(nameShaderWindow.searchField:getText() or "")
         end
         if data.name then
-            modules.game_textmessage.displayBroadcastMessage("Name shader equipped: " .. data.name)
+            modules.game_textmessage.displayBroadcastMessage(tr('Name shader equipped: %s', data.name))
         end
     elseif data.action == "unlocked" then
         -- Name shader was unlocked
         if data.name then
-            modules.game_textmessage.displayBroadcastMessage("Name shader unlocked: " .. data.name)
+            modules.game_textmessage.displayBroadcastMessage(tr('Name shader unlocked: %s', data.name))
         end
         -- Update availability
         if data.id then
@@ -279,9 +279,9 @@ function updatePreview()
         -- Note: Actual shader application would require C++ side label shader support
         -- For now, we indicate the shader name
         if shaderName ~= "" and shaderName ~= "-" then
-            nameShaderWindow.previewShaderLabel:setText("Shader: " .. shaderName)
+            nameShaderWindow.previewShaderLabel:setText(tr('Shader: %s', shaderName))
         else
-            nameShaderWindow.previewShaderLabel:setText("Shader: None")
+            nameShaderWindow.previewShaderLabel:setText(tr("Shader: None"))
         end
     end
 end
@@ -301,7 +301,7 @@ function refreshShaderList(searchText)
             break
         end
     end
-    nameShaderWindow.currentShaderLabel:setText("Current: " .. currentShaderName)
+    nameShaderWindow.currentShaderLabel:setText(tr('Current: %s', currentShaderName))
 
     -- Filter and sort shaders
     local sorted = {}
@@ -329,7 +329,7 @@ function refreshShaderList(searchText)
             availableCount = availableCount + 1
         end
     end
-    nameShaderWindow.statusLabel:setText("Unlocked: " .. availableCount .. "/" .. totalCount)
+    nameShaderWindow.statusLabel:setText(tr('Unlocked: %s/%s', availableCount, totalCount))
 
     -- Create shader widgets
     for _, shader in ipairs(sorted) do
@@ -376,7 +376,7 @@ function refreshShaderList(searchText)
                 if description ~= "" then
                     modules.game_textmessage.displayBroadcastMessage("Locked: " .. description)
                 else
-                    modules.game_textmessage.displayBroadcastMessage("This name shader is locked.")
+                    modules.game_textmessage.displayBroadcastMessage(tr("This name shader is locked."))
                 end
             end
         end

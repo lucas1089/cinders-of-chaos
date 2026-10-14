@@ -314,7 +314,7 @@ ChaosMainWindow
       anchors.left: parent.left
       anchors.right: parent.right
       margin-top: 4
-      placeholder: Search the wardrobe
+      !placeholder: tr('Search the wardrobe')
 
     UIScrollArea
       id: lookList

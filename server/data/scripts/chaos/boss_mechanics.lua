@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/boss_mechanics_core.lua")
 ChaosBossMechConfig = dofile("data/scripts/chaos/boss_mechanics_config.lua")
 if not ChaosSpeed then
@@ -177,17 +180,27 @@ function M.busy(boss)
 	return f ~= nil and f.st.busyUntil ~= nil and mnow() < f.st.busyUntil
 end
 
-local function warn(f, text)
-	text = G.warnText(text, f.profile.label or f.name)
+-- the boss yells the English line (everyone around hears the same yell); each fighter gets the orange line in their
+-- own language (Chaos.t: the config text is the key, server/README.md "Server texts in pt-BR (Chaos.t)"). {spell} in a
+-- text is the name of the spell, %s the boss.
+local function warn(f, text, spell)
 	if not text then
 		return
 	end
+	local name = f.profile.label or f.name
+	local function line(p)
+		local s = G.warnText(p and Chaos.t(p, text) or text, name)
+		if s and spell then
+			s = s:gsub("{spell}", function() return spell end)
+		end
+		return s
+	end
 	local boss = Monster(f.id)
 	if boss then
-		boss:say(text, TALKTYPE_MONSTER_YELL)
+		boss:say(line(nil), TALKTYPE_MONSTER_YELL)
 	end
 	for _, p in ipairs(fightPlayers(f)) do
-		p:sendTextMessage(orange(), text)
+		p:sendTextMessage(orange(), line(p))
 	end
 end
 
@@ -365,7 +378,7 @@ local function channelStep(f, now)
 	if ch.totem and not alive then
 		f.channel = nil
 		sendCast(f, ch.spec.label, 0, "interrupted")
-		warn(f, "%s's " .. ch.spec.label .. " is interrupted!")
+		warn(f, "%s's {spell} is interrupted!", ch.spec.label)
 		return
 	end
 	if now < ch.endAt then
@@ -663,7 +676,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			e = G.stackAdd(e, d, now)
 			f.st.stacks[guid] = e
 			if e.stacks >= 3 and e.stacks % 3 == 0 then
-				creature:sendTextMessage(orange(), string.format("%s: %d stacks (+%d%% damage taken from %s).", d.label,
+				creature:sendTextMessage(orange(), Chaos.t(creature, "%s: %d stacks (+%d%% damage taken from %s).", d.label,
 					e.stacks, math.floor(d.perStack * e.stacks * 100 + 0.5), f.profile.label or f.name))
 			end
 		end

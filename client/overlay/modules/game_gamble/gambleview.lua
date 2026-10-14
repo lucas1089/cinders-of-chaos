@@ -10,6 +10,7 @@
 --   odds = {{r, n, p}}                      rarity, name, percent
 --   npc, last = {r, rn, id, c, n, l, s, i}  the Gambler's name; the last piece bought (the reveal)
 -- The purchase rules here mirror the server's (gamble_core.lua K.checkBuy) for the buttons only; the server decides.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 GambleView = GambleView or {}
 local V = GambleView
@@ -70,7 +71,7 @@ end
 
 function V.refreshText(s, elapsed)
   if not s then return '' end
-  return string.format('New crates at %s (%s), in %s', s.at or '?', s.tz or 'server time', V.countdown(V.left(s, elapsed)))
+  return tr('New crates at %s (%s), in %s', s.at or '?', s.tz or tr('server time'), V.countdown(V.left(s, elapsed)))
 end
 
 function V.canBuy(s, it)
@@ -90,18 +91,18 @@ function V.cells(s)
     if it.sold then
       why = 'Sold. New crates come with the next stock.'
     elseif not s.near then
-      why = 'Buy from ' .. (s.npc or 'the Gambler') .. ' in person (next to the temple).'
+      why = tr('Buy from %s in person (next to the temple).', (s.npc or tr('the Gambler')))
     elseif not afford then
-      why = 'You need ' .. V.fmtNum(it.p) .. ' gold (backpack and bank).'
+      why = tr('You need %s gold (backpack and bank).', V.fmtNum(it.p))
     else
-      why = 'Pay ' .. V.fmtNum(it.p) .. ' gold and break the seal.'
+      why = tr('Pay %s gold and break the seal.', V.fmtNum(it.p))
     end
     out[#out + 1] = {
       i = num(it.i), id = num(it.id), clientId = V.clientId(it.c), name = (tostring(it.n or ''):gsub('^%l', string.upper)),
       slotText = it.sn or it.s or '', levelText = 'iLvl ' .. num(it.l), level = num(it.l),
       priceText = V.fmtNum(it.p) .. ' gold', priceColor = it.sold and V.COLORS.sold or (afford and V.COLORS.gold or V.COLORS.bad),
       sold = it.sold == true, canBuy = can, buyText = it.sold and 'Sold' or ('Buy ' .. V.short(it.p)),
-      tip = string.format('%s\n%s, item level %d\nRarity: sealed until bought\nPrice: %s gold\n%s',
+      tip = tr('%s\n%s, item level %d\nRarity: sealed until bought\nPrice: %s gold\n%s',
         (tostring(it.n or ''):gsub('^%l', string.upper)), it.sn or it.s or '', num(it.l), V.fmtNum(it.p), why)
     }
   end
@@ -118,30 +119,30 @@ end
 
 function V.header(s)
   if not s then return '' end
-  return string.format('Sealed crates for level %d (item level up to %d): %d of %d sold. Your gold: %s',
+  return tr('Sealed crates for level %d (item level up to %d): %d of %d sold. Your gold: %s',
     num(s.level), num(s.gate), V.soldCount(s), #(s.items or {}), V.fmtNum(s.money))
 end
 
 function V.nearText(s)
   if not s then return '', V.COLORS.dim end
   if s.near then
-    return 'You stand before ' .. (s.npc or 'the Gambler') .. ': pick a crate.', V.COLORS.good
+    return tr('You stand before %s: pick a crate.', (s.npc or tr('the Gambler'))), V.COLORS.good
   end
-  return 'Look from anywhere; buy from ' .. (s.npc or 'the Gambler') .. ' next to the temple.', V.COLORS.warn
+  return tr('Look from anywhere; buy from %s next to the temple.', (s.npc or tr('the Gambler'))), V.COLORS.warn
 end
 
 -- the early refresh button: text, enabled, tooltip
 function V.reroll(s)
   if not s or num(s.rerollMax) <= 0 then
-    return 'Fresh Crates', false, 'Not offered.'
+    return tr('Fresh Crates'), false, tr('Not offered.')
   end
   if s.reroll == nil then
-    return 'Fresh Crates', false, string.format('Used %d of %d in this stock. New crates at %s.', num(s.rerolls),
+    return tr('Fresh Crates'), false, tr('Used %d of %d in this stock. New crates at %s.', num(s.rerolls),
       num(s.rerollMax), s.at or '?')
   end
   local ok = s.near == true and num(s.money) >= num(s.reroll)
-  return 'Fresh Crates (' .. V.short(s.reroll) .. ')', ok,
-    string.format('A new stock now for %s gold (%d of %d used). The sold marks go too; each crate is still paid in full.',
+  return tr('Fresh Crates (%s)', V.short(s.reroll)), ok,
+    tr('A new stock now for %s gold (%d of %d used). The sold marks go too; each crate is still paid in full.',
       V.fmtNum(s.reroll), num(s.rerolls), num(s.rerollMax))
 end
 
@@ -153,7 +154,7 @@ function V.oddsText(s)
     parts[#parts + 1] = string.format(p >= 1 and '%s %.1f%%' or '%s %.2f%%', o.n, p)
   end
   if #parts == 0 then return '' end
-  return 'Odds per crate: ' .. table.concat(parts, ', ')
+  return tr('Odds per crate: %s', table.concat(parts, ', '))
 end
 
 -- the odds of Legendary (rarity 5) or better
@@ -169,7 +170,7 @@ end
 function V.reveal(last)
   if type(last) ~= 'table' or not last.r then return '', V.COLORS.dim end
   local name = (tostring(last.n or ''):gsub('^%l', string.upper))
-  return string.format('The seal breaks: %s %s (item level %d)', last.rn or ('Rarity ' .. num(last.r)), name, num(last.l)),
+  return tr('The seal breaks: %s %s (item level %d)', last.rn or ('Rarity ' .. num(last.r)), name, num(last.l)),
     V.RARITY[num(last.r)] or V.COLORS.text
 end
 

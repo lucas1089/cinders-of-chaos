@@ -40,7 +40,7 @@ MiniWindow < UIMiniWindow
     size: 12 12
     image-source: /images/ui/miniwindow_buttons
     image-clip: 29 1 12 12
-    tooltip: Close this window
+    !tooltip: tr('Close this window')
     tooltip-delayed: true
 
     $hover:
@@ -57,7 +57,7 @@ MiniWindow < UIMiniWindow
     size: 12 12
     image-source: /images/ui/miniwindow_buttons
     image-clip: 1 1 12 12
-    tooltip: Maximise or minimise window 
+    !tooltip: tr('Maximise or minimise window')
     tooltip-delayed: true
 
     $hover:
@@ -152,7 +152,7 @@ MiniWindow < UIMiniWindow
     size: 12 12
     image-source: /images/ui/miniwindow_buttons
     image-clip: 71 1 12 12
-    tooltip: Lock or unlock window
+    !tooltip: tr('Lock or unlock window')
     tooltip-delayed: true
 
     $hover:

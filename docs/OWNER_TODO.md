@@ -5,6 +5,11 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 ## Decisions
 
+- [ ] **Helper rule (proposal).** Add to Rules 2.2: "The official client's helper (healing, spell rules, auto rotation)
+  is allowed while you play. Leaving it running for hours with nobody at the keyboard counts as botting (7.4)." Until
+  then GMs escalate those cases (docs/GM_HANDBOOK.md "3a. Bot review") and give no penalty.
+- [ ] **Presence check failure.** Now only logged (`antibot_config.lua` `failAction = "log"`). `"temple"` is still
+  available. A kick is no longer an option.
 - [ ] **Dates.**
   - Proposal: launch on 20 Nov 2026 at 15:00 (UTC-3).
   - Open betas on the weekends of 31 Oct and 7 Nov.
@@ -82,6 +87,27 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   - whether Conjure Rations (food), Hallow Spear and Charge Staff, the last conjure spells that make no rune, go too
     (decided: they go).
 
+- [ ] **The Ashen Chronicle, Season 1 story:** read and approve the five chapters (English and Portuguese) in
+  `server/data/scripts/chaos/chronicle_text.lua` (also in the Codex's Lore tab and the wiki), and the goal numbers in
+  `chronicle_config.lua` `chapters.s1` (150 characters to level 100 and 1,500 rifts of tiers 1-5; 30 world bosses and 800
+  rifts of tiers 6-10; 120 Omens and 300 rifts of tiers 11-14; 40 Sepulchre clears and 25 Ascended; 5 Cinderhearts, 100
+  characters to level 600 and 10 invasions). Tune them to the expected population. The lore writers' Archivist Maelis
+  keeps "The Cinder Chronicle" in `lore_data.lua`: decide whether she is the Chronicler (one name) or a second keeper.
+- [ ] **Place the Chronicle's areas** (closed until their chapter is written): compile
+  `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (64x52, z 7, outdoor, beside the capital's walls)
+  and `chronicle_ossuary_stair.json` (60x52, z 9, under the capital), place each with
+  `python3 -I server/tools/area_planner.py place OUT/<id>.otbm WORLD.otbm COPY.otbm --at X Y Z --spawn ...` on an empty
+  spot you choose, then set in `server/data/scripts/chaos/chronicle_config.lua` `areas`: `at = {x = X, y = Y, z = Z}` and
+  `gate = {x =, y =, z =}` (the world tile where the portal appears, e.g. by the capital's gate for the Breach, a cellar
+  stair for the Ossuary Stair). `/chronicle` says which are placed. Previews: `python3 -I server/tools/chronicle_areas_test.py --preview OUT`.
+- [ ] **Place the Memorial plaza** in the capital: compile `server/tools/areaplan/chronicle/capital_memorial.json`
+  (48x40 at z 7, a roofed hall with a plaza, two halls and a garden; its approach and exit portal at the south), place it
+  with `area_planner.py place OUT/capital_memorial.otbm WORLD.otbm COPY.otbm --at X Y Z` next to a street of the capital,
+  join its south approach to the street in the map editor, and set `memorial_config.lua` `plaza.at = {x = X, y = Y, z = 7}`.
+  The statues and stones appear at the next refresh (`/memorial refresh`).
+- [ ] **Town scars of the Chronicle:** the decoration sets (`chronicle_config.lua` `town.sets`) go on free tiles around
+  the capital's temple (town 1). Check them in game after `/chronicle complete` on a test server, or set `town.anchor`;
+  optional ground swaps (`swaps`, `{dx, dy, from = id, to = id}`) need ground ids of your map.
 ## Accounts and services
 
 - [ ] **Domain.** The site address must be `https://...` (`CHAOS_SITE_URL`).
@@ -114,6 +140,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 ## Texts
 
+- [ ] **Bot review privacy line:** a lawyer should review the new suspicion-score sentence (EN and PT) and its 30/90-day
+  retention, with the other legal texts.
 - [ ] **Legal texts:** terms of use, privacy policy and donation terms. Drafts in Portuguese and English are in
   [docs/legal/](legal/README.md) and on the website (footer, account creation checkbox, donation page). Left for the
   owner: fill in the placeholders (name, CPF or CNPJ, contact and DPO e-mail, city, providers, prices, notice periods,

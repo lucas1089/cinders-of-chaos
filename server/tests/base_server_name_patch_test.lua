@@ -168,6 +168,10 @@ for line in (real or ""):gmatch("[^\n]+") do
 	end
 end
 ok(rows >= 3, "the real list has its rows")
+-- the serverName of the shipped base config.lua (base-server.tar.xz, windows-assets 407ad9b6): a live install kept it
+-- when the list only had the other two forms (2026-10-14)
+ok((real or ""):find("\n2a791147425bdd4cf01693b0a140800154f380e2872d1f22d1c29a7673953fdc,config.lua,", 1, true) ~= nil,
+	"the real list has the shipped base config.lua's serverName")
 
 os.execute("rm -rf '" .. root .. "'")
 print(string.format("base_server_name_patch_test: %d checks, %d failures", checks, fails))

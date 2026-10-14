@@ -31,7 +31,7 @@ UIWidget
     margin-top: 10
     margin-left: 10
     font: sans-bold-16px
-    text: "Name"
+    !text: tr('Name')
     color: #eef3f9
 
   UIWidget
@@ -51,7 +51,7 @@ UIWidget
     text-auto-resize: true
     margin-top: 10
     margin-left: 10
-    text: "Name"
+    !text: tr('Name')
     color: #dfe6ee
 
   Label
@@ -61,7 +61,7 @@ UIWidget
     anchors.left: starttime.left
     text-auto-resize: true
     margin-top: 2
-    text: "Name"
+    !text: tr('Name')
     color: #dfe6ee
 
   Label
@@ -71,7 +71,7 @@ UIWidget
     anchors.left: starttime.left
     text-auto-resize: true
     margin-top: 2
-    text: "Name"
+    !text: tr('Name')
     color: #dfe6ee
 
   // Sem anchors.right/bottom de proposito: a largura e a altura do 'desc' sao

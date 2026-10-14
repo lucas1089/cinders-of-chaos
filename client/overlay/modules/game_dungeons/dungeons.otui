@@ -28,7 +28,7 @@ DungeonMenuItem < Panel
     anchors.right: parent.right
     margin-top: 1
     margin-left: 3
-    text: Dungeon Name
+    !text: tr('Dungeon Name')
     color: #dfdfdf
 
   Label
@@ -146,7 +146,7 @@ LootItem < UIItem
   virtual: true
 
 MainWindow
-  text: Dungeons
+  !text: tr('Dungeons')
   size: 1219 720
 
   ScrollablePanel
@@ -197,29 +197,29 @@ MainWindow
       anchors.right: parent.right
       height: 155
       margin-top: 100
-      text: Difficulty
+      !text: tr('Difficulty')
       layout:
         type: horizontalBox
 
       DifficultyButton
-        text: Normal
+        !text: tr('Normal')
         @onFocusChange: modules.game_dungeons.onDifficultyFocus(1, self:isFocused())
 
         DifficultyIcon
           image-clip: 0 0 40 42
         
         DifficultyInfo
-          !text: 'Monster Health 100%\nMonster Damage 100%'
+          !text: tr('Monster Health 100%\nMonster Damage 100%')
 
       DifficultyButton
-        text: Hard
+        !text: tr('Hard')
         @onFocusChange: modules.game_dungeons.onDifficultyFocus(2, self:isFocused())
 
         DifficultyIcon
           image-clip: 40 0 40 42
         
         DifficultyInfo
-          !text: 'Monster Health 200%\nMonster Damage 130%\nBonus XP +75%\nGold Drop +75%'
+          !text: tr('Monster Health 200%\nMonster Damage 130%\nBonus XP +75%\nGold Drop +75%')
         
         Panel
           id: lockBg
@@ -235,14 +235,14 @@ MainWindow
           visible: false
 
       DifficultyButton
-        text: Expert
+        !text: tr('Expert')
         @onFocusChange: modules.game_dungeons.onDifficultyFocus(3, self:isFocused())
 
         DifficultyIcon
           image-clip: 80 0 40 42
         
         DifficultyInfo
-          !text: 'Monster Health 320%\nMonster Damage 190%\nBonus XP +100%\nGold Drop +100%\nLoot Chance +15%'
+          !text: tr('Monster Health 320%\nMonster Damage 190%\nBonus XP +100%\nGold Drop +100%\nLoot Chance +15%')
         
         Panel
           id: lockBg
@@ -258,14 +258,14 @@ MainWindow
           visible: false
 
       DifficultyButton
-        text: Master
+        !text: tr('Master')
         @onFocusChange: modules.game_dungeons.onDifficultyFocus(4, self:isFocused())
 
         DifficultyIcon
           image-clip: 120 0 40 42
         
         DifficultyInfo
-          !text: 'Monster Health 500%\nMonster Damage 280%\nBonus XP +200%\nGold Drop +200%\nLoot Chance +30%'
+          !text: tr('Monster Health 500%\nMonster Damage 280%\nBonus XP +200%\nGold Drop +200%\nLoot Chance +30%')
         
         Panel
           id: lockBg
@@ -281,14 +281,14 @@ MainWindow
           visible: false
 
       DifficultyButton
-        text: Torment
+        !text: tr('Torment')
         @onFocusChange: modules.game_dungeons.onDifficultyFocus(5, self:isFocused())
 
         DifficultyIcon
           image-clip: 160 0 40 42
         
         DifficultyInfo
-          !text: 'Monster Health 800%\nMonster Damage 400%\nBonus XP +300%\nGold Drop +300%\nLoot Chance +45%'
+          !text: tr('Monster Health 800%\nMonster Damage 400%\nBonus XP +300%\nGold Drop +300%\nLoot Chance +45%')
         
         Panel
           id: lockBg
@@ -304,14 +304,14 @@ MainWindow
           visible: false
 
       DifficultyButton
-        text: Hell
+        !text: tr('Hell')
         @onFocusChange: modules.game_dungeons.onDifficultyFocus(6, self:isFocused())
 
         DifficultyIcon
           image-clip: 200 0 40 42
         
         DifficultyInfo
-          !text: 'Monster Health 1300%\nMonster Damage 600%\nBonus XP +400%\nGold Drop +400%\nLoot Chance +60%'
+          !text: tr('Monster Health 1300%\nMonster Damage 600%\nBonus XP +400%\nGold Drop +400%\nLoot Chance +60%')
         
         Panel
           id: lockBg
@@ -336,14 +336,14 @@ MainWindow
       image-border-top: 30
       image-border-bottom: 5
       margin-top: 1
-      text: Requirements
+      !text: tr('Requirements')
 
       Label
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         margin-left: 2
-        text: Level:
+        !text: tr('Level:')
 
         $disabled:
           height: 0
@@ -363,7 +363,7 @@ MainWindow
         anchors.left: parent.left
         anchors.right: parent.right
         margin-left: 2
-        text: Party:
+        !text: tr('Party:')
 
         $disabled:
           height: 0
@@ -382,7 +382,7 @@ MainWindow
         anchors.left: parent.left
         anchors.right: parent.right
         margin-left: 2
-        text: Item Level:
+        !text: tr('Item Level:')
 
         $disabled:
           height: 0
@@ -401,7 +401,7 @@ MainWindow
         anchors.left: parent.left
         anchors.right: parent.right
         margin-left: 2
-        text: Gold:
+        !text: tr('Gold:')
 
         $disabled:
           height: 0
@@ -422,7 +422,7 @@ MainWindow
         margin-top: 2
         margin-left: 2
         margin-right: 4
-        text: Quests
+        !text: tr('Quests')
         height: 55
 
         $disabled:
@@ -441,7 +441,7 @@ MainWindow
         anchors.left: parent.left
         anchors.right: parent.right
         height: 65
-        text: Items
+        !text: tr('Items')
         layout:
           type: grid
           cell-size: 34 34
@@ -470,7 +470,7 @@ MainWindow
       anchors.top: prev.top
       anchors.left: prev.right
       size: 247 162
-      text: Potential Boss Loot
+      !text: tr('Potential Boss Loot')
       layout:
         type: grid
         cell-size: 34 34
@@ -514,7 +514,7 @@ MainWindow
       image-border-top: 30
       image-border-bottom: 5
       width: 250
-      text: Top Solo Runners
+      !text: tr('Top Solo Runners')
 
       Table
         id: soloTable
@@ -531,15 +531,15 @@ MainWindow
           height: 20
           
           PlayersTableHeaderColumn
-            !text: '#'
+            !text: tr('#')
             width: 33
 
           PlayersTableHeaderColumn
-            !text: 'Name'
+            !text: tr('Name')
             width: 128
 
           PlayersTableHeaderColumn
-            !text: 'Time'
+            !text: tr('Time')
             width: 70
 
       TableData
@@ -566,7 +566,7 @@ MainWindow
       image-border-top: 30
       image-border-bottom: 5
       width: 250
-      text: Top Group Runners
+      !text: tr('Top Group Runners')
 
       Table
         id: groupTable
@@ -583,15 +583,15 @@ MainWindow
           height: 20
           
           PlayersTableHeaderColumn
-            !text: '#'
+            !text: tr('#')
             width: 33
 
           PlayersTableHeaderColumn
-            !text: 'Name'
+            !text: tr('Name')
             width: 128
 
           PlayersTableHeaderColumn
-            !text: 'Time'
+            !text: tr('Time')
             width: 70
 
       TableData
@@ -618,7 +618,7 @@ MainWindow
       image-border: 10
       image-border-top: 30
       image-border-bottom: 5
-      text: Queue
+      !text: tr('Queue')
 
       Label
         anchors.top: parent.top
@@ -627,7 +627,7 @@ MainWindow
         margin-left: 2
         margin-top: 2
         text-auto-resize: true
-        text: Status:
+        !text: tr('Status:')
 
         Label
           id: queueStatus
@@ -637,7 +637,7 @@ MainWindow
           text-align: right
           text-auto-resize: true
           color: green
-          text: Open
+          !text: tr('Open')
           text-auto-resize: true
 
       Label
@@ -645,7 +645,7 @@ MainWindow
         anchors.left: parent.left
         anchors.right: parent.right
         margin-left: 2
-        text: Estimated Time:
+        !text: tr('Estimated Time:')
         text-auto-resize: true
 
         Label
@@ -673,7 +673,7 @@ MainWindow
 
       Label
         anchors.centerIn: parent
-        text: Waiting Time
+        !text: tr('Waiting Time')
         margin-bottom: 22
         color: #adadad
         text-auto-resize: true
@@ -696,7 +696,7 @@ MainWindow
         id: queueButton
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        text: Join
+        !text: tr('Join')
         margin-bottom: 5
         @onClick: modules.game_dungeons.joinQueue()
 
@@ -710,7 +710,7 @@ MainWindow
       image-border: 10
       image-border-top: 5
       image-border-bottom: 5
-      text: Challenges
+      !text: tr('Challenges')
       vertical-scrollbar: challengesScroll
       layout:
         type: verticalBox
@@ -736,6 +736,6 @@ MainWindow
   Button
     anchors.bottom: parent.bottom
     anchors.right: parent.right
-    text: Close
+    !text: tr('Close')
     width: 60
     @onClick: modules.game_dungeons.toggle()

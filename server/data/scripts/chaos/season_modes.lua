@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not (ChaosSeason and ChaosSeason.realmOf and Chaos.seasonConfig) then
 	dofile("data/scripts/chaos/season.lua")
 end
@@ -614,8 +617,7 @@ function S.modesFall(player, killer, corpse)
 		"it stays on the %s ladder as fallen and plays on as a standard character, with everything it has.", player:getName(),
 		season.name))
 	if hc.announce then
-		Game.broadcastMessage(string.format("%s has fallen in Hardcore at level %d (%s).", player:getName(), level, cause),
-			MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s has fallen in Hardcore at level %d (%s).", player:getName(), level, cause)
 	end
 end
 

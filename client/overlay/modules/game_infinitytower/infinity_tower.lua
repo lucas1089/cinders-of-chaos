@@ -146,13 +146,13 @@ end
 
 function showLoadingState()
   local seasonLabel = infinityTowerWindow:recursiveGetChildById('seasonLabel')
-  if seasonLabel then seasonLabel:setText('Current Season: --') end
+  if seasonLabel then seasonLabel:setText(tr('Current Season: --')) end
   local endLabel = infinityTowerWindow:recursiveGetChildById('seasonEndLabel')
-  if endLabel then endLabel:setText('Season Ends In: --') end
+  if endLabel then endLabel:setText(tr('Season Ends In: --')) end
   local tryLabel = infinityTowerWindow:recursiveGetChildById('nextTryLabel')
-  if tryLabel then tryLabel:setText('Next Try Available: --') end
+  if tryLabel then tryLabel:setText(tr('Next Try Available: --')) end
   local pointsLabel = infinityTowerWindow:recursiveGetChildById('towerPointsLabel')
-  if pointsLabel then pointsLabel:setText('Your Tower Points: 0') end
+  if pointsLabel then pointsLabel:setText(tr('Your Tower Points: 0')) end
 
   populateMilestones(DEFAULT_MILESTONES, 0)
 end
@@ -265,7 +265,7 @@ function populateMilestones(milestones, playerPoints)
     local pointsLbl = g_ui.createWidget('UIWidget', track)
     pointsLbl:setId('milestonePoints' .. i)
     pointsLbl:setSize({width = 50, height = 12})
-    pointsLbl:setText(pointsStr .. ' pts')
+    pointsLbl:setText(tr('%s pts', pointsStr))
     pointsLbl:setFont('cipsoftFont')
     pointsLbl:setColor('#ffda34')
     pointsLbl:setTextAlign(AlignCenter)
@@ -308,7 +308,7 @@ function populateMilestones(milestones, playerPoints)
     local claimBtn = g_ui.createWidget('Button', track)
     claimBtn:setId('claimBtn' .. i)
     claimBtn:setSize({width = 43, height = 20})
-    claimBtn:setText('Claim')
+    claimBtn:setText(tr('Claim'))
     claimBtn:setFont('cipsoftFont')
     claimBtn:addAnchor(AnchorTop, 'pointsProgress', AnchorBottom)
     claimBtn:addAnchor(AnchorLeft, 'parent', AnchorLeft)
@@ -319,7 +319,7 @@ function populateMilestones(milestones, playerPoints)
     -- Enable/disable based on points and claimed status
     if milestone.claimed then
       claimBtn:setEnabled(false)
-      claimBtn:setText('Done')
+      claimBtn:setText(tr('Done'))
     elseif playerPoints >= milestone.points then
       claimBtn:setEnabled(true)
       claimBtn.onClick = function()
@@ -345,8 +345,8 @@ function populateMilestones(milestones, playerPoints)
     local percent = math.min(playerPoints / maxPoints, 1.0)
     local fillWidth = math.floor((barWidth - 6) * percent)
     progressBar:setWidth(fillWidth)
-    progressLabel:setText(formatShortNumber(playerPoints) .. ' / ' .. formatShortNumber(maxPoints) .. ' pts')
-    progressLabel:setTooltip(comma_value(playerPoints) .. ' / ' .. comma_value(maxPoints) .. ' pts')
+    progressLabel:setText(tr('%s / %s pts', formatShortNumber(playerPoints), formatShortNumber(maxPoints)))
+    progressLabel:setTooltip(tr('%s / %s pts', comma_value(playerPoints), comma_value(maxPoints)))
   end
 end
 
@@ -450,10 +450,10 @@ function populateSeasonInfos(data)
   local tryLabel = infinityTowerWindow:recursiveGetChildById('nextTryLabel')
   local pointsLabel = infinityTowerWindow:recursiveGetChildById('towerPointsLabel')
   
-  if seasonLabel then seasonLabel:setText("Current Season: " .. (data.seasonNum or 1)) end
+  if seasonLabel then seasonLabel:setText(tr('Current Season: %s', (data.seasonNum or 1))) end
   if pointsLabel then
-    pointsLabel:setText("Your Tower Points: " .. formatShortNumber(data.playerPoints or 0))
-    pointsLabel:setTooltip("Your Tower Points: " .. comma_value(data.playerPoints or 0))
+    pointsLabel:setText(tr('Your Tower Points: %s', formatShortNumber(data.playerPoints or 0)))
+    pointsLabel:setTooltip(tr('Your Tower Points: %s', comma_value(data.playerPoints or 0)))
   end
   
   -- Clear existing timer
@@ -475,18 +475,18 @@ function populateSeasonInfos(data)
       if endLabel then
           local remainEnd = targetSeasonEnd - now
           if remainEnd > 0 then
-              endLabel:setText("Season Ends In: " .. formatTimeRemaining(remainEnd))
+              endLabel:setText(tr('Season Ends In: %s', formatTimeRemaining(remainEnd)))
           else
-              endLabel:setText("Season Ends In: Finished")
+              endLabel:setText(tr("Season Ends In: Finished"))
           end
       end
       
       if tryLabel then
           local remainTry = targetNextTry - now
           if remainTry > 0 then
-              tryLabel:setText("Next Try Available: " .. formatTimeRemaining(remainTry))
+              tryLabel:setText(tr('Next Try Available: %s', formatTimeRemaining(remainTry)))
           else
-              tryLabel:setText("Next Try Available: Ready Now!")
+              tryLabel:setText(tr("Next Try Available: Ready Now!"))
           end
       end
       

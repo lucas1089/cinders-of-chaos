@@ -247,7 +247,7 @@ ChaosMainWindow
       anchors.left: categoryPanel.right
       margin-left: 8
       width: 180
-      placeholder: Search a monster
+      !placeholder: tr('Search a monster')
 
     ChaosCheckBox
       id: knownBox

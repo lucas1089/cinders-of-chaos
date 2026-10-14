@@ -40,6 +40,8 @@ you use your rights. It follows the Brazilian General Data Protection Law (LGPD,
 - Anti-cheat: the server measures play patterns of online characters, such as the rhythm of actions, reaction times,
   repeated routes and hours played in a row. It builds a score, may send a presence check and logs the results for the
   staff. **None of this punishes on its own:** a staff member always reviews before deciding.
+  A daily suspicion score per character, with the signals behind it, is kept 30 days (90 days when a staff member
+  escalated the case); only days with a noticeable score are stored.
 - Player reports: who reported, who was reported, the reason, the note, the position, the time and the reported
   character's last 10 lines in the game's public channels. **Private messages are never stored or read.**
 - Bug reports: the text you write, the position, and the character's level and class.
@@ -66,7 +68,10 @@ Some information is visible to everyone on the website and in the game: the char
 looks, the account's country flag, the last login date, deaths, guild, leaderboards and the profile comment, if you write
 one. The account's other characters are shown on the profile unless you hide them. In the game, other players can see
 your character's equipment and talent tree if "Allow others to inspect me" is on (the default). In the mentor program, the mentor card
-only shows on the website if you choose "Show on website".
+only shows on the website if you choose "Show on website". The Memorial in the capital and its website page show a
+character's name with its realm firsts and records unless you turn "Show my records and realm firsts" off, and with a
+Hardcore fall (level, class, cause, date) only if you choose to show it; you can change both at any time, for every
+season at once. The Chronicle's contributor lists follow the same choice.
 
 ## 3. Legal bases (LGPD, art. 7)
 
@@ -75,7 +80,7 @@ only shows on the website if you choose "Show on website".
   only use what is needed, and you may object (section 8).
 - **Legal obligation:** payment records and other records the law requires us to keep.
 - **Regular exercise of rights:** records of bans, reports and reversals, to defend ourselves in a dispute.
-- **Consent:** when you choose something optional, such as showing your mentor card on the website or remembering a
+- **Consent:** when you choose something optional, such as showing your mentor card on the website, showing a Hardcore fall on the Memorial, or remembering a
   device. You can withdraw consent at any time.
 
 ## 4. How long we keep data

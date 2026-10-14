@@ -1,4 +1,5 @@
 -- Text helpers of the arena module (no client API, tested by arenatext_test.lua with plain Lua).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ArenaText = {}
 
 -- 75 -> "1:15", negative -> "0:00"
@@ -27,11 +28,11 @@ function ArenaText.seasonLine(v, seasonId)
   if type(v) ~= 'table' then
     return '', '#8c8070', ''
   end
-  local tip = string.format('PvP Season %d rating %d (%d matches).', tonumber(seasonId) or 1, tonumber(v.rating) or 1500,
+  local tip = tr('PvP Season %d rating %d (%d matches).', tonumber(seasonId) or 1, tonumber(v.rating) or 1500,
     tonumber(v.matches) or 0)
   if not v.placed then
     local total = (tonumber(v.matches) or 0) + (tonumber(v.placementLeft) or 0)
-    return string.format('Season: placement %d/%d', tonumber(v.matches) or 0, total), '#8c8070', tip
+    return tr('Season: placement %d/%d', tonumber(v.matches) or 0, total), '#8c8070', tip
   end
   return string.format('Season: %s %d', v.tierName or '?', tonumber(v.rating) or 1500), v.color or '#d6c9ae', tip
 end
@@ -63,7 +64,7 @@ end
 -- how long ago (seconds) -> "just now", "5m ago", "3h ago", "2d ago"
 function ArenaText.ago(seconds)
   seconds = math.max(0, math.floor(tonumber(seconds) or 0))
-  if seconds < 60 then return 'just now' end
+  if seconds < 60 then return tr('just now') end
   if seconds < 3600 then return math.floor(seconds / 60) .. 'm ago' end
   if seconds < 86400 then return math.floor(seconds / 3600) .. 'h ago' end
   return math.floor(seconds / 86400) .. 'd ago'
@@ -81,7 +82,7 @@ end
 -- HUD centre text: countdown seconds, fight clock or the end
 function ArenaText.hudCenter(phase, left)
   if phase == 'countdown' then
-    return tostring(math.max(0, math.floor(tonumber(left) or 0))), 'starts in'
+    return tostring(math.max(0, math.floor(tonumber(left) or 0))), tr('starts in')
   elseif phase == 'fight' then
     return ArenaText.clock(left), 'fight'
   end

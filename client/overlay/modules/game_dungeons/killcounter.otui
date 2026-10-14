@@ -35,7 +35,7 @@ Panel
   Label
     anchors.top: parent.top
     anchors.left: parent.left
-    text: Objectives
+    !text: tr('Objectives')
     color: #FFA500
     width: 75
     font: verdana-11px-rounded
@@ -61,7 +61,7 @@ Panel
     Label
       anchors.top: parent.top
       anchors.left: parent.left
-      text: Bonus Objectives
+      !text: tr('Bonus Objectives')
       color: #FFA500
       font: verdana-11px-rounded
 

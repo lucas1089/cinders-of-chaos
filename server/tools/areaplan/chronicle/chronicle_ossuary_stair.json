@@ -1,0 +1,37 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "chronicle_ossuary_stair",
+  "name": "The Ossuary Stair",
+  "biome": "crypt",
+  "size": [60, 52],
+  "floors": 1,
+  "level": [400, 520],
+  "seed": 51404,
+  "decoration": "normal",
+  "light": "dark",
+  "zones": [
+    {"id": "stair_head", "floor": 1, "shape": "room", "size": "small", "place": "south", "role": "camp", "pz": true},
+    {"id": "bone_nave", "floor": 1, "shape": "room", "size": [17, 11], "place": "center"},
+    {"id": "west_niches", "floor": 1, "shape": "room", "size": "medium", "place": "west"},
+    {"id": "east_niches", "floor": 1, "shape": "room", "size": "medium", "place": "east"},
+    {"id": "sealed_door", "floor": 1, "shape": "room", "size": [15, 9], "place": "north"}
+  ],
+  "paths": [
+    {"from": "stair_head", "to": "bone_nave", "width": 3},
+    {"from": "bone_nave", "to": "west_niches", "width": 3},
+    {"from": "bone_nave", "to": "east_niches", "width": 3},
+    {"from": "west_niches", "to": "sealed_door", "width": 2},
+    {"from": "east_niches", "to": "sealed_door", "width": 2}
+  ],
+  "entry": {"zone": "stair_head"},
+  "exit": {"zone": "stair_head"},
+  "spawns": [
+    {"zone": "bone_nave", "monster": "Tomb Guardian", "count": 5, "respawn": 90},
+    {"zone": "bone_nave", "monster": "Distorted Phantom", "count": 3, "respawn": 90},
+    {"zone": "west_niches", "monster": "Capricious Phantom", "count": 3, "respawn": 100},
+    {"zone": "east_niches", "monster": "Hazardous Phantom", "count": 3, "respawn": 100},
+    {"zone": "sealed_door", "monster": "Bloodshade Reaper", "count": 3, "respawn": 110},
+    {"zone": "sealed_door", "monster": "Umbral Arcanist", "count": 2, "respawn": 110}
+  ],
+  "notes": "The Ashen Chronicle, Season 1, chapter 4 (server/README.md \"The Ashen Chronicle\"): the stair the Sepulchre's keepers walled up, under the capital, for levels 400-520. Closed until the chapter is complete: chronicle.lua puts the gate portal at the owner's chosen spot (chronicle_config.lua areas.ossuary_stair) and takes it away again at the next season start. The exit portal leads to the temple."
+}

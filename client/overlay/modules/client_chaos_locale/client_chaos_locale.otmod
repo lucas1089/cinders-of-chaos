@@ -1,0 +1,11 @@
+Module
+  name: client_chaos_locale
+  description: Client language (English or Portuguese, Brazil): tr() with the pt-BR table of every Chaos module, the choice in Options, the login screen and the character list, the server told on opcode 157
+  author: Cinders of Chaos
+  sandboxed: false
+  reloadable: false
+  scripts: [ locale_core, pt_br, locale ]
+  autoload: true
+  autoload-priority: 5
+  @onLoad: init()
+  @onUnload: terminate()

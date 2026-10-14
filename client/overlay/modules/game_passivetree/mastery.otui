@@ -40,12 +40,12 @@ ChaosWindow
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     width: 140
-    text: Remove from plan
+    !text: tr('Remove from plan')
 
   ChaosButton
     id: cancelButton
     anchors.bottom: parent.bottom
     anchors.right: parent.right
     width: 90
-    text: Cancel
+    !text: tr('Cancel')
     @onClick: modules.game_passivetree.closeMasteryChoice()

@@ -12,6 +12,7 @@
 --    req = {level, magic, voc}, weight, desc, note, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low, sc}], cmp = [slot, ...],
 --    ds (display scale: the factor of the item's level requirement; flat health / mana / damage / heal numbers are
 --    already x ds, and the stats rows marked sc carry them: server display_scale_core.lua DS.itemTip)}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ItemTooltipLogic = {}
 local L = ItemTooltipLogic
@@ -180,15 +181,15 @@ function L.lines(tip, ctx)
   if #sub > 0 then add(table.concat(sub, ' '), L.titleColor(tip)) end
   if slotLine then add(slotLine, C.dim) end
   if tip.level then
-    add(string.format('Item Level %d', tip.level) .. (tip.maxTier and string.format('  (up to T%d)', tip.maxTier) or ''),
+    add(tr('Item Level %d', tip.level) .. (tip.maxTier and tr('  (up to T%d)', tip.maxTier) or ''),
       C.dim)
   end
 
   if tip.quality and (tonumber(tip.quality.q) or 0) > 0 then
-    add(string.format('Quality +%d%%  (up to %d%%)', tip.quality.q, tip.quality.cap or 20), C.quality)
+    add(tr('Quality +%d%%  (up to %d%%)', tip.quality.q, tip.quality.cap or 20), C.quality)
   end
   if tip.ruined then
-    add('Ruined: no orb can change this item', C.red)
+    add(tr('Ruined: no orb can change this item'), C.red)
   end
 
   local first = true
@@ -253,7 +254,7 @@ function L.lines(tip, ctx)
         add('  ' .. g.name .. (g.text ~= '' and (': ' .. g.text) or ''), g.color or C.gem, false,
           { '  ' .. g.name, g.color or C.gem, (g.text ~= '' and (': ' .. g.text) or ''), C.gem })
       else
-        add('  empty socket', C.empty)
+        add(tr('  empty socket'), C.empty)
       end
     end
   end
@@ -269,11 +270,11 @@ function L.lines(tip, ctx)
     local sep = true
     if req.level then
       local low = (tonumber(ctx.level) or 0) < req.level
-      add(string.format('Requires level %d', req.level), low and C.red or C.dim, sep)
+      add(tr('Requires level %d', req.level), low and C.red or C.dim, sep)
       sep = false
     end
     if req.magic then
-      add(string.format('Requires magic level %d', req.magic), C.dim, sep)
+      add(tr('Requires magic level %d', req.magic), C.dim, sep)
       sep = false
     end
     if req.voc then

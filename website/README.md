@@ -51,7 +51,11 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/pages/notused.php` | the short note shown instead of the stock pages this server does not use (see "Not used on this server") |
 | `tests/chaos_notused_page_test.php` | `php website/tests/chaos_notused_page_test.php`: which stock pages are sent away and the note for each (php-cli only) |
 | `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/botreview_lib.php`, `pages/botreview.php` | staff only (admin accounts with a group 4+ character): flagged bot-review days with signals, explanations and timeline; mark reviewed / false positive / escalate, note, request a presence check. Escalated days need group 5 (server/README.md "Bot detection") |
+| `tests/chaos_botreview_page_test.php` | `php website/tests/chaos_botreview_page_test.php`: access, list, day view, actions and CSRF |
 | `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page.php?plugin=chaos&p=community` (menu The World > Community) |
+| `overlay/plugins/chaos/chronicle_lib.php`, `pages/chronicle.php` | the Ashen Chronicle (read only, from the game's `chaos_chronicle_*` tables): the running season's chapters with goal bars and top contributors, and the record of past seasons, at `page.php?plugin=chaos&p=chronicle` (menu The World > Chronicle); names follow the Memorial choice (`chaos_memorial_optin.records`) |
+| `overlay/plugins/chaos/memorial_lib.php`, `pages/memorial.php` | the Capital Memorial (read only, from `chaos_memorial_entries`, rows with `shown` = 1 only): realm firsts, records and the fallen of a season, and the archive of past seasons (`&s=<season key>`), at `page.php?plugin=chaos&p=memorial` (menu The World > Memorial) |
 | `tests/chaos_community_page_test.php` | `php website/tests/chaos_community_page_test.php`: the block and the page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/guildwar_lib.php`, `pages/guildwars.php` | the guild wars declared in game (read only, from the game's `chaos_guildwar` / `chaos_guildwar_kills`): `page.php?plugin=chaos&p=guildwars` (menu The World > Guild Wars): the running wars (score, terms, time left) and the latest ended ones (winner, gold won, end reason, kills the anti-farming rules did not count); see server/README.md "Guild wars in game" |
 | `tests/chaos_guildwars_page_test.php` | `php website/tests/chaos_guildwars_page_test.php`: the wars page (php-cli with pdo_sqlite) |
@@ -1072,3 +1076,10 @@ shown where at least 3 characters are behind it. Data: the game's `chaos_telemet
 - Achievements (`chaos_achievements`) and name plate titles have no page yet.
 - Other languages: the layout's wording is English only (the language selector is off and `languages_enabled` is `en`
   only, so `?lang=` does not translate ZnoteX's strings around our English pages).
+
+## Languages
+The donation (`coins`), Character Bazaar, creator and leaderboards / records pages speak Portuguese (Brazil) or
+English (`plugins/chaos/i18n_lib.php`): `&l=pt-BR` / `&l=en` (kept in the `chaos_lang` cookie for a year), else the
+cookie, else the browser's Accept-Language, else English. `chaos_t('English %s', $x)` takes its text from
+`plugins/chaos/i18n/pt-BR.php`; each page has a link to the other language. The wiki and the legal pages keep their
+own texts (Portuguese by default). Test: `tests/chaos_i18n_test.php`.

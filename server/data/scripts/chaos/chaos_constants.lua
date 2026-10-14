@@ -91,6 +91,9 @@ ChaosOpcodes.displayScale = 157
 -- takes it); 190 is the module hello of client game_chaosguard, client -> server
 ChaosOpcodes.clientGuard = 189
 ChaosOpcodes.clientGuardHello = 190
+-- The Ashen Chronicle and the Capital Memorial: chapters, record, Memorial choice (client game_chronicle; chronicle.lua,
+-- memorial.lua; server/README.md "The Ashen Chronicle")
+ChaosOpcodes.chronicle = 171
 
 -- ---------------------------------------------------------------------------
 -- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client
@@ -177,6 +180,7 @@ Chaos.storage = {
 ChaosOpcodes.antibot = 211
 Chaos.storage.antibot = 7100890
 Chaos.antibotTables = {reports = "chaos_reports", log = "chaos_antibot_log", holds = "chaos_antibot_holds"}
+Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions"} -- botreview.lua, sql/chaos_bot.sql
 
 -- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
 -- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab

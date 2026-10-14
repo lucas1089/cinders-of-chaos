@@ -158,7 +158,7 @@ local function drawGrid()
     if not c.open then
       w.lock:setImageSource(V.LOCK_IMAGE)
       w.lock:setVisible(true)
-      w:setTooltip('Locked: ' .. tostring(c.why or ''))
+      w:setTooltip(tr('Locked: %s', tostring(c.why or '')))
     end
     cellWidgets[V.key(c.x, c.y)] = w
   end

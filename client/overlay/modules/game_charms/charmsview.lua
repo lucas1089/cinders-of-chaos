@@ -3,6 +3,7 @@
 -- placed = {{id, x, y, w, h, name, rarity, color, ilvl, mods = {{k, v, t}}, signature, icon, active}}, bag (the charms in
 -- the backpack: {ref, sid, iid, w, h, ...}), groups = {{text, open, cells}}, totals = {{k, v, cap, t}}, level, shards.
 -- The grid rules here mirror the server's (charms_core.lua placeRefusal) for the drag preview; the server decides.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CharmsView = CharmsView or {}
 local V = CharmsView
@@ -130,16 +131,16 @@ end
 
 -- ok, reason for a charm of w x h at x, y (ignoreId: the charm being moved)
 function V.check(s, w, h, x, y, ignoreId)
-  if not s or not x or not y then return false, 'Drop it on the grid.' end
+  if not s or not x or not y then return false, tr('Drop it on the grid.') end
   local cells, occ = cellIndex(s), V.occupancy(s, ignoreId)
   for _, c in ipairs(V.footprint(w, h, x, y)) do
     local cell = cells[V.key(c[1], c[2])]
-    if not cell then return false, 'The charm does not fit inside the grid there.' end
-    if not cell.open then return false, 'That cell is locked: ' .. tostring(cell.why or '') end
-    if occ[V.key(c[1], c[2])] then return false, 'Another charm is in the way.' end
+    if not cell then return false, tr('The charm does not fit inside the grid there.') end
+    if not cell.open then return false, tr('That cell is locked: %s', tostring(cell.why or '')) end
+    if occ[V.key(c[1], c[2])] then return false, tr('Another charm is in the way.') end
   end
   if not ignoreId and #(s.placed or {}) >= num(s.max ~= nil and s.max or 20) then
-    return false, 'Your charm grid is full.'
+    return false, tr('Your charm grid is full.')
   end
   return true
 end
@@ -168,7 +169,7 @@ function V.dropAction(s, drag, target, px, py)
   end
   if target ~= 'grid' then return nil end
   local p = V.preview(s, drag, px, py)
-  if not p then return nil, 'Drop it on the grid.' end
+  if not p then return nil, tr('Drop it on the grid.') end
   if not p.ok then return nil, p.why end
   if drag.kind == 'placed' then
     if p.x == drag.x and p.y == drag.y then return nil end
@@ -181,7 +182,7 @@ end
 function V.tooltip(c, placed)
   if not c then return '' end
   local lines = { c.name or 'Charm' }
-  lines[#lines + 1] = string.format('%s, item level %d, %dx%d', c.rarity or '?', num(c.ilvl), num(c.w), num(c.h))
+  lines[#lines + 1] = tr('%s, item level %d, %dx%d', c.rarity or '?', num(c.ilvl), num(c.w), num(c.h))
   for _, m in ipairs(c.mods or {}) do
     lines[#lines + 1] = '  ' .. (m.t or (tostring(m.k) .. ' ' .. tostring(m.v)))
   end
@@ -231,7 +232,7 @@ function V.header(s)
   for _, c in ipairs(s.cells or {}) do
     if c.open then open = open + 1 end
   end
-  return string.format('%d of %d cells open  -  %d charms placed  -  %d charm shards', open, num(s.cols) * num(s.rows),
+  return tr('%d of %d cells open  -  %d charms placed  -  %d charm shards', open, num(s.cols) * num(s.rows),
     #(s.placed or {}), num(s.shards))
 end
 

@@ -170,7 +170,7 @@ PartyFrames < UIWidget
 
     UILabel
       id: title
-      text: Party
+      !text: tr('Party')
       font: Verdana-9px-antialiased
       color: #d6c9ae
       anchors.left: grip.right

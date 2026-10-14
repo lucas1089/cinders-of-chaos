@@ -51,7 +51,7 @@ PayToast < UIWidget
     text-align: center
     color: #f0c050
     font: verdana-11px-rounded
-    text: Chaos Coins
+    !text: tr('Chaos Coins')
 
   Label
     id: en
@@ -169,7 +169,7 @@ MainWindow
       margin-left: 8
       width: 120
       height: 22
-      text: Pix (BRL)
+      !text: tr('Pix (BRL)')
       @onClick: modules.game_shop.selectPayMethod('pix')
 
     Button
@@ -179,7 +179,7 @@ MainWindow
       margin-left: 6
       width: 120
       height: 22
-      text: PayPal (USD)
+      !text: tr('PayPal (USD)')
       @onClick: modules.game_shop.selectPayMethod('paypal')
 
     Label

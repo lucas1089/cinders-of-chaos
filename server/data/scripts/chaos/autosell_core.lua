@@ -182,8 +182,14 @@ function K.bagPlan(entries, prices, opts)
 	return out
 end
 
--- the chat line of a sale
-function K.saleText(plan)
+-- the chat line of a sale, in `lang` (Chaos.t keys, i18n_strings.lua; English without ChaosI18n)
+function K.saleText(plan, lang)
+	local function T(key, ...)
+		if ChaosI18n then
+			return ChaosI18n.text(lang, key, ...)
+		end
+		return string.format(key, ...)
+	end
 	local n = 0
 	for _, s in ipairs(plan.sell) do
 		if not s.coin then
@@ -196,9 +202,9 @@ function K.saleText(plan)
 	for _, x in ipairs({{"locked", k.locked}, {"unique", k.unique}, {"rarity", k.rarity}, {"named", k.custom or 0},
 			{"no NPC buys", k.noPrice}, {"orbs / gems / keys", k.protected}}) do
 		if x[2] > 0 then
-			parts[#parts + 1] = x[1] .. " " .. x[2]
+			parts[#parts + 1] = T("%s %d", T(x[1]), x[2])
 		end
 	end
-	return string.format("Auto Seller: sold %d item%s from your Loot Bag for %d gold (to your bank).%s", n, n == 1 and "" or "s",
-		plan.gold, keptN > 0 and string.format(" Kept %d: %s.", keptN, table.concat(parts, ", ")) or "")
+	return T("Auto Seller: sold %d item%s from your Loot Bag for %d gold (to your bank).%s", n, n == 1 and "" or "s",
+		plan.gold, keptN > 0 and T(" Kept %d: %s.", keptN, table.concat(parts, ", ")) or "")
 end

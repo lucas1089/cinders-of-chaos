@@ -221,7 +221,7 @@ local function showDetails(spell)
   if not spell then return end
   setSpellIcon(d.icon, spell.words)
   fitLabel(d.name, string.format('%s  (%s)', spell.name or '', spell.words or ''))
-  fitLabel(d.info, string.format('%s spell, level %d. Sockets open: %d of %d (2nd at level %d, 3rd at level %d with %d %s).',
+  fitLabel(d.info, tr('%s spell, level %d. Sockets open: %d of %d (2nd at level %d, 3rd at level %d with %d %s).',
     spell.kindName or spell.kind or '', tonumber(spell.level) or 0, tonumber(spell.count) or 0,
     tonumber(spell.max) or 3, tonumber(spell.secondLevel) or 0, tonumber(spell.thirdLevel) or 0,
     tonumber(state.orbsNeeded) or 2, tr('Orbs of Sockets')))
@@ -412,7 +412,7 @@ local function decorateButton(button)
   end
   local tip = item:getTooltip() or ''
   tip = tip:gsub('\n\nSupports:.*$', '')
-  item:setTooltip(tip .. '\n\nSupports:\n' .. table.concat(lines, '\n'))
+  item:setTooltip(tr('%s\n\nSupports:\n%s', tip, table.concat(lines, '\n')))
 end
 
 local function refreshActionBar()

@@ -114,7 +114,7 @@ local function fillMine()
     w.marks:setText(r.marks)
   end
   local rules = status and status.rules or {}
-  p.mineRules:setText(string.format('Graduation at level %d: %s for you, %d Mentor Marks for your mentor (after %d minutes ' ..
+  p.mineRules:setText(tr('Graduation at level %d: %s for you, %d Mentor Marks for your mentor (after %d minutes ' ..
     'hunting together). Dismissing your mentor ends the link.', tonumber(rules.gradLevel) or 0, tostring(rules.gradReward or ''),
     tonumber(rules.gradMarks) or 0, tonumber(rules.gradShared) or 0))
 end

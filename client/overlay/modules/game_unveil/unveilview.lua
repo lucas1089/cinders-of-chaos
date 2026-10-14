@@ -4,6 +4,7 @@
 --   open {path, id, clientId, name, rarity, rarityName, level, sig, orbs, offers = [{i, key, name, text, tier, tn, lo,
 --        hi, value, hook}]}
 --   result {ok, text, veil = {s, n, t, tr, tn, lo, hi, h}}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 UnveilView = {}
 local V = UnveilView
@@ -45,13 +46,13 @@ function V.headerText(data)
   if type(data) ~= 'table' then return '' end
   local parts = { V.title(data.name or '?') }
   if data.rarityName then parts[#parts + 1] = tostring(data.rarityName) end
-  if (tonumber(data.level) or 0) > 0 then parts[#parts + 1] = 'Item Level ' .. data.level end
+  if (tonumber(data.level) or 0) > 0 then parts[#parts + 1] = tr('Item Level %s', data.level) end
   return table.concat(parts, '  -  ')
 end
 
 function V.orbsText(n)
   n = tonumber(n) or 0
-  return string.format('Orbs of Unveiling: %d', n)
+  return tr('Orbs of Unveiling: %d', n)
 end
 
 -- the cards: [{i, name, lines, tierText, tierColor, rangeText, hookText}] (at most three; malformed offers are skipped)
@@ -63,9 +64,9 @@ function V.cards(data)
       local tn = o.tn or ('V' .. tostring(o.tier or 1))
       out[#out + 1] = {
         i = tonumber(o.i), key = o.key, name = tostring(o.name), text = tostring(o.text), lines = V.wrap(o.text, V.WRAP),
-        tierText = 'Veiled tier ' .. tn, tierColor = V.tierColor(o.tier),
+        tierText = tr('Veiled tier %s', tn), tierColor = V.tierColor(o.tier),
         rangeText = (o.lo and o.hi) and (o.lo == o.hi and string.format('Range %d', o.lo) or string.format('Range %d-%d', o.lo, o.hi)) or '',
-        hookText = o.hook and 'Effect of its own' or ''
+        hookText = o.hook and tr('Effect of its own') or ''
       }
     end
   end
@@ -96,13 +97,13 @@ end
 -- the line under the cards
 function V.statusText(data, selected)
   if type(data) ~= 'table' then return '' end
-  if (tonumber(data.orbs) or 0) < 1 then return 'You have no Orb of Unveiling.' end
+  if (tonumber(data.orbs) or 0) < 1 then return tr('You have no Orb of Unveiling.') end
   for _, c in ipairs(V.cards(data)) do
     if c.i == selected then
-      return string.format('Reveal %s? The choice is final and takes one orb.', c.name)
+      return tr('Reveal %s? The choice is final and takes one orb.', c.name)
     end
   end
-  return 'Choose one of the three modifiers. The choice is final.'
+  return tr('Choose one of the three modifiers. The choice is final.')
 end
 
 -- the result line: text and colour
@@ -111,12 +112,12 @@ function V.resultText(res)
   if res.ok then
     local v = type(res.veil) == 'table' and res.veil or nil
     if v and v.n then
-      return string.format('The veil lifts: %s (%s) is yours.', tostring(v.n), tostring(v.tn or ('V' .. tostring(v.tr or 1)))),
+      return tr('The veil lifts: %s (%s) is yours.', tostring(v.n), tostring(v.tn or ('V' .. tostring(v.tr or 1)))),
         V.COLORS.ok
     end
-    return tostring(res.text or 'The veil lifts.'), V.COLORS.ok
+    return tostring(res.text or tr('The veil lifts.')), V.COLORS.ok
   end
-  return tostring(res.text or 'That did not work.'), V.COLORS.bad
+  return tostring(res.text or tr('That did not work.')), V.COLORS.bad
 end
 
 return V

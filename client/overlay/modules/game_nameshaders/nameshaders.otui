@@ -31,7 +31,7 @@ NameShaderItem < UIWidget
     margin-top: 8
     margin-right: 10
     font: verdana-11px-rounded
-    text: Shader Name
+    !text: tr('Shader Name')
     text-auto-resize: true
     color: #ffffff
 
@@ -45,7 +45,7 @@ NameShaderItem < UIWidget
     margin-bottom: 8
     font: verdana-11px-rounded
     color: #888888
-    text: Description
+    !text: tr('Description')
     text-auto-resize: true
 
   UIWidget
@@ -69,7 +69,7 @@ MainWindowTopBar
     anchors.left: parent.left
     margin-top: 30
     margin-left: 10
-    text: Current: None
+    !text: tr('Current: None')
     font: verdana-11px-rounded
     color: #ffffff
 
@@ -110,7 +110,7 @@ MainWindowTopBar
       margin-top: 20
       margin-right: 10
       font: verdana-11px-rounded
-      text: Player Name
+      !text: tr('Player Name')
       text-auto-resize: true
       color: #ffffff
 
@@ -123,7 +123,7 @@ MainWindowTopBar
       margin-bottom: 20
       margin-right: 10
       font: verdana-11px-rounded
-      text: Shader: None
+      !text: tr('Shader: None')
       text-auto-resize: true
       color: #888888
 
@@ -133,7 +133,7 @@ MainWindowTopBar
     anchors.left: parent.left
     anchors.right: parent.right
     margin: 10 10 0 10
-    placeholder: Search shaders...
+    !placeholder: tr('Search shaders...')
     placeholder-color: #808080
 
   Panel
@@ -175,7 +175,7 @@ MainWindowTopBar
     margin-left: 10
     font: verdana-11px-rounded
     color: #888888
-    text: Unlocked: 0/0
+    !text: tr('Unlocked: 0/0')
 
   Button
     id: closeButton

@@ -174,7 +174,14 @@ function LB.lookText(titles, pronoun)
 end
 
 -- broadcast text of a reset
-function LB.broadcastText(boards, awards)
+-- in `lang` (server/README.md "Server texts in pt-BR (Chaos.t)"); English without ChaosI18n
+function LB.broadcastText(boards, awards, lang)
+	local function T(key, ...)
+		if ChaosI18n then
+			return ChaosI18n.text(lang, key, ...)
+		end
+		return select("#", ...) > 0 and string.format(key, ...) or key
+	end
 	local parts = {}
 	for _, b in ipairs(boards) do
 		local names = {}
@@ -188,9 +195,9 @@ function LB.broadcastText(boards, awards)
 		end
 	end
 	if #parts == 0 then
-		return "A new leaderboard week begins! Nobody placed on last week's boards."
+		return T("A new leaderboard week begins! Nobody placed on last week's boards.")
 	end
-	return "A new leaderboard week begins! Last week's champions - " .. table.concat(parts, "; ") .. "."
+	return T("A new leaderboard week begins! Last week's champions - %s.", table.concat(parts, "; "))
 end
 
 -- ---------------------------------------------------------------- class ladder

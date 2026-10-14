@@ -197,7 +197,7 @@ PactWindow < ChaosMainWindow
     anchors.bottom: parent.bottom
     size: 180 24
     max-length: 24
-    placeholder: Name of the build
+    !placeholder: tr('Name of the build')
 
   ChaosButton
     id: saveNewButton

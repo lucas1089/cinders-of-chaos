@@ -1910,7 +1910,8 @@ function W.entryIcon(tab, e, src)
 		-- the lore of the world (lore_data.lua): by the kind of the entry (the Codex's filter group)
 		local g = e.group or ""
 		local LORE = {world = kit("ember", "flame"), rift = rift("rx", "portal"), omen = rift("rx", "ascended"),
-			raid = kit("ember", "gate"), worldboss = kit("blood", "skull"), deep = kit("shadow", "gate")}
+			raid = kit("ember", "gate"), worldboss = kit("blood", "skull"), deep = kit("shadow", "gate"),
+			chronicle = kit("ember", "flame")}
 		return LORE[g] or kit("ember", "eye")
 	end
 	return nil

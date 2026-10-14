@@ -91,12 +91,13 @@ AutoSellerWindow < ChaosMainWindow
     margin-right: 6
     height: 22
     max-length: 80
-    placeholder: Item name
+    !placeholder: tr('Item name')
 
   ChaosButton
     id: addButton
-    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.top: corpseCheck.bottom
     anchors.right: removeButton.left
+    margin-top: 8
     margin-right: 4
     size: 60 22
     !text: tr('Add')
@@ -104,8 +105,9 @@ AutoSellerWindow < ChaosMainWindow
 
   ChaosButton
     id: removeButton
-    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.top: corpseCheck.bottom
     anchors.right: clearButton.left
+    margin-top: 8
     margin-right: 4
     size: 64 22
     !text: tr('Remove')
@@ -113,8 +115,9 @@ AutoSellerWindow < ChaosMainWindow
 
   ChaosButton
     id: clearButton
-    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.top: corpseCheck.bottom
     anchors.right: parent.right
+    margin-top: 8
     size: 52 22
     !text: tr('Clear')
     @onClick: modules.game_pouches.autoSellerList('clear')

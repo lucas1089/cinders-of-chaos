@@ -289,7 +289,7 @@ local function showDetails(spell)
   if spell.scaling then
     -- the column is narrow: short form here, the full text in the tooltip
     local short = spell.scaling:gsub('distance skill x weapon attack', 'dist. x weapon'):gsub('skill x weapon attack', 'skill x weapon')
-    addStat(tr('Scales'), short, 'Scales with ' .. spell.scaling)
+    addStat(tr('Scales'), short, tr('Scales with %s', spell.scaling))
   end
   local short, full = vocationText(spell)
   addStat(tr('Vocations'), short, full)

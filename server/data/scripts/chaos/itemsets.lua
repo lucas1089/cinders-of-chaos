@@ -27,6 +27,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua
 end
@@ -529,8 +532,7 @@ function S.grantChase(player, source, key, ctx, rand)
 		hit.set.name, inbox and " Your backpack was full: it is in your inbox." or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 	if Game.broadcastMessage then
-		Game.broadcastMessage(string.format("%s found %s (%s)!", player:getName(), hit.piece.name, hit.set.name),
-			MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s (%s)!", player:getName(), hit.piece.name, hit.set.name)
 	end
 	return hit.piece.name
 end
