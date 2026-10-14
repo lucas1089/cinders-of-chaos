@@ -402,6 +402,9 @@ do
 		members = {{guid = 1}}}), true, "Hollow Vault clear")
 	eq(R.dungeonClear({dungeonId = 4, title = "Hollow Vault", difficulty = 3, difficultyStart = 2, ms = 610000,
 		members = {{guid = 1}}}), false, "difficulty raised mid-run")
+	-- the generated dungeon's real title has a leading "The" (areagen_config.lua): still the Hollow Vault board
+	eq(ChaosRecordsCore.isHollowVault(cfg, "The Hollow Vault"), true, "'The Hollow Vault' is the Hollow Vault")
+	eq(ChaosRecordsCore.isHollowVault(cfg, "Bones Dungeon"), false, "another dungeon is not")
 	-- the client view and meta
 	sent = {}
 	R.sendMeta(ann)

@@ -16,6 +16,15 @@ end
 
 ChaosRecordsCore = ChaosRecordsCore or {}
 local K = ChaosRecordsCore
+
+-- is this dungeon title the Hollow Vault (its own board)? The dungeon's title is "The Hollow Vault", the config
+-- name "Hollow Vault": compare without a leading "The " and without case
+local function plainTitle(s)
+	return (tostring(s or ""):lower():gsub("^%s*the%s+", ""):gsub("%s+$", ""))
+end
+function K.isHollowVault(cfg, title)
+	return title ~= nil and cfg.hollowVaultName ~= nil and plainTitle(title) == plainTitle(cfg.hollowVaultName)
+end
 local floor = math.floor
 
 -- ---------------------------------------------------------------- periods
@@ -138,7 +147,7 @@ function K.catalogue(cfg, src)
 			if tpl.cat == cat.key then
 				if tpl.perDungeon then
 					for _, d in ipairs(src.dungeons or {}) do
-						if d.name ~= cfg.hollowVaultName then
+						if not K.isHollowVault(cfg, d.name) then
 							list[#list + 1] = makeBoard(cfg, tpl, src, tpl.key .. "_" .. tostring(d.id), d.name, {dungeon = d.id})
 						end
 					end

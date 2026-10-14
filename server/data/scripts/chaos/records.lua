@@ -608,7 +608,7 @@ function R.dungeonClear(info)
 	if type(info) ~= "table" then
 		return false, "no info"
 	end
-	local board = info.title == cfg.hollowVaultName and "hollowvault" or ("dungeon_" .. tostring(info.dungeonId))
+	local board = ChaosRecordsCore.isHollowVault(cfg, info.title) and "hollowvault" or ("dungeon_" .. tostring(info.dungeonId))
 	return R.submit({board = board, variant = "d" .. tostring(info.difficulty), value = math.floor((info.ms or 0) / 1000),
 		members = info.members, difficulty = info.difficulty, difficultyStart = info.difficultyStart})
 end
