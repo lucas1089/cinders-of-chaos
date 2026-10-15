@@ -67,6 +67,15 @@ StashTabButton < ChaosTabButton
   padding: 2 4 2 4
   margin-right: 3
 
+// the item of an affinity tab, left in its button (stash.lua FillTabs)
+StashTabIcon < UIItem
+  size: 18 18
+  anchors.left: parent.left
+  anchors.verticalCenter: parent.verticalCenter
+  margin-left: 2
+  virtual: true
+  phantom: true
+
 ChaosMainWindow
   size: 690 470
   !text: tr('Supply Stash')
@@ -209,13 +218,13 @@ ChaosMainWindow
 
   Button
     id: StashAllButton
-    !text: tr("Stash All")
-    !tooltip: tr("Put every stackable item of your main backpack into the stash.")
+    !text: tr("Stow Everything")
+    !tooltip: tr("Put everything in your backpack, through its bags, into the stash: each item into its tab. Equipped, locked, store-bound and quest items stay.")
     anchors.right: CloseButton.left
     anchors.bottom: parent.bottom
     margin-right: 8
     margin-bottom: 0
-    width: 80
+    width: 110
     @onClick: modules.game_stash.stashAll()
 
   UIWidget

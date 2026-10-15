@@ -151,6 +151,9 @@ jobs:
       - name: Everfull Ration install (items.otb / items.xml, synthetic)
         run: python3 -I server/tools/install_store_food_test.py
 
+      - name: Depot to stash migration tool (SQL, refusals, a stub mysql client)
+        run: python3 -I server/tools/migrate_depot_stash_test.py
+
       - name: Gem install with our own looks (items.otb ownLook, synthetic)
         run: python3 -I server/tools/install_gems_test.py
 

@@ -419,112 +419,19 @@ end
 local HAS_BLOB = Item ~= nil and Item.serializeAttributes ~= nil and Item.unserializeAttributes ~= nil
 MK.hasBlob = HAS_BLOB
 
--- the key-list codec (without engine patch 0017): the standard attributes and every custom key the Chaos scripts set
-local STD = {"ITEM_ATTRIBUTE_DESCRIPTION", "ITEM_ATTRIBUTE_TEXT", "ITEM_ATTRIBUTE_WRITER", "ITEM_ATTRIBUTE_DATE",
-	"ITEM_ATTRIBUTE_NAME", "ITEM_ATTRIBUTE_ARTICLE", "ITEM_ATTRIBUTE_PLURALNAME", "ITEM_ATTRIBUTE_ACTIONID",
-	"ITEM_ATTRIBUTE_ATTACK", "ITEM_ATTRIBUTE_DEFENSE", "ITEM_ATTRIBUTE_EXTRADEFENSE", "ITEM_ATTRIBUTE_ARMOR",
-	"ITEM_ATTRIBUTE_HITCHANCE", "ITEM_ATTRIBUTE_SHOOTRANGE", "ITEM_ATTRIBUTE_CHARGES", "ITEM_ATTRIBUTE_DURATION",
-	"ITEM_ATTRIBUTE_ATTACK_SPEED"}
-local EXTRA_KEYS = {"rarity", "combatPowerLevel", "chaos_unique", "chaos_sockets", "chaos_uses", "omen_kind", "rift_tier",
-	"rift_mods", "prefix", "chaos_mods_pending", "chaos_tmog"}
-
-local keyList
-local function customKeys()
-	if keyList then
-		return keyList
-	end
-	local seen, list = {}, {}
-	local function add(k)
-		if type(k) == "string" and k ~= "" and not seen[k:lower()] then
-			seen[k:lower()] = true
-			list[#list + 1] = k
-		end
-	end
-	for _, k in ipairs(EXTRA_KEYS) do
-		add(k)
-	end
-	for i = 1, 8 do
-		add((ChaosGems and ChaosGems.ATTR_GEM or "chaos_gem") .. i)
-	end
-	if ChaosCrafting and ChaosCrafting.attributeKeys then
-		for _, k in ipairs(ChaosCrafting.attributeKeys()) do
-			add(k)
-		end
-	end
-	if ChaosCharms and ChaosCharms.attributeKeys then -- a charm's modifiers (charms.lua)
-		for _, k in ipairs(ChaosCharms.attributeKeys()) do
-			add(k)
-		end
-	end
-	keyList = list
-	return list
-end
-
-local function readAttrs(item)
-	local list = {}
-	for _, name in ipairs(STD) do
-		local c = _G[name]
-		if c and item:hasAttribute(c) then
-			local v = item:getAttribute(c)
-			if v ~= nil and v ~= "" and v ~= 0 then
-				list[#list + 1] = {"@" .. name, v}
-			end
-		end
-	end
-	for _, k in ipairs(customKeys()) do
-		local v = item:getCustomAttribute(k)
-		if v ~= nil then
-			list[#list + 1] = {k, v}
-		end
-	end
-	return list
-end
-
-local function writeAttrs(item, list)
-	for _, a in ipairs(list) do
-		local k, v = a[1], a[2]
-		if k:sub(1, 1) == "@" then
-			local c = _G[k:sub(2)]
-			if c then
-				item:setAttribute(c, v)
-			end
-		else
-			item:setCustomAttribute(k, v)
-		end
-	end
+-- the codec itself is shared with the stash (item_codec.lua): the blob of engine patch 0017, else the key list
+if not ChaosItemCodec then
+	dofile("data/scripts/chaos/item_codec.lua")
 end
 
 -- item -> codec, data
 function MK.encode(item)
-	if HAS_BLOB then
-		local blob = item:serializeAttributes()
-		if type(blob) == "string" then
-			return "blob", MC.hex(blob)
-		end
-	end
-	return "attrs", MC.encodeAttrs(readAttrs(item))
+	return ChaosItemCodec.encode(item, HAS_BLOB)
 end
 
 -- a new item (not in the world) from an offer row's item id, count, codec and data; nil, why when it cannot be made
 function MK.decode(itemId, count, codec, data)
-	local item = Game.createItem(itemId, count)
-	if not item then
-		return nil, "could not create item " .. tostring(itemId)
-	end
-	if codec == "blob" then
-		if not HAS_BLOB then
-			return nil, "codec blob needs engine patch 0017"
-		end
-		local raw = MC.unhex(data)
-		if not raw or not item:unserializeAttributes(raw) then
-			return nil, "attributes could not be read"
-		end
-	else
-		writeAttrs(item, MC.decodeAttrs(data))
-	end
-	-- a new per-item id: the engine gives one the first time the item is sent (engine patch 0003)
-	item:removeCustomAttribute("chaos_iid")
-	return item
+	return ChaosItemCodec.decode(itemId, count, codec, data, HAS_BLOB)
 end
 
 -- ------------------------------------------------------------------ the character's items

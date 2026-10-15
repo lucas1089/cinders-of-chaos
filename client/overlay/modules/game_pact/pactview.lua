@@ -1,7 +1,7 @@
 -- Chaos Pact window: the texts and rows, without client API (tested by pactview_test.lua).
 -- The server (data/scripts/chaos/pact.lua) decides everything; this only formats its `status`:
 --   {active, ends, daysLeft, dailyCoins, canClaim, claimedTotal, premiumDays, coins, title, titleText,
---    limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special = [{name, owned}],
+--    limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special = [{name, owned, source}],
 --    buildLimit, builds = [{slot, name, nodes, cls, editable, updated}]}
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
@@ -65,14 +65,14 @@ function V.limitRows(s)
   return out
 end
 
--- the special stash tabs line
+-- the affinity stash tabs line (server stash_config.lua affinities: each takes one class of item)
 function V.specialText(s)
   local parts = {}
   for _, t in ipairs(type(s) == 'table' and s.special or {}) do
-    parts[#parts + 1] = t.name .. (t.owned and ' (owned)' or ' (store)')
+    parts[#parts + 1] = tr(t.name) .. (t.owned and tr(' (owned)') or tr(' (store)'))
   end
   if #parts == 0 then return '' end
-  return tr('Special stash tabs: %s. General tabs hold %s item types each.', table.concat(parts, ', '), n(s.tabSize))
+  return tr('Affinity stash tabs: %s. General tabs hold %s entries each.', table.concat(parts, ', '), n(s.tabSize))
 end
 
 -- saved builds: one row per slot from 1 to max(limit, highest saved slot); empty editable slots included

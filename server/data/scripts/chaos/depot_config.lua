@@ -88,6 +88,9 @@ return {
 		openNoTab = "That depot tab does not exist.",
 		nameLong = "A tab name has at most %d characters.",
 		nameChars = "A tab name may only use letters, digits, spaces and punctuation.",
-		badColor = "Pick one of the tab colours."
+		badColor = "Pick one of the tab colours.",
+		-- the stash took over (stash_config.lua depot.withdrawOnly): the boxes and the chest are withdraw-only
+		closed = "The depot is withdraw-only now: store items in the stash (Economy > Supply Stash). You can still take " ..
+			"items out."
 	}
 }

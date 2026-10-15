@@ -346,8 +346,8 @@
 		"spell.count": 88,
 		"store.categories": 35,
 		"store.cosmetic": 350,
-		"store.offers": 462,
-		"store.service": 20,
+		"store.offers": 468,
+		"store.service": 26,
 		"store.unlockCost": 500,
 		"support.count": 20,
 		"support.sockets": 3,
@@ -31112,7 +31112,7 @@
 								["Classes", "3", "500", "Class unlock"],
 								["Training", "21", "25-450", "Consumable item"],
 								["Chaos Pact", "1", "300", "Chaos Pact"],
-								["Storage & Slots", "6", "100-250", "Account storage"],
+								["Storage & Slots", "12", "100-250", "Account storage"],
 								["Depot Tabs", "2", "150-500", "Account storage"],
 								["Season Pass", "4", "500-2500", "Season pass"],
 								["Premium Time", "3", "250-1200", "Premium time"]
@@ -31164,7 +31164,7 @@
 								["Pet (small abilities)", "7"],
 								["Convenience", "7"],
 								["Service", "5"],
-								["Account storage", "8"],
+								["Account storage", "14"],
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
 								["Boost", "8"],
@@ -34039,11 +34039,11 @@
 				{
 					"id": "store:32",
 					"name": "Storage & Slots",
-					"sub": "6 offers, 100-250 coins. Account storage.",
+					"sub": "12 offers, 100-250 coins. Account storage.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["6 offers, 100-250 Chaos Coins. Account storage."]},
+						{"h": "Category", "p": ["12 offers, 100-250 Chaos Coins. Account storage."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -34053,25 +34053,61 @@
 									"Extra Stash Tab",
 									"150",
 									"Account storage",
-									"Permanent, account-wide: one more stash tab (48 item types). Up to 6."
+									"Permanent, account-wide: one more general stash tab (100 entries). Up to 6."
 								],
 								[
 									"Orbs Stash Tab",
 									"200",
 									"Account storage",
-									"Permanent, account-wide: a stash tab for orbs, whetstones and rune shards."
+									"Permanent, account-wide: an affinity stash tab for orbs, whetstones, rune shards."
 								],
 								[
 									"Gems Stash Tab",
 									"200",
 									"Account storage",
-									"Permanent, account-wide: a stash tab for gems."
+									"Permanent, account-wide: an affinity stash tab for every gem you deposit."
 								],
 								[
 									"Keys Stash Tab",
 									"150",
 									"Account storage",
-									"Permanent, account-wide: a stash tab for omen fragments and omen keys."
+									"Permanent, account-wide: an affinity stash tab for Rift Keys, omens, keys, maps."
+								],
+								[
+									"Weapons Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for weapons and quivers."
+								],
+								[
+									"Armor Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for armour pieces and shields."
+								],
+								[
+									"Jewellery Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for rings and amulets."
+								],
+								[
+									"Materials Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for ores, herbs and shards."
+								],
+								[
+									"Creature Products Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent: an affinity stash tab for creature products (lent by the Pact)."
+								],
+								[
+									"Collectibles Stash Tab",
+									"100",
+									"Account storage",
+									"Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)."
 								],
 								[
 									"Character Slot",
@@ -34091,6 +34127,12 @@
 								{"item": 29856},
 								{"item": 32005},
 								{"item": 32072},
+								{"item": 2400},
+								{"item": 2472},
+								{"item": 2171},
+								{"item": 5880},
+								{"item": 36010},
+								{"item": 5929},
 								{"item": 1949},
 								{"item": 18559}
 							]

@@ -4,8 +4,8 @@
 -- the saved passive tree builds (chaos_build_slots). Other systems ask for their limit:
 --     ChaosPact.limit(player, key)    key of pact_config.lua `limits` (stashTabs, depotTabs, marketListings,
 --                                     marketAccount, buildSlots, lootRules, charSlots)
---     ChaosPact.limits(player)        every limit + stashSpecial = {orbs = bool, gems = bool, keys = bool}
---     ChaosPact.stashKind(itemId)     "orbs" | "gems" | "keys" | nil (which special stash tab takes the item)
+--     ChaosPact.limits(player)        every limit
+--     ChaosPact.stashKind(itemId)     "orbs" | "gems" | "keys" | nil (stash.lua ChaosStash.kindOf)
 --     ChaosPact.state(accountId)      the cached account state (pact_core.lua)
 --
 -- Store: offers of kind "service" with service "pact" and "pactExtra" (pact_config.lua `store`, inserted by
@@ -112,38 +112,11 @@ function Pact.active(player)
 	return Core.active(Pact.state(player:getAccountId()), os.time())
 end
 
--- ------------------------------------------------------------------ stash kinds (special tabs)
-local kindIds
-local function kinds()
-	if kindIds then
-		return kindIds
-	end
-	kindIds = {orbs = {}, keys = {}}
-	local ok, pc = pcall(dofile, "data/scripts/chaos/pouches_config.lua")
-	if ok and type(pc) == "table" then
-		for _, id in ipairs(pc.orbIds or {}) do
-			kindIds.orbs[id] = true
-		end
-		for _, id in ipairs(pc.omenIds or {}) do
-			kindIds.keys[id] = true
-		end
-	end
-	for _, id in ipairs((ChaosLootFilterConfig and ChaosLootFilterConfig.orbIds) or {}) do
-		kindIds.orbs[id] = true
-	end
-	return kindIds
-end
-
+-- ------------------------------------------------------------------ stash kinds
+-- "orbs" | "gems" | "keys" | nil (stash.lua ChaosStash.kindOf; kept for scripts that asked here)
 function Pact.stashKind(itemId)
-	local k = kinds()
-	if k.orbs[itemId] then
-		return "orbs"
-	end
-	if ChaosGems and ChaosGems.isGem and ChaosGems.isGem(itemId) then
-		return "gems"
-	end
-	if k.keys[itemId] then
-		return "keys"
+	if ChaosStash and ChaosStash.kindOf then
+		return ChaosStash.kindOf(itemId)
 	end
 	return nil
 end
@@ -183,9 +156,23 @@ local function sendStatus(player, open)
 		builds[#builds + 1] = {slot = r.slot, name = r.name, nodes = r.nodes, cls = B and B.lineName and B.lineName(r.class_line) or "",
 			editable = Core.buildEditable(lim, r.slot), updated = r.updated}
 	end
-	local special = {}
-	for _, s in ipairs(cfg.stash.special) do
-		special[#special + 1] = {name = s.name, owned = lim.stashSpecial[s.kind] == true}
+	-- the affinity stash tabs (stash_config.lua) and who owns them; the general tab size
+	local special, tabSize = {}, nil
+	local sc = Chaos.stashConfig
+	if not sc then
+		local okC, res = pcall(dofile, "data/scripts/chaos/stash_config.lua")
+		sc = okC and type(res) == "table" and res or nil
+	end
+	if sc then
+		tabSize = sc.tabSize
+		local owned = {}
+		if ChaosStash and ChaosStash.viewOf then
+			local okV, view = pcall(ChaosStash.viewOf, player)
+			owned = okV and view and view.owned or {}
+		end
+		for _, a in ipairs(sc.affinities or {}) do
+			special[#special + 1] = {name = a.name, owned = owned[a.key] ~= nil, source = owned[a.key]}
+		end
 	end
 	send(player, "status", {
 		open = open == true,
@@ -195,7 +182,7 @@ local function sendStatus(player, open)
 		dailyCoins = cfg.pact.dailyCoins, canClaim = canClaim, claimedTotal = st.claimedTotal,
 		premiumDays = player:getPremiumDays(), coins = ChaosShop and ChaosShop.getCoins and ChaosShop.getCoins(accountId) or 0,
 		title = active and cfg.pact.title.text or "", titleText = cfg.pact.title.text,
-		limits = Core.breakdown(cfg, st, now), tabSize = cfg.stash.tabSize, special = special,
+		limits = Core.breakdown(cfg, st, now), tabSize = tabSize, special = special,
 		buildLimit = lim.buildSlots, builds = builds
 	})
 end

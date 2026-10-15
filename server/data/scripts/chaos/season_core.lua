@@ -168,7 +168,7 @@ function S.joinCheck(info, cfg, now, ov)
 			"Make a new character to join.", jc.maxLevel, info.level or 0)
 	end
 	if jc.requireEmptyDepot and (info.items or 0) > 0 then
-		return nil, "Empty your depot, inbox and store inbox first: season characters start with nothing."
+		return nil, "Empty your depot, stash items, inbox and store inbox first: season characters start with nothing."
 	end
 	if info.party then
 		return nil, "Leave your party first."

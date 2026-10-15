@@ -32,8 +32,10 @@ eq(r[3], '-', 'no Pact bonus')
 eq(#V.limitRows({ limits = { {}, {} } }), 2, 'rows')
 eq(V.limitRows({ active = false, limits = { { pact = 10, pactActive = true } } })[1][3], '+10 (premium)', 'premium bonus without the Pact')
 
-eq(V.specialText({ special = { { name = 'Orbs', owned = true }, { name = 'Gems' } }, tabSize = 48 }):find('Orbs (owned), Gems (store)', 1, true) ~= nil,
-  true, 'special tabs')
+eq(V.specialText({ special = { { name = 'Orbs', owned = true }, { name = 'Gems' } }, tabSize = 100 }):find('Orbs (owned), Gems (store)', 1, true) ~= nil,
+  true, 'affinity tabs')
+eq(V.specialText({ special = { { name = 'Supplies', owned = true } }, tabSize = 100 }):find('100 entries', 1, true) ~= nil, true,
+  'general tab size in entries')
 eq(V.specialText({}), '', 'no special tabs sent')
 
 local rows = V.buildRows({ buildLimit = 2, builds = { { slot = 1, name = 'Bleed', nodes = 40, cls = 'warrior' }, { slot = 4, name = 'Old', nodes = 1 } } })

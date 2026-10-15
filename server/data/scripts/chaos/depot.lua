@@ -9,7 +9,9 @@
 --                                             are made, loose items of before tabs are sorted into tabs, the box
 --                                             descriptions and the client are updated
 --   ChaosDepot.onMoveItem(...)                called first in Player:onMoveItem (hook by patch_base_depot.py): refuses
---                                             a move that adds to a locked or full tab, or loose into the chest
+--                                             a move that adds to a locked or full tab, or loose into the chest, and
+--                                             any new item while the stash transition makes the depot withdraw-only
+--   ChaosDepot.transition()                   stash_config.lua `depot` (withdrawOnly, migrate, version)
 --   ChaosDepot.checkAdd(player, container, item, count)  the same rule for a script that adds into a container
 --   ChaosDepot.tabs(player)                   the account's tab count
 --   ChaosDepot.onLimitsChanged(player)        pact.lua calls it after a store purchase of tabs
@@ -88,6 +90,19 @@ local acc = {
 		return ok and res == true
 	end
 }
+
+-- the depot transition (stash_config.lua `depot`): withdrawOnly closes the boxes and the chest to new items; migrate
+-- moves the character's depots into the stash at a locker opening (stash.lua ChaosStash.migrateDepot)
+local stashCfg
+function Depot.transition()
+	local sc = Chaos.stashConfig or stashCfg
+	if not sc then
+		local ok, res = pcall(dofile, "data/scripts/chaos/stash_config.lua")
+		stashCfg = ok and type(res) == "table" and res or {}
+		sc = stashCfg
+	end
+	return sc.depot or {}
+end
 
 local function children(n)
 	if isContainer(n) then
@@ -352,7 +367,18 @@ function Depot.afterOpen(player, depotId)
 		local tabs = Depot.tabs(player)
 		local counts = Depot.migrate(chest, tabs)
 		Depot.refresh(player, chest, tabs, depotId)
-		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, Core.openText(cfg, tabs))
+		local tr = Depot.transition()
+		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, tr.withdrawOnly and cfg.messages.closed or Core.openText(cfg, tabs))
+		-- the engine writes the depot with the character from now on (a locker was opened this session): the depots can
+		-- move into the stash safely
+		if tr.migrate and ChaosStash and ChaosStash.migrateDepot then
+			local okM, errM = pcall(ChaosStash.migrateDepot, player)
+			if not okM then
+				print("[Chaos depot] migration: " .. tostring(errM))
+			else
+				Depot.refresh(player, chest, tabs, depotId)
+			end
+		end
 		if counts and (counts.open + counts.locked) > 0 then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Core.sortedText(cfg, counts))
 			print(string.format("[Chaos depot] %s: depot %d sorted into tabs (%d open, %d locked, %d loose)", player:getName(),
@@ -378,7 +404,7 @@ local function refusal(player, item, count, dest, from)
 	if okS and stackable and count and count < item:getCount() then
 		split = true
 	end
-	local m = {to = to, from = where, split = split, tabs = Depot.tabs(player),
+	local m = {to = to, from = where, split = split, tabs = Depot.tabs(player), closed = Depot.transition().withdrawOnly == true,
 		sameChest = where.chest ~= nil and acc.same(where.chest, to.chest),
 		sameTab = where.kind == "tab" and to.kind == "tab" and where.tab == to.tab and acc.same(where.chest, to.chest)}
 	if to.kind == "tab" then

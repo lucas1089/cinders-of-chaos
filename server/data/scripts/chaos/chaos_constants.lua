@@ -126,6 +126,7 @@ Chaos.storage = {
 	dailyLastClaim = 7100002, -- YYYYMMDD of the last claim (int32 safe)
 
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
+	-- the stash (stash_config.lua storage): 7100011 - 7100019 reserved; 7100011 journal serial, 7100012 depot migration
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)

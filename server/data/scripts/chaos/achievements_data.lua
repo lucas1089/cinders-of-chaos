@@ -486,15 +486,16 @@ return {
 		{id = "season_ssf_finished", cat = "combat", name = "Needed No One",
 			desc = "Still be Self-Found when your season ends.", points = 25, stat = "season_ssf_finished"},
 
-		-- >>> Depot tabs (depot.lua; the ids are depot_config.lua achievementTabs): each one, on any character, opens one
-		-- more depot tab for the whole account. The store sells tabs too; these three are only earned.
+		-- >>> Depot tabs (depot.lua; the ids are depot_config.lua achievementTabs and stash_config.lua generalAchievements):
+		-- each one, on any character, opens one more general stash tab (and depot tab) for the whole account. The store
+		-- sells tabs too; these three are only earned.
 		{id = "depot_tab_relics", cat = "items", name = "Cabinet of Curiosities",
-			desc = "Find 25 unique items. Opens a depot tab for your account.", points = 25, stat = "unique_found", target = 25},
+			desc = "Find 25 unique items. Opens a stash tab for your account.", points = 25, stat = "unique_found", target = 25},
 		{id = "depot_tab_trophies", cat = "monsters", name = "Hall of Trophies",
-			desc = "Complete 100 bestiary entries. Opens a depot tab for your account.", points = 25, stat = "bestiary_completed",
+			desc = "Complete 100 bestiary entries. Opens a stash tab for your account.", points = 25, stat = "bestiary_completed",
 			target = 100},
 		{id = "depot_tab_vault", cat = "rifts", name = "Keeper of the Vault",
-			desc = "Seal 50 rifts. Opens a depot tab for your account.", points = 25, stat = "rift_runs", target = 50},
+			desc = "Seal 50 rifts. Opens a stash tab for your account.", points = 25, stat = "rift_runs", target = 50},
 		-- <<< Depot tabs
 
 		-- ------------------------------------------------------------------ Secrets

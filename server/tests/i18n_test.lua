@@ -349,11 +349,15 @@ for _, f in ipairs(dofile("data/scripts/chaos/factions_config.lua").factions) do
 	check(pt[f.lore] ~= nil, "faction lore without pt-BR: " .. f.name)
 end
 for _, b in ipairs(Chaos.shopServices.worldBuffs) do check(pt[b.text] ~= nil, "world buff text without pt-BR: " .. b.id) end
--- mentor.lua and referral.lua send their config's messages as deferred texts (say)
-for _, cfgFile in ipairs({"mentor_config.lua", "referral_config.lua"}) do
+-- mentor.lua and referral.lua send their config's messages as deferred texts (say); stash.lua its config's messages
+-- and the Stow Everything reasons
+for _, cfgFile in ipairs({"mentor_config.lua", "referral_config.lua", "stash_config.lua"}) do
 	for k, v in pairs(dofile("data/scripts/chaos/" .. cfgFile).messages) do
 		check(pt[v] ~= nil, cfgFile .. " message " .. k .. " without pt-BR")
 	end
+end
+for k, v in pairs(dofile("data/scripts/chaos/stash_config.lua").reasons) do
+	check(pt[v] ~= nil, "stash_config.lua reason " .. k .. " without pt-BR")
 end
 
 -- the NPCs: their XML greet / farewell / walk away / trade lines (ChaosI18n.npcMessages) and their scripts' lines

@@ -1098,12 +1098,12 @@ return {
 		["Be alive in Hardcore when your season ends."] = "Esteja vivo no Hardcore quando sua temporada acabar.",
 		["Reach level 100 in a Self-Found season."] = "Alcance o nível 100 numa temporada Self-Found.",
 		["Still be Self-Found when your season ends."] = "Continue Self-Found quando sua temporada acabar.",
-		["Find 25 unique items. Opens a depot tab for your account."] =
-			"Encontre 25 itens únicos. Abre uma aba de depot para a sua conta.",
-		["Complete 100 bestiary entries. Opens a depot tab for your account."] =
-			"Complete 100 entradas do bestiário. Abre uma aba de depot para a sua conta.",
-		["Seal 50 rifts. Opens a depot tab for your account."] =
-			"Sele 50 rifts. Abre uma aba de depot para a sua conta.",
+		["Find 25 unique items. Opens a stash tab for your account."] =
+			"Encontre 25 itens únicos. Abre uma aba do stash para a sua conta.",
+		["Complete 100 bestiary entries. Opens a stash tab for your account."] =
+			"Complete 100 entradas do bestiário. Abre uma aba do stash para a sua conta.",
+		["Seal 50 rifts. Opens a stash tab for your account."] =
+			"Sele 50 rifts. Abre uma aba do stash para a sua conta.",
 		["Kill a rat at level 500 or higher."] = "Mate um rato no nível 500 ou mais.",
 		["Die 50 times."] = "Morra 50 vezes.",
 		["Kill a legendary monster between midnight and 1 am."] =
@@ -1150,20 +1150,41 @@ return {
 
 		-- Systems: stash, bank, town portal, pouches, Everfull Ration, Chaos Pact, hideout, autoloot, party invites, class unlocks, professions, charms, pets, guild hall, tower, arena, battleground, seasons
 		["You cannot put that item into the stash."] = "Você não pode colocar esse item no stash.",
-		["That item is on your stash block list."] = "Esse item está na sua lista de bloqueio do stash.",
+		["That item is on your never-stash list."] = "Esse item está na sua lista de nunca guardar.",
 		["Your stash cannot hold that many of this item."] = "Seu stash não comporta tantos desse item.",
+		["Your stash is full (%d entries). Withdraw something, or get another tab."] =
+			"Seu stash está cheio (%d entradas). Retire algo, ou pegue outra aba.",
+		["Your stash is full: the tabs beyond your %d general tabs and the tabs you no longer own are withdraw-only."] =
+			"Seu stash está cheio: as abas além das suas %d abas gerais e as abas que você não tem mais só permitem retirar.",
 		["Could not take the item."] = "Não foi possível pegar o item.",
 		["The stash is busy. Try again in a moment."] = "O stash está ocupado. Tente de novo daqui a pouco.",
+		["Empty the container first."] = "Esvazie o recipiente primeiro.",
 		["Stashed %dx %s."] = "Guardou %dx %s no stash.",
-		["Stashed %d item stack(s)."] = "Guardou %d pilha(s) de itens no stash.",
+		["Stashed %dx %s (%s tab)."] = "Guardou %dx %s no stash (aba %s).",
 		["You do not have that item in the stash."] = "Você não tem esse item no stash.",
 		["You do not have enough capacity."] = "Você não tem capacidade suficiente.",
 		["You do not have enough room."] = "Você não tem espaço suficiente.",
 		["Retrieved %dx %s from your stash."] = "Retirou %dx %s do seu stash.",
-		["Your stash tabs are full (%d item types). Withdraw something, or get another tab."] =
-			"Suas abas do stash estão cheias (%d tipos de item). Retire algo, ou pegue outra aba.",
-		["Your stash is full: the items in tabs beyond your %d tabs are withdraw-only."] =
-			"Seu stash está cheio: os itens nas abas além das suas %d abas só podem ser retirados.",
+		["You can take items out of the stash only in a protection zone. You can put items in anywhere."] =
+			"Você só pode retirar itens do stash numa zona de proteção. Pode guardar itens em qualquer lugar.",
+		["That item could not be restored. It stays in the stash; tell the staff."] =
+			"Não foi possível restaurar esse item. Ele fica no stash; avise a equipe.",
+		["Nothing to stow."] = "Nada para guardar.",
+		["Stowed %d item(s) into your stash."] = "Guardou %d item(ns) no seu stash.",
+		["Kept %d item(s): %s."] = "Ficaram %d item(ns): %s.",
+		["Your depot moved into your stash: %d item(s); %d did not fit and wait in the Old depot tab (withdraw-only). %d stay in the depot."] =
+			"Seu depot foi para o seu stash: %d item(ns); %d não couberam e esperam na aba Old depot (só retirar). %d ficam no depot.",
+		["More depot items move at your next login."] = "Mais itens do depot vão para o stash no seu próximo login.",
+		["The depot boxes are withdraw-only now: everything goes into the stash (Economy > Supply Stash). You can still take items out."] =
+			"As caixas do depot agora só permitem retirar: tudo vai para o stash (Economy > Supply Stash). Você ainda pode retirar itens.",
+		["containers"] = "recipientes",
+		["cannot be moved"] = "não podem ser movidos",
+		["store-bound"] = "presos à conta (loja)",
+		["quest items"] = "itens de quest",
+		["never-stash list"] = "lista de nunca guardar",
+		["no room"] = "sem espaço",
+		["too many"] = "demais",
+		["busy"] = "ocupado",
 		["You deposited %d gold. Bank balance: %d gold."] = "Você depositou %d de ouro. Saldo no banco: %d de ouro.",
 		["You deposited %d stars."] = "Você depositou %d estrelas.",
 		["You withdrew %d gold. Bank balance: %d gold."] = "Você sacou %d de ouro. Saldo no banco: %d de ouro.",

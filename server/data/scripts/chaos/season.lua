@@ -727,6 +727,11 @@ local function storedItems(player)
 	for id = 0, 50 do
 		n = n + countItems(player:getDepotChest(id, false))
 	end
+	-- whole items in the stash (the depot moved there): a join empties the stash, so they must leave first
+	if ChaosStash and ChaosStash.store and ChaosStash.store.itemRows then
+		local ok, rows = pcall(ChaosStash.store.itemRows, player:getGuid())
+		n = n + (ok and type(rows) == "table" and #rows or 0)
+	end
 	return n
 end
 
@@ -769,6 +774,8 @@ local function doJoin(player, season)
 		player:setBankBalance(0)
 		db.query("UPDATE `" .. (Chaos.tables.bank or "chaos_bank") .. "` SET `stars` = 0 WHERE `player_id` = " .. player:getGuid())
 		db.query("DELETE FROM `" .. (Chaos.tables.stash or "chaos_stash") .. "` WHERE `player_id` = " .. player:getGuid())
+		-- the whole items of the stash too (stash_config.lua tables.items), journal rows included
+		db.query("DELETE FROM `chaos_stash_items` WHERE `player_id` = " .. player:getGuid())
 	end
 	local guid = player:getGuid()
 	db.query(string.format("INSERT INTO `%s` (`player_id`, `account_id`, `season`, `joined_at`, `migrated_at`) VALUES " ..
