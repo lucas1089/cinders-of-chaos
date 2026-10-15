@@ -13,7 +13,7 @@
 Source and licence: the owner's Google Drive folder "ots/assets" (kit added 2026-10-15; the pack credited
 in docs/CREDITS.md, same drop and licence file). Licence: use in unlimited commercial
 projects (games included), modified or not, no attribution needed; no reselling, redistributing, sublicensing or
-sharing of the assets themselves; no machine-learning training. Shipping converted frames inside the game client is
+sharing of the assets themselves (no machine-learning clause, owner 2026-10-15). Shipping converted frames inside the game client is
 use in a game. So neither the sources nor the cut sheets are committed: art_import/assets_art/ is ignored by git and
 art_import/assets_art.sums holds the sha256 of every sheet's decoded RGBA pixels. SOURCES names each file by a neutral
 name, its Drive file id and md5.
@@ -56,7 +56,7 @@ SERVER_OFFSET = 3000
 ALPHA_MIN = 12
 PACK = 'Meadow Monsters Vol. 1'
 LICENCE = ('purchased; commercial use in games, credit not required; no resale or redistribution of the files; '
-           'no machine-learning use; author: docs/CREDITS.md')
+           'author: docs/CREDITS.md')
 DIRS = ('n', 'e', 's', 'w')
 FIELDS = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode', 'server_id',
           'extra']
