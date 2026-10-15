@@ -22,7 +22,7 @@ ChaosCreditsData = {
   {
     title = "Art packs",
     pt = "Pacotes de arte",
-    note = "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared, and never used to train machine learning. Listed here as thanks.",
+    note = "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning; the owner confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.",
     entries = {
       { name = "Magic VFX Spells & Impacts", author = "WsT", licence = "purchased; credit not required", use = "spell effects" },
       { name = "Auras & Buffs", author = "WsT", licence = "purchased; credit not required", use = "auras and buff effects" },

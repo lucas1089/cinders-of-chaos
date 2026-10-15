@@ -51,7 +51,8 @@ Game design, world, server systems, client interface, website and original art: 
 ## Art packs {pt-BR: Pacotes de arte}
 
 Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the
-assets themselves are never resold or shared, and never used to train machine learning. Listed here as thanks.
+assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning; the owner
+confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.
 
 - **Magic VFX Spells & Impacts**
   - Author: WsT

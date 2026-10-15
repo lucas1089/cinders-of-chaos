@@ -30,7 +30,7 @@ Conversion (like gen_pack_fx.py):
 
 The sets' licence allows use in unlimited commercial projects (games included), modified or not, without
 attribution; it forbids reselling, redistributing, sublicensing or sharing the assets themselves (alone or in
-another pack, template or generator, even modified) and machine-learning training. Shipping the converted frames
+another pack, template or generator, even modified); no machine-learning clause (owner, 2026-10-15). Shipping the converted frames
 inside the game client is use in a game. So neither the sets nor these strips are committed: art_import/pack27_fx/
 is ignored by git; art_import/pack27_fx.sums holds the sha256 of every strip's decoded RGBA pixels.
 Deterministic: no randomness; Pillow 12.3.0 and numpy 2.5.3 (the CI pins).
@@ -60,7 +60,7 @@ SOURCES = os.path.join(ART, 'pack27_sources.csv')     # every pick's art pack, f
 # source effect prefix -> the pack it comes from, by its entry name in docs/CREDITS.md
 # the licence line of every pack used (all four: the same author's standard terms; author in docs/CREDITS.md)
 LICENCE = ('purchased; commercial use in games, credit not required; no resale or redistribution of the files; '
-           'no machine-learning use; author: docs/CREDITS.md')
+           'author: docs/CREDITS.md')
 PACK_OF = [('impact_', 'Magic VFX Spells & Impacts'), ('circle_', 'Magic VFX Spells & Impacts'),
            ('status_', 'Auras & Buffs'), ('aura_', 'Auras & Buffs'), ('fx_', 'UI Game Feel'),
            ('proj_', 'Projectiles'), ('field_', 'Fields & Traps'), ('env_', 'Fields & Traps')]
