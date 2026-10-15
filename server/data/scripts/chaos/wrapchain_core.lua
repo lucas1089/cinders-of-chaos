@@ -1,7 +1,7 @@
 -- wrapchain_core.lua: hook a public function of another script once, even when several of our scripts hook the same
 -- function and the hooks are installed again every minute (after a /reload of the wrapped script). Used by records,
--- season, season_journey, guild, mentor, telemetry, discord, chronicle and memorial; tests: server/tests/telemetry_test.lua
--- and server/tests/wrapchain_test.lua. Lua 5.1 / LuaJIT and Lua 5.3.
+-- season, season_journey, guild, mentor, telemetry, discord, chronicle and memorial; tests: server/tests/telemetry_test.lua,
+-- server/tests/wrapchain_test.lua and server/tests/season_journey_test.lua (records + journey). Lua 5.1 / LuaJIT and Lua 5.3.
 --
 --   ChaosWrapChain.wrap(tbl, name, flag, after, log, opts) -> true when it hooked now (or put the hooks back on top)
 --     tbl[name] keeps running as before; after(results, ...) runs behind it, guarded by pcall (results.n, results[i]).
