@@ -1792,6 +1792,27 @@ sheet, three outfit sheets, a second moth wings sheet, two "filth" sheets).
 - Checked offline only (importer checks, check_pair, the previews). Not run in a live client. A client on pair 25 or
   older draws nothing for 2213-2233 and 33940-33985.
 
+## Sprite style checker (new, `tools/sprites/style_check.py`, `tools/sprites/style_palettes.json`, docs/SPRITE_STYLE.md)
+A style guide and an automatic check for new sprites, so they match the game. Measured only on art we may use as a
+reference: the owner's seven gear set sheets (`art_import/gear_sets/`), the owner art of pair 26
+(`art_import/owner_art/`) and our generated effects. No purchased pack and nothing else from the Drive is read until the
+licence audit allows it.
+- docs/SPRITE_STYLE.md: grid and anchors, the oblique view and the light (from the top, a little left: 94 degrees on
+  the sheets), the outline (one pixel, near-black tinted toward the theme, 98% of the rim), the palette of each theme
+  (56 to 87 colours, a fixed palette per sheet) with its ramps, shading, transparency (alpha 0 or 255), item
+  silhouettes per slot, creature and wing frames, effect frame counts, a checklist and the import steps.
+- `style_check.py check FILE... --theme NAME | --palette PAL [--cell 32] [--soft] [--key RRGGBB]`: cuts each PNG into
+  cells and reports PASS or FAIL per image and the reasons per cell; exit 1 on any failure. Checks: size and grid,
+  background (transparent or one clean key colour), upscaled art, semi-transparent pixels (`--soft`: none below alpha
+  12), colour count, palette distance (CIE76 mean and far share), outline darkness and thickness, rim light against the
+  theme's reference, lone pixels, specks, pinholes, luma spikes and speckle.
+- `style_check.py snap IN OUT --theme NAME` moves every pixel to the nearest theme colour; `report` prints the measured
+  facts of the guide.
+- `style_palettes.json` is made by `build-palettes` from the seven sheets: palettes, outline colours, light vectors, the
+  owners' ranges and the thresholds (each owner range with a margin). CI runs `build-palettes --check` and
+  `style_check_test.py` (synthetic sprites pass or fail for the right reason; the seven sheets pass their own themes,
+  the frost sheet fails the fire palette) with the pinned fx venv.
+
 ## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
 **On windows-assets (407ad9b6, owner approved 2026-10-13); switches on since 2026-10-13 (pair 24 at 407ad9b6).** Our own art for the themes of five reference sheets and four set showcases the owner
 showed: ten equipment sets, two auras, a pair of wings, four grounds with borders, six monster recolours. The sheets
