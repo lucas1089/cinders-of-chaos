@@ -6,7 +6,7 @@ import {useLayout} from '../layout';
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
-const BigWord: React.FC<{text: string; at: number}> = ({text, at}) => {
+export const BigWord: React.FC<{text: string; at: number}> = ({text, at}) => {
   const frame = useCurrentFrame();
   const {vertical} = useLayout();
   const t = interpolate(frame, [at, at + 7], [0, 1], {...clamp, easing: Easing.out(Easing.back(2))});
