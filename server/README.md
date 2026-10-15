@@ -7084,6 +7084,72 @@ nothing for client items 33660-33903 and outfits 2185-2193. Rollback: set the li
   the ground helper). Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; the transmog catalogue grew from 1,454 to 1,604 looks, 18 themed sets, auras.xml up to
   aura 32 (client 2186), wings.xml with the Runic Wings. Not played in a client.
 
+## Equipment sets (pair 28) (`data/lib/chaos_gear_sets.lua`, `data/lib/chaos_gear_sets_items.lua`, `tools/install_gear_sets.py`, `chaos/gear_sets.lua`, switch `ChaosGearSets.PAIR28`, off)
+
+Seven themed equipment sets from the owner's own item sheets (client/MANIFEST.md "Equipment sets (pair 28)"): 448
+pieces, 64 a set, client ids 33995-34442, server ids 36995-37442 (client id + 3000). Unlike the themed sets of pair 24
+these are real gear with stats. **Switch `ChaosGearSets.PAIR28`, OFF as shipped**: pair 28 is not on windows-assets yet
+(the owner approves it first). Off, installed pieces exist but nothing drops them and the transmog catalogue skips their
+ids. On: the loot below and the pieces are ordinary transmog looks. Install: `install_all.py SERVER_DIR --only
+files,gearsets` (step `gearsets`, after `assetsdecor` and after `vocations`, whose class names its lists use), restart.
+
+| Set | Theme | Levels | Drops from (hunting level) | Bosses (15% per kill) |
+|---|---|---|---|---|
+| Blightfang | dark green, venom | 8-150 | Poison Spider, Swamp Troll, Cobra, Scorpion (8-11), Wailing Widow, Rot Elemental, Bog Raider, Giant Spider (34-48), Plaguesmith, Cobra Assassin, Blightwalker, Venom Spider (138-177) | Fennra, Snake God Essence |
+| Wyrmscale | green dragon | 40-220 | Wyvern, Dragon Lord Hatchling, Dragon, Wyrm, Dragon Lord, Elder Wyrm, the Wyrmblood (36-104), Black, Mega and Netheria Dragon, Wardragon (163-180) | Shimmerscale |
+| Cinderwrought | fire, ember | 120-450 | Hellhound, Lava Golem, Burning Gladiator, Hellflayer, Burning Book, Cinderclaw, Infernal Demon, Hellhunter Pyrarch, Blazefang (132-474) | Pyrevorn, Morgashal |
+| Bloodmoon | crimson, blood | 300-650 | Elder Bloodjaw, Bloodfang Reaver, Bloodthirst Bulgeye, Bloodspark Adept, Bloodshade Reaper (326-501) | - |
+| Rimewraith | teal frost, spectral | 450-1000 | Distorted, Capricious and Hazardous Phantom, Frost Hydra (406-449), Glacial Hellcharger, Frost Maiden, Ice Lich (612-1000) | - |
+| Azure Vigil | blue and gold, holy | 800-1350 | Dawn Strayer, Spirit of Purity, Celestial Wyrm (980-1080; Rimecrown Depths, Slagmourn Foundry) | Ossivane the Gravecage |
+| Gildcrown | gold | 1200-2000 | Golden Dragon, Winterstride, Bloodantler Fiend, Mirecoil Wyrm (1160-1900; the gilded owner looks) | Vaelith the Fallen Seraph |
+
+The bands overlap, so a character always has a set running and the next one starting.
+
+- **Who wears what.** Every set dresses and arms every class. Armour pieces have a fit read off the art: heavy
+  (Warrior and Templar lines), medium (Ranger, Thief and Monk lines), cloth (Mystic and Necromancer lines); boots,
+  amulets, rings and Gildcrown's two legs anyone. Weapons follow the stock rules of their kind after `add_vocations.py`:
+  one-handed swords Warrior, Juggernaut, Templar and Thief lines; two-handed melee the Warrior line (the Berserker only
+  these); one-handed axes and clubs the Warrior without the Berserker (clubs also the Templar line); two-handed clubs
+  also the Monk line (its staff); bows the Ranger line, crossbows the Ranger and Deadeye; wands the Mystic,
+  Elementalist and Necromancer line, rods the Mystic, Illusionist and Necromancer line; shields the Warrior and
+  Juggernaut and the Templar line; spellbooks the casters. The larger half of a melee kind (by art) is two-handed.
+- **Levels (fluid).** The pieces of one track (kind and fit, e.g. the cloth helmets or the two-handed axes) spread over
+  the band in sheet order, rounded to 5: a set's three heavy helmets of 8-150 are 8, 80 and 150. Each class finds the
+  next piece of a slot a little higher, never a big jump. Stats are fixed by the level along curves anchored to the
+  stock gear of the same level (`CURVES` in the tool; the stock gear stops growing after level 1000, the curves go on
+  slowly to 2000): body armour 7 / 13 / 16 / 19 / 25 / 31 at 8 / 100 / 200 / 400 / 1000 / 2000 (medium x0.9, cloth
+  x0.8), one-handed melee attack 16 / 46 / 49 / 53 / 61 / 69 (two-handed +3 and 3 s attacks, as `two_handed.py`), of
+  it 35% the set's element; launchers the archery bands' attack (31 at level 8, 68 at 100, 85 at 2000) and hit
+  chance, the set's missile; wands 16 / 62 / 85 / 98 / 118 / 138 mean damage of the set's element, mana 2-33; shields
+  defense 14-55, spellbooks 8-33 with magic level +1 to +5; skills and magic level in steps by level; the set's
+  resisted element on body armour and amulet (2-10%, a weakness of half on body armour), half on helmet, legs,
+  shield and spellbook; rings physical 1-4%; boots speed 0-40. Bloodmoon weapons leech life (chance and amount 2-6).
+- **RNG decides only the max.** The base above is the same for everybody. A dropped piece is forged like any gear
+  (`ChaosCrafting.forge`): rarity, item level from the monster, modifiers and their tiers; the orbs work on it. No
+  piece is a unique: no set bonus, any number of pieces may be mixed with other gear.
+- **Loot** (`ChaosGearSets.lootRows`, added to the monster types at startup by `chaos/gear_sets.lua` while the switch
+  is on, as the fist weapons): per monster every piece of its set whose level is within 300 below and 50 above the
+  monster's hunting level, sharing 0.6% per kill (bosses 15%), at least 0.01% each. The chaos loot layer's extra
+  rolls, smart loot (a piece made for the killer's class weighs 3, see "Smart loot"), the Item Finder and the bestiary
+  read `MonsterType:getLoot()` and see the rows. A monster or item missing on the server is reported and skipped. No
+  talkaction, no shop.
+- **Install** (`install_gear_sets.py DATA_DIR [--dry-run]`): items.otb nodes (the importer's group and flags), an
+  items.xml block, an Equip / DeEquip pair per piece in movements.xml (slot, level, classes; ascended classes hidden
+  next to their base class) and a melee / distance / wand entry per weapon in weapons.xml (level, classes; wands and
+  rods damage, mana and element), each between marker comments, rewritten when a number changed; an id with an entry
+  outside a block stops the tool. Launchers have no ammunition type: they fire on their own like every launcher after
+  `patch_base_archery.py`. `--lua [--check]` writes `data/lib/chaos_gear_sets_items.lua` (levels, classes, stats per
+  piece; CI checks it). Tried on a copy of a full test server (`--dry-run` of `install_all.py --only gearsets` and two
+  runs of the tool): 448 nodes, the three files parse, the second run changes nothing.
+- Tests: `tests/gear_sets_test.lua` (pieces against the manifest, every set dresses and arms all 21 classes inside its
+  band, levels only rise along a track, the loot rows and the monsters they name, the transmog catalogue off and on, the
+  startup script on mocks), `tools/install_gear_sets_test.py`, `client/tools/sprites/gen_gear_sets_art_test.py`.
+- **Prices.** `tools/gen_item_prices.py` prices every piece as plain equipment by its level and slot (the equipment
+  formula and the gear scale: a level 8 helmet 140 gold, a level 120 one 8,400, from about level 1000 up 30,252, the
+  Wandering Merchant's orb cap), so the Loot Buyer and the Auto Seller take them like other gear.
+- Open (owner): publish pair 28 and switch on; the Gambler's pool, set bonuses or crafting recipes if wanted. Not run in
+  a client or on a live server.
+
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `chaos_crafting.lua`, `item_mods.lua`)
 
 Every item with a rarity is rolled by `ChaosCrafting.forge` (drops, rift chests, world boss, goblin, tutorial, and the new

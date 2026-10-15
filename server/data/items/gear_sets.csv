@@ -1,0 +1,449 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+33995,36995,cinderwrought_helmet_1,helmet,new,cinderwrought greathelm,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=H|n=1|cell=0
+33996,36996,cinderwrought_helmet_2,helmet,new,cinderwrought warhelm,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=H|n=2|cell=1
+33997,36997,cinderwrought_helmet_3,helmet,new,cinderwrought helm,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=M|n=3|cell=2
+33998,36998,cinderwrought_helmet_4,helmet,new,cinderwrought horned helm,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=H|n=4|cell=3
+33999,36999,cinderwrought_helmet_5,helmet,new,cinderwrought hood,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=C|n=5|cell=4
+34000,37000,cinderwrought_helmet_6,helmet,new,cinderwrought cowl,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=C|n=6|cell=5
+34001,37001,cinderwrought_helmet_7,helmet,new,cinderwrought coif,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=M|n=7|cell=6
+34002,37002,cinderwrought_helmet_8,helmet,new,cinderwrought casque,1x1,0,96,0,0,0,0,set=cinderwrought|kind=helmet|fit=M|n=8|cell=7
+34003,37003,cinderwrought_armor_1,armor,new,cinderwrought plate,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=H|n=1|cell=8
+34004,37004,cinderwrought_armor_2,armor,new,cinderwrought robe,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=C|n=2|cell=9
+34005,37005,cinderwrought_armor_3,armor,new,cinderwrought vestment,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=C|n=3|cell=10
+34006,37006,cinderwrought_armor_4,armor,new,cinderwrought mail,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=M|n=4|cell=11
+34007,37007,cinderwrought_armor_5,armor,new,cinderwrought cuirass,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=H|n=5|cell=12
+34008,37008,cinderwrought_armor_6,armor,new,cinderwrought warplate,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=H|n=6|cell=13
+34009,37009,cinderwrought_armor_7,armor,new,cinderwrought hauberk,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=M|n=7|cell=14
+34010,37010,cinderwrought_armor_8,armor,new,cinderwrought brigandine,1x1,0,96,0,0,0,0,set=cinderwrought|kind=armor|fit=M|n=8|cell=15
+34011,37011,cinderwrought_legs_1,legs,new,cinderwrought legplates,1x1,0,96,0,0,0,0,set=cinderwrought|kind=legs|fit=H|n=1|cell=16
+34012,37012,cinderwrought_legs_2,legs,new,cinderwrought kilt,1x1,0,96,0,0,0,0,set=cinderwrought|kind=legs|fit=C|n=2|cell=17
+34013,37013,cinderwrought_boots_1,boots,new,cinderwrought boots,1x1,0,96,0,0,0,0,set=cinderwrought|kind=boots|fit=|n=1|cell=18
+34014,37014,cinderwrought_boots_2,boots,new,cinderwrought sabatons,1x1,0,96,0,0,0,0,set=cinderwrought|kind=boots|fit=|n=2|cell=19
+34015,37015,cinderwrought_legs_3,legs,new,cinderwrought tassets,1x1,0,96,0,0,0,0,set=cinderwrought|kind=legs|fit=H|n=3|cell=20
+34016,37016,cinderwrought_legs_4,legs,new,cinderwrought leggings,1x1,0,96,0,0,0,0,set=cinderwrought|kind=legs|fit=M|n=4|cell=21
+34017,37017,cinderwrought_boots_3,boots,new,cinderwrought treads,1x1,0,96,0,0,0,0,set=cinderwrought|kind=boots|fit=|n=3|cell=22
+34018,37018,cinderwrought_boots_4,boots,new,cinderwrought striders,1x1,0,96,0,0,0,0,set=cinderwrought|kind=boots|fit=|n=4|cell=23
+34019,37019,cinderwrought_shield_1,shield,new,cinderwrought shield,1x1,0,96,0,0,0,0,set=cinderwrought|kind=shield|fit=|n=1|cell=24
+34020,37020,cinderwrought_shield_2,shield,new,cinderwrought aegis,1x1,0,96,0,0,0,0,set=cinderwrought|kind=shield|fit=|n=2|cell=25
+34021,37021,cinderwrought_shield_3,shield,new,cinderwrought bulwark,1x1,0,96,0,0,0,0,set=cinderwrought|kind=shield|fit=|n=3|cell=26
+34022,37022,cinderwrought_shield_4,shield,new,cinderwrought kite shield,1x1,0,96,0,0,0,0,set=cinderwrought|kind=shield|fit=|n=4|cell=27
+34023,37023,cinderwrought_spellbook_1,spellbook,new,cinderwrought grimoire,1x1,0,96,0,0,0,0,set=cinderwrought|kind=spellbook|fit=|n=1|cell=28
+34024,37024,cinderwrought_spellbook_2,spellbook,new,cinderwrought tome,1x1,0,96,0,0,0,0,set=cinderwrought|kind=spellbook|fit=|n=2|cell=29
+34025,37025,cinderwrought_spellbook_3,spellbook,new,cinderwrought codex,1x1,0,96,0,0,0,0,set=cinderwrought|kind=spellbook|fit=|n=3|cell=30
+34026,37026,cinderwrought_spellbook_4,spellbook,new,cinderwrought folio,1x1,0,96,0,0,0,0,set=cinderwrought|kind=spellbook|fit=|n=4|cell=31
+34027,37027,cinderwrought_sword_1,sword,new,cinderwrought greatsword,1x1,0,112,0,0,0,0,set=cinderwrought|kind=sword|fit=2|n=1|cell=32
+34028,37028,cinderwrought_sword_2,sword,new,cinderwrought claymore,1x1,0,112,0,0,0,0,set=cinderwrought|kind=sword|fit=2|n=2|cell=33
+34029,37029,cinderwrought_sword_3,sword,new,cinderwrought blade,1x1,0,112,0,0,0,0,set=cinderwrought|kind=sword|fit=1|n=3|cell=34
+34030,37030,cinderwrought_sword_4,sword,new,cinderwrought sabre,1x1,0,112,0,0,0,0,set=cinderwrought|kind=sword|fit=1|n=4|cell=35
+34031,37031,cinderwrought_axe_1,axe,new,cinderwrought greataxe,1x1,0,112,0,0,0,0,set=cinderwrought|kind=axe|fit=2|n=1|cell=36
+34032,37032,cinderwrought_axe_2,axe,new,cinderwrought battle axe,1x1,0,112,0,0,0,0,set=cinderwrought|kind=axe|fit=2|n=2|cell=37
+34033,37033,cinderwrought_axe_3,axe,new,cinderwrought axe,1x1,0,112,0,0,0,0,set=cinderwrought|kind=axe|fit=1|n=3|cell=38
+34034,37034,cinderwrought_axe_4,axe,new,cinderwrought hatchet,1x1,0,112,0,0,0,0,set=cinderwrought|kind=axe|fit=1|n=4|cell=39
+34035,37035,cinderwrought_club_1,club,new,cinderwrought mace,1x1,0,112,0,0,0,0,set=cinderwrought|kind=club|fit=1|n=1|cell=40
+34036,37036,cinderwrought_club_2,club,new,cinderwrought maul,1x1,0,112,0,0,0,0,set=cinderwrought|kind=club|fit=2|n=2|cell=41
+34037,37037,cinderwrought_bow_1,bow,new,cinderwrought bow,1x1,0,96,0,0,0,0,set=cinderwrought|kind=bow|fit=|n=1|cell=42
+34038,37038,cinderwrought_bow_2,bow,new,cinderwrought longbow,1x1,0,96,0,0,0,0,set=cinderwrought|kind=bow|fit=|n=2|cell=43
+34039,37039,cinderwrought_bow_3,bow,new,cinderwrought recurve bow,1x1,0,96,0,0,0,0,set=cinderwrought|kind=bow|fit=|n=3|cell=44
+34040,37040,cinderwrought_bow_4,bow,new,cinderwrought warbow,1x1,0,96,0,0,0,0,set=cinderwrought|kind=bow|fit=|n=4|cell=45
+34041,37041,cinderwrought_crossbow_1,crossbow,new,cinderwrought crossbow,1x1,0,96,0,0,0,0,set=cinderwrought|kind=crossbow|fit=|n=1|cell=46
+34042,37042,cinderwrought_crossbow_2,crossbow,new,cinderwrought arbalest,1x1,0,96,0,0,0,0,set=cinderwrought|kind=crossbow|fit=|n=2|cell=47
+34043,37043,cinderwrought_amulet_1,amulet,new,cinderwrought amulet,1x1,0,96,0,0,0,0,set=cinderwrought|kind=amulet|fit=|n=1|cell=48
+34044,37044,cinderwrought_amulet_2,amulet,new,cinderwrought pendant,1x1,0,96,0,0,0,0,set=cinderwrought|kind=amulet|fit=|n=2|cell=49
+34045,37045,cinderwrought_amulet_3,amulet,new,cinderwrought talisman,1x1,0,96,0,0,0,0,set=cinderwrought|kind=amulet|fit=|n=3|cell=50
+34046,37046,cinderwrought_ring_1,ring,new,cinderwrought ring,1x1,0,96,0,0,0,0,set=cinderwrought|kind=ring|fit=|n=1|cell=51
+34047,37047,cinderwrought_ring_2,ring,new,cinderwrought band,1x1,0,96,0,0,0,0,set=cinderwrought|kind=ring|fit=|n=2|cell=52
+34048,37048,cinderwrought_ring_3,ring,new,cinderwrought signet,1x1,0,96,0,0,0,0,set=cinderwrought|kind=ring|fit=|n=3|cell=53
+34049,37049,cinderwrought_ring_4,ring,new,cinderwrought seal,1x1,0,96,0,0,0,0,set=cinderwrought|kind=ring|fit=|n=4|cell=54
+34050,37050,cinderwrought_ring_5,ring,new,cinderwrought loop,1x1,0,96,0,0,0,0,set=cinderwrought|kind=ring|fit=|n=5|cell=55
+34051,37051,cinderwrought_wand_1,wand,new,cinderwrought wand,1x1,0,96,0,0,0,0,set=cinderwrought|kind=wand|fit=|n=1|cell=56
+34052,37052,cinderwrought_wand_2,wand,new,cinderwrought scepter,1x1,0,96,0,0,0,0,set=cinderwrought|kind=wand|fit=|n=2|cell=57
+34053,37053,cinderwrought_wand_3,wand,new,cinderwrought spire,1x1,0,96,0,0,0,0,set=cinderwrought|kind=wand|fit=|n=3|cell=58
+34054,37054,cinderwrought_wand_4,wand,new,cinderwrought focus,1x1,0,96,0,0,0,0,set=cinderwrought|kind=wand|fit=|n=4|cell=59
+34055,37055,cinderwrought_rod_1,rod,new,cinderwrought rod,1x1,0,96,0,0,0,0,set=cinderwrought|kind=rod|fit=|n=1|cell=60
+34056,37056,cinderwrought_rod_2,rod,new,cinderwrought staff,1x1,0,96,0,0,0,0,set=cinderwrought|kind=rod|fit=|n=2|cell=61
+34057,37057,cinderwrought_rod_3,rod,new,cinderwrought branch,1x1,0,96,0,0,0,0,set=cinderwrought|kind=rod|fit=|n=3|cell=62
+34058,37058,cinderwrought_rod_4,rod,new,cinderwrought crook,1x1,0,96,0,0,0,0,set=cinderwrought|kind=rod|fit=|n=4|cell=63
+34059,37059,wyrmscale_helmet_1,helmet,new,wyrmscale greathelm,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=H|n=1|cell=0
+34060,37060,wyrmscale_helmet_2,helmet,new,wyrmscale helm,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=M|n=2|cell=1
+34061,37061,wyrmscale_helmet_3,helmet,new,wyrmscale coif,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=M|n=3|cell=2
+34062,37062,wyrmscale_helmet_4,helmet,new,wyrmscale warhelm,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=H|n=4|cell=3
+34063,37063,wyrmscale_helmet_5,helmet,new,wyrmscale hood,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=C|n=5|cell=4
+34064,37064,wyrmscale_helmet_6,helmet,new,wyrmscale horned helm,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=H|n=6|cell=5
+34065,37065,wyrmscale_helmet_7,helmet,new,wyrmscale casque,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=M|n=7|cell=6
+34066,37066,wyrmscale_helmet_8,helmet,new,wyrmscale cowl,1x1,0,96,0,0,0,0,set=wyrmscale|kind=helmet|fit=C|n=8|cell=7
+34067,37067,wyrmscale_armor_1,armor,new,wyrmscale plate,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=H|n=1|cell=8
+34068,37068,wyrmscale_armor_2,armor,new,wyrmscale mail,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=M|n=2|cell=9
+34069,37069,wyrmscale_armor_3,armor,new,wyrmscale robe,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=C|n=3|cell=10
+34070,37070,wyrmscale_armor_4,armor,new,wyrmscale cuirass,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=H|n=4|cell=11
+34071,37071,wyrmscale_armor_5,armor,new,wyrmscale hauberk,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=M|n=5|cell=12
+34072,37072,wyrmscale_armor_6,armor,new,wyrmscale warplate,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=H|n=6|cell=13
+34073,37073,wyrmscale_armor_7,armor,new,wyrmscale brigandine,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=M|n=7|cell=14
+34074,37074,wyrmscale_armor_8,armor,new,wyrmscale vestment,1x1,0,96,0,0,0,0,set=wyrmscale|kind=armor|fit=C|n=8|cell=15
+34075,37075,wyrmscale_legs_1,legs,new,wyrmscale legplates,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=H|n=1|cell=16
+34076,37076,wyrmscale_legs_2,legs,new,wyrmscale leggings,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=M|n=2|cell=17
+34077,37077,wyrmscale_legs_3,legs,new,wyrmscale kilt,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=C|n=3|cell=18
+34078,37078,wyrmscale_legs_4,legs,new,wyrmscale tassets,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=H|n=4|cell=19
+34079,37079,wyrmscale_legs_5,legs,new,wyrmscale chausses,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=M|n=5|cell=20
+34080,37080,wyrmscale_legs_6,legs,new,wyrmscale cuisses,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=H|n=6|cell=21
+34081,37081,wyrmscale_legs_7,legs,new,wyrmscale breeches,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=M|n=7|cell=22
+34082,37082,wyrmscale_legs_8,legs,new,wyrmscale trousers,1x1,0,96,0,0,0,0,set=wyrmscale|kind=legs|fit=C|n=8|cell=23
+34083,37083,wyrmscale_shield_1,shield,new,wyrmscale shield,1x1,0,96,0,0,0,0,set=wyrmscale|kind=shield|fit=|n=1|cell=24
+34084,37084,wyrmscale_shield_2,shield,new,wyrmscale aegis,1x1,0,96,0,0,0,0,set=wyrmscale|kind=shield|fit=|n=2|cell=25
+34085,37085,wyrmscale_shield_3,shield,new,wyrmscale bulwark,1x1,0,96,0,0,0,0,set=wyrmscale|kind=shield|fit=|n=3|cell=26
+34086,37086,wyrmscale_shield_4,shield,new,wyrmscale kite shield,1x1,0,96,0,0,0,0,set=wyrmscale|kind=shield|fit=|n=4|cell=27
+34087,37087,wyrmscale_spellbook_1,spellbook,new,wyrmscale grimoire,1x1,0,96,0,0,0,0,set=wyrmscale|kind=spellbook|fit=|n=1|cell=28
+34088,37088,wyrmscale_spellbook_2,spellbook,new,wyrmscale tome,1x1,0,96,0,0,0,0,set=wyrmscale|kind=spellbook|fit=|n=2|cell=29
+34089,37089,wyrmscale_spellbook_3,spellbook,new,wyrmscale codex,1x1,0,96,0,0,0,0,set=wyrmscale|kind=spellbook|fit=|n=3|cell=30
+34090,37090,wyrmscale_spellbook_4,spellbook,new,wyrmscale folio,1x1,0,96,0,0,0,0,set=wyrmscale|kind=spellbook|fit=|n=4|cell=31
+34091,37091,wyrmscale_sword_1,sword,new,wyrmscale greatsword,1x1,0,112,0,0,0,0,set=wyrmscale|kind=sword|fit=2|n=1|cell=32
+34092,37092,wyrmscale_sword_2,sword,new,wyrmscale blade,1x1,0,112,0,0,0,0,set=wyrmscale|kind=sword|fit=1|n=2|cell=33
+34093,37093,wyrmscale_sword_3,sword,new,wyrmscale sabre,1x1,0,112,0,0,0,0,set=wyrmscale|kind=sword|fit=1|n=3|cell=34
+34094,37094,wyrmscale_sword_4,sword,new,wyrmscale claymore,1x1,0,112,0,0,0,0,set=wyrmscale|kind=sword|fit=2|n=4|cell=35
+34095,37095,wyrmscale_axe_1,axe,new,wyrmscale axe,1x1,0,112,0,0,0,0,set=wyrmscale|kind=axe|fit=1|n=1|cell=36
+34096,37096,wyrmscale_axe_2,axe,new,wyrmscale greataxe,1x1,0,112,0,0,0,0,set=wyrmscale|kind=axe|fit=2|n=2|cell=37
+34097,37097,wyrmscale_axe_3,axe,new,wyrmscale hatchet,1x1,0,112,0,0,0,0,set=wyrmscale|kind=axe|fit=1|n=3|cell=38
+34098,37098,wyrmscale_axe_4,axe,new,wyrmscale battle axe,1x1,0,112,0,0,0,0,set=wyrmscale|kind=axe|fit=2|n=4|cell=39
+34099,37099,wyrmscale_club_1,club,new,wyrmscale maul,1x1,0,112,0,0,0,0,set=wyrmscale|kind=club|fit=2|n=1|cell=40
+34100,37100,wyrmscale_club_2,club,new,wyrmscale mace,1x1,0,112,0,0,0,0,set=wyrmscale|kind=club|fit=1|n=2|cell=41
+34101,37101,wyrmscale_club_3,club,new,wyrmscale hammer,1x1,0,112,0,0,0,0,set=wyrmscale|kind=club|fit=1|n=3|cell=42
+34102,37102,wyrmscale_bow_1,bow,new,wyrmscale bow,1x1,0,96,0,0,0,0,set=wyrmscale|kind=bow|fit=|n=1|cell=43
+34103,37103,wyrmscale_bow_2,bow,new,wyrmscale longbow,1x1,0,96,0,0,0,0,set=wyrmscale|kind=bow|fit=|n=2|cell=44
+34104,37104,wyrmscale_bow_3,bow,new,wyrmscale recurve bow,1x1,0,96,0,0,0,0,set=wyrmscale|kind=bow|fit=|n=3|cell=45
+34105,37105,wyrmscale_crossbow_1,crossbow,new,wyrmscale crossbow,1x1,0,96,0,0,0,0,set=wyrmscale|kind=crossbow|fit=|n=1|cell=46
+34106,37106,wyrmscale_crossbow_2,crossbow,new,wyrmscale arbalest,1x1,0,96,0,0,0,0,set=wyrmscale|kind=crossbow|fit=|n=2|cell=47
+34107,37107,wyrmscale_amulet_1,amulet,new,wyrmscale amulet,1x1,0,96,0,0,0,0,set=wyrmscale|kind=amulet|fit=|n=1|cell=48
+34108,37108,wyrmscale_amulet_2,amulet,new,wyrmscale pendant,1x1,0,96,0,0,0,0,set=wyrmscale|kind=amulet|fit=|n=2|cell=49
+34109,37109,wyrmscale_amulet_3,amulet,new,wyrmscale talisman,1x1,0,96,0,0,0,0,set=wyrmscale|kind=amulet|fit=|n=3|cell=50
+34110,37110,wyrmscale_amulet_4,amulet,new,wyrmscale necklace,1x1,0,96,0,0,0,0,set=wyrmscale|kind=amulet|fit=|n=4|cell=51
+34111,37111,wyrmscale_ring_1,ring,new,wyrmscale ring,1x1,0,96,0,0,0,0,set=wyrmscale|kind=ring|fit=|n=1|cell=52
+34112,37112,wyrmscale_ring_2,ring,new,wyrmscale band,1x1,0,96,0,0,0,0,set=wyrmscale|kind=ring|fit=|n=2|cell=53
+34113,37113,wyrmscale_ring_3,ring,new,wyrmscale signet,1x1,0,96,0,0,0,0,set=wyrmscale|kind=ring|fit=|n=3|cell=54
+34114,37114,wyrmscale_ring_4,ring,new,wyrmscale seal,1x1,0,96,0,0,0,0,set=wyrmscale|kind=ring|fit=|n=4|cell=55
+34115,37115,wyrmscale_wand_1,wand,new,wyrmscale wand,1x1,0,96,0,0,0,0,set=wyrmscale|kind=wand|fit=|n=1|cell=56
+34116,37116,wyrmscale_wand_2,wand,new,wyrmscale scepter,1x1,0,96,0,0,0,0,set=wyrmscale|kind=wand|fit=|n=2|cell=57
+34117,37117,wyrmscale_wand_3,wand,new,wyrmscale spire,1x1,0,96,0,0,0,0,set=wyrmscale|kind=wand|fit=|n=3|cell=58
+34118,37118,wyrmscale_wand_4,wand,new,wyrmscale focus,1x1,0,96,0,0,0,0,set=wyrmscale|kind=wand|fit=|n=4|cell=59
+34119,37119,wyrmscale_rod_1,rod,new,wyrmscale rod,1x1,0,96,0,0,0,0,set=wyrmscale|kind=rod|fit=|n=1|cell=60
+34120,37120,wyrmscale_rod_2,rod,new,wyrmscale staff,1x1,0,96,0,0,0,0,set=wyrmscale|kind=rod|fit=|n=2|cell=61
+34121,37121,wyrmscale_rod_3,rod,new,wyrmscale branch,1x1,0,96,0,0,0,0,set=wyrmscale|kind=rod|fit=|n=3|cell=62
+34122,37122,wyrmscale_rod_4,rod,new,wyrmscale crook,1x1,0,96,0,0,0,0,set=wyrmscale|kind=rod|fit=|n=4|cell=63
+34123,37123,rimewraith_helmet_1,helmet,new,rimewraith greathelm,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=H|n=1|cell=0
+34124,37124,rimewraith_helmet_2,helmet,new,rimewraith helm,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=M|n=2|cell=1
+34125,37125,rimewraith_helmet_3,helmet,new,rimewraith warhelm,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=H|n=3|cell=2
+34126,37126,rimewraith_helmet_4,helmet,new,rimewraith coif,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=M|n=4|cell=3
+34127,37127,rimewraith_helmet_5,helmet,new,rimewraith casque,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=M|n=5|cell=4
+34128,37128,rimewraith_helmet_6,helmet,new,rimewraith horned helm,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=H|n=6|cell=5
+34129,37129,rimewraith_helmet_7,helmet,new,rimewraith hood,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=C|n=7|cell=6
+34130,37130,rimewraith_helmet_8,helmet,new,rimewraith cowl,1x1,0,96,0,0,0,0,set=rimewraith|kind=helmet|fit=C|n=8|cell=7
+34131,37131,rimewraith_armor_1,armor,new,rimewraith plate,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=H|n=1|cell=8
+34132,37132,rimewraith_armor_2,armor,new,rimewraith robe,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=C|n=2|cell=9
+34133,37133,rimewraith_armor_3,armor,new,rimewraith mail,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=M|n=3|cell=10
+34134,37134,rimewraith_armor_4,armor,new,rimewraith hauberk,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=M|n=4|cell=11
+34135,37135,rimewraith_armor_5,armor,new,rimewraith cuirass,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=H|n=5|cell=12
+34136,37136,rimewraith_armor_6,armor,new,rimewraith vestment,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=C|n=6|cell=13
+34137,37137,rimewraith_armor_7,armor,new,rimewraith warplate,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=H|n=7|cell=14
+34138,37138,rimewraith_armor_8,armor,new,rimewraith brigandine,1x1,0,96,0,0,0,0,set=rimewraith|kind=armor|fit=M|n=8|cell=15
+34139,37139,rimewraith_legs_1,legs,new,rimewraith legplates,1x1,0,96,0,0,0,0,set=rimewraith|kind=legs|fit=H|n=1|cell=16
+34140,37140,rimewraith_legs_2,legs,new,rimewraith leggings,1x1,0,96,0,0,0,0,set=rimewraith|kind=legs|fit=M|n=2|cell=17
+34141,37141,rimewraith_boots_1,boots,new,rimewraith boots,1x1,0,96,0,0,0,0,set=rimewraith|kind=boots|fit=|n=1|cell=18
+34142,37142,rimewraith_boots_2,boots,new,rimewraith sabatons,1x1,0,96,0,0,0,0,set=rimewraith|kind=boots|fit=|n=2|cell=19
+34143,37143,rimewraith_legs_3,legs,new,rimewraith kilt,1x1,0,96,0,0,0,0,set=rimewraith|kind=legs|fit=C|n=3|cell=20
+34144,37144,rimewraith_legs_4,legs,new,rimewraith tassets,1x1,0,96,0,0,0,0,set=rimewraith|kind=legs|fit=H|n=4|cell=21
+34145,37145,rimewraith_boots_3,boots,new,rimewraith treads,1x1,0,96,0,0,0,0,set=rimewraith|kind=boots|fit=|n=3|cell=22
+34146,37146,rimewraith_boots_4,boots,new,rimewraith striders,1x1,0,96,0,0,0,0,set=rimewraith|kind=boots|fit=|n=4|cell=23
+34147,37147,rimewraith_shield_1,shield,new,rimewraith shield,1x1,0,96,0,0,0,0,set=rimewraith|kind=shield|fit=|n=1|cell=24
+34148,37148,rimewraith_shield_2,shield,new,rimewraith aegis,1x1,0,96,0,0,0,0,set=rimewraith|kind=shield|fit=|n=2|cell=25
+34149,37149,rimewraith_shield_3,shield,new,rimewraith bulwark,1x1,0,96,0,0,0,0,set=rimewraith|kind=shield|fit=|n=3|cell=26
+34150,37150,rimewraith_shield_4,shield,new,rimewraith kite shield,1x1,0,96,0,0,0,0,set=rimewraith|kind=shield|fit=|n=4|cell=27
+34151,37151,rimewraith_spellbook_1,spellbook,new,rimewraith grimoire,1x1,0,96,0,0,0,0,set=rimewraith|kind=spellbook|fit=|n=1|cell=28
+34152,37152,rimewraith_spellbook_2,spellbook,new,rimewraith tome,1x1,0,96,0,0,0,0,set=rimewraith|kind=spellbook|fit=|n=2|cell=29
+34153,37153,rimewraith_spellbook_3,spellbook,new,rimewraith codex,1x1,0,96,0,0,0,0,set=rimewraith|kind=spellbook|fit=|n=3|cell=30
+34154,37154,rimewraith_spellbook_4,spellbook,new,rimewraith folio,1x1,0,96,0,0,0,0,set=rimewraith|kind=spellbook|fit=|n=4|cell=31
+34155,37155,rimewraith_sword_1,sword,new,rimewraith greatsword,1x1,0,112,0,0,0,0,set=rimewraith|kind=sword|fit=2|n=1|cell=32
+34156,37156,rimewraith_sword_2,sword,new,rimewraith blade,1x1,0,112,0,0,0,0,set=rimewraith|kind=sword|fit=1|n=2|cell=33
+34157,37157,rimewraith_sword_3,sword,new,rimewraith claymore,1x1,0,112,0,0,0,0,set=rimewraith|kind=sword|fit=2|n=3|cell=34
+34158,37158,rimewraith_sword_4,sword,new,rimewraith sabre,1x1,0,112,0,0,0,0,set=rimewraith|kind=sword|fit=1|n=4|cell=35
+34159,37159,rimewraith_sword_5,sword,new,rimewraith longsword,1x1,0,112,0,0,0,0,set=rimewraith|kind=sword|fit=1|n=5|cell=36
+34160,37160,rimewraith_axe_1,axe,new,rimewraith axe,1x1,0,112,0,0,0,0,set=rimewraith|kind=axe|fit=1|n=1|cell=37
+34161,37161,rimewraith_sword_6,sword,new,rimewraith great blade,1x1,0,112,0,0,0,0,set=rimewraith|kind=sword|fit=2|n=6|cell=38
+34162,37162,rimewraith_axe_2,axe,new,rimewraith hatchet,1x1,0,112,0,0,0,0,set=rimewraith|kind=axe|fit=1|n=2|cell=39
+34163,37163,rimewraith_club_1,club,new,rimewraith maul,1x1,0,112,0,0,0,0,set=rimewraith|kind=club|fit=2|n=1|cell=40
+34164,37164,rimewraith_club_2,club,new,rimewraith mace,1x1,0,112,0,0,0,0,set=rimewraith|kind=club|fit=1|n=2|cell=41
+34165,37165,rimewraith_bow_1,bow,new,rimewraith bow,1x1,0,96,0,0,0,0,set=rimewraith|kind=bow|fit=|n=1|cell=42
+34166,37166,rimewraith_bow_2,bow,new,rimewraith longbow,1x1,0,96,0,0,0,0,set=rimewraith|kind=bow|fit=|n=2|cell=43
+34167,37167,rimewraith_axe_3,axe,new,rimewraith greataxe,1x1,0,112,0,0,0,0,set=rimewraith|kind=axe|fit=2|n=3|cell=44
+34168,37168,rimewraith_bow_3,bow,new,rimewraith recurve bow,1x1,0,96,0,0,0,0,set=rimewraith|kind=bow|fit=|n=3|cell=45
+34169,37169,rimewraith_crossbow_1,crossbow,new,rimewraith crossbow,1x1,0,96,0,0,0,0,set=rimewraith|kind=crossbow|fit=|n=1|cell=46
+34170,37170,rimewraith_crossbow_2,crossbow,new,rimewraith arbalest,1x1,0,96,0,0,0,0,set=rimewraith|kind=crossbow|fit=|n=2|cell=47
+34171,37171,rimewraith_amulet_1,amulet,new,rimewraith amulet,1x1,0,96,0,0,0,0,set=rimewraith|kind=amulet|fit=|n=1|cell=48
+34172,37172,rimewraith_amulet_2,amulet,new,rimewraith pendant,1x1,0,96,0,0,0,0,set=rimewraith|kind=amulet|fit=|n=2|cell=49
+34173,37173,rimewraith_amulet_3,amulet,new,rimewraith talisman,1x1,0,96,0,0,0,0,set=rimewraith|kind=amulet|fit=|n=3|cell=50
+34174,37174,rimewraith_ring_1,ring,new,rimewraith ring,1x1,0,96,0,0,0,0,set=rimewraith|kind=ring|fit=|n=1|cell=51
+34175,37175,rimewraith_ring_2,ring,new,rimewraith band,1x1,0,96,0,0,0,0,set=rimewraith|kind=ring|fit=|n=2|cell=52
+34176,37176,rimewraith_ring_3,ring,new,rimewraith signet,1x1,0,96,0,0,0,0,set=rimewraith|kind=ring|fit=|n=3|cell=53
+34177,37177,rimewraith_ring_4,ring,new,rimewraith seal,1x1,0,96,0,0,0,0,set=rimewraith|kind=ring|fit=|n=4|cell=54
+34178,37178,rimewraith_ring_5,ring,new,rimewraith loop,1x1,0,96,0,0,0,0,set=rimewraith|kind=ring|fit=|n=5|cell=55
+34179,37179,rimewraith_wand_1,wand,new,rimewraith wand,1x1,0,96,0,0,0,0,set=rimewraith|kind=wand|fit=|n=1|cell=56
+34180,37180,rimewraith_wand_2,wand,new,rimewraith scepter,1x1,0,96,0,0,0,0,set=rimewraith|kind=wand|fit=|n=2|cell=57
+34181,37181,rimewraith_wand_3,wand,new,rimewraith spire,1x1,0,96,0,0,0,0,set=rimewraith|kind=wand|fit=|n=3|cell=58
+34182,37182,rimewraith_wand_4,wand,new,rimewraith focus,1x1,0,96,0,0,0,0,set=rimewraith|kind=wand|fit=|n=4|cell=59
+34183,37183,rimewraith_rod_1,rod,new,rimewraith rod,1x1,0,96,0,0,0,0,set=rimewraith|kind=rod|fit=|n=1|cell=60
+34184,37184,rimewraith_rod_2,rod,new,rimewraith staff,1x1,0,96,0,0,0,0,set=rimewraith|kind=rod|fit=|n=2|cell=61
+34185,37185,rimewraith_rod_3,rod,new,rimewraith branch,1x1,0,96,0,0,0,0,set=rimewraith|kind=rod|fit=|n=3|cell=62
+34186,37186,rimewraith_rod_4,rod,new,rimewraith crook,1x1,0,96,0,0,0,0,set=rimewraith|kind=rod|fit=|n=4|cell=63
+34187,37187,azurevigil_helmet_1,helmet,new,azure vigil hood,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=C|n=1|cell=0
+34188,37188,azurevigil_helmet_2,helmet,new,azure vigil greathelm,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=H|n=2|cell=1
+34189,37189,azurevigil_helmet_3,helmet,new,azure vigil helm,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=M|n=3|cell=2
+34190,37190,azurevigil_helmet_4,helmet,new,azure vigil cowl,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=C|n=4|cell=3
+34191,37191,azurevigil_helmet_5,helmet,new,azure vigil warhelm,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=H|n=5|cell=4
+34192,37192,azurevigil_helmet_6,helmet,new,azure vigil horned helm,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=H|n=6|cell=5
+34193,37193,azurevigil_helmet_7,helmet,new,azure vigil coif,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=M|n=7|cell=6
+34194,37194,azurevigil_helmet_8,helmet,new,azure vigil casque,1x1,0,96,0,0,0,0,set=azurevigil|kind=helmet|fit=M|n=8|cell=7
+34195,37195,azurevigil_armor_1,armor,new,azure vigil mail,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=M|n=1|cell=8
+34196,37196,azurevigil_armor_2,armor,new,azure vigil robe,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=C|n=2|cell=9
+34197,37197,azurevigil_armor_3,armor,new,azure vigil plate,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=H|n=3|cell=10
+34198,37198,azurevigil_armor_4,armor,new,azure vigil vestment,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=C|n=4|cell=11
+34199,37199,azurevigil_armor_5,armor,new,azure vigil cuirass,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=H|n=5|cell=12
+34200,37200,azurevigil_armor_6,armor,new,azure vigil hauberk,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=M|n=6|cell=13
+34201,37201,azurevigil_armor_7,armor,new,azure vigil warplate,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=H|n=7|cell=14
+34202,37202,azurevigil_armor_8,armor,new,azure vigil brigandine,1x1,0,96,0,0,0,0,set=azurevigil|kind=armor|fit=M|n=8|cell=15
+34203,37203,azurevigil_legs_1,legs,new,azure vigil legplates,1x1,0,96,0,0,0,0,set=azurevigil|kind=legs|fit=H|n=1|cell=16
+34204,37204,azurevigil_legs_2,legs,new,azure vigil leggings,1x1,0,96,0,0,0,0,set=azurevigil|kind=legs|fit=M|n=2|cell=17
+34205,37205,azurevigil_legs_3,legs,new,azure vigil kilt,1x1,0,96,0,0,0,0,set=azurevigil|kind=legs|fit=C|n=3|cell=18
+34206,37206,azurevigil_boots_1,boots,new,azure vigil boots,1x1,0,96,0,0,0,0,set=azurevigil|kind=boots|fit=|n=1|cell=19
+34207,37207,azurevigil_legs_4,legs,new,azure vigil tassets,1x1,0,96,0,0,0,0,set=azurevigil|kind=legs|fit=H|n=4|cell=20
+34208,37208,azurevigil_legs_5,legs,new,azure vigil chausses,1x1,0,96,0,0,0,0,set=azurevigil|kind=legs|fit=M|n=5|cell=21
+34209,37209,azurevigil_boots_2,boots,new,azure vigil sabatons,1x1,0,96,0,0,0,0,set=azurevigil|kind=boots|fit=|n=2|cell=22
+34210,37210,azurevigil_boots_3,boots,new,azure vigil treads,1x1,0,96,0,0,0,0,set=azurevigil|kind=boots|fit=|n=3|cell=23
+34211,37211,azurevigil_shield_1,shield,new,azure vigil shield,1x1,0,96,0,0,0,0,set=azurevigil|kind=shield|fit=|n=1|cell=24
+34212,37212,azurevigil_shield_2,shield,new,azure vigil aegis,1x1,0,96,0,0,0,0,set=azurevigil|kind=shield|fit=|n=2|cell=25
+34213,37213,azurevigil_shield_3,shield,new,azure vigil bulwark,1x1,0,96,0,0,0,0,set=azurevigil|kind=shield|fit=|n=3|cell=26
+34214,37214,azurevigil_shield_4,shield,new,azure vigil kite shield,1x1,0,96,0,0,0,0,set=azurevigil|kind=shield|fit=|n=4|cell=27
+34215,37215,azurevigil_spellbook_1,spellbook,new,azure vigil grimoire,1x1,0,96,0,0,0,0,set=azurevigil|kind=spellbook|fit=|n=1|cell=28
+34216,37216,azurevigil_spellbook_2,spellbook,new,azure vigil tome,1x1,0,96,0,0,0,0,set=azurevigil|kind=spellbook|fit=|n=2|cell=29
+34217,37217,azurevigil_spellbook_3,spellbook,new,azure vigil codex,1x1,0,96,0,0,0,0,set=azurevigil|kind=spellbook|fit=|n=3|cell=30
+34218,37218,azurevigil_spellbook_4,spellbook,new,azure vigil folio,1x1,0,96,0,0,0,0,set=azurevigil|kind=spellbook|fit=|n=4|cell=31
+34219,37219,azurevigil_sword_1,sword,new,azure vigil blade,1x1,0,112,0,0,0,0,set=azurevigil|kind=sword|fit=1|n=1|cell=32
+34220,37220,azurevigil_sword_2,sword,new,azure vigil greatsword,1x1,0,112,0,0,0,0,set=azurevigil|kind=sword|fit=2|n=2|cell=33
+34221,37221,azurevigil_sword_3,sword,new,azure vigil sabre,1x1,0,112,0,0,0,0,set=azurevigil|kind=sword|fit=1|n=3|cell=34
+34222,37222,azurevigil_sword_4,sword,new,azure vigil claymore,1x1,0,112,0,0,0,0,set=azurevigil|kind=sword|fit=2|n=4|cell=35
+34223,37223,azurevigil_axe_1,axe,new,azure vigil axe,1x1,0,112,0,0,0,0,set=azurevigil|kind=axe|fit=1|n=1|cell=36
+34224,37224,azurevigil_axe_2,axe,new,azure vigil greataxe,1x1,0,112,0,0,0,0,set=azurevigil|kind=axe|fit=2|n=2|cell=37
+34225,37225,azurevigil_axe_3,axe,new,azure vigil hatchet,1x1,0,112,0,0,0,0,set=azurevigil|kind=axe|fit=1|n=3|cell=38
+34226,37226,azurevigil_axe_4,axe,new,azure vigil battle axe,1x1,0,112,0,0,0,0,set=azurevigil|kind=axe|fit=2|n=4|cell=39
+34227,37227,azurevigil_club_1,club,new,azure vigil mace,1x1,0,112,0,0,0,0,set=azurevigil|kind=club|fit=1|n=1|cell=40
+34228,37228,azurevigil_club_2,club,new,azure vigil maul,1x1,0,112,0,0,0,0,set=azurevigil|kind=club|fit=2|n=2|cell=41
+34229,37229,azurevigil_club_3,club,new,azure vigil hammer,1x1,0,112,0,0,0,0,set=azurevigil|kind=club|fit=1|n=3|cell=42
+34230,37230,azurevigil_bow_1,bow,new,azure vigil bow,1x1,0,96,0,0,0,0,set=azurevigil|kind=bow|fit=|n=1|cell=43
+34231,37231,azurevigil_bow_2,bow,new,azure vigil longbow,1x1,0,96,0,0,0,0,set=azurevigil|kind=bow|fit=|n=2|cell=44
+34232,37232,azurevigil_bow_3,bow,new,azure vigil recurve bow,1x1,0,96,0,0,0,0,set=azurevigil|kind=bow|fit=|n=3|cell=45
+34233,37233,azurevigil_crossbow_1,crossbow,new,azure vigil crossbow,1x1,0,96,0,0,0,0,set=azurevigil|kind=crossbow|fit=|n=1|cell=46
+34234,37234,azurevigil_crossbow_2,crossbow,new,azure vigil arbalest,1x1,0,96,0,0,0,0,set=azurevigil|kind=crossbow|fit=|n=2|cell=47
+34235,37235,azurevigil_amulet_1,amulet,new,azure vigil amulet,1x1,0,96,0,0,0,0,set=azurevigil|kind=amulet|fit=|n=1|cell=48
+34236,37236,azurevigil_amulet_2,amulet,new,azure vigil pendant,1x1,0,96,0,0,0,0,set=azurevigil|kind=amulet|fit=|n=2|cell=49
+34237,37237,azurevigil_amulet_3,amulet,new,azure vigil talisman,1x1,0,96,0,0,0,0,set=azurevigil|kind=amulet|fit=|n=3|cell=50
+34238,37238,azurevigil_amulet_4,amulet,new,azure vigil necklace,1x1,0,96,0,0,0,0,set=azurevigil|kind=amulet|fit=|n=4|cell=51
+34239,37239,azurevigil_ring_1,ring,new,azure vigil ring,1x1,0,96,0,0,0,0,set=azurevigil|kind=ring|fit=|n=1|cell=52
+34240,37240,azurevigil_ring_2,ring,new,azure vigil band,1x1,0,96,0,0,0,0,set=azurevigil|kind=ring|fit=|n=2|cell=53
+34241,37241,azurevigil_ring_3,ring,new,azure vigil signet,1x1,0,96,0,0,0,0,set=azurevigil|kind=ring|fit=|n=3|cell=54
+34242,37242,azurevigil_ring_4,ring,new,azure vigil seal,1x1,0,96,0,0,0,0,set=azurevigil|kind=ring|fit=|n=4|cell=55
+34243,37243,azurevigil_wand_1,wand,new,azure vigil wand,1x1,0,96,0,0,0,0,set=azurevigil|kind=wand|fit=|n=1|cell=56
+34244,37244,azurevigil_wand_2,wand,new,azure vigil scepter,1x1,0,96,0,0,0,0,set=azurevigil|kind=wand|fit=|n=2|cell=57
+34245,37245,azurevigil_wand_3,wand,new,azure vigil spire,1x1,0,96,0,0,0,0,set=azurevigil|kind=wand|fit=|n=3|cell=58
+34246,37246,azurevigil_wand_4,wand,new,azure vigil focus,1x1,0,96,0,0,0,0,set=azurevigil|kind=wand|fit=|n=4|cell=59
+34247,37247,azurevigil_rod_1,rod,new,azure vigil rod,1x1,0,96,0,0,0,0,set=azurevigil|kind=rod|fit=|n=1|cell=60
+34248,37248,azurevigil_rod_2,rod,new,azure vigil staff,1x1,0,96,0,0,0,0,set=azurevigil|kind=rod|fit=|n=2|cell=61
+34249,37249,azurevigil_rod_3,rod,new,azure vigil branch,1x1,0,96,0,0,0,0,set=azurevigil|kind=rod|fit=|n=3|cell=62
+34250,37250,azurevigil_rod_4,rod,new,azure vigil crook,1x1,0,96,0,0,0,0,set=azurevigil|kind=rod|fit=|n=4|cell=63
+34251,37251,bloodmoon_helmet_1,helmet,new,bloodmoon greathelm,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=H|n=1|cell=0
+34252,37252,bloodmoon_helmet_2,helmet,new,bloodmoon helm,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=M|n=2|cell=1
+34253,37253,bloodmoon_helmet_3,helmet,new,bloodmoon hood,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=C|n=3|cell=2
+34254,37254,bloodmoon_helmet_4,helmet,new,bloodmoon coif,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=M|n=4|cell=3
+34255,37255,bloodmoon_helmet_5,helmet,new,bloodmoon warhelm,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=H|n=5|cell=4
+34256,37256,bloodmoon_helmet_6,helmet,new,bloodmoon horned helm,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=H|n=6|cell=5
+34257,37257,bloodmoon_helmet_7,helmet,new,bloodmoon casque,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=M|n=7|cell=6
+34258,37258,bloodmoon_helmet_8,helmet,new,bloodmoon cowl,1x1,0,96,0,0,0,0,set=bloodmoon|kind=helmet|fit=C|n=8|cell=7
+34259,37259,bloodmoon_armor_1,armor,new,bloodmoon plate,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=H|n=1|cell=8
+34260,37260,bloodmoon_armor_2,armor,new,bloodmoon robe,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=C|n=2|cell=9
+34261,37261,bloodmoon_armor_3,armor,new,bloodmoon vestment,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=C|n=3|cell=10
+34262,37262,bloodmoon_armor_4,armor,new,bloodmoon mail,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=M|n=4|cell=11
+34263,37263,bloodmoon_armor_5,armor,new,bloodmoon cuirass,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=H|n=5|cell=12
+34264,37264,bloodmoon_armor_6,armor,new,bloodmoon warplate,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=H|n=6|cell=13
+34265,37265,bloodmoon_armor_7,armor,new,bloodmoon hauberk,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=M|n=7|cell=14
+34266,37266,bloodmoon_armor_8,armor,new,bloodmoon brigandine,1x1,0,96,0,0,0,0,set=bloodmoon|kind=armor|fit=M|n=8|cell=15
+34267,37267,bloodmoon_legs_1,legs,new,bloodmoon legplates,1x1,0,96,0,0,0,0,set=bloodmoon|kind=legs|fit=H|n=1|cell=16
+34268,37268,bloodmoon_legs_2,legs,new,bloodmoon leggings,1x1,0,96,0,0,0,0,set=bloodmoon|kind=legs|fit=M|n=2|cell=17
+34269,37269,bloodmoon_legs_3,legs,new,bloodmoon kilt,1x1,0,96,0,0,0,0,set=bloodmoon|kind=legs|fit=C|n=3|cell=18
+34270,37270,bloodmoon_boots_1,boots,new,bloodmoon boots,1x1,0,96,0,0,0,0,set=bloodmoon|kind=boots|fit=|n=1|cell=19
+34271,37271,bloodmoon_boots_2,boots,new,bloodmoon sabatons,1x1,0,96,0,0,0,0,set=bloodmoon|kind=boots|fit=|n=2|cell=20
+34272,37272,bloodmoon_legs_4,legs,new,bloodmoon tassets,1x1,0,96,0,0,0,0,set=bloodmoon|kind=legs|fit=H|n=4|cell=21
+34273,37273,bloodmoon_boots_3,boots,new,bloodmoon treads,1x1,0,96,0,0,0,0,set=bloodmoon|kind=boots|fit=|n=3|cell=22
+34274,37274,bloodmoon_boots_4,boots,new,bloodmoon striders,1x1,0,96,0,0,0,0,set=bloodmoon|kind=boots|fit=|n=4|cell=23
+34275,37275,bloodmoon_shield_1,shield,new,bloodmoon shield,1x1,0,96,0,0,0,0,set=bloodmoon|kind=shield|fit=|n=1|cell=24
+34276,37276,bloodmoon_shield_2,shield,new,bloodmoon aegis,1x1,0,96,0,0,0,0,set=bloodmoon|kind=shield|fit=|n=2|cell=25
+34277,37277,bloodmoon_shield_3,shield,new,bloodmoon bulwark,1x1,0,96,0,0,0,0,set=bloodmoon|kind=shield|fit=|n=3|cell=26
+34278,37278,bloodmoon_shield_4,shield,new,bloodmoon kite shield,1x1,0,96,0,0,0,0,set=bloodmoon|kind=shield|fit=|n=4|cell=27
+34279,37279,bloodmoon_spellbook_1,spellbook,new,bloodmoon grimoire,1x1,0,96,0,0,0,0,set=bloodmoon|kind=spellbook|fit=|n=1|cell=28
+34280,37280,bloodmoon_spellbook_2,spellbook,new,bloodmoon tome,1x1,0,96,0,0,0,0,set=bloodmoon|kind=spellbook|fit=|n=2|cell=29
+34281,37281,bloodmoon_spellbook_3,spellbook,new,bloodmoon codex,1x1,0,96,0,0,0,0,set=bloodmoon|kind=spellbook|fit=|n=3|cell=30
+34282,37282,bloodmoon_spellbook_4,spellbook,new,bloodmoon folio,1x1,0,96,0,0,0,0,set=bloodmoon|kind=spellbook|fit=|n=4|cell=31
+34283,37283,bloodmoon_sword_1,sword,new,bloodmoon greatsword,1x1,0,112,0,0,0,0,set=bloodmoon|kind=sword|fit=2|n=1|cell=32
+34284,37284,bloodmoon_sword_2,sword,new,bloodmoon blade,1x1,0,112,0,0,0,0,set=bloodmoon|kind=sword|fit=1|n=2|cell=33
+34285,37285,bloodmoon_sword_3,sword,new,bloodmoon claymore,1x1,0,112,0,0,0,0,set=bloodmoon|kind=sword|fit=2|n=3|cell=34
+34286,37286,bloodmoon_sword_4,sword,new,bloodmoon sabre,1x1,0,112,0,0,0,0,set=bloodmoon|kind=sword|fit=1|n=4|cell=35
+34287,37287,bloodmoon_axe_1,axe,new,bloodmoon axe,1x1,0,112,0,0,0,0,set=bloodmoon|kind=axe|fit=1|n=1|cell=36
+34288,37288,bloodmoon_axe_2,axe,new,bloodmoon hatchet,1x1,0,112,0,0,0,0,set=bloodmoon|kind=axe|fit=1|n=2|cell=37
+34289,37289,bloodmoon_axe_3,axe,new,bloodmoon greataxe,1x1,0,112,0,0,0,0,set=bloodmoon|kind=axe|fit=2|n=3|cell=38
+34290,37290,bloodmoon_axe_4,axe,new,bloodmoon battle axe,1x1,0,112,0,0,0,0,set=bloodmoon|kind=axe|fit=2|n=4|cell=39
+34291,37291,bloodmoon_club_1,club,new,bloodmoon maul,1x1,0,112,0,0,0,0,set=bloodmoon|kind=club|fit=2|n=1|cell=40
+34292,37292,bloodmoon_club_2,club,new,bloodmoon mace,1x1,0,112,0,0,0,0,set=bloodmoon|kind=club|fit=1|n=2|cell=41
+34293,37293,bloodmoon_club_3,club,new,bloodmoon hammer,1x1,0,112,0,0,0,0,set=bloodmoon|kind=club|fit=1|n=3|cell=42
+34294,37294,bloodmoon_bow_1,bow,new,bloodmoon bow,1x1,0,96,0,0,0,0,set=bloodmoon|kind=bow|fit=|n=1|cell=43
+34295,37295,bloodmoon_bow_2,bow,new,bloodmoon longbow,1x1,0,96,0,0,0,0,set=bloodmoon|kind=bow|fit=|n=2|cell=44
+34296,37296,bloodmoon_bow_3,bow,new,bloodmoon recurve bow,1x1,0,96,0,0,0,0,set=bloodmoon|kind=bow|fit=|n=3|cell=45
+34297,37297,bloodmoon_crossbow_1,crossbow,new,bloodmoon crossbow,1x1,0,96,0,0,0,0,set=bloodmoon|kind=crossbow|fit=|n=1|cell=46
+34298,37298,bloodmoon_crossbow_2,crossbow,new,bloodmoon arbalest,1x1,0,96,0,0,0,0,set=bloodmoon|kind=crossbow|fit=|n=2|cell=47
+34299,37299,bloodmoon_amulet_1,amulet,new,bloodmoon amulet,1x1,0,96,0,0,0,0,set=bloodmoon|kind=amulet|fit=|n=1|cell=48
+34300,37300,bloodmoon_amulet_2,amulet,new,bloodmoon pendant,1x1,0,96,0,0,0,0,set=bloodmoon|kind=amulet|fit=|n=2|cell=49
+34301,37301,bloodmoon_amulet_3,amulet,new,bloodmoon talisman,1x1,0,96,0,0,0,0,set=bloodmoon|kind=amulet|fit=|n=3|cell=50
+34302,37302,bloodmoon_ring_1,ring,new,bloodmoon ring,1x1,0,96,0,0,0,0,set=bloodmoon|kind=ring|fit=|n=1|cell=51
+34303,37303,bloodmoon_amulet_4,amulet,new,bloodmoon necklace,1x1,0,96,0,0,0,0,set=bloodmoon|kind=amulet|fit=|n=4|cell=52
+34304,37304,bloodmoon_ring_2,ring,new,bloodmoon band,1x1,0,96,0,0,0,0,set=bloodmoon|kind=ring|fit=|n=2|cell=53
+34305,37305,bloodmoon_ring_3,ring,new,bloodmoon signet,1x1,0,96,0,0,0,0,set=bloodmoon|kind=ring|fit=|n=3|cell=54
+34306,37306,bloodmoon_ring_4,ring,new,bloodmoon seal,1x1,0,96,0,0,0,0,set=bloodmoon|kind=ring|fit=|n=4|cell=55
+34307,37307,bloodmoon_wand_1,wand,new,bloodmoon wand,1x1,0,96,0,0,0,0,set=bloodmoon|kind=wand|fit=|n=1|cell=56
+34308,37308,bloodmoon_wand_2,wand,new,bloodmoon scepter,1x1,0,96,0,0,0,0,set=bloodmoon|kind=wand|fit=|n=2|cell=57
+34309,37309,bloodmoon_wand_3,wand,new,bloodmoon spire,1x1,0,96,0,0,0,0,set=bloodmoon|kind=wand|fit=|n=3|cell=58
+34310,37310,bloodmoon_wand_4,wand,new,bloodmoon focus,1x1,0,96,0,0,0,0,set=bloodmoon|kind=wand|fit=|n=4|cell=59
+34311,37311,bloodmoon_rod_1,rod,new,bloodmoon rod,1x1,0,96,0,0,0,0,set=bloodmoon|kind=rod|fit=|n=1|cell=60
+34312,37312,bloodmoon_rod_2,rod,new,bloodmoon staff,1x1,0,96,0,0,0,0,set=bloodmoon|kind=rod|fit=|n=2|cell=61
+34313,37313,bloodmoon_rod_3,rod,new,bloodmoon branch,1x1,0,96,0,0,0,0,set=bloodmoon|kind=rod|fit=|n=3|cell=62
+34314,37314,bloodmoon_rod_4,rod,new,bloodmoon crook,1x1,0,96,0,0,0,0,set=bloodmoon|kind=rod|fit=|n=4|cell=63
+34315,37315,gildcrown_helmet_1,helmet,new,gildcrown greathelm,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=H|n=1|cell=0
+34316,37316,gildcrown_helmet_2,helmet,new,gildcrown helm,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=M|n=2|cell=1
+34317,37317,gildcrown_helmet_3,helmet,new,gildcrown coif,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=M|n=3|cell=2
+34318,37318,gildcrown_helmet_4,helmet,new,gildcrown hood,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=C|n=4|cell=3
+34319,37319,gildcrown_helmet_5,helmet,new,gildcrown warhelm,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=H|n=5|cell=4
+34320,37320,gildcrown_helmet_6,helmet,new,gildcrown horned helm,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=H|n=6|cell=5
+34321,37321,gildcrown_helmet_7,helmet,new,gildcrown casque,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=M|n=7|cell=6
+34322,37322,gildcrown_helmet_8,helmet,new,gildcrown cowl,1x1,0,96,0,0,0,0,set=gildcrown|kind=helmet|fit=C|n=8|cell=7
+34323,37323,gildcrown_armor_1,armor,new,gildcrown plate,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=H|n=1|cell=8
+34324,37324,gildcrown_armor_2,armor,new,gildcrown cuirass,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=H|n=2|cell=9
+34325,37325,gildcrown_armor_3,armor,new,gildcrown robe,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=C|n=3|cell=10
+34326,37326,gildcrown_armor_4,armor,new,gildcrown mail,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=M|n=4|cell=11
+34327,37327,gildcrown_armor_5,armor,new,gildcrown warplate,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=H|n=5|cell=12
+34328,37328,gildcrown_armor_6,armor,new,gildcrown hauberk,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=M|n=6|cell=13
+34329,37329,gildcrown_armor_7,armor,new,gildcrown brigandine,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=M|n=7|cell=14
+34330,37330,gildcrown_armor_8,armor,new,gildcrown vestment,1x1,0,96,0,0,0,0,set=gildcrown|kind=armor|fit=C|n=8|cell=15
+34331,37331,gildcrown_legs_1,legs,new,gildcrown legplates,1x1,0,96,0,0,0,0,set=gildcrown|kind=legs|fit=A|n=1|cell=16
+34332,37332,gildcrown_legs_2,legs,new,gildcrown leggings,1x1,0,96,0,0,0,0,set=gildcrown|kind=legs|fit=A|n=2|cell=17
+34333,37333,gildcrown_boots_1,boots,new,gildcrown boots,1x1,0,96,0,0,0,0,set=gildcrown|kind=boots|fit=|n=1|cell=18
+34334,37334,gildcrown_boots_2,boots,new,gildcrown sabatons,1x1,0,96,0,0,0,0,set=gildcrown|kind=boots|fit=|n=2|cell=19
+34335,37335,gildcrown_boots_3,boots,new,gildcrown treads,1x1,0,96,0,0,0,0,set=gildcrown|kind=boots|fit=|n=3|cell=20
+34336,37336,gildcrown_boots_4,boots,new,gildcrown striders,1x1,0,96,0,0,0,0,set=gildcrown|kind=boots|fit=|n=4|cell=21
+34337,37337,gildcrown_boots_5,boots,new,gildcrown sollerets,1x1,0,96,0,0,0,0,set=gildcrown|kind=boots|fit=|n=5|cell=22
+34338,37338,gildcrown_boots_6,boots,new,gildcrown walkers,1x1,0,96,0,0,0,0,set=gildcrown|kind=boots|fit=|n=6|cell=23
+34339,37339,gildcrown_shield_1,shield,new,gildcrown shield,1x1,0,96,0,0,0,0,set=gildcrown|kind=shield|fit=|n=1|cell=24
+34340,37340,gildcrown_shield_2,shield,new,gildcrown aegis,1x1,0,96,0,0,0,0,set=gildcrown|kind=shield|fit=|n=2|cell=25
+34341,37341,gildcrown_shield_3,shield,new,gildcrown bulwark,1x1,0,96,0,0,0,0,set=gildcrown|kind=shield|fit=|n=3|cell=26
+34342,37342,gildcrown_shield_4,shield,new,gildcrown kite shield,1x1,0,96,0,0,0,0,set=gildcrown|kind=shield|fit=|n=4|cell=27
+34343,37343,gildcrown_shield_5,shield,new,gildcrown buckler,1x1,0,96,0,0,0,0,set=gildcrown|kind=shield|fit=|n=5|cell=28
+34344,37344,gildcrown_spellbook_1,spellbook,new,gildcrown grimoire,1x1,0,96,0,0,0,0,set=gildcrown|kind=spellbook|fit=|n=1|cell=29
+34345,37345,gildcrown_spellbook_2,spellbook,new,gildcrown tome,1x1,0,96,0,0,0,0,set=gildcrown|kind=spellbook|fit=|n=2|cell=30
+34346,37346,gildcrown_spellbook_3,spellbook,new,gildcrown codex,1x1,0,96,0,0,0,0,set=gildcrown|kind=spellbook|fit=|n=3|cell=31
+34347,37347,gildcrown_sword_1,sword,new,gildcrown greatsword,1x1,0,112,0,0,0,0,set=gildcrown|kind=sword|fit=2|n=1|cell=32
+34348,37348,gildcrown_sword_2,sword,new,gildcrown blade,1x1,0,112,0,0,0,0,set=gildcrown|kind=sword|fit=1|n=2|cell=33
+34349,37349,gildcrown_sword_3,sword,new,gildcrown sabre,1x1,0,112,0,0,0,0,set=gildcrown|kind=sword|fit=1|n=3|cell=34
+34350,37350,gildcrown_axe_1,axe,new,gildcrown axe,1x1,0,112,0,0,0,0,set=gildcrown|kind=axe|fit=1|n=1|cell=35
+34351,37351,gildcrown_axe_2,axe,new,gildcrown greataxe,1x1,0,112,0,0,0,0,set=gildcrown|kind=axe|fit=2|n=2|cell=36
+34352,37352,gildcrown_axe_3,axe,new,gildcrown hatchet,1x1,0,112,0,0,0,0,set=gildcrown|kind=axe|fit=1|n=3|cell=37
+34353,37353,gildcrown_axe_4,axe,new,gildcrown battle axe,1x1,0,112,0,0,0,0,set=gildcrown|kind=axe|fit=2|n=4|cell=38
+34354,37354,gildcrown_axe_5,axe,new,gildcrown cleaver,1x1,0,112,0,0,0,0,set=gildcrown|kind=axe|fit=1|n=5|cell=39
+34355,37355,gildcrown_club_1,club,new,gildcrown mace,1x1,0,112,0,0,0,0,set=gildcrown|kind=club|fit=1|n=1|cell=40
+34356,37356,gildcrown_club_2,club,new,gildcrown hammer,1x1,0,112,0,0,0,0,set=gildcrown|kind=club|fit=1|n=2|cell=41
+34357,37357,gildcrown_club_3,club,new,gildcrown maul,1x1,0,112,0,0,0,0,set=gildcrown|kind=club|fit=2|n=3|cell=42
+34358,37358,gildcrown_bow_1,bow,new,gildcrown bow,1x1,0,96,0,0,0,0,set=gildcrown|kind=bow|fit=|n=1|cell=43
+34359,37359,gildcrown_bow_2,bow,new,gildcrown longbow,1x1,0,96,0,0,0,0,set=gildcrown|kind=bow|fit=|n=2|cell=44
+34360,37360,gildcrown_bow_3,bow,new,gildcrown recurve bow,1x1,0,96,0,0,0,0,set=gildcrown|kind=bow|fit=|n=3|cell=45
+34361,37361,gildcrown_crossbow_1,crossbow,new,gildcrown crossbow,1x1,0,96,0,0,0,0,set=gildcrown|kind=crossbow|fit=|n=1|cell=46
+34362,37362,gildcrown_crossbow_2,crossbow,new,gildcrown arbalest,1x1,0,96,0,0,0,0,set=gildcrown|kind=crossbow|fit=|n=2|cell=47
+34363,37363,gildcrown_amulet_1,amulet,new,gildcrown amulet,1x1,0,96,0,0,0,0,set=gildcrown|kind=amulet|fit=|n=1|cell=48
+34364,37364,gildcrown_amulet_2,amulet,new,gildcrown pendant,1x1,0,96,0,0,0,0,set=gildcrown|kind=amulet|fit=|n=2|cell=49
+34365,37365,gildcrown_amulet_3,amulet,new,gildcrown talisman,1x1,0,96,0,0,0,0,set=gildcrown|kind=amulet|fit=|n=3|cell=50
+34366,37366,gildcrown_ring_1,ring,new,gildcrown ring,1x1,0,96,0,0,0,0,set=gildcrown|kind=ring|fit=|n=1|cell=51
+34367,37367,gildcrown_amulet_4,amulet,new,gildcrown necklace,1x1,0,96,0,0,0,0,set=gildcrown|kind=amulet|fit=|n=4|cell=52
+34368,37368,gildcrown_ring_2,ring,new,gildcrown band,1x1,0,96,0,0,0,0,set=gildcrown|kind=ring|fit=|n=2|cell=53
+34369,37369,gildcrown_ring_3,ring,new,gildcrown signet,1x1,0,96,0,0,0,0,set=gildcrown|kind=ring|fit=|n=3|cell=54
+34370,37370,gildcrown_ring_4,ring,new,gildcrown seal,1x1,0,96,0,0,0,0,set=gildcrown|kind=ring|fit=|n=4|cell=55
+34371,37371,gildcrown_wand_1,wand,new,gildcrown wand,1x1,0,96,0,0,0,0,set=gildcrown|kind=wand|fit=|n=1|cell=56
+34372,37372,gildcrown_wand_2,wand,new,gildcrown scepter,1x1,0,96,0,0,0,0,set=gildcrown|kind=wand|fit=|n=2|cell=57
+34373,37373,gildcrown_wand_3,wand,new,gildcrown spire,1x1,0,96,0,0,0,0,set=gildcrown|kind=wand|fit=|n=3|cell=58
+34374,37374,gildcrown_wand_4,wand,new,gildcrown focus,1x1,0,96,0,0,0,0,set=gildcrown|kind=wand|fit=|n=4|cell=59
+34375,37375,gildcrown_rod_1,rod,new,gildcrown rod,1x1,0,96,0,0,0,0,set=gildcrown|kind=rod|fit=|n=1|cell=60
+34376,37376,gildcrown_rod_2,rod,new,gildcrown staff,1x1,0,96,0,0,0,0,set=gildcrown|kind=rod|fit=|n=2|cell=61
+34377,37377,gildcrown_rod_3,rod,new,gildcrown branch,1x1,0,96,0,0,0,0,set=gildcrown|kind=rod|fit=|n=3|cell=62
+34378,37378,gildcrown_rod_4,rod,new,gildcrown crook,1x1,0,96,0,0,0,0,set=gildcrown|kind=rod|fit=|n=4|cell=63
+34379,37379,blightfang_helmet_1,helmet,new,blightfang greathelm,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=H|n=1|cell=0
+34380,37380,blightfang_helmet_2,helmet,new,blightfang helm,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=M|n=2|cell=1
+34381,37381,blightfang_helmet_3,helmet,new,blightfang warhelm,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=H|n=3|cell=2
+34382,37382,blightfang_helmet_4,helmet,new,blightfang coif,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=M|n=4|cell=3
+34383,37383,blightfang_helmet_5,helmet,new,blightfang hood,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=C|n=5|cell=4
+34384,37384,blightfang_helmet_6,helmet,new,blightfang horned helm,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=H|n=6|cell=5
+34385,37385,blightfang_helmet_7,helmet,new,blightfang casque,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=M|n=7|cell=6
+34386,37386,blightfang_helmet_8,helmet,new,blightfang cowl,1x1,0,96,0,0,0,0,set=blightfang|kind=helmet|fit=C|n=8|cell=7
+34387,37387,blightfang_armor_1,armor,new,blightfang plate,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=H|n=1|cell=8
+34388,37388,blightfang_armor_2,armor,new,blightfang mail,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=M|n=2|cell=9
+34389,37389,blightfang_armor_3,armor,new,blightfang robe,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=C|n=3|cell=10
+34390,37390,blightfang_armor_4,armor,new,blightfang cuirass,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=H|n=4|cell=11
+34391,37391,blightfang_armor_5,armor,new,blightfang hauberk,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=M|n=5|cell=12
+34392,37392,blightfang_armor_6,armor,new,blightfang vestment,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=C|n=6|cell=13
+34393,37393,blightfang_armor_7,armor,new,blightfang brigandine,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=M|n=7|cell=14
+34394,37394,blightfang_armor_8,armor,new,blightfang warplate,1x1,0,96,0,0,0,0,set=blightfang|kind=armor|fit=H|n=8|cell=15
+34395,37395,blightfang_legs_1,legs,new,blightfang legplates,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=H|n=1|cell=16
+34396,37396,blightfang_legs_2,legs,new,blightfang leggings,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=M|n=2|cell=17
+34397,37397,blightfang_legs_3,legs,new,blightfang kilt,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=C|n=3|cell=18
+34398,37398,blightfang_legs_4,legs,new,blightfang tassets,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=H|n=4|cell=19
+34399,37399,blightfang_legs_5,legs,new,blightfang chausses,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=M|n=5|cell=20
+34400,37400,blightfang_legs_6,legs,new,blightfang trousers,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=C|n=6|cell=21
+34401,37401,blightfang_legs_7,legs,new,blightfang cuisses,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=H|n=7|cell=22
+34402,37402,blightfang_legs_8,legs,new,blightfang breeches,1x1,0,96,0,0,0,0,set=blightfang|kind=legs|fit=M|n=8|cell=23
+34403,37403,blightfang_shield_1,shield,new,blightfang shield,1x1,0,96,0,0,0,0,set=blightfang|kind=shield|fit=|n=1|cell=24
+34404,37404,blightfang_shield_2,shield,new,blightfang aegis,1x1,0,96,0,0,0,0,set=blightfang|kind=shield|fit=|n=2|cell=25
+34405,37405,blightfang_shield_3,shield,new,blightfang bulwark,1x1,0,96,0,0,0,0,set=blightfang|kind=shield|fit=|n=3|cell=26
+34406,37406,blightfang_shield_4,shield,new,blightfang kite shield,1x1,0,96,0,0,0,0,set=blightfang|kind=shield|fit=|n=4|cell=27
+34407,37407,blightfang_spellbook_1,spellbook,new,blightfang grimoire,1x1,0,96,0,0,0,0,set=blightfang|kind=spellbook|fit=|n=1|cell=28
+34408,37408,blightfang_spellbook_2,spellbook,new,blightfang tome,1x1,0,96,0,0,0,0,set=blightfang|kind=spellbook|fit=|n=2|cell=29
+34409,37409,blightfang_spellbook_3,spellbook,new,blightfang codex,1x1,0,96,0,0,0,0,set=blightfang|kind=spellbook|fit=|n=3|cell=30
+34410,37410,blightfang_spellbook_4,spellbook,new,blightfang folio,1x1,0,96,0,0,0,0,set=blightfang|kind=spellbook|fit=|n=4|cell=31
+34411,37411,blightfang_sword_1,sword,new,blightfang greatsword,1x1,0,112,0,0,0,0,set=blightfang|kind=sword|fit=2|n=1|cell=32
+34412,37412,blightfang_sword_2,sword,new,blightfang claymore,1x1,0,112,0,0,0,0,set=blightfang|kind=sword|fit=2|n=2|cell=33
+34413,37413,blightfang_sword_3,sword,new,blightfang blade,1x1,0,112,0,0,0,0,set=blightfang|kind=sword|fit=1|n=3|cell=34
+34414,37414,blightfang_sword_4,sword,new,blightfang sabre,1x1,0,112,0,0,0,0,set=blightfang|kind=sword|fit=1|n=4|cell=35
+34415,37415,blightfang_axe_1,axe,new,blightfang greataxe,1x1,0,112,0,0,0,0,set=blightfang|kind=axe|fit=2|n=1|cell=36
+34416,37416,blightfang_axe_2,axe,new,blightfang battle axe,1x1,0,112,0,0,0,0,set=blightfang|kind=axe|fit=2|n=2|cell=37
+34417,37417,blightfang_axe_3,axe,new,blightfang axe,1x1,0,112,0,0,0,0,set=blightfang|kind=axe|fit=1|n=3|cell=38
+34418,37418,blightfang_axe_4,axe,new,blightfang hatchet,1x1,0,112,0,0,0,0,set=blightfang|kind=axe|fit=1|n=4|cell=39
+34419,37419,blightfang_club_1,club,new,blightfang maul,1x1,0,112,0,0,0,0,set=blightfang|kind=club|fit=2|n=1|cell=40
+34420,37420,blightfang_club_2,club,new,blightfang mace,1x1,0,112,0,0,0,0,set=blightfang|kind=club|fit=1|n=2|cell=41
+34421,37421,blightfang_club_3,club,new,blightfang warhammer,1x1,0,112,0,0,0,0,set=blightfang|kind=club|fit=2|n=3|cell=42
+34422,37422,blightfang_club_4,club,new,blightfang hammer,1x1,0,112,0,0,0,0,set=blightfang|kind=club|fit=1|n=4|cell=43
+34423,37423,blightfang_bow_1,bow,new,blightfang bow,1x1,0,96,0,0,0,0,set=blightfang|kind=bow|fit=|n=1|cell=44
+34424,37424,blightfang_bow_2,bow,new,blightfang longbow,1x1,0,96,0,0,0,0,set=blightfang|kind=bow|fit=|n=2|cell=45
+34425,37425,blightfang_crossbow_1,crossbow,new,blightfang crossbow,1x1,0,96,0,0,0,0,set=blightfang|kind=crossbow|fit=|n=1|cell=46
+34426,37426,blightfang_crossbow_2,crossbow,new,blightfang arbalest,1x1,0,96,0,0,0,0,set=blightfang|kind=crossbow|fit=|n=2|cell=47
+34427,37427,blightfang_amulet_1,amulet,new,blightfang amulet,1x1,0,96,0,0,0,0,set=blightfang|kind=amulet|fit=|n=1|cell=48
+34428,37428,blightfang_amulet_2,amulet,new,blightfang pendant,1x1,0,96,0,0,0,0,set=blightfang|kind=amulet|fit=|n=2|cell=49
+34429,37429,blightfang_amulet_3,amulet,new,blightfang talisman,1x1,0,96,0,0,0,0,set=blightfang|kind=amulet|fit=|n=3|cell=50
+34430,37430,blightfang_amulet_4,amulet,new,blightfang necklace,1x1,0,96,0,0,0,0,set=blightfang|kind=amulet|fit=|n=4|cell=51
+34431,37431,blightfang_ring_1,ring,new,blightfang ring,1x1,0,96,0,0,0,0,set=blightfang|kind=ring|fit=|n=1|cell=52
+34432,37432,blightfang_ring_2,ring,new,blightfang band,1x1,0,96,0,0,0,0,set=blightfang|kind=ring|fit=|n=2|cell=53
+34433,37433,blightfang_ring_3,ring,new,blightfang signet,1x1,0,96,0,0,0,0,set=blightfang|kind=ring|fit=|n=3|cell=54
+34434,37434,blightfang_ring_4,ring,new,blightfang seal,1x1,0,96,0,0,0,0,set=blightfang|kind=ring|fit=|n=4|cell=55
+34435,37435,blightfang_wand_1,wand,new,blightfang wand,1x1,0,96,0,0,0,0,set=blightfang|kind=wand|fit=|n=1|cell=56
+34436,37436,blightfang_wand_2,wand,new,blightfang scepter,1x1,0,96,0,0,0,0,set=blightfang|kind=wand|fit=|n=2|cell=57
+34437,37437,blightfang_wand_3,wand,new,blightfang spire,1x1,0,96,0,0,0,0,set=blightfang|kind=wand|fit=|n=3|cell=58
+34438,37438,blightfang_wand_4,wand,new,blightfang focus,1x1,0,96,0,0,0,0,set=blightfang|kind=wand|fit=|n=4|cell=59
+34439,37439,blightfang_rod_1,rod,new,blightfang rod,1x1,0,96,0,0,0,0,set=blightfang|kind=rod|fit=|n=1|cell=60
+34440,37440,blightfang_rod_2,rod,new,blightfang staff,1x1,0,96,0,0,0,0,set=blightfang|kind=rod|fit=|n=2|cell=61
+34441,37441,blightfang_rod_3,rod,new,blightfang branch,1x1,0,96,0,0,0,0,set=blightfang|kind=rod|fit=|n=3|cell=62
+34442,37442,blightfang_rod_4,rod,new,blightfang crook,1x1,0,96,0,0,0,0,set=blightfang|kind=rod|fit=|n=4|cell=63

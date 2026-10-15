@@ -1706,6 +1706,41 @@ themselves; no machine-learning training. The source files and the cut sheets st
   compared), 0 errors, 124 warnings (those of pair 27). Previews: the look in four directions, a GIF of each walk, the
   items, a crypt scene. Not run in a client.
 
+## Equipment sets (pair 28: items 33995-34442, `tools/sprites/gen_gear_sets_art.py`, `art_import/gear_sets.csv`; not published, switch off)
+**Source and licence.** Seven 256 x 256 item sheets the owner sent on 2026-10-15, "made for us": the owner's own art,
+usable without restriction (docs/CREDITS.md "Owner art"). They are committed as `art_import/gear_sets/<set>.png`: the
+same pixels as the sheets (exact palette PNGs, about 22 KB each; `art_import/gear_sets.sums` holds the sha256 of each
+one's RGBA pixels; `SOURCES` the md5 of each sheet as sent).
+- Seven sets of 64 pieces, one per sheet, in id order: Cinderwrought (fire and ember) 33995-34058, Wyrmscale (green
+  dragon) 34059-34122, Rimewraith (teal frost, spectral) 34123-34186, Azure Vigil (blue and gold paladin) 34187-34250,
+  Bloodmoon (crimson, blood) 34251-34314, Gildcrown (gold) 34315-34378, Blightfang (dark green, venom) 34379-34442.
+  Server id = client id + 3000 (`server/data/items/gear_sets.csv`; server/README.md "Equipment sets (pair 28)").
+- `LAYOUT` names every cell, read off the sheets (helmets, armours, legs and boots, shields and spellbooks, swords and
+  axes, clubs and launchers, amulets and rings, wands and rods; the order differs a little per sheet: Wyrmscale and
+  Blightfang draw eight legs and no boots, Gildcrown two legs and six boots, five shields and three spellbooks). Armour
+  pieces carry a fit (heavy, medium, cloth, or anyone where a slot has too few pieces); melee weapons are two-handed
+  for the larger half of a kind by art pixels. Names are the set's prefix and a noun per kind and fit. Dat flags are
+  copied from a stock item of each kind (`copy:`), as for the themed sets.
+- `python3 -I gen_gear_sets_art.py build --src DIR` (DIR holds sheet1.png .. sheet7.png); `build --check` (CI)
+  compares the atlases with the sums and the things file with the layout; `gen_gear_sets_art_test.py` (CI) runs the
+  pure parts; `preview --out DIR --dat P --spr S` draws each set in a bag (8 x 8 slots) and three class kits (heavy,
+  medium, cloth) in equipment slots beside a stock look tinted in the set's colours (the client draws no gear on a
+  character).
+- Build (2026-10-15), appended to pair 27 (windows-assets 51a26d26, dat 223a1c2fc1b0f99997414a5b2cde1773):
+  ```
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat pair27a/Tibia.dat --ours-spr pair27a/Tibia.spr \
+      --out-dir pair28 --things client/tools/sprites/art_import/gear_sets.csv --first-item 33995 --expect-items 33994 \
+      --manifest-out server/data/items/gear_sets.csv
+  python3 -I client/tools/sprites/check_pair.py pair28/Tibia.dat pair28/Tibia.spr --old pair27a/Tibia.dat pair27a/Tibia.spr
+  ```
+  dat 9f75ddfe73197bce388398e4c31ca255 (5,166,592 bytes), spr e0c74346aac1febb01e2197fd75004e1 (651,827,354 bytes,
+  776,641 sprites: 448 appended), 34,442 items, 2,234 outfits, 758 effects, 160 missiles. The importer verified 448
+  sprite slots pixel-identical to the art. `check_pair.py --old`: append-only (37,047 old things and 776,193 old sprites
+  compared), 0 errors, 0 warnings in the new things; the whole pair 0 errors, 124 warnings (those of pair 27). Live pair
+  checks against it: recolour `--check` and the dungeon banners pass unchanged; `gen_outfit_anchors.py` was run again
+  (only the dat md5 in `outfit_anchors.lua` changes: no outfit was added), so that file must go in with the pair.
+  Not on windows-assets yet, not run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
