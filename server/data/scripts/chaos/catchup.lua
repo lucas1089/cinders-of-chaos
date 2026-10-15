@@ -33,6 +33,18 @@ CU.accounts = CU.accounts or {} -- account id -> {untilAt, best}
 
 local MSG = MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR
 
+-- pack farming effects (data/lib/chaos_pack27_fx.lua, switch ChaosPack27Fx.PAIR27_FX, off): an effect on the player
+-- for a buff state or reward; nothing while the switch is off
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua")
+end
+local function packFx(player, use)
+	local P = ChaosPack27Fx
+	if P and P.PAIR27_FX and P.send and player and player.getPosition then
+		pcall(function() P.send(player:getPosition(), use) end)
+	end
+end
+
 local function now()
 	return os.time()
 end
@@ -273,17 +285,20 @@ function CU.onLogin(player)
 		savePool(player, st)
 		if math.floor(st.pool) >= 1 and st.pool > before then
 			player:sendTextMessage(MSG, Chaos.t(player, "You are rested: +%d%% experience from monsters for about %d minutes of hunting.", c.rested.bonusPct, math.floor(st.pool)))
+			packFx(player, "rested")
 		end
 	end
 	-- the welcome back, once per boost and character
 	if (acc.untilAt or 0) > t and player:getStorageValue(c.storage.returningSeen) ~= acc.untilAt then
 		player:setStorageValue(c.storage.returningSeen, acc.untilAt)
 		player:sendTextMessage(MSG, Chaos.t(player, "Welcome back! For %d days: +%d%% experience, +%d%% loot and +%d%% token drops.", c.returning.durationDays, c.returning.xpPct, c.returning.lootPct, c.returning.tokenPct))
+		packFx(player, "returning")
 		nextGoalsHint(player)
 	end
 	local pct = K.altPct(c, player:getLevel(), acc.best)
 	if pct >= 1 then
 		player:sendTextMessage(MSG, Chaos.t(player, "Catch-up: +%d%% experience from monsters until you near level %d, your account's best.", math.floor(pct), acc.best))
+		packFx(player, "catchup")
 	end
 end
 
@@ -297,6 +312,7 @@ local function lowNotice(player)
 	player:setStorageValue(c.storage.lowNotice, day)
 	player:sendTextMessage(MSG, Chaos.t(player, "Your stamina is below %d hours: monsters give %d%% experience and %d%% loot. Stamina comes back faster while you are offline.", math.floor(c.stamina.lowAt / 60),
 		math.floor(c.stamina.xpMult * 100 + 0.5), math.floor(c.stamina.lootMult * 100 + 0.5)))
+	packFx(player, "low_stamina")
 end
 
 function CU.onGainExperience(player, source, exp)
@@ -374,6 +390,9 @@ local advance = CreatureEvent("ChaosCatchupAdvance")
 function advance.onAdvance(player, skill, oldLevel, newLevel)
 	if skill == SKILL_LEVEL then
 		pcall(CU.onAdvance, player, newLevel)
+		if newLevel > oldLevel then
+			packFx(player, "level_up")
+		end
 	end
 	return true
 end

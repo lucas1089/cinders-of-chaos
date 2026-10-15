@@ -31,6 +31,10 @@ local function stun(target, spent)
 		if ChaosStatusFx then
 			ChaosStatusFx.send(target:getPosition(), "stun", nil, target:getId())
 		end
+		local P27 = ChaosPack27Fx -- pair 27 (data/lib/chaos_pack27_fx.lua, off): the stun stars
+		if P27 and P27.PAIR27_FX and P27.send then
+			pcall(P27.send, target:getPosition(), "stun")
+		end
 	else
 		c:setFormula(-M.cfg.stun.bossSlow, 0, -M.cfg.stun.bossSlow, 0)
 	end

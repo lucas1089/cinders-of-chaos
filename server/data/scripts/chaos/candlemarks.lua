@@ -358,6 +358,12 @@ function M.tick()
 			if gained > 0 then
 				credit(pl, acc, gained)
 				p:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, msg(p, "earned", acc.balance))
+				if not ChaosPack27Fx then
+					pcall(dofile, "data/lib/chaos_pack27_fx.lua")
+				end
+				if ChaosPack27Fx and ChaosPack27Fx.PAIR27_FX and ChaosPack27Fx.send then -- pair 27 trial (switch off)
+					pcall(function() ChaosPack27Fx.send(p:getPosition(), "candlemarks") end)
+				end
 				-- the account's other characters see the new balance
 				for cid, other in pairs(M.players) do
 					if other.account == pl.account and other ~= pl then

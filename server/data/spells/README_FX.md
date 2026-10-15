@@ -276,10 +276,14 @@ their alpha stays soft, unlike the pixel-art sets above. In things_custom24 (eff
 `server/data/lib/chaos_big_fx_ids.lua`. Which spell, boss and use sends which, and the switch `ChaosBigFx.BIG_FX`
 (on since 2026-10-13 (pair 24 at 407ad9b6)): server/README.md "Large spell effects". Sizes and build: client/MANIFEST.md "Large spell effects".
 
-## Pack farming spell effects (pair 27 trial, effects 674-687, missiles 154-157; switch off)
+## Pack farming spell effects (pair 27 trial, effects 674-758, missiles 154-160; switch off)
 
-The nine pack farming spells get effects and missiles of their own, cut from the owner's oblique effect sets of
-2026-10-15 by `client/tools/sprites/gen_pack27_fx.py` (spec `art_import/pack27_fx.csv`), appended by `import_fx_art.py`
-(ids in `server/data/lib/chaos_pack27_fx_ids.lua`, catalogue `pack27_fx_catalog.csv`). Built only as a local trial pair;
-the switch `ChaosPack27Fx.PAIR27_FX` stays off: server/README.md "Pack farming spell effects", client/MANIFEST.md
-"Pack farming spell effects (pair 27 trial)".
+The nine pack farming spells get effects and missiles of their own. 34 more spells of the Mystic, Templar, Warrior,
+Thief, Necromancer and Monk lines get new impacts, circles and status looks (frost nova, meteor, chain lightning, holy
+smite, divine judgement, whirlwind, berserk, backstab, parry, blood drain, shadow claws and more). Also: the four vigils,
+the Iron Palm stun, the buff bar, level up (no words in the art), loot beams, reward effects, the Town Portal and the
+boss danger circle. Cut from the owner's oblique effect sets of 2026-10-15 by `client/tools/sprites/gen_pack27_fx.py`
+(spec `art_import/pack27_fx.csv`, packs per pick in `art_import/pack27_sources.csv`), appended by `import_fx_art.py`
+(ids in `server/data/lib/chaos_pack27_fx_ids.lua`, catalogue `pack27_fx_catalog.csv`). Effects only: no damage, area
+or timing changes. Built only as a local trial pair; the switch `ChaosPack27Fx.PAIR27_FX` stays off: server/README.md
+"Pack farming spell effects", client/MANIFEST.md "Pack farming spell effects (pair 27 trial)".

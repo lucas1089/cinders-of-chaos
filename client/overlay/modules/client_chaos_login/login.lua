@@ -266,7 +266,13 @@ local function openLink(key, title, message)
   end
 end
 
+-- the Credits window (client_chaos_credits, every source from docs/CREDITS.md); the short box only without it
 local function showCredits()
+  local m = modules and modules.client_chaos_credits
+  if m and type(rawget(m, 'show')) == 'function' then
+    m.show()
+    return
+  end
   infoBox(tr('Credits'), tr('Cinders of Chaos\nA dark-fantasy online adventure.\n\nInterface, art and server: the Cinders of Chaos team.\nThe client runs on the open-source OTClient engine family.\n\n' ..
     'Fonts (SIL Open Font License 1.1, licence texts in data/fonts/chaos):\nCinzel - The Cinzel Project Authors\n' ..
     'Alegreya SC, Alegreya Sans - The Alegreya (Sans) Project Authors, Huerta Tipografica\n' ..

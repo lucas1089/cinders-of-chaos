@@ -267,6 +267,7 @@ local CATEGORIES = {
     entry('Server Info',     'help',        info('server')),
     entry('Report a Bug',    'help',        { modules = { 'game_bugreport' }, fns = { 'show' } }),
     entry('Join Discord',    'community',   { custom = openCommunity, offline = true }),
+    entry('Credits',         'help',        { modules = { 'client_chaos_credits' }, fns = { 'toggle' }, offline = true }),
     { separator = true, offline = true },
     entry('Developer',       'console',     { offline = true, sub = {
       entry('Console',           'console', { modules = { 'client_terminal' }, fns = { 'toggle' }, offline = true }),

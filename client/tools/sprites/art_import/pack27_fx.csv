@@ -1,6 +1,6 @@
 kind,name,file,w,h,phases,ms,dx,dy,note
-effect,palm_quake,pack27_fx/palm_quake.png,3,3,14,70,1,1,Palm Shockwave: a ring of rubble and dust bursts from the struck target (from fx_dust_cloud/earth 0-13)
-effect,flurry_petals,pack27_fx/flurry_petals.png,3,3,16,70,1,1,"Blade Flurry: a sakura blade spiral round the caster, petals scatter (from fx_dance_spin/sakura 0-15)"
+effect,palm_quake,pack27_fx/palm_quake.png,5,5,17,62,2,2,"Palm Shockwave: a ground-slam ring tears across the floor, dust and pebbles thrown out (from impact_shockwave/earth 0-15)"
+effect,flurry_petals,pack27_fx/flurry_petals.png,4,3,15,62,1,1,"Blade Flurry: three silk-ribbon slashes whirl round the caster, petals scatter (from impact_blade_dance/sakura 0-13)"
 effect,iaido_dash_n,pack27_fx/iaido_dash_n.png,2,3,11,70,0,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards n (from fx_charge_dash/steel 0-11)"
 effect,iaido_dash_ne,pack27_fx/iaido_dash_ne.png,2,3,11,70,0,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards ne (from fx_charge_dash/steel 0-11)"
 effect,iaido_dash_e,pack27_fx/iaido_dash_e.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards e (from fx_charge_dash/steel 0-11)"
@@ -9,11 +9,85 @@ effect,iaido_dash_s,pack27_fx/iaido_dash_s.png,2,3,11,70,0,1,"Iaido Sweep: steel
 effect,iaido_dash_sw,pack27_fx/iaido_dash_sw.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards sw (from fx_charge_dash/steel 0-11)"
 effect,iaido_dash_w,pack27_fx/iaido_dash_w.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards w (from fx_charge_dash/steel 0-11)"
 effect,iaido_dash_nw,pack27_fx/iaido_dash_nw.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards nw (from fx_charge_dash/steel 0-11)"
-effect,ricochet_burst,pack27_fx/ricochet_burst.png,4,3,14,70,1,1,"Shadow Ricochet: violet shards burst on each struck target, a fading ring (from fx_shadow_step/void 0-15)"
-effect,chain_sparks,pack27_fx/chain_sparks.png,2,3,11,70,1,1,Iron Chain: a shower of steel sparks on each link (from fx_spark_shower/steel 0-11)
-effect,sanctified_seal,pack27_fx/sanctified_seal.png,4,4,13,110,1,1,"Sanctified Ground: a golden rune circle on the ground, a winged light rises (from fx_resurrection/holy 0-23 step 2)"
-effect,shieldwave_wall,pack27_fx/shieldwave_wall.png,2,2,17,90,0,0,Shield Wave: a pane of golden light rises in front and fades (from field_magic_wall/holy 0-31 step 2)
+effect,ricochet_burst,pack27_fx/ricochet_burst.png,3,3,12,62,1,1,"Shadow Ricochet: a shadow knot opens, violet tendrils lash out and recoil (from impact_shadow_burst/void 0-13)"
+effect,chain_sparks,pack27_fx/chain_sparks.png,3,3,14,62,1,1,Iron Chain: a steel burst and star lines where each link strikes (from impact_punch/steel 0-13)
+effect,sanctified_seal,pack27_fx/sanctified_seal.png,5,5,16,70,2,2,Sanctified Ground: motes gather and burst into a sun-crowned ring across the floor (from impact_holy_nova/holy 0-15)
+effect,shieldwave_bash_n,pack27_fx/shieldwave_bash_n.png,2,2,14,62,0,0,"Shield Wave: a golden shield-shaped shock bursts forward, towards n (from impact_shield_bash/holy 0-13)"
+effect,shieldwave_bash_ne,pack27_fx/shieldwave_bash_ne.png,3,2,14,62,1,0,"Shield Wave: a golden shield-shaped shock bursts forward, towards ne (from impact_shield_bash/holy 0-13)"
+effect,shieldwave_bash_e,pack27_fx/shieldwave_bash_e.png,3,3,14,62,1,1,"Shield Wave: a golden shield-shaped shock bursts forward, towards e (from impact_shield_bash/holy 0-13)"
+effect,shieldwave_bash_se,pack27_fx/shieldwave_bash_se.png,3,3,14,62,1,1,"Shield Wave: a golden shield-shaped shock bursts forward, towards se (from impact_shield_bash/holy 0-13)"
+effect,shieldwave_bash_s,pack27_fx/shieldwave_bash_s.png,2,3,14,62,0,1,"Shield Wave: a golden shield-shaped shock bursts forward, towards s (from impact_shield_bash/holy 0-13)"
+effect,shieldwave_bash_sw,pack27_fx/shieldwave_bash_sw.png,2,3,14,62,0,1,"Shield Wave: a golden shield-shaped shock bursts forward, towards sw (from impact_shield_bash/holy 0-13)"
+effect,shieldwave_bash_w,pack27_fx/shieldwave_bash_w.png,2,2,14,62,0,0,"Shield Wave: a golden shield-shaped shock bursts forward, towards w (from impact_shield_bash/holy 0-13)"
+effect,shieldwave_bash_nw,pack27_fx/shieldwave_bash_nw.png,2,2,14,62,0,0,"Shield Wave: a golden shield-shaped shock bursts forward, towards nw (from impact_shield_bash/holy 0-13)"
+effect,shrapnel_burst,pack27_fx/shrapnel_burst.png,3,3,15,62,1,1,Bone Shrapnel: a necrotic blast of bone shards and gore (from impact_corpse_explosion/necrotic 0-13)
+effect,buff_rested,pack27_fx/buff_rested.png,3,3,17,83,1,1,"rested: green crosses rise, a soft pulse ring on the floor (from status_regeneration/nature 0-15)"
+effect,buff_returning,pack27_fx/buff_returning.png,2,3,17,83,0,1,"returning player: a golden halo, white feathers drift down (from status_blessed/holy 0-15)"
+effect,buff_catchup,pack27_fx/buff_catchup.png,4,3,17,83,1,1,catch-up: a golden whirl of wind and speed lines (from status_haste/gold 0-15)
+effect,buff_low_stamina,pack27_fx/buff_low_stamina.png,2,2,17,83,0,0,"low stamina: sweat, steam puffs and a drooping swirl (from status_exhausted/steel 0-15)"
+effect,hunter_focus,pack27_fx/hunter_focus.png,3,2,17,83,0,0,Hunter's Instinct: a hawk crest and a turning crosshair over the head (from status_eagle_eye/gold 0-15)
+effect,levelup_rise,pack27_fx/levelup_rise.png,4,3,9,67,1,1,"level up: a golden ring and a rising star beam, no words (the frames before the lettering) (from fx_level_up/gold 0-7)"
+effect,loot_beam_gold,pack27_fx/loot_beam_gold.png,2,3,17,83,0,1,loot beam: legendary and exotic drops (gold) (from fx_loot_beacon/gold 0-15)
+effect,loot_beam_steel,pack27_fx/loot_beam_steel.png,2,3,17,83,0,1,loot beam: divine drops (white steel) (from fx_loot_beacon/steel 0-15)
+effect,loot_beam_amethyst,pack27_fx/loot_beam_amethyst.png,2,3,17,83,0,1,loot beam: cosmic drops (violet) (from fx_loot_beacon/amethyst 0-15)
+effect,loot_beam_emerald,pack27_fx/loot_beam_emerald.png,2,3,17,83,0,1,loot beam: unique drops (emerald) (from fx_loot_beacon/emerald 0-15)
+effect,embercache_coins,pack27_fx/embercache_coins.png,3,3,15,67,1,1,Ember Cache reward: a burst of gold coins (from fx_coin_burst/gold 0-15)
+effect,candlemark_glow,pack27_fx/candlemark_glow.png,3,3,16,83,1,1,Candlemarks earned: a treasure glow and sparkles (from fx_treasure_glow/gold 0-15)
+effect,nova_frost,pack27_fx/nova_frost.png,5,5,17,62,2,2,"Rime Bloom: a frost ring glazes the floor, a crown of ice spikes erupts and shatters (from impact_frost_nova/frost 0-15)"
+effect,meteor_fall,pack27_fx/meteor_fall.png,6,6,21,62,2,2,"Falling Pyre: a blazing meteor crashes down, fireball, debris and a cooling crater (from impact_meteor/fire 0-19)"
+effect,storm_chain,pack27_fx/storm_chain.png,5,5,17,62,2,2,Forked Storm: a bolt cracks down and leaps across the floor in jagged arcs (from impact_chain_lightning/storm 0-15)
+effect,smite_radiant,pack27_fx/smite_radiant.png,4,4,15,62,1,1,"Radiant Smite: a pillar of light slams down, a burst ring and drifting feathers (from impact_holy_smite/radiant 0-13)"
+effect,judgment_holy,pack27_fx/judgment_holy.png,6,5,16,62,2,2,Judgement: a sword of light plunges down with a cross-shaped shock ring (from impact_divine_judgment/holy 0-15)
+effect,nova_radiant,pack27_fx/nova_radiant.png,5,5,16,62,2,2,Purging Nova: motes gather and burst into a sun-crowned ring (from impact_holy_nova/radiant 0-15)
+effect,mend_holy,pack27_fx/mend_holy.png,5,5,16,62,2,2,Vow of Mending: a radiant cross blooms over a ring of holy light (from impact_mass_heal/holy 0-15)
+effect,gyre_steel,pack27_fx/gyre_steel.png,5,5,15,62,2,2,Reaping Gyre: a ring of blade smears sweeps twice around the feet (from impact_whirlwind/steel 0-15)
+effect,berserk_blood,pack27_fx/berserk_blood.png,5,5,14,62,2,2,"Bloodrage and Red Frenzy: a furious red spin, rage flares and a dust ring (from impact_berserk/blood 0-15)"
+effect,slam_earth,pack27_fx/slam_earth.png,5,5,17,62,2,2,"Earthbreaker: a radial shockwave, rock chunks and a rolling dust wall (from impact_ground_slam/earth 0-15)"
+effect,terra_strike,pack27_fx/terra_strike.png,5,5,16,62,2,2,"Colossus Fall: the ground caves in, two rings of rock spikes erupt and crumble (from impact_ultimate_terra_strike/earth 0-15)"
+effect,cleave_blood_n,pack27_fx/cleave_blood_n.png,3,2,14,62,1,0,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards n (from impact_cleave/blood 0-13)"
+effect,cleave_blood_ne,pack27_fx/cleave_blood_ne.png,3,3,15,62,1,1,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards ne (from impact_cleave/blood 0-13)"
+effect,cleave_blood_e,pack27_fx/cleave_blood_e.png,2,3,14,62,1,1,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards e (from impact_cleave/blood 0-13)"
+effect,cleave_blood_se,pack27_fx/cleave_blood_se.png,3,3,14,62,1,1,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards se (from impact_cleave/blood 0-13)"
+effect,cleave_blood_s,pack27_fx/cleave_blood_s.png,3,2,15,62,1,1,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards s (from impact_cleave/blood 0-13)"
+effect,cleave_blood_sw,pack27_fx/cleave_blood_sw.png,2,3,14,62,0,1,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards sw (from impact_cleave/blood 0-13)"
+effect,cleave_blood_w,pack27_fx/cleave_blood_w.png,2,3,14,62,0,1,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards w (from impact_cleave/blood 0-13)"
+effect,cleave_blood_nw,pack27_fx/cleave_blood_nw.png,3,3,15,62,1,1,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards nw (from impact_cleave/blood 0-13)"
+effect,backstab_shadow,pack27_fx/backstab_shadow.png,2,2,14,62,0,1,"Shadow Step: a shadow afterimage strikes from behind, a crimson X (from impact_backstab/shadow 0-13)"
+effect,parry_steel,pack27_fx/parry_steel.png,3,3,15,62,1,1,"Counter Stance: two blade gleams cross, a white-hot star and sparks (from impact_parry/steel 0-13)"
+effect,venom_flurry,pack27_fx/venom_flurry.png,2,3,14,62,0,1,Poison Blades: three dagger slashes fling green venom (from impact_venom_flurry/poison 0-13)
+effect,drain_blood,pack27_fx/drain_blood.png,2,2,14,62,0,0,Life Siphon: ribbons of blood torn from the target (from impact_blood_drain/necrotic 0-13)
+effect,claws_shadow_n,pack27_fx/claws_shadow_n.png,2,2,13,62,0,0,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards n (from impact_shadow_claws/shadow 0-13)"
+effect,claws_shadow_ne,pack27_fx/claws_shadow_ne.png,2,1,15,62,0,0,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards ne (from impact_shadow_claws/shadow 0-13)"
+effect,claws_shadow_e,pack27_fx/claws_shadow_e.png,2,1,13,62,0,0,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards e (from impact_shadow_claws/shadow 0-13)"
+effect,claws_shadow_se,pack27_fx/claws_shadow_se.png,2,3,14,62,0,1,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards se (from impact_shadow_claws/shadow 0-13)"
+effect,claws_shadow_s,pack27_fx/claws_shadow_s.png,2,3,12,62,0,1,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards s (from impact_shadow_claws/shadow 0-13)"
+effect,claws_shadow_sw,pack27_fx/claws_shadow_sw.png,2,2,14,62,0,0,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards sw (from impact_shadow_claws/shadow 0-13)"
+effect,claws_shadow_w,pack27_fx/claws_shadow_w.png,2,2,12,62,0,0,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards w (from impact_shadow_claws/shadow 0-13)"
+effect,claws_shadow_nw,pack27_fx/claws_shadow_nw.png,2,2,13,62,0,0,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards nw (from impact_shadow_claws/shadow 0-13)"
+effect,punch_fire,pack27_fx/punch_fire.png,3,3,14,62,1,1,Ashen Fist: a fiery comic punch burst (from impact_punch/fire 0-13)
+effect,hammer_steel,pack27_fx/hammer_steel.png,3,3,14,62,1,1,Iron Palm: a heavy steel impact (from impact_hammer_hit/steel 0-13)
+effect,healing_burst,pack27_fx/healing_burst.png,4,3,15,62,1,1,"Kindled Breath: a radiant plus-sign blooms, leaves and sparkles spiral up (from impact_healing_burst/spirit 0-13)"
+effect,rift_void,pack27_fx/rift_void.png,3,3,12,83,1,1,Tear in the Weave: a vortex tears open in the ground (from circle_void_rift/void@start 0-11)
+effect,summon_necro,pack27_fx/summon_necro.png,5,5,13,83,2,2,Raise Dead: a pentagram blazes inside a double circle (from circle_summoning/necrotic@start 0-11)
+effect,portal_pad,pack27_fx/portal_pad.png,3,3,25,83,1,1,Town Portal channel: a spinning rune circle with columns of light (from circle_teleport_pad/arcane@loop 0-23)
+effect,boss_telegraph,pack27_fx/boss_telegraph.png,5,5,25,83,2,2,"boss telegraph (round, 5 x 5): a pulsing blood-red rim, the fill closes in (from circle_telegraph/blood@loop 0-23)"
+effect,portal_in,pack27_fx/portal_in.png,3,3,15,67,1,1,Town Portal opens: an arcane arrival flash (from fx_teleport_in/arcane 0-15)
+effect,portal_out,pack27_fx/portal_out.png,3,3,15,67,1,1,Town Portal closes: an arcane departure flash (from fx_teleport_out/arcane 0-15)
+effect,vigil_wrath,pack27_fx/vigil_wrath.png,4,3,17,83,1,1,Vigil of Wrath on: blazing chevrons stream up (from status_might/fire 0-15)
+effect,vigil_iron,pack27_fx/vigil_iron.png,2,2,17,83,0,0,Vigil of Iron on: a shield emblem and orbiting hex plates (from status_fortified/sapphire 0-15)
+effect,vigil_haste,pack27_fx/vigil_haste.png,4,3,17,83,1,1,Vigil of Haste on: a whirl of wind and speed lines (from status_haste/wind 0-15)
+effect,vigil_clarity,pack27_fx/vigil_clarity.png,3,3,25,83,1,1,Vigil of Clarity on: turning clock-dial rings (from aura_chrono_rings/arcane 0-23)
+effect,ward_shield,pack27_fx/ward_shield.png,3,3,17,83,1,1,Soulward: a hex-grid barrier dome (from status_shielded/arcane@loop 0-15)
+effect,aegis_radiant,pack27_fx/aegis_radiant.png,3,3,17,83,1,1,Aegis of Faith: a golden dome of light (from status_divine_shield/radiant 0-15)
+effect,veil_stealth,pack27_fx/veil_stealth.png,3,3,17,83,1,1,Shadow Veil: the thief fades into shadow (from status_stealth/shadow 0-15)
+effect,zeal_oath,pack27_fx/zeal_oath.png,3,3,25,83,1,1,Zealotry: six holy swords ring the caster (from aura_crusader_oath/radiant 0-23)
+effect,bellow_cry,pack27_fx/bellow_cry.png,2,2,17,83,0,0,Iron Bellow: shockwave rings burst from the head (from status_battle_cry/gold 0-15)
+effect,curse_mark,pack27_fx/curse_mark.png,2,3,17,83,0,1,Withering Curse: a skull sigil and shadow tendrils (from status_cursed/necrotic 0-15)
+effect,stun_stars,pack27_fx/stun_stars.png,2,2,17,83,0,0,stunned: little stars wheel round the head (from status_stunned/gold 0-15)
 missile,fan_knife,pack27_fx/fan_knife.png,3,3,8,83,1,1,Fan of Knives: a steel throwing knife (from proj_throwing_knife/steel 0-7)
 missile,ricochet_bolt,pack27_fx/ricochet_bolt.png,2,2,8,83,0,0,Shadow Ricochet: a violet shadow bolt (from proj_shadow_bolt/void 0-7)
 missile,chain_disc,pack27_fx/chain_disc.png,2,2,8,83,0,0,Iron Chain: a ring of golden chi (from proj_energy_disc/gold 0-7)
 missile,shrapnel_shards,pack27_fx/shrapnel_shards.png,2,2,8,83,0,0,Bone Shrapnel: three bone shards (from proj_bone_shards/bone 0-7)
+missile,shuriken_steel,pack27_fx/shuriken_steel.png,2,2,8,83,0,0,Shuriken Toss and Barrage: a spinning steel star (from proj_shuriken/steel 0-7)
+missile,soul_skull,pack27_fx/soul_skull.png,2,2,8,83,0,0,necromancer skull orb: a green-lit skull (from proj_soul_skull/necrotic 0-7)
+missile,holy_orb,pack27_fx/holy_orb.png,2,3,8,83,0,1,Radiant Smite: a holy orb (from proj_holy_orb/radiant 0-7)

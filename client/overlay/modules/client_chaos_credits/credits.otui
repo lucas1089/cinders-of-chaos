@@ -1,0 +1,75 @@
+// Credits window (client_chaos_credits). Styles from client_chaos_theme (styles.otui).
+
+CreditsLabel < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-wrap: true
+  text-auto-resize: true
+  text-align: topleft
+  phantom: true
+
+CreditsIntro < CreditsLabel
+  margin-bottom: 4
+
+CreditsSection < CreditsLabel
+  font: Verdana Bold-13px
+  margin-top: 14
+  margin-bottom: 2
+
+CreditsNote < CreditsLabel
+  margin-top: 2
+  margin-bottom: 2
+
+CreditsName < CreditsLabel
+  font: verdana-11px-rounded
+  margin-top: 8
+
+CreditsLine < CreditsLabel
+  margin-left: 12
+  margin-top: 1
+
+CreditsCredit < CreditsLine
+
+ChaosMainWindow
+  id: creditsWindow
+  size: 620 560
+  !text: tr('Credits')
+  @onEscape: modules.client_chaos_credits.hide()
+
+  ChaosPanelDark
+    id: creditsFrame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+
+  UIScrollArea
+    id: creditsArea
+    anchors.top: creditsFrame.top
+    anchors.left: creditsFrame.left
+    anchors.right: creditsScroll.left
+    anchors.bottom: creditsFrame.bottom
+    margin: 10 8 10 14
+    layout:
+      type: verticalBox
+    vertical-scrollbar: creditsScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: creditsScroll
+    anchors.top: creditsFrame.top
+    anchors.right: creditsFrame.right
+    anchors.bottom: creditsFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 36
+    pixels-scroll: true
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.client_chaos_credits.hide()

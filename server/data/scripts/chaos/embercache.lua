@@ -129,8 +129,21 @@ local function itemText(player, list)
 	return table.concat(parts, ", ")
 end
 
+-- pack farming effects (data/lib/chaos_pack27_fx.lua, switch ChaosPack27Fx.PAIR27_FX, off): an effect on the player
+-- for a buff state or reward; nothing while the switch is off
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua")
+end
+local function packFx(player, use)
+	local P = ChaosPack27Fx
+	if P and P.PAIR27_FX and P.send and player and player.getPosition then
+		pcall(function() P.send(player:getPosition(), use) end)
+	end
+end
+
 local function toast(player, title, text)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text)
+	packFx(player, "embercache")
 	if ChaosNotify and ChaosNotify.send then
 		pcall(ChaosNotify.send, player, Chaos.t(player, title), text)
 	end

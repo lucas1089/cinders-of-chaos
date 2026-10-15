@@ -1144,4 +1144,7 @@ Cinzel (The Cinzel Project Authors), Alegreya SC (The Alegreya Project Authors),
 Project Authors), both by Huerta Tipográfica, and IM Fell English (Igino Marini). Their sources and licence texts are
 in `client/fonts-src/` and ship with the client. The OFL lets them ship with the game; they may not be sold on their own.
 
+**Credits.** Every third-party source (engine, libraries, fonts, art packs, tools) is listed in
+[docs/CREDITS.md](docs/CREDITS.md). The game shows it in its Credits window, the website on its Credits page.
+
 This page is kept up to date as features are merged: new systems move from *Coming soon* into their sections.

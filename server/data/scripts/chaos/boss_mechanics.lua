@@ -33,6 +33,9 @@ end
 if not ChaosBigFx then
 	pcall(dofile, "data/lib/chaos_big_fx.lua")
 end
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua")
+end
 
 ChaosBossMech = ChaosBossMech or {}
 local M = ChaosBossMech
@@ -330,8 +333,16 @@ local function telegraph(f, spec, warnMs)
 			if spec.kind == "follow" and mnow() < tel.lockAt then
 				G.refollow(fl.st, tel, ctxOf(fl, fightPlayers(fl)), mnow())
 			end
-			if i == 1 and ChaosBigFx and ChaosBigFx.telegraph then
-				pcall(ChaosBigFx.telegraph, tel.tiles)
+			if i == 1 then
+				-- pair 27 (data/lib/chaos_pack27_fx.lua, off): its danger circle, else the large one
+				local P27, drawn = ChaosPack27Fx, false
+				if P27 and P27.PAIR27_FX and P27.telegraph then
+					local ok, sent = pcall(P27.telegraph, tel.tiles)
+					drawn = ok and sent == true
+				end
+				if not drawn and ChaosBigFx and ChaosBigFx.telegraph then
+					pcall(ChaosBigFx.telegraph, tel.tiles)
+				end
 			end
 			drawMarks(fl, tel, pulse.kind)
 		end, pulse.at)

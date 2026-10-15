@@ -13,6 +13,9 @@ local W = ChaosVigilSpell
 if not ChaosVigilsCore then
 	dofile("data/scripts/chaos/vigils_core.lua")
 end
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua")
+end
 if not ChaosArchetypesCore then
 	pcall(dofile, "data/scripts/chaos/archetypes_core.lua")
 end
@@ -44,6 +47,10 @@ function W.toggle(creature, key)
 	player:setStorageValue(storage, new)
 	player:sendTextMessage(MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL or 1, V.toggleText(key, not was, total, mods))
 	player:getPosition():sendMagicEffect(was and (CONST_ME_POFF or 3) or (CONST_ME_MAGIC_GREEN or CONST_ME_POFF or 3))
+	local P27 = ChaosPack27Fx -- pair 27 (data/lib/chaos_pack27_fx.lua, off): the vigil's look when it starts
+	if not was and P27 and P27.PAIR27_FX and P27.send then
+		pcall(P27.send, player:getPosition(), "vigil_" .. key)
+	end
 	if ChaosVigils and ChaosVigils.refresh then -- the scripts' side in the same Lua state: at once
 		pcall(ChaosVigils.refresh, player)
 	end

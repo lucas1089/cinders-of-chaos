@@ -2764,7 +2764,20 @@ ChaosLocaleStrings['pt-BR'] = {
   ["%d Viewer"] = "%d espectador",
   ["%d Viewers"] = "%d espectadores",
   ["Watch"] = "Assistir",
+  -- client_chaos_credits/creditsview.lua
+  ["Cinders of Chaos is made with the work of these people and projects. Thank you!"] = "Cinders of Chaos é feito com o trabalho destas pessoas e projetos. Obrigado!",
+  ["Author: %s"] = "Autor: %s",
+  ["Licence: %s"] = "Licença: %s",
+  ["Used for: %s"] = "Usado em: %s",
+  ["Source: %s"] = "Origem: %s",
   -- Run-time keys: texts kept in data tables and given to tr() where they are shown (tr(row.name))
+  -- client_chaos_credits: the section headings of docs/CREDITS.md (tr(section.title); tools/ci/check_credits.py)
+  ["Art with required credit"] = "Arte com crédito obrigatório",
+  ["Art packs"] = "Pacotes de arte",
+  ["Free assets"] = "Recursos gratuitos",
+  ["Fonts"] = "Fontes",
+  ["Engine and libraries"] = "Motor e bibliotecas",
+  ["Tools"] = "Ferramentas",
   -- game_embercache (embercache.otui, cacheview.lua patterns through tr())
   ["Ember Cache"] = "Ember Cache",
   ["Day book: what you did today"] = "Diário: o que você fez hoje",

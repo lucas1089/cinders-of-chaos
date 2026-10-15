@@ -1,0 +1,12 @@
+Module
+  name: client_chaos_credits
+  description: Credits window (every third-party source: engine, fonts, art packs, tools), from docs/CREDITS.md; the login CREDITS button and System > Credits
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ credits_data, creditsview, credits ]
+  dependencies:
+    - client_chaos_theme
+  autoload: true
+  autoload-priority: 1050
+  @onLoad: init()
+  @onUnload: terminate()

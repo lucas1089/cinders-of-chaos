@@ -34,6 +34,9 @@ dofile("data/scripts/chaos/lootfilter_config.lua")
 if not ChaosFx then
 	pcall(dofile, "data/lib/chaos_fx.lua") -- effect ids of the loot rays (generated, see README_FX.md)
 end
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua") -- pair 27 trial loot beams (switch off: the rays stay)
+end
 
 local F = ChaosLootFilter
 local OPCODE = ChaosOpcodes.lootfilter
@@ -464,10 +467,16 @@ local function emitRay(kill, owner)
 		return
 	end
 	local id = ChaosFx and ChaosFx[effect]
+	local pos = Position(kill.pos.x, kill.pos.y, kill.pos.z)
+	-- pair 27 trial (data/lib/chaos_pack27_fx.lua, switch off): the pack beam of this rarity, sent at its offset tile
+	local beam = ChaosPack27Fx and ChaosPack27Fx.ray and ChaosPack27Fx.ray(effect)
+	if beam then
+		id = beam.id
+		pos = Position(kill.pos.x + beam.dx, kill.pos.y + beam.dy, kill.pos.z)
+	end
 	if not id then
 		return
 	end
-	local pos = Position(kill.pos.x, kill.pos.y, kill.pos.z)
 	local viewers = rayViewers(kill, owner)
 	if not viewers then
 		pos:sendMagicEffect(id)

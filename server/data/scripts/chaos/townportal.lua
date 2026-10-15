@@ -37,6 +37,9 @@ if not ChaosFx then
 	pcall(dofile, "data/lib/chaos_fx.lua")
 end
 
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua")
+end
 ChaosTownPortalConfig = dofile("data/scripts/chaos/townportal_config.lua")
 ChaosTownPortal = ChaosTownPortal or {}
 local T = ChaosTownPortal
@@ -64,6 +67,13 @@ end
 
 -- the first effect of the list that exists (a Vfx name, a ChaosFx name or a stock number)
 local function fx(pos, list)
+	local P27 = ChaosPack27Fx -- pair 27 (data/lib/chaos_pack27_fx.lua, off): the portal effects of that pair first
+	for _, e in ipairs(list or {}) do
+		local alt = P27 and P27.PAIR27_FX and P27.portal and type(e) == "string" and P27.portal(e)
+		if alt and Vfx and Vfx(P(pos), alt) then
+			return
+		end
+	end
 	for _, e in ipairs(list or {}) do
 		if type(e) == "number" then
 			P(pos):sendMagicEffect(e)

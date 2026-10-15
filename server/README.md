@@ -11384,21 +11384,50 @@ Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, fro
 
 ## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, off)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
-"Pack farming spell effects (pair 27 trial)", effects 674-687, missiles 154-157 on top of things_custom26) gives them
-their own. Effects only: nothing else changes. During a cast `_common.lua` asks `ChaosPack27Fx.swapFor(spellId, kind,
-name)` in `ChaosSpell.fx` / `vfx` / `vfxDir` / `shoot` / `vshoot`; a skin, a large effect and a class signature effect
-win over it.
-- Palm Shockwave palm_quake; Blade Flurry flurry_petals (the Ninja and Samurai keep their class effects); Iaido Sweep
-  iaido_dash_<dir>; Shadow Ricochet ricochet_bolt + ricochet_burst; Iron Chain chain_disc + chain_sparks; Bone Shrapnel
-  shrapnel_shards (the burst stays); Sanctified Ground sanctified_seal; Shield Wave shieldwave_wall; Fan of Knives
-  fan_knife.
-- Off (shipped): the ids file is not loaded and every spell sends what it sent before. No published pair has these
-  ids. Flip only with a published pair 27: `C.PAIR27_FX = true`, `install_all.py SERVER_DIR --only files`, restart.
+"Pack farming spell effects (pair 27 trial)", effects 674-758, missiles 154-160 on top of things_custom26) gives them
+their own. It also gives 34 spells of the other class lines new impacts, plus vigil, stun, buff, game feel, Town Portal
+and boss telegraph effects. Effects only: nothing else changes.
+- Spells: during a cast `_common.lua` asks `ChaosPack27Fx.swapFor(spellId, kind, name)` in `ChaosSpell.fx` / `vfx` /
+  `vfxDir` / `shoot` / `vshoot`. A skin always wins. A large effect and a class signature effect win too, unless the
+  spell lists the name in `first` (`swapFor` then also returns true): the new art is the point of those swaps.
+  - Pack farming: Palm Shockwave palm_quake; Blade Flurry flurry_petals (the Ninja and Samurai keep their class
+    effects); Iaido Sweep iaido_dash_<dir>; Shadow Ricochet ricochet_bolt + ricochet_burst; Iron Chain chain_disc +
+    chain_sparks; Bone Shrapnel shrapnel_shards + shrapnel_burst; Sanctified Ground sanctified_seal; Shield Wave
+    shieldwave_bash_<dir> (kind `fxdir`: turned from the caster towards its tile); Fan of Knives fan_knife; Hunter's
+    Instinct hunter_focus.
+  - Mystic: Rime Bloom nova_frost; Falling Pyre meteor_fall (first); Forked Storm storm_chain on each jump (first);
+    Tear in the Weave rift_void (first).
+  - Templar: Radiant Smite smite_radiant + holy_orb; Judgement judgment_holy, Purging Nova nova_radiant, Vow of Mending
+    mend_holy, Zealotry zeal_oath, Aegis of Faith aegis_radiant (all first).
+  - Warrior: Reaping Gyre gyre_steel, Earthbreaker slam_earth, Colossus Fall terra_strike, Iron Bellow bellow_cry, Red
+    Frenzy and Bloodrage berserk_blood (all first); Skyfall Cleave and Vaulting Cleave cleave_blood_<dir>.
+  - Thief: Shadow Step backstab_shadow, Counter Stance parry_steel, Shadow Veil veil_stealth (first); Poison Blades
+    venom_flurry; Shuriken Toss and Shuriken Barrage shuriken_steel.
+  - Necromancer: Life Siphon drain_blood; Raise Dead summon_necro + soul_skull; Withering Curse curse_mark (first) +
+    soul_skull; Soul Rot soul_skull.
+  - Monk: Shadowfist Flurry claws_shadow_<dir> (fxdir); Ashen Fist punch_fire; Iron Palm hammer_steel; Kindled Breath
+    healing_burst. Shared: Soulward ward_shield.
+- Uses (`C.uses`, `ChaosPack27Fx.send(pos, use)`, on the player): `catchup.lua` rested, returning, catchup (login
+  messages), low_stamina (the daily notice), level_up (a new level: levelup_rise, no words in the art);
+  `embercache.lua` embercache (each reward toast); `candlemarks.lua` candlemarks (Candlemarks earned); `_vigils.lua`
+  vigil_wrath / iron / haste / clarity (a vigil switched on); `ironsage/iron_palm.lua` stun (a monster really
+  stunned). Loot beams (`C.rays`, `lootfilter.lua` emitRay): legendary gold, divine steel, cosmic amethyst, unique
+  emerald; the other rays stay.
+- Town Portal (`C.portals`, `C.portal(name)`, tried first in `townportal.lua` fx): the channel arcane_circle
+  portal_pad, the Waygate teleport_in portal_in and teleport_out portal_out.
+- Boss telegraph (`C.telegraph(tiles)`, `boss_mechanics.lua` first pulse): a round telegraph of 5 tiles across gets
+  boss_telegraph at its centre (`C.telegraphCentre`, via `ChaosBigFx.circleOf`); any other shape keeps
+  `ChaosBigFx.telegraph`.
+- Off (shipped): the ids file is not loaded, `send` sends nothing, `ray`, `portal` give nil and `telegraph` false, so
+  every call site sends what it sent before. No published pair has these ids. Flip only with a published pair 27:
+  `C.PAIR27_FX = true`, `install_all.py SERVER_DIR --only files`, restart.
 - The swaps are keyed by spell id; `C.names` holds each spell's name and `tests/pack27_fx_test.lua` checks both against
   spells_chaos.xml, so a moved id fails the test (update `C.spells` and `C.names`).
 - Tests: `tests/pack27_fx_test.lua` (switch line off; ids and names in spells_chaos.xml; each script sends the
-  swapped name; every new name in the client spec and the ids file; missile ids fit u8; off: no swap; on: the names;
-  `_common.lua` wired). Not run on a server or in a client.
+  swapped name; every new name in the client spec and the ids file; missile ids fit u8; the loot rays, portal names
+  and telegraph exist; the `first` flag; off: no swap, no use effect, rays, portals and telegraph unchanged; on: the
+  names, the gold beam, the level up effect, the 5 vs 7 tile telegraph; `_common.lua` and every call site wired). Not
+  run on a server or in a client.
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 
