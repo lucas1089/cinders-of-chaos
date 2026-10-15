@@ -2,11 +2,16 @@
 """Install the planned content hunts into a base server's world map, with their way in from the teleport room.
 
 usage: python3 -I server/tools/install_content_areas.py DATA_DIR [--dry-run] [--only ID,...] [--no-room]
-                                                        [--plans DIR] [--config FILE] [--map FILE]
+                                                        [--plans DIR] [--config FILE] [--map FILE] [--no-fixed]
 
 DATA_DIR is the server's data folder. Read at run time, never hard-coded: every plan of server/tools/areaplan/plans/
 (size, origin, arrival) and server/data/scripts/chaos/hunt_teleports_config.lua (the room, the order of the plans and
 their display monsters; read through tools/hunt_teleports_dump.lua with luajit, or $LUA).
+Fixed areas: every plan of server/tools/areaplan/chronicle/ (the Ashen Chronicle's chapter areas and the Capital
+Memorial's plaza) is placed the same way at its own `origin`, with its spawns and chest script, but gets no teleport and
+no line in the places file: its way in is a runtime portal of its own (chronicle_config.lua `areas` gate,
+memorial_config.lua `plaza.portal`; tools/chronicle_areas_test.py checks that their `at` is the plan's origin).
+--no-fixed leaves them out.
 
 Steps (server/README.md "Hunt teleports"; docs/MAP_GUIDE.md "Content plans"):
   compile  every plan with `area_planner.py compile` into a temporary folder (at its own origin)
@@ -40,6 +45,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'map'))
 
 PLANS_DIR = os.path.join(HERE, 'areaplan', 'plans')
+FIXED_DIRS = (os.path.join(HERE, 'areaplan', 'chronicle'),)
 CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'hunt_teleports_config.lua')
 PLACES_REL = os.path.join('lib', 'chaos_hunt_places.lua')
 
@@ -445,9 +451,12 @@ def update_spawns(text, plan_blocks, displays, spawntime):
     for pid, xml in plan_blocks:
         if 'chaoscontent="%s"' % pid in text:
             continue
-        for b in SPAWN_RE.findall(xml):
+        blocks_of = SPAWN_RE.findall(xml)
+        if not blocks_of:
+            continue  # an area without monsters (the Memorial's plaza)
+        for b in blocks_of:
             add.append(re.sub(r'^(\t<spawn\b[^>]*?)>', r'\1 chaoscontent="%s">' % pid, b, count=1))
-        notes.append('%s: %d spawn block(s) added' % (pid, len(SPAWN_RE.findall(xml))))
+        notes.append('%s: %d spawn block(s) added' % (pid, len(blocks_of)))
     if add:
         cut = text.rfind('</spawns>')
         if cut < 0:
@@ -482,9 +491,26 @@ def spawn_path(map_path):
     return p if os.path.isfile(p) else None
 
 
+def fixed_plans(dirs, hunts, log=print):
+    """the plans of the fixed-area folders: {id: (path, plan)}; a plan without an origin is left out (logged)"""
+    out = {}
+    for d in dirs or ():
+        if not os.path.isdir(d):
+            continue
+        for pid, (path, plan) in plan_files(d).items():
+            if pid in hunts or pid in out:
+                raise InstallError('plan id %s is in two plan folders' % pid)
+            if not isinstance(plan.get('origin'), dict):
+                log('%s: no origin in %s; not placed' % (pid, os.path.basename(path)))
+                continue
+            out[pid] = (path, plan)
+    return out
+
+
 def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, config=CONFIG, map_path=None,
-        compiled=None, world=None, log=print):
-    """compiled: {id: out_dir} already compiled (tests); world: a World (tests). Returns a summary dict."""
+        compiled=None, world=None, log=print, fixed_dirs=FIXED_DIRS):
+    """compiled: {id: out_dir} already compiled (tests); world: a World (tests); fixed_dirs: the folders of the fixed
+    areas (placed at their origin, no teleport). Returns a summary dict."""
     import area_plan_place as PL
     cfg = load_config(config) if isinstance(config, str) else config
     portal = cfg['items']['portal']
@@ -494,6 +520,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
     if not map_path or not os.path.isfile(map_path):
         raise InstallError('no world map in %s/world' % data_dir)
     plans = plan_files(plans_dir)
+    fixed = fixed_plans(fixed_dirs, plans, log)
     unknown = [p['id'] for p in cfg.get('plans', []) if p['id'] not in plans]
     for pid in unknown:
         log('config plan %s has no plan file; skipped' % pid)
@@ -503,13 +530,13 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             log('%s: not in the hunt teleports config: teleport after the listed plans, display monster %s (check its '
                 'look in the client; list the plan in the config to choose)' % (p['id'], p['monster']))
     if only:
-        bad = [o for o in only if o not in plans]
+        bad = [o for o in only if o not in plans and o not in fixed]
         if bad:
             raise InstallError('unknown plan(s) for --only: %s' % ', '.join(bad))
     tmp = tempfile.mkdtemp(prefix='chaos_content_')
     try:
         areas = {}
-        for pid, (path, plan) in plans.items():
+        for pid, (path, plan) in list(plans.items()) + list(fixed.items()):
             out = (compiled or {}).get(pid)
             if not out:
                 out = os.path.join(tmp, pid)
@@ -535,9 +562,18 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             if st == 'todo' and only and pid not in only:
                 st = 'skipped'
             state[pid] = st
-            log('%s: %s (%d tiles at %s)' % (pid, {'done': 'placed already', 'todo': 'to place', 'skipped': 'not placed (--only)'}[st],
-                                             len(a['tiles']), tuple(a['man']['origin'])))
-        placed = {pid for pid, st in state.items() if st in ('done', 'todo')}
+            log('%s: %s (%d tiles at %s)%s' % (pid, {'done': 'placed already', 'todo': 'to place', 'skipped': 'not placed (--only)'}[st],
+                                               len(a['tiles']), tuple(a['man']['origin']),
+                                               ', fixed area: no teleport' if pid in fixed else ''))
+        # tiles of two areas on one spot: refused
+        owner = {}
+        for pid, a in areas.items():
+            for p in a['tiles']:
+                if p in owner:
+                    raise InstallError('%s and %s overlap at %d,%d,%d' % ((owner[p], pid) + p))
+                owner[p] = pid
+        placed_all = {pid for pid, st in state.items() if st in ('done', 'todo')}
+        placed = placed_all - set(fixed)
         slots = assign_slots(order, lay['slots'], placed) if lay['slots'] else {}
         if lay['slots']:
             log('room: %d of %d teleport slots used' % (len(slots), len(lay['slots'])))
@@ -579,7 +615,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         if sp:
             text = open(sp, encoding='latin-1').read()
             plan_blocks = [(pid, open(os.path.join(areas[pid]['out'], pid + '-spawn.xml'), encoding='latin-1').read())
-                           for pid in sorted(placed)]
+                           for pid in sorted(placed_all)]
             mons = {p['id']: p['monster'] for p in order}
             displays = {pid: (mons[pid], s['cells']) for pid, s in slots.items() if mons.get(pid)}
             new, notes = update_spawns(text, plan_blocks, displays, cfg.get('displaySpawntime', 120))
@@ -593,7 +629,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             log('spawns: no spawn file next to the map; skipped')
         # chest scripts
         server_dir = os.path.dirname(os.path.abspath(data_dir))
-        for pid in sorted(placed):
+        for pid in sorted(placed_all):
             PL.install(areas[pid]['out'], server_dir, dry_run=dry, log=lambda s: log('chests: ' + s))
         # places file
         entries = []
@@ -626,7 +662,7 @@ def main(argv):
     args, pos, i = {}, [], 0
     while i < len(argv):
         a = argv[i]
-        if a in ('--dry-run', '--no-room'):
+        if a in ('--dry-run', '--no-room', '--no-fixed'):
             args[a] = True
         elif a in ('--only', '--plans', '--config', '--map'):
             if i + 1 >= len(argv):
@@ -647,7 +683,8 @@ def main(argv):
     only = [s.strip() for s in args['--only'].split(',') if s.strip()] if args.get('--only') else None
     try:
         run(pos[0], dry=bool(args.get('--dry-run')), only=only, room_on=not args.get('--no-room'),
-            plans_dir=args.get('--plans', PLANS_DIR), config=args.get('--config', CONFIG), map_path=args.get('--map'))
+            plans_dir=args.get('--plans', PLANS_DIR), config=args.get('--config', CONFIG), map_path=args.get('--map'),
+            fixed_dirs=() if args.get('--no-fixed') else FIXED_DIRS)
     except InstallError as e:
         print('refused: %s' % e)
         return 1

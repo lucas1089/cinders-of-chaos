@@ -7,6 +7,7 @@
   "floors": 1,
   "level": [440, 560],
   "seed": 51202,
+  "origin": {"x": 14910, "y": 15140, "z": 7},
   "decoration": "normal",
   "light": "dim",
   "zones": [
@@ -60,5 +61,5 @@
     {"zone": "torn_earth", "monster": "Bloodspark Adept", "count": 3, "respawn": 100},
     {"zone": "smoke_hollow", "monster": "Blazefang", "count": 7, "respawn": 100}
   ],
-  "notes": "The Ashen Chronicle, Season 1, chapter 2 (server/README.md \"The Ashen Chronicle\"): the ground the first wound tore open beside the capital, for levels 440-560. Closed until the chapter is complete: chronicle.lua puts the gate portal at the owner's chosen spot (chronicle_config.lua areas.cinderscar_breach) and takes it away again at the next season start. The exit portal leads to the temple."
+  "notes": "The Ashen Chronicle, Season 1, chapter 2 (server/README.md \"The Ashen Chronicle\"): the ground the first wound tore open beside the capital, for levels 440-560. Closed until the chapter is complete: install step contentareas places the area at its origin; chronicle.lua puts the gate portal on its gate tile in the capital (chronicle_config.lua areas.cinderscar_breach) and takes it away again at the next season start. The exit portal leads to the temple."
 }

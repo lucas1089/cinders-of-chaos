@@ -315,7 +315,7 @@ server/
    are monsters: copy `data/monster/monsters/chaos/necro_*.xml` with the other Chaos monsters (step 5) and register them with
    `python3 -I server/tools/register_monsters.py <server>/data/monster/monsters.xml <server>/data/monster/monsters/chaos`.
    The class lock: run `server/sql/chaos_class_unlocks.sql` (the server also creates the table at startup). The three classes
-   need an account-wide unlock, sold in the store's "Classes" category (750 coins each, a placeholder); see "Class lock".
+   need an account-wide unlock, sold in the store's "Classes" category (500 coins each) or free once a character of the account reaches level 500 (decided 2026-10-14, docs/PRICES.md); see "Class lock".
 5d. Dark tile set: `python3 -I server/tools/install_dark_tiles.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
    `darktiles`) adds the 74 items of `data/items/dark_tiles.csv` to `items.otb` / `items.xml`. The client needs the matching
    `Tibia.dat` / `Tibia.spr` (`client/tools/sprites/gen_dark_tiles.py`). See "Dark tile set".
@@ -2349,9 +2349,9 @@ day, per category, top 10 offers over N days), Recent purchases, Donations (coin
 Donations: refunds and chargebacks, Record a donation (group 6), Give Chaos Coins.
 
 **Chaos Coin packs** (`shop_coins_config.lua`, read by `shop.lua`, `shop_payments.lua` and the website's donation page):
-250, 750 +10%, 1500 +15%, 4000 +25%, a one-time Starter Coins pack (250 + 250), and +20% on the first pack an account
-gets (not the starter). Chaos Coins are a thank-you for a voluntary donation; the game is fully playable for free.
-Prices: one USD table in integer cents (`usdCents`, placeholders); Pix charges `usdCents * payments.brlPerUsd` (5) in BRL,
+100, 250, 500 +5%, 1000 +10%, 2500 +15%, 5000 +20%, a one-time Starter Coins pack (250 + 250), and double coins (at most
++1000) on the first pack an account gets (not the starter). Chaos Coins are a thank-you for a voluntary donation; the game is fully playable for free.
+Prices: one USD table in integer cents (`usdCents`, decided 2026-10-14, docs/PRICES.md); Pix charges `usdCents * payments.brlPerUsd` (5) in BRL,
 PayPal `usdCents` in USD (`ChaosPayCore.priceCents`; the website derives them the same way). Crediting: the payment side
 marks a row of `chaos_coin_orders` `paid` (the donation flow below, the website hook `chaos_coin_order_paid` or the
 admin action); `shop.lua` re-reads the row locked (`FOR UPDATE`: a refund that came meanwhile is not credited), credits
@@ -2406,7 +2406,8 @@ repository.
 ### Weekly rotation, bundles, coin packs (owner approval 2026-10-13)
 
 The owner approved the monetization recommendations ("Pode fazer todas as mudanças recomendadas"): cosmetics and
-convenience only, never power. Prices marked PLACEHOLDER are listed in `docs/OWNER_TODO.md`.
+convenience only, never power. Every price was decided on 2026-10-14 (owner delegated): the sheet and the reasons are
+`docs/PRICES.md`.
 
 - **This week** (`storefront.featured` in `shop_config.lua`: `name`, `count = 5`, `pct = 10`, `pool`). Five offers of the
   pool, 10% off, a new choice every Monday at 06:00 (`ChaosShopCore.featured`: a seeded shuffle of the pool by the week
@@ -2430,13 +2431,14 @@ convenience only, never power. Prices marked PLACEHOLDER are listed in `docs/OWN
   three regalia at 25% off, an outfit with both addons + a mount + wings + an aura (Glacial: Astral Ice, Glacier Wyrm,
   Nimbus Wings, Frost Bastion; Pyre: Astral Fire, Crimson Fang, Vorondor Flames, Ember Crown; Stormcaller: Astral
   Electric, Stormkeep, wings 13, the storm mantle). The three older sets stay at 20%.
-- **Coin packs** (`shop_coins_config.lua`, PLACEHOLDER prices): Handful of Coins 80 coins for US$ 1.99 (R$ 9,95 by Pix at
-  `brlPerUsd` 5, the entry pack), Pouch 250 / 4.99, Sack 750 +10% / 14.99, Chest 1500 +15% / 29.99, Hoard 4000 +25% /
-  74.99, Vault of Coins 10000 +30% / 179.99 (the anchor), Starter Coins 250 + 250 / 2.99 once. Coins per US$ with the
-  pack bonus: 40, 50, 55, 58, 67, 72, so every bigger pack is a better thank-you.
+- **Coin packs** (`shop_coins_config.lua`, decided 2026-10-14, docs/PRICES.md): Handful of Coins 100 coins for US$ 1.98
+  (R$ 9,90 by Pix at `brlPerUsd` 5, the entry pack), Pouch 250 / 4.98 (R$ 24,90), Sack 500 +5% / 9.98 (R$ 49,90), Chest
+  1000 +10% / 19.98 (R$ 99,90), Hoard 2500 +15% / 49.98 (R$ 249,90), Vault of Coins 5000 +20% / 99.98 (R$ 499,90),
+  Starter Coins 250 + 250 / 2.98 (R$ 14,90) once. One coin is about R$ 0,10; coins per R$ with the pack bonus: 10.1,
+  10.0, 10.5, 11.0, 11.5, 12.0, so every bigger pack is a better thank-you.
 - **First donation: double coins** (`firstPurchase.bonusPct = 100`, was 20), **at most +1000** (`firstPurchase.maxBonus =
   1000`, owner 2026-10-13: "Limite a 1000"): a pack up to 1000 coins is doubled, a bigger one gets +1000 flat (the Vault:
-  10,000 + its own +30% + 1,000); once per account, on the first pack credited that is not the Starter Coins
+  5,000 + its own +20% + 1,000); once per account, on the first pack credited that is not the Starter Coins
   (`ChaosShopCore.packCredit`; `packsView` sends `firstBonusMax` to the client). "First" = the account has no credited
   order: a refund or a chargeback after crediting leaves the order `credited` (the reversal is flagged in
   `chaos_coin_payments`, and the coins taken back up to the balance, "Donations"), so a reversed donation never makes the
@@ -2447,7 +2449,7 @@ convenience only, never power. Prices marked PLACEHOLDER are listed in `docs/OWN
   `data/lib/chaos_rune_supply.lua`: 100 / 250 / 500 of Searing Orb, Rockfall, Stormcall, Frostfall, Reaper's Rune,
   Greater Hexdart, Mending and Grand Mending, 25 / 50 / 100 Shackle, 100 / 250 Dispel. Coins = vendor gold x count /
   `RUNE_GOLD_PER_COIN` (1000, about the rate the potion packs imply: 800-1,550 gold a coin), 5% off the 250 (and 50) pack,
-  10% off the 500 pack, rounded up (100 Searing Orb 9, 500 Reaper's 99, 100 Shackle 89). PLACEHOLDERS. The Reaper's,
+  10% off the 500 pack, rounded up (100 Searing Orb 9, 500 Reaper's 99, 100 Shackle 89). Kept 2026-10-14 (docs/PRICES.md). The Reaper's,
   Searing Orb and Grand Mending 100s of Supplies moved here with their keys. Delivery (`overflowInbox`): stacks of 100
   into the backpack while they fit, the rest into the store inbox, a message says how many; no room and no inbox =
   nothing given, coins refunded. Not for season characters (items). Tests: `tests/shop_test.lua` (prices against the
@@ -2490,8 +2492,9 @@ client module needed no change.
 | | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
 | | Passive Tree Reset | 60 | empties every preset for free (the in-window reset costs level x 250 gold) |
 | Convenience | (the Temple Teleport Scroll is no longer sold) | | see below |
-| | Loot Bag / Orbs Pouch / Rift Key Pouch | 350 / 300 / 250 | store pouch items, one of each per character ("Store pouches" below) |
-| | Auto Seller | 500 | unlock (also lent by an active Chaos Pact), see below |
+| | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
+| | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
+| | Rarity Autoloot / Everfull Ration | 300 / 100 | per character, see "Store pouches and the Everfull Ration" |
 | Training | 21 exercise weapon chests | 25 / 75 / 450 | the base server's chests: sword, axe, club, bow, rod, wand, shield with 500 / 1800 / 14400 charges |
 
 Premium (250 for 30 days) stays where it was.
@@ -2987,9 +2990,9 @@ autoloot list is needed.
 
 | Pouch | Item id (look) | Slots | Coins | Collects |
 |---|---|---|---|---|
-| Loot Bag | 32081 (client 33653: a leather sack, gold coins spilling) | 255, weightless | 350 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
-| Orbs Pouch | 32082 (client 33651: a violet pouch with a glowing orb) | 40 | 300 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035) |
-| Rift Key Pouch | 32083 (client 33652: an iron strongbox, gold key, key ring) | 30 | 250 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
+| Loot Bag | 32081 (client 33653: a leather sack, gold coins spilling) | 255, weightless | 250 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
+| Orbs Pouch | 32082 (client 33651: a violet pouch with a glowing orb) | 40 | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035) |
+| Rift Key Pouch | 32083 (client 33652: an iron strongbox, gold key, key ring) | 30 | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 
 - **Items.** New items.otb nodes, copies of stock bags (group and flags of the expedition bag, the brocade bag and the fur bag)
   with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py` and appended to the
@@ -3099,7 +3102,7 @@ autoloot list is needed.
 
 ## Store pouches and the Everfull Ration (`store_food.lua`, `store_food_core.lua`, `store_food_config.lua`, `tools/install_store_food.py`)
 
-The store's infinite food (Convenience, "Everfull Ration", 150 coins, a PLACEHOLDER price in `docs/OWNER_TODO.md`).
+The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 2026-10-14, docs/PRICES.md).
 
 - **Item.** Server id 32084 (after the pouches), a new items.otb node copied from the stock dragon ham (2672: flags and
   attributes), stackable like it, with an items.xml entry (name, description, weight 3 oz). Stackable because its look
@@ -3392,21 +3395,22 @@ the new account's first character levels. Approved by the owner. Nothing in it g
   account-wide title Kindled, once, to the character that logs in after the link is accepted.
 - **The referrer's rewards** (`milestones`): when the referred account's first character (the lowest character id, fixed when
   the link is accepted; another character does not count) reaches level 50: the title Torchbearer and 25 Chaos Coins; level
-  150: the title Ember Herald and 50 Chaos Coins. Rows in `chaos_referral_rewards`: `paid` at once; `void` when the referred
+  250: the title Ember Herald and 50 Chaos Coins. Rows in `chaos_referral_rewards`: `paid` at once; `void` when the referred
   account is banned; `due` (waiting) when the referrer is banned or already had `monthlyRewards` (10) rewards this month.
   Waiting rewards are tried again at every login of the referrer, at startup and every `retryMinutes` (30). Coins go to
   `chaos_shop_coins`; titles come from the paid rows (`ChaosTitles` source `referral`). The referrer is told at once or at
-  the next login. Level 150 is the main reward and a placeholder (owner decision 2026-10-13: "level X, placeholder 150").
+  the next login. Level 250 is the main reward (owner decision 2026-10-13: "level X"; X = 250 decided 2026-10-14,
+  docs/PRICES.md: with pack combat level 150 took only 1.5-3 hours).
 - **Checked again when a reward is due** (owner rules 2026-10-13; one person never sits on both sides, as the
   multi-client rule and docs/GM_HANDBOOK.md section 4 say): the referred account must be `minReferredAccountDays` (7) days
   old (else the reward waits and is paid by the retry); a shared connection by then (`sameIpAtPayout`: every login IP of
   both accounts, the online characters and the website IPs, IPv6 by /64) or a shared payer (`samePayer`: a payer hash of
   `chaos_pay_payers` on a donation of each account; the table is empty until the donation service writes it, see
   website/README.md "Creator codes") makes it `void`.
-- **Tier rewards** (`tiers`, `qualify` = `l150`): once 3, 5 and 10 referred accounts reached the qualifying milestone
+- **Tier rewards** (`tiers`, `qualify` = `l250`): once 3, 5 and 10 referred accounts reached the qualifying milestone
   (paid, not void), the referrer gets the titles Flamecaller (+50 coins), Hearthwarden (+100) and Lord of the Pyre
   (+200), once each (`chaos_referral_tiers`, `Ref.checkTiers` after a payment; titles from the rows). The client lists
-  them under the milestones ("And with friends at level 150 (n so far): ..."). The referral link is shown on the
+  them under the milestones ("And with friends at level 250 (n so far): ..."). The referral link is shown on the
   website too (The World > Creator Codes, `register.php?ref=CODE`).
 - **Client** (`game_referral`, opcode 220 `ChaosOpcodes.referral`; `open` / `sync` / `enter {code}` out, `status` /
   `message` back): the code with Copy code, what both sides get, the code box while the account may enter one (or who
@@ -3425,7 +3429,7 @@ the new account's first character levels. Approved by the owner. Nothing in it g
 ## Creator codes (`creator_codes.lua`, `creator_codes_core.lua`, `creator_codes_config.lua`, `sql/chaos_creator_codes.sql`; website `creator_lib.php`, `pages/creator.php`)
 
 A streamer or content creator gets a code; a donor picks it on the website; for `supportDays` (30) every donation of that
-account gives the creator `sharePct` (5, a placeholder) % of the donation's coins (the pack's coins, not its bonus), as
+account gives the creator `sharePct` (10, decided 2026-10-14, docs/PRICES.md) % of the donation's coins (the pack's coins, not its bonus), as
 Chaos Coins in game. The donor's pack is never reduced. Owner decision 2026-10-13: paid in coins in game, not money.
 
 - **Codes** are made on the website by an administrator (an admin panel account with a character of group `adminGroup`,
@@ -3466,7 +3470,7 @@ log in.
 - The transfer itself is the website's: `players.account_id` changes while the character is offline and locked; the
   character leaves its guild; everything it carries goes with it (items, depot, houses it owns). A referral link does
   not follow it (the referral program tracks a character by the referred account).
-- Numbers (`feePct` 8, a placeholder in the 5-10 range; 1-7 days; `minPrice` 100; `minLevel` 50; the bid step; the snipe
+- Numbers (`feePct` 10, decided 2026-10-14 at the top of the approved 5-10 range, docs/PRICES.md; 1-7 days; `minPrice` 100; `minLevel` 50; the bid step; the snipe
   minutes; `chargebackDays` 180) are in `bazaar_config.lua`, which the website reads. `ChaosBazaarCore.validate` refuses
   a fee outside 5-10 % or other days (startup and test).
 - **Tests:** `tests/bazaar_test.lua` (config, fee, step, the lock against a mocked engine: active / settling locked,
@@ -7971,7 +7975,7 @@ Coins back only**: the titles Kindled (1), Ash-Touched (5), Emberwake (18), Smou
 Herald (28), Cinderborn (35), Flamebound (38), Cinderlord (42) and Ashen Sovereign (48), the outfit shaders Ash Drift
 (10, shaders.xml id 25) and Cinder Crown (30, id 26), the Cinderwrought name plate frame (40), the Everblight outfit (15)
 and its addons (32, 45), the Cinderfall Gate portal style (25), the Magma Skull mount (50) and 10 Chaos Coins on each of
-the other 32 tiers (320 back, less than the 1000 the pass costs). No gold, potions, experience or gear on the premium
+the other 32 tiers (320 back, less than the 600 the pass costs). No gold, potions, experience or gear on the premium
 track: the validator (`ChaosSeasonPassCore.validate`, run at startup and by the test) refuses any premium reward whose
 kind is not in `P.PREMIUM_KINDS` (coins and the cosmetic kinds), any item but gold and potions on the free track (no
 orbs, gems, keys, experience potions, stamina or gear) and pack-only kinds on the tracks. The two shaders and the frame
@@ -7982,19 +7986,19 @@ are new art of this season, sold nowhere: the shaders are `chaos_ash_drift` / `c
 `game_nameplate/images/plate_cinderwrought.png` from `client/tools/gen_nameplate_art.py`; shown through the pass's own
 frame switch). **Late buyers** lose nothing: buying the premium track (or a pack that holds it) claims every premium
 reward of the tiers already reached at once (`P.premiumBacklog`, `SP.claimPremiumBacklog`; an account that got it as a
-gift while offline gets them at its next login). The price, 1000 Chaos Coins, is a placeholder (docs/OWNER_TODO.md). Items go to the character
+gift while offline gets them at its next login). The price, 600 Chaos Coins, was decided 2026-10-14 (docs/PRICES.md). Items go to the character
 that claims (refused without room: the claim is undone and stays claimable); coins to the account; outfits, mounts,
 titles and portal styles to every character of the account at once and to the others at login, kept after the
 season. Claim all claims everything it can and leaves items without room for later.
 
-**Premium and season packs.** The premium pass costs 1000 Chaos Coins, once per account and season. Three packs, each
+**Premium and season packs.** The premium pass costs 600 Chaos Coins, once per account and season. Three packs, each
 holding the lower ones, only while the season runs, once per account:
 
 | Pack | Price | Holds |
 |---|---|---|
-| Ember | 600 | Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, the Arboreal transmog set |
-| Blaze | 1800 | Ember, the premium pass, Doom Knight outfit and addons, Flamesteed mount, Pyre Gate portal style |
-| Inferno | 3200 | Blaze, Chaos Acolyte outfit and addons, Wrathfire Pegasus mount, title Inferno-Crowned (fire red), 500 Chaos Coins, 10 tier skips |
+| Ember | 500 | Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, the Arboreal transmog set |
+| Blaze | 1500 | Ember, the premium pass, Doom Knight outfit and addons, Flamesteed mount, Pyre Gate portal style |
+| Inferno | 2500 | Blaze, Chaos Acolyte outfit and addons, Wrathfire Pegasus mount, title Inferno-Crowned (fire red), 500 Chaos Coins, 10 tier skips |
 
 A higher pack after a lower one costs the difference, and the premium pass bought on its own counts toward a pack that
 holds it (Ember + pass -> Blaze = 200). The store sells the pass and each pack at full price to an account that owns
@@ -9548,7 +9552,7 @@ Treasure goblins add their hoard in their death event, which the engine runs bef
   corpse decayed.
 
 ### Rarity Autoloot (store unlock)
-Store -> Convenience -> "Rarity Autoloot", 400 Chaos Coins, `kind = "unlock"`, `unlock = "rarityAutoloot"`, storage
+Store -> Convenience -> "Rarity Autoloot", 300 Chaos Coins, `kind = "unlock"`, `unlock = "rarityAutoloot"`, storage
 `Chaos.storage.shopRarityAutoloot` (7100106), handled by `S.unlocks` in `shop_services.lua`. Without it the two Rarity
 Autoloot selectors are greyed in the window with a store hint and the server ignores them (`F.autoloot` returns nil);
 glow, dim, rare-drop lines, rays and the loot channel are free. Checked in game: before buying, an Exotic sword off the list
@@ -10967,9 +10971,10 @@ Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, fro
 
 The Necromancer, the Monk and the Templar (docs/CLASSES.md, classes five to seven) need an account-wide unlock. The method is one
 table, `ChaosClassUnlocksCore.config` (`class_unlocks_core.lua`): per class key (`necromancer`, `monk`, `templar`) the vocation ids,
-`locked`, and the unlock methods (`store`, `level`, `quest`, `achievement`, or a new kind registered with `registerMethod`). Today
-the only method is the store: category "Classes" in `shop_config.lua`, offers `unlockNecromancer`, `unlockMonk`, `unlockTemplar`
-at 750 coins each (**placeholder prices**; the offer names and prices must match the config). `shop_services.lua` asks
+`locked`, and the unlock methods (`store`, `level`, `quest`, `achievement`, or a new kind registered with `registerMethod`). Two
+methods (decided 2026-10-14, docs/PRICES.md): `level = {min = 500}` (free for the whole account once any of its characters reaches
+level 500, checked at login and on level advance) and the store: category "Classes" in `shop_config.lua`, offers
+`unlockNecromancer`, `unlockMonk`, `unlockTemplar` at 500 coins each (the offer names and prices must match the config). `shop_services.lua` asks
 `ChaosClassUnlocks.storeUnlock` for these offers, so the purchase is written to `chaos_class_unlocks` at once (not the engine's
 account storage, which is only saved at server save).
 
@@ -13536,11 +13541,43 @@ points. Season 1:
 
 | Chapter | Goals (`chapters.s1`) | When it is written |
 |---|---|---|
-| I. The Ash Thickens | 150 characters reach level 100; 1,500 rifts sealed in tiers 1-5 | ash drifts and cracks around the capital's temple |
-| II. The Wound Beside the Walls | 30 world bosses; 800 rifts in tiers 6-10 | the Cinderscar Breach opens (levels 440-560); rubble near the temple |
-| III. Omens in the Ashfall | 120 Omen guardians; 300 rifts in tiers 11-14 | ward-fires (candles) around the temple |
-| IV. The Sepulchre Stirs | 40 Ashen Sepulchre clears; 25 Ascended Omens | the Ossuary Stair opens (levels 400-520) |
-| V. Embers Rekindled | 5 Cinderheart kills; 100 characters reach level 600; 10 invasions repelled | ash and rubble cleared, flowers: the capital rebuilt |
+| I. The Ash Thickens | 250 characters reach level 300; 1,200 rifts sealed in tiers 1-5 | ash drifts and cracks around the capital's temple |
+| II. The Wound Beside the Walls | 20 world bosses; 1,200 rifts in tiers 6-10 | the Cinderscar Breach opens (levels 440-560); rubble near the temple |
+| III. Omens in the Ashfall | 180 Omen guardians; 600 rifts in tiers 11-14 | ward-fires (candles) around the temple |
+| IV. The Sepulchre Stirs | 12 Ashen Sepulchre clears; 30 Ascended Omens | the Ossuary Stair opens (levels 400-520) |
+| V. Embers Rekindled | 10 Cinderheart kills; 80 characters reach level 600; 6 invasions repelled | ash and rubble cleared, flowers: the capital rebuilt |
+
+The story text and these sizes were approved on 2026-10-14 (owner delegated, docs/OWNER_TODO.md "Decided"). The
+Chronicler is Archivist Maelis (one name; she answers "chronicle" and "cronista", `archivist_maelis.lua`).
+
+**Goal sizes** (2026-10-14, after pack combat; computed, not measured). Assumptions: Season 1 starts with the launch
+(20 Nov) and ends 31 Jan (72 days); 150 online at the evening peak (the middle of the expected 100-300), about 2.5 x
+that many players a day and 13 x it in player-hours a day (1,950 at 150); the leveling model of "Pack combat (pace)"
+(level 300 in 3-7 hours of play, 600 in 20-45, 800 in about 40, 925+ in about 55-70; boosted about 40% less). Only
+the open chapter counts, so each goal counts what happens in its own window (a level goal counts characters that cross
+the level while the chapter is open). Target: each chapter takes days at any population of 100-300, the arc about 5-6
+weeks at 150, so a quieter server still finishes before the season ends.
+
+| Goal | Rate at 150 online (where it comes from) | Days at 150 | at 100 | at 300 |
+|---|---|---|---|---|
+| I: 250 reach level 300 | ~600 different players in the first 3 days, most pass 300 in 3-7 hours of play | ~2 | ~3 | ~1 |
+| I: 1,200 rifts tiers 1-5 | ~1,200 player-hours/day at levels 100-500, 15% in rifts, ~4.5 runs/h, 1.5 players a run: ~500/day | ~2.5 | ~3.5 | ~1.2 |
+| II: 20 world bosses | 4 spawns a day (every 6 h), ~85-100% killed; does not grow with players | ~5-6 | ~6 | ~5 |
+| II: 1,200 rifts tiers 6-10 | ~580 player-hours/day at 500-900, 20% in rifts, 4 runs/h, 1.5 a run: ~300/day | ~4 | ~6 | ~2 |
+| III: 180 Omens | rifts 6+ give 2 + (tier - 6) fragments each finisher, 60 a key: ~65 keys/day, about half used at 800+ | ~6 | ~8 | ~3 |
+| III: 600 rifts tiers 11-14 | 20-60 characters at 925+, ~1.5 h/day there, 4 runs/h, 1.7 a run: ~120/day | ~5 | ~7.5 | ~2.5 |
+| IV: 12 Sepulchre clears | 80-120 characters at 800+, groups of 5-15, about one clear per group a week: ~8/week | ~10 | ~17 | ~4-5 |
+| IV: 30 Ascended | ~33 shards/day (40% per Omen finisher, 4-10% per high rift), 4 a sigil, some fails: ~5/day | ~6 | ~9 | ~3 |
+| V: 10 Cinderheart | every finisher of an Ascended kill gets a relic, 3 kinds a sigil; level 1000; ~1-2 kills/day | ~7 | ~10 | ~4 |
+| V: 80 cross level 600 | late joiners, casual players and alts crossing 600 in weeks 4-6: ~6-10/day | ~10 | ~14 | ~5 |
+| V: 6 invasions repelled | 2 scheduled a week + 35% of days a random one = ~4.5/week, ~80% repelled | ~12 | ~13 | ~11 |
+
+The slowest goal closes a chapter: I ~2.5 days, II ~5-6 (world bosses), III ~6, IV ~10 (the raid), V ~12-14
+(invasions): about 37 days at 150 online (written around 27 Dec), about 50 at 100 (9 Jan), about 28 at 300. The
+earlier sizes left chapter I to the first hours (150 characters at level 100 in under an hour of play each) and IV and V
+to 4-5 weeks each (40 raid clears at ~8 a week, 10 invasions at ~3.5 a week). Players can keep Omen keys and sigils
+from the chapter before; that only speeds a chapter up. Recheck after beta weekend 2 (`/chronicle` shows the progress)
+and before the season starts; a target is one number in `chapters.s1`.
 
 **Sources** (no content script was edited; each hook is wrapped once through `ChaosWrapChain`, `wrapchain_core.lua`,
 with the same contract built in when that file is absent):
@@ -13568,10 +13605,15 @@ player's language (`Chaos.broadcast` of i18n.lua when loaded, else English) and 
 kind `chronicle`, when discord.lua is loaded and its config switches the kind on) go out. After a season ends its world
 stays until the next season starts, which starts from nothing.
 
-**The areas.** `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (waste, 128x104, levels 440-560) and
-`chronicle_ossuary_stair.json` (crypt, 120x104, levels 400-520), planned with the area planner; the owner places them
-(docs/OWNER_TODO.md) and sets `areas[i].at` (the `place --at`) and `gate` (the world tile of the portal). Until then
-the chapter opens them in the story only: the window says so and the console names the missing setting. Their exit
+**The areas.** `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (waste, 128x104, levels 440-560, origin
+14910, 15140, 7) and `chronicle_ossuary_stair.json` (crypt, 120x104, levels 400-520, origin 15100, 15140, 9), planned
+with the area planner. Install step `contentareas` (`tools/install_content_areas.py`) places both at their origins with
+their spawns, as fixed areas: no hunt teleport (decided 2026-10-14). `areas[i].at` is that origin and `gate` the world
+tile of the portal: the upper hall of the capital's temple (Mirewake, temple 32957, 32076, 7; its stairs lead up to
+floor 6), the Breach at 32962, 32076, 6 and the Ossuary Stair at 32962, 32079, 6, on the east side of the hall, clear
+of every runtime portal around the temple (those are on floor 7). Checked on the base map: plain floor with no item,
+and the hall stays one connected walkable area with the three portals (with the Memorial's). Without `at` and `gate` a
+chapter opens an area in the story only: the window says so and the console names the missing setting. Their exit
 portal (47951) leads to the temple. `tools/chronicle_areas_test.py` checks the plans (validate, compile, QA) and the
 arrival offsets of the config.
 
@@ -13597,7 +13639,8 @@ Owner-approved design (2026-10-14): a plaza in the capital with statues and memo
 firsts, its top records and the fallen Hardcore characters, each only with the player's consent, refreshed each season
 and archived on the website (page.php?plugin=chaos&p=memorial). Pure logic `memorial_core.lua`
 (`tests/memorial_test.lua`, also `memorial.lua` on a mocked engine); numbers `memorial_config.lua`. Tables
-`chaos_memorial_optin`, `chaos_memorial_entries`. Action ids 47930-47939, modal window 7480.
+`chaos_memorial_optin`, `chaos_memorial_entries`. Action ids 47940-47949 (they were 47930-47939, the hunt teleports'
+block: moved 2026-10-14), modal window 7480.
 
 **Entries** (every `refreshSeconds`, 600, for the season key: "s<id>", else the quarter, as the records): realm firsts
 from `chaos_records_firsts` (one row per member), the season's best of each board of `boards` from `chaos_records`
@@ -13612,8 +13655,11 @@ naming them; a record whose holder hides stays, without the name; a hidden fall 
 
 **The plaza.** `server/tools/areaplan/chronicle/capital_memorial.json` (hall, 48x40, z 7 with a flat roof, every zone
 protected, no monsters): the hall of firsts (west), the hall of records (east), the garden of the fallen (north), the
-plaza with the Memorial stone, the approach with the exit portal. The owner places it in the capital and sets
-`plaza.at`. `memorial.lua` places 8 guardian statues (8836, 8837), 8 statues (1443, 1448, 1450), 12 grave stones
+plaza with the Memorial stone, the approach with the exit portal. Install step `contentareas` places it at its origin
+(14800, 14800, 7) as a fixed area; `plaza.at` is that origin (decided 2026-10-14). The way in: `memorial.lua` puts a
+magic forcefield (1387, action id 47944) on `plaza.portal`, 32956, 32080, 6 in the upper hall of the capital's temple
+(west of the Chronicle's gates), at startup and at every tick when missing; stepping in leads to the plaza's arrival
+(`plaza.at` + `plaza.arrival`, 23, 33); the plaza's exit portal leads to the temple. `memorial.lua` places 8 guardian statues (8836, 8837), 8 statues (1443, 1448, 1450), 12 grave stones
 (1407, 1408) and the stone circle (1421) on the plan's `slots`, each with its entry as the look text (item
 description, at most 255 characters); an empty slot holds nothing. More entries than statues: the pages turn every
 `rotateSeconds` (600); the stone says the page. `tools/chronicle_areas_test.py` checks that every slot is free floor

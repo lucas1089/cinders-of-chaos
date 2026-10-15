@@ -3,7 +3,9 @@
 of one alcove module and an end with its temple teleport, a tiny compiled area): the dry run writes nothing; the
 install grows the room by copying the module (no teleport in the copies), moves the end with its teleport
 destination, places the area, adds its spawns and two display monsters per slot, writes the places file; a second run
-changes nothing; a taken target tile, an area on map tiles and a changed plan are refused. No base server needed."""
+changes nothing; a taken target tile, an area on map tiles and a changed plan are refused; a fixed area (the
+chronicle folder) is placed at its origin with its spawns but gets no teleport and no places line; a fixed plan without
+an origin is left out; two areas on one tile are refused. No base server needed."""
 import hashlib, json, os, shutil, struct, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -120,6 +122,7 @@ def digest(srv):
 
 def run(srv, plans, comp, **kw):
     log = []
+    kw.setdefault('fixed_dirs', ())
     res = T.run(os.path.join(srv, 'data'), plans_dir=plans, config=CFG, compiled=comp, log=log.append, **kw)
     return res, log
 
@@ -177,7 +180,7 @@ def main():
         # a reorder moves the display monsters
         cfg2 = dict(CFG, plans=[CFG['plans'][1], CFG['plans'][0]])
         make_area(comp['tiny_hunt'], 'tiny_hunt', (1000, 1000, 7))
-        T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg2, compiled=comp, log=lambda s: None)
+        T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg2, compiled=comp, log=lambda s: None, fixed_dirs=())
         sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
         check('centerx="15" centery="10" centerz="6" radius="1" chaoshunt="other_hunt"' in sp
               and sp.count('chaoshunt=') == 4, 'reorder: display spawns follow the slots')
@@ -218,7 +221,8 @@ def main():
                   open(os.path.join(plans, 'late_hunt.json'), 'w'))
         comp2['late_hunt'] = comp['late_hunt']
         try:
-            T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg_small, compiled=comp2, log=lambda s: None)
+            T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg_small, compiled=comp2, log=lambda s: None,
+                  fixed_dirs=())
             check(False, 'too few slots refused')
         except T.InstallError as e:
             check('too few' in str(e), 'too few slots: %s' % e)
@@ -227,6 +231,43 @@ def main():
         res, _log = run(srv, plans, comp, only=['other_hunt'])
         check(res['areas'] == {'tiny_hunt': 'skipped', 'other_hunt': 'todo'} and list(res['slots']) == ['other_hunt'],
               '--only: %s' % res)
+        # fixed areas (the chronicle folder): placed at their origin with spawns, no teleport, no places line
+        srv, plans, comp = setup(os.path.join(root, 'g'))
+        fixed = os.path.join(root, 'g', 'fixed')
+        os.makedirs(fixed)
+        json.dump({'id': 'story_area', 'name': 'Story Area', 'level': [400, 500], 'origin': {'x': 1300, 'y': 1000, 'z': 7}},
+                  open(os.path.join(fixed, 'story_area.json'), 'w'))
+        json.dump({'id': 'no_origin', 'name': 'No Origin', 'level': [1, 50]}, open(os.path.join(fixed, 'no_origin.json'), 'w'))
+        comp['story_area'] = os.path.join(root, 'g', 'out', 'story_area')
+        make_area(comp['story_area'], 'story_area', (1300, 1000, 7))
+        res, log = run(srv, plans, comp, fixed_dirs=(fixed,))
+        check(res['areas'].get('story_area') == 'todo' and 'no_origin' not in res['areas'], 'fixed area placed: %s' % res['areas'])
+        check('story_area' not in res['slots'] and len(res['slots']) == 2, 'no teleport for a fixed area: %s' % res['slots'])
+        check(any('no_origin: no origin' in l for l in log), 'a fixed plan without an origin is logged')
+        m = otbm.load_otbm(os.path.join(srv, 'data', 'world', 'w.otbm'))
+        check(m.find(1300, 1000, 7) >= 0, 'the fixed area is on the map')
+        sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+        check(sp.count('chaoscontent="story_area"') == 1 and 'chaoshunt="story_area"' not in sp, 'its spawns, no display')
+        pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
+        check('story_area' not in pl, 'not in the places file')
+        once = digest(srv)
+        res, _log = run(srv, plans, comp, fixed_dirs=(fixed,))
+        check(digest(srv) == once and res['areas']['story_area'] == 'done', 'fixed area: a second run changes nothing')
+        # two areas on one tile
+        srv, plans, comp = setup(os.path.join(root, 'h'))
+        fixed = os.path.join(root, 'h', 'fixed')
+        os.makedirs(fixed)
+        json.dump({'id': 'story_area', 'name': 'Story Area', 'level': [400, 500], 'origin': {'x': 1001, 'y': 1000, 'z': 7}},
+                  open(os.path.join(fixed, 'story_area.json'), 'w'))
+        comp['story_area'] = os.path.join(root, 'h', 'out', 'story_area')
+        make_area(comp['story_area'], 'story_area', (1001, 1000, 7))
+        before = digest(srv)
+        try:
+            run(srv, plans, comp, fixed_dirs=(fixed,))
+            check(False, 'overlapping areas refused')
+        except T.InstallError as e:
+            check('overlap' in str(e), 'overlap: %s' % e)
+        check(digest(srv) == before, 'overlap: nothing written')
     finally:
         shutil.rmtree(root, ignore_errors=True)
     print('install_content_areas_test: %s' % ('ok' if not failed else '%d failed' % failed))

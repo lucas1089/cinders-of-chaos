@@ -99,7 +99,7 @@ end
 -- they come from NPC vendors and crafting (data/lib/chaos_rune_supply.lua, the vendor price per rune). A pack's coins =
 -- vendor gold x count / RUNE_GOLD_PER_COIN, minus the pack discount, rounded up. RUNE_GOLD_PER_COIN = 1000 is about the
 -- rate the store's potion packs imply (100 Great Mana Potions 15 coins = 12,000 gold at the NPC: 800 gold a coin;
--- Great Spirit 1,267, Ultimate Health 1,550). PLACEHOLDERS (docs/OWNER_TODO.md). Delivery: stacks of 100 into the
+-- Great Spirit 1,267, Ultimate Health 1,550). Kept 2026-10-14 (docs/PRICES.md). Delivery: stacks of 100 into the
 -- backpack, the rest into the store inbox (overflowInbox, shop.lua).
 local RUNE_GOLD_PER_COIN = 1000
 local RUNE_DISCOUNT = {[100] = 0, [250] = 5, [500] = 10, [25] = 0, [50] = 5}
@@ -508,32 +508,33 @@ return {
 				-- the Temple Teleport Scroll is no longer sold: every character has the free Town Portal (townportal.lua);
 				-- scrolls bought earlier keep working (shop_services.lua)
 				-- store pouches (pouches.lua, pouches_config.lua): items, one of each per character, store-bound
-				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 350, name = "Loot Bag",
+				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 250, name = "Loot Bag",
 					description = "Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."},
-				{kind = "service", service = "pouch", pouch = "orbs", icon = 32082, cost = 300, name = "Orbs Pouch",
+				{kind = "service", service = "pouch", pouch = "orbs", icon = 32082, cost = 200, name = "Orbs Pouch",
 					description = "40 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried."},
-				{kind = "service", service = "pouch", pouch = "keys", icon = 32083, cost = 250, name = "Rift Key Pouch",
+				{kind = "service", service = "pouch", pouch = "keys", icon = 32083, cost = 150, name = "Rift Key Pouch",
 					description = "30 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."},
 				-- the infinite food (store_food.lua, store_food_config.lua): one per character, store-bound, never used up.
-				-- PLACEHOLDER PRICE (150), to be decided (docs/OWNER_TODO.md)
-				{kind = "service", service = "storeFood", icon = 32084, cost = 150, name = "Everfull Ration",
+				-- price decided 2026-10-14 (docs/PRICES.md)
+				{kind = "service", service = "storeFood", icon = 32084, cost = 100, name = "Everfull Ration",
 					description = "Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."},
-				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 500, name = "Auto Seller",
+				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 400, name = "Auto Seller",
 					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
-				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 400, name = "Rarity Autoloot",
+				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 300, name = "Rarity Autoloot",
 					description = "Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."}
 			}
 		},
 		{
 			-- class unlocks (class_unlocks.lua): account-wide; offer names and prices must match
-			-- ChaosClassUnlocksCore.config (class_unlocks_core.lua). PLACEHOLDER PRICES (750 each), to be decided.
+			-- ChaosClassUnlocksCore.config (class_unlocks_core.lua). 500 each, or free at level 500 (decided 2026-10-14,
+			-- docs/PRICES.md).
 			name = "Classes", icon = {item = 2523},
 			offers = {
-				{kind = "unlock", unlock = "unlockNecromancer", icon = 2436, cost = 750, name = "Necromancer",
+				{kind = "unlock", unlock = "unlockNecromancer", icon = 2436, cost = 500, name = "Necromancer",
 					description = "Unlocks the Necromancer class (Lich, Bone Lord) for every character of your account."},
-				{kind = "unlock", unlock = "unlockMonk", icon = 7422, cost = 750, name = "Monk",
+				{kind = "unlock", unlock = "unlockMonk", icon = 7422, cost = 500, name = "Monk",
 					description = "Unlocks the Monk class (Shadowfist, Iron Sage) for every character of your account."},
-				{kind = "unlock", unlock = "unlockTemplar", icon = 2523, cost = 750, name = "Templar",
+				{kind = "unlock", unlock = "unlockTemplar", icon = 2523, cost = 500, name = "Templar",
 					description = "Unlocks the Templar class (Inquisitor, Sentinel) for every character of your account."}
 			}
 		},

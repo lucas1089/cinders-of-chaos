@@ -9,7 +9,7 @@
 -- it within `pollSeconds` (pack coins + pack bonus + the first-purchase bonus) in one transaction and marks it
 -- 'credited'. The server decides every number here; the website and the payment worker only read them.
 --
--- usdCents: the base price of the pack in US dollar CENTS (PLACEHOLDERS, the owner sets them before launch).
+-- usdCents: the base price of the pack in US dollar CENTS (decided 2026-10-14, owner delegated; docs/PRICES.md).
 -- Every other price is derived from it in code (ChaosPayCore.priceCents, lib.php chaos_pay_price_cents), so the two
 -- can never drift: PayPal charges usdCents in USD, Pix charges usdCents * brlPerUsd in BRL.
 -- bonusPct: extra coins of the pack in %. once = true: one per account (the starter pack).
@@ -17,20 +17,21 @@
 -- coins (owner approval 2026-10-13); maxBonus caps it ("Limite a 1000", 2026-10-13): double up to +1000 extra, a pack of
 -- more than 1000 coins gets +1000 flat. "First" = the account has no credited pack yet (status 'credited' stays after a
 -- refund or chargeback after crediting, so a reversal never makes the next pack "first" again).
--- Pack ladder (PLACEHOLDERS, docs/OWNER_TODO.md): an entry pack for about R$ 10 by Pix (199 x brlPerUsd 5 = R$ 9,95),
--- the four packs, and the Vault as the anchor (+30%). Coins per US$ (with the pack bonus): 40, 50, 55, 58, 67, 72.
+-- Pack ladder (decided 2026-10-14, owner delegated; docs/PRICES.md): one coin is about R$ 0,10. Every USD price ends in
+-- .98 so that x brlPerUsd 5 gives a round Pix price: R$ 9,90, 24,90, 49,90, 99,90, 249,90, 499,90 and the Starter
+-- R$ 14,90. Bonus 0 / 0 / 5 / 10 / 15 / 20%: coins per R$ (with the bonus) 10.1, 10.0, 10.5, 11.0, 11.5, 12.0.
 return {
 	currency = "USD",
 	pollSeconds = 30,
 	packs = {
-		{key = "coins80", name = "Handful of Coins", coins = 80, bonusPct = 0, usdCents = 199},
-		{key = "coins250", name = "Pouch of Coins", coins = 250, bonusPct = 0, usdCents = 499},
-		{key = "coins750", name = "Sack of Coins", coins = 750, bonusPct = 10, usdCents = 1499},
-		{key = "coins1500", name = "Chest of Coins", coins = 1500, bonusPct = 15, usdCents = 2999},
-		{key = "coins4000", name = "Hoard of Coins", coins = 4000, bonusPct = 25, usdCents = 7499},
-		{key = "coins10000", name = "Vault of Coins", coins = 10000, bonusPct = 30, usdCents = 17999},
-		-- one-time starter pack: 250 coins and 250 more for the price of a small pack
-		{key = "starter", name = "Starter Coins", coins = 250, bonusCoins = 250, usdCents = 299, once = true, starter = true}
+		{key = "coins100", name = "Handful of Coins", coins = 100, bonusPct = 0, usdCents = 198},
+		{key = "coins250", name = "Pouch of Coins", coins = 250, bonusPct = 0, usdCents = 498},
+		{key = "coins500", name = "Sack of Coins", coins = 500, bonusPct = 5, usdCents = 998},
+		{key = "coins1000", name = "Chest of Coins", coins = 1000, bonusPct = 10, usdCents = 1998},
+		{key = "coins2500", name = "Hoard of Coins", coins = 2500, bonusPct = 15, usdCents = 4998},
+		{key = "coins5000", name = "Vault of Coins", coins = 5000, bonusPct = 20, usdCents = 9998},
+		-- one-time starter pack: 250 coins and 250 more for a little more than a small pack
+		{key = "starter", name = "Starter Coins", coins = 250, bonusCoins = 250, usdCents = 298, once = true, starter = true}
 	},
 	firstPurchase = {bonusPct = 100, maxBonus = 1000},
 

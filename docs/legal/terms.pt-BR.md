@@ -60,7 +60,8 @@ administrador que não aplicou a punição. Há um recurso por punição, e a re
 
 ## 6. O que é proibido
 
-- Usar bots, macros, programas de trapaça ou clientes modificados ou de terceiros.
+- Usar bots, macros, programas de trapaça ou clientes modificados ou de terceiros. O helper do cliente oficial é
+  permitido enquanto você joga; deixá-lo rodando por horas sem ninguém no teclado conta como uso de bot.
 - Usar bugs ou falhas para ganhar vantagem, ou divulgá-los, em vez de avisar a equipe. Um bug que você mesmo informa
   nunca é punido.
 - Duplicar itens ou moedas, atacar o servidor, tentar invadir contas ou sobrecarregar o serviço.

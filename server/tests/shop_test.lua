@@ -192,18 +192,18 @@ local coins = dofile("data/scripts/chaos/shop_coins_config.lua")
 local packs = {}
 for _, p in ipairs(coins.packs) do packs[p.key] = p end
 eq(K.packCredit(packs.coins250, false, coins).total, 250, "250")
-eq(K.packCredit(packs.coins750, false, coins).total, 825, "750 +10%")
-eq(K.packCredit(packs.coins1500, false, coins).total, 1725, "1500 +15%")
-eq(K.packCredit(packs.coins4000, false, coins).total, 5000, "4000 +25%")
-eq(K.packCredit(packs.coins750, true, coins).total, 1575, "first purchase: double coins (+100% of the pack)")
-eq(K.packCredit(packs.coins80, false, coins).total, 80, "entry pack 80")
-eq(K.packCredit(packs.coins10000, false, coins).total, 13000, "Vault: 10000 +30%")
+eq(K.packCredit(packs.coins500, false, coins).total, 525, "500 +5%")
+eq(K.packCredit(packs.coins1000, false, coins).total, 1100, "1000 +10%")
+eq(K.packCredit(packs.coins2500, false, coins).total, 2875, "2500 +15%")
+eq(K.packCredit(packs.coins500, true, coins).total, 1025, "first purchase: double coins (+100% of the pack)")
+eq(K.packCredit(packs.coins100, false, coins).total, 100, "entry pack 100")
+eq(K.packCredit(packs.coins5000, false, coins).total, 6000, "Vault: 5000 +20%")
 eq(coins.firstPurchase.bonusPct, 100, "first purchase doubles")
 eq(coins.firstPurchase.maxBonus, 1000, "at most 1000 extra (owner: Limite a 1000)")
-eq(K.packCredit(packs.coins1500, true, coins).firstBonus, 1000, "1500 pack: +1000 flat")
-eq(K.packCredit(packs.coins10000, true, coins).total, 13000 + 1000, "Vault: +1000 flat")
-eq(K.packCredit(packs.coins750, true, coins).firstBonus, 750, "750 pack: doubled")
-eq(K.packCredit({coins = 1000}, true, coins).firstBonus, 1000, "1000: doubled, the cap")
+eq(K.packCredit(packs.coins2500, true, coins).firstBonus, 1000, "2500 pack: +1000 flat")
+eq(K.packCredit(packs.coins5000, true, coins).total, 6000 + 1000, "Vault: +1000 flat")
+eq(K.packCredit(packs.coins500, true, coins).firstBonus, 500, "500 pack: doubled")
+eq(K.packCredit(packs.coins1000, true, coins).firstBonus, 1000, "1000: doubled, the cap")
 eq(K.packCredit(packs.starter, true, coins).total, 500, "starter: no first purchase bonus")
 
 -- ------------------------------------------------------------------ shop.lua with a mocked engine and database
@@ -665,14 +665,14 @@ eq(DB.coins[A.account], beforeTurn + DB.gifts[gifts0 + 1].price, "coins back"); 
 -- <<< Seasons
 
 -- coin orders: pack bonus, first purchase bonus once, starter once, unknown pack rejected
-DB.orders = {{account = 77, pack = "coins750", status = "paid"}, {account = 77, pack = "coins750", status = "paid"},
+DB.orders = {{account = 77, pack = "coins500", status = "paid"}, {account = 77, pack = "coins500", status = "paid"},
 	{account = 77, pack = "starter", status = "paid"}, {account = 77, pack = "starter", status = "paid"}, {account = 77, pack = "nope", status = "paid"}}
 Shop.processOrders()
-eq(DB.orders[1].total, 1575, "first pack with the first purchase bonus (double)"); eq(DB.orders[2].total, 825, "second pack without")
+eq(DB.orders[1].total, 1025, "first pack with the first purchase bonus (double)"); eq(DB.orders[2].total, 525, "second pack without")
 eq(DB.orders[3].total, 500, "starter"); eq(DB.orders[4].status, "rejected", "second starter rejected")
-eq(DB.orders[5].status, "rejected", "unknown pack"); eq(DB.coins[77], 1575 + 825 + 500, "coins credited")
+eq(DB.orders[5].status, "rejected", "unknown pack"); eq(DB.coins[77], 1025 + 525 + 500, "coins credited")
 Shop.processOrders()
-eq(DB.coins[77], 2900, "credited once")
+eq(DB.coins[77], 2050, "credited once")
 -- refunded on the website between the crediting step's SELECT and its locked re-read: nothing credited
 DB.orders[#DB.orders + 1] = {account = 77, pack = "coins250", status = "paid"}
 local realSelect = Chaos.select
@@ -682,7 +682,7 @@ Chaos.select = function(q, cols)
 end
 Shop.processOrders()
 Chaos.select = realSelect
-eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2900, "no coins for a refunded order")
+eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2050, "no coins for a refunded order")
 
 -- Chaos Coin gifts through shop.lua: hold, cap, ban, ledger
 do

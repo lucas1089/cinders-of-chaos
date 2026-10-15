@@ -10,8 +10,9 @@
 return {
 	enabled = true,
 
-	-- PLACEHOLDER (docs/OWNER_TODO.md "Character Bazaar"): the house fee in % of the final price, 5 to 10
-	feePct = 8,
+	-- the house fee in % of the final price, a coin sink (decided 2026-10-14, owner delegated, top of the approved 5-10
+	-- range; docs/PRICES.md)
+	feePct = 10,
 	minDays = 1, -- an auction runs 1 to 7 days (the seller picks)
 	maxDays = 7,
 	minPrice = 100, -- the lowest minimum bid, in Chaos Coins

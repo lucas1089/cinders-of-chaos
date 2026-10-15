@@ -21,7 +21,8 @@ eq(cfg.classes.monk.vocations[1], 17, "monk 17"); eq(cfg.classes.monk.vocations[
 eq(cfg.classes.templar.vocations[1], 23, "templar 23"); eq(cfg.classes.templar.vocations[3], 25)
 for key, class in pairs(cfg.classes) do
 	eq(class.locked, true, key .. " locked")
-	eq(class.unlock.store.cost, 750, key .. " placeholder price")
+	eq(class.unlock.store.cost, 500, key .. " store price")
+	eq(class.unlock.level and class.unlock.level.min, 500, key .. " free at level 500")
 	eq(type(class.icon), "number", key .. " icon")
 end
 eq(cfg.classes.necromancer.unlock.store.offer, "unlockNecromancer")
@@ -40,7 +41,7 @@ eq(K.classOfOffer("autoSeller"), nil, "other unlocks are not classes")
 -- ------------------------------------------------------------------ decision and bypass
 local ok, msg, key = K.decide(23, {}, 1, 1)
 eq(ok, false, "templar locked"); eq(key, "templar")
-assert(msg:find("Templar is locked") and msg:find("store") and msg:find("750"), "message names the store and price: " .. msg)
+assert(msg:find("Templar is locked") and msg:find("store") and msg:find("500"), "message names the store and price: " .. msg)
 eq(K.decide(24, {templar = true}, 1, 1), true, "unlocked templar -> inquisitor ok")
 eq(K.decide(24, {monk = true}, 1, 1), false, "another class's unlock does not count")
 eq(K.decide(4, {}, 1, 1), true, "warrior is never locked")
@@ -70,7 +71,11 @@ local st = {[9000] = 1}
 eq(K.autoUnlock("q", {level = 1, storage = function(k) return st[k] end}, multi), nil, "quest step 1 not yet")
 st[9000] = 2
 eq(K.autoUnlock("q", {level = 1, storage = function(k) return st[k] end}, multi), "quest", "quest done unlocks")
-eq(K.autoUnlock("templar", {level = 5000}), nil, "the store method never unlocks by itself")
+local storeOnly = {table = "t", bypass = cfg.bypass, login = cfg.login,
+	classes = {s = {name = "S", vocations = {60}, locked = true, unlock = {store = {offer = "unlockS", cost = 1}}}}}
+eq(K.autoUnlock("s", {level = 5000}, storeOnly), nil, "the store method never unlocks by itself")
+eq(K.autoUnlock("templar", {level = 499}), nil, "the live config: below level 500 only the store")
+eq(K.autoUnlock("templar", {level = 500}), "level", "the live config: level 500 unlocks for free")
 -- a new kind without touching the gate
 K.registerMethod("event", {describe = function(spec) return "win " .. spec.name end,
 	check = function(spec, facts) return facts.won == spec.name end})

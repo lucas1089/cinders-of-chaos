@@ -126,8 +126,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
                data/lib/chaos_hunt_places.lua tells hunt_teleports.lua where each teleport leads (README "Hunt
-               teleports"; after houses, before poi, which then sees the new spawns; with --dry-run it reads the real
-               map and writes nothing)
+               teleports"); also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
+               areas, the Capital Memorial's plaza) at their origins, without a teleport (their runtime portals are
+               in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
+               real map and writes nothing)
   poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
                service NPCs, hunting areas, boss places) from the installed map, items, NPCs and spawn data into
                data/chaos_poi.lua (README "Map markers"; after towns, npcnames and worldtexts, which rename what it reads)

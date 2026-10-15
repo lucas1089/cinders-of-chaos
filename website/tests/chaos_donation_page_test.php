@@ -59,7 +59,7 @@ $notices = static function (string $html): bool {
 $html = render();
 check($notices($html), 'notice (EN + PT) on the page');
 check(strpos($html, 'Voluntary donation: it helps keep the server running.') < strpos($html, 'chaos-donation-packs'), 'notice before the packs');
-check(strpos($html, 'R$ 74,95') !== false && strpos($html, 'US$ 14.99') !== false, 'both prices from the USD table');
+check(strpos($html, 'R$ 49,90') !== false && strpos($html, 'US$ 9.98') !== false, 'both prices from the USD table');
 check(strpos($html, '<form') === false && strpos($html, 'Log in to donate') !== false, 'no form when logged out');
 check(stripos(strip_tags($html), 'buy chaos coins') === false && stripos($html, '>Buy') === false, 'no "Buy" wording');
 check(strpos($html, 'thank-you for your donation') !== false, 'coins described as a thank-you');
@@ -83,14 +83,14 @@ $html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], '
 $sup = $db->rows('SELECT code_id FROM chaos_creator_support WHERE account_id = 77', array());
 check(count($sup) === 1, 'a code picked on the donate page (chaos_creator_set_support)');
 check(strpos($html, 'You now support Streamer') !== false, 'the pick is confirmed');
-$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix',
+$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins500', 'chaos_pay_method' => 'pix',
 	'chaos_creator_code' => 'NOPE1'));
 check(strpos($html, 'That is not an active creator code.') !== false, 'a bad code sent with a Donate button: refused');
 check(count($db->rows('SELECT id FROM chaos_coin_orders', array())) === 0, 'and no order is made');
 // a Pix donation from the page
-$html = render(array(), array('chaos_pay_csrf' => 'wrong', 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix'));
+$html = render(array(), array('chaos_pay_csrf' => 'wrong', 'chaos_pay_pack' => 'coins500', 'chaos_pay_method' => 'pix'));
 check(strpos($html, 'The form expired') !== false, 'CSRF token checked');
-$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix'));
+$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins500', 'chaos_pay_method' => 'pix'));
 check(strpos($html, 'Your donation: Sack of Coins') !== false && strpos($html, '0014br.gov.bcb.pix') !== false, 'Pix code shown');
 check(strpos($html, 'Cancel this donation') !== false, 'cancel link');
 check(strpos($html, 'chaos-donation-receipt-terms') === false, 'no receipt note before payment');
@@ -109,8 +109,8 @@ $html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], '
 check(order_status($db, 1) === 'cancelled' && strpos($html, 'This donation was cancelled') !== false, 'cancel POST with the token cancels');
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = 1");
 $html = render(array('order' => '1'));
-check(strpos($html, chaos_h('Thank you for your voluntary donation! You received 1575 Chaos Coins as a thank-you.')) !== false, 'thanks after the donation (EN)');
-check(strpos($html, chaos_h('Obrigado pela sua doação voluntária! Você recebeu 1575 Chaos Coins como agradecimento.')) !== false, 'thanks after the donation (PT)');
+check(strpos($html, chaos_h('Thank you for your voluntary donation! You received 1025 Chaos Coins as a thank-you.')) !== false, 'thanks after the donation (EN)');
+check(strpos($html, chaos_h('Obrigado pela sua doação voluntária! Você recebeu 1025 Chaos Coins como agradecimento.')) !== false, 'thanks after the donation (PT)');
 check(strpos($html, chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN)) !== false && strpos($html, chaos_h(CHAOS_LEGAL_DONATION_AFTER_PT)) !== false, 'after payment: a voluntary donation, not a purchase (EN + PT)');
 $db->exec("UPDATE chaos_coin_orders SET status = 'paid' WHERE id = 1");
 check(strpos(render(array('order' => '1')), chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN)) !== false, 'also while the coins are on their way');

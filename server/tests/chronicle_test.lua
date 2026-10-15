@@ -155,9 +155,9 @@ eq(#rows, 4, "record: two places per chapter with contributors")
 eq(rows[1].chapter .. ":" .. rows[1].place .. ":" .. rows[1].name, "1:1:Bryn", "record row")
 -- levels crossed
 local st2 = K.newState(cfg, "s1", 1, 0)
-eq(#K.levelsCrossed(cfg, st2, 99, 100), 1, "99 -> 100 crosses 100")
-eq(#K.levelsCrossed(cfg, st2, 100, 101), 0, "100 -> 101 crosses nothing")
-eq(#K.levelsCrossed(cfg, st2, 90, 99), 0, "below")
+eq(#K.levelsCrossed(cfg, st2, 299, 300), 1, "299 -> 300 crosses 300")
+eq(#K.levelsCrossed(cfg, st2, 300, 301), 0, "300 -> 301 crosses nothing")
+eq(#K.levelsCrossed(cfg, st2, 290, 299), 0, "below")
 st2.chapter = 5
 eq(K.levelsCrossed(cfg, st2, 590, 650)[1], 600, "chapter 5 counts level 600")
 -- the records' runs
@@ -198,7 +198,10 @@ eq(table.concat(back.closeAreas, ","), "cinderscar_breach,ossuary_stair", "reset
 eq(table.concat(back.removeSets, ","), "rebuilt,wardfires", "reset: every set goes")
 eq(#K.worldDiff(w5, w5).addSets + #K.worldDiff(w5, w5).removeSets, 0, "no diff from itself")
 -- areas
-check(K.arrivalOf(cfg.areas[1]) == nil, "an area without `at` has no arrival")
+check(K.arrivalOf({key = "y", arrival = {1, 1, 0}}) == nil, "an area without `at` has no arrival")
+for _, a in ipairs(cfg.areas) do
+	check(K.arrivalOf(a) and K.gateOf(a), a.key .. ": placed (at and gate set; install step contentareas puts the plan there)")
+end
 local placed = {key = "x", at = {x = 1000, y = 2000, z = 7}, arrival = {31, 40, 0}, gate = {x = 5, y = 6, z = 7}}
 local ar = K.arrivalOf(placed)
 check(ar and ar.x == 1031 and ar.y == 2040 and ar.z == 7, "arrival = at + offset")
@@ -247,7 +250,7 @@ for _, e in ipairs(pages) do
 	check(pt, e.id .. ": a Portuguese section")
 end
 check(pageIds["lore:chronicle_s1_2"] and pages[3].name == "II. The Wound Beside the Walls", "chapter pages in order")
-check(pages[3].sections[2].rows[1][1] == "World bosses slain" and pages[3].sections[2].rows[1][2] == "30", "the goals table")
+check(pages[3].sections[2].rows[1][1] == "World bosses slain" and pages[3].sections[2].rows[1][2] == "20", "the goals table")
 check(pages[3].sections[4].p[1]:find("The Cinderscar Breach opens %(level 400"), "what changes: the area")
 eq(CP.KIND.key, "chronicle", "the Lore kind")
 
@@ -402,6 +405,10 @@ print = function(s) logged[#logged + 1] = s end
 dofile("data/scripts/chaos/chronicle.lua")
 local X = ChaosChronicle
 local XC = Chaos.chronicleConfig -- the live config (tests shrink the targets)
+-- the mocked world has no tiles at the live spots: start with the areas not placed
+for _, a in ipairs(XC.areas) do
+	a.at, a.gate = nil, nil
+end
 check(registry.ChaosChronicleLogin and registry.ChaosChronicleExtended and registry.ChaosChronicleAdvance and
 	registry.ChaosChronicleLogout, "events registered")
 eq(registry.ChaosChronicleAdvance.t, "advance", "the advance event")
@@ -464,18 +471,18 @@ ChaosRecords.submit({board = "rift_tier", value = 2, members = {777}})
 eq(X.state.contrib[1][777].name, "Offline Olga", "a member by guid gets its name")
 eq(X.state.progress[1][2], 2, "rift goal met")
 selectRows = function() return {} end
--- levels: Hero 99 -> 100 counts once; the GM never
-registry.ChaosChronicleAdvance.onAdvance(gm, SKILL_LEVEL, 99, 100)
+-- levels: Hero 299 -> 300 counts once; the GM never
+registry.ChaosChronicleAdvance.onAdvance(gm, SKILL_LEVEL, 299, 300)
 eq(X.state.progress[1][1], 0, "staff never count")
-registry.ChaosChronicleAdvance.onAdvance(hero, SKILL_LEVEL, 99, 100)
-eq(X.state.progress[1][1], 1, "Hero reached 100")
-check(queried("INSERT IGNORE INTO `chaos_chronicle_levels`.-%(1, 501, 100%)"), "the level row")
-registry.ChaosChronicleAdvance.onAdvance(hero, SKILL_LEVEL, 99, 100) -- died and levelled again
+registry.ChaosChronicleAdvance.onAdvance(hero, SKILL_LEVEL, 299, 300)
+eq(X.state.progress[1][1], 1, "Hero reached 300")
+check(queried("INSERT IGNORE INTO `chaos_chronicle_levels`.-%(1, 501, 300%)"), "the level row")
+registry.ChaosChronicleAdvance.onAdvance(hero, SKILL_LEVEL, 299, 300) -- died and levelled again
 eq(X.state.progress[1][1], 1, "a character counts once")
-registry.ChaosChronicleAdvance.onAdvance(hero, SKILL_MAGLEVEL or 999, 99, 100)
+registry.ChaosChronicleAdvance.onAdvance(hero, SKILL_MAGLEVEL or 999, 299, 300)
 eq(X.state.progress[1][1], 1, "magic level is no level")
 local nb = #broadcasts
-registry.ChaosChronicleAdvance.onAdvance(mira, SKILL_LEVEL, 98, 101)
+registry.ChaosChronicleAdvance.onAdvance(mira, SKILL_LEVEL, 298, 301)
 -- chapter 1 written
 eq(X.state.chapter, 2, "chapter 1 written")
 check(broadcasts[nb + 1] and broadcasts[nb + 1]:find("first chapter of the Ashen Chronicle is written"), "the chapter broadcast")
@@ -493,7 +500,7 @@ for _, t in pairs(tiles) do
 end
 eq(ash, #XC.town.sets.ashfall.pieces, "the ashfall placed around the temple")
 check(discordRows[#discordRows].row.title:find("I%. The Ash Thickens"), "the Discord row of the chapter")
-check(queried("INSERT INTO `chaos_chronicle_progress`.-%(1, 1, 1, 'Characters reaching level 100', 2, 2, " .. clock), "progress rows")
+check(queried("INSERT INTO `chaos_chronicle_progress`.-%(1, 1, 1, 'Characters reaching level 300', 2, 2, " .. clock), "progress rows")
 check(queried("INSERT INTO `chaos_chronicle_chapters`.-%(1, 1, 'ash_thickens', 'I%. The Ash Thickens', 'I%. As Cinzas se Adensam', 'Ash drifts"),
 	"the chapter row for the website, with what changed")
 check(queried("INSERT INTO `chaos_chronicle_chapters`.-%(1, 3, 'omens_ashfall', 'III%. Omens in the Ashfall', '.-', '', '', 0%)"),

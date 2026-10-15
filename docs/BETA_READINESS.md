@@ -58,7 +58,7 @@ closed staff-only weekend.
 | S4 | **Discord announcements.** Webhooks in `/etc/chaos/discord.env`, `chaos-discord.timer`. Never run against Discord (#144). | Owner, Dev | Restart: "Server online" in the status channel. `chaos_discord_queue` rows sent. | Set `discord_config.lua` `enabled = false`. |
 | S5 | **First live run of never-live systems** on the beta host, before players. Table "Never run" below, rows marked S. | Dev | Each row works once on the beta server. | Switch off what fails. |
 | S6 | **Language option.** Client base patch 0053 was never run in a client. | Dev | Options > Interface > Language switches to pt-BR and stays after a restart. | Language link on the login screen. |
-| S7 | **Bot review and anti-cheat posture.** `failAction = "log"`, no automatic punishment. Helper rule 2.2 decision is open. GMs escalate (GM_HANDBOOK.md 3a). | Owner | Rules page shows the decision. `antibot_config.lua` `failAction` is `"log"`. | GMs escalate and give no penalty. |
+| S7 | **Bot review and anti-cheat posture.** `failAction = "log"`, no automatic punishment (decided 2026-10-14). Helper rule decided 2026-10-14: Rules 2.2 and 7.4, a warning first, then the botting ladder (GM_HANDBOOK.md 3a). | Owner pastes 2.2 / 7.4 on an installed site | Rules page shows lines 2.2 and 7.4. `antibot_config.lua` `failAction` is `"log"`. | GMs warn and escalate bans of 30 days or more. |
 | S8 | **Patch note and known issues.** `2026-10-31.md` exists. BETA.md section 8 is stale: pair 17 wings and the base rename are done. | Dev | The note opens at first login. The known issues list matches today. | |
 | S9 | **Telemetry on a live database.** Never run against one (#107, #143). | Dev | `chaos_telemetry_*` gets hourly rows. The website telemetry page draws. | Hunt tracker and logs only. |
 | S10 | **Bazaar and creator codes posture.** Both `enabled = true`. Lawyer review of Donation Terms section 7 is pending. Beta has only test coins. | Owner | Decide: test the Bazaar in the beta or switch both off. | `enabled = false` in both configs. |
@@ -70,7 +70,7 @@ closed staff-only weekend.
 
 | # | Item | Who | How to verify |
 |---|---|---|---|
-| L1 | **Real prices.** Coin packs `usdCents` and `brlPerUsd`, class unlock 750, season pass 1000 and packs, Bazaar fee 8%, creator share 5%, referral level 150. All placeholders. | Owner | Donation Terms tables match `shop_coins_config.lua`. |
+| L1 | **Real prices.** Decided 2026-10-14 (owner delegated): docs/PRICES.md. Packs R$ 9,90-499,90 (US$ 1.98-99.98), classes 500 or free at level 500, season pass 600, Bazaar 10%, creator 10%, referral level 250. Left: the lawyer review (L3). | Dev done, Owner reviews | Donation Terms tables match `shop_coins_config.lua` (filled in). |
 | L2 | **Payments live.** Mercado Pago and PayPal Business accounts, sandbox run of LAUNCH.md "Donations" step 6, then live credentials. Only the mock was ever run (#47). | Owner, Dev | Sandbox: Pix and PayPal credit coins, cancel, expiry, refund takes coins back, bad signature gets 401. Live: one real donation each, refunded. |
 | L3 | **Lawyer review** of all legal texts: Donation Terms section 7, minors, bans and refunds, LGPD transfers, bot review line. | Owner | Lawyer sign-off. `install_site.sh` rerun writes the new texts version. |
 | L4 | **Wipe** per BETA.md section 9. Final beta backup kept and restore-proven. Rehearse it once on a copy first. | Dev | Step 6 counts: 0 players, all accounts, 0 coins, 0 owned houses. |
@@ -78,7 +78,7 @@ closed staff-only weekend.
 | L6 | **Group content validated** in the beta. Raid, Omens and Cinderheart in party, battleground 5v5+, party rifts, Descent with friends, bounty and bestiary party credit, Scorched Marches. | Staff, Dev | Beta log results. ROADMAP rows updated. |
 | L7 | **Pace calibration.** Walk times from the beta hunt tracker; `pace_config.lua` `scale` (xp 1.3, loot 1.2 from the live check of 2026-10-14). Elementalist, Mystic, Berserker and Beastmaster model at 1.3-1.6x the median class: owner decision 2026-10-14, keep them as they are through the beta and decide from real data (options: less area damage, which also touches PvP, or a per-class experience factor). | Owner, Dev | Telemetry XP/h and gold/h per band and per class near the leveling model. |
 | L8 | **Classes in progress.** C2, C3, C4 polish, Necromancer effect skins. Decide what ships. | Owner | ROADMAP C rows say done or deferred. |
-| L9 | **Chronicle.** Approve the five chapters and goal numbers. Place the Breach, the Ossuary Stair and the Memorial plaza, or keep them closed. | Owner | `/chronicle` lists the placed areas. |
+| L9 | **Chronicle.** Story and goal sizes approved 2026-10-14 (owner delegated). The Breach, the Ossuary Stair and the Memorial plaza are placed by install step `contentareas`; gates in the capital temple's upper hall. Left: look at them in game. | Dev | `/chronicle` lists both areas as placed; `/memorial` says the plaza is placed; the three portals stand in the hall. |
 | L10 | **Release client.** Final `client_build`, updater on, dress rehearsal Thu 19 Nov (LAUNCH.md section 13). | Dev, staff | Section 13 steps all pass. |
 | L11 | **Gateways** if S1 slipped, and a new backend IP. | Owner, Dev | As S1. |
 

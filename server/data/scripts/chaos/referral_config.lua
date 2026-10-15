@@ -59,16 +59,17 @@ return {
 
 	-- the referrer's rewards, when the referred account's first character (the lowest character id of that account,
 	-- fixed when the link is accepted) reaches the level. coins: Chaos Coins to the referrer's account; title: account-wide.
-	-- l150: the main reward (owner decision 2026-10-13: a cosmetic when the friend's character reaches level X, X a
-	-- PLACEHOLDER of 150, docs/OWNER_TODO.md "Referral rewards"; the referred account must be minReferredAccountDays old).
+	-- l250: the main reward (owner decision 2026-10-13: a cosmetic when the friend's character reaches level X; X = 250
+	-- decided 2026-10-14, owner delegated, docs/PRICES.md: with pack combat level 150 took 1.5-3 hours, 250 about 3-6, a
+	-- friend who stayed; the referred account must be minReferredAccountDays old).
 	milestones = {
 		{key = "l50", level = 50, coins = 25, title = {key = "referral:torchbearer", text = "Torchbearer", color = "#e0a040"}},
-		{key = "l150", level = 150, coins = 50, title = {key = "referral:emberherald", text = "Ember Herald", color = "#e06030"}}
+		{key = "l250", level = 250, coins = 50, title = {key = "referral:emberherald", text = "Ember Herald", color = "#e06030"}}
 	},
 
 	-- tier rewards of the referrer: once `count` referred accounts reached the milestone `qualify` (paid, not void), a
 	-- title for the whole account and a few coins, once each. Cosmetics only.
-	qualify = "l150",
+	qualify = "l250",
 	tiers = {
 		{key = "t3", count = 3, coins = 50, title = {key = "referral:flamecaller", text = "Flamecaller", color = "#f08a3a"}},
 		{key = "t5", count = 5, coins = 100, title = {key = "referral:hearthwarden", text = "Hearthwarden", color = "#f0a050"}},

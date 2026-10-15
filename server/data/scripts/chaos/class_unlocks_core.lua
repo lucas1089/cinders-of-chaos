@@ -30,19 +30,21 @@ M.config = {
 	--               says why and how to unlock (the store works, so it can buy the unlock right there)
 	--   "kick":     the same window, then it is logged out after kickAfterMs
 	login = {mode = "restrict", kickAfterMs = 10000, remindMs = 300000},
-	-- PRICES ARE PLACEHOLDERS (750 Chaos Coins each), to be decided by the owner.
+	-- Decided 2026-10-14 (owner delegated; docs/PRICES.md): 500 Chaos Coins each in the store, or free for the whole
+	-- account once any of its characters reaches level 500 (about 10-25 hours of play): the store is a shortcut, never
+	-- the only way in.
 	classes = {
 		necromancer = {
 			name = "Necromancer", vocations = {20, 21, 22}, locked = true, icon = 2436, -- skull staff
-			unlock = {store = {offer = "unlockNecromancer", cost = 750}}
+			unlock = {store = {offer = "unlockNecromancer", cost = 500}, level = {min = 500}}
 		},
 		monk = {
 			name = "Monk", vocations = {17, 18, 19}, locked = true, icon = 7422, -- jade hammer
-			unlock = {store = {offer = "unlockMonk", cost = 750}}
+			unlock = {store = {offer = "unlockMonk", cost = 500}, level = {min = 500}}
 		},
 		templar = {
 			name = "Templar", vocations = {23, 24, 25}, locked = true, icon = 2523, -- blessed shield
-			unlock = {store = {offer = "unlockTemplar", cost = 750}}
+			unlock = {store = {offer = "unlockTemplar", cost = 500}, level = {min = 500}}
 		}
 	}
 }

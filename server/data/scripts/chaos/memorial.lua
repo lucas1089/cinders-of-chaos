@@ -10,7 +10,8 @@
 -- each board), chaos_season_modes (season_modes.lua: the Hardcore falls of the season). Every refreshSeconds the
 -- season's rows are written again; the rows of past seasons stay (the website's archive). The plaza's items are placed
 -- at runtime on the plan's slots (memorial_config.lua plaza.at + slots), each with its entry as the look text; with
--- more entries than statues the pages turn every rotateSeconds.
+-- more entries than statues the pages turn every rotateSeconds. The way in: a portal (plaza.portal, action id
+-- aid.portal) in the upper hall of the capital's temple leads to the plaza's arrival.
 -- Consent (chaos_memorial_optin; memorial_core.lua M.choiceOf): records and realm firsts are shown unless the character
 -- turned them off; a Hardcore fall only after a yes. ChaosSeason.modesFall is wrapped (once, ChaosWrapChain): the fall
 -- asks at the next login (a modal window; the client's Memorial tab shows the question too). Turning a choice off hides the rows of every season
@@ -25,6 +26,9 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/memorial_core.lua")
 if not (ChaosChronicleCore and ChaosChronicleCore.ensureWrapChain) then
@@ -381,6 +385,59 @@ function X.placePlaza(force)
 	return true, page, pages
 end
 
+-- the way in: a portal in the capital (plaza.portal, action id aid.portal) to the plaza's arrival (plaza.at +
+-- plaza.arrival). Placed at startup and checked every tick (found again after a /reload); nothing until both are set.
+function X.arrival()
+	local pl = cfg.plaza or {}
+	return M.slotPos(pl.at, pl.arrival)
+end
+
+function X.placePortal()
+	local pl = cfg.plaza or {}
+	if type(pl.portal) ~= "table" or not X.arrival() then
+		return false
+	end
+	local it, tile = itemAt(pl.portal, cfg.aid.portal)
+	if it then
+		return true
+	end
+	if not tile or not tile:getGround() then
+		log(string.format("no tile for the portal at %d,%d,%d (memorial_config.lua plaza.portal)", pl.portal.x, pl.portal.y,
+			pl.portal.z))
+		return false
+	end
+	it = Game.createItem(cfg.portalItem or 1387, 1, P(pl.portal))
+	if not it then
+		return false
+	end
+	it:setActionId(cfg.aid.portal)
+	if ITEM_ATTRIBUTE_DESCRIPTION then
+		it:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The way to the Ember Memorial: the season's realm firsts, its records and its fallen.")
+	end
+	return true
+end
+
+local step = MoveEvent()
+step:type("stepin")
+function step.onStepIn(creature, item, position, fromPosition)
+	local player = creature and creature:getPlayer()
+	if not player then
+		return true
+	end
+	local to = X.arrival()
+	if not to then
+		player:teleportTo(fromPosition, true)
+		return true
+	end
+	player:teleportTo(P(to))
+	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s. The portal beside you leads back to the temple.",
+		"The Ember Memorial"))
+	return true
+end
+step:aid(cfg.aid.portal)
+step:register()
+
 -- ---------------------------------------------------------------- the window and the question
 function X.payload(player)
 	local guid = player:getGuid()
@@ -500,6 +557,7 @@ function think.onThink(interval)
 		return true
 	end
 	X.installHooks()
+	try("portal", X.placePortal)
 	if now() - X.refreshedAt >= (cfg.refreshSeconds or 600) then
 		try("refresh", X.refresh)
 	else
@@ -518,6 +576,7 @@ function startup.onStartup()
 	X.ensureTables()
 	X.installHooks()
 	local n = try("refresh", X.refresh)
+	try("portal", X.placePortal)
 	log(string.format("%s entries for %s%s", tostring(n or 0), tostring(X.seasonName),
 		type(cfg.plaza.at) == "table" and "" or "; the plaza is not placed yet (memorial_config.lua plaza.at)"))
 	return true

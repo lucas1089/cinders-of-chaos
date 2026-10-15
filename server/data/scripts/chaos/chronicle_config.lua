@@ -56,38 +56,44 @@ return {
 	-- world: what the chapter changes when it is written (replayed in order; undone at the next season's start)
 	--   open = {area keys}      the gate portal of each area appears (and the global flag is set)
 	--   town = {add = {set keys}, remove = {set keys}}   decoration sets of `town.sets` placed / taken away
+	-- Season 1 sizes (decided 2026-10-14, owner delegated; the arithmetic: server/README.md "The Ashen Chronicle",
+	-- "Goal sizes"): each chapter takes days at 100-300 online, about 37 days for the arc at 150 online.
 	chapters = {
 		s1 = {
 			{key = "ash_thickens",
-				goals = {{kind = "level", level = 100, target = 150}, {kind = "rift", band = "b1", target = 1500}},
+				goals = {{kind = "level", level = 300, target = 250}, {kind = "rift", band = "b1", target = 1200}},
 				world = {town = {add = {"ashfall"}}}},
 			{key = "wound_walls",
-				goals = {{kind = "worldboss", target = 30}, {kind = "rift", band = "b2", target = 800}},
+				goals = {{kind = "worldboss", target = 20}, {kind = "rift", band = "b2", target = 1200}},
 				world = {open = {"cinderscar_breach"}, town = {add = {"rubble"}}}},
 			{key = "omens_ashfall",
-				goals = {{kind = "omen", target = 120}, {kind = "rift", band = "b3", target = 300}},
+				goals = {{kind = "omen", target = 180}, {kind = "rift", band = "b3", target = 600}},
 				world = {town = {add = {"wardfires"}}}},
 			{key = "sepulchre_stirs",
-				goals = {{kind = "raid", target = 40}, {kind = "ascended", target = 25}},
+				goals = {{kind = "raid", target = 12}, {kind = "ascended", target = 30}},
 				world = {open = {"ossuary_stair"}}},
 			{key = "embers_rekindled",
-				goals = {{kind = "cinderheart", target = 5}, {kind = "level", level = 600, target = 100},
-					{kind = "event", event = "invasion", target = 10}},
+				goals = {{kind = "cinderheart", target = 10}, {kind = "level", level = 600, target = 80},
+					{kind = "event", event = "invasion", target = 6}},
 				world = {town = {remove = {"ashfall", "rubble"}, add = {"rebuilt"}}}}
 		}
 	},
 
-	-- the chapter areas (plans in server/tools/areaplan/chronicle/<plan>.json, compiled with the area planner). The
-	-- owner places each one on the map (docs/OWNER_TODO.md) and sets:
-	--   at    {x, y, z}: the spot given to `area_planner.py place ... --at X Y Z` (the plan's ORIGIN lands there)
-	--   gate  {x, y, z}: the tile on the world map where the gate portal appears once the area is open
+	-- the chapter areas (plans in server/tools/areaplan/chronicle/<plan>.json, compiled with the area planner).
+	--   at    {x, y, z}: the plan's ORIGIN on the world map. install_all.py step contentareas
+	--         (tools/install_content_areas.py) places every chronicle plan at its own `origin`, so `at` must be that
+	--         origin (tools/chronicle_areas_test.py checks it). Cells of the free block x/y 14336-15359, 10+ tiles from
+	--         every other plan and generated area (docs/MAP_GUIDE.md "Content plans").
+	--   gate  {x, y, z}: the tile on the world map where the gate portal appears once the area is open: the upper hall
+	--         of the capital's temple (Mirewake, town 1; the temple stairs lead up to it), east side, off every
+	--         walking line (checked on the base map: free floor, no item, the hall stays connected). Decided 2026-10-14.
 	-- arrival: the arrival tile's offset from the ORIGIN (from the compiled manifest; tools/chronicle_areas_test.py checks
 	-- it). Until `at` and `gate` are set the area opens in the story only (the window says so) and the console says why.
 	areas = {
 		{key = "cinderscar_breach", name = "The Cinderscar Breach", plan = "chronicle_cinderscar_breach",
-			arrival = {63, 82, 0}, minLevel = 400, at = nil, gate = nil},
+			arrival = {63, 82, 0}, minLevel = 400, at = {x = 14910, y = 15140, z = 7}, gate = {x = 32962, y = 32076, z = 6}},
 		{key = "ossuary_stair", name = "The Ossuary Stair", plan = "chronicle_ossuary_stair",
-			arrival = {59, 82, 0}, minLevel = 380, at = nil, gate = nil}
+			arrival = {59, 82, 0}, minLevel = 380, at = {x = 15100, y = 15140, z = 9}, gate = {x = 32962, y = 32079, z = 6}}
 	},
 
 	-- the town changes: decoration placed at runtime around the anchor (the capital's temple, or `anchor`) and taken

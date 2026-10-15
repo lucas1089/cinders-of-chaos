@@ -7,6 +7,7 @@
   "floors": 1,
   "level": [400, 520],
   "seed": 51404,
+  "origin": {"x": 15100, "y": 15140, "z": 9},
   "decoration": "normal",
   "light": "dark",
   "zones": [
@@ -60,5 +61,5 @@
     {"zone": "sealed_choir", "monster": "Bloodshade Reaper", "count": 4, "respawn": 100},
     {"zone": "mourners_walk", "monster": "Distorted Phantom", "count": 6, "respawn": 100}
   ],
-  "notes": "The Ashen Chronicle, Season 1, chapter 4 (server/README.md \"The Ashen Chronicle\"): the stair the Sepulchre's keepers walled up, under the capital, for levels 400-520. Closed until the chapter is complete: chronicle.lua puts the gate portal at the owner's chosen spot (chronicle_config.lua areas.ossuary_stair) and takes it away again at the next season start. The exit portal leads to the temple."
+  "notes": "The Ashen Chronicle, Season 1, chapter 4 (server/README.md \"The Ashen Chronicle\"): the stair the Sepulchre's keepers walled up, under the capital, for levels 400-520. Closed until the chapter is complete: install step contentareas places the area at its origin; chronicle.lua puts the gate portal on its gate tile in the capital (chronicle_config.lua areas.ossuary_stair) and takes it away again at the next season start. The exit portal leads to the temple."
 }

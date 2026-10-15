@@ -33,14 +33,17 @@ end
 eq(cfg.opcode, 171, "the chronicle's opcode")
 for _, kind in ipairs({"first", "record", "fallen", "stone"}) do
 	local a = cfg.aid[kind]
-	check(a and a >= 47930 and a <= 47939, "aid of " .. kind .. " in 47930-47939")
+	check(a and a >= 47940 and a <= 47949, "aid of " .. kind .. " in 47940-47949")
 	check(cfg.items[kind] ~= nil, "items of " .. kind)
 end
 eq(#cfg.slots.first, 8, "eight statues of firsts")
 eq(#cfg.slots.record, 8, "eight statues of records")
 eq(#cfg.slots.fallen, 12, "twelve memorial stones")
 check(cfg.defaults.records == true and cfg.defaults.fallen == false, "records on, falls off by default")
-check(cfg.plaza.at == nil, "the plaza waits for the owner")
+check(cfg.aid.portal and cfg.aid.portal >= 47940 and cfg.aid.portal <= 47949, "aid of the portal in 47940-47949")
+check(cfg.plaza.at and cfg.plaza.at.x == 14800 and cfg.plaza.at.y == 14800 and cfg.plaza.at.z == 7,
+	"the plaza at its plan's origin (install step contentareas)")
+check(type(cfg.plaza.portal) == "table" and type(cfg.plaza.arrival) == "table" and cfg.portalItem == 1387, "the way in")
 local seen = {}
 for kind, list in pairs(cfg.slots) do
 	if kind ~= "stone" then
@@ -173,6 +176,14 @@ function GlobalEvent(name)
 	local o = {}
 	function o:register() globals[name] = o end
 	function o:interval() end
+	return o
+end
+local moves = {}
+function MoveEvent()
+	local o = {aids = {}}
+	function o:type(t) self.t = t end
+	function o:aid(...) self.aids = {...} end
+	function o:register() moves[#moves + 1] = o end
 	return o
 end
 function TalkAction(words)
@@ -319,6 +330,9 @@ print = function(s) logged[#logged + 1] = s end
 dofile("data/scripts/chaos/memorial.lua")
 local X = ChaosMemorial
 local XC = Chaos.memorialConfig
+-- the mocked world has no tiles there: start as a server without the plaza
+local livePlaza = XC.plaza.at
+XC.plaza.at = nil
 check(registry.ChaosMemorialLogin and registry.ChaosMemorialExtended and registry.ChaosMemorialModal, "events")
 eq(registry.ChaosMemorialModal.t, "modalwindow", "the modal event")
 check(ChaosWrapChain.has(ChaosSeason.modesFall, "memorial"), "the fall hook")
@@ -342,16 +356,16 @@ XC.plaza.at = {x = 1000, y = 2000, z = 7}
 X.placePlaza(true)
 local function at(off) return tiles[(1000 + off[1]) .. "," .. (2000 + off[2]) .. ",7"].items[1] end
 local f1 = at(XC.slots.first[1])
-check(f1 and f1.aid == 47930 and (f1.id == 8836 or f1.id == 8837), "a guardian statue for the first")
+check(f1 and f1.aid == 47940 and (f1.id == 8836 or f1.id == 8837), "a guardian statue for the first")
 check(f1.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("Realm first of Season of Ash: Kaelgor %(World Boss Kill%), slain by Hero and Mira"),
 	"its look text")
 eq(at(XC.slots.first[2]) and at(XC.slots.first[2]).attrs[ITEM_ATTRIBUTE_DESCRIPTION] and 1 or 0, 0, "the GM's first has no statue")
 local rec1 = at(XC.slots.record[1])
-check(rec1 and rec1.aid == 47931 and rec1.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("World Boss Kill, boss%d+: 1:%d+, %a+, Templar"),
+check(rec1 and rec1.aid == 47941 and rec1.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("World Boss Kill, boss%d+: 1:%d+, %a+, Templar"),
 	"a record statue")
 eq(at(XC.slots.fallen[1]), nil, "no stone for a fall without its yes")
 local stone = at(XC.slots.stone)
-check(stone and stone.id == 1421 and stone.aid == 47933 and stone.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("page " .. X.page .. " of 2"),
+check(stone and stone.id == 1421 and stone.aid == 47943 and stone.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("page " .. X.page .. " of 2"),
 	"the Memorial stone with the page")
 -- rotation: ten records on eight statues; start the clock on page 1
 clock = clock - clock % 1200
@@ -414,6 +428,26 @@ check(stone1 and (stone1.id == 1407 or stone1.id == 1408) and stone1.attrs[ITEM_
 registry.ChaosMemorialModal.onModalWindow(fred, 7481, 1, 0)
 -- another modal id is not ours (nothing changes)
 eq(X.rows[503].fallen, 1, "another modal is ignored")
+-- the way in: the portal in the capital leads to the plaza's arrival
+check(livePlaza and moves[1] and moves[1].t == "stepin" and moves[1].aids[1] == 47944, "the portal's step-in event")
+XC.plaza.portal = {x = 1040, y = 2039, z = 7}
+globals.ChaosMemorialTick.onThink(60000)
+local portal = tiles["1040,2039,7"].items[1]
+check(portal and portal.id == 1387 and portal.aid == 47944 and portal.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("Ember Memorial"),
+	"the portal is placed")
+globals.ChaosMemorialTick.onThink(60000)
+eq(#tiles["1040,2039,7"].items, 1, "and found again, not doubled")
+Chaos.lang = function() return "en" end
+local walker = mkPlayer("Walker", 777)
+function walker:teleportTo(pos) self.pos = pos end
+function walker:getPlayer() return self end
+function walker:getPosition() return {sendMagicEffect = function() end} end
+moves[1].onStepIn(walker, portal, Position(1040, 2039, 7), Position(1040, 2038, 7))
+check(walker.pos and walker.pos.x == 1000 + XC.plaza.arrival[1] and walker.pos.y == 2000 + XC.plaza.arrival[2] and walker.pos.z == 7,
+	"stepping in: the plaza's arrival")
+check(walker.msgs[#walker.msgs]:find("The Ember Memorial%. The portal beside you"), "the arrival line")
+moves[1].onStepIn({getPlayer = function() return nil end}, portal, Position(1040, 2039, 7), Position(1040, 2038, 7))
+Chaos.lang = nil
 -- staff command
 local god = mkPlayer("God", 901, 6)
 talks["/memorial"].onSay(god, "/memorial", "status")

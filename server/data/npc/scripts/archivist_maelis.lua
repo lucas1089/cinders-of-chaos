@@ -32,8 +32,10 @@ local GREET = {
 		.. "(Say {english} to talk in English.)"
 }
 local LINES = {
-	job = {en = "I write down what the fire gives back. Bosses, rifts, Omens. Bring me a true account and I pay for it: ask for {tales}.",
-		pt = "Eu anoto o que o fogo devolve. Chefes, fendas, Presságios. Traga um relato verdadeiro e eu pago por ele: peça {histórias}."},
+	job = {en = "I write down what the fire gives back. Bosses, rifts, Omens. Bring me a true account and I pay for it: ask for {tales}. " ..
+		"I also keep this season's {chronicle}.",
+		pt = "Eu anoto o que o fogo devolve. Chefes, fendas, Presságios. Traga um relato verdadeiro e eu pago por ele: peça {histórias}. " ..
+		"Também guardo a {crônica} desta temporada."},
 	lore = {en = "Ask me about any of these: %s.", pt = "Pergunte sobre qualquer um destes: %s."},
 	hunt = {en = "Your map marks the hunting grounds you have walked near, with their levels. The Bestiary (Hunt > Bestiary) "
 		.. "shows where each creature lives, and the Bounty Board pays for the ones at your level.",
@@ -124,7 +126,7 @@ local function creatureSayCallback(cid, type, msg)
 		npcHandler:say(LINES.hunt[lang], cid)
 		return true
 	end
-	if has(msg, "chronicle", "cronica") then
+	if has(msg, "chronicle", "cronica", "chronicler", "cronista") then
 		-- the Ashen Chronicle (chronicle_text.lua): NPCs run in their own Lua state, so read the data files and the
 		-- global storages the server sets
 		local okT, T = pcall(dofile, "data/scripts/chaos/chronicle_text.lua")

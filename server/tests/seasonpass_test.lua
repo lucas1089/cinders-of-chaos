@@ -104,7 +104,7 @@ eq(#pass.packs, 3, "three packs")
 eq(P.packIncludesPremium(pass.packs[1]), false, "Ember has no pass")
 eq(P.packIncludesPremium(pass.packs[2]), true, "Blaze has the pass")
 eq(P.hasPremium(pass, false, 3), true, "Inferno holds the pass (it holds Blaze)")
-eq(P.packPrice(pass, 3, 1, 1000), 1600, "Ember + pass -> Inferno: both count")
+eq(P.packPrice(pass, 3, 1, 600), 1400, "Ember + pass -> Inferno: both count")
 for _, pk in ipairs(pass.packs) do
 	for _, r in ipairs(pk.rewards) do
 		if r.kind == "coins" or r.kind == "tierskips" then
@@ -335,14 +335,14 @@ eq(#P.claimable(pass, view(5, true, {[0] = {[1] = true, [2] = true}, [1] = {[1] 
 eq(P.claimedString({[1] = true, [3] = true}, 4), "1010", "claimed string")
 
 -- ---------------------------------------------------------------- packs
-eq(P.packPrice(pass, 1, 0, 0), 600, "Ember fresh")
-eq(P.packPrice(pass, 3, 0, 0), 3200, "Inferno fresh")
-eq(P.packPrice(pass, 3, 1, 0), 2600, "Ember -> Inferno pays the difference")
-eq(P.packPrice(pass, 3, 2, 0), 1400, "Blaze -> Inferno")
-eq(P.packPrice(pass, 2, 0, 1000), 800, "pass bought alone counts for Blaze")
-eq(P.packPrice(pass, 2, 1, 1000), 200, "Ember + pass -> Blaze")
-eq(P.packPrice(pass, 3, 2, 1000), 1400, "the pass counts once (Blaze already holds it)")
-eq(P.packPrice(pass, 1, 0, 1000), 600, "the pass does not count for Ember (no pass in it)")
+eq(P.packPrice(pass, 1, 0, 0), 500, "Ember fresh")
+eq(P.packPrice(pass, 3, 0, 0), 2500, "Inferno fresh")
+eq(P.packPrice(pass, 3, 1, 0), 2000, "Ember -> Inferno pays the difference")
+eq(P.packPrice(pass, 3, 2, 0), 1000, "Blaze -> Inferno")
+eq(P.packPrice(pass, 2, 0, 600), 900, "pass bought alone counts for Blaze")
+eq(P.packPrice(pass, 2, 1, 600), 400, "Ember + pass -> Blaze")
+eq(P.packPrice(pass, 3, 2, 600), 1000, "the pass counts once (Blaze already holds it)")
+eq(P.packPrice(pass, 1, 0, 600), 500, "the pass does not count for Ember (no pass in it)")
 local price, reason = P.packPrice(pass, 1, 1, 0)
 eq(price, nil, "owned")
 eq(reason ~= nil, true, "owned reason")

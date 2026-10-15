@@ -39,7 +39,7 @@ do
 		end
 	end
 	eq(cfg.milestones[1].level, 50, "first milestone level 50")
-	eq(cfg.milestones[2].level, 150, "second milestone level 150")
+	eq(cfg.milestones[2].level, 250, "second milestone level 250")
 	for _, it in ipairs(cfg.starterGift.items) do
 		ok(it.id == 7618 or it.id == 7620, "gift is plain potions only")
 	end
@@ -174,10 +174,10 @@ do
 	eq(#R.due(49, {}, cfg), 0, "level 49: nothing")
 	eq(#R.due(50, {}, cfg), 1, "level 50: one")
 	eq(R.due(50, {}, cfg)[1].key, "l50", "the level 50 one")
-	eq(#R.due(200, {}, cfg), 2, "both at once (late login)")
-	eq(#R.due(200, {l50 = true}, cfg), 1, "the one not reached yet")
-	eq(#R.due(200, {l50 = true, l150 = true}, cfg), 0, "all done")
-	eq(R.milestone(cfg, "l150").level, 150, "lookup")
+	eq(#R.due(300, {}, cfg), 2, "both at once (late login)")
+	eq(#R.due(300, {l50 = true}, cfg), 1, "the one not reached yet")
+	eq(#R.due(300, {l50 = true, l250 = true}, cfg), 0, "all done")
+	eq(R.milestone(cfg, "l250").level, 250, "lookup")
 	eq(R.decide({}, cfg), "pay", "pay")
 	eq(R.decide({referredBanned = true}, cfg), "void", "banned friend: void")
 	eq(R.decide({referredBanned = true, referrerBanned = true}, cfg), "void", "void wins")
@@ -192,7 +192,7 @@ do
 	eq(R.decide({sameIp = true}, cfg), "void", "shared connection by payout: void")
 	eq(R.decide({samePayer = true}, cfg), "void", "shared payer: void")
 	eq(R.decide({samePayer = true, referrerBanned = true}, cfg), "void", "void before wait")
-	-- the main reward at level 150 (placeholder) is a cosmetic (a title) and the tiers at 3, 5, 10 friends
+	-- the main reward at level 250 (decided 2026-10-14) is a cosmetic (a title) and the tiers at 3, 5, 10 friends
 	ok(R.milestone(cfg, cfg.qualify).title ~= nil, "the qualifying milestone gives a title")
 	eq(#cfg.tiers, 3, "three tiers")
 	eq(cfg.tiers[1].count .. "," .. cfg.tiers[2].count .. "," .. cfg.tiers[3].count, "3,5,10", "at 3, 5 and 10 friends")
@@ -229,9 +229,9 @@ do
 		friends = {{name = "Ash", level = 77, linkedAt = NOW, status = "active", rewards = {l50 = {state = "paid"}}}}}, cfg, NOW)
 	eq(v.code, "ABCD-EFGH", "code shown") eq(v.codeNote, "", "no note")
 	eq(v.canEnter, true, "new account may enter a code") ok(v.enterLeft > 0, "time left")
-	eq(#v.friends, 1, "one friend") eq(v.friends[1].steps[1].state, "paid", "50 paid") eq(v.friends[1].steps[2].state, "open", "150 open")
+	eq(#v.friends, 1, "one friend") eq(v.friends[1].steps[1].state, "paid", "50 paid") eq(v.friends[1].steps[2].state, "open", "250 open")
 	eq(#v.milestones, 2, "milestones listed") eq(v.linksThisMonth, 2, "links") eq(v.coinsEarned, 25, "coins")
-	eq(#v.tiers, 3, "tiers listed") eq(v.tiers[1].reached, false, "tier 3 not reached") eq(v.qualifyLevel, 150, "qualify level")
+	eq(#v.tiers, 3, "tiers listed") eq(v.tiers[1].reached, false, "tier 3 not reached") eq(v.qualifyLevel, 250, "qualify level")
 	v = R.view({holderReason = "noCodeYet", created = NOW - 30 * 86400}, cfg, NOW)
 	eq(v.code, "", "no code yet") ok(v.codeNote:find(tostring(cfg.minReferrerLevel), 1, true) ~= nil, "says the level")
 	eq(v.canEnter, false, "old account") ok(v.enterNote:find("7", 1, true) ~= nil, "says the window")

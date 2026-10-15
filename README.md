@@ -1091,6 +1091,8 @@ Cinders of Chaos ships its own client, built for these systems:
 
 - **Only the official client plays.** Other clients and bots that speak the protocol themselves are refused at login,
   with a link to the download.
+- **The client's helper is allowed while you play.** Healing, spell rules and the auto rotation are part of the
+  official client. Leaving it running for hours with nobody at the keyboard counts as botting (Rules 2.2 and 7.4).
 - **Two characters per IP at most.** While a second character is online from the same IP, neither can queue for a
   dungeon, enter the Infinity Tower or the arena, attack players, or give and take party bonuses.
 - **Anti-bot checks:** the server watches for patterns no human keeps up for long (perfect spell rhythm, instant

@@ -42,20 +42,31 @@ def memorial_slots():
     rows = lua('local c = dofile("data/scripts/chaos/memorial_config.lua") '
                'for _, k in ipairs({"first", "record", "fallen"}) do for i, o in ipairs(c.slots[k]) do '
                'print(k, i, o[1], o[2]) end end print("stone", 1, c.slots.stone[1], c.slots.stone[2]) '
-               'print("plan", c.plaza.plan, 0, 0)')
-    slots, plan = [], None
-    for k, i, x, y in rows:
-        if k == 'plan':
-            plan = i
+               'print("plan", c.plaza.plan, 0, 0) '
+               'local function p3(k, t) if t then print(k, t.x or t[1], t.y or t[2], t.z or t[3]) end end '
+               'p3("at", c.plaza.at) p3("arrival", c.plaza.arrival) p3("portal", c.plaza.portal)')
+    slots, plan, place = [], None, {}
+    for row in rows:
+        if row[0] == 'plan':
+            plan = row[1]
+        elif row[0] in ('at', 'arrival', 'portal'):
+            place[row[0]] = tuple(int(v) for v in row[1:4])
         else:
+            k, i, x, y = row
             slots.append((k, int(i), int(x), int(y)))
-    return slots, plan
+    return slots, plan, place
 
 
 def chronicle_areas():
     rows = lua('local c = dofile("data/scripts/chaos/chronicle_config.lua") for _, a in ipairs(c.areas) do '
-               'print(a.key, a.plan, a.arrival[1], a.arrival[2], a.arrival[3], a.minLevel) end')
-    return [dict(key=r[0], plan=r[1], arrival=(int(r[2]), int(r[3]), int(r[4])), minLevel=int(r[5])) for r in rows]
+               'local at, g = a.at or {x = -1, y = -1, z = -1}, a.gate or {x = -1, y = -1, z = -1} '
+               'print(a.key, a.plan, a.arrival[1], a.arrival[2], a.arrival[3], a.minLevel, at.x, at.y, at.z, g.x, g.y, g.z) end')
+    out = []
+    for r in rows:
+        at, gate = tuple(int(v) for v in r[6:9]), tuple(int(v) for v in r[9:12])
+        out.append(dict(key=r[0], plan=r[1], arrival=(int(r[2]), int(r[3]), int(r[4])), minLevel=int(r[5]),
+                        at=None if at[0] < 0 else at, gate=None if gate[0] < 0 else gate))
+    return out
 
 
 def neighbours(k):
@@ -123,7 +134,7 @@ def main(args):
     cat = C.catalogue(C.pair24_switch(), False)
     plans = sorted(glob.glob(os.path.join(PLANS, '*.json')))
     check(len(plans) >= 3, 'the plaza and the chapter areas are there')
-    slots, plaza_plan = memorial_slots()
+    slots, plaza_plan, plaza_place = memorial_slots()
     areas = {a['plan']: a for a in chronicle_areas()}
     compiled = {}
     for path in plans:
@@ -149,6 +160,10 @@ def main(args):
               % (a['key'], a['arrival'], (ax - ox, ay - oy, az - oz)))
         check(a['minLevel'] <= plan['level'][0], '%s: minLevel %d at most the plan\'s band %d' % (a['key'], a['minLevel'], plan['level'][0]))
         check(r['exit'] and r['exit'].get('aid') == 47951, '%s: an exit portal back to the temple' % a['key'])
+        # install step contentareas places the plan at its own origin: `at` must be that origin; the gate is a world tile
+        check(a['at'] == (ox, oy, oz), '%s: at %s is the plan\'s origin %s' % (a['key'], a['at'], (ox, oy, oz)))
+        check(a['gate'] is not None and not (14336 <= a['gate'][0] <= 15359 and 14336 <= a['gate'][1] <= 15359),
+              '%s: a gate tile in the world (not inside the content block): %s' % (a['key'], a['gate']))
     for pid in compiled:
         if pid.startswith('chronicle_'):
             check(pid in areas, '%s.json is an area of chronicle_config.lua' % pid)
@@ -159,6 +174,11 @@ def main(args):
         ox, oy, oz = r['origin']
         walk, tiles = r['walk'], r['tiles']
         check(not plan.get('spawns') and not plan.get('boss'), 'no monster in the plaza')
+        check(plaza_place.get('at') == (ox, oy, oz), 'plaza.at %s is the plan\'s origin %s' % (plaza_place.get('at'), (ox, oy, oz)))
+        ax, ay, az = r['arrival']
+        check(plaza_place.get('arrival') == (ax - ox, ay - oy, az - oz), 'plaza.arrival %s (the plan gives %s)'
+              % (plaza_place.get('arrival'), (ax - ox, ay - oy, az - oz)))
+        check(plaza_place.get('portal') is not None, 'plaza.portal: the way in from the capital')
         check(all(z['pz'] for z in r['manifest']['zones'].values()), 'every zone of the plaza is protected')
         start = tuple(r['arrival'])
         every = reachable(walk, start, set())

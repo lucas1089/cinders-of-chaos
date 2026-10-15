@@ -475,7 +475,8 @@ other classes' heals (numbers and the measurement: `server/data/spells/README.md
 ### Class lock (C8: the store unlock)
 
 The Necromancer, the Monk and the Templar can only be played on an account that has unlocked them. For now the unlock is
-bought in the store (category "Classes", 750 Chaos Coins each: **a placeholder price**). The owner may change the method
+bought in the store (category "Classes", 500 Chaos Coins each) or free for the account once one of its characters
+reaches level 500 (decided 2026-10-14, docs/PRICES.md). The owner may change the method
 later; it is one table, `ChaosClassUnlocksCore.config` in `server/data/scripts/chaos/class_unlocks_core.lua`:
 per class key the vocation ids, `locked`, and the unlock methods (`store`, `level`, `quest`, `achievement`, or a new kind
 registered with `registerMethod`), without touching the gate code.

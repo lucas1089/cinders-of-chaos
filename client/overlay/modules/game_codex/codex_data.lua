@@ -13708,7 +13708,7 @@ CodexData = {
 					sections = {
 						{
 							h = "The Ashen Chronicle",
-							p = {"The ash has always fallen on the broken world. This season it falls heavier and warmer, and the Chronicler has opened a new book. What the whole realm does, together, is written in it, and the world answers.", "One chapter is open at a time. The whole realm writes it: every world boss slain, rift sealed, Omen and Ascended Omen defeated, Ashen Sepulchre cleared, character reaching a level and world event won counts for the chapter whose goal it is. When every goal is met the chapter is written and the world changes. Adventure > Chronicle shows the bars, your part and the top contributors."}
+							p = {"The ash has always fallen on the broken world. This season it falls heavier and warmer, and Archivist Maelis, the Chronicler, has opened a new book. What the whole realm does together is written in it, and the world answers.", "One chapter is open at a time. The whole realm writes it: every world boss slain, rift sealed, Omen and Ascended Omen defeated, Ashen Sepulchre cleared, character reaching a level and world event won counts for the chapter whose goal it is. When every goal is met the chapter is written and the world changes. Adventure > Chronicle shows the bars, your part and the top contributors."}
 						},
 						{
 							h = "Chapters",
@@ -13728,7 +13728,7 @@ CodexData = {
 						},
 						{
 							h = "Em português",
-							p = {"A Crônica das Cinzas: Temporada das Cinzas", "As cinzas sempre caíram sobre o mundo partido. Nesta temporada elas caem mais grossas e mais quentes, e o Cronista abriu um livro novo. O que o reino inteiro faz, junto, fica escrito nele, e o mundo responde."}
+							p = {"A Crônica das Cinzas: Temporada das Cinzas", "As cinzas sempre caíram sobre o mundo partido. Nesta temporada elas caem mais grossas e mais quentes, e a Arquivista Maelis, a Cronista, abriu um livro novo. O que o reino inteiro fizer junto será escrito nele, e o mundo vai responder."}
 						}
 					}
 				},
@@ -13742,17 +13742,17 @@ CodexData = {
 					sections = {
 						{
 							h = "The story",
-							p = {"The ash falls warm to the touch now, and in the capital's streets it no longer melts. Beyond the walls the small rifts open faster than the wardens can count them.", "The Chronicler has written one line on the first page: \"The world remembers what it does.\" Turn the keys. Seal the small wounds before they learn to grow, and let new hunters find their strength."}
+							p = {"The ash falls warm to the touch now, and in the capital's streets the wind no longer carries it away. Beyond the walls the small rifts open faster than the Vigil's wardens can count them.", "The Chronicler has written one line on the first page: \"The world remembers what it does.\" Turn the keys. Seal the small wounds before they learn to grow, and let the new hunters find their strength."}
 						},
 						{
 							h = "Goals of the realm",
 							cols = {"Goal", "Target"},
 							w = {75, 25},
-							rows = {{"Characters reaching level 100", "150"}, {"Rifts sealed, tiers 1-5", "1,500"}}
+							rows = {{"Characters reaching level 300", "250"}, {"Rifts sealed, tiers 1-5", "1,200"}}
 						},
 						{
 							h = "When it is written",
-							p = {"Ash drifts and scorched cracks now mark the streets around the capital's temple."}
+							p = {"Ash drifts and scorched cracks now mark the ground around the capital's temple."}
 						},
 						{
 							h = "What changes",
@@ -13760,7 +13760,7 @@ CodexData = {
 						},
 						{
 							h = "Em português",
-							p = {"I. As Cinzas se Adensam", "As cinzas agora caem mornas, e nas ruas da capital elas já não derretem. Além das muralhas, as fendas pequenas se abrem mais rápido do que os guardas conseguem contar.", "O Cronista escreveu uma linha na primeira página: \"O mundo se lembra do que faz.\" Girem as chaves. Selem as feridas pequenas antes que aprendam a crescer, e deixem os novos caçadores encontrarem a sua força.", "Montes de cinza e rachaduras queimadas agora marcam as ruas em volta do templo da capital."}
+							p = {"I. As Cinzas se Adensam", "Agora as cinzas caem mornas, e nas ruas da capital o vento já não as leva embora. Além das muralhas, as fendas pequenas se abrem mais rápido do que os guardiões da Vigília conseguem contar.", "A Cronista escreveu uma única linha na primeira página: \"O mundo se lembra do que faz.\" Girem as chaves. Selem as feridas pequenas antes que aprendam a crescer, e deixem que os novos caçadores descubram a própria força.", "Montes de cinza e rachaduras queimadas agora marcam o chão em volta do templo da capital."}
 						}
 					}
 				},
@@ -13780,11 +13780,11 @@ CodexData = {
 							h = "Goals of the realm",
 							cols = {"Goal", "Target"},
 							w = {75, 25},
-							rows = {{"World bosses slain", "30"}, {"Rifts sealed, tiers 6-10", "800"}}
+							rows = {{"World bosses slain", "20"}, {"Rifts sealed, tiers 6-10", "1,200"}}
 						},
 						{
 							h = "When it is written",
-							p = {"The Cinderscar Breach is open. Rubble from the colossi's last assault lies near the temple."}
+							p = {"The Cinderscar Breach is open: its gate stands by the capital's temple. Rubble from the Five's last assault lies near the temple."}
 						},
 						{
 							h = "What changes",
@@ -13792,7 +13792,7 @@ CodexData = {
 						},
 						{
 							h = "Em português",
-							p = {"II. A Ferida ao Lado das Muralhas", "Onde os Cinco caíram pela última vez, o chão não se fechou. Uma costura de brasas corre ao lado das muralhas da capital, e Kaelgor, Skaldra, a Mãe Podre, Nyxareth e Vharok voltam pelos portais dos templos mais furiosos a cada vez.", "Derrubem-nos, de novo e de novo. Selem as fendas mais fundas que alimentam a costura. Quando ela estiver quieta o bastante para se entrar, os guardas vão abrir o caminho.", "A Cinderscar Breach está aberta. Escombros do último ataque dos colossos estão perto do templo."}
+							p = {"II. A Ferida ao Lado das Muralhas", "Onde os Cinco caíram pela última vez, o chão não se fechou. Um veio de brasas corre ao lado das muralhas da capital, e Kaelgor, Skaldra, a Mãe Podre, Nyxareth e Vharok voltam pelos portais dos templos cada vez mais furiosos.", "Derrubem-nos quantas vezes for preciso. Selem as fendas mais fundas que alimentam o veio. Quando ele estiver calmo o bastante para alguém entrar, os guardiões vão abrir o caminho.", "A Cinderscar Breach está aberta: o portão fica junto ao templo da capital. Escombros do último ataque dos Cinco estão perto do templo."}
 						}
 					}
 				},
@@ -13806,13 +13806,13 @@ CodexData = {
 					sections = {
 						{
 							h = "The story",
-							p = {"Sangrith's blood moon has been seen over the rifts, Morvane's hollow crown in the ash clouds, Thalcyra's storm in the deepest tiers. The Omens are no longer waiting behind their keys.", "Bind the fragments, walk into their arenas and put them down before their signs become their arrival. Light the ward-fires when they fall."}
+							p = {"Sangrith's blood moon has been seen over the rifts, Morvane's hollow crown in the ash clouds, Thalcyra's storm in the deepest tiers. The Omens are no longer waiting behind their keys.", "Press the fragments into keys, walk into their arenas and put them down before what they foretell arrives. Light the ward-fires when they fall."}
 						},
 						{
 							h = "Goals of the realm",
 							cols = {"Goal", "Target"},
 							w = {75, 25},
-							rows = {{"Omen guardians slain", "120"}, {"Rifts sealed, tiers 11-14", "300"}}
+							rows = {{"Omen guardians slain", "180"}, {"Rifts sealed, tiers 11-14", "600"}}
 						},
 						{h = "When it is written", p = {"Ward-fires burn around the capital's temple."}},
 						{
@@ -13821,7 +13821,7 @@ CodexData = {
 						},
 						{
 							h = "Em português",
-							p = {"III. Presságios na Chuva de Cinzas", "A lua de sangue de Sangrith foi vista sobre as fendas, a coroa oca de Morvane nas nuvens de cinza, a tempestade de Thalcyra nos níveis mais fundos. Os Presságios já não esperam atrás das suas chaves.", "Juntem os fragmentos, entrem nas arenas deles e derrubem-nos antes que os sinais virem chegada. Acendam as fogueiras de guarda quando eles caírem.", "Fogueiras de guarda queimam em volta do templo da capital."}
+							p = {"III. Presságios na Chuva de Cinzas", "A lua de sangue de Sangrith foi vista sobre as fendas, a coroa oca de Morvane nas nuvens de cinza, a tempestade de Thalcyra nos níveis mais profundos. Os Presságios já não esperam atrás das suas chaves.", "Prensem os fragmentos em chaves, entrem nas arenas deles e derrubem-nos antes que chegue o que eles anunciam. Acendam as fogueiras de guarda quando eles caírem.", "Fogueiras de guarda queimam em volta do templo da capital."}
 						}
 					}
 				},
@@ -13835,22 +13835,25 @@ CodexData = {
 					sections = {
 						{
 							h = "The story",
-							p = {"Beneath the capital, the Ashen Sepulchre breathes. Varkhul's wardens no longer wait for the weekly raid; their bones knock against the walled stair under the city at night.", "Clear the Sepulchre, face the Ascended forms of the Omens, and the stair the keepers sealed long ago will be ours to walk."}
+							p = {"Beneath the capital, the Ashen Sepulchre breathes. What was walled in with Varkhul no longer sleeps between one raid and the next; at night its bones knock against a sealed stair under the city.", "Clear the Sepulchre, face the Ascended forms of the Omens, and the stair the old wardens walled up will be ours to walk."}
 						},
 						{
 							h = "Goals of the realm",
 							cols = {"Goal", "Target"},
 							w = {75, 25},
-							rows = {{"Ashen Sepulchre clears", "40"}, {"Ascended Omens slain", "25"}}
+							rows = {{"Ashen Sepulchre clears", "12"}, {"Ascended Omens slain", "30"}}
 						},
-						{h = "When it is written", p = {"The Ossuary Stair below the capital is open."}},
+						{
+							h = "When it is written",
+							p = {"The Ossuary Stair below the capital is open: its gate stands by the capital's temple."}
+						},
 						{
 							h = "What changes",
 							p = {"The Ossuary Stair opens (level 380 and above): its gate appears in the world.", "The Chronicler's words move on, the realm hears a broadcast, and the top contributors are recorded at the season's end."}
 						},
 						{
 							h = "Em português",
-							p = {"IV. O Sepulcro Desperta", "Embaixo da capital, o Sepulcro Cinzento respira. Os guardiões de Varkhul já não esperam a raid da semana; de noite, os ossos deles batem contra a escada murada sob a cidade.", "Limpem o Sepulcro, enfrentem as formas Ascendidas dos Presságios, e a escada que os guardiões selaram há muito tempo será nossa para descer.", "A Ossuary Stair, embaixo da capital, está aberta."}
+							p = {"IV. O Sepulcro Desperta", "Embaixo da capital, o Sepulcro Cinzento respira. O que foi emparedado junto com Varkhul já não dorme entre uma incursão e outra; de noite, seus ossos batem contra uma escada selada sob a cidade.", "Limpem o Sepulcro, enfrentem as formas Ascendidas dos Presságios, e a escada que os antigos guardiões muraram será nossa para descer.", "A Ossuary Stair, embaixo da capital, está aberta: o portão fica junto ao templo da capital."}
 						}
 					}
 				},
@@ -13864,16 +13867,16 @@ CodexData = {
 					sections = {
 						{
 							h = "The story",
-							p = {"Ysgrath the Cinderheart is the first Cinder, the one that never cooled, and while it beats the ash will never stop. Forge its sigil, gather the strong, and hold the capital when the invaders come.", "When the Cinderheart falls, carry what is left of its flame back to the Great Brazier. Let the capital remember that it was rebuilt, not spared."}
+							p = {"Ysgrath the Cinderheart is the first Cinder, the one that never cooled, and while it beats the ash will never stop. Bind its sigil from the relics of the Ascended, gather the strong, and hold the towns when the invaders come.", "When the Cinderheart falls, carry what is left of its flame back to the Great Brazier. Let the capital remember that it was rebuilt, not spared."}
 						},
 						{
 							h = "Goals of the realm",
 							cols = {"Goal", "Target"},
 							w = {75, 25},
 							rows = {
-								{"The Cinderheart slain", "5"},
-								{"Characters reaching level 600", "100"},
-								{"Invasions repelled", "10"}
+								{"The Cinderheart slain", "10"},
+								{"Characters reaching level 600", "80"},
+								{"Invasions repelled", "6"}
 							}
 						},
 						{
@@ -13886,7 +13889,7 @@ CodexData = {
 						},
 						{
 							h = "Em português",
-							p = {"V. Brasas Reacesas", "Ysgrath, o Coração de Brasa, é a primeira Brasa, a que nunca esfriou, e enquanto ela queimar as cinzas nunca vão parar. Forjem o seu sigilo, reúnam os fortes e defendam a capital quando os invasores vierem.", "Quando o Coração de Brasa cair, levem o que restar da sua chama de volta ao Grande Braseiro. Que a capital se lembre de que foi reconstruída, e não poupada.", "A capital foi reconstruída: as cinzas e os escombros foram limpos e há flores onde ficavam as rachaduras."}
+							p = {"V. Brasas Reacesas", "Ysgrath, o Coração de Brasa, é a primeira Brasa, a que nunca esfriou, e enquanto ela pulsar as cinzas não vão parar de cair. Unam o seu sigilo com as relíquias dos Ascendidos, reúnam os fortes e defendam as cidades quando os invasores vierem.", "Quando o Coração de Brasa cair, levem o que restar da sua chama de volta ao Grande Braseiro. Que a capital se lembre de que foi reconstruída, e não poupada.", "A capital foi reconstruída: as cinzas e os escombros sumiram, e há flores onde ficavam as rachaduras."}
 						}
 					}
 				},

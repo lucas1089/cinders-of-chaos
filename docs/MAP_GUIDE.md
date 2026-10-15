@@ -501,6 +501,15 @@ The last four sit west of the generated areas' column (x 14340, below y 14686) a
 and 14940 east of the plaza (x 14900 and 15100, y 14700), at least 10 tiles from every other plan, the generated
 areas, the plaza and the two chronicle cells (14900, 15140 and 15100, 15140).
 
+**The fixed areas of `server/tools/areaplan/chronicle/`** (2026-10-14): the Capital Memorial's plaza at 14800, 14800, 7
+(48 x 40), the Cinderscar Breach at **14910**, 15140, 7 (128 x 104; moved 10 east of its cell so it keeps 18 tiles
+from cinderglass_sanctum, which ends at x 14891) and the Ossuary Stair at 15100, 15140, 9 (120 x 104; 60 tiles below
+mirefang_basin and rimecrown_depths). Every one is 10+ tiles from every plan and generated area in x and y, whatever
+the floor; the base map has no tile within 10 of any of them (checked with `tools/map/otbm.py`). Install step
+`contentareas` places them at their origins with their spawns, without a teleport: their ways in are runtime portals
+in the capital (chronicle_config.lua `areas` gate, memorial_config.lua `plaza.portal`). Dry run and real run on a
+copy of the base map (2026-10-14): 19 areas and the room placed, the second run changed nothing.
+
 The two 1500-2000 plans (2026-10-14, on the 1300-2000 hunting monsters, server/README.md "Late game") take the
 last free cell, 14340, 15140 (gravehorn_deeps, 64 tiles below hollowmass_reliquary), and a new column at x 15305
 (duskmarrow_crater, 13 tiles east of voidscar_chasm's 15292 and 29 east of wyrmspine_hollows). Its origin stays inside

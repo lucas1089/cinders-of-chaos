@@ -650,7 +650,7 @@ end
 function K.closingText(cfg, st, lang)
 	local done, all = K.doneCount(cfg, st), #K.chapters(cfg, st.arc)
 	if lang == "pt" then
-		return string.format("O Cronista fecha o livro desta temporada: %d de %d capítulos escritos.", done, all)
+		return string.format("A Cronista fecha o livro desta temporada: %d de %d capítulos escritos.", done, all)
 	end
 	return string.format("The Chronicler closes the book of this season: %d of %d chapters written.", done, all)
 end

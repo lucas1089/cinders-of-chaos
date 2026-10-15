@@ -478,7 +478,7 @@ Still open:
   with Blackblood Creed broke the Deadeye's single-target lead: fixed 2026-10-12, computed (ROADMAP "Open
   decisions"). Open: measure the fix on the dummies.
 - The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class
-  unlock; their price (750 Chaos Coins) is a placeholder (docs/OWNER_TODO.md). C2 / C3 polish and the C4 outfits and
+  unlock: 500 Chaos Coins each, or free at level 500 (docs/PRICES.md). C2 / C3 polish and the C4 outfits and
   effects are still in progress (ROADMAP).
 - The community (Discord) link is empty (`ChaosTopBar.COMMUNITY_URL`, the website's Discord invite).
 - Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12; the ladder is on the Rules page).

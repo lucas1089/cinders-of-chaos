@@ -158,8 +158,8 @@ return {
 	passes = {
 		[1] = {
 			name = "Ashen Pass",
-			-- price: a placeholder for the owner (docs/OWNER_TODO.md "Season pass price")
-			premium = {price = 1000, unlock = "seasonPassPremium", icon = 26031,
+			-- price: decided 2026-10-14 (owner delegated; docs/PRICES.md): 600, 320 of it back on the track
+			premium = {price = 600, unlock = "seasonPassPremium", icon = 26031,
 				description = "Premium track of the Ashen Pass for your whole account: cosmetics only (titles, shaders, a frame, Everblight), 320 coins back."},
 			-- tier = {free reward, premium reward}. The free track (gold and potions) is earned by play; the premium track
 			-- is cosmetics and Chaos Coins back only (validated: seasonpass_core.lua P.PREMIUM_KINDS): no gold, no potions,
@@ -221,7 +221,7 @@ return {
 			-- the cosmetics of every lower pack too; buying a higher pack after a lower one costs the difference (and the
 			-- premium pass price already paid counts for a pack that includes the pass).
 			packs = {
-				{id = 1, key = "ember", name = "Ember Pack", price = 600, unlock = "seasonPack1", look = 278,
+				{id = 1, key = "ember", name = "Ember Pack", price = 500, unlock = "seasonPack1", look = 278,
 					description = "Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, Arboreal transmog. Account-wide.",
 					rewards = {
 						{kind = "outfit", male = 278, female = 279, addons = 3, name = "Brotherhood outfit (full)"},
@@ -229,7 +229,7 @@ return {
 						{kind = "title", title = "Emberkin", color = "#ffb05a", name = "Title: Emberkin"},
 						{kind = "transmog", key = "arboreal", icon = 27679, name = "Arboreal transmog looks"}
 					}},
-				{id = 2, key = "blaze", name = "Blaze Pack", price = 1800, unlock = "seasonPack2", look = 1016,
+				{id = 2, key = "blaze", name = "Blaze Pack", price = 1500, unlock = "seasonPack2", look = 1016,
 					description = "Ember Pack, premium Ashen Pass, Doom Knight outfit and addons, Flamesteed, Pyre Gate portal.",
 					rewards = {
 						{kind = "premium", name = "Premium Ashen Pass"},
@@ -237,7 +237,7 @@ return {
 						{kind = "mount", id = 47, clientid = 626, name = "Flamesteed mount"},
 						{kind = "portal", key = "pyre", name = "Portal style: Pyre Gate"}
 					}},
-				{id = 3, key = "inferno", name = "Inferno Pack", price = 3200, unlock = "seasonPack3", look = 665,
+				{id = 3, key = "inferno", name = "Inferno Pack", price = 2500, unlock = "seasonPack3", look = 665,
 					description = "Blaze Pack, Chaos Acolyte outfit, Wrathfire Pegasus, title Inferno-Crowned, 500 coins, 10 tier skips.",
 					rewards = {
 						{kind = "outfit", male = 665, female = 664, addons = 3, name = "Chaos Acolyte outfit (full)"},
