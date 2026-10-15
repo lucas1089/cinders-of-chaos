@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/install_owner_decor_test.py : install_owner_decor.py on a synthetic items.otb / items.xml
 (the shipped manifest: 46 rows, ids, kinds; the nodes added and verified, idempotent; the items.xml block added once,
-kept, rewritten on a change, refused when an id is taken outside it; the generated Lua up to date; the switch off).
+kept, rewritten on a change, refused when an id is taken outside it; the generated Lua up to date; the switch on).
 No base server needed."""
 import os, struct, sys
 
@@ -41,7 +41,12 @@ wp = [r for r in rows if r['ex']['family'] == 'waypoint']
 check(len(wp) == 1 and wp[0]['size'] == '3x3' and wp[0]['light_level'] == 3 and wp[0]['light_color'] == 35,
       'waypoint: 3x3 with a cyan light')
 check(all(r['otb_flags'] & 32 == 0 for r in rows), 'no item is pickupable')
-check(not T.pair26_on(), 'switch ChaosOwnerArt.PAIR26 is off (pair 26 not published)')
+check(T.pair26_on(), 'switch ChaosOwnerArt.PAIR26 is on (pair 26 on windows-assets)')
+import tempfile  # noqa: E402
+with tempfile.TemporaryDirectory() as td:
+    off = os.path.join(td, 'chaos_owner_art.lua')
+    open(off, 'w').write(open(T.SWITCH).read().replace('M.PAIR26 = true', 'M.PAIR26 = false'))
+    check(not T.pair26_on(off) and not T.pair26_on(os.path.join(td, 'missing.lua')), 'switch read as off when false or missing')
 
 base = otb([item_node(2671, 3582)])
 new, c = patch_otb(base, rows)

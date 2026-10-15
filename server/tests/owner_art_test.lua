@@ -1,8 +1,9 @@
 -- Run from the server/ folder: luajit tests/owner_art_test.lua (and lua5.3; CI runs both)
--- The owner's art of client pair 26 (data/lib/chaos_owner_art.lua, chaos_owner_decor.lua): the switch is off (pair 26
--- is a trial, not published), so the shipped configs carry none of it; the generated decoration ids match the
--- manifest; the monster looks match the picks file and no monster file uses them yet; forced on, the store wings and
--- the boss-drop wings validate with the real configs and cores, and the decoration helper gives the installed ids.
+-- The owner's art of client pair 26 (data/lib/chaos_owner_art.lua, chaos_owner_decor.lua): the switch is on (pair 26,
+-- things_custom26, is on windows-assets at 50645056), so the shipped configs carry the store wings and the boss-drop
+-- wings and validate with the real cores; the generated decoration ids match the manifest; the monster looks match the
+-- picks file and the twelve monster files carry them; forced off, no config names a pair 26 look and the decoration
+-- helper falls back.
 CONST_ME_FIREWORK_YELLOW = CONST_ME_FIREWORK_YELLOW or 29 -- shop_config.lua reads it
 dofile("data/scripts/chaos/chaos_constants.lua")
 dofile("data/scripts/chaos/transmog_core.lua")
@@ -19,7 +20,7 @@ local function eq(a, b, m)
 end
 
 local M = dofile("data/lib/chaos_owner_art.lua")
-eq(M.PAIR26, false, "the pair 26 switch is off: the pair is not on windows-assets")
+eq(M.PAIR26, true, "the pair 26 switch is on: things_custom26 is on windows-assets")
 
 -- ---------------------------------------------------------------- decoration ids against the manifest
 local rows = {}
@@ -73,13 +74,26 @@ for i, p in ipairs(picks) do
 	end
 end
 eq(nMon, 12, "12 monster looks")
--- no monster file uses a pair 26 look while the pair is not published
-local p = io.popen('grep -rhoE "<look type=\\"[0-9]+\\"" data/monster/monsters/chaos 2>/dev/null')
+-- the twelve monster files carry their pair 26 look (apply_monster_looks.py with the rows in picks.csv), and no other
+-- monster file names a pair 26 look
+local fileLook, name = {}, nil
+local p = io.popen('grep -rhoE "<monster name=\\"[^\\"]+\\"|<look type=\\"[0-9]+\\"" data/monster/monsters/chaos 2>/dev/null')
 for line in p:lines() do
-	local look = tonumber(line:match("(%d+)"))
-	eq(look < 2213 or look > 2233, true, "no monster file names look " .. look .. " before pair 26 is out")
+	local nm = line:match('^<monster name="([^"]+)"')
+	if nm then
+		name = nm
+	elseif name then
+		fileLook[name] = tonumber(line:match("(%d+)"))
+		local look = fileLook[name]
+		eq(look < 2213 or look > 2233 or M.monsters[name] == look, true,
+			name .. ": look " .. look .. " of pair 26 only on its own monster")
+		name = nil
+	end
 end
 p:close()
+for monster, look in pairs(M.monsters) do
+	eq(fileLook[monster], look, monster .. ": the monster file has its pair 26 look")
+end
 
 -- wings: every pick of family storewings / exclusive is a wings entry with that look
 local wingLook = {}
@@ -98,22 +112,8 @@ for _, pk in ipairs(picks) do
 end
 eq(nWings, 9, "nine wings")
 
--- ---------------------------------------------------------------- switch off: the shipped configs
-local shippedExcl = dofile("data/scripts/chaos/exclusives_config.lua")
-for _, e in ipairs(shippedExcl.exclusives) do
-	eq(e.look == nil or e.look < 2213, true, "no exclusive names a pair 26 look while off")
-end
-local shippedShop = dofile("data/scripts/chaos/shop_config.lua")
-for _, c in ipairs(shippedShop.categories) do
-	for _, o in ipairs(c.offers or {}) do
-		eq(o.kind ~= "wings" or o.id < 21, true, "no store offer of the pair 26 wings while off")
-	end
-end
-eq(#M.storeOffers(), 0, "no store offers while off")
-eq(M.decorId("cactus_01", 7), 7, "decoration falls back while off")
-
--- ---------------------------------------------------------------- switch on: the wings validate
-M.PAIR26 = true
+-- ---------------------------------------------------------------- forced off: no config names pair 26
+M.PAIR26 = false
 local realDofile = dofile
 dofile = function(path, ...)
 	if path == "data/lib/chaos_owner_art.lua" then
@@ -121,9 +121,25 @@ dofile = function(path, ...)
 	end
 	return realDofile(path, ...)
 end
+local offExcl = dofile("data/scripts/chaos/exclusives_config.lua")
+local offShop = dofile("data/scripts/chaos/shop_config.lua")
+dofile = realDofile
+for _, e in ipairs(offExcl.exclusives) do
+	eq(e.look == nil or e.look < 2213, true, "no exclusive names a pair 26 look while off")
+end
+for _, c in ipairs(offShop.categories) do
+	for _, o in ipairs(c.offers or {}) do
+		eq(o.kind ~= "wings" or o.id < 21, true, "no store offer of the pair 26 wings while off")
+	end
+end
+eq(#M.storeOffers(), 0, "no store offers while off")
+eq(M.decorId("cactus_01", 7), 7, "decoration falls back while off")
+M.PAIR26 = true
+
+-- ---------------------------------------------------------------- switch on: the shipped configs validate
 local shop = dofile("data/scripts/chaos/shop_config.lua")
 local excl = dofile("data/scripts/chaos/exclusives_config.lua")
-dofile = realDofile
+eq(#M.storeOffers(), #M.storeWings, "a store offer per sold wings while on")
 local wingsCat
 for _, c in ipairs(shop.categories) do
 	if c.name == "Wings" then

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Cinderhorn Juggernaut" nameDescription="a cinderhorn juggernaut" race="blood" experience="43600" speed="31" manacost="0">
 	<health now="31700" max="31700"/>
-	<look type="1546" corpse="6068"/>
+	<look type="2218" corpse="6068"/>
 	<level min="1680" max="1720"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

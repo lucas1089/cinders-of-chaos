@@ -4,7 +4,7 @@
      "Generated areas" and "Solo kill times". -->
 <monster name="Azhkarrath the Chained Wyrm" nameDescription="Azhkarrath the Chained Wyrm" race="blood" experience="160000" speed="0" manacost="0">
 	<health now="16000" max="16000"/>
-	<look type="1535" corpse="6068"/>
+	<look type="2216" corpse="6068"/>
 	<level min="2080" max="2120"/>
 	<targetchange interval="5000" chance="10"/>
 	<flags>

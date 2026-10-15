@@ -591,25 +591,25 @@
      "y": 24584
     },
     {
-     "look": 1054,
-     "monster": "Ice Lich",
-     "name": "Ice Lich",
-     "x": 24592,
+     "boss": true,
+     "look": 2214,
+     "monster": "Ossivane the Gravecage",
+     "name": "Ossivane the Gravecage",
+     "x": 24596,
      "y": 24584
     },
     {
-     "boss": true,
-     "look": 863,
-     "monster": "Ossivane the Gravecage",
-     "name": "Ossivane the Gravecage",
-     "x": 24595,
+     "look": 1054,
+     "monster": "Ice Lich",
+     "name": "Ice Lich",
+     "x": 24599,
      "y": 24584
     },
     {
      "look": 1291,
      "monster": "Spirit of Purity",
      "name": "Spirit of Purity",
-     "x": 24598,
+     "x": 24602,
      "y": 24584
     }
    ],
@@ -873,7 +873,7 @@
     [0, 4],
     [5, 4]
    ],
-   "pixels": "4e4978223045392f708942f0583ba973",
+   "pixels": "d8d4641330a254847f03f930582da116",
    "sids": [
     [
      [10767, 30508],
@@ -1142,29 +1142,29 @@
      "y": 24641
     },
     {
-     "look": 1547,
+     "look": 2217,
      "monster": "Gloamfang Ravager",
      "name": "Gloamfang Ravager",
-     "x": 24854,
+     "x": 24855,
      "y": 24641
     },
     {
-     "look": 1494,
+     "look": 2222,
      "monster": "Winterstride",
      "name": "Winterstride",
-     "x": 24857,
+     "x": 24858,
      "y": 24641
     },
     {
-     "look": 875,
+     "look": 2220,
      "monster": "Silicron",
      "name": "Silicron",
-     "x": 24860,
+     "x": 24861,
      "y": 24641
     },
     {
      "boss": true,
-     "look": 1281,
+     "look": 2215,
      "monster": "Forgewarden Kharzun",
      "name": "Forgewarden Kharzun",
      "x": 24866,
@@ -1436,7 +1436,7 @@
    "lights": [
     [27, 0]
    ],
-   "pixels": "3871d08c1b7c9097c4aef4f24e49a811",
+   "pixels": "77777c9cb645d5ebd7bda4a457b6b002",
    "sids": [
     [
      [10772, 30493],
@@ -1705,7 +1705,7 @@
      "y": 24906
     },
     {
-     "look": 1369,
+     "look": 2223,
      "monster": "Bloodantler Fiend",
      "name": "Bloodantler Fiend",
      "x": 24647,
@@ -1719,22 +1719,22 @@
      "y": 24906
     },
     {
-     "look": 1543,
+     "look": 2219,
      "monster": "Cinderskull Reaver",
      "name": "Cinderskull Reaver",
-     "x": 24655,
+     "x": 24654,
      "y": 24906
     },
     {
-     "look": 1546,
+     "look": 2218,
      "monster": "Cinderhorn Juggernaut",
      "name": "Cinderhorn Juggernaut",
-     "x": 24659,
+     "x": 24657,
      "y": 24906
     },
     {
      "boss": true,
-     "look": 1148,
+     "look": 2213,
      "monster": "Vaelith the Fallen Seraph",
      "name": "Vaelith the Fallen Seraph",
      "x": 24668,
@@ -2008,7 +2008,7 @@
     [29, 5],
     [23, 6]
    ],
-   "pixels": "a45f1f37005004718a71e03274220f74",
+   "pixels": "03863cb2286ead004d5e8ca458003d05",
    "sids": [
     [
      [30488, 30536],
@@ -2270,7 +2270,7 @@
    "area": "throne",
    "creatures": [
     {
-     "look": 1462,
+     "look": 2224,
      "monster": "Mirecoil Wyrm",
      "name": "Mirecoil Wyrm",
      "x": 24840,
@@ -2284,7 +2284,7 @@
      "y": 24888
     },
     {
-     "look": 1369,
+     "look": 2223,
      "monster": "Bloodantler Fiend",
      "name": "Bloodantler Fiend",
      "x": 24849,
@@ -2292,24 +2292,24 @@
     },
     {
      "boss": true,
-     "look": 1535,
+     "look": 2216,
      "monster": "Azhkarrath the Chained Wyrm",
      "name": "Azhkarrath the Chained Wyrm",
-     "x": 24855,
+     "x": 24854,
      "y": 24888
     },
     {
      "look": 1449,
      "monster": "Wraithbone Stalker",
      "name": "Wraithbone Stalker",
-     "x": 24858,
+     "x": 24857,
      "y": 24888
     },
     {
-     "look": 1546,
+     "look": 2218,
      "monster": "Cinderhorn Juggernaut",
      "name": "Cinderhorn Juggernaut",
-     "x": 24862,
+     "x": 24860,
      "y": 24888
     }
    ],
@@ -2576,7 +2576,7 @@
     [23, 6],
     [25, 6]
    ],
-   "pixels": "dfdb0d9b59bfec282a7d81152f96aeb6",
+   "pixels": "a23532f9abb0946978b2704effcf2d24",
    "sids": [
     [
      [30484],

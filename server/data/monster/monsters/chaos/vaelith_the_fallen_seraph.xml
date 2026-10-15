@@ -4,7 +4,7 @@
      "Generated areas" and "Solo kill times". -->
 <monster name="Vaelith the Fallen Seraph" nameDescription="Vaelith the Fallen Seraph" race="energy" experience="125000" speed="40" manacost="0">
 	<health now="16000" max="16000"/>
-	<look type="1148" corpse="6068"/>
+	<look type="2213" corpse="6068"/>
 	<level min="1680" max="1720"/>
 	<targetchange interval="5000" chance="10"/>
 	<flags>

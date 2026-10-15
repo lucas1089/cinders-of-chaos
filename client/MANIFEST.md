@@ -628,8 +628,8 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
   (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
   (699,748 sprites), twice identical.
 - **Windows package pair:** the package takes the merged pair from the private branch `windows-assets`
-  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README; since 2026-10-14 things_custom25 at ebe1b2b2,
-  "Status words" below). Since 2026-10-11 that archive held things_custom15
+  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README; since 2026-10-15 things_custom26 at 50645056,
+  "Owner art" below; 2026-10-14 things_custom25 at ebe1b2b2, "Status words"). Since 2026-10-11 that archive held things_custom15
   (windows-assets c1441a8: the pouches, fist weapons, class looks, monster looks, the bone effects, the Cinderheart look,
   the raid boss and faction looks and the mount rider seats for client patch 0034), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
   clients still on an older pair: a pair without 33651-33653 shows nothing for a pouch.
@@ -1619,7 +1619,7 @@ CURSED!, CHILLED FOOT!, FREEZE!, POISONED!) for comparison; they are not read or
   `tools/ci/check_content.py --pair` now names things_custom25 (2,212 outfits, padding 2194-2199 blank).
 - Checked offline only (importer checks, the read-back, check_pair). Not run in a live client.
 
-## Owner art (trial pair 26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; NOT on windows-assets, switch off)
+## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
 items. `gen_owner_art.py` names each file by a neutral name, its Drive file id and md5 (`SOURCES`); the Drive titles
@@ -1651,16 +1651,22 @@ sheet, three outfit sheets, a second moth wings sheet, two "filth" sheets).
       --expect-items 33939 --manifest-out server/data/items/owner_decor.csv
   python3 -I client/tools/sprites/check_pair.py things_custom26/Tibia.dat things_custom26/Tibia.spr --old things_custom25/Tibia.dat things_custom25/Tibia.spr
   ```
-- Trial build (2026-10-15, local only; input the windows-assets archive at ebe1b2b2, dat dc1613e4..., spr d970b1cb...):
-  dat 4a019fecaeb837a64c71f068bc243b14 (5,075,880 bytes), spr 800cd7cead2187257091b2f12e8ed547 (643,478,418 bytes,
+- Output **things_custom26** (2026-10-15; input the windows-assets archive at ebe1b2b2, dat dc1613e4..., spr d970b1cb...):
+  dat 4a019fecaeb837a64c71f068bc243b14 (5,075,890 bytes), spr 800cd7cead2187257091b2f12e8ed547 (643,478,418 bytes,
   767,949 sprites: 3,603 appended), 33,985 items, 2,233 outfits, 673 effects, 153 missiles. Built twice with identical
   md5s and manifest; the importer verified 5,436 sprite slots pixel-identical to the art. `check_pair.py --old`:
   append-only (36,878 old things and 764,346 old sprites compared), 0 errors, 124 warnings, line for line those of
-  things_custom25 (INFO `sprite-zero-slots` 4,064 -> 4,080). Not packed, not pushed, not run in a live client.
-- To publish (owner approval): pack and push like things_custom25, then in one change: `ChaosOwnerArt.PAIR26 = true`
-  (server/data/lib/chaos_owner_art.lua), append `monster_looks/owner_art_picks.csv` to `picks.csv` and run
-  `server/tools/apply_monster_looks.py`, update `tools/ci/check_content.py` PAIR_NAME / PAIR_OUTFITS (things_custom26,
-  2233), regenerate `outfit_anchors.lua` and the Codex / wiki data, record the md5s here.
+  things_custom25 (INFO `sprite-zero-slots` 4,064 -> 4,080).
+- `things-1098.tar.xz` packed like things_custom25's: sha256 77e72d63611e27732342ca1d84339f62911509b1e482f99d28c9b3df47a7dbcf
+  (74,109,736 bytes); it unpacks to the md5s above. Pushed to windows-assets at 50645056 (owner approved 2026-10-15).
+- Published in one change (2026-10-15): `ChaosOwnerArt.PAIR26 = true` (server/data/lib/chaos_owner_art.lua), the rows
+  of `monster_looks/owner_art_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (12
+  monster files), `tools/ci/check_content.py --pair` names things_custom26 (2,233 outfits, no new blank outfit),
+  `outfit_anchors.lua` regenerated from this pair, the dungeon banners of the Marrow Crypts, Iron Crucible, Fallen
+  Sanctum and Pyre Throne drawn again with the new looks (`gen_dungeon_banners.py build`), the wiki data again (21 store
+  wings). Server side: server/README.md "Owner art (pair 26)".
+- Checked offline only (importer checks, check_pair, the previews). Not run in a live client. A client on pair 25 or
+  older draws nothing for 2213-2233 and 33940-33985.
 
 ## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
 **On windows-assets (407ad9b6, owner approved 2026-10-13); switches on since 2026-10-13 (pair 24 at 407ad9b6).** Our own art for the themes of five reference sheets and four set showcases the owner

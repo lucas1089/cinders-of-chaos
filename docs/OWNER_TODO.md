@@ -185,7 +185,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   in [LAUNCH.md](LAUNCH.md) section 2.
 - Base upgrade-slot check (2026-10-12): once a second per player in 12 groups, and at once on an equip or unequip
   move, instead of every 100 ms (server/README.md "Game loop stalls").
-- Owner art pair 26 (2026-10-15): approve the trial pair (client/MANIFEST.md "Owner art") before it goes to
-  `windows-assets`; the store wings carry PLACEHOLDER prices of 250 each (`server/data/lib/chaos_owner_art.lua`); check
-  the mapping of the looks (server/README.md "Owner art (pair 26)"), Ossivane's in particular; send again the small files the
+- Owner art pair 26 (2026-10-15): pair approved and on `windows-assets` (50645056), switch on (client/MANIFEST.md
+  "Owner art"). Left: the store wings carry PLACEHOLDER prices of 250 each (`server/data/lib/chaos_owner_art.lua`); check
+  the mapping of the looks in game (server/README.md "Owner art (pair 26)"), Ossivane's in particular; send again the small files the
   download could not save (fire medusa sheet, outfit sheets 2852 / 2719 / 2727, fifth_1, the two filth sheets).

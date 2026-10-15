@@ -129,7 +129,7 @@ art: 1547, 1544, 1543, 1546, 1532 (donor B, `client/tools/sprites/donor_b_select
 (no colour layers). Corpse 6068. The two top ones carry a light boss mechanics profile. Numbers: server/README.md "Late
 game", The 1300-2000 set; where they spawn: the plans gravehorn_deeps and duskmarrow_crater.
 
-**Owner art looks (trial pair 26, not live).** `client/tools/sprites/monster_looks/owner_art_picks.csv` gives the four deep
-dungeon bosses and eight 1300-2000 hunt monsters their own looks 2213-2224 (families `dungeonboss`, `hunt`). The files
-keep their current looks until pair 26 is published and the rows are appended to `picks.csv` (server/README.md "Owner
-art (pair 26)"; `apply_monster_looks.py` then writes them).
+**Owner art looks (pair 26, things_custom26, live since 2026-10-15).** `client/tools/sprites/monster_looks/owner_art_picks.csv`
+gives the four deep dungeon bosses and eight 1300-2000 hunt monsters their own looks 2213-2224 (families `dungeonboss`,
+`hunt`). Its rows are in `picks.csv` and `apply_monster_looks.py` wrote them into the 12 files (server/README.md "Owner
+art (pair 26)").

@@ -4,7 +4,7 @@
      "Generated areas" and "Solo kill times". -->
 <monster name="Ossivane the Gravecage" nameDescription="Ossivane the Gravecage" race="undead" experience="70000" speed="45" manacost="0">
 	<health now="15000" max="15000"/>
-	<look type="863" corpse="6068"/>
+	<look type="2214" corpse="6068"/>
 	<level min="1080" max="1120"/>
 	<targetchange interval="5000" chance="10"/>
 	<flags>

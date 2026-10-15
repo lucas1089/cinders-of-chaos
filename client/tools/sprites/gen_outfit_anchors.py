@@ -161,6 +161,8 @@ def anchor_of(t, spr, lid=0, centre='body'):
     """measure() of a creature thing's first south frame, in its tile pixels"""
     W, H = t.w * 32, t.h * 32
     dx, dy = t.flags.get('displacement', (0, 0)) if isinstance(t.flags.get('displacement'), tuple) else (0, 0)
+    # the dat stores two u16: a negative displacement reads as 65536 - n
+    dx, dy = (v - 65536 if v > 32767 else v for v in (dx, dy))
     return measure(south_alpha(t, spr), -(W - 32) - dx, -(H - 32) - dy, lid in FLOATING, centre)
 
 

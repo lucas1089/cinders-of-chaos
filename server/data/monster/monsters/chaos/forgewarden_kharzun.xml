@@ -4,7 +4,7 @@
      "Generated areas" and "Solo kill times". -->
 <monster name="Forgewarden Kharzun" nameDescription="Forgewarden Kharzun" race="fire" experience="95000" speed="40" manacost="0">
 	<health now="15500" max="15500"/>
-	<look type="1281" corpse="6068"/>
+	<look type="2215" corpse="6068"/>
 	<level min="1380" max="1420"/>
 	<targetchange interval="5000" chance="10"/>
 	<flags>

@@ -345,8 +345,8 @@
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 88,
 		"store.categories": 35,
-		"store.cosmetic": 344,
-		"store.offers": 456,
+		"store.cosmetic": 350,
+		"store.offers": 462,
 		"store.service": 20,
 		"store.unlockCost": 500,
 		"support.count": 20,
@@ -31086,7 +31086,7 @@
 								["Outfits", "56", "300-750", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
 								["Mounts", "125", "350-690", "Cosmetic"],
-								["Wings", "15", "200-350", "Cosmetic"],
+								["Wings", "21", "200-350", "Cosmetic"],
 								["Auras", "24", "150-300", "Cosmetic"],
 								["Outfit Shaders", "16", "120-180", "Cosmetic"],
 								["Name Plates", "13", "300", "Cosmetic"],
@@ -31160,7 +31160,7 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "344"],
+								["Cosmetic", "350"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "7"],
 								["Service", "5"],
@@ -32310,11 +32310,11 @@
 				{
 					"id": "store:6",
 					"name": "Wings",
-					"sub": "15 offers, 200-350 coins. Cosmetic.",
+					"sub": "21 offers, 200-350 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["15 offers, 200-350 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["21 offers, 200-350 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"p": ["Each one is shown with a preview in the store window (Store > Wings)."]

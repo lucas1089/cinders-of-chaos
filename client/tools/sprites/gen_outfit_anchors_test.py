@@ -95,6 +95,22 @@ check(goa.measure(figure(), -40, -40)[:2] == (cx - 40, ground - 40), 'offsets ap
 check(goa.measure(np.zeros((32, 32), np.uint8)) is None, 'nothing visible')
 check({2184, 2183} <= goa.FLOATING, 'the robed Necromancer ascension looks are listed as floating')
 
+# the dat's displacement is two u16: -6,-12 is stored as 65530,65524 and must shift the anchors like -6,-12
+class Thing:
+    w = h = 1
+
+    def __init__(self, disp):
+        self.flags = {'displacement': disp}
+
+
+real_south = goa.south_alpha
+goa.south_alpha = lambda t, spr: figure()[:32, 16:48]
+neg = goa.anchor_of(Thing((65530, 65524)), None, 1)
+check(neg == goa.measure(figure()[:32, 16:48], 6, 12, False, 'body'), 'a negative displacement is signed: %s' % (neg,))
+check(goa.anchor_of(Thing((8, 8)), None, 1) == goa.measure(figure()[:32, 16:48], -8, -8, False, 'body'),
+      'a positive displacement is unchanged')
+goa.south_alpha = real_south
+
 if fails:
     sys.exit('gen_outfit_anchors_test: %d failed' % fails)
 print('gen_outfit_anchors_test: OK')

@@ -6622,14 +6622,15 @@ blood crystals, bones, rubble).
 ## Owner art (pair 26) (`data/lib/chaos_owner_art.lua`, `data/lib/chaos_owner_decor.lua`, `tools/install_owner_decor.py`)
 
 The owner's art of 2026-10-15 (client/MANIFEST.md "Owner art"): 12 monster looks, 9 wings, 45 desert plants and a
-waypoint seal, in a **trial** client pair 26 (outfits 2213-2233, items 33940-33985). **Behind the switch
-`ChaosOwnerArt.PAIR26`, OFF**: pair 26 is not on windows-assets, and a client on pair 25 has none of these ids.
-While off nothing in the game names them; turn it on in the change that publishes the pair.
+waypoint seal, in client pair 26, things_custom26 (outfits 2213-2233, items 33940-33985). **Switch
+`ChaosOwnerArt.PAIR26`, ON since 2026-10-15**: things_custom26 is on windows-assets at 50645056 (owner approved). A client
+on pair 25 or older has none of these ids. Off, nothing in the game names them but the monster files (below).
+Install with the switch on: `install_all.py SERVER_DIR --only files,outfits,ownerdecor`, restart.
 
 - **Monster looks** (`M.monsters`; rows of `client/tools/sprites/monster_looks/owner_art_picks.csv`, families
-  `dungeonboss` and `hunt`). The monster XML keeps its look until the rows are appended to `picks.csv` and
-  `tools/apply_monster_looks.py` runs (it now writes families `hunt` and `dungeonboss` like `world`; checked by a dry run
-  on a copy: 12 files, 0 problems). Deep dungeon bosses: Vaelith the Fallen Seraph 2213 (gilded lion lord, 4x4; before
+  `dungeonboss` and `hunt`). The rows are in `picks.csv` since 2026-10-15 and `tools/apply_monster_looks.py` wrote
+  them into the 12 monster files (families `hunt` and `dungeonboss` like `world`; `--check` in CI). The switch does not
+  undo this: to go back, drop the rows from `picks.csv` and write the old looks again. Deep dungeon bosses: Vaelith the Fallen Seraph 2213 (gilded lion lord, 4x4; before
   1148), Ossivane the Gravecage 2214 (spectral lion, 4x4; before 863), Forgewarden Kharzun 2215 (basalt lion with
   molten veins, 4x4; before 1281), Azhkarrath the Chained Wyrm 2216 (black-red maned wyrm, 2x2; before 1535 at 5x5).
   Hunts 1300-2000: Gloamfang Ravager 2217 (emerald lion, 4x4), Cinderhorn Juggernaut 2218 (magma golem), Cinderskull
@@ -6641,7 +6642,7 @@ While off nothing in the game names them; turn it on in the change that publishe
   Jadeleaf Pinions, Tidewing Plumes, Duskfeather Wings, Emberplume Wings, Wildgrove Wings, Bloodfeather Wings;
   `shop_config.lua` appends `M.storeOffers()`), three boss-drop exclusives (`M.exclusives`, `exclusives_config.lua`
   calls `M.addExclusives`): Gloomgild Wings (Nyxareth), Sunforged Wings (the Cinderheart), Starmoth Wings (the Ascended
-  Omens). `tools/install_outfits.py` writes their wings.xml lines only while the switch is on.
+  Omens). `tools/install_outfits.py` writes their wings.xml lines only while the switch is on (on).
 - **Decoration** (server ids 36940-36985 = client id + 3000, `data/items/owner_decor.csv`, written by the importer):
   27 big potted cacti block a tile (otb SOLID, bottom of the stack like the stock trees), 18 small plants do not, and the
   3x3 waypoint seal (walkable, animated, cyan light 3) draws up and left of its tile: put it on the south-east tile of
@@ -6651,10 +6652,14 @@ While off nothing in the game names them; turn it on in the change that publishe
     `data/lib/chaos_owner_decor.lua` from the manifest. Tested on synthetic files (`install_owner_decor_test.py`).
   - Area planner: `tools/areaplan/decor_owner_art.json` (groups `cacti_potted`, `desert_plants`, `waypoint_seal`; a kit
     `waste` = the lava kit plus the plants, and the waste biome pointed at it). `area_plan_decor.kits()` merges it only
-    while the switch is on; off, the kits and every compiled plan stay as they are. The seal is in no kit (set pieces
+    while the switch is on (on: the one waste plan, chronicle_cinderscar_breach, now compiles with the plants; no
+    content plan uses the waste biome); off, the kits are decor_kits.json alone. The seal is in no kit (set pieces
     and map makers: `ChaosOwnerArt.decorId("waypoint_seal", fallback)`).
-- Tests: `tests/owner_art_test.lua` (switch off: no exclusive, store offer or monster file names a pair 26 look; ids
-  against the manifest and the picks; forced on: the exclusives and the store validate with the real configs).
+- Tests: `tests/owner_art_test.lua` (switch on; ids against the manifest and the picks; each of the 12 monster files
+  has its look and no other file names one; the shipped exclusives and store with the wings validate with the real
+  configs; forced off: no exclusive or store offer names a pair 26 look, the decoration falls back),
+  `tools/install_owner_decor_test.py`, `tools/area_planner_test.py` (the kits merged while on). Not run on a live
+  server or in a client yet.
 
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 

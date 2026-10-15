@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Gloamfang Ravager" nameDescription="a gloamfang ravager" race="blood" experience="27000" speed="44" manacost="0">
 	<health now="27500" max="27500"/>
-	<look type="1547" corpse="6068"/>
+	<look type="2217" corpse="6068"/>
 	<level min="1280" max="1320"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

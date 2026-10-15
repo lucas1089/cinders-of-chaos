@@ -18,9 +18,9 @@ the script; items.otb.bak keeps the original the first time; the written file is
 items.xml: a block between two marker comments before </items>, rewritten when the manifest changed; an id with an
 entry outside the block stops it.
 
-The items exist only in client pair 26. ChaosOwnerArt.PAIR26 (data/lib/chaos_owner_art.lua) is off until that pair is
-published: the items may be installed, but nothing in the game uses them (the area planner adds them to its kits only
-when the switch is on). Idempotent: a second run changes nothing.
+The items exist only in client pair 26 (things_custom26, on windows-assets since 2026-10-15). ChaosOwnerArt.PAIR26
+(data/lib/chaos_owner_art.lua) is on: the area planner adds them to its kits and map makers may place them. Off, the
+items may be installed, but nothing in the game uses them. Idempotent: a second run changes nothing.
 """
 import os, re, sys
 

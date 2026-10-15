@@ -32,8 +32,8 @@ Outputs (committed):
   art_import/owner_art.csv         the things file: outfits 2213-2233 (after pair 25's 2212), items 33940-33985
                                    (after pair 25's 33939), server id = client id + 3000
   monster_looks/owner_art_picks.csv  picks.csv rows of the 21 looks (families hunt, dungeonboss, storewings, exclusive);
-                                   appended to picks.csv when pair 26 is published (client/MANIFEST.md "Owner art")
-Append to a pair (pair 25 = things_custom25):
+                                   appended to picks.csv with pair 26 (done 2026-10-15; client/MANIFEST.md "Owner art")
+Append to a pair (pair 25 = things_custom25; the output is things_custom26, on windows-assets at 50645056):
     python3 -I import_art_things.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --out-dir NEW \
         --things art_import/owner_art.csv --first-item 33940 --first-outfit 2213 --expect-items 33939 \
         --manifest-out ../../../server/data/items/owner_decor.csv

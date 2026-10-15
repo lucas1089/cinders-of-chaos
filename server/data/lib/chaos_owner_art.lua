@@ -2,12 +2,13 @@
 -- Loaded with  ChaosOwnerArt = dofile("data/lib/chaos_owner_art.lua")  (exclusives_config.lua and shop_config.lua do so).
 -- Plain Lua, no engine calls at load (server/tests/owner_art_test.lua reads it with plain Lua).
 --
--- Pair switch (M.PAIR26, OFF): things_custom26 is a trial pair, not on windows-assets yet. A client on pair 25 or older
--- has no outfits 2213..2233 and no items 33940..33985 (it would draw nothing, or stop on a look id past its last
--- outfit). While off nothing in the game names them: no exclusive, no store offer, no wings line in wings.xml
--- (install_outfits.py), no decoration in the area planner's kits, and the monster files keep their looks (the picks
--- below go into client/tools/sprites/monster_looks/picks.csv only with the pair). Turn it on in the same change that
--- publishes the pair (client/MANIFEST.md "Owner art (pair 26)", server/README.md "Owner art").
+-- Pair switch (M.PAIR26, ON since 2026-10-15): things_custom26 is on windows-assets at 50645056 (owner approved). A
+-- client on pair 25 or older has no outfits 2213..2233 and no items 33940..33985 (it would draw nothing, or stop on a
+-- look id past its last outfit). On: the boss-drop wings are exclusives, the store sells the six wings, install_outfits.py
+-- writes their wings.xml lines, the area planner's waste kit has the plants, and the monster files carry the looks
+-- below (the rows of monster_looks/owner_art_picks.csv are in picks.csv; apply_monster_looks.py wrote them). Off: none
+-- of that, but the monster files keep the new looks until picks.csv loses the rows and the old looks are written back
+-- (client/MANIFEST.md "Owner art", server/README.md "Owner art (pair 26)").
 --
 -- What it holds (art: client/tools/sprites/gen_owner_art.py, from the owner's Drive folder "ots", 2026-10-15):
 --   * twelve monster looks 2213..2224: own looks for the four deep dungeon bosses and eight monsters of the
@@ -20,7 +21,7 @@
 
 local M = {}
 
-M.PAIR26 = false
+M.PAIR26 = true
 
 local ok, decor = pcall(dofile, "data/lib/chaos_owner_decor.lua")
 M.decor = ok and decor or {first = 36940, last = 36985, plants = {}, waypoint = nil}
