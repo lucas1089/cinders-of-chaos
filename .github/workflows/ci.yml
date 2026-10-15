@@ -358,6 +358,20 @@ jobs:
           python3 -I client/tools/sprites/gen_owner_art_test.py
           python3 -I server/tools/install_owner_decor.py --lua --check
           python3 -I server/tools/install_owner_decor_test.py
+          # catacomb kit (pair 27 trial): spec, sources and picks match gen_assets_art.py's tables (kit files not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_assets_art.py build --check
+          python3 -I client/tools/sprites/gen_assets_art_test.py
+          python3 -I server/tools/install_assets_decor.py --lua --check
+          python3 -I server/tools/install_assets_decor_test.py
+          # equipment sets of pair 28 (the owner's sheets): atlases, things file and the generated pieces match the spec
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gear_sets_art.py build --check
+          python3 -I client/tools/sprites/gen_gear_sets_art_test.py
+          python3 -I server/tools/install_gear_sets.py --lua --check
+          python3 -I server/tools/install_gear_sets_test.py
+          # sprite style checker (docs/SPRITE_STYLE.md): palettes and thresholds match the owner's gear sheets,
+          # synthetic sprites pass or fail for the right reason, the seven sheets pass their own themes
+          /tmp/fxenv/bin/python -I client/tools/sprites/style_check.py build-palettes --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/style_check_test.py
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)

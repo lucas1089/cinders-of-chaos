@@ -744,6 +744,9 @@ eq(M.swapFor(2, 223, "vfx", "aura_burst_gold"), nil, "Bob has no skin")
 -- the cast hook in _common.lua: the variant during a cast, the default outside it and when the pair lacks the variant
 NORTH, EAST, SOUTH, WEST, SOUTHWEST, SOUTHEAST, NORTHWEST, NORTHEAST = 0, 1, 2, 3, 4, 5, 6, 7
 local castPid, castSpell
+-- the pair 27 layer stays off here: it comes first for Iron Bellow and has its own test (pack27_fx_test.lua)
+dofile("data/lib/chaos_pack27_fx.lua")
+ChaosPack27Fx.PAIR27_FX = false
 ChaosSupportsSpell = {cast = function() return castPid, castSpell end}
 dofile("data/spells/chaos/_common.lua")
 local function lastEffect()

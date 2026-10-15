@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Boss of the Hollow Crypt (server/tools/areaplan/plans/hollow_crypt.json, levels 300-400): a headless rider on a
+     skeletal horse, a pumpkin lantern for a head and a reaping scythe, that rides the crypt rings at night. Never paced
+     (boss flag). Look 2234: the kit's rider, 5x5, of pair 27 (row of client/tools/sprites/monster_looks/picks.csv,
+     written by server/tools/apply_monster_looks.py; server/README.md "Catacomb kit (pair 27 trial)"). -->
+<monster name="Hollow Rider" nameDescription="the Hollow Rider" race="undead" experience="24000" speed="320" manacost="0">
+	<health now="42000" max="42000"/>
+	<look type="2234" corpse="6068"/>
+	<level min="380" max="400"/>
+	<targetchange interval="4000" chance="12"/>
+	<flags>
+		<flag isboss="1"/>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="1"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-900" max="-1400"/>
+		<!-- the scythe sweep: a wide cut in front of the horse -->
+		<attack name="physical" interval="2000" chance="20" length="5" spread="3" min="-950" max="-1500">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<!-- the lantern head: green grave fire thrown at range -->
+		<attack name="death" interval="2000" chance="18" range="7" radius="2" target="1" min="-800" max="-1250">
+			<attribute key="shootEffect" value="suddendeath"/>
+			<attribute key="areaEffect" value="greenshimmer"/>
+		</attack>
+		<!-- the charge: the horse tramples everything around it -->
+		<attack name="physical" interval="2000" chance="12" radius="3" target="0" min="-700" max="-1100">
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+		<attack name="speed" interval="4000" chance="10" range="7" duration="6000" speedchange="-450">
+			<attribute key="areaEffect" value="smallclouds"/>
+		</attack>
+	</attacks>
+	<defenses armor="60" defense="60">
+		<defense name="healing" interval="2000" chance="10" min="600" max="1100">
+			<attribute key="areaEffect" value="greenshimmer"/>
+		</defense>
+		<defense name="speed" interval="3000" chance="8" speedchange="300" duration="4000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="15"/>
+		<element deathPercent="50"/>
+		<element earthPercent="20"/>
+		<element icePercent="10"/>
+		<element firePercent="-10"/>
+		<element energyPercent="5"/>
+		<element holyPercent="-20"/>
+	</elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+		<immunity drown="1"/>
+		<immunity lifedrain="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Who rides with me tonight?"/>
+		<voice sentence="Light the lantern. Count the heads."/>
+		<voice sentence="The crypt bell tolls for you."/>
+	</voices>
+	<loot>
+		<item id="2160" countmax="2" chance="100000"/><!-- crystal coin -->
+		<item id="2152" countmax="40" chance="100000"/><!-- platinum coin -->
+		<item id="25380" chance="2000"/><!-- token -->
+		<item id="2498" chance="4500"/><!-- royal helmet -->
+		<item id="2516" chance="4500"/><!-- dragon shield -->
+		<item id="2466" chance="4000"/><!-- golden armor -->
+		<item id="2470" chance="3000"/><!-- golden legs -->
+		<item id="7884" chance="2500"/><!-- terra mantle -->
+		<item id="2536" chance="2500"/><!-- medusa shield -->
+		<item id="2195" chance="2000"/><!-- boots of haste -->
+	</loot>
+</monster>

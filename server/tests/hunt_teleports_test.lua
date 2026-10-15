@@ -22,7 +22,7 @@ local cfg = dofile("data/scripts/chaos/hunt_teleports_config.lua")
 
 -- ------------------------------------------------------------------ the config
 eq(#H.validate(cfg, nil), 0, "the shipped config is valid")
-eq(#cfg.plans, 16, "sixteen plans")
+eq(#cfg.plans, 17, "seventeen plans")
 local seen = {}
 for _, p in ipairs(cfg.plans) do
 	ok(not seen[p.id], "plan listed once: " .. p.id)

@@ -17,7 +17,7 @@
 ChaosPack27Fx = ChaosPack27Fx or {}
 local C = ChaosPack27Fx
 
-C.PAIR27_FX = false
+C.PAIR27_FX = true
 
 -- spell id -> kind -> {name the spell sends = the pair 27 name}; kinds: fx (an effect, also through vfx / vfxOr),
 -- missile (ChaosSpell.shoot / vshoot), dir (the base name of a directional effect, VfxDir), fxdir (an effect the spell

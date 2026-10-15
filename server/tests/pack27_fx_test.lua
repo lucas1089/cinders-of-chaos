@@ -24,10 +24,10 @@ end
 dofile("data/lib/chaos_pack27_fx.lua")
 local C = ChaosPack27Fx
 
--- the switch: one plain line, off (no published pair has effects 674-758 / missiles 154-160)
+-- the switch: one plain line, on (pair 27 is live: windows-assets 51a26d26, effects 674-758 / missiles 154-160)
 local src = readFile("data/lib/chaos_pack27_fx.lua") or ""
-eq(src:match("\nC%.PAIR27_FX = (%a+)\n"), "false", "the switch is one plain line, off")
-eq(C.PAIR27_FX, false, "the shipped switch is off")
+eq(src:match("\nC%.PAIR27_FX = (%a+)\n"), "true", "the switch is one plain line, on")
+eq(C.PAIR27_FX, true, "the shipped switch is on")
 
 -- the client spec
 local spec = {}
@@ -91,6 +91,7 @@ eq(C.pick(194, "fx", "whirlwind"), nil, "no swap for another name")
 eq(C.pick(999, "fx", "aura_burst_gold"), nil, "no swap for another spell")
 
 -- off: nothing, and the ids file is not loaded
+C.PAIR27_FX, C.loaded = false, nil
 ChaosVfx, ChaosVfxMissile = {aura_burst_gold = {id = 1, dx = 0, dy = 0}}, {}
 eq(C.swapFor(194, "fx", "aura_burst_gold"), nil, "off: no swap")
 eq(ChaosVfx.palm_quake, nil, "off: ids not loaded")
@@ -132,7 +133,7 @@ for key in pairs(spec) do
 		ok(e.id <= 255, name .. ": a missile id fits u8")
 	end
 end
-C.PAIR27_FX, C.loaded = false, nil
+C.PAIR27_FX, C.loaded = true, nil
 
 -- _common.lua asks the module in fx, vfx, vfxDir, shoot and vshoot
 local common = readFile("data/spells/chaos/_common.lua") or ""

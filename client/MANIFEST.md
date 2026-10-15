@@ -89,7 +89,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_healthcircle | none | none | In `alternates/`: the base client's own is used |
 | game_mainpanel | none | none | In `alternates/`: the base client's own is used |
 | game_chaosnotify (was game_notifications) | extended opcodes 79, 151, 152 | none | Needs server script (`notifications.lua`). Toast types per message kind; `sale` = ITEM SOLD with the toast scales icon (`images/toast/market.png`, as MARKET; server market.lua / orbexchange.lua: item, price, fee, proceeds, or "While you were away: ..." at login), `achievement` = ACHIEVEMENT UNLOCKED with the trophy icon (`topbutton_ranking`); titles use each type's colour. Three toasts shown, stacked by their own heights (no overlap with the 140 px invitation toasts), the rest wait in a queue capped at 12 (the oldest message toast gives way). Logic `notifyview.lua` (tested by `notifyview_test.lua`); `testNotifications()` shows a sale and an achievement too. Invitation toasts (PARTY_INVITE: Accept / Decline; CATACOMB_FREE: Start / Cancel) use the styles of `toastbuttons.otui` (`ChaosToastAccept`, `ChaosToastDecline`, 80 x 24, normal / hover / pressed / disabled clips); the label is drawn by the client in the Chaos heading font when loaded. Art `images/toast/` (accept.png, decline.png, party_invite.png and catacomb_invite.png, both 48x48) comes from `client/tools/gen_toast_art.py`: iron plates with a gold rim, an ember-green or muted crimson accent; the catacomb icon is a stone archway with a skull keystone, an iron band, a gold rim and ember light on the stairs inside; the old stock yes / no scribbles, the party icon and the catacomb icon with baked text are gone; checked offline in the client (hover and pressed). Message toast icons (48x48, same generator, frame and materials, no text): GM_BROADCAST and the fallback `announce.png` (sealed scroll, gold seal), TASK_COMPLETE `task.png` (pinned parchment, check mark), BATTLE_PASS and SEASON_PASS `season_pass.png` (laurel medallion, ember stone), NEW_PLAYER `new_player.png` (lantern), ASCENSION `ascension.png` (winged flame), MARKET `market.png` (scales), INVASION `invasion.png` (crossed axes), BOUNTY `bounty.png` (wanted poster and dagger), BESTIARY `bestiary.png` (clawed tome), JOURNEY `journey.png` (compass), BOSS_POINT `boss_point.png` (crowned skull); the stock `gm.png`, `task.png` and `battlepass.png` with baked text are gone; contact sheet of every toast type checked in the client |
-| game_itemtooltip | extended opcode 242 (JSON), server `item_tooltip.lua` | none | Rewritten: server-driven rich tooltip on hover over inventory and container items (rarity, item level and tier, base stats, modifiers with roll ranges, sockets and gems, unique and set, requirements) on the Chaos tooltip plate; Ctrl shows the equipped item(s) of the same slot side by side with green/red differences; cached by per-item id and version. View logic `tooltiplogic.lua` (tested by `tooltiplogic_test.lua`); tested in game (server/README.md "Item attributes in packets and rich tooltips") The icon draws a transmog look (`tip.look`, `item:setAppearanceId`, base patch 0030), also in item link tooltips. Item set pieces: the title "Set ..." in the set green and a set block (`L.setLines`: pieces that count, every piece worn / below its level / not worn, every bonus active or dim); the cached set pieces are dropped when the equipment changes (`LocalPlayer.onInventoryChange`, `L.dropSetTips`). Tested by `tooltipsets_test.lua`; checked on a live test server (server/README.md "Item sets") Quivers (server/README.md "Infinite arrows and quivers"): the slot "Quiver", the base's implicit modifiers as signed rows in the modifier colour (`b.imp`) and the gold note line `tip.note` ("Works only while you hold a bow or crossbow."); tested in `tooltiplogic_test.lua` and in game. No ammunition count or warning in the client: the ammunition slot holds the quiver (count 1). Sources (2026-10-15): the tip's `src` (server `itemfinder.lua` `F.brief`) gives a "Drops from: ..." / "Sources: ..." line with the first two sources and, for items that come only by luck, the expected effort in gold ("~1 in 500 legendary kills", "~1 in 1,000 kills of Dragon") and the Conquest vendor price when it sells the item (`L.sourceLines`, `tooltiplogic_test.lua`) |
+| game_itemtooltip | extended opcode 242 (JSON), server `item_tooltip.lua` | none | Rewritten: server-driven rich tooltip on hover over inventory and container items (rarity, item level and tier, base stats, modifiers with roll ranges, sockets and gems, unique and set, requirements) on the Chaos tooltip plate; Ctrl shows the equipped item(s) of the same slot side by side with green/red differences; cached by per-item id and version. View logic `tooltiplogic.lua` (tested by `tooltiplogic_test.lua`); tested in game (server/README.md "Item attributes in packets and rich tooltips") The icon draws a transmog look (`tip.look`, `item:setAppearanceId`, base patch 0030), also in item link tooltips. Item set pieces: the title "Set ..." in the set green and a set block (`L.setLines`: pieces that count, every piece worn / below its level / not worn, every bonus active or dim); the cached set pieces are dropped when the equipment changes (`LocalPlayer.onInventoryChange`, `L.dropSetTips`). Tested by `tooltipsets_test.lua`; checked on a live test server (server/README.md "Item sets") Quivers (server/README.md "Infinite arrows and quivers"): the slot "Quiver", the base's implicit modifiers as signed rows in the modifier colour (`b.imp`) and the gold note line `tip.note` ("Works only while you hold a bow or crossbow."); tested in `tooltiplogic_test.lua` and in game. No ammunition count or warning in the client: the ammunition slot holds the quiver (count 1). Sources (2026-10-15): the tip's `src` (server `itemfinder.lua` `F.brief`) gives a "Drops from: ..." / "Sources: ..." line with the first two sources and, for items that come only by luck, the expected effort in gold ("~1 in 500 legendary kills", "~1 in 1,000 kills of Dragon") and the Conquest vendor price when it sells the item (`L.sourceLines`, `tooltiplogic_test.lua`) The set block also shows for a plain piece of an open set (server `tip.set`, pair 28) with an "Active tier: n of 3" line (pt-BR in `pt_br.lua`), tested by `tooltipsets_test.lua` |
 | game_chatlinks | extended opcode 249 (JSON), server `itemlink.lua`, `itemlink_core.lua` | none | Item links in chat: Shift+click an item in the inventory or a container (with the chat input active) puts `[Item Name]` in the message, up to 3; the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; sending writes the chip out as `[Item Name]{<r><id>}` (ASCII, readable in other clients) in ordinary speech, so default channel, party, guild, channels and private messages all carry it. Messages with links are drawn with the name in the rarity colour (unique orange); hovering one asks the server for the snapshot and shows the rich tooltip through `game_itemtooltip` (`showTip` / `hideTip`; Ctrl compares). Wraps three functions of the stock `game_console` (`Message:updateLabel`, `Message:handleMouseRelease`, `Chat:sendMessage`, `Chat:sendMapText`) and puts them back on terminate; hooks `UIItem.onMouseRelease` in front of the stock handler. No links in the Help channel (server patch `tools/patch_help_itemlinks.py` for modified clients), NPC, loot and spell tabs. Logic `chatlinks_logic.lua` (tested by `chatlinks_logic_test.lua`); tested in game with two clients (server/README.md "Item links in chat"). Its wrapped handlers return exactly one value: the engine calls a table of connected handlers (`g_game.onGameStart` / `onGameEnd`, `UIItem.onMouseRelease`) and stops the rest of the table with "function call didn't return the expected number of results" on two, which skipped every onGameStart after it at each login (party frames never asked for their state, the map overlay, rifts, ...) The parts it draws stay on the label (`label.chatParts`) so `game_cosmetics` can colour the speaker's name on top |
 | game_playerinspect | extended opcode 240 (JSON), server `inspect.lua`, `inspect_core.lua` | none | Inspect Player window (Chaos skin): outfit, name, level and class, guild and rank, achievement points, best rift tier, Vocation Trial tier, the ten equipment slots with rarity frames and the rich tooltip on hover (through `game_itemtooltip`). Opened from the top menu (Social > Inspect Player: type a name, any online player) and from the right-click menu of a player (`game_interface.addMenuHook`, within 10 tiles). The Passive Tree (n) button opens the character's tree read-only in `game_passivetree` (the server's `tree` packet; it and the `equip` packets come through `Chaos.sendChunked`, parts joined by `playerinspect_logic.lua`). The checkbox "Allow others to inspect me" is the character's privacy setting (default on). Named `game_playerinspect` because the base client already has a module `game_inspect` (Inspect Object). Logic `playerinspect_logic.lua` (tested by `playerinspect_logic_test.lua`); tested in game with two clients (server/README.md "Inspect Player") |
 | game_npctalk | none (the NPCs' own private talk: MessageModes.NpcFrom / NpcTo, nothing on the server) | none (replaces the hooks of the base `game_npctrade` dialog window while loaded: `tryHandleNpcDialogMessage`, `onNpcPlayerTalk`, `onNpcConversationAttempt`, `endNpcConversation`, `setNpcDialogWindowEnabled`; `game_interface.talkToNpc`; `g_game.use` on an NPC; `g_map.addThing` for the conversation NPC's map texts; all restored on unload) | NPC dialogue window: Talk (the NPC's menu, a left click with smart controls, Use / right-click with classic controls) walks into the talk radius (3 tiles; a reachable tile, so NPCs behind counters work) and says "hi"; the conversation runs in a speech bubble over the NPC (Chaos skin, tail pointing at its name, under it when there is no room above; follows the NPC and the camera every frame, kept inside the visible map between the top menu bar, the side panels and the console): name, portrait, "You: ...", the reply with clickable {keywords} (and chips), a text field, Yes / No / Trade / Bye when they fit; long replies wrap and scroll; the conversation so far in the name's tooltip (`SupportsText.wrap`). Lines of other NPCs stay in the console; the conversation NPC's lines leave the map and the console (copy to the console: "..." menu, g_settings `npcTalk.consoleCopy`). Esc, Bye or x say "bye"; walking out of range or 120 s idle close it; a second NPC gets "bye" to the first, then "hi" 1.5 s later. Server windows (the Oracle's Choice, the Keeper's trials, the trade window) open as usual. Off: Options > Interface > Disable NPC Dialog Window (console as before). Art `images/tail_*.png` from `client/tools/gen_npctalk_art.py`; logic `npctalk_logic.lua` (tested by `npctalk_logic_test.lua`); tested in game at 1280x720 and 1920x1080 |
@@ -637,8 +637,11 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
   (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
   (699,748 sprites), twice identical.
 - **Windows package pair:** the package takes the merged pair from the private branch `windows-assets`
-  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README; since 2026-10-15 things_custom26 at 50645056,
-  "Owner art" below; 2026-10-14 things_custom25 at ebe1b2b2, "Status words"). Since 2026-10-11 that archive held things_custom15
+  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README; since 2026-10-15 things_custom28 at b37b983c
+  (dat 9f75ddfe73197bce388398e4c31ca255, spr e0c74346aac1febb01e2197fd75004e1; "Equipment sets" below); before it
+  things_custom27 at 51a26d26
+  (dat 223a1c2fc1b0f99997414a5b2cde1773, spr 40cccfc55924a53fcd16b3813c0e328a; "Pack farming spell effects" and
+  "Catacomb kit" below); before it things_custom26 at 50645056, "Owner art" below; 2026-10-14 things_custom25 at ebe1b2b2, "Status words"). Since 2026-10-11 that archive held things_custom15
   (windows-assets c1441a8: the pouches, fist weapons, class looks, monster looks, the bone effects, the Cinderheart look,
   the raid boss and faction looks and the mount rider seats for client patch 0034), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
   clients still on an older pair: a pair without 33651-33653 shows nothing for a pouch.
@@ -1628,7 +1631,7 @@ CURSED!, CHILLED FOOT!, FREEZE!, POISONED!) for comparison; they are not read or
   `tools/ci/check_content.py --pair` now names things_custom25 (2,212 outfits, padding 2194-2199 blank).
 - Checked offline only (importer checks, the read-back, check_pair). Not run in a live client.
 
-## Pack farming spell effects (pair 27 trial, effects 674-758, missiles 154-160, `tools/sprites/gen_pack27_fx.py`, `art_import/pack27_fx.csv`; local only, switch off)
+## Pack farming spell effects (pair 27 trial, effects 674-758, missiles 154-160, `tools/sprites/gen_pack27_fx.py`, `art_import/pack27_fx.csv`; live since windows-assets 51a26d26, switch on)
 **Source and licence.** The owner's oblique effect sets in Google Drive "ots" (2026-10-15; the owner confirmed all
 packs may be used): four of them (spell impacts and circles, auras and buffs, game feel, projectiles), read as loose
 files (each variant's .json and its flattened `full` sheet), 32 px. Pack names, author and licence: docs/CREDITS.md. In short: use in
@@ -1669,6 +1672,76 @@ is used yet: every pick has a fitting variant in the four packs above.
   775,674 sprites), 758 effects, 160 missiles. `check_pair.py --old`: append-only, 0 errors, 124 warnings (those of
   things_custom26). Server side: server/README.md "Pack farming spell effects" (switch `ChaosPack27Fx.PAIR27_FX`,
   off). Not run in a live client.
+
+## Catacomb kit (pair 27 trial: outfit 2234, items 33986-33994, `tools/sprites/gen_assets_art.py`, `art_import/assets_art.csv`; live since windows-assets 51a26d26, switch on)
+**Source and licence.** The owner's Drive folder "ots/assets", a monster and tile kit added 2026-10-15 (credited in
+docs/CREDITS.md: same drop and licence file). Licence: use in unlimited commercial projects
+(games included), modified or not, no attribution needed; no reselling, redistributing or sharing of the assets
+themselves; no machine-learning training. The source files and the cut sheets stay out of git:
+`art_import/assets_art/` is ignored; the spec, `art_import/assets_art.sums` (sha256 of every sheet's RGBA pixels) and
+`art_import/assets_art_sources.csv` (pack per thing, read by tools/ci/check_credits.py) are committed.
+- What could be taken: only files the Drive connector saves to disk (about 38 KB and up); smaller files come back inline
+  and are not transcribed. Of the kit's ten monsters only the headless rider has strips that large (idle in four
+  directions, walk north and west). Pending (needs a zip of the kit, or the folders as parts): black cat, raven,
+  scarecrow stalker, hedge witch, harvest werewolf, pumpkin brute, skeleton warrior, skeleton archer, wailing ghost; the
+  props, nature, borders, roofs and floor changes; the docks kit (`32/`).
+- Outfit 2234 `hollow_rider` (5x5, 160 px, layers 1): idle group 4 phases, walk group 4 phases, 140 ms. Walk east and
+  south use the idle strips of those directions. Monster: the Hollow Rider (server/README.md "Catacomb kit (pair 27
+  trial)").
+- Items 33986-33994 (server 36986-36994, `server/data/items/assets_decor.csv`): crypt portal (3x3, 8 phases, purple
+  light), collapsing portal (4x4, 8 phases), burnt-out portal ring (4x4), sealed crypt hatch (3x3, blocks), breaking
+  seal (3x3, 8 phases), open hatch (3x3), sarcophagus closed / opening (8 phases) / open (2x3, block). Each draws up and
+  left of its tile: put it on the south-east tile of its square.
+- `python3 -I gen_assets_art.py build --src DIR` (DIR holds the sources under the names of `SOURCES`); `build --check`
+  (CI) compares spec, picks and sources with the tables and any sheets on disk with the sums; `gen_assets_art_test.py`
+  (CI) runs the pure parts on synthetic strips; `preview --out DIR --dat P --spr S`.
+- Build (2026-10-15; pushed with the pair 27 effects as things_custom27, windows-assets 51a26d26), appended to pair 27 (dat 873b5ccd506f44223036c9eb213e2c90):
+  ```
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat pair27/Tibia.dat --ours-spr pair27/Tibia.spr \
+      --out-dir pair27a --things client/tools/sprites/art_import/assets_art.csv --first-item 33986 --first-outfit 2234 \
+      --expect-items 33985 --manifest-out server/data/items/assets_decor.csv
+  python3 -I client/tools/sprites/check_pair.py pair27a/Tibia.dat pair27a/Tibia.spr --old pair27/Tibia.dat pair27/Tibia.spr
+  ```
+  dat 223a1c2fc1b0f99997414a5b2cde1773 (5,159,243 bytes), spr 40cccfc55924a53fcd16b3813c0e328a (650,961,766 bytes,
+  776,193 sprites: 519 appended), 33,994 items, 2,234 outfits, 758 effects, 160 missiles. The importer verified 1,166
+  sprite slots pixel-identical to the art. `check_pair.py --old`: append-only (37,037 old things and 775,674 old sprites
+  compared), 0 errors, 124 warnings (those of pair 27). Previews: the look in four directions, a GIF of each walk, the
+  items, a crypt scene. Not run in a client.
+
+## Equipment sets (pair 28: items 33995-34442, `tools/sprites/gen_gear_sets_art.py`, `art_import/gear_sets.csv`; live since windows-assets b37b983c, switch on)
+**Source and licence.** Seven 256 x 256 item sheets the owner sent on 2026-10-15, "made for us": the owner's own art,
+usable without restriction (docs/CREDITS.md "Owner art"). They are committed as `art_import/gear_sets/<set>.png`: the
+same pixels as the sheets (exact palette PNGs, about 22 KB each; `art_import/gear_sets.sums` holds the sha256 of each
+one's RGBA pixels; `SOURCES` the md5 of each sheet as sent).
+- Seven sets of 64 pieces, one per sheet, in id order: Cinderwrought (fire and ember) 33995-34058, Wyrmscale (green
+  dragon) 34059-34122, Rimewraith (teal frost, spectral) 34123-34186, Azure Vigil (blue and gold paladin) 34187-34250,
+  Bloodmoon (crimson, blood) 34251-34314, Gildcrown (gold) 34315-34378, Blightfang (dark green, venom) 34379-34442.
+  Server id = client id + 3000 (`server/data/items/gear_sets.csv`; server/README.md "Equipment sets (pair 28)").
+- `LAYOUT` names every cell, read off the sheets (helmets, armours, legs and boots, shields and spellbooks, swords and
+  axes, clubs and launchers, amulets and rings, wands and rods; the order differs a little per sheet: Wyrmscale and
+  Blightfang draw eight legs and no boots, Gildcrown two legs and six boots, five shields and three spellbooks). Armour
+  pieces carry a fit (heavy, medium, cloth, or anyone where a slot has too few pieces); melee weapons are two-handed
+  for the larger half of a kind by art pixels. Names are the set's prefix and a noun per kind and fit. Dat flags are
+  copied from a stock item of each kind (`copy:`), as for the themed sets.
+- `python3 -I gen_gear_sets_art.py build --src DIR` (DIR holds sheet1.png .. sheet7.png); `build --check` (CI)
+  compares the atlases with the sums and the things file with the layout; `gen_gear_sets_art_test.py` (CI) runs the
+  pure parts; `preview --out DIR --dat P --spr S` draws each set in a bag (8 x 8 slots) and three class kits (heavy,
+  medium, cloth) in equipment slots beside a stock look tinted in the set's colours (the client draws no gear on a
+  character).
+- Build (2026-10-15), appended to pair 27 (windows-assets 51a26d26, dat 223a1c2fc1b0f99997414a5b2cde1773):
+  ```
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat pair27a/Tibia.dat --ours-spr pair27a/Tibia.spr \
+      --out-dir pair28 --things client/tools/sprites/art_import/gear_sets.csv --first-item 33995 --expect-items 33994 \
+      --manifest-out server/data/items/gear_sets.csv
+  python3 -I client/tools/sprites/check_pair.py pair28/Tibia.dat pair28/Tibia.spr --old pair27a/Tibia.dat pair27a/Tibia.spr
+  ```
+  dat 9f75ddfe73197bce388398e4c31ca255 (5,166,592 bytes), spr e0c74346aac1febb01e2197fd75004e1 (651,827,354 bytes,
+  776,641 sprites: 448 appended), 34,442 items, 2,234 outfits, 758 effects, 160 missiles. The importer verified 448
+  sprite slots pixel-identical to the art. `check_pair.py --old`: append-only (37,047 old things and 776,193 old sprites
+  compared), 0 errors, 0 warnings in the new things; the whole pair 0 errors, 124 warnings (those of pair 27). Live pair
+  checks against it: recolour `--check` and the dungeon banners pass unchanged; `gen_outfit_anchors.py` was run again
+  (only the dat md5 in `outfit_anchors.lua` changes: no outfit was added), so that file must go in with the pair.
+  Not on windows-assets yet, not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
@@ -1718,6 +1791,27 @@ sheet, three outfit sheets, a second moth wings sheet, two "filth" sheets).
   wings). Server side: server/README.md "Owner art (pair 26)".
 - Checked offline only (importer checks, check_pair, the previews). Not run in a live client. A client on pair 25 or
   older draws nothing for 2213-2233 and 33940-33985.
+
+## Sprite style checker (new, `tools/sprites/style_check.py`, `tools/sprites/style_palettes.json`, docs/SPRITE_STYLE.md)
+A style guide and an automatic check for new sprites, so they match the game. Measured only on art we may use as a
+reference: the owner's seven gear set sheets (`art_import/gear_sets/`), the owner art of pair 26
+(`art_import/owner_art/`) and our generated effects. No purchased pack and nothing else from the Drive is read until the
+licence audit allows it.
+- docs/SPRITE_STYLE.md: grid and anchors, the oblique view and the light (from the top, a little left: 94 degrees on
+  the sheets), the outline (one pixel, near-black tinted toward the theme, 98% of the rim), the palette of each theme
+  (56 to 87 colours, a fixed palette per sheet) with its ramps, shading, transparency (alpha 0 or 255), item
+  silhouettes per slot, creature and wing frames, effect frame counts, a checklist and the import steps.
+- `style_check.py check FILE... --theme NAME | --palette PAL [--cell 32] [--soft] [--key RRGGBB]`: cuts each PNG into
+  cells and reports PASS or FAIL per image and the reasons per cell; exit 1 on any failure. Checks: size and grid,
+  background (transparent or one clean key colour), upscaled art, semi-transparent pixels (`--soft`: none below alpha
+  12), colour count, palette distance (CIE76 mean and far share), outline darkness and thickness, rim light against the
+  theme's reference, lone pixels, specks, pinholes, luma spikes and speckle.
+- `style_check.py snap IN OUT --theme NAME` moves every pixel to the nearest theme colour; `report` prints the measured
+  facts of the guide.
+- `style_palettes.json` is made by `build-palettes` from the seven sheets: palettes, outline colours, light vectors, the
+  owners' ranges and the thresholds (each owner range with a margin). CI runs `build-palettes --check` and
+  `style_check_test.py` (synthetic sprites pass or fail for the right reason; the seven sheets pass their own themes,
+  the frost sheet fails the fire palette) with the pinned fx venv.
 
 ## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
 **On windows-assets (407ad9b6, owner approved 2026-10-13); switches on since 2026-10-13 (pair 24 at 407ad9b6).** Our own art for the themes of five reference sheets and four set showcases the owner

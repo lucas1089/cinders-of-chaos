@@ -31,7 +31,8 @@ Game design, world, server systems, client interface, website and original art: 
 
 - **Owner art**
   - Author: the Cinders of Chaos owner (own or commissioned art)
-  - Used for: monster looks, wings and decoration
+  - Used for: monster looks, wings, decoration and equipment sets
+  - Source: the equipment set sheets are the owner's own art, made for us
 - **Login artwork**
   - Author: the Cinders of Chaos team
   - Used for: the login screen

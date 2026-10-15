@@ -491,7 +491,9 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local c = cache[creature:getId()]
-	local res = c and c.totals and c.totals.res
+	-- against a player or a player's summon the PvP share of the resistances (S.totals resPvp)
+	local pvp = attacker and playerOf(attacker) ~= nil
+	local res = c and c.totals and (pvp and c.totals.resPvp or c.totals.res)
 	if res and next(res) then
 		local r1, r2 = res[ELEMENT[primaryType] or ""] or 0, res[ELEMENT[secondaryType] or ""] or 0
 		if r1 > 0 then
@@ -630,6 +632,10 @@ startup:register()
 
 local login = CreatureEvent("ChaosItemSetsLogin")
 function login.onLogin(player)
+	-- a fresh start: after a death the character comes back without its conditions but may keep its id, so a cached
+	-- condition signature must not stop the set condition from being added again (item_mods.lua refreshes at login)
+	cache[player:getId()] = nil
+	pcall(S.refresh, player)
 	player:registerEvent("ChaosItemSetsTaken")
 	player:registerEvent("ChaosItemSetsKill")
 	player:registerEvent("ChaosItemSetsLogout")

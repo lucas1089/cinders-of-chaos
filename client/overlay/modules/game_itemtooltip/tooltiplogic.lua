@@ -259,8 +259,9 @@ function L.lines(tip, ctx)
     end
   end
 
-  if tip.unique and tip.unique.set then
-    for _, row in ipairs(L.setLines(tip.unique.set)) do
+  local setBlock = (tip.unique and tip.unique.set) or tip.set -- tip.set: a plain piece of an open set (pair 28)
+  if setBlock then
+    for _, row in ipairs(L.setLines(setBlock)) do
       add(row.text, row.color, row.sep)
     end
   end
@@ -388,6 +389,10 @@ function L.setLines(set)
   if type(set) ~= 'table' then return out end
   out[#out + 1] = { text = string.format('Set: %s (%d/%d)', tostring(set.name or '?'), tonumber(set.have) or 0,
     tonumber(set.total) or 0), color = C.set, sep = true }
+  if tonumber(set.tiers) then
+    out[#out + 1] = { text = tr('Active tier: %d of %d', tonumber(set.tier) or 0, tonumber(set.tiers) or 0),
+      color = (tonumber(set.tier) or 0) > 0 and C.setOn or C.dim }
+  end
   for _, p in ipairs(type(set.pieces) == 'table' and set.pieces or {}) do
     local text = '  ' .. tostring(p.n or '?')
     if (tonumber(p.h) or 1) > 1 then text = text .. string.format(' (counts %d)', p.h) end
@@ -414,7 +419,7 @@ end
 function L.dropSetTips(cache)
   local n = 0
   for key, e in pairs(cache.entries) do
-    if type(e.tip) == 'table' and type(e.tip.unique) == 'table' and e.tip.unique.set then
+    if type(e.tip) == 'table' and ((type(e.tip.unique) == 'table' and e.tip.unique.set) or type(e.tip.set) == 'table') then
       cache.entries[key] = nil
       n = n + 1
     end

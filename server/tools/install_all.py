@@ -56,6 +56,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   ownerdecor   tools/install_owner_decor.py      the owner's decoration items of client pair 26 (45 plants, the waypoint seal)
                in items.otb / items.xml (server ids 36940..36985; used only once ChaosOwnerArt.PAIR26 is on; README
                "Owner art (pair 26)")
+  assetsdecor  tools/install_assets_decor.py     the catacomb kit items of the pair 27 trial (sarcophagi, hatches, portal ring)
+               in items.otb / items.xml (server ids 36986..36994; used only once ChaosAssetsArt.PAIR27 is on)
+  gearsets     tools/install_gear_sets.py        the seven equipment sets of client pair 28 (448 pieces, server ids
+               36995..37442) in items.otb / items.xml, their equip entries in movements.xml and weapon entries in
+               weapons.xml (levels, classes, stats; after vocations, whose class names the lists use); dropped only
+               once ChaosGearSets.PAIR28 is on (README "Equipment sets (pair 28)")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -444,6 +450,20 @@ def step_ownerdecor(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('themeitems') + 1, 'ownerdecor')  # after the themed items (client ids of pair 26 after pair 25's)
+
+
+def step_assetsdecor(server, data, ctx):
+    return tool_result(run_tool([tool('install_assets_decor.py'), data], 'install_assets_decor.py'))
+
+
+STEPS.insert(STEPS.index('ownerdecor') + 1, 'assetsdecor')  # after the owner decoration (client ids of pair 27 after 26's)
+
+
+def step_gearsets(server, data, ctx):
+    return tool_result(run_tool([tool('install_gear_sets.py'), data], 'install_gear_sets.py'))
+
+
+STEPS.insert(STEPS.index('assetsdecor') + 1, 'gearsets')  # after the catacomb kit (client ids of pair 28 after 27's)
 
 
 def step_gems(server, data, ctx):

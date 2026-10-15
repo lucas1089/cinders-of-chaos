@@ -1,0 +1,10 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+33986,36986,crypt_portal,decor,new,crypt portal,3x3,0,16777216,0,0,3,204,ms=120|family=catacomb|block=0
+33987,36987,crypt_portal_collapse,decor,new,collapsing crypt portal,4x4,0,16777216,0,0,2,204,ms=140|family=catacomb|block=0
+33988,36988,crypt_portal_husk,decor,new,burnt-out portal ring,4x4,0,0,0,0,0,0,family=catacomb|block=0
+33989,36989,crypt_seal,stump,new,sealed crypt hatch,3x3,0,8193,2,0,2,30,family=catacomb|block=1
+33990,36990,crypt_seal_breaking,stump,new,breaking crypt seal,3x3,0,16785409,2,0,3,30,ms=140|family=catacomb|block=1
+33991,36991,crypt_seal_open,decor,new,open crypt hatch,3x3,0,0,0,0,2,30,family=catacomb|block=0
+33992,36992,sarcophagus,stump,new,sealed sarcophagus,2x3,0,8193,2,0,0,0,family=catacomb|block=1
+33993,36993,sarcophagus_opening,stump,new,sarcophagus lid grinding open,2x3,0,16785409,2,0,0,0,ms=140|family=catacomb|block=1
+33994,36994,sarcophagus_open,stump,new,open sarcophagus,2x3,0,8193,2,0,0,0,family=catacomb|block=1

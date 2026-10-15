@@ -17,6 +17,7 @@
 --   quality = {q, cap}                             item quality in percent (every modifier value is multiplied by it)
 --   ruined                                         true on an item an Orb of Ruin ruined: no orb changes it any more
 --   unique = {name, set = {key, name, have, total, pieces, bonuses}}  uniques only; set: a set piece (T.setInfo)
+--   set = {..., tier, tiers}  a plain item that is a piece of an open set (pair 28): the same block, the active tier
 --   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
 --                                                  the item type's own bonuses (skills, protections, speed, ...)
 --   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd, bd, pw}]  every modifier, prefixes first: attribute key, label,
@@ -357,6 +358,8 @@ function T.build(item, opts)
 	local uniqueEntry = ChaosUniqueById and ChaosUniqueById[id] or nil
 	if unique then
 		tip.unique = {name = tip.name, set = T.setInfo(item, opts)}
+	else
+		tip.set = T.setInfo(item, opts) -- a piece of an open set (pair 28, data/lib/chaos_gear_sets.lua): plain gear
 	end
 
 	tip.base = T.baseStats(item, it)

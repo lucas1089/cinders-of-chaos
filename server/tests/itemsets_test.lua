@@ -219,6 +219,9 @@ Game = {getPlayers = function() return online end,
 	createItem = function(id) return newItem(id) end,
 	broadcastMessage = function(text) broadcasts[#broadcasts + 1] = text end}
 
+-- the open sets of pair 28 stay out of the data checks below (their own section further down)
+ChaosGearSets = dofile("data/lib/chaos_gear_sets.lua")
+ChaosGearSets.PAIR28 = false
 dofile("data/scripts/chaos/item_mods.lua")
 dofile("data/lib/chaos_unique_specs.lua")
 dofile("data/lib/chaos_unique_items.lua")
@@ -696,5 +699,141 @@ eq(batch.count, 0, "salvage all never takes a set piece")
 local styled = piece(29470)
 styled.custom.chaos_tmog = 2493
 eq(S.pieceOf(styled).key, "gallows", "the look does not change the piece")
+
+-- ---------------------------------------------------------------- the open sets of pair 28 (switch forced on)
+-- data/lib/chaos_gear_sets.lua: plain items counted by base id, bonuses at 2 / 4 / 6, PvP share of the resistances,
+-- equip / unequip / swap / re-equip / level / logout / login / death / reload, the tooltip and look text
+local G = dofile("data/lib/chaos_gear_sets.lua")
+eq(G.PAIR28, true, "pair 28 switch on as shipped")
+G.PAIR28 = false
+S.load()
+eq(S.byKey.bloodmoon, nil, "off: no open set")
+ChaosGearSets = G
+G.PAIR28 = true
+S.load()
+local open = 0
+for _, set in ipairs(S.sets) do
+	if set.open then
+		open = open + 1
+		eq(set.total, 6, set.key .. ": six pieces reach the last bonus")
+		eq(#set.bonuses, 3, set.key .. ": tiers 2, 4, 6")
+		eq(#set.pieces, 64, set.key .. ": every piece of the set counts")
+		for i, b in ipairs(set.bonuses) do
+			eq(b.n, 2 * i, set.key .. ": thresholds")
+			for k, v in pairs(b.stats) do
+				ok(S.COND[k] or S.RES[k] or M.byKey[k], set.key .. ": a known stat " .. k)
+				local def = M.byKey[k]
+				ok(not def or not def.cap or v * 2 <= def.cap, set.key .. ": " .. k .. " well under its cap")
+			end
+		end
+	end
+end
+eq(open, 7, "seven open sets")
+-- the engine's view of the pieces used below
+local SLOTP = {helmet = SLOTP_HEAD, armor = SLOTP_ARMOR, legs = SLOTP_LEGS, boots = SLOTP_FEET, amulet = SLOTP_NECKLACE,
+	ring = SLOTP_RING, shield = 48}
+local function gearPiece(set, kind, fit)
+	for _, p in ipairs(G.items.pieces) do
+		if p.set == set and p.kind == kind and (fit == nil or p.fit == fit) then
+			TYPES[p.id] = {name = p.name, slot = SLOTP[kind] or (48 + (p.fit == "2" and SLOTP_TWO_HAND or 0)),
+				weaponType = SLOTP[kind] == nil and WEAPON_SWORD or (kind == "shield" and WEAPON_SHIELD or nil)}
+			return newItem(p.id), p
+		end
+	end
+end
+local bm = {}
+for _, k in ipairs({{"helmet", "H"}, {"armor", "H"}, {"legs", "H"}, {"boots"}, {"amulet"}, {"ring"}, {"shield"},
+		{"sword", "1"}, {"sword", "2"}}) do
+	bm[k[1] .. (k[2] or "")] = gearPiece("bloodmoon", k[1], k[2])
+end
+local knight = newPlayer(700)
+local life = function() return cache[knight:getId()].lifeonhit or 0 end
+wear(knight, {[CONST_SLOT_HEAD] = bm.helmetH})
+eq(S.stateOf(knight).sets.bloodmoon.count, 1, "one plain piece counts by its base id")
+eq(life(), 0, "one piece: nothing")
+wear(knight, {[CONST_SLOT_ARMOR] = bm.armorH})
+eq(life(), 8, "two pieces: tier 1")
+wear(knight, {[CONST_SLOT_LEGS] = bm.legsH, [CONST_SLOT_FEET] = bm.boots})
+eq(cache[knight:getId()].lifeonkill, 40, "four pieces: tier 2")
+wear(knight, {[CONST_SLOT_NECKLACE] = bm.amulet, [CONST_SLOT_RING] = bm.ring})
+eq(life(), 16, "six pieces: tier 3 adds to tier 1")
+eq(cache[knight:getId()].regen, 10)
+M.refresh(knight) M.refresh(knight)
+eq(life(), 16, "refreshing again stacks nothing")
+-- the same piece twice (two copies of one blade, one in each hand) counts once; weapons and shields count
+local blade = bm.sword1
+local twin = newItem(blade:getId())
+wear(knight, {[CONST_SLOT_NECKLACE] = false, [CONST_SLOT_RING] = false, [CONST_SLOT_RIGHT] = blade, [CONST_SLOT_LEFT] = twin})
+eq(S.stateOf(knight).sets.bloodmoon.count, 5, "a duplicate in the hands counts once")
+wear(knight, {[CONST_SLOT_LEFT] = bm.shield})
+eq(S.stateOf(knight).sets.bloodmoon.count, 6, "a shield counts")
+-- swap: a two-handed blade for blade and shield counts two
+wear(knight, {[CONST_SLOT_LEFT] = false, [CONST_SLOT_RIGHT] = bm.sword2})
+eq(S.stateOf(knight).sets.bloodmoon.count, 6, "a two-handed piece counts two")
+wear(knight, {[CONST_SLOT_RIGHT] = false, [CONST_SLOT_FEET] = false})
+eq(life(), 8, "unequip: back to tier 1")
+eq(cache[knight:getId()].lifeonkill or 0, 0, "tier 2 gone")
+-- below a piece's level it does not count
+local low = newPlayer(1)
+wear(low, {[CONST_SLOT_HEAD] = gearPiece("bloodmoon", "helmet", "H"), [CONST_SLOT_ARMOR] = gearPiece("bloodmoon", "armor", "H")})
+eq(S.stateOf(low).sets.bloodmoon.count, 0, "below the pieces' level: nothing")
+-- the condition (Wyrmscale 4: maximum health +3%) and the resistances (2: fire 5%, players half)
+local wy = newPlayer(700)
+local wyItems = {}
+for i, k in ipairs({{"helmet", "H"}, {"armor", "H"}, {"legs", "H"}, {"amulet"}}) do
+	wyItems[i] = gearPiece("wyrmscale", k[1], k[2])
+end
+wear(wy, {[CONST_SLOT_HEAD] = wyItems[1], [CONST_SLOT_ARMOR] = wyItems[2], [CONST_SLOT_LEGS] = wyItems[3],
+	[CONST_SLOT_NECKLACE] = wyItems[4]})
+eq(cond(wy).params[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 103, "four pieces: maximum health +3%")
+local function nConds(p)
+	local n = 0
+	for _, c in ipairs(p.conditions) do
+		if c.kind == CONDITION_ATTRIBUTES and c.params[CONDITION_PARAM_SUBID] == S.config.conditionSubId then n = n + 1 end
+	end
+	return n
+end
+wear(wy, {[CONST_SLOT_NECKLACE] = false}) wear(wy, {[CONST_SLOT_NECKLACE] = wyItems[4]})
+eq(nConds(wy), 1, "re-equip: one condition")
+local drake = monster(5000)
+eq(events.ChaosItemSetsTaken.onHealthChange(wy, drake, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_FIREDAMAGE, ORIGIN_MELEE), -950,
+	"fire -5% from a monster")
+local foe = newPlayer(700)
+eq(events.ChaosItemSetsTaken.onHealthChange(wy, foe, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_FIREDAMAGE, ORIGIN_MELEE), -980,
+	"from a player: half of it (2%)")
+eq(events.ChaosItemSetsTaken.onHealthChange(wy, monster(100, 100, foe), -1000, COMBAT_FIREDAMAGE, 0, COMBAT_FIREDAMAGE,
+	ORIGIN_MELEE), -980, "from a player's summon: half")
+-- logout, login, death, reload
+events.ChaosItemSetsLogout.onLogout(wy)
+eq(ChaosItemSetsCache[wy:getId()], nil, "logout: nothing kept")
+wy.conditions = {} -- the engine drops the endless condition; a death does the same without a logout event
+events.ChaosItemSetsLogin.onLogin(wy)
+eq(nConds(wy), 1, "login: the condition again")
+wy.conditions = {}
+events.ChaosItemSetsLogin.onLogin(wy) -- a death: the cache was still there
+eq(nConds(wy), 1, "after a death: the condition again")
+dofile("data/scripts/chaos/itemsets.lua") -- /reload
+M.refresh(wy)
+eq(nConds(wy), 1, "reload: still one condition")
+eq(events.ChaosItemSetsTaken.onHealthChange(wy, drake, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_FIREDAMAGE, ORIGIN_MELEE), -950,
+	"reload: the resistance holds")
+wear(wy, {[CONST_SLOT_HEAD] = false, [CONST_SLOT_ARMOR] = false, [CONST_SLOT_LEGS] = false, [CONST_SLOT_NECKLACE] = false})
+eq(nConds(wy), 0, "all off: no condition")
+eq(events.ChaosItemSetsTaken.onHealthChange(wy, drake, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_FIREDAMAGE, ORIGIN_MELEE), -1000,
+	"all off: no resistance")
+-- tooltip and look text: the active tier, only the worn pieces listed
+local st = S.count({{id = wyItems[1]:getId(), set = "wyrmscale"}, {id = wyItems[2]:getId(), set = "wyrmscale"},
+	{id = wyItems[3]:getId(), set = "wyrmscale"}, {id = wyItems[4]:getId(), set = "wyrmscale"}}, 1000)
+local tip = S.tooltip("wyrmscale", st)
+eq(tip.have .. "/" .. tip.total .. " " .. tip.tier .. "/" .. tip.tiers, "4/6 2/3", "tooltip counts and tier")
+eq(#tip.pieces, 4, "only the worn pieces listed")
+eq(S.lookLines("wyrmscale", st)[1], "Set: Wyrmscale (4/6), tier 2 of 3.", "look text header")
+eq(S.lookLines("wyrmscale", st)[3], "(4) Maximum Health +3% [active]", "look text: an active bonus")
+eq(S.tooltip("embers", st).tier, nil, "the old sets keep their block")
+-- back off: the plain items are no pieces any more
+G.PAIR28 = false
+S.load()
+eq(S.pieceOf(wyItems[1]), nil, "off: no piece")
+ChaosGearSets = nil
 
 print(string.format("itemsets_test: %d checks passed", checks))

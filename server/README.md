@@ -7013,6 +7013,36 @@ Install with the switch on: `install_all.py SERVER_DIR --only files,outfits,owne
   `tools/install_owner_decor_test.py`, `tools/area_planner_test.py` (the kits merged while on). Not run on a live
   server or in a client yet.
 
+## Catacomb kit (pair 27 trial) (`data/lib/chaos_assets_art.lua`, `data/lib/chaos_assets_decor.lua`, `tools/install_assets_decor.py`, switch `ChaosAssetsArt.PAIR27`, on)
+Things of the owner's licensed monster and tile kit in the client pair 27 trial (client/MANIFEST.md "Catacomb kit (pair
+27 trial)"): one boss look (outfit 2234) and nine decoration items (client 33986-33994, server 36986-36994).
+- **Switch.** `M.PAIR27 = true` since 2026-10-15, when pair 27 went live (windows-assets 51a26d26). A client on pair 26 or older has no outfit 2234 and no items
+  33986+. On: `area_plan_decor.kits()` merges `tools/areaplan/decor_assets_art.json` after the owner's overlay (the
+  catacomb biome gets the kit `hollow_crypt`: the crypt kit plus the kit's sarcophagi); the row of
+  `client/tools/sprites/monster_looks/assets_art_picks.csv` goes into picks.csv and `tools/apply_monster_looks.py` writes
+  look 2234 into the Hollow Rider's file. Flipping it changes the decoration of every catacomb plan already placed
+  (bonechoir_catacomb, hollow_crypt): install those on a restored map. `M.lookOf(name, current)` gives the look a
+  monster should carry now.
+- **Items.** `tools/install_assets_decor.py DATA_DIR` (install_all step `assetsdecor`, after `ownerdecor`) adds the nine
+  items to items.otb and items.xml from `data/items/assets_decor.csv` (the importer's manifest), same node rules as the
+  owner decoration; idempotent. `--lua [--check]` writes `data/lib/chaos_assets_decor.lua`. Off, the items exist but
+  nothing places them. The hatches and portal rings are set pieces (3x3 / 4x4, on the south-east tile of their square);
+  the sarcophagi block their tile.
+- **The Hollow Rider** (`data/monster/monsters/chaos/hollow_rider.xml`, boss, level 380-400, 42,000 health, 24,000
+  experience): melee 900-1400, a scythe sweep (length 5, spread 3), grave fire at range (radius 2), a trample (radius 3)
+  and a slow; heals and hastes itself; death 50 %, holy -20 %, fire -10 %. Loot: two crystal coins, platinum, a token
+  at 2 %, royal helmet, dragon shield, golden armor and legs, terra mantle, medusa shield, boots of haste. Bosses are
+  never paced (pace_config.lua); the bestiary files it under its boss row. Stock look 1074 while the switch is off.
+- **Hollow Crypt** (`tools/areaplan/plans/hollow_crypt.json`, levels 300-400, catacomb, 112 x 96 at 15305, 14560, 10):
+  the undead gap between the Bonechoir Catacomb (200-290) and the Ossuary Stair (400-520). A camp at the lychgate, grave
+  rows, two ossuaries in a loop, the sexton nave and the rider's ring (boss room, one entrance, respawn 2 h). Monsters:
+  Bonecrusher, Rotten and Bloated Corpse-grub, Sopping Carcass and Corpus (37 spawns). Placed by
+  `install_content_areas.py` like the other plans (teleport room slot 17, display monster Bonecrusher). The planner
+  warns that it spawns the rider "with normal health": its catalogue calls a monster a boss only by folder name; the
+  file's own `isboss` flag still applies in the game.
+- Tests: `tests/assets_art_test.lua` (switch off, decoration ids against the manifest, the picks row, lookOf),
+  `tools/install_assets_decor_test.py`, `client/tools/sprites/gen_assets_art_test.py`.
+
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 
 Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,
@@ -7053,6 +7083,99 @@ nothing for client items 33660-33903 and outfits 2185-2193. Rollback: set the li
   exclusives; switch forced off: no set, no exclusive, the catalogue range, grounds fall back; switch on: the transmog sets and the exclusives validate with the real configs and cores,
   the ground helper). Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; the transmog catalogue grew from 1,454 to 1,604 looks, 18 themed sets, auras.xml up to
   aura 32 (client 2186), wings.xml with the Runic Wings. Not played in a client.
+
+## Equipment sets (pair 28) (`data/lib/chaos_gear_sets.lua`, `data/lib/chaos_gear_sets_items.lua`, `tools/install_gear_sets.py`, `chaos/gear_sets.lua`, switch `ChaosGearSets.PAIR28`, on)
+
+Seven themed equipment sets from the owner's own item sheets (client/MANIFEST.md "Equipment sets (pair 28)"): 448
+pieces, 64 a set, client ids 33995-34442, server ids 36995-37442 (client id + 3000). Unlike the themed sets of pair 24
+these are real gear with stats. **Switch `ChaosGearSets.PAIR28`, ON as shipped**: pair 28 is live on windows-assets b37b983c
+(2026-10-15). Off, installed pieces exist but nothing drops them and the transmog catalogue skips their
+ids. On: the loot below and the pieces are ordinary transmog looks. Install: `install_all.py SERVER_DIR --only
+files,gearsets` (step `gearsets`, after `assetsdecor` and after `vocations`, whose class names its lists use), restart.
+
+| Set | Theme | Levels | Drops from (hunting level) | Bosses (15% per kill) |
+|---|---|---|---|---|
+| Blightfang | dark green, venom | 8-150 | Poison Spider, Swamp Troll, Cobra, Scorpion (8-11), Wailing Widow, Rot Elemental, Bog Raider, Giant Spider (34-48), Plaguesmith, Cobra Assassin, Blightwalker, Venom Spider (138-177) | Fennra, Snake God Essence |
+| Wyrmscale | green dragon | 40-220 | Wyvern, Dragon Lord Hatchling, Dragon, Wyrm, Dragon Lord, Elder Wyrm, the Wyrmblood (36-104), Black, Mega and Netheria Dragon, Wardragon (163-180) | Shimmerscale |
+| Cinderwrought | fire, ember | 120-450 | Hellhound, Lava Golem, Burning Gladiator, Hellflayer, Burning Book, Cinderclaw, Infernal Demon, Hellhunter Pyrarch, Blazefang (132-474) | Pyrevorn, Morgashal |
+| Bloodmoon | crimson, blood | 300-650 | Elder Bloodjaw, Bloodfang Reaver, Bloodthirst Bulgeye, Bloodspark Adept, Bloodshade Reaper (326-501) | - |
+| Rimewraith | teal frost, spectral | 450-1000 | Distorted, Capricious and Hazardous Phantom, Frost Hydra (406-449), Glacial Hellcharger, Frost Maiden, Ice Lich (612-1000) | - |
+| Azure Vigil | blue and gold, holy | 800-1350 | Dawn Strayer, Spirit of Purity, Celestial Wyrm (980-1080; Rimecrown Depths, Slagmourn Foundry) | Ossivane the Gravecage |
+| Gildcrown | gold | 1200-2000 | Golden Dragon, Winterstride, Bloodantler Fiend, Mirecoil Wyrm (1160-1900; the gilded owner looks) | Vaelith the Fallen Seraph |
+
+The bands overlap, so a character always has a set running and the next one starting.
+
+- **Who wears what.** Every set dresses and arms every class. Armour pieces have a fit read off the art: heavy
+  (Warrior and Templar lines), medium (Ranger, Thief and Monk lines), cloth (Mystic and Necromancer lines); boots,
+  amulets, rings and Gildcrown's two legs anyone. Weapons follow the stock rules of their kind after `add_vocations.py`:
+  one-handed swords Warrior, Juggernaut, Templar and Thief lines; two-handed melee the Warrior line (the Berserker only
+  these); one-handed axes and clubs the Warrior without the Berserker (clubs also the Templar line); two-handed clubs
+  also the Monk line (its staff); bows the Ranger line, crossbows the Ranger and Deadeye; wands the Mystic,
+  Elementalist and Necromancer line, rods the Mystic, Illusionist and Necromancer line; shields the Warrior and
+  Juggernaut and the Templar line; spellbooks the casters. The larger half of a melee kind (by art) is two-handed.
+- **Levels (fluid).** The pieces of one track (kind and fit, e.g. the cloth helmets or the two-handed axes) spread over
+  the band in sheet order, rounded to 5: a set's three heavy helmets of 8-150 are 8, 80 and 150. Each class finds the
+  next piece of a slot a little higher, never a big jump. Stats are fixed by the level along curves anchored to the
+  stock gear of the same level (`CURVES` in the tool; the stock gear stops growing after level 1000, the curves go on
+  slowly to 2000): body armour 7 / 13 / 16 / 19 / 25 / 31 at 8 / 100 / 200 / 400 / 1000 / 2000 (medium x0.9, cloth
+  x0.8), one-handed melee attack 16 / 46 / 49 / 53 / 61 / 69 (two-handed +3 and 3 s attacks, as `two_handed.py`), of
+  it 35% the set's element; launchers the archery bands' attack (31 at level 8, 68 at 100, 85 at 2000) and hit
+  chance, the set's missile; wands 16 / 62 / 85 / 98 / 118 / 138 mean damage of the set's element, mana 2-33; shields
+  defense 14-55, spellbooks 8-33 with magic level +1 to +5; skills and magic level in steps by level; the set's
+  resisted element on body armour and amulet (2-10%, a weakness of half on body armour), half on helmet, legs,
+  shield and spellbook; rings physical 1-4%; boots speed 0-40. Bloodmoon weapons leech life (chance and amount 2-6).
+- **RNG decides only the max.** The base above is the same for everybody. A dropped piece is forged like any gear
+  (`ChaosCrafting.forge`): rarity, item level from the monster, modifiers and their tiers; the orbs work on it. No
+  piece is a unique; any number of pieces may be mixed with other gear.
+- **Set bonuses** (owner request 2026-10-15; `ChaosGearSets.bonuses`, only while the switch is on). The sets join the
+  item set system ("Item sets") as *open* sets: `S.load` adds `ChaosGearSets.itemSets()`, a plain item is a piece by
+  its base id (`S.openById`), any 2, 4 and 6 pieces of one set worn at their level give the tiers (weapons, shields and
+  spellbooks count; the same item twice, e.g. in both hands, once; a two-handed weapon or launcher twice). Tiers add up.
+  Each tier is about one modifier roll of the tier the band's items roll (T2-T3 for Blightfang up to T7 for Gildcrown),
+  so a full set is worth three rolls: below the uniques and the ten item sets of the same levels (Bloodsworn at 300:
+  bleed 10% and damage over time 15% at 2 pieces plus two effects) and far below a keystone. Modifier numbers go into
+  the item totals before the caps; resistances count only half against players and their summons (`pvpShare` 50; the
+  old sets keep 100), the other stats act on monsters or loot only, apart from dodge (cap 10) and maximum health.
+
+| Set | 2 pieces | 4 pieces | 6 pieces |
+|---|---|---|---|
+| Blightfang (8-150) | Chance to Poison +4%, Earth Resistance +4% | Damage over Time +6% | Chance to Poison +4%, Damage over Time +4% |
+| Wyrmscale (40-220) | Fire Resistance +5% | Maximum Health +3% | Fire Resistance +5%, Damage Taken from Monsters -2% |
+| Cinderwrought (120-450) | Chance to Ignite +6% | Elemental Penetration +4% | Chance to Ignite +4%, Damage over Time +10% |
+| Bloodmoon (300-650) | Health on Hit +8 | Life on Kill +40 | Health on Hit +8, Health Regeneration +10 per second |
+| Rimewraith (450-1000) | Chance to Chill +8% | Dodge +2% | Ice Resistance +8%, Dodge +1% |
+| Azure Vigil (800-1350) | Death Resistance +8% | Damage Taken from Monsters -3%, Healing Done +4% | Damage Taken from Monsters -2%, Maximum Health +4% |
+| Gildcrown (1200-2000) | Gold Find +10% | Rarity Find +8%, Item Find +5% | Damage to Elites and Bosses +6% |
+
+  The tooltip (server `tip.set` for a plain piece, client `tooltiplogic.lua`) and the look text show the set, the pieces
+  worn (an open set lists only those), "Active tier: n of 3" and every bonus, active ones bright / "[active]".
+  Nothing is stored: the bonuses are worked out from the equipment on every equip, unequip and swap, at login and every
+  3 s; the set condition has one sub id and is replaced, never added twice; logout drops the cache and login starts
+  from a clean one (a death that keeps the character's id does not keep a stale condition signature); a /reload
+  works the same state out again.
+- **Loot** (`ChaosGearSets.lootRows`, added to the monster types at startup by `chaos/gear_sets.lua` while the switch
+  is on, as the fist weapons): per monster every piece of its set whose level is within 300 below and 50 above the
+  monster's hunting level, sharing 0.6% per kill (bosses 15%), at least 0.01% each. The chaos loot layer's extra
+  rolls, smart loot (a piece made for the killer's class weighs 3, see "Smart loot"), the Item Finder and the bestiary
+  read `MonsterType:getLoot()` and see the rows. A monster or item missing on the server is reported and skipped. No
+  talkaction, no shop.
+- **Install** (`install_gear_sets.py DATA_DIR [--dry-run]`): items.otb nodes (the importer's group and flags), an
+  items.xml block, an Equip / DeEquip pair per piece in movements.xml (slot, level, classes; ascended classes hidden
+  next to their base class) and a melee / distance / wand entry per weapon in weapons.xml (level, classes; wands and
+  rods damage, mana and element), each between marker comments, rewritten when a number changed; an id with an entry
+  outside a block stops the tool. Launchers have no ammunition type: they fire on their own like every launcher after
+  `patch_base_archery.py`. `--lua [--check]` writes `data/lib/chaos_gear_sets_items.lua` (levels, classes, stats per
+  piece; CI checks it). Tried on a copy of a full test server (`--dry-run` of `install_all.py --only gearsets` and two
+  runs of the tool): 448 nodes, the three files parse, the second run changes nothing.
+- Tests: `tests/itemsets_test.lua` (the open sets: tiers, duplicates, hands, levels, condition, PvP share, logout,
+  login, death, reload, tooltip and look text), `tests/gear_sets_test.lua` (pieces against the manifest, every set dresses and arms all 21 classes inside its
+  band, levels only rise along a track, the loot rows and the monsters they name, the transmog catalogue off and on, the
+  startup script on mocks), `tools/install_gear_sets_test.py`, `client/tools/sprites/gen_gear_sets_art_test.py`.
+- **Prices.** `tools/gen_item_prices.py` prices every piece as plain equipment by its level and slot (the equipment
+  formula and the gear scale: a level 8 helmet 140 gold, a level 120 one 8,400, from about level 1000 up 30,252, the
+  Wandering Merchant's orb cap), so the Loot Buyer and the Auto Seller take them like other gear.
+- Open (owner): publish pair 28 and switch on; the Gambler's pool, crafting recipes if wanted. Not run in a client or
+  on a live server.
 
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `chaos_crafting.lua`, `item_mods.lua`)
 
@@ -7343,6 +7466,8 @@ build, a dodge build, a summoner) without being needed: a full set is about as s
 uniques, not above it. Every number and every set is in `chaos_item_sets_config.lua`; the pure part is
 `chaos_item_sets.lua` (counting, totals, texts, tooltip block, unique entries, chase rolls), the game side
 `itemsets.lua`. No new opcode, no storage, no table: the state is worked out again from the equipment.
+Open sets: the seven equipment sets of pair 28 join while `ChaosGearSets.PAIR28` is on (plain items counted by base
+id, any 6 pieces reach the last tier, PvP half of their resistances; "Equipment sets (pair 28)").
 
 **Pieces.** A piece is a unique (`ChaosMakeUnique`): a copy of a stock base item with its own name, description and
 stats from `data/items/chaos_items.xml` (attribute `set` = the set key; `tools/gen_unique_specs.py` writes it into
@@ -11382,7 +11507,7 @@ Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, fro
   exists under its name; every use has its call site; off: the stock effect; on: the word at +1,+1, the throttles,
   no word for damage over time, monsters or a cast without a word). Not run on a server or in a client yet.
 
-## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, off)
+## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
 "Pack farming spell effects (pair 27 trial)", effects 674-758, missiles 154-160 on top of things_custom26) gives them
 their own. It also gives 34 spells of the other class lines new impacts, plus vigil, stun, buff, game feel, Town Portal
@@ -11418,12 +11543,12 @@ and boss telegraph effects. Effects only: nothing else changes.
 - Boss telegraph (`C.telegraph(tiles)`, `boss_mechanics.lua` first pulse): a round telegraph of 5 tiles across gets
   boss_telegraph at its centre (`C.telegraphCentre`, via `ChaosBigFx.circleOf`); any other shape keeps
   `ChaosBigFx.telegraph`.
-- Off (shipped): the ids file is not loaded, `send` sends nothing, `ray`, `portal` give nil and `telegraph` false, so
-  every call site sends what it sent before. No published pair has these ids. Flip only with a published pair 27:
-  `C.PAIR27_FX = true`, `install_all.py SERVER_DIR --only files`, restart.
+- On (shipped since 2026-10-15, pair 27 live on windows-assets 51a26d26). Off: the ids file is not loaded, `send`
+  sends nothing, `ray`, `portal` give nil and `telegraph` false, so every call site sends what it sent before; set it
+  off for clients still on pair 26 or older (`install_all.py SERVER_DIR --only files`, restart).
 - The swaps are keyed by spell id; `C.names` holds each spell's name and `tests/pack27_fx_test.lua` checks both against
   spells_chaos.xml, so a moved id fails the test (update `C.spells` and `C.names`).
-- Tests: `tests/pack27_fx_test.lua` (switch line off; ids and names in spells_chaos.xml; each script sends the
+- Tests: `tests/pack27_fx_test.lua` (switch line on; ids and names in spells_chaos.xml; each script sends the
   swapped name; every new name in the client spec and the ids file; missile ids fit u8; the loot rays, portal names
   and telegraph exist; the `first` flag; off: no swap, no use effect, rays, portals and telegraph unchanged; on: the
   names, the gold beam, the level up effect, the 5 vs 7 tile telegraph; `_common.lua` and every call site wired). Not

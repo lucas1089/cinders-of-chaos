@@ -18,7 +18,7 @@ Inputs (all in the repo; the base server is read only by `survey`, `income` and 
                                     sources (no names: the base names are not ours)
   data/items/base_recipes.csv       the base crafting recipes (product, count, gold cost, materials)
   data/items/item_price_rules.csv   overrides: id, category, price, note (a fixed price or a category such as quest)
-  the Chaos sources: art_items.csv (creature products, food), fist_items.csv, the gems, supports and charms configs,
+  the Chaos sources: art_items.csv (creature products, food), fist_items.csv, gear_sets.csv (pair 28), the gems, supports and charms configs,
   the uniques (chaos_items.xml), the professions, orbs, omens, Ascended items, faction tokens, pouches, the Everfull
   Ration, the store's items (shop_config.lua) and every Chaos monster's loot (monsters/chaos, monster/lua/chaos)
 Outputs (generated, committed, CI diffs them):
@@ -353,6 +353,13 @@ def chaos_items():
         ex = extra(r.get('extra'))
         put(int(r['server_id']), r['name'], 'equip', int(ex['sell']) if ex.get('sell') else None, 'weapon',
             int(ex.get('level', 0)), 'fist_items.csv')
+    # the equipment sets of pair 28: plain gear priced by the equipment formula at the level install_gear_sets.py gives
+    import install_gear_sets as GS
+    for r in GS.rows_of(os.path.join(DATA, 'items', 'gear_sets.csv')):
+        k, two = r['kind'], r['ex']['fit'] == '2' or r['kind'] in ('bow', 'crossbow')
+        slot = {'helmet': 'head', 'armor': 'body', 'legs': 'legs', 'boots': 'feet', 'amulet': 'necklace', 'ring': 'ring',
+                'shield': 'shield', 'spellbook': 'shield'}.get(k, 'two-handed' if two else 'weapon')
+        put(r['server_id'], r['name'], 'equip', None, slot, r['level'], 'gear_sets.csv')
     gem = read(os.path.join(DATA, 'lib', 'chaos_gems_config.lua'))
     first = int(re.search(r'firstId\s*=\s*(\d+)', gem).group(1))
     gem_types = len(re.findall(r'clientIdHigh\s*=', gem)) or 7

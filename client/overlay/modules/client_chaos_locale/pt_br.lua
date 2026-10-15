@@ -1401,6 +1401,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Quality +%d%%  (up to %d%%)"] = "Qualidade +%d%%  (até %d%%)",
   ["Ruined: no orb can change this item"] = "Arruinado: nenhum orbe pode mudar este item",
   ["  empty socket"] = "  encaixe vazio",
+  ["Active tier: %d of %d"] = "Nível ativo: %d de %d",
   ["Requires level %d"] = "Requer nível %d",
   ["Requires magic level %d"] = "Requer magic level %d",
   -- game_leaderboard/leaderboard.lua

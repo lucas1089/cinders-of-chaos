@@ -154,6 +154,13 @@ local cfg = {
 	maxLooksSent = 4000 -- the window's wardrobe list is cut at this many looks (it is sent in chunks)
 }
 
+-- the equipment sets of client pair 28 (data/lib/chaos_gear_sets.lua, switch ChaosGearSets.PAIR28, on since pair 28 went live): off, their
+-- item ids out of the catalogue; on, they are ordinary looks (worn pieces unlock them)
+local okGear, gear = pcall(dofile, "data/lib/chaos_gear_sets.lua")
+if okGear and type(gear) == "table" then
+	gear.addTransmog(cfg)
+end
+
 -- the themed sets of client pair things_custom24 (data/lib/chaos_theme_art.lua, switch ChaosThemeArt.PAIR24, on since 2026-10-13): the
 -- appearance sets when the switch is on, else their item ids out of the catalogue (nothing changes for players)
 local okTheme, theme = pcall(dofile, "data/lib/chaos_theme_art.lua")

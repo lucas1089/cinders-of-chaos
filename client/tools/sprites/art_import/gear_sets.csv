@@ -1,0 +1,449 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+cinderwrought_helmet_1,item,helmet,cinderwrought greathelm,gear_sets/cinderwrought,0,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=H|n=1|cell=0
+cinderwrought_helmet_2,item,helmet,cinderwrought warhelm,gear_sets/cinderwrought,32,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=H|n=2|cell=1
+cinderwrought_helmet_3,item,helmet,cinderwrought helm,gear_sets/cinderwrought,64,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=M|n=3|cell=2
+cinderwrought_helmet_4,item,helmet,cinderwrought horned helm,gear_sets/cinderwrought,96,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=H|n=4|cell=3
+cinderwrought_helmet_5,item,helmet,cinderwrought hood,gear_sets/cinderwrought,128,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=C|n=5|cell=4
+cinderwrought_helmet_6,item,helmet,cinderwrought cowl,gear_sets/cinderwrought,160,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=C|n=6|cell=5
+cinderwrought_helmet_7,item,helmet,cinderwrought coif,gear_sets/cinderwrought,192,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=M|n=7|cell=6
+cinderwrought_helmet_8,item,helmet,cinderwrought casque,gear_sets/cinderwrought,224,0,1,1,1,1,copy:3351,new,,set=cinderwrought|kind=helmet|fit=M|n=8|cell=7
+cinderwrought_armor_1,item,armor,cinderwrought plate,gear_sets/cinderwrought,0,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=H|n=1|cell=8
+cinderwrought_armor_2,item,armor,cinderwrought robe,gear_sets/cinderwrought,32,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=C|n=2|cell=9
+cinderwrought_armor_3,item,armor,cinderwrought vestment,gear_sets/cinderwrought,64,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=C|n=3|cell=10
+cinderwrought_armor_4,item,armor,cinderwrought mail,gear_sets/cinderwrought,96,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=M|n=4|cell=11
+cinderwrought_armor_5,item,armor,cinderwrought cuirass,gear_sets/cinderwrought,128,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=H|n=5|cell=12
+cinderwrought_armor_6,item,armor,cinderwrought warplate,gear_sets/cinderwrought,160,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=H|n=6|cell=13
+cinderwrought_armor_7,item,armor,cinderwrought hauberk,gear_sets/cinderwrought,192,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=M|n=7|cell=14
+cinderwrought_armor_8,item,armor,cinderwrought brigandine,gear_sets/cinderwrought,224,32,1,1,1,1,copy:3357,new,,set=cinderwrought|kind=armor|fit=M|n=8|cell=15
+cinderwrought_legs_1,item,legs,cinderwrought legplates,gear_sets/cinderwrought,0,64,1,1,1,1,copy:3557,new,,set=cinderwrought|kind=legs|fit=H|n=1|cell=16
+cinderwrought_legs_2,item,legs,cinderwrought kilt,gear_sets/cinderwrought,32,64,1,1,1,1,copy:3557,new,,set=cinderwrought|kind=legs|fit=C|n=2|cell=17
+cinderwrought_boots_1,item,boots,cinderwrought boots,gear_sets/cinderwrought,64,64,1,1,1,1,copy:3552,new,,set=cinderwrought|kind=boots|fit=|n=1|cell=18
+cinderwrought_boots_2,item,boots,cinderwrought sabatons,gear_sets/cinderwrought,96,64,1,1,1,1,copy:3552,new,,set=cinderwrought|kind=boots|fit=|n=2|cell=19
+cinderwrought_legs_3,item,legs,cinderwrought tassets,gear_sets/cinderwrought,128,64,1,1,1,1,copy:3557,new,,set=cinderwrought|kind=legs|fit=H|n=3|cell=20
+cinderwrought_legs_4,item,legs,cinderwrought leggings,gear_sets/cinderwrought,160,64,1,1,1,1,copy:3557,new,,set=cinderwrought|kind=legs|fit=M|n=4|cell=21
+cinderwrought_boots_3,item,boots,cinderwrought treads,gear_sets/cinderwrought,192,64,1,1,1,1,copy:3552,new,,set=cinderwrought|kind=boots|fit=|n=3|cell=22
+cinderwrought_boots_4,item,boots,cinderwrought striders,gear_sets/cinderwrought,224,64,1,1,1,1,copy:3552,new,,set=cinderwrought|kind=boots|fit=|n=4|cell=23
+cinderwrought_shield_1,item,shield,cinderwrought shield,gear_sets/cinderwrought,0,96,1,1,1,1,copy:3409,new,,set=cinderwrought|kind=shield|fit=|n=1|cell=24
+cinderwrought_shield_2,item,shield,cinderwrought aegis,gear_sets/cinderwrought,32,96,1,1,1,1,copy:3409,new,,set=cinderwrought|kind=shield|fit=|n=2|cell=25
+cinderwrought_shield_3,item,shield,cinderwrought bulwark,gear_sets/cinderwrought,64,96,1,1,1,1,copy:3409,new,,set=cinderwrought|kind=shield|fit=|n=3|cell=26
+cinderwrought_shield_4,item,shield,cinderwrought kite shield,gear_sets/cinderwrought,96,96,1,1,1,1,copy:3409,new,,set=cinderwrought|kind=shield|fit=|n=4|cell=27
+cinderwrought_spellbook_1,item,spellbook,cinderwrought grimoire,gear_sets/cinderwrought,128,96,1,1,1,1,copy:3059,new,,set=cinderwrought|kind=spellbook|fit=|n=1|cell=28
+cinderwrought_spellbook_2,item,spellbook,cinderwrought tome,gear_sets/cinderwrought,160,96,1,1,1,1,copy:3059,new,,set=cinderwrought|kind=spellbook|fit=|n=2|cell=29
+cinderwrought_spellbook_3,item,spellbook,cinderwrought codex,gear_sets/cinderwrought,192,96,1,1,1,1,copy:3059,new,,set=cinderwrought|kind=spellbook|fit=|n=3|cell=30
+cinderwrought_spellbook_4,item,spellbook,cinderwrought folio,gear_sets/cinderwrought,224,96,1,1,1,1,copy:3059,new,,set=cinderwrought|kind=spellbook|fit=|n=4|cell=31
+cinderwrought_sword_1,item,sword,cinderwrought greatsword,gear_sets/cinderwrought,0,128,1,1,1,1,copy:3264,new,,set=cinderwrought|kind=sword|fit=2|n=1|cell=32
+cinderwrought_sword_2,item,sword,cinderwrought claymore,gear_sets/cinderwrought,32,128,1,1,1,1,copy:3264,new,,set=cinderwrought|kind=sword|fit=2|n=2|cell=33
+cinderwrought_sword_3,item,sword,cinderwrought blade,gear_sets/cinderwrought,64,128,1,1,1,1,copy:3264,new,,set=cinderwrought|kind=sword|fit=1|n=3|cell=34
+cinderwrought_sword_4,item,sword,cinderwrought sabre,gear_sets/cinderwrought,96,128,1,1,1,1,copy:3264,new,,set=cinderwrought|kind=sword|fit=1|n=4|cell=35
+cinderwrought_axe_1,item,axe,cinderwrought greataxe,gear_sets/cinderwrought,128,128,1,1,1,1,copy:3274,new,,set=cinderwrought|kind=axe|fit=2|n=1|cell=36
+cinderwrought_axe_2,item,axe,cinderwrought battle axe,gear_sets/cinderwrought,160,128,1,1,1,1,copy:3274,new,,set=cinderwrought|kind=axe|fit=2|n=2|cell=37
+cinderwrought_axe_3,item,axe,cinderwrought axe,gear_sets/cinderwrought,192,128,1,1,1,1,copy:3274,new,,set=cinderwrought|kind=axe|fit=1|n=3|cell=38
+cinderwrought_axe_4,item,axe,cinderwrought hatchet,gear_sets/cinderwrought,224,128,1,1,1,1,copy:3274,new,,set=cinderwrought|kind=axe|fit=1|n=4|cell=39
+cinderwrought_club_1,item,club,cinderwrought mace,gear_sets/cinderwrought,0,160,1,1,1,1,copy:3270,new,,set=cinderwrought|kind=club|fit=1|n=1|cell=40
+cinderwrought_club_2,item,club,cinderwrought maul,gear_sets/cinderwrought,32,160,1,1,1,1,copy:3270,new,,set=cinderwrought|kind=club|fit=2|n=2|cell=41
+cinderwrought_bow_1,item,bow,cinderwrought bow,gear_sets/cinderwrought,64,160,1,1,1,1,copy:3350,new,,set=cinderwrought|kind=bow|fit=|n=1|cell=42
+cinderwrought_bow_2,item,bow,cinderwrought longbow,gear_sets/cinderwrought,96,160,1,1,1,1,copy:3350,new,,set=cinderwrought|kind=bow|fit=|n=2|cell=43
+cinderwrought_bow_3,item,bow,cinderwrought recurve bow,gear_sets/cinderwrought,128,160,1,1,1,1,copy:3350,new,,set=cinderwrought|kind=bow|fit=|n=3|cell=44
+cinderwrought_bow_4,item,bow,cinderwrought warbow,gear_sets/cinderwrought,160,160,1,1,1,1,copy:3350,new,,set=cinderwrought|kind=bow|fit=|n=4|cell=45
+cinderwrought_crossbow_1,item,crossbow,cinderwrought crossbow,gear_sets/cinderwrought,192,160,1,1,1,1,copy:3349,new,,set=cinderwrought|kind=crossbow|fit=|n=1|cell=46
+cinderwrought_crossbow_2,item,crossbow,cinderwrought arbalest,gear_sets/cinderwrought,224,160,1,1,1,1,copy:3349,new,,set=cinderwrought|kind=crossbow|fit=|n=2|cell=47
+cinderwrought_amulet_1,item,amulet,cinderwrought amulet,gear_sets/cinderwrought,0,192,1,1,1,1,copy:3572,new,,set=cinderwrought|kind=amulet|fit=|n=1|cell=48
+cinderwrought_amulet_2,item,amulet,cinderwrought pendant,gear_sets/cinderwrought,32,192,1,1,1,1,copy:3572,new,,set=cinderwrought|kind=amulet|fit=|n=2|cell=49
+cinderwrought_amulet_3,item,amulet,cinderwrought talisman,gear_sets/cinderwrought,64,192,1,1,1,1,copy:3572,new,,set=cinderwrought|kind=amulet|fit=|n=3|cell=50
+cinderwrought_ring_1,item,ring,cinderwrought ring,gear_sets/cinderwrought,96,192,1,1,1,1,copy:3063,new,,set=cinderwrought|kind=ring|fit=|n=1|cell=51
+cinderwrought_ring_2,item,ring,cinderwrought band,gear_sets/cinderwrought,128,192,1,1,1,1,copy:3063,new,,set=cinderwrought|kind=ring|fit=|n=2|cell=52
+cinderwrought_ring_3,item,ring,cinderwrought signet,gear_sets/cinderwrought,160,192,1,1,1,1,copy:3063,new,,set=cinderwrought|kind=ring|fit=|n=3|cell=53
+cinderwrought_ring_4,item,ring,cinderwrought seal,gear_sets/cinderwrought,192,192,1,1,1,1,copy:3063,new,,set=cinderwrought|kind=ring|fit=|n=4|cell=54
+cinderwrought_ring_5,item,ring,cinderwrought loop,gear_sets/cinderwrought,224,192,1,1,1,1,copy:3063,new,,set=cinderwrought|kind=ring|fit=|n=5|cell=55
+cinderwrought_wand_1,item,wand,cinderwrought wand,gear_sets/cinderwrought,0,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=wand|fit=|n=1|cell=56
+cinderwrought_wand_2,item,wand,cinderwrought scepter,gear_sets/cinderwrought,32,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=wand|fit=|n=2|cell=57
+cinderwrought_wand_3,item,wand,cinderwrought spire,gear_sets/cinderwrought,64,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=wand|fit=|n=3|cell=58
+cinderwrought_wand_4,item,wand,cinderwrought focus,gear_sets/cinderwrought,96,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=wand|fit=|n=4|cell=59
+cinderwrought_rod_1,item,rod,cinderwrought rod,gear_sets/cinderwrought,128,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=rod|fit=|n=1|cell=60
+cinderwrought_rod_2,item,rod,cinderwrought staff,gear_sets/cinderwrought,160,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=rod|fit=|n=2|cell=61
+cinderwrought_rod_3,item,rod,cinderwrought branch,gear_sets/cinderwrought,192,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=rod|fit=|n=3|cell=62
+cinderwrought_rod_4,item,rod,cinderwrought crook,gear_sets/cinderwrought,224,224,1,1,1,1,copy:3066,new,,set=cinderwrought|kind=rod|fit=|n=4|cell=63
+wyrmscale_helmet_1,item,helmet,wyrmscale greathelm,gear_sets/wyrmscale,0,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=H|n=1|cell=0
+wyrmscale_helmet_2,item,helmet,wyrmscale helm,gear_sets/wyrmscale,32,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=M|n=2|cell=1
+wyrmscale_helmet_3,item,helmet,wyrmscale coif,gear_sets/wyrmscale,64,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=M|n=3|cell=2
+wyrmscale_helmet_4,item,helmet,wyrmscale warhelm,gear_sets/wyrmscale,96,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=H|n=4|cell=3
+wyrmscale_helmet_5,item,helmet,wyrmscale hood,gear_sets/wyrmscale,128,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=C|n=5|cell=4
+wyrmscale_helmet_6,item,helmet,wyrmscale horned helm,gear_sets/wyrmscale,160,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=H|n=6|cell=5
+wyrmscale_helmet_7,item,helmet,wyrmscale casque,gear_sets/wyrmscale,192,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=M|n=7|cell=6
+wyrmscale_helmet_8,item,helmet,wyrmscale cowl,gear_sets/wyrmscale,224,0,1,1,1,1,copy:3351,new,,set=wyrmscale|kind=helmet|fit=C|n=8|cell=7
+wyrmscale_armor_1,item,armor,wyrmscale plate,gear_sets/wyrmscale,0,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=H|n=1|cell=8
+wyrmscale_armor_2,item,armor,wyrmscale mail,gear_sets/wyrmscale,32,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=M|n=2|cell=9
+wyrmscale_armor_3,item,armor,wyrmscale robe,gear_sets/wyrmscale,64,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=C|n=3|cell=10
+wyrmscale_armor_4,item,armor,wyrmscale cuirass,gear_sets/wyrmscale,96,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=H|n=4|cell=11
+wyrmscale_armor_5,item,armor,wyrmscale hauberk,gear_sets/wyrmscale,128,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=M|n=5|cell=12
+wyrmscale_armor_6,item,armor,wyrmscale warplate,gear_sets/wyrmscale,160,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=H|n=6|cell=13
+wyrmscale_armor_7,item,armor,wyrmscale brigandine,gear_sets/wyrmscale,192,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=M|n=7|cell=14
+wyrmscale_armor_8,item,armor,wyrmscale vestment,gear_sets/wyrmscale,224,32,1,1,1,1,copy:3357,new,,set=wyrmscale|kind=armor|fit=C|n=8|cell=15
+wyrmscale_legs_1,item,legs,wyrmscale legplates,gear_sets/wyrmscale,0,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=H|n=1|cell=16
+wyrmscale_legs_2,item,legs,wyrmscale leggings,gear_sets/wyrmscale,32,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=M|n=2|cell=17
+wyrmscale_legs_3,item,legs,wyrmscale kilt,gear_sets/wyrmscale,64,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=C|n=3|cell=18
+wyrmscale_legs_4,item,legs,wyrmscale tassets,gear_sets/wyrmscale,96,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=H|n=4|cell=19
+wyrmscale_legs_5,item,legs,wyrmscale chausses,gear_sets/wyrmscale,128,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=M|n=5|cell=20
+wyrmscale_legs_6,item,legs,wyrmscale cuisses,gear_sets/wyrmscale,160,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=H|n=6|cell=21
+wyrmscale_legs_7,item,legs,wyrmscale breeches,gear_sets/wyrmscale,192,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=M|n=7|cell=22
+wyrmscale_legs_8,item,legs,wyrmscale trousers,gear_sets/wyrmscale,224,64,1,1,1,1,copy:3557,new,,set=wyrmscale|kind=legs|fit=C|n=8|cell=23
+wyrmscale_shield_1,item,shield,wyrmscale shield,gear_sets/wyrmscale,0,96,1,1,1,1,copy:3409,new,,set=wyrmscale|kind=shield|fit=|n=1|cell=24
+wyrmscale_shield_2,item,shield,wyrmscale aegis,gear_sets/wyrmscale,32,96,1,1,1,1,copy:3409,new,,set=wyrmscale|kind=shield|fit=|n=2|cell=25
+wyrmscale_shield_3,item,shield,wyrmscale bulwark,gear_sets/wyrmscale,64,96,1,1,1,1,copy:3409,new,,set=wyrmscale|kind=shield|fit=|n=3|cell=26
+wyrmscale_shield_4,item,shield,wyrmscale kite shield,gear_sets/wyrmscale,96,96,1,1,1,1,copy:3409,new,,set=wyrmscale|kind=shield|fit=|n=4|cell=27
+wyrmscale_spellbook_1,item,spellbook,wyrmscale grimoire,gear_sets/wyrmscale,128,96,1,1,1,1,copy:3059,new,,set=wyrmscale|kind=spellbook|fit=|n=1|cell=28
+wyrmscale_spellbook_2,item,spellbook,wyrmscale tome,gear_sets/wyrmscale,160,96,1,1,1,1,copy:3059,new,,set=wyrmscale|kind=spellbook|fit=|n=2|cell=29
+wyrmscale_spellbook_3,item,spellbook,wyrmscale codex,gear_sets/wyrmscale,192,96,1,1,1,1,copy:3059,new,,set=wyrmscale|kind=spellbook|fit=|n=3|cell=30
+wyrmscale_spellbook_4,item,spellbook,wyrmscale folio,gear_sets/wyrmscale,224,96,1,1,1,1,copy:3059,new,,set=wyrmscale|kind=spellbook|fit=|n=4|cell=31
+wyrmscale_sword_1,item,sword,wyrmscale greatsword,gear_sets/wyrmscale,0,128,1,1,1,1,copy:3264,new,,set=wyrmscale|kind=sword|fit=2|n=1|cell=32
+wyrmscale_sword_2,item,sword,wyrmscale blade,gear_sets/wyrmscale,32,128,1,1,1,1,copy:3264,new,,set=wyrmscale|kind=sword|fit=1|n=2|cell=33
+wyrmscale_sword_3,item,sword,wyrmscale sabre,gear_sets/wyrmscale,64,128,1,1,1,1,copy:3264,new,,set=wyrmscale|kind=sword|fit=1|n=3|cell=34
+wyrmscale_sword_4,item,sword,wyrmscale claymore,gear_sets/wyrmscale,96,128,1,1,1,1,copy:3264,new,,set=wyrmscale|kind=sword|fit=2|n=4|cell=35
+wyrmscale_axe_1,item,axe,wyrmscale axe,gear_sets/wyrmscale,128,128,1,1,1,1,copy:3274,new,,set=wyrmscale|kind=axe|fit=1|n=1|cell=36
+wyrmscale_axe_2,item,axe,wyrmscale greataxe,gear_sets/wyrmscale,160,128,1,1,1,1,copy:3274,new,,set=wyrmscale|kind=axe|fit=2|n=2|cell=37
+wyrmscale_axe_3,item,axe,wyrmscale hatchet,gear_sets/wyrmscale,192,128,1,1,1,1,copy:3274,new,,set=wyrmscale|kind=axe|fit=1|n=3|cell=38
+wyrmscale_axe_4,item,axe,wyrmscale battle axe,gear_sets/wyrmscale,224,128,1,1,1,1,copy:3274,new,,set=wyrmscale|kind=axe|fit=2|n=4|cell=39
+wyrmscale_club_1,item,club,wyrmscale maul,gear_sets/wyrmscale,0,160,1,1,1,1,copy:3270,new,,set=wyrmscale|kind=club|fit=2|n=1|cell=40
+wyrmscale_club_2,item,club,wyrmscale mace,gear_sets/wyrmscale,32,160,1,1,1,1,copy:3270,new,,set=wyrmscale|kind=club|fit=1|n=2|cell=41
+wyrmscale_club_3,item,club,wyrmscale hammer,gear_sets/wyrmscale,64,160,1,1,1,1,copy:3270,new,,set=wyrmscale|kind=club|fit=1|n=3|cell=42
+wyrmscale_bow_1,item,bow,wyrmscale bow,gear_sets/wyrmscale,96,160,1,1,1,1,copy:3350,new,,set=wyrmscale|kind=bow|fit=|n=1|cell=43
+wyrmscale_bow_2,item,bow,wyrmscale longbow,gear_sets/wyrmscale,128,160,1,1,1,1,copy:3350,new,,set=wyrmscale|kind=bow|fit=|n=2|cell=44
+wyrmscale_bow_3,item,bow,wyrmscale recurve bow,gear_sets/wyrmscale,160,160,1,1,1,1,copy:3350,new,,set=wyrmscale|kind=bow|fit=|n=3|cell=45
+wyrmscale_crossbow_1,item,crossbow,wyrmscale crossbow,gear_sets/wyrmscale,192,160,1,1,1,1,copy:3349,new,,set=wyrmscale|kind=crossbow|fit=|n=1|cell=46
+wyrmscale_crossbow_2,item,crossbow,wyrmscale arbalest,gear_sets/wyrmscale,224,160,1,1,1,1,copy:3349,new,,set=wyrmscale|kind=crossbow|fit=|n=2|cell=47
+wyrmscale_amulet_1,item,amulet,wyrmscale amulet,gear_sets/wyrmscale,0,192,1,1,1,1,copy:3572,new,,set=wyrmscale|kind=amulet|fit=|n=1|cell=48
+wyrmscale_amulet_2,item,amulet,wyrmscale pendant,gear_sets/wyrmscale,32,192,1,1,1,1,copy:3572,new,,set=wyrmscale|kind=amulet|fit=|n=2|cell=49
+wyrmscale_amulet_3,item,amulet,wyrmscale talisman,gear_sets/wyrmscale,64,192,1,1,1,1,copy:3572,new,,set=wyrmscale|kind=amulet|fit=|n=3|cell=50
+wyrmscale_amulet_4,item,amulet,wyrmscale necklace,gear_sets/wyrmscale,96,192,1,1,1,1,copy:3572,new,,set=wyrmscale|kind=amulet|fit=|n=4|cell=51
+wyrmscale_ring_1,item,ring,wyrmscale ring,gear_sets/wyrmscale,128,192,1,1,1,1,copy:3063,new,,set=wyrmscale|kind=ring|fit=|n=1|cell=52
+wyrmscale_ring_2,item,ring,wyrmscale band,gear_sets/wyrmscale,160,192,1,1,1,1,copy:3063,new,,set=wyrmscale|kind=ring|fit=|n=2|cell=53
+wyrmscale_ring_3,item,ring,wyrmscale signet,gear_sets/wyrmscale,192,192,1,1,1,1,copy:3063,new,,set=wyrmscale|kind=ring|fit=|n=3|cell=54
+wyrmscale_ring_4,item,ring,wyrmscale seal,gear_sets/wyrmscale,224,192,1,1,1,1,copy:3063,new,,set=wyrmscale|kind=ring|fit=|n=4|cell=55
+wyrmscale_wand_1,item,wand,wyrmscale wand,gear_sets/wyrmscale,0,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=wand|fit=|n=1|cell=56
+wyrmscale_wand_2,item,wand,wyrmscale scepter,gear_sets/wyrmscale,32,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=wand|fit=|n=2|cell=57
+wyrmscale_wand_3,item,wand,wyrmscale spire,gear_sets/wyrmscale,64,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=wand|fit=|n=3|cell=58
+wyrmscale_wand_4,item,wand,wyrmscale focus,gear_sets/wyrmscale,96,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=wand|fit=|n=4|cell=59
+wyrmscale_rod_1,item,rod,wyrmscale rod,gear_sets/wyrmscale,128,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=rod|fit=|n=1|cell=60
+wyrmscale_rod_2,item,rod,wyrmscale staff,gear_sets/wyrmscale,160,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=rod|fit=|n=2|cell=61
+wyrmscale_rod_3,item,rod,wyrmscale branch,gear_sets/wyrmscale,192,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=rod|fit=|n=3|cell=62
+wyrmscale_rod_4,item,rod,wyrmscale crook,gear_sets/wyrmscale,224,224,1,1,1,1,copy:3066,new,,set=wyrmscale|kind=rod|fit=|n=4|cell=63
+rimewraith_helmet_1,item,helmet,rimewraith greathelm,gear_sets/rimewraith,0,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=H|n=1|cell=0
+rimewraith_helmet_2,item,helmet,rimewraith helm,gear_sets/rimewraith,32,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=M|n=2|cell=1
+rimewraith_helmet_3,item,helmet,rimewraith warhelm,gear_sets/rimewraith,64,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=H|n=3|cell=2
+rimewraith_helmet_4,item,helmet,rimewraith coif,gear_sets/rimewraith,96,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=M|n=4|cell=3
+rimewraith_helmet_5,item,helmet,rimewraith casque,gear_sets/rimewraith,128,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=M|n=5|cell=4
+rimewraith_helmet_6,item,helmet,rimewraith horned helm,gear_sets/rimewraith,160,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=H|n=6|cell=5
+rimewraith_helmet_7,item,helmet,rimewraith hood,gear_sets/rimewraith,192,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=C|n=7|cell=6
+rimewraith_helmet_8,item,helmet,rimewraith cowl,gear_sets/rimewraith,224,0,1,1,1,1,copy:3351,new,,set=rimewraith|kind=helmet|fit=C|n=8|cell=7
+rimewraith_armor_1,item,armor,rimewraith plate,gear_sets/rimewraith,0,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=H|n=1|cell=8
+rimewraith_armor_2,item,armor,rimewraith robe,gear_sets/rimewraith,32,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=C|n=2|cell=9
+rimewraith_armor_3,item,armor,rimewraith mail,gear_sets/rimewraith,64,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=M|n=3|cell=10
+rimewraith_armor_4,item,armor,rimewraith hauberk,gear_sets/rimewraith,96,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=M|n=4|cell=11
+rimewraith_armor_5,item,armor,rimewraith cuirass,gear_sets/rimewraith,128,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=H|n=5|cell=12
+rimewraith_armor_6,item,armor,rimewraith vestment,gear_sets/rimewraith,160,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=C|n=6|cell=13
+rimewraith_armor_7,item,armor,rimewraith warplate,gear_sets/rimewraith,192,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=H|n=7|cell=14
+rimewraith_armor_8,item,armor,rimewraith brigandine,gear_sets/rimewraith,224,32,1,1,1,1,copy:3357,new,,set=rimewraith|kind=armor|fit=M|n=8|cell=15
+rimewraith_legs_1,item,legs,rimewraith legplates,gear_sets/rimewraith,0,64,1,1,1,1,copy:3557,new,,set=rimewraith|kind=legs|fit=H|n=1|cell=16
+rimewraith_legs_2,item,legs,rimewraith leggings,gear_sets/rimewraith,32,64,1,1,1,1,copy:3557,new,,set=rimewraith|kind=legs|fit=M|n=2|cell=17
+rimewraith_boots_1,item,boots,rimewraith boots,gear_sets/rimewraith,64,64,1,1,1,1,copy:3552,new,,set=rimewraith|kind=boots|fit=|n=1|cell=18
+rimewraith_boots_2,item,boots,rimewraith sabatons,gear_sets/rimewraith,96,64,1,1,1,1,copy:3552,new,,set=rimewraith|kind=boots|fit=|n=2|cell=19
+rimewraith_legs_3,item,legs,rimewraith kilt,gear_sets/rimewraith,128,64,1,1,1,1,copy:3557,new,,set=rimewraith|kind=legs|fit=C|n=3|cell=20
+rimewraith_legs_4,item,legs,rimewraith tassets,gear_sets/rimewraith,160,64,1,1,1,1,copy:3557,new,,set=rimewraith|kind=legs|fit=H|n=4|cell=21
+rimewraith_boots_3,item,boots,rimewraith treads,gear_sets/rimewraith,192,64,1,1,1,1,copy:3552,new,,set=rimewraith|kind=boots|fit=|n=3|cell=22
+rimewraith_boots_4,item,boots,rimewraith striders,gear_sets/rimewraith,224,64,1,1,1,1,copy:3552,new,,set=rimewraith|kind=boots|fit=|n=4|cell=23
+rimewraith_shield_1,item,shield,rimewraith shield,gear_sets/rimewraith,0,96,1,1,1,1,copy:3409,new,,set=rimewraith|kind=shield|fit=|n=1|cell=24
+rimewraith_shield_2,item,shield,rimewraith aegis,gear_sets/rimewraith,32,96,1,1,1,1,copy:3409,new,,set=rimewraith|kind=shield|fit=|n=2|cell=25
+rimewraith_shield_3,item,shield,rimewraith bulwark,gear_sets/rimewraith,64,96,1,1,1,1,copy:3409,new,,set=rimewraith|kind=shield|fit=|n=3|cell=26
+rimewraith_shield_4,item,shield,rimewraith kite shield,gear_sets/rimewraith,96,96,1,1,1,1,copy:3409,new,,set=rimewraith|kind=shield|fit=|n=4|cell=27
+rimewraith_spellbook_1,item,spellbook,rimewraith grimoire,gear_sets/rimewraith,128,96,1,1,1,1,copy:3059,new,,set=rimewraith|kind=spellbook|fit=|n=1|cell=28
+rimewraith_spellbook_2,item,spellbook,rimewraith tome,gear_sets/rimewraith,160,96,1,1,1,1,copy:3059,new,,set=rimewraith|kind=spellbook|fit=|n=2|cell=29
+rimewraith_spellbook_3,item,spellbook,rimewraith codex,gear_sets/rimewraith,192,96,1,1,1,1,copy:3059,new,,set=rimewraith|kind=spellbook|fit=|n=3|cell=30
+rimewraith_spellbook_4,item,spellbook,rimewraith folio,gear_sets/rimewraith,224,96,1,1,1,1,copy:3059,new,,set=rimewraith|kind=spellbook|fit=|n=4|cell=31
+rimewraith_sword_1,item,sword,rimewraith greatsword,gear_sets/rimewraith,0,128,1,1,1,1,copy:3264,new,,set=rimewraith|kind=sword|fit=2|n=1|cell=32
+rimewraith_sword_2,item,sword,rimewraith blade,gear_sets/rimewraith,32,128,1,1,1,1,copy:3264,new,,set=rimewraith|kind=sword|fit=1|n=2|cell=33
+rimewraith_sword_3,item,sword,rimewraith claymore,gear_sets/rimewraith,64,128,1,1,1,1,copy:3264,new,,set=rimewraith|kind=sword|fit=2|n=3|cell=34
+rimewraith_sword_4,item,sword,rimewraith sabre,gear_sets/rimewraith,96,128,1,1,1,1,copy:3264,new,,set=rimewraith|kind=sword|fit=1|n=4|cell=35
+rimewraith_sword_5,item,sword,rimewraith longsword,gear_sets/rimewraith,128,128,1,1,1,1,copy:3264,new,,set=rimewraith|kind=sword|fit=1|n=5|cell=36
+rimewraith_axe_1,item,axe,rimewraith axe,gear_sets/rimewraith,160,128,1,1,1,1,copy:3274,new,,set=rimewraith|kind=axe|fit=1|n=1|cell=37
+rimewraith_sword_6,item,sword,rimewraith great blade,gear_sets/rimewraith,192,128,1,1,1,1,copy:3264,new,,set=rimewraith|kind=sword|fit=2|n=6|cell=38
+rimewraith_axe_2,item,axe,rimewraith hatchet,gear_sets/rimewraith,224,128,1,1,1,1,copy:3274,new,,set=rimewraith|kind=axe|fit=1|n=2|cell=39
+rimewraith_club_1,item,club,rimewraith maul,gear_sets/rimewraith,0,160,1,1,1,1,copy:3270,new,,set=rimewraith|kind=club|fit=2|n=1|cell=40
+rimewraith_club_2,item,club,rimewraith mace,gear_sets/rimewraith,32,160,1,1,1,1,copy:3270,new,,set=rimewraith|kind=club|fit=1|n=2|cell=41
+rimewraith_bow_1,item,bow,rimewraith bow,gear_sets/rimewraith,64,160,1,1,1,1,copy:3350,new,,set=rimewraith|kind=bow|fit=|n=1|cell=42
+rimewraith_bow_2,item,bow,rimewraith longbow,gear_sets/rimewraith,96,160,1,1,1,1,copy:3350,new,,set=rimewraith|kind=bow|fit=|n=2|cell=43
+rimewraith_axe_3,item,axe,rimewraith greataxe,gear_sets/rimewraith,128,160,1,1,1,1,copy:3274,new,,set=rimewraith|kind=axe|fit=2|n=3|cell=44
+rimewraith_bow_3,item,bow,rimewraith recurve bow,gear_sets/rimewraith,160,160,1,1,1,1,copy:3350,new,,set=rimewraith|kind=bow|fit=|n=3|cell=45
+rimewraith_crossbow_1,item,crossbow,rimewraith crossbow,gear_sets/rimewraith,192,160,1,1,1,1,copy:3349,new,,set=rimewraith|kind=crossbow|fit=|n=1|cell=46
+rimewraith_crossbow_2,item,crossbow,rimewraith arbalest,gear_sets/rimewraith,224,160,1,1,1,1,copy:3349,new,,set=rimewraith|kind=crossbow|fit=|n=2|cell=47
+rimewraith_amulet_1,item,amulet,rimewraith amulet,gear_sets/rimewraith,0,192,1,1,1,1,copy:3572,new,,set=rimewraith|kind=amulet|fit=|n=1|cell=48
+rimewraith_amulet_2,item,amulet,rimewraith pendant,gear_sets/rimewraith,32,192,1,1,1,1,copy:3572,new,,set=rimewraith|kind=amulet|fit=|n=2|cell=49
+rimewraith_amulet_3,item,amulet,rimewraith talisman,gear_sets/rimewraith,64,192,1,1,1,1,copy:3572,new,,set=rimewraith|kind=amulet|fit=|n=3|cell=50
+rimewraith_ring_1,item,ring,rimewraith ring,gear_sets/rimewraith,96,192,1,1,1,1,copy:3063,new,,set=rimewraith|kind=ring|fit=|n=1|cell=51
+rimewraith_ring_2,item,ring,rimewraith band,gear_sets/rimewraith,128,192,1,1,1,1,copy:3063,new,,set=rimewraith|kind=ring|fit=|n=2|cell=52
+rimewraith_ring_3,item,ring,rimewraith signet,gear_sets/rimewraith,160,192,1,1,1,1,copy:3063,new,,set=rimewraith|kind=ring|fit=|n=3|cell=53
+rimewraith_ring_4,item,ring,rimewraith seal,gear_sets/rimewraith,192,192,1,1,1,1,copy:3063,new,,set=rimewraith|kind=ring|fit=|n=4|cell=54
+rimewraith_ring_5,item,ring,rimewraith loop,gear_sets/rimewraith,224,192,1,1,1,1,copy:3063,new,,set=rimewraith|kind=ring|fit=|n=5|cell=55
+rimewraith_wand_1,item,wand,rimewraith wand,gear_sets/rimewraith,0,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=wand|fit=|n=1|cell=56
+rimewraith_wand_2,item,wand,rimewraith scepter,gear_sets/rimewraith,32,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=wand|fit=|n=2|cell=57
+rimewraith_wand_3,item,wand,rimewraith spire,gear_sets/rimewraith,64,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=wand|fit=|n=3|cell=58
+rimewraith_wand_4,item,wand,rimewraith focus,gear_sets/rimewraith,96,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=wand|fit=|n=4|cell=59
+rimewraith_rod_1,item,rod,rimewraith rod,gear_sets/rimewraith,128,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=rod|fit=|n=1|cell=60
+rimewraith_rod_2,item,rod,rimewraith staff,gear_sets/rimewraith,160,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=rod|fit=|n=2|cell=61
+rimewraith_rod_3,item,rod,rimewraith branch,gear_sets/rimewraith,192,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=rod|fit=|n=3|cell=62
+rimewraith_rod_4,item,rod,rimewraith crook,gear_sets/rimewraith,224,224,1,1,1,1,copy:3066,new,,set=rimewraith|kind=rod|fit=|n=4|cell=63
+azurevigil_helmet_1,item,helmet,azure vigil hood,gear_sets/azurevigil,0,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=C|n=1|cell=0
+azurevigil_helmet_2,item,helmet,azure vigil greathelm,gear_sets/azurevigil,32,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=H|n=2|cell=1
+azurevigil_helmet_3,item,helmet,azure vigil helm,gear_sets/azurevigil,64,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=M|n=3|cell=2
+azurevigil_helmet_4,item,helmet,azure vigil cowl,gear_sets/azurevigil,96,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=C|n=4|cell=3
+azurevigil_helmet_5,item,helmet,azure vigil warhelm,gear_sets/azurevigil,128,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=H|n=5|cell=4
+azurevigil_helmet_6,item,helmet,azure vigil horned helm,gear_sets/azurevigil,160,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=H|n=6|cell=5
+azurevigil_helmet_7,item,helmet,azure vigil coif,gear_sets/azurevigil,192,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=M|n=7|cell=6
+azurevigil_helmet_8,item,helmet,azure vigil casque,gear_sets/azurevigil,224,0,1,1,1,1,copy:3351,new,,set=azurevigil|kind=helmet|fit=M|n=8|cell=7
+azurevigil_armor_1,item,armor,azure vigil mail,gear_sets/azurevigil,0,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=M|n=1|cell=8
+azurevigil_armor_2,item,armor,azure vigil robe,gear_sets/azurevigil,32,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=C|n=2|cell=9
+azurevigil_armor_3,item,armor,azure vigil plate,gear_sets/azurevigil,64,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=H|n=3|cell=10
+azurevigil_armor_4,item,armor,azure vigil vestment,gear_sets/azurevigil,96,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=C|n=4|cell=11
+azurevigil_armor_5,item,armor,azure vigil cuirass,gear_sets/azurevigil,128,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=H|n=5|cell=12
+azurevigil_armor_6,item,armor,azure vigil hauberk,gear_sets/azurevigil,160,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=M|n=6|cell=13
+azurevigil_armor_7,item,armor,azure vigil warplate,gear_sets/azurevigil,192,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=H|n=7|cell=14
+azurevigil_armor_8,item,armor,azure vigil brigandine,gear_sets/azurevigil,224,32,1,1,1,1,copy:3357,new,,set=azurevigil|kind=armor|fit=M|n=8|cell=15
+azurevigil_legs_1,item,legs,azure vigil legplates,gear_sets/azurevigil,0,64,1,1,1,1,copy:3557,new,,set=azurevigil|kind=legs|fit=H|n=1|cell=16
+azurevigil_legs_2,item,legs,azure vigil leggings,gear_sets/azurevigil,32,64,1,1,1,1,copy:3557,new,,set=azurevigil|kind=legs|fit=M|n=2|cell=17
+azurevigil_legs_3,item,legs,azure vigil kilt,gear_sets/azurevigil,64,64,1,1,1,1,copy:3557,new,,set=azurevigil|kind=legs|fit=C|n=3|cell=18
+azurevigil_boots_1,item,boots,azure vigil boots,gear_sets/azurevigil,96,64,1,1,1,1,copy:3552,new,,set=azurevigil|kind=boots|fit=|n=1|cell=19
+azurevigil_legs_4,item,legs,azure vigil tassets,gear_sets/azurevigil,128,64,1,1,1,1,copy:3557,new,,set=azurevigil|kind=legs|fit=H|n=4|cell=20
+azurevigil_legs_5,item,legs,azure vigil chausses,gear_sets/azurevigil,160,64,1,1,1,1,copy:3557,new,,set=azurevigil|kind=legs|fit=M|n=5|cell=21
+azurevigil_boots_2,item,boots,azure vigil sabatons,gear_sets/azurevigil,192,64,1,1,1,1,copy:3552,new,,set=azurevigil|kind=boots|fit=|n=2|cell=22
+azurevigil_boots_3,item,boots,azure vigil treads,gear_sets/azurevigil,224,64,1,1,1,1,copy:3552,new,,set=azurevigil|kind=boots|fit=|n=3|cell=23
+azurevigil_shield_1,item,shield,azure vigil shield,gear_sets/azurevigil,0,96,1,1,1,1,copy:3409,new,,set=azurevigil|kind=shield|fit=|n=1|cell=24
+azurevigil_shield_2,item,shield,azure vigil aegis,gear_sets/azurevigil,32,96,1,1,1,1,copy:3409,new,,set=azurevigil|kind=shield|fit=|n=2|cell=25
+azurevigil_shield_3,item,shield,azure vigil bulwark,gear_sets/azurevigil,64,96,1,1,1,1,copy:3409,new,,set=azurevigil|kind=shield|fit=|n=3|cell=26
+azurevigil_shield_4,item,shield,azure vigil kite shield,gear_sets/azurevigil,96,96,1,1,1,1,copy:3409,new,,set=azurevigil|kind=shield|fit=|n=4|cell=27
+azurevigil_spellbook_1,item,spellbook,azure vigil grimoire,gear_sets/azurevigil,128,96,1,1,1,1,copy:3059,new,,set=azurevigil|kind=spellbook|fit=|n=1|cell=28
+azurevigil_spellbook_2,item,spellbook,azure vigil tome,gear_sets/azurevigil,160,96,1,1,1,1,copy:3059,new,,set=azurevigil|kind=spellbook|fit=|n=2|cell=29
+azurevigil_spellbook_3,item,spellbook,azure vigil codex,gear_sets/azurevigil,192,96,1,1,1,1,copy:3059,new,,set=azurevigil|kind=spellbook|fit=|n=3|cell=30
+azurevigil_spellbook_4,item,spellbook,azure vigil folio,gear_sets/azurevigil,224,96,1,1,1,1,copy:3059,new,,set=azurevigil|kind=spellbook|fit=|n=4|cell=31
+azurevigil_sword_1,item,sword,azure vigil blade,gear_sets/azurevigil,0,128,1,1,1,1,copy:3264,new,,set=azurevigil|kind=sword|fit=1|n=1|cell=32
+azurevigil_sword_2,item,sword,azure vigil greatsword,gear_sets/azurevigil,32,128,1,1,1,1,copy:3264,new,,set=azurevigil|kind=sword|fit=2|n=2|cell=33
+azurevigil_sword_3,item,sword,azure vigil sabre,gear_sets/azurevigil,64,128,1,1,1,1,copy:3264,new,,set=azurevigil|kind=sword|fit=1|n=3|cell=34
+azurevigil_sword_4,item,sword,azure vigil claymore,gear_sets/azurevigil,96,128,1,1,1,1,copy:3264,new,,set=azurevigil|kind=sword|fit=2|n=4|cell=35
+azurevigil_axe_1,item,axe,azure vigil axe,gear_sets/azurevigil,128,128,1,1,1,1,copy:3274,new,,set=azurevigil|kind=axe|fit=1|n=1|cell=36
+azurevigil_axe_2,item,axe,azure vigil greataxe,gear_sets/azurevigil,160,128,1,1,1,1,copy:3274,new,,set=azurevigil|kind=axe|fit=2|n=2|cell=37
+azurevigil_axe_3,item,axe,azure vigil hatchet,gear_sets/azurevigil,192,128,1,1,1,1,copy:3274,new,,set=azurevigil|kind=axe|fit=1|n=3|cell=38
+azurevigil_axe_4,item,axe,azure vigil battle axe,gear_sets/azurevigil,224,128,1,1,1,1,copy:3274,new,,set=azurevigil|kind=axe|fit=2|n=4|cell=39
+azurevigil_club_1,item,club,azure vigil mace,gear_sets/azurevigil,0,160,1,1,1,1,copy:3270,new,,set=azurevigil|kind=club|fit=1|n=1|cell=40
+azurevigil_club_2,item,club,azure vigil maul,gear_sets/azurevigil,32,160,1,1,1,1,copy:3270,new,,set=azurevigil|kind=club|fit=2|n=2|cell=41
+azurevigil_club_3,item,club,azure vigil hammer,gear_sets/azurevigil,64,160,1,1,1,1,copy:3270,new,,set=azurevigil|kind=club|fit=1|n=3|cell=42
+azurevigil_bow_1,item,bow,azure vigil bow,gear_sets/azurevigil,96,160,1,1,1,1,copy:3350,new,,set=azurevigil|kind=bow|fit=|n=1|cell=43
+azurevigil_bow_2,item,bow,azure vigil longbow,gear_sets/azurevigil,128,160,1,1,1,1,copy:3350,new,,set=azurevigil|kind=bow|fit=|n=2|cell=44
+azurevigil_bow_3,item,bow,azure vigil recurve bow,gear_sets/azurevigil,160,160,1,1,1,1,copy:3350,new,,set=azurevigil|kind=bow|fit=|n=3|cell=45
+azurevigil_crossbow_1,item,crossbow,azure vigil crossbow,gear_sets/azurevigil,192,160,1,1,1,1,copy:3349,new,,set=azurevigil|kind=crossbow|fit=|n=1|cell=46
+azurevigil_crossbow_2,item,crossbow,azure vigil arbalest,gear_sets/azurevigil,224,160,1,1,1,1,copy:3349,new,,set=azurevigil|kind=crossbow|fit=|n=2|cell=47
+azurevigil_amulet_1,item,amulet,azure vigil amulet,gear_sets/azurevigil,0,192,1,1,1,1,copy:3572,new,,set=azurevigil|kind=amulet|fit=|n=1|cell=48
+azurevigil_amulet_2,item,amulet,azure vigil pendant,gear_sets/azurevigil,32,192,1,1,1,1,copy:3572,new,,set=azurevigil|kind=amulet|fit=|n=2|cell=49
+azurevigil_amulet_3,item,amulet,azure vigil talisman,gear_sets/azurevigil,64,192,1,1,1,1,copy:3572,new,,set=azurevigil|kind=amulet|fit=|n=3|cell=50
+azurevigil_amulet_4,item,amulet,azure vigil necklace,gear_sets/azurevigil,96,192,1,1,1,1,copy:3572,new,,set=azurevigil|kind=amulet|fit=|n=4|cell=51
+azurevigil_ring_1,item,ring,azure vigil ring,gear_sets/azurevigil,128,192,1,1,1,1,copy:3063,new,,set=azurevigil|kind=ring|fit=|n=1|cell=52
+azurevigil_ring_2,item,ring,azure vigil band,gear_sets/azurevigil,160,192,1,1,1,1,copy:3063,new,,set=azurevigil|kind=ring|fit=|n=2|cell=53
+azurevigil_ring_3,item,ring,azure vigil signet,gear_sets/azurevigil,192,192,1,1,1,1,copy:3063,new,,set=azurevigil|kind=ring|fit=|n=3|cell=54
+azurevigil_ring_4,item,ring,azure vigil seal,gear_sets/azurevigil,224,192,1,1,1,1,copy:3063,new,,set=azurevigil|kind=ring|fit=|n=4|cell=55
+azurevigil_wand_1,item,wand,azure vigil wand,gear_sets/azurevigil,0,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=wand|fit=|n=1|cell=56
+azurevigil_wand_2,item,wand,azure vigil scepter,gear_sets/azurevigil,32,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=wand|fit=|n=2|cell=57
+azurevigil_wand_3,item,wand,azure vigil spire,gear_sets/azurevigil,64,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=wand|fit=|n=3|cell=58
+azurevigil_wand_4,item,wand,azure vigil focus,gear_sets/azurevigil,96,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=wand|fit=|n=4|cell=59
+azurevigil_rod_1,item,rod,azure vigil rod,gear_sets/azurevigil,128,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=rod|fit=|n=1|cell=60
+azurevigil_rod_2,item,rod,azure vigil staff,gear_sets/azurevigil,160,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=rod|fit=|n=2|cell=61
+azurevigil_rod_3,item,rod,azure vigil branch,gear_sets/azurevigil,192,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=rod|fit=|n=3|cell=62
+azurevigil_rod_4,item,rod,azure vigil crook,gear_sets/azurevigil,224,224,1,1,1,1,copy:3066,new,,set=azurevigil|kind=rod|fit=|n=4|cell=63
+bloodmoon_helmet_1,item,helmet,bloodmoon greathelm,gear_sets/bloodmoon,0,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=H|n=1|cell=0
+bloodmoon_helmet_2,item,helmet,bloodmoon helm,gear_sets/bloodmoon,32,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=M|n=2|cell=1
+bloodmoon_helmet_3,item,helmet,bloodmoon hood,gear_sets/bloodmoon,64,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=C|n=3|cell=2
+bloodmoon_helmet_4,item,helmet,bloodmoon coif,gear_sets/bloodmoon,96,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=M|n=4|cell=3
+bloodmoon_helmet_5,item,helmet,bloodmoon warhelm,gear_sets/bloodmoon,128,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=H|n=5|cell=4
+bloodmoon_helmet_6,item,helmet,bloodmoon horned helm,gear_sets/bloodmoon,160,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=H|n=6|cell=5
+bloodmoon_helmet_7,item,helmet,bloodmoon casque,gear_sets/bloodmoon,192,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=M|n=7|cell=6
+bloodmoon_helmet_8,item,helmet,bloodmoon cowl,gear_sets/bloodmoon,224,0,1,1,1,1,copy:3351,new,,set=bloodmoon|kind=helmet|fit=C|n=8|cell=7
+bloodmoon_armor_1,item,armor,bloodmoon plate,gear_sets/bloodmoon,0,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=H|n=1|cell=8
+bloodmoon_armor_2,item,armor,bloodmoon robe,gear_sets/bloodmoon,32,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=C|n=2|cell=9
+bloodmoon_armor_3,item,armor,bloodmoon vestment,gear_sets/bloodmoon,64,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=C|n=3|cell=10
+bloodmoon_armor_4,item,armor,bloodmoon mail,gear_sets/bloodmoon,96,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=M|n=4|cell=11
+bloodmoon_armor_5,item,armor,bloodmoon cuirass,gear_sets/bloodmoon,128,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=H|n=5|cell=12
+bloodmoon_armor_6,item,armor,bloodmoon warplate,gear_sets/bloodmoon,160,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=H|n=6|cell=13
+bloodmoon_armor_7,item,armor,bloodmoon hauberk,gear_sets/bloodmoon,192,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=M|n=7|cell=14
+bloodmoon_armor_8,item,armor,bloodmoon brigandine,gear_sets/bloodmoon,224,32,1,1,1,1,copy:3357,new,,set=bloodmoon|kind=armor|fit=M|n=8|cell=15
+bloodmoon_legs_1,item,legs,bloodmoon legplates,gear_sets/bloodmoon,0,64,1,1,1,1,copy:3557,new,,set=bloodmoon|kind=legs|fit=H|n=1|cell=16
+bloodmoon_legs_2,item,legs,bloodmoon leggings,gear_sets/bloodmoon,32,64,1,1,1,1,copy:3557,new,,set=bloodmoon|kind=legs|fit=M|n=2|cell=17
+bloodmoon_legs_3,item,legs,bloodmoon kilt,gear_sets/bloodmoon,64,64,1,1,1,1,copy:3557,new,,set=bloodmoon|kind=legs|fit=C|n=3|cell=18
+bloodmoon_boots_1,item,boots,bloodmoon boots,gear_sets/bloodmoon,96,64,1,1,1,1,copy:3552,new,,set=bloodmoon|kind=boots|fit=|n=1|cell=19
+bloodmoon_boots_2,item,boots,bloodmoon sabatons,gear_sets/bloodmoon,128,64,1,1,1,1,copy:3552,new,,set=bloodmoon|kind=boots|fit=|n=2|cell=20
+bloodmoon_legs_4,item,legs,bloodmoon tassets,gear_sets/bloodmoon,160,64,1,1,1,1,copy:3557,new,,set=bloodmoon|kind=legs|fit=H|n=4|cell=21
+bloodmoon_boots_3,item,boots,bloodmoon treads,gear_sets/bloodmoon,192,64,1,1,1,1,copy:3552,new,,set=bloodmoon|kind=boots|fit=|n=3|cell=22
+bloodmoon_boots_4,item,boots,bloodmoon striders,gear_sets/bloodmoon,224,64,1,1,1,1,copy:3552,new,,set=bloodmoon|kind=boots|fit=|n=4|cell=23
+bloodmoon_shield_1,item,shield,bloodmoon shield,gear_sets/bloodmoon,0,96,1,1,1,1,copy:3409,new,,set=bloodmoon|kind=shield|fit=|n=1|cell=24
+bloodmoon_shield_2,item,shield,bloodmoon aegis,gear_sets/bloodmoon,32,96,1,1,1,1,copy:3409,new,,set=bloodmoon|kind=shield|fit=|n=2|cell=25
+bloodmoon_shield_3,item,shield,bloodmoon bulwark,gear_sets/bloodmoon,64,96,1,1,1,1,copy:3409,new,,set=bloodmoon|kind=shield|fit=|n=3|cell=26
+bloodmoon_shield_4,item,shield,bloodmoon kite shield,gear_sets/bloodmoon,96,96,1,1,1,1,copy:3409,new,,set=bloodmoon|kind=shield|fit=|n=4|cell=27
+bloodmoon_spellbook_1,item,spellbook,bloodmoon grimoire,gear_sets/bloodmoon,128,96,1,1,1,1,copy:3059,new,,set=bloodmoon|kind=spellbook|fit=|n=1|cell=28
+bloodmoon_spellbook_2,item,spellbook,bloodmoon tome,gear_sets/bloodmoon,160,96,1,1,1,1,copy:3059,new,,set=bloodmoon|kind=spellbook|fit=|n=2|cell=29
+bloodmoon_spellbook_3,item,spellbook,bloodmoon codex,gear_sets/bloodmoon,192,96,1,1,1,1,copy:3059,new,,set=bloodmoon|kind=spellbook|fit=|n=3|cell=30
+bloodmoon_spellbook_4,item,spellbook,bloodmoon folio,gear_sets/bloodmoon,224,96,1,1,1,1,copy:3059,new,,set=bloodmoon|kind=spellbook|fit=|n=4|cell=31
+bloodmoon_sword_1,item,sword,bloodmoon greatsword,gear_sets/bloodmoon,0,128,1,1,1,1,copy:3264,new,,set=bloodmoon|kind=sword|fit=2|n=1|cell=32
+bloodmoon_sword_2,item,sword,bloodmoon blade,gear_sets/bloodmoon,32,128,1,1,1,1,copy:3264,new,,set=bloodmoon|kind=sword|fit=1|n=2|cell=33
+bloodmoon_sword_3,item,sword,bloodmoon claymore,gear_sets/bloodmoon,64,128,1,1,1,1,copy:3264,new,,set=bloodmoon|kind=sword|fit=2|n=3|cell=34
+bloodmoon_sword_4,item,sword,bloodmoon sabre,gear_sets/bloodmoon,96,128,1,1,1,1,copy:3264,new,,set=bloodmoon|kind=sword|fit=1|n=4|cell=35
+bloodmoon_axe_1,item,axe,bloodmoon axe,gear_sets/bloodmoon,128,128,1,1,1,1,copy:3274,new,,set=bloodmoon|kind=axe|fit=1|n=1|cell=36
+bloodmoon_axe_2,item,axe,bloodmoon hatchet,gear_sets/bloodmoon,160,128,1,1,1,1,copy:3274,new,,set=bloodmoon|kind=axe|fit=1|n=2|cell=37
+bloodmoon_axe_3,item,axe,bloodmoon greataxe,gear_sets/bloodmoon,192,128,1,1,1,1,copy:3274,new,,set=bloodmoon|kind=axe|fit=2|n=3|cell=38
+bloodmoon_axe_4,item,axe,bloodmoon battle axe,gear_sets/bloodmoon,224,128,1,1,1,1,copy:3274,new,,set=bloodmoon|kind=axe|fit=2|n=4|cell=39
+bloodmoon_club_1,item,club,bloodmoon maul,gear_sets/bloodmoon,0,160,1,1,1,1,copy:3270,new,,set=bloodmoon|kind=club|fit=2|n=1|cell=40
+bloodmoon_club_2,item,club,bloodmoon mace,gear_sets/bloodmoon,32,160,1,1,1,1,copy:3270,new,,set=bloodmoon|kind=club|fit=1|n=2|cell=41
+bloodmoon_club_3,item,club,bloodmoon hammer,gear_sets/bloodmoon,64,160,1,1,1,1,copy:3270,new,,set=bloodmoon|kind=club|fit=1|n=3|cell=42
+bloodmoon_bow_1,item,bow,bloodmoon bow,gear_sets/bloodmoon,96,160,1,1,1,1,copy:3350,new,,set=bloodmoon|kind=bow|fit=|n=1|cell=43
+bloodmoon_bow_2,item,bow,bloodmoon longbow,gear_sets/bloodmoon,128,160,1,1,1,1,copy:3350,new,,set=bloodmoon|kind=bow|fit=|n=2|cell=44
+bloodmoon_bow_3,item,bow,bloodmoon recurve bow,gear_sets/bloodmoon,160,160,1,1,1,1,copy:3350,new,,set=bloodmoon|kind=bow|fit=|n=3|cell=45
+bloodmoon_crossbow_1,item,crossbow,bloodmoon crossbow,gear_sets/bloodmoon,192,160,1,1,1,1,copy:3349,new,,set=bloodmoon|kind=crossbow|fit=|n=1|cell=46
+bloodmoon_crossbow_2,item,crossbow,bloodmoon arbalest,gear_sets/bloodmoon,224,160,1,1,1,1,copy:3349,new,,set=bloodmoon|kind=crossbow|fit=|n=2|cell=47
+bloodmoon_amulet_1,item,amulet,bloodmoon amulet,gear_sets/bloodmoon,0,192,1,1,1,1,copy:3572,new,,set=bloodmoon|kind=amulet|fit=|n=1|cell=48
+bloodmoon_amulet_2,item,amulet,bloodmoon pendant,gear_sets/bloodmoon,32,192,1,1,1,1,copy:3572,new,,set=bloodmoon|kind=amulet|fit=|n=2|cell=49
+bloodmoon_amulet_3,item,amulet,bloodmoon talisman,gear_sets/bloodmoon,64,192,1,1,1,1,copy:3572,new,,set=bloodmoon|kind=amulet|fit=|n=3|cell=50
+bloodmoon_ring_1,item,ring,bloodmoon ring,gear_sets/bloodmoon,96,192,1,1,1,1,copy:3063,new,,set=bloodmoon|kind=ring|fit=|n=1|cell=51
+bloodmoon_amulet_4,item,amulet,bloodmoon necklace,gear_sets/bloodmoon,128,192,1,1,1,1,copy:3572,new,,set=bloodmoon|kind=amulet|fit=|n=4|cell=52
+bloodmoon_ring_2,item,ring,bloodmoon band,gear_sets/bloodmoon,160,192,1,1,1,1,copy:3063,new,,set=bloodmoon|kind=ring|fit=|n=2|cell=53
+bloodmoon_ring_3,item,ring,bloodmoon signet,gear_sets/bloodmoon,192,192,1,1,1,1,copy:3063,new,,set=bloodmoon|kind=ring|fit=|n=3|cell=54
+bloodmoon_ring_4,item,ring,bloodmoon seal,gear_sets/bloodmoon,224,192,1,1,1,1,copy:3063,new,,set=bloodmoon|kind=ring|fit=|n=4|cell=55
+bloodmoon_wand_1,item,wand,bloodmoon wand,gear_sets/bloodmoon,0,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=wand|fit=|n=1|cell=56
+bloodmoon_wand_2,item,wand,bloodmoon scepter,gear_sets/bloodmoon,32,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=wand|fit=|n=2|cell=57
+bloodmoon_wand_3,item,wand,bloodmoon spire,gear_sets/bloodmoon,64,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=wand|fit=|n=3|cell=58
+bloodmoon_wand_4,item,wand,bloodmoon focus,gear_sets/bloodmoon,96,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=wand|fit=|n=4|cell=59
+bloodmoon_rod_1,item,rod,bloodmoon rod,gear_sets/bloodmoon,128,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=rod|fit=|n=1|cell=60
+bloodmoon_rod_2,item,rod,bloodmoon staff,gear_sets/bloodmoon,160,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=rod|fit=|n=2|cell=61
+bloodmoon_rod_3,item,rod,bloodmoon branch,gear_sets/bloodmoon,192,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=rod|fit=|n=3|cell=62
+bloodmoon_rod_4,item,rod,bloodmoon crook,gear_sets/bloodmoon,224,224,1,1,1,1,copy:3066,new,,set=bloodmoon|kind=rod|fit=|n=4|cell=63
+gildcrown_helmet_1,item,helmet,gildcrown greathelm,gear_sets/gildcrown,0,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=H|n=1|cell=0
+gildcrown_helmet_2,item,helmet,gildcrown helm,gear_sets/gildcrown,32,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=M|n=2|cell=1
+gildcrown_helmet_3,item,helmet,gildcrown coif,gear_sets/gildcrown,64,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=M|n=3|cell=2
+gildcrown_helmet_4,item,helmet,gildcrown hood,gear_sets/gildcrown,96,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=C|n=4|cell=3
+gildcrown_helmet_5,item,helmet,gildcrown warhelm,gear_sets/gildcrown,128,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=H|n=5|cell=4
+gildcrown_helmet_6,item,helmet,gildcrown horned helm,gear_sets/gildcrown,160,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=H|n=6|cell=5
+gildcrown_helmet_7,item,helmet,gildcrown casque,gear_sets/gildcrown,192,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=M|n=7|cell=6
+gildcrown_helmet_8,item,helmet,gildcrown cowl,gear_sets/gildcrown,224,0,1,1,1,1,copy:3351,new,,set=gildcrown|kind=helmet|fit=C|n=8|cell=7
+gildcrown_armor_1,item,armor,gildcrown plate,gear_sets/gildcrown,0,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=H|n=1|cell=8
+gildcrown_armor_2,item,armor,gildcrown cuirass,gear_sets/gildcrown,32,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=H|n=2|cell=9
+gildcrown_armor_3,item,armor,gildcrown robe,gear_sets/gildcrown,64,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=C|n=3|cell=10
+gildcrown_armor_4,item,armor,gildcrown mail,gear_sets/gildcrown,96,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=M|n=4|cell=11
+gildcrown_armor_5,item,armor,gildcrown warplate,gear_sets/gildcrown,128,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=H|n=5|cell=12
+gildcrown_armor_6,item,armor,gildcrown hauberk,gear_sets/gildcrown,160,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=M|n=6|cell=13
+gildcrown_armor_7,item,armor,gildcrown brigandine,gear_sets/gildcrown,192,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=M|n=7|cell=14
+gildcrown_armor_8,item,armor,gildcrown vestment,gear_sets/gildcrown,224,32,1,1,1,1,copy:3357,new,,set=gildcrown|kind=armor|fit=C|n=8|cell=15
+gildcrown_legs_1,item,legs,gildcrown legplates,gear_sets/gildcrown,0,64,1,1,1,1,copy:3557,new,,set=gildcrown|kind=legs|fit=A|n=1|cell=16
+gildcrown_legs_2,item,legs,gildcrown leggings,gear_sets/gildcrown,32,64,1,1,1,1,copy:3557,new,,set=gildcrown|kind=legs|fit=A|n=2|cell=17
+gildcrown_boots_1,item,boots,gildcrown boots,gear_sets/gildcrown,64,64,1,1,1,1,copy:3552,new,,set=gildcrown|kind=boots|fit=|n=1|cell=18
+gildcrown_boots_2,item,boots,gildcrown sabatons,gear_sets/gildcrown,96,64,1,1,1,1,copy:3552,new,,set=gildcrown|kind=boots|fit=|n=2|cell=19
+gildcrown_boots_3,item,boots,gildcrown treads,gear_sets/gildcrown,128,64,1,1,1,1,copy:3552,new,,set=gildcrown|kind=boots|fit=|n=3|cell=20
+gildcrown_boots_4,item,boots,gildcrown striders,gear_sets/gildcrown,160,64,1,1,1,1,copy:3552,new,,set=gildcrown|kind=boots|fit=|n=4|cell=21
+gildcrown_boots_5,item,boots,gildcrown sollerets,gear_sets/gildcrown,192,64,1,1,1,1,copy:3552,new,,set=gildcrown|kind=boots|fit=|n=5|cell=22
+gildcrown_boots_6,item,boots,gildcrown walkers,gear_sets/gildcrown,224,64,1,1,1,1,copy:3552,new,,set=gildcrown|kind=boots|fit=|n=6|cell=23
+gildcrown_shield_1,item,shield,gildcrown shield,gear_sets/gildcrown,0,96,1,1,1,1,copy:3409,new,,set=gildcrown|kind=shield|fit=|n=1|cell=24
+gildcrown_shield_2,item,shield,gildcrown aegis,gear_sets/gildcrown,32,96,1,1,1,1,copy:3409,new,,set=gildcrown|kind=shield|fit=|n=2|cell=25
+gildcrown_shield_3,item,shield,gildcrown bulwark,gear_sets/gildcrown,64,96,1,1,1,1,copy:3409,new,,set=gildcrown|kind=shield|fit=|n=3|cell=26
+gildcrown_shield_4,item,shield,gildcrown kite shield,gear_sets/gildcrown,96,96,1,1,1,1,copy:3409,new,,set=gildcrown|kind=shield|fit=|n=4|cell=27
+gildcrown_shield_5,item,shield,gildcrown buckler,gear_sets/gildcrown,128,96,1,1,1,1,copy:3409,new,,set=gildcrown|kind=shield|fit=|n=5|cell=28
+gildcrown_spellbook_1,item,spellbook,gildcrown grimoire,gear_sets/gildcrown,160,96,1,1,1,1,copy:3059,new,,set=gildcrown|kind=spellbook|fit=|n=1|cell=29
+gildcrown_spellbook_2,item,spellbook,gildcrown tome,gear_sets/gildcrown,192,96,1,1,1,1,copy:3059,new,,set=gildcrown|kind=spellbook|fit=|n=2|cell=30
+gildcrown_spellbook_3,item,spellbook,gildcrown codex,gear_sets/gildcrown,224,96,1,1,1,1,copy:3059,new,,set=gildcrown|kind=spellbook|fit=|n=3|cell=31
+gildcrown_sword_1,item,sword,gildcrown greatsword,gear_sets/gildcrown,0,128,1,1,1,1,copy:3264,new,,set=gildcrown|kind=sword|fit=2|n=1|cell=32
+gildcrown_sword_2,item,sword,gildcrown blade,gear_sets/gildcrown,32,128,1,1,1,1,copy:3264,new,,set=gildcrown|kind=sword|fit=1|n=2|cell=33
+gildcrown_sword_3,item,sword,gildcrown sabre,gear_sets/gildcrown,64,128,1,1,1,1,copy:3264,new,,set=gildcrown|kind=sword|fit=1|n=3|cell=34
+gildcrown_axe_1,item,axe,gildcrown axe,gear_sets/gildcrown,96,128,1,1,1,1,copy:3274,new,,set=gildcrown|kind=axe|fit=1|n=1|cell=35
+gildcrown_axe_2,item,axe,gildcrown greataxe,gear_sets/gildcrown,128,128,1,1,1,1,copy:3274,new,,set=gildcrown|kind=axe|fit=2|n=2|cell=36
+gildcrown_axe_3,item,axe,gildcrown hatchet,gear_sets/gildcrown,160,128,1,1,1,1,copy:3274,new,,set=gildcrown|kind=axe|fit=1|n=3|cell=37
+gildcrown_axe_4,item,axe,gildcrown battle axe,gear_sets/gildcrown,192,128,1,1,1,1,copy:3274,new,,set=gildcrown|kind=axe|fit=2|n=4|cell=38
+gildcrown_axe_5,item,axe,gildcrown cleaver,gear_sets/gildcrown,224,128,1,1,1,1,copy:3274,new,,set=gildcrown|kind=axe|fit=1|n=5|cell=39
+gildcrown_club_1,item,club,gildcrown mace,gear_sets/gildcrown,0,160,1,1,1,1,copy:3270,new,,set=gildcrown|kind=club|fit=1|n=1|cell=40
+gildcrown_club_2,item,club,gildcrown hammer,gear_sets/gildcrown,32,160,1,1,1,1,copy:3270,new,,set=gildcrown|kind=club|fit=1|n=2|cell=41
+gildcrown_club_3,item,club,gildcrown maul,gear_sets/gildcrown,64,160,1,1,1,1,copy:3270,new,,set=gildcrown|kind=club|fit=2|n=3|cell=42
+gildcrown_bow_1,item,bow,gildcrown bow,gear_sets/gildcrown,96,160,1,1,1,1,copy:3350,new,,set=gildcrown|kind=bow|fit=|n=1|cell=43
+gildcrown_bow_2,item,bow,gildcrown longbow,gear_sets/gildcrown,128,160,1,1,1,1,copy:3350,new,,set=gildcrown|kind=bow|fit=|n=2|cell=44
+gildcrown_bow_3,item,bow,gildcrown recurve bow,gear_sets/gildcrown,160,160,1,1,1,1,copy:3350,new,,set=gildcrown|kind=bow|fit=|n=3|cell=45
+gildcrown_crossbow_1,item,crossbow,gildcrown crossbow,gear_sets/gildcrown,192,160,1,1,1,1,copy:3349,new,,set=gildcrown|kind=crossbow|fit=|n=1|cell=46
+gildcrown_crossbow_2,item,crossbow,gildcrown arbalest,gear_sets/gildcrown,224,160,1,1,1,1,copy:3349,new,,set=gildcrown|kind=crossbow|fit=|n=2|cell=47
+gildcrown_amulet_1,item,amulet,gildcrown amulet,gear_sets/gildcrown,0,192,1,1,1,1,copy:3572,new,,set=gildcrown|kind=amulet|fit=|n=1|cell=48
+gildcrown_amulet_2,item,amulet,gildcrown pendant,gear_sets/gildcrown,32,192,1,1,1,1,copy:3572,new,,set=gildcrown|kind=amulet|fit=|n=2|cell=49
+gildcrown_amulet_3,item,amulet,gildcrown talisman,gear_sets/gildcrown,64,192,1,1,1,1,copy:3572,new,,set=gildcrown|kind=amulet|fit=|n=3|cell=50
+gildcrown_ring_1,item,ring,gildcrown ring,gear_sets/gildcrown,96,192,1,1,1,1,copy:3063,new,,set=gildcrown|kind=ring|fit=|n=1|cell=51
+gildcrown_amulet_4,item,amulet,gildcrown necklace,gear_sets/gildcrown,128,192,1,1,1,1,copy:3572,new,,set=gildcrown|kind=amulet|fit=|n=4|cell=52
+gildcrown_ring_2,item,ring,gildcrown band,gear_sets/gildcrown,160,192,1,1,1,1,copy:3063,new,,set=gildcrown|kind=ring|fit=|n=2|cell=53
+gildcrown_ring_3,item,ring,gildcrown signet,gear_sets/gildcrown,192,192,1,1,1,1,copy:3063,new,,set=gildcrown|kind=ring|fit=|n=3|cell=54
+gildcrown_ring_4,item,ring,gildcrown seal,gear_sets/gildcrown,224,192,1,1,1,1,copy:3063,new,,set=gildcrown|kind=ring|fit=|n=4|cell=55
+gildcrown_wand_1,item,wand,gildcrown wand,gear_sets/gildcrown,0,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=wand|fit=|n=1|cell=56
+gildcrown_wand_2,item,wand,gildcrown scepter,gear_sets/gildcrown,32,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=wand|fit=|n=2|cell=57
+gildcrown_wand_3,item,wand,gildcrown spire,gear_sets/gildcrown,64,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=wand|fit=|n=3|cell=58
+gildcrown_wand_4,item,wand,gildcrown focus,gear_sets/gildcrown,96,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=wand|fit=|n=4|cell=59
+gildcrown_rod_1,item,rod,gildcrown rod,gear_sets/gildcrown,128,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=rod|fit=|n=1|cell=60
+gildcrown_rod_2,item,rod,gildcrown staff,gear_sets/gildcrown,160,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=rod|fit=|n=2|cell=61
+gildcrown_rod_3,item,rod,gildcrown branch,gear_sets/gildcrown,192,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=rod|fit=|n=3|cell=62
+gildcrown_rod_4,item,rod,gildcrown crook,gear_sets/gildcrown,224,224,1,1,1,1,copy:3066,new,,set=gildcrown|kind=rod|fit=|n=4|cell=63
+blightfang_helmet_1,item,helmet,blightfang greathelm,gear_sets/blightfang,0,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=H|n=1|cell=0
+blightfang_helmet_2,item,helmet,blightfang helm,gear_sets/blightfang,32,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=M|n=2|cell=1
+blightfang_helmet_3,item,helmet,blightfang warhelm,gear_sets/blightfang,64,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=H|n=3|cell=2
+blightfang_helmet_4,item,helmet,blightfang coif,gear_sets/blightfang,96,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=M|n=4|cell=3
+blightfang_helmet_5,item,helmet,blightfang hood,gear_sets/blightfang,128,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=C|n=5|cell=4
+blightfang_helmet_6,item,helmet,blightfang horned helm,gear_sets/blightfang,160,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=H|n=6|cell=5
+blightfang_helmet_7,item,helmet,blightfang casque,gear_sets/blightfang,192,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=M|n=7|cell=6
+blightfang_helmet_8,item,helmet,blightfang cowl,gear_sets/blightfang,224,0,1,1,1,1,copy:3351,new,,set=blightfang|kind=helmet|fit=C|n=8|cell=7
+blightfang_armor_1,item,armor,blightfang plate,gear_sets/blightfang,0,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=H|n=1|cell=8
+blightfang_armor_2,item,armor,blightfang mail,gear_sets/blightfang,32,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=M|n=2|cell=9
+blightfang_armor_3,item,armor,blightfang robe,gear_sets/blightfang,64,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=C|n=3|cell=10
+blightfang_armor_4,item,armor,blightfang cuirass,gear_sets/blightfang,96,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=H|n=4|cell=11
+blightfang_armor_5,item,armor,blightfang hauberk,gear_sets/blightfang,128,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=M|n=5|cell=12
+blightfang_armor_6,item,armor,blightfang vestment,gear_sets/blightfang,160,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=C|n=6|cell=13
+blightfang_armor_7,item,armor,blightfang brigandine,gear_sets/blightfang,192,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=M|n=7|cell=14
+blightfang_armor_8,item,armor,blightfang warplate,gear_sets/blightfang,224,32,1,1,1,1,copy:3357,new,,set=blightfang|kind=armor|fit=H|n=8|cell=15
+blightfang_legs_1,item,legs,blightfang legplates,gear_sets/blightfang,0,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=H|n=1|cell=16
+blightfang_legs_2,item,legs,blightfang leggings,gear_sets/blightfang,32,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=M|n=2|cell=17
+blightfang_legs_3,item,legs,blightfang kilt,gear_sets/blightfang,64,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=C|n=3|cell=18
+blightfang_legs_4,item,legs,blightfang tassets,gear_sets/blightfang,96,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=H|n=4|cell=19
+blightfang_legs_5,item,legs,blightfang chausses,gear_sets/blightfang,128,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=M|n=5|cell=20
+blightfang_legs_6,item,legs,blightfang trousers,gear_sets/blightfang,160,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=C|n=6|cell=21
+blightfang_legs_7,item,legs,blightfang cuisses,gear_sets/blightfang,192,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=H|n=7|cell=22
+blightfang_legs_8,item,legs,blightfang breeches,gear_sets/blightfang,224,64,1,1,1,1,copy:3557,new,,set=blightfang|kind=legs|fit=M|n=8|cell=23
+blightfang_shield_1,item,shield,blightfang shield,gear_sets/blightfang,0,96,1,1,1,1,copy:3409,new,,set=blightfang|kind=shield|fit=|n=1|cell=24
+blightfang_shield_2,item,shield,blightfang aegis,gear_sets/blightfang,32,96,1,1,1,1,copy:3409,new,,set=blightfang|kind=shield|fit=|n=2|cell=25
+blightfang_shield_3,item,shield,blightfang bulwark,gear_sets/blightfang,64,96,1,1,1,1,copy:3409,new,,set=blightfang|kind=shield|fit=|n=3|cell=26
+blightfang_shield_4,item,shield,blightfang kite shield,gear_sets/blightfang,96,96,1,1,1,1,copy:3409,new,,set=blightfang|kind=shield|fit=|n=4|cell=27
+blightfang_spellbook_1,item,spellbook,blightfang grimoire,gear_sets/blightfang,128,96,1,1,1,1,copy:3059,new,,set=blightfang|kind=spellbook|fit=|n=1|cell=28
+blightfang_spellbook_2,item,spellbook,blightfang tome,gear_sets/blightfang,160,96,1,1,1,1,copy:3059,new,,set=blightfang|kind=spellbook|fit=|n=2|cell=29
+blightfang_spellbook_3,item,spellbook,blightfang codex,gear_sets/blightfang,192,96,1,1,1,1,copy:3059,new,,set=blightfang|kind=spellbook|fit=|n=3|cell=30
+blightfang_spellbook_4,item,spellbook,blightfang folio,gear_sets/blightfang,224,96,1,1,1,1,copy:3059,new,,set=blightfang|kind=spellbook|fit=|n=4|cell=31
+blightfang_sword_1,item,sword,blightfang greatsword,gear_sets/blightfang,0,128,1,1,1,1,copy:3264,new,,set=blightfang|kind=sword|fit=2|n=1|cell=32
+blightfang_sword_2,item,sword,blightfang claymore,gear_sets/blightfang,32,128,1,1,1,1,copy:3264,new,,set=blightfang|kind=sword|fit=2|n=2|cell=33
+blightfang_sword_3,item,sword,blightfang blade,gear_sets/blightfang,64,128,1,1,1,1,copy:3264,new,,set=blightfang|kind=sword|fit=1|n=3|cell=34
+blightfang_sword_4,item,sword,blightfang sabre,gear_sets/blightfang,96,128,1,1,1,1,copy:3264,new,,set=blightfang|kind=sword|fit=1|n=4|cell=35
+blightfang_axe_1,item,axe,blightfang greataxe,gear_sets/blightfang,128,128,1,1,1,1,copy:3274,new,,set=blightfang|kind=axe|fit=2|n=1|cell=36
+blightfang_axe_2,item,axe,blightfang battle axe,gear_sets/blightfang,160,128,1,1,1,1,copy:3274,new,,set=blightfang|kind=axe|fit=2|n=2|cell=37
+blightfang_axe_3,item,axe,blightfang axe,gear_sets/blightfang,192,128,1,1,1,1,copy:3274,new,,set=blightfang|kind=axe|fit=1|n=3|cell=38
+blightfang_axe_4,item,axe,blightfang hatchet,gear_sets/blightfang,224,128,1,1,1,1,copy:3274,new,,set=blightfang|kind=axe|fit=1|n=4|cell=39
+blightfang_club_1,item,club,blightfang maul,gear_sets/blightfang,0,160,1,1,1,1,copy:3270,new,,set=blightfang|kind=club|fit=2|n=1|cell=40
+blightfang_club_2,item,club,blightfang mace,gear_sets/blightfang,32,160,1,1,1,1,copy:3270,new,,set=blightfang|kind=club|fit=1|n=2|cell=41
+blightfang_club_3,item,club,blightfang warhammer,gear_sets/blightfang,64,160,1,1,1,1,copy:3270,new,,set=blightfang|kind=club|fit=2|n=3|cell=42
+blightfang_club_4,item,club,blightfang hammer,gear_sets/blightfang,96,160,1,1,1,1,copy:3270,new,,set=blightfang|kind=club|fit=1|n=4|cell=43
+blightfang_bow_1,item,bow,blightfang bow,gear_sets/blightfang,128,160,1,1,1,1,copy:3350,new,,set=blightfang|kind=bow|fit=|n=1|cell=44
+blightfang_bow_2,item,bow,blightfang longbow,gear_sets/blightfang,160,160,1,1,1,1,copy:3350,new,,set=blightfang|kind=bow|fit=|n=2|cell=45
+blightfang_crossbow_1,item,crossbow,blightfang crossbow,gear_sets/blightfang,192,160,1,1,1,1,copy:3349,new,,set=blightfang|kind=crossbow|fit=|n=1|cell=46
+blightfang_crossbow_2,item,crossbow,blightfang arbalest,gear_sets/blightfang,224,160,1,1,1,1,copy:3349,new,,set=blightfang|kind=crossbow|fit=|n=2|cell=47
+blightfang_amulet_1,item,amulet,blightfang amulet,gear_sets/blightfang,0,192,1,1,1,1,copy:3572,new,,set=blightfang|kind=amulet|fit=|n=1|cell=48
+blightfang_amulet_2,item,amulet,blightfang pendant,gear_sets/blightfang,32,192,1,1,1,1,copy:3572,new,,set=blightfang|kind=amulet|fit=|n=2|cell=49
+blightfang_amulet_3,item,amulet,blightfang talisman,gear_sets/blightfang,64,192,1,1,1,1,copy:3572,new,,set=blightfang|kind=amulet|fit=|n=3|cell=50
+blightfang_amulet_4,item,amulet,blightfang necklace,gear_sets/blightfang,96,192,1,1,1,1,copy:3572,new,,set=blightfang|kind=amulet|fit=|n=4|cell=51
+blightfang_ring_1,item,ring,blightfang ring,gear_sets/blightfang,128,192,1,1,1,1,copy:3063,new,,set=blightfang|kind=ring|fit=|n=1|cell=52
+blightfang_ring_2,item,ring,blightfang band,gear_sets/blightfang,160,192,1,1,1,1,copy:3063,new,,set=blightfang|kind=ring|fit=|n=2|cell=53
+blightfang_ring_3,item,ring,blightfang signet,gear_sets/blightfang,192,192,1,1,1,1,copy:3063,new,,set=blightfang|kind=ring|fit=|n=3|cell=54
+blightfang_ring_4,item,ring,blightfang seal,gear_sets/blightfang,224,192,1,1,1,1,copy:3063,new,,set=blightfang|kind=ring|fit=|n=4|cell=55
+blightfang_wand_1,item,wand,blightfang wand,gear_sets/blightfang,0,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=wand|fit=|n=1|cell=56
+blightfang_wand_2,item,wand,blightfang scepter,gear_sets/blightfang,32,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=wand|fit=|n=2|cell=57
+blightfang_wand_3,item,wand,blightfang spire,gear_sets/blightfang,64,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=wand|fit=|n=3|cell=58
+blightfang_wand_4,item,wand,blightfang focus,gear_sets/blightfang,96,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=wand|fit=|n=4|cell=59
+blightfang_rod_1,item,rod,blightfang rod,gear_sets/blightfang,128,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=rod|fit=|n=1|cell=60
+blightfang_rod_2,item,rod,blightfang staff,gear_sets/blightfang,160,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=rod|fit=|n=2|cell=61
+blightfang_rod_3,item,rod,blightfang branch,gear_sets/blightfang,192,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=rod|fit=|n=3|cell=62
+blightfang_rod_4,item,rod,blightfang crook,gear_sets/blightfang,224,224,1,1,1,1,copy:3066,new,,set=blightfang|kind=rod|fit=|n=4|cell=63
