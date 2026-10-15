@@ -99,6 +99,27 @@ end
 ChaosSpell.bigFx = bigFx
 -- <<< Large spell effects
 
+-- >>> Pack farming spell effects (data/lib/chaos_pack27_fx.lua, switch ChaosPack27Fx.PAIR27_FX, off): the pack farming
+-- spells may send an effect or missile of their own; nil when the switch is off or no swap fits. Skins, large and class
+-- effects win over it.
+if not ChaosPack27Fx then
+	pcall(dofile, 'data/lib/chaos_pack27_fx.lua')
+end
+local function pack27(kind, name)
+	local P, W = ChaosPack27Fx, ChaosSupportsSpell
+	if type(name) ~= "string" or not P or not P.swapFor or not P.PAIR27_FX or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	local ok, alt = pcall(P.swapFor, spellId, kind, name)
+	return ok and alt or nil
+end
+ChaosSpell.pack27 = pack27
+-- <<< Pack farming spell effects
+
 -- Fx / FxMissile (chaos_fx.lua) are also called inside the casts (heal and area effects): wrapped once
 local function wrapFx()
 	if Fx and Fx ~= ChaosSpellSkinFx then
@@ -137,10 +158,18 @@ function ChaosSpell.fx(pos, name, fallback)
 	if cls and Vfx and Vfx(Position(pos), cls) then
 		return
 	end
+	local p27 = not cls and pack27("fx", name) -- the pack farming effect (pair 27), unless a class effect fits
+	if p27 and Vfx and Vfx(Position(pos), p27) then
+		return
+	end
 	Position(pos):sendMagicEffect(Fx(name, fallback))
 end
 
 function ChaosSpell.shoot(fromPos, toPos, name, fallback)
+	local p27 = pack27("missile", name) -- the pack farming missile (pair 27)
+	if p27 and VfxShoot and VfxShoot(Position(fromPos), Position(toPos), p27) then
+		return
+	end
 	Position(fromPos):sendDistanceEffect(Position(toPos), FxMissile(name, fallback))
 end
 
@@ -192,10 +221,18 @@ function ChaosSpell.vfx(pos, name)
 	if cls and Vfx(Position(pos), cls) then
 		return true
 	end
+	local p27 = not alt and not big and not cls and pack27("fx", name) -- the pack farming effect (pair 27)
+	if p27 and Vfx(Position(pos), p27) then
+		return true
+	end
 	return Vfx(Position(pos), name)
 end
 
 function ChaosSpell.vfxDir(pos, base, direction)
+	local p27 = VfxDir ~= nil and pos ~= nil and pack27("dir", base) -- the pack farming directional effect (pair 27)
+	if p27 and VfxDir(Position(pos), p27, direction) then
+		return true
+	end
 	return VfxDir ~= nil and pos ~= nil and VfxDir(Position(pos), base, direction)
 end
 
@@ -209,6 +246,10 @@ end
 function ChaosSpell.vshoot(fromPos, toPos, vname, name, fallback)
 	local alt = VfxShoot ~= nil and skinned("vmissile", vname) -- Cosmetics: the skin's variant first
 	if alt and VfxShoot(Position(fromPos), Position(toPos), alt) then
+		return
+	end
+	local p27 = VfxShoot ~= nil and pack27("missile", vname) -- the pack farming missile (pair 27)
+	if p27 and VfxShoot(Position(fromPos), Position(toPos), p27) then
 		return
 	end
 	if not (VfxShoot ~= nil and VfxShoot(Position(fromPos), Position(toPos), vname)) then

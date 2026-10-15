@@ -11382,6 +11382,24 @@ Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, fro
   exists under its name; every use has its call site; off: the stock effect; on: the word at +1,+1, the throttles,
   no word for damage over time, monsters or a cast without a word). Not run on a server or in a client yet.
 
+## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, off)
+The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
+"Pack farming spell effects (pair 27 trial)", effects 674-687, missiles 154-157 on top of things_custom26) gives them
+their own. Effects only: nothing else changes. During a cast `_common.lua` asks `ChaosPack27Fx.swapFor(spellId, kind,
+name)` in `ChaosSpell.fx` / `vfx` / `vfxDir` / `shoot` / `vshoot`; a skin, a large effect and a class signature effect
+win over it.
+- Palm Shockwave palm_quake; Blade Flurry flurry_petals (the Ninja and Samurai keep their class effects); Iaido Sweep
+  iaido_dash_<dir>; Shadow Ricochet ricochet_bolt + ricochet_burst; Iron Chain chain_disc + chain_sparks; Bone Shrapnel
+  shrapnel_shards (the burst stays); Sanctified Ground sanctified_seal; Shield Wave shieldwave_wall; Fan of Knives
+  fan_knife.
+- Off (shipped): the ids file is not loaded and every spell sends what it sent before. No published pair has these
+  ids. Flip only with a published pair 27: `C.PAIR27_FX = true`, `install_all.py SERVER_DIR --only files`, restart.
+- The swaps are keyed by spell id; `C.names` holds each spell's name and `tests/pack27_fx_test.lua` checks both against
+  spells_chaos.xml, so a moved id fails the test (update `C.spells` and `C.names`).
+- Tests: `tests/pack27_fx_test.lua` (switch line off; ids and names in spells_chaos.xml; each script sends the
+  swapped name; every new name in the client spec and the ids file; missile ids fit u8; off: no swap; on: the names;
+  `_common.lua` wired). Not run on a server or in a client.
+
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 
 The Necromancer, the Monk and the Templar (docs/CLASSES.md, classes five to seven) need an account-wide unlock. The method is one

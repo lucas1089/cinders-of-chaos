@@ -1627,6 +1627,34 @@ CURSED!, CHILLED FOOT!, FREEZE!, POISONED!) for comparison; they are not read or
   `tools/ci/check_content.py --pair` now names things_custom25 (2,212 outfits, padding 2194-2199 blank).
 - Checked offline only (importer checks, the read-back, check_pair). Not run in a live client.
 
+## Pack farming spell effects (pair 27 trial, effects 674-687, missiles 154-157, `tools/sprites/gen_pack27_fx.py`, `art_import/pack27_fx.csv`; local only, switch off)
+**Source and licence.** The owner's oblique effect sets in Google Drive "ots" (2026-10-15; owner: all bought and free
+to use): projectiles, fields and traps, game feel effects, 32 px. Their licence: use in unlimited personal and
+commercial projects (games included), modified or not, no attribution needed; no reselling, redistributing,
+sublicensing or sharing of the assets themselves, alone or in another pack, template or generator, even modified;
+no machine-learning training. Shipping converted frames inside the game client is use in a game. The sets and the
+strips stay out of git: `art_import/pack27_fx/` is ignored; only the spec and `art_import/pack27_fx.sums` are
+committed. Not read yet (too big for the download tool): the spell and impact sets, the aura and buff sets, the
+500 effect set and the 64 px game feel set.
+- 14 effects (palm_quake, flurry_petals, iaido_dash_<8 dirs>, ricochet_burst, chain_sparks, sanctified_seal,
+  shieldwave_wall) and 4 missiles (fan_knife, ricochet_bolt, chain_disc, shrapnel_shards) for the nine pack farming
+  spells. Conversion like the pack effect cuts: layers merged (back at 60 %), alpha 0 / 255 with a 4x4 dither,
+  placed by the sets' pivot (feet on (14, 20), tile centre on (16, 16), missile centre on (13, 13)), an empty last
+  frame for effects. 1,109 sprites.
+- `python3 -I gen_pack27_fx.py build --src DIR` (DIR holds the unzipped sets); `build --check` (CI) checks the spec
+  and sums against the script's table without the sets; `preview --out DIR`.
+- Trial build (2026-10-15, scratchpad only, not pushed): on things_custom26 (dat 4a019fec..., spr 800cd7ce...)
+  ```
+  python3 -I client/tools/sprites/import_fx_art.py --ours-dat things_custom26/Tibia.dat --ours-spr things_custom26/Tibia.spr \
+      --out-dir pair27 --spec client/tools/sprites/art_import/pack27_fx.csv --expect-first-effect 674 --expect-first-missile 154 \
+      --lua-out server/data/lib/chaos_pack27_fx_ids.lua --catalog-out server/data/spells/pack27_fx_catalog.csv
+  python3 -I client/tools/sprites/check_pair.py pair27/Tibia.dat pair27/Tibia.spr --old things_custom26/Tibia.dat things_custom26/Tibia.spr
+  ```
+  dat 6365ce3a1c57bba115c097ae9ebc3c06 (5,089,608 bytes), spr a3f432c44a775b1dd814aa114b671278 (644,166,267 bytes,
+  769,058 sprites), 687 effects, 157 missiles; built twice with the same md5s. `check_pair.py --old`: append-only,
+  0 errors, 124 warnings (those of things_custom26). Server side: server/README.md "Pack farming spell effects"
+  (switch `ChaosPack27Fx.PAIR27_FX`, off). Not run in a live client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
