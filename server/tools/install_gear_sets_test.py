@@ -35,11 +35,11 @@ rows = T.rows_of(T.DEFAULT_MANIFEST)
 by = {r['key']: r for r in rows}
 check(len(rows) == 448, 'manifest: 448 pieces')
 check([r['server_id'] for r in rows] == list(range(36995, 37443)), 'manifest: server ids 36995..37442 in order')
-check(not T.pair28_on(), 'switch ChaosGearSets.PAIR28 is off as shipped')
+check(T.pair28_on(), 'switch ChaosGearSets.PAIR28 is on as shipped (pair 28 is live)')
 with tempfile.TemporaryDirectory() as td:
-    on = os.path.join(td, 'chaos_gear_sets.lua')
-    open(on, 'w').write(open(T.SWITCH).read().replace('M.PAIR28 = false', 'M.PAIR28 = true'))
-    check(T.pair28_on(on) and not T.pair28_on(os.path.join(td, 'missing.lua')), 'switch read as on when true, off when missing')
+    off = os.path.join(td, 'chaos_gear_sets.lua')
+    open(off, 'w').write(open(T.SWITCH).read().replace('M.PAIR28 = true', 'M.PAIR28 = false'))
+    check(not T.pair28_on(off) and not T.pair28_on(os.path.join(td, 'missing.lua')), 'switch read as off when false or missing')
 
 # curves and levels
 check(T.curve('armor', 8) == 7 and T.curve('armor', 5000) == 31 and T.curve('armor', 150) == 14.5, 'curve: ends and between')

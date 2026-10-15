@@ -154,7 +154,7 @@ local cfg = {
 	maxLooksSent = 4000 -- the window's wardrobe list is cut at this many looks (it is sent in chunks)
 }
 
--- the equipment sets of client pair 28 (data/lib/chaos_gear_sets.lua, switch ChaosGearSets.PAIR28, off): off, their
+-- the equipment sets of client pair 28 (data/lib/chaos_gear_sets.lua, switch ChaosGearSets.PAIR28, on since pair 28 went live): off, their
 -- item ids out of the catalogue; on, they are ordinary looks (worn pieces unlock them)
 local okGear, gear = pcall(dofile, "data/lib/chaos_gear_sets.lua")
 if okGear and type(gear) == "table" then

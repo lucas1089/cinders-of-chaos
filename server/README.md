@@ -7084,12 +7084,12 @@ nothing for client items 33660-33903 and outfits 2185-2193. Rollback: set the li
   the ground helper). Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; the transmog catalogue grew from 1,454 to 1,604 looks, 18 themed sets, auras.xml up to
   aura 32 (client 2186), wings.xml with the Runic Wings. Not played in a client.
 
-## Equipment sets (pair 28) (`data/lib/chaos_gear_sets.lua`, `data/lib/chaos_gear_sets_items.lua`, `tools/install_gear_sets.py`, `chaos/gear_sets.lua`, switch `ChaosGearSets.PAIR28`, off)
+## Equipment sets (pair 28) (`data/lib/chaos_gear_sets.lua`, `data/lib/chaos_gear_sets_items.lua`, `tools/install_gear_sets.py`, `chaos/gear_sets.lua`, switch `ChaosGearSets.PAIR28`, on)
 
 Seven themed equipment sets from the owner's own item sheets (client/MANIFEST.md "Equipment sets (pair 28)"): 448
 pieces, 64 a set, client ids 33995-34442, server ids 36995-37442 (client id + 3000). Unlike the themed sets of pair 24
-these are real gear with stats. **Switch `ChaosGearSets.PAIR28`, OFF as shipped**: pair 28 is not on windows-assets yet
-(the owner approves it first). Off, installed pieces exist but nothing drops them and the transmog catalogue skips their
+these are real gear with stats. **Switch `ChaosGearSets.PAIR28`, ON as shipped**: pair 28 is live on windows-assets b37b983c
+(2026-10-15). Off, installed pieces exist but nothing drops them and the transmog catalogue skips their
 ids. On: the loot below and the pieces are ordinary transmog looks. Install: `install_all.py SERVER_DIR --only
 files,gearsets` (step `gearsets`, after `assetsdecor` and after `vocations`, whose class names its lists use), restart.
 
@@ -7126,7 +7126,33 @@ The bands overlap, so a character always has a set running and the next one star
   shield and spellbook; rings physical 1-4%; boots speed 0-40. Bloodmoon weapons leech life (chance and amount 2-6).
 - **RNG decides only the max.** The base above is the same for everybody. A dropped piece is forged like any gear
   (`ChaosCrafting.forge`): rarity, item level from the monster, modifiers and their tiers; the orbs work on it. No
-  piece is a unique: no set bonus, any number of pieces may be mixed with other gear.
+  piece is a unique; any number of pieces may be mixed with other gear.
+- **Set bonuses** (owner request 2026-10-15; `ChaosGearSets.bonuses`, only while the switch is on). The sets join the
+  item set system ("Item sets") as *open* sets: `S.load` adds `ChaosGearSets.itemSets()`, a plain item is a piece by
+  its base id (`S.openById`), any 2, 4 and 6 pieces of one set worn at their level give the tiers (weapons, shields and
+  spellbooks count; the same item twice, e.g. in both hands, once; a two-handed weapon or launcher twice). Tiers add up.
+  Each tier is about one modifier roll of the tier the band's items roll (T2-T3 for Blightfang up to T7 for Gildcrown),
+  so a full set is worth three rolls: below the uniques and the ten item sets of the same levels (Bloodsworn at 300:
+  bleed 10% and damage over time 15% at 2 pieces plus two effects) and far below a keystone. Modifier numbers go into
+  the item totals before the caps; resistances count only half against players and their summons (`pvpShare` 50; the
+  old sets keep 100), the other stats act on monsters or loot only, apart from dodge (cap 10) and maximum health.
+
+| Set | 2 pieces | 4 pieces | 6 pieces |
+|---|---|---|---|
+| Blightfang (8-150) | Chance to Poison +4%, Earth Resistance +4% | Damage over Time +6% | Chance to Poison +4%, Damage over Time +4% |
+| Wyrmscale (40-220) | Fire Resistance +5% | Maximum Health +3% | Fire Resistance +5%, Damage Taken from Monsters -2% |
+| Cinderwrought (120-450) | Chance to Ignite +6% | Elemental Penetration +4% | Chance to Ignite +4%, Damage over Time +10% |
+| Bloodmoon (300-650) | Health on Hit +8 | Life on Kill +40 | Health on Hit +8, Health Regeneration +10 per second |
+| Rimewraith (450-1000) | Chance to Chill +8% | Dodge +2% | Ice Resistance +8%, Dodge +1% |
+| Azure Vigil (800-1350) | Death Resistance +8% | Damage Taken from Monsters -3%, Healing Done +4% | Damage Taken from Monsters -2%, Maximum Health +4% |
+| Gildcrown (1200-2000) | Gold Find +10% | Rarity Find +8%, Item Find +5% | Damage to Elites and Bosses +6% |
+
+  The tooltip (server `tip.set` for a plain piece, client `tooltiplogic.lua`) and the look text show the set, the pieces
+  worn (an open set lists only those), "Active tier: n of 3" and every bonus, active ones bright / "[active]".
+  Nothing is stored: the bonuses are worked out from the equipment on every equip, unequip and swap, at login and every
+  3 s; the set condition has one sub id and is replaced, never added twice; logout drops the cache and login starts
+  from a clean one (a death that keeps the character's id does not keep a stale condition signature); a /reload
+  works the same state out again.
 - **Loot** (`ChaosGearSets.lootRows`, added to the monster types at startup by `chaos/gear_sets.lua` while the switch
   is on, as the fist weapons): per monster every piece of its set whose level is within 300 below and 50 above the
   monster's hunting level, sharing 0.6% per kill (bosses 15%), at least 0.01% each. The chaos loot layer's extra
@@ -7141,14 +7167,15 @@ The bands overlap, so a character always has a set running and the next one star
   `patch_base_archery.py`. `--lua [--check]` writes `data/lib/chaos_gear_sets_items.lua` (levels, classes, stats per
   piece; CI checks it). Tried on a copy of a full test server (`--dry-run` of `install_all.py --only gearsets` and two
   runs of the tool): 448 nodes, the three files parse, the second run changes nothing.
-- Tests: `tests/gear_sets_test.lua` (pieces against the manifest, every set dresses and arms all 21 classes inside its
+- Tests: `tests/itemsets_test.lua` (the open sets: tiers, duplicates, hands, levels, condition, PvP share, logout,
+  login, death, reload, tooltip and look text), `tests/gear_sets_test.lua` (pieces against the manifest, every set dresses and arms all 21 classes inside its
   band, levels only rise along a track, the loot rows and the monsters they name, the transmog catalogue off and on, the
   startup script on mocks), `tools/install_gear_sets_test.py`, `client/tools/sprites/gen_gear_sets_art_test.py`.
 - **Prices.** `tools/gen_item_prices.py` prices every piece as plain equipment by its level and slot (the equipment
   formula and the gear scale: a level 8 helmet 140 gold, a level 120 one 8,400, from about level 1000 up 30,252, the
   Wandering Merchant's orb cap), so the Loot Buyer and the Auto Seller take them like other gear.
-- Open (owner): publish pair 28 and switch on; the Gambler's pool, set bonuses or crafting recipes if wanted. Not run in
-  a client or on a live server.
+- Open (owner): publish pair 28 and switch on; the Gambler's pool, crafting recipes if wanted. Not run in a client or
+  on a live server.
 
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `chaos_crafting.lua`, `item_mods.lua`)
 
@@ -7439,6 +7466,8 @@ build, a dodge build, a summoner) without being needed: a full set is about as s
 uniques, not above it. Every number and every set is in `chaos_item_sets_config.lua`; the pure part is
 `chaos_item_sets.lua` (counting, totals, texts, tooltip block, unique entries, chase rolls), the game side
 `itemsets.lua`. No new opcode, no storage, no table: the state is worked out again from the equipment.
+Open sets: the seven equipment sets of pair 28 join while `ChaosGearSets.PAIR28` is on (plain items counted by base
+id, any 6 pieces reach the last tier, PvP half of their resistances; "Equipment sets (pair 28)").
 
 **Pieces.** A piece is a unique (`ChaosMakeUnique`): a copy of a stock base item with its own name, description and
 stats from `data/items/chaos_items.xml` (attribute `set` = the set key; `tools/gen_unique_specs.py` writes it into

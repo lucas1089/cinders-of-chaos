@@ -20,11 +20,33 @@ S.ATTR = "chaos_set" -- custom attribute of a set piece: the set key (ChaosMakeU
 -- ---------------------------------------------------------------------------------------------------------------
 -- the data
 -- ---------------------------------------------------------------------------------------------------------------
+-- the open sets of client pair 28 (data/lib/chaos_gear_sets.lua ChaosGearSets.itemSets()): only while its switch
+-- PAIR28 is on. An open set's pieces are plain items (no unique, no "chaos_set" attribute): a piece is known by its
+-- base id, any `cap` pieces of the set reach its last bonus, and the tooltip lists only the pieces worn.
+local function gearSets()
+	local G = ChaosGearSets
+	if type(G) ~= "table" then
+		local ok, g = pcall(dofile, "data/lib/chaos_gear_sets.lua")
+		G = ok and type(g) == "table" and g or nil
+	end
+	if G and G.PAIR28 and G.itemSets then
+		return G.itemSets()
+	end
+	return {}
+end
+
 function S.load(cfg)
 	cfg = cfg or dofile("data/lib/chaos_item_sets_config.lua")
 	S.config = cfg
-	S.sets, S.byKey, S.pieceById = {}, {}, {}
+	S.sets, S.byKey, S.pieceById, S.openById = {}, {}, {}, {}
+	local all = {}
 	for _, set in ipairs(cfg.sets) do
+		all[#all + 1] = set
+	end
+	for _, set in ipairs(gearSets()) do
+		all[#all + 1] = set
+	end
+	for _, set in ipairs(all) do
 		set.total = 0
 		for _, p in ipairs(set.pieces) do
 			p.hands = p.hands or 1
@@ -32,6 +54,12 @@ function S.load(cfg)
 			p.set = set.key
 			set.total = set.total + p.hands
 			S.pieceById[p.id] = {set = set, piece = p}
+			if set.open then
+				S.openById[p.id] = set.key
+			end
+		end
+		if set.open then
+			set.total = set.cap
 		end
 		table.sort(set.bonuses, function(a, b) return a.n < b.n end)
 		S.sets[#S.sets + 1] = set
@@ -77,6 +105,10 @@ function S.setKeyOf(item)
 		local ok, id = pcall(getItemId, item)
 		local spec = ok and ChaosUniqueSpecs and ChaosUniqueSpecs[id]
 		return spec and spec.set or nil
+	end
+	if next(S.openById) then
+		local ok, id = pcall(getItemId, item)
+		return ok and S.openById[id] or nil
 	end
 	return nil
 end
@@ -141,9 +173,11 @@ S.RES = {res_fire = "fire", res_ice = "ice", res_earth = "earth", res_energy = "
 	res_holy = "holy", res_physical = "physical"}
 
 -- what the active bonuses of a state add up to:
---   {mods = {modifier key -> n}, cond = {key -> n}, res = {element -> percent}, effects = {key -> true}}
+--   {mods = {modifier key -> n}, cond = {key -> n}, res = {element -> percent}, resPvp = {element -> percent},
+--    effects = {key -> true}}; resPvp: against players and their summons, a set's resistances x its pvpShare (%, 100
+--    when the set names none: the pair 28 sets give half)
 function S.totals(state)
-	local t = {mods = {}, cond = {}, res = {}, effects = {}}
+	local t = {mods = {}, cond = {}, res = {}, resPvp = {}, effects = {}}
 	for _, set in ipairs(S.sets) do
 		local st = state and state.sets[set.key]
 		if st and st.count > 0 then
@@ -152,7 +186,9 @@ function S.totals(state)
 					if S.COND[k] then
 						t.cond[k] = (t.cond[k] or 0) + v
 					elseif S.RES[k] then
-						t.res[S.RES[k]] = (t.res[S.RES[k]] or 0) + v
+						local el = S.RES[k]
+						t.res[el] = (t.res[el] or 0) + v
+						t.resPvp[el] = (t.resPvp[el] or 0) + floor(v * (set.pvpShare or 100) / 100)
 					else
 						t.mods[k] = (t.mods[k] or 0) + v
 					end
@@ -286,10 +322,19 @@ function S.tooltip(setKey, state)
 		if p.hands > 1 then
 			row.h = p.hands
 		end
-		tip.pieces[#tip.pieces + 1] = row
+		if not set.open or row.eq or row.low then -- an open set lists only the pieces worn
+			tip.pieces[#tip.pieces + 1] = row
+		end
 	end
+	local tier = 0
 	for _, b in ipairs(set.bonuses) do
-		tip.bonuses[#tip.bonuses + 1] = {n = b.n, t = S.bonusText(b), on = (st.count or 0) >= b.n or nil}
+		local on = (st.count or 0) >= b.n
+		tier = on and tier + 1 or tier
+		tip.bonuses[#tip.bonuses + 1] = {n = b.n, t = S.bonusText(b), on = on or nil}
+	end
+	if set.open then
+		tip.have = math.min(tip.have, set.cap)
+		tip.tier, tip.tiers = tier, #set.bonuses
 	end
 	return tip
 end
@@ -301,6 +346,9 @@ function S.lookLines(setKey, state)
 		return {}
 	end
 	local out = {string.format("Set: %s (%d/%d).", tip.name, tip.have, tip.total)}
+	if tip.tiers then
+		out[1] = string.format("Set: %s (%d/%d), tier %d of %d.", tip.name, tip.have, tip.total, tip.tier, tip.tiers)
+	end
 	for _, b in ipairs(tip.bonuses) do
 		out[#out + 1] = string.format("(%d) %s%s", b.n, b.t, b.on and " [active]" or "")
 	end

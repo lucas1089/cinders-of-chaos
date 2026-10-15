@@ -4,7 +4,7 @@
 -- Plain Lua, no engine calls at load (server/tests/gear_sets_test.lua). Lua 5.1 / LuaJIT and 5.3.
 -- Overview: server/README.md "Equipment sets (pair 28)".
 --
--- Pair switch (M.PAIR28, OFF as shipped: pair 28 is not published yet; the owner approves it first). A client on pair
+-- Pair switch (M.PAIR28, ON since 2026-10-15: pair 28 is live, windows-assets b37b983c). A client on pair
 -- 27 or older has no items 33995..34442 and draws nothing for them. Off: the items exist once installed
 -- (install_gear_sets.py, install step `gearsets`) but no monster drops them and the transmog catalogue skips their ids.
 -- On: data/scripts/chaos/gear_sets.lua adds M.lootRows() to the monster types at startup and the pieces become
@@ -20,11 +20,11 @@
 -- monster's (window), a small total chance per kill shared by those pieces; the themed bosses more. The chaos loot
 -- layer then rolls rarity, item level and modifiers as for any gear drop, and smart loot favours the killer's class
 -- (the equip rules of movements.xml name it). The base stats are fixed by level: the roll decides only how far above
--- them a copy goes. No talkaction, no shop.
+-- them a copy goes. No talkaction, no shop. Set bonuses at 2, 4 and 6 pieces (M.bonuses) through the item set system.
 
 local M = {}
 
-M.PAIR28 = false
+M.PAIR28 = true
 
 local ok, items = pcall(dofile, "data/lib/chaos_gear_sets_items.lua")
 M.items = ok and items or {first = 36995, last = 37442, sets = {}, pieces = {}}
@@ -128,6 +128,88 @@ function M.lootRows(cfg)
 		end
 	end
 	return rows
+end
+
+-- ---------------------------------------------------------------- set bonuses (only while PAIR28 is on)
+-- The sets join the item set system (data/lib/chaos_item_sets.lua S.load reads M.itemSets()) as open sets: any piece
+-- of the set counts (by its base id; the same item twice, e.g. in both hands, once; a two-handed weapon or launcher
+-- twice), and 2, 4 and 6 pieces worn at their level give the bonuses below. Keys are those of the item sets: modifier
+-- keys (added to the equipped items' totals before their caps), res_<element> (less damage of that element taken;
+-- against players and their summons only pvpShare % of it) and maxhealthpct (the set condition). Every tier is about
+-- one modifier roll of the tier a piece of the set's band rolls (blightfang T2-T3 ... gildcrown T7), below the
+-- matching uniques and keystones (server/README.md "Equipment sets (pair 28)").
+M.pvpShare = 50
+M.cap = 6
+M.bonuses = {
+	blightfang = { -- poison (8-150)
+		{n = 2, stats = {poisonchance = 4, res_earth = 4}},
+		{n = 4, stats = {dot = 6}},
+		{n = 6, stats = {poisonchance = 4, dot = 4}}
+	},
+	wyrmscale = { -- dragon hide: fire resistance (40-220)
+		{n = 2, stats = {res_fire = 5}},
+		{n = 4, stats = {maxhealthpct = 3}},
+		{n = 6, stats = {res_fire = 5, monsterreduction = 2}}
+	},
+	cinderwrought = { -- fire damage (120-450)
+		{n = 2, stats = {ignitechance = 6}},
+		{n = 4, stats = {elepen = 4}},
+		{n = 6, stats = {ignitechance = 4, dot = 10}}
+	},
+	bloodmoon = { -- life leech (300-650)
+		{n = 2, stats = {lifeonhit = 8}},
+		{n = 4, stats = {lifeonkill = 40}},
+		{n = 6, stats = {lifeonhit = 8, regen = 10}}
+	},
+	rimewraith = { -- ice and the spectral step (450-1000)
+		{n = 2, stats = {chillchance = 8}},
+		{n = 4, stats = {dodge = 2}},
+		{n = 6, stats = {res_ice = 8, dodge = 1}}
+	},
+	azurevigil = { -- holy protection (800-1350)
+		{n = 2, stats = {res_death = 8}},
+		{n = 4, stats = {monsterreduction = 3, healing = 4}},
+		{n = 6, stats = {monsterreduction = 2, maxhealthpct = 4}}
+	},
+	gildcrown = { -- gold and loot (1200-2000)
+		{n = 2, stats = {goldfind = 10}},
+		{n = 4, stats = {rarityfind = 8, itemfind = 5}},
+		{n = 6, stats = {bossdamage = 6}}
+	}
+}
+
+local SLOT = {helmet = "head", armor = "body", legs = "legs", boots = "feet", amulet = "necklace", ring = "ring",
+	shield = "shield", spellbook = "shield"}
+
+-- the sets in the item sets' format (fresh tables on every call: S.load fills them in)
+function M.itemSets()
+	local out = {}
+	local keys = {}
+	for key in pairs(M.items.sets or {}) do
+		keys[#keys + 1] = key
+	end
+	table.sort(keys)
+	for _, key in ipairs(keys) do
+		local s = M.items.sets[key]
+		local set = {key = key, name = s.name, family = "gear", classes = "every class", level = s.band[1],
+			open = true, cap = M.cap, pvpShare = M.pvpShare, pieces = {}, bonuses = {}, sources = {}}
+		for _, p in ipairs(M.items.pieces or {}) do
+			if p.set == key then
+				local two = p.fit == "2" or p.kind == "bow" or p.kind == "crossbow"
+				set.pieces[#set.pieces + 1] = {id = p.id, name = p.name, slot = SLOT[p.kind] or "weapon",
+					hands = two and 2 or 1, level = p.level}
+			end
+		end
+		for _, b in ipairs(M.bonuses[key] or {}) do
+			local stats = {}
+			for k, v in pairs(b.stats) do
+				stats[k] = v
+			end
+			set.bonuses[#set.bonuses + 1] = {n = b.n, stats = stats}
+		end
+		out[#out + 1] = set
+	end
+	return out
 end
 
 -- transmog_config.lua calls this on its table: off, the ids leave the catalogue (an installed piece unlocks nothing)

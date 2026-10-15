@@ -102,5 +102,23 @@ eq(L.cacheGet(c, '3:1', 0) ~= nil, true, 'a plain item stays')
 eq(#c.order, 2, 'the order list follows')
 eq(L.dropSetTips(c), 0, 'nothing left to drop')
 
+-- an open set of pair 28 (server tip.set on a plain item): the active tier line, the block shown, dropped from the cache
+local open = { name = 'Bloodmoon', have = 4, total = 6, tier = 2, tiers = 3, pieces = { { n = 'bloodmoon greathelm', eq = true } },
+  bonuses = { { n = 2, t = 'Health on Hit +8', on = true }, { n = 4, t = 'Life on Kill +40', on = true },
+    { n = 6, t = 'Health on Hit +8' } } }
+rows = L.setLines(open)
+eq(rows[2].text, 'Active tier: 2 of 3', 'the tier line') eq(rows[2].color, C.setOn, 'tier line bright')
+eq(rows[#rows].color, C.dim, 'the 6 piece bonus dim')
+eq(L.setLines({ name = 'Gildcrown', have = 1, total = 6, tier = 0, tiers = 3 })[2].color, C.dim, 'tier 0 dim')
+local plain = { name = 'bloodmoon greathelm', rarityName = 'Rare', rarity = 3, set = open }
+local found = false
+for _, l in ipairs(L.lines(plain, { level = 500 })) do
+  found = found or l.text == 'Active tier: 2 of 3'
+end
+eq(found, true, 'a plain set piece shows the set block')
+local c2 = L.newCache()
+L.cachePut(c2, '9:1', plain, false, 0)
+eq(L.dropSetTips(c2), 1, 'an open set piece is dropped on an equipment change')
+
 print(string.format('tooltipsets_test: %d checks%s', checks, fails > 0 and (', ' .. fails .. ' failure(s)') or ' OK'))
 if fails > 0 then os.exit(1) end

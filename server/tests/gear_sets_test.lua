@@ -13,7 +13,7 @@ local function eq(a, b, m)
 end
 
 local M = dofile("data/lib/chaos_gear_sets.lua")
-eq(M.PAIR28, false, "the pair 28 switch is off as shipped (the owner approves the pair first)")
+eq(M.PAIR28, true, "the pair 28 switch is on as shipped (pair 28 is live)")
 local P = M.items
 
 -- ---------------------------------------------------------------- pieces against the manifest
@@ -145,11 +145,12 @@ local found = false
 for _, r in ipairs(shipped.excludeRanges) do
 	found = found or (r[1] == 36995 and r[2] == 37442)
 end
-eq(found, true, "shipped (off): the pieces are out of the transmog catalogue")
+eq(found, false, "shipped (on): the pieces are in the transmog catalogue")
+M.PAIR28 = false
+eq(#M.addTransmog({excludeRanges = {}}).excludeRanges, 1, "off: the pieces are out of the catalogue")
 M.PAIR28 = true
 local c = M.addTransmog({excludeRanges = {}})
 eq(#c.excludeRanges, 0, "on: nothing excluded")
-M.PAIR28 = false
 
 -- ---------------------------------------------------------------- the startup script on mocks
 local added = {}
@@ -177,6 +178,7 @@ GlobalEvent = function()
 	return {register = function(self) registered = self end}
 end
 ChaosGearSets = M
+M.PAIR28 = false
 dofile("data/scripts/chaos/gear_sets.lua")
 eq(registered ~= nil, true, "a startup event")
 registered.onStartup()
