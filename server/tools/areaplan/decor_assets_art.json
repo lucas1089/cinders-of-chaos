@@ -1,0 +1,79 @@
+{
+ "about": "the catacomb kit decoration of the client pair 27 trial (server/data/items/assets_decor.csv, install_assets_decor.py). area_plan_decor.kits() merges it after the owner's overlay only while ChaosAssetsArt.PAIR27 (server/data/lib/chaos_assets_art.lua) is on: new groups, a kit 'hollow_crypt' (the crypt kit plus the kit's sarcophagi) and the catacomb biome pointed at it. The crypt hatches and the portal ring are groups for set pieces only (3x3 / 4x4, put on the south-east tile of their square), in no kit. Flipping the switch changes the decoration of every catacomb plan already placed (bonechoir_catacomb, hollow_crypt): install on a restored map (install_content_areas.py refuses a changed plan).",
+ "biome_kit": {
+  "catacomb": "hollow_crypt"
+ },
+ "groups": {
+  "kit_crypt_hatch": {
+   "block": true,
+   "ids": [
+    36989,
+    36990
+   ],
+   "light": 2,
+   "name": "crypt hatch",
+   "size": 3
+  },
+  "kit_crypt_hatch_open": {
+   "block": false,
+   "ids": [
+    36991
+   ],
+   "light": 2,
+   "name": "open crypt hatch",
+   "size": 3
+  },
+  "kit_portal_ring": {
+   "block": false,
+   "ids": [
+    36986,
+    36988
+   ],
+   "light": 3,
+   "name": "portal ring",
+   "size": 3
+  },
+  "kit_sarcophagi": {
+   "block": true,
+   "ids": [
+    36992,
+    36994
+   ],
+   "light": 0,
+   "name": "sarcophagus",
+   "size": 2
+  },
+  "kit_sarcophagus_opening": {
+   "block": true,
+   "ids": [
+    36993
+   ],
+   "light": 0,
+   "name": "opening sarcophagus",
+   "size": 2
+  }
+ },
+ "kits": {
+  "hollow_crypt": {
+   "add": {
+    "centre": [
+     [
+      "kit_sarcophagi",
+      3
+     ],
+     [
+      "kit_sarcophagus_opening",
+      1
+     ]
+    ],
+    "wall_side": [
+     [
+      "kit_sarcophagi",
+      2
+     ]
+    ]
+   },
+   "base": "crypt"
+  }
+ }
+}

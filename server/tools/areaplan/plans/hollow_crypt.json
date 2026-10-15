@@ -1,0 +1,170 @@
+{
+ "schema": "chaos-area-plan/1",
+ "id": "hollow_crypt",
+ "name": "Hollow Crypt",
+ "biome": "catacomb",
+ "size": [
+  112,
+  96
+ ],
+ "floors": 1,
+ "level": [
+  300,
+  400
+ ],
+ "seed": 27101,
+ "origin": {
+  "x": 15305,
+  "y": 14560,
+  "z": 10
+ },
+ "decoration": "dense",
+ "light": "dim",
+ "zones": [
+  {
+   "id": "lychgate",
+   "floor": 1,
+   "size": "small",
+   "place": "north",
+   "role": "camp",
+   "pz": true
+  },
+  {
+   "id": "grave_rows",
+   "floor": 1,
+   "size": "huge",
+   "place": "center"
+  },
+  {
+   "id": "west_ossuary",
+   "floor": 1,
+   "size": "huge",
+   "place": "west"
+  },
+  {
+   "id": "east_ossuary",
+   "floor": 1,
+   "size": "huge",
+   "place": "east"
+  },
+  {
+   "id": "sexton_nave",
+   "floor": 1,
+   "size": "large",
+   "place": "south"
+  },
+  {
+   "id": "riders_ring",
+   "floor": 1,
+   "size": [
+    22,
+    18
+   ],
+   "place": "southeast",
+   "role": "boss"
+  }
+ ],
+ "paths": [
+  {
+   "from": "lychgate",
+   "to": "grave_rows",
+   "width": 3
+  },
+  {
+   "from": "grave_rows",
+   "to": "west_ossuary",
+   "width": 3
+  },
+  {
+   "from": "grave_rows",
+   "to": "east_ossuary",
+   "width": 3
+  },
+  {
+   "from": "west_ossuary",
+   "to": "sexton_nave",
+   "width": 3
+  },
+  {
+   "from": "east_ossuary",
+   "to": "sexton_nave",
+   "width": 3
+  },
+  {
+   "from": "sexton_nave",
+   "to": "riders_ring",
+   "width": 3
+  }
+ ],
+ "entry": {
+  "zone": "lychgate"
+ },
+ "exit": {
+  "zone": "lychgate"
+ },
+ "spawns": [
+  {
+   "zone": "grave_rows",
+   "monster": "Bonecrusher",
+   "count": 6,
+   "pack": 3,
+   "respawn": 100
+  },
+  {
+   "zone": "grave_rows",
+   "monster": "Rotten Corpse-grub",
+   "count": 4,
+   "pack": 2,
+   "respawn": 100
+  },
+  {
+   "zone": "west_ossuary",
+   "monster": "Sopping Carcass",
+   "count": 6,
+   "pack": 3,
+   "respawn": 110
+  },
+  {
+   "zone": "west_ossuary",
+   "monster": "Bonecrusher",
+   "count": 4,
+   "pack": 2,
+   "respawn": 110
+  },
+  {
+   "zone": "east_ossuary",
+   "monster": "Sopping Corpus",
+   "count": 6,
+   "pack": 3,
+   "respawn": 110
+  },
+  {
+   "zone": "east_ossuary",
+   "monster": "Bloated Corpse-grub",
+   "count": 4,
+   "pack": 2,
+   "respawn": 110
+  },
+  {
+   "zone": "sexton_nave",
+   "monster": "Bonecrusher",
+   "count": 4,
+   "pack": 2,
+   "respawn": 120
+  },
+  {
+   "zone": "sexton_nave",
+   "monster": "Sopping Carcass",
+   "count": 3,
+   "pack": 3,
+   "respawn": 120
+  }
+ ],
+ "boss": {
+  "zone": "riders_ring",
+  "monster": "Hollow Rider",
+  "respawn": 7200,
+  "title": "the Hollow Rider"
+ },
+ "notes": "Content plan (pair 27 trial, catacomb kit): a small one-floor crypt for levels 300-400, the undead gap between the Bonechoir Catacomb (200-290) and the Ossuary Stair (400-520). Six zones: a loop through the two ossuaries to the sexton nave, the boss ring past it; the Hollow Rider holds the ring at the south end. With ChaosAssetsArt.PAIR27 on, the catacomb kit's sarcophagi, crypt hatches and portal ring join the decoration (areaplan/decor_assets_art.json)."
+}

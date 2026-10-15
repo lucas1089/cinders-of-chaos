@@ -637,8 +637,9 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
   (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
   (699,748 sprites), twice identical.
 - **Windows package pair:** the package takes the merged pair from the private branch `windows-assets`
-  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README; since 2026-10-15 things_custom26 at 50645056,
-  "Owner art" below; 2026-10-14 things_custom25 at ebe1b2b2, "Status words"). Since 2026-10-11 that archive held things_custom15
+  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README; since 2026-10-15 things_custom27 at 51a26d26
+  (dat 223a1c2fc1b0f99997414a5b2cde1773, spr 40cccfc55924a53fcd16b3813c0e328a; "Pack farming spell effects" and
+  "Catacomb kit" below); before it things_custom26 at 50645056, "Owner art" below; 2026-10-14 things_custom25 at ebe1b2b2, "Status words"). Since 2026-10-11 that archive held things_custom15
   (windows-assets c1441a8: the pouches, fist weapons, class looks, monster looks, the bone effects, the Cinderheart look,
   the raid boss and faction looks and the mount rider seats for client patch 0034), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
   clients still on an older pair: a pair without 33651-33653 shows nothing for a pouch.
@@ -1628,7 +1629,7 @@ CURSED!, CHILLED FOOT!, FREEZE!, POISONED!) for comparison; they are not read or
   `tools/ci/check_content.py --pair` now names things_custom25 (2,212 outfits, padding 2194-2199 blank).
 - Checked offline only (importer checks, the read-back, check_pair). Not run in a live client.
 
-## Pack farming spell effects (pair 27 trial, effects 674-758, missiles 154-160, `tools/sprites/gen_pack27_fx.py`, `art_import/pack27_fx.csv`; local only, switch off)
+## Pack farming spell effects (pair 27 trial, effects 674-758, missiles 154-160, `tools/sprites/gen_pack27_fx.py`, `art_import/pack27_fx.csv`; live since windows-assets 51a26d26, switch on)
 **Source and licence.** The owner's oblique effect sets in Google Drive "ots" (2026-10-15; the owner confirmed all
 packs may be used): four of them (spell impacts and circles, auras and buffs, game feel, projectiles), read as loose
 files (each variant's .json and its flattened `full` sheet), 32 px. Pack names, author and licence: docs/CREDITS.md. In short: use in
@@ -1669,6 +1670,41 @@ is used yet: every pick has a fitting variant in the four packs above.
   775,674 sprites), 758 effects, 160 missiles. `check_pair.py --old`: append-only, 0 errors, 124 warnings (those of
   things_custom26). Server side: server/README.md "Pack farming spell effects" (switch `ChaosPack27Fx.PAIR27_FX`,
   off). Not run in a live client.
+
+## Catacomb kit (pair 27 trial: outfit 2234, items 33986-33994, `tools/sprites/gen_assets_art.py`, `art_import/assets_art.csv`; live since windows-assets 51a26d26, switch on)
+**Source and licence.** The owner's Drive folder "ots/assets", a monster and tile kit added 2026-10-15 (credited in
+docs/CREDITS.md: same drop and licence file). Licence: use in unlimited commercial projects
+(games included), modified or not, no attribution needed; no reselling, redistributing or sharing of the assets
+themselves; no machine-learning training. The source files and the cut sheets stay out of git:
+`art_import/assets_art/` is ignored; the spec, `art_import/assets_art.sums` (sha256 of every sheet's RGBA pixels) and
+`art_import/assets_art_sources.csv` (pack per thing, read by tools/ci/check_credits.py) are committed.
+- What could be taken: only files the Drive connector saves to disk (about 38 KB and up); smaller files come back inline
+  and are not transcribed. Of the kit's ten monsters only the headless rider has strips that large (idle in four
+  directions, walk north and west). Pending (needs a zip of the kit, or the folders as parts): black cat, raven,
+  scarecrow stalker, hedge witch, harvest werewolf, pumpkin brute, skeleton warrior, skeleton archer, wailing ghost; the
+  props, nature, borders, roofs and floor changes; the docks kit (`32/`).
+- Outfit 2234 `hollow_rider` (5x5, 160 px, layers 1): idle group 4 phases, walk group 4 phases, 140 ms. Walk east and
+  south use the idle strips of those directions. Monster: the Hollow Rider (server/README.md "Catacomb kit (pair 27
+  trial)").
+- Items 33986-33994 (server 36986-36994, `server/data/items/assets_decor.csv`): crypt portal (3x3, 8 phases, purple
+  light), collapsing portal (4x4, 8 phases), burnt-out portal ring (4x4), sealed crypt hatch (3x3, blocks), breaking
+  seal (3x3, 8 phases), open hatch (3x3), sarcophagus closed / opening (8 phases) / open (2x3, block). Each draws up and
+  left of its tile: put it on the south-east tile of its square.
+- `python3 -I gen_assets_art.py build --src DIR` (DIR holds the sources under the names of `SOURCES`); `build --check`
+  (CI) compares spec, picks and sources with the tables and any sheets on disk with the sums; `gen_assets_art_test.py`
+  (CI) runs the pure parts on synthetic strips; `preview --out DIR --dat P --spr S`.
+- Build (2026-10-15; pushed with the pair 27 effects as things_custom27, windows-assets 51a26d26), appended to pair 27 (dat 873b5ccd506f44223036c9eb213e2c90):
+  ```
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat pair27/Tibia.dat --ours-spr pair27/Tibia.spr \
+      --out-dir pair27a --things client/tools/sprites/art_import/assets_art.csv --first-item 33986 --first-outfit 2234 \
+      --expect-items 33985 --manifest-out server/data/items/assets_decor.csv
+  python3 -I client/tools/sprites/check_pair.py pair27a/Tibia.dat pair27a/Tibia.spr --old pair27/Tibia.dat pair27/Tibia.spr
+  ```
+  dat 223a1c2fc1b0f99997414a5b2cde1773 (5,159,243 bytes), spr 40cccfc55924a53fcd16b3813c0e328a (650,961,766 bytes,
+  776,193 sprites: 519 appended), 33,994 items, 2,234 outfits, 758 effects, 160 missiles. The importer verified 1,166
+  sprite slots pixel-identical to the art. `check_pair.py --old`: append-only (37,037 old things and 775,674 old sprites
+  compared), 0 errors, 124 warnings (those of pair 27). Previews: the look in four directions, a GIF of each walk, the
+  items, a crypt scene. Not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

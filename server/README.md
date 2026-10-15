@@ -7013,6 +7013,36 @@ Install with the switch on: `install_all.py SERVER_DIR --only files,outfits,owne
   `tools/install_owner_decor_test.py`, `tools/area_planner_test.py` (the kits merged while on). Not run on a live
   server or in a client yet.
 
+## Catacomb kit (pair 27 trial) (`data/lib/chaos_assets_art.lua`, `data/lib/chaos_assets_decor.lua`, `tools/install_assets_decor.py`, switch `ChaosAssetsArt.PAIR27`, on)
+Things of the owner's licensed monster and tile kit in the client pair 27 trial (client/MANIFEST.md "Catacomb kit (pair
+27 trial)"): one boss look (outfit 2234) and nine decoration items (client 33986-33994, server 36986-36994).
+- **Switch.** `M.PAIR27 = true` since 2026-10-15, when pair 27 went live (windows-assets 51a26d26). A client on pair 26 or older has no outfit 2234 and no items
+  33986+. On: `area_plan_decor.kits()` merges `tools/areaplan/decor_assets_art.json` after the owner's overlay (the
+  catacomb biome gets the kit `hollow_crypt`: the crypt kit plus the kit's sarcophagi); the row of
+  `client/tools/sprites/monster_looks/assets_art_picks.csv` goes into picks.csv and `tools/apply_monster_looks.py` writes
+  look 2234 into the Hollow Rider's file. Flipping it changes the decoration of every catacomb plan already placed
+  (bonechoir_catacomb, hollow_crypt): install those on a restored map. `M.lookOf(name, current)` gives the look a
+  monster should carry now.
+- **Items.** `tools/install_assets_decor.py DATA_DIR` (install_all step `assetsdecor`, after `ownerdecor`) adds the nine
+  items to items.otb and items.xml from `data/items/assets_decor.csv` (the importer's manifest), same node rules as the
+  owner decoration; idempotent. `--lua [--check]` writes `data/lib/chaos_assets_decor.lua`. Off, the items exist but
+  nothing places them. The hatches and portal rings are set pieces (3x3 / 4x4, on the south-east tile of their square);
+  the sarcophagi block their tile.
+- **The Hollow Rider** (`data/monster/monsters/chaos/hollow_rider.xml`, boss, level 380-400, 42,000 health, 24,000
+  experience): melee 900-1400, a scythe sweep (length 5, spread 3), grave fire at range (radius 2), a trample (radius 3)
+  and a slow; heals and hastes itself; death 50 %, holy -20 %, fire -10 %. Loot: two crystal coins, platinum, a token
+  at 2 %, royal helmet, dragon shield, golden armor and legs, terra mantle, medusa shield, boots of haste. Bosses are
+  never paced (pace_config.lua); the bestiary files it under its boss row. Stock look 1074 while the switch is off.
+- **Hollow Crypt** (`tools/areaplan/plans/hollow_crypt.json`, levels 300-400, catacomb, 112 x 96 at 15305, 14560, 10):
+  the undead gap between the Bonechoir Catacomb (200-290) and the Ossuary Stair (400-520). A camp at the lychgate, grave
+  rows, two ossuaries in a loop, the sexton nave and the rider's ring (boss room, one entrance, respawn 2 h). Monsters:
+  Bonecrusher, Rotten and Bloated Corpse-grub, Sopping Carcass and Corpus (37 spawns). Placed by
+  `install_content_areas.py` like the other plans (teleport room slot 17, display monster Bonecrusher). The planner
+  warns that it spawns the rider "with normal health": its catalogue calls a monster a boss only by folder name; the
+  file's own `isboss` flag still applies in the game.
+- Tests: `tests/assets_art_test.lua` (switch off, decoration ids against the manifest, the picks row, lookOf),
+  `tools/install_assets_decor_test.py`, `client/tools/sprites/gen_assets_art_test.py`.
+
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 
 Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,
@@ -11382,7 +11412,7 @@ Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, fro
   exists under its name; every use has its call site; off: the stock effect; on: the word at +1,+1, the throttles,
   no word for damage over time, monsters or a cast without a word). Not run on a server or in a client yet.
 
-## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, off)
+## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
 "Pack farming spell effects (pair 27 trial)", effects 674-758, missiles 154-160 on top of things_custom26) gives them
 their own. It also gives 34 spells of the other class lines new impacts, plus vigil, stun, buff, game feel, Town Portal
@@ -11418,12 +11448,12 @@ and boss telegraph effects. Effects only: nothing else changes.
 - Boss telegraph (`C.telegraph(tiles)`, `boss_mechanics.lua` first pulse): a round telegraph of 5 tiles across gets
   boss_telegraph at its centre (`C.telegraphCentre`, via `ChaosBigFx.circleOf`); any other shape keeps
   `ChaosBigFx.telegraph`.
-- Off (shipped): the ids file is not loaded, `send` sends nothing, `ray`, `portal` give nil and `telegraph` false, so
-  every call site sends what it sent before. No published pair has these ids. Flip only with a published pair 27:
-  `C.PAIR27_FX = true`, `install_all.py SERVER_DIR --only files`, restart.
+- On (shipped since 2026-10-15, pair 27 live on windows-assets 51a26d26). Off: the ids file is not loaded, `send`
+  sends nothing, `ray`, `portal` give nil and `telegraph` false, so every call site sends what it sent before; set it
+  off for clients still on pair 26 or older (`install_all.py SERVER_DIR --only files`, restart).
 - The swaps are keyed by spell id; `C.names` holds each spell's name and `tests/pack27_fx_test.lua` checks both against
   spells_chaos.xml, so a moved id fails the test (update `C.spells` and `C.names`).
-- Tests: `tests/pack27_fx_test.lua` (switch line off; ids and names in spells_chaos.xml; each script sends the
+- Tests: `tests/pack27_fx_test.lua` (switch line on; ids and names in spells_chaos.xml; each script sends the
   swapped name; every new name in the client spec and the ids file; missile ids fit u8; the loot rays, portal names
   and telegraph exist; the `first` flag; off: no swap, no use effect, rays, portals and telegraph unchanged; on: the
   names, the gold beam, the level up effect, the 5 vs 7 tile telegraph; `_common.lua` and every call site wired). Not

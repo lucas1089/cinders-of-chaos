@@ -3,7 +3,8 @@
 
 usage: python3 -I apply_monster_looks.py [MONSTER_DIR] [--picks CSV] [--check]
 
-MONSTER_DIR defaults to server/data/monster. Rows of picks.csv with family "world", "omen", "raid", "hunt" or "dungeonboss"
+MONSTER_DIR defaults to server/data/monster. Rows of picks.csv with family "world", "omen", "raid", "hunt", "dungeonboss" or
+"catacombs" (the Hollow Rider of pair 27, client/tools/sprites/monster_looks/assets_art_picks.csv)
 (the owner's art of pair 26, client/tools/sprites/monster_looks/owner_art_picks.csv) name one monster (column
 `monsters`, the exact <monster name>); its XML gets <look type="LOOK" .../> with LOOK from the `look` column. The
 colour attributes (head, body, legs, feet, addons) are removed: these looks have no colour template, so the client
@@ -27,7 +28,7 @@ PICKS = os.path.join(REPO, 'client', 'tools', 'sprites', 'monster_looks', 'picks
 RIFT_CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'rift_config.lua')
 COLOURS = ('head', 'body', 'legs', 'feet', 'addons')
 # families whose rows name one monster file each (column `monsters`, the exact <monster name>)
-MONSTER_FAMILIES = ('world', 'omen', 'raid', 'hunt', 'dungeonboss')
+MONSTER_FAMILIES = ('world', 'omen', 'raid', 'hunt', 'dungeonboss', 'catacombs')
 FAMILY_THEME = {'abyss': 'Abyssal Rift', 'obsidian': 'Obsidian Hall', 'crypt': 'Ashen Crypt', 'sanctum': 'Forsaken Sanctum'}
 
 

@@ -150,6 +150,9 @@ eq(C.swapFor(1, 223, "aura_burst_gold"), nil, "off: no swap")
 
 -- the _common.lua hooks
 local castPid, castSpell
+-- the pair 27 layer stays off here: it comes first for Iron Bellow and has its own test (pack27_fx_test.lua)
+dofile("data/lib/chaos_pack27_fx.lua")
+ChaosPack27Fx.PAIR27_FX = false
 ChaosSupportsSpell = {cast = function() return castPid, castSpell end}
 dofile("data/spells/chaos/_common.lua")
 ok(ChaosVfx and ChaosVfx.aura_burst_gold, "pack effects loaded")

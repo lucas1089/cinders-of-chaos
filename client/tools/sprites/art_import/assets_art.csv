@@ -1,0 +1,11 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+hollow_rider,outfit,creature,Hollow Rider,assets_art/hollow_rider,0,0,5,5,4,4+4,,new,,layers=1|gtypes=0+1|exact=160+160|durs0=140/140/140/140|durs1=140/140/140/140|anim0=0:0:0|anim1=0:0:0
+crypt_portal,item,decor,crypt portal,assets_art/crypt_portal,0,0,3,3,1,8,notmoveable light:3:204 animateAlways,new,,ms=120|family=catacomb|block=0
+crypt_portal_collapse,item,decor,collapsing crypt portal,assets_art/crypt_portal_collapse,0,0,4,4,1,8,notmoveable light:2:204 animateAlways,new,,ms=140|family=catacomb|block=0
+crypt_portal_husk,item,decor,burnt-out portal ring,assets_art/crypt_portal_husk,0,0,4,4,1,1,notmoveable,new,,family=catacomb|block=0
+crypt_seal,item,stump,sealed crypt hatch,assets_art/crypt_seal,0,0,3,3,1,1,bottom notwalkable notmoveable light:2:30,new,,family=catacomb|block=1
+crypt_seal_breaking,item,stump,breaking crypt seal,assets_art/crypt_seal_breaking,0,0,3,3,1,8,bottom notwalkable notmoveable light:3:30 animateAlways,new,,ms=140|family=catacomb|block=1
+crypt_seal_open,item,decor,open crypt hatch,assets_art/crypt_seal_open,0,0,3,3,1,1,notmoveable light:2:30,new,,family=catacomb|block=0
+sarcophagus,item,stump,sealed sarcophagus,assets_art/sarcophagus,0,0,2,3,1,1,bottom notwalkable notmoveable,new,,family=catacomb|block=1
+sarcophagus_opening,item,stump,sarcophagus lid grinding open,assets_art/sarcophagus_opening,0,0,2,3,1,8,bottom notwalkable notmoveable animateAlways,new,,ms=140|family=catacomb|block=1
+sarcophagus_open,item,stump,open sarcophagus,assets_art/sarcophagus_open,0,0,2,3,1,1,bottom notwalkable notmoveable,new,,family=catacomb|block=1

@@ -505,6 +505,7 @@ Planned hunting areas (14, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
 | Plan | Levels | Biome |
 |---|---|---|
 | bonechoir_catacomb | 200-290 | catacomb |
+| hollow_crypt | 300-400 | catacomb (boss: the Hollow Rider; pair 27 trial art behind `ChaosAssetsArt.PAIR27`, off) |
 | sulphur_gallery | 215-299 | lava |
 | widowmere | 480-640 | swamp |
 | wyrmspine_hollows | 500-640 | cave |

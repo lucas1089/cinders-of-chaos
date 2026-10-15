@@ -98,6 +98,7 @@ C.room = {x = 31648, y = 32256, z = 6}
 C.hunts = {
 	{id = "bonechoir_catacomb", name = "Bonechoir Catacomb", level = {200, 290}},
 	{id = "sulphur_gallery", name = "Sulphur Gallery", level = {215, 299}},
+	{id = "hollow_crypt", name = "Hollow Crypt", level = {300, 400}},
 	{id = "widowmere", name = "Widowmere", level = {480, 640}},
 	{id = "wyrmspine_hollows", name = "Wyrmspine Hollows", level = {500, 640}},
 	{id = "pyrarch_crucible", name = "Pyrarch Crucible", level = {520, 690}},

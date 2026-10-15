@@ -49,7 +49,7 @@ def _max_outfit():
                      'monster_looks', 'picks.csv')
     looks = [int(r['look']) for r in csv.DictReader(open(p, newline=''))] if os.path.exists(p) else []
     return max([BASE_OUTFIT] + looks)
-MAX_OUTFIT = _max_outfit()  # 2233 with things_custom26 (see server/data/monster/CUSTOM_MONSTERS.md)
+MAX_OUTFIT = _max_outfit()  # 2234 with things_custom27 (see server/data/monster/CUSTOM_MONSTERS.md)
 bad = 0
 
 def fail(msg):
@@ -293,9 +293,9 @@ import xml.etree.ElementTree as ET
 def _opt(flag):
     return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv[:-1] else None
 
-# the client pair the monsters are drawn with: things_custom26 (client/MANIFEST.md), 2233 outfits; the blank ones have
+# the client pair the monsters are drawn with: things_custom27 (client/MANIFEST.md), 2234 outfits; the blank ones have
 # no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160 and 2194-2199 padding). --pair recounts both.
-PAIR_NAME, PAIR_OUTFITS = 'things_custom26', 2233
+PAIR_NAME, PAIR_OUTFITS = 'things_custom27', 2234
 PAIR_BLANK = ('135 161-191 411 415 424 439-440 468-469 474-485 501 518-520 524-525 536 543 549 581-582 597 616 623 '
               '625 638-643 645-646 652-663 678 700-711 713 715 718-719 722-723 737 741-744 748 751-758 764-841 861 '
               '864-867 871-872 880 891-898 1562-1999 2082-2099 2143-2160 2194-2199')
