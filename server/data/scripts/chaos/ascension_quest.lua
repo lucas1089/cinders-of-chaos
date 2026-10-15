@@ -900,7 +900,7 @@ function status.onSay(player, words, param)
 	local st = stageOf(player)
 	local npc = C().npc.name
 	local lines = {
-		[0] = Chaos.t(player, "not begun. Speak with the %s in the temple.", npc),
+		[0] = Chaos.t(player, "not begun. Speak with the %s in the Hall of Services.", npc),
 		[1] = Chaos.t(player, "Proof of Strength, %d / %d (rare and legendary monsters of level %d+).",
 			math.max(0, getS(player, K().proof)), C().proof.needed, Q.minMonsterLevel(player:getLevel())),
 		[2] = Chaos.t(player, "the Trial. Ask the %s for the trial.", npc),

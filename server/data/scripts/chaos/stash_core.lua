@@ -13,7 +13,7 @@
 -- class; the Old depot tab (cfg.oldDepot.tab) holds what the depot migration could not place: withdraw-only, never full.
 -- A tab beyond the general count, an affinity tab no longer owned and the Old depot tab are withdraw-only. Nothing is
 -- ever deleted when a limit shrinks.
---   K.view(cfg, ctx)                    {general = n, owned = {key = source}}; ctx = {stashTabs (pact limit), extras =
+--   K.view(cfg, ctx)                    {general = n, owned = {key = source}, remote = "bought" | "pact" | nil}; ctx = {stashTabs (pact limit), extras =
 --                                       {key = n}, pact = bool, achievements = {id = true}}
 --   K.writable(cfg, view, tab), K.sizeOf(cfg, tab), K.counts(entries)
 --   K.layout(cfg, view, entries)        places entries of tab 0 / an unknown tab (writable tabs first, then e.overflow
@@ -29,6 +29,7 @@
 --   K.stowSkip(cfg, f)                  why Stow Everything leaves an item (a key of cfg.reasons), or nil
 --   K.report(cfg, stowed, skipped)      the Stow Everything report {stowed, kept, reasons = {{reason, label, count, names}}}
 --   K.canWithdraw(cfg, place)           place = {pz = bool, hideout = bool}
+--   K.canDeposit(cfg, view, place)      in town for everybody, anywhere with view.remote (bought or the Pact)
 --
 -- The journal (no item lost or doubled by a crash or a failed save; server/README.md "Stash", "Write order"):
 -- every deposit and withdrawal is first a row of chaos_stash_items in a journal state with a serial `seq`; the
@@ -240,7 +241,16 @@ function K.view(cfg, ctx)
 		end
 		owned[a.key] = source
 	end
-	return {general = general, owned = owned}
+	-- remote deposit: bought once, or lent while the Chaos Pact runs (stash_config.lua remoteDeposit)
+	local rd, remote = cfg.remoteDeposit, nil
+	if rd then
+		if rd.extra and int(extras[rd.extra]) > 0 then
+			remote = "bought"
+		elseif rd.pact and ctx.pact then
+			remote = "pact"
+		end
+	end
+	return {general = general, owned = owned, remote = remote}
 end
 
 function K.sizeOf(cfg, tab)
@@ -539,6 +549,22 @@ end
 function K.canWithdraw(cfg, place)
 	place = place or {}
 	return place.pz == true or (cfg.withdrawInHideout == true and place.hideout == true)
+end
+
+-- deposit: in town (as withdraw) for everybody, anywhere with the remote deposit unlock (view.remote). Returns
+-- true, why ("pz" | "hideout" | "remote") or false
+function K.canDeposit(cfg, view, place)
+	place = place or {}
+	if place.pz == true then
+		return true, "pz"
+	end
+	if cfg.withdrawInHideout == true and place.hideout == true then
+		return true, "hideout"
+	end
+	if view and view.remote then
+		return true, "remote"
+	end
+	return false
 end
 
 -- ---------------------------------------------------------------- the journal

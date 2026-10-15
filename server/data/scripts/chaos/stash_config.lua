@@ -85,8 +85,12 @@ return {
 	reportNames = 6, -- item names listed per reason in the report
 
 	-- ------------------------------------------------------------------ access
-	-- deposit from anywhere (also mid-hunt); withdraw only in a protection zone or inside a hideout
-	withdrawInHideout = true,
+	-- Owner decision 2026-10-15: free players use the stash in town only, deposit and withdraw alike (a protection zone,
+	-- or inside a hideout). Remote deposit (from anywhere, mid-hunt, Stow Everything included) is a paid unlock: bought
+	-- once per account (pact_config.lua extra stashRemote, store "Storage & Slots") or lent while the Chaos Pact is
+	-- active (it stops when the Pact ends; nothing stored is lost). Withdraw stays protection-zone only for everybody.
+	withdrawInHideout = true, -- the hideout counts as town for both
+	remoteDeposit = {extra = "stashRemote", pact = true},
 
 	-- ------------------------------------------------------------------ the depot transition (depot.lua, stash.lua)
 	depot = {
@@ -116,7 +120,9 @@ return {
 		capacity = "You do not have enough capacity.",
 		room = "You do not have enough room.",
 		retrieved = "Retrieved %dx %s from your stash.",
-		pz = "You can take items out of the stash only in a protection zone. You can put items in anywhere.",
+		pz = "You can take items out of the stash only in a protection zone.",
+		depositPz = "You can put items into the stash only in a protection zone. Remote deposit from anywhere: " ..
+			"Store > Storage & Slots, or an active Chaos Pact.",
 		corrupt = "That item could not be restored. It stays in the stash; tell the staff.",
 		stowNone = "Nothing to stow.",
 		stowDone = "Stowed %d item(s) into your stash.",

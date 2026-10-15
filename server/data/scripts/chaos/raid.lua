@@ -1271,7 +1271,13 @@ function X.deliver(player, b, idx)
 				itemName(id) .. " (item level " .. level .. ")"
 		end
 	end
-	local u = K.rollUnique(cfg, b, rand(1, 10000), rand)
+	-- bad-luck protection (conquest.lua): the raid unique chance x the character's multiplier; a miss or a hit recorded
+	local CQ = ChaosConquest
+	local pity = CQ and CQ.pityMult and CQ.pityMult(player, "raid") or 1
+	local u = K.rollUnique(cfg, b, rand(1, 10000), rand, pity)
+	if CQ and CQ.pityRecord and #K.uniquesOf(cfg, b.key) > 0 then
+		CQ.pityRecord(player, "raid", u ~= nil, u and u.id or nil)
+	end
 	if u then
 		local item = Game.createItem(u.id, 1)
 		if item then
@@ -2405,6 +2411,29 @@ function X.placePortals()
 	for _, townId in ipairs(cfg.portal.townIds) do
 		local town = Town(townId)
 		local t = town and town:getTemplePosition()
+		-- the town's Hall of Services (npc_booths_config.lua): the portal stands in its portal room when the hall is on
+		-- the map (portal.positions, one per town); else next to the temple
+		local hallPos
+		for _, p in ipairs(cfg.portal.positions or {}) do
+			if p.town == townId and Tile(Position(p.x, p.y, p.z)) then
+				hallPos = Position(p.x, p.y, p.z)
+			end
+		end
+		if hallPos then
+			local tile = Tile(hallPos)
+			local have = tile:getItemById(cfg.portal.itemId)
+			if not (have and have:getActionId() == cfg.aid.portal) then
+				local item = spotFree(hallPos) and Game.createItem(cfg.portal.itemId, 1, hallPos)
+				if item then
+					item:setActionId(cfg.aid.portal)
+					X.portals[#X.portals + 1] = {x = hallPos.x, y = hallPos.y, z = hallPos.z}
+					placed = placed + 1
+				else
+					log("the portal tile in the Hall of Services of town " .. townId .. " is taken")
+				end
+			end
+			t = nil
+		end
 		if t then
 			local done = false
 			for _, off in ipairs(cfg.portal.offsets) do

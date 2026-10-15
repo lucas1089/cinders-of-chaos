@@ -510,6 +510,21 @@ the floor; the base map has no tile within 10 of any of them (checked with `tool
 in the capital (chronicle_config.lua `areas` gate, memorial_config.lua `plaza.portal`). Dry run and real run on a
 copy of the base map (2026-10-14): 19 areas and the room placed, the second run changed nothing.
 
+**The placed rooms of `server/tools/areaplan/rooms/`** (2026-10-15): the Idle Hall (server/README.md "Idle Hall") at
+**14600, 14760, 7** (44 x 28), in the free band between slagmourn_foundry (ends x 14527), pyrarch_crucible (ends
+y 14679), the generated areas (end y 14675), hollowmass_reliquary and hexwood_thicket (start y 14920 / 14940) and the
+plaza (starts x 14800): 70+ tiles from each (`tools/idle_hall_test.py` holds it 10+ from every plan and generated
+area). Step `contentareas` places this folder like the chronicle folder: a fixed area at its origin, no teleport; the
+way in is idlehall.lua's move, the way out the plan's exit portal.
+The two **Halls of Services** (server/README.md "Halls of Services", 2026-10-15): `services_cinderhold` at **14560,
+14820, 7** and `services_mirewake` at **14560, 14870, 7** (66 x 34 each, one layout), in the same band west of the Idle
+Hall: 33 tiles below it, 37 east of hollowmass_reliquary (ends x 14523), 60+ from hexwood_thicket; the base map has no
+tile there on floors 6-8 (checked with `tools/map/otbm.py`), and an install `--dry-run` on the base map places both.
+Biome `townhall` (new): the temples' white marble floor (406) and grey stone walls (1049 vertical, 1050 horizontal,
+1051 the north-west pole, 1053 the south-east corner, as the live map uses them), no clutter, no floor lights (the
+booths' coal basins light the rooms). The booths' counters are placed at runtime by npc_booths.lua, not in the plan, so
+the planner's rooms stay plain; `tools/services_halls_test.py` checks every booth tile on the compiled plans.
+
 The two 1500-2000 plans (2026-10-14, on the 1300-2000 hunting monsters, server/README.md "Late game") take the
 last free cell, 14340, 15140 (gravehorn_deeps, 64 tiles below hollowmass_reliquary), and a new column at x 15305
 (duskmarrow_crater, 13 tiles east of voidscar_chasm's 15292 and 29 east of wyrmspine_hollows). Its origin stays inside

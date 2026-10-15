@@ -91,7 +91,8 @@ end
 
 function V.levelText(row)
   local parts = {}
-  if num(row and row.lv) > 0 then parts[#parts + 1] = string.format('Level %d+', num(row.lv)) end
+  if num(row and row.lv) > 0 then parts[#parts + 1] = string.format('Level %d+', num(row.lv))
+  elseif num(row and row.pl) > 0 then parts[#parts + 1] = tr('Pocket: level %d+', num(row.pl)) end
   if num(row and row.party) > 1 then parts[#parts + 1] = tr('party of %d', num(row.party)) end
   return table.concat(parts, ', ')
 end
@@ -158,6 +159,28 @@ function V.group(data, filter)
     if #g.rows > 0 then kept[#kept + 1] = g end
   end
   return kept
+end
+
+-- the Pocket button of a row (server pocketboss.lua, action "pocket": {bosses = {key = {l, m, b, lv, ok}}, reset,
+-- inside}). -> nil when the boss has no pocket, else {text, enabled, tooltip}. l = charges left (daily + bonus), m = the
+-- daily charges, b = bonus charges held, lv = level needed, ok = the level is reached; inside = the key of the pocket
+-- the player is in now.
+function V.pocket(row, pocket, elapsed)
+  if type(row) ~= 'table' or type(pocket) ~= 'table' or type(pocket.bosses) ~= 'table' then return nil end
+  local p = pocket.bosses[row.k]
+  if type(p) ~= 'table' then return nil end
+  local left, daily, bonus = num(p.l), num(p.m), num(p.b)
+  local reset = math.max(0, num(pocket.reset) - num(elapsed))
+  local lines = { tr('Pocket: a private copy of this boss, open any time, alone or with your party (each member spends a charge).'),
+    tr('Less experience and loot than the scheduled fight; the boss passive point counts the same.') }
+  lines[#lines + 1] = tr('Charges left: %d (daily %d, bonus %d). New daily charges in %s.', left, daily, bonus, V.countdown(reset))
+  local enabled = left > 0 and p.ok ~= nil and pocket.inside == nil
+  if p.ok == nil and num(p.lv) > 0 then
+    lines[#lines + 1] = tr('Needs level %d.', num(p.lv))
+  elseif pocket.inside ~= nil then
+    lines[#lines + 1] = tr('You are in a pocket now.')
+  end
+  return { text = tr('Pocket %d/%d', left, daily), enabled = enabled, tooltip = table.concat(lines, '\n') }
 end
 
 -- the category header: "World Bosses (5)" or "(2 of 5)" with a filter, and the count alive

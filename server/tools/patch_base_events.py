@@ -90,6 +90,27 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    go to the character's inbox first (back in the backpack at the next login), and a store-bound item worn in a slot
    stays there (true: not dropped). Without that script the stock rule runs unchanged.
 
+16. data/scripts/eventcallbacks/monster/default_onDropLoot.lua: at or below 14 hours of stamina the stock callback dropped
+   NOTHING ("Loot of ...: nothing (due to low stamina)"). Now it asks ChaosCatchup.staminaLootMult(player)
+   (data/scripts/chaos/catchup.lua, catchup_config.lua stamina.lootMult, 0.5): above 0 the loot is rolled with every
+   chance x that factor (1 above 14 h); only 0 keeps the stock "nothing" branch. Without that script the stock rule
+   holds (0 at low stamina, 1 above). Runs after step 2 (it multiplies the waystone-patched chance line too).
+
+17. data/creaturescripts/scripts/regeneratestamina.lua: the offline time past the 10 minute grace is also multiplied by
+   ChaosCatchup.offlineStaminaMult(player) (catchup_config.lua stamina.offlineMult, 2.0): stamina comes back twice as
+   fast offline, and the Pact's x1.5 of step 13 multiplies on top (x3). Without that script the time is unchanged.
+
+18. Gentle deaths (data/scripts/chaos/gentledeath.lua): data/events/scripts/player.lua Player:onLoseExperience asks
+   ChaosGentleDeath.onLoseExperience(self, exp) first (new characters lose little or nothing, the first death of a day
+   half); a player.lua without that function gets a plain one. data/events/events.xml gets
+   <event class="Player" method="onLoseExperience" enabled="1" /> (added, or turned on). Without the script the loss
+   the engine computed is kept.
+
+19. Gentle deaths, items (owner decision 2026-10-15): data/creaturescripts/scripts/droploot.lua returns before the item
+   loss (and before the amulet of loss is used up) when ChaosGentleDeath.keepAll(player) says so: nobody loses items
+   on death except with a red or black skull (data/scripts/chaos/gentledeath.lua). Without that script the stock rule
+   (and step 15) runs unchanged.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -503,6 +524,128 @@ def patch_death_keep(text):
     return text[:m.start()] + block + text[m.end():], 'patched'
 
 
+LOSE_MARKER = '-- Chaos: gentle deaths (patch_base_events.py)'
+LOSE_RE = re.compile(r'^function Player:onLoseExperience\(([A-Za-z_][A-Za-z_0-9]*)\)[ \t]*(\r?\n)', re.M)
+
+
+def patch_lose_experience(text):
+    """player.lua: Player:onLoseExperience asks ChaosGentleDeath first; returns (new text, status)"""
+    if LOSE_MARKER in text:
+        return text, 'already'
+    m = LOSE_RE.search(text)
+    if m:
+        var, nl = m.group(1), m.group(2)
+        block = ('\t' + LOSE_MARKER + nl
+                 + '\tif ChaosGentleDeath and ChaosGentleDeath.onLoseExperience then' + nl
+                 + '\t\t' + var + ' = ChaosGentleDeath.onLoseExperience(self, ' + var + ') or ' + var + nl
+                 + '\tend' + nl)
+        return text[:m.end()] + block + text[m.end():], 'patched'
+    if 'Player:onLoseExperience' in text:
+        return text, 'unexpected player.lua (Player:onLoseExperience with an unknown signature)'
+    nl = '\r\n' if '\r\n' in text else '\n'
+    tail = '' if text.endswith(nl) or text == '' else nl
+    fn = (nl + 'function Player:onLoseExperience(exp)' + nl
+          + '\t' + LOSE_MARKER + nl
+          + '\tif ChaosGentleDeath and ChaosGentleDeath.onLoseExperience then' + nl
+          + '\t\texp = ChaosGentleDeath.onLoseExperience(self, exp) or exp' + nl
+          + '\tend' + nl
+          + '\treturn exp' + nl
+          + 'end' + nl)
+    return text + tail + fn, 'patched'
+
+
+LOSE_EVENT_RE = re.compile(r'(<event class="Player" method="onLoseExperience" enabled=")(\d)("\s*/>)')
+
+
+def patch_lose_event(text):
+    """events.xml: the Player onLoseExperience event on; returns (new text, status)"""
+    m = LOSE_EVENT_RE.search(text)
+    if m:
+        if m.group(2) == '1':
+            return text, 'already'
+        return text[:m.start()] + m.group(1) + '1' + m.group(3) + text[m.end():], 'patched'
+    nl = '\r\n' if '\r\n' in text else '\n'
+    line = '\t<event class="Player" method="onLoseExperience" enabled="1" />' + nl
+    at = text.rfind('\t<!-- Monster methods -->')
+    if at < 0:
+        at = text.rfind('</events>')
+    if at < 0:
+        return text, '</events> not found in events.xml'
+    return text[:at] + line + text[at:], 'patched'
+
+
+LOWLOOT_MARKER = '-- Chaos: low stamina cuts the loot instead of zeroing it (patch_base_events.py)'
+LOWLOOT_GATE_RE = re.compile(r'^([ \t]*)if player:getStamina\(\) <= 840 then[ \t]*(\r?\n)', re.M)
+LOWLOOT_CHANCE_RE = re.compile(r'(if roll <= lootData\.chance)([^\n]*?)( then)')
+
+
+def patch_low_stamina_loot(text):
+    """returns (new text, status): the low stamina gate asks the factor, every loot chance is x the factor"""
+    if LOWLOOT_MARKER in text:
+        return text, 'already'
+    at = text.find('ec.onDropLoot = function(self, corpse)')
+    gates = list(LOWLOOT_GATE_RE.finditer(text))
+    chances = list(LOWLOOT_CHANCE_RE.finditer(text))
+    if at < 0 or len(gates) != 1 or len(chances) != 1:
+        return text, ('unexpected default_onDropLoot.lua (ec.onDropLoot, "if player:getStamina() <= 840 then" or '
+                      '"if roll <= lootData.chance ... then" not found once)')
+    nl = gates[0].group(2)
+    c = chances[0]
+    text = text[:c.start()] + c.group(1) + c.group(2) + ' * chaosStaminaLootMult(player)' + c.group(3) + text[c.end():]
+    g = list(LOWLOOT_GATE_RE.finditer(text))[0]
+    text = (text[:g.start()] + g.group(1) + 'if player:getStamina() <= 840 and chaosStaminaLootMult(player) <= 0 then'
+            + g.group(2) + text[g.end():])
+    helper = (LOWLOOT_MARKER + nl
+              + 'local function chaosStaminaLootMult(player)' + nl
+              + '\tif ChaosCatchup and ChaosCatchup.staminaLootMult then' + nl
+              + '\t\tlocal ok, m = pcall(ChaosCatchup.staminaLootMult, player)' + nl
+              + '\t\tif ok and tonumber(m) then' + nl
+              + '\t\t\treturn tonumber(m)' + nl
+              + '\t\tend' + nl
+              + '\tend' + nl
+              + '\treturn player:getStamina() <= 840 and 0 or 1' + nl
+              + 'end' + nl + nl)
+    at = text.find('ec.onDropLoot = function(self, corpse)')
+    return text[:at] + helper + text[at:], 'patched'
+
+
+OFFLINE_MARKER = '-- Chaos: stamina comes back faster offline (patch_base_events.py)'
+
+
+def patch_offline_catchup(text):
+    """returns (new text, status): the offline time x ChaosCatchup.offlineStaminaMult, right after the 10 minute grace"""
+    if OFFLINE_MARKER in text:
+        return text, 'already'
+    m = STAMINA_RE.search(text)
+    if not m:
+        return text, 'unexpected regeneratestamina.lua ("offlineTime = offlineTime - 600" not found)'
+    ind, nl = m.group(1), m.group(2)
+    block = (ind + OFFLINE_MARKER + nl
+             + ind + 'if offlineTime > 0 and ChaosCatchup and ChaosCatchup.offlineStaminaMult then' + nl
+             + ind + '\tofflineTime = offlineTime * ChaosCatchup.offlineStaminaMult(player)' + nl
+             + ind + 'end' + nl)
+    return text[:m.end()] + block + text[m.end():], 'patched'
+
+
+KEEPALL_MARKER = '-- Chaos: gentle deaths keep every item (patch_base_events.py)'
+KEEPALL_RE = re.compile(r'^([ \t]*)local amulet = player:getSlotItem\(CONST_SLOT_NECKLACE\)[ \t]*(\r?\n)', re.M)
+
+
+def patch_keep_all(text):
+    """droploot.lua: no item loss when ChaosGentleDeath.keepAll(player); returns (new text, status)"""
+    if KEEPALL_MARKER in text:
+        return text, 'already'
+    m = KEEPALL_RE.search(text)
+    if not m or len(KEEPALL_RE.findall(text)) != 1:
+        return text, 'unexpected droploot.lua ("local amulet = player:getSlotItem(CONST_SLOT_NECKLACE)" not found once)'
+    ind, nl = m.group(1), m.group(2)
+    block = (ind + KEEPALL_MARKER + nl
+             + ind + 'if ChaosGentleDeath and ChaosGentleDeath.keepAll and ChaosGentleDeath.keepAll(player) then' + nl
+             + ind + '\treturn true' + nl
+             + ind + 'end' + nl)
+    return text[:m.start()] + block + text[m.start():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -541,6 +684,13 @@ def main():
     ok = apply(os.path.join(args[0], 'scripts', 'customs', 'actions', 'trainer_tile_stamina.lua'),
                patch_trainer_stamina, dry) and ok
     ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'droploot.lua'), patch_death_keep, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
+               patch_low_stamina_loot, dry) and ok
+    ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'regeneratestamina.lua'),
+               patch_offline_catchup, dry) and ok
+    ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch_lose_experience, dry) and ok
+    ok = apply(os.path.join(args[0], 'events', 'events.xml'), patch_lose_event, dry) and ok
+    ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'droploot.lua'), patch_keep_all, dry) and ok
     return 0 if ok else 1
 
 

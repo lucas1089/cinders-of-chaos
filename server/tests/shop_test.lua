@@ -532,7 +532,7 @@ ok(eg ~= nil, "regalia in view")
 
 -- starter packs: once per account, level gate, hidden afterwards, pact days when the Pact exists
 eq(buy(A, "starter:novice"), "Purchase complete", "novice pack")
-ok(A.auras[17] and A.items[8472] == 100 and A.items[27990] == 5, "novice parts"); eq(pactDays, 3, "pact days")
+ok(A.auras[17] and A.items[8472] == 100 and A.items[26031] == 100 and not A.items[27990], "novice parts (Supreme Health Potions, no stamina since 2026-10-15)"); eq(pactDays, 3, "pact days")
 ok(not find(A, "starter:novice"), "hidden once bought")
 local A2 = newPlayer("Alicealt", {account = A.account, level = 10})
 ok(not find(A2, "starter:novice"), "hidden for the whole account")
@@ -605,7 +605,7 @@ local Cara = newPlayer("Cara", {})
 eq(buy(A, "aura:7", "Cara"), "Gift sent", "online gift"); ok(Cara.auras[7], "delivered at once")
 eq(DB.purchases[#DB.purchases].giftPlayer, Cara.guid, "gift logged")
 eq(buy(A, "aura:7", "Cara"), "Not possible", "target owns it")
-eq(buy(A, "service:stamina", "Cara"), "Not possible", "services cannot be gifted")
+eq(buy(A, "service:blessings", "Cara"), "Not possible", "services cannot be gifted")
 -- Hideouts: an unlock offer with gift = true (hideout_store.lua) may be gifted; other unlocks may not
 eq(buy(A, "unlock:hideout_gargoyle", "Cara"), "Gift sent", "a hideout decoration is giftable")
 eq(buy(A, "unlock:autoSeller", "Cara"), "Not possible", "other unlocks are not giftable")
@@ -638,7 +638,16 @@ title, msg = buy(Sea, "item:7590x100")
 eq(title, "Not possible", "season character: no supplies"); ok(msg:find("not for season characters", 1, true), msg)
 eq(buy(Sea, "item:32256x10"), "Not possible", "season character: no whetstones")
 eq(buy(Sea, "starter:novice"), "Not possible", "season character: no starter pack (potions, stamina)")
-eq(buy(Sea, "service:stamina"), "Not possible", "season character: no stamina refill")
+eq(buy(Sea, "service:blessings"), "Not possible", "season character: no blessings (the Stamina Refill offer is gone, 2026-10-15)")
+do -- the Stamina Refill is not sold any more (pay to farm; catchup.lua halves low stamina loot instead)
+	local refill = false
+	for _, cat in ipairs(dofile("data/scripts/chaos/shop_config.lua").categories or {}) do
+		for _, o in ipairs(cat.offers or {}) do
+			if o.kind == "service" and o.service == "stamina" then refill = true end
+		end
+	end
+	eq(refill, false, "no Stamina Refill offer")
+end
 eq(buy(Sea, "unlock:autoSeller"), "Not possible", "season character: no Auto Seller")
 eq(DB.coins[Sea.account], 5000, "nothing taken")
 eq(buy(Sea, "wings:1"), "Purchase complete", "season character: wings")

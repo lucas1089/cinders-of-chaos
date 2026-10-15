@@ -1,0 +1,163 @@
+// Candlemarks (game_candlemarks): the counter next to the Chaos menu bar and the shop window.
+// Styles from client_chaos_theme. Opened from the menu (Economy > Candlemarks), the counter, or Osric the Chandler.
+
+CandlemarkCounter < UIButton
+  height: 22
+  width: 200
+  font: verdana-11px-antialised
+  color: #e8b84a
+  text-align: center
+  image-source: /images/chaos/skin/button
+  image-clip: 0 0 64 24
+  image-border: 5
+  focusable: false
+
+  $hover:
+    image-clip: 0 24 64 24
+    color: #ffe7a6
+
+CandlemarkRow < UIWidget
+  height: 46
+  background-color: #1a151a
+  phantom: true
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    virtual: true
+    phantom: true
+
+  ChaosLabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: item.right
+    anchors.right: price.left
+    margin-top: 5
+    margin-left: 8
+    height: 16
+    color: #f6cf72
+    text-align: left
+
+  ChaosLabelDim
+    id: desc
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: price.left
+    height: 16
+    text-align: left
+
+  ChaosLabel
+    id: price
+    anchors.top: parent.top
+    anchors.right: buy.left
+    margin-top: 5
+    margin-right: 8
+    width: 130
+    color: #e8b84a
+    text-align: right
+
+  ChaosLabelDim
+    id: limit
+    anchors.top: price.bottom
+    anchors.right: buy.left
+    margin-right: 8
+    width: 130
+    height: 16
+    text-align: right
+
+  ChaosButton
+    id: buy
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    size: 70 22
+    !text: tr('Buy')
+
+CandlemarkWindow < ChaosMainWindow
+  id: candlemarkWindow
+  size: 600 540
+  !text: tr('Candlemarks')
+  @onEscape: modules.game_candlemarks.hide()
+
+  ChaosBloodLabel
+    id: balance
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 18
+    text-align: left
+
+  ChaosLabel
+    id: next
+    anchors.top: balance.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 16
+    text-align: left
+
+  ChaosLabelDim
+    id: week
+    anchors.top: next.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 16
+    text-align: left
+
+  ChaosLabel
+    id: shop
+    anchors.top: week.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 16
+    text-align: left
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: shop.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: status.top
+    margin-top: 6
+    margin-bottom: 6
+
+    ScrollablePanel
+      id: list
+      anchors.fill: parent
+      margin: 4
+      margin-right: 16
+      vertical-scrollbar: listScroll
+      layout:
+        type: verticalBox
+        spacing: 2
+
+    ChaosScrollBar
+      id: listScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 48
+      pixels-scroll: true
+
+  ChaosLabel
+    id: status
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 24
+    text-wrap: true
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_candlemarks.hide()

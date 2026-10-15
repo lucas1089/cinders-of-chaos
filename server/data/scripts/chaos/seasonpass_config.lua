@@ -87,6 +87,10 @@ return {
 	tierXp = {base = 1000, step = 25},
 
 	-- Pass XP from play. dailyCap = most pass XP from that source per account and day (server midnight).
+	-- bankDays: the caps bank over this many days (a rolling window: the last bankDays days together give at most
+	-- bankDays x dailyCap), so a player who misses a day or two catches up on the next; days before the season bank
+	-- nothing (2026-10-15, respect the players' time).
+	bankDays = 3,
 	--   exp       pass XP per 1% of the character's current level gained from monsters, counted on the monster's base
 	--             experience times the experience stage of the level only: store potions, world buffs, stamina, the
 	--             season modifier and other bonuses add nothing

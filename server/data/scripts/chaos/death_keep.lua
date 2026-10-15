@@ -93,6 +93,13 @@ end
 
 -- droploot.lua: true when `item` stays in its slot (do not drop it)
 function DK.beforeDrop(player, item, corpse)
+	-- gentle deaths (gentledeath.lua): a new character keeps every slot item
+	if ChaosGentleDeath and ChaosGentleDeath.keepAll then
+		local okKeep, keep = pcall(ChaosGentleDeath.keepAll, player)
+		if okKeep and keep then
+			return true
+		end
+	end
 	local ok, stays, parked = pcall(K.beforeDrop, item, corpse, DK.api(player))
 	if not ok then
 		log("drop check failed for " .. tostring(player and player:getName()) .. ": " .. tostring(stays))

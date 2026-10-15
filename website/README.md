@@ -549,8 +549,11 @@ Check: request a recovery link for your own account on the live site; the mail's
   The client creates characters through the same checks (see "Client API").
 - **New characters** are level 1 with `lastlogin = 0` and no items, at position 0,0,0 of the chosen home town: the
   server's tutorial island (`newplayer_tutorial.lua`) takes them at the first login and gives the class kit, and the
-  island's exit leads to that town's temple. Home towns: `CHAOS_START_TOWNS`, checked against the `towns` table (the
-  server fills it at its first start). The base server's starter depot boxes (its `ADD_DEPOT_BOXES_NEW_PLAYERS`
+  island's exit leads to that town's temple. Home towns: `CHAOS_START_TOWNS` (default `2`, Cinderhold, the main city;
+  the first id is the default of the form and of the client API), checked against the `towns` table (the
+  server fills it at its first start). The game server moves every brand-new character to the main city at its first
+  login unless its town is in `newplayer_config.lua` `homeTown.keep`, so offer more towns only together with that list
+  (server/README.md "Main city"). The base server's starter depot boxes (its `ADD_DEPOT_BOXES_NEW_PLAYERS`
   snippet) are off: `!season join` needs an empty depot. `CHAOS_DEPOT_BOXES=1` puts one of each box in every town's depot.
 - **Character slots.** Each account may have `characters.free` characters of the server's `pact_config.lua` (5; read
   when `CHAOS_SERVER_DATA` points at it, else 5), plus the Character Slots bought in the game store and the slots the game

@@ -34,13 +34,15 @@ a party with an Illusionist out-damages the same party without one.
 
 **Thief** (base): fast attack speed with daggers and light swords; shurikens as a throwing weapon with a
 short range; **Shadow Veil** stealth (monsters lose track of you, broken by attacking; the first hit out of
-stealth crits); poison blades; evasion (dodge chance).
+stealth crits); poison blades; evasion (dodge chance); Blade Flurry (a spin that strikes every monster next to you,
+the line's area strike, 2026-10-15).
 - **Ninja**: dual wield, where the off-hand dagger adds a second, weaker strike on each attack (scripted:
   the engine has no dual wield); Shadow Step (teleport behind the target); smoke bomb (area blind); a
   shuriken barrage that hits several targets.
 - **Samurai** (duelist off-tank): one sword; Iaijutsu (charged draw strike, big single hit); Counter Stance (3 s: parry the
   next melee hit and strike back, every other hit taken 30% smaller, the monsters within 3 sqm turn on the Samurai);
-  Bushido focus (crit stacks while not taking damage).
+  Bushido focus (crit stacks while not taking damage); Iaido Sweep (a wide draw cut: the target and every monster in
+  the 3 x 2 tiles in front, 2026-10-15).
 
 **Warrior** (base): today's Knight kit.
 - **Juggernaut**: Iron Will, Bulwark (block/reflect), taunts.
@@ -125,20 +127,22 @@ Ranger line 23: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 10
   Falling Pyre > Pyre Torrent > Witchfire Bolt.
 - **Illusionist**: 100: Bewitching Hex > Arcane Ripple; 300: Tear in the Weave > Nightburst > Primordial Squall >
   Bewitching Hex > Arcane Ripple; 1000: Nightburst > Primordial Squall > Shattered Psyche > Arcane Ripple > Bramble Fan.
-- **Thief**: 100: Shuriken Toss.
-- **Ninja**: 100: Shadow Step > Shuriken Toss; 300: Shadow Step > Shuriken Barrage > Shuriken Toss.
-- **Samurai**: 100: Shuriken Toss; 300: Iaijutsu > Shuriken Toss.
-- **Necromancer**: 100: Withering Curse > Bone Spear.
+- **Thief**: 100: Blade Flurry > Fan of Knives > Shuriken Toss.
+- **Ninja**: 100: Blade Flurry > Shadow Step > Shuriken Toss; 300: Blade Flurry > Shadow Step > Shuriken Barrage >
+  Shuriken Toss.
+- **Samurai**: 100: Blade Flurry > Shuriken Toss; 300: Iaijutsu > Iaido Sweep > Blade Flurry > Shuriken Toss.
+- **Necromancer**: 100: Withering Curse > Bone Shrapnel > Bone Spear.
 - **Lich**: 100: Withering Curse > Soul Rot > Bone Spear; 300: Withering Curse > Soul Rot > Life Siphon > Bone Spear.
 - **Bone Lord**: 100: Withering Curse > Bone Spear; 300: Withering Curse > Bone Offering > Bone Spear.
-- **Monk**: 100: Sundering Palm > Whirling Heel > Ashen Fist.
-- **Shadowfist**: 100: Pressure Points > Sundering Palm > Ashen Fist; 300: Pressure Points > Shadowfist Flurry >
-  Sundering Palm > Ashen Fist.
-- **Iron Sage**: 100: Sundering Palm > Whirling Heel > Ashen Fist.
-- **Templar**: 100: Consecration > Radiant Smite.
+- **Monk**: 100: Sundering Palm > Whirling Heel > Palm Shockwave > Ashen Fist.
+- **Shadowfist**: 100: Pressure Points > Sundering Palm > Palm Shockwave; 300: Pressure Points > Shadowfist Flurry >
+  Sundering Palm > Shadow Ricochet.
+- **Iron Sage**: 100: Sundering Palm > Whirling Heel > Palm Shockwave > Ashen Fist; 300: Sundering Palm > Palm Shockwave >
+  Iron Chain > Iron Palm.
+- **Templar**: 100: Consecration > Sanctified Ground > Radiant Smite.
 - **Inquisitor**: 100: Judgement > Consecration > Radiant Smite; 300: Judgement > Consecration > Purging Nova > Radiant
   Smite.
-- **Sentinel**: 100: Consecration > Radiant Smite.
+- **Sentinel**: 100: Consecration > Radiant Smite; 300: Consecration > Shield Wave > Radiant Smite.
 
 ## How existing characters move over
 
@@ -238,7 +242,8 @@ for free, at the migration.
   `Chaos.classes.ascension.choices` is keyed by base vocation, so the other base classes are added there in phase 2.
 - **Client** (`client/base-patches/0016-chaos-vocation-ids.patch`): bytes 6 / 16 / 26 become server ids 11 / 12 / 13; Thief, Ninja and
   Samurai are named wherever the client names vocations; the helper treats the line as its class 6.
-- **Kit**: 10 spells (ids 236, 238-245, and 98 Shadow Mend, the self heal of phase 2b; `server/data/spells/chaos/thief|ninja|samurai`), evasion, stealth, Poison Blades, scripted dual
+- **Kit**: 13 spells (ids 236, 238-245, 98 Shadow Mend, the self heal of phase 2b, the area strikes 192 Blade Flurry
+  and 193 Iaido Sweep of 2026-10-15, `_blades.lua`, and the Thief's Fan of Knives 136, `_packtools.lua`; `server/data/spells/chaos/thief|ninja|samurai`), evasion, stealth, Poison Blades, scripted dual
   wield, counter stance, Bushido stacks (`server/data/scripts/chaos/thief_combat.lua`). Spells, numbers and the balance measurement
   are in `server/data/spells/README.md` ("Thief line"). Shurikens are the base server's throwing star (2399) and assassin star (7368),
   open to every vocation already; the shuriken spells use them when they are in hand.
@@ -344,7 +349,7 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   gear, stock heals and mana potions (`add_vocations.py`). Locked behind the store's class unlock (`class_unlocks.lua`,
   key "necromancer").
 - **Ascension**: the Ascendant Oracle (`Chaos.classes.ascension.choices[20]`).
-- **Kit**: 9 spells (ids 180-188; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
+- **Kit**: 10 spells (ids 180-188 and the Necromancer's Bone Shrapnel 197 of 2026-10-15, `_packtools.lua`; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
   minions `necro_minions.lua`, curse and bone shield `necromancer_combat.lua`, engine helpers `necro_lib.lua`, pure
   rules `necro_core.lua` (tests `server/tests/necro_test.lua`), numbers `necro_config.lua`; minion monsters
   `server/data/monster/monsters/chaos/necro_*.xml` (looks: skeleton 33, ghost 48, demon skeleton 37). New-player kit: the
@@ -393,7 +398,7 @@ Open for the Necromancer:
 - **Chi**: a player storage (shared by the spells' and the scripts' Lua states) with the time of its last change; gone after 12 s untouched.
   +1 per melee hit (at most one per 2 s), +2 Ashen Fist, +1 Pressure Points; a finisher needs 1 chi and spends all of it, x(0.30 + 0.14 per
   chi) of its 5-chi value. HUD: client module `game_monkchi` (5 pips; extended opcode 247).
-- **Kit**: 10 spells (ids 63-72; `server/data/spells/chaos/monk|shadowfist|ironsage`, helpers `_monk.lua`), evasion (6% / 8% / 4%, +25% for
+- **Kit**: 13 spells (ids 63-72 and the pack strikes of 2026-10-15, `_packtools.lua`: Palm Shockwave 194 for all three, Shadow Ricochet 195, Iron Chain 196; `server/data/spells/chaos/monk|shadowfist|ironsage`, helpers `_monk.lua`), evasion (6% / 8% / 4%, +25% for
   2 s after Mistborne Step), the Shadowfist focus crit, Pressure Points, Chi Ward, Mantra of Stone and the Iron Palm stun in
   `monk_combat.lua`. Spells, numbers and the estimate are in `server/data/spells/README.md` ("Monk line"). Unit tests: `server/tests/monk_test.lua`,
   `server/tests/monk_pvp_stun_test.lua`, `client/overlay/modules/game_monkchi/chimath_test.lua`.
@@ -429,7 +434,7 @@ Skills: sword and club 1.1 (as the Warrior), axe and fist 1.2, distance 1.4, shi
 (`server/data/XML/chaos_vocations_templar.xml`, installed by `add_vocations.py`): one-handed swords and clubs, shields,
 everything the Warrior wears; potions of the Elite Knight and the Royal Paladin. New-player kit: the Warrior's.
 
-**Kit** (9 spells, ids 189-191, 198, 199, 250-253; numbers in `server/data/spells/README.md`, "Templar line"):
+**Kit** (11 spells, ids 189-191, 198, 199, 250-253 and the pack spells of 2026-10-15, Sanctified Ground 108 for the Templar and Shield Wave 109 for the Sentinel, `_packtools.lua`; numbers in `server/data/spells/README.md`, "Templar line"):
 - Passive, all three: **Defence aura**. Every second each Templar-line player covers itself and its party members on its floor
   within range: Templar 4 sqm, -6% damage taken; Inquisitor 3 sqm, -4%; Sentinel 5 sqm, -12% and 0.4% of the maximum health
   regenerated per second. Auras do not stack (the strongest counts). **Radiant Strikes**: every melee weapon hit is followed by a
@@ -440,7 +445,10 @@ everything the Warrior wears; potions of the Elite Knight and the Royal Paladin.
   3 sqm, heals 10% of the damage dealt, at most 5% max health per cast), Zealotry (20 s: each melee hit adds a stack, +4%
   damage per stack up to +40%, gone 3 s after the last hit).
 - Sentinel: Rebuke (taunt within 4 sqm, 25% slow), Aegis of Faith (with a shield: -40% damage taken for 5 s), Lay on Hands
-  (a party member or itself within 5 sqm: 35% of its maximum health + magic level x 10; 60 s cooldown).
+  (a party member or itself within 5 sqm: 35% of its maximum health + magic level x 10; 60 s cooldown), Shield Wave (a
+  Radiant Smite on the target and 2x it on everything in the 3 x 3 tiles in front, 2026-10-15).
+- Templar only: Sanctified Ground (3 holy pulses around the cast tile: the target a third of a Radiant Smite each, the
+  rest of the pack 2.5x it, 2026-10-15).
 
 Files: `templar_aura_core.lua` (every id and number, and the rules: aura, strikes, Judgement, Zealotry, heals; tested in
 `server/tests/templar_test.lua`), `templar_combat.lua` (the aura check, onHealthChange), the spells in
@@ -472,11 +480,11 @@ other classes' heals (numbers and the measurement: `server/data/spells/README.md
 - Open: the Necromancer line has the Mystic's stock heals (Circle of Mending, Kindred Mend, Heartwood Embrace) and is the
   second healer through them; worth a look when that line is balanced.
 
-### Class lock (C8: the store unlock)
+### Class lock (C8: the account unlock)
 
 The Necromancer, the Monk and the Templar can only be played on an account that has unlocked them. For now the unlock is
-bought in the store (category "Classes", 500 Chaos Coins each) or free for the account once one of its characters
-reaches level 500 (decided 2026-10-14, docs/PRICES.md). The owner may change the method
+free for the account once one of its characters reaches level 200 (since 2026-10-15; before, 500 Chaos Coins in the
+store or level 500; the classes are no longer sold, docs/PRICES.md). The owner may change the method
 later; it is one table, `ChaosClassUnlocksCore.config` in `server/data/scripts/chaos/class_unlocks_core.lua`:
 per class key the vocation ids, `locked`, and the unlock methods (`store`, `level`, `quest`, `achievement`, or a new kind
 registered with `registerMethod`), without touching the gate code.
@@ -508,7 +516,7 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 - **Who**: every base class with ascension choices, at `Chaos.classes.ascension.minLevel` (100). The lines and their two ascended
   classes are read at run time from `Chaos.classes.ascension.choices`, so Warrior, Ranger, Mystic, Thief, Monk, Necromancer and
   Templar all have it, and a new line works without code changes (it gets the default guardian until it has its own entry).
-- **The Ascendant Oracle**, an NPC placed next to the temple of the starting town (town 1 by default), starts and ends it.
+- **The Ascendant Oracle**, an NPC in the Hall of Services (the portal beside the temple) of the main city (Cinderhold, town 2) and of Mirewake (`npc.townIds`), starts and ends it.
   1. **The Calling**: talk to the Oracle ("ascension", "quest"); it describes the two paths of your class.
   2. **Proof of Strength**: 10 points from rare (1) and legendary (3) monsters at your level: the monster's hunting level
      (as the bounty pool estimates it) must be at least 0.6 x your level (a Hydra, 73, counts at level 100; a Dragon, 42, does not).
@@ -736,6 +744,21 @@ Necromancer 25% to 3 monsters; Monk, Iron Sage 20% to 3; Deadeye, Shadowfist 20%
 players or summons, no cleave from a cleave, not in the instanced modes (rifts, tower, Descent, arena). Experience per
 hour against the median class (pack model, 300 / 800 / 1000): the slowest classes now 0.78-0.90 (were 0.36-0.50); the
 strongest area classes (Elementalist, Mystic, Berserker, Beastmaster) stay at 1.3-1.6 (open: owner decision).
+
+Second pass (2026-10-15, owner: every class must farm packs comfortably; RNG and min-maxing decide the top; the top
+pack class keeps what it has, every other class is raised to about 0.92 of it; the classes that needed a large cleave
+get pack tools of their lore instead): the Thief line's area strikes Blade Flurry (all three, every monster within 2 sqm)
+and Iaido Sweep (Samurai), and the pack tools (`_packtools.lua`): Fan of Knives (Thief), Palm Shockwave (Monk line),
+Shadow Ricochet (Shadowfist), Iron Chain (Iron Sage), Bone Shrapnel (Necromancer), Sanctified Ground (Templar), Shield
+Wave (Sentinel). Each hits its target like the filler it replaces (a boss takes no more) and the rest of the pack 1-2.5x
+that; players never take the pack share. Every class but the Elementalist cleaves to 4 monsters, the share growing from
+level 300 to 1000: Juggernaut 15-26%, Deadeye 28-21%, Ranger 23-20%, Samurai 17-19%, Illusionist 12-17%, Shadowfist 16%,
+Templar 3-16%, Sentinel 6-16%, Iron Sage 11-15%, Necromancer 2-14%, Inquisitor 8-13%, Monk 6-12%, Thief 10-11%, Warrior
+6-11%, Ninja 12-6%, Lich 10-7%, Bone Lord 6%, Beastmaster 9-0%, Berserker 0-3%, Mystic 0-2%; a summon's hits cleave by
+its master's class. Experience per hour in packs (`server/tools/pack_model.py`): every class 0.93-0.96 of the
+Elementalist at 300, 800 and 1000 (was 0.47-1.00); leveling 1-1000 of the median class 169 h -> 132 h. Single-target and
+PvP damage unchanged (the cleave never hits a boss or a player; the new spells hit a lone target like the filler).
+Table: `server/data/spells/README.md` "Pack farming for every class".
 
 ### Phase 2b (open)
 

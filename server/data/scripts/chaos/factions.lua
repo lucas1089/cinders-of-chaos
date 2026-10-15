@@ -105,9 +105,12 @@ function F.ensureTables()
 	local ok = db.query("CREATE TABLE IF NOT EXISTS `" .. T.rep .. "` (`player_id` int(11) NOT NULL, " ..
 		"`faction` varchar(16) NOT NULL, `rep` int(11) NOT NULL DEFAULT 0, `day` int(10) unsigned NOT NULL DEFAULT 0, " ..
 		"`day_gain` int(11) NOT NULL DEFAULT 0, `week` int(10) unsigned NOT NULL DEFAULT 0, " ..
-		"`week_gain` int(11) NOT NULL DEFAULT 0, `exalted_at` int(10) unsigned NOT NULL DEFAULT 0, " ..
+		"`week_gain` int(11) NOT NULL DEFAULT 0, `week_bank` int(11) NOT NULL DEFAULT 0, " ..
+		"`exalted_at` int(10) unsigned NOT NULL DEFAULT 0, " ..
 		"`total` int(11) NOT NULL DEFAULT 0, PRIMARY KEY (`player_id`, `faction`), " ..
 		"FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8")
+	-- the weekly cap carries over (factions_config.lua rolloverWeeks, 2026-10-15): tables made before keep their rows
+	ok = db.query("ALTER TABLE `" .. T.rep .. "` ADD COLUMN IF NOT EXISTS `week_bank` int(11) NOT NULL DEFAULT 0") and ok
 	ok = db.query("CREATE TABLE IF NOT EXISTS `" .. T.contracts .. "` (`player_id` int(11) NOT NULL, " ..
 		"`period` varchar(12) NOT NULL, `faction` varchar(16) NOT NULL, `slot` tinyint(3) unsigned NOT NULL, " ..
 		"`level` int(11) NOT NULL DEFAULT 1, `progress` int(11) NOT NULL DEFAULT 0, `done` tinyint(1) NOT NULL DEFAULT 0, " ..
@@ -177,12 +180,12 @@ local function stateOf(player)
 		return P
 	end
 	for _, r in ipairs(Chaos.select(string.format("SELECT `faction`, `rep`, `day`, `day_gain`, `week`, `week_gain`, " ..
-			"`exalted_at`, `total` FROM `%s` WHERE `player_id` = %d", T.rep, guid),
+			"`week_bank`, `exalted_at`, `total` FROM `%s` WHERE `player_id` = %d", T.rep, guid),
 			{{"faction", "s"}, {"rep", "n"}, {"day", "n"}, {"day_gain", "n"}, {"week", "n"}, {"week_gain", "n"},
-			{"exalted_at", "n"}, {"total", "n"}})) do
+			{"week_bank", "n"}, {"exalted_at", "n"}, {"total", "n"}})) do
 		if idx.byKey[r.faction] then
 			P.st[r.faction] = {rep = r.rep, day = r.day, dayGain = r.day_gain, week = r.week, weekGain = r.week_gain,
-				exalted = r.exalted_at, total = r.total, carry = 0}
+				bank = r.week_bank or 0, exalted = r.exalted_at, total = r.total, carry = 0}
 		end
 	end
 	for _, r in ipairs(Chaos.select(string.format("SELECT `period`, `faction`, `slot`, `level`, `progress`, `done` FROM `%s` " ..
@@ -208,11 +211,12 @@ local function saveEntry(P, key)
 		return
 	end
 	db.asyncQuery(string.format("INSERT INTO `%s` (`player_id`, `faction`, `rep`, `day`, `day_gain`, `week`, `week_gain`, " ..
-		"`exalted_at`, `total`) VALUES (%d, %s, %d, %d, %d, %d, %d, %d, %d) ON DUPLICATE KEY UPDATE `rep` = VALUES(`rep`), " ..
-		"`day` = VALUES(`day`), `day_gain` = VALUES(`day_gain`), `week` = VALUES(`week`), `week_gain` = VALUES(`week_gain`), " ..
-		"`exalted_at` = VALUES(`exalted_at`), `total` = VALUES(`total`)", T.rep, P.guid, db.escapeString(key),
+		"`week_bank`, `exalted_at`, `total`) VALUES (%d, %s, %d, %d, %d, %d, %d, %d, %d, %d) ON DUPLICATE KEY UPDATE " ..
+		"`rep` = VALUES(`rep`), `day` = VALUES(`day`), `day_gain` = VALUES(`day_gain`), `week` = VALUES(`week`), " ..
+		"`week_gain` = VALUES(`week_gain`), `week_bank` = VALUES(`week_bank`), `exalted_at` = VALUES(`exalted_at`), " ..
+		"`total` = VALUES(`total`)", T.rep, P.guid, db.escapeString(key),
 		math.floor(e.rep), e.day or 0, math.floor(e.dayGain or 0), e.week or 0, math.floor(e.weekGain or 0),
-		e.exalted or 0, math.floor(e.total or 0)))
+		math.floor(e.bank or 0), e.exalted or 0, math.floor(e.total or 0)))
 end
 
 local function flush(P)
@@ -592,7 +596,8 @@ function F.onKill(creature, corpse, killer, mostDamage)
 	local td = cfg.tokenDrop
 	if owner and (e.level or 0) >= td.minMonsterLevel and (e.level or 0) >= math.floor(owner:getLevel() * cfg.sources.kill.minLevelShare)
 			and math.random(1, 10000) <= K.tokenChance(cfg, tier)
-				* (ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(creature) or 1) then
+				* (ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(creature) or 1)
+				* (ChaosCatchup and ChaosCatchup.tokenMult and ChaosCatchup.tokenMult(owner) or 1) then
 		local tok = cfg.tokens[fkey]
 		local placed = false
 		if corpse and corpse.isContainer and corpse:isContainer() then
@@ -753,8 +758,8 @@ function F.installHooks()
 	local W = ChaosWorldBoss
 	if W and W.computeRewards and not W.factionsWrapped then
 		local original = W.computeRewards
-		W.computeRewards = function(shares, r, boss, pool, rng)
-			local out = original(shares, r, boss, pool, rng)
+		W.computeRewards = function(shares, r, boss, pool, rng, pityOf)
+			local out = original(shares, r, boss, pool, rng, pityOf)
 			if cfg.enabled then
 				try("world boss hook", F.onWorldBoss, shares, boss)
 			end
@@ -814,9 +819,9 @@ function F.turnIn(player, fkey, n)
 		return
 	end
 	local P = stateOf(player)
-	local e = K.roll(P.st[fkey] or K.newEntry(cfg), day(), week())
+	local e = K.roll(P.st[fkey] or K.newEntry(cfg), day(), week(), cfg)
 	P.st[fkey] = e
-	if e.weekGain >= cfg.weeklyCap or e.rep >= cfg.rep.max then
+	if e.weekGain >= K.weekCap(cfg, e) or e.rep >= cfg.rep.max then
 		return msg(player, Chaos.t(player, "%s cannot reward you more this week. Keep your tokens.", f.name))
 	end
 	local tok = cfg.tokens[fkey]

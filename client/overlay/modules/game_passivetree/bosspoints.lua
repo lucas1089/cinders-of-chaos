@@ -8,8 +8,19 @@ function getBossPointsState()
   return bossPointsState
 end
 
+-- the tooltip: the rule, where the kills come from (world boss events, pocket bosses, the other bosses), then every
+-- boss slain or not
 local function tooltipOf(data)
-  local lines = {'First kill of each major boss: +1 passive point (kept through resets).'}
+  local lines = {
+    tr('First kill of each major boss: +1 passive point (kept through resets).'),
+    tr('Where to get them:'),
+    tr('- World bosses: the event every 6 hours (portals by the temples, level 300).'),
+    tr('- Pocket bosses: a private copy any time, Adventure > Boss Spawns (daily charges).'),
+    tr('- The Trial Warden: win your Ascension Trial (level 100).'),
+    tr('- The others: their spawns in Adventure > Boss Spawns.'),
+    tr('Your party counts: any kill you helped with gives the point.'),
+    '',
+  }
   for _, boss in ipairs(type(data.bosses) == 'table' and data.bosses or {}) do
     lines[#lines + 1] = string.format('%s %s', boss.done and '[x]' or '[  ]', tostring(boss.label or boss.name or '?'))
   end

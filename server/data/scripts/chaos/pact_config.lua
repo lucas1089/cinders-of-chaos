@@ -82,9 +82,12 @@ return {
 		-- server's own autoloot callback (data/scripts/creaturescripts/autoloot.lua, 10 free / 20 premium) does.
 		-- Keep free + pact at most 20, or raise that callback's premium limit too.
 		lootRules = {label = "Loot rules (autoloot list)", free = 10, pact = 10, maxExtra = 0, premiumCounts = true},
-		charSlots = {label = "Character slots", free = 5, pact = 0, maxExtra = 10}
+		charSlots = {label = "Character slots", free = 5, pact = 0, maxExtra = 10},
+		-- remote stash deposit (owner 2026-10-15; stash_config.lua remoteDeposit): deposit from anywhere while > 0;
+		-- the Pact lends it, the store sells it once (withdraw stays in town for everybody)
+		stashRemote = {label = "Remote stash deposit", free = 0, pact = 1, maxExtra = 1}
 	},
-	order = {"stashTabs", "depotTabs", "marketListings", "marketAccount", "buildSlots", "lootRules", "charSlots"},
+	order = {"stashTabs", "stashRemote", "depotTabs", "marketListings", "marketAccount", "buildSlots", "lootRules", "charSlots"},
 
 	-- stash tabs: stash_config.lua (tab size, the affinity tabs and which extra, Pact or achievement owns each)
 
@@ -103,6 +106,7 @@ return {
 		stashMaterials = {max = 1, name = "Materials Stash Tab"},
 		stashProducts = {max = 1, name = "Creature Products Stash Tab"},
 		stashCosmetics = {max = 1, name = "Collectibles Stash Tab"},
+		stashRemote = {limit = "stashRemote", name = "Remote Stash Deposit"}, -- stash_config.lua remoteDeposit
 		charSlots = {limit = "charSlots", name = "Character Slot"},
 		buildSlots = {limit = "buildSlots", name = "Build Slot"}
 	},
@@ -126,7 +130,7 @@ return {
 			name = "Chaos Pact", icon = {item = 16101},
 			offers = {
 				{kind = "service", service = "pact", key = "service:pact:30", icon = 16101, cost = 300, name = "Chaos Pact (30 days)",
-					description = "30 days, stacks: +10% XP, stamina x1.5, +1 loadout, Auto Seller, monthly cosmetic."}
+					description = "30 days, stacks: +10% XP, stamina x1.5, remote stash deposit, Auto Seller, cosmetic."}
 			}
 		},
 		storage = {
@@ -153,6 +157,9 @@ return {
 					description = "Permanent: an affinity stash tab for creature products (lent by the Pact)."},
 				{kind = "service", service = "pactExtra", extra = "stashCosmetics", key = "service:pactExtra:stashCosmetics", icon = 5929, cost = 100, name = "Collectibles Stash Tab",
 					description = "Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)."},
+				-- remote stash deposit (owner 2026-10-15; stash_config.lua remoteDeposit): PLACEHOLDER price (docs/OWNER_TODO.md)
+				{kind = "service", service = "pactExtra", extra = "stashRemote", key = "service:pactExtra:stashRemote", icon = 2365, cost = 300, name = "Remote Stash Deposit",
+					description = "Permanent, account-wide: deposit into the stash from anywhere. Pact: included."},
 				{kind = "service", service = "pactExtra", extra = "charSlots", key = "service:pactExtra:charSlots", icon = 1949, cost = 250, name = "Character Slot",
 					description = "Permanent: one more character on your account, created on the website. Up to 10."},
 				{kind = "service", service = "pactExtra", extra = "buildSlots", key = "service:pactExtra:buildSlots", icon = 18559, cost = 100, name = "Build Slot",

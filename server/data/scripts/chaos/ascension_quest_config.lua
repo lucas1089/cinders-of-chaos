@@ -11,7 +11,7 @@ return {
 	npc = {
 		name = "Ascendant Oracle",
 		spawn = true,
-		townIds = {1},
+		townIds = {2, 1}, -- the main city (Cinderhold) first, then Mirewake (server/README.md "Main city")
 		positions = {},
 		offsets = {{2, -2}, {-2, -2}, {2, 2}, {-2, 2}, {3, 0}, {-3, 0}, {0, -3}, {0, 3}, {1, -2}, {-1, -2}},
 		-- the confirmations (modal windows) only work this close to the Oracle

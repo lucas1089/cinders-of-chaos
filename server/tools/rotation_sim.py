@@ -48,6 +48,8 @@ STOCK_CSV = os.path.join(SPELLS, 'stock_spells.csv')
 MODEL_CSV = os.path.join(SPELLS, 'rotation_model.csv')
 TEMPLAR_CORE = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'templar_aura_core.lua')
 TOSS_SCRIPT = os.path.join(SPELLS, 'chaos', 'thief', 'shuriken_toss.lua')
+BLADES = os.path.join(SPELLS, 'chaos', '_blades.lua')
+PACKTOOLS = os.path.join(SPELLS, 'chaos', '_packtools.lua')
 CLIENT_DATA = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
 
 GCD = 2.0                     # the attack group cooldown of nearly every attack spell
@@ -109,7 +111,9 @@ def stats(cls, level):
     p = sk * (fist if kind == 'fist' else atk)
     return {'L': float(level), 'l': level / 5.0, 'ML': ml, 'SK': sk, 'ATK': atk, 'P': p, 'FIST': fist,
             'BITE': 0.12 * level + 0.6 * sk, 'PETS': 2 if level >= 400 else 1, 'cls': cls,
-            'SMITE': smite_for(cls, level), 'TOSS': toss_for(cls, level)}
+            'SMITE': smite_for(cls, level), 'TOSS': toss_for(cls, level), 'FLURRY': flurry_for(cls, level),
+            'SWEEP': sweep_scale(), 'OFFHAND': OFFHAND.get(cls, 1.0), 'FAN': pack_scale('fan'),
+            'SANCT': pack_scale('sanctified'), 'WAVE': pack_scale('shieldWave')}
 
 
 def smite_for(cls, level):
@@ -147,6 +151,43 @@ def toss_for(cls, level):
     if e and level < e[0]:
         return e[1]
     return scale.get(VOC[cls], default)
+
+
+# the Ninja's off-hand strike after each melee weapon strike: 50% of it (two blades of the same attack), README "Thief line"
+OFFHAND = {'Ninja': 1.5}
+
+
+@functools.lru_cache(maxsize=None)
+def blades_cfg(key, path=None):
+    """a block of ChaosBlades.cfg (chaos/_blades.lua) or ChaosPackTools.cfg (chaos/_packtools.lua, path=PACKTOOLS):
+    ({voc: scale}, {voc: (below, scale)}, default or the scale)"""
+    text = open(path or BLADES, encoding='utf-8').read()
+    block = re.search(r'\b' + key + r'\s*=\s*\{(.*?)\n\t\},', text, re.S).group(1)
+    m = re.search(r'\bscale\s*=\s*\{([^}]*)\}', block)
+    e = re.search(r'\bearly\s*=\s*(\{.*?\}\s*\})', block, re.S)
+    d = re.search(r'\bdefaultScale\s*=\s*([0-9.]+)', block) or re.search(r'^\s*scale\s*=\s*([0-9.]+)', block, re.M)
+    scale = {int(k): float(v) for k, v in re.findall(r'\[(\d+)\]\s*=\s*([0-9.]+)', m.group(1))} if m else {}
+    return scale, early_scales(e.group(1)) if e else {}, float(d.group(1)) if d else 1.0
+
+
+def flurry_for(cls, level):
+    """Blade Flurry's class scale (ChaosBlades.cfg.flurry)"""
+    scale, early, default = blades_cfg('flurry')
+    e = early.get(VOC[cls])
+    if e and level < e[0]:
+        return e[1]
+    return scale.get(VOC[cls], default)
+
+
+def pack_scale(key, cls=None):
+    """the scale of a pack tool (ChaosPackTools.cfg.<key>): the class's when the block has a table"""
+    scale, _, default = blades_cfg(key, PACKTOOLS)
+    return scale.get(VOC[cls], default) if cls else default
+
+
+def sweep_scale():
+    """Iaido Sweep's scale (ChaosBlades.cfg.sweep)"""
+    return blades_cfg('sweep')[2]
 
 
 def smite_scale():

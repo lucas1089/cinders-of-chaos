@@ -1,0 +1,56 @@
+// Next Goals tracker HUD (game_goals): the first open goals of the character, at the left edge of the visible map,
+// half way down (the other HUDs: top left character plate, rift and invasion; top centre siege, arena and monster bar;
+// top right toasts; bottom right the task tracker; bottom centre monk chi). Click the title to fold it, a row to open
+// the Next Goals window; the window's "Tracker on screen" box (or Adventure > Goal Tracker) hides it.
+GoalTrackerRow < UIWidget
+  height: 26
+  phantom: false
+  focusable: false
+
+  UILabel
+    id: label
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    text-align: left
+    font: verdana-11px-antialised
+    color: #e8dcc2
+    phantom: true
+
+  ChaosProgressBar
+    id: bar
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: label.bottom
+    margin-top: 1
+    height: 6
+    background-color: #a3844b
+    phantom: true
+
+ChaosPanelDark
+  id: goalsTracker
+  width: 220
+  padding: 6
+  focusable: false
+  visible: false
+  opacity: 0.92
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  UILabel
+    id: title
+    height: 16
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    !text: tr('Next Goals')
+    phantom: false
+    @onClick: modules.game_goals.foldTracker()
+
+  UIWidget
+    id: rows
+    phantom: true
+    layout:
+      type: verticalBox
+      fit-children: true

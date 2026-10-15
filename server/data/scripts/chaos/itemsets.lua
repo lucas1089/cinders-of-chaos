@@ -529,7 +529,27 @@ function S.grantChase(player, source, key, ctx, rand)
 	if not ctx.itemFind then
 		ctx.itemFind = ChaosLoot and ChaosLoot.itemFindMult and ChaosLoot.itemFindMult(player) or 1
 	end
+	-- bad-luck protection (conquest.lua, group "set"): the chances x the character's multiplier; a roll that could drop
+	-- a piece records a miss or a hit
+	local CQ = ChaosConquest
+	local eligible = false
+	if CQ and CQ.pityMult and CQ.pityRecord then
+		for _, set in ipairs(S.sets or {}) do
+			if S.chaseChance(set, source, key, ctx) > 0 then
+				eligible = true
+				break
+			end
+		end
+	end
+	local base = ctx.itemFind
+	if eligible then
+		ctx.itemFind = base * CQ.pityMult(player, "set")
+	end
 	local hit = S.rollChase(source, key, ctx, rand)
+	ctx.itemFind = base
+	if eligible then
+		CQ.pityRecord(player, "set", hit ~= nil, hit and hit.piece.id or nil)
+	end
 	if not hit then
 		return nil
 	end

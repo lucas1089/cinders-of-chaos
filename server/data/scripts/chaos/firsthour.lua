@@ -43,8 +43,32 @@ function F.langOf(player)
 	return (hooked == "pt" or hooked == "pt-BR") and "pt" or "en"
 end
 
--- the hunting marks of the player's level nearest its temple, added to its map discoveries -> their short names
+-- the content hunts of the teleport room of Cinderhold for the player's level -> "Name (lo-hi)" names. The placed
+-- plans (hunt_teleports.lua) when they are there, else the list of goals_config.lua.
+function F.planNames(level)
+	local list = ChaosHuntTeleports and ChaosHuntTeleports.idx and ChaosHuntTeleports.idx.list
+	if not list or #list == 0 then
+		local gc = Chaos.goalsConfig
+		if not gc then
+			local ok, t = pcall(dofile, "data/scripts/chaos/goals_config.lua")
+			gc = ok and t or nil
+		end
+		list = gc and gc.hunts or {}
+	end
+	return M.pickPlans(list, level)
+end
+
+-- the hunting marks of the player's level nearest its temple, added to its map discoveries, and the content hunts of
+-- the teleport room for its level -> their short names
 function F.revealHunts(player)
+	local names = F.revealMarks(player)
+	for _, n in ipairs(F.planNames(player:getLevel())) do
+		names[#names + 1] = n
+	end
+	return names
+end
+
+function F.revealMarks(player)
 	local P = ChaosPoi
 	if not P or not P.all or not P.key or not P.seen then
 		return {}
@@ -103,6 +127,28 @@ function F.run(player)
 	player:setStorageValue(key("hints"), hmask)
 end
 
+-- hints and reveals added to the config since the character's last login: the ones of levels it already passed are
+-- marked given, silently; the rest come at their level
+function F.sync(player)
+	local c, level = C(), player:getLevel()
+	local legacy = c.legacy or {}
+	local function known(name, fallback)
+		local v = player:getStorageValue(key(name))
+		return v >= 0 and v or fallback
+	end
+	local hk, rk = known("hintsKnown", legacy.hints or 0), known("revealsKnown", legacy.reveals or 0)
+	if hk < #c.hints then
+		player:setStorageValue(key("hints"), M.sync(player:getStorageValue(key("hints")), hk, #c.hints,
+			function(i) return c.hints[i].level end, level))
+	end
+	if rk < #c.revealAt then
+		player:setStorageValue(key("reveals"), M.sync(player:getStorageValue(key("reveals")), rk, #c.revealAt,
+			function(i) return c.revealAt[i] end, level))
+	end
+	player:setStorageValue(key("hintsKnown"), #c.hints)
+	player:setStorageValue(key("revealsKnown"), #c.revealAt)
+end
+
 local login = CreatureEvent("ChaosFirstHourLogin")
 function login.onLogin(player)
 	if not C() or not C().enabled then
@@ -110,12 +156,16 @@ function login.onLogin(player)
 	end
 	player:registerEvent("ChaosFirstHourAdvance")
 	if player:getStorageValue(key("hints")) < 0 then
+		player:setStorageValue(key("hintsKnown"), #C().hints)
+		player:setStorageValue(key("revealsKnown"), #C().revealAt)
 		if player:getLevel() > C().quietAbove then
 			player:setStorageValue(key("hints"), M.all(#C().hints))
 			player:setStorageValue(key("reveals"), M.all(#C().revealAt))
 			return true
 		end
 		player:setStorageValue(key("hints"), 0)
+	else
+		F.sync(player)
 	end
 	-- the first hint waits for the kit (the tutorial island gives it when the character leaves)
 	local pid = player:getId()

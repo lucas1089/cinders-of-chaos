@@ -4,7 +4,8 @@
 --                            bands = [{index, label, own, contracts = [{key, type, name, count, tier, level, look,
 --                            outfit, reward = {gold, chaos, divine, exp}, state = open|active|done, progress}]}]}
 --                     progress {key, progress, count, state}
---   client -> server  open | accept {key} | abandon {key}
+--   client -> server  open | accept {key} | abandon {key} | reroll {key}
+--   board.rerolls: bounty rerolls held (bought with Candlemarks); an active contract then shows a Reroll button
 -- The top menu (Adventure > Bounty Board) calls toggle().
 
 local OPCODE = 223
@@ -137,6 +138,13 @@ local function updateRow(row, c)
     elseif state == 'active' then
       send('abandon', { key = c.key })
     end
+  end
+  local rerolls = board and tonumber(board.rerolls) or 0
+  if row.reroll then
+    row.reroll:setVisible(state == 'active' and rerolls > 0)
+    row.reroll:setText(tr('Reroll (%d)', rerolls))
+    row.reroll:setTooltip(tr('Another monster for this contract (its progress is lost).'))
+    row.reroll.onClick = function() send('reroll', { key = c.key }) end
   end
 end
 

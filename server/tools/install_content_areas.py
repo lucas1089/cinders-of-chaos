@@ -8,9 +8,10 @@ DATA_DIR is the server's data folder. Read at run time, never hard-coded: every 
 (size, origin, arrival) and server/data/scripts/chaos/hunt_teleports_config.lua (the room, the order of the plans and
 their display monsters; read through tools/hunt_teleports_dump.lua with luajit, or $LUA).
 Fixed areas: every plan of server/tools/areaplan/chronicle/ (the Ashen Chronicle's chapter areas and the Capital
-Memorial's plaza) is placed the same way at its own `origin`, with its spawns and chest script, but gets no teleport and
-no line in the places file: its way in is a runtime portal of its own (chronicle_config.lua `areas` gate,
-memorial_config.lua `plaza.portal`; tools/chronicle_areas_test.py checks that their `at` is the plan's origin).
+Memorial's plaza) and of server/tools/areaplan/rooms/ (the Idle Hall) is placed the same way at its own `origin`, with
+its spawns and chest script, but gets no teleport and no line in the places file: its way in is a runtime portal of its
+own (chronicle_config.lua `areas` gate, memorial_config.lua `plaza.portal`; tools/chronicle_areas_test.py checks that
+their `at` is the plan's origin) or, for the Idle Hall, idlehall.lua's move (tools/idle_hall_test.py).
 --no-fixed leaves them out.
 
 Steps (server/README.md "Hunt teleports"; docs/MAP_GUIDE.md "Content plans"):
@@ -45,7 +46,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'map'))
 
 PLANS_DIR = os.path.join(HERE, 'areaplan', 'plans')
-FIXED_DIRS = (os.path.join(HERE, 'areaplan', 'chronicle'),)
+FIXED_DIRS = (os.path.join(HERE, 'areaplan', 'chronicle'), os.path.join(HERE, 'areaplan', 'rooms'))
 CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'hunt_teleports_config.lua')
 PLACES_REL = os.path.join('lib', 'chaos_hunt_places.lua')
 

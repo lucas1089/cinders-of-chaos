@@ -340,7 +340,9 @@ end
 -- places, bank, items = {{id, count}}, gear, gearRarity, unique, titles = {{key, text, color, place, name}}}.
 -- r = Chaos.worldBoss.reward: base items for everyone, pool split by share, r.podium.categories[i].rewards[place]
 -- for the top 3 of each category, plus their title and an extra unique chance (one unique at most per player).
-function W.computeRewards(shares, r, boss, uniquePool, rng)
+-- pityOf (optional, conquest.lua bad-luck protection): pityOf(guid) -> the multiplier on every unique chance of that
+-- player; a reward then carries pityRolled = true (the unique was rolled: the caller records the miss or the hit)
+function W.computeRewards(shares, r, boss, uniquePool, rng, pityOf)
 	rng = rng or math.random
 	uniquePool = uniquePool or {}
 	local cats = r.podium and r.podium.categories or {}
@@ -386,12 +388,17 @@ function W.computeRewards(shares, r, boss, uniquePool, rng)
 			reward.gearRarity = rng(lo, math.max(lo, hi))
 		end
 		if #uniquePool > 0 then
-			local won = rng(10000) <= (r.uniqueChance or 0) + math.floor((r.uniqueShareBonus or 0) * s.share)
+			local mult = pityOf and tonumber(pityOf(s.guid)) or 1
+			if mult ~= mult or mult < 1 then
+				mult = 1
+			end
+			reward.pityRolled = pityOf ~= nil or nil
+			local won = rng(10000) <= math.floor(((r.uniqueChance or 0) + math.floor((r.uniqueShareBonus or 0) * s.share)) * mult)
 			for _, chance in ipairs(uniqueRolls) do
 				if won then
 					break
 				end
-				won = chance > 0 and rng(10000) <= chance
+				won = chance > 0 and rng(10000) <= math.floor(chance * mult)
 			end
 			if won then
 				reward.unique = uniquePool[rng(#uniquePool)]
@@ -899,7 +906,21 @@ local function distribute()
 	local minPercent = c.reward.minScorePercent or c.reward.minDamagePercent
 	local shares, total = W.computeShares(state.stats or {}, state.maxHealth or 0, minPercent, excluded, c.roles)
 	local podium = W.placeRoles(shares, c.reward.podium, state.maxHealth or 0)
-	local rewards = W.computeRewards(shares, c.reward, boss, W.uniquePool(boss.name))
+	-- bad-luck protection (conquest.lua): the participation unique chance x the player's "boss" multiplier
+	local CQ = ChaosConquest
+	local pityOf = nil
+	if CQ and CQ.pityMult and CQ.pityRecord then
+		pityOf = function(guid)
+			for _, s in ipairs(shares) do
+				local p = s.guid == guid and Player(s.name)
+				if p and p:getGuid() == guid then
+					return CQ.pityMult(p, "boss")
+				end
+			end
+			return 1
+		end
+	end
+	local rewards = W.computeRewards(shares, c.reward, boss, W.uniquePool(boss.name), nil, pityOf)
 	local LB = ChaosLeaderboard
 	if LB and LB.recordShares then LB.recordShares(shares) end -- leaderboard.lua (World Boss: damage, kills)
 	local boards = c.roles.boards or {}
@@ -923,6 +944,14 @@ local function distribute()
 	for _, r in ipairs(rewards) do
 		local player = Player(r.name)
 		if player and player:getGuid() == r.guid then
+			if r.pityRolled and CQ and CQ.pityRecord then
+				-- a set piece of the pool resets the "set" group, any other boss unique the "boss" group
+				local e = r.unique and ChaosUniqueById and ChaosUniqueById[r.unique]
+				CQ.pityRecord(player, "boss", r.unique ~= nil and not (e and e.set), r.unique)
+				if e and e.set then
+					CQ.pityRecord(player, "set", true, r.unique)
+				end
+			end
 			W.deliver(player, r)
 			-- exclusives.lua: the rare personal drop of a visual exclusive (rewarded players online at the kill)
 			if ChaosExclusives and ChaosExclusives.worldBossKill then pcall(ChaosExclusives.worldBossKill, player, boss.name) end

@@ -65,11 +65,15 @@ return {
 	},
 	maxCombine = 10, -- orbs made by one click
 
-	-- uniques are never salvaged: they are chase items with their own drop table and no rarity tier to price them
+	-- uniques are not salvaged for their rarity (they have none) ...
 	allowUniques = false,
-	-- except item set pieces (data/lib/chaos_item_sets.lua): duplicates are common enough, each gives this many shards
+	-- ... but item set pieces (data/lib/chaos_item_sets.lua): duplicates are common enough, each gives this many shards
 	-- (about a Mythic drop; no orb chance beyond the Common one)
 	setPieceShards = 8,
+	-- ... and, with Conquest Tokens loaded (conquest.lua), every unique: a share of its Conquest vendor price in tokens
+	-- (conquest_config.lua salvage: 10%, at least 25) plus uniqueShards rune shards (a set piece keeps setPieceShards)
+	uniqueTokens = true,
+	uniqueShards = 4,
 
 	-- "salvage all": items of rarity <= maxRarity directly inside one container (the backpack or one bag in it),
 	-- at most batchCap items per action

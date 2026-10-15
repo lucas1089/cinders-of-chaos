@@ -50,13 +50,19 @@ return {
 	},
 
 	-- weekly bonus: completing this many contracts in one bounty week (Monday rollHour to Monday rollHour) gives a
-	-- chest (a present box renamed) with the band's "weekly" orbs inside
-	weeklyNeed = 7,
+	-- chest (a present box renamed) with the band's "weekly" orbs inside. 4 (was 7, 2026-10-15, respect the players'
+	-- time): about two short sessions a week earn it; a contract is 60-200 kills, about 15-25 minutes
+	weeklyNeed = 4,
 	weeklyChestId = 1990,
 	weeklyChestName = "bounty chest",
 	-- crafting orbs added to every weekly chest (data/lib/chaos_crafting.lua); {} for none
 	weeklyExtra = {{id = 29851, count = 3, name = "Orbs of Awakening"}, {id = 24697, count = 1, name = "Orb of Unmaking"},
 		{id = 32256, count = 5, name = "Whetstones"}, {id = 32251, count = 2, name = "Orbs of Tempering"}},
 
-	items = {chaos = 29856, divine = 29857}
+	items = {chaos = 29856, divine = 29857},
+
+	-- rerolls (2026-10-15): charges bought in the Candlemarks shop (ChaosBounty.addRerolls); one gives an accepted contract
+	-- another monster of its band and type. Player storage (lent from the catchup block 7102400-7102409, server/README.md
+	-- "Storage keys")
+	rerollStorage = 7102403
 }

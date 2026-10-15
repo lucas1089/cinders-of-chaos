@@ -7,7 +7,7 @@
 --                      ChaosItemMods.config.bind.max per item); only an Orb of Erasure frees it (and wipes the item)
 --   Orb of Excision    removes the modifier you choose on the bench (a random one that is not bound by use-with; Rift Keys too)
 --   Orb of Reforging   rolls the tier (by the item level) and the value of one modifier you choose again
---   Orb of Ruin        the gamble: improve / nothing / ruined, the odds in ChaosOrbsConfig.ruin
+--   Orb of Ruin        the gamble: improve / nothing (ruined only while ChaosOrbsConfig.ruin.ruin > 0; 0 since 2026-10-15)
 --   Whetstone          +1% quality up to 20% (30% from Divine rarity): every modifier value is multiplied
 -- The orbs that take a modifier (`pick`) are aimed with opts.mod = the modifier's attribute key (the bench's picker);
 -- without one they pick at random among the modifiers they may act on. Tested by server/tests/crafting_test.lua.
@@ -264,8 +264,9 @@ local function register()
 	-- Orb of Ruin
 	it = itemOf("ruin")
 	C.addOrb({key = "ruin", id = it.id, name = it.name,
-		text = string.format("A gamble: %d%% it improves (a tier more on every unbound modifier, or an extra one), %d%% nothing, %d%% ruined for good.",
-			R.improve, R.nothing, R.ruin),
+		text = R.ruin > 0 and string.format("A gamble: %d%% it improves (a tier more on every unbound modifier, or an extra one), %d%% nothing, %d%% ruined for good.",
+			R.improve, R.nothing, R.ruin) or string.format("A gamble: %d%% it improves (a tier more on every unbound modifier, or an extra one), %d%% nothing happens. It never ruins the item.",
+			R.improve, R.nothing),
 		check = function(item)
 			local ok, why = needRarity(item)
 			if not ok then
@@ -280,7 +281,10 @@ local function register()
 			return O.ruin(item)
 		end,
 		preview = function(item)
-			return string.format("%d%% improves, %d%% nothing, %d%% ruined", R.improve, R.nothing, R.ruin)
+			if R.ruin > 0 then
+				return string.format("%d%% improves, %d%% nothing, %d%% ruined", R.improve, R.nothing, R.ruin)
+			end
+			return string.format("%d%% improves, %d%% nothing", R.improve, R.nothing)
 		end})
 
 	-- Whetstone
@@ -381,7 +385,7 @@ function O.ruin(item)
 			return true, {item = item, outcome = "improve", kind = kind, text = string.format("%s improved: %s.", name, text)}
 		end
 		return true, {item = item, outcome = "nothing", text = string.format("%s: nothing left to improve, nothing happened.", name)}
-	elseif outcome == "ruin" then
+	elseif outcome == "ruin" and (O.config.ruin.ruin or 0) > 0 then
 		item:setCustomAttribute(M.RUINED, 1)
 		C.rewriteDescription(item)
 		return true, {item = item, outcome = "ruin", text = string.format("%s is ruined: no orb can change it any more.", name)}

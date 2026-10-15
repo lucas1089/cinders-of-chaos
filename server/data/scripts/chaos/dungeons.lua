@@ -83,8 +83,11 @@ local function cooldownStorage()
 	return s and (s.timerCooldown or s.TimerCooldown) or nil
 end
 
-local function cooldownSeconds()
-	return (DUNGEON_SYSTEM and DUNGEON_SYSTEM.CooldownTime) or 3600
+local function cooldownSeconds(success)
+	if success == false and tonumber(cfg.failCooldownSeconds) then
+		return tonumber(cfg.failCooldownSeconds)
+	end
+	return tonumber(cfg.cooldownSeconds) or (DUNGEON_SYSTEM and DUNGEON_SYSTEM.CooldownTime) or 3600
 end
 
 local function extraOf(id)
@@ -602,10 +605,14 @@ local function cleanArea(id, dg, bossName)
 	end
 end
 
-local function setCooldown(player)
+-- success: the run was cleared. Chaos.dungeons cooldownOnSuccess / cooldownOnFail decide (by default only a clear)
+local function setCooldown(player, success)
+	if success and cfg.cooldownOnSuccess == false or not success and not cfg.cooldownOnFail then
+		return
+	end
 	local storage = cooldownStorage()
 	if storage then
-		player:setStorageValue(storage, os.time() + cooldownSeconds())
+		player:setStorageValue(storage, os.time() + cooldownSeconds(success and true or false))
 	end
 end
 
@@ -630,9 +637,7 @@ local function endRun(run, success, reason)
 					p:popupFYI(Chaos.t(p, reason or baseMessage("ToFail", "You were unable to complete the dungeon in time.")))
 				end
 			end
-			if not success or cfg.cooldownOnSuccess then
-				setCooldown(p)
-			end
+			setCooldown(p, success)
 		end
 		for guid in pairs(run.members) do
 			releasePlayer(run, guid)
@@ -703,6 +708,10 @@ local function endRun(run, success, reason)
 		-- item sets (itemsets.lua): a chase roll over the dungeon sets on a clear
 		if ChaosItemSets and ChaosItemSets.grantChase then
 			ChaosItemSets.grantChase(p, "dungeon", nil, {difficulty = run.difficulty})
+		end
+		-- Conquest Tokens (conquest.lua) for the clear, by the difficulty step
+		if ChaosConquest and ChaosConquest.reward then
+			pcall(ChaosConquest.reward, p, "dungeon_clear", {difficulty = run.difficulty}, "dungeon " .. tostring(run.dungeonId))
 		end
 		-- a generated dungeon's boss chest and achievement counters (areagen.lua registerDungeon)
 		if extra.onClear then
@@ -922,7 +931,7 @@ tick = function()
 					releasePlayer(run, guid)
 					if p then
 						send(p, "finish") -- hide the kill counter
-						setCooldown(p) -- leaving / dying counts as a failed attempt
+						setCooldown(p, false) -- leaving / dying counts as a failed attempt
 					end
 				end
 			end
@@ -1114,7 +1123,7 @@ function LoginEvent.onLogin(player)
 				if restart then
 					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your dungeon run was cut short by a server restart."))
 				else
-					setCooldown(player)
+					setCooldown(player, false)
 					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You logged out inside the dungeon: your run is over."))
 				end
 				break

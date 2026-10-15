@@ -236,14 +236,17 @@ for _, k in ipairs({"ORIGIN_MELEE", "ORIGIN_RANGED", "ORIGIN_SPELL", "ORIGIN_WAN
 	end
 end
 
-function PC.cleave(creature, attacker, amount, combatType)
+-- `owner`: the player whose class decides (the attacker itself, or the master of the summon that hit; since 2026-10-15
+-- a summoner's minions cleave by their master's class, data/spells/README.md "Pack farming for every class")
+function PC.cleave(creature, attacker, amount, combatType, owner)
 	local c = cfg()
-	local voc = attacker:getVocation()
+	local voc = (owner or attacker):getVocation()
 	local e = P.cleaveOf(c, voc and voc:getId())
 	if not e then
 		return 0
 	end
-	local dmg = P.cleaveDamage(amount, e.percent)
+	local who = owner or attacker
+	local dmg = P.cleaveDamage(amount, P.cleavePercent(e, who.getLevel and who:getLevel() or nil, c.cleave))
 	if dmg <= 0 then
 		return 0
 	end
@@ -275,10 +278,15 @@ end
 
 local cleaveEv = CreatureEvent(CLEAVE)
 function cleaveEv.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
-	if not cleaving and attacker and attacker:isPlayer() and DIRECT[origin] and primaryType ~= COMBAT_HEALING then
+	local owner = attacker and (attacker:isPlayer() and attacker or nil)
+	if attacker and not owner and attacker:isMonster() then
+		local master = attacker:getMaster()
+		owner = master and master:isPlayer() and master or nil
+	end
+	if not cleaving and owner and DIRECT[origin] and primaryType ~= COMBAT_HEALING then
 		local amount = math.abs(primaryDamage or 0) + math.abs(secondaryDamage or 0)
 		if amount > 0 then
-			local ok, err = pcall(PC.cleave, creature, attacker, amount, primaryType)
+			local ok, err = pcall(PC.cleave, creature, attacker, amount, primaryType, owner)
 			cleaving = false
 			if not ok then
 				print("[ChaosPace] cleave: " .. tostring(err))

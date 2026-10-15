@@ -752,8 +752,9 @@ function K.uniquesOf(cfg, bossKey)
 end
 
 -- the unique of a roll: roll 1..10000 against the chance, then rand picks one; nil when the roll misses
-function K.rollUnique(cfg, b, roll, rand)
-	local chance = (b.final and cfg.loot.final or cfg.loot.boss).uniqueChance
+-- mult (optional): the bad-luck multiplier of the character (conquest.lua, group "raid"), at most x10000
+function K.rollUnique(cfg, b, roll, rand, mult)
+	local chance = math.min(10000, (b.final and cfg.loot.final or cfg.loot.boss).uniqueChance * (tonumber(mult) or 1))
 	if roll > chance then
 		return nil
 	end

@@ -1003,6 +1003,10 @@ function RF.deliver(player, run, auto)
 	local data = run.key and {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
 		omen = run.omen} or run
 	local r = data.omen and R.omenReward(cfg, player:getLevel()) or R.reward(cfg, data.tier, data.bonus, rand)
+	-- Conquest Tokens (conquest.lua) for a sealed rift, by its tier; the Omen guardian's come with its kill
+	if not data.omen and ChaosConquest and ChaosConquest.reward then
+		pcall(ChaosConquest.reward, player, "rift_clear", {tier = data.tier}, "rift tier " .. tostring(data.tier))
+	end
 	-- Rift Atlas: the finisher's own atlas (gold, orbs, rolls, fragments) and the run's keystone (shared by all)
 	local atlasOwn = not data.omen and R.atlasMods(player, {theme = run.themeName or run.theme, tier = data.tier}) or nil
 	if not data.omen then
@@ -1081,7 +1085,8 @@ function RF.deliver(player, run, auto)
 				end
 			end
 		else
-			uniques = L.rollUniques(r.lootTier, data.boss, 0, itemFind * r.rarityMult)
+			-- the finisher as the owner: bad-luck protection (conquest.lua) and the season rule, as a corpse drop
+			uniques = L.rollUniques(r.lootTier, data.boss, 0, itemFind * r.rarityMult, nil, player)
 		end
 		for _, e in ipairs(uniques) do
 			local item = Game.createItem(e.id, 1)

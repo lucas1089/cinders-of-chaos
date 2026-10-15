@@ -752,7 +752,38 @@ def m_vigil_tithe(c):
     c.px(['h'], 11, 9, {'h': CH})
 
 
+# time-friendly progression (server catchup.lua)
+def m_rested(c):
+    c.ell(3, 4, 19, 20, A)                                                         # a crescent moon: rest
+    c.ell(8, 2, 22, 17, 0)
+    c.px(['h'], 6, 9, {'h': AH})
+    c.px(['BBBB', '..B.', '.B..', 'BBBB'], 16, 15, {'B': B})                       # a small z and a star
+    star(c, 19, 6, 2.6, 1.0, BH)
+
+
+def m_returning(c):
+    c.poly([(5, 23), (5, 9), (12, 3), (19, 9), (19, 23)], B)                       # an open doorway
+    c.poly([(8, 23), (8, 11), (12, 7), (16, 11), (16, 23)], KK)
+    c.poly([(4, 13), (11, 8), (11, 11), (21, 11), (21, 15), (11, 15), (11, 18)], A)  # an arrow coming home
+    c.px(['h'], 10, 10, {'h': AH})
+
+
+def m_catchup(c):
+    m_up_arrow(c, 8, 9, 0.6, B)                                                    # a small arrow catching up
+    m_up_arrow(c, 16, 3, 0.75, A)                                                  # with the big one
+    c.px(['W'], 16, 5, {'W': W})
+
+
+def m_low_stamina(c):
+    c.poly([(6, 4), (20, 4), (14, 13), (20, 22), (6, 22), (12, 13)], B)            # an hourglass running low
+    c.poly([(9, 6), (17, 6), (13, 11)], KK)
+    c.poly([(9, 20), (17, 20), (13, 16)], A)
+    c.rect(5, 3, 21, 5, BD); c.rect(5, 21, 21, 23, BD)
+
+
 MOTIFS = {  # name: (function, ramps A, B, C)
+    'rested': (m_rested, 'holy', 'arcane'), 'returning': (m_returning, 'gold', 'wood'),
+    'catchup': (m_catchup, 'gold', 'nature'), 'low_stamina': (m_low_stamina, 'blood', 'steel'),
     'world_xp': (m_world_xp, 'gold', 'water'), 'world_loot': (m_world_loot, 'gold', 'wood'),
     'world_skill': (m_world_skill, 'steel', 'arcane'), 'victory': (m_victory, 'nature', 'steel', 'gold'),
     'golden_hour': (m_golden_hour, 'gold', 'wood'), 'chaos_storm': (m_chaos_storm, 'arcane', 'shadow'),
@@ -796,7 +827,7 @@ SPELL_ICONS = {
 }
 
 DEBUFFS = {'poison', 'burning', 'energy', 'bleeding', 'drowning', 'freezing', 'dazzled', 'cursed', 'paralyze', 'drunk',
-           'pacified', 'muted', 'infight', 'skull_white', 'skull_red', 'skull_black', 'stunned'}
+           'pacified', 'muted', 'infight', 'skull_white', 'skull_red', 'skull_black', 'stunned', 'low_stamina'}
 
 ICONS = sorted(set(MOTIFS) | set(SPELL_ICONS))
 assert not set(MOTIFS) & set(SPELL_ICONS), 'a name is both drawn and taken from a spell'

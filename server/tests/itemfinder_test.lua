@@ -235,6 +235,14 @@ do
 	eq(idx.items[99999], false, "an unknown id has no record")
 	eq(idx.items[7001].rows.monster[1].v, "10%", "child loot: 50% x 10% x rate 2")
 	eq(idx.items[2400].rows.monster, nil, "a 0% loot entry is not shown")
+	local b = K.brief(idx, 5000)
+	eq(#b.s, 2, "brief: two sources")
+	eq(b.s[1].n, "Dragon Lord", "brief: the best monster first")
+	eq(b.s[1].k, "monster", "brief: its kind")
+	eq(b.e, nil, "brief: no effort line for a common drop")
+	local child = K.brief(idx, 7001)
+	check(child.e and math.abs(child.e.p - 0.1) < 1e-9 and child.e.m == "Dragon", "brief: a rare monster drop names the monster")
+	eq(K.brief(idx, 5001).e, nil, "brief: a crafted item has no effort line")
 	local shield = idx.items[5001].rows.craft[1]
 	eq(shield.n, "Mining table", "station name")
 	eq(shield.d, "level 20, 3,000 gold", "recipe detail")
@@ -373,13 +381,32 @@ do
 		battleground = dofile(base .. "battleground_config.lua"), guildboss = dofile(base .. "guildboss_config.lua"),
 		descent = dofile(base .. "descent_config.lua"), raid = dofile(base .. "raid_config.lua"), dungeons = Chaos.dungeons,
 		goblin = dofile(base .. "treasure_goblin_config.lua"), achievements = dofile(base .. "achievements_data.lua"),
-		factions = dofile(base .. "factions_config.lua"), uber = dofile(base .. "uber_config.lua")
+		factions = dofile(base .. "factions_config.lua"), uber = dofile(base .. "uber_config.lua"),
+		pocketBoss = dofile(base .. "pocketboss_config.lua"),
+		-- the Conquest vendor (conquest.lua): two offers of its catalog
+		conquest = {cfg = dofile(base .. "conquest_config.lua"), offers = {{id = 2412, level = 60, price = 690},
+			{id = 36659, level = 650, price = 1580, always = true}}}
 	}
 	local errors = S.rewards(D, emit)
 	for _, e in ipairs(errors) do
 		print("  rewards " .. e.key .. ": " .. e.message)
 	end
 	eq(#errors, 0, "every reward source reads its real config")
+	do
+		local function vendorRow(id)
+			for _, r in ipairs((K.rec(idx, id) or {rows = {}}).rows.shop or {}) do
+				if r.n == "Conquest vendor" then
+					return r
+				end
+			end
+		end
+		local r = vendorRow(2412)
+		check(r ~= nil and r.v == "690 tokens", "a unique is listed at the Conquest vendor")
+		check(r ~= nil and r.d:find("from level 10", 1, true) ~= nil, "with its level band: " .. tostring(r and r.d))
+		check(vendorRow(36659) ~= nil and vendorRow(36659).d:find("always", 1, true) ~= nil, "the Monk's fist weapon always")
+		check(vendorRow(D.rift.omen.key.id) ~= nil, "Omen Keys of a chosen kind")
+		check(vendorRow(D.uber.items.shards.storm.id) ~= nil, "Ascended Shards of a chosen kind")
+	end
 	local gems = dofile("data/lib/chaos_gems_config.lua")
 	S.lootLayer(dofile(base .. "loot_config.lua"), gems, {
 		{id = 8209, name = "Soulreaper", minTier = "legendary", chance = 150, monsters = {"demon", "hellhound"}},
@@ -400,6 +427,16 @@ do
 	S.gemCombining(gems, emit)
 	K.finish(idx)
 
+	-- the tooltip's short sources (K.brief): a unique by luck, with its chance per legendary kill
+	local soul = K.brief(idx, 8209)
+	check(soul ~= nil and soul.s[1].n == "Unique drop", "brief: the unique drop row")
+	check(soul and soul.e and soul.e.w == "legendary", "brief: effort per legendary kill")
+	check(soul and soul.e and math.abs(soul.e.p - 150 * 4 / 10000) < 1e-9, "brief: 150 x tierMult 4 per 10000")
+	local boss = K.brief(idx, 8210)
+	check(boss and boss.e and boss.e.w == "boss", "brief: a boss-only unique counts boss kills")
+	eq(K.brief(idx, 1), nil, "brief: an item without rows")
+	eq(K.brief(nil, 8209), nil, "brief: no index")
+
 	local function has(id, kind, name, label)
 		local r = idx.items[id]
 		for _, row in ipairs(r and r.rows[kind] or {}) do
@@ -411,6 +448,8 @@ do
 		return false
 	end
 	has(29856, "reward", "Daily reward", "daily reward cycle")
+	has(29856, "reward", "Pocket boss", "world boss pocket orbs")
+	has(Chaos.worldBoss.bosses[1].gear[1], "drop", Chaos.worldBoss.bosses[1].name .. " (pocket)", "world boss pocket set piece")
 	has(29856, "reward", "Login streak", "login streak")
 	has(29856, "reward", "Bounty contract", "bounty contract orbs")
 	has(29851, "reward", "Bounty weekly chest", "bounty weekly extra")

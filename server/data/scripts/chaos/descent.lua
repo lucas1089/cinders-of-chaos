@@ -1082,6 +1082,11 @@ local function rewardPlayer(run, pe, cleared, player)
 				Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s carried %s out of the Ember Descent!", player:getName(), u.name)
 			end
 		end
+		-- Conquest Tokens (conquest.lua) by the depth reached, more for a full clear
+		if ChaosConquest and ChaosConquest.reward then
+			pcall(ChaosConquest.reward, player, "descent_clear", {depth = depth, cleared = cleared and true or nil},
+				"depth " .. tostring(depth))
+		end
 		-- item sets (itemsets.lua): the Descent set's chase roll by the depth reached
 		if ChaosItemSets and ChaosItemSets.grantChase then
 			local piece = ChaosItemSets.grantChase(player, "descent", nil, {depth = depth, cleared = cleared and true or nil})
@@ -1353,7 +1358,7 @@ function X.start(player, weekly)
 			if weekly then
 				row.freeWeek = fs.week
 			else
-				row.freeDay = fs.day
+				row.freeDay = DC.spendDaily(cfg, row, now)
 			end
 			saveRow(m:getGuid())
 		else
@@ -1743,7 +1748,7 @@ function X.sendInfo(player)
 			held = (t.clear and row.bestClear == 1) or (t.depth and row.best >= t.depth) or false}
 	end
 	send(player, "info", {name = cfg.name, minLevel = cfg.minLevel, level = player:getLevel(), maxPlayers = cfg.maxPlayers,
-		rooms = {cfg.rooms.min, cfg.rooms.max}, freeDaily = fs.daily, freeWeekly = fs.weekly,
+		rooms = {cfg.rooms.min, cfg.rooms.max}, freeDaily = fs.daily, freeDailyCount = fs.dailyCount, freeWeekly = fs.weekly,
 		nextDaily = math.max(0, fs.nextDaily - now), sigils = #X.sigils(player),
 		craft = {shards = cr.shards, gold = cr.gold, haveShards = player:getItemCount(cr.shardId),
 			haveGold = player:getMoney() + player:getBankBalance(), name = cfg.sigil.name},
@@ -1890,6 +1895,29 @@ function X.placePortals()
 	for _, townId in ipairs(cfg.portal.townIds) do
 		local town = Town(townId)
 		local t = town and town:getTemplePosition()
+		-- the town's Hall of Services (npc_booths_config.lua): the portal stands in its portal room when the hall is on
+		-- the map (portal.positions, one per town); else next to the temple
+		local hallPos
+		for _, p in ipairs(cfg.portal.positions or {}) do
+			if p.town == townId and Tile(Position(p.x, p.y, p.z)) then
+				hallPos = Position(p.x, p.y, p.z)
+			end
+		end
+		if hallPos then
+			local tile = Tile(hallPos)
+			local have = tile:getItemById(cfg.portal.itemId)
+			if not (have and have:getActionId() == cfg.aid.portal) then
+				local item = spotFree(hallPos) and Game.createItem(cfg.portal.itemId, 1, hallPos)
+				if item then
+					item:setActionId(cfg.aid.portal)
+					X.portals[#X.portals + 1] = {x = hallPos.x, y = hallPos.y, z = hallPos.z}
+					placed = placed + 1
+				else
+					log("the portal tile in the Hall of Services of town " .. townId .. " is taken")
+				end
+			end
+			t = nil
+		end
 		if t then
 			local done = false
 			for _, off in ipairs(cfg.portal.offsets) do

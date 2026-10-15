@@ -319,17 +319,33 @@ end
 
 -- ------------------------------------------------------------------ pack cleave
 do
-	local c = P.cleaveOf(cfg, 7)
-	ok(c and c.percent == 20 and c.targets == 2, "Deadeye: 20% to 2")
+	-- owner decision 2026-10-15 (data/spells/README.md "Pack farming for every class"): the Elementalist, the strongest
+	-- pack class, has none; every other class cleaves 4 monsters, its share growing from level 300 to 1000
 	ok(P.cleaveOf(cfg, 5) == nil, "Elementalist: no cleave")
+	local c = P.cleaveOf(cfg, 7)
+	ok(c and c.percent == 28 and c.high == 21 and c.targets == 4, "Deadeye: 28% at 300, 21% at 1000, to 4")
 	ok(P.cleaveOf(cfg, nil) == nil, "no vocation: none")
 	ok(P.cleaveOf(off, 7) == nil, "layer off: no cleave")
 	ok(P.cleaveOf({enabled = true, cleave = {enabled = false, byVocation = {[7] = {percent = 1, targets = 1}}}}, 7) == nil,
 		"cleave off")
-	for _, v in ipairs({7, 18, 11, 13, 20, 17, 19, 12}) do
+	for _, v in ipairs({4, 8, 14, 3, 7, 15, 1, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25}) do
 		local e = P.cleaveOf(cfg, v)
-		ok(e and e.percent >= 10 and e.percent <= 30 and e.targets >= 1 and e.targets <= 4, "cleave of " .. v .. " sane")
+		ok(e and e.percent >= 0 and e.percent <= 70 and (e.high or e.percent) <= 70 and e.targets == 4,
+			"cleave of " .. v .. " sane")
 	end
+	-- the share by level: percent up to fromLevel, linear to high at toLevel, high above
+	local cc = cfg.cleave
+	eq(cc.fromLevel, 300, "from level 300"); eq(cc.toLevel, 1000, "to level 1000")
+	local t = cc.byVocation[23]
+	eq(P.cleavePercent(t, 100, cc), t.percent, "below 300: the level 300 share")
+	eq(P.cleavePercent(t, 300, cc), t.percent, "at 300")
+	eq(P.cleavePercent(t, 650, cc), (t.percent + t.high) / 2, "half way")
+	eq(P.cleavePercent(t, 1000, cc), t.high, "at 1000")
+	eq(P.cleavePercent(t, 2000, cc), t.high, "above 1000")
+	eq(P.cleavePercent({percent = 20}, 1000, cc), 20, "no high: one share")
+	eq(P.cleavePercent(t, nil, cc), t.percent, "no level: the level 300 share")
+	ok(P.cleaveOf({enabled = true, cleave = {byVocation = {[1] = {percent = 0, high = 3, targets = 4}}}}, 1) ~= nil,
+		"a share only at high levels still counts")
 	eq(P.cleaveDamage(1000, 20), 200, "20% of 1000")
 	eq(P.cleaveDamage(-999, 25), 249, "negative values (the engine's sign) and rounding down")
 	eq(P.cleaveDamage(3, 20), 0, "too small: 0")
@@ -555,28 +571,54 @@ do
 	function player:isPlayer() return true end
 	function player:getVocation() local v = self._voc return {getId = function() return v end} end
 	player._voc = 11
+	player._level = 300
+	function player:getLevel() return self._level end
+	local thief = ChaosPaceConfig.cleave.byVocation[11]
 	spectators = {m, n1, n2, n3, far, bossN, pet}
 	combats = {}
 	local p1 = events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
 	eq(p1, 1000, "the hit itself is unchanged")
-	eq(#combats, 3, "Thief: up to 3 neighbours, no nested cleave")
+	eq(#combats, 3, "Thief: the 3 monsters around, no nested cleave")
 	local hitIds = {}
 	for _, cbt in ipairs(combats) do
 		hitIds[cbt.target] = true
-		eq(cbt.dmg, -250, "25% of the hit")
+		eq(cbt.dmg, -math.floor(1000 * thief.percent / 100), "the level 300 share of the hit")
 		eq(cbt.origin, ORIGIN_NONE, "the cleave hit has no spell origin")
 	end
 	ok(hitIds[n1] and hitIds[n2] and hitIds[n3], "the three within 1 sqm")
 	ok(not hitIds[far] and not hitIds[bossN] and not hitIds[pet], "not the far one, a boss or a player's summon")
 	combats = {}
+	player._level = 1000
+	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
+	eq(combats[1] and combats[1].dmg, -math.floor(1000 * thief.high / 100), "level 1000: the high share")
+	combats = {}
 	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_CONDITION)
 	eq(#combats, 0, "damage over time: no cleave")
 	player._voc = 5
 	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
-	eq(#combats, 0, "a class with area damage: no cleave")
+	eq(#combats, 0, "the Elementalist: no cleave")
 	player._voc = 7
 	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
-	eq(#combats, 2, "Deadeye: 2 neighbours")
+	eq(#combats, 3, "Deadeye: up to 4, the 3 around")
+	combats = {}
+	player._voc = 23
+	player._level = 650
+	local tp = ChaosPaceConfig.cleave.byVocation[23]
+	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_HOLYDAMAGE or COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
+	eq(combats[1] and combats[1].dmg, -math.floor(1000 * (tp.percent + tp.high) / 2 / 100), "Templar 650: half way")
+	-- a summon's hit cleaves by its master's class and level (the Necromancer's minions)
+	combats = {}
+	player._voc = 20
+	player._level = 300
+	local nec = ChaosPaceConfig.cleave.byVocation[20]
+	events.ChaosPaceCleave.onHealthChange(m, pet, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
+	eq(#combats, 3, "a minion's hit cleaves the 3 around (never the pet itself)")
+	eq(combats[1] and combats[1].dmg, -math.floor(1000 * nec.percent / 100), "by the master's class")
+	combats = {}
+	player._voc = 5
+	events.ChaosPaceCleave.onHealthChange(m, pet, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
+	eq(#combats, 0, "an Elementalist's summon: no cleave")
+	player._voc = 20
 	combats = {}
 	events.ChaosPaceCleave.onHealthChange(m, n1, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
 	eq(#combats, 0, "a monster attacker: no cleave")

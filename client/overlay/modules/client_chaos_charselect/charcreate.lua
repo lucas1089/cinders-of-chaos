@@ -90,7 +90,7 @@ local function updateControls()
   if not alive(win) then return end
   local c = chosenClass()
   if c then
-    win.classText:setText(c.locked and (c.name .. ': ' .. tr('locked for this account. Unlock it in the game store (Classes).'))
+    win.classText:setText(c.locked and (c.name .. ': ' .. tr('locked for this account. Reach level 200 with any character of your account to unlock it.'))
       or (c.name .. ': ' .. (c.plays ~= '' and c.plays or tr('a base class. You choose its ascension at level 100.'))))
     win.classText:setColor(c.locked and '#e03a1e' or '#d6c9ae')
   else
@@ -137,7 +137,7 @@ local function fill(state)
     b.icon:setImageSource(c.icon)
     if c.locked then
       b.icon:setImageColor('#ffffff55')
-      b:setTooltip(c.name .. ': ' .. tr('locked for this account. Unlock it in the game store (Classes).'))
+      b:setTooltip(c.name .. ': ' .. tr('locked for this account. Reach level 200 with any character of your account to unlock it.'))
     else
       b:setTooltip(c.name .. (c.plays ~= '' and (': ' .. c.plays) or ''))
     end

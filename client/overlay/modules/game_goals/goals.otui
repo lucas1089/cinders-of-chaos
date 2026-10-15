@@ -1,0 +1,238 @@
+// Next Goals window (game_goals): the goals of the character's level band (why, where, progress, reward, expected
+// effort), the gear path and the hunts of the band, the next unlocks. Styles from client_chaos_theme.
+// Opened from the menu (Adventure > Next Goals) or a click on the on-screen tracker (tracker.otui).
+
+GoalRow < UIWidget
+  height: 84
+  margin-bottom: 4
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: goButton.left
+    margin-top: 6
+    margin-left: 8
+    margin-right: 6
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: why
+    anchors.top: title.bottom
+    anchors.left: title.left
+    anchors.right: parent.right
+    margin-top: 2
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: effort
+    anchors.top: why.bottom
+    anchors.left: title.left
+    anchors.right: parent.right
+    margin-top: 2
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #a89a84
+    text-align: left
+    phantom: true
+
+  ChaosProgressBar
+    id: bar
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-left: 8
+    margin-bottom: 7
+    width: 150
+    height: 14
+    phantom: true
+
+  UILabel
+    id: reward
+    anchors.left: bar.right
+    anchors.right: parent.right
+    anchors.verticalCenter: bar.verticalCenter
+    margin-left: 10
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #e8b84a
+    text-align: left
+    phantom: true
+
+  ChaosButton
+    id: goButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 5
+    margin-right: 6
+    size: 96 20
+    visible: false
+
+GoalSideLine < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-bottom: 3
+  phantom: false
+
+GoalSideTitle < UILabel
+  height: 16
+  margin-top: 6
+  margin-bottom: 2
+  font: verdana-11px-rounded
+  color: #e8b84a
+  text-align: left
+  phantom: true
+
+ChaosMainWindow
+  id: goalsWindow
+  size: 880 600
+  !text: tr('Next Goals')
+  @onEscape: modules.game_goals.hide()
+
+  UILabel
+    id: bandLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: journeyButton.left
+    margin-right: 8
+    height: 18
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+
+  ChaosButton
+    id: journeyButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    size: 150 20
+    visible: false
+    !text: tr('Seasonal Journey')
+    @onClick: modules.game_goals.openJourney()
+
+  ChaosLabelDim
+    id: bandText
+    anchors.top: bandLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 16
+    text-align: left
+
+  ChaosProgressBar
+    id: bandBar
+    anchors.top: bandText.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 16
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: bandBar.bottom
+    anchors.left: parent.left
+    anchors.right: side.left
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-right: 8
+    margin-bottom: 8
+    padding: 3
+
+  UIScrollArea
+    id: goalList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 44
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: waitLabel
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    !text: tr('Loading your goals...')
+
+  ChaosPanelDark
+    id: side
+    anchors.top: bandBar.bottom
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    width: 290
+    padding: 3
+
+  UIScrollArea
+    id: sideList
+    anchors.top: side.top
+    anchors.left: side.left
+    anchors.right: sideScroll.left
+    anchors.bottom: side.bottom
+    margin: 6
+    layout:
+      type: verticalBox
+    vertical-scrollbar: sideScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: sideScroll
+    anchors.top: side.top
+    anchors.right: side.right
+    anchors.bottom: side.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 24
+    pixels-scroll: true
+
+  ChaosLabel
+    id: summaryLabel
+    anchors.left: parent.left
+    anchors.right: trackerBox.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+
+  ChaosCheckBox
+    id: trackerBox
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 12
+    width: 170
+    !text: tr('Tracker on screen')
+    @onCheckChange: modules.game_goals.setTrackerEnabled(self:isChecked())
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_goals.hide()

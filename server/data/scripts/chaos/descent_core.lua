@@ -533,16 +533,49 @@ function D.titles(cfg, best, cleared)
 	return list
 end
 
--- the free runs left: row = {freeDay, freeWeek} (the day / week key of the last free run used)
+-- day keys (YYYYMMDD) <-> noon of that day
+local function keyTime(k)
+	k = tonumber(k) or 0
+	local y, m, d = math.floor(k / 10000), math.floor(k / 100) % 100, k % 100
+	if y < 2000 or m < 1 or m > 12 or d < 1 or d > 31 then
+		return nil
+	end
+	return os.time({year = y, month = m, day = d, hour = 12})
+end
+
+local function keyOf(t)
+	return tonumber(os.date("%Y%m%d", t))
+end
+
+-- the free runs left: row = {freeDay, freeWeek}. freeDay is the daily runs' clock: one free run comes per day after it,
+-- at most cfg.freeBankDays banked (0 / no date: a full bank). Spending one moves the clock (D.spendDaily); with a bank of
+-- 1 it is exactly "the day of the last free run used", the old meaning, so old rows read the same.
 function D.freeState(cfg, row, now)
 	row = row or {}
-	local day = tonumber(os.date("%Y%m%d", now))
+	local day = keyOf(now)
 	local week = D.weekKey(now, cfg.resetHour)
 	local d = os.date("*t", now)
 	local tomorrow = os.time({year = d.year, month = d.month, day = d.day + 1, hour = 0, min = 0, sec = 0})
-	local daily = (tonumber(row.freeDay) or 0) ~= day
-	return {daily = daily, weekly = (tonumber(row.freeWeek) or 0) ~= week, day = day, week = week,
-		nextDaily = daily and now or tomorrow}
+	local bankMax = math.max(1, math.floor(tonumber(cfg.freeBankDays) or 1))
+	local from, today = keyTime(row.freeDay), keyTime(day)
+	local count = bankMax
+	if from then
+		count = math.max(0, math.min(bankMax, math.floor((today - from) / 86400 + 0.5)))
+	end
+	return {daily = count > 0, dailyCount = count, weekly = (tonumber(row.freeWeek) or 0) ~= week, day = day, week = week,
+		nextDaily = count > 0 and now or tomorrow}
+end
+
+-- the new freeDay after one free daily run is spent (the clock moves one day, from at most freeBankDays ago)
+function D.spendDaily(cfg, row, now)
+	local bankMax = math.max(1, math.floor(tonumber(cfg.freeBankDays) or 1))
+	local today = keyTime(keyOf(now))
+	local from = keyTime((row or {}).freeDay)
+	local oldest = today - bankMax * 86400
+	if not from or from < oldest then
+		from = oldest
+	end
+	return keyOf(from + 86400)
 end
 
 -- how a run is paid: "free" (the free run of the mode), "sigil" or nil + why

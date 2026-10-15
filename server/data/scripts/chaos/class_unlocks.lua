@@ -1,6 +1,6 @@
 -- class_unlocks.lua: the class lock. Some classes (now: the Necromancer, the Monk and the Templar) can only be played
--- on an account that has unlocked them; today the unlock is bought in the store (category "Classes", placeholder
--- price 750 Chaos Coins each). The unlock is account-wide: every character of the account.
+-- on an account that has unlocked them; the unlock is free once a character of the account reaches level 200 (no
+-- store offer since 2026-10-15). The unlock is account-wide: every character of the account.
 -- Config and rules: class_unlocks_core.lua (ChaosClassUnlocksCore.config, one table; the unlock methods are
 -- pluggable: store, level, quest, achievement, or any kind added with ChaosClassUnlocksCore.registerMethod).
 -- Storage: the table chaos_class_unlocks (server/sql/chaos_class_unlocks.sql; created here at startup if missing).
@@ -27,7 +27,7 @@
 --     website should offer a locked vocation only to accounts with a row in chaos_class_unlocks; whatever it does,
 --   * the login check below catches every character on a locked vocation: with mode "restrict" (default) it logs in,
 --     goes to its temple, cannot attack and gains no experience or skill until the account unlocks the class (the
---     store works in that state, so it can buy the unlock at once; the restriction ends the moment it is bought);
+--     restriction ends the moment another character of the account reaches the level);
 --     mode "kick" shows the same window and logs it out. Staff (group 4+ or account type 5+) is never locked.
 -- Commands: !classes (what the account has unlocked); staff: /classunlock <character>, <class>[, revoke].
 if not Chaos then

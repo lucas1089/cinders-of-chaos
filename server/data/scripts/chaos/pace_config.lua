@@ -68,23 +68,41 @@ return {
 		announceFrom = 6
 	},
 
-	-- pack cleave (PvE only): the classes with little area damage (data/spells/README.md C4, area share under ~30%) hit
-	-- packs too. A direct hit of such a character (melee, ranged, spell; not damage over time) on a paced monster also
-	-- deals `percent` of it to up to `targets` other monsters within `radius` sqm of that monster (nearest first; never a
-	-- boss, a player's summon or a player). By vocation id (chaos_constants.lua Chaos.classes.ids). Model and numbers:
-	-- server/README.md "Pack combat (pace)", class spread.
+	-- pack cleave (PvE only): a direct hit (melee, ranged, spell; not damage over time) of a character, or of its summon
+	-- (by its master's class), on a paced monster also deals a share of it to up to `targets` other monsters within
+	-- `radius` sqm of that monster (nearest first; never a boss, a player's summon or a player). The share is `percent`
+	-- up to level fromLevel, linear to `high` at toLevel and `high` above (pace_core.lua P.cleavePercent). Bosses are
+	-- never paced, so boss damage and PvP do not change. By vocation id (chaos_constants.lua Chaos.classes.ids).
+	-- Owner decision 2026-10-15: the strongest pack class (the Elementalist) is not touched and every other class is
+	-- raised to about 0.92 of it or more in packs at levels 300 / 800 / 1000; each share is what its class needs
+	-- (server/tools/pack_model.py; data/spells/README.md "Pack farming for every class"). The classes that needed more
+	-- than about 25% got pack spells of their own instead (_blades.lua, _packtools.lua) and keep at most 20% here.
 	cleave = {
 		enabled = true,
 		radius = 1,
+		fromLevel = 300,
+		toLevel = 1000,
 		byVocation = {
-			[7] = {percent = 20, targets = 2}, -- Deadeye (area share 15%)
-			[18] = {percent = 20, targets = 2}, -- Shadowfist (7%)
-			[11] = {percent = 25, targets = 3}, -- Thief (0%)
-			[13] = {percent = 25, targets = 3}, -- Samurai (0%)
-			[20] = {percent = 25, targets = 3}, -- Necromancer (1%)
-			[17] = {percent = 20, targets = 3}, -- Monk (17%)
-			[19] = {percent = 20, targets = 3}, -- Iron Sage (17%)
-			[12] = {percent = 15, targets = 2} -- Ninja (30%)
+			[4] = {percent = 6, high = 11, targets = 4}, -- Warrior
+			[8] = {percent = 15, high = 26, targets = 4}, -- Juggernaut
+			[14] = {percent = 0, high = 3, targets = 4}, -- Berserker
+			[3] = {percent = 23, high = 20, targets = 4}, -- Ranger
+			[7] = {percent = 28, high = 21, targets = 4}, -- Deadeye
+			[15] = {percent = 9, high = 0, targets = 4}, -- Beastmaster (the companion's hits too)
+			[1] = {percent = 0, high = 2, targets = 4}, -- Mystic
+			[10] = {percent = 12, high = 17, targets = 4}, -- Illusionist
+			[11] = {percent = 10, high = 11, targets = 4}, -- Thief
+			[12] = {percent = 12, high = 6, targets = 4}, -- Ninja
+			[13] = {percent = 17, high = 19, targets = 4}, -- Samurai
+			[20] = {percent = 2, high = 14, targets = 4}, -- Necromancer (the minions' hits too)
+			[21] = {percent = 10, high = 7, targets = 4}, -- Lich
+			[22] = {percent = 6, high = 6, targets = 4}, -- Bone Lord (the minions' hits too)
+			[17] = {percent = 6, high = 12, targets = 4}, -- Monk
+			[18] = {percent = 16, high = 16, targets = 4}, -- Shadowfist
+			[19] = {percent = 11, high = 15, targets = 4}, -- Iron Sage
+			[23] = {percent = 3, high = 16, targets = 4}, -- Templar
+			[24] = {percent = 8, high = 13, targets = 4}, -- Inquisitor
+			[25] = {percent = 6, high = 16, targets = 4} -- Sentinel
 		}
 	},
 

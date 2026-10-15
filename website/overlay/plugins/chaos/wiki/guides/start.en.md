@@ -12,13 +12,22 @@ Cinders of Chaos is a dark fantasy online RPG with its own client. You hunt, col
 => @download | Client | Download it and log in with your account.
 => @create | Character | Pick one of the free classes.
 => @tutorial | Tutorial island | Fighting, spells, the passive tree and orbs.
-=> @temple | Your town | The temple, with your class kit.
+=> @temple | Cinderhold | The main city: your temple, with your class kit.
 
 ## The tutorial island
 
-At your first login you arrive on a small island. Each station teaches one thing: fighting, spells, the passive tree and orbs. You get a passive point and an Orb of Upheaval to practise with. Nobody dies on the island. When you leave, you go to your town's temple with your class kit.
+At your first login you arrive on a small island. Each station teaches one thing: fighting, spells, the passive tree and orbs. You get a passive point and an Orb of Upheaval to practise with. Nobody dies on the island. When you leave, you go to the temple of Cinderhold with your class kit.
 
 > [tip] Already know the game? Skip the tutorial at the goblin statue.
+
+## Cinderhold, the main city
+
+Every new character lives in Cinderhold, the biggest city. Everything is close to its temple:
+
+- Two great teleports, five steps north of the temple, lead to the teleport room: a portal to a hunt of every level.
+- The depot, two banks and the shops.
+- The Hall of Services, through the portal beside the temple: every service of the game behind its counter. The Loot Buyer, who buys what you find, the Material Broker, the Gambler, the Conquest and Candlemark vendors, the Ascendant Oracle, the Keeper of Trials, and the portals to the Ember Descent and the raid.
+- Death, the Town Portal spell and the temple scroll all bring you back to this temple.
 
 ## The first levels
 
@@ -26,7 +35,8 @@ At your first login you arrive on a small island. Each station teaches one thing
 - Spend your points in the [passive tree](wiki:guide:tree). A point comes every {{tree.levelsPerPoint}} levels.
 - Take contracts from Adventure > Bounty Board. They pay gold and orbs.
 - Claim the daily reward. A streak of days pays more.
-- At levels 20, 50, 100 and 200 you get gifts: potions, orbs and more.
+- At levels {{newplayer.giftLevels}} you get gifts: potions, orbs and more.
+- Lost later on? Adventure > Next Goals shows what to do at your level. See [Progression](wiki:guide:progression).
 
 ## Hunting in packs
 

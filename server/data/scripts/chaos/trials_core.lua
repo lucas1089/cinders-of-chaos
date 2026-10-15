@@ -475,9 +475,39 @@ function M.weekKey(t)
 	return ChaosBounty.week(t or os.time(), {rollHour = hour})
 end
 
+-- the repeat rewards of the week `nowKey` from what is stored: {count, bank, allowance, rolled}. storedKey / storedCount /
+-- storedBank: the week of the last counted repeat, the repeats counted in it and the bank it had. A new week carries the
+-- unused rewards of the old one and one week's worth per week skipped, together at most (repeatBankWeeks - 1) weeks'
+-- worth. A stored key that is no date (none yet, the old YYYYWW keys) carries nothing.
+function M.repeatState(storedKey, storedCount, storedBank, nowKey)
+	local r = M.cfg().reward
+	local per, weeks = r.repeatsPerWeek, r.repeatBankWeeks or 1
+	storedCount, storedBank = max(0, tonumber(storedCount) or 0), max(0, tonumber(storedBank) or 0)
+	if storedKey == nowKey then
+		return {count = storedCount, bank = storedBank, allowance = per + storedBank}
+	end
+	local bank = 0
+	local function t(k)
+		k = tonumber(k) or 0
+		local y, m, d = math.floor(k / 10000), math.floor(k / 100) % 100, k % 100
+		if y < 2000 or m < 1 or m > 12 or d < 1 or d > 31 then
+			return nil
+		end
+		return os.time({year = y, month = m, day = d, hour = 12})
+	end
+	local ta, tb = t(storedKey), t(nowKey)
+	if weeks > 1 and ta and tb and tb > ta then
+		local n = math.floor((tb - ta) / (7 * 86400) + 0.5)
+		local unused = max(0, per + storedBank - storedCount) + max(0, n - 1) * per
+		bank = min((weeks - 1) * per, unused)
+	end
+	return {count = 0, bank = bank, allowance = per + bank, rolled = true}
+end
+
 -- what a clear pays: {first = bool, gold, chaos, divine, tokens, counted}. tierCleared = before this clear.
--- weekCount = repeat rewards already paid this week.
-function M.clearOutcome(tierIdx, level, tierCleared, tokens, weekCount)
+-- weekCount = repeat rewards already paid this week; allowance = the week's repeat rewards (repeatsPerWeek + the bank,
+-- M.repeatState), repeatsPerWeek when nil.
+function M.clearOutcome(tierIdx, level, tierCleared, tokens, weekCount, allowance)
 	local c = M.cfg()
 	local first = tierIdx > (tierCleared or 0)
 	local r = first and c.reward.first or c.reward.repeatReward
@@ -488,7 +518,7 @@ function M.clearOutcome(tierIdx, level, tierCleared, tokens, weekCount)
 		return out
 	end
 	out.tokens = min(c.switch.tokensPerRepeat, max(0, c.switch.maxTokens - (tokens or 0)))
-	if (weekCount or 0) < c.reward.repeatsPerWeek then
+	if (weekCount or 0) < (allowance or c.reward.repeatsPerWeek) then
 		out.gold = (level or 0) * r.goldPerLevel * tierIdx
 		out.chaos, out.divine = r.chaos[tierIdx] or 0, r.divine[tierIdx] or 0
 		out.counted = true

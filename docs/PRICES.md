@@ -48,25 +48,25 @@ show".
 | Convenience | depot tab 150, 4 tabs 500, stash tabs 150-200, character slot 250, build slot 100 | | | kept |
 | VIP | Chaos Pact, 30 days | 300 | R$ 30 | kept |
 | Premium | 30 / 90 / 180 days | 250 / 650 / 1200 | | kept |
-| Boosts | Stamina Refill 40, Stamina Extension 8, All Blessings 60 | | | kept |
+| Boosts | All Blessings 60 | | | kept; the Stamina Refill (40) and the Stamina Extension (8) were removed 2026-10-15 (pay to farm; low stamina now halves the loot instead of zeroing it) |
 | Boosts | Double Experience Potion 50, five for 225 (not for season characters) | | | kept |
 | Boosts | World Experience / World Loot 300, World Training 250 (for everybody) | | | kept |
 | Supplies | potion packs 15-30 | | | kept |
 | Runes | vendor gold x count / 1000, 5% off 250, 10% off 500 | | | kept |
 | Services | Name Change 250, Vocation Change 400, Sex Change 100, Skull Remover 150, Passive Reset 60 | | | kept |
-| Classes | Necromancer, Monk, Templar, each (account-wide) | 500 | R$ 50 | was 750; now also free at level 500 |
+| Classes | Necromancer, Monk, Templar | - | - | not sold since 2026-10-15: free for the account at level 200 (was 750, then 500 or level 500) |
 | Season pass | Ashen Pass premium track (320 coins back on the track) | 600 | R$ 60 | was 1000 |
 | Season pass | Ember / Blaze / Inferno packs | 500 / 1500 / 2500 | | was 600 / 1800 / 3200 |
-| Starter bundles | Novice 250, Adventurer 450, Champion 750 (once, by level) | | | kept |
+| Starter bundles | Novice 250, Adventurer 450, Champion 750 (once, by level) | | | kept; Novice: 100 Supreme Health Potions instead of 5 Stamina Extensions (2026-10-15) |
 
 Why these changes:
 - **Per-character convenience** (Loot Bag, Auto Seller, Rarity Autoloot, pouches, the Ration) is bought again for every
   alt. Bag + seller + autoloot cost 1,250 coins a character (3,750, about R$ 375, for three); now 950 (2,850). That is the
   "this server is greedy" line in reviews. The Pact still lends the Auto Seller, so VIP keeps its value.
-- **Classes: a free path.** Selling a class with no other way in reads as pay-to-win, even if the class is not
-  stronger. Now any character of the account at level 500 (about 10-25 hours of play, the leveling model of
-  server/README.md "Pack combat (pace)") unlocks all three; the store is a shortcut. `class_unlocks_core.lua` already
-  had the `level` method.
+- **Classes: earned, not sold.** Selling a class reads as pay-to-win, even if the class is not stronger. Since
+  2026-10-15 any character of the account at level 200 (about 3 hours of play in the leveling model of
+  server/README.md "The leveling model and the hours") unlocks all three, and the store no longer sells them (was 500
+  coins or level 500 from 2026-10-14). `class_unlocks_core.lua` keeps the `store` method, unused.
 - **Season pass.** A season pass is usually about the price of a small pack. 600 coins with 320 back on the track is
   280 coins net (R$ 28) for a player who finishes it. The packs follow the same discount.
 - **Runes stay at 1000 gold a coin.** That keeps the store rate of supplies equal to the potion packs; coins never buy

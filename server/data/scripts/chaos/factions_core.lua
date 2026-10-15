@@ -282,16 +282,47 @@ end
 
 -- ---------------------------------------------------------------- standing and gains
 function K.newEntry(cfg)
-	return {rep = cfg.rep.start or 0, day = 0, dayGain = 0, week = 0, weekGain = 0, exalted = 0, total = 0, carry = 0,
-		rivalCarry = 0}
+	return {rep = cfg.rep.start or 0, day = 0, dayGain = 0, week = 0, weekGain = 0, bank = 0, exalted = 0, total = 0,
+		carry = 0, rivalCarry = 0}
 end
 
-function K.roll(e, day, week)
+-- the cap of this week for an entry: weeklyCap + what earlier weeks left unused (e.bank)
+function K.weekCap(cfg, e)
+	return cfg.weeklyCap + max(0, (e and e.bank) or 0)
+end
+
+-- whole weeks from week key a to week key b (YYYYMMDD of their Mondays); nil for a key that is not a date
+function K.weeksBetween(a, b)
+	local function t(k)
+		k = tonumber(k) or 0
+		local y, m, d = floor(k / 10000), floor(k / 100) % 100, k % 100
+		if y < 2000 or m < 1 or m > 12 or d < 1 or d > 31 then
+			return nil
+		end
+		return os.time({year = y, month = m, day = d, hour = 12})
+	end
+	local ta, tb = t(a), t(b)
+	if not ta or not tb then
+		return nil
+	end
+	return floor((tb - ta) / (7 * 86400) + 0.5)
+end
+
+-- cfg (optional): the unused cap of the week that ends, and every week skipped, carry over into e.bank, together at
+-- most (rolloverWeeks - 1) x weeklyCap (so a week's cap is at most rolloverWeeks weeks' worth)
+function K.roll(e, day, week, cfg)
 	if day and e.day ~= day then
 		e.day, e.dayGain, e.carry = day, 0, 0
 	end
 	if week and e.week ~= week then
-		e.week, e.weekGain = week, 0
+		local bank = 0
+		local weeks = cfg and (cfg.rolloverWeeks or 1) or 1
+		local n = weeks > 1 and (e.week or 0) > 0 and K.weeksBetween(e.week, week) or nil
+		if n and n >= 1 then
+			local unused = max(0, K.weekCap(cfg, e) - (e.weekGain or 0)) + (n - 1) * cfg.weeklyCap
+			bank = min((weeks - 1) * cfg.weeklyCap, unused)
+		end
+		e.week, e.weekGain, e.bank = week, 0, bank
 	end
 	return e
 end
@@ -336,7 +367,7 @@ function K.gain(cfg, idx, st, key, amount, o)
 	end
 	local e = st[key] or K.newEntry(cfg)
 	st[key] = e
-	K.roll(e, o.day, o.week)
+	K.roll(e, o.day, o.week, cfg)
 	res.before = e.rep
 	res.rankBefore = K.rankAt(cfg, e.rep)
 	local value = amount
@@ -348,7 +379,7 @@ function K.gain(cfg, idx, st, key, amount, o)
 	if not o.contract then
 		e.carry = value - whole
 	end
-	local room = max(0, cfg.weeklyCap - e.weekGain)
+	local room = max(0, K.weekCap(cfg, e) - e.weekGain)
 	local gained = min(whole, room, max(0, cfg.rep.max - e.rep))
 	res.capped = gained < whole
 	if gained > 0 then
@@ -701,13 +732,13 @@ function K.payload(cfg, idx, st, ctx)
 	end
 	local ranks = {}
 	for _, f in ipairs(idx.list) do
-		local e = K.roll(st[f.key] or K.newEntry(cfg), ctx.day, ctx.week)
+		local e = K.roll(st[f.key] or K.newEntry(cfg), ctx.day, ctx.week, cfg)
 		local b = K.bar(cfg, e.rep)
 		ranks[f.key] = b.rank
 		local tok = cfg.tokens[f.key]
 		out.factions[#out.factions + 1] = {k = f.key, n = f.name, s = f.short, c = f.color, lore = f.lore, rival = f.rival,
 			rep = e.rep, rank = b.rank, rn = b.name, rc = b.color, lo = b.lo, hi = b.hi, pct = b.pct, nx = b.next,
-			wk = e.weekGain, dy = e.dayGain, dr = K.drMult(cfg, e.dayGain), ex = (e.exalted or 0) > 0 or nil,
+			wk = e.weekGain, wc = K.weekCap(cfg, e), dy = e.dayGain, dr = K.drMult(cfg, e.dayGain), ex = (e.exalted or 0) > 0 or nil,
 			npc = f.npc.name, near = ctx.near == f.key or nil, tok = (ctx.tokens or {})[f.key] or 0,
 			tn = tok and tok.plural or "tokens", tid = cid(tok and tok.id or 0), theme = f.theme}
 	end

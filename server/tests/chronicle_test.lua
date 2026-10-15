@@ -353,7 +353,7 @@ Game = {
 		return it
 	end
 }
-Town = function(id) return id == 1 and {getTemplePosition = function() return {x = 100, y = 100, z = 7} end} or nil end
+Town = function(id) return id == cfg.townId and {getTemplePosition = function() return {x = 100, y = 100, z = 7} end} or nil end
 local players = {}
 local nextId = 1000
 local function mkPlayer(name, guid, group, level)

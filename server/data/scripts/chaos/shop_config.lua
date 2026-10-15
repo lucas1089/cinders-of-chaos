@@ -193,9 +193,9 @@ return {
 			offers = {
 				{kind = "bundle", key = "starter:novice", oncePerAccount = true, maxLevel = 50, gift = false, cost = 250,
 					name = "Novice Pack", icon = 8472,
-					description = "Once per account, up to level 50: Gale Ring aura, 100 Great Spirit Potions, 5 Stamina Extensions.",
-					parts = {"aura:17", "item:8472x100",
-						{kind = "item", id = 27990, count = 5, cost = 40, name = "5 Stamina Extensions"},
+					description = "Once per account, up to level 50: Gale Ring aura, 100 Great Spirit Potions, 100 Supreme Health Potions.",
+					-- 100 Supreme Health Potions (30) replace the 5 Stamina Extensions (40) on 2026-10-15: no stamina for coins
+					parts = {"aura:17", "item:8472x100", "item:26031x100",
 						{kind = "pact", days = 3, cost = 60, name = "3 days of the Chaos Pact"}}},
 				{kind = "bundle", key = "starter:adventurer", oncePerAccount = true, maxLevel = 150, gift = false, cost = 450,
 					name = "Adventurer Pack", icon = 1988,
@@ -474,16 +474,25 @@ return {
 		{
 			name = "Boosts", icon = {item = 28095},
 			offers = {
-				{kind = "service", service = "stamina", icon = 27990, cost = 40, name = "Stamina Refill",
-					description = "Fills your stamina to the full 42 hours at once."},
-				{kind = "item", id = 27990, count = 1, cost = 8, name = "Stamina Extension",
-					description = "Use it to regain 2 hours of stamina (up to the maximum)."},
+				-- the Stamina Refill (40 coins, the whole 42 h at once) was removed on 2026-10-15: paying to farm longer at full
+				-- loot. Nobody holds a refill (the service filled the stamina at purchase); a gift of it still queued for an
+				-- offline character is refunded to the sender at delivery (shop.lua: "It is no longer sold."). The
+				-- "stamina" service handler stays in shop_services.lua, unused. Low stamina now halves the loot instead of
+				-- zeroing it and regenerates x2 offline (catchup.lua).
+				-- the Stamina Extension (8 coins, +2 h) was removed on 2026-10-15 as well (owner rule "follow your
+				-- recommendations"); owned ones keep working, the level 100 kit (newplayer_config.lua) still gives two
 				{kind = "item", id = 28095, count = 1, cost = 50, seasonBlocked = true, name = "Double Experience Potion",
 					description = "1 hour of double experience per potion (Character > Character Info). Not for season characters."},
 				{kind = "item", id = 28095, count = 5, cost = 225, seasonBlocked = true, name = "5 Double Experience Potions",
 					description = "Five hours of double experience, one potion at a time."},
 				{kind = "service", service = "blessings", icon = 11260, cost = 60, name = "All Blessings",
-					description = "All five blessings at once: less experience and item loss when you die."}
+					description = "All five blessings at once: less experience loss when you die (items are never lost without a red or black skull)."},
+				-- the Eternal Blessing (gentledeath.lua, owner decision 2026-10-15): one purchase per character, all five
+				-- blessings kept for good (given back at each login after a death). PLACEHOLDER price (docs/OWNER_TODO.md).
+				-- Not for season characters: a season ladder is not bought (season.lua realm > 0; !bless still works there).
+				{kind = "service", service = "eternalBlessing", icon = 11260, cost = 750, seasonBlocked = true,
+					name = "Eternal Blessing",
+					description = "This character keeps all five blessings for good: they come back after every death. Once per character. Not for season characters."}
 			}
 		},
 		{
@@ -534,20 +543,9 @@ return {
 					description = "Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."}
 			}
 		},
-		{
-			-- class unlocks (class_unlocks.lua): account-wide; offer names and prices must match
-			-- ChaosClassUnlocksCore.config (class_unlocks_core.lua). 500 each, or free at level 500 (decided 2026-10-14,
-			-- docs/PRICES.md).
-			name = "Classes", icon = {item = 2523},
-			offers = {
-				{kind = "unlock", unlock = "unlockNecromancer", icon = 2436, cost = 500, name = "Necromancer",
-					description = "Unlocks the Necromancer class (Lich, Bone Lord) for every character of your account."},
-				{kind = "unlock", unlock = "unlockMonk", icon = 7422, cost = 500, name = "Monk",
-					description = "Unlocks the Monk class (Shadowfist, Iron Sage) for every character of your account."},
-				{kind = "unlock", unlock = "unlockTemplar", icon = 2523, cost = 500, name = "Templar",
-					description = "Unlocks the Templar class (Inquisitor, Sentinel) for every character of your account."}
-			}
-		},
+		-- the "Classes" category (Necromancer, Monk, Templar at 500 coins each) was removed on 2026-10-15 (owner rule
+		-- "follow your recommendations"): classes are earned by play only, free for the account at level 200
+		-- (class_unlocks_core.lua). Nobody had bought one yet.
 		{
 			name = "Training", icon = {item = 27732},
 			offers = {

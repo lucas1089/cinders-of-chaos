@@ -153,11 +153,12 @@ C.odds = {draws = 1, floor = 1, tier = "magic", find = 1, maxRarity = 10}
 C.announceFrom = 10
 
 -- ------------------------------------------------------------------ the NPC
--- placed next to the temple of every town in `towns` (ids; the main town is 1) on the first free tile of `offsets`
+-- placed next to the temple of every town in `towns` (ids; the main city is Cinderhold, 2, server/README.md "Main
+-- city"; Mirewake, 1, keeps him too) on the first free tile of `offsets`
 -- (none of the other temple NPCs, portals and the Great Brazier use these), at startup after them. Buying and the
 -- early refresh need the Gambler within `range` tiles; the window opens anywhere (Economy > The Gambler) to look.
 C.npc = {
-	name = "Mordecai Ashwager", range = 4, towns = {1}, delayMs = 3000,
+	name = "Mordecai Ashwager", range = 4, towns = {2, 1}, delayMs = 3000,
 	offsets = {{-5, -2}, {5, -2}, {-5, 2}, {5, 2}, {-1, -5}, {1, 5}, {-6, -3}, {6, -3}, {-6, 3}, {6, 3}}
 }
 

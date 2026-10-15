@@ -198,7 +198,12 @@ end
 -- adds new marks (a reveal) to a list, one per kind and tile; returns how many were new
 function M.addMarks(list, new)
   local seen = {}
-  for _, m in ipairs(list) do seen[m.k .. ':' .. m.x .. ':' .. m.y .. ':' .. m.z] = true end
+  for _, m in ipairs(list) do
+    -- a stored mark without a whole tile (a bad poi message) is skipped, never an error
+    if type(m) == 'table' and m.k and m.x and m.y and m.z then
+      seen[tostring(m.k) .. ':' .. tostring(m.x) .. ':' .. tostring(m.y) .. ':' .. tostring(m.z)] = true
+    end
+  end
   local n = 0
   for _, m in ipairs(type(new) == 'table' and new or {}) do
     if type(m) == 'table' and m.k and m.x and m.y and m.z then

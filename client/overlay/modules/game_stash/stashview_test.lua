@@ -56,4 +56,16 @@ has(text, '- locked: 1', 'a reason without names')
 eq(V.reportText({ stowed = 0, kept = 0 }), 'Nothing to stow.', 'nothing')
 eq(V.reportText(nil), '', 'no report')
 
+-- deposit (owner 2026-10-15): town for everybody, anywhere with the remote unlock
+eq(V.canDeposit(nil, 16384), true, 'free, in a protection zone')
+eq(V.canDeposit({ canDeposit = false }, 0), false, 'free, outside: locked')
+eq(V.canDeposit({ remote = 'bought' }, 0), true, 'bought unlock, outside')
+eq(V.canDeposit({ remote = 'pact' }, 0), true, 'the Pact, outside')
+eq(V.canDeposit({ canDeposit = true, depositWhy = 'pz' }, 0), false, 'left the zone: the stale answer does not count')
+eq(V.canDeposit({ canDeposit = true, depositWhy = 'hideout' }, 0), true, 'inside a hideout')
+has(V.depositLockedText(), 'Storage & Slots', 'the locked state says where to unlock')
+has(V.stowTooltip(false, {}), 'Chaos Pact', 'Stow Everything locked: where to unlock')
+has(V.stowTooltip(true, { remote = 'pact' }), 'lent by your Chaos Pact', 'Stow Everything: the unlock source')
+has(V.infoText(d, 0, false, false), 'remote deposit', 'the line under the list when locked')
+
 print('stashview_test: ' .. n .. ' checks OK')

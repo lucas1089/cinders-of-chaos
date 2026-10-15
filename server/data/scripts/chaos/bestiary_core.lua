@@ -367,9 +367,10 @@ end
 
 -- the board of a character for a task day: hunts from spawning monsters in the board window, families from categories
 -- with at least familyMinMonsters of them. Seeded by day and character: the same all day, other characters differ.
-function C.offers(day, guid, level, catalogue, cfg)
+-- salt: the player's board rerolls of the day (0 = the day's own board; Candlemarks rerolls, bestiary.lua)
+function C.offers(day, guid, level, catalogue, cfg, salt)
 	local win = C.window(level, cfg.boardWindow)
-	local rand = C.rng((day % 100000) * 7919 + (guid % 1000003) * 31 + 17)
+	local rand = C.rng((day % 100000) * 7919 + (guid % 1000003) * 31 + 17 + (math.floor(tonumber(salt) or 0) % 1000) * 104729)
 	local pool, byCat, cats = {}, {}, {}
 	for _, e in ipairs(catalogue.list) do
 		if not e.boss and (e.spawns or 0) > 0 and inWindow(e, win) then

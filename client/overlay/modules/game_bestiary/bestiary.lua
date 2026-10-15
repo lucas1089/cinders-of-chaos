@@ -7,7 +7,8 @@
 --                     board {offers, tasks, active, maxActive, doneDay, dailyLimit, doneWeek, weeklyLimit, nextIn}
 --                     tracker {rows = [{k = task|bounty, key, label, p, r}]}
 --                     show {tab}
---   client -> server  open | list | summary | entry {id} | board | take {id} | accept {key} | abandon {key} | query
+--   client -> server  open | list | summary | entry {id} | board | take {id} | accept {key} | abandon {key} | reroll | query
+--   board.rerolls: kill task board rerolls held (bought with Candlemarks): the Reroll board button shows while above 0
 -- The top menu (Hunt -> Bestiary / Task Tracker) calls toggle() and
 -- toggleTracker().
 
@@ -347,6 +348,13 @@ local function renderBoard()
   local p = window.tasksPanel
   p.limitsLabel:setText(V.limitsText(board))
   p.limitsLabel:setTooltip(tr('Tasks you hold, tasks completed today and this week (a task day starts at 06:00).'))
+  local rerolls = num(board.rerolls)
+  if p.rerollButton then
+    p.rerollButton:setVisible(rerolls > 0)
+    p.rerollButton:setText(tr('Reroll board (%d)', rerolls))
+    p.rerollButton:setTooltip(tr("Draw today's offers again (tasks you hold stay)."))
+    p.rerollButton.onClick = function() send('reroll') end
+  end
   p.boardList:destroyChildren()
   local offers = list(board.offers)
   for _, o in ipairs(offers) do

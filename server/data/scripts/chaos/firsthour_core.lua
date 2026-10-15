@@ -102,6 +102,45 @@ function M.pickHunts(marks, seen, keyOf, center, level, opts)
 	return list
 end
 
+-- a hint or reveal added after the character got its mask: entries known+1 .. count whose level (levelOf(i)) the
+-- character has passed are marked given, silently (an old level 600 character is not told about level 150 now).
+-- Returns the new mask.
+function M.sync(mask, known, count, levelOf, level)
+	mask = math.max(0, floor(tonumber(mask) or 0))
+	level = tonumber(level) or 0
+	for i = math.max(1, floor(tonumber(known) or 0) + 1), count do
+		if levelOf(i) <= level then
+			mask = M.set(mask, i)
+		end
+	end
+	return mask
+end
+
+-- the content hunts of the teleport room for a level: plans = {{name, level = {lo, hi}}}; up to opts.count whose band
+-- holds the level or starts at most opts.slack above it, lowest band first -> "Sulphur Gallery (215-299)" names
+function M.pickPlans(plans, level, opts)
+	opts = opts or M.cfg().plans or {}
+	level = tonumber(level) or 0
+	local out = {}
+	for _, p in ipairs(plans or {}) do
+		local lo, hi = p.level and tonumber(p.level[1]), p.level and tonumber(p.level[2])
+		if lo and hi and lo <= level + (opts.slack or 0) and hi >= level then
+			out[#out + 1] = p
+		end
+	end
+	table.sort(out, function(a, b)
+		if a.level[1] ~= b.level[1] then
+			return a.level[1] < b.level[1]
+		end
+		return tostring(a.name) < tostring(b.name)
+	end)
+	local names = {}
+	for i = 1, math.min(#out, opts.count or 3) do
+		names[i] = string.format("%s (%d-%d)", tostring(out[i].name or out[i].id), out[i].level[1], out[i].level[2])
+	end
+	return names
+end
+
 -- a hunting mark's short name: "Rat, Snake (level 4-9)"
 function M.shortName(m)
 	return (tostring(m.n or ""):gsub("^Hunting: ", ""))

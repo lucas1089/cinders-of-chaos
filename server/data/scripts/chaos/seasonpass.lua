@@ -232,6 +232,7 @@ local function periodsOf(acc)
 	if acc.day ~= day or acc.week ~= week then
 		SP.flush(acc)
 		acc.periods = {}
+		acc.prev = {}
 		acc.day, acc.week = day, week
 		loadPeriod(acc, day)
 		loadPeriod(acc, week)
@@ -333,6 +334,38 @@ function SP.addXp(acc, amount, why)
 	return amount
 end
 
+-- the banked daily cap (cfg.bankDays): the pass XP of capKey on today and the days before, newest first, and how many
+-- of those days the season ran. The earlier days are read once per day (acc.prev).
+local function capWindow(acc, today, capKey)
+	local n = math.max(1, math.floor(tonumber(cfg.bankDays) or 1))
+	local t = now()
+	local start
+	local season = SP.active()
+	if season and ChaosSeason and ChaosSeason.times then
+		local ok, st = pcall(ChaosSeason.times, season, overrides())
+		start = ok and st or nil
+	end
+	local startKey = start and P.dayKey(start) or 0
+	acc.prev = acc.prev or {}
+	local used, days = {today[capKey] or 0}, 1
+	for i = 1, n - 1 do
+		local key = P.dayKey(t - i * 86400)
+		if key < startKey then
+			break
+		end
+		if not acc.prev[key] then
+			local saved = acc.periods
+			acc.periods = {}
+			acc.prev[key] = loadPeriod(acc, key)
+			acc.periods = saved
+		end
+		used[#used + 1] = acc.prev[key][capKey] or 0
+		days = days + 1
+	end
+	return used, days
+end
+SP.capWindow = capWindow
+
 -- one game event of a character: pass XP from the source (daily cap) and the challenges
 -- source: exp (value = level units), kill, boss, bounty, rift (value = tier), goblin, invasion
 function SP.progress(player, source, value)
@@ -356,9 +389,11 @@ function SP.progress(player, source, value)
 			acc.frac = acc.frac + (tonumber(value) or 0) * cfg.sources.exp.xp
 			local whole = math.floor(acc.frac)
 			acc.frac = acc.frac - whole
-			gain = P.sourceGain(cfg, "exp", whole / cfg.sources.exp.xp, today[capKey])
+			local used, days = capWindow(acc, today, capKey)
+			gain = P.sourceGain(cfg, "exp", whole / cfg.sources.exp.xp, used, days)
 		else
-			gain = P.sourceGain(cfg, source, value, today[capKey])
+			local used, days = capWindow(acc, today, capKey)
+			gain = P.sourceGain(cfg, source, value, used, days)
 		end
 		if gain > 0 then
 			setPeriod(acc, day, capKey, (today[capKey] or 0) + gain)
@@ -1132,7 +1167,10 @@ function SP.stateOf(player)
 		local sources = {}
 		for _, key in ipairs({"exp", "boss", "bounty", "rift", "goblin", "invasion"}) do
 			local s = cfg.sources[key]
-			sources[#sources + 1] = {key = key, name = s.name, today = today["cap:" .. key] or 0, cap = s.dailyCap}
+			-- cap: today's room with the banked days (cfg.bankDays) plus what today already took
+			local used, days = capWindow(acc, today, "cap:" .. key)
+			local done = today["cap:" .. key] or 0
+			sources[#sources + 1] = {key = key, name = s.name, today = done, cap = done + P.sourceRoom(cfg, key, used, days)}
 		end
 		data.sources = sources
 	end

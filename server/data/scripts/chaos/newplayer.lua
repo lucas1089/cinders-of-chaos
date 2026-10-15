@@ -9,6 +9,9 @@
 -- the kit skips; the base starter chest (scripts/customs/actions/first_chest.lua, storage 33735) is marked as opened
 -- when the kit is given, so nobody collects both. No base file is changed.
 --
+-- Home town: a brand-new character moves to the main city (newplayer_config.lua homeTown, Cinderhold) once, at its
+-- first login (NP.settleHome); characters that have their kit keep their town (server/README.md "Main city").
+--
 -- Other scripts: ChaosNewPlayer.kitFor(vocationId) (newplayer_core.lua) returns a vocation's kit;
 -- ChaosNewPlayer.setKit(name, def, {vocationIds}) adds or changes one (docs/CLASSES.md).
 --
@@ -187,6 +190,27 @@ function NP.giveKit(player)
 	return true, kit
 end
 
+-- ------------------------------------------------------------------------------------------------ home town
+-- a brand-new character (no kit yet) moves to the main city once (homeTown in the config, NP.homeTownFor). teleport:
+-- also send it to the new temple (a first login without the tutorial island). Returns true when the town changed.
+function NP.settleHome(player, teleport)
+	local okT, town = pcall(function() return player:getTown() end)
+	local cur = okT and town and town:getId() or 0
+	local id = NP.homeTownFor(cur, NP.isSet(getS(player, "kit")))
+	local home = id and Town(id)
+	if not home then
+		return false
+	end
+	player:setTown(home)
+	if teleport then
+		local temple = home:getTemplePosition()
+		player:teleportTo(temple)
+		temple:sendMagicEffect(CONST_ME_TELEPORT)
+	end
+	print("[newplayer] " .. player:getName() .. ": home town " .. tostring(cur) .. " -> " .. id)
+	return true
+end
+
 -- ------------------------------------------------------------------------------------------------ welcome
 function NP.showWelcome(player, force)
 	if not force and NP.isSet(getS(player, "welcome")) then
@@ -263,6 +287,7 @@ function login.onLogin(player)
 		return true
 	end
 	if NP.kitDueAtLogin(getS(player, "kit"), player:getLastLoginSaved()) and NP.kitFor(player:getVocation():getId()) then
+		NP.settleHome(player, true)
 		NP.kitAndWelcome(player)
 	end
 	return true
@@ -272,7 +297,7 @@ login:register()
 -- ------------------------------------------------------------------------------------------------ staff command
 -- /newplayerkit <name>            give the kit again (ignores the flag)
 -- /newplayerkit <name>, welcome   show the welcome again
--- /newplayerkit <name>, milestone <n>  give milestone n (1..4) again
+-- /newplayerkit <name>, milestone <n>  give milestone n (1..10, newplayer_config.lua milestones) again
 -- /newplayerkit <name>, reset     clear every new-player flag (kit, welcome, milestones, tutorial)
 -- /newplayerkit <name>, tutorial  send the character to the start of the tutorial island
 local admin = TalkAction("/newplayerkit")

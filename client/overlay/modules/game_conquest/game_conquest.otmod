@@ -1,0 +1,13 @@
+Module
+  name: game_conquest
+  description: The Conquest vendor - Conquest Tokens buy any unique or set piece you have seen, Omen Keys of a chosen kind, Ascended Shards and the rarity refinement; bad-luck protection; extended opcode 167
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ conquestview, conquest ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

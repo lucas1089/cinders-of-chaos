@@ -111,11 +111,20 @@ local function tokens(player)
 	return math.max(0, getS(player, S().tokens))
 end
 
-local function weekCount(player)
-	if getS(player, S().weekKey) ~= M.weekKey() then
-		return 0
+-- the repeat rewards of this week (M.repeatState): a new week rolls the stored count over into the bank first
+local function repeats(player)
+	local st = M.repeatState(getS(player, S().weekKey), getS(player, S().weekCount), getS(player, S().weekBank),
+		M.weekKey())
+	if st.rolled and getS(player, S().weekKey) > 0 then
+		player:setStorageValue(S().weekKey, M.weekKey())
+		player:setStorageValue(S().weekCount, 0)
+		player:setStorageValue(S().weekBank, st.bank)
 	end
-	return math.max(0, getS(player, S().weekCount))
+	return st
+end
+
+local function weekCount(player)
+	return repeats(player).count
 end
 
 local function inCombat(player)
@@ -168,7 +177,7 @@ function T.state(player)
 	local tr = T.runs[player:getId()]
 	return M.clientState({voc = voc, level = player:getLevel(), tier = T.tierCleared(player, voc), picks = T.picks(player, voc),
 		tokens = tokens(player), cooldown = getS(player, S().cooldown), now = os.time(), running = tr and not tr.over or nil,
-		repeatsLeft = math.max(0, C().reward.repeatsPerWeek - weekCount(player))})
+		repeatsLeft = math.max(0, repeats(player).allowance - weekCount(player))})
 end
 
 function T.sendState(player)
@@ -861,13 +870,15 @@ local function reward(player, tr)
 	local c = C()
 	local voc = tr.voc
 	local before = T.tierCleared(player, voc)
-	local out = M.clearOutcome(tr.tier, player:getLevel(), before, tokens(player), weekCount(player))
+	local rp = repeats(player)
+	local out = M.clearOutcome(tr.tier, player:getLevel(), before, tokens(player), rp.count, rp.allowance)
 	if out.first then
 		player:setStorageValue(S().tierBase + voc, tr.tier)
 	end
 	if out.counted then
 		player:setStorageValue(S().weekKey, M.weekKey())
-		player:setStorageValue(S().weekCount, weekCount(player) + 1)
+		player:setStorageValue(S().weekCount, rp.count + 1)
+		player:setStorageValue(S().weekBank, rp.bank)
 	end
 	if out.tokens > 0 then
 		player:setStorageValue(S().tokens, tokens(player) + out.tokens)
@@ -1447,7 +1458,9 @@ function T.placeKeepers()
 		for _, townId in ipairs(n.townIds or {}) do
 			local town = Town(townId)
 			local temple = town and town:getTemplePosition()
-			local pos = temple and freeTileNear(temple, n.offsets)
+			-- the booth in the town's Hall of Services (npc_booths.lua), else next to the temple
+			local pos = (ChaosNpcBooths and ChaosNpcBooths.spot and ChaosNpcBooths.spot(n.name, townId))
+				or (temple and freeTileNear(temple, n.offsets))
 			if pos and placeKeeper(pos) then
 				placed = placed + 1
 			else

@@ -15,7 +15,7 @@ return {
 		{id = 32252, key = "binding", clientId = 25047, name = "Orb of Binding", plural = "Orbs of Binding", article = "an", weight = 50, description = "Binds one modifier of an item with a rarity: the Orbs of Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone. Choose the modifier on the crafting bench. Only an Orb of Erasure frees it."},
 		{id = 32253, key = "excision", clientId = 25049, name = "Orb of Excision", plural = "Orbs of Excision", article = "an", weight = 50, description = "Removes the modifier you choose on the crafting bench (a random one that is not bound when used directly). On a Rift Key: one modifier."},
 		{id = 32254, key = "reforging", clientId = 25048, name = "Orb of Reforging", plural = "Orbs of Reforging", article = "an", weight = 50, description = "Rolls the tier (by the item level) and the value of the one modifier you choose on the crafting bench again."},
-		{id = 32255, key = "ruin", clientId = 24477, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble for an item with a rarity: it improves (one tier more on every modifier that is not bound, or an extra modifier), nothing happens, or the item is ruined for good: no orb changes it any more."},
+		{id = 32255, key = "ruin", clientId = 24477, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble for an item with a rarity: it improves (one tier more on every modifier that is not bound, or an extra modifier) or nothing happens. It never ruins the item."},
 		{id = 32256, key = "whetstone", clientId = 22083, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "Use it with an item with a rarity: +1% quality (every modifier value is multiplied), up to 20% (30% from Divine rarity)."},
 		{id = 32257, key = "unveiling", clientId = 25046, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Use it with an item that has a veiled modifier: choose one of three modifiers of the veiled pool. The choice is final."}
 	},
@@ -39,7 +39,8 @@ return {
 
 	-- the Orb of Ruin: odds in percent of its outcomes (they add up to 100), and how an improvement goes: `tiers` % one
 	-- more tier on every modifier that is not bound, else (or when every modifier is at T8) one extra modifier above
-	-- the side limit (once per item)
-	ruin = {improve = 40, nothing = 45, ruin = 15, tiers = 60}
+	-- the side limit (once per item). ruin = 0 since the Conquest rework (2026-10-15): the worst case is that nothing
+	-- happens; a ruin above 0 would bring the old "ruined for good" outcome back (items ruined before stay ruined).
+	ruin = {improve = 40, nothing = 60, ruin = 0, tiers = 60}
 
 }

@@ -701,8 +701,8 @@ function A.installHooks()
 	local W = ChaosWorldBoss
 	if W and W.computeRewards and not W.achievementsWrapped then
 		local original = W.computeRewards
-		W.computeRewards = function(shares, r, boss, pool, rng)
-			local out = original(shares, r, boss, pool, rng)
+		W.computeRewards = function(shares, r, boss, pool, rng, pityOf)
+			local out = original(shares, r, boss, pool, rng, pityOf)
 			local ok, err = pcall(onBossShares, shares, boss)
 			if not ok then
 				log("world boss hook: " .. tostring(err))

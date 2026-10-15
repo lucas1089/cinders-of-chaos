@@ -465,6 +465,12 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
 - the **mock donation provider**: `CHAOS_PAY_PIX_PROVIDER=mock` / `CHAOS_PAY_PAYPAL_PROVIDER=mock` in
   `/etc/chaos/payments.env` approve every donation by themselves after a few seconds (free Chaos Coins). Live values:
   `mercadopago` / `paypal` (or `off`); see "Donations" below.
+- the **beta switch**: `server/data/scripts/chaos/beta_config.lua` `enabled = true` gives every account 5,000 free
+  Chaos Coins at its first new character (server/README.md "Beta starter coins"). Set `enabled = false` on the launch
+  server before the first start; check with `grep -n "enabled" data/scripts/chaos/beta_config.lua`. The beta coins, the
+  purchases made with them and the grant rows (`chaos_shop_coins`, `chaos_shop_purchases`, `chaos_shop_history`,
+  `chaos_beta_grants`) are wiped with the beta (docs/BETA.md section 9; only the beta coins: the snippet in docs/BETA.md
+  section 4).
 
 ## 12. Open loose ends that matter for launch (ROADMAP.md)
 
@@ -478,7 +484,7 @@ Still open:
   with Blackblood Creed broke the Deadeye's single-target lead: fixed 2026-10-12, computed (ROADMAP "Open
   decisions"). Open: measure the fix on the dummies.
 - The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class
-  unlock: 500 Chaos Coins each, or free at level 500 (docs/PRICES.md). C2 / C3 polish and the C4 outfits and
+  unlock: free at account level 200, not sold (docs/PRICES.md). C2 / C3 polish and the C4 outfits and
   effects are still in progress (ROADMAP).
 - The community (Discord) link is empty (`ChaosTopBar.COMMUNITY_URL`, the website's Discord invite).
 - Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12; the ladder is on the Rules page).
@@ -502,7 +508,7 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
 2. Engine built with the patches (section 1); server folder in `/opt/chaos/server` with the real map.
 3. `prod_config.py`, `/etc/chaos/chaos.env` (section 3).
 4. `install_all.py --dry-run`, then for real, then once more (0 changes) (section 4).
-5. Remove every test-only file (section 11).
+5. Remove every test-only file and turn the beta switch off (`beta_config.lua` `enabled = false`; section 11).
 6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`.
 7. Create the staff account and characters; log in with the release client; check the login screen (boosted creature,
    events, players online), a store purchase, a crafting orb, the bank, the stash.

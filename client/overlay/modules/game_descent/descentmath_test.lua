@@ -93,6 +93,11 @@ eq(lines[3].text, 'Free weekly descent: used this week', 'weekly used')
 eq(lines[4].text, 'Ember Sigil: 2 carried', 'sigils')
 eq(lines[5].text, 'Best depth: 7   Runs: 4   Clears: 0', 'records')
 eq(lines[6].text, 'This week (seed 123): best depth 6', 'weekly record')
+info.freeDailyCount = 3
+eq(M.infoLines(info)[2].text, 'Free descents: 3 ready (unused days bank up to 3)', 'banked free runs')
+info.freeDailyCount = 1
+eq(M.infoLines(info)[2].text, 'Free descent today: ready', 'one free run: the old line')
+info.freeDailyCount = nil
 info.freeDaily, info.nextDaily = false, 3 * 3600 + 600
 eq(M.infoLines(info)[2].text, 'Free descent today: used (next in 3:10 h)', 'daily used')
 local c = M.craft(info)

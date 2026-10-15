@@ -303,8 +303,77 @@ function L.lines(tip, ctx)
   if tip.collects then
     for _, line in ipairs(L.wrap(tip.collects, L.WRAP)) do add(line, C.dim) end
   end
+  -- where it comes from (server itemfinder.lua F.brief): the first sources, the expected effort, a token price
+  local srcLines = L.sourceLines(tip.src)
+  for i, line in ipairs(srcLines) do
+    add(line.text, line.color, i == 1)
+  end
   if tip.weight then
-    add(string.format('Weight %s oz', trim(tip.weight)), C.dim, not tip.locked and not tip.store)
+    add(string.format('Weight %s oz', trim(tip.weight)), C.dim, #srcLines == 0 and not tip.locked and not tip.store)
+  end
+  return out
+end
+
+-- 1 / p, rounded as a player reads it (1-20 exact, then 5s, 10s, 50s, 100s); the same as the server's
+-- goals_core.lua K.oneIn
+function L.oneIn(p)
+  p = tonumber(p) or 0
+  if p <= 0 then return nil end
+  local n = 1 / p
+  if n < 1.5 then return 1 end
+  local step = n < 20 and 1 or n < 200 and 5 or n < 1000 and 10 or n < 10000 and 50 or 100
+  return math.max(1, math.floor(n / step + 0.5) * step)
+end
+
+-- 12345 -> '12,345'
+function L.int(n)
+  local s = tostring(math.floor(tonumber(n) or 0))
+  return (s:reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', ''))
+end
+
+-- the sources block of a tooltip: src = {s = [{k, n, v}], e = {p, w, m}, t = token price}; rows {text, color}
+function L.sourceLines(src)
+  local out = {}
+  if type(src) ~= 'table' then return out end
+  local C = L.COLORS
+  local parts = {}
+  for _, s in ipairs(type(src.s) == 'table' and src.s or {}) do
+    if type(s) == 'table' and s.n then
+      parts[#parts + 1] = tostring(s.n) .. (s.v and (' (' .. tostring(s.v) .. ')') or '')
+    end
+  end
+  if #parts > 0 then
+    local drop = src.s[1].k == 'monster' or src.s[1].k == 'drop'
+    local text = drop and tr('Drops from: %s', table.concat(parts, ', ')) or tr('Sources: %s', table.concat(parts, ', '))
+    for _, line in ipairs(L.wrap(text, L.WRAP)) do
+      out[#out + 1] = { text = line, color = C.dim }
+    end
+  end
+  local effort
+  local e = type(src.e) == 'table' and src.e or nil
+  local n = e and L.oneIn(e.p)
+  if n then
+    local count = L.int(n)
+    if e.w == 'legendary' then
+      effort = tr('~1 in %s legendary kills', count)
+    elseif e.w == 'boss' then
+      effort = tr('~1 in %s boss kills', count)
+    elseif e.m then
+      effort = tr('~1 in %s kills of %s', count, tostring(e.m))
+    else
+      effort = tr('~1 in %s kills', count)
+    end
+  end
+  local price = tonumber(src.t)
+  if effort and price then
+    effort = effort .. tr(', or %s Conquest Tokens', L.int(price))
+  elseif price then
+    effort = tr('Conquest vendor: %s tokens', L.int(price))
+  end
+  if effort then
+    for _, line in ipairs(L.wrap(effort, L.WRAP)) do
+      out[#out + 1] = { text = line, color = C.gold }
+    end
   end
   return out
 end

@@ -15,6 +15,8 @@ eq(head, 'Chaos Pact ended', 'ended headline')
 eq(line:find('withdraw-only', 1, true) ~= nil, true, 'ended: nothing lost')
 head = V.status({ active = false, endsAt = 0, dailyCoins = 5 })
 eq(head, 'No Chaos Pact', 'never bought')
+eq(select(2, V.status({ active = false, endsAt = 0, dailyCoins = 5 })):find('remote stash deposit', 1, true) ~= nil, true,
+  'the perks name remote stash deposit')
 
 local text, on = V.claim({ active = true, canClaim = true, dailyCoins = 5 })
 eq(text, 'Claim 5 coins', 'claim text') eq(on, true, 'claim on')

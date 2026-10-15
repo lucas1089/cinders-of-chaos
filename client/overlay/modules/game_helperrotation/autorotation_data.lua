@@ -165,25 +165,31 @@ ChaosAutoRotationData = {
     } },
     [11] = { name = "Thief", presets = {
       { level = 20, gap = 2.00, spells = { 236 }, creatures = { 1 } },
+      { level = 50, gap = 2.00, spells = { 192, 236 }, creatures = { 2, 1 } },
+      { level = 80, gap = 2.00, spells = { 192, 136, 236 }, creatures = { 2, 2, 1 } },
     }, heals = {
       { id = 98, level = 25 },
     } },
     [12] = { name = "Ninja", presets = {
       { level = 20, gap = 2.00, spells = { 236 }, creatures = { 1 } },
-      { level = 100, gap = 2.00, spells = { 240, 236 }, creatures = { 1, 1 } },
-      { level = 180, gap = 2.00, spells = { 240, 242, 236 }, creatures = { 1, 2, 1 } },
+      { level = 50, gap = 2.00, spells = { 192, 236 }, creatures = { 2, 1 } },
+      { level = 100, gap = 2.00, spells = { 192, 240, 236 }, creatures = { 2, 1, 1 } },
+      { level = 180, gap = 2.00, spells = { 192, 240, 242, 236 }, creatures = { 2, 1, 2, 1 } },
     }, heals = {
       { id = 98, level = 25 },
     } },
     [13] = { name = "Samurai", presets = {
       { level = 20, gap = 2.00, spells = { 236 }, creatures = { 1 } },
-      { level = 120, gap = 2.00, spells = { 244, 236 }, creatures = { 1, 1 } },
+      { level = 50, gap = 2.00, spells = { 192, 236 }, creatures = { 2, 1 } },
+      { level = 120, gap = 2.00, spells = { 244, 192, 236 }, creatures = { 1, 2, 1 } },
+      { level = 200, gap = 2.00, spells = { 244, 193, 192, 236 }, creatures = { 1, 2, 2, 1 } },
     }, heals = {
       { id = 98, level = 25 },
     } },
     [20] = { name = "Necromancer", presets = {
       { level = 15, gap = 2.00, spells = { 181 }, creatures = { 1 } },
       { level = 40, gap = 2.00, spells = { 182, 181 }, creatures = { 1, 1 } },
+      { level = 60, gap = 2.00, spells = { 182, 197, 181 }, creatures = { 1, 2, 1 } },
     }, heals = {
       { id = 103, level = 300 },
       { id = 82, level = 36 },
@@ -211,29 +217,31 @@ ChaosAutoRotationData = {
     [17] = { name = "Monk", presets = {
       { level = 15, gap = 2.00, spells = { 63 }, creatures = { 1 } },
       { level = 30, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
-      { level = 50, gap = 2.00, spells = { 64, 65, 63 }, creatures = { 1, 2, 1 } },
+      { level = 50, gap = 2.00, spells = { 64, 65, 194, 63 }, creatures = { 1, 2, 2, 1 } },
     }, heals = {
       { id = 66, level = 40 },
     } },
     [18] = { name = "Shadowfist", presets = {
       { level = 15, gap = 2.00, spells = { 63 }, creatures = { 1 } },
       { level = 30, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
-      { level = 50, gap = 2.00, spells = { 64, 65, 63 }, creatures = { 1, 2, 1 } },
-      { level = 100, gap = 2.00, spells = { 68, 64, 63 }, creatures = { 1, 1, 1 } },
-      { level = 150, gap = 2.00, spells = { 68, 69, 64, 63 }, creatures = { 1, 1, 1, 1 } },
+      { level = 50, gap = 2.00, spells = { 64, 65, 194, 63 }, creatures = { 1, 2, 2, 1 } },
+      { level = 100, gap = 2.00, spells = { 68, 64, 194 }, creatures = { 1, 1, 1 } },
+      { level = 150, gap = 2.00, spells = { 68, 69, 64, 195 }, creatures = { 1, 1, 1, 1 } },
     }, heals = {
       { id = 66, level = 40 },
     } },
     [19] = { name = "Iron Sage", presets = {
       { level = 15, gap = 2.00, spells = { 63 }, creatures = { 1 } },
       { level = 30, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
-      { level = 50, gap = 2.00, spells = { 64, 65, 63 }, creatures = { 1, 2, 1 } },
+      { level = 50, gap = 2.00, spells = { 64, 65, 194, 63 }, creatures = { 1, 2, 2, 1 } },
+      { level = 150, gap = 2.00, spells = { 64, 194, 196, 71 }, creatures = { 1, 1, 1, 1 } },
     }, heals = {
       { id = 66, level = 40 },
     } },
     [23] = { name = "Templar", presets = {
       { level = 20, gap = 2.00, spells = { 189 }, creatures = { 1 } },
       { level = 40, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
+      { level = 60, gap = 2.00, spells = { 190, 108, 189 }, creatures = { 2, 2, 1 } },
     }, heals = {
       { id = 191, level = 30 },
     } },
@@ -248,6 +256,7 @@ ChaosAutoRotationData = {
     [25] = { name = "Sentinel", presets = {
       { level = 20, gap = 2.00, spells = { 189 }, creatures = { 1 } },
       { level = 40, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
+      { level = 150, gap = 2.00, spells = { 190, 109, 189 }, creatures = { 2, 2, 1 } },
     }, heals = {
       { id = 191, level = 30 },
     } },
@@ -268,14 +277,18 @@ ChaosAutoRotationData = {
     [65] = { name = "Whirling Heel", words = "drai spir dhun", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = true },
     [68] = { name = "Pressure Points", words = "kah mynd dhun", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
     [69] = { name = "Shadowfist Flurry", words = "kah gal umh dhun", cooldown = 12000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = true },
+    [71] = { name = "Iron Palm", words = "kah brak dhun", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = true },
     [80] = { name = "Reaver's Spin", words = "kah", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [85] = { name = "Arcane Ripple", words = "drai ondr", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [105] = { name = "Butcher's Gyre", words = "kah gal", cooldown = 6000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [106] = { name = "Earthrend", words = "kah vas", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [108] = { name = "Sanctified Ground", words = "drai sol sanct", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [109] = { name = "Shield Wave", words = "drai sol aeg", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [111] = { name = "Phantom Javelin", words = "kah sag", cooldown = 2000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
     [120] = { name = "Bramble Fan", words = "drai gor ul", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [121] = { name = "Glacier Fan", words = "drai hyr ul", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [124] = { name = "Sanctum Burst", words = "drai vas sol", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [136] = { name = "Fan of Knives", words = "drai vas nyx shur", cooldown = 6000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [138] = { name = "Smoulder Brand", words = "hesh pyr", cooldown = 30000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
     [141] = { name = "Rending Mark", words = "hesh sang", cooldown = 30000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
     [148] = { name = "Hammerfall Palm", words = "kah gro brak", cooldown = 2000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
@@ -293,6 +306,12 @@ ChaosAutoRotationData = {
     [188] = { name = "Bone Offering", words = "drai sang oss", cooldown = 12000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [189] = { name = "Radiant Smite", words = "kah sol dyr", cooldown = 2000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
     [190] = { name = "Consecration", words = "drai sol haln", cooldown = 20000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [192] = { name = "Blade Flurry", words = "drai vas kaen", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [193] = { name = "Iaido Sweep", words = "drai gal kaen", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [194] = { name = "Palm Shockwave", words = "drai gal dhun", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [195] = { name = "Shadow Ricochet", words = "kah umh dhun", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [196] = { name = "Iron Chain", words = "kah brak vinc", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
+    [197] = { name = "Bone Shrapnel", words = "drai oss krak", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [198] = { name = "Judgement", words = "kah sol vehm", cooldown = 12000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
     [199] = { name = "Purging Nova", words = "drai gal sol orr", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [200] = { name = "Rime Bloom", words = "drai hyr rhim", cooldown = 8000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },

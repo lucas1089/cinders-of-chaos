@@ -1,5 +1,6 @@
 // Boss Spawns window (game_bossspawns): bosses by category with place and respawn. Styles from client_chaos_theme.
 // Opened from the menu (Adventure > Boss Spawns). Fixed size: the columns are laid out for 700 px.
+// The Pocket button of a row opens a private copy of that boss (server pocketboss.lua; shown only for pocket bosses).
 
 BossSpawnsCategory < UIWidget
   height: 24
@@ -55,11 +56,20 @@ BossSpawnsRow < UIWidget
     margin-left: 4
     phantom: true
 
+  ChaosButton
+    id: pocketButton
+    anchors.right: loc.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    width: 84
+    height: 20
+    visible: false
+
   UILabel
     id: name
     anchors.top: parent.top
     anchors.left: creature.right
-    anchors.right: loc.left
+    anchors.right: pocketButton.left
     margin-top: 4
     margin-left: 8
     margin-right: 8

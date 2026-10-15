@@ -190,7 +190,8 @@ do
 	ok(said(a, "Bones Dungeon: 1 minute left"), "dungeons: the 1 minute warning")
 	advance(61 * 1000)
 	eq(a.pos.x, 100, "dungeons: time up: back where the player entered")
-	ok(a.storage[50203] and a.storage[50203] > os.time(), "dungeons: the failure cooldown")
+	ok(a.storage[50203] and a.storage[50203] - os.time() <= Chaos.dungeons.failCooldownSeconds and a.storage[50203] > os.time(),
+		"dungeons: a failed run (time up): the short fail cooldown")
 	-- the waiting player gets the dungeon now (b queued without a cooldown)
 	advance(3000)
 	eq(b.pos.x, 510, "dungeons: the next in the queue goes in")
@@ -201,7 +202,8 @@ do
 	login.onLogin(b)
 	eq(b.pos.x, temple.x, "dungeons: a relog inside the box goes to the temple")
 	ok(said(b, "You logged out inside the dungeon: your run is over."), "dungeons: told why")
-	ok(b.storage[50203] and b.storage[50203] > os.time(), "dungeons: leaving by a logout counts as a failed attempt")
+	ok(b.storage[50203] and b.storage[50203] - os.time() <= Chaos.dungeons.failCooldownSeconds,
+		"dungeons: leaving by a logout is a failed attempt: the short fail cooldown")
 	-- a restart: the first login inside the box goes to the temple without a cooldown
 	local c = newPlayer(3, "Fen", P(511, 511, 7))
 	c.lastLogout = ChaosDungeonsBoot - 10

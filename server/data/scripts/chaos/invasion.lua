@@ -877,6 +877,10 @@ end
 
 function V.deliver(player, r)
 	local inboxUsed = false
+	-- Conquest Tokens (conquest.lua) by the share of the defence
+	if ChaosConquest and ChaosConquest.reward then
+		pcall(ChaosConquest.reward, player, "invasion", {share = r.share}, tostring(r.areaName or ""))
+	end
 	if r.bank and r.bank > 0 then
 		player:setBankBalance(player:getBankBalance() + r.bank)
 	end

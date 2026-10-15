@@ -94,6 +94,11 @@ ChaosOpcodes.clientGuardHello = 190
 -- The Ashen Chronicle and the Capital Memorial: chapters, record, Memorial choice (client game_chronicle; chronicle.lua,
 -- memorial.lua; server/README.md "The Ashen Chronicle")
 ChaosOpcodes.chronicle = 171
+-- Candlemarks: the currency for time online, its counter and shop window (client game_candlemarks; candlemarks.lua,
+-- candlemarks_core.lua, candlemarks_config.lua; server/README.md "Candlemarks"). Storages 7102460 - 7102469.
+ChaosOpcodes.candlemarks = 176
+Chaos.candlemarksTables = {accounts = "chaos_candlemarks", progress = "chaos_candlemark_progress",
+	purchases = "chaos_candlemark_purchases"}
 
 -- ---------------------------------------------------------------------------
 -- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client
@@ -212,7 +217,9 @@ Chaos.tables = {
 	coinOrders = "chaos_coin_orders",
 	-- the Pix / PayPal donation of an order (shop_payments.lua, the website's pay/ worker and webhook)
 	coinPayments = "chaos_coin_payments",
-	coinGifts = "chaos_coin_gifts"
+	coinGifts = "chaos_coin_gifts",
+	-- beta starter coins, one row per account (beta.lua, beta_core.lua ChaosBetaCore.TABLE, sql/chaos_beta.sql)
+	betaGrants = "chaos_beta_grants"
 }
 -- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
 Chaos.tables.riftAtlas = "chaos_rift_atlas"
@@ -248,6 +255,9 @@ ChaosOpcodes.raid = 213
 Chaos.storage.raid = 7100440
 Chaos.tables.raidLockouts = "chaos_raid_lockouts"
 Chaos.tables.raidInstances = "chaos_raid_instances"
+-- Pocket bosses (pocketboss.lua, pocketboss_core.lua, pocketboss_config.lua, sql/chaos_pocketboss.sql): on the Boss
+-- Spawns opcode (217, actions pocket*), no player storages; action ids 47620 - 47629 reserved (47620 the way out)
+Chaos.tables.pocketBoss = "chaos_pocketboss"
 -- Loadouts / Armory (client game_loadouts; loadouts.lua, loadouts_core.lua, loadouts_config.lua, sql/chaos_loadouts.sql):
 -- save and switch whole builds; storages 7100570 - 7100579 reserved (+0 active slot, +1 switch serial, +2 last switch),
 -- and 7112000 - 7127999 for the support runes each loadout holds (loadouts_config.lua runeMirrorBase)
@@ -306,6 +316,12 @@ Chaos.tables.professionSales = "chaos_professions_sales"
 -- (+0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes); no tables
 ChaosOpcodes.gamble = 199
 Chaos.storage.gamble = 7101900
+-- Conquest Tokens: the token vendor and bad-luck protection (client game_conquest; conquest.lua, conquest_core.lua,
+-- conquest_config.lua, sql/chaos_conquest.sql, NPC data/npc/Iselde Varrow.xml); storages 7102640 - 7102689 reserved
+-- (+0 day, +1..+29 tokens today per source, +30..+39 misses in a row per pity group)
+ChaosOpcodes.conquest = 167
+Chaos.storage.conquest = 7102640
+Chaos.tables.conquest = "chaos_conquest"
 -- Map markers (client game_mapmarkers; server/README.md "Map markers"). One opcode for two scripts, JSON {action, data}:
 -- partymarkers.lua (+ _core, _config): where the other party members are; poi.lua (+ _core, _config, the generated
 -- data/chaos_poi.lua of tools/gen_poi.py): points of interest, the discovered ones in chaos_poi_seen
@@ -425,7 +441,14 @@ Chaos.dungeons = {
 	-- "Pack combat (pace)").
 	maxTimeSeconds = 900,
 	limits = {warnAt = {300, 60, 10}},
-	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the base server modal only did on failure)
+	-- the cooldown (2026-10-15, respect the players' time): a cleared run 15 minutes (cooldownSeconds, about one more
+	-- run's length; runs take 10-15), it replaces the base server's DUNGEON_SYSTEM.CooldownTime (3600, after every run).
+	-- A failed run, a time-out, leaving or dying inside: a short failCooldownSeconds, 5 minutes, so farming 85% of the
+	-- monsters and leaving does not pay (owner rule "follow your recommendations", 2026-10-15).
+	cooldownOnSuccess = true,
+	cooldownOnFail = true,
+	cooldownSeconds = 900,
+	failCooldownSeconds = 300,
 	queueTickMs = 3000,
 	maxDifficulty = 6, -- client has 6 difficulty buttons
 	-- percentage of the run's monsters that must die to unlock the boss (owner, 2026-10-14: 85, was 100): the members
@@ -752,7 +775,7 @@ Chaos.boosted = {
 
 -- Store services (shop_services.lua, autosell.lua). Prices and the offers themselves are in shop_config.lua.
 Chaos.shopServices = {
-	maxStamina = 2520, -- minutes (42 h), what the Stamina Refill restores to
+	maxStamina = 2520, -- minutes (42 h), what the stamina service restores to (the Stamina Refill offer was removed 2026-10-15)
 
 	-- Temple Teleport Scroll: an ordinary "scroll" item (6119, no other script uses it) with this action id and a
 	-- custom name/description; the uses left are kept in the item's custom attribute "chaos_uses".
@@ -848,6 +871,22 @@ Chaos.tables.deathRecaps = "chaos_death_recaps"
 ChaosOpcodes.nemesis = 163
 Chaos.tables.nemesis = "chaos_nemesis"
 Chaos.storage.nemesis = 7102300
+
+-- Next Goals: the goals of every character's level band, the gear path, the hunts and the on-screen tracker (client
+-- game_goals; goals.lua, goals_core.lua, goals_config.lua, sql/chaos_goals.sql). 178 is free in the reference server,
+-- the base client and every Chaos module. No player storages.
+ChaosOpcodes.goals = 178
+Chaos.tables.goals = "chaos_goals"
+
+-- Ember Cache, Daily Spark and the day book: points from every activity, a daily Spark, three weekly milestones, what
+-- the character did today (client game_embercache; embercache.lua, embercache_core.lua, daybook_core.lua,
+-- embercache_config.lua). 174 is free in the reference server, the base client and every Chaos module. Storages
+-- 7102700 - 7102719 (the cache) and 7102720 - 7102739 (the day book), embercache_config.lua; no tables.
+ChaosOpcodes.emberCache = 174
+Chaos.storage.emberCache = 7102700
+Chaos.storage.daybook = 7102720
+-- Gentle deaths (gentledeath.lua, gentledeath_config.lua): storages 7102740 - 7102744
+Chaos.storage.gentleDeath = 7102740
 
 -- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
 -- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,

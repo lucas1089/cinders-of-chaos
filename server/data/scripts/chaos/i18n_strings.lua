@@ -6,6 +6,73 @@
 
 return {
 	["pt-BR"] = {
+		-- Idle Hall (idlehall.lua, idlehall_core.lua)
+		["You are idle in town: you will be moved to the Idle Hall in 1 minute. Take a step to stay."] =
+			"Você está parado na cidade: em 1 minuto será levado ao Idle Hall. Dê um passo para ficar.",
+		["You are idle in town: you will be moved to the Idle Hall in %d seconds. Take a step to stay."] =
+			"Você está parado na cidade: em %d segundos será levado ao Idle Hall. Dê um passo para ficar.",
+		["You stood idle in town for %d minutes and were moved to the Idle Hall. Its portal leads back to your temple."] =
+			"Você ficou parado na cidade por %d minutos e foi levado ao Idle Hall. O portal dele leva de volta ao seu templo.",
+		-- Time-friendly progression (catchup.lua)
+		["Rested Vial: +%d minutes of rested hunting (%d in all)."] =
+			"Frasco de Descanso: +%d minutos de caça descansada (%d no total).",
+		["Bounty rerolls: %d. Use one on an accepted contract in the Bounty Board."] =
+			"Novos sorteios de bounty: %d. Use um em um contrato aceito no Bounty Board.",
+		["You have no bounty reroll."] = "Você não tem novo sorteio de bounty.",
+		["No other monster fits this contract."] = "Nenhum outro monstro serve para este contrato.",
+		["Bounty rerolled: now %d x %s."] = "Bounty sorteado de novo: agora %d x %s.",
+		["Kill task rerolls: %d. Use one on the task board of the Bestiary."] =
+			"Novos sorteios de kill task: %d. Use um no quadro de tarefas do Bestiary.",
+		["You have no kill task reroll."] = "Você não tem novo sorteio de kill task.",
+		["The task board was drawn again."] = "O quadro de tarefas foi sorteado de novo.",
+		["Not sure where to start? Open Next Goals in the top menu."] =
+			"Não sabe por onde começar? Abra Next Goals no menu superior.",
+		["You are rested: +%d%% experience from monsters for about %d minutes of hunting."] =
+			"Você está descansado: +%d%% de experiência de monstros por cerca de %d minutos de caça.",
+		["Welcome back! For %d days: +%d%% experience, +%d%% loot and +%d%% token drops."] =
+			"Bem-vindo de volta! Por %d dias: +%d%% de experiência, +%d%% de loot e +%d%% de drops de tokens.",
+		["Catch-up: +%d%% experience from monsters until you near level %d, your account's best."] =
+			"Recuperação: +%d%% de experiência de monstros até chegar perto do level %d, o melhor da sua conta.",
+		["Your stamina is below %d hours: monsters give %d%% experience and %d%% loot. Stamina comes back faster while you are offline."] =
+			"Sua stamina está abaixo de %d horas: monstros dão %d%% de experiência e %d%% de loot. A stamina volta mais rápido enquanto você está offline.",
+		-- Ember Cache, Daily Spark and the day book (embercache.lua)
+		["%d gold to your bank and %s."] = "%d de ouro no seu banco e %s.",
+		["%d gold to your bank."] = "%d de ouro no seu banco.",
+		["Your backpack was full: see your inbox."] = "Sua mochila estava cheia: veja sua caixa de entrada.",
+		["Daily Spark lit: %s"] = "Daily Spark aceso: %s",
+		["Ember Cache milestone %d of %d: %s"] = "Marco %d de %d do Ember Cache: %s",
+		["Your last day of play (%s): %s experience, %d kills, %s gold of loot, %d Ember points."] =
+			"Seu último dia de jogo (%s): %s de experiência, %d abates, %s de ouro em loot, %d pontos Ember.",
+		["Daily Spark"] = "Daily Spark",
+		["Ember Cache"] = "Ember Cache",
+		["Day book"] = "Diário",
+		-- Restock (restock.lua)
+		["Restock: stand in a protection zone in town."] = "Reabastecer: fique em uma zona de proteção na cidade.",
+		["Restock: not inside an instance."] = "Reabastecer: não dentro de uma instância.",
+		["Restock: nothing used in this hunt session yet."] =
+			"Reabastecer: nada foi usado nesta sessão de caçada ainda.",
+		["Restock: you need %d gold (carried or in the bank)."] =
+			"Reabastecer: você precisa de %d de ouro (com você ou no banco).",
+		["Restocked %s for %d gold."] = "Reabastecido: %s por %d de ouro.",
+		[" Some went to your inbox (no room or capacity)."] =
+			" Parte foi para sua caixa de entrada (sem espaço ou capacidade).",
+		-- Gentle deaths (gentledeath.lua)
+		["Gentle death: you lost no experience."] = "Morte suave: você não perdeu experiência.",
+		["Gentle death: first death of the day, you lost %d%% of the usual experience."] =
+			"Morte suave: primeira morte do dia, você perdeu %d%% da experiência normal.",
+		["Gentle death: you lost %d%% of the usual experience."] = "Morte suave: você perdeu %d%% da experiência normal.",
+		["Gentle death: you keep all your items (only a red or black skull drops them)."] =
+			"Morte suave: você mantém todos os seus itens (só uma red ou black skull os derruba).",
+		["Blessings: leave combat first (no battle sign or protection zone lock)."] =
+			"Bênçãos: saia do combate primeiro (sem sinal de batalha nem bloqueio de zona de proteção).",
+		["Blessings: you need %d gold (carried or in the bank) for %d blessing(s)."] =
+			"Bênçãos: você precisa de %d de ouro (com você ou no banco) para %d bênção(ões).",
+		["The gods bless you: %d blessing(s) for %d gold. You have all blessings."] =
+			"Os deuses te abençoam: %d bênção(ões) por %d de ouro. Você tem todas as bênçãos.",
+		["You already have the Eternal Blessing."] = "Você já tem a Eternal Blessing.",
+		["The Eternal Blessing is yours: this character keeps all blessings for good."] =
+			"A Eternal Blessing é sua: este personagem mantém todas as bênçãos para sempre.",
+		["Eternal Blessing: your blessings are back."] = "Eternal Blessing: suas bênçãos voltaram.",
 		-- Pack combat (pace.lua)
 		["Multikill x%d: +%d%% experience on the chain."] = "Multikill x%d: +%d%% de experiência na sequência.",
 		-- Auto Seller (autosell.lua, autosell_core.lua)
@@ -425,8 +492,8 @@ return {
 
 		-- New players: the welcome, the kit, the level gifts and the tutorial island (newplayer.lua, newplayer_core.lua, newplayer_tutorial.lua, newplayer_config.lua)
 		["Welcome to Cinders of Chaos"] = "Bem-vindo a Cinders of Chaos",
-		["Welcome, %s the %s.\n\nYour starter kit is in your backpack. Next steps:\n- Character > Spellbook (Alt+S): every spell of your class and what it does.\n- The passive tree (top menu, Character): a point every 4 levels past level 8.\n- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n- The store (top menu, Economy): temple scrolls, stamina and services.\n- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n%s"] =
-			"Bem-vindo, %s, o %s.\n\nSeu kit inicial está na sua mochila. Próximos passos:\n- Character > Spellbook (Alt+S): todas as magias da sua classe e o que cada uma faz.\n- A árvore passiva (menu do topo, Character): um ponto a cada 4 níveis acima do nível 8.\n- Adventure > Bounty Board: contratos diários que pagam ouro e Orbs of Upheaval.\n- A loja (menu do topo, Economy): pergaminhos do templo, stamina e serviços.\n- O menu do topo tem todas as janelas do jogo: dungeons, a torre, as diárias, o banco e o stash.\n\n%s",
+		["Welcome, %s the %s.\n\nYour starter kit is in your backpack. Next steps:\n- Character > Spellbook (Alt+S): every spell of your class and what it does.\n- The passive tree (top menu, Character): a point every 4 levels past level 8.\n- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n- The store (top menu, Economy): temple scrolls, stamina and services.\n- Cinderhold is the main city: the two great teleports north of its temple lead to the teleport room, a portal to a hunt of every level.\n- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n%s"] =
+			"Bem-vindo, %s, o %s.\n\nSeu kit inicial está na sua mochila. Próximos passos:\n- Character > Spellbook (Alt+S): todas as magias da sua classe e o que cada uma faz.\n- A árvore passiva (menu do topo, Character): um ponto a cada 4 níveis acima do nível 8.\n- Adventure > Bounty Board: contratos diários que pagam ouro e Orbs of Upheaval.\n- A loja (menu do topo, Economy): pergaminhos do templo, stamina e serviços.\n- Cinderhold é a cidade principal: os dois grandes teleportes ao norte do templo levam à sala de teleportes, um portal para uma caçada de cada nível.\n- O menu do topo tem todas as janelas do jogo: dungeons, a torre, as diárias, o banco e o stash.\n\n%s",
 		["Welcome to Cinders of Chaos! Your kit is in your backpack. Everything else is in the menu at the top."] =
 			"Bem-vindo a Cinders of Chaos! Seu kit está na sua mochila. Todo o resto está no menu do topo.",
 		["A gift waits for you at level %s."] = "Um presente espera por você no nível %s.",
@@ -584,8 +651,8 @@ return {
 		["%d minutes"] = "%d minutos",
 		["1 second"] = "1 segundo",
 		["%d seconds"] = "%d segundos",
-		["Ascension is earned, not claimed. Speak with the %s in the temple."] =
-			"A ascensão é conquistada, não reivindicada. Fale com o %s no templo.",
+		["Ascension is earned, not claimed. Speak with the %s in the Hall of Services."] =
+			"A ascensão é conquistada, não reivindicada. Fale com o %s no Salão de Serviços.",
 		["The %s waits beyond the veil. You go alone; you have %d seconds to break it.\n\n%s\n\nIf you fall, the Oracle pulls you back unharmed: no experience, no items lost. You may try again after %s."] =
 			"O %s espera além do véu. Você vai sozinho; tem %d segundos para derrotá-lo.\n\n%s\n\nSe você cair, o Oracle te puxa de volta ileso: sem perder experiência nem itens. Você pode tentar de novo depois de %s.",
 		["The Trial of Ascension"] = "O Trial of Ascension",
@@ -683,7 +750,7 @@ return {
 			"O Oracle espera. Diga 'choice' quando estiver pronto.",
 		["That path is not yours to walk."] = "Esse caminho não é seu.",
 		["Ascension: %s"] = "Ascensão: %s",
-		["not begun. Speak with the %s in the temple."] = "não começou. Fale com o %s no templo.",
+		["not begun. Speak with the %s in the Hall of Services."] = "não começou. Fale com o %s no Salão de Serviços.",
 		["Proof of Strength, %d / %d (rare and legendary monsters of level %d+)."] =
 			"Proof of Strength, %d / %d (monstros raros e lendários de nível %d+).",
 		["the Trial. Ask the %s for the trial."] = "o Trial. Peça o trial ao %s.",
@@ -1165,8 +1232,10 @@ return {
 		["You do not have enough capacity."] = "Você não tem capacidade suficiente.",
 		["You do not have enough room."] = "Você não tem espaço suficiente.",
 		["Retrieved %dx %s from your stash."] = "Retirou %dx %s do seu stash.",
-		["You can take items out of the stash only in a protection zone. You can put items in anywhere."] =
-			"Você só pode retirar itens do stash numa zona de proteção. Pode guardar itens em qualquer lugar.",
+		["You can take items out of the stash only in a protection zone."] =
+			"Você só pode retirar itens do stash numa zona de proteção.",
+		["You can put items into the stash only in a protection zone. Remote deposit from anywhere: Store > Storage & Slots, or an active Chaos Pact."] =
+			"Você só pode guardar itens no stash numa zona de proteção. Guardar de qualquer lugar: Store > Storage & Slots, ou um Chaos Pact ativo.",
 		["That item could not be restored. It stays in the stash; tell the staff."] =
 			"Não foi possível restaurar esse item. Ele fica no stash; avise a equipe.",
 		["Nothing to stow."] = "Nada para guardar.",
@@ -1339,6 +1408,8 @@ return {
 		["The way is sealed."] = "O caminho está selado.",
 		["%s is for level %d and above."] = "%s é para o nível %d ou mais.",
 		["%s. The portal beside you leads back to the temple."] = "%s. O portal ao seu lado leva de volta ao templo.",
+		["The Hall of Services: progression to the west, trade to the east, the Descent and the raid to the south. The portal beside you leads back to the temple."] =
+			"O Salão de Serviços: progressão a oeste, comércio a leste, a Descida e a raid ao sul. O portal ao seu lado leva de volta ao templo.",
 		["%s declared war on your guild (%s). Answer it in Social > Guild Wars before it expires in %s."] =
 			"%s declarou guerra à sua guilda (%s). Responda em Social > Guild Wars antes que expire em %s.",
 		["Leaderboard: %s place on the %s board last week. You hold the title %s this week.%s"] =
@@ -2060,5 +2131,153 @@ return {
 		["The raid is full."] = "O raid está cheio.",
 		["You must stand in a protection zone to join the raid."] =
 			"Você precisa estar em uma zona de proteção para entrar no raid.",
+		-- Pocket bosses (pocketboss.lua, pocketboss_core.lua)
+		["Pocket reward of %s: %s.%s"] = "Recompensa do pocket de %s: %s.%s",
+		["Every pocket arena is in use. Try again in a moment."] = "Todas as arenas de pocket estão em uso. Tente de novo em instantes.",
+		["Personal loot of %s (%.1f%% of its health in damage and healing): %s.%s"] =
+			"Loot pessoal de %s (%.1f%% da vida dele em dano e cura): %s.%s",
+		["nothing this time"] = "nada desta vez",
+		["%s falls in %s. The pocket closes in %d seconds: loot the corpse."] =
+			"%s cai em %s. O pocket fecha em %d segundos: pegue o loot do corpo.",
+		["%s appears. You have %d minutes."] = "%s aparece. Você tem %d minutos.",
+		["Pocket of %s: it comes in %d seconds. %d%% experience and loot; the way out is in the room to the south."] =
+			"Pocket de %s: ele chega em %d segundos. %d%% de experiência e loot; a saída fica na sala ao sul.",
+		["%s falls and is carried out of the pocket."] = "%s cai e é levado para fora do pocket.",
+		["The boss did not answer; your charge is given back."] = "O boss não respondeu; sua carga foi devolvida.",
+		["Time is up: %s still stands."] = "O tempo acabou: %s continua de pé.",
+		["A gamemaster closed the pocket."] = "Um gamemaster fechou o pocket.",
+		["Ended by the staff."] = "Encerrado pela equipe.",
+		["the pocket is full"] = "o pocket está cheio",
+		["You stay behind from the pocket of %s: %s."] = "Você fica de fora do pocket de %s: %s.",
+		["The server is restarting: the pocket closes and your charge is given back."] =
+			"O servidor está reiniciando: o pocket fecha e sua carga é devolvida.",
+		["No pocket charges left for this boss today. They come back in %s."] =
+			"Sem cargas de pocket para este boss hoje. Elas voltam em %s.",
+		["You hold the most bonus charges for this boss (%d)."] = "Você já tem o máximo de cargas bônus para este boss (%d).",
+		["No more bonus charges for this boss today (%d a day)."] = "Sem mais cargas bônus para este boss hoje (%d por dia).",
+		["Pocket bosses are switched off."] = "Os pocket bosses estão desligados.",
+		["There is no pocket of that boss."] = "Não existe pocket desse boss.",
+		["You need level %d for the pocket of %s."] = "Você precisa de level %d para o pocket de %s.",
+		["Leave %s first."] = "Saia de %s primeiro.",
+		["Open a pocket from a protection zone."] = "Abra um pocket a partir de uma zona de proteção.",
+		["You are in combat."] = "Você está em combate.",
+		["Wait %d seconds before opening another pocket."] = "Espere %d segundos antes de abrir outro pocket.",
+		["You were rewarded by the %s fight less than an hour ago: its pocket opens for you in %s."] =
+			"Você foi recompensado pela luta de %s há menos de uma hora: o pocket dele abre para você em %s.",
+		["level %d needed"] = "level %d necessário",
+		["inside %s"] = "dentro de %s",
+		["too far away"] = "longe demais",
+		["in combat"] = "em combate",
+		["rewarded by this boss's event within the hour"] = "recompensado pelo evento deste boss nesta hora",
+		["no charges left"] = "sem cargas",
+		-- Conquest Tokens, the Conquest vendor and bad-luck protection (conquest.lua, conquest_core.lua K.reasons, the vendor NPC)
+		["The Conquest vendor is closed."] = "O vendedor de Conquest está fechado.",
+		["There is no such offer."] = "Essa oferta não existe.",
+		["You do not have enough Conquest Tokens."] = "Você não tem Conquest Tokens suficientes.",
+		["You have not seen this item yet: find it once, slay a monster that drops it, or reach its level band."] =
+			"Você ainda não viu este item: encontre-o uma vez, mate um monstro que o derruba ou chegue à faixa de nível dele.",
+		["This season item is not for sale to your character."] = "Este item de temporada não está à venda para o seu personagem.",
+		["Visit the Conquest vendor from a protection zone."] = "Visite o vendedor de Conquest em uma zona de proteção.",
+		["Wear an item with a rarity in that slot first."] = "Primeiro equipe um item com raridade nesse slot.",
+		["Uniques keep their stats: they cannot be refined."] = "Únicos mantêm seus atributos: não podem ser refinados.",
+		["A ruined item cannot be refined."] = "Um item arruinado não pode ser refinado.",
+		["This item is already at the highest rarity a refinement reaches."] =
+			"Este item já está na maior raridade que um refinamento alcança.",
+		["Choose two different kinds."] = "Escolha dois tipos diferentes.",
+		["There is no such kind."] = "Esse tipo não existe.",
+		["You do not carry enough of that kind to convert."] = "Você não carrega o suficiente desse tipo para converter.",
+		["Carry an Omen Key to attune it."] = "Carregue uma Omen Key para sintonizá-la.",
+		["Your level is too low for that."] = "Seu nível é baixo demais para isso.",
+		["%s is now %s (%d Conquest Tokens)."] = "%s agora é %s (%d Conquest Tokens).",
+		["+%d Conquest Tokens (%s). Balance: %d."] = "+%d Conquest Tokens (%s). Saldo: %d.",
+		["Ascended Shards are not installed on this server. Your tokens are back."] =
+			"Ascended Shards não estão instalados neste servidor. Seus tokens voltaram.",
+		["Bought with Conquest Tokens"] = "Comprado com Conquest Tokens",
+		["Conquest Tokens: today's limit for %s is reached (%d)."] = "Conquest Tokens: o limite de hoje para %s foi atingido (%d).",
+		["Converted"] = "Convertido",
+		["Converted %d %s into one of %s."] = "Convertidos %d %s em um de %s.",
+		["New modifier: %s."] = "Novo modificador: %s.",
+		["The key could not be made. Your tokens are back."] = "A chave não pôde ser feita. Seus tokens voltaram.",
+		["The relics could not be taken."] = "As relíquias não puderam ser retiradas.",
+		["The shards could not be taken."] = "Os fragmentos não puderam ser retirados.",
+		["The vendor shakes her head. Try again."] = "A vendedora balança a cabeça. Tente de novo.",
+		["The vendor's stock is empty for that item. Your tokens are untouched."] =
+			"O estoque da vendedora está vazio para esse item. Seus tokens não foram tocados.",
+		["You bought %s for %d Conquest Tokens.%s"] = "Você comprou %s por %d Conquest Tokens.%s",
+		["You bought an Ascended Shard (%s) for %d Conquest Tokens."] = "Você comprou um Ascended Shard (%s) por %d Conquest Tokens.",
+		["You bought an Omen Key (%s) for %d Conquest Tokens."] = "Você comprou uma Omen Key (%s) por %d Conquest Tokens.",
+		["Your Omen Key now opens the %s guardian's arena (%d Conquest Tokens)."] =
+			"Sua Omen Key agora abre a arena do guardião %s (%d Conquest Tokens).",
+		["Every trophy has a price, |PLAYERNAME|, and you have been paying it in blood. Want to see my {wares}? Ask about {tokens} or {luck}."] =
+			"Todo troféu tem um preço, |PLAYERNAME|, e você vem pagando em sangue. Quer ver minhas {wares}? Pergunte sobre {tokens} ou {luck}.",
+		["Come back with more conquests, |PLAYERNAME|."] = "Volte com mais conquistas, |PLAYERNAME|.",
+		["The ledger stays open for you."] = "O livro de registros fica aberto para você.",
+		["Pick what you need. Anything you have seen fall, or anything of your level, is on my ledger."] =
+			"Escolha o que precisa. Tudo o que você viu cair, ou tudo do seu nível, está no meu registro.",
+		["Conquest Tokens come from every boss you help slay, every sealed rift, dungeon, Descent run and defended town. The harder the fight, the more you earn."] =
+			"Conquest Tokens vêm de cada chefe que você ajuda a matar, cada rift selado, dungeon, corrida da Descent e cidade defendida. Quanto mais difícil a luta, mais você ganha.",
+		["Every time a boss, a raid or a chest keeps its treasure from you, the next try gets kinder. Once it drops, the count starts over. The window shows how far along you are."] =
+			"Cada vez que um chefe, uma raid ou um baú guarda o tesouro de você, a próxima tentativa fica mais generosa. Quando ele cai, a contagem recomeça. A janela mostra quanto falta.",
+		["Iselde Varrow. I keep the ledger of conquests. Ask about my {wares}."] =
+			"Iselde Varrow. Eu guardo o registro das conquistas. Pergunte sobre minhas {wares}.",
+		-- Candlemarks (candlemarks.lua, candlemarks_config.lua messages and offers, NPC Osric the Chandler)
+		["Candlemarks are switched off."] = "As Candlemarks estão desligadas.",
+		["That offer is not in the shop."] = "Essa oferta não está na loja.",
+		["You need level %d for that."] = "Você precisa do nível %d para isso.",
+		["You need %d Candlemarks for that."] = "Você precisa de %d Candlemarks para isso.",
+		["Weekly limit reached for that offer."] = "Limite semanal dessa oferta atingido.",
+		["Your account already has that."] = "Sua conta já tem isso.",
+		["That offer is not available right now."] = "Essa oferta não está disponível agora.",
+		["One purchase at a time."] = "Uma compra de cada vez.",
+		["Visit Osric the Chandler to buy (in the Hall of Services, or next to the temple)."] = "Visite Osric the Chandler para comprar (no Salão de Serviços, ou ao lado do templo).",
+		["The purchase could not be written down. Nothing was taken; try again."] =
+			"Não foi possível registrar a compra. Nada foi cobrado; tente de novo.",
+		["Bought %s for %d Candlemarks."] = "Comprou %s por %d Candlemarks.",
+		["Your backpack is full: the rest went to your inbox."] = "Sua mochila está cheia: o resto foi para o seu inbox.",
+		["You earned a Candlemark. Your account has %d."] = "Você ganhou uma Candlemark. Sua conta tem %d.",
+		["Your account reached today's Candlemark limit."] = "Sua conta atingiu o limite de Candlemarks de hoje.",
+		["Pocket Boss Charge"] = "Carga de Pocket Boss",
+		["One extra charge for the pocket boss you choose."] = "Uma carga extra para o pocket boss que você escolher.",
+		["Common crafting orbs."] = "Orbes de criação comuns.",
+		["Rolls the values of an item's modifiers again."] = "Rola de novo os valores dos modificadores de um item.",
+		["A crafting orb for the patient."] = "Um orbe de criação para os pacientes.",
+		["A rare crafting orb, once a week."] = "Um orbe de criação raro, uma vez por semana.",
+		["Raise the quality of an item."] = "Aumentam a qualidade de um item.",
+		["Chipped Gem"] = "Gema Chipped",
+		["A random gem of the lowest quality."] = "Uma gema aleatória da menor qualidade.",
+		["Flawed Gem"] = "Gema Flawed",
+		["A random gem of the second quality."] = "Uma gema aleatória da segunda qualidade.",
+		["Salvage material."] = "Material de salvage.",
+		["Hunting Supplies I"] = "Suprimentos de Caça I",
+		["Hunting Supplies II"] = "Suprimentos de Caça II",
+		["Hunting Supplies III"] = "Suprimentos de Caça III",
+		["50 health and 50 mana potions."] = "50 poções de vida e 50 de mana.",
+		["25 great health and 25 great mana potions."] = "25 grandes poções de vida e 25 grandes de mana.",
+		["25 ultimate health and 25 great spirit potions."] = "25 poções de vida supremas e 25 grandes poções de espírito.",
+		["Rested Vial"] = "Frasco de Descanso",
+		["Stored rested experience for your next hunt."] = "Experiência de descanso guardada para a sua próxima caçada.",
+		["Bounty Reroll"] = "Novo sorteio de Bounty",
+		["Draw one bounty contract again."] = "Sorteia de novo um contrato de bounty.",
+		["Kill Task Reroll"] = "Novo sorteio de Kill Task",
+		["Draw one kill task again."] = "Sorteia de novo uma kill task.",
+		["Candle Seal"] = "Selo de Vela",
+		["A kill effect: a seal of candlelight. For the account."] = "Um efeito de abate: um selo de luz de vela. Para a conta.",
+		["Candlelight Name"] = "Nome à Luz de Vela",
+		["Your name in chat in candlelight. For the account."] = "Seu nome no chat à luz de vela. Para a conta.",
+		["Tallow Labels"] = "Rótulos de Sebo",
+		["Loot labels on warm tallow. For the account."] = "Rótulos de loot sobre sebo morno. Para a conta.",
+		["Welcome, |PLAYERNAME|. Every half hour you spend among us burns a mark into my candles. Care to see my {wares}?"] =
+			"Bem-vindo, |PLAYERNAME|. Cada meia hora que você passa entre nós queima uma marca nas minhas velas. Quer ver minhas {wares}?",
+		["Keep your wick dry, |PLAYERNAME|."] = "Mantenha seu pavio seco, |PLAYERNAME|.",
+		["The candles burn on without you."] = "As velas continuam queimando sem você.",
+		["Here is what your marks can buy. Some of it only once a week, mind you."] =
+			"Eis o que suas marcas compram. Algumas coisas só uma vez por semana, veja bem.",
+		["Every %d minutes a soul spends in this world, a mark is burnt in for its account. Two souls per hearth at most."] =
+			"A cada %d minutos que uma alma passa neste mundo, uma marca é queimada para a conta dela. No máximo duas almas por lar.",
+		["Osric, chandler. I count the hours you keep the dark at bay. Ask about my {wares}."] =
+			"Osric, fabricante de velas. Conto as horas em que você mantém a escuridão longe. Pergunte sobre minhas {wares}.",
+		-- Beta starter coins (beta.lua)
+		["Beta: your account received %d Chaos Coins to try the store. They are beta test coins: they and everything bought with them are wiped at launch."] =
+			"Beta: sua conta recebeu %d Chaos Coins para testar a loja. São moedas de teste do beta: elas e tudo o que for comprado com elas serão apagados no lançamento.",
 	},
 }

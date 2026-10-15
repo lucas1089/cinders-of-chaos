@@ -250,10 +250,26 @@ function P.cleaveOf(cfg, vocationId)
 		return nil
 	end
 	local e = c.byVocation[tonumber(vocationId) or -1]
-	if not e or (tonumber(e.percent) or 0) <= 0 or (tonumber(e.targets) or 0) <= 0 then
+	if not e or math.max(tonumber(e.percent) or 0, tonumber(e.high) or 0) <= 0 or (tonumber(e.targets) or 0) <= 0 then
 		return nil
 	end
 	return e
+end
+
+-- the share of a cleave entry at a character level: `percent` up to the table's fromLevel, linear to `high` at toLevel,
+-- `high` from there (an entry without `high` keeps `percent` at every level)
+function P.cleavePercent(e, level, c)
+	local lo = num(e and e.percent, 0)
+	local hi = e and e.high ~= nil and num(e.high, lo) or lo
+	local from, to = num(c and c.fromLevel, 300), num(c and c.toLevel, 1000)
+	level = num(level, from)
+	if hi == lo or level <= from or to <= from then
+		return lo
+	end
+	if level >= to then
+		return hi
+	end
+	return lo + (hi - lo) * (level - from) / (to - from)
 end
 
 function P.cleaveDamage(amount, percent)

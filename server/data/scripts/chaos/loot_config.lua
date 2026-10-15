@@ -42,7 +42,9 @@ return {
 	itemFindStorage = 7100040,
 	itemFindMaxPercent = 300, -- clamp
 
-	-- same threshold as the stock callback: at or below it the stock callback drops nothing, so do we
+	-- same threshold as the stock callback. With catchup.lua loaded (always, in this repo) low stamina CUTS the loot
+	-- (catchup_config.lua stamina.lootMult, x0.5) and the stock callback is patched the same way (patch_base_events.py
+	-- step 16); only without it does the old rule hold: at or below this, no loot at all
 	minStamina = 840,
 
 	-- 1. extra rolls from the monster's own loot table

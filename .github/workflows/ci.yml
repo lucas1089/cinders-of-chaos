@@ -130,6 +130,15 @@ jobs:
       - name: Content areas install and the teleport room (install_content_areas.py on a synthetic map)
         run: python3 -I server/tools/install_content_areas_test.py
 
+      - name: Idle Hall plan (validates, compiles, the config's origin, arrival and fixture slots)
+        run: python3 -I server/tools/idle_hall_test.py
+
+      - name: Halls of Services plans (validate, compile, booths closed and reached, portals, NPCs never walk)
+        run: python3 -I server/tools/services_halls_test.py
+
+      - name: Idle kick patch (config.lua kickIdlePlayerAfterMinutes on a copy of the stock text)
+        run: python3 -I server/tools/patch_base_idle_kick_test.py
+
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
 
@@ -154,6 +163,9 @@ jobs:
       - name: Depot to stash migration tool (SQL, refusals, a stub mysql client)
         run: python3 -I server/tools/migrate_depot_stash_test.py
 
+      - name: Home town migration tool (SQL, defaults, refusals)
+        run: python3 -I server/tools/migrate_home_town_test.py
+
       - name: Gem install with our own looks (items.otb ownLook, synthetic)
         run: python3 -I server/tools/install_gems_test.py
 
@@ -163,8 +175,14 @@ jobs:
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py
 
+      - name: Low stamina cuts the loot, faster offline stamina (patch_base_events.py steps 16 and 17, stock copies)
+        run: python3 -I server/tools/stamina_catchup_patch_test.py
+
       - name: Store items kept on death (patch_base_events.py step 15, stock copy)
         run: python3 -I server/tools/death_keep_patch_test.py
+
+      - name: Gentle deaths (patch_base_events.py step 18, stock copy)
+        run: python3 -I server/tools/gentle_death_patch_test.py
 
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py

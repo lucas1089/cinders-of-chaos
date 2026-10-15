@@ -141,6 +141,11 @@ Stash.OnDrop = function(self, widget, mousePos, forced)
 	if not item:isPickupable() then
 	return false
 	end
+	-- deposit in town only, unless the remote deposit unlock is on (the server checks again)
+	if not Stash.CanDeposit() then
+		Stash.ShowLocked()
+		return false
+	end
 	-- any item (a weapon, a rift key, a stack): the server stores it whole and says when it cannot
 	Stash.StashItem(item, 1)
 	return false
@@ -270,8 +275,15 @@ Stash.DataManager = function(protocol, opcode, buffer)
 		Stash.UpdateAccess()
 	elseif buffer.make == "access" then
 		if Stash.Tabs then
-			Stash.Tabs.canWithdraw = buffer.canWithdraw == true
-			Stash.Tabs.withdrawWhy = nil
+			if buffer.canWithdraw ~= nil then
+				Stash.Tabs.canWithdraw = buffer.canWithdraw == true
+				Stash.Tabs.withdrawWhy = nil
+			end
+			if buffer.canDeposit ~= nil then
+				Stash.Tabs.canDeposit = buffer.canDeposit == true
+				Stash.Tabs.depositWhy = nil
+				Stash.Tabs.remote = nil
+			end
 		end
 		Stash.UpdateAccess()
 	elseif buffer.make == "StowReport" then
@@ -430,7 +442,7 @@ Stash.Define = function()
 		itemWidget.onClick = function(self)
 			if not Stash.CanWithdraw() then
 				if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
-					modules.game_textmessage.displayFailureMessage(tr('Withdraw in a protection zone. You can deposit anywhere.'))
+					modules.game_textmessage.displayFailureMessage(tr('Withdraw in a protection zone.'))
 				end
 				return
 			end
@@ -499,8 +511,22 @@ Stash.CanWithdraw = function()
 	return V.canWithdraw(Stash.Tabs, states)
 end
 
+-- may items go in here (in town, or anywhere with the remote deposit unlock)
+Stash.CanDeposit = function()
+	local me = g_game.getLocalPlayer and g_game.getLocalPlayer()
+	local states = me and me.getStates and me:getStates() or 0
+	return V.canDeposit(Stash.Tabs, states)
+end
+
+-- the locked deposit: a line that says where to unlock remote deposit
+Stash.ShowLocked = function()
+	if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
+		modules.game_textmessage.displayFailureMessage(V.depositLockedText())
+	end
+end
+
 Stash.TabInfoText = function()
-	return V.infoText(Stash.Tabs, Stash.SelectedTab, Stash.CanWithdraw())
+	return V.infoText(Stash.Tabs, Stash.SelectedTab, Stash.CanWithdraw(), Stash.CanDeposit())
 end
 
 -- the items greyed out or not, and the line under the list, after a state change or a server answer
@@ -517,6 +543,12 @@ Stash.UpdateAccess = function()
 	end
 	if Stash.UI.TabInfo then
 		Stash.UI.TabInfo:setText(Stash.TabInfoText())
+	end
+	-- Stow Everything: greyed out with the unlock hint while depositing is locked here
+	local dep = Stash.CanDeposit()
+	if Stash.UI.StashAllButton then
+		Stash.UI.StashAllButton:setOpacity(dep and 1 or 0.45)
+		Stash.UI.StashAllButton:setTooltip(V.stowTooltip(dep, Stash.Tabs))
 	end
 end
 
@@ -725,6 +757,10 @@ end
 -- the "Stow Everything" button: everything of the backpack, through its bags, into its tab (the server's report comes back
 -- as StowReport)
 function stashAll()
+	if not Stash.CanDeposit() then
+		Stash.ShowLocked()
+		return
+	end
 	Stash.Communicate(json.encode({action = "Stash", data = {make = "StashAllRequest"}}))
 end
 

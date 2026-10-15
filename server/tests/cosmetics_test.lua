@@ -148,9 +148,9 @@ for _, c in ipairs(cfg.cosmetics) do
 	end
 end
 eq(count.spellskin, 12, "12 spell skins")
-eq(count.killfx, 23, "23 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 8 reward track, 3 Pact months)")
-eq(count.lootbeam, 15, "15 label accents (three PvP, 4 reward track, 3 Pact months)")
-eq(count.chatcolor, 15, "15 chat colours (three PvP, 5 reward track, the Pact's)")
+eq(count.killfx, 24, "24 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 8 reward track, 3 Pact months, 1 Candlemarks)")
+eq(count.lootbeam, 16, "16 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks)")
+eq(count.chatcolor, 16, "16 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks)")
 -- the Chaos Pact (VIP) perks: never sold, every monthly key and the chat colour are pact cosmetics
 local pactCfg = dofile("data/scripts/chaos/pact_config.lua")
 local byKeyC = {}

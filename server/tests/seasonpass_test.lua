@@ -247,6 +247,17 @@ eq((P.sourceGain(cfg, "rift", 10, 0)), 120, "rift tier 10: 40 + 8 x 10")
 eq((P.sourceGain(cfg, "bounty", nil, 590)), 10, "bounty cap")
 eq((P.sourceGain(cfg, "boss", nil, 0)), 150, "boss")
 eq((P.sourceGain(cfg, "nothing", nil, 0)), 0, "unknown source")
+-- the daily caps bank over cfg.bankDays days (a rolling window): newest day first
+eq(cfg.bankDays, 3, "three days bank")
+eq(P.sourceRoom(cfg, "exp", {0, 0, 0}, 3), 900, "two days missed: three days of cap today")
+eq(P.sourceRoom(cfg, "exp", {0, 300, 300}, 3), 300, "a daily player keeps one day of cap")
+eq(P.sourceRoom(cfg, "exp", {0, 0, 300}, 3), 600, "one day missed")
+eq(P.sourceRoom(cfg, "exp", {900, 0, 0}, 3), 0, "the bank spent today")
+eq(P.sourceRoom(cfg, "exp", {0, 900, 0}, 3), 0, "spent yesterday: nothing more until the window moves on")
+eq(P.sourceRoom(cfg, "exp", {0, 0, 0}, 1), 300, "the season's first day banks nothing before it")
+eq(P.sourceRoom(cfg, "exp", 280), 20, "a plain number is today's use, as before")
+eq((P.sourceGain(cfg, "rift", 10, {0, 1200, 0}, 3)), 120, "rift with a banked day")
+eq((P.sourceGain(cfg, "bounty", nil, {1790, 0, 0}, 3)), 10, "bounty at the banked cap")
 -- every source the engine file sends is configured
 for _, s in ipairs({"exp", "boss", "bounty", "rift", "goblin", "invasion"}) do
 	eq(cfg.sources[s] ~= nil, true, "source " .. s)

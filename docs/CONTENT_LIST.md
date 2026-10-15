@@ -78,7 +78,7 @@ Status per class item (ROADMAP.md "Then: class rework"):
 - C3 Rework of the old kits: **in progress**. Phase 2a done.
 - C4 Passive trees, icons, effects, outfits: passive trees done. Class looks in pairs 19 and 20, live.
 - C5 Necromancer, C6 Monk, C7 Templar: **phase B**. Tested in game, level 300 measured.
-- C8 Store unlock for Necromancer, Monk, Templar: **phase B**. Tested in game. Final unlock method open.
+- C8 Account unlock for Necromancer, Monk, Templar: **phase B**. Tested in game. Free at account level 200; not sold since 2026-10-15.
 - C9 Ascension quest: done. The Ascendant Oracle, Proof of Strength, a class Trial, the Choice.
 - C3a Illusionist healer pass: done.
 
@@ -101,6 +101,14 @@ Progression systems:
 - **Experience cap and display scale.** Damage shown in millions at the end game (#128). Done.
 - **Level-up wings.** Golden wings on level up (#84). Done.
 - **Waystone upgrades.** Experience, Loot, Rarity upgrades fixed (#6). Done.
+- **Time-friendly progression** (#164). Done, not run live.
+  - Low stamina halves loot and experience, never zero loot. Offline stamina x2. No stamina sold in the store.
+  - Rested experience: +100% from a pool filled offline (2.5 minutes of hunting per hour, 180 at most).
+  - Returning player: 14 days away gives 7 days of +50% experience, +25% loot, +50% token drops.
+  - Alt catch-up: +100% below the account's best level, fading near it.
+  - Caps that bank: faction rep 3 weeks, season pass 3 days, Trials repeats 3 weeks, Descent free runs 3.
+  - Bounty chest at 4 contracts. Dungeon cooldown 15 minutes after a clear, 5 after a fail.
+  - The buff bar shows Rested, Welcome Back, Catch-up and Low Stamina.
 
 ## 3. Combat and spells
 
@@ -146,7 +154,9 @@ World content:
 
 - **Tutorial island.** Five stations: passive tree, orbs, keystones (#22). Done.
 - **New-player kit** per vocation (#21). Done.
-- **First hour hints.** Nearest hunts marked on the map at set levels. Done.
+- **First hour hints.** Nearest hunts marked on the map at set levels; since #176 a hint and the teleport room hunts at every
+  band where the next system unlocks, up to level 2000. Done (the extension not run live).
+- **Milestone gifts.** Potions and orbs at levels 20, 50, 100, 200, 300, 500, 800, 1000, 1500 and 2000 (#176 added 300+).
 - **Late game spawns.** 17 imported monsters in four level 500+ areas (#4). Done.
 - **Spawn density and respawn** tuned for launch (#89). Done.
 - **Pack combat** (#151): hunting monsters with less health in packs (base map 4.5 per 100 tiles from level 30 in
@@ -164,6 +174,8 @@ World content:
 - **Bestiary and kill tasks** with a task tracker, 18 categories (#35). Done.
 - **Map markers.** Party members and points of interest (#94). Done.
 - **Town Portal** and hideout travel. Done.
+- **Main city Cinderhold.** New characters live there: the hunt teleport room 5 steps from the temple, depot, banks, shops and every Chaos temple NPC (#175). Done, not run live.
+- **Halls of Services.** Cinderhold and Mirewake: every Chaos NPC in a closed booth behind a counter, progression and economy rows and a portal room, one step from the temple (#175). Done, not run live.
 - **Ember Blessings.** 10 one-minute kill blessings (#74). Done.
 - **Nemesis.** A monster that kills you may become your Nemesis (#141). Done.
 
@@ -217,6 +229,9 @@ Boss systems:
 
 - **World boss roles.** Damage, healer and tank podiums and titles (#13, #32). Done.
 - **Boss Spawns window.** Every boss by category, place and respawn (#52). Done.
+- **Pocket bosses.** A private copy of the 5 world, 10 island and 25 random raid bosses, any time: 3 charges a day per
+  boss, 60% experience and loot, Conquest Tokens; personal loot for every helper of the scheduled island and raid
+  fights (#160). Done, not run live.
 - **Boss mechanics** on the key bosses (#129). Done.
 - **Solo kill times** computed for every boss group (#127). Done, computed only.
 - **Competitive records.** Fastest kills of every boss group (#135). Done.
@@ -238,6 +253,7 @@ Boss systems:
 | Vocation Trials | Solo class challenge, three tiers | done |
 | Ascension Trial | The trial of the Ascension quest | done |
 | World boss arena | Built at runtime, 40 players | done |
+| Pocket boss arenas | 16 runtime arenas, a private copy of a world, island or raid boss for a party of 1-5 (#160) | done, not run live |
 | Guild hall and guild boss | Guild instance and weekly boss (#30, #70) | done |
 | Personal hideout | Instanced room per character (#72) | done |
 | Instance limits | Time limits, warnings and waiting lines for every instance (#108) | done, not run in game |
@@ -245,6 +261,8 @@ Boss systems:
 ## 7. Endgame systems
 
 - **Bounty board.** Daily "kill X" contracts in six tiers, paid in orbs (#10). Done.
+- **Ember Cache and Daily Spark.** Ember points from every activity; the day's first 40 points double, a Daily Spark at 30,
+  weekly milestones at 120 / 300 / 600 with rewards by level (#173). Done, not run live.
 - **Seasons.** Fresh-start season characters, season uniques, ladders (#12). Phase 1 done.
 - **Season modes.** Self-Found and Hardcore (#62). Done.
 - **Seasonal Journey.** 8 chapters per season character (#67). Done, not run live.
@@ -255,6 +273,8 @@ Boss systems:
 - **Charms.** 5x4 charm grid, four shapes, four unique charms (#76). Done.
 - **Professions.** Delving, Wortcunning, Flaying, Angling; 20 materials (#78). Done.
 - **The Gambler.** Sealed gear for gold, stock refreshes every 4 hours (#83). Done.
+- **Conquest Tokens.** Tokens from every boss and clear; a vendor of any unique or set piece you have seen; Omen Keys
+  and Ascended Shards of a chosen kind; bad-luck protection on boss, set, raid and monster uniques (#158). Done, not run live.
 - **Achievements.** 173 in 10 categories, 4,170 points; reward track (#26, #75). Done.
 - **Leaderboards.** Weekly boards: world boss, healer, tank, bounty, rifts, class ladder (#13). Done.
 - **Competitive records** for bosses, dungeons and the tower (#135). Done.
@@ -275,7 +295,8 @@ Boss systems:
     Tempering, Binding, Excision, Reforging, Ruin, Unveiling, Echoes, and the Whetstone.
   - Keys and currencies: Rift Key, Omen Key, Omen Fragment, Rune Shard, waystone orbs.
 - **Crafting bench** in the client. Done.
-- **Salvage and the item lock.** Gear into Rune Shards (#39). Done.
+- **Salvage and the item lock.** Gear into Rune Shards (#39); uniques into Conquest Tokens (#158). Done.
+- **Refinement.** A worn item one rarity up for Conquest Tokens, modifiers kept, one added (#158). Done, not run live.
 - **Crafting Table window.** 7 categories, 275 base recipes (#79). Done.
 - **Crafting bonus.** Crafted gear rolls a Chaos rarity (#80). Done.
 - **Rune supply.** 36 runes from vendors and crafting (#130). Done.
@@ -283,6 +304,8 @@ Boss systems:
 - **Rich tooltips** with an equipped-item compare (#40). Done.
 - **Item links in chat.** Done.
 - **Item finder.** "Where does this drop" (#100). Done.
+- **Smart loot.** A gear drop nobody near can wear may become wearable gear of the same loot table; the extra rolls favour
+  gear made for the class (#171). Done, not run live.
 - **Codex.** In-client encyclopedia: modifiers, powers, orbs, gems, uniques, sets, rift, lore. Done.
 - **Themed art.** Ten equipment sets, two auras, runic wings, grounds (#112). Built, switch on, not run in a client.
 
@@ -326,18 +349,21 @@ Boss systems:
 - **Market buy orders** (#49) and **price history** (#64). Done.
 - **Orb Exchange.** Order book for the crafting orbs (#55). Done.
 - **Loot Buyer** and the **Auto Seller**. Done.
-- **Depot tabs.** 4 free tabs of 100 items, more with the Pact or the store (#85). Done.
+- **Candlemarks.** One per 30 minutes online for every online character (2 per IP), for the account; a shop at Osric the Chandler of pocket boss charges, common orbs, gems, supplies and three own cosmetics, with weekly limits (#162). Done, not run live.
+- **Depot tabs.** 4 free tabs of 100 items, more with the Pact or the store (#85). Done; withdraw-only since the stash took over (#153).
+- **Stash.** The one item storage: whole items, deposit and withdraw in town, remote deposit from anywhere as a paid unlock (store or the Chaos Pact), 4 general tabs of 100 and a free Supplies tab, 9 more affinity tabs (weapons, armour, jewellery, materials, creature products, orbs, gems, keys, collectibles), Stow Everything, the depot moved in (#153). Done.
 - **Chaos Pact.** Subscription and account storage: stash tabs, slots, saved builds (#43). Done.
 - **Store pouches.** Loot Bag (255 slots, weightless), orb and key pouches (#41). Done.
 - **Everfull Ration.** Infinite food in the store (#136). Done.
 - **Donations** for Chaos Coins: Pix and PayPal (#47). Done, live accounts not connected.
+- **Beta starter coins.** 5,000 Chaos Coins once per account in the beta, wiped at launch (#177). Done; off at launch.
 - **Creator codes** for streamers (#132). Done.
 - **Character Bazaar.** Character auctions for coins on the website (#134). Done.
 - **Transmog.** Account-wide wardrobe, 37 appearance sets (#48). Done.
-- **Cosmetics.** 91 cosmetics: spell skins, kill effects, loot labels, chat colours, footprints, outlines (#51, #86). Done.
+- **Cosmetics.** 94 cosmetics: spell skins, kill effects, loot labels, chat colours, footprints, outlines (#51, #86). Done.
 - **Exclusives.** 39 never-sold visuals from achievements and boss drops (#86). Done.
 
-Store: 456 offers in 35 categories (counted from `shop_config.lua`). Prices are placeholders (#137).
+Store: 469 offers in 36 categories (counted from `shop_config.lua` by `gen_wiki_data.lua`, 2026-10-15). Prices are placeholders (#137).
 
 | Category | Offers | Category | Offers |
 |---|---|---|---|
@@ -354,7 +380,7 @@ Store: 456 offers in 35 categories (counted from `shop_config.lua`). Prices are 
 | Portal Styles | 6 | Classes | 3 |
 | Spell Effects | 12 | Training | 21 |
 | Kill Effects | 5 | Chaos Pact | 1 |
-| Loot Labels | 4 | Storage & Slots | 6 |
+| Loot Labels | 4 | Storage & Slots | 13 |
 | Chat Colours | 5 | Depot Tabs | 2 |
 | Footprints | 9 | Season Pass | 4 |
 | Outlines | 9 | Premium Time | 3 |
@@ -364,9 +390,18 @@ Store: 456 offers in 35 categories (counted from `shop_config.lua`). Prices are 
 
 102 modules in `client/overlay/modules/`. The main player-facing ones:
 
+- **Next Goals.** For every character: the goals of its level band (1 to 2000+), why, where (map mark or window), progress, a
+  small reward and the expected effort; the gear path and hunts of the band; a tracker on screen (#176). Done, not run live.
+- **Item tooltip sources.** "Drops from" the first two sources, "~1 in N legendary kills", the Conquest price (#176). Done,
+  not run live.
 - **Hunt tracker.** Exp/h, profit/h, supplies (#17). Done.
 - **DPS meter and combat log** (#63). Done.
 - **Death recap.** Who hit you in the last seconds (#99). Done.
+- **Gentle deaths and blessings.** No item loss on death except with a red or black skull; no experience loss to level
+  30, half at 100; the first death of a day x0.5; `!bless` buys the missing blessings; the store's Eternal Blessing keeps
+  them on one character (#172). Done, not run live.
+- **Day book.** What the character did today, and a recap of the last day of play at login (#173). Done, not run live.
+- **Restock.** One button in the Hunt Tracker buys back the supplies the session used, at NPC prices +10% (#174). Done, not run live.
 - **Loot filter.** Hide or highlight by rarity, loot channel, rule counters and sounds (#16, #50). Done.
 - **Ground loot labels** in rarity colours. Done.
 - **Autoloot** with rarity autoloot. Done.
@@ -386,6 +421,7 @@ Store: 456 offers in 35 categories (counted from `shop_config.lua`). Prices are 
 - **Signed client updater.** Done.
 - **Autosave without the freeze** (#92). Done.
 - **Game loop stalls and login reads** fixed (#96, #97, #108). Done.
+- **Idle Hall.** Idle 10 minutes in a town: a warning, then moved to a trainer room with dummies (#168). Done, not run live.
 
 ## 13. Website
 
@@ -498,6 +534,10 @@ Chronicle and memorial areas (in `server/tools/areaplan/chronicle/`):
 - **Cinderscar Breach.** Waste, 128x104, levels 440-560. Chronicle area.
 - **Ossuary Stair.** Crypt, 120x104, levels 400-520. Chronicle area.
 - **Capital Memorial plaza.** Hall, 48x40, in the capital. Statues and stones placed by script.
+
+Placed rooms (in `server/tools/areaplan/rooms/`):
+
+- **Idle Hall.** Hall, 44x28, one for every town. Dummies, benches and sign placed by script.
 
 Other open placement work (docs/CONTENT.md "For the owner"):
 

@@ -22,7 +22,7 @@
 -- (EventCallback onGainExperience; needs the experience dispatch of tools/patch_base_events.py, as every Chaos bonus).
 --
 -- Protocol (JSON {action, data}):
---   client -> server  open | list | entry {id} | board | take {id} | accept {key} | abandon {key} | query
+--   client -> server  open | list | entry {id} | board | take {id} | accept {key} | abandon {key} | reroll | query
 --   server -> client  summary {open, total, known, completed, percent, points, rank = {name, exp, next, nextName},
 --                             cats = [{key, name, known, completed, total}], diffs = [{key, name, th, bonus}], tasks =
 --                             {active, maxActive, doneDay, dailyLimit, doneWeek, weeklyLimit}}
@@ -31,7 +31,7 @@
 --                     entry {id, name, cat, diff, level, kills, stage, th, next, ... what the stage reveals}
 --                     kill {id, kills, stage, next}
 --                     board {offers = [{key, kind, label, target, lo, hi, level, required, monsters, look, reward,
---                            state}], active = [tasks], limits..., nextIn}
+--                            state}], active = [tasks], limits..., nextIn, rerolls}
 --                     tracker {rows = [{k = "task"|"bounty", key, label, p, r, done}]}
 -- Lua 5.1 / LuaJIT compatible.
 
@@ -578,9 +578,33 @@ local function boardLevel(player)
 	return math.max(1, player:getStorageValue(cfg.taskPointsStorage + 2))
 end
 
+-- board rerolls (Candlemarks): charges in rerollStorage, the day's rerolls used in + 1 (day) / + 2 (count)
+local function rerollsOf(player)
+	return math.max(0, tonumber(player:getStorageValue(cfg.rerollStorage)) or 0)
+end
+X.rerollsOf = rerollsOf
+
+local function boardSalt(player)
+	if player:getStorageValue(cfg.rerollStorage + 1) ~= taskDay() then
+		return 0
+	end
+	return math.max(0, tonumber(player:getStorageValue(cfg.rerollStorage + 2)) or 0)
+end
+
+function X.addRerolls(player, n)
+	n = math.floor(tonumber(n) or 0)
+	if n < 1 or n > 100 then
+		return false
+	end
+	player:setStorageValue(cfg.rerollStorage, rerollsOf(player) + n)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+		"Kill task rerolls: %d. Use one on the task board of the Bestiary.", rerollsOf(player)))
+	return true
+end
+
 local function sendBoard(player)
 	local st = stateOf(player)
-	local offers = C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg)
+	local offers = C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg, boardSalt(player))
 	local list, active = {}, {}
 	for _, o in ipairs(offers) do
 		local v = taskView(o, player)
@@ -597,6 +621,7 @@ local function sendBoard(player)
 	local data = limits(st)
 	data.offers, data.tasks = list, active
 	data.nextIn = math.max(0, C.nextRoll(now(), cfg) - now())
+	data.rerolls = rerollsOf(player)
 	Chaos.send(player, OPCODE, "board", data)
 end
 
@@ -633,12 +658,27 @@ local function accept(player, key)
 	end
 	local st = stateOf(player)
 	local task
-	for _, o in ipairs(C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg)) do
+	for _, o in ipairs(C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg, boardSalt(player))) do
 		if o.key == key then
 			task = o
 		end
 	end
 	startTask(player, st, task)
+	sendBoard(player)
+end
+
+-- a board reroll: the open offers of today are drawn again (tasks held stay)
+local function reroll(player)
+	if rerollsOf(player) < 1 then
+		player:sendCancelMessage(Chaos.t(player, "You have no kill task reroll."))
+		return
+	end
+	local day = taskDay()
+	local salt = boardSalt(player) + 1
+	player:setStorageValue(cfg.rerollStorage, rerollsOf(player) - 1)
+	player:setStorageValue(cfg.rerollStorage + 1, day)
+	player:setStorageValue(cfg.rerollStorage + 2, salt)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "The task board was drawn again."))
 	sendBoard(player)
 end
 
@@ -1089,6 +1129,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		accept(player, data.key)
 	elseif a == "abandon" then
 		abandon(player, data.key)
+	elseif a == "reroll" then
+		reroll(player)
 	elseif a == "query" then
 		sendTracker(player)
 	end

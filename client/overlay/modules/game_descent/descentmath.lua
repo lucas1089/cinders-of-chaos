@@ -184,7 +184,10 @@ function M.infoLines(info)
   add(tr('%d-%d rooms, %d minutes, up to %d players. Level %d+.', tonumber(info.rooms and info.rooms[1]) or 8,
     tonumber(info.rooms and info.rooms[2]) or 12, math.floor((tonumber(info.timeLimit) or 0) / 60),
     tonumber(info.maxPlayers) or 4, tonumber(info.minLevel) or 0), M.COLORS.dim)
-  if info.freeDaily then
+  local banked = math.floor(tonumber(info.freeDailyCount) or 0)
+  if info.freeDaily and banked > 1 then
+    add(tr('Free descents: %d ready (unused days bank up to 3)', banked), M.COLORS.good)
+  elseif info.freeDaily then
     add(tr('Free descent today: ready'), M.COLORS.good)
   else
     add(tr('Free descent today: used (next in %s)', M.hours(info.nextDaily)), M.COLORS.dim)

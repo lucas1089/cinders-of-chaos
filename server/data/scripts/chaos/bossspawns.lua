@@ -12,9 +12,12 @@
 -- Protocol (JSON {action, data}):
 --   client -> server  open | refresh                        (rate limited, requestMs)
 --   server -> client  list {now, refresh, cats = [{k, n, c, t}], rows = [...]}   (Chaos.sendChunked: about 20 KB)
+--   pocket bosses (pocketboss.lua, ChaosPocketBoss.actions):
+--   client -> server  pocketEnter {k = boss key} | pocketLeave | pocketInfo
+--   server -> client  pocket {bosses = {key = {l, m, b, lv, ok}}, reset, inside} (after every list) | pocketError {text}
 -- Rows: k key, c category, n name, loc, p {x, y, z}, lv level, o outfit, st status, in seconds to `at`, at "Wed 19:30",
 -- ln place note (no coordinates), tx rule text, sh its short form, ago seconds since the last kill, by killer, kills, alive (count when more
--- than one), party.
+-- than one), party, pl (pocket level, pocketboss.lua: the raid category is sorted by it, then by name).
 -- Lua 5.1 / LuaJIT.
 
 if not Chaos then
@@ -379,6 +382,10 @@ function S.payload(player)
 	local idx = S.ensure()
 	fillTowns(idx)
 	local data = K.payload(idx, S.context(player))
+	-- pocket bosses (pocketboss.lua): each pocket row's level (pl) and the raid bosses sorted by it, then by name
+	if ChaosPocketBoss and ChaosPocketBoss.tidy then
+		try("pocket rows", ChaosPocketBoss.tidy, data.rows)
+	end
 	data.refresh = cfg.refreshSeconds or 30
 	return data
 end
@@ -391,7 +398,12 @@ function S.send(player)
 	if not data then
 		return false
 	end
-	return Chaos.sendChunked(player, OPCODE, json.encode({action = "list", data = data}))
+	local sent = Chaos.sendChunked(player, OPCODE, json.encode({action = "list", data = data}))
+	-- the pocket charges of this player (pocketboss.lua), shown as the rows' Pocket buttons
+	if ChaosPocketBoss and ChaosPocketBoss.push then
+		try("pocket", ChaosPocketBoss.push, player)
+	end
+	return sent
 end
 
 -- ---------------------------------------------------------------- events
@@ -416,7 +428,17 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local msg = Chaos.decode(buffer)
-	if not msg or (msg.action ~= "open" and msg.action ~= "refresh") then
+	if not msg then
+		return
+	end
+	-- the pocket bosses' actions (pocketboss.lua: pocketEnter, pocketLeave, pocketInfo; rate limited there)
+	local PB = ChaosPocketBoss
+	local pocket = type(msg.action) == "string" and PB and PB.actions and PB.actions[msg.action]
+	if pocket then
+		pocket(player, msg.data)
+		return
+	end
+	if msg.action ~= "open" and msg.action ~= "refresh" then
 		return
 	end
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "bossspawns", cfg.requestMs or 1000) then

@@ -97,6 +97,17 @@ eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {}}, "depotTabs", NOW), L.depotT
 eq(P.extraMax(cfg, "charSlots"), L.charSlots.maxExtra, "character slot max")
 eq(P.extraMax(cfg, "stashGems"), 1, "special tab max")
 
+-- remote stash deposit (stash_config.lua remoteDeposit): a limit of 0 free, lent by the Pact, bought once
+eq(P.limit(cfg, {pactEnds = 0, extras = {}}, "stashRemote", NOW), 0, "remote deposit: free players have none")
+eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {}}, "stashRemote", NOW), 1, "remote deposit: lent by the Pact")
+eq(P.limit(cfg, {pactEnds = NOW - 1, extras = {}}, "stashRemote", NOW), 0, "remote deposit: gone when the Pact ends")
+eq(P.limit(cfg, {pactEnds = 0, extras = {stashRemote = 1}}, "stashRemote", NOW), 1, "remote deposit: bought")
+eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {stashRemote = 1}}, "stashRemote", NOW) > 0, true, "remote deposit: both")
+eq(P.extraMax(cfg, "stashRemote"), 1, "remote deposit: bought once")
+local scfgR = dofile("data/scripts/chaos/stash_config.lua").remoteDeposit
+eq(scfgR.extra, "stashRemote", "the stash reads the same extra")
+eq(scfgR.pact and cfg.limits.stashRemote.pact > 0, true, "the stash and the limit agree: the Pact lends it")
+
 -- ---------------------------------------------------------------- saved builds
 local limB = P.limits(cfg, {pactEnds = 0, extras = {}}, NOW)
 eq(P.buildEditable(limB, 1), true, "slot 1 editable")

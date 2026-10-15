@@ -114,7 +114,8 @@ local function rateMult(ctx)
 	if cap and r > cap then
 		r = cap
 	end
-	return r
+	-- catchup.lua (low stamina, returning player): after the cap, a cut must cut and the boost is the player's own time
+	return r * (ctx and tonumber(ctx.catchup) or 1)
 end
 L.rateMult = rateMult
 
@@ -453,7 +454,9 @@ function L.uniqueList(source)
 				bossOnly = e.bossOnly and true or false,
 				level = e.level,
 				minMonsterLevel = e.minMonsterLevel,
-				season = e.season -- season uniques (season.lua)
+				season = e.season, -- season uniques (season.lua)
+				set = e.set, -- a set piece (chaos_item_sets.lua)
+				ascended = e.ascended
 			}
 		end
 	end
@@ -482,8 +485,20 @@ local function monsterListed(monsters, name)
 	return false
 end
 
+-- the bad-luck protection group of a unique entry (conquest_config.lua pity): set pieces, boss uniques, the rest
+function L.pityGroup(e)
+	if e.set then
+		return "set"
+	elseif e.bossOnly then
+		return "boss"
+	end
+	return "monster"
+end
+
 -- returns list of unique entries that dropped (at most unique.maxPerKill, random among the hits)
--- owner (optional): the Player the drop is for; season uniques only drop for that season's characters (season.lua)
+-- owner (optional): the Player the drop is for; season uniques only drop for that season's characters (season.lua).
+-- With an owner and Conquest Tokens loaded (conquest.lua) every eligible entry's chance is x the owner's bad-luck
+-- multiplier of its group, and each group with an eligible entry records a miss, or a hit (the misses go back to 0)
 function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 	local u = cfg().unique
 	tier = L.normTier(tier)
@@ -492,6 +507,16 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 	local hits = {}
 	if mult <= 0 then
 		return hits
+	end
+	local pity, rolled = nil, {}
+	if owner and ChaosConquest and ChaosConquest.pityMult and ChaosConquest.pityRecord then
+		local cache = {}
+		pity = function(group)
+			if cache[group] == nil then
+				cache[group] = ChaosConquest.pityMult(owner, group)
+			end
+			return cache[group]
+		end
 	end
 	for _, e in ipairs(L.uniqueList(source)) do
 		local ok = rank >= tierValue(u.tierRank, e.minTier, 0)
@@ -508,9 +533,13 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 			ok = false
 		end
 		if ok then
-			local chance = e.chance * mult * (itemFind or 1)
+			local group = pity and L.pityGroup(e)
+			local chance = e.chance * mult * (itemFind or 1) * (group and pity(group) or 1)
 			if chance > u.maxChance then
 				chance = u.maxChance
+			end
+			if group then
+				rolled[group] = rolled[group] or false
 			end
 			if chance > 0 and rnd(1, 1000000) <= chance * 100 then
 				hits[#hits + 1] = e
@@ -520,6 +549,14 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 	local max = u.maxPerKill or 1
 	while #hits > max do
 		table.remove(hits, rnd(1, #hits))
+	end
+	if pity then
+		for _, e in ipairs(hits) do
+			rolled[L.pityGroup(e)] = e.id
+		end
+		for group, hit in pairs(rolled) do
+			ChaosConquest.pityRecord(owner, group, hit ~= false, hit or nil)
+		end
 	end
 	return hits
 end
@@ -765,6 +802,9 @@ function L.dropLevel(monster, owner, tier)
 	if wb and wb.bossId and wb.bossId == monster:getId() then
 		src.worldBoss = true
 	end
+	if ChaosPocketBoss and ChaosPocketBoss.isWorldBoss and ChaosPocketBoss.isWorldBoss(monster) then
+		src.worldBoss = true -- a world boss in its pocket (pocketboss.lua) drops at the world boss item level
+	end
 	return M.sourceLevel(src)
 end
 
@@ -797,7 +837,14 @@ local function processKill(monster, corpse)
 	if not owner then
 		return
 	end
-	if owner:getStamina() <= c.minStamina then
+	-- low stamina cuts the loot instead of zeroing it, and the returning boost raises it (catchup.lua: x0.5 at or below
+	-- 14 h, x1.25 for a returning player; outside the maxRate cap). Without catchup.lua the stock rule: nothing.
+	local catchup = ChaosCatchup and ChaosCatchup.lootMult and ChaosCatchup.lootMult(owner)
+	if catchup == nil and owner:getStamina() <= c.minStamina then
+		return
+	end
+	catchup = tonumber(catchup) or 1
+	if catchup <= 0 then
 		return
 	end
 
@@ -810,8 +857,11 @@ local function processKill(monster, corpse)
 	end
 	-- pack combat (pace.lua): loot per kill x the monster's loot factor (1 when it is not paced)
 	local pace = ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(monster) or 1
+	-- pocket bosses (pocketboss.lua): the corpse of a pocket boss and its adds x the pocket's lootMult, through the same
+	-- thinning as the pack factor (so even the always-dropped items are not guaranteed there)
+	pace = pace * (ChaosPocketBoss and ChaosPocketBoss.lootMultOf and ChaosPocketBoss.lootMultOf(monster) or 1)
 	local ctx = {tier = tier, monster = monster, player = owner, level = level, itemFind = L.itemFindMult(owner),
-		pace = pace}
+		pace = pace, catchup = catchup}
 	-- the Orb Find of the placed charms (charms.lua): the currency chances only
 	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
@@ -845,7 +895,13 @@ local function processKill(monster, corpse)
 
 	-- 1. extra rolls
 	local lootTable = mType and mType:getLoot()
-	for _, drop in ipairs(L.rollExtraLoot(lootTable, tier, ctx)) do
+	-- smart loot (smartloot.lua): the extra rolls favour gear made for the owner's class (the gear chance sum stays)
+	local rollTable = lootTable
+	if ChaosSmartLoot and ChaosSmartLoot.reweight then
+		local okW, w = pcall(ChaosSmartLoot.reweight, lootTable, owner)
+		rollTable = okW and w or lootTable
+	end
+	for _, drop in ipairs(L.rollExtraLoot(rollTable, tier, ctx)) do
 		local item = not isAmmo(drop.itemId) and corpse:addItem(drop.itemId, drop.count) or nil
 		if item then
 			if L.isGearId(drop.itemId) then
@@ -855,6 +911,14 @@ local function processKill(monster, corpse)
 				end
 			end
 			bonus[#bonus + 1] = (drop.count > 1 and (drop.count .. "x ") or "") .. itemName(drop.itemId)
+		end
+	end
+
+	-- 1b. smart loot (smartloot.lua): a gear drop nobody near can wear may become one of this loot table they can
+	if ChaosSmartLoot and ChaosSmartLoot.apply then
+		local okSmart, errSmart = pcall(ChaosSmartLoot.apply, corpse, owner, lootTable, rnd)
+		if not okSmart then
+			print("[Chaos loot] smart loot: " .. tostring(errSmart))
 		end
 	end
 

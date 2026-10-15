@@ -25,8 +25,9 @@ return {
 	gateAid = 47920,
 	gateItem = 1387, -- magic forcefield (type teleport, no destination: chronicle.lua moves the player, as areagen.lua)
 
-	-- the capital: its temple anchors the town changes (`town.anchor` overrides it)
-	townId = 1,
+	-- the capital: its temple anchors the town changes (`town.anchor` overrides it). Cinderhold, the main city
+	-- (server/README.md "Main city", owner request 2026-10-15; it was Mirewake, town 1)
+	townId = 2,
 
 	broadcast = true, -- chapter written, season start / end: a server broadcast
 	discordEvent = "chronicle", -- the event type for the Discord queue (discord.lua), when that module is loaded
@@ -85,15 +86,16 @@ return {
 	--         origin (tools/chronicle_areas_test.py checks it). Cells of the free block x/y 14336-15359, 10+ tiles from
 	--         every other plan and generated area (docs/MAP_GUIDE.md "Content plans").
 	--   gate  {x, y, z}: the tile on the world map where the gate portal appears once the area is open: the upper hall
-	--         of the capital's temple (Mirewake, town 1; the temple stairs lead up to it), east side, off every
-	--         walking line (checked on the base map: free floor, no item, the hall stays connected). Decided 2026-10-14.
+	--         of the capital's temple (Cinderhold, town 2: the two stairs in the temple's side rooms lead up to it, a
+	--         gallery over the temple), west end of its north row, off every walking line (checked on the base map: free
+	--         floor, no item, the hall stays connected). Moved from Mirewake's hall 2026-10-15 ("Main city").
 	-- arrival: the arrival tile's offset from the ORIGIN (from the compiled manifest; tools/chronicle_areas_test.py checks
 	-- it). Until `at` and `gate` are set the area opens in the story only (the window says so) and the console says why.
 	areas = {
 		{key = "cinderscar_breach", name = "The Cinderscar Breach", plan = "chronicle_cinderscar_breach",
-			arrival = {63, 82, 0}, minLevel = 400, at = {x = 14910, y = 15140, z = 7}, gate = {x = 32962, y = 32076, z = 6}},
+			arrival = {63, 82, 0}, minLevel = 400, at = {x = 14910, y = 15140, z = 7}, gate = {x = 32362, y = 32240, z = 6}},
 		{key = "ossuary_stair", name = "The Ossuary Stair", plan = "chronicle_ossuary_stair",
-			arrival = {59, 82, 0}, minLevel = 380, at = {x = 15100, y = 15140, z = 9}, gate = {x = 32962, y = 32079, z = 6}}
+			arrival = {59, 82, 0}, minLevel = 380, at = {x = 15100, y = 15140, z = 9}, gate = {x = 32358, y = 32240, z = 6}}
 	},
 
 	-- the town changes: decoration placed at runtime around the anchor (the capital's temple, or `anchor`) and taken

@@ -258,6 +258,18 @@ for i = 1, math.min(#offers, #other) do
 	end
 end
 assert(same < #offers, "another day, another board")
+-- a board reroll (Candlemarks): the salt draws another board the same day; salt 0 is the day's board
+local salted = C.offers(20261008, 42, 120, bigCat, cfg, 1)
+same = 0
+for i = 1, math.min(#offers, #salted) do
+	if offers[i].key == salted[i].key then
+		same = same + 1
+	end
+end
+assert(same < #offers, "a reroll draws another board")
+eq(C.offers(20261008, 42, 120, bigCat, cfg, 0)[1].key, offers[1].key, "salt 0: the day's board")
+eq(C.offers(20261008, 42, 120, bigCat, cfg, 1)[1].key, salted[1].key, "a salted board is stable")
+eq(cfg.rerollStorage, 7102404, "reroll storages")
 local empty = C.offers(20261008, 42, 120, C.index({}, cfg), cfg)
 eq(#empty, 0, "nothing to offer")
 
@@ -482,6 +494,16 @@ do
 	eq(onExp(player, monster("Dragon", "Dragon [Lv 120]"), 1000, 1000), math.floor(base * 1.1 + 1e-9),
 		"level-tagged dragon: still +10%")
 	X.players[77] = nil
+	-- the Candlemarks API: board reroll charges
+	local st = {}
+	local buyer = {getStorageValue = function(_, k) return st[k] or -1 end, setStorageValue = function(_, k, v) st[k] = v end,
+		sendTextMessage = function() end, getGuid = function() return 78 end}
+	eq(X.rerollsOf(buyer), 0, "no reroll yet")
+	eq(X.addRerolls(buyer, 2), true, "two rerolls added")
+	eq(X.rerollsOf(buyer), 2, "two held")
+	eq(X.addRerolls(buyer, 0), false, "zero refused")
+	eq(X.addRerolls(buyer, "x"), false, "junk refused")
+	eq(st[cfg.rerollStorage], 2, "kept in its storage")
 	setmetatable(_G, nil)
 end
 

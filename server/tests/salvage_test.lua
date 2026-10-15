@@ -80,6 +80,24 @@ eq(K.percent(75), "0.75", "two decimals")
 eq(K.check(gear(3), cfg), nil, "a rolled item may be salvaged")
 eq(K.check(gear(3, nil, {locked = true}), cfg), "locked", "locked")
 eq(K.check(gear(3, nil, {unique = true}), cfg), "unique", "unique")
+-- a unique with a Conquest Token value (conquest.lua) may be salvaged: tokens + uniqueShards shards
+do
+	local u = gear(0, 60, {unique = true})
+	u.tokens = 69
+	eq(K.check(u, cfg), nil, "a unique salvages for Conquest Tokens")
+	eq(K.shards(u, cfg), cfg.uniqueShards, "its fixed shards")
+	local roll = K.roll(u, cfg, function(a) return 10000 end)
+	eq(roll.tokens, 69, "the tokens are in the roll")
+	eq(K.preview(u, cfg).tokens, 69, "the bench shows them")
+	u.tokens = 0
+	eq(K.check(u, cfg), "unique", "without a token value it stays refused")
+	local off = {}
+	for k, v in pairs(cfg) do off[k] = v end
+	off.uniqueTokens = false
+	u.tokens = 69
+	eq(K.check(u, off), "unique", "switched off: refused")
+	eq(K.batch({u}, 15, cfg).count, 0, "salvage all never takes a unique")
+end
 eq(K.check(gear(0), cfg), "normal", "no rarity")
 eq(K.check(gear(3, nil, {gems = 1, sockets = 2}), cfg), "gems", "socketed gems: take them out first")
 eq(K.check(gear(3, nil, {sockets = 2}), cfg), nil, "empty sockets are fine")

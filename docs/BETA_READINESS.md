@@ -70,7 +70,7 @@ closed staff-only weekend.
 
 | # | Item | Who | How to verify |
 |---|---|---|---|
-| L1 | **Real prices.** Decided 2026-10-14 (owner delegated): docs/PRICES.md. Packs R$ 9,90-499,90 (US$ 1.98-99.98), classes 500 or free at level 500, season pass 600, Bazaar 10%, creator 10%, referral level 250. Left: the lawyer review (L3). | Dev done, Owner reviews | Donation Terms tables match `shop_coins_config.lua` (filled in). |
+| L1 | **Real prices.** Decided 2026-10-14 (owner delegated): docs/PRICES.md. Packs R$ 9,90-499,90 (US$ 1.98-99.98), classes free at level 200 (not sold), season pass 600, Bazaar 10%, creator 10%, referral level 250. Left: the lawyer review (L3). | Dev done, Owner reviews | Donation Terms tables match `shop_coins_config.lua` (filled in). |
 | L2 | **Payments live.** Mercado Pago and PayPal Business accounts, sandbox run of LAUNCH.md "Donations" step 6, then live credentials. Only the mock was ever run (#47). | Owner, Dev | Sandbox: Pix and PayPal credit coins, cancel, expiry, refund takes coins back, bad signature gets 401. Live: one real donation each, refunded. |
 | L3 | **Lawyer review** of all legal texts: Donation Terms section 7, minors, bans and refunds, LGPD transfers, bot review line. | Owner | Lawyer sign-off. `install_site.sh` rerun writes the new texts version. |
 | L4 | **Wipe** per BETA.md section 9. Final beta backup kept and restore-proven. Rehearse it once on a copy first. | Dev | Step 6 counts: 0 players, all accounts, 0 coins, 0 owned houses. |

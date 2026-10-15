@@ -56,6 +56,8 @@ local function tile(x, y, z, h)
 	function t:getHouse() return self.house end
 	function t:getThing(i) return self.things[i + 1] end
 	function t:hasProperty() return self.solid == true end
+	function t:hasFlag() return true end -- every tile a protection zone: the reach rules are under test here (the
+	-- town-only deposit rule of the stash: tests/stash_test.lua)
 	tiles[key(x, y, z)] = t
 	return t
 end

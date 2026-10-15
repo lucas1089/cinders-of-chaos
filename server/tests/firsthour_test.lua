@@ -142,4 +142,46 @@ new.level = 20
 events.ChaosFirstHourAdvance.onAdvance(new, SKILL_LEVEL, 19, 20)
 assert(new.msgs[#new.msgs]:find("Bestiário", 1, true))
 
+-- ------------------------------------------------------------------ beyond level 100 (2026-10-15)
+-- every band where the next system unlocks has a hint, up to 2000; the masks stay in 31 bits
+local levels = {}
+for _, h in ipairs(cfg.hints) do
+	levels[h.level] = true
+end
+for _, lv in ipairs({150, 200, 300, 800, 900, 1000, 1300, 1600, 2000}) do
+	assert(levels[lv], "a hint at level " .. lv)
+end
+assert(cfg.revealAt[#cfg.revealAt] >= 1500, "reveals up to the late hunts")
+assert(#cfg.hints <= 31 and #cfg.revealAt <= 31, "masks fit 31 bits")
+eq(cfg.legacy.hints, 8, "the hints before the extension")
+eq(cfg.legacy.reveals, 6, "the reveals before the extension")
+eq(cfg.hints[8].key, "ascension", "old hints keep their index")
+eq(cfg.revealAt[6], 80, "old reveals keep their index")
+-- sync: entries added later at levels already passed are marked, the others wait
+local mask = M.all(8)
+mask = M.sync(mask, 8, #cfg.hints, function(i) return cfg.hints[i].level end, 450)
+for i, h in ipairs(cfg.hints) do
+	eq(M.has(mask, i), h.level <= 450, "sync hint " .. h.key)
+end
+eq(M.sync(5, 3, 3, function() return 1 end, 10), 5, "nothing new")
+-- the teleport room hunts
+local plans = {{name = "B", level = {200, 290}}, {name = "A", level = {215, 299}}, {name = "W", level = {480, 640}}}
+local names = M.pickPlans(plans, 210, {count = 3, slack = 40})
+eq(#names, 2); eq(names[1], "B (200-290)"); eq(names[2], "A (215-299)")
+eq(#M.pickPlans(plans, 450, {count = 3, slack = 40}), 1, "a band starting within the slack")
+eq(#M.pickPlans(plans, 100, {count = 3, slack = 40}), 0, "none at 100")
+eq(#F.planNames(500) > 0, true, "planNames from goals_config.lua without placed hunts")
+-- an old character (hints given up to the old list): its first login after the extension marks the passed ones
+local old = mkPlayer(3, 460)
+old.st[cfg.storage.base] = M.all(8)
+old.st[cfg.storage.base + 1] = M.all(6)
+old.st[7100250] = os.time()
+events.ChaosFirstHourLogin.onLogin(old); flush()
+eq(#old.msgs, 0, "no flood of old hints")
+eq(old:getStorageValue(cfg.storage.base + cfg.storage.hintsKnown), #cfg.hints, "knows the list now")
+old.level = 500
+events.ChaosFirstHourAdvance.onAdvance(old, SKILL_LEVEL, 499, 500)
+eq(#old.msgs, 1, "the level 500 hint")
+assert(old.msgs[1]:find("Widowmere", 1, true), "names the teleport hunts: " .. old.msgs[1])
+
 print("firsthour_test: OK")

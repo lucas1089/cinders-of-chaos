@@ -242,7 +242,10 @@ ok(ChaosDungeonIsInside(a), "dungeon 4: still a member on floor 9")
 a.pos = P(temple.x, temple.y, temple.z) -- the boss room's exit teleport
 advance(3000)
 ok(not ChaosDungeonIsInside(a), "dungeon 4: out of the area: the run is over")
-ok(a.storage[50203] and a.storage[50203] > os.time(), "dungeon 4: leaving counts as a failed attempt")
+ok(a.storage[50203] and a.storage[50203] > os.time() and a.storage[50203] - os.time() <= Chaos.dungeons.failCooldownSeconds,
+	"dungeon 4: leaving is a failed attempt: the 5 minute fail cooldown")
+eq(Chaos.dungeons.failCooldownSeconds, 300, "fail cooldown 5 minutes")
+eq(Chaos.dungeons.cooldownSeconds, 900, "clear cooldown 15 minutes")
 ok(creatures[101] == nil and creatures[102] == nil and creatures[103] == nil, "dungeon 4: the clean-up reaches every floor")
 ok(creatures[104] == outsider, "dungeon 4: a monster outside the area stays")
 
@@ -311,6 +314,10 @@ do
 	kill.onKill(e, boss)
 	advance(15000)
 	ok(not ChaosDungeonIsInside(e) and not ChaosDungeonIsInside(f), "the boss after the unlock: the run is won")
+	local cd = Chaos.dungeons.cooldownSeconds
+	ok(e.storage[50203] and e.storage[50203] > os.time() + cd - 60 and e.storage[50203] <= os.time() + cd,
+		"a cleared run: the short cooldown (" .. tostring(e.storage[50203] and e.storage[50203] - os.time()) .. " s)")
+	ok(f.storage[50203] and f.storage[50203] > os.time(), "a cleared run: every member gets it")
 	x2.unlock = nil
 end
 

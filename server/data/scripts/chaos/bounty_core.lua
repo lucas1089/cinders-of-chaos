@@ -194,6 +194,76 @@ function B.rollBand(day, bandIndex, cfg, pool)
 	return contracts
 end
 
+-- a reroll (2026-10-15, bounty rerolls bought with Candlemarks): another monster for an accepted contract `c`, same
+-- band, slot, type and elite tier, picked by the board's own rules (the count too), never a name of `avoid` (lower case
+-- names: the band's board and the player's other contracts) nor c's own monster. nil when nothing else fits.
+function B.rerollContract(c, cfg, pool, avoid, rand)
+	local band = c and cfg.bands[c.band]
+	if not band then
+		return nil
+	end
+	local used = {[c.name:lower()] = true}
+	for name in pairs(avoid or {}) do
+		used[name] = true
+	end
+	local nc
+	if c.type == "boss" then
+		local list = candidates(pool.bosses, band.pick, 0, used)
+		if #list == 0 then
+			return nil
+		end
+		nc = contractOf(c.band, c.slot, "boss", list[rand(1, #list)])
+		nc.count = rand(cfg.bossCount[1], cfg.bossCount[2])
+	elseif c.type == "elite" then
+		local list = candidates(pool.hunt, band.pick, cfg.eliteMinSpawns, used)
+		if #list == 0 then
+			return nil
+		end
+		local mon = list[rand(1, #list)]
+		local e = cfg.elite[1]
+		for _, x in ipairs(cfg.elite) do
+			if x.tier == c.tier then
+				e = x
+			end
+		end
+		nc = contractOf(c.band, c.slot, "elite", mon)
+		nc.tier = c.tier or e.tier
+		nc.count = rand(e.count[1], e.count[2])
+		local g = cfg.goalMult and cfg.goalMult(mon) or 1
+		if g > 1 then
+			nc.count = math.max(nc.count, math.floor(nc.count * g + 0.5))
+		end
+	else
+		local list = candidates(pool.hunt, band.pick, 0, used)
+		if #list == 0 then
+			return nil
+		end
+		local mon = list[rand(1, #list)]
+		nc = contractOf(c.band, c.slot, c.type, mon)
+		local n = rand(band.kills[1], band.kills[2])
+		local g = cfg.goalMult and cfg.goalMult(mon) or 1
+		if g > 1 then
+			n = n * g
+		end
+		nc.count = (mon.spawns or 0) < cfg.fewSpawns and roundTo(n * cfg.fewSpawnsMult, 5) or roundTo(n, 10)
+	end
+	return nc
+end
+
+-- the contract a player really holds: the board's `c`, or after a reroll (entry e names another monster) a copy with
+-- that monster (find(name) -> its pool entry, for the look and level) and the entry's count
+function B.overrideOf(c, e, find)
+	if not c or not e or type(e.monster) ~= "string" or e.monster:lower() == c.name:lower() then
+		return c
+	end
+	local mon = find and find(e.monster) or nil
+	local nc = contractOf(c.band, c.slot, c.type, mon or {name = e.monster, level = c.level, look = 0})
+	nc.tier = c.tier
+	nc.count = e.required or c.count
+	nc.rerolled = true
+	return nc
+end
+
 function B.roll(day, cfg, pool)
 	local board = {day = day, bands = {}, byKey = {}, byName = {}}
 	for i, band in ipairs(cfg.bands) do

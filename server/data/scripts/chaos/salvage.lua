@@ -108,6 +108,16 @@ local function isStackable(item)
 	return ok and v or false
 end
 
+-- the Conquest Tokens a unique gives when salvaged (conquest.lua; nil when it is no unique or tokens are off)
+function S.uniqueTokens(item)
+	local CQ = ChaosConquest
+	if not cfg.uniqueTokens or not CQ or not CQ.offerOf or not CQ.cfg or not C.isUnique(item) then
+		return nil
+	end
+	local o = CQ.offerOf(item:getId())
+	return o and ChaosConquestCore.salvageTokens(CQ.cfg, o.price) or nil
+end
+
 -- the info table of salvage_core.lua for an engine item
 function S.infoOf(player, item)
 	local s = ChaosGems and ChaosGems.read(item) or {count = 0, filled = 0}
@@ -129,6 +139,7 @@ function S.infoOf(player, item)
 		level = C.levelOf(item),
 		unique = C.isUnique(item),
 		setPiece = ChaosItemSets and ChaosItemSets.pieceOf and ChaosItemSets.pieceOf(item) ~= nil or nil, -- itemsets.lua
+		tokens = S.uniqueTokens(item), -- conquest.lua: a unique gives Conquest Tokens
 		sockets = s.count or 0,
 		gems = s.filled or 0,
 		highTiers = high,
@@ -185,10 +196,13 @@ local function orbName(key)
 end
 
 local function rowText(info, roll)
-	local text = string.format("%s (level %d): %d %s", info.setPiece and "Set piece" or C.rarityName(info.rarity), info.level, roll.shards,
+	local text = string.format("%s (level %d): %d %s", info.setPiece and "Set piece" or (info.unique and "Unique" or C.rarityName(info.rarity)), info.level, roll.shards,
 		roll.shards == 1 and cfg.shard.name or cfg.shard.plural)
 	if roll.orb then
 		text = text .. " + 1 " .. orbName(roll.orb)
+	end
+	if roll.tokens then
+		text = text .. " + " .. roll.tokens .. " Conquest Tokens"
 	end
 	return text
 end
@@ -398,6 +412,14 @@ local function salvageOne(player, data)
 		orbs[roll.orb] = 1
 	end
 	local inbox = giveRolls(player, roll.shards, orbs)
+	if roll.tokens then
+		-- the item is gone from the character: save it before the tokens go into the database
+		if Chaos.saveCharacter(player) then
+			ChaosConquest.grant(player, "salvage", roll.tokens, name)
+		else
+			print("[Chaos salvage] " .. name .. " of " .. player:getName() .. ": the save failed, " .. roll.tokens .. " tokens not given")
+		end
+	end
 	local text = rowText(info, roll)
 	logRows(player, {{item = name, text = text}})
 	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT or 9)

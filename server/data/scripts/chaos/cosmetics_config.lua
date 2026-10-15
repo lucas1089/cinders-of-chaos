@@ -36,6 +36,8 @@
 -- exclusives.lua (exclusives_config.lua `bosses`), never sold.
 -- And "pact" (pact = the window's line): the Chaos Pact's perks (pact_config.lua perks, pact_perks.lua): the chat
 -- colour while the Pact is active, the monthly cosmetic kept for good; never sold.
+-- And "candlemarks": bought for Candlemarks at Osric the Chandler (candlemarks_config.lua offers of kind "cosmetic",
+-- one per account); never sold for Chaos Coins.
 
 return {
 	opcode = 225, -- ChaosOpcodes.cosmetics (client game_cosmetics)
@@ -257,6 +259,13 @@ return {
 			color = "#b8c4d4", name = "Gladiator Steel", desc = "Your name in chat shows polished steel for everyone."},
 		{id = 308, key = "chat_infernal", kind = "chatcolor", icon = 2343, source = "pvp", pvp = "PvP season reward: Infernal or better",
 			color = "#ff6a4a", name = "Infernal Name", desc = "Your name in chat burns infernal red for everyone. PvP season: Infernal."},
+		-- Candlemarks (candlemarks_config.lua; source "candlemarks"): bought at Osric the Chandler, never for coins
+		{id = 140, key = "kill_candleseal", kind = "killfx", icon = 2050, source = "candlemarks", vfx = "holy_seal",
+			name = "Candle Seal", desc = "A seal of candlelight glows where your killing blow lands."},
+		{id = 230, key = "loot_tallow", kind = "lootbeam", icon = 2048, source = "candlemarks", accent = "#2e2412f0",
+			name = "Tallow Labels", desc = "Your highlighted loot labels sit on warm tallow. Rarity colours stay."},
+		{id = 330, key = "chat_candlelight", kind = "chatcolor", icon = 2047, source = "candlemarks", color = "#ffd98a",
+			name = "Candlelight Name", desc = "Your name in chat glows soft candlelight for everyone."},
 		-- the Scorched Marches vendor (pvpzone.lua; banked embers)
 		{id = 120, key = "kill_marchfire", kind = "killfx", icon = 2353, source = "pvp", pvp = "Scorched Marches vendor (embers)",
 			vfx = "meteor_strike", name = "Marchfire", desc = "A burning star falls where your killing blow lands."},

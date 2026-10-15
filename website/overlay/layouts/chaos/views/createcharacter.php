@@ -86,7 +86,7 @@ foreach ($lines as $base => $line) {
 					<span class="chaos-note">Every new character starts on the tutorial island; its temple is where you go when you leave it.</span>
 				</div>
 			<?php else: ?>
-				<input type="hidden" name="selected_town" value="<?= (int)end($towns) ?>">
+				<input type="hidden" name="selected_town" value="<?= (int)reset($towns) ?>">
 			<?php endif; ?>
 
 			<?php Token::create(); ?>

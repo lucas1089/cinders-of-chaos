@@ -26,7 +26,7 @@ function V.status(s)
   if n(s.endsAt) > 0 then
     return tr('Chaos Pact ended'), tr('Ended %s. Nothing is lost: extra tabs are withdraw-only, extra builds read-only.', (s.ends or ''))
   end
-  return tr('No Chaos Pact'), tr('Perks for 30 days: +10%% XP, stamina x1.5, room, slots, %s coins a day and a title.', n(s.dailyCoins))
+  return tr('No Chaos Pact'), tr('Perks for 30 days: +10%% XP, stamina x1.5, remote stash deposit, room, slots, %s coins a day and a title.', n(s.dailyCoins))
 end
 
 -- the claim button: text and whether it is enabled

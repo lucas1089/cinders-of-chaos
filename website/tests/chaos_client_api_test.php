@@ -237,7 +237,7 @@ check($code === 400 && in_array('reg.restricted_word', $b['errors'], true), 'bad
 [$code, $b] = create(array('name' => 'Old Guard'));
 check($code === 400 && in_array('acc.name_taken', $b['errors'], true), 'taken name');
 [$code, $b] = create(array('name' => 'Bone Weaver', 'vocation' => 20));
-check($code === 400 && $b['errors'] === array('The Necromancer is locked for your account. Unlock it in the game store (Classes).'), 'locked class: a clear refusal');
+check($code === 400 && $b['errors'] === array('The Necromancer is locked for your account. Reach level 200 with any character of your account to unlock it.'), 'locked class: a clear refusal');
 [$code, $b] = create(array('name' => 'Bone Weaver', 'vocation' => 21));
 check($code === 400 && in_array('createchar.bad_vocation', $b['errors'], true), 'an ascension cannot be created');
 [$code, $b] = create(array('name' => 'Neutral One', 'sex' => 5));

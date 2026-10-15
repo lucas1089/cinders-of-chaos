@@ -2,7 +2,7 @@
 --
 -- Everything is per account: the Pact (chaos_pact), the one-time extras bought in the store (chaos_account_extras) and
 -- the saved passive tree builds (chaos_build_slots). Other systems ask for their limit:
---     ChaosPact.limit(player, key)    key of pact_config.lua `limits` (stashTabs, depotTabs, marketListings,
+--     ChaosPact.limit(player, key)    key of pact_config.lua `limits` (stashTabs, stashRemote, depotTabs, marketListings,
 --                                     marketAccount, buildSlots, lootRules, charSlots)
 --     ChaosPact.limits(player)        every limit
 --     ChaosPact.stashKind(itemId)     "orbs" | "gems" | "keys" | nil (stash.lua ChaosStash.kindOf)

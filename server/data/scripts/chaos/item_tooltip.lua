@@ -112,6 +112,13 @@ local function answer(player, data)
 			if ok then
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
 				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)
+				-- where it comes from (itemfinder.lua F.brief): the first two sources, the expected effort, a token price
+				if ChaosItemFinder and ChaosItemFinder.brief and type(row.tip) == "table" then
+					local okb, b = pcall(ChaosItemFinder.brief, item:getId())
+					if okb and b then
+						row.tip.src = b
+					end
+				end
 			else
 				row.gone = true
 				print("[item_tooltip] " .. tostring(tip))

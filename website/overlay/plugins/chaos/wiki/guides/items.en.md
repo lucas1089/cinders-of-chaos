@@ -36,4 +36,4 @@ Gear can have up to {{gem.maxSockets}} [sockets](wiki:gem:sockets) for [gems](wi
 
 ## Professions
 
-Four [gathering professions](wiki:mat:professions) give materials to sell to the Material Broker next to every temple. Levelling them also gives a little extra experience.
+Four [gathering professions](wiki:mat:professions) give materials to sell to the Material Broker next to every temple (in Cinderhold and Mirewake: in the Hall of Services). Levelling them also gives a little extra experience.

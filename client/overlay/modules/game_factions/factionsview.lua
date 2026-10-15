@@ -1,7 +1,8 @@
 -- Pure helpers of the Factions window (no client API), tested by factionsview_test.lua.
 -- The data comes from the server (server/data/scripts/chaos/factions_core.lua K.payload):
 --   {now, nextDay, nextWeek, weekCap, gold, sel, ranks = [{k, n, min, c}],
---    factions = [{k, n, s, c, lore, rival, rep, rank, rn, rc, lo, hi, pct, nx, wk, dy, dr, ex, npc, near, tok, tn, tid, theme}],
+--    factions = [{k, n, s, c, lore, rival, rep, rank, rn, rc, lo, hi, pct, nx, wk, wc, dy, dr, ex, npc, near, tok, tn, tid,
+--                 theme}], wc = the faction's cap this week (weekCap + the carried unused cap),
 --    contracts = [{key, f, per = "d" | "w", kind, label, p, n, rep, done, give}],
 --    offers = [{key, f, kind, n, rank, rn, price, tokens, st = "ok" | "locked" | "owned" | "soldout", why, wl, wb, item,
 --               lv, rar, mods, desc, craft}]}
@@ -91,8 +92,14 @@ function V.nextText(f)
   return tr('%s more to %s', V.fmt(num(f.hi) - num(f.rep)), f.nx)
 end
 
+-- the faction's own cap this week (wc: weekCap plus the unused cap carried from earlier weeks), else the global one
+function V.capOf(f, cap)
+  if f and num(f.wc) > 0 then return num(f.wc) end
+  return cap
+end
+
 function V.weekText(f, cap)
-  return tr('This week %s / %s', V.fmt(f and f.wk), V.fmt(cap))
+  return tr('This week %s / %s', V.fmt(f and f.wk), V.fmt(V.capOf(f, cap)))
 end
 
 -- what the next activity point is worth today (contracts are not reduced)
@@ -105,6 +112,7 @@ function V.drText(f)
 end
 
 function V.capped(f, cap)
+  cap = V.capOf(f, cap)
   return f ~= nil and num(f.wk) >= num(cap) and num(cap) > 0
 end
 

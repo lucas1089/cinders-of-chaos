@@ -21,7 +21,7 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
-				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 45% nothing, 15% ruined."},
+				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
@@ -42,7 +42,7 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
-				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 45% nothing, 15% ruined."},
+				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
@@ -63,7 +63,7 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
-				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 45% nothing, 15% ruined."},
+				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
@@ -84,7 +84,7 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
-				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 45% nothing, 15% ruined."},
+				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
@@ -4932,7 +4932,7 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.3%, Magic 2%, Rare 7%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.5% of the time."},
 								{"Salvage", "Combine 12 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 25.7% of those are this one."},
-								{"Bounty chest", "3 in every weekly bounty chest (7 contracts in a week)."}
+								{"Bounty chest", "3 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
 					},
@@ -5017,7 +5017,7 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.8%, Rare 3%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."},
 								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 5.9% of those are this one."},
-								{"Bounty chest", "1 in every weekly bounty chest (7 contracts in a week)."}
+								{"Bounty chest", "1 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
 					},
@@ -5179,7 +5179,7 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.12%, Magic 0.9%, Rare 3.5%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.7% of the time."},
 								{"Salvage", "Combine 20 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 8.8% of those are this one."},
-								{"Bounty chest", "2 in every weekly bounty chest (7 contracts in a week)."}
+								{"Bounty chest", "2 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
 					},
@@ -5276,12 +5276,12 @@ CodexData = {
 					id = "orb:ruin",
 					name = "Orb of Ruin",
 					color = "#e8b84a",
-					sub = "A gamble: 40% it improves (a tier more on every unbound modifier, or an extra one), 45% nothing, 15% ruined for good.",
+					sub = "A gamble: 40% it improves (a tier more on every unbound modifier, or an extra one), 60% nothing happens. It never ruins the item.",
 					f = {group = "orb"},
 					sections = {
 						{
 							h = "What it does",
-							p = {"A gamble: 40% it improves (a tier more on every unbound modifier, or an extra one), 45% nothing, 15% ruined for good."}
+							p = {"A gamble: 40% it improves (a tier more on every unbound modifier, or an extra one), 60% nothing happens. It never ruins the item."}
 						},
 						{
 							h = "Rules",
@@ -5324,7 +5324,7 @@ CodexData = {
 								{"Salvage", "Combine 5 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 10.3% of those are this one."},
 								{"Store", "10 for 20 Chaos Coins, 5 a week per account."},
-								{"Bounty chest", "5 in every weekly bounty chest (7 contracts in a week)."}
+								{"Bounty chest", "5 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
 					},
@@ -5997,12 +5997,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 78 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2466}
@@ -6040,12 +6042,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {11395}
@@ -6080,12 +6084,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 100 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {27647}
@@ -6119,12 +6125,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {27658}
@@ -6159,12 +6167,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {25175}
@@ -6195,12 +6205,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28100}
@@ -6228,12 +6240,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28101}
@@ -6264,12 +6278,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Bloodsworn Reaver: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {25410}
@@ -6307,12 +6323,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {7379}
@@ -6347,12 +6365,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.04%, Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Warlock, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 69 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {3972}
@@ -6387,12 +6407,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 83 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {18403}
@@ -6427,12 +6449,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.06%, Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Bonelord, Elder Bonelord, Skeleton Warrior, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 68 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {11374}
@@ -6468,12 +6492,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "900 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 150. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 90 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27667}
@@ -6508,12 +6534,14 @@ CodexData = {
 								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1390 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 139 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {8925}
@@ -6548,12 +6576,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 100 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {10314}
@@ -6586,12 +6616,14 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"Bosses", "Ysgrath the Cinderheart."},
-								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."}
+								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
+								{"Conquest vendor", "5400 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 540 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2123}
@@ -6626,12 +6658,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 100 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {8892}
@@ -6662,12 +6696,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 138 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {29471}
@@ -6698,12 +6734,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 138 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {7894}
@@ -6738,12 +6776,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 138 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {7899}
@@ -6774,12 +6814,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 138 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {24637}
@@ -6810,12 +6852,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 138 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28041}
@@ -6846,12 +6890,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1380 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 138 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Cinderstorm Court: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {27666}
@@ -6883,12 +6929,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {7462}
@@ -6923,12 +6971,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 77 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27230}
@@ -6959,12 +7009,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {11304}
@@ -6995,12 +7047,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28112}
@@ -7034,12 +7088,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {7404}
@@ -7074,12 +7130,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {11301}
@@ -7113,12 +7171,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {7418}
@@ -7149,12 +7209,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Duskstalker Garb: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {27249}
@@ -7193,12 +7255,14 @@ CodexData = {
 								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1420 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 90. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 142 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {29866}
@@ -7233,12 +7297,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 78 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {22423}
@@ -7273,12 +7339,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1000 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 100 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {27692}
@@ -7313,12 +7381,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1010 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 101 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {3975}
@@ -7356,12 +7426,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 72 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2440}
@@ -7394,12 +7466,14 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.6% (x item find)."},
 								{"Bosses", "Ascended Thalcyra, Ysgrath the Cinderheart."},
-								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."}
+								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
+								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 420 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2171}
@@ -7431,12 +7505,14 @@ CodexData = {
 								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 136 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {24790}
@@ -7472,12 +7548,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 83 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {7890}
@@ -7511,12 +7589,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 162 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {27474}
@@ -7551,12 +7631,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 162 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {15407}
@@ -7587,12 +7669,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 162 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {29470}
@@ -7623,12 +7707,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "Nyxareth the Void Archon: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 550. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 162 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Gallows Marksman: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28114}
@@ -7663,12 +7749,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.04%, Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 69 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {8849}
@@ -7703,12 +7791,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 71 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {11426}
@@ -7743,12 +7833,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {23590}
@@ -7786,12 +7878,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1580 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): always on sale. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 158 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {36659}
@@ -7829,12 +7923,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {10301}
@@ -7869,12 +7965,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 72 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {10218}
@@ -7912,12 +8010,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {10221}
@@ -7952,12 +8052,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.06%, Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Massive Fire Elemental, Dragon Lord, Blazebringer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "680 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 68 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {19390}
@@ -7992,12 +8094,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Massive Fire Elemental, Dragon Lord, Blazebringer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
 					},
 					items = {16111}
@@ -8030,12 +8134,14 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.6% (x item find)."},
 								{"Bosses", "Ascended Morvane, Ysgrath the Cinderheart."},
-								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."}
+								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
+								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 420 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2493}
@@ -8071,12 +8177,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "980 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 98 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27668}
@@ -8107,12 +8215,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 120 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {26808}
@@ -8140,12 +8250,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 120 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {2129}
@@ -8180,12 +8292,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 120 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {24741}
@@ -8216,12 +8330,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 200. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 120 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Hollowpack Covenant: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {24718}
@@ -8256,12 +8372,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.06%, Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 69 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {21693}
@@ -8296,12 +8414,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "980 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 98 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Embers of Aranoth: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {2496}
@@ -8336,12 +8456,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 120 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {28023}
@@ -8379,12 +8501,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.04%, Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 71 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {3961}
@@ -8419,12 +8543,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 71 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27288}
@@ -8459,12 +8585,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 77 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {25418}
@@ -8492,12 +8620,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28125}
@@ -8528,12 +8658,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28106}
@@ -8564,12 +8696,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28111}
@@ -8604,12 +8738,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28107}
@@ -8640,12 +8776,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28108}
@@ -8673,12 +8811,14 @@ CodexData = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.48% (x item find)."},
 								{"World bosses", "The Rotmother: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1260 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 126 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Mirrorweave Raiment: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28109}
@@ -8713,12 +8853,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
 					},
 					items = {27231}
@@ -8750,12 +8892,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 77 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27232}
@@ -8793,12 +8937,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.04%, Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 69 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2412}
@@ -8833,12 +8979,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27693}
@@ -8874,12 +9022,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 87 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {15453}
@@ -8914,12 +9064,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "770 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 60. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 77 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {10318}
@@ -8954,12 +9106,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.04%, Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "690 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 10. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 69 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {10296}
@@ -8994,12 +9148,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 83 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {8881}
@@ -9034,12 +9190,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "930 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 170. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 93 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27251}
@@ -9074,12 +9232,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "720 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 30. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 72 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
 					},
 					items = {13760}
@@ -9111,12 +9271,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 71 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2206}
@@ -9151,12 +9313,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "830 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 83 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {21691}
@@ -9189,12 +9353,14 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 0.6% (x item find)."},
 								{"Bosses", "Ascended Sangrith, Ysgrath the Cinderheart."},
-								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."}
+								{"Ascended spoils", "Every finisher of a listed boss: 2 unique rolls (x6 find) after an Ascended Omen, 3 (x10 find) after the Cinderheart."},
+								{"Conquest vendor", "4200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 950. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 420 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {2408}
@@ -9232,12 +9398,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {26756}
@@ -9272,12 +9440,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27228}
@@ -9313,12 +9483,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 78 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {28115}
@@ -9356,12 +9528,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.36%, Boss 0.54% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 78 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {8209}
@@ -9399,12 +9573,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "780 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 78 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {29571}
@@ -9439,12 +9615,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 80 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {15413}
@@ -9479,12 +9657,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1200 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 120 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {28049}
@@ -9520,12 +9700,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1050 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 105 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27390}
@@ -9560,12 +9742,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "710 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 20. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 71 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {8858}
@@ -9600,12 +9784,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {24851}
@@ -9640,12 +9826,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.06%, Legendary 0.12%, Boss 0.18% (x item find)."},
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 108 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {2500}
@@ -9680,12 +9868,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.06%, Legendary 0.12%, Boss 0.18% (x item find)."},
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 108 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {27646}
@@ -9720,12 +9910,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.06%, Legendary 0.12%, Boss 0.18% (x item find)."},
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 108 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {28691}
@@ -9760,12 +9952,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.06%, Legendary 0.12%, Boss 0.18% (x item find)."},
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1080 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 100. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
+							p = {"A unique keeps its stats: no orb changes it. As a set piece it salvages for 8 rune shards and 108 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Part of the set Thornwake Volley: its bonuses are on the Sets tab."}
 						}
 					},
 					items = {18406}
@@ -9797,12 +9991,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {22474}
@@ -9834,12 +10030,14 @@ CodexData = {
 								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 136 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {29868}
@@ -9874,12 +10072,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "870 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 130. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 87 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27652}
@@ -9914,12 +10114,14 @@ CodexData = {
 								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "1360 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 70. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 136 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27675}
@@ -9957,12 +10159,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "800 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 80. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 80 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {28020}
@@ -9997,12 +10201,14 @@ CodexData = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {26133}
@@ -10040,12 +10246,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.08%, Legendary 0.16%, Boss 0.24% (x item find)."},
 								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "740 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 40. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {10510}
@@ -10083,12 +10291,14 @@ CodexData = {
 								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.06%, Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "660 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 66 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out).", "Season unique: during season 1 it drops only for that season's characters, afterwards for everyone."}
 						}
 					},
 					items = {22690}
@@ -10123,12 +10333,14 @@ CodexData = {
 								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
 								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
-								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 50. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 75 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
 					items = {27295}
@@ -10218,7 +10430,9 @@ CodexData = {
 							rows = {
 								{"World bosses", "Vharok the Blood Colossus: 0.48% per kill and piece (x item find), and the bosses' participation reward rolls them with the other boss uniques."},
 								{"Rift chest", "Ashen Crypt rifts from key tier 5: 2.5% per finisher's chest, +0.25% per tier above, at most 8%."},
-								{"Who", "Characters of level 250 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 250 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1260 Conquest Tokens, once it dropped for you or from level 250."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10269,7 +10483,9 @@ CodexData = {
 							rows = {
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen: 0.48% per kill and piece (x item find), and the bosses' participation reward rolls them with the other boss uniques."},
 								{"Rift chest", "Abyssal Rift rifts from key tier 6: 2.5% per finisher's chest, +0.25% per tier above, at most 8%."},
-								{"Who", "Characters of level 350 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 350 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1380 Conquest Tokens, once it dropped for you or from level 350."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10321,7 +10537,9 @@ CodexData = {
 								{"World bosses", "Nyxareth the Void Archon: 0.48% per kill and piece (x item find), and the bosses' participation reward rolls them with the other boss uniques."},
 								{"Rift chest", "Abyssal Rift rifts from key tier 4: 2.5% per finisher's chest, +0.25% per tier above, at most 8%."},
 								{"Dungeons", "Every clear: 1.5%, +0.5% per difficulty step, at most 6%."},
-								{"Who", "Characters of level 250 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 250 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1260 Conquest Tokens, once it dropped for you or from level 250."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10369,7 +10587,11 @@ CodexData = {
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
-							rows = {{"Monsters", "Each piece drops as the unique it always was: see its Uniques page."}}
+							rows = {
+								{"Monsters", "Each piece drops as the unique it always was: see its Uniques page."},
+								{"Conquest vendor", "Any piece you choose: 980-1010 Conquest Tokens, once it dropped for you or from level 20."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
 						},
 						{
 							h = "Rules",
@@ -10416,7 +10638,9 @@ CodexData = {
 							rows = {
 								{"World bosses", "Nyxareth the Void Archon: 0.48% per kill and piece (x item find), and the bosses' participation reward rolls them with the other boss uniques."},
 								{"Rift chest", "Obsidian Hall rifts from key tier 7: 2.5% per finisher's chest, +0.25% per tier above, at most 8%."},
-								{"Who", "Characters of level 550 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 550 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1620 Conquest Tokens, once it dropped for you or from level 550."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10465,7 +10689,9 @@ CodexData = {
 								{"World bosses", "The Rotmother: 0.48% per kill and piece (x item find), and the bosses' participation reward rolls them with the other boss uniques."},
 								{"Rift chest", "Ashen Crypt rifts from key tier 4: 2.5% per finisher's chest, +0.25% per tier above, at most 8%."},
 								{"Dungeons", "Every clear: 1.5%, +0.5% per difficulty step, at most 6%."},
-								{"Who", "Characters of level 200 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 200 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1200 Conquest Tokens, once it dropped for you or from level 200."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10512,7 +10738,9 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Ember Descent", "Leaving from depth 8: 3%, +1% per deeper room, +5% on a full clear, at most 12%."},
-								{"Who", "Characters of level 350 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 350 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1380 Conquest Tokens, once it dropped for you or from level 350."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10563,7 +10791,9 @@ CodexData = {
 							rows = {
 								{"World bosses", "The Rotmother: 0.48% per kill and piece (x item find), and the bosses' participation reward rolls them with the other boss uniques."},
 								{"Rift chest", "Forsaken Sanctum rifts from key tier 5: 2.5% per finisher's chest, +0.25% per tier above, at most 8%."},
-								{"Who", "Characters of level 250 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 250 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1260 Conquest Tokens, once it dropped for you or from level 250."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10610,7 +10840,9 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Ashen Sepulchre", "Spoils of ulthar, sovereign: 2% per boss loot, 5% from the final boss."},
-								{"Who", "Characters of level 750 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 750 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1860 Conquest Tokens, once it dropped for you or from level 750."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -10659,7 +10891,9 @@ CodexData = {
 								{"Monsters", "Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear: 0.06% per kill and piece (x item find) from rare monsters, 0.18% as bosses."},
 								{"Rift chest", "Forsaken Sanctum rifts from key tier 1: 2.5% per finisher's chest, +0.25% per tier above, at most 8%."},
 								{"Dungeons", "Every clear: 1.5%, +0.5% per difficulty step, at most 6%."},
-								{"Who", "Characters of level 100 or more (the set's level - 50); item find raises the chances."}
+								{"Who", "Characters of level 100 or more (the set's level - 50); item find raises the chances."},
+								{"Conquest vendor", "Any piece you choose: 1080 Conquest Tokens, once it dropped for you or from level 100."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},
 						{
@@ -12543,7 +12777,7 @@ CodexData = {
 					sections = {
 						{
 							h = "What they are",
-							p = {"Four gathering professions, each with its own level 1-100: Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple).", "Every profession level above 1 adds 0.0253% experience from monsters, all four together at most +10% (every profession at 100)."}
+							p = {"Four gathering professions, each with its own level 1-100: Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold and Mirewake in the Hall of Services).", "Every profession level above 1 adds 0.0253% experience from monsters, all four together at most +10% (every profession at 100)."}
 						},
 						{
 							h = "Experience bonus with all four at a level",
@@ -13177,6 +13411,59 @@ CodexData = {
 					}
 				},
 				{
+					id = "basics:conquest",
+					name = "Conquest Tokens",
+					color = "#d6c9ae",
+					sub = "The sure path: tokens for every boss and clear, any item you have seen for sale.",
+					sections = {
+						{
+							h = "Earning",
+							p = {"Every boss you help slay (damage, last hit, or a party member within range), every sealed rift, dungeon clear, Ember Descent run and invasion reward gives Conquest Tokens. Each source has a daily limit; the window's Progress tab shows today's tokens."},
+							cols = {"Source", "Tokens", "Per day"},
+							w = {40, 35, 25},
+							rows = {
+								{"World boss", "12", "72"},
+								{"Island boss", "10", "60"},
+								{"Sepulchre boss", "15", "120"},
+								{"Omen guardian", "15", "90"},
+								{"Ascended Omen", "25", "150"},
+								{"Guild boss", "12", "48"},
+								{"Dungeon boss", "5", "60"},
+								{"Lair boss", "3", "45"},
+								{"Sealed rift", "4-11 by tier", "300"},
+								{"Dungeon clear", "7-15 by difficulty", "90"},
+								{"Ember Descent", "up to 18 by depth", "90"},
+								{"Invasion", "5-15 by share", "60"}
+							}
+						},
+						{
+							h = "The Conquest vendor",
+							p = {"Iselde Varrow next to the temple, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + 50. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.", "The Cinderheart chain: an Omen Key of the kind you choose (150), your Omen Key attuned to another kind (40), an Ascended Shard of the kind you choose (300); 2 shards or 2 relics of one kind become one of another.", "Refinement: a worn item with a rarity rises one rarity (up to Celestial), keeps every modifier and gains one; 60 + 40 x the new rarity tokens.", "Salvage: a unique on the bench gives 10% of its price in tokens (at least 25)."},
+							cols = {"Group", "Price"},
+							w = {40, 60},
+							rows = {
+								{"Monster unique", "600 + 1.5 x level"},
+								{"Boss unique", "1000 + 3 x level"},
+								{"Set piece", "900 + 1.2 x level"},
+								{"Raid unique", "2400"},
+								{"Ascended unique", "4200"}
+							}
+						},
+						{
+							h = "Bad-luck protection",
+							p = {"Each miss of a roll raises your next chance of that group; a drop starts the count again. Perfect rolls and the top rarities stay luck."},
+							cols = {"Group", "Each miss", "At most"},
+							w = {35, 40, 25},
+							rows = {
+								{"Monster uniques", "+1% of the base per miss", "x3"},
+								{"Boss uniques", "+10% of the base per miss", "x4"},
+								{"Set pieces", "+5% of the base per miss", "x4"},
+								{"Raid uniques", "+25% of the base per miss", "x5"}
+							}
+						}
+					}
+				},
+				{
 					id = "basics:quality",
 					name = "Quality, binding and ruin",
 					color = "#d6c9ae",
@@ -13194,7 +13481,7 @@ CodexData = {
 						},
 						{
 							h = "Ruin",
-							p = {"The Orb of Ruin: 40% the item improves (60% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), 45% nothing, 15% it is ruined: no orb changes it any more."},
+							p = {"The Orb of Ruin: 40% the item improves (60% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), 60% nothing happens. It never ruins an item (items ruined before stay ruined). For a sure step up, the Conquest vendor's refinement raises a worn item one rarity (up to Celestial), keeps its modifiers and adds one."},
 							links = {"orb:ruin"}
 						}
 					}
@@ -13230,19 +13517,54 @@ CodexData = {
 						},
 						{
 							h = "Pack cleave",
-							p = {"Classes with little area damage hit packs too: a direct hit on a hunting monster also deals a share of it to monsters within 1 sqm of it (never bosses, players or their summons)."},
+							p = {"A direct hit on a hunting monster, yours or your summon's, also deals a share of it to monsters within 1 sqm of it (never bosses, players or their summons), so every class kills packs. The share goes from the first number at level 300 and below to the second at level 1000 and above."},
 							cols = {"Class", "Share", "Monsters"},
 							w = {50, 25, 25},
 							rows = {
-								{"Thief", "25%", "3"},
-								{"Samurai", "25%", "3"},
-								{"Necromancer", "25%", "3"},
-								{"Monk", "20%", "3"},
-								{"Iron Sage", "20%", "3"},
-								{"Deadeye", "20%", "2"},
-								{"Shadowfist", "20%", "2"},
-								{"Ninja", "15%", "2"}
+								{"Warrior", "6% -> 11%", "4"},
+								{"Juggernaut", "15% -> 26%", "4"},
+								{"Berserker", "0% -> 3%", "4"},
+								{"Ranger", "23% -> 20%", "4"},
+								{"Deadeye", "28% -> 21%", "4"},
+								{"Beastmaster", "9% -> 0%", "4"},
+								{"Mystic", "0% -> 2%", "4"},
+								{"Illusionist", "12% -> 17%", "4"},
+								{"Thief", "10% -> 11%", "4"},
+								{"Ninja", "12% -> 6%", "4"},
+								{"Samurai", "17% -> 19%", "4"},
+								{"Necromancer", "2% -> 14%", "4"},
+								{"Lich", "10% -> 7%", "4"},
+								{"Bone Lord", "6%", "4"},
+								{"Monk", "6% -> 12%", "4"},
+								{"Shadowfist", "16%", "4"},
+								{"Iron Sage", "11% -> 15%", "4"},
+								{"Templar", "3% -> 16%", "4"},
+								{"Inquisitor", "8% -> 13%", "4"},
+								{"Sentinel", "6% -> 16%", "4"}
 							}
+						}
+					}
+				},
+				{
+					id = "basics:pocket",
+					name = "Pocket bosses",
+					color = "#d6c9ae",
+					sub = "A private copy of a time-gated or contested boss, any time, for less reward.",
+					sections = {
+						{
+							h = "In short",
+							p = {"The world bosses, the island bosses and the random raid bosses each have a pocket: a private arena with that boss, opened any time with the Pocket button of the Boss Spawns window, alone or with your party.", "Every character has 3 charges a day per boss (new ones at 00:00); every party member spends one. Bonus charges stay over the reset (at most 6 held, 3 added a day).", "The boss is scaled to the party. It pays less than the scheduled fight: experience and loot are cut (even the always-dropped items are not sure), and world bosses give a smaller share of their event reward with one roll of their set.", "The boss passive point counts for a pocket kill as for any other kill: no one is locked out by the clock.", "A lethal hit carries you out without dying; the charge stays spent. After a boss's event rewarded you, its pocket waits 60 minutes."},
+							cols = {"Bosses", "Level", "Experience", "Loot", "Time", "Tokens"},
+							w = {26, 12, 16, 12, 18, 16},
+							rows = {
+								{"World bosses", "300", "60%", "60%", "15 min", "3"},
+								{"Island bosses", "250", "60%", "60%", "12 min", "2"},
+								{"Raid bosses", "150", "60%", "60%", "10 min", "1"}
+							}
+						},
+						{
+							h = "The scheduled fights",
+							p = {"Island and raid bosses spawned in the world: every helper whose damage and healing reach 2% of the boss's health gets a personal loot roll, not only the corpse owner."}
 						}
 					}
 				},

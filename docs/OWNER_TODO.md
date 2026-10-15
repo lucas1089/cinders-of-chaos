@@ -25,9 +25,30 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   `https://<site>/register.php?ref=` once the domain exists, so the client shows the link too.
 - [ ] **Character Bazaar cron.** Add the cron line of `website/README.md` "Character Bazaar" on the live site.
 - [ ] **Town scars of the Chronicle (a check, not a decision):** the decoration sets (`chronicle_config.lua`
-  `town.sets`) go on free tiles around the capital's temple (town 1). Look at them in game after `/chronicle complete`
+  `town.sets`) go on free tiles around the capital's temple (Cinderhold, town 2, since 2026-10-15). Look at them in game after `/chronicle complete`
   on a test server, and the three portals in the temple's upper hall; set `town.anchor` if they land badly. Optional
   ground swaps (`swaps`) need ground ids of the map.
+- [ ] **Main city Cinderhold and the Halls of Services (a check, not a decision):** after a restart, step into the
+  portal at the south end of Cinderhold's temple (Mirewake: its south-west corner): the hall holds the Oracle, the
+  Keeper of Trials, Archivist Maelis, the faction NPC, the Loot Buyer, the Material Broker, the Gambler, Iselde Varrow
+  and Osric behind their counters, and the Descent / raid portals. The Great Brazier moved to Cinderhold. Previews and
+  the reasons for a hall instead of street booths: server/README.md "Halls of Services". A new character should leave the tutorial
+  island in Cinderhold. Optional for existing characters: `server/tools/migrate_home_town.py` (server/README.md "Main
+  city").
+
+- [ ] **Stash prices (PLACEHOLDER).** Seven new store offers in "Storage & Slots" (`server/data/scripts/chaos/pact_config.lua`
+  `store.storage`): Weapons, Armor, Jewellery, Materials and Creature Products Stash Tab at 150 coins each, Collectibles
+  Stash Tab at 100, and Remote Stash Deposit at 300 (deposit into the stash from anywhere; also included while the
+  Chaos Pact is active). Payments are off in the beta; set the real prices before launch. Also decide: keep selling "Extra Depot
+  Tab" / "4 Depot Tabs" (each now also counts as a general stash tab) or remove the Depot Tabs store category, and when to
+  remove the depot boxes for good (server/README.md "Stash", "Depot transition").
+
+- [ ] **Conquest Tokens: review the prices and the income** (`server/data/scripts/chaos/conquest_config.lua`, server/README.md
+  "Conquest Tokens, the Conquest vendor and bad-luck protection"). Target: a chosen item in 1-3 weeks of dedicated play
+  (about 1,800 tokens a week), 3-6 weeks casual (about 360 a week). Now: monster uniques 600 + 1.5 x level, boss uniques
+  1,000 + 3 x level, set pieces 900 + 1.2 x level, raid uniques 2,400 (Crown 3,600), Ascended uniques 4,200 (Signet 5,400);
+  Omen Key of a chosen kind 150, attune 40, Ascended Shard 300; refinement 60 + 40 x the new rarity, up to Celestial.
+  Only the numbers are left for the owner; the design questions are under "Decided".
 
 ## Accounts and services
 
@@ -86,6 +107,43 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
 
 ## Decided
 
+- Candlemarks (2026-10-15, server/README.md "Candlemarks"): the name stays Candlemarks (not "Vigil Coins": "Vigil" is
+  the Vigils auras and the Vigil faction). Every online character earns 1 per 30 minutes, idle or not, into the
+  account's balance; at most 2 characters per IP (the earliest logins). Prices as built, about 2.5x an active-only
+  design because idle time counts (one character 4 hours a day: 56 a week; everything at the weekly caps: about 430):
+  pocket boss charge 15 (3 a week), Orb of Grafting 30 (1, stays), Unmaking 12 (3), Tempering 8 (5), 2 Whetstones 8
+  (5), Flawed gem 8 (5), Chipped gem 3 (10), 3 Awakening or 3 Ember Orbs 5 (10 each), 10 Rune Shards 5 (5), supply
+  bundles 3 / 5 / 8 (5 a week in all), and three cosmetics of our own, once per account: Candle Seal 150, Candlelight
+  Name 120, Tallow Labels 100. Purchases only next to Osric the Chandler at the temple (the window works anywhere). No
+  daily cap. The idle kick is raised to 1440 minutes (`patch_base_idle_kick.py --minutes N`). The rested vial and the
+  bounty / kill task reroll offers light up when those APIs exist.
+
+- **Conquest Tokens (2026-10-15).** Tokens stay per character: alts already get the experience catch-up, and no mule can
+  funnel tokens. Season characters keep their own (a season character is a character of its own). Bad-luck protection
+  stays per group, not per item. No repair for items ruined by the old Orb of Ruin: no live server yet, so none exist.
+  The cheap low-level unique prices stay (about 2 weeks for a casual, kept for new players). The world boss
+  participation unique roll and the rift chest unique roll are now under bad-luck protection too.
+
+- **Pocket bosses (2026-10-15, owner delegated to the developers; server/README.md "Pocket bosses").**
+  - 60% experience and 60% loot in every pocket (world, island, raid), kept.
+  - Level floors for the open-world bosses' pockets kept: island 250, raid 150, Moloveth 250 (world bosses: the event's 300).
+  - Every one of the 25 random raid bosses keeps its pocket; the Boss Spawns window lists the raid bosses by pocket level,
+    then name (`pocketboss_config.lua` `sortSpawns`), and shows "Pocket: level N+" on rows without a level of their own.
+  - No Ashen Sepulchre pockets (open any time, its loot is the weekly lockout).
+  - The one-hour no-stacking record is kept in `chaos_pocketboss.event_at`, so a restart keeps it.
+  - Multi-client characters may open pockets; each spends its own charges.
+  - Still to measure live: the island and raid bosses' health and damage scaling (guesses until then), the charges (3 a day),
+    the tokens (3 / 2 / 1) and the time limits.
+
+- **Time-friendly progression, store and dungeons (2026-10-15, standing rule "follow your recommendations").**
+  - Class unlocks are no longer sold: the store's "Classes" category (500 coins each) is removed; the Necromancer, Monk
+    and Templar unlock for the whole account at level 200. Nobody had bought one, so nothing to refund. No quest path was
+    built (the code supports a `quest` method if wanted later).
+  - Stamina is not sold: the Stamina Refill (40) and the Stamina Extension (8) are removed. The Novice Pack's 5 Stamina
+    Extensions (40) became 100 Supreme Health Potions (30); the pack stays at 250 coins (worth 355). Owned extensions keep
+    working; the level 100 kit still gives two.
+  - Dungeons: a 5 minute cooldown after a failed run (`Chaos.dungeons.failCooldownSeconds`), 15 after a clear.
+
 - **Decided 2026-10-14 (owner delegated, "Decida tudo sobre o item 6"):**
   - **The Ashen Chronicle, Season 1 text: approved after an edit**, because the draft had a few slips: ash that "melts",
     "colossi" for the Five (only Vharok is one), the "weekly raid" in the story, the city's wardens mixed with
@@ -105,12 +163,14 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
     Ossuary Stair (15100, 15140, 9) and the Memorial plaza (14800, 14800, 7) at their plan origins, idempotent,
     refusing taken tiles; `at` is set to those origins (a test checks it). Tried on a copy of the base map: placed,
     and a second run changed nothing.
-  - **Gates in the capital's temple** (Mirewake, town 1), in its upper hall on floor 6 (the temple stairs lead there):
-    Breach 32962, 32076, 6; Ossuary Stair 32962, 32079, 6; the Memorial's portal 32956, 32080, 6 (new: `memorial.lua`
-    puts it there, `plaza.portal`). Because the Chronicle's scars are around that temple, every player's home town is
-    the capital by default, and the hall is off every walking line (checked on the base map: plain floor, the hall stays
-    connected). Not the hunt teleport room: it is in Cinderhold, not the capital. Found in passing: the Memorial's
-    action ids 47930-47933 were the hunt teleports' block; moved to 47940-47944.
+  - **Gates in the capital's temple** (Cinderhold, town 2, the main city since your request of 2026-10-15; they were
+    in Mirewake's hall before), in its upper hall on floor 6 (the stairs of the temple's two side rooms lead there):
+    Breach 32362, 32240, 6; Ossuary Stair 32358, 32240, 6; the Memorial's portal 32379, 32240, 6 (`memorial.lua`
+    puts it there, `plaza.portal`). The Chronicle's scars are around that temple, every new character's home town is
+    the capital, and the hall is off every walking line (checked on the base map: plain floor, every other tile of
+    the hall still reached from both stairs). The hunt teleport room is one step away: its two great teleports stand 5
+    tiles north of the temple (server/README.md "Main city"). Found in passing: the Memorial's action ids 47930-47933
+    were the hunt teleports' block; moved to 47940-47944.
   - **Helper rule** (Rules 2.2 and 7.4, the Terms section 6 EN / pt-BR, the wiki's rules guide, docs/GM_HANDBOOK.md
     3a and 4): "The official client's helper (healing, spell rules, auto rotation, targeting) is allowed while you
     play. Leaving it running for hours with nobody at the keyboard counts as botting (7.4)." First time a warning, then
@@ -121,7 +181,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
     can fail for someone who stepped away for a minute; staff decide with the bot review (no automatic punishment).
   - **Prices:** the sheet and the reasons are [docs/PRICES.md](PRICES.md). Coin packs 100 / 250 / 525 / 1100 / 2875 /
     6000 coins for R$ 9,90 / 24,90 / 49,90 / 99,90 / 249,90 / 499,90 by Pix (US$ 1.98 ... 99.98 by PayPal,
-    `brlPerUsd` 5), Starter 500 for R$ 14,90; one coin about R$ 0,10. Classes 500 coins each **or free at level 500**
+    `brlPerUsd` 5), Starter 500 for R$ 14,90; one coin about R$ 0,10. Classes **free at level 200, not sold** (500 coins or level 500 until 2026-10-15)
     (the store is a shortcut, never the only way in). Season pass 600 (320 back), packs 500 / 1500 / 2500. Loot Bag
     250, Auto Seller 400, Rarity Autoloot 300, pouches 200 / 150, Everfull Ration 100 (per-character items, cheaper for
     alts). Bazaar fee 10%, creator share 10%, referral main reward at level 250. Cosmetics, the Pact, premium, boosts,

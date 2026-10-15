@@ -1,0 +1,13 @@
+Module
+  name: game_goals
+  description: Next Goals window and tracker - the goals of every level band, the gear path, the hunts and the next unlocks (server goals.lua, extended opcode 178)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ goalsview, goals ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

@@ -79,7 +79,7 @@ own Chaos spells with custom names, icons and effects, and the spellbook (Charac
 | **Warrior** | melee, heavy armour, most health | **Juggernaut**: the tankiest class, with taunts, damage reduction and block/reflect · **Berserker**: two-handed area damage; *Rage* hits harder the lower your health, *Skyfall Cleave* leaps in and slams the ground |
 | **Ranger** | bows and crossbows that need no arrows, a quiver in the off-hand | **Deadeye**: the best single-target damage in the game, with crossbows, marks and crits · **Beastmaster**: fights beside a *War Wolf* companion that grows with you (two wolves from level 400), bow shots that splash |
 | **Mystic** | spells, wands and rods | **Elementalist**: the best area damage, with fire, ice and energy combos · **Illusionist**: the best healer, for one ally and for the whole party (Mirror Mend, Lucid Reverie), plus party attack buffs; weakens enemies |
-| **Thief** | fast light weapons, shurikens, stealth, evasion | **Ninja**: the line's burst single target: dual-wields daggers with an off-hand strike, very fast hits, Shadow Step · **Samurai**: a duelist off-tank: one sword, a Counter Stance that parries, guards and taunts, the Iaijutsu draw strike and Bushido crit stacks |
+| **Thief** | fast light weapons, shurikens, stealth, evasion, Blade Flurry against packs | **Ninja**: the line's burst single target: dual-wields daggers with an off-hand strike, very fast hits, Shadow Step · **Samurai**: a duelist off-tank: one sword, a Counter Stance that parries, guards and taunts, the Iaijutsu draw strike, the Iaido Sweep cut and Bushido crit stacks |
 | **Necromancer** | summoner: skeletons and spirits, curses, corpses | **Lich**: curses, damage over time, life drain and Corpse Explosion, with one strong shade or none · **Bone Lord**: the army: more skeletons, the Bone Golem, an aura and sacrifices |
 | **Monk** | unarmed or with a staff, chi, evasion | **Shadowfist**: single-target burst: Pressure Points, Flurry, crits from spent chi · **Iron Sage**: the second healer, a melee chi healer with some bruiser toughness: Kindled Breath on the most hurt ally, Mantra of Stone heals and shields the party, Chi Ward |
 | **Templar** | holy melee: sword or mace and shield, heavy armour, a party defence aura | **Inquisitor**: holy area damage: Judgement, Purging Nova, Zealotry · **Sentinel**: tank-support: a stronger aura with regeneration, Rebuke, Aegis of Faith and Lay on Hands, the biggest emergency heal |
@@ -109,7 +109,7 @@ front by trimming the classes right behind them, not by raising the leaders.
 
 ### The ascension quest
 
-Ascension is earned, not bought. The **Ascendant Oracle** next to the temple leads every class through it:
+Ascension is earned, not bought. The **Ascendant Oracle** in the Hall of Services (the portal beside the temple of Cinderhold or Mirewake) leads every class through it:
 
 1. **The Calling:** talk to the Oracle at level 100. It tells you about the two paths of your class.
 2. **Proof of Strength:** slay rare and legendary monsters that are a match for your level (a rare counts 1, a legendary 3;
@@ -530,7 +530,7 @@ rankings keep score.
 
 ### The Ember Descent
 
-A roguelike trial below the city (Adventure > Ember Descent, or the portal next to the temple), alone or with up to 4
+A roguelike trial below the city (Adventure > Ember Descent, or the portal in the Hall of Services), alone or with up to 4
 players from level 100.
 - **8 to 12 rooms** in a seeded chain: combat, elite, treasure, shrine and merchant rooms, and a boss in the last hall.
   Monsters grow stronger the deeper you go.
@@ -546,7 +546,7 @@ players from level 100.
 
 ![The Ashen Sepulchre: a soak mechanic and the weekly lockouts](docs/images/feature_raid.png)
 
-A raid for organised groups of 5 to 15 (Adventure > Raid: Ashen Sepulchre, or the portal next to the temple).
+A raid for organised groups of 5 to 15 (Adventure > Raid: Ashen Sepulchre, or the portal in the Hall of Services).
 - **Five bosses in a row** with trash and doors between them: Gravewarden Ulthar, Morwen the Ash-Sister, the Marrow
   Colossus, Vhoss the Hexmaw and Varkhul the Ashen Sovereign, each with a look of its own.
 - **Mechanics to learn:** tank swaps with stacking debuffs, a frontal cleave and a rear sweep, split soak circles,
@@ -860,7 +860,7 @@ Four gathering professions (Economy > Professions), each with its own level from
   steal or camp a node. Flay your own kills or your party's, once per corpse.
 - **Five tiers of materials,** from Common to Infernal, each opened by your profession level and your character level.
   The Professions window lists where to gather each tier and which of your nodes are ready.
-- **The Material Broker** next to every temple buys them all and pays into your bank. Demand changes every week: each
+- **The Material Broker** next to every temple (in Cinderhold and Mirewake: in the Hall of Services) buys them all and pays into your bank. Demand changes every week: each
   profession's five materials pay x1.5, x1.25, x1, x1 and x0.75, in a new order. Per material and day the first 100
   pay in full and the next 100 pay half. At best, gathering earns about a quarter of what hunting at the same level
   pays, less at the top tier.
@@ -915,7 +915,7 @@ A currency order book for the crafting orbs (Economy > Orb Exchange, or the butt
 
 ![The Gambler's sealed crates and a reveal](docs/images/feature_gambler.png)
 
-Mordecai Ashwager stands next to the temple of Mirewake, the main town, and sells **sealed equipment for gold**
+Mordecai Ashwager stands behind his counter in the Hall of Services of Cinderhold, the main city (and of Mirewake), and sells **sealed equipment for gold**
 (talk to him, or Economy > The Gambler).
 - **Your own stock:** 14 sealed pieces made for your character: gear your class can use, at an item level close to
   what your own kills drop. You see the base, the slot and the item level. The rarity stays hidden until you pay.

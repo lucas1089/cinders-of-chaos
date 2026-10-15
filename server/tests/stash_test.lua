@@ -984,6 +984,17 @@ local function slotOf(item)
 		if c == item then return i - 1 end
 	end
 end
+-- a free player outside town: no deposit (owner 2026-10-15: remote deposit is a paid unlock)
+req(hero, {make = "Stash", Pos = {x = 65535, y = 64, z = slotOf(blade)}, UpdateList = true})
+eq(blade.removed, nil, "free, outside a protection zone: the weapon stays")
+has(lastCancel(hero), "Storage & Slots", "the refusal says where to unlock remote deposit")
+eq(last("access") and last("access").canDeposit, false, "the client is told")
+check(last("tabs") ~= nil and last("tabs").canDeposit == false and last("tabs").remote == nil, "tabs: deposit locked, no unlock")
+req(hero, {make = "StashAllRequest"})
+eq(last("StowReport"), nil, "free, outside: no Stow Everything either")
+eq(activeRows(1), 0, "nothing stored")
+-- in town it works for everybody
+pz[key3(hero.pos)] = true
 req(hero, {make = "Stash", Pos = {x = 65535, y = 64, z = slotOf(blade)}, UpdateList = true})
 eq(blade.removed, true, "the weapon left the backpack")
 eq(activeRows(1), 1, "one row for it")
@@ -997,7 +1008,7 @@ has(lastText(hero), "Stashed 1x Doombringer", "told")
 local listed = itemsList()
 eq(#listed, 1, "the list echo")
 eq(listed[1] and listed[1].row, row.id, "the list carries the row id")
-check(last("tabs") ~= nil and last("tabs").canWithdraw == false, "tabs: no withdraw outside a protection zone")
+check(last("tabs") ~= nil and last("tabs").canWithdraw == true and last("tabs").depositWhy == "pz", "tabs: in town both work")
 req(hero, {make = "Stash", Pos = {x = 65535, y = 64, z = slotOf(gold1)}})
 req(hero, {make = "Stash", Pos = {x = 65535, y = 64, z = slotOf(gold2)}})
 eq(DB.plain["1:2148"] and DB.plain["1:2148"].count, 130, "two gold stacks: one merged entry of 130")
@@ -1008,6 +1019,7 @@ req(hero, {make = "Stash", Pos = {x = 65535, y = CONST_SLOT_BACKPACK, z = 0}})
 check(hero.slots[CONST_SLOT_BACKPACK] == bp, "the backpack stays equipped")
 
 -- withdraw: refused outside a protection zone, the exact item back inside one
+pz[key3(hero.pos)] = nil
 req(hero, {make = "Redeem", row = row.id})
 has(lastCancel(hero), "protection zone", "withdraw refused outside a protection zone")
 eq(last("access") and last("access").canWithdraw, false, "the client is told")
@@ -1302,6 +1314,48 @@ DB.ach.unique_50 = true
 local v9 = S.viewOf(h9, true)
 eq(v9.owned.cosmetics, "achievement", "Collectibles earned by an achievement")
 eq(v9.owned.products, "pact", "Products lent by the Pact")
+
+-- remote deposit (owner 2026-10-15): bought or lent by the Pact; withdraw stays in town for everybody
+local extras, pactOn = {}, true
+ChaosPact = {limit = function() return 4 end, state = function() return {extras = extras} end,
+	active = function() return pactOn end}
+pz[key3(h9.pos)] = nil
+local function depositOutside(label, expectOk)
+	local it = newItem(2472)
+	it.custom.n = label
+	h9.bp().children[#h9.bp().children + 1] = it
+	it.parent = h9.bp()
+	req(h9, {make = "Stash", Pos = {x = 65535, y = 64, z = #h9.bp().children - 1}})
+	eq(it.removed == true, expectOk, label)
+	return it
+end
+depositOutside("the Pact active, outside town: remote deposit works", true)
+eq(S.viewOf(h9).remote, "pact", "lent by the Pact")
+pactOn = false
+depositOutside("the Pact ended: remote deposit stops", false)
+has(lastCancel(h9), "protection zone", "and says why")
+check(activeRows(10) >= 2, "nothing stored before is lost when the Pact ends")
+extras.stashRemote = 1
+depositOutside("bought unlock, outside town: remote deposit works", true)
+eq(S.viewOf(h9).remote, "bought", "bought once")
+req(h9, {make = "StashAllRequest"})
+check(last("StowReport") ~= nil, "bought unlock: Stow Everything from anywhere")
+local stored
+for _, r in pairs(DB.rows) do
+	if r.player == 10 and r.state == 0 then stored = r end
+end
+req(h9, {make = "Redeem", row = stored.id})
+has(lastCancel(h9), "protection zone", "withdraw outside town refused even with the unlock")
+eq(DB.rows[stored.id] and DB.rows[stored.id].state, 0, "still stored")
+req(h9, {make = "SendItems"})
+eq(tostring(last("tabs").canDeposit) .. "/" .. tostring(last("tabs").depositWhy) .. "/" .. tostring(last("tabs").canWithdraw), "true/remote/false",
+	"tabs: remote deposit, no withdraw")
+eq(K.canDeposit(cfg, {remote = nil}, {pz = false}), false, "core: free outside")
+eq(select(2, K.canDeposit(cfg, {remote = nil}, {hideout = true})), "hideout", "core: a hideout counts as town")
+eq(select(2, K.canDeposit(cfg, {remote = "bought"}, {pz = true})), "pz", "core: in town the zone is the reason")
+eq(K.view(cfg, {extras = {stashRemote = 1}}).remote, "bought", "core: bought")
+eq(K.view(cfg, {pact = true}).remote, "pact", "core: the Pact")
+eq(K.view(cfg, {pact = false}).remote, nil, "core: the Pact ended")
 ChaosPact = nil
 
 -- ====================================================================== the SQL

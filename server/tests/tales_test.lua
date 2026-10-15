@@ -182,7 +182,8 @@ local npcHere = true
 local npc = {isNpc = function() return true end, getName = function() return "Archivist Maelis" end,
 	isPlayer = function() return false end}
 Game = {getSpectators = function() return npcHere and {npc} or {} end, createNpc = function() return npc end}
-Town = function() return {getTemplePosition = function() return pos(100, 100, 7) end} end
+-- the main city only (townIds[1]): two towns on one mocked temple would place the Archivist twice
+Town = function(id) return id == cfg.npc.townIds[1] and {getTemplePosition = function() return pos(100, 100, 7) end} or nil end
 Tile = function() return nil end
 Chaos = {storage = {}, monsterTypeName = function(c) return c.type end}
 local factionGains = {}

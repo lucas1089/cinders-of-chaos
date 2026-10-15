@@ -3,8 +3,10 @@
 -- server/tests/stash_test.lua (the rules, the journal with crashes, this file against a mocked engine). Overview:
 -- server/README.md "Stash".
 --
---   deposit   from anywhere (also mid-hunt): drag an item onto the window, Stow Everything, scripts (ChaosStash.storeItem)
---   withdraw  only in a protection zone or inside a hideout (stash_core.lua K.canWithdraw); the client greys it out
+--   deposit   in town (a protection zone or a hideout) for everybody; from anywhere (also mid-hunt) with the remote
+--             deposit unlock (store, or while the Chaos Pact runs; stash_core.lua K.canDeposit): drag an item onto the
+--             window, Stow Everything, scripts (ChaosStash.storeItem). The depot migration is not a deposit of the player
+--   withdraw  only in a protection zone or inside a hideout, for everybody (K.canWithdraw); the client greys both out
 --   items     a plain stack (nothing but id and count) merges by type into chaos_stash (player_id, item_id) -> count, tab;
 --             any other item is one row of chaos_stash_items with every attribute (item_codec.lua: the engine's blob
 --             of patch 0017, else the key list) and comes back exactly as it went in
@@ -31,12 +33,13 @@
 --     Open                              -> Toggle
 --   server -> client data.make:
 --     tabs {tabs=[{id, name, used, size, locked, affinity, icon, old, source}], limit, pact, tabSize, canWithdraw,
---           withdrawWhy = "pz" | "hideout" | nil}
+--           withdrawWhy = "pz" | "hideout" | nil, canDeposit, depositWhy = "pz" | "hideout" | "remote" | nil,
+--           remote = "bought" | "pact" | nil (the remote deposit unlock)}
 --     addItems {isFirst, isLast, items=[{sprite, count, name, tooltip, id, uniqueId, typee, tab, row?, rarity?}]}
 --     addCategorys {list=[{name, value}], remote}   forceBlockList {items}   addBlockItem {status, itemData}
 --     Toggle {remote}                   StashAll {status}  (the progress overlay)
 --     StowReport {stowed, kept, reasons=[{reason, label, count, names}]}
---     access {canWithdraw}              after a refused withdrawal
+--     access {canWithdraw} | {canDeposit}   after a refused withdrawal or deposit
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 if not Chaos then
@@ -782,6 +785,19 @@ function S.canWithdraw(player)
 	return Core.canWithdraw(cfg, S.place(player))
 end
 
+-- true, why ("pz" | "hideout" | "remote") when the player may deposit here: in town for everybody, anywhere with the
+-- remote deposit unlock (bought, or lent by an active Chaos Pact)
+function S.canDeposit(player, view)
+	return Core.canDeposit(cfg, view or S.viewOf(player), S.place(player))
+end
+
+local function refuseDeposit(player, quiet)
+	if not quiet then
+		player:sendCancelMessage(Chaos.t(player, M.depositPz))
+		send(player, {make = "access", canDeposit = false})
+	end
+end
+
 local function blockEntry(itemType)
 	return {sprite = itemType:getClientId(), name = itemType:getName(), id = itemType:getId()}
 end
@@ -821,6 +837,7 @@ function S.sendItems(player)
 	local active = ChaosPact ~= nil and ChaosPact.active ~= nil and ChaosPact.active(player) == true
 	local place = S.place(player)
 	local can = Core.canWithdraw(cfg, place)
+	local canDep, depWhy = Core.canDeposit(cfg, view, place)
 	local tabList = Core.tabsView(cfg, view, entries)
 	for _, t in ipairs(tabList) do
 		if t.icon then
@@ -828,7 +845,8 @@ function S.sendItems(player)
 		end
 	end
 	send(player, {make = "tabs", tabs = tabList, limit = view.general, pact = active,
-		tabSize = cfg.tabSize, canWithdraw = can, withdrawWhy = can and (place.pz and "pz" or "hideout") or nil})
+		tabSize = cfg.tabSize, canWithdraw = can, withdrawWhy = can and (place.pz and "pz" or "hideout") or nil,
+		canDeposit = canDep, depositWhy = depWhy, remote = view.remote})
 	if #list == 0 then
 		send(player, {make = "addItems", isFirst = true, isLast = true, items = {}})
 		return
@@ -988,6 +1006,10 @@ S.depositList = depositList
 
 -- one item dragged onto the window (or a script's ChaosStash.storeItem); true when it went in
 function S.deposit(player, item, quiet)
+	if not S.canDeposit(player) then
+		refuseDeposit(player, quiet)
+		return false
+	end
 	local f = S.factsOf(player, item)
 	local why = Core.depositRefusal(cfg, f)
 	if why then
@@ -1056,6 +1078,10 @@ end
 
 -- Stow Everything: every item of the backpack into its tab; returns the report (stash_core.lua K.report)
 function S.stow(player)
+	if not S.canDeposit(player) then
+		refuseDeposit(player)
+		return nil
+	end
 	send(player, {make = "StashAll", status = true})
 	local items, kept = {}, {}
 	for _, it in ipairs(backpackItems(player)) do

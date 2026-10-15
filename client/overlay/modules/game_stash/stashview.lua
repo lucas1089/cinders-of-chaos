@@ -27,6 +27,32 @@ function V.canWithdraw(tabs, states)
   return type(tabs) == 'table' and tabs.canWithdraw == true and tabs.withdrawWhy == 'hideout'
 end
 
+-- depositing: in town for everybody (the live protection zone state, or the server's hideout answer); anywhere with the
+-- remote deposit unlock (the server's `remote`: bought, or lent by an active Chaos Pact). The server checks again.
+function V.canDeposit(tabs, states)
+  if V.hasFlag(states, V.PZ_FLAG) then return true end
+  if type(tabs) ~= 'table' then return false end
+  if tabs.remote then return true end
+  return tabs.canDeposit == true and tabs.depositWhy == 'hideout'
+end
+
+-- the locked state of depositing: where to unlock it
+function V.depositLockedText()
+  return tr('Deposit only in a protection zone. Remote deposit from anywhere: Store > Storage & Slots, or an active Chaos Pact.')
+end
+
+-- the Stow Everything button's tooltip
+function V.stowTooltip(canDeposit, tabs)
+  if not canDeposit then
+    return V.depositLockedText()
+  end
+  local text = tr('Put everything in your backpack, through its bags, into the stash: each item into its tab. Equipped, locked, store-bound and quest items stay.')
+  if type(tabs) == 'table' and tabs.remote then
+    text = text .. '\n' .. (tabs.remote == 'pact' and tr('Remote deposit: lent by your Chaos Pact.') or tr('Remote deposit: unlocked.'))
+  end
+  return text
+end
+
 -- the text of a tab button: the number of a general tab, the (translated) name of an affinity tab
 function V.tabLabel(t)
   if type(t) ~= 'table' then return '' end
@@ -65,7 +91,7 @@ function V.tabTooltip(t, pact)
 end
 
 -- the line under the list
-function V.infoText(d, selected, canWithdraw)
+function V.infoText(d, selected, canWithdraw, canDeposit)
   if type(d) ~= 'table' or type(d.tabs) ~= 'table' then return '' end
   local text
   if n(selected) ~= 0 then
@@ -91,7 +117,9 @@ function V.infoText(d, selected, canWithdraw)
       text = text .. tr('. Withdraw-only tabs: %d', locked)
     end
   end
-  if not canWithdraw then
+  if canDeposit == false then
+    text = text .. tr('. Deposit and withdraw in a protection zone (remote deposit: Store > Storage & Slots).')
+  elseif not canWithdraw then
     text = text .. tr('. Withdraw in a protection zone.')
   end
   return text
@@ -101,7 +129,7 @@ end
 function V.itemTooltip(data, canWithdraw)
   local text = type(data) == 'table' and tostring(data.tooltip or data.name or '') or ''
   if not canWithdraw then
-    text = text .. '\n' .. tr('Withdraw in a protection zone. You can deposit anywhere.')
+    text = text .. '\n' .. tr('Withdraw in a protection zone.')
   end
   return text
 end

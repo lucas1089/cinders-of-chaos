@@ -290,7 +290,7 @@ end
 -- whole categories, decided once (a new category must be added here: the test fails on an unknown one)
 local CATEGORY = {
 	["Outfits"] = true, ["Outfit Addons"] = true, ["Mounts"] = true, ["Wings"] = true, ["Auras"] = true,
-	["Outfit Shaders"] = true, ["Name Plates"] = true, ["Portal Styles"] = true, ["Bundles"] = true, ["Classes"] = true,
+	["Outfit Shaders"] = true, ["Name Plates"] = true, ["Portal Styles"] = true, ["Bundles"] = true, -- "Classes" no longer sold (2026-10-15)
 	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true,
 	["Spell Effects"] = true, ["Kill Effects"] = true, ["Loot Labels"] = true, ["Chat Colours"] = true, ["Appearances"] = true,
 	["Footprints"] = true, ["Outlines"] = true, -- cosmetics.lua: looks only

@@ -196,6 +196,27 @@ function NP.kitDueAtLogin(kitStorage, lastLoginSaved)
 	return not NP.isSet(kitStorage) and (tonumber(lastLoginSaved) or 0) <= 0
 end
 
+-- the town a brand-new character should live in, or nil to leave its town alone. currentTownId: the town it was
+-- created with; hasKit: the kit storage is set (the character played already). homeTown = {id, keep = {ids}}.
+function NP.homeTownFor(currentTownId, hasKit, c)
+	c = c or NP.cfg()
+	local h = c.homeTown
+	local id = h and tonumber(h.id) or 0
+	if hasKit or id <= 0 then
+		return nil
+	end
+	local cur = tonumber(currentTownId) or 0
+	if cur == id then
+		return nil
+	end
+	for _, k in ipairs(h.keep or {}) do
+		if tonumber(k) == cur then
+			return nil
+		end
+	end
+	return id
+end
+
 -- ------------------------------------------------------------------------------------------------ milestones
 -- indexes of the milestones a level change from oldLevel to newLevel reaches and that are not claimed yet.
 -- claimed(index) -> bool

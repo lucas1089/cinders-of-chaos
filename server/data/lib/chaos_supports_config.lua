@@ -38,6 +38,10 @@ return {
 		[63] = "single", [64] = "single", [68] = "single", [69] = "single", [71] = "single", -- Monk strikes
 		[189] = "single", [198] = "single", -- Radiant Smite, Judgement
 		[236] = "single", [240] = "single", [244] = "single", -- Shuriken Toss, Shadow Step, Iaijutsu
+		[192] = "area", [193] = "area", -- Blade Flurry, Iaido Sweep (weapon strikes on every monster hit)
+		-- the pack tools (data/spells/chaos/_packtools.lua): Palm Shockwave, Shadow Ricochet, Iron Chain, Bone Shrapnel,
+		-- Sanctified Ground, Shield Wave, Fan of Knives
+		[194] = "area", [195] = "area", [196] = "area", [197] = "area", [108] = "area", [109] = "area", [136] = "area",
 		-- the snares (data/spells/chaos/_snares.lua): a brand rune socketed in them picks their element
 		[99] = "area", [100] = "area", [104] = "buff", -- Snare Trap, Seeker Mine, Detonate Mines
 	},

@@ -5,7 +5,8 @@
 --                                                                      reload) or a new one on spot()
 -- opts: radius, spacing, minFromTemple, minOpen (npc_place_core.lua K.DEFAULTS). Used by item_prices.lua (Loot Buyer),
 -- gamble.lua (the Gambler), ascension_quest.lua (Ascendant Oracle), tales.lua (Archivist Maelis), professions.lua
--- (Material Broker) and factions.lua. Lua 5.1 / LuaJIT compatible.
+-- (Material Broker) and factions.lua. An NPC with a booth in its town's Hall of Services (npc_booths_config.lua) is
+-- placed in the booth instead (ChaosNpcBooths.spotForTemple). Lua 5.1 / LuaJIT compatible.
 
 if not ChaosNpcPlaceCore then
 	dofile("data/scripts/chaos/npc_place_core.lua")
@@ -101,7 +102,25 @@ function NP.spot(temple, offsets, name, opts)
 	return Position(temple.x + dx, temple.y + dy, temple.z)
 end
 
+-- the NPC's booth in its town's Hall of Services (npc_booths.lua), when it has one and the hall is on the map
+local function booth(name, temple)
+	if not (ChaosNpcBooths and ChaosNpcBooths.spotForTemple) then
+		return nil
+	end
+	local ok, pos = pcall(ChaosNpcBooths.spotForTemple, name, temple)
+	return ok and pos or nil
+end
+
 function NP.place(name, temple, offsets, opts)
+	local b = booth(name, temple)
+	if b then
+		for _, e in ipairs(near(b, 1)) do
+			if e.npc:getName():lower() == name:lower() then
+				return e.npc
+			end
+		end
+		return Game.createNpc(name, b)
+	end
 	local radius = (opts and opts.radius) or K.DEFAULTS.radius
 	for _, e in ipairs(near(temple, radius)) do
 		if e.npc:getName():lower() == name:lower() then

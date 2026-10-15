@@ -209,19 +209,21 @@ local SITES = {
 	["class_unlocks.lua"] = {}, ["professions.lua"] = {"msg%(player,%s*"}, ["charms.lua"] = {}, ["pets.lua"] = {}, ["necro_minions.lua"] = {},
 	["pack_items.lua"] = {}, ["nameplate.lua"] = {}, ["guild.lua"] = {}, ["guild_hall.lua"] = {}, ["season_journey.lua"] = {},
 	["infinitytower.lua"] = {}, ["infinitytower_run.lua"] = {}, ["arena.lua"] = {"msg%(%w+,%s*"},
-	["battleground.lua"] = {"msg%(%w+,%s*"}, ["mentor.lua"] = {}, ["referral.lua"] = {},
+	["battleground.lua"] = {"msg%(%w+,%s*"}, ["mentor.lua"] = {}, ["referral.lua"] = {}, ["beta.lua"] = {},
 	["pvpzone.lua"] = {}, ["multiclient.lua"] = {}, ["antibot.lua"] = {}, ["events_schedule.lua"] = {},
 	["commands_ui.lua"] = {}, ["spellbook.lua"] = {}, ["supports.lua"] = {}, ["loadouts.lua"] = {}, ["crafting.lua"] = {},
 	["chronicle.lua"] = {}, ["atlas.lua"] = {}, ["siege.lua"] = {"pushBack%(player, fromPosition,%s*"}, ["guildboss.lua"] = {},
 	["leaderboard.lua"] = {},
 	["market.lua"] = {}, ["hideout.lua"] = {}, ["gamble.lua"] = {}, ["cosmetics.lua"] = {}, ["transmog.lua"] = {},
 	["trials_effects.lua"] = {}, ["paragon.lua"] = {}, ["passivetree.lua"] = {}, ["bosspoints.lua"] = {}, ["gems.lua"] = {},
-	["salvage.lua"] = {}, ["archery.lua"] = {}, ["blessings.lua"] = {},
+	["salvage.lua"] = {}, ["archery.lua"] = {}, ["blessings.lua"] = {}, ["candlemarks.lua"] = {}, ["catchup.lua"] = {},
+	["pocketboss.lua"] = {"tell%(run,%s*", "fail%(run,%s*", "K%.T%(%s*"}, ["pocketboss_core.lua"] = CORE_T,
 	-- factions, bestiary, season pass, community goal, dungeons, goblins and Chaos loot; reasons returned to the window
 	["factions.lua"] = {"return nil,%s*"}, ["factions_core.lua"] = CORE_T, ["bestiary.lua"] = {},
 	["bestiary_core.lua"] = CORE_T, ["seasonpass.lua"] = {"notice%(player,%s*"}, ["seasonpass_core.lua"] = CORE_T,
 	["community.lua"] = {}, ["community_core.lua"] = CORE_T, ["dungeons.lua"] = {},
-	["treasure_goblin.lua"] = {}, ["loot.lua"] = {}, ["rift_core.lua"] = CORE_T, ["infinitytower_run.lua"] = {}
+	["treasure_goblin.lua"] = {}, ["loot.lua"] = {}, ["rift_core.lua"] = CORE_T, ["infinitytower_run.lua"] = {},
+	["conquest.lua"] = {"result%(player,%s*%a+,%s*"}
 }
 local used = 0
 for f, extra in pairs(SITES) do
@@ -362,7 +364,8 @@ end
 
 -- the NPCs: their XML greet / farewell / walk away / trade lines (ChaosI18n.npcMessages) and their scripts' lines
 local NPC_XML = {"Ascendant Oracle", "Loot Buyer", "Material Broker", "Mordecai Ashwager", "Keeper of Trials",
-	"Wandering Merchant", "Warden Ysolde", "Forgemaster Brannoc", "Cantor Velith", "Elder Bramwyn"}
+	"Wandering Merchant", "Warden Ysolde", "Forgemaster Brannoc", "Cantor Velith", "Elder Bramwyn",
+	"Osric the Chandler", "Iselde Varrow"}
 for _, name in ipairs(NPC_XML) do
 	local fh = io.open("data/npc/" .. name .. ".xml", "r")
 	check(fh ~= nil, "npc xml " .. name)
@@ -375,7 +378,7 @@ for _, name in ipairs(NPC_XML) do
 	end
 end
 for _, f in ipairs({"loot_buyer.lua", "ascendant_oracle.lua", "material_broker.lua", "mordecai_ashwager.lua",
-		"chaos_faction_npc.lua", "keeper_of_trials.lua", "wandering_merchant.lua"}) do
+		"chaos_faction_npc.lua", "keeper_of_trials.lua", "wandering_merchant.lua", "osric_the_chandler.lua", "iselde_varrow.lua"}) do
 	local fh = io.open("data/npc/scripts/" .. f, "r")
 	check(fh ~= nil, "npc script " .. f)
 	if fh then

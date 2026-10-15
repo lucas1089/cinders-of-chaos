@@ -452,6 +452,10 @@ function NP.tutorialStart(player)
 	if not NP.islandReady() then
 		return false
 	end
+	-- the main city becomes its home now, so a logout or death on the island already leads there
+	if NP.settleHome then
+		NP.settleHome(player, false)
+	end
 	setS(player, "stage", 1)
 	setS(player, "done", 0)
 	setS(player, "kills", 0)
@@ -477,6 +481,9 @@ end
 function NP.tutorialFinish(player, how)
 	setS(player, "stage", how == "done" and C().stageDone or C().stageSkipped)
 	NP.islandSince[player:getGuid()] = nil
+	if NP.settleHome then -- a character that was on the island before the home town was set (no kit yet)
+		NP.settleHome(player, false)
+	end
 	local temple = player:getTown():getTemplePosition()
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	player:teleportTo(temple)

@@ -335,7 +335,7 @@ function chaos_client_api_class_problem(int $vocation, int $accountId): ?string 
 		return null;
 	}
 	if ($lines[$vocation]['lock'] !== '' && !in_array($vocation, chaos_creatable_classes($accountId), true)) {
-		return 'The ' . $lines[$vocation]['name'] . ' is locked for your account. Unlock it in the game store (Classes).';
+		return 'The ' . $lines[$vocation]['name'] . ' is locked for your account. Reach level 200 with any character of your account to unlock it.';
 	}
 	return null;
 }
@@ -373,7 +373,7 @@ function chaos_client_api_create(array $req, int $accountId, string $ipKey, int 
 	$post = array(
 		'name' => is_string($req['name'] ?? null) ? substr($req['name'], 0, 64) : '',
 		'selected_vocation' => (int)($req['vocation'] ?? 0),
-		'selected_town' => $town > 0 ? $town : (int)($towns[count($towns) - 1] ?? 0),
+		'selected_town' => $town > 0 ? $town : (int)($towns[0] ?? 0), // the first is the default: the main city
 		'selected_gender' => (int)($req['sex'] ?? -1),
 	);
 	$errors = chaos_character_form_errors($post, $accountId, $userData, false);

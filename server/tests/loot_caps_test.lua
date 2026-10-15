@@ -223,6 +223,41 @@ do
 	ChaosPace, ChaosPaceConfig = nil, nil
 end
 
+-- bad-luck protection (conquest.lua) in L.rollUniques: with an owner the chance x the group's multiplier, every group
+-- with an eligible entry records a miss or a hit; without an owner (simulation, chests) nothing changes
+do
+	local list = {
+		{id = 9001, name = "Monster Blade", minTier = "magic", chance = 10, monsters = {"Wolf"}},
+		{id = 9002, name = "Boss Crown", minTier = "boss", chance = 10, bossOnly = true, monsters = {"Wolf"}},
+		{id = 9003, name = "Set Helm", minTier = "magic", chance = 10, set = "embers", monsters = {"Wolf"}}
+	}
+	local mult, records = {monster = 1, boss = 1, set = 1}, {}
+	ChaosConquest = {
+		pityMult = function(_, g) return mult[g] end,
+		pityRecord = function(_, g, hit, id) records[#records + 1] = {g = g, hit = hit, id = id} end
+	}
+	local owner = {}
+	-- a magic kill: chance 10 x1 per 10000 = 1000 per 1,000,000; a roll of 1500 misses, x2 pity makes it hit
+	L.setRandom(function(a, b) return b == 1000000 and 1500 or a end)
+	ok(#L.rollUniques("magic", "Wolf", 50, 1, list, owner) == 0, "no pity: the roll misses")
+	local groups = {}
+	for _, r in ipairs(records) do groups[r.g] = r.hit end
+	ok(groups.monster == false and groups.set == false and groups.boss == nil, "monster and set misses recorded, no boss roll")
+	records = {}
+	mult.monster = 2
+	local hits = L.rollUniques("magic", "Wolf", 50, 1, list, owner)
+	ok(#hits == 1 and hits[1].id == 9001, "x2 pity: the monster unique drops")
+	groups = {}
+	for _, r in ipairs(records) do groups[r.g] = r end
+	ok(groups.monster and groups.monster.hit == true and groups.monster.id == 9001, "the hit resets the monster group")
+	ok(groups.set and groups.set.hit == false, "the set group still missed")
+	records = {}
+	L.rollUniques("magic", "Wolf", 50, 1, list, nil)
+	ok(#records == 0, "no owner: no pity")
+	ChaosConquest = nil
+	L.setRandom(math.random)
+end
+
 print(string.format("loot_caps_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

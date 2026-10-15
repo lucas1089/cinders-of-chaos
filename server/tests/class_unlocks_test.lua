@@ -21,13 +21,10 @@ eq(cfg.classes.monk.vocations[1], 17, "monk 17"); eq(cfg.classes.monk.vocations[
 eq(cfg.classes.templar.vocations[1], 23, "templar 23"); eq(cfg.classes.templar.vocations[3], 25)
 for key, class in pairs(cfg.classes) do
 	eq(class.locked, true, key .. " locked")
-	eq(class.unlock.store.cost, 500, key .. " store price")
-	eq(class.unlock.level and class.unlock.level.min, 500, key .. " free at level 500")
+	eq(class.unlock.store, nil, key .. ": not sold (owner rule 2026-10-15, earned by play only)")
+	eq(class.unlock.level and class.unlock.level.min, 200, key .. " free at level 200")
 	eq(type(class.icon), "number", key .. " icon")
 end
-eq(cfg.classes.necromancer.unlock.store.offer, "unlockNecromancer")
-eq(cfg.classes.monk.unlock.store.offer, "unlockMonk")
-eq(cfg.classes.templar.unlock.store.offer, "unlockTemplar")
 eq(table.concat(K.lockedClasses(), ","), "monk,necromancer,templar", "locked classes, sorted")
 
 -- ------------------------------------------------------------------ vocation -> class
@@ -35,13 +32,13 @@ for v = 17, 19 do eq(K.classOfVocation(v), "monk", "voc " .. v) end
 for v = 20, 22 do eq(K.classOfVocation(v), "necromancer", "voc " .. v) end
 for v = 23, 25 do eq(K.classOfVocation(v), "templar", "voc " .. v) end
 for _, v in ipairs({0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14, 15, 16, 26}) do eq(K.classOfVocation(v), nil, "voc " .. v) end
-eq(K.classOfOffer("unlockTemplar"), "templar"); eq(K.classOfOffer("unlockMonk"), "monk")
+eq(K.classOfOffer("unlockTemplar"), nil, "no class is sold any more"); eq(K.classOfOffer("unlockMonk"), nil)
 eq(K.classOfOffer("autoSeller"), nil, "other unlocks are not classes")
 
 -- ------------------------------------------------------------------ decision and bypass
 local ok, msg, key = K.decide(23, {}, 1, 1)
 eq(ok, false, "templar locked"); eq(key, "templar")
-assert(msg:find("Templar is locked") and msg:find("store") and msg:find("500"), "message names the store and price: " .. msg)
+assert(msg:find("Templar is locked") and msg:find("level 200") and not msg:find("store"), "message names the level, no store: " .. msg)
 eq(K.decide(24, {templar = true}, 1, 1), true, "unlocked templar -> inquisitor ok")
 eq(K.decide(24, {monk = true}, 1, 1), false, "another class's unlock does not count")
 eq(K.decide(4, {}, 1, 1), true, "warrior is never locked")
@@ -74,8 +71,8 @@ eq(K.autoUnlock("q", {level = 1, storage = function(k) return st[k] end}, multi)
 local storeOnly = {table = "t", bypass = cfg.bypass, login = cfg.login,
 	classes = {s = {name = "S", vocations = {60}, locked = true, unlock = {store = {offer = "unlockS", cost = 1}}}}}
 eq(K.autoUnlock("s", {level = 5000}, storeOnly), nil, "the store method never unlocks by itself")
-eq(K.autoUnlock("templar", {level = 499}), nil, "the live config: below level 500 only the store")
-eq(K.autoUnlock("templar", {level = 500}), "level", "the live config: level 500 unlocks for free")
+eq(K.autoUnlock("templar", {level = 199}), nil, "the live config: below level 200 only the store")
+eq(K.autoUnlock("templar", {level = 200}), "level", "the live config: level 200 unlocks for free")
 -- a new kind without touching the gate
 K.registerMethod("event", {describe = function(spec) return "win " .. spec.name end,
 	check = function(spec, facts) return facts.won == spec.name end})
@@ -237,7 +234,7 @@ eq(U.isRestricted(gm), false)
 
 -- ------------------------------------------------------------------ the restriction callbacks
 eq(callback("onTargetCombat")(alice, {}), RETURNVALUE_NOTPOSSIBLE, "restricted cannot attack")
-assert(alice.cancel and alice.cancel:find("store"), "and is told why")
+assert(alice.cancel and alice.cancel:find("level 200"), "and is told why")
 eq(callback("onTargetCombat")(alt, {}), RETURNVALUE_NOERROR, "others attack")
 eq(callback("onGainExperience")(alice, nil, 500, 500), 0, "no experience")
 eq(callback("onGainExperience")(alt, nil, 500, 500), 500)
@@ -254,17 +251,16 @@ eq(alt.pos, nil, "a free character is left alone"); eq(alt.popup, nil)
 
 -- ------------------------------------------------------------------ the store entry and the account-wide grant
 eq(U.storeUnlock("autoSeller"), nil, "not a class offer")
-local entry = U.storeUnlock("unlockTemplar")
-eq(entry.classKey, "templar"); eq(entry.owned(alt), false, "not owned yet")
-eq(entry.grant(alt), true, "bought by another character of the account")
-eq(entry.owned(alice), true, "account-wide")
+eq(U.storeUnlock("unlockTemplar"), nil, "the class offers are gone (2026-10-15)")
+eq(U.isUnlocked(7, "templar"), false, "not unlocked yet")
+eq(U.grant(7, "templar", "level"), true, "earned by another character of the account")
 eq(U.isUnlocked(7, "templar"), true)
 eq(U.isRestricted(alice), false, "the restriction ends at once")
 eq(U.canUseVocation(alt, 25), true, "alt may become a sentinel now")
 assert(alice.messages[#alice.messages]:find("unlocked"), "the locked character is told")
 eq(U.isUnlocked(8, "templar"), false, "other accounts unaffected")
 eq(U.isUnlocked(7, "monk"), false, "other classes unaffected")
-eq(U.storeUnlock("unlockNecromancer").owned(bob), false)
+eq(U.isUnlocked(8, "necromancer"), false)
 eq(U.grant(8, "nonsense", "store"), false, "unknown class refused")
 
 -- revoke (staff) and the kick mode

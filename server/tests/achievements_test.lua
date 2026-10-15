@@ -165,7 +165,7 @@ eq(m.describe({points = 500}), "earn 500 achievement points on your account")
 eq(m.describe({name = "rift_t10"}), "earn the achievement Edge of Ruin")
 eq(m.describe({points = 300, name = "wb_all"}), "earn 300 achievement points on your account, or earn the achievement Colossus Hunter")
 eq(m.describe({text = "custom"}), "custom")
--- plugged into the class lock's core: the store stays the configured method of every class
+-- plugged into the class lock's core: the level is the configured method of every class (no store since 2026-10-15)
 -- (skipped where the class lock is not installed yet)
 local lockFile = io.open("data/scripts/chaos/class_unlocks_core.lua", "r")
 if lockFile then
@@ -174,7 +174,7 @@ dofile("data/scripts/chaos/class_unlocks_core.lua")
 local CK = ChaosClassUnlocksCore
 CK.registerMethod("achievement", m)
 for key, class in pairs(CK.config.classes) do
-	eq(class.unlock.store ~= nil, true, key .. " keeps the store")
+	eq(class.unlock.level ~= nil and class.unlock.store == nil, true, key .. " unlocks by level, not sold")
 	eq(class.unlock.achievement, nil, key .. " has no achievement method configured")
 	eq(CK.autoUnlock(key, {level = 1, achievement = function() return true end}), nil, key .. ": not configured, no auto unlock")
 end

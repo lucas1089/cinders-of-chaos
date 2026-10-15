@@ -233,6 +233,24 @@ eq(L.toScale(7, nil, nil), 7, 'tooltips without ds')
 local plainA, plainB = { stats = { { k = 'maxhealth', v = 300, sc = 1 } } }, { stats = { { k = 'maxhealth', v = 100, sc = 1 } } }
 eq(L.diff(plainA, plainB)[1].d, 200, 'no ds: as before')
 
+-- ---------------------------------------------------------------- sources and expected effort (server itemfinder.lua F.brief)
+eq(#L.sourceLines(nil), 0, 'no sources')
+local src = L.sourceLines({ s = { { k = 'drop', n = 'Unique drop', v = '0.9%' }, { k = 'reward', n = 'Rift chest' } },
+  e = { p = 1 / 400, w = 'legendary' }, t = 690 })
+eq(src[1].text, 'Drops from: Unique drop (0.9%), Rift chest', 'drops from line')
+eq(src[#src - 1].text, '~1 in 400 legendary kills, or 690 Conquest', 'effort and tokens (wrapped)')
+local joined = {}
+for _, l in ipairs(src) do joined[#joined + 1] = l.text end
+eq(table.concat(joined, ' '):find('or 690 Conquest Tokens', 1, true) ~= nil, true, 'token price')
+eq(L.sourceLines({ s = { { k = 'shop', n = 'Agnes', v = '4 gold' } } })[1].text, 'Sources: Agnes (4 gold)', 'sources line')
+eq(L.sourceLines({ s = { { k = 'monster', n = 'Dragon', v = '0.1%' } }, e = { p = 0.001, w = 'kill', m = 'Dragon' } })[2].text,
+  '~1 in 1,000 kills of Dragon', 'kills of a monster')
+eq(L.sourceLines({ s = {}, t = 1200 })[1].text, 'Conquest vendor: 1,200 tokens', 'vendor only')
+eq(L.oneIn(1 / 267), 270, 'rounded')
+eq(L.oneIn(0), nil, 'no chance')
+local withSrc = L.lines({ name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Rat', v = '5%' } } } })
+eq(withSrc[#withSrc - 1].text, 'Drops from: Rat (5%)', 'the sources sit above the weight')
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

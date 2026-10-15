@@ -12,6 +12,7 @@
   "lava": "lava",
   "sanctum": "cave",
   "swamp": "swamp",
+  "townhall": "townhall",
   "vault": "vault",
   "waste": "lava"
  },
@@ -2045,6 +2046,53 @@
     ],
     [
      "rotten_plants",
+     1
+    ]
+   ]
+  },
+  "townhall": {
+   "around": [],
+   "centre": [],
+   "corner": [
+    [
+     "plants",
+     1
+    ]
+   ],
+   "floor": [],
+   "light_floor": [],
+   "light_small": [],
+   "light_wall_h": [
+    [
+     "torch_h",
+     2
+    ]
+   ],
+   "light_wall_v": [
+    [
+     "torch_v",
+     2
+    ]
+   ],
+   "path_edge": [],
+   "wall_h": [
+    [
+     "tapestry_h",
+     2
+    ],
+    [
+     "banner_h",
+     1
+    ]
+   ],
+   "wall_side": [],
+   "wall_v": [
+    [
+     "tapestry_v",
+     2
+    ],
+    [
+     "banner_v",
      1
     ]
    ]

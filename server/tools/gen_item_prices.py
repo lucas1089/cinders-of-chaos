@@ -392,6 +392,9 @@ def chaos_items():
         put(int(i), 'orb', 'currency', src='chaos_orbs_config.lua')
     sf = re.search(r'item\s*=\s*\{id\s*=\s*(\d+)', read(os.path.join(DATA, 'scripts', 'chaos', 'store_food_config.lua')))
     put(int(sf.group(1)), 'Everfull Ration', 'bound', src='store_food_config.lua')
+    # the Stamina Extension left the store on 2026-10-15 but is still given free (the level 100 kit,
+    # newplayer_config.lua): it stays unsellable, so a free item is no gold path
+    put(27990, 'Stamina Extension', 'store', src='newplayer_config.lua (former store item)')
     sal = re.search(r'shard\s*=\s*\{[^}]*?\bid\s*=\s*(\d+)', read(os.path.join(DATA, 'scripts', 'chaos', 'salvage_config.lua')), re.S)
     if sal:
         put(int(sal.group(1)), 'rune shard', 'currency', src='salvage_config.lua')

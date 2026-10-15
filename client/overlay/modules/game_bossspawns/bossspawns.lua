@@ -1,9 +1,11 @@
 -- Boss Spawns window: every boss of the server by category, where it is and when it comes back.
 -- Server: server/data/scripts/chaos/bossspawns.lua, extended opcode 217 (JSON {action, data}, sent with
 -- Chaos.sendChunked and joined by ProtocolGame.registerExtendedJSONOpcode).
---   client -> server  open | refresh
+--   client -> server  open | refresh | pocketEnter {k} (server pocketboss.lua)
 --   server -> client  list {now, refresh, cats = [{k, n, c, t}], rows = [{k, c, n, loc, p, lv, o, st, in, at, tx, ago, by,
 --                     kills, alive, party}]}
+--                     pocket {bosses = {key = {l, m, b, lv, ok}}, reset, inside} (the Pocket buttons; after every list)
+--                     pocketError {text} (why a pocket did not open, already in the player's language)
 -- The countdowns tick here every second from the moment the list arrived; the list is asked again every `refresh`
 -- seconds while the window is open. Menu: Adventure > Boss Spawns (added with ChaosTopBar.addEntry).
 
@@ -12,6 +14,9 @@ local V = BossSpawnsView
 
 local window
 local data
+local pocket -- the pocket charges (server pocketboss.lua)
+local pocketAt = 0
+local pocketMsg, pocketMsgAt -- the last refusal, shown for a few seconds in the bottom line
 local receivedAt = 0
 local askedAt = 0
 local collapsed = {} -- category key -> true (kept for the session)
@@ -36,10 +41,10 @@ local function safe(name, fn)
   end
 end
 
-local function send(action)
+local function send(action, payload)
   local protocol = g_game.getProtocolGame()
   if protocol then
-    protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = {} }))
+    protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = payload or {} }))
   end
 end
 
@@ -60,7 +65,9 @@ end
 local function updateLive()
   local e = elapsed()
   for _, entry in ipairs(live) do updateRow(entry, e) end
-  if window and data then
+  if window and pocketMsg and now() - (pocketMsgAt or 0) < 8 then
+    window.updatedLabel:setText(pocketMsg)
+  elseif window and data then
     local age = math.floor(e)
     window.updatedLabel:setText(age < 5 and tr('Updated just now') or tr('Updated %s', V.ago(age)))
   end
@@ -86,6 +93,20 @@ local function setCreature(widget, o)
   widget:setVisible(true)
   widget:setOutfit({ type = tonumber(o.type), head = tonumber(o.head) or 0, body = tonumber(o.body) or 0,
     legs = tonumber(o.legs) or 0, feet = tonumber(o.feet) or 0, addons = tonumber(o.addons) or 0 })
+end
+
+local function setPocket(w, r)
+  local pk = V.pocket(r, pocket, math.max(0, now() - pocketAt))
+  w.pocketButton:setVisible(pk ~= nil)
+  if not pk then return end
+  w.pocketButton:setText(pk.text)
+  w.pocketButton:setTooltip(pk.tooltip)
+  w.pocketButton:setEnabled(pk.enabled)
+  local key = r.k
+  w.pocketButton.onClick = function()
+    send('pocketEnter', { k = key })
+    return true
+  end
 end
 
 local function render()
@@ -119,6 +140,7 @@ local function render()
         w.loc:setText(tostring(r.loc or ''))
         w.coords:setText(V.where(r))
         w:setTooltip(V.tooltip(r, e))
+        setPocket(w, r)
         live[#live + 1] = { row = r, widget = w }
         shown = shown + 1
       end
@@ -142,6 +164,13 @@ local function onMessage(protocol, opcode, msg)
   if type(msg) ~= 'table' then return end
   if msg.action == 'list' and type(msg.data) == 'table' then
     onList(msg.data)
+  elseif msg.action == 'pocket' and type(msg.data) == 'table' then
+    pocket = msg.data
+    pocketAt = now()
+    if data then render() end
+  elseif msg.action == 'pocketError' and type(msg.data) == 'table' and type(msg.data.text) == 'string' then
+    pocketMsg, pocketMsgAt = msg.data.text, now()
+    updateLive()
   end
 end
 
@@ -193,13 +222,13 @@ local function addMenu()
 end
 
 local function onGameStart()
-  data = nil
+  data, pocket, pocketMsg = nil, nil, nil
   addMenu()
 end
 
 local function onGameEnd()
   hide()
-  data = nil
+  data, pocket, pocketMsg = nil, nil, nil
 end
 
 function init()

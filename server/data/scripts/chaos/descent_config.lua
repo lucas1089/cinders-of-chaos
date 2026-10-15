@@ -8,8 +8,12 @@ return {
 
 	-- ------------------------------------------------------------------ entry
 	-- the city portal: a magic forcefield (no destination) with action id aid.portal next to the temple of each town of
-	-- townIds (the first free tile of offsets, after the world boss portals' spots). Stepping in opens the Descent window.
-	portal = {itemId = 1387, townIds = {1}, offsets = {{-3, 3}, {3, 3}, {-3, -3}, {3, -3}, {0, 4}, {4, 1}, {-4, 1}}},
+	-- townIds (the main city Cinderhold first, server/README.md "Main city"; the first free tile of offsets,
+	-- after the world boss portals' spots). Stepping in opens the Descent window.
+	-- positions: the portal room of each town's Hall of Services (npc_booths_config.lua `portals`, offset from the hall's
+	-- origin; tools/services_halls_test.py checks them); a town whose hall is not on the map uses `offsets`
+	portal = {itemId = 1387, townIds = {2, 1}, offsets = {{-3, 3}, {3, 3}, {-3, -3}, {3, -3}, {0, 4}, {4, 1}, {-4, 1}},
+		positions = {{town = 2, x = 14589, y = 14843, z = 7}, {town = 1, x = 14589, y = 14893, z = 7}}},
 	minLevel = 100,
 	maxPlayers = 4,
 	partyRange = 8, -- party members within this many sqm (same floor) of the leader come along
@@ -18,6 +22,9 @@ return {
 	-- leaderboards: Monday resetHour). More runs of either kind cost one Ember Sigil each. Every member of a party pays
 	-- for himself (his free run or one sigil); a member with neither stays behind.
 	freePerDay = 1,
+	-- unused daily free runs bank up to this many (2026-10-15, respect the players' time): three days away, three
+	-- free descents waiting. The weekly run is seeded per week and does not bank.
+	freeBankDays = 3,
 	freeWeeklyPerWeek = 1,
 	resetHour = 6, -- the weekly reset hour (leaderboard_config.lua resetHour)
 
@@ -25,7 +32,7 @@ return {
 	-- stock "red power core" (no script, shop or loot uses it) with this action id and the custom attribute
 	-- descent_sigil = 1; its name and description are set when it is made. Not stackable (one sigil a run).
 	sigil = {itemId = 10074, actionId = 47710, name = "Ember Sigil",
-		description = "A coal that never cools. Enter the Ember Descent once more (the portal next to the temple).",
+		description = "A coal that never cools. Enter the Ember Descent once more (the portal in the Hall of Services, beside the temple).",
 		craft = {shardId = 32051, shards = 25, gold = 50000}},
 
 	-- ------------------------------------------------------------------ the instance

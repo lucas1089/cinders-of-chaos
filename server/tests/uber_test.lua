@@ -958,6 +958,13 @@ end
 relicUse.onUse(hero, relic)
 check(hero.texts[#hero.texts]:find("Missing: Hollow Crown, Storm", 1, true) ~= nil, "two relics missing")
 A.giveRelic(hero, "hollow")
+-- the Conquest vendor's relic conversion reads the carried relics through ChaosAscended.relicsOf (conquest.lua)
+do
+	local kinds = {}
+	for _, r in ipairs(A.relicsOf(hero)) do kinds[r[2]] = (kinds[r[2]] or 0) + 1 end
+	eq(kinds.hollow, 1, "relicsOf sees the hollow relic")
+	check(kinds.storm == nil, "and no storm relic yet")
+end
 A.giveRelic(hero, "storm")
 relicUse.onUse(hero, relic)
 local cind

@@ -1498,6 +1498,8 @@ local function relicsOf(player)
 	return out
 end
 
+A.relicsOf = relicsOf -- conquest.lua: the relic conversion
+
 function A.useRelic(player)
 	local cfg = C()
 	local found = relicsOf(player)

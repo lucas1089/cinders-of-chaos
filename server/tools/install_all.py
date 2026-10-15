@@ -74,6 +74,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Material Broker in data/npc and the hooks in the stock pick / sickle / skinning / fishing scripts
                (README "Professions")
   gamble       tools/install_gamble.py           the Gambler NPC in data/npc (README "The Gambler")
+  candlemarks  tools/install_candlemarks.py      Osric the Chandler (the Candlemark shop NPC) in data/npc (README "Candlemarks")
+  idlekick     tools/patch_base_idle_kick.py     config.lua kickIdlePlayerAfterMinutes = 1440: idle characters stay online and earn
+               Candlemarks (the stock 15 kicks them after 16 minutes; README "Candlemarks")
+  conquest     tools/install_conquest.py         the Conquest vendor NPC in data/npc (README "Conquest Tokens, the Conquest
+               vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
@@ -130,8 +135,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
                data/lib/chaos_hunt_places.lua tells hunt_teleports.lua where each teleport leads (README "Hunt
                teleports"); also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
-               areas, the Capital Memorial's plaza) at their origins, without a teleport (their runtime portals are
-               in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
+               areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") at
+               their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
                real map and writes nothing)
   poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
                service NPCs, hunting areas, boss places) from the installed map, items, NPCs and spawn data into
@@ -483,6 +488,27 @@ def step_professions(server, data, ctx):
 
 def step_gamble(server, data, ctx):
     return tool_result(run_tool([tool('install_gamble.py'), data], 'install_gamble.py'))
+
+
+def step_conquest(server, data, ctx):
+    return tool_result(run_tool([tool('install_conquest.py'), data], 'install_conquest.py'))
+
+
+STEPS.insert(STEPS.index('gamble') + 1, 'conquest')  # the Conquest vendor NPC, next to the Gambler's step
+
+
+def step_candlemarks(server, data, ctx):
+    return tool_result(run_tool([tool('install_candlemarks.py'), data], 'install_candlemarks.py'))
+
+
+STEPS.insert(STEPS.index('gamble') + 1, 'candlemarks')  # the Candlemark shop NPC, right after the Gambler's step
+
+
+def step_idlekick(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_idle_kick.py'), server], 'patch_base_idle_kick.py'))
+
+
+STEPS.insert(STEPS.index('candlemarks') + 1, 'idlekick')  # config.lua: idle characters stay online (Candlemarks)
 
 
 def step_supports(server, data, ctx):
