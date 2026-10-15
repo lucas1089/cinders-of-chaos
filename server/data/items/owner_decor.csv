@@ -1,0 +1,47 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+33940,36940,cactus_01,stump,new,leaning cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33941,36941,cactus_02,stump,new,leaning cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33942,36942,cactus_03,stump,new,tall cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33943,36943,cactus_04,stump,new,tall cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33944,36944,cactus_05,stump,new,tall cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33945,36945,cactus_06,stump,new,budding tall cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33946,36946,cactus_07,stump,new,round-topped cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33947,36947,cactus_08,stump,new,flowering round-topped cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33948,36948,cactus_09,stump,new,columnar cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33949,36949,cactus_10,stump,new,flowering columnar cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33950,36950,cactus_11,stump,new,pale columnar cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33951,36951,cactus_12,stump,new,flowering spiny cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33952,36952,cactus_13,stump,new,barrel cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33953,36953,cactus_14,stump,new,flowering cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33954,36954,cactus_15,stump,new,blooming cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33955,36955,cactus_16,stump,new,spiny cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33956,36956,cactus_17,decor,new,small columnar cactus,2x2,0,0,0,0,0,0,family=cacti|block=0
+33957,36957,cactus_18,stump,new,flowering spiny cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33958,36958,cactus_19,decor,new,small columnar cactus,2x2,0,0,0,0,0,0,family=cacti|block=0
+33959,36959,cactus_20,stump,new,flowering dark cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33960,36960,cactus_21,decor,new,potted flower,2x2,0,0,0,0,0,0,family=cacti|block=0
+33961,36961,cactus_22,stump,new,dark agave,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33962,36962,cactus_23,decor,new,desert shrub,2x2,0,0,0,0,0,0,family=cacti|block=0
+33963,36963,cactus_24,decor,new,potted agave,2x2,0,0,0,0,0,0,family=cacti|block=0
+33964,36964,cactus_25,decor,new,dry shrub,2x2,0,0,0,0,0,0,family=cacti|block=0
+33965,36965,cactus_26,decor,new,succulent,2x2,0,0,0,0,0,0,family=cacti|block=0
+33966,36966,cactus_27,decor,new,thorny shrub,2x2,0,0,0,0,0,0,family=cacti|block=0
+33967,36967,cactus_28,decor,new,potted aloe,2x2,0,0,0,0,0,0,family=cacti|block=0
+33968,36968,cactus_29,decor,new,withered cactus,2x2,0,0,0,0,0,0,family=cacti|block=0
+33969,36969,cactus_30,decor,new,succulent,2x2,0,0,0,0,0,0,family=cacti|block=0
+33970,36970,cactus_31,decor,new,potted grass,2x2,0,0,0,0,0,0,family=cacti|block=0
+33971,36971,cactus_32,stump,new,flowering cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33972,36972,cactus_33,decor,new,potted succulent,2x2,0,0,0,0,0,0,family=cacti|block=0
+33973,36973,cactus_34,decor,new,flowering succulent,2x2,0,0,0,0,0,0,family=cacti|block=0
+33974,36974,cactus_35,stump,new,barrel cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33975,36975,cactus_36,stump,new,flowering barrel cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33976,36976,cactus_37,stump,new,flowering prickly cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33977,36977,cactus_38,stump,new,prickly pear,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33978,36978,cactus_39,stump,new,round cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33979,36979,cactus_40,stump,new,round cactus,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33980,36980,cactus_41,decor,new,thorn sprout,2x2,0,0,0,0,0,0,family=cacti|block=0
+33981,36981,cactus_42,decor,new,desert grass,2x2,0,0,0,0,0,0,family=cacti|block=0
+33982,36982,cactus_43,decor,new,flowering cactus,2x2,0,0,0,0,0,0,family=cacti|block=0
+33983,36983,cactus_44,decor,new,flowering shrub,2x2,0,0,0,0,0,0,family=cacti|block=0
+33984,36984,cactus_45,stump,new,blue agave,2x2,0,8193,2,0,0,0,family=cacti|block=1
+33985,36985,waypoint_seal,decor,new,waypoint seal,3x3,0,16777216,0,0,3,35,ms=100|family=waypoint|block=0

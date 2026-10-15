@@ -80,6 +80,16 @@ end
 -- empty while its switch is off)
 local okTheme, THEME = pcall(dofile, "data/lib/chaos_theme_art.lua")
 local THEME_OFFERS = (okTheme and type(THEME) == "table" and THEME.storeOffers) and THEME.storeOffers() or {}
+-- the store wings of client pair 26, the owner's art (data/lib/chaos_owner_art.lua M.storeOffers; empty while its
+-- switch ChaosOwnerArt.PAIR26 is off): appended to the Wings category
+local okOwner, OWNER = pcall(dofile, "data/lib/chaos_owner_art.lua")
+local OWNER_WINGS = (okOwner and type(OWNER) == "table" and OWNER.storeOffers) and OWNER.storeOffers() or {}
+local function withOwnerWings(list)
+	for _, o in ipairs(OWNER_WINGS) do
+		list[#list + 1] = o
+	end
+	return list
+end
 
 -- the weekly rotation's pool ("This week"): cosmetics only, never power. The boss exclusives (exclusives_config.lua,
 -- chaos_theme_art.lua M.exclusives) and the prestige sets are never in it. Keys: ChaosShopCore.offerKey.
@@ -246,13 +256,13 @@ return {
 		},
 		{
 			name = "Wings", icon = {outfit = preview({wings = 937})},
-			offers = {
+			offers = withOwnerWings({
 				{kind = "wings", id = 1, cost = 250}, {kind = "wings", id = 4, cost = 250}, {kind = "wings", id = 7, cost = 300},
 				{kind = "wings", id = 8, cost = 300}, {kind = "wings", id = 9, cost = 300}, {kind = "wings", id = 12, cost = 350},
 				{kind = "wings", id = 13, cost = 350}, {kind = "wings", id = 2, cost = 200}, {kind = "wings", id = 3, cost = 200},
 				{kind = "wings", id = 5, cost = 200}, {kind = "wings", id = 6, cost = 250}, {kind = "wings", id = 10, cost = 250},
 				{kind = "wings", id = 11, cost = 200}, {kind = "wings", id = 14, cost = 250}, {kind = "wings", id = 15, cost = 250}
-			}
+			})
 		},
 		{
 			name = "Auras", icon = {outfit = preview({aura = 932})},

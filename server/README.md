@@ -6619,6 +6619,43 @@ blood crystals, bones, rubble).
   Checked in game on the test server: a tier 1 rift (Ashen Crypt), `/worldboss arena` (lobby, corners, pillars) and the
   trial room, with the set on and off, at normal size and with the client's HD upscaling (x2).
 
+## Owner art (pair 26) (`data/lib/chaos_owner_art.lua`, `data/lib/chaos_owner_decor.lua`, `tools/install_owner_decor.py`)
+
+The owner's art of 2026-10-15 (client/MANIFEST.md "Owner art"): 12 monster looks, 9 wings, 45 desert plants and a
+waypoint seal, in a **trial** client pair 26 (outfits 2213-2233, items 33940-33985). **Behind the switch
+`ChaosOwnerArt.PAIR26`, OFF**: pair 26 is not on windows-assets, and a client on pair 25 has none of these ids.
+While off nothing in the game names them; turn it on in the change that publishes the pair.
+
+- **Monster looks** (`M.monsters`; rows of `client/tools/sprites/monster_looks/owner_art_picks.csv`, families
+  `dungeonboss` and `hunt`). The monster XML keeps its look until the rows are appended to `picks.csv` and
+  `tools/apply_monster_looks.py` runs (it now writes families `hunt` and `dungeonboss` like `world`; checked by a dry run
+  on a copy: 12 files, 0 problems). Deep dungeon bosses: Vaelith the Fallen Seraph 2213 (gilded lion lord, 4x4; before
+  1148), Ossivane the Gravecage 2214 (spectral lion, 4x4; before 863), Forgewarden Kharzun 2215 (basalt lion with
+  molten veins, 4x4; before 1281), Azhkarrath the Chained Wyrm 2216 (black-red maned wyrm, 2x2; before 1535 at 5x5).
+  Hunts 1300-2000: Gloamfang Ravager 2217 (emerald lion, 4x4), Cinderhorn Juggernaut 2218 (magma golem), Cinderskull
+  Reaver 2219 (fire brute), Silicron 2220 (ice golem), Vyrm 2221 (ice dragon), Winterstride 2222 (golden yeti),
+  Bloodantler Fiend 2223 (golden behemoth), Mirecoil Wyrm 2224 (golden wyrm). Not covered (no fitting sheet): Facetis,
+  Thal, Rimeshroud Revenant, Wraithbone Stalker, Pyrewing Tyrant (own 5x5 look). Ossivane's fit is loose (a spectral
+  beast for a walking ribcage); Azhkarrath gets smaller.
+- **Wings** (wings.xml ids 21-29): six sold in the store's Wings category (`M.storeWings`, PLACEHOLDER 250 each:
+  Jadeleaf Pinions, Tidewing Plumes, Duskfeather Wings, Emberplume Wings, Wildgrove Wings, Bloodfeather Wings;
+  `shop_config.lua` appends `M.storeOffers()`), three boss-drop exclusives (`M.exclusives`, `exclusives_config.lua`
+  calls `M.addExclusives`): Gloomgild Wings (Nyxareth), Sunforged Wings (the Cinderheart), Starmoth Wings (the Ascended
+  Omens). `tools/install_outfits.py` writes their wings.xml lines only while the switch is on.
+- **Decoration** (server ids 36940-36985 = client id + 3000, `data/items/owner_decor.csv`, written by the importer):
+  27 big potted cacti block a tile (otb SOLID, bottom of the stack like the stock trees), 18 small plants do not, and the
+  3x3 waypoint seal (walkable, animated, cyan light 3) draws up and left of its tile: put it on the south-east tile of
+  the square it covers. None is moveable or pickupable; items.xml gives a name only.
+  - Install: step `ownerdecor` of `install_all.py`, after `themeitems` (`python3 -I server/tools/install_owner_decor.py
+    DATA_DIR [--dry-run]`), idempotent, refused when a server id belongs to another item; `--lua [--check]` writes
+    `data/lib/chaos_owner_decor.lua` from the manifest. Tested on synthetic files (`install_owner_decor_test.py`).
+  - Area planner: `tools/areaplan/decor_owner_art.json` (groups `cacti_potted`, `desert_plants`, `waypoint_seal`; a kit
+    `waste` = the lava kit plus the plants, and the waste biome pointed at it). `area_plan_decor.kits()` merges it only
+    while the switch is on; off, the kits and every compiled plan stay as they are. The seal is in no kit (set pieces
+    and map makers: `ChaosOwnerArt.decorId("waypoint_seal", fallback)`).
+- Tests: `tests/owner_art_test.lua` (switch off: no exclusive, store offer or monster file names a pair 26 look; ids
+  against the manifest and the picks; forced on: the exclusives and the store validate with the real configs).
+
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 
 Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,

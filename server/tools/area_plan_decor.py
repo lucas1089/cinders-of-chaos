@@ -15,11 +15,16 @@ route the area needs (the shortest walks from the arrival to every zone, spawn a
 path, a blocking piece only where its walkable neighbours stay joined, one decoration item per tile. The QA of the
 compiler checks afterwards that no walkable tile was cut off. `decoration` scales every rate, `light` the lights.
 """
-import json, os
+import json, os, re
 
 import area_plan_core as C
 
 KITS_PATH = os.path.join(C.PLANDIR, 'decor_kits.json')
+# the owner's decoration of client pair 26 (desert plants, the waypoint seal): merged only while the server switch
+# ChaosOwnerArt.PAIR26 is on (server/data/lib/chaos_owner_art.lua; a client on an older pair has no such items)
+OWNER_PATH = os.path.join(C.PLANDIR, 'decor_owner_art.json')
+OWNER_SWITCH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'lib',
+                            'chaos_owner_art.lua')
 DECOR = {'sparse': 0.55, 'normal': 1.0, 'dense': 1.5}
 LIGHT = {'dark': 0.5, 'dim': 0.75, 'normal': 1.0, 'bright': 1.5}
 # rates at "normal" (per candidate tile unless noted)
@@ -28,10 +33,34 @@ RATE = dict(floor_wall=0.14, floor_near=0.08, floor_mid=0.03, wall_side=0.07, co
 _kits = None
 
 
+def owner_on(path=OWNER_SWITCH):
+    if not os.path.isfile(path):
+        return False
+    return re.search(r'^M\.PAIR26\s*=\s*true\b', open(path, encoding='utf-8').read(), re.M) is not None
+
+
+def merge_owner(k, extra):
+    """decor_kits.json plus the owner's overlay: its groups, its kits (a `base` kit's rows plus `add` rows per
+    category) and its biome mapping; the input is not changed"""
+    out = json.loads(json.dumps(k))
+    for name, g in extra['groups'].items():
+        assert name not in out['groups'], 'group %s twice' % name
+        out['groups'][name] = g
+    for name, spec in extra['kits'].items():
+        kit = json.loads(json.dumps(out['kits'][spec['base']]))
+        for cat, rows in spec['add'].items():
+            kit[cat] = kit.get(cat, []) + rows
+        out['kits'][name] = kit
+    out['biome_kit'].update(extra['biome_kit'])
+    return out
+
+
 def kits():
     global _kits
     if _kits is None:
         _kits = json.load(open(KITS_PATH, encoding='utf-8'))
+        if owner_on():
+            _kits = merge_owner(_kits, json.load(open(OWNER_PATH, encoding='utf-8')))
     return _kits
 
 

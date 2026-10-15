@@ -459,6 +459,10 @@ pvp, social, economy, store, rules, faq.
 
 These are finished as plans or code. The owner still has to place them in the map editor.
 
+Owner art in a trial client pair 26 (not published; switch `ChaosOwnerArt.PAIR26` off; server/README.md "Owner art
+(pair 26)"): own looks for the four deep dungeon bosses and eight hunting monsters of 1300-2000, six store wings and
+three boss-drop wings, 45 desert plants and a waypoint seal for maps and the area planner.
+
 Planned hunting areas (14, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
 
 | Plan | Levels | Biome |

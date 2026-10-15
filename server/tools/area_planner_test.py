@@ -230,6 +230,17 @@ ok(crypt['stats']['entry_to_boss'] and crypt['boss']['monster'] == 'Morgashal', 
 lk = crypt['links'][0]
 ok(len(crypt['links']) == 1 and lk['brush'] == 'stairs', 'crypt: the stairs use the stair brush (%s)' % lk['brush'])
 kit = __import__('area_plan_decor').kits()
+# the owner's decoration of pair 26: off, the kits are decor_kits.json; merged, the waste biome gets its own kit
+_D = __import__('area_plan_decor')
+ok(not _D.owner_on() and 'waste' not in kit['kits'] and kit['biome_kit']['waste'] == 'lava',
+   'owner decoration: switch off, no change to the kits')
+_m = _D.merge_owner(kit, json.load(open(_D.OWNER_PATH, encoding='utf-8')))
+ok(_m['biome_kit']['waste'] == 'waste' and ['cacti_potted', 3] in _m['kits']['waste']['centre']
+   and _m['kits']['waste']['floor'][:len(kit['kits']['lava']['floor'])] == kit['kits']['lava']['floor']
+   and kit['biome_kit']['waste'] == 'lava', 'owner decoration merged: waste = the lava kit plus the plants, input kept')
+ok(all(36940 <= i <= 36985 for g in ('cacti_potted', 'desert_plants', 'waypoint_seal') for i in _m['groups'][g]['ids'])
+   and len(_m['groups']['cacti_potted']['ids']) + len(_m['groups']['desert_plants']['ids']) == 45,
+   'owner decoration: 45 plants and the seal, server ids 36940..36985')
 ok(crypt['tiles'][lk['hole']]['ground'] == kit['brushes']['stairs_down_ground'], 'crypt: the stairs ground above')
 ok(kit['brushes']['stairs_up'] in [i for i, _a in crypt['tiles'][lk['stair']]['items']], 'crypt: the stone stairs below')
 ok(lk['landing'] == (lk['stair'][0], lk['stair'][1] + 1, lk['stair'][2]) and lk['up'] == (lk['hole'][0], lk['hole'][1] - 1, lk['hole'][2]),

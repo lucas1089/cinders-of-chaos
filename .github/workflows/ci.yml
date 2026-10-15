@@ -324,6 +324,11 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_gem_art.py build --check
           # status words (the owner's text effect set): the spec matches the strips and the PICKS table
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_fx.py build --check
+          # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_owner_art.py build --check
+          python3 -I client/tools/sprites/gen_owner_art_test.py
+          python3 -I server/tools/install_owner_decor.py --lua --check
+          python3 -I server/tools/install_owner_decor_test.py
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)

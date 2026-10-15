@@ -1619,6 +1619,49 @@ CURSED!, CHILLED FOOT!, FREEZE!, POISONED!) for comparison; they are not read or
   `tools/ci/check_content.py --pair` now names things_custom25 (2,212 outfits, padding 2194-2199 blank).
 - Checked offline only (importer checks, the read-back, check_pair). Not run in a live client.
 
+## Owner art (trial pair 26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; NOT on windows-assets, switch off)
+**Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
+their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
+items. `gen_owner_art.py` names each file by a neutral name, its Drive file id and md5 (`SOURCES`); the Drive titles
+are not copied. Not used: two .aseprite spell / aura effects (zombie hands, tentacles: effects, not an approved use),
+the FX and aura zips, one duplicate sheet, and seven small files the download tool could not save (a fire medusa
+sheet, three outfit sheets, a second moth wings sheet, two "filth" sheets).
+- Monster looks 2213-2224 (layers 1, frame groups idle 1 phase + walk, 100 ms): four 4x4 lion beasts (128 px, 3 walk
+  phases), two 2x2 drakes (3 walk phases), six 2x2 creatures with an 8-phase walk and an idle frame per direction.
+  Server use: server/README.md "Owner art (pair 26)" (the four deep dungeon bosses and eight 1300-2000 hunt monsters).
+- Wings 2225-2233 (3x3, one group, animateAlways): six feathered wings (9 phases, 110 ms; the sheets repeat the east
+  column as the west one, so west is east mirrored about the wearer's axis), two ornate wings (8 phases, 120 ms,
+  displacement -6,-12: the scan put their art 6 px left and 12 px above the other wings), moth wings (5 phases).
+  `fix_pair_warnings.py --scan-aura-displacement --wings 2225-2233`: art centres x -19.6..-22.5, y -18.9..-21.3 px;
+  the wings already in the pair (1486, 2140-2142, 2187) span x -14.5..-20.2, y -17.8..-22.5, so ours sit up to 2.3 px
+  further left, which looks right in the previews.
+- Items 33940-33985 (server 36940-36985, `server/data/items/owner_decor.csv`): 45 desert plants cut as blobs from one
+  sheet, 2x2 each with the pot on the item's tile (27 block a tile: kind stump, `bottom notwalkable notmoveable`; 18
+  do not: kind decor, `notmoveable`) and a 3x3 waypoint seal (60 phases at 100 ms, light 3 colour 35, walkable).
+  New importer kind `decor` (otb group 0, no flags).
+- `python3 -I gen_owner_art.py build --src DIR` writes `art_import/owner_art/*.png` (23 sheets, 3.4 MB),
+  `art_import/owner_art.csv` and `monster_looks/owner_art_picks.csv`; `build --check` (CI) compares the committed sheets,
+  things file and picks with the spec; `gen_owner_art_test.py` (CI) runs the pure parts on synthetic sheets;
+  `preview --out DIR --dat P --spr S [--before-dat --before-spr]` draws each look on a tile floor (four directions, the
+  walk, the monster's current look beside it), the wings on a player by the wings rule, and the decoration.
+- Append to things_custom25:
+  ```
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat things_custom25/Tibia.dat --ours-spr things_custom25/Tibia.spr \
+      --out-dir things_custom26 --things client/tools/sprites/art_import/owner_art.csv --first-item 33940 --first-outfit 2213 \
+      --expect-items 33939 --manifest-out server/data/items/owner_decor.csv
+  python3 -I client/tools/sprites/check_pair.py things_custom26/Tibia.dat things_custom26/Tibia.spr --old things_custom25/Tibia.dat things_custom25/Tibia.spr
+  ```
+- Trial build (2026-10-15, local only; input the windows-assets archive at ebe1b2b2, dat dc1613e4..., spr d970b1cb...):
+  dat 4a019fecaeb837a64c71f068bc243b14 (5,075,880 bytes), spr 800cd7cead2187257091b2f12e8ed547 (643,478,418 bytes,
+  767,949 sprites: 3,603 appended), 33,985 items, 2,233 outfits, 673 effects, 153 missiles. Built twice with identical
+  md5s and manifest; the importer verified 5,436 sprite slots pixel-identical to the art. `check_pair.py --old`:
+  append-only (36,878 old things and 764,346 old sprites compared), 0 errors, 124 warnings, line for line those of
+  things_custom25 (INFO `sprite-zero-slots` 4,064 -> 4,080). Not packed, not pushed, not run in a live client.
+- To publish (owner approval): pack and push like things_custom25, then in one change: `ChaosOwnerArt.PAIR26 = true`
+  (server/data/lib/chaos_owner_art.lua), append `monster_looks/owner_art_picks.csv` to `picks.csv` and run
+  `server/tools/apply_monster_looks.py`, update `tools/ci/check_content.py` PAIR_NAME / PAIR_OUTFITS (things_custom26,
+  2233), regenerate `outfit_anchors.lua` and the Codex / wiki data, record the md5s here.
+
 ## Themed sets, auras and grounds (things_custom24, `tools/sprites/gen_theme_art.py`, `art_import/theme*`)
 **On windows-assets (407ad9b6, owner approved 2026-10-13); switches on since 2026-10-13 (pair 24 at 407ad9b6).** Our own art for the themes of five reference sheets and four set showcases the owner
 showed: ten equipment sets, two auras, a pair of wings, four grounds with borders, six monster recolours. The sheets

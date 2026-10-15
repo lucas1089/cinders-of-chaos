@@ -60,7 +60,8 @@ ONTOP, ANIM, FORCEUSE = 1 << 13, 1 << 24, 1 << 26
 OTB = {'product': (0, PICKUP | MOVE | STACK, 0), 'food': (0, PICKUP | MOVE | STACK, 0), 'corpse': (2, FORCEUSE, 0),
        'tree': (0, SOLID | ONTOP, 2), 'stump': (0, SOLID | ONTOP, 2), 'ground': (1, 0, 0), 'water': (1, 0, 0),
        'border': (0, ONTOP, 1), 'shore': (0, ONTOP, 1), 'lake': (0, 0, 0), 'dock': (0, 0, 0),
-       'weapon': (0, PICKUP | MOVE, 0)}   # weapon: hand items (the Monk's fist weapons, art_import/fist_weapons.csv)
+       'weapon': (0, PICKUP | MOVE, 0),   # weapon: hand items (the Monk's fist weapons, art_import/fist_weapons.csv)
+       'decor': (0, 0, 0)}   # decor: fixed decoration (art_import/owner_art.csv: small plants, the waypoint seal)
 # the themed set pieces (art_import/theme_things.csv, gen_theme_art.py): the group and flags of the stock item of
 # each kind (melee weapons useable, arrows and bolts stackable, the backpack a container)
 OTB.update({k: (0, USEABLE | PICKUP | MOVE, 0) for k in ('sword', 'axe', 'club')})

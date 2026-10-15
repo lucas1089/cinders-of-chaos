@@ -53,6 +53,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
                items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
                ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
+  ownerdecor   tools/install_owner_decor.py      the owner's decoration items of client pair 26 (45 plants, the waypoint seal)
+               in items.otb / items.xml (server ids 36940..36985; used only once ChaosOwnerArt.PAIR26 is on; README
+               "Owner art (pair 26)")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -429,6 +432,13 @@ def step_themeitems(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('fistweapons') + 1, 'themeitems')  # after the fist weapons (client ids appended after theirs)
+
+
+def step_ownerdecor(server, data, ctx):
+    return tool_result(run_tool([tool('install_owner_decor.py'), data], 'install_owner_decor.py'))
+
+
+STEPS.insert(STEPS.index('themeitems') + 1, 'ownerdecor')  # after the themed items (client ids of pair 26 after pair 25's)
 
 
 def step_gems(server, data, ctx):
