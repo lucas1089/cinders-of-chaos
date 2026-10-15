@@ -1,0 +1,18 @@
+{
+  "name": "cinders-promo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Promo video of Cinders of Chaos (Remotion)",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Promo out/promo_ptbr_1920x1080.mp4",
+    "render:en": "remotion render Promo out/promo_en_1920x1080.mp4 --props=./props/en.json",
+    "render:vertical": "remotion render PromoVertical out/promo_ptbr_1080x1920.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.532",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.532"
+  }
+}

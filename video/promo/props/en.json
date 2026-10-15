@@ -1,0 +1,17 @@
+{
+  "strings": {
+    "hook1": "One horde.",
+    "hook2": "One spell.",
+    "login": "Dark fantasy in pixel art",
+    "spells": "88 custom spells",
+    "packs": "Monsters come in packs",
+    "teleports": "A teleport for every hunt",
+    "classes": "7 classes, 14 ascensions",
+    "classNames": ["Warrior", "Ranger", "Mystic", "Thief", "Necromancer", "Monk", "Templar"],
+    "dungeons": "9 dungeons, 6 difficulties",
+    "bosses": "Bosses with their own mechanics",
+    "bossNames": ["Vaelith the Fallen Seraph", "Forgewarden Kharzun", "Ossivane the Gravecage"],
+    "cta": "Beta coming soon",
+    "loginClip": "login_en.mp4"
+  }
+}
