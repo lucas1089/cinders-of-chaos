@@ -1,6 +1,6 @@
 -- Pack tools (2026-10-15, owner: the classes that needed a large pack cleave get real area tools of their lore
 -- instead, and a small cleave): Palm Shockwave (194, the Monk line), Shadow Ricochet (195, Shadowfist), Iron Chain
--- (196, Iron Sage), Bone Shrapnel (197, Necromancer), Sanctified Ground (108, Templar), Shield Wave (109, Sentinel),
+-- (196, Iron Sage), Bone Shrapnel (197, Necromancer), Sanctified Ground (137, Templar), Shield Wave (170, Sentinel),
 -- Fan of Knives (136, Thief). Numbers: T.cfg below; spells and balance: server/data/spells/README.md "Pack farming for
 -- every class"; read by server/tools/rotation_sim.py (the scales, the text form of _blades.lua).
 --

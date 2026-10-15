@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/blades_test.lua (CI runs it with LuaJIT and Lua 5.3)
--- The Thief line's area strikes (2026-10-15, pack farming; data/spells/chaos/_blades.lua): Blade Flurry (192, Thief,
--- Ninja, Samurai) and Iaido Sweep (193, Samurai). The pure parts (ranges, class scales, the sweep's tiles), the casts on
+-- The Thief line's area strikes (2026-10-15, pack farming; data/spells/chaos/_blades.lua): Blade Flurry (73, Thief,
+-- Ninja, Samurai) and Iaido Sweep (74, Samurai). The pure parts (ranges, class scales, the sweep's tiles), the casts on
 -- a mocked engine (who is hit, with what), the two spell scripts, the spell entries and the data that reads them
 -- (rotation_model.csv, the supports' kinds, the class effects).
 local failures, checks = 0, 0
@@ -277,7 +277,7 @@ do
 	local fl, sw = entry("Blade Flurry"), entry("Iaido Sweep")
 	ok(fl and sw, "both spells in spells_chaos.xml")
 	fl, sw = fl or "", sw or ""
-	eq(fl:match('spellid="(%d+)"'), "192", "Blade Flurry id")
+	eq(fl:match('spellid="(%d+)"'), "73", "Blade Flurry id")
 	eq(fl:match('words="([^"]+)"'), "drai vas kaen", "Blade Flurry words")
 	eq(fl:match('group="(%a+)"'), "attack", "Blade Flurry: attack group")
 	eq(fl:match('level="(%d+)"'), "50", "Blade Flurry level")
@@ -287,7 +287,7 @@ do
 	for _, v in ipairs({"Thief", "Ninja", "Samurai"}) do
 		ok(fl:find('<vocation name="' .. v .. '" />', 1, true), "Blade Flurry for the " .. v)
 	end
-	eq(sw:match('spellid="(%d+)"'), "193", "Iaido Sweep id")
+	eq(sw:match('spellid="(%d+)"'), "74", "Iaido Sweep id")
 	eq(sw:match('words="([^"]+)"'), "drai gal kaen", "Iaido Sweep words")
 	eq(sw:match('level="(%d+)"'), "200", "Iaido Sweep level")
 	eq(sw:match(' cooldown="(%d+)"'), "8000", "Iaido Sweep cooldown (second pass)")
@@ -304,7 +304,7 @@ do
 		ids[id] = (ids[id] or 0) + 1
 		words[w] = (words[w] or 0) + 1
 	end
-	eq(ids["192"], 1, "id 192 used once"); eq(ids["193"], 1, "id 193 used once")
+	eq(ids["73"], 1, "id 73 used once"); eq(ids["74"], 1, "id 74 used once")
 	eq(words["drai vas kaen"], 1, "words used once"); eq(words["drai gal kaen"], 1, "words used once")
 
 	local csv = readFile("data/spells/rotation_model.csv") or ""
@@ -314,12 +314,12 @@ do
 	eq(tonumber(csv:match('\ndrai vas kaen,Blade Flurry,"[^"]*",([%d%.]+),')), 5, "Blade Flurry: 5 of the dummies")
 	eq(tonumber(csv:match('\ndrai gal kaen,Iaido Sweep,"[^"]*",([%d%.]+),')), 1 + 4 * B.cfg.sweep.pack, "Iaido Sweep: 1 + 4 x pack")
 	local SC = dofile("data/lib/chaos_supports_config.lua")
-	eq(SC.kindOverride[192], "area", "supports: Blade Flurry is an area spell")
-	eq(SC.kindOverride[193], "area", "supports: Iaido Sweep is an area spell")
+	eq(SC.kindOverride[73], "area", "supports: Blade Flurry is an area spell")
+	eq(SC.kindOverride[74], "area", "supports: Iaido Sweep is an area spell")
 	dofile("data/lib/chaos_class_fx.lua")
-	eq(ChaosClassFx.pick("ninja", 192, "whirlwind"), "ninja_vanish", "the Ninja's flurry")
-	eq(ChaosClassFx.pick("samurai", 192, "whirlwind"), "samurai_parry", "the Samurai's flurry")
-	eq(ChaosClassFx.pick("thief", 192, "whirlwind"), nil, "the Thief's: the default spin")
+	eq(ChaosClassFx.pick("ninja", 73, "whirlwind"), "ninja_vanish", "the Ninja's flurry")
+	eq(ChaosClassFx.pick("samurai", 73, "whirlwind"), "samurai_parry", "the Samurai's flurry")
+	eq(ChaosClassFx.pick("thief", 73, "whirlwind"), nil, "the Thief's: the default spin")
 end
 
 if failures > 0 then

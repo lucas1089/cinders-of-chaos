@@ -273,7 +273,7 @@
 		<vocation name="Samurai" />
 	</instant>
 	<!-- the line's area strike (2026-10-15, pack farming; _blades.lua) -->
-	<instant group="attack" spellid="192" name="Blade Flurry" words="drai vas kaen" level="50" mana="120" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/thief/blade_flurry.lua">
+	<instant group="attack" spellid="73" name="Blade Flurry" words="drai vas kaen" level="50" mana="120" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/thief/blade_flurry.lua">
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
@@ -301,7 +301,7 @@
 	<instant group="support" spellid="245" name="Bushido Focus" words="vyr mynd" level="150" mana="200" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/samurai/bushido_focus.lua">
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="attack" spellid="193" name="Iaido Sweep" words="drai gal kaen" level="200" mana="450" premium="1" range="2" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/samurai/iaido_sweep.lua">
+	<instant group="attack" spellid="74" name="Iaido Sweep" words="drai gal kaen" level="200" mana="450" premium="1" range="2" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/samurai/iaido_sweep.lua">
 		<vocation name="Samurai" />
 	</instant>
 	<!-- berserker -->
@@ -420,7 +420,7 @@
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="attack" spellid="108" name="Sanctified Ground" words="drai sol sanct" level="60" mana="200" premium="1" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/templar/sanctified_ground.lua">
+	<instant group="attack" spellid="137" name="Sanctified Ground" words="drai sol sanct" level="60" mana="200" premium="1" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/templar/sanctified_ground.lua">
 		<vocation name="Templar" />
 	</instant>
 	<instant group="healing" spellid="191" name="Vow of Mending" words="saen tor fidh" level="30" mana="150" premium="0" aggressive="0" selftarget="1" cooldown="8000" groupcooldown="1000" needlearn="0" script="chaos/templar/vow_of_mending.lua">
@@ -442,7 +442,7 @@
 	<instant group="support" spellid="251" name="Rebuke" words="vok sol kal" level="100" mana="150" premium="1" aggressive="0" selftarget="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/rebuke.lua">
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="attack" spellid="109" name="Shield Wave" words="drai sol aeg" level="150" mana="250" premium="1" range="3" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/shield_wave.lua">
+	<instant group="attack" spellid="170" name="Shield Wave" words="drai sol aeg" level="150" mana="250" premium="1" range="3" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/shield_wave.lua">
 		<vocation name="Sentinel" />
 	</instant>
 	<instant group="support" spellid="252" name="Aegis of Faith" words="tor gal sol aeg" level="120" mana="150" premium="1" aggressive="0" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/aegis_of_faith.lua">

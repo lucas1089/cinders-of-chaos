@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/packtools_test.lua (CI runs it with LuaJIT and Lua 5.3)
 -- The pack tools (2026-10-15, data/spells/chaos/_packtools.lua): Palm Shockwave (194), Shadow Ricochet (195), Iron Chain
--- (196), Bone Shrapnel (197), Sanctified Ground (108), Shield Wave (109), Fan of Knives (136). The pure parts (hits,
+-- (196), Bone Shrapnel (197), Sanctified Ground (137), Shield Wave (170), Fan of Knives (136). The pure parts (hits,
 -- jumps, the fan's targets), each spell script on a mocked engine (who is hit, the target the plain hit and the pack
 -- `pack` x it, players never the pack share), the spell entries, the rotation model rows (1 + 4 x pack) and the
 -- supports' kind.
@@ -341,8 +341,8 @@ do
 		{195, "Shadow Ricochet", "kah umh dhun", "shadowfist/shadow_ricochet.lua", {"Shadowfist"}, "ricochet"},
 		{196, "Iron Chain", "kah brak vinc", "ironsage/iron_chain.lua", {"Iron Sage"}, "chain"},
 		{197, "Bone Shrapnel", "drai oss krak", "necromancer/bone_shrapnel.lua", {"Necromancer"}, "shrapnel"},
-		{108, "Sanctified Ground", "drai sol sanct", "templar/sanctified_ground.lua", {"Templar"}, "sanctified"},
-		{109, "Shield Wave", "drai sol aeg", "sentinel/shield_wave.lua", {"Sentinel"}, "shieldWave"},
+		{137, "Sanctified Ground", "drai sol sanct", "templar/sanctified_ground.lua", {"Templar"}, "sanctified"},
+		{170, "Shield Wave", "drai sol aeg", "sentinel/shield_wave.lua", {"Sentinel"}, "shieldWave"},
 		{136, "Fan of Knives", "drai vas nyx shur", "thief/fan_of_knives.lua", {"Thief"}, "fan"},
 	}
 	local ids, words = {}, {}

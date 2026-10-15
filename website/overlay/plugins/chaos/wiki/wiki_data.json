@@ -926,7 +926,7 @@
 								"spell:161",
 								"spell:162",
 								"spell:238",
-								"spell:192",
+								"spell:73",
 								"spell:100",
 								"spell:104",
 								"spell:179",
@@ -941,7 +941,7 @@
 								"spell:241",
 								"spell:245",
 								"spell:242",
-								"spell:193"
+								"spell:74"
 							]
 						},
 						{
@@ -1304,7 +1304,7 @@
 								"spell:161",
 								"spell:162",
 								"spell:190",
-								"spell:108",
+								"spell:137",
 								"spell:179",
 								"spell:233",
 								"spell:255",
@@ -1313,7 +1313,7 @@
 								"spell:251",
 								"spell:199",
 								"spell:252",
-								"spell:109",
+								"spell:170",
 								"spell:250",
 								"spell:253"
 							]
@@ -2135,7 +2135,7 @@
 					"icon": "wiki/i/sp-261.png"
 				},
 				{
-					"id": "spell:192",
+					"id": "spell:73",
 					"name": "Blade Flurry",
 					"sub": "\"drai vas kaen\", level 50, 120 mana, cooldown 8 s",
 					"color": "#9fdc7f",
@@ -2303,7 +2303,7 @@
 					"icon": "wiki/i/sp-284.png"
 				},
 				{
-					"id": "spell:108",
+					"id": "spell:137",
 					"name": "Sanctified Ground",
 					"sub": "\"drai sol sanct\", level 60, 200 mana, cooldown 8 s",
 					"color": "#9fdc7f",
@@ -3469,7 +3469,7 @@
 					"icon": "wiki/i/sp-268.png"
 				},
 				{
-					"id": "spell:109",
+					"id": "spell:170",
 					"name": "Shield Wave",
 					"sub": "\"drai sol aeg\", level 150, 250 mana, cooldown 8 s",
 					"color": "#9fdc7f",
@@ -3826,7 +3826,7 @@
 					"icon": "wiki/i/sp-242.png"
 				},
 				{
-					"id": "spell:193",
+					"id": "spell:74",
 					"name": "Iaido Sweep",
 					"sub": "\"drai gal kaen\", level 200, 450 mana, cooldown 8 s",
 					"color": "#9fdc7f",

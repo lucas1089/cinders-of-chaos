@@ -1,5 +1,5 @@
--- The Thief line's area strikes (2026-10-15, pack farming): Blade Flurry (192, all three classes) and Iaido Sweep
--- (193, Samurai). Numbers: B.cfg below; spells: server/data/spells/README.md "Thief line"; balance: "Pack farming for
+-- The Thief line's area strikes (2026-10-15, pack farming): Blade Flurry (73, all three classes) and Iaido Sweep
+-- (74, Samurai). Numbers: B.cfg below; spells: server/data/spells/README.md "Thief line"; balance: "Pack farming for
 -- every class" there. Read by server/tools/rotation_sim.py (the class scales, the same text form as Shuriken Toss).
 --
 -- Both are melee weapon strikes (ChaosSpell.weaponStrike, ORIGIN_MELEE), one per monster hit, so the line's weapon

@@ -102,14 +102,14 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 236 | Shuriken Toss | `kah shur` | T, N, Sa | 20 | 50 | 2s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x the star in hand (or a default star). The Thief's filler. Cooldown 2 s since the second rotation pass (was 3 s at x2.0): damage x a class scale, Thief 1.33, Ninja 1.33 (1.62 from level 180), Samurai 1.33 (1.5 from level 120) ("Rotations"). |
 | 238 | Shadow Veil | `fen umh` | T, N, Sa | 40 | 120 | 20s | 4 s stealth: monsters drop you and cannot pick you; dealing damage or taking a hit ends it; the first weapon hit out of it crits (x2). |
 | 239 | Poison Blades | `vyr vex thyss` | T, N, Sa | 60 | 150 | 30s | 20 s: weapon hits and weapon strikes poison the target, 60% of the hit as earth damage over 4 s. |
-| 192 | Blade Flurry | `drai vas kaen` | T, N, Sa | 50 | 120 | 8s | Spin: a melee weapon strike on every monster within 2 sqm of you (the 5x5 square; 3x3 in the first pass; players are never hit). On one target it hits like a Shuriken Toss of the class (`_blades.lua` class scale: Thief 1.33, Ninja 1.08 plus the off-hand strike, 0.89 below 180, Samurai 1.5, 1.33 below 120); its worth is the pack (2026-10-15, "Pack farming for every class"). |
+| 73 | Blade Flurry | `drai vas kaen` | T, N, Sa | 50 | 120 | 8s | Spin: a melee weapon strike on every monster within 2 sqm of you (the 5x5 square; 3x3 in the first pass; players are never hit). On one target it hits like a Shuriken Toss of the class (`_blades.lua` class scale: Thief 1.33, Ninja 1.08 plus the off-hand strike, 0.89 below 180, Samurai 1.5, 1.33 below 120); its worth is the pack (2026-10-15, "Pack farming for every class"). |
 | 240 | Shadow Step | `ash umh` | N | 100 | 150 | 8s | Teleport behind the target (range 5) and stab it: melee weapon strike, the off-hand follows. |
 | 241 | Smoke Bomb | `drai nebh` | N | 130 | 300 | 20s | Smoke 5x5 around you: monsters lose their target and cannot pick a player for 3 s, slowed 30% (bosses only drop the target once). |
 | 242 | Shuriken Barrage | `drai vas shur` | N | 180 | 400 | 10s | A shuriken at the target and up to 4 more monsters within 3 sqm of it. |
 | 243 | Counter Stance | `tor ryx` | Sa | 100 | 100 | 8s | For 3 s the next melee hit taken is parried (no damage) and answered with 1.5x the parried hit; every other hit taken is 30% smaller; taunts the monsters within 3 sqm (the Samurai is the duelist off-tank). |
 | 244 | Iaijutsu | `kah gal kaen` | Sa | 120 | 350 | 10s | 0.8 s charge, then one heavy melee weapon strike on the target if it is still within 2 sqm. |
 | 245 | Bushido Focus | `vyr mynd` | Sa | 150 | 200 | 30s | 30 s: +3% crit chance per second without taking damage (3 at once, max 10 stacks = 30%), crits do x1.5; a hit taken resets the stacks. |
-| 193 | Iaido Sweep | `drai gal kaen` | Sa | 200 | 450 | 12s | A wide draw cut towards the target (range 2), no charge, cooldown 8 s (12 s in the first pass): the target takes a melee weapon strike of (P x 0.10-0.16 + 30-60) x 0.8, about half an Iaijutsu, every monster in the 3 x 2 tiles in front of you (the 7 nearest of the quarter on a diagonal) 1.5x that. Other players only when they are the target, with the plain hit (2026-10-15). |
+| 74 | Iaido Sweep | `drai gal kaen` | Sa | 200 | 450 | 12s | A wide draw cut towards the target (range 2), no charge, cooldown 8 s (12 s in the first pass): the target takes a melee weapon strike of (P x 0.10-0.16 + 30-60) x 0.8, about half an Iaijutsu, every monster in the 3 x 2 tiles in front of you (the 7 nearest of the quarter on a diagonal) 1.5x that. Other players only when they are the target, with the plain hit (2026-10-15). |
 | 136 | Fan of Knives | `drai vas nyx shur` | T | 80 | 150 | 6s | The Thief only (range 4): a Shuriken Toss of the Thief (x1.33) on the target and on the nearest 5 monsters within 4 sqm of you, ranged weapon strikes (2026-10-15, `_packtools.lua`). |
 | **berserker** (B) / **beastmaster** (BM) | | | | | | | |
 | 246 | Skyfall Cleave | `drai skai hrun` | B | 100 | 300 | 10s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) x 0.7 physical, 30% slow 2 s. Needs a weapon. |
@@ -151,8 +151,8 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 251 | Rebuke | `vok sol kal` | Se | 100 | 150 | 12s | Taunts every monster within 4 sqm, 25% slow for 6 s. |
 | 252 | Aegis of Faith | `tor gal sol aeg` | Se | 120 | 150 | 25s | With a shield: -40% damage taken for 5 s. |
 | 253 | Lay on Hands | `saen gal manh "Name"` | Se | 150 | 400 | 60s | Party member (named, or the lowest health share) or itself within 5 sqm: 35% max health + ml x 10. |
-| 108 | Sanctified Ground | `drai sol sanct` | T | 60 | 200 | 8s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
-| 109 | Shield Wave | `drai sol aeg` | Se | 150 | 250 | 8s | A Radiant Smite of the Sentinel on the target (range 3) and a wave of holy force through the 3 x 3 tiles in front for 2x that (players the plain hit). |
+| 137 | Sanctified Ground | `drai sol sanct` | T | 60 | 200 | 8s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
+| 170 | Shield Wave | `drai sol aeg` | Se | 150 | 250 | 8s | A Radiant Smite of the Sentinel on the target (range 3) and a wave of holy force through the 3 x 3 tiles in front for 2x that (players the plain hit). |
 | **build archetypes, second round** (2026-10-12; docs/BUILDS.md "Snares", "Vigils"; server/README.md "Snares", "Vigils"; Rl = the Ranger line R, D, BM; Tl = the Thief line T, N, S; all = every class) | | | | | | | |
 | 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 40 | 90 | 2s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
 | 100 | Seeker Mine | `kah snar ["element"]` | Rl, Tl | 60 | 110 | 2s | A mine thrown the same way, armed after 0.8 s, bursts for 1.15 x a trap at Detonate Mines or its 8 s fuse. 5 at once. |
@@ -759,22 +759,22 @@ size is not rounded, the multikill bonus linear between its steps (pulls vary; t
 class crossed a pack size). `--rounded` gives the first form. Before this pass the refined model gave 0.67-1.44 (the
 first model 0.78-1.59).
 
-**New spells.** First pass: the Thief line's area strikes (`chaos/_blades.lua`), Blade Flurry (192, all three, level 50,
-8 s, a weapon strike on every monster within 2 sqm of the caster since the second pass) and Iaido Sweep (193, Samurai,
+**New spells.** First pass: the Thief line's area strikes (`chaos/_blades.lua`), Blade Flurry (73, all three, level 50,
+8 s, a weapon strike on every monster within 2 sqm of the caster since the second pass) and Iaido Sweep (74, Samurai,
 level 200, 8 s, the target and the 3 x 2 tiles in front). Second pass (owner: the classes that needed a cleave of more
 than about 25% at level 1000 get pack tools of their lore and a cleave of at most about 20%), `chaos/_packtools.lua`:
 
 | Spell | Class | Level, cooldown | What the pack takes | On the target |
 |---|---|---|---|---|
 | Fan of Knives (136) | Thief | 80, 6 s | the nearest 5 monsters within 4 sqm of the Thief, 1x | a Shuriken Toss of the Thief |
-| Iaido Sweep (193, changed) | Samurai | 200, 8 s (was 12) | the 3 x 2 tiles in front, 1.5x | half an Iaijutsu |
-| Blade Flurry (192, changed) | Thief, Ninja, Samurai | 50, 8 s | every monster within 2 sqm (was 1), 1x | a Shuriken Toss of the class |
+| Iaido Sweep (74, changed) | Samurai | 200, 8 s (was 12) | the 3 x 2 tiles in front, 1.5x | half an Iaijutsu |
+| Blade Flurry (73, changed) | Thief, Ninja, Samurai | 50, 8 s | every monster within 2 sqm (was 1), 1x | a Shuriken Toss of the class |
 | Palm Shockwave (194) | Monk, Shadowfist, Iron Sage | 50, 4 s | every monster within 2 sqm of the target, 2x | an Ashen Fist, +2 chi |
 | Shadow Ricochet (195) | Shadowfist | 150, 8 s | 4 jumps, each within 3 sqm of the last, 2.5x | an Ashen Fist, +2 chi |
 | Iron Chain (196) | Iron Sage | 150, 8 s | 4 links, each within 2 sqm of the last, 2x | an Ashen Fist, +2 chi |
 | Bone Shrapnel (197) | Necromancer | 60, 4 s | every monster within 1 sqm of the target, 2.5x | a Bone Spear |
-| Sanctified Ground (108) | Templar | 60, 8 s | 3 pulses within 2 sqm of the cast tile, 2.5x | a third of a Radiant Smite a pulse |
-| Shield Wave (109) | Sentinel | 150, 8 s | the 3 x 3 tiles in front, 2x | a Radiant Smite of the Sentinel |
+| Sanctified Ground (137) | Templar | 60, 8 s | 3 pulses within 2 sqm of the cast tile, 2.5x | a third of a Radiant Smite a pulse |
+| Shield Wave (170) | Sentinel | 150, 8 s | the 3 x 3 tiles in front, 2x | a Radiant Smite of the Sentinel |
 
 One rule for all of them: the spell's target takes what the filler it replaces in the rotation deals, so a lone target
 (a boss) takes no more than before; the rest of the pack takes the multiple above. A player is hit only as the target or

@@ -1,0 +1,19 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,palm_quake,pack27_fx/palm_quake.png,3,3,14,70,1,1,Palm Shockwave: a ring of rubble and dust bursts from the struck target (from fx_dust_cloud/earth 0-13)
+effect,flurry_petals,pack27_fx/flurry_petals.png,3,3,16,70,1,1,"Blade Flurry: a sakura blade spiral round the caster, petals scatter (from fx_dance_spin/sakura 0-15)"
+effect,iaido_dash_n,pack27_fx/iaido_dash_n.png,2,3,11,70,0,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards n (from fx_charge_dash/steel 0-11)"
+effect,iaido_dash_ne,pack27_fx/iaido_dash_ne.png,2,3,11,70,0,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards ne (from fx_charge_dash/steel 0-11)"
+effect,iaido_dash_e,pack27_fx/iaido_dash_e.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards e (from fx_charge_dash/steel 0-11)"
+effect,iaido_dash_se,pack27_fx/iaido_dash_se.png,2,3,11,70,0,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards se (from fx_charge_dash/steel 0-11)"
+effect,iaido_dash_s,pack27_fx/iaido_dash_s.png,2,3,11,70,0,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards s (from fx_charge_dash/steel 0-11)"
+effect,iaido_dash_sw,pack27_fx/iaido_dash_sw.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards sw (from fx_charge_dash/steel 0-11)"
+effect,iaido_dash_w,pack27_fx/iaido_dash_w.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards w (from fx_charge_dash/steel 0-11)"
+effect,iaido_dash_nw,pack27_fx/iaido_dash_nw.png,3,3,11,70,1,1,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards nw (from fx_charge_dash/steel 0-11)"
+effect,ricochet_burst,pack27_fx/ricochet_burst.png,4,3,14,70,1,1,"Shadow Ricochet: violet shards burst on each struck target, a fading ring (from fx_shadow_step/void 0-15)"
+effect,chain_sparks,pack27_fx/chain_sparks.png,2,3,11,70,1,1,Iron Chain: a shower of steel sparks on each link (from fx_spark_shower/steel 0-11)
+effect,sanctified_seal,pack27_fx/sanctified_seal.png,4,4,13,110,1,1,"Sanctified Ground: a golden rune circle on the ground, a winged light rises (from fx_resurrection/holy 0-23 step 2)"
+effect,shieldwave_wall,pack27_fx/shieldwave_wall.png,2,2,17,90,0,0,Shield Wave: a pane of golden light rises in front and fades (from field_magic_wall/holy 0-31 step 2)
+missile,fan_knife,pack27_fx/fan_knife.png,3,3,8,83,1,1,Fan of Knives: a steel throwing knife (from proj_throwing_knife/steel 0-7)
+missile,ricochet_bolt,pack27_fx/ricochet_bolt.png,2,2,8,83,0,0,Shadow Ricochet: a violet shadow bolt (from proj_shadow_bolt/void 0-7)
+missile,chain_disc,pack27_fx/chain_disc.png,2,2,8,83,0,0,Iron Chain: a ring of golden chi (from proj_energy_disc/gold 0-7)
+missile,shrapnel_shards,pack27_fx/shrapnel_shards.png,2,2,8,83,0,0,Bone Shrapnel: three bone shards (from proj_bone_shards/bone 0-7)
