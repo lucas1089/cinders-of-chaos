@@ -1,0 +1,89 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "idle_hall",
+  "name": "The Idle Hall",
+  "biome": "hall",
+  "size": [
+    44,
+    28
+  ],
+  "floors": 1,
+  "level": [
+    1,
+    50
+  ],
+  "seed": 91307,
+  "origin": {
+    "x": 14600,
+    "y": 14760,
+    "z": 7
+  },
+  "decoration": "sparse",
+  "light": "bright",
+  "zones": [
+    {
+      "id": "hall",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        12,
+        13
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        17,
+        7
+      ]
+    },
+    {
+      "id": "training",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        9,
+        10
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        4,
+        9
+      ]
+    },
+    {
+      "id": "rest",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        9,
+        10
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        31,
+        9
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "hall",
+      "to": "training",
+      "width": 3
+    },
+    {
+      "from": "hall",
+      "to": "rest",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "hall"
+  },
+  "exit": {
+    "zone": "hall"
+  },
+  "notes": "The Idle Hall (server/README.md \"Idle Hall\"): a protected room where idlehall.lua moves characters that stood idle in a town for idleMinutes, so the temples stay clear. No monsters. idlehall.lua places at runtime the exercise dummies in the west training room, benches in the east rest room and the sign beside the arrival (idlehall_config.lua slots, offsets from this plan's ORIGIN). The exit portal leads to the character's town temple."
+}

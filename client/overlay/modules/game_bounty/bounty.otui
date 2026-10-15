@@ -76,6 +76,14 @@ BountyRow < ChaosPanelDark
     anchors.verticalCenter: parent.verticalCenter
     width: 86
 
+  ChaosButton
+    id: reroll
+    anchors.right: parent.right
+    anchors.top: action.bottom
+    margin-top: 2
+    width: 86
+    visible: false
+
 BountyTab < ChaosTabButton
   width: 118
   margin-right: 4

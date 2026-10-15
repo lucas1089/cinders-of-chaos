@@ -101,14 +101,15 @@ end
 
 -- ---------------------------------------------------------------- tabs
 local function fillWars(d)
-  local g = d.guild
+  local g = type(d.guild) == 'table' and d.guild or nil
+  local wars = type(d.wars) == 'table' and d.wars or {} -- a bad state never breaks the board
   if not g then
     text(tr('You are not in a guild. The War Board shows the wars of the server.'), '#8c8070')
     return
   end
   local canAnswer = g.canDeclare
-  local pending = list(d.wars and d.wars.pending)
-  local active = list(d.wars and d.wars.active)
+  local pending = list(wars.pending)
+  local active = list(wars.active)
   section(tr('Offers'))
   if #pending == 0 then text(tr('No open offers.'), '#8c8070') end
   for _, w in ipairs(pending) do
@@ -145,7 +146,7 @@ local function fillWars(d)
     for _, k in ipairs(lines) do text(V.killLine(k), k.counted and '#d6c9ae' or '#8c8070') end
   end
   section(tr('History'))
-  local hist = list(d.wars and d.wars.history)
+  local hist = list(wars.history)
   if #hist == 0 then text(tr('No wars yet.'), '#8c8070') end
   for _, w in ipairs(hist) do
     warRow(w, w.status == 'ended' and { text = tr('Kill log'), click = function() send('log', { id = w.id }) end } or nil)
@@ -156,8 +157,8 @@ local function fillWars(d)
 end
 
 local function fillDeclare(d)
-  local g = d.guild
-  local o = d.options or {}
+  local g = type(d.guild) == 'table' and d.guild or nil
+  local o = type(d.options) == 'table' and d.options or {}
   if not g then
     text(tr('You are not in a guild.'), '#8c8070')
     return

@@ -74,7 +74,7 @@ do
 	local shippedExcl = dofile("data/scripts/chaos/exclusives_config.lua")
 	local nLook = 0
 	for _, e in ipairs(shippedExcl.exclusives) do
-		if e.look and e.look >= 2185 then
+		if e.look and e.look >= 2185 and e.look < 2213 then -- pair 26's wings (2213 on) are chaos_owner_art.lua's
 			nLook = nLook + 1
 		end
 	end
@@ -100,7 +100,7 @@ eq(last[1] == M.items.first and last[2] == M.items.last, true, "the item ids are
 eq(ChaosTransmogCore.isExcluded(transmog, 36700), true, "an installed themed item unlocks nothing while off")
 local excl = dofile("data/scripts/chaos/exclusives_config.lua")
 for _, e in ipairs(excl.exclusives) do
-	eq(e.look == nil or e.look < 2185, true, "no exclusive names a pair 24 look while off")
+	eq(e.look == nil or e.look < 2185 or e.look >= 2213, true, "no exclusive names a pair 24 look while off")
 end
 eq(M.ground("lava", nil, 598), 598, "grounds fall back while off")
 eq(M.ground("water", "n", 4644), 4644, "border pieces fall back while off")
@@ -193,7 +193,7 @@ problems = ChaosExclusivesCore.validate(excl, opts)
 eq(#problems, 0, "exclusives with the auras and wings validate: " .. table.concat(problems, "; "))
 local found = 0
 for _, e in ipairs(excl.exclusives) do
-	if e.look and e.look >= 2185 then
+	if e.look and e.look >= 2185 and e.look < 2213 then -- pair 26's wings (2213 on) are chaos_owner_art.lua's
 		found = found + 1
 	end
 end

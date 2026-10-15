@@ -138,8 +138,13 @@ eq(cfg.aid.exit, 47951, "exit action id")
 local hunting = 0
 local boxes = {}
 for _, def in ipairs(cfg.areas) do
-	ok(def.origin.x >= 14336 and def.origin.y >= 14336 and def.origin.x + def.size[1] <= 15359
-		and def.origin.y + def.size[2] <= 15359, def.id .. ": inside the empty part of the map")
+	-- the empty parts of the map: 14336-15359 (hunting areas and the Vault), 24576-25599 (the dungeons 6-9; the full
+	-- map has no tile there, the rift slots use 20480-21503)
+	local function inBlock(lo, hi)
+		return def.origin.x >= lo and def.origin.y >= lo and def.origin.x + def.size[1] <= hi + 1
+			and def.origin.y + def.size[2] <= hi + 1
+	end
+	ok(inBlock(14336, 15359) or (def.dungeon and inBlock(24576, 25599)), def.id .. ": inside an empty part of the map")
 	for _, b in ipairs(boxes) do
 		local apart = def.origin.x > b.x2 or def.origin.x + def.size[1] - 1 < b.x1 or def.origin.y > b.y2
 			or def.origin.y + def.size[2] - 1 < b.y1 or def.origin.z > b.z2 or def.origin.z + (def.floors or 1) - 1 < b.z1
@@ -172,10 +177,77 @@ for _, def in ipairs(cfg.areas) do
 	end
 end
 eq(hunting, 3, "three hunting areas")
+-- the queue dungeons: the Vault (5) and the four deep dungeons (6-9, levels 1000 / 1300 / 1600 / 2000), each with its
+-- own boss file, the Vault's run and challenges, a boss chest and a level band at its entry level
+local dungeons, dIds = {}, {}
+for _, def in ipairs(cfg.areas) do
+	if def.dungeon then
+		local d = def.dungeon
+		dungeons[#dungeons + 1] = def
+		ok(not dIds[d.id] and d.id >= 5, def.id .. ": a dungeon id of its own after the four base ones")
+		dIds[d.id] = true
+		eq(d.time, 900, def.id .. ": a run of at most 15 minutes (owner, 2026-10-14)")
+		eq(d.party, 1, def.id .. ": solo like the Vault")
+		eq(#d.bossHealth, 6, def.id .. ": a boss curve for the six difficulties")
+		ok(def.spawns.level[1] == d.level and def.spawns.level[2] == d.level + 50, def.id .. ": monsters of its band")
+		ok(def.boss.level == d.level + 100, def.id .. ": the boss 100 levels above the entry")
+		local speed = d.challenges[1]
+		ok(speed.key == "speed" and speed.maxMs == math.floor(d.time * 0.4 / 60 + 0.5) * 60 * 1000
+			and d.challenges[2].key == "flawless", def.id .. ": speed (40% of the run) and flawless")
+		if d.id > 5 then
+			ok(d.chest and d.chest.gold > 0, def.id .. ": a boss chest")
+		end
+	end
+end
+eq(#dungeons, 5, "five generated dungeons")
+-- the run model (dungeons_difficulty.lua D.runSeconds, server/README.md "Solo kill times"): from the monster files and
+-- the generated spawns, a capable player at the dungeon's level needs about 10 minutes at difficulty 1 and stays well
+-- inside the 15 minute limit at 6; the boss alone 2-3 minutes at 1 and 5-6 at 6
+do
+	local DD = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+	-- pack combat (pace.lua): the trash at the pace curve's health, the walk per pack
+	dofile("data/scripts/chaos/pace_core.lua")
+	local pc = dofile("data/scripts/chaos/pace_config.lua")
+	local function fileHp(name)
+		local f = io.open("data/monster/monsters/chaos/" .. name:lower():gsub(" ", "_") .. ".xml", "r")
+		local text = f and f:read("*a") or ""
+		if f then
+			f:close()
+		end
+		return tonumber(text:match('<health now="(%d+)"')) or 0
+	end
+	for _, def in ipairs(dungeons) do
+		local m = A.generate(cfg, def, {})
+		local mons = {}
+		for _, s in ipairs(m.spawns) do
+			mons[#mons + 1] = {hp = fileHp(s.monster), level = s.level, count = s.count,
+				pace = ChaosPaceCore.factors(pc, s.level, true).health}
+		end
+		local b = def.boss
+		local spec = {level = def.dungeon.level + 25, monsters = mons, need = 0.85, packs = #m.spawns,
+			boss = DD.levelHealth(fileHp(b.monster), b.level) * b.healthMult, bossCurve = def.dungeon.bossHealth,
+			trashCurve = def.dungeon.trashHealth}
+		local r1, r6 = DD.runSeconds(spec, 1), DD.runSeconds(spec, 6)
+		-- the owner's rule (2026-10-14): at least 100 monsters in every queue dungeon, in packs (pace)
+		ok(r1.monsters >= 100, def.id .. string.format(": at least 100 monsters (%d)", r1.monsters))
+		ok(r1.monsters / #m.spawns >= 4, def.id .. string.format(": in packs (%.1f a pack)", r1.monsters / #m.spawns))
+		ok(r1.total >= 480 and r1.total <= 660, def.id .. string.format(": about 10 minutes at difficulty 1 (%d s)", math.floor(r1.total)))
+		ok(r6.total <= 0.92 * def.dungeon.time, def.id .. string.format(": difficulty 6 inside the limit (%d s)", math.floor(r6.total)))
+		ok(r1.boss >= 120 and r1.boss <= 180, def.id .. string.format(": the boss 2-3 minutes at 1 (%d s)", math.floor(r1.boss)))
+		ok(r6.boss >= 270 and r6.boss <= 390, def.id .. string.format(": the boss 4.5-6.5 minutes at 6 (%d s)", math.floor(r6.boss)))
+		ok(#def.dungeon.trashHealth == 6, def.id .. ": its own trash curve")
+	end
+end
+local levels = {}
+for _, def in ipairs(dungeons) do
+	levels[#levels + 1] = def.dungeon.level
+end
+eq(table.concat(levels, ","), "800,1000,1300,1600,2000", "the dungeons follow the levels")
 
 -- ====================================================================== the configured areas
 -- Fixed checksums: change them together with the config (python3 -I server/tools/areagen_export.py summary prints them).
-local SUMS = {emberdeep = 877547416, ossuary = 1345173580, cinderfall = 283090213, vault = 1403621262}
+local SUMS = {emberdeep = 283372836, ossuary = 1221939955, cinderfall = 766991134, vault = 2125522065,
+	marrow = 1923860382, crucible = 26295666, sanctum = 1321453866, throne = 1082124787}
 
 -- ground id -> family (stock and dark)
 local famOf = {}
@@ -307,16 +379,25 @@ for _, def in ipairs(cfg.areas) do
 	end
 end
 
--- density of the three hunting areas against item 89 (normal hunts 2.7-4.4 per 100 tiles; 1000+ band 2.7)
+-- density of the three hunting areas: "big and full" (2026-10-14), since pack combat (pace) 4.5 per 100 tiles like the
+-- filled base hunts, most points packs of 2-4
 local total = 0
 for _, def in ipairs(cfg.areas) do
 	if not def.dungeon then
 		local m = A.generate(cfg, def, {})
 		total = total + m.stats.monsters
-		ok(m.stats.density >= 1.3 and m.stats.density <= 3.5, def.id .. ": density in the item 89 range")
+		ok(m.stats.density >= 4.0 and m.stats.density <= 5.0, def.id .. ": density 4.0-5.0 per 100 tiles")
+		local packs, points = 0, 0
+		for _, sp in ipairs(m.spawns) do
+			points = points + 1
+			if (sp.count or 1) >= 2 then
+				packs = packs + 1
+			end
+		end
+		ok(packs >= points * 0.5, def.id .. ": at least half the points are packs (" .. packs .. "/" .. points .. ")")
 	end
 end
-ok(total >= 150 and total <= 240, "the three areas hold about 150-200 monsters (" .. total .. ")")
+ok(total >= 920 and total <= 1120, "the three areas hold about 1,020 monsters (" .. total .. ")")
 
 -- ====================================================================== many seeds, small areas
 local base = {}
@@ -400,6 +481,14 @@ do
 	function Game.createItem(id, count, p)
 		local t = tiles[key(p)]
 		local it = {id = id}
+		function it:remove()
+			for k, x in ipairs(t.items) do
+				if x == self then
+					table.remove(t.items, k)
+					return true
+				end
+			end
+		end
 		function it:setActionId(a) self.aid = a end
 		function it:getActionId() return self.aid or 0 end
 		if not t.ground then
@@ -559,13 +648,41 @@ do
 	end
 	local extra = Chaos.dungeons.extra[d.id]
 	ok(extra and extra.populate and extra.bossType == vault.def.boss.monster, "the dungeon hook and the boss look")
+	-- the boss room gate: closed at registration and at every run start, the boss waits for the unlock
+	local gate = vault.gate
+	ok(gate and #gate > 0, "the vault: a gate on its boss room doorways")
+	local function gateClosed()
+		local n = 0
+		for _, g in ipairs(gate) do
+			local tl = Tile(Position(g.x, g.y, g.z))
+			n = n + ((tl and tl:getItemById(g.id)) and 1 or 0)
+		end
+		return n
+	end
+	eq(gateClosed(), #gate, "the gate is closed after the build")
 	extra.populate()
 	local n = 0
+	local bossPoint
 	for _, p in ipairs(vault.points) do
 		n = n + #p.alive
+		if p.boss then
+			bossPoint = p
+		end
 	end
-	eq(n, vault.model.stats.monsters + 1, "a run fills every point and the boss")
+	eq(n, vault.model.stats.monsters, "a run fills every point, not the boss")
+	eq(#bossPoint.alive, 0, "the boss waits for the unlock")
+	eq(gateClosed(), #gate, "the gate is closed at the run start")
+	ok(extra.unlock ~= nil, "the unlock hook")
+	extra.unlock()
+	eq(#bossPoint.alive, 1, "unlocked: the boss appears")
+	eq(gateClosed(), 0, "unlocked: the gate opens")
+	extra.unlock()
+	eq(#bossPoint.alive, 1, "a second unlock never doubles the boss")
+	n = n + 1
 	extra.populate()
+	eq(gateClosed(), #gate, "the next run closes the gate again")
+	eq(#bossPoint.alive, 0, "the next run removes the boss")
+	extra.unlock()
 	local n2 = 0
 	for _, m in pairs(monsters) do
 		local o = vault.model.origin
@@ -575,6 +692,102 @@ do
 		end
 	end
 	eq(n2, n, "a second run replaces the monsters, never doubles them")
+	-- every generated dungeon: the gate seals its boss room (a walk from the boss over the walkable tiles of its floor,
+	-- the gate tiles blocked, never leaves the room)
+	for _, id in ipairs({"vault", "marrow", "crucible", "sanctum", "throne"}) do
+		local a = AG.areas[id]
+		local q, walk = a.model.bossRoom, a.model.walk[a.model.bossRoom.z]
+		local blocked = {}
+		for _, g in ipairs(a.gate) do
+			blocked[g.y * 65536 + g.x] = true
+			ok(g.z == q.z, id .. ": gate on the boss floor")
+		end
+		local seen, stack, outside = {}, {{a.model.boss.x, a.model.boss.y}}, 0
+		seen[a.model.boss.y * 65536 + a.model.boss.x] = true
+		while #stack > 0 do
+			local c = table.remove(stack)
+			if c[1] < q.x1 or c[1] > q.x2 or c[2] < q.y1 or c[2] > q.y2 then
+				outside = outside + 1
+			end
+			for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}}) do
+				local k = (c[2] + d[2]) * 65536 + c[1] + d[1]
+				if walk[k] and not blocked[k] and not seen[k] then
+					seen[k] = true
+					stack[#stack + 1] = {c[1] + d[1], c[2] + d[2]}
+				end
+			end
+		end
+		ok(#a.gate >= 3 and outside == 0, id .. ": the gate (" .. #a.gate .. " tiles) seals the boss room")
+	end
+	-- the deep dungeons 6-9: registered with their box, boss and the clear hook
+	for _, id in ipairs({"marrow", "crucible", "sanctum", "throne"}) do
+		local a = AG.areas[id]
+		local dd = a.def.dungeon
+		local dg = DUNGEON_SYSTEM.Dungeons[dd.id]
+		ok(dg and dg.Level == dd.level and dg.DungeonTime == dd.time and dg.AmountParty == 1, id .. ": a base dungeon")
+		eq(dg.ToPos.z, a.def.origin.z + a.def.floors - 1, id .. ": its box holds every floor")
+		local f, t2 = dg.FromPos, dg.ToPos
+		local function inside(q)
+			return q.x >= f.x and q.x <= t2.x and q.y >= f.y and q.y <= t2.y and q.z >= f.z and q.z <= t2.z
+		end
+		local out = 0
+		for _, s in ipairs(a.model.spawns) do
+			out = out + (inside(s) and 0 or 1)
+		end
+		ok(out == 0 and inside(dg.DungeonPos) and inside(a.model.boss), id .. ": entry, boss and spawns in its box")
+		local x = Chaos.dungeons.extra[dd.id]
+		ok(x and x.populate and x.onClear and x.bossName == a.def.boss.name:lower() and x.title == dd.title,
+			id .. ": the dungeon hook, the boss by its name and the clear hook")
+	end
+	-- the boss chest: gold to the bank by the difficulty's gold bonus, gear from the boss's loot table at the boss
+	-- level's item level + the difficulty's, the rarity floor of the difficulty; the achievement counters
+	do
+		local DD = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+	-- pack combat (pace.lua): the trash at the pace curve's health, the walk per pack
+	dofile("data/scripts/chaos/pace_core.lua")
+	local pc = dofile("data/scripts/chaos/pace_config.lua")
+		local gear = {[3983] = true, [2495] = true}
+		ChaosLoot = {isGearId = function(id) return gear[id] == true end, itemFindMult = function() return 1 end,
+			upgradeRarity = function(tier, current) return current end,
+			rollCurrency = function(tier) return {{id = 29856, count = 1}} end}
+		ChaosItemMods = {config = {itemLevel = {max = 150}}, sourceLevel = function(src) return 128 + (src.tier == "boss" and 10 or 0) end}
+		local made = {}
+		ChaosCrafting = {createItem = function(id, rarity, level)
+			made[#made + 1] = {id = id, rarity = rarity, level = level}
+			return {id = id}
+		end}
+		ChaosLootConfig = {gear = {names = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Exotic", "Mythic", "Chaos"}}}
+		function MonsterType(name)
+			return {getLoot = function()
+				return {{itemId = 2160, chance = 100000}, {itemId = 3983, chance = 4440}, {itemId = 2495, chance = 4440}}
+			end}
+		end
+		Chaos.giveItem = function(_, _, count) return count end
+		local stats = {}
+		ChaosAchievements = {progress = function(_, k, n) stats[k] = (stats[k] or 0) + n end,
+			set = function(_, k, v) stats[k] = math.max(stats[k] or 0, v) end}
+		RETURNVALUE_NOERROR = 0
+		local bank, msgs = 0, {}
+		local player = {getBankBalance = function() return bank end, setBankBalance = function(_, v) bank = v end,
+			addItemEx = function() return 0 end, getInbox = function() return nil end,
+			sendTextMessage = function(_, _, text) msgs[#msgs + 1] = text end}
+		local th = AG.areas.throne
+		local x = Chaos.dungeons.extra[th.def.dungeon.id]
+		x.onClear(player, {difficulty = 1})
+		eq(bank, th.def.dungeon.chest.gold, "difficulty 1: the chest's gold")
+		eq(#made, 1, "difficulty 1: one piece")
+		ok(gear[made[1].id] and made[1].rarity == 3 and made[1].level == 138, "a Rare piece of the boss's gear at its item level")
+		ok(msgs[1] and msgs[1]:find("Boss chest of The Pyre Throne", 1, true) ~= nil, "the chest message")
+		made = {}
+		x.onClear(player, {difficulty = 6})
+		eq(bank, th.def.dungeon.chest.gold + DD.chest(th.def.dungeon.chest, 6).gold, "difficulty 6: x5 gold")
+		eq(#made, 3, "difficulty 6: three pieces")
+		ok(made[1].rarity == 8 and made[1].level == 143, "difficulty 6: Chaos rarity, item level + 5")
+		eq(stats.dungeon_throne, 2, "two clears counted")
+		eq(stats.dungeon_throne_top, 6, "the best difficulty")
+		eq(stats.dungeon_throne_d6, 1, "won on difficulty 6")
+		eq(Chaos.dungeons.extra[AG.areas.vault.def.dungeon.id].onClear, nil, "the Vault has no chest (unchanged)")
+	end
 end
 
 print(string.format("areagen: %d checks, %d failed", checks, fails))

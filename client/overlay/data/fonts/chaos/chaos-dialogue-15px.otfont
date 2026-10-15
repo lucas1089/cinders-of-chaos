@@ -2,7 +2,7 @@ Font
   name: chaos-dialogue-15px
   texture: chaos-dialogue-15px
   height: 21
-  glyph-size: 23 21
+  glyph-size: 19 21
   first-glyph: 32
   y-offset: 0
   spacing: 0 0

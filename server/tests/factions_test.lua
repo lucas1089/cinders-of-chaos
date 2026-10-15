@@ -162,6 +162,35 @@ eq(res.gained, 0, "nothing past the cap")
 check(res.capped, "capped flag")
 res = K.gain(cfg, idx, st2, "compact", 300, {day = D + 7, week = W + 7, contract = true})
 eq(res.gained, 300, "new week, cap reset")
+eq(st2.compact.bank, 0, "a capped week leaves nothing to carry")
+-- the weekly cap rolls over (rolloverWeeks): unused cap and skipped weeks, at most rolloverWeeks weeks' worth
+eq(cfg.rolloverWeeks, 3, "three weeks of cap at most")
+eq(K.weeksBetween(20261005, 20261019), 2, "two weeks between Mondays")
+eq(K.weeksBetween(202641, 20261019), nil, "an old YYYYWW key is not a date")
+local stR = {}
+K.gain(cfg, idx, stR, "choir", 2500, {day = D, week = W, contract = true})
+K.roll(stR.choir, D + 7, 20261012, cfg)
+eq(stR.choir.bank, cfg.weeklyCap - 2500, "the unused 5000 carry over")
+eq(K.weekCap(cfg, stR.choir), 2 * cfg.weeklyCap - 2500, "this week's cap")
+res = K.gain(cfg, idx, stR, "choir", 20000, {day = D + 7, week = 20261012, contract = true})
+eq(res.gained, 2 * cfg.weeklyCap - 2500, "the banked cap is usable")
+local stS = {}
+K.gain(cfg, idx, stS, "circle", 100, {day = D, week = W, contract = true})
+K.roll(stS.circle, D + 35, 20261109, cfg)
+eq(stS.circle.bank, 2 * cfg.weeklyCap, "five weeks away: capped at two extra weeks")
+local stN = {circle = K.newEntry(cfg)}
+K.roll(stN.circle, D, W, cfg)
+eq(stN.circle.bank, 0, "a fresh entry has no bank")
+local stO = {}
+K.gain(cfg, idx, stO, "circle", 100, {day = D, week = W, contract = true})
+K.roll(stO.circle, D + 7, 20261012)
+eq(stO.circle.bank, 0, "without cfg nothing rolls over")
+check(K.payload(cfg, idx, stR, {now = os.time(), day = D + 7, week = 20261012}).factions ~= nil, "payload with a bank")
+for _, f in ipairs(K.payload(cfg, idx, stR, {now = os.time(), day = D + 7, week = 20261012}).factions) do
+	if f.k == "choir" then
+		eq(f.wc, 2 * cfg.weeklyCap - 2500, "the window gets the faction's own cap")
+	end
+end
 -- rivalry floor: the rival never drops below the floor through rivalry
 eq(st2.circle.rep, -1950, "rival lost a quarter of 7800")
 K.gain(cfg, idx, st2, "compact", 1000, {day = D + 7, week = W + 7, contract = true})

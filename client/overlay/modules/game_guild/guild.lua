@@ -116,7 +116,7 @@ local function fillMembers(d)
   for _, m in ipairs(members) do
     buttonRow(GuildMath.memberText(m), nil, false, nil, GuildMath.memberPoints(m), nil, m.online and '#9fd68a' or nil)
   end
-  text('Guild XP comes from experience (a 1 percent share, capped per day), bounties, rifts, world bosses, invasions and the guild siege.', '#8c8070')
+  text(tr('Guild XP comes from experience (a 1 percent share, capped per day), bounties, rifts, world bosses, invasions and the guild siege.'), '#8c8070')
 end
 
 local function fillHall(d)

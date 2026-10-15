@@ -463,6 +463,37 @@ function K.lookup(idx, id, cid)
 	return {id = r.id, cid = r.cid, name = r.name, total = r.n, secs = secs}
 end
 
+-- the short "where from" of an item tooltip (item_tooltip.lua): the first two sources and, when the item comes only by
+-- luck, the best chance per kill. nil for an item without rows.
+--   {s = {{k = kind, n = name, v = value text}}, e = {p = chance 0..1, w = "kill" | "legendary" | "boss", m = monster}}
+K.BRIEF = {"monster", "drop", "reward", "craft", "shop", "store", "gamble", "gather"}
+K.SURE = {craft = true, shop = true, gamble = true, gather = true} -- a sure way: no effort line (the store and the
+-- Conquest vendor still show it: "~1 in 400 legendary kills, or 690 tokens")
+K.EFFORT_BELOW = 0.2 -- the effort line shows below this chance per kill (1 in 5)
+function K.brief(idx, id, cid)
+	local r = idx and idx.ready and K.find(idx, id, cid)
+	if not r then
+		return nil
+	end
+	local src, best, sure = {}, nil, false
+	for _, kind in ipairs(K.BRIEF) do
+		for _, row in ipairs(r.rows[kind] or {}) do
+			if #src < 2 then
+				src[#src + 1] = {k = kind, n = tostring(row.n):sub(1, 32), v = row.v}
+			end
+			sure = sure or K.SURE[kind] == true
+			local p = tonumber(row.p)
+			if p and p > 0 and (not best or p > best.p) then
+				best = {p = p, w = row.pk or "kill", m = kind == "monster" and row.n or nil}
+			end
+		end
+	end
+	if #src == 0 then
+		return nil
+	end
+	return {s = src, e = (not sure and best and best.p < K.EFFORT_BELOW) and best or nil}
+end
+
 -- the opcode's dispatch: action, data -> answer action, answer data (nil: nothing to answer)
 --   search {q, p}       -> results {q, p, pages, total, rows}
 --   item {id} | {cid}   -> item {id, cid, name, total, secs} | {.., none = true}

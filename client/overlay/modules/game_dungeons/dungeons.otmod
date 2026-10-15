@@ -5,6 +5,6 @@ Module
   website: None
   sandboxed: true
   autoload: true
-  scripts: [ dungeons ]
+  scripts: [ dungeonsview, dungeons ]
   @onLoad: init()
   @onUnload: terminate()

@@ -1,5 +1,6 @@
 -- Pure helpers of the Records view of the Leaderboards window (no client API), tested by recordsview_test.lua.
 -- Server: server/data/scripts/chaos/records.lua (actions rmeta / rcat / rboard / rfirsts on opcode 229).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 RecordsView = {}
 
 -- the meta comes in parts: rcat {cat, boards} (each at most 6 boards), then rmeta {categories, parts, ...}.
@@ -98,15 +99,15 @@ end
 -- the "your rank" line
 function RecordsView.ownText(board, data)
   local own = type(data) == 'table' and type(data.own) == 'table' and data.own or nil
-  if not own then return 'You have no result on this board in this view yet.' end
-  return string.format('Your rank: #%d of %d   -   %s: %s', tonumber(own.rank) or 0, tonumber(data.total) or 0,
+  if not own then return tr('You have no result on this board in this view yet.') end
+  return tr('Your rank: #%d of %d   -   %s: %s', tonumber(own.rank) or 0, tonumber(data.total) or 0,
     board and board.value or 'Best', RecordsView.valueText(own.value, board and board.format))
 end
 
 -- "the all-time record" line under the tabs
 function RecordsView.recordText(board, data)
-  if type(data) ~= 'table' or not tonumber(data.record) then return 'No all-time record yet: be the first.' end
-  return string.format('All-time record: %s', RecordsView.valueText(data.record, board and board.format))
+  if type(data) ~= 'table' or not tonumber(data.record) then return tr('No all-time record yet: be the first.') end
+  return tr('All-time record: %s', RecordsView.valueText(data.record, board and board.format))
 end
 
 function RecordsView.dateText(at)

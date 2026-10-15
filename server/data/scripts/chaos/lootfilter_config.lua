@@ -15,7 +15,7 @@ ChaosLootFilterConfig = {
 	historySize = 50,         -- kills remembered per character (older ones are dropped and greyed on the client)
 	reach = {x = 7, y = 5},    -- click-to-loot: same floor and within this many squares of the corpse (the visible screen)
 	sweepMs = 1000,            -- one timer for rays and decay checks while anything is tracked
-	decayCheckEvery = 5,       -- check tracked corpses for decay every N sweeps
+	decayCheckEvery = 5,       -- check each tracked corpse for decay every N sweeps (a 1/N share of them per sweep)
 	corpseAttribute = "lf_kill", -- custom attribute set on the corpse (kill id), so the corpse can be found again
 
 	-- loot rays: a light beam over the corpse while a qualifying item is still in it

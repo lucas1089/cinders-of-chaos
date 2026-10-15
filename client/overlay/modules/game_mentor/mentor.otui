@@ -273,7 +273,7 @@ MentorWindow < ChaosMainWindow
       margin-left: 6
       size: 140 22
       max-length: 24
-      placeholder: Language / region
+      !placeholder: tr('Language / region')
 
     ChaosComboBox
       id: onlineCombo
@@ -443,7 +443,7 @@ MentorWindow < ChaosMainWindow
         anchors.left: lLang.right
         size: 170 22
         max-length: 24
-        placeholder: English, EU
+        !placeholder: tr('English, EU')
 
       ChaosLabelDim
         id: lHours
@@ -460,7 +460,7 @@ MentorWindow < ChaosMainWindow
         anchors.left: lHours.right
         size: 150 22
         max-length: 24
-        placeholder: 18-23 UTC
+        !placeholder: tr('18-23 UTC')
 
       ChaosLabelDim
         id: lNote
@@ -478,7 +478,7 @@ MentorWindow < ChaosMainWindow
         anchors.right: parent.right
         height: 22
         max-length: 80
-        placeholder: What you like to teach
+        !placeholder: tr('What you like to teach')
 
       ChaosCheckBox
         id: accepting
@@ -528,7 +528,7 @@ MentorWindow < ChaosMainWindow
       margin-top: 4
       size: 200 22
       max-length: 29
-      placeholder: Character name
+      !placeholder: tr('Character name')
 
     ChaosButton
       id: inviteButton

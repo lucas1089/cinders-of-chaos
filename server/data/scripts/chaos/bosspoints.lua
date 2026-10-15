@@ -23,6 +23,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/bosspoints_core.lua")
 
 Chaos.bossPoints = dofile("data/scripts/chaos/bosspoints_config.lua")
@@ -89,7 +92,7 @@ function B.grant(player, boss, quiet)
 	player:setStorageValue(BASE + boss.id, 1)
 	if not quiet then
 		local got = B.count(player)
-		local text = string.format("First kill of %s: +1 passive point! %s.", boss.name, K.label(got, B.index.total))
+		local text = Chaos.t(player, "First kill of %s: +1 passive point! %s.", boss.name, K.label(got, B.index.total))
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 		toast(player, text)
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
@@ -232,7 +235,7 @@ function B.retro(player)
 	end
 	player:setStorageValue(BASE, version)
 	if given > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Boss passive points: +%d for bosses you had already slain (%s). %s.", given, table.concat(names, ", "),
 			K.label(B.count(player), B.index.total)))
 	end

@@ -337,13 +337,26 @@ end
 event:register()
 
 -- register on whatever a player attacks; a stunned monster cannot attack
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if not creature or not target then
 		return RETURNVALUE_NOERROR
 	end
 	if creature:isPlayer() then
-		target:registerEvent("ChaosMonkCombat")
+		registerOnce(target, "ChaosMonkCombat")
 	elseif creature:isMonster() and hasCond(creature, CONDITION_PARALYZE, ID.subId.stun) then
 		return RETURNVALUE_NOTPOSSIBLE
 	end

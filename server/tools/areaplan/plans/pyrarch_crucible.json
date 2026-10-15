@@ -1,0 +1,338 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "pyrarch_crucible",
+  "name": "Pyrarch Crucible",
+  "biome": "lava",
+  "size": [
+    172,
+    140
+  ],
+  "floors": 1,
+  "level": [
+    520,
+    690
+  ],
+  "seed": 25202,
+  "origin": {
+    "x": 14700,
+    "y": 14540,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "quench_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "southwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "bellows",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "crucible",
+      "floor": 1,
+      "shape": "arena",
+      "size": [
+        29,
+        29
+      ],
+      "place": "center"
+    },
+    {
+      "id": "mould_hall",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "ember_forge",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "slag_vent",
+      "floor": 1,
+      "size": "large",
+      "place": "south"
+    },
+    {
+      "id": "anvil_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "cinder_chapel",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "pour_channels",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "furnace_maw",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "ingot_vault",
+      "floor": 1,
+      "size": [
+        22,
+        18
+      ]
+    },
+    {
+      "id": "flux_pits",
+      "floor": 1,
+      "size": "large",
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "quench_camp",
+      "to": "bellows",
+      "width": 3
+    },
+    {
+      "from": "bellows",
+      "to": "crucible",
+      "width": 4
+    },
+    {
+      "from": "crucible",
+      "to": "mould_hall",
+      "width": 3
+    },
+    {
+      "from": "crucible",
+      "to": "ember_forge",
+      "width": 3
+    },
+    {
+      "from": "ember_forge",
+      "to": "slag_vent",
+      "width": 3
+    },
+    {
+      "from": "slag_vent",
+      "to": "quench_camp",
+      "width": 3
+    },
+    {
+      "from": "bellows",
+      "to": "anvil_gallery",
+      "width": 3
+    },
+    {
+      "from": "anvil_gallery",
+      "to": "mould_hall",
+      "width": 3
+    },
+    {
+      "from": "mould_hall",
+      "to": "cinder_chapel",
+      "width": 3
+    },
+    {
+      "from": "cinder_chapel",
+      "to": "ember_forge",
+      "width": 3
+    },
+    {
+      "from": "ember_forge",
+      "to": "pour_channels",
+      "width": 3
+    },
+    {
+      "from": "pour_channels",
+      "to": "slag_vent",
+      "width": 3
+    },
+    {
+      "from": "crucible",
+      "to": "furnace_maw",
+      "width": 3
+    },
+    {
+      "from": "furnace_maw",
+      "to": "ingot_vault",
+      "width": 3
+    },
+    {
+      "from": "slag_vent",
+      "to": "flux_pits",
+      "width": 3
+    },
+    {
+      "from": "quench_camp",
+      "to": "flux_pits",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "quench_camp"
+  },
+  "exit": {
+    "zone": "quench_camp"
+  },
+  "spawns": [
+    {
+      "zone": "bellows",
+      "monster": "Hellhunter Pyrarch",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bellows",
+      "monster": "Spellreaper Pyrarch",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crucible",
+      "monster": "Embermaw Archon",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crucible",
+      "monster": "Pitlord Incarnate",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mould_hall",
+      "monster": "Hellmaw Brute",
+      "count": 15,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "ember_forge",
+      "monster": "Inferno Juggernaut",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_forge",
+      "monster": "Nightflare Dreadknight",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_vent",
+      "monster": "Sineater Pyrarch",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "anvil_gallery",
+      "monster": "Hellhunter Pyrarch",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "anvil_gallery",
+      "monster": "Spellreaper Pyrarch",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_chapel",
+      "monster": "Sineater Pyrarch",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_chapel",
+      "monster": "Nightflare Dreadknight",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pour_channels",
+      "monster": "Inferno Juggernaut",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pour_channels",
+      "monster": "Hellmaw Brute",
+      "count": 11,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "furnace_maw",
+      "monster": "Embermaw Archon",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "furnace_maw",
+      "monster": "Pitlord Incarnate",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ingot_vault",
+      "monster": "Hellmaw Brute",
+      "count": 12,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "ingot_vault",
+      "monster": "Spellreaper Pyrarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "flux_pits",
+      "monster": "Sineater Pyrarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "flux_pits",
+      "monster": "Hellhunter Pyrarch",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): the pyrarchs' forge for levels 520-690, a round crucible with a loop of forges. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for twelve parties."
+}

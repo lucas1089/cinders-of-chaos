@@ -1,4 +1,5 @@
 -- Transmog window: logic without client API (game_transmog/transmog.lua uses it; transmogview_test.lua tests it).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TransmogView = {}
 local V = TransmogView
 
@@ -30,9 +31,9 @@ end
 function V.slotSub(row)
   local item = row and row.item
   if not item then return 'Empty' end
-  if not item.kind then return 'Cannot change its look' end
+  if not item.kind then return tr('Cannot change its look') end
   if item.look then return 'Look: ' .. tostring(item.look.name) end
-  return (item.kindName or item.kind) .. ', own look'
+  return tr('%s, own look', (item.kindName or item.kind))
 end
 
 -- the slot to select: the wanted one if it has an item, else the first slot whose item can change its look
@@ -82,7 +83,7 @@ function V.detail(row, look, money)
   if item.look then
     d.remove = true
     local removeFee = tonumber(item.removeFee) or 0
-    d.fee = d.fee .. (removeFee > 0 and ('  -  remove: ' .. V.gold(removeFee) .. ' gold') or '  -  remove: free')
+    d.fee = d.fee .. (removeFee > 0 and ('  -  remove: ' .. V.gold(removeFee) .. ' gold') or tr('  -  remove: free'))
   end
   if not look then
     d.hint = 'Pick an appearance on the right to preview it.'

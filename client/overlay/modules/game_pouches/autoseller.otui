@@ -2,12 +2,13 @@
 // The rarity checkboxes are created by autoseller.lua (one per rarity, in its colour) inside rarityRow.
 
 AutoSellerRarityCheck < ChaosCheckBox
+  // the width is set from the text by pouches.lua (AutoSellerView.checkWidth)
   width: 72
   height: 20
 
 AutoSellerWindow < ChaosMainWindow
   id: autoSellerWindow
-  size: 440 392
+  size: 460 392
   !text: tr('Auto Seller')
   @onEscape: modules.game_pouches.hideAutoSeller()
 
@@ -65,7 +66,7 @@ AutoSellerWindow < ChaosMainWindow
     height: 22
     layout:
       type: horizontalBox
-      spacing: 10
+      spacing: 6
 
   ChaosSeparator
     id: sep
@@ -91,12 +92,13 @@ AutoSellerWindow < ChaosMainWindow
     margin-right: 6
     height: 22
     max-length: 80
-    placeholder: Item name
+    !placeholder: tr('Item name')
 
   ChaosButton
     id: addButton
-    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.top: corpseCheck.bottom
     anchors.right: removeButton.left
+    margin-top: 8
     margin-right: 4
     size: 60 22
     !text: tr('Add')
@@ -104,8 +106,9 @@ AutoSellerWindow < ChaosMainWindow
 
   ChaosButton
     id: removeButton
-    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.top: corpseCheck.bottom
     anchors.right: clearButton.left
+    margin-top: 8
     margin-right: 4
     size: 64 22
     !text: tr('Remove')
@@ -113,8 +116,9 @@ AutoSellerWindow < ChaosMainWindow
 
   ChaosButton
     id: clearButton
-    anchors.verticalCenter: itemEdit.verticalCenter
+    anchors.top: corpseCheck.bottom
     anchors.right: parent.right
+    margin-top: 8
     size: 52 22
     !text: tr('Clear')
     @onClick: modules.game_pouches.autoSellerList('clear')

@@ -15,6 +15,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosTrialsCore then
 	dofile("data/scripts/chaos/trials_core.lua")
 end
@@ -205,7 +208,7 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 			pd, sd = M.scaleDamage(pd, keep), M.scaleDamage(sd, keep)
 			player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
 			player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR,
-				"Your last stand holds: the lethal blow leaves you standing.")
+				Chaos.t(player, "Your last stand holds: the lethal blow leaves you standing."))
 		end
 	end
 	return pd, sd
@@ -301,17 +304,30 @@ end
 event:register()
 
 -- the event sits on whatever a player or a player's summon attacks, and on every player (hits taken, heals received)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if creature and target then
 		if creature:isPlayer() then
 			if bonusesOf(creature) then
-				target:registerEvent("ChaosTrialNodes")
+				registerOnce(target, "ChaosTrialNodes")
 			end
 		else
 			local master = creature:getMaster()
 			if master and master:isPlayer() and bonusesOf(master) then
-				target:registerEvent("ChaosTrialNodes")
+				registerOnce(target, "ChaosTrialNodes")
 			end
 		end
 	end

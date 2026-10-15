@@ -4,8 +4,18 @@
   "huntLevelFactor": 2.0,
   "glitchSpawntime": {"min": 30000, "minOthers": 10},
   "bandRespawn": [
-    {"from": 300, "to": 600, "spawntime": 90, "onlyUpTo": 300}
+    {"from": 300, "to": 600, "spawntime": 45, "onlyUpTo": 300},
+    {"from": 600, "to": 100000, "spawntime": 75, "onlyUpTo": 300}
   ],
+  "_dungeons": "pack combat (README 'Pack combat (pace)', base dungeons): each base dungeon keeps at most `keep` of its hunting monsters inside its boxes (the base FromPos/ToPos box widened to DungeonPos and the extra boxes of chaos_constants.lua Chaos.dungeons.extra), so a run at difficulty 1 takes about 10 minutes and fits the 15-minute limit; no fill spawn inside",
+  "dungeons": [
+    {"id": 1, "boxes": [[31630, 32134, 8, 31851, 32300, 8], [31856, 32197, 8, 31908, 32236, 8]], "keep": 119},
+    {"id": 2, "boxes": [[31633, 32322, 8, 31855, 32596, 8]], "keep": 110},
+    {"id": 3, "boxes": [[31963, 33109, 0, 32069, 33215, 7], [31950, 33098, 0, 32078, 33245, 10]], "keep": 100},
+    {"id": 4, "boxes": [[31564, 31614, 8, 31586, 31623, 8], [31452, 31495, 8, 31736, 31644, 12]], "keep": 100}
+  ],
+  "_fill": "every base-map hunt under 3.25 monsters per 100 walkable tiles raised to 3.4 (at most x2 entries, +400): written by tools/gen_spawn_density.py from the map, README 'Spawn density and respawn', Fill",
+  "fill": "spawn_density.json",
   "model": {
     "_doc": "the capacity model of --report: README 'The leveling model and the hours' and 'Respec' (kills per hour)",
     "bands": [[1, 50], [50, 150], [150, 300], [300, 600], [600, 1000], [1000, 100000]],
@@ -14,7 +24,12 @@
     "maxKillsPerHour": 900,
     "viewBlockFactor": 1.25,
     "tierHealth": 1.11,
-    "levelHealthBonus": 0.0074
+    "levelHealthBonus": 0.0074,
+    "_pace": "pack combat (README 'Pack combat (pace)'): one hunter's kills per hour by hunting level, the pack-cycle model of the median class, in place of efficiency x DPS / health. Remove the key for the earlier model",
+    "paceKillsPerHour": {
+      "base": [[20, 900], [30, 1600], [100, 1580], [225, 1320], [450, 1210], [800, 1210], [1250, 1200]],
+      "scaled": [[650, 990], [1000, 940], [1300, 850], [2000, 800]]
+    }
   },
   "_areas": "thin areas whose density was raised: H4 = the 300-600 band to 3.0 monsters per 100 walkable tiles (at most +50%), H5 = the top of the 600-1000 band (levels 900+, outdoors) to 1.5 (at most +60%). Measured 2026-10-11 on the loaded map: walkable tiles within 6 sqm of a spawn, no protection zone, no house",
   "areas": [

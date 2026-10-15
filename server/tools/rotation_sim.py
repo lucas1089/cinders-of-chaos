@@ -16,7 +16,9 @@ Data (everything in the repo, so CI runs it without the base tree):
   server/data/spells/rotation_model.csv       the average damage of one cast on the main target (an expression of
                                               the class's stats at the level), the targets of the 5-dummy pack it
                                               hits, and the rotation flags (keep: a debuff kept up; chi: a Monk
-                                              finisher; skip: no direct damage or a condition the dummies never meet)
+                                              finisher; skip: no direct damage or a condition the dummies never meet;
+                                              utility: a spell players cast by hand that no preset and no set of 5
+                                              takes, the snares Snare Trap and Seeker Mine)
 
 The model (computed, not measured): a priority rotation, cast the first ready spell of the list whenever the attack
 group allows it. A cast starts the spell's cooldown, its group cooldown (the cast spell's groupcooldown on every group
@@ -27,13 +29,16 @@ The gap is the longest time between two casts over HORIZON seconds from a fresh 
 attack group cooldown. The damage is relative (no passive tree, no class factor, no auto attack, no minions); the
 change of a class's spell damage bounds the change of its total.
 
---report prints, per class and level band (100 / 300 / 600 / 1000), the best set of at most 5 with its gap and damage
-against the measured kit (the C4 harness: every Chaos attack spell of the class on cooldown); --class / --level also
-list the class's spells with their numbers.
+The 2.0 s rule holds from level 15 (GAP_FROM) up, at every band and every preset level of a class that has an attack
+spell there; below level 15 a class may have one spell on a longer cooldown (a new character's first levels).
+
+--report prints, per class and level band (15 / 30 / 60 / 100 / 300 / 600 / 1000), the best set of at most 5 with
+its gap and damage against the measured kit (the C4 harness: every Chaos attack spell of the class on cooldown);
+--class / --level also list the class's spells with their numbers.
 --write / --check: client/overlay/modules/game_helperrotation/autorotation_data.lua (the helper's "Auto rotation"
 button: the best set for every level where the class gets a new attack spell, and its heals).
 """
-import csv, itertools, math, os, re, sys
+import csv, functools, itertools, math, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
@@ -42,14 +47,18 @@ CHAOS_XML = os.path.join(SPELLS, 'chaos', 'spells_chaos.xml')
 STOCK_CSV = os.path.join(SPELLS, 'stock_spells.csv')
 MODEL_CSV = os.path.join(SPELLS, 'rotation_model.csv')
 TEMPLAR_CORE = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'templar_aura_core.lua')
+TOSS_SCRIPT = os.path.join(SPELLS, 'chaos', 'thief', 'shuriken_toss.lua')
+BLADES = os.path.join(SPELLS, 'chaos', '_blades.lua')
+PACKTOOLS = os.path.join(SPELLS, 'chaos', '_packtools.lua')
 CLIENT_DATA = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
 
-SNARES = (99, 100)            # Snare Trap, Seeker Mine
 GCD = 2.0                     # the attack group cooldown of nearly every attack spell
 HORIZON = 120.0               # seconds simulated from a fresh start
 MAX_SPELLS = 5
 GAP_LIMIT = 2.0
-BANDS = (100, 300, 600, 1000)
+BANDS = (15, 30, 60, 100, 300, 600, 1000)
+GAP_FROM = 15                 # the 2.0 s rule holds from this level up (below: exempt, see the docstring)
+NO_PRESET = ('skip', 'utility')  # flags that keep a spell out of every rotation the simulator builds
 MIN_PLAYER_ATTACK_INTERVAL = 1.0  # config.lua minPlayerAttackInterval (src-patch 0011), seconds
 CHI_HIT_INTERVAL = 2.0            # one chi per melee hit, at most one per 2 s (ChaosMonk.cfg.chi)
 KEEP_SHARE = 0.95                 # a best set keeps 95% of the measured kit's damage when it can
@@ -102,7 +111,9 @@ def stats(cls, level):
     p = sk * (fist if kind == 'fist' else atk)
     return {'L': float(level), 'l': level / 5.0, 'ML': ml, 'SK': sk, 'ATK': atk, 'P': p, 'FIST': fist,
             'BITE': 0.12 * level + 0.6 * sk, 'PETS': 2 if level >= 400 else 1, 'cls': cls,
-            'SMITE': smite_for(cls, level)}
+            'SMITE': smite_for(cls, level), 'TOSS': toss_for(cls, level), 'FLURRY': flurry_for(cls, level),
+            'SWEEP': sweep_scale(), 'OFFHAND': OFFHAND.get(cls, 1.0), 'FAN': pack_scale('fan'),
+            'SANCT': pack_scale('sanctified'), 'WAVE': pack_scale('shieldWave')}
 
 
 def smite_for(cls, level):
@@ -112,11 +123,71 @@ def smite_for(cls, level):
     return smite_scale().get(VOC[cls], 1.0)
 
 
-def smite_early():
-    """{vocation: (below level, scale)} of ChaosTemplar.cfg.radiantSmite.early"""
-    text = open(TEMPLAR_CORE, encoding='utf-8').read()
+def early_scales(text):
+    """{vocation: (below level, scale)} of a table of `[voc] = {below = N, scale = X}` entries"""
     return {int(v): (int(b), float(k)) for v, b, k in re.findall(
         r'\[(\d+)\]\s*=\s*\{below\s*=\s*(\d+),\s*scale\s*=\s*([0-9.]+)\}', text)}
+
+
+def smite_early():
+    """{vocation: (below level, scale)} of ChaosTemplar.cfg.radiantSmite.early"""
+    return early_scales(open(TEMPLAR_CORE, encoding='utf-8').read())
+
+
+@functools.lru_cache(maxsize=None)
+def toss_scales():
+    """Shuriken Toss's class scale (chaos/thief/shuriken_toss.lua): ({voc: scale}, {voc: (below, scale)}, default)"""
+    text = open(TOSS_SCRIPT, encoding='utf-8').read()
+    m = re.search(r'local SCALE\s*=\s*\{([^}]*)\}', text)
+    e = re.search(r'local EARLY\s*=\s*(\{.*?\}\s*\})\s*\n', text)
+    d = re.search(r'local DEFAULT_SCALE\s*=\s*([0-9.]+)', text)
+    scale = {int(k): float(v) for k, v in re.findall(r'\[(\d+)\]\s*=\s*([0-9.]+)', m.group(1))} if m else {}
+    return scale, early_scales(e.group(1)) if e else {}, float(d.group(1)) if d else 1.0
+
+
+def toss_for(cls, level):
+    scale, early, default = toss_scales()
+    e = early.get(VOC[cls])
+    if e and level < e[0]:
+        return e[1]
+    return scale.get(VOC[cls], default)
+
+
+# the Ninja's off-hand strike after each melee weapon strike: 50% of it (two blades of the same attack), README "Thief line"
+OFFHAND = {'Ninja': 1.5}
+
+
+@functools.lru_cache(maxsize=None)
+def blades_cfg(key, path=None):
+    """a block of ChaosBlades.cfg (chaos/_blades.lua) or ChaosPackTools.cfg (chaos/_packtools.lua, path=PACKTOOLS):
+    ({voc: scale}, {voc: (below, scale)}, default or the scale)"""
+    text = open(path or BLADES, encoding='utf-8').read()
+    block = re.search(r'\b' + key + r'\s*=\s*\{(.*?)\n\t\},', text, re.S).group(1)
+    m = re.search(r'\bscale\s*=\s*\{([^}]*)\}', block)
+    e = re.search(r'\bearly\s*=\s*(\{.*?\}\s*\})', block, re.S)
+    d = re.search(r'\bdefaultScale\s*=\s*([0-9.]+)', block) or re.search(r'^\s*scale\s*=\s*([0-9.]+)', block, re.M)
+    scale = {int(k): float(v) for k, v in re.findall(r'\[(\d+)\]\s*=\s*([0-9.]+)', m.group(1))} if m else {}
+    return scale, early_scales(e.group(1)) if e else {}, float(d.group(1)) if d else 1.0
+
+
+def flurry_for(cls, level):
+    """Blade Flurry's class scale (ChaosBlades.cfg.flurry)"""
+    scale, early, default = blades_cfg('flurry')
+    e = early.get(VOC[cls])
+    if e and level < e[0]:
+        return e[1]
+    return scale.get(VOC[cls], default)
+
+
+def pack_scale(key, cls=None):
+    """the scale of a pack tool (ChaosPackTools.cfg.<key>): the class's when the block has a table"""
+    scale, _, default = blades_cfg(key, PACKTOOLS)
+    return scale.get(VOC[cls], default) if cls else default
+
+
+def sweep_scale():
+    """Iaido Sweep's scale (ChaosBlades.cfg.sweep)"""
+    return blades_cfg('sweep')[2]
 
 
 def smite_scale():
@@ -247,7 +318,7 @@ def prepare(spells, model, cls, level):
     out = []
     for s in spells:
         m = model[s['words']]
-        if 'skip' in m['flags']:
+        if m['flags'] & set(NO_PRESET):
             continue
         p = Spell()
         p.words, p.name, p.id, p.chaos = s['words'], s['name'], s['id'], s['chaos']
@@ -372,8 +443,8 @@ def search(pool, ref, limit, by_rate, by_cast):
 
 def harness(pool):
     """the measured rotation (C4, 2026-10-11): every attack spell of the class's Chaos kit on cooldown, the strongest
-    ready first (the stock spells and the snares, added 2026-10-12, were not in it)"""
-    kit = [s for s in pool if s.chaos and s.id not in SNARES]
+    ready first (the stock spells and the snares, added 2026-10-12, were not in it; the pool has no utility spell)"""
+    kit = [s for s in pool if s.chaos]
     if not kit:
         return None
     rot = order(kit)
@@ -390,8 +461,8 @@ def analyse(spells, model, cls, level):
 def breakpoints(spells, model, cls):
     """the levels where the class gets a new attack spell the rotation can use, and the level bands (the stats grow)"""
     lv = {s['level'] for s in spells if s['group'] == 'attack' and cls in s['vocations'] and
-          'skip' not in model[s['words']]['flags']}
-    return sorted(lv | (set(BANDS) if lv else set()))
+          not model[s['words']]['flags'] & set(NO_PRESET)}
+    return sorted(lv | ({b for b in BANDS if b >= min(lv)} if lv else set()))
 
 
 def creatures(rotation, model):
@@ -480,10 +551,15 @@ def report(spells, model, only_cls=None, only_level=None):
             if not b:
                 print('%-12s %4d  no attack spell' % (cls, lv))
                 continue
-            print('%-12s %4d  best %d: gap %.2f s  1t %7.1f  5t %8.1f | C4 kit (%d): gap %.2f s  1t %7.1f  5t %8.1f'
-                  '  ->  1t %+.1f%%  5t %+.1f%%' % (
-                      cls, lv, len(b['spells']), b['gap'], b['dps1'], b['dps5'], len(h['spells']), h['gap'],
-                      h['dps1'], h['dps5'], 100 * (b['dps1'] / h['dps1'] - 1), 100 * (b['dps5'] / h['dps5'] - 1)))
+            line = '%-12s %4d  best %d: gap %.2f s  1t %7.1f  5t %8.1f' % (
+                cls, lv, len(b['spells']), b['gap'], b['dps1'], b['dps5'])
+            if h and h['dps1'] and h['dps5']:
+                line += ' | C4 kit (%d): gap %.2f s  1t %7.1f  5t %8.1f  ->  1t %+.1f%%  5t %+.1f%%' % (
+                    len(h['spells']), h['gap'], h['dps1'], h['dps5'], 100 * (b['dps1'] / h['dps1'] - 1),
+                    100 * (b['dps5'] / h['dps5'] - 1))
+            else:
+                line += ' | C4 kit: no Chaos attack spell yet'
+            print(line)
             print('                  %s' % fmt_set(b))
             if only_cls:
                 for s in sorted(a['pool'], key=lambda s: -s.dmg):

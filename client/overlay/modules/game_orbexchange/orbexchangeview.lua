@@ -3,6 +3,7 @@
 -- rows of the book, the price chart as rectangles, my orders and fills as text.
 -- The window always shows a pair as base / quote: the base is an orb, the quote gold or another orb; prices are quote
 -- per base. "Buy" gives the quote and wants the base, "Sell" gives the base and wants the quote.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 OrbExchangeView = OrbExchangeView or {}
 local V = OrbExchangeView
@@ -107,9 +108,9 @@ end
 function V.form(f, base, quote, meta)
   meta = meta or {}
   local qty = V.parseAmount(f.qty)
-  if not qty or qty < 1 then return nil, 'Enter how many ' .. V.assetName(meta, base) .. '.' end
+  if not qty or qty < 1 then return nil, tr('Enter how many %s.', V.assetName(meta, base)) end
   local price = V.parsePrice(f.price)
-  if not price then return nil, 'Enter a price per ' .. V.shortName(meta, base) .. ' in ' .. V.assetName(meta, quote) .. '.' end
+  if not price then return nil, tr('Enter a price per %s in %s.', V.shortName(meta, base), V.assetName(meta, quote)) end
   -- rounded to the aggressive side by less than one unit: a buyer pays up, a seller asks down (both still cross the
   -- order the price came from)
   local total
@@ -118,7 +119,7 @@ function V.form(f, base, quote, meta)
   else
     total = math.ceil(qty * price - 1e-9)
   end
-  if total < 1 then return nil, 'The total is less than one ' .. V.assetName(meta, quote) .. '.' end
+  if total < 1 then return nil, tr('The total is less than one %s.', V.assetName(meta, quote)) end
   local req
   if f.side == 'sell' then
     req = { give = base, giveQty = qty, want = quote, wantQty = total }
@@ -130,8 +131,8 @@ function V.form(f, base, quote, meta)
     local kind = asset == V.GOLD and 'gold' or 'orb'
     local lo = meta.min and meta.min[kind] or 1
     local hi = meta.max and meta.max[kind]
-    if n < lo then return string.format('At least %s %s per order.', V.money(lo), V.assetName(meta, asset)) end
-    if hi and n > hi then return string.format('At most %s %s per order.', V.money(hi), V.assetName(meta, asset)) end
+    if n < lo then return tr('At least %s %s per order.', V.money(lo), V.assetName(meta, asset)) end
+    if hi and n > hi then return tr('At most %s %s per order.', V.money(hi), V.assetName(meta, asset)) end
     return nil
   end
   local why = limits(req.give, req.giveQty) or limits(req.want, req.wantQty)
@@ -154,19 +155,19 @@ function V.previewText(req, preview, side, base, quote, meta)
   if not req then return '' end
   local parts = {}
   if side == 'sell' then
-    parts[#parts + 1] = string.format('You give %s for at least %s (%s each).', V.amount(meta, base, req.giveQty), V.amount(meta, quote, req.wantQty),
+    parts[#parts + 1] = tr('You give %s for at least %s (%s each).', V.amount(meta, base, req.giveQty), V.amount(meta, quote, req.wantQty),
       V.priceText(preview.each))
   else
-    parts[#parts + 1] = string.format('You give up to %s for at least %s (%s each).', V.amount(meta, quote, req.giveQty), V.amount(meta, base, req.wantQty),
+    parts[#parts + 1] = tr('You give up to %s for at least %s (%s each).', V.amount(meta, quote, req.giveQty), V.amount(meta, base, req.wantQty),
       V.priceText(preview.each))
   end
   if preview.fee > 0 then
-    parts[#parts + 1] = string.format('Fee %s gold (%s%%) on the gold you receive.', V.money(preview.fee), V.priceText((meta.fees.goldBps or 0) / 100))
+    parts[#parts + 1] = tr('Fee %s gold (%s%%) on the gold you receive.', V.money(preview.fee), V.priceText((meta.fees.goldBps or 0) / 100))
   elseif quote == V.GOLD and side == 'buy' then
     parts[#parts + 1] = 'No fee for the buyer.'
   end
   if preview.placeFee > 0 then
-    parts[#parts + 1] = string.format('Orb-for-orb orders cost %s gold from your bank.', V.money(preview.placeFee))
+    parts[#parts + 1] = tr('Orb-for-orb orders cost %s gold from your bank.', V.money(preview.placeFee))
   end
   return table.concat(parts, ' ')
 end
@@ -195,7 +196,7 @@ function V.bookRows(book, rowsPerSide)
     spread = { kind = 'spread', price = string.format('Spread %s', V.priceText(asks[1].p - bids[1].p)),
       qty = mid > 0 and string.format('%s%%', V.priceText((asks[1].p - bids[1].p) / mid * 100)) or '' }
   else
-    spread = { kind = 'spread', price = (#asks + #bids) == 0 and 'No orders' or 'One side only', qty = '' }
+    spread = { kind = 'spread', price = (#asks + #bids) == 0 and tr('No orders') or tr('One side only'), qty = '' }
   end
   rows[#rows + 1] = spread
   for i = 1, #bids do rows[#rows + 1] = row('bid', bids[i]) end
@@ -270,9 +271,9 @@ function V.orderPrice(o, meta)
   local give, want = tonumber(o.giveQty) or 0, tonumber(o.wantQty) or 0
   if give <= 0 or want <= 0 then return '' end
   if o.give == V.GOLD then
-    return string.format('%s gold per %s', V.priceText(give / want), V.shortName(meta, o.want))
+    return tr('%s gold per %s', V.priceText(give / want), V.shortName(meta, o.want))
   elseif o.want == V.GOLD then
-    return string.format('%s gold per %s', V.priceText(want / give), V.shortName(meta, o.give))
+    return tr('%s gold per %s', V.priceText(want / give), V.shortName(meta, o.give))
   elseif want >= give then
     return string.format('%s %s per %s', V.priceText(want / give), V.shortName(meta, o.want), V.shortName(meta, o.give))
   end
@@ -299,7 +300,7 @@ end
 -- f = {ago, order, gave, gaveQty, got, gotQty, fee, role}
 function V.fillText(f, meta)
   local when = V.ago(f.ago)
-  local s = string.format('%s: gave %s, got %s', when == 'now' and 'just now' or (when .. ' ago'), V.amount(meta, f.gave, f.gaveQty),
+  local s = string.format('%s: gave %s, got %s', when == 'now' and tr('just now') or (when .. ' ago'), V.amount(meta, f.gave, f.gaveQty),
     V.amount(meta, f.got, f.gotQty))
   if f.fee then s = s .. string.format(' (fee %s)', V.money(f.fee)) end
   return s

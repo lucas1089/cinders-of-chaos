@@ -17,6 +17,7 @@
 --                     message {kind = ok | error, text}   the answer to a craft (patch_base_crafting_ui.py)
 --                     tip {category, craftId, tip}   the tooltip (false when the server has none)
 -- The server decides; the checks here only explain why the Craft button is off.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CraftingTableView = CraftingTableView or {}
 local V = CraftingTableView
@@ -150,10 +151,10 @@ function V.bonusText(r)
   local parts = {}
   if b.kind == 'gear' then
     for _, o in ipairs(b.odds) do parts[#parts + 1] = o.name .. ' ' .. V.pctText(o.pct) end
-    return string.format('Rarity at item level %d: %s', b.level, table.concat(parts, ' / '))
+    return tr('Rarity at item level %d: %s', b.level, table.concat(parts, ' / '))
   end
   for _, o in ipairs(b.odds) do parts[#parts + 1] = string.format('+%d at %s', o.extra, V.pctText(o.pct)) end
-  return 'Bonus yield: ' .. table.concat(parts, ' / ')
+  return tr('Bonus yield: %s', table.concat(parts, ' / '))
 end
 
 function V.recipe(raw, category)
@@ -258,17 +259,17 @@ end
 function V.reasonText(key, r, ctx)
   local cat = V.category(r.category)
   if key == 'locked' then
-    return 'Recipe not unlocked yet.' .. (r.lockText ~= '' and (' ' .. r.lockText) or '')
+    return tr('Recipe not unlocked yet.%s', (r.lockText ~= '' and (' ' .. r.lockText) or ''))
   elseif key == 'skill' then
     return string.format('Needs %s %d (yours %d).', V.SKILL_NAMES[cat and cat.skill or 7], r.level, num(ctx.skill))
   elseif key == 'gold' then
-    return string.format('Needs %s (you carry %s).', V.goldText(r.cost), V.goldText(ctx.money))
+    return tr('Needs %s (you carry %s).', V.goldText(r.cost), V.goldText(ctx.money))
   elseif key == 'materials' then
-    return 'Materials missing.'
+    return tr('Materials missing.')
   elseif key == 'table' then
-    return string.format('Use a %s table to craft this.', cat and cat.name or 'crafting')
+    return tr('Use a %s table to craft this.', cat and cat.name or 'crafting')
   elseif key == 'away' then
-    return 'Go back to the crafting table.'
+    return tr('Go back to the crafting table.')
   end
   return ''
 end
@@ -369,7 +370,7 @@ function V.plainTip(r)
   local cat = V.category(r.category)
   lines[#lines + 1] = string.format('%s level %d, %s', V.SKILL_NAMES[cat and cat.skill or 7], r.level, V.goldText(r.cost))
   local b = V.bonusText(r)
-  lines[#lines + 1] = b ~= '' and b or 'A crafted item may roll a rarity.'
+  lines[#lines + 1] = b ~= '' and b or tr('A crafted item may roll a rarity.')
   return table.concat(lines, '\n')
 end
 

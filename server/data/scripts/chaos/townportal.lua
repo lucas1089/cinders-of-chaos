@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/townportal_core.lua")
 if not ChaosVfx then
 	pcall(dofile, "data/lib/chaos_vfx.lua")
@@ -34,6 +37,9 @@ if not ChaosFx then
 	pcall(dofile, "data/lib/chaos_fx.lua")
 end
 
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua")
+end
 ChaosTownPortalConfig = dofile("data/scripts/chaos/townportal_config.lua")
 ChaosTownPortal = ChaosTownPortal or {}
 local T = ChaosTownPortal
@@ -61,6 +67,13 @@ end
 
 -- the first effect of the list that exists (a Vfx name, a ChaosFx name or a stock number)
 local function fx(pos, list)
+	local P27 = ChaosPack27Fx -- pair 27 (data/lib/chaos_pack27_fx.lua, off): the portal effects of that pair first
+	for _, e in ipairs(list or {}) do
+		local alt = P27 and P27.PAIR27_FX and P27.portal and type(e) == "string" and P27.portal(e)
+		if alt and Vfx and Vfx(P(pos), alt) then
+			return
+		end
+	end
 	for _, e in ipairs(list or {}) do
 		if type(e) == "number" then
 			P(pos):sendMagicEffect(e)
@@ -304,7 +317,7 @@ local function openPair(player)
 	T.pairs[pair.owner] = pair
 	player:setStorageValue(ST.cooldown, os.time() + cfg.cooldownSeconds)
 	spellCooldown(player, cfg.cooldownSeconds)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"A portal to your temple opened beside you. Its return portal waits beside the temple for %d minutes.",
 		cfg.portalMinutes))
 	return true
@@ -371,7 +384,7 @@ function T.cast(player, source)
 	T.casts[player:getId()] = cast
 	fx(player:getPosition(), cfg.castEffect)
 	Chaos.send(player, OPCODE, "cast", {ms = cfg.castMs})
-	player:sendTextMessage(MESSAGE_STATUS_SMALL, "Opening a town portal... stand still.")
+	player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Opening a town portal... stand still."))
 	addEvent(poll, cfg.pollMs, player:getId(), token)
 	return true
 end
@@ -418,7 +431,7 @@ local function use(creature, item, position, fromPosition, kind)
 		end
 		player:teleportTo(P(pair.temple))
 		fx(pair.temple, pair.style.travel or pair.style.open)
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, "The return portal beside the temple takes you back.")
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "The return portal beside the temple takes you back."))
 	else
 		-- the exact spot of the cast; a creature standing there moves the arrival next to it
 		local dest = pair.returnTo
@@ -516,7 +529,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			player:setStorageValue(ST.style, s.id)
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, "Portal style: " .. s.name .. ".")
 		else
-			player:sendCancelMessage("You do not own that portal style.")
+			player:sendCancelMessage(Chaos.t(player, "You do not own that portal style."))
 		end
 		sendState(player, false)
 	elseif msg.action == "cast" then

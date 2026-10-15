@@ -1,0 +1,39 @@
+# Language (client/MANIFEST.md "Localization"): Options > Interface gets a "Language" row after "Field timers over magic walls and fields" with a button that shows the current language and opens the choice (English, Portugues (Brasil)) of the overlay module client_chaos_locale (ChaosLocale.showMenu). The choice is the module's own setting (g_settings chaos-language), not a client_settings option: no dataset.lua entry, the Ok / Apply of the window do not touch it. Without the module the button hides itself. OTUI only; applies after 0041 (its context is the field timers panel).
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -396,6 +396,35 @@ InterfaceWindow < Panel
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('When checked, the seconds left are shown over magic walls, wild\ngrowth and other timed fields. A field that was already there when it\ncame into view shows "~": its start is not known.')
+ 
++  FlatPanel
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    Label
++      id: chaosLanguageLabel
++      !text: tr('Language')
++      font: $var-cip-font
++      color: $var-text-cip-color
++      text-auto-resize: true
++      anchors.left: parent.left
++      anchors.verticalCenter: parent.verticalCenter
++      margin-left: 8
++
++    Button
++      id: chaosLanguageButton
++      size: 180 18
++      anchors.right: parent.right
++      anchors.verticalCenter: parent.verticalCenter
++      margin-right: 24
++      !tooltip: tr('The language of the client and of the server messages')
++      @onSetup: if ChaosLocale then self:setText(ChaosLocale.name()) else self:hide() end
++      @onClick: if ChaosLocale then ChaosLocale.showMenu(self) end
++
+   FlatPanel
+     size: 505 44
+     anchors.top: prev.bottom

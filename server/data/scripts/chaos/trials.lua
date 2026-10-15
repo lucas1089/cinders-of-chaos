@@ -27,6 +27,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosTrialsCore then
 	dofile("data/scripts/chaos/trials_core.lua")
 end
@@ -108,11 +111,20 @@ local function tokens(player)
 	return math.max(0, getS(player, S().tokens))
 end
 
-local function weekCount(player)
-	if getS(player, S().weekKey) ~= M.weekKey() then
-		return 0
+-- the repeat rewards of this week (M.repeatState): a new week rolls the stored count over into the bank first
+local function repeats(player)
+	local st = M.repeatState(getS(player, S().weekKey), getS(player, S().weekCount), getS(player, S().weekBank),
+		M.weekKey())
+	if st.rolled and getS(player, S().weekKey) > 0 then
+		player:setStorageValue(S().weekKey, M.weekKey())
+		player:setStorageValue(S().weekCount, 0)
+		player:setStorageValue(S().weekBank, st.bank)
 	end
-	return math.max(0, getS(player, S().weekCount))
+	return st
+end
+
+local function weekCount(player)
+	return repeats(player).count
 end
 
 local function inCombat(player)
@@ -131,7 +143,7 @@ local function achievement(player, fn, key, amount)
 end
 
 local function box(player, title, text)
-	Chaos.send(player, OPCODE, "sendMessage", {title = title, message = text})
+	Chaos.send(player, OPCODE, "sendMessage", {title = Chaos.t(player, title), message = text})
 end
 
 -- ======================================================================== the passive bonus table
@@ -165,7 +177,7 @@ function T.state(player)
 	local tr = T.runs[player:getId()]
 	return M.clientState({voc = voc, level = player:getLevel(), tier = T.tierCleared(player, voc), picks = T.picks(player, voc),
 		tokens = tokens(player), cooldown = getS(player, S().cooldown), now = os.time(), running = tr and not tr.over or nil,
-		repeatsLeft = math.max(0, C().reward.repeatsPerWeek - weekCount(player))})
+		repeatsLeft = math.max(0, repeats(player).allowance - weekCount(player))})
 end
 
 function T.sendState(player)
@@ -186,29 +198,29 @@ end
 -- ok, text
 function T.choose(player, pair, side)
 	if not C().enabled then
-		return false, "The Vocation Trials are closed."
+		return false, Chaos.t(player, "The Vocation Trials are closed.")
 	end
 	local voc = vocId(player)
 	if not M.family(voc) then
-		return false, "Your vocation has no trial."
+		return false, Chaos.t(player, "Your vocation has no trial.")
 	end
 	if T.runs[player:getId()] then
-		return false, "You cannot change your nodes during a trial."
+		return false, Chaos.t(player, "You cannot change your nodes during a trial.")
 	end
 	local state = {tier = T.tierCleared(player, voc), picks = T.picks(player, voc), tokens = tokens(player), level = player:getLevel()}
-	local plan, why = M.planPick(state, pair, side)
+	local plan, why = M.planPick(state, pair, side, Chaos.lang(player))
 	if not plan then
 		return false, why
 	end
 	if not plan.free then
 		if inCombat(player) then
-			return false, "You cannot change a held node in combat."
+			return false, Chaos.t(player, "You cannot change a held node in combat.")
 		end
 		if tokens(player) < plan.tokens then
-			return false, "You need a Trial Token."
+			return false, Chaos.t(player, "You need a Trial Token.")
 		end
 		if not pay(player, plan.gold) then
-			return false, string.format("Changing a node costs %d gold coins and a Trial Token.", plan.gold)
+			return false, Chaos.t(player, "Changing a node costs %d gold coins and a Trial Token.", plan.gold)
 		end
 		player:setStorageValue(S().tokens, tokens(player) - plan.tokens)
 		achievement(player, "progress", C().achievements.switches, 1)
@@ -221,9 +233,15 @@ function T.choose(player, pair, side)
 	achievement(player, "set", C().achievements.nodes, count)
 	local node = plan.side > 0 and M.nodeById(M.nodeId(voc, plan.pair, plan.side))
 	if not node then
-		return true, "The choice was given up" .. (plan.free and "." or string.format(" (1 Trial Token and %d gold coins).", plan.gold))
+		if plan.free then
+			return true, Chaos.t(player, "The choice was given up.")
+		end
+		return true, Chaos.t(player, "The choice was given up (1 Trial Token and %d gold coins).", plan.gold)
 	end
-	return true, string.format("%s is yours%s.", node.name, plan.free and "" or string.format(" (1 Trial Token and %d gold coins)", plan.gold))
+	if plan.free then
+		return true, Chaos.t(player, "%s is yours.", node.name)
+	end
+	return true, Chaos.t(player, "%s is yours (1 Trial Token and %d gold coins).", node.name, plan.gold)
 end
 
 -- ======================================================================== the room
@@ -366,10 +384,11 @@ local function sendHud(tr, action, state)
 	end
 end
 
-local function say(tr, text)
+-- key (+ arguments): in the player's language (Chaos.t)
+local function say(tr, text, ...)
 	local p = Player(tr.pid)
 	if p then
-		p:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, text)
+		p:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, Chaos.t(p, text, ...))
 	end
 end
 
@@ -501,7 +520,7 @@ local function startStage(tr)
 				tr.total = tr.total - 1 -- could not be made: it does not count
 			end
 		end
-		say(tr, string.format("Wave %d of %d.", tr.waveNo, tr.waveCount))
+		say(tr, "Wave %d of %d.", tr.waveNo, tr.waveCount)
 	elseif stage.kind == "seals" then
 		tr.seal = {index = 1, charge = 0}
 		tr.sealOrder = M.sealOrder(stage.count, math.random)
@@ -533,7 +552,7 @@ local function startStage(tr)
 			m:selectTarget(player)
 		end
 		tr.notes = {tr.fam.boss.name .. " awakens."}
-		say(tr, tr.fam.boss.name .. " awakens. " .. tr.fam.story)
+		say(tr, "%s awakens. %s", tr.fam.boss.name, ChaosI18n.msg(tr.fam.story))
 	end
 	sendHud(tr, "update")
 end
@@ -585,7 +604,7 @@ local function spawnBossAdds(tr, player)
 		end
 		spawnThrall(tr, pos, tr.scale.addHp)
 	end
-	say(tr, tr.fam.boss.name .. " calls for aid!")
+	say(tr, "%s calls for aid!", tr.fam.boss.name)
 end
 
 local function zones(tr, player)
@@ -669,7 +688,7 @@ local function tickSeals(tr, player, ms, pos)
 	local r = M.sealStep(tr.seal, tr.sealOrder, stand, C().tickMs)
 	if r == "done" then
 		pos:sendMagicEffect(CONST_ME_HOLYAREA)
-		say(tr, string.format("The %s seal breaks.", M.SEAL_ELEMENTS[stand]))
+		say(tr, "The %s seal breaks.", ChaosI18n.msg(M.SEAL_ELEMENTS[stand]))
 		tr.killed = tr.seal.index - 1
 		if tr.seal.index > #tr.sealOrder then
 			tr.notes = {"The seals are broken."}
@@ -725,7 +744,7 @@ local function tickMarks(tr, player, ms)
 			tr.markId = nil
 			tr.deadline = tr.deadline - M.cfg().markPenaltySeconds * 1000
 			tr.markIdx = tr.markIdx - 1 -- it comes back
-			say(tr, string.format("The mark got away! %d seconds are lost.", C().markPenaltySeconds))
+			say(tr, "The mark got away! %d seconds are lost.", C().markPenaltySeconds)
 			spawnMark(tr)
 			sendHud(tr, "update")
 		else
@@ -851,13 +870,15 @@ local function reward(player, tr)
 	local c = C()
 	local voc = tr.voc
 	local before = T.tierCleared(player, voc)
-	local out = M.clearOutcome(tr.tier, player:getLevel(), before, tokens(player), weekCount(player))
+	local rp = repeats(player)
+	local out = M.clearOutcome(tr.tier, player:getLevel(), before, tokens(player), rp.count, rp.allowance)
 	if out.first then
 		player:setStorageValue(S().tierBase + voc, tr.tier)
 	end
 	if out.counted then
 		player:setStorageValue(S().weekKey, M.weekKey())
-		player:setStorageValue(S().weekCount, weekCount(player) + 1)
+		player:setStorageValue(S().weekCount, rp.count + 1)
+		player:setStorageValue(S().weekBank, rp.bank)
 	end
 	if out.tokens > 0 then
 		player:setStorageValue(S().tokens, tokens(player) + out.tokens)
@@ -904,16 +925,17 @@ function finish(pid, how, text)
 			local lines = {}
 			if out.first then
 				local list = M.pairsOf(tr.voc)
-				lines[#lines + 1] = string.format("First clear on %s: the %s pair of nodes opens (%s or %s).", tr.tierDef.name,
-					({"first", "second", "third"})[tr.tier], list[tr.tier].a.name, list[tr.tier].b.name)
+				lines[#lines + 1] = Chaos.t(player, "First clear on %s: the %s pair of nodes opens (%s or %s).", tr.tierDef.name,
+					Chaos.t(player, ({"first", "second", "third"})[tr.tier]), list[tr.tier].a.name, list[tr.tier].b.name)
 			else
-				lines[#lines + 1] = "Cleared again: +" .. out.tokens .. " Trial Token" .. (out.tokens == 1 and "" or "s") .. "."
+				lines[#lines + 1] = Chaos.t(player, out.tokens == 1 and "Cleared again: +%s Trial Token." or "Cleared again: +%s Trial Tokens.",
+					out.tokens)
 			end
 			if out.gold > 0 then
-				lines[#lines + 1] = string.format("%d gold coins to your bank, %d Orb(s) of Upheaval, %d Orb(s) of Fate%s.", out.gold, out.chaos,
-					out.divine, out.inbox and " (some in your inbox)" or "")
+				lines[#lines + 1] = Chaos.t(player, "%d gold coins to your bank, %d Orb(s) of Upheaval, %d Orb(s) of Fate%s.", out.gold, out.chaos,
+					out.divine, out.inbox and Chaos.t(player, " (some in your inbox)") or "")
 			elseif not out.first then
-				lines[#lines + 1] = "The weekly repeat rewards are used up; the token is yours."
+				lines[#lines + 1] = Chaos.t(player, "The weekly repeat rewards are used up; the token is yours.")
 			end
 			for _, l in ipairs(lines) do
 				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, l)
@@ -923,8 +945,8 @@ function finish(pid, how, text)
 			T.sendState(player)
 			Chaos.send(player, RIFT_OPCODE, "end", {result = "success", text = lines[1] or "", exitIn = C().exitSeconds})
 		else
-			local fail = how == "error" and (text or "The trial could not begin. Nothing is lost.")
-				or ((text or "You have failed the trial.") .. " Nothing is lost.")
+			local fail = how == "error" and Chaos.t(player, text or "The trial could not begin. Nothing is lost.")
+				or Chaos.t(player, "%s Nothing is lost.", Chaos.t(player, text or "You have failed the trial."))
 			if how ~= "error" and how ~= "logout" and how ~= "abort" then
 				player:setStorageValue(S().cooldown, os.time() + C().enter.failCooldownSeconds)
 			end
@@ -973,8 +995,8 @@ local function loseLife(pid)
 	P(tr.L.playerStart):sendMagicEffect(CONST_ME_TELEPORT)
 	tr.shieldUntil = mnow() + C().shieldSeconds * 1000
 	tr.still = {}
-	say(tr, string.format("You fall! %d %s left. The monsters cannot touch you for %d seconds.", tr.lives,
-		tr.lives == 1 and "life" or "lives", C().shieldSeconds))
+	say(tr, tr.lives == 1 and "You fall! %d life left. The monsters cannot touch you for %d seconds." or
+		"You fall! %d lives left. The monsters cannot touch you for %d seconds.", tr.lives, C().shieldSeconds)
 	sendHud(tr, "update")
 end
 
@@ -1114,40 +1136,41 @@ function T.enter(player, tierIdx, opts)
 	opts = opts or {}
 	local c = C()
 	if not c.enabled then
-		return false, "The Vocation Trials are closed."
+		return false, Chaos.t(player, "The Vocation Trials are closed.")
 	end
 	tierIdx = Chaos.toInt(tierIdx, 1, #c.tiers)
 	if not tierIdx then
-		return false, "That difficulty does not exist."
+		return false, Chaos.t(player, "That difficulty does not exist.")
 	end
 	local voc = vocId(player)
 	local fam, famKey = M.family(voc)
 	if not fam then
-		return false, "Your vocation has no trial."
+		return false, Chaos.t(player, "Your vocation has no trial.")
 	end
 	local pid = player:getId()
 	if T.runs[pid] then
-		return false, "You are in a trial already."
+		return false, Chaos.t(player, "You are in a trial already.")
 	end
 	local other = otherRun(player)
 	if other then
-		return false, "You are busy in " .. other .. "."
+		return false, Chaos.t(player, "You are busy in %s.", other)
 	end
-	local problem = M.enterProblem(tierIdx, player:getLevel(), T.tierCleared(player, voc), os.time(), getS(player, S().cooldown))
+	local problem = M.enterProblem(tierIdx, player:getLevel(), T.tierCleared(player, voc), os.time(), getS(player, S().cooldown),
+		Chaos.lang(player))
 	if problem then
 		return false, problem
 	end
 	if inCombat(player) then
-		return false, "You cannot enter a trial in combat."
+		return false, Chaos.t(player, "You cannot enter a trial in combat.")
 	end
 	if c.enter.needProtectionZone and not inProtectionZone(player) then
-		return false, "Enter the trial from a protection zone."
+		return false, Chaos.t(player, "Enter the trial from a protection zone.")
 	end
 	if Chaos.isMultiClient(player) then
-		return false, "Characters that share a connection with another character cannot enter a trial."
+		return false, Chaos.t(player, "Characters that share a connection with another character cannot enter a trial.")
 	end
 	if opts.needNpc and not T.keeperNear(player) then
-		return false, "The trial is entered at the " .. c.npc.name .. "."
+		return false, Chaos.t(player, "The trial is entered at the %s.", c.npc.name)
 	end
 	local running = 0
 	for _ in pairs(T.runs) do
@@ -1163,7 +1186,7 @@ function T.enter(player, tierIdx, opts)
 			end
 			return false, IL.busy(player, "trials", "trial chambers", lefts, c.limits)
 		end
-		return false, "Every trial chamber is in use. Try again in a moment."
+		return false, Chaos.t(player, "Every trial chamber is in use. Try again in a moment.")
 	end
 	local L, err = T.buildSlot(slot)
 	if not L then
@@ -1171,7 +1194,7 @@ function T.enter(player, tierIdx, opts)
 		slot = freeSlot()
 		L = slot and T.buildSlot(slot)
 		if not L then
-			return false, "The trial chambers cannot be opened. Please tell the staff."
+			return false, Chaos.t(player, "The trial chambers cannot be opened. Please tell the staff.")
 		end
 	end
 	cleanSlot(L)
@@ -1201,8 +1224,8 @@ function T.enter(player, tierIdx, opts)
 	P(L.playerStart):sendMagicEffect(CONST_ME_TELEPORT)
 	heal(player)
 	eventsOn(player)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s (%s): %d minutes, %d %s. %s", fam.name, tierDef.name,
-		math.floor(tierDef.time / 60), tr.lives, tr.lives == 1 and "life" or "lives", fam.story))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, tr.lives == 1 and "%s (%s): %d minutes, %d life. %s" or
+		"%s (%s): %d minutes, %d lives. %s", fam.name, tierDef.name, math.floor(tierDef.time / 60), tr.lives, Chaos.t(player, fam.story)))
 	Chaos.send(player, RIFT_OPCODE, "start", hudData(tr))
 	addEvent(beginFight, c.countdownSeconds * 1000, pid)
 	addEvent(tick, c.tickMs, pid)
@@ -1311,7 +1334,7 @@ function login.onLogin(player)
 		player:setStorageValue(S().marker, 0)
 		player:setStorageValue(S().cooldown, 0)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"Your last trial was cut short by a server restart. It does not count against you; no waiting is needed.")
+			Chaos.t(player, "Your last trial was cut short by a server restart. It does not count against you; no waiting is needed."))
 	end
 	return true
 end
@@ -1435,7 +1458,9 @@ function T.placeKeepers()
 		for _, townId in ipairs(n.townIds or {}) do
 			local town = Town(townId)
 			local temple = town and town:getTemplePosition()
-			local pos = temple and freeTileNear(temple, n.offsets)
+			-- the booth in the town's Hall of Services (npc_booths.lua), else next to the temple
+			local pos = (ChaosNpcBooths and ChaosNpcBooths.spot and ChaosNpcBooths.spot(n.name, townId))
+				or (temple and freeTileNear(temple, n.offsets))
 			if pos and placeKeeper(pos) then
 				placed = placed + 1
 			else

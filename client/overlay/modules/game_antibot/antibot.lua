@@ -96,7 +96,7 @@ local function showCheck(data)
   end
   checkWindow.retryButton:setText(L.retryText(c.retries))
   checkWindow.retryButton:setEnabled(c.retries > 0)
-  setStatus(checkWindow, c.attempt > 1 and 'A new picture. Take your time.' or '', L.COLORS.dim)
+  setStatus(checkWindow, c.attempt > 1 and tr('A new picture. Take your time.') or '', L.COLORS.dim)
   checkWindow:show()
   checkWindow:raise()
   checkWindow:focus()
@@ -114,7 +114,7 @@ end
 local function onCheckResult(d)
   if not checkWindow then return end
   if d.retry then
-    setStatus(checkWindow, d.text or 'Try again.', L.COLORS.warn)
+    setStatus(checkWindow, d.text or tr('Try again.'), L.COLORS.warn)
     return -- the next picture follows
   end
   setStatus(checkWindow, d.text or '', d.ok and L.COLORS.good or L.COLORS.bad)
@@ -136,7 +136,7 @@ end
 local function fillReasons()
   local box = reportWindow.reasonBox
   box:clearOptions()
-  box:addOption('Choose a reason', '', true)
+  box:addOption(tr('Choose a reason'), '', true)
   for _, r in ipairs(reasons) do box:addOption(r.n, r.k, true) end
   box:setCurrentIndex(1, true)
 end
@@ -222,7 +222,7 @@ end
 local function addMenus()
   local gi = modules.game_interface
   if not hooked and gi and gi.addMenuHook then
-    gi.addMenuHook('chaosReport', 'Report Player',
+    gi.addMenuHook('chaosReport', tr('Report Player'),
       function(menuPosition, lookThing, useThing, creatureThing) report(creatureThing and creatureThing:getName()) end,
       function(menuPosition, lookThing, useThing, creatureThing)
         return creatureThing ~= nil and L.canReport(creatureThing:isPlayer(), creatureThing:isLocalPlayer())

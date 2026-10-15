@@ -42,26 +42,39 @@ function K.cleanText(text, max)
 	return text
 end
 
-function K.leftText(seconds)
+function K.leftText(seconds, lang)
+	local T = function(key, n)
+		if ChaosI18n and ChaosI18n.text then
+			return ChaosI18n.text(lang, key, n)
+		end
+		return n and string.format(key, n) or key
+	end
 	seconds = floor(num(seconds))
 	if seconds <= 0 then
-		return "now"
+		return T("now")
 	end
 	if seconds >= 86400 then
 		local d = floor(seconds / 86400)
-		return d .. (d == 1 and " day" or " days")
+		return T(d == 1 and "%d day" or "%d days", d)
 	end
 	if seconds >= 3600 then
 		local h = floor(seconds / 3600)
-		return h .. (h == 1 and " hour" or " hours")
+		return T(h == 1 and "%d hour" or "%d hours", h)
 	end
 	local m = math.max(1, floor(seconds / 60))
-	return m .. (m == 1 and " minute" or " minutes")
+	return T(m == 1 and "%d minute" or "%d minutes", m)
 end
 
--- the message of a refusal reason, with its number filled in
-function K.say(cfg, reason, extra)
+-- the message of a refusal reason, with its number filled in; in `lang` (ChaosI18n, i18n_core.lua) when it is loaded
+function K.say(cfg, reason, extra, lang)
 	local msg = cfg.messages[reason] or tostring(reason)
+	if ChaosI18n and ChaosI18n.text then
+		local tr = ChaosI18n.text(lang, msg)
+		if not msg:find("%", 1, true) then
+			return tr
+		end
+		msg = tr
+	end
 	if not msg:find("%", 1, true) then
 		return msg
 	end
@@ -69,7 +82,7 @@ function K.say(cfg, reason, extra)
 		mentorLevel = cfg.mentor.minAccountLevel, mentorHours = cfg.mentor.minOnlineHours,
 		mentorAge = cfg.mentor.minAccountDays, mentorCharLevel = cfg.mentor.minCharacterLevel,
 		apprenticeLevel = cfg.apprentice.maxLevel, apprenticeAge = cfg.apprentice.maxAccountDays,
-		maxMentors = cfg.apprentice.maxMentors, cooldown = K.leftText(extra)
+		maxMentors = cfg.apprentice.maxMentors, cooldown = K.leftText(extra, lang)
 	})[reason]
 	if arg == nil then
 		return msg

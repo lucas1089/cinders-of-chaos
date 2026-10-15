@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -163,20 +166,24 @@ local function spellOf(player)
 	return NP.tutorialSpellFor(player:getVocation():getId())
 end
 
+-- the lesson's text and toast in the player's language (the config's texts are Chaos.t keys)
 local function lessonText(player, i)
 	local t = T()
 	local lesson = t.lessons[i]
+	local tr = function(key, ...)
+		return Chaos.t(player, key, ...)
+	end
 	if i == 1 then
-		return string.format(lesson.text, t.kills), string.format(lesson.toast, t.kills)
+		return tr(lesson.text, t.kills), tr(lesson.toast, t.kills)
 	elseif i == 2 then
 		local spell = spellOf(player)
-		local extra = spell and string.format(", then cast %s: say \"%s\" (it heals you).", spell.name, spell.words)
-			or ". Your class learns its first spell at level 20 (Shuriken Toss)."
-		return string.format(lesson.text, extra), string.format(lesson.toast, spell and (" and say \"" .. spell.words .. "\"") or "")
+		local extra = spell and tr(", then cast %s: say \"%s\" (it heals you).", spell.name, spell.words)
+			or tr(". Your class learns its first spell at level 20 (Shuriken Toss).")
+		return tr(lesson.text, extra), tr(lesson.toast, spell and tr(" and say \"%s\"", spell.words) or "")
 	elseif i == 4 then
-		return string.format(lesson.text, ChaosCrafting and lesson.craftHint or ""), lesson.toast
+		return tr(lesson.text, ChaosCrafting and tr(lesson.craftHint) or ""), tr(lesson.toast)
 	end
-	return lesson.text, lesson.toast
+	return tr(lesson.text), tr(lesson.toast)
 end
 
 function NP.showLesson(player, i)
@@ -241,9 +248,9 @@ local function complete(player, i)
 	local t = T()
 	local text
 	if i < t.rooms then
-		text = string.format("Station %d done! The gate to the east is open.", i)
+		text = Chaos.t(player, "Station %d done! The gate to the east is open.", i)
 	else
-		text = "Step into the forcefield to leave the island."
+		text = Chaos.t(player, "Step into the forcefield to leave the island.")
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	NP.toast(player, text)
@@ -275,7 +282,7 @@ local function poll(pid)
 		if castSpell(player) and not NP.hasBit(flagsOf(player), 2) then
 			setFlag(player, 2)
 			if not NP.hasBit(flagsOf(player), 1) then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Well cast! Now open your spellbook: Character > Spellbook (Alt+S).")
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Well cast! Now open your spellbook: Character > Spellbook (Alt+S)."))
 			end
 		end
 		if NP.spellTaskDone(flagsOf(player), spellOf(player) ~= nil) then
@@ -338,7 +345,7 @@ local function startTask(player, i)
 			local key = Chaos.storage.passiveExtraPoints
 			player:setStorageValue(key, math.max(0, player:getStorageValue(key)) + 1)
 			setFlag(player, 4)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You received a free passive point.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You received a free passive point."))
 		end
 		if ChaosPassiveTree and ChaosPassiveTree.hasAllocation and ChaosPassiveTree.hasAllocation(player) then
 			complete(player, 3)
@@ -445,6 +452,10 @@ function NP.tutorialStart(player)
 	if not NP.islandReady() then
 		return false
 	end
+	-- the main city becomes its home now, so a logout or death on the island already leads there
+	if NP.settleHome then
+		NP.settleHome(player, false)
+	end
 	setS(player, "stage", 1)
 	setS(player, "done", 0)
 	setS(player, "kills", 0)
@@ -470,17 +481,20 @@ end
 function NP.tutorialFinish(player, how)
 	setS(player, "stage", how == "done" and C().stageDone or C().stageSkipped)
 	NP.islandSince[player:getGuid()] = nil
+	if NP.settleHome then -- a character that was on the island before the home town was set (no kit yet)
+		NP.settleHome(player, false)
+	end
 	local temple = player:getTown():getTemplePosition()
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	player:teleportTo(temple)
 	temple:sendMagicEffect(CONST_ME_TELEPORT)
 	if how == "time" then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your time on the tutorial island is up: here is your kit. " ..
-			"Everything the island shows is also in the menu at the top.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
+			Chaos.t(player, "Your time on the tutorial island is up: here is your kit. Everything the island shows is also in the menu at the top."))
 	elseif how == "skipped" then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You skipped the tutorial.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You skipped the tutorial."))
 	else
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You finished the tutorial. Good hunting!")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You finished the tutorial. Good hunting!"))
 	end
 	NP.kitAndWelcome(player, 1000)
 	-- the login windows (Daily Reward, patch notes) waited for the island; the client shows them after the welcome
@@ -520,7 +534,7 @@ function NP.tutorialLogin(player, first)
 				local s = stageOf(p)
 				local _, toast = lessonText(p, s)
 				NP.toast(p, toast)
-				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Tutorial: " .. toast .. " Use the angel statue to read the lesson again.")
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Tutorial: %s Use the angel statue to read the lesson again.", toast))
 				startTask(p, s)
 			end
 		end, C().welcome.delayMs)
@@ -552,7 +566,7 @@ function kill.onKill(creature, target)
 	if kills >= T().kills then
 		complete(player, 1)
 	else
-		player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_EVENT_ADVANCE, string.format("Rats killed: %d / %d", kills, T().kills))
+		player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Rats killed: %d / %d", kills, T().kills))
 		local pid = player:getId()
 		addEvent(function()
 			local p = Player(pid)
@@ -601,7 +615,7 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		if p then
 			Chaos.heal(p, p:getMaxHealth() - p:getHealth())
 			p:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The island will not let you die: you are healed. Use your potions and spells in the real world!")
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "The island will not let you die: you are healed. Use your potions and spells in the real world!"))
 		end
 	end, 100)
 	return primaryDamage < 0 and -keep or keep, primaryType, 0, secondaryType
@@ -635,7 +649,7 @@ local function hookSpellbook()
 			setFlag(player, 1)
 			if spellOf(player) and not NP.hasBit(flagsOf(player), 2) then
 				local spell = spellOf(player)
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Now cast %s: say \"%s\".", spell.name, spell.words))
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Now cast %s: say \"%s\".", spell.name, spell.words))
 			end
 			if NP.spellTaskDone(flagsOf(player), spellOf(player) ~= nil) then
 				complete(player, 2)
@@ -649,12 +663,27 @@ hookSpellbook()
 
 -- no PvP on the island
 local guard = EventCallback
+-- runs for every attack on a player (every monster hit): the attacker first (a monster's own attack never needs the
+-- island), the layout built once per tutorial config
+local islandL, islandT, islandSig
+local function islandLayout()
+	local t = NP.cfg().tutorial
+	local o = t.origin
+	local sig = islandSig
+	if not islandL or islandT ~= t or sig[1] ~= o.x or sig[2] ~= o.y or sig[3] ~= o.z or sig[4] ~= t.rooms
+			or sig[5] ~= t.roomW or sig[6] ~= t.roomH or sig[7] ~= t.waterRing then
+		islandL, islandT = NP.layout(t), t
+		islandSig = {o.x, o.y, o.z, t.rooms, t.roomW, t.roomH, t.waterRing}
+	end
+	return islandL
+end
+
 guard.onTargetCombat = function(creature, target)
-	if not creature or not target or not target:isPlayer() or not NP.onIsland(target:getPosition()) then
+	if not creature or not target or not target:isPlayer() then
 		return RETURNVALUE_NOERROR
 	end
 	local attacker = creature:isPlayer() and creature or (creature:getMaster() and creature:getMaster():getPlayer())
-	if attacker and attacker ~= target then
+	if attacker and attacker ~= target and NP.onIsland(target:getPosition(), islandLayout()) then
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	return RETURNVALUE_NOERROR
@@ -663,7 +692,7 @@ guard:register()
 
 local function pushBack(creature, fromPosition, text)
 	if text and creature:isPlayer() then
-		creature:sendCancelMessage(text)
+		creature:sendCancelMessage(Chaos.t(creature, text))
 	end
 	creature:teleportTo(fromPosition, true)
 end
@@ -763,7 +792,7 @@ local skip = Action()
 function skip.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	if NP.inTutorial(stageOf(player)) then
 		NP.modal(player, T().modalBase + 9, "Skip the tutorial?",
-			"You leave the island at once and get your starter kit at the temple. You cannot come back.",
+			Chaos.t(player, "You leave the island at once and get your starter kit at the temple. You cannot come back."),
 			{{1, "Skip"}, {2, "Stay"}})
 	end
 	return true
@@ -774,7 +803,7 @@ skip:register()
 local skipTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "skiptutorial")
 function skipTalk.onSay(player, words, param)
 	if not NP.inTutorial(stageOf(player)) then
-		player:sendCancelMessage("You are not in the tutorial.")
+		player:sendCancelMessage(Chaos.t(player, "You are not in the tutorial."))
 		return false
 	end
 	NP.tutorialFinish(player, "skipped")

@@ -174,6 +174,158 @@ eq(s['failed'], [('Loadbot Aaa', 'connection closed by the server without a mess
 eq(lt.spread([float(v) for v in range(0, 101)]), 'p50 50 ms, p90 90 ms, p95 95 ms, max 100 ms', 'p50 / p90 / p95 / max')
 eq(lt.spread([]), 'p50 0 ms, p90 0 ms, p95 0 ms, max 0 ms', 'no logins')
 
+# ---------------------------------------------------------------- classes, levels and spell rotations (--classes)
+VOCS = """<vocations>
+	<!-- <vocation id="99" name="Old" gainhp="1"> -->
+	<vocation id="5" clientid="13" name="Elementalist" description="an elementalist" gaincap="10" gainhp="5" gainmana="30">
+	</vocation>
+	<vocation id="14" clientid="21" name="Berserker" gainhp="14" gainmana="6">
+	</vocation>
+</vocations>"""
+v = lt.parse_vocations(VOCS)
+eq(v, {'Elementalist': {'id': 5, 'hp': 5, 'mana': 30}, 'Berserker': {'id': 14, 'hp': 14, 'mana': 6}}, 'vocations, comments skipped')
+
+SPELLS = """<spells>
+	<!-- <instant group="attack" name="Gone" words="gone" level="1" /> -->
+	<instant group="attack" name="Big Ring" words="drai ring" level="200" mana="900" cooldown="20000" groupcooldown="2000" script="a.lua">
+		<vocation name="Elementalist" />
+	</instant>
+	<instant group="attack" name="Fan" words="drai fan" level="50" mana="200" cooldown="4000" groupcooldown="2000" script="b.lua">
+		<vocation name="Elementalist" />
+		<vocation name="Mystic" />
+	</instant>
+	<instant group="attack" name="Bolt" words="kah bolt" level="10" mana="20" needtarget="1" cooldown="2000" script="c.lua">
+		<vocation name="Elementalist" />
+	</instant>
+	<instant group="attack" name="Learned" words="kah learn" level="10" needlearn="1" script="d.lua">
+		<vocation name="Elementalist" />
+	</instant>
+	<instant group="attack" name="Snare" words="drai snar" level="10" script="e.lua">
+		<vocation name="Elementalist" />
+	</instant>
+	<instant group="support" name="Rage" words="vyr sang khar" level="120" mana="200" cooldown="30000" script="f.lua">
+		<vocation name="Berserker" />
+	</instant>
+	<instant group="healing" name="Heal" words="heal" level="1" script="g.lua">
+		<vocation name="Elementalist" />
+	</instant>
+	<instant name="Edit Door" words="aleta grav" level="1" script="h.lua" />
+	<instant group="attack" name="Cleave" words="kah cleave" level="1" script="i.lua" />
+</spells>"""
+sp = lt.parse_spells(SPELLS)
+eq([s['words'] for s in sp], ['drai ring', 'drai fan', 'kah bolt', 'kah learn', 'drai snar', 'vyr sang khar', 'heal',
+                              'aleta grav', 'kah cleave'], 'every instant, comments skipped, self-closing ones too')
+eq((sp[0]['level'], sp[0]['mana'], sp[0]['cooldown'], sp[0]['groupcooldown'], sp[0]['vocations']),
+   (200, 900, 20000, 2000, {'Elementalist'}), 'level, mana, cooldowns, vocations')
+eq((sp[2]['needtarget'], sp[3]['needlearn'], sp[7]['group'], sp[8]['vocations']), (True, True, '', set()),
+   'needtarget, needlearn, no group, no vocation list')
+MODEL = 'words,name,dmg,t5,flags,source\ndrai ring,Big Ring,1,5,,a\ndrai fan,Fan,1,4,,b\nkah bolt,Bolt,1,1,,c\n' \
+        'drai snar,Snare,1,5,utility,e\nbad,Bad,1,x,,z\n'
+model = lt.parse_rotation_model(MODEL)
+eq(model['drai fan'], (4.0, ''), 'targets of 5 and flags')
+eq('bad' in model, False, 'a row without a number is skipped')
+eq([s['words'] for s in lt.rotation_for(sp, model, 'Elementalist', 300)], ['drai ring', 'drai fan', 'kah bolt', 'kah cleave'],
+   'area first; no learned, utility, healing or house spell; a spell without a vocation list is everyone\'s')
+eq([s['words'] for s in lt.rotation_for(sp, model, 'Elementalist', 100)], ['drai fan', 'kah bolt', 'kah cleave'],
+   'a spell above the level left out')
+eq([s['words'] for s in lt.rotation_for(sp, model, 'Berserker', 300)], ['vyr sang khar', 'kah cleave'],
+   'the class support spell (rage) first, other vocations\' spells left out')
+eq(lt.rotation_for(sp, model, 'Berserker', 300)[0]['group'], 'support', 'the rage is a support cast')
+
+rot = lt.rotation_for(sp, model, 'Elementalist', 300)
+ready = {}
+eq(lt.next_spell(rot, ready, 0)['words'], 'drai ring', 'the biggest area spell first')
+ready.update({'drai ring': 20.1, 'attack': 2.1})
+eq(lt.next_spell(rot, ready, 1), None, 'the attack group cooldown holds every attack spell')
+eq(lt.next_spell(rot, ready, 2.2)['words'], 'drai fan', 'then the next area spell whose cooldown is over')
+eq(lt.next_spell(rot, {}, 0, attack=False), None, 'a lure casts no attack spell')
+brot = lt.rotation_for(sp, model, 'Berserker', 300)
+eq(lt.next_spell(brot, {'attack': 9}, 0, attack=False)['words'], 'vyr sang khar', 'a lure still casts the rage')
+
+eq(lt.parse_weights('Elementalist:3, Berserker:1,Thief'), [('Elementalist', 3), ('Berserker', 1), ('Thief', 1)], 'weights')
+for bad in ('A:0', 'A:x', 'A:-2'):
+    try:
+        lt.parse_weights(bad)
+        eq('accepted', 'refused', 'bad weight %r' % bad)
+    except ValueError:
+        eq(True, True, 'bad weight %r refused' % bad)
+classes = [('E', 2), ('B', 1)]
+plan = [lt.assign(i, classes, [100, 300]) for i in range(12)]
+eq(plan[:6], [('E', 100), ('E', 100), ('B', 100), ('E', 300), ('E', 300), ('B', 300)], 'class by weight, then the next level')
+eq(sum(1 for c, _ in plan if c == 'E'), 8, 'weights kept')
+eq(sorted(set(plan)), [('B', 100), ('B', 300), ('E', 100), ('E', 300)], 'every class at every level')
+eq(lt.exp_for_level(100), 15694800, 'experience of level 100 (the engine formula)')
+eq(lt.exp_for_level(1), 0, 'level 1: 0')
+hp, mana, ml, skill = lt.class_stats('Elementalist', 300, {'hp': 5, 'mana': 30})
+eq((hp, mana), (185 + 292 * 5, 90 + 292 * 30), 'health and mana per level')
+eq(ml > 60 and skill == 20, True, 'a caster: magic level, no weapon skill')
+hp, mana, ml, skill = lt.class_stats('Berserker', 1000, {'hp': 14, 'mana': 6})
+eq(ml <= 60 and 100 <= skill <= 130, True, 'a fighter: weapon skill')
+eq(lt.class_stats('Elementalist', 1000, {})[2] > lt.class_stats('Elementalist', 100, {})[2], True, 'magic level grows')
+eq(lt.class_stats('Elementalist', 300, {}, 2.0)[2], 2 * lt.class_stats('Elementalist', 300, {})[2], '--power: magic level')
+eq(lt.class_stats('Berserker', 300, {}, 1.5)[3], int(lt.class_stats('Berserker', 300, {})[3] * 1.5), '--power: skill')
+eq(lt.parse(['setup', '--power', '1.6']).power, 1.6, '--power')
+
+POI2 = POI.replace('(level 20-30)', '(level 500-900)').replace('Hunting: Rat (level 1-10)', 'Hunting: Rat (level 60-100)') \
+    .replace('\t},', '\t\t{k = "hunt", x = 7000, y = 7000, z = 7, n = "Hunting: Nameless", r = 1},\n\t},')
+hunts = lt.hunt_marks(POI2)
+eq([h[:2] for h in hunts], [(60, 100), (10, 20), (500, 900)], 'hunts with a level band only')
+eq([h[:2] for h in lt.hunts_for_level(hunts, 100)], [(60, 100)], 'level 100: a band starting at 50-100')
+eq([h[:2] for h in lt.hunts_for_level(hunts, 1000)], [(500, 900)], 'level 1000: 500+')
+eq([h[:2] for h in lt.hunts_for_level(hunts, 300)], [(60, 100)], 'nothing in 150-300: the highest band under it')
+eq([h[:2] for h in lt.hunts_for_level(hunts, 5)], [(10, 20)], 'nothing under: the lowest bands')
+temples = [(100, 200, 7)]
+lp = lt.level_positions(hunts, temples, [100, 1000, 100, 1000], 0.25)
+eq(lp, lt.level_positions(hunts, temples, [100, 1000, 100, 1000], 0.25), 'deterministic')
+eq(abs(lp[3][0] - 100) <= 5 and lp[3][2] == 7, True, 'the town share at the temples, spread over the bots')
+eq(abs(lp[0][0] - 1000) <= 3 and lp[0][2] == 8, True, 'the first bot hunts')
+eq(sum(1 for i in range(100) if lt.level_positions(hunts, temples, [100] * 100, 0.1)[i][2] == 7), 10, '10% in town')
+eq(abs(lp[1][0] - 5000) <= 3 and lp[1][2] == 10, True, 'a level 1000 bot in the 500+ hunt')
+eq(abs(lp[2][0] - 1000) <= 3 and lp[2][2] == 8, True, 'a level 100 bot in the 60-100 hunt')
+
+PLACES = '''return { places = {
+	{id = "a", name = "A", level = {480, 640}, teleport = {x = 1, y = 1, z = 6}, arrival = {x = 1000, y = 1000, z = 8}},
+	{id = "b", name = "B", level = {1000, 1120}, teleport = {x = 2, y = 1, z = 6}, arrival = {x = 1200, y = 1000, z = 9}},
+}}'''
+SPAWNS = ''.join('<spawn centerx="%d" centery="%d" centerz="%d" radius="2">\n' % p for p in
+                 [(1010, 1000, 8), (1020, 1005, 9), (1090, 1000, 8), (1110, 1000, 9), (1180, 990, 10), (1000, 1300, 8),
+                  (1000, 1000, 12)] + [(1000 + i, 990, 8) for i in range(30)])
+pm = lt.place_marks(PLACES, SPAWNS, per_place=5)
+eq(len([p for p in pm if p[:2] == (480, 640)]), 5, 'at most per_place points a place')
+eq([p[2:] for p in pm if p[:2] == (1000, 1120)], [(1110, 1000, 9), (1180, 990, 10)], 'the nearest arrival wins, a floor off')
+eq(all(p[2:] != (1000, 1300, 8) and p[2:] != (1000, 1000, 12) for p in pm), True, 'too far or too deep: left out')
+eq(lt.place_marks('return {}', SPAWNS), [], 'no places')
+idx = lt.spawn_index(SPAWNS)
+eq(lt.snap_to_spawn((1012, 1003, 8), idx), (1010, 1000, 8), 'snapped to the nearest spawn centre on the floor')
+eq(lt.snap_to_spawn((1000, 1290, 8), idx), (1000, 1300, 8), 'across a cell border')
+eq(lt.snap_to_spawn((1012, 1003, 7), idx), (1012, 1003, 7), 'none on the floor: unchanged')
+eq(lt.snap_to_spawn((1500, 1500, 8), idx), (1500, 1500, 8), 'none within reach: unchanged')
+
+a = lt.parse(['run', '--classes', 'Elementalist:3,Berserker', '--levels', '100,600', '--server-data', '/x', '--pull', '5,8'])
+eq((a.class_weights, a.level_list, a.pull), ([('Elementalist', 3), ('Berserker', 1)], [100, 600], (5, 8.0)),
+   '--classes, --levels, --pull')
+eq(lt.class_plan(a)[:4], [('Elementalist', 100)] * 3 + [('Berserker', 100)], 'the plan of setup and run')
+eq(lt.class_plan(lt.parse(['run'])), None, 'no --classes: the old bots')
+eq(lt.parse(['cleanup', '--classes', 'A']).classes, 'A', 'cleanup needs no server data')
+for bad in (['--classes', 'A'], ['--classes', 'A:0', '--server-data', '/x'], ['--levels', '0'], ['--levels', ''],
+            ['--pull', '0,5'], ['--pull', '5'], ['--power', '0']):
+    try:
+        lt.parse(['run'] + bad)
+        eq('accepted', 'refused', 'bad option %r' % (bad,))
+    except SystemExit:
+        eq(True, True, 'bad option %r refused' % (bad,))
+
+# ---------------------------------------------------------------- per-thread CPU and the probe's p95
+rows = [{'per_thread': {'tfs/1': 50.0, 'disp/2': 80.0}}, {'per_thread': {'tfs/1': 10.0, 'disp/2': 60.0}}]
+eq([t[0] for t in lt.thread_summary(rows)], ['disp/2', 'tfs/1'], 'the busiest thread first')
+eq(lt.thread_summary(rows)[0][1], 70.0, 'its average')
+with _tempfile.NamedTemporaryFile('w', suffix='.log', delete=False) as f:
+    f.write('[loadtest-probe] t=100 players=5 lag_avg_ms=51.2 lag_max_ms=90 samples=80\n'
+            '[loadtest-probe] t=105 players=5 lag_avg_ms=52.0 lag_max_ms=120 samples=80 lag_p95_ms=70 monsters=9 npcs=1\n'
+            '[loadtest-probe] t=999 players=5 lag_avg_ms=52.0 lag_max_ms=120 samples=80\n')
+eq(lt.probe_lines(f.name, 100, 200), [(100, 5, 51.2, 90, None), (105, 5, 52.0, 120, 70)], 'probe lines, p95 when printed')
+os.unlink(f.name)
+
 for f in FAILS:
     print('FAIL ' + f)
 print('loadtest_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

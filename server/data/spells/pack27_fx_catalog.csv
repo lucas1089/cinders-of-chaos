@@ -1,0 +1,93 @@
+kind,id,name,size,send_offset,patterns,frames,ms,note
+effect,674,palm_quake,5x5,"2,2",1x1,17,62,"Palm Shockwave: a ground-slam ring tears across the floor, dust and pebbles thrown out (from impact_shockwave/earth 0-15)"
+effect,675,flurry_petals,4x3,"1,1",1x1,15,62,"Blade Flurry: three silk-ribbon slashes whirl round the caster, petals scatter (from impact_blade_dance/sakura 0-13)"
+effect,676,iaido_dash_n,2x3,"0,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards n (from fx_charge_dash/steel 0-11)"
+effect,677,iaido_dash_ne,2x3,"0,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards ne (from fx_charge_dash/steel 0-11)"
+effect,678,iaido_dash_e,3x3,"1,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards e (from fx_charge_dash/steel 0-11)"
+effect,679,iaido_dash_se,2x3,"0,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards se (from fx_charge_dash/steel 0-11)"
+effect,680,iaido_dash_s,2x3,"0,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards s (from fx_charge_dash/steel 0-11)"
+effect,681,iaido_dash_sw,3x3,"1,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards sw (from fx_charge_dash/steel 0-11)"
+effect,682,iaido_dash_w,3x3,"1,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards w (from fx_charge_dash/steel 0-11)"
+effect,683,iaido_dash_nw,3x3,"1,1",1x1,11,70,"Iaido Sweep: steel crescents and speed lines rush towards the cut, towards nw (from fx_charge_dash/steel 0-11)"
+effect,684,ricochet_burst,3x3,"1,1",1x1,12,62,"Shadow Ricochet: a shadow knot opens, violet tendrils lash out and recoil (from impact_shadow_burst/void 0-13)"
+effect,685,chain_sparks,3x3,"1,1",1x1,14,62,Iron Chain: a steel burst and star lines where each link strikes (from impact_punch/steel 0-13)
+effect,686,sanctified_seal,5x5,"2,2",1x1,16,70,Sanctified Ground: motes gather and burst into a sun-crowned ring across the floor (from impact_holy_nova/holy 0-15)
+effect,687,shieldwave_bash_n,2x2,"0,0",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards n (from impact_shield_bash/holy 0-13)"
+effect,688,shieldwave_bash_ne,3x2,"1,0",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards ne (from impact_shield_bash/holy 0-13)"
+effect,689,shieldwave_bash_e,3x3,"1,1",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards e (from impact_shield_bash/holy 0-13)"
+effect,690,shieldwave_bash_se,3x3,"1,1",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards se (from impact_shield_bash/holy 0-13)"
+effect,691,shieldwave_bash_s,2x3,"0,1",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards s (from impact_shield_bash/holy 0-13)"
+effect,692,shieldwave_bash_sw,2x3,"0,1",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards sw (from impact_shield_bash/holy 0-13)"
+effect,693,shieldwave_bash_w,2x2,"0,0",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards w (from impact_shield_bash/holy 0-13)"
+effect,694,shieldwave_bash_nw,2x2,"0,0",1x1,14,62,"Shield Wave: a golden shield-shaped shock bursts forward, towards nw (from impact_shield_bash/holy 0-13)"
+effect,695,shrapnel_burst,3x3,"1,1",1x1,15,62,Bone Shrapnel: a necrotic blast of bone shards and gore (from impact_corpse_explosion/necrotic 0-13)
+effect,696,buff_rested,3x3,"1,1",1x1,17,83,"rested: green crosses rise, a soft pulse ring on the floor (from status_regeneration/nature 0-15)"
+effect,697,buff_returning,2x3,"0,1",1x1,17,83,"returning player: a golden halo, white feathers drift down (from status_blessed/holy 0-15)"
+effect,698,buff_catchup,4x3,"1,1",1x1,17,83,catch-up: a golden whirl of wind and speed lines (from status_haste/gold 0-15)
+effect,699,buff_low_stamina,2x2,"0,0",1x1,17,83,"low stamina: sweat, steam puffs and a drooping swirl (from status_exhausted/steel 0-15)"
+effect,700,hunter_focus,3x2,"0,0",1x1,17,83,Hunter's Instinct: a hawk crest and a turning crosshair over the head (from status_eagle_eye/gold 0-15)
+effect,701,levelup_rise,4x3,"1,1",1x1,9,67,"level up: a golden ring and a rising star beam, no words (the frames before the lettering) (from fx_level_up/gold 0-7)"
+effect,702,loot_beam_gold,2x3,"0,1",1x1,17,83,loot beam: legendary and exotic drops (gold) (from fx_loot_beacon/gold 0-15)
+effect,703,loot_beam_steel,2x3,"0,1",1x1,17,83,loot beam: divine drops (white steel) (from fx_loot_beacon/steel 0-15)
+effect,704,loot_beam_amethyst,2x3,"0,1",1x1,17,83,loot beam: cosmic drops (violet) (from fx_loot_beacon/amethyst 0-15)
+effect,705,loot_beam_emerald,2x3,"0,1",1x1,17,83,loot beam: unique drops (emerald) (from fx_loot_beacon/emerald 0-15)
+effect,706,embercache_coins,3x3,"1,1",1x1,15,67,Ember Cache reward: a burst of gold coins (from fx_coin_burst/gold 0-15)
+effect,707,candlemark_glow,3x3,"1,1",1x1,16,83,Candlemarks earned: a treasure glow and sparkles (from fx_treasure_glow/gold 0-15)
+effect,708,nova_frost,5x5,"2,2",1x1,17,62,"Rime Bloom: a frost ring glazes the floor, a crown of ice spikes erupts and shatters (from impact_frost_nova/frost 0-15)"
+effect,709,meteor_fall,6x6,"2,2",1x1,21,62,"Falling Pyre: a blazing meteor crashes down, fireball, debris and a cooling crater (from impact_meteor/fire 0-19)"
+effect,710,storm_chain,5x5,"2,2",1x1,17,62,Forked Storm: a bolt cracks down and leaps across the floor in jagged arcs (from impact_chain_lightning/storm 0-15)
+effect,711,smite_radiant,4x4,"1,1",1x1,15,62,"Radiant Smite: a pillar of light slams down, a burst ring and drifting feathers (from impact_holy_smite/radiant 0-13)"
+effect,712,judgment_holy,6x5,"2,2",1x1,16,62,Judgement: a sword of light plunges down with a cross-shaped shock ring (from impact_divine_judgment/holy 0-15)
+effect,713,nova_radiant,5x5,"2,2",1x1,16,62,Purging Nova: motes gather and burst into a sun-crowned ring (from impact_holy_nova/radiant 0-15)
+effect,714,mend_holy,5x5,"2,2",1x1,16,62,Vow of Mending: a radiant cross blooms over a ring of holy light (from impact_mass_heal/holy 0-15)
+effect,715,gyre_steel,5x5,"2,2",1x1,15,62,Reaping Gyre: a ring of blade smears sweeps twice around the feet (from impact_whirlwind/steel 0-15)
+effect,716,berserk_blood,5x5,"2,2",1x1,14,62,"Bloodrage and Red Frenzy: a furious red spin, rage flares and a dust ring (from impact_berserk/blood 0-15)"
+effect,717,slam_earth,5x5,"2,2",1x1,17,62,"Earthbreaker: a radial shockwave, rock chunks and a rolling dust wall (from impact_ground_slam/earth 0-15)"
+effect,718,terra_strike,5x5,"2,2",1x1,16,62,"Colossus Fall: the ground caves in, two rings of rock spikes erupt and crumble (from impact_ultimate_terra_strike/earth 0-15)"
+effect,719,cleave_blood_n,3x2,"1,0",1x1,14,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards n (from impact_cleave/blood 0-13)"
+effect,720,cleave_blood_ne,3x3,"1,1",1x1,15,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards ne (from impact_cleave/blood 0-13)"
+effect,721,cleave_blood_e,2x3,"1,1",1x1,14,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards e (from impact_cleave/blood 0-13)"
+effect,722,cleave_blood_se,3x3,"1,1",1x1,14,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards se (from impact_cleave/blood 0-13)"
+effect,723,cleave_blood_s,3x2,"1,1",1x1,15,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards s (from impact_cleave/blood 0-13)"
+effect,724,cleave_blood_sw,2x3,"0,1",1x1,14,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards sw (from impact_cleave/blood 0-13)"
+effect,725,cleave_blood_w,2x3,"0,1",1x1,14,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards w (from impact_cleave/blood 0-13)"
+effect,726,cleave_blood_nw,3x3,"1,1",1x1,15,62,"Skyfall and Vaulting Cleave: a wide cleaving arc in front of the warrior, towards nw (from impact_cleave/blood 0-13)"
+effect,727,backstab_shadow,2x2,"0,1",1x1,14,62,"Shadow Step: a shadow afterimage strikes from behind, a crimson X (from impact_backstab/shadow 0-13)"
+effect,728,parry_steel,3x3,"1,1",1x1,15,62,"Counter Stance: two blade gleams cross, a white-hot star and sparks (from impact_parry/steel 0-13)"
+effect,729,venom_flurry,2x3,"0,1",1x1,14,62,Poison Blades: three dagger slashes fling green venom (from impact_venom_flurry/poison 0-13)
+effect,730,drain_blood,2x2,"0,0",1x1,14,62,Life Siphon: ribbons of blood torn from the target (from impact_blood_drain/necrotic 0-13)
+effect,731,claws_shadow_n,2x2,"0,0",1x1,13,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards n (from impact_shadow_claws/shadow 0-13)"
+effect,732,claws_shadow_ne,2x1,"0,0",1x1,15,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards ne (from impact_shadow_claws/shadow 0-13)"
+effect,733,claws_shadow_e,2x1,"0,0",1x1,13,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards e (from impact_shadow_claws/shadow 0-13)"
+effect,734,claws_shadow_se,2x3,"0,1",1x1,14,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards se (from impact_shadow_claws/shadow 0-13)"
+effect,735,claws_shadow_s,2x3,"0,1",1x1,12,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards s (from impact_shadow_claws/shadow 0-13)"
+effect,736,claws_shadow_sw,2x2,"0,0",1x1,14,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards sw (from impact_shadow_claws/shadow 0-13)"
+effect,737,claws_shadow_w,2x2,"0,0",1x1,12,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards w (from impact_shadow_claws/shadow 0-13)"
+effect,738,claws_shadow_nw,2x2,"0,0",1x1,13,62,"Shadowfist Flurry: three rakes of living shadow, turned from the caster, towards nw (from impact_shadow_claws/shadow 0-13)"
+effect,739,punch_fire,3x3,"1,1",1x1,14,62,Ashen Fist: a fiery comic punch burst (from impact_punch/fire 0-13)
+effect,740,hammer_steel,3x3,"1,1",1x1,14,62,Iron Palm: a heavy steel impact (from impact_hammer_hit/steel 0-13)
+effect,741,healing_burst,4x3,"1,1",1x1,15,62,"Kindled Breath: a radiant plus-sign blooms, leaves and sparkles spiral up (from impact_healing_burst/spirit 0-13)"
+effect,742,rift_void,3x3,"1,1",1x1,12,83,Tear in the Weave: a vortex tears open in the ground (from circle_void_rift/void@start 0-11)
+effect,743,summon_necro,5x5,"2,2",1x1,13,83,Raise Dead: a pentagram blazes inside a double circle (from circle_summoning/necrotic@start 0-11)
+effect,744,portal_pad,3x3,"1,1",1x1,25,83,Town Portal channel: a spinning rune circle with columns of light (from circle_teleport_pad/arcane@loop 0-23)
+effect,745,boss_telegraph,5x5,"2,2",1x1,25,83,"boss telegraph (round, 5 x 5): a pulsing blood-red rim, the fill closes in (from circle_telegraph/blood@loop 0-23)"
+effect,746,portal_in,3x3,"1,1",1x1,15,67,Town Portal opens: an arcane arrival flash (from fx_teleport_in/arcane 0-15)
+effect,747,portal_out,3x3,"1,1",1x1,15,67,Town Portal closes: an arcane departure flash (from fx_teleport_out/arcane 0-15)
+effect,748,vigil_wrath,4x3,"1,1",1x1,17,83,Vigil of Wrath on: blazing chevrons stream up (from status_might/fire 0-15)
+effect,749,vigil_iron,2x2,"0,0",1x1,17,83,Vigil of Iron on: a shield emblem and orbiting hex plates (from status_fortified/sapphire 0-15)
+effect,750,vigil_haste,4x3,"1,1",1x1,17,83,Vigil of Haste on: a whirl of wind and speed lines (from status_haste/wind 0-15)
+effect,751,vigil_clarity,3x3,"1,1",1x1,25,83,Vigil of Clarity on: turning clock-dial rings (from aura_chrono_rings/arcane 0-23)
+effect,752,ward_shield,3x3,"1,1",1x1,17,83,Soulward: a hex-grid barrier dome (from status_shielded/arcane@loop 0-15)
+effect,753,aegis_radiant,3x3,"1,1",1x1,17,83,Aegis of Faith: a golden dome of light (from status_divine_shield/radiant 0-15)
+effect,754,veil_stealth,3x3,"1,1",1x1,17,83,Shadow Veil: the thief fades into shadow (from status_stealth/shadow 0-15)
+effect,755,zeal_oath,3x3,"1,1",1x1,25,83,Zealotry: six holy swords ring the caster (from aura_crusader_oath/radiant 0-23)
+effect,756,bellow_cry,2x2,"0,0",1x1,17,83,Iron Bellow: shockwave rings burst from the head (from status_battle_cry/gold 0-15)
+effect,757,curse_mark,2x3,"0,1",1x1,17,83,Withering Curse: a skull sigil and shadow tendrils (from status_cursed/necrotic 0-15)
+effect,758,stun_stars,2x2,"0,0",1x1,17,83,stunned: little stars wheel round the head (from status_stunned/gold 0-15)
+missile,154,fan_knife,3x3,"1,1",3x3,8,83,Fan of Knives: a steel throwing knife (from proj_throwing_knife/steel 0-7)
+missile,155,ricochet_bolt,2x2,"0,0",3x3,8,83,Shadow Ricochet: a violet shadow bolt (from proj_shadow_bolt/void 0-7)
+missile,156,chain_disc,2x2,"0,0",3x3,8,83,Iron Chain: a ring of golden chi (from proj_energy_disc/gold 0-7)
+missile,157,shrapnel_shards,2x2,"0,0",3x3,8,83,Bone Shrapnel: three bone shards (from proj_bone_shards/bone 0-7)
+missile,158,shuriken_steel,2x2,"0,0",3x3,8,83,Shuriken Toss and Barrage: a spinning steel star (from proj_shuriken/steel 0-7)
+missile,159,soul_skull,2x2,"0,0",3x3,8,83,necromancer skull orb: a green-lit skull (from proj_soul_skull/necrotic 0-7)
+missile,160,holy_orb,2x3,"0,1",3x3,8,83,Radiant Smite: a holy orb (from proj_holy_orb/radiant 0-7)

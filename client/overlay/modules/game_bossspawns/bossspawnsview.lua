@@ -1,6 +1,7 @@
 -- Pure helpers of the Boss Spawns window (no client API), tested by bossspawnsview_test.lua.
 -- Rows come from the server (server/data/scripts/chaos/bossspawns_core.lua K.payload); every time is a number of
 -- seconds counted from the moment the list arrived, so the window counts down by itself between two refreshes.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 BossSpawnsView = {}
 local V = BossSpawnsView
 
@@ -38,10 +39,10 @@ end
 -- seconds since -> "just now", "12m ago", "3h ago", "2d ago"
 function V.ago(seconds)
   seconds = math.max(0, math.floor(num(seconds)))
-  if seconds < 60 then return 'just now' end
-  if seconds < 3600 then return string.format('%dm ago', math.floor(seconds / 60)) end
-  if seconds < 86400 then return string.format('%dh ago', math.floor(seconds / 3600)) end
-  return string.format('%dd ago', math.floor(seconds / 86400))
+  if seconds < 60 then return tr('just now') end
+  if seconds < 3600 then return tr('%dm ago', math.floor(seconds / 60)) end
+  if seconds < 86400 then return tr('%dh ago', math.floor(seconds / 3600)) end
+  return tr('%dd ago', math.floor(seconds / 86400))
 end
 
 -- the status column: text, colour. elapsed = seconds since the list arrived
@@ -51,24 +52,24 @@ function V.status(row, elapsed)
   local left = row['in'] ~= nil and math.max(0, num(row['in']) - num(elapsed)) or nil
   if st == 'alive' then
     local n = num(row.alive)
-    return n > 1 and string.format('Alive (%d)', n) or 'Alive', V.COLORS.alive
+    return n > 1 and tr('Alive (%d)', n) or 'Alive', V.COLORS.alive
   elseif st == 'respawn' then
-    if left and left > 0 then return 'Respawns in ' .. V.countdown(left), V.COLORS.respawn end
-    return 'Respawn due', V.COLORS.due
+    if left and left > 0 then return tr('Respawns in %s', V.countdown(left)), V.COLORS.respawn end
+    return tr('Respawn due'), V.COLORS.due
   elseif st == 'due' then
-    return 'Respawn due', V.COLORS.due
+    return tr('Respawn due'), V.COLORS.due
   elseif st == 'scheduled' then
     if left and left > 0 then return 'In ' .. V.countdown(left), V.COLORS.scheduled end
     return 'Starting', V.COLORS.starting
   elseif st == 'random' then
     return 'Random', V.COLORS.random
   elseif st == 'ondemand' then
-    return 'On demand', V.COLORS.ondemand
+    return tr('On demand'), V.COLORS.ondemand
   elseif st == 'cooldown' then
-    if left and left > 0 then return 'Your cooldown ' .. V.countdown(left), V.COLORS.cooldown end
+    if left and left > 0 then return tr('Your cooldown %s', V.countdown(left)), V.COLORS.cooldown end
     return 'Ready', V.COLORS.ready
   end
-  return 'Not seen yet', V.COLORS.unknown
+  return tr('Not seen yet'), V.COLORS.unknown
 end
 
 -- the small line under the status: the time of day of a far event, else the last kill
@@ -90,8 +91,9 @@ end
 
 function V.levelText(row)
   local parts = {}
-  if num(row and row.lv) > 0 then parts[#parts + 1] = string.format('Level %d+', num(row.lv)) end
-  if num(row and row.party) > 1 then parts[#parts + 1] = string.format('party of %d', num(row.party)) end
+  if num(row and row.lv) > 0 then parts[#parts + 1] = string.format('Level %d+', num(row.lv))
+  elseif num(row and row.pl) > 0 then parts[#parts + 1] = tr('Pocket: level %d+', num(row.pl)) end
+  if num(row and row.party) > 1 then parts[#parts + 1] = tr('party of %d', num(row.party)) end
   return table.concat(parts, ', ')
 end
 
@@ -114,7 +116,7 @@ function V.tooltip(row, elapsed)
   if row.tx and row.tx ~= '' then lines[#lines + 1] = tostring(row.tx) end
   if row.at then lines[#lines + 1] = 'Next: ' .. tostring(row.at) end
   if row.ago ~= nil then
-    local line = 'Last kill: ' .. V.ago(num(row.ago) + num(elapsed))
+    local line = tr('Last kill: %s', V.ago(num(row.ago) + num(elapsed)))
     if row.by then line = line .. ' by ' .. tostring(row.by) end
     if num(row.kills) > 0 then line = line .. string.format(' (%d kills)', num(row.kills)) end
     lines[#lines + 1] = line
@@ -157,6 +159,28 @@ function V.group(data, filter)
     if #g.rows > 0 then kept[#kept + 1] = g end
   end
   return kept
+end
+
+-- the Pocket button of a row (server pocketboss.lua, action "pocket": {bosses = {key = {l, m, b, lv, ok}}, reset,
+-- inside}). -> nil when the boss has no pocket, else {text, enabled, tooltip}. l = charges left (daily + bonus), m = the
+-- daily charges, b = bonus charges held, lv = level needed, ok = the level is reached; inside = the key of the pocket
+-- the player is in now.
+function V.pocket(row, pocket, elapsed)
+  if type(row) ~= 'table' or type(pocket) ~= 'table' or type(pocket.bosses) ~= 'table' then return nil end
+  local p = pocket.bosses[row.k]
+  if type(p) ~= 'table' then return nil end
+  local left, daily, bonus = num(p.l), num(p.m), num(p.b)
+  local reset = math.max(0, num(pocket.reset) - num(elapsed))
+  local lines = { tr('Pocket: a private copy of this boss, open any time, alone or with your party (each member spends a charge).'),
+    tr('Less experience and loot than the scheduled fight; the boss passive point counts the same.') }
+  lines[#lines + 1] = tr('Charges left: %d (daily %d, bonus %d). New daily charges in %s.', left, daily, bonus, V.countdown(reset))
+  local enabled = left > 0 and p.ok ~= nil and pocket.inside == nil
+  if p.ok == nil and num(p.lv) > 0 then
+    lines[#lines + 1] = tr('Needs level %d.', num(p.lv))
+  elseif pocket.inside ~= nil then
+    lines[#lines + 1] = tr('You are in a pocket now.')
+  end
+  return { text = tr('Pocket %d/%d', left, daily), enabled = enabled, tooltip = table.concat(lines, '\n') }
 end
 
 -- the category header: "World Bosses (5)" or "(2 of 5)" with a filter, and the count alive

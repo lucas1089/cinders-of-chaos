@@ -38,6 +38,11 @@ WHOLE_DIRS = ['ui', 'common_buttons', 'skin', 'options', 'optionstab']
 CHROME_MODULES = ['game_interface', 'game_console', 'game_inventory', 'game_minimap', 'game_skills',
                   'game_actionbar', 'game_containers', 'game_healthinfo', 'client_topmenu', 'game_topbar',
                   'game_battle', 'game_viplist', 'game_mainpanel', 'game_sidebars']
+# English words baked into a texture, erased (each box filled with its most common colour): base patch 0054 draws
+# them as tr() labels, so pt-BR shows them translated. (x0, y0, x1, y1), x1/y1 exclusive.
+TEXT_FREE = {
+    'ui/schedule.png': [(1, 1, 111, 15), (113, 1, 225, 15)],  # the login Event Schedule heads "Active", "Upcoming"
+}
 REF = re.compile(r'/images/([A-Za-z0-9_/.\- ]+?)(?:\.png)?(?=[\s\'")\],;]|$)')
 
 _XS = np.array([s[0] for s in STOPS])
@@ -54,6 +59,16 @@ def recolor(rgba):
     out = rgba.copy()
     out[..., :3] = (np.clip(mapped * w + rgb * (1 - w), 0, 1) * 255).round().astype(np.uint8)
     return out, float((w[..., 0] * (rgba[..., 3] > 0)).sum())
+
+
+def erase_text(rgba, boxes):
+    """each box filled with the colour it holds most (the band behind the text)"""
+    out = rgba.copy()
+    for x0, y0, x1, y1 in boxes:
+        region = out[y0:y1, x0:x1].reshape(-1, out.shape[-1])
+        colours, counts = np.unique(region, axis=0, return_counts=True)
+        out[y0:y1, x0:x1] = colours[counts.argmax()]
+    return out
 
 
 def wanted_files(base):
@@ -103,6 +118,7 @@ def main():
         arr, touched = recolor(np.array(im))
         if touched < 1:
             continue
+        arr = erase_text(arr, TEXT_FREE.get(rel.replace(os.sep, '/'), ()))
         written += 1
         if not dry:
             os.makedirs(os.path.dirname(dst), exist_ok=True)

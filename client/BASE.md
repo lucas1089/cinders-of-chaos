@@ -303,6 +303,22 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     the rotation unaffected); no "You are exhausted"; every accepted spell at least its cooldown apart, the attack group
     at least 2 s; a 2.5 s client stall was followed by 1-4 casts in the next 6 s, no burst. Not run on Windows.
 
+31. `0053` (OTUI `client_settings/options/interface.otui`): Language. Options > Interface gets a "Language" row after
+    "Field timers over magic walls and fields" (0041): a label and a button with the current language that opens the
+    choice of the overlay module `client_chaos_locale` (`ChaosLocale.showMenu`, `MANIFEST.md` "Localization"). The
+    choice is the module's own setting (`chaos-language`), not a `client_settings` option, so the window's Ok / Apply
+    do not touch it; without the module the button hides itself. OTUI only; its context is 0041's field timers panel
+    (checked with `patch --dry-run` on that context, not on the assembled tree). Not run in a client yet.
+
+32. `0054` (OTUI `client_background/background.otui`, Lua `client_background/casts.lua`): the login screen's panels
+    through `tr()`. The Event Schedule panel's column heads "Active" and "Upcoming" were baked into
+    `/images/ui/schedule`; the overlay's recoloured copy has them erased (`tools/gen_ui_reskin.py` `TEXT_FREE`) and
+    the patch draws them as two labels (`$var-cip-font`, the old bronze `#8d5a3a`) over the head band. The Casts
+    panel's counts (`setCounts`) are `tr('%d Players Casting', n)` / `tr('%d Viewers', n)` (and the singulars). The
+    pt-BR texts, with the panel's other `tr()` labels (Boosted, Creature, Casts, Watch), are in
+    `client_chaos_locale/pt_br.lua`. Applies after 0014 (casts.lua; checked with `patch --dry-run` on the assembled
+    tree's files). Run in the Linux client (pt-BR and English login screens, 2026-10-14).
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

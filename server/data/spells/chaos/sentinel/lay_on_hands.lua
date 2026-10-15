@@ -2,6 +2,10 @@
 -- (ChaosTemplar.cfg.layOnHands). Say a name to choose (saen gal manh "Name"); without one it goes to the party
 -- member (or the Sentinel) with the lowest health share. Long cooldown.
 dofile('data/spells/scripts/chaos/_templar.lua')
+-- status words (data/lib/chaos_status_fx.lua, switch off: nothing more is sent)
+if not ChaosStatusFx then
+	pcall(dofile, "data/lib/chaos_status_fx.lua")
+end
 
 local T = ChaosTemplar
 local L = T.cfg.layOnHands
@@ -41,5 +45,8 @@ function onCastSpell(creature, variant, isHotkey)
 	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "holy_arrow", CONST_ANI_SMALLHOLY)
 	ChaosSpell.healTarget(player, target, amount, amount, Fx("holy_spiral", CONST_ME_HOLYAREA))
 	ChaosSpell.vfx(target:getPosition(), "healing_bloom")
+	if ChaosStatusFx then
+		ChaosStatusFx.send(target:getPosition(), "lay_on_hands", nil, target:getId())
+	end
 	return true
 end

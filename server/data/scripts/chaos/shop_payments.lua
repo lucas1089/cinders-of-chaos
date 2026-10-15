@@ -336,6 +336,22 @@ function Pay.processReversals()
 					receivers[c.account] = (receivers[c.account] or 0) + c.take
 				end
 			end
+			-- the creator share this donation paid (creator_codes.lua, after its hold): taken back too, once, as far as the
+			-- creator's balance holds it (a chargeback can come months after the hold; the share must not outlive it)
+			local creatorTaken, creatorAcc = 0, nil
+			local use = Chaos.select("SELECT `creator_account_id`, `share` FROM `chaos_creator_uses` WHERE `order_id` = " .. r.order_id ..
+				" AND `state` = 'paid' FOR UPDATE", {{"creator_account_id", "n"}, {"share", "n"}})[1]
+			if use and use.share > 0 then
+				creatorAcc = use.creator_account_id
+				local cb = Chaos.select("SELECT `coins` FROM `" .. T_COINS .. "` WHERE `account_id` = " .. creatorAcc .. " FOR UPDATE", {{"coins", "n"}})[1]
+				creatorTaken = math.min(use.share, math.max(0, cb and cb.coins or 0))
+				if creatorTaken > 0 then
+					db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. creatorTaken .. " WHERE `account_id` = " .. creatorAcc ..
+						" AND `coins` >= " .. creatorTaken)
+				end
+				db.query("UPDATE `chaos_creator_uses` SET `state` = 'reversed', `reason` = 'reversed', `settled_at` = " .. now() ..
+					" WHERE `order_id` = " .. r.order_id .. " AND `state` = 'paid'")
+			end
 			db.query("UPDATE `" .. T_PAY .. "` SET `reversal_done` = 1, `reversal_coins` = " .. (cur.reversal_coins + take + clawed) .. ", `updated` = " .. now() ..
 				" WHERE `order_id` = " .. r.order_id .. " AND `reversal_done` = 0")
 			db.query("COMMIT")
@@ -344,6 +360,10 @@ function Pay.processReversals()
 			if clawed > 0 or unpaid > 0 then
 				log(string.format("order %d: %d coins taken back from gift receivers, %d gifted coins could not be recovered (staff: see %s)",
 					r.order_id, clawed, unpaid, T_COIN_GIFTS))
+			end
+			if creatorAcc then
+				log(string.format("order %d: creator share reversed, %d of %d coins taken back from account %d", r.order_id, creatorTaken,
+					use.share, creatorAcc))
 			end
 			for _, p in ipairs(Game.getPlayers()) do
 				local got = receivers[p:getAccountId()]

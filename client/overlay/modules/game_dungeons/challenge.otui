@@ -11,7 +11,7 @@ Panel
   Label
     id: text
     anchors.centerIn: parent
-    text: The Beginning challenge completed!
+    !text: tr('The Beginning challenge completed!')
     color: #341c06
     font: Verdana Bold-13px
     text-auto-resize: true

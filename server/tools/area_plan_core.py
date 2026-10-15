@@ -120,11 +120,15 @@ def tiers():
 
 
 def tier_window(lo, hi):
-    """(touched tiers, pick_lo, pick_hi) of a level band"""
+    """(touched tiers, pick_lo, pick_hi) of a level band. The last tier has no top (800+), but the bounty board's pick
+    window ends at 1500; a band above it may also take monsters up to its own top + 100 (the 1300-2000 set)"""
     t = [b for b in tiers() if b[0] <= hi and b[1] >= lo]
     if not t:
         return [], None, None
-    return t, min(b[2] for b in t), max(b[3] for b in t)
+    phi = max(b[3] for b in t)
+    if any(b[1] >= 99999 for b in t):
+        phi = max(phi, hi + 100)
+    return t, min(b[2] for b in t), phi
 
 
 CHEST_ACTION_BLOCK = (47960, 47999)    # one action id per planned area with chests (server/README.md "Area planner")

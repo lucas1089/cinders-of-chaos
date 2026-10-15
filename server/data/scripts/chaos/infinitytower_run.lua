@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 ChaosTowerRun = ChaosTowerRun or {}
 
@@ -396,15 +399,15 @@ end
 
 function ChaosTowerRun.start(player)
 	if runOf[player:getId()] then
-		player:sendCancelMessage("You are already inside the tower.")
+		player:sendCancelMessage(Chaos.t(player, "You are already inside the tower."))
 		return false
 	end
 	if player:getLevel() < cfg.minLevel then
-		player:sendCancelMessage(string.format("You need level %d to enter the Infinity Tower.", cfg.minLevel))
+		player:sendCancelMessage(Chaos.t(player, "You need level %d to enter the Infinity Tower.", cfg.minLevel))
 		return false
 	end
 	if player:getParty() and player:getParty():getLeader():getId() ~= player:getId() then
-		player:sendCancelMessage("Only the party leader can start the tower.")
+		player:sendCancelMessage(Chaos.t(player, "Only the party leader can start the tower."))
 		return false
 	end
 	local group = groupOf(player)
@@ -422,11 +425,11 @@ function ChaosTowerRun.start(player)
 			return false
 		end
 		if Chaos and Chaos.isMultiClient and Chaos.isMultiClient(m) then
-			player:sendCancelMessage(m:getName() .. ": " .. Chaos.multiClient.msgDungeon)
+			player:sendCancelMessage(m:getName() .. ": " .. Chaos.t(player, Chaos.multiClient.msgDungeon))
 			return false
 		end
 		if m:getCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT) then
-			player:sendCancelMessage(m:getName() .. " is in a fight.")
+			player:sendCancelMessage(Chaos.t(player, "%s is in a fight.", m:getName()))
 			return false
 		end
 	end
@@ -440,7 +443,7 @@ function ChaosTowerRun.start(player)
 			end
 			player:sendCancelMessage(IL.busy(player, "tower", "tower arenas", lefts, cfg.limits))
 		else
-			player:sendCancelMessage("All tower arenas are busy. Try again in a moment.")
+			player:sendCancelMessage(Chaos.t(player, "All tower arenas are busy. Try again in a moment."))
 		end
 		return false
 	end
@@ -455,7 +458,7 @@ function ChaosTowerRun.start(player)
 		m:registerEvent("ChaosTowerPlayerDeath")
 		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, center + math.floor((i - 1) / 2)))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out.", cfg.startDelay))
+		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out.", cfg.startDelay))
 	end
 	run.nextEvent = addEvent(function(s)
 		local r = runs[s]
@@ -497,7 +500,7 @@ end
 function ChaosTowerRun.leave(player)
 	local run = runOf[player:getId()]
 	if not run then
-		player:sendCancelMessage("You are not inside the tower.")
+		player:sendCancelMessage(Chaos.t(player, "You are not inside the tower."))
 		return false
 	end
 	removePlayer(run, player:getId(), true)

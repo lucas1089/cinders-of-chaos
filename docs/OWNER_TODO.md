@@ -5,82 +5,50 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 ## Decisions
 
+Item 6 of 2026-10-14 ("Decida tudo sobre o item 6"): the developers decided every pure game or design question below;
+each is under "Decided" with its reason. Left here: what needs the owner's own answer or a real-world action.
+
 - [ ] **Dates.**
   - Proposal: launch on 20 Nov 2026 at 15:00 (UTC-3).
   - Open betas on the weekends of 31 Oct and 7 Nov.
-  - The Season 1 start (now 1 Nov) moves to the launch date.
+  - The Season 1 start (now 1 Nov in `season_config.lua`) moves to the launch date. The Chronicle's goal sizes assume
+    it does (server/README.md "The Ashen Chronicle", "Goal sizes").
 - [ ] **The beta plan.** Who joins, the wipe before launch, coins and donations in the beta, the Season 1 start and
   the staff schedule: every decision is in [docs/BETA.md](BETA.md) (draft), each marked "Owner decides" with a
-  recommendation.
-- [ ] **Donation prices.** Every coin pack's price is a placeholder in USD (`usdCents` in
-  `server/data/scripts/chaos/shop_coins_config.lua`). Pix is not priced on its own: it charges the USD price x 5 in
-  BRL (`brlPerUsd = 5`). Set the USD prices, and check that `brlPerUsd` gives the BRL prices you want.
-- [ ] **Class unlock price.** The Necromancer, the Monk and the Templar cost 750 Chaos Coins each (account-wide), a
-  placeholder in `server/data/scripts/chaos/class_unlocks_core.lua` and in the store offers of `shop_config.lua`
-  (category "Classes"; change both). Decide the price, or another way to unlock them (the unlock method is
-  pluggable: ROADMAP C8).
-- [ ] **Store prices of 2026-10-13 (placeholders; owner approval "Pode fazer todas as mudanças recomendadas").**
-  - Coin packs (`server/data/scripts/chaos/shop_coins_config.lua`): Handful of Coins 80 for US$ 1.99 (R$ 9,95 by Pix),
-    Pouch 250 / 4.99, Sack 750 +10% / 14.99, Chest 1500 +15% / 29.99, Hoard 4000 +25% / 74.99, Vault of Coins 10000
-    +30% / 179.99 (the anchor), Starter 250 + 250 / 2.99. Update the Donation Terms tables' R$ / US$ placeholders.
-    Decided 2026-10-13 ("Limite a 1000"): the first donation is double up to +1000 extra coins; a pack above 1000 coins
-    gets +1000 flat (the Vault: 10,000 + 1,000), `shop_coins_config.lua` `firstPurchase.maxBonus`, the website setting
-    `first_bonus_max`. Donate page, client, Donation Terms (EN, PT) and tests say so.
-  - Chaos outfit shaders (`cosmetics_config.lua` `outfitShaders`, on): 250 (Ember Glow, Frost Rime, Void Flicker,
-    Heartblood), 300 (Holy Radiance, Spectral Ghost).
-  - Themed appearance sets of pair 24 (`server/data/lib/chaos_theme_art.lua` `M.sets`): 350 a full set (Cryptbone,
-    Wildroot, Moonsilver), 250 a class kit (Rimeglass, Emeraldine, Thornwild), sold only in the weekly "This week"
-    rotation (5 offers, 10% off). Prestige, never sold: Voidmourn, Sunsworn, Oathsteel and the three Starwing kits
-    (achievements in server/README.md "Weekly rotation, bundles, coin packs"). Change the split there if wanted.
-  - Regalia bundles (outfit + mount + wings + aura) at 25% off; the three older bundles stay at 20%.
-  - Everfull Ration, the infinite food (`shop_config.lua`, Convenience): 150 coins.
-  - Rune packs (`shop_config.lua` `RUNE_GOLD_PER_COIN = 1000`, `RUNE_DISCOUNT` 5% / 10%): 100 Searing Orb 9, 500 Reaper's
-    99, 100 Grand Mending 24, 100 Shackle 89 (all from the vendor prices of `data/lib/chaos_rune_supply.lua`).
-  - VIP (the Chaos Pact, 300 coins / 30 days). Decided 2026-10-13 ("Vip ganha +10% de exp e restaura stamina mais
-    rápido. Retire o loot bag e autoloot."; "Pode manter" for the loadout slot): while active +10% monster experience
-    (inside the experience cap; not for season characters), stamina back x1.5 faster (offline and on the trainer tile),
-    +1 loadout slot, the Auto Seller, a chat colour and a monthly cosmetic (six months planned, `pact_config.lua`
-    `perks.monthly`). Rarity Autoloot is no longer lent by the Pact (still sold); the Loot Bag is a store item, never a
-    Pact perk. The old rule "loadout slots are never sold" is replaced: the Pact's slot stays, the earned slots are not
-    sold on their own. No priority login: there is no login queue. Season characters get no Pact experience
-    (decided, see "Decided").
-  - Loot Bag and Auto Seller, defined 2026-10-13. Loot Bag (350 coins, was "Loot Pouch"): bottomless, 255 slots (the
-    most a container can have in this protocol), its contents weigh nothing (engine src-patch 0038), takes all the loot
-    of your kills by default, kept at relog, back (empty) after a death. Auto Seller (500 coins, or the Pact): sells
-    what is in the Loot Bag at NPC prices, once per 30 s, gold to the bank. Never sold: locked items, uniques, orbs,
-    gems, keys, items no NPC buys. Rarities and the commands: decided, see "Decided".
-- [ ] **Season pass price.** The premium track of the Ashen Pass costs 1000 Chaos Coins, a placeholder
-  (`premium.price` in `server/data/scripts/chaos/seasonpass_config.lua`; the store offer reads it). The track is
-  cosmetics and 320 coins back only (approved 2026-10-13). Decide the price; the packs (600 / 1800 / 3200) too.
-- [ ] **Creator codes.** Decided 2026-10-13: the creator is paid in Chaos Coins in game. Left: the share, 5% of the
-  donation's coins, a placeholder (`sharePct` in `server/data/scripts/chaos/creator_codes_config.lua`), the hold (14
-  days) and the caps (500 per donation, 5000 a month). Codes are created on the website (The World > Creator Codes,
-  an admin panel account with a group 5 character).
-- [ ] **Referral rewards.** The main reward comes at level 150 of the friend's first character, a placeholder
-  (`milestones` and `qualify` in `server/data/scripts/chaos/referral_config.lua`; the friend's account must be 7 days
-  old). Tier titles at 3, 5 and 10 friends. Set `shareUrl` to `https://<site>/register.php?ref=` so the client shows
-  the link too (the website shows it already).
-- [ ] **Character Bazaar fee.** 8% of the final price, a placeholder in the approved 5-10% range (`feePct` in
-  `server/data/scripts/chaos/bazaar_config.lua`). Also check the minimum level 50 and the minimum price 100 coins.
-  Add the cron line of `website/README.md` "Character Bazaar" on the live site.
+  recommendation. The go / no-go list for the beta, with owner and dev items: [docs/BETA_READINESS.md](BETA_READINESS.md).
 - [ ] **A lawyer must review the new clauses.** Donation Terms section 7 (Season Pass, creator codes, Character
-  Bazaar) is a draft with placeholders (`[PREÇO DO PASSE PREMIUM]`, `[PERCENTUAL DO CRIADOR]`, `[TAXA DO BAZAR]`, ...;
-  docs/legal/README.md "Placeholders" and "Check" item 17). It must be reviewed before the Bazaar and creator codes
-  are switched on for players.
-- [x] **Staff rules.** Decided 2026-10-12: the recommended rules of [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (see
-  "Decided" below).
-- [x] **Rune prices** (2026-10-13; rune conjuring is gone, runes come from NPCs and crafting). Decided 2026-10-13: the
-  prices stay as below; Conjure Rations, Hallow Spear and Charge Staff go too ("Pode tirar, já que as ammos são
-  infinitas"). Every NPC now sells each
-  rune at one price, about its conjure cost in mana-potion gold: about twice the old NPC price for most runes (Searing
-  Orb 45 -> 84, Reaper's Rune 50-108 -> 220, Grand Mending 175 -> 240, Shackle 700 -> 890; the unscribed rune stays 10).
-  Crafting makes them for 55% of that gold (about 46% with the crafting bonus) plus herbs and ore pieces. Full table and
-  the gold-per-hour share by level band: server/README.md "Rune supply"; numbers in
-  `server/data/lib/chaos_rune_supply.lua` (`price`, `goldShare`). Decide:
-  - the prices (300 attack runes an hour cost 14-17% of hunting gold at levels 8-20, 40% at 30, 62% at 45 with Reaper's
-    Runes, 18% at 100, 7% at 300, about 1% past 500: flat prices are no sink in the late game);
-  - whether Conjure Rations (food), Hallow Spear and Charge Staff, the last conjure spells that make no rune, go too
-    (decided: they go).
+  Bazaar): its numbers are filled in now (pass 600 coins, creator 10%, Bazaar 10%, 14 days each); left
+  `[REGRAS DE DIVULGAÇÃO DO CRIADOR]` and the review itself (docs/legal/README.md "Placeholders" and "Check" item 17). It
+  must be reviewed before the Bazaar and creator codes are switched on for players. The Terms' new helper sentence
+  (section 6) and the pack prices go to the same review.
+- [ ] **Referral link.** Set `shareUrl` in `server/data/scripts/chaos/referral_config.lua` to
+  `https://<site>/register.php?ref=` once the domain exists, so the client shows the link too.
+- [ ] **Character Bazaar cron.** Add the cron line of `website/README.md` "Character Bazaar" on the live site.
+- [ ] **Town scars of the Chronicle (a check, not a decision):** the decoration sets (`chronicle_config.lua`
+  `town.sets`) go on free tiles around the capital's temple (Cinderhold, town 2, since 2026-10-15). Look at them in game after `/chronicle complete`
+  on a test server, and the three portals in the temple's upper hall; set `town.anchor` if they land badly. Optional
+  ground swaps (`swaps`) need ground ids of the map.
+- [ ] **Main city Cinderhold and the Halls of Services (a check, not a decision):** after a restart, step into the
+  portal at the south end of Cinderhold's temple (Mirewake: its south-west corner): the hall holds the Oracle, the
+  Keeper of Trials, Archivist Maelis, the faction NPC, the Loot Buyer, the Material Broker, the Gambler, Iselde Varrow
+  and Osric behind their counters, and the Descent / raid portals. The Great Brazier moved to Cinderhold. Previews and
+  the reasons for a hall instead of street booths: server/README.md "Halls of Services". A new character should leave the tutorial
+  island in Cinderhold. Optional for existing characters: `server/tools/migrate_home_town.py` (server/README.md "Main
+  city").
+
+- [ ] **Stash prices (PLACEHOLDER).** Seven new store offers in "Storage & Slots" (`server/data/scripts/chaos/pact_config.lua`
+  `store.storage`): Weapons, Armor, Jewellery, Materials and Creature Products Stash Tab at 150 coins each, Collectibles
+  Stash Tab at 100, and Remote Stash Deposit at 300 (deposit into the stash from anywhere; also included while the
+  Chaos Pact is active). Payments are off in the beta; set the real prices before launch. Also decide: keep selling "Extra Depot
+  Tab" / "4 Depot Tabs" (each now also counts as a general stash tab) or remove the Depot Tabs store category, and when to
+  remove the depot boxes for good (server/README.md "Stash", "Depot transition").
+
+- [ ] **Conquest Tokens: review the prices and the income** (`server/data/scripts/chaos/conquest_config.lua`, server/README.md
+  "Conquest Tokens, the Conquest vendor and bad-luck protection"). Target: a chosen item in 1-3 weeks of dedicated play
+  (about 1,800 tokens a week), 3-6 weeks casual (about 360 a week). Now: monster uniques 600 + 1.5 x level, boss uniques
+  1,000 + 3 x level, set pieces 900 + 1.2 x level, raid uniques 2,400 (Crown 3,600), Ascended uniques 4,200 (Signet 5,400);
+  Omen Key of a chosen kind 150, attune 40, Ascended Shard 300; refinement 60 + 40 x the new rarity, up to Celestial.
+  Only the numbers are left for the owner; the design questions are under "Decided".
 
 ## Accounts and services
 
@@ -99,6 +67,12 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   `website/install_site.sh` again. Steps: website/README.md "Mail".
 - [ ] **reCAPTCHA keys:** `CHAOS_RECAPTCHA_SITE_KEY` and `CHAOS_RECAPTCHA_SECRET` in `site.env`.
 - [ ] **Discord invite link** for the website and the client.
+- [ ] **Discord webhooks** for the game's announcements (no bot, no token): in Discord, Server Settings > Integrations >
+  Webhooks, create one per channel: records and realm firsts, bosses (world boss, Ascended, Cinderheart), players (levels
+  500 and 1000), announcements (season start and end), server status (up, daily restart, down), Character Bazaar. Put
+  the URLs in `/etc/chaos/discord.env` on the server (`CHAOS_DISCORD_WEBHOOK_RECORDS`, `_BOSSES`, `_PLAYERS`,
+  `_ANNOUNCE`, `_STATUS`, `_BAZAAR`; never in the repository) and enable `chaos-discord.timer`. Steps: docs/LAUNCH.md
+  "Discord announcements". The invite link above (`CHAOS_DISCORD_URL`) also shows on the downloads page.
 - [ ] **Payment accounts:** Mercado Pago (Pix) and PayPal, with live credentials in `payments.env`.
 
 ## Keys
@@ -108,6 +82,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 ## Texts
 
+- [ ] **Bot review privacy line:** a lawyer should review the new suspicion-score sentence (EN and PT) and its 30/90-day
+  retention, with the other legal texts.
 - [ ] **Legal texts:** terms of use, privacy policy and donation terms. Drafts in Portuguese and English are in
   [docs/legal/](legal/README.md) and on the website (footer, account creation checkbox, donation page). Left for the
   owner: fill in the placeholders (name, CPF or CNPJ, contact and DPO e-mail, city, providers, prices, notice periods,
@@ -117,8 +93,9 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - [ ] **Moderation record period:** pick `[PRAZO DOS REGISTROS DE MODERAÇÃO]` (Privacy Policy section 4) and set the
   same number of days in `server/data/scripts/chaos/moderation_purge_config.lua` `days` (default 730 = 2 years). The
   daily purge is built (server/README.md "Moderation record purge").
-- [ ] **Rules page 7.9 on a site installed before 2026-10-12:** the installer adds the Rules page once and never
-  overwrites it. Paste line 7.9 (chargeback fraud) of `website/setup/rules.bbcode` in Admin Panel > Pages > Rules.
+- [ ] **Rules page on a site installed before 2026-10-14:** the installer adds the Rules page once and never
+  overwrites it. Paste lines 2.2 and 7.4 (the helper, 2026-10-14) and, if installed before 2026-10-12, 7.9 (chargeback
+  fraud) of `website/setup/rules.bbcode` in Admin Panel > Pages > Rules.
 
 ## On the live server
 
@@ -129,6 +106,86 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - [ ] Behind a proxy, pass the real client address through to PHP. The register limit and the login lock use it.
 
 ## Decided
+
+- Candlemarks (2026-10-15, server/README.md "Candlemarks"): the name stays Candlemarks (not "Vigil Coins": "Vigil" is
+  the Vigils auras and the Vigil faction). Every online character earns 1 per 30 minutes, idle or not, into the
+  account's balance; at most 2 characters per IP (the earliest logins). Prices as built, about 2.5x an active-only
+  design because idle time counts (one character 4 hours a day: 56 a week; everything at the weekly caps: about 430):
+  pocket boss charge 15 (3 a week), Orb of Grafting 30 (1, stays), Unmaking 12 (3), Tempering 8 (5), 2 Whetstones 8
+  (5), Flawed gem 8 (5), Chipped gem 3 (10), 3 Awakening or 3 Ember Orbs 5 (10 each), 10 Rune Shards 5 (5), supply
+  bundles 3 / 5 / 8 (5 a week in all), and three cosmetics of our own, once per account: Candle Seal 150, Candlelight
+  Name 120, Tallow Labels 100. Purchases only next to Osric the Chandler at the temple (the window works anywhere). No
+  daily cap. The idle kick is raised to 1440 minutes (`patch_base_idle_kick.py --minutes N`). The rested vial and the
+  bounty / kill task reroll offers light up when those APIs exist.
+
+- **Conquest Tokens (2026-10-15).** Tokens stay per character: alts already get the experience catch-up, and no mule can
+  funnel tokens. Season characters keep their own (a season character is a character of its own). Bad-luck protection
+  stays per group, not per item. No repair for items ruined by the old Orb of Ruin: no live server yet, so none exist.
+  The cheap low-level unique prices stay (about 2 weeks for a casual, kept for new players). The world boss
+  participation unique roll and the rift chest unique roll are now under bad-luck protection too.
+
+- **Pocket bosses (2026-10-15, owner delegated to the developers; server/README.md "Pocket bosses").**
+  - 60% experience and 60% loot in every pocket (world, island, raid), kept.
+  - Level floors for the open-world bosses' pockets kept: island 250, raid 150, Moloveth 250 (world bosses: the event's 300).
+  - Every one of the 25 random raid bosses keeps its pocket; the Boss Spawns window lists the raid bosses by pocket level,
+    then name (`pocketboss_config.lua` `sortSpawns`), and shows "Pocket: level N+" on rows without a level of their own.
+  - No Ashen Sepulchre pockets (open any time, its loot is the weekly lockout).
+  - The one-hour no-stacking record is kept in `chaos_pocketboss.event_at`, so a restart keeps it.
+  - Multi-client characters may open pockets; each spends its own charges.
+  - Still to measure live: the island and raid bosses' health and damage scaling (guesses until then), the charges (3 a day),
+    the tokens (3 / 2 / 1) and the time limits.
+
+- **Time-friendly progression, store and dungeons (2026-10-15, standing rule "follow your recommendations").**
+  - Class unlocks are no longer sold: the store's "Classes" category (500 coins each) is removed; the Necromancer, Monk
+    and Templar unlock for the whole account at level 200. Nobody had bought one, so nothing to refund. No quest path was
+    built (the code supports a `quest` method if wanted later).
+  - Stamina is not sold: the Stamina Refill (40) and the Stamina Extension (8) are removed. The Novice Pack's 5 Stamina
+    Extensions (40) became 100 Supreme Health Potions (30); the pack stays at 250 coins (worth 355). Owned extensions keep
+    working; the level 100 kit still gives two.
+  - Dungeons: a 5 minute cooldown after a failed run (`Chaos.dungeons.failCooldownSeconds`), 15 after a clear.
+
+- **Decided 2026-10-14 (owner delegated, "Decida tudo sobre o item 6"):**
+  - **The Ashen Chronicle, Season 1 text: approved after an edit**, because the draft had a few slips: ash that "melts",
+    "colossi" for the Five (only Vharok is one), the "weekly raid" in the story, the city's wardens mixed with
+    Varkhul's, "as cinzas se erguem" (rise) for "lift". Fixed in `chronicle_text.lua` (EN and pt-BR, more natural
+    Brazilian Portuguese: "veio de brasas", "quantas vezes for preciso", "se dissipam", "se reergue"); the codex and the
+    wiki are regenerated.
+  - **The Chronicler is Archivist Maelis** (one name, not a second keeper), because she already keeps the realm's
+    ledger in ink mixed with ash (lore_data.lua) and already answers "chronicle": the intro names her, pt-BR says "a
+    Cronista", and she answers "cronista" too.
+  - **Chronicle goal sizes** (`chronicle_config.lua` `chapters.s1`): I 250 characters to level 300 + 1,200 rifts of
+    tiers 1-5; II 20 world bosses + 1,200 rifts of 6-10; III 180 Omens + 600 rifts of 11-14; IV 12 Sepulchre clears + 30
+    Ascended; V 10 Cinderhearts + 80 characters to 600 + 6 invasions. Because pack combat and 100-300 online made the
+    old ones hours (chapter I) or weeks (40 raids, 10 invasions): now each chapter takes days, the arc about 37 days at
+    150 online, 50 at 100, 28 at 300. The arithmetic: server/README.md "The Ashen Chronicle", "Goal sizes".
+  - **Chronicle areas placed by the install**, because nobody should edit the map by hand: install step `contentareas`
+    places the Breach (14910, 15140, 7; moved 10 east of its cell to keep 10+ tiles from cinderglass_sanctum), the
+    Ossuary Stair (15100, 15140, 9) and the Memorial plaza (14800, 14800, 7) at their plan origins, idempotent,
+    refusing taken tiles; `at` is set to those origins (a test checks it). Tried on a copy of the base map: placed,
+    and a second run changed nothing.
+  - **Gates in the capital's temple** (Cinderhold, town 2, the main city since your request of 2026-10-15; they were
+    in Mirewake's hall before), in its upper hall on floor 6 (the stairs of the temple's two side rooms lead there):
+    Breach 32362, 32240, 6; Ossuary Stair 32358, 32240, 6; the Memorial's portal 32379, 32240, 6 (`memorial.lua`
+    puts it there, `plaza.portal`). The Chronicle's scars are around that temple, every new character's home town is
+    the capital, and the hall is off every walking line (checked on the base map: plain floor, every other tile of
+    the hall still reached from both stairs). The hunt teleport room is one step away: its two great teleports stand 5
+    tiles north of the temple (server/README.md "Main city"). Found in passing: the Memorial's action ids 47930-47933
+    were the hunt teleports' block; moved to 47940-47944.
+  - **Helper rule** (Rules 2.2 and 7.4, the Terms section 6 EN / pt-BR, the wiki's rules guide, docs/GM_HANDBOOK.md
+    3a and 4): "The official client's helper (healing, spell rules, auto rotation, targeting) is allowed while you
+    play. Leaving it running for hours with nobody at the keyboard counts as botting (7.4)." First time a warning, then
+    the 7.4 ladder. A gamemaster counts a case only with an hour of unattended signals, a missed presence check and no
+    answer to them within 5 minutes; no escalation needed below a 30-day ban. Because the proposal was sound and GMs
+    had no rule to apply.
+  - **Presence check failure stays "log"** (`antibot_config.lua` `failAction`), because a check is one signal and
+    can fail for someone who stepped away for a minute; staff decide with the bot review (no automatic punishment).
+  - **Prices:** the sheet and the reasons are [docs/PRICES.md](PRICES.md). Coin packs 100 / 250 / 525 / 1100 / 2875 /
+    6000 coins for R$ 9,90 / 24,90 / 49,90 / 99,90 / 249,90 / 499,90 by Pix (US$ 1.98 ... 99.98 by PayPal,
+    `brlPerUsd` 5), Starter 500 for R$ 14,90; one coin about R$ 0,10. Classes **free at level 200, not sold** (500 coins or level 500 until 2026-10-15)
+    (the store is a shortcut, never the only way in). Season pass 600 (320 back), packs 500 / 1500 / 2500. Loot Bag
+    250, Auto Seller 400, Rarity Autoloot 300, pouches 200 / 150, Everfull Ration 100 (per-character items, cheaper for
+    alts). Bazaar fee 10%, creator share 10%, referral main reward at level 250. Cosmetics, the Pact, premium, boosts,
+    supplies, runes and services kept. The Donation Terms tables (EN, PT) are filled in.
 
 - Item prices (owner, 2026-10-14; server/README.md "Item prices"):
   - Kept as built: plain equipment at 31% of its old NPC price (the gear scale), rolled copies x1.5 to x32 by rarity and
@@ -188,3 +245,7 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   in [LAUNCH.md](LAUNCH.md) section 2.
 - Base upgrade-slot check (2026-10-12): once a second per player in 12 groups, and at once on an equip or unequip
   move, instead of every 100 ms (server/README.md "Game loop stalls").
+- Owner art pair 26 (2026-10-15): pair approved and on `windows-assets` (50645056), switch on (client/MANIFEST.md
+  "Owner art"). Left: the store wings carry PLACEHOLDER prices of 250 each (`server/data/lib/chaos_owner_art.lua`); check
+  the mapping of the looks in game (server/README.md "Owner art (pair 26)"), Ossivane's in particular; send again the small files the
+  download could not save (fire medusa sheet, outfit sheets 2852 / 2719 / 2727, fifth_1, the two filth sheets).

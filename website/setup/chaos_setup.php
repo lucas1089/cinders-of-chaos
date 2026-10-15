@@ -147,6 +147,61 @@ if ($err !== '') {
 }
 znote_plugin_set_enabled('chaos', true);
 $out .= "plugin chaos: installed and enabled\n";
+// Character Bazaar: one open listing per character, held by the database (two list requests at once both passed the
+// "already listed" check). A table made before this (the game server's bazaar.lua, an older install.sql) gets the
+// generated `active_player_id` and its unique key; a character listed twice keeps its oldest listing, the others are
+// cancelled by the staff path (every escrow refunded) first.
+if ($tableExists('chaos_bazaar_listings')) {
+	$r = $link->query("SHOW COLUMNS FROM `chaos_bazaar_listings` LIKE 'active_player_id'");
+	if ($r && $r->num_rows === 0) {
+		require_once $Z . '/plugins/chaos/bazaar_lib.php';
+		$dups = chaos_bazaar($config)->cancelDuplicateListings();
+		if ($dups) {
+			$out .= 'chaos_bazaar_listings: duplicate listings cancelled and refunded: ' . implode(', ', $dups) . "\n";
+		}
+		try {
+			$ok = $link->query("ALTER TABLE `chaos_bazaar_listings` ADD COLUMN `active_player_id` int(11) GENERATED ALWAYS AS "
+				. "(CASE WHEN `status` IN ('active', 'settling') THEN `player_id` ELSE NULL END) STORED, "
+				. 'ADD UNIQUE KEY `chaos_bazaar_listings_active` (`active_player_id`)');
+			$error = $link->error;
+		} catch (mysqli_sql_exception $e) {
+			$ok = false;
+			$error = $e->getMessage();
+		}
+		if (!$ok) {
+			finish($out . 'chaos_bazaar_listings.active_player_id: ' . $error . "\n", 1);
+		}
+		$out .= "chaos_bazaar_listings: one open listing per character (unique key)\n";
+	}
+	// at most maxActivePerAccount open listings per seller, held by the database too (two characters of one account
+	// listed at once both passed the count): `seller_slot`, the generated `active_seller_id` and their unique key. Open
+	// listings made before get a slot first (bazaar_lib.php assignSellerSlots), then the key is added.
+	// (keyed on the index, so a run stopped between the steps finishes them the next time)
+	$r = $link->query("SHOW INDEX FROM `chaos_bazaar_listings` WHERE `Key_name` = 'chaos_bazaar_listings_seller_slot'");
+	if ($r && $r->num_rows === 0) {
+		require_once $Z . '/plugins/chaos/bazaar_lib.php';
+		try {
+			$c = $link->query("SHOW COLUMNS FROM `chaos_bazaar_listings` LIKE 'active_seller_id'");
+			$ok = $c && $c->num_rows > 0 ? true : $link->query('ALTER TABLE `chaos_bazaar_listings` ADD COLUMN `seller_slot` tinyint(3) unsigned DEFAULT NULL, '
+				. "ADD COLUMN `active_seller_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `seller_account_id` ELSE NULL END) STORED");
+			if ($ok) {
+				$slotted = chaos_bazaar($config)->assignSellerSlots();
+				if ($slotted) {
+					$out .= "chaos_bazaar_listings: seller slots given to $slotted open listings\n";
+				}
+				$ok = $link->query('ALTER TABLE `chaos_bazaar_listings` ADD UNIQUE KEY `chaos_bazaar_listings_seller_slot` (`active_seller_id`, `seller_slot`)');
+			}
+			$error = $link->error;
+		} catch (mysqli_sql_exception $e) {
+			$ok = false;
+			$error = $e->getMessage();
+		}
+		if (!$ok) {
+			finish($out . 'chaos_bazaar_listings.active_seller_id: ' . $error . "\n", 1);
+		}
+		$out .= "chaos_bazaar_listings: auction limit per seller (unique key)\n";
+	}
+}
 // the version of the legal texts for the game server: server_config chaos_legal_version. The game's legal_notice.lua
 // tells an account without an acceptance of this version, at login, to accept on the website (legal_lib.php).
 require_once $Z . '/plugins/chaos/legal_lib.php';
@@ -193,6 +248,10 @@ $out .= "menu: The World (Server Info, Patch Notes, Leaderboards, Seasons, Rules
 // the community goal and the week's world modifiers (plugins/chaos/pages/community.php, read from the game's tables)
 $menu('Community', 'page.php?plugin=chaos&p=community', 'fa-fire', 6, $world);
 $out .= "menu: The World > Community\n";
+// the Ashen Chronicle and the Capital Memorial (plugins/chaos/pages/chronicle.php, memorial.php; read from the game's tables)
+$menu('Chronicle', 'page.php?plugin=chaos&p=chronicle', 'fa-book', 6, $world);
+$menu('Memorial', 'page.php?plugin=chaos&p=memorial', 'fa-university', 6, $world);
+$out .= "menu: The World > Chronicle, Memorial\n";
 // the guild wars declared in game: current wars and the history (plugins/chaos/pages/guildwars.php)
 $menu('Guild Wars', 'page.php?plugin=chaos&p=guildwars', 'fa-shield', 7, $world);
 $out .= "menu: The World > Guild Wars\n";
@@ -213,6 +272,9 @@ $out .= "menu: Donate\n";
 $adminEntry = db()->fetchOne('SELECT `id` FROM `znote_menu` WHERE `location` = ? AND `url` = ? AND `parent_id` = 0 LIMIT 1;', ['main', 'admin/index.php']);
 $menu('Player Reports', 'page.php?plugin=chaos&p=reports', 'fa-flag', 17, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
 $out .= "menu: Player Reports (staff only)\n";
+// balance telemetry for the staff (plugins/chaos/pages/telemetry.php): admin accounts with a group 5+ character only
+$menu('Balance Telemetry', 'page.php?plugin=chaos&p=telemetry', 'fa-line-chart', 18, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
+$out .= "menu: Balance Telemetry (staff only)\n";
 
 // ZnoteX's own entries that lead to pages this server does not use (README "Not used on this server"): the shop and
 // its points, the creature and spell lists (both in the client) and the forum. Switched off once per install, on a

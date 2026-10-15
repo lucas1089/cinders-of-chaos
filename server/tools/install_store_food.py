@@ -8,10 +8,13 @@ Everything is read from server/data/scripts/chaos/store_food_config.lua (`item`:
 weight, article, name, plural, description), the file the Lua side (store_food.lua) uses too.
 
 1. data/items/items.otb: a copy of the stock food node `sourceId` (2672, the dragon ham: group, flags, every attribute)
-   with the server id `id`, made not stackable (one ration, never used up). Its client id: the dragon ham's while
-   `ownLook = false` (the client pair has no ration art yet), `clientId` (our art, client id 33904:
-   client/tools/sprites/gen_store_food_art.py, appended by import_art_things.py with art_import/store_food.csv) once
-   the pair has it and the config says ownLook = true. A node already there with the same bytes is left alone, one
+   with the server id `id`, stackable like that node (its look is a stackable client thing: the 10.98 protocol
+   writes a count byte for an item whose client thing is stackable, so a server item that is not would leave the
+   client reading past the message, "ProtocolGame parse message exception ... opcode 0x6e" at every container that
+   showed the ration, found in a live test 2026-10-14; one ration a character, count 1, never used up). Its client
+   id: the dragon ham's while
+   `ownLook = false`, `clientId` (our art, client id 33904: client/tools/sprites/gen_store_food_art.py, appended by
+   import_art_things.py with art_import/store_food.csv; in things_custom25) while ownLook = true (on since 2026-10-14). A node already there with the same bytes is left alone, one
    with other bytes (a changed config or look) is replaced; a server id that belongs to any other client id stops the
    script (nothing is written). items.otb.bak keeps the original the first time; the written file is parsed again and
    the node checked. Range: 32084 (after the store pouches 32081..32083).
@@ -53,9 +56,10 @@ def read_config(path=CONFIG):
 
 
 def node(stock, cfg, client_id):
-    """a copy of the stock food node with the new server id and client id, not stackable"""
+    """a copy of the stock food node with the new server id and client id, stackable as the stock node is (the client
+    reads a count for a stackable look; the ration's look is the stock food's or our art made with its flags)"""
     _s, _e, _sid, _cid, group, flags, attrs = stock
-    flags = (flags | FLAG_PICKUPABLE | FLAG_MOVEABLE) & ~FLAG_STACKABLE
+    flags = flags | FLAG_PICKUPABLE | FLAG_MOVEABLE
     body = struct.pack('<I', flags)
     seen = False
     for k, v in attrs:
@@ -100,7 +104,9 @@ def verify_otb(data, cfg, want, cid):
     by_sid = {k[2]: k for k in kids}
     k = by_sid.get(cfg['id'])
     assert k and k[3] == cid, 'ration node %d' % cfg['id']
-    assert not (k[5] & FLAG_STACKABLE), 'ration not stackable'
+    stock = by_sid.get(cfg['sourceId'])
+    assert stock and bool(k[5] & FLAG_STACKABLE) == bool(stock[5] & FLAG_STACKABLE), \
+        'ration stackable as its source (the client reads a count for a stackable look)'
     assert data[k[0]:k[1]] == want, 'ration node bytes'
     sids = [x[2] for x in kids]
     assert len(sids) == len(set(sids)), 'duplicate server ids in items.otb'

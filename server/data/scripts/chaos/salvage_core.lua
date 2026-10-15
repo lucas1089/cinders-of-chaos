@@ -4,7 +4,8 @@
 -- An item is described by an info table built by salvage.lua from the engine item:
 --   {gear, riftKey, rarity, level (item level), unique, sockets, gems (socketed), highTiers (modifiers of tier
 --   cfg.highTier or better), locked, stackable, inBackpack, setPiece (an item set piece: salvaged for setPieceShards
---   although it is a unique without a rarity; "salvage all" never takes one)}
+--   although it is a unique without a rarity; "salvage all" never takes one), tokens (the Conquest Tokens a unique gives,
+--   conquest.lua; a unique with tokens > 0 may be salvaged when cfg.uniqueTokens, for uniqueShards shards + the tokens)}
 --
 --   K.isLocked(value)                     a lock attribute value -> true / false
 --   K.check(info, cfg)                    nil when the item may be salvaged, else a reason key (K.reasons)
@@ -56,7 +57,7 @@ function K.check(info, cfg)
 	if info.riftKey then
 		return "riftKey"
 	end
-	if info.unique and not cfg.allowUniques and not info.setPiece then
+	if info.unique and not cfg.allowUniques and not info.setPiece and not (cfg.uniqueTokens and (info.tokens or 0) > 0) then
 		return "unique"
 	end
 	if info.stackable then
@@ -65,7 +66,7 @@ function K.check(info, cfg)
 	if not info.gear then
 		return "notGear"
 	end
-	if (info.rarity or 0) < 1 and not info.setPiece then
+	if (info.rarity or 0) < 1 and not info.setPiece and not (info.unique and (info.tokens or 0) > 0) then
 		return "normal"
 	end
 	if (info.gems or 0) > 0 then
@@ -106,6 +107,10 @@ function K.shards(info, cfg)
 		-- an item set piece (data/lib/chaos_item_sets.lua): a fixed number, it has no rarity to price it
 		return math.max(1, floor(tonumber(cfg.setPieceShards) or 1))
 	end
+	if info.unique then
+		-- a unique salvaged for Conquest Tokens (info.tokens): a fixed number of shards on top
+		return math.max(1, floor(tonumber(cfg.uniqueShards) or 1))
+	end
 	local r = rarityIndex(info, cfg)
 	local base = cfg.baseShards[r]
 	local n = floor(base * (1 + cfg.levelBonus * K.levelFraction(info.level, cfg)) + 1e-9)
@@ -138,7 +143,7 @@ end
 K.weighted = weighted
 
 function K.roll(info, cfg, rand)
-	local out = {shards = K.shards(info, cfg)}
+	local out = {shards = K.shards(info, cfg), tokens = info.unique and (info.tokens or 0) > 0 and info.tokens or nil}
 	if rand(1, 10000) <= K.orbChance(info, cfg) then
 		out.orb = weighted(cfg.orbWeights, rand)
 	end
@@ -160,7 +165,7 @@ function K.preview(info, cfg)
 		return {ok = false, why = K.reasons[why] or why, locked = info and info.locked or nil}
 	end
 	return {ok = true, why = "", shards = K.shards(info, cfg), orbChance = percent(K.orbChance(info, cfg)),
-		locked = nil}
+		locked = nil, tokens = info.unique and (info.tokens or 0) > 0 and info.tokens or nil}
 end
 
 -- entries: list of info tables (in container order). Returns

@@ -1,0 +1,129 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "capital_memorial",
+  "name": "The Ember Memorial",
+  "biome": "hall",
+  "size": [
+    48,
+    40
+  ],
+  "floors": 1,
+  "level": [
+    1,
+    50
+  ],
+  "seed": 73021,
+  "origin": {
+    "x": 14800,
+    "y": 14800,
+    "z": 7
+  },
+  "decoration": "sparse",
+  "light": "bright",
+  "zones": [
+    {
+      "id": "approach",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        9,
+        5
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        19,
+        31
+      ]
+    },
+    {
+      "id": "plaza",
+      "floor": 1,
+      "shape": "arena",
+      "size": [
+        19,
+        15
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        14,
+        13
+      ]
+    },
+    {
+      "id": "hall_of_firsts",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        7,
+        11
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        4,
+        15
+      ]
+    },
+    {
+      "id": "hall_of_records",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        7,
+        11
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        36,
+        15
+      ]
+    },
+    {
+      "id": "garden_of_the_fallen",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        28,
+        6
+      ],
+      "role": "camp",
+      "pz": true,
+      "at": [
+        10,
+        4
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "approach",
+      "to": "plaza",
+      "width": 3
+    },
+    {
+      "from": "plaza",
+      "to": "hall_of_firsts",
+      "width": 3
+    },
+    {
+      "from": "plaza",
+      "to": "hall_of_records",
+      "width": 3
+    },
+    {
+      "from": "plaza",
+      "to": "garden_of_the_fallen",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "approach"
+  },
+  "exit": {
+    "zone": "approach"
+  },
+  "notes": "The Capital Memorial (server/README.md \"The Capital Memorial\"): a protected memorial plaza for the capital, no monsters. Statues of the season's realm firsts stand in the west hall, the top records in the east hall, the memorial stones of fallen Hardcore characters (opt-in) in the northern garden, and the Memorial stone in the middle of the plaza. memorial.lua places those items at runtime on free tiles of each zone (memorial_config.lua slots, offsets from this plan's ORIGIN); the plan holds only the hall. The exit portal leads to the temple."
+}

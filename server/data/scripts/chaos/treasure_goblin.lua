@@ -28,6 +28,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 ChaosTreasureGoblinConfig = dofile("data/scripts/chaos/treasure_goblin_config.lua")
 dofile("data/scripts/chaos/treasure_goblin_core.lua")
 if not ChaosSpeed then
@@ -169,7 +172,7 @@ end
 -- ------------------------------------------------------------------ messages
 local function tell(pos, radius, text, msgType)
 	for _, p in ipairs(Game.getSpectators(pos, false, true, radius, radius, radius, radius)) do
-		p:sendTextMessage(msgType or MESSAGE_EVENT_ADVANCE, text)
+		p:sendTextMessage(msgType or MESSAGE_EVENT_ADVANCE, Chaos.t(p, text))
 	end
 end
 
@@ -285,7 +288,7 @@ local function despawn(monster, st, escaped)
 	if escaped then
 		effect(pos, "summon_portal", CONST_ME_TELEPORT)
 		say(monster, c.escapeLine)
-		tell(pos, c.behaviour.announceRadius, string.format(c.escapeText, st.goblinName or c.name))
+		tell(pos, c.behaviour.announceRadius, ChaosI18n.msg(c.escapeText, st.goblinName or c.name))
 		print(string.format("[Chaos goblin] escaped at %d,%d,%d", pos.x, pos.y, pos.z))
 	else
 		pos:sendMagicEffect(CONST_ME_POFF)
@@ -302,7 +305,7 @@ local function announce(monster, st)
 		local pid = p:getId()
 		if not st.seen[pid] then
 			st.seen[pid] = true
-			local text = string.format(c.appearText, st.goblinName or c.name)
+			local text = Chaos.t(p, c.appearText, st.goblinName or c.name)
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 			if c.behaviour.toast and ChaosNotify and ChaosNotify.gmBroadcast then
 				pcall(ChaosNotify.gmBroadcast, p, text)
@@ -553,7 +556,7 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		return true
 	end
 	local pos = creature:getPosition()
-	tell(pos, c.behaviour.announceRadius, string.format(c.killText, owner:getName(), st.goblinName or c.name))
+	tell(pos, c.behaviour.announceRadius, ChaosI18n.msg(c.killText, owner:getName(), st.goblinName or c.name))
 
 	local xp = G.experience(c, st.replacedExp, st.level)
 	if xp > 0 then
@@ -565,19 +568,19 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		if not ok then
 			print("[Chaos goblin] loot failed: " .. tostring(bonus))
 		elseif #bonus > 0 then
-			local text = (st.goblinName or c.name) .. " hoard: " .. table.concat(bonus, ", ")
+			local text = ChaosI18n.msg("%s hoard: %s", st.goblinName or c.name, table.concat(bonus, ", "))
 			local msgType = _G[c.loot.messageType] or MESSAGE_LOOT or MESSAGE_INFO_DESCR
 			local party = owner:getParty()
 			if party then
-				party:broadcastPartyLoot(text)
+				party:broadcastPartyLoot(tostring(text)) -- one line for the whole party: English
 			else
-				owner:sendTextMessage(msgType, text)
+				owner:sendTextMessage(msgType, Chaos.t(owner, text))
 			end
 			pos:sendMagicEffect(CONST_ME_GIFT_WRAPS or CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE)
 			-- loot rays: lootfilter.lua reads the corpse in onDropLoot, after this death event, so uniques and
 			-- Legendary+ items placed above get their beam without a hook
 			print(string.format("[Chaos goblin] %s killed a %s (area level %d): %s", owner:getName(), st.goblinName or c.name,
-				st.level, text))
+				st.level, tostring(text)))
 		end
 	end
 
@@ -621,6 +624,8 @@ function TG.rollAt(info, rand_)
 		return why, 0, 0
 	end
 	local mult = tonumber(ChaosEvents and ChaosEvents.bonus and call(ChaosEvents.bonus, "goblin") or 1) or 1
+	-- pack combat (pace.lua): a hunt gives more respawns per hour, so each rolls x the monster's loot factor
+	mult = mult * (tonumber(info.paceMult) or 1)
 	local hit, oneIn, pct = G.rollWithSpoor(c, rand_ or rand, mult, function()
 		local m, p = TG.spoorAt(info.pos)
 		return m, p
@@ -661,7 +666,8 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	local mt = self:getType()
 	local info = {
 		name = self:getName(), pos = position, natural = not artificial, startup = startup,
-		summon = self:getMaster() ~= nil, boss = isBoss(self), hostile = isHostile(self), maxHealth = self:getMaxHealth()
+		summon = self:getMaster() ~= nil, boss = isBoss(self), hostile = isHostile(self), maxHealth = self:getMaxHealth(),
+		paceMult = ChaosPace and ChaosPace.spawnLootMult and ChaosPace.spawnLootMult(self) or 1
 	}
 	local outcome, _, spoorPct = TG.rollAt(info)
 	if outcome ~= "goblin" then

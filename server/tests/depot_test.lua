@@ -55,7 +55,7 @@ end
 for _, id in ipairs(cfg.achievementTabs) do
 	local a = achById[id]
 	check(a ~= nil, "achievement " .. id .. " exists")
-	has(a and a.desc, "depot tab", "achievement " .. id .. " says it opens a depot tab")
+	has(a and a.desc, "stash tab", "achievement " .. id .. " says it opens a stash tab (the depot retired into the stash)")
 end
 eq(pc.extras.depotTabs.limit, "depotTabs", "depot tabs are a Pact extra")
 local keys = {}
@@ -455,6 +455,8 @@ end
 local pactLimit = 4
 ChaosPact = {limit = function(player, key) return key == "depotTabs" and pactLimit or 0 end}
 
+-- the depot tabs as they were (the stash transition off); the transition is checked after the move rules
+Chaos.stashConfig = {depot = {withdrawOnly = false, migrate = false, version = 1}}
 dofile("data/scripts/chaos/depot.lua")
 local Dp = ChaosDepot
 check(lockerAction ~= nil, "own locker Action without the base locker script")
@@ -633,6 +635,22 @@ eq(move(sword, 1, backpack, boxes[8], 255), 1, "tab 8 still locked")
 sent = {}
 callbacks.onItemMoved(hero, sword, 1, INV, cpos(0), backpack, boxes[3])
 eq(sent[1] and sent[1].action, "tabs", "refresh after a depot move")
+-- the stash transition (stash_config.lua depot.withdrawOnly): nothing new goes in, taking out and tidying a tab work
+Chaos.stashConfig.depot.withdrawOnly = true
+eq(move(sword, 1, backpack, boxes[3], 255), 1, "transition: inventory into an open tab refused")
+has(lastWarning(), "withdraw-only", "transition: the warning names the stash")
+eq(move(sword, 1, nil, chest, idx(boxes[3]), GROUND), 1, "transition: from the ground onto a tab icon refused")
+eq(move(sword, 1, backpack, chest, 255), 1, "transition: loose into the chest refused")
+eq(move(over.items[3], 1, over, boxes[3], 255), 1, "transition: from one tab into another refused")
+eq(move(inner, 1, boxes[2], boxes[2], 0), 0, "transition: moved inside its tab")
+eq(move(stack, 40, boxes[1], boxes[1], 255), 1, "transition: a split stack inside a tab refused (one more item)")
+eq(Dp.onMoveItem(hero, over.items[4], 1, cpos(3), INV, over, hero), 0, "transition: out of a tab to the inventory")
+eq(move(sword, 1, backpack, lockerC.items[2], 255), 0, "transition: the inbox is not touched")
+local code, why = Dp.checkAdd(hero, boxes[3], sword, 1)
+check(code ~= 0 and type(why) == "string" and why:find("stash", 1, true) ~= nil, "transition: a script's add is refused too")
+local D2 = D.decide(cfg, {to = {kind = "tab", tab = 1}, from = {kind = "other"}, tabs = 4, used = 0, weight = 1, closed = true})
+eq(D2 and D2.code, "closed", "decide: closed")
+Chaos.stashConfig.depot.withdrawOnly = false
 -- moves that have nothing to do with the depot
 eq(Dp.onMoveItem(hero, sword, 1, INV, cpos(0), nil, backpack), 0, "into a backpack")
 eq(Dp.onMoveItem(hero, sword, 1, INV, GROUND, nil, nil), 0, "onto the ground")

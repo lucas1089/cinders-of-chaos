@@ -606,6 +606,32 @@ function chaos_records_rows(string $slot, string $period, string $mode, int $lim
 		LIMIT ?;', array_merge([$slot, $period, (int)chaos_cfg('staff_group', 4)], $vocations, [$limit]));
 }
 
+/** The name a realm first is listed by (ChaosRecordsCore.firstDisplay in the server's records_core.lua): a first keeps
+ * its target and the short title name ("Skaldra"); the list names the boss in full ("Skaldra the Rime Queen") from the
+ * boards the server published (chaos_records_boards): the variant's name, else the board's, else the stored name. */
+function chaos_records_first_name(array $first, array $boards): string {
+	$short = (string)($first['name'] ?? '');
+	$parts = explode(':', (string)($first['target'] ?? ''), 2);
+	$board = $boards[$parts[0]] ?? null;
+	if (!$board) {
+		return $short;
+	}
+	if (count($parts) < 2 || $parts[1] === '') {
+		return (string)$board['name'];
+	}
+	$variants = $board['variants'] ?? array();
+	if (isset($variants[$parts[1]])) {
+		return (string)$variants[$parts[1]];
+	}
+	// "<family>.<variant>" (the trials): the stored name and the variant
+	$dot = strrpos($parts[1], '.');
+	$v = $dot === false ? null : ($variants[substr($parts[1], $dot + 1)] ?? null);
+	if ($v !== null && $short !== '') {
+		return $short . ' (' . $v . ')';
+	}
+	return $short !== '' ? $short : (string)$board['name'];
+}
+
 /** The realm firsts of a season, oldest first. */
 function chaos_records_firsts(string $season): array {
 	if (!chaos_table_exists('chaos_records_firsts')) {
@@ -1065,10 +1091,11 @@ function chaos_coin_first_bonus(int $coins, int $pct, int $max = 0): int {
 
 /** The first donation line of the Donate page and the guides: "double Chaos Coins (+100%, up to 1000 extra)". */
 function chaos_coin_first_text(int $pct, int $max): string {
-	$base = $pct === 100 ? 'double Chaos Coins' : '+' . $pct . '% extra Chaos Coins';
+	$t = function_exists('chaos_t') ? 'chaos_t' : 'sprintf';   // the page's language (i18n_lib.php), else English
+	$base = $pct === 100 ? $t('double Chaos Coins') : $t('+%d%% extra Chaos Coins', $pct);
 	$notes = $pct === 100 ? array('+100%') : array();
 	if ($max > 0) {
-		$notes[] = 'up to ' . $max . ' extra';
+		$notes[] = $t('up to %d extra', $max);
 	}
 	return $notes ? $base . ' (' . implode(', ', $notes) . ')' : $base;
 }

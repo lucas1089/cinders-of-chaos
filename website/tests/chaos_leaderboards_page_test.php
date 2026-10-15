@@ -168,6 +168,9 @@ $ri->execute(array('tower_floor|-|-', 'all', 2, 120, 1, 8, 1, ''));
 $ri->execute(array('tower_floor|-|-', 'w' . $week, 1, 60, 1, 4, 1, ''));
 $season = chaos_records_season_key(time());
 $pdo->prepare("INSERT INTO chaos_records_firsts VALUES (?, 'ascended:cinder', 'ascended', 'Cinderheart', 'Quick Blade, Mid Arrow', '1,3', 900, 100)")->execute(array($season));
+// a world boss first keeps the short title name ("Skaldra"); the list names the boss in full (live test 2026-10-14)
+$pdo->exec("INSERT INTO chaos_records_boards VALUES ('wb_time', 'bosses', 'World Boss Kill Time', 'min', 'time', 'Fastest', 'kaelgor=Kaelgor the Infernal Warlord;skaldra=Skaldra the Rime Queen', '', 3)");
+$pdo->prepare("INSERT INTO chaos_records_firsts VALUES (?, 'wb_time:skaldra', 'wb_time', 'Skaldra', 'Rime Breaker', '5', 400, 120)")->execute(array($season));
 $renderRec = static function (array $get): string {
 	global $config;
 	$_GET = $get;
@@ -197,6 +200,13 @@ check(array_column($recRows($html), 1) === array('60'), 'records: this week only
 $html = $renderRec(array('rb' => 'tower_floor', 'rp' => 'season'));
 check(strpos($html, 'No result on this board in this view yet') !== false, 'records: empty season view');
 check(strpos($html, 'Quick Blade, Mid Arrow') !== false && strpos($html, 'Cinderheart') !== false, 'records: realm firsts of the season');
+check(strpos($html, '<td>Skaldra the Rime Queen</td>') !== false && strpos($html, '<td>Skaldra</td>') === false,
+	'records: a realm first names the boss in full, not its key');
+check(chaos_records_first_name(array('target' => 'trials:warrior.cruel', 'name' => 'Gauntlet Champion'),
+	array('trials' => array('name' => 'Trials', 'variants' => array('cruel' => 'Cruel')))) === 'Gauntlet Champion (Cruel)',
+	'records: a trials first as the server announced it');
+check(chaos_records_first_name(array('target' => 'gone:x', 'name' => 'Old Boss'), array()) === 'Old Boss',
+	'records: an unknown board keeps the stored name');
 check(chaos_records_value('pct', 4512) === '45.12%' && chaos_records_value('', 1500) === '1,500', 'records: value formats');
 check(preg_match('/^(s\d+|q\d{5})$/', $season) === 1, 'records: season key');
 check(count(chaos_records_categories()) === 6, 'records: categories read from records_config.lua');

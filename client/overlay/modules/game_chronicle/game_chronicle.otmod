@@ -1,0 +1,13 @@
+Module
+  name: game_chronicle
+  description: The Ashen Chronicle (the season's chapters, their goals and contributors, the record of past seasons) and the Capital Memorial's choice and list (server chronicle.lua and memorial.lua, extended opcode 171)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ chronicleview, chronicle ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1003
+  @onLoad: init()
+  @onUnload: terminate()

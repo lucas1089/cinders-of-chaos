@@ -250,6 +250,7 @@ function W.load()
 	D.invasion = cfg("invasion_config")
 	D.siege = cfg("siege_config")
 	D.guildboss = cfg("guildboss_config")
+	D.pocket = cfg("pocketboss_config")
 	D.mech = cfg("boss_mechanics_config")
 	dofile("data/scripts/chaos/boss_mechanics_core.lua")
 	D.goblin = cfg("treasure_goblin_config")
@@ -273,6 +274,8 @@ function W.load()
 	D.coins = cfg("shop_coins_config")
 	D.respec = cfg("respec_config")
 	D.difficulty = cfg("dungeons_difficulty")
+	D.pace = cfg("pace_config")
+	D.areagen = cfg("areagen_config")
 	D.antibot = cfg("antibot_config")
 	D.scale = cfg("display_scale_config")
 	dofile("data/scripts/chaos/class_unlocks_core.lua")
@@ -804,6 +807,35 @@ function W.bossEntries(D)
 			table.remove(out[#out].sections, 3)
 		end
 	end
+	-- pocket bosses (pocketboss_config.lua, server/README.md "Pocket bosses")
+	local pk = D.pocket
+	local catNames = {world = "World bosses", island = "Island bosses", raid = "Raid bosses (random raids)"}
+	local prow = {}
+	for _, key in ipairs({"world", "island", "raid"}) do
+		local c = pk.categories[key]
+		if c then
+			prow[#prow + 1] = {catNames[key], num(c.minLevel or wb.minLevel), floor(c.xpMult * 100 + 0.5) .. "%",
+				floor(c.lootMult * 100 + 0.5) .. "%", num(c.minutes) .. " min", num(c.tokens)}
+		end
+	end
+	out[#out + 1] = {id = "boss:pocket", name = "Pocket bosses", color = COLORS.boss, group = "world",
+		sub = string.format("A private copy of a world, island or raid boss, any time: %d charges a day per boss.", pk.charges.daily),
+		sections = {
+			{h = "How it works", p = {
+				"Open it with the Pocket button of the Boss Spawns window (Adventure > Boss Spawns), alone or with your party from a protection zone; every member spends a charge.",
+				string.format("%d charges per boss and day (new ones at %02d:00 server time). Bonus charges stay over the reset: at most %d held and %d added a day.",
+					pk.charges.daily, pk.charges.resetHour or 0, pk.charges.bonusMax, pk.charges.bonusPerDay),
+				"The boss is scaled to the party size. A lethal hit carries you out without dying; the charge stays spent.",
+				string.format("After a boss's scheduled or contested fight rewarded you, its pocket waits %d minutes.", floor((pk.noStackSeconds or 0) / 60))}},
+			{h = "Rewards", p = {
+				"Less than the scheduled fight: experience and the corpse are cut (even the items that always drop are not sure), Conquest Tokens on top.",
+				string.format("World bosses also give each player %s of their event's base orbs and one roll of the boss's set at %s.",
+					floor(pk.categories.world.lootMult * 100 + 0.5) .. "%", per10k(wb.reward.gearChance * pk.categories.world.lootMult)),
+				"The boss passive point counts for a pocket kill too: nobody is locked out by the clock."},
+				cols = {"Bosses", "Level", "Experience", "Loot", "Time", "Tokens"}, w = {30, 10, 16, 12, 16, 16}, rows = prow},
+			{h = "The scheduled fights", p = {string.format("Island and raid bosses spawned in the world give every helper whose damage and healing reach %s%% of the boss's health a personal loot roll; the corpse owner keeps the corpse.",
+				num(pk.contested.minPercent))}, links = {"boss:world"}}
+		}}
 	-- the raid
 	local rc = D.raid
 	local rRows, rLinks = {}, {}
@@ -907,7 +939,8 @@ function W.bossEntries(D)
 	local others = {
 		{"Omen guardians", {"sangrith the bloodmoon herald", "morvane the hollow crown", "thalcyra the stormbound seer"}},
 		{"Rift guardians (every tier; more from tier 8 and 12)", {"rift_guardian"}},
-		{"Dungeons and hunting grounds", {"vault keeper ossrim", "the emberdeep maw", "the ossuary warden", "cinderwing"}},
+		{"Dungeons and hunting grounds", {"vault keeper ossrim", "ossivane the gravecage", "forgewarden kharzun",
+			"vaelith the fallen seraph", "azhkarrath the chained wyrm", "the emberdeep maw", "the ossuary warden", "cinderwing"}},
 		{"Dormant bosses (not spawned yet)", {"ormathulak", "talath", "gloomfire", "saga", "legendary warrior"}}}
 	local mSections = {{h = "How to read a mechanic", p = {
 		"A red mark pulses on every tile the hit will land on, from 1.5 to 3 seconds before it (harder content warns later). The hit lands only on the tiles still marked: walk out. There is always a safe tile you can reach in time at normal speed.",
@@ -928,6 +961,31 @@ function W.bossEntries(D)
 	return out
 end
 
+-- the generated dungeons of areagen_config.lua, in config order: {def, d, monsters} (monsters: the count the generator
+-- places, from the same seed)
+function W.generatedDungeons(D)
+	local out = {}
+	local A = ChaosAreaGenCore
+	if not A then
+		dofile("data/scripts/chaos/areagen_core.lua")
+		A = ChaosAreaGenCore
+	end
+	for _, def in ipairs(D.areagen.areas) do
+		if def.dungeon and def.enabled ~= false then
+			local m = A.generate(D.areagen, def, {})
+			out[#out + 1] = {def = def, d = def.dungeon, monsters = m.stats.monsters}
+		end
+	end
+	return out
+end
+
+local DUNGEON_THEME = {vault = "Dark stone halls", marrow = "Catacombs of dark sand, slate and bones",
+	crucible = "A forge cut into the rock, split by lava cracks and pools", sanctum = "A drowned shrine of wet caves and gilded chapels",
+	throne = "The burnt court of the wyrms: basalt, lava, marble and gilded halls"}
+function W.dungeonTheme(def)
+	return DUNGEON_THEME[def.theme] or "Generated halls"
+end
+
 function W.dungeonEntries(D)
 	local out = {}
 	local dc = D.C0.dungeons
@@ -941,13 +999,20 @@ function W.dungeonEntries(D)
 		listRows[#listRows + 1] = {x.title, titleCase(x.bossName)}
 		listLinks[#listLinks + 1] = "dungeon:" .. id
 	end
+	-- the generated dungeons (areagen_config.lua areas with `dungeon`: the Hollow Vault and the deep dungeons 6-9),
+	-- registered at startup by areagen.lua
+	local gen = W.generatedDungeons(D)
+	for _, g in ipairs(gen) do
+		listRows[#listRows + 1] = {g.d.title, g.def.boss.name}
+		listLinks[#listLinks + 1] = "dungeon:" .. g.d.id
+	end
 	out[#out + 1] = {id = "dungeon:about", name = "Dungeons", color = COLORS.dungeon, group = "dungeon",
 		sub = string.format("Queue, %d difficulties, speed and flawless challenges.", dc.maxDifficulty),
 		sections = {
 			{h = "How they work", p = {
 				"Step on a dungeon's entry or open Adventure > Dungeons: pick a difficulty and join the queue; the group goes in together.",
-				string.format("Kill the dungeon's monsters, then its boss. A run lasts at most %s. Each finished difficulty unlocks the next one.",
-					seconds(dc.maxTimeSeconds)),
+				string.format("Kill %d%% of the dungeon's monsters to unlock its boss, then kill the boss. A run lasts at most %s. Each finished difficulty unlocks the next one.",
+					dc.progressNeeded, seconds(dc.maxTimeSeconds)),
 				"Speed and flawless challenges give points; solo and group rankings keep the best times."}},
 			{h = "Dungeons", cols = {"Dungeon", "Boss"}, w = {50, 50}, rows = listRows, links = listLinks},
 			{h = "Difficulty", p = {"What each difficulty does to the dungeon's monsters (health, damage) and to your rewards (experience, gold, an extra loot roll)."},
@@ -963,6 +1028,47 @@ function W.dungeonEntries(D)
 				{h = "Overview", p = {"Boss: " .. titleCase(x.bossName) .. ". The level and group size come from the dungeon's entry."}},
 				{h = "Challenges", cols = {"Challenge", "Goal", "Points"}, w = {30, 55, 15}, rows = ch},
 				{h = "More", p = {"Queue and difficulty: Dungeons."}, links = {"dungeon:about"}}}}
+	end
+	local DD = D.difficulty
+	for _, g in ipairs(gen) do
+		local def, d = g.def, g.d
+		local ch = {}
+		for _, c in ipairs(d.challenges or {}) do
+			ch[#ch + 1] = {c.title, c.desc, num(c.points)}
+		end
+		local mons = {}
+		for _, row in ipairs(def.spawns.monsters) do
+			mons[#mons + 1] = row[1]
+		end
+		local sections = {
+			{h = "Overview", p = {
+				string.format("%s, level %s and up, alone (the queue sends one player in). A run lasts %s; the speed challenge asks for %s.",
+					W.dungeonTheme(def), num(d.level), seconds(d.time), seconds(math.floor((d.challenges[1].maxMs or 0) / 1000))),
+				string.format("%d %s of %s x %s, %d monsters of level %s-%s in packs: %s. The boss room stays shut behind a gate until %d%% of them are dead; then it opens and the boss appears%s.",
+					def.floors or 1, (def.floors or 1) == 1 and "floor" or "floors (a hole leads down)", num(def.size[1]),
+					num(def.size[2]), g.monsters, num(def.spawns.level[1]), num(def.spawns.level[2]), table.concat(mons, ", "),
+					D.C0.dungeons.progressNeeded, (def.floors or 1) > 1 and " on the lowest floor" or ""),
+				string.format("Boss: %s (level %s). Its health grows by its own curve, %s%% to %s%% from difficulty 1 to 6%s; damage, experience, gold and loot follow the difficulty table.",
+					def.boss.name, num(def.boss.level), num(d.bossHealth[1]), num(d.bossHealth[#d.bossHealth]),
+					d.trashHealth and string.format(", the other monsters' %s%% to %s%%", num(d.trashHealth[1]),
+						num(d.trashHealth[#d.trashHealth])) or "")}}}
+		sections[#sections + 1] = mechSection(D, def.boss.name:lower(), "The boss fight:")
+		if d.chest then
+			local rows = {}
+			local names = D.loot and D.loot.gear and D.loot.gear.names or {}
+			for i = 1, #DD.levels do
+				local c = DD.chest(d.chest, i)
+				rows[#rows + 1] = {num(i), money(c.gold), num(c.pieces), names[c.rarity] or num(c.rarity), "+" .. num(c.itemLevel),
+					num(c.currency)}
+			end
+			sections[#sections + 1] = {h = "Boss chest", p = {
+				"Every finisher gets the boss chest at the end of a won run, straight into the backpack (the inbox when it is full): gold to the bank, pieces of the boss's own gear with at least the rarity below (item find can raise it), at the boss's item level plus the bonus, and orb rolls."},
+				cols = {"Difficulty", "Gold", "Gear", "Rarity", "Item level", "Orb rolls"}, w = {14, 18, 12, 20, 18, 18}, rows = rows}
+		end
+		sections[#sections + 1] = {h = "Challenges", cols = {"Challenge", "Goal", "Points"}, w = {30, 55, 15}, rows = ch}
+		sections[#sections + 1] = {h = "More", p = {"Queue and difficulty: Dungeons."}, links = {"dungeon:about"}}
+		out[#out + 1] = {id = "dungeon:" .. d.id, name = d.title, color = COLORS.dungeon, group = "dungeon",
+			sub = string.format("Dungeon, level %s. Boss: %s.", num(d.level), def.boss.name), sections = sections}
 	end
 	-- the Infinity Tower
 	local tw = D.C0.tower
@@ -1064,6 +1170,7 @@ function W.eventEntries(D)
 		sub = "Rare monsters that run away with loot.",
 		sections = {{h = "Goblins", p = {"Any monster may turn into a treasure goblin when it spawns. Catch it before it escapes: goblins drop extra loot and count on the Goblin Slayer board.",
 			"Kinds: " .. sentence(kinds) .. "."}}}}
+	out[#out + 1] = dofile("tools/wiki_nemesis.lua")(cfg("nemesis_config"), COLORS.event)
 	return out
 end
 
@@ -1072,11 +1179,69 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 local MONSTER_DIRS = {"", "ascended/", "goblins/", "guildboss/", "omens/", "raid/", "world_bosses/", "wildwood/"}
 
+-- item names for the loot tables: data/items/base_item_names.csv, the art tables (server_id, name), then the comment
+-- after a loot line of any monster file (<item id="2148" .../><!-- gold coin -->), the first in file order
+function W.itemNames(texts)
+	local names = {}
+	local function csv(path, idCol, nameCol)
+		local text = readFile(path) or ""
+		local head
+		for line in text:gmatch("[^\n]+") do
+			local cols = {}
+			for c in (line .. ","):gmatch("([^,]*),") do
+				cols[#cols + 1] = c
+			end
+			if not head then
+				head = {}
+				for i, c in ipairs(cols) do
+					head[c] = i
+				end
+				if not head[idCol] or not head[nameCol] then
+					return
+				end
+			else
+				local id, name = tonumber(cols[head[idCol]]), cols[head[nameCol]]
+				if id and name and name ~= "" and not names[id] then
+					names[id] = name
+				end
+			end
+		end
+	end
+	csv("data/items/base_item_names.csv", "id", "name")
+	for _, f in ipairs({"art_items", "theme_items", "donor_items", "fist_items", "owner_decor", "dark_tiles"}) do
+		csv("data/items/" .. f .. ".csv", "server_id", "name")
+	end
+	for _, data in ipairs(texts) do
+		for id, name in data:gmatch('<item id="(%d+)"[^>]-/?>[ \t]*<!%-%-%s*(.-)%s*%-%->') do
+			id = tonumber(id)
+			if id and not names[id] and name ~= "" then
+				names[id] = name
+			end
+		end
+	end
+	return names
+end
+
+-- the loot list of a monster file as MonsterType:getLoot() gives it to the Bestiary: {itemId, chance, maxCount}
+function W.lootOf(data)
+	local out = {}
+	local loot = data:match("<loot>(.-)</loot>")
+	for tag in (loot or ""):gmatch("<item%s([^>]*)>") do
+		local a = attrs(tag)
+		local id = tonumber(a.id)
+		if id then
+			out[#out + 1] = {itemId = id, chance = tonumber(a.chance) or 0, maxCount = tonumber(a.countmax) or 1}
+		end
+	end
+	return out
+end
+
 function W.monsterFiles()
 	local out = {}
 	local listing = io.popen("cd data/monster/monsters/chaos && find . -name '*.xml' | LC_ALL=C sort")
 	local text = listing:read("*a")
 	listing:close()
+	local texts = {}
 	for path in text:gmatch("[^\n]+") do
 		local data = readFile("data/monster/monsters/chaos/" .. path:gsub("^%./", ""))
 		local head = data and data:match("<monster%s([^>]*)>")
@@ -1085,14 +1250,76 @@ function W.monsterFiles()
 			local hp = data:match("<health[^>]-max=\"(%d+)\"")
 			local lmin, lmax = data:match("<level[^>]-min=\"(%d+)\"[^>]-max=\"(%d+)\"")
 			out[a.name:lower()] = {name = a.name, exp = tonumber(a.experience) or 0, hp = tonumber(hp) or 0,
-				level = lmin and (lmin == lmax and lmin or (lmin .. "-" .. lmax)) or nil, dir = path:match("^%./(.-)/") or ""}
+				level = lmin and (lmin == lmax and lmin or (lmin .. "-" .. lmax)) or nil, dir = path:match("^%./(.-)/") or "",
+				loot = W.lootOf(data)}
+			texts[#texts + 1] = data
 		end
 	end
-	return out
+	return out, W.itemNames(texts)
+end
+
+-- a loot chance in percent: 1 decimal from 1%, 3 below (the Item Finder's K.percent)
+local function lootPct(p)
+	p = tonumber(p) or 0
+	local function trim(v, d)
+		local t = string.format("%." .. d .. "f", v)
+		if t:find("%.") then
+			t = t:gsub("0+$", ""):gsub("%.$", "")
+		end
+		return t
+	end
+	if p <= 0 then
+		return "0%"
+	elseif p >= 100 then
+		return "100%"
+	elseif p >= 1 then
+		return trim(p, 1) .. "%"
+	elseif p >= 0.001 then
+		return trim(p, 3) .. "%"
+	end
+	return "<0.001%"
+end
+
+-- the loot table of a monster entry: the Bestiary's full list (bestiary_core.lua C.loot at stage 3, its lootMax rows,
+-- the most likely first) and the uniques that name the monster (chaos_unique_items.lua monsters)
+function W.lootSections(D, key, m, names)
+	if not ChaosBestiaryCore or not ChaosBestiaryCore.loot then
+		dofile("data/scripts/chaos/bestiary_core.lua")
+	end
+	D.bestiaryCfg = D.bestiaryCfg or cfg("bestiary_config")
+	local list = ChaosBestiaryCore.loot(m.loot, function(id)
+		return names[id] or ("item " .. id), id
+	end, 3, D.bestiaryCfg)
+	local secs = {}
+	local rows = {}
+	for _, l in ipairs(list) do
+		rows[#rows + 1] = {l.name, lootPct(l.chance), (tonumber(l.max) or 1) > 1 and ("1-" .. l.max) or "1"}
+	end
+	if #rows > 0 then
+		secs[#secs + 1] = {h = "Loot", cols = {"Item", "Chance per kill", "Count"}, w = {56, 26, 18}, rows = rows}
+	end
+	local uniques = {}
+	for _, u in ipairs(D.uniques or {}) do
+		for _, mk in ipairs(u.monsters or {}) do
+			if mk == key then
+				uniques[#uniques + 1] = {u.name, u.bossOnly and "Boss-only unique" or ("Unique, " .. tostring(u.minTier) ..
+					" or stronger"), links = {"unique:" .. u.id}}
+			end
+		end
+	end
+	table.sort(uniques, function(a, b) return a[1] < b[1] end)
+	if #uniques > 0 then
+		local urows = {}
+		for _, r in ipairs(uniques) do
+			urows[#urows + 1] = {r[1], r[2]}
+		end
+		secs[#secs + 1] = {h = "Uniques it can drop", cols = {"Unique", "From"}, w = {50, 50}, rows = urows}
+	end
+	return secs
 end
 
 function W.monsterEntries(D)
-	local files = W.monsterFiles()
+	local files, names = W.monsterFiles()
 	local where = {}
 	local function add(name, text)
 		local k = name:lower()
@@ -1151,10 +1378,39 @@ function W.monsterEntries(D)
 			if m.level then
 				rows[#rows + 1] = {"Level", m.level}
 			end
+			-- pack combat (pace_config.lua): a late game hunt's monster spawns on the map, so it is paced
+			local pc = D.pace
+			local lateGame = false
+			for _, t in ipairs(where[k]) do
+				lateGame = lateGame or t:find("^Late game area") ~= nil
+			end
+			if lateGame and pc and pc.enabled ~= false and m.level then
+				local lo, hi = tostring(m.level):match("^(%d+)%-?(%d*)$")
+				local L = math.floor(((tonumber(lo) or 0) + (tonumber(hi) or tonumber(lo) or 0)) / 2)
+				local function lin(points, x)
+					if x <= points[1][1] then
+						return points[1][2]
+					end
+					for i = 2, #points do
+						local a, b = points[i - 1], points[i]
+						if x <= b[1] then
+							return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1])
+						end
+					end
+					return points[#points][2]
+				end
+				rows[#rows + 1] = {"In hunts (pack combat)", string.format(
+					"health x%.3f, experience and loot per kill x%.3f / x%.3f, damage x%.2f at level %d (Basics: Pack combat)",
+					lin(pc.scaled.health, L), math.min(1, lin(pc.scaled.xp, L) * (pc.scale and pc.scale.xp or 1)),
+					math.min(1, lin(pc.scaled.loot, L) * (pc.scale and pc.scale.loot or 1)), lin(pc.damage, L), L)}
+			end
 			out[#out + 1] = {id = "monster:" .. k:gsub("[^%w]+", "-"), name = m.name, color = COLORS.monster,
 				sub = table.concat(where[k], "; ") .. ".",
 				sections = {{h = "Monster", cols = {"", ""}, w = {35, 65}, rows = rows},
 					{h = "Where", p = where[k]}}}
+			for _, sec in ipairs(W.lootSections(D, k, m, names)) do
+				table.insert(out[#out].sections, sec)
+			end
 		end
 	end
 	table.sort(out, function(a, b) return a.name < b.name end)
@@ -1481,6 +1737,12 @@ function W.facts(D, vocs, spells, T, typeCount)
 	for _ in pairs(C0.dungeons.extra) do
 		f["dungeon.count"] = f["dungeon.count"] + 1
 	end
+	-- and the generated ones (the Hollow Vault, the deep dungeons 6-9), registered by areagen.lua at startup
+	for _, def in ipairs(D.areagen.areas) do
+		if def.dungeon and def.enabled ~= false then
+			f["dungeon.count"] = f["dungeon.count"] + 1
+		end
+	end
 	f["dungeon.difficulties"] = C0.dungeons.maxDifficulty
 	f["tower.seasonDays"] = C0.tower.seasonLengthDays
 	f["invasion.on"] = D.invasion.enabled == true
@@ -1491,6 +1753,8 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["siege.minLevel"] = D.siege.minLevel
 	f["guildboss.on"] = D.guildboss.enabled == true
 	f["guildboss.minLevel"] = D.guildboss.minLevel
+	f["pocket.on"] = D.pocket.enabled == true
+	f["pocket.charges"] = D.pocket.charges.daily
 	f["events.count"] = #C0.events.list
 	-- seasons
 	local s1 = D.season.seasons[1]
@@ -1581,6 +1845,18 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["store.categories"] = #D.shop.categories
 	-- new players
 	f["newplayer.tutorial"] = true
+	-- the milestone gifts (newplayer_config.lua milestones) and Next Goals (goals_config.lua; the progression guide)
+	local gifts = {}
+	for _, m in ipairs(D.newplayer.milestones or {}) do
+		gifts[#gifts + 1] = tostring(m.level)
+	end
+	f["newplayer.giftLevels"] = sentence(gifts)
+	f["newplayer.giftLevelsPt"] = #gifts > 1 and (table.concat(gifts, ", ", 1, #gifts - 1) .. " e " .. gifts[#gifts]) or
+		(gifts[1] or "")
+	local goals = cfg("goals_config")
+	f["goals.bands"] = #goals.bands
+	f["goals.count"] = #goals.goals
+	f["goals.lastBand"] = goals.bands[#goals.bands].from
 	return f
 end
 
@@ -1595,6 +1871,7 @@ end
 --   tr-<iconKey>         a painted keystone or mastery (images/passivetree/painted_nodes.png, treedata/painted.lua)
 --   sup-<key>            a support rune (images/game/supports/, gen_support_icons.py)
 --   it-<set>-<kind>      an item of a themed set (client/tools/sprites/art_import/theme/items_<set>.png)
+--   gm-<key>-<tier>      a socket gem's look (client/tools/sprites/art_import/gems.png, gen_gem_art.py)
 --   top-<name>           a top menu button (client images/chaos/topbutton_<name>.png, gen_theme_art.py)
 --   img/class-<key>.png  the website's class badges (website/tools/gen_site_art.py)
 -- The art of an icon only illustrates the entry: a unique shows a themed piece of its slot, not its own sprite.
@@ -1602,6 +1879,7 @@ end
 -- draws it from our client pair only when that art is ours and published (website/README.md "Sprite images").
 W.SOURCES[#W.SOURCES + 1] = "client/overlay/modules/game_chaosspells/spelldata.lua"
 W.SOURCES[#W.SOURCES + 1] = "client/overlay/modules/game_passivetree/treedata/painted.lua"
+W.SOURCES[#W.SOURCES + 1] = "client/tools/gen_spell_icons.py"
 
 local ICON = "wiki/i/"
 local function kit(theme, glyph)
@@ -1619,10 +1897,14 @@ end
 local function gem(hex)
 	return ICON .. "gem-" .. tostring(hex):gsub("^#", ""):lower() .. ".png"
 end
+-- a socket gem's own look (its Perfect tier unless named)
+local function gemLook(key, tier)
+	return ICON .. "gm-" .. key .. "-" .. tostring(tier or 5) .. ".png"
+end
 local function classBadge(key)
 	return "img/class-" .. key .. ".png"
 end
-W.icon = {kit = kit, orb = orb, top = top, item = item, gem = gem, class = classBadge}
+W.icon = {kit = kit, orb = orb, top = top, item = item, gem = gem, gemLook = gemLook, class = classBadge}
 
 -- element words of the data -> kit theme
 local ELEMENT_THEME = {fire = "fire", ice = "frost", energy = "light", earth = "poison", death = "shadow", holy = "holy",
@@ -1641,20 +1923,20 @@ end
 -- the reference tabs
 local TAB_ICON = {classes = top("skills"), spells = top("spells"), tree = top("passivetree"), basics = top("help"),
 	modifiers = kit("arcane", "nodes"), powers = kit("fire", "flame"), uniques = item("sunsworn", "sword"),
-	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gem("#ff5a4a"),
+	sets = item("oathsteel", "armor"), orbs = orb("arcane", "swirl"), gems = gemLook("ruby"),
 	supports = ICON .. "sup-emberbrand.png", rift = ICON .. "rx-portal.png", dungeons = top("dungeons"),
 	bosses = kit("blood", "skull"), events = top("events"), monsters = kit("shadow", "ghost"),
-	materials = kit("nature", "leaf"), store = top("vip")}
+	materials = kit("nature", "leaf"), lore = kit("ember", "eye"), store = top("vip")}
 -- the banner's tint
 local TAB_TONE = {classes = "#f6cf72", spells = "#9fdc7f", tree = "#e8b84a", basics = "#d6c9ae", modifiers = "#7d96ff",
 	powers = "#ff9a3c", uniques = "#ff9c3a", sets = "#58c878", orbs = "#e8b84a", gems = "#ff5a4a", supports = "#ff8228",
 	rift = "#a064e6", dungeons = "#c0a0ff", bosses = "#ff7050", events = "#ffb050", monsters = "#d6c9ae",
-	materials = "#7ec46a", store = "#ff70c0"}
+	materials = "#7ec46a", lore = "#c9a27a", store = "#ff70c0"}
 
 local BASICS = {["basics:items"] = top("inventory"), ["basics:rarity"] = kit("light", "crystal"),
 	["basics:tiers"] = kit("steel", "arrowup"), ["basics:itemlevel"] = kit("ember", "arrowup"),
 	["basics:sides"] = kit("steel", "twin"), ["basics:quality"] = kit("steel", "hammer"),
-	["basics:basebonus"] = kit("steel", "shield")}
+	["basics:basebonus"] = kit("steel", "shield"), ["basics:pace"] = kit("blood", "burst")}
 local MOD_GLYPH = {chaos = "rift", skill = "sword", absorb = "shield", element = "burst", special = "eye"}
 local MOD_THEME = {chaos = "arcane", skill = "steel", absorb = "water", element = "fire", special = "holy"}
 local POWERS = {arclightning = {"light", "bolt"}, bloodrush = {"blood", "drop"}, crimsonburst = {"blood", "burst"},
@@ -1696,7 +1978,9 @@ local RIFT_KEY_ICON = rift("rk", "9")
 local RIFT_ENTRY = {keys = RIFT_KEY_ICON, tiers = rift("rx", "portal"), omens = rift("rx", "omenkey"),
 	atlas = rift("rx", "atlas"), themes = rift("rt", "abyss")}
 local DUNGEON_WORDS = {{"bone", kit("bone", "skull")}, {"element", kit("arcane", "swirl")},
-	{"chevalier", kit("steel", "sword")}, {"root", kit("nature", "thorns")}}
+	{"chevalier", kit("steel", "sword")}, {"root", kit("nature", "thorns")}, {"vault", kit("arcane", "gate")},
+	{"marrow", kit("bone", "skull")}, {"crucible", kit("steel", "hammer")}, {"sanctum", kit("holy", "burst")},
+	{"throne", kit("fire", "burst")}}
 local BOSS_ELEMENT_GLYPH = {fire = "meteor", ice = "crystal", earth = "thorns", death = "skull", physical = "greataxe"}
 local RAID_BOSS = {ulthar = {"bone", "skull"}, morwen = {"fire", "ghost"}, colossus = {"bone", "golem"},
 	hexmaw = {"shadow", "eye"}, sovereign = {"ember", "banner"}}
@@ -1766,9 +2050,20 @@ end
 function W.loadArtSources(D)
 	local saved = ChaosSpellData
 	dofile("../client/overlay/modules/game_chaosspells/spelldata.lua")
+	-- a spell's painted icon when it has one, else its drawing of the icon kit (gen_spell_icons.py ICONS: name, theme,
+	-- glyph; a spell newer than the painted set, e.g. Blade Flurry and Iaido Sweep)
+	local kitOf = {}
+	local py = readFile("../client/tools/gen_spell_icons.py") or ""
+	for q, name, theme, glyph in py:gmatch("%((['\"])(.-)%1, '(%a+)', '(%a+)'%)") do
+		kitOf[name] = {theme, glyph}
+	end
 	local clientOf = {}
 	for _, s in ipairs(ChaosSpellData) do
-		clientOf[s.id] = s.clientId
+		if readFile("../client/overlay/data/images/game/spells_painted/" .. s.clientId .. ".png") then
+			clientOf[s.id] = s.clientId
+		elseif kitOf[s.name] then
+			clientOf[s.id] = kitOf[s.name]
+		end
 	end
 	ChaosSpellData = saved
 	local savedP = getPaintedTreeIcons
@@ -1804,6 +2099,9 @@ function W.entryIcon(tab, e, src)
 		return classBadge(rest)
 	elseif tab == "spells" then
 		local c = src.clientOf[tonumber(rest)]
+		if type(c) == "table" then
+			return kit(c[1], c[2])
+		end
 		return c and (ICON .. "sp-" .. c .. ".png") or kit("arcane", "burst")
 	elseif tab == "tree" then
 		if id == "tree:about" then
@@ -1842,7 +2140,7 @@ function W.entryIcon(tab, e, src)
 		end
 		return orb("arcane", "swirl")
 	elseif tab == "gems" then
-		return rest == "sockets" and kit("steel", "ring") or gem(e.color or "#d6c9ae")
+		return rest == "sockets" and kit("steel", "ring") or gemLook(rest)
 	elseif tab == "supports" then
 		return ICON .. "sup-" .. rest .. ".png"
 	elseif tab == "rift" then
@@ -1905,13 +2203,20 @@ function W.entryIcon(tab, e, src)
 		return kit(MAT_THEME[tier] or "steel", MAT_GLYPH[prof] or "dots")
 	elseif tab == "store" then
 		return id == "store:about" and top("vip") or STORE[e.name] or top("vip")
+	elseif tab == "lore" then
+		-- the lore of the world (lore_data.lua): by the kind of the entry (the Codex's filter group)
+		local g = e.group or ""
+		local LORE = {world = kit("ember", "flame"), rift = rift("rx", "portal"), omen = rift("rx", "ascended"),
+			raid = kit("ember", "gate"), worldboss = kit("blood", "skull"), deep = kit("shadow", "gate"),
+			chronicle = kit("ember", "flame")}
+		return LORE[g] or kit("ember", "eye")
 	end
 	return nil
 end
 
 -- the guides: slug -> the hero image's motif. emblem = the big icon in the middle, icons = the ring around it,
 -- tone = the tint of the scene. website/overlay/plugins/chaos/wiki_lib.php lists the same slugs (its test checks).
-W.GUIDE_ORDER = {"start", "classes", "tree", "items", "rifts", "dungeons", "bosses", "seasons", "economy", "social", "pvp",
+W.GUIDE_ORDER = {"start", "progression", "classes", "tree", "items", "rifts", "dungeons", "bosses", "seasons", "economy", "social", "pvp",
 	"store", "rules", "faq"}
 
 function W.guideArt(src)
@@ -1936,6 +2241,9 @@ function W.guideArt(src)
 	local G = {
 		start = {tone = "#e8b84a", emblem = kit("holy", "gate"),
 			icons = {top("quests"), top("spells"), top("passivetree"), top("daily"), top("inventory"), top("market")}},
+		progression = {tone = "#ffb050", emblem = top("quests"),
+			icons = {top("dungeons"), kit("blood", "skull"), top("infinitytower"), orb("arcane", "swirl"), top("market"),
+				kit("holy", "banner")}},
 		classes = {tone = "#f6cf72", emblem = kit("holy", "cross"), icons = classes},
 		tree = {tone = "#e8b84a", emblem = top("passivetree"), icons = painted(6)},
 		items = {tone = "#ff9c3a", emblem = orb("arcane", "swirl"),
@@ -2013,7 +2321,7 @@ function W.sectionIcons(e, src)
 	end
 end
 
--- icons, banners and the art table; the entries' iconKey (a helper) is dropped
+-- icons, banners and the art table; the entries' iconKey (a helper) and art (a client image) are dropped
 -- the real sprite of an entry (website/README.md "Sprite images"): {item = <server id>} for a unique, the first piece
 -- of a set; the website shows it only when the item's art is ours and published, else the themed icon above
 function W.entrySprite(tab, e)
@@ -2042,6 +2350,7 @@ function W.decorate(tabs, src)
 			e.icon = W.entryIcon(t.id, e, src)
 			e.sprite = W.entrySprite(t.id, e)
 			e.iconKey = nil
+			e.art = nil -- a client image path (the Codex's gem strip); the wiki shows its icon instead
 			W.sectionIcons(e, src)
 		end
 	end
@@ -2055,6 +2364,7 @@ end
 function W.switches(D)
 	return {
 		{"boss:world", D.C0.worldBoss.enabled == true}, {"boss:raid", D.raid.enabled == true},
+		{"boss:pocket", D.pocket.enabled == true},
 		{"boss:ascended", D.uberCfg.enabled == true}, {"boss:guild", D.guildboss.enabled == true},
 		{"dungeon:descent", D.descent.enabled == true}, {"event:invasion", D.invasion.enabled == true},
 		{"event:siege", D.siege.enabled == true}
@@ -2074,8 +2384,59 @@ function W.markSoon(D, lists)
 	end
 end
 
+-- the expected effort of every unique (goals_core.lua K.effortText): its chance per kill of the weakest tier that rolls
+-- it (loot_config.lua unique: chance x tierMult, at most maxChance, before item find) as "~1 in N legendary kills", a
+-- row of the entry's Sources table (the Conquest vendor's price is already there, gen_codex_data.lua conquestRows)
+function W.uniqueEffort(D, u)
+	if not ChaosGoalsCore then
+		dofile("data/scripts/chaos/goals_core.lua")
+	end
+	local K = ChaosGoalsCore
+	local lu = D.loot.unique
+	local parts = {}
+	for _, t in ipairs(u.bossOnly and {"boss"} or {"legendary", "boss"}) do
+		local mult = tonumber(lu.tierMult[t]) or 0
+		if mult > 0 then
+			local p = math.min(tonumber(lu.maxChance) or 10000, (tonumber(u.chance) or 0) * mult) / 10000
+			local text = K.effortText(p, t)
+			if text then
+				parts[#parts + 1] = text
+			end
+		end
+	end
+	if #parts == 0 then
+		return nil
+	end
+	local where = (u.monsters and #u.monsters > 0) and " of the listed monsters" or ""
+	return table.concat(parts, ", ") .. where .. (u.ascended and " (before item find)." or
+		" (before item find; rift and Omen chests roll it too).")
+end
+
+function W.addUniqueEffort(D, tab)
+	local byId = {}
+	for _, u in ipairs(D.uniques or {}) do
+		byId["unique:" .. u.id] = u
+	end
+	for _, e in ipairs(tab and tab.entries or {}) do
+		local u = byId[e.id]
+		local text = u and W.uniqueEffort(D, u)
+		if text then
+			for _, sec in ipairs(e.sections or {}) do
+				if sec.h == "Sources" and sec.rows then
+					local rows = {}
+					for _, r in ipairs(sec.rows) do
+						rows[#rows + 1] = r
+					end
+					table.insert(rows, 2, {"Expected effort", text})
+					sec.rows = rows
+				end
+			end
+		end
+	end
+end
+
 local CODEX_TABS = {modifiers = true, powers = true, orbs = true, gems = true, uniques = true, sets = true, rift = true,
-	supports = true, materials = true, basics = true}
+	supports = true, materials = true, basics = true, lore = true}
 
 function W.build(D)
 	local vocs = W.vocations()
@@ -2104,6 +2465,7 @@ function W.build(D)
 			codex[t.id] = {id = t.id, name = t.name, entries = entries}
 		end
 	end
+	W.addUniqueEffort(D, codex.uniques)
 	table.insert(codex.rift.entries, W.atlasEntry(D))
 	table.insert(codex.rift.entries, W.riftThemesEntry(D))
 	local dungeons, bosses, events = W.dungeonEntries(D), W.bossEntries(D), W.eventEntries(D)
@@ -2119,6 +2481,7 @@ function W.build(D)
 		{id = "events", name = "Events", entries = events},
 		{id = "monsters", name = "Monsters", entries = W.monsterEntries(D)},
 		codex.materials,
+		codex.lore,
 		{id = "store", name = "Store", entries = store}
 	}
 	local src = W.loadArtSources(D)

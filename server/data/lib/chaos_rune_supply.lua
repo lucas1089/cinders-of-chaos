@@ -23,13 +23,14 @@ R.otherConjures = {
 	{script = "conjuring/enchant_staff.lua", name = "Charge Staff"},
 }
 
--- town ids (server/tools/base_towns.csv): the main hub (town 1, Mirewake: the temple NPCs stand there) and the towns a new
--- character may call home (website CHAOS_START_TOWNS, default "1"). Every rune must have a vendor in each.
-R.hubTown = 1
-R.startTowns = {1}
+-- town ids (server/tools/base_towns.csv): the main hub (town 2, Cinderhold: the main city, server/README.md "Main city")
+-- and the towns a new character may call home (newplayer_config.lua homeTown, website CHAOS_START_TOWNS, default "2").
+-- Every rune must have a vendor in each.
+R.hubTown = 2
+R.startTowns = {2}
 
 -- the vendors that sell every rune and the unscribed rune, by their Chaos name (data/npc/base_npc_names.csv gives the
--- file before the npcnames step renames it). Mirewake: the hub and the default home town; Cinderhold: the second city.
+-- file before the npcnames step renames it). Cinderhold: the main city and the default home town; Mirewake: the old hub.
 R.vendors = {
 	{name = "Raloth", town = 1},
 	{name = "Isora", town = 2},

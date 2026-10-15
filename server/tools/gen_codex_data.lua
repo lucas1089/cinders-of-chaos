@@ -22,7 +22,9 @@ Gen.SOURCES = {
 	"data/scripts/chaos/salvage_config.lua", "data/scripts/chaos/shop_config.lua", "data/scripts/chaos/bounty_config.lua",
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
 	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua",
-	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua"
+	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua",
+	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
+	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -274,11 +276,37 @@ function Gen.load()
 	D.rift = dofile("data/scripts/chaos/rift_config.lua")
 	D.uber = dofile("data/scripts/chaos/uber_config.lua") -- the Ascended Omens and the Cinderheart (uber.lua)
 	D.prof = dofile("data/scripts/chaos/professions_config.lua") -- the professions' materials (professions.lua)
+	D.lore = dofile("data/scripts/chaos/lore_data.lua") -- the lore entries (docs/CONTENT.md "Lore")
+	D.pace = dofile("data/scripts/chaos/pace_config.lua") -- pack combat (pace.lua): the curves of the Pack combat page
+	D.pocket = dofile("data/scripts/chaos/pocketboss_config.lua") -- pocket bosses (pocketboss.lua): the Pocket bosses page
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
 	D.worldBoss = Chaos and Chaos.worldBoss
+	-- Conquest Tokens (conquest.lua): the vendor's price of every unique and set piece, the bad-luck protection
+	dofile("data/scripts/chaos/conquest_core.lua")
+	D.conquest = dofile("data/scripts/chaos/conquest_config.lua")
+	D.conquestOffers = ChaosConquestCore.byKey(ChaosConquestCore.catalog(D.conquest, {uniques = ChaosUniqueItems,
+		sets = ChaosItemSets and ChaosItemSets.sets, raid = dofile("data/scripts/chaos/raid_config.lua").uniques,
+		specs = ChaosUniqueSpecs}))
 	return D
+end
+
+-- the Conquest vendor row of an item (nil when the item is not on sale) and the bad-luck protection line of its group
+function Gen.conquestRows(D, id)
+	local o = D.conquestOffers and D.conquestOffers["u:" .. id]
+	if not o or not D.conquest or D.conquest.enabled == false then
+		return nil
+	end
+	local band = D.conquest.vendor.levelBand or 0
+	local vendor = {"Conquest vendor", string.format("%s Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): %s. " ..
+		"Bought pieces are made like a drop.", Gen.num(o.price), o.always and "always on sale" or
+		string.format("once it dropped for you, once you slew a monster that drops it, or from level %d", math.max(1, o.level - band)))}
+	local group = o.group == "ascended" and "boss" or o.group
+	local g = D.conquest.pity[group]
+	local pity = g and {"Bad-luck protection", string.format("%s: every miss gives +%s%% of the base chance on your next roll (at most x%s); a drop starts again.",
+		g.label, Gen.num(g.step * 100), Gen.num(g.cap))} or nil
+	return vendor, pity, o
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -297,7 +325,7 @@ local TIER_ORDER = {"normal", "magic", "rare", "legendary", "boss"}
 local TIER_NAME = {normal = "Normal", magic = "Magic", rare = "Rare", legendary = "Legendary", boss = "Boss"}
 
 local COLORS = {absorb = "#7fa8ff", skill = "#9fdc7f", special = "#f6cf72", element = "#ff8a5a", chaos = "#ff70c0",
-	power = "#ff9a3c", orb = "#e8b84a", currency = "#c0a0ff", rift = "#c0a0ff", unique = "#ff9c3a", basics = "#d6c9ae"}
+	power = "#ff9a3c", orb = "#e8b84a", currency = "#c0a0ff", rift = "#c0a0ff", unique = "#ff9c3a", basics = "#d6c9ae", lore = "#c9a27a"}
 
 local function kindsOf(kinds)
 	local out = {}
@@ -514,8 +542,9 @@ local function affixOrbs(D, a, isPower)
 	add("tempering", "New value inside its tier (unless bound).")
 	add("reforging", "New tier (by item level) and value when you pick it.")
 	add("binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone.")
-	add("ruin", string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing, %d%% ruined.",
-		ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin))
+	add("ruin", ruin.ruin > 0 and string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing, %d%% ruined.",
+		ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin) or string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing; it never ruins the item.",
+		ruin.improve, ruin.tiers, ruin.nothing))
 	add("whetstone", string.format("Quality multiplies its value: +%d%% per stone, up to %d%% (%d%% from %s).", q.perStone,
 		q.cap, q.capHigh, C.rarityName(q.highFrom)))
 	return rows, links
@@ -979,6 +1008,8 @@ function Gen.gemEntries(D)
 			sub = string.format("Weapon: %s; armour: %s; jewellery: %s", cfg.effects[t.weapon.effect].label,
 				cfg.effects[t.armour.effect].label, cfg.effects[t.jewel.effect].label),
 			f = {group = "gem"}, items = gemIds,
+			-- the five tiers of its look (client images/game/gems/<key>.png, client/tools/sprites/gen_gem_art.py)
+			art = "/images/game/gems/" .. t.key,
 			sections = {
 				{h = "Effects by tier", p = {"A gem gives one effect, chosen by the item it sits in: weapons, armour (every other gear) or jewellery (amulets and rings). Remove = gold to take it out intact (Shatter is free and destroys it)."},
 					cols = {"Tier", "Weapon", "Armour", "Jewellery", "Remove"}, w = {14, 24, 24, 24, 14}, rows = rows},
@@ -1152,8 +1183,18 @@ function Gen.uniqueEntries(D)
 			sources[#sources + 1] = {"Omen guardian chest", string.format("%d unique rolls at the boss tier over every unique, x%s find.",
 				D.rift.omen.reward.uniqueRolls, Gen.num(D.rift.omen.reward.uniqueFind))}
 		end
-		local rules = {setOf[u.id] and string.format("A unique keeps its stats: no orb changes it. As a set piece it salvages for %d rune shards.",
-				D.salvage.setPieceShards or 0) or "A unique keeps its stats: no orb changes it and it is never salvaged.",
+		local cv, cp, co = Gen.conquestRows(D, u.id)
+		if cv then
+			sources[#sources + 1] = cv
+		end
+		if cp then
+			sources[#sources + 1] = cp
+		end
+		local tokens = co and ChaosConquestCore.salvageTokens(D.conquest, co.price) or 0
+		local rules = {setOf[u.id] and string.format("A unique keeps its stats: no orb changes it. As a set piece it salvages for %d rune shards%s.",
+				D.salvage.setPieceShards or 0, tokens > 0 and (" and " .. tokens .. " Conquest Tokens") or "") or
+				(tokens > 0 and string.format("A unique keeps its stats: no orb changes it. Salvage gives %d rune shards and %d Conquest Tokens.",
+				D.salvage.uniqueShards or 0, tokens) or "A unique keeps its stats: no orb changes it and it is never salvaged."),
 			string.format("%d socket, fixed (gems may be socketed and taken out).", D.G.config.uniqueSockets)}
 		if u.season then
 			rules[#rules + 1] = string.format("Season unique: during season %d it drops only for that season's characters, afterwards for everyone.", u.season)
@@ -1251,6 +1292,23 @@ function Gen.setEntries(D)
 		if src.rift or src.raid or src.descent or src.dungeon then
 			sources[#sources + 1] = {"Who", string.format("Characters of level %d or more (the set's level - %d); item find raises the chances.",
 				math.max(1, set.level - c.levelBelow), c.levelBelow)}
+		end
+		do
+			local lo, hi
+			for _, piece in ipairs(set.pieces) do
+				local o = D.conquestOffers and D.conquestOffers["u:" .. piece.id]
+				if o then
+					lo, hi = math.min(lo or o.price, o.price), math.max(hi or o.price, o.price)
+				end
+			end
+			if lo then
+				local _, pity = Gen.conquestRows(D, set.pieces[1].id)
+				sources[#sources + 1] = {"Conquest vendor", string.format("Any piece you choose: %s Conquest Tokens, once it dropped for you or from level %d.",
+					lo == hi and Gen.num(lo) or (Gen.num(lo) .. "-" .. Gen.num(hi)), math.max(1, set.level - (D.conquest.vendor.levelBand or 0)))}
+				if pity then
+					sources[#sources + 1] = pity
+				end
+			end
 		end
 		local rules = {"A piece counts when it is worn in its slot and you have its level; the same piece twice counts once.",
 			"A two-handed weapon counts as two pieces.",
@@ -1554,18 +1612,149 @@ function Gen.basicsEntries(D)
 		{h = "Sides", p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments...).",
 			"Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, find, experience...).",
 			"A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."}}})
+	-- Conquest Tokens (conquest_config.lua, server/README.md "Conquest Tokens, the Conquest vendor and bad-luck protection")
+	local cq = D.conquest
+	if cq and cq.enabled ~= false then
+		local K = ChaosConquestCore
+		local src = {}
+		for _, key in ipairs({"boss_world", "boss_island", "boss_sepulchre", "boss_omen", "boss_ascended", "boss_guild",
+				"boss_dungeon", "boss_lair"}) do
+			local e = cq.sources[key]
+			src[#src + 1] = {e.label:gsub("^%l", string.upper), Gen.num(K.amount(cq, key)), Gen.num(e.cap)}
+		end
+		src[#src + 1] = {"Sealed rift", Gen.num(K.amount(cq, "rift_clear", {tier = 1})) .. "-" ..
+			Gen.num(K.amount(cq, "rift_clear", {tier = 15})) .. " by tier", Gen.num(cq.sources.rift_clear.cap)}
+		src[#src + 1] = {"Dungeon clear", Gen.num(K.amount(cq, "dungeon_clear", {difficulty = 1})) .. "-" ..
+			Gen.num(cq.sources.dungeon_clear.max) .. " by difficulty", Gen.num(cq.sources.dungeon_clear.cap)}
+		src[#src + 1] = {"Ember Descent", "up to " .. Gen.num(cq.sources.descent_clear.max) .. " by depth", Gen.num(cq.sources.descent_clear.cap)}
+		src[#src + 1] = {"Invasion", Gen.num(K.amount(cq, "invasion")) .. "-" .. Gen.num(cq.sources.invasion.max) ..
+			" by share", Gen.num(cq.sources.invasion.cap)}
+		local prices = {}
+		for _, g in ipairs(cq.vendor.groupOrder) do
+			local d = cq.vendor.groups[g]
+			prices[#prices + 1] = {d.label, d.perLevel > 0 and (Gen.num(d.base) .. " + " .. Gen.num(d.perLevel) .. " x level")
+				or Gen.num(d.base)}
+		end
+		local pity = {}
+		for _, g in ipairs(cq.pityOrder) do
+			local d = cq.pity[g]
+			pity[#pity + 1] = {d.label, "+" .. Gen.num(d.step * 100) .. "% of the base per miss", "x" .. Gen.num(d.cap)}
+		end
+		add("conquest", "Conquest Tokens", "The sure path: tokens for every boss and clear, any item you have seen for sale.", {
+			{h = "Earning", p = {"Every boss you help slay (damage, last hit, or a party member within range), every sealed rift, dungeon clear, Ember Descent run and invasion reward gives Conquest Tokens. Each source has a daily limit; the window's Progress tab shows today's tokens."},
+				cols = {"Source", "Tokens", "Per day"}, w = {40, 35, 25}, rows = src},
+			{h = "The Conquest vendor", p = {string.format("Iselde Varrow next to the temple, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + %d. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.",
+				cq.vendor.levelBand),
+				string.format("The Cinderheart chain: an Omen Key of the kind you choose (%d), your Omen Key attuned to another kind (%d), an Ascended Shard of the kind you choose (%d); %d shards or %d relics of one kind become one of another.",
+					cq.cinder.omenKey, cq.cinder.attune, cq.cinder.shard, cq.cinder.convert.shards, cq.cinder.convert.relics),
+				string.format("Refinement: a worn item with a rarity rises one rarity (up to %s), keeps every modifier and gains one; %d + %d x the new rarity tokens.",
+					D.C.rarityName(cq.refine.maxRarity), cq.refine.base, cq.refine.perRarity),
+				string.format("Salvage: a unique on the bench gives %d%% of its price in tokens (at least %d).", math.floor(cq.salvage.share * 100), cq.salvage.min)},
+				cols = {"Group", "Price"}, w = {40, 60}, rows = prices},
+			{h = "Bad-luck protection", p = {"Each miss of a roll raises your next chance of that group; a drop starts the count again. Perfect rolls and the top rarities stay luck."},
+				cols = {"Group", "Each miss", "At most"}, w = {35, 40, 25}, rows = pity}})
+	end
 	local q = M.config.quality
 	local ruin = D.O.config.ruin
 	add("quality", "Quality, binding and ruin", "Whetstones, bound modifiers and the Orb of Ruin.", {
 		{h = "Quality", p = {string.format("Each Whetstone adds %d%% quality, up to %d%% (%d%% from %s). Every modifier value is multiplied by (100 + quality) / 100, rounded.",
 			q.perStone, q.cap, q.capHigh, C.rarityName(q.highFrom))}, links = {"orb:whetstone"}},
 		{h = "Binding", p = {"A bound modifier is left alone by Tempering, Unmaking, Excision, Reforging and Upheaval. Only an Orb of Erasure frees it (and wipes the item). An item with a bound modifier refuses the Orb of Fate."}, links = {"orb:binding"}},
-		{h = "Ruin", p = {string.format("The Orb of Ruin: %d%% the item improves (%d%% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), %d%% nothing, %d%% it is ruined: no orb changes it any more.",
-			ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin)}, links = {"orb:ruin"}}})
+		{h = "Ruin", p = {ruin.ruin > 0 and string.format("The Orb of Ruin: %d%% the item improves (%d%% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), %d%% nothing, %d%% it is ruined: no orb changes it any more.",
+			ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin) or string.format("The Orb of Ruin: %d%% the item improves (%d%% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), %d%% nothing happens. It never ruins an item (items ruined before stay ruined). For a sure step up, the Conquest vendor's refinement raises a worn item one rarity (up to %s), keeps its modifiers and adds one.",
+			ruin.improve, ruin.tiers, ruin.nothing, D.C.rarityName(D.conquest.refine.maxRarity))}, links = {"orb:ruin"}}})
 	local bb = {}
 	for r = 1, #C.config.baseBonus do
 		local b = C.config.baseBonus[r]
 		bb[r] = {C.rarityName(r), Gen.range(b[1], b[2])}
+	end
+	-- pack combat (pace_config.lua, server/README.md "Pack combat (pace)")
+	local pc = D.pace
+	if pc and pc.enabled ~= false then
+		local function lin(points, x)
+			if x <= points[1][1] then
+				return points[1][2]
+			end
+			for i = 2, #points do
+				local a, b = points[i - 1], points[i]
+				if x <= b[1] then
+					return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1])
+				end
+			end
+			return points[#points][2]
+		end
+		local function pct(v)
+			return Gen.num(floor(v * 100 + 0.5)) .. "%"
+		end
+		local sx, sl = pc.scale and pc.scale.xp or 1, pc.scale and pc.scale.loot or 1
+		local prow = {}
+		for _, L in ipairs({20, 50, 100, 200, 300, 600, 1000}) do
+			prow[#prow + 1] = {Gen.num(L), pct(lin(pc.base.health, L)), pct(math.min(1, lin(pc.base.xp, L) * sx)),
+				pct(math.min(1, lin(pc.base.loot, L) * sl)),
+				pct(lin(pc.damage, L))}
+		end
+		for _, L in ipairs({650, 1000, 1300, 2000}) do
+			prow[#prow + 1] = {Gen.num(L) .. " (own level)", pct(lin(pc.scaled.health, L)),
+				pct(math.min(1, lin(pc.scaled.xp, L) * sx)), pct(math.min(1, lin(pc.scaled.loot, L) * sl)), pct(lin(pc.damage, L))}
+		end
+		local steps = {}
+		for _, st in ipairs(pc.multikill.steps) do
+			steps[#steps + 1] = string.format("%d kills +%d%%", st.kills, st.percent)
+		end
+		add("pace", "Pack combat", "Monsters come in packs and die fast: kill groups, not one at a time.", {
+			{h = "In short", p = {
+				"Hunting monsters have much less health and come in bigger packs. Pull a group and kill it together: area spells and cleaves matter.",
+				"Experience and loot per kill are lower by the same share, so experience and gold per hour stay where they were. Kill counts (bounties, bestiary, tasks, achievements) need more kills by the same share.",
+				string.format("Multikill: kills each within %s of the one before form a chain; the whole chain's experience gets %s.",
+					Gen.seconds(pc.multikill.windowMs), table.concat(steps, ", ")),
+				"Bosses, rifts, the Ember Descent, the tower, invasions, arena, battleground and PvP are not changed."}},
+			{h = "By hunting level", p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."},
+				cols = {"Level", "Health", "Experience", "Loot", "Damage"}, w = {28, 18, 18, 18, 18}, rows = prow}})
+		local crow = {}
+		local names = {[4] = "Warrior", [8] = "Juggernaut", [14] = "Berserker", [3] = "Ranger", [7] = "Deadeye",
+			[15] = "Beastmaster", [1] = "Mystic", [5] = "Elementalist", [10] = "Illusionist", [11] = "Thief", [12] = "Ninja",
+			[13] = "Samurai", [20] = "Necromancer", [21] = "Lich", [22] = "Bone Lord", [17] = "Monk", [18] = "Shadowfist",
+			[19] = "Iron Sage", [23] = "Templar", [24] = "Inquisitor", [25] = "Sentinel"}
+		local from, to = pc.cleave and pc.cleave.fromLevel or 300, pc.cleave and pc.cleave.toLevel or 1000
+		for _, voc in ipairs({4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25}) do
+			local e = pc.cleave and pc.cleave.byVocation[voc]
+			if e and names[voc] then
+				local hi = e.high or e.percent
+				crow[#crow + 1] = {names[voc], hi == e.percent and (e.percent .. "%") or
+					string.format("%d%% -> %d%%", e.percent, hi), Gen.num(e.targets)}
+			end
+		end
+		if #crow > 0 then
+			table.insert(out[#out].sections, {h = "Pack cleave", p = {string.format("A direct hit on a hunting monster, yours or your summon's, also deals a share of it to monsters within %d sqm of it (never bosses, players or their summons), so every class kills packs. The share goes from the first number at level %d and below to the second at level %d and above.",
+				pc.cleave.radius or 1, from, to)}, cols = {"Class", "Share", "Monsters"}, w = {50, 25, 25}, rows = crow})
+		end
+	end
+	-- pocket bosses (pocketboss_config.lua, server/README.md "Pocket bosses")
+	local pk = D.pocket
+	if pk and pk.enabled ~= false then
+		local names = {world = "World bosses", island = "Island bosses", raid = "Raid bosses"}
+		local prow = {}
+		for _, key in ipairs({"world", "island", "raid"}) do
+			local c = pk.categories[key]
+			if c then
+				prow[#prow + 1] = {names[key], c.minLevel and Gen.num(c.minLevel) or Gen.num(D.worldBoss and D.worldBoss.minLevel or 0),
+					Gen.num(math.floor(c.xpMult * 100 + 0.5)) .. "%", Gen.num(math.floor(c.lootMult * 100 + 0.5)) .. "%",
+					Gen.num(c.minutes) .. " min", Gen.num(c.tokens)}
+			end
+		end
+		local ch = pk.charges
+		add("pocket", "Pocket bosses", "A private copy of a time-gated or contested boss, any time, for less reward.", {
+			{h = "In short", p = {
+				"The world bosses, the island bosses and the random raid bosses each have a pocket: a private arena with that boss, opened any time with the Pocket button of the Boss Spawns window, alone or with your party.",
+				string.format("Every character has %d charges a day per boss (new ones at %02d:00); every party member spends one. Bonus charges stay over the reset (at most %d held, %d added a day).",
+					ch.daily, ch.resetHour or 0, ch.bonusMax, ch.bonusPerDay),
+				"The boss is scaled to the party. It pays less than the scheduled fight: experience and loot are cut (even the always-dropped items are not sure), and world bosses give a smaller share of their event reward with one roll of their set.",
+				"The boss passive point counts for a pocket kill as for any other kill: no one is locked out by the clock.",
+				string.format("A lethal hit carries you out without dying; the charge stays spent. After a boss's event rewarded you, its pocket waits %d minutes.",
+					math.floor((pk.noStackSeconds or 0) / 60))},
+				cols = {"Bosses", "Level", "Experience", "Loot", "Time", "Tokens"}, w = {26, 12, 16, 12, 18, 16}, rows = prow},
+			{h = "The scheduled fights", p = {string.format("Island and raid bosses spawned in the world: every helper whose damage and healing reach %s%% of the boss's health gets a personal loot roll, not only the corpse owner.",
+				Gen.num(pk.contested.minPercent))}}})
 	end
 	add("basebonus", "Base stat bonus", "Attack, defence, armour and hit chance from the rarity.", {
 		{h = "Base stats", p = {"An item with a rarity also gets a small bonus to its attack, defence, armour and hit chance, once: min + item level x (max - min + 1) / 100."},
@@ -1639,7 +1828,7 @@ function Gen.materialEntries(D)
 		sections = {
 			{h = "What they are", p = {"Four gathering professions, each with its own level 1-" .. P.maxLevel .. ": " ..
 				"Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). " ..
-				"They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple).",
+				"They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold and Mirewake in the Hall of Services).",
 				"Every profession level above 1 adds " .. Gen.num(P.bonus.perLevel) .. "% experience from monsters, all four " ..
 				"together at most +" .. Gen.num(P.bonus.cap) .. "% (every profession at " .. P.maxLevel .. ")."}},
 			{h = "Experience bonus with all four at a level", cols = {"Level", "Bonus"}, w = {50, 50}, rows = bonusRows},
@@ -1694,6 +1883,38 @@ function Gen.materialEntries(D)
 					"for %d a day, then %s up to %d a day.", t.price, table.concat(slots, ", "), b.fullPerDay,
 					Gen.num(b.lateMult * 100) .. "%", b.capPerDay)}}
 			}}
+	end
+	return out
+end
+
+function Gen.loreOptions(D)
+	local out = {{"", "Everything"}}
+	for _, k in ipairs(D.lore and D.lore.kinds or {}) do
+		out[#out + 1] = {k.key, k.en}
+	end
+	out[#out + 1] = {"chronicle", "The Ashen Chronicle"} -- tools/chronicle_pages.lua
+	return out
+end
+
+-- the lore of the world (data/scripts/chaos/lore_data.lua): one entry each, English, then Brazilian Portuguese
+function Gen.loreEntries(D)
+	local L = D.lore
+	if not L then
+		return {}
+	end
+	local kinds = {}
+	for _, k in ipairs(L.kinds) do
+		kinds[k.key] = k
+	end
+	local out = {}
+	for _, e in ipairs(L.entries) do
+		local k = kinds[e.kind] or {en = e.kind}
+		out[#out + 1] = {id = "lore:" .. e.id, name = e.name, color = COLORS.lore, sub = k.en, group = e.kind, f = {group = e.kind},
+			sections = {{h = "Lore", p = e.en}, {h = "Em portugu\195\170s", p = e.pt}}}
+	end
+	-- the Ashen Chronicle's chapters and the Capital Memorial (chronicle_text.lua, chronicle_config.lua, memorial_config.lua)
+	for _, e in ipairs(dofile("tools/chronicle_pages.lua").entries(COLORS.lore)) do
+		out[#out + 1] = e
 	end
 	return out
 end
@@ -1771,7 +1992,9 @@ function Gen.build(D)
 		{id = "materials", name = "Materials", entries = Gen.materialEntries(D), filters = {
 			{key = "group", label = "Profession", match = "eq", options = {{"", "Every profession"}, {"about", "About"},
 				{"delving", "Delving"}, {"wortcunning", "Wortcunning"}, {"flaying", "Flaying"}, {"angling", "Angling"}}}}},
-		{id = "basics", name = "Basics", entries = Gen.basicsEntries(D), filters = {}}
+		{id = "basics", name = "Basics", entries = Gen.basicsEntries(D), filters = {}},
+		{id = "lore", name = "Lore", entries = Gen.loreEntries(D), filters = {
+			{key = "group", label = "Group", match = "eq", options = Gen.loreOptions(D)}}}
 	}
 	for _, tab in ipairs(tabs) do
 		Gen.pruneOptions(tab)

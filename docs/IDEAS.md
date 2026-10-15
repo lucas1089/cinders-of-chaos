@@ -13,7 +13,7 @@ is ideas only: we write our own.
 - Backpack preview in the item tooltip.
 - UI scale for 4K screens.
 - Minimap preview of Town Portal and waystone destinations.
-- Own quest log, linked to the Seasonal Journey and the Codex.
+- Own quest log, linked to the Seasonal Journey and the Codex. (Partly done: Next Goals, ROADMAP #176, is the level path with a link to the Journey.)
 - Full minimap generated from the OTBM and delivered by the updater.
 - Background music per region with fades, set per area on the server. Own, CC0 or CC BY tracks only.
 

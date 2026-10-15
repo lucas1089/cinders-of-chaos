@@ -1,10 +1,12 @@
 -- Pure helpers of the Factions window (no client API), tested by factionsview_test.lua.
 -- The data comes from the server (server/data/scripts/chaos/factions_core.lua K.payload):
 --   {now, nextDay, nextWeek, weekCap, gold, sel, ranks = [{k, n, min, c}],
---    factions = [{k, n, s, c, lore, rival, rep, rank, rn, rc, lo, hi, pct, nx, wk, dy, dr, ex, npc, near, tok, tn, tid, theme}],
+--    factions = [{k, n, s, c, lore, rival, rep, rank, rn, rc, lo, hi, pct, nx, wk, wc, dy, dr, ex, npc, near, tok, tn, tid,
+--                 theme}], wc = the faction's cap this week (weekCap + the carried unused cap),
 --    contracts = [{key, f, per = "d" | "w", kind, label, p, n, rep, done, give}],
 --    offers = [{key, f, kind, n, rank, rn, price, tokens, st = "ok" | "locked" | "owned" | "soldout", why, wl, wb, item,
 --               lv, rar, mods, desc, craft}]}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 FactionsView = {}
 local V = FactionsView
 
@@ -86,31 +88,38 @@ function V.barPercent(f)
 end
 
 function V.nextText(f)
-  if not f or not f.nx then return 'The highest rank.' end
-  return string.format('%s more to %s', V.fmt(num(f.hi) - num(f.rep)), f.nx)
+  if not f or not f.nx then return tr('The highest rank.') end
+  return tr('%s more to %s', V.fmt(num(f.hi) - num(f.rep)), f.nx)
+end
+
+-- the faction's own cap this week (wc: weekCap plus the unused cap carried from earlier weeks), else the global one
+function V.capOf(f, cap)
+  if f and num(f.wc) > 0 then return num(f.wc) end
+  return cap
 end
 
 function V.weekText(f, cap)
-  return string.format('This week %s / %s', V.fmt(f and f.wk), V.fmt(cap))
+  return tr('This week %s / %s', V.fmt(f and f.wk), V.fmt(V.capOf(f, cap)))
 end
 
 -- what the next activity point is worth today (contracts are not reduced)
 function V.drText(f)
   local m = num(f and f.dr)
-  if m >= 1 then return 'Kills, tokens and events at full value today' end
-  if m >= 0.5 then return 'Kills, tokens and events at half value today' end
-  if m > 0 then return string.format('Kills, tokens and events at %d%% today', math.floor(m * 100 + 0.5)) end
-  return 'No more reputation from activity today'
+  if m >= 1 then return tr('Kills, tokens and events at full value today') end
+  if m >= 0.5 then return tr('Kills, tokens and events at half value today') end
+  if m > 0 then return tr('Kills, tokens and events at %d%% today', math.floor(m * 100 + 0.5)) end
+  return tr('No more reputation from activity today')
 end
 
 function V.capped(f, cap)
+  cap = V.capOf(f, cap)
   return f ~= nil and num(f.wk) >= num(cap) and num(cap) > 0
 end
 
 function V.rivalText(data, f)
   local r = f and f.rival and V.faction(data, f.rival)
   if not r then return '' end
-  return string.format('Rival: %s. Every gain here costs them a quarter of it (not below Wary, never once they hold you Exalted).', r.n)
+  return tr('Rival: %s. Every gain here costs them a quarter of it (not below Wary, never once they hold you Exalted).', r.n)
 end
 
 function V.tokenText(f)
@@ -122,11 +131,11 @@ end
 function V.tokenButton(f, cap)
   if not f then return false, '' end
   if num(f.tok) <= 0 then return false, string.format('Bring %s from %s content.', f.tn or 'tokens', f.s or f.n) end
-  if not f.near then return false, string.format('Speak with %s to turn them in.', f.npc or 'the faction NPC') end
+  if not f.near then return false, tr('Speak with %s to turn them in.', f.npc or tr('the faction NPC')) end
   if V.capped(f, cap) or f.ex and num(f.rep) >= num(f.hi) then
-    return false, 'No more reputation this week: keep them.'
+    return false, tr('No more reputation this week: keep them.')
   end
-  return true, string.format('Give every %s to %s.', f.tn or 'token', f.npc or 'the NPC')
+  return true, tr('Give every %s to %s.', f.tn or 'token', f.npc or tr('the NPC'))
 end
 
 -- contracts of one faction: daily first, open ones first, then by key
@@ -150,7 +159,7 @@ end
 
 function V.progressText(c)
   if c.done then return 'Done' end
-  if c.kind == 'deliver' then return 'Bring it to the NPC' end
+  if c.kind == 'deliver' then return tr('Bring it to the NPC') end
   return string.format('%s / %s', V.fmt(c.p), V.fmt(c.n))
 end
 
@@ -163,8 +172,8 @@ end
 -- the Deliver button of a delivery contract: shown, enabled, tooltip
 function V.deliverButton(c, f)
   if c.kind ~= 'deliver' or c.done then return false, false, '' end
-  if not (f and f.near) then return true, false, string.format('Speak with %s to deliver.', f and f.npc or 'the NPC') end
-  return true, true, 'Hand over the materials and the gold.'
+  if not (f and f.near) then return true, false, tr('Speak with %s to deliver.', f and f.npc or tr('the NPC')) end
+  return true, true, tr('Hand over the materials and the gold.')
 end
 
 function V.contractsSummary(data, key)
@@ -202,26 +211,26 @@ end
 -- the offer's button: text, enabled, colour of the state line, tooltip
 function V.offerButton(o, f)
   local near = f and f.near
-  local who = f and f.npc or 'the quartermaster'
+  local who = f and f.npc or tr('the quartermaster')
   if o.st == 'locked' then return 'Locked', false, V.COLORS.locked, o.why or '' end
-  if o.st == 'soldout' then return 'Sold out', false, V.COLORS.soldout, o.why or '' end
+  if o.st == 'soldout' then return tr('Sold out'), false, V.COLORS.soldout, o.why or '' end
   if o.st == 'owned' then
     if o.kind == 'recipe' then
-      if not near then return 'Craft', false, V.COLORS.owned, string.format('Speak with %s to craft.', who) end
-      return 'Craft', true, V.COLORS.owned, 'Craft once with the materials shown.'
+      if not near then return 'Craft', false, V.COLORS.owned, tr('Speak with %s to craft.', who) end
+      return 'Craft', true, V.COLORS.owned, tr('Craft once with the materials shown.')
     end
     return 'Owned', false, V.COLORS.owned, o.why or ''
   end
-  if not near then return 'Buy', false, V.COLORS.ok, string.format('Speak with %s to buy.', who) end
-  return 'Buy', true, V.COLORS.ok, 'Buy it now.'
+  if not near then return 'Buy', false, V.COLORS.ok, tr('Speak with %s to buy.', who) end
+  return 'Buy', true, V.COLORS.ok, tr('Buy it now.')
 end
 
 function V.offerKindText(o)
   if o.kind == 'gear' then
-    return string.format('Item level %d, %s', num(o.lv), V.rarityName(o.rar))
+    return tr('Item level %d, %s', num(o.lv), V.rarityName(o.rar))
   elseif o.kind == 'orbs' then
     local t = o.desc or ''
-    if o.wl then t = string.format('%s (%d of %d this week)', t, num(o.wb), num(o.wl)) end
+    if o.wl then t = tr('%s (%d of %d this week)', t, num(o.wb), num(o.wl)) end
     return t
   end
   return o.desc or ''
@@ -258,5 +267,5 @@ end
 
 function V.resetText(data)
   if not data then return '' end
-  return string.format('Daily contracts in %s, weekly in %s', V.countdown(data.nextDay), V.countdown(data.nextWeek))
+  return tr('Daily contracts in %s, weekly in %s', V.countdown(data.nextDay), V.countdown(data.nextWeek))
 end

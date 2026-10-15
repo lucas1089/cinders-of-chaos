@@ -6,11 +6,13 @@ Standard library only (Python 3.7+). Three commands:
   setup    create the bot accounts and characters in the game database (mysql client; CHAOS_DB_* as for backup.sh)
              python3 -I server/tools/loadtest.py setup --count 30 [--pos 1500,1500,7 | --spread SERVER/data/chaos_poi.lua]
                  [--town 1] [--vocation 4] [--hash-iterations 120000] [--town-share 0.34] [--area-level 150] [--health 1500]
+                 [--classes NAME:WEIGHT,... --levels L,L,... --server-data SERVER_DIR [--power 1.0]]
   run      log the bots in, walk, talk, measure, print a report
              python3 -I server/tools/loadtest.py run --count 30 --host 127.0.0.1 --port 7171 --duration 120
                  [--server-pid PID] [--server-log PATH] [--key key.pem] [--ramp 0.5] [--walk 1.0] [--say 20]
                  [--dev-key | --client-key HEX] [--client-build N] [--login-timeout 20] [--hunt]
                  [--reconnect MIN,MAX] [--drop P] [--abort P] [--opcodes FILE] [--opcode-every S] [--pm S] [--party S]
+                 [--classes ... --levels ... --server-data SERVER_DIR [--pull STEPS,SECONDS] [--rotation-model CSV]]
   cleanup  delete the bot characters and accounts again
              python3 -I server/tools/loadtest.py cleanup
 
@@ -29,6 +31,22 @@ server/tools/loadtest_hunt.lua gives every bot near a monster that monster as it
 it the bots fight the monsters of their hunting area (melee, the monsters' spells, loot, respawn) and never die (a real
 player dies now and then; a level 100 bot in a level 400 area would nearly die every second, and every lethal hit runs
 all prepare-death events, which is not what players cost). --health sets the bots' health.
+Classes (server/README.md "Load test with area classes"): --classes "Elementalist:5,Berserker:4,..." (vocation names of
+the installed data/XML/vocations.xml, weights) and --levels 100,300,600,1000 give bot i the class of a weighted round
+robin and, class by class, the next level band (assign(); setup and run need the same two options, and run uses the
+first --count of the plan). setup writes the vocation, level, its experience, health and mana by the vocation's gains,
+a magic level and weapon skills of a hunter of that level (--power multiplies both: gear, gems and the tree), and 30
+days of premium (the higher area spells are premium spells). It places the bots in hunts of their level band: the map
+markers of data/chaos_poi.lua and, through the hunt teleports' data/lib/chaos_hunt_places.lua, spawn points of the
+planned hunts (up to 12 each), a band starting at half the level to the level; each position is moved to the nearest
+spawn centre (a tile a monster stands on, so no wall: a character on a wall goes to its temple); --town-share of them,
+spread evenly over the bots, at the temples. run reads the installed data/spells/spells.xml and
+server/data/spells/rotation_model.csv (--rotation-model): each bot casts, by the real say packet, the attack spells
+its class and level may use (no learned spells, no hand-cast utilities), the area spells first (most targets of 5),
+each when its own and its group's cooldown are over, plus the class's pet and rage spells (CLASS_SUPPORT). --pull
+STEPS,SECONDS: a lure of STEPS steps mostly one way (one per --walk), then SECONDS standing to fight (attack spells
+only then), then the next lure. The bots need the server-side TEST ONLY hunt script (a target, kept alive, mana kept
+up, faced to the target for the wave spells, a class weapon) as for --hunt; the report counts the casts.
 Storms and spam (the stress test of server/README.md "Stress test"):
   --reconnect MIN,MAX  each bot leaves after MIN..MAX s in game and logs in again (a reconnect loop) until the run ends
   --drop P             a session ends without the logout packet (the socket is closed: a crashed client), chance P
@@ -75,14 +93,18 @@ after entering with the server's text); login time (p50 / p90 / p95 / max) and i
 every 10 s says how many bots are in game, still logging in and failed; Ctrl+C or SIGTERM ends the run early and
 still prints the report. Timeouts: 10 s per connect, 15 s for the login server's answer and for the game server's
 challenge, 20 s for the answer to the game login (--login-timeout S sets the last one). With --server-pid
-the server's CPU (% of one core) and memory (RSS) every second (Linux /proc); with --server-log the lines of the
-probe server/tools/loadtest_probe.lua (TEST ONLY) that the server printed during the run: the game loop lag.
+the server's CPU (% of one core) and memory (RSS) every second and the three busiest threads (the dispatcher, the game
+loop, is the busiest; Linux /proc); with --server-log the lines of the probe server/tools/loadtest_probe.lua (TEST
+ONLY) that the server printed during the run: the game loop lag (and the p95 of each 5 s when the probe prints
+lag_p95_ms).
 """
 import asyncio
 import base64
+import glob
 import hashlib
 import hmac
 import json
+import math
 import os
 import random
 import re
@@ -253,6 +275,8 @@ class Bot:
         self.cid = 0  # the creature id of the character (the first game message, 0x17)
         self.guard_wait = 0  # while set (a monotonic deadline) the reader looks for a late client guard challenge
         self.invited_by = []  # creature ids of bots that invited this one into a party
+        self.rotation = []  # spells this bot casts (rotation_for), with --classes
+        self.ready = {}  # spell words / spell group -> monotonic time it may be cast again
 
     def key(self):
         return [random.getrandbits(32) for _ in range(4)]
@@ -476,8 +500,17 @@ class Bot:
         next_say = first(a.say)
         next_op, next_pm, next_party = first(a.opcode_every), first(a.pm), first(a.party)
         next_ping = time.monotonic() + 2
+        lure = {'steps': 0, 'fight_until': 0.0, 'dir': 0x65}
         while self.alive and time.monotonic() < min(clock['until'], leave_at) and not self.stats['stop']:
             now = time.monotonic()
+            if self.rotation:
+                # with --pull the attack spells wait for the fight part (a player lures without attacking)
+                spell = next_spell(self.rotation, self.ready, now, attack=not a.pull or lure['fight_until'] > now)
+                if spell:
+                    self.conn.send(b'\x96\x01' + string(spell['words']))
+                    self.ready[spell['words']] = now + spell['cooldown'] / 1000.0 + 0.1
+                    self.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + 0.1
+                    self.count('casts' if spell['group'] == 'attack' else 'support_casts')
             if now >= next_op and a.opcode_list:
                 op, payload = random.choice(a.opcode_list)
                 self.conn.send(b'\x32' + bytes([op]) + string(self.fill(payload)))
@@ -492,7 +525,19 @@ class Bot:
             if now >= next_party:
                 self.party_step()
                 next_party = now + a.party * (0.75 + random.random() * 0.5)
-            if now >= next_walk and a.walk > 0:
+            if now >= next_walk and a.walk > 0 and a.pull:
+                # lure: --pull STEPS steps mostly one way (the monsters on the way follow), then stand and fight
+                # for the --pull seconds, then the next lure in a new direction
+                if lure['fight_until'] <= now:
+                    if lure['steps'] <= 0:
+                        lure['steps'], lure['dir'] = a.pull[0], random.choice((0x65, 0x66, 0x67, 0x68))
+                    self.conn.send(bytes([lure['dir'] if random.random() < 0.75 else random.choice((0x65, 0x66, 0x67, 0x68))]))
+                    self.stats['walks'] += 1
+                    lure['steps'] -= 1
+                    if lure['steps'] <= 0:
+                        lure['fight_until'] = now + a.pull[1] * (0.75 + random.random() * 0.5)
+                next_walk = now + a.walk * (0.75 + random.random() * 0.5)
+            elif now >= next_walk and a.walk > 0:
                 self.conn.send(bytes([random.choice((0x65, 0x66, 0x67, 0x68))]))
                 self.stats['walks'] += 1
                 next_walk = now + a.walk * (0.75 + random.random() * 0.5)
@@ -508,6 +553,17 @@ class Bot:
             except Exception:  # noqa: BLE001
                 break
             await asyncio.sleep(0.1)
+
+
+def next_spell(rotation, ready, now, attack=True):
+    """the first spell of the rotation whose own cooldown and group cooldown are over (the area spells come first in
+    it); attack=False: only the support spells (a lure)"""
+    for s in rotation:
+        if s['group'] == 'attack' and not attack:
+            continue
+        if ready.get(s['group'], 0) <= now and ready.get(s['words'], 0) <= now:
+            return s
+    return None
 
 
 class LoginAborted(Exception):
@@ -600,6 +656,214 @@ def bot_name(index):
     return 'Loadbot ' + suffix.capitalize()
 
 
+# ------------------------------------------------------------------------------------------------ classes and spells
+# support spells that are part of a class's damage (a pet, a rage): cast whenever ready, beside the attack rotation
+CLASS_SUPPORT = ('vael ferh', 'vyr sang khar', 'vael oss')
+
+
+def _attrs(text):
+    return dict(re.findall(r'([\w-]+)\s*=\s*"([^"]*)"', text))
+
+
+def parse_vocations(text):
+    """{name: {'id', 'hp', 'mana'}} of a data/XML/vocations.xml (gainhp / gainmana per level)"""
+    out = {}
+    for m in re.finditer(r'<vocation\b([^>]*)>', re.sub(r'<!--.*?-->', '', text, flags=re.S)):
+        a = _attrs(m.group(1))
+        if 'id' in a and 'name' in a:
+            out[a['name']] = {'id': int(a['id']), 'hp': int(a.get('gainhp', 5)), 'mana': int(a.get('gainmana', 5))}
+    return out
+
+
+def parse_spells(text):
+    """[{words, name, group, level, mana, cooldown, groupcooldown, needtarget, vocations}] of the instant spells of a
+    data/spells/spells.xml (comments skipped; an empty vocation list means every vocation, as in the engine)"""
+    out = []
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.S)
+    for m in re.finditer(r'<instant\b([^>]*?)(/>|>(.*?)</instant>)', text, flags=re.S):
+        a = _attrs(m.group(1))
+        if 'words' not in a:
+            continue
+        out.append({'words': a['words'], 'name': a.get('name', ''), 'group': a.get('group', ''),
+                    'level': int(a.get('level', a.get('lvl', 0)) or 0), 'mana': int(a.get('mana', 0) or 0),
+                    'cooldown': int(a.get('cooldown', 2000) or 0), 'groupcooldown': int(a.get('groupcooldown', 2000) or 0),
+                    'needtarget': a.get('needtarget') == '1', 'needlearn': a.get('needlearn') == '1',
+                    'params': a.get('params') == '1',
+                    'vocations': set(re.findall(r'<vocation\s+name\s*=\s*"([^"]+)"', m.group(3) or ''))})
+    return out
+
+
+def parse_rotation_model(text):
+    """{words: (targets hit in a pack of 5, flags)} of server/data/spells/rotation_model.csv"""
+    import csv
+    import io
+    out = {}
+    for row in csv.DictReader(io.StringIO(text)):
+        try:
+            out[row['words']] = (float(row['t5'] or 1), row.get('flags') or '')
+        except (KeyError, ValueError):
+            continue
+    return out
+
+
+def rotation_for(spells, model, vocation, level):
+    """the spells a bot of this vocation and level casts: the attack spells it may use (not learned ones, not the
+    hand-cast utilities of rotation_model.csv), area spells first (most targets of 5, then the higher level spell),
+    and the class's pet / rage support spells (CLASS_SUPPORT)"""
+    rot = []
+    for s in spells:
+        if s['level'] > level or s['needlearn'] or s['params'] or (s['vocations'] and vocation not in s['vocations']):
+            continue
+        t5, flags = model.get(s['words'], (1.0, ''))
+        if s['group'] == 'attack' and 'utility' not in flags and 'skip' not in flags:
+            rot.append(dict(s, t5=t5))
+        elif s['words'] in CLASS_SUPPORT:
+            rot.append(dict(s, t5=0.0, group='support'))
+    rot.sort(key=lambda s: (s['group'] != 'support', -s['t5'], -s['level'], s['words']))
+    return rot
+
+
+def parse_weights(text):
+    """'Elementalist:4,Berserker:2' -> [('Elementalist', 4), ('Berserker', 2)]"""
+    out = []
+    for part in text.split(','):
+        part = part.strip()
+        if not part:
+            continue
+        name, _, w = part.partition(':')
+        try:
+            weight = int(w) if w else 1
+        except ValueError:
+            weight = -1
+        if weight < 1:
+            raise ValueError('class weight must be a whole number 1 or more: %r' % part)
+        out.append((name.strip(), weight))
+    return out
+
+
+def assign(index, classes, levels):
+    """(class, level) of bot index: the classes round robin by weight, each class through every level band in turn
+    (setup and run compute the same, so both need the same --classes and --levels)"""
+    wheel = [name for name, w in classes for _ in range(w)]
+    return wheel[index % len(wheel)], levels[(index // len(wheel)) % len(levels)]
+
+
+def exp_for_level(level):
+    lv = level - 1
+    return (50 * lv ** 3 - 150 * lv ** 2 + 400 * lv) // 3
+
+
+MAGES = {'Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord'}
+
+
+def class_stats(vocation, level, gains, power=1.0):
+    """health, mana, magic level and weapon skill of a bot: a hunter of that level, roughly (hp / mana per level of
+    vocations.xml; magic level and skills grow slower than level, as in play); power multiplies the magic level and
+    the skill (what gear, gems and the passive tree add to a real character's damage)"""
+    hp = 185 + (level - 8) * gains.get('hp', 5)
+    mana = 90 + (level - 8) * gains.get('mana', 5)
+    skill = int(min(130, 40 + 22 * math.log(max(1, level) / 20.0 + 1, 2)) * power)
+    if vocation in MAGES:
+        return hp, mana, int(min(140, 30 + 20 * math.log(level / 20.0 + 1, 2)) * power), 20
+    return hp, mana, int(min(60, 5 + level / 25.0) * power), skill
+
+
+def hunt_marks(text):
+    """[(low, high, x, y, z)] of the hunt marks of a data/chaos_poi.lua that name a level band"""
+    out = []
+    for m in re.finditer(r'\{k = "hunt", x = (\d+), y = (\d+), z = (\d+), n = "([^"]*)"', text):
+        band = re.search(r'\(level (\d+)-(\d+)\)', m.group(4))
+        if band:
+            out.append((int(band.group(1)), int(band.group(2)), int(m.group(1)), int(m.group(2)), int(m.group(3))))
+    return out
+
+
+def place_marks(places_text, spawn_text, per_place=12, reach=150):
+    """[(low, high, x, y, z)] in the planned hunts that the hunt teleports lead to (data/lib/chaos_hunt_places.lua,
+    install step contentareas): up to per_place spawn centres of the spawn file round each place's arrival (within
+    `reach` sqm, one floor up or down, the nearest arrival wins), spread over the place; its level band"""
+    places = [(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)))
+              for m in re.finditer(r'level = \{(\d+), (\d+)\}.*?arrival = \{x = (\d+), y = (\d+), z = (\d+)\}',
+                                   places_text)]
+    if not places:
+        return []
+    near = {i: [] for i in range(len(places))}
+    for m in re.finditer(r'<spawn\s+centerx="(\d+)"\s+centery="(\d+)"\s+centerz="(\d+)"', spawn_text):
+        x, y, z = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        best = None
+        for i, p in enumerate(places):
+            d = max(abs(x - p[2]), abs(y - p[3]))
+            if d <= reach and abs(z - p[4]) <= 1 and (best is None or d < best[0]):
+                best = (d, i)
+        if best:
+            near[best[1]].append((x, y, z))
+    out = []
+    for i, p in enumerate(places):
+        pts = sorted(near[i])
+        step = max(1, len(pts) // per_place)
+        out.extend((p[0], p[1]) + pt for pt in pts[::step][:per_place])
+    return out
+
+
+def spawn_index(spawn_text, cell=16):
+    """{(x // cell, y // cell, z): [(x, y, z)]} of the spawn centres of a spawn file"""
+    out = {}
+    for m in re.finditer(r'<spawn\s+centerx="(\d+)"\s+centery="(\d+)"\s+centerz="(\d+)"', spawn_text):
+        x, y, z = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        out.setdefault((x // cell, y // cell, z), []).append((x, y, z))
+    return out
+
+
+def snap_to_spawn(pos, index, reach=12, cell=16):
+    """the spawn centre nearest to pos on its floor within reach sqm (a tile a monster stands on, so not a wall: a
+    character placed on a wall goes to its temple), else pos"""
+    x, y, z = pos
+    best = None
+    for cx in range((x - reach) // cell, (x + reach) // cell + 1):
+        for cy in range((y - reach) // cell, (y + reach) // cell + 1):
+            for p in index.get((cx, cy, z), ()):
+                d = max(abs(p[0] - x), abs(p[1] - y))
+                if d <= reach and (best is None or (d, p) < best):
+                    best = (d, p)
+    return best[1] if best else pos
+
+
+def hunts_for_level(hunts, level):
+    """the hunts a character of this level would pick: band low end at or under the level and at least half of it
+    (a level 1000 hunts 500+, a level 100 hunts 50-100); else the hunts with the highest low end under it (or, with
+    none under it, the lowest ones)"""
+    fit = [h for h in hunts if level * 0.5 <= h[0] <= level]
+    if not fit:
+        under = [h for h in hunts if h[0] <= level]
+        if under:
+            top = max(h[0] for h in under)
+            fit = [h for h in under if h[0] >= top * 0.8]
+        else:
+            low = min(h[0] for h in hunts)
+            fit = [h for h in hunts if h[0] == low]
+    return fit
+
+
+def level_positions(hunts, temples, levels_of_bots, town_share):
+    """one position per bot: a town_share of them (spread evenly over the bots, so over every class and level) round
+    robin over the temples, the others over the hunts of their level (hunts_for_level), up to 3 tiles off the mark;
+    deterministic"""
+    out, used = [], {}
+    for i, level in enumerate(levels_of_bots):
+        rnd = random.Random(i)
+        if int((i + 1) * town_share + 1e-9) > int(i * town_share + 1e-9) or not hunts:
+            x, y, z = temples[i % len(temples)]
+            off = 5
+        else:
+            fit = hunts_for_level(hunts, level)
+            k = used.get(level, 0)
+            used[level] = k + 1
+            x, y, z = fit[(k * 7919 + level) % len(fit)][2:]
+            off = 3
+        out.append((x + rnd.randint(-off, off), y + rnd.randint(-off, off), z))
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ server sampling
 class Sampler:
     def __init__(self, pid):
@@ -612,7 +876,26 @@ class Sampler:
         cpu = int(fields[11]) + int(fields[12])  # utime + stime
         rss = int(fields[21]) * os.sysconf('SC_PAGE_SIZE')
         threads = int(fields[17])
-        return time.monotonic(), cpu, rss, threads
+        return time.monotonic(), cpu, rss, threads, self.read_threads()
+
+    def read_threads(self):
+        """{'name/tid': utime + stime} of every thread of the server (the dispatcher is the game loop)"""
+        out = {}
+        base = '/proc/%d/task' % self.pid
+        try:
+            tids = os.listdir(base)
+        except OSError:
+            return out
+        for tid in tids:
+            try:
+                with open('%s/%s/stat' % (base, tid)) as f:
+                    raw = f.read()
+            except OSError:
+                continue
+            name = raw[raw.index('(') + 1:raw.rindex(')')]
+            fields = raw.rsplit(')', 1)[1].split()
+            out['%s/%s' % (name, tid)] = int(fields[11]) + int(fields[12])
+        return out
 
     async def loop(self):
         prev = self.read()
@@ -620,9 +903,20 @@ class Sampler:
             await asyncio.sleep(1)
             cur = self.read()
             dt = cur[0] - prev[0]
+            per = {k: 100.0 * (v - prev[4].get(k, v)) / self.tick / dt for k, v in cur[4].items()}
             self.samples.append({'t': cur[0], 'cpu': 100.0 * (cur[1] - prev[1]) / self.tick / dt, 'rss': cur[2],
-                                 'threads': cur[3]})
+                                 'threads': cur[3], 'per_thread': per, 'busiest': max(per.values() or [0])})
             prev = cur
+
+
+def thread_summary(rows, top=3):
+    """[(thread, avg %, p95 %)] of the threads with the most CPU over the samples, most first"""
+    acc = {}
+    for r in rows:
+        for k, v in r.get('per_thread', {}).items():
+            acc.setdefault(k, []).append(v)
+    out = [(k, sum(v) / len(rows), pct(v, 95)) for k, v in acc.items()]
+    return sorted(out, key=lambda x: -x[1])[:top]
 
 
 def pct(values, p):
@@ -643,9 +937,11 @@ def probe_lines(path, start, end):
     try:
         with open(path, errors='replace') as f:
             for line in f:
-                m = re.search(r'\[loadtest-probe\] t=(\d+) players=(\d+) lag_avg_ms=([\d.]+) lag_max_ms=(\d+)', line)
+                m = re.search(r'\[loadtest-probe\] t=(\d+) players=(\d+) lag_avg_ms=([\d.]+) lag_max_ms=(\d+)'
+                              r'(?: samples=\d+)?(?: lag_p95_ms=(\d+))?', line)
                 if m and start <= int(m.group(1)) <= end:
-                    out.append((int(m.group(1)), int(m.group(2)), float(m.group(3)), int(m.group(4))))
+                    out.append((int(m.group(1)), int(m.group(2)), float(m.group(3)), int(m.group(4)),
+                                int(m.group(5)) if m.group(5) else None))
     except OSError:
         pass
     return out
@@ -666,6 +962,20 @@ async def run_test(args):
     # the hold starts when the last bot was started (the ramp takes longer than ramp x count on a busy machine)
     clock = {'until': float('inf')}
     bots = [Bot(i, args, n, stats) for i in range(args.count)]
+    plan = class_plan(args)
+    if plan:
+        spells = parse_spells(read_text(os.path.join(args.server_data, 'data', 'spells', 'spells.xml')))
+        model_path = args.rotation_model or os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data',
+                                                         'spells', 'rotation_model.csv')
+        model = parse_rotation_model(read_text(model_path)) if os.path.exists(model_path) else {}
+        rotations = {}
+        for bot, key in zip(bots, plan):
+            if key not in rotations:
+                rotations[key] = rotation_for(spells, model, key[0], key[1])
+            bot.rotation = rotations[key]
+        for (cls, level), rot in sorted(rotations.items()):
+            area = [s['name'] for s in rot if s['group'] == 'attack' and s['t5'] > 1]
+            print('  %s %d: %d spells, area: %s' % (cls, level, len(rot), ', '.join(area) or 'none'))
     tasks = []
     loop = asyncio.get_event_loop()
     for sig in ('SIGINT', 'SIGTERM'):
@@ -724,7 +1034,7 @@ def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
         print('  %4d x %s (%s%s)' % (count, reason, ', '.join(names), ', ...' if count > len(names) else ''))
     print('  disconnects during the run: %d; steps sent %d, chat lines %d; received %.1f MB' % (
         s['disconnects'], s['walks'], s['says'], s['bytes'] / 1e6))
-    extra = [(k, s.get(k, 0)) for k in ('sessions', 'aborted', 'dropped', 'opcodes', 'pms', 'party_invites',
+    extra = [(k, s.get(k, 0)) for k in ('casts', 'support_casts', 'sessions', 'aborted', 'dropped', 'opcodes', 'pms', 'party_invites',
                                        'party_joins', 'party_leaves') if s.get(k)]
     if extra:
         print('  ' + ', '.join('%s %d' % kv for kv in extra))
@@ -744,6 +1054,7 @@ def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
             rss = [r['rss'] / 1048576.0 for r in rows]
             print('  server %-14s CPU avg %5.1f%%  p95 %5.1f%%  max %5.1f%% of one core; RSS avg %.0f MB, max %.0f MB'
                   % (label, statistics.mean(cpu), pct(cpu, 95), max(cpu), statistics.mean(rss), max(rss)))
+            print('    busiest threads: ' + ', '.join('%s avg %.1f%% p95 %.1f%%' % t for t in thread_summary(rows)))
     if args.server_log:
         idle = probe_lines(args.server_log, int(wall0) - 60, int(wall0))
         lines = probe_lines(args.server_log, int(wall0), int(wall1) + 1)
@@ -755,6 +1066,10 @@ def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
             print('  game loop lag at %d+ players (probe, %d reports): avg %.1f ms, worst 5 s avg %.1f ms, max %d ms'
                   % (min(l[1] for l in loaded), len(loaded), statistics.mean(l[2] for l in loaded),
                      max(l[2] for l in loaded), max(l[3] for l in loaded)))
+            p95s = [l[4] for l in loaded if l[4] is not None]
+            if p95s:
+                print('    p95 of each 5 s: median %d ms, worst %d ms; 5 s windows with a stall of 500 ms or more: %d'
+                      % (pct(p95s, 50), max(p95s), sum(1 for l in loaded if l[3] >= 500)))
         if not idle and not loaded:
             print('  no [loadtest-probe] lines in %s (copy server/tools/loadtest_probe.lua into data/scripts and restart)'
                   % args.server_log)
@@ -825,7 +1140,65 @@ def spread_positions(marks, count, town_share):
     return out
 
 
+def read_text(path):
+    with open(path, errors='replace') as f:
+        return f.read()
+
+
+def class_plan(args):
+    """[(class, level)] per bot from --classes / --levels, or None (every bot --vocation at level 100)"""
+    if not args.classes:
+        return None
+    return [assign(i, args.class_weights, args.level_list) for i in range(args.count)]
+
+
+def setup_classes(args, plan):
+    data = os.path.join(args.server_data, 'data')
+    vocs = parse_vocations(read_text(os.path.join(data, 'XML', 'vocations.xml')))
+    missing = sorted({c for c, _ in plan} - set(vocs))
+    if missing:
+        sys.exit('--classes: no such vocation in vocations.xml: %s' % ', '.join(missing))
+    poi = read_text(os.path.join(data, 'chaos_poi.lua'))
+    temples = [m[1:] for m in poi_marks(poi) if m[0] == 'temple']
+    hunts = hunt_marks(poi)
+    places = os.path.join(data, 'lib', 'chaos_hunt_places.lua')
+    spawns = sorted(glob.glob(os.path.join(data, 'world', '*-spawn.xml')))[:1]
+    if os.path.exists(places) and spawns:
+        planned = place_marks(read_text(places), read_text(spawns[0]))
+        print('hunts: %d of the map markers, %d spawn points of %d planned hunts' % (
+            len(hunts), len(planned), len({h[:2] for h in planned})))
+        hunts += planned
+    positions = level_positions(hunts, temples, [lv for _, lv in plan], args.town_share)
+    if spawns:
+        index = spawn_index(read_text(spawns[0]))
+        positions = [snap_to_spawn(p, index) for p in positions]
+    pw = password_hash(PREFIX, args.hash_iterations)
+    st = []
+    for i, (cls, level) in enumerate(plan):
+        acc = '%s%04d' % (PREFIX, i)
+        hp, mana, ml, skill = class_stats(cls, level, vocs[cls], args.power)
+        px, py, z = positions[i]
+        # premium for 30 days: most area spells of the higher levels are premium spells
+        st.append("INSERT IGNORE INTO `accounts` (`name`, `password`, `email`, `premium_ends_at`) VALUES ('%s', '%s', '', "
+                  "UNIX_TIMESTAMP() + 30 * 86400);" % (acc, pw))
+        st.append("INSERT IGNORE INTO `players` (`name`, `account_id`, `group_id`, `vocation`, `level`, `health`, "
+                  "`healthmax`, `experience`, `mana`, `manamax`, `maglevel`, `skill_fist`, `skill_club`, `skill_sword`, "
+                  "`skill_axe`, `skill_dist`, `skill_shielding`, `cap`, `town_id`, `posx`, `posy`, `posz`, `lastlogin`, "
+                  "`looktype`) SELECT '%s', `id`, 1, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, 3000, %d, "
+                  "%d, %d, %d, UNIX_TIMESTAMP() - 86400, 128 FROM `accounts` WHERE `name` = '%s';"
+                  % (bot_name(i), vocs[cls]['id'], level, hp, hp, exp_for_level(level), mana, mana, ml, skill, skill,
+                     skill, skill, skill, skill, args.town, px, py, z, acc))
+    return st
+
+
 def setup(args):
+    plan = class_plan(args)
+    if plan:
+        sql(args, setup_classes(args, plan))
+        out = sql(args, ["SELECT p.`vocation`, p.`level`, COUNT(*) FROM `players` p JOIN `accounts` a ON a.`id` = "
+                         "p.`account_id` WHERE a.`name` LIKE '%s%%' GROUP BY 1, 2;" % PREFIX])
+        print('bot characters in the database (vocation, level, count):\n' + out.strip())
+        return
     if args.spread:
         with open(args.spread, errors='replace') as f:
             positions = spread_positions(poi_marks(f.read(), args.area_level), args.count, args.town_share)
@@ -887,7 +1260,8 @@ def parse(argv):
                 '--pos': '1500,1500,7', '--town': 1, '--vocation': 4, '--db': '', '--client-key': '',
                 '--client-build': 1, '--login-timeout': 20.0, '--hash-iterations': 120000, '--spread': '',
                 '--town-share': 0.34, '--health': 1500, '--area-level': 150, '--reconnect': '', '--drop': 0.0,
-                '--abort': 0.0, '--opcodes': '', '--opcode-every': 0.0, '--pm': 0.0, '--party': 0.0}
+                '--abort': 0.0, '--opcodes': '', '--opcode-every': 0.0, '--pm': 0.0, '--party': 0.0,
+                '--classes': '', '--levels': '100', '--power': 1.0, '--server-data': '', '--pull': '', '--rotation-model': ''}
     vals = dict(defaults)
     flags = {'--no-source-ips': False, '--dev-key': False, '--hunt': False}
     i = 1
@@ -918,6 +1292,22 @@ def parse(argv):
     if not (0 <= a.drop <= 1 and 0 <= a.abort <= 1):
         sys.exit('--drop and --abort are chances 0..1')
     a.opcode_list = load_opcodes(a.opcodes) if a.opcodes else []
+    try:
+        a.class_weights = parse_weights(a.classes)
+        a.level_list = [int(v) for v in a.levels.split(',') if v.strip()]
+    except ValueError as e:
+        sys.exit('--classes NAME:WEIGHT,... / --levels L,L,...: %s' % e)
+    if not a.level_list or any(not 1 <= lv <= 5000 for lv in a.level_list):
+        sys.exit('--levels: levels 1..5000')
+    if a.classes and a.cmd != 'cleanup' and not a.server_data:
+        sys.exit('--classes needs --server-data SERVER_DIR (its vocations.xml, spells.xml and chaos_poi.lua)')
+    if not 0.1 <= a.power <= 10:
+        sys.exit('--power 0.1..10')
+    if a.pull:
+        m = re.match(r'^(\d+),(\d+(?:\.\d+)?)$', a.pull)
+        if not m or int(m.group(1)) < 1:
+            sys.exit('--pull STEPS,SECONDS (STEPS 1 or more)')
+        a.pull = (int(m.group(1)), float(m.group(2)))
     key = a.client_key or os.environ.get('CHAOS_CLIENT_KEY', '')
     if a.dev_key:
         a.guard_key = GUARD_DEV_KEY

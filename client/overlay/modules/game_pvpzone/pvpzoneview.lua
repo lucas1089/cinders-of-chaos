@@ -1,4 +1,5 @@
 -- The Scorched Marches: pure helpers of the window, the entry confirmation and the HUD (no widgets; pvpzoneview_test.lua).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 PvpZoneView = {}
 local V = PvpZoneView
 
@@ -44,60 +45,60 @@ function V.contestLine(c)
   c = c or {}
   local phase = c.phase
   if phase == 'warden' then
-    return string.format('Shrine Warden %s- %s left', c.warden and string.format('%d%% ', c.warden) or '',
+    return tr('Shrine Warden %s- %s left', c.warden and string.format('%d%% ', c.warden) or '',
       V.clock(c.left)), '#ff7040'
   elseif phase == 'capture' then
     if c.contested then
-      return string.format('Shrine: CONTESTED - %s left', V.clock(c.left)), '#ff4030'
+      return tr('Shrine: CONTESTED - %s left', V.clock(c.left)), '#ff4030'
     end
     local lead = c.progress and c.progress[1]
     if lead then
       return string.format('Shrine: %s %d%% - %s left', lead.short or lead.name, lead.pct or 0, V.clock(c.left)), lead.color or '#f6cf72'
     end
-    return string.format('Shrine: open, take it! - %s left', V.clock(c.left)), '#f6cf72'
+    return tr('Shrine: open, take it! - %s left', V.clock(c.left)), '#f6cf72'
   end
-  return string.format('Shrine contest in %s', V.clock(c.left)), '#b8ab92'
+  return tr('Shrine contest in %s', V.clock(c.left)), '#b8ab92'
 end
 
 -- who holds the shrine: text, colour
 function V.holderLine(c)
   local h = c and c.holder
   if not h then
-    return 'Nobody holds the Cinder Shrine', '#8c8070'
+    return tr('Nobody holds the Cinder Shrine'), '#8c8070'
   end
-  return string.format('%s hold the shrine (%s)', h.short or h.name, V.span(h.left)), h.color or '#f6cf72'
+  return tr('%s hold the shrine (%s)', h.short or h.name, V.span(h.left)), h.color or '#f6cf72'
 end
 
 function V.pledgeLine(p)
   if not p then
-    return 'Not pledged: no reputation, no shrine', '#8c8070'
+    return tr('Not pledged: no reputation, no shrine'), '#8c8070'
   end
-  return 'Fighting for ' .. (p.name or p.key), p.color or '#d6c9ae'
+  return tr('Fighting for %s', (p.name or p.key)), p.color or '#d6c9ae'
 end
 
 -- the status line under the bars: protection, the exit channel, piles around
 function V.statusLine(d)
   if tonumber(d.exit) then
-    return string.format('Leaving... %d%% (do not fight)', d.exit), '#9fd89f'
+    return tr('Leaving... %d%% (do not fight)', d.exit), '#9fd89f'
   end
   if (tonumber(d.protect) or 0) > 0 then
-    return string.format('Protected for %ds', d.protect), '#8fb8ff'
+    return tr('Protected for %ds', d.protect), '#8fb8ff'
   end
   if (tonumber(d.piles) or 0) > 0 then
-    return string.format('%s embers lie on the ground', V.number(d.piles)), '#e8a040'
+    return tr('%s embers lie on the ground', V.number(d.piles)), '#e8a040'
   end
-  return 'Bank your embers at a safe exit', '#8c8070'
+  return tr('Bank your embers at a safe exit'), '#8c8070'
 end
 
 -- the entry button of the window: text, enabled, tooltip
 function V.enterButton(s)
   if s.inside then
-    return 'Inside', false, 'Leave through a safe exit to bank your embers.'
+    return 'Inside', false, tr('Leave through a safe exit to bank your embers.')
   end
   if not s.canEnter then
     return 'Enter', false, s.why or ''
   end
-  return 'Enter the Marches', true, 'Opens the rules and the confirmation first.'
+  return tr('Enter the Marches'), true, tr('Opens the rules and the confirmation first.')
 end
 
 -- the confirmation: may the player confirm? (the box ticked, and for a Hardcore character the second box)
@@ -113,21 +114,21 @@ end
 function V.riskText(s)
   local lines = {}
   for _, r in ipairs(s.rules or {}) do lines[#lines + 1] = '- ' .. r end
-  lines[#lines + 1] = string.format('You carry %s embers now. A defeat drops them all; your killer may take up to %s of them.',
+  lines[#lines + 1] = tr('You carry %s embers now. A defeat drops them all; your killer may take up to %s of them.',
     V.number(s.carried), V.number(s.pickup and s.pickup.perKill or 0))
   if s.hc and s.hc.isHc then
-    lines[#lines + 1] = s.hc.allow and 'HARDCORE: a defeat here may end your Hardcore run.' or
-      'HARDCORE: Hardcore characters cannot enter the Marches.'
+    lines[#lines + 1] = s.hc.allow and tr('HARDCORE: a defeat here may end your Hardcore run.') or
+      tr('HARDCORE: Hardcore characters cannot enter the Marches.')
   end
   return table.concat(lines, '\n')
 end
 
 -- a faction pledge row: text, button text, enabled, tooltip
 function V.factionRow(f, s)
-  local rival = (f.rivalName or f.rival) and ('sworn rival: ' .. (f.rivalName or f.rival)) or ''
+  local rival = (f.rivalName or f.rival) and (tr('sworn rival: %s', (f.rivalName or f.rival))) or ''
   if f.pledged then
     local wait = tonumber(s.pledgeChangeIn) or 0
-    return f.name, 'Pledged', false, wait > 0 and ('You can change in ' .. V.span(wait)) or rival
+    return f.name, 'Pledged', false, wait > 0 and (tr('You can change in %s', V.span(wait))) or rival
   end
   return f.name, 'Pledge', f.can == true, f.why or rival
 end
@@ -136,7 +137,7 @@ end
 function V.vendorRow(o, banked)
   local sub
   if o.weekly then
-    sub = string.format('%d of %d this week', o.bought or 0, o.weekly)
+    sub = tr('%d of %d this week', o.bought or 0, o.weekly)
   elseif o.kind == 'cosmetic' then
     sub = 'Cosmetic, account-wide'
   else
@@ -149,7 +150,7 @@ function V.vendorRow(o, banked)
 end
 
 function V.recordLine(s)
-  return string.format('Banked %s (this week %s, all time %s)   Defeats dealt %s, taken %s   Shrines %s',
+  return tr('Banked %s (this week %s, all time %s)   Defeats dealt %s, taken %s   Shrines %s',
     V.number(s.banked), V.number(s.weekBanked), V.number(s.total), V.number(s.kills), V.number(s.defeats), V.number(s.captures))
 end
 

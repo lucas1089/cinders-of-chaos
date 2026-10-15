@@ -170,6 +170,23 @@ check(G.tileSet(pud)[G.key(103, 104)] and #pinfo.centers == 4, "a puddle under t
 local body = G.tileSet(shape({kind = "circle", radius = 1, fixedSize = true}, 4))
 check(body[G.key(96, 100)] and body[G.key(100, 101)] and body[G.key(97, 96)], "a 4x4 boss: shapes measured from its body")
 
+-- a 4x4 boss's melee target stands on its body (north or west of the anchor): the cone and the line aimed at it still
+-- reach it (live test 2026-10-14: Sangrith's Red Crescent marked 1 tile and missed the tank)
+for _, tp in ipairs({{x = 100, y = 99}, {x = 99, y = 100}, {x = 97, y = 99}, {x = 100, y = 101}, {x = 101, y = 100}}) do
+	local c4 = G.tileSet(shape({kind = "cone", length = 5, spread = 2}, 4, tp))
+	local l4 = G.tileSet(shape({kind = "line", halfWidth = 1, length = 8}, 4, tp))
+	check(c4[G.key(tp.x, tp.y)], "size 4 cone reaches its target at " .. tp.x .. "," .. tp.y)
+	check(l4[G.key(tp.x, tp.y)], "size 4 line reaches its target at " .. tp.x .. "," .. tp.y)
+	local n = 0
+	for _ in pairs(c4) do n = n + 1 end
+	check(n >= 10, "size 4 cone at " .. tp.x .. "," .. tp.y .. " is a real cone (" .. n .. " tiles)")
+end
+do -- a target outside the body: the same tiles as before (direction from the anchor, the whole body)
+	local body4 = G.footprint(boss, 4)
+	local dx, dy, from = G.aimFrom(body4, boss, {x = 100, y = 106})
+	check(dx == 0 and dy == 1 and from == body4, "a target outside the body: anchor direction, whole body")
+end
+
 -- the same tiles as uber_core.lua's own shapes for a size 1 boss (uber_test.lua keeps those)
 dofile("data/scripts/chaos/uber_core.lua")
 local U = ChaosUberCore

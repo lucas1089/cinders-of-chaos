@@ -542,10 +542,24 @@ function mana.onManaChange(creature, attacker, pd, pt, sd, st, origin)
 end
 mana:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local target = EventCallback
 target.onTargetCombat = function(creature, victim)
-	if cfg.enabled and creature and victim and victim:isMonster() and ownerOf(creature) then
-		victim:registerEvent("ChaosCombatLogHealth")
+	if cfg.enabled and creature and victim and victim:isMonster() and not eventKnown(victim, "ChaosCombatLogHealth")
+			and ownerOf(creature) then
+		registerOnce(victim, "ChaosCombatLogHealth")
 	end
 	return RETURNVALUE_NOERROR
 end

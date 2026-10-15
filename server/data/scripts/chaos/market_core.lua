@@ -510,55 +510,15 @@ function C.pendingAction(offerId, listSeq)
 end
 
 -- ------------------------------------------------------------------ codecs
-function C.hex(s)
-	return (tostring(s or ""):gsub(".", function(c) return string.format("%02x", c:byte()) end))
+-- the shared item codec's text forms (item_codec_core.lua; the stash stores items the same way)
+if not ChaosItemCodecCore then
+	dofile("data/scripts/chaos/item_codec_core.lua")
 end
-
-function C.unhex(h)
-	h = tostring(h or "")
-	if #h % 2 == 1 or h:find("[^%x]") then
-		return nil
-	end
-	return (h:gsub("%x%x", function(x) return string.char(tonumber(x, 16)) end))
-end
-
+C.hex = ChaosItemCodecCore.hex
+C.unhex = ChaosItemCodecCore.unhex
 -- the key-list codec (no engine patch 0017): list of {key, value} (value number or string; key "@NAME" = a standard
 -- attribute ITEM_ATTRIBUTE_NAME) -> "key=n:123;key=s:<hex>;..." with every key hex encoded
-function C.encodeAttrs(list)
-	local parts = {}
-	for _, a in ipairs(list or {}) do
-		local k, v = a[1], a[2]
-		if type(v) == "number" then
-			parts[#parts + 1] = C.hex(k) .. "=n:" .. string.format("%.17g", v)
-		elseif type(v) == "boolean" then
-			parts[#parts + 1] = C.hex(k) .. "=b:" .. (v and "1" or "0")
-		elseif v ~= nil then
-			parts[#parts + 1] = C.hex(k) .. "=s:" .. C.hex(tostring(v))
-		end
-	end
-	return table.concat(parts, ";")
-end
-
-function C.decodeAttrs(text)
-	local list = {}
-	for part in tostring(text or ""):gmatch("[^;]+") do
-		local k, t, v = part:match("^(%x*)=(%a):(.*)$")
-		if k then
-			local key = C.unhex(k)
-			local value
-			if t == "n" then
-				value = tonumber(v)
-			elseif t == "b" then
-				value = v == "1"
-			elseif t == "s" then
-				value = C.unhex(v)
-			end
-			if key and value ~= nil then
-				list[#list + 1] = {key, value}
-			end
-		end
-	end
-	return list
-end
+C.encodeAttrs = ChaosItemCodecCore.encodeAttrs
+C.decodeAttrs = ChaosItemCodecCore.decodeAttrs
 
 return C

@@ -1,5 +1,6 @@
 -- Sistema de Notificações Moderno para TFS 1.3 / OTClient - VERSÃO CORRIGIDA
 -- CORREÇÕES: Party invite notifications integradas ao sistema de catacomb + POPUPS CORRIGIDOS
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 local opcode = 79
 local gameRootPanel = modules.game_interface.getRootPanel()
@@ -566,7 +567,7 @@ local function createCompactNotification(data, isPinned)
             closeButton:setId('closeButton')
             closeButton:setSize({width = 20, height = 20})
             closeButton:setImageSource('images/Icon Close')
-            closeButton:setTooltip("Close notification")
+            closeButton:setTooltip(tr("Close notification"))
             closeButton:setMarginTop(5)
             closeButton:setMarginRight(5)
             closeButton:addAnchor(AnchorTop, 'parent', AnchorTop)
@@ -598,7 +599,7 @@ local function createCompactNotification(data, isPinned)
     if titleLabel then
         pcall(function()
             titleLabel:setId('titleLabel')
-            titleLabel:setText(data.title or 'NOTIFICATION')
+            titleLabel:setText(data.title or tr('NOTIFICATION'))
             titleLabel:setFont(titleFont())
             titleLabel:setColor(data.titleColor or '#a3844b')
             titleLabel:setTextAlign(AlignCenter)
@@ -617,7 +618,7 @@ local function createCompactNotification(data, isPinned)
     if messageLabel then
         pcall(function()
             messageLabel:setId('messageLabel')
-            messageLabel:setText(data.message or 'Notification message')
+            messageLabel:setText(data.message or tr('Notification message'))
             messageLabel:setFont('verdana-11px-antialised')
             messageLabel:setColor('#FFD700')
             messageLabel:setTextAlign(AlignLeft)
@@ -1099,7 +1100,7 @@ function onExtendedOpcode(protocol, opcode, buffer)
         
         taskComplete = function(data)
             if data.taskName and data.taskPoints and data.killCount then
-                local message = string.format("Task Complete: of %s, killed %d and received %d task points", 
+                local message = tr("Task Complete: of %s, killed %d and received %d task points", 
                                             data.taskName, data.killCount, data.taskPoints)
                 addNotification("TASK_COMPLETE", message, data.customIcon, data.monsterLookType)
             end
@@ -1184,7 +1185,7 @@ function onExtendedOpcode(protocol, opcode, buffer)
 
         battlePassComplete = function(data)
             if data.missionName and data.expPoints then
-                local message = string.format("Mission Complete: %s and received %d battle pass exp", 
+                local message = tr("Mission Complete: %s and received %d battle pass exp", 
                                             data.missionName, data.expPoints)
                 addNotification("BATTLE_PASS", message, nil, data.monsterLookType)
             end
@@ -1194,7 +1195,7 @@ function onExtendedOpcode(protocol, opcode, buffer)
         partyInvite = function(data)
             if data.inviterName then
                 -- example = Lury [30] invited you to join their party for catacomb ice  level 1!
-                local message = string.format("%s [%d] invited you to join their party for catacomb %s level %d!", 
+                local message = tr("%s [%d] invited you to join their party for catacomb %s level %d!", 
                     data.inviterName, data.inviterResets or 0, 
                     data.element and data.element:gsub("^%l", string.upper) or "unknown", 
                     data.level or 0)
@@ -1213,7 +1214,7 @@ function onExtendedOpcode(protocol, opcode, buffer)
         -- Handler para catacomb livre
         catacombFree = function(data)
             if data.element and data.level then
-                local message = string.format("The %s Catacomb Level %s is now free!", 
+                local message = tr("The %s Catacomb Level %s is now free!", 
                     data.element:gsub("^%l", string.upper), data.level)
                 
                 local catacombData = {
@@ -1234,12 +1235,12 @@ end
 
 -- Função de teste para debug
 function testNotifications()
-    addNotification("GM_BROADCAST", "Test GM notification!")
+    addNotification("GM_BROADCAST", tr("Test GM notification!"))
     scheduleEvent(function()
-        addNotification("TASK_COMPLETE", "You completed the Dragon task and received 100 points!", nil, 718)
+        addNotification("TASK_COMPLETE", tr("You completed the Dragon task and received 100 points!"), nil, 718)
     end, 2000)
     scheduleEvent(function()
-        addNotification("BATTLE_PASS", "You completed the Kill 50 Demons mission and received 500 exp points!")
+        addNotification("BATTLE_PASS", tr("You completed the Kill 50 Demons mission and received 500 exp points!"))
     end, 4000)
     scheduleEvent(function()
         -- Teste de convite de party
@@ -1248,11 +1249,11 @@ function testNotifications()
             level = 1,
             element = "ice"
         }
-        addNotification("PARTY_INVITE", "TestPlayer invited you to join their party for catacomb!", nil, nil, inviteData)
+        addNotification("PARTY_INVITE", tr("TestPlayer invited you to join their party for catacomb!"), nil, nil, inviteData)
     end, 6000)
     scheduleEvent(function()
-        addNotification("SALE", "While you were away: 3 items sold for 4.2M gold: Doombringer, 20x Orb of Fate, plate armor.")
-        addNotification("ACHIEVEMENT", "The Thousandth Step: +50 points. Title: the Unbroken. Reward: mount Doombringer.")
+        addNotification("SALE", tr("While you were away: 3 items sold for 4.2M gold: Doombringer, 20x Orb of Fate, plate armor."))
+        addNotification("ACHIEVEMENT", tr("The Thousandth Step: +50 points. Title: the Unbroken. Reward: mount Doombringer."))
     end, 1000)
     scheduleEvent(function()
         -- Teste de catacomb livre
@@ -1260,6 +1261,6 @@ function testNotifications()
             element = "fire",
             level = 1
         }
-        addNotification("CATACOMB_FREE", "The Fire Catacomb Level 1 is now free!", nil, nil, nil, catacombData)
+        addNotification("CATACOMB_FREE", tr("The Fire Catacomb Level 1 is now free!"), nil, nil, nil, catacombData)
     end, 8000)
 end

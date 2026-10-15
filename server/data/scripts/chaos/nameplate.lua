@@ -23,6 +23,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosNameplate or not ChaosNameplate.collect then
 	dofile("data/scripts/chaos/nameplate_core.lua")
 end
@@ -185,15 +188,20 @@ end
 ext:type("extendedopcode")
 ext:register()
 
--- rebuild every online player's plate; send the ones that changed
+-- rebuild every online player's plate; send the ones that changed. Each player is checked once per CHECK_SECONDS, spread
+-- over that many one-second slices by creature id (400 players: 80 per tick instead of 400 in one 50-100 ms tick)
+local slice = 0
 local think = GlobalEvent("ChaosNameplateThink")
 function think.onThink(interval)
+	slice = (slice + 1) % CHECK_SECONDS
 	for _, player in ipairs(Game.getPlayers()) do
-		N.refresh(player)
+		if player:getId() % CHECK_SECONDS == slice then
+			N.refresh(player)
+		end
 	end
 	return true
 end
-think:interval(CHECK_SECONDS * 1000)
+think:interval(1000)
 think:register()
 
 local startup = GlobalEvent("ChaosNameplateStartup")
@@ -220,8 +228,8 @@ local function onTitle(player, words, param)
 	local lower = param:lower()
 	if lower == "" then
 		if #list == 0 then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "You hold no titles yet. Titles come from the weekly leaderboards, " ..
-				"the guild siege, seasons and more; they show above your name.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+				"You hold no titles yet. Titles come from the weekly leaderboards, the guild siege, seasons and more; they show above your name."))
 			return false
 		end
 		local active = N.pick(list, choice)
@@ -229,26 +237,26 @@ local function onTitle(player, words, param)
 		for _, t in ipairs(list) do
 			parts[#parts + 1] = describe(t, active)
 		end
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Your titles: " .. table.concat(parts, ", ") ..
-			(choice == "none" and " (hidden)" or "") .. ". Pick one in the Achievements window.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Your titles: %s%s. Pick one in the Achievements window.",
+			table.concat(parts, ", "), choice == "none" and Chaos.t(player, " (hidden)") or ""))
 		return false
 	end
 	if lower == "none" or lower == "off" or lower == "hide" then
 		saveChoice(player, "none")
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Your title is hidden.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Your title is hidden."))
 	elseif lower == "auto" or lower == "default" then
 		saveChoice(player, nil)
 		local t = N.pick(list, nil)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, t and ("Your title follows the newest you earn: " .. t.text .. ".")
-			or "Your title follows the newest you earn.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, t and Chaos.t(player, "Your title follows the newest you earn: %s.", t.text)
+			or Chaos.t(player, "Your title follows the newest you earn."))
 	else
 		local t = N.find(list, param)
 		if not t then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "You do not hold the title \"" .. param .. "\".")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You do not hold the title \"%s\".", param))
 			return false
 		end
 		saveChoice(player, t.key)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Your title is now " .. t.text .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Your title is now %s.", t.text))
 	end
 	N.refresh(player)
 	return false

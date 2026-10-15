@@ -134,7 +134,7 @@ Event.Init = function()
 	end
 	--Event.UI.beastPanel = contentPanel.beastPanel
 
-	Event.NewButton = modules.game_extramenu.Menu.AddButton("Event Schedule",  function() modules.game_event.Event.Toggle(false) end, "eventschedule")
+	Event.NewButton = modules.game_extramenu.Menu.AddButton(tr("Event Schedule"),  function() modules.game_event.Event.Toggle(false) end, "eventschedule")
 
 	Event.Define()
 
@@ -404,12 +404,10 @@ Event.Define = function()
 		Event.Tooltip:breakAnchors()
 		Event.Tooltip:raise()
 		Event.Tooltip.name:setText(ev.name or "")
-		Event.Tooltip.starttime:setText("<color=\"orange\">" .. tr("Period") .. "</color>: " ..
-			Event.FormatPeriod(ev.startTime or now, ev.endTime or now))
+		Event.Tooltip.starttime:setText(tr('<color="orange">%s</color>: %s', tr("Period"), Event.FormatPeriod(ev.startTime or now, ev.endTime or now)))
 		Event.Tooltip.players:setText(statusLine)
 		Event.Tooltip.commands:setText("")
-		Event.Tooltip.desc:setText("<color=\"orange\">" .. tr("Description") .. "</color>: " ..
-			(ev.description or ""))
+		Event.Tooltip.desc:setText(tr('<color="orange">%s</color>: %s', tr("Description"), (ev.description or "")))
 
 		Event.LayoutTooltip()
 		-- Posiciona AGORA. Sem isto a tooltip so era movida no onMouseMove do
@@ -606,15 +604,15 @@ Event.Define = function()
 			if card and card.Data then
 				local ev = card.Data
 				if ev.startTime and now < ev.startTime then
-					card.countdown:setText("Starts in " .. Event.FormatDuration(ev.startTime - now))
+					card.countdown:setText(tr('Starts in %s', Event.FormatDuration(ev.startTime - now)))
 					card.countdown:setColor("#ffaa00")
 					hasActive = true
 				elseif ev.endTime and now < ev.endTime then
-					card.countdown:setText("Ends in " .. Event.FormatDuration(ev.endTime - now))
+					card.countdown:setText(tr('Ends in %s', Event.FormatDuration(ev.endTime - now)))
 					card.countdown:setColor("#66cc66")
 					hasActive = true
 				else
-					card.countdown:setText("Ended")
+					card.countdown:setText(tr("Ended"))
 					card.countdown:setColor("#888888")
 				end
 			end
@@ -774,10 +772,10 @@ Event.Define = function()
 							Event.Tooltip:breakAnchors()
 							Event.Tooltip:raise()
 							Event.Tooltip.name:setText(info.event .. ": ")
-							Event.Tooltip.starttime:setText("<color=\"orange\">"..tr("Start Time").."</color>"..": " .. info.starttimeDescription)
-							Event.Tooltip.players:setText("<color=\"orange\">"..tr("Players").."</color>"..": Min: " .. info.minplayers .. " | Max: " .. info.maxplayers)
-							Event.Tooltip.commands:setText("<color=\"orange\">"..tr("Informations").."</color>"..": " .. (CommandList or ""))
-							Event.Tooltip.desc:setText("<color=\"orange\">"..tr("Event Description").."</color>"..": " .. (info.eventdescription or ""))
+							Event.Tooltip.starttime:setText(tr('<color="orange">%s</color>: %s', tr("Start Time"), info.starttimeDescription))
+							Event.Tooltip.players:setText(tr('<color="orange">%s</color>: Min: %s | Max: %s', tr("Players"), info.minplayers, info.maxplayers))
+							Event.Tooltip.commands:setText(tr('<color="orange">%s</color>: %s', tr("Informations"), (CommandList or "")))
+							Event.Tooltip.desc:setText(tr('<color="orange">%s</color>: %s', tr("Event Description"), (info.eventdescription or "")))
 							Event.LayoutTooltip()
 							Event.MoveToolTip()
 						else
@@ -1282,7 +1280,7 @@ Event.Define = function()
 		Event.DestroyConfirmBox()
 		local confirmFunc = function()Event.DestroyConfirmBox()  g_net.Send("Event", { make = "confirmEvent", eventKey = data.eventKey, confirmed = true }) end
 		local cancelFunc = function() Event.DestroyConfirmBox() end
-		Event.ConfirmBox = displayGeneralBox("Event Warning",
+		Event.ConfirmBox = displayGeneralBox(tr("Event Warning"),
 		tr(data.text),
 		{
 			{text="Yes", callback=confirmFunc},

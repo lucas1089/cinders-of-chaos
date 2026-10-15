@@ -13,6 +13,8 @@ local queueTime = 0
 local timerEvent = nil
 local timeLeft = 0
 local timeLeftEvent = nil
+local bossUnlocked = false
+local bossNeed = 85 -- percent of the run's monsters that unlock the boss (the server's `need` in "start")
 
 local pendingDifficulty = nil
 local difficultyUpdateTimer = nil
@@ -209,8 +211,8 @@ function onDungeonsList(data)
     local queue = dungeonMenu:getChildById("queue")
     boss:setOutfit(dungeon.boss)
     title:setText(dungeon.title)
-    level:setText(formatShortNumber(dungeon.level) .. "+ Level")
-    queue:setText("Queue: " .. (dungeon.queue == 0 and "Open" or dungeon.queue .. " Players"))
+    level:setText(tr('%s+ Level', formatShortNumber(dungeon.level)))
+    queue:setText(tr('Queue: %s', (dungeon.queue == 0 and tr("Open") or tr('%s Players', dungeon.queue))))
     if dungeon.queue >= 6 then
       queue:setColor("red")
     elseif dungeon.queue >= 3 then
@@ -345,6 +347,9 @@ function onDungeonData(data)
   end
 
   Dungeons[data.id] = data
+  if selectedDungeonId == data.id and dungeonInfo then
+    applyDifficultyTexts(data)
+  end
 
   if pendingInitialDungeonId == data.id then
     selectDungeon(data.id)
@@ -387,7 +392,7 @@ function refreshMenuQueueColor(menuDungeon)
     queuePlayers = dungeon.queue or 0
   end
 
-  queueLabel:setText("Queue: " .. (queuePlayers == 0 and "Open" or queuePlayers .. " Players"))
+  queueLabel:setText(tr('Queue: %s', (queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))))
   if queuePlayers >= 6 then
     queueLabel:setColor("red")
   elseif queuePlayers >= 3 then
@@ -493,24 +498,22 @@ function onDungeonSelected(parent, child, reason)
   doSelection(dungeonId)
 end
 
--- banner art lives in /images/dungeons/<short name>.png; the server sends the full title
-local BANNERS = {
-  ["Bones Dungeon"] = "Bones",
-  ["Master of the Elements"] = "MasterElement",
-  ["Forbidden Chevalier"] = "Forbidden",
-  ["Rootmaw"] = "Rootmaw",
-  ["Underworld"] = "Underworld"
-}
-
+-- banner art: DungeonsView.bannerFor (dungeonsview.lua)
 function bannerFor(title)
-  title = tostring(title or "")
-  local candidates = { BANNERS[title], title, title:match("^(%S+)") }
-  for _, name in ipairs(candidates) do
-    if name and g_resources.fileExists("/images/dungeons/" .. name .. ".png") then
-      return "/images/dungeons/" .. name
+  return DungeonsView.bannerFor(title, function(path) return g_resources.fileExists(path) end)
+end
+
+-- the six panel texts: the dungeon's own health curves when the server sent them, else the table's
+function applyDifficultyTexts(dungeon)
+  local panel = currentUI.difficultiesPanel
+  if not panel then return end
+  for i = 1, 6 do
+    local button = panel:getChildByIndex(i)
+    local info = button and button:getChildById("info")
+    if info then
+      info:setText(DungeonsView.panelText(i, dungeon and dungeon.health))
     end
   end
-  return "/images/dungeons/Underworld"
 end
 
 function selectDungeon(dungeonId)
@@ -531,6 +534,7 @@ function selectDungeon(dungeonId)
   currentUI.groupTable = window and window:recursiveGetChildById("groupTable") or nil
 
   dungeonInfo:getChildById("banner"):setImageSource(bannerFor(dungeon.title))
+  applyDifficultyTexts(dungeon)
 
   if currentUI.difficultiesPanel then
     if currentUI.difficultiesPanel:getChildCount() >= 1 then
@@ -569,7 +573,7 @@ function selectDungeon(dungeonId)
 
   if currentUI.queueStatus then
     local queuePlayers = dungeon.queue.players
-    currentUI.queueStatus:setText(queuePlayers == 0 and "Open" or queuePlayers .. " Players")
+    currentUI.queueStatus:setText(queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))
     if queuePlayers >= 6 then
       currentUI.queueStatus:setColor("red")
     elseif queuePlayers >= 3 then
@@ -590,7 +594,7 @@ function selectDungeon(dungeonId)
     for i = 1, #dungeon.challenges do
       local challenge = dungeon.challenges[i]
       local widget = g_ui.createWidget("ChallengePanel", currentUI.challengesPanel)
-      widget:setText(challenge.title .. " (" .. formatShortNumber(challenge.points) .. " Points)")
+      widget:setText(tr('%s (%s Points)', challenge.title, formatShortNumber(challenge.points)))
       widget:getChildById("checkbox"):setChecked(challenge.completed)
       widget:getChildById("description"):setText(challenge.desc)
     end
@@ -706,7 +710,7 @@ function onDungeonQueue(data)
   if not queueDungeon or not queueButton then return end
 
   if data.joined then
-    queueButton:setText("Leave")
+    queueButton:setText(tr("Leave"))
     local dungeon = Dungeons[data.id]
     if dungeon then
       queueDungeon:setText(dungeon.title)
@@ -714,7 +718,7 @@ function onDungeonQueue(data)
     if timerEvent then removeEvent(timerEvent) end
     timerEvent = scheduleEvent(queueTimer, 1000)
   else
-    queueButton:setText("Join")
+    queueButton:setText(tr("Join"))
     queueDungeon:setText("------")
     if timerEvent then
       removeEvent(timerEvent)
@@ -731,7 +735,7 @@ function onStopQueue()
 
   local queueDungeon = safeRecursiveGet(dungeonInfo, "queueDungeon")
   local queueButton = safeRecursiveGet(dungeonInfo, "queueButton")
-  if queueButton then queueButton:setText("Join") end
+  if queueButton then queueButton:setText(tr("Join")) end
   if queueDungeon then queueDungeon:setText("------") end
   if timerEvent then
     removeEvent(timerEvent)
@@ -765,7 +769,7 @@ function onDungeonStart(data)
 
   local queueDungeon = safeRecursiveGet(dungeonInfo, "queueDungeon")
   local queueButton = safeRecursiveGet(dungeonInfo, "queueButton")
-  if queueButton then queueButton:setText("Join") end
+  if queueButton then queueButton:setText(tr("Join")) end
   if queueDungeon then queueDungeon:setText("------") end
   if timerEvent then
     removeEvent(timerEvent)
@@ -801,14 +805,16 @@ function onDungeonStart(data)
 
   killCounter:getChildById("label"):setText("0%")
   local mainObjective = killCounter:getChildById("mainObjective")
-  mainObjective:setText("Kill monsters to spawn " .. (data.boss or ""))
+  bossNeed = tonumber(data.need) or 85
+  bossUnlocked = false
+  mainObjective:setText(tr('Kill %d%% of the monsters to unlock %s', bossNeed, (data.boss or "")))
   mainObjective:setChecked(false)
   local bossObjective = killCounter:getChildById("bossObjective")
-  bossObjective:setText("Kill " .. (data.boss or ""))
+  bossObjective:setText(tr('Kill %s', (data.boss or "")))
   bossObjective:setEnabled(false)
   bossObjective:setChecked(false)
-  killCounter:getChildById("monstersLeft"):setText("Monsters remaining " .. (data.left or 0))
-  killCounter:getChildById("timeLeft"):setText("Time left " .. MsToShortTime(data.duration or 0))
+  killCounter:getChildById("monstersLeft"):setText(tr('Monsters remaining %s', (data.left or 0)))
+  killCounter:getChildById("timeLeft"):setText(tr('Time left %s', MsToShortTime(data.duration or 0)))
 
   timeLeft = data.duration or 0
   if timeLeftEvent then removeEvent(timeLeftEvent) end
@@ -817,7 +823,7 @@ end
 
 function doTimeLeft()
   timeLeft = timeLeft - 100
-  killCounter:getChildById("timeLeft"):setText("Time left " .. MsToShortTime(timeLeft))
+  killCounter:getChildById("timeLeft"):setText(tr('Time left %s', MsToShortTime(timeLeft)))
   if timeLeft > 0 then
     timeLeftEvent = scheduleEvent(doTimeLeft, 100)
   end
@@ -847,12 +853,16 @@ function onDungeonKilled(data)
         local newHeight = maxHeight
         bar:setWidth(newWidth)
         bar:setHeight(newHeight)
-    killCounter:getChildById("label"):setText(math.min(100, data.percent) .. "%")
-    if data.percent >= 100 then
+    if not bossUnlocked then
+      killCounter:getChildById("label"):setText(math.min(100, data.percent) .. "%")
+    end
+    if data.unlocked and not bossUnlocked then
+      bossUnlocked = true
       killCounter:getChildById("mainObjective"):setChecked(true)
+      killCounter:getChildById("label"):setText(tr("Boss unlocked!"))
       bossObjective:setEnabled(true)
 	  local textWidget = challengeNotifi:getChildById("text")
-  textWidget:setText("You can kill the boss now!")
+  textWidget:setText(tr("Boss unlocked!"))
   challengeNotifi:setWidth(math.max(263, 96 + textWidget:getTextSize().width))
   g_effects.fadeIn(challengeNotifi, 250)
   scheduleEvent(
@@ -867,7 +877,7 @@ function onDungeonKilled(data)
   elseif data.boss then
     bossObjective:setChecked(true)
 	local textWidget = challengeNotifi:getChildById("text")
-  textWidget:setText("You completed the dungeon!")
+  textWidget:setText(tr("You completed the dungeon!"))
   challengeNotifi:setWidth(math.max(263, 96 + textWidget:getTextSize().width))
   g_effects.fadeIn(challengeNotifi, 250)
   scheduleEvent(
@@ -880,7 +890,7 @@ function onDungeonKilled(data)
   )
   end
   if data.left then
-    killCounter:getChildById("monstersLeft"):setText("Monsters Alive: " .. data.left)
+    killCounter:getChildById("monstersLeft"):setText(tr('Monsters Alive: %s', data.left))
   end
 end
 
@@ -917,7 +927,7 @@ function onDungeonQueueUpdate(data)
   local menuDungeon = dungeonsMenus:getChildById("dungeon" .. data.id)
   local queue = menuDungeon:getChildById("queue")
   local queuePlayers = data.queue
-  queue:setText("Queue: " .. (queuePlayers == 0 and "Open" or queuePlayers .. " Players"))
+  queue:setText(tr('Queue: %s', (queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))))
   if queuePlayers >= 6 then
     queue:setColor("red")
   elseif queuePlayers >= 3 then
@@ -928,7 +938,7 @@ function onDungeonQueueUpdate(data)
   if selectedDungeonId == data.id then
     if currentUI.queueStatus then
       local queuePlayers = data.queue
-      currentUI.queueStatus:setText(queuePlayers == 0 and "Open" or queuePlayers .. " Players")
+      currentUI.queueStatus:setText(queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))
       if queuePlayers >= 6 then
         currentUI.queueStatus:setColor("red")
       elseif queuePlayers >= 3 then
@@ -945,7 +955,7 @@ end
 
 function onChallengeCompleted(data)
   local textWidget = challengeNotifi:getChildById("text")
-  textWidget:setText(data .. " challenge completed!")
+  textWidget:setText(tr('%s challenge completed!', data))
   challengeNotifi:setWidth(math.max(263, 96 + textWidget:getTextSize().width))
   g_effects.fadeIn(challengeNotifi, 250)
   scheduleEvent(

@@ -8,6 +8,7 @@
 -- Plan state (TreePlan.new): list (planned ids in the order they were added), set, masteries ({[id] = chosen effect}
 -- of planned mastery nodes), undo / redo (snapshots, at most HISTORY). Every change records a snapshot first, so undo
 -- and redo restore whole states; the server sync (prune) and reset are not recorded.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TreePlan = {}
 
 local HISTORY = 100
@@ -287,7 +288,7 @@ end
 function TreePlan.costText(cost, free)
   free = math.max(0, math.floor(tonumber(free) or 0))
   if cost == 0 then
-    return 'No plan: click a node to plan the path to it.', true
+    return tr('No plan: click a node to plan the path to it.'), true
   end
   local fits = cost <= free
   return string.format('Plan: %d / %d point%s%s', cost, free, free == 1 and '' or 's',
@@ -345,7 +346,7 @@ function TreePlan.countText(index, count, query)
     return ''
   end
   if count == 0 then
-    return 'No match'
+    return tr('No match')
   end
   return string.format('%d / %d', index, count)
 end

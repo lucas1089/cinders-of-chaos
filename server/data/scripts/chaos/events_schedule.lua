@@ -16,6 +16,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -161,7 +164,7 @@ local talk = {} -- reached from the menu: Info & Services window (commands_ui.lu
 function talk.onSay(player, words, param)
 	local lines = E.describeActive()
 	if #lines == 0 then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "No event is active today. Check the calendar on the login screen.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No event is active today. Check the calendar on the login screen."))
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Active events:\n" .. table.concat(lines, "\n"))
 	end

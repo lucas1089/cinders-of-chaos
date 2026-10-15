@@ -23,6 +23,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 Chaos.battlegroundConfig = dofile("data/scripts/chaos/battleground_config.lua")
 if not (ChaosBattlegroundCore and ChaosBattlegroundCore.findMatches) then
 	dofile("data/scripts/chaos/battleground_core.lua")
@@ -62,8 +65,9 @@ local function log(text)
 	print("[Chaos battleground] " .. text)
 end
 
+-- text: a key (Chaos.t) or a deferred text (ChaosI18n.msg): in the player's language
 local function msg(player, text)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, text))
 end
 
 local function send(player, action, data)
@@ -435,7 +439,7 @@ function B.join(player, role)
 				why = m:getName() .. ": " .. why
 			end
 			player:sendCancelMessage(why)
-			msg(player, "Battleground: " .. why)
+			msg(player, ChaosI18n.msg("Battleground: %s", why))
 			return false
 		end
 	end
@@ -461,7 +465,7 @@ function B.join(player, role)
 		B.queued[m.cid] = entry
 		local p = Player(m.cid)
 		if p then
-			msg(p, string.format("Battleground: you joined the queue as %s (%s). Stay in a protection zone.", m.role, bracket.name))
+			msg(p, ChaosI18n.msg("Battleground: you joined the queue as %s (%s). Stay in a protection zone.", m.role, bracket.name))
 			stateLater(m.cid)
 		end
 	end
@@ -472,7 +476,7 @@ function B.leaveQueue(player, silent)
 	local e = B.queued[player:getId()]
 	if not e then
 		if not silent then
-			player:sendCancelMessage("You are not in the battleground queue.")
+			player:sendCancelMessage(Chaos.t(player, "You are not in the battleground queue."))
 		end
 		return false
 	end
@@ -480,7 +484,8 @@ function B.leaveQueue(player, silent)
 	for _, m in ipairs(e.members) do
 		local p = Player(m.cid)
 		if p then
-			msg(p, p == player and "Battleground: you left the queue." or ("Battleground: " .. player:getName() .. " left the queue, so did your party."))
+			msg(p, p == player and "Battleground: you left the queue." or
+				ChaosI18n.msg("Battleground: %s left the queue, so did your party.", player:getName()))
 			stateLater(m.cid)
 		end
 	end
@@ -767,7 +772,7 @@ local function leave(m, e, p, reason)
 		row.deserterUntil = now + minutes * 60
 		B.saveRow(e.guid)
 		if p then
-			msg(p, string.format("Battleground: you left the match early (%s). Deserter: no queue for %d minute(s).",
+			msg(p, ChaosI18n.msg("Battleground: you left the match early (%s). Deserter: no queue for %d minute(s).",
 				reason, minutes))
 		end
 		announce(m, string.format("%s left the battleground (%s).", e.name, reason), "left")
@@ -934,8 +939,8 @@ local function startMatch(found)
 				for _, other in ipairs(entry.members) do
 					local o = Player(other.cid)
 					if o then
-						msg(o, "Battleground: a match was found but could not start, you were removed from the queue: " ..
-							(o == p and why or (mem.name .. ": " .. why)))
+						msg(o, ChaosI18n.msg("Battleground: a match was found but could not start, you were removed from the queue: %s",
+							o == p and why or (mem.name .. ": " .. why)))
 						stateLater(other.cid)
 					end
 				end
@@ -997,8 +1002,7 @@ local function startMatch(found)
 	end
 	B.matches[slot] = m
 	eachOnline(m, function(p, e)
-		msg(p, string.format("Battleground: Ember Wells %dv%d. You fight for the %s. The wells open in %d seconds; secure mode " ..
-			"must be off (the client turns it off for you).", m.size, m.size, cfg.teams[e.team].name, cfg.prepSeconds))
+		msg(p, ChaosI18n.msg("Battleground: Ember Wells %dv%d. You fight for the %s. The wells open in %d seconds; secure mode must be off (the client turns it off for you).", m.size, m.size, cfg.teams[e.team].name, cfg.prepSeconds))
 		send(p, "start", {team = e.team, size = m.size, prep = cfg.prepSeconds, match = cfg.matchSeconds,
 			teams = {cfg.teams[1].name, cfg.teams[2].name}, colors = {cfg.teams[1].color, cfg.teams[2].color},
 			braziers = {L.braziers[1].name, L.braziers[2].name, L.braziers[3].name}, win = cfg.winScore, bracket = bracket.name})
@@ -1109,13 +1113,12 @@ local function tickMatch(m)
 						leave(m, e, p, "inactive")
 					elseif afk == "warn" and not e.afkWarned then
 						e.afkWarned = true
-						p:sendTextMessage(MESSAGE_STATUS_WARNING, string.format("Battleground: you seem inactive. Move or fight, or you " ..
-							"are removed as a deserter in %d seconds.", cfg.afkKickSeconds - cfg.afkWarnSeconds))
+						p:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(p, "Battleground: you seem inactive. Move or fight, or you are removed as a deserter in %d seconds.", cfg.afkKickSeconds - cfg.afkWarnSeconds))
 					elseif not afk then
 						e.afkWarned = nil
 					end
 					if now >= m.fightAt + cfg.secureGraceSeconds and p:hasSecureMode() and (now - m.fightAt) % 10 == 0 then
-						p:sendTextMessage(MESSAGE_STATUS_WARNING, "Battleground: turn secure mode off to fight back.")
+						p:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(p, "Battleground: turn secure mode off to fight back."))
 					end
 				else
 					e.lastActive = now -- waiting for the wave
@@ -1385,7 +1388,7 @@ guard.onTargetCombat = function(creature, target)
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	if tm.phase == "prep" then
-		a:sendCancelMessage(string.format("The wells open in %d seconds.", math.max(0, tm.fightAt - os.time())))
+		a:sendCancelMessage(Chaos.t(a, "The wells open in %d seconds.", math.max(0, tm.fightAt - os.time())))
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	if not K.canHit(tm.phase, tm.players[a:getId()], tm.players[target:getId()], false) then

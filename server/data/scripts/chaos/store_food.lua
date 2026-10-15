@@ -5,13 +5,17 @@
 -- "You are full." at the cap every food has (1200 s), so it eats exactly as often as normal food. The item is never
 -- used up. Store-bound like the store pouches: one per character, the owner's guid and the attributes chaos_storebound
 -- and chaos_locked; pouches.lua refuses the ground, mail, trash, other players' containers, the trade window and the
--- player market for any chaos_storebound item. Only the owner can eat from it. Death: a ration dropped with the backpack
--- leaves the corpse and comes back at the next login (storage `regrant`).
+-- player market for any chaos_storebound item. Only the owner can eat from it. Death: death_keep.lua keeps it out of the
+-- drop (inbox, back in the backpack at the next login; also with no corpse, on water). Fallback without that hook: a
+-- ration dropped with the backpack leaves the corpse and comes back at the next login (storage `regrant`).
 -- Store offer: {kind = "service", service = "storeFood"} (registered into ChaosShopServices.services here; no edit of
 -- shop_services.lua). Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/store_food_core.lua")
 dofile("data/scripts/chaos/store_food_config.lua")
@@ -160,8 +164,7 @@ function F.storeGive(player)
 	if not where then
 		return "Your backpack and inbox are full. Your coins were refunded."
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("The Everfull Ration is in your %s. Use it like food: it " ..
-		"never runs out.", where))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The Everfull Ration is in your %s. Use it like food: it never runs out.", Chaos.t(player, where)))
 	return true
 end
 
@@ -220,7 +223,7 @@ function login.onLogin(player)
 	player:registerEvent("ChaosStoreFoodDeath")
 	if owed(player) and F.installed() and F.give(player) then
 		player:setStorageValue(cfg().storage.regrant, 0)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Back after your death: your Everfull Ration.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Back after your death: your Everfull Ration."))
 	end
 	return true
 end

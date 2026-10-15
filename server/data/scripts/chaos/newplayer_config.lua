@@ -187,6 +187,15 @@ return {
 		gold = 500 -- gold coins (player:addMoney)
 	},
 
+	-- ------------------------------------------------------------------ home town (owner request 2026-10-15)
+	-- The main city: new characters live there (their temple, respawn and Town Portal). A brand-new character (no kit
+	-- yet) whose town is not `id` and not in `keep` is moved to `id` once, at its first login (before the tutorial
+	-- island; with the island off it is sent to the new temple at once). Characters that already have their kit keep
+	-- their town. `keep`: town ids the website offers as a free choice (CHAOS_START_TOWNS) that are kept as chosen; {}
+	-- = every new character goes to `id`. id = 0 turns it off (the town of the character's creation stays).
+	-- Cinderhold (town 2) was chosen by data: server/README.md "Main city". The website's default is the same town.
+	homeTown = {id = 2, keep = {}},
+
 	-- the base server's starter chest (data/scripts/customs/actions/first_chest.lua, action id and storage 33735):
 	-- characters that got the kit are marked as having opened it, so nobody collects two starter sets. nil = leave the
 	-- chest alone.
@@ -203,7 +212,21 @@ return {
 		{level = 100, orbs = 3, items = {{27990, 2}}, -- Stamina Extension (the store item, +2 h of stamina each)
 			potions = {melee = {{7591, 50}}, ranged = {{8472, 50}}, caster = {{7590, 50}}}},
 		{level = 200, orbs = 5, potions = {
-			melee = {{8473, 50}}, ranged = {{26030, 50}}, caster = {{26029, 50}}}}
+			melee = {{8473, 50}}, ranged = {{26030, 50}}, caster = {{26029, 50}}}},
+		-- 2026-10-15: gifts over the whole level range (the Next Goals bands, goals_config.lua); Orbs of Fate (29857)
+		-- and Grafting (29855) from 300 on. At most 10 milestones (storages 7100260 - 7100269).
+		{level = 300, orbs = 5, items = {{29857, 1}}, potions = {
+			melee = {{8473, 75}}, ranged = {{26030, 75}}, caster = {{26029, 75}}}},
+		{level = 500, orbs = 6, items = {{29857, 2}, {27990, 2}}, potions = {
+			melee = {{8473, 100}}, ranged = {{26030, 100}}, caster = {{26029, 100}}}},
+		{level = 800, orbs = 8, items = {{29857, 2}, {29855, 1}}, potions = {
+			melee = {{8473, 100}}, ranged = {{26030, 100}}, caster = {{26029, 100}}}},
+		{level = 1000, orbs = 10, items = {{29857, 3}, {29855, 1}, {27990, 2}}, potions = {
+			melee = {{8473, 100}}, ranged = {{26030, 100}}, caster = {{26029, 100}}}},
+		{level = 1500, orbs = 12, items = {{29857, 3}, {29855, 2}}, potions = {
+			melee = {{8473, 100}}, ranged = {{26030, 100}}, caster = {{26029, 100}}}},
+		{level = 2000, orbs = 15, items = {{29857, 5}, {29855, 3}}, potions = {
+			melee = {{8473, 100}}, ranged = {{26030, 100}}, caster = {{26029, 100}}}}
 	},
 	orbId = 29856, -- Orb of Upheaval
 
@@ -217,6 +240,8 @@ return {
 			"- The passive tree (top menu, Character): a point every 4 levels past level 8.\n" ..
 			"- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n" ..
 			"- The store (top menu, Economy): temple scrolls, stamina and services.\n" ..
+			"- Cinderhold is the main city: the two great teleports north of its temple lead to the teleport room, " ..
+			"a portal to a hunt of every level.\n" ..
 			"- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n" ..
 			"%s",
 		toast = "Welcome to Cinders of Chaos! Your kit is in your backpack. Everything else is in the menu at the top.",

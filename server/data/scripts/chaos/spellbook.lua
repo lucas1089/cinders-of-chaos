@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 local OPCODE = ChaosOpcodes.spellbook
 
@@ -873,7 +876,7 @@ local function onSpellsCommand(player, words, param)
 		return false
 	end
 	if not Book.sendTo(player) then
-		player:sendCancelMessage("The spellbook is already opening.")
+		player:sendCancelMessage(Chaos.t(player, "The spellbook is already opening."))
 	end
 	return false
 end

@@ -111,10 +111,10 @@ function importBuild()
   local edit = child('codeEdit')
   local code = edit and edit:getText() or ''
   if code:gsub('%s', '') == '' then
-    setPreviewText('Paste a build code into the box first.', '#e07060')
+    setPreviewText(tr('Paste a build code into the box first.'), '#e07060')
     return
   end
-  setPreviewText('Asking the server for a preview...')
+  setPreviewText(tr('Asking the server for a preview...'))
   sendAction('buildPreview', {code = code})
 end
 
@@ -123,15 +123,15 @@ function applyBuild()
     return
   end
   closeConfirm()
-  local price = (preview.cost or 0) > 0 and (formatGold(preview.cost) .. ' gold coins') or 'free'
-  local text = string.format('Apply this build (%d nodes%s)?\nPrice: %s.', preview.applied or 0,
-    (preview.removed or 0) > 0 and string.format(', %d of your nodes taken back', preview.removed) or '', price)
+  local price = (preview.cost or 0) > 0 and (tr('%s gold coins', formatGold(preview.cost))) or 'free'
+  local text = tr('Apply this build (%d nodes%s)?\nPrice: %s.', preview.applied or 0,
+    (preview.removed or 0) > 0 and tr(', %d of your nodes taken back', preview.removed) or '', price)
   local sentCode, sentCost = preview.code, preview.cost or 0
   local function ok()
     sendAction('buildApply', {code = sentCode, cost = sentCost})
     closeConfirm()
   end
-  confirmBox = displayGeneralBox('Import build', text, {
+  confirmBox = displayGeneralBox(tr('Import build'), text, {
     {text = tr('Apply'), callback = ok},
     {text = tr('Cancel'), callback = closeConfirm},
     anchor = AnchorHorizontalCenter
@@ -149,8 +149,8 @@ ChaosTreeHandlers.buildCode = function(data)
     edit:setText(data.code)
   end
   g_window.setClipboardText(data.code)
-  setPreviewText(string.format('Your build code (%d nodes%s) was copied to the clipboard.\nShare it, or paste it in chat as a build link: [build %s]',
-    #(data.nodes or {}), data.paragon and ' and your Paragon points' or '', data.code))
+  setPreviewText(tr('Your build code (%d nodes%s) was copied to the clipboard.\nShare it, or paste it in chat as a build link: [build %s]',
+    #(data.nodes or {}), data.paragon and tr(' and your Paragon points') or '', data.code))
 end
 
 ChaosTreeHandlers.buildPreview = function(data)
@@ -168,7 +168,7 @@ ChaosTreeHandlers.buildPreview = function(data)
     edit:setText(data.code or '')
   end
   local lines = {data.summary or ''}
-  lines[#lines + 1] = string.format('Points: the build needs %d, you own %d.', data.wanted or 0, data.points or 0)
+  lines[#lines + 1] = tr('Points: the build needs %d, you own %d.', data.wanted or 0, data.points or 0)
   if data.change then
     lines[#lines + 1] = 'The tree shows the build now. Apply Build to take it, Cancel Preview to go back.'
   end
@@ -178,16 +178,16 @@ ChaosTreeHandlers.buildPreview = function(data)
 end
 
 ChaosTreeHandlers.buildError = function(data)
-  local text = type(data) == 'table' and data.message or 'The build could not be imported.'
+  local text = type(data) == 'table' and data.message or tr('The build could not be imported.')
   if buildWindow and buildWindow:isVisible() then
     setPreviewText(text, '#e07060')
   else
-    sendMessageBox('Build code', text)
+    sendMessageBox(tr('Build code'), text)
   end
 end
 
 ChaosTreeHandlers.buildApplied = function(data)
   preview = nil
   refreshButtons()
-  setPreviewText(type(data) == 'table' and data.message or 'Build imported.', '#80c070')
+  setPreviewText(type(data) == 'table' and data.message or tr('Build imported.'), '#80c070')
 end

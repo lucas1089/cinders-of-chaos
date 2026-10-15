@@ -9,7 +9,7 @@ id,name,words,group,level,mana,cooldown,groupcooldown,secondarygroup,secondarygr
 113,Thornlash,kah gor,attack,13,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
 89,Ember Lash,kah pyr,attack,14,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
 112,Frostbite,kah hyr,attack,15,20,2000,2000,,0,,Mystic;Elementalist;Illusionist
-61,Bonebreaker,kah brak,attack,16,30,6000,2000,,0,,Warrior;Juggernaut;Berserker
+61,Bonebreaker,kah brak,attack,16,30,2000,2000,,0,,Warrior;Juggernaut;Berserker
 148,Hammerfall Palm,kah gro brak,attack,16,20,2000,2000,,0,,Mystic;Illusionist
 87,Gravetouch,kah nyx,attack,16,20,2000,2000,,0,,Mystic;Elementalist
 121,Glacier Fan,drai hyr ul,attack,18,25,4000,2000,,0,,Mystic;Illusionist

@@ -470,9 +470,9 @@ function addOffer(category, data)
   offer:setId("offer_" .. category .. "_" .. newIndex)
   -- the price in the list is short (15.3k), exact in the tooltip and in the buy confirmation
   local cost = tonumber(data["cost"])
-  offer.title:setText(data["title"] .. " (" .. (cost and formatShortNumber(cost) or tostring(data["cost"])) .. " coins)")
+  offer.title:setText(tr('%s (%s coins)', data["title"], (cost and formatShortNumber(cost) or tostring(data["cost"]))))
   if cost and (cost >= 1000 or cost <= -1000) then
-    offer.title:setTooltip(data["title"] .. " (" .. comma_value(cost) .. " coins)")
+    offer.title:setTooltip(tr('%s (%s coins)', data["title"], comma_value(cost)))
   end
   local oldCost = tonumber(data["oldCost"])
   if offer.oldPrice and oldCost and cost and oldCost > cost then
@@ -585,7 +585,7 @@ function giftOffer(widget)
   if giftWindow then giftWindow:destroy() end
   giftWindow = g_ui.displayUI('giftoffer')
   giftWindow.selected = sel
-  giftWindow:getChildById('info'):setText("Buy " .. sel.title .. " (" .. sel.cost .. " Chaos Coins) for another character. It gets it at once, or at its next login.")
+  giftWindow:getChildById('info'):setText(tr('Buy %s (%s Chaos Coins) for another character. It gets it at once, or at its next login.', sel.title, sel.cost))
   giftWindow:show()
   giftWindow:raise()
   giftWindow:focus()
@@ -610,7 +610,7 @@ function confirmGiftOffer()
   scheduleEvent(function()
     if msgWindow then msgWindow:destroy() end
     msgWindow = displayGeneralBox(tr("Gift from the shop"),
-      "Give " .. sel.title .. " to " .. name .. " for " .. sel.cost .. " Chaos Coins?", {
+      tr('Give %s to %s for %s Chaos Coins?', sel.title, name, sel.cost), {
       { text = tr('Yes'), callback = buyConfirmed },
       { text = tr('No'),  callback = buyCanceled },
       anchor = AnchorHorizontalCenter
@@ -658,7 +658,7 @@ function buyOffer(widget)
   scheduleEvent(function()
     if msgWindow then msgWindow:destroy() end
     local title = tr("Buying from shop")
-    local msg   = "Do you want to buy " .. item.title .. " for " .. item.cost .. " Chaos Coins?"
+    local msg   = tr('Do you want to buy %s for %s Chaos Coins?', item.title, item.cost)
     msgWindow = displayGeneralBox(title, msg, {
       { text = tr('Yes'), callback = buyConfirmed },
       { text = tr('No'),  callback = buyCanceled },

@@ -32,6 +32,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/leaderboard_core.lua")
 
 Chaos.leaderboardConfig = dofile("data/scripts/chaos/leaderboard_config.lua")
@@ -235,10 +238,10 @@ function LB.deliverPending(player)
 			end
 		end
 		local b = boardByKey[r.board]
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Leaderboard: %s place on the %s board last week. You hold the title %s this week.%s",
 			cfg.rankNames[r.rank] or ("#" .. r.rank), b and b.name or r.board, r.title,
-			#parts > 0 and (" Reward in your inbox: " .. table.concat(parts, ", ") .. ".") or ""))
+			#parts > 0 and Chaos.t(player, " Reward in your inbox: %s.", table.concat(parts, ", ")) or ""))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	end
 end
@@ -271,8 +274,7 @@ function LB.checkReset(force)
 	loadHeld(prev)
 	ensureWeek()
 	if #awards > 0 then
-		local text = LB.broadcastText(cfg.boards, awards)
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+		local text = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, function(lang) return LB.broadcastText(cfg.boards, awards, lang) end)
 		if ChaosNotify and ChaosNotify.gmBroadcast then
 			ChaosNotify.gmBroadcast(nil, text)
 		end

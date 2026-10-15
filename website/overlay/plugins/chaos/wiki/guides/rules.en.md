@@ -5,6 +5,7 @@ The rules keep the game fair. By playing you accept the [rules](/page.php?p=rule
 ## The essentials
 
 - No bots, macros or modified clients. The game's own tools are allowed: hunt tracker, loot filter, autoloot and auto seller.
+- The official client's helper (healing, spell rules, auto rotation) is allowed while you play. Leaving it running for hours with nobody at the keyboard counts as botting: a warning the first time, then the botting penalties.
 - Do not use bugs. Report them with System > Report a Bug. A bug you report yourself is never punished.
 - Be respectful in every channel. No harassment, threats, hate or spam.
 - No advertising of other games, servers or websites.

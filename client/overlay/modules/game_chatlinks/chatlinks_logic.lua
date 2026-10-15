@@ -2,6 +2,7 @@
 -- A link in a message is   [Item Name]{<r><id>}   (r = rarity as a hex digit or u for a unique, id = 9 characters a-z 0-9), made by the
 -- server (extended opcode 249, server/data/scripts/chaos/itemlink.lua + itemlink_core.lua: same format). Other clients
 -- show the text as it is; this one shows "[Item Name]" in the rarity colour and the tooltip of the snapshot on hover.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ChatLinksLogic = {}
 local L = ChatLinksLogic
@@ -134,10 +135,10 @@ end
 function L.canAdd(text, chips, extra)
   local live = L.liveChips(text, chips)
   if #live >= L.MAX_LINKS then
-    return false, string.format('You can link up to %d items in one message.', L.MAX_LINKS)
+    return false, tr('You can link up to %d items in one message.', L.MAX_LINKS)
   end
   if L.projectedLength(text, live, extra) + 1 > L.MAX_TEXT then
-    return false, 'The message is too long for another item link.'
+    return false, tr('The message is too long for another item link.')
   end
   return true
 end
@@ -146,14 +147,14 @@ end
 -- tab = { name, id, private, npc, loot, spell, serverLog } -> ctx for the server, or nil and the reason
 function L.contextOf(tab, helpAllowed)
   tab = tab or {}
-  if tab.npc then return nil, 'Items cannot be linked in NPC conversations.' end
-  if tab.loot or tab.spell then return nil, 'Items cannot be linked in this channel.' end
+  if tab.npc then return nil, tr('Items cannot be linked in NPC conversations.') end
+  if tab.loot or tab.spell then return nil, tr('Items cannot be linked in this channel.') end
   if tab.private then return { kind = 'private' } end
   if tab.serverLog then return { kind = 'say' } end
   if tab.local_ then return { kind = 'say' } end
   local id = tonumber(tab.id)
   if id == 7 and not helpAllowed then
-    return nil, 'Item links are not allowed in the Help channel.'
+    return nil, tr('Item links are not allowed in the Help channel.')
   end
   return { kind = 'channel', id = id }
 end
@@ -213,5 +214,5 @@ end
 function L.footer(owner, entry, now)
   local left = math.max(0, (tonumber(entry.left) or L.TTL) - (now - (entry.at or now)))
   local minutes = math.ceil(left / 60)
-  return string.format('Linked by %s - %d min left', owner or '?', math.max(minutes, 0))
+  return tr('Linked by %s - %d min left', owner or '?', math.max(minutes, 0))
 end

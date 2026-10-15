@@ -154,6 +154,17 @@ do
 	ok(NP.kitDueAtLogin(-1, 0), "new character gets the kit")
 	ok(not NP.kitDueAtLogin(1700000000, 0), "never twice")
 	ok(not NP.kitDueAtLogin(-1, 1700000000), "existing characters never get it by logging in")
+	-- the home town: the main city (Cinderhold, town 2) for brand-new characters only
+	eq(cfg.homeTown.id, 2, "the main city is Cinderhold (town 2)")
+	eq(NP.homeTownFor(1, false), 2, "a new character created in town 1 moves to the main city")
+	eq(NP.homeTownFor(2, false), nil, "already there")
+	eq(NP.homeTownFor(1, true), nil, "a character with its kit keeps its town")
+	eq(NP.homeTownFor(nil, false), 2, "no town at all: the main city")
+	local keep = {homeTown = {id = 2, keep = {4}}}
+	eq(NP.homeTownFor(4, false, keep), nil, "a town the website offers as a choice is kept")
+	eq(NP.homeTownFor(1, false, keep), 2, "other towns still move")
+	eq(NP.homeTownFor(1, false, {homeTown = {id = 0}}), nil, "id 0 turns it off")
+	eq(NP.homeTownFor(1, false, {}), nil, "no homeTown entry: off")
 	local m = 0
 	m = NP.setBit(m, 4)
 	m = NP.setBit(m, 4)
@@ -217,7 +228,22 @@ do
 	end
 	ok(has, "thief level 100: great spirit potions")
 	ok(#NP.milestoneItems(1, "nonsense") > 0, "an unknown role falls back to melee potions")
-	eq(#NP.milestoneItems(9, "melee"), 0, "unknown milestone")
+	eq(#NP.milestoneItems(99, "melee"), 0, "unknown milestone")
+	-- gifts over the whole level range (2026-10-15): up to 2000, Orbs of Fate and Grafting late, 10 storages at most
+	ok(#cfg.milestones <= 10, "at most 10 milestones")
+	eq(cfg.milestones[#cfg.milestones].level, 2000, "the last gift at 2000")
+	local last = 0
+	for _, m in ipairs(cfg.milestones) do
+		ok(m.level > last, "milestones rise")
+		last = m.level
+	end
+	local fate, graft = 0, 0
+	for _, it in ipairs(NP.milestoneItems(#cfg.milestones, "caster")) do
+		if it.id == 29857 then fate = fate + it.count elseif it.id == 29855 then graft = graft + it.count end
+	end
+	ok(fate > 0 and graft > 0, "level 2000: Orbs of Fate and Grafting")
+	due = NP.milestonesDue(299, 999, function() return false end)
+	eq(#due, 3, "299 -> 999 reaches 300, 500 and 800")
 end
 
 -- ------------------------------------------------------------------ tutorial island
@@ -301,6 +327,25 @@ do
 	eq(NP.tutorialSpellFor(11), nil, "no thief spell at level 1")
 	eq(NP.tutorialSpellFor(12), nil, "no ninja spell at level 1")
 	eq(#t.lessons, t.rooms, "a lesson per station")
+end
+
+-- ------------------------------------------------------------------ the main city (server/README.md "Main city")
+-- the temple services new characters need stand in their home town: every config that anchors something next to a
+-- temple lists the main city first (or names it alone)
+do
+	local main = cfg.homeTown.id
+	local function first(list, what)
+		eq(list and list[1], main, what .. ": the main city first")
+	end
+	first(dofile("data/scripts/chaos/ascension_quest_config.lua").npc.townIds, "Ascendant Oracle")
+	first(dofile("data/scripts/chaos/trials_config.lua").npc.townIds, "Keeper of Trials")
+	first(dofile("data/scripts/chaos/tales_config.lua").npc.townIds, "Archivist Maelis")
+	first(dofile("data/scripts/chaos/descent_config.lua").portal.townIds, "Descent portal")
+	first(dofile("data/scripts/chaos/raid_config.lua").portal.townIds, "raid portal")
+	eq(dofile("data/scripts/chaos/community_config.lua").brazier.townId, main, "the Great Brazier")
+	eq(dofile("data/scripts/chaos/chronicle_config.lua").townId, main, "the Chronicle's capital")
+	local hunts = dofile("data/scripts/chaos/hunt_teleports_config.lua")
+	eq(hunts.room.town, main, "the hunt teleport room")
 end
 
 print(string.format("newplayer_test: %d checks, %d failures", checks, fails))

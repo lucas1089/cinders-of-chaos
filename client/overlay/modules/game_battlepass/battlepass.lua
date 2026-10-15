@@ -185,7 +185,7 @@ local function fillChallenges(listWidget, data)
     row.text:setText(text)
     row.progress:setPercent(pct)
     row.progress:setText(ptext)
-    row.reward:setText(string.format('+%d XP', tonumber(c.xp) or 0))
+    row.reward:setText(tr('+%d XP', tonumber(c.xp) or 0))
     if c.done then row.text:setColor('#6b8f5a') end
   end
 end

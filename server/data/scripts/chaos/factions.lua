@@ -31,7 +31,13 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/factions_core.lua")
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
+end
 
 Chaos.factionsConfig = dofile("data/scripts/chaos/factions_config.lua")
 local cfg = Chaos.factionsConfig
@@ -99,9 +105,12 @@ function F.ensureTables()
 	local ok = db.query("CREATE TABLE IF NOT EXISTS `" .. T.rep .. "` (`player_id` int(11) NOT NULL, " ..
 		"`faction` varchar(16) NOT NULL, `rep` int(11) NOT NULL DEFAULT 0, `day` int(10) unsigned NOT NULL DEFAULT 0, " ..
 		"`day_gain` int(11) NOT NULL DEFAULT 0, `week` int(10) unsigned NOT NULL DEFAULT 0, " ..
-		"`week_gain` int(11) NOT NULL DEFAULT 0, `exalted_at` int(10) unsigned NOT NULL DEFAULT 0, " ..
+		"`week_gain` int(11) NOT NULL DEFAULT 0, `week_bank` int(11) NOT NULL DEFAULT 0, " ..
+		"`exalted_at` int(10) unsigned NOT NULL DEFAULT 0, " ..
 		"`total` int(11) NOT NULL DEFAULT 0, PRIMARY KEY (`player_id`, `faction`), " ..
 		"FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8")
+	-- the weekly cap carries over (factions_config.lua rolloverWeeks, 2026-10-15): tables made before keep their rows
+	ok = db.query("ALTER TABLE `" .. T.rep .. "` ADD COLUMN IF NOT EXISTS `week_bank` int(11) NOT NULL DEFAULT 0") and ok
 	ok = db.query("CREATE TABLE IF NOT EXISTS `" .. T.contracts .. "` (`player_id` int(11) NOT NULL, " ..
 		"`period` varchar(12) NOT NULL, `faction` varchar(16) NOT NULL, `slot` tinyint(3) unsigned NOT NULL, " ..
 		"`level` int(11) NOT NULL DEFAULT 1, `progress` int(11) NOT NULL DEFAULT 0, `done` tinyint(1) NOT NULL DEFAULT 0, " ..
@@ -171,12 +180,12 @@ local function stateOf(player)
 		return P
 	end
 	for _, r in ipairs(Chaos.select(string.format("SELECT `faction`, `rep`, `day`, `day_gain`, `week`, `week_gain`, " ..
-			"`exalted_at`, `total` FROM `%s` WHERE `player_id` = %d", T.rep, guid),
+			"`week_bank`, `exalted_at`, `total` FROM `%s` WHERE `player_id` = %d", T.rep, guid),
 			{{"faction", "s"}, {"rep", "n"}, {"day", "n"}, {"day_gain", "n"}, {"week", "n"}, {"week_gain", "n"},
-			{"exalted_at", "n"}, {"total", "n"}})) do
+			{"week_bank", "n"}, {"exalted_at", "n"}, {"total", "n"}})) do
 		if idx.byKey[r.faction] then
 			P.st[r.faction] = {rep = r.rep, day = r.day, dayGain = r.day_gain, week = r.week, weekGain = r.week_gain,
-				exalted = r.exalted_at, total = r.total, carry = 0}
+				bank = r.week_bank or 0, exalted = r.exalted_at, total = r.total, carry = 0}
 		end
 	end
 	for _, r in ipairs(Chaos.select(string.format("SELECT `period`, `faction`, `slot`, `level`, `progress`, `done` FROM `%s` " ..
@@ -202,11 +211,12 @@ local function saveEntry(P, key)
 		return
 	end
 	db.asyncQuery(string.format("INSERT INTO `%s` (`player_id`, `faction`, `rep`, `day`, `day_gain`, `week`, `week_gain`, " ..
-		"`exalted_at`, `total`) VALUES (%d, %s, %d, %d, %d, %d, %d, %d, %d) ON DUPLICATE KEY UPDATE `rep` = VALUES(`rep`), " ..
-		"`day` = VALUES(`day`), `day_gain` = VALUES(`day_gain`), `week` = VALUES(`week`), `week_gain` = VALUES(`week_gain`), " ..
-		"`exalted_at` = VALUES(`exalted_at`), `total` = VALUES(`total`)", T.rep, P.guid, db.escapeString(key),
+		"`week_bank`, `exalted_at`, `total`) VALUES (%d, %s, %d, %d, %d, %d, %d, %d, %d, %d) ON DUPLICATE KEY UPDATE " ..
+		"`rep` = VALUES(`rep`), `day` = VALUES(`day`), `day_gain` = VALUES(`day_gain`), `week` = VALUES(`week`), " ..
+		"`week_gain` = VALUES(`week_gain`), `week_bank` = VALUES(`week_bank`), `exalted_at` = VALUES(`exalted_at`), " ..
+		"`total` = VALUES(`total`)", T.rep, P.guid, db.escapeString(key),
 		math.floor(e.rep), e.day or 0, math.floor(e.dayGain or 0), e.week or 0, math.floor(e.weekGain or 0),
-		e.exalted or 0, math.floor(e.total or 0)))
+		math.floor(e.bank or 0), e.exalted or 0, math.floor(e.total or 0)))
 end
 
 local function flush(P)
@@ -322,7 +332,7 @@ function F.payload(player, sel)
 		tokens[f.key] = player:getItemCount(cfg.tokens[f.key].id)
 	end
 	local data = K.payload(cfg, idx, P.st, {now = now(), day = day(), week = week(), contracts = contracts, owned = P.owned,
-		weekly = weeklyView(P), near = nearFaction(player), tokens = tokens, itemName = itemName, itemMods = ChaosItemMods,
+		lang = Chaos.lang(player), weekly = weeklyView(P), near = nearFaction(player), tokens = tokens, itemName = itemName, itemMods = ChaosItemMods,
 		offerItemId = function(o)
 			return cfg.tokens[o.faction] and cfg.tokens[o.faction].id or 0
 		end,
@@ -416,14 +426,14 @@ function F.gain(player, key, amount, source, quiet)
 	end
 	if not quiet and res.gained > 0 then
 		local rv = res.rival and idx.byKey[res.rival]
-		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_STATUS_SMALL, string.format("+%d reputation with %s%s.",
+		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_STATUS_SMALL, Chaos.t(player, "+%d reputation with %s%s.",
 			res.gained, f.name, (res.rivalLoss or 0) > 0 and string.format(" (%s -%d)", rv.name, res.rivalLoss) or ""))
 	elseif not quiet and res.capped then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("You have reached this week's reputation cap with %s.", f.name))
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "You have reached this week's reputation cap with %s.", f.name))
 	end
 	if res.rankAfter and res.rankBefore and res.rankAfter > res.rankBefore then
 		local r = cfg.ranks[res.rankAfter]
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s now counts you as %s.", f.name, r.name))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s now counts you as %s.", f.name, r.name))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 		flush(P)
 		if ChaosNameplate and ChaosNameplate.refresh then
@@ -446,7 +456,7 @@ local function completeContract(player, P, c)
 	end
 	saveContract(P, c)
 	local f = idx.byKey[c.faction]
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s contract done: %s.", f.name, c.label))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s contract done: %s.", f.name, K.label(c, Chaos.lang(player))))
 	F.gain(player, c.faction, c.rep, "contract")
 end
 
@@ -490,7 +500,7 @@ local function giveTokens(player, key, n)
 		return
 	end
 	giveStack(player, tok.id, n)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You received %d %s.", n, n == 1 and tok.name or tok.plural))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You received %d %s.", n, n == 1 and tok.name or tok.plural))
 end
 
 -- ---------------------------------------------------------------- kills
@@ -538,10 +548,16 @@ local function creditList(killer, mostDamage)
 	return killers
 end
 
-local function onKillFor(player, e, fkey, tier)
+-- monster: the creature (pack combat, pace.lua: a paced monster counts 1 / its kill-goal factor for the contracts and the
+-- reputation points, summed per player)
+local function onKillFor(player, e, fkey, tier, monster)
 	local share = cfg.sources.kill.minLevelShare
 	local info = {cat = e.cat, level = e.level or 0}
-	progress(player, function(c) return K.matchKill(c, info) end, 1)
+	local goal = monster and ChaosPace and ChaosPace.goalMultOf and ChaosPace.goalMultOf(monster) or 1
+	local n = (goal > 1 and ChaosPace.killCredit) and ChaosPace.killCredit(player, monster, "faction") or 1
+	if n > 0 then
+		progress(player, function(c) return K.matchKill(c, info) end, n)
+	end
 	if info.level < math.floor(player:getLevel() * share) then
 		return
 	end
@@ -549,7 +565,7 @@ local function onKillFor(player, e, fkey, tier)
 		return
 	end
 	local P = stateOf(player)
-	local pts = (P.killPts[fkey] or 0) + (cfg.sources.kill.points[tier] or 1)
+	local pts = (P.killPts[fkey] or 0) + (cfg.sources.kill.points[tier] or 1) / (goal > 1 and goal or 1)
 	local per = cfg.sources.kill.pointsPerRep
 	local rep = math.floor(pts / per)
 	P.killPts[fkey] = pts - rep * per
@@ -573,13 +589,15 @@ function F.onKill(creature, corpse, killer, mostDamage)
 		tier = "legendary"
 	end
 	for _, p in ipairs(creditList(killer, mostDamage)) do
-		onKillFor(p, e, fkey, tier)
+		onKillFor(p, e, fkey, tier, creature)
 	end
 	-- the token: one roll per kill, into the corpse (the loot owner's)
 	local owner = playerOf(mostDamage) or playerOf(killer)
 	local td = cfg.tokenDrop
 	if owner and (e.level or 0) >= td.minMonsterLevel and (e.level or 0) >= math.floor(owner:getLevel() * cfg.sources.kill.minLevelShare)
-			and math.random(1, 10000) <= K.tokenChance(cfg, tier) then
+			and math.random(1, 10000) <= K.tokenChance(cfg, tier)
+				* (ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(creature) or 1)
+				* (ChaosCatchup and ChaosCatchup.tokenMult and ChaosCatchup.tokenMult(owner) or 1) then
 		local tok = cfg.tokens[fkey]
 		local placed = false
 		if corpse and corpse.isContainer and corpse:isContainer() then
@@ -740,8 +758,8 @@ function F.installHooks()
 	local W = ChaosWorldBoss
 	if W and W.computeRewards and not W.factionsWrapped then
 		local original = W.computeRewards
-		W.computeRewards = function(shares, r, boss, pool, rng)
-			local out = original(shares, r, boss, pool, rng)
+		W.computeRewards = function(shares, r, boss, pool, rng, pityOf)
+			local out = original(shares, r, boss, pool, rng, pityOf)
 			if cfg.enabled then
 				try("world boss hook", F.onWorldBoss, shares, boss)
 			end
@@ -775,7 +793,7 @@ local function needNpc(player, fkey)
 	local near = nearFaction(player)
 	if near ~= fkey then
 		local f = idx.byKey[fkey]
-		msg(player, string.format("Speak with %s (%s) for that.", f.npc.name, f.name))
+		msg(player, Chaos.t(player, "Speak with %s (%s) for that.", f.npc.name, f.name))
 		return false
 	end
 	return true
@@ -801,24 +819,24 @@ function F.turnIn(player, fkey, n)
 		return
 	end
 	local P = stateOf(player)
-	local e = K.roll(P.st[fkey] or K.newEntry(cfg), day(), week())
+	local e = K.roll(P.st[fkey] or K.newEntry(cfg), day(), week(), cfg)
 	P.st[fkey] = e
-	if e.weekGain >= cfg.weeklyCap or e.rep >= cfg.rep.max then
-		return msg(player, string.format("%s cannot reward you more this week. Keep your tokens.", f.name))
+	if e.weekGain >= K.weekCap(cfg, e) or e.rep >= cfg.rep.max then
+		return msg(player, Chaos.t(player, "%s cannot reward you more this week. Keep your tokens.", f.name))
 	end
 	local tok = cfg.tokens[fkey]
 	local have = player:getItemCount(tok.id)
 	n = math.min(have, Chaos.toInt(n, 1, 100000) or have)
 	if n <= 0 then
-		return msg(player, string.format("You carry no %s.", tok.plural))
+		return msg(player, Chaos.t(player, "You carry no %s.", tok.plural))
 	end
 	if not player:removeItem(tok.id, n) then
-		return msg(player, "The tokens could not be taken.")
+		return msg(player, Chaos.t(player, "The tokens could not be taken."))
 	end
 	local res = F.gain(player, fkey, n * cfg.sources.token, "token", true)
 	flush(P)
-	msg(player, string.format("%s takes %d %s: +%d reputation%s.", f.npc.name, n, n == 1 and tok.name or tok.plural,
-		res.gained, res.capped and " (weekly cap reached)" or ""), true)
+	msg(player, Chaos.t(player, "%s takes %d %s: +%d reputation%s.", f.npc.name, n, n == 1 and tok.name or tok.plural,
+		res.gained, res.capped and Chaos.t(player, " (weekly cap reached)") or ""), true)
 end
 
 function F.deliver(player, key)
@@ -829,33 +847,33 @@ function F.deliver(player, key)
 		end
 	end
 	if not c or c.kind ~= "deliver" or c.done then
-		return msg(player, "That delivery is not open.")
+		return msg(player, Chaos.t(player, "That delivery is not open."))
 	end
 	if not needNpc(player, c.faction) then
 		return
 	end
 	for _, it in ipairs(c.items or {}) do
 		if player:getItemCount(it.id) < it.count then
-			return msg(player, string.format("You need %d %s.", it.count, itemName(it.id, it.count)))
+			return msg(player, Chaos.t(player, "You need %d %s.", it.count, itemName(it.id, it.count)))
 		end
 	end
 	if money(player) < (c.gold or 0) then
-		return msg(player, string.format("You need %s gold (carried or in the bank).", K.thousands(c.gold)))
+		return msg(player, Chaos.t(player, "You need %s gold (carried or in the bank).", K.thousands(c.gold)))
 	end
 	for _, it in ipairs(c.items or {}) do
 		if not player:removeItem(it.id, it.count) then
-			return msg(player, "The materials could not be taken.")
+			return msg(player, Chaos.t(player, "The materials could not be taken."))
 		end
 	end
 	if not pay(player, c.gold or 0) then
 		for _, it in ipairs(c.items or {}) do
 			giveStack(player, it.id, it.count)
 		end
-		return msg(player, "The gold could not be taken.")
+		return msg(player, Chaos.t(player, "The gold could not be taken."))
 	end
 	c.progress = c.count
 	completeContract(player, stateOf(player), c)
-	msg(player, "Delivered: " .. c.label .. ".", true)
+	msg(player, Chaos.t(player, "Delivered: %s.", K.label(c, Chaos.lang(player))), true)
 end
 
 local function bump(P, offer)
@@ -919,16 +937,17 @@ function F.buy(player, key)
 	for _, f in ipairs(idx.list) do
 		ranks[f.key] = K.rankAt(cfg, (P.st[f.key] or K.newEntry(cfg)).rep)
 	end
-	local state, why = K.offerState(cfg, idx, o, {ranks = ranks, owned = P.owned, weekly = weeklyView(P)})
+	local state, why = K.offerState(cfg, idx, o, {ranks = ranks, owned = P.owned, weekly = weeklyView(P),
+		lang = Chaos.lang(player)})
 	if state ~= "ok" then
-		return msg(player, why or "Not available.")
+		return msg(player, why or Chaos.t(player, "Not available."))
 	end
 	local tok = cfg.tokens[o.faction]
 	if (o.tokens or 0) > 0 and player:getItemCount(tok.id) < o.tokens then
-		return msg(player, string.format("You need %d %s.", o.tokens, tok.plural))
+		return msg(player, Chaos.t(player, "You need %d %s.", o.tokens, tok.plural))
 	end
 	if money(player) < o.price then
-		return msg(player, string.format("You need %s gold (carried or in the bank).", K.thousands(o.price)))
+		return msg(player, Chaos.t(player, "You need %s gold (carried or in the bank).", K.thousands(o.price)))
 	end
 	-- make the goods first, then take the payment
 	local item
@@ -936,17 +955,17 @@ function F.buy(player, key)
 		local err
 		item, err = F.makeGear(o)
 		if not item then
-			return msg(player, err)
+			return msg(player, Chaos.t(player, err))
 		end
 	end
 	if (o.tokens or 0) > 0 and not player:removeItem(tok.id, o.tokens) then
 		if item then item:remove() end
-		return msg(player, "The tokens could not be taken.")
+		return msg(player, Chaos.t(player, "The tokens could not be taken."))
 	end
 	if not pay(player, o.price) then
 		if (o.tokens or 0) > 0 then giveStack(player, tok.id, o.tokens) end
 		if item then item:remove() end
-		return msg(player, "The gold could not be taken.")
+		return msg(player, Chaos.t(player, "The gold could not be taken."))
 	end
 	local note = ""
 	if o.kind == "gear" then
@@ -954,7 +973,7 @@ function F.buy(player, key)
 			local inbox = player:getInbox()
 			if inbox then
 				inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
-				note = " Your backpack was full: it is in your inbox."
+				note = Chaos.t(player, " Your backpack was full: it is in your inbox.")
 			end
 		end
 	elseif o.kind == "orbs" then
@@ -968,7 +987,7 @@ function F.buy(player, key)
 	end
 	bump(P, o)
 	log(string.format("%s bought %s for %d gold and %d tokens", player:getName(), o.key, o.price, o.tokens or 0))
-	msg(player, string.format("Bought: %s.%s", o.name, note), true)
+	msg(player, Chaos.t(player, "Bought: %s.%s", o.name, note), true)
 end
 
 function F.craft(player, key, n)
@@ -978,7 +997,7 @@ function F.craft(player, key, n)
 	end
 	local P = stateOf(player)
 	if not P.owned[o.key] then
-		return msg(player, "You do not know that recipe.")
+		return msg(player, Chaos.t(player, "You do not know that recipe."))
 	end
 	if not needNpc(player, o.faction) then
 		return
@@ -988,14 +1007,14 @@ function F.craft(player, key, n)
 	local tok = cfg.tokens[o.faction]
 	for _, it in ipairs(cr.inputs or {}) do
 		if player:getItemCount(it.id) < it.count * n then
-			return msg(player, string.format("You need %d %s.", it.count * n, itemName(it.id, it.count * n)))
+			return msg(player, Chaos.t(player, "You need %d %s.", it.count * n, itemName(it.id, it.count * n)))
 		end
 	end
 	if (cr.tokens or 0) > 0 and player:getItemCount(tok.id) < cr.tokens * n then
-		return msg(player, string.format("You need %d %s.", cr.tokens * n, tok.plural))
+		return msg(player, Chaos.t(player, "You need %d %s.", cr.tokens * n, tok.plural))
 	end
 	if money(player) < (cr.gold or 0) * n then
-		return msg(player, string.format("You need %s gold.", K.thousands((cr.gold or 0) * n)))
+		return msg(player, Chaos.t(player, "You need %s gold.", K.thousands((cr.gold or 0) * n)))
 	end
 	for _, it in ipairs(cr.inputs or {}) do
 		player:removeItem(it.id, it.count * n)
@@ -1007,44 +1026,25 @@ function F.craft(player, key, n)
 	for _, it in ipairs(cr.output) do
 		giveStack(player, it.id, it.count * n)
 	end
-	msg(player, string.format("%s: made %dx.", o.name:gsub("^Recipe: ", ""), n), true)
+	msg(player, Chaos.t(player, "%s: made %dx.", o.name:gsub("^Recipe: ", ""), n), true)
 end
 
 -- ---------------------------------------------------------------- NPC placement
-local function placeNpc(name, pos)
-	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do
-		if c:isNpc() and c:getName():lower() == name:lower() then
-			return c
-		end
-	end
-	return Game.createNpc(name, pos)
-end
-
-local function freeTileNear(temple)
-	for _, o in ipairs(cfg.npcOffsets) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
-end
-
 function F.placeNpcs()
 	local placed = 0
 	for _, f in ipairs(idx.list) do
 		local n = f.npc
-		local pos
+		local done
 		if n.pos then
-			pos = Position(n.pos.x, n.pos.y, n.pos.z)
+			-- a fixed spot: that tile (an NPC of that name already near it is kept)
+			done = try("place " .. n.name, ChaosNpcPlace.place, n.name, Position(n.pos.x, n.pos.y, n.pos.z), {{0, 0}},
+				{radius = 8, spacing = 0, minFromTemple = 0})
 		else
 			local town = (n.town and Town(n.town)) or (n.townId and Town(n.townId))
 			local temple = town and town:getTemplePosition()
-			pos = temple and freeTileNear(temple)
+			done = temple and try("place " .. n.name, ChaosNpcPlace.place, n.name, temple, cfg.npcOffsets, cfg.npcPlace)
 		end
-		if pos and try("place " .. n.name, placeNpc, n.name, pos) then
+		if done then
 			placed = placed + 1
 		else
 			log("could not place " .. n.name .. " (no town, no free tile next to the temple, or data/npc/" .. n.name ..

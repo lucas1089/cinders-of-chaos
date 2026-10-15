@@ -227,7 +227,8 @@ local function countSupplies(player)
 end
 
 local function checkSupplies(player, s)
-	if not cfg.countSuppliesInPz and Tile(player:getPosition()) and Tile(player:getPosition()):hasFlag(TILESTATE_PROTECTIONZONE) then
+	local tile = not cfg.countSuppliesInPz and Tile(player:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
 		s.inv = nil
 		return
 	end
@@ -281,35 +282,59 @@ function heal.onHealthChange(creature, attacker, primaryDamage, primaryType, sec
 end
 heal:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local target = EventCallback
 target.onTargetCombat = function(creature, victim)
-	if creature and victim and victim:isMonster() and huntOwner(creature) then
-		victim:registerEvent("ChaosHuntDamage")
+	if creature and victim and victim:isMonster() and not eventKnown(victim, "ChaosHuntDamage") and huntOwner(creature) then
+		registerOnce(victim, "ChaosHuntDamage")
 	end
 	return RETURNVALUE_NOERROR
 end
 target:register(cfg.targetIndex)
 
 -- ---------------------------------------------------------------- tick: supplies, window refresh, cleanup
+-- every character is looked at once per thinkMs, spread over SLICES shorter ticks by creature id: the supply count walks
+-- the whole inventory, and every online character has a session (autoStart), so one pass over all of them in one tick
+-- made a lag spike under load
+local SLICES = 4
+local slice = 0
 local think = GlobalEvent("ChaosHuntThink")
 function think.onThink(interval)
 	local now = os.time()
+	slice = (slice + 1) % SLICES
 	for _, player in ipairs(Game.getPlayers()) do
-		local s = sessionOf(player)
-		if s and H.running(s) then
-			local ok, err = pcall(checkSupplies, player, s)
-			if not ok then
-				print("[Chaos hunt] supplies failed: " .. tostring(err))
+		local id = player:getId()
+		if id % SLICES == slice then
+			local s = sessionOf(player)
+			if s and H.running(s) then
+				local ok, err = pcall(checkSupplies, player, s)
+				if not ok then
+					print("[Chaos hunt] supplies failed: " .. tostring(err))
+				end
+			end
+			if H.watch[id] then
+				send(player, false)
 			end
 		end
-		if H.watch[player:getId()] then
-			send(player, false)
-		end
 	end
-	H.sweep(H.sessions, now, (cfg.keepOfflineMinutes or 30) * 60)
+	if slice == 0 then
+		H.sweep(H.sessions, now, (cfg.keepOfflineMinutes or 30) * 60)
+	end
 	return true
 end
-think:interval(cfg.thinkMs or 2000)
+think:interval(math.max(100, math.floor((cfg.thinkMs or 2000) / SLICES)))
 think:register()
 
 -- ---------------------------------------------------------------- login / logout / opcode

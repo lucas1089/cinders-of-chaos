@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Iselde Varrow, the Conquest vendor: any unique or set piece you have seen, for Conquest Tokens; Omen Keys of the kind
+     you choose, Ascended Shards and their conversion, the rarity refinement (server/data/scripts/chaos/conquest.lua,
+     conquest_config.lua; server/README.md "Conquest Tokens, the Conquest vendor and bad-luck protection"). Placed next
+     to the main temple at startup; installed by server/tools/install_conquest.py. -->
+<npc name="Iselde Varrow" script="iselde_varrow.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="139" head="114" body="132" legs="76" feet="114" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Every trophy has a price, |PLAYERNAME|, and you have been paying it in blood. Want to see my {wares}? Ask about {tokens} or {luck}." />
+		<parameter key="message_farewell" value="Come back with more conquests, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The ledger stays open for you." />
+	</parameters>
+</npc>

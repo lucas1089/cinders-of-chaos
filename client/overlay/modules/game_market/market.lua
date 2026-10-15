@@ -127,9 +127,9 @@ local function updateWallet(gold, coins)
   local m = meta or {}
   if m.coinsOk == false then
     -- a season market trades for gold only (server season.lua): no coin balance to show
-    window.walletLabel:setText(string.format('%s market   Bank: %s gold', m.realmName or 'Standard', V.money(m.gold or 0)))
+    window.walletLabel:setText(tr('%s market   Bank: %s gold', m.realmName or tr('Standard'), V.money(m.gold or 0)))
   else
-    window.walletLabel:setText(string.format('%s market  Bank: %s gold  Chaos Coins: %s', m.realmName or 'Standard',
+    window.walletLabel:setText(tr('%s market  Bank: %s gold  Chaos Coins: %s', m.realmName or tr('Standard'),
       V.money(m.gold or 0), V.money(m.coins or 0)))
   end
 end
@@ -258,7 +258,7 @@ local function confirmBuy(offer)
   buttons[#buttons + 1] = { text = tr('Cancel'), callback = close }
   buttons.anchor = AnchorHorizontalCenter
   local what = ((offer.count or 1) > 1 and (offer.count .. 'x ') or '') .. (offer.name or 'item')
-  local msg = string.format('Buy %s from %s?\nIt goes to your inbox (the depot).', what, offer.seller or '?')
+  local msg = tr('Buy %s from %s?\nIt goes to your inbox (the depot).', what, offer.seller or '?')
   if displayGeneralBox then
     box = displayGeneralBox(tr('Buy'), msg, buttons, nil, close)
     widenButtons(box)
@@ -271,7 +271,7 @@ local function confirmCancel(offer)
   local box
   local function close() if box then box:destroy() box = nil end end
   local function yes() close() send('cancel', { id = offer.id }) end
-  local msg = string.format('Cancel the offer of %s? The item goes back to your inbox; the listing fee is not refunded.', offer.name or 'item')
+  local msg = tr('Cancel the offer of %s? The item goes back to your inbox; the listing fee is not refunded.', offer.name or 'item')
   if displayGeneralBox then
     box = displayGeneralBox(tr('Cancel offer'), msg, { { text = tr('Yes'), callback = yes }, { text = tr('No'), callback = close },
       anchor = AnchorHorizontalCenter }, yes, close)
@@ -309,7 +309,7 @@ local function addRow(list, offer, mode)
   if mode == 'browse' then
     subText = V.subLine(offer)
   elseif mode == 'history' then
-    subText = V.historyLine(offer) .. (offer.order and ' (buy order)' or '')
+    subText = V.historyLine(offer) .. (offer.order and tr(' (buy order)') or '')
   else
     subText = V.stateLine(offer)
   end
@@ -328,7 +328,7 @@ local function addRow(list, offer, mode)
   local prices = V.priceLines(offer)
   local prow = row:getChildById('prices')
   if mode == 'history' or (mode == 'closed' and offer.state == 'sold') then
-    prow:getChildById('gold'):setText(V.money(offer.paid or 0) .. (offer.cur == 'coins' and ' coins' or ' gold'))
+    prow:getChildById('gold'):setText(V.money(offer.paid or 0) .. (offer.cur == 'coins' and tr(' coins') or tr(' gold')))
     prow:getChildById('gold'):setColor(offer.cur == 'coins' and COLORS.coins or COLORS.gold)
     prow:getChildById('coins'):setText('')
   else
@@ -407,7 +407,7 @@ end
 local function updateModToggle(req)
   local p = window.browsePanel
   local n = V.modCount(req or V.modRequest(modForm(), modLimits()) or {})
-  p.modToggle:setText((n > 0 and ('Modifiers (' .. n .. ')') or 'Modifiers') .. (modsOpen and ' [-]' or ' [+]'))
+  p.modToggle:setText((n > 0 and (tr('Modifiers (%s)', n)) or tr('Modifiers')) .. (modsOpen and ' [-]' or ' [+]'))
   local limits = modLimits()
   p.modPanel.addModButton:setEnabled(#modRowWidgets < (limits.maxRows or 6))
   p.modPanel.needEdit:setEnabled(comboValue(p.modPanel.modeCombo) == 'count')
@@ -442,7 +442,7 @@ function addModRow(key)
   if not window then return end
   local limits = modLimits()
   if #modRowWidgets >= (limits.maxRows or 6) then
-    setStatus(string.format('At most %d modifiers per search.', limits.maxRows or 6), COLORS.error)
+    setStatus(tr('At most %d modifiers per search.', limits.maxRows or 6), COLORS.error)
     return
   end
   local row = g_ui.createWidget('MarketModRow', window.browsePanel.modPanel.modRows)
@@ -718,16 +718,16 @@ local function updateFee()
   local days = tonumber(comboValue(s.daysCombo)) or 3
   local parts = {}
   local fee = V.fee(meta, gold, coins)
-  parts[#parts + 1] = string.format('Listing fee: %s gold from your bank, not refunded.', V.money(fee))
+  parts[#parts + 1] = tr('Listing fee: %s gold from your bank, not refunded.', V.money(fee))
   if gold > 0 then
     local tax, net = V.tax(meta, 'gold', gold)
-    parts[#parts + 1] = string.format('Sold for gold: tax %s, you receive %s gold in your bank.', V.money(tax), V.money(net))
+    parts[#parts + 1] = tr('Sold for gold: tax %s, you receive %s gold in your bank.', V.money(tax), V.money(net))
   end
   if coins > 0 then
     local tax, net = V.tax(meta, 'coins', coins)
-    parts[#parts + 1] = string.format('Sold for coins: tax %s, you receive %s Chaos Coins on your account.', V.money(tax), V.money(net))
+    parts[#parts + 1] = tr('Sold for coins: tax %s, you receive %s Chaos Coins on your account.', V.money(tax), V.money(net))
   end
-  parts[#parts + 1] = string.format('The offer lasts %d day%s; if nothing sells, the item returns to your inbox.', days, days == 1 and '' or 's')
+  parts[#parts + 1] = tr('The offer lasts %d day%s; if nothing sells, the item returns to your inbox.', days, days == 1 and '' or 's')
   s.feeText:setText(table.concat(parts, '\n'))
   updatePriceHint()
 end
@@ -764,7 +764,7 @@ local function showSelected()
   s.sellSub:setText(table.concat(sub, ' - '))
   s.countEdit:setEnabled(selected.stack == true)
   s.countEdit:setText(tostring(selected.count or 1))
-  s.countMax:setText(selected.stack and ('of ' .. (selected.count or 1)) or '')
+  s.countMax:setText(selected.stack and (tr('of %s', (selected.count or 1))) or '')
   s.listButton:setEnabled(true)
 end
 
@@ -843,7 +843,7 @@ end
 local function onMine(data)
   local list = window.minePanel.mineList
   clearList(list)
-  addHeading(list, string.format('Active offers (%d; listings used with buy orders: %d / %d)', #(data.active or {}),
+  addHeading(list, tr('Active offers (%d; listings used with buy orders: %d / %d)', #(data.active or {}),
     tonumber(data.used) or #(data.active or {}), data.max or 20))
   for _, offer in ipairs(data.active or {}) do addRow(list, offer, 'mine') end
   if #(data.active or {}) == 0 then
@@ -855,7 +855,7 @@ local function onMine(data)
     local t = g_ui.createWidget('MarketText', list)
     t:setHeight(18)
     t:setColor(COLORS.gold)
-    t:setText(string.format('%d deliveries are on the way to your inbox / bank.', data.owed))
+    t:setText(tr('%d deliveries are on the way to your inbox / bank.', data.owed))
   end
   addHeading(list, tr('Sold, expired and cancelled'))
   for _, offer in ipairs(data.closed or {}) do addRow(list, offer, 'closed') end
@@ -944,8 +944,8 @@ local function confirmOrderCancel(row)
   local box
   local function close() if box then box:destroy() box = nil end end
   local function yes() close() send('orderCancel', { id = row.id }) end
-  local msg = string.format('Cancel your buy order for %s? The %s %s still held come back to you; the listing fee is not refunded.',
-    row.name or 'item', V.money(row.escrow or 0), row.cur == 'coins' and 'Chaos Coins' or 'gold')
+  local msg = tr('Cancel your buy order for %s? The %s %s still held come back to you; the listing fee is not refunded.',
+    row.name or 'item', V.money(row.escrow or 0), row.cur == 'coins' and tr('Chaos Coins') or 'gold')
   if displayGeneralBox then
     box = displayGeneralBox(tr('Cancel buy order'), msg, { { text = tr('Yes'), callback = yes }, { text = tr('No'), callback = close },
       anchor = AnchorHorizontalCenter }, yes, close)
@@ -999,7 +999,7 @@ local function showOrderPage(rows, info, emptyText)
   p.orderEmpty:setText(emptyText)
   p.orderEmpty:setVisible(#(rows or {}) == 0)
   local total = tonumber(info.total) or 0
-  p.orderPageLabel:setText(string.format('Page %d / %d  (%d order%s)', info.page or 1, math.max(1, info.pages or 1), total, total == 1 and '' or 's'))
+  p.orderPageLabel:setText(tr('Page %d / %d  (%d order%s)', info.page or 1, math.max(1, info.pages or 1), total, total == 1 and '' or 's'))
   p.orderPrev:setEnabled((info.page or 1) > 1)
   p.orderNext:setEnabled((info.page or 1) < (info.pages or 1))
   p.orderScroll:setValue(0)
@@ -1014,7 +1014,7 @@ local function onMyOrders(data)
   local p = window.ordersPanel
   showOrderPage({}, { page = 1, pages = 1, total = #(data.active or {}) }, '')
   p.orderEmpty:hide()
-  addHeading(p.orderList, string.format('Your open buy orders (listings used: %d / %d)', tonumber(data.used) or 0, tonumber(data.max) or 20))
+  addHeading(p.orderList, tr('Your open buy orders (listings used: %d / %d)', tonumber(data.used) or 0, tonumber(data.max) or 20))
   for _, r in ipairs(data.active or {}) do addOrderRow(p.orderList, r) end
   if #(data.active or {}) == 0 then
     local t = g_ui.createWidget('MarketTextDim', p.orderList)
@@ -1047,7 +1047,7 @@ end
 function updateOrderCost()
   if not window then return end
   local f = window.ordersPanel.postFrame
-  f.orderModsText:setText(orderMods and ('Modifiers: ' .. V.orderFilterText(orderMods, modName))
+  f.orderModsText:setText(orderMods and (tr('Modifiers: %s', V.orderFilterText(orderMods, modName)))
     or tr('Modifiers: any. Set rows in the Browse tab\'s Modifiers section, then press Use Browse modifiers.'))
   local req, total, fee = V.checkOrder(meta, orderForm())
   if req then
@@ -1156,9 +1156,9 @@ function openFill(row)
   p.fillFrame:show()
   local f = p.fillFrame
   local left = (tonumber(row.qty) or 0) - (tonumber(row.filled) or 0)
-  f.fillHeader:setText(string.format('%s wants %s%s at %s %s each', row.buyer or '?', left > 1 and (V.money(left) .. 'x ') or '',
-    row.name or '?', V.money(row.price or 0), row.cur == 'coins' and 'Chaos Coins' or 'gold'))
-  f.fillFilter:setText('Must be: ' .. V.orderFilterText(row.filter, modName))
+  f.fillHeader:setText(tr('%s wants %s%s at %s %s each', row.buyer or '?', left > 1 and (V.money(left) .. 'x ') or '',
+    row.name or '?', V.money(row.price or 0), row.cur == 'coins' and tr('Chaos Coins') or tr('gold')))
+  f.fillFilter:setText(tr('Must be: %s', V.orderFilterText(row.filter, modName)))
   f.fillList:destroyChildren()
   showFillChoice()
   send('fillable', { id = row.id })
@@ -1330,11 +1330,11 @@ local function onMessage(protocol, opcode, msg)
     applyCoinRule()
     updateWallet()
     local s = window.sellPanel
-    s.rulesText:setText(string.format('Locked, equipped, store and quest items and bags with something inside cannot be listed. '
+    s.rulesText:setText(tr('Locked, equipped, store and quest items and bags with something inside cannot be listed. '
       .. 'Bought items and items that come back arrive in your inbox (the depot); gold goes to your bank, Chaos Coins to your '
       .. 'account. Up to %d offers at a time.%s', meta.maxActive or 20,
-      (meta.realm or 0) > 0 and (meta.coinsOk == false and ' Season characters trade on their own season market, for gold only.'
-        or ' Season characters trade on their own season market.') or ''))
+      (meta.realm or 0) > 0 and (meta.coinsOk == false and tr(' Season characters trade on their own season market, for gold only.')
+        or tr(' Season characters trade on their own season market.')) or ''))
     updateFee()
     if not window:isVisible() then return end
     showTab(tabIndex)

@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -31,6 +34,17 @@ end
 
 -- ======================================================================== pure helpers (tested)
 
+-- a text in `lang` (Chaos.t keys); English without ChaosI18n or a language
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local function trim(s)
 	return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
 end
@@ -43,18 +57,18 @@ function S.capitalize(name)
 	end))
 end
 
--- Returns the cleaned name or nil, reason. rules = Chaos.shopServices.name
-function S.validateName(raw, rules)
+-- Returns the cleaned name or nil, reason (in `lang`, English by default). rules = Chaos.shopServices.name
+function S.validateName(raw, rules, lang)
 	rules = rules or C().name
 	local name = trim(raw)
 	if #name < rules.minLength or #name > rules.maxLength then
-		return nil, string.format("A name must have %d to %d characters.", rules.minLength, rules.maxLength)
+		return nil, T(lang, "A name must have %d to %d characters.", rules.minLength, rules.maxLength)
 	end
 	if name:find("[^%a ]") then
-		return nil, "A name may only contain letters and spaces."
+		return nil, T(lang, "A name may only contain letters and spaces.")
 	end
 	if name:find("  ", 1, true) then
-		return nil, "Use single spaces between the words."
+		return nil, T(lang, "Use single spaces between the words.")
 	end
 	name = S.capitalize(name)
 	local words = {}
@@ -62,26 +76,26 @@ function S.validateName(raw, rules)
 		words[#words + 1] = word
 	end
 	if #words > rules.maxWords then
-		return nil, string.format("A name may have at most %d words.", rules.maxWords)
+		return nil, T(lang, "A name may have at most %d words.", rules.maxWords)
 	end
 	local lower = name:lower()
 	for _, word in ipairs(words) do
 		if #word < rules.minWordLength then
-			return nil, string.format("Every word needs at least %d letters.", rules.minWordLength)
+			return nil, T(lang, "Every word needs at least %d letters.", rules.minWordLength)
 		end
 		local lw = word:lower()
 		for _, staff in ipairs(rules.staffWords) do
 			if lw == staff then
-				return nil, "Names may not look like a staff member's."
+				return nil, T(lang, "Names may not look like a staff member's.")
 			end
 		end
 	end
 	if lower:find("(%a)%1%1") then
-		return nil, "A name may not repeat a letter three times in a row."
+		return nil, T(lang, "A name may not repeat a letter three times in a row.")
 	end
 	for _, bad in ipairs(rules.forbidden) do
 		if lower:find(bad, 1, true) then
-			return nil, "That name is not allowed."
+			return nil, T(lang, "That name is not allowed.")
 		end
 	end
 	return name
@@ -106,8 +120,8 @@ function S.isPromoted(id, map)
 	return false
 end
 
--- Target vocation id for "!changevocation <word>" from vocation `currentId`, or nil + reason.
-function S.vocationFor(word, currentId, map)
+-- Target vocation id for "!changevocation <word>" from vocation `currentId`, or nil + reason (in `lang`).
+function S.vocationFor(word, currentId, map, lang)
 	map = map or C().vocations
 	local ids = map[trim(word):lower()]
 	if not ids then
@@ -116,15 +130,15 @@ function S.vocationFor(word, currentId, map)
 			names[#names + 1] = k
 		end
 		table.sort(names)
-		return nil, "Choose one of: " .. table.concat(names, ", ") .. "."
+		return nil, T(lang, "Choose one of: %s.", table.concat(names, ", "))
 	end
 	local promoted = S.isPromoted(currentId, map)
 	-- a base class with two ascended classes (Thief: Ninja or Samurai): an ascended character names the one it wants
 	if promoted and ids.choose then
-		return nil, "You have ascended: name the ascended class you want (" .. table.concat(ids.choose, " or ") .. ")."
+		return nil, T(lang, "You have ascended: name the ascended class you want (%s).", table.concat(ids.choose, T(lang, " or ")))
 	end
 	if ids[1] == currentId or ids[2] == currentId then
-		return nil, "You already are of that vocation."
+		return nil, T(lang, "You already are of that vocation.")
 	end
 	return promoted and ids[2] or ids[1]
 end
@@ -261,12 +275,12 @@ local function loadBuffs()
 end
 S.loadBuffs = loadBuffs
 
-function S.describeBuffs()
+function S.describeBuffs(lang)
 	local lines = {}
 	for _, def in ipairs(C().worldBuffs) do
 		local left = S.buffLeft(def.id)
 		if left > 0 then
-			lines[#lines + 1] = string.format("%s (%s): %s left", def.name, def.text, S.formatDuration(left))
+			lines[#lines + 1] = T(lang, "%s (%s): %s left", def.name, T(lang, def.text), S.formatDuration(left))
 		end
 	end
 	return lines
@@ -286,25 +300,25 @@ end
 -- where the scroll may not be used: a reason, or nil
 function S.teleportBlocked(player)
 	if inCombat(player) then
-		return "You cannot use this while you are in combat."
+		return Chaos.t(player, "You cannot use this while you are in combat.")
 	end
 	if ChaosDungeonIsInside and ChaosDungeonIsInside(player) then
-		return "You cannot use this inside a dungeon."
+		return Chaos.t(player, "You cannot use this inside a dungeon.")
 	end
 	if ChaosTowerRun and ChaosTowerRun.isInside and ChaosTowerRun.isInside(player) then
-		return "You cannot use this inside the Infinity Tower."
+		return Chaos.t(player, "You cannot use this inside the Infinity Tower.")
 	end
 	if ChaosWorldBoss and ChaosWorldBoss.inside and ChaosWorldBoss.inside(player:getPosition()) then
-		return "You cannot use this inside the world boss arena."
+		return Chaos.t(player, "You cannot use this inside the world boss arena.")
 	end
 	if ChaosRift and ChaosRift.isInside and ChaosRift.isInside(player) then
-		return "You cannot use this inside a rift."
+		return Chaos.t(player, "You cannot use this inside a rift.")
 	end
 	-- every other registered instance (raid, Descent, battleground, Marches, guild boss, siege, arena, ...); a hideout
 	-- stays allowed (a teleport out of it is harmless)
 	local label = Chaos.inAnyInstance and select(2, Chaos.inAnyInstance(player, "hideout")) or nil
 	if label then
-		return "You cannot use this inside " .. label .. "."
+		return Chaos.t(player, "You cannot use this inside %s.", label)
 	end
 	return nil
 end
@@ -376,12 +390,12 @@ local function tokenService(storage, what, command)
 	return {
 		check = function(player)
 			if player:getStorageValue(storage) > 0 then
-				return "You already have an unused " .. what .. ". Use it first (" .. command .. ")."
+				return Chaos.t(player, "You already have an unused %s. Use it first (%s).", Chaos.t(player, what), command)
 			end
 		end,
 		apply = function(player)
 			player:setStorageValue(storage, 1)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You received a " .. what .. ". Use it in " .. command .. ".")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You received a %s. Use it in %s.", Chaos.t(player, what), command))
 			return true
 		end
 	}
@@ -391,13 +405,13 @@ S.services = {
 	stamina = {
 		check = function(player)
 			if player:getStamina() >= C().maxStamina then
-				return "Your stamina is already full."
+				return Chaos.t(player, "Your stamina is already full.")
 			end
 		end,
 		apply = function(player)
 			player:setStamina(C().maxStamina)
 			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your stamina is full again.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your stamina is full again."))
 			return true
 		end
 	},
@@ -407,7 +421,7 @@ S.services = {
 			local cfg = C().templeScroll
 			local item = player:addItem(cfg.itemId, 1, false)
 			if not item then
-				return "You do not have enough room or capacity."
+				return Chaos.t(player, "You do not have enough room or capacity.")
 			end
 			item:setActionId(cfg.actionId)
 			setScrollUses(item, offer.uses or 1)
@@ -419,11 +433,11 @@ S.services = {
 		check = function(player, offer)
 			local b = S.worldBuffs[offer.buff]
 			if not b then
-				return "This offer cannot be bought."
+				return Chaos.t(player, "This offer cannot be bought.")
 			end
 			local _, left = S.stackBuff(os.time(), S.buffExpiry(offer.buff), b.def.minutes * 60, b.def.capMinutes * 60)
 			if not _ then
-				return string.format("%s is already active for %s; it can run at most %d minutes. Try again later.",
+				return Chaos.t(player, "%s is already active for %s; it can run at most %d minutes. Try again later.",
 					b.def.name, S.formatDuration(left), b.def.capMinutes)
 			end
 		end,
@@ -432,18 +446,17 @@ S.services = {
 			local now = os.time()
 			local expiry, left = S.stackBuff(now, S.buffExpiry(offer.buff), b.def.minutes * 60, b.def.capMinutes * 60)
 			if not expiry then
-				return "The world buff is at its limit."
+				return Chaos.t(player, "The world buff is at its limit.")
 			end
 			persistBuff(offer.buff, expiry)
-			local text
+			-- each reader's language: the buff's text is a key too (ChaosI18n.msg without arguments)
 			if left > 0 then
-				text = string.format("%s extended the %s by %d minutes! (%s) %s left. Thank you!",
-					player:getName(), b.def.name, b.def.minutes, b.def.text, S.formatDuration(expiry - now))
+				Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s extended the %s by %d minutes! (%s) %s left. Thank you!",
+					player:getName(), b.def.name, b.def.minutes, ChaosI18n.msg(b.def.text), S.formatDuration(expiry - now))
 			else
-				text = string.format("%s activated the %s for everyone: %s for %d minutes! Thank you!",
-					player:getName(), b.def.name, b.def.text, b.def.minutes)
+				Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s activated the %s for everyone: %s for %d minutes! Thank you!",
+					player:getName(), b.def.name, ChaosI18n.msg(b.def.text), b.def.minutes)
 			end
-			Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
 			for _, p in ipairs(Game.getPlayers()) do
 				p:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 			end
@@ -451,7 +464,7 @@ S.services = {
 		end
 	},
 
-	nameToken = tokenService(ST.nameChangeTokens, "name change", "Character > Services"),
+	nameToken = tokenService(ST.nameChangeTokens, "name change", "Character > Services"), -- `what` is a key too
 	vocationToken = tokenService(ST.vocationChangeTokens, "vocation change", "Character > Services"),
 
 	blessings = {
@@ -461,7 +474,7 @@ S.services = {
 					return nil
 				end
 			end
-			return "You already have all blessings."
+			return Chaos.t(player, "You already have all blessings.")
 		end,
 		apply = function(player)
 			for _, b in ipairs(C().blessings) do
@@ -470,7 +483,7 @@ S.services = {
 				end
 			end
 			player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The gods bless you: you have all blessings.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The gods bless you: you have all blessings."))
 			return true
 		end
 	},
@@ -478,11 +491,11 @@ S.services = {
 	skullRemover = {
 		check = function(player)
 			if inCombat(player) then
-				return "Leave combat first (no battle sign or protection zone lock)."
+				return Chaos.t(player, "Leave combat first (no battle sign or protection zone lock).")
 			end
 			local skull = player:getSkull()
 			if player:getSkullTime() <= 0 and skull ~= SKULL_RED and skull ~= SKULL_BLACK then
-				return "You have no unjustified kills or red/black skull to remove."
+				return Chaos.t(player, "You have no unjustified kills or red/black skull to remove.")
 			end
 		end,
 		apply = function(player)
@@ -492,7 +505,7 @@ S.services = {
 				player:setSkull(SKULL_NONE)
 			end
 			player:getPosition():sendMagicEffect(CONST_ME_HOLYDAMAGE)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your unjustified kills are forgiven and your skull is gone.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your unjustified kills are forgiven and your skull is gone."))
 			return true
 		end
 	},
@@ -500,7 +513,7 @@ S.services = {
 	sexChange = {
 		check = function(player)
 			if inCombat(player) then
-				return "Leave combat first."
+				return Chaos.t(player, "Leave combat first.")
 			end
 		end,
 		apply = function(player)
@@ -523,8 +536,8 @@ S.services = {
 			outfit.lookType = target
 			player:setOutfit(outfit)
 			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your character is now " ..
-				(newSex == PLAYERSEX_FEMALE and "female" or "male") .. ". Your outfits came with you.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, newSex == PLAYERSEX_FEMALE and
+				"Your character is now female. Your outfits came with you." or "Your character is now male. Your outfits came with you."))
 			return true
 		end
 	},
@@ -532,12 +545,12 @@ S.services = {
 	passiveReset = {
 		check = function(player)
 			if not (ChaosPassiveTree and ChaosPassiveTree.resetAll) then
-				return "The passive tree is not available."
+				return Chaos.t(player, "The passive tree is not available.")
 			end
 			-- the service also resets the Paragon track (paragon.lua): one paid respec for every passive point
 			local paragon = ChaosParagon and ChaosParagon.hasAllocation and ChaosParagon.hasAllocation(player)
 			if not ChaosPassiveTree.hasAllocation(player) and not paragon then
-				return "Your passive tree and Paragon track have no allocated points."
+				return Chaos.t(player, "Your passive tree and Paragon track have no allocated points.")
 			end
 		end,
 		apply = function(player)
@@ -546,7 +559,7 @@ S.services = {
 			end
 			ChaosPassiveTree.resetAll(player)
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-				"Your passive tree and Paragon points were reset. All points are free to spend again.")
+				Chaos.t(player, "Your passive tree and Paragon points were reset. All points are free to spend again."))
 			return true
 		end
 	},
@@ -555,7 +568,7 @@ S.services = {
 	pouch = {
 		check = function(player, offer)
 			if not ChaosPouches then
-				return "This offer is not available."
+				return Chaos.t(player, "This offer is not available.")
 			end
 			return ChaosPouches.storeCheck(player, offer.pouch)
 		end,
@@ -582,7 +595,7 @@ function S.check(player, offer)
 	if offer.kind == "unlock" then
 		local u = unlockEntry(offer.unlock)
 		if not u then
-			return "This offer cannot be bought."
+			return Chaos.t(player, "This offer cannot be bought.")
 		end
 		local owned
 		if u.owned then
@@ -591,13 +604,13 @@ function S.check(player, offer)
 			owned = player:getStorageValue(u.storage) > 0
 		end
 		if owned then
-			return "You already own " .. u.name .. "."
+			return Chaos.t(player, "You already own %s.", u.name)
 		end
 		return nil
 	end
 	local service = S.services[offer.service or ""]
 	if not service then
-		return "This offer cannot be bought."
+		return Chaos.t(player, "This offer cannot be bought.")
 	end
 	return service.check and service.check(player, offer) or nil
 end
@@ -606,27 +619,27 @@ function S.deliver(player, offer)
 	if offer.kind == "unlock" then
 		local u = unlockEntry(offer.unlock)
 		if not u then
-			return "This offer cannot be bought."
+			return Chaos.t(player, "This offer cannot be bought.")
 		end
 		if u.grant then
 			local ok, err = u.grant(player)
 			if not ok then
-				return err or "Something went wrong. Your coins were refunded."
+				return err or Chaos.t(player, "Something went wrong. Your coins were refunded.")
 			end
 		else
 			player:setStorageValue(u.storage, 1)
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You unlocked " .. u.name .. ". " .. u.done)
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You unlocked %s. %s", u.name, Chaos.t(player, u.done)))
 		return true
 	end
 	local service = S.services[offer.service or ""]
 	if not service then
-		return "This offer cannot be bought."
+		return Chaos.t(player, "This offer cannot be bought.")
 	end
 	local ok, result = pcall(service.apply, player, offer)
 	if not ok then
 		print("[Chaos store] service " .. tostring(offer.service) .. " failed: " .. tostring(result))
-		return "Something went wrong. Your coins were refunded."
+		return Chaos.t(player, "Something went wrong. Your coins were refunded.")
 	end
 	return result
 end
@@ -686,7 +699,7 @@ function think.onThink(interval)
 	for _, def in ipairs(C().worldBuffs) do
 		local active = S.buffLeft(def.id) > 0
 		if running[def.id] and not active then
-			Game.broadcastMessage(def.name .. " has ended.", MESSAGE_STATUS_WARNING)
+			Chaos.broadcast(MESSAGE_STATUS_WARNING, "%s has ended.", def.name)
 		end
 		running[def.id] = active
 	end
@@ -697,15 +710,15 @@ think:register()
 
 local login = CreatureEvent("ChaosShopServicesLogin")
 function login.onLogin(player)
-	for _, line in ipairs(S.describeBuffs()) do
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "World buff active - " .. line)
+	for _, line in ipairs(S.describeBuffs(Chaos.lang(player))) do
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "World buff active - %s", line))
 	end
 	if player:getStorageValue(ST.nameChangeTokens) > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You have an unused name change: Character > Services.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You have an unused name change: Character > Services."))
 	end
 	if player:getStorageValue(ST.vocationChangeTokens) > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"You have an unused vocation change: Character > Services.")
+			Chaos.t(player, "You have an unused vocation change: Character > Services."))
 	end
 	return true
 end
@@ -713,11 +726,11 @@ login:register()
 
 local buffsTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "worldbuffs")
 function buffsTalk.onSay(player, words, param)
-	local lines = S.describeBuffs()
+	local lines = S.describeBuffs(Chaos.lang(player))
 	if #lines == 0 then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "No world buff is active. Anyone can start one in the store (World Buffs).")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No world buff is active. Anyone can start one in the store (World Buffs)."))
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Active world buffs:\n" .. table.concat(lines, "\n"))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Active world buffs:\n%s", table.concat(lines, "\n")))
 	end
 	return false
 end
@@ -730,7 +743,7 @@ function scroll.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local cfg = C().templeScroll
 	local now = os.time()
 	if (exhaust[player:getId()] or 0) > now then
-		player:sendCancelMessage("You are exhausted.")
+		player:sendCancelMessage(Chaos.t(player, "You are exhausted."))
 		return true
 	end
 	exhaust[player:getId()] = now + cfg.cooldown
@@ -747,10 +760,11 @@ function scroll.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	temple:sendMagicEffect(CONST_ME_TELEPORT)
 	if uses <= 1 then
 		item:remove(1)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "The scroll crumbles to dust.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "The scroll crumbles to dust."))
 	else
 		setScrollUses(item, uses - 1)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Your scroll has %d use%s left.", uses - 1, uses - 1 == 1 and "" or "s"))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, uses - 1 == 1 and "Your scroll has %d use left." or
+			"Your scroll has %d uses left.", uses - 1))
 	end
 	return true
 end
@@ -813,40 +827,40 @@ S.applyRename = applyRename
 local renameTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "changename")
 function renameTalk.onSay(player, words, param)
 	if player:getStorageValue(ST.nameChangeTokens) < 1 then
-		player:sendCancelMessage("You need a Name Change from the store first.")
+		player:sendCancelMessage(Chaos.t(player, "You need a Name Change from the store first."))
 		return false
 	end
 	if trim(param) == "" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Type the new name (3-20 letters, single spaces, " ..
-			"in a protection zone, out of combat). You will be logged out and log in with the new name.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+			"Type the new name (3-20 letters, single spaces, in a protection zone, out of combat). You will be logged out and log in with the new name."))
 		return false
 	end
-	local name, err = S.validateName(param)
+	local name, err = S.validateName(param, nil, Chaos.lang(player))
 	if not name then
 		player:sendCancelMessage(err)
 		return false
 	end
 	if name == player:getName() then
-		player:sendCancelMessage("That is already your name.")
+		player:sendCancelMessage(Chaos.t(player, "That is already your name."))
 		return false
 	end
 	if nameTaken(name) or MonsterType(name) then
-		player:sendCancelMessage("That name is already taken.")
+		player:sendCancelMessage(Chaos.t(player, "That name is already taken."))
 		return false
 	end
 	if inCombat(player) then
-		player:sendCancelMessage("You cannot change your name in combat.")
+		player:sendCancelMessage(Chaos.t(player, "You cannot change your name in combat."))
 		return false
 	end
 	if not inProtectionZone(player) then
-		player:sendCancelMessage("Go to a protection zone (a temple or a depot) first.")
+		player:sendCancelMessage(Chaos.t(player, "Go to a protection zone (a temple or a depot) first."))
 		return false
 	end
 	local guid, oldName = player:getGuid(), player:getName()
 	player:setStorageValue(ST.nameChangeTokens, 0)
 	player:save()
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your name is now " .. name .. ". You will be logged out: log in as " .. name .. ".")
-	player:popupFYI("Your name is now " .. name .. ".\nYou will be logged out now. Log in again with the new name.")
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your name is now %s. You will be logged out: log in as %s.", name, name))
+	player:popupFYI(Chaos.t(player, "Your name is now %s.\nYou will be logged out now. Log in again with the new name.", name))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	addEvent(function(cid)
 		local p = Player(cid)
@@ -863,35 +877,35 @@ ChaosCommands.register("changename", function(player, param) return renameTalk.o
 local vocTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "changevocation")
 function vocTalk.onSay(player, words, param)
 	if player:getStorageValue(ST.vocationChangeTokens) < 1 then
-		player:sendCancelMessage("You need a Vocation Change from the store first.")
+		player:sendCancelMessage(Chaos.t(player, "You need a Vocation Change from the store first."))
 		return false
 	end
 	local current = player:getVocation()
-	local newId, err = S.vocationFor(param, current:getId())
+	local newId, err = S.vocationFor(param, current:getId(), nil, Chaos.lang(player))
 	if not newId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Choose one of: " .. C().vocationWords:gsub("|", ", ") .. ". " .. err)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Choose one of: %s. %s", (C().vocationWords:gsub("|", ", ")), err))
 		return false
 	end
 	local newVoc = Vocation(newId)
 	if not newVoc then
-		player:sendCancelMessage("That vocation does not exist on this server.")
+		player:sendCancelMessage(Chaos.t(player, "That vocation does not exist on this server."))
 		return false
 	end
 	-- the class lock (class_unlocks.lua): a locked class needs the account's unlock; the token is kept
 	if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
 		local allowed, lockMessage = ChaosClassUnlocks.canUseVocation(player, newId)
 		if not allowed then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, (lockMessage or "That class is locked. Unlock it in the store.")
-				.. " Your Vocation Change is kept.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s Your Vocation Change is kept.",
+				lockMessage or Chaos.t(player, "That class is locked. Unlock it in the store.")))
 			return false
 		end
 	end
 	if inCombat(player) then
-		player:sendCancelMessage("You cannot change your vocation in combat.")
+		player:sendCancelMessage(Chaos.t(player, "You cannot change your vocation in combat."))
 		return false
 	end
 	if not inProtectionZone(player) then
-		player:sendCancelMessage("Go to a protection zone (a temple or a depot) first.")
+		player:sendCancelMessage(Chaos.t(player, "Go to a protection zone (a temple or a depot) first."))
 		return false
 	end
 	local stats = S.recomputeStats(player:getLevel(), C().vocationBaseLevel, player:getCapacity(),
@@ -925,7 +939,7 @@ function vocTalk.onSay(player, words, param)
 	end
 	player:save()
 	player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"You are now %s. Health, mana and capacity follow the new vocation; skills and magic level are kept; your passive tree was reset for free. Relog if anything looks stale.",
 		newVoc:getDescription()))
 	return false

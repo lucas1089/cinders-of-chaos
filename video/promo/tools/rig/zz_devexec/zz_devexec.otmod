@@ -1,0 +1,9 @@
+Module
+  name: zz_devexec
+  description: TEST ONLY (trailer rig client, never shipped): runs /devexec/cmd.lua of the client folder when it changes
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 2000
+  scripts: [ devexec ]
+  @onLoad: DevExec.init()

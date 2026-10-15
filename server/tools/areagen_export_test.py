@@ -26,7 +26,8 @@ ok(ax._esc(b'\x01\xfd\xfe\xff') == b'\x01\xfd\xfd\xfd\xfe\xfd\xff', 'escape of F
 
 areas = ax.run_dump('all')
 ids = [a['id'] for a in areas]
-ok(ids == ['emberdeep', 'ossuary', 'cinderfall', 'vault'], 'four areas in config order: %s' % ids)
+ok(ids == ['emberdeep', 'ossuary', 'cinderfall', 'vault', 'marrow', 'crucible', 'sanctum', 'throne'],
+   'eight areas in config order (the four deep dungeons 6-9 last): %s' % ids)
 for a in areas:
     ok(not a['problems'], a['id'] + ': no validator problem: %s' % a['problems'])
     ok(a['arrival'] and a['exit'], a['id'] + ': arrival and exit')

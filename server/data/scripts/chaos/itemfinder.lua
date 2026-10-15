@@ -251,6 +251,7 @@ local function rewardTables()
 		rift = loadTable(ChaosRiftConfig, base .. "rift_config.lua"),
 		tower = Chaos.tower,
 		worldBoss = Chaos.worldBoss,
+		pocketBoss = loadTable(Chaos.pocketBossConfig, base .. "pocketboss_config.lua"),
 		invasion = loadTable(nil, base .. "invasion_config.lua"),
 		arena = loadTable(nil, base .. "arena_config.lua"),
 		battleground = loadTable(nil, base .. "battleground_config.lua"),
@@ -261,7 +262,8 @@ local function rewardTables()
 		goblin = loadTable(nil, base .. "treasure_goblin_config.lua"),
 		achievements = loadTable(nil, base .. "achievements_data.lua"),
 		factions = loadTable(nil, base .. "factions_config.lua"),
-		uber = loadTable(ChaosUberConfig, base .. "uber_config.lua")
+		uber = loadTable(ChaosUberConfig, base .. "uber_config.lua"),
+		conquest = ChaosConquest and ChaosConquest.catalog and {cfg = ChaosConquest.cfg, offers = ChaosConquest.catalog()} or nil
 	}
 end
 
@@ -319,12 +321,36 @@ function F.build()
 	stats.errors = errors
 	stats.timings = table.concat(timings, ", ")
 	F.index = idx
+	F.briefs = {}
 	print(string.format("[Chaos itemfinder] %d items, %d rows in %d ms (%s), about %.1f MB of Lua memory",
 		stats.items, stats.rows, stats.ms, stats.timings, stats.kb / 1024))
 	for _, e in ipairs(errors) do
 		print("[Chaos itemfinder] " .. e)
 	end
 	return stats
+end
+
+-- the short sources of an item tooltip (item_tooltip.lua): K.brief and, when the Conquest vendor sells the item, its
+-- token price (conquest.lua, guarded). Cached per server id until the index is rebuilt.
+F.briefs = F.briefs or {}
+function F.brief(id)
+	id = tonumber(id)
+	if not cfg.enabled or not id or not F.index or not F.index.ready then
+		return nil
+	end
+	local cached = F.briefs[id]
+	if cached == nil then
+		cached = K.brief(F.index, id) or false
+		if ChaosConquest and ChaosConquest.offerOf then
+			local ok, o = pcall(ChaosConquest.offerOf, id)
+			if ok and type(o) == "table" and tonumber(o.price) then
+				cached = cached or {s = {}}
+				cached.t = tonumber(o.price)
+			end
+		end
+		F.briefs[id] = cached
+	end
+	return cached or nil
 end
 
 function F.send(player, action, data)

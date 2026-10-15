@@ -123,6 +123,32 @@ for _, c in ipairs(c1) do
 		assert(c.name ~= "Wolf", "elite needs eliteMinSpawns")
 	end
 end
+
+-- pack combat (pace): cfg.goalMult multiplies the kill counts (the same roll, x the monster's factor)
+do
+	cfg.goalMult = function(mon) return mon.name == "Troll" and 5 or 1 end
+	local pb = B.roll(day, cfg, small)
+	cfg.goalMult = nil
+	for i, c in ipairs(pb.bands[1].contracts) do
+		local plain = c1[i]
+		eq(c.name, plain.name, "pace: the same monsters")
+		if c.name == "Troll" and c.type == "hunt" then
+			eq(c.count % 10, 0, "pace: hunt kills a multiple of 10")
+			assert(math.abs(c.count - plain.count * 5) <= 25, "pace: hunt kills x5 (" .. c.count .. ")")
+		elseif c.name == "Troll" then
+			eq(c.count, plain.count * 5, "pace: elite kills x5")
+		else
+			eq(c.count, plain.count, "pace: factor 1 unchanged")
+		end
+	end
+	-- the real curves: a level 15 pool monster (hunting level 30) and a level 980 level-scaled one
+	dofile("data/scripts/chaos/pace_core.lua")
+	local pc = dofile("data/scripts/chaos/pace_config.lua")
+	local g1 = ChaosPaceCore.goalOfEntry(pc, {level = 6, exp = 12, health = 30})
+	eq(g1, 1, "pace: a level 12 hunt keeps its goals")
+	local g2 = ChaosPaceCore.goalOfEntry(pc, {level = 980, exp = 13900, health = 22000})
+	assert(g2 > 20, "pace: a level-scaled late-game monster needs 20x+ the kills")
+end
 eq(#sb.bands[2].contracts, 0, "nothing fits band 2")
 
 -- ---------------------------------------------------------------- kills
@@ -240,5 +266,48 @@ local nextBoard = B.roll(day + 1, cfg, pool)
 eq(B.activeCount(entries, nextBoard.day), 0, "old contracts do not count against the limit")
 eq(B.expire(entries, nextBoard.day), cfg.maxActive, "all expired")
 eq(next(entries), nil, "nothing left")
+
+-- ---------------------------------------------------------------- rerolls (Candlemarks)
+eq(cfg.rerollStorage, 7102403, "reroll charges storage")
+do
+	local b = B.roll(day, cfg, pool)
+	for _, band in ipairs(b.bands) do
+		local avoid = {}
+		for _, c in ipairs(band.contracts) do avoid[c.name:lower()] = true end
+		for _, c in ipairs(band.contracts) do
+			local nc = B.rerollContract(c, cfg, pool, avoid, B.rng(1234 + band.index))
+			if nc then
+				eq(nc.key, c.key, "same key " .. c.key)
+				eq(nc.type, c.type, "same type " .. c.key)
+				eq(nc.tier, c.tier, "same elite tier " .. c.key)
+				assert(not avoid[nc.name:lower()], "a monster off the band's board: " .. nc.name)
+				assert(nc.count and nc.count > 0, "a count " .. c.key)
+				local inBand = false
+				for _, e in ipairs(c.type == "boss" and pool.bosses or pool.hunt) do
+					if e.name == nc.name and e.level >= cfg.bands[c.band].pick[1] and e.level <= cfg.bands[c.band].pick[2] then
+						inBand = true
+					end
+				end
+				assert(inBand, "from the band's window: " .. nc.name)
+				-- the player's override: the entry names the new monster
+				local e = {monster = nc.name, required = nc.count, status = 0}
+				local own = B.overrideOf(c, e, function() return nil end)
+				eq(own.name, nc.name, "override name"); eq(own.count, nc.count, "override count")
+				assert(own.rerolled, "marked as rerolled")
+				assert(B.matches(own, nc.name, "legendary"), "kills of the new monster count")
+				assert(not B.matches(own, c.name, "legendary"), "the old monster no longer counts")
+			end
+		end
+	end
+	local c = b.bands[1].contracts[1]
+	eq(B.overrideOf(c, {monster = c.name, required = 5}), c, "not rerolled: the board's contract")
+	eq(B.overrideOf(c, nil), c, "no entry: the board's contract")
+	eq(B.rerollContract({band = 99, name = "x", type = "hunt"}, cfg, pool, {}, B.rng(1)), nil, "unknown band: none")
+	local everything = {}
+	for _, e in ipairs(pool.hunt) do everything[e.name:lower()] = true end
+	local hunt
+	for _, bc in ipairs(b.bands[1].contracts) do if bc.type == "hunt" then hunt = bc end end
+	eq(B.rerollContract(hunt, cfg, pool, everything, B.rng(1)), nil, "nothing else fits: none")
+end
 
 print("bounty: all asserts passed")

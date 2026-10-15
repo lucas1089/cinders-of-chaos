@@ -387,7 +387,7 @@ do
 		eq(s.opcode, ChaosOpcodes.dungeons, "patched: the dungeon opcode")
 	end
 	eq(b.pos.x, 100, "patched: the player stays on the tile")
-	-- the window's queue runs the dungeon (capped at 45 minutes)
+	-- the window's queue runs the dungeon (capped at 15 minutes since pack combat)
 	events["ChaosDungeonsExtended:creature"].onExtendedOpcode(b, ChaosOpcodes.dungeons,
 		{action = "queue", data = {id = 1, difficulty = 1}})
 	eq(b.pos.x, 510, "the queue runs the dungeon")

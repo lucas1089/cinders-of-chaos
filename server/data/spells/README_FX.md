@@ -122,8 +122,12 @@ damage; Frozen Crypt ice_lance + frost_glyph; Doomtide dome_blast_fire / storm_r
 Blightswarm toxic_burst; Purifying Wellspring healing_bloom; Ironbark Hide stone_ward; Briar Prison earth_spikes;
 Moonfang Pack / Wild Bond teleport_in; Verdant Sanctuary grove_glyph; Primordial Squall earth_spikes / frost_nova;
 Dawnpiercer holy_spear + holy_hit; Skewering Line thrust (by facing); Blessed Earth / Consecration holy_seal;
-Lightward / Aegis of Faith dawn_aegis; Final Verdict / Judgement holy_spear + holy_smite; Reaping Gyre / Whirling Heel
-whirlwind; Earthbreaker earth_spikes; Red Frenzy / Bloodrage aura_burst_red; Iron Bellow / Banner Call / Bushido Focus /
+Lightward / Aegis of Faith dawn_aegis; Final Verdict / Judgement holy_spear + holy_smite; Reaping Gyre / Whirling Heel /
+Blade Flurry whirlwind (the Flurry: ninja_vanish / samurai_parry as class effects); Iaido Sweep heavy_cleave (towards
+the target, on the first tile of the cut); Palm Shockwave aura_burst_gold on the target; Shadow Ricochet shadow_bolt
+jumps + void_eye; Iron Chain lightning_orb links + stone_rise; Bone Shrapnel bone_spear + bone_spear burst; Sanctified
+Ground holy_seal; Shield Wave dome_blast_holy in front; Fan of Knives razor_disc (the stock throwing knife without the
+pack); Earthbreaker earth_spikes; Red Frenzy / Bloodrage aura_burst_red; Iron Bellow / Banner Call / Bushido Focus /
 Zealotry aura_burst_gold; Vaulting Cleave / Skyfall Cleave heavy_cleave and Iaijutsu sword_slash and Feral Command
 claw_rake (towards the target); Colossus Fall earth_spikes + blunt_smash; Hall of Mirrors arcane_sigil; Umbral Stride /
 Shadow Step / Shadow Veil shade_vanish / shade_appear; Flickerdash blink_vanish / blink_appear; Shattered Psyche
@@ -271,3 +275,15 @@ of light (holy, arcane), a meteor, a lightning burst, a holy sanctum, a void rif
 their alpha stays soft, unlike the pixel-art sets above. In things_custom24 (effects 635-655); the ids are in
 `server/data/lib/chaos_big_fx_ids.lua`. Which spell, boss and use sends which, and the switch `ChaosBigFx.BIG_FX`
 (on since 2026-10-13 (pair 24 at 407ad9b6)): server/README.md "Large spell effects". Sizes and build: client/MANIFEST.md "Large spell effects".
+
+## Pack farming spell effects (pair 27 trial, effects 674-758, missiles 154-160; switch off)
+
+The nine pack farming spells get effects and missiles of their own. 34 more spells of the Mystic, Templar, Warrior,
+Thief, Necromancer and Monk lines get new impacts, circles and status looks (frost nova, meteor, chain lightning, holy
+smite, divine judgement, whirlwind, berserk, backstab, parry, blood drain, shadow claws and more). Also: the four vigils,
+the Iron Palm stun, the buff bar, level up (no words in the art), loot beams, reward effects, the Town Portal and the
+boss danger circle. Cut from the owner's oblique effect sets of 2026-10-15 by `client/tools/sprites/gen_pack27_fx.py`
+(spec `art_import/pack27_fx.csv`, packs per pick in `art_import/pack27_sources.csv`), appended by `import_fx_art.py`
+(ids in `server/data/lib/chaos_pack27_fx_ids.lua`, catalogue `pack27_fx_catalog.csv`). Effects only: no damage, area
+or timing changes. Built only as a local trial pair; the switch `ChaosPack27Fx.PAIR27_FX` stays off: server/README.md
+"Pack farming spell effects", client/MANIFEST.md "Pack farming spell effects (pair 27 trial)".

@@ -20,6 +20,12 @@
 --   * Logout and death: the engine removes summons with their owner; the rest and the timers are forgotten.
 -- The minions' own guard: the owner's hits and those of its other summons do not hurt them (area spells).
 
+if not Chaos then
+	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosNecro then
 	dofile("data/scripts/chaos/necro_lib.lua")
 end
@@ -78,7 +84,7 @@ local function restAll(player, list)
 	end
 	N.restPut(M.rest, player:getId(), os.time(), rested)
 	if #rested > 0 then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, "Your minions rest until you leave the protection zone.")
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Your minions rest until you leave the protection zone."))
 	end
 end
 

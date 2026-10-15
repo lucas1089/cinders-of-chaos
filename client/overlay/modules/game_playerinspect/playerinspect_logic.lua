@@ -6,6 +6,7 @@
 --   tree   {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}   the passive tree, after the
 --          equipment; a big one comes in parts "S..", "P..", "E.." (Chaos.sendChunked), joined by L.joinPart
 --   denied {code, text}      privacy {allow}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PlayerInspectLogic = {}
 local L = PlayerInspectLogic
@@ -47,7 +48,7 @@ end
 function L.lines(d)
   local C = L.COLORS
   local out = {}
-  local voc = d.voc ~= '' and d.voc or 'No vocation'
+  local voc = d.voc ~= '' and d.voc or tr('No vocation')
   out[#out + 1] = { text = string.format('Level %d %s', tonumber(d.level) or 0, voc), color = C.text }
   if d.ascended then out[#out + 1] = { text = 'Ascended class', color = C.gold } end
   if type(d.guild) == 'table' and d.guild.name then
@@ -55,12 +56,12 @@ function L.lines(d)
   else
     out[#out + 1] = { text = 'No guild', color = C.dim }
   end
-  out[#out + 1] = { text = string.format('Achievement points: %s', L.numberText(d.ach)), color = C.text }
+  out[#out + 1] = { text = tr('Achievement points: %s', L.numberText(d.ach)), color = C.text }
   local rift = tonumber(d.rift) or 0
-  out[#out + 1] = rift > 0 and { text = string.format('Best rift sealed: tier %d', rift), color = C.text }
+  out[#out + 1] = rift > 0 and { text = tr('Best rift sealed: tier %d', rift), color = C.text }
     or { text = 'No rift sealed yet', color = C.dim }
   local trials = tonumber(d.trials) or 0
-  out[#out + 1] = trials > 0 and { text = string.format('Vocation Trials: tier %d of %d', trials, L.MAX_TRIAL_TIER), color = C.text }
+  out[#out + 1] = trials > 0 and { text = tr('Vocation Trials: tier %d of %d', trials, L.MAX_TRIAL_TIER), color = C.text }
     or { text = 'No Vocation Trial cleared', color = C.dim }
   return out
 end
@@ -84,7 +85,7 @@ end
 -- the Passive Tree button's text: "Passive Tree (42)" or nil when there is no tree to show
 function L.treeButtonText(state)
   if not state.tree then return nil end
-  return string.format('Passive Tree (%d)', #state.tree.nodes)
+  return tr('Passive Tree (%d)', #state.tree.nodes)
 end
 
 -- the parts of a chunked message (Chaos.sendChunked: "S" first part, "P" middle parts, "E" last part; a message that fits

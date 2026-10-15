@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua and chaos_gems.lua
 end
@@ -128,13 +131,26 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and creature ~= target then
+	if creature and target and creature ~= target and not eventKnown(target, "ChaosGemsDealt") then
 		local p = playerOf(creature)
 		local t = p and cache[p:getId()]
 		if t and hasDamage(t) then
-			target:registerEvent("ChaosGemsDealt")
+			registerOnce(target, "ChaosGemsDealt")
 		end
 	end
 	return RETURNVALUE_NOERROR
@@ -296,10 +312,9 @@ end
 
 -- ---------------------------------------------------------------- use-with on every gem
 local function hint(player, id, prefix)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
-		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind "
-		.. "to combine three into one of the next quality.", prefix or "", G.gemName(id), G.gemSummary(id),
-		G.gemOf(id).tier < G.TIERS and "a gem" or "nothing (Perfect is the best quality)"))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind to combine three into one of the next quality.", prefix and Chaos.t(player, prefix) or "", G.gemName(id), G.gemSummary(id),
+		Chaos.t(player, G.gemOf(id).tier < G.TIERS and "a gem" or "nothing (Perfect is the best quality)")))
 end
 
 local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey)

@@ -2,6 +2,7 @@
 -- Rows of the window (server server/data/scripts/chaos/cosmetics.lua, cosmetics_core.lua C.rows), the chat name colour
 -- (only the speaker's name, only player messages, only colours the server sent), the label accent, and the Collection
 -- tab (server exclusives.lua: the exclusives of every visual kind and how each is earned).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CosmeticsLogic = {}
 local CL = CosmeticsLogic
@@ -56,8 +57,8 @@ function CL.tabRows(rows, kind, line, lineName)
   end
   if kind ~= 'spellskin' or line then
     out[1] = { id = 0, kind = kind, line = line, name = 'Default', owned = true, selected = not anySelected,
-      desc = CL.DEFAULT_TEXT[kind], how = kind == 'spellskin' and ('Every spell of your ' .. (type(lineName) == 'string' and lineName or 'line')) or
-      'Every character' }
+      desc = CL.DEFAULT_TEXT[kind], how = kind == 'spellskin' and (tr('Every spell of your %s', (type(lineName) == 'string' and lineName or tr('line')))) or
+      tr('Every character') }
   end
   for _, r in ipairs(mine) do out[#out + 1] = r end
   for _, r in ipairs(other) do
@@ -105,9 +106,9 @@ function CL.subText(r)
   if r.collection then
     return (r.kindName or r.kind or '') .. (r.owned and ' - Unlocked' or (' - ' .. (r.how or 'Locked')))
   end
-  if r.otherLine then return tostring(r.lineName or 'Another line') .. ' - not your class' end
-  if r.id == 0 then return r.selected and 'In use' or 'Default' end
-  if r.selected then return 'In use' end
+  if r.otherLine then return tr('%s - not your class', tostring(r.lineName or 'Another line')) end
+  if r.id == 0 then return r.selected and tr('In use') or 'Default' end
+  if r.selected then return tr('In use') end
   if r.owned then return 'Unlocked' end
   return r.how or 'Locked'
 end

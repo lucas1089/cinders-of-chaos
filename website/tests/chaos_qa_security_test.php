@@ -23,10 +23,10 @@ function check(bool $ok, string $what): void {
 }
 
 // ------------------------------------------------------------------ Mercado Pago partial refund
-$approved = array('id' => 555, 'status' => 'approved', 'status_detail' => 'partially_refunded', 'transaction_amount' => 24.95,
+$approved = array('id' => 555, 'status' => 'approved', 'status_detail' => 'partially_refunded', 'transaction_amount' => 24.90,
 	'currency_id' => 'BRL', 'external_reference' => 'coc-x', 'payment_method_id' => 'pix', 'transaction_amount_refunded' => 10.00);
 $n = ChaosPayMercadoPago::normalize($approved);
-check($n['status'] === 'refunded' && $n['refunded_cents'] === 1000 && $n['amount_cents'] === 2495, 'partial refund is a refund of 10.00');
+check($n['status'] === 'refunded' && $n['refunded_cents'] === 1000 && $n['amount_cents'] === 2490, 'partial refund is a refund of 10.00');
 $approved['transaction_amount_refunded'] = 0;
 $approved['status_detail'] = 'accredited';
 check(ChaosPayMercadoPago::normalize($approved)['status'] === 'approved', 'no refund: still approved');
@@ -58,7 +58,7 @@ check($svc->makeCharge($id), 'charge made');
 $token = $db->rows('SELECT token FROM chaos_coin_payments WHERE order_id = ?', array($id))[0]['token'];
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = ?", array($id));
 $answers = array('GET https://api.mercadopago.com/v1/payments/555' => array('id' => 555, 'status' => 'approved',
-	'status_detail' => 'partially_refunded', 'transaction_amount' => 24.95, 'currency_id' => 'BRL', 'external_reference' => $token,
+	'status_detail' => 'partially_refunded', 'transaction_amount' => 24.90, 'currency_id' => 'BRL', 'external_reference' => $token,
 	'payment_method_id' => 'pix', 'transaction_amount_refunded' => 10.00));
 $res = $svc->webhook('mercadopago', $sign('555'), '{}', 'data.id=555&type=payment');
 $p = $db->rows('SELECT reversal, reversal_cents FROM chaos_coin_payments WHERE order_id = ?', array($id))[0];
@@ -71,19 +71,19 @@ $answers = array('POST https://api.mercadopago.com/v1/payments' => array('id' =>
 	'point_of_interaction' => array('transaction_data' => array('qr_code' => 'PIX'))));
 $svc->makeCharge($id2);
 $token2 = $db->rows('SELECT token FROM chaos_coin_payments WHERE order_id = ?', array($id2))[0]['token'];
-$answers = array('GET https://api.mercadopago.com/v1/payments/556' => array('id' => 556, 'status' => 'approved', 'transaction_amount' => 24.95,
+$answers = array('GET https://api.mercadopago.com/v1/payments/556' => array('id' => 556, 'status' => 'approved', 'transaction_amount' => 24.90,
 	'currency_id' => 'BRL', 'external_reference' => $token2, 'payment_method_id' => 'pix', 'transaction_amount_refunded' => 5.00));
 $svc->webhook('mercadopago', $sign('556'), '{}', 'data.id=556&type=payment');
 check($db->rows('SELECT status FROM chaos_coin_orders WHERE id = ?', array($id2))[0]['status'] === 'refunded', 'partial refund before crediting: not credited');
 
 // ------------------------------------------------------------------ a second, larger refund after crediting
-// order $id: refunded 10.00 of 24.95 and flagged above; the game server handled it, then the rest is refunded
+// order $id: refunded 10.00 of 24.90 and flagged above; the game server handled it, then the rest is refunded
 $db->exec('UPDATE chaos_coin_payments SET reversal_done = 1, reversal_coins = 100 WHERE order_id = ?', array($id));
-$answers = array('GET https://api.mercadopago.com/v1/payments/555' => array('id' => 555, 'status' => 'refunded', 'transaction_amount' => 24.95,
-	'currency_id' => 'BRL', 'external_reference' => $token, 'payment_method_id' => 'pix', 'transaction_amount_refunded' => 24.95));
+$answers = array('GET https://api.mercadopago.com/v1/payments/555' => array('id' => 555, 'status' => 'refunded', 'transaction_amount' => 24.90,
+	'currency_id' => 'BRL', 'external_reference' => $token, 'payment_method_id' => 'pix', 'transaction_amount_refunded' => 24.90));
 $res = $svc->webhook('mercadopago', $sign('555'), '{}', 'data.id=555&type=payment');
 $p = $db->rows('SELECT reversal, reversal_cents, reversal_done, reversal_coins FROM chaos_coin_payments WHERE order_id = ?', array($id))[0];
-check($res[1] === 'reversal' && (int)$p['reversal_cents'] === 2495 && (int)$p['reversal_done'] === 0 && (int)$p['reversal_coins'] === 100,
+check($res[1] === 'reversal' && (int)$p['reversal_cents'] === 2490 && (int)$p['reversal_done'] === 0 && (int)$p['reversal_coins'] === 100,
 	'a larger refund raises reversal_cents and asks the game server again (it keeps what it took)');
 check($svc->webhook('mercadopago', $sign('555'), '{}', 'data.id=555&type=payment')[1] === 'already', 'the same refund again: nothing');
 // a chargeback after a partial refund: the whole donation
@@ -95,7 +95,7 @@ $svc->makeCharge($id4);
 $token4 = $db->rows('SELECT token FROM chaos_coin_payments WHERE order_id = ?', array($id4))[0]['token'];
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = ?", array($id4));
 $db->exec("UPDATE chaos_coin_payments SET reversal = 'refunded', reversal_cents = 500, reversal_done = 1, reversal_coins = 50, paid_at = ? WHERE order_id = ?", array($now, $id4));
-$answers = array('GET https://api.mercadopago.com/v1/payments/557' => array('id' => 557, 'status' => 'charged_back', 'transaction_amount' => 24.95,
+$answers = array('GET https://api.mercadopago.com/v1/payments/557' => array('id' => 557, 'status' => 'charged_back', 'transaction_amount' => 24.90,
 	'currency_id' => 'BRL', 'external_reference' => $token4, 'payment_method_id' => 'pix', 'transaction_amount_refunded' => 5.00));
 $res = $svc->webhook('mercadopago', $sign('557'), '{}', 'data.id=557&type=payment');
 $p = $db->rows('SELECT reversal, reversal_cents, reversal_done FROM chaos_coin_payments WHERE order_id = ?', array($id4))[0];
@@ -111,7 +111,7 @@ $svc->makeCharge($id5);
 $token5 = $db->rows('SELECT token FROM chaos_coin_payments WHERE order_id = ?', array($id5))[0]['token'];
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = ?", array($id5));
 $db->exec('UPDATE chaos_coin_payments SET paid_at = ?, checked = ? WHERE order_id = ?', array($now, $now, $id5));
-$answers = array('GET https://api.mercadopago.com/v1/payments/558' => array('id' => 558, 'status' => 'charged_back', 'transaction_amount' => 24.95,
+$answers = array('GET https://api.mercadopago.com/v1/payments/558' => array('id' => 558, 'status' => 'charged_back', 'transaction_amount' => 24.90,
 	'currency_id' => 'BRL', 'external_reference' => $token5, 'payment_method_id' => 'pix', 'transaction_amount_refunded' => 0));
 $svc->runOnce();
 check($db->rows('SELECT reversal FROM chaos_coin_payments WHERE order_id = ?', array($id5))[0]['reversal'] === '', 'not again within a day');

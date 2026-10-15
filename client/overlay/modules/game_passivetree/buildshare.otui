@@ -18,7 +18,7 @@ ChaosWindow
     text-wrap: true
     text-auto-resize: false
     text-align: center
-    text: Export copies your build code to the clipboard. Paste a code and press Import to preview it in the tree.
+    !text: tr('Export copies your build code to the clipboard. Paste a code and press Import to preview it in the tree.')
 
   ChaosTextEdit
     id: codeEdit
@@ -35,7 +35,7 @@ ChaosWindow
     anchors.left: parent.left
     margin-top: 6
     width: 110
-    text: Export
+    !text: tr('Export')
     @onClick: modules.game_passivetree.exportBuild()
 
   ChaosButton
@@ -44,7 +44,7 @@ ChaosWindow
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 6
     width: 110
-    text: Import
+    !text: tr('Import')
     @onClick: modules.game_passivetree.importBuild()
 
   ChaosButton
@@ -53,7 +53,7 @@ ChaosWindow
     anchors.right: parent.right
     margin-top: 6
     width: 110
-    text: Paste
+    !text: tr('Paste')
     @onClick: modules.game_passivetree.pasteBuild()
 
   ChaosSeparator
@@ -80,7 +80,7 @@ ChaosWindow
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     width: 110
-    text: Apply Build
+    !text: tr('Apply Build')
     enabled: false
     @onClick: modules.game_passivetree.applyBuild()
 
@@ -89,7 +89,7 @@ ChaosWindow
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     width: 110
-    text: Cancel Preview
+    !text: tr('Cancel Preview')
     enabled: false
     @onClick: modules.game_passivetree.cancelBuildPreview()
 
@@ -98,5 +98,5 @@ ChaosWindow
     anchors.bottom: parent.bottom
     anchors.right: parent.right
     width: 110
-    text: Close
+    !text: tr('Close')
     @onClick: modules.game_passivetree.closeBuildShare()

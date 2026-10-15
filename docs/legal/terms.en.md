@@ -59,7 +59,8 @@ give the penalty reviews it. There is one appeal per penalty, and that answer is
 
 ## 6. What is not allowed
 
-- Using bots, macros, cheat programs, or modified or third-party clients.
+- Using bots, macros, cheat programs, or modified or third-party clients. The official client's helper is allowed while
+  you play; leaving it running for hours with nobody at the keyboard counts as using a bot.
 - Using bugs or glitches for an advantage, or spreading them, instead of telling the staff. A bug you report yourself
   is never punished.
 - Duplicating items or coins, attacking the server, trying to break into accounts or overloading the service.

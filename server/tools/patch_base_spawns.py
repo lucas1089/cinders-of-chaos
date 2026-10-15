@@ -21,9 +21,18 @@ What spawn_tuning.json asks for, in this order (server/README.md "Spawn density 
   move             {"at": [x, y, z], "to": [x, y]}: the entry at that absolute position moves to another tile of the same
                    floor (entries on a blocking tile, found against the map when the list was made)
   remove           {"at": [x, y, z]}: the entry at that position is taken out (kept as an XML comment)
+  dungeons         {"id", "boxes": [[x1, y1, z1, x2, y2, z2], ...], "keep": n}: a base dungeon keeps at most n of its
+                   hunting monsters (pack combat: runs of 10-15 minutes, server/README.md "Pack combat (pace)"); the
+                   others are taken out like `remove`, spread evenly (by floor, y, x); no fill spawn lands inside
   add              {"area": id, "at": [x, y, z], "like": [x, y, z]}: a new one-monster spawn at `at` with the monster
                    and the final spawntime of the existing entry at `like`; `at` must lie in the area's box. The
                    positions were checked against the map (walkable, no protection zone, no house, no floor change)
+  fill             the name of a JSON file next to this one (tools/spawn_density.json, written by
+                   tools/gen_spawn_density.py from the map): per hunt {"id", "z", "likes": [[x, y], ...], "add":
+                   [[x, y, index in likes, dx, dy, ...], ...]}; each add is a new spawn block on floor z (marked
+                   chaosadd="<id>") with the monster and final spawntime of the like entry at its centre and at each
+                   further dx, dy (the pack fill's blocks of 3), so every base-map hunt reaches the density of
+                   server/README.md "Fill" and "Pack combat (pace)"
 Monster names are never written in the JSON: an entry is named by its position, a new one copies an existing one.
 
 Every change carries a marker, so a run first undoes the previous run and then applies the JSON again: a second run
@@ -215,7 +224,7 @@ def apply(text, tuning, monsters):
     """returns (new text, counts, problems); text must be a restored file"""
     blocks = parse(text)
     times, counts = plan_spawntimes(blocks, tuning, monsters)
-    counts.update({'moved': 0, 'removed': 0, 'added': 0})
+    counts.update({'moved': 0, 'removed': 0, 'added': 0, 'filled': 0})
     problems = []
     by_pos = {}
     for b, center, tags in blocks:
@@ -235,6 +244,14 @@ def apply(text, tuning, monsters):
         if not hits:
             problems.append('remove %s: no entry there' % list(at))
         removes.update(hits)
+    dungeon_boxes, dungeon_out = [], set()
+    for dg in tuning.get('dungeons') or []:
+        boxes = [tuple(b) for b in dg['boxes']]
+        dungeon_boxes += boxes
+        thin = plan_dungeon(blocks, boxes, int(dg['keep']), monsters, removes)
+        removes.update(thin)
+        dungeon_out.update(thin)
+        counts['dungeon'] = counts.get('dungeon', 0) + len(thin)
     final = {}  # (b, j) -> final spawntime, for the adds
     counter = [0]
 
@@ -251,7 +268,8 @@ def apply(text, tuning, monsters):
             key = (b, j)
             final[key] = num(attr(tag, 'spawntime'))
             if key in removes:
-                counts['removed'] += 1
+                if key not in dungeon_out:
+                    counts['removed'] += 1
                 return '<!-- chaosremoved: %s -->' % tag
             new = tag
             if key in times:
@@ -281,7 +299,7 @@ def apply(text, tuning, monsters):
             problems.append('add %s: outside the box of area %s' % (list(at), area['id']))
             continue
         hits = by_pos.get(like, [])
-        hits = [h for h in hits if h not in removes]
+        hits = [h for h in hits if h not in removes or h in dungeon_out]
         if not hits:
             problems.append('add %s: no entry at like %s' % (list(at), list(like)))
             continue
@@ -292,6 +310,30 @@ def apply(text, tuning, monsters):
                      '\t\t<monster name="%s" x="0" y="0" z="%d" spawntime="%d" />%s\t</spawn>%s'
                      % (at[0], at[1], at[2], num(ad.get('radius'), 2), area['id'], eol, name, at[2], st, eol, eol))
         counts['added'] += 1
+    for area in tuning.get('_fill') or []:
+        z = area['z']
+        likes = []
+        for lx, ly in area['likes']:
+            hits = [h for h in by_pos.get((lx, ly, z), []) if h not in removes or h in dungeon_out]
+            if not hits:
+                problems.append('fill %s: no entry at like %s' % (area['id'], [lx, ly, z]))
+            likes.append(hits[0] if hits else None)
+        for row in area['add']:
+            x, y, li = row[0], row[1], row[2]
+            if in_boxes(dungeon_boxes, x, y, z):
+                continue  # a base dungeon keeps its own count (tuning "dungeons")
+            offs = [(0, 0)] + [(row[k], row[k + 1]) for k in range(3, len(row) - 1, 2)]
+            hit = likes[li] if 0 <= li < len(likes) else None
+            if hit is None:
+                continue
+            b, j = hit
+            name = attr(blocks[b][2][j], 'name')
+            st = final.get((b, j), 60)
+            mons = ''.join('\t\t<monster name="%s" x="%d" y="%d" z="%d" spawntime="%d" />%s' % (name, dx, dy, z, st, eol)
+                           for dx, dy in offs)
+            added.append('\t<spawn centerx="%d" centery="%d" centerz="%d" radius="2" chaosadd="%s">%s%s\t</spawn>%s'
+                         % (x, y, z, area['id'], eol, mons, eol))
+            counts['filled'] += len(offs)
     if added:
         k = out.rfind('</spawns>')
         if k < 0:
@@ -299,6 +341,33 @@ def apply(text, tuning, monsters):
         else:
             out = out[:k] + ''.join(added) + out[k:]
     return out, counts, problems
+
+
+def in_boxes(boxes, x, y, z):
+    return any(b[0] <= x <= b[3] and b[1] <= y <= b[4] and b[2] <= z <= b[5] for b in boxes)
+
+
+def plan_dungeon(blocks, boxes, keep, monsters, removes):
+    """{(block, index)} of the entries to take out of a base dungeon: its hunting monsters (huntable, not a boss) inside
+    the boxes, beyond `keep`, spread evenly over the dungeon (sorted by floor, y, x), so the run model fits 15 minutes
+    (server/README.md "Pack combat (pace)", base dungeons). Bosses, NPCs and non-hunting monsters stay."""
+    found = []
+    for b, center, tags in blocks:
+        for j, tag in enumerate(tags):
+            if (b, j) in removes:
+                continue
+            x, y, z = entry_pos(center, tag)
+            if in_boxes(boxes, x, y, z) and huntable(monsters.get((attr(tag, 'name') or '').lower())):
+                found.append(((z, y, x, b, j), (b, j)))
+    found.sort()
+    n = len(found)
+    if n <= keep:
+        return set()
+    out = set()
+    for i, (_k, key) in enumerate(found):
+        if (i + 1) * keep // n == i * keep // n:
+            out.add(key)
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ report
@@ -313,6 +382,18 @@ def report(text, tuning, monsters, rate_spawn):
     view = float(model.get('viewBlockFactor', 1.25))
     tier_hp = float(model.get('tierHealth', 1.11))
     hp_bonus = float(model.get('levelHealthBonus', 0.0074))
+
+    # pack combat (pace, README "Pack combat (pace)"): one hunter's kills per hour by hunting level, the pack-cycle
+    # model of the median class (base monsters / level-scaled sets), in place of the 0.47-efficiency formula
+    pace = model.get('paceKillsPerHour')
+
+    def lin(points, x):
+        if x <= points[0][0]:
+            return points[0][1]
+        for (xa, ya), (xb, yb) in zip(points, points[1:]):
+            if x <= xb:
+                return ya + (yb - ya) * (x - xa) / float(xb - xa)
+        return points[-1][1]
 
     def dps(level):
         if level < 100:
@@ -345,6 +426,8 @@ def report(text, tuning, monsters, rate_spawn):
                 hp = m.get('health', 1) * (1 + hp_bonus * (m['minLevel'] + m['maxLevel']) / 2 if scaled else 1) * tier_hp
                 aoe = 0.75 if scaled and lvl >= 600 else 1.0
                 kills = min(kcap, 3600.0 * eff * dps(lvl) * aoe / max(1.0, hp))
+                if pace:
+                    kills = lin(pace['scaled' if scaled else 'base'], lvl)
                 r['hunters'] += supply / len(items) / kills
     lines = ['| Band | Spawn blocks | Monsters | Avg respawn s | Respawn kills/h | Hunters it holds |', '|---|---|---|---|---|---|']
     for (lo, hi), r in zip(bands, rows):
@@ -389,7 +472,10 @@ def main(argv):
             print('%s: mapName not found, pass --spawn' % cfg_path)
             return 1
         spawn_path = os.path.join(data, 'world', name + '-spawn.xml')
-    tuning = json.loads(read(opts.get('--tuning', DEFAULT_TUNING)))
+    tuning_path = opts.get('--tuning', DEFAULT_TUNING)
+    tuning = json.loads(read(tuning_path))
+    if tuning.get('fill'):
+        tuning['_fill'] = json.loads(read(os.path.join(os.path.dirname(os.path.abspath(tuning_path)), tuning['fill'])))['areas']
     dry = opts.get('--dry-run')
     reg_path = os.path.join(data, 'monster', 'monsters.xml')
     if os.path.isfile(reg_path):

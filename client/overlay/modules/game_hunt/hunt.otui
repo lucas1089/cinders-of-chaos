@@ -212,7 +212,7 @@ ChaosMainWindow
     id: hintLabel
     phantom: false
     anchors.left: parent.left
-    anchors.right: meterButton.left
+    anchors.right: restockButton.left
     anchors.verticalCenter: closeButton.verticalCenter
     margin-right: 8
     text-align: left
@@ -220,6 +220,16 @@ ChaosMainWindow
     height: 28
     !text: tr('Alt+H opens and closes this window.')
     !tooltip: tr('Loot is counted at NPC sell prices (coins at face value), supplies at NPC buy prices.')
+
+  ChaosButton
+    id: restockButton
+    anchors.right: meterButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 4
+    width: 72
+    !text: tr('Restock')
+    !tooltip: tr('In town: buy back the potions, runes and spears this session used, at NPC prices plus a small fee, from your gold and bank.')
+    @onClick: modules.game_hunt.restock()
 
   ChaosButton
     id: meterButton

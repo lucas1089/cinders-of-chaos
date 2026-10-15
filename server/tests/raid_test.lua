@@ -363,6 +363,10 @@ eq(#K.uniquesOf(cfg, "sovereign"), 5, "the final boss can give every raid unique
 eq(#K.uniquesOf(cfg, "ulthar"), 1, "a boss its own")
 eq(K.rollUnique(cfg, cfg.bosses[1], 151, function(a) return a end), nil, "the roll misses")
 eq(K.rollUnique(cfg, cfg.bosses[1], 150, function(a) return a end).name, "Gravewarden's Verdict", "the roll hits")
+-- bad-luck protection (conquest.lua): the chance x the character's multiplier, at most 10000
+eq(K.rollUnique(cfg, cfg.bosses[1], 300, function(a) return a end, 2).name, "Gravewarden's Verdict", "x2 hits at 300")
+eq(K.rollUnique(cfg, cfg.bosses[1], 301, function(a) return a end, 2), nil, "x2 misses at 301")
+check(K.rollUnique(cfg, cfg.bosses[1], 10000, function(a) return a end, 1000) ~= nil, "capped at 10000")
 for _ = 1, 50 do
 	local lv = K.gearLevel(cfg, math.random)
 	check(lv >= 120 and lv <= 130, "gear item level 120-130")

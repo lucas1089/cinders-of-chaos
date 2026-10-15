@@ -1,6 +1,7 @@
 -- Store pouches window: the logic without client API (tested by pouchesview_test.lua).
 -- The rules mirror the server's pouches_core.lua: list, gold, uniques, gear (+ minRarity), supplies, gems, other,
 -- overflow (take what a full Orbs / Rift Key Pouch passes on; on when the server does not say).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PouchesView = {}
 local V = PouchesView
@@ -23,12 +24,12 @@ end
 
 -- the line under the title: whether this character has the Loot Bag
 function V.statusText(owned, title)
-  title = title or 'Loot Bag'
+  title = title or tr('Loot Bag')
   if type(owned) ~= 'table' then return '' end
   if owned.loot then
-    return 'You have a ' .. title .. '. It collects while you carry it (backpack or a bag inside it).'
+    return tr('You have a %s. It collects while you carry it (backpack or a bag inside it).', title)
   end
-  return 'You have no ' .. title .. ' yet: Store > Convenience. These rules are kept for when you do.'
+  return tr('You have no %s yet: Store > Convenience. These rules are kept for when you do.', title)
 end
 
 -- the right-click hook: the item looks like the Loot Bag (client id from the server) and carries the item lock

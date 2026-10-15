@@ -30,6 +30,7 @@ Membros alimentam a Summoning Stone no salão da guilda e invocam o [chefe da gu
 
 - O [calendário](wiki:event:calendar) tem {{events.count}} dias de bônus fixos: experiência, loot, monstros raros e pontos da torre.
 - [Treasure goblins](wiki:event:goblin) aparecem em qualquer lugar e fogem com o loot. Pegue antes que escapem.
+- O seu **Nemesis**: um monstro que mata você (nível 50 ou mais) pode voltar atrás de você, com nome próprio. Ele reaparece enquanto você caça a espécie dele e fica mais forte cada vez que mata você de novo. Mate-o para ganhar um troféu com o nome dele e o título Avenger of Self.
 
 ::: if invasion.on
 - [Invasões](wiki:event:invasion): ondas de invasores numa cidade ou área de caça, e depois o chefe deles. Nível {{invasion.minLevel}} ou mais para as recompensas.

@@ -242,7 +242,10 @@ ok(ChaosDungeonIsInside(a), "dungeon 4: still a member on floor 9")
 a.pos = P(temple.x, temple.y, temple.z) -- the boss room's exit teleport
 advance(3000)
 ok(not ChaosDungeonIsInside(a), "dungeon 4: out of the area: the run is over")
-ok(a.storage[50203] and a.storage[50203] > os.time(), "dungeon 4: leaving counts as a failed attempt")
+ok(a.storage[50203] and a.storage[50203] > os.time() and a.storage[50203] - os.time() <= Chaos.dungeons.failCooldownSeconds,
+	"dungeon 4: leaving is a failed attempt: the 5 minute fail cooldown")
+eq(Chaos.dungeons.failCooldownSeconds, 300, "fail cooldown 5 minutes")
+eq(Chaos.dungeons.cooldownSeconds, 900, "clear cooldown 15 minutes")
 ok(creatures[101] == nil and creatures[102] == nil and creatures[103] == nil, "dungeon 4: the clean-up reaches every floor")
 ok(creatures[104] == outsider, "dungeon 4: a monster outside the area stays")
 
@@ -263,6 +266,60 @@ local d = newCreature(4, "Gil", P(31896, 32217, 8), true)
 d.getLastLogout = function() return 0 end
 login.onLogin(d)
 eq(d.pos.x, temple.x, "dungeon 1: a login in the boss room after a restart goes to the temple")
+
+-- ------------------------------------------------------------------ the boss unlock at progressNeeded (85%)
+eq(Chaos.dungeons.progressNeeded, 85, "the boss unlocks at 85% of the run's monsters")
+do
+	ItemType = function(id) return {getId = function() return id end, getClientId = function() return id end} end
+	local x2 = Chaos.dungeons.extra[2]
+	local unlocked = 0
+	x2.unlock = function() unlocked = unlocked + 1 end
+	local e = newCreature(5, "Hal", P(32369, 32241, 7), true)
+	local f = newCreature(6, "Ivo", P(32368, 32241, 7), true)
+	local mons = {}
+	for i = 1, 20 do
+		mons[i] = newCreature(200 + i, "tornado", P(31700 + i, 32400, 8), false)
+	end
+	local boss = newCreature(250, "master of the elements", P(31800, 32500, 8), false)
+	sent = {}
+	ext.onExtendedOpcode(e, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	ext.onExtendedOpcode(f, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	local st
+	for _, s in ipairs(sent) do
+		if s.action == "start" and s.p == e then st = s.data end
+	end
+	eq(st and st.need, 85, "dungeon 2: start tells the client the threshold")
+	local kill = events["ChaosDungeonKill:creature"]
+	for i = 1, 16 do
+		mons[i]:remove()
+	end
+	advance(3000)
+	eq(unlocked, 0, "80%: still locked")
+	local function unlockedSent(p)
+		for _, s in ipairs(sent) do
+			if s.p == p and s.action == "killed" and s.data.unlocked then return true end
+		end
+		return false
+	end
+	ok(not unlockedSent(e), "80%: no unlock sent")
+	mons[17]:remove()
+	advance(3000)
+	eq(unlocked, 1, "85%: the dungeon's unlock hook (gate, boss)")
+	ok(unlockedSent(e) and unlockedSent(f), "85%: every member gets the unlock")
+	ok(e.msgs[#e.msgs]:find("Boss unlocked!", 1, true) ~= nil, "85%: the console line")
+	advance(3000)
+	eq(unlocked, 1, "unlocked once")
+	ok(ChaosDungeonIsInside(e), "the run goes on until the boss dies")
+	boss:remove()
+	kill.onKill(e, boss)
+	advance(15000)
+	ok(not ChaosDungeonIsInside(e) and not ChaosDungeonIsInside(f), "the boss after the unlock: the run is won")
+	local cd = Chaos.dungeons.cooldownSeconds
+	ok(e.storage[50203] and e.storage[50203] > os.time() + cd - 60 and e.storage[50203] <= os.time() + cd,
+		"a cleared run: the short cooldown (" .. tostring(e.storage[50203] and e.storage[50203] - os.time()) .. " s)")
+	ok(f.storage[50203] and f.storage[50203] > os.time(), "a cleared run: every member gets it")
+	x2.unlock = nil
+end
 
 print(string.format("dungeons_area_test: %d checks, %d failed", checks, fails))
 if fails > 0 then

@@ -10,6 +10,17 @@
 ChaosDailyCore = ChaosDailyCore or {}
 local D = ChaosDailyCore
 
+-- a text in `lang` through ChaosI18n (i18n_core.lua) when it is loaded, else English (milestoneText)
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 -- ---------------------------------------------------------------- days
 -- YYYYMMDD -> a day number (consecutive calendar days differ by 1; noon avoids daylight saving edges)
 function D.dayNumber(key)
@@ -155,13 +166,13 @@ function D.itemsText(items, name)
 	return table.concat(parts, ", ")
 end
 
-function D.milestoneText(m, name)
+function D.milestoneText(m, name, lang)
 	if not m then
 		return ""
 	end
 	local text = D.itemsText(m.items, name)
 	if m.title then
-		text = text .. (text ~= "" and " and " or "") .. "the title \"" .. m.title .. "\""
+		text = text .. (text ~= "" and T(lang, " and ") or "") .. T(lang, "the title \"%s\"", m.title)
 	end
 	return text
 end

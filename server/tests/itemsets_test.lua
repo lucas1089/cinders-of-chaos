@@ -665,6 +665,23 @@ eq(got.id, 29559) eq(got.custom.chaos_set, "ashwarden") eq(got.custom.chaos_uniq
 eq(got.attrs[ITEM_ATTRIBUTE_NAME], "Ashwarden Bulwark")
 ok(messages[1]:find("Oath of the Ashen Warden", 1, true), "the finder is told the set") eq(#broadcasts, 1)
 eq(S.grantChase(finder, "raid", "sovereign", {final = true, itemFind = 1}, scripted({10000})), nil, "a miss gives nothing")
+-- bad-luck protection (conquest.lua, group "set"): x3 turns a roll of twice the chance into a hit; misses and hits recorded
+do
+	local recs = {}
+	ChaosConquest = {pityMult = function() return 3 end,
+		pityRecord = function(_, g, hit, id) recs[#recs + 1] = {g = g, hit = hit, id = id} end}
+	local c = S.chaseChance(S.byKey.ashwarden, "raid", "sovereign", {final = true, level = 800})
+	eq(S.grantChase(finder, "raid", "sovereign", {final = true, itemFind = 1}, scripted({c * 2, 1, 3})), "Ashwarden Bulwark",
+		"pity x3 turns the roll into a drop")
+	eq(recs[1].g, "set") eq(recs[1].hit, true) eq(recs[1].id, 29559)
+	ChaosConquest.pityMult = function() return 1 end
+	eq(S.grantChase(finder, "raid", "sovereign", {final = true, itemFind = 1}, scripted({c * 2})), nil, "without pity a miss")
+	eq(recs[2].hit, false, "the miss is recorded")
+	local n = #recs
+	S.grantChase(finder, "raid", "morwen", {itemFind = 1}, scripted({1}))
+	eq(#recs, n, "a source without a set roll records nothing")
+	ChaosConquest = nil
+end
 
 -- ---------------------------------------------------------------- salvage and transmog
 local SC = dofile("data/scripts/chaos/salvage_core.lua")

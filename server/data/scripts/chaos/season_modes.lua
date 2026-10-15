@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not (ChaosSeason and ChaosSeason.realmOf and Chaos.seasonConfig) then
 	dofile("data/scripts/chaos/season.lua")
 end
@@ -155,7 +158,7 @@ function S.modesJoined(player, season, mode)
 	db.asyncQuery(string.format("INSERT INTO `%s` (`at`, `season`, `player_id`, `event`, `detail`) VALUES (%d, %d, %d, 'mode', %s)",
 		cfg.tables.log, now(), season.id, guid, db.escapeString(mode.key)))
 	if mode.key ~= "standard" then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Mode: %s. It holds until %s ends.", mode.name, season.name))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Mode: %s. It holds until %s ends.", mode.name, season.name))
 	end
 	if mode.hc then
 		registerHardcore(player)
@@ -610,12 +613,10 @@ function S.modesFall(player, killer, corpse)
 	end
 	S.ladderCache = {}
 	log(string.format("%s fell at level %d (%s)", player:getName(), level, cause))
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You have fallen. %s is no longer a Hardcore character: " ..
-		"it stays on the %s ladder as fallen and plays on as a standard character, with everything it has.", player:getName(),
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You have fallen. %s is no longer a Hardcore character: it stays on the %s ladder as fallen and plays on as a standard character, with everything it has.", player:getName(),
 		season.name))
 	if hc.announce then
-		Game.broadcastMessage(string.format("%s has fallen in Hardcore at level %d (%s).", player:getName(), level, cause),
-			MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s has fallen in Hardcore at level %d (%s).", player:getName(), level, cause)
 	end
 end
 
@@ -832,7 +833,7 @@ function login.onLogin(player)
 	S.hcState[player:getId()] = {loginAt = now(), lastBeat = now()}
 	if hardcoreNow(player) then
 		registerHardcore(player)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Hardcore: you cannot be hurt for %d seconds after logging in.",
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Hardcore: you cannot be hurt for %d seconds after logging in.",
 			hc.loginSeconds))
 	end
 	feedAchievements(player)

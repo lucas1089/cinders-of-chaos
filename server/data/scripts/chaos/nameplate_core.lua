@@ -46,10 +46,12 @@ N.SOURCE_PRIORITY = {staff = 100}
 N.MAX_TITLE = 24
 N.MAX_GUILD = 30
 
-function N.clean(s, max)
-	if s == nil then
-		return ""
-	end
+-- clean(s, max) is pure and runs for every title of every online player at each plate check (nameplate.lua): the
+-- results are kept (a few thousand distinct strings at most; the memo starts over past N.MEMO_MAX entries)
+N.MEMO_MAX = 4096
+local memo, memoSize = {}, 0
+
+local function cleanRaw(s, max)
 	s = tostring(s):gsub("[%c|]", " "):gsub("^%s+", ""):gsub("%s+$", ""):gsub("%s%s+", " ")
 	if max and #s > max then
 		s = s:sub(1, max):gsub("%s+$", "")
@@ -57,15 +59,48 @@ function N.clean(s, max)
 	return s
 end
 
-local function hexColor(c)
-	if type(c) ~= "string" then
-		return nil
+local function remember(k, v)
+	if memoSize >= N.MEMO_MAX then
+		memo, memoSize = {}, 0
 	end
+	memo[k] = v
+	memoSize = memoSize + 1
+	return v
+end
+
+function N.clean(s, max)
+	if s == nil then
+		return ""
+	end
+	local k = type(s) == "string" and ((max or 0) .. "\0" .. s) or nil
+	if k then
+		local v = memo[k]
+		if v then
+			return v
+		end
+		return remember(k, cleanRaw(s, max))
+	end
+	return cleanRaw(s, max)
+end
+
+local function hexColorRaw(c)
 	c = c:gsub("^#", "")
 	if #c == 6 and not c:find("[^%x]") then
 		return c:lower()
 	end
-	return nil
+	return false
+end
+
+local function hexColor(c)
+	if type(c) ~= "string" then
+		return nil
+	end
+	local k = "#\0" .. c
+	local v = memo[k]
+	if v == nil then
+		v = remember(k, hexColorRaw(c))
+	end
+	return v or nil
 end
 
 -- t = {key?, text | title, color?, at?, frame?, priority?}; source = the registry name
@@ -81,9 +116,10 @@ function N.normalize(t, source)
 		return nil
 	end
 	source = tostring(source or t.source or "other")
+	local key = N.clean(t.key, 64)
 	local frame = t.frame or N.SOURCE_FRAME[source]
 	return {
-		key = N.clean(t.key, 64) ~= "" and N.clean(t.key, 64) or (source .. ":" .. text:lower()),
+		key = key ~= "" and key or (source .. ":" .. text:lower()),
 		text = text,
 		color = hexColor(t.color) or N.COLORS[source] or N.COLORS.other,
 		at = tonumber(t.at) or 0,

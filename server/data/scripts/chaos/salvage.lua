@@ -25,6 +25,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua")
 end
@@ -105,6 +108,16 @@ local function isStackable(item)
 	return ok and v or false
 end
 
+-- the Conquest Tokens a unique gives when salvaged (conquest.lua; nil when it is no unique or tokens are off)
+function S.uniqueTokens(item)
+	local CQ = ChaosConquest
+	if not cfg.uniqueTokens or not CQ or not CQ.offerOf or not CQ.cfg or not C.isUnique(item) then
+		return nil
+	end
+	local o = CQ.offerOf(item:getId())
+	return o and ChaosConquestCore.salvageTokens(CQ.cfg, o.price) or nil
+end
+
 -- the info table of salvage_core.lua for an engine item
 function S.infoOf(player, item)
 	local s = ChaosGems and ChaosGems.read(item) or {count = 0, filled = 0}
@@ -126,6 +139,7 @@ function S.infoOf(player, item)
 		level = C.levelOf(item),
 		unique = C.isUnique(item),
 		setPiece = ChaosItemSets and ChaosItemSets.pieceOf and ChaosItemSets.pieceOf(item) ~= nil or nil, -- itemsets.lua
+		tokens = S.uniqueTokens(item), -- conquest.lua: a unique gives Conquest Tokens
 		sockets = s.count or 0,
 		gems = s.filled or 0,
 		highTiers = high,
@@ -182,10 +196,13 @@ local function orbName(key)
 end
 
 local function rowText(info, roll)
-	local text = string.format("%s (level %d): %d %s", info.setPiece and "Set piece" or C.rarityName(info.rarity), info.level, roll.shards,
+	local text = string.format("%s (level %d): %d %s", info.setPiece and "Set piece" or (info.unique and "Unique" or C.rarityName(info.rarity)), info.level, roll.shards,
 		roll.shards == 1 and cfg.shard.name or cfg.shard.plural)
 	if roll.orb then
 		text = text .. " + 1 " .. orbName(roll.orb)
+	end
+	if roll.tokens then
+		text = text .. " + " .. roll.tokens .. " Conquest Tokens"
 	end
 	return text
 end
@@ -395,10 +412,19 @@ local function salvageOne(player, data)
 		orbs[roll.orb] = 1
 	end
 	local inbox = giveRolls(player, roll.shards, orbs)
+	if roll.tokens then
+		-- the item is gone from the character: save it before the tokens go into the database
+		if Chaos.saveCharacter(player) then
+			ChaosConquest.grant(player, "salvage", roll.tokens, name)
+		else
+			print("[Chaos salvage] " .. name .. " of " .. player:getName() .. ": the save failed, " .. roll.tokens .. " tokens not given")
+		end
+	end
 	local text = rowText(info, roll)
 	logRows(player, {{item = name, text = text}})
 	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT or 9)
-	local msg = string.format("Salvaged %s: %s.%s", name, text, inbox > 0 and " Your backpack is full: some went to your inbox." or "")
+	local msg = Chaos.t(player, "Salvaged %s: %s.%s", name, text,
+		inbox > 0 and Chaos.t(player, " Your backpack is full: some went to your inbox.") or "")
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
@@ -452,9 +478,9 @@ local function salvageBatch(player, data)
 		orbText[#orbText + 1] = string.format("%dx %s", n, orbName(key))
 	end
 	table.sort(orbText)
-	local msg = string.format("Salvaged %d items: %d %s%s.%s", #rows, shards, cfg.shard.plural,
-		gotOrbs > 0 and (" and " .. table.concat(orbText, ", ")) or "",
-		inbox > 0 and " Your backpack is full: some went to your inbox." or "")
+	local msg = Chaos.t(player, "Salvaged %d items: %d %s%s.%s", #rows, shards, cfg.shard.plural,
+		gotOrbs > 0 and (Chaos.t(player, " and ") .. table.concat(orbText, ", ")) or "",
+		inbox > 0 and Chaos.t(player, " Your backpack is full: some went to your inbox.") or "")
 	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT or 9)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
@@ -502,7 +528,7 @@ local function combine(player, data)
 	local text = string.format("%d %s -> %dx %s", cost, cfg.shard.plural, count, orb.name)
 	logRows(player, {{orb = "Shards", item = orb.name, text = text}})
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or 13)
-	local msg = text .. "." .. ((inbox or 0) > 0 and " Your backpack is full: it went to your inbox." or "")
+	local msg = text .. "." .. ((inbox or 0) > 0 and Chaos.t(player, " Your backpack is full: it went to your inbox.") or "")
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
@@ -529,6 +555,10 @@ end
 
 function S.onAction(player, action, data)
 	if not bench() then
+		return
+	end
+	-- each action reads the crafting log for the answer (opcode fuzz test): one per 150 ms; the scope has its own limit
+	if action ~= "salvageScope" and ChaosRateLimit and not ChaosRateLimit.allow(player, "salvage.action", 150) then
 		return
 	end
 	if action == "salvage" then

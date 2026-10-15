@@ -18,11 +18,14 @@ return {
 	-- characters behind one IP count once (multiclient.lua allows 2 per IP)
 	onePerIp = true,
 
-	-- respawn interval in percent of the spawntime: 100 below minHunters, then perExtraHunter less for every hunter
-	-- after the first, never under minPercent. 2 hunters 85%, 3 70%, 4 55%, 5 or more 50%.
+	-- respawn interval in percent of the spawntime: soloPercent for one hunter alone (pack combat, 2026-10-14: monsters
+	-- die 2-5x faster), then perExtraHunter less for every hunter after the first, never under minPercent.
+	-- 1 hunter 80%, 2 70%, 3 60%, 4 50%, 5 or more 45% (was 100 / 85 / 70 / 55 / 50). Without soloPercent a zone needs
+	-- minHunters and starts from 100.
+	soloPercent = 80,
 	minHunters = 2,
-	perExtraHunter = 15,
-	minPercent = 50,
+	perExtraHunter = 10,
+	minPercent = 45,
 
 	-- one zone per busy grid cell (cellSize x cellSize sqm, one floor); the spawns whose centre lies in the cell or
 	-- within margin sqm of it get the zone's percent (the busiest zone wins where two overlap)

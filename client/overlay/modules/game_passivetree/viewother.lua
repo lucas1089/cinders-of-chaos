@@ -40,7 +40,7 @@ function showOtherTree(data)
   local banner = child('viewBanner')
   if banner then
     local label = banner:getChildById('viewText')
-    label:setText(string.format('%s: %d passive node%s (read-only)', tostring(data.name or '?'), #data.nodes,
+    label:setText(tr('%s: %d passive node%s (read-only)', tostring(data.name or '?'), #data.nodes,
       #data.nodes == 1 and '' or 's'))
     banner:setVisible(true)
   end

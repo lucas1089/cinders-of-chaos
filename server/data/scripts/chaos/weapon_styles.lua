@@ -63,7 +63,15 @@ local function resistance(creature, ctype)
 	if not creature:isMonster() then
 		return 0
 	end
-	local name = creature:getName():lower()
+	-- the type name: monsters of other types shown under one name (rift names, invaders) have their own resistances
+	local name
+	if Chaos and Chaos.monsterTypeName then
+		name = Chaos.monsterTypeName(creature)
+	else
+		local ok, n = pcall(function() return creature:getType():name() end)
+		name = ok and type(n) == "string" and n ~= "" and n or creature:getName()
+	end
+	name = tostring(name):lower()
 	local r = resCache[name]
 	if r == nil then
 		local ok, list = pcall(function() return creature:getType():getElementList() end)
@@ -194,10 +202,23 @@ end
 hit:register()
 
 -- the event has to sit on whatever a player attacks (same approach as the passive tree / equipment scripts)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local target = EventCallback
 target.onTargetCombat = function(creature, victim)
 	if creature and victim and creature:isPlayer() then
-		victim:registerEvent("ChaosWeaponStyle")
+		registerOnce(victim, "ChaosWeaponStyle")
 	end
 	return RETURNVALUE_NOERROR
 end

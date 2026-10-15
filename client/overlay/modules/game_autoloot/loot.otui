@@ -81,7 +81,7 @@ MainWindow
     anchors.top: lbl.bottom
     anchors.left: lbl.left
     margin: 10 0 0 0
-    placeholder: demon shield
+    !placeholder: tr('demon shield')
 
   Button
     id: add

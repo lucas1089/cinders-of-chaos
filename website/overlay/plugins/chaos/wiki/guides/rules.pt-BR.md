@@ -5,6 +5,7 @@ As regras mantêm o jogo justo. Ao jogar você aceita as [regras](/page.php?p=ru
 ## O essencial
 
 - Sem bots, macros ou clientes modificados. As ferramentas do próprio jogo são permitidas: hunt tracker, filtro de loot, autoloot e auto seller.
+- O helper do cliente oficial (cura, regras de magia, rotação automática) é permitido enquanto você joga. Deixá-lo rodando por horas sem ninguém no teclado conta como bot: um aviso na primeira vez, depois as punições de bot.
 - Não use bugs. Denuncie em System > Report a Bug. Um bug que você mesmo reporta nunca é punido.
 - Respeite todos os canais. Nada de assédio, ameaças, ódio ou spam.
 - Nada de propaganda de outros jogos, servidores ou sites.

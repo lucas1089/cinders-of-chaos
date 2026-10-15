@@ -28,13 +28,13 @@ guardian, using a payment method they allowed. If a minor donated without permis
 
 | Pack | Chaos Coins as a thank-you | Pix | PayPal |
 |---|---|---|---|
-| Handful of Coins | 80 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Pouch of Coins | 250 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Sack of Coins | 825 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Chest of Coins | 1725 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Hoard of Coins | 5000 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Vault of Coins | 13000 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Starter Coins, once per account | 500 | [PREÇO EM R$] | [PREÇO EM US$] |
+| Handful of Coins | 100 | R$ 9,90 | US$ 1.98 |
+| Pouch of Coins | 250 | R$ 24,90 | US$ 4.98 |
+| Sack of Coins | 525 | R$ 49,90 | US$ 9.98 |
+| Chest of Coins | 1100 | R$ 99,90 | US$ 19.98 |
+| Hoard of Coins | 2875 | R$ 249,90 | US$ 49.98 |
+| Vault of Coins | 6000 | R$ 499,90 | US$ 99.98 |
+| Starter Coins, once per account | 500 | R$ 14,90 | US$ 2.98 |
 
 - Each account's first donation brings 100% more Chaos Coins (double), up to 1000 extra Chaos Coins (a pack of more than 1000 coins gets 1000 extra), except for the Starter Coins pack.
 - Payment is handled by Mercado Pago or PayPal, under their terms. We do not receive or store card numbers, bank account
@@ -74,18 +74,18 @@ guardian, using a payment method they allowed. If a minor donated without permis
 
 ## 7. Season Pass, creator codes and the Character Bazaar
 
-- **Season Pass.** The premium track of a season pass is unlocked with Chaos Coins ([PREÇO DO PASSE PREMIUM] Chaos
+- **Season Pass.** The premium track of a season pass is unlocked with Chaos Coins (600 Chaos
   Coins). It gives cosmetic items and some Chaos Coins back only, never gold, experience or game power. Its rewards
-  are those of the season it belongs to, and can be claimed until [PRAZO DE RESGATE DO PASSE] days after that season
+  are those of the season it belongs to, and can be claimed until 14 days after that season
   ends. Buying it late gives the rewards of the tiers already reached at once.
 - **Creator codes.** A creator code chosen on the website does not change your donation or the Chaos Coins you get. As
-  a thank-you from the server, the creator receives [PERCENTUAL DO CRIADOR] % of the Chaos Coins of your donations made
-  while the code is chosen, in the game, after [PRAZO DE CARÊNCIA DO CRIADOR] days. Nothing of this is paid in money.
+  a thank-you from the server, the creator receives 10 % of the Chaos Coins of your donations made
+  while the code is chosen, in the game, after 14 days. Nothing of this is paid in money.
   A creator code cannot be used by its own account, nor by accounts of the same person, connection or payer. A refunded
   or disputed donation gives the creator nothing. The creator agrees to these rules and to tell its audience that the
   code supports it ([REGRAS DE DIVULGAÇÃO DO CRIADOR]). We may switch a code off at any time.
 - **Character Bazaar.** Players may sell a character to another player on the website for Chaos Coins only. The
-  server keeps a fee of [TAXA DO BAZAR] % of the final price. The bid is held from the bidder's Chaos Coins until the
+  server keeps a fee of 10 % of the final price. The bid is held from the bidder's Chaos Coins until the
   auction ends and given back at once if the bidder is outbid or the auction is cancelled. At the end, the character
   moves to the winner's account with what it carries, and the seller receives the price less the fee. Season,
   Hardcore and Self-Found characters, guild leaders, characters with an open report and characters of an account that

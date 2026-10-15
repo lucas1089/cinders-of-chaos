@@ -16,6 +16,12 @@
 -- Health, mana and capacity follow the new vocation's gains (ChaosShopServices.recomputeStats, as the vocation
 -- change does). The client learns the new vocation from a fresh basic-data packet (0x9F, the one the server sends at
 -- login), so its spell list and action bar switch without a relog.
+if not Chaos then
+	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -158,7 +164,7 @@ function talk.onSay(player, words, param)
 	end
 	local newVoc = Vocation(newId)
 	if not newVoc then
-		player:sendCancelMessage("That vocation does not exist on this server.")
+		player:sendCancelMessage(Chaos.t(player, "That vocation does not exist on this server."))
 		return false
 	end
 	-- the class lock (class_unlocks.lua): the Monk, the Necromancer and the Templar need the account's unlock
@@ -181,15 +187,15 @@ function talk.onSay(player, words, param)
 	pos:sendMagicEffect(CONST_ME_HOLYAREA)
 	pos:sendMagicEffect(EFFECT[newId] or CONST_ME_GROUNDSHAKER)
 	if how == true then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"You switched for free: you are now %s. This was your only free switch; from now on only the store's Vocation Change changes it.",
 			newVoc:getDescription()))
 		return false
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"You have ascended: you are now %s. The choice is final; only the store's Vocation Change can undo it.",
 		newVoc:getDescription()))
-	Game.broadcastMessage(string.format("%s has ascended to %s.", player:getName(), newVoc:getName()), MESSAGE_EVENT_ADVANCE)
+	Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s has ascended to %s.", player:getName(), newVoc:getName())
 	return false
 end
 ChaosCommands.register("ascend", function(player, param) return talk.onSay(player, "", param) end)

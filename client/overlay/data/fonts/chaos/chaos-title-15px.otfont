@@ -2,7 +2,7 @@ Font
   name: chaos-title-15px
   texture: chaos-title-15px
   height: 22
-  glyph-size: 22 22
+  glyph-size: 18 22
   first-glyph: 32
   y-offset: 0
   spacing: -1 0

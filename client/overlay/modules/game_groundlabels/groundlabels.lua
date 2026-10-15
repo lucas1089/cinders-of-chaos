@@ -510,7 +510,7 @@ local pendingPick -- {key, row, at}: asked the server to put this item on top of
 local function pickUp(thing)
   local player = g_game.getLocalPlayer()
   if not player or not player:getInventoryItem(BACKPACK_POS.y) then
-    message('You have no backpack to put it in.')
+    message(tr('You have no backpack to put it in.'))
     return
   end
   g_game.move(thing, BACKPACK_POS, thing:getCount()) -- the engine walks there first when it is not next to you
@@ -546,7 +546,7 @@ end
 local function activate(l, mousePos, button)
   local thing = thingOf(l.t, l.row)
   if not thing then
-    message('That item is gone.')
+    message(tr('That item is gone.'))
     scheduleScan(0)
     return
   end

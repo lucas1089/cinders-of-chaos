@@ -134,14 +134,20 @@ for _, name in ipairs({"ChaosBuffBarThink", "ChaosBuffBarLogin", "ChaosBuffBarLo
 		"ChaosPartyFramesThink", "ChaosPartyFramesLogin", "ChaosPartyFramesLogout", "ChaosPartyFramesExtended"}) do
 	ok(events[name] ~= nil, "registered " .. name)
 end
-eq(events.ChaosBuffBarThink.ms, ChaosBuffs.cfg.tickMs, "buff tick"); eq(events.ChaosPartyFramesThink.ms, ChaosPartyFrames.cfg.tickMs, "party tick")
+-- the buff bar looks at a quarter of the characters per tick (by creature id): four ticks are one full pass
+local function buffTick()
+	for _ = 1, 4 do
+		events.ChaosBuffBarThink.onThink(250)
+	end
+end
+eq(events.ChaosBuffBarThink.ms, ChaosBuffs.cfg.tickMs / 4, "buff tick: a quarter of the players each time"); eq(events.ChaosPartyFramesThink.ms, ChaosPartyFrames.cfg.tickMs, "party tick")
 eq(events.ChaosBuffBarExtended.kind, "extendedopcode", "buff opcode event type"); eq(events.ChaosPartyFramesLogin.kind, "login", "login event type")
 
 -- ------------------------------------------------------------------ the buff bar
 local A = newPlayer("Aria", 1000, 1000, 7)
 events.ChaosBuffBarLogin.onLogin(A)
 ok(A._events.ChaosBuffBarExtended and A._events.ChaosBuffBarLogout, "login registers the events")
-events.ChaosBuffBarThink.onThink(1000)
+buffTick()
 eq(#take(A), 0, "nothing is sent to a client that did not ask")
 -- haste and poison on the character
 A._conds["1:0:0"] = 12000
@@ -158,14 +164,14 @@ eq(#take(A), 0, "sync is rate limited")
 -- quiet: nothing; time passes: still nothing
 clock = clock + 1000
 A._conds["1:0:0"], A._conds["2:0:0"] = 11000, 7000
-events.ChaosBuffBarThink.onThink(1000)
+buffTick()
 eq(#take(A), 0, "a countdown is not sent")
 -- a new debuff, a gone buff
 A._conds["3:-1:0"] = 59000
 A._conds["1:0:0"] = nil
 clock = clock + 1000
 A._conds["2:0:0"] = 6000
-events.ChaosBuffBarThink.onThink(1000)
+buffTick()
 sent = take(A)
 eq(#sent, 1, "one diff"); eq(sent[1].msg.action, "diff", "a diff")
 local d = sent[1].msg.data
@@ -173,13 +179,13 @@ eq(#d.add, 1, "one add"); eq(d.add[1].k, "infight", "in fight added"); eq(d.del[
 -- a recast of the poison moves the end
 clock = clock + 1000
 A._conds["2:0:0"] = 20000
-events.ChaosBuffBarThink.onThink(1000)
+buffTick()
 sent = take(A)
 ok(#sent == 1 and sent[1].msg.data.upd and sent[1].msg.data.upd[1].k == "poison" and sent[1].msg.data.upd[1].l == 20000, "recast = update")
 -- the periodic full list
 clock = clock + ChaosBuffs.cfg.resyncMs
 A._conds["2:0:0"], A._conds["3:-1:0"] = 5000, 29000
-events.ChaosBuffBarThink.onThink(1000)
+buffTick()
 sent = take(A)
 eq(#sent, 1, "resync message"); eq(sent[1].msg.action, "full", "a full list again")
 -- the cache serves the party frames without a second look
@@ -190,7 +196,7 @@ eq(ChaosBuffs.cache[A._id].at, before, "cached list is reused")
 ext(A, ChaosOpcodes.buffs, "off")
 A._conds["2:0:0"] = 99000
 clock = clock + 2000
-events.ChaosBuffBarThink.onThink(1000)
+buffTick()
 eq(#take(A), 0, "nothing after off")
 ok(ChaosBuffBar.watch[A._id] == nil, "not watching")
 ext(A, ChaosOpcodes.buffs, "bogus")

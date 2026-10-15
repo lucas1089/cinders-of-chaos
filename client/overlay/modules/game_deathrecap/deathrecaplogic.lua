@@ -3,6 +3,7 @@
 -- rate, element split sorted with colours), the killing blow, the header lines, the timeline of the last hits and the
 -- history list. Tested by deathrecaplogic_test.lua (luajit and lua5.3). Data comes from the server
 -- (server/data/scripts/chaos/deathrecap_core.lua R.build).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 DeathRecapLogic = {}
 local L = DeathRecapLogic
@@ -176,8 +177,8 @@ function L.killingBlow(recap)
   local kb = type(recap) == 'table' and type(recap.kb) == 'table' and recap.kb or {}
   local name = L.displayName(kb.n, kb.m)
   local a = num(kb.a)
-  if not a or a <= 0 then return string.format('Killing blow: %s', name) end
-  return string.format('Killing blow: %s, %s %s%s%s', name, L.exact(a), L.elementName(kb.el):lower(),
+  if not a or a <= 0 then return tr('Killing blow: %s', name) end
+  return tr('Killing blow: %s, %s %s%s%s', name, L.exact(a), L.elementName(kb.el):lower(),
     kb.c == 1 and ' (critical)' or '', kb.mp == 1 and ' (mana)' or '')
 end
 
@@ -189,9 +190,9 @@ function L.header(recap)
   local who = L.displayName(kb.n, kb.m)
   local h = {}
   if defeat then
-    h.title = string.format('Defeated by %s', who)
+    h.title = tr('Defeated by %s', who)
   else
-    h.title = string.format('Killed by %s', who)
+    h.title = tr('Killed by %s', who)
   end
   local sub = { L.clock(recap.at) }
   if num(recap.lvl) then sub[#sub + 1] = string.format('level %d', num(recap.lvl)) end
@@ -214,9 +215,9 @@ function L.header(recap)
     h.window = 'No hits recorded before the death'
     h.totals = ''
   else
-    h.window = string.format('Last %s before the death, %d hit%s', L.seconds(recap.dur), num(recap.nh) or 0,
+    h.window = tr('Last %s before the death, %d hit%s', L.seconds(recap.dur), num(recap.nh) or 0,
       (num(recap.nh) or 0) == 1 and '' or 's')
-    h.totals = string.format('Damage taken: %s', L.short(tot))
+    h.totals = tr('Damage taken: %s', L.short(tot))
     if mp > 0 then h.totals = h.totals .. string.format(' (health %s, mana %s)', L.short(hp), L.short(mp)) end
   end
   return h

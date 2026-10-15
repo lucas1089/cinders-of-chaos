@@ -7,6 +7,7 @@
 --    top = [{n, p}],
 --    week = {mods = [{k, n, d}], left, staff},
 --    brazier = {near, min, max, gold, per, room}}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 CommunityView = {}
 local V = CommunityView
 
@@ -77,7 +78,7 @@ end
 function V.stageLine(s, elapsed)
   local state = V.stageState(s, elapsed)
   if state == 'open' then return 'Active: ' .. V.countdown(V.left(s.left, elapsed)) .. ' left', V.COLORS.open end
-  if state == 'done' then return string.format('Reached at %d%%', num(s and s.pct)), V.COLORS.done end
+  if state == 'done' then return tr('Reached at %d%%', num(s and s.pct)), V.COLORS.done end
   return string.format('At %d%%', num(s and s.pct)), V.COLORS.todo
 end
 
@@ -88,7 +89,7 @@ end
 
 function V.stageTooltip(s)
   if not s then return '' end
-  return string.format('%s (%d%%)\n%s for everyone online, %d hours.', tostring(s.n or ''), num(s.pct), tostring(s.d or ''),
+  return tr('%s (%d%%)\n%s for everyone online, %d hours.', tostring(s.n or ''), num(s.pct), tostring(s.d or ''),
     num(s.h))
 end
 
@@ -109,7 +110,7 @@ function V.rewardText(data)
   local m = data and data.mine or {}
   local parts = {}
   if num(m.top) > 0 and m.title then
-    parts[#parts + 1] = string.format('Top %d: the title %s.', num(m.top), tostring(m.title))
+    parts[#parts + 1] = tr('Top %d: the title %s.', num(m.top), tostring(m.title))
   end
   if num(m.token) > 0 then
     local have = num(m.p) >= num(m.token)
@@ -152,13 +153,13 @@ end
 function V.weekText(data, elapsed)
   local w = data and data.week or {}
   local n = #list(w.mods)
-  if n == 0 then return 'No world modifier this week.' end
-  return string.format('This week (%s left)%s', V.countdown(V.left(w.left, elapsed)), w.staff and ', set by the staff' or '')
+  if n == 0 then return tr('No world modifier this week.') end
+  return tr('This week (%s left)%s', V.countdown(V.left(w.left, elapsed)), w.staff and tr(', set by the staff') or '')
 end
 
 function V.goalTimeText(data, elapsed)
   local g = data and data.goal or {}
-  return 'Ends in ' .. V.countdown(V.left(g.left, elapsed))
+  return tr('Ends in %s', V.countdown(V.left(g.left, elapsed)))
 end
 
 -- ---------------------------------------------------------------- the Brazier dialog
@@ -179,23 +180,23 @@ function V.donation(data, gold)
   local b = data and data.brazier or {}
   local per = math.max(1, num(b.per))
   gold = math.floor(num(gold))
-  if gold <= 0 then return 0, 0, 'Enter an amount of gold.' end
-  if gold < num(b.min) then return 0, 0, string.format('At least %s gold.', V.fmt(b.min)) end
+  if gold <= 0 then return 0, 0, tr('Enter an amount of gold.') end
+  if gold < num(b.min) then return 0, 0, tr('At least %s gold.', V.fmt(b.min)) end
   local take = math.min(gold, num(b.max) > 0 and num(b.max) or gold, num(b.room))
   take = math.floor(take / per) * per
-  if take <= 0 then return 0, 0, 'The Brazier takes no more from you today.' end
-  if take > num(b.gold) then return 0, 0, 'You do not have that much gold.' end
+  if take <= 0 then return 0, 0, tr('The Brazier takes no more from you today.') end
+  if take > num(b.gold) then return 0, 0, tr('You do not have that much gold.') end
   return take, math.floor(take / per), nil
 end
 
 -- the dialog's preview line and whether the button may be pressed
 function V.donateState(data, text)
   local b = data and data.brazier or {}
-  if not b.near then return 'Stand next to the Great Brazier in the temple.', false, V.COLORS.bad end
+  if not b.near then return tr('Stand next to the Great Brazier in the temple.'), false, V.COLORS.bad end
   local gold = V.parseGold(text)
   local take, pts, why = V.donation(data, gold)
   if why then return why, false, V.COLORS.bad end
-  return string.format('Give %s gold for %s points.', V.fmt(take), V.fmt(pts)), true, V.COLORS.ok
+  return tr('Give %s gold for %s points.', V.fmt(take), V.fmt(pts)), true, V.COLORS.ok
 end
 
 function V.quickAmounts(data)

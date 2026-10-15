@@ -31,7 +31,7 @@ end
 local function post(body, cb)
   local url = Api.url()
   if not url then
-    cb(nil, 'no account API URL')
+    cb(nil, tr('no account API URL'))
     return
   end
   local ok, err = pcall(HTTP.post, url, json.encode(body), function(data, httpErr)
@@ -43,7 +43,7 @@ local function post(body, cb)
     if decoded then
       cb(decoded, decoded.ok and nil or httpErr)
     else
-      cb(nil, httpErr or 'no answer')
+      cb(nil, httpErr or tr('no answer'))
     end
   end)
   if not ok then cb(nil, tostring(err)) end
@@ -66,7 +66,7 @@ function Api.ensureLogin(cb)
   if busy then return end
   local account, password = G and G.account, G and G.password
   if type(account) ~= 'string' or account == '' or type(password) ~= 'string' or password == '' then
-    finishLogin(false, 'Log in again to use the website features.')
+    finishLogin(false, tr('Log in again to use the website features.'))
     return
   end
   busy = true
@@ -107,7 +107,7 @@ function Api.create(form, cb)
     if not ok then cb(false, text) return end
     post(Core.createRequest(token, form, Core.nonce()), function(body, err)
       if body and body.ok then
-        cb(true, body.message or 'Created.', body)
+        cb(true, body.message or tr('Created.'), body)
       else
         if body and body.error == 'token' then token = nil end
         cb(false, Core.errorText(body, err), body)

@@ -72,7 +72,7 @@ check(ChaosPayService::priceCents(array('usd_cents' => 1000), 'pix', $pay) === 5
 check(ChaosPayService::priceCents($packs['coins250'], 'card', $pay) === null, 'no third method');
 check(ChaosPayService::money(7495, 'BRL') === 'R$ 74,95' && ChaosPayService::money(123456, 'BRL') === 'R$ 1.234,56', 'BRL text');
 check(ChaosPayService::money(1499, 'USD') === 'US$ 14.99' && ChaosPayService::money(100000, 'USD') === 'US$ 1,000.00', 'USD text');
-check(ChaosPayUtil::cents('24.95') === 2495 && ChaosPayUtil::cents(74.95) === 7495 && ChaosPayUtil::cents('5') === 500 && ChaosPayUtil::cents('0.1') === 10, 'cents parsing');
+check(ChaosPayUtil::cents('24.90') === 2490 && ChaosPayUtil::cents(74.95) === 7495 && ChaosPayUtil::cents('5') === 500 && ChaosPayUtil::cents('0.1') === 10, 'cents parsing');
 check(ChaosPayUtil::decimal(7495) === '74.95' && ChaosPayUtil::decimal(5) === '0.05', 'decimal');
 check(ChaosPayUtil::crc16('123456789') === '29B1', 'CRC16-CCITT check value');
 [$en, $pt] = ChaosPayService::thanks(975);
@@ -87,16 +87,16 @@ $db = fresh_db();
 $mpHttp = new FakeHttp();
 $mp = new ChaosPayMercadoPago('TEST-TOKEN', 'whsecret', '', 0, $mpHttp, $clock);
 $svc = new ChaosPayService($db, array('pix' => $mp), $packs, $pay, array('site_url' => 'https://site.example.invalid', 'reconcile_seconds' => 60), $clock, $logger);
-$r = $svc->createOrder(77, 'coins750', 'pix');
+$r = $svc->createOrder(77, 'coins500', 'pix');
 check($r['ok'] && !$r['reused'], 'order created');
 $id = $r['order_id'];
 $o = order_row($db, $id);
-check($o['status'] === 'pending' && (int)$o['amount_cents'] === 7495 && $o['currency'] === 'BRL', 'pending row with the server price');
-check((int)$o['coins'] + (int)$o['bonus'] + (int)$o['first_bonus'] === 1575, 'credit preview with the first donation bonus (double)');
-check($svc->createOrder(77, 'coins750', 'pix')['order_id'] === $id && $svc->createOrder(77, 'coins750', 'pix')['reused'], 'same pack: the open order');
-$x = $svc->createOrder(77, 'coins4000', 'pix');
+check($o['status'] === 'pending' && (int)$o['amount_cents'] === 4990 && $o['currency'] === 'BRL', 'pending row with the server price');
+check((int)$o['coins'] + (int)$o['bonus'] + (int)$o['first_bonus'] === 1025, 'credit preview with the first donation bonus (double)');
+check($svc->createOrder(77, 'coins500', 'pix')['order_id'] === $id && $svc->createOrder(77, 'coins500', 'pix')['reused'], 'same pack: the open order');
+$x = $svc->createOrder(77, 'coins2500', 'pix');
 check(!$x['ok'] && $x['order_id'] === $id, 'one open order at a time');
-check(!$svc->createOrder(77, 'coins750', 'paypal')['ok'], 'no provider for PayPal here');
+check(!$svc->createOrder(77, 'coins500', 'paypal')['ok'], 'no provider for PayPal here');
 check(!$svc->createOrder(77, 'nope', 'pix')['ok'], 'unknown pack');
 
 $mpHttp->on('POST', '/v1/payments', 201, array('id' => 123456789, 'status' => 'pending', 'date_of_expiration' => '2027-01-15T08:30:00.000-03:00',
@@ -107,7 +107,7 @@ $body = json_decode($req['body'], true);
 check($req['url'] === 'https://api.mercadopago.com/v1/payments' && $req['method'] === 'POST', 'POST /v1/payments');
 check($mpHttp->header($req, 'Authorization') === 'Bearer TEST-TOKEN', 'bearer token');
 check($mpHttp->header($req, 'X-Idempotency-Key') === $o['token'], 'idempotency key = order token');
-check($body['payment_method_id'] === 'pix' && $body['transaction_amount'] === 74.95 && $body['external_reference'] === $o['token'], 'Pix body');
+check($body['payment_method_id'] === 'pix' && $body['transaction_amount'] === 49.90 && $body['external_reference'] === $o['token'], 'Pix body');
 check($body['payer']['email'] === 'player@example.invalid', 'payer e-mail passed through');
 check($body['date_of_expiration'] === gmdate('Y-m-d\TH:i:s', $now + 1800) . '.000+00:00', 'expiry 30 minutes, ISO 8601');
 check(strpos($body['description'], 'Voluntary donation') !== false && strpos($body['description'], 'fully playable for free') !== false, 'donation wording in the description');
@@ -122,7 +122,7 @@ $sign = static function (string $dataId, string $reqId, string $ts, string $secr
 	$v1 = hash_hmac('sha256', "id:$dataId;request-id:$reqId;ts:$ts;", $secret);
 	return array('x-signature' => "ts=$ts,v1=$v1", 'x-request-id' => $reqId);
 };
-$payment = static function (string $status, $amount = 74.95, string $currency = 'BRL', string $ref = null, array $extra = array()) use ($o): array {
+$payment = static function (string $status, $amount = 49.90, string $currency = 'BRL', string $ref = null, array $extra = array()) use ($o): array {
 	return array_merge(array('id' => 123456789, 'status' => $status, 'status_detail' => '', 'transaction_amount' => $amount, 'currency_id' => $currency,
 		'external_reference' => $ref ?? $o['token'], 'payment_method_id' => 'pix', 'transaction_amount_refunded' => 0), $extra);
 };
@@ -144,19 +144,19 @@ $mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 7.49));
 $res = $svc->webhook('mercadopago', $sign('123456789', 'r3', '1800000000'), '{"type":"payment"}', $q);
 check($res[0] === 200 && order_row($db, $id)['status'] === 'open', 'wrong amount: not paid');
 check(strpos(order_row($db, $id)['note'], 'mismatch') === 0, 'mismatch noted');
-$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 74.95, 'USD'));
+$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 49.90, 'USD'));
 $svc->webhook('mercadopago', $sign('123456789', 'r4', '1800000000'), '{}', $q);
 check(order_row($db, $id)['status'] === 'open', 'wrong currency: not paid');
-$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 74.95, 'BRL', 'coc-1-2-other'));
+$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 49.90, 'BRL', 'coc-1-2-other'));
 $svc->webhook('mercadopago', $sign('123456789', 'r5', '1800000000'), '{}', $q);
 check(order_row($db, $id)['status'] === 'open', 'wrong reference: not paid');
-$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 74.95, 'BRL', null, array('payment_method_id' => 'visa')));
+$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 49.90, 'BRL', null, array('payment_method_id' => 'visa')));
 $svc->webhook('mercadopago', $sign('123456789', 'r5b', '1800000000'), '{}', $q);
 check(order_row($db, $id)['status'] === 'open', 'not a Pix payment: not paid');
 $mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('pending'));
 $svc->webhook('mercadopago', $sign('123456789', 'r6', '1800000000'), '{}', $q);
 check(order_row($db, $id)['status'] === 'open', 'pending stays open');
-$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 74.95, 'BRL', null,
+$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('approved', 49.90, 'BRL', null,
 	array('payer' => array('id' => '555', 'email' => 'Payer@Example.com', 'identification' => array('type' => 'CPF', 'number' => '123.456.789-09')))), true);
 $res = $svc->webhook('mercadopago', $sign('123456789', 'r7', '1800000000'), '{}', $q);
 check($res[0] === 200 && $res[1] === 'paid' && order_row($db, $id)['status'] === 'paid', 'approved: paid');
@@ -182,7 +182,7 @@ check($mpT->webhook($sign('123456789', 'r', (string)($now * 1000)), '{}', $q)['o
 
 // refund before the game server credited it
 $mpHttp->answers = array();
-$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('refunded', 74.95, 'BRL', null, array('transaction_amount_refunded' => 74.95)));
+$mpHttp->on('GET', '/v1/payments/123456789', 200, $payment('refunded', 49.90, 'BRL', null, array('transaction_amount_refunded' => 49.90)));
 $svc->webhook('mercadopago', $sign('123456789', 'r9', '1800000000'), '{}', $q);
 check(order_row($db, $id)['status'] === 'refunded', 'refunded before crediting');
 
@@ -193,9 +193,9 @@ $id2 = $r2['order_id'];
 $mpHttp->on('POST', '/v1/payments', 201, array('id' => 222, 'status' => 'pending', 'point_of_interaction' => array('transaction_data' => array('qr_code' => 'PIX2'))));
 $svc->makeCharge($id2);
 $o2 = order_row($db, $id2);
-check((int)$o2['amount_cents'] === 2495, 'R$ 24,95 for the 4.99 USD pack');
+check((int)$o2['amount_cents'] === 2490, 'R$ 24,90 for the 4.98 USD pack');
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = ?", array($id2));
-$mpHttp->on('GET', '/v1/payments/222', 200, array('id' => 222, 'status' => 'charged_back', 'transaction_amount' => 24.95, 'currency_id' => 'BRL',
+$mpHttp->on('GET', '/v1/payments/222', 200, array('id' => 222, 'status' => 'charged_back', 'transaction_amount' => 24.90, 'currency_id' => 'BRL',
 	'external_reference' => $o2['token'], 'payment_method_id' => 'pix'), true);
 $res = $svc->webhook('mercadopago', $sign('222', 'r10', '1800000000'), '{}', 'data.id=222&type=payment');
 $o2 = order_row($db, $id2);
@@ -208,7 +208,7 @@ $id3 = $svc->createOrder(77, 'coins250', 'pix')['order_id'];
 $mpHttp->on('POST', '/v1/payments', 201, array('id' => 333, 'status' => 'pending', 'point_of_interaction' => array('transaction_data' => array('qr_code' => 'PIX3'))));
 $svc->makeCharge($id3);
 $t3 = order_row($db, $id3)['token'];
-$mpHttp->on('GET', '/v1/payments/333', 200, array('id' => 333, 'status' => 'pending', 'transaction_amount' => 24.95, 'currency_id' => 'BRL', 'external_reference' => $t3, 'payment_method_id' => 'pix'), true);
+$mpHttp->on('GET', '/v1/payments/333', 200, array('id' => 333, 'status' => 'pending', 'transaction_amount' => 24.90, 'currency_id' => 'BRL', 'external_reference' => $t3, 'payment_method_id' => 'pix'), true);
 $now += 1800 + 61;
 $mpHttp->on('PUT', '/v1/payments/333', 200, array('id' => 333, 'status' => 'cancelled'));
 $st = $svc->runOnce();
@@ -219,7 +219,7 @@ $puts = array_filter($mpHttp->requests, static function ($q) { return $q['method
 check(count($puts) === 1 && json_decode(end($puts)['body'], true)['status'] === 'cancelled', 'PUT status cancelled');
 // a Pix paid at the last second still counts
 $mpHttp->answers = array();
-$mpHttp->on('GET', '/v1/payments/333', 200, array('id' => 333, 'status' => 'approved', 'transaction_amount' => 24.95, 'currency_id' => 'BRL', 'external_reference' => $t3, 'payment_method_id' => 'pix'));
+$mpHttp->on('GET', '/v1/payments/333', 200, array('id' => 333, 'status' => 'approved', 'transaction_amount' => 24.90, 'currency_id' => 'BRL', 'external_reference' => $t3, 'payment_method_id' => 'pix'));
 $svc->webhook('mercadopago', $sign('333', 'r12', '1800000000'), '{}', 'data.id=333&type=payment');
 check(order_row($db, $id3)['status'] === 'paid', 'late approval after expiry is still paid');
 
@@ -252,7 +252,7 @@ $ppHttp = new FakeHttp();
 $pp = new ChaosPayPayPal('CID', 'CSECRET', 'WH-1', 'sandbox', 'DONATION', 'Cinders of Chaos', $ppHttp, $clock);
 $svc3 = new ChaosPayService($db3, array('paypal' => $pp), $packs, $pay, array('site_url' => 'https://site.example.invalid/'), $clock, $logger);
 $ppHttp->on('POST', '/v1/oauth2/token', 200, array('access_token' => 'A21', 'expires_in' => 32000), true);
-$pid = $svc3->createOrder(77, 'coins1500', 'paypal')['order_id'];
+$pid = $svc3->createOrder(77, 'coins1000', 'paypal')['order_id'];
 $ppHttp->on('POST', '/v2/checkout/orders', 201, array('id' => '5O190127TN364715T', 'status' => 'PAYER_ACTION_REQUIRED',
 	'links' => array(array('rel' => 'self', 'href' => 'x'), array('rel' => 'payer-action', 'href' => 'https://www.sandbox.paypal.com/checkoutnow?token=5O190127TN364715T'))));
 check($svc3->makeCharge($pid), 'PayPal order made');
@@ -263,14 +263,14 @@ check($req['url'] === 'https://api-m.sandbox.paypal.com/v2/checkout/orders' && $
 check($ppHttp->header($req, 'Authorization') === 'Bearer A21', 'OAuth token used');
 check($ppHttp->header($ppHttp->requests[0], 'Authorization') === 'Basic ' . base64_encode('CID:CSECRET'), 'client credentials');
 $u = $b['purchase_units'][0];
-check($b['intent'] === 'CAPTURE' && $u['amount']['value'] === '29.99' && $u['amount']['currency_code'] === 'USD', 'USD amount from the table');
+check($b['intent'] === 'CAPTURE' && $u['amount']['value'] === '19.98' && $u['amount']['currency_code'] === 'USD', 'USD amount from the table');
 check($u['custom_id'] === $po['token'] && $u['items'][0]['category'] === 'DONATION' && $u['items'][0]['quantity'] === '1', 'donation item');
 check(strpos($u['items'][0]['name'], 'voluntary donation') !== false && strpos($u['description'], 'Voluntary donation') !== false, 'donation wording at PayPal');
 check($b['payment_source']['paypal']['experience_context']['return_url'] === 'https://site.example.invalid/page.php?plugin=chaos&p=coins&order=' . $pid . '&done=1', 'return url');
 check($b['payment_source']['paypal']['experience_context']['shipping_preference'] === 'NO_SHIPPING', 'no shipping');
 $po = order_row($db3, $pid);
 check($po['status'] === 'open' && strpos($po['pay_url'], 'checkoutnow') !== false && $po['qr_code'] === '', 'approval link stored');
-$ppOrder = static function (string $status, string $capStatus = '', string $value = '29.99', array $refunds = array()) use ($po): array {
+$ppOrder = static function (string $status, string $capStatus = '', string $value = '19.98', array $refunds = array()) use ($po): array {
 	$o = array('id' => '5O190127TN364715T', 'status' => $status, 'purchase_units' => array(array('custom_id' => $po['token'],
 		'amount' => array('currency_code' => 'USD', 'value' => $value))));
 	if ($capStatus !== '') {
@@ -301,7 +301,7 @@ $res = $svc3->webhook('paypal', $ppHeaders, '{"event_type":"CHECKOUT.ORDER.APPRO
 check($res[0] === 404, 'unknown PayPal order refused');
 // refund after crediting: the refund resource points at the capture
 $db3->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = ?", array($pid));
-$ppHttp->on('GET', '/v2/checkout/orders/5O190127TN364715T', 200, $ppOrder('COMPLETED', 'PARTIALLY_REFUNDED', '29.99',
+$ppHttp->on('GET', '/v2/checkout/orders/5O190127TN364715T', 200, $ppOrder('COMPLETED', 'PARTIALLY_REFUNDED', '19.98',
 	array(array('status' => 'COMPLETED', 'amount' => array('value' => '10.00', 'currency_code' => 'USD')))));
 $refundEvent = '{"event_type":"PAYMENT.CAPTURE.REFUNDED","resource":{"id":"1JU08902781691411","links":[{"rel":"up","href":"https://api.paypal.com/v2/payments/captures/3C679366HH908993F"}]}}';
 $res = $svc3->webhook('paypal', $ppHeaders, $refundEvent, 'psp=paypal');
@@ -318,7 +318,7 @@ $ppHttp->on('POST', '/v2/checkout/orders', 201, array('id' => '7AB00000000000000
 $svc3->makeCharge($pid2);
 $svc3->cancelOrder(77, $pid2);
 $ppHttp->on('GET', '/v2/checkout/orders/7AB00000000000000', 200, array('id' => '7AB00000000000000', 'status' => 'APPROVED',
-	'purchase_units' => array(array('custom_id' => order_row($db3, $pid2)['token'], 'amount' => array('currency_code' => 'USD', 'value' => '4.99')))));
+	'purchase_units' => array(array('custom_id' => order_row($db3, $pid2)['token'], 'amount' => array('currency_code' => 'USD', 'value' => '4.98')))));
 $before = count(array_filter($ppHttp->requests, static function ($q) { return strpos($q['url'], '/capture') !== false; }));
 check($svc3->sync($pid2) === 'not captured' && order_row($db3, $pid2)['status'] === 'cancelled', 'cancelled order not captured');
 check(count(array_filter($ppHttp->requests, static function ($q) { return strpos($q['url'], '/capture') !== false; })) === $before, 'no capture call');
@@ -335,7 +335,7 @@ $svc4->runOnce();
 $mo = order_row($db4, $m1);
 check($mo['status'] === 'open' && strpos($mo['qr_code'], '0014br.gov.bcb.pix') !== false, 'mock Pix code');
 check(substr($mo['qr_code'], -4) === ChaosPayUtil::crc16(substr($mo['qr_code'], 0, -4)), 'mock Pix code has a valid CRC');
-check(strpos($mo['qr_code'], '5405' . '14.95') !== false, 'mock Pix amount R$ 14,95 (2.99 USD x 5)');
+check(strpos($mo['qr_code'], '5405' . '14.90') !== false, 'mock Pix amount R$ 14,90 (2.98 USD x 5)');
 $now += 10;
 $svc4->runOnce();
 check(order_row($db4, $m1)['status'] === 'open', 'not before approveAfter');

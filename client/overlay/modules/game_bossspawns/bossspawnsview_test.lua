@@ -73,5 +73,24 @@ groups = V.group(data, 'SKAL')
 eq(V.header(groups[1], false), '- World Bosses (1 of 2)', 'filtered header')
 eq(#V.group(nil), 0, 'no data')
 
+-- the Pocket button (server pocketboss.lua)
+local pocket = { bosses = { world_1 = { l = 2, m = 3, b = 0, lv = 300, ok = 1 }, world_2 = { l = 0, m = 3, b = 0, lv = 300, ok = 1 },
+  world_3 = { l = 3, m = 3, b = 0, lv = 300 } }, reset = 3600 }
+local pk = V.pocket({ k = 'world_1' }, pocket, 0)
+eq(pk.text, 'Pocket 2/3', 'pocket text')
+eq(pk.enabled, true, 'pocket enabled')
+eq(pk.tooltip:find('New daily charges in 1h 00m', 1, true) ~= nil, true, 'reset in the tooltip')
+eq(V.pocket({ k = 'world_1' }, pocket, 600).tooltip:find('50m 00s', 1, true) ~= nil, true, 'reset counts down')
+eq(V.pocket({ k = 'world_2' }, pocket, 0).enabled, false, 'no charges: disabled')
+local low = V.pocket({ k = 'world_3' }, pocket, 0)
+eq(low.enabled, false, 'level too low: disabled')
+eq(low.tooltip:find('Needs level 300', 1, true) ~= nil, true, 'level in the tooltip')
+eq(V.pocket({ k = 'lair_tibb' }, pocket, 0), nil, 'no pocket for that boss')
+eq(V.pocket({ k = 'world_1' }, nil, 0), nil, 'no pocket data yet')
+eq(V.levelText({ pl = 150 }), 'Pocket: level 150+', 'the pocket level of an open-world boss')
+eq(V.levelText({ lv = 300, pl = 300 }), 'Level 300+', 'the own level first')
+pocket.inside = 'world_3'
+eq(V.pocket({ k = 'world_1' }, pocket, 0).enabled, false, 'inside a pocket: disabled')
+
 if fails > 0 then print(fails .. ' failure(s)') os.exit(1) end
 print('bossspawnsview_test: OK')

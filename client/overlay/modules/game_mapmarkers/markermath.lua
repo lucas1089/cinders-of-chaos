@@ -1,4 +1,5 @@
 -- Pure helpers of the map markers (no client API), tested by markermath_test.lua.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 MapMarkerMath = {}
 local M = MapMarkerMath
 
@@ -156,9 +157,9 @@ function M.memberText(e, me)
   if me then
     local dz = (e.z or 0) - (me.z or 0)
     if dz < 0 then
-      parts[#parts + 1] = (dz == -1) and '1 floor up' or string.format('%d floors up', -dz)
+      parts[#parts + 1] = (dz == -1) and tr('1 floor up') or tr('%d floors up', -dz)
     elseif dz > 0 then
-      parts[#parts + 1] = (dz == 1) and '1 floor down' or string.format('%d floors down', dz)
+      parts[#parts + 1] = (dz == 1) and tr('1 floor down') or tr('%d floors down', dz)
     end
     local dx, dy = (e.x or 0) - (me.x or 0), (e.y or 0) - (me.y or 0)
     local d = math.max(math.abs(dx), math.abs(dy))
@@ -197,7 +198,12 @@ end
 -- adds new marks (a reveal) to a list, one per kind and tile; returns how many were new
 function M.addMarks(list, new)
   local seen = {}
-  for _, m in ipairs(list) do seen[m.k .. ':' .. m.x .. ':' .. m.y .. ':' .. m.z] = true end
+  for _, m in ipairs(list) do
+    -- a stored mark without a whole tile (a bad poi message) is skipped, never an error
+    if type(m) == 'table' and m.k and m.x and m.y and m.z then
+      seen[tostring(m.k) .. ':' .. tostring(m.x) .. ':' .. tostring(m.y) .. ':' .. tostring(m.z)] = true
+    end
+  end
   local n = 0
   for _, m in ipairs(type(new) == 'table' and new or {}) do
     if type(m) == 'table' and m.k and m.x and m.y and m.z then

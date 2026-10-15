@@ -19,9 +19,9 @@ end
 
 local function freeText(info)
   if info.free == 'level' then
-    return string.format('free below level %d', info.freeBelowLevel or 50)
+    return tr('free below level %d', info.freeBelowLevel or 50)
   elseif info.free == 'vocation' then
-    return 'free once after your class changed'
+    return tr('free once after your class changed')
   end
   return nil
 end
@@ -30,14 +30,14 @@ local function priceText(cost, info)
   if (cost or 0) <= 0 then
     return 'free' .. (freeText(info) and (' (' .. freeText(info) .. ')') or '')
   end
-  return formatGold(cost) .. ' gold coins'
+  return tr('%s gold coins', formatGold(cost))
 end
 
 local function refreshTooltip()
   local window = getTreeWindow and getTreeWindow()
   local button = window and window:recursiveGetChildById('resetPresetButton')
   if button and respecInfo then
-    button:setTooltip(string.format('Reset the whole tree: %s.\nRight-click a saved node to refund only that node: %s.',
+    button:setTooltip(tr('Reset the whole tree: %s.\nRight-click a saved node to refund only that node: %s.',
       priceText(respecInfo.full, respecInfo), priceText(respecInfo.node, respecInfo)))
   end
 end
@@ -54,9 +54,9 @@ end
 function respecResetText()
   if not respecInfo then
     sendAction('respecInfo')
-    return 'The reset price is not known yet. Press Reset again in a moment.'
+    return tr('The reset price is not known yet. Press Reset again in a moment.')
   end
-  return string.format('Reset your whole passive tree for %s? Every point becomes free to spend again.\n' ..
+  return tr('Reset your whole passive tree for %s? Every point becomes free to spend again.\n' ..
     'To take back only one node, right-click it instead (%s).', priceText(respecInfo.full, respecInfo),
     priceText(respecInfo.node, respecInfo))
 end
@@ -67,7 +67,7 @@ local function nodeName(id)
     local ok, nodes = pcall(getTreeNodes)
     if ok and type(nodes) == 'table' then
       for i, node in pairs(nodes) do
-        nodeNames[i] = node.name or 'this keystone'
+        nodeNames[i] = node.name or tr('this keystone')
       end
     end
   end
@@ -95,13 +95,13 @@ function onNodeMousePress(widget, mousePos, button)
   end
   closeRefund()
   local cost = respecInfo and respecInfo.node
-  local text = string.format('Refund %s? The point becomes free to spend again.\nPrice: %s.', nodeName(id),
-    cost and priceText(cost, respecInfo) or 'asked from the server')
+  local text = tr('Refund %s? The point becomes free to spend again.\nPrice: %s.', nodeName(id),
+    cost and priceText(cost, respecInfo) or tr('asked from the server'))
   local function ok()
     sendAction('refundNode', {id = id})
     closeRefund()
   end
-  refundBox = displayGeneralBox('Refund node', text, {
+  refundBox = displayGeneralBox(tr('Refund node'), text, {
     {text = tr('Refund'), callback = ok},
     {text = tr('Cancel'), callback = closeRefund},
     anchor = AnchorHorizontalCenter

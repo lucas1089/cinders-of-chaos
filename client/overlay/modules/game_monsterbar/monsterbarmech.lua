@@ -8,6 +8,16 @@ MonsterBarMech = {}
 local M = MonsterBarMech
 
 M.HOLD_MS = 600 -- the bar stays this long after the hit (or the interrupt) so the end can be read
+M.BELOW_BAR = 90 -- the cast bar's margin-top under a shown monster bar (from the monster bar's margin-top)
+
+-- the cast bar's margins in the map panel: under the monster bar while it shows, else in its place. barTop / barLeft
+-- are the monster bar's margins for the current view (MonsterBarMath.place), worked out also while that bar is
+-- hidden: its otui default (44) is above the screen when the map panel starts above it (extended view: y -72 at
+-- 1280x800), which kept the cast bar off screen in a live test (2026-10-14)
+function M.margins(barShown, barTop, barLeft)
+  barTop, barLeft = tonumber(barTop) or 0, tonumber(barLeft) or 0
+  return barShown and (barTop + M.BELOW_BAR) or barTop, barLeft
+end
 
 M.COLORS = {
   telegraph = '#c0392b', -- danger: get out of the marks

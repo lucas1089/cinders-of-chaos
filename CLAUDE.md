@@ -35,6 +35,9 @@ for t in client/overlay/modules/*/*_test.lua; do luajit "$t" && lua5.3 "$t"; don
 python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
+python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
+python3 -I tools/ci/check_credits.py   # every pack of the art *sources.csv files is in docs/CREDITS.md; pt-BR headings
+python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits_test.py
 python3 client/tools/make_fonts_test.py
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
@@ -42,12 +45,15 @@ for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
 
 # generated files must be committed up to date (CI diffs them)
 python3 client/tools/gen_spell_data.py                       # -> game_chaosspells/spelldata.lua
+python3 -I client/tools/gen_credits.py                       # docs/CREDITS.md -> client_chaos_credits/credits_data.lua, website credits_data.json (--check)
 cd server && python3 -I tools/gen_unique_specs.py            # -> data/lib/chaos_unique_specs.lua
 cd server && luajit tools/gen_codex_data.lua                 # -> client game_codex/codex_data.lua
 cd server && lua5.3 tools/gen_codex_data.lua --check
 cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json
 cd server && lua5.3 tools/gen_wiki_data.lua --check
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
+python3 -I client/tools/sprites/gen_owner_art.py build --check  # owner art of pair 26 (CI uses the fx venv)
+python3 -I server/tools/install_owner_decor.py --lua --check     # -> data/lib/chaos_owner_decor.lua
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.
@@ -82,6 +88,7 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
 - `server/README.md`: one section per server system, install steps, assumptions.
 - `client/MANIFEST.md`: client modules. `client/BASE.md`: client base patches.
 - `docs/CLASSES.md`: classes.
+- `docs/CREDITS.md`: every third-party source. The game and the website show it.
 - `server/data/spells/README.md`: measured balance numbers.
 
 `HANDOFF.md` is an early snapshot and is outdated.
@@ -89,4 +96,6 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
 ## Rules
 
 - No names of other servers, games or clients in the repo. `check_names.py` enforces it.
+  - Art pack names may appear only in `docs/CREDITS.md` and the two files generated from it.
+- Every third-party asset, font, library or tool that ships goes into `docs/CREDITS.md`. Then run `gen_credits.py`.
 - No real account data or player logs in the repo.

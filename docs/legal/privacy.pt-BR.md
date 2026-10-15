@@ -40,6 +40,8 @@ como você exerce os seus direitos. Ela segue a Lei Geral de Proteção de Dados
 - Antitrapaça: o servidor mede padrões de jogo dos personagens online, como o ritmo de ações, o tempo de reação, rotas
   repetidas e horas seguidas de jogo. Gera uma pontuação, pode enviar uma verificação de presença e registra resultados
   para a equipe. **Nada disso pune sozinho:** uma pessoa da equipe sempre analisa antes de decidir.
+  Uma pontuação diária de suspeita por personagem, com os sinais que a explicam, fica guardada 30 dias (90 dias quando
+  a equipe escalou o caso); só dias com pontuação relevante são guardados.
 - Denúncias de jogadores: quem denunciou, quem foi denunciado, motivo, observação, posição, data e as últimas 10 linhas
   do denunciado nos canais públicos do jogo. **Mensagens privadas nunca são guardadas nem lidas.**
 - Relatos de bugs: o texto que você escreve, a posição, o nível e a classe do personagem.
@@ -47,6 +49,9 @@ como você exerce os seus direitos. Ela segue a Lei Geral de Proteção de Dados
 - Registro da equipe: toda ação de administração, com quem fez, quando e em qual personagem.
 - Estatísticas do jogo: contagens agregadas, como quantos personagens escolheram cada talento. Essas contagens não têm
   nome, conta nem identificação.
+- Estatísticas de balanceamento: totais por hora, por faixa de nível e classe, como experiência e ouro por hora, tempo
+  de morte de chefes, mortes por área, magias usadas e quantos jogadores estão online. São contadas na memória do
+  servidor e guardadas sem nome, conta nem identificação.
 
 **Doações**
 
@@ -62,7 +67,10 @@ Algumas informações aparecem para todos no site e no jogo: nome, nível, class
 bandeira do país da conta, a data do último login, as mortes, a guilda, os rankings e o comentário do perfil, se você
 escrever um. Os demais personagens da conta aparecem no perfil, a menos que você os oculte. No jogo, outros jogadores
 podem ver o equipamento e a árvore de talentos do seu personagem, se "Allow others to inspect me" estiver ligado (padrão). No programa de mentores, o
-cartão de mentor só aparece no site se você escolher "Mostrar no site".
+cartão de mentor só aparece no site se você escolher "Mostrar no site". O Memorial da capital e a página dele no site
+mostram o nome do personagem com as primeiras vitórias do reino e os recordes, a menos que você desligue "Show my records
+and realm firsts", e com uma queda no Hardcore (nível, classe, causa, data) só se você escolher mostrar; você pode mudar as
+duas coisas quando quiser, para todas as temporadas de uma vez. As listas de contribuintes da Crônica seguem a mesma escolha.
 
 ## 3. Bases legais (LGPD, art. 7º)
 
@@ -71,7 +79,7 @@ cartão de mentor só aparece no site se você escolher "Mostrar no site".
   agregadas. Usamos só o necessário e você pode se opor (seção 8).
 - **Cumprimento de obrigação legal:** registros de pagamento e outros registros que a lei manda guardar.
 - **Exercício regular de direitos:** registros de banimentos, denúncias e estornos, para nos defender em uma disputa.
-- **Consentimento:** quando você escolhe algo opcional, como mostrar o cartão de mentor no site ou lembrar um
+- **Consentimento:** quando você escolhe algo opcional, como mostrar o cartão de mentor no site, mostrar uma queda no Hardcore no Memorial ou lembrar um
   dispositivo. Você pode retirar o consentimento quando quiser.
 
 ## 4. Por quanto tempo guardamos
@@ -84,6 +92,7 @@ cartão de mentor só aparece no site se você escolher "Mostrar no site".
 | Dispositivo lembrado na verificação em duas etapas | 30 dias |
 | Registros técnicos: console do servidor, verificações do cliente, servidores de entrada | 14 dias |
 | Resumo de morte | as últimas 5 mortes de cada personagem |
+| Estatísticas de balanceamento (totais, sem identificação) | 90 dias por hora, depois 2 anos por dia |
 | Denúncias, relatos de bugs, registros do antitrapaça e da equipe | até [PRAZO DOS REGISTROS DE MODERAÇÃO], apagados automaticamente todo dia; mais tempo só enquanto uma denúncia estiver aberta ou um banimento ou recurso precisar deles |
 | Banimentos | enquanto o banimento valer e depois, pelo prazo necessário para tratar recursos e reincidência |
 | Registros de doação | pelo prazo exigido pelas leis fiscais e contábeis, de pelo menos 5 anos |
@@ -107,6 +116,9 @@ Não vendemos dados pessoais. Compartilhamos apenas o necessário com:
 - **Cópia de segurança externa:** [PROVEDOR DE BACKUP] guarda as cópias, sempre criptografadas.
 - **Discord:** a nossa comunidade fica no Discord. A equipe recebe ali avisos de novas denúncias com o número da
   denúncia, o motivo e os nomes dos dois personagens, nunca o texto. O uso do Discord segue as regras do próprio Discord.
+- **Anúncios no Discord:** os canais públicos do nosso Discord mostram notícias do jogo com nomes de personagens:
+  recordes, primeiras vitórias, mortes de chefes, níveis 500 e 1000 e leilões do Bazar de Personagens (nome, nível,
+  classe e preço). São informações que o site já mostra publicamente.
 - **Autoridades:** quando a lei ou uma ordem judicial exigir.
 
 ## 6. Transferência internacional

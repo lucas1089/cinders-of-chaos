@@ -80,6 +80,16 @@ end
 -- empty while its switch is off)
 local okTheme, THEME = pcall(dofile, "data/lib/chaos_theme_art.lua")
 local THEME_OFFERS = (okTheme and type(THEME) == "table" and THEME.storeOffers) and THEME.storeOffers() or {}
+-- the store wings of client pair 26, the owner's art (data/lib/chaos_owner_art.lua M.storeOffers; empty while its
+-- switch ChaosOwnerArt.PAIR26 is off): appended to the Wings category
+local okOwner, OWNER = pcall(dofile, "data/lib/chaos_owner_art.lua")
+local OWNER_WINGS = (okOwner and type(OWNER) == "table" and OWNER.storeOffers) and OWNER.storeOffers() or {}
+local function withOwnerWings(list)
+	for _, o in ipairs(OWNER_WINGS) do
+		list[#list + 1] = o
+	end
+	return list
+end
 
 -- the weekly rotation's pool ("This week"): cosmetics only, never power. The boss exclusives (exclusives_config.lua,
 -- chaos_theme_art.lua M.exclusives) and the prestige sets are never in it. Keys: ChaosShopCore.offerKey.
@@ -99,7 +109,7 @@ end
 -- they come from NPC vendors and crafting (data/lib/chaos_rune_supply.lua, the vendor price per rune). A pack's coins =
 -- vendor gold x count / RUNE_GOLD_PER_COIN, minus the pack discount, rounded up. RUNE_GOLD_PER_COIN = 1000 is about the
 -- rate the store's potion packs imply (100 Great Mana Potions 15 coins = 12,000 gold at the NPC: 800 gold a coin;
--- Great Spirit 1,267, Ultimate Health 1,550). PLACEHOLDERS (docs/OWNER_TODO.md). Delivery: stacks of 100 into the
+-- Great Spirit 1,267, Ultimate Health 1,550). Kept 2026-10-14 (docs/PRICES.md). Delivery: stacks of 100 into the
 -- backpack, the rest into the store inbox (overflowInbox, shop.lua).
 local RUNE_GOLD_PER_COIN = 1000
 local RUNE_DISCOUNT = {[100] = 0, [250] = 5, [500] = 10, [25] = 0, [50] = 5}
@@ -183,9 +193,9 @@ return {
 			offers = {
 				{kind = "bundle", key = "starter:novice", oncePerAccount = true, maxLevel = 50, gift = false, cost = 250,
 					name = "Novice Pack", icon = 8472,
-					description = "Once per account, up to level 50: Gale Ring aura, 100 Great Spirit Potions, 5 Stamina Extensions.",
-					parts = {"aura:17", "item:8472x100",
-						{kind = "item", id = 27990, count = 5, cost = 40, name = "5 Stamina Extensions"},
+					description = "Once per account, up to level 50: Gale Ring aura, 100 Great Spirit Potions, 100 Supreme Health Potions.",
+					-- 100 Supreme Health Potions (30) replace the 5 Stamina Extensions (40) on 2026-10-15: no stamina for coins
+					parts = {"aura:17", "item:8472x100", "item:26031x100",
 						{kind = "pact", days = 3, cost = 60, name = "3 days of the Chaos Pact"}}},
 				{kind = "bundle", key = "starter:adventurer", oncePerAccount = true, maxLevel = 150, gift = false, cost = 450,
 					name = "Adventurer Pack", icon = 1988,
@@ -220,7 +230,7 @@ return {
 				{kind = "bundle", key = "bundle:pyre", pct = 25, name = "Pyre Regalia", icon = 2187,
 					description = "The Astral Fire outfit with both addons, the Crimson Fang mount, Vorondor Flames and the Ember Crown aura.",
 					parts = {"outfit:1213", "mount:121", "wings:7", "aura:15"}},
-				{kind = "bundle", key = "bundle:storm", pct = 25, name = "Stormcaller Regalia", icon = 2150,
+				{kind = "bundle", key = "bundle:storm", pct = 25, name = "Stormcaller Regalia", icon = 2189,
 					description = "The Astral Electric outfit with both addons, the Stormkeep mount, wings and the storm mantle aura.",
 					parts = {"outfit:1217", "mount:140", "wings:13", "aura:22"}}
 			}
@@ -246,13 +256,13 @@ return {
 		},
 		{
 			name = "Wings", icon = {outfit = preview({wings = 937})},
-			offers = {
+			offers = withOwnerWings({
 				{kind = "wings", id = 1, cost = 250}, {kind = "wings", id = 4, cost = 250}, {kind = "wings", id = 7, cost = 300},
 				{kind = "wings", id = 8, cost = 300}, {kind = "wings", id = 9, cost = 300}, {kind = "wings", id = 12, cost = 350},
 				{kind = "wings", id = 13, cost = 350}, {kind = "wings", id = 2, cost = 200}, {kind = "wings", id = 3, cost = 200},
 				{kind = "wings", id = 5, cost = 200}, {kind = "wings", id = 6, cost = 250}, {kind = "wings", id = 10, cost = 250},
 				{kind = "wings", id = 11, cost = 200}, {kind = "wings", id = 14, cost = 250}, {kind = "wings", id = 15, cost = 250}
-			}
+			})
 		},
 		{
 			name = "Auras", icon = {outfit = preview({aura = 932})},
@@ -464,16 +474,25 @@ return {
 		{
 			name = "Boosts", icon = {item = 28095},
 			offers = {
-				{kind = "service", service = "stamina", icon = 27990, cost = 40, name = "Stamina Refill",
-					description = "Fills your stamina to the full 42 hours at once."},
-				{kind = "item", id = 27990, count = 1, cost = 8, name = "Stamina Extension",
-					description = "Use it to regain 2 hours of stamina (up to the maximum)."},
+				-- the Stamina Refill (40 coins, the whole 42 h at once) was removed on 2026-10-15: paying to farm longer at full
+				-- loot. Nobody holds a refill (the service filled the stamina at purchase); a gift of it still queued for an
+				-- offline character is refunded to the sender at delivery (shop.lua: "It is no longer sold."). The
+				-- "stamina" service handler stays in shop_services.lua, unused. Low stamina now halves the loot instead of
+				-- zeroing it and regenerates x2 offline (catchup.lua).
+				-- the Stamina Extension (8 coins, +2 h) was removed on 2026-10-15 as well (owner rule "follow your
+				-- recommendations"); owned ones keep working, the level 100 kit (newplayer_config.lua) still gives two
 				{kind = "item", id = 28095, count = 1, cost = 50, seasonBlocked = true, name = "Double Experience Potion",
 					description = "1 hour of double experience per potion (Character > Character Info). Not for season characters."},
 				{kind = "item", id = 28095, count = 5, cost = 225, seasonBlocked = true, name = "5 Double Experience Potions",
 					description = "Five hours of double experience, one potion at a time."},
 				{kind = "service", service = "blessings", icon = 11260, cost = 60, name = "All Blessings",
-					description = "All five blessings at once: less experience and item loss when you die."}
+					description = "All five blessings at once: less experience loss when you die (items are never lost without a red or black skull)."},
+				-- the Eternal Blessing (gentledeath.lua, owner decision 2026-10-15): one purchase per character, all five
+				-- blessings kept for good (given back at each login after a death). PLACEHOLDER price (docs/OWNER_TODO.md).
+				-- Not for season characters: a season ladder is not bought (season.lua realm > 0; !bless still works there).
+				{kind = "service", service = "eternalBlessing", icon = 11260, cost = 750, seasonBlocked = true,
+					name = "Eternal Blessing",
+					description = "This character keeps all five blessings for good: they come back after every death. Once per character. Not for season characters."}
 			}
 		},
 		{
@@ -508,35 +527,25 @@ return {
 				-- the Temple Teleport Scroll is no longer sold: every character has the free Town Portal (townportal.lua);
 				-- scrolls bought earlier keep working (shop_services.lua)
 				-- store pouches (pouches.lua, pouches_config.lua): items, one of each per character, store-bound
-				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 350, name = "Loot Bag",
+				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 250, name = "Loot Bag",
 					description = "Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."},
-				{kind = "service", service = "pouch", pouch = "orbs", icon = 32082, cost = 300, name = "Orbs Pouch",
+				{kind = "service", service = "pouch", pouch = "orbs", icon = 32082, cost = 200, name = "Orbs Pouch",
 					description = "40 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried."},
-				{kind = "service", service = "pouch", pouch = "keys", icon = 32083, cost = 250, name = "Rift Key Pouch",
+				{kind = "service", service = "pouch", pouch = "keys", icon = 32083, cost = 150, name = "Rift Key Pouch",
 					description = "30 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."},
 				-- the infinite food (store_food.lua, store_food_config.lua): one per character, store-bound, never used up.
-				-- PLACEHOLDER PRICE (150), to be decided (docs/OWNER_TODO.md)
-				{kind = "service", service = "storeFood", icon = 32084, cost = 150, name = "Everfull Ration",
+				-- price decided 2026-10-14 (docs/PRICES.md)
+				{kind = "service", service = "storeFood", icon = 32084, cost = 100, name = "Everfull Ration",
 					description = "Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."},
-				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 500, name = "Auto Seller",
+				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 400, name = "Auto Seller",
 					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
-				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 400, name = "Rarity Autoloot",
+				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 300, name = "Rarity Autoloot",
 					description = "Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."}
 			}
 		},
-		{
-			-- class unlocks (class_unlocks.lua): account-wide; offer names and prices must match
-			-- ChaosClassUnlocksCore.config (class_unlocks_core.lua). PLACEHOLDER PRICES (750 each), to be decided.
-			name = "Classes", icon = {item = 2523},
-			offers = {
-				{kind = "unlock", unlock = "unlockNecromancer", icon = 2436, cost = 750, name = "Necromancer",
-					description = "Unlocks the Necromancer class (Lich, Bone Lord) for every character of your account."},
-				{kind = "unlock", unlock = "unlockMonk", icon = 7422, cost = 750, name = "Monk",
-					description = "Unlocks the Monk class (Shadowfist, Iron Sage) for every character of your account."},
-				{kind = "unlock", unlock = "unlockTemplar", icon = 2523, cost = 750, name = "Templar",
-					description = "Unlocks the Templar class (Inquisitor, Sentinel) for every character of your account."}
-			}
-		},
+		-- the "Classes" category (Necromancer, Monk, Templar at 500 coins each) was removed on 2026-10-15 (owner rule
+		-- "follow your recommendations"): classes are earned by play only, free for the account at level 200
+		-- (class_unlocks_core.lua). Nobody had bought one yet.
 		{
 			name = "Training", icon = {item = 27732},
 			offers = {

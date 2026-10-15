@@ -138,10 +138,10 @@ function openBank(data, currencyName)
 		end
 
 		BankingAcceptWindow.value:setValue(0)
-		BankingAcceptWindow.shit:setText("The Amount: " .. comma_value(BankingAcceptWindow.value:getValue()))
+		BankingAcceptWindow.shit:setText(tr('The Amount: %s', comma_value(BankingAcceptWindow.value:getValue())))
 
 		function BankingAcceptWindow.value.onValueChange(widget, value)
-			BankingAcceptWindow.shit:setText("The Amount: " .. comma_value(value))
+			BankingAcceptWindow.shit:setText(tr('The Amount: %s', comma_value(value)))
 		end
 
 		function BankingAcceptWindow.buttonOk.onClick()
@@ -197,10 +197,10 @@ function openBank(data, currencyName)
 		end
 
 		BankingAcceptWindow.value:setValue(0)
-		BankingAcceptWindow.shit:setText("The Amount: " .. comma_value(BankingAcceptWindow.value:getValue()))
+		BankingAcceptWindow.shit:setText(tr('The Amount: %s', comma_value(BankingAcceptWindow.value:getValue())))
 
 		function BankingAcceptWindow.value.onValueChange(widget, value)
-			BankingAcceptWindow.shit:setText("The Amount: " .. comma_value(value))
+			BankingAcceptWindow.shit:setText(tr('The Amount: %s', comma_value(value)))
 		end
 
 		function BankingAcceptWindow.buttonOk.onClick()
@@ -254,10 +254,10 @@ function openBank(data, currencyName)
 		end
 
 		BankingAcceptWindow2.value:setValue(0)
-		BankingAcceptWindow2.sendAmount:setText("The Amount: " .. comma_value(BankingAcceptWindow2.value:getValue()))
+		BankingAcceptWindow2.sendAmount:setText(tr('The Amount: %s', comma_value(BankingAcceptWindow2.value:getValue())))
 
 		function BankingAcceptWindow2.value.onValueChange(widget, value)
-			BankingAcceptWindow2.sendAmount:setText("The Amount: " .. comma_value(value))
+			BankingAcceptWindow2.sendAmount:setText(tr('The Amount: %s', comma_value(value)))
 		end
 
 		function BankingAcceptWindow2.buttonOk.onClick()

@@ -58,7 +58,9 @@ if (!$link->connect_errno) {
 	}
 	$link->close();
 }
-$wanted = int_list(env('CHAOS_START_TOWNS', '1'));
+// The first id is the default home town: Cinderhold (2), the main city (server/README.md "Main city"; the game server's
+// newplayer_config.lua homeTown moves new characters there unless the town is in its `keep` list).
+$wanted = int_list(env('CHAOS_START_TOWNS', '2'));
 if (!$towns) {
 	fwrite(STDERR, "note: the towns table is empty (the game server fills it at its first start); using generic town names.\n");
 	foreach ($wanted as $id) {

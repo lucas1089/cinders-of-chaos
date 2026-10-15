@@ -10,10 +10,21 @@
 --   packs       P.pack(pass, id), P.ownedPack(packRows), P.hasPremium(pass, premium, packId),
 --               P.packPrice(pass, target, ownedPack, passPaid), P.packGrants(pass, fromId, toId)
 --   cosmetics   P.entitlements(pass, claims, packId) -> list of cosmetic rewards of the account
---   checks      P.validate(cfg), P.rewardText(r)
+--   checks      P.validate(cfg), P.rewardText(r, lang?) (in `lang` through ChaosI18n when loaded; English otherwise)
 
 ChaosSeasonPassCore = ChaosSeasonPassCore or {}
 local P = ChaosSeasonPassCore
+
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
 
 P.KINDS = {item = true, coins = true, title = true, outfit = true, mount = true, shader = true, portal = true,
 	frame = true, transmog = true, tierskips = true, premium = true}
@@ -84,9 +95,31 @@ function P.expUnits(rawExp, stage, level)
 	return exp * 100 / span
 end
 
+-- room left under a source's daily cap. used: pass XP of the source today, or a list {today, yesterday, the day
+-- before, ...} of the last cfg.bankDays days; days: how many of those days the season ran (the days before it bank
+-- nothing). With the list the cap banks: what the last bankDays days left unused is open today (a rolling window of
+-- bankDays x dailyCap), so a day missed is made up later and the long-run rate stays dailyCap a day.
+function P.sourceRoom(cfg, source, used, days)
+	local s = cfg.sources[source]
+	if not s or not s.dailyCap then
+		return math.huge
+	end
+	if type(used) ~= "table" then
+		return math.max(0, s.dailyCap - (tonumber(used) or 0))
+	end
+	local window = math.max(1, math.floor(tonumber(cfg.bankDays) or 1))
+	days = math.max(1, math.min(window, math.floor(tonumber(days) or window)))
+	local sum = 0
+	for i = 1, days do
+		sum = sum + math.max(0, tonumber(used[i]) or 0)
+	end
+	return math.max(0, days * s.dailyCap - sum)
+end
+
 -- pass XP a source event gives, after the daily cap. value: units for exp, the key tier for rift, else unused.
--- Returns gained (whole number), the source's raw xp before the cap
-function P.sourceGain(cfg, source, value, usedToday)
+-- usedToday: a number, or the list and days of P.sourceRoom (the banked cap). Returns gained (whole number), the
+-- source's raw xp before the cap
+function P.sourceGain(cfg, source, value, usedToday, days)
 	local s = cfg.sources[source]
 	if not s then
 		return 0, 0
@@ -99,7 +132,7 @@ function P.sourceGain(cfg, source, value, usedToday)
 	else
 		raw = s.xp
 	end
-	local room = math.max(0, (s.dailyCap or math.huge) - (tonumber(usedToday) or 0))
+	local room = P.sourceRoom(cfg, source, usedToday, days)
 	return math.max(0, math.min(raw, room)), raw
 end
 
@@ -343,7 +376,7 @@ function P.entitlements(pass, claims, packId)
 	return out
 end
 
-function P.rewardText(r)
+function P.rewardText(r, lang)
 	if not r then
 		return ""
 	end
@@ -351,13 +384,13 @@ function P.rewardText(r)
 		return r.name
 	end
 	if r.kind == "title" then
-		return "Title: " .. tostring(r.title)
+		return T(lang, "Title: %s", tostring(r.title))
 	elseif r.kind == "coins" then
-		return tostring(r.amount) .. " Chaos Coins"
+		return T(lang, "%s Chaos Coins", tostring(r.amount))
 	elseif r.kind == "tierskips" then
-		return tostring(r.count) .. " tier skips"
+		return T(lang, "%s tier skips", tostring(r.count))
 	elseif r.kind == "premium" then
-		return "Premium pass"
+		return T(lang, "Premium pass")
 	end
 	return r.kind
 end

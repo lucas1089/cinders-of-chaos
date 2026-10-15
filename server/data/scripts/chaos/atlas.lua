@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/atlas_core.lua")
 ChaosAtlasConfig = ChaosAtlasConfig or dofile("data/scripts/chaos/atlas_config.lua")
 -- the Swift times come from the rift model (atlas_core.lua A.swiftSeconds -> rift_core.lua R.clearSeconds); rift.lua
@@ -132,7 +135,7 @@ ChaosRiftCore.hooks.onSealed = function(info)
 				for _, c in ipairs(new) do
 					names[#names + 1] = A.cellName(RC(), c)
 				end
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Rift Atlas: %s completed, +%d point%s.",
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Rift Atlas: %s completed, +%d point%s.",
 					table.concat(names, ", "), pts, pts == 1 and "" or "s"))
 				Chaos.send(player, OPCODE, "credit", {cells = names, points = pts})
 				if S.treeSent[player:getId()] then

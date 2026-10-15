@@ -434,6 +434,57 @@ eq(champ.mounts[122], true, "mount of the last chapter")
 eq(champ.outfits[1248], 0, "outfit of chapter 7 (male look)")
 eq(champ.outfits[1249], 0, "outfit of chapter 7 (female look)")
 
+-- records.lua and season_journey.lua both hook ChaosAchievements.set and install their hooks again every minute: in
+-- any order, also after a /reload of achievements.lua, one set call runs the original and each hook exactly once
+do
+	local rawSets = 0
+	ChaosAchievements.set = function() rawSets = rawSets + 1 end
+	ChaosAchievements.progress = function() end
+	ChaosWorldBoss = {state = {}, computeRewards = function() end}
+	ChaosRiftCore = {atlasSealed = function() end}
+	ChaosExclusives = {bossKill = function() end}
+	ChaosAscended = {runs = {}}
+	Chaos.trials = dofile("data/scripts/chaos/trials_config.lua")
+	ChaosTrials = {runs = {}}
+	Vocation = function() return {getName = function() return "Knight" end} end
+	result = {}
+	ChaosTitles.registerFrame = function() end
+	DUNGEON_SYSTEM = false -- not the auto-numbered constant of this test
+	db.storeQuery = function() return nil end
+	db.asyncQuery = db.query
+	local okR, errR = pcall(dofile, "data/scripts/chaos/records.lua")
+	ok(okR, "records.lua loads: " .. tostring(errR))
+	local R = ChaosRecords
+	ChaosTrials.runs[hero:getId()] = {tierDef = {time = 600}, deadline = 0, famKey = "fam"}
+	local submits, journeyRecords = 0, 0
+	local realSubmit, realRecord = R.submit, J.record
+	R.submit = function() submits = submits + 1 return true end
+	J.record = function(...) journeyRecords = journeyRecords + 1 return realRecord(...) end
+	local function once(what)
+		rawSets, submits, journeyRecords = 0, 0, 0
+		ChaosAchievements.set(hero, "trial_tier_1", 1)
+		ChaosAchievements.set(hero, "rift_tier", 9)
+		eq(rawSets, 2, what .. ": the original set runs once per call")
+		eq(submits, 1, what .. ": the trial record submitted once")
+		eq(journeyRecords, 1, what .. ": the journey stat counted once")
+	end
+	for i = 1, 5 do
+		R.installHooks()
+		J.installHooks()
+		registered.ChaosSeasonJourneyFlush.onThink(60000)
+		R.installHooks()
+		once("alternating installs, round " .. i)
+	end
+	-- a /reload of achievements.lua: a new set, hooked again by whichever script installs first
+	ChaosAchievements.set = function() rawSets = rawSets + 1 end
+	J.installHooks()
+	once("reload, journey first")
+	R.installHooks()
+	J.installHooks()
+	once("reload, then both")
+	R.submit, J.record = realSubmit, realRecord
+end
+
 print(string.format("season_journey_test: %d checks, %d failed", checks, fails))
 if fails > 0 then os.exit(1) end
 print("season_journey_test: OK")

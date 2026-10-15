@@ -447,7 +447,7 @@ Game = {
 		return it
 	end
 }
-Town = function(id) return id == 1 and {getTemplePosition = function() return {x = 100, y = 100, z = 7} end} or nil end
+Town = function(id) return id == cfg.brazier.townId and {getTemplePosition = function() return {x = 100, y = 100, z = 7} end} or nil end
 Tile = function(pos)
 	return {getGround = function() return true end, hasProperty = function() return false end,
 		getTopCreature = function() return nil end, hasFlag = function() return false end, getItems = function() return {} end}

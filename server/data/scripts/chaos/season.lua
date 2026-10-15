@@ -30,6 +30,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/season_core.lua")
 
 Chaos.seasonConfig = dofile("data/scripts/chaos/season_config.lua")
@@ -604,7 +607,7 @@ function S.checkMilestones(player)
 			"`reached_at`) VALUES (%d, %d, %s, %d, %s, %d)", T.rewards, account, season.id, db.escapeString(m.key), guid,
 			db.escapeString(player:getName()), now()))
 		logEvent(season.id, guid, "milestone", m.key)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s milestone: %s. Unlocked for your whole account: %s.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s milestone: %s. Unlocked for your whole account: %s.",
 			season.name, m.name, S.rewardText(m.reward)))
 	end
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE)
@@ -652,21 +655,13 @@ function S.onRecord(board, who, value)
 end
 
 -- wrap ChaosLeaderboard.record (again after a /reload of leaderboard.lua)
+if not (ChaosWrapChain and ChaosWrapChain.wrap) then
+	dofile("data/scripts/chaos/wrapchain_core.lua")
+end
 function S.wrapLeaderboard()
-	local LB = ChaosLeaderboard
-	if not LB or not LB.record or LB.record == S.wrappedRecord then
-		return
-	end
-	local original = LB.record
-	S.wrappedRecord = function(board, who, value, mode)
-		local entry = original(board, who, value, mode)
-		local ok, err = pcall(S.onRecord, board, who, value)
-		if not ok then
-			log("season stat failed: " .. tostring(err))
-		end
-		return entry
-	end
-	LB.record = S.wrappedRecord
+	ChaosWrapChain.wrap(ChaosLeaderboard, "record", "season", function(res, board, who, value)
+		S.onRecord(board, who, value)
+	end, function(e) log("season stat failed: " .. e) end)
 end
 
 -- ---------------------------------------------------------------- migration (end of season)
@@ -685,8 +680,7 @@ local function migrateRow(guid, seasonId, why)
 		S.sendState(p, false)
 	elseif p then
 		local season = S.byId(seasons(), seasonId)
-		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s has ended. This character is now a standard character: " ..
-			"it keeps its level, skills, items and passive tree and can trade with everyone.", season and season.name or "The season"))
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "%s has ended. This character is now a standard character: it keeps its level, skills, items and passive tree and can trade with everyone.", season and season.name or Chaos.t(p, "The season")))
 		S.rowOf(guid)
 		S.sendState(p, false)
 	end
@@ -733,6 +727,11 @@ local function storedItems(player)
 	for id = 0, 50 do
 		n = n + countItems(player:getDepotChest(id, false))
 	end
+	-- whole items in the stash (the depot moved there): a join empties the stash, so they must leave first
+	if ChaosStash and ChaosStash.store and ChaosStash.store.itemRows then
+		local ok, rows = pcall(ChaosStash.store.itemRows, player:getGuid())
+		n = n + (ok and type(rows) == "table" and #rows or 0)
+	end
 	return n
 end
 
@@ -775,6 +774,8 @@ local function doJoin(player, season)
 		player:setBankBalance(0)
 		db.query("UPDATE `" .. (Chaos.tables.bank or "chaos_bank") .. "` SET `stars` = 0 WHERE `player_id` = " .. player:getGuid())
 		db.query("DELETE FROM `" .. (Chaos.tables.stash or "chaos_stash") .. "` WHERE `player_id` = " .. player:getGuid())
+		-- the whole items of the stash too (stash_config.lua tables.items), journal rows included
+		db.query("DELETE FROM `chaos_stash_items` WHERE `player_id` = " .. player:getGuid())
 	end
 	local guid = player:getGuid()
 	db.query(string.format("INSERT INTO `%s` (`player_id`, `account_id`, `season`, `joined_at`, `migrated_at`) VALUES " ..
@@ -788,8 +789,7 @@ local function doJoin(player, season)
 	if jc.regiveKit and NP and NP.giveKit and NP.getS and (tonumber(NP.getS(player, "kit")) or 0) > 0 then
 		pcall(NP.giveKit, player)
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to %s! %s is now a season character %s. " ..
-		"The season ends in %s. Adventure > Season shows your milestones.", season.name, player:getName(), season.tag or "",
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Welcome to %s! %s is now a season character %s. The season ends in %s. Adventure > Season shows your milestones.", season.name, player:getName(), season.tag or "",
 		S.formatDuration(select(2, S.times(season, S.ov)) - now())))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED or CONST_ME_MAGIC_BLUE)
 	pcall(function() player:save() end)
@@ -1137,14 +1137,13 @@ local function checkSeasons(startup)
 	local id = season and season.id or 0
 	if not startup and lastActive ~= nil and id ~= lastActive then
 		if season then
-			Game.broadcastMessage(string.format("%s %s has begun! New characters can join in Adventure > Season.", season.name,
-				season.tag or ""), MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s %s has begun! New characters can join in Adventure > Season.", season.name,
+				season.tag or "")
 			logEvent(season.id, 0, "start", "season started")
 		end
 		local old = S.byId(seasons(), lastActive)
 		if old then
-			Game.broadcastMessage(string.format("%s has ended. Its characters are now standard characters.", old.name),
-				MESSAGE_EVENT_ADVANCE)
+			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s has ended. Its characters are now standard characters.", old.name)
 			logEvent(old.id, 0, "end", "season ended")
 		end
 		S.ladderCache = {}
@@ -1227,11 +1226,10 @@ function login.onLogin(player)
 		local s = S.current()
 		if s then
 			if S.realmOf(p) == s.id then
-				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s %s: %s left. Adventure > Season shows your milestones.",
+				p:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(p, "%s %s: %s left. Adventure > Season shows your milestones.",
 					s.name, s.tag or "", S.formatDuration(select(2, S.times(s, S.ov)) - now())))
 			elseif not S.rowOf(p:getGuid()) and p:getLevel() <= cfg.join.maxLevel then
-				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s is running. This character can still join it: " ..
-					"Adventure > Season in the menu.", s.name))
+				p:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(p, "%s is running. This character can still join it: Adventure > Season in the menu.", s.name))
 			end
 		end
 		S.sendState(p, false)

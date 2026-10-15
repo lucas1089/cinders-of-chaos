@@ -5,7 +5,8 @@
 --   server -> client  state {open?, t, p, xp, xph, lvl, left, ttl, lv, lvh, sv, svh, pf, pfh, dmg, dps, heal, hps, kc,
 --                     k = [[name, n]], l = [[clientId, n, gold, name, rarity, unique, orb]],
 --                     s = [[clientId, n, gold, name]], x = [[clientId, n, name, rarity, unique, orb]]}
---   client -> server  open | close | get | pause | resume | reset
+--   client -> server  open | close | get | pause | resume | reset; restockQuote | restock (server restock.lua; answer
+--                     restockQuote {rows = [[clientId, count, gold, name]], gold, fee, pct, money, why})
 -- While the window is open the server sends a state every 2 s; the session clock ticks here in between.
 -- The top menu (Hunt -> Hunt Tracker) calls toggle().
 -- The base client's analyser (mods/game_analyser) is not used: its loot, supply, damage and kill panes are fed by
@@ -80,7 +81,7 @@ local function showStats()
   window.sessionPanel.pauseButton:setTooltip(paused and tr('Count again from here.') or tr('Stop the clock and the counters.'))
 
   setStat('xp', HuntMath.short(st.xp), HuntMath.exact(st.xp) .. ' experience')
-  setStat('xph', HuntMath.short(st.xph), HuntMath.exact(st.xph) .. ' experience per hour')
+  setStat('xph', HuntMath.short(st.xph), tr('%s experience per hour', HuntMath.exact(st.xph)))
   setStat('next', HuntMath.nextLevel(st.ttl),
     tr('Level %d: %s experience to level %d at the current rate', tonumber(st.lvl) or 0, HuntMath.exact(st.left),
       (tonumber(st.lvl) or 0) + 1))
@@ -91,9 +92,9 @@ local function showStats()
   goldStat('svh', st.svh)
   goldStat('pf', st.pf, HuntMath.profitColor(st.pf))
   goldStat('pfh', st.pfh, HuntMath.profitColor(st.pfh))
-  setStat('dmg', HuntMath.short(st.dmg), HuntMath.exact(st.dmg) .. ' damage dealt')
+  setStat('dmg', HuntMath.short(st.dmg), tr('%s damage dealt', HuntMath.exact(st.dmg)))
   setStat('dps', HuntMath.exact(st.dps), tr('Average over the session'))
-  setStat('heal', HuntMath.short(st.heal), HuntMath.exact(st.heal) .. ' health healed')
+  setStat('heal', HuntMath.short(st.heal), tr('%s health healed', HuntMath.exact(st.heal)))
   setStat('hps', HuntMath.exact(st.hps), tr('Average over the session'))
 end
 
@@ -203,11 +204,70 @@ local function build()
   selectTab(selected)
 end
 
+-- ---------------------------------------------------------------- restock (server restock.lua)
+-- the Restock button asks for a quote; the answer opens a box with what it buys and the gold, Yes buys that quote
+local restockBox
+local RESTOCK_WHY = {
+  pz = 'Restock works in a protection zone in town.',
+  instance = 'Restock does not work inside an instance.',
+  none = 'Nothing to restock: this session used no supplies yet.',
+  money = 'Not enough gold for a restock (carried and bank).',
+}
+
+local function closeRestockBox()
+  if restockBox then restockBox:destroy() restockBox = nil end
+end
+
+local function onRestockQuote(q)
+  closeRestockBox()
+  local why = type(q.why) == 'string' and q.why or ''
+  if why ~= '' then
+    if displayInfoBox then
+      restockBox = displayInfoBox(tr('Restock'), tr(RESTOCK_WHY[why] or RESTOCK_WHY.none))
+      if restockBox then restockBox.onOk = function() restockBox = nil end end
+    end
+    return
+  end
+  local lines = {}
+  for i, r in ipairs(type(q.rows) == 'table' and q.rows or {}) do
+    if i > 12 then break end
+    if type(r) == 'table' then
+      lines[#lines + 1] = string.format('%dx %s', tonumber(r[2]) or 0, tostring(r[4] or '?'))
+    end
+  end
+  local gold = HuntMath.exact(tonumber(q.gold) or 0)
+  local message = tr('Buy back what this hunt used for %s gold?', gold)
+  local fee = tonumber(q.fee) or 0
+  if fee > 0 then
+    message = message .. '\n' .. tr('It includes a %d%% convenience fee: %s gold.', tonumber(q.pct) or 0, HuntMath.exact(fee))
+  end
+  message = message .. '\n' .. table.concat(lines, '\n')
+  local function yes()
+    closeRestockBox()
+    send('restock')
+  end
+  if displayGeneralBox then
+    restockBox = displayGeneralBox(tr('Restock'), message,
+      { { text = tr('Yes'), callback = yes }, { text = tr('No'), callback = closeRestockBox }, anchor = AnchorHorizontalCenter },
+      yes, closeRestockBox)
+  else
+    yes()
+  end
+end
+
+function restock()
+  send('restockQuote')
+end
+
 -- ---------------------------------------------------------------- protocol
 local function onExtendedOpcode(protocol, opcode, buffer)
   local ok, msg = pcall(json.decode, buffer)
   if not ok or type(msg) ~= 'table' then
     g_logger.error('[hunt] invalid JSON: ' .. tostring(msg))
+    return
+  end
+  if msg.action == 'restockQuote' and type(msg.data) == 'table' then
+    onRestockQuote(msg.data)
     return
   end
   if msg.action ~= 'state' or type(msg.data) ~= 'table' then return end
@@ -291,6 +351,7 @@ function copySummary()
 end
 
 local function onGameEnd()
+  closeRestockBox()
   if window then window:hide() end
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
   state = nil

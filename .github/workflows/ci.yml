@@ -15,7 +15,7 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -64,9 +64,19 @@ jobs:
 
       - name: Client modules (otmod name, scripts)
         run: python3 -I tools/ci/check_modules.py
+      - name: Client localization (every tr() key has pt-BR, no hard-coded UI text)
+        run: python3 -I tools/ci/check_locales.py
 
-      - name: Client layouts (no fit-children on anchor-sized widgets)
-        run: python3 -I tools/ci/check_layouts.py
+      - name: Credits (every art pack of the sources files named in docs/CREDITS.md, pt-BR headings, generated data up to date)
+        run: |
+          python3 -I tools/ci/check_credits.py
+          python3 -I tools/ci/check_credits_test.py
+          python3 -I client/tools/gen_credits_test.py
+
+      - name: Client layouts (no fit-children on anchor-sized widgets, no anchor cycles)
+        run: |
+          python3 -I tools/ci/check_layouts.py
+          python3 -I tools/ci/check_layouts_test.py
 
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
@@ -111,16 +121,29 @@ jobs:
       - name: Area generator export (the Lua generator's dump, OTBM writer and reader, spawn file)
         run: python3 -I server/tools/areagen_export_test.py
 
-      - name: Area planner (validator, reachability maths, layout, compiler, decoration, place; the example plans)
+      - name: Area planner (validator, reachability maths, layout, compiler, decoration, place; the example and content plans)
         run: |
           # system numpy: place reads maps with tools/map/otbm.py (python3 -I does not see pip's user site)
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/area_planner_test.py
+          python3 -I server/tools/gen_spawn_density_test.py   # the hunt fill (tools/spawn_density.json); same numpy
           d=$(mktemp -d)
-          for p in server/tools/areaplan/examples/*.json; do
+          for p in server/tools/areaplan/examples/*.json server/tools/areaplan/plans/*.json; do
             python3 -I server/tools/area_planner.py validate "$p"
             python3 -I server/tools/area_planner.py compile "$p" "$d"
           done
+
+      - name: Content areas install and the teleport room (install_content_areas.py on a synthetic map)
+        run: python3 -I server/tools/install_content_areas_test.py
+
+      - name: Idle Hall plan (validates, compiles, the config's origin, arrival and fixture slots)
+        run: python3 -I server/tools/idle_hall_test.py
+
+      - name: Halls of Services plans (validate, compile, booths closed and reached, portals, NPCs never walk)
+        run: python3 -I server/tools/services_halls_test.py
+
+      - name: Idle kick patch (config.lua kickIdlePlayerAfterMinutes on a copy of the stock text)
+        run: python3 -I server/tools/patch_base_idle_kick_test.py
 
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
@@ -143,11 +166,29 @@ jobs:
       - name: Everfull Ration install (items.otb / items.xml, synthetic)
         run: python3 -I server/tools/install_store_food_test.py
 
+      - name: Depot to stash migration tool (SQL, refusals, a stub mysql client)
+        run: python3 -I server/tools/migrate_depot_stash_test.py
+
+      - name: Home town migration tool (SQL, defaults, refusals)
+        run: python3 -I server/tools/migrate_home_town_test.py
+
+      - name: Gem install with our own looks (items.otb ownLook, synthetic)
+        run: python3 -I server/tools/install_gems_test.py
+
       - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
         run: python3 -I server/tools/weightless_patch_test.py
 
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py
+
+      - name: Low stamina cuts the loot, faster offline stamina (patch_base_events.py steps 16 and 17, stock copies)
+        run: python3 -I server/tools/stamina_catchup_patch_test.py
+
+      - name: Store items kept on death (patch_base_events.py step 15, stock copy)
+        run: python3 -I server/tools/death_keep_patch_test.py
+
+      - name: Gentle deaths (patch_base_events.py step 18, stock copy)
+        run: python3 -I server/tools/gentle_death_patch_test.py
 
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py
@@ -304,13 +345,28 @@ jobs:
           python3 -I server/tools/install_theme_items.py --lua --check
           # pack effect cuts: spec and sums match gen_pack_fx.py's table (the art set and the strips are not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
+          # pack farming spell effects (pair 27 trial): spec and sums match gen_pack27_fx.py's table (sets not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack27_fx.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
+          # gem looks (the owner's gem set): atlas, things spec and the Codex strips match the generator (same pins)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gem_art.py build --check
+          # status words (the owner's text effect set): the spec matches the strips and the PICKS table
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_fx.py build --check
+          # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_owner_art.py build --check
+          python3 -I client/tools/sprites/gen_owner_art_test.py
+          python3 -I server/tools/install_owner_decor.py --lua --check
+          python3 -I server/tools/install_owner_decor_test.py
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)
         # icons, guide heroes and tab banners; the same pinned Pillow and numpy as the art checks above (WebP bytes)
         run: /tmp/fxenv/bin/python -I website/tools/gen_wiki_art.py --check
+
+      - name: Dungeon banners match their plan and the dungeon maps (gen_dungeon_banners.py, no pair)
+        # the plan's tiles, boss and monsters against a fresh areagen dump (LuaJIT), the banners' pixels against the plan
+        run: /tmp/fxenv/bin/python -I client/tools/gen_dungeon_banners.py --check
 
       - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
         run: python3 -I client/tools/outfit_art/class_art_test.py
@@ -385,6 +441,12 @@ jobs:
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_outfit_anchors.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq luajit
+          /tmp/fxenv/bin/python -I chaos/client/tools/gen_dungeon_banners.py --check \
+              --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Website sprite images draw from the live pair (gen_sprite_images.py, our art only, no items.otb)
         run: |

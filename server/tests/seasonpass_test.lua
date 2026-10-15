@@ -104,7 +104,7 @@ eq(#pass.packs, 3, "three packs")
 eq(P.packIncludesPremium(pass.packs[1]), false, "Ember has no pass")
 eq(P.packIncludesPremium(pass.packs[2]), true, "Blaze has the pass")
 eq(P.hasPremium(pass, false, 3), true, "Inferno holds the pass (it holds Blaze)")
-eq(P.packPrice(pass, 3, 1, 1000), 1600, "Ember + pass -> Inferno: both count")
+eq(P.packPrice(pass, 3, 1, 600), 1400, "Ember + pass -> Inferno: both count")
 for _, pk in ipairs(pass.packs) do
 	for _, r in ipairs(pk.rewards) do
 		if r.kind == "coins" or r.kind == "tierskips" then
@@ -247,6 +247,17 @@ eq((P.sourceGain(cfg, "rift", 10, 0)), 120, "rift tier 10: 40 + 8 x 10")
 eq((P.sourceGain(cfg, "bounty", nil, 590)), 10, "bounty cap")
 eq((P.sourceGain(cfg, "boss", nil, 0)), 150, "boss")
 eq((P.sourceGain(cfg, "nothing", nil, 0)), 0, "unknown source")
+-- the daily caps bank over cfg.bankDays days (a rolling window): newest day first
+eq(cfg.bankDays, 3, "three days bank")
+eq(P.sourceRoom(cfg, "exp", {0, 0, 0}, 3), 900, "two days missed: three days of cap today")
+eq(P.sourceRoom(cfg, "exp", {0, 300, 300}, 3), 300, "a daily player keeps one day of cap")
+eq(P.sourceRoom(cfg, "exp", {0, 0, 300}, 3), 600, "one day missed")
+eq(P.sourceRoom(cfg, "exp", {900, 0, 0}, 3), 0, "the bank spent today")
+eq(P.sourceRoom(cfg, "exp", {0, 900, 0}, 3), 0, "spent yesterday: nothing more until the window moves on")
+eq(P.sourceRoom(cfg, "exp", {0, 0, 0}, 1), 300, "the season's first day banks nothing before it")
+eq(P.sourceRoom(cfg, "exp", 280), 20, "a plain number is today's use, as before")
+eq((P.sourceGain(cfg, "rift", 10, {0, 1200, 0}, 3)), 120, "rift with a banked day")
+eq((P.sourceGain(cfg, "bounty", nil, {1790, 0, 0}, 3)), 10, "bounty at the banked cap")
 -- every source the engine file sends is configured
 for _, s in ipairs({"exp", "boss", "bounty", "rift", "goblin", "invasion"}) do
 	eq(cfg.sources[s] ~= nil, true, "source " .. s)
@@ -335,14 +346,14 @@ eq(#P.claimable(pass, view(5, true, {[0] = {[1] = true, [2] = true}, [1] = {[1] 
 eq(P.claimedString({[1] = true, [3] = true}, 4), "1010", "claimed string")
 
 -- ---------------------------------------------------------------- packs
-eq(P.packPrice(pass, 1, 0, 0), 600, "Ember fresh")
-eq(P.packPrice(pass, 3, 0, 0), 3200, "Inferno fresh")
-eq(P.packPrice(pass, 3, 1, 0), 2600, "Ember -> Inferno pays the difference")
-eq(P.packPrice(pass, 3, 2, 0), 1400, "Blaze -> Inferno")
-eq(P.packPrice(pass, 2, 0, 1000), 800, "pass bought alone counts for Blaze")
-eq(P.packPrice(pass, 2, 1, 1000), 200, "Ember + pass -> Blaze")
-eq(P.packPrice(pass, 3, 2, 1000), 1400, "the pass counts once (Blaze already holds it)")
-eq(P.packPrice(pass, 1, 0, 1000), 600, "the pass does not count for Ember (no pass in it)")
+eq(P.packPrice(pass, 1, 0, 0), 500, "Ember fresh")
+eq(P.packPrice(pass, 3, 0, 0), 2500, "Inferno fresh")
+eq(P.packPrice(pass, 3, 1, 0), 2000, "Ember -> Inferno pays the difference")
+eq(P.packPrice(pass, 3, 2, 0), 1000, "Blaze -> Inferno")
+eq(P.packPrice(pass, 2, 0, 600), 900, "pass bought alone counts for Blaze")
+eq(P.packPrice(pass, 2, 1, 600), 400, "Ember + pass -> Blaze")
+eq(P.packPrice(pass, 3, 2, 600), 1000, "the pass counts once (Blaze already holds it)")
+eq(P.packPrice(pass, 1, 0, 600), 500, "the pass does not count for Ember (no pass in it)")
 local price, reason = P.packPrice(pass, 1, 1, 0)
 eq(price, nil, "owned")
 eq(reason ~= nil, true, "owned reason")
@@ -406,6 +417,10 @@ do
 	local text = f:read("*a")
 	f:close()
 	eq(text:find("function SP.ownsTransmog(player, key)", 1, true) ~= nil, true, "transmog.lua's season hook exists")
+	-- coins can leave the balance from the website meanwhile: the spend must read ROW_COUNT, not trust db.query
+	local spend = text:match("local function spendCoins%(account, amount%)(.-)\nend\n")
+	eq((spend and spend:find("Shop.spend(account, amount)", 1, true) and spend:find("ROW_COUNT()", 1, true)) and true or false, true,
+		"spendCoins counts only an UPDATE that changed the row")
 end
 
 print(string.format("seasonpass_test: OK (%d tiers, %d packs, %d cosmetics, %d XP to the top)", #pass.tiers, #pass.packs,

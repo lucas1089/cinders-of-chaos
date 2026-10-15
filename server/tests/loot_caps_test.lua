@@ -19,8 +19,11 @@ end
 -- ---------------------------------------------------------------- engine mock
 Chaos = {}
 MAX_LOOTCHANCE = 100000
-local registered
-EventCallback = setmetatable({register = function(self, index) registered = index end}, {__newindex = rawset})
+local registered, dropSteps = nil, {}
+EventCallback = setmetatable({register = function(self, index)
+	registered = registered or index
+	dropSteps[#dropSteps + 1] = {index = index, fn = self.onDropLoot}
+end}, {__newindex = rawset})
 function ItemType(id)
 	return {isStackable = function() return id ~= 2400 end, getName = function() return "item " .. id end}
 end
@@ -103,7 +106,157 @@ ok(#cur == 1 and cur[1].id == 1, "the scale is exactly the cap (3.0)")
 C.currency.maxScale = nil
 cur = L.rollCurrency("normal", {itemFind = 4, orbFind = 2})
 ok(#cur == 2, "without the cap both hit")
+-- pack combat (pace.lua): ctx.pace scales the currency chance after the cap (3400 x 3 = 10200 hits; x0.5 = 5100 not)
+C.currency.maxScale = 3.0
+cur = L.rollCurrency("normal", {itemFind = 4, orbFind = 2, pace = 0.5})
+ok(#cur == 0, "pace: the currency chance x the loot factor, outside the cap")
 L.setRandom(nil)
+
+-- pace: extra rolls x the loot factor (a 5% entry at x2 rate x0.2 pace = 2%: a 3% roll misses, a 1% roll hits)
+do
+	local saved = C.rateMult
+	C.rateMult = 2
+	local roll
+	L.setRandom(function(a, b)
+		if a == 0 and b == 100000 then
+			return roll
+		end
+		return a
+	end)
+	local tbl = {{itemId = 2148, chance = 5000, minCount = 1, maxCount = 1}}
+	local function rolls(pace)
+		local out = L.rollExtraLoot(tbl, "magic", {level = 0, pace = pace})
+		return #out
+	end
+	roll = 3000
+	local base = rolls(nil)
+	local paced = rolls(0.2)
+	roll = 1000
+	local paced2 = rolls(0.2)
+	ok(base > 0 and paced == 0 and paced2 > 0, "pace: extra roll chance x the loot factor ("
+		.. base .. "/" .. paced .. "/" .. paced2 .. ")")
+	C.rateMult = saved
+	L.setRandom(nil)
+end
+
+-- pace: thinning a corpse
+do
+	ChaosPaceCore = nil
+	dofile("data/scripts/chaos/pace_core.lua")
+	local removed = {}
+	local function item(id, count)
+		local it = {id = id, count = count}
+		function it:getId() return self.id end
+		function it:getCount() return self.count end
+		function it:remove(n)
+			if n then
+				self.count = self.count - n
+			else
+				removed[#removed + 1] = self.id
+				self.count = 0
+			end
+			return true
+		end
+		return it
+	end
+	local coins, sword = item(2148, 100), item(2400, 1)
+	local corpse = {items = {coins, sword}}
+	function corpse:getSize() return #self.items end
+	function corpse:getItem(i) return self.items[i + 1] end
+	local stackable = {[2148] = true}
+	local savedS = L.isStackableId
+	L.isStackableId = function(id) return stackable[id] == true end
+	L.setRandom(function(a, b) return math.floor((a + b) / 2) end) -- 0.5 for the thinning
+	L.thinCorpse(corpse, 0.2)
+	ok(coins.count == 20, "pace: 100 coins x0.2 = 20 (" .. coins.count .. ")")
+	ok(removed[1] == 2400, "pace: a sword at 0.5 >= 0.2 removed")
+	coins.count = 100
+	removed = {}
+	L.setRandom(function(a, b) return a end) -- 0.0
+	local sword2 = item(2400, 1)
+	corpse.items = {coins, sword2}
+	L.thinCorpse(corpse, 0.3)
+	ok(#removed == 0 and sword2.count == 1, "pace: a sword at 0.0 < 0.3 kept")
+	ok(L.thinCorpse(corpse, 1) == 0, "pace: factor 1 changes nothing")
+	L.isStackableId = savedS
+	L.setRandom(nil)
+end
+
+-- ---------------------------------------------------------------- pace: a corpse the autoloot empties decays fast too
+do
+	ITEM_ATTRIBUTE_DURATION = ITEM_ATTRIBUTE_DURATION or 9
+	ChaosPaceConfig = {enabled = true, emptyCorpseSeconds = 30}
+	local pacedMonster = {getId = function() return 5 end}
+	local stockMonster = {getId = function() return 6 end}
+	ChaosPace = {isPaced = function(m) return m == pacedMonster end}
+	local function corpseOf(n)
+		local c = {items = n, duration = nil, decays = 0}
+		function c:getSize() return self.items end
+		function c:setAttribute(k, v) if k == ITEM_ATTRIBUTE_DURATION then self.duration = v end end
+		function c:decay() self.decays = self.decays + 1 end
+		return c
+	end
+	-- the steps after the loot layer (index > priority) that run after every autoloot (3.5) and the filter finish (4.5)
+	local late
+	for _, s in ipairs(dropSteps) do
+		if s.fn and s.index > 4.5 then
+			late = s.fn
+		end
+	end
+	ok(late ~= nil, "an empty corpse check runs after the autoloot steps")
+	if late then
+		-- the autoloot (Loot Bag, base autoloot) took the last item: empty at the end of the drop
+		local looted = corpseOf(0)
+		late(pacedMonster, looted)
+		ok(looted.duration == 30000 and looted.decays == 1, "emptied by autoloot: short decay")
+		local left = corpseOf(2)
+		late(pacedMonster, left)
+		ok(left.duration == nil and left.decays == 0, "items left in it: stock decay")
+		local stock = corpseOf(0)
+		late(stockMonster, stock)
+		ok(stock.duration == nil, "not paced: stock decay")
+		ChaosPaceConfig.emptyCorpseSeconds = 0
+		local off = corpseOf(0)
+		late(pacedMonster, off)
+		ok(off.duration == nil, "emptyCorpseSeconds 0: stock decay")
+	end
+	ChaosPace, ChaosPaceConfig = nil, nil
+end
+
+-- bad-luck protection (conquest.lua) in L.rollUniques: with an owner the chance x the group's multiplier, every group
+-- with an eligible entry records a miss or a hit; without an owner (simulation, chests) nothing changes
+do
+	local list = {
+		{id = 9001, name = "Monster Blade", minTier = "magic", chance = 10, monsters = {"Wolf"}},
+		{id = 9002, name = "Boss Crown", minTier = "boss", chance = 10, bossOnly = true, monsters = {"Wolf"}},
+		{id = 9003, name = "Set Helm", minTier = "magic", chance = 10, set = "embers", monsters = {"Wolf"}}
+	}
+	local mult, records = {monster = 1, boss = 1, set = 1}, {}
+	ChaosConquest = {
+		pityMult = function(_, g) return mult[g] end,
+		pityRecord = function(_, g, hit, id) records[#records + 1] = {g = g, hit = hit, id = id} end
+	}
+	local owner = {}
+	-- a magic kill: chance 10 x1 per 10000 = 1000 per 1,000,000; a roll of 1500 misses, x2 pity makes it hit
+	L.setRandom(function(a, b) return b == 1000000 and 1500 or a end)
+	ok(#L.rollUniques("magic", "Wolf", 50, 1, list, owner) == 0, "no pity: the roll misses")
+	local groups = {}
+	for _, r in ipairs(records) do groups[r.g] = r.hit end
+	ok(groups.monster == false and groups.set == false and groups.boss == nil, "monster and set misses recorded, no boss roll")
+	records = {}
+	mult.monster = 2
+	local hits = L.rollUniques("magic", "Wolf", 50, 1, list, owner)
+	ok(#hits == 1 and hits[1].id == 9001, "x2 pity: the monster unique drops")
+	groups = {}
+	for _, r in ipairs(records) do groups[r.g] = r end
+	ok(groups.monster and groups.monster.hit == true and groups.monster.id == 9001, "the hit resets the monster group")
+	ok(groups.set and groups.set.hit == false, "the set group still missed")
+	records = {}
+	L.rollUniques("magic", "Wolf", 50, 1, list, nil)
+	ok(#records == 0, "no owner: no pity")
+	ChaosConquest = nil
+	L.setRandom(math.random)
+end
 
 print(string.format("loot_caps_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

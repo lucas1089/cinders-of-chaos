@@ -21,12 +21,16 @@
 -- refuses it, the stock market does not list it). The trade window refuses it (onTradeRequest / onTradeAccept), and
 -- Player:onMoveItem (hook written by install_pouches.py) keeps it, and any container holding it, in the character's
 -- inventory or depot: no ground, no mailbox, no house, no other player's container. Player market: ChaosPouches.isPouch.
--- Death: the engine may drop the backpack into the corpse; the pouch is then taken out of the corpse (its contents stay
--- in the corpse, like the rest of the backpack) and given back, empty, at the next login.
+-- Death: death_keep.lua (hook in the base droploot.lua) takes the pouch out of a dropping backpack before it drops (its
+-- contents drop with the backpack) and parks it in the inbox, back in the backpack at the next login; this works with
+-- no corpse too (a death on water). The corpse search below is the fallback for a server without that hook.
 -- The retired Bottomless Loot Pouch unlock (storage 7100100): its owners get a Loot Bag for free once, at login.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/pouches_core.lua")
 dofile("data/scripts/chaos/pouches_config.lua")
@@ -69,21 +73,27 @@ function PO.isPouch(item)
 	return customAttr(item, cfg().attr.storebound) ~= nil
 end
 
--- the item is a pouch or a container with a pouch somewhere inside
-function PO.holdsPouch(item, depth)
+-- the item is a pouch or a container with a pouch somewhere inside. Every nesting level is walked (a depth limit let a
+-- pouch 9+ bags deep be traded or dropped); past HOLDS_BUDGET items the answer is true, so a huge pile is refused too.
+local HOLDS_BUDGET = 4000
+function PO.holdsPouch(item)
 	if not item then
 		return false
 	end
-	if PO.isPouch(item) then
-		return true
-	end
-	depth = depth or 0
-	if depth > 8 or not item.isContainer or not item:isContainer() then
-		return false
-	end
-	for _, inner in ipairs(item:getItems() or {}) do
-		if PO.holdsPouch(inner, depth + 1) then
+	local queue, i = {item}, 1
+	while queue[i] do
+		if i > HOLDS_BUDGET then
 			return true
+		end
+		local it = queue[i]
+		i = i + 1
+		if PO.isPouch(it) then
+			return true
+		end
+		if it.isContainer and it:isContainer() then
+			for _, inner in ipairs(it:getItems() or {}) do
+				queue[#queue + 1] = inner
+			end
 		end
 	end
 	return false
@@ -494,7 +504,7 @@ end
 local trade = EventCallback
 trade.onTradeRequest = function(player, target, item)
 	if PO.holdsPouch(item) then
-		player:sendCancelMessage("Store items cannot be traded.")
+		player:sendCancelMessage(Chaos.t(player, "Store items cannot be traded."))
 		return false
 	end
 	return true
@@ -504,7 +514,7 @@ trade:register(1)
 local accept = EventCallback
 accept.onTradeAccept = function(player, target, item, targetItem)
 	if PO.holdsPouch(item) or PO.holdsPouch(targetItem) then
-		player:sendCancelMessage("Store items cannot be traded.")
+		player:sendCancelMessage(Chaos.t(player, "Store items cannot be traded."))
 		return false
 	end
 	return true
@@ -591,8 +601,8 @@ function PO.storeGive(player, kind, why)
 	if not where then
 		return "Something went wrong. Your coins were refunded."
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: your %s is in your %s. It collects %s while you " ..
-		"carry it.", why or "Store", k.title, where, k.collects))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: your %s is in your %s. It collects %s while you carry it.",
+		Chaos.t(player, why or "Store"), k.title, Chaos.t(player, where), Chaos.t(player, k.collects)))
 	return true
 end
 
@@ -703,8 +713,8 @@ function login.onLogin(player)
 			end
 			setBits(player, c.storage.regrant, bits)
 			if #back > 0 then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Back after your death, empty: your %s (%s).",
-					table.concat(back, ", "), where))
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Back after your death, empty: your %s (%s).",
+					table.concat(back, ", "), Chaos.t(player, where)))
 			end
 		end
 	end)

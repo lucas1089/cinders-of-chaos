@@ -37,7 +37,13 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/professions_core.lua")
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
+end
 
 Chaos.professionsConfig = dofile("data/scripts/chaos/professions_config.lua")
 local cfg = Chaos.professionsConfig
@@ -97,8 +103,9 @@ local function constant(name, fallback)
 	return v ~= nil and v or fallback
 end
 
+-- text: a key (Chaos.t) or a deferred text (ChaosI18n.msg): in the player's language
 local function msg(player, text, kind)
-	player:sendTextMessage(kind or MESSAGE_INFO_DESCR, text)
+	player:sendTextMessage(kind or MESSAGE_INFO_DESCR, Chaos.t(player, text))
 end
 
 local function fx(pos, name, fallback)
@@ -449,7 +456,7 @@ local function giveMaterial(player, id, count)
 		local inbox = player:getInbox()
 		if inbox then
 			inbox:addItem(id, rest)
-			msg(player, "Your backpack is full: " .. rest .. " went to your inbox.", MESSAGE_STATUS_SMALL)
+			msg(player, ChaosI18n.msg("Your backpack is full: %s went to your inbox.", rest), MESSAGE_STATUS_SMALL)
 		end
 	end
 	return count
@@ -471,15 +478,15 @@ function P.reward(player, S, prof, r)
 	local exp = K.charXp(cfg, player:getLevel())
 	pcall(function() player:addExperience(exp, true) end)
 	if r.count > 0 then
-		msg(player, string.format("You gathered %d %s (+%d %s experience).", r.count, plural(mat, r.count), r.xp, p.name))
+		msg(player, ChaosI18n.msg("You gathered %d %s (+%d %s experience).", r.count, plural(mat, r.count), r.xp, p.name))
 	else
-		msg(player, string.format("Nothing worth keeping (+%d %s experience).", r.xp, p.name), MESSAGE_STATUS_SMALL)
+		msg(player, ChaosI18n.msg("Nothing worth keeping (+%d %s experience).", r.xp, p.name), MESSAGE_STATUS_SMALL)
 	end
 	if gained > 0 then
 		refreshBonus(S)
 		saveLevel(S, prof)
 		fx(player:getPosition(), "CONST_ME_FIREWORK_YELLOW", 29)
-		msg(player, string.format("You advanced to %s level %d. Profession experience bonus: +%s%%.", p.name, e.level,
+		msg(player, ChaosI18n.msg("You advanced to %s level %d. Profession experience bonus: +%s%%.", p.name, e.level,
 			fmtPct(S.bonus)), MESSAGE_EVENT_ADVANCE)
 		Chaos.send(player, OPCODE, "levelup", {k = prof, lv = e.level, from = before})
 		setAchievements(player, S) -- the buff bar's entry follows S.bonus on its next look (every second)
@@ -516,7 +523,7 @@ local function finish(player, ch)
 		local nd = P.nodes[ch.node]
 		if not nd or not nodeOnTile(nd.pos, nd.id) then
 			castbar(player, "end", {s = ch.serial, r = "failed"})
-			return player:sendCancelMessage("The vein is gone.")
+			return player:sendCancelMessage(Chaos.t(player, "The vein is gone."))
 		end
 		P.cooldowns[S.guid] = P.cooldowns[S.guid] or {}
 		P.cooldowns[S.guid][ch.node] = now() + cfg.respawnMin * 60
@@ -529,7 +536,7 @@ local function finish(player, ch)
 		local corpse = P.findCorpse(ch.pos, ch.corpse)
 		if not corpse then
 			castbar(player, "end", {s = ch.serial, r = "failed"})
-			return player:sendCancelMessage("The corpse is gone.")
+			return player:sendCancelMessage(Chaos.t(player, "The corpse is gone."))
 		end
 		corpse:setCustomAttribute(FLAYED_ATTR, 1)
 		g.chance = cfg.flaying.chance
@@ -638,7 +645,7 @@ function P.gatherNode(player, nodeItem, pos)
 	local e = S.levels[def.prof]
 	local tier = K.gatherTier(cfg, def.tier, e.level, player:getLevel())
 	if tier < def.tier and e.level < cfg.tiers[def.tier].profLevel then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("With %s %d you only get %s materials here (%s %d for more).",
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "With %s %d you only get %s materials here (%s %d for more).",
 			p.name, e.level, cfg.tiers[tier].name:lower(), p.name, cfg.tiers[def.tier].profLevel))
 	end
 	return P.startChannel(player, {prof = def.prof, tier = def.tier, pos = pos, node = key})
@@ -756,7 +763,7 @@ end
 
 function P.sell(player, id, n)
 	if not brokerNear(player) then
-		return result(player, false, "Sell to a Material Broker: they stand next to every temple.")
+		return result(player, false, "Sell to a Material Broker: one stands next to every temple, in Cinderhold and Mirewake in the Hall of Services.")
 	end
 	local mat = idx.mat[tonumber(id) or 0]
 	if not mat then
@@ -772,7 +779,7 @@ end
 
 function P.sellAll(player)
 	if not brokerNear(player) then
-		return result(player, false, "Sell to a Material Broker: they stand next to every temple.")
+		return result(player, false, "Sell to a Material Broker: one stands next to every temple, in Cinderhold and Mirewake in the Hall of Services.")
 	end
 	local S = stateOf(player)
 	local units, gold = 0, 0
@@ -787,27 +794,6 @@ function P.sellAll(player)
 end
 
 -- ---------------------------------------------------------------- broker placement
-local function placeNpc(name, pos)
-	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do
-		if c:isNpc() and c:getName():lower() == name:lower() then
-			return c
-		end
-	end
-	return Game.createNpc(name, pos)
-end
-
-local function freeTileNear(temple)
-	for _, o in ipairs(cfg.broker.offsets) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
-end
-
 function P.placeBrokers()
 	local towns = {}
 	if cfg.broker.towns == "all" then
@@ -820,15 +806,14 @@ function P.placeBrokers()
 	local placed, missed = 0, {}
 	for _, town in ipairs(towns) do
 		local temple = town and town:getTemplePosition()
-		local pos = temple and freeTileNear(temple)
-		if pos and try("place broker", placeNpc, cfg.broker.npc, pos) then
+		if temple and try("place broker", ChaosNpcPlace.place, cfg.broker.npc, temple, cfg.broker.offsets, cfg.broker.place) then
 			placed = placed + 1
 		else
 			missed[#missed + 1] = town and town:getName() or "?"
 		end
 	end
 	if #missed > 0 then
-		log("no Material Broker at " .. table.concat(missed, ", ") .. " (no free tile next to the temple, or data/npc/" ..
+		log("no Material Broker at " .. table.concat(missed, ", ") .. " (no free tile near the temple, or data/npc/" ..
 			cfg.broker.npc .. ".xml is missing: tools/install_professions.py)")
 	end
 	return placed

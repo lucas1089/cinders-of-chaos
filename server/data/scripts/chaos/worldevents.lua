@@ -11,6 +11,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosInvasionCore or not ChaosInvasionCore.pickWorldEvent then
 	dofile("data/scripts/chaos/invasion_core.lua")
 end
@@ -34,7 +37,7 @@ local function announce(text)
 	if ChaosInvasion and ChaosInvasion.announce then
 		ChaosInvasion.announce(text)
 	else
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 	end
 end
 
@@ -76,13 +79,13 @@ local function describe(kind, area, endsAt)
 	local e = we()[kind] or {}
 	local until_ = os.date("%H:%M", endsAt)
 	if kind == "storm" then
-		return string.format("A Chaos Storm rages over %s until %s: magic, rare and legendary monsters appear %s times as often there.",
+		return ChaosI18n.msg("A Chaos Storm rages over %s until %s: magic, rare and legendary monsters appear %s times as often there.",
 			area.name, until_, tostring(e.tierMult or 3))
 	elseif kind == "golden" then
-		return string.format("Golden Hour in %s until %s: +%d%% loot from every monster there.", area.name, until_,
+		return ChaosI18n.msg("Golden Hour in %s until %s: +%d%% loot from every monster there.", area.name, until_,
 			math.floor(((e.lootMult or 1.25) - 1) * 100 + 0.5))
 	end
-	return string.format("A Wandering Merchant has set up shop somewhere in %s until %s: orbs and rare goods at a good price. Find him!",
+	return ChaosI18n.msg("A Wandering Merchant has set up shop somewhere in %s until %s: orbs and rare goods at a good price. Find him!",
 		area.name, until_)
 end
 
@@ -151,7 +154,7 @@ function W.stop(quiet)
 	setCalendar(nil)
 	if not quiet then
 		local e = we()[a.kind] or {}
-		announce(string.format("The %s in %s is over.", e.name or a.kind, a.area.name))
+		announce(ChaosI18n.msg("The %s in %s is over.", e.name or a.kind, a.area.name))
 	end
 	return true
 end
@@ -228,7 +231,7 @@ function W.start(kind, areaKey)
 		addEvent(goldenFx, 500, W.token)
 	end
 	local text = describe(kind, area, endsAt)
-	setCalendar({id = "worldEvent", name = e.name or kind, description = text, untilTime = endsAt})
+	setCalendar({id = "worldEvent", name = e.name or kind, description = tostring(text), untilTime = endsAt})
 	announce(text)
 	local where = W.active.npcPos and string.format(" at %d,%d,%d", W.active.npcPos.x, W.active.npcPos.y, W.active.npcPos.z) or ""
 	return true, (e.name or kind) .. " in " .. area.name .. where -- the spot only for the staff reply

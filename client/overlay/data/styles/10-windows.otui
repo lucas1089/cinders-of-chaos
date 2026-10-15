@@ -106,7 +106,7 @@ ActionAssignWindow < MainWindow
     margin-left: 130
     margin-top: -7
     text-auto-resize: true
-    text: Mode: "Chat On"
+    !text: tr('Mode: "Chat On"')
     font: $var-cip-font
     color: $var-text-cip-color
 
@@ -130,7 +130,7 @@ ActionAssignWindow < MainWindow
     margin-left: -1
     text-auto-resize: true 
     text-wrap: true
-    text: Click "Ok" to assign the hotkey. Click "Clear" to remove the hotkey from "
+    !text: tr('Click "Ok" to assign the hotkey. Click "Clear" to remove the hotkey from "')
     font: $var-cip-font
     color: $var-text-cip-color
 
@@ -142,7 +142,7 @@ ActionAssignWindow < MainWindow
     margin-top: 8
     margin-left: 5
     text-auto-resize: true
-    text: This hotkey is already in use and will be overwritten.
+    !text: tr('This hotkey is already in use and will be overwritten.')
     color: #f75f5f
     font: $var-cip-font
     visible: false
@@ -159,7 +159,7 @@ ActionAssignWindow < MainWindow
     anchors.bottom: parent.bottom
     size: 45 21
     font: cipsoftFont
-    text: Close
+    !text: tr('Close')
     @onClick: self:getParent():destroy()
 
   Button
@@ -169,7 +169,7 @@ ActionAssignWindow < MainWindow
     anchors.bottom: parent.bottom
     size: 45 21
     font: cipsoftFont
-    text: Clear
+    !text: tr('Clear')
 
   Button
     id: buttonOk
@@ -178,7 +178,7 @@ ActionAssignWindow < MainWindow
     anchors.bottom: parent.bottom
     size: 45 21
     font: cipsoftFont
-    text: Ok
+    !text: tr('Ok')
 
 WindowPanel < Panel
   image-source: /images/ui/window

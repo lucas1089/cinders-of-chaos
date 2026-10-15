@@ -154,7 +154,7 @@ do
 	local login, logout = events["ChaosDungeonsLogin:creature"], events["ChaosDungeonsLogout:creature"]
 	ok(ext and login and logout, "dungeons: events")
 	local cfg = Chaos.dungeons
-	eq(cfg.maxTimeSeconds, 2700, "dungeons: 45 minutes at most")
+	eq(cfg.maxTimeSeconds, 900, "dungeons: 15 minutes at most (pack combat)")
 	local a = newPlayer(1, "Dara", P(100, 100, 7))
 	local b = newPlayer(2, "Elm", P(101, 100, 7))
 	login.onLogin(a)
@@ -164,7 +164,7 @@ do
 	for _, s in ipairs(sent) do
 		if s.action == "start" and s.p == a then start = s.data end
 	end
-	eq(start and start.duration, 2700 * 1000, "dungeons: the client's clock is the capped time (60 -> 45 minutes)")
+	eq(start and start.duration, 900 * 1000, "dungeons: the client's clock is the capped time (60 -> 15 minutes)")
 	-- a second player queues: the wait is the run inside (the window's dungeon page)
 	ItemType = function(id) return {getId = function() return id end, getClientId = function() return id end} end
 	MonsterType = function() return nil end
@@ -176,21 +176,22 @@ do
 	for _, s in ipairs(sent) do
 		if s.action == "dungeon" and s.data.queue then wait = s.data.queue.estimated end
 	end
-	ok(wait and wait >= 2690 * 1000, "dungeons: the queue shows the wait of the run inside: " .. tostring(wait))
+	ok(wait and wait >= 890 * 1000, "dungeons: the queue shows the wait of the run inside: " .. tostring(wait))
 	-- staff list
 	local found
 	for _, r in ipairs(IL.runs()) do
 		if r.key == "dungeon" then found = r end
 	end
-	ok(found and found.players == 1 and found.left == 2700 and found.note == "1 queued", "dungeons: listed")
+	ok(found and found.players == 1 and found.left == 900 and found.note == "1 queued", "dungeons: listed")
 	-- warnings, then time up
-	advance((2700 - 300 + 3) * 1000)
+	advance((900 - 300 + 3) * 1000)
 	ok(said(a, "Bones Dungeon: 5 minutes left"), "dungeons: the 5 minute warning: " .. table.concat(a.msgs, " | "))
 	advance(240 * 1000)
 	ok(said(a, "Bones Dungeon: 1 minute left"), "dungeons: the 1 minute warning")
 	advance(61 * 1000)
 	eq(a.pos.x, 100, "dungeons: time up: back where the player entered")
-	ok(a.storage[50203] and a.storage[50203] > os.time(), "dungeons: the failure cooldown")
+	ok(a.storage[50203] and a.storage[50203] - os.time() <= Chaos.dungeons.failCooldownSeconds and a.storage[50203] > os.time(),
+		"dungeons: a failed run (time up): the short fail cooldown")
 	-- the waiting player gets the dungeon now (b queued without a cooldown)
 	advance(3000)
 	eq(b.pos.x, 510, "dungeons: the next in the queue goes in")
@@ -201,7 +202,8 @@ do
 	login.onLogin(b)
 	eq(b.pos.x, temple.x, "dungeons: a relog inside the box goes to the temple")
 	ok(said(b, "You logged out inside the dungeon: your run is over."), "dungeons: told why")
-	ok(b.storage[50203] and b.storage[50203] > os.time(), "dungeons: leaving by a logout counts as a failed attempt")
+	ok(b.storage[50203] and b.storage[50203] - os.time() <= Chaos.dungeons.failCooldownSeconds,
+		"dungeons: leaving by a logout is a failed attempt: the short fail cooldown")
 	-- a restart: the first login inside the box goes to the temple without a cooldown
 	local c = newPlayer(3, "Fen", P(511, 511, 7))
 	c.lastLogout = ChaosDungeonsBoot - 10

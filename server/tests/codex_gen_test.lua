@@ -81,7 +81,8 @@ local text = Gen.render(data)
 eq(text, Gen.render(Gen.build(D)), "byte-stable output"); count()
 local loaded = (loadstring or load)(text)()
 eq(type(loaded), "table", "the output loads"); count()
-eq(#loaded.tabs, 10, "ten tabs"); count()
+eq(#loaded.tabs, 11, "eleven tabs (the last is Lore, docs/CONTENT.md)"); count()
+eq(loaded.tabs[11].id, "lore", "the lore tab"); count()
 
 local tabs, ids, entries = {}, {}, 0
 for _, tab in ipairs(loaded.tabs) do

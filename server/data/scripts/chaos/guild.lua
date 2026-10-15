@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/guild_core.lua")
 
 Chaos.guildConfig = dofile("data/scripts/chaos/guild_config.lua")
@@ -365,36 +368,15 @@ function G.onRecord(board, who, value)
 	G.addXp(gid, guid, stat, amount)
 end
 
--- wrap ChaosLeaderboard.record (again after a /reload of leaderboard.lua). Several wrappers may stack (seasons does
--- the same); a guard makes the guild part run once per call, and seasons is told that its wrapper is still in place.
+-- hook ChaosLeaderboard.record (again after a /reload of leaderboard.lua) through ChaosWrapChain: one hook per
+-- call, also with season, mentor and records hooking it; nested record calls give no guild XP (outer only).
+if not (ChaosWrapChain and ChaosWrapChain.wrap) then
+	dofile("data/scripts/chaos/wrapchain_core.lua")
+end
 function G.wrapLeaderboard()
-	local LB = ChaosLeaderboard
-	if not LB or not LB.record or LB.record == G.wrappedRecord then
-		return
-	end
-	local original = LB.record
-	local wrapper
-	wrapper = function(board, who, value, mode)
-		if G.inRecord then
-			return original(board, who, value, mode)
-		end
-		G.inRecord = true
-		local ok, entry = pcall(original, board, who, value, mode)
-		G.inRecord = false
-		if not ok then
-			error(entry, 0)
-		end
-		local ok2, err = pcall(G.onRecord, board, who, value)
-		if not ok2 then
-			log("guild XP from " .. tostring(board) .. " failed: " .. tostring(err))
-		end
-		return entry
-	end
-	G.wrappedRecord = wrapper
-	LB.record = wrapper
-	if ChaosSeason and ChaosSeason.wrappedRecord == original then
-		ChaosSeason.wrappedRecord = wrapper
-	end
+	ChaosWrapChain.wrap(ChaosLeaderboard, "record", "guild", function(res, board, who, value)
+		G.onRecord(board, who, value)
+	end, function(e) log("guild XP failed: " .. e) end, {outer = true})
 end
 
 -- new siege results -> guild XP for every guild that fought (once per row)
@@ -502,7 +484,7 @@ function G.applyAura(player)
 	if want and not has then
 		player:addAura(id)
 		player:setStorageValue(cfg.storage.auraOn, 1)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your guild's aura is yours to wear while you are in the guild (outfit window).")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your guild's aura is yours to wear while you are in the guild (outfit window)."))
 	elseif not want and has then
 		local bought = Chaos.storage.shopAuraBase and player:getStorageValue(Chaos.storage.shopAuraBase + id) == 1
 		if not bought and player.removeAura then

@@ -1,6 +1,7 @@
 -- Pure helpers of the Party Finder window (no client API), tested by partyfinderview_test.lua.
 -- Rows come from the server (server/data/scripts/chaos/party_finder_core.lua K.row / K.list); times are seconds counted
 -- from the moment the list arrived, so the window counts down by itself between two pushes.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 PartyFinderView = {}
 local V = PartyFinderView
 
@@ -45,9 +46,9 @@ end
 
 function V.ago(seconds)
   seconds = math.max(0, math.floor(num(seconds)))
-  if seconds < 60 then return 'just now' end
-  if seconds < 3600 then return string.format('%dm ago', math.floor(seconds / 60)) end
-  return string.format('%dh ago', math.floor(seconds / 3600))
+  if seconds < 60 then return tr('just now') end
+  if seconds < 3600 then return tr('%dm ago', math.floor(seconds / 60)) end
+  return tr('%dh ago', math.floor(seconds / 3600))
 end
 
 function V.badgeText(n)
@@ -120,10 +121,10 @@ end
 -- can the viewer apply? -> true | false, reason text (the server checks again)
 function V.canApply(row, my, level)
   if type(row) ~= 'table' then return false, 'Gone' end
-  if row.mine then return false, 'Your group' end
+  if row.mine then return false, tr('Your group') end
   if row.ap then return false, 'Applied' end
   if num(level) < num(row.ml) then return false, string.format('Level %d+', num(row.ml)) end
-  if #V.applyRoles(row, my) == 0 then return false, 'No open role for you' end
+  if #V.applyRoles(row, my) == 0 then return false, tr('No open role for you') end
   return true
 end
 
@@ -238,9 +239,9 @@ end
 function V.queueText(q, acts, elapsed)
   if type(q) ~= 'table' then return '' end
   local act = q.a and V.activityOf(acts, q.a)
-  local what = act and act.n or 'any activity'
+  local what = act and act.n or tr('any activity')
   local since = num(q.since) + num(elapsed)
-  return string.format('Queued as %s (%s) - %s', V.roleName(q.r), what, since < 60 and 'just now' or V.timeLeft(since))
+  return tr('Queued as %s (%s) - %s', V.roleName(q.r), what, since < 60 and tr('just now') or V.timeLeft(since))
 end
 
 -- the applicant line: "Seris  Lv 350 Illusionist"

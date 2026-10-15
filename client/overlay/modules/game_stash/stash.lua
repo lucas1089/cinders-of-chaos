@@ -1,4 +1,5 @@
 Stash = {}
+local V = StashView -- stashview.lua: texts and rules (tested by stashview_test.lua)
 local CODE = 57
 local Filter = "AllItems"
 local DepotId = 3502
@@ -7,8 +8,9 @@ Stash.Data = {}
 Stash.Opcode = 110 -- must match ChaosOpcodes.stash on the server
 Stash.CategoryData = nil
 Stash.BlockList = {}
--- stash tabs (server stash.lua "tabs", Chaos Pact and account storage): Stash.Tabs = {tabs = [{id, name, used, size,
--- locked, special}], limit, pact, tabSize}; Stash.SelectedTab 0 = every tab
+-- stash tabs (server stash.lua "tabs"): Stash.Tabs = {tabs = [{id, name, used, size, locked, affinity, icon, old, source}],
+-- limit, pact, tabSize, canWithdraw, withdrawWhy}; Stash.SelectedTab 0 = every tab. Deposits work anywhere; withdrawals
+-- only in a protection zone (or a hideout): the items are greyed out elsewhere and the server refuses too.
 Stash.Tabs = nil
 Stash.SelectedTab = 0
 
@@ -22,7 +24,8 @@ Stash.Init = function()
 
 	connect(LocalPlayer, {
 		onPositionChange = Stash.OnWalkClose,
-		onWalk = Stash.OnWalkClose
+		onWalk = Stash.OnWalkClose,
+		onStatesChange = Stash.OnStatesChange
 	})
 
 	-- the extra-menu button only exists in the client this module came from; the Chaos top bar has a stash icon
@@ -33,8 +36,8 @@ Stash.Init = function()
 	Stash.Progress:hide()
 
 	if Keybind then
-		Keybind.new("Windows", "Toggle Stash", "", "")
-		Keybind.bind("Windows", "Toggle Stash", {
+		Keybind.new("Windows", tr("Toggle Stash"), "", "")
+		Keybind.bind("Windows", tr("Toggle Stash"), {
 			{
 			  type = KEY_DOWN,
 			  callback = Stash.Toggle,
@@ -96,7 +99,7 @@ Stash.Terminate = function()
 	end
 
 	if Keybind then
-		Keybind.delete("Windows", "Toggle Stash")
+		Keybind.delete("Windows", tr("Toggle Stash"))
 	end
 
 	disconnect(g_game, {
@@ -107,7 +110,8 @@ Stash.Terminate = function()
 	-- actually disconnected. Use the same reference we connected with.
 	disconnect(LocalPlayer, {
 		onPositionChange = Stash.OnWalkClose,
-		onWalk = Stash.OnWalkClose
+		onWalk = Stash.OnWalkClose,
+		onStatesChange = Stash.OnStatesChange
 	})
 
 	Stash.UnhookDragHint()
@@ -137,9 +141,12 @@ Stash.OnDrop = function(self, widget, mousePos, forced)
 	if not item:isPickupable() then
 	return false
 	end
-	if not item:isStackable() then
-	return false
+	-- deposit in town only, unless the remote deposit unlock is on (the server checks again)
+	if not Stash.CanDeposit() then
+		Stash.ShowLocked()
+		return false
 	end
+	-- any item (a weapon, a rift key, a stack): the server stores it whole and says when it cannot
 	Stash.StashItem(item, 1)
 	return false
 end
@@ -265,6 +272,22 @@ Stash.DataManager = function(protocol, opcode, buffer)
 	elseif buffer.make == "tabs" then
 		Stash.Tabs = buffer
 		Stash.FillTabs()
+		Stash.UpdateAccess()
+	elseif buffer.make == "access" then
+		if Stash.Tabs then
+			if buffer.canWithdraw ~= nil then
+				Stash.Tabs.canWithdraw = buffer.canWithdraw == true
+				Stash.Tabs.withdrawWhy = nil
+			end
+			if buffer.canDeposit ~= nil then
+				Stash.Tabs.canDeposit = buffer.canDeposit == true
+				Stash.Tabs.depositWhy = nil
+				Stash.Tabs.remote = nil
+			end
+		end
+		Stash.UpdateAccess()
+	elseif buffer.make == "StowReport" then
+		displayInfoBox(tr('Stow Everything'), V.reportText(buffer))
 	elseif buffer.make == "Toggle" then
 		Stash.remoteAccess = (buffer.remote == true)
 		Stash.Toggle()
@@ -313,8 +336,9 @@ Stash.Define = function()
 			make = "Redeem",
 			item = Stash.UIConfirm.SupplyIcon.serverId,
 			id = Stash.UIConfirm.SupplyIcon.uniqueId,
+			row = Stash.UIConfirm.SupplyIcon.row,
 			count = Stash.UIConfirm.quantityScroll:getValue()
-		}}))	
+		}}))
 	end	
 	
 	Stash.UIConfirm.CancelButton.onClick = function()
@@ -401,15 +425,27 @@ Stash.Define = function()
 		itemWidget:setMargin(0)
 		itemWidget:setDraggable(false)
 		-- buildTooltip comes from the donor client's tooltip module, which this client does not have
+		local can = Stash.CanWithdraw()
+		local tip = V.itemTooltip(Data, can)
 		if itemWidget.buildTooltip then
-			itemWidget:buildTooltip(Data.tooltip)
+			itemWidget:buildTooltip(tip)
 		else
-			itemWidget:setTooltip(Data.tooltip)
+			itemWidget:setTooltip(tip)
 		end
 		itemWidget.serverId = Data.id
 		itemWidget.uniqueId = Data.uniqueId
+		itemWidget.row = Data.row
+		itemWidget.data = Data
+		-- withdraw only in a protection zone: greyed out elsewhere (deposits still work)
+		itemWidget:setOpacity(can and 1 or 0.45)
 
 		itemWidget.onClick = function(self)
+			if not Stash.CanWithdraw() then
+				if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
+					modules.game_textmessage.displayFailureMessage(tr('Withdraw in a protection zone.'))
+				end
+				return
+			end
 			Stash.UI.Overlay:setVisible(true)
 			Stash.UI.Overlay.background:setVisible(false)
 			Stash.UI.Overlay.BlockListBase:setVisible(false)
@@ -420,7 +456,7 @@ Stash.Define = function()
 			-- ceiling instead of the previous 100k magic number — players with
 			-- millions of crystals still pick how many to take, just in larger
 			-- steps. The label still shows the real total on the stash icon.
-			local cap = math.min(Data.count, 1000000)
+			local cap = V.isWhole(Data) and 1 or math.min(Data.count, 1000000) -- a whole item comes out as it went in
 			Stash.UIConfirm.quantityScroll:setMinimum(1)
 			Stash.UIConfirm.quantityScroll:setMaximum(cap)
 			Stash.UIConfirm.quantityScroll:setValue(cap)
@@ -428,6 +464,7 @@ Stash.Define = function()
 			Stash.UIConfirm:raise()
 			Stash.UIConfirm.SupplyIcon.serverId = self.serverId
 			Stash.UIConfirm.SupplyIcon.uniqueId = self.uniqueId
+			Stash.UIConfirm.SupplyIcon.row = self.row
 		end
 	end
 
@@ -466,41 +503,59 @@ Stash.Define = function()
 
 end
 
--- ---------------------------------------------------------------- tabs
-local function tabTooltip(t, pact)
-	local text = string.format("%s: %d of %d item types", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0, t.size or 0)
-	if t.locked then
-		text = text .. (t.special and "\nWithdraw-only." or
-			(pact and "\nWithdraw-only: beyond your tabs." or "\nWithdraw-only while your Chaos Pact is inactive. Nothing is lost."))
+-- ---------------------------------------------------------------- tabs and access
+-- may items come out here (the local player's protection zone state, or the server's hideout answer)
+Stash.CanWithdraw = function()
+	local me = g_game.getLocalPlayer and g_game.getLocalPlayer()
+	local states = me and me.getStates and me:getStates() or 0
+	return V.canWithdraw(Stash.Tabs, states)
+end
+
+-- may items go in here (in town, or anywhere with the remote deposit unlock)
+Stash.CanDeposit = function()
+	local me = g_game.getLocalPlayer and g_game.getLocalPlayer()
+	local states = me and me.getStates and me:getStates() or 0
+	return V.canDeposit(Stash.Tabs, states)
+end
+
+-- the locked deposit: a line that says where to unlock remote deposit
+Stash.ShowLocked = function()
+	if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
+		modules.game_textmessage.displayFailureMessage(V.depositLockedText())
 	end
-	return text
 end
 
 Stash.TabInfoText = function()
-	local d = Stash.Tabs
-	if not d or not d.tabs then
-		return ""
+	return V.infoText(Stash.Tabs, Stash.SelectedTab, Stash.CanWithdraw(), Stash.CanDeposit())
+end
+
+-- the items greyed out or not, and the line under the list, after a state change or a server answer
+Stash.UpdateAccess = function()
+	if not (Stash.UI and Stash.UI.SupplyList) then
+		return
 	end
-	if Stash.SelectedTab ~= 0 then
-		for _, t in ipairs(d.tabs) do
-			if t.id == Stash.SelectedTab then
-				return string.format("%s: %d / %d item types%s", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0,
-					t.size or 0, t.locked and (d.pact and ", withdraw-only" or ", withdraw-only (no Chaos Pact)") or "")
-			end
+	local can = Stash.CanWithdraw()
+	for _, w in ipairs(Stash.UI.SupplyList:getChildren()) do
+		if w.data then
+			w:setOpacity(can and 1 or 0.45)
+			w:setTooltip(V.itemTooltip(w.data, can))
 		end
 	end
-	local used, size, locked = 0, 0, 0
-	for _, t in ipairs(d.tabs) do
-		used = used + (t.used or 0)
-		if not t.locked and not t.special then size = size + (t.size or 0) end
-		if t.locked then locked = locked + 1 end
+	if Stash.UI.TabInfo then
+		Stash.UI.TabInfo:setText(Stash.TabInfoText())
 	end
-	local text = string.format("%d item types. General tabs: %d (%d types each)%s", used, d.limit or 0, d.tabSize or 0,
-		d.pact and ", Chaos Pact active" or "")
-	if locked > 0 then
-		text = text .. string.format(". %d tab%s withdraw-only", locked, locked == 1 and "" or "s")
+	-- Stow Everything: greyed out with the unlock hint while depositing is locked here
+	local dep = Stash.CanDeposit()
+	if Stash.UI.StashAllButton then
+		Stash.UI.StashAllButton:setOpacity(dep and 1 or 0.45)
+		Stash.UI.StashAllButton:setTooltip(V.stowTooltip(dep, Stash.Tabs))
 	end
-	return text
+end
+
+Stash.OnStatesChange = function(localPlayer, now, old)
+	if V.hasFlag(now, V.PZ_FLAG) ~= V.hasFlag(old, V.PZ_FLAG) then
+		Stash.UpdateAccess()
+	end
 end
 
 Stash.SelectTab = function(id)
@@ -534,19 +589,26 @@ Stash.FillTabs = function()
 		return
 	end
 	local known = false
-	local function add(id, text, tooltip, locked, width)
+	local function add(id, text, tooltip, locked, width, icon)
 		local b = g_ui.createWidget("StashTabButton", bar)
 		b.tabId = id
 		b:setText(text)
 		if width then b:setWidth(width) end
 		b:setTooltip(tooltip)
 		if locked then b:setColor("#7a4a40") end
+		if icon then
+			-- an affinity tab: its item as the icon, the name beside it
+			local ic = g_ui.createWidget("StashTabIcon", b)
+			ic:setItemId(icon)
+			b:setTextOffset(topoint("9 0"))
+		end
 		b.onClick = function() Stash.SelectTab(id) end
 		known = known or id == Stash.SelectedTab
 	end
-	add(0, "All", "Every tab", false)
+	add(0, tr("All"), tr("Every tab"), false)
 	for _, t in ipairs(d.tabs) do
-		add(t.id, t.name, tabTooltip(t, d.pact), t.locked, t.special and 50 or nil)
+		local label = V.tabLabel(t)
+		add(t.id, label, V.tabTooltip(t, d.pact), t.locked, (t.affinity or t.old) and math.max(56, 26 + #label * 6) or nil, t.icon)
 	end
 	if not known then
 		Stash.SelectedTab = 0
@@ -692,8 +754,13 @@ function vipToggle()
 	Stash.Communicate(json.encode({action = "Stash", data = {make = "Open"}}))
 end
 
--- the "Stash All" button: every stackable of the main backpack into the stash
+-- the "Stow Everything" button: everything of the backpack, through its bags, into its tab (the server's report comes back
+-- as StowReport)
 function stashAll()
+	if not Stash.CanDeposit() then
+		Stash.ShowLocked()
+		return
+	end
 	Stash.Communicate(json.encode({action = "Stash", data = {make = "StashAllRequest"}}))
 end
 

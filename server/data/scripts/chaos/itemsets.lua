@@ -27,6 +27,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua
 end
@@ -397,14 +400,27 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and target:isMonster() then
+	if creature and target and target:isMonster() and not eventKnown(target, "ChaosItemSetsDealt") then
 		local e = effectsOf(playerOf(creature))
 		if e then
 			for _, key in ipairs(DEALT) do
 				if e[key] then
-					target:registerEvent("ChaosItemSetsDealt")
+					registerOnce(target, "ChaosItemSetsDealt")
 					break
 				end
 			end
@@ -513,7 +529,27 @@ function S.grantChase(player, source, key, ctx, rand)
 	if not ctx.itemFind then
 		ctx.itemFind = ChaosLoot and ChaosLoot.itemFindMult and ChaosLoot.itemFindMult(player) or 1
 	end
+	-- bad-luck protection (conquest.lua, group "set"): the chances x the character's multiplier; a roll that could drop
+	-- a piece records a miss or a hit
+	local CQ = ChaosConquest
+	local eligible = false
+	if CQ and CQ.pityMult and CQ.pityRecord then
+		for _, set in ipairs(S.sets or {}) do
+			if S.chaseChance(set, source, key, ctx) > 0 then
+				eligible = true
+				break
+			end
+		end
+	end
+	local base = ctx.itemFind
+	if eligible then
+		ctx.itemFind = base * CQ.pityMult(player, "set")
+	end
 	local hit = S.rollChase(source, key, ctx, rand)
+	ctx.itemFind = base
+	if eligible then
+		CQ.pityRecord(player, "set", hit ~= nil, hit and hit.piece.id or nil)
+	end
 	if not hit then
 		return nil
 	end
@@ -525,12 +561,11 @@ function S.grantChase(player, source, key, ctx, rand)
 		ChaosMakeUnique(item)
 	end
 	local inbox = give(player, item)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You found %s, a piece of %s.%s", hit.piece.name,
-		hit.set.name, inbox and " Your backpack was full: it is in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You found %s, a piece of %s.%s", hit.piece.name,
+		hit.set.name, inbox and Chaos.t(player, " Your backpack was full: it is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 	if Game.broadcastMessage then
-		Game.broadcastMessage(string.format("%s found %s (%s)!", player:getName(), hit.piece.name, hit.set.name),
-			MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s (%s)!", player:getName(), hit.piece.name, hit.set.name)
 	end
 	return hit.piece.name
 end

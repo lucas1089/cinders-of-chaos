@@ -1,0 +1,13 @@
+Module
+  name: game_candlemarks
+  description: Candlemarks - the currency for time online: a counter next to the menu bar and the shop window (server candlemarks.lua, extended opcode 176); Economy > Candlemarks
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ candlemarksview, candlemarks ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1060
+  @onLoad: init()
+  @onUnload: terminate()

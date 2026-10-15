@@ -1,0 +1,9 @@
+node_modules
+out/
+# copied from the repo by tools/prepare.sh
+public/art
+public/fonts
+# captured by tools/capture_login.sh, kept out of git
+public/footage
+# made by tools/gen_music.py
+public/audio

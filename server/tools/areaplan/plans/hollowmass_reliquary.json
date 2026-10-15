@@ -1,0 +1,518 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "hollowmass_reliquary",
+  "name": "Hollowmass Reliquary",
+  "biome": "crypt",
+  "size": [
+    184,
+    156
+  ],
+  "floors": 2,
+  "level": [
+    1150,
+    1300
+  ],
+  "seed": 25404,
+  "origin": {
+    "x": 14340,
+    "y": 14920,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "lychgate_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "shroud_nave",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "censer_choir",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "bone_transept",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "vigil_cloister",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "mourners_apse",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "candle_ambulatory",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "weeping_chapter",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "pallbearers_walk",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "sexton_stair",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "grave_landing",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "reliquary_heart",
+      "floor": 2,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "saints_charnel",
+      "floor": 2,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "hollow_mass",
+      "floor": 2,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "ossuary_cellar",
+      "floor": 2,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "tithe_crypt",
+      "floor": 2,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    },
+    {
+      "id": "martyr_cells",
+      "floor": 2,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "dirge_gallery",
+      "floor": 2,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "lychgate_camp",
+      "to": "shroud_nave",
+      "width": 3
+    },
+    {
+      "from": "shroud_nave",
+      "to": "bone_transept",
+      "width": 3
+    },
+    {
+      "from": "bone_transept",
+      "to": "vigil_cloister",
+      "width": 3
+    },
+    {
+      "from": "vigil_cloister",
+      "to": "mourners_apse",
+      "width": 3
+    },
+    {
+      "from": "mourners_apse",
+      "to": "candle_ambulatory",
+      "width": 3
+    },
+    {
+      "from": "candle_ambulatory",
+      "to": "weeping_chapter",
+      "width": 3
+    },
+    {
+      "from": "weeping_chapter",
+      "to": "pallbearers_walk",
+      "width": 3
+    },
+    {
+      "from": "pallbearers_walk",
+      "to": "lychgate_camp",
+      "width": 3
+    },
+    {
+      "from": "lychgate_camp",
+      "to": "censer_choir",
+      "width": 4
+    },
+    {
+      "from": "censer_choir",
+      "to": "mourners_apse",
+      "width": 3
+    },
+    {
+      "from": "censer_choir",
+      "to": "bone_transept",
+      "width": 3
+    },
+    {
+      "from": "censer_choir",
+      "to": "weeping_chapter",
+      "width": 3
+    },
+    {
+      "from": "vigil_cloister",
+      "to": "sexton_stair",
+      "width": 3
+    },
+    {
+      "from": "grave_landing",
+      "to": "saints_charnel",
+      "width": 3
+    },
+    {
+      "from": "grave_landing",
+      "to": "ossuary_cellar",
+      "width": 3
+    },
+    {
+      "from": "saints_charnel",
+      "to": "reliquary_heart",
+      "width": 3
+    },
+    {
+      "from": "reliquary_heart",
+      "to": "hollow_mass",
+      "width": 3
+    },
+    {
+      "from": "ossuary_cellar",
+      "to": "hollow_mass",
+      "width": 3
+    },
+    {
+      "from": "hollow_mass",
+      "to": "tithe_crypt",
+      "width": 2
+    },
+    {
+      "from": "saints_charnel",
+      "to": "martyr_cells",
+      "width": 3
+    },
+    {
+      "from": "martyr_cells",
+      "to": "dirge_gallery",
+      "width": 3
+    },
+    {
+      "from": "dirge_gallery",
+      "to": "reliquary_heart",
+      "width": 3
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "sexton_stair",
+      "to": "grave_landing"
+    }
+  ],
+  "entry": {
+    "zone": "lychgate_camp"
+  },
+  "exit": {
+    "zone": "lychgate_camp"
+  },
+  "spawns": [
+    {
+      "zone": "shroud_nave",
+      "monster": "Golden Dragon",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shroud_nave",
+      "monster": "Black Vixen",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "censer_choir",
+      "monster": "Spiky Carnivor",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "censer_choir",
+      "monster": "Vyrm",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_transept",
+      "monster": "Winterstride",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_transept",
+      "monster": "Golden Dragon",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_cloister",
+      "monster": "Silicron",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_cloister",
+      "monster": "Spiky Carnivor",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourners_apse",
+      "monster": "Thal",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourners_apse",
+      "monster": "Vyrm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_ambulatory",
+      "monster": "Black Vixen",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_ambulatory",
+      "monster": "Winterstride",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_chapter",
+      "monster": "Golden Dragon",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_chapter",
+      "monster": "Silicron",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pallbearers_walk",
+      "monster": "Spiky Carnivor",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pallbearers_walk",
+      "monster": "Black Vixen",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sexton_stair",
+      "monster": "Vyrm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sexton_stair",
+      "monster": "Golden Dragon",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_landing",
+      "monster": "Winterstride",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_landing",
+      "monster": "Spiky Carnivor",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reliquary_heart",
+      "monster": "Thal",
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reliquary_heart",
+      "monster": "Facetis",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "saints_charnel",
+      "monster": "Silicron",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "saints_charnel",
+      "monster": "Vyrm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_mass",
+      "monster": "Thal",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_mass",
+      "monster": "Winterstride",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ossuary_cellar",
+      "monster": "Facetis",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ossuary_cellar",
+      "monster": "Silicron",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_crypt",
+      "monster": "Facetis",
+      "count": 2,
+      "respawn": 75,
+      "pack": 2
+    },
+    {
+      "zone": "martyr_cells",
+      "monster": "Golden Dragon",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "martyr_cells",
+      "monster": "Thal",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dirge_gallery",
+      "monster": "Vyrm",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dirge_gallery",
+      "monster": "Facetis",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "tithe_crypt",
+      "quest": "hollowmass_tithe",
+      "reward": {
+        "gold": 1500000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 5
+          }
+        ],
+        "message": "The last tithe of a mass no one sings."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a two-floor reliquary crypt for levels 1150-1300. A ring of chapels on the first floor, the sexton stair down to a second ring and the tithe crypt."
+}

@@ -37,6 +37,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/hideout_core.lua")
 ChaosHideoutConfig = dofile("data/scripts/chaos/hideout_config.lua")
 if not ChaosDarkTiles then
@@ -724,9 +727,9 @@ function M.enter(player, owner)
 	player:teleportTo(P(arrival))
 	P(arrival):sendMagicEffect(CONST_ME_TELEPORT)
 	if owner == player:getGuid() then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Welcome home. Character > Hideout to decorate.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Welcome home. Character > Hideout to decorate."))
 	else
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You visit the hideout of %s.", name))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You visit the hideout of %s.", name))
 		countVisit(owner, player)
 	end
 	return true
@@ -1003,7 +1006,7 @@ function M.like(player, owner)
 	bump(owner, "likes")
 	local o = Player(owner)
 	if o then
-		o:sendTextMessage(MESSAGE_STATUS_SMALL, player:getName() .. " likes your hideout.")
+		o:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(o, "%s likes your hideout.", player:getName()))
 	end
 	return true, "You like this hideout."
 end
@@ -1176,11 +1179,11 @@ local depotUse = Action()
 function depotUse.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local _, room = M.roomAt(item:getPosition())
 	if not room or room.owner ~= player:getGuid() then
-		player:sendCancelMessage("Only the owner of this hideout may open its depot.")
+		player:sendCancelMessage(Chaos.t(player, "Only the owner of this hideout may open its depot."))
 		return true
 	end
 	if not room.depotOk then
-		player:sendCancelMessage("This depot cannot open here. Use a town depot.")
+		player:sendCancelMessage(Chaos.t(player, "This depot cannot open here. Use a town depot."))
 		return true
 	end
 	return false
@@ -1233,7 +1236,7 @@ moved.onItemMoved = function(player, item, count, fromPosition, toPosition, from
 	if toPosition and toPosition.x ~= (CONTAINER_POSITION or 0xFFFF) and K.fromWorld(cfg, toPosition) then
 		if item:getTopParent() ~= player then
 			item:moveTo(player)
-			player:sendCancelMessage("Nothing can be left on a hideout's floor.")
+			player:sendCancelMessage(Chaos.t(player, "Nothing can be left on a hideout's floor."))
 		end
 	end
 end
@@ -1323,7 +1326,7 @@ function staff.onSay(player, words, param)
 	end
 	local guid = Chaos.findPlayer((param or ""):gsub("^%s+", ""):gsub("%s+$", ""))
 	if not guid then
-		player:sendCancelMessage("No such character.")
+		player:sendCancelMessage(Chaos.t(player, "No such character."))
 		return false
 	end
 	local ok, text = M.enter(player, guid)

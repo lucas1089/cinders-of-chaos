@@ -20,6 +20,8 @@ what shows what; this file only draws. Icon names (wiki/i/<name>.png, 48 x 48, i
   tr-<iconKey>         a cell of client/overlay/data/images/passivetree/painted_nodes.png (treedata/painted.lua)
   sup-<key>            client/overlay/data/images/game/supports/<key>.png (gen_support_icons.py)
   it-<set>-<kind>      a cell of client/tools/sprites/art_import/theme/items_<set>.png (theme_things.csv), 2x crisp
+  gm-<key>-<tier>      a socket gem's look, phase 0 of its row in client/tools/sprites/art_import/gems.png
+                       (gen_gem_art.py: config type order, five tiers a type), 2x crisp
   top-<name>           client/overlay/data/images/chaos/topbutton_<name>.png (gen_theme_art.py)
   img/class-<key>.png  the class badges of website/tools/gen_site_art.py (not written here, only checked)
   rm-, rk-, ro-, rt-, rg-, an-, rx-   the painted rift icons of wiki_rift_art.py (64 x 64; its docstring has the names)
@@ -28,8 +30,8 @@ the client's login background), a haze in the tone, embers, a medallion with the
 No text in the images (the page is in two languages), no screenshots: our client's screens show base sprites and
 outfits that are not our own art.
 
-Only our own art: the inputs above are procedural or our own paintings committed in the repository. Nothing is read
-from outside it. Deterministic: the same inputs and library versions give the same bytes; CI runs --check with the
+Only our own art: the inputs above are procedural, our own paintings or the owner's gem set (gems.png), committed in
+the repository. Nothing is read from outside it. Deterministic: the same inputs and library versions give the same bytes; CI runs --check with the
 pinned Pillow and numpy of the other art checks (.github/workflows/ci.yml).
 Needs Pillow (with WebP) and numpy.
 """
@@ -177,6 +179,16 @@ def draw_gem(rgb):
     return img
 
 
+def _gem_rows():
+    """gem key -> its type index in server/data/lib/chaos_gems_config.lua (the row order of art_import/gems.png)"""
+    if "gem_rows" not in _CACHE:
+        import re
+        text = open(os.path.join(REPO, "server", "data", "lib", "chaos_gems_config.lua"), encoding="utf-8").read()
+        block = text[text.index("types = {"):]
+        _CACHE["gem_rows"] = {k: i for i, k in enumerate(re.findall(r'\{key = "(\w+)"', block))}
+    return _CACHE["gem_rows"]
+
+
 def source_image(name):
     """The best source of an icon (any size, RGBA) and whether it is pixel art (scaled crisp)."""
     if name.startswith("img/class-"):
@@ -205,6 +217,10 @@ def source_image(name):
     if kind == "it":
         atlas, x, y = _item_cells()[rest.replace("-", "_", 1)]
         return _open(os.path.join(ITEMS, atlas + ".png")).crop((x, y, x + 32, y + 32)), True
+    if kind == "gm":
+        key, tier = rest.rsplit("-", 1)
+        row = _gem_rows()[key] * 5 + int(tier) - 1
+        return _open(os.path.join(ITEMS, "gems.png")).crop((0, row * 32, 32, row * 32 + 32)), True
     if kind == "top":
         return _open(os.path.join(REPO, "client", "overlay", "data", "images", "chaos", "topbutton_" + rest + ".png")), False
     raise ValueError("unknown icon %r" % name)
@@ -358,7 +374,7 @@ def seed_of(text):
 
 def render(kind, spec):
     if kind == "icon":
-        size = ITEM if os.path.basename(spec).startswith("it-") or is_rift(spec) else ICON
+        size = ITEM if os.path.basename(spec).startswith(("it-", "gm-")) or is_rift(spec) else ICON
         return png_bytes(icon_at(spec, size))
     if kind == "hero":
         return webp_bytes(scene(spec, 960, 300, seed_of(spec["seed"])))

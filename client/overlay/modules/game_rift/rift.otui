@@ -30,7 +30,7 @@ ChaosPanelDark
 
   ChaosTitle
     id: title
-    text: Rift
+    !text: tr('Rift')
     phantom: true
 
   RiftHudLabel
@@ -74,7 +74,7 @@ ChaosPanelDark
   RiftHudLabel
     id: modsHeader
     color: #8c8070
-    text: Modifiers
+    !text: tr('Modifiers')
     margin-top: 6
 
   UIWidget

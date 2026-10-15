@@ -166,4 +166,21 @@ eq(T.frameOf(p), "violet", "cosmetic frame")
 eq(T.frameOf(mockPlayer({guid = 2})), nil, "not owned")
 eq(N.frameOf(N.pick(T.of(p)), T.frameOf(p)), "violet", "cosmetic beats the staff frame")
 
+-- ---------------------------------------------------------------- memo (clean and colours are cached; same results)
+for _ = 1, 3 do
+	eq(N.clean("  Grim|Lord\n  of  ash "), "Grim Lord of ash", "memo: same text twice")
+	eq(#N.clean(string.rep("y", 40), N.MAX_TITLE), 24, "memo: cut")
+	eq(N.clean(string.rep("y", 40)), string.rep("y", 40), "memo: other max, own entry")
+	eq(N.clean(12), "12", "memo: a number is not cached")
+	eq(N.normalize({text = "X", color = "#ABCDEF"}, "season").color, "abcdef", "memo: colour")
+	eq(N.normalize({text = "X", color = "zzz"}, "season").color, N.COLORS.season, "memo: bad colour")
+	eq(N.normalize({text = "X", key = " k|1 "}, "season").key, "k 1", "memo: key cleaned once")
+end
+local max = N.MEMO_MAX
+N.MEMO_MAX = 4
+for i = 1, 20 do
+	eq(N.clean(" t" .. i .. " "), "t" .. i, "memo: past the cap it starts over")
+end
+N.MEMO_MAX = max
+
 print("nameplate_test: OK")

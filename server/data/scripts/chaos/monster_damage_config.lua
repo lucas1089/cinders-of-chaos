@@ -24,5 +24,9 @@ return {
 	elemental = false,
 
 	-- the hit taken by the mana shield (utamo vita) is scaled as well (onManaChange), so mana shield users are not spared
-	manaShield = true
+	manaShield = true,
+
+	-- monster levels kept in memory (per generation; at most twice this many). Above the monsters that fight players at
+	-- once: pack combat (pace.lua) keeps ~100k monsters alive
+	levelCacheSize = 32768
 }

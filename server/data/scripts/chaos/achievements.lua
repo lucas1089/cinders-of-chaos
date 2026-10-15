@@ -46,6 +46,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -220,7 +223,7 @@ local function giveReward(player, reward)
 			end
 		end, 200)
 	end
-	return K.rewardText(reward, itemName) .. (inbox and " (your backpack was full: see your inbox)" or "")
+	return K.rewardText(reward, itemName, Chaos.lang(player)) .. (inbox and Chaos.t(player, " (your backpack was full: see your inbox)") or "")
 end
 
 -- a toast with the ACHIEVEMENT UNLOCKED header (notifications.lua ChaosNotify.send; the raw packet when it is not loaded)
@@ -245,8 +248,9 @@ local function checkClassUnlocks(player)
 		if not U.isUnlocked(player:getAccountId(), key) and CK.autoUnlock(key, facts) == "achievement"
 			and U.grant(player:getAccountId(), key, "achievement") then
 			local class = CK.config.classes[key]
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Class unlocked for your account: " .. (class and class.name or key) .. ".")
-			notify(player, "Class unlocked", (class and class.name or key) .. " is open to every character of your account.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Class unlocked for your account: %s.", class and class.name or key))
+			notify(player, Chaos.t(player, "Class unlocked"), Chaos.t(player, "%s is open to every character of your account.",
+				class and class.name or key))
 		end
 	end
 end
@@ -271,14 +275,14 @@ local function unlock(player, def, quiet)
 		acc.ids[def.id] = true
 		acc.points = acc.points + def.points
 	end
-	local parts = {string.format("Achievement unlocked: %s (+%d points).", def.name, def.points)}
+	local parts = {Chaos.t(player, "Achievement unlocked: %s (+%d points).", def.name, def.points)}
 	if def.title then
-		parts[#parts + 1] = string.format("Title: %s (pick it in the Achievements window).", def.title)
+		parts[#parts + 1] = Chaos.t(player, "Title: %s (pick it in the Achievements window).", def.title)
 	end
 	local rewardText = ""
 	if def.reward then
 		local ok, text = pcall(giveReward, player, def.reward)
-		parts[#parts + 1] = ok and ("Reward: " .. text .. ".") or "The reward could not be given; tell the staff."
+		parts[#parts + 1] = ok and Chaos.t(player, "Reward: %s.", text) or Chaos.t(player, "The reward could not be given; tell the staff.")
 		if ok then
 			rewardText = text
 		else
@@ -287,7 +291,7 @@ local function unlock(player, def, quiet)
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, table.concat(parts, " "))
 	if not quiet then
-		notify(player, K.toast(def, rewardText))
+		notify(player, K.toast(def, rewardText, Chaos.lang(player)))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 	end
 	Chaos.send(player, OPCODE, "unlock", {id = def.id, name = def.name, points = def.points, title = def.title})
@@ -541,13 +545,13 @@ function A.sendState(player, open)
 		open = open and true or false,
 		points = points, accountPoints = accPoints, maxPoints = K.maxPoints(index),
 		unlocked = count, total = #index.list,
-		categories = K.categorySummary(index, unlocked),
+		categories = K.categorySummary(index, unlocked, Chaos.lang(player)),
 		recent = K.recent(index, unlocked, 5),
 		titles = K.titlesOf(index, unlocked),
 		titlesOn = titlesOn, activeTitle = active or "", heldTitles = held or {}
 	})
 	A.sendTrack(player)
-	local rows = K.view(index, stats, unlocked, itemName)
+	local rows = K.view(index, stats, unlocked, itemName, Chaos.lang(player))
 	for i = 1, #rows, CHUNK do
 		local part = {}
 		for j = i, math.min(#rows, i + CHUNK - 1) do
@@ -697,8 +701,8 @@ function A.installHooks()
 	local W = ChaosWorldBoss
 	if W and W.computeRewards and not W.achievementsWrapped then
 		local original = W.computeRewards
-		W.computeRewards = function(shares, r, boss, pool, rng)
-			local out = original(shares, r, boss, pool, rng)
+		W.computeRewards = function(shares, r, boss, pool, rng, pityOf)
+			local out = original(shares, r, boss, pool, rng, pityOf)
 			local ok, err = pcall(onBossShares, shares, boss)
 			if not ok then
 				log("world boss hook: " .. tostring(err))
@@ -784,11 +788,22 @@ function kill.onKill(player, target)
 	local ok, err = pcall(function()
 		local name = typeNameOf(target):lower()
 		local tier = ChaosTierOf and ChaosTierOf(target) or "normal"
+		-- pack combat (pace.lua): a paced monster counts 1 / its kill-goal factor (summed per counter), so the kill
+		-- counts take as long as before; ambushes and goblins already come at the old rate
+		local function credit(key)
+			return ChaosPace and ChaosPace.killCredit and ChaosPace.killCredit(player, target, key) or 1
+		end
+		local function add(key)
+			local n = credit(key)
+			if n > 0 then
+				A.progress(player, key, n)
+			end
+		end
 		if tier == "magic" or tier == "rare" or tier == "legendary" then
-			A.progress(player, "kills_" .. tier, 1)
-			A.progress(player, "kills_tiered", 1)
+			add("kills_" .. tier)
+			add("kills_tiered")
 			if tier == "legendary" and tonumber(os.date("%H")) == 0 then
-				A.progress(player, "witching_legendary", 1)
+				add("witching_legendary")
 			end
 		end
 		if name == "treasure goblin" or (ChaosTreasureGoblin and ChaosTreasureGoblin.isGoblinName
@@ -799,7 +814,7 @@ function kill.onKill(player, target)
 		end
 		local party = player:getParty()
 		if party and #(party:getMembers() or {}) >= 1 then
-			A.progress(player, "party_kills", 1)
+			add("party_kills")
 		end
 		addEvent(afterKill, 50, player:getId(), target:getId(), tier)
 	end)
@@ -830,7 +845,7 @@ advance:register()
 
 -- the unlocks of the quiet login check: one toast (achievements_core.lua K.summaryToast) with names, points and rewards
 local function summaryToast(player, list)
-	local title, text = K.summaryToast(list, list.rewards)
+	local title, text = K.summaryToast(list, list.rewards, Chaos.lang(player))
 	if title then
 		notify(player, title, text)
 	end

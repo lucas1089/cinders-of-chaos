@@ -20,6 +20,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 ChaosBlessingsConfig = dofile("data/scripts/chaos/blessings_config.lua")
 dofile("data/scripts/chaos/blessings_core.lua")
 
@@ -338,12 +341,25 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local target = EventCallback
 target.onTargetCombat = function(creature, tgt)
-	if creature and tgt and tgt:isMonster() then
+	if creature and tgt and tgt:isMonster() and not eventKnown(tgt, "ChaosBlessingsDealt") then
 		local p = playerOf(creature)
 		if p and X.value(p, "damage") > 0 then
-			tgt:registerEvent("ChaosBlessingsDealt")
+			registerOnce(tgt, "ChaosBlessingsDealt")
 		end
 	end
 	return RETURNVALUE_NOERROR
@@ -400,7 +416,7 @@ local function tick()
 				if place then
 					X.clear(player)
 					player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR,
-						"Your Ember Blessings fade: no blessings in the " .. place .. ".")
+						Chaos.t(player, "Your Ember Blessings fade: no blessings in the %s.", place))
 				end
 			end
 		end

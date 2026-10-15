@@ -116,6 +116,33 @@ local function alongSide(x, y, b, dx, dy)
 	return along, side
 end
 
+-- the direction and the body a cone or a line starts from. A big boss's target can stand on the boss's own body tiles
+-- (the engine blocks only the anchor tile; a melee target next to the anchor on the north or west side stands inside
+-- the 4 x 4 footprint): measured from the anchor and the whole body, such a target was never in the cone or line aimed
+-- at it, and the shape could shrink to a tile or two (live test 2026-10-14, Sangrith at size 4: "Red Crescent tiles 1"
+-- with the tank not marked). Then the direction goes from the body's centre and the body ends just before the target,
+-- so the target's tile is the shape's first row.
+function G.aimFrom(body, b0, target)
+	local t = target or {x = b0.x, y = b0.y + 1}
+	local inside = t.x >= body.x1 and t.x <= body.x2 and t.y >= body.y1 and t.y <= body.y2
+	if not inside or (body.x1 == body.x2 and body.y1 == body.y2) then
+		local dx, dy = G.direction(b0, t)
+		return dx, dy, body
+	end
+	local dx, dy = G.direction({x = (body.x1 + body.x2) / 2, y = (body.y1 + body.y2) / 2}, t)
+	local b = {x1 = body.x1, y1 = body.y1, x2 = body.x2, y2 = body.y2}
+	if dx > 0 then
+		b.x2 = t.x - 1
+	elseif dx < 0 then
+		b.x1 = t.x + 1
+	elseif dy > 0 then
+		b.y2 = t.y - 1
+	else
+		b.y1 = t.y + 1
+	end
+	return dx, dy, b
+end
+
 -- ===================================================================== shapes
 G.SHAPES = {"circle", "cone", "line", "ring", "cross", "puddles", "follow", "marks", "half", "lines", "eye"}
 
@@ -151,9 +178,9 @@ function G.shape(spec, ctx)
 	local name = spec.kind
 	local info = {}
 	if name == "cone" then
-		local dx, dy = G.direction(b0, ctx.target or {x = b0.x, y = b0.y + 1})
+		local dx, dy, from = G.aimFrom(body, b0, ctx.target)
 		return collect(list, function(x, y)
-			local along, side = alongSide(x, y, body, dx, dy)
+			local along, side = alongSide(x, y, from, dx, dy)
 			if along < 1 or along > P.length then
 				return false
 			end
@@ -161,10 +188,10 @@ function G.shape(spec, ctx)
 		end), info
 	elseif name == "line" then
 		-- a beam from the boss's body to the wall, towards the target, halfWidth tiles to each side
-		local dx, dy = G.direction(b0, ctx.target or {x = b0.x, y = b0.y + 1})
+		local dx, dy, from = G.aimFrom(body, b0, ctx.target)
 		local length = P.length or 99
 		return collect(list, function(x, y)
-			local along, side = alongSide(x, y, body, dx, dy)
+			local along, side = alongSide(x, y, from, dx, dy)
 			return along >= 1 and along <= length and side <= (P.halfWidth or 0)
 		end), info
 	elseif name == "ring" then

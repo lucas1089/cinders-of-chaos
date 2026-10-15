@@ -7,6 +7,7 @@
 --   diff  {add = [entry], upd = [{k, l, s}], del = [key]}
 --   entry {k key, n name, d description, i icon, t 0 buff / 1 debuff, l ms left (none: no timer), s stacks}
 -- An entry in the table: {key, name, desc, icon, debuff, endAt (client clock seconds, nil: no timer), stacks, seq}.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 BuffMath = {}
 
@@ -198,7 +199,7 @@ function BuffMath.tooltip(entry, now)
   if entry.desc ~= '' then lines[#lines + 1] = entry.desc end
   if entry.stacks and entry.stacks > 0 then lines[#lines + 1] = 'Stacks: ' .. math.floor(entry.stacks) end
   local left = BuffMath.remaining(entry, now)
-  lines[#lines + 1] = left and ('Time left: ' .. BuffMath.formatLong(left)) or 'No time limit'
+  lines[#lines + 1] = left and (tr('Time left: %s', BuffMath.formatLong(left))) or tr('No time limit')
   return table.concat(lines, '\n')
 end
 

@@ -3,6 +3,7 @@
 -- inputs ("5k", "2.5m"), the Browse filter from the window's fields, the Sell form check, row texts, the modifier
 -- filter (up to 6 rows of modifier / lowest value / lowest tier, all or at least N, sockets, quality, free prefix /
 -- suffix, power, bound) with its choices taken from the Codex data (game_codex CodexData), paging.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 MarketView = {}
 local V = MarketView
@@ -80,18 +81,18 @@ end
 -- the Sell form: returns {gold, coins, days, count} or nil, the reason
 function V.checkSell(meta, form)
   local gold, coins = V.parseAmount(form.gold), V.parseAmount(form.coins)
-  if not gold or not coins then return nil, 'Prices are whole numbers (5k and 2.5m work).' end
-  if gold == 0 and coins == 0 then return nil, 'Set a price in gold, in Chaos Coins or in both.' end
+  if not gold or not coins then return nil, tr('Prices are whole numbers (5k and 2.5m work).') end
+  if gold == 0 and coins == 0 then return nil, tr('Set a price in gold, in Chaos Coins or in both.') end
   local p = meta and meta.price or {}
   local pg, pc = p.gold or { min = 1, max = 2000000000 }, p.coins or { min = 1, max = 100000 }
   if gold > 0 and (gold < pg.min or gold > pg.max) then
-    return nil, 'A gold price must be between ' .. V.money(pg.min) .. ' and ' .. V.money(pg.max) .. '.'
+    return nil, tr('A gold price must be between %s and %s.', V.money(pg.min), V.money(pg.max))
   end
   if coins > 0 and (coins < pc.min or coins > pc.max) then
-    return nil, 'A coin price must be between ' .. V.money(pc.min) .. ' and ' .. V.money(pc.max) .. '.'
+    return nil, tr('A coin price must be between %s and %s.', V.money(pc.min), V.money(pc.max))
   end
   local count = floor(tonumber(form.count) or 1)
-  if count < 1 or count > (tonumber(form.have) or 1) then return nil, 'You do not have that many.' end
+  if count < 1 or count > (tonumber(form.have) or 1) then return nil, tr('You do not have that many.') end
   return { gold = gold, coins = coins, days = tonumber(form.days) or (meta and meta.defaultDuration) or 3, count = count }
 end
 
@@ -157,7 +158,7 @@ end
 function V.modChoices(cat, query)
   local words = {}
   for w in tostring(query or ''):lower():gmatch('%S+') do words[#words + 1] = w end
-  local out = { { #words > 0 and 'Matching modifiers...' or 'Choose a modifier...', '' } }
+  local out = { { #words > 0 and tr('Matching modifiers...') or tr('Choose a modifier...'), '' } }
   local first
   for _, g in ipairs(V.MOD_GROUPS) do
     local head = false
@@ -206,10 +207,10 @@ function V.modRequest(form, limits)
   local mods, seen = {}, {}
   for i, r in ipairs(form.rows or {}) do
     if r.key and r.key ~= '' then
-      if seen[r.key] then return nil, 'Each modifier only once per search.' end
+      if seen[r.key] then return nil, tr('Each modifier only once per search.') end
       seen[r.key] = true
       local min = whole(r.min)
-      if not min then return nil, 'Row ' .. i .. ': the minimum value is a whole number.' end
+      if not min then return nil, tr('Row %s: the minimum value is a whole number.', i) end
       if min > (limits.maxValue or 1000000) then min = limits.maxValue or 1000000 end
       local tier = math.max(0, math.min(tonumber(r.tier) or 0, limits.maxTier or 8))
       local row = { k = r.key }
@@ -218,18 +219,18 @@ function V.modRequest(form, limits)
       mods[#mods + 1] = row
     end
   end
-  if #mods > (limits.maxRows or 6) then return nil, 'At most ' .. (limits.maxRows or 6) .. ' modifiers per search.' end
+  if #mods > (limits.maxRows or 6) then return nil, tr('At most %s modifiers per search.', (limits.maxRows or 6)) end
   local out = { mods = mods }
   if form.mode == 'count' and #mods > 0 then
     local need = whole(form.need)
     if not need or need < 1 or need > #mods then
-      return nil, string.format('"At least" needs a number from 1 to %d (the modifiers chosen).', #mods)
+      return nil, tr('"At least" needs a number from 1 to %d (the modifiers chosen).', #mods)
     end
     if need < #mods then out.need = need end
   end
   local sockets, quality = whole(form.sockets), whole(form.quality)
-  if not sockets then return nil, 'Sockets: a whole number.' end
-  if not quality then return nil, 'Quality: a whole number.' end
+  if not sockets then return nil, tr('Sockets: a whole number.') end
+  if not quality then return nil, tr('Quality: a whole number.') end
   if sockets > 0 then out.sockets = math.min(sockets, limits.maxSockets or 8) end
   if quality > 0 then out.quality = math.min(quality, limits.maxQuality or 30) end
   if form.freeP then out.freeP = true end
@@ -297,12 +298,12 @@ function V.stateLine(row)
   if row.state == 'sold' then
     local tax, net = row.tax or 0, (row.paid or 0) - (row.tax or 0)
     local cur = row.cur == 'coins' and 'coins' or 'gold'
-    return string.format('Sold to %s for %s %s (tax %s, you got %s)', row.buyer or '?', V.money(row.paid), cur, V.money(tax),
+    return tr('Sold to %s for %s %s (tax %s, you got %s)', row.buyer or '?', V.money(row.paid), cur, V.money(tax),
       V.money(net))
   elseif row.state == 'expired' then
-    return 'Expired: the item went back to your inbox'
+    return tr('Expired: the item went back to your inbox')
   elseif row.state == 'cancelled' then
-    return 'Cancelled: the item went back to your inbox'
+    return tr('Cancelled: the item went back to your inbox')
   elseif row.state == 'active' then
     return V.timeLeft(row.left) .. ' left'
   end
@@ -312,9 +313,9 @@ end
 function V.historyLine(row)
   local cur = row.cur == 'coins' and 'coins' or 'gold'
   if row.side == 'bought' then
-    return string.format('Bought from %s for %s %s', row.seller or '?', V.money(row.paid), cur)
+    return tr('Bought from %s for %s %s', row.seller or '?', V.money(row.paid), cur)
   end
-  return string.format('Sold to %s for %s %s (tax %s)', row.buyer or '?', V.money(row.paid), cur, V.money(row.tax or 0))
+  return tr('Sold to %s for %s %s (tax %s)', row.buyer or '?', V.money(row.paid), cur, V.money(row.tax or 0))
 end
 
 function V.pageText(page, pages, total)
@@ -343,27 +344,27 @@ V.ORDER_SORT_NAMES = { new = 'Newest', price = 'Best price', ending = 'Ending so
 -- or nil}. Returns the orderPost request {sid, quantity, price, cur, days, filter} and its total and fee, or nil, why
 function V.checkOrder(meta, form)
   form = form or {}
-  if not tonumber(form.sid) or tonumber(form.sid) <= 0 then return nil, 'Choose the item you want: search for it first.' end
+  if not tonumber(form.sid) or tonumber(form.sid) <= 0 then return nil, tr('Choose the item you want: search for it first.') end
   local qty = V.parseAmount(form.quantity)
-  if not qty or qty < 1 then return nil, 'How many do you want? A whole number of 1 or more.' end
+  if not qty or qty < 1 then return nil, tr('How many do you want? A whole number of 1 or more.') end
   local limits = meta and meta.orders or V.ORDER_LIMITS
   local maxQ = limits.maxQuantity or V.ORDER_LIMITS.maxQuantity
-  if qty > maxQ then return nil, 'At most ' .. V.money(maxQ) .. ' per order.' end
+  if qty > maxQ then return nil, tr('At most %s per order.', V.money(maxQ)) end
   local cur = form.cur == 'coins' and 'coins' or 'gold'
   local price = V.parseAmount(form.price)
   local p = meta and meta.price or {}
   local lim = (p[cur]) or (cur == 'coins' and { min = 1, max = 100000 } or { min = 100, max = 2000000000 })
   if not price or price < lim.min or price > lim.max then
-    return nil, string.format('The price per item in %s must be between %s and %s.', cur == 'coins' and 'Chaos Coins' or 'gold',
+    return nil, tr('The price per item in %s must be between %s and %s.', cur == 'coins' and tr('Chaos Coins') or 'gold',
       V.money(lim.min), V.money(lim.max))
   end
   local total = price * qty
   local maxT = (limits.maxTotal or V.ORDER_LIMITS.maxTotal)[cur]
   if maxT and total > maxT then
-    return nil, 'One order may hold at most ' .. V.money(maxT) .. (cur == 'coins' and ' Chaos Coins.' or ' gold.')
+    return nil, tr('One order may hold at most %s%s', V.money(maxT), (cur == 'coins' and tr(' Chaos Coins.') or tr(' gold.')))
   end
   local ilvl = V.parseAmount(form.ilvl)
-  if not ilvl then return nil, 'Item level: a whole number.' end
+  if not ilvl then return nil, tr('Item level: a whole number.') end
   local filter = { rarity = (tonumber(form.rarity) or 0) > 0 and tonumber(form.rarity) or nil, ilvl = ilvl > 0 and ilvl or nil }
   for k, v in pairs(form.mods or {}) do filter[k] = v end
   if filter.mods and #filter.mods == 0 then filter.mods = nil end
@@ -375,16 +376,16 @@ end
 -- what posting holds and costs, for the form's text
 function V.orderCostText(meta, req, total, fee)
   if not req then return '' end
-  local curName = req.cur == 'coins' and 'Chaos Coins' or 'gold'
+  local curName = req.cur == 'coins' and tr('Chaos Coins') or 'gold'
   local lines = {}
   if req.cur == 'coins' then
-    lines[#lines + 1] = string.format('Held now: %s Chaos Coins from your account, and the listing fee of %s gold from your bank.', V.money(total), V.money(fee))
+    lines[#lines + 1] = tr('Held now: %s Chaos Coins from your account, and the listing fee of %s gold from your bank.', V.money(total), V.money(fee))
   else
-    lines[#lines + 1] = string.format('Held now: %s gold from your bank (%s for the items + %s listing fee).', V.money(total + fee),
+    lines[#lines + 1] = tr('Held now: %s gold from your bank (%s for the items + %s listing fee).', V.money(total + fee),
       V.money(total), V.money(fee))
   end
   local tax = V.tax(meta, req.cur, req.price)
-  lines[#lines + 1] = string.format('Sellers get %s %s per item (%s sales tax). What is not bought comes back when the order ends; the fee does not.',
+  lines[#lines + 1] = tr('Sellers get %s %s per item (%s sales tax). What is not bought comes back when the order ends; the fee does not.',
     V.money(req.price - tax), curName, V.money(tax))
   return table.concat(lines, '\n')
 end
@@ -453,9 +454,9 @@ function V.fillText(meta, row, n)
   local cur = row.cur == 'coins' and 'coins' or 'gold'
   local total = (tonumber(row.price) or 0) * n
   local tax, net = V.tax(meta, cur, total)
-  return string.format('Sell %s for %s %s: tax %s, you receive %s %s%s.', n > 1 and (n .. ' items') or '1 item', V.money(total),
-    cur == 'coins' and 'Chaos Coins' or 'gold', V.money(tax), V.money(net), cur == 'coins' and 'Chaos Coins' or 'gold',
-    cur == 'coins' and ' on your account' or ' in your bank')
+  return tr('Sell %s for %s %s: tax %s, you receive %s %s%s.', n > 1 and (n .. ' items') or '1 item', V.money(total),
+    cur == 'coins' and tr('Chaos Coins') or 'gold', V.money(tax), V.money(net), cur == 'coins' and tr('Chaos Coins') or 'gold',
+    cur == 'coins' and tr(' on your account') or tr(' in your bank'))
 end
 
 -- the seller's items for an order: those that fit first

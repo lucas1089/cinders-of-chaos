@@ -17,6 +17,18 @@
 ChaosInstanceLimitsCore = ChaosInstanceLimitsCore or {}
 local K = ChaosInstanceLimitsCore
 
+-- K.about, K.leftText and K.busyText take an optional last `lang` ("pt-BR" | "en"): through ChaosI18n (i18n_core.lua)
+-- when it is loaded, else English
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local floor, max, min = math.floor, math.max, math.min
 
 -- ------------------------------------------------------------------ numbers
@@ -41,10 +53,10 @@ function K.clock(sec)
 end
 
 -- a rough wait for a message: "under a minute", "~4 min", "~1 h 10 min"
-function K.about(sec)
+function K.about(sec, lang)
 	sec = max(0, floor(tonumber(sec) or 0))
 	if sec < 60 then
-		return "under a minute"
+		return T(lang, "under a minute")
 	end
 	local m = floor((sec + 59) / 60)
 	if m < 60 then
@@ -55,16 +67,16 @@ function K.about(sec)
 	return m > 0 and string.format("~%d h %d min", h, m) or string.format("~%d h", h)
 end
 
-function K.leftText(sec)
+function K.leftText(sec, lang)
 	sec = max(0, floor(tonumber(sec) or 0))
 	if sec >= 120 and sec % 60 == 0 then
-		return floor(sec / 60) .. " minutes left"
+		return T(lang, "%s minutes left", floor(sec / 60))
 	elseif sec == 60 then
-		return "1 minute left"
+		return T(lang, "1 minute left")
 	elseif sec == 1 then
-		return "1 second left"
+		return T(lang, "1 second left")
 	end
-	return sec .. " seconds left"
+	return T(lang, "%s seconds left", sec)
 end
 
 local function ordinal(n)
@@ -77,16 +89,18 @@ local function ordinal(n)
 end
 K.ordinal = ordinal
 
--- what: "rifts", "Descent halls", ... (plural)
-function K.busyText(what, eta, position)
-	local text = "All " .. tostring(what or "instances") .. " are busy."
+-- what: "rifts", "Descent halls", ... (plural; a key too)
+function K.busyText(what, eta, position, lang)
+	local text = T(lang, "All %s are busy.", T(lang, tostring(what or "instances")))
 	if eta then
-		text = text .. (eta < 60 and " One frees up in under a minute." or (" Try again in " .. K.about(eta) .. "."))
+		text = text .. (eta < 60 and T(lang, " One frees up in under a minute.") or T(lang, " Try again in %s.", K.about(eta, lang)))
 	else
-		text = text .. " Try again in a moment."
+		text = text .. T(lang, " Try again in a moment.")
 	end
 	if position then
-		text = text .. string.format(" You are %s in line: you will be told when one is free.", ordinal(position))
+		-- "2nd" in English, "2º" in pt-BR
+		local nth = (ChaosI18n and ChaosI18n.normalize and ChaosI18n.normalize(lang) == "pt-BR") and (position .. "º") or ordinal(position)
+		text = text .. T(lang, " You are %s in line: you will be told when one is free.", nth)
 	end
 	return text
 end

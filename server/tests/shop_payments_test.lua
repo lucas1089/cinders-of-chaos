@@ -64,21 +64,21 @@ local now = 1800000000
 local function decide(pack, method, orders, starter)
 	return P.decide({coinsCfg = cfg, pack = pack, method = method, now = now, orders = orders or {}, starterCredited = starter})
 end
-local d = decide(packs.coins750, "pix")
-eq(d.action, "create", "create"); eq(d.cents, 7495, "Pix cents of the order")
-eq(decide(packs.coins750, "paypal").cents, 1499, "PayPal cents of the order")
+local d = decide(packs.coins500, "pix")
+eq(d.action, "create", "create"); eq(d.cents, 4990, "Pix cents of the order")
+eq(decide(packs.coins500, "paypal").cents, 998, "PayPal cents of the order")
 eq(decide(nil, "pix").action, "refuse", "unknown pack")
-eq(decide(packs.coins750, "bitcoin").action, "refuse", "unknown method")
+eq(decide(packs.coins500, "bitcoin").action, "refuse", "unknown method")
 eq(decide(packs.starter, "pix", {}, true).action, "refuse", "starter once")
 eq(decide(packs.starter, "pix", {}, false).action, "create", "starter first time")
-local open = {id = 9, pack_key = "coins750", method = "pix", status = "open", created = now - 60, expires = now + 600}
-d = decide(packs.coins750, "pix", {open})
+local open = {id = 9, pack_key = "coins500", method = "pix", status = "open", created = now - 60, expires = now + 600}
+d = decide(packs.coins500, "pix", {open})
 eq(d.action, "reuse", "same pack and method: the open order again"); eq(d.order.id, 9, "reused id")
-d = decide(packs.coins1500, "pix", {open})
+d = decide(packs.coins1000, "pix", {open})
 eq(d.action, "refuse", "one open order per account"); eq(d.order.id, 9, "the open order comes with the refusal")
-eq(decide(packs.coins750, "paypal", {open}).action, "refuse", "other method also refused while one is open")
-local expired = {id = 8, pack_key = "coins750", method = "pix", status = "open", created = now - 4000, expires = now - 5}
-eq(decide(packs.coins1500, "pix", {expired}).action, "create", "an expired order does not block")
+eq(decide(packs.coins500, "paypal", {open}).action, "refuse", "other method also refused while one is open")
+local expired = {id = 8, pack_key = "coins500", method = "pix", status = "open", created = now - 4000, expires = now - 5}
+eq(decide(packs.coins1000, "pix", {expired}).action, "create", "an expired order does not block")
 ok(P.isOpen({status = "pending", created = now}, now), "pending is open")
 ok(not P.isOpen({status = "credited"}, now), "credited is not open")
 local many = {}
@@ -90,18 +90,18 @@ eq(decide(packs.coins250, "pix", many).action, "create", "older ones do not coun
 -- ------------------------------------------------------------------ token, view
 local t = P.token(77, now, function(a, b) return a end)
 eq(t, "coc-77-" .. now .. "-000000000000", "token form"); ok(#P.token(77, now) <= 64, "token fits")
-local v = P.view({id = 5, status = "open", method = "pix", pack_key = "coins750", amount_cents = 7495, currency = "BRL",
-	qr_code = "000201", pay_url = "", expires = now + 90, created = now, coins = 750, bonus = 75, first_bonus = 150}, packs.coins750, now, cfg)
-eq(v.price, "R$ 74,95", "view price"); eq(v.remaining, 90, "remaining"); eq(v.qrHex, "303030323031", "qr as hex"); eq(v.url, nil, "no url")
+local v = P.view({id = 5, status = "open", method = "pix", pack_key = "coins500", amount_cents = 4990, currency = "BRL",
+	qr_code = "000201", pay_url = "", expires = now + 90, created = now, coins = 750, bonus = 75, first_bonus = 150}, packs.coins500, now, cfg)
+eq(v.price, "R$ 49,90", "view price"); eq(v.remaining, 90, "remaining"); eq(v.qrHex, "303030323031", "qr as hex"); eq(v.url, nil, "no url")
 eq(v.coins, 975, "coins with bonuses"); eq(v.name, "Sack of Coins", "name")
-v = P.view({id = 5, status = "open", method = "pix", pack_key = "coins750", amount_cents = 7495, currency = "BRL",
-	qr_code = "x", pay_url = "", expires = now - 1, created = now}, packs.coins750, now, cfg)
+v = P.view({id = 5, status = "open", method = "pix", pack_key = "coins500", amount_cents = 4990, currency = "BRL",
+	qr_code = "x", pay_url = "", expires = now - 1, created = now}, packs.coins500, now, cfg)
 eq(v.status, "expired", "past expiry shows as expired")
-v = P.view({id = 5, status = "credited", method = "paypal", pack_key = "coins750", amount_cents = 1499, currency = "USD",
-	coins = 750, bonus = 75, first_bonus = 0, created = now}, packs.coins750, now, cfg)
+v = P.view({id = 5, status = "credited", method = "paypal", pack_key = "coins500", amount_cents = 998, currency = "USD",
+	coins = 750, bonus = 75, first_bonus = 0, created = now}, packs.coins500, now, cfg)
 eq(v.text, "Thank you for your voluntary donation! You received 825 Chaos Coins as a thank-you.", "credited view thanks")
 ok(v.textPt:find("Obrigado pela sua doação voluntária", 1, true), "credited view thanks pt")
-v = P.view({id = 5, status = "pending", method = "pix", pack_key = "coins750", amount_cents = 7495, currency = "BRL", created = now - 500}, packs.coins750, now, cfg)
+v = P.view({id = 5, status = "pending", method = "pix", pack_key = "coins500", amount_cents = 4990, currency = "BRL", created = now - 500}, packs.coins500, now, cfg)
 ok(v.text:find("slow", 1, true), "pending too long")
 
 -- ------------------------------------------------------------------ reversal coins
@@ -255,21 +255,21 @@ eq(ask("buy", {}), nil, "the store's own actions are not answered here")
 local r = ask("pay_packs")
 eq(r.action, "pay_packs", "packs answer"); eq(r.data.notice, P.NOTICE_EN, "notice sent"); eq(r.data.noticePt, P.NOTICE_PT, "notice pt sent")
 eq(r.data.terms, (P.terms()), "refund sentence sent"); eq(r.data.termsPt, select(2, P.terms()), "refund sentence pt sent")
-eq(#r.data.packs, 7, "seven packs"); eq(r.data.packs[1].prices.pix.text, "R$ 9,95", "entry pack: about R$ 10 by Pix"); eq(r.data.packs[3].prices.pix.text, "R$ 74,95", "Pix price text")
-eq(r.data.packs[3].prices.paypal.cents, 1499, "PayPal price"); eq(r.data.packs[3].total, 1575, "first donation bonus (double) in the preview")
+eq(#r.data.packs, 7, "seven packs"); eq(r.data.packs[1].prices.pix.text, "R$ 9,90", "entry pack: R$ 9,90 by Pix"); eq(r.data.packs[3].prices.pix.text, "R$ 49,90", "Pix price text")
+eq(r.data.packs[3].prices.paypal.cents, 998, "PayPal price"); eq(r.data.packs[3].total, 1025, "first donation bonus (double) in the preview")
 eq(r.data.packs[3].prices.card, nil, "no third method"); ok(r.status, "balance sent")
 eq(r.data.firstBonusMax, 1000, "the first bonus cap sent to the client"); eq(r.data.packs[7] and r.data.packs[7].key ~= nil, true, "packs listed")
 
-r = ask("pay_create", {pack = "coins750", method = "pix"})
-eq(r.action, "pay_order", "order answer"); eq(r.data.status, "pending", "pending"); eq(r.data.price, "R$ 74,95", "order price")
+r = ask("pay_create", {pack = "coins500", method = "pix"})
+eq(r.action, "pay_order", "order answer"); eq(r.data.status, "pending", "pending"); eq(r.data.price, "R$ 49,90", "order price")
 eq(DB.orders[1].status, "pending", "row written"); eq(DB.orders[1].provider, "pix", "provider = method")
-eq(DB.pay[1].amount_cents, 7495, "amount from the server config"); eq(DB.pay[1].currency, "BRL", "currency")
-eq(DB.orders[1].coins + DB.orders[1].bonus + DB.orders[1].first_bonus, 1575, "credit preview on the row (first donation: double)")
+eq(DB.pay[1].amount_cents, 4990, "amount from the server config"); eq(DB.pay[1].currency, "BRL", "currency")
+eq(DB.orders[1].coins + DB.orders[1].bonus + DB.orders[1].first_bonus, 1025, "credit preview on the row (first donation: double)")
 -- the client sends no price: a forged amount field changes nothing
 ChaosRateLimit = nil
-r = ask("pay_create", {pack = "coins750", method = "pix", amount = 1})
+r = ask("pay_create", {pack = "coins500", method = "pix", amount = 1})
 eq(r.data.id, 1, "same pack again: the open order"); eq(#DB.orders, 1, "no second row")
-r = ask("pay_create", {pack = "coins4000", method = "paypal"})
+r = ask("pay_create", {pack = "coins2500", method = "paypal"})
 eq(r.action, "pay_error", "second open order refused"); eq(r.data.order.id, 1, "refusal shows the open order")
 -- a creator code sent with the donation (the website's pick, chaos_creator_support): refused codes stop the donation
 do
@@ -298,7 +298,7 @@ do
 	eq(r.data.msg, "You cannot support your own creator code.", "self-use refused")
 	eq(#DB.orders, rows, "no order for a refused code")
 	eq(#creatorQ, 0, "nothing written for a refused code")
-	r = ask("pay_create", {pack = "coins750", method = "pix", creator = "streamer"})
+	r = ask("pay_create", {pack = "coins500", method = "pix", creator = "streamer"})
 	eq(r.data.id, 1, "a good code: the donation goes on (here: the open order)")
 	ok(creatorQ[2] and creatorQ[2]:find("INSERT INTO `chaos_creator_support`", 1, true) and creatorQ[2]:find("(77, 4,", 1, true), "the pick saved")
 	ok(creatorQ[3] and creatorQ[3]:find("'pick'", 1, true), "the pick logged")
@@ -314,15 +314,15 @@ eq(ask("pay_status", {id = 1}), nil, "another account's order: nothing")
 r = ask("pay_cancel", {id = 1}); eq(DB.orders[1].status, "open", "another account cannot cancel")
 player.acc = 77
 r = ask("pay_cancel", {id = 1}); eq(DB.orders[1].status, "cancelled", "cancelled"); eq(r.data.status, "cancelled", "view cancelled")
-r = ask("pay_create", {pack = "coins4000", method = "paypal"})
-eq(r.data.status, "pending", "new order after the cancel"); eq(DB.pay[2].amount_cents, 7499, "PayPal amount"); eq(DB.pay[2].currency, "USD", "USD")
+r = ask("pay_create", {pack = "coins2500", method = "paypal"})
+eq(r.data.status, "pending", "new order after the cancel"); eq(DB.pay[2].amount_cents, 4998, "PayPal amount"); eq(DB.pay[2].currency, "USD", "USD")
 
 -- the poll: a paid row starts the crediting step at once; a pending row without a charge for 10 minutes fails
 DB.orders[2].status = "paid"
 ChaosShopPay.poll(); eq(credited, 1, "crediting step called")
 DB.orders[2].status = "credited"; DB.orders[2].coins, DB.orders[2].bonus, DB.orders[2].first_bonus = 4000, 1000, 800
 sent = {}
-ChaosShopPay.onCredited(2, 77, {total = 5800}, packs.coins4000)
+ChaosShopPay.onCredited(2, 77, {total = 5800}, packs.coins2500)
 eq(sent[1].action, "pay_paid", "thank-you push"); eq(sent[1].data.coins, 5800, "coins in the push")
 eq(sent[1].data.text, "Thank you for your voluntary donation! You received 5800 Chaos Coins as a thank-you.", "push thanks")
 eq(sent[1].data.terms, (P.terms("credited")), "push receipt note"); eq(sent[1].data.termsPt, select(2, P.terms("credited")), "push receipt note pt")
@@ -391,5 +391,38 @@ DB.pay[6].reversal_cents, DB.pay[6].reversal_done = 10000, 0
 ChaosShopPay.poll()
 eq(DB.coins[77], 4000, "then all of it: the other 750"); eq(DB.pay[6].reversal_coins, 1000, "1000 handled in all")
 ChaosShopPay.poll(); eq(DB.coins[77], 4000, "only once")
+
+-- a chargeback after the creator share was paid (creator_codes.lua pays after its 14-day hold; a chargeback can come
+-- months later): the share is taken back from the creator once, as far as the creator's balance holds it
+do
+	local uses = {[7] = {creator = 900, share = 120, state = "paid"}}
+	local realSelect, realQuery = Chaos.select, db.query
+	Chaos.select = function(q, cols)
+		if q:find("FROM `chaos_creator_uses`", 1, true) then
+			local u = uses[tonumber(q:match("`order_id` = (%d+)"))]
+			return (u and u.state == "paid") and {{creator_account_id = u.creator, share = u.share}} or {}
+		end
+		return realSelect(q, cols)
+	end
+	db.query = function(q)
+		if q:find("^UPDATE `chaos_creator_uses` SET `state` = 'reversed'") then
+			local u = uses[tonumber(q:match("`order_id` = (%d+)"))]
+			if u and u.state == "paid" then u.state = "reversed" end
+			return true
+		end
+		return realQuery(q)
+	end
+	DB.orders[#DB.orders + 1] = {id = 7, account_id = 77, pack_key = "coins250", provider = "paypal", provider_ref = "cc", status = "credited",
+		coins = 2400, bonus = 0, first_bonus = 0, created = now}
+	DB.pay[7] = {order_id = 7, method = "paypal", amount_cents = 1999, currency = "USD", reversal = "charged_back", reversal_cents = 0, reversal_done = 0}
+	DB.coins[77], DB.coins[900] = 5000, 1000
+	ChaosShopPay.poll()
+	eq(DB.coins[900], 880, "the creator's 120 coins of that donation taken back")
+	eq(uses[7].state, "reversed", "the share is marked reversed")
+	DB.pay[7].reversal_done = 0
+	ChaosShopPay.poll()
+	eq(DB.coins[900], 880, "only once")
+	Chaos.select, db.query = realSelect, realQuery
+end
 
 print("shop_payments_test: ok")

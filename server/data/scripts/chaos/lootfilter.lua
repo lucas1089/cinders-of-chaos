@@ -26,10 +26,16 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/lootfilter_core.lua")
 dofile("data/scripts/chaos/lootfilter_config.lua")
 if not ChaosFx then
 	pcall(dofile, "data/lib/chaos_fx.lua") -- effect ids of the loot rays (generated, see README_FX.md)
+end
+if not ChaosPack27Fx then
+	pcall(dofile, "data/lib/chaos_pack27_fx.lua") -- pair 27 trial loot beams (switch off: the rays stay)
 end
 
 local F = ChaosLootFilter
@@ -390,6 +396,16 @@ local function refresh(kill)
 		end
 		return nil
 	end
+	-- nothing taken or changed since the last check: skip the itemInfo of every item (F.fingerprint)
+	local list = {}
+	for i, item in ipairs(corpse:getItems()) do
+		list[i] = {item:getId(), item:getCount()}
+	end
+	local fp = F.fingerprint(list)
+	if fp == kill.fp then
+		return corpse
+	end
+	kill.fp = fp
 	local left = F.reconcile(kill.entries, presentOf(corpse))
 	if not sameList(left, kill.left) then
 		kill.left = left
@@ -451,10 +467,16 @@ local function emitRay(kill, owner)
 		return
 	end
 	local id = ChaosFx and ChaosFx[effect]
+	local pos = Position(kill.pos.x, kill.pos.y, kill.pos.z)
+	-- pair 27 trial (data/lib/chaos_pack27_fx.lua, switch off): the pack beam of this rarity, sent at its offset tile
+	local beam = ChaosPack27Fx and ChaosPack27Fx.ray and ChaosPack27Fx.ray(effect)
+	if beam then
+		id = beam.id
+		pos = Position(kill.pos.x + beam.dx, kill.pos.y + beam.dy, kill.pos.z)
+	end
 	if not id then
 		return
 	end
-	local pos = Position(kill.pos.x, kill.pos.y, kill.pos.z)
 	local viewers = rayViewers(kill, owner)
 	if not viewers then
 		pos:sendMagicEffect(id)
@@ -479,7 +501,7 @@ sweep = function()
 	state.event = nil
 	state.tick = state.tick + 1
 	local now = os.time()
-	local decayTick = state.tick % math.max(1, cfg().decayCheckEvery) == 0
+	local every = cfg().decayCheckEvery
 	local ids = {}
 	for id in pairs(state.kills) do
 		ids[#ids + 1] = id
@@ -492,7 +514,7 @@ sweep = function()
 				stopTracking(kill)
 			else
 				local rays = kill.rayUntil and now <= kill.rayUntil
-				if rays or decayTick then
+				if F.decayDue(id, state.tick, every, rays) then
 					local ok, err = pcall(refresh, kill)
 					if not ok then
 						print("[Chaos lootfilter] refresh failed: " .. tostring(err))
@@ -599,7 +621,7 @@ local function pickup(monster, corpse)
 		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: " .. table.concat(taken, ", ") .. ".")
 	end
 	if failed > 0 then
-		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: no room or capacity, left in the corpse.")
+		owner:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(owner, "Rarity autoloot: no room or capacity, left in the corpse."))
 	end
 end
 

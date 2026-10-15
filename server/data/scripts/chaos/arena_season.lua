@@ -19,6 +19,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos.battlegroundConfig then
 	Chaos.battlegroundConfig = dofile("data/scripts/chaos/battleground_config.lua")
 end
@@ -289,9 +292,9 @@ function P.processSeason(seasonId)
 					if ChaosNameplate and ChaosNameplate.refresh then
 						pcall(ChaosNameplate.refresh, p)
 					end
-					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("PvP Season %d has ended: you finished %s (%s, rating %d).%s",
+					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "PvP Season %d has ended: you finished %s (%s, rating %d).%s",
 						seasonId, rw.tier.name, cfg.season.bracketNames[bracket] or bracket, rating,
-						rw.title and (" Title: " .. rw.title .. ".") or ""))
+						rw.title and Chaos.t(p, " Title: %s.", rw.title) or ""))
 				end
 			end
 		end
@@ -316,8 +319,8 @@ function P.check(startup)
 		end
 		setConfig(cfg.season.configKey, s)
 		if not startup then
-			Game.broadcastMessage(string.format("PvP Season %d has ended. Season %d begins: ratings were softly reset; the season rewards are handed out.",
-				s, s + 1), MESSAGE_STATUS_WARNING)
+			Chaos.broadcast(MESSAGE_STATUS_WARNING, "PvP Season %d has ended. Season %d begins: ratings were softly reset; the season rewards are handed out.",
+				s, s + 1)
 		end
 	end
 	-- a season changed while characters were online: their cached rows are of the old season

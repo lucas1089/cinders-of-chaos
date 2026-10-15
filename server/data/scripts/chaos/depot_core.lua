@@ -15,7 +15,7 @@
 --                                             anywhere, a slot holding a container = into it)
 --   D.locate(cfg, node, acc)                  {kind = "tab", tab, box, chest} | {kind = "chest", chest} |
 --                                             {kind = "loose", chest} (in a container loose in the chest) | {kind = "other"}
---   D.decide(cfg, m)                          nil = allowed, else {code = "locked" | "full" | "chest", text}
+--   D.decide(cfg, m)                          nil = allowed, else {code = "locked" | "full" | "chest" | "closed", text}
 --   D.layout(cfg, tabs, used, items)          places loose chest items into tabs (migration)
 --   D.tabsView(cfg, tabs, used)               {{tab, used, size, locked}} for the client and the texts
 --   D.description(cfg, tab, tabs, used, name)  the look text of a box (a named tab: the name first)
@@ -138,11 +138,21 @@ end
 
 -- ---------------------------------------------------------------- the move rule
 -- m = {to = locate(...), from = locate(...) of where the item is now, sameTab = bool, sameChest = bool,
---      tabs = n, used = items in the target tab now, weight = what the move adds, split = part of a stack}
+--      tabs = n, used = items in the target tab now, weight = what the move adds, split = part of a stack,
+--      closed = the depot is withdraw-only (stash_config.lua depot.withdrawOnly: the stash took over)}
 function D.decide(cfg, m)
 	local to, from = m.to or {kind = "other"}, m.from or {kind = "other"}
 	local M = cfg.messages
 	local tabs = int(m.tabs)
+	if m.closed and to.kind ~= "other" then
+		-- nothing new goes in; moving within the same tab (or loose in the same chest) stays possible
+		local same = (from.kind == "tab" and m.sameTab) or ((from.kind == "chest" or from.kind == "loose") and
+			(to.kind == "chest" or to.kind == "loose") and m.sameChest)
+		if not (same and not m.split) then
+			return {code = "closed", text = M.closed}
+		end
+		return nil
+	end
 	if to.kind == "chest" or to.kind == "loose" then
 		-- the chest itself (and what lies loose in it from before tabs) takes no new items; loose items already there
 		-- may be moved around in it

@@ -271,11 +271,87 @@ def gate(d, c):
         d.arc((64 - r, 70 - r, 64 + r, 70 + r), 40 + i * 70, 300 + i * 70, fill=c, width=5)
     d.rectangle((14, 112, 114, 122), fill=c)
 
+def flurry(d, c):
+    # Blade Flurry: three curved blades spinning round a hub, with the arc of the spin
+    for r, w in ((54, 5), (40, 3)):
+        d.arc((64 - r, 64 - r, 64 + r, 64 + r), 210, 320, fill=c, width=w)
+        d.arc((64 - r, 64 - r, 64 + r, 64 + r), 30, 140, fill=c, width=w)
+    for i in range(3):
+        a = 2 * math.pi * i / 3 - math.pi / 2
+        pts = [(64 + 10 * math.cos(a - .9), 64 + 10 * math.sin(a - .9)), (64 + 30 * math.cos(a - .38), 64 + 30 * math.sin(a - .38)),
+               (64 + 58 * math.cos(a), 64 + 58 * math.sin(a)), (64 + 40 * math.cos(a + .42), 64 + 40 * math.sin(a + .42)),
+               (64 + 22 * math.cos(a + .55), 64 + 22 * math.sin(a + .55)), (64 + 10 * math.cos(a + .9), 64 + 10 * math.sin(a + .9))]
+        d.polygon(pts, fill=c)
+    d.ellipse((52, 52, 76, 76), fill=c)
+    d.ellipse((59, 59, 69, 69), fill=(20, 10, 30))
+
+def sweep(d, c):
+    # Iaido Sweep: a wide crescent cut drawn from the scabbard, the blade at its end
+    d.pieslice((6, 22, 122, 138), 200, 340, fill=c)
+    d.pieslice((22, 40, 106, 124), 196, 344, fill=(18, 13, 18, 255))
+    d.line([(16, 116), (34, 100)], fill=c, width=10)
+    d.polygon([(30, 106), (26, 96), (96, 40), (112, 34), (104, 50)], fill=c)
+    d.line([(26, 92), (40, 108)], fill=c, width=6)
+
+def palmwave(d, c):
+    # Palm Shockwave: an open palm and the rings of its shockwave
+    for r, w in ((56, 5), (44, 4), (32, 3)):
+        d.arc((64 - r, 70 - r, 64 + r, 70 + r), 200, 340, fill=c, width=w)
+    d.rounded_rectangle((44, 52, 84, 112), 10, fill=c)
+    for i, x in enumerate((44, 54, 64, 74)):
+        d.rounded_rectangle((x, 26 + abs(i - 1.5) * 6, x + 9, 60), 4, fill=c)
+    d.polygon([(84, 80), (104, 62), (110, 70), (88, 94)], fill=c)
+
+def ricochet(d, c):
+    # Shadow Ricochet: a dark fist mark and its zig-zag jumps
+    pts = [(14, 104), (44, 44), (66, 92), (88, 30), (112, 70)]
+    d.line(pts, fill=c, width=7, joint='curve')
+    for x, y in pts:
+        d.ellipse((x - 9, y - 9, x + 9, y + 9), fill=c)
+    d.ellipse((6, 96, 22, 112), fill=(20, 10, 30))
+
+def chain(d, c):
+    # Iron Chain: three linked iron rings across the icon
+    for i, (x, y) in enumerate(((30, 92), (64, 64), (98, 36))):
+        if i % 2 == 0:
+            d.ellipse((x - 22, y - 14, x + 22, y + 14), outline=c, width=9)
+        else:
+            d.ellipse((x - 14, y - 22, x + 14, y + 22), outline=c, width=9)
+
+def shrapnel(d, c):
+    # Bone Shrapnel: a burst of bone shards from a cracked core
+    for i in range(8):
+        a = math.pi * i / 4 + .2
+        x0, y0 = 64 + 18 * math.cos(a), 64 + 18 * math.sin(a)
+        x1, y1 = 64 + 58 * math.cos(a), 64 + 58 * math.sin(a)
+        d.polygon([(x0 - 6 * math.sin(a), y0 + 6 * math.cos(a)), (x1, y1), (x0 + 6 * math.sin(a), y0 - 6 * math.cos(a))], fill=c)
+    d.ellipse((46, 46, 82, 82), fill=c)
+    d.line([(52, 56), (64, 66), (74, 58)], fill=(30, 20, 20), width=4)
+
+def shieldwave(d, c):
+    # Shield Wave: a shield driven forward with arcs of force in front of it
+    d.polygon([(14, 34), (54, 34), (54, 70), (34, 100), (14, 70)], fill=c)
+    for r, w in ((30, 6), (44, 5), (58, 4)):
+        d.arc((60 - r, 66 - r, 60 + r, 66 + r), -50, 50, fill=c, width=w)
+
+def knives(d, c):
+    # Fan of Knives: five knives spread in a fan
+    for i in range(5):
+        a = math.radians(-140 + i * 25)
+        x1, y1 = 64 + 58 * math.cos(a), 112 + 58 * math.sin(a) * 1.5
+        bx, by = 64 + 18 * math.cos(a), 112 + 18 * math.sin(a) * 1.5
+        n = (-(y1 - by), x1 - bx)
+        ln = math.hypot(*n) or 1
+        nx, ny = n[0] / ln * 6, n[1] / ln * 6
+        d.polygon([(bx + nx, by + ny), (x1, y1), (bx - nx, by - ny)], fill=c)
+    d.ellipse((54, 102, 74, 122), fill=c)
+
 GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'burst', 'bolt', 'drop', 'crystal', 'meteor', 'dots', 'shield', 'thorns', 'paw', 'leaf', 'swirl', 'cross', 'arrows',
     'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile',
     'shuriken', 'daggers', 'smoke', 'katana', 'hood', 'greataxe', 'fang', 'skull', 'bonespear', 'golem', 'banner', 'ribs',
-    'fist', 'palm', 'kick', 'flame', 'nodes', 'mountain', 'gate')}
+    'fist', 'palm', 'kick', 'flame', 'nodes', 'mountain', 'gate', 'flurry', 'sweep', 'palmwave',
+    'ricochet', 'chain', 'shrapnel', 'shieldwave', 'knives')}
 
 ICONS = [  # (spell name, theme, glyph)
     ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
@@ -319,7 +395,13 @@ ICONS = [  # (spell name, theme, glyph)
     # build archetypes, second round (2026-10-12): the snares and the vigils
     ('Snare Trap', 'steel', 'fang'), ('Seeker Mine', 'ember', 'meteor'), ('Detonate Mines', 'fire', 'burst'),
     ('Vigil of Wrath', 'blood', 'banner'), ('Vigil of Iron', 'steel', 'shield'), ('Vigil of Haste', 'nature', 'dash'),
-    ('Vigil of Clarity', 'water', 'ring')]
+    ('Vigil of Clarity', 'water', 'ring'),
+    # pack farming (2026-10-15): the Thief line's area strikes (cells 289..290)
+    ('Blade Flurry', 'steel', 'flurry'), ('Iaido Sweep', 'blood', 'sweep'),
+    # the pack tools of the second pass (cells 291..297)
+    ('Palm Shockwave', 'ember', 'palmwave'), ('Shadow Ricochet', 'shadow', 'ricochet'), ('Iron Chain', 'steel', 'chain'),
+    ('Bone Shrapnel', 'bone', 'shrapnel'), ('Sanctified Ground', 'holy', 'ring'), ('Shield Wave', 'light', 'shieldwave'),
+    ('Fan of Knives', 'steel', 'knives')]
 
 def render(theme, glyph):
     c = COL[theme]

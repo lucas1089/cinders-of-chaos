@@ -1,0 +1,68 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+lion_holy,outfit,creature,Gilded Lionlord,owner_art/lion_holy,0,0,4,4,4,1+3,,new,,layers=1|gtypes=0+1|exact=128+128|durs1=100/100/100|anim1=0:0:0
+lion_spectral,outfit,creature,Gravemane Spectre,owner_art/lion_spectral,0,0,4,4,4,1+3,,new,,layers=1|gtypes=0+1|exact=128+128|durs1=100/100/100|anim1=0:0:0
+lion_furnace,outfit,creature,Furnace-heart Lion,owner_art/lion_furnace,0,0,4,4,4,1+3,,new,,layers=1|gtypes=0+1|exact=128+128|durs1=100/100/100|anim1=0:0:0
+drake_pyre,outfit,creature,Pyre Drake,owner_art/drake_pyre,0,0,2,2,4,1+3,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100|anim1=0:0:0
+lion_emerald,outfit,creature,Emerald Ravager,owner_art/lion_emerald,0,0,4,4,4,1+3,,new,,layers=1|gtypes=0+1|exact=128+128|durs1=100/100/100|anim1=0:0:0
+golem_magma,outfit,creature,Magma Juggernaut,owner_art/golem_magma,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+brute_fire,outfit,creature,Cinder Brute,owner_art/brute_fire,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+golem_ice,outfit,creature,Rime Colossus,owner_art/golem_ice,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+dragon_ice,outfit,creature,Frostwing Vyrm,owner_art/dragon_ice,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+yeti_gold,outfit,creature,Gilded Yeti,owner_art/yeti_gold,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+behemoth_gold,outfit,creature,Gilded Behemoth,owner_art/behemoth_gold,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+drake_gold,outfit,creature,Gilded Drake,owner_art/drake_gold,0,0,2,2,4,1+3,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100|anim1=0:0:0
+wings_jadeleaf,outfit,wings,Jadeleaf Pinions,owner_art/wings_jadeleaf,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
+wings_tidewing,outfit,wings,Tidewing Plumes,owner_art/wings_tidewing,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
+wings_duskfeather,outfit,wings,Duskfeather Wings,owner_art/wings_duskfeather,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
+wings_emberplume,outfit,wings,Emberplume Wings,owner_art/wings_emberplume,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
+wings_wildgrove,outfit,wings,Wildgrove Wings,owner_art/wings_wildgrove,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
+wings_bloodfeather,outfit,wings,Bloodfeather Wings,owner_art/wings_bloodfeather,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
+wings_gloomgild,outfit,wings,Gloomgild Wings,owner_art/wings_gloomgild,0,0,3,3,4,8,animateAlways displacement:-6:-12,new,,gtypes=1|layers=1|exact=96|durs0=120/120/120/120/120/120/120/120|anim0=0:0:0
+wings_sunforged,outfit,wings,Sunforged Wings,owner_art/wings_sunforged,0,0,3,3,4,8,animateAlways displacement:-6:-12,new,,gtypes=1|layers=1|exact=96|durs0=120/120/120/120/120/120/120/120|anim0=0:0:0
+wings_starmoth,outfit,wings,Starmoth Wings,owner_art/wings_starmoth,0,0,3,3,4,5,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=140/140/140/140/140|anim0=0:0:0
+cactus_01,item,stump,leaning cactus,owner_art/cacti,0,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_02,item,stump,leaning cactus,owner_art/cacti,64,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_03,item,stump,tall cactus,owner_art/cacti,128,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_04,item,stump,tall cactus,owner_art/cacti,192,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_05,item,stump,tall cactus,owner_art/cacti,256,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_06,item,stump,budding tall cactus,owner_art/cacti,320,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_07,item,stump,round-topped cactus,owner_art/cacti,384,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_08,item,stump,flowering round-topped cactus,owner_art/cacti,448,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_09,item,stump,columnar cactus,owner_art/cacti,512,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_10,item,stump,flowering columnar cactus,owner_art/cacti,576,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_11,item,stump,pale columnar cactus,owner_art/cacti,640,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_12,item,stump,flowering spiny cactus,owner_art/cacti,704,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_13,item,stump,barrel cactus,owner_art/cacti,768,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_14,item,stump,flowering cactus,owner_art/cacti,832,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_15,item,stump,blooming cactus,owner_art/cacti,896,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_16,item,stump,spiny cactus,owner_art/cacti,960,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_17,item,decor,small columnar cactus,owner_art/cacti,1024,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_18,item,stump,flowering spiny cactus,owner_art/cacti,1088,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_19,item,decor,small columnar cactus,owner_art/cacti,1152,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_20,item,stump,flowering dark cactus,owner_art/cacti,1216,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_21,item,decor,potted flower,owner_art/cacti,1280,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_22,item,stump,dark agave,owner_art/cacti,1344,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_23,item,decor,desert shrub,owner_art/cacti,1408,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_24,item,decor,potted agave,owner_art/cacti,1472,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_25,item,decor,dry shrub,owner_art/cacti,1536,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_26,item,decor,succulent,owner_art/cacti,1600,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_27,item,decor,thorny shrub,owner_art/cacti,1664,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_28,item,decor,potted aloe,owner_art/cacti,1728,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_29,item,decor,withered cactus,owner_art/cacti,1792,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_30,item,decor,succulent,owner_art/cacti,1856,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_31,item,decor,potted grass,owner_art/cacti,1920,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_32,item,stump,flowering cactus,owner_art/cacti,1984,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_33,item,decor,potted succulent,owner_art/cacti,2048,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_34,item,decor,flowering succulent,owner_art/cacti,2112,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_35,item,stump,barrel cactus,owner_art/cacti,2176,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_36,item,stump,flowering barrel cactus,owner_art/cacti,2240,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_37,item,stump,flowering prickly cactus,owner_art/cacti,2304,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_38,item,stump,prickly pear,owner_art/cacti,2368,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_39,item,stump,round cactus,owner_art/cacti,2432,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_40,item,stump,round cactus,owner_art/cacti,2496,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+cactus_41,item,decor,thorn sprout,owner_art/cacti,2560,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_42,item,decor,desert grass,owner_art/cacti,2624,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_43,item,decor,flowering cactus,owner_art/cacti,2688,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_44,item,decor,flowering shrub,owner_art/cacti,2752,0,2,2,1,1,notmoveable,new,,family=cacti|block=0
+cactus_45,item,stump,blue agave,owner_art/cacti,2816,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
+waypoint_seal,item,decor,waypoint seal,owner_art/waypoint,0,0,3,3,1,60,notmoveable light:3:35,new,,ms=100|family=waypoint|block=0

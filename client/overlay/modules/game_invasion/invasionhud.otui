@@ -33,7 +33,7 @@ ChaosPanelDark
 
   ChaosTitle
     id: title
-    text: Invasion
+    !text: tr('Invasion')
     phantom: true
 
   InvasionHudLabel

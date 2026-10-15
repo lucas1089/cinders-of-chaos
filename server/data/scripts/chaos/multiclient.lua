@@ -9,6 +9,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- every character from the IP, blocks or not (the login limit always applies)
 local function sameIp(player)
@@ -36,7 +39,7 @@ function login.onLogin(player)
 	local online = #sameIp(player)
 	if online + 1 > Chaos.multiClient.maxPerIp then
 		print(string.format("[ChaosMC] %s refused: %d characters online from the same IP", player:getName(), online))
-		player:popupFYI(string.format("Only %d characters from the same connection can be online at once.", Chaos.multiClient.maxPerIp))
+		player:popupFYI(Chaos.t(player, "Only %d characters from the same connection can be online at once.", Chaos.multiClient.maxPerIp))
 		return false
 	end
 	local siblings = Chaos.mcSiblings(player) -- empty while the blocks are switched off
@@ -48,7 +51,7 @@ function login.onLogin(player)
 		end
 	end
 	if #siblings > 0 then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
 			"Another character from your connection is online: dungeons, the Infinity Tower and PvP are blocked for both (max %d characters).",
 			Chaos.multiClient.maxPerIp))
 	end
@@ -76,7 +79,7 @@ pvp.onTargetCombat = function(creature, target)
 		local id = attacker:getId()
 		if (lastNotice[id] or 0) + 2 <= os.time() then
 			lastNotice[id] = os.time()
-			attacker:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.multiClient.msgPvp)
+			attacker:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(attacker, Chaos.multiClient.msgPvp))
 		end
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end

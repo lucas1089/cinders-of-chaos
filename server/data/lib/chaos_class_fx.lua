@@ -80,10 +80,12 @@ C.swaps = {
 	},
 	ninja = {
 		[240] = {shade_vanish = "ninja_vanish", shade_appear = "ninja_vanish"}, -- Shadow Step
+		[73] = {whirlwind = "ninja_vanish"},            -- Blade Flurry (an ink slash through the spin)
 		[241] = {shadow_smoke = "ninja_smoke"},          -- Smoke Bomb (each tile)
 	},
 	samurai = {
 		[243] = {shield_bubble = "samurai_parry"},       -- Counter Stance
+		[73] = {whirlwind = "samurai_parry"},           -- Blade Flurry (a crescent of steel)
 		[245] = {aura_burst_gold = "samurai_focus"},     -- Bushido Focus
 	},
 	necromancer = {

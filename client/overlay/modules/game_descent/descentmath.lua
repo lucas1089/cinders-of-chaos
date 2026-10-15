@@ -1,4 +1,5 @@
 -- Pure helpers of the Ember Descent window, HUD and boon cards (no client API), tested by descentmath_test.lua.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 DescentMath = {}
 local M = DescentMath
 
@@ -66,17 +67,17 @@ end
 function M.stateLine(d)
   if type(d) ~= 'table' then return '' end
   local s = d.state
-  if s == 'choose' then return 'Room cleared: choose a boon.' end
-  if s == 'travel' then return 'The next door opens...' end
-  if s == 'done' then return 'The descent is over.' end
+  if s == 'choose' then return tr('Room cleared: choose a boon.') end
+  if s == 'travel' then return tr('The next door opens...') end
+  if s == 'done' then return tr('The descent is over.') end
   if s == 'rest' then
-    if d.ready then return 'Waiting for the party...' end
-    if d.type == 'shrine' then return 'Use the altar (health for a boon), then Continue.' end
-    if d.type == 'merchant' then return 'Spend your embers at the stand, then Continue.' end
-    return 'Continue when you are ready.'
+    if d.ready then return tr('Waiting for the party...') end
+    if d.type == 'shrine' then return tr('Use the altar (health for a boon), then Continue.') end
+    if d.type == 'merchant' then return tr('Spend your embers at the stand, then Continue.') end
+    return tr('Continue when you are ready.')
   end
   if d.type == 'boss' then
-    return d.bossName and (tostring(d.bossName) .. ' awaits.') or 'The last hall.'
+    return d.bossName and (tostring(d.bossName) .. ' awaits.') or tr('The last hall.')
   end
   local left = tonumber(d.monsters) or 0
   local waves = tonumber(d.waves) or 0
@@ -139,8 +140,8 @@ end
 function M.cardNote(c)
   if type(c) ~= 'table' then return '' end
   local have, max = tonumber(c.s) or 0, tonumber(c.m) or 1
-  if max <= 1 then return 'Unique boon' end
-  if have == 0 then return string.format('New (stacks to %d)', max) end
+  if max <= 1 then return tr('Unique boon') end
+  if have == 0 then return tr('New (stacks to %d)', max) end
   return string.format('Held %d of %d', have, max)
 end
 
@@ -180,21 +181,24 @@ function M.infoLines(info)
   if type(info) ~= 'table' then return {} end
   local lines = {}
   local function add(text, color) lines[#lines + 1] = { text = text, color = color or M.COLORS.text } end
-  add(string.format('%d-%d rooms, %d minutes, up to %d players. Level %d+.', tonumber(info.rooms and info.rooms[1]) or 8,
+  add(tr('%d-%d rooms, %d minutes, up to %d players. Level %d+.', tonumber(info.rooms and info.rooms[1]) or 8,
     tonumber(info.rooms and info.rooms[2]) or 12, math.floor((tonumber(info.timeLimit) or 0) / 60),
     tonumber(info.maxPlayers) or 4, tonumber(info.minLevel) or 0), M.COLORS.dim)
-  if info.freeDaily then
-    add('Free descent today: ready', M.COLORS.good)
+  local banked = math.floor(tonumber(info.freeDailyCount) or 0)
+  if info.freeDaily and banked > 1 then
+    add(tr('Free descents: %d ready (unused days bank up to 3)', banked), M.COLORS.good)
+  elseif info.freeDaily then
+    add(tr('Free descent today: ready'), M.COLORS.good)
   else
-    add('Free descent today: used (next in ' .. M.hours(info.nextDaily) .. ')', M.COLORS.dim)
+    add(tr('Free descent today: used (next in %s)', M.hours(info.nextDaily)), M.COLORS.dim)
   end
-  add(info.freeWeekly and 'Free weekly descent: ready' or 'Free weekly descent: used this week',
+  add(info.freeWeekly and tr('Free weekly descent: ready') or tr('Free weekly descent: used this week'),
     info.freeWeekly and M.COLORS.good or M.COLORS.dim)
-  add(string.format('%s: %d carried', tostring(info.craft and info.craft.name or 'Ember Sigils'),
+  add(string.format('%s: %d carried', tostring(info.craft and info.craft.name or tr('Ember Sigils')),
     tonumber(info.sigils) or 0), (tonumber(info.sigils) or 0) > 0 and M.COLORS.bright or M.COLORS.dim)
-  add(string.format('Best depth: %d%s   Runs: %d   Clears: %d', tonumber(info.best) or 0,
+  add(tr('Best depth: %d%s   Runs: %d   Clears: %d', tonumber(info.best) or 0,
     info.bestClear and ' (conquered)' or '', tonumber(info.runs) or 0, tonumber(info.clears) or 0), M.COLORS.gold)
-  add(string.format('This week (seed %s): best depth %d', tostring(info.weekSeed or '?'), tonumber(info.weekBest) or 0),
+  add(tr('This week (seed %s): best depth %d', tostring(info.weekSeed or '?'), tonumber(info.weekBest) or 0),
     M.COLORS.gold)
   return lines
 end
@@ -212,7 +216,7 @@ function M.craft(info)
   local shards, gold = tonumber(c.shards) or 0, tonumber(c.gold) or 0
   local hs, hg = tonumber(c.haveShards) or 0, tonumber(c.haveGold) or 0
   return { can = hs >= shards and hg >= gold,
-    text = string.format('Forge: %d rune shards (%d) and %s gold (%s)', shards, hs, M.number(gold), M.number(hg)) }
+    text = tr('Forge: %d rune shards (%d) and %s gold (%s)', shards, hs, M.number(gold), M.number(hg)) }
 end
 
 -- which entry buttons work: {normal, weekly} each {can, text}
@@ -227,7 +231,7 @@ function M.entryButtons(info)
     if sig > 0 then return { can = true, text = label .. ' (1 sigil)' } end
     return { can = false, text = label }
   end
-  return { normal = one(info.freeDaily, 'Descend'), weekly = one(info.freeWeekly, 'Weekly Descent') }
+  return { normal = one(info.freeDaily, 'Descend'), weekly = one(info.freeWeekly, tr('Weekly Descent')) }
 end
 
 M.RESULTS = {
@@ -245,12 +249,12 @@ function M.endLines(d)
   local r = M.RESULTS[d.result] or { title = tostring(d.text or ''), color = M.COLORS.text }
   local lines = { string.format('Depth %d of %d%s', tonumber(d.depth) or 0, tonumber(d.rooms) or 0,
     d.weekly and ' (weekly)' or '') }
-  if (tonumber(d.gold) or 0) > 0 then lines[#lines + 1] = M.number(d.gold) .. ' gold to your bank' end
+  if (tonumber(d.gold) or 0) > 0 then lines[#lines + 1] = tr('%s gold to your bank', M.number(d.gold)) end
   for _, it in ipairs(type(d.items) == 'table' and d.items or {}) do
     lines[#lines + 1] = (it.unique and 'Unique: ' or '') .. ((tonumber(it.count) or 1) > 1 and (it.count .. ' ') or '')
       .. tostring(it.name or '')
   end
-  if d.title then lines[#lines + 1] = 'New title: ' .. tostring(d.title) end
+  if d.title then lines[#lines + 1] = tr('New title: %s', tostring(d.title)) end
   return { title = r.title, color = r.color, lines = lines }
 end
 

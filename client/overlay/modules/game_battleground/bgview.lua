@@ -1,4 +1,5 @@
 -- Pure helpers of the battleground module (no client API; tested by bgview_test.lua with plain Lua).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 BgView = {}
 local V = BgView
 
@@ -78,9 +79,9 @@ function V.bracketCard(view, tiers, placementTotal)
     c.unplaced = true
   end
   if view.decayIn and num(view.decayIn) > 0 then
-    c.decay = 'Decay in ' .. V.span(view.decayIn) .. ' without a rated match'
+    c.decay = tr('Decay in %s without a rated match', V.span(view.decayIn))
   end
-  c.tooltip = string.format('Season rating %d (deviation %d), peak %d, %d matches.', num(view.rating, 1500), num(view.rd),
+  c.tooltip = tr('Season rating %d (deviation %d), peak %d, %d matches.', num(view.rating, 1500), num(view.rd),
     num(view.peak, num(view.rating, 1500)), num(view.matches))
   return c
 end
@@ -90,22 +91,22 @@ function V.queueStatus(state, elapsed)
   state = type(state) == 'table' and state or {}
   elapsed = num(elapsed)
   if type(state.match) == 'table' then
-    return 'You are in a battleground match.', '#f6cf72'
+    return tr('You are in a battleground match.'), '#f6cf72'
   end
   if num(state.deserter) - elapsed > 0 then
-    return 'Deserter: no queue for ' .. V.span(num(state.deserter) - elapsed) .. '.', '#e03a1e'
+    return tr('Deserter: no queue for %s.', V.span(num(state.deserter) - elapsed)), '#e03a1e'
   end
   if type(state.queue) == 'table' then
     local q = state.queue
     local waited = num(q.waited) + elapsed
     local est = math.max(0, num(q.est) - elapsed)
-    return string.format('In the queue %s (%d players waiting). Estimated: %s', V.clock(waited), num(q.players),
-      est > 0 and ('~' .. V.span(est)) or 'any moment'), '#f6cf72'
+    return tr('In the queue %s (%d players waiting). Estimated: %s', V.clock(waited), num(q.players),
+      est > 0 and ('~' .. V.span(est)) or tr('any moment')), '#f6cf72'
   end
   if not state.bracket then
-    return string.format('You need level %d for the battleground.', num(state.minLevel, 100)), '#e03a1e'
+    return tr('You need level %d for the battleground.', num(state.minLevel, 100)), '#e03a1e'
   end
-  return string.format('%d waiting in your bracket. Estimated wait: ~%s', num(state.waiting), V.span(state.est)), '#d6c9ae'
+  return tr('%d waiting in your bracket. Estimated wait: ~%s', num(state.waiting), V.span(state.est)), '#d6c9ae'
 end
 
 -- the role buttons: the class's roles, the chosen one marked
@@ -121,13 +122,13 @@ end
 -- the honor line of the window
 function V.honorLine(state)
   state = type(state) == 'table' and state or {}
-  return string.format('Honor %s   (this week %s / %s)   Weekly first win: %s', V.number(state.honor),
+  return tr('Honor %s   (this week %s / %s)   Weekly first win: %s', V.number(state.honor),
     V.number(state.weekHonor), V.number(state.weekCap), state.firstWinDone and 'taken' or 'ready')
 end
 
 function V.recordLine(state)
   local r = type(state) == 'table' and type(state.record) == 'table' and state.record or {}
-  return string.format('Battlegrounds %d   W-L-D %d-%d-%d   Downs dealt %d   Wells taken %d', num(r.matches), num(r.wins),
+  return tr('Battlegrounds %d   W-L-D %d-%d-%d   Downs dealt %d   Wells taken %d', num(r.matches), num(r.wins),
     num(r.losses), num(r.draws), num(r.kills), num(r.captures))
 end
 
@@ -138,9 +139,9 @@ function V.vendorRow(o, honor)
   if o.owned then
     r.sub, r.can, r.button = 'Unlocked for your account.', false, 'Owned'
   elseif num(honor) < num(o.cost) then
-    r.sub, r.can = string.format('You need %s more honor.', V.number(num(o.cost) - num(honor))), false
+    r.sub, r.can = tr('You need %s more honor.', V.number(num(o.cost) - num(honor))), false
   else
-    r.sub, r.can = o.kind == 'cosmetic' and 'Cosmetic, account-wide.' or 'Delivered to your backpack (inbox when full).', true
+    r.sub, r.can = o.kind == 'cosmetic' and tr('Cosmetic, account-wide.') or tr('Delivered to your backpack (inbox when full).'), true
   end
   return r
 end
@@ -151,7 +152,7 @@ function V.rewardRows(tiers, seasonId)
   for _, t in ipairs(type(tiers) == 'table' and tiers or {}) do
     local parts = {}
     if t.title then parts[#parts + 1] = string.format('title "%s (S%d)"', t.title, num(seasonId)) end
-    if t.frame then parts[#parts + 1] = t.frame .. ' plate frame' end
+    if t.frame then parts[#parts + 1] = tr('%s plate frame', t.frame) end
     local cos = type(t.cosmetics) == 'table' and #t.cosmetics or 0
     if cos > 0 then parts[#parts + 1] = cos .. (cos == 1 and ' cosmetic' or ' cosmetics') end
     parts[#parts + 1] = V.number(t.honor) .. ' honor'
@@ -195,7 +196,7 @@ end
 function V.hudCenter(d)
   d = type(d) == 'table' and d or {}
   if d.phase == 'prep' then
-    return tostring(math.max(0, math.floor(num(d.left)))), 'the wells open in'
+    return tostring(math.max(0, math.floor(num(d.left)))), tr('the wells open in')
   elseif d.phase == 'fight' then
     return V.clock(d.left), 'left'
   end
@@ -206,10 +207,10 @@ end
 function V.hudNotice(d)
   d = type(d) == 'table' and d or {}
   if d.respawn then
-    return string.format('Downed: back with the next wave in %ds', math.max(0, math.floor(num(d.respawn)))), '#e03a1e'
+    return tr('Downed: back with the next wave in %ds', math.max(0, math.floor(num(d.respawn)))), '#e03a1e'
   end
   if d.afk then
-    return string.format('Inactive: move or fight within %ds', math.max(0, math.floor(num(d.afk)))), '#ff5050'
+    return tr('Inactive: move or fight within %ds', math.max(0, math.floor(num(d.afk)))), '#ff5050'
   end
   return '', '#d6c9ae'
 end
@@ -246,7 +247,7 @@ function V.summary(d, myTeam)
   else
     local se = type(d.season) == 'table' and d.season or nil
     if se then
-      s.rating = string.format('Season rating %d -> %d (%s)', num(se.before), num(se.after), V.delta(se.delta))
+      s.rating = tr('Season rating %d -> %d (%s)', num(se.before), num(se.after), V.delta(se.delta))
       if se.placed then
         s.rating = s.rating .. '  ' .. tostring(se.tierName or '')
       else
@@ -255,7 +256,7 @@ function V.summary(d, myTeam)
     else
       s.rating = ''
     end
-    s.honor = string.format('Honor +%d%s', num(d.honor), d.firstWin and ' (first win of the week)' or '')
+    s.honor = string.format('Honor +%d%s', num(d.honor), d.firstWin and tr(' (first win of the week)') or '')
     if d.items and d.items ~= '' then s.honor = s.honor .. '  ' .. d.items end
   end
   return s

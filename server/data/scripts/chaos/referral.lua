@@ -20,6 +20,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/referral_core.lua")
 Chaos.referralConfig = dofile("data/scripts/chaos/referral_config.lua")
 
@@ -38,12 +41,9 @@ local function q(text)
 	return db.escapeString(tostring(text or ""))
 end
 
+-- a deferred text (ChaosI18n.msg; tostring = English): message / Chaos.t give it in each reader's language
 local function say(key, ...)
-	local text = MSG[key] or key
-	if select("#", ...) > 0 then
-		return string.format(text, ...)
-	end
-	return text
+	return ChaosI18n.msg(MSG[key] or key, ...)
 end
 
 -- ------------------------------------------------------------------ tables
@@ -297,6 +297,7 @@ local function send(player, action, data)
 end
 
 local function message(player, text, isError)
+	text = Chaos.t(player, text)
 	send(player, "message", {text = text, error = isError == true})
 	if isError then
 		player:sendCancelMessage(text)
@@ -337,7 +338,7 @@ local function sendStatus(player, open)
 	state.tiers = (Ref.accounts[accountId] or Ref.load(accountId)).tiers
 	if link then
 		state.link = {status = link.status, referrerName = accountName(link.referrer_account_id), gift = link.gift_at > 0,
-			reason = link.status == "rejected" and say(link.reason, cfg.entryDays) or ""}
+			reason = link.status == "rejected" and Chaos.t(player, say(link.reason, cfg.entryDays)) or ""}
 	end
 	local v = Core.view(state, cfg, now)
 	v.open = open == true
@@ -354,7 +355,7 @@ local function giveGift(player, link)
 	-- check the depot inbox first: what does not fit in the backpack goes there (as achievements.lua and bounty.lua do)
 	local inbox = player.getInbox and player:getInbox()
 	if not inbox then
-		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, say("giftNoRoom"))
+		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player, say("giftNoRoom")))
 		return false
 	end
 	local toInbox = false
@@ -368,14 +369,14 @@ local function giveGift(player, link)
 		end
 	end
 	if toInbox then
-		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, say("giftInbox"))
+		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player, say("giftInbox")))
 	end
 	local now = os.time()
 	db.query(string.format("UPDATE `%s` SET `gift_at` = %d, `gift_player_id` = %d WHERE `referred_account_id` = %d AND `gift_at` = 0",
 		T.links, now, player:getGuid(), link.referred_account_id))
 	link.gift_at = now
 	log(link.referred_account_id, link.referrer_account_id, player:getGuid(), "gift", Core.giftText(cfg))
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("gift", Core.giftText(cfg), gift.title and gift.title.text or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("gift", Core.giftText(cfg), gift.title and gift.title.text or "")))
 	player:getPosition():sendMagicEffect(CONST_ME_GIFT_WRAPS or CONST_ME_MAGIC_GREEN or 13)
 	refreshAccount(link.referred_account_id)
 	return true
@@ -408,7 +409,7 @@ local function activate(player, link, referrerId, code, source)
 		T.links, accountId, referrerId, q(code), q(source), link and link.created_at or now, now, first))
 	log(accountId, referrerId, player:getGuid(), "link", source .. " " .. code)
 	local fresh = linkOf(accountId)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("linked", accountName(referrerId)))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("linked", accountName(referrerId))))
 	if fresh then
 		giveGift(player, fresh)
 	end
@@ -438,7 +439,7 @@ function Ref.enter(player, text)
 		Ref.checkMilestones(player)
 	end
 	sendStatus(player, false)
-	send(player, "message", {text = say("linked", accountName(referrerId)), error = false})
+	send(player, "message", {text = Chaos.t(player, say("linked", accountName(referrerId))), error = false})
 end
 
 -- a code entered on the website: checked at the first login of the account
@@ -458,7 +459,7 @@ local function checkPending(player, link)
 	if not ok then
 		db.query(string.format("UPDATE `%s` SET `status` = 'rejected', `reason` = %s WHERE `referred_account_id` = %d", T.links, q(reason), link.referred_account_id))
 		log(link.referred_account_id, link.referrer_account_id, player:getGuid(), "rejected", reason .. " " .. tostring(link.code))
-		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, say("rejected", say(reason, cfg.entryDays)))
+		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player, say("rejected", say(reason, cfg.entryDays))))
 		return nil
 	end
 	return activate(player, link, referrerId, code, "web")
@@ -480,7 +481,7 @@ local function notify(referrerId)
 		if m then
 			local text = r.state == "paid" and say("paid", name, m.level, Core.rewardText(m)) or say("void", name, m.level)
 			for _, p in ipairs(online) do
-				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, text))
 			end
 		end
 		db.query(string.format("UPDATE `%s` SET `notified` = 1 WHERE `referred_account_id` = %d AND `milestone` = %s",
@@ -538,7 +539,7 @@ function Ref.checkTiers(referrerId)
 		end
 		log(referrerId, 0, 0, "tier", t.key .. " " .. Core.rewardText(t))
 		for _, p in ipairs(onlineOf(referrerId)) do
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, say("tier", t.count, qm and qm.level or 0, Core.rewardText(t)))
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, say("tier", t.count, qm and qm.level or 0, Core.rewardText(t))))
 		end
 		given = given + 1
 	end
@@ -619,7 +620,7 @@ function Ref.checkMilestones(player)
 		local m = Core.milestone(cfg, w.milestone)
 		if m and w.referred_account_id == link.referred_account_id then
 			for _, p in ipairs(onlineOf(link.referrer_account_id)) do
-				p:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, say("waitingCap", player:getName(), m.level))
+				p:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(p, say("waitingCap", player:getName(), m.level)))
 			end
 		end
 	end

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/install_store_food_test.py : install_store_food.py on a synthetic items.otb / items.xml
-(the config read from store_food_config.lua, the node copied from the stock food node and made not stackable, the
+(the config read from store_food_config.lua, the node copied from the stock food node, stackable as that node is, the
 stock look while ownLook is false and our look when it is true, idempotent, an id taken by another item stops it,
 the items.xml block added once and rewritten on a change). No base server needed."""
 import os, struct, sys, tempfile
@@ -30,9 +30,10 @@ def otb(nodes):
     return b'\x00\x00\x00\x00' + root + b''.join(nodes) + bytes([END])
 
 
-cfg = T.read_config()
+shipped = T.read_config()
+check(shipped['ownLook'] is True, 'config: our look, on since 2026-10-14 (things_custom25 on windows-assets)')
+cfg = dict(shipped, ownLook=False)   # the stock look first, then ownLook
 check(cfg['id'] == 32084 and cfg['sourceId'] == 2672, 'config: ids')
-check(cfg['ownLook'] is False, 'config: the stock look until the client pair has the art')
 check(cfg['clientId'] == 33904, 'config: our look after the pair 24 items (33903)')
 check('never runs out' in cfg['description'], 'config: description read (joined strings)')
 
@@ -42,9 +43,17 @@ check('added' in note and cid == 3583, 'node added with the dragon ham look')
 kids, _ = scan(new)
 by = {k[2]: k for k in kids}
 check(32084 in by and by[32084][3] == 3583, 'server id 32084 -> client 3583')
-check(not (by[32084][5] & FLAG_STACKABLE), 'not stackable')
+check(by[32084][5] & FLAG_STACKABLE, 'stackable like its look (the dragon ham): the client reads a count for a stackable '
+      'thing, a non-stackable server item broke the container packet (live test 2026-10-14)')
 check(by[2672][5] & FLAG_STACKABLE, 'the dragon ham stays stackable')
 check(T.verify_otb(new, cfg, want, cid) == 4, 'verified, four nodes')
+# an older install (the ration made not stackable) is updated in place
+old_node = item_node(32084, 3583, 0)
+older = otb([item_node(2671, 3582), item_node(2672, 3583), item_node(2673, 3584, 0), old_node])
+fixed, note_f, want_f, cid_f = T.patch_otb(older, cfg)
+by_f = {k[2]: k for k in scan(fixed)[0]}
+check('updated' in note_f and by_f[32084][5] & FLAG_STACKABLE, 'a non-stackable ration from an older install is fixed')
+check(T.verify_otb(fixed, cfg, want_f, cid_f) == 4, 'fixed node verified')
 again, note2, _, _ = T.patch_otb(new, cfg)
 check(again == new and 'present' in note2, 'idempotent')
 own = dict(cfg, ownLook=True)

@@ -3,6 +3,7 @@
 -- ghost preview. The check mirrors the server's (server/data/scripts/chaos/hideout_core.lua K.placeProblem): one
 -- object per tile, a rug under it, wall decorations on the north / west wall, the fixture tiles free, the limits and a
 -- path from the arrival tile to every fixture. The server decides; this only colours the preview.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 HideoutLogic = {}
 local HL = HideoutLogic
@@ -52,12 +53,12 @@ end
 
 -- may the player start placing this row? -> true | false, reason
 function HL.canPlace(r, hideout, inside)
-  if not r then return false, 'Pick a decoration.' end
-  if not inside or not inside.isOwner then return false, 'Enter your hideout to decorate it.' end
+  if not r then return false, tr('Pick a decoration.') end
+  if not inside or not inside.isOwner then return false, tr('Enter your hideout to decorate it.') end
   if not r.owned then return false, 'Locked: ' .. tostring(r.how or '') end
-  if (r.placed or 0) >= (r.max or 0) then return false, string.format('At most %d of it.', r.max or 0) end
+  if (r.placed or 0) >= (r.max or 0) then return false, tr('At most %d of it.', r.max or 0) end
   if hideout and (hideout.count or 0) >= (hideout.max or 0) then
-    return false, string.format('Your hideout holds at most %d decorations.', hideout.max or 0)
+    return false, tr('Your hideout holds at most %d decorations.', hideout.max or 0)
   end
   return true
 end
@@ -183,19 +184,19 @@ end
 
 -- can row r go to (gx, gy) at rotation rot? state = {layout, catalogue, placed, hideout}. -> true | false, reason
 function HL.check(state, r, gx, gy, rot, ignoreId)
-  if not r then return false, 'Pick a decoration.' end
+  if not r then return false, tr('Pick a decoration.') end
   local L = state.layout
   local occ, total = HL.occupancy(state, ignoreId)
   local hideout = state.hideout or {}
-  if total >= (hideout.max or 0) then return false, 'The hideout is full.' end
+  if total >= (hideout.max or 0) then return false, tr('The hideout is full.') end
   local same = 0
   for _, p in ipairs(state.placed or {}) do
     if p.key == r.key and p.id ~= ignoreId then same = same + 1 end
   end
-  if same >= (r.max or 0) then return false, 'At most ' .. tostring(r.max) .. '.' end
+  if same >= (r.max or 0) then return false, tr('At most %s.', tostring(r.max)) end
   if r.layer == 'wall' then
-    if not HL.wallSide(L, gx, gy) then return false, 'Hang it on the north or the west wall.' end
-    if occ.wall[key(gx, gy)] then return false, 'Something already hangs there.' end
+    if not HL.wallSide(L, gx, gy) then return false, tr('Hang it on the north or the west wall.') end
+    if occ.wall[key(gx, gy)] then return false, tr('Something already hangs there.') end
     return true
   end
   local reserved = {}
@@ -204,15 +205,15 @@ function HL.check(state, r, gx, gy, rot, ignoreId)
   for _, part in ipairs(HL.parts(r, rot)) do
     local x, y = gx + part[1], gy + part[2]
     local k = key(x, y)
-    if x < 1 or y < 1 or x > L.w or y > L.h then return false, 'Place it on the floor.' end
-    if reserved[k] then return false, 'That tile is kept free.' end
-    if occ[r.layer][k] then return false, r.layer == 'floor' and 'There is a rug there.' or 'Something stands there.' end
+    if x < 1 or y < 1 or x > L.w or y > L.h then return false, tr('Place it on the floor.') end
+    if reserved[k] then return false, tr('That tile is kept free.') end
+    if occ[r.layer][k] then return false, r.layer == 'floor' and tr('There is a rug there.') or tr('Something stands there.') end
     if r.layer == 'object' and r.block then newSolid[k] = true end
   end
   if next(newSolid) then
     for k in pairs(occ.solid) do newSolid[k] = true end
     local okReach, what = HL.reachOk(L, newSolid)
-    if not okReach then return false, 'That would wall off the ' .. (what:match('^dummy') and 'dummies' or what) .. '.' end
+    if not okReach then return false, tr('That would wall off the %s.', (what:match('^dummy') and tr('dummies') or what)) end
   end
   return true
 end

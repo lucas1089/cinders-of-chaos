@@ -40,6 +40,8 @@ you use your rights. It follows the Brazilian General Data Protection Law (LGPD,
 - Anti-cheat: the server measures play patterns of online characters, such as the rhythm of actions, reaction times,
   repeated routes and hours played in a row. It builds a score, may send a presence check and logs the results for the
   staff. **None of this punishes on its own:** a staff member always reviews before deciding.
+  A daily suspicion score per character, with the signals behind it, is kept 30 days (90 days when a staff member
+  escalated the case); only days with a noticeable score are stored.
 - Player reports: who reported, who was reported, the reason, the note, the position, the time and the reported
   character's last 10 lines in the game's public channels. **Private messages are never stored or read.**
 - Bug reports: the text you write, the position, and the character's level and class.
@@ -47,6 +49,9 @@ you use your rights. It follows the Brazilian General Data Protection Law (LGPD,
 - Staff log: every admin action, with who did it, when and on which character.
 - Game statistics: aggregate counts, such as how many characters picked each talent. These counts carry no name, account
   or identifier.
+- Balance statistics: hourly totals per level range and class, such as experience and gold per hour, boss kill times,
+  deaths per area, spell casts and how many players are online. They are counted in the server's memory and stored
+  without any name, account or identifier.
 
 **Donations**
 
@@ -63,7 +68,10 @@ Some information is visible to everyone on the website and in the game: the char
 looks, the account's country flag, the last login date, deaths, guild, leaderboards and the profile comment, if you write
 one. The account's other characters are shown on the profile unless you hide them. In the game, other players can see
 your character's equipment and talent tree if "Allow others to inspect me" is on (the default). In the mentor program, the mentor card
-only shows on the website if you choose "Show on website".
+only shows on the website if you choose "Show on website". The Memorial in the capital and its website page show a
+character's name with its realm firsts and records unless you turn "Show my records and realm firsts" off, and with a
+Hardcore fall (level, class, cause, date) only if you choose to show it; you can change both at any time, for every
+season at once. The Chronicle's contributor lists follow the same choice.
 
 ## 3. Legal bases (LGPD, art. 7)
 
@@ -72,7 +80,7 @@ only shows on the website if you choose "Show on website".
   only use what is needed, and you may object (section 8).
 - **Legal obligation:** payment records and other records the law requires us to keep.
 - **Regular exercise of rights:** records of bans, reports and reversals, to defend ourselves in a dispute.
-- **Consent:** when you choose something optional, such as showing your mentor card on the website or remembering a
+- **Consent:** when you choose something optional, such as showing your mentor card on the website, showing a Hardcore fall on the Memorial, or remembering a
   device. You can withdraw consent at any time.
 
 ## 4. How long we keep data
@@ -85,6 +93,7 @@ only shows on the website if you choose "Show on website".
 | Remembered device in two-step verification | 30 days |
 | Technical logs: server console, client checks, gateway servers | 14 days |
 | Death recap | the last 5 deaths of each character |
+| Balance statistics (totals, no identifier) | 90 days per hour, then 2 years per day |
 | Player reports, bug reports, anti-cheat and staff logs | up to [PRAZO DOS REGISTROS DE MODERAÇÃO], deleted automatically every day; longer only while a report is still open or a ban or an appeal needs them |
 | Bans | while the ban lasts and afterwards, as long as needed for appeals and repeat offences |
 | Donation records | as long as tax and accounting laws require, at least 5 years |
@@ -107,6 +116,9 @@ We do not sell personal data. We only share what is needed with:
 - **Off-site backup:** [PROVEDOR DE BACKUP] stores the backups, always encrypted.
 - **Discord:** our community is on Discord. The staff get notices of new player reports there, with the report number,
   the reason and the two character names, never the text. Your use of Discord follows Discord's own rules.
+- **Discord announcements:** our public Discord channels show game news with character names: records, first kills,
+  boss kills, levels 500 and 1000, and Character Bazaar auctions (name, level, class and price). This is information
+  the website already shows publicly.
 - **Authorities:** when the law or a court order requires it.
 
 ## 6. International transfers

@@ -78,7 +78,7 @@ local function showSample(r)
     local me = g_game.getLocalPlayer()
     local name = me and me:getName() or 'You'
     local level = me and me:getLevel() or 1
-    local text = os.date('%H:%M') .. ' ' .. name .. ' [' .. level .. ']: Hail, ash-walkers!'
+    local text = tr('%s %s [%s]: Hail, ash-walkers!', os.date('%H:%M'), name, level)
     local parts = { text, '#f0f000' }
     local colored = r and CL.validColor(r.color) and CL.colorLine(parts, text, { name = name, level = level },
       { [name] = r.color }) or parts
@@ -136,7 +136,7 @@ local function showSample(r)
     local bg = r and CL.validColor(r.accent) and r.accent or '#100c0ef0'
     for _, s in ipairs(CL.SAMPLE_RARITY) do
       local l = g_ui.createWidget('CosmeticSampleLabel', box)
-      l:setText(s.name .. ' Ashen Blade')
+      l:setText(tr('%s Ashen Blade', s.name))
       l:setColor(s.color)
       l:setBorderColor(s.color)
       l:setBackgroundColor(bg)

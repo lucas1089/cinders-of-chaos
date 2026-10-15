@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -572,10 +575,23 @@ end
 event:register()
 
 -- the event sits on whatever a player with runes attacks (and on every player: heals, Reprisal)
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if creature and target and creature ~= target and creature:isPlayer() and active[creature:getId()] then
-		target:registerEvent("ChaosSupportsHit")
+		registerOnce(target, "ChaosSupportsHit")
 	end
 	return RETURNVALUE_NOERROR
 end
@@ -1010,8 +1026,7 @@ local function onUseRune(player, item, fromPosition, target, toPosition, isHotke
 			player:sendCancelMessage(text)
 		end
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s - %s. Fits %s spells. Socket it in the spell "
-			.. "supports window (Character > Spell Supports).", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type)))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type)))
 	end
 	sendState(player)
 	sendBar(player)

@@ -465,6 +465,12 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
 - the **mock donation provider**: `CHAOS_PAY_PIX_PROVIDER=mock` / `CHAOS_PAY_PAYPAL_PROVIDER=mock` in
   `/etc/chaos/payments.env` approve every donation by themselves after a few seconds (free Chaos Coins). Live values:
   `mercadopago` / `paypal` (or `off`); see "Donations" below.
+- the **beta switch**: `server/data/scripts/chaos/beta_config.lua` `enabled = true` gives every account 5,000 free
+  Chaos Coins at its first new character (server/README.md "Beta starter coins"). Set `enabled = false` on the launch
+  server before the first start; check with `grep -n "enabled" data/scripts/chaos/beta_config.lua`. The beta coins, the
+  purchases made with them and the grant rows (`chaos_shop_coins`, `chaos_shop_purchases`, `chaos_shop_history`,
+  `chaos_beta_grants`) are wiped with the beta (docs/BETA.md section 9; only the beta coins: the snippet in docs/BETA.md
+  section 4).
 
 ## 12. Open loose ends that matter for launch (ROADMAP.md)
 
@@ -478,7 +484,7 @@ Still open:
   with Blackblood Creed broke the Deadeye's single-target lead: fixed 2026-10-12, computed (ROADMAP "Open
   decisions"). Open: measure the fix on the dummies.
 - The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class
-  unlock; their price (750 Chaos Coins) is a placeholder (docs/OWNER_TODO.md). C2 / C3 polish and the C4 outfits and
+  unlock: free at account level 200, not sold (docs/PRICES.md). C2 / C3 polish and the C4 outfits and
   effects are still in progress (ROADMAP).
 - The community (Discord) link is empty (`ChaosTopBar.COMMUNITY_URL`, the website's Discord invite).
 - Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12; the ladder is on the Rules page).
@@ -502,7 +508,7 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
 2. Engine built with the patches (section 1); server folder in `/opt/chaos/server` with the real map.
 3. `prod_config.py`, `/etc/chaos/chaos.env` (section 3).
 4. `install_all.py --dry-run`, then for real, then once more (0 changes) (section 4).
-5. Remove every test-only file (section 11).
+5. Remove every test-only file and turn the beta switch off (`beta_config.lua` `enabled = false`; section 11).
 6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`.
 7. Create the staff account and characters; log in with the release client; check the login screen (boosted creature,
    events, players online), a store purchase, a crafting orb, the bank, the stash.
@@ -777,6 +783,13 @@ From domain first. Check: ask for a recovery link for your own account; it arriv
 password form once, and the headers show `spf=pass dkim=pass dmarc=pass`. Without `CHAOS_SMTP_HOST` the site runs
 without mail and the recovery page says recovery by e-mail is not available.
 
+**Pre-deploy check** (before every website or beta deploy; `website/README.md` "Smoke test"): run
+`website/tests/e2e/run.sh` on the commit to deploy (a throwaway local site, about 30 s), then
+`E2E_BASE_URL=https://<staging site>/ website/tests/e2e/run.sh` against staging. Both must end with `# fail 0`. They
+cover the home page, account creation, login, character creation and page, the Donate page (voluntary donation label,
+Pix and PayPal buttons), the wiki with the pt-BR / en switch and the Character Bazaar. Never run it against the live
+site: it creates an account and a character.
+
 ## Donations (Pix / PayPal)
 
 Chaos Coins are a thank-you for a **voluntary donation**: nobody is required to donate and the game is fully playable for
@@ -822,6 +835,47 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
    id, secret and webhook id, `CHAOS_PAYPAL_ENV=live`; `sudo systemctl restart chaos-payworker`. One small real donation
    of each kind, refunded afterwards.
 8. Watch `/var/log/chaos/payworker.log` and `CHAOS_PAY_LOG` the first days (order ids and amounts only, no personal data).
+
+## Discord announcements
+
+The game posts records, realm firsts, world boss spawns and kills, Ascended and Cinderheart kills, levels 500 and
+1000, season start and end, server up / daily restart / down, and the Character Bazaar's new auctions and sales to
+Discord channel **webhooks**. No bot, no token in the repository, no account linking. The game only writes rows to
+`chaos_discord_queue`; the website's worker posts them. How it works: server/README.md "Discord announcements",
+website/README.md "Discord announcements".
+
+1. In Discord, Server Settings > Integrations > Webhooks: one webhook per channel you want, e.g. `#records`,
+   `#bosses`, `#players`, `#announcements`, `#server-status`, `#bazaar` (one webhook for all also works). Copy each URL.
+   A webhook URL is a password: anyone with it can post as it.
+2. `sudo install -m 600 -o www-data -g www-data /dev/null /etc/chaos/discord.env` and fill it in:
+   ```
+   CHAOS_DISCORD_WEBHOOK_RECORDS=https://discord.com/api/webhooks/...
+   CHAOS_DISCORD_WEBHOOK_BOSSES=...
+   CHAOS_DISCORD_WEBHOOK_PLAYERS=...
+   CHAOS_DISCORD_WEBHOOK_ANNOUNCE=...
+   CHAOS_DISCORD_WEBHOOK_STATUS=...
+   CHAOS_DISCORD_WEBHOOK_BAZAAR=...
+   # CHAOS_DISCORD_WEBHOOK_DEFAULT=...     every channel without its own
+   # CHAOS_DISCORD_OFF=level,bazaar_list   event kinds not to post
+   CHAOS_SITE_URL=https://<site>
+   ```
+3. `sudo cp server/deploy/chaos-discord.service server/deploy/chaos-discord.timer /etc/systemd/system/ &&
+   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-discord.timer` (and copy `server/deploy/chaos.logrotate`
+   again: it now rotates `/var/log/chaos/discord.log`).
+4. Test: restart the game server (a "Server online" post in the status channel within a minute), then
+   `sudo -u www-data sh -c 'set -a; . /etc/chaos/discord.env; php /var/www/chaos/plugins/chaos/discord_worker.php --site /var/www/chaos'`
+   by hand and check `SELECT kind, status, error FROM chaos_discord_queue ORDER BY id DESC LIMIT 10;`.
+5. Switch event types on or off in `server/data/scripts/chaos/discord_config.lua` `events` (a `/reload` or restart),
+   or without a restart with `CHAOS_DISCORD_OFF` in `discord.env`.
+
+## Balance telemetry
+
+Staff charts of experience and gold per hour, boss kills and times, deaths, spell casts, gold faucets and sinks, store
+coins and online counts: `page.php?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry; admin accounts with a
+character of group 5 or higher). Nothing to set up: the game server creates the `chaos_telemetry_*` tables at its start
+(or the install step `sql`) and writes one row per bucket every hour. Hourly rows are kept 90 days, then daily rows
+730 days. Aggregates only, no names or ids (privacy policy section 2, "Game statistics"). Details: server/README.md
+"Balance telemetry". `/telemetry` in game shows the hour in memory.
 
 ## Client updates (signed updater)
 

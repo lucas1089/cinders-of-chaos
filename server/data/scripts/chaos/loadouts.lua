@@ -32,6 +32,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosLoadoutsConfig then
 	dofile("data/scripts/chaos/loadouts_config.lua")
 end
@@ -843,7 +846,7 @@ function L.load(player, target)
 	L.casts[player:getId()] = cast
 	castbar(player, "start", {s = cast.serial, n = "Switching loadout", ms = cfg.castMs, id = 0})
 	send(player, "cast", {ms = cfg.castMs, slot = target})
-	player:sendTextMessage(MESSAGE_STATUS_SMALL, "Switching loadout... stand still.")
+	player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Switching loadout... stand still."))
 	addEvent(poll, cfg.pollMs, player:getId(), cast.token)
 	return true, nil
 end
@@ -979,7 +982,7 @@ function L.recover(player)
 		end
 		writeState(guid, st, "")
 		print(string.format("[Chaos loadouts] %s: the last switch did not reach the player save; undone", player:getName()))
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your last loadout switch was interrupted by a server restart and was undone.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your last loadout switch was interrupted by a server restart and was undone."))
 		if ChaosPassiveTree and ChaosPassiveTree.apply then
 			ChaosPassiveTree.apply(player)
 		end

@@ -176,4 +176,11 @@ if okTheme and type(theme) == "table" then
 	theme.addExclusives(cfg)
 end
 
+-- the wings of client pair 26, the owner's art (data/lib/chaos_owner_art.lua, switch ChaosOwnerArt.PAIR26, on since
+-- the pair was published, 2026-10-15): appended with their boss groups only when the switch is on
+local okOwner, owner = pcall(dofile, "data/lib/chaos_owner_art.lua")
+if okOwner and type(owner) == "table" then
+	owner.addExclusives(cfg)
+end
+
 return cfg

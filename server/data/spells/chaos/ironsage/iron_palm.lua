@@ -7,6 +7,10 @@
 -- A player is stunned by monk_combat.lua when the strike's damage lands on it (ChaosMonk.cfg.stun.pvp: 0.5 s + 0.1 s
 -- per chi, 6 s immunity, half as long within 15 s of the last stun); the spell only tells it the chi spent.
 dofile('data/spells/scripts/chaos/_monk.lua')
+-- status words (data/lib/chaos_status_fx.lua, switch off: nothing more is sent)
+if not ChaosStatusFx then
+	pcall(dofile, "data/lib/chaos_status_fx.lua")
+end
 
 local function stun(target, spent)
 	local M = ChaosMonk
@@ -24,6 +28,13 @@ local function stun(target, spent)
 		c:setParameter(CONDITION_PARAM_SUBID, M.ids.subId.stun)
 		c:setFormula(-1, 0, -1, 0)
 		ChaosSpell.vfxOr(target:getPosition(), "punch_hit_gold", "ground_slam", CONST_ME_STUN)
+		if ChaosStatusFx then
+			ChaosStatusFx.send(target:getPosition(), "stun", nil, target:getId())
+		end
+		local P27 = ChaosPack27Fx -- pair 27 (data/lib/chaos_pack27_fx.lua, off): the stun stars
+		if P27 and P27.PAIR27_FX and P27.send then
+			pcall(P27.send, target:getPosition(), "stun")
+		end
 	else
 		c:setFormula(-M.cfg.stun.bossSlow, 0, -M.cfg.stun.bossSlow, 0)
 	end

@@ -53,6 +53,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
                items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
                ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
+  ownerdecor   tools/install_owner_decor.py      the owner's decoration items of client pair 26 (45 plants, the waypoint seal)
+               in items.otb / items.xml (server ids 36940..36985; used only once ChaosOwnerArt.PAIR26 is on; README
+               "Owner art (pair 26)")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -71,6 +74,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Material Broker in data/npc and the hooks in the stock pick / sickle / skinning / fishing scripts
                (README "Professions")
   gamble       tools/install_gamble.py           the Gambler NPC in data/npc (README "The Gambler")
+  candlemarks  tools/install_candlemarks.py      Osric the Chandler (the Candlemark shop NPC) in data/npc (README "Candlemarks")
+  idlekick     tools/patch_base_idle_kick.py     config.lua kickIdlePlayerAfterMinutes = 1440: idle characters stay online and earn
+               Candlemarks (the stock 15 kicks them after 16 minutes; README "Candlemarks")
+  conquest     tools/install_conquest.py         the Conquest vendor NPC in data/npc (README "Conquest Tokens, the Conquest
+               vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
@@ -122,6 +130,14 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                name"; after worldtexts)
   houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
                in the map's house file (README "Base houses")
+  contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/) into the map at their
+               origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
+               modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
+               data/lib/chaos_hunt_places.lua tells hunt_teleports.lua where each teleport leads (README "Hunt
+               teleports"); also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
+               areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") at
+               their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
+               real map and writes nothing)
   poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
                service NPCs, hunting areas, boss places) from the installed map, items, NPCs and spawn data into
                data/chaos_poi.lua (README "Map markers"; after towns, npcnames and worldtexts, which rename what it reads)
@@ -423,6 +439,13 @@ def step_themeitems(server, data, ctx):
 STEPS.insert(STEPS.index('fistweapons') + 1, 'themeitems')  # after the fist weapons (client ids appended after theirs)
 
 
+def step_ownerdecor(server, data, ctx):
+    return tool_result(run_tool([tool('install_owner_decor.py'), data], 'install_owner_decor.py'))
+
+
+STEPS.insert(STEPS.index('themeitems') + 1, 'ownerdecor')  # after the themed items (client ids of pair 26 after pair 25's)
+
+
 def step_gems(server, data, ctx):
     return tool_result(run_tool([tool('install_gems.py'), data], 'install_gems.py'))
 
@@ -465,6 +488,27 @@ def step_professions(server, data, ctx):
 
 def step_gamble(server, data, ctx):
     return tool_result(run_tool([tool('install_gamble.py'), data], 'install_gamble.py'))
+
+
+def step_conquest(server, data, ctx):
+    return tool_result(run_tool([tool('install_conquest.py'), data], 'install_conquest.py'))
+
+
+STEPS.insert(STEPS.index('gamble') + 1, 'conquest')  # the Conquest vendor NPC, next to the Gambler's step
+
+
+def step_candlemarks(server, data, ctx):
+    return tool_result(run_tool([tool('install_candlemarks.py'), data], 'install_candlemarks.py'))
+
+
+STEPS.insert(STEPS.index('gamble') + 1, 'candlemarks')  # the Candlemark shop NPC, right after the Gambler's step
+
+
+def step_idlekick(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_idle_kick.py'), server], 'patch_base_idle_kick.py'))
+
+
+STEPS.insert(STEPS.index('candlemarks') + 1, 'idlekick')  # config.lua: idle characters stay online (Candlemarks)
 
 
 def step_supports(server, data, ctx):
@@ -590,6 +634,21 @@ def step_poi(server, data, ctx):
             return tool_result((False, ['no map in %s/world' % real]))
         return tool_result(run_tool([tool('gen_poi.py'), server, '--map', mp], 'gen_poi.py'))
     return tool_result(run_tool([tool('gen_poi.py'), server], 'gen_poi.py'))
+
+
+def step_contentareas(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('install_content_areas.py'), data, '--dry-run', '--map', mp],
+                                    'install_content_areas.py'))
+    return tool_result(run_tool([tool('install_content_areas.py'), data], 'install_content_areas.py'))
+
+
+STEPS.insert(STEPS.index('houses') + 1, 'contentareas')  # after houses (map steps), before poi
 
 
 def tool_map_path(data_dir):

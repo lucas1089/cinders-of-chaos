@@ -40,7 +40,7 @@ local SPLASH = true                    -- "Press any key to start" before the pa
 local root, bg, enterGame
 local logo, logoHot, glowW, emberLayer, sparkLayer, pressW, splashW, spinner
 local medL, medR, crestT, crestB
-local verLabel, statusLabel, statusDot, serverCaption, sceneLink
+local verLabel, statusLabel, statusDot, serverCaption, sceneLink, langLink
 local view = { cx = 0, cy = 0, sx = 1, sy = 1 }   -- crop of title.png and its scale on screen
 local mark = { x0 = -1, y0 = -1, x1 = -1, y1 = -1 } -- the sparkle mark on screen (relative to bg)
 local statusChecking = true
@@ -62,6 +62,13 @@ local function try(fn, ...)
 end
 
 -- ---------------------------------------------------------------- layout helpers
+-- upper case of a translated (cp1252) text: string.upper leaves "\231" (c cedilla) and the other accents alone
+local function upperText(s)
+  local core = rawget(_G, 'ChaosLocaleCore')
+  if core and core.upper then return core.upper(s) end
+  return s:upper()
+end
+
 local function place(w, x, y, wd, ht)
   if not alive(w) then return end
   w:breakAnchors()
@@ -192,6 +199,21 @@ local function createSceneLink()
   updateSceneLink()
 end
 
+-- the language (client_chaos_locale): under the background link; a choice reloads the modules, this screen too
+local function createLangLink()
+  if not ChaosLocale or not ChaosLocale.showMenu then return end
+  langLink = newWidget('ChaosLoginLink', bg, 'chaosLangLink')
+  langLink:setPhantom(false)
+  langLink:setTextAutoResize(true)
+  langLink:addAnchor(AnchorRight, 'parent', AnchorRight)
+  langLink:addAnchor(AnchorTop, 'parent', AnchorTop)
+  langLink:setMarginRight(14)
+  langLink:setMarginTop(50)
+  langLink:setText(ChaosLocale.buttonText())
+  langLink:setTooltip(tr('The language of the client and of the server messages'))
+  langLink.onClick = function() ChaosLocale.showMenu(langLink) end
+end
+
 -- ---------------------------------------------------------------- panel
 local function skinField(w, normal, focus, rightPad)
   w:setImageSource(IMG .. normal)
@@ -244,7 +266,13 @@ local function openLink(key, title, message)
   end
 end
 
+-- the Credits window (client_chaos_credits, every source from docs/CREDITS.md); the short box only without it
 local function showCredits()
+  local m = modules and modules.client_chaos_credits
+  if m and type(rawget(m, 'show')) == 'function' then
+    m.show()
+    return
+  end
   infoBox(tr('Credits'), tr('Cinders of Chaos\nA dark-fantasy online adventure.\n\nInterface, art and server: the Cinders of Chaos team.\nThe client runs on the open-source OTClient engine family.\n\n' ..
     'Fonts (SIL Open Font License 1.1, licence texts in data/fonts/chaos):\nCinzel - The Cinzel Project Authors\n' ..
     'Alegreya SC, Alegreya Sans - The Alegreya (Sans) Project Authors, Huerta Tipografica\n' ..
@@ -314,6 +342,11 @@ local function layoutPanel()
   local auto = eg:getChildById('autoLoginBox')
   local lab = rem:getChildren()[1]
   if lab then lab:setText(tr('Remember account')) end
+  -- the stock texts of the other two boxes stay English without this (base enterGame has no pt-BR)
+  local labP = remP and (remP:getChildren()[1] or remP)
+  if labP then labP:setText(tr('Remember password')) end
+  local labA = auto and (auto:getChildren()[1] or auto)
+  if labA then labA:setText(tr('Auto login')) end
   for _, box in ipairs({ rem, remP, auto }) do
     local l = box:getChildren()[1] or box
     l:setFont('verdana-11px-antialised')
@@ -321,7 +354,7 @@ local function layoutPanel()
   end
   place(rem, X0, rowChecks, 150, 16)
   place(remP, X0 + 160, rowChecks, 150, 16)
-  place(auto, X0 + 330, rowChecks, 120, 16)
+  place(auto, X0 + 330, rowChecks, 150, 16)  -- "Login autom\225tico" is wider than "Auto Login"
   for _, id in ipairs({ 'buttonInformation', 'passwordInformation' }) do
     local b = eg:getChildById(id)
     if b then b:setOpacity(0) b:setPhantom(true) place(b, 0, 0, 1, 1) end
@@ -386,7 +419,9 @@ local function layoutCorners()
     sel:breakAnchors()
     sel:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     sel:addAnchor(AnchorTop, 'parent', AnchorTop)
-    sel:setMarginLeft(62)
+    -- right of the caption, whatever its length ("Servidor" is wider than "Server")
+    local capW = serverCaption:getTextSize().width
+    sel:setMarginLeft(math.max(62, 14 + capW + 8))
     sel:setMarginTop(10)
     sel:setWidth(150)
     sel:setHeight(22)
@@ -396,7 +431,7 @@ local function layoutCorners()
     cam:breakAnchors()
     cam:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     cam:addAnchor(AnchorTop, 'parent', AnchorTop)
-    cam:setMarginLeft(220)
+    cam:setMarginLeft((sel and sel:getMarginLeft() or 62) + 158)
     cam:setMarginTop(11)
   end
   verLabel = newWidget('ChaosLoginCorner', bg, 'chaosVersion')
@@ -405,7 +440,7 @@ local function layoutCorners()
   verLabel:setMarginRight(14)
   verLabel:setMarginTop(10)
   local ver = tostring(g_app.getVersion() or '')
-  verLabel:setText(tr('Version') .. ' ' .. (GameInfo and GameInfo.strVersion or '') .. (ver ~= '' and ('  -  client ' .. ver) or ''))
+  verLabel:setText(tr('Version') .. ' ' .. (GameInfo and GameInfo.strVersion or '') .. (ver ~= '' and (tr('  -  client %s', ver)) or ''))
 
   -- server status: the artwork's "CONNECTING..." line under the splash bar, under the server box once the panel shows
   statusLabel = newWidget('ChaosLoginStatus', bg, 'chaosStatus')
@@ -421,7 +456,7 @@ placeStatus = function()
   if not alive(statusLabel) or not alive(bg) then return end
   statusLabel:breakAnchors()
   if state.splash then
-    statusLabel:setText(statusLabel.chaosText and statusLabel.chaosText:upper() or '')
+    statusLabel:setText(statusLabel.chaosText and upperText(statusLabel.chaosText) or '')
     statusLabel:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
     statusLabel:addAnchor(AnchorTop, 'parent', AnchorTop)
     statusLabel:setMarginLeft(artX(688) - math.floor(bg:getWidth() / 2))
@@ -583,7 +618,7 @@ local function createBackgroundLayers()
   if pressText ~= 'Press any key to start' or splashFont then
     pressW:getChildById('words'):setVisible(false)
     if splashFont then pressW:getChildById('text'):setFont(splashFont) end
-    pressW:getChildById('text'):setText(pressText:upper())
+    pressW:getChildById('text'):setText(upperText(pressText))
     pressW:getChildById('text'):setVisible(true)
   end
   pressW:setVisible(false)
@@ -874,6 +909,7 @@ function init()
   createDecor()
   relayout()
   try(createSceneLink)
+  try(createLangLink)
   try(applySceneMode)
   updateStatus()
   try(hookSchedule)
@@ -919,7 +955,7 @@ function terminate()
   end
   if LoginScene then try(LoginScene.destroy) end
   for _, w in ipairs({ medL, medR, crestT, crestB, logo, glowW, emberLayer, sparkLayer, pressW, spinner, splashW,
-                       verLabel, statusLabel, statusDot, serverCaption, sceneLink }) do
+                       verLabel, statusLabel, statusDot, serverCaption, sceneLink, langLink }) do
     if alive(w) then w:destroy() end
   end
   ChaosLogin = nil

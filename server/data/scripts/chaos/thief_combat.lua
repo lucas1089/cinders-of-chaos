@@ -288,15 +288,28 @@ end
 event:register()
 
 -- register on whatever a player attacks; a monster that targets a stealthed player cannot attack it
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if not creature or not target then
 		return RETURNVALUE_NOERROR
 	end
 	if creature:isPlayer() then
-		target:registerEvent("ChaosThiefCombat")
-	elseif creature:isMonster() and target:isPlayer() and creature:getTarget() == target
-			and not C.monsterMayTarget(stealthed(target), true) then
+		registerOnce(target, "ChaosThiefCombat")
+	elseif creature:isMonster() and target:isPlayer() and not C.monsterMayTarget(stealthed(target), true)
+			and creature:getTarget() == target then -- the stealth first: one condition lookup, no target userdata
 		creature:setTarget(nil)
 		creature:setFollowCreature(nil)
 		creature:removeTarget(target)

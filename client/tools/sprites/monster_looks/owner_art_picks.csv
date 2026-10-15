@@ -1,0 +1,22 @@
+key,look,lib,lib_id,recolour,family,rank,monsters,description,edit
+lion_holy,2213,owner,1-HtjiBooNgAuy894uX4xRLjGeWUGIsWL,,dungeonboss,boss,Vaelith the Fallen Seraph,"Gilded Lionlord: white-maned lion lord in gold plate and a red cape, 4x4",owner-sheet
+lion_spectral,2214,owner,16r3CdnhzkixURGtwV9EqyxdDrmr52j-m,,dungeonboss,boss,Ossivane the Gravecage,"Gravemane Spectre: blue spectral lion beast with glowing grave sigils, 4x4",owner-sheet
+lion_furnace,2215,owner,1YEkgl-Rr6jsfvJBK4uUxuJaIPRhb_uVf,,dungeonboss,boss,Forgewarden Kharzun,"Furnace-heart Lion: lion beast of cracked basalt with molten veins, 4x4",owner-sheet
+drake_pyre,2216,owner,1qZcMNdnyo8T_HvXrxRvIVwca8UTgX-Qu,,dungeonboss,boss,Azhkarrath the Chained Wyrm,Pyre Drake: black-red wyrm with a burning mane,owner-sheet
+lion_emerald,2217,owner,19uJ2ceWbmbb-Fh_Yl09iCPexiZxlO9x0,,hunt,hunt,Gloamfang Ravager,"Emerald Ravager: green-maned lion beast studded with emerald crystals, 4x4",owner-sheet
+golem_magma,2218,owner,1SzPpRo8650ysMNcDBsk1x0mjRm_6YPlG,,hunt,hunt,Cinderhorn Juggernaut,Magma Juggernaut: magma stone golem with glowing seams,owner-sheet
+brute_fire,2219,owner,1M7-1ahkBtBTZf1xjH-qrtd_RBDbUwBQ3,,hunt,hunt,Cinderskull Reaver,"Cinder Brute: one-eyed brute of black-red rock, flames on its head",owner-sheet
+golem_ice,2220,owner,1gYV8DE15cqrcTbkOaR8JxrX6ve4OWOSi,,hunt,hunt,Silicron,Rime Colossus: ice stone golem with frost spikes,owner-sheet
+dragon_ice,2221,owner,1ebH5KdJz4fSmfVVAuMvaAlliULmHQPmx,,hunt,hunt,Vyrm,Frostwing Vyrm: pale blue ice dragon with long wings,owner-sheet
+yeti_gold,2222,owner,10MrWbHh417Oks_OKvbOcNX-4iYssBr_B,,hunt,hunt,Winterstride,Gilded Yeti: golden-furred yeti,owner-sheet
+behemoth_gold,2223,owner,19eLhA9pBHXyc8E5YO697W67MlVuYd2b8,,hunt,hunt,Bloodantler Fiend,Gilded Behemoth: horned brute of golden hide,owner-sheet
+drake_gold,2224,owner,1X-hZ59d0km5kG-O58Nrcbo1LS6m2SGdL,,hunt,hunt,Mirecoil Wyrm,Gilded Drake: golden wyrm with a feathered mane,owner-sheet
+wings_jadeleaf,2225,owner,16z5DsMgvLAu_2Yg8gyJIfx_a8zWad86s,,storewings,wings,store (Wings),Jadeleaf Pinions: lime feathered wings,owner-sheet; west mirrored from east
+wings_tidewing,2226,owner,1krAfVoNdPrYVoxkuMvTxoiwVJKqqx1a7,,storewings,wings,store (Wings),Tidewing Plumes: teal feathered wings with a soft glow,owner-sheet; west mirrored from east
+wings_duskfeather,2227,owner,1JN3LrljYlRn90yh8B_FCK7Ou8pS4oPuC,,storewings,wings,store (Wings),Duskfeather Wings: violet feathered wings with a soft glow,owner-sheet; west mirrored from east
+wings_emberplume,2228,owner,1EETQR1CFFaeyKdsRqdBxFxLfT92Mnejd,,storewings,wings,store (Wings),Emberplume Wings: orange feathered wings with a soft glow,owner-sheet; west mirrored from east
+wings_wildgrove,2229,owner,1_CkGtqt41SgP0pBPbvDsAV0HN6zxZDhJ,,storewings,wings,store (Wings),Wildgrove Wings: green feathered wings with a soft glow,owner-sheet; west mirrored from east
+wings_bloodfeather,2230,owner,1yzFxrCrb1YToXbE6Nx5-L_mU6CDWdmmh,,storewings,wings,store (Wings),Bloodfeather Wings: crimson feathered wings with a soft glow,owner-sheet; west mirrored from east
+wings_gloomgild,2231,owner,1kRRVHUCdzoziMCefZNw49ydfXuDfivCd,,exclusive,wings,boss drop (Nyxareth),Gloomgild Wings: violet scaled wings on gilded bone roots with a violet gem,owner-sheet
+wings_sunforged,2232,owner,1xOEGBqdF8HHYNXcuh2fYMzsB_M82K3_Z,,exclusive,wings,boss drop (the Cinderheart),Sunforged Wings: ember scaled wings on gilded bone roots with a violet gem,owner-sheet
+wings_starmoth,2233,owner,1JP8_25agsCUfhs1Nd6d8A-861tanGTWD,,exclusive,wings,boss drop (the Ascended Omens),Starmoth Wings: violet moth wings dusted with starlight,owner-sheet

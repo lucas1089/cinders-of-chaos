@@ -3,13 +3,15 @@
 
 usage: python3 -I server/tools/rotation_sim_test.py
 
-- every class and ascension at the level bands 100 / 300 / 600 / 1000: a best set of at most 5 attack spells whose
-  longest time between two casts is at most 2.0 s (owner, 2026-10-14);
+- every class and ascension at the level bands 15 / 30 / 60 / 100 / 300 / 600 / 1000 and at every level where its
+  preset changes: a best set of at most 5 attack spells whose longest time between two casts is at most 2.0 s (owner,
+  2026-10-14), from level 15 up (below it exempt; a class with no attack spell yet has no preset);
+- the snares (utility) are in no set and no preset;
 - the simulator: a lone 2 s filler casts every 2 s, a 4 s spell alone leaves 4 s, a 4 s group cooldown or a shared
   secondary group leaves a window, a cast time inside the group cooldown does not;
 - the data: rotation_model.csv has a row for every attack spell, stock_spells.csv carries every row of
   spell_timings.csv (patch_spell_timings.py) and patch_spell_timings.py does what the csv says (synthetic spells.xml);
-- Radiant Smite's class scale is read from templar_aura_core.lua;
+- Radiant Smite's class scale is read from templar_aura_core.lua, Shuriken Toss's from shuriken_toss.lua;
 - the client's autorotation_data.lua is up to date (--check).
 """
 import os, sys
@@ -64,6 +66,14 @@ for row in P.load():
 check(R.smite_scale() == {23: 0.56, 24: 0.69, 25: 0.56}, 'Radiant Smite scales from templar_aura_core.lua')
 smite = [s for s in spells if s['words'] == 'kah sol dyr'][0]
 check(smite['cooldown'] == 2000, 'Radiant Smite cooldown 2 s')
+check(R.toss_scales() == ({11: 1.33, 12: 1.62, 13: 1.5}, {12: (180, 1.33), 13: (120, 1.33)}, 1.33),
+      'Shuriken Toss scales from shuriken_toss.lua')
+check(R.toss_for('Ninja', 179) == 1.33 and R.toss_for('Ninja', 180) == 1.62 and R.toss_for('Samurai', 120) == 1.5,
+      'Shuriken Toss early scales')
+toss = [s for s in spells if s['words'] == 'kah shur'][0]
+check(toss['cooldown'] == 2000, 'Shuriken Toss cooldown 2 s')
+utility = {w for w, m in model.items() if 'utility' in m['flags']}
+check(utility == {'drai snar', 'kah snar'}, 'the snares are utility spells')
 
 # patch_spell_timings.py on a synthetic spells.xml: the attributes change once, the Chaos block never
 xml = ('<spells>\n<instant group="attack" name="Sunder Guard" words="kah gro" cooldown="12000" groupcooldown="12000" '
@@ -80,15 +90,18 @@ check(P.patch_text(new, rows)[1] == [], 'idempotent')
 check(P.patch_text(xml.replace('expose_weakness', 'other'), rows)[2] == ['attack/expose_weakness.lua'],
       'a missing script is reported')
 
-# every class and ascension at every band: at most 5 spells, never 2 s without one
+# every class and ascension at every band and every preset level: at most 5 spells, never 2 s without one from
+# level 15 up, never a snare
 for cls, _, _ in R.CLASSES:
-    for lv in R.BANDS:
+    for lv in sorted(set(R.BANDS) | set(R.breakpoints(spells, model, cls))):
         best = R.analyse(spells, model, cls, lv)['best']
-        check(best is not None, '%s %d has attack spells' % (cls, lv))
+        check(best is not None or lv < 100, '%s %d has attack spells' % (cls, lv))
         if best:
             check(len(best['spells']) <= R.MAX_SPELLS, '%s %d: at most 5 spells' % (cls, lv))
-            check(best['gap'] <= R.GAP_LIMIT + 1e-9, '%s %d: gap %.2f s <= 2.0 s (%s)' % (
-                cls, lv, best['gap'], R.fmt_set(best)))
+            check(not {s.words for s in best['spells']} & utility, '%s %d: no snare in the set' % (cls, lv))
+            if lv >= R.GAP_FROM:
+                check(best['gap'] <= R.GAP_LIMIT + 1e-9, '%s %d: gap %.2f s <= 2.0 s (%s)' % (
+                    cls, lv, best['gap'], R.fmt_set(best)))
 
 # the client data is up to date
 text = R.client_data(spells, model)

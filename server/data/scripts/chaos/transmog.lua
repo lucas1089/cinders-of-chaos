@@ -34,6 +34,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosTransmogCore then
 	dofile("data/scripts/chaos/transmog_core.lua")
 end
@@ -242,8 +245,8 @@ local function announce(player, names)
 	if #names == 0 then
 		return
 	end
-	local text = #names == 1 and ("New appearance unlocked: " .. names[1] .. ".")
-		or ("New appearances unlocked: " .. table.concat(names, ", ") .. ".")
+	local text = #names == 1 and Chaos.t(player, "New appearance unlocked: %s.", names[1])
+		or Chaos.t(player, "New appearances unlocked: %s.", table.concat(names, ", "))
 	player:sendTextMessage(MESSAGE_INFO_DESCR, text)
 end
 
@@ -315,7 +318,7 @@ local function syncSets(player)
 		end
 	end
 	if #names > 0 then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Appearance set unlocked: " .. table.concat(names, ", ") .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Appearance set unlocked: %s.", table.concat(names, ", ")))
 	end
 end
 

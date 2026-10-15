@@ -105,6 +105,9 @@ end
 
 function G.clientIdOf(typeIndex, tier)
 	local t = cfg.types[typeIndex]
+	if cfg.ownLook and cfg.lookFirst then -- our animated gem looks (chaos_gems_config.lua ownLook)
+		return cfg.lookFirst + (typeIndex - 1) * G.TIERS + tier - 1
+	end
 	if t.clientIdHigh and tier >= (cfg.highFrom or 99) then
 		return t.clientIdHigh
 	end

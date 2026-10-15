@@ -241,6 +241,118 @@ return {
 			}
 		},
 
+		-- ---------------------------------------------------------------- the generated dungeons 6-9 (2026-10-14)
+		-- Only ids of the palettes above (checked with areagen_export.py check), so nothing new to check against the pair.
+		-- The Marrow Crypts (1000): catacombs of dark sand and slate under dark stone walls, bones everywhere
+		marrow = {
+			floor = "crypt", wall = "darkstone", roomFloors = {"slate", "flagstone", "slate", "marble"}, bossFloor = "marble",
+			decor = {
+				share = 0.12,
+				scatter = {{3653, 3}, {3654, 3}, {2229, 2}, {2230, 3}, {2231, 2}, {3102, 1}, {3116, 1}},
+				clusters = {
+					{per1000 = 7, size = {3, 5}, radius = 1, items = {{2229, 2}, {2230, 3}, {2231, 2}}},
+					{per1000 = 4, size = {2, 4}, radius = 1, items = {{3653, 3}, {3654, 3}, {3655, 2}}}
+				}
+			},
+			obstacles = {share = 0.006, items = {{1356, 1}, {1358, 1}}},
+			lights = {per100 = 4.5, spacing = 5, items = {{1484, 2}, {7059, 1}}},
+			props = {per100 = 2.5, spacing = 3, items = {{1442, 2}, {1443, 2}, {2034, 2}, {9419, 1}, {9420, 1}}},
+			dark = {
+				floor = "ash",
+				patches = {{family = "darkmoss", share = 0.05, radius = {2, 3}}},
+				decor = {
+					share = 0.11,
+					scatter = {{"bone_pile", 3}, {"rubble", 2}, {2230, 2}, {3653, 2}},
+					clusters = {{per1000 = 7, size = {3, 5}, radius = 1, items = {{"bone_pile", 3}, {2229, 1}, {2231, 1}}}}
+				},
+				obstacles = {share = 0.008, items = {{"broken_pillar", 2}, {"ruined_pillar", 1}}},
+				lights = {per100 = 4.5, spacing = 5, items = {{"brazier", 2}, {"standing_torch", 1}}}
+			}
+		},
+		-- The Iron Crucible (1300): a forge cut into the rock: cave floor split by lava cracks and pools, iron halls
+		crucible = {
+			floor = "cave", wall = "darkstone", roomFloors = {"tiles", "slate", "tiles"}, bossFloor = "tiles",
+			patches = {{family = "cracks", share = 0.08, radius = {2, 4}}},
+			pools = {{family = "lava", share = 0.03, radius = {1, 3}}},
+			decor = {
+				share = 0.10,
+				scatter = {{3610, 4}, {3611, 3}, {3612, 4}, {3613, 3}, {3621, 3}, {3622, 2}, {2230, 1}},
+				clusters = {{per1000 = 6, size = {3, 5}, radius = 1, items = {{3610, 3}, {3611, 3}, {3613, 2}, {3614, 2}}}}
+			},
+			obstacles = {share = 0.01, items = {{1356, 2}, {1357, 2}, {1358, 2}, {1359, 2}, {8361, 1}}},
+			lights = {per100 = 4.5, spacing = 5, items = {{1484, 2}, {7059, 1}}},
+			props = {per100 = 2.5, spacing = 3, items = {{1442, 2}, {1443, 2}, {22308, 2}, {22309, 2}, {2034, 2}, {9686, 1}}},
+			dark = {
+				floor = "obsidian",
+				patches = {{family = "ash", share = 0.05, radius = {2, 3}}},
+				decor = {
+					share = 0.09,
+					scatter = {{"rubble", 4}, {3610, 3}, {3612, 3}, {3621, 2}},
+					clusters = {{per1000 = 5, size = {3, 5}, radius = 1, items = {{"rubble", 2}, {3611, 2}, {3613, 2}}}}
+				},
+				obstacles = {share = 0.01, items = {{"dark_boulder", 3}, {"blood_crystals", 2}, {1356, 1}}},
+				lights = {per100 = 4.5, spacing = 5, items = {{"brazier", 3}, {1484, 1}}}
+			}
+		},
+		-- The Fallen Sanctum (1600): a drowned shrine: wet cave and mud passages, gilded and marble chapels in old walls
+		sanctum = {
+			floor = "cave", wall = "ruin", roomFloors = {"flagstone", "marble", "gilded", "flagstone"}, bossFloor = "gilded",
+			patches = {{family = "mud", share = 0.08, radius = {2, 3}}},
+			decor = {
+				share = 0.11,
+				scatter = {{3610, 3}, {3612, 3}, {3653, 2}, {3654, 2}, {2792, 2}, {2793, 1}, {2797, 1}, {2230, 1}},
+				clusters = {{per1000 = 7, size = {3, 6}, radius = 2, items = {{2792, 3}, {2793, 2}, {2794, 2}, {2797, 2},
+					{4182, 2}, {4183, 1}}}}
+			},
+			obstacles = {share = 0.006, items = {{1356, 1}, {1358, 1}}},
+			lights = {per100 = 4.5, spacing = 5, items = {{1484, 2}, {7059, 1}}},
+			props = {per100 = 2.5, spacing = 3, items = {{1442, 2}, {1443, 2}, {22308, 2}, {22309, 2}, {22312, 1},
+				{9419, 1}, {9420, 1}}},
+			dark = {
+				floor = "wetrock",
+				patches = {{family = "darkmoss", share = 0.08, radius = {2, 4}}},
+				decor = {
+					share = 0.10,
+					scatter = {{"glowcap_teal", 2}, {"glowcap_purple", 2}, {"rubble", 2}, {3653, 2}, {3610, 2}},
+					clusters = {{per1000 = 8, size = {3, 6}, radius = 2, items = {{"glowcap_teal", 3}, {"glowcap_purple", 3},
+						{2792, 1}}}}
+				},
+				obstacles = {share = 0.008, items = {{"broken_pillar", 2}, {"ruined_pillar", 1}}},
+				lights = {per100 = 4.5, spacing = 5, items = {{"brazier", 2}, {"standing_torch", 1}}}
+			}
+		},
+		-- The Pyre Throne (2000): the burnt court of the wyrms: grey rock and basalt passages, lava, marble and gilded halls
+		throne = {
+			floor = "rockfloor", wall = "darkstone", roomFloors = {"marble", "marble", "gilded", "flagstone"},
+			bossFloor = "gilded",
+			patches = {
+				{family = "basalt", share = 0.12, radius = {3, 5}},
+				{family = "cracks", share = 0.04, radius = {2, 3}}
+			},
+			pools = {{family = "lava", share = 0.03, radius = {1, 3}}},
+			decor = {
+				share = 0.09,
+				scatter = {{3610, 4}, {3611, 3}, {3612, 4}, {3613, 3}, {3621, 3}, {3622, 2}, {3623, 2}, {2230, 1}, {2231, 1}},
+				clusters = {{per1000 = 5, size = {3, 6}, radius = 2, items = {{3610, 3}, {3611, 3}, {3613, 2}, {3621, 2}}}}
+			},
+			obstacles = {share = 0.008, items = {{1356, 2}, {1358, 2}, {8361, 1}}},
+			lights = {per100 = 4.5, spacing = 5, items = {{1484, 2}, {7059, 1}}},
+			props = {per100 = 2.5, spacing = 3, items = {{1442, 2}, {1443, 2}, {22308, 2}, {22309, 2}, {22312, 1}, {2034, 2},
+				{9686, 1}}},
+			dark = {
+				floor = "obsidian",
+				patches = {{family = "ash", share = 0.06, radius = {2, 4}}},
+				decor = {
+					share = 0.08,
+					scatter = {{"rubble", 3}, {"bone_pile", 1}, {3610, 3}, {3612, 3}, {3621, 2}},
+					clusters = {{per1000 = 5, size = {3, 6}, radius = 2, items = {{"glowcap_purple", 2}, {"rubble", 2},
+						{3611, 2}}}}
+				},
+				obstacles = {share = 0.01, items = {{"blood_crystals", 3}, {"dark_boulder", 2}, {"broken_pillar", 1}}},
+				lights = {per100 = 4.5, spacing = 5, items = {{"brazier", 3}, {"standing_torch", 1}}}
+			}
+		},
+
 		-- ---------------------------------------------------------------- the rift themes (rift_layout_core.lua)
 		-- One theme per rift theme of rift_config.lua; each serves every layout kind its rift theme rolls (a rock for
 		-- caves, wastes and mixed layouts, walls and room floors for dungeons, room floors for the chambers of a mixed
@@ -366,17 +478,22 @@ return {
 	-- areas use 2000-13824, server/README.md "Rifts"); floors go down (z + 1 each). entrance: the portal on the live map
 	-- (chosen with the map data, docs/MAP_GUIDE.md "Generated areas"), back: where the exit portal puts players.
 	-- spawns.density: monsters per 100 walkable tiles outside the arrival's safe radius (item 89: 2.7-4.4 in normal
-	-- hunts; cave 2.7-3.2, dungeon 3.3-3.6, open land 1.2-2.0; the bulky level-scaled monsters are pulled three at a
-	-- time, so a little lower), band = the bounds the tests hold it to. level: the level the monsters are scaled to
+	-- hunts; 2026-10-14 every hunt "big and full": 3.25 in all four, the base-map hunts are filled to 3.25-3.4 by
+	-- tools/gen_spawn_density.py), band = the bounds the tests hold it to. Sizes were doubled on 2026-10-14 (walkable
+	-- tiles x2.0-2.2); the boxes stay apart: emberdeep x 14400-14495 y 14400-14475, ossuary x 14560-14689 y 14400-14501,
+	-- cinderfall x 14400-14544 y 14560-14675, vault x 14560-14675 y 14560-14655. level: the level the monsters are scaled to
 	-- (areagen_core.lua A.levelScale); spawntime in seconds (120 like the 600-1000 band).
+	-- Pack combat (pace.lua, 2026-10-14): the three open areas at 4.5 per 100 (band 4.0-5.0), 60% of the points a pack of
+	-- up to 4, points 6+ sqm apart, 75 s respawn (the 600+ band of tools/spawn_tuning.json); their monsters are paced
+	-- (pace_config.lua scaled curves at the point's level).
 	areas = {
 		{
 			id = "emberdeep", name = "Emberdeep Hollows", kind = "cave", theme = "emberdeep", enabled = true, seed = 1001,
-			origin = {x = 14400, y = 14400, z = 9}, size = {66, 52}, floors = 2, linksPerFloor = 2,
+			origin = {x = 14400, y = 14400, z = 9}, size = {96, 76}, floors = 2, linksPerFloor = 2,
 			layout = {fill = 0.47, steps = 5, spread = 2, minRegion = 40, tunnelRadius = 1},
 			arrival = {8, 8}, exit = {0, -1}, minLevel = 1000,
-			spawns = {density = 2.4, band = {2.0, 3.0}, minDistance = 4, packChance = 15, packMax = 2, safeRadius = 10,
-				spawntime = 120, level = {1000, 1100},
+			spawns = {density = 4.5, band = {4.0, 5.0}, minDistance = 6, packChance = 60, packMax = 4, safeRadius = 10,
+				spawntime = 75, level = {1000, 1100},
 				monsters = {{"Tundra Troll", 3}, {"Loricate Orger", 3}, {"Lady bug", 2}, {"Lacewing Moth", 2},
 					{"Grindmaw the Mauler", 2}}},
 			boss = {monster = "Grindmaw the Mauler", name = "The Emberdeep Maw", level = 1100, healthMult = 8,
@@ -385,11 +502,11 @@ return {
 		},
 		{
 			id = "ossuary", name = "Sunken Ossuary", kind = "dungeon", theme = "ossuary", enabled = true, seed = 2002,
-			origin = {x = 14560, y = 14400, z = 9}, size = {90, 70}, floors = 2, linksPerFloor = 1,
-			layout = {rooms = {10, 13}, room = {7, 12}, gap = 3, corridor = 3, loops = {2, 4}, bossRoom = 13},
+			origin = {x = 14560, y = 14400, z = 9}, size = {130, 102}, floors = 2, linksPerFloor = 1,
+			layout = {rooms = {20, 26}, room = {7, 12}, gap = 3, corridor = 3, loops = {2, 4}, bossRoom = 13},
 			arrival = {9, 9}, exit = {0, -1}, minLevel = 1100,
-			spawns = {density = 2.8, band = {2.3, 3.5}, minDistance = 4, packChance = 20, packMax = 2, safeRadius = 9, roomCap = 5,
-				spawntime = 120, level = {1100, 1200},
+			spawns = {density = 4.5, band = {4.0, 5.0}, minDistance = 6, packChance = 60, packMax = 4, safeRadius = 9, roomCap = 5,
+				spawntime = 75, level = {1100, 1200},
 				monsters = {{"Royal Man", 3}, {"Golden Lord", 3}, {"Dawn Strayer", 2}, {"Frost Maiden", 2},
 					{"Dreamgorger", 2}}},
 			boss = {monster = "Dawn Strayer", name = "The Ossuary Warden", level = 1200, healthMult = 8, damageMult = 1.25,
@@ -398,11 +515,11 @@ return {
 		},
 		{
 			id = "cinderfall", name = "Cinderfall Wastes", kind = "waste", theme = "cinderfall", enabled = true, seed = 3003,
-			origin = {x = 14400, y = 14560, z = 7}, size = {100, 80}, floors = 1,
+			origin = {x = 14400, y = 14560, z = 7}, size = {145, 116}, floors = 1,
 			layout = {fill = 0.36, steps = 4, spread = 1, minRegion = 60, tunnelRadius = 2},
 			arrival = {9, 9}, exit = {0, -1}, minLevel = 1200,
-			spawns = {density = 1.6, band = {1.3, 2.0}, minDistance = 5, packChance = 25, packMax = 3, safeRadius = 12,
-				spawntime = 120, level = {1200, 1300},
+			spawns = {density = 4.5, band = {4.0, 5.0}, minDistance = 6, packChance = 60, packMax = 4, safeRadius = 12,
+				spawntime = 75, level = {1200, 1300},
 				monsters = {{"Azure Dragon", 3}, {"Jungle Beasts", 3}, {"Blazebringer", 2}, {"Swamp Snapper", 2},
 					{"Garack", 1}}},
 			boss = {monster = "Azure Dragon", name = "Cinderwing", level = 1300, healthMult = 8, damageMult = 1.25,
@@ -413,23 +530,134 @@ return {
 			-- a run of the dungeon system (dungeons.lua): registered as base dungeon `dungeon.id` at startup, monsters
 			-- spawned at the start of each run (no respawn), the boss in the boss room
 			id = "vault", name = "The Hollow Vault", kind = "dungeon", theme = "vault", enabled = true, seed = 4004,
-			origin = {x = 14560, y = 14560, z = 9}, size = {76, 64}, floors = 1,
-			layout = {rooms = {9, 11}, room = {6, 9}, gap = 3, corridor = 3, loops = {2, 3}, bossRoom = 11},
+			origin = {x = 14560, y = 14560, z = 9}, size = {104, 84}, floors = 1,
+			layout = {rooms = {14, 16}, room = {6, 8}, gap = 3, corridor = 3, loops = {1, 2}, bossRoom = 9},
 			arrival = {8, 8}, exit = {0, -1},
-			spawns = {density = 2.8, minDistance = 4, packChance = 30, packMax = 3, safeRadius = 8, roomCap = 5.5, spawntime = 0,
-				level = {800, 850},
+			spawns = {density = 8.75, minDistance = 7, packChance = 100, packMin = 6, packMax = 7, safeRadius = 8, roomCap = 16,
+				spawntime = 0, level = {800, 850},
 				monsters = {{"Orclops Ravager", 3}, {"Shaper Matriarch", 3}, {"Grove Keeper", 2}, {"Blazebringer", 2},
 					{"Garack", 2}}},
-			-- the boss: Garack's 14,800 x the engine level bonus (1 + 0.0074 x 900) x healthMult 10 = 1.13M; difficulty
-			-- multiplies it by bossHealth, not by the dungeon table's 100-1300%, so a solo run stays inside 30 minutes
-			-- (server/README.md "Generated areas", The Hollow Vault)
-			boss = {monster = "Garack", name = "Vault Keeper Ossrim", level = 900, healthMult = 10, damageMult = 1.4},
-			dungeon = {id = 5, level = 800, party = 1, time = 1800, title = "The Hollow Vault",
-				bossHealth = {100, 125, 150, 175, 200, 225},
+			-- 2026-10-14 (owner: "dungeons of 10-15 minutes"): a run of 15 minutes (was 40), the speed challenge 6 (was 16).
+			-- Pack combat (pace.lua, the same day) and the owner's rule of at least 100 monsters per queue dungeon: 14-16
+			-- rooms (104 x 84) and 103 monsters in packs of 6-7 (was 7-8 rooms, 18 in packs of 2-3), the trash on its own
+			-- curve below (76-118% of the paced health): 9.5 minutes at difficulty 1, 13.7 at 6 (D.runSeconds). The boss:
+			-- Garack's 14,800 x the engine level bonus (1 + 0.0074 x 900) x healthMult 2.88 = 327k, 2:30 alone at 2,180
+			-- (was x10, 1.13M, 8:40); the
+			-- difficulty multiplies it by bossHealth and the trash by trashHealth, not by the table's 100-1300%. The model:
+			-- dungeons_difficulty.lua D.runSeconds, server/README.md "Solo kill times"
+			boss = {monster = "Garack", name = "Vault Keeper Ossrim", level = 900, healthMult = 2.88, damageMult = 1.4},
+			dungeon = {id = 5, level = 800, party = 1, time = 900, title = "The Hollow Vault",
+				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {76, 85, 93, 101, 109, 118},
 				loot = {{id = 2160, count = 12}},
 				challenges = {
-					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 12 minutes.",
-						maxMs = 12 * 60 * 1000},
+					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
+						maxMs = 6 * 60 * 1000},
+					{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
+				}}
+		},
+
+		-- ---------------------------------------------------------------- the generated dungeons 6-9 (2026-10-14)
+		-- Owner request: four more queue dungeons for the levels after the Vault (1000, 1300, 1600, 2000), built like it, and
+		-- (later the same day) every generated dungeon 10-15 minutes.
+		-- They lie in their own empty block x/y 24576-25599 (the full map has no tile there, checked in the OTBM: the nearest
+		-- tile is 5,315 sqm away; the rift slots use 20480-21503, the other runtime areas 2000-15359; server/README.md
+		-- "Generated areas", docs/MAP_GUIDE.md "Content plans"): a 2 x 2 grid of 256 sqm cells, z 9.
+		-- Sized by the run model (dungeons_difficulty.lua D.runSeconds, server/README.md "Solo kill times"): the monsters to
+		-- the gate (85%) x their kill time alone (health x (1 + 0.0074 L) against the damage at L: 75 / 87 / 97 / 103 s in
+		-- these bands) x trashHealth / 2.3 for packs, + the boss x bossHealth / damage, + 90 s of walking. Pack combat
+		-- (pace.lua, the same day): the trash has the pace curve's health (x0.056-0.066 here), a pack of P dies in
+		-- P / (1 + (P - 1) x 0.254) kill times alone and every pack to the gate adds 12 s of walking and pulling
+		-- (D.model.aoeShare, walkPerPack). Owner rule: at least 100 monsters per queue dungeon. So the dungeons have 14-16
+		-- rooms (104 x 84) and 102-104 monsters in 16-21 packs of 6-7; the trash curve of each (trashHealth, 46-129% of
+		-- the paced health) and bosses of 2:30 alone (healthMult 2.83-2.91) give 9.5 minutes at difficulty 1 and 13.7 at
+		-- 6, inside the limit of 15 minutes; the speed challenge 6 minutes (40%). The boss
+		-- is a monster file of its own (its look, its loot table). chest: the boss chest every finisher gets at the end
+		-- (areagen.lua AG.giveChest, numbers in dungeons_difficulty.lua D.chest: item level and rarity by difficulty).
+		{
+			id = "marrow", name = "The Marrow Crypts", kind = "dungeon", theme = "marrow", enabled = true, seed = 5005,
+			origin = {x = 24576, y = 24576, z = 9}, size = {104, 84}, floors = 1,
+			layout = {rooms = {14, 16}, room = {6, 8}, gap = 3, corridor = 3, loops = {1, 2}, bossRoom = 9},
+			arrival = {8, 8}, exit = {0, -1},
+			spawns = {density = 8.0, minDistance = 7, packChance = 100, packMin = 6, packMax = 7, safeRadius = 8, roomCap = 16,
+				spawntime = 0, level = {1000, 1050},
+				monsters = {{"Scaleborn", 3}, {"Ice Lich", 3}, {"Spirit of Purity", 2}, {"Twisted Shaper", 2},
+					{"Celestial Wyrm", 2}}},
+			-- 15,000 x (1 + 0.0074 x 1100) x 2.91 = 399k: 2:30 at 2,660 (level 1025)
+			boss = {monster = "Ossivane the Gravecage", name = "Ossivane the Gravecage", level = 1100, healthMult = 2.91,
+				damageMult = 1.4},
+			dungeon = {id = 6, level = 1000, party = 1, time = 900, title = "The Marrow Crypts",
+				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {94, 101, 108, 115, 122, 129},
+				loot = {{id = 2160, count = 15}},
+				chest = {gold = 150000},
+				challenges = {
+					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
+						maxMs = 6 * 60 * 1000},
+					{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
+				}}
+		},
+		{
+			id = "crucible", name = "The Iron Crucible", kind = "dungeon", theme = "crucible", enabled = true, seed = 6006,
+			origin = {x = 24832, y = 24576, z = 9}, size = {104, 84}, floors = 1,
+			layout = {rooms = {14, 16}, room = {6, 8}, gap = 3, corridor = 3, loops = {1, 2}, bossRoom = 9},
+			arrival = {8, 8}, exit = {0, -1},
+			spawns = {density = 8.0, minDistance = 7, packChance = 100, packMin = 6, packMax = 7, safeRadius = 8, roomCap = 16,
+				spawntime = 0, level = {1300, 1350},
+				monsters = {{"Facetis", 3}, {"Thal", 3}, {"Silicron", 2}, {"Winterstride", 2}, {"Gloamfang Ravager", 2}}},
+			-- 15,500 x (1 + 0.0074 x 1400) x 2.88 = 507k: 2:30 at 3,383 (level 1325)
+			boss = {monster = "Forgewarden Kharzun", name = "Forgewarden Kharzun", level = 1400, healthMult = 2.88,
+				damageMult = 1.4},
+			dungeon = {id = 7, level = 1300, party = 1, time = 900, title = "The Iron Crucible",
+				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {55, 61, 66, 72, 77, 83},
+				loot = {{id = 2160, count = 20}},
+				chest = {gold = 200000},
+				challenges = {
+					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
+						maxMs = 6 * 60 * 1000},
+					{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
+				}}
+		},
+		{
+			id = "sanctum", name = "The Fallen Sanctum", kind = "dungeon", theme = "sanctum", enabled = true, seed = 7007,
+			origin = {x = 24576, y = 24832, z = 9}, size = {104, 84}, floors = 1,
+			layout = {rooms = {14, 16}, room = {6, 8}, gap = 3, corridor = 3, loops = {1, 2}, bossRoom = 9},
+			arrival = {8, 8}, exit = {0, -1},
+			spawns = {density = 8.75, minDistance = 7, packChance = 100, packMin = 6, packMax = 7, safeRadius = 8, roomCap = 16,
+				spawntime = 0, level = {1600, 1650},
+				monsters = {{"Bloodantler Fiend", 3}, {"Cinderskull Reaver", 3}, {"Rimeshroud Revenant", 2},
+					{"Cinderhorn Juggernaut", 2}, {"Wraithbone Stalker", 2}}},
+			-- 16,000 x (1 + 0.0074 x 1700) x 2.83 = 615k: 2:30 at 4,106 (level 1625)
+			boss = {monster = "Vaelith the Fallen Seraph", name = "Vaelith the Fallen Seraph", level = 1700, healthMult = 2.83,
+				damageMult = 1.4},
+			dungeon = {id = 8, level = 1600, party = 1, time = 900, title = "The Fallen Sanctum",
+				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {46, 51, 56, 61, 66, 71},
+				loot = {{id = 2160, count = 25}},
+				chest = {gold = 250000},
+				challenges = {
+					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
+						maxMs = 6 * 60 * 1000},
+					{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
+				}}
+		},
+		{
+			id = "throne", name = "The Pyre Throne", kind = "dungeon", theme = "throne", enabled = true, seed = 8008,
+			origin = {x = 24832, y = 24832, z = 9}, size = {104, 84}, floors = 1,
+			layout = {rooms = {14, 16}, room = {6, 8}, gap = 3, corridor = 3, loops = {1, 2}, bossRoom = 9},
+			arrival = {8, 8}, exit = {0, -1},
+			spawns = {density = 8.25, minDistance = 7, packChance = 100, packMin = 6, packMax = 7, safeRadius = 8, roomCap = 16,
+				spawntime = 0, level = {2000, 2050},
+				monsters = {{"Pyrewing Tyrant", 3}, {"Mirecoil Wyrm", 3}, {"Wraithbone Stalker", 2},
+					{"Cinderhorn Juggernaut", 2}, {"Bloodantler Fiend", 2}}},
+			-- 16,000 x (1 + 0.0074 x 2100) x 2.87 = 760k: 2:30 at 5,070 (level 2025). Chained: speed 0, it never leaves
+			-- its throne (its look has one facing)
+			boss = {monster = "Azhkarrath the Chained Wyrm", name = "Azhkarrath the Chained Wyrm", level = 2100,
+				healthMult = 2.87, damageMult = 1.4},
+			dungeon = {id = 9, level = 2000, party = 1, time = 900, title = "The Pyre Throne",
+				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {72, 78, 84, 89, 95, 101},
+				loot = {{id = 2160, count = 30}},
+				chest = {gold = 300000},
+				challenges = {
+					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
+						maxMs = 6 * 60 * 1000},
 					{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 				}}
 		}

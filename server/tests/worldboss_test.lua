@@ -295,6 +295,16 @@ local g = W.computeRewards({shares[1]}, r, boss1, {}, function(a, b) if b then r
 assertEq(g[1].gear, 111, "share bonus on the gear chance")
 local g2 = W.computeRewards({shares[3]}, r, boss1, {}, function(a, b) if b then return a end; if a == 10000 then return 3300 end; return 1 end)
 assertEq(g2[1].gear, nil, "small share, same roll fails")
+-- bad-luck protection (conquest.lua): pityOf(guid) multiplies every unique chance of that player; pityRolled marks it
+local roll450 = function(a, b) if b then return a end; if a == 10000 then return 450 end; return 1 end
+local p0 = W.computeRewards({shares[1]}, r, boss1, {9001}, roll450)
+assertEq(p0[1].unique, nil, "no pity: 230 (and a podium 400) miss a roll of 450")
+assertEq(p0[1].pityRolled, nil, "no pity function: nothing to record")
+local p2 = W.computeRewards({shares[1]}, r, boss1, {9001}, roll450, function(guid) return 2 end)
+assertEq(p2[1].unique, 9001, "pity x2: 460 hits")
+assertEq(p2[1].pityRolled, true, "the roll is marked for the record")
+local pBad = W.computeRewards({shares[1]}, r, boss1, {9001}, roll450, function() return 0 / 0 end)
+assertEq(pBad[1].unique, nil, "a bad multiplier counts as x1")
 
 -- ---------------------------------------------------------------- roles: credits and caps
 local ro = cfg.roles

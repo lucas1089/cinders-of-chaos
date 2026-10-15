@@ -452,6 +452,12 @@ do
 	eq(callbacks.onGainExperience(mentor, monster, 100, 100), 100, "the mentor gets no bonus")
 	mentor.level = 400
 	eq(callbacks.onGainExperience(appr, monster, 100, 100), 100, "an over-levelled mentor: no bonus")
+	-- a renamed monster counts at its type's level (Aegis Sentinel, 578 in bounty_pool.lua), not its shown name's (Rat)
+	local sentinelType = {name = function() return "Aegis Sentinel" end, experience = function() return 1 end,
+		maxHealth = function() return 1 end}
+	local disguised = {getName = function() return "Rat" end, isMonster = function() return true end,
+		getType = function() return sentinelType end}
+	eq(callbacks.onGainExperience(appr, disguised, 100, 100), 110, "a renamed high-level monster: its type's level")
 	mentor.level = 26
 	appr.ip = mentor.ip
 	eq(callbacks.onGainExperience(appr, monster, 100, 100), 100, "same connection: no bonus")

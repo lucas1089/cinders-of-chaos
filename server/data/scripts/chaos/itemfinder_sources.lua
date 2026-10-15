@@ -13,7 +13,8 @@
 -- S.professions   gathering, the Material Broker (professions_config.lua)
 -- S.salvage       salvage shards and the shard recipes (salvage_config.lua)
 -- S.gemCombining  three gems of a tier make one of the next (chaos_gems_config.lua)
--- S.REWARDS       one function per reward system (daily reward, bounty, rifts, tower, world bosses, invasions, arena,
+-- S.REWARDS       one function per reward system (daily reward, bounty, rifts, tower, world bosses, pocket bosses,
+--                 invasions, arena,
 --                 battleground, guild boss, the Descent, the raid, dungeons, treasure goblins, achievements, factions,
 --                 the Ascended Omens); S.rewards runs them all, each in a pcall, and returns the errors
 
@@ -72,7 +73,7 @@ function S.monsters(list, emit, opts)
 				if id and chance > 0 then
 					local eff = math.min(100000, chance * rate)
 					emit("monster", id, {n = m.name, d = detail, v = K.pct(eff),
-						c = K.countText(1, tonumber(l.maxCount) or 1), b = m.boss or nil, o = -eff})
+						c = K.countText(1, tonumber(l.maxCount) or 1), b = m.boss or nil, o = -eff, p = eff / 100000})
 					if type(l.childLoot) == "table" and #l.childLoot > 0 then
 						walk(l.childLoot, mult * math.min(100000, chance) / 100000)
 					end
@@ -126,7 +127,10 @@ function S.lootLayer(lootCfg, gems, uniques, emit, monsterName)
 			(u.bossOnly and "bosses only" or (from .. " and better")) ..
 			((tonumber(u.minMonsterLevel) or 0) > 0 and (", monster level " .. u.minMonsterLevel .. "+") or "") ..
 			(u.season and ", season characters" or "")
-		emit("drop", u.id, {n = "Unique drop", d = d, v = K.per10k(best), o = -best})
+		-- p: the chance per kill of the weakest tier that rolls it (the expected effort of the tooltip, K.brief)
+		local tier = u.bossOnly and "boss" or "legendary"
+		local per = (tonumber(u.chance) or 0) * (tonumber(um[tier]) or tonumber(um.legendary) or 1)
+		emit("drop", u.id, {n = "Unique drop", d = d, v = K.per10k(best), o = -best, p = per / 10000, pk = tier})
 	end
 end
 
@@ -276,12 +280,12 @@ function S.professions(P, emit)
 		emit("gather", m.id, {n = p.name or cap(m.prof), d = d, o = m.tier})
 		local b = P.broker or {}
 		if t.price then
-			emit("sellto", m.id, {n = b.npc or "Material Broker", d = "every town, next to the temple; the week's demand changes it",
+			emit("sellto", m.id, {n = b.npc or "Material Broker", d = "every town, next to the temple (Cinderhold and Mirewake: the Hall of Services); the week's demand changes it",
 				v = K.gold(t.price), o = -t.price})
 		end
 	end
 	for _, tool in ipairs(P.broker and P.broker.tools or {}) do
-		emit("shop", tool.id, {n = P.broker.npc or "Material Broker", d = "every town, next to the temple", v = K.gold(tool.price),
+		emit("shop", tool.id, {n = P.broker.npc or "Material Broker", d = "every town, next to the temple (Cinderhold and Mirewake: the Hall of Services)", v = K.gold(tool.price),
 			o = tool.price})
 	end
 end
@@ -431,6 +435,31 @@ S.REWARDS[#S.REWARDS + 1] = {key = "worldboss", fn = function(D, emit)
 	for _, cat in ipairs(r.podium and r.podium.categories or {}) do
 		for place, list in ipairs(cat.rewards or {}) do
 			items(list, function(id, n) reward(emit, id, n, "World boss", (cat.name or "") .. " place " .. place, 1 + place) end)
+		end
+	end
+end}
+
+-- D.pocketBoss = pocketboss_config.lua, D.worldBoss = Chaos.worldBoss: a world boss in its pocket (pocketboss.lua) gives
+-- every player the base orbs x lootMult and one roll of the boss's gear list at gearChance x lootMult (its own corpse is
+-- the monster's loot x lootMult, listed with the monster)
+S.REWARDS[#S.REWARDS + 1] = {key = "pocketboss", fn = function(D, emit)
+	local pc, wb = D.pocketBoss, D.worldBoss
+	local cat = pc and pc.enabled ~= false and pc.categories and pc.categories.world
+	local r = wb and wb.reward
+	if not cat or not r then
+		return
+	end
+	local mult = cat.lootMult or 1
+	items(r.base, function(id, n)
+		reward(emit, id, n, "Pocket boss", string.format("world boss pocket: x%s at random", tostring(mult)), 0)
+	end)
+	for _, b in ipairs(wb.bosses or {}) do
+		local gear = b.gear or {}
+		if #gear > 0 and (r.gearChance or 0) > 0 then
+			local each = (r.gearChance or 0) * mult / #gear
+			for _, id in ipairs(gear) do
+				emit("drop", id, {n = b.name .. " (pocket)", d = "world boss pocket: one piece of its set", v = K.per10k(each), o = 1})
+			end
 		end
 	end
 end}
@@ -650,6 +679,32 @@ S.REWARDS[#S.REWARDS + 1] = {key = "uber", fn = function(D, emit)
 	end
 	if u.items.relic then
 		reward(emit, u.items.relic.id, nil, "Ascended Omen", "every finisher of an Ascended arena", 0)
+	end
+end}
+
+-- D.conquest = {cfg = conquest_config.lua, offers = ChaosConquestCore.catalog(...)}: every unique and set piece at the
+-- Conquest vendor for tokens, the Omen Keys and Ascended Shards of a chosen kind (conquest.lua)
+S.REWARDS[#S.REWARDS + 1] = {key = "conquest", fn = function(D, emit)
+	local c = D.conquest
+	if not c or not c.cfg or c.cfg.enabled == false then
+		return
+	end
+	local band = (c.cfg.vendor or {}).levelBand or 0
+	for _, o in ipairs(c.offers or {}) do
+		emit("shop", o.id, {n = "Conquest vendor", d = o.always and "always on sale, for Conquest Tokens" or
+			string.format("Conquest Tokens: once seen, or from level %d", math.max(1, o.level - band)),
+			v = K.int(o.price) .. " tokens", o = o.price})
+	end
+	local ci = c.cfg.cinder or {}
+	if D.rift and D.rift.omen and D.rift.omen.key and ci.omenKey then
+		emit("shop", D.rift.omen.key.id, {n = "Conquest vendor", d = "an Omen Key of the kind you choose",
+			v = K.int(ci.omenKey) .. " tokens", o = ci.omenKey})
+	end
+	for _, s in pairs(D.uber and D.uber.items and D.uber.items.shards or {}) do
+		if ci.shard then
+			emit("shop", s.id, {n = "Conquest vendor", d = "a shard of the kind you choose; " .. ((ci.convert or {}).shards or 2) ..
+				" shards of one kind convert into one of another", v = K.int(ci.shard) .. " tokens", o = ci.shard})
+		end
 	end
 end}
 

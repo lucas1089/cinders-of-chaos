@@ -1,4 +1,5 @@
 -- Pure helpers of the rift HUD (no client API), tested by riftmath_test.lua.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 RiftMath = {}
 
 -- 75 -> "1:15", 3600 -> "60:00"; negative and nil -> "0:00"
@@ -22,15 +23,15 @@ end
 
 function RiftMath.bossLine(d)
   if d.omen and d.boss == 'waiting' then
-    return 'The guardian ' .. tostring(d.bossName or '') .. ' is coming...'
+    return tr('The guardian %s is coming...', tostring(d.bossName or ''))
   end
   if d.boss == 'alive' then
-    return 'The guardian ' .. tostring(d.bossName or '') .. ' is here!'
+    return tr('The guardian %s is here!', tostring(d.bossName or ''))
   elseif d.boss == 'dead' then
-    return 'The guardian is slain.'
+    return tr('The guardian is slain.')
   end
   local need = math.max(0, (tonumber(d.bossAt) or 0) - (tonumber(d.killed) or 0))
-  return string.format('Guardian in %d kill%s', need, need == 1 and '' or 's')
+  return tr('Guardian in %d kill%s', need, need == 1 and '' or 's')
 end
 
 -- "+20% quantity, +10% experience" (empty when there is no bonus)
@@ -94,10 +95,10 @@ function RiftMath.swiftLine(swift, limit, left)
   if not swift or swift <= 0 or not limit then return '', nil end
   local elapsed = math.max(0, limit - (left or 0))
   if elapsed <= swift then
-    return string.format('Swift: seal within %s (%s to spare)', RiftMath.clock(swift), RiftMath.clock(swift - elapsed)),
+    return tr('Swift: seal within %s (%s to spare)', RiftMath.clock(swift), RiftMath.clock(swift - elapsed)),
       '#7fb8e8'
   end
-  return string.format('Swift: missed (%s)', RiftMath.clock(swift)), '#8c8070'
+  return tr('Swift: missed (%s)', RiftMath.clock(swift)), '#8c8070'
 end
 
 -- colour of the clock: gold, orange under a minute, red under 20 s

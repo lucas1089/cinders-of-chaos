@@ -109,6 +109,9 @@ jobs:
 
       - name: Prepare the server folder
         run: |
+          # install step contentareas: numpy (area_plan_place.py reads the map; python3 -I does not see pip's user
+          # site) and luajit (hunt_teleports_dump.lua reads the teleport room config)
+          sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy luajit
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p base work
           tar -xJf assets/server/base-server.tar.xz -C base

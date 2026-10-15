@@ -1007,6 +1007,10 @@ end
 for _, e in ipairs(loadErrors) do
 	failure("load", "-", e, "the script must load")
 end
+-- the Auto Seller unlocked (store), so its window actions (pouches.lua opcode 226 -> autosell.lua) read their fields
+if Chaos.storage and Chaos.storage.shopAutoSeller then
+	fuzzer.storage[Chaos.storage.shopAutoSeller] = 1
+end
 
 local handlers = {}
 for _, ev in ipairs(registered) do
@@ -1348,11 +1352,12 @@ end
 local function dynamicActions(src, set)
 	for name, g in pairs(_G) do
 		if type(name) == "string" and name:match("^Chaos") and type(g) == "table" and src:find(name, 1, true) then
-			for _, field in ipairs({"actions", "extraActions", "handlers"}) do
+			-- AUTOSELL_ACTIONS: the Auto Seller window's actions that pouches.lua (opcode 226) hands to autosell.lua (a set)
+			for _, field in ipairs({"actions", "extraActions", "handlers", "AUTOSELL_ACTIONS"}) do
 				local t = rawget(g, field)
 				if type(t) == "table" then
 					for k, v in pairs(t) do
-						if type(k) == "string" and type(v) == "function" then
+						if type(k) == "string" and (type(v) == "function" or v == true) then
 							set[k] = true
 						end
 					end
@@ -1849,8 +1854,9 @@ for _, f in ipairs(handlerFiles) do
 		end
 	end
 end
--- handlers on one opcode: an action reaches one of them (the map markers' hello is answered by both on purpose)
-local sharedOk = {[ChaosOpcodes.mapMarkers] = {hello = true}}
+-- handlers on one opcode: an action reaches one of them (the map markers' hello is answered by both on purpose; the
+-- display scale hello carries the client's language too, which i18n.lua keeps)
+local sharedOk = {[ChaosOpcodes.mapMarkers] = {hello = true}, [ChaosOpcodes.displayScale] = {hello = true}}
 for op, names in pairs(opcodeOwners) do
 	if #names > 1 then
 		local group = {}

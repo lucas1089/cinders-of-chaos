@@ -30,6 +30,7 @@ Members feed the Summoning Stone in the guild hall and summon the [guild boss](w
 
 - The [calendar](wiki:event:calendar) has {{events.count}} recurring bonus days: experience, loot, rare monsters and tower points.
 - [Treasure goblins](wiki:event:goblin) appear anywhere and run off with loot. Catch them before they escape.
+- Your **Nemesis**: a monster that kills you (level 50 or more) may come back for you, by name. It returns while you hunt its kind and grows each time it kills you again. Slay it for a trophy with its name and the title Avenger of Self.
 
 ::: if invasion.on
 - [Invasions](wiki:event:invasion): waves of invaders at a town or hunting ground, then their boss. Level {{invasion.minLevel}} or more for the rewards.

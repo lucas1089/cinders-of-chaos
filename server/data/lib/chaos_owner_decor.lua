@@ -1,0 +1,58 @@
+-- Server ids of the decoration items of client pair 26 (server/tools/install_owner_decor.py --lua, from
+-- server/data/items/owner_decor.csv). Generated; do not edit by hand. Used by data/lib/chaos_owner_art.lua, and
+-- only while its switch ChaosOwnerArt.PAIR26 is on.
+
+return {
+	first = 36940,
+	last = 36985,
+	-- the plants in sheet order: key, server id, blocks a tile, name
+	plants = {
+		{key = "cactus_01", id = 36940, block = true, name = "leaning cactus"},
+		{key = "cactus_02", id = 36941, block = true, name = "leaning cactus"},
+		{key = "cactus_03", id = 36942, block = true, name = "tall cactus"},
+		{key = "cactus_04", id = 36943, block = true, name = "tall cactus"},
+		{key = "cactus_05", id = 36944, block = true, name = "tall cactus"},
+		{key = "cactus_06", id = 36945, block = true, name = "budding tall cactus"},
+		{key = "cactus_07", id = 36946, block = true, name = "round-topped cactus"},
+		{key = "cactus_08", id = 36947, block = true, name = "flowering round-topped cactus"},
+		{key = "cactus_09", id = 36948, block = true, name = "columnar cactus"},
+		{key = "cactus_10", id = 36949, block = true, name = "flowering columnar cactus"},
+		{key = "cactus_11", id = 36950, block = true, name = "pale columnar cactus"},
+		{key = "cactus_12", id = 36951, block = true, name = "flowering spiny cactus"},
+		{key = "cactus_13", id = 36952, block = true, name = "barrel cactus"},
+		{key = "cactus_14", id = 36953, block = true, name = "flowering cactus"},
+		{key = "cactus_15", id = 36954, block = true, name = "blooming cactus"},
+		{key = "cactus_16", id = 36955, block = true, name = "spiny cactus"},
+		{key = "cactus_17", id = 36956, block = false, name = "small columnar cactus"},
+		{key = "cactus_18", id = 36957, block = true, name = "flowering spiny cactus"},
+		{key = "cactus_19", id = 36958, block = false, name = "small columnar cactus"},
+		{key = "cactus_20", id = 36959, block = true, name = "flowering dark cactus"},
+		{key = "cactus_21", id = 36960, block = false, name = "potted flower"},
+		{key = "cactus_22", id = 36961, block = true, name = "dark agave"},
+		{key = "cactus_23", id = 36962, block = false, name = "desert shrub"},
+		{key = "cactus_24", id = 36963, block = false, name = "potted agave"},
+		{key = "cactus_25", id = 36964, block = false, name = "dry shrub"},
+		{key = "cactus_26", id = 36965, block = false, name = "succulent"},
+		{key = "cactus_27", id = 36966, block = false, name = "thorny shrub"},
+		{key = "cactus_28", id = 36967, block = false, name = "potted aloe"},
+		{key = "cactus_29", id = 36968, block = false, name = "withered cactus"},
+		{key = "cactus_30", id = 36969, block = false, name = "succulent"},
+		{key = "cactus_31", id = 36970, block = false, name = "potted grass"},
+		{key = "cactus_32", id = 36971, block = true, name = "flowering cactus"},
+		{key = "cactus_33", id = 36972, block = false, name = "potted succulent"},
+		{key = "cactus_34", id = 36973, block = false, name = "flowering succulent"},
+		{key = "cactus_35", id = 36974, block = true, name = "barrel cactus"},
+		{key = "cactus_36", id = 36975, block = true, name = "flowering barrel cactus"},
+		{key = "cactus_37", id = 36976, block = true, name = "flowering prickly cactus"},
+		{key = "cactus_38", id = 36977, block = true, name = "prickly pear"},
+		{key = "cactus_39", id = 36978, block = true, name = "round cactus"},
+		{key = "cactus_40", id = 36979, block = true, name = "round cactus"},
+		{key = "cactus_41", id = 36980, block = false, name = "thorn sprout"},
+		{key = "cactus_42", id = 36981, block = false, name = "desert grass"},
+		{key = "cactus_43", id = 36982, block = false, name = "flowering cactus"},
+		{key = "cactus_44", id = 36983, block = false, name = "flowering shrub"},
+		{key = "cactus_45", id = 36984, block = true, name = "blue agave"},
+	},
+	-- the 3x3 waypoint seal (put it on the south-east tile of the square it covers)
+	waypoint = 36985
+}

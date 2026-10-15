@@ -267,6 +267,24 @@ function F.reconcile(entries, present)
 end
 
 -- sightClear (optional): false = a wall, door or bars between them; only the squares next to the player skip it
+-- the sweep's decay check (lootfilter.lua): a tracked kill is due when its id falls in this sweep's slot, so each
+-- corpse is still checked every `every` sweeps but every sweep takes a share instead of all at once every
+-- `every`-th sweep (300 players x 50 tracked kills was 0.2-0.9 s in one task); a kill with a ray is due every sweep
+function F.decayDue(id, tick, every, rays)
+	every = math.max(1, math.floor(tonumber(every) or 1))
+	return rays and true or (tonumber(id) or 0) % every == (tonumber(tick) or 0) % every
+end
+
+-- a cheap fingerprint of a corpse's contents: {{id, count}, ...} in container order -> "id:count,..."; the full
+-- reconcile (itemInfo of every item) runs only when it differs from the last one seen
+function F.fingerprint(items)
+	local parts = {}
+	for i, it in ipairs(items or {}) do
+		parts[i] = tostring(it[1]) .. ":" .. tostring(it[2])
+	end
+	return table.concat(parts, ",")
+end
+
 function F.inReach(from, to, range, sightClear)
 	if not from or not to or from.z ~= to.z then
 		return false

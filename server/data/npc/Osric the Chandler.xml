@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Osric the Chandler: keeps the Candlemark shop, the currency for time online (server/data/scripts/chaos/candlemarks.lua,
+     candlemarks_config.lua; server/README.md "Candlemarks"). Placed next to the temples at startup; installed by
+     server/tools/install_candlemarks.py. The same window opens from the game menu (Economy > Candlemarks). -->
+<npc name="Osric the Chandler" script="osric_the_chandler.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="133" head="78" body="58" legs="76" feet="115" addons="1" />
+	<parameters>
+		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. Every half hour you spend among us burns a mark into my candles. Care to see my {wares}?" />
+		<parameter key="message_farewell" value="Keep your wick dry, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The candles burn on without you." />
+	</parameters>
+</npc>

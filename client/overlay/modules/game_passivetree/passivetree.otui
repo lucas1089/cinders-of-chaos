@@ -432,7 +432,7 @@ UIWindow
       anchors.bottom: parent.bottom
       anchors.left: parent.left
       anchors.right: parent.right
-      text: Info & Bonuses
+      !text: tr('Info & Bonuses')
       @onClick: modules.game_passivetree.toggleStats()
 
   TreeButton
@@ -441,7 +441,7 @@ UIWindow
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 40
     margin-right: 3
-    text: Apply Plan
+    !text: tr('Apply Plan')
     width: 110
     !tooltip: tr('Allocate every planned node in one go (left-click a node to plan the path to it)')
     enabled: true
@@ -452,7 +452,7 @@ UIWindow
     anchors.top: applyPoints.top
     anchors.left: applyPoints.right
     margin-left: 5
-    text: Reset
+    !text: tr('Reset')
     width: 110
     enabled: true
     @onClick: modules.game_passivetree.reset()
@@ -462,7 +462,7 @@ UIWindow
     anchors.top: applyPoints.top
     anchors.left: resetPresetButton.right
     margin-left: 5
-    text: Paragon
+    !text: tr('Paragon')
     width: 110
     enabled: true
     @onClick: modules.game_passivetree.toggleParagon()
@@ -472,7 +472,7 @@ UIWindow
     anchors.top: applyPoints.top
     anchors.left: paragonButton.right
     margin-left: 5
-    text: Build Code
+    !text: tr('Build Code')
     width: 110
     enabled: true
     !tooltip: tr('Export your build as a code, or import a code (preview first)')
@@ -483,7 +483,7 @@ UIWindow
     anchors.top: applyPoints.top
     anchors.left: buildShareButton.right
     margin-left: 5
-    text: Trials
+    !text: tr('Trials')
     width: 110
     enabled: true
     !tooltip: tr('Vocation Trials: clear your vocation trial to open pairs of special nodes (choose one of each pair)')
@@ -497,7 +497,7 @@ UIWindow
     size: 200 340
     image-source: /images/ui/miniwindow
     image-border: 20
-    text: Reset
+    !text: tr('Reset')
     font: verdana-11px-rounded
     text-align: top
     text-offset: 0 4
@@ -512,7 +512,7 @@ UIWindow
       height: 75
       margin: 20 5 0 5
       Label
-        text: Preset Name:
+        !text: tr('Preset Name:')
         anchors.top: parent.top
         font: verdana-11px-rounded
         margin-top: 4
@@ -534,7 +534,7 @@ UIWindow
         id: savePresetButton
         anchors.top: presetName.bottom
         anchors.right: presetName.left
-        text: Save
+        !text: tr('Save')
         width: 50
         enabled: false
         margin: 5 5 0 0
@@ -542,14 +542,14 @@ UIWindow
         id: resetPresetButton
         anchors.top: presetName.bottom
         anchors.left: presetName.right
-        text: Reset
+        !text: tr('Reset')
         width: 50
         margin: 5 0 0 5
         @onClick: modules.game_passivetree.reset()
     
     Label
       id: presetSlots
-      text: Slots: 1/1
+      !text: tr('Slots: 1/1')
       anchors.top: presetsSave.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 10
@@ -567,11 +567,11 @@ UIWindow
 
       PresetItem
         id: preset1
-        text: Default
+        !text: tr('Default')
     
     Button
       width: 40
-      text: Close
+      !text: tr('Close')
       anchors.bottom: parent.bottom
       anchors.right: parent.right
       margin: 0 7 7 0
@@ -592,7 +592,7 @@ UIWindow
       font: verdana-11px-rounded
       anchors.centerIn: parent
       text-auto-resize: true
-      text: 10 Passive Points
+      !text: tr('10 Passive Points')
 
   Label
     id: bossPoints
@@ -631,14 +631,14 @@ UIWindow
       font: verdana-11px-rounded
       text-align: center
       text-auto-resize: false
-      text: No plan: click a node to plan the path to it.
+      !text: tr('No plan: click a node to plan the path to it.')
 
     TreeButton
       id: planUndo
       anchors.bottom: parent.bottom
       anchors.left: parent.left
       width: 118
-      text: Undo
+      !text: tr('Undo')
       enabled: false
       !tooltip: tr('Undo the last plan change (Ctrl+Z)')
       @onClick: modules.game_passivetree.plannerUndo()
@@ -648,7 +648,7 @@ UIWindow
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       width: 118
-      text: Redo
+      !text: tr('Redo')
       enabled: false
       !tooltip: tr('Redo (Ctrl+Y)')
       @onClick: modules.game_passivetree.plannerRedo()
@@ -658,7 +658,7 @@ UIWindow
       anchors.bottom: parent.bottom
       anchors.right: parent.right
       width: 118
-      text: Clear Plan
+      !text: tr('Clear Plan')
       enabled: false
       @onClick: modules.game_passivetree.plannerClear()
 
@@ -680,7 +680,7 @@ UIWindow
       width: 150
       height: 22
       max-length: 40
-      placeholder: Search nodes
+      !placeholder: tr('Search nodes')
       !tooltip: tr('Find nodes by name or bonus (Ctrl+F). Enter: next match.')
       @onTextChange: modules.game_passivetree.onTreeSearchChange()
 
@@ -691,7 +691,7 @@ UIWindow
       margin-left: 4
       width: 52
       height: 26
-      text: Prev
+      !text: tr('Prev')
       @onClick: modules.game_passivetree.treeSearchPrev()
 
     TreeButton
@@ -701,7 +701,7 @@ UIWindow
       margin-left: 4
       width: 52
       height: 26
-      text: Next
+      !text: tr('Next')
       @onClick: modules.game_passivetree.treeSearchNext()
 
     Label
@@ -742,7 +742,7 @@ UIWindow
       anchors.verticalCenter: parent.verticalCenter
       width: 130
       height: 26
-      text: Back to my tree
+      !text: tr('Back to my tree')
       @onClick: modules.game_passivetree.closeOtherTree()
 
   TreeButton
@@ -751,7 +751,7 @@ UIWindow
     anchors.right: parent.horizontalCenter
     margin-bottom: 5
     margin-right: 5
-    text: Zoom -
+    !text: tr('Zoom -')
     width: 110
     enabled: true
     @onClick: modules.game_passivetree.zoomLess()
@@ -761,7 +761,7 @@ UIWindow
     anchors.left: prev.right
     anchors.verticalCenter: prev.verticalCenter
     margin-left: 5
-    text: Zoom +
+    !text: tr('Zoom +')
     width: 110
     enabled: true
     @onClick: modules.game_passivetree.zoomPlus()
@@ -769,7 +769,7 @@ UIWindow
     anchors.bottom: zoomLess.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-bottom: 5
-    text: Close
+    !text: tr('Close')
     width: 110
     @onClick: modules.game_passivetree.hide()
 
@@ -777,7 +777,7 @@ UIWindow
     anchors.top: prev.top
     anchors.left: prev.right
     margin-left: 10
-    text: Cancel
+    !text: tr('Cancel')
     width: 110
     enabled: false
     visible: false

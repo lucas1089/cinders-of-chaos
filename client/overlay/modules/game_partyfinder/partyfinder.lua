@@ -65,7 +65,7 @@ end
 local function updateBadge()
   local text = V.badgeText(badgeCount)
   if menuEntry then
-    menuEntry.text = badgeCount > 0 and string.format('Party Finder (%d)', badgeCount) or 'Party Finder'
+    menuEntry.text = badgeCount > 0 and tr('Party Finder (%d)', badgeCount) or tr('Party Finder')
     local top = modules.client_chaos_topbar
     if top and top.ChaosTopBar and top.ChaosTopBar.refresh then pcall(top.ChaosTopBar.refresh) end
   end

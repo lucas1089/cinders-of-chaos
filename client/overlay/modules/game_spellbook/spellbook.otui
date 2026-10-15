@@ -120,7 +120,7 @@ ChaosMainWindow
     anchors.left: parent.left
     width: 230
     height: 22
-    placeholder: Search name or words...
+    !placeholder: tr('Search name or words...')
     placeholder-color: #6b6258
 
   ChaosComboBox

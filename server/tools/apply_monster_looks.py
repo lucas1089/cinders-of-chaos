@@ -3,7 +3,8 @@
 
 usage: python3 -I apply_monster_looks.py [MONSTER_DIR] [--picks CSV] [--check]
 
-MONSTER_DIR defaults to server/data/monster. Rows of picks.csv with family "world", "omen" or "raid" name one monster (column
+MONSTER_DIR defaults to server/data/monster. Rows of picks.csv with family "world", "omen", "raid", "hunt" or "dungeonboss"
+(the owner's art of pair 26, client/tools/sprites/monster_looks/owner_art_picks.csv) name one monster (column
 `monsters`, the exact <monster name>); its XML gets <look type="LOOK" .../> with LOOK from the `look` column. The
 colour attributes (head, body, legs, feet, addons) are removed: these looks have no colour template, so the client
 ignores them. The corpse and every other attribute stay. The rift family rows (abyss, obsidian, crypt, sanctum) belong
@@ -14,7 +15,8 @@ wings of exclusives_config.lua, wings.xml); --check makes sure no monster file u
 (rank variants of the rift looks, client/tools/sprites/monster_looks/rift_variant_picks.csv) belong to no monster file
 either; --check makes sure rift_config.lua `looks.variants` lists each. Rows of family "bigguardian" (the bigger
 guardian looks, client/tools/sprites/monster_looks/big_boss_picks.csv) belong to no monster file either; --check makes
-sure rift_config.lua `looks.bigGuardians` maps a guardian look to each.
+sure rift_config.lua `looks.bigGuardians` maps a guardian look to each. Rows of family "storewings" (the store wings of
+pair 26, data/lib/chaos_owner_art.lua) belong to no monster file either.
 Idempotent: a second run changes nothing. --check changes nothing and exits 1 when a file is not up to date.
 """
 import csv, os, re, sys
@@ -24,6 +26,8 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 PICKS = os.path.join(REPO, 'client', 'tools', 'sprites', 'monster_looks', 'picks.csv')
 RIFT_CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'rift_config.lua')
 COLOURS = ('head', 'body', 'legs', 'feet', 'addons')
+# families whose rows name one monster file each (column `monsters`, the exact <monster name>)
+MONSTER_FAMILIES = ('world', 'omen', 'raid', 'hunt', 'dungeonboss')
 FAMILY_THEME = {'abyss': 'Abyssal Rift', 'obsidian': 'Obsidian Hall', 'crypt': 'Ashen Crypt', 'sanctum': 'Forsaken Sanctum'}
 
 
@@ -44,9 +48,10 @@ def main():
         i = args.index('--picks'); picks = args[i + 1]; del args[i:i + 2]
     mdir = args[0] if args else os.path.join(REPO, 'server', 'data', 'monster')
     rows = list(csv.DictReader(open(picks, newline='')))
-    want = {r['monsters']: int(r['look']) for r in rows if r['family'] in ('world', 'omen', 'raid')}
+    want = {r['monsters']: int(r['look']) for r in rows if r['family'] in MONSTER_FAMILIES}
     rift = {int(r['look']): r['key'] for r in rows
-            if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive', 'riftvariant', 'bigguardian')}
+            if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive', 'riftvariant', 'bigguardian',
+                                                              'storewings')}
     found, changed, problems = set(), 0, []
     for root, _, files in os.walk(mdir):
         for f in sorted(files):

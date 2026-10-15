@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Archivist Maelis: keeps a ledger of the lore. She gives the tales (server/data/scripts/chaos/tales.lua,
+     tales_config.lua) and answers questions about the world's lore (lore_data.lua), in English or Brazilian
+     Portuguese. Placed next to the temple at startup (tales_config.lua npc); docs/CONTENT.md "Tales". -->
+<npc name="Archivist Maelis" script="archivist_maelis.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="138" head="114" body="113" legs="57" feet="114" addons="1" />
+	<parameters>
+		<parameter key="message_greet" value="Ash on your boots, |PLAYERNAME|. I keep the {ledger}. Ask me for {tales}, or for any {lore} you fear. (Diga {portugues} para conversar em português.)" />
+		<parameter key="message_farewell" value="Write what you saw, |PLAYERNAME|. Ink outlasts us." />
+		<parameter key="message_walkaway" value="Another page left blank." />
+	</parameters>
+</npc>

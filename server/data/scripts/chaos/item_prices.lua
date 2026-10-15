@@ -16,30 +16,12 @@ if not ok or type(cfg) ~= "table" then
 	cfg = {enabled = false, npc = {name = "Loot Buyer", towns = "all", offsets = {}}}
 end
 ChaosItemPrices.config = cfg
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
+end
 
 local function log(text)
 	print("[Chaos item prices] " .. text)
-end
-
-local function placeNpc(name, pos)
-	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do
-		if c:isNpc() and c:getName():lower() == name:lower() then
-			return c
-		end
-	end
-	return Game.createNpc(name, pos)
-end
-
-local function freeTileNear(temple)
-	for _, o in ipairs(cfg.npc.offsets or {}) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
 end
 
 function ChaosItemPrices.placeNpcs()
@@ -54,11 +36,14 @@ function ChaosItemPrices.placeNpcs()
 	local placed, missed = 0, {}
 	for _, town in ipairs(towns) do
 		local temple = town and town:getTemplePosition()
-		local pos = temple and freeTileNear(temple)
 		local done = false
-		if pos then
-			local okp, npc = pcall(placeNpc, cfg.npc.name, pos)
+		if temple then
+			-- npc_place.lua: the offsets first, then any reachable free tile, away from the other NPCs
+			local okp, npc = pcall(ChaosNpcPlace.place, cfg.npc.name, temple, cfg.npc.offsets, cfg.npc.place)
 			done = okp and npc ~= nil
+			if not okp then
+				log("placing at " .. town:getName() .. ": " .. tostring(npc))
+			end
 		end
 		if done then
 			placed = placed + 1
@@ -67,7 +52,7 @@ function ChaosItemPrices.placeNpcs()
 		end
 	end
 	if #missed > 0 then
-		log("no " .. cfg.npc.name .. " at " .. table.concat(missed, ", ") .. " (no free tile next to the temple, or data/npc/" ..
+		log("no " .. cfg.npc.name .. " at " .. table.concat(missed, ", ") .. " (no free tile near the temple, or data/npc/" ..
 			cfg.npc.name .. ".xml is missing: tools/install_item_prices.py)")
 	end
 	return placed

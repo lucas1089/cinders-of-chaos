@@ -45,11 +45,17 @@ function Bar.update(player, w, now, force)
 	end
 end
 
+-- every watching character is looked at once per tickMs, spread over SLICES shorter ticks by creature id (a full pass
+-- over every online character in one tick made a lag spike under load)
+local SLICES = 4
+local slice = 0
 local think = GlobalEvent("ChaosBuffBarThink")
 function think.onThink(interval)
 	local now = B.nowMs()
+	slice = (slice + 1) % SLICES
 	for _, player in ipairs(Game.getPlayers()) do
-		local w = Bar.watch[player:getId()]
+		local id = player:getId()
+		local w = id % SLICES == slice and Bar.watch[id]
 		if w then
 			local ok, err = pcall(Bar.update, player, w, now, false)
 			if not ok then
@@ -59,7 +65,7 @@ function think.onThink(interval)
 	end
 	return true
 end
-think:interval(B.cfg.tickMs)
+think:interval(math.max(50, math.floor(B.cfg.tickMs / SLICES)))
 think:register()
 
 local login = CreatureEvent("ChaosBuffBarLogin")

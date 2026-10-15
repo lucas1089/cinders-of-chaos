@@ -72,6 +72,21 @@ eq(table.concat(none, ","), "1,25,250,1000", "no spawns at all keeps the normal 
 local tiny = C.thresholds({kills = {1, 2, 3, 5}, points = {1, 1, 1, 1}}, 1, cfg)
 eq(table.concat(tiny, ","), "1,2,3,4", "at least the stage number and strictly increasing")
 eq(table.concat(C.thresholds(cfg.boss, 1, cfg), ","), "1,2,3,5", "bosses keep their numbers")
+-- pack combat (pace): the kill-goal factor on every stage after the first
+eq(table.concat(C.thresholds(medium, 200, cfg, 5), ","), "1,125,1250,5000", "pace x5: Discovered at 1 kill still")
+eq(table.concat(C.thresholds(medium, 3, cfg, 5), ","), "1,25,250,1000", "pace x5 and few spawns")
+eq(table.concat(C.thresholds(medium, 200, cfg, 1), ","), "1,25,250,1000", "pace x1 unchanged")
+eq(table.concat(C.thresholds(cfg.boss, 1, cfg, 5), ","), "1,2,3,5", "pace: bosses keep theirs")
+do
+	local saved = cfg.goalOf
+	cfg.goalOf = function(info, level) return info.name == "Paced" and 2.7 or 1 end
+	local e1 = C.buildEntry({name = "Paced", exp = 100, health = 100}, {spawns = 50}, cfg)
+	eq(e1.goal, 2.7, "pace: the entry keeps its goal")
+	eq(e1.th[4], math.floor(C.difficultyOf(e1.level, false, cfg).kills[4] * 2.7 + 0.5), "pace: the entry's thresholds")
+	local e2 = C.buildEntry({name = "Paced", exp = 100, health = 100, boss = true}, {spawns = 50}, cfg)
+	eq(e2.goal, 1, "pace: a boss entry has no goal factor")
+	cfg.goalOf = saved
+end
 eq(C.stageOf(0, th), 0)
 eq(C.stageOf(1, th), 1)
 eq(C.stageOf(24, th), 1)
@@ -200,6 +215,8 @@ ok = C.canTakeHunt(nil, 30, 5, cfg)
 assert(not ok)
 local fewEntry = {key = "x", diff = "medium", spawns = 3}
 eq(C.huntCount(fewEntry, cfg), 75, "few spawns: half, rounded to 5")
+eq(C.huntCount({key = "x", diff = "medium", spawns = 300, goal = 2.7}, cfg), 410, "pace: 150 x 2.7 = 405 -> 410")
+eq(C.huntCount({key = "x", diff = "medium", spawns = 3, goal = 2.7}, cfg), 205, "pace and few spawns: 202.5 -> 205")
 
 -- ---------------------------------------------------------------- the board (real-size catalogue from the spawn data)
 local big = {}
@@ -241,6 +258,18 @@ for i = 1, math.min(#offers, #other) do
 	end
 end
 assert(same < #offers, "another day, another board")
+-- a board reroll (Candlemarks): the salt draws another board the same day; salt 0 is the day's board
+local salted = C.offers(20261008, 42, 120, bigCat, cfg, 1)
+same = 0
+for i = 1, math.min(#offers, #salted) do
+	if offers[i].key == salted[i].key then
+		same = same + 1
+	end
+end
+assert(same < #offers, "a reroll draws another board")
+eq(C.offers(20261008, 42, 120, bigCat, cfg, 0)[1].key, offers[1].key, "salt 0: the day's board")
+eq(C.offers(20261008, 42, 120, bigCat, cfg, 1)[1].key, salted[1].key, "a salted board is stable")
+eq(cfg.rerollStorage, 7102404, "reroll storages")
 local empty = C.offers(20261008, 42, 120, C.index({}, cfg), cfg)
 eq(#empty, 0, "nothing to offer")
 
@@ -427,5 +456,55 @@ for key, e in pairs(spawns) do
 	assert(#e.areas >= 1 and #e.areas <= 3, "1-3 areas")
 end
 assert(n > 500, "the full map's monsters")
+
+-- ---------------------------------------------------------------- engine file: experience bonus by type name
+-- bestiary.lua against a mocked engine: a renamed monster (rift name, Chaos.createMonsterNamed, a level tag) still
+-- gets the completed entry's experience bonus, keyed by its type name, not its shown name.
+do
+	local n = 0
+	setmetatable(_G, {__index = function(t, k)
+		if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
+	end})
+	loadstring = loadstring or load
+	local function obj()
+		return setmetatable({}, {__index = function() return function() return true end end})
+	end
+	local cbs = {}
+	EventCallback = setmetatable({}, {__newindex = function(t, k, v) cbs[k] = v end,
+		__index = function(t, k) if k == "register" then return function() end end end})
+	CreatureEvent, GlobalEvent, TalkAction = obj, obj, obj
+	db = {query = function() return true end, storeQuery = function() return false end,
+		escapeString = function(v) return "'" .. v .. "'" end}
+	addEvent = function() return 1 end
+	Game = {getMonsterTypes = function() return {} end}
+	dofile("data/scripts/chaos/bestiary.lua")
+	local X = ChaosBestiary
+	local onExp = assert(cbs.onGainExperience, "experience callback")
+	local function monster(typeName, shown)
+		local mt = {name = function() return typeName end}
+		return {isMonster = function() return true end, getType = function() return mt end,
+			getName = function() return shown or typeName end}
+	end
+	local player = {getGuid = function() return 77 end, getStorageValue = function() return -1 end}
+	X.players[77] = {points = 0, completed = {dragon = {exp = 10, damage = 2}}}
+	local base = onExp(player, monster("Rat"), 1000, 1000)
+	eq(onExp(player, monster("Dragon"), 1000, 1000), math.floor(base * 1.1 + 1e-9), "plain dragon: +10%")
+	eq(onExp(player, monster("Dragon", "Abyssal Wyrm"), 1000, 1000), math.floor(base * 1.1 + 1e-9),
+		"renamed dragon: still +10%")
+	eq(onExp(player, monster("Dragon", "Dragon [Lv 120]"), 1000, 1000), math.floor(base * 1.1 + 1e-9),
+		"level-tagged dragon: still +10%")
+	X.players[77] = nil
+	-- the Candlemarks API: board reroll charges
+	local st = {}
+	local buyer = {getStorageValue = function(_, k) return st[k] or -1 end, setStorageValue = function(_, k, v) st[k] = v end,
+		sendTextMessage = function() end, getGuid = function() return 78 end}
+	eq(X.rerollsOf(buyer), 0, "no reroll yet")
+	eq(X.addRerolls(buyer, 2), true, "two rerolls added")
+	eq(X.rerollsOf(buyer), 2, "two held")
+	eq(X.addRerolls(buyer, 0), false, "zero refused")
+	eq(X.addRerolls(buyer, "x"), false, "junk refused")
+	eq(st[cfg.rerollStorage], 2, "kept in its storage")
+	setmetatable(_G, nil)
+end
 
 print("bestiary_test: ok")

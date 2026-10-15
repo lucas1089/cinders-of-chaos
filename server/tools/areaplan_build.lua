@@ -169,6 +169,11 @@ local function addStock()
 	cfg.borders.st_snow = {["*"] = "st_snow"}
 	cfg.borders.st_ice = {["*"] = "st_ice"}
 	cfg.borders.st_grass = {["*"] = "st_grass"}
+	-- the towns' own tiles (the Halls of Services, server/README.md "Main city"): Cinderhold's temple floor (white
+	-- marble) and its grey stone walls; pieces as the live map uses them (pole = the north-west corner, corner = the
+	-- south-east one, see areagen_core.lua A.wallPiece)
+	cfg.families.st_white_marble = {z = 1, grounds = {{406, 1}}, indoor = true}
+	cfg.walls.st_stone = {horizontal = {{1050, 1}}, vertical = {{1049, 1}}, corner = {{1053, 1}}, pole = {{1051, 1}}}
 end
 addStock()
 
@@ -248,6 +253,13 @@ local BIOMES = {
 		desc = "catacombs: crypt sand corridors, slate and flagstone rooms, ruin walls"},
 	hall = {kind = "dungeon", theme = "rift_hall", z = 9, light = "normal",
 		desc = "black marble halls in dark stone walls"},
+	-- the Halls of Services (server/README.md "Main city"): a town building, not a dungeon: no clutter, no pillars
+	townhall = {kind = "dungeon", theme = "rift_hall", z = 7, light = "bright",
+		desc = "town hall: white marble floor in grey stone walls, as the temples of the towns; no clutter",
+		override = {floor = "st_white_marble", wall = "st_stone", roomFloors = {"st_white_marble"},
+			bossFloor = "st_white_marble", mixedFloors = {"st_white_marble"}, patches = {}, pools = {},
+			decor = {share = 0, scatter = {}, clusters = {}}, obstacles = {share = 0, items = {}},
+			props = {per100 = 0, spacing = 3, items = {}}, lights = {per100 = 0, spacing = 6, items = "ids:1484"}}},
 	abyss = {kind = "cave", theme = "rift_abyss", z = 11, light = "dark",
 		desc = "eldritch waste or cave of rift floor"},
 	sanctum = {kind = "cave", theme = "rift_sanctum", z = 9, light = "dim",

@@ -1,0 +1,518 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "gravehorn_deeps",
+  "name": "Gravehorn Deeps",
+  "biome": "crypt",
+  "size": [
+    188,
+    172
+  ],
+  "floors": 2,
+  "level": [
+    1500,
+    1750
+  ],
+  "seed": 25407,
+  "origin": {
+    "x": 14340,
+    "y": 15140,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "hornward_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "bonefire_nave",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "antler_choir",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "reaver_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "smouldering_cloister",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "ashen_apse",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "cinderbone_vault",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "hollow_belfry",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "sigil_walk",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "gravehorn_stair",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "deepbone_landing",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "fiends_heart",
+      "floor": 2,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "marrow_forge",
+      "floor": 2,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "horned_ossuary",
+      "floor": 2,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "shroud_cells",
+      "floor": 2,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "antler_reliquary",
+      "floor": 2,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    },
+    {
+      "id": "juggernaut_pits",
+      "floor": 2,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "ember_crypts",
+      "floor": 2,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "hornward_camp",
+      "to": "sigil_walk",
+      "width": 3
+    },
+    {
+      "from": "sigil_walk",
+      "to": "hollow_belfry",
+      "width": 3
+    },
+    {
+      "from": "hollow_belfry",
+      "to": "cinderbone_vault",
+      "width": 3
+    },
+    {
+      "from": "cinderbone_vault",
+      "to": "ashen_apse",
+      "width": 3
+    },
+    {
+      "from": "ashen_apse",
+      "to": "smouldering_cloister",
+      "width": 3
+    },
+    {
+      "from": "smouldering_cloister",
+      "to": "reaver_gallery",
+      "width": 3
+    },
+    {
+      "from": "reaver_gallery",
+      "to": "bonefire_nave",
+      "width": 3
+    },
+    {
+      "from": "bonefire_nave",
+      "to": "hornward_camp",
+      "width": 3
+    },
+    {
+      "from": "hornward_camp",
+      "to": "antler_choir",
+      "width": 4
+    },
+    {
+      "from": "antler_choir",
+      "to": "reaver_gallery",
+      "width": 3
+    },
+    {
+      "from": "antler_choir",
+      "to": "hollow_belfry",
+      "width": 3
+    },
+    {
+      "from": "antler_choir",
+      "to": "ashen_apse",
+      "width": 3
+    },
+    {
+      "from": "smouldering_cloister",
+      "to": "gravehorn_stair",
+      "width": 3
+    },
+    {
+      "from": "deepbone_landing",
+      "to": "marrow_forge",
+      "width": 3
+    },
+    {
+      "from": "deepbone_landing",
+      "to": "shroud_cells",
+      "width": 3
+    },
+    {
+      "from": "marrow_forge",
+      "to": "fiends_heart",
+      "width": 3
+    },
+    {
+      "from": "fiends_heart",
+      "to": "horned_ossuary",
+      "width": 3
+    },
+    {
+      "from": "shroud_cells",
+      "to": "horned_ossuary",
+      "width": 3
+    },
+    {
+      "from": "horned_ossuary",
+      "to": "antler_reliquary",
+      "width": 2
+    },
+    {
+      "from": "marrow_forge",
+      "to": "juggernaut_pits",
+      "width": 3
+    },
+    {
+      "from": "juggernaut_pits",
+      "to": "ember_crypts",
+      "width": 3
+    },
+    {
+      "from": "ember_crypts",
+      "to": "fiends_heart",
+      "width": 3
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "gravehorn_stair",
+      "to": "deepbone_landing"
+    }
+  ],
+  "entry": {
+    "zone": "hornward_camp"
+  },
+  "exit": {
+    "zone": "hornward_camp"
+  },
+  "spawns": [
+    {
+      "zone": "bonefire_nave",
+      "monster": "Cinderskull Reaver",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bonefire_nave",
+      "monster": "Rimeshroud Revenant",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "antler_choir",
+      "monster": "Bloodantler Fiend",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "antler_choir",
+      "monster": "Cinderskull Reaver",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reaver_gallery",
+      "monster": "Cinderskull Reaver",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reaver_gallery",
+      "monster": "Bloodantler Fiend",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smouldering_cloister",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smouldering_cloister",
+      "monster": "Cinderskull Reaver",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_apse",
+      "monster": "Bloodantler Fiend",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_apse",
+      "monster": "Rimeshroud Revenant",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinderbone_vault",
+      "monster": "Cinderskull Reaver",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinderbone_vault",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_belfry",
+      "monster": "Bloodantler Fiend",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_belfry",
+      "monster": "Cinderskull Reaver",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sigil_walk",
+      "monster": "Rimeshroud Revenant",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sigil_walk",
+      "monster": "Bloodantler Fiend",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gravehorn_stair",
+      "monster": "Cinderskull Reaver",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gravehorn_stair",
+      "monster": "Bloodantler Fiend",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deepbone_landing",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deepbone_landing",
+      "monster": "Bloodantler Fiend",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fiends_heart",
+      "monster": "Bloodantler Fiend",
+      "count": 19,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fiends_heart",
+      "monster": "Wraithbone Stalker",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marrow_forge",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marrow_forge",
+      "monster": "Cinderskull Reaver",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "horned_ossuary",
+      "monster": "Bloodantler Fiend",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "horned_ossuary",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shroud_cells",
+      "monster": "Wraithbone Stalker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shroud_cells",
+      "monster": "Bloodantler Fiend",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "antler_reliquary",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 2,
+      "respawn": 75,
+      "pack": 2
+    },
+    {
+      "zone": "juggernaut_pits",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "juggernaut_pits",
+      "monster": "Cinderskull Reaver",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_crypts",
+      "monster": "Wraithbone Stalker",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_crypts",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "antler_reliquary",
+      "quest": "gravehorn_antler",
+      "reward": {
+        "gold": 3000000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 9
+          }
+        ],
+        "message": "An antler crown, still warm from the forge that grew it."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a two-floor horned crypt for levels 1500-1750, on the 1300-2000 hunting set (Cinderskull Reaver, Bloodantler Fiend, Cinderhorn Juggernaut; Rimeshroud Revenant above, Wraithbone Stalker below). A ring of chapels on the first floor, the gravehorn stair down to a second ring, the forge pits and the antler reliquary."
+}

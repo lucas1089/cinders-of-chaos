@@ -88,8 +88,8 @@ function renderPacks()
   local page = payWindow.packsPage
   page.packList:destroyChildren()
   -- the chosen method is marked > like this <
-  page.methodPix:setText(payMethod == 'pix' and '> Pix (BRL) <' or 'Pix (BRL)')
-  page.methodPaypal:setText(payMethod == 'paypal' and '> PayPal (USD) <' or 'PayPal (USD)')
+  page.methodPix:setText(payMethod == 'pix' and tr('> Pix (BRL) <') or tr('Pix (BRL)'))
+  page.methodPaypal:setText(payMethod == 'paypal' and tr('> PayPal (USD) <') or tr('PayPal (USD)'))
   if not payData then
     page.firstBonus:setText(tr('Loading...'))
     return
@@ -181,7 +181,7 @@ function showPayOrder(view)
   payWindow.packsPage:hide()
   local page = payWindow.orderPage
   page:show()
-  page.orderTitle:setText(string.format('%s - %d Chaos Coins', view.name or '', tonumber(view.coins) or 0))
+  page.orderTitle:setText(tr('%s - %d Chaos Coins', view.name or '', tonumber(view.coins) or 0))
   page.orderAmount:setText(string.format('%s: %s', PayView.METHOD_LABEL[view.method] or '', view.price or ''))
   local en, pt = PayView.statusText(view), ''
   if view.status == 'credited' then en, pt = PayView.thanks(view.coins) end

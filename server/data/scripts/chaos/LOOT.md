@@ -18,8 +18,10 @@ Keep our index strictly between 0 and 3: above 3 the autoloot would run before u
 auto-picked. The callback returns nothing, so the chain continues; all work runs inside `pcall`, an error is printed
 as `[Chaos loot] onDropLoot failed: ...` and never breaks autoloot.
 
-It bails out exactly like the stock one when `RATE_LOOT == 0`, when there is no corpse owner player, or when the owner
-has stamina <= `minStamina` (840; the stock callback drops nothing then).
+It bails out exactly like the stock one when `RATE_LOOT == 0` or when there is no corpse owner player. Low stamina
+(<= `minStamina`, 840) no longer stops it: `ChaosCatchup.lootMult(owner)` (catchup.lua) multiplies the rate after the
+`maxRate` cap, x0.5 at low stamina and x1.25 for a returning player. The stock callback is patched the same way
+(`tools/patch_base_events.py` step 16: its loot chances x0.5 instead of nothing). Without catchup.lua the old rule holds.
 
 The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.lua's death event, kept 10 s), else
 `ChaosTierOf(monster)`, else `"normal"`.

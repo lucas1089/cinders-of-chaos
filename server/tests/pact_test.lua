@@ -1,8 +1,8 @@
 -- Run from the server/ folder: luajit tests/pact_test.lua (or lua5.3; CI runs both)
 -- Chaos Pact and account storage (pact_core.lua with the real pact_config.lua): limits (free / Pact / extras, caps,
--- premium for the loot rules), stacking and its cap, the daily coins, one-time extras, stash tabs (placing the stash of
--- before tabs, special tabs, withdraw-only tabs after the Pact ends, nothing deleted), saved build slots, character
--- slots, and the store offers (shop_config.lua inserts them; prices, keys, the coin drip below the price).
+-- premium for the loot rules), stacking and its cap, the daily coins, one-time extras (the stash tabs themselves:
+-- tests/stash_test.lua), saved build slots, character slots, and the store offers (shop_config.lua inserts them;
+-- prices, keys, the coin drip below the price).
 dofile("data/scripts/chaos/pact_core.lua")
 local P = ChaosPactCore
 local cfg = dofile("data/scripts/chaos/pact_config.lua")
@@ -48,9 +48,6 @@ check(L.lootRules.free + L.lootRules.pact <= 20, "loot rules within the base cal
 -- character slots: bought (capped) + legacy (not capped)
 local chars = {pactEnds = NOW + DAY, extras = {charSlots = 3, charSlotsLegacy = 4}}
 eq(P.limit(cfg, chars, "charSlots", NOW), L.charSlots.free + 3 + 4, "character slots: bought + legacy, Pact adds none")
-local lim = P.limits(cfg, {pactEnds = 0, extras = {stashOrbs = 1}}, NOW)
-eq(lim.stashSpecial.orbs, true, "orbs tab owned")
-eq(lim.stashSpecial.gems, false, "gems tab not owned")
 local rows = P.breakdown(cfg, ended, NOW)
 eq(#rows, #cfg.order, "breakdown rows")
 eq(rows[1].key, "stashTabs", "breakdown order")
@@ -100,89 +97,16 @@ eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {}}, "depotTabs", NOW), L.depotT
 eq(P.extraMax(cfg, "charSlots"), L.charSlots.maxExtra, "character slot max")
 eq(P.extraMax(cfg, "stashGems"), 1, "special tab max")
 
--- ---------------------------------------------------------------- stash tabs
-local SIZE = cfg.stash.tabSize
-local function entries(n, firstItem, tab, kind)
-	local out = {}
-	for i = 1, n do
-		out[i] = {item = firstItem + i - 1, tab = tab or 0, kind = kind}
-	end
-	return out
-end
-local function concat(a, b)
-	local out = {}
-	for _, e in ipairs(a) do out[#out + 1] = e end
-	for _, e in ipairs(b) do out[#out + 1] = e end
-	return out
-end
-local function tabCount(list, tab)
-	local n = 0
-	for _, e in ipairs(list) do
-		if e.tab == tab then n = n + 1 end
-	end
-	return n
-end
-local limFree = P.limits(cfg, free, NOW) -- 2 tabs
-local limPact = P.limits(cfg, pact, NOW) -- 4 tabs
--- the stash of before tabs: 130 types, placed in order; what does not fit the 2 free tabs goes to tab 3, read-only
-local old = entries(130, 1000)
-local moves = P.layout(cfg, limFree, old)
-eq(#moves, 130, "every old entry placed")
-eq(tabCount(old, 1), SIZE, "tab 1 full")
-eq(tabCount(old, 2), SIZE, "tab 2 full")
-eq(tabCount(old, 3), 130 - 2 * SIZE, "the rest in tab 3")
-eq(P.tabWritable(cfg, limFree, 3), false, "tab 3 withdraw-only without the Pact")
-eq(P.tabWritable(cfg, limPact, 3), true, "tab 3 writable with the Pact")
-eq(#P.layout(cfg, limFree, old), 0, "layout is stable")
--- deposits: full without the Pact (entries in a withdraw-only tab), fine with it
-local tab, reason = P.depositTab(cfg, limFree, old, 5000, nil)
-check(tab == nil and reason == "locked", "new item refused: tabs full, tab 3 withdraw-only")
-eq(P.depositTab(cfg, limFree, old, 1000, nil), 1, "known item in a writable tab")
-tab, reason = P.depositTab(cfg, limFree, old, 1129, nil)
-check(tab == nil and reason == "locked", "known item in a withdraw-only tab with no room elsewhere")
-eq(P.depositTab(cfg, limPact, old, 5000, nil), 3, "with the Pact: the first tab with room")
-eq(P.depositTab(cfg, limPact, old, 1129, nil), 3, "with the Pact: its own tab")
--- withdrawing frees room: a known item from the read-only tab moves into the writable tab with room
-local partial = entries(SIZE * 2 - 1, 1000, nil)
-P.layout(cfg, limFree, partial)
-partial[#partial + 1] = {item = 9000, tab = 3}
-eq(P.depositTab(cfg, limFree, partial, 9000, nil), 2, "entry of a read-only tab moves to a writable tab with room")
-eq(P.depositTab(cfg, limFree, partial, 9001, nil), 2, "new item into the free place")
--- empty stash
-eq(P.depositTab(cfg, limFree, {}, 1, nil), 1, "empty stash: tab 1")
-tab, reason = P.depositTab(cfg, P.limits(cfg, {extras = {}}, NOW), entries(2 * SIZE, 1, 0), 99999, nil)
--- (unplaced entries do not count: layout runs first in stash.lua)
-eq(tab, 1, "unplaced entries are not counted")
-local full = entries(2 * SIZE, 1)
-P.layout(cfg, limFree, full)
-tab, reason = P.depositTab(cfg, limFree, full, 99999, nil)
-check(tab == nil and reason == "full", "full stash")
--- special tabs
-local limOrbs = P.limits(cfg, {pactEnds = 0, extras = {stashOrbs = 1}}, NOW)
-eq(P.depositTab(cfg, limOrbs, full, 29856, "orbs"), 101, "an orb goes to the Orbs tab even when the general tabs are full")
-tab = P.depositTab(cfg, limFree, full, 29856, "orbs")
-eq(tab, nil, "no Orbs tab: an orb needs general room")
-local mixed = concat(entries(3, 2000, 1), entries(2, 29850, 1, "orbs"))
-moves = P.layout(cfg, limOrbs, mixed)
-eq(#moves, 2, "orbs move into the bought Orbs tab")
-eq(tabCount(mixed, 101), 2, "two orbs in tab 101")
-eq(tabCount(mixed, 1), 3, "the rest stays")
-local gemsInGems = entries(2, 32001, 102, "gems")
-eq(P.tabWritable(cfg, limFree, 102), false, "a special tab not owned is withdraw-only")
-eq(#P.layout(cfg, limFree, gemsInGems), 0, "entries of a lost special tab stay")
-local unknown = {{item = 7, tab = 150}}
-P.layout(cfg, limFree, unknown)
-eq(unknown[1].tab, 1, "an unknown tab id is placed again")
--- the tab bar
-local view = P.tabsView(cfg, limFree, old)
-eq(#view, 3, "two free tabs and the withdraw-only tab 3")
-eq(view[3].locked, true, "tab 3 shown locked")
-eq(view[1].used, SIZE, "tab 1 usage")
-view = P.tabsView(cfg, limOrbs, mixed)
-eq(view[#view].special, "orbs", "the Orbs tab shown")
-eq(view[#view].size, cfg.stash.special[1].size, "special tab size")
-view = P.tabsView(cfg, limPact, {})
-eq(#view, L.stashTabs.free + L.stashTabs.pact, "empty tabs of the Pact shown")
+-- remote stash deposit (stash_config.lua remoteDeposit): a limit of 0 free, lent by the Pact, bought once
+eq(P.limit(cfg, {pactEnds = 0, extras = {}}, "stashRemote", NOW), 0, "remote deposit: free players have none")
+eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {}}, "stashRemote", NOW), 1, "remote deposit: lent by the Pact")
+eq(P.limit(cfg, {pactEnds = NOW - 1, extras = {}}, "stashRemote", NOW), 0, "remote deposit: gone when the Pact ends")
+eq(P.limit(cfg, {pactEnds = 0, extras = {stashRemote = 1}}, "stashRemote", NOW), 1, "remote deposit: bought")
+eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {stashRemote = 1}}, "stashRemote", NOW) > 0, true, "remote deposit: both")
+eq(P.extraMax(cfg, "stashRemote"), 1, "remote deposit: bought once")
+local scfgR = dofile("data/scripts/chaos/stash_config.lua").remoteDeposit
+eq(scfgR.extra, "stashRemote", "the stash reads the same extra")
+eq(scfgR.pact and cfg.limits.stashRemote.pact > 0, true, "the stash and the limit agree: the Pact lends it")
 
 -- ---------------------------------------------------------------- saved builds
 local limB = P.limits(cfg, {pactEnds = 0, extras = {}}, NOW)
@@ -231,11 +155,16 @@ for key, x in pairs(cfg.extras) do
 	check(sold, "extra " .. key .. " is sold")
 	check(x.name ~= nil, "extra " .. key .. " has a name")
 end
-for _, s in ipairs(cfg.stash.special) do
-	check(cfg.extras[s.extra] ~= nil, "special tab " .. s.kind .. " has an extra")
-	check(s.tab > 100, "special tab id above the general tabs")
+-- the affinity stash tabs (stash_config.lua): each bought one is an extra sold here, ids above the general tabs
+local scfg = dofile("data/scripts/chaos/stash_config.lua")
+for _, a in ipairs(scfg.affinities) do
+	if a.extra then
+		check(cfg.extras[a.extra] ~= nil and P.extraMax(cfg, a.extra) == 1, "affinity tab " .. a.key .. " has an extra of 1")
+	end
+	check(a.tab > 100 and a.tab < scfg.oldDepot.tab, "affinity tab id above the general tabs")
 end
-check(L.stashTabs.free + L.stashTabs.pact + L.stashTabs.maxExtra < 100, "general tab ids stay below the special ones")
+check(L.stashTabs.free + L.stashTabs.pact + L.stashTabs.maxExtra <= scfg.maxGeneralTabs, "the general tabs fit maxGeneralTabs")
+check(scfg.maxGeneralTabs < 100, "general tab ids stay below the affinity ones")
 
 print(string.format("pact_test: %d checks, %d failures", count, failures))
 if failures > 0 then

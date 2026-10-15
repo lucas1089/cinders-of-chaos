@@ -1,5 +1,5 @@
--- Codex: an in-client encyclopedia of the item system. Tabs (Modifiers, Powers, Orbs, Gems, Uniques, Sets, Rift, Supports,
--- Basics), a search box (every word must be in the name or the page), the tab's filters (side, item kind, item level,
+-- Codex: an in-client encyclopedia of the item system. Tabs (Modifiers, Powers, Orbs, Gems, Uniques, Sets, Rift, Supports, Materials,
+-- Basics, Lore), a search box (every word must be in the name or the page), the tab's filters (side, item kind, item level,
 -- level, group...), the list on the left and the page of the chosen entry on the right.
 -- No server round trip: everything comes from codex_data.lua, generated from the server's data files by
 -- server/tools/gen_codex_data.lua (CI fails when it is stale). The logic without client API is codexview.lua.
@@ -7,7 +7,8 @@
 -- codex_data.lua: CodexData = {rarities, tierLevels, tierWeights, tierWindow, shared = {ref -> section},
 --   tabs = [{id, name, filters = [{key, label, match = "eq"|"has"|"max"|"ilvl", options = [{value, text}]}],
 --            entries = [{id, name, color, sub, f = {filter key -> value}, tiers, tv, sections,
---                       items = [server item ids: "Where to find" opens game_itemfinder]}]}]}
+--                       items = [server item ids: "Where to find" opens game_itemfinder],
+--                       art = an image path shown at the top of the page (a gem's five tiers, gen_gem_art.py)}]}]}
 --   section = {h, p = [paragraphs], cols = [names], w = [relative widths], rows = [[cells]], links = [entry id | ""],
 --              tiers = true (rows are T1..T8: the item level filter marks the ones that roll)} | {ref = shared key}
 -- Opened from the top menu (Economy > Codex, Alt+K) and from the crafting bench (right-click a modifier: open(id)).
@@ -151,6 +152,10 @@ local function showEntry(entry)
   if entry.color then window.pageTitle:setColor(entry.color) else window.pageTitle:setColor('#f6cf72') end
   window.pageSub:setText(CodexView.subline(entry, level, data))
   local page = window.page
+  if type(entry.art) == 'string' and entry.art ~= '' then
+    local art = g_ui.createWidget('CodexArt', page)
+    art.strip:setImageSource(entry.art)
+  end
   -- an item of the game (orb, currency, gem, unique, material): where to find it (game_itemfinder, server opcode 155)
   local finder = modules.game_itemfinder
   if type(entry.items) == 'table' and #entry.items > 0 and finder and finder.open then
@@ -378,6 +383,8 @@ function init()
   end
   for i, tab in ipairs(data.tabs) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabBar)
+    -- eleven tabs (Lore last) share the bar: no wider than the theme's 96, all of them inside the window
+    b:setWidth(math.min(96, math.floor((window:getWidth() - 40 - 4 * (#data.tabs - 1)) / #data.tabs)))
     b:setText(tab.name)
     b:setTooltip(tipText(tr('%d entries', #tab.entries)))
     b.onClick = function() history = {}; showTab(i) end

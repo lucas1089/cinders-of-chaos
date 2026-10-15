@@ -22,7 +22,7 @@ ChaosPanelDark
 
   UILabel
     id: title
-    text: Chi
+    !text: tr('Chi')
     font: verdana-11px-rounded
     color: #d6c9ae
     anchors.top: parent.top

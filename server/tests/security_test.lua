@@ -2,7 +2,7 @@
 -- Security fixes of the launch review (docs/LAUNCH.md, "Security review"):
 --   * ratelimit.lua: per player and key, refused inside the interval, forgotten at logout
 --   * stash.lua: a floor item of a house cannot be stashed from outside that house; fixed (not movable) items cannot be
---     stashed; list / redeem requests are rate limited
+--     stashed; list / redeem requests are rate limited; a deposit is a journal row before the item moves
 --   * dungeons.lua: no queueing (and no teleport into a run) while in a fight
 local n = 0
 setmetatable(_G, {__index = function(t, k)
@@ -29,7 +29,8 @@ os.mtime = function() return clock end
 -- db: nothing stored yet; queries are recorded
 local queries = {}
 db = {query = function(q) queries[#queries + 1] = q; return true end, storeQuery = function() return nil end,
-	asyncQuery = function(q) queries[#queries + 1] = q end, escapeString = function(s) return "'" .. s .. "'" end}
+	asyncQuery = function(q) queries[#queries + 1] = q end, escapeString = function(s) return "'" .. s .. "'" end,
+	lastInsertId = function() return #queries end}
 result = {free = function() end}
 Chaos.select = function() return {} end
 
@@ -55,6 +56,8 @@ local function tile(x, y, z, h)
 	function t:getHouse() return self.house end
 	function t:getThing(i) return self.things[i + 1] end
 	function t:hasProperty() return self.solid == true end
+	function t:hasFlag() return true end -- every tile a protection zone: the reach rules are under test here (the
+	-- town-only deposit rule of the stash: tests/stash_test.lua)
 	tiles[key(x, y, z)] = t
 	return t
 end
@@ -89,7 +92,12 @@ local function newPlayer(id, pos)
 	function p:getPosition() return self.pos end
 	function p:sendCancelMessage(t) self.cancels[#self.cancels + 1] = t end
 	function p:sendTextMessage() end
-	function p:getStorageValue() return -1 end
+	p.storage = {}
+	function p:getStorageValue(k) return self.storage[k] or -1 end
+	function p:setStorageValue(k, v) self.storage[k] = v end
+	function p:getAccountId() return id end
+	function p:getName() return "P" .. id end
+	function p:getSlotItem() return nil end
 	function p:getLevel() return 200 end
 	function p:getIp() return 0 end
 	function p:getGroup() return {getId = function() return 1 end, getAccess = function() return false end} end
@@ -124,8 +132,16 @@ eq(gold.removed, false, "house floor item stashed from outside the house")
 local inside = newPlayer(2, Position(101, 101, 7))
 stashAt(inside, 101, 100, 7)
 eq(gold.removed, true, "a player inside the house stashes from its floor")
-local insert = queries[#queries]
-eq(insert:find("INSERT INTO `" .. Chaos.tables.stash .. "`", 1, true) ~= nil, true, "stash row written")
+-- the journal (stash_core.lua): a depositing row first, then the item, the save, and the row merged into chaos_stash
+local function find(text, from)
+	for i = from or 1, #queries do
+		if queries[i]:find(text, 1, true) then return i end
+	end
+	return nil
+end
+local journal = find("INSERT INTO `chaos_stash_items`")
+local merged = find("INSERT INTO `" .. Chaos.tables.stash .. "`")
+eq(journal ~= nil and merged ~= nil and journal < merged, true, "journal row first, then the stash row")
 
 local otherHouse = tile(99, 100, 7, house(6))       -- another house next to the street
 local coins = item(2152, 3)
@@ -151,7 +167,8 @@ local stack = item(2151, 9)
 street.things[1] = stack
 local nq = #queries
 stashAt(saveless, 100, 100, 7)
-eq(#queries, nq, "no stash row without a save")
+eq(find("INSERT INTO `" .. Chaos.tables.stash .. "`", nq + 1), nil, "no stash row without a save")
+eq(find("DELETE FROM `chaos_stash_items`", nq + 1) ~= nil, true, "the journal row is dropped")
 eq(saveless.added[1] and saveless.added[1][1], 2151, "the item goes back to the character")
 eq(saveless.added[1] and saveless.added[1][2], 9, "all of it")
 
@@ -173,13 +190,20 @@ stashAt(outside, 99, 99, 7)
 eq(around.removed, true, "with one open side it is in reach")
 
 -- rate limit: the item list is read from the database at most every 300 ms
+local function lists(from)
+	local n = 0
+	for i = from + 1, #sent do
+		if sent[i].data and sent[i].data.make == "addItems" then n = n + 1 end
+	end
+	return n
+end
 local before = #sent
 stashEvent.onExtendedOpcode(outside, OP, {action = "Stash", data = {make = "SendItems"}})
 stashEvent.onExtendedOpcode(outside, OP, {action = "Stash", data = {make = "SendItems"}})
-eq(#sent - before, 1, "second list request inside 300 ms dropped")
+eq(lists(before), 1, "second list request inside 300 ms dropped")
 clock = clock + 300
 stashEvent.onExtendedOpcode(outside, OP, {action = "Stash", data = {make = "SendItems"}})
-eq(#sent - before, 2, "allowed again after 300 ms")
+eq(lists(before), 2, "allowed again after 300 ms")
 
 -- ---------------------------------------------------------------- dungeons.lua
 DUNGEON_SYSTEM = {

@@ -1,0 +1,153 @@
+// The Conquest vendor window (game_conquest): Conquest Tokens, the offers by tab (uniques, set pieces, raid and Ascended
+// uniques, the Cinderheart chain, the rarity refinement) and the Progress page (bad-luck protection, today's tokens).
+// Styles from client_chaos_theme. Opened from the menu (Economy > Conquest Vendor) or by Iselde Varrow.
+
+ConquestRow < UIWidget
+  height: 40
+  background-color: #1a151a
+  border-width: 1
+  border-color: #3a2c22
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+    border-color: #e8b84a
+
+  UIItem
+    id: item
+    size: 34 34
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 3
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: item.right
+    anchors.right: price.left
+    margin-top: 4
+    margin-left: 6
+    height: 15
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: price.left
+    height: 15
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: price
+    anchors.right: buy.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    width: 110
+    font: verdana-11px-antialised
+    color: #e8b84a
+    text-align: right
+    phantom: true
+
+  ChaosButton
+    id: buy
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    size: 64 22
+    !text: tr('Buy')
+
+ConquestLine < UILabel
+  height: 16
+  font: verdana-11px-antialised
+  color: #d8ccb4
+  text-align: left
+  phantom: true
+
+ConquestWindow < ChaosMainWindow
+  id: conquestWindow
+  size: 720 560
+  !text: tr('Conquest Vendor')
+  @onEscape: modules.game_conquest.hide()
+
+  ChaosLabel
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 30
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosLabel
+    id: placeLabel
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    text-align: left
+
+  UIWidget
+    id: tabBar
+    anchors.top: placeLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 24
+    layout:
+      type: horizontalBox
+      spacing: 3
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: status.top
+    margin-top: 4
+    margin-bottom: 6
+
+    ScrollablePanel
+      id: list
+      anchors.fill: parent
+      margin: 6
+      margin-right: 16
+      vertical-scrollbar: listScroll
+      layout:
+        type: verticalBox
+        spacing: 3
+
+    ChaosScrollBar
+      id: listScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 43
+      pixels-scroll: true
+
+  ChaosLabel
+    id: status
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 24
+    text-wrap: true
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_conquest.hide()

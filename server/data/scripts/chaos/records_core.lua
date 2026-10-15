@@ -16,6 +16,15 @@ end
 
 ChaosRecordsCore = ChaosRecordsCore or {}
 local K = ChaosRecordsCore
+
+-- is this dungeon title the Hollow Vault (its own board)? The dungeon's title is "The Hollow Vault", the config
+-- name "Hollow Vault": compare without a leading "The " and without case
+local function plainTitle(s)
+	return (tostring(s or ""):lower():gsub("^%s*the%s+", ""):gsub("%s+$", ""))
+end
+function K.isHollowVault(cfg, title)
+	return title ~= nil and cfg.hollowVaultName ~= nil and plainTitle(title) == plainTitle(cfg.hollowVaultName)
+end
 local floor = math.floor
 
 -- ---------------------------------------------------------------- periods
@@ -138,7 +147,7 @@ function K.catalogue(cfg, src)
 			if tpl.cat == cat.key then
 				if tpl.perDungeon then
 					for _, d in ipairs(src.dungeons or {}) do
-						if d.name ~= cfg.hollowVaultName then
+						if not K.isHollowVault(cfg, d.name) then
 							list[#list + 1] = makeBoard(cfg, tpl, src, tpl.key .. "_" .. tostring(d.id), d.name, {dungeon = d.id})
 						end
 					end
@@ -468,15 +477,24 @@ local function names(list)
 end
 K.names = names
 
-function K.recordText(board, variant, size, value, members, prev)
-	return string.format("New record! %s: %s by %s%s.", label(board, variant, size), K.valueText(value, board.format),
-		names(members), prev and (" (was " .. K.valueText(prev, board.format) .. ")") or "")
+-- a text in `lang` (server/README.md "Server texts in pt-BR (Chaos.t)"); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	return string.format(key, ...)
+end
+
+function K.recordText(board, variant, size, value, members, prev, lang)
+	return T(lang, "New record! %s: %s by %s%s.", label(board, variant, size), K.valueText(value, board.format),
+		names(members), prev and T(lang, " (was %s)", K.valueText(prev, board.format)) or "")
 end
 
 -- display = the third value of K.firstTarget (the boss's full name, or the board's)
-function K.firstText(display, members, seasonName)
-	return string.format("Realm first of %s! %s %s the first to defeat %s.", seasonName or "the season", names(members),
-		#members == 1 and "is" or "are", tostring(display))
+function K.firstText(display, members, seasonName, lang)
+	return T(lang, #members == 1 and "Realm first of %s! %s is the first to defeat %s." or
+		"Realm first of %s! %s are the first to defeat %s.", seasonName or T(lang, "the season"), names(members),
+		tostring(display))
 end
 
 -- the realm first target of a run: key, short name, display name (nil: the board has no realm firsts). run.first = {key, short}
@@ -495,4 +513,30 @@ function K.firstTarget(board, variant, run)
 		return board.key .. ":" .. tostring(variant), v.short or v.name, v.name
 	end
 	return board.key, K.shortName(board.name), board.name
+end
+
+-- the name a realm first is listed by (the client's Realm Firsts, records.lua rfirsts), from its stored target: the
+-- third value of K.firstTarget. A first keeps only its target and the short title name ("Skaldra"); the list showed
+-- that short name (live test 2026-10-14) instead of "Skaldra the Rime Queen". byKey = the catalogue's boards by key;
+-- short = the stored name (used when the target names no board or variant any more).
+function K.firstDisplay(byKey, target, short)
+	target = tostring(target or "")
+	local bkey, rest = target:match("^([^:]+):(.+)$")
+	local board = byKey and byKey[bkey or target]
+	if not board then
+		return short
+	end
+	if not rest then
+		return board.name
+	end
+	local vk = board.variantByKey or {}
+	if vk[rest] then
+		return vk[rest].name
+	end
+	-- run.first override ("<family>.<variant>": the trials): the stored name and the variant, as K.firstTarget
+	local v = vk[rest:match("%.([^.]+)$") or ""]
+	if v and short then
+		return short .. " (" .. v.name .. ")"
+	end
+	return short or board.name
 end

@@ -15,7 +15,8 @@ return {
 		weekCount = 7101762,
 		runs = 7101763, -- completed runs (information, achievements)
 		cooldown = 7101764, -- os.time until the next attempt after a failed one
-		marker = 7101765 -- run in progress: tier x 100 + vocation id (cleared at the end; found at login = interrupted)
+		marker = 7101765, -- run in progress: tier x 100 + vocation id (cleared at the end; found at login = interrupted)
+		weekBank = 7101766 -- repeat rewards carried from earlier weeks into weekKey's week (reward.repeatBankWeeks)
 	},
 
 	-- the three difficulties. A tier needs the one before it cleared (as the vocation you play) and its level.
@@ -64,6 +65,9 @@ return {
 		first = {goldPerLevel = 4000, chaos = {2, 4, 8}, divine = {0, 1, 3}},
 		repeatReward = {goldPerLevel = 800, chaos = {1, 2, 3}, divine = {0, 0, 1}},
 		repeatsPerWeek = 5,
+		-- unused repeat rewards carry over: a week allows repeatsPerWeek + what earlier weeks left, at most
+		-- repeatBankWeeks weeks' worth (3: 15). 2026-10-15, respect the players' time.
+		repeatBankWeeks = 3,
 		weekResetHour = 6, -- the week: Monday 06:00, the bounty board's (ChaosBounty.week)
 		items = {chaos = 29856, divine = 29857}
 	},
@@ -84,7 +88,7 @@ return {
 	npc = {
 		name = "Keeper of Trials",
 		spawn = true,
-		townIds = {1},
+		townIds = {2, 1}, -- the main city (Cinderhold) first, then Mirewake (server/README.md "Main city")
 		positions = {},
 		offsets = {{-2, 2}, {2, -3}, {-3, -2}, {3, 2}, {0, 4}, {-4, 0}, {4, 0}, {-2, -3}, {1, 3}},
 		range = 6

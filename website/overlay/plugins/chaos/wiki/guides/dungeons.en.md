@@ -6,9 +6,11 @@ Instanced content to play alone or in a group.
 
 - There are {{dungeon.count}} [dungeons](wiki:dungeon:about) with {{dungeon.difficulties}} difficulties each.
 - Step on the entry or open Adventure > Dungeons, pick a difficulty and join the queue. The group goes in together.
-- Kill the monsters, then the boss. Each difficulty you finish unlocks the next.
+- Kill most of the monsters (85%) to unlock the boss, then kill it. Each difficulty you finish unlocks the next.
 - Higher difficulties give more experience, gold and loot.
 - Speed and flawless challenges give points and count for the rankings.
+- Every dungeon run lasts at most 15 minutes and holds at least 100 monsters in packs: pull a group and kill it together.
+- The generated dungeons are solo runs for the late game: [The Hollow Vault](wiki:dungeon:5) from level 800, then the four deep dungeons, [The Marrow Crypts](wiki:dungeon:6) (1000), [The Iron Crucible](wiki:dungeon:7) (1300), [The Fallen Sanctum](wiki:dungeon:8) (1600) and [The Pyre Throne](wiki:dungeon:9) (2000). Each is a short run of about 10-15 minutes with packs of monsters; the boss room opens once 85% of them are dead. Each boss has its own [mechanics](wiki:boss:mechanics), and the deep dungeons give every finisher a boss chest: gold, gear of the boss with a higher rarity and item level on each difficulty, and orbs.
 
 ## The Infinity Tower
 

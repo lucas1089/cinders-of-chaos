@@ -8,6 +8,10 @@ return {
 	-- creaturescripts/autoloot.lua = 3. Must be > 0 (after the stock pass) and < 3 (before autoloot,
 	-- otherwise autolooters never receive the extra items). Do not change unless you know why.
 	priority = 1,
+	-- pack combat (pace.lua): the empty corpse check runs at this index, after every step that takes items out of the
+	-- corpse (pouches 2.7, base autoloot 3, Rarity Autoloot 3.5, professions 4, loot filter finish 4.5), so a corpse
+	-- that the autoloot emptied gets the short decay too
+	emptyCorpseIndex = 99,
 
 	-- global hook. A number, or function(ctx) returning a number; ctx = {tier=, monster=, player=}.
 	-- Multiplies the chance of the EXTRA rolls (not their stack counts) and the currency chances.
@@ -38,7 +42,9 @@ return {
 	itemFindStorage = 7100040,
 	itemFindMaxPercent = 300, -- clamp
 
-	-- same threshold as the stock callback: at or below it the stock callback drops nothing, so do we
+	-- same threshold as the stock callback. With catchup.lua loaded (always, in this repo) low stamina CUTS the loot
+	-- (catchup_config.lua stamina.lootMult, x0.5) and the stock callback is patched the same way (patch_base_events.py
+	-- step 16); only without it does the old rule hold: at or below this, no loot at all
 	minStamina = 840,
 
 	-- 1. extra rolls from the monster's own loot table

@@ -28,13 +28,13 @@ escrever para [E-MAIL DE CONTATO] com o número da doação.
 
 | Pacote | Chaos Coins de agradecimento | Pix | PayPal |
 |---|---|---|---|
-| Handful of Coins | 80 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Pouch of Coins | 250 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Sack of Coins | 825 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Chest of Coins | 1725 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Hoard of Coins | 5000 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Vault of Coins | 13000 | [PREÇO EM R$] | [PREÇO EM US$] |
-| Starter Coins, uma vez por conta | 500 | [PREÇO EM R$] | [PREÇO EM US$] |
+| Handful of Coins | 100 | R$ 9,90 | US$ 1,98 |
+| Pouch of Coins | 250 | R$ 24,90 | US$ 4,98 |
+| Sack of Coins | 525 | R$ 49,90 | US$ 9,98 |
+| Chest of Coins | 1100 | R$ 99,90 | US$ 19,98 |
+| Hoard of Coins | 2875 | R$ 249,90 | US$ 49,98 |
+| Vault of Coins | 6000 | R$ 499,90 | US$ 99,98 |
+| Starter Coins, uma vez por conta | 500 | R$ 14,90 | US$ 2,98 |
 
 - A primeira doação de cada conta traz 100% a mais de Chaos Coins (o dobro), até 1000 Chaos Coins a mais (um pacote de mais de 1000 coins recebe 1000 a mais), exceto no pacote Starter Coins.
 - O pagamento é feito pelo Mercado Pago ou pelo PayPal, conforme os termos deles. Nós não recebemos nem guardamos dados
@@ -75,18 +75,18 @@ escrever para [E-MAIL DE CONTATO] com o número da doação.
 
 ## 7. Season Pass, códigos de criador e o Bazar de Personagens
 
-- **Season Pass.** A trilha premium de um passe de temporada é liberada com Chaos Coins ([PREÇO DO PASSE PREMIUM]
+- **Season Pass.** A trilha premium de um passe de temporada é liberada com Chaos Coins (600
   Chaos Coins). Ela dá apenas itens cosméticos e algumas Chaos Coins de volta, nunca ouro, experiência ou poder de
-  jogo. As recompensas são as da temporada a que o passe pertence e podem ser resgatadas até [PRAZO DE RESGATE DO PASSE]
+  jogo. As recompensas são as da temporada a que o passe pertence e podem ser resgatadas até 14
   dias depois do fim dessa temporada. Quem compra tarde recebe na hora as recompensas dos níveis já alcançados.
 - **Códigos de criador.** Um código de criador escolhido no site não muda a sua doação nem as Chaos Coins que você
-  recebe. Como agradecimento do servidor, o criador recebe [PERCENTUAL DO CRIADOR] % das Chaos Coins das suas doações
-  feitas enquanto o código está escolhido, no jogo, depois de [PRAZO DE CARÊNCIA DO CRIADOR] dias. Nada disso é pago em
+  recebe. Como agradecimento do servidor, o criador recebe 10 % das Chaos Coins das suas doações
+  feitas enquanto o código está escolhido, no jogo, depois de 14 dias. Nada disso é pago em
   dinheiro. Um código de criador não pode ser usado pela própria conta, nem por contas da mesma pessoa, conexão ou
   pagador. Uma doação reembolsada ou contestada não dá nada ao criador. O criador aceita estas regras e informa ao seu
   público que o código o apoia ([REGRAS DE DIVULGAÇÃO DO CRIADOR]). Podemos desligar um código a qualquer momento.
 - **Bazar de Personagens.** Jogadores podem vender um personagem a outro jogador no site, somente por Chaos Coins. O
-  servidor fica com uma taxa de [TAXA DO BAZAR] % do preço final. O lance fica retido das Chaos Coins de quem deu o
+  servidor fica com uma taxa de 10 % do preço final. O lance fica retido das Chaos Coins de quem deu o
   lance até o fim do leilão e volta na hora se o lance for coberto ou o leilão for cancelado. No fim, o personagem
   passa para a conta do vencedor com o que carrega, e o vendedor recebe o preço menos a taxa. Personagens de temporada,
   Hardcore e Self-Found, líderes de guilda, personagens com denúncia aberta e personagens de conta banida ou com doação

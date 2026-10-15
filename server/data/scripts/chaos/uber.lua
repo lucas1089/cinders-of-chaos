@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/uber_core.lua")
 ChaosUberConfig = dofile("data/scripts/chaos/uber_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
@@ -199,8 +202,8 @@ function A.giveSigil(player, kind, why)
 	end
 	A.applySigil(item, kind)
 	local inbox = giveEx(player, item)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %s.%s", why or "You received a sigil",
-		U.sigilName(cfg, kind), inbox and " It is in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: %s.%s", Chaos.t(player, why or "You received a sigil"),
+		U.sigilName(cfg, kind), inbox and Chaos.t(player, " It is in your inbox.") or ""))
 	return inbox
 end
 
@@ -223,8 +226,8 @@ function A.giveShard(player, kind, why)
 		return nil
 	end
 	local inbox = giveStack(player, s.id, 1)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: an %s.%s", why or "You found", ItemType(s.id):getName(),
-		inbox and " It is in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: an %s.%s", Chaos.t(player, why or "You found"),
+		ItemType(s.id):getName(), inbox and Chaos.t(player, " It is in your inbox.") or ""))
 	return inbox
 end
 
@@ -733,10 +736,11 @@ function A.deliver(player, run)
 			found[#found + 1] = U.relicName(cfg, r.relic)
 		end
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"Spoils of %s: %d gold to your bank, %d Orbs of Upheaval, %d Orbs of Fate%s%s%s.%s", def.boss, r.gold, r.chaos,
 		r.divine, r.exalted > 0 and string.format(", %d Exalted Orb%s", r.exalted, r.exalted == 1 and "" or "s") or "",
-		#found > 0 and ", " or "", table.concat(found, ", "), inbox and " Your backpack was full: the rest is in your inbox." or ""))
+		#found > 0 and ", " or "", table.concat(found, ", "),
+		inbox and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	return r, found
 end
@@ -784,8 +788,8 @@ local function success(run)
 			names[#names + 1] = e.name
 		end
 		table.sort(names)
-		Game.broadcastMessage(string.format("%s %s extinguished the Cinderheart in %s!", table.concat(names, ", "),
-			#names == 1 and "has" or "have", U.clockText(secs)), MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, #names == 1 and "%s has extinguished the Cinderheart in %s!" or
+			"%s have extinguished the Cinderheart in %s!", table.concat(names, ", "), U.clockText(secs))
 	end
 	sendHud(run, "update")
 	for id in pairs(run.players) do
@@ -1208,19 +1212,19 @@ end
 
 local function memberProblem(m, def)
 	if A.runOf[m:getId()] then
-		return "is already inside an Ascended arena"
+		return ChaosI18n.msg("is already inside an Ascended arena")
 	end
 	if m:getLevel() < def.minLevel then
-		return string.format("needs level %d", def.minLevel)
+		return ChaosI18n.msg("needs level %d", def.minLevel)
 	end
 	if Chaos.isMultiClient and Chaos.isMultiClient(m) then
-		return "has another character from the same connection online"
+		return ChaosI18n.msg("has another character from the same connection online")
 	end
 	if inCombat(m) then
-		return "is in a fight"
+		return ChaosI18n.msg("is in a fight")
 	end
 	if insideOther(m) then
-		return "is inside a rift, a dungeon, the tower or the world boss arena"
+		return ChaosI18n.msg("is inside a rift, a dungeon, the tower or the world boss arena")
 	end
 	return nil
 end
@@ -1251,36 +1255,36 @@ end
 local function openerOk(player, def)
 	local cfg = C()
 	if not cfg.enabled then
-		player:sendCancelMessage("The Ascended arenas are closed.")
+		player:sendCancelMessage(Chaos.t(player, "The Ascended arenas are closed."))
 		return false
 	end
 	if A.runOf[player:getId()] then
-		player:sendCancelMessage("You are already inside an Ascended arena.")
+		player:sendCancelMessage(Chaos.t(player, "You are already inside an Ascended arena."))
 		return false
 	end
 	if cfg.needProtectionZone and not inProtectionZone(player) then
-		player:sendCancelMessage("You must stand in a protection zone to use a sigil.")
+		player:sendCancelMessage(Chaos.t(player, "You must stand in a protection zone to use a sigil."))
 		return false
 	end
 	if inCombat(player) then
-		player:sendCancelMessage("You cannot use a sigil while you are in a fight.")
+		player:sendCancelMessage(Chaos.t(player, "You cannot use a sigil while you are in a fight."))
 		return false
 	end
 	if Chaos.isMultiClient and Chaos.isMultiClient(player) then
-		player:sendCancelMessage(Chaos.multiClient and Chaos.multiClient.msgDungeon or "Not with a second character online.")
+		player:sendCancelMessage(Chaos.t(player, Chaos.multiClient and Chaos.multiClient.msgDungeon or "Not with a second character online."))
 		return false
 	end
 	if insideOther(player) then
-		player:sendCancelMessage("You cannot use a sigil from here.")
+		player:sendCancelMessage(Chaos.t(player, "You cannot use a sigil from here."))
 		return false
 	end
 	if player:getLevel() < def.minLevel then
-		player:sendCancelMessage(string.format("You need level %d to face %s.", def.minLevel, def.boss))
+		player:sendCancelMessage(Chaos.t(player, "You need level %d to face %s.", def.minLevel, def.boss))
 		return false
 	end
 	local last = player:getStorageValue(ST + 2)
 	if last > 0 and os.time() - last < cfg.useCooldown then
-		player:sendCancelMessage("Wait a moment.")
+		player:sendCancelMessage(Chaos.t(player, "Wait a moment."))
 		return false
 	end
 	player:setStorageValue(ST + 2, os.time())
@@ -1293,9 +1297,9 @@ local function gather(player, def)
 		if i > 1 then
 			local why = memberProblem(m, def)
 			if why then
-				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s stays behind: %s.", m:getName(), why))
-				m:sendTextMessage(MESSAGE_INFO_DESCR, string.format("You stay behind from %s's arena: you %s.",
-					player:getName(), why:gsub("^is ", "are "):gsub("^needs ", "need "):gsub("^has ", "have ")))
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s stays behind: %s.", m:getName(), why))
+				m:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(m, "You stay behind from %s's arena: you %s.",
+					player:getName(), ChaosI18n.you(why)))
 			else
 				group[#group + 1] = m
 			end
@@ -1309,7 +1313,7 @@ function A.open(player, item)
 	local kind = kindOf(item)
 	local def = kind and U.kind(cfg, kind)
 	if not def then
-		player:sendCancelMessage("This sigil is silent.")
+		player:sendCancelMessage(Chaos.t(player, "This sigil is silent."))
 		return false
 	end
 	if not openerOk(player, def) then
@@ -1321,7 +1325,7 @@ function A.open(player, item)
 		return false
 	end
 	if not item:remove(1) then
-		player:sendCancelMessage("The sigil cannot be used now.")
+		player:sendCancelMessage(Chaos.t(player, "The sigil cannot be used now."))
 		return false
 	end
 	cleanSlot(L)
@@ -1427,7 +1431,7 @@ function A.gate(player)
 		return true
 	end
 	if now < (entry.reenterAt or 0) then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("The Ember Gate opens for you in %d seconds.",
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "The Ember Gate opens for you in %d seconds.",
 			entry.reenterAt - now))
 		player:teleportTo(P(run.L.anteStart))
 		return false
@@ -1451,18 +1455,18 @@ function A.useShards(player, item)
 	local have = player:getItemCount(item:getId())
 	local n, cost = U.bindShards(cfg, have)
 	if n < 1 then
-		player:sendCancelMessage(string.format("You need %d of these shards to bind an Ascended Sigil (you carry %d).",
+		player:sendCancelMessage(Chaos.t(player, "You need %d of these shards to bind an Ascended Sigil (you carry %d).",
 			cfg.shardCost, have))
 		return false
 	end
 	if not itemReady(cfg.items.sigil.id) then
-		player:sendCancelMessage("Ascended Sigils are not installed on this server.")
+		player:sendCancelMessage(Chaos.t(player, "Ascended Sigils are not installed on this server."))
 		return false
 	end
 	if not player:removeItem(item:getId(), cost) then
 		return false
 	end
-	A.giveSigil(player, kind, string.format("%d shards bind together", cost))
+	A.giveSigil(player, kind, ChaosI18n.msg("%d shards bind together", cost))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
 	return true
 end
@@ -1493,6 +1497,8 @@ local function relicsOf(player)
 	end
 	return out
 end
+
+A.relicsOf = relicsOf -- conquest.lua: the relic conversion
 
 function A.useRelic(player)
 	local cfg = C()

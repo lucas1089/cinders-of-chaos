@@ -1,4 +1,5 @@
 -- Pure helpers of the Season Pass window (no client API), tested by passview_test.lua.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 PassView = {}
 
 local FREE, PREMIUM = 0, 1
@@ -58,10 +59,10 @@ end
 -- progress bar: percent and text
 function PassView.progress(state)
   local tier, max = tonumber(state.tier) or 0, tonumber(state.maxTier) or 0
-  if max > 0 and tier >= max then return 100, 'Max tier reached' end
+  if max > 0 and tier >= max then return 100, tr('Max tier reached') end
   local into, need = tonumber(state.into) or 0, tonumber(state.need) or 0
   if need <= 0 then return 0, '' end
-  return math.floor(into * 100 / need), string.format('%d / %d XP to tier %d', into, need, tier + 1)
+  return math.floor(into * 100 / need), tr('%d / %d XP to tier %d', into, need, tier + 1)
 end
 
 -- the button of an offer of the Packs page: text, enabled

@@ -40,6 +40,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCharmsCore then
 	dofile("data/scripts/chaos/charms_core.lua")
 end
@@ -740,8 +743,8 @@ function CH.onSource(player, source, ctx)
 		return nil
 	end
 	local name = Core.nameOf(cfg, charm)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You found a charm: %s%s.", name,
-		where == "inbox" and " (in your inbox)" or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You found a charm: %s%s.", name,
+		where == "inbox" and Chaos.t(player, " (in your inbox)") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or 13)
 	log(string.format("%s: %s from %s", player:getName(), name, source))
 	return charm
@@ -824,13 +827,26 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and target:isMonster() then
+	if creature and target and target:isMonster() and not eventKnown(target, "ChaosCharmsDealt") then
 		local p = playerOf(creature)
 		local st = p and CH.players[p:getGuid()]
 		if st and st.own and anyFamily(st) then
-			target:registerEvent("ChaosCharmsDealt")
+			registerOnce(target, "ChaosCharmsDealt")
 		end
 	end
 	return RETURNVALUE_NOERROR
@@ -861,7 +877,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			local sign = primaryDamage < 0 and -1 or 1
 			primaryDamage, secondaryDamage = sign * cap, 0
 			creature:getPosition():sendMagicEffect(CONST_ME_FIREAREA or 7)
-			creature:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Last Ember: the Gravewarden's Seal kept you alive.")
+			creature:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(creature, "Last Ember: the Gravewarden's Seal kept you alive."))
 		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType

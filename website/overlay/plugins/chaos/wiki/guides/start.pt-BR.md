@@ -12,13 +12,22 @@ Cinders of Chaos é um RPG online de fantasia sombria, com cliente próprio. Voc
 => @download | Cliente | Baixe e entre com sua conta.
 => @create | Personagem | Escolha uma das classes livres.
 => @tutorial | Ilha do tutorial | Luta, magias, a árvore passiva e os orbes.
-=> @temple | Sua cidade | O templo, com o kit da sua classe.
+=> @temple | Cinderhold | A cidade principal: seu templo, com o kit da sua classe.
 
 ## A ilha do tutorial
 
-No primeiro login você chega a uma pequena ilha. Cada estação ensina uma coisa: lutar, usar magias, a árvore passiva e os orbes. Você ganha um ponto passivo e um Orb of Upheaval para treinar. Ninguém morre na ilha. Ao sair, você vai para o templo da sua cidade com o kit da sua classe.
+No primeiro login você chega a uma pequena ilha. Cada estação ensina uma coisa: lutar, usar magias, a árvore passiva e os orbes. Você ganha um ponto passivo e um Orb of Upheaval para treinar. Ninguém morre na ilha. Ao sair, você vai para o templo de Cinderhold com o kit da sua classe.
 
 > [tip] Já conhece o jogo? Pule o tutorial na estátua do goblin.
+
+## Cinderhold, a cidade principal
+
+Todo personagem novo mora em Cinderhold, a maior cidade. Tudo fica perto do templo:
+
+- Dois grandes teleportes, cinco passos ao norte do templo, levam à sala de teleportes: um portal para uma caçada de cada nível.
+- O depot, dois bancos e as lojas.
+- O Salão de Serviços, pelo portal ao lado do templo: cada serviço do jogo atrás do seu balcão. O Loot Buyer, que compra o que você encontra, o Material Broker, o Gambler, os vendedores de Conquest e de Candlemarks, o Ascendant Oracle, o Keeper of Trials e os portais da Ember Descent e da raid.
+- A morte, a magia Town Portal e o pergaminho do templo sempre trazem você de volta a este templo.
 
 ## Os primeiros níveis
 
@@ -26,7 +35,12 @@ No primeiro login você chega a uma pequena ilha. Cada estação ensina uma cois
 - Gaste seus pontos na [árvore passiva](wiki:guide:tree). Um ponto chega a cada {{tree.levelsPerPoint}} níveis.
 - Pegue contratos no Adventure > Bounty Board. Eles pagam ouro e orbes.
 - Reclame a recompensa diária. A sequência de dias rende mais.
-- Nos níveis 20, 50, 100 e 200 você ganha presentes: poções, orbes e mais.
+- Nos níveis {{newplayer.giftLevelsPt}} você ganha presentes: poções, orbes e mais.
+- Perdido mais tarde? Adventure > Next Goals mostra o que fazer no seu nível. Veja [Progressão](wiki:guide:progression).
+
+## Caçando em grupos
+
+Os monstros vêm em grupos e morrem rápido. Puxe um grupo e mate todos juntos com suas magias de área: várias mortes com até 3 segundos entre uma e outra formam uma sequência, e uma sequência de 4 ou mais dá até 40% a mais de experiência. Cada morte dá menos experiência e loot do que um monstro grande daria, então um grupo cheio é o jeito rápido de subir. Os chefes continuam com toda a força. Veja [Pack combat](wiki:basics:pace).
 
 ## O menu do topo
 

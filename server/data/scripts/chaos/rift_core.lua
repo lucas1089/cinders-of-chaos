@@ -12,6 +12,17 @@
 ChaosRiftCore = ChaosRiftCore or {}
 local R = ChaosRiftCore
 
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local floor = math.floor
 
 local function clamp(v, lo, hi)
@@ -1593,8 +1604,8 @@ function R.atlasFragments(n, am, rand)
 	return roundChance(n * (1 + f / 100), rand)
 end
 
--- the HUD line of a run's atlas ("Atlas: Lone Ember, +12% packs, +1 life"), or nil
-function R.atlasNote(am)
+-- the HUD line of a run's atlas ("Atlas: Lone Ember, +12% packs, +1 life"), or nil; in `lang` (English without)
+function R.atlasNote(am, lang)
 	if not am then
 		return nil
 	end
@@ -1603,18 +1614,18 @@ function R.atlasNote(am)
 		parts[#parts + 1] = am.keystone
 	end
 	if (am.density or 0) > 0 then
-		parts[#parts + 1] = "+" .. floor(am.density) .. "% packs"
+		parts[#parts + 1] = T(lang, "+%s%% packs", floor(am.density))
 	end
 	if (am.time or 0) > 0 then
-		parts[#parts + 1] = "+" .. floor(am.time) .. "% time"
+		parts[#parts + 1] = T(lang, "+%s%% time", floor(am.time))
 	end
 	if (am.lives or 0) > 0 then
-		parts[#parts + 1] = "+" .. am.lives .. " " .. (am.lives == 1 and "life" or "lives")
+		parts[#parts + 1] = am.lives == 1 and T(lang, "+%s life", am.lives) or T(lang, "+%s lives", am.lives)
 	end
 	if #parts == 0 then
 		return nil
 	end
-	return "Atlas: " .. table.concat(parts, ", ")
+	return T(lang, "Atlas: %s", table.concat(parts, ", "))
 end
 
 return R

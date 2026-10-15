@@ -3,6 +3,7 @@
 -- Sell form suggests and its warning, the mark of a Browse row priced well under / over the typical price, and the
 -- 30-day chart as rectangles (the Orb Exchange chart, game_orbexchange/orbexchangeview.lua OrbExchangeView.chart, with
 -- days in place of hours).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 MarketView = MarketView or {}
 local V = MarketView
@@ -12,7 +13,7 @@ local floor = math.floor
 V.PRICE_COLORS = { low = '#8fd16a', high = '#e05a4a', warn = '#e8a040', dim = '#8c8070', text = '#d6c9ae', line = '#e8b84a', vol = '#3a3339' }
 
 local function curName(cur, n)
-  if cur == 'coins' then return n == 1 and 'Chaos Coin' or 'Chaos Coins' end
+  if cur == 'coins' then return n == 1 and tr('Chaos Coin') or tr('Chaos Coins') end
   return 'gold'
 end
 V.curName = curName
@@ -20,10 +21,10 @@ V.curName = curName
 function V.priceAgo(s)
   s = tonumber(s)
   if not s then return '' end
-  if s < 60 then return 'just now' end
-  if s < 3600 then return string.format('%dm ago', floor(s / 60)) end
-  if s < 86400 then return string.format('%dh ago', floor(s / 3600)) end
-  return string.format('%dd ago', floor(s / 86400))
+  if s < 60 then return tr('just now') end
+  if s < 3600 then return tr('%dm ago', floor(s / 60)) end
+  if s < 86400 then return tr('%dh ago', floor(s / 3600)) end
+  return tr('%dd ago', floor(s / 86400))
 end
 
 -- "Rare - iLvl 60-69" (the key the stats are of)
@@ -41,11 +42,11 @@ function V.typicalLine(s, cur)
   end
   if not s.typical then
     local have = math.max(s.n7 or 0, s.n30 or 0)
-    return { text = string.format('Typical price: not enough sales yet (%d of %d).', have, s.need or 5), color = V.PRICE_COLORS.dim }
+    return { text = tr('Typical price: not enough sales yet (%d of %d).', have, s.need or 5), color = V.PRICE_COLORS.dim }
   end
-  local basis = s.basis == '7d' and string.format('median of %d sales, 7 days', s.n7 or 0)
-    or string.format('daily medians of %d sales, %d days', s.n30 or 0, s.days or 30)
-  return { text = string.format('Typical price: %s %s each (%s)', V.money(s.typical), curName(cur, s.typical), basis), color = V.PRICE_COLORS.line }
+  local basis = s.basis == '7d' and tr('median of %d sales, 7 days', s.n7 or 0)
+    or tr('daily medians of %d sales, %d days', s.n30 or 0, s.days or 30)
+  return { text = tr('Typical price: %s %s each (%s)', V.money(s.typical), curName(cur, s.typical), basis), color = V.PRICE_COLORS.line }
 end
 
 -- the stats as lines {text, color}: typical, last sale, 7 days (median, range, volume), lowest / highest
@@ -54,19 +55,19 @@ function V.priceStatsLines(s, cur)
   if not s then return out end
   local c = curName(cur)
   if s.last then
-    out[#out + 1] = { text = string.format('Last sale: %s %s, %s', V.money(s.last), c, V.priceAgo(s.lastAgo)), color = V.PRICE_COLORS.text }
+    out[#out + 1] = { text = tr('Last sale: %s %s, %s', V.money(s.last), c, V.priceAgo(s.lastAgo)), color = V.PRICE_COLORS.text }
   end
   if (s.n7 or 0) > 0 then
-    out[#out + 1] = { text = string.format('7 days: median %s, %d sale%s (%d unit%s)', V.money(s.median7), s.n7, s.n7 == 1 and '' or 's',
+    out[#out + 1] = { text = tr('7 days: median %s, %d sale%s (%d unit%s)', V.money(s.median7), s.n7, s.n7 == 1 and '' or 's',
       s.units7 or s.n7, (s.units7 or s.n7) == 1 and '' or 's'), color = V.PRICE_COLORS.text }
     if s.lo and s.hi and (s.lo ~= s.min7 or s.hi ~= s.max7) then
-      out[#out + 1] = { text = string.format('Usual range: %s - %s (lowest %s, highest %s)', V.money(s.lo), V.money(s.hi), V.money(s.min7),
+      out[#out + 1] = { text = tr('Usual range: %s - %s (lowest %s, highest %s)', V.money(s.lo), V.money(s.hi), V.money(s.min7),
         V.money(s.max7)), color = V.PRICE_COLORS.dim }
     else
       out[#out + 1] = { text = string.format('Lowest %s, highest %s', V.money(s.min7), V.money(s.max7)), color = V.PRICE_COLORS.dim }
     end
   elseif (s.n30 or 0) > 0 then
-    out[#out + 1] = { text = string.format('No sales in 7 days; %d in %d days.', s.n30, s.days or 30), color = V.PRICE_COLORS.dim }
+    out[#out + 1] = { text = tr('No sales in 7 days; %d in %d days.', s.n30, s.days or 30), color = V.PRICE_COLORS.dim }
   end
   return out
 end
@@ -107,11 +108,11 @@ function V.sellWarning(ask, count, typical, warn, cur)
   local pct = floor(r * 100 + 0.5)
   if r <= warn.low then
     return { kind = 'low', color = V.PRICE_COLORS.warn,
-      text = string.format('Far below the typical price: %d%% of %s %s each. Is that what you want?', pct, V.money(typical), curName(cur, typical)) }
+      text = tr('Far below the typical price: %d%% of %s %s each. Is that what you want?', pct, V.money(typical), curName(cur, typical)) }
   end
   if r >= warn.high then
     return { kind = 'high', color = V.PRICE_COLORS.warn,
-      text = string.format('Far above the typical price: %d%% of %s %s each; it may not sell.', pct, V.money(typical), curName(cur, typical)) }
+      text = tr('Far above the typical price: %d%% of %s %s each; it may not sell.', pct, V.money(typical), curName(cur, typical)) }
   end
   return nil
 end
@@ -123,15 +124,15 @@ function V.rowMark(offer)
   local unit = floor((tonumber(price) or 0) / math.max(1, tonumber(offer.count) or 1))
   local diff = floor(math.abs(unit / offer.typ - 1) * 100 + 0.5)
   if offer.pm == 'low' then
-    return { text = string.format('%d%% under typical', diff), color = V.PRICE_COLORS.low, kind = 'low' }
+    return { text = tr('%d%% under typical', diff), color = V.PRICE_COLORS.low, kind = 'low' }
   end
-  return { text = string.format('%d%% over typical', diff), color = V.PRICE_COLORS.high, kind = 'high' }
+  return { text = tr('%d%% over typical', diff), color = V.PRICE_COLORS.high, kind = 'high' }
 end
 
 -- the tooltip line of a row's typical price (nil without one)
 function V.rowTypicalText(offer)
   if not offer or not tonumber(offer.typ) then return nil end
-  return string.format('Typical price: %s %s each', V.money(offer.typ), curName(offer.tcur, offer.typ))
+  return tr('Typical price: %s %s each', V.money(offer.typ), curName(offer.tcur, offer.typ))
 end
 
 -- the chart: points {{h = days ago, p, v}} oldest first -> rectangles {x, y, w, h, kind = 'line' | 'vol'} (a step line
@@ -157,5 +158,5 @@ function V.chartScale(points, days)
   local lo, hi = math.huge, -math.huge
   for _, p in ipairs(points) do lo, hi = math.min(lo, p.p), math.max(hi, p.p) end
   return { high = V.short and V.short(hi) or tostring(hi), low = V.short and V.short(lo) or tostring(lo),
-    from = string.format('%d days ago', (days or 30) - 1), to = 'today' }
+    from = tr('%d days ago', (days or 30) - 1), to = 'today' }
 end

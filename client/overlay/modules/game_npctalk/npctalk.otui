@@ -158,7 +158,7 @@ NpcTalkBubble < ChaosPanelHighlight
     margin-right: 4
     height: 22
     max-length: 255
-    placeholder: Say something...
+    !placeholder: tr('Say something...')
     placeholder-color: #6b6258
 
   ChaosButton

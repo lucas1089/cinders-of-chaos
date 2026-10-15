@@ -107,7 +107,8 @@ for _, name in ipairs(listDir("data/scripts/chaos")) do
 		local text = f:read("*a")
 		f:close()
 		for args in text:gmatch("TalkAction%(([^)]*)%)") do
-			if args:find('"!') then
+			-- the owner's exception (2026-10-15): !bless (gentledeath.lua, its words in gentledeath_config.lua)
+			if args:find('"!') and not args:find('"!bless"', 1, true) then
 				offenders[#offenders + 1] = name .. ": " .. args
 			end
 		end

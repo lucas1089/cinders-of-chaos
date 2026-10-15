@@ -49,11 +49,11 @@ Same names in both languages. The page highlights any placeholder still there.
 | `[PROVEDOR DE HOSPEDAGEM]`, `[PAÍS DA HOSPEDAGEM]` | the host of the game, the site and the database, and its country | privacy |
 | `[PROVEDOR ANTI-DDOS]` | the provider of the gateway VPS (docs/LAUNCH.md "Gateways and DDoS") | privacy |
 | `[PROVEDOR DE BACKUP]` | the off-site backup target (`CHAOS_BACKUP_REMOTE` / `CHAOS_BACKUP_RSYNC`) | privacy |
-| `[PREÇO DO PASSE PREMIUM]`, `[PRAZO DE RESGATE DO PASSE]` | the premium Season Pass price in Chaos Coins (`seasonpass_config.lua` `premium.price`, 1000 now) and the claim days after a season (`claimGraceDays`, 14 now) | donations |
-| `[PERCENTUAL DO CRIADOR]`, `[PRAZO DE CARÊNCIA DO CRIADOR]` | the creator's share in % (`creator_codes_config.lua` `sharePct`, 5 now) and the hold in days (`holdDays`, 14 now) | donations |
+| `[PREÇO DO PASSE PREMIUM]`, `[PRAZO DE RESGATE DO PASSE]` | the premium Season Pass price in Chaos Coins (`seasonpass_config.lua` `premium.price`, 600, filled in 2026-10-14) and the claim days after a season (`claimGraceDays`, 14 now) | donations |
+| `[PERCENTUAL DO CRIADOR]`, `[PRAZO DE CARÊNCIA DO CRIADOR]` | the creator's share in % (`creator_codes_config.lua` `sharePct`, 10) and the hold in days (`holdDays`, 14), filled in 2026-10-14 | donations |
 | `[REGRAS DE DIVULGAÇÃO DO CRIADOR]` | what a creator must tell its audience (for example "the code supports me; using it costs you nothing"); a link to the creator rules if there are any | donations |
-| `[TAXA DO BAZAR]` | the Character Bazaar fee in % (`bazaar_config.lua` `feePct`, 5 to 10, 8 now) | donations |
-| `[PREÇO EM R$]`, `[PREÇO EM US$]` | the pack prices: USD = `usdCents` in `shop_coins_config.lua`, BRL = USD x `brlPerUsd`. Or drop the price columns and keep "the amount shown before payment counts" | donations |
+| `[TAXA DO BAZAR]` | the Character Bazaar fee in % (`bazaar_config.lua` `feePct`, 5 to 10, 10, filled in 2026-10-14) | donations |
+| `[PREÇO EM R$]`, `[PREÇO EM US$]` | the pack prices: USD = `usdCents` in `shop_coins_config.lua`, BRL = USD x `brlPerUsd`. Filled in 2026-10-14 (docs/PRICES.md); change them with the config | donations |
 
 The coin numbers in the donation table come from `shop_coins_config.lua` (the test checks them). Change both together.
 
@@ -116,3 +116,12 @@ What the code does was read for these texts. These points are not settled by the
     these terms (and whether creators must disclose the code as advertising, CONAR / CDC art. 36); that a fee kept on a
     player-to-player sale of a character for Chaos Coins does not make the operator a seller or intermediary of goods;
     the wording of "no real-world value" next to a market in characters; and the minors point (item 8) for the Bazaar.
+18. **The Capital Memorial and the Ashen Chronicle (drafted 2026-10-14).** The Memorial (in the capital and on the
+    website's Memorial page, with an archive of past seasons) and the Chronicle's contributor lists show character names.
+    Records and realm firsts are shown unless the player turns "Show my records and realm firsts" off (they are on the
+    public leaderboards already); a Hardcore fall (name, level, class, cause, date) only after the player's yes, asked at
+    the next login after the fall. A change hides every season's rows at once (`chaos_memorial_entries.shown`). The
+    privacy texts need one sentence each (EN "Public information" and the consent basis; PT the same; the lines are in
+    the Chronicle work's notes, server/README.md "The Capital Memorial"). Check that the default for records (shown
+    until turned off) is acceptable next to the opt-in for falls. A deleted character leaves every season of the archive
+    with it (`ON DELETE CASCADE`).

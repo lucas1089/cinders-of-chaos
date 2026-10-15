@@ -163,8 +163,9 @@ for _, kind in ipairs({"outfit", "addons", "mount", "wings", "aura", "shader", "
 end
 -- wings: one look in the pair that no XML line had (1486), a boss drop, and the Runic Wings of things_custom24 (look 2187,
 -- a boss drop added by ChaosThemeArt.addExclusives, switch on since 2026-10-13); three achievement wings of
--- things_custom17 (donor-library looks 2140..2142, picks.csv family "exclusive"), ids after the store's 1..15
-eq(boss.wings, 2, "wings: two boss exclusives") eq(ach.wings, 3, "wings: three achievement exclusives")
+-- things_custom17 (donor-library looks 2140..2142, picks.csv family "exclusive"), ids after the store's 1..15; and the
+-- three boss-drop wings of pair 26 (looks 2231..2233, ChaosOwnerArt.addExclusives, switch on since 2026-10-15)
+eq(boss.wings, 5, "wings: five boss exclusives") eq(ach.wings, 3, "wings: three achievement exclusives")
 local picks = readFile("../client/tools/sprites/monster_looks/picks.csv")
 for _, e in ipairs(cfg.exclusives) do
 	if e.kind == "wings" then
@@ -247,16 +248,21 @@ local function seq(...)
 	end
 end
 local g = K.groupForKill(cfg, "cinder")
-eq(#g.rewards, 4, "the Cinderheart has four rewards")
+eq(#g.rewards, 5, "the Cinderheart has five rewards (the Sunforged Wings of pair 26 last)")
+eq(g.rewards[5], "wings_sunforged", "the pair 26 wings are the Cinderheart's last reward")
 local key, why = K.roll(g, {}, seq(0.9))
 eq(key, nil, "a miss") eq(why, "miss", "why: miss")
 key = K.roll(g, {}, seq(0.01, 0))
 eq(key, g.rewards[1], "a hit: the first reward")
 key = K.roll(g, {}, seq(0.01, 0.99))
-eq(key, g.rewards[4], "a hit: the last reward")
+eq(key, g.rewards[#g.rewards], "a hit: the last reward")
 key = K.roll(g, {[g.rewards[1]] = true, [g.rewards[2]] = true}, seq(0.01, 0))
 eq(key, g.rewards[3], "owned rewards are skipped")
-key, why = K.roll(g, {[g.rewards[1]] = true, [g.rewards[2]] = true, [g.rewards[3]] = true, [g.rewards[4]] = true}, seq(0.01, 0))
+local ownedAll = {}
+for _, r in ipairs(g.rewards) do
+	ownedAll[r] = true
+end
+key, why = K.roll(g, ownedAll, seq(0.01, 0))
 eq(key, nil, "nothing left") eq(why, "owned", "why: owned")
 eq(K.roll(g, {}, seq(g.chance, 0)), nil, "the chance is a strict bound")
 eq(select(2, K.roll(nil, {}, seq(0))), "none", "no group")

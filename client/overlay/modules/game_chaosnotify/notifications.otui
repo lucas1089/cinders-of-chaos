@@ -34,12 +34,12 @@ NotificationPanel < Panel
     margin-top: 8
     margin-right: 8
     image-source: images/Icon Close
-    tooltip: Pin notification
+    !tooltip: tr('Pin notification')
 
   // Título principal (grande)
   Label
     id: titleLabel
-    text: GAMEMASTER NOTIFICATION
+    !text: tr('GAMEMASTER NOTIFICATION')
     anchors.top: parent.top
     anchors.left: iconContainer.right
     anchors.right: pinButton.left
@@ -65,7 +65,7 @@ NotificationPanel < Panel
   // Texto da mensagem (centro) - COR AMARELA E FONTE MAIOR
   Label
     id: messageLabel
-    text: Esta é uma mensagem de teste do sistema de notificações
+    !text: tr('Notification message')
     anchors.top: separator.bottom
     anchors.left: iconContainer.right
     anchors.right: pinButton.left
@@ -81,7 +81,7 @@ NotificationPanel < Panel
   // Texto do tempo acima da barra
   Label
     id: timerTextLabel
-    text: 5 sec
+    !text: tr('5 sec')
     anchors.bottom: timerBarContainer.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-bottom: 2

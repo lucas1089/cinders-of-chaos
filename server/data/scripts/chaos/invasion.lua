@@ -24,6 +24,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosInvasionCore or not ChaosInvasionCore.hud then
 	dofile("data/scripts/chaos/invasion_core.lua")
 end
@@ -60,30 +63,28 @@ local function P(t)
 end
 
 -- ======================================================================== messages
+-- text: a string or a deferred text (ChaosI18n.msg), written in each player's language
 local function toast(player, text)
-	local payload = json.encode({action = "invasion", message = text})
+	local function payload(p)
+		return json.encode({action = "invasion", message = Chaos.t(p, text)})
+	end
 	if player then
-		player:sendExtendedOpcode(NOTIFY, payload)
+		player:sendExtendedOpcode(NOTIFY, payload(player))
 		return
 	end
 	for _, p in ipairs(Game.getPlayers()) do
-		p:sendExtendedOpcode(NOTIFY, payload)
+		p:sendExtendedOpcode(NOTIFY, payload(p))
 	end
 end
 V.toast = toast
 
+-- text: a string or a deferred text (ChaosI18n.msg): each player reads it in their language, the log is English
 local function announce(text, withToast)
-	if Game.broadcastMessage then
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
-	else
-		for _, p in ipairs(Game.getPlayers()) do
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
-		end
-	end
+	local english = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 	if withToast ~= false then
 		toast(nil, text)
 	end
-	log(text)
+	log(english)
 end
 V.announce = announce
 
@@ -420,10 +421,12 @@ local function spawnWave(i)
 				monster:setHealth(boss.health)
 				state.bossId = monster:getId()
 				state.bossName = monster:getName()
+				-- its type ("Orc Warlord" behind "Warchief Grashnak"): the unique drop lists name types
+				state.bossType = Chaos.monsterTypeName and Chaos.monsterTypeName(monster) or boss.name
 				state.bossAlive = true
 				state.bossHp = 100
 				state.planned = state.planned + 1
-				announce(string.format("Wave %d of %d: %s leads the last assault on %s!", i, state.waves, state.bossName,
+				announce(ChaosI18n.msg("Wave %d of %d: %s leads the last assault on %s!", i, state.waves, state.bossName,
 					state.areaName))
 			else
 				log("boss " .. boss.name .. " could not be created")
@@ -432,7 +435,7 @@ local function spawnWave(i)
 		state.bossSpawned = true
 	end
 	if i < state.waves or not state.bossAlive then
-		announce(string.format("Wave %d of %d: %d %s reach %s!", i, state.waves, spawned,
+		announce(ChaosI18n.msg("Wave %d of %d: %d %s reach %s!", i, state.waves, spawned,
 			spawned == 1 and "invader" or "invaders", state.areaName))
 	end
 end
@@ -584,9 +587,9 @@ local function tick(token)
 		local before = state.breach
 		state.breach = I.breachStep(state.breach, n, boss, 1, C().breach)
 		if before < 50 and state.breach >= 50 then
-			announce(string.format("The defences of %s are crumbling: the breach is at 50%%!", state.areaName))
+			announce(ChaosI18n.msg("The defences of %s are crumbling: the breach is at 50%%!", state.areaName))
 		elseif before < 80 and state.breach >= 80 then
-			announce(string.format("%s is about to fall: the breach is at 80%%!", state.areaName))
+			announce(ChaosI18n.msg("%s is about to fall: the breach is at 80%%!", state.areaName))
 		end
 		breachBar(true)
 		if state.bossAlive then
@@ -677,7 +680,7 @@ function V.start(areaKey, factionKey)
 	state.breach = 0
 	state.contrib = {}
 	state.mc = {}
-	announce(string.format("INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord.",
+	announce(ChaosI18n.msg("INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord.",
 		faction.name, area.name, state.targetName, state.waves, c.timeLimitMinutes or 20))
 	addEvent(tick, 1000, state.token)
 	addEvent(moveLoop, c.moveMs or 400, state.token)
@@ -697,7 +700,7 @@ finish = function(result)
 		for i = 1, math.min(3, #list) do
 			names[#names + 1] = string.format("%s (%d%%)", list[i].name, math.floor(list[i].share * 100 + 0.5))
 		end
-		announce(string.format("VICTORY! %s held: the %s is broken in %s. Top defenders: %s.", state.areaName,
+		announce(ChaosI18n.msg("VICTORY! %s held: the %s is broken in %s. Top defenders: %s.", state.areaName,
 			state.factionName, I.clock(now() - state.startedAt), #names > 0 and table.concat(names, ", ") or "nobody"))
 		V.startBuff(state.area)
 		state.result = "win"
@@ -714,7 +717,7 @@ finish = function(result)
 	state.result = result
 	sendAll("end", {result = result, text = result == "breach" and string.format("%s has fallen!", state.areaName)
 		or string.format("Time is up: %s is overrun!", state.areaName)})
-	announce(string.format("DEFEAT! %s %s. The %s occupies it for %d minutes: slay the occupiers to free it.",
+	announce(ChaosI18n.msg("DEFEAT! %s %s. The %s occupies it for %d minutes: slay the occupiers to free it.",
 		state.areaName, result == "breach" and "has fallen" or "could not be held in time", state.factionName,
 		(c.occupation or {}).minutes or 30))
 	occupy()
@@ -779,11 +782,11 @@ function V.endOccupation(how)
 	local token = state.token
 	if how == "liberated" then
 		local list = giveRewards((C().rewards or {}).liberationMult or 0.25, state.libContrib or {}, true)
-		announce(string.format("%s is liberated! The last occupier is slain (%d defender%s rewarded).", state.areaName, #list,
+		announce(ChaosI18n.msg("%s is liberated! The last occupier is slain (%d defender%s rewarded).", state.areaName, #list,
 			#list == 1 and "" or "s"))
 		sendAll("end", {result = "liberated", text = string.format("%s is free again!", state.areaName)})
 	else
-		announce(string.format("The %s withdraws from %s.", state.factionName, state.areaName))
+		announce(ChaosI18n.msg("The %s withdraws from %s.", state.factionName, state.areaName))
 		sendAll("end", {result = "withdrawn", text = string.format("The occupiers leave %s.", state.areaName)})
 	end
 	cleanupInvaders()
@@ -805,7 +808,7 @@ function V.stop()
 	breachBar(false)
 	state.phase = "idle"
 	sendAll("hide", {})
-	announce(string.format("The invasion of %s was called off.", tostring(state.areaName)))
+	announce(ChaosI18n.msg("The invasion of %s was called off.", tostring(state.areaName)))
 	return true
 end
 
@@ -854,8 +857,9 @@ local function pickUnique(player, r)
 	end
 	local level = r.areaLevel or 1
 	local itemFind = L.itemFindMult and L.itemFindMult(player) or 1
-	if L.rollUniques and r.bossName then
-		local hits = L.rollUniques("boss", r.bossName, level, itemFind * 20, nil, player)
+	local bossType = r.bossType or r.bossName
+	if L.rollUniques and bossType then
+		local hits = L.rollUniques("boss", bossType, level, itemFind * 20, nil, player)
 		if hits[1] then
 			return hits[1]
 		end
@@ -873,6 +877,10 @@ end
 
 function V.deliver(player, r)
 	local inboxUsed = false
+	-- Conquest Tokens (conquest.lua) by the share of the defence
+	if ChaosConquest and ChaosConquest.reward then
+		pcall(ChaosConquest.reward, player, "invasion", {share = r.share}, tostring(r.areaName or ""))
+	end
 	if r.bank and r.bank > 0 then
 		player:setBankBalance(player:getBankBalance() + r.bank)
 	end
@@ -890,7 +898,7 @@ function V.deliver(player, r)
 			end
 			inboxUsed = giveEx(player, item) or inboxUsed
 			parts[#parts + 1] = "the unique " .. tostring(e.name)
-			announce(player:getName() .. " received the unique " .. tostring(e.name) .. " for defending " .. tostring(r.areaName) .. "!", false)
+			announce(ChaosI18n.msg("%s received the unique %s for defending %s!", player:getName(), tostring(e.name), tostring(r.areaName)), false)
 		end
 	end
 	local text = string.format("%s reward (rank %d, %d%% of the defence): %d gold to your bank%s%s.%s",
@@ -920,6 +928,7 @@ giveRewards = function(mult, contrib, liberation)
 		r.areaLevel = state.area.level
 		r.areaName = state.areaName
 		r.bossName = state.bossName
+		r.bossType = state.bossType
 		r.liberation = liberation
 		local who = {guid = r.guid, name = r.name}
 		if not liberation and ChaosLeaderboard and ChaosLeaderboard.record then -- weekly Defender board
@@ -986,7 +995,7 @@ function V.startBuff(area)
 			bonus = {xp = v.xp}, untilTime = V.buff.endsAt}
 		V.buff.viaEvents = true
 	end
-	announce(string.format("Victory buff: +%d%% experience %s for %d minutes!", pct,
+	announce(ChaosI18n.msg("Victory buff: +%d%% experience %s for %d minutes!", pct,
 		V.buff.scope == "area" and ("in " .. area.name) or "for everyone", v.minutes))
 end
 
@@ -1092,7 +1101,7 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller)
 		state.bossAlive = false
 		state.bossHp = 0
 		local p = playerOf(mostDamageKiller) or playerOf(killer)
-		announce(string.format("%s is slain%s!", tostring(state.bossName), p and (" by " .. p:getName()) or ""))
+		announce(p and ChaosI18n.msg("%s is slain by %s!", tostring(state.bossName), p:getName()) or ChaosI18n.msg("%s is slain!", tostring(state.bossName)))
 	end
 	return true
 end
@@ -1194,7 +1203,7 @@ function schedule.onThink(interval)
 				local key = s.at .. ":" .. m
 				if not V.warned[key] and t >= s.at - m * 60 and t < s.at - m * 60 + 120 and t < s.at then
 					V.warned[key] = true
-					announce(string.format("The %s gathers: %s will be invaded in %d minute%s!", faction.name, area.name, m,
+					announce(ChaosI18n.msg("The %s gathers: %s will be invaded in %d minute%s!", faction.name, area.name, m,
 						m == 1 and "" or "s"))
 				end
 			end

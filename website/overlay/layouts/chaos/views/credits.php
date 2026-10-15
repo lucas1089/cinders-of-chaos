@@ -1,6 +1,6 @@
 <?php
 /**
- * Credits: ZnoteX's own credits page, unchanged, plus the layout credit. The stock view asks GitHub for the
+ * Credits: ZnoteX's own credits page, unchanged, plus the layout credit and a link to the game's credits (plugins/chaos/pages/credits.php). The stock view asks GitHub for the
  * contributor list while it renders and fails when GitHub answers with an error (rate limit); then a short version
  * with the same credits and a link to the list is shown instead of a broken page.
  */
@@ -23,5 +23,7 @@ try {
 		<?= $html ?>
 		<div class="znx-acct-head">Cinders of Chaos layout</div>
 		<div class="znx-acct-info">Based on the Void layout by Alex (opengamescommunity.com), re-coloured and framed for Cinders of Chaos.</div>
+		<div class="znx-acct-head">Cinders of Chaos</div>
+		<div class="znx-acct-info"><a href="page.php?plugin=chaos&amp;p=credits">Créditos do jogo / Game credits</a>: engine, fonts, art packs and tools.</div>
 	</div>
 </div>

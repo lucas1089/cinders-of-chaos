@@ -9,6 +9,9 @@ return {
 	-- player storages (7100870 - 7100879 reserved): +0 bestiary points earned from kill tasks, +1 / +2 the task day and
 	-- the level the board of that day was rolled for
 	taskPointsStorage = 7100870,
+	-- board rerolls (2026-10-15, bought with Candlemarks: ChaosBestiary.addRerolls): +0 charges held, +1 the task day of
+	-- +2, the rerolls used that day (the board's seed). Lent from the catchup block 7102400-7102409 (server/README.md)
+	rerollStorage = 7102404,
 	flushSeconds = 120, -- kills are kept in memory and written every this many seconds, at logout and at a stage
 
 	-- monsters left out of the bestiary: experience below minExp (scenery, summons of spells, test dummies), and these

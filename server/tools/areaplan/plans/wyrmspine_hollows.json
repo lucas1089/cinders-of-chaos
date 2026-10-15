@@ -1,0 +1,340 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "wyrmspine_hollows",
+  "name": "Wyrmspine Hollows",
+  "biome": "cave",
+  "size": [
+    176,
+    136
+  ],
+  "floors": 1,
+  "level": [
+    500,
+    640
+  ],
+  "seed": 25201,
+  "origin": {
+    "x": 15100,
+    "y": 14340,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "lantern_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "northwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "scale_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "molt_chamber",
+      "floor": 1,
+      "size": [
+        28,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "stormvent",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "venom_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "brood_shelf",
+      "floor": 1,
+      "size": "medium",
+      "place": "southeast",
+      "role": "treasure"
+    },
+    {
+      "id": "shedskin_vault",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "fang_gallery",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "west"
+    },
+    {
+      "id": "spine_ridge",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "ashen_nest",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "thunder_hollow",
+      "floor": 1,
+      "size": [
+        22,
+        18
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "coil_cavern",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "lantern_camp",
+      "to": "scale_gallery",
+      "width": 3
+    },
+    {
+      "from": "scale_gallery",
+      "to": "molt_chamber",
+      "width": 4
+    },
+    {
+      "from": "molt_chamber",
+      "to": "stormvent",
+      "width": 3
+    },
+    {
+      "from": "molt_chamber",
+      "to": "venom_hollow",
+      "width": 3
+    },
+    {
+      "from": "venom_hollow",
+      "to": "lantern_camp",
+      "width": 3
+    },
+    {
+      "from": "stormvent",
+      "to": "brood_shelf",
+      "width": 2
+    },
+    {
+      "from": "scale_gallery",
+      "to": "shedskin_vault",
+      "width": 3
+    },
+    {
+      "from": "shedskin_vault",
+      "to": "stormvent",
+      "width": 3
+    },
+    {
+      "from": "lantern_camp",
+      "to": "fang_gallery",
+      "width": 3
+    },
+    {
+      "from": "fang_gallery",
+      "to": "venom_hollow",
+      "width": 3
+    },
+    {
+      "from": "venom_hollow",
+      "to": "spine_ridge",
+      "width": 3
+    },
+    {
+      "from": "spine_ridge",
+      "to": "thunder_hollow",
+      "width": 3
+    },
+    {
+      "from": "thunder_hollow",
+      "to": "stormvent",
+      "width": 3
+    },
+    {
+      "from": "molt_chamber",
+      "to": "ashen_nest",
+      "width": 3
+    },
+    {
+      "from": "ashen_nest",
+      "to": "coil_cavern",
+      "width": 3
+    },
+    {
+      "from": "molt_chamber",
+      "to": "spine_ridge",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "lantern_camp"
+  },
+  "exit": {
+    "zone": "lantern_camp"
+  },
+  "spawns": [
+    {
+      "zone": "scale_gallery",
+      "monster": "Ashfang Wrym",
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "scale_gallery",
+      "monster": "Shadowvein Wrym",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "molt_chamber",
+      "monster": "Viridscale Wrym",
+      "count": 19,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "molt_chamber",
+      "monster": "Ashfang Wrym",
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "stormvent",
+      "monster": "Stormvein Wrym",
+      "count": 17,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "venom_hollow",
+      "monster": "Viridscale Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "venom_hollow",
+      "monster": "Shadowvein Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "brood_shelf",
+      "monster": "Flarevein Wyrm",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "shedskin_vault",
+      "monster": "Shadowvein Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "shedskin_vault",
+      "monster": "Viridscale Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "fang_gallery",
+      "monster": "Ashfang Wrym",
+      "count": 19,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "spine_ridge",
+      "monster": "Viridscale Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "spine_ridge",
+      "monster": "Ashfang Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_nest",
+      "monster": "Ashfang Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_nest",
+      "monster": "Shadowvein Wrym",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "thunder_hollow",
+      "monster": "Stormvein Wrym",
+      "count": 19,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "coil_cavern",
+      "monster": "Viridscale Wrym",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "coil_cavern",
+      "monster": "Stormvein Wrym",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "brood_shelf",
+      "quest": "wyrmspine_clutch",
+      "reward": {
+        "gold": 300000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "A cold clutch of scale and coin."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a wyrm cave for levels 500-640, four wrym kinds and a Flarevein brood. Four times the first draft (owner, 2026-10-14): 10 hunting zones in loops, room for twelve parties."
+}

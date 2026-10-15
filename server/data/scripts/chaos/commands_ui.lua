@@ -12,6 +12,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommandsCore or not ChaosCommandsCore.capture or not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -107,7 +110,7 @@ end
 -- ---------------------------------------------------------------- native commands
 M.register("pos", function(player)
 	local p = player:getPosition()
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Your position: %d, %d, %d.", p.x, p.y, p.z))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Your position: %d, %d, %d.", p.x, p.y, p.z))
 end)
 
 -- ---------------------------------------------------------------- catalog

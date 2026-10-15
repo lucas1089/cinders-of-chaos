@@ -3,6 +3,7 @@
 -- switchGold, running, tiers = [{name, minLevel, cleared, problem, time, lives, bossHealth}],
 -- pairs = [{pair, tier (difficulty name), locked, held (0/1/2), nodes = [{id, name, lore, lines = [{text, good}], can, why,
 -- switch, needsSpellEvents}]}]}.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TrialsMath = {}
 
 local GOOD, BAD, DIM, HELD = '#7fd06a', '#e0654a', '#8c8070', '#f6cf72'
@@ -25,24 +26,24 @@ function TrialsMath.fit(text, max)
 end
 
 function TrialsMath.tokensLine(state)
-  return string.format('Trial Tokens: %d / %d     Changing a held node costs 1 token and %s gold',
+  return tr('Trial Tokens: %d / %d     Changing a held node costs 1 token and %s gold',
     state.tokens or 0, state.maxTokens or 10, TrialsMath.gold(state.switchGold))
 end
 
 function TrialsMath.lockText(tierName)
-  return 'Locked: clear on ' .. tostring(tierName)
+  return tr('Locked: clear on %s', tostring(tierName))
 end
 
 function TrialsMath.lockTooltip(state, entry)
-  return string.format('Clear %s on %s to open this pair of nodes.', tostring(state.trial), tostring(entry.tier))
+  return tr('Clear %s on %s to open this pair of nodes.', tostring(state.trial), tostring(entry.tier))
 end
 
 -- what a node card shows for `side` (1 or 2) of `entry`: {action, enabled, status, statusColor, tooltip}
 function TrialsMath.card(state, entry, side)
   local node = entry.nodes[side]
   if state.running then
-    return {action = entry.held == side and 'Held' or 'In a trial', enabled = false,
-      status = entry.locked and TrialsMath.lockText(entry.tier) or 'Not during a trial', statusColor = DIM,
+    return {action = entry.held == side and 'Held' or tr('In a trial'), enabled = false,
+      status = entry.locked and TrialsMath.lockText(entry.tier) or tr('Not during a trial'), statusColor = DIM,
       tooltip = 'Nodes cannot be changed while a trial runs.'}
   end
   if entry.locked then
@@ -54,13 +55,13 @@ function TrialsMath.card(state, entry, side)
       tooltip = 'You hold this node. Pick the other one to change (1 Trial Token and gold).'}
   end
   if (entry.held or 0) == 0 then
-    return {action = 'Choose', enabled = node.can == true, status = node.can and 'Free to choose' or tostring(node.why or ''),
+    return {action = 'Choose', enabled = node.can == true, status = node.can and tr('Free to choose') or tostring(node.why or ''),
       statusColor = node.can and GOOD or BAD, tooltip = 'The first choice of a pair is free. Choosing one locks the other.'}
   end
   local can = node.can == true
-  return {action = 'Switch', enabled = can, status = can and '1 token + gold' or 'Needs a Trial Token',
+  return {action = 'Switch', enabled = can, status = can and '1 token + gold' or tr('Needs a Trial Token'),
     statusColor = can and HELD or BAD,
-    tooltip = string.format('Replaces %s. Costs 1 Trial Token and %s gold.', tostring(entry.nodes[entry.held] and entry.nodes[entry.held].name or '?'),
+    tooltip = tr('Replaces %s. Costs 1 Trial Token and %s gold.', tostring(entry.nodes[entry.held] and entry.nodes[entry.held].name or '?'),
       TrialsMath.gold(state.switchGold))}
 end
 
@@ -71,7 +72,7 @@ function TrialsMath.tierButton(state, i)
   if t.cleared then
     text = text .. ' (cleared)'
   end
-  local tip = string.format('%s: level %d, %d minutes, %d lives, guardian about %s health.', t.name, t.minLevel,
+  local tip = tr('%s: level %d, %d minutes, %d lives, guardian about %s health.', t.name, t.minLevel,
     math.floor((t.time or 0) / 60), t.lives or 0, TrialsMath.gold(t.bossHealth))
   if state.running then
     return {text = text, enabled = false, tooltip = 'A trial is running.'}
@@ -79,9 +80,9 @@ function TrialsMath.tierButton(state, i)
   if t.problem then
     tip = tip .. '\n' .. t.problem
   elseif t.cleared then
-    tip = tip .. '\nCleared: another clear gives a Trial Token.'
+    tip = tr('%s\nCleared: another clear gives a Trial Token.', tip)
   else
-    tip = tip .. '\nThe first clear opens a pair of nodes.'
+    tip = tr('%s\nThe first clear opens a pair of nodes.', tip)
   end
   return {text = text, enabled = t.problem == nil, tooltip = tip}
 end
@@ -95,9 +96,9 @@ function TrialsMath.confirmText(state, entry, side)
   end
   local head
   if (entry.held or 0) == 0 then
-    head = string.format('Choose %s? The other node of the pair is locked while you hold it.', node.name)
+    head = tr('Choose %s? The other node of the pair is locked while you hold it.', node.name)
   else
-    head = string.format('Switch to %s? It costs 1 Trial Token and %s gold coins.', node.name, TrialsMath.gold(state.switchGold))
+    head = tr('Switch to %s? It costs 1 Trial Token and %s gold coins.', node.name, TrialsMath.gold(state.switchGold))
   end
   return head .. '\n\n' .. table.concat(lines, '\n')
 end

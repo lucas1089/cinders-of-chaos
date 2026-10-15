@@ -1,4 +1,5 @@
 -- Pure helpers of the invasion HUD and the upcoming events window (no client API), tested by invasionmath_test.lua.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 InvasionMath = {}
 
 -- 725 -> "12:05"
@@ -24,14 +25,14 @@ end
 
 function InvasionMath.title(d)
   d = type(d) == 'table' and d or {}
-  if d.phase == 'occupied' then return tostring(d.area or '?') .. ' is occupied' end
+  if d.phase == 'occupied' then return tr('%s is occupied', tostring(d.area or '?')) end
   return 'Invasion: ' .. tostring(d.area or '?')
 end
 
 function InvasionMath.subtitle(d)
   d = type(d) == 'table' and d or {}
-  if d.phase == 'occupied' then return 'Slay the occupiers to free it' end
-  return tostring(d.faction or 'A horde') .. ' - defend ' .. tostring(d.target or 'the target')
+  if d.phase == 'occupied' then return tr('Slay the occupiers to free it') end
+  return tr('%s - defend %s', tostring(d.faction or 'A horde'), tostring(d.target or 'the target'))
 end
 
 function InvasionMath.waveLine(d)
@@ -65,8 +66,8 @@ function InvasionMath.topLines(top)
 end
 
 function InvasionMath.youLine(you)
-  if type(you) ~= 'table' then return 'You: not in the defence yet' end
-  return string.format('You: #%d, %d%% of the defence, %d kill%s', tonumber(you.rank) or 0, tonumber(you.share) or 0,
+  if type(you) ~= 'table' then return tr('You: not in the defence yet') end
+  return tr('You: #%d, %d%% of the defence, %d kill%s', tonumber(you.rank) or 0, tonumber(you.share) or 0,
     tonumber(you.kills) or 0, (tonumber(you.kills) or 0) == 1 and '' or 's')
 end
 

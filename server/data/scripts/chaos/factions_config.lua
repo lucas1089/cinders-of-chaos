@@ -43,6 +43,10 @@ return {
 	-- full value, the next 600 at half, everything after at a fifth
 	daily = {bands = {{upTo = 600, mult = 1.0}, {upTo = 1200, mult = 0.5}, {mult = 0.2}}},
 	weeklyCap = 7500, -- per faction and week, every source together (rivalry losses do not count)
+	-- the unused cap of a week (and of every week skipped) carries over: a week's cap is weeklyCap + the carried part,
+	-- at most rolloverWeeks weeks' worth (3: 22,500). A player who misses two weeks catches up in the third.
+	-- (2026-10-15, respect the players' time; docs/OWNER_TODO.md "Time-friendly progression")
+	rolloverWeeks = 3,
 	rivalry = {share = 0.25, floor = -2000, swornAtExalted = true},
 
 	-- activity sources

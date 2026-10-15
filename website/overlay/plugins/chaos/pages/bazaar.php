@@ -12,7 +12,8 @@
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once __DIR__ . '/../bazaar_lib.php';
-$GLOBALS['page_title'] = 'Character Bazaar';
+require_once __DIR__ . '/../i18n_lib.php';
+$GLOBALS['page_title'] = chaos_t('Character Bazaar');
 
 $self = 'page.php?plugin=chaos&p=bazaar';
 $accountId = function_exists('getSession') ? (int)getSession('user_id') : 0;
@@ -21,7 +22,7 @@ try {
 	$bz->settleDue();
 } catch (Throwable $e) {
 	error_log('[chaos bazaar] page: ' . $e->getMessage());
-	echo '<div class="chaos-page"><div class="chaos-box"><h1 class="chaos-heading">Character Bazaar</h1><p class="chaos-muted">The bazaar is not available right now.</p></div></div>';
+	echo '<div class="chaos-page"><div class="chaos-box"><h1 class="chaos-heading">' . chaos_h(chaos_t('Character Bazaar')) . '</h1><p class="chaos-muted">' . chaos_h(chaos_t('The bazaar is not available right now.')) . '</p></div></div>';
 	return;
 }
 $cfg = $bz->config();
@@ -36,7 +37,7 @@ $message = '';
 $messageOk = true;
 if ($accountId > 0 && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
 	if ($csrf === '' || !hash_equals($csrf, (string)($_POST['csrf'] ?? ''))) {
-		[$messageOk, $message] = array(false, 'The form expired. Please try again.');
+		[$messageOk, $message] = array(false, chaos_t('The form expired. Please try again.'));
 	} elseif ($_POST['do'] === 'list') {
 		[$messageOk, $message] = $bz->listCharacter($accountId, (int)($_POST['player'] ?? 0), (int)($_POST['min'] ?? 0),
 			(int)($_POST['buyout'] ?? 0), (int)($_POST['days'] ?? 0));
@@ -57,69 +58,70 @@ $view = isset($_GET['id']) ? $bz->listing((int)$_GET['id']) : null;
 ?>
 <div class="chaos-page" id="chaos-bazaar">
 	<div class="chaos-box">
-		<h1 class="chaos-heading">Character Bazaar</h1>
-		<p class="chaos-lead">Players sell characters to players for Chaos Coins. Bids are held from your balance and come back at once if you are outbid. The house keeps <?= (int)$cfg['feePct'] ?>% of the final price. A listed character cannot log in until its auction ends. Season, Hardcore and Self-Found characters, guild leaders and characters with an open report cannot be listed. Rules: the wiki's Character Bazaar page and the Donation Terms.</p>
-		<nav class="chaos-tabs" aria-label="Views">
-			<a class="chaos-tab<?= !$view && empty($_GET['mine']) && empty($_GET['admin']) ? ' is-active' : '' ?>" href="<?= chaos_h($self) ?>">Open auctions</a>
-			<?php if ($accountId > 0): ?><a class="chaos-tab<?= !empty($_GET['mine']) ? ' is-active' : '' ?>" href="<?= chaos_h($self . '&mine=1') ?>">Sell a character</a><?php endif; ?>
-			<?php if ($isAdmin): ?><a class="chaos-tab<?= !empty($_GET['admin']) ? ' is-active' : '' ?>" href="<?= chaos_h($self . '&admin=1') ?>">Administration</a><?php endif; ?>
+		<h1 class="chaos-heading"><?= chaos_h(chaos_t('Character Bazaar')) ?></h1>
+		<p class="chaos-muted chaos-lang-row"><?= chaos_lang_link($self) ?></p>
+		<p class="chaos-lead"><?= chaos_h(chaos_t('Players sell characters to players for Chaos Coins. Bids are held from your balance and come back at once if you are outbid. The house keeps %d%% of the final price. A listed character cannot log in until its auction ends. Season, Hardcore and Self-Found characters, guild leaders and characters with an open report cannot be listed. Rules: the wiki\'s Character Bazaar page and the Donation Terms.', (int)$cfg['feePct'])) ?></p>
+		<nav class="chaos-tabs" aria-label="<?= chaos_h(chaos_t('Views')) ?>">
+			<a class="chaos-tab<?= !$view && empty($_GET['mine']) && empty($_GET['admin']) ? ' is-active' : '' ?>" href="<?= chaos_h($self) ?>"><?= chaos_h(chaos_t('Open auctions')) ?></a>
+			<?php if ($accountId > 0): ?><a class="chaos-tab<?= !empty($_GET['mine']) ? ' is-active' : '' ?>" href="<?= chaos_h($self . '&mine=1') ?>"><?= chaos_h(chaos_t('Sell a character')) ?></a><?php endif; ?>
+			<?php if ($isAdmin): ?><a class="chaos-tab<?= !empty($_GET['admin']) ? ' is-active' : '' ?>" href="<?= chaos_h($self . '&admin=1') ?>"><?= chaos_h(chaos_t('Administration')) ?></a><?php endif; ?>
 		</nav>
 		<?php if ($message !== ''): ?>
-			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-bazaar-message"><?= chaos_h($message) ?></p>
+			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-bazaar-message"><?= chaos_h(chaos_t($message)) ?></p>
 		<?php endif; ?>
 		<?php if (empty($cfg['enabled'])): ?>
-			<p class="chaos-muted">The Character Bazaar is closed.</p>
+			<p class="chaos-muted"><?= chaos_h(chaos_t('The Character Bazaar is closed.')) ?></p>
 		<?php elseif ($view): ?>
 			<?php $bids = $bz->bidsOf((int)$view['id']); ?>
 			<h2><?= chaos_h($view['player_name']) ?></h2>
-			<p>Level <?= (int)$view['level'] ?> <?= chaos_h($class((int)$view['vocation'])) ?>. Status: <?= chaos_h($view['status']) ?>.
-				<?php if ($view['status'] === 'active'): ?>Ends <?= chaos_h($time((int)$view['ends_at'])) ?> UTC (in <?= chaos_h($left((int)$view['ends_at'])) ?>).<?php endif; ?></p>
-			<p>Current bid: <strong><?= (int)$view['current_bid'] > 0 ? (int)$view['current_bid'] . ' Chaos Coins' : 'none (minimum ' . (int)$view['min_price'] . ')' ?></strong><?= (int)$view['buyout'] > 0 ? '. Buyout: ' . (int)$view['buyout'] . ' Chaos Coins' : '' ?>.</p>
+			<p><?= chaos_h(chaos_t('Level %d %s. Status: %s.', (int)$view['level'], $class((int)$view['vocation']), chaos_t($view['status']))) ?>
+				<?php if ($view['status'] === 'active'): ?><?= chaos_h(chaos_t('Ends %s UTC (in %s).', $time((int)$view['ends_at']), $left((int)$view['ends_at']))) ?><?php endif; ?></p>
+			<p><?= chaos_h(chaos_t('Current bid:')) ?> <strong><?= chaos_h((int)$view['current_bid'] > 0 ? (int)$view['current_bid'] . ' Chaos Coins' : chaos_t('none (minimum %d)', (int)$view['min_price'])) ?></strong><?= (int)$view['buyout'] > 0 ? chaos_h(chaos_t('. Buyout: %d Chaos Coins', (int)$view['buyout'])) : '' ?>.</p>
 			<?php if ($view['status'] === 'active' && $accountId > 0 && (int)$view['seller_account_id'] !== $accountId): ?>
 				<form method="post" action="<?= chaos_h($self . '&id=' . (int)$view['id']) ?>" id="chaos-bazaar-bid">
 					<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>"><input type="hidden" name="id" value="<?= (int)$view['id'] ?>">
-					<label>Your bid <input type="number" name="amount" min="<?= $bz->minNextBid($view) ?>" value="<?= $bz->minNextBid($view) ?>"></label>
-					<button type="submit" name="do" value="bid" class="chaos-button">Bid</button>
-					<span class="chaos-muted">Your balance: <?= $bz->coins($accountId) ?> Chaos Coins.</span>
+					<label><?= chaos_h(chaos_t('Your bid')) ?> <input type="number" name="amount" min="<?= $bz->minNextBid($view) ?>" value="<?= $bz->minNextBid($view) ?>"></label>
+					<button type="submit" name="do" value="bid" class="chaos-button"><?= chaos_h(chaos_t('Bid')) ?></button>
+					<span class="chaos-muted"><?= chaos_h(chaos_t('Your balance: %d Chaos Coins.', $bz->coins($accountId))) ?></span>
 				</form>
 			<?php elseif ($view['status'] === 'active' && (int)$view['seller_account_id'] === $accountId && (int)$view['current_bid_id'] === 0): ?>
 				<form method="post" action="<?= chaos_h($self . '&id=' . (int)$view['id']) ?>">
 					<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>"><input type="hidden" name="id" value="<?= (int)$view['id'] ?>">
-					<button type="submit" name="do" value="cancel" class="chaos-button">Cancel this auction</button>
+					<button type="submit" name="do" value="cancel" class="chaos-button"><?= chaos_h(chaos_t('Cancel this auction')) ?></button>
 				</form>
 			<?php endif; ?>
-			<table class="chaos-table"><thead><tr><th>Time (UTC)</th><th class="num">Bid</th><th>State</th></tr></thead><tbody>
-				<?php if (!$bids): ?><tr><td colspan="3" class="chaos-muted">No bids yet.</td></tr><?php endif; ?>
+			<table class="chaos-table"><thead><tr><th><?= chaos_h(chaos_t('Time (UTC)')) ?></th><th class="num"><?= chaos_h(chaos_t('Bid')) ?></th><th><?= chaos_h(chaos_t('State')) ?></th></tr></thead><tbody>
+				<?php if (!$bids): ?><tr><td colspan="3" class="chaos-muted"><?= chaos_h(chaos_t('No bids yet.')) ?></td></tr><?php endif; ?>
 				<?php foreach ($bids as $b): ?>
-					<tr><td><?= chaos_h($time((int)$b['created_at'])) ?></td><td class="num"><?= (int)$b['amount'] ?><?= (int)$b['buyout'] === 1 ? ' (buyout)' : '' ?></td><td><?= chaos_h($b['state']) ?></td></tr>
+					<tr><td><?= chaos_h($time((int)$b['created_at'])) ?></td><td class="num"><?= (int)$b['amount'] ?><?= (int)$b['buyout'] === 1 ? chaos_h(chaos_t(' (buyout)')) : '' ?></td><td><?= chaos_h(chaos_t($b['state'])) ?></td></tr>
 				<?php endforeach; ?>
 			</tbody></table>
 		<?php elseif (!empty($_GET['mine']) && $accountId > 0): ?>
-			<h2>Your characters</h2>
-			<table class="chaos-table" id="chaos-bazaar-candidates"><thead><tr><th>Character</th><th class="num">Level</th><th>Can be listed?</th></tr></thead><tbody>
+			<h2><?= chaos_h(chaos_t('Your characters')) ?></h2>
+			<table class="chaos-table" id="chaos-bazaar-candidates"><thead><tr><th><?= chaos_h(chaos_t('Character')) ?></th><th class="num"><?= chaos_h(chaos_t('Level')) ?></th><th><?= chaos_h(chaos_t('Can be listed?')) ?></th></tr></thead><tbody>
 				<?php foreach ($bz->candidates($accountId) as $c): ?>
 					<tr><td><?= chaos_h($c['name']) ?></td><td class="num"><?= (int)$c['level'] ?></td>
 						<td><?php if (!$c['why']): ?>
 							<form method="post" action="<?= chaos_h($self . '&mine=1') ?>">
 								<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>"><input type="hidden" name="player" value="<?= (int)$c['id'] ?>">
-								<label>Minimum <input type="number" name="min" min="<?= (int)$cfg['minPrice'] ?>" value="<?= (int)$cfg['minPrice'] ?>" style="width:7em;"></label>
-								<label>Buyout <input type="number" name="buyout" min="0" value="0" style="width:7em;"></label>
-								<label>Days <select name="days"><?php for ($d = (int)$cfg['minDays']; $d <= (int)$cfg['maxDays']; $d++): ?><option value="<?= $d ?>"<?= $d === 3 ? ' selected' : '' ?>><?= $d ?></option><?php endfor; ?></select></label>
-								<button type="submit" name="do" value="list" class="chaos-button">List</button>
+								<label><?= chaos_h(chaos_t('Minimum')) ?> <input type="number" name="min" min="<?= (int)$cfg['minPrice'] ?>" value="<?= (int)$cfg['minPrice'] ?>" style="width:7em;"></label>
+								<label><?= chaos_h(chaos_t('Buyout')) ?> <input type="number" name="buyout" min="0" value="0" style="width:7em;"></label>
+								<label><?= chaos_h(chaos_t('Days')) ?> <select name="days"><?php for ($d = (int)$cfg['minDays']; $d <= (int)$cfg['maxDays']; $d++): ?><option value="<?= $d ?>"<?= $d === 3 ? ' selected' : '' ?>><?= $d ?></option><?php endfor; ?></select></label>
+								<button type="submit" name="do" value="list" class="chaos-button"><?= chaos_h(chaos_t('List')) ?></button>
 							</form>
-						<?php else: ?><span class="chaos-muted"><?= chaos_h(implode(' ', $c['why'])) ?></span><?php endif; ?></td></tr>
+						<?php else: ?><span class="chaos-muted"><?= chaos_h(implode(' ', array_map('chaos_t', $c['why']))) ?></span><?php endif; ?></td></tr>
 				<?php endforeach; ?>
 			</tbody></table>
-			<h2>Your listings</h2>
-			<table class="chaos-table"><thead><tr><th>Character</th><th>Status</th><th class="num">Price</th><th class="num">Fee</th><th>Ends (UTC)</th></tr></thead><tbody>
+			<h2><?= chaos_h(chaos_t('Your listings')) ?></h2>
+			<table class="chaos-table"><thead><tr><th><?= chaos_h(chaos_t('Character')) ?></th><th><?= chaos_h(chaos_t('Status')) ?></th><th class="num"><?= chaos_h(chaos_t('Price')) ?></th><th class="num"><?= chaos_h(chaos_t('Fee')) ?></th><th><?= chaos_h(chaos_t('Ends (UTC)')) ?></th></tr></thead><tbody>
 				<?php foreach ($bz->ofSeller($accountId) as $l): ?>
 					<tr><td><a href="<?= chaos_h($self . '&id=' . (int)$l['id']) ?>"><?= chaos_h($l['player_name']) ?></a></td><td><?= chaos_h($l['status'] . ($l['reason'] !== '' ? ' (' . $l['reason'] . ')' : '')) ?></td>
 						<td class="num"><?= (int)$l['current_bid'] ?></td><td class="num"><?= (int)$l['fee'] ?></td><td><?= chaos_h($time((int)$l['ends_at'])) ?></td></tr>
 				<?php endforeach; ?>
 			</tbody></table>
 		<?php elseif (!empty($_GET['admin']) && $isAdmin): ?>
-			<h2>Latest listings</h2>
-			<table class="chaos-table" id="chaos-bazaar-admin"><thead><tr><th>#</th><th>Character</th><th>Status</th><th class="num">Bid</th><th class="num">Bids</th><th>Ends</th><th></th></tr></thead><tbody>
+			<h2><?= chaos_h(chaos_t('Latest listings')) ?></h2>
+			<table class="chaos-table" id="chaos-bazaar-admin"><thead><tr><th>#</th><th><?= chaos_h(chaos_t('Character')) ?></th><th><?= chaos_h(chaos_t('Status')) ?></th><th class="num"><?= chaos_h(chaos_t('Bid')) ?></th><th class="num"><?= chaos_h(chaos_t('Bids')) ?></th><th><?= chaos_h(chaos_t('Ends')) ?></th><th></th></tr></thead><tbody>
 				<?php foreach ($bz->adminRecent() as $l): ?>
 					<tr><td><?= (int)$l['id'] ?></td><td><a href="<?= chaos_h($self . '&id=' . (int)$l['id']) ?>"><?= chaos_h($l['player_name']) ?></a></td>
 						<td><?= chaos_h($l['status'] . ($l['reason'] !== '' ? ' (' . $l['reason'] . ')' : '')) ?></td><td class="num"><?= (int)$l['current_bid'] ?></td><td class="num"><?= (int)$l['bids'] ?></td>
@@ -127,19 +129,19 @@ $view = isset($_GET['id']) ? $bz->listing((int)$_GET['id']) : null;
 						<td><?php if (in_array($l['status'], array('active', 'settling'), true)): ?>
 							<form method="post" action="<?= chaos_h($self . '&admin=1') ?>">
 								<input type="hidden" name="csrf" value="<?= chaos_h($csrf) ?>"><input type="hidden" name="id" value="<?= (int)$l['id'] ?>"><input type="hidden" name="admin" value="1">
-								<input type="text" name="reason" maxlength="48" placeholder="reason" required>
-								<button type="submit" name="do" value="cancel" class="chaos-button">Cancel</button>
+								<input type="text" name="reason" maxlength="48" placeholder="<?= chaos_h(chaos_t('reason')) ?>" required>
+								<button type="submit" name="do" value="cancel" class="chaos-button"><?= chaos_h(chaos_t('Cancel')) ?></button>
 							</form>
 						<?php endif; ?></td></tr>
 				<?php endforeach; ?>
 			</tbody></table>
 		<?php else: ?>
 			<?php $open = $bz->open(); ?>
-			<table class="chaos-table" id="chaos-bazaar-open"><thead><tr><th>Character</th><th class="num">Level</th><th>Class</th><th class="num">Bid</th><th class="num">Buyout</th><th>Ends in</th></tr></thead><tbody>
-				<?php if (!$open): ?><tr><td colspan="6" class="chaos-muted">No auctions right now.</td></tr><?php endif; ?>
+			<table class="chaos-table" id="chaos-bazaar-open"><thead><tr><th><?= chaos_h(chaos_t('Character')) ?></th><th class="num"><?= chaos_h(chaos_t('Level')) ?></th><th><?= chaos_h(chaos_t('Class')) ?></th><th class="num"><?= chaos_h(chaos_t('Bid')) ?></th><th class="num"><?= chaos_h(chaos_t('Buyout')) ?></th><th><?= chaos_h(chaos_t('Ends in')) ?></th></tr></thead><tbody>
+				<?php if (!$open): ?><tr><td colspan="6" class="chaos-muted"><?= chaos_h(chaos_t('No auctions right now.')) ?></td></tr><?php endif; ?>
 				<?php foreach ($open as $l): ?>
 					<tr><td><a href="<?= chaos_h($self . '&id=' . (int)$l['id']) ?>"><?= chaos_h($l['player_name']) ?></a></td><td class="num"><?= (int)$l['level'] ?></td><td><?= chaos_h($class((int)$l['vocation'])) ?></td>
-						<td class="num"><?= (int)$l['current_bid'] > 0 ? (int)$l['current_bid'] : (int)$l['min_price'] . ' min' ?></td><td class="num"><?= (int)$l['buyout'] > 0 ? (int)$l['buyout'] : '-' ?></td>
+						<td class="num"><?= (int)$l['current_bid'] > 0 ? (int)$l['current_bid'] : chaos_h(chaos_t('%d min', (int)$l['min_price'])) ?></td><td class="num"><?= (int)$l['buyout'] > 0 ? (int)$l['buyout'] : '-' ?></td>
 						<td><?= chaos_h($left((int)$l['ends_at'])) ?></td></tr>
 				<?php endforeach; ?>
 			</tbody></table>

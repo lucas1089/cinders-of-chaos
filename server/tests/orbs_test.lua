@@ -124,6 +124,8 @@ for _, it in ipairs(cfg.items) do
 	ok(it.id >= 32251 and it.id <= 32260, "id range of the orbs")
 end
 eq(cfg.ruin.improve + cfg.ruin.nothing + cfg.ruin.ruin, 100, "ruin odds add up")
+eq(cfg.ruin.ruin, 0, "the Orb of Ruin never ruins an item (worst case: nothing)")
+eq(cfg.ruin.improve, 40, "it keeps its 40% improvement")
 -- no Path of Exile currency names in the orbs
 for _, orb in ipairs(C.config.orbs) do
 	for _, bad in ipairs({"Transmutation", "Alchemy", "Exalted", "Annulment", "Scouring", "Chaos Orb", "Divine Orb", "Vaal"}) do
@@ -291,9 +293,15 @@ dice = {}
 isOk, res = C.apply("ruin", slotItem)
 eq(res.kind, "tiers", "the extra slot comes once")
 eq(select(2, C.check("exalted", slotItem)), "full", "no free slot after the extra one")
--- ruin
+-- ruin: never since the Conquest rework (ChaosOrbsConfig.ruin.ruin = 0): even a forced "ruin" roll does nothing
 O.forceRuin = "ruin"
 isOk, res = C.apply("ruin", slotItem)
+eq(res.outcome, "nothing", "the Orb of Ruin no longer ruins")
+eq(M.isRuined(slotItem), false, "the item is not ruined")
+-- the old outcome while a server turns it back on (ruin > 0): items ruined that way stay ruined
+cfg.ruin.ruin = 15
+isOk, res = C.apply("ruin", slotItem)
+cfg.ruin.ruin = 0
 eq(res.outcome, "ruin")
 eq(M.isRuined(slotItem), true)
 ok(slotItem:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Ruined"), "the description says Ruined")
@@ -324,14 +332,14 @@ for _ = 1, 20000 do
 	counts[r] = counts[r] + 1
 end
 ok(math.abs(counts.improve - 8000) < 450, "improve about 40%: " .. counts.improve)
-ok(math.abs(counts.nothing - 9000) < 450, "nothing about 45%: " .. counts.nothing)
-ok(math.abs(counts.ruin - 3000) < 400, "ruin about 15%: " .. counts.ruin)
+ok(math.abs(counts.nothing - 12000) < 450, "nothing about 60%: " .. counts.nothing)
+eq(counts.ruin, 0, "never ruined")
 C.random = function(a, b)
 	local v = table.remove(dice, 1)
 	if v == nil then return a end
 	return v
 end
-eq(C.preview("ruin", forged(2400, 4, 100)), "40% improves, 45% nothing, 15% ruined", "the bench shows the odds")
+eq(C.preview("ruin", forged(2400, 4, 100)), "40% improves, 60% nothing", "the bench shows the odds")
 
 -- ---------------------------------------------------------------- Whetstone (quality)
 local q = forged(2400, 4, 100)

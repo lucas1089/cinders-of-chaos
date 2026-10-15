@@ -5,6 +5,11 @@
 --   the transfer is being done; still locked), sold, expired (no bid), cancelled (seller before a bid, or an
 --   administrator: every escrow refunded), failed (the transfer could not be done: escrow refunded, reason). fee_pct =
 --   the fee when listed; fee = the coins kept by the house on a sale. player_name / level / vocation: as listed.
+--   active_player_id: generated, player_id while active or settling, else NULL; its unique key allows one open
+--   listing per character (two list requests at once). Existing tables get it from website/setup/chaos_setup.php.
+--   seller_slot: 1..maxActivePerAccount, given by the website at listing; active_seller_id: generated, seller_account_id
+--   while active or settling, else NULL; the unique key on both holds the per-seller auction limit (two characters of
+--   one account listed at once). Existing tables get them from website/setup/chaos_setup.php.
 -- chaos_bazaar_bids: every bid. escrow = the Chaos Coins taken from the bidder's balance and held (0 once refunded or
 --   paid to the seller). state: leading, outbid (refunded), won (paid), refunded (cancel / failure), buyout = 1 for a
 --   buyout. ip = the bidder's address (the shill-bidding check: never the seller's connection).
@@ -30,7 +35,12 @@ CREATE TABLE IF NOT EXISTS `chaos_bazaar_listings` (
   `player_name` varchar(255) NOT NULL DEFAULT '',
   `level` int(11) NOT NULL DEFAULT 0,
   `vocation` int(11) NOT NULL DEFAULT 0,
+  `active_player_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `player_id` ELSE NULL END) STORED,
+  `seller_slot` tinyint(3) unsigned DEFAULT NULL,
+  `active_seller_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `seller_account_id` ELSE NULL END) STORED,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `chaos_bazaar_listings_active` (`active_player_id`),
+  UNIQUE KEY `chaos_bazaar_listings_seller_slot` (`active_seller_id`, `seller_slot`),
   KEY `chaos_bazaar_listings_player` (`player_id`, `status`),
   KEY `chaos_bazaar_listings_status` (`status`, `ends_at`),
   KEY `chaos_bazaar_listings_seller` (`seller_account_id`, `status`)

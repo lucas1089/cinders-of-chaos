@@ -91,6 +91,14 @@ ChaosOpcodes.displayScale = 157
 -- takes it); 190 is the module hello of client game_chaosguard, client -> server
 ChaosOpcodes.clientGuard = 189
 ChaosOpcodes.clientGuardHello = 190
+-- The Ashen Chronicle and the Capital Memorial: chapters, record, Memorial choice (client game_chronicle; chronicle.lua,
+-- memorial.lua; server/README.md "The Ashen Chronicle")
+ChaosOpcodes.chronicle = 171
+-- Candlemarks: the currency for time online, its counter and shop window (client game_candlemarks; candlemarks.lua,
+-- candlemarks_core.lua, candlemarks_config.lua; server/README.md "Candlemarks"). Storages 7102460 - 7102469.
+ChaosOpcodes.candlemarks = 176
+Chaos.candlemarksTables = {accounts = "chaos_candlemarks", progress = "chaos_candlemark_progress",
+	purchases = "chaos_candlemark_purchases"}
 
 -- ---------------------------------------------------------------------------
 -- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client
@@ -123,6 +131,7 @@ Chaos.storage = {
 	dailyLastClaim = 7100002, -- YYYYMMDD of the last claim (int32 safe)
 
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
+	-- the stash (stash_config.lua storage): 7100011 - 7100019 reserved; 7100011 journal serial, 7100012 depot migration
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
@@ -177,6 +186,7 @@ Chaos.storage = {
 ChaosOpcodes.antibot = 211
 Chaos.storage.antibot = 7100890
 Chaos.antibotTables = {reports = "chaos_reports", log = "chaos_antibot_log", holds = "chaos_antibot_holds"}
+Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions"} -- botreview.lua, sql/chaos_bot.sql
 
 -- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
 -- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
@@ -207,7 +217,9 @@ Chaos.tables = {
 	coinOrders = "chaos_coin_orders",
 	-- the Pix / PayPal donation of an order (shop_payments.lua, the website's pay/ worker and webhook)
 	coinPayments = "chaos_coin_payments",
-	coinGifts = "chaos_coin_gifts"
+	coinGifts = "chaos_coin_gifts",
+	-- beta starter coins, one row per account (beta.lua, beta_core.lua ChaosBetaCore.TABLE, sql/chaos_beta.sql)
+	betaGrants = "chaos_beta_grants"
 }
 -- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
 Chaos.tables.riftAtlas = "chaos_rift_atlas"
@@ -243,6 +255,9 @@ ChaosOpcodes.raid = 213
 Chaos.storage.raid = 7100440
 Chaos.tables.raidLockouts = "chaos_raid_lockouts"
 Chaos.tables.raidInstances = "chaos_raid_instances"
+-- Pocket bosses (pocketboss.lua, pocketboss_core.lua, pocketboss_config.lua, sql/chaos_pocketboss.sql): on the Boss
+-- Spawns opcode (217, actions pocket*), no player storages; action ids 47620 - 47629 reserved (47620 the way out)
+Chaos.tables.pocketBoss = "chaos_pocketboss"
 -- Loadouts / Armory (client game_loadouts; loadouts.lua, loadouts_core.lua, loadouts_config.lua, sql/chaos_loadouts.sql):
 -- save and switch whole builds; storages 7100570 - 7100579 reserved (+0 active slot, +1 switch serial, +2 last switch),
 -- and 7112000 - 7127999 for the support runes each loadout holds (loadouts_config.lua runeMirrorBase)
@@ -301,6 +316,12 @@ Chaos.tables.professionSales = "chaos_professions_sales"
 -- (+0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes); no tables
 ChaosOpcodes.gamble = 199
 Chaos.storage.gamble = 7101900
+-- Conquest Tokens: the token vendor and bad-luck protection (client game_conquest; conquest.lua, conquest_core.lua,
+-- conquest_config.lua, sql/chaos_conquest.sql, NPC data/npc/Iselde Varrow.xml); storages 7102640 - 7102689 reserved
+-- (+0 day, +1..+29 tokens today per source, +30..+39 misses in a row per pity group)
+ChaosOpcodes.conquest = 167
+Chaos.storage.conquest = 7102640
+Chaos.tables.conquest = "chaos_conquest"
 -- Map markers (client game_mapmarkers; server/README.md "Map markers"). One opcode for two scripts, JSON {action, data}:
 -- partymarkers.lua (+ _core, _config): where the other party members are; poi.lua (+ _core, _config, the generated
 -- data/chaos_poi.lua of tools/gen_poi.py): points of interest, the discovered ones in chaos_poi_seen
@@ -412,16 +433,28 @@ Chaos.dungeons = {
 	-- Everything the base server table does not have is declared here, per base server dungeon id.
 	exitDelayMs = 10000, -- delay between finishing and teleporting the group out
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a queue run lasts the base server's
-	-- DungeonTime (60 / 30 minutes) but at most maxTimeSeconds (45 minutes: two to three times the speed challenge of
-	-- 15-20 minutes); warnings at warnAt seconds left. One run per dungeon at a time (the base dungeon is one map area):
-	-- the queue is the waiting line and shows the wait of the run inside.
-	maxTimeSeconds = 2700,
+	-- DungeonTime (60 / 30 minutes) but at most maxTimeSeconds; warnings at warnAt seconds left. One run per dungeon at
+	-- a time (the base dungeon is one map area): the queue is the waiting line and shows the wait of the run inside.
+	-- Pack combat (pace.lua, 2026-10-14; owner: dungeons of at most 10-15 minutes, at least 100 monsters each): 15
+	-- minutes (was 45). The base dungeons keep 100-119 of their monsters (tools/spawn_tuning.json "dungeons") and their
+	-- own health curves below: the run model gives 9.5 minutes at difficulty 1 and 13.7 at 6 (server/README.md
+	-- "Pack combat (pace)").
+	maxTimeSeconds = 900,
 	limits = {warnAt = {300, 60, 10}},
-	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the base server modal only did on failure)
+	-- the cooldown (2026-10-15, respect the players' time): a cleared run 15 minutes (cooldownSeconds, about one more
+	-- run's length; runs take 10-15), it replaces the base server's DUNGEON_SYSTEM.CooldownTime (3600, after every run).
+	-- A failed run, a time-out, leaving or dying inside: a short failCooldownSeconds, 5 minutes, so farming 85% of the
+	-- monsters and leaving does not pay (owner rule "follow your recommendations", 2026-10-15).
+	cooldownOnSuccess = true,
+	cooldownOnFail = true,
+	cooldownSeconds = 900,
+	failCooldownSeconds = 300,
 	queueTickMs = 3000,
 	maxDifficulty = 6, -- client has 6 difficulty buttons
-	-- percentage of area monsters that must die before the "boss can be killed" notice
-	progressNeeded = 100,
+	-- percentage of the run's monsters that must die to unlock the boss (owner, 2026-10-14: 85, was 100): the members
+	-- get "Boss unlocked!", a generated dungeon (areagen.lua) opens its boss room gate and spawns its boss; a run is won
+	-- when the boss dies after that (dungeons.lua unlockBoss)
+	progressNeeded = 85,
 	-- area = {{from, to}, ...}: boxes that belong to the dungeon next to the base FromPos/ToPos box (dungeons.lua areaOf),
 	-- for the parts that box misses: measured on the base map and its boss scripts (server/README.md "dungeons")
 	extra = {
@@ -431,8 +464,13 @@ Chaos.dungeons = {
 			-- the lever boss room east of the box (the boss script's bossArea; boss, entrance and exit teleport in it)
 			area = {{{x = 31856, y = 32197, z = 8}, {x = 31908, y = 32236, z = 8}}},
 			loot = {{id = 2160, count = 3}},
+			-- pack combat: the boss Prince Skeletal 200,000 at level 175 (533/s): 6:15 alone, x40% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {40, 50, 60, 70, 80, 90},
+			trashHealth = {75, 86, 97, 108, 119, 129},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 15 minutes.", maxMs = 15 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 			}
 		},
@@ -440,8 +478,13 @@ Chaos.dungeons = {
 			title = "Master of the Elements",
 			bossName = "master of the elements",
 			loot = {{id = 2160, count = 5}},
+			-- pack combat: the boss 300,000 at level 225 (685/s): 7:18 alone, x34% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {34, 43, 51, 60, 68, 77},
+			trashHealth = {74, 83, 92, 101, 109, 118},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 20 minutes.", maxMs = 20 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 			}
 		},
@@ -452,8 +495,13 @@ Chaos.dungeons = {
 			-- the lever and the boss room on floor 10 (the map's tiles of the dungeon)
 			area = {{{x = 31950, y = 33098, z = 0}, {x = 32078, y = 33245, z = 10}}},
 			loot = {{id = 2160, count = 8}},
+			-- pack combat: the boss 550,000 at level 525 (1,455/s): 6:18 alone, x40% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {40, 50, 60, 70, 80, 90},
+			trashHealth = {34, 37, 41, 44, 47, 51},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 20 minutes.", maxMs = 20 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without anyone dying."}
 			}
 		},
@@ -464,8 +512,13 @@ Chaos.dungeons = {
 			-- the lever on floor 11 and the boss room on floor 12 (the map's tiles of the dungeon)
 			area = {{{x = 31452, y = 31495, z = 8}, {x = 31736, y = 31644, z = 12}}},
 			loot = {{id = 2160, count = 10}},
+			-- pack combat: the boss 685,000 at level 625 (1,696/s): 6:44 alone, x37% = 2:30
+			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty
+			-- table's 100-1300% (the run model's fit with at least 100 monsters, server/README.md "Pack combat (pace)")
+			bossHealth = {37, 46, 56, 65, 74, 83},
+			trashHealth = {61, 67, 73, 79, 85, 91},
 			challenges = {
-				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 10 minutes.", maxMs = 10 * 60 * 1000},
+				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.", maxMs = 6 * 60 * 1000},
 				{key = "flawless", title = "Flawless", points = 10, desc = "Finish without dying."}
 			}
 		}
@@ -722,7 +775,7 @@ Chaos.boosted = {
 
 -- Store services (shop_services.lua, autosell.lua). Prices and the offers themselves are in shop_config.lua.
 Chaos.shopServices = {
-	maxStamina = 2520, -- minutes (42 h), what the Stamina Refill restores to
+	maxStamina = 2520, -- minutes (42 h), what the stamina service restores to (the Stamina Refill offer was removed 2026-10-15)
 
 	-- Temple Teleport Scroll: an ordinary "scroll" item (6119, no other script uses it) with this action id and a
 	-- custom name/description; the uses left are kept in the item's custom attribute "chaos_uses".
@@ -811,6 +864,29 @@ ChaosOpcodes.levelWings = 191
 -- combat log's damage-taken hook in combatlog.lua). No player storages.
 ChaosOpcodes.deathRecap = 154
 Chaos.tables.deathRecaps = "chaos_death_recaps"
+
+-- Nemesis: a monster that kills a character may become its personal nemesis (client game_nemesis; nemesis.lua,
+-- nemesis_core.lua, nemesis_config.lua, sql/chaos_nemesis.sql). 163 is free in the reference server, the base client
+-- and every Chaos module. Storages 7102300 - 7102309 reserved (nemesis_config.lua storage)
+ChaosOpcodes.nemesis = 163
+Chaos.tables.nemesis = "chaos_nemesis"
+Chaos.storage.nemesis = 7102300
+
+-- Next Goals: the goals of every character's level band, the gear path, the hunts and the on-screen tracker (client
+-- game_goals; goals.lua, goals_core.lua, goals_config.lua, sql/chaos_goals.sql). 178 is free in the reference server,
+-- the base client and every Chaos module. No player storages.
+ChaosOpcodes.goals = 178
+Chaos.tables.goals = "chaos_goals"
+
+-- Ember Cache, Daily Spark and the day book: points from every activity, a daily Spark, three weekly milestones, what
+-- the character did today (client game_embercache; embercache.lua, embercache_core.lua, daybook_core.lua,
+-- embercache_config.lua). 174 is free in the reference server, the base client and every Chaos module. Storages
+-- 7102700 - 7102719 (the cache) and 7102720 - 7102739 (the day book), embercache_config.lua; no tables.
+ChaosOpcodes.emberCache = 174
+Chaos.storage.emberCache = 7102700
+Chaos.storage.daybook = 7102720
+-- Gentle deaths (gentledeath.lua, gentledeath_config.lua): storages 7102740 - 7102744
+Chaos.storage.gentleDeath = 7102740
 
 -- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
 -- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,
@@ -1028,6 +1104,41 @@ function Chaos.send(player, opcode, action, data)
 		payload.data = data
 	end
 	player:sendExtendedOpcode(opcode, json.encode(payload))
+	return true
+end
+
+-- Creature events that an onTargetCombat callback puts on a monster stay on it until it dies, but the callbacks run for
+-- every target of every hit (area spells: every monster in the area), and Creature:registerEvent looks the event up by
+-- name each time. Chaos.registerOnce(creature, name) calls it once per monster and event: monster ids are never reused
+-- while the server runs. A player is registered at every call (a player keeps its id across logins, its events do not).
+-- Chaos.eventKnown(creature, name): true when registerOnce already put that event on this monster (callbacks check it
+-- before a costly condition). The memo starts over past Chaos.registerMemoMax monsters (they get registered once more).
+Chaos.registerMemoMax = 50000
+local registerMemo, registerMemoSize = {}, 0
+
+function Chaos.eventKnown(creature, name)
+	local set = registerMemo[name]
+	return set ~= nil and set[creature:getId()] == true
+end
+
+function Chaos.registerOnce(creature, name)
+	local id = creature:getId()
+	local set = registerMemo[name]
+	if set and set[id] then
+		return true
+	end
+	creature:registerEvent(name)
+	if creature:isMonster() then
+		if registerMemoSize >= Chaos.registerMemoMax then
+			registerMemo, registerMemoSize, set = {}, 0, nil
+		end
+		if not set then
+			set = {}
+			registerMemo[name] = set
+		end
+		set[id] = true
+		registerMemoSize = registerMemoSize + 1
+	end
 	return true
 end
 

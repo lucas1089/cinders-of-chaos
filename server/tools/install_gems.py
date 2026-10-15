@@ -8,10 +8,15 @@ types (name, plural, clientId, clientIdHigh, the three effects and their values)
 
 1. data/items/items.otb: one node per gem type and tier, server ids firstId.. (32001..32035), each a copy of the stock
    node of its client sprite (the small ruby, the small enchanted ruby, ...) with the new server id and the "useable"
-   flag (FLAG_USEABLE, needed for "use with"). Nodes are appended at the end of the root. A node already there with the
+   flag (FLAG_USEABLE, needed for "use with"). With `ownLook = true` the node's client id is our own animated look
+   instead, lookFirst + (type - 1) * tiers + tier - 1 (33905..33939: client/tools/sprites/gen_gem_art.py,
+   art_import/gems.csv; the client pair must have them), the rest of the node still the stock gem's (its look copies
+   the stock gem's dat flags: stackable, multi-use). Flipping ownLook either way rewrites the 35 nodes; a look id that
+   another node uses stops the script. Nodes are appended at the end of the root. A node already there with the
    same bytes is left alone; one with other bytes (an older config) is replaced; a server id that belongs to another
-   client id stops the script (nothing is written). A copy of the original file is kept as items.otb.bak the first
-   time. After writing, the file is parsed again and every gem node is checked.
+   client id (neither the stock sprite nor our look) stops the script (nothing is written). A copy of the original
+   file is kept as items.otb.bak the first time. After writing, the file is parsed again and every gem node is
+   checked.
    The dark tile set (install_dark_tiles.py) uses 30484..30557; these ids stay clear of it.
 2. data/items/items.xml: the gems (name, plural, a description with their three effects, weight) inside a block
    between two marker comments before </items>, rewritten when the config changed; and the Orb of Sockets (the unused
@@ -50,6 +55,11 @@ def read_config(path=CONFIG):
     cfg = {}
     cfg['firstId'] = int(re.search(r'firstId\s*=\s*(\d+)', text).group(1))
     cfg['highFrom'] = int(re.search(r'highFrom\s*=\s*(\d+)', text).group(1))
+    own = re.search(r'\bownLook\s*=\s*(true|false)', text)
+    cfg['ownLook'] = bool(own and own.group(1) == 'true')
+    look = re.search(r'\blookFirst\s*=\s*(\d+)', text)
+    cfg['lookFirst'] = int(look.group(1)) if look else None
+    assert not cfg['ownLook'] or cfg['lookFirst'], 'chaos_gems_config.lua: ownLook needs lookFirst'
     cfg['tiers'] = re.findall(r'"([^"]+)"', re.search(r'tiers\s*=\s*\{([^}]*)\}', text).group(1))
     orb = re.search(r'socketOrb\s*=\s*\{(.*?)\}', text, re.S).group(1)
     cfg['socketOrb'] = {'id': int(re.search(r'id\s*=\s*(\d+)', orb).group(1)),
@@ -84,14 +94,29 @@ def read_config(path=CONFIG):
     return cfg
 
 
+def stock_client_id(cfg, sid):
+    """the client id of the stock gem sprite of a gem server id (its otb node is copied)"""
+    n = len(cfg['tiers'])
+    t = cfg['types'][(sid - cfg['firstId']) // n]
+    tier = (sid - cfg['firstId']) % n + 1
+    return t['clientIdHigh'] if (t['clientIdHigh'] and tier >= cfg['highFrom']) else t['clientId']
+
+
+def own_client_id(cfg, sid):
+    """our own look of a gem server id (lookFirst..), None without lookFirst"""
+    return cfg['lookFirst'] + sid - cfg['firstId'] if cfg.get('lookFirst') else None
+
+
 def gems(cfg):
-    """[(server id, client id, items.xml name, plural, description)]"""
+    """[(server id, client id, items.xml name, plural, description)]; the client id is our look with ownLook"""
     out = []
     n = len(cfg['tiers'])
     for ti, t in enumerate(cfg['types']):
         for tier in range(1, n + 1):
             sid = cfg['firstId'] + ti * n + tier - 1
-            cid = t['clientIdHigh'] if (t['clientIdHigh'] and tier >= cfg['highFrom']) else t['clientId']
+            cid = stock_client_id(cfg, sid)
+            if cfg.get('ownLook'):
+                cid = own_client_id(cfg, sid)
             q = cfg['tiers'][tier - 1].lower()
             parts = []
             for group, label in (('weapon', 'in a weapon'), ('armour', 'in armour'), ('jewel', 'in jewellery')):
@@ -173,14 +198,16 @@ def scan(data):
     return kids, i
 
 
-def gem_node(stock, sid):
-    """a copy of the stock node (group, flags + useable, every attribute) with the new server id"""
-    _s, _e, _sid, cid, group, flags, attrs = stock
+def gem_node(stock, sid, cid=None):
+    """a copy of the stock node (group, flags + useable, every attribute) with the new server id (and client id)"""
+    _s, _e, _sid, _cid, group, flags, attrs = stock
     flags |= FLAG_USEABLE | FLAG_PICKUPABLE | FLAG_MOVEABLE | FLAG_STACKABLE
     body = struct.pack('<I', flags)
     for k, v in attrs:
         if k == A_SERVERID:
             v = struct.pack('<H', sid)
+        elif k == A_CLIENTID and cid is not None:
+            v = struct.pack('<H', cid)
         body += attr(k, v)
     return bytes([START]) + escape(bytes([group])) + escape(body) + bytes([END])
 
@@ -197,21 +224,27 @@ def stock_nodes(kids, first, last):
     return out
 
 
-def patch_otb(data, rows):
+def patch_otb(data, rows, cfg=None):
+    """cfg (read_config) names the stock sprite of each gem when the rows carry our own looks (ownLook)"""
     kids, root_end = scan(data)
     first, last = rows[0][0], rows[-1][0]
     stock = stock_nodes(kids, first, last)
     by_sid = {k[2]: k for k in kids}
     replace, append, wanted = [], [], {}
+    others = {k[3] for k in kids if k[2] is not None and not first <= k[2] <= last}
     for sid, cid, _name, _plural, _desc in rows:
-        if cid not in stock:
-            raise SystemExit('items.otb: no stock node with client id %d (gem %d); nothing written' % (cid, sid))
-        want = gem_node(stock[cid], sid)
+        scid = stock_client_id(cfg, sid) if cfg else cid
+        if cid != scid and cid in others:
+            raise SystemExit('items.otb: client id %d (the look of gem %d) is already used by another node; nothing '
+                             'written' % (cid, sid))
+        if scid not in stock:
+            raise SystemExit('items.otb: no stock node with client id %d (gem %d); nothing written' % (scid, sid))
+        want = gem_node(stock[scid], sid, cid if cid != scid else None)
         wanted[sid] = want
         k = by_sid.get(sid)
         if k is None:
             append.append(want)
-        elif k[3] != cid:
+        elif k[3] not in (cid, scid, own_client_id(cfg, sid) if cfg else cid):
             raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
                              % (sid, k[3], cid))
         elif data[k[0]:k[1]] != want:
@@ -306,11 +339,12 @@ def main():
         print('items.otb / items.xml not found in', os.path.join(data_dir, 'items'))
         return 1
     raw = open(otb, 'rb').read()
-    new, notes, wanted = patch_otb(raw, rows)
+    new, notes, wanted = patch_otb(raw, rows, cfg)
     n = verify_otb(new, rows, wanted)
     for line in notes:
         print(line)
-    print('items.otb: verified (%d item nodes, every gem node a useable copy of its stock sprite)' % n)
+    print('items.otb: verified (%d item nodes, every gem node a useable copy of its stock sprite%s)'
+          % (n, ', with our own looks %d..%d' % (rows[0][1], rows[-1][1]) if cfg['ownLook'] else ''))
     text = open(xml, encoding='utf-8', errors='surrogateescape').read()
     new_text, note = patch_xml(text, rows, cfg['socketOrb'])
     print(note)

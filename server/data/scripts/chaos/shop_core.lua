@@ -14,10 +14,12 @@
 --   C.price(offer, categoryName, ctx)     cost, oldCost (nil when not reduced), tags {"Sale", "New", "Featured"}
 --   C.bundleCost(bundle, listSum)         a bundle's price: its own cost, or listSum minus its pct
 --   C.giftProblem(t)                      why a gift to this target is refused, or nil
---   C.coinGiftProblem(rules, f)           why a Chaos Coin gift is refused (hold after a donation, daily cap, ban), or nil
+--   C.coinGiftProblem(rules, f, lang?)    why a Chaos Coin gift is refused (hold after a donation, daily cap, ban), or nil
+--                                         (in `lang` through ChaosI18n when it is loaded; English otherwise)
 --   C.clawbackPlan(shortfall, gifts)      what to take back from the receivers of a charged-back donor's coin gifts
 --   C.packCredit(pack, first, cfg)        {coins, bonus, firstBonus, total} for a paid Chaos Coin pack
 --   C.validate(cfg, cosmetics, ex)        list of problems in shop_config.lua (keys, prices, sales, bundles, exclusives)
+--   C.iconCount(icon, stackable)          the count an item picture is drawn with (a pile for a stackable item)
 --   C.FRAMES / C.frameIndex(frame) / C.frameStorage(S, i)   name plate frames: the order is the ownership storage slot
 --                                         (shop.lua kind "frame", exclusives.lua kind "frame")
 -- Lua 5.1 / LuaJIT / Lua 5.3 compatible.
@@ -25,9 +27,35 @@
 ChaosShopCore = ChaosShopCore or {}
 local C = ChaosShopCore
 
+-- a text in `lang` (Chaos.t keys, i18n_strings.lua); English without ChaosI18n
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 -- offer kinds that can be bought for another character (services and unlocks run per character, right away)
 C.GIFTABLE = {item = true, wings = true, aura = true, shader = true, outfit = true, addons = true, mount = true,
 	premium = true, frame = true, bundle = true}
+
+-- ------------------------------------------------------------------ item pictures (offer and category icons)
+-- A stackable item is drawn by its count: one small gem or coin is a few pixels in the 32 px cell (live test
+-- 2026-10-14: the Stormcaller Regalia, a small amethyst, showed as a dot). Without its own iconCount (offers) or count
+-- (category icons) a stackable picture is drawn as a pile; anything else as one item.
+C.ICON_PILE = 100
+
+-- icon = an offer ({iconCount}) or a category icon ({count}); stackable = the engine's ItemType:isStackable()
+function C.iconCount(icon, stackable)
+	local n = icon and (icon.iconCount or icon.count)
+	if n then
+		return n
+	end
+	return stackable and C.ICON_PILE or 1
+end
 
 -- ------------------------------------------------------------------ name plate frames
 -- index = the frame's slot: never reorder, only append. 1-5 the first store frames, 6-13 the second set of store frames,
@@ -344,7 +372,7 @@ end
 -- Chaos Coins given to another account must not outlive a chargeback of the donation that bought them.
 -- rules = shop_config.lua coinGifts {holdDays, perDay}; f = {now, amount, lastCredited (unix time of the sender's last
 -- credited coin order, 0 = none), giftedToday (coins gifted by the sender in the last 24 hours), targetBanned}
-function C.coinGiftProblem(rules, f)
+function C.coinGiftProblem(rules, f, lang)
 	rules = rules or {}
 	if f.targetBanned then
 		return "That account cannot receive gifts."
@@ -353,13 +381,13 @@ function C.coinGiftProblem(rules, f)
 	local last = tonumber(f.lastCredited) or 0
 	if hold > 0 and last > 0 and f.now - last < hold then
 		local days = math.ceil((hold - (f.now - last)) / 86400)
-		return string.format("Chaos Coins can be gifted %d days after your last donation (in %d day%s).",
-			rules.holdDays, days, days == 1 and "" or "s")
+		return T(lang, days == 1 and "Chaos Coins can be gifted %d days after your last donation (in %d day)." or
+			"Chaos Coins can be gifted %d days after your last donation (in %d days).", rules.holdDays, days)
 	end
 	local cap = tonumber(rules.perDay) or 0
 	if cap > 0 and (tonumber(f.giftedToday) or 0) + f.amount > cap then
 		local left = math.max(0, cap - (tonumber(f.giftedToday) or 0))
-		return string.format("You can gift at most %d Chaos Coins a day (%d left today).", cap, left)
+		return T(lang, "You can gift at most %d Chaos Coins a day (%d left today).", cap, left)
 	end
 	return nil
 end

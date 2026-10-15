@@ -73,7 +73,7 @@ r, m = has(p, 'unknown key "item"')
 ok(r, 'schema: an item id key is refused: %s' % m)
 p = copy.deepcopy(base)
 p['size'] = [300, 20]
-r, m = has(p, 'above the maximum 160')
+r, m = has(p, 'above the maximum 200')
 ok(r and any('below the minimum 24' in x for x in m), 'schema: the size limits: %s' % m)
 p = copy.deepcopy(base)
 p['decoration'] = 'lots'
@@ -128,6 +128,11 @@ ok(r and any('pick from:' in x for x in m), 'tier: a monster too weak for the ba
 p = copy.deepcopy(base)
 p['level'] = [40, 400]
 ok(has(p, 'spans 4 level tiers')[0], 'tier: a band over four tiers')
+# the open top tier (800+): the bounty window ends at 1500, a band above it takes monsters up to its top + 100
+ok(C.tier_window(900, 1100)[2] == 1500, 'tier: the top tier keeps the bounty window up to 1500')
+ok(C.tier_window(1300, 1450)[2] == 1550, 'tier: a 1300-1450 band takes monsters up to 1550')
+ok(C.tier_window(1750, 2000)[1:] == (640, 2100), 'tier: a 1750-2000 band takes monsters up to 2100')
+ok(C.tier_window(150, 280)[2] == 299, 'tier: a closed tier keeps its window')
 p = copy.deepcopy(base)
 p['zones'][5]['floor'] = 1
 p['paths'].append({'from': 'landing', 'to': 'hall'})
@@ -225,6 +230,20 @@ ok(crypt['stats']['entry_to_boss'] and crypt['boss']['monster'] == 'Morgashal', 
 lk = crypt['links'][0]
 ok(len(crypt['links']) == 1 and lk['brush'] == 'stairs', 'crypt: the stairs use the stair brush (%s)' % lk['brush'])
 kit = __import__('area_plan_decor').kits()
+# the owner's decoration of pair 26: on (pair 26 published), the waste biome gets its own kit merged over
+# decor_kits.json; the file itself (what the kits are with the switch off) keeps the lava kit for it
+_D = __import__('area_plan_decor')
+_base = json.load(open(_D.KITS_PATH, encoding='utf-8'))
+_m = _D.merge_owner(_base, json.load(open(_D.OWNER_PATH, encoding='utf-8')))
+ok(_D.owner_on() and kit == _m and kit['biome_kit']['waste'] == 'waste' and 'waste' in kit['kits'],
+   'owner decoration: switch on, the kits are decor_kits.json merged with the owner\'s')
+ok('waste' not in _base['kits'] and _base['biome_kit']['waste'] == 'lava', 'owner decoration: off, the waste biome uses the lava kit')
+ok(_m['biome_kit']['waste'] == 'waste' and ['cacti_potted', 3] in _m['kits']['waste']['centre']
+   and _m['kits']['waste']['floor'][:len(_base['kits']['lava']['floor'])] == _base['kits']['lava']['floor']
+   and _base['biome_kit']['waste'] == 'lava', 'owner decoration merged: waste = the lava kit plus the plants, input kept')
+ok(all(36940 <= i <= 36985 for g in ('cacti_potted', 'desert_plants', 'waypoint_seal') for i in _m['groups'][g]['ids'])
+   and len(_m['groups']['cacti_potted']['ids']) + len(_m['groups']['desert_plants']['ids']) == 45,
+   'owner decoration: 45 plants and the seal, server ids 36940..36985')
 ok(crypt['tiles'][lk['hole']]['ground'] == kit['brushes']['stairs_down_ground'], 'crypt: the stairs ground above')
 ok(kit['brushes']['stairs_up'] in [i for i, _a in crypt['tiles'][lk['stair']]['items']], 'crypt: the stone stairs below')
 ok(lk['landing'] == (lk['stair'][0], lk['stair'][1] + 1, lk['stair'][2]) and lk['up'] == (lk['hole'][0], lk['hole'][1] - 1, lk['hole'][2]),

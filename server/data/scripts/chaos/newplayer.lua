@@ -9,6 +9,9 @@
 -- the kit skips; the base starter chest (scripts/customs/actions/first_chest.lua, storage 33735) is marked as opened
 -- when the kit is given, so nobody collects both. No base file is changed.
 --
+-- Home town: a brand-new character moves to the main city (newplayer_config.lua homeTown, Cinderhold) once, at its
+-- first login (NP.settleHome); characters that have their kit keep their town (server/README.md "Main city").
+--
 -- Other scripts: ChaosNewPlayer.kitFor(vocationId) (newplayer_core.lua) returns a vocation's kit;
 -- ChaosNewPlayer.setKit(name, def, {vocationIds}) adds or changes one (docs/CLASSES.md).
 --
@@ -18,6 +21,9 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
 end
 if not ChaosNewPlayer or not ChaosNewPlayer.kitFor then
 	dofile("data/scripts/chaos/newplayer_core.lua")
@@ -58,8 +64,10 @@ function NP.toast(player, message)
 	end
 end
 
--- a server modal window (the client's game_modaldialog shows it); buttons = {{id, text}, ...}
+-- a server modal window (the client's game_modaldialog shows it); buttons = {{id, text}, ...}. The title and the button
+-- texts are keys (Chaos.t: the player's language); the text comes translated.
 function NP.modal(player, id, title, text, buttons)
+	title = Chaos.t(player, title)
 	if not ModalWindow then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, title .. ": " .. text)
 		return
@@ -67,7 +75,7 @@ function NP.modal(player, id, title, text, buttons)
 	local w = ModalWindow(id, title, text)
 	buttons = buttons or {{1, "Ok"}}
 	for _, b in ipairs(buttons) do
-		w:addButton(b[1], b[2])
+		w:addButton(b[1], Chaos.t(player, b[2]))
 	end
 	w:setDefaultEnterButton(buttons[1][1])
 	w:setDefaultEscapeButton(buttons[#buttons][1])
@@ -176,10 +184,31 @@ function NP.giveKit(player)
 	if C().baseChestStorage then
 		player:setStorageValue(C().baseChestStorage, 1)
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You received the %s starter kit.%s",
-		NP.vocationName(vocId), inbox and " Some of it did not fit: it is in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You received the %s starter kit.%s",
+		NP.vocationName(vocId), inbox and Chaos.t(player, " Some of it did not fit: it is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_GIFT_WRAPS or CONST_ME_MAGIC_BLUE)
 	return true, kit
+end
+
+-- ------------------------------------------------------------------------------------------------ home town
+-- a brand-new character (no kit yet) moves to the main city once (homeTown in the config, NP.homeTownFor). teleport:
+-- also send it to the new temple (a first login without the tutorial island). Returns true when the town changed.
+function NP.settleHome(player, teleport)
+	local okT, town = pcall(function() return player:getTown() end)
+	local cur = okT and town and town:getId() or 0
+	local id = NP.homeTownFor(cur, NP.isSet(getS(player, "kit")))
+	local home = id and Town(id)
+	if not home then
+		return false
+	end
+	player:setTown(home)
+	if teleport then
+		local temple = home:getTemplePosition()
+		player:teleportTo(temple)
+		temple:sendMagicEffect(CONST_ME_TELEPORT)
+	end
+	print("[newplayer] " .. player:getName() .. ": home town " .. tostring(cur) .. " -> " .. id)
+	return true
 end
 
 -- ------------------------------------------------------------------------------------------------ welcome
@@ -190,9 +219,9 @@ function NP.showWelcome(player, force)
 	local w = C().welcome
 	setS(player, "welcome", 1)
 	NP.modal(player, C().tutorial.modalBase, w.title,
-		string.format(w.text, player:getName(), NP.vocationName(player:getVocation():getId()),
-			NP.giftLine(player:getLevel())))
-	NP.toast(player, w.toast)
+		Chaos.t(player, w.text, player:getName(), NP.vocationName(player:getVocation():getId()),
+			NP.giftLine(player:getLevel(), nil, Chaos.lang(player))))
+	NP.toast(player, Chaos.t(player, w.toast))
 	return true
 end
 
@@ -225,8 +254,8 @@ function NP.giveMilestone(player, index)
 		inbox = giveStack(player, nil, it.id, it.count) or inbox
 		parts[#parts + 1] = it.count .. "x " .. ItemType(it.id):getName()
 	end
-	local text = string.format("Level %d gift: %s.%s", m.level, table.concat(parts, ", "),
-		inbox and " Your backpack was full: the rest is in your inbox." or "")
+	local text = Chaos.t(player, "Level %d gift: %s.%s", m.level, table.concat(parts, ", "),
+		inbox and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or "")
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	NP.toast(player, text)
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
@@ -258,6 +287,7 @@ function login.onLogin(player)
 		return true
 	end
 	if NP.kitDueAtLogin(getS(player, "kit"), player:getLastLoginSaved()) and NP.kitFor(player:getVocation():getId()) then
+		NP.settleHome(player, true)
 		NP.kitAndWelcome(player)
 	end
 	return true
@@ -267,7 +297,7 @@ login:register()
 -- ------------------------------------------------------------------------------------------------ staff command
 -- /newplayerkit <name>            give the kit again (ignores the flag)
 -- /newplayerkit <name>, welcome   show the welcome again
--- /newplayerkit <name>, milestone <n>  give milestone n (1..4) again
+-- /newplayerkit <name>, milestone <n>  give milestone n (1..10, newplayer_config.lua milestones) again
 -- /newplayerkit <name>, reset     clear every new-player flag (kit, welcome, milestones, tutorial)
 -- /newplayerkit <name>, tutorial  send the character to the start of the tutorial island
 local admin = TalkAction("/newplayerkit")

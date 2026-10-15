@@ -4,3 +4,4 @@ e7677319658a94b49e497a5c7aaf91d6b708f72380d00c3a6259c8ef0a0a2b79,scripts/customs
 b907664517507d7c7990d915114ad5ac04c5090cf4fce4d912aac3b7abffd636,scripts/customs/znote/znote_login.lua,= Cinders of Chaos Login =,the same banner after the worldtexts step renamed its first word
 8bcdca3051ab63ed9da538d764b009269b47622a3499960d2eb04ec43c2bd546,config.lua,Cinders of Chaos,serverName in the stock config.lua: the world name of the character list (its short form)
 2d4b318a9ac009546f378c3298a25c7019b791b205df368dd6d2aa2632f47330,config.lua,Cinders of Chaos,serverName in the stock config.lua (the base server's full name)
+2a791147425bdd4cf01693b0a140800154f380e2872d1f22d1c29a7673953fdc,config.lua,Cinders of Chaos,serverName in the stock config.lua of base-server.tar.xz of windows-assets 407ad9b6 (live install 2026-10-14)

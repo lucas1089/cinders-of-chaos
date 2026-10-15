@@ -72,9 +72,13 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
   copy of `shop_coins_config.lua`, also `payments.methods.pix.enabled = false` and `paypal.enabled = false`: a method
   switched off there is hidden in the client and on the website. Never the `mock` provider on a public server: it
   approves every donation by itself.
-- Test coins: one grant per account at the start of each weekend, announced in the patch note and on Discord, so
-  everyone can try the store, the Pact and the coin side of the market. An administrator (group 5+) runs, with the
-  server online:
+- **Test coins (built, owner request 2026-10-15):** the beta switch `Chaos.beta` (`server/data/scripts/chaos/beta_config.lua`,
+  `enabled = true`, `starterCoins = 5000`) gives every account 5,000 Chaos Coins **once**, at the first login of its first
+  new character, with a line (English / pt-BR) saying they are beta test coins wiped at launch. Per account, not per
+  character (alts get nothing), recorded in `chaos_beta_grants`, so restarts never give them twice (server/README.md
+  "Beta starter coins"). Season characters: the coins are the account's; the season store rules apply. **Turn the switch
+  off at launch** (docs/LAUNCH.md section 11). Announce it in the patch note and on Discord.
+- Extra top-ups (optional, e.g. at the start of weekend 2): an administrator (group 5+) runs, with the server online:
   ```sql
   -- every account up to 5,000 Chaos Coins (never lowers a balance)
   INSERT INTO chaos_shop_coins (account_id, coins) SELECT id, 5000 FROM accounts
@@ -83,6 +87,19 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
   Single corrections: `/coins <character>, <amount>` (group 5+, written to the admin audit log) or the admin panel's
   Store > Give Chaos Coins. The amount (5,000) is **Owner decides**.
 - Say it everywhere: beta coins are not real and are wiped at launch.
+- The full wipe (section 9) removes them with every `chaos_*` table. If the owner keeps characters instead (section 3),
+  reset only the beta coins and their purchases, with the server stopped (items already delivered stay on the characters;
+  remove those by hand or wipe):
+  ```sql
+  -- beta coins, store purchase log, pending gifts and the beta grant flags (idempotent: run it twice, same result)
+  DELETE FROM chaos_shop_coins;
+  DELETE FROM chaos_shop_history;
+  DELETE FROM chaos_shop_purchases;
+  DELETE FROM chaos_shop_gifts;
+  DELETE FROM chaos_coin_gifts;
+  DELETE FROM chaos_beta_grants;
+  ```
+  Keep `chaos_coin_orders` / `chaos_coin_payments` (payments are off, so they are empty; with real donations, see below).
 - Alternative: real donations in the beta. Then the coins of paid orders must survive the wipe (section 9 would keep
   `chaos_shop_coins`, `chaos_coin_orders` and `chaos_coin_payments` for those accounts), the live payment setup must be
   done by 31 Oct (docs/LAUNCH.md "Donations"), and the prices are still placeholders. Not recommended.
@@ -189,20 +206,23 @@ status update afterwards.
 
 ## 8. Known issues to tell players
 
-From ROADMAP.md and server/README.md; put the short list in the patch note or on Discord.
-- The rest of the base world still has old names in places: NPC names and dialogue, quests, houses, raid texts
-  (ROADMAP "Open decisions": the rename is in progress).
-- The three achievement wings (looks 2140-2142) draw nothing until sprite pair things_custom17 is on `windows-assets`
-  (docs/OWNER_TODO.md).
-- The outfit window lists no shaders (store ones neither); shaders still work from the store and the wardrobe.
-- The Necromancer line has no spell effect skins yet.
-- Rift monsters keep the corpse of their pool type.
-- Dungeon difficulty changes nothing in the dungeon. (The Infinity Tower season-end top 3 chests are paid since
-  12 Oct: server/README.md "Infinity Tower season rewards".)
-- Occupied towns do not raise NPC prices yet (invasions).
-- Rift Keys cannot be stashed (they do not stack).
-- The weapon (auto-attack) numbers are being re-measured; class balance may move between the weekends.
+From ROADMAP.md and server/README.md; put the short list in the patch note or on Discord. Checked against the code
+on 2026-10-14.
+- The Necromancer line has no spell effect skins yet (BETA_READINESS.md L8).
+- Rift monsters keep the corpse of their pool type (ROADMAP #8, open).
+- Occupied towns do not raise NPC prices yet (invasions, ROADMAP #29 "Not done").
+- Rift Keys cannot be stashed (they do not stack, ROADMAP #43). The store's Rift Key Pouch holds them.
+- Class balance may move between the weekends: the owner keeps the strong area classes as they are through the beta
+  and decides from its data (BETA_READINESS.md L7).
 - The Discord link in the client is empty until the server is created (`ChaosTopBar.COMMUNITY_URL`).
+
+Fixed since the first draft of this list (no longer to tell players):
+- Base world old names: NPCs, dialogue, quests, houses and raid texts renamed (`4c440803`).
+- Achievement wings (looks 2140-2142): pair things_custom17 is live on `windows-assets` (`2c9407d1`).
+- The outfit window lists and wears owned shaders (`067590f0`).
+- Dungeon difficulty scales monster health, damage, experience, gold and loot (`3b5a68af`; Hollow Vault and the
+  generated dungeons have their own curves). The Infinity Tower season-end top 3 chests are paid since 12 Oct.
+- The weapon (auto-attack) numbers were re-measured in game (`4a21429b`).
 
 ## 9. Wipe procedure
 
@@ -309,10 +329,10 @@ otherwise.
 **6. Check.**
 
 ```
-mysql "$CHAOS_DB_NAME" -e "SELECT COUNT(*) FROM players; SELECT COUNT(*) FROM accounts; SELECT COUNT(*) FROM chaos_shop_coins; SELECT COUNT(*) FROM houses WHERE owner <> 0;"
+mysql "$CHAOS_DB_NAME" -e "SELECT COUNT(*) FROM players; SELECT COUNT(*) FROM accounts; SELECT COUNT(*) FROM chaos_shop_coins; SELECT COUNT(*) FROM chaos_beta_grants; SELECT COUNT(*) FROM houses WHERE owner <> 0;"
 ```
 
-Expect 0, the number of accounts, 0, 0.
+Expect 0, the number of accounts, 0, 0, 0. Then set `beta_config.lua` `enabled = false` (docs/LAUNCH.md section 11).
 
 **7. Launch install.** Update the repository to the launch commit, set the Season 1 and PvP dates (section 5), put the
 launch note into `server/data/patchnotes/`, run `install_all.py` (docs/LAUNCH.md section 4: dry run, real run, a second

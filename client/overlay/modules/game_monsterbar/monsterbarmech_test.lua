@@ -32,5 +32,20 @@ for kind in pairs(M.COLORS) do
   eq(type(M.HINTS[kind]), 'string', 'a hint for ' .. kind)
 end
 
+-- placement: in place of a hidden monster bar, under a shown one; on screen when the map panel starts above it
+dofile(dir .. 'monsterbarmath.lua')
+local panel = { x = 0, y = -72, width = 1280, height = 872 } -- the extended view at 1280x800 (live test 2026-10-14)
+local limits = MonsterBarMath.screenLimits({ x = 0, y = 0, width = 1280, height = 800 }, function(id)
+  if id == 'chaosMenuBar' then return { x = 346, y = 0, width = 588, height = 36 } end
+end)
+local barTop, barLeft = MonsterBarMath.place(panel, limits, 420, 84)
+local top, left = M.margins(false, barTop, barLeft)
+eq(top, barTop, 'no monster bar: the cast bar takes its place')
+eq(left, barLeft, 'the same offset as the monster bar')
+eq(panel.y + top >= 36, true, 'on screen, under the top menu, with the map panel above the window')
+eq(panel.y + 44 < 0, true, 'the otui default margin (44) is off screen in this view: the margins must come from place')
+eq(M.margins(true, barTop, barLeft), barTop + M.BELOW_BAR, 'a shown monster bar: below it')
+eq(M.margins(false, nil, nil), 0, 'no numbers: 0')
+
 print(string.format('monsterbarmech_test: %d checks, %d failures', checks, fails))
 if fails > 0 then os.exit(1) end

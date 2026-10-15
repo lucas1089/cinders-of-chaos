@@ -60,6 +60,9 @@ MOUNTS = [(141, 1561, 'Bone Steed', 30),
 EXCLUSIVES = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'exclusives_config.lua')
 # the wings of client pair things_custom24, in exclusives_config.lua's line format; read only while its switch is on
 THEME_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_theme_art.lua')
+# the wings of client pair 26 (the owner's art): the boss-drop wings in exclusives_config.lua's line format and the
+# store wings (M.storeWings); read only while ChaosOwnerArt.PAIR26 is on
+OWNER_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_owner_art.lua')
 XBEGIN = '\t<!-- Chaos exclusive outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 XEND = '\t<!-- end of the Chaos exclusive outfits -->\n'
 WBEGIN = '\t<!-- Chaos wings (server/tools/install_outfits.py, do not edit by hand) -->\n'
@@ -103,6 +106,13 @@ def exclusives(path=EXCLUSIVES):
         from install_theme_items import pair24_on
         if pair24_on(THEME_ART):
             text += open(THEME_ART, encoding='utf-8').read()
+    owner = path == EXCLUSIVES and os.path.isfile(OWNER_ART)
+    if owner:
+        sys.path.insert(0, HERE)
+        from install_owner_decor import pair26_on
+        owner = pair26_on(OWNER_ART)
+        if owner:
+            text += open(OWNER_ART, encoding='utf-8').read()
     for m in re.finditer(r'\{key = "[\w]+", kind = "(outfit|mount|wings|shader)", ([^\n]*)\n[^\n]*?name = "([^"]+)"', text):
         kind, fields, name = m.group(1), m.group(2), m.group(3)
         f = dict(re.findall(r'(\w+) = (\d+)', fields))
@@ -114,6 +124,10 @@ def exclusives(path=EXCLUSIVES):
             out['wings'].append((int(f['id']), int(f['look']), name))
         else:
             out['shader'].append((int(f['id']), re.search(r'shader = "([^"]+)"', fields).group(1)))
+    if owner:
+        # the store wings of pair 26 (one line each: key, id, look, name, cost)
+        for m in re.finditer(r'\{key = "[\w]+", id = (\d+), look = (\d+), name = "([^"]+)", cost = \d+\}', text):
+            out['wings'].append((int(m.group(1)), int(m.group(2)), m.group(3)))
     return out
 
 

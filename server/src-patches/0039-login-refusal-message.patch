@@ -1,0 +1,68 @@
+# Login refusal with a reason (server/README.md "Character Bazaar"). Live test 2026-10-14: logging in with a character
+# listed on the Character Bazaar only showed "connection lost"; the reason was only in the server log. A script that
+# refuses a login returns false from onLogin and the engine kicks the player (Player::onPlacedCreature ->
+# kickPlayer): everything sent so far, the login packets and any text message, sat in the protocol's output buffer,
+# which is dropped when the connection closes. New Lua method player:refuseLogin(message): the login error packet
+# (0x14, what the engine's own refusals send through ProtocolGame::disconnectClient) goes out at once with
+# Protocol::send, like the client guard's refusal (patch 0021); the caller then returns false from onLogin as before.
+# The client shows "Login Error" with the text and goes back to the login screen. Used by
+# data/scripts/chaos/bazaar.lua (in the player's language, Chaos.t). Built against the chain 0001-0038.
+# Applies after 0001-0038.
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -10,6 +10,7 @@
+ #include "chat.h"
+ #include "player.h"
+ #include "clientguard.h"
++#include "outputmessage.h"
+ #include "chaosdisplay.h"
+ #include "game.h"
+ #include "protocolstatus.h"
+@@ -2585,6 +2586,7 @@
+ 
+ 	registerMethod("Player", "getClientGuard", LuaScriptInterface::luaPlayerGetClientGuard); // Chaos (patch 0021)
+ 	registerMethod("Player", "clientGuardFail", LuaScriptInterface::luaPlayerClientGuardFail);
++	registerMethod("Player", "refuseLogin", LuaScriptInterface::luaPlayerRefuseLogin); // Chaos (patch 0039)
+ 
+ 	registerMethod("Player", "getGuildWarList", LuaScriptInterface::luaPlayerGetGuildWarList);
+ 	registerMethod("Player", "setGuildWarList", LuaScriptInterface::luaPlayerSetGuildWarList);
+@@ -9777,6 +9779,27 @@
+ 	return 1;
+ }
+ 
++// Chaos (patch 0039): the login error box with a reason. A script that refuses a login (onLogin returns false) could
++// only drop the connection: the client said "connection lost" and the reason was only in the server log. The message
++// goes out at once (Protocol::send, like the client guard's refusal), not through the output buffer: the buffer, with
++// the login packets, is dropped when the kick closes the connection right after. The client shows it as a login error.
++int LuaScriptInterface::luaPlayerRefuseLogin(lua_State* L)
++{
++	// player:refuseLogin(message): sends the login error box; the caller then returns false from onLogin (the engine
++	// kicks the player). Returns true when sent (nil without a connection).
++	Player* player = getUserdata<Player>(L, 1);
++	if (!player || !player->client) {
++		lua_pushnil(L);
++		return 1;
++	}
++	auto output = OutputMessagePool::getOutputMessage();
++	output->addByte(0x14);
++	output->addString(getString(L, 2));
++	player->client->send(output);
++	pushBoolean(L, true);
++	return 1;
++}
++
+ int LuaScriptInterface::luaPlayerGetGuildWarList(lua_State* L)
+ {
+ 	// player:getGuildWarList()
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -974,6 +974,7 @@
+ 
+ 		static int luaPlayerGetClientGuard(lua_State* L); // Chaos (patch 0021)
+ 		static int luaPlayerClientGuardFail(lua_State* L);
++		static int luaPlayerRefuseLogin(lua_State* L); // Chaos (patch 0039)
+ 		static int luaPlayerGetGuildWarList(lua_State* L);
+ 		static int luaPlayerSetGuildWarList(lua_State* L);
+ 

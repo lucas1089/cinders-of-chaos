@@ -1,0 +1,30 @@
+{
+  "lang": "en",
+  "cut": "trailer",
+  "strings": {
+    "hook1": "One horde.",
+    "hook2": "One spell.",
+    "title": "Dark fantasy in pixel art",
+    "teleports": "A teleport for every hunt",
+    "packs": "Monsters come in packs",
+    "loot": "15 item rarities",
+    "classes": "7 classes, 14 ascensions",
+    "classPlay": "Every class plays differently",
+    "classBerserker": "Berserker",
+    "classBoneLord": "Bone Lord",
+    "classInquisitor": "Inquisitor",
+    "tree": "A 663-node passive tree",
+    "supports": "20 spell supports",
+    "codex": "106 uniques, 77 modifiers",
+    "dungeons": "9 dungeons, 6 difficulties",
+    "gate": "Boss unlocks at 85%",
+    "bosses": "Bosses with their own mechanics",
+    "bossVaelith": "Vaelith the Fallen Seraph",
+    "bossKharzun": "Forgewarden Kharzun",
+    "bossAzhkarrath": "Azhkarrath the Chained Wyrm",
+    "rifts": "Rifts with 36 modifiers",
+    "atlas": "An 81-node Atlas",
+    "worldBoss": "5 world bosses",
+    "cta": "Beta coming soon"
+  }
+}

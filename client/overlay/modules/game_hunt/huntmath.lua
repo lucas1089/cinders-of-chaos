@@ -1,4 +1,5 @@
 -- Pure helpers of the hunt tracker window (no client API), tested by huntmath_test.lua.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 HuntMath = {}
 
 -- the base server's rarity names and our colours (same list as game_lootfilter and lootfilter_core.lua)
@@ -143,11 +144,11 @@ end
 function HuntMath.summary(st, seconds)
   st = st or {}
   local lines = {
-    'Hunt session: ' .. HuntMath.duration(seconds or st.t),
+    tr('Hunt session: %s', HuntMath.duration(seconds or st.t)),
     'Experience: ' .. HuntMath.exact(st.xp) .. ' (' .. HuntMath.exact(st.xph) .. '/h)',
-    'Loot: ' .. HuntMath.exact(st.lv) .. ' gold (' .. HuntMath.exact(st.lvh) .. '/h)',
+    tr('Loot: %s gold (%s/h)', HuntMath.exact(st.lv), HuntMath.exact(st.lvh)),
     'Supplies: ' .. HuntMath.exact(st.sv) .. ' gold',
-    'Profit: ' .. HuntMath.exact(st.pf) .. ' gold (' .. HuntMath.exact(st.pfh) .. '/h)',
+    tr('Profit: %s gold (%s/h)', HuntMath.exact(st.pf), HuntMath.exact(st.pfh)),
     'Kills: ' .. HuntMath.exact(st.kc),
   }
   for _, k in ipairs(HuntMath.killRows(st.k, st.kc)) do

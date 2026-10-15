@@ -1,0 +1,408 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "rimecrown_depths",
+  "name": "Rimecrown Depths",
+  "biome": "ice",
+  "size": [
+    180,
+    140
+  ],
+  "floors": 1,
+  "level": [
+    1000,
+    1120
+  ],
+  "seed": 25401,
+  "origin": {
+    "x": 15100,
+    "y": 14940,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "frost_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "lich_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "glacier_heart",
+      "floor": 1,
+      "size": [
+        28,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "wyrm_shelf",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "purity_well",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "shaper_crevasse",
+      "floor": 1,
+      "size": "large",
+      "place": "south"
+    },
+    {
+      "id": "crown_vault",
+      "floor": 1,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    },
+    {
+      "id": "hoarfrost_hall",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "rime_terraces",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "west"
+    },
+    {
+      "id": "frozen_nave",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "icefall_chasm",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "pale_crypt",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "shiver_vault",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "snowblind_grotto",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "frostbite_cells",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "frost_camp",
+      "to": "lich_gallery",
+      "width": 3
+    },
+    {
+      "from": "lich_gallery",
+      "to": "glacier_heart",
+      "width": 4
+    },
+    {
+      "from": "glacier_heart",
+      "to": "wyrm_shelf",
+      "width": 3
+    },
+    {
+      "from": "glacier_heart",
+      "to": "purity_well",
+      "width": 3
+    },
+    {
+      "from": "purity_well",
+      "to": "shaper_crevasse",
+      "width": 3
+    },
+    {
+      "from": "shaper_crevasse",
+      "to": "crown_vault",
+      "width": 2
+    },
+    {
+      "from": "wyrm_shelf",
+      "to": "frost_camp",
+      "width": 3
+    },
+    {
+      "from": "frost_camp",
+      "to": "hoarfrost_hall",
+      "width": 3
+    },
+    {
+      "from": "hoarfrost_hall",
+      "to": "wyrm_shelf",
+      "width": 3
+    },
+    {
+      "from": "lich_gallery",
+      "to": "rime_terraces",
+      "width": 3
+    },
+    {
+      "from": "rime_terraces",
+      "to": "purity_well",
+      "width": 3
+    },
+    {
+      "from": "glacier_heart",
+      "to": "frozen_nave",
+      "width": 3
+    },
+    {
+      "from": "frozen_nave",
+      "to": "shaper_crevasse",
+      "width": 3
+    },
+    {
+      "from": "wyrm_shelf",
+      "to": "icefall_chasm",
+      "width": 3
+    },
+    {
+      "from": "icefall_chasm",
+      "to": "pale_crypt",
+      "width": 3
+    },
+    {
+      "from": "lich_gallery",
+      "to": "shiver_vault",
+      "width": 3
+    },
+    {
+      "from": "icefall_chasm",
+      "to": "crown_vault",
+      "width": 2
+    },
+    {
+      "from": "icefall_chasm",
+      "to": "snowblind_grotto",
+      "width": 3
+    },
+    {
+      "from": "purity_well",
+      "to": "frostbite_cells",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "frost_camp"
+  },
+  "exit": {
+    "zone": "frost_camp"
+  },
+  "spawns": [
+    {
+      "zone": "lich_gallery",
+      "monster": "Ice Lich",
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacier_heart",
+      "monster": "Scaleborn",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacier_heart",
+      "monster": "Celestial Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_shelf",
+      "monster": "Celestial Wyrm",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "purity_well",
+      "monster": "Spirit of Purity",
+      "count": 17,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaper_crevasse",
+      "monster": "Twisted Shaper",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaper_crevasse",
+      "monster": "Vorkhaz",
+      "count": 2,
+      "respawn": 75,
+      "pack": 2
+    },
+    {
+      "zone": "crown_vault",
+      "monster": "Vorkhaz",
+      "count": 2,
+      "respawn": 75,
+      "pack": 2
+    },
+    {
+      "zone": "hoarfrost_hall",
+      "monster": "Celestial Wyrm",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hoarfrost_hall",
+      "monster": "Ice Lich",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rime_terraces",
+      "monster": "Spirit of Purity",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rime_terraces",
+      "monster": "Ice Lich",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_nave",
+      "monster": "Scaleborn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_nave",
+      "monster": "Twisted Shaper",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "icefall_chasm",
+      "monster": "Celestial Wyrm",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "icefall_chasm",
+      "monster": "Scaleborn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_crypt",
+      "monster": "Spirit of Purity",
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_crypt",
+      "monster": "Vorkhaz",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shiver_vault",
+      "monster": "Ice Lich",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowblind_grotto",
+      "monster": "Celestial Wyrm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowblind_grotto",
+      "monster": "Twisted Shaper",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frostbite_cells",
+      "monster": "Spirit of Purity",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frostbite_cells",
+      "monster": "Scaleborn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "crown_vault",
+      "quest": "rimecrown_tribute",
+      "reward": {
+        "gold": 1000000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 4
+          }
+        ],
+        "message": "Tribute to a crown no one wears."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a frozen deep for levels 1000-1120, the first world hunt past 1000. Four times the first draft (owner, 2026-10-14): 13 hunting zones in loops, room for twelve parties."
+}

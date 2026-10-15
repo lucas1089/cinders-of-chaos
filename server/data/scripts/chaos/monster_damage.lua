@@ -18,6 +18,9 @@
 --   did not take to the onHealthChange events. The mana event scales the hit; when the mana cannot take all of it, the
 --   health event of the same hit (same attacker, same millisecond) is not scaled again.
 --
+-- * Pack combat (pace.lua): a paced monster's hits (every element, conditions and mana shield hits included) are x its
+--   damage curve (pace_config.lua damage) on top, in the same event; bosses and player summons are never paced.
+--
 -- Config: monster_damage_config.lua (Chaos.monsterDamage). Pure logic: monster_damage_core.lua
 -- (tests: server/tests/monster_damage_test.lua). Exports: ChaosMonsterDamage.levelOf(monster),
 -- ChaosMonsterDamage.multiplierOf(attacker) (1 when not boosted).
@@ -46,8 +49,10 @@ local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
 
--- monster id -> level (a monster's level does not change); emptied when it grows large
-local levelCache, cacheSize = {}, 0
+-- monster id -> level (a monster's level does not change); two generations of cfg.levelCacheSize entries each
+-- (monster_damage_core.lua C.newCache): bounded memory, and live monsters stay cached with ~100k alive under pace
+local levelCache = C.newCache(Chaos.monsterDamage and Chaos.monsterDamage.levelCacheSize or 32768)
+MD.levelCache = levelCache
 
 local function ownLevel(monster)
 	if ChaosLoot and ChaosLoot.monsterLevel then
@@ -71,7 +76,7 @@ end
 
 function MD.levelOf(monster)
 	local id = monster:getId()
-	local lvl = levelCache[id]
+	local lvl = levelCache.get(id)
 	if lvl then
 		return lvl
 	end
@@ -80,11 +85,7 @@ function MD.levelOf(monster)
 	if inv and tonumber(inv.areaLevel) then
 		lvl = math.max(lvl, tonumber(inv.areaLevel))
 	end
-	if cacheSize >= 5000 then
-		levelCache, cacheSize = {}, 0
-	end
-	levelCache[id] = lvl
-	cacheSize = cacheSize + 1
+	levelCache.put(id, lvl)
 	return lvl
 end
 
@@ -115,10 +116,14 @@ local function boost(creature, attacker, primaryDamage, primaryType, secondaryDa
 		return primaryDamage, secondaryDamage
 	end
 	local mult = MD.multiplierOf(attacker)
-	if mult == 1 then
+	-- pack combat (pace.lua): a paced monster (or its summon) deals x its damage curve, every element and condition
+	local pm = ChaosPace and ChaosPace.damageMultOf and ChaosPace.damageMultOf(attacker) or 1
+	if mult == 1 and pm == 1 then
 		return primaryDamage, secondaryDamage
 	end
-	return C.scaleHit(cfg(), K, mult, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	primaryDamage, secondaryDamage = C.scaleHit(cfg(), K, mult, primaryDamage, primaryType, secondaryDamage,
+		secondaryType, origin)
+	return C.scalePace(K, pm, primaryDamage, primaryType, secondaryDamage, secondaryType)
 end
 
 local health = CreatureEvent("ChaosMonsterDamageHealth")

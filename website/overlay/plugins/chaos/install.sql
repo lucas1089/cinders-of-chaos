@@ -228,7 +228,9 @@ CREATE TABLE IF NOT EXISTS `chaos_pay_payers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Character Bazaar (server/sql/chaos_bazaar.sql; the game server also creates them at startup): listings, bids with
--- their escrow, the log. bazaar_lib.php, README "Character Bazaar".
+-- their escrow, the log. bazaar_lib.php, README "Character Bazaar". `active_player_id` (generated, unique): one open
+-- listing per character; setup/chaos_setup.php adds it to a table created before it existed. `seller_slot` and
+-- `active_seller_id` (generated) with their unique key: at most maxActivePerAccount open listings per seller.
 CREATE TABLE IF NOT EXISTS `chaos_bazaar_listings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `player_id` int(11) NOT NULL,
@@ -249,7 +251,12 @@ CREATE TABLE IF NOT EXISTS `chaos_bazaar_listings` (
   `player_name` varchar(255) NOT NULL DEFAULT '',
   `level` int(11) NOT NULL DEFAULT 0,
   `vocation` int(11) NOT NULL DEFAULT 0,
+  `active_player_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `player_id` ELSE NULL END) STORED,
+  `seller_slot` tinyint(3) unsigned DEFAULT NULL,
+  `active_seller_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `seller_account_id` ELSE NULL END) STORED,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `chaos_bazaar_listings_active` (`active_player_id`),
+  UNIQUE KEY `chaos_bazaar_listings_seller_slot` (`active_seller_id`, `seller_slot`),
   KEY `chaos_bazaar_listings_player` (`player_id`, `status`),
   KEY `chaos_bazaar_listings_status` (`status`, `ends_at`),
   KEY `chaos_bazaar_listings_seller` (`seller_account_id`, `status`)
@@ -281,3 +288,8 @@ CREATE TABLE IF NOT EXISTS `chaos_bazaar_log` (
   PRIMARY KEY (`id`),
   KEY `chaos_bazaar_log_listing` (`listing_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Discord announcements (discord_lib.php, discord_worker.php; the game server's server/sql/chaos_discord.sql creates the
+-- same tables): the queue the game writes and the worker's cursors. Here too, so the worker runs before the server.
+CREATE TABLE IF NOT EXISTS `chaos_discord_queue` (`id` int unsigned NOT NULL AUTO_INCREMENT, `created_at` int unsigned NOT NULL, `kind` varchar(32) NOT NULL, `channel` varchar(32) NOT NULL DEFAULT 'default', `title` varchar(256) NOT NULL DEFAULT '', `body` text NOT NULL, `fields` text NOT NULL, `status` varchar(8) NOT NULL DEFAULT 'new', `attempts` int unsigned NOT NULL DEFAULT 0, `next_at` int unsigned NOT NULL DEFAULT 0, `sent_at` int unsigned NOT NULL DEFAULT 0, `error` varchar(255) NOT NULL DEFAULT '', PRIMARY KEY (`id`), KEY `status` (`status`, `next_at`, `id`), KEY `created` (`created_at`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS `chaos_discord_state` (`k` varchar(32) NOT NULL, `v` bigint NOT NULL DEFAULT 0, PRIMARY KEY (`k`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

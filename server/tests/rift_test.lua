@@ -300,10 +300,12 @@ do
 	for _, row in ipairs(cfg.layout.sizes) do
 		ok(row[2] + 16 <= g.spacing, "band side " .. row[2] .. " fits the slot with 8 cells each side")
 	end
-	-- clear of every other runtime area (they use x/y 2000-15359)
+	-- clear of every generated area (x/y 2000-15359, the queue dungeons 6-9 in 24576-25599)
 	local ag = dofile("data/scripts/chaos/areagen_config.lua")
+	local gx2, gy2 = g.origin.x + g.spacing * g.cols - 1, g.origin.y + g.spacing * (g.rows or g.cols) - 1
 	for _, def in ipairs(ag.areas) do
-		ok(def.origin.x + def.size[1] < g.origin.x and def.origin.y + def.size[2] < g.origin.y, "clear of " .. def.id)
+		local x2, y2 = def.origin.x + def.size[1] - 1, def.origin.y + def.size[2] - 1
+		ok(x2 < g.origin.x or def.origin.x > gx2 or y2 < g.origin.y or def.origin.y > gy2, "clear of " .. def.id)
 	end
 end
 

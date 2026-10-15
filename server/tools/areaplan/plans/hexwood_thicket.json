@@ -1,0 +1,322 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "hexwood_thicket",
+  "name": "Hexwood Thicket",
+  "biome": "forest",
+  "size": [
+    184,
+    144
+  ],
+  "floors": 1,
+  "level": [
+    720,
+    840
+  ],
+  "seed": 25302,
+  "origin": {
+    "x": 14700,
+    "y": 14940,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "woodcutters_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "stag_glade",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "weeping_grove",
+      "floor": 1,
+      "size": [
+        28,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "ape_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "crawler_roots",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "sorcerers_ring",
+      "floor": 1,
+      "size": "large",
+      "place": "north"
+    },
+    {
+      "id": "raven_copse",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "briar_maze",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "hollow_oaks",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "blight_meadow",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "witch_clearing",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "thornback_ridge",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "woodcutters_camp",
+      "to": "stag_glade",
+      "width": 3
+    },
+    {
+      "from": "stag_glade",
+      "to": "weeping_grove",
+      "width": 4
+    },
+    {
+      "from": "weeping_grove",
+      "to": "ape_hollow",
+      "width": 3
+    },
+    {
+      "from": "weeping_grove",
+      "to": "crawler_roots",
+      "width": 3
+    },
+    {
+      "from": "crawler_roots",
+      "to": "woodcutters_camp",
+      "width": 3
+    },
+    {
+      "from": "weeping_grove",
+      "to": "sorcerers_ring",
+      "width": 3
+    },
+    {
+      "from": "ape_hollow",
+      "to": "raven_copse",
+      "width": 3
+    },
+    {
+      "from": "raven_copse",
+      "to": "sorcerers_ring",
+      "width": 3
+    },
+    {
+      "from": "sorcerers_ring",
+      "to": "briar_maze",
+      "width": 3
+    },
+    {
+      "from": "briar_maze",
+      "to": "crawler_roots",
+      "width": 3
+    },
+    {
+      "from": "crawler_roots",
+      "to": "hollow_oaks",
+      "width": 3
+    },
+    {
+      "from": "hollow_oaks",
+      "to": "woodcutters_camp",
+      "width": 3
+    },
+    {
+      "from": "weeping_grove",
+      "to": "blight_meadow",
+      "width": 3
+    },
+    {
+      "from": "blight_meadow",
+      "to": "witch_clearing",
+      "width": 3
+    },
+    {
+      "from": "stag_glade",
+      "to": "thornback_ridge",
+      "width": 3
+    },
+    {
+      "from": "stag_glade",
+      "to": "blight_meadow",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "woodcutters_camp"
+  },
+  "exit": {
+    "zone": "woodcutters_camp"
+  },
+  "spawns": [
+    {
+      "zone": "stag_glade",
+      "monster": "Black Stag",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_grove",
+      "monster": "Elite Spider",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_grove",
+      "monster": "Cursed Ape",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ape_hollow",
+      "monster": "Cursed Ape",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crawler_roots",
+      "monster": "Webbound Crawler",
+      "count": 17,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "sorcerers_ring",
+      "monster": "Dark Sorcerer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sorcerers_ring",
+      "monster": "Black Stag",
+      "count": 2,
+      "respawn": 75,
+      "pack": 2
+    },
+    {
+      "zone": "raven_copse",
+      "monster": "Cursed Ape",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "raven_copse",
+      "monster": "Elite Spider",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "briar_maze",
+      "monster": "Webbound Crawler",
+      "count": 11,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "briar_maze",
+      "monster": "Elite Spider",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_oaks",
+      "monster": "Black Stag",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_oaks",
+      "monster": "Webbound Crawler",
+      "count": 11,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "blight_meadow",
+      "monster": "Black Stag",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blight_meadow",
+      "monster": "Cursed Ape",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "witch_clearing",
+      "monster": "Dark Sorcerer",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "witch_clearing",
+      "monster": "Elite Spider",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thornback_ridge",
+      "monster": "Black Stag",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a cursed wood for levels 720-840 above ground, the stags, apes and crawlers that spawned nowhere. Four times the first draft (owner, 2026-10-14): 11 hunting zones in loops, room for twelve parties."
+}

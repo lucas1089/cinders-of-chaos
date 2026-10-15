@@ -1,0 +1,256 @@
+// The Chronicle window (game_chronicle): the Ashen Chronicle's chapters with their goal bars, the record of past seasons,
+// and the Capital Memorial (the "Show me on the Memorial" choice and what it remembers this season). Styles from
+// client_chaos_theme. Every text wraps and takes the height it needs; the list and the page scroll. Opened from the
+// menu (Adventure > Chronicle).
+
+ChronicleText < UILabel
+  height: 14
+  text-align: topLeft
+  text-wrap: true
+  text-vertical-auto-resize: true
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  phantom: true
+
+ChronicleHeading < ChronicleText
+  margin-top: 10
+  font: verdana-11px-rounded
+  color: #e8b84a
+
+ChronicleParagraph < ChronicleText
+  margin-top: 4
+
+ChronicleNote < ChronicleText
+  margin-top: 4
+  color: #8c8070
+
+// one row of the list: a name and a line under it
+ChronicleListRow < UIWidget
+  height: 34
+  margin-bottom: 2
+  padding: 3 5 3 5
+  phantom: false
+  focusable: false
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+
+  ChronicleText
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  ChronicleText
+    id: sub
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 1
+    color: #8c8070
+
+// a goal: its label over a bar
+ChronicleGoal < UIWidget
+  height: 36
+  margin-top: 6
+  phantom: true
+
+  ChronicleText
+    id: label
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+  ChaosProgressBar
+    id: bar
+    anchors.top: label.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 3
+    height: 16
+    background-color: #c8641e
+
+// a ranked name: place, name, points
+ChronicleTopRow < UIWidget
+  height: 16
+  phantom: true
+
+  UILabel
+    id: place
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 24
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+
+  UILabel
+    id: name
+    anchors.left: place.right
+    anchors.right: value.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 90
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: right
+
+ChronicleCheck < ChaosCheckBox
+  margin-top: 8
+  height: 16
+  text-auto-resize: true
+
+ChronicleSave < ChaosButton
+  margin-top: 10
+  width: 120
+
+ChaosMainWindow
+  id: chronicleWindow
+  size: 820 580
+  !text: tr('Chronicle')
+  @onEscape: modules.game_chronicle.hide()
+
+  UIWidget
+    id: tabBar
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+    ChaosTabButton
+      id: tabChapters
+      !text: tr('Chapters')
+      @onClick: modules.game_chronicle.showTab('chapters')
+
+    ChaosTabButton
+      id: tabRecord
+      !text: tr('Record')
+      @onClick: modules.game_chronicle.showTab('record')
+
+    ChaosTabButton
+      id: tabMemorial
+      !text: tr('Memorial')
+      @onClick: modules.game_chronicle.showTab('memorial')
+
+  ChaosLabel
+    id: headLabel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 16
+    text-align: left
+    color: #f6cf72
+
+  // ------------------------------------------------------------ the list
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: headLabel.bottom
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 8
+    width: 250
+
+  UIScrollArea
+    id: entryList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 5 3 5 5
+    vertical-scrollbar: listScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin: 3 3 3 0
+    step: 36
+    pixels-scroll: true
+
+  // ------------------------------------------------------------ the page
+  ChaosPanelDark
+    id: pageFrame
+    anchors.top: listFrame.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: listFrame.bottom
+    margin-left: 8
+
+  ChronicleText
+    id: pageTitle
+    anchors.top: pageFrame.top
+    anchors.left: pageFrame.left
+    anchors.right: pageFrame.right
+    margin: 8 12 0 12
+    font: verdana-11px-rounded
+    color: #f6cf72
+
+  ChronicleText
+    id: pageSub
+    anchors.top: pageTitle.bottom
+    anchors.left: pageTitle.left
+    anchors.right: pageTitle.right
+    margin-top: 2
+    color: #8c8070
+
+  ChaosSeparator
+    id: pageSep
+    anchors.top: pageSub.bottom
+    anchors.left: pageFrame.left
+    anchors.right: pageFrame.right
+    margin: 4 8 0 8
+
+  UIScrollArea
+    id: page
+    anchors.top: pageSep.bottom
+    anchors.left: pageFrame.left
+    anchors.right: pageScroll.left
+    anchors.bottom: pageFrame.bottom
+    margin: 2 4 8 12
+    vertical-scrollbar: pageScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: pageScroll
+    anchors.top: pageSep.bottom
+    anchors.right: pageFrame.right
+    anchors.bottom: pageFrame.bottom
+    margin: 2 3 3 0
+    step: 40
+    pixels-scroll: true
+
+  ChaosLabel
+    id: msgLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_chronicle.hide()

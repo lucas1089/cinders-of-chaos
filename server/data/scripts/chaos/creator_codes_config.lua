@@ -13,8 +13,9 @@
 return {
 	enabled = true,
 
-	-- PLACEHOLDER (docs/OWNER_TODO.md "Creator codes"): % of the donation's coins the creator earns
-	sharePct = 5,
+	-- % of the donation's coins the creator earns (decided 2026-10-14, owner delegated; docs/PRICES.md): 10, so the
+	-- Vault's 5000 coins reach orderCap exactly
+	sharePct = 10,
 	-- a code chosen by a donor applies to that account's donations for this many days (then the donor picks again)
 	supportDays = 30,
 	-- a share is paid this many days after the donation was credited, when it was not refunded or charged back

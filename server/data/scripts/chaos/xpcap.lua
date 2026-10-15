@@ -36,6 +36,9 @@ function X.baseOf(player, source, rawExp, enteredExp)
 	if tier and ChaosTiers and ChaosTiers[tier] then
 		tierXp = ChaosTiers[tier].xp or 1
 	end
+	-- pack combat (pace.lua): a paced monster's experience per kill is x its curve before any bonus, so is its base
+	local paceXp = ChaosPace and ChaosPace.xpMultOf and ChaosPace.xpMultOf(source) or 1
+	tierXp = tierXp * paceXp
 	rawExp = tonumber(rawExp)
 	if rawExp and rawExp > 0 then
 		local okL, lvl = pcall(function() return source:getMonsterLevel() end)

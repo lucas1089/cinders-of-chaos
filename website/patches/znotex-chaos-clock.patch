@@ -1,0 +1,12 @@
+--- a/config.php
++++ b/config.php
+@@ -461,7 +461,8 @@
+ 	function getClock($time = false, $format = false, $adjust = true) {
+ 		if ($time === false) $time = time();
+ 		$date = "d F Y (H:i)";
+-		if ($adjust) $adjust = (1 * 3600);
++		// Cinders of Chaos: no fixed +1 h. Times follow PHP's time zone, like the footer clock and the game server.
++		if ($adjust) $adjust = 0;
+ 		else $adjust = 0;
+ 		if ($format) return date($date, $time+$adjust);
+ 		else return $time+$adjust;

@@ -180,6 +180,7 @@ local function buildAutoSeller()
     local cb = g_ui.createWidget('AutoSellerRarityCheck', asWindow.rarityRow)
     cb:setId('rarity_' .. t.key)
     cb:setText(tr(t.name))
+    cb:setWidth(AV.checkWidth(cb:getTextSize().width)) -- as wide as its text (a fixed width clipped the names)
     cb:setColor(t.color)
     cb.tierKey = t.key
     cb.onCheckChange = safe('rarity', onRarityCheck)

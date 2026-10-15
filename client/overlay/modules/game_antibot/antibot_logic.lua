@@ -1,6 +1,7 @@
 -- game_antibot pure logic (no client API): the presence check payload, countdown text and colour, the report form
 -- check and the messages. antibot.lua draws; antibot_logic_test.lua runs this under luajit and lua5.3.
 -- Server: data/scripts/chaos/antibot.lua, reports.lua (extended opcode 211).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 AntibotLogic = AntibotLogic or {}
 local L = AntibotLogic
@@ -46,7 +47,7 @@ function L.parseCheck(d)
 end
 
 function L.prompt(word)
-  return 'Click the picture of: ' .. tostring(word)
+  return tr('Click the picture of: %s', tostring(word))
 end
 
 -- seconds left -> "1:05"
@@ -72,8 +73,8 @@ function L.answer(check, key)
 end
 
 function L.retryText(retries)
-  if retries > 0 then return 'Another picture' end
-  return 'No more pictures'
+  if retries > 0 then return tr('Another picture') end
+  return tr('No more pictures')
 end
 
 -- ---------------------------------------------------------------- reports
@@ -102,11 +103,11 @@ end
 -- the same rules as the server (reports_core.lua R.validate); returns the message or nil, error text
 function L.reportMessage(name, reason, note, ownName, noteMax)
   name = tostring(name or ''):gsub('^%s+', ''):gsub('%s+$', '')
-  if not L.validName(name) then return nil, 'Type the name of the character you want to report.' end
-  if ownName and name:lower() == tostring(ownName):lower() then return nil, 'You cannot report yourself.' end
-  if type(reason) ~= 'string' or reason == '' then return nil, 'Choose a reason.' end
+  if not L.validName(name) then return nil, tr('Type the name of the character you want to report.') end
+  if ownName and name:lower() == tostring(ownName):lower() then return nil, tr('You cannot report yourself.') end
+  if type(reason) ~= 'string' or reason == '' then return nil, tr('Choose a reason.') end
   note = L.cleanNote(note, noteMax)
-  if reason == 'other' and #note < 3 then return nil, 'Describe the problem in the note (reason Other).' end
+  if reason == 'other' and #note < 3 then return nil, tr('Describe the problem in the note (reason Other).') end
   return { name = name, reason = reason, note = note }
 end
 

@@ -175,7 +175,7 @@ Measured around every spawn (13 tiles around each monster) on the live map, with
 | dead ends | 17-25 per 1 000 hunt tiles (short side pockets; good safe spots) |
 | monsters per spawn | mean 1.1-1.5 (most spawns hold 1 monster with radius 1; groups of 3-8 for packs) |
 | distance between spawn points | median 4-7 tiles (p25 3-4, p75 4-8) |
-| density | 2.7-4.4 monsters per 100 walkable hunt tiles. By area: forest/grass 1.2-1.7, desert/ice 1.7-2.0, dirt 2.2, swamp 2.5, cave 2.7-3.2, dungeon 3.3-3.6, lava 1.3-3.9 |
+| density | 4.0-5.0 monsters per 100 walkable hunt tiles since pack combat (server/README.md "Pack combat (pace)": monsters die 2-30x faster, packs of 3-7; before 2.7-4.4). By area: forest/grass 1.2-1.7, desert/ice 1.7-2.0, dirt 2.2, swamp 2.5, cave 2.7-3.2, dungeon 3.3-3.6, lava 1.3-3.9 |
 | depth | 64 % of live-map spawns are on floors 7-11 and 21 % on floors 12-15. Above ground (0-6) holds 14 % |
 | floor changes | caves have 4 per 1 000 open tiles, dungeons 3.4. On the live map 98 % of ladders have a tile above, 79 % of stairs and 70 % of holes have a tile directly below |
 
@@ -311,7 +311,8 @@ The same model can be written as an OTBM piece for the map editor.
 ### Make or change an area
 1. Add or edit an entry in `areas` of `server/data/scripts/chaos/areagen_config.lua`:
    - `kind`: `cave`, `dungeon` or `waste`; `theme`; `seed`;
-   - `origin`: top-left of the first floor, inside x/y 14336-15359, not overlapping another area;
+   - `origin`: top-left of the first floor, inside x/y 14336-15359 (a queue dungeon also 24576-25599, below), not
+     overlapping another area;
    - `size`, `floors`, `linksPerFloor`, `layout` (below), `spawns`, `boss`;
    - `entrance` and `back` on the world map, and `minLevel`.
 2. Look at it before it goes live:
@@ -334,8 +335,9 @@ The same model can be written as an OTBM piece for the map editor.
 | `layout.minRegion` | pockets smaller than this are filled; bigger ones are joined by a tunnel | 40-60 |
 | `layout.tunnelRadius` | 1 = 3-wide tunnels, 2 = 5-wide | 1-2 |
 | `layout.rooms`, `room`, `corridor`, `loops`, `bossRoom` (dungeon) | room count and size, corridor width, extra circuits | 9-13 rooms of 7-12, corridor 3, loops 2-4 |
-| `spawns.density` | monsters per 100 walkable tiles outside the safe radius | cave 2.4, dungeon 2.8, waste 1.6 (item 89: 2.7-4.4 normal hunts) |
-| `spawns.roomCap` (dungeon) | most monsters per 100 tiles of one room | 5-5.5 |
+| `spawns.density` | monsters per 100 walkable tiles outside the safe radius | hunts 4.5 (band 4.0-5.0, pack combat), queue dungeons 8-8.75 in packs of 6-7 (at least 100 monsters a run) |
+| `spawns.roomCap` (dungeon) | most monsters per 100 tiles of one room | 5-5.5 (queue dungeons 16) |
+| `spawns.packChance`, `packMin`, `packMax` | the share of points that are packs and their size | hunts 60, 2-4; queue dungeons 100, 6-7 |
 | `spawns.minDistance`, `packChance`, `packMax` | spacing of spawn points, packs | 4-5, 15-30 %, 2-3 |
 | `spawns.level` | the level the monsters are scaled to | the area's band |
 | `theme.decor.share`, `clusters` | single pieces per walkable tile, clusters per 1000 tiles | cave 0.10, dungeon 0.12, waste 0.08 |
@@ -372,7 +374,7 @@ temple with a nave, chapels and a boss throne room).
 
 | key | what |
 |---|---|
-| `id`, `name`, `biome`, `size` [w, h] (24-160), `floors` (1-4), `level` [lo, hi] | the area |
+| `id`, `name`, `biome`, `size` [w, h] (24-200), `floors` (1-4), `level` [lo, hi] | the area |
 | `seed`, `origin`, `decoration` (sparse, normal, dense), `light` (dark, dim, normal, bright) | optional |
 | `zones` | `id`, `floor`, `shape` (room, cave, arena), `size` (small, medium, large, huge or [w, h]), `at` or `place` (compass), `role` (hunt, camp, boss, treasure, passage), `pz` |
 | `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor or tunnel |
@@ -466,3 +468,114 @@ open tile, lights per 100 tiles and the spam share.
 ### What it does not do
 - No towns, houses or house roofs (only a flat roof over a dungeon above ground).
 - The chest script gives items, gold and experience; quest logic beyond that is hand-written.
+
+### Content plans
+`server/tools/areaplan/plans/`: sixteen production plans for the thin level bands (docs/CONTENT.md). CI validates and
+compiles them with the examples. Each has its own `origin`, one 200 x 200 cell in the empty block east and south of
+the generated areas (rows y 14340, 14540, 14940 and 15140; the plaza at 14800, 14800 sits in the free band between),
+so they never overlap each other, the generated areas or the plaza. Since 2026-10-14 each is four times the first
+draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de monstros"): twice the side, 12-17 zones in
+loops, 3.2-3.5 monsters per 100 walkable tiles; since pack combat (the same day, server/README.md "Pack combat (pace)")
+4.1-4.6 in packs of 3 (respawn 45 s for 300-599, 75 s for 600+), no zone above the validator's 8 per 100:
+
+| Plan | Band | Size | Origin x, y, z | Arrival |
+|---|---|---|---|---|
+| bonechoir_catacomb | 200-290 | 148 x 120 | 14700, 14340, 10 | 14773, 14363, 10 |
+| sulphur_gallery | 215-299 | 164 x 124 | 14900, 14340, 10 | 14931, 14401, 10 |
+| wyrmspine_hollows | 500-640 | 176 x 136 | 15100, 14340, 9 | 15134, 14366, 9 |
+| pyrarch_crucible | 520-690 | 172 x 140 | 14700, 14540, 10 | 14733, 14651, 10 |
+| widowmere | 480-640 | 168 x 132 | 14900, 14540, 8 | 14983, 14565, 8 |
+| corsairs_reach | 780-900 | 172 x 132 | 15100, 14540, 9 | 15133, 14605, 9 |
+| hexwood_thicket | 720-840 | 184 x 144 | 14700, 14940, 7 | 14791, 15054, 7 |
+| mirefang_basin | 880-999 | 176 x 140 | 14900, 14940, 8 | 14934, 14967, 8 |
+| rimecrown_depths | 1000-1120 | 180 x 140 | 15100, 14940, 7 | 15189, 14967, 7 |
+| cinderglass_sanctum | 1120-1300 | 192 x 152, 2 floors | 14700, 15140, 9 | 14795, 15260, 9 |
+| slagmourn_foundry | 1000-1150 | 188 x 168 | 14340, 14700, 10 | 14376, 14783, 10 |
+| hollowmass_reliquary | 1150-1300 | 184 x 156, 2 floors | 14340, 14920, 9 | 14431, 15043, 9 |
+| gallowfen_mire | 1300-1450 | 184 x 176 | 14900, 14700, 8 | 14991, 14734, 8 |
+| voidscar_chasm | 1400-1500 | 192 x 176, 2 floors | 15100, 14700, 11 | 15252, 14787, 11 |
+| gravehorn_deeps | 1500-1750 | 188 x 172, 2 floors | 14340, 15140, 10 | 14433, 15173, 10 |
+| duskmarrow_crater | 1750-2000 | 192 x 176, 2 floors | 15305, 14340, 9 | 15342, 14427, 9 |
+
+The last four sit west of the generated areas' column (x 14340, below y 14686) and in the band between rows 14540
+and 14940 east of the plaza (x 14900 and 15100, y 14700), at least 10 tiles from every other plan, the generated
+areas, the plaza and the two chronicle cells (14900, 15140 and 15100, 15140).
+
+**The fixed areas of `server/tools/areaplan/chronicle/`** (2026-10-14): the Capital Memorial's plaza at 14800, 14800, 7
+(48 x 40), the Cinderscar Breach at **14910**, 15140, 7 (128 x 104; moved 10 east of its cell so it keeps 18 tiles
+from cinderglass_sanctum, which ends at x 14891) and the Ossuary Stair at 15100, 15140, 9 (120 x 104; 60 tiles below
+mirefang_basin and rimecrown_depths). Every one is 10+ tiles from every plan and generated area in x and y, whatever
+the floor; the base map has no tile within 10 of any of them (checked with `tools/map/otbm.py`). Install step
+`contentareas` places them at their origins with their spawns, without a teleport: their ways in are runtime portals
+in the capital (chronicle_config.lua `areas` gate, memorial_config.lua `plaza.portal`). Dry run and real run on a
+copy of the base map (2026-10-14): 19 areas and the room placed, the second run changed nothing.
+
+**The placed rooms of `server/tools/areaplan/rooms/`** (2026-10-15): the Idle Hall (server/README.md "Idle Hall") at
+**14600, 14760, 7** (44 x 28), in the free band between slagmourn_foundry (ends x 14527), pyrarch_crucible (ends
+y 14679), the generated areas (end y 14675), hollowmass_reliquary and hexwood_thicket (start y 14920 / 14940) and the
+plaza (starts x 14800): 70+ tiles from each (`tools/idle_hall_test.py` holds it 10+ from every plan and generated
+area). Step `contentareas` places this folder like the chronicle folder: a fixed area at its origin, no teleport; the
+way in is idlehall.lua's move, the way out the plan's exit portal.
+The two **Halls of Services** (server/README.md "Halls of Services", 2026-10-15): `services_cinderhold` at **14560,
+14820, 7** and `services_mirewake` at **14560, 14870, 7** (66 x 34 each, one layout), in the same band west of the Idle
+Hall: 33 tiles below it, 37 east of hollowmass_reliquary (ends x 14523), 60+ from hexwood_thicket; the base map has no
+tile there on floors 6-8 (checked with `tools/map/otbm.py`), and an install `--dry-run` on the base map places both.
+Biome `townhall` (new): the temples' white marble floor (406) and grey stone walls (1049 vertical, 1050 horizontal,
+1051 the north-west pole, 1053 the south-east corner, as the live map uses them), no clutter, no floor lights (the
+booths' coal basins light the rooms). The booths' counters are placed at runtime by npc_booths.lua, not in the plan, so
+the planner's rooms stay plain; `tools/services_halls_test.py` checks every booth tile on the compiled plans.
+
+The two 1500-2000 plans (2026-10-14, on the 1300-2000 hunting monsters, server/README.md "Late game") take the
+last free cell, 14340, 15140 (gravehorn_deeps, 64 tiles below hollowmass_reliquary), and a new column at x 15305
+(duskmarrow_crater, 13 tiles east of voidscar_chasm's 15292 and 29 east of wyrmspine_hollows). Its origin stays inside
+the schema's 14336-15359; the area runs to x 15497, where the map has no tiles (the full map read with
+tools/map/otbm.py: no tile in x 15295-15510, y 14330-14545 nor in x 14330-14545, y 15130-15355). The block is now full:
+a next plan goes further along that column (x 15305, rows 14540, 14700, 14940) after the same check.
+Teleports: 16 plans in the room's 20 slots (4 spare).
+
+**The dungeon block x/y 24576-25599** (2026-10-14, owner approval: the queue dungeons 6-9 of `areagen_config.lua`,
+server/README.md "Generated areas"). The 14336-15359 block is full, so the four deep dungeons got a block of their
+own outside the world (world x 30700-34600, y 30900-33850). Checked with `tools/map/otbm.py` on the full map
+(18,388,336 tiles): no tile and no spawn in x/y 24576-25599, the nearest tile is 5,315 sqm away (30851, 30914, 9);
+the rift slots use 20480-21503 and every other runtime area 2000-15359. Cells of 256 sqm, z 9 (z 10 free too):
+
+| Dungeon | Cell origin x, y, z | Size, floors |
+|---|---|---|
+| The Marrow Crypts (6, level 1000) | 24576, 24576, 9 | 52 x 42, 1 |
+| The Iron Crucible (7, level 1300) | 24832, 24576, 9 | 52 x 42, 1 |
+| The Fallen Sanctum (8, level 1600) | 24576, 24832, 9 | 52 x 42, 1 |
+| The Pyre Throne (9, level 2000) | 24832, 24832, 9 | 52 x 42, 1 |
+
+The block has room for twelve more cells (x 25088 and 25344, every row; rows y 25088 and 25344). `tests/areagen_test.lua`
+holds every area to one of the two blocks and apart from the others.
+
+**The way in: the teleport room.** `install_all.py` step `contentareas` (`server/tools/install_content_areas.py`)
+places every plan at its own origin, with its spawns and chest script, and grows the teleport room of Cinderhold
+(the hub the "Teleports" portals beside Cinderhold's temple lead to; floor 6, "More Teleports", of the
+three-floor hall at 31627-31669, 32251-32261) by five alcove modules on each side:
+20 new teleports, one per plan in the order of `hunt_teleports_config.lua` (a plan missing there comes after, by band),
+room for 14 plans and 6 spare. Each teleport has the plan's name and band on its sign and floating over it, and two
+monsters of the plan in the cells beside it, like the room's own. Below the band's floor
+it refuses (in the player's language); the camp portal of a placed plan leads back to the middle of the room. Safe to
+re-run; it reads the plans at run time (a moved or resized plan that was placed already is refused: restore
+`<map>.otbm.bak` and install again). Details: server/README.md "Hunt teleports".
+```
+python3 -I server/tools/install_content_areas.py SERVER_DIR/data --dry-run      # what it would do
+python3 -I server/tools/install_all.py SERVER_DIR --only contentareas            # do it
+```
+Placing one by hand (a copy of the map, for the map editor):
+```
+python3 -I server/tools/area_planner.py compile server/tools/areaplan/plans/widowmere.json OUT
+python3 -I server/tools/area_planner.py render server/tools/areaplan/plans/widowmere.json OUT items.otb items.xml Tibia.dat Tibia.spr
+python3 -I server/tools/area_planner.py place OUT/widowmere.otbm world.otbm copy.otbm --at 14900 14540 8 \
+    --spawn world-spawn.xml copy-spawn.xml
+python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest script, when the plan has chests
+```
+- Keep the origin of the table in `--at`: the chest script keys its chests by the origin, and `place` rewrites it
+  when the area moves.
+- A new plan gets its teleport at the next install; a line in `hunt_teleports_config.lua` `plans` (id and display
+  monster) chooses its place and monster. More plans than slots: raise `modules` of a side there.
+- The monsters of the 650-1300 plans spawned nowhere before. Check their art in the client first
+  (server/data/monster/CUSTOM_MONSTERS.md).
+- After placing, rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`, so the bounty board, the
+  bestiary and the map markers know the new spawns, and `content_audit.py` to see the bands again.

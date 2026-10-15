@@ -53,6 +53,29 @@ eq(L.isLocked(nil), false, 'no item') eq(L.isLocked({}), false, 'an item without
 eq(L.greyAction(true, false), 'grey', 'grey a locked item') eq(L.greyAction(true, true), nil, 'already grey')
 eq(L.greyAction(false, true), 'clear', 'unlocked: take our grey back') eq(L.greyAction(false, false), nil, 'leave other shaders')
 
+-- a slot whose setItemShader re-enters (the engine's onItemChange -> game_itemrarity -> onSlotItem): one shader call
+-- each way, no endless recursion (live test 2026-10-14: "stack overflow" opening a backpack with the Loot Bag)
+do
+  local calls, depth, maxDepth = 0, 0, 0
+  local slot = {}
+  local locked = true
+  function slot:setItemShader(name)
+    calls = calls + 1
+    depth = depth + 1
+    if depth > maxDepth then maxDepth = depth end
+    if depth < 50 then L.applyItemGrey(self, locked) end
+    depth = depth - 1
+  end
+  eq(L.applyItemGrey(slot, true), 'grey', 're-entrant slot: greyed')
+  eq(calls, 1, 're-entrant slot: one shader call to grey')
+  eq(maxDepth < 50, true, 're-entrant slot: no recursion')
+  locked = false
+  calls = 0
+  eq(L.applyItemGrey(slot, false), 'clear', 're-entrant slot: cleared')
+  eq(calls, 1, 're-entrant slot: one shader call to clear')
+  eq(slot.sfxGrey, nil, 're-entrant slot: mark gone')
+end
+
 -- the registered shader files exist (client/overlay/data/shaders)
 local shaders = dir .. '../../data/shaders/'
 for _, s in ipairs(L.UI_SHADERS) do

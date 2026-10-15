@@ -19,6 +19,18 @@ end
 ChaosAscensionQuestCore = ChaosAscensionQuestCore or {}
 local M = ChaosAscensionQuestCore
 
+-- Texts take an optional `lang` ("pt-BR" | "en"): through ChaosI18n (i18n_core.lua) when it is loaded, else English.
+-- ascension_quest.lua passes Chaos.lang(player), the Oracle ChaosI18n.langOf(player).
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 M.STAGE = {NONE = 0, PROOF = 1, TRIAL = 2, CHOICE = 3, DONE = 4}
 
 function M.cfg()
@@ -65,30 +77,30 @@ end
 
 -- who may walk the quest: ok, code, text. code: "noline" (no ascension for this vocation), "ascended" (already),
 -- "level" (below Chaos.classes.ascension.minLevel)
-function M.eligibility(vocId, level)
+function M.eligibility(vocId, level, lang)
 	local base = classes().baseOf[vocId]
 	if not base or not classes().ascension.choices[base] then
-		return false, "noline", "Your path holds no ascension, wanderer."
+		return false, "noline", T(lang, "Your path holds no ascension, wanderer.")
 	end
 	if base ~= vocId then
-		return false, "ascended", "You have ascended already. Your path is chosen; only the store's Vocation Change can alter it."
+		return false, "ascended", T(lang, "You have ascended already. Your path is chosen; only the store's Vocation Change can alter it.")
 	end
 	local minLevel = classes().ascension.minLevel
 	if (tonumber(level) or 0) < minLevel then
-		return false, "level", string.format("You are not ready. Return when you have reached level %d.", minLevel)
+		return false, "level", T(lang, "You are not ready. Return when you have reached level %d.", minLevel)
 	end
 	return true, "ok"
 end
 
 -- the ascended class a word names for this character, or nil and the reason (the Choice, stage 3)
-function M.validateChoice(vocId, word, stage)
-	local ok, code, text = M.eligibility(vocId, math.huge)
+function M.validateChoice(vocId, word, stage, lang)
+	local ok, code, text = M.eligibility(vocId, math.huge, lang)
 	if not ok then
 		return nil, text, code
 	end
 	-- DONE too: a character the store's Vocation Change took back to the base class may choose again
 	if M.stage(stage) < M.STAGE.CHOICE then
-		return nil, "You have not passed the Trial yet.", "stage"
+		return nil, T(lang, "You have not passed the Trial yet."), "stage"
 	end
 	local w = (tostring(word or "")):lower():gsub("^%s+", ""):gsub("%s+$", "")
 	local id = classes().ascension.choices[vocId][w]
@@ -97,7 +109,7 @@ function M.validateChoice(vocId, word, stage)
 		for _, c in ipairs(M.choicesOf(vocId)) do
 			words[#words + 1] = c.word
 		end
-		return nil, "Choose: " .. table.concat(words, " or ") .. ".", "word"
+		return nil, T(lang, "Choose: %s.", table.concat(words, T(lang, " or "))), "word"
 	end
 	return id
 end
@@ -120,28 +132,28 @@ end
 
 -- ------------------------------------------------------------------------------------------------ texts
 -- the Calling: the two paths of the base class. nameOf(id) -> vocation name; describe(word, id) -> text or nil
-function M.pathText(word, id, nameOf)
+function M.pathText(word, id, nameOf, lang)
 	local p = M.cfg().paths[word]
 	if p then
-		return p
+		return T(lang, p)
 	end
 	local name = nameOf and nameOf(id) or word
-	return "the " .. tostring(name)
+	return T(lang, "the %s", tostring(name))
 end
 
-function M.callingText(baseName, baseId, nameOf)
+function M.callingText(baseName, baseId, nameOf, lang)
 	local list = M.choicesOf(baseId) or {}
 	local parts = {}
 	for i, c in ipairs(list) do
-		parts[#parts + 1] = (i == 1 and "" or "The other is ") .. M.pathText(c.word, c.id, nameOf) .. " ({" .. c.word .. "})."
+		parts[#parts + 1] = T(lang, i == 1 and "%s ({%s})." or "The other is %s ({%s}).", M.pathText(c.word, c.id, nameOf, lang), c.word)
 	end
-	return string.format("Two roads rise from the %s. One is %s", tostring(baseName), table.concat(parts, " "))
+	return T(lang, "Two roads rise from the %s. One is %s", tostring(baseName), table.concat(parts, " "))
 end
 
-function M.proofText(points)
+function M.proofText(points, lang)
 	local p = M.cfg().proof
-	return string.format("Prove your strength: slay rare and legendary beasts that are worthy of your level. A rare one counts %d, "
-		.. "a legendary one %d. You have %d of %d.", p.points.rare or 0, p.points.legendary or 0, math.max(0, points or 0), p.needed)
+	return T(lang, "Prove your strength: slay rare and legendary beasts that are worthy of your level. A rare one counts %d, a legendary one %d. You have %d of %d.",
+		p.points.rare or 0, p.points.legendary or 0, math.max(0, points or 0), p.needed)
 end
 
 -- ------------------------------------------------------------------------------------------------ Proof of Strength
@@ -180,30 +192,30 @@ end
 
 -- ------------------------------------------------------------------------------------------------ the Trial
 -- may the character enter: ok, reason
-function M.canEnterTrial(stage, now, cooldownUntil, busy)
+function M.canEnterTrial(stage, now, cooldownUntil, busy, lang)
 	if M.stage(stage) ~= M.STAGE.TRIAL then
 		if M.stage(stage) < M.STAGE.TRIAL then
-			return false, "The Trial is closed to you until your strength is proven."
+			return false, T(lang, "The Trial is closed to you until your strength is proven.")
 		end
-		return false, "You have passed the Trial already."
+		return false, T(lang, "You have passed the Trial already.")
 	end
 	if busy then
-		return false, "You are in a trial already."
+		return false, T(lang, "You are in a trial already.")
 	end
 	local wait = (tonumber(cooldownUntil) or 0) - (tonumber(now) or 0)
 	if wait > 0 then
-		return false, string.format("The Trial rejects you for now. Return in %s.", M.formatWait(wait))
+		return false, T(lang, "The Trial rejects you for now. Return in %s.", M.formatWait(wait, lang))
 	end
 	return true
 end
 
-function M.formatWait(seconds)
+function M.formatWait(seconds, lang)
 	seconds = math.max(0, math.floor(seconds))
 	if seconds >= 60 then
 		local m = math.ceil(seconds / 60)
-		return m == 1 and "1 minute" or (m .. " minutes")
+		return m == 1 and T(lang, "1 minute") or T(lang, "%d minutes", m)
 	end
-	return seconds == 1 and "1 second" or (seconds .. " seconds")
+	return seconds == 1 and T(lang, "1 second") or T(lang, "%d seconds", seconds)
 end
 
 -- the guardian's numbers for a player of this level (the level is clamped to scaleMin..scaleMax)
@@ -357,11 +369,11 @@ end
 -- ------------------------------------------------------------------------------------------------ !ascend and staff
 -- what !ascend does: true = the old command runs; false, text = the player is sent to the Oracle.
 -- mode "open" keeps the command for everyone; staff keeps it always; a migrated character's free switch keeps working.
-function M.commandGate(mode, isStaff, freeSwitchPending)
+function M.commandGate(mode, isStaff, freeSwitchPending, lang)
 	if mode == "open" or isStaff or freeSwitchPending then
 		return true
 	end
-	return false, "Ascension is earned, not claimed. Speak with the " .. M.cfg().npc.name .. " in the temple."
+	return false, T(lang, "Ascension is earned, not claimed. Speak with the %s in the Hall of Services.", M.cfg().npc.name)
 end
 
 -- "/ascendset <player>, <class>": name, ascended vocation id (any line) or nil and the reason
@@ -413,34 +425,35 @@ function M.sendModal(player, id, title, text, buttons, choices)
 	return true
 end
 
-function M.sendTrialModal(player, baseId)
+function M.sendTrialModal(player, baseId, lang)
 	local g = M.guardianFor(baseId)
 	local t = M.cfg().trial
-	local text = string.format("The %s waits beyond the veil. You go alone; you have %d seconds to break it.\n\n%s\n\n"
-		.. "If you fall, the Oracle pulls you back unharmed: no experience, no items lost. You may try again after %s.",
-		g.name, t.timeLimitSeconds, g.hint or "", M.formatWait(t.cooldownSeconds))
-	return M.sendModal(player, M.cfg().modal.trial, "The Trial of Ascension", text, {{1, "Enter"}, {2, "Not yet"}})
+	local text = T(lang, "The %s waits beyond the veil. You go alone; you have %d seconds to break it.\n\n%s\n\nIf you fall, the Oracle pulls you back unharmed: no experience, no items lost. You may try again after %s.",
+		g.name, t.timeLimitSeconds, g.hint and T(lang, g.hint) or "", M.formatWait(t.cooldownSeconds, lang))
+	return M.sendModal(player, M.cfg().modal.trial, T(lang, "The Trial of Ascension"), text,
+		{{1, T(lang, "Enter")}, {2, T(lang, "Not yet")}})
 end
 
 -- nameOf(id) -> vocation name
-function M.sendChoiceModal(player, baseId, nameOf)
+function M.sendChoiceModal(player, baseId, nameOf, lang)
 	local list = M.choicesOf(baseId) or {}
 	local names, lines = {}, {}
 	for _, c in ipairs(list) do
 		local name = nameOf and nameOf(c.id) or c.word
 		names[#names + 1] = name
-		lines[#lines + 1] = "- " .. M.pathText(c.word, c.id, nameOf)
+		lines[#lines + 1] = "- " .. M.pathText(c.word, c.id, nameOf, lang)
 	end
-	local text = "Choose the path you will walk. The choice is final; only the store's Vocation Change can alter it.\n\n"
-		.. table.concat(lines, "\n")
-	return M.sendModal(player, M.cfg().modal.choice, "The Choice", text, {{1, "Choose"}, {2, "Not yet"}}, names)
+	local text = T(lang, "Choose the path you will walk. The choice is final; only the store's Vocation Change can alter it.\n\n%s",
+		table.concat(lines, "\n"))
+	return M.sendModal(player, M.cfg().modal.choice, T(lang, "The Choice"), text,
+		{{1, T(lang, "Choose")}, {2, T(lang, "Not yet")}}, names)
 end
 
-function M.sendConfirmModal(player, id, word, name)
-	local text = string.format("You will walk the path of %s.\n\nThis is final. Ascend?",
-		M.pathText(word, id, function() return name end))
-	return M.sendModal(player, M.cfg().modal.confirmBase + id, "Ascend as " .. tostring(name) .. "?", text,
-		{{1, "Ascend"}, {2, "Cancel"}})
+function M.sendConfirmModal(player, id, word, name, lang)
+	local text = T(lang, "You will walk the path of %s.\n\nThis is final. Ascend?",
+		M.pathText(word, id, function() return name end, lang))
+	return M.sendModal(player, M.cfg().modal.confirmBase + id, T(lang, "Ascend as %s?", tostring(name)), text,
+		{{1, T(lang, "Ascend")}, {2, T(lang, "Cancel")}})
 end
 
 return M

@@ -1,9 +1,9 @@
+// Cinders of Chaos: chaos-outline-12px was dropped (client/MANIFEST.md "OFL fonts"). This stub replaces the old file
+// of an updated install with the name of a font loaded before it, so the client skips it and its old sheet takes no
+// font atlas slot.
 Font
-  name: chaos-outline-12px
-  texture: chaos-outline-12px
-  height: 18
-  glyph-size: 13 18
-  first-glyph: 32
-  y-offset: 0
-  spacing: -1 0
+  name: Icon-VBold-11px
+  texture: /data/fonts/Icon-VBold-11px
+  height: 15
+  glyph-size: 22 15
   space-width: 4

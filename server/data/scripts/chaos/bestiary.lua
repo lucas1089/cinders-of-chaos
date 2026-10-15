@@ -22,7 +22,7 @@
 -- (EventCallback onGainExperience; needs the experience dispatch of tools/patch_base_events.py, as every Chaos bonus).
 --
 -- Protocol (JSON {action, data}):
---   client -> server  open | list | entry {id} | board | take {id} | accept {key} | abandon {key} | query
+--   client -> server  open | list | entry {id} | board | take {id} | accept {key} | abandon {key} | reroll | query
 --   server -> client  summary {open, total, known, completed, percent, points, rank = {name, exp, next, nextName},
 --                             cats = [{key, name, known, completed, total}], diffs = [{key, name, th, bonus}], tasks =
 --                             {active, maxActive, doneDay, dailyLimit, doneWeek, weeklyLimit}}
@@ -31,12 +31,15 @@
 --                     entry {id, name, cat, diff, level, kills, stage, th, next, ... what the stage reveals}
 --                     kill {id, kills, stage, next}
 --                     board {offers = [{key, kind, label, target, lo, hi, level, required, monsters, look, reward,
---                            state}], active = [tasks], limits..., nextIn}
+--                            state}], active = [tasks], limits..., nextIn, rerolls}
 --                     tracker {rows = [{k = "task"|"bounty", key, label, p, r, done}]}
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
 end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
@@ -47,6 +50,22 @@ dofile("data/scripts/chaos/bestiary_core.lua")
 
 Chaos.bestiaryConfig = dofile("data/scripts/chaos/bestiary_config.lua")
 local cfg = Chaos.bestiaryConfig
+-- pack combat (pace.lua): kill stages and kill tasks x the monster's kill-goal factor (pace_config.lua goal curves)
+if not ChaosPaceCore then
+	dofile("data/scripts/chaos/pace_core.lua")
+end
+local function paceCfg()
+	return ChaosPaceConfig or dofile("data/scripts/chaos/pace_config.lua")
+end
+cfg.goalOf = function(info, level)
+	return ChaosPaceCore.goalOfEntry(paceCfg(), {minLevel = info.minLevel, maxLevel = info.maxLevel, exp = info.exp,
+		health = info.health, level = level})
+end
+-- a family task: a base monster at the window's middle (the bestiary's level, x2 for the hunting level)
+cfg.familyGoalOf = function(level)
+	local pc = paceCfg()
+	return ChaosPaceCore.factors(pc, (tonumber(level) or 0) * (pc.baseLevelMult or 2), false).goal
+end
 local bountyCfg = Chaos.bountyConfig or dofile("data/scripts/chaos/bounty_config.lua")
 local C = ChaosBestiaryCore
 local OPCODE = ChaosOpcodes.bestiary or 253
@@ -421,9 +440,9 @@ local function sendEntry(player, id)
 		end
 		data.uniques = uniques
 	end
-	local can, task = C.canTakeHunt(e, player:getLevel(), kills, cfg)
+	local can, task = C.canTakeHunt(e, player:getLevel(), kills, cfg, Chaos.lang(player))
 	if can then
-		local ok, why = C.canAccept(task, st, cfg)
+		local ok, why = C.canAccept(task, st, cfg, Chaos.lang(player))
 		if not ok then
 			can, task = false, why
 		end
@@ -559,9 +578,33 @@ local function boardLevel(player)
 	return math.max(1, player:getStorageValue(cfg.taskPointsStorage + 2))
 end
 
+-- board rerolls (Candlemarks): charges in rerollStorage, the day's rerolls used in + 1 (day) / + 2 (count)
+local function rerollsOf(player)
+	return math.max(0, tonumber(player:getStorageValue(cfg.rerollStorage)) or 0)
+end
+X.rerollsOf = rerollsOf
+
+local function boardSalt(player)
+	if player:getStorageValue(cfg.rerollStorage + 1) ~= taskDay() then
+		return 0
+	end
+	return math.max(0, tonumber(player:getStorageValue(cfg.rerollStorage + 2)) or 0)
+end
+
+function X.addRerolls(player, n)
+	n = math.floor(tonumber(n) or 0)
+	if n < 1 or n > 100 then
+		return false
+	end
+	player:setStorageValue(cfg.rerollStorage, rerollsOf(player) + n)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+		"Kill task rerolls: %d. Use one on the task board of the Bestiary.", rerollsOf(player)))
+	return true
+end
+
 local function sendBoard(player)
 	local st = stateOf(player)
-	local offers = C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg)
+	local offers = C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg, boardSalt(player))
 	local list, active = {}, {}
 	for _, o in ipairs(offers) do
 		local v = taskView(o, player)
@@ -578,11 +621,12 @@ local function sendBoard(player)
 	local data = limits(st)
 	data.offers, data.tasks = list, active
 	data.nextIn = math.max(0, C.nextRoll(now(), cfg) - now())
+	data.rerolls = rerollsOf(player)
 	Chaos.send(player, OPCODE, "board", data)
 end
 
 local function startTask(player, st, task)
-	local ok, err = C.canAccept(task, st, cfg)
+	local ok, err = C.canAccept(task, st, cfg, Chaos.lang(player))
 	if not ok then
 		player:sendCancelMessage(err)
 		return false
@@ -597,12 +641,12 @@ local function startTask(player, st, task)
 		"`hi`, `level`, `progress`, `required`, `status`, `mc`) VALUES (%d, %s, %d, %s, %s, %s, %d, %d, %d, 0, %d, 0, %d)",
 		cfg.tableTasks, st.guid, db.escapeString(t.key), at, db.escapeString(t.kind), db.escapeString(t.target),
 		db.escapeString(t.label), t.lo, t.hi, t.level, t.required, mc))
-	local what = t.kind == "family" and string.format("%d %s of level %d-%d", t.required, t.label, t.lo, t.hi)
+	local what = t.kind == "family" and Chaos.t(player, "%d %s of level %d-%d", t.required, t.label, t.lo, t.hi)
 		or string.format("%d x %s", t.required, t.label)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Kill task accepted: " .. what .. ".")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Kill task accepted: %s.", what))
 	if mc == 1 and not cfg.mcReward then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"Another character from your connection is online: you may hunt, but this task will pay no reward.")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+			"Another character from your connection is online: you may hunt, but this task will pay no reward."))
 	end
 	queueTracker(player)
 	return true
@@ -614,7 +658,7 @@ local function accept(player, key)
 	end
 	local st = stateOf(player)
 	local task
-	for _, o in ipairs(C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg)) do
+	for _, o in ipairs(C.offers(taskDay(), st.guid, boardLevel(player), X.cat(), cfg, boardSalt(player))) do
 		if o.key == key then
 			task = o
 		end
@@ -623,11 +667,26 @@ local function accept(player, key)
 	sendBoard(player)
 end
 
+-- a board reroll: the open offers of today are drawn again (tasks held stay)
+local function reroll(player)
+	if rerollsOf(player) < 1 then
+		player:sendCancelMessage(Chaos.t(player, "You have no kill task reroll."))
+		return
+	end
+	local day = taskDay()
+	local salt = boardSalt(player) + 1
+	player:setStorageValue(cfg.rerollStorage, rerollsOf(player) - 1)
+	player:setStorageValue(cfg.rerollStorage + 1, day)
+	player:setStorageValue(cfg.rerollStorage + 2, salt)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "The task board was drawn again."))
+	sendBoard(player)
+end
+
 -- a hunt task from a bestiary entry
 local function take(player, id)
 	local e = X.cat().byId[id]
 	local st = stateOf(player)
-	local ok, task = C.canTakeHunt(e, player:getLevel(), e and st.kills[e.key] or 0, cfg)
+	local ok, task = C.canTakeHunt(e, player:getLevel(), e and st.kills[e.key] or 0, cfg, Chaos.lang(player))
 	if not ok then
 		player:sendCancelMessage(task)
 	else
@@ -648,7 +707,7 @@ local function abandon(player, key)
 	st.tasks[key] = nil
 	db.asyncQuery(string.format("DELETE FROM `%s` WHERE `player_id` = %d AND `task` = %s AND `accepted_at` = %d",
 		cfg.tableTasks, st.guid, db.escapeString(key), t.at))
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Kill task abandoned: " .. t.label .. ".")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Kill task abandoned: %s.", t.label))
 	sendBoard(player)
 	queueTracker(player)
 end
@@ -684,7 +743,7 @@ local function payTask(player, st, t)
 		t.mc, st.day, st.week, st.guid, db.escapeString(t.key), t.at))
 	local e = t.kind == "hunt" and X.cat().byKey[t.target]
 	if t.mc == 1 and not cfg.mcReward then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Kill task completed: %s. Another character from your connection was online during the hunt: no reward.", t.label))
 		return
 	end
@@ -700,7 +759,7 @@ local function payTask(player, st, t)
 	player:setStorageValue(cfg.taskPointsStorage, taskPoints(player) + r.points)
 	local parts = {}
 	if r.gold > 0 then
-		parts[#parts + 1] = r.gold .. " gold (bank)"
+		parts[#parts + 1] = Chaos.t(player, "%s gold (bank)", r.gold)
 	end
 	if r.chaos > 0 then
 		parts[#parts + 1] = r.chaos .. plural(r.chaos, " Orb of Upheaval")
@@ -709,12 +768,12 @@ local function payTask(player, st, t)
 		parts[#parts + 1] = r.divine .. plural(r.divine, " Orb of Fate")
 	end
 	if r.exp > 0 then
-		parts[#parts + 1] = r.exp .. " experience"
+		parts[#parts + 1] = Chaos.t(player, "%s experience", r.exp)
 	end
-	parts[#parts + 1] = r.points .. " bestiary points"
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Kill task completed: %s. Reward: %s.%s", t.label,
-		table.concat(parts, ", "), inbox and " Your backpack was full: the orbs are in your inbox." or ""))
-	notify(player, string.format("Kill task completed: %d %s.", t.required, t.label), e and lookOf(e) or nil)
+	parts[#parts + 1] = Chaos.t(player, "%s bestiary points", r.points)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Kill task completed: %s. Reward: %s.%s", t.label,
+		table.concat(parts, ", "), inbox and Chaos.t(player, " Your backpack was full: the orbs are in your inbox.") or ""))
+	notify(player, Chaos.t(player, "Kill task completed: %d %s.", t.required, t.label), e and lookOf(e) or nil)
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	if ChaosAchievements then
 		pcall(ChaosAchievements.progress, player, "bestiary_tasks", 1)
@@ -738,15 +797,15 @@ local function creditKill(player, e)
 		local text
 		if after == 1 then
 			st.known = (st.known or 0) + 1
-			text = string.format("Bestiary: %s discovered (+%d points).", e.name, gained)
+			text = Chaos.t(player, "Bestiary: %s discovered (+%d points).", e.name, gained)
 		elseif after >= 4 then
 			st.completedCount = (st.completedCount or 0) + 1
 			st.completed[e.key] = C.bonusOf(e, cfg)
 			local b = st.completed[e.key]
-			text = string.format("Bestiary: %s completed (+%d points). You deal %d%% more damage to it and gain %d%% more " ..
-				"experience from it.", e.name, gained, b.damage, b.exp)
+			text = Chaos.t(player, "Bestiary: %s completed (+%d points). You deal %d%% more damage to it and gain %d%% more experience from it.",
+				e.name, gained, b.damage, b.exp)
 		else
-			text = string.format("Bestiary: %s %s (+%d points).", e.name, stageName:lower(), gained)
+			text = Chaos.t(player, "Bestiary: %s %s (+%d points).", e.name, Chaos.t(player, stageName:lower()), gained)
 		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 		if after >= 2 then
@@ -776,7 +835,7 @@ local function creditKill(player, e)
 				payTask(player, st, t)
 			else
 				for _, pct in ipairs(crossed or {}) do
-					player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Kill task %s: %d%% done (%d/%d).", t.label, pct,
+					player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Kill task %s: %d%% done (%d/%d).", t.label, pct,
 						t.progress, t.required))
 				end
 				-- progress is written every 10 kills and at the milestones (the row is rewritten at completion)
@@ -882,12 +941,26 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:register()
 
+-- Chaos.registerOnce / eventKnown (chaos_constants.lua): register on a monster once, not at every hit
+local function registerOnce(creature, name)
+	local f = Chaos and Chaos.registerOnce
+	if f then
+		return f(creature, name)
+	end
+	creature:registerEvent(name)
+	return true
+end
+local function eventKnown(creature, name)
+	local f = Chaos and Chaos.eventKnown
+	return f ~= nil and f(creature, name)
+end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
-	if creature and target and target:isMonster() then
+	if creature and target and target:isMonster() and not eventKnown(target, "ChaosBestiaryDealt") then
 		local p = playerOf(creature)
-		if p and bonusAgainst(p, typeNameOf(target)) then
-			target:registerEvent("ChaosBestiaryDealt")
+		local st = p and X.players[p:getGuid()]
+		if st and st.completed and next(st.completed) and bonusAgainst(p, typeNameOf(target)) then
+			registerOnce(target, "ChaosBestiaryDealt")
 		end
 	end
 	return RETURNVALUE_NOERROR
@@ -903,7 +976,8 @@ xpCb.onGainExperience = function(self, source, exp, rawExp)
 	if not st then
 		return exp
 	end
-	local b = st.completed and st.completed[source:getName():lower()]
+	-- the type, not the shown name: a rift name, a named monster or a level tag keeps the completed bonus
+	local b = bonusAgainst(self, typeNameOf(source))
 	local pct = (b and b.exp or 0) + C.rankOf((st.points or 0) + taskPoints(self), cfg).exp
 	if pct > 0 then
 		return math.floor(exp * (100 + pct) / 100 + 1e-9)
@@ -1055,6 +1129,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		accept(player, data.key)
 	elseif a == "abandon" then
 		abandon(player, data.key)
+	elseif a == "reroll" then
+		reroll(player)
 	elseif a == "query" then
 		sendTracker(player)
 	end

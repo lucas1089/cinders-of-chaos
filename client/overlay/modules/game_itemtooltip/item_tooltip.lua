@@ -165,7 +165,7 @@ end
 
 -- the rows of the differences hovered - equipped
 local function diffRows(tip, other)
-  local rows = { { text = 'Compared with ' .. (other.name or 'equipped'), color = C.dim, sep = true } }
+  local rows = { { text = tr('Compared with %s', (other.name or tr('equipped'))), color = C.dim, sep = true } }
   local diffs = L.diff(tip, other)
   if #diffs == 0 then
     rows[#rows + 1] = { text = 'No difference', color = C.dim }

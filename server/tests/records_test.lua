@@ -194,6 +194,18 @@ eq(K.firstTarget(byKey.tower_floor, nil), nil, "no realm first for the tower")
 tgt, short = K.firstTarget(byKey.trials, "cruel", {first = {key = "warrior.cruel", short = "Gauntlet Champion"}})
 eq(tgt .. "/" .. short, "trials:warrior.cruel/Gauntlet Champion", "trials: one first per family and tier")
 
+-- the Realm Firsts list names the boss in full (live test 2026-10-14: "Skaldra" instead of the full name)
+local wbTarget, wbShort = K.firstTarget(byKey.wb_time, "skaldra")
+eq(wbShort, "Skaldra", "the stored short name (titles)")
+eq(K.firstDisplay(byKey, wbTarget, wbShort), "Skaldra the Rime Queen", "list: the world boss's full name")
+eq(K.firstDisplay(byKey, "ascended:cinder", "Cinderheart"), select(3, K.firstTarget(byKey.ascended, "cinder")),
+	"list: the Ascended as announced")
+eq(K.firstDisplay(byKey, "guildboss", "Gorvath"), byKey.guildboss.name, "list: a board without variants")
+eq(K.firstDisplay(byKey, "trials:warrior.cruel", "Gauntlet Champion"),
+	select(3, K.firstTarget(byKey.trials, "cruel", {first = {key = "warrior.cruel", short = "Gauntlet Champion"}})),
+	"list: a trials first as announced")
+eq(K.firstDisplay(byKey, "gone:x", "Old Boss"), "Old Boss", "list: an unknown board keeps the stored name")
+
 -- ---------------------------------------------------------------- texts
 eq(K.valueText(75, "time"), "1:15", "m:ss")
 eq(K.valueText(3725, "time"), "1:02:05", "h:mm:ss")
@@ -318,6 +330,14 @@ do
 	eq(broadcasts[1], "Realm first of Q" .. (math.floor((os.date("*t").month - 1) / 3) + 1) .. " " .. os.date("*t").year ..
 		"! Ann, Bob are the first to defeat Kaelgor the Infernal Warlord.", "realm first broadcast")
 	eq(#R.titlesOf(ann), 1, "Ann holds the realm first title")
+	-- the Realm Firsts list (rfirsts) names the boss in full, the title keeps the short name
+	local sentBefore = #sent
+	R.sendFirsts(ann)
+	local msg = #sent > sentBefore and sent[#sent].msg or {}
+	eq(msg.action, "rfirsts", "rfirsts sent")
+	local row = msg.data and msg.data.rows and msg.data.rows[1] or {}
+	eq(row.name, "Kaelgor the Infernal Warlord", "the list names the boss in full")
+	eq(R.titlesOf(ann)[1].text, "First: Kaelgor", "the title keeps the short name")
 	-- the same boss again: no second realm first
 	local before = #broadcasts
 	ChaosWorldBoss.computeRewards({{guid = 1, name = "Ann", damage = 1}}, {}, {name = "Kaelgor the Infernal Warlord"})
@@ -382,6 +402,9 @@ do
 		members = {{guid = 1}}}), true, "Hollow Vault clear")
 	eq(R.dungeonClear({dungeonId = 4, title = "Hollow Vault", difficulty = 3, difficultyStart = 2, ms = 610000,
 		members = {{guid = 1}}}), false, "difficulty raised mid-run")
+	-- the generated dungeon's real title has a leading "The" (areagen_config.lua): still the Hollow Vault board
+	eq(ChaosRecordsCore.isHollowVault(cfg, "The Hollow Vault"), true, "'The Hollow Vault' is the Hollow Vault")
+	eq(ChaosRecordsCore.isHollowVault(cfg, "Bones Dungeon"), false, "another dungeon is not")
 	-- the client view and meta
 	sent = {}
 	R.sendMeta(ann)

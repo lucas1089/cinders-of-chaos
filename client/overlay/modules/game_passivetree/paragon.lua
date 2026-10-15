@@ -37,11 +37,11 @@ local function refreshParagon()
   paragonWindow.lockedPanel:setVisible(locked)
   paragonWindow.applyButton:setEnabled(not locked and ParagonMath.pendingSum(paragonPending) > 0)
   paragonWindow.resetButton:setEnabled(not locked and (s.spent or 0) > 0)
-  paragonWindow.resetButton:setTooltip(string.format('Refund every Paragon point for %d gold (level x 250).', s.resetCost or 0))
+  paragonWindow.resetButton:setTooltip(tr('Refund every Paragon point for %d gold (level x 250).', s.resetCost or 0))
   if locked then
-    paragonWindow.summary:setText(string.format('Level %d', s.level or 0))
-    paragonWindow.lockedPanel.lockedTitle:setText(string.format('Unlocks at level %d', s.startLevel or 1000))
-    paragonWindow.lockedPanel.lockedText:setText(string.format(
+    paragonWindow.summary:setText(tr('Level %d', s.level or 0))
+    paragonWindow.lockedPanel.lockedTitle:setText(tr('Unlocks at level %d', s.startLevel or 1000))
+    paragonWindow.lockedPanel.lockedText:setText(tr(
       'Every level above %d gives one Paragon point for small, capped bonuses: damage, health, speed, gold and item find.',
       s.startLevel or 1000))
     return
@@ -77,7 +77,7 @@ local function buildRows()
       row:setId('stat_' .. stat.key)
       row.statKey = stat.key
       row.statName:setText(stat.name)
-      local tip = string.format('%s\n+%s%% per point, up to +%s%% (%d points).', stat.desc or stat.name,
+      local tip = tr('%s\n+%s%% per point, up to +%s%% (%d points).', stat.desc or stat.name,
         ParagonMath.fmt(stat.perPoint), ParagonMath.fmt(stat.perPoint * stat.maxPoints), stat.maxPoints)
       row:setTooltip(tip)
       row.statName:setTooltip(tip)
@@ -193,8 +193,8 @@ function resetParagon()
     close()
   end
   local cost = paragonState.resetCost or 0 -- the server's price (respec.lua)
-  resetBox = displayGeneralBox('Reset Paragon', string.format('Refund all %d Paragon points for %s? Proceed?',
-    paragonState.spent or 0, cost > 0 and (formatGold(cost) .. ' gold coins') or 'free'), {
+  resetBox = displayGeneralBox(tr('Reset Paragon'), tr('Refund all %d Paragon points for %s? Proceed?',
+    paragonState.spent or 0, cost > 0 and (tr('%s gold coins', formatGold(cost))) or tr('free')), {
       {text = tr('Ok'), callback = ok},
       {text = tr('Cancel'), callback = close},
       anchor = AnchorHorizontalCenter

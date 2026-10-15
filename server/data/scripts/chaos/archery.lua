@@ -29,6 +29,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosArchery then
 	dofile("data/lib/chaos_archery_core.lua")
 end
@@ -337,12 +340,13 @@ function A.checkHands(player)
 			log(player:getName() .. ": the save after the hands check failed; the logout save keeps it")
 		end
 		if #lines > 0 then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "The ammunition slot is a second ring slot now and " ..
-				"quivers are worn in the off-hand next to a bow or crossbow. Moved: " .. table.concat(lines, ", ") .. ".")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player,
+				"The ammunition slot is a second ring slot now and quivers are worn in the off-hand next to a bow or crossbow. Moved: %s.",
+				table.concat(lines, ", ")))
 		end
 		if #mightLines > 0 then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "You can only wear one might ring at a time. " ..
-				"Moved: " .. table.concat(mightLines, ", ") .. ".")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player,
+				"You can only wear one might ring at a time. Moved: %s.", table.concat(mightLines, ", ")))
 		end
 		if ChaosItemMods and ChaosItemMods.refresh then
 			pcall(ChaosItemMods.refresh, player, true)

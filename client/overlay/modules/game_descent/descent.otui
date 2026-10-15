@@ -57,7 +57,7 @@ DescentHud < ChaosPanelDark
 
   ChaosTitle
     id: title
-    text: The Ember Descent
+    !text: tr('The Ember Descent')
     phantom: true
 
   DescentHudLabel
@@ -92,7 +92,7 @@ DescentHud < ChaosPanelDark
   DescentHudLabel
     id: boonsHeader
     color: #8c8070
-    text: Boons
+    !text: tr('Boons')
     margin-top: 6
 
   UIWidget
@@ -109,7 +109,7 @@ DescentHud < ChaosPanelDark
   DescentHudLabel
     id: cursesHeader
     color: #e03a1e
-    text: Curses
+    !text: tr('Curses')
     margin-top: 4
 
   UIWidget

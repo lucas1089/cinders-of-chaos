@@ -1,0 +1,350 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "bonechoir_catacomb",
+  "name": "Bonechoir Catacomb",
+  "biome": "catacomb",
+  "size": [
+    148,
+    120
+  ],
+  "floors": 1,
+  "level": [
+    200,
+    290
+  ],
+  "seed": 25101,
+  "origin": {
+    "x": 14700,
+    "y": 14340,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "narthex",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "choir",
+      "floor": 1,
+      "size": "huge",
+      "place": "center"
+    },
+    {
+      "id": "west_charnel",
+      "floor": 1,
+      "size": "large",
+      "place": "west"
+    },
+    {
+      "id": "east_charnel",
+      "floor": 1,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "bell_vault",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "reliquary",
+      "floor": 1,
+      "size": "small",
+      "place": "southeast",
+      "role": "treasure"
+    },
+    {
+      "id": "cantor_crypts",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "dirge_cloister",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "ossuary_aisle",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "sexton_galleries",
+      "floor": 1,
+      "size": "huge"
+    },
+    {
+      "id": "requiem_hall",
+      "floor": 1,
+      "size": [
+        26,
+        18
+      ]
+    },
+    {
+      "id": "hymnal_vault",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "narthex",
+      "to": "choir",
+      "width": 3
+    },
+    {
+      "from": "choir",
+      "to": "west_charnel",
+      "width": 3
+    },
+    {
+      "from": "choir",
+      "to": "east_charnel",
+      "width": 3
+    },
+    {
+      "from": "west_charnel",
+      "to": "bell_vault",
+      "width": 3
+    },
+    {
+      "from": "east_charnel",
+      "to": "bell_vault",
+      "width": 3
+    },
+    {
+      "from": "bell_vault",
+      "to": "reliquary",
+      "width": 2
+    },
+    {
+      "from": "narthex",
+      "to": "cantor_crypts",
+      "width": 3
+    },
+    {
+      "from": "narthex",
+      "to": "dirge_cloister",
+      "width": 3
+    },
+    {
+      "from": "cantor_crypts",
+      "to": "west_charnel",
+      "width": 3
+    },
+    {
+      "from": "dirge_cloister",
+      "to": "east_charnel",
+      "width": 3
+    },
+    {
+      "from": "west_charnel",
+      "to": "ossuary_aisle",
+      "width": 3
+    },
+    {
+      "from": "ossuary_aisle",
+      "to": "bell_vault",
+      "width": 3
+    },
+    {
+      "from": "east_charnel",
+      "to": "sexton_galleries",
+      "width": 3
+    },
+    {
+      "from": "sexton_galleries",
+      "to": "requiem_hall",
+      "width": 3
+    },
+    {
+      "from": "requiem_hall",
+      "to": "bell_vault",
+      "width": 3
+    },
+    {
+      "from": "choir",
+      "to": "hymnal_vault",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "narthex"
+  },
+  "exit": {
+    "zone": "narthex"
+  },
+  "spawns": [
+    {
+      "zone": "choir",
+      "monster": "Deathrattle",
+      "count": 12,
+      "pack": 3,
+      "respawn": 100
+    },
+    {
+      "zone": "choir",
+      "monster": "Skullshade",
+      "count": 5,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "west_charnel",
+      "monster": "Bonecleaver",
+      "count": 9,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "east_charnel",
+      "monster": "Doombone",
+      "count": 5,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "east_charnel",
+      "monster": "Blackblade",
+      "count": 4,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "bell_vault",
+      "monster": "Bonecleaver",
+      "count": 8,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "bell_vault",
+      "monster": "Deathrattle",
+      "count": 8,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "reliquary",
+      "monster": "Doombone",
+      "count": 2,
+      "respawn": 180,
+      "pack": 2
+    },
+    {
+      "zone": "cantor_crypts",
+      "monster": "Skullshade",
+      "count": 8,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "cantor_crypts",
+      "monster": "Deathrattle",
+      "count": 8,
+      "pack": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "dirge_cloister",
+      "monster": "Doombone",
+      "count": 8,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "dirge_cloister",
+      "monster": "Bonecleaver",
+      "count": 8,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "ossuary_aisle",
+      "monster": "Bonecleaver",
+      "count": 12,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "ossuary_aisle",
+      "monster": "Blackblade",
+      "count": 8,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "sexton_galleries",
+      "monster": "Deathrattle",
+      "count": 10,
+      "pack": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "sexton_galleries",
+      "monster": "Blackblade",
+      "count": 7,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "requiem_hall",
+      "monster": "Doombone",
+      "count": 12,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "requiem_hall",
+      "monster": "Skullshade",
+      "count": 12,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "hymnal_vault",
+      "monster": "Skullshade",
+      "count": 4,
+      "respawn": 120,
+      "pack": 3
+    },
+    {
+      "zone": "hymnal_vault",
+      "monster": "Deathrattle",
+      "count": 4,
+      "respawn": 120,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "reliquary",
+      "quest": "bonechoir_tithe",
+      "reward": {
+        "gold": 120000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 1
+          }
+        ],
+        "message": "A choir tithe, paid in coin and ash."
+      }
+    }
+  ],
+  "notes": "Content plan (docs/CONTENT.md): a one-floor catacomb for levels 200-290, the undead the 200-300 band lacks beside the library isle. Four times the first draft (owner, 2026-10-14): 10 hunting zones in loops, room for eight parties."
+}

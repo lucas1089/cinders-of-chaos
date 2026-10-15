@@ -192,18 +192,18 @@ local coins = dofile("data/scripts/chaos/shop_coins_config.lua")
 local packs = {}
 for _, p in ipairs(coins.packs) do packs[p.key] = p end
 eq(K.packCredit(packs.coins250, false, coins).total, 250, "250")
-eq(K.packCredit(packs.coins750, false, coins).total, 825, "750 +10%")
-eq(K.packCredit(packs.coins1500, false, coins).total, 1725, "1500 +15%")
-eq(K.packCredit(packs.coins4000, false, coins).total, 5000, "4000 +25%")
-eq(K.packCredit(packs.coins750, true, coins).total, 1575, "first purchase: double coins (+100% of the pack)")
-eq(K.packCredit(packs.coins80, false, coins).total, 80, "entry pack 80")
-eq(K.packCredit(packs.coins10000, false, coins).total, 13000, "Vault: 10000 +30%")
+eq(K.packCredit(packs.coins500, false, coins).total, 525, "500 +5%")
+eq(K.packCredit(packs.coins1000, false, coins).total, 1100, "1000 +10%")
+eq(K.packCredit(packs.coins2500, false, coins).total, 2875, "2500 +15%")
+eq(K.packCredit(packs.coins500, true, coins).total, 1025, "first purchase: double coins (+100% of the pack)")
+eq(K.packCredit(packs.coins100, false, coins).total, 100, "entry pack 100")
+eq(K.packCredit(packs.coins5000, false, coins).total, 6000, "Vault: 5000 +20%")
 eq(coins.firstPurchase.bonusPct, 100, "first purchase doubles")
 eq(coins.firstPurchase.maxBonus, 1000, "at most 1000 extra (owner: Limite a 1000)")
-eq(K.packCredit(packs.coins1500, true, coins).firstBonus, 1000, "1500 pack: +1000 flat")
-eq(K.packCredit(packs.coins10000, true, coins).total, 13000 + 1000, "Vault: +1000 flat")
-eq(K.packCredit(packs.coins750, true, coins).firstBonus, 750, "750 pack: doubled")
-eq(K.packCredit({coins = 1000}, true, coins).firstBonus, 1000, "1000: doubled, the cap")
+eq(K.packCredit(packs.coins2500, true, coins).firstBonus, 1000, "2500 pack: +1000 flat")
+eq(K.packCredit(packs.coins5000, true, coins).total, 6000 + 1000, "Vault: +1000 flat")
+eq(K.packCredit(packs.coins500, true, coins).firstBonus, 500, "500 pack: doubled")
+eq(K.packCredit(packs.coins1000, true, coins).firstBonus, 1000, "1000: doubled, the cap")
 eq(K.packCredit(packs.starter, true, coins).total, 500, "starter: no first purchase bonus")
 
 -- ------------------------------------------------------------------ shop.lua with a mocked engine and database
@@ -236,8 +236,9 @@ db = {
 		local amount, acc = q:match("UPDATE `chaos_shop_coins` SET `coins` = `coins` %- (%d+) WHERE `account_id` = (%d+)")
 		if amount then
 			acc, amount = tonumber(acc), tonumber(amount)
-			if (DB.coins[acc] or 0) < amount then return false end
-			DB.coins[acc] = DB.coins[acc] - amount; return true
+			-- as the engine: the query succeeds even when the WHERE matched no row; ROW_COUNT() tells
+			if (DB.coins[acc] or 0) < amount then DB.rowCount = 0; return true end
+			DB.coins[acc] = DB.coins[acc] - amount; DB.rowCount = 1; return true
 		end
 		local vals = q:match("INSERT INTO `chaos_shop_purchases` .- VALUES %((.*)%)$")
 		if vals then
@@ -285,8 +286,12 @@ local function inList(q, key)
 end
 Chaos.select = function(q, cols)
 	local acc = tonumber(q:match("`account_id` = (%d+)"))
-	if q:find("SELECT `coins` FROM `chaos_shop_coins`", 1, true) then
-		return DB.coins[acc] and {{coins = DB.coins[acc]}} or {}
+	if q:find("ROW_COUNT()", 1, true) then
+		return {{n = DB.rowCount or 0}}
+	elseif q:find("SELECT `coins` FROM `chaos_shop_coins`", 1, true) then
+		local have = DB.coins[acc]
+		if DB.afterCoinRead then DB.afterCoinRead(acc) end -- another process (the website) moves coins right after the read
+		return have and {{coins = have}} or {}
 	elseif q:find("SELECT COUNT(*) AS `n` FROM `chaos_shop_purchases`", 1, true) then
 		local key, since = q:match("`offer_key` = '([^']*)'"), tonumber(q:match("`created` >= (%d+)")) or 0
 		local count = 0
@@ -527,7 +532,7 @@ ok(eg ~= nil, "regalia in view")
 
 -- starter packs: once per account, level gate, hidden afterwards, pact days when the Pact exists
 eq(buy(A, "starter:novice"), "Purchase complete", "novice pack")
-ok(A.auras[17] and A.items[8472] == 100 and A.items[27990] == 5, "novice parts"); eq(pactDays, 3, "pact days")
+ok(A.auras[17] and A.items[8472] == 100 and A.items[26031] == 100 and not A.items[27990], "novice parts (Supreme Health Potions, no stamina since 2026-10-15)"); eq(pactDays, 3, "pact days")
 ok(not find(A, "starter:novice"), "hidden once bought")
 local A2 = newPlayer("Alicealt", {account = A.account, level = 10})
 ok(not find(A2, "starter:novice"), "hidden for the whole account")
@@ -600,7 +605,7 @@ local Cara = newPlayer("Cara", {})
 eq(buy(A, "aura:7", "Cara"), "Gift sent", "online gift"); ok(Cara.auras[7], "delivered at once")
 eq(DB.purchases[#DB.purchases].giftPlayer, Cara.guid, "gift logged")
 eq(buy(A, "aura:7", "Cara"), "Not possible", "target owns it")
-eq(buy(A, "service:stamina", "Cara"), "Not possible", "services cannot be gifted")
+eq(buy(A, "service:blessings", "Cara"), "Not possible", "services cannot be gifted")
 -- Hideouts: an unlock offer with gift = true (hideout_store.lua) may be gifted; other unlocks may not
 eq(buy(A, "unlock:hideout_gargoyle", "Cara"), "Gift sent", "a hideout decoration is giftable")
 eq(buy(A, "unlock:autoSeller", "Cara"), "Not possible", "other unlocks are not giftable")
@@ -633,7 +638,16 @@ title, msg = buy(Sea, "item:7590x100")
 eq(title, "Not possible", "season character: no supplies"); ok(msg:find("not for season characters", 1, true), msg)
 eq(buy(Sea, "item:32256x10"), "Not possible", "season character: no whetstones")
 eq(buy(Sea, "starter:novice"), "Not possible", "season character: no starter pack (potions, stamina)")
-eq(buy(Sea, "service:stamina"), "Not possible", "season character: no stamina refill")
+eq(buy(Sea, "service:blessings"), "Not possible", "season character: no blessings (the Stamina Refill offer is gone, 2026-10-15)")
+do -- the Stamina Refill is not sold any more (pay to farm; catchup.lua halves low stamina loot instead)
+	local refill = false
+	for _, cat in ipairs(dofile("data/scripts/chaos/shop_config.lua").categories or {}) do
+		for _, o in ipairs(cat.offers or {}) do
+			if o.kind == "service" and o.service == "stamina" then refill = true end
+		end
+	end
+	eq(refill, false, "no Stamina Refill offer")
+end
 eq(buy(Sea, "unlock:autoSeller"), "Not possible", "season character: no Auto Seller")
 eq(DB.coins[Sea.account], 5000, "nothing taken")
 eq(buy(Sea, "wings:1"), "Purchase complete", "season character: wings")
@@ -660,14 +674,14 @@ eq(DB.coins[A.account], beforeTurn + DB.gifts[gifts0 + 1].price, "coins back"); 
 -- <<< Seasons
 
 -- coin orders: pack bonus, first purchase bonus once, starter once, unknown pack rejected
-DB.orders = {{account = 77, pack = "coins750", status = "paid"}, {account = 77, pack = "coins750", status = "paid"},
+DB.orders = {{account = 77, pack = "coins500", status = "paid"}, {account = 77, pack = "coins500", status = "paid"},
 	{account = 77, pack = "starter", status = "paid"}, {account = 77, pack = "starter", status = "paid"}, {account = 77, pack = "nope", status = "paid"}}
 Shop.processOrders()
-eq(DB.orders[1].total, 1575, "first pack with the first purchase bonus (double)"); eq(DB.orders[2].total, 825, "second pack without")
+eq(DB.orders[1].total, 1025, "first pack with the first purchase bonus (double)"); eq(DB.orders[2].total, 525, "second pack without")
 eq(DB.orders[3].total, 500, "starter"); eq(DB.orders[4].status, "rejected", "second starter rejected")
-eq(DB.orders[5].status, "rejected", "unknown pack"); eq(DB.coins[77], 1575 + 825 + 500, "coins credited")
+eq(DB.orders[5].status, "rejected", "unknown pack"); eq(DB.coins[77], 1025 + 525 + 500, "coins credited")
 Shop.processOrders()
-eq(DB.coins[77], 2900, "credited once")
+eq(DB.coins[77], 2050, "credited once")
 -- refunded on the website between the crediting step's SELECT and its locked re-read: nothing credited
 DB.orders[#DB.orders + 1] = {account = 77, pack = "coins250", status = "paid"}
 local realSelect = Chaos.select
@@ -677,7 +691,7 @@ Chaos.select = function(q, cols)
 end
 Shop.processOrders()
 Chaos.select = realSelect
-eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2900, "no coins for a refunded order")
+eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2050, "no coins for a refunded order")
 
 -- Chaos Coin gifts through shop.lua: hold, cap, ban, ledger
 do
@@ -740,6 +754,41 @@ do
 	eq(talks["/coins"].onSay(R1, "/coins", "Receiver, 500"), true, "a player: said as chat, nothing else")
 	eq(#logged, 2, "players are not logged")
 	ChaosAdmin = nil
+end
+
+-- the website's bazaar takes coins from another process: between the balance read and the UPDATE the coins can go;
+-- the UPDATE then changes no row and the purchase must not go through (it used to deliver for free)
+do
+	local Racer = newPlayer("Racer", {account = 777})
+	DB.coins[777] = 20
+	local e = Shop.byKey["item:2304x100"]
+	ok(e and e.cost <= 20, "a cheap offer for the race")
+	DB.afterCoinRead = function(acc) if acc == 777 then DB.coins[777] = 0 end end
+	local had = Racer.items[2304] or 0
+	local recv = DB.coins[502]
+	request(Racer, "gift_coins", {name = "Receiver", amount = 10})
+	eq(DB.coins[777], 0, "coin gift: the sender has nothing")
+	eq(DB.coins[502], recv, "coin gift: the receiver got nothing (no coins created)")
+	DB.coins[777] = 20
+	-- buy() reads the balance twice (its own check, then spend): the coins go right after the second read
+	local reads = 0
+	DB.afterCoinRead = function(acc)
+		if acc == 777 then
+			reads = reads + 1
+			if reads == 2 then DB.coins[777] = 0 end
+		end
+	end
+	local _, gp = find(Racer, "item:2304x100")
+	request(Racer, "get_page", {category = (find(Racer, "item:2304x100")), page = gp})
+	reads = 0
+	local c, pg, o = find(Racer, "item:2304x100")
+	local view = last("category_page").data.offers[o]
+	request(Racer, "buy", {category = c, page = pg, offer = o, title = view.title, cost = view.cost})
+	local title = last("message") and last("message").data.title
+	DB.afterCoinRead = nil
+	ok(title ~= "Purchase complete", "store purchase refused: " .. tostring(title))
+	eq(Racer.items[2304] or 0, had, "store purchase: nothing delivered when the coins went meanwhile")
+	eq(DB.coins[777], 0, "and no coins created")
 end
 
 -- outfit shaders: a mark without the engine's ownership (bought before server src-patch 0036) gets it at login

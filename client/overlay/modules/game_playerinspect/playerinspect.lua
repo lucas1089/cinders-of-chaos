@@ -106,7 +106,7 @@ local function refreshTreeButton()
   if not window then return end
   local text = L.treeButtonText(state)
   window.treeButton:setEnabled(text ~= nil)
-  window.treeButton:setText(text or 'Passive Tree')
+  window.treeButton:setText(text or tr('Passive Tree'))
 end
 
 function openInspectedTree()
@@ -139,7 +139,7 @@ local function showResult(d)
     label:setText(line.text)
     label:setColor(line.color)
   end
-  setStatus(d.self and 'This is you.' or '', L.COLORS.dim)
+  setStatus(d.self and tr('This is you.') or '', L.COLORS.dim)
   refreshTreeButton()
 end
 
@@ -151,7 +151,7 @@ end
 local function onDenied(d)
   state = L.newState()
   clearAll() -- no stale character next to the refusal
-  setStatus(tostring(d.text or 'Nothing to show.'), L.COLORS.red)
+  setStatus(tostring(d.text or tr('Nothing to show.')), L.COLORS.red)
 end
 
 local function onPrivacy(d)
@@ -185,7 +185,7 @@ function inspectName(name)
   local clean = L.cleanName(name)
   if not clean then
     show()
-    setStatus('Enter the name of a player.', L.COLORS.red)
+    setStatus(tr('Enter the name of a player.'), L.COLORS.red)
     return
   end
   show()
@@ -244,7 +244,7 @@ function toggle()
   end
   focusName()
   scheduleEvent(focusName, 150)
-  if state.data == nil then setStatus('Type the name of a player who is online.', L.COLORS.dim) end
+  if state.data == nil then setStatus(tr('Type the name of a player who is online.'), L.COLORS.dim) end
 end
 
 local function onGameEnd()
@@ -256,7 +256,7 @@ end
 local function addMenuEntry()
   local gi = modules.game_interface
   if hooked or not gi or not gi.addMenuHook then return end
-  gi.addMenuHook('chaosInspect', 'Inspect Player',
+  gi.addMenuHook('chaosInspect', tr('Inspect Player'),
     function(menuPosition, lookThing, useThing, creatureThing) inspectCreature(creatureThing) end,
     function(menuPosition, lookThing, useThing, creatureThing)
       return creatureThing ~= nil and creatureThing:isPlayer()

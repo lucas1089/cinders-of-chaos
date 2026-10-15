@@ -238,7 +238,7 @@ function create()
 		return 
 	end
 
-	window.pWindow.points:setText(formatShortNumber(pointsOwned) .. " points")
+	window.pWindow.points:setText(tr('%s points', formatShortNumber(pointsOwned)))
 
 	view = window:recursiveGetChildById("view")
 	background = window:recursiveGetChildById("background")
@@ -1734,7 +1734,7 @@ function calculateStats()
 
 	label = g_ui.createWidget("InfoLabel", labels)
 
-	label:setText("---------------- CURRENT BONUSES ----------------")
+	label:setText(tr("---------------- CURRENT BONUSES ----------------"))
 
 	for k, v in pairs(bonusText) do
 		label = g_ui.createWidget("InfoLabel", labels)
@@ -1746,7 +1746,7 @@ function calculateStats()
 	local plannedIds = plannerIds and plannerIds() or {}
 	if #plannedIds > 0 then
 		label = g_ui.createWidget("InfoLabel", labels)
-		label:setText(string.format("---------------- PLANNED (%d) ----------------", #plannedIds))
+		label:setText(tr("---------------- PLANNED (%d) ----------------", #plannedIds))
 		for _, v in pairs(getCustomStatString(getSkillTreeBonuses(true), true)) do
 			label = g_ui.createWidget("InfoLabel", labels)
 			label:setText(v)
@@ -1758,7 +1758,7 @@ function calculateStats()
 	local paragon = not viewing and getParagonState and getParagonState()
 	if paragon then
 		label = g_ui.createWidget("InfoLabel", labels)
-		label:setText("---------------- PARAGON ----------------")
+		label:setText(tr("---------------- PARAGON ----------------"))
 		local lines = ParagonMath.bonusLines(paragon)
 		if not paragon.unlocked then
 			lines = {string.format("Unlocks at level %d.", paragon.startLevel or 1000)}
@@ -1920,7 +1920,7 @@ end
 function updatePoints(value)
 	pointsOwned = pointsOwned + value
 
-	window.pWindow.points:setText(formatShortNumber(pointsOwned) .. " points")
+	window.pWindow.points:setText(tr('%s points', formatShortNumber(pointsOwned)))
 	if plannerUpdateBar then
 		plannerUpdateBar() -- planner.lua: the plan's cost against the free points
 	end
@@ -2007,7 +2007,7 @@ function reset()
 	end
   
 	messageBox = displayGeneralBox(
-	  "Reset Warning",
+	  tr("Reset Warning"),
 	  text,
 	  {
 		{ text = tr("Ok"),     callback = okFunc },

@@ -11,8 +11,8 @@
 -- Chaos.storage.bountyWeekBonus. Multi-client: see mcReward in bounty_config.lua.
 --
 -- Protocol (JSON {action, data}):
---   client -> server  open | accept {key} | abandon {key}
---   server -> client  board {day, nextIn, open, band, active, maxActive, week = {done, need, claimed}, bands = [{index,
+--   client -> server  open | accept {key} | abandon {key} | reroll {key}
+--   server -> client  board {day, nextIn, open, band, active, maxActive, rerolls, week = {done, need, claimed}, bands = [{index,
 --                            label, own, contracts = [{key, type, name, count, tier, level, look, outfit, reward =
 --                            {gold, chaos, divine, exp}, state = open|active|done, progress}]}]}
 --                     progress {key, progress, count, state}
@@ -20,6 +20,9 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
 end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
@@ -31,6 +34,14 @@ dofile("data/scripts/chaos/bounty_core.lua")
 Chaos.bountyConfig = dofile("data/scripts/chaos/bounty_config.lua")
 local cfg = Chaos.bountyConfig
 local B = ChaosBounty
+-- pack combat (pace.lua): hunt and elite kill counts x the monster's kill-goal factor (pace_config.lua goal curves)
+if not ChaosPaceCore then
+	dofile("data/scripts/chaos/pace_core.lua")
+end
+cfg.goalMult = function(mon)
+	local pc = ChaosPaceConfig or dofile("data/scripts/chaos/pace_config.lua")
+	return ChaosPaceCore.goalOfEntry(pc, mon)
+end
 local OPCODE = ChaosOpcodes.bounty
 local TABLE = cfg.table
 
@@ -68,10 +79,47 @@ B.pool, B.current = nil, nil
 function B.board()
 	local day = B.day(os.time(), cfg)
 	if not B.current or B.current.day ~= day then
-		B.pool = B.pool or filterPool(rawPool)
+		if not B.pool then
+			B.pool, B.poolByName = filterPool(rawPool), nil
+		end
 		B.current = B.roll(day, cfg, B.pool)
 	end
 	return B.current
+end
+
+-- the pool entry of a monster name (look and level of a rerolled contract)
+function B.poolEntry(name)
+	if type(name) ~= "string" or not B.pool then
+		return nil
+	end
+	if not B.poolByName then
+		B.poolByName = {}
+		for _, list in ipairs({B.pool.hunt or {}, B.pool.bosses or {}}) do
+			for _, e in ipairs(list) do
+				B.poolByName[e.name:lower()] = e
+			end
+		end
+	end
+	return B.poolByName[name:lower()]
+end
+
+-- ---------------------------------------------------------------- rerolls (Candlemarks, candlemarks_config.lua)
+-- A reroll gives an accepted contract another monster of the same band and type (progress back to 0). Charges are
+-- bought (ChaosBounty.addRerolls, the Candlemarks shop) and kept in storage cfg.rerollStorage.
+local function rerollsOf(player)
+	return math.max(0, tonumber(player:getStorageValue(cfg.rerollStorage)) or 0)
+end
+B.rerollsOf = rerollsOf
+
+function B.addRerolls(player, n)
+	n = math.floor(tonumber(n) or 0)
+	if n < 1 or n > 100 then
+		return false
+	end
+	player:setStorageValue(cfg.rerollStorage, rerollsOf(player) + n)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+		"Bounty rerolls: %d. Use one on an accepted contract in the Bounty Board.", rerollsOf(player)))
+	return true
 end
 
 -- ---------------------------------------------------------------- player state
@@ -103,6 +151,10 @@ local function loadPlayer(player)
 		TABLE, guid, day), {{"contract", "s"}, {"monster", "s"}, {"progress", "n"}, {"required", "n"}, {"status", "n"}, {"mc", "n"}})) do
 		entries[row.contract] = {key = row.contract, day = day, monster = row.monster, progress = row.progress,
 			required = row.required, status = row.status, mc = row.mc}
+		local c = B.current and B.current.byKey[row.contract]
+		if c and row.status == 0 and type(row.monster) == "string" and row.monster:lower() ~= c.name:lower() then
+			B.anyReroll = true -- a rerolled contract: kills of monsters off the board count too (B.onKill)
+		end
 	end
 	local week = B.week(os.time(), cfg)
 	local st = {day = day, week = week, entries = entries, weekDone = weekDone(guid, week)}
@@ -132,6 +184,9 @@ end
 -- ---------------------------------------------------------------- window
 local function contractView(c, st, level)
 	local e = st.entries[c.key]
+	if e then
+		c = B.overrideOf(c, e, B.poolEntry) -- a rerolled contract shows its own monster and count
+	end
 	local outfit = {type = c.look}
 	if c.outfit then
 		for k, v in pairs(c.outfit) do
@@ -168,6 +223,7 @@ function B.sendBoard(player, open)
 		band = own,
 		active = B.activeCount(st.entries, board.day),
 		maxActive = cfg.maxActive,
+		rerolls = rerollsOf(player),
 		open = open and true or false,
 		week = {done = st.weekDone, need = cfg.weeklyNeed,
 			claimed = player:getStorageValue(Chaos.storage.bountyWeekBonus) == B.week(now, cfg)},
@@ -246,15 +302,16 @@ local function giveWeekly(player, bandIndex)
 		inbox = giveStack(player, o.id, o.count) or inbox
 	end
 	player:setStorageValue(Chaos.storage.bountyWeekBonus, B.week(os.time(), cfg))
-	local text = string.format("Weekly bounty bonus: a %s with %d Orbs of Upheaval and %d Orbs of Fate%s.%s",
-		cfg.weeklyChestName or "chest", r.chaos, r.divine, table.concat(extra), inbox and " It is in your inbox." or "")
+	local text = Chaos.t(player, "Weekly bounty bonus: a %s with %d Orbs of Upheaval and %d Orbs of Fate%s.%s",
+		cfg.weeklyChestName or Chaos.t(player, "chest"), r.chaos, r.divine, table.concat(extra),
+		inbox and Chaos.t(player, " It is in your inbox.") or "")
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	notify(player, text)
 end
 
 local function payContract(player, c, e)
 	if e.mc == 1 and not cfg.mcReward then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 			"Bounty completed: %s. Another character from your connection was online during the hunt: no reward.", c.name))
 		return false
 	end
@@ -279,7 +336,7 @@ local function payContract(player, c, e)
 	end
 	local parts = {}
 	if r.gold > 0 then
-		parts[#parts + 1] = r.gold .. " gold (bank)"
+		parts[#parts + 1] = Chaos.t(player, "%s gold (bank)", r.gold)
 	end
 	if r.chaos > 0 then
 		parts[#parts + 1] = r.chaos .. (r.chaos > 1 and " Orbs of Upheaval" or " Orb of Upheaval")
@@ -294,10 +351,10 @@ local function payContract(player, c, e)
 		parts[#parts + 1] = ChaosSupports.listText(runes)
 	end
 	if r.exp > 0 then
-		parts[#parts + 1] = r.exp .. " experience"
+		parts[#parts + 1] = Chaos.t(player, "%s experience", r.exp)
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Bounty completed: %s. Reward: %s.%s", c.name,
-		table.concat(parts, ", "), inbox and " Your backpack was full: the orbs are in your inbox." or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Bounty completed: %s. Reward: %s.%s", c.name,
+		table.concat(parts, ", "), inbox and Chaos.t(player, " Your backpack was full: the orbs are in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	if ChaosRift and ChaosRift.onBountyPaid then
 		ChaosRift.onBountyPaid(player, c) -- a chance of a tier-1 Rift Key (rift_config.lua bountyKey)
@@ -314,7 +371,7 @@ local function accept(player, key)
 	local st = stateOf(player)
 	local ok, c = B.canAccept(board, st.entries, key, (B.visibleBands(player:getLevel(), cfg)), cfg)
 	if not ok then
-		player:sendCancelMessage(c)
+		player:sendCancelMessage(Chaos.t(player, c))
 		B.sendBoard(player)
 		return
 	end
@@ -327,11 +384,49 @@ local function accept(player, key)
 		TABLE, player:getGuid(), board.day, db.escapeString(key), db.escapeString(c.name), c.count, mc, now))
 	local what = c.type == "elite" and string.format("%d %s+ %s", c.count, c.tier, c.name)
 		or string.format("%d x %s", c.count, c.name)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Bounty accepted: " .. what .. ". It expires at the next roll.")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Bounty accepted: %s. It expires at the next roll.", what))
 	if mc == 1 and not cfg.mcReward then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"Another character from your connection is online: you may hunt, but this contract will pay no reward.")
+			Chaos.t(player, "Another character from your connection is online: you may hunt, but this contract will pay no reward."))
 	end
+	B.sendBoard(player)
+end
+
+local function reroll(player, key)
+	local st = stateOf(player)
+	local board = B.board()
+	local e = type(key) == "string" and st.entries[key]
+	local c = e and board.byKey[key]
+	if not c or e.status ~= 0 or e.day ~= board.day then
+		return
+	end
+	if rerollsOf(player) < 1 then
+		player:sendCancelMessage(Chaos.t(player, "You have no bounty reroll."))
+		return
+	end
+	local avoid = {}
+	for _, bc in ipairs((board.bands[c.band] or {}).contracts or {}) do
+		avoid[bc.name:lower()] = true
+	end
+	for k, oe in pairs(st.entries) do
+		if k ~= key and type(oe.monster) == "string" then
+			avoid[oe.monster:lower()] = true
+		end
+	end
+	if type(e.monster) == "string" then
+		avoid[e.monster:lower()] = true
+	end
+	local nc = B.rerollContract(c, cfg, B.pool, avoid, B.rng(os.time() + player:getGuid() * 7 + rerollsOf(player)))
+	if not nc then
+		player:sendCancelMessage(Chaos.t(player, "No other monster fits this contract."))
+		return
+	end
+	player:setStorageValue(cfg.rerollStorage, rerollsOf(player) - 1)
+	e.monster, e.required, e.progress = nc.name, nc.count, 0
+	B.anyReroll = true
+	db.asyncQuery(string.format("UPDATE `%s` SET `monster` = %s, `required` = %d, `progress` = 0 WHERE `player_id` = %d AND " ..
+		"`day` = %d AND `contract` = %s", TABLE, db.escapeString(nc.name), nc.count, player:getGuid(), e.day, db.escapeString(key)))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Bounty rerolled: now %d x %s.", nc.count, nc.name))
 	B.sendBoard(player)
 end
 
@@ -344,7 +439,7 @@ local function abandon(player, key)
 	st.entries[key] = nil
 	db.asyncQuery(string.format("DELETE FROM `%s` WHERE `player_id` = %d AND `day` = %d AND `contract` = %s",
 		TABLE, player:getGuid(), e.day, db.escapeString(key)))
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Bounty abandoned: " .. e.monster .. ".")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Bounty abandoned: %s.", e.monster))
 	B.sendBoard(player)
 end
 
@@ -353,6 +448,10 @@ local function creditKill(player, c, tierName)
 	local st = stateOf(player)
 	local e = st.entries[c.key]
 	if not e or e.status ~= 0 or e.day ~= B.current.day then
+		return
+	end
+	-- a rerolled contract counts its own monster only (c is the board's contract or the player's override)
+	if type(e.monster) == "string" and e.monster:lower() ~= c.name:lower() then
 		return
 	end
 	if e.mc == 0 and Chaos.isMultiClient(player) then
@@ -386,9 +485,9 @@ local function creditKill(player, c, tierName)
 		return
 	end
 	player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_STATUS_SMALL,
-		string.format("Bounty: %s %d/%d.", c.name, e.progress, e.required))
+		Chaos.t(player, "Bounty: %s %d/%d.", c.name, e.progress, e.required))
 	for _, pct in ipairs(crossed) do
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Bounty %s: %d%% done (%d/%d).", c.name, pct, e.progress,
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Bounty %s: %d%% done (%d/%d).", c.name, pct, e.progress,
 			e.required))
 		if pct == 50 then
 			notify(player, string.format("Bounty halfway: %s %d/%d.", c.name, e.progress, e.required), c.look)
@@ -415,8 +514,11 @@ function B.onKill(creature, killer, mostDamageKiller)
 	if ChaosRift and ChaosRift.isHusk and ChaosRift.isHusk(creature) then
 		return
 	end
-	local list = B.board().byName[typeNameOf(creature):lower()]
-	if not list then
+	local board = B.board()
+	local name = typeNameOf(creature):lower()
+	local list = board.byName[name] or {}
+	-- rerolled contracts hunt monsters that may not be on the board: their holders are checked below
+	if #list == 0 and not B.anyReroll then
 		return
 	end
 	local id = creature:getId()
@@ -448,6 +550,19 @@ function B.onKill(creature, killer, mostDamageKiller)
 			end
 		end
 	end
+	for _, p in ipairs(credited) do
+		local st = B.players[p:getGuid()]
+		for key, e in pairs(st and st.entries or {}) do
+			local c = board.byKey[key]
+			if e.status == 0 and c and type(e.monster) == "string" and e.monster:lower() == name
+					and c.name:lower() ~= name then
+				local own = B.overrideOf(c, e, B.poolEntry)
+				if B.matches(own, name, tier) then
+					creditKill(p, own, tier)
+				end
+			end
+		end
+	end
 end
 
 local death = CreatureEvent("ChaosBountyDeath")
@@ -475,7 +590,7 @@ function roll.onThink(interval)
 	if before and before ~= board.day then
 		for _, player in ipairs(Game.getPlayers()) do
 			stateOf(player)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The bounty board has new contracts (Adventure > Bounty Board).")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The bounty board has new contracts (Adventure > Bounty Board)."))
 		end
 	end
 	return true
@@ -522,6 +637,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		accept(player, data.key)
 	elseif msg.action == "abandon" then
 		abandon(player, data.key)
+	elseif msg.action == "reroll" then
+		reroll(player, data.key)
 	end
 end
 ext:type("extendedopcode")

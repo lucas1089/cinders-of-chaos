@@ -16,6 +16,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 local OPCODE = ChaosOpcodes.autoloot
 local BASE = Chaos.storage.autolootBase
@@ -114,11 +117,11 @@ local function handleCommand(player, param, byClient)
 
 	if action == "clear" then
 		writeList(player, {})
-		player:sendCancelMessage("Autoloot list cleaned.")
+		player:sendCancelMessage(Chaos.t(player, "Autoloot list cleaned."))
 	elseif action == "add" or action == "remove" then
 		local itemType = lookupItem(argument, byClient)
 		if not itemType then
-			player:sendCancelMessage(string.format("The item %s does not exist!", argument))
+			player:sendCancelMessage(Chaos.t(player, "The item %s does not exist!", argument))
 			sendList(player)
 			return
 		end
@@ -132,25 +135,25 @@ local function handleCommand(player, param, byClient)
 		end
 		if action == "add" then
 			if index then
-				player:sendCancelMessage(string.format("The item %s already exists!", itemType:getName()))
+				player:sendCancelMessage(Chaos.t(player, "The item %s already exists!", itemType:getName()))
 			elseif #items >= getLimit(player) then
-				player:sendCancelMessage(string.format("Your auto loot only allows you to add %d items.", getLimit(player)))
+				player:sendCancelMessage(Chaos.t(player, "Your auto loot only allows you to add %d items.", getLimit(player)))
 			else
 				items[#items + 1] = itemType:getId()
 				writeList(player, items)
-				player:sendCancelMessage(string.format("Perfect you have added to the list: %s", itemType:getName()))
+				player:sendCancelMessage(Chaos.t(player, "Perfect you have added to the list: %s", itemType:getName()))
 			end
 		else
 			if index then
 				table.remove(items, index)
 				writeList(player, items)
-				player:sendCancelMessage(string.format("Perfect, you have removed from the list: %s", itemType:getName()))
+				player:sendCancelMessage(Chaos.t(player, "Perfect, you have removed from the list: %s", itemType:getName()))
 			else
-				player:sendCancelMessage(string.format("The item %s does not exist in the list.", itemType:getName()))
+				player:sendCancelMessage(Chaos.t(player, "The item %s does not exist in the list.", itemType:getName()))
 			end
 		end
 	elseif action ~= "show" and action ~= "" then
-		player:sendCancelMessage("Unknown auto loot action.")
+		player:sendCancelMessage(Chaos.t(player, "Unknown auto loot action."))
 	end
 	sendList(player)
 end

@@ -24,6 +24,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
 | `overlay/plugins/chaos/register_guard.php` | the per-IP limit of account creation (see "Account creation") |
 | `overlay/plugins/chaos/mail_lib.php`, `recovery_lib.php`, `recovery_page.php` | the site's one mail sender (SMTP, off without settings) and account recovery by a one-time link (see "Mail") |
+| `patches/znotex-chaos-clock.patch` | ZnoteX's `getClock()` drops its fixed +1 hour, so the dates it prints (character created, last login, news, admin panel) are in PHP's time zone, as the rest of the site (found by the smoke test, 2026-10-14) |
+| `tests/e2e/run.sh`, `tests/e2e/smoke.test.js` | the browser smoke test of the key flows (see "Smoke test") |
 | `patches/znotex-chaos-recovery-mail.patch` | `recovery.php` hands over to our recovery page; ZnoteX's `Mail` class sends through our sender (see "Mail") |
 | `tests/chaos_mail_test.php`, `tests/chaos_recovery_test.php` | `php website/tests/chaos_mail_test.php` / `chaos_recovery_test.php`: the SMTP settings from the environment, mail off, the sender with a fake transport; the recovery answers, limits, link, token and notice (php-cli with pdo_sqlite, no network) |
 | `tests/chaos_escape_patch_test.php` | `php website/tests/chaos_escape_patch_test.php`: every line of the escape patch rendered with malicious guild / rank / MOTD / comment values (php-cli only) |
@@ -42,12 +44,20 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_creator_test.php` | `php website/tests/chaos_creator_test.php`: settings from `creator_codes_config.lua`, picks (unknown, off, own code), totals, the admin check and actions, the referral link (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/bazaar_lib.php`, `pages/bazaar.php`, `bazaar_worker.php` | the Character Bazaar: character auctions for Chaos Coins with escrow, fee and transfer (see "Character Bazaar") |
 | `tests/chaos_bazaar_test.php` | `php website/tests/chaos_bazaar_test.php`: every blocked listing, bids and escrow, the fee and the transfer, expiry, buyout, cancel, a failed transfer, coins kept whole (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/discord_lib.php`, `discord_worker.php` | Discord announcements: posts the game's queued events and the bazaar's new auctions and sales to channel webhooks from the environment (see "Discord announcements") |
+| `tests/chaos_discord_worker_test.php` | `php website/tests/chaos_discord_worker_test.php`: the worker against a mock webhook endpoint (a local `php -S`): embeds, no pings, 429 and rate limit headers, retries, switches, the bazaar scan, cleanup; the downloads page's Discord step (php-cli with pdo_sqlite, nothing leaves the machine) |
+| `overlay/plugins/chaos/telemetry_lib.php`, `pages/telemetry.php` | staff only (admin accounts with a group 5+ character): balance telemetry charts, server-drawn SVG (see "Balance telemetry") |
+| `tests/chaos_telemetry_page_test.php` | `php website/tests/chaos_telemetry_page_test.php`: access, filters, rates and the small-group rule, every section, the SVG charts (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
 | `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss, the class tabs of the byClass boards (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/notused.php` | the short note shown instead of the stock pages this server does not use (see "Not used on this server") |
 | `tests/chaos_notused_page_test.php` | `php website/tests/chaos_notused_page_test.php`: which stock pages are sent away and the note for each (php-cli only) |
 | `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/botreview_lib.php`, `pages/botreview.php` | staff only (admin accounts with a group 4+ character): flagged bot-review days with signals, explanations and timeline; mark reviewed / false positive / escalate, note, request a presence check. Escalated days need group 5 (server/README.md "Bot detection") |
+| `tests/chaos_botreview_page_test.php` | `php website/tests/chaos_botreview_page_test.php`: access, list, day view, actions and CSRF |
 | `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page.php?plugin=chaos&p=community` (menu The World > Community) |
+| `overlay/plugins/chaos/chronicle_lib.php`, `pages/chronicle.php` | the Ashen Chronicle (read only, from the game's `chaos_chronicle_*` tables): the running season's chapters with goal bars and top contributors, and the record of past seasons, at `page.php?plugin=chaos&p=chronicle` (menu The World > Chronicle); names follow the Memorial choice (`chaos_memorial_optin.records`) |
+| `overlay/plugins/chaos/memorial_lib.php`, `pages/memorial.php` | the Capital Memorial (read only, from `chaos_memorial_entries`, rows with `shown` = 1 only): realm firsts, records and the fallen of a season, and the archive of past seasons (`&s=<season key>`), at `page.php?plugin=chaos&p=memorial` (menu The World > Memorial) |
 | `tests/chaos_community_page_test.php` | `php website/tests/chaos_community_page_test.php`: the block and the page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/guildwar_lib.php`, `pages/guildwars.php` | the guild wars declared in game (read only, from the game's `chaos_guildwar` / `chaos_guildwar_kills`): `page.php?plugin=chaos&p=guildwars` (menu The World > Guild Wars): the running wars (score, terms, time left) and the latest ended ones (winner, gold won, end reason, kills the anti-farming rules did not count); see server/README.md "Guild wars in game" |
 | `tests/chaos_guildwars_page_test.php` | `php website/tests/chaos_guildwars_page_test.php`: the wars page (php-cli with pdo_sqlite) |
@@ -61,6 +71,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/wiki_lib.php`, `pages/wiki.php`, `wiki/` | the player wiki: guides in Portuguese and English, the reference generated from the server data by `server/tools/gen_wiki_data.lua`, the search (see "Wiki") |
 | `tests/chaos_wiki_page_test.php` | `php website/tests/chaos_wiki_page_test.php`: every wiki page in both languages, the guides, search, escaping and 404s (php-cli only) |
+| `overlay/plugins/chaos/credits_lib.php`, `pages/credits.php`, `credits/credits_data.json` | the Credits page: every third-party source of the game from `docs/CREDITS.md` (the JSON is generated by `client/tools/gen_credits.py`, the same source as the game's Credits window), at `page.php?plugin=chaos&p=credits` (Portuguese headings, English with `&l=en`); linked from the footer and from the site's credits page |
+| `tests/chaos_credits_page_test.php` | `php website/tests/chaos_credits_page_test.php`: the Credits page in both languages, every entry and required credit line, escaping, source links, the footer link (php-cli only) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `tools/gen_sprite_images.py`, `tools/sprite_owners.csv` | item and outfit images drawn from our client pair at install time, only our art (see "Sprite images") |
@@ -539,8 +551,11 @@ Check: request a recovery link for your own account on the live site; the mail's
   The client creates characters through the same checks (see "Client API").
 - **New characters** are level 1 with `lastlogin = 0` and no items, at position 0,0,0 of the chosen home town: the
   server's tutorial island (`newplayer_tutorial.lua`) takes them at the first login and gives the class kit, and the
-  island's exit leads to that town's temple. Home towns: `CHAOS_START_TOWNS`, checked against the `towns` table (the
-  server fills it at its first start). The base server's starter depot boxes (its `ADD_DEPOT_BOXES_NEW_PLAYERS`
+  island's exit leads to that town's temple. Home towns: `CHAOS_START_TOWNS` (default `2`, Cinderhold, the main city;
+  the first id is the default of the form and of the client API), checked against the `towns` table (the
+  server fills it at its first start). The game server moves every brand-new character to the main city at its first
+  login unless its town is in `newplayer_config.lua` `homeTown.keep`, so offer more towns only together with that list
+  (server/README.md "Main city"). The base server's starter depot boxes (its `ADD_DEPOT_BOXES_NEW_PLAYERS`
   snippet) are off: `!season join` needs an empty depot. `CHAOS_DEPOT_BOXES=1` puts one of each box in every town's depot.
 - **Character slots.** Each account may have `characters.free` characters of the server's `pact_config.lua` (5; read
   when `CHAOS_SERVER_DATA` points at it, else 5), plus the Character Slots bought in the game store and the slots the game
@@ -900,6 +915,16 @@ Bazaar). The rules (`bazaar_lib.php`, class `ChaosBazaar`; numbers from the game
   still the one the bidder saw. Writes are POSTs with the page's CSRF token; output is escaped; prepared statements only.
 - **Cron:** `* * * * * www-data php <site>/plugins/chaos/bazaar_worker.php --site <site>` ends auctions on time when
   nobody opens the page.
+- **One open listing per character**, held by the database: `active_player_id` is generated (`player_id` while
+  `active` or `settling`, else NULL) with a unique key, so two list requests at once cannot both insert; the second gets
+  "already listed". Cancel, sale, expiry and failure set NULL, so the character can be listed again. On an existing
+  table `setup/chaos_setup.php` adds the column once (MySQL 5.7+ / MariaDB 10.2+); a character listed twice before
+  keeps its oldest listing and the others are cancelled by the staff path (escrow refunded).
+- **At most `maxActivePerAccount` open listings per seller**, held by the database too: each listing takes a
+  `seller_slot` (1..max) and the generated `active_seller_id` (`seller_account_id` while open, else NULL) has a unique
+  key with it, so two characters of one account listed at once cannot both take the last slot; the loser reads the
+  slots again and gets "You can run 2 auctions at once". `setup/chaos_setup.php` adds both columns and the key to an
+  existing table once, giving open listings made before a slot first (`assignSellerSlots`).
 - Tables: `chaos_bazaar_listings`, `chaos_bazaar_bids`, `chaos_bazaar_log` (`install.sql`, `server/sql/chaos_bazaar.sql`).
 - Test: `php website/tests/chaos_bazaar_test.php`. Not run against a live site.
 
@@ -973,6 +998,9 @@ the form's CSRF token is the page's own. The `character.created` hook runs for b
 On top, the API refuses an account without the acceptance of the current Terms (403 with the accept page's URL: the
 player accepts once on the site) and checks the season choice: only the season running now, a mode of
 `season_config.lua` `modes.list`, Hardcore modes only with `hardcore: true` (the client's "I understand").
+A banned account (an active `account_bans` row: `expires_at` 0 is permanent, else until `expires_at`, as the game
+server reads it) gets no token: `login` answers 403 `banned` with the end (`until`) and the reason, told only after the
+right password. `create` with a token issued before the ban answers the same and ends the account's tokens.
 
 **Season at creation.** A season choice writes `chaos_season_requests` (player, season, mode). The game server
 carries it out at the character's first login with its own join (`season.lua` `S.applyRequest`: `S.joinCheck`, the
@@ -1019,6 +1047,81 @@ there are, how many apprentices learn now and how many graduated. The page only 
 `chaos_mentor_links`; without them it says that no mentor is listed yet. The numbers in the page's text
 (`chaos_mentor_rules()`) are checked against `server/data/scripts/chaos/mentor_config.lua` by the test.
 
+## Discord announcements
+
+The game server queues events in `chaos_discord_queue` (server/README.md "Discord announcements"; the plugin's
+`install.sql` creates the table too). `plugins/chaos/discord_worker.php` posts them to Discord channel **webhooks**
+as embeds in the site's colours (`discord_lib.php`), and adds the Character Bazaar's new auctions and sales from
+`chaos_bazaar_log` (its first run only notes where the log is). No bot and no token: a webhook URL per channel, from
+the environment only.
+
+- **Run it** every minute as the web server's user: `server/deploy/chaos-discord.service` + `.timer`
+  (`EnvironmentFile=/etc/chaos/discord.env`, log `/var/log/chaos/discord.log`), or cron:
+  `* * * * * www-data set -a; . /etc/chaos/discord.env; php <site>/plugins/chaos/discord_worker.php --site <site>`.
+  `--loop [--interval 20]` keeps it running instead. Without any webhook it exits at once; the rows wait.
+- **Environment** (`/etc/chaos/discord.env`, mode 600, owned by www-data; never in the repository):
+  `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts), `_BOSSES` (world boss spawn and kill, Ascended,
+  Cinderheart), `_PLAYERS` (levels 500 and 1000), `_ANNOUNCE` (season start and end), `_STATUS` (server up, daily
+  restart, down), `_BAZAAR` (auctions and sales), `_DEFAULT` (every channel without its own); `CHAOS_DISCORD_OFF`
+  (kinds not to post, comma separated: `record`, `first`, `worldboss_spawn`, `worldboss_kill`, `ascended_kill`,
+  `cinderheart_kill`, `level`, `season_start`, `season_end`, `status_up`, `status_down`, `status_restart`,
+  `bazaar_list`, `bazaar_sale`); `CHAOS_DISCORD_NAME` (the poster's name); `CHAOS_SITE_URL` (the bazaar link). Only
+  `https://discord.com/api/webhooks/<id>/<token>` URLs are taken.
+- **Rate limits:** at most 20 posts a run, 0.6 s apart per webhook; Discord's 429 `retry_after` and
+  `X-RateLimit-Remaining: 0` hold that webhook's rows back. A failed post is tried again after 1, 2, 4, 8 minutes and
+  then marked `failed`. Posts never ping (`allowed_mentions` empty). Rows: `new`, `sent`, `failed`, `nohook` (no webhook
+  for the channel), `off`; sent rows are deleted after 14 days, failed ones after 28.
+- **Invite:** `CHAOS_DISCORD_URL` (site.env) shows the Discord button of the layout and, as an https link, a last step
+  "Join the community on Discord" on the downloads page.
+
+## Balance telemetry
+
+`page.php?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry, added by `setup/chaos_setup.php`): admin accounts
+(`CHAOS_ADMIN_ACCOUNTS`) with a character of group 5 or higher; anyone else gets "not found". Read only. Filters: level
+band, class (a line or one class), a UTC date range (14 days by default, at most 400). Sections: online (average and
+peak per day), hunting (experience and gold per hour per day, per class, per band), bosses (kills, average, best and
+slowest time per party size), deaths per area and killer, spell casts, gold faucets and sinks, Chaos Coins per store
+category (`chaos_shop_purchases`, by the buyer's level). Charts are SVG drawn by the server (`telemetry_lib.php`): no
+script and no external file; a point's or bar's tooltip is its `<title>`, and each chart has a table. A rate is only
+shown where at least 3 characters are behind it. Data: the game's `chaos_telemetry_*` tables (server/README.md
+"Balance telemetry"); without them the page says there is no telemetry yet.
+
+## Smoke test
+
+A browser test of the key flows, in headless Chromium with [Playwright](https://playwright.dev) (Apache 2.0). It is
+the pre-deploy check of docs/LAUNCH.md "Website". One command:
+
+```
+website/tests/e2e/run.sh                                        # a throwaway local site, about 30 s
+E2E_BASE_URL=https://staging.example.org/ website/tests/e2e/run.sh   # an installed site (staging)
+```
+
+Flows, in order (`tests/e2e/smoke.test.js`, Node's own test runner): 1. home page (title, menu, login box);
+2. account creation (a new account per run, the Terms box); 3. login (lands on My Account); 4. character creation, the
+character list and the character page; 5. the Donate page in English and Portuguese: the voluntary donation label in
+both languages, a Pix and a PayPal button per pack and the first donation bonus in Portuguese; with mock providers a Pix
+donation is started (the order page shows the copy-and-paste code) and cancelled; 6. the wiki: Portuguese index, the
+switch to English and back on a guide, search; 7. the Character Bazaar list in both languages. Every page is checked
+for PHP errors and notices and for script errors. Requests to any other host are blocked, so nothing reaches Google,
+Mercado Pago or PayPal.
+
+- **Local site** (no `E2E_BASE_URL`): a MariaDB data folder in a new temporary folder, the game schema
+  (`CHAOS_E2E_SCHEMA` = the base server's `schema.sql`, else the upstream TFS 1.4.2 `schema.sql`, fetched at its tag
+  and checked by SHA-256), `server/sql/*.sql`, one town, `install_site.sh` with mock donation providers, and
+  `php -S` with `setup/router.php`. Everything is deleted at the end; a failed run keeps the folder and its logs.
+  Ports: `E2E_HTTP_PORT` (8099), `E2E_DB_PORT` (33099). It needs network access for ZnoteX, the layout and PHPMailer
+  (as the installer always does).
+- **Staging**: `E2E_BASE_URL` alone. It creates one account and one character per run (names `smoke...` /
+  `Smoke ...`; delete them in the admin panel afterwards) and counts against the per-address account limit (3 per
+  hour). It starts no donation unless `E2E_PAY_MOCK=1`. Never point it at the live site.
+- **Screenshots** of each flow: `E2E_SHOTS` (default `$TMPDIR/chaos-e2e-shots`).
+- **Needs**: php 8.1+ with mysqli, mariadb-server, git, curl, python3, Node 18+ and the npm package `playwright` with
+  its Chromium, installed outside the repository (no `package.json`, no lockfile here):
+  `npm install -g playwright@1.56.1 && npx playwright@1.56.1 install chromium` (skip the second command where
+  `PLAYWRIGHT_BROWSERS_PATH` already has Chromium). `run.sh` finds a global install through `npm root -g`.
+- CI: the manual workflow `website-e2e.yml` (Actions > Website smoke test > Run workflow) runs the local site on a
+  GitHub runner. It needs no secrets. It is not part of `ci.yml`.
+
 ## Not done / for later
 
 - Known small points from the security QA, left as they are: `pay/Service.php` apply() records the provider's status
@@ -1029,3 +1132,10 @@ there are, how many apprentices learn now and how many graduated. The page only 
 - Achievements (`chaos_achievements`) and name plate titles have no page yet.
 - Other languages: the layout's wording is English only (the language selector is off and `languages_enabled` is `en`
   only, so `?lang=` does not translate ZnoteX's strings around our English pages).
+
+## Languages
+The donation (`coins`), Character Bazaar, creator and leaderboards / records pages speak Portuguese (Brazil) or
+English (`plugins/chaos/i18n_lib.php`): `&l=pt-BR` / `&l=en` (kept in the `chaos_lang` cookie for a year), else the
+cookie, else the browser's Accept-Language, else English. `chaos_t('English %s', $x)` takes its text from
+`plugins/chaos/i18n/pt-BR.php`; each page has a link to the other language. The wiki and the legal pages keep their
+own texts (Portuguese by default). Test: `tests/chaos_i18n_test.php`.

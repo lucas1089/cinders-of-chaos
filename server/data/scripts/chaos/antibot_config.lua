@@ -91,7 +91,9 @@ return {
 		graceHours = 8, -- after a passed check no new one for this long
 		successFactor = 0.4, -- a passed check multiplies the score by this
 		failPenalty = 40, -- a failed check adds this
-		failAction = "temple", -- "temple" (teleport to the temple + log), "kick" (+ log) or "log" (log only)
+		-- "log" (default: log only, a signal for staff) or "temple" (teleport to the temple + log). Never a kick: the check
+		-- only adds a signal for a manual review (server/README.md "Bot detection"); "kick" is treated as "log".
+		failAction = "log",
 		deferMaxMinutes = 30, -- a check deferred (PvP, boss) longer than this is dropped; the score asks again later
 		pvpSeconds = 60, -- a hit from or on a player this recently: in PvP combat
 		bossSeconds = 45, -- a hit from or on a boss this recently: in a boss fight

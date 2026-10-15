@@ -20,6 +20,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 Chaos.arenaConfig = dofile("data/scripts/chaos/arena_config.lua")
 if not (ChaosArenaCore and ChaosArenaCore.rateMatch) then
 	dofile("data/scripts/chaos/arena_core.lua")
@@ -63,8 +66,9 @@ local function playerOf(creature)
 	return master and master:isPlayer() and master or nil
 end
 
+-- text: a key (Chaos.t) or a deferred text (ChaosI18n.msg): in the player's language
 local function msg(player, text)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, text))
 end
 
 -- ======================================================================== ratings (DB)
@@ -325,7 +329,7 @@ function S.join(player, mode)
 			end
 			player:sendCancelMessage(why)
 			if #members > 1 then
-				msg(player, "Arena: " .. why)
+				msg(player, ChaosI18n.msg("Arena: %s", why))
 			end
 			return false
 		end
@@ -346,7 +350,7 @@ function S.join(player, mode)
 		S.queued[cid] = entry
 		local m = Player(cid)
 		if m then
-			msg(m, string.format("Arena: you joined the %s queue (rating %d). Stay in a protection zone; the Arena window leaves the queue.",
+			msg(m, ChaosI18n.msg("Arena: you joined the %s queue (rating %d). Stay in a protection zone; the Arena window leaves the queue.",
 				mode, math.floor(entry.rating)))
 			stateLater(cid)
 		end
@@ -358,7 +362,7 @@ function S.leaveQueue(player, silent)
 	local e = S.queued[player:getId()]
 	if not e then
 		if not silent then
-			player:sendCancelMessage("You are not in the arena queue.")
+			player:sendCancelMessage(Chaos.t(player, "You are not in the arena queue."))
 		end
 		return false
 	end
@@ -366,7 +370,8 @@ function S.leaveQueue(player, silent)
 	for _, cid in ipairs(e.members) do
 		local m = Player(cid)
 		if m then
-			msg(m, m == player and "Arena: you left the queue." or ("Arena: " .. player:getName() .. " left the queue, so did your party."))
+			msg(m, m == player and "Arena: you left the queue." or
+				ChaosI18n.msg("Arena: %s left the queue, so did your party.", player:getName()))
 			stateLater(cid)
 		end
 	end
@@ -611,8 +616,8 @@ local function startMatch(a, b)
 				for _, other in ipairs(entry.members) do
 					local o = Player(other)
 					if o then
-						msg(o, "Arena: a match was found but could not start, you were removed from the queue: " ..
-							(o == p and why or ((p and p:getName() or "your partner") .. ": " .. why)))
+						msg(o, ChaosI18n.msg("Arena: a match was found but could not start, you were removed from the queue: %s",
+							o == p and why or ((p and p:getName() or "your partner") .. ": " .. why)))
 						stateLater(other)
 					end
 				end
@@ -669,7 +674,7 @@ local function startMatch(a, b)
 	end
 	eachOnline(m, function(p, e)
 		local opp = table.concat(names[3 - e.team], ", ")
-		msg(p, string.format("Arena %s against %s. The fight starts in %d seconds; secure mode must be off (the client turns it off for you).",
+		msg(p, ChaosI18n.msg("Arena %s against %s. The fight starts in %d seconds; secure mode must be off (the client turns it off for you).",
 			m.mode, opp, cfg.countdownSeconds))
 		Chaos.send(p, OPCODE, "start", {mode = m.mode, team = e.team, countdown = cfg.countdownSeconds, fight = cfg.fightSeconds})
 	end)
@@ -876,7 +881,7 @@ local function tickMatch(m)
 	if m.phase == "countdown" and now >= m.fightAt then
 		m.phase = "fight"
 		eachOnline(m, function(p)
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Arena: FIGHT!")
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Arena: FIGHT!"))
 			p:getPosition():sendMagicEffect(CONST_ME_FIREAREA)
 		end)
 	end
@@ -1081,7 +1086,7 @@ guard.onTargetCombat = function(creature, target)
 	end
 	local ae, te = tm.players[a:getId()], tm.players[target:getId()]
 	if tm.phase == "countdown" then
-		a:sendCancelMessage(string.format("The fight starts in %d seconds.", math.max(0, tm.fightAt - os.time())))
+		a:sendCancelMessage(Chaos.t(a, "The fight starts in %d seconds.", math.max(0, tm.fightAt - os.time())))
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	if not A.canHit(tm.phase, ae, te, false) then
@@ -1200,7 +1205,7 @@ local function onArena(player, words, param)
 	if cmd == "queue" or cmd == "join" then
 		local mode = A.parseMode(C(), arg)
 		if not mode then
-			player:sendCancelMessage("Choose 1v1, 2v2 or 3v3.")
+			player:sendCancelMessage(Chaos.t(player, "Choose 1v1, 2v2 or 3v3."))
 			return false
 		end
 		S.join(player, mode)

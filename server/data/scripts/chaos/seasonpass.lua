@@ -33,6 +33,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/seasonpass_core.lua")
 if not ChaosSeason or not ChaosSeason.status then
 	dofile("data/scripts/chaos/season_core.lua")
@@ -229,6 +232,7 @@ local function periodsOf(acc)
 	if acc.day ~= day or acc.week ~= week then
 		SP.flush(acc)
 		acc.periods = {}
+		acc.prev = {}
 		acc.day, acc.week = day, week
 		loadPeriod(acc, day)
 		loadPeriod(acc, week)
@@ -287,11 +291,12 @@ local function toast(player, text)
 	end
 end
 
--- text: the chat line; short (optional): the toast, which shows two short lines
+-- text: the chat line; short (optional): the toast, which shows two short lines. Keys or deferred texts
+-- (ChaosI18n.msg): each character reads them in its own language
 local function tellAccount(account, text, effect, short)
 	for _, p in ipairs(accountPlayers(account)) do
-		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
-		toast(p, short or text)
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, text))
+		toast(p, Chaos.t(p, short or text))
 		if effect then
 			p:getPosition():sendMagicEffect(effect)
 		end
@@ -318,16 +323,48 @@ function SP.addXp(acc, amount, why)
 	if after > before then
 		SP.flush(acc)
 		local p = pass(acc)
-		local text = after - before == 1 and string.format("%s: tier %d reached! Claim your rewards in Adventure > Season Pass.",
-			p.name, after) or string.format("%s: tiers %d to %d reached! Claim your rewards in Adventure > Season Pass.",
+		local text = after - before == 1 and ChaosI18n.msg("%s: tier %d reached! Claim your rewards in Adventure > Season Pass.",
+			p.name, after) or ChaosI18n.msg("%s: tiers %d to %d reached! Claim your rewards in Adventure > Season Pass.",
 			p.name, before + 1, after)
 		tellAccount(acc.id, text, CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE,
-			string.format("Tier %d reached! New rewards to claim.", after))
+			ChaosI18n.msg("Tier %d reached! New rewards to claim.", after))
 		logEvent(acc.id, 0, acc.season, "tier", string.format("%d -> %d (%s)", before, after, tostring(why or "")))
 		refreshAccount(acc.id)
 	end
 	return amount
 end
+
+-- the banked daily cap (cfg.bankDays): the pass XP of capKey on today and the days before, newest first, and how many
+-- of those days the season ran. The earlier days are read once per day (acc.prev).
+local function capWindow(acc, today, capKey)
+	local n = math.max(1, math.floor(tonumber(cfg.bankDays) or 1))
+	local t = now()
+	local start
+	local season = SP.active()
+	if season and ChaosSeason and ChaosSeason.times then
+		local ok, st = pcall(ChaosSeason.times, season, overrides())
+		start = ok and st or nil
+	end
+	local startKey = start and P.dayKey(start) or 0
+	acc.prev = acc.prev or {}
+	local used, days = {today[capKey] or 0}, 1
+	for i = 1, n - 1 do
+		local key = P.dayKey(t - i * 86400)
+		if key < startKey then
+			break
+		end
+		if not acc.prev[key] then
+			local saved = acc.periods
+			acc.periods = {}
+			acc.prev[key] = loadPeriod(acc, key)
+			acc.periods = saved
+		end
+		used[#used + 1] = acc.prev[key][capKey] or 0
+		days = days + 1
+	end
+	return used, days
+end
+SP.capWindow = capWindow
 
 -- one game event of a character: pass XP from the source (daily cap) and the challenges
 -- source: exp (value = level units), kill, boss, bounty, rift (value = tier), goblin, invasion
@@ -352,9 +389,11 @@ function SP.progress(player, source, value)
 			acc.frac = acc.frac + (tonumber(value) or 0) * cfg.sources.exp.xp
 			local whole = math.floor(acc.frac)
 			acc.frac = acc.frac - whole
-			gain = P.sourceGain(cfg, "exp", whole / cfg.sources.exp.xp, today[capKey])
+			local used, days = capWindow(acc, today, capKey)
+			gain = P.sourceGain(cfg, "exp", whole / cfg.sources.exp.xp, used, days)
 		else
-			gain = P.sourceGain(cfg, source, value, today[capKey])
+			local used, days = capWindow(acc, today, capKey)
+			gain = P.sourceGain(cfg, source, value, used, days)
 		end
 		if gain > 0 then
 			setPeriod(acc, day, capKey, (today[capKey] or 0) + gain)
@@ -376,8 +415,10 @@ function SP.progress(player, source, value)
 				if v >= c.target then
 					setPeriod(acc, period, "done:" .. c.key, 1)
 					local xp = kind == "daily" and cfg.challenges.dailyXp or cfg.challenges.weeklyXp
-					tellAccount(acc.id, string.format("%s challenge done: %s (+%d pass XP).", kind == "daily" and "Daily" or "Weekly",
-						c.text, xp), nil, string.format("Challenge done: +%d pass XP.", xp))
+					local daily = kind == "daily"
+					tellAccount(acc.id, ChaosI18n.msg(daily and "Daily challenge done: %s (+%d pass XP)." or
+						"Weekly challenge done: %s (+%d pass XP).", ChaosI18n.msg(c.text), xp), nil,
+						ChaosI18n.msg("Challenge done: +%d pass XP.", xp))
 					logEvent(acc.id, player:getGuid(), acc.season, "challenge", c.key)
 					SP.addXp(acc, xp, "challenge " .. c.key)
 					refreshAccount(acc.id)
@@ -437,12 +478,13 @@ function SP.deliverCosmetics(player)
 				if key then
 					player:setStorageValue(key, 1)
 				end
-				added[#added + 1] = r.name or "a shader"
+				added[#added + 1] = r.name or Chaos.t(player, "a shader")
 			end
 		end
 	end
 	if #added > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Season pass cosmetics of your account: " .. table.concat(added, ", ") .. ".")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Season pass cosmetics of your account: %s.",
+			table.concat(added, ", ")))
 	end
 	return added
 end
@@ -571,8 +613,8 @@ function SP.claim(player, tier, track, quiet)
 		deliverAccount(acc.id)
 	end
 	if not quiet then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Season pass tier %d (%s): %s.", tier,
-			track == P.PREMIUM and "premium" or "free", P.rewardText(r)))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Season pass tier %d (%s): %s.", tier,
+			Chaos.t(player, track == P.PREMIUM and "premium" or "free"), P.rewardText(r, Chaos.lang(player))))
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or CONST_ME_MAGIC_BLUE)
 	end
 	return true, r
@@ -593,7 +635,7 @@ function SP.claimAll(player)
 			local ok, r = SP.claim(player, c.tier, c.track, true)
 			if ok then
 				got = got + 1
-				names[#names + 1] = P.rewardText(r)
+				names[#names + 1] = P.rewardText(r, Chaos.lang(player))
 			else
 				stop = r
 				noRoom = noRoom or (type(r) == "string" and r:find("room", 1, true) ~= nil)
@@ -601,7 +643,7 @@ function SP.claimAll(player)
 		end
 	end
 	if got > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Season pass: claimed %d reward%s: %s.", got,
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Season pass: claimed %d reward%s: %s.", got,
 			got == 1 and "" or "s", table.concat(names, ", ")))
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or CONST_ME_MAGIC_BLUE)
 	end
@@ -627,9 +669,9 @@ function SP.claimPremiumBacklog(account)
 		end
 	end
 	if got > 0 then
-		tellAccount(account, string.format("Premium %s: the %d reward%s of the tiers you already reached %s yours: %s.", p.name,
-			got, got == 1 and "" or "s", got == 1 and "is" or "are", table.concat(names, ", ")), nil,
-			string.format("%d premium reward%s unlocked", got, got == 1 and "" or "s"))
+		tellAccount(account, ChaosI18n.msg(got == 1 and "Premium %s: the %d reward of the tiers you already reached is yours: %s." or
+			"Premium %s: the %d rewards of the tiers you already reached are yours: %s.", p.name, got, table.concat(names, ", ")), nil,
+			ChaosI18n.msg("%d premium reward%s unlocked", got, got == 1 and "" or "s"))
 		refreshAccount(account)
 	end
 	return got
@@ -657,7 +699,7 @@ function SP.grantPremium(account, actorGuid, paid, source)
 		return false, "The season pass can only be bought while its season runs."
 	end
 	if hasPremium(acc) then
-		return false, "That account already has the premium " .. pass(acc).name .. "."
+		return false, ChaosI18n.msg("That account already has the premium %s.", pass(acc).name)
 	end
 	SP.flush(acc)
 	local tok = token()
@@ -676,8 +718,8 @@ function SP.grantPremium(account, actorGuid, paid, source)
 	acc.premium, acc.premiumPaid = true, paid or 0
 	acc.cur.premium, acc.cur.premiumPaid = true, paid or 0
 	logEvent(acc.id, actorGuid, acc.season, "premium", string.format("%s, %d coins", tostring(source), paid or 0))
-	tellAccount(acc.id, string.format("The premium %s is unlocked for your whole account. Its rewards wait in Adventure > " ..
-		"Season Pass.", pass(acc).name), CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE, "Premium track unlocked!")
+	tellAccount(acc.id, ChaosI18n.msg("The premium %s is unlocked for your whole account. Its rewards wait in Adventure > Season Pass.",
+		pass(acc).name), CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE, "Premium track unlocked!")
 	refreshAccount(acc.id)
 	SP.claimPremiumBacklog(acc.id)
 	return true
@@ -696,7 +738,7 @@ function SP.grantPack(account, actorGuid, id, paid, source)
 	end
 	local from = acc.cur.pack
 	if from >= id then
-		return false, "That account already owns " .. pk.name .. "."
+		return false, ChaosI18n.msg("That account already owns %s.", pk.name)
 	end
 	local tok = token()
 	db.query(string.format("INSERT IGNORE INTO `%s` (`account_id`, `season`, `pack`, `paid`, `player_id`, `bought_at`, `token`) " ..
@@ -705,7 +747,7 @@ function SP.grantPack(account, actorGuid, id, paid, source)
 	local rows = Chaos.select(string.format("SELECT `token` FROM `%s` WHERE `account_id` = %d AND `season` = %d AND `pack` = %d",
 		T.packs, acc.id, acc.season, id), {{"token", "s"}})
 	if not rows[1] or rows[1].token ~= tok then
-		return false, "That account already owns " .. pk.name .. "."
+		return false, ChaosI18n.msg("That account already owns %s.", pk.name)
 	end
 	acc.cur.packs[id] = paid or 0
 	acc.cur.pack = id
@@ -719,8 +761,8 @@ function SP.grantPack(account, actorGuid, id, paid, source)
 	end
 	SP.flush(acc)
 	deliverAccount(acc.id)
-	tellAccount(acc.id, string.format("%s is yours: its cosmetics are on every character of your account.", pk.name),
-		CONST_ME_FIREWORK_RED or CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE, pk.name .. " unlocked!")
+	tellAccount(acc.id, ChaosI18n.msg("%s is yours: its cosmetics are on every character of your account.", pk.name),
+		CONST_ME_FIREWORK_RED or CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE, ChaosI18n.msg("%s unlocked!", pk.name))
 	refreshAccount(acc.id)
 	if hasPremium(acc) then
 		SP.claimPremiumBacklog(acc.id)
@@ -751,10 +793,19 @@ local function spendCoins(account, amount)
 	if not Shop or not Shop.getCoins or Shop.getCoins(account) < amount then
 		return false
 	end
-	-- game scripts run on one thread and db.query is synchronous: the check above and this update cannot interleave
-	return db.query(string.format("UPDATE `%s` SET `coins` = `coins` - %d WHERE `account_id` = %d AND `coins` >= %d",
-		Chaos.tables.shopCoins, amount, account, amount)) and true or false
+	if Shop.spend then
+		return Shop.spend(account, amount) -- shop.lua: counts only when the UPDATE changed the row
+	end
+	-- the website (Character Bazaar) changes the balance from another process: db.query is true even when the WHERE
+	-- matched nothing, so the change is read back (ROW_COUNT)
+	if not db.query(string.format("UPDATE `%s` SET `coins` = `coins` - %d WHERE `account_id` = %d AND `coins` >= %d",
+			Chaos.tables.shopCoins, amount, account, amount)) then
+		return false
+	end
+	local r = Chaos.select("SELECT ROW_COUNT() AS `n`", {{"n", "n"}})[1]
+	return r ~= nil and r.n == 1
 end
+SP.spendCoins = spendCoins
 
 local function shopHistory(player, title, cost)
 	db.asyncQuery(string.format("INSERT INTO `%s` (`account_id`, `player_id`, `title`, `cost`, `created`) VALUES (%d, %d, %s, %d, %d)",
@@ -806,18 +857,18 @@ function SP.windowBuy(player, what, shownPrice, giftName)
 	local price, why = SP.offerPrice(acc, what)
 	if not price then
 		releaseIfOffline(account)
-		return false, giftName and (why == "Owned." and (targetName .. " already has it.") or why) or why
+		return false, giftName and (why == "Owned." and ChaosI18n.msg("%s already has it.", targetName) or why) or why
 	end
 	if tonumber(shownPrice) ~= price then
 		releaseIfOffline(account)
-		return false, string.format("The price is %d Chaos Coins%s. Please confirm again.", price,
-			giftName and (" for " .. targetName) or "")
+		return false, giftName and ChaosI18n.msg("The price is %d Chaos Coins for %s. Please confirm again.", price, targetName)
+			or ChaosI18n.msg("The price is %d Chaos Coins. Please confirm again.", price)
 	end
 	local Shop = ChaosShop
 	local have = Shop and Shop.getCoins and Shop.getCoins(player:getAccountId()) or 0
 	if have < price then
 		releaseIfOffline(account)
-		return false, string.format("You need %d Chaos Coins (you have %d).", price, have)
+		return false, ChaosI18n.msg("You need %d Chaos Coins (you have %d).", price, have)
 	end
 	if not spendCoins(player:getAccountId(), price) then
 		releaseIfOffline(account)
@@ -839,7 +890,7 @@ function SP.windowBuy(player, what, shownPrice, giftName)
 	end
 	if giftName then
 		title = title .. " (gift to " .. targetName .. ")"
-		tellAccount(account, string.format("%s gave your account %s.", player:getName(), offerName(acc, what)))
+		tellAccount(account, ChaosI18n.msg("%s gave your account %s.", player:getName(), offerName(acc, what)))
 		logEvent(player:getAccountId(), player:getGuid(), acc.season, "gift", title)
 	end
 	shopHistory(player, title, price)
@@ -907,8 +958,8 @@ function SP.storeCheck(player, offer)
 		return why == "Owned." and "Your account already has the premium pass." or why
 	end
 	if price ~= offer.cost then
-		return string.format("Your account gets this for %d Chaos Coins (the difference to what it already owns): buy it in " ..
-			"Adventure > Season Pass, Packs.", price)
+		return ChaosI18n.msg("Your account gets this for %d Chaos Coins (the difference to what it already owns): buy it in Adventure > Season Pass, Packs.",
+			price)
 	end
 	return nil
 end
@@ -1041,7 +1092,13 @@ xp:register()
 local kill = CreatureEvent("ChaosSeasonPassKill")
 function kill.onKill(creature, target)
 	if creature and creature:isPlayer() and target and target:isMonster() and not target:getMaster() then
-		local ok, err = pcall(SP.progress, creature, "kill", 1)
+		-- pack combat (pace.lua): a paced monster counts 1 / its kill-goal factor (summed), so the kill tasks take as
+		-- long as before
+		local n = ChaosPace and ChaosPace.killCredit and ChaosPace.killCredit(creature, target, "pass") or 1
+		local ok, err = true, nil
+		if n > 0 then
+			ok, err = pcall(SP.progress, creature, "kill", n)
+		end
 		if not ok then
 			log("kill: " .. tostring(err))
 		end
@@ -1110,7 +1167,10 @@ function SP.stateOf(player)
 		local sources = {}
 		for _, key in ipairs({"exp", "boss", "bounty", "rift", "goblin", "invasion"}) do
 			local s = cfg.sources[key]
-			sources[#sources + 1] = {key = key, name = s.name, today = today["cap:" .. key] or 0, cap = s.dailyCap}
+			-- cap: today's room with the banked days (cfg.bankDays) plus what today already took
+			local used, days = capWindow(acc, today, "cap:" .. key)
+			local done = today["cap:" .. key] or 0
+			sources[#sources + 1] = {key = key, name = s.name, today = done, cap = done + P.sourceRoom(cfg, key, used, days)}
 		end
 		data.sources = sources
 	end
@@ -1168,7 +1228,7 @@ end
 
 local function notice(player, text)
 	if text then
-		Chaos.send(player, OPCODE, "notice", {text = tostring(text)})
+		Chaos.send(player, OPCODE, "notice", {text = Chaos.t(player, text)})
 	end
 end
 
@@ -1203,7 +1263,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			notice(player, why or "Nothing to claim.")
 		elseif why then
 			-- no room, or items a season character cannot claim while the season runs: they wait
-			notice(player, why:find("room", 1, true) and (why .. " The other items wait for you.") or why)
+			notice(player, why:find("room", 1, true) and Chaos.t(player, "%s The other items wait for you.", Chaos.t(player, why)) or why)
 		end
 		SP.sendState(player, false)
 	elseif msg.action == "buy" then
@@ -1251,7 +1311,7 @@ function login.onLogin(player)
 			SP.claimPremiumBacklog(p:getAccountId()) -- a premium pass given while the account was offline
 			local n = #P.claimable(pa, viewOf(acc, true))
 			if n > 0 then
-				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %d reward%s to claim in Adventure > Season Pass.", pa.name,
+				p:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(p, "%s: %d reward%s to claim in Adventure > Season Pass.", pa.name,
 					n, n == 1 and "" or "s"))
 			end
 		end

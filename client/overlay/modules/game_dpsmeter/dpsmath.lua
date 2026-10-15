@@ -1,6 +1,7 @@
 -- DPS meter, pure parts (no UI calls): settings, number and time formats, the rows of a tab (share, bar length, per
 -- second, average, crit rate), the segment list, the party rows, row icons and colours, and the exported summaries.
 -- Tested by dpsmath_test.lua (luajit and lua5.3). Data comes from the server (combatlog_core.lua CL.state).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 DpsMath = {}
 
@@ -235,7 +236,7 @@ end
 
 -- the title line of the panel: "<label>  0:42" (live: "<label>  0:42 *")
 function DpsMath.title(view)
-  if not view then return 'No fight yet' end
+  if not view then return tr('No fight yet') end
   local label = view.id == 's' and 'Session' or tostring(view.label or 'Fight')
   return string.format('%s  %s%s', label, DpsMath.duration(view.dur), view.live == 1 and ' *' or '')
 end
@@ -275,7 +276,7 @@ function DpsMath.summary(view, idx, maxRows)
   local t = tabTitle(idx)
   local rows, total = DpsMath.rows(view, idx)
   local lines = {
-    string.format('DPS Meter - %s (%s)', view.id == 's' and 'Session' or tostring(view.label or 'Fight'),
+    tr('DPS Meter - %s (%s)', view.id == 's' and 'Session' or tostring(view.label or 'Fight'),
       DpsMath.duration(view.dur)),
     string.format('%s: %s (%s %s)', t.name, DpsMath.exact(total), DpsMath.exact(DpsMath.perSecond(total, view.dur)), t.rate),
   }

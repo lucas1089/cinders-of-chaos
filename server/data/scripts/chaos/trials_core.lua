@@ -16,6 +16,17 @@ end
 
 ChaosTrialsCore = ChaosTrialsCore or {}
 local M = ChaosTrialsCore
+
+-- a text in `lang` through ChaosI18n (i18n_core.lua) when it is loaded, else English (planPick, enterProblem)
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
 local floor, max, min = math.floor, math.max, math.min
 
 function M.cfg()
@@ -347,18 +358,18 @@ end
 -- ------------------------------------------------------------------------------------------------ choosing and switching
 -- Can the character put pair `pair` on `side` (1 or 2) now? Returns a plan {free, gold, tokens, change} or nil, reason.
 --   state = {tier = highest tier cleared, picks = {p1,p2,p3}, tokens = n, level = n}
-function M.planPick(state, pair, side)
+function M.planPick(state, pair, side, lang)
 	pair, side = floor(tonumber(pair) or 0), floor(tonumber(side) or 0)
 	if pair ~= pair or pair < 1 or pair > 3 or (side ~= 0 and side ~= 1 and side ~= 2) then
-		return nil, "That is not a choice of your trial nodes."
+		return nil, T(lang, "That is not a choice of your trial nodes.")
 	end
 	if pair > (state.tier or 0) then
 		local t = M.cfg().tiers[pair]
-		return nil, string.format("Locked: clear your trial on %s first.", t and t.name or "a higher difficulty")
+		return nil, T(lang, "Locked: clear your trial on %s first.", t and t.name or T(lang, "a higher difficulty"))
 	end
 	local current = (state.picks and state.picks[pair]) or 0
 	if side == current then
-		return nil, side == 0 and "Nothing is chosen there." or "You already hold that node."
+		return nil, T(lang, side == 0 and "Nothing is chosen there." or "You already hold that node.")
 	end
 	local plan = {pair = pair, side = side, from = current}
 	if current == 0 then
@@ -370,7 +381,7 @@ function M.planPick(state, pair, side)
 	plan.gold = max(0, floor(tonumber(state.level) or 0)) * sw.goldPerLevel
 	plan.tokens = 1
 	if (state.tokens or 0) < plan.tokens then
-		return nil, "Changing a held node costs a Trial Token. Clear a trial you have already cleared to earn one.", plan
+		return nil, T(lang, "Changing a held node costs a Trial Token. Clear a trial you have already cleared to earn one."), plan
 	end
 	return plan
 end
@@ -380,20 +391,20 @@ function M.tier(i)
 	return M.cfg().tiers[i]
 end
 
--- level / previous tier / protection: why a character may not enter tier i (nil = may)
-function M.enterProblem(tierIdx, level, tierCleared, now, cooldownUntil)
+-- level / previous tier / protection: why a character may not enter tier i (nil = may), in `lang` (English by default)
+function M.enterProblem(tierIdx, level, tierCleared, now, cooldownUntil, lang)
 	local t = M.tier(tierIdx)
 	if not t then
-		return "That difficulty does not exist."
+		return T(lang, "That difficulty does not exist.")
 	end
 	if tierIdx > (tierCleared or 0) + 1 then
-		return string.format("Clear the trial on %s first.", M.tier(tierIdx - 1).name)
+		return T(lang, "Clear the trial on %s first.", M.tier(tierIdx - 1).name)
 	end
 	if (level or 0) < t.minLevel then
-		return string.format("%s needs level %d.", t.name, t.minLevel)
+		return T(lang, "%s needs level %d.", t.name, t.minLevel)
 	end
 	if (cooldownUntil or 0) > (now or 0) then
-		return string.format("The trial is still closed to you for %d seconds.", (cooldownUntil or 0) - (now or 0))
+		return T(lang, "The trial is still closed to you for %d seconds.", (cooldownUntil or 0) - (now or 0))
 	end
 	return nil
 end
@@ -464,9 +475,39 @@ function M.weekKey(t)
 	return ChaosBounty.week(t or os.time(), {rollHour = hour})
 end
 
+-- the repeat rewards of the week `nowKey` from what is stored: {count, bank, allowance, rolled}. storedKey / storedCount /
+-- storedBank: the week of the last counted repeat, the repeats counted in it and the bank it had. A new week carries the
+-- unused rewards of the old one and one week's worth per week skipped, together at most (repeatBankWeeks - 1) weeks'
+-- worth. A stored key that is no date (none yet, the old YYYYWW keys) carries nothing.
+function M.repeatState(storedKey, storedCount, storedBank, nowKey)
+	local r = M.cfg().reward
+	local per, weeks = r.repeatsPerWeek, r.repeatBankWeeks or 1
+	storedCount, storedBank = max(0, tonumber(storedCount) or 0), max(0, tonumber(storedBank) or 0)
+	if storedKey == nowKey then
+		return {count = storedCount, bank = storedBank, allowance = per + storedBank}
+	end
+	local bank = 0
+	local function t(k)
+		k = tonumber(k) or 0
+		local y, m, d = math.floor(k / 10000), math.floor(k / 100) % 100, k % 100
+		if y < 2000 or m < 1 or m > 12 or d < 1 or d > 31 then
+			return nil
+		end
+		return os.time({year = y, month = m, day = d, hour = 12})
+	end
+	local ta, tb = t(storedKey), t(nowKey)
+	if weeks > 1 and ta and tb and tb > ta then
+		local n = math.floor((tb - ta) / (7 * 86400) + 0.5)
+		local unused = max(0, per + storedBank - storedCount) + max(0, n - 1) * per
+		bank = min((weeks - 1) * per, unused)
+	end
+	return {count = 0, bank = bank, allowance = per + bank, rolled = true}
+end
+
 -- what a clear pays: {first = bool, gold, chaos, divine, tokens, counted}. tierCleared = before this clear.
--- weekCount = repeat rewards already paid this week.
-function M.clearOutcome(tierIdx, level, tierCleared, tokens, weekCount)
+-- weekCount = repeat rewards already paid this week; allowance = the week's repeat rewards (repeatsPerWeek + the bank,
+-- M.repeatState), repeatsPerWeek when nil.
+function M.clearOutcome(tierIdx, level, tierCleared, tokens, weekCount, allowance)
 	local c = M.cfg()
 	local first = tierIdx > (tierCleared or 0)
 	local r = first and c.reward.first or c.reward.repeatReward
@@ -477,7 +518,7 @@ function M.clearOutcome(tierIdx, level, tierCleared, tokens, weekCount)
 		return out
 	end
 	out.tokens = min(c.switch.tokensPerRepeat, max(0, c.switch.maxTokens - (tokens or 0)))
-	if (weekCount or 0) < c.reward.repeatsPerWeek then
+	if (weekCount or 0) < (allowance or c.reward.repeatsPerWeek) then
 		out.gold = (level or 0) * r.goldPerLevel * tierIdx
 		out.chaos, out.divine = r.chaos[tierIdx] or 0, r.divine[tierIdx] or 0
 		out.counted = true

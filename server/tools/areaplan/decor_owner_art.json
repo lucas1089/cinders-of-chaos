@@ -1,0 +1,109 @@
+{
+ "about": "the owner's decoration of client pair 26 (server/data/items/owner_decor.csv, install_owner_decor.py). area_plan_decor.kits() merges it into decor_kits.json only while ChaosOwnerArt.PAIR26 (server/data/lib/chaos_owner_art.lua) is on: new groups, a kit 'waste' (the lava kit plus the plants) and the waste biome pointed at it. The waypoint seal is a group for set pieces only (3x3, put on the south-east tile of its square), in no kit.",
+ "biome_kit": {
+  "waste": "waste"
+ },
+ "groups": {
+  "cacti_potted": {
+   "block": true,
+   "ids": [
+    36940,
+    36941,
+    36942,
+    36943,
+    36944,
+    36945,
+    36946,
+    36947,
+    36948,
+    36949,
+    36950,
+    36951,
+    36952,
+    36953,
+    36954,
+    36955,
+    36957,
+    36959,
+    36961,
+    36971,
+    36974,
+    36975,
+    36976,
+    36977,
+    36978,
+    36979,
+    36984
+   ],
+   "light": 0,
+   "name": "potted cactus",
+   "size": 2
+  },
+  "desert_plants": {
+   "block": false,
+   "ids": [
+    36956,
+    36958,
+    36960,
+    36962,
+    36963,
+    36964,
+    36965,
+    36966,
+    36967,
+    36968,
+    36969,
+    36970,
+    36972,
+    36973,
+    36980,
+    36981,
+    36982,
+    36983
+   ],
+   "light": 0,
+   "name": "desert plant",
+   "size": 2
+  },
+  "waypoint_seal": {
+   "block": false,
+   "ids": [
+    36985
+   ],
+   "light": 3,
+   "name": "waypoint seal",
+   "size": 3
+  }
+ },
+ "kits": {
+  "waste": {
+   "add": {
+    "around": [
+     [
+      "desert_plants",
+      2
+     ]
+    ],
+    "centre": [
+     [
+      "cacti_potted",
+      3
+     ]
+    ],
+    "floor": [
+     [
+      "desert_plants",
+      1
+     ]
+    ],
+    "wall_side": [
+     [
+      "cacti_potted",
+      2
+     ]
+    ]
+   },
+   "base": "lava"
+  }
+ }
+}

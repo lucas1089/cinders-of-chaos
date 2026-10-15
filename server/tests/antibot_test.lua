@@ -671,7 +671,25 @@ do
 	eq(AB.states[1].check.active, nil, "check closed")
 	check(async[#async]:find("check_pass", 1, true), "pass logged")
 	check(alice.storage[7100890] and alice.storage[7100890] > 0, "last check stored")
-	-- unanswered: temple + log
+	-- unanswered with the default "log": no move, no kick, only the log entry (manual review only)
+	eq(Chaos.antibotConfig.check.failAction, "log", "a failed check only logs by default")
+	for _, action in ipairs({"log", "kick"}) do
+		Chaos.antibotConfig.check.failAction = action
+		AB.states[2].lastPvp = nil
+		AB.states[2].check.lastAt, AB.states[2].check.graceUntil = 0, 0
+		AB.forceCheck(bob)
+		bob.pos = {x = 300, y = 300, z = 7}
+		local dl = AB.states[2].check.active.deadline
+		local rt = os.time
+		os.time = function() return dl + 5 end
+		AB.tick()
+		os.time = rt
+		eq(bob.pos.x, 300, "failed check with " .. action .. ": not moved")
+		check(not bob.removed, "failed check with " .. action .. ": never kicked")
+		check(async[#async]:find("check_fail", 1, true) and async[#async]:find("action log", 1, true), action .. ": logged as log")
+	end
+	-- unanswered with "temple": temple + log
+	Chaos.antibotConfig.check.failAction = "temple"
 	AB.states[2].lastPvp = nil
 	AB.forceCheck(bob)
 	bob.pos = {x = 300, y = 300, z = 7}

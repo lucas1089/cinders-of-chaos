@@ -67,7 +67,7 @@ return {
 	-- A gold sink in the main temple: an object placed at startup next to the temple (or exactly at `pos`). Using it
 	-- opens the donate dialog of the client; the window's Donate button works only within `range` tiles of it.
 	brazier = {
-		townId = 1, -- the main temple (nil town: pos must be set)
+		townId = 2, -- the main temple: Cinderhold, the main city (server/README.md "Main city"; nil town: pos must be set)
 		pos = nil, -- {x =, y =, z =} to place it exactly
 		offsets = {{3, -2}, {-3, -2}, {3, 2}, {-3, 2}, {4, 0}, {-4, 0}, {0, 4}, {0, -4}},
 		itemId = 1481, -- coal basin (stock); the dark tile set's "brazier" is used when installed

@@ -4,7 +4,7 @@
 --
 -- Nothing here bans or punishes on its own. A character whose suspicion score passes check.at gets a presence check (a
 -- small modal: click the picture matching a word, one retry); a failed or unanswered check runs check.failAction
--- (temple / kick / log) and writes chaos_antibot_log; a score over log.at writes a staff log entry. Staff decide.
+-- (log, the default, or temple; never a kick) and writes chaos_antibot_log; a score over log.at writes a staff log entry. Staff decide.
 --
 -- Where the samples come from (all cheap, bounded):
 --   positions   one getPosition per online character every sampleMs (GlobalEvent); only cell changes are stored
@@ -28,6 +28,9 @@
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/antibot_core.lua")
 
@@ -294,27 +297,19 @@ function AB.startCheck(player, st, attempt)
 end
 
 local function failAction(player)
+	-- never a kick (manual review only, server/README.md "Bot detection"): "kick" from an old config acts as "log"
 	local action = cfg.check.failAction
-	if action == "kick" then
-		player:sendTextMessage(MESSAGE_STATUS_WARNING, "Presence check failed. You were logged out.")
-		addEvent(function(cid)
-			local p = Player(cid)
-			if p then
-				p:remove()
-			end
-		end, 1000, player:getId())
-		return "kick"
-	elseif action == "temple" then
+	if action == "temple" then
 		local town = player:getTown()
 		local pos = town and town:getTemplePosition()
 		if pos then
 			player:teleportTo(pos)
 			pos:sendMagicEffect(CONST_ME_TELEPORT)
 		end
-		player:sendTextMessage(MESSAGE_STATUS_WARNING, "Presence check failed. You were taken to the temple.")
+		player:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(player, "Presence check failed. You were taken to the temple."))
 		return "temple"
 	end
-	player:sendTextMessage(MESSAGE_STATUS_WARNING, "Presence check failed.")
+	player:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(player, "Presence check failed."))
 	return "log"
 end
 

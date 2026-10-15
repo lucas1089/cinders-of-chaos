@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/shop_core.lua")
 
 ChaosShopConfig = dofile("data/scripts/chaos/shop_config.lua")
@@ -195,7 +198,7 @@ function Shop.seasonProblem(target, offer, gift, name)
 		return ChaosSeason.storeProblem(target, offer, gift, name)
 	end
 	if offer.seasonBlocked and type(target) ~= "number" and isSeason(target) then
-		return "Season characters cannot buy " .. tostring(offer.name or offer.key) .. "."
+		return ChaosI18n.msg("Season characters cannot buy %s.", tostring(offer.name or offer.key))
 	end
 	return nil
 end
@@ -407,6 +410,12 @@ local function giftable(offer)
 	return true
 end
 
+-- a stackable item type (drawn by its count: shop_core.lua C.iconCount)
+local function stackable(it)
+	local ok, v = pcall(function() return it:isStackable() end)
+	return ok and v and true or false
+end
+
 local function clientOffer(e, player)
 	local offer = e.offer
 	local view = {cost = e.cost, oldCost = e.oldCost, title = offer.name, description = offer.description or ""}
@@ -447,7 +456,8 @@ local function clientOffer(e, player)
 		view.type, view.outfit = "outfit", {type = offer.look, rotating = true}
 	else
 		-- services, unlocks, frames, bundles: the icon is any item picture
-		view.type, view.item, view.count = "item", ItemType(offer.icon or 1949):getClientId(), offer.iconCount or 1
+		local it = ItemType(offer.icon or 1949)
+		view.type, view.item, view.count = "item", it:getClientId(), K.iconCount(offer, stackable(it))
 	end
 	if offer.kind == "bundle" and pactGrant() then
 		for _, p in ipairs(offer.resolved or {}) do
@@ -476,7 +486,8 @@ local function categoriesView(player, list)
 		local entry = {name = category.name, pages = math.max(1, math.ceil(#category.offers / cfg.perPage)),
 			endsIn = category.endsIn} -- the weekly rotation: seconds until it changes (the client counts down)
 		if category.icon.item then
-			entry.type, entry.item, entry.count = "item", ItemType(category.icon.item):getClientId(), category.icon.count or 1
+			local it = ItemType(category.icon.item)
+			entry.type, entry.item, entry.count = "item", it:getClientId(), K.iconCount(category.icon, stackable(it))
 		else
 			entry.type, entry.outfit = "outfit", category.icon.outfit
 		end
@@ -508,15 +519,21 @@ function Shop.addCoins(accountId, amount)
 		") ON DUPLICATE KEY UPDATE `coins` = GREATEST(0, `coins` + " .. amount .. ")")
 end
 
--- takes the coins if the account has them; true on success. Game scripts run on one thread and
--- db.query is synchronous, so the check and the update cannot interleave with another purchase.
+-- takes the coins if the account has them; true on success. Another process changes the balance too (the website's
+-- Character Bazaar takes bids from it): the UPDATE counts only when it changed the row (ROW_COUNT), since db.query is
+-- true for an UPDATE whose WHERE matched nothing.
 local function spend(accountId, amount)
 	if Shop.getCoins(accountId) < amount then
 		return false
 	end
-	return db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. amount ..
-		" WHERE `account_id` = " .. accountId .. " AND `coins` >= " .. amount) and true or false
+	if not db.query("UPDATE `" .. T_COINS .. "` SET `coins` = `coins` - " .. amount ..
+			" WHERE `account_id` = " .. accountId .. " AND `coins` >= " .. amount) then
+		return false
+	end
+	local r = Chaos.select("SELECT ROW_COUNT() AS `n`", {{"n", "n"}})[1]
+	return r ~= nil and r.n == 1
 end
+Shop.spend = spend
 
 local function logHistory(player, title, cost)
 	db.asyncQuery("INSERT INTO `" .. T_HISTORY .. "` (`account_id`, `player_id`, `title`, `cost`, `created`) VALUES (" ..
@@ -541,8 +558,9 @@ local function send(player, action, data, withStatus)
 	player:sendExtendedOpcode(OPCODE, json.encode(payload))
 end
 
+-- title and text in the buyer's language: a key, a deferred text (ChaosI18n.msg) or a text already translated
 local function message(player, title, text)
-	send(player, "message", {title = title, msg = text}, true)
+	send(player, "message", {title = Chaos.t(player, title), msg = Chaos.t(player, text)}, true)
 end
 
 -- ------------------------------------------------------------------ checks before coins are taken
@@ -560,11 +578,14 @@ local function partProblem(target, offer, gift)
 		return nil
 	end
 	if Shop.owns(target, offer) then
-		return (gift and (target:getName() .. " already owns ") or "You already own ") .. nameOf(offer) .. "."
+		if gift then
+			return ChaosI18n.msg("%s already owns %s.", target:getName(), nameOf(offer))
+		end
+		return ChaosI18n.msg("You already own %s.", nameOf(offer))
 	end
 	if not gift and offer.premium and (offer.kind == "outfit" or offer.kind == "addons" or offer.kind == "mount") and
 		not target:isPremium() then
-		return nameOf(offer) .. " needs a Premium account to wear. Get Premium Time first."
+		return ChaosI18n.msg("%s needs a Premium account to wear. Get Premium Time first.", nameOf(offer))
 	end
 	if offer.kind == "service" or offer.kind == "unlock" then
 		if not ChaosShopServices then
@@ -595,14 +616,14 @@ local function offerProblem(player, offer, gift)
 	-- <<< Seasons
 	if not gift then
 		if offer.maxLevel and player:getLevel() > offer.maxLevel then
-			return nameOf(offer) .. " is for characters up to level " .. offer.maxLevel .. "."
+			return ChaosI18n.msg("%s is for characters up to level %s.", nameOf(offer), offer.maxLevel)
 		end
 		if offer.oncePerAccount and boughtCount(player:getAccountId(), offer.key, 0) > 0 then
-			return "Your account already bought " .. nameOf(offer) .. "."
+			return ChaosI18n.msg("Your account already bought %s.", nameOf(offer))
 		end
 	end
 	if offer.weeklyLimit and boughtCount(player:getAccountId(), offer.key, weekStart(now())) >= offer.weeklyLimit then
-		return "You bought " .. nameOf(offer) .. " " .. offer.weeklyLimit .. " times this week; the limit resets on Monday."
+		return ChaosI18n.msg("You bought %s %s times this week; the limit resets on Monday.", nameOf(offer), offer.weeklyLimit)
 	end
 	return Shop.partsProblem(gift or player, offer, gift ~= nil)
 end
@@ -627,14 +648,14 @@ local function deliverOne(player, offer)
 					if carried > 0 then
 						player:removeItem(offer.id, carried) -- nothing given: the coins are refunded
 					end
-					return player:getName() .. " does not have enough room in the backpack or the store inbox."
+					return ChaosI18n.msg("%s does not have enough room in the backpack or the store inbox.", player:getName())
 				end
 				toInbox = toInbox + n
 			end
 			left = left - n
 		end
 		if toInbox > 0 then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%d of them went to your store inbox (no room or capacity).", toInbox))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%d of them went to your store inbox (no room or capacity).", toInbox))
 		end
 		return true
 	elseif offer.kind == "item" then
@@ -644,7 +665,7 @@ local function deliverOne(player, offer)
 			if given > 0 then
 				player:removeItem(offer.id, given)
 			end
-			return player:getName() .. " does not have enough room or capacity."
+			return ChaosI18n.msg("%s does not have enough room or capacity.", player:getName())
 		end
 		return true
 	elseif offer.kind == "wings" then
@@ -762,18 +783,20 @@ function Shop.deliverGifts(player)
 	for _, r in ipairs(rows) do
 		local offer = byKey[r.offer_key]
 		-- Seasons: a gift sent before the receiver joined a season is checked again (refunded when refused)
-		local problem = not offer and "it is no longer sold" or Shop.seasonProblem(player, offer, true) or
+		local problem = not offer and "It is no longer sold." or Shop.seasonProblem(player, offer, true) or
 			Shop.partsProblem(player, offer, true)
 		local result = problem or Shop.deliver(player, offer)
 		if result == true then
 			db.query("UPDATE `" .. T_GIFTS .. "` SET `status` = 1, `done` = " .. now() .. " WHERE `id` = " .. r.id)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, r.from_name .. " gave you " .. r.title .. " from the Chaos store.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s gave you %s from the Chaos store.", r.from_name, r.title))
 			afterDelivery(player)
 		else
 			db.query("UPDATE `" .. T_GIFTS .. "` SET `status` = 2, `done` = " .. now() .. " WHERE `id` = " .. r.id .. " AND `status` = 0")
 			Shop.addCoins(r.from_account, r.price)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, r.from_name .. " sent you " .. r.title .. ", but " ..
-				tostring(result):gsub("%.$", ""):lower() .. "; the coins went back to them.")
+			local why = Chaos.t(player, result):gsub("%.$", "")
+			why = why:sub(1, 1):lower() .. why:sub(2)
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s sent you %s, but %s; the coins went back to them.",
+				r.from_name, r.title, why))
 		end
 	end
 end
@@ -838,7 +861,7 @@ local function buy(player, data)
 	end
 
 	if Shop.getCoins(accountId) < e.cost then
-		return message(player, "Not enough coins", "You need " .. e.cost .. " Chaos Coins for " .. view.title .. ".")
+		return message(player, "Not enough coins", ChaosI18n.msg("You need %s Chaos Coins for %s.", e.cost, view.title))
 	end
 	if not spend(accountId, e.cost) then
 		return message(player, "Error", "Could not take the coins. Try again.")
@@ -852,7 +875,8 @@ local function buy(player, data)
 				return message(player, "Error", result)
 			end
 			afterDelivery(targetPlayer)
-			targetPlayer:sendTextMessage(MESSAGE_EVENT_ADVANCE, player:getName() .. " gave you " .. view.title .. " from the Chaos store.")
+			targetPlayer:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(targetPlayer, "%s gave you %s from the Chaos store.",
+				player:getName(), view.title))
 			targetPlayer:getPosition():sendMagicEffect(cfg.purchaseEffect)
 		else
 			db.query("INSERT INTO `" .. T_GIFTS .. "` (`target_player`, `offer_key`, `title`, `price`, `from_account`, `from_name`, `created`) VALUES (" ..
@@ -862,8 +886,8 @@ local function buy(player, data)
 		logPurchase(player, offer, view.title, e.cost, e.oldCost, target.account, target.guid)
 		logHistory(player, view.title .. " (gift to " .. target.name .. ")", e.cost)
 		log(player:getName() .. " gave " .. offer.key .. " to " .. target.name .. " for " .. e.cost)
-		return message(player, "Gift sent", "You gave " .. view.title .. " to " .. target.name .. " for " .. e.cost .. " Chaos Coins." ..
-			(targetPlayer and "" or " It is delivered at their next login."))
+		return message(player, "Gift sent", ChaosI18n.msg(targetPlayer and "You gave %s to %s for %s Chaos Coins." or
+			"You gave %s to %s for %s Chaos Coins. It is delivered at their next login.", view.title, target.name, e.cost))
 	end
 
 	local result = Shop.deliver(player, offer)
@@ -888,7 +912,7 @@ local function buy(player, data)
 			send(player, "category_page", {category = c, page = p, offers = offers})
 		end
 	end
-	message(player, "Purchase complete", "You bought " .. view.title .. " for " .. e.cost .. " Chaos Coins.")
+	message(player, "Purchase complete", ChaosI18n.msg("You bought %s for %s Chaos Coins.", view.title, e.cost))
 end
 
 local function history(player)
@@ -898,7 +922,7 @@ local function history(player)
 	for _, r in ipairs(rows) do
 		list[#list + 1] = {
 			type = "item", item = ItemType(29856):getClientId(), count = 1, cost = r.cost, title = r.title,
-			description = "Bought on " .. os.date("%Y-%m-%d %H:%M", r.created) .. " for " .. r.cost .. " Chaos Coins."
+			description = Chaos.t(player, "Bought on %s for %s Chaos Coins.", os.date("%Y-%m-%d %H:%M", r.created), r.cost)
 		}
 	end
 	send(player, "history", list, true)
@@ -907,7 +931,7 @@ end
 local function gift(player, data)
 	local amount = Chaos.toInt(data.amount, cfg.giftMin)
 	if not amount then
-		return message(player, "Error", "You can gift at least " .. cfg.giftMin .. " Chaos Coins.")
+		return message(player, "Error", ChaosI18n.msg("You can gift at least %s Chaos Coins.", cfg.giftMin))
 	end
 	local guid, name = Chaos.findPlayer(tostring(data.name or ""))
 	if not guid then
@@ -927,19 +951,19 @@ local function gift(player, data)
 	local bans = Chaos.select("SELECT COUNT(*) AS `n` FROM `account_bans` WHERE `account_id` = " .. target ..
 		" AND (`expires_at` <= 0 OR `expires_at` > " .. t .. ")", {{"n", "n"}})[1]
 	local problem = K.coinGiftProblem(cfg.coinGifts, {now = t, amount = amount, lastCredited = last.t or 0,
-		giftedToday = today and today.n or 0, targetBanned = (bans and bans.n or 0) > 0})
+		giftedToday = today and today.n or 0, targetBanned = (bans and bans.n or 0) > 0}, Chaos.lang(player))
 	if problem then
 		return message(player, "Not possible", problem)
 	end
 	if not spend(from, amount) then
-		return message(player, "Not enough coins", "You do not have " .. amount .. " Chaos Coins.")
+		return message(player, "Not enough coins", ChaosI18n.msg("You do not have %s Chaos Coins.", amount))
 	end
 	Shop.addCoins(target, amount)
 	db.query("INSERT INTO `" .. T_COIN_GIFTS .. "` (`from_account`, `to_account`, `amount`, `order_id`, `created`) VALUES (" ..
 		from .. ", " .. target .. ", " .. amount .. ", " .. (last.id or 0) .. ", " .. t .. ")")
 	log(string.format("%s (account %d) gifted %d Chaos Coins to %s (account %d)", player:getName(), from, amount, name, target))
 	logHistory(player, "Gift to " .. name, amount)
-	message(player, "Gift sent", "You gifted " .. amount .. " Chaos Coins to " .. name .. ".")
+	message(player, "Gift sent", ChaosI18n.msg("You gifted %s Chaos Coins to %s.", amount, name))
 end
 
 local ext = CreatureEvent("ChaosShopExtended")
@@ -1030,12 +1054,13 @@ local function plateFrame(player, param)
 	elseif FRAME_INDEX[want] and player:getStorageValue(frameKey(FRAME_INDEX[want])) > 0 then
 		player:setStorageValue(S.shopFrameActive, FRAME_INDEX[want])
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Your name plate frames: " ..
-			(#owned > 0 and table.concat(owned, ", ") or "none (Store > Name Plates)") .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Your name plate frames: %s.",
+			#owned > 0 and table.concat(owned, ", ") or Chaos.t(player, "none (Store > Name Plates)")))
 		return
 	end
 	afterDelivery(player)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Name plate frame: " .. (want == "off" and "your title's own" or want) .. ".")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Name plate frame: %s.",
+		want == "off" and Chaos.t(player, "your title's own") or want))
 end
 ChaosCommands.register("plateframe", plateFrame)
 Shop.plateFrame = plateFrame
@@ -1092,9 +1117,9 @@ function Shop.processOrders()
 				for _, p in ipairs(Game.getPlayers()) do
 					if p:getAccountId() == r.account_id then
 						-- coin packs are donations (shop_payments_core.lua ChaosPayCore.thanks)
-						p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you (%s%s).%s",
-							credit.total, pack.name or pack.key, credit.firstBonus > 0 and ", first donation bonus included" or "",
-							ChaosPayCore and " " .. (ChaosPayCore.terms("credited")) or ""))
+						p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you (%s%s).%s",
+							credit.total, pack.name or pack.key, credit.firstBonus > 0 and Chaos.t(p, ", first donation bonus included") or "",
+							ChaosPayCore and " " .. (select(Chaos.lang(p) == "pt-BR" and 2 or 1, ChaosPayCore.terms("credited"))) or ""))
 						break
 					end
 				end

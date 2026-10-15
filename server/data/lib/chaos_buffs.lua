@@ -156,6 +156,12 @@ source("blessing_rarity", "blessings", "buff", "Ember of Fortune", "buff:blessin
 source("blessing_orb", "blessings", "buff", "Ember of the Forge", "buff:blessing_orb", "Orbs drop more often from your kills.", 25, {blessing = "orb"})
 -- Professions (data/scripts/chaos/professions.lua): the passive experience bonus of the profession levels, no timer
 source("professions", "professions", "buff", "Profession Mastery", "buff:professions", "Your profession levels add experience from monsters.", 29)
+-- time-friendly progression (data/scripts/chaos/catchup.lua): the rested pool (stacks = minutes of hunting left), the
+-- returning player boost (timer), the alt catch-up (stacks = percent) and low stamina (a debuff, no timer)
+source("rested", "catchup", "buff", "Rested", "buff:rested", "More experience from monsters until your rest is spent.", 26, {part = "rested"})
+source("returning", "catchup", "buff", "Welcome Back", "buff:returning", "More experience, loot and token drops for returning players.", 26, {part = "returning"})
+source("catchup", "catchup", "buff", "Catch-up", "buff:catchup", "More experience from monsters below your account's best level.", 26, {part = "alt"})
+source("low_stamina", "catchup", "debuff", "Low Stamina", "buff:low_stamina", "Less experience and loot until your stamina comes back.", 42, {part = "low"})
 
 -- ---- engine conditions: buffs
 cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50)
@@ -515,6 +521,18 @@ function S.professions(player, now, def)
 	local whole = math.floor(tonumber(it.pct) or 0)
 	local out = item(def, nil, whole >= 1 and whole or nil)
 	out.name, out.desc = clip(it.name or def.name, B.cfg.maxName), clip(it.desc or def.desc, B.cfg.maxDesc)
+	return {out}
+end
+
+-- time-friendly progression (catchup.lua): ChaosCatchup.buffItem(player, def.part) -> {desc, leftMs, stacks} or nil
+function S.catchup(player, now, def)
+	local X = ChaosCatchup
+	local it = X and X.buffItem and X.buffItem(player, def.part)
+	if not it then
+		return nil
+	end
+	local out = item(def, it.leftMs, it.stacks)
+	out.desc = clip(it.desc or def.desc, B.cfg.maxDesc)
 	return {out}
 end
 

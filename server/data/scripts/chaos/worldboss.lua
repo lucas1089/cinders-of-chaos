@@ -39,6 +39,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -337,7 +340,9 @@ end
 -- places, bank, items = {{id, count}}, gear, gearRarity, unique, titles = {{key, text, color, place, name}}}.
 -- r = Chaos.worldBoss.reward: base items for everyone, pool split by share, r.podium.categories[i].rewards[place]
 -- for the top 3 of each category, plus their title and an extra unique chance (one unique at most per player).
-function W.computeRewards(shares, r, boss, uniquePool, rng)
+-- pityOf (optional, conquest.lua bad-luck protection): pityOf(guid) -> the multiplier on every unique chance of that
+-- player; a reward then carries pityRolled = true (the unique was rolled: the caller records the miss or the hit)
+function W.computeRewards(shares, r, boss, uniquePool, rng, pityOf)
 	rng = rng or math.random
 	uniquePool = uniquePool or {}
 	local cats = r.podium and r.podium.categories or {}
@@ -383,12 +388,17 @@ function W.computeRewards(shares, r, boss, uniquePool, rng)
 			reward.gearRarity = rng(lo, math.max(lo, hi))
 		end
 		if #uniquePool > 0 then
-			local won = rng(10000) <= (r.uniqueChance or 0) + math.floor((r.uniqueShareBonus or 0) * s.share)
+			local mult = pityOf and tonumber(pityOf(s.guid)) or 1
+			if mult ~= mult or mult < 1 then
+				mult = 1
+			end
+			reward.pityRolled = pityOf ~= nil or nil
+			local won = rng(10000) <= math.floor(((r.uniqueChance or 0) + math.floor((r.uniqueShareBonus or 0) * s.share)) * mult)
 			for _, chance in ipairs(uniqueRolls) do
 				if won then
 					break
 				end
-				won = chance > 0 and rng(10000) <= chance
+				won = chance > 0 and rng(10000) <= math.floor(chance * mult)
 			end
 			if won then
 				reward.unique = uniquePool[rng(#uniquePool)]
@@ -486,14 +496,10 @@ local function combatOf(name)
 	return _G["COMBAT_" .. tostring(name):upper() .. "DAMAGE"] or COMBAT_PHYSICALDAMAGE
 end
 
+-- text: a string or a deferred text (ChaosI18n.msg): each player reads it in their language; the toast and the log
+-- are English
 local function announce(text, toast)
-	if Game.broadcastMessage then
-		Game.broadcastMessage(text, MESSAGE_EVENT_ADVANCE)
-	else
-		for _, p in ipairs(Game.getPlayers()) do
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
-		end
-	end
+	text = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 	if toast and ChaosNotify and ChaosNotify.gmBroadcast then
 		ChaosNotify.gmBroadcast(nil, text)
 	end
@@ -868,7 +874,7 @@ function W.deliver(player, r)
 			inboxUsed = giveEx(player, item) or inboxUsed
 			local e = ChaosUniqueById and ChaosUniqueById[r.unique]
 			parts[#parts + 1] = "the unique " .. (e and e.name or itemName(r.unique))
-			announce(player:getName() .. " received the unique " .. (e and e.name or itemName(r.unique)) .. " from the world boss!", false)
+			announce(ChaosI18n.msg("%s received the unique %s from the world boss!", player:getName(), e and e.name or itemName(r.unique)), false)
 		end
 	end
 	local roles = {}
@@ -876,13 +882,13 @@ function W.deliver(player, r)
 		roles[#roles + 1] = string.format("%s in %s", W.placeName(t.place), (t.name or t.key):lower())
 		W.grantTitle(player, t)
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"World boss reward (%.1f%% of the contribution: %s damage, %s healing, %s tanking%s): %d gold to your bank, %s.%s",
 		(r.share or 0) * 100, W.short(r.damage), W.short(r.healing), W.short(r.tanking),
 		#roles > 0 and ("; " .. table.concat(roles, ", ")) or "", r.bank or 0, table.concat(parts, ", "),
-		inboxUsed and " Your backpack was full: the rest is in your inbox." or ""))
+		inboxUsed and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
 	for _, t in ipairs(r.titles or {}) do
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You earned the title %s (%s %s) for %d days.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You earned the title %s (%s %s) for %d days.",
 			t.text, W.placeName(t.place), (t.name or t.key):lower(), C().roles.titleDays or 7))
 	end
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
@@ -900,7 +906,21 @@ local function distribute()
 	local minPercent = c.reward.minScorePercent or c.reward.minDamagePercent
 	local shares, total = W.computeShares(state.stats or {}, state.maxHealth or 0, minPercent, excluded, c.roles)
 	local podium = W.placeRoles(shares, c.reward.podium, state.maxHealth or 0)
-	local rewards = W.computeRewards(shares, c.reward, boss, W.uniquePool(boss.name))
+	-- bad-luck protection (conquest.lua): the participation unique chance x the player's "boss" multiplier
+	local CQ = ChaosConquest
+	local pityOf = nil
+	if CQ and CQ.pityMult and CQ.pityRecord then
+		pityOf = function(guid)
+			for _, s in ipairs(shares) do
+				local p = s.guid == guid and Player(s.name)
+				if p and p:getGuid() == guid then
+					return CQ.pityMult(p, "boss")
+				end
+			end
+			return 1
+		end
+	end
+	local rewards = W.computeRewards(shares, c.reward, boss, W.uniquePool(boss.name), nil, pityOf)
 	local LB = ChaosLeaderboard
 	if LB and LB.recordShares then LB.recordShares(shares) end -- leaderboard.lua (World Boss: damage, kills)
 	local boards = c.roles.boards or {}
@@ -924,6 +944,14 @@ local function distribute()
 	for _, r in ipairs(rewards) do
 		local player = Player(r.name)
 		if player and player:getGuid() == r.guid then
+			if r.pityRolled and CQ and CQ.pityRecord then
+				-- a set piece of the pool resets the "set" group, any other boss unique the "boss" group
+				local e = r.unique and ChaosUniqueById and ChaosUniqueById[r.unique]
+				CQ.pityRecord(player, "boss", r.unique ~= nil and not (e and e.set), r.unique)
+				if e and e.set then
+					CQ.pityRecord(player, "set", true, r.unique)
+				end
+			end
 			W.deliver(player, r)
 			-- exclusives.lua: the rare personal drop of a visual exclusive (rewarded players online at the kill)
 			if ChaosExclusives and ChaosExclusives.worldBossKill then pcall(ChaosExclusives.worldBossKill, player, boss.name) end
@@ -941,8 +969,8 @@ local function distribute()
 		local player = Player(e.name)
 		if player and player:getGuid() == guid and not got[guid] then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, excluded[guid]
-				and "No world boss reward: another character from your connection was online during the fight."
-				or string.format("No world boss reward: you need a contribution (damage, healing and tanking) of at least %.2f%% of the boss health.", minPercent))
+				and Chaos.t(player, "No world boss reward: another character from your connection was online during the fight.")
+				or Chaos.t(player, "No world boss reward: you need a contribution (damage, healing and tanking) of at least %.2f%% of the boss health.", minPercent))
 		end
 	end
 	return shares, total, podium
@@ -1095,7 +1123,7 @@ local function spawnBoss(token)
 	boss:registerEvent("ChaosWorldBossDeath")
 	packFx(boss:getPosition(), "wb_arrives", CONST_ME_MORTAREA)
 	boss:say(b.intro, TALKTYPE_MONSTER_YELL)
-	announce(string.format("%s has appeared in the world boss arena! You have %d minutes to bring it down.", b.name, C().fightMinutes), true)
+	announce(ChaosI18n.msg("%s has appeared in the world boss arena! You have %d minutes to bring it down.", b.name, C().fightMinutes), true)
 	addEvent(function(t)
 		if state.token == t and state.phase == "fight" then
 			finish(false, "time")
@@ -1139,7 +1167,7 @@ finish = function(victory, reason)
 		local shares, _, podium = distribute()
 		local secs = os.time() - (state.fightStart or os.time())
 		state.result = podium
-		announce(string.format("%s has been slain by %d champion(s) in %dm %02ds! %s Everyone inside returns home in %d seconds.",
+		announce(ChaosI18n.msg("%s has been slain by %d champion(s) in %dm %02ds! %s Everyone inside returns home in %d seconds.",
 			b.name, #shares, math.floor(secs / 60), secs % 60, W.podiumText(podium, C().reward.podium), delay), false)
 		-- the client toast has room for about two lines: one toast per category (it shows three at once)
 		if ChaosNotify and ChaosNotify.gmBroadcast then
@@ -1158,7 +1186,7 @@ finish = function(victory, reason)
 			delay = math.min(delay, 10)
 			announce("The world boss event was stopped by the staff.", true)
 		elseif reason == "time" then
-			announce(string.format("%s was not defeated in time and withdraws. The world boss event is over.", b.name), true)
+			announce(ChaosI18n.msg("%s was not defeated in time and withdraws. The world boss event is over.", b.name), true)
 		end
 	end
 	addEvent(closeOut, delay * 1000, token)
@@ -1192,8 +1220,8 @@ function W.start(index)
 		startedAt = os.time(), spawnAt = os.time() + c.gatherSeconds, portalsUntil = os.time() + c.portalMinutes * 60}
 	state = W.state
 	local n = openPortals()
-	announce(string.format("WORLD BOSS: %s Portals are open next to the temples for %d minutes (level %d+). The boss appears in %d seconds.",
-		b.intro, c.portalMinutes, c.minLevel, c.gatherSeconds), true)
+	announce(ChaosI18n.msg("WORLD BOSS: %s Portals are open next to the temples for %d minutes (level %d+). The boss appears in %d seconds.",
+		ChaosI18n.msg(b.intro), c.portalMinutes, c.minLevel, c.gatherSeconds), true)
 	if n == 0 then
 		print("[Chaos world boss] no portal spot found (Game.getTowns / portalPositions)")
 	end
@@ -1399,6 +1427,20 @@ end
 login:register()
 
 -- no PvP in arena and lobby, no combat at all against players in the lobby
+-- the guard runs for every attack on a player (every monster hit): the layout is built once per arena config, not per call
+local guardL, guardA, guardSig
+local function guardLayout()
+	local a = C().arena
+	local o = a.origin
+	local sig = guardSig
+	if not guardL or guardA ~= a or sig[1] ~= o.x or sig[2] ~= o.y or sig[3] ~= o.z or sig[4] ~= a.inner
+			or sig[5] ~= a.lobbyGap or sig[6] ~= a.lobbyInnerW or sig[7] ~= a.lobbyInnerH then
+		guardL, guardA = W.layout(a), a
+		guardSig = {o.x, o.y, o.z, a.inner, a.lobbyGap, a.lobbyInnerW, a.lobbyInnerH}
+	end
+	return guardL
+end
+
 local guard = EventCallback
 guard.onTargetCombat = function(creature, target)
 	if not creature or not target then
@@ -1411,7 +1453,7 @@ guard.onTargetCombat = function(creature, target)
 		end
 		return RETURNVALUE_NOERROR
 	end
-	local L = W.layout()
+	local L = guardLayout()
 	local tpos = target:getPosition()
 	if not W.inside(tpos, L) then
 		return RETURNVALUE_NOERROR
@@ -1428,7 +1470,7 @@ guard:register()
 
 -- forcefields
 local function pushBack(player, fromPosition, text)
-	player:sendCancelMessage(text)
+	player:sendCancelMessage(Chaos.t(player, text))
 	player:teleportTo(fromPosition, true)
 end
 
@@ -1448,7 +1490,7 @@ function enter.onStepIn(creature, item, position, fromPosition)
 		return true
 	end
 	if player:getLevel() < c.minLevel then
-		pushBack(player, fromPosition, string.format("You need level %d to face the world boss.", c.minLevel))
+		pushBack(player, fromPosition, ChaosI18n.msg("You need level %d to face the world boss.", c.minLevel))
 		return true
 	end
 	if c.maxPlayers > 0 and #playersInside() >= c.maxPlayers then
@@ -1459,12 +1501,12 @@ function enter.onStepIn(creature, item, position, fromPosition)
 		state.mc[player:getGuid()] = true
 		if not c.mcReward then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-				"Another character from your connection is online: you may fight, but you will get no world boss reward.")
+				Chaos.t(player, "Another character from your connection is online: you may fight, but you will get no world boss reward."))
 		end
 	end
 	player:teleportTo(P(W.layout().lobbyArrival))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "World boss lobby: the forcefield to the north leads to the arena, the ones on the sides take you home. " .. W.status())
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "World boss lobby: the forcefield to the north leads to the arena, the ones on the sides take you home. %s", W.status()))
 	return true
 end
 enter:type("stepin")
@@ -1536,7 +1578,7 @@ function schedule.onThink(interval)
 		if not warned[key] and now >= W.nextAt - m * 60 and now < W.nextAt then
 			warned[key] = true
 			local b = c.bosses[W.pickBoss(#c.bosses, c.mode, Game.getStorageValue(c.rotationStorage))]
-			announce(string.format("A world boss awakens in %d minute(s)%s! Portals will open next to the temples.", m,
+			announce(ChaosI18n.msg("A world boss awakens in %d minute(s)%s! Portals will open next to the temples.", m,
 				c.mode == "rotation" and (": " .. b.name) or ""), m == (c.warnMinutes or {})[1])
 		end
 	end

@@ -26,10 +26,16 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
 	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
+if not ChaosNpcPlace then
+	dofile("data/scripts/chaos/npc_place.lua")
 end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
@@ -149,14 +155,14 @@ function ChaosAscension.ascend(player, word, opts)
 		id = opts.vocId or (Q.baseOf(voc:getId()) and Chaos.classes.ascension.choices[Q.baseOf(voc:getId())]
 			and Chaos.classes.ascension.choices[Q.baseOf(voc:getId())][tostring(word or ""):lower()])
 		if not id or not Q.isAscendedId(id) then
-			return false, "That is no ascended class."
+			return false, Chaos.t(player, "That is no ascended class.")
 		end
 	else
-		local ok, _, text = Q.eligibility(voc:getId(), player:getLevel())
+		local ok, _, text = Q.eligibility(voc:getId(), player:getLevel(), Chaos.lang(player))
 		if not ok then
 			return false, text
 		end
-		id, reason = Q.validateChoice(voc:getId(), word, stageOf(player))
+		id, reason = Q.validateChoice(voc:getId(), word, stageOf(player), Chaos.lang(player))
 		if not id then
 			return false, reason
 		end
@@ -166,20 +172,20 @@ function ChaosAscension.ascend(player, word, opts)
 	if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
 		local allowed, lockMessage = ChaosClassUnlocks.canUseVocation(player, id)
 		if not allowed then
-			return false, lockMessage or "That class is locked. Unlock it in the store."
+			return false, lockMessage or Chaos.t(player, "That class is locked. Unlock it in the store.")
 		end
 	end
 	if not opts.staff then
 		if inCombat(player) then
-			return false, "You cannot ascend in combat."
+			return false, Chaos.t(player, "You cannot ascend in combat.")
 		end
 		if not S.oracleNear(player) then
-			return false, "Ascend before the " .. C().npc.name .. "."
+			return false, Chaos.t(player, "Ascend before the %s.", C().npc.name)
 		end
 	end
 	local newVoc = Vocation(id)
 	if not newVoc then
-		return false, "That vocation does not exist on this server."
+		return false, Chaos.t(player, "That vocation does not exist on this server.")
 	end
 	if ChaosClasses.applyVocation then
 		ChaosClasses.applyVocation(player, newVoc)
@@ -192,12 +198,12 @@ function ChaosAscension.ascend(player, word, opts)
 	local pos = player:getPosition()
 	pos:sendMagicEffect(CONST_ME_HOLYAREA)
 	pos:sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_GROUNDSHAKER)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"You have ascended: you are now %s. The choice is final; only the store's Vocation Change can undo it.",
 		newVoc:getDescription()))
-	toast(player, string.format("You have ascended: %s.", newVoc:getName()))
+	toast(player, Chaos.t(player, "You have ascended: %s.", newVoc:getName()))
 	if not opts.quiet then
-		Game.broadcastMessage(string.format(C().broadcast, player:getName(), newVoc:getName()), MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, C().broadcast, player:getName(), newVoc:getName())
 	end
 	if ChaosNameplate and ChaosNameplate.refresh then
 		pcall(ChaosNameplate.refresh, player)
@@ -211,7 +217,7 @@ function S.commandAllowed(player)
 		return true
 	end
 	local free = player:getStorageValue(Chaos.classes.storage.freeSwitch)
-	local ok, text = Q.commandGate(C().command, isStaff(player), free and free > 0)
+	local ok, text = Q.commandGate(C().command, isStaff(player), free and free > 0, Chaos.lang(player))
 	if not ok then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
 	end
@@ -258,10 +264,10 @@ function S.creditProof(player, tier, level)
 	if done then
 		setStage(player, Q.STAGE.TRIAL)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"Proof of Strength: complete. Return to the " .. C().npc.name .. " and ask for the trial.")
-		toast(player, "Proof of Strength complete: the Trial awaits.")
+			Chaos.t(player, "Proof of Strength: complete. Return to the %s and ask for the trial.", C().npc.name))
+		toast(player, Chaos.t(player, "Proof of Strength complete: the Trial awaits."))
 	else
-		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, string.format(
+		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, Chaos.t(player,
 			"Proof of Strength: %d / %d.", n, C().proof.needed))
 	end
 	return pts
@@ -449,7 +455,7 @@ local function removeMonsters(tr)
 	end
 end
 
--- end a trial: how = "won" | "death" | "time" | "left" | "logout" | "error"
+-- end a trial: how = "won" | "death" | "time" | "left" | "logout" | "error"; text = a key or a deferred text (Chaos.t)
 function S.finish(pid, how, text)
 	local tr = S.trials[pid]
 	if not tr or tr.over then
@@ -466,18 +472,19 @@ function S.finish(pid, how, text)
 		if how == "won" then
 			setStage(player, Q.STAGE.CHOICE)
 			player:setStorageValue(K().trialWon, now())
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 				"The %s falls. You have passed the Trial. The Oracle calls you back in %d seconds: make your choice.",
 				tr.guardian.name, t.winExitSeconds))
-			toast(player, "Trial passed: return to the Oracle and make your choice.")
+			toast(player, Chaos.t(player, "Trial passed: return to the Oracle and make your choice."))
 			player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
 		elseif how ~= "error" then
 			player:setStorageValue(K().cooldown, now() + t.cooldownSeconds)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, (text or "You have failed the Trial.") .. string.format(
-				" Nothing is lost. You may try again in %s.", Q.formatWait(t.cooldownSeconds)))
-			toast(player, "Trial failed: try again in " .. Q.formatWait(t.cooldownSeconds) .. ".")
+			local lang = Chaos.lang(player)
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s Nothing is lost. You may try again in %s.",
+				Chaos.t(player, text or "You have failed the Trial."), Q.formatWait(t.cooldownSeconds, lang)))
+			toast(player, Chaos.t(player, "Trial failed: try again in %s.", Q.formatWait(t.cooldownSeconds, lang)))
 		else
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text or "The Trial could not begin. Nothing is lost.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, text or "The Trial could not begin. Nothing is lost."))
 		end
 	end
 	local delay = (how == "won") and t.winExitSeconds * 1000 or 0
@@ -549,7 +556,8 @@ local function spawnGuardian(pid)
 	tr.deadline = tr.started + t.timeLimitSeconds * 1000
 	tr.nextAdd = tr.started + t.addEvery
 	tr.nextZone = tr.started + t.zoneEvery
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("The %s awakens. %s", tr.guardian.name, tr.guardian.hint or ""))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The %s awakens. %s", tr.guardian.name,
+		tr.guardian.hint and Chaos.t(player, tr.guardian.hint) or ""))
 end
 
 -- a share of the maximum health; a Hollow Vessel counts health + maximum energy shield (Chaos.percentBase)
@@ -592,7 +600,7 @@ local function spawnAdds(tr, player)
 			end
 		end
 	end
-	player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, "The " .. tr.guardian.name .. " calls for aid!")
+	player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, Chaos.t(player, "The %s calls for aid!", tr.guardian.name))
 end
 
 local function zones(tr, player)
@@ -643,7 +651,7 @@ local function tick(pid)
 	local ms = mnow()
 	if tr.phase == "fight" then
 		if ms >= tr.deadline then
-			S.finish(pid, "time", "Time is up: the " .. tr.guardian.name .. " still stands.")
+			S.finish(pid, "time", ChaosI18n.msg("Time is up: the %s still stands.", tr.guardian.name))
 			return
 		end
 		local g = tr.guardianId and Monster(tr.guardianId)
@@ -653,13 +661,13 @@ local function tick(pid)
 		local left = math.floor((tr.deadline - ms) / 1000)
 		if left > 0 and left % 30 == 0 and left ~= tr.lastAnnounce then
 			tr.lastAnnounce = left
-			player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, string.format("Trial: %d seconds left.", left))
+			player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, Chaos.t(player, "Trial: %d seconds left.", left))
 		end
 		if Q.hasMechanic(tr.guardian, "stillness") then
 			local r = Q.stillness(tr.still, pos.x .. ":" .. pos.y, ms)
 			if r == "warn" then
 				pos:sendMagicEffect(CONST_ME_STONES or CONST_ME_POFF)
-				player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, "The ground trembles under you. Move!")
+				player:sendTextMessage(MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR, Chaos.t(player, "The ground trembles under you. Move!"))
 			elseif r == "slam" then
 				hurt(tr, player, t.stillShare, CONST_ME_GROUNDSHAKER)
 			end
@@ -680,21 +688,21 @@ end
 function S.enterTrial(player)
 	local t = C().trial
 	local voc = player:getVocation():getId()
-	local ok, _, text = Q.eligibility(voc, player:getLevel())
+	local ok, _, text = Q.eligibility(voc, player:getLevel(), Chaos.lang(player))
 	if not ok then
 		return false, text
 	end
 	local pid = player:getId()
-	ok, text = Q.canEnterTrial(stageOf(player), now(), getS(player, K().cooldown), S.trials[pid] ~= nil)
+	ok, text = Q.canEnterTrial(stageOf(player), now(), getS(player, K().cooldown), S.trials[pid] ~= nil, Chaos.lang(player))
 	if not ok then
 		return false, text
 	end
 	if inCombat(player) then
-		return false, "You cannot enter the Trial in combat."
+		return false, Chaos.t(player, "You cannot enter the Trial in combat.")
 	end
 	local oracle = S.oracleNear(player)
 	if not oracle then
-		return false, "The Trial is entered at the " .. C().npc.name .. "."
+		return false, Chaos.t(player, "The Trial is entered at the %s.", C().npc.name)
 	end
 	local running = 0
 	for _ in pairs(S.trials) do
@@ -711,7 +719,7 @@ function S.enterTrial(player)
 			end
 			return false, IL.busy(player, "ascension", "trial chambers", lefts, lim)
 		end
-		return false, "Every trial chamber is in use. Try again in a moment."
+		return false, Chaos.t(player, "Every trial chamber is in use. Try again in a moment.")
 	end
 	local L, err = S.buildSlot(slot)
 	if not L then
@@ -719,7 +727,7 @@ function S.enterTrial(player)
 		slot = freeSlot()
 		L = slot and S.buildSlot(slot)
 		if not L then
-			return false, "The trial chambers cannot be opened. Please tell the staff."
+			return false, Chaos.t(player, "The trial chambers cannot be opened. Please tell the staff.")
 		end
 	end
 	cleanSlot(L)
@@ -734,7 +742,7 @@ function S.enterTrial(player)
 	P(L.playerStart):sendMagicEffect(CONST_ME_TELEPORT)
 	heal(player)
 	eventsOn(player)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("The Trial of Ascension: the %s comes in %d seconds. You have %d seconds to defeat it.",
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The Trial of Ascension: the %s comes in %d seconds. You have %d seconds to defeat it.",
 		tr.guardian.name, t.countdownSeconds, t.timeLimitSeconds))
 	addEvent(spawnGuardian, t.countdownSeconds * 1000, pid)
 	addEvent(tick, t.tickMs, pid)
@@ -820,15 +828,15 @@ function modal.onModalWindow(player, modalWindowId, buttonId, choiceId)
 		if not c then
 			return true
 		end
-		local id, reason = Q.validateChoice(voc, c.word, stageOf(player))
+		local id, reason = Q.validateChoice(voc, c.word, stageOf(player), Chaos.lang(player))
 		if not id then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, reason)
 			return true
 		end
-		Q.sendConfirmModal(player, id, c.word, vocName(id))
+		Q.sendConfirmModal(player, id, c.word, vocName(id), Chaos.lang(player))
 	elseif modalWindowId > m.confirmBase and modalWindowId <= m.confirmBase + 255 then
 		if buttonId ~= 1 then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "The Oracle waits. Say 'choice' when you are ready.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "The Oracle waits. Say 'choice' when you are ready."))
 			return true
 		end
 		local id = modalWindowId - m.confirmBase
@@ -839,7 +847,7 @@ function modal.onModalWindow(player, modalWindowId, buttonId, choiceId)
 			end
 		end
 		if not word then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "That path is not yours to walk.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "That path is not yours to walk."))
 			return true
 		end
 		local ok, text = ChaosAscension.ascend(player, word)
@@ -883,26 +891,28 @@ logout:register()
 local status = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "ascension")
 function status.onSay(player, words, param)
 	local voc = player:getVocation():getId()
-	local ok, code, text = Q.eligibility(voc, player:getLevel())
+	local lang = Chaos.lang(player)
+	local ok, code, text = Q.eligibility(voc, player:getLevel(), lang)
 	if not ok then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Ascension: " .. text)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Ascension: %s", text))
 		return false
 	end
 	local st = stageOf(player)
+	local npc = C().npc.name
 	local lines = {
-		[0] = "not begun. Speak with the " .. C().npc.name .. " in the temple.",
-		[1] = string.format("Proof of Strength, %d / %d (rare and legendary monsters of level %d+).",
+		[0] = Chaos.t(player, "not begun. Speak with the %s in the Hall of Services.", npc),
+		[1] = Chaos.t(player, "Proof of Strength, %d / %d (rare and legendary monsters of level %d+).",
 			math.max(0, getS(player, K().proof)), C().proof.needed, Q.minMonsterLevel(player:getLevel())),
-		[2] = "the Trial. Ask the " .. C().npc.name .. " for the trial.",
-		[3] = "the Choice. Tell the " .. C().npc.name .. " your choice.",
-		[4] = "complete."
+		[2] = Chaos.t(player, "the Trial. Ask the %s for the trial.", npc),
+		[3] = Chaos.t(player, "the Choice. Tell the %s your choice.", npc),
+		[4] = Chaos.t(player, "complete.")
 	}
 	local extra = ""
 	local wait = getS(player, K().cooldown) - now()
 	if st == 2 and wait > 0 then
-		extra = " You may try again in " .. Q.formatWait(wait) .. "."
+		extra = Chaos.t(player, " You may try again in %s.", Q.formatWait(wait, lang))
 	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Ascension: " .. lines[st] .. extra)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Ascension: %s", lines[st] .. extra))
 	return false
 end
 ChaosCommands.register("ascension", function(player, param) return status.onSay(player, "", param) end)
@@ -951,18 +961,6 @@ local function placeOracle(pos)
 	return Game.createNpc(name, pos)
 end
 
-local function freeTileNear(temple, offsets)
-	for _, o in ipairs(offsets) do
-		local pos = Position(temple.x + o[1], temple.y + o[2], temple.z)
-		local tile = Tile(pos)
-		if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-				and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE) then
-			return pos
-		end
-	end
-	return nil
-end
-
 function S.placeOracles()
 	local n = C().npc
 	local placed = 0
@@ -975,12 +973,13 @@ function S.placeOracles()
 		for _, townId in ipairs(n.townIds or {}) do
 			local town = Town(townId)
 			local temple = town and town:getTemplePosition()
-			local pos = temple and freeTileNear(temple, n.offsets)
-			if pos and placeOracle(pos) then
+			-- npc_place.lua: the offsets first, then any reachable free tile, away from the other NPCs
+			local okp, npc = pcall(function() return temple and ChaosNpcPlace.place(n.name, temple, n.offsets, n.place) end)
+			if okp and npc then
 				placed = placed + 1
 			else
 				log("could not place the " .. n.name .. " in town " .. tostring(townId)
-					.. " (no free tile next to the temple, or data/npc/" .. n.name .. ".xml is missing)")
+					.. " (no free tile near the temple, or data/npc/" .. n.name .. ".xml is missing)")
 			end
 		end
 	end

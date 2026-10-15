@@ -115,7 +115,7 @@ ChaosCharSelectScreen < UIWidget
       anchors.bottom: parent.bottom
       margin-left: 22
       margin-bottom: 12
-      width: 200
+      width: 222
       !text: tr('Show hidden characters')
       checked: true
       enabled: false
@@ -135,6 +135,14 @@ ChaosCharSelectScreen < UIWidget
       anchors.verticalCenter: recordBox.verticalCenter
       margin-left: 8
       width: 150
+
+    ChaosButton
+      id: languageButton
+      anchors.left: accountStatus.right
+      anchors.verticalCenter: accountIcon.verticalCenter
+      margin-left: 16
+      size: 190 22
+      !tooltip: tr('The language of the client and of the server messages')
 
     ChaosButton
       id: playButton
@@ -476,7 +484,7 @@ ChaosCreateWindow < ChaosStaticMainWindow
     anchors.top: seasonWarning.bottom
     anchors.left: nameLabel.left
     margin-top: 2
-    width: 300
+    width: 340
     !text: tr('I understand: this character has one life')
     visible: false
 

@@ -5,6 +5,7 @@
 -- The look itself reaches every item drawing through the item's custom attribute 8 (client base patch 0030); this
 -- window only picks it. Previews use item:setAppearanceId on the window's own items. Menu: Character > Transmog, or
 -- right-click an equipped item > Transmog.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 local OPCODE = 212
 local V = TransmogView
@@ -71,7 +72,7 @@ local function refreshDetail()
     showItem(d.previewItem, item.cid, lookCid)
     d.itemName:setText(item.name or '')
     local lookText = selectedLook and ('Preview: ' .. selectedLook.name)
-      or (item.look and ('Looks like: ' .. item.look.name) or 'Shows its own look')
+      or (item.look and (tr('Looks like: %s', item.look.name)) or tr('Shows its own look'))
     d.lookName:setText(lookText)
     d.kindLabel:setText(item.kind and (item.kindName or item.kind) or '')
   else
@@ -125,7 +126,7 @@ local function refreshLooks()
   for _, r in ipairs(rows) do
     local w = g_ui.createWidget('TransmogLook', p.lookList)
     w:setItemId(tonumber(r.cid) or 0)
-    w:setTooltip(r.name .. (r.set and ('\n' .. r.set .. ' set') or ''))
+    w:setTooltip(r.name .. (r.set and (tr('\n%s set', r.set)) or ''))
     w.look = r
     w.onClick = function()
       selectedLook = r

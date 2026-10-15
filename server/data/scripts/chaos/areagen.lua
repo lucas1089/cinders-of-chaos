@@ -234,6 +234,152 @@ local function pointsOf(model)
 end
 
 -- ======================================================================== the dungeon system
+local function giveEx(player, item)
+	if player:addItemEx(item, false) ~= RETURNVALUE_NOERROR then
+		local inbox = player:getInbox()
+		if inbox then
+			inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		end
+		return true
+	end
+	return false
+end
+
+local function itemName(id)
+	local ok, name = pcall(function() return ItemType(id):getName() end)
+	return ok and name and name ~= "" and name or ("item " .. id)
+end
+
+-- The boss chest of a generated dungeon (`dungeon.chest`): one per finisher of a won run, straight into the backpack
+-- (the inbox when it is full; the run sends everyone out 10 s after the kill, so there is no chest to open on the
+-- floor). What it holds per difficulty: dungeons_difficulty.lua D.chest. Gear: pieces drawn from the boss's own loot
+-- table by its chances, item level M.sourceLevel(boss level, tier boss) + the difficulty's bonus, rarity: the
+-- difficulty's floor and the loot layer's bonus steps (item find counts). rand(a, b) for the tests.
+function AG.giveChest(entry, player, difficulty, rand)
+	local d = entry.def.dungeon
+	if not (d and d.chest) then
+		return nil
+	end
+	rand = rand or math.random
+	local DD = ChaosDungeonDifficulty or dofile("data/scripts/chaos/dungeons_difficulty.lua")
+	local c = DD.chest(d.chest, difficulty)
+	local L, M = ChaosLoot, ChaosItemMods
+	local found, inbox = {}, false
+	if c.gold > 0 then
+		player:setBankBalance(player:getBankBalance() + c.gold)
+	end
+	local b = entry.def.boss
+	local rows, total = {}, 0
+	local mt = b and MonsterType(b.monster)
+	for _, e in ipairs(mt and mt:getLoot() or {}) do
+		if e.itemId and (e.chance or 0) > 0 and L and L.isGearId(e.itemId) then
+			rows[#rows + 1] = e
+			total = total + e.chance
+		end
+	end
+	local itemFind = L and L.itemFindMult and L.itemFindMult(player) or 1
+	local level = M and M.sourceLevel and M.sourceLevel({monsterLevel = b and b.level or d.level, tier = "boss"}) or nil
+	if level and M.config and M.config.itemLevel then
+		level = math.min(M.config.itemLevel.max, level + c.itemLevel)
+	end
+	local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
+	for _ = 1, (total > 0 and c.pieces or 0) do
+		local roll, pick = rand(1, total), rows[#rows]
+		for _, e in ipairs(rows) do
+			roll = roll - e.chance
+			if roll <= 0 then
+				pick = e
+				break
+			end
+		end
+		local rarity = L.upgradeRarity and L.upgradeRarity(c.tier, c.rarity, itemFind) or c.rarity
+		local item = ChaosCrafting and ChaosCrafting.createItem and ChaosCrafting.createItem(pick.itemId, rarity, level)
+			or Game.createItem(pick.itemId, 1)
+		if item then
+			inbox = giveEx(player, item) or inbox
+			found[#found + 1] = "[" .. (names and names[rarity] or rarity) .. "] " .. itemName(pick.itemId)
+		end
+	end
+	if L and L.rollCurrency then
+		local ctx = {tier = c.tier, player = player, level = 0, itemFind = itemFind}
+		for _ = 1, c.currency do
+			for _, cur in ipairs(L.rollCurrency(c.tier, ctx)) do
+				local rest = cur.count - Chaos.giveItem(player, cur.id, cur.count)
+				if rest > 0 then
+					local box = player:getInbox()
+					if box then
+						box:addItem(cur.id, rest, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+					end
+					inbox = true
+				end
+				found[#found + 1] = (cur.count > 1 and (cur.count .. "x ") or "") .. itemName(cur.id)
+			end
+		end
+	end
+	local t = Chaos.t or function(_, text) return text end
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(t(player, "Boss chest of %s: %d gold to your bank%s%s.%s"),
+		entry.def.name, c.gold, #found > 0 and ", " or "", table.concat(found, ", "),
+		inbox and t(player, " Your backpack was full: the rest is in your inbox.") or ""))
+	return c, found
+end
+
+-- a won run (dungeons.lua endRun, per finisher): the boss chest and the achievement counters of the dungeon
+-- (achievements_data.lua: dungeon_<area id> clears, dungeon_<area id>_top the best difficulty)
+local function onClear(entry, player, info)
+	AG.giveChest(entry, player, info and info.difficulty or 1)
+	local A2 = ChaosAchievements
+	if A2 and A2.progress then
+		A2.progress(player, "dungeon_" .. entry.def.id, 1)
+		local diff = info and info.difficulty or 1
+		A2.set(player, "dungeon_" .. entry.def.id .. "_top", diff)
+		if diff >= 6 then
+			A2.set(player, "dungeon_" .. entry.def.id .. "_d6", 1)
+		end
+	end
+end
+
+-- The boss room gate of a generated dungeon: every walkable tile of the ring just outside the boss room (the doorways
+-- the corridors cut through its wall) gets a wall piece of the theme's wall brush (horizontal on the north and south
+-- rows, vertical on the west and east columns: ids the palette check already covers). Closed at every run start, opened
+-- by the dungeon system when the run reaches Chaos.dungeons.progressNeeded (dungeons.lua), when the boss also appears.
+-- Returns {{x, y, z, id}}; empty for a theme without walls.
+function AG.gateTiles(cfg, def, model)
+	local q = model.bossRoom
+	local theme = cfg.themes[def.theme]
+	local brush = theme and theme.wall and cfg.walls[theme.wall]
+	local walk = q and model.walk and model.walk[q.z]
+	local out = {}
+	if not (brush and walk) then
+		return out
+	end
+	local h, v = brush.horizontal[1][1], brush.vertical[1][1]
+	for y = q.y1 - 1, q.y2 + 1 do
+		for x = q.x1 - 1, q.x2 + 1 do
+			local ring = x == q.x1 - 1 or x == q.x2 + 1 or y == q.y1 - 1 or y == q.y2 + 1
+			if ring and walk[y * 65536 + x] then
+				local side = (y == q.y1 - 1 or y == q.y2 + 1) and h or v
+				out[#out + 1] = {x = x, y = y, z = q.z, id = side}
+			end
+		end
+	end
+	return out
+end
+
+local function setGate(entry, closed)
+	for _, g in ipairs(entry.gate or {}) do
+		local pos = P(g)
+		local tile = Tile(pos)
+		local item = tile and tile:getItemById(g.id)
+		if closed and not item then
+			Game.createItem(g.id, 1, pos)
+		elseif not closed and item then
+			item:remove()
+			pos:sendMagicEffect(CONST_ME_POFF or 3)
+		end
+	end
+	entry.gateClosed = closed
+end
+
 local function registerDungeon(entry)
 	local d = entry.def.dungeon
 	if not d then
@@ -257,8 +403,13 @@ local function registerDungeon(entry)
 		-- the boss shows its own name (Chaos.createMonsterNamed); the dungeon matches the kill by that name
 		bossName = b and ((Chaos.createMonsterNamed and b.name or b.monster):lower()) or nil,
 		bossType = b and b.monster or nil,
-		loot = d.loot, challenges = d.challenges, bossHealth = d.bossHealth,
-		-- every run: the monsters of every point and the boss (dungeons.lua startRun; its teardown removes them)
+		loot = d.loot, challenges = d.challenges, bossHealth = d.bossHealth, trashHealth = d.trashHealth,
+		-- the boss chest and the achievement counters of a won run (dungeons.lua endRun, per finisher)
+		onClear = d.chest and function(player, info)
+			onClear(entry, player, info)
+		end or nil,
+		-- every run: the monsters of every point (dungeons.lua startRun; its teardown removes them); the boss room is
+		-- closed by its gate and the boss waits for `unlock`
 		populate = function()
 			for _, point in ipairs(entry.points) do
 				local old = {}
@@ -272,10 +423,24 @@ local function registerDungeon(entry)
 					end
 					forget(mid)
 				end
-				fillPoint(point)
+				if not point.boss then
+					fillPoint(point)
+				end
+			end
+			setGate(entry, true)
+		end,
+		-- the run reached Chaos.dungeons.progressNeeded (dungeons.lua): the gate opens and the boss appears in its room
+		unlock = function()
+			setGate(entry, false)
+			for _, point in ipairs(entry.points) do
+				if point.boss and #point.alive == 0 then
+					fillPoint(point)
+				end
 			end
 		end
 	}
+	entry.gate = AG.gateTiles(C(), entry.def, m)
+	setGate(entry, true)
 	entry.isDungeon = true
 	log(string.format("%s registered as dungeon %d (level %d)", entry.def.name, d.id, d.level))
 end
@@ -487,7 +652,9 @@ function step.onStepIn(creature, item, position, fromPosition)
 	-- the exit: back beside the entrance, or to the temple for an area without one
 	local entry = areaOfExit(position)
 	local back = entry and (entry.def.back or entry.def.entrance)
-	player:teleportTo(back and P(back) or player:getTown():getTemplePosition())
+	-- a planned content hunt's exit: back to the teleport room (hunt_teleports.lua)
+	local room = not back and ChaosHuntTeleports and ChaosHuntTeleports.backFor and ChaosHuntTeleports.backFor(position)
+	player:teleportTo(back and P(back) or room or player:getTown():getTemplePosition())
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	return true
 end

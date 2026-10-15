@@ -1,4 +1,5 @@
 -- Pure text helpers of the Guild window (tested by guildmath_test.lua; no client calls).
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 GuildMath = {}
 
 function GuildMath.money(n)
@@ -20,13 +21,13 @@ end
 -- header line under the guild name and the XP bar text
 function GuildMath.levelText(g)
   g = g or {}
-  return string.format('Guild level %d / %d', tonumber(g.level) or 1, tonumber(g.maxLevel) or 20)
+  return tr('Guild level %d / %d', tonumber(g.level) or 1, tonumber(g.maxLevel) or 20)
 end
 
 function GuildMath.xpText(g)
   g = g or {}
-  if (tonumber(g.need) or 0) <= 0 then return 'Max level' end
-  return string.format('%s / %s GXP (%d%%)', GuildMath.money(g.into), GuildMath.money(g.need), tonumber(g.pct) or 0)
+  if (tonumber(g.need) or 0) <= 0 then return tr('Max level') end
+  return tr('%s / %s GXP (%d%%)', GuildMath.money(g.into), GuildMath.money(g.need), tonumber(g.pct) or 0)
 end
 
 function GuildMath.percent(g)
@@ -41,23 +42,23 @@ function GuildMath.perksNow(p)
   if (tonumber(p.xp) or 0) > 0 then parts[#parts + 1] = '+' .. p.xp .. '% experience' end
   if (tonumber(p.loot) or 0) > 0 then parts[#parts + 1] = '+' .. p.loot .. '% loot' end
   if (tonumber(p.respec) or 0) > 0 then parts[#parts + 1] = 'respec -' .. p.respec .. '%' end
-  if (tonumber(p.depotSlots) or 0) > 0 then parts[#parts + 1] = '+' .. p.depotSlots .. ' depot slots' end
+  if (tonumber(p.depotSlots) or 0) > 0 then parts[#parts + 1] = tr('+%s depot slots', p.depotSlots) end
   if p.scroll then parts[#parts + 1] = 'daily hall scroll' end
   if p.aura then parts[#parts + 1] = 'guild aura' end
-  if #parts == 0 then return 'No perks yet: they start at guild level 2.' end
+  if #parts == 0 then return tr('No perks yet: they start at guild level 2.') end
   return table.concat(parts, ', ')
 end
 
 function GuildMath.rentText(h)
   h = h or {}
-  if not h.owned then return 'Your guild owns no guild hall.' end
-  local rent = GuildMath.money(h.rent) .. ' gold a week'
+  if not h.owned then return tr('Your guild owns no guild hall.') end
+  local rent = tr('%s gold a week', GuildMath.money(h.rent))
   if h.rentState == 'paid' then
-    return string.format('Rent %s, paid until %s (%s left).', rent, h.paidUntil or '?', GuildMath.duration(h.rentLeft))
+    return tr('Rent %s, paid until %s (%s left).', rent, h.paidUntil or '?', GuildMath.duration(h.rentLeft))
   elseif h.rentState == 'grace' then
-    return string.format('Rent %s is DUE. The upgrades lock in %s.', rent, GuildMath.duration(h.graceLeft))
+    return tr('Rent %s is DUE. The upgrades lock in %s.', rent, GuildMath.duration(h.graceLeft))
   end
-  return string.format('Rent %s is UNPAID: the upgrades are locked until it is paid.', rent)
+  return tr('Rent %s is UNPAID: the upgrades are locked until it is paid.', rent)
 end
 
 function GuildMath.rentColor(h)
@@ -71,11 +72,11 @@ function GuildMath.upgradeText(u)
   local tiers = (tonumber(u.max) or 1) > 1 and string.format(' %d/%d', tonumber(u.tier) or 0, u.max) or ''
   local state
   if (tonumber(u.tier) or 0) >= (tonumber(u.max) or 1) then
-    state = u.active and 'owned' or 'owned, locked'
+    state = u.active and 'owned' or tr('owned, locked')
   elseif (tonumber(u.tier) or 0) > 0 then
-    state = string.format('next: %s gold, level %d', GuildMath.money(u.cost), tonumber(u.level) or 0)
+    state = tr('next: %s gold, level %d', GuildMath.money(u.cost), tonumber(u.level) or 0)
   else
-    state = string.format('%s gold, guild level %d', GuildMath.money(u.cost), tonumber(u.level) or 0)
+    state = tr('%s gold, guild level %d', GuildMath.money(u.cost), tonumber(u.level) or 0)
   end
   return string.format('%s%s - %s', u.name or '?', tiers, state)
 end
@@ -87,7 +88,7 @@ end
 
 function GuildMath.memberPoints(m)
   m = m or {}
-  return string.format('%s this week / %s', GuildMath.money(m.week), GuildMath.money(m.total))
+  return tr('%s this week / %s', GuildMath.money(m.week), GuildMath.money(m.total))
 end
 
 function GuildMath.topText(t)
