@@ -9,6 +9,7 @@ built or edited by hand; the branch has no history in common with `main`.
 | `client/base-client.tar.xz.partNN` | the base client (AstraClient-main), unchanged; the parts are one file cut at 95 MB (GitHub refuses files over 100 MB): `cat base-client.tar.xz.part* > base-client.tar.xz` |
 | `things/things-1098.tar.xz` | the merged Chaos `Tibia.dat` + `Tibia.spr` (10.98) |
 | `mapeditor/map-editor.tar.xz` | the map editor (Remere's Map Editor build for 10.98, GPL; sources: github.com/hjnilsson/rme), unchanged; the package swaps in our items.otb/items.xml and adds our monsters to its creature list |
+| `backup/item-forge-cnn.tar.xz` | backup only, not a package input: the item forge model work (trained weights, training data, scripts, logs); checksum in `backup/SHA256SUMS` |
 | `SHA256SUMS.parts` | checksums of the files above |
 
 To replace one: build the new archive the same way, update `SHA256SUMS.parts`, commit to this branch.
