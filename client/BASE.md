@@ -319,6 +319,18 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `client_chaos_locale/pt_br.lua`. Applies after 0014 (casts.lua; checked with `patch --dry-run` on the assembled
     tree's files). Run in the Linux client (pt-BR and English login screens, 2026-10-14).
 
+33. `0055` (Lua `mods/game_compendium/compendium.lua`): the Compendium's pages for the Chaos client. The window is
+    still reachable: `game_sidebuttons` stays loaded (the top menu only hides its window) and loads `game_compendium`
+    with its load-later list, and the keybind "Open Compendium" (Dialogs, no default key) opens it. The base pages
+    described a task shop with talismans and hunting points, Soul Seal, familiars and podiums, a right-side menu and
+    the 8.60 protocol. They now describe Hunt > Kill Tasks and Adventure > Bounty Board (`game_bestiary`,
+    `game_bounty`), Hunt > Task Tracker, System > Helper (the `0052` server-confirmed rotation), Economy > Codex and
+    Item Finder, the top menu (`client_chaos_topbar`), Hunt > Bestiary, Social > Patch Notes and System > Report a Bug /
+    Join Discord. The section titles are the window's button images and are unchanged. `renderPage` shows each page
+    through `tr()`; the pt-BR texts, with the window's own labels (Compendium, Previous Page, Next Page), are in
+    `client_chaos_locale/pt_br.lua`. Lua only; applies after 0014 (its `compendium.lua` hunk; checked by applying
+    0001-0055 to the base tree). Not run in a client yet.
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:
