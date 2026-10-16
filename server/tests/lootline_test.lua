@@ -216,6 +216,50 @@ sent = {}
 kill({id = 907, desc = "a bat"}, corpseOf(1), cara, {stock("Loot of a bat: nothing")})
 eq(sent[1][3], "Loot de a bat: nada.", "solo pt-BR: the stock nothing translated")
 
+-- ---------------------------------------------------------------- rarity of stock items (rolled after the stock line)
+-- the stock line names the rarity the stock callback rolled; loot.lua raises it afterwards. Every stock entry shows
+-- its final rarity, in {} from Rare (3) on.
+eq(K.compose({stock = "Loot of a dragon: 120 gold coins, [Rare] fire sword, [Uncommon] plate armor"}),
+	"Loot of a dragon: 120 gold coins, {[Rare] fire sword}, [Uncommon] plate armor.", "stock Rare: {}; Uncommon: none")
+eq(K.compose({stock = "Loot of a dragon: 120 gold coins, [Common] fire sword, plate armor",
+	upgrades = {{name = "fire sword", from = "Common", to = "Epic"}, {name = "plate armor", to = "Uncommon"}}}),
+	"Loot of a dragon: 120 gold coins, {[Epic] fire sword}, [Uncommon] plate armor.",
+	"raised after the stock line: the entry shows the final rarity, no duplicate")
+eq(K.compose({stock = "Loot of a dragon: [Rare] fire sword, [Rare] fire sword",
+	upgrades = {{name = "fire sword", from = "Rare", to = "Mythic"}}}),
+	"Loot of a dragon: {[Mythic] fire sword}, {[Rare] fire sword}.", "two of a kind: one raise, one entry")
+eq(K.compose({stock = "Loot of a dragon: a meat", upgrades = {{name = "fire sword", from = "Rare", to = "Legendary"}},
+	bonus = {"{Ashbringer}"}}),
+	"Loot of a dragon: a meat, {[Legendary] fire sword}, {Ashbringer}.", "no matching entry: a bonus item")
+eq(K.compose({stock = "Loot of a rat: nothing", upgrades = {{name = "fire sword", to = "Rare"}}}),
+	"Loot of a rat: {[Rare] fire sword}.", "an empty stock line: the raise replaces nothing")
+eq(K.compose({monster = "a rat", upgrades = {{name = "fire sword", to = "Epic"}}}),
+	"Loot of a rat: {[Epic] fire sword}.", "no stock line")
+eq(K.compose({stock = "Loot of a dragon: 2x [Rare] arrows, {Ashbringer}"}),
+	"Loot of a dragon: {2x [Rare] arrows}, {Ashbringer}.", "a count kept inside, an entry in {} left as is")
+eq(K.compose({stock = "Loot of a dragon: [Rare] fire sword", flag = 5}), "Loot of a dragon: [Rare] fire sword.",
+	"the flag from the config")
+eq(K.compose({stock = "Loot of a dragon: [Strange] fire sword"}), "Loot of a dragon: [Strange] fire sword.",
+	"an unknown rarity name: no {}")
+eq(K.compose({stock = "Loot of a dragon: [Rare] fire sword"}, true, T("pt-BR")),
+	"Loot de a dragon: {[Rare] fire sword}.", "pt-BR: the same marks")
+local cfgNames = dofile("data/scripts/chaos/loot_config.lua")
+cfgNames = ChaosLootConfig and ChaosLootConfig.gear.names or (cfgNames and cfgNames.gear and cfgNames.gear.names)
+for i, n in ipairs(K.RARITY_NAMES) do
+	eq(cfgNames and cfgNames[i], n, "the default rarity names are loot_config.lua's: " .. n)
+end
+
+-- the engine side: loot.lua's raise reaches the line through addUpgrade
+sent = {}
+kill({id = 908, desc = "a dragon"}, corpseOf(1), cara, {stock("Loot of a dragon: 120 gold coins, [Common] fire sword"),
+	{index = 1, fn = function(mon)
+		check(X.addUpgrade(mon, {name = "fire sword", from = "Common", to = "Rare"}), "the raise joins the line")
+	end}})
+eq(sent[1] and sent[1][3], "Loot de a dragon: 120 gold coins, {[Rare] fire sword}.", "the merged line shows the raise")
+check(not X.addUpgrade({id = 909}, {name = "x", to = "Rare"}), "no record: loot.lua lists the raise itself")
+local lootSrc = io.open("data/scripts/chaos/loot.lua"):read("*a")
+check(lootSrc:find("ChaosLootLine.addUpgrade(monster, up)", 1, true) ~= nil, "loot.lua hands its raises to the line")
+
 print(string.format("lootline_test: %d checks, %d failures", checks, failures))
 if failures > 0 then
 	os.exit(1)

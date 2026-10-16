@@ -39,6 +39,8 @@ fi
 echo $$ > "$RUN/start.pid"
 echo "$SOCK" > "$RUN/socket.txt"
 rm -f "$RUN/stop"
+# a stop request left from before (stop-server.sh) must not stop this start at once
+rm -f "$ROOT/server/stop.request"
 
 for f in "$MDB/bin/mariadbd" "$ROOT/server/tfs"; do
   [ -x "$f" ] || { echo "Missing: $f (extract the whole archive, keep the folder layout)"; exit 1; }
@@ -61,6 +63,11 @@ if [ ! -d "$DATA/mysql" ]; then
     >> "$LOGS/database-setup.log" 2>&1 || { echo "mariadb-install-db failed: see logs/database-setup.log"; exit 1; }
 fi
 if ! db_up; then
+  # something else (another database, an old run of this package) already listens on 3307: say so instead of waiting
+  if (exec 3<>/dev/tcp/127.0.0.1/3307) 2>/dev/null; then
+    echo "Port 3307 is already in use by another program. Find it with: ss -ltnp 'sport = :3307' (as root), stop it, start again."
+    exit 1
+  fi
   echo "Starting the database (127.0.0.1:3307)..."
   as_root=()
   [ "$(id -u)" -eq 0 ] && as_root=(--user=root)
@@ -87,13 +94,14 @@ stop_db() {
 if [ ! -f "$DATA/chaos-setup-done.txt" ]; then
   echo "Loading the game database from server/sql-setup ..."
   pass=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  # The game and the website connect over TCP to 127.0.0.1 only, so the game's account is 'chaos'@'127.0.0.1'. No
+  # 'chaos'@'localhost': when this system user is itself named chaos, that is the socket admin account the lines
+  # below run as, and giving it a password locked the script out half way (ERROR 1045, an empty game database).
   sql -e "CREATE DATABASE IF NOT EXISTS chaos CHARACTER SET utf8mb4;
           CREATE USER IF NOT EXISTS 'chaos'@'127.0.0.1' IDENTIFIED BY '$pass';
-          CREATE USER IF NOT EXISTS 'chaos'@'localhost' IDENTIFIED BY '$pass';
           ALTER USER 'chaos'@'127.0.0.1' IDENTIFIED BY '$pass';
-          ALTER USER 'chaos'@'localhost' IDENTIFIED BY '$pass';
-          GRANT ALL PRIVILEGES ON chaos.* TO 'chaos'@'127.0.0.1';
-          GRANT ALL PRIVILEGES ON chaos.* TO 'chaos'@'localhost';"
+          GRANT ALL PRIVILEGES ON chaos.* TO 'chaos'@'127.0.0.1';" \
+    || { echo "Could not create the game database and its user: see the message above"; exit 1; }
   umask 077
   {
     echo "# Cinders of Chaos, Linux server package. Read by start-server.sh; config.lua reads the CHAOS_* variables."

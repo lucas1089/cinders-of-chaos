@@ -10,7 +10,9 @@ Needs: about 6 GB of free memory (the world map is large), 2 GB of disk, ports 7
 2. ./start-server.sh
    The first start creates the database (about a minute) and prints the staff account it made (also in
    first-start-account.txt). Wait for "Server Online". Ctrl+C stops the game server (it saves) and the database.
-   ./start-server.sh -d runs it in the background (log: logs/server.log); ./stop-server.sh stops it.
+   ./start-server.sh -d runs it in the background (log: logs/server.log); ./stop-server.sh stops it: it writes
+   server/stop.request (the game server checks for it every few seconds, tells the players, saves and exits) and
+   sends SIGTERM only when the game server has not taken the file after 20 seconds.
 3. Log in with the Cinders of Chaos client (CindersOfChaos-Client-Linux.tar.gz or CindersOfChaos-Client-Windows.zip
    of the same release). More accounts: ./add-account.sh ACCOUNT PASSWORD "Character Name" [warrior|ranger|mystic|thief]
    For local tests only: CHAOS_TEST_ACCOUNTS=1 ./start-server.sh at the first start adds the accounts chaos/chaos

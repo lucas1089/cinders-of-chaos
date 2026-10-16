@@ -36,7 +36,7 @@ the installed data/XML/vocations.xml, weights) and --levels 100,300,600,1000 giv
 robin and, class by class, the next level band (assign(); setup and run need the same two options, and run uses the
 first --count of the plan). setup writes the vocation, level, its experience, health and mana by the vocation's gains,
 a magic level and weapon skills of a hunter of that level (--power multiplies both: gear, gems and the tree), and 30
-days of premium (the higher area spells are premium spells). It places the bots in hunts of their level band: the map
+days of premium (the stamina bonus of a paying player; no spell needs premium since server/README.md "Free spells"). It places the bots in hunts of their level band: the map
 markers of data/chaos_poi.lua and, through the hunt teleports' data/lib/chaos_hunt_places.lua, spawn points of the
 planned hunts (up to 12 each), a band starting at half the level to the level; each position is moved to the nearest
 spawn centre (a tile a monster stands on, so no wall: a character on a wall goes to its temple); --town-share of them,
@@ -1178,7 +1178,7 @@ def setup_classes(args, plan):
         acc = '%s%04d' % (PREFIX, i)
         hp, mana, ml, skill = class_stats(cls, level, vocs[cls], args.power)
         px, py, z = positions[i]
-        # premium for 30 days: most area spells of the higher levels are premium spells
+        # premium for 30 days: the stamina bonus of a paying player (spells are free, README "Free spells")
         st.append("INSERT IGNORE INTO `accounts` (`name`, `password`, `email`, `premium_ends_at`) VALUES ('%s', '%s', '', "
                   "UNIX_TIMESTAMP() + 30 * 86400);" % (acc, pw))
         st.append("INSERT IGNORE INTO `players` (`name`, `account_id`, `group_id`, `vocation`, `level`, `health`, "

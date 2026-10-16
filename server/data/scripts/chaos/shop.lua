@@ -129,6 +129,7 @@ local function exclusions()
 	local repl = classes.outfitReplacement
 	if repl and repl.outfit and repl.outfit.lookType then
 		src.looks[#src.looks + 1] = repl.outfit.lookType
+		src.looks[#src.looks + 1] = repl.outfit.female -- the pair 29 Archmage has a look per sex
 	end
 	local ok, data = pcall(dofile, "data/scripts/chaos/achievements_data.lua")
 	src.achievements = ok and data or nil

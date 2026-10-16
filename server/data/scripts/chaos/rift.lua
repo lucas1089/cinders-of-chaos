@@ -1252,7 +1252,9 @@ local function spawnOne(run, name, pos, tier, boss, opts)
 	local variant = R.pickVariant(run.looks, name, boss, math.random())
 	local shown = variant and variant.name or R.nameOf(run.looks, name, boss)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
-	local m = create(name, P(pos), true, false, shown) or create(name, P(pos), true, true, shown)
+	-- the level the run scales it to, shown after the name (monster_levels.lua)
+	local level = run.key and R.displayLevel(C(), run.key.tier, run.density ~= nil, boss and run.omen) or nil
+	local m = create(name, P(pos), true, false, shown, level) or create(name, P(pos), true, true, shown, level)
 	if not m then
 		return nil
 	end

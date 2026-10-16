@@ -119,7 +119,8 @@ Rates stay as the download has them: `rateExp` is not used (experience stages, w
 `rateSkill = 3`, `rateMagic = 2`, `rateLoot = 1`. `maxPacketsPerSecond` (50) is the engine's flood limit per connection.
 
 Also check by hand:
-- `freePremium` (false in the download): premium gates spells, items, outfits and the autoloot list size.
+- `freePremium` (false in the download): premium gates items, outfits and the autoloot list size. Spells and runes
+  are free for everyone (`patch_free_spells.py`, server/README.md "Free spells").
 - Passwords: `passwordType = "pbkdf2-sha256"`. The engine needs patch 0014 (`server/src-patches/0014-salted-password-hashes.patch`)
   and the website its password patch (`website/install_site.sh` applies it); both write
   `pbkdf2-sha256$<iterations>$<salt>$<key>` into `accounts.password` (`server/sql/chaos_passwords.sql` widens the column

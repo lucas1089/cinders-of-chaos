@@ -22,14 +22,14 @@ ChaosCreditsData = {
   {
     title = "Art packs",
     pt = "Pacotes de arte",
-    note = "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning; the owner confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.",
+    note = "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning or as a style reference; its effects are only imported into the game. The owner confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.",
     entries = {
       { name = "Magic VFX Spells & Impacts", author = "WsT", licence = "purchased; credit not required", use = "spell effects" },
       { name = "Auras & Buffs", author = "WsT", licence = "purchased; credit not required", use = "auras and buff effects" },
       { name = "UI Game Feel", author = "WsT", licence = "purchased; credit not required", use = "level up, loot beams and other game feel effects" },
       { name = "Projectiles", author = "WsT", licence = "purchased; credit not required", use = "missiles" },
       { name = "Fields & Traps", author = "WsT", licence = "purchased; credit not required", use = "field and trap effects" },
-      { name = "Mega VFX 500", author = "WsT", licence = "purchased; credit not required" },
+      { name = "Mega VFX 500", author = "WsT", licence = "purchased; credit not required", use = "Mystic line spell effects and missiles" },
       { name = "Pixel Spellcraft VFX", author = "WsT", licence = "purchased; credit not required" },
       { name = "Anime Ki Auras", author = "WsT", licence = "purchased; credit not required" },
       { name = "Meadow Monsters Vol. 1", author = "WsT", licence = "purchased; credit not required", use = "monsters" },

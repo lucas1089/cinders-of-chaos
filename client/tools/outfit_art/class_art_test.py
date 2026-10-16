@@ -33,7 +33,7 @@ def expect(cond, what):
 def test_designs():
     """every look builds for its sexes, with two non-empty addons of parts the base does not have."""
     keys = CA.all_keys()
-    expect(len(keys) == 10, "10 looks: %s" % keys)
+    expect(len(keys) == 12, "12 looks: %s" % keys)
     for look, sex in keys:
         lk = L.LOOKS[look][0](sex)
         names = {p.name for p in lk.rig.parts}

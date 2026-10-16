@@ -101,7 +101,30 @@ ChaosSpell.bigFx = bigFx
 if not ChaosPack27Fx then
 	pcall(dofile, 'data/lib/chaos_pack27_fx.lua')
 end
+-- Pair 29 effects (data/lib/chaos_pack29_fx.lua, switch ChaosPack29Fx.PAIR29, off): the Mystic line's new effects come
+-- first (as a `first` pair 27 swap: over the large and class effects); nil when off or no swap fits
+if not ChaosPack29Fx then
+	pcall(dofile, 'data/lib/chaos_pack29_fx.lua')
+end
+local function pack29(kind, name)
+	local Q, W = ChaosPack29Fx, ChaosSupportsSpell
+	if type(name) ~= "string" or not Q or not Q.swapFor or not Q.PAIR29 or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	local ok, alt = pcall(Q.swapFor, spellId, kind, name)
+	return pid and ok and alt or nil
+end
+ChaosSpell.pack29 = pack29
+-- the name a script sends itself (VfxShoot): the pair 29 one during the cast, else the same name
+function ChaosSpell.pack29Name(kind, name)
+	return pack29(kind, name) or name
+end
 local function pack27(kind, name)
+	local p29 = pack29(kind, name)
+	if p29 then
+		return p29, true
+	end
 	local P, W = ChaosPack27Fx, ChaosSupportsSpell
 	if type(name) ~= "string" or not P or not P.swapFor or not P.PAIR27_FX or not W or not W.cast then
 		return nil

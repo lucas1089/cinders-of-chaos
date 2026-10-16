@@ -255,7 +255,7 @@ function init()
       SpellInfo.Default[s.name] = {
         id = s.id, name = s.name, words = s.words, type = 'Instant', level = s.level, mana = s.mana, soul = 0,
         icon = key, group = { [1] = s.groupCooldown }, needTarget = s.needTarget, parameter = false, range = s.range,
-        exhaustion = s.cooldown, premium = true, vocations = s.vocations
+        exhaustion = s.cooldown, premium = false, vocations = s.vocations
       }
       SpellIcons[key] = { s.icon, s.id }
       if order then

@@ -415,6 +415,20 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     guard and timer stay. The chain `0001`-`0062` applied to the base archive; both files parse in LuaJIT and Lua 5.3;
     tests `game_helpertimers/helpertimers_test.lua`. Not yet run in a client: a heal under 50% during an attack rotation
     and a cast-time spell, potion and rune in the same second.
+41. `0063` (Lua `mods/game_compendium/compendium.lua`): **compendium help text.** The base compendium still sent
+    players to Task Hunt (hidden: `assemble_client.sh` drops `game_task_hunt`, the top bar has no entry) and named the
+    8.60 protocol. Its pages now point to the top menu bar, Hunt > Kill Tasks and Adventure > Bounty Board, and name
+    10.98. Plain English like the rest of the base text. The chain `0001`-`0063` applied to the base archive; the file
+    parses in LuaJIT and Lua 5.3.
+42. `0064` (C++ `src/framework/platform/x11window.cpp`): **a lost X display ends the client at once.** A test run
+    crashed in `Creature::getWalkAnimationPhases` after SIGTERM, once Xvfb had shut down. With the X server gone, the
+    next X call hits Xlib's default IO error handler, which calls `exit()`; `exit()` runs the static destructors
+    (`g_things`, `g_map`, `g_game`) while the logic/render worker thread of `GraphicalApplication::run` still polls the
+    dispatcher and draws, and a creature's walk update reads a destroyed thing type. A normal stop is not affected (the
+    worker is joined before `Client::terminate`). Now `XSetIOErrorHandler` (set when the display opens) writes "X11
+    display connection lost, exiting" to stderr and ends with `std::_Exit(1)`, without the destructors. The chain
+    `0001`-`0064` applied to the base archive; `x11window.cpp` compiles (`g++ -std=c++20 -fsyntax-only -Wall`). Not
+    reproduced in a client run.
 
 ### Names check of the assembled client
 

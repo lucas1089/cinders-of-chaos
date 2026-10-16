@@ -103,6 +103,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  README "Rotations")
                tools/patch_mystic_stock_fx.py    Mystic line effects in the base Bewitching Hex and Arcane Ripple
                                                  scripts (spells/README_FX.md "Mystic line effects")
+               tools/patch_free_spells.py        every spell and rune free: no premium flag in spells.xml or the
+                                                 revscripts, no premium test in the NPC spell teachers (README
+                                                 "Free spells")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
                0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
@@ -605,6 +608,9 @@ def step_spells(server, data, ctx):
         lines += more
     if ok:
         ok, more = run_tool([tool('patch_mystic_stock_fx.py'), data], 'patch_mystic_stock_fx.py')
+        lines += more
+    if ok:
+        ok, more = run_tool([tool('patch_free_spells.py'), data], 'patch_free_spells.py')
         lines += more
     warn = unregistered_spell_fragments(data)
     return ok, lines, warn

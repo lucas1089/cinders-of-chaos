@@ -51,13 +51,13 @@ local info = {
   ['Sunder Guard'] = entry(243, 'Sunder Guard', 'kah gro', { group = { [3] = 2000, [6] = 12000 } }),
   ['Radiant Shard'] = entry(258, 'Radiant Shard', 'drai ira vas sol', { level = 0, range = 5, area = {} }),
   ['Kindred Mend'] = entry(84, 'Kindred Mend', 'saen kin', { mana = 120 }),
-  ['Bonebreaker'] = entry(61, 'Bonebreaker', 'kah brak'),
+  ['Bonebreaker'] = entry(61, 'Bonebreaker', 'kah brak', { premium = true }),
 }
 local icons = {}
 for _, e in pairs(info) do
   icons[e.icon] = { 7, e.id }
 end
-local runes = { [3180] = { id = 86, group = 3, name = 'Bastion Rune' }, [3189] = { id = 15, group = 1 } }
+local runes = { [3180] = { id = 86, group = 3, name = 'Bastion Rune' }, [3189] = { id = 15, group = 1, premium = true } }
 local server = F.serverWords(ChaosSpellData, ChaosSpellNames)
 local undo, idMap = F.apply(info, icons, runes, server)
 eq(info['Pyre Torrent'].id, 163, 'Pyre Torrent gets the server id')
@@ -78,6 +78,8 @@ eq(info['Kindred Mend'].mana, 140, 'Kindred Mend mana')
 eq(info['Bonebreaker'].id, 61, 'Bonebreaker keeps its id')
 eq(info['Bonebreaker'].exhaustion, 2000, 'Bonebreaker 2 s (second rotation pass)')
 eq(runes[3180].group, 1, 'Bastion Rune in the attack group')
+eq(info['Bonebreaker'].premium, false, 'stock spell free (no premium)')
+eq(runes[3189].premium, false, 'rune free (no premium)')
 eq(idMap[240], 163, 'id map 240'); eq(idMap[238], false, 'id map 238 dropped'); eq(idMap[61], nil, 'id map 61')
 eq(idMap[174], 172, 'id map 174'); eq(idMap[172], 174, 'id map 172'); eq(idMap[243], 171, 'id map 243')
 local ids = {}
@@ -98,6 +100,8 @@ eq(info['Divine Dazzle'].id, 238, 'restore moved id')
 eq(info['Divine Dazzle'].notOnServer, nil, 'restore flag')
 eq(info['Sunder Guard'].group[3], 2000, 'restore group')
 eq(info['Bonebreaker'].exhaustion, nil, 'restore exhaustion')
+eq(info['Bonebreaker'].premium, true, 'restore premium')
+eq(runes[3189].premium, true, 'restore rune premium')
 eq(icons.pyretorrent[2], 240, 'restore icon')
 eq(runes[3180].group, 3, 'restore rune')
 

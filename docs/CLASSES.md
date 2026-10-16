@@ -253,7 +253,8 @@ for free, at the migration.
   after a class change. List in `Chaos.classes.outfits` (`chaos_constants.lua`), code in `ascension.lua`
   (`giveClassOutfits`), outfits.xml entries for both sexes by `server/tools/install_outfits.py` (install step `outfits`).
   The Mystic line's donor art outfit 1559 "Archmage" was retired on 2026-10-16. It is not given any more; owners keep it
-  as "Archmage (old)", and it is never sold. A replacement waits behind `Chaos.classes.outfitReplacement` (off).
+  as "Archmage (old)", and it is never sold. Its replacement is the pair 29 Archmage (2235 male / 2236 female, our own
+  art, both addons given), behind `Chaos.classes.outfitReplacement` (off until pair 29 is live).
   See server/README.md "Class looks".
 
 Limits of phase 1:

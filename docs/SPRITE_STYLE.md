@@ -25,6 +25,13 @@ Third-party packs (licence audit of 2026-10-15, owner's confirmation the same da
   measurement.
 - Imported pack art in the pairs stays as it is. Do not trace, recolour or sample any other game's or server's
   sprites.
+- **Owner-approved exception (2026-10-16, Mystic effects of pair 29):** a purchased pack's effect may be recoloured
+  (`theme_recolour.py`, a hue shift) only when the pack has no variant in the spell's theme colour. Use the pack's own
+  variant whenever one fits; the Druid-kit spells keep their nature green. Pair 29 needed no recolour: every pick of
+  `gen_pack29_fx.py` has a variant in its theme colour. A recoloured pick must say so in its note and in its
+  `*sources.csv` row.
+- Mega VFX 500 effects may be imported into a pair (`gen_pack29_fx.py`), but they are never a reference: not viewed
+  for style, measured, sampled for a palette or given to an AI tool. `style_check.py` is not run on them.
 
 ## Grid, size and anchors
 

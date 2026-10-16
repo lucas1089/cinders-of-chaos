@@ -5,8 +5,9 @@
 --   * holds back the stock line: while a record is open, a MESSAGE_LOOT "Loot of ..." sent to the corpse owner (or
 --     broadcast to the owner's party) is kept instead of sent (Player.sendTextMessage and Party.broadcastPartyLoot are
 --     wrapped once; every other message passes unchanged),
---   * takes the Chaos bonus items (ChaosLootLine.addBonus, loot.lua) and the pouch line (ChaosLootLine.addPouch,
---     pouches.lua); without this file both send their own line as before,
+--   * takes the Chaos bonus items (ChaosLootLine.addBonus, loot.lua), the rarity raises of stock items
+--     (ChaosLootLine.addUpgrade, loot.lua: the stock entry shows the final rarity, {} from Rare on) and the pouch line
+--     (ChaosLootLine.addPouch, pouches.lua); without this file they send their own lines as before,
 --   * sends the one line at index `flushIndex` (after the autoloot, the Rarity Autoloot and the empty corpse check):
 --     to the owner with the pouch part, to the other party members without it.
 -- A record that a failed callback left open is sent when the next kill opens one.
@@ -136,6 +137,19 @@ function X.addBonus(monster, items)
 	return true
 end
 
+-- a rarity the Chaos loot layer raised on a stock item (loot.lua): {name = the item's name, from = the rarity name the
+-- stock line shows (nil: none), to = the new one}. True when the stock entry is rewritten at the flush (else the caller
+-- lists it as a bonus item)
+function X.addUpgrade(monster, upgrade)
+	if not X.active(monster) or type(upgrade) ~= "table" or not upgrade.name or not upgrade.to then
+		return false
+	end
+	local rec = X.current
+	rec.upgrades = rec.upgrades or {}
+	rec.upgrades[#rec.upgrades + 1] = {name = tostring(upgrade.name), from = upgrade.from, to = tostring(upgrade.to)}
+	return true
+end
+
 -- the pouch line ("Looted: ... (notes)."): true when it joins the kill's line
 function X.addPouch(monster, text)
 	if not X.active(monster) or not text then
@@ -159,7 +173,11 @@ local function begin(monster, corpse)
 		local okD, d = pcall(Chaos.monsterNameDescription, monster)
 		desc = okD and d or nil
 	end
-	X.current = {id = idOf(monster), owner = idOf(owner), monster = desc, bonus = {}}
+	-- the rarity names of the stock line (loot_config.lua gear.names) and the {} rarity (pouches_config.lua lootLine)
+	local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names or nil
+	local pc = ChaosPouchesConfig
+	local flag = pc and pc.lootLine and pc.lootLine.flagRarity or nil
+	X.current = {id = idOf(monster), owner = idOf(owner), monster = desc, bonus = {}, names = names, flag = flag}
 end
 
 if EventCallback then

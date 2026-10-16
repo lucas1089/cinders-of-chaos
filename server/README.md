@@ -176,6 +176,11 @@ server/
                                       potions before the stock ones), then the mapped type, then any item of that look;
                                       such an item's hotkey message says "(never runs out)", not "Using the last ..."
                                       (see "Potions"; tools/hotkey_lookup_patch_test.py)
+  src-patches/0044-display-level-override.patch   engine: a display level set with monster:setDisplayLevel wins
+                                      over the monster's own level (rift, invasion and generated area monsters show the
+                                      level their system scaled them to; see "Monster levels in the name")
+    stop_request.lua  stop_request_core.lua  stop_request_config.lua (graceful stop: the packages' stop-server
+                                      scripts write server/stop.request, see "Stop request file")
     cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
                                       see "Cooldown channels")
     display_scale.lua  display_scale_core.lua  display_scale_config.lua (every combat number shown x the factor of the
@@ -237,7 +242,8 @@ server/
    Foreign keys assume `players.id` is `int(11) NOT NULL` (stock TFS schema).
 3. Spells: `python3 -I server/tools/register_spells.py <server>/data` (Chaos spells) and
    `python3 -I server/tools/rename_spells.py <server>/data --sql rename_spells.sql` (Chaos names for the stock
-   spells and runes; apply the SQL once). See `data/spells/README.md`.
+   spells and runes; apply the SQL once). See `data/spells/README.md`. Then
+   `python3 -I server/tools/patch_free_spells.py <server>/data`: no spell or rune needs premium ("Free spells").
 4. Experience bonuses: `python3 -I server/tools/patch_base_events.py <server>/data` (once; idempotent). The base
    server's `Player:onGainExperience` (`data/events/scripts/player.lua`) never runs the script callbacks, so
    without it every Chaos experience bonus is silently ignored: Blood Moon, the passive tree's experience nodes,
@@ -1394,6 +1400,22 @@ preset changes, from level 15 up (`tools/rotation_sim_test.py`; below 15 exempt)
 `rotation_model.csv`: no preset takes them. Assumption: the
 4 s attack group cooldowns of the supreme strikes and the big stock area spells stay (balance); the rotations leave
 those spells out.
+
+## Free spells (`tools/patch_free_spells.py`, install step `spells`)
+
+Owner decision (2026-10-16): free players can use every spell. The playtest found a free level 20 Mystic unable to
+cast 12 of the 28 Mystic spells. The engine refuses a premium spell to an account without premium time
+(`Spell::playerSpellCheck`, "You need a premium account."). `patch_free_spells.py DATA_DIR [--dry-run]` runs in the
+`spells` step after `patch_mystic_stock_fx.py`. It sets `premium="0"` on every `<instant>`, `<rune>` and `<conjure>` of
+`data/spells/spells.xml` that had it set. It turns `spell:isPremium(true)` of revscript spells (`data/scripts/**`,
+`data/spells/scripts/**`) into `isPremium(false)`. It drops the premium test of `StdModule.learnSpell` in
+`data/npc/lib/npcsystem/modules.lua`, so an NPC teacher never asks for premium. The Chaos block is left alone:
+`data/spells/chaos/spells_chaos.xml` itself has no premium spell any more (71 were premium; all 97 are free now).
+Idempotent; refuses only when `spells.xml` is missing; a base without the `learnSpell` test is reported.
+Test: `tools/patch_free_spells_test.py` (CI). On a stock 1.4.2 data folder it freed 83 entries of `spells.xml`.
+Only spells and runes change. `freePremium` stays false. The other premium perks stay ("Premium" under the Pact).
+The client follows: `game_chaosspells/spellfix.lua` clears the premium flag of the client's stock spell and rune
+entries, the Chaos entries come free from `spelldata.lua`, and the Spellbook window no longer shows a Premium row.
 
 ## Engine: decay manager, hardening, spell events (`src-patches/0006`, `0007`, `0008`)
 
@@ -3626,7 +3648,7 @@ the engine has no login queue. Depot tabs: the Pact's +1 was already in `limits.
 **Premium.** The Pact gives no premium days (`pact.premiumDays = 0`, the owner's decision: the stamina bonus below is
 power, not comfort). A value above 0 would add that many premium days per purchase. With `freePremium = false`,
 premium on this base unlocks: the 64 outfits and 39 mounts marked `premium="yes"`, houses (`buyhouse.lua`), boats and the
-premium travel / spell / blessing NPC options, premium-only areas (bridge and teleport scripts), offline training, a VIP list
+premium travel / blessing NPC options, premium-only areas (bridge and teleport scripts), offline training, a VIP list
 of 100, the depot limit, the base autoloot list of 20, and the stock stamina bonus (green stamina above 40 hours gives
 x1.5 experience to premium players, `events/scripts/player.lua`). Promotion is off (`tools/patch_promotion.py`), so premium no
 longer promotes anyone. Premium is already sold on its own (Premium Time), so the Pact adds nothing new to it; the
@@ -4188,7 +4210,7 @@ Character > Spellbook in the client menu opens the client window `game_spellbook
 - `data/spells/spells.xml`: every `<instant>`, `<rune>` and `<conjure>` (name, words, level, magic level, mana, soul, cooldown, group, premium, range, vocations, rune item id). Monster spells (words starting with `#`) and house spells (`house/` scripts) are skipped.
 - `data/spells/scripts/<script>` is read as text, never run: element (`COMBAT_PARAM_TYPE`, `doAreaCombat`/`doTargetCombat`/`damageTarget` arguments), kind (damage, heal, buff, summon, conjure, utility), area (the largest `createCombatArea(...)`: an `AREA_*` table of the spell library, an inline table literal, which is loaded only when it holds nothing but digits, commas and braces, or a local table of the same script), scaling (magic level, skill x weapon attack, distance skill x weapon attack). Chaos spells use the first comment line of their script (`-- <Name>: <description>`); stock spells get a generated one ("Single-target fire damage.", "Fire damage in front of you (wave).", "Heals you and cures paralysis.", "Conjures 4 x 'searing orb rune'.").
 - Parsed once at startup when the `AREA_*` tables already exist, otherwise on the first Character > Spellbook; `/spells reload` (staff) parses again after a spell change. A player can open it once every 2 seconds.
-- Protocol (JSON `{action, data}`): `open` {vocation, level, magicLevel, total, chunks, vocationNames [{id, name}]}, then `spells` {index, spells [...]} until all are sent (about 6.5 KB of JSON per packet), then `done` {total}. A spell: name, words, level, maglevel, mana, manaPercent, soul, cooldown and groupCooldown (ms), group, type, element, target (`single`/`area`/`self`/`front`), center (`caster`/`target`), area (matrix, 1 = hit, 2 = centre, 3 = centre and hit; `front` spells drawn facing north), range, description, scaling, vocations (ids), premium, rune and runeClientId. The client sends `open` to ask for the same answer.
+- Protocol (JSON `{action, data}`): `open` {vocation, level, magicLevel, total, chunks, vocationNames [{id, name}]}, then `spells` {index, spells [...]} until all are sent (about 6.5 KB of JSON per packet), then `done` {total}. A spell: name, words, level, maglevel, mana, manaPercent, soul, cooldown and groupCooldown (ms), group, type, element, target (`single`/`area`/`self`/`front`), center (`caster`/`target`), area (matrix, 1 = hit, 2 = centre, 3 = centre and hit; `front` spells drawn facing north), range, description, scaling, vocations (ids), premium (false for all since "Free spells"; the client no longer shows it), rune and runeClientId. The client sends `open` to ask for the same answer.
 - With the reference spell set (234 player spells) that is 14 packets, about 76 KB.
 - Cache check (2026-10-16): `open`, `done` also carry `sig` (a checksum of the packed list, cached per display-scale factor), `open` carries `learned` (names of the `needlearn` spells the player learned) and spells carry `id` (spellid) and `needLearn`. The client sends `open {have = sig}`; when it is the current list only `open {unchanged = true, chunks = 0}` and `done` go out, without the 2 s throttle. An old client (no `have`) gets the full list as before.
 - Spellbook items: using a stock spellbook (the base action `data/scripts/actions/others/spellbook.lua`, hooked by `tools/patch_base_spellbook.py`, install_all step `events`) or a Chaos set spellbook (27 gear-set and 10 themed ids, registered by `spellbook.lua`) sends `show` to a client that has spoken opcode 219 this login (its background fetch after login, `open {prefetch = true}`, which the new-player tutorial does not count); the client opens the window. A client without the window keeps the stock "Spells for Level n" text (`ChaosSpellbook.spellText`). Test: `tools/patch_base_spellbook_test.py`.
@@ -10555,6 +10577,13 @@ Loot Filter get their data by opcode, not from this text. Each recipient reads t
 `i18n_strings.lua`, e.g. "Loot de a dragon: 120 gold coins. Coletado: ... (2 para sua mochila)."); item and monster
 names stay as the engine gives them. The client's loot colouring keys on the message mode and the `{}` marks, not on the
 words, so the translated prefix keeps it. Without `lootline.lua` each part sends its own line as before.
+Rarity of stock items: the stock callback (index 0) writes its line with the rarity it rolled ("[Common] fire sword"),
+and the Chaos loot layer (index 1) may raise that rarity afterwards. The raise goes to the record
+(`ChaosLootLine.addUpgrade`: item name, old and new rarity name), and at the flush `K.annotate` rewrites that stock entry
+to the final rarity (no second "[Epic] fire sword" entry) and wraps every stock entry from `lootLine.flagRarity` (3,
+Rare; `pouches_config.lua`) on in `{}`, as the bonus items and the pouch part are: "Loot of a dragon: 120 gold coins,
+{[Epic] fire sword}, [Uncommon] plate armor." A raise with no matching entry is listed as a bonus item. Without
+`lootline.lua` the bonus line lists the raise with the same `{}` rule.
 Every step is in `pcall` and returns nothing, so the chain never stops. `autoloot.lua` and `autosell.lua` are unchanged; the
 auto seller still sells first (sold items never show in the row; checked in game: "Auto seller: sold ..."). The rarity pickup
 puts what it takes into the backpack; with no room it stays in the corpse (the retired Bottomless Loot Pouch used to send it to
@@ -11932,12 +11961,16 @@ client/MANIFEST.md "Class looks pair", "things_custom19" and "Class looks pair 2
   - Owners keep it: `Chaos.classes.retiredOutfits` keeps its outfits.xml line as "Archmage (old)"
     (`install_outfits.py`); re-run `install_all.py SERVER_DIR --only outfits` to rename the line.
   - Never sold: `gen_shop_cosmetics.py` and `shop.lua` exclude `retiredOutfits` and the replacement outfit.
-  - Replacement switch `Chaos.classes.outfitReplacement` (`enabled = false` as shipped, one plain line;
-    `outfit = nil` until a client pair has the new look). On with an outfit set: the Mystic line is given it, and
-    a character of the line wearing 1559 is moved to it at its next login (`ChaosClasses.outfitSwap`), colours kept.
-    `install_outfits.py` writes its outfits.xml line only while it is on. Flip it only once the clients have the
-    pair. Tests: `tests/classes_test.lua` (off as shipped, on without and with an outfit, off again),
-    `tests/shop_test.lua` (1559 excluded).
+  - Replacement switch `Chaos.classes.outfitReplacement` (`enabled = false` as shipped, one plain line): the pair 29
+    Archmage, `outfit = {lookType = 2235, female = 2236, name = "Archmage", addons = 3}` (our own rig art,
+    client/MANIFEST.md "Archmage (pair 29)"). On: the Mystic line is given the look of its sex with both addons
+    (`ChaosClasses.classOutfitsFor(voc, sex)`, `ascension.lua` `giveClassOutfits`), and a character of the line wearing
+    1559 (or the other sex's Archmage) is moved to it at its next login (`ChaosClasses.outfitSwap`), colours kept.
+    `install_outfits.py` writes its outfits.xml lines only while it is on: type 1 2235, type 0 2236, both "Archmage".
+    Flip it only once the clients have pair 29 (with `ChaosPack29Fx.PAIR29`), then `install_all.py SERVER_DIR --only
+    outfits`. Tests: `tests/classes_test.lua` (off as shipped, on without and with the outfit, per sex, off again),
+    `tools/install_outfits_test.py` (switch off: no line; on: one line per sex), `tests/shop_test.lua` (1559, 2235
+    and 2236 never sold).
 
 ## Class signature effects (`data/lib/chaos_class_fx.lua`, `data/lib/chaos_class_fx_ids.lua`, hooks in `data/spells/chaos/_common.lua`)
 Each class line's signature spells send an effect of their own (ROADMAP C4 "effects"), so the classes read differently
@@ -12087,6 +12120,36 @@ Owner: "I found the effects of the Mystic spells very poor." Effects only, all f
   missile become none when the pack arcane bolt and hit are in the pair.
 - Tests: `tests/mystic_fx_test.lua` (helpers, wrappers, every ChaosFx name of the Mystic scripts exists, every name
   sent is in an ids file), `tools/patch_mystic_stock_fx_test.py`, `tests/big_fx_test.lua`.
+
+## Mystic line effects, Tier B (pair 29) (`data/lib/chaos_pack29_fx.lua`, `data/lib/chaos_pack29_fx_ids.lua`, switch `ChaosPack29Fx.PAIR29`, off)
+
+Tier B of the 2026-10-16 Mystic effect pass (owner-approved): 21 effects and 9 missiles of the owner's oblique effect
+sets (client/MANIFEST.md "Mystic line effects, Tier B (pair 29)", effects 759-779, missiles 161-169) for 17 spells of the
+Mystic, Elementalist and Illusionist and the base spell Bewitching Hex. Effects only: no damage, area, timing or target
+changes. What each spell sends: server/data/spells/README_FX.md "Mystic line effects, Tier B".
+- Swaps (`C.spells`, spell id -> kind -> old name -> pair 29 name). Kinds: `fx` (ChaosSpell.fx / vfx / vfxOr, asked in
+  `_common.lua` before the pair 27, large and class effects; a cosmetic skin still wins), `missile` (ChaosSpell.shoot /
+  vshoot, ChaosMysticFx.shoot, and `ChaosSpell.pack29Name` for the two scripts that call VfxShoot themselves: Witchfire
+  Bolt, Shattered Psyche), `send` (ChaosMysticFx.send / later, the Tier A helpers' exact effects; `ChaosMysticFx.alt`).
+  The cast context (`ChaosSupportsSpell.cast()`, also in the cast's addEvent callbacks) gives the spell id.
+- New sends: Tear in the Weave shoots `weave_marble` from each pulled foe to the rift (`ChaosMysticFx.shoot`, nothing
+  without the pair). Bewitching Hex (base spell, no cast context): `C.stock`, read by `ChaosMysticFx.stockName` in the
+  wrap of `patch_mystic_stock_fx.py` (missile `hex_missile`, ticks `hex_curse`).
+- The Druid-kit spells keep the nature green (Ironbark Hide, Briar Prison, Primordial Squall); no pick is recoloured.
+- Ground: the floor shapes and the effects that cover the body are drawn under the creatures
+  (client/tools/sprites/ground_fx.csv, `gen_ground_fx.py`; `storm_shock` stays above).
+- Off (as shipped until pair 29 is on windows-assets): the ids file is not loaded, every swap, `alt` and `stockName` give
+  the old name, so each spell sends exactly its Tier A effects. Flip step: `C.PAIR29 = true` (the check in
+  `tests/pack29_fx_test.lua`), together with `Chaos.classes.outfitReplacement.enabled` (the Archmage, same pair),
+  `python3 -I tools/install_all.py SERVER_DIR --only files,outfits`, restart. Rollback: false.
+- The swaps are keyed by spell id; `C.names` holds each spell's name and `tests/pack29_fx_test.lua` checks both against
+  spells_chaos.xml, so a moved id fails the test.
+- Tests: `tests/pack29_fx_test.lua` (switch line off; ids and names; each script sends the swapped name; every name of
+  the client spec is sent by a swap or the Tear in the Weave shot and is in the ids file; missile ids fit u8; off: no
+  swap, ids not loaded, the Hex plan unchanged; on: the names through ChaosMysticFx and the Hex plan; `_common.lua` and
+  the two VfxShoot sites wired), `tests/mystic_fx_test.lua` (every name the Mystic scripts send is in an ids file). A
+  local run with the switch on passed the whole server test set (client/MANIFEST.md). Not run on a server or in a
+  client.
 
 ## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
@@ -13310,8 +13373,41 @@ damage and a skull colour. So patch 0040 adds a display level instead (`monster:
 placement) `monster_levels.lua` gives a monster without a level of its own `ChaosLoot.monsterLevel`: the bounty pool's
 hunting level of its type, else the experience / health estimate; the same level item level, monster damage and pace
 use. Not for a player's summon. Display monsters of the teleport room get it like any monster. Without patch 0040
-nothing changes. Rift, invasion and dungeon monsters scaled by their system show their type's level, not the scaled
-one. Tests: `tests/monster_levels_test.lua`.
+nothing changes.
+
+**Scaled monsters** show the level their system scaled them to, not their type's. The system passes it to
+`Chaos.createMonsterNamed(type, pos, extended, force, shownName, shownLevel)` (or sets `Chaos.spawnLevel` around
+`Game.createMonster`); `monster_levels.lua` uses it once in the same `onSpawn`, before the placement, so the first
+creature packet carries it. Patch 0044 lets a set display level win over a level of the monster's own (a level-scaled
+type in a rift showed its rolled "[777]"). Display only, as above.
+- Rifts with density (`rift_core.lua R.displayLevel`): every pack monster and the guardian show the tier's level
+  (`tiers[t].minLevel`, + `beyond.minLevelStep` a tier above the table), the player level their health budget is
+  sized for. Without density, and an Omen guardian, keep their own level (their own health x multipliers).
+- Invasions (`invasion_core.lua I.displayLevel`): waves, boss and occupiers show the area level they are scaled to.
+- Generated areas and dungeons (`areagen.lua`): each monster shows its spawn point's level (`A.levelScale`).
+- Base dungeons (`dungeons.lua`) are not level-scaled: a difficulty multiplies health and damage by percents after the
+  placement, so their monsters keep their level.
+
+Tests: `tests/monster_levels_test.lua`.
+
+## Stop request file (`stop_request.lua`, `stop_request_core.lua`, `stop_request_config.lua`)
+Windows ends a closed console window after about 5 seconds, too soon for the engine's save, so closing the game server
+window of the Windows package could lose progress. The packages' stop scripts now ask the server to stop with a file:
+- `stop-server.bat` (Windows package) writes `server\stop.request` while ChaosServer.exe runs, then waits up to 200 s
+  for the process to exit before it stops the database, as before.
+- `stop-server.sh` (Linux package) writes `server/stop.request` first and waits up to 20 s for the server to take it;
+  without an answer (an older server) it removes the file and sends SIGTERM as before. It still touches `run/stop`
+  so `start-server.sh` does not start the server again.
+- The globalevent `ChaosStopRequest` checks the server folder (the engine's working folder) every `intervalMs`
+  (2.5 s). Found: it removes the file, broadcasts `message`, and after `graceMs` (3 s) runs `saveServer()` and
+  `Game.setGameState(GAME_STATE_SHUTDOWN)` (every player saved at the kick, a clean exit with code 0, which the start
+  scripts take as a stop, not a crash).
+
+Safety: the name is fixed by the config and must be a bare file name (letters, digits, `_`, `-`, `.`; no folder, no
+`..`; else `stop.request`), so only a file in the server's own folder counts. Its content is never read. A file that
+cannot be removed stops nothing (logged once), so a stuck file never stops every later start. A leftover file is
+removed at startup (and by both start scripts) instead of being obeyed. Anyone who can write into the server folder
+can stop the server, the same people who can already end its process. Tests: `tests/stop_request_test.lua`.
 
 ## Respawn near players (engine patch 0041, config `spawnNearPlayers`, `spawnMinPlayerDistance`)
 Owner, 2026-10-16: monsters must respawn even with players nearby. The stock engine skipped a spawn block while a

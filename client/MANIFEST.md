@@ -9,7 +9,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | Module | Server contract | Client-engine needs | Verdict |
 |---|---|---|---|
 | game_stash | extended opcode 110 + Economy > Supply Stash | none after port | Ported off `client_manager`; replaces the base client's own stash. The one item storage (server/README.md "Stash"): any item can be dropped in (whole items with their attributes, plain stacks merged), a whole item withdraws as one (`Redeem {row}`); the tab bar (All, the general tabs, the affinity tabs with their item as icon and name, Old depot; withdraw-only tabs dimmed, tooltips with the class, the owner source and why a tab is withdraw-only) from the server's `tabs` message; deposit and withdraw in town only unless remote deposit is unlocked (store or the Chaos Pact): the Stow Everything button greyed with a tooltip that says where to unlock and a refused drop says so; items greyed out with a tooltip outside a protection zone (the local player's Pz state, live while walking, or the server's hideout answer; `access` after a refusal); the Stow Everything button and its report box (`StowReport`). Logic `stashview.lua` (tested by `stashview_test.lua`). Item tooltips fall back to `setTooltip`. The tabs of before were tested in game; the whole-item stash is not run in a client yet |
-| game_bank | extended opcode 60 | none | Server `bank.lua`. Gold tab only (the star tab is hidden: no star currency). Deposit all / Withdraw all; amount dialog with input, slider, 25% / 50% / All, OK / Cancel. Logic in `bank_core.lua` (tested). |
+| game_bank | extended opcode 60 | none | Server `bank.lua`. Gold tab only (the star tab is hidden: no star currency). Deposit all / Withdraw all; amount dialog with input, slider, 25% / 50% / All, OK / Cancel. Logic in `bank_core.lua` (tested). The toggle shows the window at once (this session's last state, else "-" until the reply) and raises it over later windows; a reply opens it only when asked for or already open (`B.onReply`), so a reopen inside the server's 300 ms rate limit no longer stays hidden and a late reply after a close does not reopen it. The state is dropped at logout. |
 | game_autoloot | extended opcode 216 (JSON: `open` / `add` / `remove` / `clear` / `sync` out, `open` / `list` back) | none | Auto Loot window; the list is the server's (`autoloot.lua`, base storages 80000+). It also takes over the item menu's base Quick Loot entries (`game_quickloot`, which talks Quick Loot packets a 10.98 server does not have; live test winpkg-35): "Manage Loot containers" opens the Loot Bag rules (`game_pouches`), "Add to Loot List" / "Remove from Loot List" edit the server list quietly (`quiet`, answer `list`, the window stays shut) |
 | game_itemrarity | item custom attributes (server engine patch 0003, client feature 126 negotiated at login) | none (the engine already parses the attributes) | Rarity of an item from its custom attribute (keys `ChaosItemAttr`, same numbers as the server's `Chaos.itemAttr`), description tag as fallback; 15 rarities; frame in the rarity colour (unique orange) on container and inventory slots; turns feature 126 off at logout. `itemrarity_test.lua`; tested in game. Soft rarity outline (base patch 0044, not built or run yet): at load it hands the engine one colour per rarity and the unique colour (`Item.setRarityOutlineColor`, alpha 225; `getRarityOutlinePlan` / `applyRarityOutline`, tested), a reach of 3 sprite pixels, no outline for Common, a breathing outline from Mythic up (2.2 s), and the Graphics options `rarityOutlineMap` / `rarityOutlineSlots` (`onOutlineOption`); the engine draws it around dropped items on the map and items in inventory and container slots. A client without 0044 has no `Item.setRarityOutlineColor` and nothing changes. `updateRarityFrame` also calls `game_shaderfx` (`onSlotItem`: grey a locked item; `onRarityFrame`: the shine) when that module is loaded |
 | game_battlepass | extended opcode 227 (JSON) + Adventure > Season Pass; toasts through `game_chaosnotify` (action `seasonpass`) | none | Replaced: the Chaos season pass window (Chaos skin, 760 x 560): tier, pass XP bar, Claim all; Rewards page (50 tier rows, free and premium reward with item / outfit / mount icon and Claim, locked / premium / claimed states), Challenges page (daily and weekly with progress and reset timers, the day's pass XP per source and cap), Packs page (premium pass and the three season packs: Buy, Upgrade for the difference, Gift to a character name with the receiving account's price). Server `data/scripts/chaos/seasonpass.lua` (server/README.md "Season pass"). The old raw opcode 39 window and its images are gone. Logic `passview.lua` (tested by `passview_test.lua`); tested in game with two clients |
@@ -182,6 +182,7 @@ installed server: ten entries had other ids than the server and four stock spell
 of Chaos spells (238 Shadow Veil, 244 Iaijutsu, 245 Bushido Focus, 248 Wild Bond), so cooldowns went to the wrong spell
 and a helper rule could resolve to the wrong words; the six ascension spells follow the server's new ids below 256
 (`server/tools/patch_spell_ids.py`); mana, level, groups, target, range and vocation ids where they differ; rune groups.
+Every stock spell and rune entry loses its premium flag: all spells are free (`server/tools/patch_free_spells.py`).
 The 42 stock entries of spells the server does not have keep their entry but are marked `notOnServer` and moved to id +
 1000; the spells the server removed (`ChaosRemovedSpells`, the conjure spells) keep entry and id (the rune cooldown icons
 use them), are marked `notOnServer` and leave the spell list (`hideRemovedSpells`) and the helper's lists. The helper's
@@ -224,7 +225,7 @@ helper can cast them; Sunder Guard's attack group cooldown is 2 s like the serve
 Breath and Chi Ward 1) instead of sending it to be refused.
 
 ## Spellbook (new)
-`game_spellbook` opens on Character > Spellbook (or Character > Spellbook in the top menu, which asks the server with `open`). Left: search box (name or words), a filter ("My vocation" / "All spells") and the spell list (icon, name in the element colour, words, level in red when it is above yours). Right: icon, name, words, level, magic level, mana, soul, cooldown (group cooldown in the tooltip), group, type, element, target, what it scales with, vocations (initials, full names in the tooltip), premium, the description and the area of effect drawn as a grid (hit cells in the element colour, your tile gold, the target outlined white; single-target spells show you and the target, self spells only you; cells shrink to fit areas up to 21 x 21). Icons come from `Spells.getSpellIcon(words)` of gamelib; runes show their rune item. Names, descriptions and areas come from the server (`server/data/scripts/chaos/spellbook.lua`), so the client keeps no spell data of its own. Not run in a client: the layout sizes, the theme styles in this window and the combo box popup were checked by reading only.
+`game_spellbook` opens on Character > Spellbook (or Character > Spellbook in the top menu, which asks the server with `open`). Left: search box (name or words), a filter ("My vocation" / "All spells") and the spell list (icon, name in the element colour, words, level in red when it is above yours). Right: icon, name, words, level, magic level, mana, soul, cooldown (group cooldown in the tooltip), group, type, element, target, what it scales with, vocations (initials, full names in the tooltip), the description and the area of effect drawn as a grid (hit cells in the element colour, your tile gold, the target outlined white; single-target spells show you and the target, self spells only you; cells shrink to fit areas up to 21 x 21). Icons come from `Spells.getSpellIcon(words)` of gamelib; runes show their rune item. Names, descriptions and areas come from the server (`server/data/scripts/chaos/spellbook.lua`), so the client keeps no spell data of its own. Not run in a client: the layout sizes, the theme styles in this window and the combo box popup were checked by reading only.
 
 Speed and filter (2026-10-16): the window shows at once. The list is fetched about 3 s after login and kept with the
 server's signature (`sig`); a reopen sends `open {have = sig}`, the server answers with two small messages when the list
@@ -1801,6 +1802,67 @@ one's RGBA pixels; `SOURCES` the md5 of each sheet as sent).
   checks against it: recolour `--check` and the dungeon banners pass unchanged; `gen_outfit_anchors.py` was run again
   (only the dat md5 in `outfit_anchors.lua` changes: no outfit was added), so that file must go in with the pair.
   Not on windows-assets yet, not run in a client.
+
+## Mystic line effects, Tier B (pair 29: effects 759-779, missiles 161-169, `tools/sprites/gen_pack29_fx.py`, `art_import/pack29_fx.csv`; not live, switch off)
+**Source and licence.** The owner's oblique effect sets in Google Drive "ots" (the loose files: a variant's .json and
+its flattened `full` sheet; the 500 effect set's `metadata.json` and `all` sheets), credited in docs/CREDITS.md. Use in
+games, modified or not, no attribution; no resale or redistribution of the files. The 500 effect set is imported only:
+never a style reference or an AI input (docs/SPRITE_STYLE.md); `style_check.py` is not run on it. The sets and the
+strips stay out of git (`art_import/pack29_fx/` is ignored); the spec, `pack29_fx.sums` and `pack29_sources.csv` (pack
+per pick, read by tools/ci/check_credits.py) are committed. No pick is recoloured: every Mystic pick has a variant in
+its theme colour; the Druid-kit spells keep the nature green.
+- 21 effects: storm_shock, covenant_bloodlust, pyre_rune, crypt_ice_strike, doom_skyfall, doom_tornado, ironbark_skin,
+  briar_rooted, squall_spore_cloud, mirror_ring, mirror_glass_nova, umbral_step, psyche_fracture, wraith_veil,
+  night_eyelid, night_cataclysm, weave_crush, mend_chime, reverie_pop, reverie_release, hex_curse. 9 missiles:
+  witchfire_lance, storm_bolt, pyre_comet, crypt_lance, hex_missile, umbral_raven, psyche_prism, weave_marble,
+  mend_shards. 3,402 sprites. Which spell sends which: server/data/spells/README_FX.md "Mystic line effects, Tier B".
+- Conversion: `gen_pack27_fx.py`'s (layers merged, alpha 0 / 255 with a 4x4 ordered dither, loop cuts dissolve in their
+  last three frames, an empty last frame, missiles in the 3 x 3 direction patterns). The 500 set: placed by its anchor
+  tile (the feet point), its projectiles by their frame centre with the flat ground shadow under them removed
+  (near-black pixels of alpha 90-170).
+- Ground: `client/tools/sprites/ground_fx.csv` lists the floor shapes and body-covering effects of the pair (rules 3 and 4
+  of `gen_ground_fx.py`, cover measured on pair 29 into `ground_fx_cover.csv`); `storm_shock` stays above.
+- `python3 -I gen_pack29_fx.py build --src DIR [--src DIR]` (DIRs hold the sets); `build --check` (CI) checks spec, sums
+  and sources against the script's table without the sets; `preview --out DIR`.
+
+## Archmage (pair 29: outfits 2235 male / 2236 female, `tools/sprites/gen_archmage_art.py`, `art_import/archmage.csv`; not live, switch off)
+The Mystic line's class outfit, in place of the retired donor look 1559 (server/README.md "Class looks"). Our own art:
+the class-look outfit rig (`tools/outfit_art/class_art_line.py` `archmage`, rendered by `class_art.py`), no donor,
+stock, pack or AI pixels, owner-approved 2026-10-16. A long tinted robe, a white beard (his) or long white hair (hers),
+an ember orb on a wooden staff with a gold claw; addon 1 a tall pointed hat with a gold band; addon 2 a dark mantle,
+gold hem trim and a floating ember sigil. The stock player layout: 2x2, displacement 8,8, 2 layers (art + colour
+template: hair, robe, skirt, boots), 3 addon patterns, 2 mount patterns, idle 1 + walking 8 (150 ms). Default
+colours 0 / 94 / 94 / 114. `class_art.py edges`: no pose crosses the frame. The sheets are committed
+(`art_import/archmage/`, sums in `archmage.sums`); a render from the repo code (`gen_archmage_art.py build`, about 20
+minutes) gives them pixel for pixel; `build --check` (CI) checks the things file and the sums. `style_check.py check`
+on the in-game frames (all addons worn, `--palette` of the frames, `--cell 64`): outline, light, noise and alpha pass in
+all four directions; against the seven theme palettes it fails as every template outfit does (the grey parts the player
+tints; nearest wyrmscale, mean distance 5.9).
+
+## Pair 29 build (2026-10-16; not on windows-assets yet, switches off)
+Input pair 28 (windows-assets b37b983c, dat 9f75ddfe73197bce388398e4c31ca255, spr e0c74346aac1febb01e2197fd75004e1):
+```
+python3 -I client/tools/sprites/import_fx_art.py --ours-dat pair28/Tibia.dat --ours-spr pair28/Tibia.spr --out-dir p29fx \
+    --spec client/tools/sprites/art_import/pack29_fx.csv --expect-first-effect 759 --expect-first-missile 161 \
+    --lua-out server/data/lib/chaos_pack29_fx_ids.lua --catalog-out server/data/spells/pack29_fx_catalog.csv
+python3 -I client/tools/sprites/import_art_things.py --ours-dat p29fx/Tibia.dat --ours-spr p29fx/Tibia.spr --out-dir pair29 \
+    --things client/tools/sprites/art_import/archmage.csv --first-outfit 2235 --expect-items 34442
+python3 -I client/tools/sprites/check_pair.py pair29/Tibia.dat pair29/Tibia.spr --old pair28/Tibia.dat pair28/Tibia.spr
+```
+- p29fx (effects only): dat 2db4a8dab9601b364a5637cf2c732990, spr 4833114106ab6a6cd5be532ee4ac082c; the importer
+  verified 1,022 frames and patterns pixel-identical to the strips.
+- **pair 29**: dat 5388d3d8951ac2c532a9a75259280ced (5,226,588 bytes), spr 07be0eb619f83b9125f7af45fb8ee98f
+  (655,121,069 bytes, 780,964 sprites: 4,323 appended), 34,442 items, 2,236 outfits, 779 effects, 169 missiles. The
+  importer verified 3,456 outfit sprite slots pixel-identical to the sheets. Built twice with identical md5s.
+- `check_pair.py --old`: append-only (37,495 old things and 776,641 old sprites compared), 0 errors, 124 warnings (those
+  of pair 28); `--new-only`: 0 errors, 0 warnings in the new things. `gen_outfit_anchors.py --check` passes on it
+  (`outfit_anchors.lua` regenerated: the dat md5 and 2235 / 2236), `server/tools/check_item_wire.py` (an installed
+  items.otb and this dat): 0 nodes disagree.
+- Archive `things/things-1098.tar.xz` (tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-16 00:00:00Z'
+  --format=gnu of Tibia.dat and Tibia.spr, `xz -9 -T0`, xz 5.4.5): 75,369,240 bytes, sha256
+  ef626bf17d52c66728a9986feb3dbb9c32cc74433ad48e9c0917d09c6aa23468; packed twice with the same sha256; it unpacks to
+  the md5s above. Switch-on step: `ChaosPack29Fx.PAIR29` and `Chaos.classes.outfitReplacement.enabled` (server/README.md
+  "Mystic line effects, Tier B (pair 29)", "Class looks"). Not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

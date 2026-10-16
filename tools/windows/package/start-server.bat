@@ -50,8 +50,10 @@ echo done> "%DATA%\chaos-setup-done.txt"
 echo Database ready. Accounts: chaos / chaos (staff), test / test (one character per class).
 
 :run
-echo Starting the game server. Close this window to stop it.
+echo Starting the game server. Stop it with stop-server.bat (it saves first).
 cd /d "%ROOT%server"
+rem a stop request left from before (stop-server.bat) must not stop this start at once
+if exist "%ROOT%server\stop.request" del /q "%ROOT%server\stop.request"
 if not exist "%ROOT%crashes" mkdir "%ROOT%crashes"
 set /a crashes=0
 :serve

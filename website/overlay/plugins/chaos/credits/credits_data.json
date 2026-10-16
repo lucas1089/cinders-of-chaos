@@ -42,7 +42,7 @@
   {
    "title": "Art packs",
    "pt": "Pacotes de arte",
-   "note": "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning; the owner confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.",
+   "note": "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning or as a style reference; its effects are only imported into the game. The owner confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.",
    "entries": [
     {
      "name": "Magic VFX Spells & Impacts",
@@ -77,7 +77,8 @@
     {
      "name": "Mega VFX 500",
      "author": "WsT",
-     "licence": "purchased; credit not required"
+     "licence": "purchased; credit not required",
+     "use": "Mystic line spell effects and missiles"
     },
     {
      "name": "Pixel Spellcraft VFX",

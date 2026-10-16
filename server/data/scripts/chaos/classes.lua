@@ -43,26 +43,38 @@ local function replacementFor(vocId)
 	return nil
 end
 
--- the class outfits a vocation is given (Chaos.classes.outfits, plus the replacement outfit while its switch is on);
--- a fresh list, never nil. Retired outfits (Chaos.classes.retiredOutfits) are never in it.
-function M.classOutfitsFor(vocId)
+-- the replacement outfit's look for a sex (0 = female: `female` when set; else lookType, the male look)
+local function replacementLook(o, sex)
+	return (sex == 0 and o.female) or o.lookType
+end
+
+-- the class outfits a vocation is given (Chaos.classes.outfits, plus the replacement outfit while its switch is on:
+-- {lookType = the look of `sex`, name, addons}); a fresh list, never nil. Retired outfits
+-- (Chaos.classes.retiredOutfits) are never in it. sex: 0 female, 1 male (nil: male)
+function M.classOutfitsFor(vocId, sex)
 	local out, seen = {}, {}
 	for _, o in ipairs((cfg().outfits or {})[vocId] or {}) do
 		out[#out + 1] = o; seen[o.lookType] = true
 	end
 	local r = replacementFor(vocId)
-	if r and not seen[r.outfit.lookType] then
-		out[#out + 1] = r.outfit
+	local look = r and replacementLook(r.outfit, sex)
+	if r and not seen[look] then
+		out[#out + 1] = {lookType = look, name = r.outfit.name, addons = r.outfit.addons}
 	end
 	return out
 end
 
--- the look type a character of this vocation wearing `worn` is moved to at login, or nil (switch off, another
--- vocation, or not wearing the replaced outfit)
-function M.outfitSwap(vocId, worn)
+-- the look type a character of this vocation and sex wearing `worn` is moved to at login, or nil (switch off,
+-- another vocation, or not wearing the replaced outfit or the other sex's replacement look)
+function M.outfitSwap(vocId, worn, sex)
 	local r = replacementFor(vocId)
-	if r and worn == r.replaces then
-		return r.outfit.lookType
+	if not r then
+		return nil
+	end
+	local look = replacementLook(r.outfit, sex)
+	local other = replacementLook(r.outfit, sex == 0 and 1 or 0)
+	if worn == r.replaces or (worn == other and other ~= look) then
+		return look
 	end
 	return nil
 end

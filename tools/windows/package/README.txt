@@ -10,9 +10,10 @@ Runs the server and the client on your own computer.
 3. Double-click start-client.bat and log in:
      account chaos / password chaos   staff character "Chaos Admin" (god: /coins, /worldboss, admin panel)
      account test  / password test    Test Warrior, Test Ranger, Test Mystic, Test Thief (level 1: class kit, Cinderhold temple)
-4. To stop: close the game server window, then run stop-server.bat. It waits up to 200 seconds for the game
-   server to save and exit before it stops the database; if the game server is still running then, it leaves
-   the database running (run it again later).
+4. To stop: run stop-server.bat (do not close the game server window: Windows ends a closed console after about
+   5 seconds, before the save is done). It writes server\stop.request; the game server checks for it every few
+   seconds, tells the players, saves and exits. stop-server.bat waits up to 200 seconds for that before it stops
+   the database; if the game server is still running then, it leaves the database running (run it again later).
    If the game server crashes, start-server.bat starts it again after 5 seconds (each crash is written to
    crashes\crashes.log); after 5 crashes in a row it stops trying and leaves the window open.
 

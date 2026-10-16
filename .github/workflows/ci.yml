@@ -166,6 +166,12 @@ jobs:
       - name: Mystic stock spell effects patch (patch_mystic_stock_fx.py on copies of the base Hex and Ripple lines)
         run: python3 -I server/tools/patch_mystic_stock_fx_test.py
 
+      - name: Class outfits install (install_outfits.py; the pair 29 Archmage per sex behind its switch)
+        run: python3 -I server/tools/install_outfits_test.py
+
+      - name: Free spells patch (patch_free_spells.py on a synthetic spells.xml, revscript and NPC library)
+        run: python3 -I server/tools/patch_free_spells_test.py
+
       - name: Ground effects under the creatures (rules, ground_fx.csv, groundfx_data.lua up to date)
         run: |
           python3 -I client/tools/sprites/gen_ground_fx_test.py
@@ -394,6 +400,10 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
           # pack farming spell effects (pair 27 trial): spec and sums match gen_pack27_fx.py's table (sets not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack27_fx.py build --check
+          # Mystic line effects, Tier B (pair 29): spec, sums and sources match gen_pack29_fx.py's table (sets not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_fx.py build --check
+          # the Archmage of pair 29 (our own rig art): things file and sheet sums match class_art.py (no render)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
           # gem looks (the owner's gem set): atlas, things spec and the Codex strips match the generator (same pins)

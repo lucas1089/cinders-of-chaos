@@ -8,6 +8,7 @@
 -- Spell fields: name, words, level, maglevel, mana, manaPercent, soul, cooldown, groupCooldown, group, type,
 -- element, target (single/area/self/front), center (caster/target), area (matrix: 1 hit, 2 centre, 3 centre + hit,
 -- "front" spells face north), range, description, scaling, vocations (ids), premium, rune, runeClientId, id, needLearn.
+-- premium is not shown: every spell is free (server/README.md "Free spells").
 --
 -- Speed: the window shows at once with the cached list. The rows are built once per list (the server's sig); a reopen
 -- only refreshes the state that changes (learned, level, cooldown) and asks the server whether the list is still the
@@ -365,7 +366,6 @@ local function showDetails(spell)
   end
   local short, full = vocationText(spell)
   addStat(tr('Vocations'), short, full)
-  if spell.premium then addStat(tr('Premium'), tr('Yes')) end
   if spell.needLearn then
     local learned = Core.status(spell, { learned = Core.learnedNames }) ~= 'learn'
     local learnRow = addStat(tr('Learned spell'), learned and tr('Yes') or tr('No'))

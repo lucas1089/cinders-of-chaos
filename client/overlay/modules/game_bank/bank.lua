@@ -13,6 +13,7 @@ local function sendAction(opcode, action, data)
 end
 
 local bankInfoTable, bankingWindow, amountWindow, bankRadioTabs, bankButton
+local pending = false -- the player asked to open the window and no reply came yet (bank_core.lua B.onReply)
 local currencyName = "gold"
 
 local GOLD_ITEM, STAR_ITEM = 3031, 35572
@@ -169,11 +170,30 @@ function bankOpcode(protocol, code, buffer)
 
 	if json_data.action == "open" then
 		bankInfoTable = json_data.data
-		openBank(bankInfoTable, currencyName)
-		bankingWindow:show()
-		bankingWindow:focus()
-		bankButton:setOn(true)
+		if B.onReply(bankingWindow:isVisible(), pending) == "show" then
+			pending = false
+			openBank(bankInfoTable, currencyName)
+			showWindow()
+		end
 	end
+end
+
+-- shown on top of the other windows: a window made later (another module's) would cover it otherwise
+function showWindow()
+	bankingWindow:show()
+	bankingWindow:raise()
+	bankingWindow:focus()
+	bankButton:setOn(true)
+end
+
+-- no state yet (the first open of this session): empty until the reply, the "all" buttons off
+local function showEmpty()
+	for _, id in ipairs({"textEdit2", "textEdit3"}) do
+		bankingWindow[id]:setText("-")
+		bankingWindow[id]:setTooltip("")
+	end
+	bankingWindow.depositAllButton:setEnabled(false)
+	bankingWindow.withdrawAllButton:setEnabled(false)
 end
 
 function refresh()
@@ -208,7 +228,10 @@ end
 
 function offline()
 	bankingWindow:hide()
+	bankButton:setOn(false)
 	closeAmountWindow()
+	pending = false
+	bankInfoTable = nil -- the next character must not see this one's balance
 end
 
 function onBankTypeChange(radioTabs, selected, deselected)
@@ -226,16 +249,28 @@ function bankWindowtoggle()
 		bankingWindow:hide()
 		bankButton:setOn(false)
 		closeAmountWindow()
+		pending = false -- a reply still on its way does not open it again
 	else
 		bankWindowShow()
 	end
 end
 
+-- shows the window at once (the last state of this session, else empty) and asks the server for a fresh one: the
+-- window never depends on the reply (a reopen within the server's rate limit gets none)
 function bankWindowShow()
+	pending = true
 	sendAction(bankBalanceOpCode, "openBank")
 	refresh()
+	if bankInfoTable then
+		openBank(bankInfoTable, currencyName)
+	else
+		showEmpty()
+	end
+	showWindow()
 end
 
 function bankWindowHide()
 	bankingWindow:hide()
+	bankButton:setOn(false)
+	pending = false
 end
