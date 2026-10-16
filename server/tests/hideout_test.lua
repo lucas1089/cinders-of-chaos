@@ -857,7 +857,11 @@ ok(r and not r.ok and r.text:find("fight", 1, true), "no entry in a fight")
 ana.infight = false
 
 -- enter: a slot is built and furnished
+local portalCalls = {}
+ChaosTownPortal = {liftSpellCooldown = function(p) portalCalls[#portalCalls + 1] = "lift:" .. p:getName() end,
+	restoreSpellCooldown = function(p) portalCalls[#portalCalls + 1] = "restore:" .. p:getName() end}
 r = req(ana, "enter")
+eq(portalCalls[1], "lift:Ana", "entering lifts the Town Portal's spell cooldown (the way out is not 'exhausted')")
 ok(r == nil or r.ok, "enter")
 local slot = K.poolSlotOf(M.pool, 1)
 eq(slot, 1, "slot 1")
@@ -1009,6 +1013,7 @@ ok(ChaosTownPortalCore.hideoutExit({hideout = true}), "the Town Portal inside is
 -- leave and teardown after emptySeconds; the slot goes back to the pool
 moves[cfg.aid.exit].onStepIn(ana, nil, ana:getPosition(), ana:getPosition())
 eq(ana.pos.x, 100, "exit leads back")
+eq(portalCalls[#portalCalls], "restore:Ana", "leaving shows the Town Portal's cooldown again")
 eq(ana.st[cfg.storage.returnSet], 0, "return spot used")
 local realTime = os.time
 local clock = realTime()

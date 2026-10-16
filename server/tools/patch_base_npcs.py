@@ -26,9 +26,14 @@ The NPC scripts of the base server were written for a newer library than the one
 4. data/npc/lib/npc.lua: the delayed lines of a table reply (doCreatureSayWithDelay) indexed Player(pcid) without a
    check, so a player who logged out (or an NPC removed) during a long reply raised "attempt to index a nil value".
 
-Exact match on the stock lines; anything else is reported and left alone. Idempotent: every change carries a marker.
+5. data/npc/*.xml: an NPC whose script="..." names a file of data/npc/scripts only in another letter case (the base
+   Addoner.xml asks for addoner.lua, the file is Addoner.lua) loads on Windows and fails on Linux ("Can not load script:
+   addoner.lua" at every start, the NPC without its dialogue). The attribute gets the file's real name.
+
+Exact match on the stock lines; anything else is reported and left alone. Idempotent: every change carries a marker
+(step 5 needs none: a name that matches a file is left alone).
 """
-import os, sys
+import os, re, sys
 
 MARK = 'Chaos: (patch_base_npcs.py)'
 
@@ -219,6 +224,38 @@ def patch_npc_lib(text):
     return text, 'patched'
 
 
+SCRIPT_RE = re.compile(r'(<npc\b[^>]*?\bscript=")([^"]+)(")')
+
+
+def fix_script_case(text, names):
+    """(new text, the old script name or None): script="x" set to the file of `names` (the file names of
+    data/npc/scripts) that matches x but for the letter case, when x itself is not one of them"""
+    m = SCRIPT_RE.search(text)
+    if not m or m.group(2) in names:
+        return text, None
+    real = [n for n in names if n.lower() == m.group(2).lower()]
+    if len(real) != 1:
+        return text, None
+    return text[:m.start(2)] + real[0] + text[m.end(2):], m.group(2)
+
+
+def patch_script_case(npc_dir, dry):
+    scripts = os.path.join(npc_dir, 'scripts')
+    if not os.path.isdir(scripts):
+        return
+    names = set(os.listdir(scripts))
+    for f in sorted(os.listdir(npc_dir)):
+        path = os.path.join(npc_dir, f)
+        if not f.endswith('.xml') or not os.path.isfile(path):
+            continue
+        text = open(path, encoding='utf-8', errors='surrogateescape').read()
+        new, old = fix_script_case(text, names)
+        if old:
+            if not dry:
+                open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
+            print(f'{path}: script {old} -> {SCRIPT_RE.search(new).group(2)} (letter case of the file)')
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -238,6 +275,7 @@ def main():
     ok = apply(os.path.join(lib, 'npcsystem', 'npchandler.lua'), patch_npchandler, dry)
     ok = apply(os.path.join(lib, 'npcsystem', 'modules.lua'), patch_modules, dry) and ok
     ok = apply(os.path.join(lib, 'npc.lua'), patch_npc_lib, dry) and ok
+    patch_script_case(os.path.join(args[0], 'npc'), dry)
     return 0 if ok else 1
 
 

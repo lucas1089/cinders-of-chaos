@@ -171,6 +171,11 @@ server/
                                       support runes, potions, item moves, other uses), the auto attack on a timer of its
                                       own: none holds another; config cooldownChannels, moveItemDelay, runeChannelDelay,
                                       potionChannelDelay (see "Cooldown channels"; tools/cooldown_channels_patch_test.py)
+  src-patches/0043-hotkey-item-by-look.patch   engine: a hotkey (an inventory use by client id) uses a carried item of
+                                      that look that is never used up first (stackable and store-bound: the Everfull
+                                      potions before the stock ones), then the mapped type, then any item of that look;
+                                      such an item's hotkey message says "(never runs out)", not "Using the last ..."
+                                      (see "Potions"; tools/hotkey_lookup_patch_test.py)
     cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
                                       see "Cooldown channels")
     display_scale.lua  display_scale_core.lua  display_scale_config.lua (every combat number shown x the factor of the
@@ -192,6 +197,8 @@ server/
     salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
     potions.lua  potions_core.lua  potions_config.lua (no empty flasks, the Everfull health / mana potions; helpers in
                                       data/lib/chaos_potions.lua, installer tools/install_potions.py, see "Potions")
+    lootline.lua  lootline_core.lua (one loot line per kill: the stock "Loot of", the Chaos bonus and the pouch line
+                                      merged, see "One loot line per kill" under the loot filter)
     craft_bonus.lua  craft_bonus_core.lua  craft_bonus_config.lua (the base crafting tables' bonus: rarity of crafted
                                       equipment, extra potions and runes; tools/patch_base_crafting_bonus.py, see "Crafting bonus")
     item_mods.lua (Chaos item modifiers on the character; catalogue and rolls in data/lib/chaos_item_mods.lua, see "Item modifiers")
@@ -289,7 +296,9 @@ server/
    string with number" on "yes") and `|TIME|` was printed as it is. The tool patches `npc/lib` (exact match on the stock
    lines): lists of lines are said line by line, the tags are filled (blessing 2000 gold up to level 30, then 200 per
    level above 20, at most 20000; the twist of fate at most 50000), a node without text says nothing instead of failing
-   (Sevias's dead rats), the delayed lines of a long reply stop when the player logs out. `tools/rename_spells.py` writes
+   (Sevias's dead rats), the delayed lines of a long reply stop when the player logs out. An NPC whose `script="..."` names its
+   file in another letter case (the base `Addoner.xml` asks for `addoner.lua`, the file is `Addoner.lua`: fine on Windows,
+   "Can not load script" twice at every Linux start) gets the file's real name (`tools/patch_base_npcs_test.py`). `tools/rename_spells.py` writes
    an NPC `spellName` with an apostrophe escaped (it broke Casnath, Whiskerton, Valon, Jashelm, Korbek and Ixesseth, which did
    not load) and repairs the lines an older run wrote. Tested by `tests/npc_lib_test.lua`; verified on the test server
    (Dorrik answers "twist of fate" in four lines, "yes" charges the level's cost and gives the blessing).
@@ -3287,8 +3296,8 @@ autoloot list is needed.
   `ChaosPouches.stow`) follows the same plan, then the backpack. Picking up an item through its ground label (`game_groundlabels`)
   is the normal move into the backpack and does not route into pouches. Gear is rolled on the way out
   (`ChaosLoot.finalizeRarity`). Containers and pouches are never collected. Only the corpse owner's pouches collect, as the base
-  autoloot (party members do not loot each other's corpses here). One loot line per kill (`MESSAGE_LOOT`, as the stock "Loot of" line) that
-  lists what was taken, not the pouch (owner 2026-10-16): "Looted: {[Legendary] wyrmscale helmet}, 10 gold coins, 2 dragon
+  autoloot (party members do not loot each other's corpses here). The pouch line (`MESSAGE_LOOT`) ends the kill's one loot line ("One loot line
+  per kill" below; its own line only without `lootline.lua`). It lists what was taken, not the pouch (owner 2026-10-16): "Looted: {[Legendary] wyrmscale helmet}, 10 gold coins, 2 dragon
   scales (Orbs Pouch is full; 3 to your Loot Bag; 1 to your backpack)." (`ChaosPouchesCore.lootList` / `summary`). Grouped
   by item (id, rarity, unique), plural names for counts, uniques and rarity gear first with the rarity tag; from Rare
   (`lootLine.flagRarity` 3) and uniques wrapped in `{}` (the client's loot highlight, as the Chaos bonus loot line); at most
@@ -3419,6 +3428,14 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   It shares the stock potions' exhaust (`CONDITION_EXHAUST_HEAL`, the action interval - 100 ms = 900 ms), so it is no
   faster than a stack of stock potions and blocks them for the same time. "You are exhausted." while it runs. Higher
   tiers stay consumables: they are the gold sink.
+- **Hotkeys and the action bar** (engine patch 0043, playtest 2026-10-16): the client uses a potion from its action bar,
+  hotkeys and helper by client id, and the engine maps 266 / 268 to the stock 7618 / 7620. So a hotkey drinks the stock
+  potions first (consumed) and, without 0043, answered "Sorry, not possible." once none were left, with the Everfull
+  potion in the backpack. With 0043 a hotkey first looks for a carried item of that look that is never used up
+  (stackable and store-bound, `chaos_storebound`: the Everfull potion), so the free potion is drunk before the stock
+  ones; then the stock type; then any item of that look. The hotkey message of such an item no longer counts it
+  ("Using the last everfull health potion...", always one): "Using an everfull health potion (never runs out)." Using
+  the Everfull potion from its container slot always drinks it. `tools/hotkey_lookup_patch_test.py`.
 - **Store-bound** like the Everfull Ration: `chaos_storebound` and `chaos_locked`, so no trade, ground, mail, market, NPC
   sale or trash (pouches.lua, engine patch 0009), and `death_keep.lua` keeps it on death.
 - **Sources.** The starter kit (`newplayer.lua` calls `ChaosPotions.giveAll` into the kit backpack); a one-time grant at
@@ -3996,6 +4013,10 @@ vocation; `needlearn="0"`, so existing characters have it at the next login afte
 
 - **Inside a hideout** (2026-10-16): the cast is a way out at once (`K.hideoutExit`: no channel, cooldown or pair), through
   `ChaosHideout.leave` (the spot entered from, else the home temple, else Cinderhold; never a hideout or an instance).
+  The engine checks the spell's 60 s cooldown condition before the script runs, so a cast inside within a minute of
+  the last portal answered "You are exhausted." (playtest 2026-10-16). Entering a hideout now lifts that condition
+  (`ChaosTownPortal.liftSpellCooldown`) and leaving puts back what is left of the storage cooldown
+  (`restoreSpellCooldown`); outside, the storage cooldown refuses as before. `tests/townportal_test.lua`, `tests/hideout_test.lua`.
 - **Cast:** `ChaosTownPortal.cast(player)` refuses at once (reason below) or starts a 3 s channel (`castMs`, polled every 250 ms). A step or any
   damage (health change, or a mana hit from an attacker) ends it with nothing spent. At the end the rules are checked again, then the pair opens:
   a portal on the first free tile around the caster (`fieldOffsets`, action id 47810) leading to the temple of the character's town, and a return
@@ -5402,7 +5423,7 @@ placed by other means. Users: `hideout.lua` (kind `hideout`, action id 47610), `
 its `portalOffsets`; closing removes them and the pulse drops them; `portalPositions` and the staff `/siege portal` only
 register theirs), `worldboss.lua` (`worldboss`, the World Boss Portals while a boss is awake, the same way). Labelled
 only (they keep their own placement, `ChaosCityPortals.register`): the Ember Descent and raid portals (`descent`,
-`raid`, the halls' portal room), the hunting-area entrances of `areagen_config.lua` (`hunt`, 47950: one action id
+`raid`, the halls' portal room), the Hall of Services' exit (`servicesexit`, 47881, below), the hunting-area entrances of `areagen_config.lua` (`hunt`, 47950: one action id
 for every area, so each portal carries its own title, "Emberdeep Hollows, levels 1000-1100", made by `C.bandTitle`
 from the area's `name` and `spawns.level`; a new area gets one with no other change), the Idle Hall's exit
 (`idlehall`, 47911, below). `chronicle.lua` places the **Chronicle Gates** (`chronicle`, 47920 + the area's index;
@@ -5417,6 +5438,11 @@ exit tile, checked by `tools/idle_hall_test.py`): the installer leaves areagen's
 re-tags it at startup and every minute (a portal already re-tagged is found again, so the migration is idempotent) and
 handles the step itself: the character's temple, else Cinderhold's. Look text "Idle Hall Exit: Step in to go back to
 your temple. ..." and a blue effect.
+
+**The Hall of Services' exit** (action id 47881, `npc_booths_config.lua` `aid.exit`; playtest 2026-10-16: it had no look
+text): `npc_booths.lua` `retagExit` registers it as kind `servicesexit` with the hall's town, so it reads "Hall of
+Services Exit: Step in to go back to the temple of this town." (pt-BR "Saída do Salão de Serviços: ...") and shows a red
+effect like the way in. `tests/npc_booths_test.lua` checks the registration, `tests/cityportals_test.lua` the kind.
 
 **Where** (`C.candidates`, first match): the town's Hall of Services portal room when the kind has a tile there
 (`npc_booths_config.lua` `portals`: `hideout`, `guildhall`, `memorial` and the two Chronicle Gates; the key is the
@@ -10507,10 +10533,28 @@ not changed.
 - Settings live in one storage value per character, `Chaos.storage.lootFilter` (7100500), packed by `F.pack`; the client
   mirrors them (pushed after login and asked for with `sync` at game start).
 
-**onDropLoot order** (lower index first): 0 stock loot + "Loot of" text, 1 Chaos loot layer, 2 auto seller,
+**onDropLoot order** (lower index first): -1 the kill's loot line opens (`lootline.lua`), 0 stock loot + "Loot of" text
+(held back), 1 Chaos loot layer, 2 auto seller,
 **2.5 snapshot** (the corpse contents for the loot channel; list items below the Rarity Autoloot minimum are moved into a
 bag on the corpse tile for the rest of the chain), 2.7 store pouches ("Store pouches"), 3 base autoloot, **3.5 rarity
-pickup**, **4.5 finish** (the held items go back into the corpse, the bag is removed, the loot row, rare-drop lines and rays start).
+pickup**, **4.5 finish** (the held items go back into the corpse, the bag is removed, the loot row, rare-drop lines and rays start),
+99 empty corpse check, **100** the kill's one loot line is sent ("One loot line per kill").
+
+**One loot line per kill** (`lootline.lua`, `lootline_core.lua`, `tests/lootline_test.lua`; playtest 2026-10-16: a kill
+printed "Loot of ...", "Chaos bonus loot of ..." and "Looted: ..."). At index -1 a record opens for the corpse owner;
+while it is open the stock "Loot of ..." line (MESSAGE_LOOT to the owner, or `broadcastPartyLoot`) is held back
+(`Player.sendTextMessage` and `Party.broadcastPartyLoot` are wrapped once; any other message passes). The Chaos loot
+layer adds its bonus items (`ChaosLootLine.addBonus`) and the store pouches their line (`ChaosLootLine.addPouch`); at
+index 100 one line is sent: "Loot of a dragon: 120 gold coins, a dragon ham, 2 ember shards, {Ashbringer}. Looted: 120
+gold coins, {Ashbringer} (2 to your backpack)." The bonus items join the stock list ("nothing" is replaced by them),
+uniques and rare pouch items keep their `{}` highlight, and the pouch part (with the Loot Bag notes) is the owner's: in a
+party the other members get the line without it. The line still starts with "Loot of": the client's loot colouring and
+short numbers (`client_chaos_numbers`) read loot messages by their mode, and the loot channel, the hunt tracker and the
+Loot Filter get their data by opcode, not from this text. Each recipient reads the fixed parts in their language
+(`Chaos.t`: "Loot of %s: %s", "nothing", "Looted: %s", the pouch notes such as "%d to your backpack"; pt-BR in
+`i18n_strings.lua`, e.g. "Loot de a dragon: 120 gold coins. Coletado: ... (2 para sua mochila)."); item and monster
+names stay as the engine gives them. The client's loot colouring keys on the message mode and the `{}` marks, not on the
+words, so the translated prefix keeps it. Without `lootline.lua` each part sends its own line as before.
 Every step is in `pcall` and returns nothing, so the chain never stops. `autoloot.lua` and `autosell.lua` are unchanged; the
 auto seller still sells first (sold items never show in the row; checked in game: "Auto seller: sold ..."). The rarity pickup
 puts what it takes into the backpack; with no room it stays in the corpse (the retired Bottomless Loot Pouch used to send it to
@@ -13182,7 +13226,10 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   Ironhook Corsair 1492, Elite Tidecrest Serpent 675, Black Vixen 1475) and at most 2x2 tiles (owner, 2026-10-16:
   bigger sprites spilled over the cell walls; swapped: Celestial Wyrm 3x3 -> Spirit of Purity, Scaleborn 5x4 ->
   Twisted Shaper, Bonecrusher 3x3 -> Sopping Carcass; Wyrmspine Hollows has only 4x4 and 5x5 monsters: `display =
-  false`, none). Display blocks of a slot no longer used are removed.
+  false`, none). Display blocks of a slot no longer used are removed. A base display block whose monster stands off its centre (centre on the
+  corridor, monster one tile north in the cell) is taken over too (before, only the centre counted: two monsters on one
+  cell, "Couldn't spawn monster" for Hellspawn, Warlock and Fleshcarver at every start; playtest 2026-10-16;
+  `tools/install_content_areas_test.py`).
 - Chest scripts (`area_planner.py install`) and `data/lib/chaos_hunt_places.lua`: per plan its teleport, sign,
   arrival, exit and band.
 - Idempotent: a placed plan (same tiles) and a grown room are left alone; a plan changed after it was placed is
@@ -16402,6 +16449,9 @@ blessing: x0.92 per blessing, and x0.7 for an ascended class, as the base `getLo
 
 Linear between the points of `xpLoss`; the first death of a day (the day turns at 06:00) is x0.5 on top
 (`firstDeathOfDay`; storage 7102740). Skills and magic level follow the engine. The player is told what was eased.
+Only a death is eased: the engine also runs `onLoseExperience` for every script's `player:removeExperience`, and a
+character with health above 0 there is not dying (the tutorial reset takes the island's experience back that way;
+before the 2026-10-16 playtest it could not below level 30 and said "Gentle death" without a death). `tests/gentledeath_test.lua`.
 
 **!bless** (owner exception 2026-10-15 to the no-commands rule; the only Chaos player command, `tests/commands_ui_test.lua`
 allows it by name). Buys every missing classic blessing (the five base ones, `Chaos.shopServices.blessings`; not the

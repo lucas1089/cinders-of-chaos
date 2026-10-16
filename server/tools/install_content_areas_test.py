@@ -407,6 +407,15 @@ def main():
         got = T.assign_slots(order[:len(fake)], fake, set(ids))
         seq = [got[pid]['teleport'] for pid in ids[:len(fake)]]
         check(seq == sorted(seq), 'lower bands west, higher east, north before south: %s' % seq)
+        # a base display block whose monster stands off its centre (centre in the corridor, the monster one tile north
+        # in the cell): taken over all the same, so no second monster on the cell ("Couldn't spawn" at startup)
+        off = ('<?xml version="1.0"?>\n<spawns>\n\t<spawn centerx="11" centery="11" centerz="6" radius="1">\n'
+               '\t\t<monster name="Warlock" x="0" y="-1" z="6" spawntime="120" />\n\t</spawn>\n</spawns>\n')
+        new, notes = T.update_spawns(off, [], {'h': ('Hydra', [(11, 10, 6)])}, 120, takeover={(11, 10, 6)})
+        check('Warlock' not in new and new.count('chaoshunt="h"') == 1, 'off-centre base display taken over: %s' % notes)
+        new, notes = T.update_spawns(off, [], {'h': ('Hydra', [(11, 10, 6)])}, 120, takeover=())
+        check('Warlock' in new and 'chaoshunt' not in new and any('already has a spawn' in n for n in notes),
+              'an off-centre monster on a display cell is seen (no second monster on it): %s' % notes)
     finally:
         shutil.rmtree(root, ignore_errors=True)
     print('install_content_areas_test: %s' % ('ok' if not failed else '%d failed' % failed))

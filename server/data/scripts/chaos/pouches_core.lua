@@ -9,8 +9,9 @@
 --   ChaosPouchesCore.plan(info, rules, sets, cfg, carried)   the carried pouches to try, in order, and the overflow kind
 --   ChaosPouchesCore.route(info, rules, sets, cfg)  plan() with every pouch carried: the kinds, in order
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
---   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow)   the per-kill loot line, or nil
---   ChaosPouchesCore.lootList(looted, opts)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
+--   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow, t)   the per-kill loot line, or nil
+--   ChaosPouchesCore.lootList(looted, opts, t)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
+--   (t(pattern, ...): the player's language, e.g. Chaos.t bound to the owner; default English, P.english)
 -- info = {id, actionId, count, category = "equipment"|"currency"|"supplies"|"other", rarity = 0..15, unique = bool,
 --         gem = bool, container = bool, pouch = bool (a pouch itself), onList = bool (on the base autoloot list)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -216,7 +217,15 @@ end
 -- the loot line's item list. looted = the items taken this kill, in corpse order: {id, name, plural, count, rarity,
 -- rarityName, unique}. Same item (id, rarity, unique) grouped and counted; uniques and rarity gear first (highest first),
 -- then the rest in corpse order; at most opts.maxEntries (5), then "and N more". Returns the text or nil.
-function P.lootList(looted, opts)
+-- English text of a pattern (the default translator of lootList / summary)
+function P.english(pattern, ...)
+	if select("#", ...) == 0 then
+		return pattern
+	end
+	return string.format(pattern, ...)
+end
+
+function P.lootList(looted, opts, t)
 	opts = opts or {}
 	local maxEntries, flag = opts.maxEntries or 5, opts.flagRarity or 3
 	local groups, byKey = {}, {}
@@ -262,7 +271,7 @@ function P.lootList(looted, opts)
 	end
 	local text = table.concat(parts, ", ")
 	if #groups > maxEntries then
-		text = text .. " and " .. (#groups - maxEntries) .. " more"
+		text = text .. (t or P.english)(" and %d more", #groups - maxEntries)
 	end
 	return text
 end
@@ -271,27 +280,28 @@ end
 -- backpack), backpack = n (wanted by a pouch, went to the backpack), left = n (no room anywhere), full = {[kind] =
 -- true} (say the pouch is full), overflow = n (items a full specialist pouch passed to the Loot Bag). The pouch names
 -- stay out of the list; they appear only in the short notes. nil when nothing happened.
-function P.summary(cfg, looted, backpack, left, full, overflow)
-	local list = P.lootList(looted, cfg.lootLine)
+function P.summary(cfg, looted, backpack, left, full, overflow, t)
+	t = t or P.english
+	local list = P.lootList(looted, cfg.lootLine, t)
 	local notes = {}
 	for _, kind in ipairs(cfg.order) do
 		if full and full[kind] then
-			notes[#notes + 1] = cfg.kinds[kind].title .. " is full"
+			notes[#notes + 1] = t("%s is full", cfg.kinds[kind].title)
 		end
 	end
 	if (overflow or 0) > 0 then
-		notes[#notes + 1] = overflow .. " to your " .. cfg.kinds.loot.title
+		notes[#notes + 1] = t("%d to your %s", overflow, cfg.kinds.loot.title)
 	end
 	if backpack > 0 then
-		notes[#notes + 1] = backpack .. " to your backpack"
+		notes[#notes + 1] = t("%d to your backpack", backpack)
 	end
 	if left > 0 then
-		notes[#notes + 1] = left .. " left in the corpse, no room"
+		notes[#notes + 1] = t("%d left in the corpse, no room", left)
 	end
 	if not list and #notes == 0 then
 		return nil
 	end
-	local text = "Looted: " .. (list or "nothing")
+	local text = t("Looted: %s", list or t("nothing"))
 	if #notes > 0 then
 		text = text .. " (" .. table.concat(notes, "; ") .. ")"
 	end

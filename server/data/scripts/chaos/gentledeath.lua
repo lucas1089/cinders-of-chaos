@@ -102,8 +102,13 @@ function GD.ease(player, exp)
 	return out
 end
 
--- Player:onLoseExperience (patch_base_events.py step 18)
+-- Player:onLoseExperience (patch_base_events.py step 18). The engine runs the event for a death (health 0) and for
+-- every script's player:removeExperience (health above 0): only a death is eased. Before (playtest 2026-10-16) the
+-- tutorial reset could not take the island's experience back below level 30 and told "Gentle death" without a death.
 function GD.onLoseExperience(player, exp)
+	if player and player.getHealth and (tonumber(player:getHealth()) or 0) > 0 then
+		return exp
+	end
 	local ok, res = pcall(GD.ease, player, exp)
 	if not ok then
 		log("lose experience: " .. tostring(res))

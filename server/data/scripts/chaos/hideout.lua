@@ -755,6 +755,11 @@ function M.enter(player, owner, back)
 	here:sendMagicEffect(CONST_ME_TELEPORT)
 	player:teleportTo(P(arrival))
 	P(arrival):sendMagicEffect(CONST_ME_TELEPORT)
+	-- the Town Portal is a way out from inside (townportal.lua); the engine refuses its spell while the 60 s cooldown
+	-- condition of the last portal runs ("You are exhausted."), so that condition is lifted here (playtest 2026-10-16)
+	if ChaosTownPortal and ChaosTownPortal.liftSpellCooldown then
+		ChaosTownPortal.liftSpellCooldown(player)
+	end
 	if owner == player:getGuid() then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Welcome home. Character > Hideout to decorate. The portal south of you, or Leave in that window, takes you back."))
 	else
@@ -793,6 +798,9 @@ function M.leave(player, text)
 	player:setStorageValue(ST.returnSet, 0)
 	player:teleportTo(dest)
 	dest:sendMagicEffect(CONST_ME_TELEPORT)
+	if ChaosTownPortal and ChaosTownPortal.restoreSpellCooldown then
+		ChaosTownPortal.restoreSpellCooldown(player) -- the action bar shows what is left of the portal's cooldown again
+	end
 	if text then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	end

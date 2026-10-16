@@ -110,6 +110,13 @@ eq(GD.onLoseExperience(hc, 1000), 1000, "Hardcore untouched")
 check(not GD.keepAll(hc), "Hardcore drops items")
 ChaosSeason = nil
 eq(GD.onLoseExperience(mk(5, 10), "x"), "x", "bad input passed through")
+local alive = mk(8, 10)
+function alive:getHealth() return 150 end
+eq(GD.onLoseExperience(alive, 150), 150, "a script's removeExperience (alive, the tutorial reset) is not a death")
+eq(#alive.said, 0, "and says nothing")
+local dead = mk(9, 10)
+function dead:getHealth() return 0 end
+eq(GD.onLoseExperience(dead, 150), 0, "a death (health 0) is eased")
 ChaosGentleDeathConfig.enabled = false
 eq(GD.onLoseExperience(mk(6, 10), 1000), 1000, "off")
 check(not GD.keepAll(mk(7, 10)), "off: items drop")

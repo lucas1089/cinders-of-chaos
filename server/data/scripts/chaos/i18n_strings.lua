@@ -1348,6 +1348,19 @@ return {
 		["Chronicle Gate"] = "Portão da Chronicle",
 		["Hunting Area Portal"] = "Portal da Área de Caça",
 		["Idle Hall Exit"] = "Saída do Idle Hall",
+		["Hall of Services Exit"] = "Saída do Salão de Serviços",
+		["Step in to go back to the temple of this town."] = "Entre para voltar ao templo desta cidade.",
+		-- one loot line per kill (lootline_core.lua, pouches_core.lua summary)
+		["Loot of %s: %s"] = "Loot de %s: %s",
+		["nothing"] = "nada",
+		["nothing (due to low stamina)"] = "nada (stamina baixa)",
+		["a creature"] = "uma criatura",
+		["Looted: %s"] = "Coletado: %s",
+		["%s is full"] = "%s está cheio",
+		["%d to your %s"] = "%d para seu %s",
+		["%d to your backpack"] = "%d para sua mochila",
+		["%d left in the corpse, no room"] = "%d ficou no corpo, sem espaço",
+		[" and %d more"] = " e mais %d",
 		["Step in to go back to your temple. Characters who stand idle in town are moved to this hall."] =
 			"Entre para voltar ao seu templo. Personagens parados na cidade são levados a este salão.",
 		["Step in to enter this hunting area; the portal refuses characters below its level. Its exit portal leads back here."] =

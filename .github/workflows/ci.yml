@@ -151,6 +151,9 @@ jobs:
       - name: Potions install (no empty flasks, Everfull potions, NPC replacement)
         run: python3 -I server/tools/install_potions_test.py
 
+      - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
+        run: python3 -I server/tools/patch_base_npcs_test.py
+
       - name: Idle kick patch (config.lua kickIdlePlayerAfterMinutes on a copy of the stock text)
         run: python3 -I server/tools/patch_base_idle_kick_test.py
 
@@ -215,6 +218,12 @@ jobs:
 
       - name: Cooldown channels never hold each other (server src-patch 0042, guard)
         run: python3 -I server/tools/cooldown_channels_patch_test.py
+
+      - name: Hotkeys find an item by its look (server src-patch 0043, guard)
+        run: python3 -I server/tools/hotkey_lookup_patch_test.py
+
+      - name: The install report counts the map (install_all.py snapshot, towns step)
+        run: python3 -I server/tools/install_all_snapshot_test.py
 
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py

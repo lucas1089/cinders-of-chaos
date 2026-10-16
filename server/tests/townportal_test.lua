@@ -128,6 +128,17 @@ do -- townportal.lua: the hideout case comes before every refusal and goes throu
 	local block = src:find("K.blockReason(bf)", cast, true)
 	assert(exit and block and exit < block, "T.cast: the hideout way out before the refusals")
 	assert(src:find("ChaosHideout.leave(player,", cast, true), "T.cast: through the hideout's exit logic")
+	-- the hideout lifts the spell's cooldown condition at the entry (the engine would answer "You are exhausted."
+	-- before T.cast runs) and puts back what is left of the storage cooldown at the exit (playtest 2026-10-16)
+	local lift = src:find("function T.liftSpellCooldown(player)", 1, true)
+	assert(lift and src:find("player:removeCondition(CONDITION_SPELLCOOLDOWN, CONDITIONID_DEFAULT, cfg.spellId)", lift, true),
+		"T.liftSpellCooldown removes the spell's cooldown condition")
+	local restore = src:find("function T.restoreSpellCooldown(player)", 1, true)
+	assert(restore and src:find("K.cooldownLeft(os.time(), player:getStorageValue(ST.cooldown))", restore, true),
+		"T.restoreSpellCooldown uses what is left of the storage cooldown")
+	local hsrc = assert(io.open("data/scripts/chaos/hideout.lua")):read("*a")
+	assert(hsrc:find("ChaosTownPortal.liftSpellCooldown(player)", 1, true)
+		and hsrc:find("ChaosTownPortal.restoreSpellCooldown(player)", 1, true), "hideout.lua calls both")
 end
 assert(K.blockReason({cooldownLeft = 12}):find("12 seconds"), "cooldown text")
 assert(K.blockReason({cooldownLeft = 1}):find("1 second%."), "one second")

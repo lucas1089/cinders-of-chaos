@@ -1032,6 +1032,10 @@ local function processKill(monster, corpse)
 		end
 	end
 
+	-- one loot line per kill (lootline.lua): the bonus items join the stock "Loot of ..." line; without it their own line
+	if #bonus > 0 and ChaosLootLine and ChaosLootLine.addBonus and ChaosLootLine.addBonus(monster, bonus) then
+		return
+	end
 	if #bonus > 0 then
 		local text = ChaosI18n.msg("Chaos bonus loot of %s: %s", Chaos.monsterNameDescription(monster), table.concat(bonus, ", "))
 		local party = owner:getParty()
