@@ -387,7 +387,8 @@ server/
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
-   every one of them is in the client menu (see "Player commands: the menu"). It also covers the stock `!autoloot`.
+   every one of them is in the client menu (see "Player commands: the menu"). It also covers the stock `!autoloot`
+   and makes the base `/pos` staff only.
 7a. Autosave: `python3 -I server/tools/patch_base_save.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
    `autosave`, after `commands`) switches the base hourly autosave to `Game.saveIncremental` and keeps the game state;
    the logout writes the outfit columns and the skill history row only on a change. Needs engine patch 0026 for the
@@ -413,8 +414,13 @@ server/
 8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
-`data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are a separate admin-panel module written by another
-task; they are not covered here. They use extended opcode 120, which does not collide with any opcode below.
+`data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are the in-game admin panel (client `game_admin`, extended opcode
+120, which does not collide with any opcode below); its own README (`admin/README.md`) has the files, the permission
+model and every action. Besides the base server tools it has seven Chaos categories (Currencies, Progression, Classes,
+Buffs & Gear, Bosses & Events, Instances & PvP, Guilds & Market: 93 actions over the Chaos systems' own APIs) and the
+staff chat commands as Tools actions (the talkaction files unchanged). Group 4 inspects and fixes, value needs group 5,
+resets of progress are dangerous (group 6); every run is in `chaos_admin_log`. Tests: `tests/admin_panel_test.lua`,
+`tests/admin_probe_test.lua`, `tests/staff_permissions_test.lua`.
 
 Every script starts with `if not Chaos then dofile("data/scripts/chaos/chaos_constants.lua") end`,
 so load order inside `data/scripts` does not matter (the `dofile` path is relative to the server's
@@ -656,7 +662,7 @@ One extended opcode message carries at most 8192 bytes (`NetworkMessage::addStri
 error). The base `Player.sendExtendedOpcode` wrote `0x32` and the opcode first, so a longer payload went out as the two
 bytes `32 <opcode>`: the client read the next two bytes as the length, logged `ProtocolGame parse message exception (...
 3 unread, last opcode is 0x32 ...)` and dropped the rest of that network message. At every admin login this lost the
-whole admin catalog (opcode 120, about 20 KB, so the admin panel never appeared) and whatever was bundled after it (the
+whole admin catalog (opcode 120, then about 20 KB, now about 60 KB in 8 parts; so the admin panel never appeared) and whatever was bundled after it (the
 ancestral points push 89, sometimes the loot filter settings 238 and name plates 248). `extended_opcode.lua` replaces
 `Player.sendExtendedOpcode`: a payload over 8192 bytes is not sent and a `[Warning - Chaos] extended opcode ...` line names
 it. Big JSON goes through `Chaos.sendChunked(player, opcode, json)` (parts `S...`, `P...`, `E...` of 8000 bytes, joined by
@@ -787,6 +793,7 @@ base server (idempotent; `--dry-run` lists the changes).
 | `!buyhouse`, `!leavehouse`, `!sellhouse <player>` | Economy > More > House |
 | `!ancestralstore <group>, <n>` | Economy > More > Ancestral Store |
 | `!online`, `!uptime`, `!serverinfo` | System > Server Info |
+| `/pos` (base revscript, answered players too) | Character > Character Info; staff only now (`install_commands.py` puts a staff guard in its onSay) |
 | `!commands` | removed (the menu is the list) |
 | `!report <text>` | removed: System > Report a Bug; a player: System > Report a Player, right-click > Report Player (`game_antibot`) |
 
@@ -794,7 +801,11 @@ Kept as a typed player command: `!bless` (owner exception 2026-10-15; buys the m
 "Gentle deaths and blessings"). Kept as typed commands: every staff command (`/` words with an access check: `/rift`, `/season`, `/arena`, `/daily`,
 `/leaderboard`, `/patchnotes`, `/spells reload`, `/supports reload`, `/achievements`, `/invasion`, `/worldboss`,
 `/siege`, `/guild`, `/pet`, `/reports`, `/classunlock`, `/ascendset`, `/towerrun`, `/goblin`, `/coins`, `/gmnotify`,
-`/newplayerkit`, `/treestats` and the base server's `/` commands); for a player those words are plain chat. The base server's Help
+`/newplayerkit`, `/treestats` and the base server's `/` commands); for a player those words are plain chat.
+`tests/no_player_talkactions_test.lua` holds the full staff allowlist (64 words, file by file) and fails on any
+talkaction under `data/` that is not on it, or whose onSay (or the local function it hands the call to) has no staff
+check in its first lines; `!bless` is its one player exception. A new player feature goes into a window, not a
+talkaction. `tools/install_commands_test.py` (CI) runs the install step on a small copy of the base files. The base server's Help
 channel words `!mute` / `!unmute` stay: they are tutor tools inside that channel, not player commands.
 
 ## Client-side gaps found while reading the client (not changed, `client/` is out of scope)
@@ -3346,6 +3357,15 @@ put it back by hand). A full rollback is the backup. Removing the depot boxes la
 **Client** (`game_stash`): the window of before plus whole items in the list (a whole item withdraws as one), the tab bar
 with affinity icons, greyed items outside a protection zone, the Stow Everything button and its report. Logic
 `stashview.lua` (tested by `stashview_test.lua`). Not run in a client yet.
+
+**Staff** (admin panel Economy > Stash: add item, tabs and search, remove item; `stash.lua` `ChaosStash.staffGive`,
+`staffSummary`, `staffFind`, `staffRemove`). Reads work by character id, offline too, and lay nothing out. Writes need the
+character online and go through the journal like a player's: an item made for the stash (`Game.createItem`, never on
+the character, so the journal's remove / restore have nothing to do) is a depositing row first, the serial is saved with
+the character, then the row becomes the entry; a removal is a taking row, the save, then the row deleted (nothing is
+given). A tab named by staff must be a general or affinity tab with room (never Old depot); Auto routes it as a deposit.
+At most 100 whole items at once; a plain stack is one merged entry. `chaos_stash_log` rows `staff` / `staffdel`.
+`tests/stash_test.lua` runs them on its in-memory database (a failed save leaves nothing behind, the backpack untouched).
 
 **Tables.** `chaos_stash` and `chaos_stash_block` (`sql/chaos.sql`), `chaos_stash.tab` (`sql/chaos_pact.sql`),
 `chaos_stash_items` and `chaos_stash_log` (`sql/chaos_stash.sql`; `stash.lua` creates them at startup too).

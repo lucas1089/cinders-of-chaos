@@ -145,6 +145,9 @@ jobs:
       - name: Idle kick patch (config.lua kickIdlePlayerAfterMinutes on a copy of the stock text)
         run: python3 -I server/tools/patch_base_idle_kick_test.py
 
+      - name: Player commands out of the base server (install_commands.py on a small copy, /pos staff only)
+        run: python3 -I server/tools/install_commands_test.py
+
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
 

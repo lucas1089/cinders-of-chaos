@@ -1399,6 +1399,189 @@ end
 LogoutEvent:type("logout")
 LogoutEvent:register()
 
+-- ---------------------------------------------------------------- staff (admin panel economy.stash_*)
+-- Read by guid (the character may be offline); writes need the character online, because the journal's serial is a
+-- storage saved with the character (the write order above). An item made for the stash was never on the character, so
+-- the journal's remove / restore (deposit) and give / ungive (removal) have nothing to do; the rest is the same
+-- journal: the row first, the serial saved with the character, then the entry.
+
+local function staffTabName(tab)
+	tab = int(tab)
+	if tab == 0 then
+		return "unplaced"
+	end
+	if cfg.oldDepot and tab == int(cfg.oldDepot.tab) then
+		return cfg.oldDepot.name
+	end
+	return tabName(tab) or ("Tab " .. tab)
+end
+S.staffTabName = staffTabName
+
+-- a tab staff may name: a general tab 1..maxGeneralTabs or an affinity tab (never Old depot, which takes no items)
+function S.staffTabOk(tab)
+	tab = int(tab)
+	return (tab >= 1 and tab <= int(cfg.maxGeneralTabs)) or Core.affinityByTab(cfg, tab) ~= nil
+end
+
+-- per-tab counts, nothing laid out or written: {{tab, name, entries, items}} sorted by tab, and the totals
+function S.staffSummary(guid)
+	local byTab, out = {}, {}
+	local function add(tab, n)
+		tab = int(tab)
+		local t = byTab[tab]
+		if not t then
+			t = {tab = tab, name = staffTabName(tab), entries = 0, items = 0}
+			byTab[tab] = t
+			out[#out + 1] = t
+		end
+		t.entries, t.items = t.entries + 1, t.items + math.max(1, int(n))
+	end
+	for _, r in ipairs(store.plainRows(guid)) do
+		add(r.tab, r.count)
+	end
+	for _, r in ipairs(store.itemRows(guid)) do
+		add(r.tab, r.count)
+	end
+	table.sort(out, function(a, b) return a.tab < b.tab end)
+	local entries, items = 0, 0
+	for _, t in ipairs(out) do
+		entries, items = entries + t.entries, items + t.items
+	end
+	return out, entries, items
+end
+
+-- one item type: the merged stack {count, tab} (count 0 when none) and the whole-item rows {{id, tab, name, count}}
+function S.staffFind(guid, itemId)
+	local count, tab = store.plainCount(guid, itemId)
+	local rows = {}
+	for _, r in ipairs(store.itemRows(guid)) do
+		if r.item_id == int(itemId) then
+			rows[#rows + 1] = {id = r.id, tab = r.tab, name = r.name, count = r.count}
+		end
+	end
+	return {count = count, tab = tab}, rows
+end
+
+-- `count` of item `itemId` made into the stash of an online character. tab 0: routed as a deposit; else that tab
+-- (S.staffTabOk, with room). A plain stack is one merged entry; an item that does not stack is one row each (at most
+-- 100). Returns ok, text, stored ({{name, count, tab}}).
+function S.staffGive(player, itemId, count, tab, source)
+	itemId, count, tab = int(itemId), int(count), int(tab)
+	if itemId <= 0 or int(call(ItemType(itemId), "getId")) ~= itemId then
+		return false, "Unknown item."
+	end
+	local f0 = S.typeFacts(itemId)
+	if count < 1 or (not f0.stackable and count > 100) then
+		return false, "Count out of range (an item that does not stack: at most 100)."
+	end
+	if tab ~= 0 and not S.staffTabOk(tab) then
+		return false, "No such tab (general 1-" .. int(cfg.maxGeneralTabs) .. " or an affinity tab)."
+	end
+	local env = S.env(player)
+	env.remove = function() return true end
+	env.restore = function() end
+	if not Core.settle(env) then
+		return false, "The stash is busy (an earlier operation is not settled yet)."
+	end
+	local view = S.viewOf(player)
+	local entries = S.entries(player, view)
+	local items = {}
+	for i = 1, f0.stackable and 1 or count do
+		local item = Game.createItem(itemId, f0.stackable and math.min(count, 100) or 1)
+		if not item then
+			return false, "The item could not be made."
+		end
+		local f = S.factsOf(nil, item)
+		f.count = f0.stackable and count or 1
+		items[i] = {item = item, facts = f, classes = Core.classify(cfg, f)}
+	end
+	local recs = {}
+	if tab == 0 then
+		local counts, planItems = {}, {}
+		for _, e in ipairs(entries) do
+			if e.plain then
+				counts[e.key] = e.count
+			end
+		end
+		for i, it in ipairs(items) do
+			planItems[i] = {ref = i, key = Core.entryKey(it.facts), classes = it.classes, count = it.facts.count}
+		end
+		local plan, skipped = Core.plan(cfg, view, entries, planItems, {counts = counts})
+		if #plan == 0 then
+			return false, "No room: " .. tostring(skipped[1] and skipped[1].reason or "full") .. "."
+		end
+		for _, p in ipairs(plan) do
+			local it = items[p.ref]
+			recs[#recs + 1] = recordOf(it.item, it.facts, p.tab, it.classes, source or "staff")
+		end
+	else
+		local used = Core.counts(entries)
+		local key = Core.entryKey(items[1].facts)
+		local own = 0
+		for _, e in ipairs(entries) do
+			if key and e.key == key and int(e.tab) == tab then
+				own = 1
+			end
+		end
+		local need = key and (1 - own) or #items
+		if (used[tab] or 0) + need > Core.sizeOf(cfg, tab) then
+			return false, string.format("%s is full (%d / %d).", staffTabName(tab), used[tab] or 0, Core.sizeOf(cfg, tab))
+		end
+		for _, it in ipairs(items) do
+			recs[#recs + 1] = recordOf(it.item, it.facts, tab, it.classes, source or "staff")
+		end
+	end
+	for _, rec in ipairs(recs) do
+		if rec.plain then
+			rec.count = count
+		end
+	end
+	local done, failed = Core.deposit(env, recs)
+	if #done == 0 then
+		return false, "Not stored: " .. tostring(failed[1] and failed[1].reason or "busy") .. "."
+	end
+	local stored, n = {}, 0
+	for _, rec in ipairs(done) do
+		stored[#stored + 1] = {name = rec.name, count = rec.count, tab = rec.tab}
+		n = n + rec.count
+	end
+	store.log(player:getGuid(), "staff", #done, 0, #failed, string.format("%dx %d", n, itemId))
+	return true, string.format("%dx %s stored (%s).", n, tostring(done[1].name), staffTabName(done[1].tab)), stored
+end
+
+-- an entry taken out of an online character's stash and destroyed, through the journal: what = {row = id} (a whole
+-- item) or {item = id, count = n} (from the merged stack, clamped to what is stored). Returns ok, text.
+function S.staffRemove(player, what)
+	local guid = player:getGuid()
+	local rec, name
+	if what.row then
+		local r = store.itemRow(guid, int(what.row))
+		if not r then
+			return false, "No such stored item of that character."
+		end
+		rec = {id = r.id, itemId = r.item_id, count = math.max(1, r.count), codec = r.codec, data = r.data, tab = r.tab, plain = false}
+		name = r.name ~= "" and r.name or S.typeFacts(r.item_id).typeName
+	else
+		local itemId = int(what.item)
+		local have, tab = store.plainCount(guid, itemId)
+		local amount = math.min(have, math.max(0, int(what.count)))
+		if amount <= 0 then
+			return false, "None of that item in the stash as a merged stack."
+		end
+		rec = {itemId = itemId, count = amount, tab = tab, plain = true, codec = "plain", data = ""}
+		name = S.typeFacts(itemId).typeName
+	end
+	local env = S.env(player)
+	env.give = function() return true end
+	env.ungive = function() end
+	local ok, why = Core.withdraw(env, rec)
+	if not ok then
+		return false, "Not removed: " .. tostring(why) .. "."
+	end
+	store.log(guid, "staffdel", rec.count, 0, 0, string.format("%dx %d", rec.count, rec.itemId))
+	return true, string.format("%dx %s removed from the stash (%s).", rec.count, tostring(name), staffTabName(rec.tab))
+end
+
 -- put a loose item (e.g. in a corpse) into the stash, for scripts. Returns true when it was stashed; false when the
 -- item may not go in, is blocked or no tab has room.
 function ChaosStash.storeItem(player, item)

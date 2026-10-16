@@ -90,29 +90,89 @@ reg{id = "market_buy_orders", name = "Market buy orders", description = "Buy ord
 		return true, string.format("%d buy order(s); active escrow: %d gold, %d Chaos Coins.", #lines, sums.gold or 0, sums.coins or 0), lines
 	end}
 
-reg{id = "stash_give", name = "Add to stash", description = "Add items to a player's stash if the server build supports it (Player:addItemStash).",
-	params = {{name = "player", label = "Player", type = "player"}, {name = "item", label = "Item id or name", type = "string", max = 60},
-		{name = "count", label = "Count", type = "int", min = 1, max = 100000, default = 1}},
+
+-- ------------------------------------------------------------------ the stash (stash.lua ChaosStash.staff*; server/README.md "Stash")
+-- Whole items, affinity tabs and the crash-safe journal: every write goes through the stash's own journal (the row
+-- first, the serial saved with the character, then the entry), so a crash never loses or doubles an item.
+local okStash, stashCfg = pcall(dofile, "data/scripts/chaos/stash_config.lua")
+local STASH_TABS = {{value = "0", label = "Auto (as a deposit)"}}
+if okStash and type(stashCfg) == "table" then
+	for t = 1, tonumber(stashCfg.maxGeneralTabs) or 0 do
+		STASH_TABS[#STASH_TABS + 1] = {value = tostring(t), label = "General tab " .. t}
+	end
+	for _, a in ipairs(stashCfg.affinities or {}) do
+		STASH_TABS[#STASH_TABS + 1] = {value = tostring(a.tab), label = a.name .. " (" .. a.tab .. ")"}
+	end
+end
+
+local function stashApi(fn)
+	return ChaosAdmin.system("ChaosStash", fn)
+end
+
+reg{id = "stash_give", name = "Stash: add item", description = "Make items straight into a tab of an online player's stash, through the stash journal. Auto routes it like a deposit (affinity tab, else a general tab).",
+	minGroup = 5,
+	params = {{name = "player", label = "Player (online)", type = "player"}, {name = "item", label = "Item id or name", type = "string", max = 60},
+		{name = "count", label = "Count (whole items: max 100)", type = "int", min = 1, max = 1000000, default = 1},
+		{name = "tab", label = "Tab", type = "select", default = "0", options = STASH_TABS}},
 	handler = function(actor, p)
+		local S, why = stashApi("staffGive")
+		if not S then return false, why end
 		local t, err = ChaosAdmin.targetOnline(actor, p.player)
-		if not t then return false, err end
+		if not t then return false, err .. " The stash journal needs the character online." end
 		local it, e2 = ChaosAdmin.resolveItem(p.item)
 		if not it then return false, e2 end
-		if type(t.addItemStash) ~= "function" then return false, "Stash API (Player:addItemStash) is not available on this build." end
-		local ok, res = pcall(t.addItemStash, t, it:getId(), p.count)
-		if not ok then return false, "Stash call failed: " .. tostring(res) end
-		return true, string.format("Added %dx %s to %s's stash.", p.count, it:getName(), t:getName())
+		local ok, text = S.staffGive(t, it:getId(), p.count, tonumber(p.tab) or 0, "staff")
+		return ok, t:getName() .. ": " .. tostring(text)
 	end}
 
-reg{id = "stash_info", name = "Stash item count", description = "How many of an item a player has in stash (if supported).",
-	params = {{name = "player", label = "Player", type = "player"}, {name = "item", label = "Item id or name", type = "string", max = 60}},
+reg{id = "stash_info", name = "Stash: tabs and search", description = "Entries and items per tab of a player's stash (offline too); with an item, where it is: the merged stack and every stored row (row ids for Stash: remove).",
+	params = {{name = "player", label = "Player", type = "player"},
+		{name = "item", label = "Search item id or name (optional)", type = "string", max = 60, required = false}},
 	handler = function(actor, p)
-		local t = Player(p.player)
-		if not t then return false, "Player is not online." end
-		local it, e2 = ChaosAdmin.resolveItem(p.item)
-		if not it then return false, e2 end
-		if type(t.getStashItemCount) ~= "function" then return false, "Stash API (Player:getStashItemCount) is not available on this build." end
-		local ok, n = pcall(t.getStashItemCount, t, it:getId())
-		if not ok then return false, "Stash call failed: " .. tostring(n) end
-		return true, string.format("%s has %d x %s in stash.", t:getName(), n, it:getName())
+		local S, why = stashApi("staffSummary")
+		if not S then return false, why end
+		local t, err = ChaosAdmin.targetAny(actor, p.player)
+		if not t then return false, err end
+		local tabs, entries, items = S.staffSummary(t.guid)
+		local lines = {}
+		for _, row in ipairs(tabs) do
+			lines[#lines + 1] = string.format("%s: %d entries, %d items", row.name, row.entries, row.items)
+		end
+		if p.item and p.item ~= "" then
+			local it, e2 = ChaosAdmin.resolveItem(p.item)
+			if not it then return false, e2 end
+			local stack, rows = S.staffFind(t.guid, it:getId())
+			lines[#lines + 1] = string.format("-- %s (%d): stack %d%s, %d stored item(s)", it:getName(), it:getId(), stack.count,
+				stack.count > 0 and (" in " .. S.staffTabName(stack.tab)) or "", #rows)
+			for i, r in ipairs(rows) do
+				if i > 40 then lines[#lines + 1] = "..." break end
+				lines[#lines + 1] = string.format("row %d: %s x%d in %s", r.id, r.name ~= "" and r.name or it:getName(), r.count,
+					S.staffTabName(r.tab))
+			end
+		end
+		return true, string.format("%s: %d entries, %d items in %d tab(s).", t.name, entries, items, #tabs), lines
+	end}
+
+reg{id = "stash_remove", name = "Stash: remove item", description = "Take items out of an online player's stash and destroy them, through the stash journal: a stored row (id from Stash: tabs and search) or an amount of a merged stack.",
+	dangerous = true,
+	params = {{name = "player", label = "Player (online)", type = "player"},
+		{name = "row", label = "Row id (0 = use item and count)", type = "int", min = 0, max = 2147483647, default = 0},
+		{name = "item", label = "Item id or name (merged stack)", type = "string", max = 60, required = false},
+		{name = "count", label = "Count", type = "int", min = 1, max = 2000000000, default = 1}},
+	handler = function(actor, p)
+		local S, why = stashApi("staffRemove")
+		if not S then return false, why end
+		local t, err = ChaosAdmin.targetOnline(actor, p.player)
+		if not t then return false, err .. " The stash journal needs the character online." end
+		local what
+		if p.row and p.row > 0 then
+			what = {row = p.row}
+		else
+			if not p.item or p.item == "" then return false, "Give a row id or an item." end
+			local it, e2 = ChaosAdmin.resolveItem(p.item)
+			if not it then return false, e2 end
+			what = {item = it:getId(), count = p.count}
+		end
+		local ok, text = S.staffRemove(t, what)
+		return ok, t:getName() .. ": " .. tostring(text)
 	end}

@@ -14,6 +14,8 @@ usage: python3 -I install_commands.py DATA_DIR [--dry-run]
 3. Player-facing texts that tell players to type a command: the login lines of creaturescripts/scripts/login.lua
    ("To see the commands use: !commands ...") are commented out; the double experience potion's "type: !exp" and the
    task NPCs' "Say {!ancestral}" point to the menu instead.
+4. Base "/" revscripts that answer players too (STAFF_ONLY: /pos shows anyone the position) get a staff guard as the
+   first line of their onSay, so for a player the words are plain chat. The position is in Character > Character Info.
 
 Idempotent: a second run changes nothing. --dry-run prints what would change and writes nothing.
 """
@@ -34,6 +36,11 @@ TEXTS = [
 NPC_DIR = 'npc/scripts'
 NPC_OLD = 'Say {!ancestral} to see information about your current task.'
 NPC_NEW = 'Your current task: Character > Character Info, in the menu.'
+
+# base revscripts with "/" words that players may use too: the staff guard goes in as the first line of the onSay
+STAFF_ONLY = ['scripts/talkactions/position.lua']
+ONSAY = re.compile(r'(?m)^(?P<head>function\s+[A-Za-z_]\w*\.onSay\s*\([^)]*\)[ \t]*\r?\n)')
+GUARD = '\tif not player:getGroup():getAccess() then return true end -- %s: staff only (players: the menu)\n' % MARK
 
 
 def player_words(words):
@@ -90,6 +97,16 @@ def fix_login(text):
     return '\n'.join(out), n
 
 
+def staff_only(text):
+    """A base revscript's text -> (new text, True when the guard went in). Its first onSay gets the staff guard."""
+    if MARK + ': staff only' in text:
+        return text, False
+    m = ONSAY.search(text)
+    if not m:
+        return text, False
+    return text[:m.end()] + GUARD + text[m.end():], True
+
+
 def main(argv):
     args = [a for a in argv if not a.startswith('--')]
     dry = '--dry-run' in argv
@@ -136,6 +153,14 @@ def main(argv):
                 continue
             new, removed = fix_revscript(old)
             write(path, old, new, 'player words out: ' + ', '.join(removed))
+
+    for rel in STAFF_ONLY:
+        path = os.path.join(data, rel)
+        if os.path.isfile(path):
+            old = read(path)
+            new, done = staff_only(old)
+            if done:
+                write(path, old, new, 'staff only (a player gets plain chat)')
 
     login = os.path.join(data, 'creaturescripts', 'scripts', 'login.lua')
     if os.path.isfile(login):

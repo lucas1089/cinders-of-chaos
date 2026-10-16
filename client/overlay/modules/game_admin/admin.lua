@@ -32,8 +32,9 @@ function init()
     onGameStart = onGameStart,
     onGameEnd = onGameEnd
   })
-  -- JSON variant: the server splits the catalog (about 20 KB, over the 8192 bytes one extended opcode message can
-  -- carry) into S/P/E parts, which the base ProtocolGame joins and decodes before calling onExtendedOpcode
+  -- JSON variant: the server splits the catalog (about 60 KB for the highest group, over the 8192 bytes one extended
+  -- opcode message can carry) into S/P/E parts, which the base ProtocolGame joins and decodes before calling
+  -- onExtendedOpcode
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, onExtendedOpcode)
 
   if g_game.isOnline() then
@@ -247,6 +248,7 @@ function buildSidebar()
   local function add(id, label)
     local b = g_ui.createWidget("AdminCategoryButton", list)
     b:setText(label)
+    b:setTooltip(label) -- a long server label ("Chaos: Guilds & Market") may not fit the sidebar
     b:setOn(selectedCategory == id)
     b.onClick = function()
       selectedCategory = id
