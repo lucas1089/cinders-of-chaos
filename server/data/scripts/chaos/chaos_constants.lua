@@ -979,7 +979,7 @@ Chaos.classes = {
 	-- vocations wearing `replaces` (or the other sex's Archmage) is moved to it at its next login
 	-- (ChaosClasses.outfitSwap). Keep `enabled` one plain line: install_outfits.py and gen_shop_cosmetics.py read it.
 	outfitReplacement = {
-		enabled = false,
+		enabled = true,
 		vocations = {1, 5, 10},
 		replaces = 1559,
 		outfit = {lookType = 2235, female = 2236, name = "Archmage", addons = 3}

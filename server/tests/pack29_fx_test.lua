@@ -26,7 +26,7 @@ local C = ChaosPack29Fx
 
 -- the switch: one plain line, off until pair 29 is live
 local src = readFile("data/lib/chaos_pack29_fx.lua") or ""
-eq(C.PAIR29, false, "the shipped switch is off")
+eq(C.PAIR29, true, "the switch is on (pair 29 live)")
 eq(src:match("\nC%.PAIR29 = (%a+)\n"), tostring(C.PAIR29), "the switch is one plain line")
 
 -- the client spec

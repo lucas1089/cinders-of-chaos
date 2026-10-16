@@ -239,7 +239,7 @@ end
 do
 	local MYSTIC, ELEMENTALIST, ILLUSIONIST = 1, 5, 10
 	local r = cfg.outfitReplacement
-	eq(r.enabled, false, "the replacement switch (pair 29) ships off")
+	eq(r.enabled, true, "the replacement switch (pair 29) is on")
 	local shipped = r.enabled
 	r.enabled = false -- the checks below set the switch themselves
 	eq(r.replaces, 1559, "it replaces the Archmage")

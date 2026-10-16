@@ -25,7 +25,7 @@ end
 dofile("data/lib/chaos_pack29_fx.lua")
 dofile("data/lib/chaos_pack29_vfx.lua")
 local Q, V = ChaosPack29Fx, ChaosPack29Vfx
-eq(Q.PAIR29, false, "the shipped pair 29 switch is off")
+eq(Q.PAIR29, true, "the pair 29 switch is on (pair 29 live)")
 
 -- the client spec
 local spec, specNames = {}, {}

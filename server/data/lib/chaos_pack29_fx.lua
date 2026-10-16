@@ -17,7 +17,7 @@
 ChaosPack29Fx = ChaosPack29Fx or {}
 local C = ChaosPack29Fx
 
-C.PAIR29 = false
+C.PAIR29 = true
 
 -- spell id -> kind -> {name the spell sends = the pair 29 name}
 C.spells = {

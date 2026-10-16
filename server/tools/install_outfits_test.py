@@ -28,7 +28,7 @@ def expect(cond, what):
         print('FAIL', what)
 
 
-SHIPPED_ON = False   # Chaos.classes.outfitReplacement.enabled as shipped (the pair 29 switch)
+SHIPPED_ON = True   # Chaos.classes.outfitReplacement.enabled as shipped (the pair 29 switch)
 
 
 def test_shipped():
