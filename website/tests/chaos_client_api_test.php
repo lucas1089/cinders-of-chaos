@@ -59,7 +59,7 @@ $DB = new ChaosApiFakeDb($pdo);
 function db() { return $GLOBALS['DB']; }
 foreach (array(
 	'CREATE TABLE accounts (id INTEGER PRIMARY KEY, name TEXT NOT NULL, password TEXT NOT NULL, type INT NOT NULL DEFAULT 1, premium_ends_at INT NOT NULL DEFAULT 0, email TEXT NOT NULL DEFAULT \'\')',
-	'CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, account_id INT NOT NULL, level INT NOT NULL DEFAULT 1, vocation INT NOT NULL DEFAULT 0, sex INT NOT NULL DEFAULT 1, town_id INT NOT NULL DEFAULT 1, looktype INT NOT NULL DEFAULT 136, lookhead INT NOT NULL DEFAULT 0, lookbody INT NOT NULL DEFAULT 0, looklegs INT NOT NULL DEFAULT 0, lookfeet INT NOT NULL DEFAULT 0, lookaddons INT NOT NULL DEFAULT 0, lastlogin INT NOT NULL DEFAULT 0, deletion INT NOT NULL DEFAULT 0, wings_id INT NOT NULL DEFAULT 0, aura_id INT NOT NULL DEFAULT 0, shader_id INT NOT NULL DEFAULT 0)',
+	'CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, account_id INT NOT NULL, level INT NOT NULL DEFAULT 1, vocation INT NOT NULL DEFAULT 0, experience INT NOT NULL DEFAULT 0, health INT NOT NULL DEFAULT 150, healthmax INT NOT NULL DEFAULT 150, mana INT NOT NULL DEFAULT 0, manamax INT NOT NULL DEFAULT 0, cap INT NOT NULL DEFAULT 400, soul INT NOT NULL DEFAULT 0, sex INT NOT NULL DEFAULT 1, town_id INT NOT NULL DEFAULT 1, looktype INT NOT NULL DEFAULT 136, lookhead INT NOT NULL DEFAULT 0, lookbody INT NOT NULL DEFAULT 0, looklegs INT NOT NULL DEFAULT 0, lookfeet INT NOT NULL DEFAULT 0, lookaddons INT NOT NULL DEFAULT 0, lastlogin INT NOT NULL DEFAULT 0, deletion INT NOT NULL DEFAULT 0, wings_id INT NOT NULL DEFAULT 0, aura_id INT NOT NULL DEFAULT 0, shader_id INT NOT NULL DEFAULT 0)',
 	'CREATE TABLE chaos_class_unlocks (account_id INT NOT NULL, class_key TEXT NOT NULL, source TEXT NOT NULL DEFAULT \'\', created INT NOT NULL DEFAULT 0)',
 	'CREATE TABLE chaos_account_extras (account_id INT NOT NULL, extra_key TEXT NOT NULL, amount INT NOT NULL DEFAULT 0)',
 	'CREATE TABLE chaos_legal_acceptance (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INT NOT NULL, version TEXT NOT NULL, accepted_at INT NOT NULL)',
@@ -234,6 +234,34 @@ check($code === 400 && in_array('acc.name_letters', $b['errors'], true), 'bad na
 check($code === 400 && $b['errors'] === array('acc.name_max_words'), 'bad name: too many words');
 [$code, $b] = create(array('name' => 'Gm Ash'));
 check($code === 400 && in_array('reg.restricted_word', $b['errors'], true), 'bad name: restricted word');
+// a name that is a page address of the site (README "Web server": /highscores is the page, not the character)
+foreach (array('Highscores', 'characterprofile', 'Page', 'Myaccount', 'Clientservices') as $n) {
+	[$code, $b] = create(array('name' => $n));
+	check($code === 400 && in_array('reg.restricted_word', (array)($b['errors'] ?? null), true), "bad name: page address $n");
+}
+$form2 = $form; $form2['name'] = 'Serverinfo';
+check(chaos_character_form_errors($form2, 7, array(), false) === array('reg.restricted_word'), 'form: a page address refused');
+check(!chaos_character_name_reserved('Highscores Hero') && !chaos_character_name_reserved('Pager'), 'a longer name is not an address');
+// the list covers every top-level page of the site: our overlay's and, with CHAOS_ZNOTEX_DIR, ZnoteX's (letters only)
+$tops = array();
+foreach (array_merge(glob($repo . '/website/overlay/*.php'), glob($repo . '/website/overlay/*', GLOB_ONLYDIR)) as $f) {
+	$tops[] = basename($f, '.php');
+}
+$zdir = (string)getenv('CHAOS_ZNOTEX_DIR');
+if ($zdir !== '' && is_dir($zdir)) {
+	foreach (array_merge(glob($zdir . '/*.php'), glob($zdir . '/*', GLOB_ONLYDIR)) as $f) {
+		$tops[] = basename($f, '.php');
+	}
+}
+foreach ($tops as $top) {
+	if (preg_match('/^[A-Za-z]+$/', $top)) {
+		check(in_array(strtolower($top), chaos_reserved_character_names(), true), "reserved: $top");
+	}
+}
+// the game's name change refuses the same list (server chaos_constants.lua shopServices.name.reserved)
+$lua = (string)file_get_contents($repo . '/server/data/scripts/chaos/chaos_constants.lua');
+$luaList = preg_match('/\breserved = \{(.*?)\}/s', $lua, $lm) && preg_match_all('/"([a-z]+)"/', $lm[1], $ln) ? $ln[1] : array();
+check($luaList === chaos_reserved_character_names(), 'the server name change has the same reserved list');
 [$code, $b] = create(array('name' => 'Old Guard'));
 check($code === 400 && in_array('acc.name_taken', $b['errors'], true), 'taken name');
 [$code, $b] = create(array('name' => 'Bone Weaver', 'vocation' => 20));
@@ -259,7 +287,14 @@ $pdo->exec("INSERT INTO chaos_class_unlocks (account_id, class_key) VALUES (7, '
 [$code, $b] = create(array('name' => 'bone weaver', 'vocation' => 20, 'sex' => 0));
 check($code === 200 && $b['ok'] && $b['name'] === 'Bone Weaver', 'unlocked class: created, name formatted');
 $row = $pdo->query("SELECT * FROM players WHERE name = 'Bone Weaver'")->fetch(PDO::FETCH_ASSOC);
-check((int)$row['looktype'] === 2184 && (int)$row['lookaddons'] === 3 && (int)$row['lookhead'] === 78, 'class look of a female Necromancer (pair 20), both addons, starter colours');
+check((int)$row['looktype'] === 2184 && (int)$row['lookaddons'] === 3, 'class look of a female Necromancer (pair 20), both addons');
+check((int)$row['lookhead'] === 114 && (int)$row['lookbody'] === 128 && (int)$row['looklegs'] === 114 && (int)$row['lookfeet'] === 114,
+	'the Necromancer\'s start colours (class_looks_core.lua L.startColors), not the old yellow and blue');
+$necro = chaos_start_stats(20);
+check((int)$row['level'] === 8 && (int)$row['experience'] === 4200, 'created at level 8 with exactly its experience');
+check($necro !== null && (int)$row['healthmax'] === $necro['health'] && (int)$row['health'] === $necro['health']
+	&& (int)$row['manamax'] === $necro['mana'] && (int)$row['mana'] === $necro['mana'] && (int)$row['cap'] === $necro['cap']
+	&& (int)$row['soul'] === 100 && $necro['mana'] > 80, 'the Necromancer\'s level 8 stats (start_stats.lua), not the flat 150 / 0 / 400');
 check(($b['look']['type'] ?? 0) === 2184, 'the answer carries the new look');
 [$code, $b] = create(array('name' => 'Ash Runner', 'vocation' => 11, 'season' => 1, 'mode' => 'hcssf', 'hardcore' => true));
 check($code === 200 && strpos($b['message'], 'season') !== false, 'created with a season join');
@@ -294,7 +329,7 @@ check($code === 200, 'an hour later: allowed again');
 [$code, $b] = api(array('action' => 'login', 'account' => 'newbie', 'password' => 'pw newbie', 'nonce' => nonce()));
 check($code === 200 && $b['account']['terms'] === false, 'an account without the current Terms logs in, terms false');
 [$code, $b] = create(array('name' => 'Fresh Face'), $b['token']);
-check($code === 403 && $b['error'] === 'terms' && $b['url'] === 'https://www.example.org/page.php?plugin=chaos&p=accept', 'create without the Terms: 403 with the accept page');
+check($code === 403 && $b['error'] === 'terms' && $b['url'] === 'https://www.example.org/page?plugin=chaos&p=accept', 'create without the Terms: 403 with the accept page');
 $pdo->exec("UPDATE accounts SET password = '" . chaos_password_hash('new horse', 1000) . "' WHERE id = 7");
 [$code, $b] = api(array('action' => 'state', 'token' => $token));
 check($code === 401, 'a password change ends the token');
@@ -366,6 +401,13 @@ check($code === 503 && $b['error'] === 'off', 'switched off');
 check(chaos_class_look(4, 1) === 2073 && chaos_class_look(4, 0) === 2074, 'Warrior: base looks');
 check(chaos_class_look(8, 1) === 2161 && chaos_class_look(23, 0) === 2180, 'pair 19 and pair 20 looks with the switches on');
 check(chaos_class_look(0, 1) === null && chaos_class_look(2, 1) === null, 'no look for no class or a retired id');
+// owner report 2026-10-16 ("Jokr"): a Ranger looked like a mage. Its look is the hooded archer; the colours make the art
+check(chaos_class_look(3, 1) === 2163 && chaos_class_look(3, 0) === 2164, 'Ranger: the hooded archer, male and female');
+check(chaos_class_colors(3) === array('head' => 116, 'body' => 120, 'legs' => 116, 'feet' => 115), 'Ranger: green and brown, not blue');
+check(chaos_class_colors(2) === null, 'no colours for a retired id');
+check(chaos_start_stats(1) === array('level' => 8, 'experience' => 4200, 'health' => 185, 'mana' => 300, 'cap' => 470, 'soul' => 100),
+	'Mystic: level 8, its level 1 row plus 7 levels of gains');
+check(chaos_start_stats(2) === null, 'no stats for a retired id');
 $lua = trim((string)shell_exec('command -v luajit || command -v lua5.3 || command -v lua'));
 $lua = $lua === '' ? '' : strtok($lua, "\n");
 $luaCheck = $lua === '' ? '' : trim((string)shell_exec('cd ' . escapeshellarg($repo . '/server') . ' && ' . escapeshellarg($lua) . ' -e '
@@ -380,6 +422,26 @@ if ($luaCheck !== '') {
 	check(implode(' ', $php) === $luaCheck, 'every class and sex: the same look as ChaosClassLooks.lookFor');
 } else {
 	echo "note: no Lua interpreter, the class look comparison with class_looks_core.lua was skipped\n";
+}
+$luaColors = $lua === '' ? '' : trim((string)shell_exec('cd ' . escapeshellarg($repo . '/server') . ' && ' . escapeshellarg($lua) . ' -e '
+	. escapeshellarg('Chaos = {classes = {}}; dofile("data/scripts/chaos/class_looks_core.lua"); local t = {}; for v = 0, 25 do local c = ChaosClassLooks.startColors[v]; t[#t + 1] = v .. "=" .. (c and (c.head .. "/" .. c.body .. "/" .. c.legs .. "/" .. c.feet) or "nil") end; io.write(table.concat(t, " "))') . ' 2>/dev/null'));
+if ($luaColors !== '') {
+	$php = array();
+	for ($v = 0; $v <= 25; $v++) {
+		$c = chaos_class_colors($v);
+		$php[] = $v . '=' . ($c === null ? 'nil' : $c['head'] . '/' . $c['body'] . '/' . $c['legs'] . '/' . $c['feet']);
+	}
+	check(implode(' ', $php) === $luaColors, 'every class: the same start colours as L.startColors');
+}
+$luaStats = $lua === '' ? '' : trim((string)shell_exec('cd ' . escapeshellarg($repo . '/server') . ' && ' . escapeshellarg($lua) . ' -e '
+	. escapeshellarg('dofile("data/scripts/chaos/chaos_constants.lua"); dofile("data/scripts/chaos/newplayer_core.lua"); local NP = ChaosNewPlayer; local S = NP.startStatsCfg(); local L = NP.startLevel(); local t = {}; for v = 0, 25 do local r = S.stats[v] and NP.statsFor(v, L); t[#t + 1] = v .. "=" .. (r and (r.health .. "/" .. r.mana .. "/" .. r.cap .. "/" .. r.soul) or "nil") end; io.write(table.concat(t, " "))') . ' 2>/dev/null'));
+if ($luaStats !== '') {
+	$php = array();
+	for ($v = 0; $v <= 25; $v++) {
+		$st = chaos_start_stats($v);
+		$php[] = $v . '=' . ($st === null ? 'nil' : $st['health'] . '/' . $st['mana'] . '/' . $st['cap'] . '/' . $st['soul']);
+	}
+	check(implode(' ', $php) === $luaStats, 'every class: the same start stats as NP.statsFor at the start level');
 }
 
 @unlink($data . '/scripts');

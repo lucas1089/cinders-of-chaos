@@ -57,4 +57,17 @@ eq(B.request('nonsense', 'gold', 50), nil, 'unknown mode')
 
 eq(B.HEIGHT.transfer > B.HEIGHT.amount, true, 'the transfer dialog is taller')
 
+-- the window and the server's reply: shown when asked for (pending) or open; a late reply after a close keeps it closed
+eq(B.onReply(false, true), 'show', 'asked for: shown')
+eq(B.onReply(true, false), 'show', 'open: the new state shows (after a deposit)')
+eq(B.onReply(false, false), 'keep', 'closed in between: stays closed')
+
+-- bank.lua: the toggle shows the window at once and raises it (the reply may never come within the rate limit)
+local src = io.open(here .. 'bank.lua'):read('*a')
+local show = src:match('function bankWindowShow%(%)(.-)\nend')
+eq(show ~= nil and show:find('showWindow()', 1, true) ~= nil, true, 'the toggle shows the window without the reply')
+eq(show ~= nil and show:find('sendAction(bankBalanceOpCode, "openBank")', 1, true) ~= nil, true, 'and asks for the state')
+eq(src:find('bankingWindow:raise()', 1, true) ~= nil, true, 'raised over the windows made later')
+eq(src:find('bankInfoTable = nil', 1, true) ~= nil, true, 'the state is dropped at logout')
+
 print(('bank_core_test: %d checks passed'):format(n))

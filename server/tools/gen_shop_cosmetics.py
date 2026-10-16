@@ -90,7 +90,7 @@ def exclusions():
         m = re.search(r'\n\t%s = \{(.*?)\n\t\},?\n' % key, text, re.S)
         if not m:
             sys.exit('chaos_constants.lua: no Chaos.classes.%s block' % key)
-        for t in re.findall(r'lookType\s*=\s*(\d+)', m.group(1)):
+        for t in re.findall(r'(?:lookType|female)\s*=\s*(\d+)', m.group(1)):
             looks.setdefault(int(t), why)
     for f, why in (('achievements_data.lua', 'achievement reward'), ('season_config.lua', 'season reward'),
                    ('seasonpass_config.lua', 'season pass reward'), ('exclusives_config.lua', 'exclusive (never sold)')):

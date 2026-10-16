@@ -134,6 +134,10 @@ function F.apply(info, icons, runes, serverWords, removedWords)
         set(undo, spell, "id", old + F.OFF_SERVER)
       end
     end
+    -- every spell and rune is free (server patch_free_spells.py, server/README.md "Free spells")
+    if spell.premium then
+      set(undo, spell, "premium", false)
+    end
     if spell.id ~= old and type(old) == "number" then
       idMap[old] = not spell.notOnServer and spell.id or false
       local icon = icons and spell.icon and icons[spell.icon]
@@ -148,6 +152,11 @@ function F.apply(info, icons, runes, serverWords, removedWords)
       for k, v in pairs(fix) do
         set(undo, rune, k, v)
       end
+    end
+  end
+  for _, rune in pairs(runes or {}) do
+    if rune.premium then
+      set(undo, rune, "premium", false)
     end
   end
   return undo, idMap, removedIds

@@ -199,6 +199,11 @@ for _, it in ipairs(created) do
 	end
 end
 eq(exitItem.aid, cfg.aid.exit, "the exit portal re-tagged")
+-- playtest 2026-10-16: the exit had no look text; registered like the other exits (cityportals_fx.lua labels it)
+local exitReg = ChaosCityPortals.placed[ChaosCityPortalsCore.key(exitTile.pos)]
+check(exitReg ~= nil and exitReg.kind == "servicesexit" and exitReg.aid == cfg.aid.exit and exitReg.town == 2,
+	"the exit portal registered for its look text")
+eq(ChaosCityPortals.kindOf(cfg.aid.exit), "servicesexit", "the exit's action id has a kind")
 local entryItem = created[#created]
 eq(entryItem.aid, cfg.aid.entry, "the way in")
 local o2 = cfg.entry.offsets[2]

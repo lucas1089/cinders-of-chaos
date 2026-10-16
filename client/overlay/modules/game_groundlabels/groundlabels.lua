@@ -44,6 +44,7 @@ local window
 local events = {}
 local handlers = {}
 local mapPanel
+local rowsVersion = 0 -- changes whenever the known rows may have (game_lootbeams re-reads getGroundItems then)
 
 local reported = {}
 local function safe(name, fn)
@@ -112,6 +113,7 @@ local function dropTile(key)
 end
 
 local function clearAll()
+  rowsVersion = rowsVersion + 1
   rawCache = {}
   for key in pairs(tiles) do dropTile(key) end
   tiles, labels = {}, {}
@@ -189,6 +191,7 @@ end
 local lastLayoutMs = 0
 local layout
 local function relayout()
+  rowsVersion = rowsVersion + 1
   local started = g_clock.millis()
   layout()
   lastLayoutMs = g_clock.millis() - started
@@ -718,6 +721,20 @@ function getLabels()
       kind = l.d.kind, dim = l.d.dim, highlight = l.d.highlight, rect = l.label and l.label:getRect() }
   end
   return out
+end
+
+-- for game_lootbeams: the server rows of the tiles in view {{pos, rows}} (corpse rows included, it leaves them out)
+-- and the counter that changes when they may have
+function getGroundItems()
+  local out = {}
+  for _, t in pairs(tiles) do
+    if t.rows and #t.rows > 0 then out[#out + 1] = { pos = t.pos, rows = t.rows } end
+  end
+  return out
+end
+
+function getRowsVersion()
+  return rowsVersion
 end
 
 -- counts for the terminal: tiles watched, tiles answered, rows, labels drawn

@@ -5,7 +5,7 @@
 
 | File | Page |
 |---|---|
-| `terms.pt-BR.md`, `terms.en.md` | Terms of Use: `page.php?plugin=chaos&p=legal&doc=terms` (`&l=en` for English) |
+| `terms.pt-BR.md`, `terms.en.md` | Terms of Use: `page?plugin=chaos&p=legal&doc=terms` (`&l=en` for English) |
 | `privacy.pt-BR.md`, `privacy.en.md` | Privacy Policy (LGPD): `...&doc=privacy` |
 | `donations.pt-BR.md`, `donations.en.md` | Donation Terms: `...&doc=donations` |
 
@@ -21,7 +21,7 @@ The Portuguese text is the main one and prevails; the English one is a translati
 - Account creation needs the checkbox "I accept the Terms of Use and the Privacy Policy". The acceptance is stored in
   `chaos_legal_acceptance` with a version: the first 16 hex digits of the SHA-256 of the three Portuguese texts. Any
   edit gives a new version, and every account is asked again: on the website at its next login
-  (`page.php?plugin=chaos&p=accept`), in the game by a notice with that link. Run the installer after an edit: it
+  (`page?plugin=chaos&p=accept`), in the game by a notice with that link. Run the installer after an edit: it
   writes the version the game server compares (`server_config` `chaos_legal_version`).
 - Donations: the donation page says before payment that a donation is voluntary, gives no right to a refund except where
   the law requires one, and is not the purchase of a product. After payment the order says again that it was a
@@ -97,7 +97,7 @@ What the code does was read for these texts. These points are not settled by the
     Decide who it is.
 13. **Existing accounts: built (2026-10-12).** An account with no `chaos_legal_acceptance` row for the current version
     (the beta accounts made before the checkbox, and every account after the texts change) is sent to
-    `page.php?plugin=chaos&p=accept` at its next website login: the same checkbox, the same row (version, time, no IP).
+    `page?plugin=chaos&p=accept` at its next website login: the same checkbox, the same row (version, time, no IP).
     The game client's login cannot be held for a web form, so the game server shows such an account a message and a
     window with that link at every login until it accepts (`legal_notice.lua`; the installer writes the texts'
     version to `server_config`). Check that a player who only plays and never visits the site is covered by the
@@ -108,7 +108,7 @@ What the code does was read for these texts. These points are not settled by the
     (no refund except where the law requires one, not the purchase of a product, coins without real-world value);
     once the order is paid or credited, the "voluntary donation, not a purchase" sentence instead. The in-game message
     after crediting carries that one too. Both name where the Donation Terms are, as text and not a link: the website
-    page `page.php?plugin=chaos&p=legal&doc=donations`. Check that this is enough in the client.
+    page `page?plugin=chaos&p=legal&doc=donations`. Check that this is enough in the client.
 16. **Discord webhooks.** The reports webhook sends character names to Discord (`CHAOS_REPORTS_WEBHOOK`); the health
     alerts may carry log lines. The policy mentions the reports notices.
 17. **Season Pass, creator codes, Character Bazaar (drafted 2026-10-13, Donation Terms section 7).** Check with the

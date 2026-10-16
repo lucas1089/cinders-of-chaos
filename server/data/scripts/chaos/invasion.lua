@@ -357,8 +357,16 @@ end
 
 local function spawnOne(name, pos, tier, scale, info, rename)
 	pendingRename = rename
-	local monster = Game.createMonster(name, P(pos), true, false)
+	-- every invader is scaled to the area level (I.scale, I.planBoss): monster_levels.lua shows it after the name, in
+	-- onSpawn before the placement
+	Chaos.spawnLevel = I.displayLevel(state.area and state.area.level)
+	local ok, monster = pcall(Game.createMonster, name, P(pos), true, false)
 	pendingRename = nil
+	Chaos.spawnLevel = nil
+	if not ok then
+		log("could not create " .. tostring(name) .. ": " .. tostring(monster))
+		return nil
+	end
 	if not monster then
 		return nil
 	end

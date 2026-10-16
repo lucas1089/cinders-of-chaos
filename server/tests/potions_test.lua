@@ -189,7 +189,21 @@ local kitBag = mkItem(1988, 1, {})
 eq(PT.giveAll(cara, kitBag), 2, "the kit: both Everfull potions")
 eq(#kitBag.kids, 2, "into the kit backpack")
 eq(kitBag.kids[1].attrs.chaos_storebound, 1, "store-bound")
-eq(kitBag.kids[1].attrs.chaos_locked, 1, "locked")
+eq(kitBag.kids[1].attrs.chaos_locked, cfg.bindLock, "locked with the bind value")
+check(cfg.bindLock ~= 0 and cfg.bindLock ~= 1, "bound for every lock check (not 0), not the client's grey player lock (1)")
+-- a potion given before 2026-10-16 (lock 1: drawn as a dark flask) gets the bind value at the next login
+local gus = mkPlayer(7)
+local oldPot = mkItem(HEALTH.id, 1)
+oldPot.attrs.chaos_locked, oldPot.attrs.chaos_storebound = 1, 1
+local sent = 0
+function oldPot:sendUpdate() sent = sent + 1 end
+gus.bp.kids[1] = oldPot
+gus.bp.kids[2] = mkItem(7618, 5)
+eq(PT.rebind(gus), 1, "one old Everfull potion rebound")
+eq(oldPot.attrs.chaos_locked, cfg.bindLock, "its lock value") eq(sent, 1, "sent again to the client")
+eq(gus.bp.kids[2].attrs.chaos_locked, nil, "stock potions untouched")
+eq(PT.rebind(gus), 0, "idempotent")
+check(K.needsRebind(cfg, 1) and not K.needsRebind(cfg, cfg.bindLock), "needsRebind")
 eq(cara.st[cfg.storage.granted], 1, "flag set")
 cara.bp.kids[1] = kitBag
 eq(PT.giveAll(cara), 0, "never a second one while it has them")

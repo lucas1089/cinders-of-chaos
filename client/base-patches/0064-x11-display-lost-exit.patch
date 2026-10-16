@@ -1,0 +1,42 @@
+# Chaos: a lost X display ends the client at once (C++ src/framework/platform/x11window.cpp; applies after 0001-0063).
+# Found in a test run: the client crashed in Creature::getWalkAnimationPhases after SIGTERM, once Xvfb had shut down.
+# Cause: with the X server gone, the next X call in the main loop hits Xlib's default IO error handler, which calls
+# exit(). exit() runs the static destructors (g_things, g_map, g_game, ...) while the logic/render worker thread
+# (GraphicalApplication::run) still polls the dispatcher and builds draw queues: a creature's walk update then reads a
+# destroyed thing type (Thing::getAnimator on a null ThingType). The normal stop (close, SIGTERM with a display) is not
+# affected: the worker is joined before Client::terminate. Now an X IO error handler (XSetIOErrorHandler, set when the
+# display opens) writes "X11 display connection lost, exiting" to stderr and ends the process with std::_Exit(1), without
+# the destructors. Nothing is lost: without a display nothing can be drawn, and the client saves nothing in destructors.
+diff --git a/src/framework/platform/x11window.cpp b/src/framework/platform/x11window.cpp
+index 2fc64a5..307dcbc 100644
+--- a/src/framework/platform/x11window.cpp
++++ b/src/framework/platform/x11window.cpp
+@@ -36,6 +36,20 @@
+ #include <unistd.h>
+ 
+ namespace {
++// Chaos (base patch 0064): the X server went away (Xvfb stopped, the display closed). Xlib's default handler calls
++// exit(), which runs the static destructors (g_things, g_map, g_game, ...) while the logic/render worker thread still
++// polls and draws: a creature's walk update then reads a destroyed thing type (crash in
++// Creature::getWalkAnimationPhases). Nothing can be drawn or saved without the display, so end the process at once,
++// without the destructors.
++int chaosXIOErrorHandler(Display*)
++{
++    static const char message[] = "X11 display connection lost, exiting\n";
++    const ssize_t written = ::write(2, message, sizeof(message) - 1);
++    (void)written;
++    std::_Exit(1);
++    return 0;
++}
++
+ void setCursorBitmapBit(std::vector<uint8>& bits, int bytesPerRow, int x, int y)
+ {
+     const int index = y * bytesPerRow + (x / 8);
+@@ -448,6 +462,7 @@ void X11Window::internalOpenDisplay()
+     m_display = XOpenDisplay(NULL);
+     if(!m_display)
+         g_logger.fatal("Unable to open X11 display");
++    XSetIOErrorHandler(chaosXIOErrorHandler); // Chaos (base patch 0064)
+     m_screen = DefaultScreen(m_display);
+ }
+ 

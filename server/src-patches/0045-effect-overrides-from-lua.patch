@@ -1,0 +1,219 @@
+# Hit effects and missiles swapped from Lua (pair 29 condition auras, element blasts, hit splashes and missiles;
+# server/README.md "Condition auras, blasts and fireworks (pair 29)"). The engine draws the hit effect of every damage
+# part itself (Game::combatGetTypeInfo: a red splash on a blood creature, small stock sparks for an element, the same
+# for each tick of a burning or poison condition) and every missile by its stock id. Now Lua may swap them:
+#   Game.setHitEffect(kind, key, effect[, dx, dy])  kind 0: a physical hit on a creature of race `key`; 1: a direct
+#       hit of combat type `key`; 2: a condition tick of combat type `key`. The effect is sent at the target tile +
+#       (dx, dy) (an effect bigger than a tile is drawn up-left of its tile); 0 sends none; nil or -1 gives the stock
+#       one back. The splash item and the text colour stay the engine's.
+#   Game.setMissileEffect(stock, missile[, dx, dy])  every distance effect `stock` (spells, runes, wands, monsters,
+#       Lua sendDistanceEffect) is sent as `missile`, both ends shifted by (dx, dy); missile 0 or nil: stock again.
+#   Game.clearEffectOverrides()  all stock again.
+# Nothing is set by default: without a Lua call every effect is the stock one. data/lib/chaos_pack29_vfx.lua sets
+# them at startup only when the pair 29 switch is on (ChaosPack29Fx.PAIR29), and only for effect ids that pair has.
+# Guard: server/tools/effect_overrides_patch_test.py. Applies after 0001-0044.
+--- a/src/game.h
++++ b/src/game.h
+@@ -454,6 +454,13 @@
+ 		void addDistanceEffect(const Position& fromPos, const Position& toPos, uint8_t effect);
+ 		static void addDistanceEffect(const SpectatorVec& spectators, const Position& fromPos, const Position& toPos, uint8_t effect);
+ 
++		// Chaos (src-patch 0045): hit effects and missiles swapped from Lua (Game.setHitEffect / Game.setMissileEffect)
++		static void setHitEffectOverride(uint8_t kind, uint16_t key, int32_t effect, int8_t dx, int8_t dy);
++		static void setMissileOverride(uint8_t stock, uint8_t missile, int8_t dx, int8_t dy);
++		static void clearEffectOverrides();
++		static void addHitEffect(const SpectatorVec& spectators, const Creature* target, const Position& pos,
++		                         CombatType_t combatType, CombatOrigin origin, uint8_t stock);
++
+ 		void setAccountStorageValue(const uint32_t accountId, const uint32_t key, const int32_t value);
+ 		int32_t getAccountStorageValue(const uint32_t accountId, const uint32_t key) const;
+ 		void loadAccountStorageValues();
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -44,6 +44,78 @@
+ extern Weapons* g_weapons;
+ extern Scripts* g_scripts;
+ 
++// Chaos (src-patch 0045): hit effects and missiles swapped from Lua. Empty by default: the stock effects.
++namespace {
++struct ChaosFxOverride {
++	uint16_t effect; // 0 = no effect
++	int8_t dx;
++	int8_t dy;
++};
++// key: kind << 16 | key; kind 0 = a physical hit on a race, 1 = a direct hit of a combat type, 2 = a condition tick
++std::map<uint32_t, ChaosFxOverride> chaosHitOverrides;
++std::map<uint8_t, ChaosFxOverride> chaosMissileOverrides;
++
++const ChaosFxOverride* chaosHitOverride(uint8_t kind, uint16_t key)
++{
++	auto it = chaosHitOverrides.find((static_cast<uint32_t>(kind) << 16) | key);
++	return it != chaosHitOverrides.end() ? &it->second : nullptr;
++}
++
++Position chaosShifted(const Position& pos, int8_t dx, int8_t dy)
++{
++	return Position(static_cast<uint16_t>(pos.x + dx), static_cast<uint16_t>(pos.y + dy), pos.z);
++}
++}
++
++void Game::setHitEffectOverride(uint8_t kind, uint16_t key, int32_t effect, int8_t dx, int8_t dy)
++{
++	uint32_t k = (static_cast<uint32_t>(kind) << 16) | key;
++	if (effect < 0) {
++		chaosHitOverrides.erase(k);
++	} else {
++		chaosHitOverrides[k] = {static_cast<uint16_t>(effect), dx, dy};
++	}
++}
++
++void Game::setMissileOverride(uint8_t stock, uint8_t missile, int8_t dx, int8_t dy)
++{
++	if (missile == 0) {
++		chaosMissileOverrides.erase(stock);
++	} else {
++		chaosMissileOverrides[stock] = {missile, dx, dy};
++	}
++}
++
++void Game::clearEffectOverrides()
++{
++	chaosHitOverrides.clear();
++	chaosMissileOverrides.clear();
++}
++
++// the hit effect of one damage part: a condition tick by its combat type, a physical hit by the target's race, any
++// other hit by its combat type; without an override the stock effect (combatGetTypeInfo)
++void Game::addHitEffect(const SpectatorVec& spectators, const Creature* target, const Position& pos,
++                        CombatType_t combatType, CombatOrigin origin, uint8_t stock)
++{
++	const ChaosFxOverride* o = nullptr;
++	if (origin == ORIGIN_CONDITION) {
++		o = chaosHitOverride(2, combatType);
++	} else if (combatType == COMBAT_PHYSICALDAMAGE) {
++		o = chaosHitOverride(0, target->getRace());
++	} else {
++		o = chaosHitOverride(1, combatType);
++	}
++	if (o) {
++		if (o->effect != 0) {
++			addMagicEffect(spectators, chaosShifted(pos, o->dx, o->dy), o->effect);
++		}
++		return;
++	}
++	if (stock != CONST_ME_NONE) {
++		addMagicEffect(spectators, pos, stock);
++	}
++}
++
+ Game::Game()
+ {
+ 	offlineTrainingWindow.defaultEnterButton = 1;
+@@ -4777,16 +4849,12 @@
+ 		uint8_t hitEffect;
+ 		if (message.primary.value) {
+ 			combatGetTypeInfo(damage.primary.type, target, message.primary.color, hitEffect);
+-			if (hitEffect != CONST_ME_NONE) {
+-				addMagicEffect(spectators, targetPos, hitEffect);
+-			}
++			addHitEffect(spectators, target, targetPos, damage.primary.type, damage.origin, hitEffect); // Chaos 0045
+ 		}
+ 
+ 		if (message.secondary.value) {
+ 			combatGetTypeInfo(damage.secondary.type, target, message.secondary.color, hitEffect);
+-			if (hitEffect != CONST_ME_NONE) {
+-				addMagicEffect(spectators, targetPos, hitEffect);
+-			}
++			addHitEffect(spectators, target, targetPos, damage.secondary.type, damage.origin, hitEffect); // Chaos 0045
+ 		}
+ 
+ 		if (message.primary.color != TEXTCOLOR_NONE || message.secondary.color != TEXTCOLOR_NONE) {
+@@ -5025,9 +5093,16 @@
+ 
+ void Game::addDistanceEffect(const SpectatorVec& spectators, const Position& fromPos, const Position& toPos, uint8_t effect)
+ {
++	Position from = fromPos, to = toPos;
++	auto it = chaosMissileOverrides.find(effect); // Chaos (src-patch 0045): a stock missile swapped from Lua
++	if (it != chaosMissileOverrides.end()) {
++		effect = static_cast<uint8_t>(it->second.effect);
++		from = chaosShifted(fromPos, it->second.dx, it->second.dy);
++		to = chaosShifted(toPos, it->second.dx, it->second.dy);
++	}
+ 	for (Creature* spectator : spectators) {
+ 		if (Player* tmpPlayer = spectator->getPlayer()) {
+-			tmpPlayer->sendDistanceShoot(fromPos, toPos, effect);
++			tmpPlayer->sendDistanceShoot(from, to, effect);
+ 		}
+ 	}
+ }
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -551,6 +551,9 @@
+ 		static int luaGameLoadMap(lua_State* L);
+ 
+ 		static int luaGameGetExperienceStage(lua_State* L);
++		static int luaGameSetHitEffect(lua_State* L); // Chaos (src-patch 0045)
++		static int luaGameSetMissileEffect(lua_State* L);
++		static int luaGameClearEffectOverrides(lua_State* L);
+ 		static int luaGameGetExperienceForLevel(lua_State* L);
+ 		static int luaGameGetMonsterCount(lua_State* L);
+ 		static int luaGameGetPlayerCount(lua_State* L);
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2168,6 +2168,9 @@
+ 	registerMethod("Game", "loadMap", LuaScriptInterface::luaGameLoadMap);
+ 
+ 	registerMethod("Game", "getExperienceStage", LuaScriptInterface::luaGameGetExperienceStage);
++	registerMethod("Game", "setHitEffect", LuaScriptInterface::luaGameSetHitEffect); // Chaos (src-patch 0045)
++	registerMethod("Game", "setMissileEffect", LuaScriptInterface::luaGameSetMissileEffect);
++	registerMethod("Game", "clearEffectOverrides", LuaScriptInterface::luaGameClearEffectOverrides);
+ 	registerMethod("Game", "getExperienceForLevel", LuaScriptInterface::luaGameGetExperienceForLevel);
+ 	registerMethod("Game", "getMonsterCount", LuaScriptInterface::luaGameGetMonsterCount);
+ 	registerMethod("Game", "getPlayerCount", LuaScriptInterface::luaGameGetPlayerCount);
+@@ -4475,6 +4478,46 @@
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaGameSetHitEffect(lua_State* L)
++{
++	// Game.setHitEffect(kind, key, effect[, dx = 0[, dy = 0]])  Chaos (src-patch 0045)
++	// kind 0: a physical hit on a creature of race `key`; 1: a direct hit of combat type `key`; 2: a condition tick of
++	// combat type `key`. effect: the magic effect sent instead (at the tile + dx, dy), 0 none, nil or -1 the stock one.
++	uint8_t kind = getNumber<uint8_t>(L, 1);
++	uint16_t key = getNumber<uint16_t>(L, 2);
++	if (kind > 2) {
++		pushBoolean(L, false);
++		return 1;
++	}
++	int32_t effect = isNumber(L, 3) ? getNumber<int32_t>(L, 3) : -1;
++	if (effect > 0xFFFF) {
++		pushBoolean(L, false);
++		return 1;
++	}
++	Game::setHitEffectOverride(kind, key, effect, getNumber<int8_t>(L, 4, 0), getNumber<int8_t>(L, 5, 0));
++	pushBoolean(L, true);
++	return 1;
++}
++
++int LuaScriptInterface::luaGameSetMissileEffect(lua_State* L)
++{
++	// Game.setMissileEffect(stock, missile[, dx = 0[, dy = 0]])  Chaos (src-patch 0045)
++	// every distance effect `stock` is sent as `missile` (from and to shifted by dx, dy); missile 0 or nil: stock
++	uint8_t stock = getNumber<uint8_t>(L, 1);
++	uint8_t missile = isNumber(L, 2) ? getNumber<uint8_t>(L, 2) : 0;
++	Game::setMissileOverride(stock, missile, getNumber<int8_t>(L, 3, 0), getNumber<int8_t>(L, 4, 0));
++	pushBoolean(L, true);
++	return 1;
++}
++
++int LuaScriptInterface::luaGameClearEffectOverrides(lua_State* L)
++{
++	// Game.clearEffectOverrides()  Chaos (src-patch 0045): back to the stock hit effects and missiles
++	Game::clearEffectOverrides();
++	pushBoolean(L, true);
++	return 1;
++}
++
+ int LuaScriptInterface::luaGameGetExperienceForLevel(lua_State* L)
+ {
+ 	// Game.getExperienceForLevel(level)

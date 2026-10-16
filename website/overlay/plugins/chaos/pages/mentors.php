@@ -1,7 +1,7 @@
 <?php
 /**
  * Mentors: the mentors who chose to be shown (their card, graduates, free places) and the totals, read from the game
- * server's chaos_mentor* tables (mentor_lib.php). page.php?plugin=chaos&p=mentors
+ * server's chaos_mentor* tables (mentor_lib.php). page?plugin=chaos&p=mentors
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once dirname(__DIR__) . '/mentor_lib.php';

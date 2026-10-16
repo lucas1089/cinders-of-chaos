@@ -26,7 +26,7 @@ SIZE = 32
 
 LUA_DUMP = r'''
 for _, f in ipairs({"chaos_fx", "chaos_vfx", "chaos_vfx_art", "chaos_big_fx_ids", "chaos_class_fx_ids",
-    "chaos_pack_fx_ids", "chaos_pack27_fx_ids", "chaos_status_fx_ids"}) do
+    "chaos_pack_fx_ids", "chaos_pack27_fx_ids", "chaos_pack29_fx_ids", "chaos_status_fx_ids"}) do
   pcall(dofile, "data/lib/" .. f .. ".lua")
 end
 dofile("data/scripts/chaos/cosmetics_core.lua")

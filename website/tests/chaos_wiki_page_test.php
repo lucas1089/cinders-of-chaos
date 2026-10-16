@@ -174,12 +174,12 @@ check(strpos($store, '(legal:donations)') !== false && strpos($store, 'doação 
 
 // ---------------------------------------------------------------- the renderer and the link rules
 check(chaos_wiki_link('javascript:alert(1)', 'en') === '' && chaos_wiki_link('//evil.example', 'en') === '' && chaos_wiki_link('http://x.example', 'en') === '', 'links: no javascript, protocol-relative or plain http');
-check(chaos_wiki_link('wiki:nope:nope', 'en') === '' && chaos_wiki_link('wiki:class:warrior', 'en') === 'page.php?plugin=chaos&p=wiki&t=class%3Awarrior&l=en', 'links: wiki topics');
-check(chaos_wiki_link('legal:donations', 'pt-BR') === 'page.php?plugin=chaos&p=legal&doc=donations' && chaos_wiki_link('legal:donations', 'en') === 'page.php?plugin=chaos&p=legal&doc=donations&l=en', 'links: legal texts in the same language');
+check(chaos_wiki_link('wiki:nope:nope', 'en') === '' && chaos_wiki_link('wiki:class:warrior', 'en') === 'page?plugin=chaos&p=wiki&t=class%3Awarrior&l=en', 'links: wiki topics');
+check(chaos_wiki_link('legal:donations', 'pt-BR') === 'page?plugin=chaos&p=legal&doc=donations' && chaos_wiki_link('legal:donations', 'en') === 'page?plugin=chaos&p=legal&doc=donations&l=en', 'links: legal texts in the same language');
 $html = chaos_wiki_guide_html("# T <b>\n\nA **b** [x](javascript:alert(1)) [y](wiki:guide:faq) <script>alert(1)</script> {{nope.key}}\n\n- one\n  two\n", 'en');
 check(strpos($html, '<h1 class="chaos-heading">T &lt;b&gt;</h1>') !== false, 'renderer: heading escaped');
 check(strpos($html, '<script>') === false && strpos($html, '&lt;script&gt;') !== false && strpos($html, 'javascript') === false, 'renderer: no script, no javascript link');
-check(strpos($html, '<a href="page.php?plugin=chaos&amp;p=wiki&amp;t=guide%3Afaq&amp;l=en">y</a>') !== false && strpos($html, '<strong>b</strong>') !== false, 'renderer: wiki link and bold');
+check(strpos($html, '<a href="page?plugin=chaos&amp;p=wiki&amp;t=guide%3Afaq&amp;l=en">y</a>') !== false && strpos($html, '<strong>b</strong>') !== false, 'renderer: wiki link and bold');
 check(strpos($html, '<li>one two</li>') !== false, 'renderer: list item continued');
 $html = chaos_wiki_guide_html("Intro\n\n=> @key | <b>One</b> | the **first** {{rift.maxTier}}\n=> @nope | Two | x\n\n> [warn] Careful <i>\n> still\n\nAfter", 'en');
 check(substr_count($html, 'class="chaos-wiki-steps__step"') === 2 && strpos($html, '<strong>&lt;b&gt;One&lt;/b&gt;</strong>') !== false
@@ -193,21 +193,21 @@ $entry = chaos_wiki_entry_html(array('id' => 'x', 'name' => '<i>N</i>', 'sub' =>
 	'sections' => array(array('h' => 'H', 'p' => array('<b>'), 'cols' => array('A', 'B'), 'rows' => array(array('class', '<x>')), 'links' => array('class:warrior')))), 'en');
 check(strpos($entry, '&lt;i&gt;N&lt;/i&gt;') !== false && strpos($entry, 'S&amp;') !== false && strpos($entry, '<p>&lt;b&gt;</p>') !== false && strpos($entry, '<td>&lt;x&gt;</td>') !== false, 'entry: every value escaped');
 check(strpos($entry, 'red;x:y') === false && strpos($entry, 'border-left-color:#d6c9ae') !== false, 'entry: a bad colour is replaced');
-check(strpos($entry, '<a href="page.php?plugin=chaos&amp;p=wiki&amp;t=class%3Awarrior&amp;l=en">class</a>') !== false, 'entry: row link');
+check(strpos($entry, '<a href="page?plugin=chaos&amp;p=wiki&amp;t=class%3Awarrior&amp;l=en">class</a>') !== false, 'entry: row link');
 check(strpos($entry, 'Coming soon') !== false, 'entry: soon badge');
 
 // ---------------------------------------------------------------- the pages
 list($page, $code, $title) = render_wiki(array());
 check($code === 200 && $title === 'Wiki', 'index: 200, title');
 check(strpos($page, 'lang="pt-BR"') !== false && strpos($page, '>Guias</h2>') !== false && strpos($page, '>Referência</h2>') !== false, 'index: Portuguese by default');
-check(strpos($page, 'href="page.php?plugin=chaos&amp;p=wiki&amp;l=en" lang="en">English</a>') !== false, 'index: English link');
+check(strpos($page, 'href="page?plugin=chaos&amp;p=wiki&amp;l=en" lang="en">English</a>') !== false, 'index: English link');
 foreach ($guides as $slug => $titles) {
-	check(strpos($page, 'href="page.php?plugin=chaos&amp;p=wiki&amp;t=guide%3A' . $slug . '">' . chaos_h($titles['pt-BR']) . '</a>') !== false, "index: links guide $slug");
+	check(strpos($page, 'href="page?plugin=chaos&amp;p=wiki&amp;t=guide%3A' . $slug . '">' . chaos_h($titles['pt-BR']) . '</a>') !== false, "index: links guide $slug");
 }
 foreach ($tabIds as $id) {
-	check(strpos($page, 'href="page.php?plugin=chaos&amp;p=wiki&amp;t=tab%3A' . $id . '"') !== false, "index: links tab $id");
+	check(strpos($page, 'href="page?plugin=chaos&amp;p=wiki&amp;t=tab%3A' . $id . '"') !== false, "index: links tab $id");
 }
-check(strpos($page, 'name="q"') !== false && strpos($page, 'action="page.php"') !== false && strpos($page, 'name="l"') === false, 'index: search form, no language field in Portuguese');
+check(strpos($page, 'name="q"') !== false && strpos($page, 'action="page"') !== false && strpos($page, 'name="l"') === false, 'index: search form, no language field in Portuguese');
 list($page) = render_wiki(array('l' => 'en'));
 check(strpos($page, 'lang="en"') !== false && strpos($page, '>Guides</h2>') !== false && strpos($page, '<input type="hidden" name="l" value="en">') !== false, 'index: English');
 check(strpos($page, 't=guide%3Astart&amp;l=en"') !== false && strpos($page, 'lang="pt-BR">Português</a>') !== false, 'index (en): links keep the language, link back');
@@ -293,7 +293,7 @@ list($page) = render_wiki(array('q' => '"><img src=x onerror=alert(1)>'));
 check(strpos($page, '<img') === false && strpos($page, '&quot;&gt;&lt;img') !== false, 'search page: attribute break-out escaped');
 list($page) = render_wiki(array('q' => 'Pyre Oath', 'l' => 'en'));
 check(strpos($page, 'Results for') !== false && strpos($page, 't=tree%3A108&amp;l=en">Pyre Oath</a>') !== false, 'search page: finds Pyre Oath');
-check(strpos($page, 'href="page.php?plugin=chaos&amp;p=wiki&amp;q=Pyre%20Oath" lang="pt-BR"') !== false, 'search page: language link keeps the query');
+check(strpos($page, 'href="page?plugin=chaos&amp;p=wiki&amp;q=Pyre%20Oath" lang="pt-BR"') !== false, 'search page: language link keeps the query');
 list($page) = render_wiki(array('q' => 'a'));
 check(strpos($page, 'Digite pelo menos 2 letras.') !== false, 'search page: too short');
 list($page) = render_wiki(array('q' => str_repeat('x', 500)));
@@ -304,9 +304,9 @@ check(chaos_wiki_query(array('q' => array('x'))) === '' && chaos_wiki_query(arra
 $src = (string)file_get_contents(__DIR__ . '/../overlay/plugins/chaos/pages/wiki.php');
 check(strpos($src, "if (!isset(\$config)) { http_response_code(403);") !== false, 'no direct access');
 $locale = include __DIR__ . '/../overlay/layouts/chaos/locale/en.php';
-check(strpos((string)$locale['void.footer.copyright'], '<a href="page.php?plugin=chaos&amp;p=wiki">Wiki</a>') !== false, 'footer links the wiki');
-check(strpos((string)file_get_contents(__DIR__ . '/../setup/chaos_setup.php'), "\$menu('Wiki', 'page.php?plugin=chaos&p=wiki'") !== false, 'menu entry');
-check(strpos((string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/index.php'), 'href="page.php?plugin=chaos&amp;p=wiki">Read the guide</a>') !== false, 'home page button');
+check(strpos((string)$locale['void.footer.copyright'], '<a href="page?plugin=chaos&amp;p=wiki">Wiki</a>') !== false, 'footer links the wiki');
+check(strpos((string)file_get_contents(__DIR__ . '/../setup/chaos_setup.php'), "\$menu('Wiki', 'page?plugin=chaos&p=wiki'") !== false, 'menu entry');
+check(strpos((string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/index.php'), 'href="page?plugin=chaos&amp;p=wiki">Read the guide</a>') !== false, 'home page button');
 $css = (string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/assets/css/chaos.css');
 check(strpos($css, '.chaos-wiki-search') !== false && strpos($css, '.chaos-wiki-scroll') !== false, 'layout styles');
 check(strpos($css, '.chaos-wiki-steps') !== false && strpos($css, '.chaos-wiki-callout') !== false && strpos($css, '.chaos-wiki-hero__img') !== false, 'layout styles: wiki art');

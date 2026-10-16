@@ -43,6 +43,9 @@ function onCastSpell(creature, variant, isHotkey)
 			local spots = ChaosSpell.freeAround(p, c:getPosition())
 			if #spots > 0 then
 				ChaosSpell.fx(c:getPosition(), "shadow_smoke", CONST_ME_POFF)
+				if ChaosMysticFx then -- pair 29 only (ChaosPack29Fx): a singularity drags the foe in
+					ChaosMysticFx.shoot(c:getPosition(), p, "weave_marble")
+				end
 				c:teleportTo(spots[1].pos)
 				ChaosSpell.fx(spots[1].pos, "shadow_smoke", CONST_ME_MORTAREA)
 			end

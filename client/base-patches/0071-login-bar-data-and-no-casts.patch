@@ -1,0 +1,32 @@
+# Chaos: the login screen's bottom bar shows only data it has; casts off on our server (client_background; after
+# 0001-0070). background.lua: hasBoostedInfo() for client_chaos_login (ChaosLoginBar), which shows the bar only with
+# the sign-in panel and each panel only with data. casts.lua: the cast list is asked for only with Services.casts =
+# true in init.lua (our server has none; the request opened a failing login connection every 30 s).
+--- a/modules/client_background/background.lua
++++ b/modules/client_background/background.lua
+@@ -248,6 +248,11 @@
+   end)
+ end
+ 
++-- Chaos (base patch 0071): client_chaos_login shows the boosted panel only when the service sent a creature or a boss
++function hasBoostedInfo()
++  return boostedCreatureInfo ~= nil or boostedBossInfo ~= nil
++end
++
+ function updateBoostedInfo(creatureInfo, bossInfo)
+   boostedCreatureInfo = creatureInfo
+   boostedBossInfo = bossInfo
+--- a/modules/client_background/casts.lua
++++ b/modules/client_background/casts.lua
+@@ -66,6 +66,11 @@
+   castStatusEvent = nil
+ 
+   cancelCastRequest()
++  -- Chaos (base patch 0071): our server has no cast list; asking its login port every 30 s for one only opened
++  -- connections that failed. Casts are asked for only with Services.casts = true in init.lua.
++  if not (type(Services) == 'table' and Services.casts == true) then
++    return
++  end
+   if serverInfo and serverInfo ~= Cast.serverInfo then
+     Cast.list = {}
+     setCounts(0, 0)

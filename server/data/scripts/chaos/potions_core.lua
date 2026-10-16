@@ -60,6 +60,16 @@ function K.npcBuy(cfg, s)
 	return {ok = true, price = e.price}
 end
 
+-- the lock value an Everfull potion carries (cfg.bindLock: bound, not drawn grey), and whether an item's current value
+-- must change to it (a potion given before 2026-10-16 carries 1, the grey player lock)
+function K.bindLock(cfg)
+	return cfg.bindLock or 1
+end
+
+function K.needsRebind(cfg, value)
+	return tonumber(value) ~= K.bindLock(cfg)
+end
+
 -- the one-time grant at login: characters made before the Everfull potions (a new character gets them with its
 -- starter kit, which sets the flag; lastLogin 0 = brand new, the kit comes a moment later)
 function K.grantDue(cfg, s)

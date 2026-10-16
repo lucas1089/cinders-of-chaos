@@ -1,0 +1,14 @@
+diff --git a/characterprofile.php b/characterprofile.php
+index 3608781..d04c9e4 100644
+--- a/characterprofile.php
++++ b/characterprofile.php
+@@ -130,7 +130,8 @@ if (isset($_GET['name']) === true && empty($_GET['name']) === false) {
+ 						$level_next_exp = (int)level_to_experience($level_raw + 1);
+ 						$level_exp_span = max(1, $level_next_exp - $level_start_exp);
+ 						$level_exp_done = min($level_exp_span, max(0, $experience_raw - $level_start_exp));
+-						$level_percent = round(($level_exp_done / $level_exp_span) * 100, 2);
++						// Chaos: rounded down, so a character 1 experience short of the next level never shows 100%
++						$level_percent = floor(($level_exp_done / $level_exp_span) * 10000) / 100;
+ 						$level_needed = max(0, $level_next_exp - $experience_raw);
+ 						$detail_skill_rows = array(
+ 							array('label' => t('common.level'), 'value' => $playerstats['level']),

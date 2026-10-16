@@ -73,6 +73,9 @@ jobs:
           python3 -I tools/ci/check_credits_test.py
           python3 -I client/tools/gen_credits_test.py
 
+      - name: Client release host and site (client/tools/set_server_host.py)
+        run: python3 -I client/tools/set_server_host_test.py
+
       - name: Client layouts (no fit-children on anchor-sized widgets, no anchor cycles)
         run: |
           python3 -I tools/ci/check_layouts.py
@@ -151,6 +154,9 @@ jobs:
       - name: Potions install (no empty flasks, Everfull potions, NPC replacement)
         run: python3 -I server/tools/install_potions_test.py
 
+      - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
+        run: python3 -I server/tools/patch_base_npcs_test.py
+
       - name: Idle kick patch (config.lua kickIdlePlayerAfterMinutes on a copy of the stock text)
         run: python3 -I server/tools/patch_base_idle_kick_test.py
 
@@ -162,6 +168,12 @@ jobs:
 
       - name: Mystic stock spell effects patch (patch_mystic_stock_fx.py on copies of the base Hex and Ripple lines)
         run: python3 -I server/tools/patch_mystic_stock_fx_test.py
+
+      - name: Class outfits install (install_outfits.py; the pair 29 Archmage per sex behind its switch)
+        run: python3 -I server/tools/install_outfits_test.py
+
+      - name: Free spells patch (patch_free_spells.py on a synthetic spells.xml, revscript and NPC library)
+        run: python3 -I server/tools/patch_free_spells_test.py
 
       - name: Ground effects under the creatures (rules, ground_fx.csv, groundfx_data.lua up to date)
         run: |
@@ -216,6 +228,12 @@ jobs:
       - name: Cooldown channels never hold each other (server src-patch 0042, guard)
         run: python3 -I server/tools/cooldown_channels_patch_test.py
 
+      - name: Hotkeys find an item by its look (server src-patch 0043, guard)
+        run: python3 -I server/tools/hotkey_lookup_patch_test.py
+
+      - name: The install report counts the map (install_all.py snapshot, towns step)
+        run: python3 -I server/tools/install_all_snapshot_test.py
+
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py
 
@@ -224,6 +242,9 @@ jobs:
 
       - name: Store items kept on death (patch_base_events.py step 15, stock copy)
         run: python3 -I server/tools/death_keep_patch_test.py
+
+      - name: Hit effects and missiles swapped from Lua (server src-patch 0045, pair 29 VFX packs)
+        run: python3 -I server/tools/effect_overrides_patch_test.py
 
       - name: Gentle deaths (patch_base_events.py step 18, stock copy)
         run: python3 -I server/tools/gentle_death_patch_test.py
@@ -318,6 +339,19 @@ jobs:
             server/tools/proxyprotocol_test.cpp -o "$d/proxyprotocol_test"
           "$d/proxyprotocol_test"
 
+      - name: Login security (RSA key tools, failed-login limits of server src-patch 0047, VPS hardening dry run)
+        run: |
+          python3 -I server/tools/rsa_key_test.py
+          python3 -I client/tools/set_rsa_key_test.py
+          d=$(mktemp -d)
+          awk '/^--- \/dev\/null/{getline n; if (n ~ /loginlimit\.h/) {p=1; print; print n; next}} p&&/^--- a\//{p=0} p' \
+            server/src-patches/0047-login-failure-limit.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" server/tools/loginlimit_test.cpp -o "$d/loginlimit_test"
+          "$d/loginlimit_test"
+          shellcheck tools/linux/harden_vps.sh
+          python3 -I tools/linux/harden_vps_test.py
+
       - name: Gateway and backend firewall scripts (render and check, no changes)
         run: |
           bash -n server/deploy/gateway/setup_gateway.sh
@@ -385,6 +419,12 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
           # pack farming spell effects (pair 27 trial): spec and sums match gen_pack27_fx.py's table (sets not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack27_fx.py build --check
+          # Mystic line effects, Tier B (pair 29): spec, sums and sources match gen_pack29_fx.py's table (sets not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_fx.py build --check
+          # condition auras, blasts, missiles, fireworks and hit splashes of pair 29 (the VFX packs, not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_vfx.py build --check
+          # the Archmage of pair 29 (our own rig art): things file and sheet sums match class_art.py (no render)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
           # gem looks (the owner's gem set): atlas, things spec and the Codex strips match the generator (same pins)

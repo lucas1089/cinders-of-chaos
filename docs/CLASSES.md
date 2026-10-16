@@ -144,6 +144,38 @@ Ranger line 23: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 10
   Smite.
 - **Sentinel**: 100: Consecration > Radiant Smite; 300: Consecration > Shield Wave > Radiant Smite.
 
+## Starting stats
+
+New characters start at level 8 (4200 experience) in the temple of Cinderhold, wearing their full kit (owner design
+2026-10-16: no tutorial island). Every class has its own level 1 health, mana, capacity (oz) and soul and its gains per
+level in `server/data/scripts/chaos/start_stats.lua` (the one source of every creation path: the website and the client,
+`add-account.sh`, the test accounts, and the game's one-time login correction of characters below them); the start is
+the level 1 row plus 7 levels of gains. The level 1 values follow the vocation gains: more health per level, more health
+at level 1, and so on. Ascended classes start like their base class. The class look is worn in the class's start colours
+(`class_looks_core.lua` `L.startColors`). The owner approved these stats and start colours on 2026-10-16.
+
+| Class | Level 8 health / mana / capacity | Start colours (head, body, legs, feet) |
+|---|---|---|
+| Warrior | 290 / 70 / 645 | 57, 113, 114, 116 (grey, crimson, black, brown) |
+| Ranger | 235 / 165 / 580 | 116, 120, 116, 115 (browns, forest green) |
+| Mystic | 185 / 300 / 470 | 57, 107, 126, 114 (grey, deep blue, navy, black) |
+| Thief | 259 / 115 / 609 | 95, 114, 95, 114 (dark grey, black) |
+| Monk | 259 / 115 / 609 | 97, 97, 116, 116 (ochre, brown) |
+| Necromancer | 211 / 262 / 501 | 114, 128, 114, 114 (black, dark purple) |
+| Templar | 278 / 96 / 640 | 79, 0, 79, 57 (gold, white) |
+
+Level 1 rows:
+
+| Class | Health | Mana | Capacity |
+|---|---|---|---|
+| Warrior (4, 8, 14) | 185 | 35 | 470 |
+| Ranger (3, 7, 15) | 165 | 60 | 440 |
+| Mystic (1, 5, 10) | 150 | 90 | 400 |
+| Thief (11, 12, 13) | 175 | 45 | 455 |
+| Monk (17, 18, 19) | 175 | 45 | 455 |
+| Necromancer (20, 21, 22) | 155 | 80 | 410 |
+| Templar (23, 24, 25) | 180 | 40 | 465 |
+
 ## How existing characters move over
 
 | Today | Becomes |
@@ -253,7 +285,8 @@ for free, at the migration.
   after a class change. List in `Chaos.classes.outfits` (`chaos_constants.lua`), code in `ascension.lua`
   (`giveClassOutfits`), outfits.xml entries for both sexes by `server/tools/install_outfits.py` (install step `outfits`).
   The Mystic line's donor art outfit 1559 "Archmage" was retired on 2026-10-16. It is not given any more; owners keep it
-  as "Archmage (old)", and it is never sold. A replacement waits behind `Chaos.classes.outfitReplacement` (off).
+  as "Archmage (old)", and it is never sold. Its replacement is the pair 29 Archmage (2235 male / 2236 female, our own
+  art, both addons given), behind `Chaos.classes.outfitReplacement` (off until pair 29 is live).
   See server/README.md "Class looks".
 
 Limits of phase 1:

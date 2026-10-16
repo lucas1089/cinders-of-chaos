@@ -156,7 +156,7 @@ final class ChaosDiscordWorker {
 			WHERE `g`.`id` > ? AND `g`.`action` IN (\'list\', \'sold\') ORDER BY `g`.`id` LIMIT 50;', array($cursor));
 		$n = 0;
 		$last = $cursor;
-		$link = $this->siteUrl !== '' ? "\n" . $this->siteUrl . '/page.php?plugin=chaos&p=bazaar' : '';
+		$link = $this->siteUrl !== '' ? "\n" . $this->siteUrl . '/page?plugin=chaos&p=bazaar' : '';
 		foreach ($rows as $r) {
 			$last = max($last, (int)$r['id']);
 			$kind = $r['action'] === 'sold' ? 'bazaar_sale' : 'bazaar_list';

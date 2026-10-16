@@ -1,19 +1,21 @@
 -- game_shaderfx: the UI widget shaders of base patch 0044 (client/MANIFEST.md "game_shaderfx").
---   liquid orbs   two orbs at the bottom corners of the game window, health and mana as a moving liquid
+--   liquid orbs   two orbs beside the chat panel, health at its left edge and mana at its right edge, bottom-aligned
+--                 with it (anchored to bottomSplitter, so they follow its resize and move; game_chatpanel centres the
+--                 group and leaves out the orbs on a window too narrow for them). Health and mana as a moving liquid
 --                 (chaos_ui_orb); a change of the value makes it slosh. Option liquidOrbs (off by default), size
---                 liquidOrbSize (small / medium / large, medium by default); an orb over the chat panel moves up.
+--                 liquidOrbSize (small / medium / large, medium by default).
 --   frame shine   a light sweep across the rarity frame of legendary-and-up and unique items in inventory and
 --                 container slots (chaos_ui_shine; game_itemrarity calls onRarityFrame). Option rarityFrameShine.
---   greyscale     a locked item (custom attribute 3) is drawn grey in its slot (chaos_ui_grey as the item shader;
+--   greyscale     an item its player locked (custom attribute 3 = 1) is drawn grey in its slot; a bound item (2, the
+--                 Everfull potions) keeps its colours (chaos_ui_grey as the item shader;
 --                 game_itemrarity calls onSlotItem). setGreyed(widget, on) for any other module.
 -- The engine part (UIWidget:setUiShader / setUiShaderParams) is base patch 0044; a client without it keeps plain
 -- images (every call is guarded). Pure helpers in shaderfxlogic.lua (shaderfx_test.lua).
 local L = ShaderFxLogic
 
-local orbs
+local orbs -- {health = widget, mana = widget} while the orbs exist
+local orbsFit = true -- game_chatpanel: false when the window leaves no room for them beside the chat
 local options = { shine = true, orbs = false, orbSize = L.ORB_DEFAULT_SIZE }
-local placeEvent
-local PLACE_TICK = 500 -- the chat panel can be resized at any time: the orbs check their place twice a second
 local orbState = {} -- 'health' / 'mana' -> {fill, slosh}
 local sloshEvent
 local SLOSH_TICK = 50
@@ -97,7 +99,7 @@ end
 
 -- ---------------------------------------------------------------- orbs
 local function orbWidget(kind)
-  return orbs and orbs:getChildById(kind == 'health' and 'healthOrb' or 'manaOrb')
+  return orbs and orbs[kind] or nil
 end
 
 local function paintOrb(kind)
@@ -169,51 +171,82 @@ local function applyOrbSize()
   end
 end
 
--- keep the orbs off the bottom area (action bars + chat): an orb over it sits on top of it instead
+-- anchor the orbs to the chat panel's edges (bottomSplitter): health right of its left edge's grip, mana past the
+-- width grip, both on the window's bottom edge like the chat. Without the chat panel (mobile) or game_chatpanel: the
+-- bottom corners of the root panel.
 local function placeOrbs()
   if not orbs then return end
   local gi = modules.game_interface
   local root = gi and gi.getRootPanel and gi.getRootPanel()
-  local map = gi and gi.getMapPanel and gi.getMapPanel()
   local splitter = root and root:getChildById('bottomSplitter')
-  if not map then return end
-  local area = nil
-  if splitter and splitter:isVisible() then
-    area = { x = splitter:getX(), y = splitter:getY(), width = splitter:getWidth() }
-  end
-  local size = L.orbSize(options.orbSize)
-  local bottom = map:getY() + map:getHeight()
+  local logic = rawget(_G, 'ChaosChatLogic')
+  local m = logic and logic.orbMargins and logic.orbMargins() or nil
+  local beside = splitter and splitter:isVisible() and m ~= nil
   for _, kind in ipairs({ 'health', 'mana' }) do
     local w = orbWidget(kind)
     if w then
-      local x = kind == 'health' and (map:getX() + L.ORB_EDGE) or (map:getX() + map:getWidth() - L.ORB_EDGE - size)
-      local margin = L.orbMarginBottom({ x = x, width = size }, bottom, size, area)
-      if w:getMarginBottom() ~= margin then w:setMarginBottom(margin) end
+      w:breakAnchors()
+      w:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+      w:setMarginBottom(m and m.bottom or L.ORB_EDGE)
+      if beside then
+        if kind == 'health' then
+          w:addAnchor(AnchorRight, 'bottomSplitter', AnchorLeft)
+          w:setMarginRight(m.left)
+        else
+          w:addAnchor(AnchorLeft, 'bottomSplitter', AnchorRight)
+          w:setMarginLeft(m.right)
+        end
+      elseif kind == 'health' then
+        w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        w:setMarginLeft(L.ORB_EDGE)
+      else
+        w:addAnchor(AnchorRight, 'parent', AnchorRight)
+        w:setMarginRight(L.ORB_EDGE)
+      end
+      w:setVisible(orbsFit)
     end
   end
 end
 
-local function placeTick()
-  placeEvent = nil
-  if not orbs then return end
+-- game_chatpanel: the room the orbs take beside the chat (0 while they are off)
+function getOrbReserve()
+  if not options.orbs then return 0 end
+  return (L.orbSize(options.orbSize))
+end
+
+-- game_chatpanel: whether the orbs fit beside the chat in this window
+-- (game_chatpanel loads after this module: its call also anchors the orbs to the chat once its logic exists)
+function setOrbsFit(fit)
+  orbsFit = fit ~= false
   placeOrbs()
-  placeEvent = scheduleEvent(placeTick, PLACE_TICK)
+end
+
+local function relayoutChat()
+  local chat = rawget(_G, 'ChaosChatPanel')
+  if chat and chat.relayout then pcall(chat.relayout) end
 end
 
 local function destroyOrbs()
-  if placeEvent then removeEvent(placeEvent) placeEvent = nil end
   if sloshEvent then removeEvent(sloshEvent) sloshEvent = nil end
-  if orbs then orbs:destroy() orbs = nil end
+  if orbs then
+    for _, w in pairs(orbs) do w:destroy() end
+    orbs = nil
+  end
   orbState = {}
 end
 
 local function createOrbs()
   if orbs then return end
   local gi = modules.game_interface
-  local map = gi and gi.getMapPanel and gi.getMapPanel()
-  if not map then return end
-  orbs = g_ui.loadUI('shaderfx', map)
-  if not orbs then return end
+  local root = gi and gi.getRootPanel and gi.getRootPanel()
+  if not root then return end
+  g_ui.importStyle('shaderfx')
+  orbs = {}
+  for kind, id in pairs({ health = 'healthOrb', mana = 'manaOrb' }) do
+    local w = g_ui.createWidget('ChaosOrb', root)
+    w:setId(id)
+    orbs[kind] = w
+  end
   for kind, color in pairs(L.ORB_COLORS) do
     local w = orbWidget(kind)
     local liquid = w and w:getChildById('liquid')
@@ -225,12 +258,13 @@ local function createOrbs()
     end
   end
   applyOrbSize()
+  placeOrbs()
   if g_game.isOnline() then refreshOrbs() end
-  if not placeEvent then placeEvent = scheduleEvent(placeTick, 0) end
 end
 
 local function applyOrbs()
   if options.orbs then createOrbs() else destroyOrbs() end
+  relayoutChat() -- the chat makes room for the orbs (or takes it back)
 end
 
 -- ---------------------------------------------------------------- options (client_settings, base patch 0044)
@@ -244,7 +278,7 @@ function onOption(which, value)
   elseif which == 'orbSize' then
     options.orbSize = tonumber(value) or L.ORB_DEFAULT_SIZE
     applyOrbSize()
-    placeOrbs()
+    relayoutChat()
   end
 end
 

@@ -7,7 +7,7 @@
  * Privacy: only rows with shown = 1 give a name (the character's choice: records and firsts unless turned off, a fall
  * only after a yes; turning it off hides every season's rows at once). A first counts its hidden members without
  * naming them; a record whose holder keeps the name stays, without it; a hidden fall is not listed at all.
- * Used by page.php?plugin=chaos&p=memorial (&s=<season key> for the archive). Prepared statements; chaos_h() on output.
+ * Used by page?plugin=chaos&p=memorial (&s=<season key> for the archive). Prepared statements; chaos_h() on output.
  */
 
 if (!function_exists('chaos_memorial_seasons')) {

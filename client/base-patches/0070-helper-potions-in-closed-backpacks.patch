@@ -1,0 +1,68 @@
+# Chaos: the helper's healing uses potions in closed backpacks, the Everfull potions among them (helper.lua; after
+# 0001-0069). On this 10.98 server LocalPlayer:getInventoryCount counts only equipped items and open containers, and
+# the helper used a potion only with a count above 0 (usePotion and the health / mana loops), so a potion in a closed
+# backpack was never used, although the server's use by id finds it in any carried container (server patch 0043 makes
+# that find the Everfull potions by their look). ChaosPotionGate (overlay game_helperrotation/potiongate.lua, tested)
+# allows a probe every 3 s for a potion the client cannot count, and waits 30 s when the server answers "Sorry, not
+# possible.". A counted potion is used as before; without the overlay module the old check runs.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -3638,11 +3638,15 @@
+   end
+ 
+   -- Usar getInventoryCount que funciona com containers fechados
++  -- Chaos (base patch 0070): on this server the count sees only open containers; ChaosPotionGate also lets a potion
++  -- in a closed backpack (the Everfull potions) be used, probing and backing off when the server has nothing to use
+   local potionCount = player:getInventoryCount(potionId, 0)
+-  if potionCount and potionCount > 0 then
++  local gate = ChaosPotionGate
++  if (gate and gate.allowed(gate.session, potionId, now, potionCount)) or (not gate and potionCount and potionCount > 0) then
+     safeDoThing(false)
+     g_game.useInventoryItemWith(potionId, player, 0, true)
+     safeDoThing(true)
++    if gate then gate.used(gate.session, potionId, now, potionCount) end
+     markObjectUse("potion", now, potionConfig.exhaustion)
+     lastObjectUseWasRune = false
+     return true
+@@ -4152,7 +4156,7 @@
+   health = localPlayer:getHealth()
+   healthPercent = (health / maxHealth) * 100
+   for _, potion in ipairs(cachedPrioritizedHealthPotions) do
+-    local hasItem = hasItemInBackpack(potion.id)
++    local hasItem = potionAvailable(potion.id)
+     local shouldUse = healthPercent <= potion.percent
+     if hasItem and shouldUse then
+       local potionUsed = usePotion(potion.id)
+@@ -4181,6 +4185,14 @@
+   return success and count and count > 0
+ end
+ 
++-- Chaos (base patch 0070): a potion the healing may use: counted in an open container, or a ChaosPotionGate probe
++-- for one in a closed backpack (the server's use by id finds it there)
++function potionAvailable(potionId)
++  local gate = ChaosPotionGate
++  if hasItemInBackpack(potionId) then return true end
++  return gate ~= nil and gate.allowed(gate.session, potionId, g_clock.millis(), 0)
++end
++
+ function checkManaHealing(mana, maxMana)
+   if not helperAutomaticFunctionsEnabled then
+     return
+@@ -4203,7 +4215,7 @@
+     for _, potion in ipairs(cachedPrioritizedHealthPotions) do
+       -- Only check if we actually have it (optimization: maybe skip hasItem check here if we want pure speed?)
+       -- Original code checked hasItemInBackpack.
+-      if hasItemInBackpack(potion.id) and currentHealthPercent <= potion.percent then
++      if potionAvailable(potion.id) and currentHealthPercent <= potion.percent then
+         startHealthPotionPriority = true
+         break
+       end
+@@ -4230,7 +4242,7 @@
+ 
+   -- 2. Tentar usar mana potion (cooldown independente de food)
+   for _, potion in ipairs(cachedPrioritizedManaPotions) do
+-    local hasItem = hasItemInBackpack(potion.id)
++    local hasItem = potionAvailable(potion.id)
+     local shouldUse = manaPercent <= potion.percent
+     if hasItem and shouldUse then
+       usePotion(potion.id)

@@ -293,3 +293,15 @@ function A.message(sel, nameOf)
   end
   return string.format('Rotation set: %s (max gap %.1f s)', table.concat(names, ' > '), sel.gap)
 end
+
+-- Which label the "Auto-update my spells" box can show in the room it has (the presets row, between the Set Key /
+-- help icons and Rename). free: pixels of room; widths: {full, short, box} of the box with each label and bare.
+-- 'full', then 'short', then 'none' (the box alone; the tooltip keeps the full text). It never overlaps.
+function A.autoBoxLabel(free, widths)
+  free = tonumber(free) or 0
+  widths = widths or {}
+  if (tonumber(widths.full) or math.huge) <= free then return 'full' end
+  if (tonumber(widths.short) or math.huge) <= free then return 'short' end
+  if (tonumber(widths.box) or math.huge) <= free then return 'none' end
+  return 'hidden'
+end

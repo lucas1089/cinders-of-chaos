@@ -499,10 +499,20 @@ ChaosMainWindow
     !tooltip: tr('What your Loot Bag (a store item) collects from your kills')
     @onClick: if modules.game_pouches then modules.game_pouches.toggleSettings() end
 
+  ChaosButton
+    id: lootBeamsButton
+    anchors.right: pouchButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    size: 96 24
+    !text: tr('Loot Beams')
+    !tooltip: tr('Light pillars over corpses with loot these rules make glow: on or off, height, intensity')
+    @onClick: if modules.game_lootbeams then modules.game_lootbeams.toggleSettings() end
+
   ChaosLabelDim
     id: savedLabel
     anchors.verticalCenter: closeButton.verticalCenter
     anchors.left: parent.left
-    anchors.right: pouchButton.left
+    anchors.right: lootBeamsButton.left
     text-align: left
     !text: tr('Changes are saved on your character at once.')

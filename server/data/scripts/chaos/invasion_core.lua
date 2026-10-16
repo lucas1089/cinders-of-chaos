@@ -264,6 +264,16 @@ function I.roster(faction, areaLevel, sc)
 	return fit
 end
 
+-- the level shown after an invader's name (monster_levels.lua, engine patches 0040 / 0044): the area level every
+-- invader is scaled to (I.scale; the roster stays within rosterLow-rosterHigh of it, inside the clamps); nil without one
+function I.displayLevel(areaLevel)
+	local lv = tonumber(areaLevel)
+	if not lv or lv ~= lv or lv <= 0 or lv == math.huge then
+		return nil
+	end
+	return math.floor(lv + 0.5)
+end
+
 -- multipliers that bring a monster of `monLevel` to the area level: health, damage and experience
 function I.scale(monLevel, areaLevel, sc)
 	sc = sc or {}

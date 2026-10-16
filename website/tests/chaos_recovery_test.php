@@ -77,7 +77,7 @@ function page(string $method, array $get, array $post, string $ip, int $now): st
 	return $r['html'];
 }
 function token_of(array $mail): string {
-	return preg_match('~https://www\.example\.org/recovery\.php\?reset=([A-Za-z0-9_-]{43})~', (string)$mail['text'], $m) ? $m[1] : '';
+	return preg_match('~https://www\.example\.org/recovery\?reset=([A-Za-z0-9_-]{43})~', (string)$mail['text'], $m) ? $m[1] : '';
 }
 
 // ---------------------------------------------------------------- the form
@@ -105,7 +105,7 @@ $token = token_of($mail);
 check($mail['to'] === 'wolf@example.org' && $mail['to_name'] === 'emberwolf', 'to the account e-mail');
 check($mail['subject'] === 'Cinders of Chaos: reset your password', 'subject with our name');
 check($token !== '', 'the link uses the configured site address');
-check(strpos($mail['html'], 'https://www.example.org/recovery.php?reset=' . $token) !== false, 'the HTML part has the same link');
+check(strpos($mail['html'], 'https://www.example.org/recovery?reset=' . $token) !== false, 'the HTML part has the same link');
 check(strpos($mail['text'] . $mail['html'], 'evil.example') === false, 'never the request Host header');
 check(strpos($mail['text'], 'emberwolf') !== false && strpos($mail['text'], 'Cinders of Chaos') !== false && strpos($mail['text'], '30 minutes') !== false,
 	'the mail names the account, our site and the lifetime');

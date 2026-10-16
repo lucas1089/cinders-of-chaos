@@ -948,7 +948,14 @@ local function processKill(monster, corpse)
 			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100))
 			if target > current then
 				item:setCustomAttribute("rarity", target)
-				bonus[#bonus + 1] = string.format("[%s] %s", rarityName(target), itemName(id))
+				-- one loot line (lootline.lua): the stock entry of this item ("[Common] x", written before this roll)
+				-- shows the new rarity, {} from Rare on; without it a bonus item, marked the same way
+				local up = {name = itemName(id), from = current > 0 and rarityName(current) or nil, to = rarityName(target)}
+				if not (ChaosLootLine and ChaosLootLine.addUpgrade and ChaosLootLine.addUpgrade(monster, up)) then
+					local text = string.format("[%s] %s", up.to, up.name)
+					local flag = ChaosPouchesConfig and ChaosPouchesConfig.lootLine and ChaosPouchesConfig.lootLine.flagRarity or 3
+					bonus[#bonus + 1] = target >= flag and ("{" .. text .. "}") or text
+				end
 				local from = c.announceRarityFrom or 0
 				if from > 0 and target >= from then
 					announce(owner, corpsePos,
@@ -1032,6 +1039,10 @@ local function processKill(monster, corpse)
 		end
 	end
 
+	-- one loot line per kill (lootline.lua): the bonus items join the stock "Loot of ..." line; without it their own line
+	if #bonus > 0 and ChaosLootLine and ChaosLootLine.addBonus and ChaosLootLine.addBonus(monster, bonus) then
+		return
+	end
 	if #bonus > 0 then
 		local text = ChaosI18n.msg("Chaos bonus loot of %s: %s", Chaos.monsterNameDescription(monster), table.concat(bonus, ", "))
 		local party = owner:getParty()

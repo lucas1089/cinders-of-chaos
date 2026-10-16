@@ -103,6 +103,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  README "Rotations")
                tools/patch_mystic_stock_fx.py    Mystic line effects in the base Bewitching Hex and Arcane Ripple
                                                  scripts (spells/README_FX.md "Mystic line effects")
+               tools/patch_free_spells.py        every spell and rune free: no premium flag in spells.xml or the
+                                                 revscripts, no premium test in the NPC spell teachers (README
+                                                 "Free spells")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
                0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
@@ -202,7 +205,8 @@ written as os.getenv("NAME") or "default" (server/tools/prod_config.py writes th
 The password comes from the environment variable CHAOS_DB_PASS, else MYSQL_PWD, else config.lua's mysqlPass. It is handed to
 the mysql client through a temporary option file (mode 0600), never on the command line.
 
-The report lists, per step, the files that changed (compared by content) and the tool's own output. Exit status 0 when
+The report lists, per step, the files that changed (compared by content; the map .otbm by size and modification time,
+so the towns, worldtexts and contentareas steps count it) and the tool's own output. Exit status 0 when
 every step succeeded, 1 otherwise (the run stops at the first failed step: later steps build on earlier ones).
 """
 import hashlib
@@ -237,8 +241,11 @@ LIB_MARK = '-- Chaos unique items (server/tools/install_all.py, data/items/READM
 AUTOLOOT_RE = re.compile(r'^([ \t]*)(<talkaction\s+words="!autoloot"[^>]*/>)[ \t]*$', re.M)
 AUTOLOOT_MARK = 'Chaos: autoloot.lua registers !autoloot (server/tools/install_all.py)'
 
-# hashed for the change report; the map itself is skipped (large and never changed by any step)
-SKIP_HASH = re.compile(r'\.otbm(\.bak|\.tmp)?$|(^|/)(logs|reports)/')
+# hashed for the change report; the map's backup and temporary copies, logs and reports are skipped. The map itself
+# (towns, worldtexts, contentareas change it) is large: it is compared by size and modification time, not hashed
+# (its tools write it only when it changes), so "towns - 1 file(s) changed" names the map
+SKIP_HASH = re.compile(r'\.otbm(\.bak|\.tmp)$|(^|/)(logs|reports)/')
+MAP_FILE = re.compile(r'\.otbm$')
 
 
 # ------------------------------------------------------------------------------------------------ helpers
@@ -247,7 +254,7 @@ def say(text=''):
 
 
 def snapshot(server):
-    """relative path -> sha1 of config.lua and every file under data/ (no maps, logs, reports)"""
+    """relative path -> sha1 of config.lua and every file under data/ (the map: size and mtime; no logs, reports)"""
     out = {}
     cfg = os.path.join(server, 'config.lua')
     if os.path.isfile(cfg):
@@ -259,6 +266,10 @@ def snapshot(server):
             path = os.path.join(root, name)
             rel = os.path.relpath(path, server).replace(os.sep, '/')
             if SKIP_HASH.search(rel) or os.path.islink(path):
+                continue
+            if MAP_FILE.search(rel):
+                st = os.stat(path)
+                out[rel] = 'map %d %d' % (st.st_size, st.st_mtime_ns)
                 continue
             out[rel] = digest(path)
     return out
@@ -597,6 +608,9 @@ def step_spells(server, data, ctx):
         lines += more
     if ok:
         ok, more = run_tool([tool('patch_mystic_stock_fx.py'), data], 'patch_mystic_stock_fx.py')
+        lines += more
+    if ok:
+        ok, more = run_tool([tool('patch_free_spells.py'), data], 'patch_free_spells.py')
         lines += more
     warn = unregistered_spell_fragments(data)
     return ok, lines, warn

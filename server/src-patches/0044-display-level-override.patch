@@ -1,0 +1,43 @@
+# Scaled monster levels in the name (server/README.md "Monster levels in the name"). Patch 0040 showed a display level
+# only for a monster without a level of its own, so a level-scaled type (a <level min max> in its XML) inside a rift,
+# an invasion or a generated area / dungeon showed its rolled type level ("[777]") and not the level its system
+# scaled it to. Now a display level set with monster:setDisplayLevel wins over the monster's own level in the creature
+# packet and the look text; unset (0), the own level shows as before. Display only: getMonsterLevel(), the engine's
+# level bonuses and the skull colour are unchanged. monster_levels.lua sets it at the spawn (Chaos.spawnLevel, before
+# the placement) for those systems only; every other level-scaled monster keeps its own level as before.
+# Applies after 0001-0043.
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+index 2f856da..d34348f 100644
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -14433,7 +14433,7 @@ int LuaScriptInterface::luaMonsterSetDisplayLevel(lua_State* L)
+ 
+ int LuaScriptInterface::luaMonsterGetDisplayLevel(lua_State* L)
+ {
+-	// monster:getDisplayLevel() (its own level when it has one, else the display level, else 0)
++	// monster:getDisplayLevel() (the display level when set, else its own level, else 0)
+ 	const Monster* monster = getUserdata<const Monster>(L, 1);
+ 	if (monster) {
+ 		lua_pushnumber(L, monster->getDisplayLevel());
+diff --git a/src/monster.h b/src/monster.h
+index d4bfd28..5500146 100644
+--- a/src/monster.h
++++ b/src/monster.h
+@@ -118,13 +118,14 @@ class Monster final : public Creature
+ 		int32_t getLevel() const {
+ 			return level;
+ 		}
+-		// Chaos: the level shown after the name ("Hellflayer [250]") for a monster without a level of its own
+-		// (no <level> in its XML): display only, no health, speed, damage, experience or skull change
++		// Chaos: the level shown after the name ("Hellflayer [250]"): display only, no health, speed, damage,
++		// experience or skull change. Set, it wins over the monster's own level (patch 0044: a rift, invasion or
++		// generated area monster shows the level its system scaled it to); unset, the own level shows.
+ 		void setDisplayLevel(int32_t value) {
+ 			displayLevel = value > 0 ? value : 0;
+ 		}
+ 		int32_t getDisplayLevel() const {
+-			return level > 0 ? level : displayLevel;
++			return displayLevel > 0 ? displayLevel : level;
+ 		}
+ 		void onAttackedCreatureDisappear(bool isLogout) override;
+ 

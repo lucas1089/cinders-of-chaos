@@ -3,7 +3,7 @@
  * Seasons: the current (or next) season from the server's season_config.lua,
  * its reward track, and the season ladder (characters in chaos_season_players) with a tab per
  * season mode (Self-Found, Hardcore, ...; chaos_season_modes) and the fallen Hardcore characters.
- * page.php?plugin=chaos&p=seasons[&mode=<all|standard|ssf|hc|hcssf|fallen>]
+ * page?plugin=chaos&p=seasons[&mode=<all|standard|ssf|hc|hcssf|fallen>]
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 $GLOBALS['page_title'] = 'Seasons';
@@ -29,7 +29,7 @@ if (!isset($modeTabs[$mode])) {
 }
 $fallenMarks = $mode === 'fallen' ? array() : chaos_fallen_marks();
 $modeUrl = static function (string $key): string {
-	return 'page.php?plugin=chaos&p=seasons&mode=' . rawurlencode($key);
+	return 'page?plugin=chaos&p=seasons&mode=' . rawurlencode($key);
 };
 $fmt = static function (int $t): string {
 	return $t > 0 ? date('j M Y, H:i', $t) : '-';
@@ -91,7 +91,7 @@ $fmt = static function (int $t): string {
 							<?php if (!$ladder): ?><li class="chaos-empty">Nobody yet.</li><?php endif; ?>
 							<?php foreach ($ladder as $r): ?>
 								<?php $fell = $mode === 'fallen' ? array((string)$r['name'] => array('level' => (int)($r['fallen_level'] ?? 0), 'cause' => (string)($r['fallen_cause'] ?? ''))) : $fallenMarks; ?>
-								<li><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a><?= chaos_fallen_html($fell, (string)$r['name']) ?>
+								<li><a href="characterprofile?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a><?= chaos_fallen_html($fell, (string)$r['name']) ?>
 									<span class="chaos-muted"><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></span>
 									<span class="chaos-ladder__lvl"><?= $mode === 'fallen' ? (int)($r['fallen_level'] ?? 0) : (int)$r['level'] ?></span></li>
 							<?php endforeach; ?>

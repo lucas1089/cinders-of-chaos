@@ -5,7 +5,9 @@
 --   ChaosLootFilter.applyPreset(name)         settings of a preset ("all", "hunter", "strict"), or nil
 --   ChaosLootFilter.classify(info, s)         "highlight" | "normal" | "dim" for one item
 --   ChaosLootFilter.autoloot(info, s, onList, unlocked)  "take" | "keep" | nil (nil = leave it to the stock autoloot)
---   ChaosLootFilter.rayEffect(info, cfg)      effect name of the loot ray for an item, or nil
+--   ChaosLootFilter.rayEffect(info, cfg)      effect name of the loot ray for an item, or nil (rayEffects only)
+--   ChaosLootFilter.beamCandidate(info, cfg)  may this item give its corpse a loot beam (drawn by the client)
+--   ChaosLootFilter.beamItems(entries, left, cfg)  indexes of the tracked entries still inside that may beam
 --   ChaosLootFilter.signature(info)           key used to match a tracked entry to an item still in the corpse
 --   ChaosLootFilter.reconcile(entries, present)  remaining count per tracked entry, given what the corpse holds now
 --   ChaosLootFilter.inReach(from, to, range)  same floor and within range.x / range.y squares
@@ -242,6 +244,37 @@ function F.rayEffect(info, cfg)
 		end
 	end
 	return best
+end
+
+-- Loot beams (client game_lootbeams): the client draws a light pillar over a corpse, coloured by the best item still
+-- inside that the player's own loot filter makes glow. The server only says which items may beam; the filter, the
+-- colour and the look are the client's. cfg = {beamMinRarity = n, beamUniques = bool, beamOrbs = bool}
+function F.beamCandidate(info, cfg)
+	if type(info) ~= "table" then
+		return false
+	end
+	if info.unique then
+		return cfg.beamUniques ~= false
+	end
+	if info.power then
+		return true -- a legendary power always glows
+	end
+	if info.orb then
+		return cfg.beamOrbs and true or false
+	end
+	local r = tonumber(info.rarity) or 0
+	return r >= 1 and r >= (tonumber(cfg.beamMinRarity) or 1)
+end
+
+-- entries = {{info, count}, ...} as tracked; left = {remaining count per entry}. Returns {i, ...} in entry order.
+function F.beamItems(entries, left, cfg)
+	local out = {}
+	for i, e in ipairs(entries or {}) do
+		if (tonumber(left and left[i]) or 0) > 0 and F.beamCandidate(e.info, cfg) then
+			out[#out + 1] = i
+		end
+	end
+	return out
 end
 
 -- ---------------------------------------------------------------- tracking

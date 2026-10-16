@@ -1,0 +1,31 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,storm_shock,pack29_fx/storm_shock.png,2,3,17,83,0,1,Forked Storm: jagged arcs crackle over each struck foe (from status_shocked/thunder 0-15)
+effect,covenant_bloodlust,pack29_fx/covenant_bloodlust.png,2,3,17,83,0,1,"Crimson Covenant: veins throb on the floor, red vapour coils up the caster (from status_bloodlust/blood 0-15)"
+effect,pyre_rune,pack29_fx/pyre_rune.png,2,2,16,83,0,0,Falling Pyre: a burning rune circle marks where the meteor falls (from field_rune_trap/hellfire 0-31 step 2)
+effect,crypt_ice_strike,pack29_fx/crypt_ice_strike.png,5,5,17,62,2,2,Frozen Crypt: a cluster of ice spikes erupts and bursts into shards and frost mist (from impact_ultimate_ice_strike/frost 0-15)
+effect,doom_skyfall,pack29_fx/doom_skyfall.png,5,5,28,67,1,1,"Doomtide, last wave: a meteor falls from the sky and bursts (from mega:skyfall_meteor/all 0-27)"
+effect,doom_tornado,pack29_fx/doom_tornado.png,4,3,19,62,1,1,"Doomtide, storm wave: a howling storm funnel spins up and unwinds (from impact_tornado/storm 0-19)"
+effect,ironbark_skin,pack29_fx/ironbark_skin.png,2,3,17,83,0,1,Ironbark Hide: bark-like plates shimmer over the body (from status_iron_skin/earth 0-15)
+effect,briar_rooted,pack29_fx/briar_rooted.png,2,1,17,83,0,0,Briar Prison: gnarled roots coil around the feet (from status_rooted/nature@loop 0-15)
+effect,squall_spore_cloud,pack29_fx/squall_spore_cloud.png,6,5,24,62,2,2,"Primordial Squall, venom waves: a toxic blast swells into a spore cloud (from impact_mushroom_cloud/poison 0-23)"
+effect,mirror_ring,pack29_fx/mirror_ring.png,3,3,17,83,1,1,Hall of Mirrors: a ring of mirror panes turns round the caster (from mega:circle_mirror_ring/all 0-15)
+effect,mirror_glass_nova,pack29_fx/mirror_glass_nova.png,3,3,14,83,1,1,Hall of Mirrors: each clone steps out of a burst of glass shards (from mega:burst_glass_shardnova/all 0-13)
+effect,umbral_step,pack29_fx/umbral_step.png,4,3,14,62,1,1,Umbral Stride: a void shadow step where the Illusionist leaves and arrives (from fx_shadow_step/void 0-15)
+effect,psyche_fracture,pack29_fx/psyche_fracture.png,3,4,16,83,1,2,Shattered Psyche: the mind cracks in a prismatic fracture (from mega:burst_prismatic_fracture/all 0-15)
+effect,wraith_veil,pack29_fx/wraith_veil.png,3,3,25,83,1,1,Wraithshroud: smoke tendrils and blinking eyes veil the caster (from aura_shadow_veil/void 0-23)
+effect,night_eyelid,pack29_fx/night_eyelid.png,3,4,16,83,1,2,"Nightburst, the gather: a void eye opens on the floor (from mega:burst_void_eyelid/all 0-15)"
+effect,night_cataclysm,pack29_fx/night_cataclysm.png,6,5,24,62,2,2,Nightburst: a black hole crushes to a point and detonates in a void shockwave (from impact_void_cataclysm/void 0-23)
+effect,weave_crush,pack29_fx/weave_crush.png,5,5,16,83,2,2,Tear in the Weave: each implosion collapses the space round the rift (from mega:burst_gravity_crush/all 0-15)
+effect,mend_chime,pack29_fx/mend_chime.png,3,3,12,83,1,1,Mirror Mend: a crystal chime rings on the mirror (from mega:impact_crystal_chime/all 0-11)
+effect,reverie_pop,pack29_fx/reverie_pop.png,2,3,16,83,0,1,Lucid Reverie: dream bubbles pop on each member at every pulse (from mega:burst_dreambubble_pop/all 0-15)
+effect,reverie_release,pack29_fx/reverie_release.png,2,2,15,62,0,0,Lucid Reverie: spirit lights rise round the Illusionist (from fx_soul_release/spirit 0-15)
+effect,hex_curse,pack29_fx/hex_curse.png,2,3,17,83,0,1,Bewitching Hex: a void curse sigil and tendrils on the hexed foe (from status_cursed/void 0-15)
+missile,witchfire_lance,pack29_fx/witchfire_lance.png,3,3,8,83,1,1,Witchfire Bolt: a lance of witchfire (from proj_flame_lance/hellfire 0-7)
+missile,storm_bolt,pack29_fx/storm_bolt.png,3,3,8,83,1,1,Forked Storm: a forked lightning bolt (from proj_lightning_bolt/storm 0-7)
+missile,pyre_comet,pack29_fx/pyre_comet.png,3,3,8,83,1,1,Falling Pyre: a blazing comet (from proj_comet/fire 0-7)
+missile,crypt_lance,pack29_fx/crypt_lance.png,3,3,8,83,1,1,Frozen Crypt: a crystal ice lance (from proj_ice_lance/crystal 0-7)
+missile,hex_missile,pack29_fx/hex_missile.png,2,2,8,83,0,0,Bewitching Hex: a lavender arcane missile (from proj_arcane_missile/lavender 0-7)
+missile,umbral_raven,pack29_fx/umbral_raven.png,3,3,8,83,1,1,Umbral Stride: a raven of shadow (from mega:raven_shade/all 0-7)
+missile,psyche_prism,pack29_fx/psyche_prism.png,3,3,8,83,1,1,Shattered Psyche: a bolt splitting into a prism (from mega:prism_bolt/all 0-7)
+missile,weave_marble,pack29_fx/weave_marble.png,3,3,8,83,1,1,Tear in the Weave: a singularity drags each pulled foe in (from mega:singularity_marble/all 0-7)
+missile,mend_shards,pack29_fx/mend_shards.png,3,3,8,83,1,1,Mirror Mend: a volley of mirror shards (from mega:mirror_shard_volley/all 0-7)

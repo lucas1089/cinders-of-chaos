@@ -33,12 +33,12 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 		<p class="chaos-hero__text">Cinders of Chaos is a dark fantasy online RPG with its own client. It keeps the classic top-down hunt-and-loot game and adds the depth of an action RPG: classes with ascensions, a huge passive tree, items with rarities and modifiers, crafting orbs, monsters that roll affixes, and endgame systems built for weeks of play rather than days.</p>
 		<div class="chaos-cta">
 			<?php if (function_exists('user_logged_in') && user_logged_in()): ?>
-				<a class="chaos-btn" href="createcharacter.php">Create a character</a>
+				<a class="chaos-btn" href="createcharacter">Create a character</a>
 			<?php else: ?>
-				<a class="chaos-btn" href="register.php">Create an account</a>
+				<a class="chaos-btn" href="register">Create an account</a>
 			<?php endif; ?>
-			<a class="chaos-btn chaos-btn--ghost" href="downloads.php">Download the client</a>
-			<a class="chaos-btn chaos-btn--ghost" href="page.php?plugin=chaos&amp;p=wiki">Read the guide</a>
+			<a class="chaos-btn chaos-btn--ghost" href="downloads">Download the client</a>
+			<a class="chaos-btn chaos-btn--ghost" href="page?plugin=chaos&amp;p=wiki">Read the guide</a>
 		</div>
 	</section>
 
@@ -81,7 +81,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 	<section class="chaos-box">
 		<h2 class="chaos-heading">The Great Brazier</h2>
 		<?= $community ?>
-		<a class="chaos-btn chaos-btn--ghost" href="page.php?plugin=chaos&amp;p=community">Community goal and contributors</a>
+		<a class="chaos-btn chaos-btn--ghost" href="page?plugin=chaos&amp;p=community">Community goal and contributors</a>
 	</section>
 	<?php endif; ?>
 
@@ -90,7 +90,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 		<h2 class="chaos-heading">Latest patch notes <small><?= $h($latest['date'] ?? '') ?></small></h2>
 		<h3 class="chaos-subheading"><?= $h($latest['title']) ?></h3>
 		<?php foreach (array_slice($latest['intro'], 0, 2) as $l): ?><p class="chaos-lead"><?= $h($l) ?></p><?php endforeach; ?>
-		<a class="chaos-btn chaos-btn--ghost" href="page.php?plugin=chaos&amp;p=patchnotes&amp;id=<?= rawurlencode((string)$latest['id']) ?>">Read the full notes</a>
+		<a class="chaos-btn chaos-btn--ghost" href="page?plugin=chaos&amp;p=patchnotes&amp;id=<?= rawurlencode((string)$latest['id']) ?>">Read the full notes</a>
 	</section>
 	<?php endif; ?>
 

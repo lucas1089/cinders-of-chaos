@@ -806,7 +806,20 @@ Chaos.shopServices = {
 		-- a first word (or any word) that is one of these is refused: staff look-alikes
 		staffWords = {"gm", "cm", "god", "admin", "adm", "tutor", "gamemaster", "staff", "support", "owner", "sr", "senior", "server"},
 		-- refused anywhere in the name (lower case, substring match); extend as needed
-		forbidden = {"admin", "gamemaster", "moderator", "fuck", "shit", "bitch", "whore", "nazi", "hitler", "cunt", "rape"}
+		forbidden = {"admin", "gamemaster", "moderator", "fuck", "shit", "bitch", "whore", "nazi", "hitler", "cunt", "rape"},
+		-- refused as the whole name: the website's top-level addresses (website/README.md "Web server": /highscores is
+		-- a page, so a character named Highscores could not be reached there). The same list as the website's
+		-- chaos_reserved_character_names() (website/overlay/engine/function/chaos_character.php; a test compares them)
+		reserved = {
+			"achievements", "auctionchar", "bans", "blank", "buypoints", "changelog", "changepassword", "characterprofile",
+			"config", "contact", "createcharacter", "creatures", "credits", "deaths", "downloads", "failed", "faq", "forum",
+			"gallery", "guilds", "guildwar", "helpdesk", "highscores", "house", "houses", "index", "ipn", "items", "killers",
+			"login", "logout", "mailtest", "market", "myaccount", "onlinelist", "page", "payment", "powergamers", "protected",
+			"queststatus", "recovery", "register", "serverinfo", "settings", "shop", "spells", "sub", "success", "support",
+			"team", "topguilds", "toponline", "twofa", "twtrnews", "voting",
+			"admin", "api", "assets", "cache", "docker", "engine", "install", "landing", "layouts", "locale", "lua", "plugins",
+			"special", "sql", "tests", "tools", "updates", "vendor", "clientservices"
+		}
 	},
 
 	-- Vocation change: command word -> {base id, ascended id} (data/XML/vocations.xml, docs/CLASSES.md). An ascended
@@ -959,15 +972,17 @@ Chaos.classes = {
 	retiredOutfits = {
 		{lookType = 1559, name = "Archmage (old)"}
 	},
-	-- The Mystic line's replacement Archmage (a later client pair; the art waits for the owner's approval). Off, nothing
-	-- names it. On, with `outfit` set, it joins the class outfits of `vocations` (ChaosClasses.classOutfitsFor), and a
-	-- character of those vocations wearing `replaces` is moved to it at its next login (ChaosClasses.outfitSwap).
-	-- Keep `enabled` one plain line: install_outfits.py and gen_shop_cosmetics.py read it.
+	-- The Mystic line's replacement Archmage: client pair 29 (outfits 2235 male / 2236 female, our own rig art,
+	-- client/tools/outfit_art/class_art_line.py `archmage`, owner-approved 2026-10-16). `enabled` is the pair 29 switch:
+	-- off until the clients have pair 29, nothing names the look then. On, it joins the class outfits of `vocations`
+	-- with both addons (ChaosClasses.classOutfitsFor: the look of the character's sex), and a character of those
+	-- vocations wearing `replaces` (or the other sex's Archmage) is moved to it at its next login
+	-- (ChaosClasses.outfitSwap). Keep `enabled` one plain line: install_outfits.py and gen_shop_cosmetics.py read it.
 	outfitReplacement = {
-		enabled = false,
+		enabled = true,
 		vocations = {1, 5, 10},
 		replaces = 1559,
-		outfit = nil -- {lookType = N, name = "Archmage"} once the pair with the new look ships
+		outfit = {lookType = 2235, female = 2236, name = "Archmage", addons = 3}
 	},
 	outfits = (function()
 		local O = {
@@ -1363,15 +1378,23 @@ end
 -- Game.createMonster under a shown name. The name is set in onSpawn, before the placement (callback in
 -- monster_tiers.lua, index -100, so it runs first), so the first creature packet already carries it: a rename after the
 -- placement does not reach clients that know the creature (the engine resends a known creature by id only, without
--- its name).
+-- its name). shownLevel (optional): the level a system scaled the monster to (a rift tier, an invasion area, a
+-- generated area point); monster_levels.lua shows it after the name ("[level]", engine patches 0040 / 0044) in the
+-- same onSpawn, so the first creature packet carries it too.
 Chaos.spawnName = nil
-function Chaos.createMonsterNamed(typeName, position, extended, force, shownName)
-	if not shownName or shownName == typeName then
+Chaos.spawnLevel = nil
+function Chaos.createMonsterNamed(typeName, position, extended, force, shownName, shownLevel)
+	if shownName == typeName then
+		shownName = nil
+	end
+	if not shownName and not shownLevel then
 		return Game.createMonster(typeName, position, extended, force)
 	end
 	Chaos.spawnName = shownName
+	Chaos.spawnLevel = shownLevel
 	local ok, monster = pcall(Game.createMonster, typeName, position, extended, force)
 	Chaos.spawnName = nil
+	Chaos.spawnLevel = nil
 	if not ok then
 		error(monster, 0)
 	end

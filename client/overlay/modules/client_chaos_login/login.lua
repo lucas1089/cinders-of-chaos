@@ -125,7 +125,7 @@ local function inMark(x, y, r)
   return x + r >= mark.x0 and x - r <= mark.x1 and y + r >= mark.y0 and y - r <= mark.y1
 end
 
-local layoutInfo, placeStatus
+local layoutInfo, placeStatus, barTick
 
 local function relayout()
   if not alive(bg) then return end
@@ -632,11 +632,18 @@ end
 
 -- the stock event schedule / boosted / casts panels (client_background): under the sign-in panel when they fit,
 -- else beside it (schedule and boosted bottom left, casts bottom right above the corner mark), else hidden
+-- which panels show (ChaosLoginBar: only with data; casts only on a server that has them); set by barTick
+local barShown = { info = false, boost = false, cast = false }
+local barKey = nil
+
 layoutInfo = function()
   local la = alive(bg) and bg:getChildById('loadAfter')
   if not la or not alive(enterGame) then return end
   local info, boost, cast = la:getChildById('informationScroll'), la:getChildById('boostedScroll'), la:getChildById('castScroll')
   if not (info and boost and cast) then return end
+  info:setVisible(barShown.info)
+  boost:setVisible(barShown.boost)
+  cast:setVisible(barShown.cast)
   local w, h = bg:getWidth(), bg:getHeight()
   local panelBottom = enterGame:getMarginTop() + PANEL_H + 8
   local IH, gap = 117, 8
@@ -652,11 +659,22 @@ layoutInfo = function()
   end
   local iw, bw, cw = info:getWidth(), boost:getWidth(), cast:getWidth()
   local side = math.floor((w - PANEL_W - 64) / 2)       -- room beside the panel and its medallions
+  local widgets = { info = info, boost = boost, cast = cast }
   if panelBottom + IH + 4 <= h then
-    local x = math.floor((w - (iw + bw + cw + 2)) / 2)
-    at(info, x, h - IH - 2) at(boost, x + iw + 1, h - IH - 2) at(cast, x + iw + bw + 2, h - IH - 2)
+    -- the shown panels side by side, centred
+    for _, p in ipairs(ChaosLoginBar.row({ 'info', 'boost', 'cast' }, barShown,
+        { info = iw, boost = bw, cast = cw }, w, 1)) do
+      at(widgets[p.id], p.x, h - IH - 2)
+    end
   elseif side >= math.max(iw, bw, cw) + 24 and mark.y0 - IH - gap >= 40 and h - 2 * IH - 10 - gap >= 40 then
-    at(info, 12, h - IH - 10) at(boost, 12, h - 2 * IH - 10 - gap)
+    -- schedule and boosted bottom left (the shown ones from the bottom up), casts bottom right
+    local y = h - IH - 10
+    for _, id in ipairs({ 'info', 'boost' }) do
+      if barShown[id] then
+        at(widgets[id], 12, y)
+        y = y - IH - gap
+      end
+    end
     at(cast, w - cw - 12, mark.y0 - IH - gap)
   else
     la.chaosHidden = true
@@ -718,6 +736,33 @@ local function unhookSchedule()
 end
 
 -- ---------------------------------------------------------------- animation
+-- the bottom bar: shown only with the sign-in panel and with data (ChaosLoginBar); laid out again when that changes
+barTick = function()
+  local la = alive(bg) and bg:getChildById('loadAfter')
+  if not la then return end
+  local bgm = modules.client_background
+  local es = bgm and rawget(bgm, 'EventSchedule')
+  local hasBoosted = bgm and rawget(bgm, 'hasBoostedInfo')
+  local csm = modules.client_chaos_charselect
+  local cs = csm and rawget(csm, 'CharSelect')
+  local st = ChaosLoginBar.state({
+    splash = state.splash, noRoom = la.chaosHidden == true,
+    loginPanel = alive(enterGame) and enterGame:isVisible(),
+    charList = cs ~= nil and type(cs.isVisible) == 'function' and cs.isVisible() == true,
+    inGame = g_game.isOnline() or g_game.isLogging(),
+    events = ChaosLoginBar.eventCount(type(es) == 'table' and es.events or nil),
+    boosted = type(hasBoosted) == 'function' and hasBoosted() == true,
+    casts = type(Services) == 'table' and Services.casts == true,
+  })
+  local key = ChaosLoginBar.key(st)
+  if key ~= barKey then
+    barKey = key
+    barShown = { info = st.info, boost = st.boost, cast = st.cast }
+    if layoutInfo then try(layoutInfo) end
+  end
+  if la:isVisible() ~= (st.bar and not la.chaosHidden) then la:setVisible(st.bar and not la.chaosHidden) end
+end
+
 local function tick()
   animEvent = scheduleEvent(tick, 50)
   if not alive(bg) or not bg:isVisible() then return end
@@ -792,8 +837,7 @@ local function tick()
   if alive(spinner) and spinner:isVisible() then
     spinner:setImageClip(string.format('%d 0 32 32', (math.floor(clock * 16) % 12) * 32))
   end
-  local la = bg:getChildById('loadAfter')
-  if la and la:isVisible() and (state.splash or la.chaosHidden) then la:setVisible(false) end
+  barTick()
 end
 
 local function fadeIn()

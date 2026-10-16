@@ -1301,7 +1301,11 @@ function X.deliver(player, b, idx)
 	lines[#lines + 1] = string.format("%d Sepulchre Marks", sp.marks)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Spoils of %s: %s.%s", b.name, table.concat(lines, ", "),
 		inbox and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
-	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_GIFT_WRAPS)
+	if ChaosPack29Vfx then -- pair 29 (switch off: the stock firework)
+		ChaosPack29Vfx.celebrate(player:getPosition(), "boss", CONST_ME_FIREWORK_YELLOW or CONST_ME_GIFT_WRAPS)
+	else
+		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_GIFT_WRAPS)
+	end
 	return lines
 end
 

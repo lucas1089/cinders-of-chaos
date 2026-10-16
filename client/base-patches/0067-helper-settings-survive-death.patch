@@ -1,0 +1,245 @@
+# Chaos: the helper's settings survive death, relog, crashes and restarts (mods/game_helper/helper.lua; after 0001-0066).
+# Owner: the helper's settings reset when the character died. The helper unblocked saves at the end of every UI reload
+# (onLoadHelperData), loaded or not, and a helper.json it could not read (missing, cut short by a client closed on the
+# death screen, not JSON) gave defaults that the next save wrote over the file. Now ChaosHelperSave (overlay
+# game_helperrotation/helpersave.lua, tested with a death and relogin) decides: saves only after this character's file
+# was read; a checked write through .tmp with a .bak of the last good file; a broken file is read from .bak / .tmp or
+# kept as .broken; saveSettings is debounced (500 ms) and death (g_game.onDeath), logout and unload write at once.
+# Without the overlay module the old code runs.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -1023,6 +1023,11 @@
+   if helper and helper:isVisible() then fitHelperWindow() end
+ end
+ 
++-- Chaos 0067: a death writes the pending change at once (the client may be closed on the death screen)
++function onHelperDeath()
++  if _Helper.flushSettings then _Helper.flushSettings() end
++end
++
+ function onHelperVocationChange(changedPlayer)
+   refreshHelperProfile(changedPlayer)
+   if helperVocationEvent then removeEvent(helperVocationEvent) end
+@@ -1055,6 +1060,7 @@
+       connect(g_game, {
+         onGameStart = online,
+         onGameEnd = offline,
++        onDeath = onHelperDeath,
+         onSpellCooldown = onSpellCooldown,
+         onSpellGroupCooldown = onSpellGroupCooldown,
+         onUpdateSpellArea = onUpdateSpellArea,
+@@ -1312,7 +1318,7 @@
+     helperVocationEvent = nil
+   end
+   -- Persist while the cached character path and UI-backed configs still exist.
+-  saveSettings()
++  if _Helper.flushSettings then _Helper.flushSettings() else saveSettings() end -- Chaos 0067: not debounced here
+ 
+   if modules.game_helper and modules.game_helper.scripting then
+     modules.game_helper.scripting.terminate()
+@@ -1354,6 +1360,7 @@
+     disconnect(g_game, {
+       onGameStart = online,
+       onGameEnd = offline,
++      onDeath = onHelperDeath,
+       onSpellCooldown = onSpellCooldown,
+       onSpellGroupCooldown = onSpellGroupCooldown,
+       onUpdateSpellArea = onUpdateSpellArea,
+@@ -2001,6 +2008,7 @@
+ 
+   -- bloqueia save até tudo carregar
+   skipSaveUntilLoaded = true
++  if _Helper.beginHelperLoad then _Helper.beginHelperLoad() end -- Chaos 0067: no save until the file is read
+   isTransitioningPlayer = true
+   helperConfig.currentLockedTargetId = 0
+ 
+@@ -2111,7 +2119,12 @@
+     helperVocationEvent = nil
+   end
+   -- Save before logout cleanup resets transient UI/alarm state.
+-  saveSettings()
++  if _Helper.flushSettings then
++    _Helper.flushSettings() -- Chaos 0067: a pending (debounced) change is written now
++    _Helper.endHelperSession()
++  else
++    saveSettings()
++  end
+ 
+   if modules.game_helper and modules.game_helper.scripting then
+     modules.game_helper.scripting.onGameEnd()
+@@ -5954,8 +5967,45 @@
+   rebuildHealingCache()
+ end
+ 
+--- SAVE
+-function saveSettings()
++-- Chaos (base patch 0067): the settings survive death, relog, crashes and restarts. ChaosHelperSave (overlay
++-- game_helperrotation/helpersave.lua, tested) allows a save only after this character's file was read, writes through
++-- a checked .tmp with a .bak of the last good file, reads the .bak when the file is broken, and saveSettings is
++-- debounced (500 ms); death and logout write at once. Without the overlay module the old direct write runs.
++local helperSaveSession = nil
++local helperSaveEvent = nil
++
++local function helperSave()
++  local HS = ChaosHelperSave
++  if HS and not helperSaveSession then helperSaveSession = HS.newSession() end
++  return HS, helperSaveSession
++end
++
++local helperSaveFs = {
++  exists = function(p) return g_resources.fileExists(p) end,
++  read = function(p) return g_resources.readFileContents(p) end,
++  write = function(p, text)
++    if g_resources.writeFileContents(p, text) == false then error('writeFileContents failed') end
++  end,
++  copy = function(a, b)
++    local text = g_resources.readFileContents(a)
++    if g_resources.writeFileContents(b, text) == false then error('copy failed') end
++  end,
++  delete = function(p) if g_resources.deleteFile then g_resources.deleteFile(p) end end,
++}
++
++_Helper.beginHelperLoad = function()
++  local HS, st = helperSave()
++  if HS then HS.beginLoad(st) end
++end
++
++_Helper.endHelperSession = function()
++  local HS, st = helperSave()
++  if helperSaveEvent then removeEvent(helperSaveEvent) helperSaveEvent = nil end
++  if HS then HS.endSession(st) end
++end
++
++-- SAVE (the write itself; saveSettings below debounces it)
++local function writeSettingsNow()
+   if skipSaveUntilLoaded then
+     return false
+   end
+@@ -5965,6 +6015,10 @@
+   if not dir then
+     return false
+   end
++  local HS, st = helperSave()
++  if HS and not HS.canSave(st, dir) then
++    return false -- this character's file has not been read yet: never write defaults over it
++  end
+ 
+   local folder = dir .. "/helper.json"
+ 
+@@ -6015,6 +6069,16 @@
+     return false
+   end
+ 
++  if HS then
++    local written = HS.write(helperSaveFs, folder, result, json.decode)
++    if written then
++      HS.flushed(st)
++    else
++      g_logger.error("Could not save helper settings: the written file did not read back")
++    end
++    return written
++  end
++
+   -- Safely attempt to write the file
+   local writeStatus, writeResult = pcall(function()
+     return g_resources.writeFileContents(folder, result)
+@@ -6031,11 +6095,42 @@
+   return true
+ end
+ 
++-- a change: written 500 ms after the last one (ChaosHelperSave), or at once without the overlay module
++function saveSettings()
++  local HS, st = helperSave()
++  if not HS then
++    return writeSettingsNow()
++  end
++  if skipSaveUntilLoaded then
++    return false
++  end
++  local due = HS.request(st, getCharacterStorageDir(g_game.getLocalPlayer()), g_clock.millis())
++  if not due then
++    return false
++  end
++  if helperSaveEvent then removeEvent(helperSaveEvent) end
++  helperSaveEvent = scheduleEvent(function()
++    helperSaveEvent = nil
++    writeSettingsNow()
++  end, HS.DEBOUNCE_MS)
++  return true
++end
++
++-- write a pending change now (death, logout, unload, the Save button)
++local function flushSettings()
++  if helperSaveEvent then
++    removeEvent(helperSaveEvent)
++    helperSaveEvent = nil
++  end
++  return writeSettingsNow()
++end
++_Helper.flushSettings = flushSettings
++
+ -- Exportar saveSettings para módulos externos (deve ficar APÓS a definição da função)
+ _Helper.saveSettings = saveSettings
+ 
+ function saveHelperSettings()
+-  if saveSettings() then
++  if flushSettings() then
+     modules.game_textmessage.displayGameMessage("Helper configuration saved successfully!")
+   else
+     modules.game_textmessage.displayFailureMessage("Could not save Helper configuration.")
+@@ -6140,6 +6235,27 @@
+     end
+   end
+ 
++  local HS, st = helperSave()
++  local rawConfig = nil
++  local status, result
++  if HS then
++    -- no save until this read finished; a broken file falls back to its .bak / .tmp or is kept as .broken
++    HS.beginLoad(st)
++    local value, readStatus = HS.read(helperSaveFs, folder, json.decode)
++    if not value then
++      resetToDefaults()
++      helperAutomaticFunctionsEnabled = true
++      if helperConfig then
++        helperConfig.helperAutomaticFunctionsEnabled = true
++      end
++      HS.finishLoad(st, dir, readStatus)
++      return false
++    end
++    status, result = true, value
++    if migratedFromLegacy then
++      rawConfig = g_resources.readFileContents(folder)
++    end
++  else
+   if not g_resources.fileExists(folder) then
+     resetToDefaults()
+     helperAutomaticFunctionsEnabled = true
+@@ -6149,8 +6265,7 @@
+     return false
+   end
+ 
+-  local rawConfig = nil
+-  local status, result = pcall(function()
++  status, result = pcall(function()
+     rawConfig = g_resources.readFileContents(folder)
+     return json.decode(rawConfig)
+   end)
+@@ -6159,6 +6274,7 @@
+     resetToDefaults()
+     return false
+   end
++  end
+ 
+   if migratedFromLegacy and rawConfig then
+     g_resources.makeDir(dir)
+@@ -6171,6 +6287,9 @@
+   local savedFuncs = _Helper.HotkeyManager.preserveFuncs()
+ 
+   helperConfig = result
++  if HS then
++    HS.finishLoad(st, dir, 'ok')
++  end
+ 
+   -- Restaurar apenas as funções de hotkey (os códigos vêm do arquivo)
+   _Helper.HotkeyManager.restoreFuncs(savedFuncs)

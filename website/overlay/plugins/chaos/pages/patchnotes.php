@@ -2,7 +2,7 @@
 /**
  * Patch notes: the Markdown files of the game server's data/patchnotes/
  * folder, read with the rules of patchnotes_core.lua (the in-game window).
- * page.php?plugin=chaos&p=patchnotes[&id=<file id>]
+ * page?plugin=chaos&p=patchnotes[&id=<file id>]
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 $GLOBALS['page_title'] = 'Patch Notes';
@@ -30,7 +30,7 @@ if ($want !== '' && chaos_pn_valid_id($want)) {
 				<ul class="chaos-pn-list">
 					<?php foreach ($notes as $n): ?>
 						<li class="<?= $current !== null && $n['id'] === $current['id'] ? 'is-active' : '' ?>">
-							<a href="page.php?plugin=chaos&amp;p=patchnotes&amp;id=<?= rawurlencode($n['id']) ?>">
+							<a href="page?plugin=chaos&amp;p=patchnotes&amp;id=<?= rawurlencode($n['id']) ?>">
 								<span class="chaos-pn-list__date"><?= chaos_h($n['date'] ?? '') ?></span>
 								<span class="chaos-pn-list__title"><?= chaos_h($n['title']) ?></span>
 							</a>

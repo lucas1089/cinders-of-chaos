@@ -66,5 +66,14 @@ eq(s.rowsPerColumn, 7, 'compact rows')
 eq(L.layout('Bogus', 1).width, 520, 'unknown size is Normal')
 eq(L.layout('Wide', 20).rowsPerColumn, L.MAX_ROWS, 'rows capped')
 
+-- top margin: below the menu bar when it covers the top of the map
+eq(L.topMargin(0, 0, nil), 12, 'no bar: 12 px')
+eq(L.topMargin(0, 0, {y = 2, height = 36}), 2 + 36 + 6, 'below the menu bar')
+eq(L.topMargin(100, 0, {y = 2, height = 36}), 12, 'bar above the map: 12 px')
+eq(L.topMargin(-40, 0, nil), 52, 'map starts above the window: visible top')
+eq(L.topMargin(-40, 0, {y = 2, height = 36}), 2 + 36 + 6 + 40, 'extended view below the bar')
+eq(L.topMargin(0, 0, {y = 2, height = 0}), 12, 'hidden bar ignored')
+eq(L.topMargin(0, 0, {y = 400, height = 36}), 12, 'bar lower down ignored')
+
 if fails > 0 then os.exit(1) end
 print('helperhud tests OK')

@@ -138,12 +138,14 @@ local hex = M.wrapStock("bewitching_hex", function() calls = calls + 1 return tr
 sent, shots, events = {}, {}, {}
 eq(hex(creature(1, 10), variant), true, "hex: the base result")
 eq(calls, 1, "hex: the base cast ran")
-eq(shots[1] and shots[1].name, "arcane_bolt", "hex: the bolt")
+-- with the pair 29 switch on (ChaosPack29Fx.PAIR29) the Hex sends its pair 29 missile and curse instead
+local p29 = ChaosPack29Fx and ChaosPack29Fx.PAIR29
+eq(shots[1] and shots[1].name, p29 and "hex_missile" or "arcane_bolt", "hex: the bolt")
 runEvents()
 local names = {}
 for _, s in ipairs(sent) do names[s.name] = (names[s.name] or 0) + 1 end
 eq(names.arcane_hit, 1, "hex: one impact")
-eq(names.tick_curse, 4, "hex: four tick marks")
+eq(names[p29 and "hex_curse" or "tick_curse"], 4, "hex: four tick marks")
 sent, shots, events = {}, {}, {}
 local failed = M.wrapStock("bewitching_hex", function() return false end)
 eq(failed(creature(1, 10), variant), false, "hex: a failed cast")
@@ -181,7 +183,7 @@ end
 -- every name the Mystic spells send through ChaosMysticFx is in an ids file of the pair (ChaosVfx names)
 local ids = ""
 for _, f in ipairs({"chaos_vfx.lua", "chaos_vfx_art.lua", "chaos_class_fx_ids.lua", "chaos_big_fx_ids.lua",
-	"chaos_pack_fx_ids.lua", "chaos_pack27_fx_ids.lua"}) do
+	"chaos_pack_fx_ids.lua", "chaos_pack27_fx_ids.lua", "chaos_pack29_fx_ids.lua"}) do
 	ids = ids .. (readFile("data/lib/" .. f) or "")
 end
 local function inPair(name)

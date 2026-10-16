@@ -1,5 +1,6 @@
 # Cinders of Chaos (website/overlay/.htaccess, copied over ZnoteX's own by install_site.sh). Apache 2.4.
-# ZnoteX's rule (any other path is a character name) plus deny rules for everything that is not a page or an asset.
+# Clean addresses (/page for page.php), ZnoteX's rule (any other path is a character name) plus deny rules for
+# everything that is not a page or an asset.
 # nginx: website/README.md "Web server" has the same rules as a server block.
 Options -Indexes +FollowSymLinks
 
@@ -18,8 +19,32 @@ RedirectMatch 404 "/\.(?!well-known(/|$))"
 </FilesMatch>
 
 RewriteEngine On
+
+# Clean addresses (README "Web server"): /highscores is highscores.php, /characterprofile?name=X is
+# characterprofile.php?name=X. Top-level pages only (a name of letters, digits, _ and -: no folder, no dot file).
+# 1. A GET or HEAD that names a page with .php gets a 301 to the clean address, the query kept. THE_REQUEST is the
+#    line the browser sent, so the internal rewrite below never comes back here (no loop). POST and every other method
+#    are never redirected, nor the machine endpoints the game client and the payment providers call by their .php
+#    address (updates/ and the client services path are folders, never matched here).
+RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+RewriteCond %{THE_REQUEST} "^[A-Z]+\s/index\.php(\?\S*)?\s"
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule "^index\.php$" / [R=301,L]
+RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+RewriteCond %{THE_REQUEST} "^[A-Z]+\s/[A-Za-z0-9_-]+\.php(\?\S*)?\s"
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond $1 !^(chaos_client_api|chaos_pay_webhook|chaos_outfit)$
+RewriteRule "^([A-Za-z0-9_-]+)\.php$" /$1 [R=301,L]
+# 2. /page serves page.php when it exists, the query kept ([END]: no further rewriting of the result).
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule "^([A-Za-z0-9_-]+)$" /$1.php [END]
+
+# 3. ZnoteX's rule: any other path is a character name
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 # [B]: the name is URL-encoded into the query (Apache 2.4.59+ refuses a raw space there, and a name cannot add
-# parameters)
-RewriteRule ^(.*)$ /characterprofile.php?name=$1 [B,L]
+# parameters). [END]: the result is not rewritten again (the 301 above would otherwise see THE_REQUEST of a missing
+# /x.php and send it to /characterprofile?name=x.php)
+RewriteRule ^(.*)$ /characterprofile.php?name=$1 [B,END]

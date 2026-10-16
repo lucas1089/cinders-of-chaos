@@ -209,3 +209,21 @@ word_shackled,above,status word: the words must stay readable (rule 4 spares the
 word_shocked,above,status word: the words must stay readable (rule 4 spares the status words)
 word_smite,above,status word: the words must stay readable (rule 4 spares the status words)
 word_stunned,above,status word: the words must stay readable (rule 4 spares the status words)
+storm_shock,above,pair 29: arcs crackle over the struck body; the word 'shock' is not a floor shape
+pyre_rune,ground,pair 29: rule 3 and 4: a burning rune circle on the floor
+crypt_ice_strike,ground,pair 29: rule 4: ice spikes erupt round the target
+doom_skyfall,ground,pair 29: rule 4: a 5x5 meteor impact
+doom_tornado,ground,pair 29: rule 4: a storm funnel over the target
+briar_rooted,ground,pair 29: rule 4: roots coil round the feet
+squall_spore_cloud,ground,pair 29: rule 4: a 6x5 spore cloud
+mirror_ring,ground,pair 29: rule 3: a ring of mirror panes round the caster
+mirror_glass_nova,ground,pair 29: rule 3: a burst of glass shards round the clone
+wraith_veil,ground,pair 29: rule 4: smoke tendrils veil the caster
+night_eyelid,ground,pair 29: a void eye opening on the floor
+night_cataclysm,ground,pair 29: rule 4: a 6x5 void shockwave
+weave_crush,ground,pair 29: rule 4: the implosion round the rift
+hex_curse,ground,pair 29: rule 4: the curse sigil and tendrils cover the hexed foe
+blast_ground,ground,pair 29 VFX packs: earth and rocks burst up from the floor at the feet
+blast_energy,ground,pair 29 VFX packs: rule 4: the energy star covers the body for 0.56 s
+fw_gold_ring,above,pair 29 VFX packs: a firework ring bursting in the air over the head; 'ring' is not a floor shape
+fw_white_ring,above,pair 29 VFX packs: a firework ring bursting in the air over the head; 'ring' is not a floor shape

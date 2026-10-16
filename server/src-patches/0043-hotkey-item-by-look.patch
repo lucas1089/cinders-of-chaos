@@ -1,0 +1,114 @@
+# Hotkey item lookup by look (server/README.md "Potions", Everfull potions). The client's action bar, its hotkeys and
+# the helper use an inventory item by client id (position 0xFFFF, 0, 0: Game::internalGetThing), and the engine maps
+# the client id to ONE server type (Items::getItemIdByClientId). The Everfull potions (32085 / 32086) share the stock
+# Health / Mana Potion's client id (266 / 268), which maps to the stock 7618 / 7620. So a hotkey drank the stock
+# potions first and, once none were left, answered "Sorry, not possible." with the Everfull potion in the backpack
+# (found in the playtest of 2026-10-16). Now the hotkey lookup tries, in order: a carried item of that client id that
+# is never used up (stackable and store-bound: custom attribute chaos_storebound, the Everfull potions and the Everfull
+# Ration), so the free, infinite potion is drunk before the stock ones; the mapped type (stock rule); any carried item
+# of that client id. Each walks the inventory first, then the containers breadth first (the order of findItemOfType),
+# with the same subType rule. The hotkey message of such an item no longer counts it ("Using the last everfull health
+# potion...", it is always one): "Using an everfull health potion (never runs out)." (actions.cpp
+# showUseHotkeyMessage). Guard: server/tools/hotkey_lookup_patch_test.py. Applies after 0001-0042.
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -320,6 +320,54 @@
+ 	return player;
+ }
+ 
++// Chaos (patch 0043): an item that is never used up: stackable and store-bound (custom attribute chaos_storebound). Those
++// are the Everfull potions and the Everfull Ration (count 1, a use does not remove them); actions.cpp has the same rule
++static bool chaosNeverUsedUp(Item* item)
++{
++	return item && item->isStackable() && item->getCustomAttribute("chaos_storebound") != nullptr;
++}
++
++// Chaos (patch 0043): the first item (inventory first, then containers breadth first, as findItemOfType) whose
++// client id is clientId, only one that is never used up when neverUsedUp; the hotkey lookup's first and last try
++static Item* findItemOfClientId(Cylinder* cylinder, uint16_t clientId, int32_t subType, bool neverUsedUp)
++{
++	if (cylinder == nullptr || clientId == 0) {
++		return nullptr;
++	}
++
++	auto matches = [&](Item* item) {
++		return item->getClientID() == clientId && (subType == -1 || subType == item->getSubType()) &&
++			(!neverUsedUp || chaosNeverUsedUp(item));
++	};
++
++	std::vector<Container*> containers;
++	for (size_t i = cylinder->getFirstIndex(), j = cylinder->getLastIndex(); i < j; ++i) {
++		Thing* thing = cylinder->getThing(i);
++		Item* item = thing ? thing->getItem() : nullptr;
++		if (!item) {
++			continue;
++		}
++		if (matches(item)) {
++			return item;
++		}
++		if (Container* container = item->getContainer()) {
++			containers.push_back(container);
++		}
++	}
++
++	for (size_t i = 0; i < containers.size(); ++i) {
++		for (Item* item : containers[i]->getItemList()) {
++			if (matches(item)) {
++				return item;
++			}
++			if (Container* subContainer = item->getContainer()) {
++				containers.push_back(subContainer);
++			}
++		}
++	}
++	return nullptr;
++}
++
+ Thing* Game::internalGetThing(Player* player, const Position& pos, int32_t index, uint32_t spriteId, stackPosType_t type) const
+ {
+ 	if (pos.x != 0xFFFF) {
+@@ -424,7 +472,17 @@
+ 			subType = -1;
+ 		}
+ 
+-		return findItemOfType(player, it.id, true, subType);
++		// Chaos (patch 0043): the Everfull potions share the stock potions' client id, and the client id maps to the stock
++		// type. An item of this look that is never used up comes first (the free, infinite potion before the stock ones),
++		// then the mapped type, then any other item of this look (the action bar and the hotkeys find the Everfull potion)
++		Item* found = findItemOfClientId(player, spriteId, subType, true);
++		if (!found) {
++			found = findItemOfType(player, it.id, true, subType);
++		}
++		if (!found) {
++			found = findItemOfClientId(player, spriteId, subType, false);
++		}
++		return found;
+ 	}
+ 
+ 	//inventory
+--- a/src/actions.cpp
++++ b/src/actions.cpp
+@@ -451,10 +451,22 @@
+ }
+ 
+ 
++// Chaos (patch 0043): an item that is never used up: stackable and store-bound (the Everfull potions and the Everfull
++// Ration, count 1); game.cpp has the same rule for the hotkey lookup
++static bool chaosNeverUsedUp(const Item* item)
++{
++	return item && item->isStackable() && const_cast<Item*>(item)->getCustomAttribute("chaos_storebound") != nullptr;
++}
++
+ static void showUseHotkeyMessage(Player* player, const Item* item, uint32_t count)
+ {
+ 	const ItemType& it = Item::items[item->getID()];
+-	if (!it.showCount) {
++	if (chaosNeverUsedUp(item)) {
++		// Chaos (patch 0043): not "Using the last ..." (it counts one): "Using an everfull health potion (never runs out)."
++		const std::string& article = item->getArticle();
++		player->sendTextMessage(MESSAGE_INFO_DESCR, fmt::format("Using {:s}{:s} (never runs out).",
++			article.empty() ? "" : article + ' ', item->getName()));
++	} else if (!it.showCount) {
+ 		player->sendTextMessage(MESSAGE_INFO_DESCR, fmt::format("Using one of {:s}...",  item->getName()));
+ 	} else if (count == 1) {
+ 		player->sendTextMessage(MESSAGE_INFO_DESCR, fmt::format("Using the last {:s}...",  item->getName()));

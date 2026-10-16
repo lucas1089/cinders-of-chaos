@@ -91,6 +91,10 @@ end
 local login = CreatureEvent("ChaosPotionsLogin")
 function login.onLogin(player)
 	local c = PT.cfg()
+	local okR, errR = pcall(PT.rebind, player)
+	if not okR then
+		print("[potions] rebind of " .. player:getName() .. " failed: " .. tostring(errR))
+	end
 	if not K.grantDue(c, {granted = player:getStorageValue(c.storage.granted) == 1,
 		lastLogin = player:getLastLoginSaved()}) then
 		return true

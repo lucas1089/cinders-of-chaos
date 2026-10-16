@@ -42,9 +42,14 @@ end
 for _, o in ipairs(Chaos.classes.retiredOutfits) do
 	retiredLooks[#retiredLooks + 1] = o.lookType
 end
+-- and the replacement Archmage of pair 29, both looks, switch on or off
+local repl = Chaos.classes.outfitReplacement.outfit
+retiredLooks[#retiredLooks + 1] = repl.lookType
+retiredLooks[#retiredLooks + 1] = repl.female
 local EX = K.exclusions({classLooks = ChaosClassLooks.looks, classOutfits = Chaos.classes.outfits,
 	achievements = achievements, season = season, seasonpass = seasonpass, looks = retiredLooks})
 ok(EX.looks[1559], "the retired Archmage 1559 is never sold")
+ok(EX.looks[2235] and EX.looks[2236], "the pair 29 Archmage (2235 / 2236) is never sold")
 ok(EX.looks[1551] and EX.looks[1558], "the donor art class outfits stay excluded")
 for _, e in pairs(ChaosClassLooks.looks) do
 	ok(EX.looks[e.male] and EX.looks[e.female], "class look " .. e.name .. " excluded")

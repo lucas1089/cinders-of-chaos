@@ -7,13 +7,14 @@ SpellbookRow < UIWidget
   background-color: alpha
   padding: 2
 
+  // hover: a faint lift; selected: a soft gold tint and a thin gold frame (the element-coloured names stay readable)
   $hover !focus:
-    background-color: #3a333955
+    background-color: #ffffff0f
 
   $focus:
-    background-color: #5a0a0a99
+    background-color: #e8b84a1c
     border-width: 1
-    border-color: #e8b84a
+    border-color: #e8b84a99
 
   UIWidget
     id: icon

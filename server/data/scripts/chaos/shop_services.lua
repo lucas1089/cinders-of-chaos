@@ -98,6 +98,11 @@ function S.validateName(raw, rules, lang)
 			return nil, T(lang, "That name is not allowed.")
 		end
 	end
+	for _, address in ipairs(rules.reserved or {}) do
+		if lower == address then
+			return nil, T(lang, "That name is not allowed.")
+		end
+	end
 	return name
 end
 

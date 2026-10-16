@@ -122,15 +122,45 @@ $rowsOf = static function (string $html): array {
 	preg_match_all('#<tr class="[^"]*">\s*<td>(\d+)</td>\s*<td><a [^>]*>([^<]+)</a></td>\s*<td>[^<]*</td>\s*<td class="num">([^<]+)</td>#', $html, $m, PREG_SET_ORDER);
 	return array_map(static function ($x) { return array((int)$x[1], $x[2], $x[3]); }, $m);
 };
+// the dropdown filters (lib.php chaos_pick_form): [value, label, selected] of each <option> of the <select name=$name>
+$selectOf = static function (string $html, string $name): array {
+	if (!preg_match('#<select [^>]*name="' . preg_quote($name, '#') . '"[^>]*>(.*?)</select>#s', $html, $m)) {
+		return array();
+	}
+	preg_match_all('#<option value="([^"]*)"( selected)?>([^<]*)</option>#', $m[1], $om, PREG_SET_ORDER);
+	return array_map(static function ($o) { return array(html_entity_decode($o[1], ENT_QUOTES), html_entity_decode($o[3], ENT_QUOTES), $o[2] !== ''); }, $om);
+};
+$formOf = static function (string $html, string $label): string {
+	$at = strpos($html, '<form class="chaos-pick" method="get" action="page');
+	while ($at !== false) {
+		$end = (int)strpos($html, '</form>', $at);
+		$form = substr($html, $at, $end - $at + 7);
+		if (strpos($form, 'aria-label="' . $label . '"') !== false) {
+			return $form;
+		}
+		$at = strpos($html, '<form class="chaos-pick"', $end);
+	}
+	return '';
+};
 // All classes (default): every class, fastest first, m:ss
 $html = $renderClass('cinder_solo', null);
-check(strpos($html, 'aria-label="Classes"') !== false, 'cinder_solo shows class tabs');
-$tabs = substr($html, (int)strpos($html, 'aria-label="Classes"'));
-$tabs = substr($tabs, 0, (int)strpos($tabs, '</nav>'));
-preg_match_all('#<a class="chaos-tab( is-active)?" href="([^"]+)"[^>]*>(?:<img[^>]*> )?([^<]+)</a>#', $tabs, $tm, PREG_SET_ORDER);
-check(array_map('trim', array_column($tm, 3)) === array('All classes', 'Mystic', 'Ranger', 'Warrior', 'Thief', 'Monk', 'Necromancer', 'Templar'), 'class tabs: All classes first, then the client order');
-check(($tm[0][1] ?? '') === ' is-active', 'All classes active by default');
-check(strpos($tm[3][2] ?? '', 'board=cinder_solo&amp;class=4') !== false, 'Warrior tab links class=4');
+$form = $formOf($html, 'Boards');
+check($form !== '', 'weekly boards: a GET form to page');
+check(strpos($form, '<input type="hidden" name="plugin" value="chaos">') !== false && strpos($form, '<input type="hidden" name="p" value="leaderboards">') !== false,
+	'weekly boards: the form keeps plugin=chaos&p=leaderboards');
+check(strpos($form, '<button type="submit" class="chaos-btn chaos-pick__go">Show</button>') !== false, 'weekly boards: a submit button (no JavaScript needed)');
+check(strpos($html, '<script src="plugins/chaos/assets/js/chaos-pick.js" defer></script>') !== false, 'the auto-submit script is a file, deferred');
+check(preg_match('#<script(?![^>]*\bsrc=)[^>]*>#', $html) === 0, 'no inline script');
+$opts = $selectOf($form, 'board');
+$names = array_column($opts, 1);
+$sorted = $names;
+usort($sorted, static function ($a, $b) { return strcasecmp($a, $b); });
+check(count($opts) === count($boards) && $names === $sorted, 'weekly boards: one dropdown, every board, sorted by name');
+check(array_column(array_filter($opts, static function ($o) { return $o[2]; }), 0) === array('cinder_solo'), 'weekly boards: the board shown is selected');
+$copts = $selectOf($form, 'class');
+check(array_column($copts, 1) === array('All classes', 'Mystic', 'Ranger', 'Warrior', 'Thief', 'Monk', 'Necromancer', 'Templar'), 'class dropdown: All classes first, then the client order');
+check(array_column($copts, 0) === array('all', '1', '3', '4', '11', '17', '20', '23'), 'class dropdown: the class= values of the old tabs');
+check(($copts[0][2] ?? false) === true, 'All classes selected by default');
 check(array_column($rowsOf($html), 1) === array('Fast Mystic', 'Old Mystic', 'Quick Blade', 'Iron Juggernaut', 'Mid Arrow', 'Slow Hammer'), 'all classes: fastest first');
 // Warrior tab: Warrior and its ascensions only, ranked again from 1, still m:ss
 $rows = $rowsOf($renderClass('cinder_solo', '4'));
@@ -144,13 +174,12 @@ check(strpos($html, 'Cinderheart Solo &middot; Mystic') !== false, 'heading name
 // a class without scores: the empty line names it; the other board tabs keep the class
 $html = $renderClass('cinder_solo', '17');
 check(strpos($html, 'No Monk on this board yet this week.') !== false, 'empty class tab message');
-check(strpos($html, 'board=cinder_small&amp;class=17') !== false, 'board tab to another class board keeps the class');
-check(strpos($html, 'board=worldboss&amp;class') === false, 'board tab to a board without class tabs drops the class');
+check(array_column(array_filter($selectOf($html, 'class'), static function ($o) { return $o[2]; }), 0) === array('17'), 'class dropdown: the class shown is selected (kept when the board changes)');
 // a bad class value or a board without class tabs: every class, no class tabs
 check(array_column($rowsOf($renderClass('cinder_solo', '999')), 1) === array('Fast Mystic', 'Old Mystic', 'Quick Blade', 'Iron Juggernaut', 'Mid Arrow', 'Slow Hammer'), 'unknown class: every class');
 check(array_column($rowsOf($renderClass('cinder_solo', '4 OR 1=1')), 1)[0] === 'Fast Mystic', 'non-numeric class: every class');
 $html = $renderClass('worldboss', '4');
-check(strpos($html, 'aria-label="Classes"') === false, 'worldboss: no class tabs');
+check($selectOf($html, 'class') === array(), 'worldboss: no class dropdown');
 check(count($rowsOf($html)) === 3 && strpos($html, 'Mid Arrow') !== false, 'worldboss: the class value is ignored');
 
 
@@ -158,6 +187,7 @@ check(count($rowsOf($html)) === 3 && strpos($html, 'Mid Arrow') !== false, 'worl
 check(strpos($renderClass('worldboss', null), 'No records yet') !== false, 'records: nothing before the server published boards');
 $pdo->exec("INSERT INTO chaos_records_boards VALUES ('omen', 'bosses', 'Omen Guardians', 'min', 'time', 'Fastest', 'bloodmoon=Sangrith;storm=Thalcyra', 'solo=Solo;small=2-3;party=4-5', 1),
 	('tower_floor', 'tower', 'Highest Floor', 'max', '', 'Floor', '', '', 2)");
+$pdo->exec("INSERT INTO chaos_records_boards VALUES ('x\"><b>', 'misc', '<Ember> & \"Ash\"', 'max', '', 'Score', '', '', 9)");
 $ri = $pdo->prepare('INSERT INTO chaos_records VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
 foreach (array(array(1, 300, 50, 4), array(2, 280, 90, 8), array(3, 300, 40, 3), array(4, 100, 10, 4), array(7, 3700, 5, 8)) as $r) {
 	$ri->execute(array('omen|storm|small', 'all', $r[0], $r[1], $r[2], $r[3], 2, 'A, B'));
@@ -184,7 +214,22 @@ $recRows = static function (string $html): array {
 	return array_map(static function ($x) { return array($x[2], $x[3]); }, $m);
 };
 $html = $renderRec(array('rb' => 'omen', 'rv' => 'storm', 'rs' => 'small', 'rp' => 'all'));
-check(strpos($html, 'aria-label="Record boards"') !== false && strpos($html, 'aria-label="Party size"') !== false, 'records: board and size tabs');
+check(strpos($html, 'aria-label="Record boards"') !== false && strpos($html, 'aria-label="Party size"') !== false, 'records: board dropdown and size tabs');
+$form = $formOf($html, 'Record boards');
+check(strpos($form, 'action="page#records"') !== false, 'records form: lands on the records box');
+foreach (array('plugin' => 'chaos', 'p' => 'leaderboards', 'rp' => 'all', 'rs' => 'small') as $k => $v) {
+	check(strpos($form, '<input type="hidden" name="' . $k . '" value="' . $v . '">') !== false, "records form: keeps $k=$v");
+}
+check(strpos($form, 'name="rb" data-chaos-autosubmit data-chaos-reset="rv rs"') !== false, 'records form: a new board drops the boss and party size');
+check(array_column($selectOf($form, 'rb'), 1) === array('<Ember> & "Ash"', 'Highest Floor', 'Omen Guardians', 'World Boss Kill Time'), 'records: boards sorted by name');
+check(array_column(array_filter($selectOf($form, 'rb'), static function ($o) { return $o[2]; }), 0) === array('omen'), 'records: the board shown is selected');
+check(strpos($form, '&lt;Ember&gt; &amp; &quot;Ash&quot;') !== false && strpos($html, '<Ember>') === false, 'records: board names escaped');
+check(strpos($form, 'value="x&quot;&gt;&lt;b&gt;"') !== false, 'records: board keys escaped');
+check($selectOf($form, 'rv') === array(array('bloodmoon', 'Sangrith', false), array('storm', 'Thalcyra', true)), 'records: the boss dropdown in the server order, the boss shown selected');
+check(strpos($form, '<span class="chaos-pick__label">Boss</span>') !== false, 'records: a boss board labels its variants Boss');
+check(array_column($selectOf($form, 'rc'), 1) === array('All classes', 'Mystic', 'Ranger', 'Warrior', 'Thief', 'Monk', 'Necromancer', 'Templar'), 'records: class dropdown, All classes first');
+check(strpos($html, 'aria-label="Record period"') !== false && substr_count($html, 'rp=week') >= 1 && substr_count($html, 'rp=season') >= 1, 'records: the period stays three tabs');
+check(strpos($html, 'p=leaderboards&amp;rb=omen&amp;rp=season&amp;rv=storm&amp;rs=small&amp;rc=all#records') !== false, 'records: period tab links keep every filter');
 check(array_column($recRows($html), 0) === array('Slow Hammer', 'Mid Arrow', 'Quick Blade', 'Iron Juggernaut'), 'records: fastest first, tie to the earlier time, staff left out');
 check(array_column($recRows($html), 1) === array('4:40', '5:00', '5:00', '1:01:40'), 'records: m:ss and h:mm:ss');
 check(strpos($html, 'title="A, B"') !== false, 'records: the party in the tooltip');
@@ -195,6 +240,7 @@ check(array_column($recRows($html), 0) === array('Quick Blade'), 'records: bad f
 $html = $renderRec(array('rb' => 'tower_floor', 'rp' => 'all'));
 check(array_column($recRows($html), 0) === array('Slow Hammer', 'Quick Blade'), 'records: max board highest first');
 check(strpos($html, 'aria-label="Party size"') === false, 'records: no size tabs on a board without sizes');
+check($selectOf($html, 'rv') === array() && strpos($formOf($html, 'Record boards'), 'name="rs"') === false, 'records: no boss dropdown and no size on a board without them');
 $html = $renderRec(array('rb' => 'tower_floor', 'rp' => 'week'));
 check(array_column($recRows($html), 1) === array('60'), 'records: this week only');
 $html = $renderRec(array('rb' => 'tower_floor', 'rp' => 'season'));
@@ -210,6 +256,15 @@ check(chaos_records_first_name(array('target' => 'gone:x', 'name' => 'Old Boss')
 check(chaos_records_value('pct', 4512) === '45.12%' && chaos_records_value('', 1500) === '1,500', 'records: value formats');
 check(preg_match('/^(s\d+|q\d{5})$/', $season) === 1, 'records: season key');
 check(count(chaos_records_categories()) === 6, 'records: categories read from records_config.lua');
+
+// the sort of the dropdowns: accents folded (the client's BoardPick.fold), ties by the key
+check(array_keys(chaos_sort_options(array('b' => 'Zelo', 'a' => 'Égide', 'c' => 'escudo', 'd' => 'Arena'))) === array('d', 'a', 'c', 'b'), 'sort: accents fold to their base letter');
+check(array_keys(chaos_sort_options(array('y' => 'Same', 'x' => 'Same'))) === array('x', 'y'), 'sort: ties by key');
+check(chaos_sort_fold('ÇÃO Ñ') === 'cao n', 'fold: pt-BR accents');
+// a select and its labels escaped; the selected value compared as a string
+$sel = chaos_pick_select('a"b', '<L>', array('1' => '<one>', '01' => 'two'), '01');
+check(strpos($sel, 'name="a&quot;b"') !== false && strpos($sel, '&lt;L&gt;') !== false && strpos($sel, '&lt;one&gt;') !== false, 'select: escaped');
+check(strpos($sel, '<option value="01" selected>two</option>') !== false && strpos($sel, '<option value="1">') !== false, 'select: selected by string');
 
 echo $failed === 0 ? "chaos_leaderboards_page_test: OK\n" : "chaos_leaderboards_page_test: $failed failed\n";
 exit($failed === 0 ? 0 : 1);

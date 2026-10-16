@@ -37,6 +37,8 @@ return {
 			text = "Step in to open the raid window: the Ashen Sepulchre for a party of 5 to 15, level 800+."},
 		hunt = {name = "Hunting Area Portal", effect = "CONST_ME_MAGIC_GREEN",
 			text = "Step in to enter this hunting area; the portal refuses characters below its level. Its exit portal leads back here."},
+		servicesexit = {name = "Hall of Services Exit", effect = "CONST_ME_MAGIC_RED",
+			text = "Step in to go back to the temple of this town."},
 		idlehall = {name = "Idle Hall Exit", effect = "CONST_ME_MAGIC_BLUE",
 			text = "Step in to go back to your temple. Characters who stand idle in town are moved to this hall."},
 		siege = {name = "Guild Siege Portal", effect = "CONST_ME_YELLOW_RINGS",

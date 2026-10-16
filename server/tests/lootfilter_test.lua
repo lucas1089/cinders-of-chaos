@@ -119,6 +119,29 @@ eq(F.rayEffect({unique = true}, {rayUniques = false, rayMinRarity = 5, rayBands 
 eq(F.rayEffect(gear(5), {rayMinRarity = 8, rayBands = cfg.rayBands}), nil, "threshold is one value")
 eq(F.rayEffect({id = 29856, orb = true, rarity = 0}, cfg), nil, "orbs: no ray")
 
+-- ---------------------------------------------------------------- loot beams (real config)
+eq(cfg.beams, true, "the client draws loot beams")
+eq(cfg.rayEffects, false, "the old ray map effects are off")
+eq(F.beamCandidate(gear(1), cfg), true, "Common gear may beam (the client's loot filter decides)")
+eq(F.beamCandidate(gear(15), cfg), true, "Transcendent may beam")
+eq(F.beamCandidate(gear(0), cfg), false, "no rarity: no beam")
+eq(F.beamCandidate({unique = true, rarity = 0}, cfg), true, "uniques beam")
+eq(F.beamCandidate({power = true, rarity = 0}, cfg), true, "a legendary power beams")
+eq(F.beamCandidate({orb = true, rarity = 0}, cfg), true, "orbs may beam (client option)")
+eq(F.beamCandidate({orb = true}, {beamOrbs = false}), false, "orbs off")
+eq(F.beamCandidate({unique = true}, {beamUniques = false}), false, "uniques off")
+eq(F.beamCandidate(gear(4), {beamMinRarity = 5}), false, "below the minimum")
+eq(F.beamCandidate(nil, cfg), false, "no info")
+do
+	local entries = {{info = {category = "currency", id = 2148}, count = 50}, {info = gear(5), count = 1},
+		{info = {unique = true}, count = 1}, {info = gear(2), count = 1}}
+	local list = F.beamItems(entries, {50, 1, 1, 1}, cfg)
+	eq(table.concat(list, ","), "2,3,4", "coins never beam; the rest in entry order")
+	eq(table.concat(F.beamItems(entries, {50, 0, 1, 0}, cfg), ","), "3", "looted entries drop out")
+	eq(#F.beamItems(entries, {50, 0, 0, 0}, cfg), 0, "nothing left: the beam ends")
+	eq(#F.beamItems(nil, nil, cfg), 0, "no entries")
+end
+
 -- ---------------------------------------------------------------- reconcile (greying the loot channel)
 local a = {sig = "2148:0:", count = 50}
 local b = {sig = "2400:3:", count = 1}

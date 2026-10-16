@@ -39,6 +39,8 @@ fi
 echo $$ > "$RUN/start.pid"
 echo "$SOCK" > "$RUN/socket.txt"
 rm -f "$RUN/stop"
+# a stop request left from before (stop-server.sh) must not stop this start at once
+rm -f "$ROOT/server/stop.request"
 
 for f in "$MDB/bin/mariadbd" "$ROOT/server/tfs"; do
   [ -x "$f" ] || { echo "Missing: $f (extract the whole archive, keep the folder layout)"; exit 1; }
@@ -61,6 +63,11 @@ if [ ! -d "$DATA/mysql" ]; then
     >> "$LOGS/database-setup.log" 2>&1 || { echo "mariadb-install-db failed: see logs/database-setup.log"; exit 1; }
 fi
 if ! db_up; then
+  # something else (another database, an old run of this package) already listens on 3307: say so instead of waiting
+  if (exec 3<>/dev/tcp/127.0.0.1/3307) 2>/dev/null; then
+    echo "Port 3307 is already in use by another program. Find it with: ss -ltnp 'sport = :3307' (as root), stop it, start again."
+    exit 1
+  fi
   echo "Starting the database (127.0.0.1:3307)..."
   as_root=()
   [ "$(id -u)" -eq 0 ] && as_root=(--user=root)
@@ -87,13 +94,14 @@ stop_db() {
 if [ ! -f "$DATA/chaos-setup-done.txt" ]; then
   echo "Loading the game database from server/sql-setup ..."
   pass=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  # The game and the website connect over TCP to 127.0.0.1 only, so the game's account is 'chaos'@'127.0.0.1'. No
+  # 'chaos'@'localhost': when this system user is itself named chaos, that is the socket admin account the lines
+  # below run as, and giving it a password locked the script out half way (ERROR 1045, an empty game database).
   sql -e "CREATE DATABASE IF NOT EXISTS chaos CHARACTER SET utf8mb4;
           CREATE USER IF NOT EXISTS 'chaos'@'127.0.0.1' IDENTIFIED BY '$pass';
-          CREATE USER IF NOT EXISTS 'chaos'@'localhost' IDENTIFIED BY '$pass';
           ALTER USER 'chaos'@'127.0.0.1' IDENTIFIED BY '$pass';
-          ALTER USER 'chaos'@'localhost' IDENTIFIED BY '$pass';
-          GRANT ALL PRIVILEGES ON chaos.* TO 'chaos'@'127.0.0.1';
-          GRANT ALL PRIVILEGES ON chaos.* TO 'chaos'@'localhost';"
+          GRANT ALL PRIVILEGES ON chaos.* TO 'chaos'@'127.0.0.1';" \
+    || { echo "Could not create the game database and its user: see the message above"; exit 1; }
   umask 077
   {
     echo "# Cinders of Chaos, Linux server package. Read by start-server.sh; config.lua reads the CHAOS_* variables."
@@ -106,6 +114,8 @@ if [ ! -f "$DATA/chaos-setup-done.txt" ]; then
     echo "# client guard: the 64 hex digits the official client was built with (GitHub secret CHAOS_CLIENT_KEY)."
     echo "# Empty: the guard is off and any 10.98 client can log in. Set: only that client can (README.txt)."
     echo "CHAOS_CLIENT_KEY="
+    echo "# RSA login key: the path of our own key (server/tools/rsa_key.py gen; README.txt). Empty: the public default key."
+    echo "CHAOS_RSA_KEY_FILE="
   } > "$ENVF"
   umask 022
   for f in "$ROOT"/server/sql-setup/*.sql; do
@@ -133,6 +143,26 @@ set -a
 # shellcheck disable=SC1090
 . "$ENVF"
 set +a
+
+# ---- login-screen services (server/tools/clientservices.py): the boosted creature / boss and the event schedule the
+# game server writes to server/data/chaos_clientservices.json, on 127.0.0.1 only. The website's web server forwards
+# https://<site>/clientservices to it (README.txt "Login screen services"). CHAOS_CLIENTSERVICES=0 in chaos.env: off.
+svc=0
+if [ "${CHAOS_CLIENTSERVICES:-1}" != 0 ] && [ -f "$ROOT/server/tools/clientservices.py" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -I "$ROOT/server/tools/clientservices.py" "$ROOT/server/data/chaos_clientservices.json" \
+      --host 127.0.0.1 --port "${CHAOS_CLIENTSERVICES_PORT:-8090}" >> "$LOGS/clientservices.log" 2>&1 &
+    svc=$!
+    echo $svc > "$RUN/clientservices.pid"
+    echo "Login-screen services on 127.0.0.1:${CHAOS_CLIENTSERVICES_PORT:-8090} (log: logs/clientservices.log)."
+  else
+    echo "python3 not found: the login-screen services are off (the client hides that bar)."
+  fi
+fi
+stop_svc() {
+  if [ $svc -ne 0 ] && kill -0 $svc 2>/dev/null; then kill $svc 2>/dev/null || true; fi
+  rm -f "$RUN/clientservices.pid"
+}
 
 # ---- game server, started again after a clean stop (the daily server save shuts it down) and after a crash
 child=0
@@ -174,6 +204,7 @@ while [ ! -f "$RUN/stop" ]; do
   sleep 5
 done
 
+stop_svc
 stop_db
 rm -f "$RUN/start.pid" "$RUN/stop"
 echo "Stopped."

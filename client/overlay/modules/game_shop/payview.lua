@@ -19,7 +19,7 @@ V.BEFORE_PT = "A doa\231\227o n\227o d\225 direito a reembolso, exceto quando a 
 V.AFTER_EN = "This was a voluntary donation, not a purchase. It gives no right to a refund, except where the law requires one."
 -- "Esta foi uma doação voluntária, não uma compra. Ela não dá direito a reembolso, exceto quando a lei exigir."
 V.AFTER_PT = "Esta foi uma doa\231\227o volunt\225ria, n\227o uma compra. Ela n\227o d\225 direito a reembolso, exceto quando a lei exigir."
-V.TERMS_URL = "page.php?plugin=chaos&p=legal&doc=donations"
+V.TERMS_URL = "page?plugin=chaos&p=legal&doc=donations"
 V.TERMS_EN = "Donation Terms on the website: " .. V.TERMS_URL
 V.TERMS_PT = "Termos de Doa\231\227o no site: " .. V.TERMS_URL
 

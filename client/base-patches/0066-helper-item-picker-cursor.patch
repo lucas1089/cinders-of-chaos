@@ -1,0 +1,240 @@
+# Chaos: the helper's item slots show the target cursor like "Use with"; right-click or Escape cancels (after 0001-0065).
+# Owner: clicking a healing slot (spell, potion, mana training), a tool, timer, rune, equipment, supply, food or
+# stamina slot did not change the cursor. The helper only called g_mouse.pushCursor('target'); with the system cursor
+# (the client's default) that shows nothing. game_interface's startUseWith also calls g_mouse.setGrabber(widget,
+# 'target'). Each of the nine pickers now calls ChaosItemPicker.begin(grabber) once its onMouseRelease is set and
+# ChaosItemPicker.finish() where it popped the cursor (overlay game_helperrotation/itempicker.lua, tested); without
+# that module the old calls run. A right-click or Escape runs the slot's handler off the window: nothing is picked.
+--- a/mods/game_helper/classes/alarms/low_supply_alarm.lua
++++ b/mods/game_helper/classes/alarms/low_supply_alarm.lua
+@@ -625,11 +625,12 @@
+ 
+   grabber:grabMouse()
+   if settingsWindow then settingsWindow:hide() end
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+ 
+   grabber.onMouseRelease = function(self, mousePosition, mouseButton)
+     _Helper.LowSupplyAlarm.onItemSelected(self, mousePosition, mouseButton)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(grabber) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ _Helper.LowSupplyAlarm.onItemSelected = function(self, mousePosition, mouseButton)
+@@ -641,7 +642,7 @@
+     settingsWindow:raise()
+     settingsWindow:focus()
+   end
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   grabber.onMouseRelease = nil
+ 
+   local rootWidget = g_ui.getRootWidget()
+--- a/mods/game_helper/classes/auto_stamina.lua
++++ b/mods/game_helper/classes/auto_stamina.lua
+@@ -49,7 +49,7 @@
+     mouseGrabber.onMouseRelease = nil
+   end
+   if itemSelectionActive and g_mouse and g_mouse.popCursor then
+-    pcall(function() g_mouse.popCursor('target') end)
++    if ChaosItemPicker then ChaosItemPicker.finish() else pcall(function() g_mouse.popCursor('target') end) end
+   end
+   itemSelectionActive = false
+ 
+@@ -93,7 +93,7 @@
+     mouseGrabber:setFocusable(false)
+   end
+   mouseGrabber:grabMouse()
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+   itemSelectionActive = true
+   selectionHelperWindow = g_ui.getRootWidget():recursiveGetChildById('helperWindow')
+   if selectionHelperWindow then selectionHelperWindow:hide() end
+@@ -107,11 +107,15 @@
+       local tile = clicked:getTile(position); local thing = tile and tile:getTopUseThing()
+       itemId = thing and thing:getId() or 0
+     end
+-    if itemId == 0 then modules.game_textmessage.displayFailureMessage(tr('No item selected!')); return true end
++    if itemId == 0 then
++      if not (ChaosItemPicker and ChaosItemPicker.cancelling) then modules.game_textmessage.displayFailureMessage(tr('No item selected!')) end
++      return true
++    end
+     local cfg = config()
+     if cfg then cfg.id = itemId; setButtonItem(itemId); if _Helper.saveSettings then _Helper.saveSettings() end end
+     return true
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(mouseGrabber) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ function api.check()
+--- a/mods/game_helper/classes/equipment.lua
++++ b/mods/game_helper/classes/equipment.lua
+@@ -448,11 +448,12 @@
+ 
+   grabber:grabMouse()
+   if helperWindow then helperWindow:hide() end
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+ 
+   grabber.onMouseRelease = function(self, mousePosition, mouseButton)
+     equip.onItemSelected(self, mousePosition, mouseButton, targetButton, targetType)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(grabber) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ function equip.onItemSelected(self, mousePosition, mouseButton, targetButton, targetType)
+@@ -461,7 +462,7 @@
+ 
+   grabber:ungrabMouse()
+   if helperWindow then helperWindow:show() end
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   grabber.onMouseRelease = nil
+ 
+   local rootWidget = g_ui.getRootWidget()
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -3356,16 +3356,17 @@
+ function assignRune(button, groupName, groups, tableToAssign)
+   mouseGrabberWidget:grabMouse()
+   helper:hide()
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+   mouseGrabberWidget.onMouseRelease = function(self, mousePosition, mouseButton)
+     onAssignRune(self, mousePosition, mouseButton, button)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(mouseGrabberWidget) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ function onAssignRune(self, mousePosition, mouseButton, button)
+   mouseGrabberWidget:ungrabMouse()
+   helper:show()
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   mouseGrabberWidget.onMouseRelease = nil
+ 
+   local rootWidget = g_ui.getRootWidget()
+@@ -3652,16 +3653,17 @@
+ function assignPotionEvent(button)
+   mouseGrabberWidget:grabMouse()
+   helper:hide()
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+   mouseGrabberWidget.onMouseRelease = function(self, mousePosition, mouseButton)
+     onAssignPotion(self, mousePosition, mouseButton, button)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(mouseGrabberWidget) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ function onAssignPotion(self, mousePosition, mouseButton, button)
+   mouseGrabberWidget:ungrabMouse()
+   helper:show()
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   mouseGrabberWidget.onMouseRelease = nil
+ 
+   local rootWidget = g_ui.getRootWidget()
+@@ -6790,7 +6792,7 @@
+ function onAssignSpecialFood(self, mousePosition, mouseButton, category, index)
+   specialFoodAssignActive = false
+   mouseGrabberWidget:ungrabMouse()
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   mouseGrabberWidget.onMouseRelease = nil
+ 
+   if specialFoodsWindow then
+@@ -6841,10 +6843,11 @@
+   specialFoodAssignActive = true
+   mouseGrabberWidget:grabMouse()
+   if specialFoodsWindow then specialFoodsWindow:hide() end
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+   mouseGrabberWidget.onMouseRelease = function(self, mousePosition, mouseButton)
+     onAssignSpecialFood(self, mousePosition, mouseButton, category, index)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(mouseGrabberWidget) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ local function buildSpecialFoodRows(category)
+@@ -6928,7 +6931,7 @@
+       specialFoodAssignActive = false
+       mouseGrabberWidget:ungrabMouse()
+       mouseGrabberWidget.onMouseRelease = nil
+-      g_mouse.popCursor('target')
++      if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+     end
+     specialFoodsWindow:destroy()
+     specialFoodsWindow = nil
+--- a/mods/game_helper/magic_shooter_panel.lua
++++ b/mods/game_helper/magic_shooter_panel.lua
+@@ -862,11 +862,12 @@
+ 
+   grabber:grabMouse()
+   if helperWindow then helperWindow:hide() end
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+ 
+   grabber.onMouseRelease = function(self, mousePosition, mouseButton)
+     magicShooter.onRuneSelected(self, mousePosition, mouseButton)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(grabber) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ function magicShooter.onRuneSelected(self, mousePosition, mouseButton)
+@@ -875,7 +876,7 @@
+ 
+   grabber:ungrabMouse()
+   if helperWindow then helperWindow:show() end
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   grabber.onMouseRelease = nil
+ 
+   local rootWidget = g_ui.getRootWidget()
+--- a/mods/game_helper/timer_panel.lua
++++ b/mods/game_helper/timer_panel.lua
+@@ -195,18 +195,19 @@
+   end
+ 
+   mouseGrabber:grabMouse()
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+ 
+   mouseGrabber.onMouseRelease = function(self, mousePosition, mouseButton)
+     timerPanel.onItemSelected(self, mousePosition, mouseButton, isTemporaryGrabber)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(mouseGrabber) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ function timerPanel.onItemSelected(self, mousePosition, mouseButton, isTemporaryGrabber)
+   local mouseGrabber = modules.game_helper.getMouseGrabber and modules.game_helper.getMouseGrabber() or self
+ 
+   mouseGrabber:ungrabMouse()
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   mouseGrabber.onMouseRelease = nil
+ 
+   -- Destroy temporary grabber to prevent widget leak
+--- a/mods/game_helper/tools_panel.lua
++++ b/mods/game_helper/tools_panel.lua
+@@ -741,10 +741,11 @@
+   end
+   grabber:grabMouse()
+   if helperWindow then helperWindow:hide() end
+-  g_mouse.pushCursor('target')
++  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+   grabber.onMouseRelease = function(self, mousePosition, mouseButton)
+     tools.onAssignQuiverAmmo(self, mousePosition, mouseButton, button)
+   end
++  if ChaosItemPicker then ChaosItemPicker.begin(grabber) end -- the target cursor like "Use with"; right-click / Escape cancel
+ end
+ 
+ -- Handle ammunition item assignment
+@@ -756,7 +757,7 @@
+     g_mouse.updateGrabber(grabber, 'target')
+   end
+   grabber:ungrabMouse()
+-  g_mouse.popCursor('target')
++  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+   grabber.onMouseRelease = nil
+   if helperWindow then helperWindow:show() end
+ 

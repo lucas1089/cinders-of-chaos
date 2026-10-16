@@ -26,22 +26,5 @@ ChaosOrb < UIWidget
     color: #f0e8dc
     phantom: true
 
-UIWidget
-  id: chaosOrbs
-  anchors.fill: parent
-  phantom: true
-  focusable: false
-
-  ChaosOrb
-    id: healthOrb
-    anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-left: 6
-    margin-bottom: 6
-
-  ChaosOrb
-    id: manaOrb
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    margin-right: 6
-    margin-bottom: 6
+// The two orbs are created in the game root panel (shaderfx.lua) and anchored to the chat panel's edges
+// (bottomSplitter), beside the chat and its grips (game_chatpanel's ChaosChatLogic.orbMargins).

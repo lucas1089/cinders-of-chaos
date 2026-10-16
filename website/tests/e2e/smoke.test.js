@@ -96,7 +96,7 @@ test('1. home page', async () => {
 });
 
 test('2. account creation', async () => {
-  await go('register.php');
+  await go('register');
   const f = page.locator('form:has(input[name=password_again])');
   await f.locator('input[name=username]').fill(ACCOUNT);
   await f.locator('input[name=password]').fill(PASSWORD);
@@ -107,7 +107,7 @@ test('2. account creation', async () => {
   if (await f.locator('input[name=chaos_accept_terms]').count()) await f.locator('input[name=chaos_accept_terms]').check();
   await shot('02-register-form');
   await submit(f.locator('[type=submit]'));
-  assert.match(page.url(), /register\.php\?success/, 'account created: ' + (await text()).slice(0, 400));
+  assert.match(page.url(), /\/register\?success/, 'account created: ' + (await text()).slice(0, 400));
   assert.match(await text(), /account has been created/i);
   await shot('02-register-done');
   noProblems();
@@ -122,27 +122,27 @@ test('3. login', async () => {
     await page.locator('input[name=chaos_accept_terms]').check();
     await submit(page.locator('form:has(input[name=chaos_accept_terms]) [type=submit]'));
   }
-  assert.match(page.url(), /myaccount\.php/, 'lands on My Account');
+  assert.match(page.url(), /\/myaccount(\?|$)/, 'lands on My Account');
   assert.ok((await text()).includes(ACCOUNT), 'the account name is shown');
   await shot('03-login-myaccount');
   noProblems();
 });
 
 test('4. character creation, character list and character page', async () => {
-  await go('createcharacter.php');
+  await go('createcharacter');
   const f = page.locator('form:has(input[name=selected_vocation])');
   assert.ok(await f.locator('input[name=selected_vocation]').count() >= 1, 'class choice');
   await f.locator('input[name=name]').fill(CHARACTER);
   await f.locator('input[name=selected_vocation]').first().check({ force: true });
   await shot('04-create-character-form');
   await submit(f.locator('[type=submit]'));
-  assert.match(page.url(), /createcharacter\.php\?success/, 'character created: ' + (await text()).slice(0, 400));
+  assert.match(page.url(), /\/createcharacter\?success/, 'character created: ' + (await text()).slice(0, 400));
 
-  await go('myaccount.php');
+  await go('myaccount');
   assert.ok((await text()).includes(CHARACTER), 'the character list has the new character');
   await shot('04-character-list');
 
-  await go('characterprofile.php?name=' + encodeURIComponent(CHARACTER));
+  await go('characterprofile?name=' + encodeURIComponent(CHARACTER));
   const t = await text();
   assert.ok(t.includes(CHARACTER), 'character page: name');
   assert.match(t, /Level\s*1\b/i, 'character page: level');
@@ -155,7 +155,7 @@ test('5. donation page: voluntary donation label and payment buttons', async () 
     ['en', 'Voluntary donation', /^\s*Donate\b/i],
     ['pt-BR', 'Doação voluntária', /^\s*Doar\b/i],
   ]) {
-    await go('page.php?plugin=chaos&p=coins&l=' + lang);
+    await go('page?plugin=chaos&p=coins&l=' + lang);
     const t = await text();
     assert.ok(t.includes(label), lang + ': the voluntary donation label');
     assert.ok(t.includes('Nobody is required to donate') && t.includes('Ninguém é obrigado a doar'), lang + ': both texts');
@@ -169,7 +169,7 @@ test('5. donation page: voluntary donation label and payment buttons', async () 
     await shot('05-donate-' + lang);
   }
   if (PAY_MOCK) {   // a Pix donation with the mock provider: the order page, then cancel it (nothing leaves the site)
-    await go('page.php?plugin=chaos&p=coins&l=en');
+    await go('page?plugin=chaos&p=coins&l=en');
     await submit(page.locator('form:has(input[name=chaos_pay_method][value=pix]) [type=submit]').first());
     assert.match(await text(), /Pix copy and paste/i, 'the order: the Pix copy-and-paste code');
     await shot('05-donate-pix-order');
@@ -184,7 +184,7 @@ test('5. donation page: voluntary donation label and payment buttons', async () 
 });
 
 test('6. wiki and the language switch pt-BR / en', async () => {
-  await go('page.php?plugin=chaos&p=wiki&l=pt-BR');
+  await go('page?plugin=chaos&p=wiki&l=pt-BR');
   assert.ok((await text()).includes('Guias'), 'pt-BR index');
   await shot('06-wiki-pt-BR');
   await submit(page.locator('a.chaos-wiki-lang[lang=en]'));
@@ -196,13 +196,13 @@ test('6. wiki and the language switch pt-BR / en', async () => {
   await submit(page.locator('a.chaos-wiki-lang[lang="pt-BR"]'));   // Portuguese is the default: no l= in the link
   assert.ok((await text()).includes('Primeiros passos'), 'the same guide in Portuguese');
   await shot('06-wiki-guide-pt-BR');
-  await go('page.php?plugin=chaos&p=wiki&l=en&q=' + encodeURIComponent('rift'));
+  await go('page?plugin=chaos&p=wiki&l=en&q=' + encodeURIComponent('rift'));
   assert.ok(await page.locator('mark').count() >= 1, 'search marks its hits');
   noProblems();
 });
 
 test('7. Character Bazaar list', async () => {
-  await go('page.php?plugin=chaos&p=bazaar&l=en');
+  await go('page?plugin=chaos&p=bazaar&l=en');
   let t = await text();
   assert.ok(t.toUpperCase().includes('CHARACTER BAZAAR'), 'title');
   assert.ok(/Open auctions/i.test(t), 'the auctions tab');

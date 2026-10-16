@@ -1,6 +1,6 @@
 <?php
 /**
- * Character Bazaar (page.php?plugin=chaos&p=bazaar; bazaar_lib.php, website/README.md "Character Bazaar").
+ * Character Bazaar (page?plugin=chaos&p=bazaar; bazaar_lib.php, website/README.md "Character Bazaar").
  *
  *  - GET: the open auctions (character, level, class, current bid, ends); &id=N one auction with its bids (amounts and
  *    times only, never the bidders) and, logged in, the bid form; &mine=1 the account's characters (which can be
@@ -15,7 +15,7 @@ require_once __DIR__ . '/../bazaar_lib.php';
 require_once __DIR__ . '/../i18n_lib.php';
 $GLOBALS['page_title'] = chaos_t('Character Bazaar');
 
-$self = 'page.php?plugin=chaos&p=bazaar';
+$self = 'page?plugin=chaos&p=bazaar';
 $accountId = function_exists('getSession') ? (int)getSession('user_id') : 0;
 try {
 	$bz = chaos_bazaar($config);

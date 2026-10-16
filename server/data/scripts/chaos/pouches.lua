@@ -473,7 +473,13 @@ local function collect(monster, corpse)
 			lastFull[key] = now
 		end
 	end
-	local text = P.summary(c, looted, backpack, left, notes.full, overflow)
+	local text = P.summary(c, looted, backpack, left, notes.full, overflow, function(key, ...)
+		return Chaos and Chaos.t and Chaos.t(owner, key, ...) or P.english(key, ...)
+	end) -- the owner's language
+	-- one loot line per kill (lootline.lua): the pouch part ends the kill's "Loot of ..." line; without it its own line
+	if text and ChaosLootLine and ChaosLootLine.addPouch and ChaosLootLine.addPouch(monster, text) then
+		return
+	end
 	if text then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, text)
 	end

@@ -35,7 +35,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	if target and ChaosVfxMissile then
 		local from, to = creature:getPosition(), target:getPosition()
-		VfxShoot(from, to, "arcane_bolt")
+		VfxShoot(from, to, ChaosSpell.pack29Name("missile", "arcane_bolt")) -- pair 29: psyche_prism
 		if delayed then
 			local fly = M.flightMs(from, to)
 			M.later(fly, to, "px03_arcane")

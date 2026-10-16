@@ -103,7 +103,8 @@ end
 
 function X.retagExit(hall)
 	local e = hall.exit
-	local tile = e and Tile(P(K.offset(hall, e[1], e[2], e[3])))
+	local pos = e and K.offset(hall, e[1], e[2], e[3])
+	local tile = pos and Tile(P(pos))
 	if not tile then
 		return false
 	end
@@ -111,6 +112,8 @@ function X.retagExit(hall)
 		local aid = it:getActionId()
 		if aid == EXIT_AID or aid == C().aid.exit then
 			it:setActionId(C().aid.exit)
+			-- the look text and the effect (cityportals_fx.lua), like the other exits (idlehall.lua)
+			ChaosCityPortals.register("servicesexit", C().aid.exit, pos, hall.town)
 			return true
 		end
 	end

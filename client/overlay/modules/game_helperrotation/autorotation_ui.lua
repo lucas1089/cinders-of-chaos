@@ -195,6 +195,7 @@ local function savePrefs(p)
   for id, v in pairs(p.ignored or {}) do if v then ignored[tonumber(id) or id] = true end end
   node[name] = { autoUpdate = p.autoUpdate == true, ignored = ignored }
   g_settings.setNode(SETTINGS_NODE, node)
+  if g_settings.save then g_settings.save() end -- on disk now: a crash or a death screen close keeps it
 end
 
 function U.isAutoUpdate()
@@ -318,24 +319,72 @@ local function addButton()
   u:setMarginRight(4)
   u.onClick = function() U.undoRotation() end
   u:setVisible(U.undo ~= nil)
-  local c = g_ui.createWidget('CheckBox', panel)
+  -- the box sits on the presets row, left of Rename (in the title row it covered "RULES" of the centred title)
+  local presets = panel:recursiveGetChildById('presetsSection')
+  local rename = presets and presets:getChildById('renameButton')
+  local c = g_ui.createWidget('CheckBox', presets or panel)
   c:setId(U.AUTO_ID)
-  c:setText(tr('Auto-update my spells'))
-  c:setTooltip(tr('After a level-up, update a rotation that Auto rotation wrote with the new spells.\n' ..
+  c:setTooltip(tr('Auto-update my spells') .. '\n' ..
+    tr('After a level-up, update a rotation that Auto rotation wrote with the new spells.\n' ..
     'Off: a new spell is only offered (Add / Ignore). Your own rules are never changed.'))
   c:setTextHorizontalAutoResize(true)
   c:setHeight(16)
-  c:addAnchor(AnchorVerticalCenter, U.BUTTON_ID, AnchorVerticalCenter)
-  c:addAnchor(AnchorRight, U.UNDO_ID, AnchorLeft)
-  c:setMarginRight(8)
+  if rename then
+    c:addAnchor(AnchorVerticalCenter, 'renameButton', AnchorVerticalCenter)
+    c:addAnchor(AnchorRight, 'renameButton', AnchorLeft)
+    c:setMarginRight(10)
+  else
+    c:addAnchor(AnchorTop, U.BUTTON_ID, AnchorBottom)
+    c:addAnchor(AnchorRight, 'parent', AnchorRight)
+    c:setMarginTop(4)
+    c:setMarginRight(10)
+  end
   c:setChecked(U.isAutoUpdate())
   c.onCheckChange = function(self, checked) U.setAutoUpdate(checked) end
+  if presets then
+    connect(presets, { onGeometryChange = function() U.fitAutoBox() end })
+  end
+  U.fitAutoBox()
   return true
 end
+
+-- the label that fits between the row's left widgets (Presets:, Set Key, help icon) and Rename
+function U.fitAutoBox()
+  local root = g_ui.getRootWidget()
+  local c = root and root:recursiveGetChildById(U.AUTO_ID)
+  local presets = c and c:getParent()
+  local rename = presets and presets:getChildById('renameButton')
+  if not c or not rename then return end
+  local leftEdge = presets:getX()
+  for _, id in ipairs({ 'presetsLabel', 'setKeyPresetButton', 'presetHelpIcon' }) do
+    local w = presets:getChildById(id)
+    if w and w:isVisible() then leftEdge = math.max(leftEdge, w:getX() + w:getWidth()) end
+  end
+  local free = rename:getX() - c:getMarginRight() - leftEdge - 10
+  local function widthWith(text)
+    c:setText(text)
+    return c:getWidth()
+  end
+  local full, short = tr('Auto-update my spells'), tr('Auto-update')
+  local BOX = 16 -- the box image alone
+  local widths = { full = widthWith(full), short = widthWith(short), box = BOX }
+  local pick = ChaosAutoRotation.autoBoxLabel(free, widths)
+  c:setText(pick == 'full' and full or pick == 'short' and short or '')
+  if pick == 'none' then c:setWidth(BOX) end
+  c:setVisible(pick ~= 'hidden')
+end
+
+-- for autosetup_ui.lua (the "Auto setup" button reuses the rotation and the spell checks)
+U.canCastFor = canCastFor
+U.applyRotation = applyRotation
+U.refreshShooter = refreshShooter
+U.save = save
+U.nameOf = nameOf
 
 local function poll()
   if g_game.isOnline() then
     addButton()
+    if ChaosAutoSetupUI and ChaosAutoSetupUI.addButton then ChaosAutoSetupUI.addButton() end
   end
   pollEvent = scheduleEvent(poll, 2000)
 end
@@ -387,7 +436,8 @@ function U.onLevelUp()
 end
 
 local function onLevelChange(localPlayer, level, levelPercent, oldLevel)
-  if oldLevel and level > oldLevel then
+  -- oldLevel 0: the login's first level packet (also after a death), not a level-up
+  if oldLevel and oldLevel > 0 and level > oldLevel then
     U.onLevelUp()
   end
 end
@@ -397,20 +447,26 @@ local function onGameEnd()
   U.undo = nil
 end
 
+-- the server's answer to a potion probe (ChaosPotionGate, base patch 0070): nothing to use -> the potion waits
+local function onTextMessage(mode, text)
+  if ChaosPotionGate then ChaosPotionGate.onText(ChaosPotionGate.session, text, g_clock.millis()) end
+end
+
 function U.init()
   connect(LocalPlayer, { onLevelChange = onLevelChange })
-  connect(g_game, { onGameEnd = onGameEnd })
+  connect(g_game, { onGameEnd = onGameEnd, onTextMessage = onTextMessage })
   poll()
 end
 
 function U.terminate()
   disconnect(LocalPlayer, { onLevelChange = onLevelChange })
-  disconnect(g_game, { onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameEnd = onGameEnd, onTextMessage = onTextMessage })
   if pollEvent then
     removeEvent(pollEvent)
     pollEvent = nil
   end
   closeBox()
+  if ChaosAutoSetupUI and ChaosAutoSetupUI.terminate then ChaosAutoSetupUI.terminate() end
   local root = g_ui.getRootWidget()
   for _, id in ipairs({ U.AUTO_ID, U.UNDO_ID, U.BUTTON_ID }) do
     local b = root and root:recursiveGetChildById(id)

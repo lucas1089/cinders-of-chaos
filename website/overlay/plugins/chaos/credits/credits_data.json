@@ -42,7 +42,7 @@
   {
    "title": "Art packs",
    "pt": "Pacotes de arte",
-   "note": "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning; the owner confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.",
+   "note": "Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning or as a style reference; its effects are only imported into the game. The owner confirmed (2026-10-15) that the other WsT packs here have no such clause. The MutterPixel Studio packs (bought 2026-10-16) may be modified and recoloured, are never used as AI training data or a style reference, and ask for credit (appreciated, not required). Listed here as thanks.",
    "entries": [
     {
      "name": "Magic VFX Spells & Impacts",
@@ -77,7 +77,8 @@
     {
      "name": "Mega VFX 500",
      "author": "WsT",
-     "licence": "purchased; credit not required"
+     "licence": "purchased; credit not required",
+     "use": "Mystic line spell effects and missiles"
     },
     {
      "name": "Pixel Spellcraft VFX",
@@ -100,6 +101,14 @@
      "author": "WsT",
      "licence": "purchased; credit not required",
      "use": "grounds, borders and map objects"
+    },
+    {
+     "name": "MutterPixel Studio animated VFX",
+     "author": "MutterPixel Studio",
+     "licence": "purchased; use in games, modified or recoloured; no resale or sharing of the files; never AI training data",
+     "credit": "Art by MutterPixel Studio",
+     "use": "condition auras, element blasts, missiles, level-up and boss fireworks, hit splashes",
+     "source": "Pixel Status Effects - Animated VFX Pack, Pixel Projectiles - Animated VFX, Pixel Fireworks - Animated VFX, Pixel Blood VFX - Animated VFX, Pixel Explosions - Animated VFX"
     }
    ]
   },

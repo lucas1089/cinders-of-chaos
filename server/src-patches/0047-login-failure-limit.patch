@@ -1,0 +1,302 @@
+# Failed-login limits per IP and per account (server/README.md "Failed-login limits", docs/SECURITY_CHECKLIST.md).
+# The stock engine lets anyone try passwords as fast as it can reconnect: its throttle (Ban::acceptConnection) only stops
+# 6 connections within 500 ms, and nothing counts wrong passwords. The website limits its own logins; the game's
+# account login (7171) and game login (7172) had no limit, and each wrong guess costs a PBKDF2 run on the login worker.
+#   * src/loginlimit.h (new, header only, no engine types; server/tools/loginlimit_test.cpp tests it): after
+#     loginFailMaxPerIp (20) failed logins from one IP, or loginFailMaxPerAccount (50) on one account name from any IP,
+#     within loginFailWindow (600) seconds, that IP / account is refused for loginFailBlock (900) seconds. 0 turns a
+#     limit off. The account name is compared case-insensitively. A good login clears the account's count, never the
+#     IP's (an attacker's own account cannot reset it). The maps are bounded (100,000 entries each, expired ones swept).
+#   * ProtocolLogin / ProtocolGame: the check runs before the password check is queued (no PBKDF2 for a blocked IP or
+#     account) and refuses with "Too many failed logins. Please wait N minutes ...". The result of each check is
+#     recorded on the dispatcher. One console line when a block starts: [Login limit] ip|account blocked ...
+#   * behind the gateways the IP is the player's own (patch 0025). The website's own login limit is separate.
+# Apply in the server source root after 0001-0046: patch -p1 < 0047-login-failure-limit.patch, then rebuild.
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -337,6 +337,13 @@ bool ConfigManager::load()
+ 	string[CLIENT_GUARD_STAFF_IPS] = getGlobalString(L, "clientGuardStaffIps", "");
+ 	string[CLIENT_GUARD_LOG_FILE] = getGlobalString(L, "clientGuardLogFile", "data/logs/clientguard.log");
+ 	integer[CLIENT_GUARD_TIMEOUT] = getGlobalNumber(L, "clientGuardTimeout", 10);
++	// Chaos (patch 0047): failed-login limits (src/loginlimit.h, server/README.md "Failed-login limits"). After
++	// loginFailMaxPerIp failed logins from one IP, or loginFailMaxPerAccount on one account name, within loginFailWindow
++	// seconds, that IP / account is refused for loginFailBlock seconds before any password check. 0 turns a limit off.
++	integer[LOGIN_FAIL_MAX_PER_IP] = getGlobalNumber(L, "loginFailMaxPerIp", 20);
++	integer[LOGIN_FAIL_MAX_PER_ACCOUNT] = getGlobalNumber(L, "loginFailMaxPerAccount", 50);
++	integer[LOGIN_FAIL_WINDOW] = getGlobalNumber(L, "loginFailWindow", 600);
++	integer[LOGIN_FAIL_BLOCK] = getGlobalNumber(L, "loginFailBlock", 900);
+ 	boolean[CLIENT_GUARD_ALLOW_DEV_KEY] = getGlobalBoolean(L, "clientGuardAllowDevKey", false);
+ 	// Chaos (patch 0025): the gateways in front of the server (src/proxyprotocol.h, server/README.md "Gateways and the PROXY
+ 	// protocol"). proxyProtocolTrusted: their addresses (a.b.c.d or a.b.c.d/nn, comma separated); a connection from one
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -154,6 +154,10 @@ class ConfigManager
+ 			PLAYER_SPEED_SOFT_LEVEL,
+ 			PLAYER_SPEED_PER_TEN_LEVELS_ABOVE,
+ 			CLIENT_GUARD_TIMEOUT, // Chaos (patch 0021): client guard
++			LOGIN_FAIL_MAX_PER_IP, // Chaos (patch 0047): failed-login limits
++			LOGIN_FAIL_MAX_PER_ACCOUNT,
++			LOGIN_FAIL_WINDOW,
++			LOGIN_FAIL_BLOCK,
+ 			SLOW_TASK_LOG_MS, // Chaos (patch 0027): slow task log
+ 			SPAWN_MIN_PLAYER_DISTANCE, // Chaos (patch 0041): no respawn this close to a player
+ 
+new file mode 100644
+--- /dev/null
++++ b/src/loginlimit.h
+@@ -0,0 +1,142 @@
++// Chaos (patch 0047): failed-login limits per IP and per account (server/README.md "Failed-login limits").
++// Header only and free of engine types, so server/tools/loginlimit_test.cpp builds it alone.
++
++#ifndef FS_LOGINLIMIT_H_CHAOS
++#define FS_LOGINLIMIT_H_CHAOS
++
++#include <algorithm>
++#include <cctype>
++#include <cstdint>
++#include <mutex>
++#include <string>
++#include <unordered_map>
++
++namespace LoginLimit {
++
++// 0 in maxPerIp / maxPerAccount turns that limit off
++struct Settings
++{
++	uint32_t maxPerIp = 20;       // failed logins from one IP within windowSec
++	uint32_t maxPerAccount = 50;  // failed logins on one account name (from any IP) within windowSec
++	uint32_t windowSec = 600;
++	uint32_t blockSec = 900;
++};
++
++struct Entry
++{
++	int64_t windowStart = 0;
++	int64_t blockedUntil = 0;
++	uint32_t count = 0;
++};
++
++class Limiter
++{
++	public:
++		static constexpr size_t MAX_ENTRIES = 100000; // per map; expired entries are swept when it is reached
++		static constexpr size_t MAX_NAME = 64;
++
++		// the account name as the database compares it (case-insensitive), bounded
++		static std::string key(const std::string& account) {
++			std::string k = account.substr(0, MAX_NAME);
++			std::transform(k.begin(), k.end(), k.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
++			return k;
++		}
++
++		// seconds left of a block of this IP or account (0: the login may go on)
++		uint32_t blockedFor(uint32_t ip, const std::string& account, int64_t now, const Settings& s) {
++			std::lock_guard<std::mutex> guard(lock);
++			int64_t until = 0;
++			if (s.maxPerIp != 0) {
++				auto it = ips.find(ip);
++				if (it != ips.end()) {
++					until = std::max(until, it->second.blockedUntil);
++				}
++			}
++			if (s.maxPerAccount != 0) {
++				auto it = accounts.find(key(account));
++				if (it != accounts.end()) {
++					until = std::max(until, it->second.blockedUntil);
++				}
++			}
++			return until > now ? static_cast<uint32_t>(until - now) : 0;
++		}
++
++		// the result of one password check. Returns a non-empty note when this failure started a block (for the log).
++		// A success clears the account's count, never the IP's: an attacker's own good account cannot reset it.
++		std::string record(uint32_t ip, const std::string& account, bool ok, int64_t now, const Settings& s) {
++			std::lock_guard<std::mutex> guard(lock);
++			if (ok) {
++				accounts.erase(key(account));
++				return "";
++			}
++			std::string note;
++			if (s.maxPerIp != 0 && bump(ips, ip, now, s, s.maxPerIp)) {
++				note = "ip";
++			}
++			if (s.maxPerAccount != 0 && bump(accounts, key(account), now, s, s.maxPerAccount)) {
++				note += note.empty() ? "account" : "+account";
++			}
++			return note;
++		}
++
++		size_t size() const { return ips.size() + accounts.size(); }
++
++	private:
++		template <typename Map, typename Key>
++		bool bump(Map& map, const Key& k, int64_t now, const Settings& s, uint32_t max) {
++			if (map.size() >= MAX_ENTRIES) {
++				sweep(map, now, s);
++			}
++			if (map.size() >= MAX_ENTRIES && map.find(k) == map.end()) {
++				return false; // under a flood of new keys the map stays bounded; the IP limit still holds
++			}
++			Entry& e = map[k];
++			if (e.blockedUntil > now) {
++				return false;
++			}
++			if (now - e.windowStart >= static_cast<int64_t>(s.windowSec)) {
++				e.windowStart = now;
++				e.count = 0;
++			}
++			if (++e.count >= max) {
++				e.blockedUntil = now + s.blockSec;
++				e.count = 0;
++				e.windowStart = e.blockedUntil;
++				return true;
++			}
++			return false;
++		}
++
++		template <typename Map>
++		static void sweep(Map& map, int64_t now, const Settings& s) {
++			for (auto it = map.begin(); it != map.end();) {
++				const Entry& e = it->second;
++				if (e.blockedUntil <= now && now - e.windowStart >= static_cast<int64_t>(s.windowSec)) {
++					it = map.erase(it);
++				} else {
++					++it;
++				}
++			}
++		}
++
++		std::mutex lock;
++		std::unordered_map<uint32_t, Entry> ips;
++		std::unordered_map<std::string, Entry> accounts;
++};
++
++inline Limiter& global()
++{
++	static Limiter limiter;
++	return limiter;
++}
++
++inline std::string refusal(uint32_t seconds)
++{
++	const uint32_t minutes = (seconds + 59) / 60;
++	return "Too many failed logins. Please wait " + std::to_string(minutes) + (minutes == 1 ? " minute" : " minutes") +
++	       " and try again.\nForgot your password? Reset it on the website.";
++}
++
++} // namespace LoginLimit
++
++#endif
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -18,6 +18,7 @@
+ #include "iomarket.h"
+ #include "ban.h"
+ #include "clientguard.h"
++#include "loginlimit.h"
+ #include "scheduler.h"
+ #include "monster.h"
+ #include "chaosdisplay.h"
+@@ -491,6 +492,26 @@ void ProtocolGame::logout(bool displayEffect, bool forced)
+ 	g_game.removeCreature(player);
+ }
+ 
++// Chaos (patch 0047): failed-login limits from config.lua (src/loginlimit.h)
++static LoginLimit::Settings loginLimitSettings()
++{
++	LoginLimit::Settings s;
++	s.maxPerIp = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::LOGIN_FAIL_MAX_PER_IP)));
++	s.maxPerAccount = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::LOGIN_FAIL_MAX_PER_ACCOUNT)));
++	s.windowSec = static_cast<uint32_t>(std::max<int64_t>(1, g_config.getNumber(ConfigManager::LOGIN_FAIL_WINDOW)));
++	s.blockSec = static_cast<uint32_t>(std::max<int64_t>(1, g_config.getNumber(ConfigManager::LOGIN_FAIL_BLOCK)));
++	return s;
++}
++
++static void loginLimitRecord(uint32_t ip, const std::string& accountName, bool ok)
++{
++	const std::string note = LoginLimit::global().record(ip, accountName, ok, time(nullptr), loginLimitSettings());
++	if (!note.empty()) {
++		std::cout << "[Login limit] " << note << " blocked after failed logins: ip " << convertIPToString(ip)
++		          << ", account " << LoginLimit::Limiter::key(accountName) << std::endl;
++	}
++}
++
+ void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg)
+ {
+ 	if (g_game.getGameState() == GAME_STATE_SHUTDOWN) {
+@@ -600,10 +621,18 @@ void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg)
+ 		return;
+ 	}
+ 
++	// Chaos (patch 0047): too many failed logins from this IP or on this account: refused before the password check
++	const uint32_t clientIp = getIP();
++	if (const uint32_t wait = LoginLimit::global().blockedFor(clientIp, accountName, time(nullptr), loginLimitSettings())) {
++		disconnectClient(LoginLimit::refusal(wait));
++		return;
++	}
++
+ 	// Chaos (patch 0014): the password check (database + PBKDF2) runs on the login worker, the login on the dispatcher
+ 	auto thisPtr = getThis();
+ 	bool queued = IOLoginData::gameworldAuthenticationAsync(accountName, password, characterName, token, tokenTime,
+-	                                                         [thisPtr, operatingSystem](uint32_t accountId, const std::string& name) {
++	                                                         [thisPtr, operatingSystem, clientIp, accountName](uint32_t accountId, const std::string& name) {
++		loginLimitRecord(clientIp, accountName, accountId != 0);
+ 		if (accountId == 0) {
+ 			thisPtr->disconnectClient("Account name or password is not correct.");
+ 			return;
+--- a/src/protocollogin.cpp
++++ b/src/protocollogin.cpp
+@@ -12,6 +12,7 @@
+ #include "iologindata.h"
+ #include "ban.h"
+ #include "clientguard.h"
++#include "loginlimit.h"
+ #include "game.h"
+ 
+ #include <fmt/format.h>
+@@ -30,6 +31,26 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
+ 	disconnect();
+ }
+ 
++// Chaos (patch 0047): failed-login limits from config.lua (src/loginlimit.h)
++static LoginLimit::Settings loginLimitSettings()
++{
++	LoginLimit::Settings s;
++	s.maxPerIp = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::LOGIN_FAIL_MAX_PER_IP)));
++	s.maxPerAccount = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::LOGIN_FAIL_MAX_PER_ACCOUNT)));
++	s.windowSec = static_cast<uint32_t>(std::max<int64_t>(1, g_config.getNumber(ConfigManager::LOGIN_FAIL_WINDOW)));
++	s.blockSec = static_cast<uint32_t>(std::max<int64_t>(1, g_config.getNumber(ConfigManager::LOGIN_FAIL_BLOCK)));
++	return s;
++}
++
++static void loginLimitRecord(uint32_t ip, const std::string& accountName, bool ok)
++{
++	const std::string note = LoginLimit::global().record(ip, accountName, ok, time(nullptr), loginLimitSettings());
++	if (!note.empty()) {
++		std::cout << "[Login limit] " << note << " blocked after failed logins: ip " << convertIPToString(ip)
++		          << ", account " << LoginLimit::Limiter::key(accountName) << std::endl;
++	}
++}
++
+ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, const std::string& token, uint16_t version, const std::shared_ptr<Account>& checkedAccount, uint32_t clientId, const std::string& guardReason)
+ {
+ 	if (!checkedAccount) {
+@@ -248,9 +269,17 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
+ 		}
+ 	}
+ 
++	// Chaos (patch 0047): too many failed logins from this IP or on this account: refused before the password check
++	const uint32_t clientIp = connection->getIP();
++	if (const uint32_t wait = LoginLimit::global().blockedFor(clientIp, accountName, time(nullptr), loginLimitSettings())) {
++		disconnectClient(LoginLimit::refusal(wait), version);
++		return;
++	}
++
+ 	// Chaos (patch 0014): the password check (database + PBKDF2) runs on the login worker, the answer on the dispatcher
+ 	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
+-	bool queued = IOLoginData::loginserverAuthenticationAsync(accountName, password, [thisPtr, accountName, password, authToken, version, clientId, guardReason](std::shared_ptr<Account> account) {
++	bool queued = IOLoginData::loginserverAuthenticationAsync(accountName, password, [thisPtr, accountName, password, authToken, version, clientId, guardReason, clientIp](std::shared_ptr<Account> account) {
++		loginLimitRecord(clientIp, accountName, account != nullptr);
+ 		thisPtr->getCharacterList(accountName, password, authToken, version, account, clientId, guardReason);
+ 	});
+ 	if (!queued) {

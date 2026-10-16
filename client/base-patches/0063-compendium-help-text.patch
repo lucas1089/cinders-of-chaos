@@ -1,0 +1,34 @@
+# Chaos: the compendium's help text (Lua only; applies after 0001-0062). The base compendium still told players to use
+# Task Hunt, which the client no longer ships (assemble_client.sh drops game_task_hunt; the top bar has no entry), and
+# said the protocol is 8.60. It now points to the task systems in the top menu bar, Hunt > Kill Tasks and Adventure >
+# Bounty Board, and names the 10.98 protocol this client speaks.
+diff --git a/mods/game_compendium/compendium.lua b/mods/game_compendium/compendium.lua
+index dcaa696..cba71ec 100644
+--- a/mods/game_compendium/compendium.lua
++++ b/mods/game_compendium/compendium.lua
+@@ -6,7 +6,7 @@ local sections = {
+   {
+     title = "Game Content",
+     pages = {
+-      "Task Hunt\nComplete bounty and weekly tasks, improve your talismans and spend hunting points in the task shop.",
++      "Tasks\nTake kill tasks under Hunt > Kill Tasks and bounties under Adventure > Bounty Board in the top menu bar.",
+       "Soul Seal\nUse Soul Pit content to collect Soul Seal points and unlock its progression rewards."
+     }
+   },
+@@ -20,14 +20,14 @@ local sections = {
+   {
+     title = "Useful Info",
+     pages = {
+-      "Use the right-side menu to open Cyclopedia, Task Hunt, Compendium and other game systems.",
++      "Use the top menu bar to open the game systems: Hunt > Kill Tasks for kill tasks, Adventure > Bounty Board for bounties.",
+       "Only the Cinders of Chaos client receives the modern extension bytes. Legacy Cip and OTC clients keep their original packet layout."
+     }
+   },
+   {
+     title = "Major Updates",
+     pages = {
+-      "Modern Systems\nTask Hunt, Soul Seal, Familiar, item inspection and monster podium support are integrated with the 8.60 protocol."
++      "Modern Systems\nKill Tasks, the Bounty Board, Soul Seal, Familiar, item inspection and monster podium support are integrated with the 10.98 protocol."
+     }
+   },
+   {

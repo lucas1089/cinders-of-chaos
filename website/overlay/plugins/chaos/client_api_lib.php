@@ -265,7 +265,7 @@ function chaos_client_api_state(int $accountId, int $now): array {
 	return array(
 		'account' => array(
 			'terms' => !function_exists('chaos_legal_has_accepted') || chaos_legal_has_accepted($accountId),
-			'termsUrl' => $site . '/page.php?plugin=chaos&p=accept',
+			'termsUrl' => $site . '/page?plugin=chaos&p=accept',
 			'slots' => array('used' => $used, 'limit' => chaos_character_limit($accountId)),
 			'classes' => $classes,
 			'towns' => $towns,
@@ -353,7 +353,7 @@ function chaos_client_api_create(array $req, int $accountId, string $ipKey, int 
 	if (function_exists('chaos_legal_has_accepted') && !chaos_legal_has_accepted($accountId)) {
 		$site = rtrim((string)($config['site_url'] ?? ''), '/');
 		return chaos_client_api_fail(403, 'terms', 'Accept the current Terms of Use on the website first (log in there once).',
-			array('url' => $site . '/page.php?plugin=chaos&p=accept'));
+			array('url' => $site . '/page?plugin=chaos&p=accept'));
 	}
 	if (!chaos_client_api_nonce_fresh($req['nonce'] ?? null, $now)) {
 		return chaos_client_api_fail(409, 'replay', 'This request was already used. Please try again.');

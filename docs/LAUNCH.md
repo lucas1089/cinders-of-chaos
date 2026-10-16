@@ -23,7 +23,11 @@ five ready-to-use downloads, listed in the release notes:
 - `CindersOfChaos-Client-Windows.zip` and `CindersOfChaos-Client-Linux.tar.gz`: the client alone (`Chaos.exe`, or
   `run-client.sh` with its libraries in `lib/`), pointed at the workflow input `server_host` (default 127.0.0.1;
   `client/tools/set_server_host.py`). Both are built with the secret `CHAOS_CLIENT_KEY` and the input `client_build`,
-  and both get the updater inputs.
+  and both get the updater inputs. The optional input `site_url` (the website, `https://example.org`; empty by default)
+  writes `Services.account = "<site_url>/chaos_client_api.php"` (the character select's looks and "Create character";
+  empty keeps both off) and points the login-screen services at `<site_url>/clientservices`, which the site's web
+  server forwards to `clientservices.py` (below and `tools/linux/server/README.txt`). It must be `https://` (`http://`
+  only for 127.0.0.1 / localhost).
 - `CindersOfChaos-Server-Windows.zip`: the Windows server alone (engine, portable MariaDB, the start / stop .bat files,
   the test accounts; `tools/windows/server-README.txt`), `ip = server_host`.
 - `CindersOfChaos-Server-Linux.tar.gz`: the engine built on Ubuntu 22.04 (runs on Ubuntu 22.04+ and Debian 12+), its
@@ -110,6 +114,8 @@ docs/BETA.md section 2). Run it again with `--max-players 400` (or without the o
 | `clientGuardMode`, `clientGuardKey`, `clientGuardAllowDevKey`, `clientGuardTimeout`, `clientGuardDownloadUrl`, `clientGuardBuilds`, `clientGuardManifest`, `clientGuardStaffIps` | `"enforce"`, `os.getenv("CHAOS_CLIENT_KEY") or ""`, false, 10, the options | only the official client plays (engine patch 0021, `server/README.md` "Client guard"): the key is the GitHub secret `CHAOS_CLIENT_KEY` the Windows client is built with, in `/etc/chaos/chaos.env`; without it every player is kicked (the console says so at start). `clientGuardMode = "log"` for a log-only first week or an emergency |
 | `minPlayerSpeed`, `maxPlayerSpeed`, `playerSpeedBonus`, `playerSpeedPerTenLevels`, `playerSpeedSoftLevel`, `playerSpeedPerTenLevelsAbove` | 120, 2600, 50, 25, 300, 10 | movement speed (engine patch 0018, `server/README.md` "Movement speed"): walk speed held between about 1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level up to 300, 1 per level after. The client needs base patch 0029 (same step times) |
 | `proxyProtocolTrusted`, `proxyProtocolRequired` | the gateways' IPs, true (or `""`, false without gateways) | the gateways in front of the server (engine patch 0025, section "Gateways and DDoS"): a connection from a listed gateway must start with a PROXY header and the engine takes the player's real IP from it; `true` refuses every other address except 127.0.0.0/8. Not given: the value already in `config.lua` stays |
+| `rsaKeyFile` | `os.getenv("CHAOS_RSA_KEY_FILE") or "key.pem"` | the login's RSA key (engine patch 0046, `server/README.md` "Login encryption (RSA, XTEA)"): our own key made on this machine with `server/tools/rsa_key.py gen`, its path in `/etc/chaos/chaos.env`; the client is built with its public modulus (secret `CHAOS_RSA_PUBLIC`). Without it the base `key.pem`, the public default key (the console warns) |
+| `loginFailMaxPerIp`, `loginFailMaxPerAccount`, `loginFailWindow`, `loginFailBlock` | not written: 20, 50, 600, 900 | failed-login limits of the game logins (engine patch 0047, `server/README.md` "Failed-login limits") |
 | `slowTaskLogMs` | 0 (not set: off), or e.g. 100 while hunting lag; 200 or less for the slow COMMIT warning of section 9 | the slow task log (engine patch 0027, `server/README.md` "Slow task log"): every game loop task that took this many ms or more is one console line with the Lua script and line, the database queries and the collector's sweep that took the time. On, it costs about 1 us per Lua call (well under 1% of the game loop at 200 online) |
 | `loginPrefetch` | true (not set: true) | the login scripts' reads run on the login worker's own connection before the login (engine patch 0031, `server/README.md` "Login reads off the game loop"); answered from those rows only when the text is the same and no write reached a table they read since. `false` reads everything on the game loop as before. Read at startup |
 | `rateSpawn` | 3 | how many monsters one spawn brings back per check (stock 1: a pack of five took five spawntimes to refill). The timers themselves are in the spawn file (install step `spawns`); engine patch 0022 lets `respawn.lua` shorten them where several players hunt together (`server/README.md` "Spawn density and respawn"). Without patch 0022 the console prints one `[ChaosRespawn]` line and the stock timers apply |
@@ -119,7 +125,8 @@ Rates stay as the download has them: `rateExp` is not used (experience stages, w
 `rateSkill = 3`, `rateMagic = 2`, `rateLoot = 1`. `maxPacketsPerSecond` (50) is the engine's flood limit per connection.
 
 Also check by hand:
-- `freePremium` (false in the download): premium gates spells, items, outfits and the autoloot list size.
+- `freePremium` (false in the download): premium gates items, outfits and the autoloot list size. Spells and runes
+  are free for everyone (`patch_free_spells.py`, server/README.md "Free spells").
 - Passwords: `passwordType = "pbkdf2-sha256"`. The engine needs patch 0014 (`server/src-patches/0014-salted-password-hashes.patch`)
   and the website its password patch (`website/install_site.sh` applies it); both write
   `pbkdf2-sha256$<iterations>$<salt>$<key>` into `accounts.password` (`server/sql/chaos_passwords.sql` widens the column
@@ -191,6 +198,10 @@ sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer
   `systemctl list-timers chaos-watchdog.timer`, `journalctl -u chaos-watchdog`.
 - `chaos-clientservices.service`: the login-screen endpoint (`server/tools/clientservices.py`, port 8090) that serves
   `data/chaos_clientservices.json`, which the game server rewrites every 5 minutes.
+  A client built with `site_url` asks `https://<site>/clientservices`: forward that path to it in the site's web server
+  (Apache `ProxyPass "/clientservices" "http://127.0.0.1:8090/clientservices"` with `proxy` and `proxy_http`; nginx
+  `location = /clientservices { proxy_pass http://127.0.0.1:8090/clientservices; }`) and keep 8090 closed. The Linux
+  server package starts it on 127.0.0.1 itself (`start-server.sh`). Without it the client hides the login screen's bar.
 - `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open). Also the client guard's
   `data/logs/clientguard.log` (IPs, accounts), as the privacy policy says (docs/legal/).
 - `chaos-health.timer`: every 5 minutes `server/tools/chaos_health.py` checks the services, ports, status protocol,
@@ -333,13 +344,17 @@ Write down the date and how long it took; that time is the rollback time.
   `CHAOS_BASE_CLIENT_REPO`, pinned with `base_ref` / `CHAOS_BASE_CLIENT_REF` to the commit the patches were made
   against), applies `client/base-patches/*` and the overlay with `client/tools/assemble_client.sh`, builds with MSVC +
   vcpkg (x64-windows-static) and uploads `Chaos.exe` and a runnable folder. Set `server_host` to the public host.
+- Keys of a release client (docs/SECURITY_CHECKLIST.md): the secret `CHAOS_CLIENT_KEY` (client guard) and the secret
+  or variable `CHAOS_RSA_PUBLIC` (the game server's login key, `server/tools/rsa_key.py public`).
+  `windows-package.yml` fails without them unless its input `allow_dev_key` is ticked (a test build only).
   It only runs when started by hand, never on pushes or pull requests.
 - Ship the client with the merged 10.98 `Tibia.dat` / `Tibia.spr` in `data/things/1098/`.
 - Client updates after launch: the signed updater (section "Client updates" below). Turn it on in the package
   (`windows-package.yml` inputs `update_manifest` and `update_public_key`) before the first public download.
 - Character select and Create character (client/MANIFEST.md "Character select"): set the website's account API URL
   in the client's `init.lua` (`Services.account`, base patch 0050) before packing:
-  `python3 -I client/tools/set_account_api.py <client> https://<site>/chaos_client_api.php`. Empty (the default) keeps
+  `python3 -I client/tools/set_account_api.py <client> https://<site>/chaos_client_api.php`, or for a release the
+  workflow input `site_url` (`client/tools/set_server_host.py --site-url`, section 1). Empty (the default) keeps
   the character select working with the login server's looks only (no wings, aura or shader) and the Create character
   button off; characters are then made on the website. The site must serve it over HTTPS (section "Website").
 
@@ -430,6 +445,9 @@ loot), autoloot, crafting, store, auto seller, store pouches, daily reward, towe
 | Staff talkactions | every `/` command checks the group's access flag (`/goblin`: gods, admin panel and `/testkit`: group 4+); `/coins`, `/charm give`, `/pact` (all but `info`) and every command that hands out value need group 5 (`Chaos.staffCommand`, `Chaos.economyMinGroup`), every use in the admin audit log | safe (`tests/staff_permissions_test.lua`) |
 | `clientservices.py` | no socket timeout (an idle connection held a thread); a negative `Content-Length` blocked a thread | **fixed** |
 | Test servers' `zz_test_lua.lua` | `/lua` runs any Lua for any player | never ship (section 11) |
+| Login encryption (review 2026-10-16) | **the server and client used the public default RSA key** (anyone on the path reads every account and password), and **the client's XTEA session key came from the current second** (a recorded session could be decrypted) | **fixed**: our own key (engine patch 0046, `rsa_key.py`, `CHAOS_RSA_PUBLIC`), random XTEA keys (client base patch 0072); owner steps in docs/SECURITY_CHECKLIST.md |
+| Game logins (review 2026-10-16) | no limit on wrong passwords at 7171 / 7172 (the stock throttle stops only 6 connections in 500 ms) | **fixed**: failed-login limits per IP and account (engine patch 0047) |
+| Release workflow (review 2026-10-16) | a release without the `CHAOS_CLIENT_KEY` secret only warned, so the published beta client had the public development key (client guard effectively off) | **fixed**: the run fails without the secrets unless `allow_dev_key` is ticked; release notes name the keys |
 
 Settled since the review:
 - **Rifts at the daily save.** `rift.lua` ends every open run at a clean shutdown or a closed server (the daily save,
@@ -757,6 +775,12 @@ one `host` per entry): a proposal, not built.
 
 ## Website
 
+**Cloudflare** (docs/SECURITY_CHECKLIST.md "Cloudflare"): the orange cloud (proxy) only on `@` and `www`, with SSL/TLS
+mode **Full (strict)** (the Let's Encrypt certificate stays on the server); the game host (`play`) is always **DNS only**
+(grey): Cloudflare's proxy carries web traffic, not the game's TCP ports. With the proxy on, run
+`tools/linux/harden_vps.sh --cloudflare` so Apache sees the visitor's address (the site's login limits count per
+address). The game host's record still shows the machine's IP, so the proxy does not hide this machine.
+
 The account site is `website/` (ZnoteX with our layout and plugin; details in `website/README.md`). Install it after
 the database (section 2) on the web host, outside the repository:
 
@@ -795,7 +819,7 @@ site: it creates an account and a character.
 ## Donations (Pix / PayPal)
 
 Chaos Coins are a thank-you for a **voluntary donation**: nobody is required to donate and the game is fully playable for
-free. The client (Store > Donate) and the website (`page.php?plugin=chaos&p=coins`) say so in English and Portuguese
+free. The client (Store > Donate) and the website (`page?plugin=chaos&p=coins`) say so in English and Portuguese
 before a pack is picked, every button says "Donate", and the thank-you after the donation repeats it. Pix goes through
 Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua` `usdCents`), Pix = USD x 5. How it works:
 `website/README.md` "Donations", `server/README.md` "Store".
@@ -873,7 +897,7 @@ website/README.md "Discord announcements".
 ## Balance telemetry
 
 Staff charts of experience and gold per hour, boss kills and times, deaths, spell casts, gold faucets and sinks, store
-coins and online counts: `page.php?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry; admin accounts with a
+coins and online counts: `page?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry; admin accounts with a
 character of group 5 or higher). Nothing to set up: the game server creates the `chaos_telemetry_*` tables at its start
 (or the install step `sql`) and writes one row per bucket every hour. Hourly rows are kept 90 days, then daily rows
 730 days. Aggregates only, no names or ids (privacy policy section 2, "Game statistics"). Details: server/README.md

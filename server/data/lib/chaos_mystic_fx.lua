@@ -5,6 +5,8 @@
 -- caller keeps its old effect (the 1x1 tile effects of an area stay when no large effect covers it).
 -- Also wraps two base-server stock spells (Bewitching Hex, Arcane Ripple): server/tools/patch_mystic_stock_fx.py
 -- adds a load and a wrap of onCastSpell to their scripts.
+-- Pair 29 (Tier B, data/lib/chaos_pack29_fx.lua, switch ChaosPack29Fx.PAIR29): send, later and shoot take the casting
+-- spell's pair 29 name (M.alt), the stock spells theirs (M.stockName); off, the names here.
 -- Pure parts (flightMs, ring, inCone, stockPlan) are tested by tests/mystic_fx_test.lua. Lua 5.1 / LuaJIT / 5.3.
 
 ChaosMysticFx = ChaosMysticFx or {}
@@ -67,6 +69,7 @@ local LIBS = {
 	{"ChaosClassFx", "data/lib/chaos_class_fx.lua"},
 	{"ChaosPack27Fx", "data/lib/chaos_pack27_fx.lua"},
 	{"ChaosPackFx", "data/lib/chaos_pack_fx.lua"},
+	{"ChaosPack29Fx", "data/lib/chaos_pack29_fx.lua"},
 }
 
 -- every effect set whose switch is on has its ids in ChaosVfx (each lib loads its ids file once)
@@ -91,9 +94,24 @@ function M.known(name)
 	return type(name) == "string" and ChaosVfx ~= nil and ChaosVfx[name] ~= nil and Vfx ~= nil
 end
 
--- send exactly effect `name` at pos (no spell swap: the names here are the final ones; a large or class swap of the
--- casting spell would otherwise turn a ring burst into another large effect); true when sent
+-- the pair 29 name (data/lib/chaos_pack29_fx.lua, switch ChaosPack29Fx.PAIR29) of an effect (kind "send") or missile
+-- this helper sends for the casting spell, else the same name
+function M.alt(kind, name)
+	local Q, W = ChaosPack29Fx, ChaosSupportsSpell
+	if type(name) ~= "string" or not Q or not Q.PAIR29 or not Q.swapFor or not W or not W.cast then
+		return name
+	end
+	local pid, spellId = W.cast()
+	local ok, alt = pcall(Q.swapFor, spellId, kind, name)
+	return pid and ok and alt or name
+end
+
+-- send exactly effect `name` at pos (no large or class swap: the names here are the final ones; a large or class swap
+-- of the casting spell would otherwise turn a ring burst into another large effect; only the casting spell's pair 29
+-- name, M.alt); true when sent
 function M.send(pos, name)
+	M.ensure()
+	name = M.alt("send", name)
 	if not pos or not M.known(name) then
 		return false
 	end
@@ -126,6 +144,7 @@ end
 -- a missile (pack or pair 27 name) from -> to; true when sent
 function M.shoot(from, to, name)
 	M.ensure()
+	name = M.alt("missile", name)
 	if not from or not to or not VfxShoot or not ChaosVfxMissile or not ChaosVfxMissile[name] then
 		return false
 	end
@@ -152,6 +171,13 @@ M.STOCK = {
 	arcane_ripple = {mouth = "arcane_hit", hit = "px674_arcane", len = 6, hitMs = 300},
 }
 
+-- the pair 29 name of a stock spell's effect or missile (ChaosPack29Fx.stock, switch on and in the pair), else `name`
+function M.stockName(key, kind, name)
+	local Q = ChaosPack29Fx
+	local alt = Q and Q.PAIR29 and Q.stockFor and Q.stockFor(key, kind, name)
+	return alt or name
+end
+
 -- the plan of a stock spell's sends (pure): list of {ms, kind, name, at}; at = "caster", "front", "target", "hits"
 function M.stockPlan(key, flight)
 	local s = M.STOCK[key]
@@ -160,10 +186,10 @@ function M.stockPlan(key, flight)
 	end
 	local plan = {}
 	if key == "bewitching_hex" then
-		plan[#plan + 1] = {0, "missile", s.missile, "target"}
+		plan[#plan + 1] = {0, "missile", M.stockName(key, "missile", s.missile), "target"}
 		plan[#plan + 1] = {flight or 0, "effect", s.impact, "target"}
 		for i = 1, s.ticks do
-			plan[#plan + 1] = {(flight or 0) + i * s.tickMs, "effect", s.tick, "target"}
+			plan[#plan + 1] = {(flight or 0) + i * s.tickMs, "effect", M.stockName(key, "fx", s.tick), "target"}
 		end
 	elseif key == "arcane_ripple" then
 		plan[#plan + 1] = {0, "effect", s.mouth, "front"}

@@ -15,7 +15,8 @@ Core.FILTERS = {
   { key = 'learned', text = 'Learned' },
   { key = 'soon', text = 'Available soon' },
   { key = 'vocation', text = 'My vocation' },
-  { key = 'all', text = 'All spells' }
+  { key = 'all', text = 'All spells' },
+  { key = 'runes', text = 'Runes' } -- the rune entries only; every other filter lists spells only
 }
 Core.DEFAULT_FILTER = 'learned'
 Core.SETTINGS_NODE = 'chaosSpellbook'       -- g_settings node: {[character name] = filter key}
@@ -103,8 +104,16 @@ function Core.textMatches(spell, text)
   return lower(spell.name):find(text, 1, true) ~= nil or lower(spell.words):find(text, 1, true) ~= nil
 end
 
+-- a rune entry (the server's <rune>: a rune item id; a client SpellInfo entry of type "Rune"); a conjure spell, which
+-- makes runes, is a spell
+function Core.isRune(spell)
+  return spell.rune ~= nil and spell.rune ~= false or tostring(spell.type or ''):lower() == 'rune'
+end
+
 function Core.filterMatches(spell, ctx, filter)
   filter = Core.normalizeFilter(filter)
+  if filter == 'runes' then return Core.isRune(spell) end
+  if Core.isRune(spell) then return false end
   if filter == 'all' then return true end
   local status = Core.status(spell, ctx)
   if filter == 'learned' then return status == 'ready' end
@@ -205,11 +214,14 @@ function Core.setupPicker(window, player, spells, env)
     local name = text:match('^(.-)\n') or text
     local words = text:match('\n(.*)$') or ''
     local data = spells[name] or {}
-    rows[#rows + 1] = {
+    local row = {
       widget = w,
       spell = { name = name, words = words, level = data.level, maglevel = data.mlevel or data.maglevel,
-        needLearn = data.needLearn }
+        needLearn = data.needLearn, type = data.type, rune = data.rune }
     }
+    -- a spell picker lists spells; a rune entry stays out unless the caller picks runes (env.runes)
+    row.hidden = Core.isRune(row.spell) and not env.runes
+    rows[#rows + 1] = row
   end
   table.sort(rows, function(a, b) return Core.compare(a.spell, b.spell) end)
   for i, row in ipairs(rows) do
@@ -227,7 +239,7 @@ function Core.setupPicker(window, player, spells, env)
     local learnedOnly = tick and tick:isChecked() or false
     local text = search and search:getText() or ''
     for _, row in ipairs(rows) do
-      local visible = (not learnedOnly or row.status == 'ready') and Core.textMatches(row.spell, text)
+      local visible = not row.hidden and (not learnedOnly or row.status == 'ready') and Core.textMatches(row.spell, text)
       row.widget:setVisible(visible)
     end
   end

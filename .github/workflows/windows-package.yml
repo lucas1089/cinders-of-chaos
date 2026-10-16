@@ -33,8 +33,14 @@
 # Client guard (client/BASE.md "Client guard", server/README.md "Client guard"): both clients are built with the
 # repository secret CHAOS_CLIENT_KEY (Settings -> Secrets and variables -> Actions -> New repository secret; 64 hex
 # digits, the same value as CHAOS_CLIENT_KEY on the game server) and the build number of the input client_build. Without
-# the secret they get the public development key (a warning in the run); a production server refuses it. The Windows
+# the secret the run fails, unless the input allow_dev_key is ticked: then they get the public development key (a
+# warning in the run and in the release notes), which a production server refuses. The Windows
 # packages' server folder keeps the guard off (local play); the Linux server turns it on when its chaos.env sets the key.
+# Login key (server/README.md "Login encryption (RSA, XTEA)"): the separate client downloads encrypt the login with the
+# game server's own RSA key, whose public modulus (decimal, server/tools/rsa_key.py public) is the secret or variable
+# CHAOS_RSA_PUBLIC (public, but kept out of the repository); client/tools/set_rsa_key.py writes it into init.lua. Without
+# it the run fails unless allow_dev_key is ticked (then the public default key, a warning). The full Windows zip keeps
+# the default key: its own server folder has the stock key.pem.
 # Signed updater (client/MANIFEST.md "Signed updater"): it updates only modules/ mods/ data/ layouts/, which both clients
 # share, so update_manifest / update_public_key go into the Windows and the Linux client alike.
 # The first run builds the vcpkg ports of both exes (about an hour); later runs reuse the vcpkg binary caches.
@@ -63,6 +69,15 @@ on:
         description: "Server address of the separate client and server downloads (DNS name or IPv4; the full Windows zip keeps 127.0.0.1)"
         required: false
         default: "127.0.0.1"
+      site_url:
+        description: "Website of the separate client downloads, https://... (account API: character looks and Create character; login-screen services through <site>/clientservices). Empty: both off"
+        required: false
+        default: ""
+      allow_dev_key:
+        description: "Test build only: allow clients without the secrets CHAOS_CLIENT_KEY / CHAOS_RSA_PUBLIC (public development keys; never for players)"
+        type: boolean
+        required: false
+        default: false
 
 # contents: write: the jobs hand their parts over through a prerelease of this run (tag winpkg-<run number>) instead of
 # workflow artifacts, which count against the account's artifact storage quota; release assets do not. The publish
@@ -80,6 +95,8 @@ env:
   UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
   CLIENT_BUILD: ${{ inputs.client_build || '1' }}
   SERVER_HOST: ${{ inputs.server_host || '127.0.0.1' }}
+  SITE_URL: ${{ inputs.site_url }}
+  ALLOW_DEV_KEY: ${{ inputs.allow_dev_key && 'true' || 'false' }}
   # vcpkg registry state for the engine's libraries (tag 2023.12.12: Boost 1.83); fmt is pinned to 9.1.0 below
   ENGINE_VCPKG_BASELINE: c8696863d371ab7f46e213d8f5ca923c4aef2a00
   MARIADB_VERSION: "10.11.14"
@@ -292,15 +309,23 @@ jobs:
         shell: bash
         env:
           CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+          CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
         run: |
           if ! [[ "$CLIENT_BUILD" =~ ^[0-9]+$ ]] || [ "$CLIENT_BUILD" -lt 1 ] || [ "$CLIENT_BUILD" -gt 65535 ]; then
             echo "::error::client_build must be a number from 1 to 65535"
             exit 1
           fi
-          if [ -z "$CHAOS_CLIENT_KEY" ]; then
-            echo "::warning::No CHAOS_CLIENT_KEY secret: this client gets the public DEVELOPMENT key; a production server (clientGuardMode enforce) kicks it."
+          if [ -z "$CHAOS_CLIENT_KEY" ] && [ "$ALLOW_DEV_KEY" != true ]; then
+            echo "::error::No CHAOS_CLIENT_KEY secret. Set it (docs/SECURITY_CHECKLIST.md), or tick allow_dev_key for a test build."
+            exit 1
+          elif [ -z "$CHAOS_CLIENT_KEY" ]; then
+            echo "::warning::No CHAOS_CLIENT_KEY secret (allow_dev_key): this client gets the public DEVELOPMENT key; a production server (clientGuardMode enforce) kicks it."
           elif ! [[ "$CHAOS_CLIENT_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
             echo "::error::The CHAOS_CLIENT_KEY secret must be 64 hex digits (openssl rand -hex 32)"
+            exit 1
+          fi
+          if [ -z "$CHAOS_RSA_PUBLIC" ] && [ "$ALLOW_DEV_KEY" != true ]; then
+            echo "::error::No CHAOS_RSA_PUBLIC (the game server's login key, server/tools/rsa_key.py public). Set it, or tick allow_dev_key for a test build."
             exit 1
           fi
           echo "Client build $CLIENT_BUILD"
@@ -472,6 +497,8 @@ jobs:
       # the separate downloads, made from the same folders: the client pointed at server_host, the server without the
       # client and the map editor (its config.lua ip = server_host; the database stays local, root without a password)
       - name: Client and server downloads (Windows)
+        env:
+          CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
         run: |
           set -euo pipefail
           P=CindersOfChaos
@@ -487,7 +514,9 @@ jobs:
 
           C=CindersOfChaos-Client
           cp -a "$P/client" "$C"
-          python3 -I chaos/client/tools/set_server_host.py "$C" "$SERVER_HOST"
+          python3 -I chaos/client/tools/set_server_host.py "$C" "$SERVER_HOST" --site-url "$SITE_URL"
+          python3 -I chaos/client/tools/set_rsa_key.py "$C" --from-env CHAOS_RSA_PUBLIC \
+            $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
           python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run
           crlf chaos/tools/windows/client-README.txt "$C/README.txt"
           info "server host: $SERVER_HOST" "client build: $CLIENT_BUILD" > "$C/BUILD_INFO.txt"
@@ -683,15 +712,23 @@ jobs:
       - name: Client guard inputs (build number, key secret)
         env:
           CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+          CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
         run: |
           if ! [[ "$CLIENT_BUILD" =~ ^[0-9]+$ ]] || [ "$CLIENT_BUILD" -lt 1 ] || [ "$CLIENT_BUILD" -gt 65535 ]; then
             echo "::error::client_build must be a number from 1 to 65535"
             exit 1
           fi
-          if [ -z "$CHAOS_CLIENT_KEY" ]; then
-            echo "::warning::No CHAOS_CLIENT_KEY secret: this client gets the public DEVELOPMENT key; a production server (clientGuardMode enforce) kicks it."
+          if [ -z "$CHAOS_CLIENT_KEY" ] && [ "$ALLOW_DEV_KEY" != true ]; then
+            echo "::error::No CHAOS_CLIENT_KEY secret. Set it (docs/SECURITY_CHECKLIST.md), or tick allow_dev_key for a test build."
+            exit 1
+          elif [ -z "$CHAOS_CLIENT_KEY" ]; then
+            echo "::warning::No CHAOS_CLIENT_KEY secret (allow_dev_key): this client gets the public DEVELOPMENT key; a production server (clientGuardMode enforce) kicks it."
           elif ! [[ "$CHAOS_CLIENT_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
             echo "::error::The CHAOS_CLIENT_KEY secret must be 64 hex digits (openssl rand -hex 32)"
+            exit 1
+          fi
+          if [ -z "$CHAOS_RSA_PUBLIC" ] && [ "$ALLOW_DEV_KEY" != true ]; then
+            echo "::error::No CHAOS_RSA_PUBLIC (the game server's login key, server/tools/rsa_key.py public). Set it, or tick allow_dev_key for a test build."
             exit 1
           fi
           echo "Client build $CLIENT_BUILD"
@@ -710,6 +747,8 @@ jobs:
           make -j"$(nproc)"
 
       - name: Put the Linux client together
+        env:
+          CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
         run: |
           set -euo pipefail
           P=CindersOfChaos-Client-Linux
@@ -722,7 +761,9 @@ jobs:
             python3 -I chaos/client/tools/set_update_config.py "$P" \
               --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD"
           fi
-          python3 -I chaos/client/tools/set_server_host.py "$P" "$SERVER_HOST"
+          python3 -I chaos/client/tools/set_server_host.py "$P" "$SERVER_HOST" --site-url "$SITE_URL"
+          python3 -I chaos/client/tools/set_rsa_key.py "$P" --from-env CHAOS_RSA_PUBLIC \
+            $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
           python3 -I chaos/client/tools/make_update_manifest.py build "$P" --dry-run
           {
             echo "chaos commit: $GITHUB_SHA"
@@ -772,6 +813,7 @@ jobs:
     timeout-minutes: 15
     env:
       KEY_STATE: ${{ secrets.CHAOS_CLIENT_KEY != '' && 'the official key (secret CHAOS_CLIENT_KEY)' || 'the public development key (no CHAOS_CLIENT_KEY secret)' }}
+      RSA_STATE: ${{ (secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC) && 'our own key (CHAOS_RSA_PUBLIC)' || 'the PUBLIC DEFAULT key (no CHAOS_RSA_PUBLIC), never for players' }}
       ALL_OK: ${{ needs.package.result == 'success' && needs.engine-linux.result == 'success' && needs.client-linux.result == 'success' }}
     steps:
       - name: Release notes and download links
@@ -800,6 +842,7 @@ jobs:
             line CindersOfChaos-Client-Linux.tar.gz "the Linux client (Ubuntu 22.04+, Debian 12+): ./run-client.sh, connects to $SERVER_HOST."
             echo
             echo "Client build $CLIENT_BUILD, built with $KEY_STATE. Server host of the separate downloads: $SERVER_HOST."
+            echo "Login encryption of the separate client downloads: $RSA_STATE."
           } > notes.md
           cat notes.md
           gh release edit "$PKG_TAG" -R "$GITHUB_REPOSITORY" --title "Cinders of Chaos packages ${{ github.run_number }}" \

@@ -878,6 +878,16 @@ function R.packHealth(cfg, tier, walkable)
 	return math.max(1, floor(budget / (d.count * R.eliteHealthAvg(cfg, t.tier, d.share)) + 0.5))
 end
 
+-- the level shown after a rift monster's name ("[level]", monster_levels.lua, engine patches 0040 / 0044): a density run
+-- sizes every pack monster and its guardian for a player of the tier's level (R.packHealth, R.guardianBase), so they
+-- show that level; nil (their own) without density and for an Omen guardian (its own health x omen.healthMult)
+function R.displayLevel(cfg, tier, dense, omenGuardian)
+	if not dense or omenGuardian then
+		return nil
+	end
+	return R.tierInfo(cfg, tier).minLevel
+end
+
 -- the guardian's base health (x boss.healthMult = what R.guardianHealthMult multiplies): guardianSeconds of a typical
 -- solo player's single-target damage
 function R.guardianBase(cfg, tier)

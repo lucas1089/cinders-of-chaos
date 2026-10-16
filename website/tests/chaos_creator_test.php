@@ -143,7 +143,7 @@ check(count($list) === 1 && $list[0]['owner'] === 'Ember Streams' && (int)$list[
 check(count(chaos_creator_admin_log()) >= 5, 'the log');
 
 // ---------------------------------------------------------------- referral link
-check(chaos_referral_link(3, 'https://example.invalid/') === 'https://example.invalid/register.php?ref=ABCD2345', 'referral link');
+check(chaos_referral_link(3, 'https://example.invalid/') === 'https://example.invalid/register?ref=ABCD2345', 'referral link');
 check(chaos_referral_link(2, 'https://example.invalid') === '', 'no code yet: no link');
 
 // ---------------------------------------------------------------- the page

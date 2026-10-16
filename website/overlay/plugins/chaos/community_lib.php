@@ -7,7 +7,7 @@
  *   chaos_community_week     the week's world modifiers (names and texts, seed or staff)
  *   chaos_community_contrib  the top contributors of the period
  *   chaos_community_history  the latest news lines (a stage reached, a period's end)
- * Used by the front page block (layouts/chaos/views/index.php) and page.php?plugin=chaos&p=community.
+ * Used by the front page block (layouts/chaos/views/index.php) and page?plugin=chaos&p=community.
  * Every query is a prepared statement; every value printed goes through chaos_h().
  */
 
@@ -164,7 +164,7 @@ function chaos_community_block_html(array $state, bool $full = false): string {
 		if ($full && $g['top']) {
 			$h .= '<table class="chaos-table chaos-community__top"><thead><tr><th>#</th><th>Contributor</th><th class="num">Points</th></tr></thead><tbody>';
 			foreach ($g['top'] as $i => $r) {
-				$h .= '<tr><td>' . ($i + 1) . '</td><td><a href="characterprofile.php?name=' . rawurlencode($r['name']) . '">'
+				$h .= '<tr><td>' . ($i + 1) . '</td><td><a href="characterprofile?name=' . rawurlencode($r['name']) . '">'
 					. chaos_h($r['name']) . '</a></td><td class="num chaos-gold">' . chaos_h(number_format($r['points'])) . '</td></tr>';
 			}
 			$h .= '</tbody></table>';

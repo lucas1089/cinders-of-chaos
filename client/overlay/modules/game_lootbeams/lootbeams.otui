@@ -1,0 +1,131 @@
+// Loot beams (game_lootbeams): the settings window. Styles from client_chaos_theme.
+
+LootBeamsCheck < ChaosCheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin-top: 8
+
+// one colour of the legend: a swatch and the tiers that beam in it
+LootBeamsLegendRow < UIWidget
+  height: 16
+  margin-bottom: 2
+  phantom: true
+
+  UIWidget
+    id: swatch
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    size: 12 12
+    border-width: 1
+    border-color: #2a2220
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: swatch.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+LootBeamsWindow < ChaosMainWindow
+  id: lootBeamsWindow
+  size: 420 452
+  !text: tr('Loot Beams')
+  @onEscape: modules.game_lootbeams.hideSettings()
+
+  ChaosLabelDim
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 42
+    text-wrap: true
+    text-align: topLeft
+    !text: tr('A light pillar over a corpse that holds loot your loot filter makes glow, in the colour of the best item inside.')
+
+  LootBeamsCheck
+    id: enabled
+    anchors.top: intro.bottom
+    !text: tr('Show loot beams')
+
+  LootBeamsCheck
+    id: ground
+    anchors.top: enabled.bottom
+    !text: tr('Beams over items on the ground')
+    !tooltip: tr('Items lying outside a corpse get a beam too. Needs the Ground Labels on (they know what lies there).')
+
+  LootBeamsCheck
+    id: orbs
+    anchors.top: ground.bottom
+    !text: tr('Beams for orbs')
+
+  ChaosLabel
+    id: heightLabel
+    anchors.top: orbs.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    width: 80
+    !text: tr('Height')
+
+  ChaosComboBox
+    id: heightCombo
+    anchors.verticalCenter: heightLabel.verticalCenter
+    anchors.left: heightLabel.right
+    margin-left: 8
+    size: 110 22
+
+  ChaosLabel
+    id: intensityLabel
+    anchors.top: heightLabel.bottom
+    anchors.left: parent.left
+    margin-top: 16
+    width: 80
+    !text: tr('Intensity')
+
+  ChaosComboBox
+    id: intensityCombo
+    anchors.verticalCenter: intensityLabel.verticalCenter
+    anchors.left: intensityLabel.right
+    margin-left: 8
+    size: 110 22
+
+  ChaosLabelDim
+    id: legendHeader
+    anchors.top: intensityLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 16
+    height: 14
+    text-align: left
+    !text: tr('Colours (the best item inside wins):')
+
+  UIWidget
+    id: legend
+    anchors.top: legendHeader.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 144
+    phantom: true
+    layout:
+      type: verticalBox
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_lootbeams.hideSettings()
+
+  ChaosLabelDim
+    id: savedLabel
+    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    text-align: left
+    !text: tr('Saved on this computer.')

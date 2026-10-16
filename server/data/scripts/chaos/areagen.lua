@@ -225,8 +225,9 @@ end
 local function spawnPoint(point, noForce)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 	local pos = P(point)
-	local m = create(point.monster, pos, true, false, point.name)
-		or (not noForce and create(point.monster, pos, true, true, point.name)) or nil
+	-- the point's level, shown after the name (monster_levels.lua): the level A.levelScale scales it to
+	local m = create(point.monster, pos, true, false, point.name, point.level)
+		or (not noForce and create(point.monster, pos, true, true, point.name, point.level)) or nil
 	if not m then
 		return nil
 	end

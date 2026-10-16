@@ -3,8 +3,9 @@
  * Leaderboards: the weekly boards (chaos_leaderboard), the title holders of
  * the last scored week (chaos_leaderboard_titles) and the all-time Class
  * Ladder (players, grouped by class line). Read-only.
- * page.php?plugin=chaos&p=leaderboards[&board=<key>][&class=<base class id>|all]
- * A board with byClass (leaderboard_config.lua) has class tabs, "All classes" first, as in the client.
+ * page?plugin=chaos&p=leaderboards[&board=<key>][&class=<base class id>|all]
+ * The boards are one dropdown sorted by name, as in the client; a board with byClass (leaderboard_config.lua) has a
+ * class dropdown, "All classes" first. The dropdowns are GET forms (lib.php chaos_pick_form; chaos-pick.js submits on change).
  * Records (records.lua; the boards the server published in chaos_records_boards):
  * &rb=<board>&rv=<variant>&rs=<party size>&rp=week|season|all&rc=<base class id>, and the realm firsts of the season.
  */
@@ -29,7 +30,6 @@ $week = chaos_week_key(time(), 6);
 $rows = chaos_leaderboard_rows($board, $week, 20, ($def['mode'] ?? '') === 'min', $classIds);
 list($titleWeek, $titleRows) = chaos_leaderboard_titles();
 $fallenMarks = chaos_fallen_marks(); // season modes: the skull of a fallen Hardcore character on the Class Ladder
-// the class tab stays picked when moving to another board with class tabs, as in the client
 // ---- records: the board, its filters and the rows
 $rBoards = chaos_records_boards();
 $rCats = chaos_records_categories();
@@ -68,11 +68,11 @@ if ($rDef) {
 $rFirsts = chaos_records_firsts($rSeason);
 $rUrl = static function (array $over) use ($rKey, $rSel): string {
 	$q = array_merge(array('rb' => $rKey), $rSel, $over);
-	return 'page.php?plugin=chaos&p=leaderboards&' . http_build_query($q) . '#records';
+	return 'page?plugin=chaos&p=leaderboards&' . http_build_query($q) . '#records';
 };
 $url = static function (string $key, ?string $class = null) use ($boards, $classKey): string {
 	$class = $class ?? $classKey;
-	$u = 'page.php?plugin=chaos&p=leaderboards&board=' . rawurlencode($key);
+	$u = 'page?plugin=chaos&p=leaderboards&board=' . rawurlencode($key);
 	return (!empty($boards[$key]['byClass']) && $class !== 'all') ? $u . '&class=' . rawurlencode($class) : $u;
 };
 ?>
@@ -82,20 +82,22 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 		<p class="chaos-muted chaos-lang-row"><?= chaos_lang_link($url($board)) ?></p>
 		<p class="chaos-lead"><?= chaos_h(chaos_t('Weekly boards reset every Monday at 06:00 server time. The top 3 of each board earn a title for the next week and orbs in their inbox. Staff characters are left out of every board.')) ?></p>
 
-		<nav class="chaos-tabs" aria-label="<?= chaos_h(chaos_t('Boards')) ?>">
-			<?php foreach ($boards as $key => $b): ?>
-				<a class="chaos-tab<?= $key === $board ? ' is-active' : '' ?>" href="<?= chaos_h($url($key)) ?>"><?= chaos_h($b['name']) ?></a>
-			<?php endforeach; ?>
-		</nav>
-
-		<?php if ($classGroups): ?>
-			<nav class="chaos-tabs chaos-tabs--classes" aria-label="<?= chaos_h(chaos_t('Classes')) ?>">
-				<a class="chaos-tab<?= $classKey === 'all' ? ' is-active' : '' ?>" href="<?= chaos_h($url($board, 'all')) ?>"><?= chaos_h(chaos_t('All classes')) ?></a>
-				<?php foreach ($classGroups as $base => $g): ?>
-					<a class="chaos-tab<?= $classKey === (string)$base ? ' is-active' : '' ?>" href="<?= chaos_h($url($board, (string)$base)) ?>" title="<?= chaos_h(implode(', ', array_map('chaos_class_name', chaos_line_ids($base)))) ?>"><img src="<?= chaos_h(znote_plugin_asset('chaos', 'img/class-' . $g['icon'] . '.png')) ?>" alt="" width="18" height="18"> <?= chaos_h($g['name']) ?></a>
-				<?php endforeach; ?>
-			</nav>
-		<?php endif; ?>
+		<?php
+		// the boards: one dropdown sorted by the name shown, as the client's Leaderboards window (boardpick.lua); the
+		// class dropdown of a byClass board, "All classes" first. A GET form (works without JavaScript), the parameters
+		// of the old tab links (board, class).
+		$pickFields = chaos_pick_select('board', chaos_t('Board'), chaos_sort_options(array_map(static function (array $b): string {
+			return (string)$b['name'];
+		}, $boards)), $board);
+		if ($classGroups) {
+			$pickClasses = array('all' => chaos_t('All classes'));
+			foreach ($classGroups as $base => $g) {
+				$pickClasses[(string)$base] = (string)$g['name'];
+			}
+			$pickFields .= chaos_pick_select('class', chaos_t('Class'), $pickClasses, $classKey);
+		}
+		echo chaos_pick_form(array('plugin' => 'chaos', 'p' => 'leaderboards'), $pickFields, chaos_t('Boards'));
+		?>
 
 		<h2 class="chaos-subheading"><?= chaos_h($def['name']) ?><?php if ($classKey !== 'all'): ?> &middot; <?= chaos_h($classGroups[(int)$classKey]['name']) ?><?php endif; ?> <small><?= chaos_h(chaos_t('week of %s', chaos_week_label($week))) ?></small></h2>
 		<?php if ($def['info'] !== ''): ?><p class="chaos-muted"><?= chaos_h($def['info']) ?><?php if ($def['title'] !== ''): ?> <?= chaos_h(chaos_t('Title:')) ?> <span class="chaos-gold"><?= chaos_h($def['title']) ?></span>.<?php endif; ?></p><?php endif; ?>
@@ -107,7 +109,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 			<?php else: foreach ($rows as $i => $r): ?>
 				<tr class="<?= $i < 3 ? 'chaos-top chaos-top-' . ($i + 1) : '' ?>">
 					<td><?= $i + 1 ?></td>
-					<td><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a></td>
+					<td><a href="characterprofile?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a></td>
 					<td><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></td>
 					<td class="num"><?= chaos_h(chaos_leaderboard_value($def, $r['value'])) ?></td>
 					<?php if ($def['count'] !== ''): ?><td class="num"><?= (int)$r['count'] ?></td><?php endif; ?>
@@ -123,29 +125,37 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 		<?php if (!$rDef): ?>
 			<p class="chaos-muted"><?= chaos_h(chaos_t('No records yet: the boards appear after the next server start.')) ?></p>
 		<?php else: ?>
-			<nav class="chaos-tabs" aria-label="<?= chaos_h(chaos_t('Record boards')) ?>">
-				<?php foreach ($rBoards as $k => $b): ?>
-					<a class="chaos-tab<?= $k === $rKey ? ' is-active' : '' ?>" href="<?= chaos_h($rUrl(array('rb' => $k, 'rv' => '', 'rs' => ''))) ?>" title="<?= chaos_h($rCats[$b['cat']]['name'] ?? $b['cat']) ?>"><?= chaos_h($b['name']) ?></a>
-				<?php endforeach; ?>
-			</nav>
+			<?php
+			// board, boss (variant) and class: dropdowns, the boards sorted by name, "All classes" first; a new board
+			// drops the boss and party size of the old one (chaos-pick.js; without it the page falls back to the first).
+			// Period and party size stay small tabs. Same parameters as before: rb, rv, rs, rp, rc.
+			$pickFields = chaos_pick_select('rb', chaos_t('Board'), chaos_sort_options(array_map(static function (array $b): string {
+				return (string)$b['name'];
+			}, $rBoards)), $rKey, array('rv', 'rs'));
+			if ($rDef['variants']) {
+				$pickFields .= chaos_pick_select('rv', $rDef['cat'] === 'bosses' ? chaos_t('Boss') : chaos_t('Record variant'),
+					array_map('strval', $rDef['variants']), $rSel['rv']);
+			}
+			$pickClasses = array('all' => chaos_t('All classes'));
+			foreach ($rGroups as $base => $g) {
+				$pickClasses[(string)$base] = (string)$g['name'];
+			}
+			$pickFields .= chaos_pick_select('rc', chaos_t('Class'), $pickClasses, $rSel['rc']);
+			echo chaos_pick_form(array('plugin' => 'chaos', 'p' => 'leaderboards', 'rp' => $rSel['rp'], 'rs' => $rSel['rs']),
+				$pickFields, chaos_t('Record boards'), 'records');
+			?>
 			<nav class="chaos-tabs chaos-tabs--classes" aria-label="<?= chaos_h(chaos_t('Record period')) ?>">
 				<?php foreach ($rPeriods as $k => $name): ?>
 					<a class="chaos-tab<?= $k === $rSel['rp'] ? ' is-active' : '' ?>" href="<?= chaos_h($rUrl(array('rp' => $k))) ?>"><?= chaos_h($name) ?></a>
 				<?php endforeach; ?>
 			</nav>
-			<?php foreach (array('rv' => $rDef['variants'], 'rs' => $rDef['sizes']) as $param => $list): if (!$list) { continue; } ?>
-				<nav class="chaos-tabs chaos-tabs--classes" aria-label="<?= chaos_h($param === 'rv' ? chaos_t('Record variant') : chaos_t('Party size')) ?>">
-					<?php foreach ($list as $k => $name): ?>
-						<a class="chaos-tab<?= (string)$k === $rSel[$param] ? ' is-active' : '' ?>" href="<?= chaos_h($rUrl(array($param => (string)$k))) ?>"><?= chaos_h($name) ?></a>
+			<?php if ($rDef['sizes']): ?>
+				<nav class="chaos-tabs chaos-tabs--classes" aria-label="<?= chaos_h(chaos_t('Party size')) ?>">
+					<?php foreach ($rDef['sizes'] as $k => $name): ?>
+						<a class="chaos-tab<?= (string)$k === $rSel['rs'] ? ' is-active' : '' ?>" href="<?= chaos_h($rUrl(array('rs' => (string)$k))) ?>"><?= chaos_h($name) ?></a>
 					<?php endforeach; ?>
 				</nav>
-			<?php endforeach; ?>
-			<nav class="chaos-tabs chaos-tabs--classes" aria-label="<?= chaos_h(chaos_t('Record class')) ?>">
-				<a class="chaos-tab<?= $rSel['rc'] === 'all' ? ' is-active' : '' ?>" href="<?= chaos_h($rUrl(array('rc' => 'all'))) ?>"><?= chaos_h(chaos_t('All classes')) ?></a>
-				<?php foreach ($rGroups as $base => $g): ?>
-					<a class="chaos-tab<?= $rSel['rc'] === (string)$base ? ' is-active' : '' ?>" href="<?= chaos_h($rUrl(array('rc' => (string)$base))) ?>"><?= chaos_h($g['name']) ?></a>
-				<?php endforeach; ?>
-			</nav>
+			<?php endif; ?>
 			<table class="chaos-table chaos-records">
 				<thead><tr><th>#</th><th><?= chaos_h(chaos_t('Name')) ?></th><th><?= chaos_h(chaos_t('Class')) ?></th><th class="num"><?= chaos_h(chaos_t($rDef['label'])) ?></th><th><?= chaos_h(chaos_t('Party')) ?></th><th><?= chaos_h(chaos_t('Date')) ?></th></tr></thead>
 				<tbody>
@@ -154,7 +164,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 				<?php else: foreach ($rRows as $i => $r): ?>
 					<tr class="<?= $i < 3 ? 'chaos-top chaos-top-' . ($i + 1) : '' ?>">
 						<td><?= $i + 1 ?></td>
-						<td><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a></td>
+						<td><a href="characterprofile?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a></td>
 						<td><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></td>
 						<td class="num"><?= chaos_h(chaos_records_value($rDef['format'], $r['value'])) ?></td>
 						<td<?= (int)$r['party'] > 1 ? ' title="' . chaos_h($r['members']) . '"' : '' ?>><?= chaos_h((int)$r['party'] > 1 ? chaos_t('%d players', (int)$r['party']) : chaos_t('solo')) ?></td>
@@ -192,7 +202,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 					<tr>
 						<td><?= chaos_h($boards[(string)$r['board']]['name'] ?? (string)$r['board']) ?></td>
 						<td><?= chaos_h(array(chaos_t('1st'), chaos_t('2nd'), chaos_t('3rd'))[(int)$r['rank'] - 1] ?? ('#' . (int)$r['rank'])) ?></td>
-						<td><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a></td>
+						<td><a href="characterprofile?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a></td>
 						<td><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></td>
 						<td class="chaos-gold"><?= chaos_h($r['title']) ?></td>
 					</tr>
@@ -212,7 +222,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 					<ol class="chaos-ladder__list">
 						<?php if (!$ladder): ?><li class="chaos-empty"><?= chaos_h(chaos_t('Nobody yet.')) ?></li><?php endif; ?>
 						<?php foreach ($ladder as $r): ?>
-							<li><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a><?= chaos_fallen_html($fallenMarks, (string)$r['name']) ?>
+							<li><a href="characterprofile?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a><?= chaos_fallen_html($fallenMarks, (string)$r['name']) ?>
 								<span class="chaos-muted"><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></span>
 								<span class="chaos-ladder__lvl"><?= (int)$r['level'] ?></span></li>
 						<?php endforeach; ?>

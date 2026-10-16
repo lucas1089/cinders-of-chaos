@@ -49,6 +49,7 @@ eq(select(3, L.shineParams(2, true, true, 'k')), L.UNIQUE_SHINE_STRENGTH, 'uniqu
 -- greyscale of locked items
 local function item(attrs) return { getCustomAttribute = function(self, k) return attrs[k] or 0 end } end
 eq(L.isLocked(item({ [3] = 1 })), true, 'locked') eq(L.isLocked(item({})), false, 'not locked')
+eq(L.isLocked(item({ [3] = 2 })), false, 'bound (the Everfull potions): drawn in their colours, not grey')
 eq(L.isLocked(nil), false, 'no item') eq(L.isLocked({}), false, 'an item without attributes')
 eq(L.greyAction(true, false), 'grey', 'grey a locked item') eq(L.greyAction(true, true), nil, 'already grey')
 eq(L.greyAction(false, true), 'clear', 'unlocked: take our grey back') eq(L.greyAction(false, false), nil, 'leave other shaders')
@@ -95,14 +96,26 @@ do
   eq(L.orbSize(1), 76, 'small')
   eq(L.orbSize(3), 190, 'large')
   eq(L.orbSize(9), 150, 'unknown size is the default')
-  -- window 2000 x 1340, chat panel from x 178, 760 wide, top at y 1150
-  local area = { x = 178, y = 1150, width = 760 }
-  eq(L.orbMarginBottom({ x = 6, width = 150 }, 1340, 150, area), L.ORB_EDGE, 'left orb beside the chat stays in the corner')
-  eq(L.orbMarginBottom({ x = 6, width = 190 }, 1340, 190, area), 1340 - 1150 + L.ORB_CLEAR, 'a large orb over the chat sits on it')
-  eq(L.orbMarginBottom({ x = 2000 - 6 - 190, width = 190 }, 1340, 190, area), L.ORB_EDGE, 'right orb clear of a narrow chat')
-  eq(L.orbMarginBottom({ x = 1500, width = 150 }, 1340, 150, { x = 0, y = 1150, width = 2000 }), 194, 'full width chat: on top')
-  eq(L.orbMarginBottom({ x = 6, width = 150 }, 1000, 150, { x = 0, y = 1150, width = 2000 }), L.ORB_EDGE, 'map ends above the chat (classic view)')
-  eq(L.orbMarginBottom({ x = 6, width = 150 }, 1340, 150, nil), L.ORB_EDGE, 'no chat panel')
+  -- every orb size beside the chat (game_chatpanel's layout): inside the window, clear of the grips and the chat
+  local C = rawget(_G, 'ChaosChatLogic')
+  if not C then
+    dofile(((arg and arg[0] or ''):match('^(.*[/\\])') or './') .. '../game_chatpanel/chatpanel_logic.lua')
+    C = ChaosChatLogic
+  end
+  local m = C.orbMargins()
+  for opt = 1, 3 do
+    local size = L.orbSize(opt)
+    for _, off in ipairs({ false, -4000, 4000 }) do
+      local p = C.layout({ regionLeft = 0, regionRight = 1920, windowLeft = 0, windowWidth = 1920, width = 760,
+        offset = off or nil, orbSize = size })
+      eq(p.orbs, true, 'orb size ' .. opt .. ' fits a 1920 window')
+      local lifeLeft, lifeRight = p.chatLeft - m.left - size, p.chatLeft - m.left
+      local manaLeft = p.chatLeft + p.chatWidth + m.right
+      eq(lifeLeft >= 0 and manaLeft + size <= 1920, true, 'orbs inside the window (size ' .. opt .. ')')
+      eq(lifeRight <= p.chatLeft - C.MOVE_GRIP_GAP - C.GRIP, true, 'life orb clear of the move grip and the chat')
+      eq(manaLeft >= p.chatLeft + p.chatWidth + C.WIDTH_GRIP_GAP + C.GRIP, true, 'mana orb clear of the width grip')
+    end
+  end
 end
 
 if fails > 0 then

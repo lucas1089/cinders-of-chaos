@@ -79,3 +79,17 @@ function B.request(mode, currency, amount, name)
   end
   return nil
 end
+
+-- The window and the server's "open" reply (playtest: once the Bank window did not appear). The window used to show
+-- only when a reply came: a reopen within the server's rate limit (bank.open, 300 ms) got none, and it stayed hidden;
+-- a reply to a request made before a close showed it again. Now the toggle shows the window at once (with the last
+-- state of this session, else empty until the reply) and asks for a fresh state; a reply only shows the window when
+-- the player asked for it (pending) or it is open, else it just keeps the state.
+-- what an "open" reply does: 'show' (fill and show), or 'keep' (keep the state, the window stays closed)
+function B.onReply(visible, pending)
+  if visible or pending then
+    return 'show'
+  end
+  return 'keep'
+end
+

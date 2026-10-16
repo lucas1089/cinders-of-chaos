@@ -126,4 +126,18 @@ function L.layout(sizeName, count)
   }
 end
 
+-- the HUD's top margin inside the map panel: 12 px below the visible top of the map, and below the menu bar when
+-- the bar sits over the top of the map (the bar lives on the game root panel, the HUD on the map panel; in the
+-- extended view the map panel starts above the window). mapY / visibleTop: screen y; bar: the bar's rect or nil
+L.HUD_GAP = 12
+L.BAR_GAP = 6
+function L.topMargin(mapY, visibleTop, bar)
+  local top = math.max(mapY, visibleTop or mapY)
+  local y = top + L.HUD_GAP
+  if bar and bar.height > 0 and bar.y < top + 60 and bar.y + bar.height > top then
+    y = math.max(y, bar.y + bar.height + L.BAR_GAP)
+  end
+  return y - mapY
+end
+
 return ChaosBotHudLogic

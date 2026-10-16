@@ -63,6 +63,12 @@ for f in start-server.sh stop-server.sh add-account.sh; do
   install -m 0755 "$REPO/tools/linux/server/$f" "$OUT/$f"
 done
 install -m 0644 "$REPO/tools/linux/server/README.txt" "$OUT/README.txt"
+# the login-screen services (boosted creature / boss, event schedule): start-server.sh runs it on 127.0.0.1:8090
+mkdir -p "$OUT/server/tools"
+install -m 0644 "$REPO/server/tools/clientservices.py" "$OUT/server/tools/clientservices.py"
+# security: our own RSA login key and the VPS hardening (docs/SECURITY_CHECKLIST.md)
+install -m 0644 "$REPO/server/tools/rsa_key.py" "$OUT/server/tools/rsa_key.py"
+install -m 0755 "$REPO/tools/linux/harden_vps.sh" "$OUT/harden_vps.sh"
 mkdir -p "$OUT/deploy"
 cp "$REPO"/server/deploy/*.service "$REPO"/server/deploy/*.timer "$REPO"/server/deploy/chaos.env.example \
   "$REPO"/server/deploy/chaos.logrotate "$OUT/deploy/"

@@ -1,6 +1,6 @@
 <?php
 /**
- * Creator codes and the referral link (page.php?plugin=chaos&p=creator; creator_lib.php, website/README.md
+ * Creator codes and the referral link (page?plugin=chaos&p=creator; creator_lib.php, website/README.md
  * "Creator codes").
  *
  *  - Everyone logged in: pick a creator to support (or stop), see the current pick and until when; the account's
@@ -15,7 +15,7 @@ require_once __DIR__ . '/../creator_lib.php';
 require_once __DIR__ . '/../i18n_lib.php';
 $GLOBALS['page_title'] = chaos_t('Creator Codes');
 
-$self = 'page.php?plugin=chaos&p=creator';
+$self = 'page?plugin=chaos&p=creator';
 $cfg = chaos_creator_config();
 $accountId = function_exists('getSession') ? (int)getSession('user_id') : 0;
 $isAdmin = $accountId > 0 && chaos_creator_is_admin($config, $accountId);

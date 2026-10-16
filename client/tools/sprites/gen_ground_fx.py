@@ -42,7 +42,8 @@ SPEC = os.path.join(HERE, 'ground_fx.csv')
 COVER = os.path.join(HERE, 'ground_fx_cover.csv')
 OUT = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_groundfx', 'groundfx_data.lua')
 CATALOGUES = ['effects_catalog.csv', 'vfx_catalog.csv', 'vfx_art_catalog.csv', 'class_fx_catalog.csv',
-              'pack_fx_catalog.csv', 'big_fx_catalog.csv', 'status_fx_catalog.csv', 'pack27_fx_catalog.csv']
+              'pack_fx_catalog.csv', 'big_fx_catalog.csv', 'status_fx_catalog.csv', 'pack27_fx_catalog.csv',
+              'pack29_fx_catalog.csv', 'pack29_vfx_catalog.csv']
 DIRS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw']
 GROUND_STYLES = {'circle', 'nova', 'rings'}
 NAME_WORDS = re.compile(r'(^|_)(seal|sigil|glyph|rune|ring|rings|nova|telegraph|rift|pad|warning|quake|shock|dome|'

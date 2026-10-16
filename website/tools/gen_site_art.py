@@ -5,9 +5,10 @@ from client/tools/gen_login_art.py, as on the login screen).
 
 Run:  python3 -I website/tools/gen_site_art.py [task ...]      (no task = all)
 Tasks: theme (site logo, header, favicon, frame pieces), classes (class badges), social, discord, otlist,
-       showcase (class showcase), features (features infographic)
+       showcase (class showcase), features (features infographic), icons (the SEO icon set and the link preview
+       image: favicon.ico, the PNG icons of the web manifest, the Open Graph JPEG; README "SEO and social previews")
 Output: website/overlay/layouts/chaos/assets/img/ (site), website/overlay/plugins/chaos/assets/img/ (class badges),
-        website/art/ (banners and material to post elsewhere).
+        website/art/ (banners and material to post elsewhere), website/overlay/favicon.ico (the web root).
 Needs Pillow + numpy. Reads the client's generated art (client/overlay/data/images/chaos/) and reuses the client
 generator's code, so the site and the client stay one look. Text uses a serif TrueType font: the first found of
 FONTS below, searched in client/fonts-src/ (the client's OFL fonts: Cinzel, Alegreya SC, Alegreya Sans, IM Fell
@@ -399,7 +400,7 @@ def gen_theme():
     # favicon: the C of the logo on a client badge
     fav = gta.render_icon(glyph_letter_c, False).crop((10, 10, gta.N - 10, gta.N - 10))
     save(fav.resize((64, 64), Image.LANCZOS), OUT_THEME, "favicon.png")
-    save(fav.resize((180, 180), Image.LANCZOS), OUT_THEME, "apple-touch-icon.png", colors=256)
+    # apple-touch-icon.png, the other icon sizes, favicon.ico and the Open Graph image: the icons task
     # frame pieces for the stylesheet (the client's own ornaments)
     for name in ("orn_corner_tl.png", "orn_corner_tr.png", "orn_corner_bl.png", "orn_corner_br.png", "orn_crest.png"):
         save(Image.open(os.path.join(CLIENT_IMG, "skin", name)).convert("RGBA"), OUT_THEME, name.replace("orn_", "frame-"))
@@ -439,7 +440,8 @@ def chip(img, cx, y, text, fnt):
     return x1 - x0
 
 
-def gen_social():
+def social_image():
+    """The 1200 x 630 link preview (the social share image and the Open Graph image are the same picture)."""
     W, H = 1200, 630
     img = backdrop(W, H, focus_y=0.3, dark=0.45, seed=3)
     panel(img, (24, 24, W - 24, H - 24), corner=40, fill_alpha=0, gold=True)
@@ -454,7 +456,44 @@ def gen_social():
         chip(img, x + w / 2, 500, t, f)
         x += w + gap
     plain_text(img, (W // 2, 572), "Dark fantasy OT server  |  protocol 10.98  |  own client", font(20, "text"), fill=MUTED, anchor="mm")
-    save(img.convert("RGB"), OUT_ART, "social-share-1200x630.png", colors=128)
+    return img.convert("RGB")
+
+
+def gen_social():
+    save(social_image(), OUT_ART, "social-share-1200x630.png", colors=128)
+
+
+def icon_image(size, dark_bg=True):
+    """The C of the logo on a client badge, on a solid iron background (icons never need transparency)."""
+    icon = gta.render_icon(glyph_letter_c, True).crop((10, 10, gta.N - 10, gta.N - 10)).resize((size, size), Image.LANCZOS)
+    bg = Image.new("RGBA", (size, size), BLACK + (255,))
+    bg.alpha_composite(icon)
+    return bg.convert("RGB")
+
+
+def gen_icons():
+    """The icons the site's <head>, favicon.ico and site.webmanifest name (plugins/chaos/seo_lib.php), and the Open
+    Graph image: the social image as a JPEG under 300 KB, the size messaging apps still fetch."""
+    for size in (16, 32, 192, 512):
+        name = "favicon-%dx%d.png" % (size, size) if size < 100 else "android-chrome-%dx%d.png" % (size, size)
+        save(icon_image(size), OUT_THEME, name, colors=64 if size < 100 else 128)
+    save(icon_image(180), OUT_THEME, "apple-touch-icon.png", colors=128)
+    # favicon.ico at the web root: 16, 32 and 48 px in one file (browsers ask for /favicon.ico by themselves)
+    ico = icon_image(48)
+    ico_path = os.path.join(REPO, "website", "overlay", "favicon.ico")
+    ico.save(ico_path, format="ICO", sizes=[(16, 16), (32, 32), (48, 48)])
+    print("wrote %s %d KB" % (os.path.relpath(ico_path, REPO), (os.path.getsize(ico_path) + 1023) // 1024))
+    # the Open Graph image: the committed social share image (the social task) as a JPEG, since WhatsApp and the
+    # others fetch og:image only when it is small (about 300 KB or less; the PNG is over 400 KB)
+    og = Image.open(os.path.join(OUT_ART, "social-share-1200x630.png")).convert("RGB")
+    og_path = os.path.join(OUT_THEME, "og-image-1200x630.jpg")
+    quality = 86
+    while True:
+        og.save(og_path, format="JPEG", quality=quality, optimize=True, progressive=False)
+        if os.path.getsize(og_path) <= 280 * 1024 or quality <= 50:
+            break
+        quality -= 4
+    print("wrote %s %s %d KB (quality %d)" % (os.path.relpath(og_path, REPO), og.size, (os.path.getsize(og_path) + 1023) // 1024, quality))
 
 
 def gen_discord():
@@ -635,7 +674,7 @@ def gen_features():
 
 
 TASKS = {"theme": gen_theme, "classes": gen_classes, "social": gen_social, "discord": gen_discord,
-         "otlist": gen_otlist, "showcase": gen_showcase, "features": gen_features}
+         "otlist": gen_otlist, "showcase": gen_showcase, "features": gen_features, "icons": gen_icons}
 
 
 def main(argv):

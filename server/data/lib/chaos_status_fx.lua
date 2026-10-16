@@ -176,5 +176,9 @@ function C.onSpellHit(creature, attacker, origin)
 	if not C.allow(creature:getId(), now(), attacker:getId() .. ":" .. serial) then
 		return false
 	end
-	return sendWord(creature:getPosition(), name)
+	local sent = sendWord(creature:getPosition(), name)
+	if sent and ChaosPack29Vfx and ChaosPack29Vfx.onWord then -- pair 29 (switch off: nothing): the state's aura
+		pcall(ChaosPack29Vfx.onWord, creature, name)
+	end
+	return sent
 end

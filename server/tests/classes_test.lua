@@ -239,16 +239,22 @@ end
 do
 	local MYSTIC, ELEMENTALIST, ILLUSIONIST = 1, 5, 10
 	local r = cfg.outfitReplacement
-	eq(r.enabled, false, "the replacement switch ships off")
+	eq(r.enabled, true, "the replacement switch (pair 29) is on")
+	local shipped = r.enabled
+	r.enabled = false -- the checks below set the switch themselves
 	eq(r.replaces, 1559, "it replaces the Archmage")
+	eq(r.outfit.lookType, 2235, "the pair 29 Archmage, male"); eq(r.outfit.female, 2236, "the pair 29 Archmage, female")
+	eq(r.outfit.name, "Archmage", "named Archmage"); eq(r.outfit.addons, 3, "with both addons")
 	eq(C.isRetiredOutfit(1559), true, "1559 is retired"); eq(C.isRetiredOutfit(1558), false, "the Ranger's is not")
 	eq(cfg.retiredOutfits[1].name, "Archmage (old)", "kept wearable under its old name")
-	-- nobody is given 1559 any more, at a login or a class change
+	-- nobody is given 1559 or the pair 29 looks while the switch is off, at a login or a class change
 	for vocId = 0, 30 do
-		for _, o in ipairs(C.classOutfitsFor(vocId)) do
-			eq(o.lookType ~= 1559, true, "vocation " .. vocId .. " is given 1559")
+		for _, sex in ipairs({0, 1}) do
+			for _, o in ipairs(C.classOutfitsFor(vocId, sex)) do
+				eq(o.lookType ~= 1559 and o.lookType ~= 2235 and o.lookType ~= 2236, true, "vocation " .. vocId .. " is given 1559 or 2235/2236")
+			end
+			eq(C.outfitSwap(vocId, 1559, sex), nil, "switch off: no swap for vocation " .. vocId)
 		end
-		eq(C.outfitSwap(vocId, 1559), nil, "switch off: no swap for vocation " .. vocId)
 	end
 	for _, v in ipairs({MYSTIC, ELEMENTALIST, ILLUSIONIST}) do
 		eq(#C.classOutfitsFor(v), 0, "the Mystic line has no donor art outfit while the switch is off")
@@ -256,25 +262,36 @@ do
 	eq(C.classOutfitsFor(12)[1].lookType, 1505, "the other classes keep theirs (Ninja)")
 	-- the switch line is one plain line (install_outfits.py and gen_shop_cosmetics.py read it)
 	local src = io.open("data/scripts/chaos/chaos_constants.lua"):read("*a")
-	eq(src:match("\n\toutfitReplacement = {\n\t\tenabled = (%a+),\n"), "false", "the switch is one plain line")
-	-- on, with no outfit set yet: still nothing
-	r.enabled = true
+	eq(src:match("\n\toutfitReplacement = {\n\t\tenabled = (%a+),\n"), tostring(shipped), "the switch is one plain line")
+	-- on, with no outfit set: still nothing
+	local outfit = r.outfit
+	r.enabled, r.outfit = true, nil
 	eq(#C.classOutfitsFor(MYSTIC), 0, "on without an outfit: nothing given")
 	eq(C.outfitSwap(MYSTIC, 1559), nil, "on without an outfit: no swap")
-	-- on, with an outfit: the Mystic line gets it, wearers of 1559 are moved, other classes untouched
-	r.outfit = {lookType = 2999, name = "Archmage"}
+	-- on, with the pair 29 outfit: the Mystic line gets the look of its sex with both addons, wearers of 1559 (or of
+	-- the other sex's Archmage) are moved, other classes untouched
+	r.outfit = outfit
 	for _, v in ipairs({MYSTIC, ELEMENTALIST, ILLUSIONIST}) do
-		local list = C.classOutfitsFor(v)
-		eq(#list, 1, "one outfit for vocation " .. v); eq(list[1].lookType, 2999, "the replacement")
-		eq(C.outfitSwap(v, 1559), 2999, "1559 wearer moved, vocation " .. v)
-		eq(C.outfitSwap(v, 2060), nil, "another look stays, vocation " .. v)
+		local male, female = C.classOutfitsFor(v, 1), C.classOutfitsFor(v, 0)
+		eq(#male, 1, "one outfit for vocation " .. v); eq(male[1].lookType, 2235, "his Archmage")
+		eq(female[1].lookType, 2236, "her Archmage"); eq(male[1].addons, 3, "both addons")
+		eq(C.classOutfitsFor(v)[1].lookType, 2235, "no sex given: the male look")
+		eq(C.outfitSwap(v, 1559, 1), 2235, "1559 wearer moved, his look, vocation " .. v)
+		eq(C.outfitSwap(v, 1559, 0), 2236, "1559 wearer moved, her look, vocation " .. v)
+		eq(C.outfitSwap(v, 2235, 0), 2236, "the other sex's Archmage moved, vocation " .. v)
+		eq(C.outfitSwap(v, 2236, 0), nil, "her own Archmage stays, vocation " .. v)
+		eq(C.outfitSwap(v, 2060, 1), nil, "another look stays, vocation " .. v)
 	end
-	eq(C.outfitSwap(4, 1559), nil, "a Warrior wearing 1559 keeps it")
+	eq(C.outfitSwap(4, 1559, 1), nil, "a Warrior wearing 1559 keeps it")
 	eq(#C.classOutfitsFor(4), 1, "the Warrior keeps only its own"); eq(C.classOutfitsFor(4)[1].lookType, 1551, "Warborn")
+	-- one look for both sexes (no `female`): the same look type for both
+	r.outfit = {lookType = 2999, name = "Archmage"}
+	eq(C.classOutfitsFor(MYSTIC, 0)[1].lookType, 2999, "one look: hers"); eq(C.outfitSwap(MYSTIC, 1559, 0), 2999, "one look: moved")
+	r.outfit = outfit
 	-- off again: back to nothing
 	r.enabled = false
 	eq(#C.classOutfitsFor(MYSTIC), 0, "off again"); eq(C.outfitSwap(MYSTIC, 1559), nil, "off again: no swap")
-	r.outfit = nil
+	r.enabled = shipped
 end
 
 print("classes_test: OK")

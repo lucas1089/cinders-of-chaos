@@ -181,7 +181,7 @@ local names = {}
 for _, g in ipairs(done) do
 	names[g.key] = true
 end
-check(names.lvl8 and names.magic1, "level 8 and a magic monster done")
+check(names.magic1 and not names.lvl8, "a magic monster done (no Reach level 8: characters start at 8)")
 check(not names.bounty1 and not names.passive1, "not the others")
 eq(#K.evaluate(cfg, ctx), 0, "never twice")
 ctx.stats.passive_spent = 1
@@ -621,7 +621,7 @@ ChaosAchievements.stats[202] = {}
 events.ChaosGoalsLogin.onLogin(p2)
 runTimers()
 local st2 = Gs.st[202]
-check(st2 and st2.done.lvl8, "level 8 done at login")
+check(st2 and not st2.done.lvl8, "no level 8 goal (characters start at level 8)")
 eq(trackerRow("lvl20") and trackerRow("lvl20").progress, 8, "login: Reach level 20 at 8")
 check(trackerRow("magic1") and trackerRow("bounty1"), "login: magic1 and bounty1 tracked")
 -- levels 9 to 12, one advance each: one queued run, one push

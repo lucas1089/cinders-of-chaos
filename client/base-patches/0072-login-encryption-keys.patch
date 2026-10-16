@@ -1,0 +1,76 @@
+# Chaos: login encryption (server/README.md "Login encryption (RSA, XTEA)", docs/SECURITY_CHECKLIST.md; after 0001-0071).
+# protocol.cpp: the XTEA session key comes from OpenSSL's RAND_bytes (std::random_device if that fails). The stock
+# generateXteaKey seeded mt19937 with the current second, so a recorded login gave away its session key after a few
+# hundred guesses: the whole session could be read and forged, whatever the RSA key. Both logins use it (the Lua login
+# protocol through Protocol.generateXteaKey, the game login in C++).
+# init.lua: Services.rsa = "" (the decimal modulus of the game server's own 1024-bit key; client/tools/set_rsa_key.py
+# writes it at build time, windows-package.yml from the secret CHAOS_RSA_PUBLIC). init.lua is never touched by the
+# signed updater, so an update cannot put the old key back.
+# gamelib/const.lua: a valid Services.rsa replaces OTSERV_RSA, the public default key every stock server ships (its
+# private key is public). chooseRsa keeps using OTSERV_RSA for every host but the official ones, so the login and the
+# game login both encrypt with our key. Empty: the default key, as before (local test servers with the stock key.pem).
+--- a/init.lua
++++ b/init.lua
+@@ -36,7 +36,11 @@ Services = {
+     package = 1,
+     required = false,
+     download = ""
+-  }
++  },
++  -- Cinders of Chaos login key (base patch 0072, server/README.md "Login encryption (RSA, XTEA)"): the decimal modulus
++  -- of the game server's own 1024-bit RSA key, written at build time by client/tools/set_rsa_key.py (the secret
++  -- CHAOS_RSA_PUBLIC of windows-package.yml). "" keeps the public default key (local test servers only).
++  rsa = ""
+ }
+ 
+ -- Direct connection to the TFS login server (no HTTP service required).
+--- a/modules/gamelib/const.lua
++++ b/modules/gamelib/const.lua
+@@ -454,6 +454,12 @@ OTSERV_RSA  = "1091201329673994292788609605089955415282375029027981291234687579"
+               "6207862794310902180176810615217550567108238764764442605581471797" ..
+               "07119674283982419152118103759076030616683978566631413"
+ 
++-- Chaos (base patch 0072): the game server's own key from init.lua (Services.rsa, client/tools/set_rsa_key.py) replaces
++-- the public default key, whose private key everybody has
++if type(Services) == 'table' and type(Services.rsa) == 'string' and Services.rsa:match('^%d+$') and #Services.rsa >= 300 then
++  OTSERV_RSA = Services.rsa
++end
++
+ CIPSOFT_RSA = "1321277432058722840622950990822933849527763264961655079678763618" ..
+               "4334395343554449668205332383339435179772895415509701210392836078" ..
+               "6959821132214473291575712138800495033169914814069637740318278150" ..
+--- a/src/framework/net/protocol.cpp
++++ b/src/framework/net/protocol.cpp
+@@ -24,6 +24,9 @@
+ #include "connection.h"
+ #include <framework/core/application.h>
+ #include <random>
++#ifndef __EMSCRIPTEN__
++#include <openssl/rand.h>
++#endif
+ 
+ #include <framework/net/packet_player.h>
+ #include <framework/net/packet_recorder.h>
+@@ -322,12 +325,16 @@ void Protocol::internalRecvData(uint8* buffer, uint32 size)
+ 
+ void Protocol::generateXteaKey()
+ {
+-    std::mt19937 eng(std::time(NULL));
+-    std::uniform_int_distribution<uint32> unif(0, 0xFFFFFFFF);
+-    m_xteaKey[0] = unif(eng);
+-    m_xteaKey[1] = unif(eng);
+-    m_xteaKey[2] = unif(eng);
+-    m_xteaKey[3] = unif(eng);
++    // Chaos (base patch 0072): the session key comes from the system's random generator. The stock code seeded
++    // mt19937 with the current second, so anyone who saw a login could find its XTEA key by trying the seconds
++    // around it and read (and forge) the whole session, whatever the RSA key.
++#ifndef __EMSCRIPTEN__
++    if (RAND_bytes(reinterpret_cast<unsigned char*>(m_xteaKey), sizeof(m_xteaKey)) == 1)
++        return;
++#endif
++    std::random_device rd;
++    for (auto& word : m_xteaKey)
++        word = (static_cast<uint32>(rd()) << 16) ^ static_cast<uint32>(rd());
+ }
+ 
+ void Protocol::setXteaKey(uint32 a, uint32 b, uint32 c, uint32 d)

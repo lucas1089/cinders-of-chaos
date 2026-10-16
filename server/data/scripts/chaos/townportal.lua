@@ -283,6 +283,21 @@ local function spellCooldown(player, seconds)
 	player:addCondition(c)
 end
 
+-- Inside a hideout the Town Portal is the way out at once, but the engine checks the spell's cooldown condition
+-- before T.cast runs ("You are exhausted." for up to 60 s after the last portal). The hideout lifts the condition at
+-- the entry; the real cooldown is the storage (K.cooldownLeft, checked by T.cast outside), so nothing is skipped.
+function T.liftSpellCooldown(player)
+	player:removeCondition(CONDITION_SPELLCOOLDOWN, CONDITIONID_DEFAULT, cfg.spellId)
+end
+
+-- after leaving a hideout: the condition again for what is left of the storage cooldown (the action bar shows it)
+function T.restoreSpellCooldown(player)
+	local left = K.cooldownLeft(os.time(), player:getStorageValue(ST.cooldown))
+	if left > 0 then
+		spellCooldown(player, left)
+	end
+end
+
 -- the channel finished: open the pair. Returns true or an error text (nothing spent then)
 local function openPair(player)
 	local reason = K.blockReason(blockFacts(player))

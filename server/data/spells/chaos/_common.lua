@@ -101,7 +101,43 @@ ChaosSpell.bigFx = bigFx
 if not ChaosPack27Fx then
 	pcall(dofile, 'data/lib/chaos_pack27_fx.lua')
 end
+-- Pair 29 effects (data/lib/chaos_pack29_fx.lua, switch ChaosPack29Fx.PAIR29, off): the Mystic line's new effects come
+-- first (as a `first` pair 27 swap: over the large and class effects); nil when off or no swap fits
+if not ChaosPack29Fx then
+	pcall(dofile, 'data/lib/chaos_pack29_fx.lua')
+end
+-- The element blasts of the pair 29 VFX packs (data/lib/chaos_pack29_vfx.lua, same switch) stand in for the small hits
+-- and procedural bursts of any spell when the Mystic table has no swap.
+if not ChaosPack29Vfx then
+	pcall(dofile, 'data/lib/chaos_pack29_vfx.lua')
+end
+local function pack29(kind, name)
+	local Q, W = ChaosPack29Fx, ChaosSupportsSpell
+	if type(name) ~= "string" or not Q or not Q.swapFor or not Q.PAIR29 or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	local ok, alt = pcall(Q.swapFor, spellId, kind, name)
+	if pid and ok and alt then
+		return alt
+	end
+	local V = ChaosPack29Vfx
+	if pid and V and V.swapFor then
+		local ok2, blast = pcall(V.swapFor, kind, name)
+		return ok2 and blast or nil
+	end
+	return nil
+end
+ChaosSpell.pack29 = pack29
+-- the name a script sends itself (VfxShoot): the pair 29 one during the cast, else the same name
+function ChaosSpell.pack29Name(kind, name)
+	return pack29(kind, name) or name
+end
 local function pack27(kind, name)
+	local p29 = pack29(kind, name)
+	if p29 then
+		return p29, true
+	end
 	local P, W = ChaosPack27Fx, ChaosSupportsSpell
 	if type(name) ~= "string" or not P or not P.swapFor or not P.PAIR27_FX or not W or not W.cast then
 		return nil
@@ -531,6 +567,9 @@ function ChaosSpell.slow(target, ticks, percent)
 	c:setParameter(CONDITION_PARAM_TICKS, ticks)
 	c:setFormula(-percent, 0, -percent, 0)
 	target:addCondition(c)
+	if ChaosPack29Vfx then -- the slowed aura while it lasts (pair 29 switch; off: nothing)
+		pcall(ChaosPack29Vfx.hold, target, "slowed", ticks)
+	end
 end
 
 function ChaosSpell.damageTarget(caster, target, ctype, min, max, effect)

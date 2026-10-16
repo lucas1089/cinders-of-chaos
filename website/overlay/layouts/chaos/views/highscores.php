@@ -68,7 +68,7 @@ $showLooks = !empty($loadOutfits) && function_exists('chaos_outfit_url');
 			<tr class="<?= $i < 3 ? 'chaos-top chaos-top-' . ($i + 1) : '' ?>">
 				<td><?= $i + 1 ?></td>
 				<?php if ($showLooks): ?><td class="chaos-look-col"><img class="chaos-look" src="<?= $h(chaos_outfit_url((int)($r['type'] ?? 0), (int)($r['addons'] ?? 0), (int)($r['head'] ?? 0), (int)($r['body'] ?? 0), (int)($r['legs'] ?? 0), (int)($r['feet'] ?? 0))) ?>" alt="" width="64" height="64" loading="lazy" decoding="async"></td><?php endif; ?>
-				<td><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= $h($r['name']) ?></a></td>
+				<td><a href="characterprofile?name=<?= rawurlencode((string)$r['name']) ?>"><?= $h($r['name']) ?></a></td>
 				<td><?= $h($className((int)$r['vocation'])) ?></td>
 				<td class="num"><?= (int)$r['value'] ?></td>
 				<?php if ($type === 7): ?><td class="num"><?= $h(number_format((float)$r['experience'])) ?></td><?php endif; ?>
@@ -76,7 +76,7 @@ $showLooks = !empty($loadOutfits) && function_exists('chaos_outfit_url');
 		<?php endforeach; endif; ?>
 		</tbody>
 	</table>
-	<p class="chaos-note">Staff characters are not listed. Weekly boards, titles and the Class Ladder: <a href="page.php?plugin=chaos&amp;p=leaderboards">Leaderboards</a>.</p>
+	<p class="chaos-note">Staff characters are not listed. Weekly boards, titles and the Class Ladder: <a href="page?plugin=chaos&amp;p=leaderboards">Leaderboards</a>.</p>
 <?php endif; ?>
 </div>
 </div>

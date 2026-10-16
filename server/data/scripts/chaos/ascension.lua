@@ -92,8 +92,8 @@ end
 -- (Chaos.classes.retiredOutfits, e.g. 1559 Archmage) are not given any more; owners keep them. With the replacement
 -- switch on (Chaos.classes.outfitReplacement), a character wearing the replaced outfit is moved to the new one.
 function C.giveClassOutfits(player, wear)
-	local vocId = player:getVocation():getId()
-	local list = C.classOutfitsFor(vocId)
+	local vocId, sex = player:getVocation():getId(), player:getSex()
+	local list = C.classOutfitsFor(vocId, sex)
 	if #list == 0 then
 		return 0
 	end
@@ -108,6 +108,10 @@ function C.giveClassOutfits(player, wear)
 				added = added + 1
 			end
 		end
+		-- the replacement Archmage comes with both addons (Chaos.classes.outfitReplacement.outfit.addons)
+		if o.addons and player:hasOutfit(o.lookType) and not player:hasOutfit(o.lookType, o.addons) then
+			player:addOutfitAddon(o.lookType, o.addons)
+		end
 	end
 	if added > 0 then
 		if wear and not hadOne then
@@ -118,7 +122,7 @@ function C.giveClassOutfits(player, wear)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "New outfits: " .. table.concat(names, ", ") .. ".")
 	end
 	local look = player:getOutfit()
-	local swap = C.outfitSwap(vocId, look.lookType)
+	local swap = C.outfitSwap(vocId, look.lookType, sex)
 	if swap and player:hasOutfit(swap) then
 		look.lookType = swap
 		player:setOutfit(look)

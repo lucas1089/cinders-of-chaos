@@ -8,6 +8,7 @@ $config = array('chaos' => array('server_data' => __DIR__ . '/../../server/data'
 $GLOBALS['config'] = $config;
 require __DIR__ . '/../overlay/plugins/chaos/lib.php';
 require __DIR__ . '/../overlay/plugins/chaos/memorial_lib.php';
+function znote_plugin_asset(string $plugin, string $path): string { return 'plugins/' . $plugin . '/assets/' . $path; }
 
 $failed = 0;
 function check(bool $ok, string $what): void {
@@ -98,6 +99,18 @@ $arch = render_page(array('s' => 's1'));
 check(strpos($arch, 'Old Fred') !== false && strpos($arch, '(archive)') !== false && strpos($arch, 'Skaldra') === false, 'the archive');
 $bad = render_page(array('s' => "s9' OR 1=1"));
 check(strpos($bad, 'Season of Embers') !== false, 'an unknown key shows the current season');
+check(strpos($page, '<form class="chaos-pick"') === false, 'two seasons: links, no dropdown');
+// more than six seasons: one dropdown with the same &s= values, the season shown selected, a submit button
+foreach (array(3, 4, 5, 6, 7) as $n) {
+	$ins->execute(array('s' . $n, 'first', 'k' . $n, 1, 'Vexa', 'T', '', 1, '', $t - 100 + $n, 1, 1, $n === 7 ? 'Season <7> & "Ash"' : 'Season ' . $n));
+}
+$many = render_page(array('s' => 's4'));
+check(strpos($many, '<form class="chaos-pick" method="get" action="page" aria-label="Seasons">') !== false, 'seven seasons: a dropdown form');
+check(strpos($many, '<input type="hidden" name="p" value="memorial">') !== false && strpos($many, 'name="s" data-chaos-autosubmit') !== false, 'the dropdown sends p=memorial&s=');
+check(strpos($many, '<option value="s4" selected>Season 4</option>') !== false, 'the season shown is selected');
+check(strpos($many, 'Season &lt;7&gt; &amp; &quot;Ash&quot;') !== false && strpos($many, 'Season <7>') === false, 'season names escaped');
+check(strpos($many, 'chaos-pick__go">Show</button>') !== false && strpos($many, 'chaos-pick.js') !== false, 'button without JavaScript, auto-submit with it');
+check(strpos($many, 'chaos-memorial__seasons') === false, 'no link row any more');
 $pdo->exec('DELETE FROM chaos_memorial_entries');
 check(strpos(render_page(), 'The Memorial is still empty') !== false, 'empty');
 

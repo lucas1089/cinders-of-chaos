@@ -1,0 +1,14 @@
+{
+  "name": "Cinders of Chaos",
+  "short_name": "Cinders",
+  "description": "Cinders of Chaos: RPG online de fantasia sombria, grátis e com cliente próprio.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#050405",
+  "theme_color": "#0d0b0e",
+  "icons": [
+    { "src": "/layouts/chaos/assets/img/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/layouts/chaos/assets/img/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

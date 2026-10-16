@@ -19,4 +19,12 @@ eq(V.isLootPouch(3926, 1, ids), false, 'another pouch')
 eq(V.isLootPouch(3925, 1, {}), false, 'ids not known yet')
 local opts = V.rarityOptions({ 'Common', 'Uncommon' })
 eq(#opts, 15, '15 options') eq(opts[2], 'Uncommon', 'names used') eq(opts[3], 'Rarity 3', 'fallback name')
+-- the window fits its content (live test winpkg-35: the note was cut off, the saved line ran under the buttons)
+eq(V.fitHeight({ top = 100, contentBottom = 480, savedHeight = 14, buttonHeight = 24, paddingBottom = 16, minHeight = 452 }),
+  452, 'short content: the minimum height')
+-- pt-BR: a three-line note and Open Store under it reach lower; the saved line wraps to two lines
+eq(V.fitHeight({ top = 100, contentBottom = 560, savedHeight = 28, buttonHeight = 24, paddingBottom = 16, minHeight = 452 }),
+  460 + V.SAVED_GAP + 28 + V.BUTTON_GAP + 24 + 16, 'long content: the window grows')
+local noteEn = V.statusText({ loot = false }, 'Loot Bag')
+eq(noteEn:find('when you do.', 1, true) ~= nil, true, 'the note ends with its full sentence (no placeholder cut)')
 print('pouchesview_test: ' .. n .. ' checks OK')

@@ -7,7 +7,7 @@ PouchCheck < ChaosCheckBox
 
 PouchesWindow < ChaosMainWindow
   id: pouchesWindow
-  size: 420 396
+  size: 420 452
   !text: tr('Loot Bag')
   @onEscape: modules.game_pouches.hideSettings()
 
@@ -72,23 +72,23 @@ PouchesWindow < ChaosMainWindow
     anchors.top: other.bottom
     !text: tr('Overflow: what a full Orbs or Rift Key Pouch passes on')
 
+  // the note on the Loot Bag: the full width, as many lines as it needs (pt-BR is longer); Open Store under it
   ChaosLabel
     id: status
     anchors.top: overflow.bottom
     anchors.left: parent.left
-    anchors.right: storeButton.left
+    anchors.right: parent.right
     margin-top: 12
-    margin-right: 8
-    height: 30
     text-wrap: true
+    text-auto-resize: true
     text-align: topLeft
     color: #e8b84a
 
   ChaosButton
     id: storeButton
-    anchors.top: overflow.bottom
+    anchors.top: status.bottom
     anchors.right: parent.right
-    margin-top: 12
+    margin-top: 6
     size: 92 24
     !text: tr('Open Store')
     @onClick: modules.game_pouches.openStore()
@@ -111,10 +111,14 @@ PouchesWindow < ChaosMainWindow
     !text: tr('Close')
     @onClick: modules.game_pouches.hideSettings()
 
+  // its own line above the buttons (it ran under Auto Seller / Close: live test winpkg-35)
   ChaosLabelDim
     id: savedLabel
-    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.bottom: closeButton.top
     anchors.left: parent.left
-    anchors.right: sellButton.left
+    anchors.right: parent.right
+    margin-bottom: 8
+    text-wrap: true
+    text-auto-resize: true
     text-align: left
     !text: tr('Saved on your character at once.')

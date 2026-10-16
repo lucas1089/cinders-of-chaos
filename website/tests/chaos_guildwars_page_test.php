@@ -90,7 +90,7 @@ check(strpos($html, 'Wars now') !== false && strpos($html, 'History') !== false,
 check(strpos($html, '7 : 3') !== false && strpos($html, '23h 0m') !== false, 'running score and time');
 check(strpos($html, 'Night Pact') === false, 'pending and declined offers are not shown');
 check(strpos($html, '&lt;b&gt;Bold&lt;/b&gt;') !== false && strpos($html, '<b>Bold</b>') === false, 'names escaped');
-check(strpos($html, 'guilds.php?name=Iron%20Crows') !== false, 'guild links');
+check(strpos($html, 'guilds?name=Iron%20Crows') !== false, 'guild links');
 check(strpos($html, 'Iron Crows won') !== false && strpos($html, '1,800,000 gold') !== false, 'won with the payout');
 check(strpos($html, 'Draw') !== false, 'draw shown');
 

@@ -79,6 +79,220 @@ if (preg_match('/<FilesMatch "([^"]+)">\s*Require all denied/', $ht, $m)) {
 }
 check(trim((string)preg_replace('/^#.*$/m', '', (string)file_get_contents($root . '/overlay/special/.htaccess'))) === 'Require all denied', 'special/.htaccess: Require all denied');
 
+// ---------------------------------------------------------------- clean addresses (.htaccess, README "Web server")
+// The rewrite rules run here over a fake web root, the way Apache 2.4 applies them in a .htaccess: the <FilesMatch>
+// deny first (access check), then mod_rewrite (its fixup runs before mod_alias's), an internal rewrite starting the
+// request over with the new address (THE_REQUEST stays what the browser sent), and RedirectMatch 404 on an address
+// mod_rewrite left alone. Result: "301 <location>", "403", "404", or "run <file>[?query]" / "serve <file>".
+function ht_blocks(string $ht): array {
+	$blocks = array();
+	$conds = array();
+	foreach (preg_split('/\R/', $ht) as $line) {
+		$line = trim($line);
+		if (preg_match('/^RewriteCond\s+(\S+)\s+("[^"]*"|\S+)(?:\s+\[([^\]]*)\])?$/', $line, $m)) {
+			$conds[] = array($m[1], trim($m[2], '"'));
+		} elseif (preg_match('/^RewriteRule\s+("[^"]*"|\S+)\s+(\S+)(?:\s+\[([^\]]*)\])?$/', $line, $m)) {
+			$blocks[] = array('conds' => $conds, 'pattern' => trim($m[1], '"'), 'target' => $m[2], 'flags' => explode(',', $m[3] ?? ''));
+			$conds = array();
+		}
+	}
+	return $blocks;
+}
+function ht_request(string $ht, array $fs, string $method, string $target): string {
+	$the = $method . ' ' . $target . ' HTTP/1.1';
+	[$path, $query] = array_pad(explode('?', $target, 2), 2, '');
+	$path = rawurldecode($path);
+	$deny = preg_match('/<FilesMatch "([^"]+)">\s*Require all denied/', $ht, $fm) ? '#' . $fm[1] . '#' : '#^$#';
+	$notFound = preg_match('/RedirectMatch 404 "([^"]+)"\R(?:#.*\R)?RedirectMatch 404 "([^"]+)"/', $ht, $rm) ? array('#' . str_replace('#', '\#', $rm[1]) . '#', '#' . $rm[2] . '#') : array();
+	$isFile = static function (string $p) use ($fs): bool { return in_array(ltrim($p, '/'), $fs['files'], true); };
+	$isDir = static function (string $p) use ($fs): bool { return in_array(rtrim(ltrim($p, '/'), '/'), $fs['dirs'], true); };
+	for ($round = 0; $round < 5; $round++) {
+		if ($isFile($path) && preg_match($deny, basename($path))) {
+			return '403';
+		}
+		$rewritten = null;
+		foreach (ht_blocks($ht) as $b) {
+			$rel = ltrim($path, '/');
+			if (!preg_match('#' . $b['pattern'] . '#', $rel, $g)) {
+				continue;
+			}
+			$ok = true;
+			foreach ($b['conds'] as [$test, $pat]) {
+				$val = strtr($test, array('%{REQUEST_METHOD}' => $method, '%{THE_REQUEST}' => $the, '%{REQUEST_FILENAME}' => $path, '$1' => $g[1] ?? ''));
+				$neg = $pat[0] === '!';
+				$pat = ltrim($pat, '!');
+				$hit = $pat === '-f' ? $isFile($val) : ($pat === '-d' ? $isDir($val) : preg_match('#' . str_replace('#', '\#', $pat) . '#', $val) === 1);
+				if ($hit === $neg) { $ok = false; break; }
+			}
+			if (!$ok) {
+				continue;
+			}
+			if (in_array('B', $b['flags'], true)) {
+				$g = array_map('rawurlencode', $g);
+			}
+			$to = preg_replace_callback('/\$(\d)/', static function ($m) use ($g) { return $g[(int)$m[1]] ?? ''; }, $b['target']);
+			if ($to === '-') {
+				break;
+			}
+			if (in_array('R=301', $b['flags'], true)) {
+				return '301 ' . $to . ($query !== '' ? '?' . $query : '');
+			}
+			[$to, $q2] = array_pad(explode('?', $to, 2), 2, '');
+			$rewritten = array($to, $q2 !== '' ? $q2 : $query, in_array('END', $b['flags'], true));
+			break;
+		}
+		if ($rewritten === null) {
+			foreach ($notFound as $re) {
+				if (preg_match($re, $path)) {
+					return '404';
+				}
+			}
+			if ($isFile($path)) {
+				return (substr($path, -4) === '.php' ? 'run ' : 'serve ') . ltrim($path, '/') . ($query !== '' ? '?' . $query : '');
+			}
+			return $isDir($path) ? 'dir' : '404';
+		}
+		[$path, $query, $end] = $rewritten;
+		if ($end) { // [END]: no more rewriting, only the access and alias checks of the new address
+			if ($isFile($path) && preg_match($deny, basename($path))) {
+				return '403';
+			}
+			foreach ($notFound as $re) {
+				if (preg_match($re, $path)) {
+					return '404';
+				}
+			}
+			return 'run ' . ltrim($path, '/') . ($query !== '' ? '?' . $query : '');
+		}
+	}
+	return 'loop';
+}
+$fs = array(
+	'files' => array('index.php', 'highscores.php', 'page.php', 'characterprofile.php', 'register.php', 'guilds.php', 'chaos_client_api.php',
+		'chaos_pay_webhook.php', 'chaos_outfit.php', 'config.local.php', '.env.php', '.env', '.git/config', 'tests/x.php', 'special/x.php', 'install/index.php',
+		'SQL/a.sql', 'engine/backups/x.php', 'updates/live/manifest.json', 'updates/x.php', 'admin/index.php', 'layouts/chaos/a.css'),
+	'dirs' => array('.git', 'tests', 'special', 'install', 'SQL', 'engine', 'engine/backups', 'updates', 'updates/live', 'admin', 'layouts', 'layouts/chaos'),
+);
+$cases = array(
+	// the clean address runs the page, the query kept
+	array('GET', '/highscores', 'run highscores.php'),
+	array('GET', '/highscores?list=1&page=2', 'run highscores.php?list=1&page=2'),
+	array('GET', '/characterprofile?name=Ash%20Walker', 'run characterprofile.php?name=Ash%20Walker'),
+	array('GET', '/page?plugin=chaos&p=wiki', 'run page.php?plugin=chaos&p=wiki'),
+	array('POST', '/register', 'run register.php'),
+	// a GET / HEAD of the .php address: 301 to the clean one, query kept; never a POST
+	array('GET', '/highscores.php', '301 /highscores'),
+	array('HEAD', '/highscores.php?list=1', '301 /highscores?list=1'),
+	array('GET', '/page.php?plugin=chaos&p=wiki', '301 /page?plugin=chaos&p=wiki'),
+	array('GET', '/index.php', '301 /'),
+	array('GET', '/index.php?x=1', '301 /?x=1'),
+	array('POST', '/register.php', 'run register.php'),
+	array('POST', '/page.php?plugin=chaos&p=coins', 'run page.php?plugin=chaos&p=coins'),
+	array('PUT', '/highscores.php', 'run highscores.php'),
+	// the machine endpoints keep their .php address
+	array('GET', '/chaos_client_api.php', 'run chaos_client_api.php'),
+	array('POST', '/chaos_client_api.php', 'run chaos_client_api.php'),
+	array('GET', '/chaos_pay_webhook.php?psp=paypal', 'run chaos_pay_webhook.php?psp=paypal'),
+	array('POST', '/chaos_pay_webhook.php?psp=mercadopago', 'run chaos_pay_webhook.php?psp=mercadopago'),
+	array('GET', '/chaos_outfit.php?id=128', 'run chaos_outfit.php?id=128'),
+	array('GET', '/updates/live/manifest.json', 'serve updates/live/manifest.json'),
+	array('GET', '/admin/index.php', 'run admin/index.php'),
+	array('GET', '/layouts/chaos/a.css', 'serve layouts/chaos/a.css'),
+	// any other path is a character name (ZnoteX's rule)
+	array('GET', '/Ash%20Walker', 'run characterprofile.php?name=Ash%20Walker'),
+	array('GET', '/Highscores', 'run characterprofile.php?name=Highscores'),
+	array('GET', '/nosuch.php', 'run characterprofile.php?name=nosuch.php'),
+	// denied stays denied, also through the new rules
+	array('GET', '/config.local.php', '403'),
+	array('GET', '/config.local', 'run characterprofile.php?name=config.local'),
+	array('GET', '/.env.php', '404'),
+	array('GET', '/.env', '403'),
+	array('GET', '/.git/config', '404'),
+	array('GET', '/tests/x.php', '404'),
+	array('GET', '/tests', '404'),
+	array('GET', '/special/x.php', '404'),
+	array('GET', '/install/index.php', '404'),
+	array('GET', '/install', '404'),
+	array('GET', '/engine/backups/x.php', '404'),
+	array('GET', '/SQL/a.sql', '403'),
+	array('GET', '/updates/x.php', 'run updates/x.php'), // the folder's own .htaccess denies it (php off, Require all denied)
+);
+foreach ($cases as [$method, $target, $want]) {
+	$got = ht_request($ht, $fs, $method, $target);
+	check($got === $want, ".htaccess $method $target: $want (got $got)");
+}
+check(preg_match('/RewriteRule "\^\(\[A-Za-z0-9_-\]\+\)\$" \/\$1\.php \[END\]\R(?:.*\R)*?RewriteRule \^\(\.\*\)\$ \/characterprofile\.php\?name=\$1 \[B,END\]/', $ht) === 1,
+	'the page rule comes before the character rule');
+check(substr_count($ht, 'RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$') === 2 && substr_count($ht, '[R=301,L]') === 2, 'only GET and HEAD are redirected');
+check(strpos((string)file_get_contents($root . '/overlay/updates/.htaccess'), 'RewriteEngine Off') !== false, 'updates/: no rewriting at all');
+
+// ---------------------------------------------------------------- the nginx block of the README: the same addresses
+$readme = (string)file_get_contents($root . '/README.md');
+check(preg_match('/^map "\$request_method:\$request_uri" \$chaos_clean_url \{\R\s+default "";\R\s+"~([^"]+)" "([^"]+)";\R\s+"~([^"]+)" "([^"]+)";\R\}/m', $readme, $nm) === 1, 'nginx: the clean address map');
+$ngx = static function (string $method, string $uri) use ($nm): string {
+	foreach (array(array($nm[1], $nm[2]), array($nm[3], $nm[4])) as [$re, $val]) {
+		if (preg_match('#' . $re . '#', $method . ':' . $uri, $g)) {
+			return (string)preg_replace_callback('/\$(\w+)/', static function ($m) use ($g) { return $g[$m[1]] ?? ''; }, $val);
+		}
+	}
+	return '';
+};
+if (!empty($nm)) {
+	foreach (array(array('GET', '/highscores.php', '/highscores'), array('HEAD', '/highscores.php?list=1&x=2', '/highscores?list=1&x=2'),
+		array('GET', '/index.php', '/'), array('GET', '/index.php?x=1', '/?x=1'), array('GET', '/page.php?plugin=chaos&p=wiki', '/page?plugin=chaos&p=wiki'),
+		array('POST', '/register.php', ''), array('PUT', '/highscores.php', ''), array('GET', '/chaos_client_api.php', ''),
+		array('GET', '/chaos_pay_webhook.php?psp=paypal', ''), array('GET', '/chaos_outfit.php?id=1', ''), array('GET', '/tests/x.php', ''),
+		array('GET', '/updates/x.php', ''), array('GET', '/admin/index.php', ''), array('GET', '/.env.php', ''), array('GET', '/config.local.php', ''),
+		array('GET', '/highscores', '')) as [$method, $uri, $want]) {
+		check($ngx($method, $uri) === $want, "nginx: $method $uri -> " . ($want === '' ? 'no redirect' : $want));
+	}
+}
+check(strpos($readme, "    set \$chaos_301 \$chaos_clean_url;\n    if (!-f \$request_filename) { set \$chaos_301 \"\"; }\n    if (\$chaos_301) { return 301 \$chaos_301; }") !== false, 'nginx: the 301 only for an existing page');
+check(strpos($readme, "        try_files \$uri \$uri/ @page;") !== false
+	&& strpos($readme, "        if (-f \$request_filename.php) { rewrite \"^/([A-Za-z0-9_-]+)\$\" /\$1.php last; }\n        rewrite ^/(.*)\$ /characterprofile.php?name=\$1 last;") !== false,
+	'nginx: /page runs page.php, then the character rule');
+check(preg_match('/^\s*try_files[^;\n]*\$uri\.php/m', $readme) === 0, 'nginx: never try_files $uri.php (it would send the PHP source)');
+check(strpos($readme, '    set $chaos_301') < strpos($readme, '    location ~ /\. { deny all; }'), 'nginx: the redirect before the locations');
+
+// ---------------------------------------------------------------- our links: the clean form
+require_once $root . '/overlay/plugins/chaos/lib.php';
+foreach (array('highscores.php?x=1' => 'highscores?x=1', '/page.php?p=rules' => '/page?p=rules', 'index.php' => './', '/index.php' => '/',
+	'page.php#records' => 'page#records', 'admin/index.php' => 'admin/index.php', 'https://example.org/a.php' => 'https://example.org/a.php',
+	'chaos_client_api.php' => 'chaos_client_api.php', '/chaos_pay_webhook.php?psp=paypal' => '/chaos_pay_webhook.php?psp=paypal',
+	'chaos_outfit.php?id=1' => 'chaos_outfit.php?id=1', 'page?p=rules' => 'page?p=rules') as $in => $want) {
+	check(chaos_clean_url($in) === $want, "chaos_clean_url($in) = $want");
+}
+$links = array();
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/overlay', FilesystemIterator::SKIP_DOTS)) as $f) {
+	if (preg_match('/\.(php|js)$/', $f->getFilename())) {
+		$src = (string)file_get_contents($f->getPathname());
+		// href / action / Location / site URL to a top-level .php page (the machine endpoints excepted)
+		if (preg_match_all('~(?:href=|action=|Location: |\$site \. \'/|\$base \. \'/|siteUrl \. \'/|rtrim\(\$siteUrl, \'/\'\) \. \'/)["\']?/?(?!chaos_client_api|chaos_pay_webhook|chaos_outfit)[a-z_]+\.php\b~', $src, $lm)) {
+			foreach ($lm[0] as $l) {
+				$links[] = substr($f->getPathname(), strlen($root) + 1) . ': ' . $l;
+			}
+		}
+		if (preg_match_all('~\bpage\.php\?~', $src, $lm)) {
+			$links[] = substr($f->getPathname(), strlen($root) + 1) . ': page.php?';
+		}
+	}
+}
+check($links === array(), 'our links use the clean form: ' . implode(' | ', array_slice($links, 0, 6)));
+$setup = (string)file_get_contents($root . '/setup/chaos_setup.php');
+check(preg_match("/\\\$menu\('[^']+', '[a-z_]+\.php/", $setup) === 0, 'setup: menu entries in the clean form');
+check(strpos($setup, "chaos_clean_url((string)\$row['url'])") !== false, 'setup: old .php menu entries made clean');
+check(strpos((string)file_get_contents($root . '/setup/rules.bbcode'), '[url=/page.php') === false, 'the Rules page links the clean form');
+$menuPatch = (string)file_get_contents($root . '/patches/znotex-chaos-clean-urls.patch');
+check(strpos($menuPatch, "+++ b/engine/function/menus.php") !== false && strpos($menuPatch, "+		\$page .= '.php';") !== false, "the patch: ZnoteX's menu checks read a clean address");
+// a page form that posts never posts to an address that answers 301 (only GET / HEAD of a .php address do)
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/overlay', FilesystemIterator::SKIP_DOTS)) as $f) {
+	if (substr($f->getFilename(), -4) === '.php' && preg_match_all('~<form[^>]*method="post"[^>]*>~i', (string)file_get_contents($f->getPathname()), $fm)) {
+		foreach ($fm[0] as $form) {
+			check(preg_match('~action="/?[a-z_]+\.php~', $form) === 0, 'POST form to a clean address: ' . $form);
+		}
+	}
+}
+
 // ---------------------------------------------------------------- the local router (php -S)
 $router = (string)file_get_contents($root . '/setup/router.php');
 if (preg_match("/if \\(preg_match\\('(#.+?#i)', \\\$uri\\)/", $router, $m)) {

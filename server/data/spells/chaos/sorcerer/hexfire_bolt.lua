@@ -34,7 +34,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	if target and ChaosVfxMissile then
 		local from, to = creature:getPosition(), target:getPosition()
-		VfxShoot(from, to, "fireball")
+		VfxShoot(from, to, ChaosSpell.pack29Name("missile", "fireball")) -- pair 29: witchfire_lance
 		if delayed then
 			M.later(M.flightMs(from, to), to, "fire_explosion")
 		else

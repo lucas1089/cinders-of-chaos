@@ -424,6 +424,49 @@ def templar(sex):
     return Look(rg, st, A1, A2)
 
 
+# ------------------------------------------------------------------------------------------------ Archmage
+def archmage(sex):
+    """The Mystic line's class outfit (pair 29, replaces the donor look 1559): an old battle mage in a long tinted robe,
+    a white beard (his) or long white hair (hers), an ember orb on a tall wooden staff with a gold claw.
+    Addon 1: a tall pointed hat with a gold band. Addon 2: a dark mantle, gold hem trim and a floating ember sigil over
+    the open left hand."""
+    B = Body(sex, height=0.4)
+    H = B.H
+    h = H["head"]
+    P = B.parts(skin="skin", shirt="robe", pants="skirt", shoe="boot", sleeve="robe")
+    P += B.eyes()
+    if B.f:
+        P += G.hair_long(B, mat="ash", length=9.0)
+    else:
+        P += G.hair_short(B, mat="ash")
+        P.append(Part("beard", "head", "ash", union(ell((2.9, 0, h - 2.2), (1.5, 2.3, 1.6)),
+                                                     ell((3.1, 0, h - 4.2), (1.3, 1.8, 2.0)),
+                                                     cone((3.2, 0, h - 5.0), (3.4, 0, h - 8.6), 1.3, 0.3), k=0.6)))
+    P += robe(B, hem=1.3, flare=1.2)
+    P += G.belt(B, "leather", "gold")
+    for s in "rl":
+        P.append(Part("sleeve_" + s, "fore_" + s, "robe", cone(B.joint("fore_" + s), B.wrist(s) + (0, 0, 0.6), 1.35, 2.0)))
+    st = Stance(arm_r=(6, 10), fore_r=(60, 0), arm_l=(8, 12), fore_l=(40, -6), swing_r=0.0, swing_l=0.3, nod=-10)
+    sp, top, d = staff(B, st, "r", mat="wood", up=14.0, down=None, tilt=(0.0, 0.04))
+    P += sp
+    P.append(Part("staff_claw", "torso", "gold", cone(top - d * 0.4, top + d * 0.9, 0.9, 1.2)))
+    P.append(Part("staff_orb", "torso", "ember", ell(top + d * 1.6, (1.15, 1.15, 1.15))))
+    rg = _rig(B, P)
+    # addon 1: the pointed hat, bent back at the tip, gold band
+    A1 = [Part("hat_brim", "head", "hood", clip(ell((0.2, 0, h + 2.4), (4.9, 4.9, 0.7)), G.above(h + 2.0))),
+          Part("hat_cone", "head", "hood", union(cone((-0.1, 0, h + 2.4), (-0.9, 0, h + 7.0), 3.2, 1.2),
+                                                cone((-0.9, 0, h + 7.0), (-3.0, 0, h + 9.0), 1.25, 0.25), k=0.5)),
+          Part("hat_band", "head", "gold", clip(clip(cyl((-0.1, 0, h + 2.4), (-0.25, 0, h + 3.6), 3.25, 0.1),
+                                                     G.above(h + 2.6)), G.below(h + 3.4)))]
+    # addon 2: the mantle with gold trim and a floating ember sigil over the open left hand
+    A2 = mantle(B, "wrap", drop=1.9, wide=1.6, name="amantle")
+    A2 += hem_trim(B, "gold", hem=1.3, flare=1.2, band=0.8)
+    hl = B.hand("l")
+    A2.append(Part("sigil", "fore_l", "ember", union(ell(hl + (0.6, -0.4, -1.4), (0.9, 0.9, 0.9)),
+                                                      cone(hl + (0.6, -0.4, -1.0), hl + (0.4, -0.5, -3.2), 0.7, 0.12))))
+    return Look(rg, st, A1, A2)
+
+
 # the looks of this line: key -> (design, sexes, name)
 LOOKS = {
     "lich": (lich, ("female",), "Lich"),
@@ -432,7 +475,9 @@ LOOKS = {
     "thief": (thief, ("male", "female"), "Thief"),
     "ninja": (ninja, ("male", "female"), "Ninja"),
     "templar": (templar, ("male", "female"), "Templar"),
+    "archmage": (archmage, ("male", "female"), "Archmage"),
 }
 # default colours per look (the outfits csv; the players choose their own): head, body, legs, feet
 COLOURS = {"lich": (0, 128, 127, 114), "inquisitor": (132, 132, 114, 114), "necromancer": (95, 121, 114, 114),
-           "thief": (114, 116, 95, 114), "ninja": (114, 95, 114, 114), "templar": (40, 0, 95, 95)}
+           "thief": (114, 116, 95, 114), "ninja": (114, 95, 114, 114), "templar": (40, 0, 95, 95),
+           "archmage": (0, 94, 94, 114)}

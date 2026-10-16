@@ -49,7 +49,7 @@ if ($chaosPwAccount > 0 && PHP_SAPI !== 'cli' && session_status() === PHP_SESSIO
 			$_SESSION = array();
 			session_destroy();
 		}
-		header('Location: login.php', true, 303);
+		header('Location: login', true, 303);
 		exit;
 	}
 	unset($chaosPwHash);

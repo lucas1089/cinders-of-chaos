@@ -3,7 +3,7 @@
  * The Ashen Chronicle: the running season's chapters (goal bars, the top contributors, what each written chapter
  * changed) and the record of past seasons (who carried each chapter), read from the game server's chaos_chronicle_*
  * tables (chronicle_lib.php). The story itself: the wiki (Events tab) and the client (Adventure > Chronicle).
- * page.php?plugin=chaos&p=chronicle
+ * page?plugin=chaos&p=chronicle
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once dirname(__DIR__) . '/chronicle_lib.php';
@@ -27,6 +27,6 @@ $state = chaos_chronicle_state(5, 5);
 				<?= chaos_chronicle_season_html($past, false) ?>
 			<?php endforeach; ?>
 		<?php endif; ?>
-		<p class="chaos-note">In the game: Adventure &gt; Chronicle. Names follow each character's Memorial choice (<a href="page.php?plugin=chaos&amp;p=memorial">the Memorial</a>).</p>
+		<p class="chaos-note">In the game: Adventure &gt; Chronicle. Names follow each character's Memorial choice (<a href="page?plugin=chaos&amp;p=memorial">the Memorial</a>).</p>
 	</div>
 </div>

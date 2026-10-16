@@ -51,8 +51,10 @@ Game design, world, server systems, client interface, website and original art: 
 ## Art packs {pt-BR: Pacotes de arte}
 
 Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the
-assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning; the owner
-confirmed (2026-10-15) that the other packs here have no such clause. Listed here as thanks.
+assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning or as a style
+reference; its effects are only imported into the game. The owner confirmed (2026-10-15) that the other WsT packs
+here have no such clause. The MutterPixel Studio packs (bought 2026-10-16) may be modified and recoloured, are never
+used as AI training data or a style reference, and ask for credit (appreciated, not required). Listed here as thanks.
 
 - **Magic VFX Spells & Impacts**
   - Author: WsT
@@ -77,6 +79,7 @@ confirmed (2026-10-15) that the other packs here have no such clause. Listed her
 - **Mega VFX 500**
   - Author: WsT
   - Licence: purchased; credit not required
+  - Used for: Mystic line spell effects and missiles
 - **Pixel Spellcraft VFX**
   - Author: WsT
   - Licence: purchased; credit not required
@@ -91,6 +94,12 @@ confirmed (2026-10-15) that the other packs here have no such clause. Listed her
   - Author: WsT
   - Licence: purchased; credit not required
   - Used for: grounds, borders and map objects
+- **MutterPixel Studio animated VFX**
+  - Author: MutterPixel Studio
+  - Licence: purchased; use in games, modified or recoloured; no resale or sharing of the files; never AI training data
+  - Credit: Art by MutterPixel Studio
+  - Used for: condition auras, element blasts, missiles, level-up and boss fireworks, hit splashes
+  - Source: Pixel Status Effects - Animated VFX Pack, Pixel Projectiles - Animated VFX, Pixel Fireworks - Animated VFX, Pixel Blood VFX - Animated VFX, Pixel Explosions - Animated VFX
 
 ## Free assets {pt-BR: Recursos gratuitos}
 
@@ -216,3 +225,7 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
   mount looks. Per look tracing: `client/tools/sprites/monster_looks/sources.csv`,
   `client/tools/outfit_art/class_looks_sources.csv`. Their authors and licences are not recorded yet, so they are
   not shown in the game or on the website.
+- **set29 status**, **set29 projectile**, **set29 firework**, **set29 blood**, **set29 explosion**: the internal
+  labels of the five MutterPixel Studio packs above, in the order of its Source line (status effects, projectiles,
+  fireworks, blood, explosions). `client/tools/sprites/art_import/pack29_vfx_sources.csv` names each pick's pack by
+  its label, so the pack names stay in this file (tools/ci/check_names.py).

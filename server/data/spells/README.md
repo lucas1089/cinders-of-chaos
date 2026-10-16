@@ -50,7 +50,7 @@ ground_slam (every name must be in ChaosFx: tests/spell_fx_names_test.lua); miss
 Vocations (the classes, docs/CLASSES.md): W Warrior, J Juggernaut, B Berserker, R Ranger, D Deadeye, BM Beastmaster, M Mystic,
 E Elementalist, I Illusionist (the old kits: sorcerer -> M, E; druid -> I, the first three also M; paladin -> R, D, BM; knight -> W, J,
 B; illusionist -> M, I). The table below still names the old vocations in the section rows; the "Vocations" column is current.
-All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level can cast, no scroll/NPC teaching), `premium=1` from level 60 up.
+All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level can cast, no scroll/NPC teaching), `premium=0`: every spell is free (owner decision 2026-10-16, server/README.md "Free spells").
 
 | id | Name | Words | Vocations | Lvl | Mana | Cooldown | What it does |
 |---|---|---|---|---|---|---|---|

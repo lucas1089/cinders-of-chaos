@@ -440,6 +440,15 @@ def spawn_center(block):
     return tuple(int(v) for v in m.groups()) if m else None
 
 
+def spawn_cells(block):
+    """the tiles the creatures of a spawn block stand on (centre + each x / y offset, its own z)"""
+    c = spawn_center(block)
+    if not c:
+        return []
+    return [(c[0] + int(x), c[1] + int(y), int(z)) for x, y, z in
+            re.findall(r'<(?:monster|npc)\b[^>]*?\bx="(-?\d+)" y="(-?\d+)" z="(\d+)"', block)]
+
+
 def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
     """the spawn file with the plans' blocks (once each) and exactly the wanted display blocks; returns (text, notes).
     displays: {id: (monster, cells[, spawntime])}; takeover: display cells of the hall order whose unmarked blocks (the
@@ -454,7 +463,10 @@ def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
             times[c] = d[2] if len(d) > 2 and d[2] else spawntime
     takeover = set(takeover)
     for b in blocks:
-        if 'chaoshunt=' not in b and 'chaoscontent=' not in b and spawn_center(b) in takeover:
+        # a base display block may stand its monster off its centre (centre in the corridor, monster in the cell)
+        cells = spawn_cells(b)
+        on_cell = spawn_center(b) in takeover or (cells and all(c in takeover for c in cells))
+        if 'chaoshunt=' not in b and 'chaoscontent=' not in b and on_cell:
             text = text.replace(b, '', 1)
             notes.append('base display spawn at %s taken over by the hall order' % (spawn_center(b),))
     # display blocks no longer wanted (slot moved, plan dropped) go
@@ -468,6 +480,9 @@ def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
         c = spawn_center(b)
         if c:
             centers.setdefault(c, []).append(b)
+        for cell in spawn_cells(b):
+            if cell != c and b not in centers.get(cell, []):
+                centers.setdefault(cell, []).append(b)
     add = []
     for c in sorted(want):
         pid, monster = want[c]

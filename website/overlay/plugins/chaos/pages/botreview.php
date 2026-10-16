@@ -1,6 +1,6 @@
 <?php
 /**
- * Staff: bot review (page.php?plugin=chaos&p=botreview). The days the game server flagged (botreview.lua), with the
+ * Staff: bot review (page?plugin=chaos&p=botreview). The days the game server flagged (botreview.lua), with the
  * score, each signal, the explanations and a timeline. Nothing here punishes: staff look, then mark the day reviewed,
  * false positive or escalated; every mark is logged (chaos_bot_actions). Penalties follow the GM handbook ladder.
  *
@@ -22,7 +22,7 @@ if ($group <= 0) {
 	return;
 }
 $GLOBALS['page_title'] = 'Bot Review';
-$self = 'page.php?plugin=chaos&p=botreview';
+$self = 'page?plugin=chaos&p=botreview';
 $now = time();
 
 if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['chaos_botreview_csrf'])) {
@@ -183,7 +183,7 @@ $row = $detailId > 0 ? chaos_botreview_row($detailId) : null;
 			<?php endif; ?>
 		<?php else: ?>
 			<?php [$rows, $total] = chaos_botreview_list($f, $now); ?>
-			<form method="get" action="page.php" class="chaos-filter" style="margin:10px 0;">
+			<form method="get" action="page" class="chaos-filter" style="margin:10px 0;">
 				<input type="hidden" name="plugin" value="chaos">
 				<input type="hidden" name="p" value="botreview">
 				<input type="hidden" name="status" value="<?= chaos_h($f['status']) ?>">

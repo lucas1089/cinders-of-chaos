@@ -1,6 +1,6 @@
 Module
   name: game_chatpanel
-  description: The chat panel's size (width handle, per character size, limits) and the Enter rule of the chat (ChaosChatLogic, read by modules/game_console through base patch 0056)
+  description: The chat panel's size and place (centred group with the orbs, move and width grips, per character, limits) and the Enter rule of the chat (ChaosChatLogic, read by modules/game_console through base patch 0056)
   author: Cinders of Chaos
   sandboxed: false
   autoload: true

@@ -23,14 +23,15 @@ local pt = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
 local booths = dofile("data/scripts/chaos/npc_booths_config.lua")
 
 -- ---------------------------------------------------------------- the shipped config
-for _, kind in ipairs({"hideout", "guildhall", "services", "siege", "memorial", "worldboss", "chronicle", "descent", "raid", "hunt", "idlehall"}) do
+for _, kind in ipairs({"hideout", "guildhall", "services", "siege", "memorial", "worldboss", "chronicle", "descent", "raid", "hunt", "idlehall", "servicesexit"}) do
 	local k = cfg.kinds[kind]
 	check(k ~= nil, kind .. ": a kind")
 	check(k.name:find("Portal", 1, true) ~= nil or k.name:find("Gate", 1, true) ~= nil or k.name:find("Exit", 1, true) ~= nil, kind .. ": the name says it is a portal")
 	check(#k.text > 20 and (k.text:find("Step in", 1, true) or k.text:find("step in", 1, true)), kind .. ": says what it does")
 	-- the Descent and the raid open a window; their runs bring the party back themselves
 	check(kind == "descent" or kind == "raid" or k.text:find("exit portal", 1, true) ~= nil
-		or k.text:find("back to your temple", 1, true) ~= nil, kind .. ": says the way back")
+		or k.text:find("back to your temple", 1, true) ~= nil or k.text:find("back to the temple", 1, true) ~= nil,
+		kind .. ": says the way back")
 	check(pt[k.name] ~= nil, kind .. ": pt-BR name")
 	check(pt[k.text] ~= nil, kind .. ": pt-BR text")
 	check(type(k.effect) == "string" and k.effect:match("^CONST_ME_[A-Z_]+$") ~= nil, kind .. ": an effect name")

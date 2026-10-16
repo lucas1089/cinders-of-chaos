@@ -56,12 +56,12 @@ ok(not L.cacheFresh({at = 100}, 100 + cfg.cacheSeconds, cfg), "stale")
 ok(not L.cacheFresh({at = 100}, 50, cfg), "clock moved back: stale")
 
 -- the link is the website's accept page; the website setup writes the version the server reads
-eq(cfg.url, "page.php?plugin=chaos&p=accept", "url")
+eq(cfg.url, "page?plugin=chaos&p=accept", "url")
 ok(readFile("../website/overlay/plugins/chaos/pages/accept.php") ~= "", "website accept page exists")
 local setup = readFile("../website/setup/chaos_setup.php")
 ok(setup:find("'chaos_legal_version'", 1, true) ~= nil, "website setup writes server_config chaos_legal_version")
 local lib = readFile("../website/overlay/plugins/chaos/legal_lib.php")
-ok(lib:find("CHAOS_LEGAL_ACCEPT_URL', 'page.php?plugin=chaos&p=accept'", 1, true) ~= nil, "same url as the website")
+ok(lib:find("CHAOS_LEGAL_ACCEPT_URL', 'page?plugin=chaos&p=accept'", 1, true) ~= nil, "same url as the website")
 ok(lib:find("substr(hash('sha256', $all), 0, 16)", 1, true) ~= nil, "website version is 16 hex digits")
 
 -- ====================================================================== engine

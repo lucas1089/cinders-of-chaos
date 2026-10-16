@@ -4,7 +4,7 @@
     python3 -I client/tools/outfit_art/class_art.py look  [KEY ...] --out-dir DIR        # standing, 4 directions, addons
     python3 -I client/tools/outfit_art/class_art.py build [KEY ...] --out-dir DIR [--layout 2+4|1+8] [--procs 4]
 
-KEY is a look of class_art_line.LOOKS (lich, inquisitor, necromancer, thief, ninja, templar) or look_sex
+KEY is a look of class_art_line.LOOKS (lich, inquisitor, necromancer, thief, ninja, templar, archmage) or look_sex
 (necromancer_female); none means all. `build` writes, per look and sex:
   DIR/<look>_<sex>.png    the sheet (one row per group and phase; one 64x64 column per
                           ((z * 3 + addon) * 2 + layer) * 4 + direction: on foot / riding, base / addon 1 / addon 2,

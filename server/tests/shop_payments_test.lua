@@ -51,8 +51,8 @@ else
 	print("note: website folder not found, refund sentences compared to the website skipped")
 end
 en, pt = P.terms()
-eq(en, P.BEFORE_EN .. " Donation Terms on the website: page.php?plugin=chaos&p=legal&doc=donations", "terms before en")
-eq(pt, P.BEFORE_PT .. " Termos de Doação no site: page.php?plugin=chaos&p=legal&doc=donations", "terms before pt")
+eq(en, P.BEFORE_EN .. " Donation Terms on the website: page?plugin=chaos&p=legal&doc=donations", "terms before en")
+eq(pt, P.BEFORE_PT .. " Termos de Doação no site: page?plugin=chaos&p=legal&doc=donations", "terms before pt")
 eq(P.terms("open"), en, "an open order is before the donation")
 en, pt = P.terms("credited")
 ok(en:find("^This was a voluntary donation, not a purchase%.") and en:find("doc=donations$"), "terms after en")
