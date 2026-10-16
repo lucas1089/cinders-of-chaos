@@ -27,7 +27,7 @@ L.SLOSH_MIN = 0.01
 -- font that reads at that size.
 L.ORB_SIZES = {
   { size = 76, font = 'verdana-11px-rounded' },
-  { size = 150, font = 'chaos-outline-12px' },
+  { size = 150, font = 'chaos-outline-11px' },
   { size = 190, font = 'chaos-display-16px' },
 }
 L.ORB_DEFAULT_SIZE = 2

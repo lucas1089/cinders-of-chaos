@@ -598,7 +598,9 @@ local function pollOutfitWindow()
   local list = outfitWin.ScrollBar.selectionList
   local shown = outfitOf(outfitWin.preview.previewoutfit.creature)
   local focused = list and list:getFocusedChild()
-  local hovered = list and buttonOf(list, g_ui.getHoveredWidget())
+  -- g_ui.getHoveredWidget is not in every engine build: without it the hover marker is simply not shown
+  local hoveredWidget = g_ui.getHoveredWidget and g_ui.getHoveredWidget() or nil
+  local hovered = list and buttonOf(list, hoveredWidget)
   local focusedOutfit = focused and focused.outfit and outfitOf(focused.outfit)
   local hoverOutfit = hovered and hovered.outfit and outfitOf(hovered.outfit)
   local sig = table.concat({ tostring(row), P.key(shown), P.key(focusedOutfit), P.key(hoverOutfit) }, '|')
